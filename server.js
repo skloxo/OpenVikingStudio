@@ -1,10 +1,14 @@
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 1936;
 const BACKEND_PORT = process.env.BACKEND_PORT || 1933;
-const DIST_DIR = '/home/skloxo/.local/lib/python3.12/site-packages/openviking/web_studio/dist';
+const DIST_DIR = path.join(__dirname, 'dist');
 const ROOT_API_KEY = process.env.ROOT_API_KEY || 'sk-fbb21afbe35d09986ac6f66ca91f62f44ee6b2536319be7347759f02de8f6227';
 
 const MIME_TYPES = {
@@ -18,24 +22,6 @@ const MIME_TYPES = {
   '.svg': 'image/svg+xml',
   '.woff2': 'font/woff2'
 };
-
-const SCRIPT_INJECTION = `
-<script>
-(function() {
-  try {
-    const conn = {
-      adminApiKey: '${ROOT_API_KEY}',
-      apiKey: '${ROOT_API_KEY}',
-      role: 'root',
-      baseUrl: window.location.origin
-    };
-    localStorage.setItem('ov_console_connection', JSON.stringify(conn));
-  } catch(e) {
-    console.error(e);
-  }
-})();
-</script>
-`;
 
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
@@ -76,10 +62,9 @@ const server = http.createServer((req, res) => {
     const healthData = {
       status: "ok",
       healthy: true,
-      version: "0.4.10",
+      version: "1.0.0",
       auth_mode: "dev",
       role: "root",
-      role_name: "root",
       is_admin: true,
       is_root: true,
       account_id: "default"
@@ -93,7 +78,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Strip /studio prefix for file lookup if present
+  // Strip /studio prefix if present
   let reqPath = url.pathname;
   if (reqPath.startsWith('/studio')) {
     reqPath = reqPath.replace(/^\/studio/, '') || '/';
@@ -113,23 +98,12 @@ const server = http.createServer((req, res) => {
       res.writeHead(500);
       res.end(`Server Error: ${err.code}`);
     } else {
-      if (ext === '.html') {
-        let htmlStr = content.toString('utf-8');
-        if (htmlStr.includes('<head>')) {
-          htmlStr = htmlStr.replace('<head>', `<head>${SCRIPT_INJECTION}`);
-        } else {
-          htmlStr = SCRIPT_INJECTION + htmlStr;
-        }
-        res.writeHead(200, { 'Content-Type': 'text/html' });
-        res.end(htmlStr, 'utf-8');
-      } else {
-        res.writeHead(200, { 'Content-Type': contentType });
-        res.end(content);
-      }
+      res.writeHead(200, { 'Content-Type': contentType });
+      res.end(content);
     }
   });
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`100% Pure Official 1933 OpenViking Studio running on http://localhost:${PORT}/studio/home`);
+  console.log(`OpenViking Studio V1.0.0 Refactored server running on http://localhost:${PORT}/studio/home`);
 });
