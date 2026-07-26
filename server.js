@@ -34,27 +34,39 @@ const SCRIPT_INJECTION = `
     console.error(e);
   }
 
-  function moveHeaderControlsToSidebar() {
-    // 1. Remove top-right GitHub link and hide top-right theme toggle in header
-    const headerLinks = Array.from(document.querySelectorAll('header a'));
+  function fixV100UIAndInteractivity() {
+    const header = document.querySelector('header');
+    if (!header) return;
+
+    const headerLinks = Array.from(header.querySelectorAll('a'));
+    const headerButtons = Array.from(header.querySelectorAll('button'));
+
+    // 1. Completely hide top-right GitHub link
     headerLinks.forEach(a => {
       if (a.href && a.href.includes('github.com')) {
         a.style.display = 'none';
       }
     });
 
-    const headerButtons = Array.from(document.querySelectorAll('header button'));
-    const themeBtn = headerButtons.find(b => !b.textContent.includes('EN') && !b.textContent.includes('中'));
+    // 2. Find original language & theme buttons in top-right header
     const langBtn = headerButtons.find(b => b.textContent && (b.textContent.includes('EN') || b.textContent.includes('中')));
+    const themeBtn = headerButtons.find(b => b !== langBtn && (b.querySelector('svg') || b.getAttribute('aria-label') || b.className.includes('theme') || b.className.includes('mode')));
 
-    // Hide header buttons
-    if (themeBtn) themeBtn.style.display = 'none';
-    if (langBtn) langBtn.style.display = 'none';
-    if (langBtn && langBtn.parentElement) {
-      langBtn.parentElement.style.display = 'none';
+    // Hide original header buttons visually so top-right is clean, but keep in DOM for React events
+    if (langBtn) {
+      langBtn.style.opacity = '0';
+      langBtn.style.pointerEvents = 'none';
+      langBtn.style.position = 'absolute';
+      langBtn.style.right = '-9999px';
+    }
+    if (themeBtn) {
+      themeBtn.style.opacity = '0';
+      themeBtn.style.pointerEvents = 'none';
+      themeBtn.style.position = 'absolute';
+      themeBtn.style.right = '-9999px';
     }
 
-    // 2. Find Sidebar item "连接与身份"
+    // 3. Locate Sidebar item "连接与身份"
     const sidebarElements = Array.from(document.querySelectorAll('aside *, nav *, [class*="sidebar"] *'));
     const connItem = sidebarElements.find(el => el.children.length === 0 && el.textContent && el.textContent.trim().includes('连接与身份'));
 
@@ -70,29 +82,44 @@ const SCRIPT_INJECTION = `
       if (connRow && !document.getElementById('v100-injected-controls')) {
         const wrapper = document.createElement('div');
         wrapper.id = 'v100-injected-controls';
-        wrapper.className = 'px-3 py-2.5 my-2 rounded-xl bg-slate-200/50 border border-slate-200/80 flex flex-col gap-2 shadow-2xs font-sans text-xs';
+        wrapper.style.cssText = 'padding: 10px 12px; margin: 8px 0 12px 0; border-radius: 10px; background: rgba(241, 245, 249, 0.9); border: 1px solid rgba(226, 232, 240, 0.8); display: flex; flex-direction: column; gap: 8px; font-family: sans-serif; font-size: 12px;';
 
-        // Control row with Language Pill & Theme Button
         const ctrlRow = document.createElement('div');
-        ctrlRow.className = 'flex items-center justify-between w-full';
+        ctrlRow.style.cssText = 'display: flex; align-items: center; justify-content: space-between; width: 100%;';
 
-        const langBox = document.createElement('div');
-        langBox.className = 'flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-slate-200/60 shadow-2xs font-medium text-slate-700 cursor-pointer';
-        langBox.innerHTML = '<span class="text-[11px]">中 / EN</span>';
-        langBox.onclick = () => { if (langBtn) langBtn.click(); };
+        // Interactive Language Box
+        const langBox = document.createElement('button');
+        langBox.type = 'button';
+        langBox.style.cssText = 'display: flex; align-items: center; gap: 4px; background: #ffffff; padding: 4px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-weight: 600; color: #334155; font-size: 11px; cursor: pointer; border-style: solid;';
+        langBox.innerHTML = '<span id="v100-lang-txt">' + (langBtn ? langBtn.textContent.trim() : '中 / EN') + '</span>';
+        langBox.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (langBtn) {
+            langBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+          }
+        };
 
-        const themeBox = document.createElement('div');
-        themeBox.className = 'p-1 rounded-lg hover:bg-white text-slate-600 cursor-pointer transition';
-        themeBox.innerHTML = '<span class="text-sm">🌙</span>';
-        themeBox.onclick = () => { if (themeBtn) themeBtn.click(); };
+        // Interactive Theme Box
+        const themeBox = document.createElement('button');
+        themeBox.type = 'button';
+        themeBox.style.cssText = 'padding: 4px 8px; border-radius: 6px; background: transparent; border: none; font-size: 14px; cursor: pointer; color: #475569; display: flex; align-items: center; justify-content: center;';
+        themeBox.innerHTML = '<span>🌙 / ☀️</span>';
+        themeBox.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (themeBtn) {
+            themeBtn.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+          }
+        };
 
         ctrlRow.appendChild(langBox);
         ctrlRow.appendChild(themeBox);
 
-        // Version Row
+        // Version Badge Row
         const verRow = document.createElement('div');
-        verRow.className = 'flex items-center justify-between w-full pt-2 border-t border-slate-200/60 font-mono text-[11px] font-semibold text-slate-600';
-        verRow.innerHTML = '<span>系统版本</span><span class="bg-blue-600 text-white px-1.5 py-0.5 rounded text-[10px] font-bold">V1.0.0</span>';
+        verRow.style.cssText = 'display: flex; align-items: center; justify-content: space-between; width: 100%; font-size: 11px; font-weight: 600; color: #334155; padding-top: 6px; border-top: 1px solid #e2e8f0; font-family: monospace;';
+        verRow.innerHTML = '<span>系统版本</span><span style="background: #2563eb; color: #ffffff; padding: 2px 6px; border-radius: 4px; font-weight: 700;">V1.0.0</span>';
 
         wrapper.appendChild(ctrlRow);
         wrapper.appendChild(verRow);
@@ -100,16 +127,18 @@ const SCRIPT_INJECTION = `
         if (connRow.parentElement) {
           connRow.parentElement.insertBefore(wrapper, connRow);
         }
+      } else if (document.getElementById('v100-lang-txt') && langBtn) {
+        document.getElementById('v100-lang-txt').textContent = langBtn.textContent.trim();
       }
     }
   }
 
   window.addEventListener('DOMContentLoaded', () => {
-    moveHeaderControlsToSidebar();
-    const obs = new MutationObserver(moveHeaderControlsToSidebar);
+    fixV100UIAndInteractivity();
+    const obs = new MutationObserver(fixV100UIAndInteractivity);
     obs.observe(document.body, { childList: true, subtree: true });
-    setTimeout(moveHeaderControlsToSidebar, 300);
-    setTimeout(moveHeaderControlsToSidebar, 1000);
+    setTimeout(fixV100UIAndInteractivity, 300);
+    setTimeout(fixV100UIAndInteractivity, 1000);
   });
 })();
 </script>
@@ -187,5 +216,5 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`1933 Official 100% Perfect UI with V1.0.0 Controls in Sidebar on http://localhost:${PORT}/studio/home`);
+  console.log(`1933 Official 100% Perfect UI with Interactive V1.0.0 Controls in Sidebar on http://localhost:${PORT}/studio/home`);
 });
