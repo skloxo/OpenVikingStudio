@@ -1,0 +1,15 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build output
+dist
+dist.bak
+
+# Technical Documentation (Do NOT push to Git per project requirement)
+ARCHITECTURE.md
+
+# Environment & Logs
+.env
+*.log
+.DS_Store
