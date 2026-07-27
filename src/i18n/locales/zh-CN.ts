@@ -566,8 +566,8 @@ const zhCN = {
     todayRetrievals: {
       description:
         '展示用户或 Agent 今日使用语义检索 find() 和 search() 的成功调用次数，每天零点刷新。',
-      find: 'find',
-      search: 'search',
+      find: 'find 语义查找',
+      search: 'search 关键词搜索',
       title: '今日检索次数',
     },
     todayTokens: {
