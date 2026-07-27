@@ -182,6 +182,7 @@ function RetrievalPage() {
         onSubmit={handleSubmit}
         placeholder={t(`placeholders.${retrievalMode}`)}
         query={query}
+        sendLabel={t('send')}
       />
 
       <RetrievalControls

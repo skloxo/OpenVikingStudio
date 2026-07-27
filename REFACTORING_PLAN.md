@@ -35,9 +35,9 @@
 - **修改文件**：`src/routes/home/-components/token-trend-panel.tsx`
 - **验收标准**：Token 趋势图表更紧凑，首屏显示更多下方数据。
 
-#### 📇 Task Card - v1.0.10: Home Context Commits 热力图 (ContextCommitsHeatmap) 样式微调
+#### 📇 Task Card - [x] v1.0.10: Home Context Commits 热力图 (ContextCommitsHeatmap) 4px 终端圆角与高密重构（已通过 ✅）
 - **修改目标**：重构提交热力图单元格间距与 Tooltip 样式。
-- **修改逻辑**：将热力图容器设为紧凑高密布局，对齐全局 6px 圆角风格。
+- **修改逻辑**：将热力图容器设为紧凑高密布局，对齐全局 4px 微圆角风格，去除冗余图例条。
 - **关联规范**：[UI_SPECIFICATION.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/UI_SPECIFICATION.md)
 - **修改文件**：`src/routes/home/-components/context-commits-heatmap.tsx`
 - **验收标准**：热力图展示精致规范，交互 Tooltip 响应流畅。
@@ -46,12 +46,12 @@
 
 ### 阶段 3：检索/搜索 (Retrieval) 模块重构
 
-#### 📇 Task Card - v1.0.11: 检索搜索栏 (SearchBar) 紧凑化重构
-- **修改目标**：重构 `/retrieval` 页面的搜索输入框与按钮组。
-- **修改逻辑**：输入框圆角收紧为 `rounded-sm` (4px)，按钮 padding 调紧，参考 terminal 命令行精致风格。
+#### 📇 Task Card - [x] v1.0.11: 检索搜索栏 (SearchBar) 与控制栏 (RetrievalControls) 4px 硬朗高密重构（已交付 🔄）
+- **修改目标**：重构 `/retrieval` 页面的搜索输入框、发送按钮及控制筛选栏。
+- **修改逻辑**：输入框与按钮圆角收紧为 `rounded-sm` (4px)，增加快捷键标示，缩小选择框与范围 Badge 圆角至 `rounded-xs` (2px)，遵循高密 Trading 质感。
 - **关联规范**：[UI_SPECIFICATION.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/UI_SPECIFICATION.md)
-- **修改文件**：`src/routes/retrieval/-components/search-bar.tsx`
-- **验收标准**：搜索栏输入框及控件更紧凑精细。
+- **修改文件**：`src/routes/retrieval/-components/search-bar.tsx`、`retrieval-controls.tsx`
+- **验收标准**：检索搜索栏及筛选控制控件紧凑精致，符合 4px 规范。
 
 #### 📇 Task Card - v1.0.12: 检索结果列表 (RetrievalResults) 高密卡片化
 - **修改目标**：重构搜索结果条目的展示密度与得分 Badge。

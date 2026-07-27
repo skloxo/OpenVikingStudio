@@ -107,14 +107,14 @@ export function RetrievalControls({
           onChange={(event) => onCustomPathInputChange(event.target.value)}
           placeholder={t('controls.customScopePlaceholder')}
           aria-label={t('controls.customScope')}
-          className="h-8 w-64 font-mono text-sm"
+          className="h-8 w-64 rounded-sm font-mono text-xs"
         />
       )}
 
-      <div className="inline-flex h-8 max-w-full items-center gap-1.5 rounded-md border bg-muted/30 px-2.5 text-xs text-muted-foreground">
+      <div className="inline-flex h-8 max-w-full items-center gap-1.5 rounded-xs border border-border/60 bg-muted/30 px-2.5 text-xs text-muted-foreground">
         <FolderOpen className="size-3.5 shrink-0" />
         <span className="shrink-0">{t('controls.effectiveScope')}</span>
-        <span className="max-w-64 truncate font-mono text-foreground">
+        <span className="max-w-64 truncate font-mono text-foreground font-medium">
           {targetUri ?? t('controls.allContexts')}
         </span>
       </div>
@@ -125,12 +125,12 @@ export function RetrievalControls({
           onChange={(event) => onSessionIdInputChange(event.target.value)}
           placeholder={t('controls.sessionPlaceholder')}
           aria-label={t('controls.sessionId')}
-          className="h-8 w-52 font-mono text-sm"
+          className="h-8 w-52 rounded-sm font-mono text-xs"
         />
       )}
 
       {mode === 'grep' && (
-        <label className="inline-flex h-8 cursor-pointer items-center gap-2 rounded-md border bg-muted/20 px-2.5 text-xs text-foreground">
+        <label className="inline-flex h-8 cursor-pointer items-center gap-2 rounded-sm border border-border/60 bg-muted/20 px-2.5 text-xs text-foreground">
           <Checkbox checked={ignoreCase} onCheckedChange={onIgnoreCaseChange} />
           {t('controls.ignoreCase')}
         </label>
