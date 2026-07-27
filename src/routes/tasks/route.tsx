@@ -71,7 +71,7 @@ type TaskTypeFilter =
   | 'all'
 
 const DEFAULT_PAGE_SIZE = 20
-const MAX_TASKS = 2000
+const MAX_TASKS = 300
 const PAGE_SIZE_OPTIONS = [20, 50, 100] as const
 const TASK_TYPE_OPTIONS: Exclude<TaskTypeFilter, 'all'>[] = [
   'session_commit',
