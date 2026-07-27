@@ -42,6 +42,7 @@ import {
 } from '#/components/ui/table'
 import { useAppConnection } from '#/hooks/use-app-connection'
 import { getOvResult, getTasks } from '#/lib/ov-client'
+import { postResources } from '#/gen/ov-client'
 import { commitSession } from '#/lib/sessions/api'
 import { cn } from '#/lib/utils'
 import { TaskDetailSheet } from '#/routes/tasks/-components/task-detail-sheet'
@@ -70,7 +71,7 @@ type TaskTypeFilter =
   | 'all'
 
 const DEFAULT_PAGE_SIZE = 20
-const MAX_TASKS = 200
+const MAX_TASKS = 2000
 const PAGE_SIZE_OPTIONS = [20, 50, 100] as const
 const TASK_TYPE_OPTIONS: Exclude<TaskTypeFilter, 'all'>[] = [
   'session_commit',
@@ -167,6 +168,15 @@ function TasksRoute() {
     mutationFn: async (task: TaskRecord) => {
       if (task.task_type === 'session_commit' && task.resource_id) {
         const res = await commitSession(task.resource_id)
+        return { res, task }
+      }
+      if (task.task_type === 'add_resource' && task.resource_id) {
+        const res = await postResources({
+          body: {
+            path: task.resource_id,
+            reason: `Re-queued task: ${task.task_id}`,
+          } as any,
+        })
         return { res, task }
       }
       throw new Error(
