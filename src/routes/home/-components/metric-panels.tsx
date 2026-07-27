@@ -31,6 +31,7 @@ function MetricPanel({
   icon: Icon,
   isError,
   isLoading,
+  subRowsCount = 3,
   title,
   value,
 }: {
@@ -39,6 +40,7 @@ function MetricPanel({
   icon: ComponentType<{ className?: string; style?: CSSProperties }>
   isError?: boolean
   isLoading?: boolean
+  subRowsCount?: number
   title: string
   value: string
 }) {
@@ -91,7 +93,7 @@ function MetricPanel({
   }, [isError, isLoading, value])
 
   return (
-    <Panel className="flex min-h-[152px] flex-col justify-between p-3.5">
+    <Panel className="flex min-h-[142px] flex-col justify-between p-3.5">
       <div>
         <div className="flex items-start justify-between gap-2.5">
           <div className="min-w-0">
@@ -112,7 +114,7 @@ function MetricPanel({
         </div>
 
         {isLoading ? (
-          <Skeleton className="mt-2.5 h-7 w-24 rounded-xs" />
+          <Skeleton className="mt-2.5 h-7 w-28 rounded-xs" />
         ) : isError ? (
           <p className="mt-2.5 text-xs text-destructive">{value}</p>
         ) : (
@@ -124,9 +126,9 @@ function MetricPanel({
 
       {isLoading ? (
         <div className="mt-3 grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] gap-1.5">
-          <Skeleton className="h-10 w-full rounded-xs" />
-          <Skeleton className="h-10 w-full rounded-xs" />
-          <Skeleton className="h-10 w-full rounded-xs" />
+          {Array.from({ length: subRowsCount }).map((_, i) => (
+            <Skeleton key={i} className="h-7 w-full rounded-xs" />
+          ))}
         </div>
       ) : children ? (
         <div className="mt-3 grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] gap-1.5">
@@ -253,6 +255,7 @@ export function TodayRetrievalsPanel({
       icon={Search}
       isError={isError}
       isLoading={isLoading}
+      subRowsCount={2}
       title={t('todayRetrievals.title')}
       value={isError ? t('requestFailed') : formatNumber(total)}
     >

@@ -17,7 +17,21 @@ export function resolveStudioManagementCapabilities({
   role: ConnectionRole
   serverMode: ServerMode
 }): StudioManagementCapabilities {
-  if (isRoleLoading || serverMode === 'dev' || !hasControlCredential) {
+  if (isRoleLoading) {
+    return {
+      canManageAccounts: false,
+      canManageUsers: false,
+    }
+  }
+
+  if (serverMode === 'dev') {
+    return {
+      canManageAccounts: true,
+      canManageUsers: true,
+    }
+  }
+
+  if (!hasControlCredential) {
     return {
       canManageAccounts: false,
       canManageUsers: false,
