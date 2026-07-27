@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import {
   CheckCircle2Icon,
+  CheckIcon,
   CircleDashedIcon,
   CircleXIcon,
   ChevronRightIcon,
@@ -117,6 +118,9 @@ function TasksRoute() {
   const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(
     null,
   )
+  const [requeuedTaskIds, setRequeuedTaskIds] = React.useState<Set<string>>(
+    () => new Set(),
+  )
   const tasksQuery = useQuery({
     queryFn: () => fetchTasks(taskType, statusFilter),
     queryKey: ['tasks', identityScopeKey, taskType, statusFilter],
@@ -132,7 +136,8 @@ function TasksRoute() {
   const retryMutation = useMutation({
     mutationFn: async (task: TaskRecord) => {
       if (task.task_type === 'session_commit' && task.resource_id) {
-        return commitSession(task.resource_id)
+        const res = await commitSession(task.resource_id)
+        return { res, task }
       }
       throw new Error(
         i18n.language.startsWith('zh')
@@ -143,7 +148,11 @@ function TasksRoute() {
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : String(error))
     },
-    onSuccess: async () => {
+    onSuccess: async (data) => {
+      const taskId = data.task.task_id
+      if (taskId) {
+        setRequeuedTaskIds((prev) => new Set(prev).add(taskId))
+      }
       toast.success(
         i18n.language.startsWith('zh')
           ? '任务已重新提交放入处理队列'
@@ -410,25 +419,45 @@ function TasksRoute() {
                       <TableCell className="whitespace-nowrap text-right text-muted-foreground">
                         <span className="inline-flex items-center justify-end gap-2">
                           {status === 'failed' && task.resource_id ? (
-                            <Button
-                              type="button"
-                              size="icon-xs"
-                              variant="outline"
-                              className="rounded-xs"
-                              title={i18n.language.startsWith('zh') ? '重新入队' : 'Re-queue'}
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                retryMutation.mutate(task)
-                              }}
-                              disabled={retryMutation.isPending}
-                            >
-                              <RotateCcwIcon
-                                className={cn(
-                                  'size-3',
-                                  retryMutation.isPending && 'animate-spin',
-                                )}
-                              />
-                            </Button>
+                            taskId && requeuedTaskIds.has(taskId) ? (
+                              <span
+                                className="inline-flex items-center gap-1 rounded-xs bg-emerald-500/10 px-1.5 py-0.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400"
+                                title={
+                                  i18n.language.startsWith('zh')
+                                    ? '已重新提交放入队列'
+                                    : 'Already Re-queued'
+                                }
+                              >
+                                <CheckIcon className="size-3" />
+                                {i18n.language.startsWith('zh')
+                                  ? '已入队'
+                                  : 'Re-queued'}
+                              </span>
+                            ) : (
+                              <Button
+                                type="button"
+                                size="icon-xs"
+                                variant="outline"
+                                className="rounded-xs"
+                                title={
+                                  i18n.language.startsWith('zh')
+                                    ? '重新入队'
+                                    : 'Re-queue'
+                                }
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  retryMutation.mutate(task)
+                                }}
+                                disabled={retryMutation.isPending}
+                              >
+                                <RotateCcwIcon
+                                  className={cn(
+                                    'size-3',
+                                    retryMutation.isPending && 'animate-spin',
+                                  )}
+                                />
+                              </Button>
+                            )
                           ) : null}
                           {formatTime(task)}
                         </span>
