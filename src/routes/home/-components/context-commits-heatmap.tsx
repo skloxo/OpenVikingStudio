@@ -4,7 +4,6 @@ import HeatMap from '@uiw/react-heat-map'
 
 import {
   HEATMAP_COLOR_STOPS,
-  HEATMAP_EMPTY_COLOR,
   HEATMAP_MONTH_LABELS,
   HEATMAP_WEEK_LABELS,
 } from '../-constants/dashboard'
@@ -107,24 +106,6 @@ export function ContextCommitsHeatmap({
               weekLabels={HEATMAP_WEEK_LABELS}
               width={820}
             />
-          </div>
-
-          <div className="-mt-1 flex justify-end text-xs text-muted-foreground">
-            <div className="flex items-center gap-1.5">
-              <span className="mr-0.5">{t('contextCommits.legend.none')}</span>
-              <span
-                className="size-3 rounded-[2px]"
-                style={{ backgroundColor: HEATMAP_EMPTY_COLOR }}
-              />
-              {HEATMAP_COLOR_STOPS.map((color, index) => (
-                <span
-                  key={`${color}-${index}`}
-                  className="size-3 rounded-[2px]"
-                  style={{ backgroundColor: color }}
-                />
-              ))}
-              <span className="ml-0.5">{t('contextCommits.legend.more')}</span>
-            </div>
           </div>
         </div>
 
