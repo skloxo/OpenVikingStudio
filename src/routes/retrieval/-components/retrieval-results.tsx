@@ -62,8 +62,8 @@ export function RetrievalResults({
   t: TFunction<'retrieval'>
 }) {
   return (
-    <div className="flex flex-col gap-3">
-      <h2 className="text-base font-medium">
+    <div className="flex flex-col gap-2.5">
+      <h2 className="text-sm font-semibold tracking-tight">
         {hasSubmitted && hasResults
           ? t('results.topN', {
               count: Math.min(flatItems.length, resultCount),
@@ -71,7 +71,7 @@ export function RetrievalResults({
           : t('results.title')}
       </h2>
 
-      <div className="min-h-80 rounded-lg border border-dashed bg-card/50">
+      <div className="min-h-80 rounded border border-border/60 bg-card/60 overflow-hidden shadow-xs">
         {!hasSubmitted ? (
           <EmptyRetrievalState
             hasRetrievableContext={hasRetrievableContext}
@@ -145,10 +145,10 @@ function EmptyRetrievalState({
           <Button
             size="sm"
             variant="secondary"
-            className="mt-1 gap-1.5"
+            className="mt-1 h-7 rounded-xs px-3 text-xs gap-1.5"
             onClick={onUploadClick}
           >
-            <Upload className="size-4" />
+            <Upload className="size-3.5" />
             {t('empty.upload')}
           </Button>
         </>
@@ -167,36 +167,36 @@ function ResultList({
   t: TFunction<'retrieval'>
 }) {
   return (
-    <div className="divide-y">
+    <div className="divide-y divide-border/60">
       {queryPlanItems.length > 0 && (
-        <div className="border-b bg-muted/20 px-4 py-3">
+        <div className="border-b border-border/60 bg-muted/20 px-3 py-2">
           <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
             <Workflow className="size-3.5" />
             <span>
               {t('queryPlan.title', { count: queryPlanItems.length })}
             </span>
           </div>
-          <div className="mt-2 flex flex-wrap gap-1.5">
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
             {queryPlanItems.slice(0, 4).map((plan, index) => (
               <span
                 key={`${plan.query}-${index}`}
-                className="inline-flex max-w-full items-center gap-1 rounded-md border bg-background px-2 py-1 text-xs text-muted-foreground"
+                className="inline-flex max-w-full items-center gap-1 rounded-xs border border-border/60 bg-background px-2 py-0.5 text-xs text-muted-foreground"
               >
                 {plan.context_type && (
                   <span
                     className={cn(
-                      'font-medium',
+                      'font-mono font-semibold text-[10px]',
                       TYPE_META[plan.context_type].color,
                     )}
                   >
                     {t(`types.${plan.context_type}`)}
                   </span>
                 )}
-                <span className="truncate">{plan.query}</span>
+                <span className="truncate font-mono">{plan.query}</span>
               </span>
             ))}
             {queryPlanItems.length > 4 && (
-              <span className="rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground">
+              <span className="rounded-xs bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                 {t('queryPlan.more', { count: queryPlanItems.length - 4 })}
               </span>
             )}
@@ -228,11 +228,11 @@ function ResultRow({
       search={resourceSearch}
       target="_blank"
       rel="noreferrer noopener"
-      className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-inset"
+      className="flex w-full items-start gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-inset"
     >
       <div
         className={cn(
-          'mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold uppercase tracking-wide',
+          'mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-xs px-1.5 py-0.5 text-[10px] font-mono font-semibold uppercase tracking-wider',
           meta.bgColor,
           meta.color,
         )}
@@ -241,23 +241,23 @@ function ResultRow({
         <span>{t(`types.${item.type}`)}</span>
       </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-medium">{name}</div>
-        <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground/70">
-          <FolderOpen className="size-3 shrink-0" />
+        <div className="truncate text-xs font-mono font-semibold text-foreground">{name}</div>
+        <div className="mt-0.5 flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground/70">
+          <FolderOpen className="size-3 shrink-0 text-muted-foreground/50" />
           <span className="truncate">{parent}</span>
         </div>
         {item.item.abstract && (
-          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground/60">
+          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground/70 leading-relaxed">
             {item.item.abstract}
           </p>
         )}
       </div>
       {item.item.result_kind === 'grep' && item.item.line !== undefined ? (
-        <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+        <span className="shrink-0 rounded-xs bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground border border-border/40">
           {t('results.line', { line: item.item.line })}
         </span>
       ) : item.item.result_kind !== 'glob' ? (
-        <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] tabular-nums text-muted-foreground">
+        <span className="shrink-0 rounded-xs bg-muted/60 px-1.5 py-0.5 font-mono text-xs tabular-nums font-semibold text-muted-foreground border border-border/40">
           {item.item.score.toFixed(3)}
         </span>
       ) : null}
