@@ -157,7 +157,29 @@ function TasksRoute() {
     queryKey: ['tasks', identityScopeKey, taskType, statusFilter],
     refetchInterval: 10_000,
   })
-  const allTasks = tasksQuery.data ?? []
+  const rawTasks = tasksQuery.data ?? []
+  const allTasks = React.useMemo(() => {
+    if (statusFilter === 'failed') {
+      return rawTasks.filter((task) => {
+        const taskId = task.task_id
+        const isRequeuedByBackend = Boolean(
+          task.resource_id &&
+            task.created_at &&
+            rawTasks.some(
+              (otherTask) =>
+                otherTask.resource_id === task.resource_id &&
+                otherTask.task_id !== task.task_id &&
+                (otherTask.created_at || 0) >= (task.created_at || 0),
+            ),
+        )
+        const isRequeued = Boolean(
+          (taskId && requeuedTaskIds.has(taskId)) || isRequeuedByBackend,
+        )
+        return !isRequeued
+      })
+    }
+    return rawTasks
+  }, [rawTasks, statusFilter, requeuedTaskIds])
   const pageOffset = (page - 1) * pageSize
   const tasks = allTasks.slice(pageOffset, pageOffset + pageSize)
   const totalPages = Math.max(1, Math.ceil(allTasks.length / pageSize))
@@ -365,11 +387,18 @@ function TasksRoute() {
           type="button"
           variant="outline"
           size="sm"
-          disabled={tasksQuery.isFetching}
-          onClick={() => void tasksQuery.refetch()}
+          disabled={tasksQuery.isFetching || taskStatsQuery.isFetching}
+          onClick={() => {
+            void tasksQuery.refetch()
+            void taskStatsQuery.refetch()
+          }}
         >
           <RefreshCwIcon
-            className={tasksQuery.isFetching ? 'animate-spin' : undefined}
+            className={
+              tasksQuery.isFetching || taskStatsQuery.isFetching
+                ? 'animate-spin'
+                : undefined
+            }
           />
           {t('refresh')}
         </Button>
