@@ -23,7 +23,7 @@ import {
   SheetTitle,
 } from '#/components/ui/sheet'
 import { getOvResult, getTaskByTaskId } from '#/lib/ov-client'
-import { getTaskDate } from '#/routes/tasks/-lib/task-time'
+import { formatTaskDuration, getTaskDate } from '#/routes/tasks/-lib/task-time'
 
 import {
   hasTaskResult,
@@ -149,6 +149,13 @@ export function TaskDetailSheet({
                   icon={<RefreshCwIcon />}
                   label={t('detail.fields.updatedAt')}
                   value={formatTaskTime(task, i18n.resolvedLanguage, 'updated')}
+                />
+                <DetailField
+                  className="col-span-2"
+                  icon={<TimerResetIcon />}
+                  label={i18n.language.startsWith('zh') ? '执行耗时 / 已用时长' : 'Duration'}
+                  value={formatTaskDuration(task, i18n.language.startsWith('zh'))}
+                  mono
                 />
               </div>
 

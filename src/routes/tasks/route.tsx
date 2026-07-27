@@ -46,7 +46,7 @@ import {
   normalizeTaskStatus,
 } from '#/routes/tasks/-lib/task-record'
 import type { TaskRecord, TaskStatus } from '#/routes/tasks/-lib/task-record'
-import { getTaskDate } from '#/routes/tasks/-lib/task-time'
+import { formatTaskDuration, getTaskDate } from '#/routes/tasks/-lib/task-time'
 
 export const Route = createFileRoute('/tasks')({
   component: TasksRoute,
@@ -315,6 +315,7 @@ function TasksRoute() {
                   <TableHead>{t('table.type')}</TableHead>
                   <TableHead>{t('table.resource')}</TableHead>
                   <TableHead>{t('table.status')}</TableHead>
+                  <TableHead>{i18n.language.startsWith('zh') ? '耗时 / 已运行' : 'Duration'}</TableHead>
                   <TableHead className="text-right">
                     {t('table.createdAt')}
                   </TableHead>
@@ -323,6 +324,8 @@ function TasksRoute() {
               <TableBody>
                 {tasks.map((task, index) => {
                   const taskId = task.task_id
+                  const status = normalizeTaskStatus(task.status)
+                  const isRunning = status === 'running'
                   return (
                     <TableRow
                       key={taskId || String(index)}
@@ -364,6 +367,18 @@ function TasksRoute() {
                         {task.resource_id || '-'}
                       </TableCell>
                       <TableCell>{renderStatus(task.status)}</TableCell>
+                      <TableCell className="whitespace-nowrap font-mono text-xs">
+                        {isRunning ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-xs bg-sky-500/10 px-1.5 py-0.5 text-sky-600 dark:text-sky-400">
+                            <span className="size-1.5 rounded-full bg-sky-500 animate-pulse" />
+                            {formatTaskDuration(task, i18n.language.startsWith('zh'))}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">
+                            {formatTaskDuration(task, i18n.language.startsWith('zh'))}
+                          </span>
+                        )}
+                      </TableCell>
                       <TableCell className="whitespace-nowrap text-right text-muted-foreground">
                         {formatTime(task)}
                       </TableCell>
