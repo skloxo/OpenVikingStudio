@@ -228,17 +228,31 @@ class TaskTracker:
 
     async def _process_one_pending_task(self, task: TaskRecord, sem: asyncio.Semaphore) -> None:
         async with sem:
+            from openviking.server.dependencies import get_service
+            service = None
+            for _ in range(30):
+                try:
+                    s = get_service()
+                    if getattr(s, "_initialized", False):
+                        service = s
+                        break
+                except Exception:
+                    pass
+                await asyncio.sleep(0.5)
+
+            if service is None:
+                logger.warning("[TaskTracker] Service not ready for task %s, skipping for next iteration", task.task_id)
+                return
+
             try:
                 await self.start(task.task_id)
                 if task.resource_id and task.resource_id.startswith("viking://resources/"):
-                    from openviking.server.dependencies import get_service
                     from openviking.server.identity import RequestContext, Role
                     from openviking_cli.session.user_id import UserIdentifier
 
                     acc = task.account_id or "default"
                     usr = task.user_id or "default"
                     ctx = RequestContext(user=UserIdentifier(acc, usr), role=Role.ROOT)
-                    service = get_service()
                     await service.reindex(uri=task.resource_id, mode="semantic_and_vectors", wait=True, ctx=ctx)
                 await self.complete(task.task_id)
             except Exception as e:
