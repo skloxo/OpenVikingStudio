@@ -21,14 +21,14 @@
 
 ### 阶段 2：控制台主页 (Home / Dashboard) 模块高密重构
 
-#### 📇 Task Card - v1.0.8: Home 基础指标卡片 (MetricPanels) 高密对齐
+#### 📇 Task Card - [x] v1.0.8: Home 基础指标卡片 (MetricPanels) 高密对齐（已通过 ✅）
 - **修改目标**：重构 Home 主页顶部指标卡片的外观与排版密度。
 - **修改逻辑**：将原 `rounded-xl`/`rounded-2xl` 圆角收紧为 `rounded-md` (6px)，内边距由 `p-6` 缩减为 `p-3.5`，按照 `tedtrading` 风格强化数字与 Label 的对比度。
 - **关联规范**：[UI_SPECIFICATION.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/UI_SPECIFICATION.md#1-设计-token-标准) Section 1
 - **修改文件**：`src/routes/home/-components/metric-panels.tsx`
 - **验收标准**：访问 `http://127.0.0.1:1936/studio/home`，指标卡片高度收紧，空间利用率提升。
 
-#### 📇 Task Card - v1.0.9: Home Token 趋势图表 (TokenTrendPanel) 紧凑排版
+#### 📇 Task Card - [x] v1.0.9: Home Token 趋势图表 (TokenTrendPanel) 紧凑排版与 4px 硬朗微圆角重构（已交付 🔄）
 - **修改目标**：重构 Token 消耗趋势图表容器与 Recharts 渲染高度。
 - **修改逻辑**：压缩图表 Header padding，收紧 Card 圆角至 `rounded-md`，提升纵向信息显示效率。
 - **关联规范**：[UI_SPECIFICATION.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/UI_SPECIFICATION.md)
