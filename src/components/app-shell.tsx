@@ -284,7 +284,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
               <AccountSwitcher />
               <span className="text-[11px] font-mono text-slate-400 dark:text-slate-500 font-normal leading-none select-none block px-2 -mt-1">
-                v1.0.13
+                v1.1.0
               </span>
             </div>
             <SidebarTrigger className="shrink-0" />

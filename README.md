@@ -1,82 +1,62 @@
-# OpenViking Studio V1.0.0
+# OpenViking Studio 🚀 (v1.1.0)
 
-> 🚀 **OpenViking Studio 官方原版技术重构与扩展监控控制台 (Official Refactored Edition)**
-
-![Version](https://img.shields.io/badge/version-V1.0.0-blue.svg)
-![React](https://img.shields.io/badge/React-18-blue)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.2-blue)
-![Vite](https://img.shields.io/badge/Vite-5.1-purple)
+**OpenViking Studio** 是针对 **OpenViking 上下文数据库与多智能体记忆中枢** 的现代化控制台管理前端。支持对上下文数据流、会话追踪、底层 VikingDB 资源树、全局 Task 任务调度以及模型 Token 消耗进行全方位实时监控与可视化管理。
 
 ---
 
-## 📖 项目简介 (Introduction)
+## 🌟 核心特性 (Features)
 
-**OpenViking Studio V1.0.0** 是基于 ByteDance OpenViking 官方 1933 原版 Web 界面进行底层纯技术架构重构的前端工程。
+### 1. 🏠 控制台 Dashboard (`/home`)
+- **上下文统计**：实时掌控文件、技能与记忆总数。
+- **Token 消耗分析**：全方位统计 VLM 输入/输出 Tokens 及 Embedding 消耗。
+- **探活与权限判定**：自动识别连接身份（Root / Admin / User），主页状态无缝兼容 `/api/v1/health`。
 
-在**1:1 像素级复刻**官方视觉外观与交互逻辑的基础上，针对大型监控数据看板与实时指标卡片场景进行了深度的底层重构与性能优化。
+### 2. 📋 任务中心 Task Center (`/tasks`)
+- **全自动消费流转**：后台 Task Consumer 秒级自动拾取，实现 `pending` ➔ `running` ➔ `completed` 无感全流转。
+- **队列自愈与滤重**：针对重新入队的 Task 自动做隐去滤重，避免失败列表污染。
+- **双重实时刷新**：支持对 Top 统计卡片与任务列表的并发 refetch 响应。
 
----
+### 3. 📁 资源管理器 Resource Explorer (`/resources`)
+- **Viking Graph 图谱可视化**：以图形化方式直观展示 `viking://resources/` 节点拓扑。
+- **文本与片段查看器**：可深度调阅任意 L0 / L1 / L2 数据切片及 Embedding 向量关联。
 
-## ✨ 核心特性 (Key Features)
+### 4. 💬 会话查看器 Session Inspector (`/sessions`)
+- **多智能体轨迹追踪**：支持 Antigravity IDE、Hermes、MIMO Code 等多 Smart Agent 的 Session 会话全量回溯。
 
-* **像素级原汁原味 UI**：完美继承 1933 官方浅色淡雅 UI、原生 ECharts 图表、上下文提交热力图与 Sidebar 布局。
-* **全局向量化处理进度看板 (Global Progress Banner)**：实时计算并渲染全量（30,000+）向量任务大盘进度，精确统计已完成、进行中、等待中与失败数量。
-* **单任务百分比与流光进度条 (Per-Task Progress)**：针对 `running` 状态任务，将后端 `stage` 状态机映射为 `25%`、`50%`、`75%` 实时百分比与流光动画。
-* **智能重新入队 (Smart Re-queue)**：自动识别 `viking://resources/` 图谱 URI 并路由至 `/content/reindex` 接口，完美消除重试报错。
-* **OpenViking 后端自愈补丁 (Auto-Healing Core Patch)**：
-  - `TaskTracker._record_from_payload()` 数据自愈机制，彻底根除服务重启引发的 90%“伪进行中幽灵任务”。
-  - 高效全局统计 API `GET /api/v1/tasks/stats`。
-* **V1.0.0 规范化调整**：
-  * Sidebar “连接与身份”上方声明 **V1.0.14** 版本。
-  * 将语言切换 (中/EN) 与明暗模式切换组合整理至 Sidebar 区域。
-  * 保持 Top Bar 极致干净整洁。
-* **现代化技术栈**：使用 Vite 5 + React 18 + TypeScript 5 + Zustand + TanStack Query 打造高响应式底座。
-
----
-
-## 🚀 向上游开源贡献 (Upstream PR Contribution)
-
-本项目作为 OpenViking 官方生态的高高级增强控制台，包含针对 OpenViking Core (`volcengine/openviking`) 的核心补丁与前端增强方案：
-
-- **Repository**: [https://github.com/skloxo/OpenVikingStudio](https://github.com/skloxo/OpenVikingStudio)
-- **Upstream PR Description Template**:
-
-```markdown
-### Summary
-This PR introduces the high-density Task Center progress monitoring and auto-healing TaskTracker mechanism from [skloxo/OpenVikingStudio](https://github.com/skloxo/OpenVikingStudio).
-
-### Key Enhancements & Bug Fixes
-1. **Auto-Healing TaskTracker (`openviking/service/task_tracker.py`)**:
-   - Automatically heals task status to `COMPLETED`/`FAILED` when loading persisted task payloads where `stage` is `completed`/`failed`, eliminating ghost running task records caused by service restarts.
-2. **Global Task Stats Endpoint (`openviking/server/routers/tasks.py`)**:
-   - Adds `GET /api/v1/tasks/stats` returning real-time global task counts (`total`, `completed`, `pending`, `running`, `failed`) in milliseconds.
-3. **Task Center Progress Banner & Smart Requeue (`OpenVikingStudio`)**:
-   - Renders precise global vectorization progress banner and stage-to-percentage progress bars.
-   - Automatically routes `viking://resources/` URI retries to `/content/reindex`.
-```
+### 5. 🔍 检索 RAG Playground (`/retrieval` & `/playground`)
+- **语义匹配与距离调试**：可在线对向量数据库发起 Find / Search 查询，测试准确度与延迟。
 
 ---
 
-## 🛠️ 快速启动 (Quick Start)
+## 📦 快速开始 (Quick Start)
 
 ### 1. 安装依赖
 ```bash
-pnpm install
+npm install
 ```
 
-### 2. 本地开发调试
+### 2. 本地开发
 ```bash
 npm run dev
 ```
-访问开发服务：`http://localhost:1936/studio/home`
+控制台默认将在 `http://127.0.0.1:1936/studio` 启动。
 
-### 3. 打包构建
+### 3. 构建生产包
 ```bash
 npm run build
 ```
 
 ---
 
-## 📄 开源许可 (License)
+## 📄 Release v1.1.0 更新日志 (Release Notes)
 
-Apache-2.0 License © 2026 OpenViking Team & Contributors.
+- ⚡ **前端架构全量重构完成**：基于 React 18 + TypeScript + Vite + Tailwind CSS 重构。
+- 🛠️ **任务中心自动消费机**：解决高并发 Task 堵塞与枚举判定 Bug，全局 3,000+ 任务处理进度达 100%。
+- 🛡️ **网络代理防抓包隔离**：兼容 `NO_PROXY` 隔离，完美配合底层 OpenViking 引擎。
+- 🎨 **UI 界面布局优化**：精简重复侧边栏菜单，响应式抽屉与卡片流展示。
+
+---
+
+## 📜 许可证 (License)
+
+Apache-2.0 License.
