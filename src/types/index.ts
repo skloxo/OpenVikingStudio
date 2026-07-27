@@ -11,6 +11,9 @@ export interface TodayTokens {
   prompt: number;
   completion: number;
   embedding: number;
+  vlm_input?: number;
+  vlm_output?: number;
+  embedding_input?: number;
 }
 
 export interface TodayRetrievals {

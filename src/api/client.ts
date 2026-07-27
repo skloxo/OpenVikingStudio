@@ -1,4 +1,4 @@
-import { ConsoleDashboardSummary, SystemStatus } from '../types';
+import type { ConsoleDashboardSummary, SystemStatus } from '../types';
 
 const ROOT_API_KEY = 'sk-fbb21afbe35d09986ac6f66ca91f62f44ee6b2536319be7347759f02de8f6227';
 

@@ -3,7 +3,7 @@ import { Navbar } from './components/layout/Navbar';
 import { Sidebar } from './components/layout/Sidebar';
 import { useStudioStore } from './store/useStudioStore';
 import { getDashboardSummary, getSystemStatus } from './api/client';
-import { ConsoleDashboardSummary } from './types';
+import type { ConsoleDashboardSummary } from './types';
 
 export const App: React.FC = () => {
   const { activeTab } = useStudioStore();
@@ -38,9 +38,9 @@ export const App: React.FC = () => {
                   <div className="text-sm font-medium text-slate-500 mb-1">今日 Tokens 消耗</div>
                   <div className="text-3xl font-bold text-slate-900 mb-4">{summary?.today_tokens.total.toLocaleString() || '137,464'}</div>
                   <div className="space-y-1.5 text-xs text-slate-600 border-t border-slate-100 pt-3">
-                    <div className="flex justify-between"><span>VLM 输入 Tokens</span><span className="font-mono font-medium text-blue-600">{summary?.today_tokens.vlm_input.toLocaleString() || '78,467'}</span></div>
-                    <div className="flex justify-between"><span>VLM 输出 Tokens</span><span className="font-mono font-medium text-purple-600">{summary?.today_tokens.vlm_output.toLocaleString() || '54,392'}</span></div>
-                    <div className="flex justify-between"><span>Embedding 输入 Tokens</span><span className="font-mono font-medium text-emerald-600">{summary?.today_tokens.embedding_input.toLocaleString() || '4,605'}</span></div>
+                    <div className="flex justify-between"><span>VLM 输入 Tokens</span><span className="font-mono font-medium text-blue-600">{summary?.today_tokens.vlm_input?.toLocaleString() || '78,467'}</span></div>
+                    <div className="flex justify-between"><span>VLM 输出 Tokens</span><span className="font-mono font-medium text-purple-600">{summary?.today_tokens.vlm_output?.toLocaleString() || '54,392'}</span></div>
+                    <div className="flex justify-between"><span>Embedding 输入 Tokens</span><span className="font-mono font-medium text-emerald-600">{summary?.today_tokens.embedding_input?.toLocaleString() || '4,605'}</span></div>
                   </div>
                 </div>
 

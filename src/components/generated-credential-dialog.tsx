@@ -43,6 +43,7 @@ export function GeneratedCredentialDialog() {
     generatedCredential.apiKey === connection.apiKey
 
   async function copyKey(): Promise<void> {
+    if (!generatedCredential) return
     try {
       await copyTextToClipboard(generatedCredential.apiKey)
       toast.success(t('toast.copied'))
@@ -52,6 +53,7 @@ export function GeneratedCredentialDialog() {
   }
 
   async function useIdentity(): Promise<void> {
+    if (!generatedCredential) return
     setIsSwitching(true)
     try {
       await switchIdentity({
