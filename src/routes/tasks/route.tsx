@@ -276,21 +276,45 @@ function TasksRoute() {
     )
   }
 
-  const completedCount = allTasks.filter(
-    (t) => normalizeTaskStatus(t.status) === 'completed',
-  ).length
-  const runningCount = allTasks.filter(
-    (t) => normalizeTaskStatus(t.status) === 'running',
-  ).length
-  const pendingCount = allTasks.filter(
-    (t) => normalizeTaskStatus(t.status) === 'pending',
-  ).length
-  const failedCount = allTasks.filter(
-    (t) => normalizeTaskStatus(t.status) === 'failed',
-  ).length
-  const totalCount = allTasks.length
+  const taskStatsQuery = useQuery({
+    queryFn: async () => {
+      try {
+        const resp = await fetch('http://127.0.0.1:1933/api/v1/tasks/stats')
+        if (resp.ok) {
+          const json = await resp.json()
+          return json.result as {
+            total: number
+            completed: number
+            pending: number
+            running: number
+            failed: number
+          }
+        }
+      } catch {
+        // Fallback to local counts if endpoint fails
+      }
+      return null
+    },
+    queryKey: ['taskStats', identityScopeKey],
+    refetchInterval: 5_000,
+  })
+
+  const stats = taskStatsQuery.data
+  const completedCount = stats
+    ? stats.completed
+    : allTasks.filter((item) => normalizeTaskStatus(item.status) === 'completed').length
+  const runningCount = stats
+    ? stats.running
+    : allTasks.filter((item) => normalizeTaskStatus(item.status) === 'running').length
+  const pendingCount = stats
+    ? stats.pending
+    : allTasks.filter((item) => normalizeTaskStatus(item.status) === 'pending').length
+  const failedCount = stats
+    ? stats.failed
+    : allTasks.filter((item) => normalizeTaskStatus(item.status) === 'failed').length
+  const totalCount = stats ? stats.total : allTasks.length
   const globalPct =
-    totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
+    totalCount > 0 ? Math.round((completedCount / totalCount) * 1000) / 10 : 0
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-5">
