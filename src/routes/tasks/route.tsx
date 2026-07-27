@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import {
   CheckCircle2Icon,
@@ -9,8 +9,10 @@ import {
   ClipboardListIcon,
   LoaderCircleIcon,
   RefreshCwIcon,
+  RotateCcwIcon,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
@@ -39,6 +41,7 @@ import {
 } from '#/components/ui/table'
 import { useAppConnection } from '#/hooks/use-app-connection'
 import { getOvResult, getTasks } from '#/lib/ov-client'
+import { commitSession } from '#/lib/sessions/api'
 import { cn } from '#/lib/utils'
 import { TaskDetailSheet } from '#/routes/tasks/-components/task-detail-sheet'
 import {
@@ -105,6 +108,7 @@ async function fetchTasks(
 function TasksRoute() {
   const { i18n, t } = useTranslation('tasksPage')
   const { identityScopeKey } = useAppConnection()
+  const queryClient = useQueryClient()
   const [page, setPage] = React.useState(1)
   const [pageSize, setPageSize] = React.useState(DEFAULT_PAGE_SIZE)
   const [taskType, setTaskType] = React.useState<TaskTypeFilter>('all')
@@ -124,6 +128,30 @@ function TasksRoute() {
   const totalPages = Math.max(1, Math.ceil(allTasks.length / pageSize))
   const hasNext = page < totalPages
   const hasActiveFilters = taskType !== 'all' || statusFilter !== 'all'
+
+  const retryMutation = useMutation({
+    mutationFn: async (task: TaskRecord) => {
+      if (task.task_type === 'session_commit' && task.resource_id) {
+        return commitSession(task.resource_id)
+      }
+      throw new Error(
+        i18n.language.startsWith('zh')
+          ? '此任务类型暂不支持直接重新入队'
+          : 'Retry not supported for this task type',
+      )
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : String(error))
+    },
+    onSuccess: async () => {
+      toast.success(
+        i18n.language.startsWith('zh')
+          ? '任务已重新提交放入处理队列'
+          : 'Task successfully re-queued',
+      )
+      await queryClient.invalidateQueries({ queryKey: ['tasks'] })
+    },
+  })
 
   React.useEffect(() => {
     if (page > totalPages) {
@@ -380,7 +408,30 @@ function TasksRoute() {
                         )}
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-right text-muted-foreground">
-                        {formatTime(task)}
+                        <span className="inline-flex items-center justify-end gap-2">
+                          {status === 'failed' && task.resource_id ? (
+                            <Button
+                              type="button"
+                              size="icon-xs"
+                              variant="outline"
+                              className="rounded-xs"
+                              title={i18n.language.startsWith('zh') ? '重新入队' : 'Re-queue'}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                retryMutation.mutate(task)
+                              }}
+                              disabled={retryMutation.isPending}
+                            >
+                              <RotateCcwIcon
+                                className={cn(
+                                  'size-3',
+                                  retryMutation.isPending && 'animate-spin',
+                                )}
+                              />
+                            </Button>
+                          ) : null}
+                          {formatTime(task)}
+                        </span>
                       </TableCell>
                     </TableRow>
                   )
