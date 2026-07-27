@@ -137,8 +137,41 @@ function HealthBadge({
   )
 }
 
+const HEADER_TRANSLATIONS: Record<string, string> = {
+  'Queue': '队列名称',
+  'Pending': '等待中',
+  'In Progress': '进行中',
+  'Processed': '已处理',
+  'Requeued': '重新入队',
+  'Errors': '异常数',
+  'Total': '总数',
+  'Collection': '集合',
+  'Index Count': '索引数',
+  'Vector Count': '向量数',
+  'Status': '状态',
+  'Model': '模型名称',
+  'Provider': '提供方',
+  'Calls': '调用次数',
+  'Prompt': '输入 Tokens',
+  'Completion': '输出 Tokens',
+  'Last Updated': '最后更新',
+  'Metric': '监控指标',
+  'Value': '当前数值',
+  'Operation': '操作类型',
+  'Count': '操作次数',
+  'Avg (ms)': '均耗时 (ms)',
+  'Min (ms)': '最小耗时 (ms)',
+  'Max (ms)': '最大耗时 (ms)',
+}
+
+function translateHeader(header: string, isZh: boolean): string {
+  if (!isZh) return header
+  return HEADER_TRANSLATIONS[header.trim()] || header
+}
+
 function ObserverStatusContent({ status }: { status: string }) {
-  const { t } = useTranslation('monitoringPage')
+  const { i18n, t } = useTranslation('monitoringPage')
+  const isZh = i18n.language.startsWith('zh')
   const blocks = React.useMemo(() => parseObserverStatus(status), [status])
 
   if (blocks.length === 0) {
@@ -168,9 +201,9 @@ function ObserverStatusContent({ status }: { status: string }) {
                   {block.headers.map((header, headerIndex) => (
                     <TableHead
                       key={`${header}-${headerIndex}`}
-                      className="whitespace-nowrap"
+                      className="whitespace-nowrap font-medium"
                     >
-                      {header}
+                      {translateHeader(header, isZh)}
                     </TableHead>
                   ))}
                 </TableRow>
