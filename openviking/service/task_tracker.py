@@ -305,10 +305,16 @@ class TaskTracker:
         This eliminates the race condition between has_running() and create().
         """
         self._validate_owner(account_id, user_id)
+        account_key = (account_id, user_id)
         async with self._async_lock:
-            for task in await self._load_all_from_store(account_id, user_id):
-                with self._lock:
-                    self._tasks[task.task_id] = task
+            # Only load from disk if this account scope has never been loaded.
+            # Once _loaded_accounts contains the key, all tasks are already in
+            # self._tasks – no need to re-scan 42k files every time.
+            if account_key not in self._loaded_accounts:
+                for task in await self._load_all_from_store(account_id, user_id):
+                    with self._lock:
+                        self._tasks[task.task_id] = task
+                self._loaded_accounts.add(account_key)
 
             with self._lock:
                 tasks = list(self._tasks.values())
