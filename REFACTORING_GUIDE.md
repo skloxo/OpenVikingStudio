@@ -114,7 +114,7 @@ cp -rf ./dist/* /home/skloxo/.local/lib/python3.12/site-packages/openviking/web_
 | **v1.0.5** | **Vite Proxy 完整修复**：补全所有 OpenViking 后端路径代理（含 `/health`），修复"admin/root 权限缺失"问题 | `vite.config.ts`、`src/hooks/use-app-connection.tsx` | ❌ 未通过（Playground 崩溃） |
 | **v1.0.6** | **修复 Playground 缺失 Icon 导入导致的渲染崩溃**：在 `terminal-panel.tsx` 中补全 `TerminalIcon` 导入 | `src/routes/playground/-components/terminal-panel.tsx` | ✅ 已验收 |
 | **v1.0.7** | **侧边栏账号切换器 Dev 模式防护**：在 `account-switcher.tsx` 增加 `serverMode !== 'dev'` 拦截，消除单租户后端 `/admin/accounts` 500 告警 | `src/components/account-switcher.tsx` | ✅ 已验收 |
-| **v1.0.8** | **Home 基础指标卡片高密对齐 (Task-v1.0.8)**：重构 `panel.tsx` 与 `metric-panels.tsx`，应用 `UI_SPECIFICATION` 高密 6px 微圆角与紧凑 Padding | `src/routes/home/-components/panel.tsx`、`metric-panels.tsx` | 🔄 待验收 |
+| **v1.0.8** | **Home 基础指标卡片高密对齐 (Task-v1.0.8)**：重构 `panel.tsx` 与 `metric-panels.tsx`，应用 `UI_SPECIFICATION` 高密 4px 微圆角与汉化 | `src/routes/home/-components/panel.tsx`、`metric-panels.tsx` | ✅ 已验收 |
 
 ---
 

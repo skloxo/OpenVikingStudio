@@ -40,7 +40,7 @@ export function TokenTrendPanel({
     <Panel>
       <SectionHeading
         action={
-          <span className="rounded-full border border-[oklch(0.68_0.12_232/0.2)] bg-background/70 px-3 py-1 text-xs tabular-nums text-muted-foreground shadow-xs dark:bg-white/[0.06]">
+          <span className="rounded-sm border border-[oklch(0.68_0.12_232/0.2)] bg-background/70 px-2.5 py-0.5 text-xs tabular-nums text-muted-foreground shadow-2xs dark:bg-white/6">
             {rangeLabel}
           </span>
         }
@@ -49,7 +49,7 @@ export function TokenTrendPanel({
       />
 
       {isLoading ? (
-        <Skeleton className="h-72 w-full" />
+        <Skeleton className="h-60 w-full" />
       ) : isError ? (
         <EmptyState>{t('requestFailed')}</EmptyState>
       ) : disabled ? (
@@ -57,7 +57,7 @@ export function TokenTrendPanel({
       ) : items.length === 0 ? (
         <EmptyState>{t('tokenTrend.empty')}</EmptyState>
       ) : (
-        <Suspense fallback={<Skeleton className="h-72 w-full" />}>
+        <Suspense fallback={<Skeleton className="h-60 w-full" />}>
           <TokenTrendChart items={items} t={t} />
         </Suspense>
       )}
