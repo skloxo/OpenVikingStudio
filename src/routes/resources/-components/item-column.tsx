@@ -38,7 +38,7 @@ export function ItemColumn({
         {items.length === 0 ? (
           <div className="flex h-full items-center justify-center px-6 py-10">
             <div className="max-w-[13rem] text-center">
-              <div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-2xl bg-muted/60 text-muted-foreground/70 shadow-inner">
+              <div className="mx-auto mb-3 flex size-9 items-center justify-center rounded-xs bg-muted/60 text-muted-foreground/70 shadow-inner">
                 <Folder className="size-4" />
               </div>
               <p className="text-sm font-medium text-foreground/70">

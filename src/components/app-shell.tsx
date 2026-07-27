@@ -59,7 +59,7 @@ import { resolveStudioManagementCapabilities } from '#/lib/studio-permissions'
 type NavItem = {
   icon: React.ComponentType
   id: string
-  section: 'workspace' | 'operations'
+  section: 'workspace' | 'operations' | 'settings'
   titleKey: string
   to: string
   children?: readonly NavSubItem[]
@@ -102,11 +102,18 @@ const NAV_ITEMS: readonly NavItem[] = [
     to: '/retrieval',
   },
   {
-    icon: ScrollTextIcon,
-    id: 'requestLogs',
+    icon: SparklesIcon,
+    id: 'skills',
     section: 'workspace',
-    titleKey: 'navigation.requestLogs.title',
-    to: '/request-logs',
+    titleKey: 'navigation.skills.title',
+    to: '/skills',
+  },
+  {
+    icon: BookOpenIcon,
+    id: 'resources',
+    section: 'workspace',
+    titleKey: 'navigation.resources.title',
+    to: '/resources',
   },
   {
     icon: BlocksIcon,
@@ -115,10 +122,47 @@ const NAV_ITEMS: readonly NavItem[] = [
     titleKey: 'navigation.sessions.title',
     to: '/sessions',
   },
+  {
+    icon: ScrollTextIcon,
+    id: 'requestLogs',
+    section: 'operations',
+    titleKey: 'navigation.requestLogs.title',
+    to: '/request-logs',
+  },
+  {
+    icon: ClipboardListIcon,
+    id: 'tasks',
+    section: 'operations',
+    titleKey: 'navigation.tasks.title',
+    to: '/tasks',
+  },
+  {
+    icon: MonitorUpIcon,
+    id: 'monitoring',
+    section: 'operations',
+    titleKey: 'navigation.monitoring.title',
+    to: '/monitoring',
+  },
+  {
+    icon: UsersRoundIcon,
+    id: 'users',
+    section: 'settings',
+    titleKey: 'navigation.users.title',
+    to: '/users',
+  },
+  {
+    icon: KeyRoundIcon,
+    id: 'settings',
+    section: 'settings',
+    titleKey: 'navigation.settings.title',
+    to: '/settings',
+  },
 ]
 
 const NAV_SECTIONS = [
   { id: 'workspace', titleKey: 'sidebar.groups.workspace' },
+  { id: 'operations', titleKey: 'sidebar.groups.operations' },
+  { id: 'settings', titleKey: 'sidebar.groups.settings' },
 ] as const
 
 function resolveLanguage(rawLanguage: string | undefined): 'zh-CN' | 'en' {
@@ -258,7 +302,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
               <AccountSwitcher />
               <span className="text-[11px] font-mono text-slate-400 dark:text-slate-500 font-normal leading-none select-none block px-2 -mt-1">
-                v1.0.12
+                v1.0.13
               </span>
             </div>
             <SidebarTrigger className="shrink-0" />

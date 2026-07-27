@@ -53,12 +53,23 @@
 - **修改文件**：`src/routes/retrieval/-components/search-bar.tsx`、`retrieval-controls.tsx`
 - **验收标准**：检索搜索栏及筛选控制控件紧凑精致，符合 4px 规范。
 
-#### 📇 Task Card - [x] v1.0.12: 检索结果列表 (RetrievalResults) 高密卡片化重构（已交付 🔄）
+#### 📇 Task Card - [x] v1.0.12: 检索结果列表 (RetrievalResults) 高密卡片化重构（已通过 ✅）
 - **修改目标**：重构 `/retrieval` 搜索结果条目的展示密度、Tag 微圆角与得分 Badge。
 - **修改逻辑**：容器应用 4px 实线微边框，结果行内边距缩减 (`px-3 py-2.5`)，结果类型与得分 Tag 统一为 `rounded-xs` (2px) + `font-mono`。
 - **关联规范**：[UI_SPECIFICATION.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/UI_SPECIFICATION.md)
 - **修改文件**：`src/routes/retrieval/-components/retrieval-results.tsx`
-- **验收标准**：检索结果列表卡片更紧凑精细，得分与路径等信息呈现清晰。多检索匹配条目。
+- **验收标准**：检索结果列表卡片更紧凑精细，得分与路径等信息呈现清晰。
+
+---
+
+### 阶段 4：技能/资源 (Skills / Resources) 模块重构
+
+#### 📇 Task Card - [x] v1.0.13: 技能卡片 (Skills) 与资源浏览 4px 微圆角与高密重构（已交付 🔄）
+- **修改目标**：重构 `/skills` 与 `/resources` 页面的技能卡片与空状态/文件列。
+- **修改逻辑**：技能卡片圆角收紧为 `rounded` (4px)，Icon 背景与作用域 Scope Tag 缩紧为 `rounded-xs` (2px) + `font-mono`，提升整页高级感。
+- **关联规范**：[UI_SPECIFICATION.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/UI_SPECIFICATION.md)
+- **修改文件**：`src/routes/skills/route.tsx`、`src/routes/resources/-components/item-column.tsx`
+- **验收标准**：技能卡片布局更紧凑，Tag 与 Icon 圆角统一致为 4px/2px 规范。
 
 ---
 

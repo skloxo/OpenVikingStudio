@@ -150,7 +150,7 @@ async function fetchSkills(): Promise<SkillItem[]> {
   const result = await getOvResult<SkillListResult>(
     ovClient.client.get({
       query: {
-        node_limit: 1000,
+        node_limit: 200,
       },
       url: '/api/v1/skills',
     }),
@@ -271,29 +271,29 @@ function SkillsRoute() {
               <button
                 key={`${skill.scope}:${skill.uri}`}
                 type="button"
-                className="min-w-0 rounded-xl text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                className="min-w-0 rounded text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                 aria-label={t('viewDetail', { name: skill.name })}
                 onClick={() => setSelectedSkill(skill)}
               >
                 <Card
                   size="sm"
-                  className="h-full transition-colors hover:bg-muted/35"
+                  className="h-full rounded border border-border/60 transition-colors hover:bg-muted/35"
                 >
-                  <CardHeader>
+                  <CardHeader className="p-3.5">
                     <div className="flex items-start justify-between gap-3">
-                      <div className="flex min-w-0 items-center gap-2.5">
-                        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                          <SparklesIcon className="size-4" />
+                      <div className="flex min-w-0 items-center gap-2">
+                        <div className="flex size-7 shrink-0 items-center justify-center rounded-xs bg-primary/10 text-primary">
+                          <SparklesIcon className="size-3.5" />
                         </div>
-                        <CardTitle className="truncate">{skill.name}</CardTitle>
+                        <CardTitle className="truncate font-mono text-sm font-semibold">{skill.name}</CardTitle>
                       </div>
-                      <Badge variant="outline" className="gap-1 font-normal">
-                        <ScopeIcon />
+                      <Badge variant="outline" className="gap-1 rounded-xs border-border/60 font-mono text-[10px] font-semibold">
+                        <ScopeIcon className="size-3" />
                         {t(`scopes.${skill.scope}`)}
                       </Badge>
                     </div>
                     {skill.description ? (
-                      <CardDescription className="line-clamp-2 pt-1 leading-5">
+                      <CardDescription className="line-clamp-2 pt-1 text-xs leading-relaxed text-muted-foreground/75">
                         {skill.description}
                       </CardDescription>
                     ) : null}

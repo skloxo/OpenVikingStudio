@@ -91,7 +91,7 @@ function MetricPanel({
   }, [isError, isLoading, value])
 
   return (
-    <Panel className="flex min-h-[136px] flex-col p-3.5">
+    <Panel className="flex min-h-[152px] flex-col justify-between p-3.5">
       <div>
         <div className="flex items-start justify-between gap-2.5">
           <div className="min-w-0">
@@ -101,7 +101,7 @@ function MetricPanel({
             <p className="sr-only">{description}</p>
           </div>
           <span
-            className="flex size-6 shrink-0 items-center justify-center rounded-sm"
+            className="flex size-6 shrink-0 items-center justify-center rounded-xs"
             style={{ backgroundColor: HOME_ACCENT_COLORS.iconSoft }}
           >
             <Icon
@@ -112,7 +112,7 @@ function MetricPanel({
         </div>
 
         {isLoading ? (
-          <Skeleton className="mt-2.5 h-8 w-20" />
+          <Skeleton className="mt-2.5 h-7 w-24 rounded-xs" />
         ) : isError ? (
           <p className="mt-2.5 text-xs text-destructive">{value}</p>
         ) : (
@@ -122,8 +122,14 @@ function MetricPanel({
         )}
       </div>
 
-      {children ? (
-        <div className="mt-3 grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-1.5">
+      {isLoading ? (
+        <div className="mt-3 grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] gap-1.5">
+          <Skeleton className="h-10 w-full rounded-xs" />
+          <Skeleton className="h-10 w-full rounded-xs" />
+          <Skeleton className="h-10 w-full rounded-xs" />
+        </div>
+      ) : children ? (
+        <div className="mt-3 grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] gap-1.5">
           {children}
         </div>
       ) : null}
