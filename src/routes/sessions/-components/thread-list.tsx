@@ -41,6 +41,7 @@ export function ThreadList({ activeSessionId }: ThreadListProps) {
   const { getTitle, removeTitle, setTitle } = useSessionTitles(identityScopeKey)
   const createSession = useCreateSession()
   const deleteSession = useDeleteSession()
+  const [visibleCount, setVisibleCount] = useState(25)
   const [sessionToDelete, setSessionToDelete] = useState<{
     id: string
     title: string
@@ -87,6 +88,9 @@ export function ThreadList({ activeSessionId }: ThreadListProps) {
     t,
   ])
 
+  const visibleSessions = sessions.slice(0, visibleCount)
+  const hasMore = sessions.length > visibleCount
+
   return (
     <aside className="flex h-full w-72 shrink-0 flex-col border-r border-border/70 bg-muted/20">
       <div className="flex h-16 shrink-0 items-center justify-between border-b border-border/70 px-4">
@@ -95,7 +99,7 @@ export function ThreadList({ activeSessionId }: ThreadListProps) {
             {t('threadList.title')}
           </h1>
           {!isLoading ? (
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <p className="mt-0.5 text-xs font-mono text-muted-foreground">
               {t('threadList.count', { count: sessions.length })}
             </p>
           ) : null}
@@ -119,13 +123,20 @@ export function ThreadList({ activeSessionId }: ThreadListProps) {
 
       <div className="min-h-0 flex-1 overflow-y-auto p-2">
         {isLoading ? (
-          <div className="flex h-28 items-center justify-center gap-2 text-sm text-muted-foreground">
-            <LoaderCircleIcon className="size-4 animate-spin" />
-            <span>{t('threadList.loading')}</span>
+          <div className="space-y-2 p-1">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 rounded-xs border border-border/40 p-2.5">
+                <div className="size-4 rounded-xs bg-muted/80 animate-pulse shrink-0" />
+                <div className="flex-1 space-y-1.5 min-w-0">
+                  <div className="h-3.5 w-3/4 rounded-xs bg-muted/80 animate-pulse" />
+                  <div className="h-2.5 w-1/2 rounded-xs bg-muted/50 animate-pulse" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : sessions.length === 0 ? (
           <div className="flex h-40 flex-col items-center justify-center px-6 text-center">
-            <div className="flex size-9 items-center justify-center rounded-xl bg-muted">
+            <div className="flex size-9 items-center justify-center rounded-xs bg-muted">
               <MessageSquareIcon className="size-4 text-muted-foreground" />
             </div>
             <p className="mt-3 text-sm font-medium text-foreground">
@@ -137,7 +148,7 @@ export function ThreadList({ activeSessionId }: ThreadListProps) {
           </div>
         ) : (
           <div className="space-y-1">
-            {sessions.map((session) => {
+            {visibleSessions.map((session) => {
               const isActive = activeSessionId === session.session_id
               const title = getTitle(session.session_id)
 
@@ -145,28 +156,28 @@ export function ThreadList({ activeSessionId }: ThreadListProps) {
                 <div
                   key={session.session_id}
                   className={cn(
-                    'group/session relative rounded-xl transition-colors',
+                    'group/session relative rounded-xs transition-colors',
                     isActive
-                      ? 'bg-accent text-accent-foreground shadow-sm ring-1 ring-border/60'
+                      ? 'bg-accent text-accent-foreground shadow-2xs ring-1 ring-border/60'
                       : 'hover:bg-muted/80',
                   )}
                 >
                   <Link
                     to="/sessions"
                     search={{ s: session.session_id }}
-                    className="flex min-w-0 items-start gap-2.5 px-3 py-2.5 pr-9 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="flex min-w-0 items-start gap-2.5 px-3 py-2 pr-8 outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <MessageSquareIcon
                       className={cn(
-                        'mt-0.5 size-4 shrink-0',
+                        'mt-0.5 size-3.5 shrink-0',
                         isActive ? 'text-primary' : 'text-muted-foreground',
                       )}
                     />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium">
+                      <span className="block truncate text-xs font-mono font-medium">
                         {title}
                       </span>
-                      <span className="mt-1 block truncate font-mono text-[11px] text-muted-foreground">
+                      <span className="mt-0.5 block truncate font-mono text-[10px] text-muted-foreground/70">
                         {formatSessionTime(
                           session.mod_time,
                           i18n.resolvedLanguage,
@@ -185,15 +196,31 @@ export function ThreadList({ activeSessionId }: ThreadListProps) {
                       })
                     }}
                     disabled={deleteSession.isPending}
-                    className="absolute right-2 top-2.5 flex size-6 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-[opacity,color,background-color] hover:bg-destructive/10 hover:text-destructive focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-hover/session:opacity-100"
+                    className="absolute right-1.5 top-2 flex size-5 items-center justify-center rounded-xs text-muted-foreground opacity-0 transition-[opacity,color,background-color] hover:bg-destructive/10 hover:text-destructive focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-hover/session:opacity-100"
                     aria-label={t('threadList.deleteSession', { title })}
                     title={t('threadList.deleteSession', { title })}
                   >
-                    <Trash2Icon className="size-3.5" />
+                    <Trash2Icon className="size-3" />
                   </button>
                 </div>
               )
             })}
+
+            {hasMore && (
+              <div className="pt-2 text-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full rounded-xs h-7 text-xs font-mono"
+                  onClick={() => setVisibleCount((prev) => prev + 25)}
+                >
+                  {i18n.language.startsWith('zh')
+                    ? `加载更多会话 (${visibleSessions.length} / ${sessions.length})`
+                    : `Load More (${visibleSessions.length} / ${sessions.length})`}
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>
