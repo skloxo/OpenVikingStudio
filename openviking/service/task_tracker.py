@@ -303,13 +303,14 @@ class TaskTracker:
 
         Returns TaskRecord on success, None if a running task already exists.
         This eliminates the race condition between has_running() and create().
+        When a new task is successfully created, any old FAILED tasks for the
+        same (task_type, resource_id) are automatically cleaned up so they no
+        longer appear in the failed list.
         """
         self._validate_owner(account_id, user_id)
         account_key = (account_id, user_id)
         async with self._async_lock:
             # Only load from disk if this account scope has never been loaded.
-            # Once _loaded_accounts contains the key, all tasks are already in
-            # self._tasks – no need to re-scan 42k files every time.
             if account_key not in self._loaded_accounts:
                 for task in await self._load_all_from_store(account_id, user_id):
                     with self._lock:
@@ -327,6 +328,28 @@ class TaskTracker:
             )
             if has_active:
                 return None
+
+            # Auto-cleanup: delete old FAILED records for the same resource
+            # so the failed list stays clean after a re-queue.
+            failed_ids = [
+                t.task_id
+                for t in tasks
+                if t.task_type == task_type
+                and t.resource_id == resource_id
+                and self._matches_owner(t, account_id, user_id)
+                and t.status == TaskStatus.FAILED
+            ]
+            for fid in failed_ids:
+                await self._store.delete(fid, account_id=account_id, user_id=user_id)
+                with self._lock:
+                    self._tasks.pop(fid, None)
+            if failed_ids:
+                logger.info(
+                    "[TaskTracker] Auto-cleaned %d failed task(s) for resource=%s before re-queue",
+                    len(failed_ids),
+                    resource_id,
+                )
+
             task = TaskRecord(
                 task_id=str(uuid4()),
                 task_type=task_type,
