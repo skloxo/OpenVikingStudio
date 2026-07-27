@@ -147,6 +147,7 @@ class TaskTracker:
     def __init__(self, store: TaskStore) -> None:
         self._store = store
         self._tasks: Dict[str, TaskRecord] = {}
+        self._loaded_accounts: Set[Tuple[str, Optional[str]]] = set()
         self._lock = threading.Lock()
         self._async_lock = asyncio.Lock()
         self._cleanup_task: Optional[asyncio.Task] = None
@@ -429,12 +430,14 @@ class TaskTracker:
     ) -> List[TaskRecord]:
         """List tasks with optional filters. Most-recent first. Returns snapshot copies."""
         async with self._async_lock:
-            if account_id is not None:
+            account_key = (account_id, user_id)
+            if account_id is not None and account_key not in self._loaded_accounts:
                 loaded = await self._load_all_from_store(account_id, user_id)
                 if loaded:
                     with self._lock:
                         for task in loaded:
                             self._tasks[task.task_id] = task
+                self._loaded_accounts.add(account_key)
             with self._lock:
                 source = list(self._tasks.values())
             tasks = [self._copy(t) for t in source if self._matches_owner(t, account_id, user_id)]
