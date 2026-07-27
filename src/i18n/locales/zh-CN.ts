@@ -572,10 +572,10 @@ const zhCN = {
     },
     todayTokens: {
       description: '展示今日实时 token 消耗，每天零点刷新。',
-      embeddingInput: 'Embedding input tokens',
+      embeddingInput: 'Embedding 输入 Tokens',
       title: '今日 Tokens 消耗',
-      vlmInput: 'VLM input tokens',
-      vlmOutput: 'VLM output tokens',
+      vlmInput: 'VLM 输入 Tokens',
+      vlmOutput: 'VLM 输出 Tokens',
     },
     tokenTrend: {
       description:

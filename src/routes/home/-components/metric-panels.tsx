@@ -101,7 +101,7 @@ function MetricPanel({
             <p className="sr-only">{description}</p>
           </div>
           <span
-            className="flex size-6 shrink-0 items-center justify-center rounded-md"
+            className="flex size-6 shrink-0 items-center justify-center rounded-sm"
             style={{ backgroundColor: HOME_ACCENT_COLORS.iconSoft }}
           >
             <Icon
