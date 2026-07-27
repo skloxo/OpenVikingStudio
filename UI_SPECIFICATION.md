@@ -11,9 +11,9 @@
 
 | 元素类型 | 统一标准 (Target Class) | 优化对比说明 |
 | :--- | :--- | :--- |
-| **卡片/面板圆角** | `rounded-md` (6px) | 从原版 `rounded-xl` (12px+) 统一缩减为 6px 微圆角 |
-| **按钮/输入框圆角** | `rounded-sm` (4px) 或 `rounded-md` | 提升精细度，避免气泡感 |
-| **标签 Badge 圆角** | `rounded-xs` (2px) / `rounded-sm` | 紧凑无缝 |
+| **卡片/面板圆角** | `rounded` (4px) / `var(--radius: 0.25rem)` | ✅ 用户已验收：统一使用 4px 微圆角 |
+| **按钮/输入框圆角** | `rounded-sm` (3px-4px) | 提升精细度，配合硬朗 Terminal 质感 |
+| **标签 Badge 圆角** | `rounded-xs` (2px) | 紧凑精致微圆角 |
 | **面板内边距 (Padding)** | `p-3` (12px) 或 `p-3.5` | 从 `p-6` (24px) 减半，空间利用率提升 50%+ |
 | **组件间距 (Gap)** | `gap-2` (8px) / `gap-3` | 缩减大空白间距 |
 | **表格行高 (Row Height)** | `h-8` (32px), `py-1.5` | 紧凑型列表排版 |

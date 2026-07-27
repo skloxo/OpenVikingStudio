@@ -25,17 +25,17 @@ export function TokenTrendChart({
 }) {
   return (
     <>
-      <div className="h-72 min-h-72 min-w-0 w-full">
+      <div className="h-60 min-h-60 min-w-0 w-full">
         <ResponsiveContainer
           width="100%"
           height="100%"
-          initialDimension={{ width: 720, height: 288 }}
+          initialDimension={{ width: 720, height: 240 }}
           minWidth={1}
           minHeight={1}
         >
           <AreaChart
             data={items}
-            margin={{ bottom: 0, left: 0, right: 12, top: 8 }}
+            margin={{ bottom: 0, left: 0, right: 12, top: 4 }}
           >
             <defs>
               <linearGradient
@@ -102,17 +102,17 @@ export function TokenTrendChart({
               axisLine={false}
               className="text-muted-foreground"
               dataKey="date"
-              tick={{ fill: 'currentColor', fontSize: 12 }}
+              tick={{ fill: 'currentColor', fontSize: 11 }}
               tickFormatter={formatShortDate}
               tickLine={false}
             />
             <YAxis
               axisLine={false}
               className="text-muted-foreground"
-              tick={{ fill: 'currentColor', fontSize: 12 }}
+              tick={{ fill: 'currentColor', fontSize: 11 }}
               tickFormatter={(value) => Number(value).toLocaleString()}
               tickLine={false}
-              width={64}
+              width={56}
             />
             <Tooltip
               cursor={{ stroke: 'currentColor', strokeOpacity: 0.12 }}
@@ -148,7 +148,7 @@ export function TokenTrendChart({
           </AreaChart>
         </ResponsiveContainer>
       </div>
-      <div className="mt-4 flex flex-wrap gap-4 text-sm text-muted-foreground">
+      <div className="mt-2.5 flex flex-wrap gap-3.5 text-xs text-muted-foreground">
         <LegendDot
           color={TOKEN_COLORS.input}
           label={t('todayTokens.vlmInput')}
@@ -168,9 +168,9 @@ export function TokenTrendChart({
 
 function LegendDot({ color, label }: { color: string; label: string }) {
   return (
-    <span className="inline-flex items-center gap-2">
+    <span className="inline-flex items-center gap-1.5 font-mono">
       <span
-        className="size-2.5 rounded-full"
+        className="size-2 rounded-xs"
         style={{ backgroundColor: color }}
       />
       <span>{label}</span>
@@ -198,24 +198,24 @@ function TokenTrendTooltip({
   }
 
   return (
-    <div className="min-w-56 rounded-xl border border-border/70 bg-popover/95 px-3.5 py-3 text-xs text-popover-foreground shadow-2xl shadow-black/10 ring-1 ring-foreground/5 backdrop-blur-md dark:shadow-black/35">
-      <div className="font-medium tabular-nums text-foreground">
+    <div className="min-w-52 rounded-sm border border-border/70 bg-popover/95 p-2.5 text-xs text-popover-foreground shadow-xl ring-1 ring-foreground/5 backdrop-blur-md dark:shadow-black/35">
+      <div className="font-mono font-semibold tabular-nums text-foreground">
         {String(label ?? '')}
       </div>
-      <div className="mt-3 space-y-2 border-t border-border/70 pt-3">
+      <div className="mt-2 space-y-1.5 border-t border-border/70 pt-2">
         {payload.map((item) => (
           <div
             key={item.dataKey ?? item.name}
             className="grid grid-cols-[auto_1fr_auto] items-center gap-2"
           >
             <span
-              className="size-2 rounded-full"
+              className="size-2 rounded-xs"
               style={{ backgroundColor: item.color }}
             />
             <span className="min-w-0 truncate text-muted-foreground">
               {labelForKey(item.dataKey ?? item.name)}
             </span>
-            <span className="font-medium tabular-nums text-foreground">
+            <span className="font-mono font-medium tabular-nums text-foreground">
               {formatNumber(item.value)}
             </span>
           </div>
