@@ -26,32 +26,28 @@ async def task_stats(
     _ctx: RequestContext = Depends(get_request_context),
 ):
     """Return exact global task statistics (total, completed, pending, running, failed)."""
-    import glob, json
-    task_files = glob.glob("/home/skloxo/.openviking/data/viking/default/_system/tasks/default/*.json")
-    completed = 0
-    pending = 0
-    running = 0
-    failed = 0
-    for f in task_files:
-        try:
-            with open(f) as fp:
-                st = json.load(fp).get("status")
-                if st == "completed": completed += 1
-                elif st == "pending": pending += 1
-                elif st == "running": running += 1
-                elif st == "failed": failed += 1
-        except Exception:
-            pass
-    return Response(
-        status="ok",
-        result={
-            "total": len(task_files),
-            "completed": completed,
-            "pending": pending,
-            "running": running,
-            "failed": failed,
-        },
-    )
+    tracker = get_task_tracker()
+    if _ctx.role == Role.ROOT:
+        system_stats = await tracker.get_stats(
+            account_id=SYSTEM_TASK_ACCOUNT_ID,
+            user_id=SYSTEM_TASK_USER_ID,
+        )
+        user_account_id = _ctx.account_id or "default"
+        user_user_id = _ctx.user.user_id if (_ctx.user and _ctx.user.user_id) else "default"
+        user_stats = await tracker.get_stats(
+            account_id=user_account_id,
+            user_id=user_user_id,
+        )
+        result = {
+            key: system_stats.get(key, 0) + user_stats.get(key, 0)
+            for key in ["total", "completed", "pending", "running", "failed"]
+        }
+    else:
+        result = await tracker.get_stats(
+            account_id=_ctx.account_id,
+            user_id=_ctx.user.user_id,
+        )
+    return Response(status="ok", result=result)
 
 
 @router.get("/tasks/{task_id}")
@@ -128,30 +124,3 @@ async def list_tasks(
             user_id=_ctx.user.user_id,
         )
     return Response(status="ok", result=[t.to_dict() for t in tasks])
-
-
-@router.get("/tasks/stats")
-async def task_stats(
-    _ctx: RequestContext = Depends(get_request_context),
-):
-    """Return exact global task statistics (total, completed, pending, running, failed)."""
-    tracker = get_task_tracker()
-    account_id = SYSTEM_TASK_ACCOUNT_ID if _ctx.role == Role.ROOT else _ctx.account_id
-    user_id = SYSTEM_TASK_USER_ID if _ctx.role == Role.ROOT else _ctx.user.user_id
-    all_tasks = await tracker.list_tasks(
-        limit=100000,
-        account_id=account_id,
-        user_id=user_id,
-    )
-    from collections import Counter
-    counts = Counter(t.status.value for t in all_tasks)
-    return Response(
-        status="ok",
-        result={
-            "total": len(all_tasks),
-            "completed": counts.get("completed", 0),
-            "pending": counts.get("pending", 0),
-            "running": counts.get("running", 0),
-            "failed": counts.get("failed", 0),
-        },
-    )

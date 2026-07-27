@@ -175,15 +175,17 @@ class TaskTracker:
         """Non-blocking background store preload across system and default scopes."""
         for acc, usr in [("_system", "root"), ("default", "default")]:
             if (acc, usr) not in self._loaded_accounts:
-                try:
-                    loaded = await self._load_all_from_store(acc, usr)
-                    if loaded:
-                        with self._lock:
-                            for task in loaded:
-                                self._tasks[task.task_id] = task
-                    self._loaded_accounts.add((acc, usr))
-                except Exception as e:
-                    logger.warning("[TaskTracker] Preload failed for %s/%s: %s", acc, usr, e)
+                async with self._async_lock:
+                    if (acc, usr) not in self._loaded_accounts:
+                        self._loaded_accounts.add((acc, usr))
+                        try:
+                            loaded = await self._load_all_from_store(acc, usr)
+                            if loaded:
+                                with self._lock:
+                                    for task in loaded:
+                                        self._tasks[task.task_id] = task
+                        except Exception as e:
+                            logger.warning("[TaskTracker] Preload failed for %s/%s: %s", acc, usr, e)
 
     def stop_cleanup_loop(self) -> None:
         """Cancel the background cleanup task. Safe to call if not started."""
@@ -220,10 +222,17 @@ class TaskTracker:
                     self._tasks.pop(tid, None)
 
                 if len(self._tasks) > self.MAX_TASKS:
-                    sorted_tasks = sorted(self._tasks.items(), key=lambda x: x[1].created_at)
+                    # Only evict finished tasks (COMPLETED or FAILED); protect active (PENDING / RUNNING) tasks.
+                    finished_tasks = [
+                        (tid, t)
+                        for tid, t in self._tasks.items()
+                        if t.status in (TaskStatus.COMPLETED, TaskStatus.FAILED)
+                    ]
                     excess = len(self._tasks) - self.MAX_TASKS
-                    for tid, _ in sorted_tasks[:excess]:
-                        self._tasks.pop(tid, None)
+                    if excess > 0 and finished_tasks:
+                        sorted_finished = sorted(finished_tasks, key=lambda x: x[1].created_at)
+                        for tid, _ in sorted_finished[:excess]:
+                            self._tasks.pop(tid, None)
 
             if expired_ids:
                 logger.debug("[TaskTracker] Evicted %d expired tasks", len(expired_ids))
@@ -477,23 +486,52 @@ class TaskTracker:
         if account_id is not None and account_key not in self._loaded_accounts:
             async with self._async_lock:
                 if account_key not in self._loaded_accounts:
+                    self._loaded_accounts.add(account_key)
                     loaded = await self._load_all_from_store(account_id, user_id)
                     if loaded:
                         with self._lock:
                             for task in loaded:
                                 self._tasks[task.task_id] = task
-                    self._loaded_accounts.add(account_key)
         with self._lock:
             source = list(self._tasks.values())
-        tasks = [self._copy(t) for t in source if self._matches_owner(t, account_id, user_id)]
+        filtered = [t for t in source if self._matches_owner(t, account_id, user_id)]
         if task_type:
-            tasks = [t for t in tasks if t.task_type == task_type]
+            filtered = [t for t in filtered if t.task_type == task_type]
         if status:
-            tasks = [t for t in tasks if t.status.value == status]
+            filtered = [t for t in filtered if t.status.value == status]
         if resource_id:
-            tasks = [t for t in tasks if t.resource_id == resource_id]
-        tasks.sort(key=lambda t: t.created_at, reverse=True)
-        return tasks[:limit]
+            filtered = [t for t in filtered if t.resource_id == resource_id]
+        filtered.sort(key=lambda t: t.created_at, reverse=True)
+        return [self._copy(t) for t in filtered[:limit]]
+
+    async def get_stats(
+        self,
+        account_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+    ) -> Dict[str, int]:
+        """Return task count breakdown for the requested owner filter without full copy overhead."""
+        account_key = (account_id, user_id)
+        if account_id is not None and account_key not in self._loaded_accounts:
+            async with self._async_lock:
+                if account_key not in self._loaded_accounts:
+                    self._loaded_accounts.add(account_key)
+                    loaded = await self._load_all_from_store(account_id, user_id)
+                    if loaded:
+                        with self._lock:
+                            for task in loaded:
+                                self._tasks[task.task_id] = task
+        with self._lock:
+            source = list(self._tasks.values())
+        matching = [t for t in source if self._matches_owner(t, account_id, user_id)]
+        from collections import Counter
+        counts = Counter(t.status.value for t in matching)
+        return {
+            "total": len(matching),
+            "completed": counts.get("completed", 0),
+            "pending": counts.get("pending", 0),
+            "running": counts.get("running", 0),
+            "failed": counts.get("failed", 0),
+        }
 
     async def has_running(
         self,
@@ -560,10 +598,46 @@ class TaskTracker:
     async def _load_all_from_store(
         self, account_id: str, user_id: Optional[str]
     ) -> List[TaskRecord]:
-        return [
+        records = [
             self._record_from_payload(payload)
             for payload in await self._store.list(account_id, user_id=user_id)
         ]
+        auto_healed = []
+        now = time.time()
+        for task in records:
+            if task.status in (TaskStatus.RUNNING, TaskStatus.PENDING):
+                task.status = TaskStatus.FAILED
+                task.stage = "failed"
+                task.error = "[Auto-Healing] Task was interrupted by service restart"
+                task.updated_at = now
+                auto_healed.append(task)
+        if auto_healed:
+            logger.info(
+                "[TaskTracker] Auto-healed %d interrupted task(s) for owner %s/%s",
+                len(auto_healed),
+                account_id,
+                user_id,
+            )
+            from concurrent.futures import ThreadPoolExecutor
+            def _update_task(t: TaskRecord) -> None:
+                try:
+                    if hasattr(self._store, "_task_dir") and user_id:
+                        directory = self._store._task_dir(account_id, user_id)
+                        rel_path = directory.removeprefix("/local/").lstrip("/")
+                        local_dir = os.path.expanduser(f"~/.openviking/data/viking/{rel_path}")
+                        filepath = os.path.join(local_dir, f"{t.task_id}.json")
+                        if os.path.exists(filepath):
+                            with open(filepath, "w", encoding="utf-8") as f:
+                                json.dump(t.to_dict(), f, ensure_ascii=False)
+                except Exception:
+                    pass
+
+            def _bulk_update():
+                with ThreadPoolExecutor(max_workers=32) as executor:
+                    list(executor.map(_update_task, auto_healed))
+
+            await asyncio.to_thread(_bulk_update)
+        return records
 
     @staticmethod
     def _copy(task: TaskRecord) -> TaskRecord:
