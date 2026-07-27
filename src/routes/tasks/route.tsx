@@ -218,8 +218,23 @@ function TasksRoute() {
     }).format(date)
   }
 
-  const renderStatus = (rawStatus: string | undefined) => {
-    const status = normalizeTaskStatus(rawStatus)
+  const getTaskProgressPct = (task: TaskRecord): number => {
+    const status = normalizeTaskStatus(task.status)
+    if (status === 'completed') return 100
+    if (status === 'failed') return 0
+    if (status === 'pending') return 0
+
+    const stage = task.stage?.toLowerCase()
+    if (stage === 'completed') return 90
+    if (stage === 'extracting') return 75
+    if (stage === 'archiving') return 50
+    if (stage === 'started') return 25
+    return 40
+  }
+
+  const renderStatus = (task: TaskRecord) => {
+    const status = normalizeTaskStatus(task.status)
+    const pct = getTaskProgressPct(task)
     const Icon =
       status === 'completed'
         ? CheckCircle2Icon
@@ -230,21 +245,52 @@ function TasksRoute() {
             : CircleDashedIcon
 
     return (
-      <Badge
-        variant={
-          status === 'failed'
-            ? 'destructive'
-            : status === 'completed'
-              ? 'secondary'
-              : 'outline'
-        }
-        className="gap-1 font-normal"
-      >
-        <Icon className={status === 'running' ? 'animate-spin' : undefined} />
-        {t(`status.${status}`)}
-      </Badge>
+      <div className="flex flex-col gap-1 min-w-[120px]">
+        <div className="flex items-center justify-between gap-1.5">
+          <Badge
+            variant={
+              status === 'failed'
+                ? 'destructive'
+                : status === 'completed'
+                  ? 'secondary'
+                  : 'outline'
+            }
+            className="gap-1 font-normal"
+          >
+            <Icon className={status === 'running' ? 'animate-spin' : undefined} />
+            {t(`status.${status}`)}
+          </Badge>
+          {status === 'running' && (
+            <span className="text-xs font-semibold text-primary">{pct}%</span>
+          )}
+        </div>
+        {status === 'running' && (
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-300"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        )}
+      </div>
     )
   }
+
+  const completedCount = allTasks.filter(
+    (t) => normalizeTaskStatus(t.status) === 'completed',
+  ).length
+  const runningCount = allTasks.filter(
+    (t) => normalizeTaskStatus(t.status) === 'running',
+  ).length
+  const pendingCount = allTasks.filter(
+    (t) => normalizeTaskStatus(t.status) === 'pending',
+  ).length
+  const failedCount = allTasks.filter(
+    (t) => normalizeTaskStatus(t.status) === 'failed',
+  ).length
+  const totalCount = allTasks.length
+  const globalPct =
+    totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-5">
@@ -270,6 +316,47 @@ function TasksRoute() {
           {t('refresh')}
         </Button>
       </header>
+
+      {/* Global Progress Banner */}
+      <div className="flex flex-col gap-2 rounded-xl border bg-card/60 p-4 shadow-xs">
+        <div className="flex items-center justify-between text-sm">
+          <span className="font-medium text-muted-foreground">
+            {i18n.language.startsWith('zh')
+              ? '全局处理进度'
+              : 'Global Vectorization Progress'}
+          </span>
+          <span className="font-bold text-primary">{globalPct}%</span>
+        </div>
+        <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full rounded-full bg-primary transition-all duration-500"
+            style={{ width: `${globalPct}%` }}
+          />
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs text-muted-foreground">
+          <span>
+            {i18n.language.startsWith('zh') ? '已完成' : 'Completed'}:{' '}
+            <strong className="text-foreground">{completedCount}</strong> /{' '}
+            {totalCount}
+          </span>
+          <div className="flex items-center gap-3">
+            <span>
+              {i18n.language.startsWith('zh') ? '进行中' : 'Running'}:{' '}
+              <strong className="text-blue-500">{runningCount}</strong>
+            </span>
+            <span>
+              {i18n.language.startsWith('zh') ? '等待中' : 'Pending'}:{' '}
+              <strong className="text-amber-500">{pendingCount}</strong>
+            </span>
+            {failedCount > 0 && (
+              <span>
+                {i18n.language.startsWith('zh') ? '失败' : 'Failed'}:{' '}
+                <strong className="text-destructive">{failedCount}</strong>
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
 
       <div className="flex flex-wrap items-center gap-2 rounded-xl border bg-card/60 p-2 shadow-xs">
         <span className="px-1 text-xs font-medium text-muted-foreground">
@@ -458,7 +545,7 @@ function TasksRoute() {
                       <TableCell className="max-w-72 truncate text-muted-foreground">
                         {task.resource_id || '-'}
                       </TableCell>
-                      <TableCell>{renderStatus(task.status)}</TableCell>
+                      <TableCell>{renderStatus(task)}</TableCell>
                       <TableCell className="whitespace-nowrap font-mono text-xs">
                         {isRunning ? (
                           <span className="inline-flex items-center gap-1.5 rounded-xs bg-sky-500/10 px-1.5 py-0.5 text-sky-600 dark:text-sky-400">
