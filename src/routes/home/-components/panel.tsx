@@ -12,7 +12,7 @@ export function Panel({
   return (
     <section
       className={cn(
-        'animate-home-panel-in rounded-md border border-border/70 bg-muted/80 p-3.5 shadow-xs transition-[background-color,border-color,box-shadow,transform] duration-200 ease-out hover:-translate-y-0.5 hover:border-border hover:bg-muted hover:shadow-sm dark:border-white/10 dark:bg-white/[0.12] dark:hover:border-white/15 dark:hover:bg-white/[0.16]',
+        'animate-home-panel-in rounded border border-border/70 bg-muted/80 p-3.5 shadow-xs transition-[background-color,border-color,box-shadow,transform] duration-200 ease-out hover:-translate-y-0.5 hover:border-border hover:bg-muted hover:shadow-sm dark:border-white/10 dark:bg-white/12 dark:hover:border-white/15 dark:hover:bg-white/16',
         className,
       )}
     >
@@ -47,7 +47,7 @@ export function SectionHeading({
 
 export function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex min-h-7 flex-wrap items-center gap-x-2 rounded-sm border border-[oklch(0.68_0.12_232/0.1)] bg-background/55 px-2 py-1 text-xs shadow-2xs dark:border-white/10 dark:bg-white/[0.05]">
+    <div className="flex min-h-7 flex-wrap items-center gap-x-2 rounded-xs border border-[oklch(0.68_0.12_232/0.1)] bg-background/55 px-2 py-1 text-xs shadow-2xs dark:border-white/10 dark:bg-white/5">
       <span className="min-w-0 grow text-muted-foreground">{label}</span>
       <span className="ml-auto font-mono font-semibold tabular-nums text-[oklch(0.46_0.13_242)] dark:text-[oklch(0.74_0.12_232)]">
         {value}
