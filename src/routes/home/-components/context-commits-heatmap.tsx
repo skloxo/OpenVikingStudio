@@ -161,11 +161,11 @@ export function ContextCommitsHeatmap({
 
 function ContextCommitStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="border-b border-border/60 py-2 last:border-b-0 sm:border-b-0 sm:border-r sm:px-4 sm:last:border-r-0 xl:border-b xl:border-r-0 xl:px-0 xl:last:border-b-0">
+    <div className="border-b border-border/60 py-1.5 last:border-b-0 sm:border-b-0 sm:border-r sm:px-3 sm:last:border-r-0 xl:border-b xl:border-r-0 xl:px-0 xl:last:border-b-0">
       <div className="text-[11px] leading-none text-muted-foreground">
         {label}
       </div>
-      <div className="mt-1.5 text-lg font-semibold leading-none tabular-nums">
+      <div className="mt-1 text-xl font-mono font-semibold leading-none tabular-nums">
         {value}
       </div>
     </div>
@@ -226,33 +226,33 @@ function CommitTooltipView({
   return (
     <div
       ref={tooltipRef}
-      className="pointer-events-none fixed z-50 w-64 max-w-[calc(100vw-1rem)] rounded-xl border border-border/70 bg-popover/95 px-3.5 py-3 text-xs text-popover-foreground shadow-2xl shadow-black/10 ring-1 ring-foreground/5 backdrop-blur-md dark:shadow-black/35"
+      className="pointer-events-none fixed z-50 w-60 max-w-[calc(100vw-1rem)] rounded-sm border border-border/70 bg-popover/95 p-2.5 text-xs text-popover-foreground shadow-xl ring-1 ring-foreground/5 backdrop-blur-md dark:shadow-black/35"
       style={{
         left: x,
         top: y - 12,
         transform: `translate(calc(-50% + ${horizontalShift}px), -100%)`,
       }}
     >
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="font-medium tabular-nums">{details.date}</div>
+          <div className="font-mono font-semibold tabular-nums">{details.date}</div>
           <div className="mt-0.5 text-[11px] text-muted-foreground">
             {t('contextCommits.tooltip.total')}
           </div>
         </div>
-        <div className="rounded-md bg-[oklch(0.68_0.12_232_/_0.14)] px-2 py-1 text-sm font-semibold tabular-nums text-[oklch(0.45_0.13_242)] dark:bg-[oklch(0.68_0.14_232_/_0.18)] dark:text-[oklch(0.76_0.14_232)]">
+        <div className="rounded-xs bg-[oklch(0.68_0.12_232_/_0.14)] px-1.5 py-0.5 text-xs font-mono font-semibold tabular-nums text-[oklch(0.45_0.13_242)] dark:bg-[oklch(0.68_0.14_232_/_0.18)] dark:text-[oklch(0.76_0.14_232)]">
           {details.total}
         </div>
       </div>
 
-      <div className="mt-3 space-y-2 border-t border-border/70 pt-3">
+      <div className="mt-2 space-y-1.5 border-t border-border/70 pt-2">
         {rows.map((row, index) => (
           <div
             key={row.label}
             className="grid grid-cols-[auto_1fr_auto] items-center gap-2"
           >
             <span
-              className="size-1.5 rounded-full"
+              className="size-1.5 rounded-xs"
               style={{
                 backgroundColor:
                   HEATMAP_COLOR_STOPS[
@@ -264,7 +264,7 @@ function CommitTooltipView({
             <span className="min-w-0 truncate text-muted-foreground">
               {row.label}
             </span>
-            <span className="font-medium tabular-nums">
+            <span className="font-mono font-medium tabular-nums">
               {formatNumber(row.value)}
             </span>
           </div>
@@ -272,7 +272,7 @@ function CommitTooltipView({
       </div>
 
       <span
-        className="absolute top-full size-2.5 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b border-r border-border/70 bg-popover/95"
+        className="absolute top-full size-2 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b border-r border-border/70 bg-popover/95"
         style={{ left: `calc(50% - ${horizontalShift}px)` }}
       />
     </div>

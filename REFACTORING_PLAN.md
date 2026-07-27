@@ -28,7 +28,7 @@
 - **修改文件**：`src/routes/home/-components/metric-panels.tsx`
 - **验收标准**：访问 `http://127.0.0.1:1936/studio/home`，指标卡片高度收紧，空间利用率提升。
 
-#### 📇 Task Card - [x] v1.0.9: Home Token 趋势图表 (TokenTrendPanel) 紧凑排版与 4px 硬朗微圆角重构（已交付 🔄）
+#### 📇 Task Card - [x] v1.0.9: Home Token 趋势图表 (TokenTrendPanel) 紧凑排版与 4px 硬朗微圆角重构（已通过 ✅）
 - **修改目标**：重构 Token 消耗趋势图表容器与 Recharts 渲染高度。
 - **修改逻辑**：压缩图表 Header padding，收紧 Card 圆角至 `rounded-md`，提升纵向信息显示效率。
 - **关联规范**：[UI_SPECIFICATION.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/UI_SPECIFICATION.md)
