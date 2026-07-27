@@ -80,7 +80,7 @@ export function ContextCommitsPanel({
       />
 
       {isLoading ? (
-        <Skeleton className="h-72 w-full" />
+        <Skeleton className="h-[176px] w-full rounded-xs" />
       ) : isError ? (
         <EmptyState>{t('requestFailed')}</EmptyState>
       ) : disabled ? (
@@ -88,7 +88,7 @@ export function ContextCommitsPanel({
       ) : items.length === 0 ? (
         <EmptyState>{t('contextCommits.empty')}</EmptyState>
       ) : (
-        <Suspense fallback={<Skeleton className="h-72 w-full" />}>
+        <Suspense fallback={<Skeleton className="h-[176px] w-full rounded-xs" />}>
           <ContextCommitsHeatmap
             endDate={endDate}
             items={items}
