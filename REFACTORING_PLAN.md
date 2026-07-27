@@ -46,19 +46,19 @@
 
 ### 阶段 3：检索/搜索 (Retrieval) 模块重构
 
-#### 📇 Task Card - [x] v1.0.11: 检索搜索栏 (SearchBar) 与控制栏 (RetrievalControls) 4px 硬朗高密重构（已交付 🔄）
+#### 📇 Task Card - [x] v1.0.11: 检索搜索栏 (SearchBar) 与控制栏 (RetrievalControls) 4px 硬朗高密重构（已通过 ✅）
 - **修改目标**：重构 `/retrieval` 页面的搜索输入框、发送按钮及控制筛选栏。
 - **修改逻辑**：输入框与按钮圆角收紧为 `rounded-sm` (4px)，增加快捷键标示，缩小选择框与范围 Badge 圆角至 `rounded-xs` (2px)，遵循高密 Trading 质感。
 - **关联规范**：[UI_SPECIFICATION.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/UI_SPECIFICATION.md)
 - **修改文件**：`src/routes/retrieval/-components/search-bar.tsx`、`retrieval-controls.tsx`
 - **验收标准**：检索搜索栏及筛选控制控件紧凑精致，符合 4px 规范。
 
-#### 📇 Task Card - v1.0.12: 检索结果列表 (RetrievalResults) 高密卡片化
-- **修改目标**：重构搜索结果条目的展示密度与得分 Badge。
-- **修改逻辑**：缩减每个 result item 的 padding (`py-2 px-3`)，分数 Tag 设为 `rounded-xs` 微圆角。
+#### 📇 Task Card - [x] v1.0.12: 检索结果列表 (RetrievalResults) 高密卡片化重构（已交付 🔄）
+- **修改目标**：重构 `/retrieval` 搜索结果条目的展示密度、Tag 微圆角与得分 Badge。
+- **修改逻辑**：容器应用 4px 实线微边框，结果行内边距缩减 (`px-3 py-2.5`)，结果类型与得分 Tag 统一为 `rounded-xs` (2px) + `font-mono`。
 - **关联规范**：[UI_SPECIFICATION.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/UI_SPECIFICATION.md)
 - **修改文件**：`src/routes/retrieval/-components/retrieval-results.tsx`
-- **验收标准**：单屏可展示更多检索匹配条目。
+- **验收标准**：检索结果列表卡片更紧凑精细，得分与路径等信息呈现清晰。多检索匹配条目。
 
 ---
 
