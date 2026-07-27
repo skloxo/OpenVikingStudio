@@ -605,7 +605,7 @@ class TaskTracker:
         auto_healed = []
         now = time.time()
         for task in records:
-            if task.status in (TaskStatus.RUNNING, TaskStatus.PENDING):
+            if task.status == TaskStatus.RUNNING:
                 task.status = TaskStatus.FAILED
                 task.stage = "failed"
                 task.error = "[Auto-Healing] Task was interrupted by service restart"
