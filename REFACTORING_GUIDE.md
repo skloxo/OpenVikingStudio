@@ -115,6 +115,8 @@ cp -rf ./dist/* /home/skloxo/.local/lib/python3.12/site-packages/openviking/web_
 | **v1.0.6** | **修复 Playground 缺失 Icon 导入导致的渲染崩溃**：在 `terminal-panel.tsx` 中补全 `TerminalIcon` 导入 | `src/routes/playground/-components/terminal-panel.tsx` | ✅ 已验收 |
 | **v1.0.7** | **侧边栏账号切换器 Dev 模式防护**：在 `account-switcher.tsx` 增加 `serverMode !== 'dev'` 拦截，消除单租户后端 `/admin/accounts` 500 告警 | `src/components/account-switcher.tsx` | ✅ 已验收 |
 | **v1.0.8** | **Home 基础指标卡片高密对齐 (Task-v1.0.8)**：重构 `panel.tsx` 与 `metric-panels.tsx`，应用 `UI_SPECIFICATION` 高密 4px 微圆角与汉化 | `src/routes/home/-components/panel.tsx`、`metric-panels.tsx` | ✅ 已验收 |
+| **v1.0.9** | **Home Token 趋势图表高密重构 (Task-v1.0.9)**：重构 `token-trend-panel.tsx` 与 `token-trend-chart.tsx`，渲染高度压缩至 240px，图表/Tooltip 全面应用 4px 硬朗微圆角 | `src/routes/home/-components/token-trend-panel.tsx`、`token-trend-chart.tsx` | ✅ 已验收 |
+| **v1.0.10** | **Home Context Commits 热力图高密重构 (Task-v1.0.10)**：重构 `context-commits-heatmap.tsx`，将热力图浮层与右侧统计数据全量落地 4px 微圆角与 font-mono 紧凑对齐 | `src/routes/home/-components/context-commits-heatmap.tsx` | 🔄 待验收 |
 
 ---
 
