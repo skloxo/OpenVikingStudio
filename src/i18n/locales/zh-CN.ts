@@ -38,6 +38,9 @@ const zhCN = {
       skills: {
         title: '技能',
       },
+      resources: {
+        title: '资源库',
+      },
       tasks: {
         title: '任务中心',
       },
@@ -46,6 +49,12 @@ const zhCN = {
       },
       sessions: {
         title: '会话',
+      },
+      users: {
+        title: '用户管理',
+      },
+      settings: {
+        title: '连接与设置',
       },
       playground: {
         title: '实验场',

@@ -118,6 +118,8 @@ cp -rf ./dist/* /home/skloxo/.local/lib/python3.12/site-packages/openviking/web_
 | **v1.0.9** | **Home Token 趋势图表高密重构 (Task-v1.0.9)**：重构 `token-trend-panel.tsx` 与 `token-trend-chart.tsx`，渲染高度压缩至 240px，图表/Tooltip 全面应用 4px 硬朗微圆角 | `src/routes/home/-components/token-trend-panel.tsx`、`token-trend-chart.tsx` | ✅ 已验收 |
 | **v1.0.10** | **Home Context Commits 热力图高密重构 (Task-v1.0.10)**：重构 `context-commits-heatmap.tsx`，将热力图浮层与右侧统计数据全量落地 4px 微圆角与 font-mono 紧凑对齐，去除底部图例条 | `src/routes/home/-components/context-commits-heatmap.tsx` | ✅ 已验收 |
 | **v1.0.11** | **检索搜索栏与控制栏 4px 硬朗高密重构 (Task-v1.0.11)**：重构 `search-bar.tsx` 与 `retrieval-controls.tsx`，应用 4px 硬朗微圆角、快捷键标示与紧凑字体布局 | `src/routes/retrieval/-components/search-bar.tsx`、`retrieval-controls.tsx` | 🔄 待验收 |
+| **v1.0.12** | **检索结果列表高密卡片化重构 (Task-v1.0.12)**：重构 `retrieval-results.tsx`，将结果卡片全量落地 4px 实线微边框、`px-3 py-2.5` 紧凑行高与 2px `rounded-xs` 得分 Tag | `src/routes/retrieval/-components/retrieval-results.tsx` | ✅ 已验收 |
+| **v1.0.13** | **技能卡片与资源浏览高密重构 (Task-v1.0.13)**：重构 `skills/route.tsx` 与 `item-column.tsx`，应用 4px 卡片微圆角与 `font-mono` Scope 标签 | `src/routes/skills/route.tsx`、`resources/-components/item-column.tsx` | 🔄 待验收 |
 
 ---
 

@@ -14,6 +14,7 @@ import { Route as HomeRouteRouteImport } from './routes/home/route'
 import { Route as MonitoringRouteRouteImport } from './routes/monitoring/route'
 import { Route as PlaygroundRouteRouteImport } from './routes/playground/route'
 import { Route as RequestLogsRouteRouteImport } from './routes/request-logs/route'
+import { Route as ResourcesRouteRouteImport } from './routes/resources/route'
 import { Route as RetrievalRouteRouteImport } from './routes/retrieval/route'
 import { Route as SessionsRouteRouteImport } from './routes/sessions/route'
 import { Route as SettingsRouteRouteImport } from './routes/settings/route'
@@ -47,6 +48,11 @@ const PlaygroundRouteRoute = PlaygroundRouteRouteImport.update({
 const RequestLogsRouteRoute = RequestLogsRouteRouteImport.update({
   id: '/request-logs',
   path: '/request-logs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResourcesRouteRoute = ResourcesRouteRouteImport.update({
+  id: '/resources',
+  path: '/resources',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RetrievalRouteRoute = RetrievalRouteRouteImport.update({
@@ -101,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/monitoring': typeof MonitoringRouteRoute
   '/playground': typeof PlaygroundRouteRoute
   '/request-logs': typeof RequestLogsRouteRoute
+  '/resources': typeof ResourcesRouteRoute
   '/retrieval': typeof RetrievalRouteRoute
   '/sessions': typeof SessionsRouteRouteWithChildren
   '/settings': typeof SettingsRouteRoute
@@ -117,6 +124,7 @@ export interface FileRoutesByTo {
   '/monitoring': typeof MonitoringRouteRoute
   '/playground': typeof PlaygroundRouteRoute
   '/request-logs': typeof RequestLogsRouteRoute
+  '/resources': typeof ResourcesRouteRoute
   '/retrieval': typeof RetrievalRouteRoute
   '/settings': typeof SettingsRouteRoute
   '/skills': typeof SkillsRouteRoute
@@ -133,6 +141,7 @@ export interface FileRoutesById {
   '/monitoring': typeof MonitoringRouteRoute
   '/playground': typeof PlaygroundRouteRoute
   '/request-logs': typeof RequestLogsRouteRoute
+  '/resources': typeof ResourcesRouteRoute
   '/retrieval': typeof RetrievalRouteRoute
   '/sessions': typeof SessionsRouteRouteWithChildren
   '/settings': typeof SettingsRouteRoute
@@ -151,6 +160,7 @@ export interface FileRouteTypes {
     | '/monitoring'
     | '/playground'
     | '/request-logs'
+    | '/resources'
     | '/retrieval'
     | '/sessions'
     | '/settings'
@@ -167,6 +177,7 @@ export interface FileRouteTypes {
     | '/monitoring'
     | '/playground'
     | '/request-logs'
+    | '/resources'
     | '/retrieval'
     | '/settings'
     | '/skills'
@@ -182,6 +193,7 @@ export interface FileRouteTypes {
     | '/monitoring'
     | '/playground'
     | '/request-logs'
+    | '/resources'
     | '/retrieval'
     | '/sessions'
     | '/settings'
@@ -199,6 +211,7 @@ export interface RootRouteChildren {
   MonitoringRouteRoute: typeof MonitoringRouteRoute
   PlaygroundRouteRoute: typeof PlaygroundRouteRoute
   RequestLogsRouteRoute: typeof RequestLogsRouteRoute
+  ResourcesRouteRoute: typeof ResourcesRouteRoute
   RetrievalRouteRoute: typeof RetrievalRouteRoute
   SessionsRouteRoute: typeof SessionsRouteRouteWithChildren
   SettingsRouteRoute: typeof SettingsRouteRoute
@@ -244,6 +257,13 @@ declare module '@tanstack/react-router' {
       path: '/request-logs'
       fullPath: '/request-logs'
       preLoaderRoute: typeof RequestLogsRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/resources': {
+      id: '/resources'
+      path: '/resources'
+      fullPath: '/resources'
+      preLoaderRoute: typeof ResourcesRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/retrieval': {
@@ -330,6 +350,7 @@ const rootRouteChildren: RootRouteChildren = {
   MonitoringRouteRoute: MonitoringRouteRoute,
   PlaygroundRouteRoute: PlaygroundRouteRoute,
   RequestLogsRouteRoute: RequestLogsRouteRoute,
+  ResourcesRouteRoute: ResourcesRouteRoute,
   RetrievalRouteRoute: RetrievalRouteRoute,
   SessionsRouteRoute: SessionsRouteRouteWithChildren,
   SettingsRouteRoute: SettingsRouteRoute,
