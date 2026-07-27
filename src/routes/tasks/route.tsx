@@ -106,6 +106,36 @@ async function fetchTasks(
   return normalizeTasks(result)
 }
 
+const REQUEUED_TASKS_STORAGE_KEY = 'ov_studio_requeued_task_ids'
+
+function getStoredRequeuedTaskIds(): Set<string> {
+  if (typeof window === 'undefined') return new Set()
+  try {
+    const raw = localStorage.getItem(REQUEUED_TASKS_STORAGE_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return new Set(parsed)
+    }
+  } catch {
+    // Ignore storage errors
+  }
+  return new Set()
+}
+
+function saveStoredRequeuedTaskId(taskId: string) {
+  if (typeof window === 'undefined') return
+  try {
+    const current = getStoredRequeuedTaskIds()
+    current.add(taskId)
+    localStorage.setItem(
+      REQUEUED_TASKS_STORAGE_KEY,
+      JSON.stringify(Array.from(current)),
+    )
+  } catch {
+    // Ignore storage errors
+  }
+}
+
 function TasksRoute() {
   const { i18n, t } = useTranslation('tasksPage')
   const { identityScopeKey } = useAppConnection()
@@ -119,7 +149,7 @@ function TasksRoute() {
     null,
   )
   const [requeuedTaskIds, setRequeuedTaskIds] = React.useState<Set<string>>(
-    () => new Set(),
+    () => getStoredRequeuedTaskIds(),
   )
   const tasksQuery = useQuery({
     queryFn: () => fetchTasks(taskType, statusFilter),
@@ -151,6 +181,7 @@ function TasksRoute() {
     onSuccess: async (data) => {
       const taskId = data.task.task_id
       if (taskId) {
+        saveStoredRequeuedTaskId(taskId)
         setRequeuedTaskIds((prev) => new Set(prev).add(taskId))
       }
       toast.success(
@@ -363,6 +394,20 @@ function TasksRoute() {
                   const taskId = task.task_id
                   const status = normalizeTaskStatus(task.status)
                   const isRunning = status === 'running'
+                  const isRequeuedByBackend = Boolean(
+                    task.resource_id &&
+                      task.created_at &&
+                      allTasks.some(
+                        (otherTask) =>
+                          otherTask.resource_id === task.resource_id &&
+                          otherTask.task_id !== task.task_id &&
+                          (otherTask.created_at || 0) >= (task.created_at || 0),
+                      ),
+                  )
+                  const isRequeued = Boolean(
+                    (taskId && requeuedTaskIds.has(taskId)) ||
+                      isRequeuedByBackend,
+                  )
                   return (
                     <TableRow
                       key={taskId || String(index)}
@@ -419,7 +464,7 @@ function TasksRoute() {
                       <TableCell className="whitespace-nowrap text-right text-muted-foreground">
                         <span className="inline-flex items-center justify-end gap-2">
                           {status === 'failed' && task.resource_id ? (
-                            taskId && requeuedTaskIds.has(taskId) ? (
+                            isRequeued ? (
                               <span
                                 className="inline-flex items-center gap-1 rounded-xs bg-emerald-500/10 px-1.5 py-0.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400"
                                 title={
