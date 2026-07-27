@@ -160,7 +160,7 @@ class TaskTracker:
     # ── Lifecycle ──
 
     def start_cleanup_loop(self) -> None:
-        """Start the background TTL cleanup coroutine.
+        """Start the background TTL cleanup coroutine and non-blocking store preload.
 
         Safe to call multiple times; subsequent calls are no-ops.
         Must be called from within a running event loop.
@@ -168,7 +168,22 @@ class TaskTracker:
         if self._cleanup_task is not None and not self._cleanup_task.done():
             return
         self._cleanup_task = asyncio.create_task(self._cleanup_loop())
-        logger.debug("[TaskTracker] Cleanup loop started")
+        asyncio.create_task(self._preload_store())
+        logger.debug("[TaskTracker] Cleanup loop & background store preload started")
+
+    async def _preload_store(self) -> None:
+        """Non-blocking background store preload across system and default scopes."""
+        for acc, usr in [("_system", "root"), ("default", "default")]:
+            if (acc, usr) not in self._loaded_accounts:
+                try:
+                    loaded = await self._load_all_from_store(acc, usr)
+                    if loaded:
+                        with self._lock:
+                            for task in loaded:
+                                self._tasks[task.task_id] = task
+                    self._loaded_accounts.add((acc, usr))
+                except Exception as e:
+                    logger.warning("[TaskTracker] Preload failed for %s/%s: %s", acc, usr, e)
 
     def stop_cleanup_loop(self) -> None:
         """Cancel the background cleanup task. Safe to call if not started."""
@@ -429,18 +444,19 @@ class TaskTracker:
         user_id: Optional[str] = None,
     ) -> List[TaskRecord]:
         """List tasks with optional filters. Most-recent first. Returns snapshot copies."""
-        async with self._async_lock:
-            account_key = (account_id, user_id)
-            if account_id is not None and account_key not in self._loaded_accounts:
-                loaded = await self._load_all_from_store(account_id, user_id)
-                if loaded:
-                    with self._lock:
-                        for task in loaded:
-                            self._tasks[task.task_id] = task
-                self._loaded_accounts.add(account_key)
-            with self._lock:
-                source = list(self._tasks.values())
-            tasks = [self._copy(t) for t in source if self._matches_owner(t, account_id, user_id)]
+        account_key = (account_id, user_id)
+        if account_id is not None and account_key not in self._loaded_accounts:
+            async with self._async_lock:
+                if account_key not in self._loaded_accounts:
+                    loaded = await self._load_all_from_store(account_id, user_id)
+                    if loaded:
+                        with self._lock:
+                            for task in loaded:
+                                self._tasks[task.task_id] = task
+                    self._loaded_accounts.add(account_key)
+        with self._lock:
+            source = list(self._tasks.values())
+        tasks = [self._copy(t) for t in source if self._matches_owner(t, account_id, user_id)]
         if task_type:
             tasks = [t for t in tasks if t.task_type == task_type]
         if status:
