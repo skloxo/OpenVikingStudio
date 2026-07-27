@@ -8,7 +8,6 @@ import {
   ClipboardListIcon,
   GlobeIcon,
   HomeIcon,
-  GithubIcon,
   KeyRoundIcon,
   MoonIcon,
   MonitorUpIcon,
@@ -29,7 +28,6 @@ import {
 } from '#/components/ui/collapsible'
 import { CrossDeviceVerifyDialog } from '#/components/cross-device-verify-dialog'
 import { AccountSwitcher } from '#/components/account-switcher'
-import { CurrentUserMenu } from '#/components/current-user-menu'
 import { GeneratedCredentialDialog } from '#/components/generated-credential-dialog'
 import { ScrollArea } from '#/components/ui/scroll-area'
 import {
@@ -53,7 +51,6 @@ import {
   AppConnectionProvider,
   useAppConnection,
 } from '#/hooks/use-app-connection'
-import { cn } from '#/lib/utils'
 import { resolveStudioManagementCapabilities } from '#/lib/studio-permissions'
 
 type NavItem = {
@@ -143,26 +140,11 @@ const NAV_ITEMS: readonly NavItem[] = [
     titleKey: 'navigation.monitoring.title',
     to: '/monitoring',
   },
-  {
-    icon: UsersRoundIcon,
-    id: 'users',
-    section: 'settings',
-    titleKey: 'navigation.users.title',
-    to: '/users',
-  },
-  {
-    icon: KeyRoundIcon,
-    id: 'settings',
-    section: 'settings',
-    titleKey: 'navigation.settings.title',
-    to: '/settings',
-  },
 ]
 
 const NAV_SECTIONS = [
   { id: 'workspace', titleKey: 'sidebar.groups.workspace' },
   { id: 'operations', titleKey: 'sidebar.groups.operations' },
-  { id: 'settings', titleKey: 'sidebar.groups.settings' },
 ] as const
 
 function resolveLanguage(rawLanguage: string | undefined): 'zh-CN' | 'en' {

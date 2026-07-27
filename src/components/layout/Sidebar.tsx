@@ -1,6 +1,6 @@
 import React from 'react';
 import { useStudioStore } from '../../store/useStudioStore';
-import { ActiveTab } from '../../types';
+import type { ActiveTab } from '../../types';
 import { 
   Home, 
   FlaskConical, 

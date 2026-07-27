@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { ActiveTab, SystemStatus } from '../types';
+import type { ActiveTab, SystemStatus } from '../types';
 
 interface StudioState {
   activeTab: ActiveTab;
@@ -14,11 +14,11 @@ interface StudioState {
 
 export const useStudioStore = create<StudioState>((set) => ({
   activeTab: 'home',
-  setActiveTab: (tab) => set({ activeTab: tab }),
+  setActiveTab: (tab: ActiveTab) => set({ activeTab: tab }),
   lang: 'zh',
-  setLang: (lang) => set({ lang }),
+  setLang: (lang: 'zh' | 'en') => set({ lang }),
   theme: 'light',
-  toggleTheme: () => set((state) => ({ theme: state.theme === 'light' ? 'dark' : 'light' })),
+  toggleTheme: () => set((state: StudioState) => ({ theme: state.theme === 'light' ? 'dark' : 'light' })),
   systemStatus: null,
-  setSystemStatus: (systemStatus) => set({ systemStatus }),
+  setSystemStatus: (systemStatus: SystemStatus) => set({ systemStatus }),
 }));

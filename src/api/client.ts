@@ -1,4 +1,4 @@
-import { ConsoleDashboardSummary, SystemStatus } from '../types';
+import type { ConsoleDashboardSummary, SystemStatus } from '../types';
 
 const ROOT_API_KEY = '[REDACTED_API_KEY]';
 
