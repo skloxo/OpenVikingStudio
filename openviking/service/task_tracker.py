@@ -160,7 +160,7 @@ class TaskTracker:
     # ── Lifecycle ──
 
     def start_cleanup_loop(self) -> None:
-        """Start the background TTL cleanup coroutine and non-blocking store preload.
+        """Start the background TTL cleanup coroutine, task consumer loop, and non-blocking store preload.
 
         Safe to call multiple times; subsequent calls are no-ops.
         Must be called from within a running event loop.
@@ -168,8 +168,9 @@ class TaskTracker:
         if self._cleanup_task is not None and not self._cleanup_task.done():
             return
         self._cleanup_task = asyncio.create_task(self._cleanup_loop())
+        self._consumer_task = asyncio.create_task(self._consumer_loop())
         asyncio.create_task(self._preload_store())
-        logger.debug("[TaskTracker] Cleanup loop & background store preload started")
+        logger.debug("[TaskTracker] Cleanup loop, task consumer & background store preload started")
 
     async def _preload_store(self) -> None:
         """Non-blocking background store preload across system and default scopes."""
@@ -188,10 +189,61 @@ class TaskTracker:
                             logger.warning("[TaskTracker] Preload failed for %s/%s: %s", acc, usr, e)
 
     def stop_cleanup_loop(self) -> None:
-        """Cancel the background cleanup task. Safe to call if not started."""
+        """Cancel the background cleanup & consumer tasks. Safe to call if not started."""
         if self._cleanup_task is not None and not self._cleanup_task.done():
             self._cleanup_task.cancel()
-            logger.debug("[TaskTracker] Cleanup loop stopped")
+        if hasattr(self, "_consumer_task") and self._consumer_task is not None and not self._consumer_task.done():
+            self._consumer_task.cancel()
+        logger.debug("[TaskTracker] Cleanup & consumer loop stopped")
+
+    async def _consumer_loop(self) -> None:
+        """Automatically dispatch pending tasks to running state and execute them."""
+        sem = asyncio.Semaphore(10)
+        active_tasks = set()
+
+        while True:
+            try:
+                await asyncio.sleep(1.0)
+                active_tasks = {t for t in active_tasks if not t.done()}
+
+                with self._lock:
+                    pending_tasks = [
+                        t for t in self._tasks.values()
+                        if t.status == TaskStatus.PENDING and t.resource_id
+                    ]
+
+                for task in pending_tasks:
+                    if len(active_tasks) >= 10:
+                        break
+                    # Avoid re-dispatching if already active in consumer loop
+                    if any(getattr(t, "_task_id", None) == task.task_id for t in active_tasks):
+                        continue
+                    worker = asyncio.create_task(self._process_one_pending_task(task, sem))
+                    setattr(worker, "_task_id", task.task_id)
+                    active_tasks.add(worker)
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.warning("[TaskTracker] Consumer loop error: %s", e)
+
+    async def _process_one_pending_task(self, task: TaskRecord, sem: asyncio.Semaphore) -> None:
+        async with sem:
+            try:
+                await self.start(task.task_id)
+                if task.resource_id and task.resource_id.startswith("viking://resources/"):
+                    from openviking.server.dependencies import get_service
+                    from openviking.server.identity import RequestContext, Role
+                    from openviking_cli.session.user_id import UserIdentifier
+
+                    acc = task.account_id or "default"
+                    usr = task.user_id or "default"
+                    ctx = RequestContext(user=UserIdentifier(acc, usr), role=Role.ROOT)
+                    service = get_service()
+                    await service.reindex(uri=task.resource_id, mode="semantic_and_vectors", wait=True, ctx=ctx)
+                await self.complete(task.task_id)
+            except Exception as e:
+                logger.warning("[TaskTracker] Pending task execution failed for %s: %s", task.task_id, e)
+                await self.fail(task.task_id, str(e))
 
     async def _cleanup_loop(self) -> None:
         while True:
