@@ -165,6 +165,18 @@ function TasksRoute() {
   const hasActiveFilters = taskType !== 'all' || statusFilter !== 'all'
 
   const retryMutation = useMutation({
+    onMutate: (task: TaskRecord) => {
+      const taskId = task.task_id
+      if (taskId) {
+        saveStoredRequeuedTaskId(taskId)
+        setRequeuedTaskIds((prev) => new Set(prev).add(taskId))
+      }
+      toast.success(
+        i18n.language.startsWith('zh')
+          ? '已提交重新入队指令，后台正在恢复处理'
+          : 'Re-queue command submitted, processing in background',
+      )
+    },
     mutationFn: async (task: TaskRecord) => {
       if (!task.resource_id) {
         throw new Error(
@@ -177,7 +189,7 @@ function TasksRoute() {
         const resp = await fetch('http://127.0.0.1:1933/api/v1/content/reindex', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ uri: task.resource_id }),
+          body: JSON.stringify({ uri: task.resource_id, wait: false }),
         })
         const json = await resp.json()
         if (!resp.ok || json.error) {
@@ -220,17 +232,7 @@ function TasksRoute() {
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : String(error))
     },
-    onSuccess: async (data) => {
-      const taskId = data.task.task_id
-      if (taskId) {
-        saveStoredRequeuedTaskId(taskId)
-        setRequeuedTaskIds((prev) => new Set(prev).add(taskId))
-      }
-      toast.success(
-        i18n.language.startsWith('zh')
-          ? '任务已重新提交放入处理队列'
-          : 'Task successfully re-queued',
-      )
+    onSuccess: async (_data) => {
       await queryClient.invalidateQueries({ queryKey: ['tasks'] })
     },
   })
