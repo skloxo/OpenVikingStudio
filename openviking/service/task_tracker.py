@@ -329,13 +329,13 @@ class TaskTracker:
             if has_active:
                 return None
 
-            # Auto-cleanup: delete old FAILED records for the same resource
-            # so the failed list stays clean after a re-queue.
+            # Auto-cleanup: delete ALL old FAILED records for the same resource_id
+            # (regardless of task_type) so the failed list stays clean after re-queue.
+            # e.g. an old 'add_resource' failure gets cleaned when re-queued as 'reindex'.
             failed_ids = [
                 t.task_id
                 for t in tasks
-                if t.task_type == task_type
-                and t.resource_id == resource_id
+                if t.resource_id == resource_id
                 and self._matches_owner(t, account_id, user_id)
                 and t.status == TaskStatus.FAILED
             ]
