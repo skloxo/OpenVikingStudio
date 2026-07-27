@@ -166,11 +166,43 @@ function TasksRoute() {
 
   const retryMutation = useMutation({
     mutationFn: async (task: TaskRecord) => {
-      if (task.task_type === 'session_commit' && task.resource_id) {
+      if (!task.resource_id) {
+        throw new Error(
+          i18n.language.startsWith('zh')
+            ? '任务缺少关联资源 ID，无法重新入队'
+            : 'Missing resource ID for task',
+        )
+      }
+      if (task.resource_id.startsWith('viking://resources/')) {
+        const resp = await fetch('http://127.0.0.1:1933/api/v1/content/reindex', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uri: task.resource_id }),
+        })
+        const json = await resp.json()
+        if (!resp.ok || json.error) {
+          throw new Error(
+            json.error?.message ||
+              (i18n.language.startsWith('zh')
+                ? '重新索引失败'
+                : 'Reindex failed'),
+          )
+        }
+        return { res: json, task }
+      }
+      if (task.task_type === 'session_commit') {
         const res = await commitSession(task.resource_id)
+        const resAny = res as any
+        if (resAny?.result?.reason === 'no_messages' || resAny?.reason === 'no_messages') {
+          toast.info(
+            i18n.language.startsWith('zh')
+              ? '该会话无未提交消息，已无需重复入队'
+              : 'Session has no pending uncommitted messages',
+          )
+        }
         return { res, task }
       }
-      if (task.task_type === 'add_resource' && task.resource_id) {
+      if (task.task_type === 'add_resource') {
         const res = await postResources({
           body: {
             path: task.resource_id,
