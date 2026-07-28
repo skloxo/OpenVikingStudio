@@ -372,10 +372,10 @@ function MonitoringRoute() {
             </CardContent>
           </Card>
 
-          {/* Task 2.1: Queue Status Card */}
+          {/* Task 2.1: Queue Status Card — 数据来自真实 Observer API */}
           <QueueStatusCard
-            isHealthy={overview?.components.queue?.is_healthy ?? true}
-            // TODO: 接入真实队列行明细数据（目前使用默认演示数值）
+            status={overview?.components.queue.status ?? ''}
+            isHealthy={overview?.components.queue.is_healthy ?? false}
           />
 
           <div
