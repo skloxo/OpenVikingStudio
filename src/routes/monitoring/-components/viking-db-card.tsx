@@ -48,7 +48,7 @@ export interface VikingDbCardProps {
 }
 
 export function VikingDbCard({ status, isHealthy }: VikingDbCardProps) {
-  const { t } = useTranslation('monitoring')
+  const { t } = useTranslation('monitoringPage')
   const rows = React.useMemo(() => parseVikingDbStatus(status), [status])
 
   return (

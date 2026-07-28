@@ -57,7 +57,7 @@ interface QueueRowProps {
 }
 
 function QueueRow({ title, processing, pending, completed, errors, total }: QueueRowProps) {
-  const { t } = useTranslation('monitoring')
+  const { t } = useTranslation('monitoringPage')
 
   return (
     <div className="flex flex-col gap-2">
@@ -99,7 +99,7 @@ function QueueRow({ title, processing, pending, completed, errors, total }: Queu
 }
 
 export function QueueStatusCard({ status, isHealthy }: QueueStatusCardProps) {
-  const { t } = useTranslation('monitoring')
+  const { t } = useTranslation('monitoringPage')
   const rows = React.useMemo(() => parseQueueStatus(status), [status])
 
   const getQueueDisplayName = (name: string): string => {
