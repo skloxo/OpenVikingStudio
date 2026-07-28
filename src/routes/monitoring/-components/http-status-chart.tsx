@@ -60,24 +60,43 @@ export function HttpStatusChart({
 }: HttpStatusChartProps) {
   const { t } = useTranslation('monitoringPage')
 
-  // 将实际获取到的具体 code 统计转化为图表数组
+  // 将全量 total 扩展映射到对应的 status code 分布
   const chartData: ExactStatusCodeItem[] = React.useMemo(() => {
     const entries = Object.entries(codeMap)
-    if (entries.length === 0) return []
+    if (entries.length === 0) {
+      if (total > 0) {
+        const successCount = Math.round(total * successRate)
+        const errorCount = total - successCount
+        const result: ExactStatusCodeItem[] = [
+          { code: 200, count: successCount, ...getStatusCodeInfo(200) },
+        ]
+        if (errorCount > 0) {
+          result.push({ code: 500, count: errorCount, ...getStatusCodeInfo(500) })
+        }
+        return result
+      }
+      return []
+    }
+
+    const mapSum = entries.reduce((acc, [, val]) => acc + (Number(val) || 0), 0)
+    const factor = total > 0 && mapSum > 0 ? total / mapSum : 1
+
     return entries
       .map(([codeStr, count]) => {
         const code = parseInt(codeStr, 10)
         const info = getStatusCodeInfo(code)
+        const rawCount = Number(count) || 0
+        const scaledCount = Math.round(rawCount * factor)
         return {
           code,
-          count: Number(count) || 0,
+          count: scaledCount,
           color: info.color,
           label: info.label,
         }
       })
       .filter((item) => item.count > 0)
       .sort((a, b) => b.count - a.count)
-  }, [codeMap])
+  }, [codeMap, total, successRate])
 
   const sampleTotal = chartData.reduce((sum, item) => sum + item.count, 0)
   const formattedSuccessRate = (successRate * 100).toFixed(1)
@@ -123,7 +142,7 @@ export function HttpStatusChart({
             </div>
 
             <div className="flex flex-col justify-center rounded-lg border bg-muted/20 px-3.5 py-2.5">
-              <span className="text-xs text-muted-foreground font-medium">
+              <span className="text-xs text-muted-foreground font-medium truncate" title={t('httpStatusCard.totalRequests')}>
                 {t('httpStatusCard.totalRequests')}
               </span>
               <span className="font-mono text-xl font-bold text-foreground tabular-nums mt-0.5">
@@ -152,7 +171,7 @@ export function HttpStatusChart({
                 </Pie>
                 <Tooltip
                   content={({ active, payload }) => {
-                    if (active && payload?.length) {
+                    if (active && payload && payload.length) {
                       const data = payload[0].payload as ExactStatusCodeItem
                       const percent = sampleTotal > 0 ? ((data.count / sampleTotal) * 100).toFixed(1) : '100'
                       return (
@@ -171,7 +190,7 @@ export function HttpStatusChart({
             </ResponsiveContainer>
           </div>
 
-          {/* 右侧：精确状态码图例 */}
+          {/* 右侧：全量状态码图例 */}
           <div className="flex flex-col gap-2">
             {chartData.map((item) => {
               const percent = sampleTotal > 0 ? ((item.count / sampleTotal) * 100).toFixed(1) : '100'
