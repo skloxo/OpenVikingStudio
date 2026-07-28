@@ -119,6 +119,8 @@ const zhCN = {
       indexCount: '索引数',
       status: '状态',
       noData: '暂无向量数据库集合数据',
+      context: '上下文集合 (context)',
+      total: '合计',
     },
     queue: {
       title: '队列状态',
@@ -133,7 +135,10 @@ const zhCN = {
       noData: '暂无队列数据',
       embedding: '嵌入向量队列',
       semantic: '语义处理队列',
-      semanticNodes: 'Semantic-Nodes',
+      externalParse: '外部解析队列',
+      sessionCommit: '会话提交队列',
+      semanticNodes: '语义节点队列',
+      totalRow: '合计',
     },
     offline: {
       title: '尚未连接 OpenViking 服务',
