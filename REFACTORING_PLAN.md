@@ -1,4 +1,4 @@
-# OpenViking Studio 任务卡片化微拆分重构计划 (Task-Card Refactoring Roadmap)
+# OpenViking Studio 任务卡片化微拆分重构计划 (Task-Card Implementation Plan)
 
 > **🎯 核心重构与视觉规范**
 > 1. **第一性原理与哲学**: 严格遵守 [USER_DESIGN_RULES.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/USER_DESIGN_RULES.md) (TideTrading 极客终端调性、奥卡姆剃刀、按需焦点感知 60s 懒加载、绝无阴影、全量纯净 i18n)。
@@ -7,55 +7,62 @@
 
 ---
 
-## 📇 细粒度任务卡片列表 (Task Cards)
+## 📇 全量任务卡片完整履历 (Task Cards Roadmap)
 
-### 阶段 1：控制台与监控大盘 (Home & Monitoring) 细粒度卡片
+### 阶段 1：App Shell 基础框架与修缮
 
-#### 📇 Task Card - [x] v1.1.8: AGENT PEER 记忆中枢看护看板高密与纯净 i18n 重构（已验收通过 ✅）
-- **修改目标**: 对齐 1934 官方看护看板，支持 9 大 Agent 节点全景监控。
-- **修改逻辑**: 大标题纯净精简，副标题下移原中文/英文备注，三态命名（`活跃` / `空闲` / `休眠`），通道命名（`本地直连` / `网络远程` / `原生中枢`），60s 焦点感知懒拉取。
-- **修改文件**: `src/routes/home/-components/peer-memory-grid.tsx`
-- **验收结果**: 已验收并提交 Git `e4537b5`。
-
-#### 📇 Task Card - 🔄 v1.1.9: 监控大盘系统物理资源与 VikingDB 向量走势图 (SystemResourceChart)（进行中 🔄）
-- **修改目标**: 在 `/monitoring` 页面新增 `SystemResourceChart` 4px 微圆角高密面积走势图。
-- **修改逻辑**: 接入 Recharts 渲染 CPU / RAM 占用率与 VikingDB 向量增长双通道走势，应用 1px 微透明边框与等宽数字 (`tabular-nums`)。
-- **修改文件**: `src/routes/monitoring/-components/system-resource-chart.tsx`、`src/routes/monitoring/route.tsx`
-- **验收标准**: 在 1936 查看监控大盘，高密面积图平滑渲染，无布局抖动。
+- [x] **v1.0.1**: 移除顶部整条 Header，释放纵向展示空间 (`src/components/app-shell.tsx`) ✅
+- [x] **v1.0.2**: 侧边栏标题区添加版本号副标题 (`src/components/app-shell.tsx`) ✅
+- [x] **v1.0.3**: 语言切换移至侧边栏底部，UI 统一 (`src/components/app-shell.tsx`) ✅
+- [x] **v1.0.4**: 主题切换移至侧边栏底部；侧边栏收起/展开按钮修复；请求日志路由修复 (`src/components/app-shell.tsx`) ✅
+- [x] **v1.0.5**: Vite Proxy 完整修复：补全所有 OpenViking 后端路径代理（含 `/health`），修复 admin/root 权限缺失问题 (`vite.config.ts`) ✅
+- [x] **v1.0.6**: 修复 Playground 缺失 Icon 导入导致的渲染崩溃 (`src/routes/playground/-components/terminal-panel.tsx`) ✅
+- [x] **v1.0.7**: 侧边栏账号切换器 (AccountSwitcher) Dev 模式防错封装 (`src/components/account-switcher.tsx`) ✅
 
 ---
 
-### 阶段 2：技能中心 (Skills Center) 细粒度卡片拆解
+### 阶段 2：控制台 (Home / Dashboard) 高密重构
 
-#### 📇 Task Card - ⏳ v1.1.10: 技能中心 (Skills) 搜索过滤与作用域 Scope 高密标签卡片重构
-- **修改目标**: 重构 `/skills` 页面的搜索过滤栏与 Skill 卡片网格。
-- **修改逻辑**: 应用 `rounded` (4px) 微圆角卡片，搜索框内嵌 `Ctrl+K` 快捷键标示，将 `scope` 标签收紧为 `rounded-xs` (2px) + `font-mono`，展示 85 个顶级技能精美卡片。
-- **修改文件**: `src/routes/skills/route.tsx`
-- **验收标准**: 技能搜索响应毫秒级，卡片排版信息密度与对比度符合 TideTrading 极客终端风格。
-
-#### 📇 Task Card - ⏳ v1.1.11: 技能中心 (Skills) 渐进式 L0/L1/L2 语义摘要抽屉面板
-- **修改目标**: 为技能卡片增加点击抽屉/弹层，展示 OpenViking L0/L1/L2 三级渐进式摘要。
-- **修改逻辑**: 点击卡片弹出高密侧滑抽屉，分层展示意图触发词(L0)、SOP 流程(L1)与源码全量(L2)。
-- **修改文件**: `src/routes/skills/-components/skill-detail-drawer.tsx`
-- **验收标准**: 点击技能卡片抽屉顺畅滑出，支持 L0/L1/L2 分级切换。
+- [x] **v1.0.8**: Home 基础指标卡片 (MetricPanels) 高密对齐，圆角收紧为 6px，内边距 `p-3.5` (`src/routes/home/-components/metric-panels.tsx`) ✅
+- [x] **v1.0.9**: Home Token 趋势图表 (TokenTrendPanel) 紧凑排版与 4px 硬朗微圆角重构 (`src/routes/home/-components/token-trend-panel.tsx`) ✅
+- [x] **v1.0.10**: Home Context Commits 热力图 4px 终端圆角与高密重构 (`src/routes/home/-components/context-commits-heatmap.tsx`) ✅
 
 ---
 
-### 阶段 3：检索与测试工作台 (Retrieval Workbench) 细粒度卡片拆解
+### 阶段 3：检索与测试工作台 (Retrieval Workbench) 基础重构
 
-#### 📇 Task Card - ⏳ v1.1.12: 检索测试台 (Retrieval) ETag / Score 分数阈值筛选器高密重构
-- **修改目标**: 重构 `/retrieval` 检索筛选控制栏。
-- **修改逻辑**: 增加 Score 相似度得分滑动条/阈值过滤框，应用 `rounded-sm` 紧凑尺寸与全量中文/英文纯净 i18n。
-- **修改文件**: `src/routes/retrieval/-components/retrieval-controls.tsx`
-- **验收标准**: 筛选滑动条响应精确，控制栏空间利用率显著提升。
-
-#### 📇 Task Card - ⏳ v1.1.13: 检索测试台 (Retrieval) 命中文档高亮与代码块预览卡片化
-- **修改目标**: 重构搜索结果匹配内容的预览视图。
-- **修改逻辑**: 匹配关键字应用 OKLCH 文本高亮，代码块采用 JetBrains Mono 等宽字体，卡片边框收紧至 `rounded-md` (4px)。
-- **修改文件**: `src/routes/retrieval/-components/retrieval-results.tsx`
-- **验收标准**: 检索结果卡片无缝呈现高亮代码与分数 Badge。
+- [x] **v1.0.11**: 检索搜索栏 (SearchBar) 与控制栏 (RetrievalControls) 4px 硬朗高密重构 (`src/routes/retrieval/-components/search-bar.tsx`) ✅
+- [x] **v1.0.12**: 检索结果列表 (RetrievalResults) 高密卡片化重构 (`src/routes/retrieval/-components/retrieval-results.tsx`) ✅
 
 ---
 
-*文档保存路径：`/home/skloxo/aho/openclaw/project/OpenVikingStudio/REFACTORING_PLAN.md`*
-*更新时间：2026-07-28*
+### 阶段 4：监控大盘与核心数据卡片 (Monitoring & Data Cards)
+
+- [x] **v1.1.0**: 监控大盘总体重构与强收敛中英文框架 (`src/routes/monitoring/route.tsx`) ✅
+- [x] **v1.1.1**: 顶部运行环境探测与 Root 鉴权看板 (`src/components/app-shell.tsx`) ✅
+- [x] **v1.1.2**: 任务中心 (Task Center) 状态解析与异常抛错修复 (`src/routes/tasks/route.tsx`) ✅
+- [x] **v1.1.3**: VikingDbCard 向量数据库卡片高密重构 (`src/routes/monitoring/-components/viking-db-card.tsx`) ✅
+- [x] **v1.1.4**: RetrievalStatusCard 检索状态卡片重构 (`src/routes/monitoring/-components/retrieval-status-card.tsx`) ✅
+- [x] **v1.1.5**: ModelMonitoringCard AI 模型消耗监控卡片重构 (`src/routes/monitoring/-components/model-monitoring-card.tsx`) ✅
+- [x] **v1.1.6**: HttpStatusDonutChart HTTP 状态分布与成功率走势图 (`src/routes/monitoring/-components/http-status-chart.tsx`) ✅
+- [x] **v1.1.7**: KnowledgeBaseOverview 知识库全景大盘重构 (`src/routes/home/-components/knowledge-base-overview.tsx`) ✅
+- [x] **v1.1.8**: AGENT PEER 记忆中枢看板高密重构与通俗化命名 (已提交 Git `e4537b5`) ✅
+
+---
+
+### 阶段 5：当前与后续细粒度任务卡片 (Current & Future Task Cards)
+
+- [x] **v1.1.9**: 监控大盘系统物理资源与 VikingDB 向量走势图 (`SystemResourceChart`)（已完成并提交 Git `00d4575`） ✅
+- [x] **v1.1.10**: 技能中心 (`/skills`) 搜索过滤与 Scope 高密标签卡片重构（已完成 1936 打包验证 🔄）
+- [ ] **v1.1.11**: 技能中心 (`/skills`) 渐进式 L0/L1/L2 语义摘要抽屉面板
+- [ ] **v1.1.12**: 检索测试台 (`/retrieval`) Score 相似度得分滑动阈值筛选器
+- [ ] **v1.1.13**: 检索测试台 (`/retrieval`) 命中文档 OKLCH 高亮与代码块预览
+- [ ] **v1.1.14**: 技能中心 (`/skills`) 关联资源树结构查看器
+- [ ] **v1.1.15**: 任务中心 (`/tasks`) 异步任务执行进度高密流式列表
+- [ ] **v1.1.16**: 任务中心 (`/tasks`) 异常任务重试与 Log 查看器面板
+- [ ] **v1.1.17**: 会话中心 (`/sessions`) 跨 Agent 共享会话图谱查看器
+- [ ] **v1.1.18**: 设置页面 (`/settings`) 本地 1933 / 1936 反向代理健康诊断面板
+
+---
+
+*全量文档保存路径：`/home/skloxo/.gemini/antigravity-ide/brain/eb762217-74ad-4e82-9b0d-1fcbc5567e21/implementation_plan.md`*

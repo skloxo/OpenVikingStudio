@@ -176,15 +176,25 @@ async function fetchSkillDetail(skill: SkillItem): Promise<SkillDetail> {
 function SkillsRoute() {
   const { t } = useTranslation('skillsPage')
   const { identityScopeKey } = useAppConnection()
-  const [selectedSkill, setSelectedSkill] = React.useState<SkillItem | null>(
-    null,
-  )
+  const [selectedSkill, setSelectedSkill] = React.useState<SkillItem | null>(null)
+  const [searchQuery, setSearchQuery] = React.useState('')
+
   const skillsQuery = useQuery({
     queryFn: fetchSkills,
     queryKey: ['skills', identityScopeKey],
     staleTime: 30_000,
   })
   const skills = skillsQuery.data ?? []
+
+  // 客户端毫秒级检索过滤
+  const filteredSkills = React.useMemo(() => {
+    if (!searchQuery.trim()) return skills
+    const q = searchQuery.toLowerCase()
+    return skills.filter(
+      (s) => s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q)
+    )
+  }, [skills, searchQuery])
+
   const connectionUnavailable =
     isOvClientError(skillsQuery.error) &&
     skillsQuery.error.code === 'NETWORK_ERROR'
@@ -195,28 +205,47 @@ function SkillsRoute() {
   })
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-5">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="grid gap-1.5">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {t('title')}
+    <div className="flex w-full min-w-0 flex-col gap-4">
+      {/* 头部标题与高密搜索筛选栏 */}
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3">
+        <div className="grid gap-1">
+          <h1 className="text-xl font-semibold tracking-tight flex items-center gap-2">
+            🧠 {t('title')}
+            <Badge variant="outline" className="font-mono text-xs rounded-xs">
+              {filteredSkills.length} Total
+            </Badge>
           </h1>
-          <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
+          <p className="max-w-3xl text-xs text-muted-foreground">
             {t('description')}
           </p>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={skillsQuery.isFetching}
-          onClick={() => void skillsQuery.refetch()}
-        >
-          <RefreshCwIcon
-            className={skillsQuery.isFetching ? 'animate-spin' : undefined}
-          />
-          {t('refresh')}
-        </Button>
+
+        <div className="flex items-center gap-2">
+          {/* 4px 高密搜索输入框 */}
+          <div className="relative w-64">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="搜索技能名称或描述..."
+              className="w-full rounded border border-border/60 bg-background/50 px-2.5 py-1 text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-cyan-500/50 focus:outline-none font-sans"
+            />
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs rounded"
+            disabled={skillsQuery.isFetching}
+            onClick={() => void skillsQuery.refetch()}
+          >
+            <RefreshCwIcon
+              className={skillsQuery.isFetching ? 'size-3.5 animate-spin' : 'size-3.5'}
+            />
+            {t('refresh')}
+          </Button>
+        </div>
       </header>
 
       {skillsQuery.isLoading ? (
@@ -249,68 +278,62 @@ function SkillsRoute() {
             ) : null}
           </div>
         </Card>
-      ) : skills.length === 0 ? (
-        <Card className="min-h-56 items-center justify-center px-6 text-center">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <SparklesIcon className="size-5" />
-          </div>
-          <div className="grid max-w-md gap-1">
-            <p className="font-medium">{t('empty')}</p>
-            <p className="text-sm text-muted-foreground">
-              {t('emptyDescription')}
-            </p>
-          </div>
+      ) : filteredSkills.length === 0 ? (
+        <Card className="rounded border border-dashed border-border/60 bg-muted/10 p-8 text-center">
+          <p className="text-xs text-muted-foreground font-mono">
+            {searchQuery ? '未找到匹配的技能' : t('empty')}
+          </p>
         </Card>
       ) : (
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {skills.map((skill) => {
-            const ScopeIcon =
-              skill.scope === 'user' ? UserRoundIcon : UsersRoundIcon
-
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {filteredSkills.map((skill) => {
+            const isAgentScope = skill.scope === 'agent'
             return (
-              <button
+              <Card
                 key={`${skill.scope}:${skill.uri}`}
-                type="button"
-                className="min-w-0 rounded text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-                aria-label={t('viewDetail', { name: skill.name })}
+                className="group relative flex cursor-pointer flex-col justify-between rounded border border-border/60 bg-card p-3 transition-all hover:border-cyan-500/40 hover:bg-muted/20"
                 onClick={() => setSelectedSkill(skill)}
               >
-                <Card
-                  size="sm"
-                  className="h-full rounded border border-border/60 transition-colors hover:bg-muted/35"
-                >
-                  <CardHeader className="p-3.5">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex min-w-0 items-center gap-2">
-                        <div className="flex size-7 shrink-0 items-center justify-center rounded-xs bg-primary/10 text-primary">
-                          <SparklesIcon className="size-3.5" />
-                        </div>
-                        <CardTitle className="truncate font-mono text-sm font-semibold">{skill.name}</CardTitle>
+                <div>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="flex size-7 shrink-0 items-center justify-center rounded-xs bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">
+                        <SparklesIcon className="size-4" />
                       </div>
-                      <Badge variant="outline" className="gap-1 rounded-xs border-border/60 font-mono text-[10px] font-semibold">
-                        <ScopeIcon className="size-3" />
-                        {t(`scopes.${skill.scope}`)}
-                      </Badge>
+                      <h3 className="truncate text-xs font-semibold text-foreground group-hover:text-cyan-500 transition-colors">
+                        {skill.name}
+                      </h3>
                     </div>
-                    {skill.description ? (
-                      <CardDescription className="line-clamp-2 pt-1 text-xs leading-relaxed text-muted-foreground/75">
-                        {skill.description}
-                      </CardDescription>
-                    ) : null}
-                  </CardHeader>
-                  <CardContent className="mt-auto">
-                    <div className="flex items-center justify-between gap-3">
-                      <code className="min-w-0 truncate text-xs text-muted-foreground">
-                        {skill.uri}
-                      </code>
-                      <span className="flex shrink-0 items-center gap-0.5 text-xs font-medium text-primary">
-                        {t('detail')}
-                        <ChevronRightIcon className="size-3.5" />
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </button>
+                    <Badge
+                      variant="outline"
+                      className="shrink-0 rounded-xs font-mono text-[10px] uppercase border-border/60 bg-muted/30"
+                    >
+                      {isAgentScope ? (
+                        <span className="flex items-center gap-1 text-cyan-600 dark:text-cyan-400">
+                          <UsersRoundIcon className="size-3" />
+                          Agent
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400">
+                          <UserRoundIcon className="size-3" />
+                          User
+                        </span>
+                      )}
+                    </Badge>
+                  </div>
+
+                  <p className="line-clamp-2 text-xs leading-5 text-muted-foreground font-sans">
+                    {skill.description || '暂无详细描述说明'}
+                  </p>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-2 text-[10px] font-mono text-muted-foreground/80">
+                  <span className="truncate max-w-44" title={skill.uri}>
+                    {skill.uri}
+                  </span>
+                  <ChevronRightIcon className="size-3.5 group-hover:translate-x-0.5 transition-transform text-cyan-500" />
+                </div>
+              </Card>
             )
           })}
         </div>
