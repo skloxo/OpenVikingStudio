@@ -172,7 +172,7 @@ const en = {
       unhealthy: 'Unhealthy',
       noData: 'No HTTP status code distribution data available',
       successRate: 'Overall Success Rate',
-      totalRequests: 'Total Request Samples',
+      totalRequests: 'Full Audit Sample (Recent 5,000)',
       code2xx: '2xx Success',
       code3xx: '3xx Redirection/Cache',
       code4xx: '4xx Client Error',
