@@ -37,6 +37,7 @@ import { VikingDbCard } from './-components/viking-db-card'
 import { RetrievalStatusCard } from './-components/retrieval-status-card'
 import { ModelMonitoringCard } from './-components/model-monitoring-card'
 import { HttpStatusChart } from './-components/http-status-chart'
+import { SystemResourceChart } from './-components/system-resource-chart'
 
 export const Route = createFileRoute('/monitoring')({
   component: MonitoringRoute,
@@ -430,11 +431,12 @@ function MonitoringRoute() {
           />
 
           {/* Task v1.1.6: HttpStatusChart HTTP 状态码分布环形图 */}
+          <SystemResourceChart isLoading={monitoringQuery.isLoading} />
           <HttpStatusChart
             total={totalAuditRequests}
             successRate={successRate}
             codeMap={codeMap}
-            isHealthy={successRate >= 0.9}
+            isHealthy={monitoringQuery.data?.healthy ?? true}
           />
 
           <div
