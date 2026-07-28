@@ -47,63 +47,13 @@ export interface QueueStatusCardProps {
   isHealthy: boolean
 }
 
-interface QueueRowProps {
-  title: string
-  processing: number
-  pending: number
-  completed: number
-  errors: number
-  total: number
-}
-
-function QueueRow({ title, processing, pending, completed, errors, total }: QueueRowProps) {
-  const { t } = useTranslation('monitoringPage')
-
-  return (
-    <div className="flex flex-col gap-2">
-      <span className="text-xs font-medium text-muted-foreground">{title}</span>
-      <div className="grid grid-cols-5 gap-1.5 rounded-lg border bg-muted/20 p-1.5 text-center text-xs">
-        <div className="flex flex-col items-center justify-center rounded-md bg-blue-500/10 py-1.5 px-1">
-          <span className="text-[10px] text-muted-foreground">{t('queue.processing')}</span>
-          <span className="font-mono text-sm font-bold text-blue-600 dark:text-blue-400 tabular-nums">
-            {processing}
-          </span>
-        </div>
-        <div className="flex flex-col items-center justify-center rounded-md bg-amber-500/10 py-1.5 px-1">
-          <span className="text-[10px] text-muted-foreground">{t('queue.pending')}</span>
-          <span className="font-mono text-sm font-bold text-amber-600 dark:text-amber-400 tabular-nums">
-            {pending}
-          </span>
-        </div>
-        <div className="flex flex-col items-center justify-center rounded-md bg-emerald-500/10 py-1.5 px-1">
-          <span className="text-[10px] text-muted-foreground">{t('queue.completed')}</span>
-          <span className="font-mono text-sm font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
-            {completed}
-          </span>
-        </div>
-        <div className="flex flex-col items-center justify-center rounded-md bg-destructive/10 py-1.5 px-1">
-          <span className="text-[10px] text-muted-foreground">{t('queue.errors')}</span>
-          <span className="font-mono text-sm font-bold text-destructive tabular-nums">
-            {errors}
-          </span>
-        </div>
-        <div className="flex flex-col items-center justify-center rounded-md bg-muted/50 py-1.5 px-1">
-          <span className="text-[10px] text-muted-foreground">{t('queue.total')}</span>
-          <span className="font-mono text-sm font-bold text-foreground tabular-nums">
-            {total}
-          </span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 export function QueueStatusCard({ status, isHealthy }: QueueStatusCardProps) {
   const { t } = useTranslation('monitoringPage')
   const rows = React.useMemo(() => parseQueueStatus(status), [status])
 
   const getQueueDisplayName = (name: string): string => {
     const lower = name.toLowerCase()
+    if (lower === 'total') return 'TOTAL'
     if (lower.includes('embedding')) return t('queue.embedding')
     if (lower.includes('semantic-node') || lower.includes('semantic_node')) return t('queue.semanticNodes')
     if (lower.includes('semantic')) return t('queue.semantic')
@@ -134,20 +84,86 @@ export function QueueStatusCard({ status, isHealthy }: QueueStatusCardProps) {
       </div>
 
       {rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t('queue.noData')}</p>
+        <div className="rounded-lg border bg-muted/20 p-3 text-center text-xs text-muted-foreground">
+          {t('queue.noData')}
+        </div>
       ) : (
-        <div className="flex flex-col gap-4">
-          {rows.map((row) => (
-            <QueueRow
-              key={row.name}
-              title={getQueueDisplayName(row.name)}
-              processing={row.processing}
-              pending={row.pending}
-              completed={row.completed}
-              errors={row.errors}
-              total={row.total}
-            />
-          ))}
+        <div className="flex flex-col gap-1.5">
+          {/* 统一顶置表头 (只出现一次，彻底消除重复感) */}
+          <div className="grid grid-cols-6 items-center px-3 py-1 text-xs text-muted-foreground font-medium border-b border-border/50">
+            <span className="col-span-2">{t('queue.queueName')}</span>
+            <span className="text-right">{t('queue.processing')}</span>
+            <span className="text-right">{t('queue.pending')}</span>
+            <span className="text-right">{t('queue.completed')}</span>
+            <span className="text-right">{t('queue.errors')}</span>
+          </div>
+
+          {/* 数据列表 */}
+          {rows.map((row, i) => {
+            const isTotalRow = row.name.toUpperCase() === 'TOTAL'
+            const displayName = getQueueDisplayName(row.name)
+
+            return (
+              <div
+                key={row.name + i}
+                className={cn(
+                  'grid grid-cols-6 items-center px-3 py-2 text-xs rounded-md font-mono transition-colors',
+                  isTotalRow
+                    ? 'bg-muted/60 font-bold border border-border/80 text-foreground mt-1'
+                    : 'bg-muted/20 hover:bg-muted/40 text-foreground/90',
+                )}
+              >
+                {/* 队列名 */}
+                <span className="col-span-2 font-sans font-medium truncate">{displayName}</span>
+
+                {/* 处理中 */}
+                <span
+                  className={cn(
+                    'text-right tabular-nums font-bold',
+                    row.processing > 0
+                      ? 'text-blue-600 dark:text-blue-400'
+                      : 'text-muted-foreground/60',
+                  )}
+                >
+                  {row.processing}
+                </span>
+
+                {/* 待处理 */}
+                <span
+                  className={cn(
+                    'text-right tabular-nums font-bold',
+                    row.pending > 0
+                      ? 'text-amber-600 dark:text-amber-400'
+                      : 'text-muted-foreground/60',
+                  )}
+                >
+                  {row.pending}
+                </span>
+
+                {/* 已完成 */}
+                <span
+                  className={cn(
+                    'text-right tabular-nums font-bold',
+                    row.completed > 0
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : 'text-muted-foreground/60',
+                  )}
+                >
+                  {row.completed.toLocaleString()}
+                </span>
+
+                {/* 错误数 */}
+                <span
+                  className={cn(
+                    'text-right tabular-nums font-bold',
+                    row.errors > 0 ? 'text-destructive' : 'text-muted-foreground/60',
+                  )}
+                >
+                  {row.errors}
+                </span>
+              </div>
+            )
+          })}
         </div>
       )}
     </Card>
