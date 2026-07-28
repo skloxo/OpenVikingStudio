@@ -34,6 +34,7 @@ import { cn } from '#/lib/utils'
 import { parseObserverStatus } from './-lib/parse-status'
 import { QueueStatusCard } from './-components/queue-status-card'
 import { VikingDbCard } from './-components/viking-db-card'
+import { RetrievalStatusCard } from './-components/retrieval-status-card'
 
 export const Route = createFileRoute('/monitoring')({
   component: MonitoringRoute,
@@ -383,6 +384,12 @@ function MonitoringRoute() {
           <VikingDbCard
             status={overview?.components.vikingdb.status ?? ''}
             isHealthy={overview?.components.vikingdb.is_healthy ?? false}
+          />
+
+          {/* Task v1.1.4: RetrievalStatusCard 检索状态卡片 */}
+          <RetrievalStatusCard
+            status={overview?.components.retrieval.status ?? ''}
+            isHealthy={overview?.components.retrieval.is_healthy ?? false}
           />
 
           <div

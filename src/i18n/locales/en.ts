@@ -134,6 +134,20 @@ const en = {
       semanticNodes: 'Semantic-Nodes Queue',
       totalRow: 'TOTAL',
     },
+    retrievalCard: {
+      title: 'Context Retrieval',
+      healthy: 'Healthy',
+      unhealthy: 'Unhealthy',
+      noData: 'No retrieval metrics available',
+      totalQueries: 'Total Queries',
+      totalResults: 'Total Results',
+      zeroResultRate: 'Zero-Result Rate',
+      avgLatency: 'Avg Latency',
+      avgResultsPerQuery: 'Avg Results / Query',
+      rerankUsed: 'Rerank Used',
+      avgScore: 'Avg Score',
+      maxLatency: 'Max Latency',
+    },
     offline: {
       title: 'OpenViking is not connected',
       description:
