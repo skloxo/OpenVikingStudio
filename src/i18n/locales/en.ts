@@ -110,6 +110,8 @@ const en = {
       indexCount: 'Indexes',
       status: 'Status',
       noData: 'No vector DB collections found',
+      context: 'Context Collection (context)',
+      total: 'TOTAL',
     },
     queue: {
       title: 'Queue Status',
@@ -124,7 +126,10 @@ const en = {
       noData: 'No queue data available',
       embedding: 'Embedding Queue',
       semantic: 'Semantic Queue',
-      semanticNodes: 'Semantic-Nodes',
+      externalParse: 'External Parse Queue',
+      sessionCommit: 'Session Commit Queue',
+      semanticNodes: 'Semantic-Nodes Queue',
+      totalRow: 'TOTAL',
     },
     offline: {
       title: 'OpenViking is not connected',

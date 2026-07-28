@@ -53,10 +53,12 @@ export function QueueStatusCard({ status, isHealthy }: QueueStatusCardProps) {
 
   const getQueueDisplayName = (name: string): string => {
     const lower = name.toLowerCase()
-    if (lower === 'total') return 'TOTAL'
+    if (lower === 'total') return t('queue.totalRow')
     if (lower.includes('embedding')) return t('queue.embedding')
     if (lower.includes('semantic-node') || lower.includes('semantic_node')) return t('queue.semanticNodes')
     if (lower.includes('semantic')) return t('queue.semantic')
+    if (lower.includes('externalparse') || lower.includes('external_parse')) return t('queue.externalParse')
+    if (lower.includes('sessioncommit') || lower.includes('session_commit')) return t('queue.sessionCommit')
     return name
   }
 

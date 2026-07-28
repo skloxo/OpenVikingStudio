@@ -51,6 +51,13 @@ export function VikingDbCard({ status, isHealthy }: VikingDbCardProps) {
   const { t } = useTranslation('monitoringPage')
   const rows = React.useMemo(() => parseVikingDbStatus(status), [status])
 
+  const getCollectionDisplayName = (name: string): string => {
+    const lower = name.toLowerCase()
+    if (lower === 'total') return t('vikingdb.total')
+    if (lower === 'context') return t('vikingdb.context')
+    return name
+  }
+
   return (
     <Card className="flex flex-col gap-4 p-4 shadow-none transition-colors hover:border-primary/30">
       <div className="flex items-center justify-between">
@@ -95,7 +102,9 @@ export function VikingDbCard({ status, isHealthy }: VikingDbCardProps) {
               key={row.collection + i}
               className="grid grid-cols-4 items-center px-2 py-1.5 text-xs rounded-md bg-muted/20 hover:bg-muted/40 font-mono"
             >
-              <span className="font-sans font-medium text-foreground truncate">{row.collection}</span>
+              <span className="font-sans font-medium text-foreground truncate">
+                {getCollectionDisplayName(row.collection)}
+              </span>
               <span className="text-right text-emerald-600 dark:text-emerald-400 font-bold tabular-nums">
                 {row.vectorCount.toLocaleString()}
               </span>
