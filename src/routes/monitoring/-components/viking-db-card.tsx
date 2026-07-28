@@ -18,25 +18,19 @@ function parseVikingDbStatus(status: string): ParsedVikingDbRow[] {
   if (!tableBlock) return []
 
   const headers = tableBlock.headers
+
+  // 精准匹配列名，避免 Index Count 中的 count 被误判为 Vector Count
   const col = {
-    collection: headers.findIndex((h) =>
-      /collection|name|table/i.test(h),
-    ),
-    vectorCount: headers.findIndex((h) =>
-      /vector|count|size|documents/i.test(h),
-    ),
-    indexCount: headers.findIndex((h) =>
-      /index|indexes/i.test(h),
-    ),
-    status: headers.findIndex((h) =>
-      /status|state|health/i.test(h),
-    ),
+    collection: headers.findIndex((h) => /^collection$/i.test(h.trim()) || /collection/i.test(h)),
+    vectorCount: headers.findIndex((h) => /vector\s*count|vectors/i.test(h.trim())),
+    indexCount: headers.findIndex((h) => /index\s*count|indexes/i.test(h.trim())),
+    status: headers.findIndex((h) => /^status$/i.test(h.trim()) || /status/i.test(h)),
   }
 
   return tableBlock.rows.map((row) => ({
     collection: col.collection >= 0 ? (row[col.collection] ?? 'default') : row[0] ?? 'default',
-    vectorCount: col.vectorCount >= 0 ? parseInt(row[col.vectorCount] ?? '0', 10) || 0 : 0,
-    indexCount: col.indexCount >= 0 ? parseInt(row[col.indexCount] ?? '0', 10) || 0 : 0,
+    vectorCount: col.vectorCount >= 0 ? parseInt(row[col.vectorCount]?.replace(/,/g, '') ?? '0', 10) || 0 : 0,
+    indexCount: col.indexCount >= 0 ? parseInt(row[col.indexCount]?.replace(/,/g, '') ?? '0', 10) || 0 : 0,
     status: col.status >= 0 ? (row[col.status] ?? 'OK') : 'OK',
   }))
 }
@@ -57,6 +51,18 @@ export function VikingDbCard({ status, isHealthy }: VikingDbCardProps) {
     if (lower === 'context') return t('vikingdb.context')
     return name
   }
+
+  // 区分普通数据行与 TOTAL 合计行
+  const normalRows = rows.filter((r) => r.collection.toUpperCase() !== 'TOTAL')
+  const totalRow = rows.find((r) => r.collection.toUpperCase() === 'TOTAL')
+
+  const totalVectors = totalRow
+    ? totalRow.vectorCount
+    : normalRows.reduce((sum, r) => sum + r.vectorCount, 0)
+  const totalIndexes = totalRow
+    ? totalRow.indexCount
+    : normalRows.reduce((sum, r) => sum + r.indexCount, 0)
+  const collectionCount = normalRows.length
 
   return (
     <Card className="flex flex-col gap-4 p-4 shadow-none transition-colors hover:border-primary/30">
@@ -81,6 +87,28 @@ export function VikingDbCard({ status, isHealthy }: VikingDbCardProps) {
         </Badge>
       </div>
 
+      {/* 顶部 3 个关键汇总指标瓷片 */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="flex flex-col justify-center rounded-lg border bg-muted/20 px-3 py-2">
+          <span className="text-[11px] text-muted-foreground font-medium">{t('vikingdb.activeCollections')}</span>
+          <span className="font-mono text-base font-bold text-foreground tabular-nums mt-0.5">
+            {collectionCount}
+          </span>
+        </div>
+        <div className="flex flex-col justify-center rounded-lg border bg-emerald-500/10 border-emerald-500/20 px-3 py-2">
+          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">{t('vikingdb.totalVectors')}</span>
+          <span className="font-mono text-base font-bold text-emerald-600 dark:text-emerald-400 tabular-nums mt-0.5">
+            {totalVectors.toLocaleString()}
+          </span>
+        </div>
+        <div className="flex flex-col justify-center rounded-lg border bg-muted/20 px-3 py-2">
+          <span className="text-[11px] text-muted-foreground font-medium">{t('vikingdb.searchIndexes')}</span>
+          <span className="font-mono text-base font-bold text-foreground tabular-nums mt-0.5">
+            {totalIndexes}
+          </span>
+        </div>
+      </div>
+
       {rows.length === 0 ? (
         <div className="rounded-lg border bg-muted/20 p-3 text-center text-xs text-muted-foreground">
           {status ? (
@@ -90,41 +118,54 @@ export function VikingDbCard({ status, isHealthy }: VikingDbCardProps) {
           )}
         </div>
       ) : (
-        <div className="flex flex-col gap-2">
-          <div className="grid grid-cols-4 px-2 py-1 text-xs text-muted-foreground font-medium border-b border-border/50">
+        <div className="flex flex-col gap-1.5">
+          <div className="grid grid-cols-4 px-3 py-1 text-xs text-muted-foreground font-medium border-b border-border/50">
             <span>{t('vikingdb.collection')}</span>
             <span className="text-right">{t('vikingdb.vectorCount')}</span>
             <span className="text-right">{t('vikingdb.indexCount')}</span>
             <span className="text-right">{t('vikingdb.status')}</span>
           </div>
-          {rows.map((row, i) => (
-            <div
-              key={row.collection + i}
-              className="grid grid-cols-4 items-center px-2 py-1.5 text-xs rounded-md bg-muted/20 hover:bg-muted/40 font-mono"
-            >
-              <span className="font-sans font-medium text-foreground truncate">
-                {getCollectionDisplayName(row.collection)}
-              </span>
-              <span className="text-right text-emerald-600 dark:text-emerald-400 font-bold tabular-nums">
-                {row.vectorCount.toLocaleString()}
-              </span>
-              <span className="text-right text-muted-foreground tabular-nums">
-                {row.indexCount}
-              </span>
-              <span className="text-right">
+          {rows.map((row, i) => {
+            const isTotalRow = row.collection.toUpperCase() === 'TOTAL'
+            return (
+              <div
+                key={row.collection + i}
+                className={cn(
+                  'grid grid-cols-4 items-center px-3 py-2 text-xs rounded-md font-mono transition-colors',
+                  isTotalRow
+                    ? 'bg-muted/60 font-bold border border-border/80 text-foreground mt-1'
+                    : 'bg-muted/20 hover:bg-muted/40 text-foreground/90',
+                )}
+              >
+                <span className="font-sans font-medium truncate">
+                  {getCollectionDisplayName(row.collection)}
+                </span>
                 <span
                   className={cn(
-                    'inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold',
-                    /ok|normal|healthy/i.test(row.status)
-                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                      : 'bg-destructive/10 text-destructive',
+                    'text-right font-bold tabular-nums',
+                    row.vectorCount > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground/60',
                   )}
                 >
-                  {row.status}
+                  {row.vectorCount.toLocaleString()}
                 </span>
-              </span>
-            </div>
-          ))}
+                <span className="text-right text-muted-foreground tabular-nums">
+                  {row.indexCount}
+                </span>
+                <span className="text-right">
+                  <span
+                    className={cn(
+                      'inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold',
+                      /ok|normal|healthy/i.test(row.status)
+                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                        : 'bg-destructive/10 text-destructive',
+                    )}
+                  >
+                    {row.status}
+                  </span>
+                </span>
+              </div>
+            )
+          })}
         </div>
       )}
     </Card>

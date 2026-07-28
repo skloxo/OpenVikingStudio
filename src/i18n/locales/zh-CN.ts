@@ -121,6 +121,9 @@ const zhCN = {
       noData: '暂无向量数据库集合数据',
       context: '上下文集合 (context)',
       total: '合计',
+      activeCollections: '活动集合数',
+      totalVectors: '总向量数据量',
+      searchIndexes: '检索索引数',
     },
     queue: {
       title: '队列状态',
