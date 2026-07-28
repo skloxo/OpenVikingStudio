@@ -639,7 +639,21 @@ const zhCN = {
       files: '文件',
       memories: '记忆',
       skills: '技能',
-      title: '上下文数据量',
+      title: '上下文资产分布',
+    },
+    knowledgeBaseOverview: {
+      title: '知识库全景与向量引擎',
+      subtitle: '业务资产节点与 Vector 维度分布概览',
+      memoryAssets: '记忆库节点 (Memory)',
+      resourceAssets: '资源文件数 (Resources)',
+      skillAssets: '技能知识数 (Skills)',
+      totalVectors: '总向量数据量',
+      activeCollections: '维度的集合空间',
+      healthyEngine: '向量引擎健康运行中',
+      vectorEngineTitle: 'VikingDB Vector 引擎空间',
+      totalAssetsLabel: '总计算数据资产:',
+      nodeUnit: '节点',
+      spacesUnit: '个集合空间',
     },
     page: {
       description:

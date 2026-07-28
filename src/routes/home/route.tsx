@@ -9,6 +9,7 @@ import {
   TodayTokensPanel,
 } from './-components/metric-panels'
 import { TokenTrendPanel } from './-components/token-trend-panel'
+import { KnowledgeBaseOverview } from './-components/knowledge-base-overview'
 import {
   fetchConsoleContextCommits,
   fetchConsoleDashboardSummary,
@@ -20,6 +21,8 @@ import type {
   ConnectionDraft,
   ConnectionRole,
 } from '#/hooks/use-app-connection'
+import { getObserverSystem, getOvResult } from '#/lib/ov-client'
+import { parseObserverStatus } from '../monitoring/-lib/parse-status'
 
 export const Route = createFileRoute('/home')({
   component: HomePage,
@@ -55,7 +58,7 @@ function getMetricsScopeKey(
 
 function HomePage() {
   const { t } = useTranslation('home')
-  const { connection, connectionRole, isConnectionRoleLoading } =
+  const { connection, connectionRole, isConnectionRoleLoading, identityScopeKey } =
     useAppConnection()
   const canQueryMetrics =
     !isConnectionRoleLoading && connectionRole !== 'unknown'
@@ -66,6 +69,12 @@ function HomePage() {
     queryFn: fetchConsoleDashboardSummary,
     queryKey: ['console-dashboard-summary', metricsScopeKey],
     refetchInterval: 30_000,
+  })
+
+  const observerQuery = useQuery({
+    queryFn: () => getOvResult<Record<string, unknown>>(getObserverSystem()),
+    queryKey: ['home-observer-system', identityScopeKey],
+    refetchInterval: 15_000,
   })
 
   const tokenSeries = useQuery({
@@ -83,6 +92,29 @@ function HomePage() {
   })
 
   const summary = dashboard.data
+  const observerData = observerQuery.data
+
+  // 解析真实 VikingDB 向量总数
+  let vectorCount = 0
+  let collectionCount = 1
+  if (observerData && typeof observerData === 'object') {
+    const rawComponents = (observerData as { components?: Record<string, { status?: string }> }).components
+    const vikingStatus = rawComponents?.vikingdb?.status ?? ''
+    const blocks = parseObserverStatus(vikingStatus)
+    for (const block of blocks) {
+      if (block.kind === 'table') {
+        const colIdx = block.headers.findIndex((h) => /vectors/i.test(h) || /数量/i.test(h))
+        if (colIdx >= 0) {
+          collectionCount = block.rows.length
+          vectorCount = block.rows.reduce((sum, row) => {
+            const val = parseInt(row[colIdx]?.replace(/,/g, '') ?? '0', 10) || 0
+            return sum + val
+          }, 0)
+        }
+      }
+    }
+  }
+
   const missingPrivilegedRole =
     !isConnectionRoleLoading && connectionRole === 'unknown'
   const metricsUnavailable = missingPrivilegedRole || isDisabledPayload(summary)
@@ -95,6 +127,16 @@ function HomePage() {
 
   return (
     <div className="flex flex-col gap-5 pb-8">
+      {/* Task v1.1.7: KnowledgeBaseOverview 知识库全景与向量引擎卡片 */}
+      <KnowledgeBaseOverview
+        memoryCount={summary?.context_counts?.memories ?? 0}
+        resourceCount={summary?.context_counts?.files ?? 0}
+        skillCount={summary?.context_counts?.skills ?? 0}
+        vectorCount={vectorCount}
+        collectionCount={collectionCount}
+        isLoading={isMetricsLoading || observerQuery.isLoading}
+      />
+
       <div className="grid gap-4 md:grid-cols-3">
         <ContextDataPanel
           data={summary?.context_counts}
