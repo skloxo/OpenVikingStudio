@@ -35,6 +35,7 @@ import { parseObserverStatus } from './-lib/parse-status'
 import { QueueStatusCard } from './-components/queue-status-card'
 import { VikingDbCard } from './-components/viking-db-card'
 import { RetrievalStatusCard } from './-components/retrieval-status-card'
+import { ModelMonitoringCard } from './-components/model-monitoring-card'
 
 export const Route = createFileRoute('/monitoring')({
   component: MonitoringRoute,
@@ -390,6 +391,12 @@ function MonitoringRoute() {
           <RetrievalStatusCard
             status={overview?.components.retrieval.status ?? ''}
             isHealthy={overview?.components.retrieval.is_healthy ?? false}
+          />
+
+          {/* Task v1.1.5: ModelMonitoringCard AI 模型消耗监控卡片 */}
+          <ModelMonitoringCard
+            status={overview?.components.models.status ?? ''}
+            isHealthy={overview?.components.models.is_healthy ?? false}
           />
 
           <div
