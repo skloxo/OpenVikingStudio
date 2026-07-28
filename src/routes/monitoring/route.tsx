@@ -252,7 +252,7 @@ function MonitoringRoute() {
     enabled: serverMode !== 'offline',
     queryFn: async () => {
       const res = await getOvResult<Record<string, unknown>>(
-        getConsoleAudit({ query: { page: 1, page_size: 500 } }),
+        getConsoleAudit({ query: { page: 1, page_size: 100 } }),
       )
       return res
     },
@@ -263,7 +263,7 @@ function MonitoringRoute() {
 
   const overview = monitoringQuery.data
   const auditData = auditQuery.data
-  // total 是后端数据库记录的全量日志条数（如 5,000）
+  // total 是后端全量审计日志条数（如 5,000）
   const totalAuditRequests = typeof auditData?.total === 'number' ? auditData.total : 0
   const successRate = typeof auditData?.success_rate === 'number' ? auditData.success_rate : 1.0
 
