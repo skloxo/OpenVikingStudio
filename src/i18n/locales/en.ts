@@ -611,6 +611,30 @@ const en = {
     page: {
       placeholder: 'Operations dashboard is under construction.',
     },
+    vikingdb: {
+      title: 'Vector DB (VikingDB)',
+      healthy: 'Healthy',
+      unhealthy: 'Unhealthy',
+      collection: 'Collection',
+      vectorCount: 'Vector Count',
+      indexCount: 'Indexes',
+      status: 'Status',
+      noData: 'No vector DB collections found',
+    },
+    queue: {
+      title: 'Queue Status',
+      healthy: 'Healthy',
+      unhealthy: 'Unhealthy',
+      processing: 'Processing',
+      pending: 'Pending',
+      completed: 'Completed',
+      errors: 'Errors',
+      total: 'Total',
+      noData: 'No queue data available',
+      embedding: 'Embedding Queue',
+      semantic: 'Semantic Queue',
+      semanticNodes: 'Semantic-Nodes',
+    },
   },
   requestLogs: {
     accessRequired: {
