@@ -55,7 +55,7 @@ function getStatusCodeInfo(code: number): { color: string; label: string } {
 export function HttpStatusChart({
   total = 0,
   successRate = 1.0,
-  codeMap = { 200: 50 },
+  codeMap = {},
   isHealthy = true,
 }: HttpStatusChartProps) {
   const { t } = useTranslation('monitoringPage')
@@ -63,9 +63,7 @@ export function HttpStatusChart({
   // 将实际获取到的具体 code 统计转化为图表数组
   const chartData: ExactStatusCodeItem[] = React.useMemo(() => {
     const entries = Object.entries(codeMap)
-    if (entries.length === 0) {
-      return [{ code: 200, count: total || 1, ...getStatusCodeInfo(200) }]
-    }
+    if (entries.length === 0) return []
     return entries
       .map(([codeStr, count]) => {
         const code = parseInt(codeStr, 10)
@@ -79,8 +77,9 @@ export function HttpStatusChart({
       })
       .filter((item) => item.count > 0)
       .sort((a, b) => b.count - a.count)
-  }, [codeMap, total])
+  }, [codeMap])
 
+  const sampleTotal = chartData.reduce((sum, item) => sum + item.count, 0)
   const formattedSuccessRate = (successRate * 100).toFixed(1)
 
   return (
@@ -106,33 +105,35 @@ export function HttpStatusChart({
         </Badge>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-        {/* 左侧：概览指标 */}
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-col justify-center rounded-lg border bg-emerald-500/10 border-emerald-500/20 px-3.5 py-2.5">
-            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-              {t('httpStatusCard.successRate')}
-            </span>
-            <span className="font-mono text-xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums mt-0.5">
-              {formattedSuccessRate}%
-            </span>
-          </div>
-
-          <div className="flex flex-col justify-center rounded-lg border bg-muted/20 px-3.5 py-2.5">
-            <span className="text-xs text-muted-foreground font-medium">
-              {t('httpStatusCard.totalRequests')}
-            </span>
-            <span className="font-mono text-xl font-bold text-foreground tabular-nums mt-0.5">
-              {total.toLocaleString()}
-            </span>
-          </div>
+      {chartData.length === 0 ? (
+        <div className="rounded-lg border bg-muted/20 p-6 text-center text-xs text-muted-foreground">
+          {t('httpStatusCard.noData')}
         </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+          {/* 左侧：概览指标 */}
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col justify-center rounded-lg border bg-emerald-500/10 border-emerald-500/20 px-3.5 py-2.5">
+              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                {t('httpStatusCard.successRate')}
+              </span>
+              <span className="font-mono text-xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums mt-0.5">
+                {formattedSuccessRate}%
+              </span>
+            </div>
 
-        {/* 中间：Recharts 环形饼图 */}
-        <div className="h-44 w-full flex items-center justify-center">
-          {total === 0 ? (
-            <div className="text-xs text-muted-foreground">{t('httpStatusCard.noData')}</div>
-          ) : (
+            <div className="flex flex-col justify-center rounded-lg border bg-muted/20 px-3.5 py-2.5">
+              <span className="text-xs text-muted-foreground font-medium">
+                {t('httpStatusCard.totalRequests')}
+              </span>
+              <span className="font-mono text-xl font-bold text-foreground tabular-nums mt-0.5">
+                {total.toLocaleString()}
+              </span>
+            </div>
+          </div>
+
+          {/* 中间：Recharts 环形饼图 */}
+          <div className="h-44 w-full flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -151,9 +152,9 @@ export function HttpStatusChart({
                 </Pie>
                 <Tooltip
                   content={({ active, payload }) => {
-                    if (active && payload.length) {
+                    if (active && payload?.length) {
                       const data = payload[0].payload as ExactStatusCodeItem
-                      const percent = total > 0 ? ((data.count / total) * 100).toFixed(1) : '100'
+                      const percent = sampleTotal > 0 ? ((data.count / sampleTotal) * 100).toFixed(1) : '100'
                       return (
                         <div className="rounded-lg border bg-popover px-3 py-1.5 text-xs text-popover-foreground shadow-md font-mono">
                           <p className="font-bold flex items-center gap-1.5">
@@ -168,30 +169,30 @@ export function HttpStatusChart({
                 />
               </PieChart>
             </ResponsiveContainer>
-          )}
-        </div>
+          </div>
 
-        {/* 右侧：精确状态码图例 (显示具体 HTTP Code 200/404/500) */}
-        <div className="flex flex-col gap-2">
-          {chartData.map((item) => {
-            const percent = total > 0 ? ((item.count / total) * 100).toFixed(1) : '100'
-            return (
-              <div
-                key={item.code}
-                className="flex items-center justify-between px-2.5 py-1.5 rounded-md bg-muted/20 text-xs font-mono"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-                  <span className="font-sans font-medium text-foreground">{item.label}</span>
+          {/* 右侧：精确状态码图例 */}
+          <div className="flex flex-col gap-2">
+            {chartData.map((item) => {
+              const percent = sampleTotal > 0 ? ((item.count / sampleTotal) * 100).toFixed(1) : '100'
+              return (
+                <div
+                  key={item.code}
+                  className="flex items-center justify-between px-2.5 py-1.5 rounded-md bg-muted/20 text-xs font-mono"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                    <span className="font-sans font-medium text-foreground">{item.label}</span>
+                  </div>
+                  <span className="font-bold text-foreground tabular-nums">
+                    {item.count.toLocaleString()} <span className="text-[10px] text-muted-foreground font-normal">({percent}%)</span>
+                  </span>
                 </div>
-                <span className="font-bold text-foreground tabular-nums">
-                  {item.count.toLocaleString()} <span className="text-[10px] text-muted-foreground font-normal">({percent}%)</span>
-                </span>
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
         </div>
-      </div>
+      )}
     </Card>
   )
 }
