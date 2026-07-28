@@ -175,6 +175,18 @@ const zhCN = {
       embeddingGroup: 'Embedding 向量模型',
       rerankGroup: 'Rerank 重排模型',
     },
+    httpStatusCard: {
+      title: 'HTTP 请求状态码分布',
+      healthy: '正常',
+      unhealthy: '异常',
+      noData: '暂无 HTTP 状态码分布数据',
+      successRate: '总体成功率',
+      totalRequests: '统计样本总数',
+      code2xx: '2xx 成功响应',
+      code3xx: '3xx 缓存/重定向',
+      code4xx: '4xx 客户端错误',
+      code5xx: '5xx 服务端错误',
+    },
     offline: {
       title: '尚未连接 OpenViking 服务',
       description: '配置服务地址和访问凭证后即可查看监控数据。',

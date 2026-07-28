@@ -166,6 +166,18 @@ const en = {
       embeddingGroup: 'Embedding Models',
       rerankGroup: 'Rerank Models',
     },
+    httpStatusCard: {
+      title: 'HTTP Status Code Distribution',
+      healthy: 'Healthy',
+      unhealthy: 'Unhealthy',
+      noData: 'No HTTP status code distribution data available',
+      successRate: 'Overall Success Rate',
+      totalRequests: 'Total Request Samples',
+      code2xx: '2xx Success',
+      code3xx: '3xx Redirection/Cache',
+      code4xx: '4xx Client Error',
+      code5xx: '5xx Server Error',
+    },
     offline: {
       title: 'OpenViking is not connected',
       description:
