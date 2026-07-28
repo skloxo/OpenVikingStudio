@@ -19,7 +19,6 @@ export interface HttpStatusChartProps {
   isHealthy?: boolean
 }
 
-// 为常用具体状态码分配语义颜色与含义标签
 function getStatusCodeInfo(code: number): { color: string; label: string } {
   switch (code) {
     case 200:
@@ -60,42 +59,46 @@ export function HttpStatusChart({
 }: HttpStatusChartProps) {
   const { t } = useTranslation('monitoringPage')
 
-  // 将全量 total 扩展映射到对应的 status code 分布
+  // 精准匹配 successRate 与 total 全量数据的比例推算逻辑
   const chartData: ExactStatusCodeItem[] = React.useMemo(() => {
+    if (total <= 0) return []
+
+    // 真正的成功数与失败数
+    const expectedSuccessCount = Math.round(total * successRate)
+    const expectedErrorCount = Math.max(0, total - expectedSuccessCount)
+
     const entries = Object.entries(codeMap)
-    if (entries.length === 0) {
-      if (total > 0) {
-        const successCount = Math.round(total * successRate)
-        const errorCount = total - successCount
-        const result: ExactStatusCodeItem[] = [
-          { code: 200, count: successCount, ...getStatusCodeInfo(200) },
-        ]
-        if (errorCount > 0) {
-          result.push({ code: 500, count: errorCount, ...getStatusCodeInfo(500) })
+    const hasErrorInMap = entries.some(([codeStr]) => parseInt(codeStr, 10) >= 400)
+
+    // 成功项 (200)
+    const result: ExactStatusCodeItem[] = [
+      { code: 200, count: expectedSuccessCount, ...getStatusCodeInfo(200) },
+    ]
+
+    // 失败/报错项 (如果有 401/404/500 codeMap 就按样本比例分排，没有就归类为 500)
+    if (expectedErrorCount > 0) {
+      if (hasErrorInMap) {
+        const errorEntries = entries.filter(([codeStr]) => parseInt(codeStr, 10) >= 400)
+        const errorSum = errorEntries.reduce((acc, [, val]) => acc + (Number(val) || 0), 0)
+        const factor = errorSum > 0 ? expectedErrorCount / errorSum : 1
+
+        for (const [codeStr, count] of errorEntries) {
+          const code = parseInt(codeStr, 10)
+          const scaled = Math.round((Number(count) || 0) * factor)
+          if (scaled > 0) {
+            result.push({ code, count: scaled, ...getStatusCodeInfo(code) })
+          }
         }
-        return result
+      } else {
+        result.push({
+          code: 500,
+          count: expectedErrorCount,
+          ...getStatusCodeInfo(500),
+        })
       }
-      return []
     }
 
-    const mapSum = entries.reduce((acc, [, val]) => acc + (Number(val) || 0), 0)
-    const factor = total > 0 && mapSum > 0 ? total / mapSum : 1
-
-    return entries
-      .map(([codeStr, count]) => {
-        const code = parseInt(codeStr, 10)
-        const info = getStatusCodeInfo(code)
-        const rawCount = Number(count) || 0
-        const scaledCount = Math.round(rawCount * factor)
-        return {
-          code,
-          count: scaledCount,
-          color: info.color,
-          label: info.label,
-        }
-      })
-      .filter((item) => item.count > 0)
-      .sort((a, b) => b.count - a.count)
+    return result.filter((item) => item.count > 0).sort((a, b) => b.count - a.count)
   }, [codeMap, total, successRate])
 
   const sampleTotal = chartData.reduce((sum, item) => sum + item.count, 0)
@@ -190,7 +193,7 @@ export function HttpStatusChart({
             </ResponsiveContainer>
           </div>
 
-          {/* 右侧：全量状态码图例 */}
+          {/* 右侧：状态码图例 */}
           <div className="flex flex-col gap-2">
             {chartData.map((item) => {
               const percent = sampleTotal > 0 ? ((item.count / sampleTotal) * 100).toFixed(1) : '100'
