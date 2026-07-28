@@ -10,6 +10,7 @@ import {
 } from './-components/metric-panels'
 import { TokenTrendPanel } from './-components/token-trend-panel'
 import { KnowledgeBaseOverview } from './-components/knowledge-base-overview'
+import { PeerMemoryGrid } from './-components/peer-memory-grid'
 import {
   fetchConsoleContextCommits,
   fetchConsoleDashboardSummary,
@@ -68,13 +69,17 @@ function HomePage() {
     enabled: canQueryMetrics,
     queryFn: fetchConsoleDashboardSummary,
     queryKey: ['console-dashboard-summary', metricsScopeKey],
-    refetchInterval: 30_000,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
+    staleTime: 30_000,
   })
 
   const observerQuery = useQuery({
     queryFn: () => getOvResult<Record<string, unknown>>(getObserverSystem()),
     queryKey: ['home-observer-system', identityScopeKey],
-    refetchInterval: 15_000,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
+    staleTime: 30_000,
   })
 
   const tokenSeries = useQuery({
@@ -135,6 +140,13 @@ function HomePage() {
         vectorCount={vectorCount}
         collectionCount={collectionCount}
         isLoading={isMetricsLoading || observerQuery.isLoading}
+      />
+
+      {/* Task v1.1.8: PeerMemoryGrid 6 大 Agent 体外大脑协同网络 */}
+      <PeerMemoryGrid
+        isLoading={isMetricsLoading || observerQuery.isLoading}
+        totalMemories={summary?.context_counts?.memories ?? 0}
+        totalSkills={summary?.context_counts?.skills ?? 0}
       />
 
       <div className="grid gap-4 md:grid-cols-3">
