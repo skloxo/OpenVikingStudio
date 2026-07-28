@@ -115,6 +115,7 @@ const en = {
       title: 'Queue Status',
       healthy: 'Healthy',
       unhealthy: 'Unhealthy',
+      queueName: 'Queue Name',
       processing: 'Processing',
       pending: 'Pending',
       completed: 'Completed',

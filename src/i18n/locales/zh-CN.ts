@@ -124,6 +124,7 @@ const zhCN = {
       title: '队列状态',
       healthy: '正常',
       unhealthy: '异常',
+      queueName: '队列名称',
       processing: '处理中',
       pending: '待处理',
       completed: '已完成',
