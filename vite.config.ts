@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite'
+import pkg from './package.json' assert { type: 'json' }
 import { devtools } from '@tanstack/devtools-vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
 
@@ -61,10 +62,9 @@ const config = defineConfig({
     tanstackRouter({ target: 'react', autoCodeSplitting: true }),
     viteReact(),
   ],
-  // 自动从 package.json 注入版本号 — 组件中使用 __APP_VERSION__ 常量即可
-  // npm run dev/build 时，npm 自动将 package.json version 写入 npm_package_version 环境变量
+  // 实时从 package.json 读取并注入版本号 — 组件中使用 __APP_VERSION__ 常量即可
   define: {
-    __APP_VERSION__: JSON.stringify(process.env.npm_package_version ?? '0.0.0'),
+    __APP_VERSION__: JSON.stringify(pkg.version),
   },
 })
 

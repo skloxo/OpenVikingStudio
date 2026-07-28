@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useTranslation } from 'react-i18next'
 import { Badge } from '#/components/ui/badge'
 import { Card, CardTitle } from '#/components/ui/card'
 import { cn } from '#/lib/utils'
@@ -40,15 +41,6 @@ function parseQueueStatus(status: string): ParsedQueueRow[] {
   }))
 }
 
-// 将 Observer 返回的英文队列名转换为中文显示名
-function getQueueDisplayName(name: string): string {
-  const lower = name.toLowerCase()
-  if (lower.includes('embedding')) return '嵌入向量队列'
-  if (lower.includes('semantic-node') || lower.includes('semantic_node')) return 'Semantic-Nodes'
-  if (lower.includes('semantic')) return '语义处理队列'
-  return name
-}
-
 export interface QueueStatusCardProps {
   /** Observer system 返回的 queue 组件的 status 原始文本 */
   status: string
@@ -65,36 +57,38 @@ interface QueueRowProps {
 }
 
 function QueueRow({ title, processing, pending, completed, errors, total }: QueueRowProps) {
+  const { t } = useTranslation('monitoring')
+
   return (
     <div className="flex flex-col gap-2">
       <span className="text-xs font-medium text-muted-foreground">{title}</span>
       <div className="grid grid-cols-5 gap-1.5 rounded-lg border bg-muted/20 p-1.5 text-center text-xs">
         <div className="flex flex-col items-center justify-center rounded-md bg-blue-500/10 py-1.5 px-1">
-          <span className="text-[10px] text-muted-foreground">处理中</span>
+          <span className="text-[10px] text-muted-foreground">{t('queue.processing')}</span>
           <span className="font-mono text-sm font-bold text-blue-600 dark:text-blue-400 tabular-nums">
             {processing}
           </span>
         </div>
         <div className="flex flex-col items-center justify-center rounded-md bg-amber-500/10 py-1.5 px-1">
-          <span className="text-[10px] text-muted-foreground">待处理</span>
+          <span className="text-[10px] text-muted-foreground">{t('queue.pending')}</span>
           <span className="font-mono text-sm font-bold text-amber-600 dark:text-amber-400 tabular-nums">
             {pending}
           </span>
         </div>
         <div className="flex flex-col items-center justify-center rounded-md bg-emerald-500/10 py-1.5 px-1">
-          <span className="text-[10px] text-muted-foreground">已完成</span>
+          <span className="text-[10px] text-muted-foreground">{t('queue.completed')}</span>
           <span className="font-mono text-sm font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
             {completed}
           </span>
         </div>
         <div className="flex flex-col items-center justify-center rounded-md bg-destructive/10 py-1.5 px-1">
-          <span className="text-[10px] text-muted-foreground">错误数</span>
+          <span className="text-[10px] text-muted-foreground">{t('queue.errors')}</span>
           <span className="font-mono text-sm font-bold text-destructive tabular-nums">
             {errors}
           </span>
         </div>
         <div className="flex flex-col items-center justify-center rounded-md bg-muted/50 py-1.5 px-1">
-          <span className="text-[10px] text-muted-foreground">总计</span>
+          <span className="text-[10px] text-muted-foreground">{t('queue.total')}</span>
           <span className="font-mono text-sm font-bold text-foreground tabular-nums">
             {total}
           </span>
@@ -105,12 +99,21 @@ function QueueRow({ title, processing, pending, completed, errors, total }: Queu
 }
 
 export function QueueStatusCard({ status, isHealthy }: QueueStatusCardProps) {
+  const { t } = useTranslation('monitoring')
   const rows = React.useMemo(() => parseQueueStatus(status), [status])
+
+  const getQueueDisplayName = (name: string): string => {
+    const lower = name.toLowerCase()
+    if (lower.includes('embedding')) return t('queue.embedding')
+    if (lower.includes('semantic-node') || lower.includes('semantic_node')) return t('queue.semanticNodes')
+    if (lower.includes('semantic')) return t('queue.semantic')
+    return name
+  }
 
   return (
     <Card className="flex flex-col gap-4 p-4 shadow-none transition-colors hover:border-primary/30">
       <div className="flex items-center justify-between">
-        <CardTitle className="text-base font-semibold">队列状态</CardTitle>
+        <CardTitle className="text-base font-semibold">{t('queue.title')}</CardTitle>
         <Badge
           variant="outline"
           className={cn(
@@ -126,12 +129,12 @@ export function QueueStatusCard({ status, isHealthy }: QueueStatusCardProps) {
               isHealthy ? 'bg-emerald-500' : 'bg-destructive',
             )}
           />
-          {isHealthy ? '正常' : '异常'}
+          {isHealthy ? t('queue.healthy') : t('queue.unhealthy')}
         </Badge>
       </div>
 
       {rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">暂无队列数据</p>
+        <p className="text-sm text-muted-foreground">{t('queue.noData')}</p>
       ) : (
         <div className="flex flex-col gap-4">
           {rows.map((row) => (

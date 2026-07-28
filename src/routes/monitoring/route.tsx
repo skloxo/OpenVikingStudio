@@ -33,6 +33,7 @@ import { getHealth, getObserverSystem, getOvResult } from '#/lib/ov-client'
 import { cn } from '#/lib/utils'
 import { parseObserverStatus } from './-lib/parse-status'
 import { QueueStatusCard } from './-components/queue-status-card'
+import { VikingDbCard } from './-components/viking-db-card'
 
 export const Route = createFileRoute('/monitoring')({
   component: MonitoringRoute,
@@ -376,6 +377,12 @@ function MonitoringRoute() {
           <QueueStatusCard
             status={overview?.components.queue.status ?? ''}
             isHealthy={overview?.components.queue.is_healthy ?? false}
+          />
+
+          {/* Task 2.2 / v1.1.3: VikingDbCard 向量数据库卡片 */}
+          <VikingDbCard
+            status={overview?.components.vikingdb.status ?? ''}
+            isHealthy={overview?.components.vikingdb.is_healthy ?? false}
           />
 
           <div

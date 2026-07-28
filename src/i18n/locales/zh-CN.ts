@@ -600,6 +600,30 @@ const zhCN = {
     page: {
       placeholder: '运维面板能力尚未接入。',
     },
+    vikingdb: {
+      title: '向量数据库 (VikingDB)',
+      healthy: '正常',
+      unhealthy: '异常',
+      collection: '集合名称',
+      vectorCount: '向量数量',
+      indexCount: '索引数',
+      status: '状态',
+      noData: '暂无向量数据库集合数据',
+    },
+    queue: {
+      title: '队列状态',
+      healthy: '正常',
+      unhealthy: '异常',
+      processing: '处理中',
+      pending: '待处理',
+      completed: '已完成',
+      errors: '错误数',
+      total: '总计',
+      noData: '暂无队列数据',
+      embedding: '嵌入向量队列',
+      semantic: '语义处理队列',
+      semanticNodes: 'Semantic-Nodes',
+    },
   },
   requestLogs: {
     accessRequired: {
