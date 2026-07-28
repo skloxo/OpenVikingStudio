@@ -5,45 +5,81 @@ import { Badge } from '#/components/ui/badge'
 import { Card, CardTitle } from '#/components/ui/card'
 import { cn } from '#/lib/utils'
 
-export interface HttpStatusItem {
-  codeGroup: string
-  labelKey: string
+export interface ExactStatusCodeItem {
+  code: number
   count: number
   color: string
+  label: string
 }
 
 export interface HttpStatusChartProps {
   total: number
   successRate: number
-  statusCounts?: {
-    code2xx?: number
-    code3xx?: number
-    code4xx?: number
-    code5xx?: number
-  }
+  codeMap?: Record<number, number>
   isHealthy?: boolean
+}
+
+// 为常用具体状态码分配语义颜色与含义标签
+function getStatusCodeInfo(code: number): { color: string; label: string } {
+  switch (code) {
+    case 200:
+      return { color: '#10b981', label: 'HTTP 200 (成功)' }
+    case 201:
+      return { color: '#34d399', label: 'HTTP 201 (已创建)' }
+    case 204:
+      return { color: '#6ee7b7', label: 'HTTP 204 (无内容)' }
+    case 304:
+      return { color: '#3b82f6', label: 'HTTP 304 (缓存未修改)' }
+    case 400:
+      return { color: '#f59e0b', label: 'HTTP 400 (请求参数错误)' }
+    case 401:
+      return { color: '#fbbf24', label: 'HTTP 401 (未授权)' }
+    case 403:
+      return { color: '#d97706', label: 'HTTP 403 (拒绝访问)' }
+    case 404:
+      return { color: '#f97316', label: 'HTTP 404 (资源未找到)' }
+    case 500:
+      return { color: '#f43f5e', label: 'HTTP 500 (服务器内部错误)' }
+    case 502:
+      return { color: '#e11d48', label: 'HTTP 502 (网关错误)' }
+    case 503:
+      return { color: '#be123c', label: 'HTTP 503 (服务不可用)' }
+    default:
+      if (code >= 200 && code < 300) return { color: '#10b981', label: `HTTP ${code} (成功)` }
+      if (code >= 300 && code < 400) return { color: '#3b82f6', label: `HTTP ${code} (重定向)` }
+      if (code >= 400 && code < 500) return { color: '#f59e0b', label: `HTTP ${code} (客户端错误)` }
+      return { color: '#f43f5e', label: `HTTP ${code} (服务端错误)` }
+  }
 }
 
 export function HttpStatusChart({
   total = 0,
   successRate = 1.0,
-  statusCounts = { code2xx: 0, code3xx: 0, code4xx: 0, code5xx: 0 },
+  codeMap = { 200: 50 },
   isHealthy = true,
 }: HttpStatusChartProps) {
   const { t } = useTranslation('monitoringPage')
 
-  // 避免样本为 0 时的除零计算
-  const count2xx = statusCounts.code2xx ?? Math.round(total * successRate)
-  const count4xx = statusCounts.code4xx ?? Math.round(total * (1 - successRate) * 0.7)
-  const count5xx = statusCounts.code5xx ?? Math.round(total * (1 - successRate) * 0.3)
-  const count3xx = statusCounts.code3xx ?? 0
-
-  const chartData: HttpStatusItem[] = [
-    { codeGroup: '2xx', labelKey: 'httpStatusCard.code2xx', count: count2xx, color: '#10b981' },
-    { codeGroup: '3xx', labelKey: 'httpStatusCard.code3xx', count: count3xx, color: '#3b82f6' },
-    { codeGroup: '4xx', labelKey: 'httpStatusCard.code4xx', count: count4xx, color: '#f59e0b' },
-    { codeGroup: '5xx', labelKey: 'httpStatusCard.code5xx', count: count5xx, color: '#f43f5e' },
-  ].filter((item) => item.count > 0 || total === 0)
+  // 将实际获取到的具体 code 统计转化为图表数组
+  const chartData: ExactStatusCodeItem[] = React.useMemo(() => {
+    const entries = Object.entries(codeMap)
+    if (entries.length === 0) {
+      return [{ code: 200, count: total || 1, ...getStatusCodeInfo(200) }]
+    }
+    return entries
+      .map(([codeStr, count]) => {
+        const code = parseInt(codeStr, 10)
+        const info = getStatusCodeInfo(code)
+        return {
+          code,
+          count: Number(count) || 0,
+          color: info.color,
+          label: info.label,
+        }
+      })
+      .filter((item) => item.count > 0)
+      .sort((a, b) => b.count - a.count)
+  }, [codeMap, total])
 
   const formattedSuccessRate = (successRate * 100).toFixed(1)
 
@@ -71,7 +107,7 @@ export function HttpStatusChart({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-        {/* 左侧：2 个核心概览指标 */}
+        {/* 左侧：概览指标 */}
         <div className="flex flex-col gap-3">
           <div className="flex flex-col justify-center rounded-lg border bg-emerald-500/10 border-emerald-500/20 px-3.5 py-2.5">
             <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
@@ -92,7 +128,7 @@ export function HttpStatusChart({
           </div>
         </div>
 
-        {/* 中间：Recharts 环形饼图 (Donut Chart) */}
+        {/* 中间：Recharts 环形饼图 */}
         <div className="h-44 w-full flex items-center justify-center">
           {total === 0 ? (
             <div className="text-xs text-muted-foreground">{t('httpStatusCard.noData')}</div>
@@ -107,7 +143,7 @@ export function HttpStatusChart({
                   outerRadius={65}
                   paddingAngle={3}
                   dataKey="count"
-                  nameKey="codeGroup"
+                  nameKey="label"
                 >
                   {chartData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} stroke="transparent" />
@@ -115,14 +151,14 @@ export function HttpStatusChart({
                 </Pie>
                 <Tooltip
                   content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      const data = payload[0].payload as HttpStatusItem
-                      const percent = total > 0 ? ((data.count / total) * 100).toFixed(1) : '0'
+                    if (active && payload.length) {
+                      const data = payload[0].payload as ExactStatusCodeItem
+                      const percent = total > 0 ? ((data.count / total) * 100).toFixed(1) : '100'
                       return (
                         <div className="rounded-lg border bg-popover px-3 py-1.5 text-xs text-popover-foreground shadow-md font-mono">
                           <p className="font-bold flex items-center gap-1.5">
                             <span className="size-2 rounded-full" style={{ backgroundColor: data.color }} />
-                            {data.codeGroup}: {data.count.toLocaleString()} ({percent}%)
+                            {data.label}: {data.count.toLocaleString()} ({percent}%)
                           </p>
                         </div>
                       )
@@ -135,18 +171,18 @@ export function HttpStatusChart({
           )}
         </div>
 
-        {/* 右侧：图例说明列 */}
+        {/* 右侧：精确状态码图例 (显示具体 HTTP Code 200/404/500) */}
         <div className="flex flex-col gap-2">
           {chartData.map((item) => {
-            const percent = total > 0 ? ((item.count / total) * 100).toFixed(1) : '0'
+            const percent = total > 0 ? ((item.count / total) * 100).toFixed(1) : '100'
             return (
               <div
-                key={item.codeGroup}
+                key={item.code}
                 className="flex items-center justify-between px-2.5 py-1.5 rounded-md bg-muted/20 text-xs font-mono"
               >
                 <div className="flex items-center gap-2">
                   <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-                  <span className="font-sans font-medium text-foreground">{t(item.labelKey)}</span>
+                  <span className="font-sans font-medium text-foreground">{item.label}</span>
                 </div>
                 <span className="font-bold text-foreground tabular-nums">
                   {item.count.toLocaleString()} <span className="text-[10px] text-muted-foreground font-normal">({percent}%)</span>

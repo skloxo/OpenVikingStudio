@@ -267,16 +267,13 @@ function MonitoringRoute() {
   const successRate = typeof auditData?.success_rate === 'number' ? auditData.success_rate : 1.0
 
   const items = Array.isArray(auditData?.items) ? (auditData.items as Array<{ status_code?: number }>) : []
-  const statusCounts = React.useMemo(() => {
-    let c2xx = 0, c3xx = 0, c4xx = 0, c5xx = 0
+  const codeMap = React.useMemo(() => {
+    const map: Record<number, number> = {}
     for (const item of items) {
       const code = item.status_code ?? 200
-      if (code >= 200 && code < 300) c2xx++
-      else if (code >= 300 && code < 400) c3xx++
-      else if (code >= 400 && code < 500) c4xx++
-      else if (code >= 500) c5xx++
+      map[code] = (map[code] ?? 0) + 1
     }
-    return { code2xx: c2xx, code3xx: c3xx, code4xx: c4xx, code5xx: c5xx }
+    return map
   }, [items])
 
   const selectedComponent =
@@ -435,7 +432,7 @@ function MonitoringRoute() {
           <HttpStatusChart
             total={totalAuditRequests}
             successRate={successRate}
-            statusCounts={statusCounts}
+            codeMap={codeMap}
             isHealthy={successRate >= 0.9}
           />
 
