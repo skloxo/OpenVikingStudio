@@ -147,21 +147,21 @@ export function ModelMonitoringCard({ status, isHealthy }: ModelMonitoringCardPr
         </div>
       ) : (
         <div className="flex flex-col gap-4">
+          {/* 单头统一表头（避免每个分类重复打印表头） */}
+          <div className="grid grid-cols-6 items-center px-3 py-1 text-xs text-muted-foreground font-medium border-b border-border/50">
+            <span className="col-span-2">{t('modelsCard.modelName')}</span>
+            <span>{t('modelsCard.provider')}</span>
+            <span className="text-right">{t('modelsCard.calls')}</span>
+            <span className="text-right">{t('modelsCard.promptTokens')}</span>
+            <span className="text-right">{t('modelsCard.totalTokens')}</span>
+          </div>
+
           {groups.map((group, idx) => (
             <div key={group.groupName + idx} className="flex flex-col gap-1.5">
-              <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+              <span className="text-xs font-semibold text-foreground/80 flex items-center gap-1.5 pt-1">
                 <span className="size-1.5 rounded-full bg-primary/60" />
                 {getGroupTitle(group.groupName)}
               </span>
-
-              {/* 单头清爽表格 */}
-              <div className="grid grid-cols-6 items-center px-3 py-1 text-xs text-muted-foreground font-medium border-b border-border/50">
-                <span className="col-span-2">{t('modelsCard.modelName')}</span>
-                <span>{t('modelsCard.provider')}</span>
-                <span className="text-right">{t('modelsCard.calls')}</span>
-                <span className="text-right">{t('modelsCard.promptTokens')}</span>
-                <span className="text-right">{t('modelsCard.totalTokens')}</span>
-              </div>
 
               {group.rows.map((row, rIdx) => (
                 <div
