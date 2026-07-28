@@ -29,13 +29,14 @@ import {
   TableRow,
 } from '#/components/ui/table'
 import { useAppConnection } from '#/hooks/use-app-connection'
-import { getHealth, getObserverSystem, getOvResult } from '#/lib/ov-client'
+import { getConsoleAudit, getHealth, getObserverSystem, getOvResult } from '#/lib/ov-client'
 import { cn } from '#/lib/utils'
 import { parseObserverStatus } from './-lib/parse-status'
 import { QueueStatusCard } from './-components/queue-status-card'
 import { VikingDbCard } from './-components/viking-db-card'
 import { RetrievalStatusCard } from './-components/retrieval-status-card'
 import { ModelMonitoringCard } from './-components/model-monitoring-card'
+import { HttpStatusChart } from './-components/http-status-chart'
 
 export const Route = createFileRoute('/monitoring')({
   component: MonitoringRoute,
@@ -246,7 +247,38 @@ function MonitoringRoute() {
     retry: false,
     staleTime: 5_000,
   })
+
+  const auditQuery = useQuery({
+    enabled: serverMode !== 'offline',
+    queryFn: async () => {
+      const res = await getOvResult<Record<string, unknown>>(
+        getConsoleAudit({ query: { page: 1, page_size: 50 } }),
+      )
+      return res
+    },
+    queryKey: ['monitoring-audit-summary', identityScopeKey],
+    refetchInterval: 15_000,
+    staleTime: 10_000,
+  })
+
   const overview = monitoringQuery.data
+  const auditData = auditQuery.data
+  const totalAuditRequests = typeof auditData?.total === 'number' ? auditData.total : 0
+  const successRate = typeof auditData?.success_rate === 'number' ? auditData.success_rate : 1.0
+
+  const items = Array.isArray(auditData?.items) ? (auditData.items as Array<{ status_code?: number }>) : []
+  const statusCounts = React.useMemo(() => {
+    let c2xx = 0, c3xx = 0, c4xx = 0, c5xx = 0
+    for (const item of items) {
+      const code = item.status_code ?? 200
+      if (code >= 200 && code < 300) c2xx++
+      else if (code >= 300 && code < 400) c3xx++
+      else if (code >= 400 && code < 500) c4xx++
+      else if (code >= 500) c5xx++
+    }
+    return { code2xx: c2xx, code3xx: c3xx, code4xx: c4xx, code5xx: c5xx }
+  }, [items])
+
   const selectedComponent =
     activeType === 'overview' ? undefined : overview?.components[activeType]
   const SelectedMonitorIcon =
@@ -397,6 +429,14 @@ function MonitoringRoute() {
           <ModelMonitoringCard
             status={overview?.components.models.status ?? ''}
             isHealthy={overview?.components.models.is_healthy ?? false}
+          />
+
+          {/* Task v1.1.6: HttpStatusChart HTTP 状态码分布环形图 */}
+          <HttpStatusChart
+            total={totalAuditRequests}
+            successRate={successRate}
+            statusCounts={statusCounts}
+            isHealthy={successRate >= 0.9}
           />
 
           <div
