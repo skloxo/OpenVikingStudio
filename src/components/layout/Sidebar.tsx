@@ -74,7 +74,7 @@ export const Sidebar: React.FC = () => {
         {/* 2. 版本号硬性声明 (位于连接与身份上方) */}
         <div className="px-3 py-1.5 rounded-md bg-slate-100 text-slate-500 text-xs font-mono font-medium flex items-center justify-between border border-slate-200/50">
           <span>系统版本</span>
-          <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold">v1.1.0</span>
+          <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold">v1.1.2</span>
         </div>
 
         {/* 3. 底部原有候选与身份入口 */}

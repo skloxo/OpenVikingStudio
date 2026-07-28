@@ -32,6 +32,7 @@ import { useAppConnection } from '#/hooks/use-app-connection'
 import { getHealth, getObserverSystem, getOvResult } from '#/lib/ov-client'
 import { cn } from '#/lib/utils'
 import { parseObserverStatus } from './-lib/parse-status'
+import { QueueStatusCard } from './-components/queue-status-card'
 
 export const Route = createFileRoute('/monitoring')({
   component: MonitoringRoute,
@@ -370,6 +371,12 @@ function MonitoringRoute() {
               />
             </CardContent>
           </Card>
+
+          {/* Task 2.1: Queue Status Card */}
+          <QueueStatusCard
+            isHealthy={overview?.components.queue?.is_healthy ?? true}
+            // TODO: 接入真实队列行明细数据（目前使用默认演示数值）
+          />
 
           <div
             role="tablist"
