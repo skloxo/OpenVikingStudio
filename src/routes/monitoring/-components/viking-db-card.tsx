@@ -64,6 +64,10 @@ export function VikingDbCard({ status, isHealthy }: VikingDbCardProps) {
     : normalRows.reduce((sum, r) => sum + r.indexCount, 0)
   const collectionCount = normalRows.length
 
+  // 当仅有 1 个集合时，隐藏冗余的 TOTAL 行与重复列，避免三层数字叠加重复
+  const isSingleCollection = collectionCount <= 1
+  const displayRows = isSingleCollection ? normalRows : rows
+
   return (
     <Card className="flex flex-col gap-4 p-4 shadow-none transition-colors hover:border-primary/30">
       <div className="flex items-center justify-between">
@@ -125,7 +129,7 @@ export function VikingDbCard({ status, isHealthy }: VikingDbCardProps) {
             <span className="text-right">{t('vikingdb.indexCount')}</span>
             <span className="text-right">{t('vikingdb.status')}</span>
           </div>
-          {rows.map((row, i) => {
+          {displayRows.map((row, i) => {
             const isTotalRow = row.collection.toUpperCase() === 'TOTAL'
             return (
               <div
