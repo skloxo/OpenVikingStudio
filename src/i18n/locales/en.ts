@@ -112,6 +112,9 @@ const en = {
       noData: 'No vector DB collections found',
       context: 'Context Collection (context)',
       total: 'TOTAL',
+      activeCollections: 'Active Collections',
+      totalVectors: 'Total Vectors',
+      searchIndexes: 'Search Indexes',
     },
     queue: {
       title: 'Queue Status',
