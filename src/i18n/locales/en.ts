@@ -644,11 +644,25 @@ const en = {
     },
     contextData: {
       description:
-        'Includes files, skills, and user memories to show the current context resource scale.',
+        'Includes files, skills, and user memories to measure context scale.',
       files: 'Files',
       memories: 'Memories',
       skills: 'Skills',
-      title: 'Context Data Volume',
+      title: 'Context Asset Distribution',
+    },
+    knowledgeBaseOverview: {
+      title: 'Knowledge Base Overview & Vector Engine',
+      subtitle: 'Overview of business asset nodes and vector distribution',
+      memoryAssets: 'Memory Nodes',
+      resourceAssets: 'Resource Files',
+      skillAssets: 'Skill Nodes',
+      totalVectors: 'Total Vector Records',
+      activeCollections: 'Active Collection Spaces',
+      healthyEngine: 'Vector Engine Healthy',
+      vectorEngineTitle: 'VikingDB Vector Engine Space',
+      totalAssetsLabel: 'Total Computed Assets:',
+      nodeUnit: 'Nodes',
+      spacesUnit: 'Collection Spaces',
     },
     page: {
       description:
