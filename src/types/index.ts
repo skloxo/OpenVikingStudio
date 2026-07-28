@@ -42,4 +42,12 @@ export interface SystemStatus {
   account_id: string;
 }
 
+export interface SystemMetrics {
+  cpu_usage_pct: number;
+  memory_used_mb: number;
+  memory_total_mb: number;
+  disk_used_pct: number;
+  uptime_seconds: number;
+}
+
 export type ActiveTab = 'home' | 'playground' | 'search' | 'logs' | 'sessions';
