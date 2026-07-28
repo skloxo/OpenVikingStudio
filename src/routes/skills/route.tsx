@@ -150,7 +150,7 @@ async function fetchSkills(): Promise<SkillItem[]> {
   const result = await getOvResult<SkillListResult>(
     ovClient.client.get({
       query: {
-        node_limit: 200,
+        node_limit: 50,
       },
       url: '/api/v1/skills',
     }),
