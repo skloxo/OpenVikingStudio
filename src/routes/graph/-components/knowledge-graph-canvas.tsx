@@ -239,23 +239,30 @@ export function KnowledgeGraphCanvas({
     onCountChange?.(graphData.nodes.length)
   }, [graphData.nodes.length, onCountChange])
 
-  // Handle Node Click: Highlight and smooth camera flight
+  // Handle Node Click: Highlight and smooth camera flight (NaN safe)
   const handleNodeClick = React.useCallback(
     (node: NodeData) => {
       const fullNode = allNodesMap.get(node.id) || node
       onNodeSelect?.(fullNode)
 
       if (fgRef.current) {
-        if (mode === '3d' && fgRef.current.cameraPosition && typeof node.x === 'number') {
-          const distance = 40
-          const distRatio = 1 + distance / Math.hypot(node.x, node.y, node.z || 1)
-          fgRef.current.cameraPosition(
-            { x: node.x * distRatio, y: node.y * distRatio, z: (node.z || 0) * distRatio },
-            node,
-            1200,
-          )
-        } else if (mode === '2d' && fgRef.current.centerAt && typeof node.x === 'number') {
-          fgRef.current.centerAt(node.x, node.y, 1000)
+        const nx = typeof node.x === 'number' && !isNaN(node.x) ? node.x : null
+        const ny = typeof node.y === 'number' && !isNaN(node.y) ? node.y : null
+        const nz = typeof node.z === 'number' && !isNaN(node.z) ? node.z : 0
+
+        if (mode === '3d' && typeof fgRef.current.cameraPosition === 'function' && nx !== null && ny !== null) {
+          const hyp = Math.hypot(nx, ny, nz || 1)
+          if (hyp > 0 && !isNaN(hyp)) {
+            const distance = 40
+            const distRatio = 1 + distance / hyp
+            fgRef.current.cameraPosition(
+              { x: nx * distRatio, y: ny * distRatio, z: nz * distRatio },
+              { x: nx, y: ny, z: nz },
+              1200,
+            )
+          }
+        } else if (mode === '2d' && typeof fgRef.current.centerAt === 'function' && nx !== null && ny !== null) {
+          fgRef.current.centerAt(nx, ny, 1000)
           fgRef.current.zoom(2.5, 1000)
         }
       }
@@ -263,14 +270,32 @@ export function KnowledgeGraphCanvas({
     [allNodesMap, mode, onNodeSelect],
   )
 
-  // Highlight links connected to selected node
+  // Highlight links and neighbor nodes connected to selected node (O(1) Set lookup)
   const selectedNodeId = selectedNode?.id
-  const isLinkConnectedToSelected = (link: LinkData) => {
-    if (!selectedNodeId) return false
-    const sId = typeof link.source === 'object' ? link.source.id : link.source
-    const tId = typeof link.target === 'object' ? link.target.id : link.target
-    return sId === selectedNodeId || tId === selectedNodeId
-  }
+  const { selectedConnectedLinkSet, selectedConnectedNodeSet } = React.useMemo(() => {
+    const linkSet = new Set<LinkData>()
+    const nodeSet = new Set<string>()
+
+    if (selectedNodeId) {
+      nodeSet.add(selectedNodeId)
+      graphData.links.forEach((link) => {
+        const sId = typeof link.source === 'object' ? link.source.id : link.source
+        const tId = typeof link.target === 'object' ? link.target.id : link.target
+        if (sId === selectedNodeId || tId === selectedNodeId) {
+          linkSet.add(link)
+          nodeSet.add(sId)
+          nodeSet.add(tId)
+        }
+      })
+    }
+
+    return { selectedConnectedLinkSet: linkSet, selectedConnectedNodeSet: nodeSet }
+  }, [graphData.links, selectedNodeId])
+
+  const isLinkConnectedToSelected = React.useCallback(
+    (link: LinkData) => selectedConnectedLinkSet.has(link),
+    [selectedConnectedLinkSet],
+  )
 
   return (
     <div
@@ -283,14 +308,17 @@ export function KnowledgeGraphCanvas({
           width={dimensions.width}
           height={dimensions.height}
           graphData={graphData}
-          warmupTicks={150}
-          cooldownTicks={30}
+          warmupTicks={30}
+          cooldownTicks={50}
+          cooldownTime={3000}
           d3VelocityDecay={0.8}
           d3AlphaDecay={0.08}
           nodeLabel="label"
           nodeColor={(node: NodeData) => {
-            if (selectedNodeId && node.id === selectedNodeId) {
-              return '#f59e0b'
+            if (selectedNodeId) {
+              if (node.id === selectedNodeId) return '#f59e0b'
+              if (selectedConnectedNodeSet.has(node.id)) return node.color
+              return isDark ? 'rgba(100, 116, 139, 0.25)' : 'rgba(203, 213, 225, 0.4)'
             }
             return node.color
           }}
@@ -316,16 +344,19 @@ export function KnowledgeGraphCanvas({
           width={dimensions.width}
           height={dimensions.height}
           graphData={graphData}
-          warmupTicks={200}
-          cooldownTicks={15}
-          d3VelocityDecay={0.9}
-          d3AlphaDecay={0.1}
+          warmupTicks={30}
+          cooldownTicks={50}
+          cooldownTime={3000}
+          d3VelocityDecay={0.85}
+          d3AlphaDecay={0.08}
           nodeResolution={4}
           linkCurvature={0.12}
           nodeLabel="label"
           nodeColor={(node: NodeData) => {
-            if (selectedNodeId && node.id === selectedNodeId) {
-              return '#f59e0b'
+            if (selectedNodeId) {
+              if (node.id === selectedNodeId) return '#f59e0b'
+              if (selectedConnectedNodeSet.has(node.id)) return node.color
+              return isDark ? 'rgba(100, 116, 139, 0.25)' : 'rgba(203, 213, 225, 0.4)'
             }
             return node.color
           }}
