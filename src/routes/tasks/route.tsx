@@ -2,14 +2,10 @@ import * as React from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import {
-  ActivityIcon,
-  CheckCircle2Icon,
   CheckIcon,
   CircleDashedIcon,
   CircleXIcon,
   ChevronRightIcon,
-  ClockIcon,
-  ClipboardListIcon,
   LoaderCircleIcon,
   RefreshCwIcon,
   RotateCcwIcon,
@@ -842,7 +838,6 @@ function TasksRoute() {
             <span className="font-medium">
               {i18n.language.startsWith('zh') ? '任务成功率' : 'Success Rate'}
             </span>
-            <CheckCircle2Icon className="size-4 text-emerald-500" />
           </div>
           <div className="flex items-baseline gap-1">
             <span className="font-mono text-xl font-bold tabular-nums text-foreground">
@@ -861,7 +856,6 @@ function TasksRoute() {
             <span className="font-medium">
               {i18n.language.startsWith('zh') ? '平均处理耗时' : 'Avg Duration'}
             </span>
-            <ClockIcon className="size-4 text-cyan-500" />
           </div>
           <div className="flex items-baseline gap-1">
             <span className="font-mono text-xl font-bold tabular-nums text-foreground">
@@ -882,7 +876,6 @@ function TasksRoute() {
             <span className="font-medium">
               {i18n.language.startsWith('zh') ? '任务总数' : 'Total Tasks'}
             </span>
-            <ClipboardListIcon className="size-4 text-indigo-500" />
           </div>
           <div className="flex items-baseline gap-1">
             <span className="font-mono text-xl font-bold tabular-nums text-foreground">
@@ -901,7 +894,6 @@ function TasksRoute() {
             <span className="font-medium">
               {i18n.language.startsWith('zh') ? '并发与排队' : 'Active/Pending'}
             </span>
-            <ActivityIcon className="size-4 text-amber-500" />
           </div>
           <div className="flex items-baseline gap-1">
             <span className="font-mono text-xl font-bold tabular-nums text-foreground">
