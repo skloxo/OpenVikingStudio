@@ -1,138 +1,174 @@
-# OpenViking Studio 任务卡片化超细粒度重构计划 (Hyper-Detailed Task Card Roadmap - Single Source of Truth)
+# OpenViking Studio 任务卡片化超细粒度重构计划 (Single Source of Truth)
 
-> **🎯 唯一真相源 (Single Source of Truth) — 5 星强制铁律 ⭐⭐⭐⭐⭐**
+> **🎯 唯一真相源 ⭐⭐⭐⭐⭐ — 基于 Git 历史 + 会话 Transcript 双重物理证据**
 >
-> **每次完成一个版本的迭代，必须第一时间将实际交付内容与 Git 证据回写至本卡片文档，标记为 `[x] 已验收通过 ✅`。本文档必须时刻与 Git 历史 100% 物理对齐，是项目的唯一真相！**
+> 本文档每条记录均有**会话 ID + 步骤号 / Git Commit Hash** 作为物理证据支撑，100% 真实可追溯。
 >
-> 1. **三大工程哲学**: 严格遵守 [AGENTS.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/AGENTS.md) (第一性原理、奥卡姆剃刀、全生命周期"信达雅")。
-> 2. **SemVer 3 位版本号铁律**: 版本号锁定在 `1.1.Z`，绝对单向递增。先开发哪个卡片，哪个版本号靠前！
-> 3. **版本与 Commit 强绑定**: 每个 Task Card 完成后必须推送带版本号的 Git Commit 消息（如 `feat: v1.1.22 ...`）并打 `v1.1.xx` Release Tag，不得遗漏！
+> **干活必留痕铁律（每次迭代完成后缺一不可）：**
+> 1. `git tag -a v1.x.y <hash> -m "release: v1.x.y <概括>"` → 立即 `git push origin v1.x.y`
+> 2. 将本文档对应卡片状态改为 `[x] ✅`，补写 Git hash + 修改文件清单
+> 3. `git commit -m "docs: update REFACTORING_PLAN.md - mark v1.x.y as delivered"` → `git push`
 
 ---
 
-## 📇 全量任务卡片基于 Git 物理证据的时间轴
+## ✅ 阶段 0：v1.0.x 基础建设（Tag: `V1.0.0`）
 
-### ✅ 阶段 0：v1.0.x 基础建设（v1.0.0 ~ v1.0.12，Tag: `V1.0.0`）
+**【Git 证据】Tag `V1.0.0` (commit `9898cdd`)，后续 v1.0.8~v1.0.12 commit messages**
 
-已在 v1.0.x 系列中完成并上线的核心功能（**非 1.1.x 卡片体系，是更早期基建**）：
-
-| 版本 | Git Commit 消息（摘录） | 内容摘要 |
-| :--- | :--- | :--- |
-| V1.0.0 | `release: V1.0.0 official refactored studio release` | 全站视觉重构，Sessions/Resources/Tasks/Retrieval 路由完整建立 |
-| v1.0.8 | `release: v1.0.8 - Home MetricPanels high-density` | 首页 MetricPanels 4px 微圆角与等宽数字对齐 |
-| v1.0.9 | `release: v1.0.9 - Home TokenTrendPanel` | 首页 14 天 Token 趋势面积图 |
-| v1.0.10 | `release: v1.0.10 - Home ContextCommitsHeatmap` | 首页 365 天上下文提交热力图 |
-| v1.0.11 | `release: v1.0.11 - Retrieval SearchBar 4px radius` | 检索测试台搜索栏 4px 高密重构 |
-| v1.0.12 | `release: v1.0.12 - RetrievalResults 4px radius` | 检索结果列表 4px 高密卡片重构 |
-| — | `feat: add task Re-queue button` | 任务中心一键重排队按钮 |
-| — | `feat: add task execution duration and live elapsed time` | 任务耗时与实时秒表列 |
-| — | `feat: implement progressive pagination for sessions` | 会话中心渐进式分页加载 |
+| 版本 | Git Commit | 内容 |
+|------|-----------|------|
+| V1.0.0 | `9898cdd` | 全站重构：Sessions / Resources / Tasks / Retrieval / Home 路由完整建立 |
+| v1.0.8 | `0b8cbb2` | 首页 MetricPanels 4px 微圆角，等宽数字，dev mode bypass |
+| v1.0.9 | `a36183b` | 首页 TokenTrendPanel 14天面积图 |
+| v1.0.10 | `e2cf5e4` | 首页 ContextCommitsHeatmap 365天热力图 |
+| v1.0.11 | `d7732eb` | 检索搜索栏 4px 高密重构 |
+| v1.0.12 | `75ea5e1` | 检索结果列表 4px 高密卡片 |
+| — | `acc44db` | 任务中心一键重排队按钮 |
+| — | `8e235be` | 任务耗时与实时秒表列 |
+| — | `09c2ccb` | 会话中心渐进式分页加载 |
 
 ---
 
-### ✅ 阶段 1：v1.1.0 监控大盘建设（v1.1.0 ~ v1.1.7，Tag: `v1.1.0`）
+## ✅ 阶段 1：v1.1.0 监控大盘建设（Tag: `v1.1.0`）
 
-**【Git 证据】Tag `v1.1.0`，后续 commits 命名含 v1.1.2~v1.1.7（未独立打 Tag）**
+**【Git 证据】Tag `v1.1.0` (commit `8278ff2`)，后续 v1.1.2~v1.1.7 commits**
 
-| 版本标记 | Git Commit | 内容摘要 |
-| :--- | :--- | :--- |
-| v1.1.0 | `8278ff2` | 版本号升至 1.1.0 |
-| v1.1.2 | `12b418a` `0ac5c25` | 监控大盘 QueueStatusCard（工序队列健康状态卡片） |
-| v1.1.3 | `96fe309` | VikingDbCard（VikingDB 向量库卡片） |
-| v1.1.4 | `1d9fbae` | RetrievalStatusCard（检索状态卡片） |
-| v1.1.5 | `bf19143` | ModelMonitoringCard（模型使用监控卡片） |
+| 版本标记 | Git Commit | 内容 |
+|---------|-----------|------|
+| v1.1.0 | `8278ff2` | 版本升至 1.1.0，README 更新 |
+| v1.1.2 | `12b418a` `0ac5c25` | 监控大盘 QueueStatusCard（工序队列健康状态） |
+| v1.1.3 | `96fe309` | VikingDbCard（VikingDB 向量库概览） |
+| v1.1.4 | `1d9fbae` | RetrievalStatusCard（检索状态） |
+| v1.1.5 | `bf19143` | ModelMonitoringCard（模型使用监控） |
 | v1.1.6 | `6ad7e3b` | HttpStatusChart（HTTP 状态码甜甜圈图） |
-| v1.1.7 | `4a4842d` | KnowledgeBaseOverview（知识库全景概览组件） |
+| v1.1.7 | `4a4842d` | KnowledgeBaseOverview（知识库全景概览） |
 
 ---
 
-### ✅ 阶段 2：v1.1.x 任务卡片体系建设（v1.1.8 ~ v1.1.11，已提交未打 Tag）
+## ✅ 阶段 2：v1.1.8~v1.1.14（Commit 已标注版本，Tags 已补打）
 
-**【Git 证据】Commit 消息明确标注版本号，但未打 Release Tag（补录历史）**
+**【Git 证据】Commit 消息含版本号；Tags `v1.1.8` `v1.1.9` `v1.1.10` `v1.1.11` 已于 2026-07-30 补打推送**
+**【会话证据】`eb762217` implementation_plan.md 明确标注"阶段 1：已全量验收完成卡片 (v1.1.8 ~ v1.1.14)"**
 
-#### 📇 Task Card - [x] v1.1.8: AGENT PEER 记忆中枢看护看板高密重构（已验收通过 ✅）
-- **Git Commit**: `e4537b5` `feat(home): v1.1.8 complete AGENT PEER memory dashboard grid with clean i18n`
-- **修改内容**: 9 大 Agent 节点全景监控网格，三态命名（活跃/空闲/休眠），60s 焦点感知懒拉取。
-- **修改文件**: `src/routes/home/-components/peer-memory-grid.tsx`
+#### [x] v1.1.8: AGENT PEER 记忆中枢看护看板高密重构 ✅
+- **Git**: `e4537b5` `feat(home): v1.1.8 complete AGENT PEER memory dashboard grid`
+- **Tag**: `v1.1.8` (补打于 2026-07-30)
+- **内容**: 9 大 Agent 节点全景监控网格，三态命名（活跃/空闲/休眠），60s 焦点感知懒拉取
+- **文件**: `src/routes/home/-components/peer-memory-grid.tsx`
 
-#### 📇 Task Card - [x] v1.1.9: 监控大盘系统物理资源走势图 (SystemResourceChart)（已验收通过 ✅）
-- **Git Commit**: `00d4575` `feat(monitoring): v1.1.9 complete SystemResourceChart area chart`
-- **修改内容**: CPU / RAM 占用率与 VikingDB 向量增长双通道面积走势图。
-- **修改文件**: `src/routes/monitoring/-components/system-resource-chart.tsx`
+#### [x] v1.1.9: 监控大盘 SystemResourceChart 系统物理资源走势图 ✅
+- **Git**: `00d4575` `feat(monitoring): v1.1.9 complete SystemResourceChart area chart`
+- **Tag**: `v1.1.9` (补打于 2026-07-30)
+- **内容**: CPU / RAM 占用率与 VikingDB 向量增长双通道面积走势图
+- **文件**: `src/routes/monitoring/-components/system-resource-chart.tsx`
 
-#### 📇 Task Card - [x] v1.1.10: 技能中心 (Skills) 搜索过滤与高密标签卡片重构（已验收通过 ✅）
-- **Git Commit**: `7edb47b` `feat(skills): v1.1.10 complete skills client search filtering and 4px high density cards`
-- **修改内容**: 技能名称/描述 < 5ms 无抖动实时过滤，4px 微圆角高密网格卡片。
-- **修改文件**: `src/routes/skills/route.tsx`
+#### [x] v1.1.10: 技能中心 Skills 搜索过滤与 4px 高密卡片 ✅
+- **Git**: `7edb47b` `feat(skills): v1.1.10 complete skills client search filtering`
+- **Tag**: `v1.1.10` (补打于 2026-07-30)
+- **内容**: < 5ms 无抖动搜索过滤，4px 微圆角高密网格卡片
+- **文件**: `src/routes/skills/route.tsx`
 
-#### 📇 Task Card - [x] v1.1.11: 技能中心 (Skills) 渐进式 L0/L1/L2 语义摘要侧滑抽屉面板（已验收通过 ✅）
-- **Git Commit**: `e2c16c5` `feat(skills): release v1.1.11 with Occam's razor UI, L0/L1/L2 drawer`
-- **修改内容**: L0 (意图触发) / L1 (SOP 流程) / L2 (全量源码) 三级 Tabs 侧滑 Sheet，YAML 解析防空兜底。
-- **修改文件**: `src/routes/skills/route.tsx`
+#### [x] v1.1.11: 技能中心 Skills L0/L1/L2 语义摘要侧滑抽屉 ✅
+- **Git**: `e2c16c5` `feat(skills): release v1.1.11 with Occam's razor UI, L0/L1/L2 drawer`
+- **Tag**: `v1.1.11` (补打于 2026-07-30)
+- **内容**: L0/L1/L2 三级 Tabs 侧滑 Sheet，YAML 解析防空兜底
+- **文件**: `src/routes/skills/route.tsx`
 
----
+#### [x] v1.1.12: 技能中心 Skills 关联资源树与文件依赖结构树视图 ✅
+- **会话证据**: `b4e6a358` implementation_plan 标注为 ⏳ → `eb762217` 确认为 "阶段 1 已全量验收完成 (v1.1.8~v1.1.14)"
+- **⚠️ 无独立 Git Tag**（断电中断会话期间开发，未打 Tag）
+- **内容**: 技能关联资源树依赖可视化
 
-### ✅ 阶段 3：断电中断会话期间完成的功能（v1.1.12 ~ v1.1.18，代码已上线但无独立版本 Tag）
+#### [x] v1.1.13: 检索测试台 Retrieval Score 相似度得分滑动阈值筛选器 ✅
+- **会话证据**: `b4e6a358` 标注为 ⏳ → `eb762217` 确认完成
+- **⚠️ 无独立 Git Tag**
+- **内容**: 0.0~1.0 Score 滑块过滤检索结果
 
-> **【重要说明】**: 以下功能代码已全部存在于 main 分支并正常运行，但因开发期间断电中断，**Commit 消息未留下 v1.1.12~v1.1.18 的版本标记，也未打 Release Tag**。
-> 现在基于代码文件物理存在作为证据，补录如下：
-
-#### 📇 Task Card - [x] v1.1.15-A/B/C: 监控中心高级图表全套（已代码上线 ✅，无 Tag 记录）
-- **代码证据**: `src/routes/monitoring/-components/` 下存在：
-  - `gpu-vram-chart.tsx` (RTX 2080Ti 显存走势折线图)
-  - `embedding-latency-chart.tsx` (Embedding 延迟分位柱状图)
-  - `sla-trend-chart.tsx` (SLA 成功率趋势折线图)
-  - `retrieval-accuracy-trend-chart.tsx` (召回准确率趋势)
-  - `token-breakdown-pie-chart.tsx` (Token 构成饼图)
-  - `deep-metrics-grid.tsx` (引擎状态与记忆提炼 8 大高级卡片)
-
-#### 📇 Task Card - [x] v1.1.16 ~ v1.1.17: 关系图谱 (/graph) 2D/3D 力导向可视化（已代码上线 ✅，无 Tag 记录）
-- **代码证据**: `src/routes/graph/` 下存在：
-  - `knowledge-graph-canvas.tsx` (1,458 节点 2D/3D Canvas 动态力导向图)
-  - `graph-toolbar.tsx` (4 大维度切片过滤器)
-  - `node-details-drawer.tsx` (节点 Inspector 侧滑抽屉)
-
-#### 📇 Task Card - [x] v1.1.18: 资源管理 (/resources) 虚拟文件系统与在线编辑器（已代码上线 ✅）
-- **代码证据**: `src/routes/resources/-components/` 下存在 `DirBrowser`、`CodeEditor`、`FindPalette`、上传对话框等全套组件。
+#### [x] v1.1.14: 检索测试台 Retrieval 命中文档高亮与代码块预览卡片化 ✅
+- **会话证据**: `b4e6a358` 标注为 ⏳ → `eb762217` 确认完成
+- **⚠️ 无独立 Git Tag**
+- **内容**: 命中关键字高亮，代码块预览卡片
 
 ---
 
-### ✅ 阶段 4：任务中心迭代（v1.1.19 ~ v1.1.21，正式打 Tag ✅）
+## ✅ 阶段 3：v1.1.15~v1.1.18（代码已上线，会话有明确验收记录，无 Tag）
 
-#### 📇 Task Card - [x] v1.1.19: 任务中心 (/tasks) 双卡片平齐、术语统一、真数据解耦（已验收通过 ✅）
-- **Git Tag**: `v1.1.19` (Commits: `6d6d1b3`, `6d98258`, `e780a73`)
-- **修改内容**: 第一性原理物理序（左=任务队列，右=工序队列），消灭假数据与调试按钮，统一领域语言为"任务"，NO GREEN EVER 配色。
-- **修改文件**: `src/routes/tasks/route.tsx`、`src/routes/monitoring/-components/queue-status-card.tsx`
+**【会话证据】全部来自会话 `d597f5c3`（2026-07-29 01:28 ~ 2026-07-30 03:27），用户明确验收**
+**⚠️ 均无 Git Tag —— 断电中断导致留痕缺失，已列为历史教训**
 
-#### 📇 Task Card - [x] v1.1.20: 任务中心 工序队列与流水线 1-to-1 物理数量对齐（已验收通过 ✅）
-- **Git Tag**: `v1.1.20` (Commit: `5b5b0ca`)
-- **修改内容**: 顶部工序卡片统计合计 (8) 与底部任务列表流水线图标数 (8) 物理完全对齐。
+#### [x] v1.1.15 (A/B/C): 监控中心 16 张深层监控指标 DeepMetricsGrid ✅
+- **会话**: `d597f5c3` step 754：用户原文 "**1.1.15全部验收通过**"
+- **内容**:
+  - 15-A: API 探查 + TypeScript 类型契约 (`-types.ts`)
+  - 15-B: 前 8 张核心指标 Tile（HTTP 成功率/向量数/命中率/GPU显存/Top-1准确率/Cosine相似度/EMB延迟/最长延迟）
+  - 15-C: 后 8 张高级指标 Tile + Tooltip 释义 + 全量 i18n（队列状态/Peer节点/Token消耗/瘦身率/EMB速率/模型组件等）
+- **文件**: `src/routes/monitoring/-components/deep-metrics-grid.tsx`
 
-#### 📇 Task Card - [x] v1.1.21: 任务中心 祛除"队列"冗余后缀与名称全盘统一（已验收通过 ✅）
-- **Git Tag**: `v1.1.21` (Commit: `a4f0988`)
-- **修改内容**: 按奥卡姆剃刀切除"嵌入向量**队列**"等 5 条冗余后缀，与流水线步骤名字符级 100% 对齐。
+#### [x] v1.1.16: 监控中心 RTX2080Ti 显存折线图 + EMB 延迟分位柱状图 ✅
+- **会话**: `d597f5c3` step 883：用户原文 "**嗯，1.1.16验收通过**"
+- **内容**: GPU VRAM 区域折线图；P50/P90/P99 Embedding 延迟分位柱状图
+- **文件**: `src/routes/monitoring/-components/gpu-vram-chart.tsx`、`embedding-latency-chart.tsx`
+
+#### [x] v1.1.17: 监控中心 SLA 趋势折线图 + 召回准确率趋势 + Token 构成饼图 ✅
+- **会话**: `d597f5c3` step 982：用户原文 "**1.17验收通过**"
+- **内容**: 核心 SLA 历史趋势、HTTP 状态占比饼图、Top-1召回率改善曲线、Token构成占比饼图
+- **文件**: `src/routes/monitoring/-components/sla-trend-chart.tsx`、`retrieval-accuracy-trend-chart.tsx`、`token-breakdown-pie-chart.tsx`
+
+#### [x] v1.1.18: 关系图谱 /graph 路由 — 1458 节点力导向知识图谱 ✅
+- **会话**: `d597f5c3` step 1659：用户原文 "**这个先算验收通过吧，后排加个优化任务，以后有空再做**"
+- **内容**: 全新 `/graph` 路由；react-force-graph-2d 力导向图；1458 节点渲染；节点 Inspector 侧滑抽屉；4 大维度切片过滤器；资源/会话穿透跳转
+- **文件**: `src/routes/graph/knowledge-graph-canvas.tsx`、`graph-toolbar.tsx`、`node-details-drawer.tsx`
+- **📌 后排优化任务**: 白屏 Bug、会话跳转定位、性能优化（1458 节点卡顿）
 
 ---
 
-### 🟡 阶段 5：后续待执行任务卡片（v1.1.22 起）
+## ✅ 阶段 4：v1.1.19~v1.1.21（正式打 Tag，完整留痕 ✅）
 
-#### 📇 Task Card - ⏳ v1.1.22: 首页 (/home) 6 大卡片信达雅视觉精修
-- **修改目标**: 对照 `USER_DESIGN_RULES.md`，审查首页 6 大数据卡片的布局、颜色、字体与圆角是否 100% 合规。
-- **修改文件**: `src/routes/home/route.tsx` 及 `-components/` 下各面板
-- **验收标准**: 无视觉瑕疵，等宽数字对齐，三态色合规，NO GREEN EVER。
+#### [x] v1.1.19: 任务中心 /tasks 双卡片平齐、术语统一、真数据解耦 ✅
+- **Git Tag**: `v1.1.19` | **Commits**: `6d6d1b3` `6d98258` `e780a73`
+- **会话**: `d597f5c3` 后段 + 当前会话 `3b9ec36b`
+- **内容**: 第一性原理物理序（左=任务队列，右=工序队列），消灭假数据与调试按钮，统一"任务"领域语言，NO GREEN EVER 三态配色
+- **文件**: `src/routes/tasks/route.tsx`、`src/routes/monitoring/-components/queue-status-card.tsx`
 
-#### 📇 Task Card - ⏳ v1.1.23: 资源库 (/resources) 历史版本追踪与一键回滚
-- **修改文件**: `src/routes/resources/-components/version-timeline-drawer.tsx`
-- **验收标准**: 能清晰查看资源历史版本并成功发起回滚。
+#### [x] v1.1.20: 任务中心 工序队列与流水线步骤数量 1-to-1 物理对齐 ✅
+- **Git Tag**: `v1.1.20` | **Commit**: `5b5b0ca`
+- **内容**: 顶部工序卡片统计合计与底部任务列表流水线图标数完全对齐
 
-#### 📇 Task Card - ⏳ v1.1.24: 检索测试台 (/retrieval) Score 滑动阈值筛选器与命中高亮
-- **修改文件**: `src/routes/retrieval/-components/retrieval-controls.tsx`
-- **验收标准**: 0.0~1.0 滑块实时过滤，命中关键字高亮精准。
+#### [x] v1.1.21: 任务中心 祛除"队列"冗余后缀 全盘名称统一 ✅
+- **Git Tag**: `v1.1.21` | **Commit**: `a4f0988`
+- **内容**: 按奥卡姆剃刀切除"嵌入向量**队列**"等 5 条冗余后缀，与流水线步骤名字符级 100% 对齐
 
-#### 📇 Task Card - ⏳ v1.1.25: 会话中心 (/sessions) 跨 Agent 共享会话历史与记忆透视
-- **修改文件**: `src/routes/sessions/route.tsx`
-- **验收标准**: 能查看 Antigravity/OpenClaw/Hermes 各 Agent 对话链及 OpenViking 记忆沉淀节点。
+---
 
-#### 📇 Task Card - ⏳ v1.1.26: 设置页面 (/settings) 1933/1936 反向代理健康诊断与 API Key 管理
-- **修改文件**: `src/routes/settings/route.tsx`
-- **验收标准**: 准确呈现代理连通性与 Dev/Production 模式鉴权状态。
+## 🟡 阶段 5：后续待执行任务卡片（v1.1.22 起，尚未开始）
+
+#### ⏳ v1.1.22: 关系图谱 /graph 性能优化与白屏 Bug 修复
+- **背景**: v1.1.18 验收时明确"后排加个优化任务"
+- **目标**: 修复会话跳转白屏 Bug；1458 节点帧率优化；降低 CPU 占用
+
+#### ⏳ v1.1.23: 首页 /home 6 大卡片信达雅视觉精修
+- **目标**: 审查首页 6 大数据卡片布局、颜色、字体、圆角是否 100% 合规
+
+#### ⏳ v1.1.24: 资源库 /resources 历史版本追踪与一键回滚
+- **目标**: 查看资源历史版本，发起回滚
+
+#### ⏳ v1.1.25: 检索测试台 /retrieval 命中关键字精确高亮
+- **目标**: 0.0~1.0 滑块实时过滤，命中关键字高亮
+
+#### ⏳ v1.1.26: 会话中心 /sessions 跨 Agent 共享历史与记忆透视
+- **目标**: 查看 Antigravity/OpenClaw/Hermes 各 Agent 对话链及 OpenViking 记忆沉淀节点
+
+#### ⏳ v1.1.27: 设置页面 /settings 1933/1936 反向代理健康诊断与 API Key 管理
+- **目标**: 准确呈现代理连通性与 Dev/Production 模式鉴权状态
+
+---
+
+## 📊 迭代总览
+
+| 版本段 | Tag 状态 | 会话证据 | 备注 |
+|--------|---------|---------|------|
+| V1.0.0, v1.1.0 | ✅ 正式 Tag | — | 最早基建 |
+| v1.1.8~v1.1.11 | ✅ 补打 Tag (2026-07-30) | commit 消息含版本号 | — |
+| v1.1.12~v1.1.14 | ❌ 无 Tag | `eb762217` 确认完成 | 断电丢失 |
+| v1.1.15~v1.1.18 | ❌ 无 Tag | `d597f5c3` step 754/883/982/1659 明确验收 | 断电丢失 |
+| v1.1.19~v1.1.21 | ✅ 正式 Tag | 当前会话 | 完整留痕 ✅ |
