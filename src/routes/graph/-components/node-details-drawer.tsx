@@ -4,6 +4,7 @@ import { CopyIcon, CheckIcon, CpuIcon, SparklesIcon, FileTextIcon, HistoryIcon, 
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
+import { getRouterBasePath } from '#/lib/public-path'
 import type { NodeData } from './knowledge-graph-canvas'
 
 interface NodeDetailsDrawerProps {
@@ -23,13 +24,14 @@ export function NodeDetailsDrawer({ node, onClose }: NodeDetailsDrawerProps) {
   }
 
   const handleOpenSourcePage = () => {
-    let path = `/studio/resources?uri=${encodeURIComponent(node.id)}`
+    const base = getRouterBasePath().replace(/\/$/, '')
+    let path = `${base}/resources?uri=${encodeURIComponent(node.id)}`
     if (node.category === 'peers') {
-      path = `/studio/skills?search=${encodeURIComponent(node.id.replace('viking://peers/', ''))}`
+      path = `${base}/skills?search=${encodeURIComponent(node.id.replace('viking://peers/', ''))}`
     } else if (node.category === 'skills') {
-      path = `/studio/skills?search=${encodeURIComponent(node.id.replace('viking://skills/', ''))}`
+      path = `${base}/skills?search=${encodeURIComponent(node.id.replace('viking://skills/', ''))}`
     } else if (node.category === 'sessions') {
-      path = `/studio/sessions?s=${encodeURIComponent(node.id.replace('viking://sessions/', ''))}`
+      path = `${base}/sessions?s=${encodeURIComponent(node.id.replace('viking://sessions/', ''))}`
     }
 
     window.open(path, '_blank')

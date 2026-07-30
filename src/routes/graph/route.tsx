@@ -9,6 +9,44 @@ import type { NodeData } from './-components/knowledge-graph-canvas'
 import { KnowledgeGraphCanvas } from './-components/knowledge-graph-canvas'
 import { NodeDetailsDrawer } from './-components/node-details-drawer'
 
+class GraphErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex size-full flex-col items-center justify-center gap-3 bg-card/50 p-6 text-center">
+          <div className="rounded-md border border-rose-500/30 bg-rose-500/10 p-4 text-rose-600 dark:text-rose-400 max-w-md font-mono text-xs">
+            <h3 className="font-bold text-sm mb-1">WebGL / 3D 渲染器初始化异常</h3>
+            <p className="text-[11px] opacity-90 leading-relaxed">
+              {this.state.error?.message || '画布初始化失败，可能是由于 WebGL 上下文丢失或 GPU 硬件加速受限。'}
+            </p>
+            <button
+              type="button"
+              onClick={() => this.setState({ hasError: false, error: null })}
+              className="mt-3 rounded bg-cyan-600 px-3 py-1 text-white hover:bg-cyan-700 text-xs transition-colors"
+            >
+              重新加载画布
+            </button>
+          </div>
+        </div>
+      )
+    }
+
+    return this.props.children
+  }
+}
+
 export const Route = createFileRoute('/graph')({
   component: GraphRouteComponent,
 })
@@ -30,14 +68,16 @@ function GraphRouteComponent() {
   return (
     <div className="relative h-[calc(100vh-4rem)] w-full overflow-hidden font-sans">
       {/* 2D / 3D Canvas Viewport */}
-      <KnowledgeGraphCanvas
-        searchQuery={searchQuery}
-        filterCategory={activeFilter}
-        mode={mode}
-        selectedNode={selectedNode}
-        onNodeSelect={setSelectedNode}
-        onCountChange={setNodeCount}
-      />
+      <GraphErrorBoundary>
+        <KnowledgeGraphCanvas
+          searchQuery={searchQuery}
+          filterCategory={activeFilter}
+          mode={mode}
+          selectedNode={selectedNode}
+          onNodeSelect={setSelectedNode}
+          onCountChange={setNodeCount}
+        />
+      </GraphErrorBoundary>
 
       {/* Floating Glassmorphism Toolbar */}
       <div className="absolute top-3 left-3 right-3 z-30 pointer-events-none">
