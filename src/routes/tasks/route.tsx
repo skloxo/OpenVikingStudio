@@ -495,41 +495,37 @@ function TasksRoute() {
 
     if (type === 'session_commit') {
       groups = [
-        { type: 'serial', step: { name: '状态刷盘', state: status === 'completed' ? 'completed' : (status as any) } },
+        { type: 'serial', step: { name: '会话提交', state: status === 'completed' ? 'completed' : (status as any) } },
       ]
     } else if (type === 'admin_reindex' || type === 'snapshot_restore_reindex') {
-      // 空间清理是第一步：任务只要不是 pending 就代表已跑过
       const purgeState: StepItem['state'] = status === 'pending' ? 'pending' : 'completed'
-      // 向量重构是第二步：看 Embedding 子工序
       const rebuildState = inferStepState('Embedding', status === 'completed' ? 'completed' : (status as any))
       groups = [
-        { type: 'serial', step: { name: '空间清理', state: purgeState } },
-        { type: 'serial', step: { name: '向量重构', state: rebuildState } },
+        { type: 'serial', step: { name: '外部解析', state: purgeState } },
+        { type: 'serial', step: { name: '嵌入向量', state: rebuildState } },
       ]
     } else if (type === 'connector_import') {
-      // 鉴权/拉取是串行前置步，只要不是 pending 就视为完成
       const preState: StepItem['state'] = status === 'pending' ? 'pending' : 'completed'
       groups = [
-        { type: 'serial', step: { name: '鉴权', state: preState } },
-        { type: 'serial', step: { name: '拉取', state: preState } },
+        { type: 'serial', step: { name: '外部解析', state: preState } },
         {
           type: 'parallel',
           steps: [
-            { name: '解析', state: inferStepState('Semantic', status === 'completed' ? 'completed' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'pending') },
-            { name: '落库', state: inferStepState('Embedding', status === 'completed' ? 'completed' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'pending') },
+            { name: '语义处理', state: inferStepState('Semantic', status === 'completed' ? 'completed' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'pending') },
+            { name: '嵌入向量', state: inferStepState('Embedding', status === 'completed' ? 'completed' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'pending') },
           ],
         },
       ]
     } else {
-      // add_resource / add_skill: 解析串行完成后，语义提炼+向量落库并发
+      // add_resource / add_skill: 外部解析 -> 语义处理 + 嵌入向量
       const parseState: StepItem['state'] = status === 'pending' ? 'pending' : 'completed'
       groups = [
-        { type: 'serial', step: { name: '解析', state: parseState } },
+        { type: 'serial', step: { name: '外部解析', state: parseState } },
         {
           type: 'parallel',
           steps: [
-            { name: '语义提炼', state: inferStepState('Semantic', status === 'completed' ? 'completed' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'pending') },
-            { name: '向量落库', state: inferStepState('Embedding', status === 'completed' ? 'completed' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'pending') },
+            { name: '语义处理', state: inferStepState('Semantic', status === 'completed' ? 'completed' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'pending') },
+            { name: '嵌入向量', state: inferStepState('Embedding', status === 'completed' ? 'completed' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'pending') },
           ],
         },
       ]
@@ -634,23 +630,23 @@ function TasksRoute() {
         else if (st === 'completed') map.Embedding.completed++
         else if (st === 'failed') map.Embedding.errors++
       } else {
-        const semProc = qStatus?.Semantic?.processed ?? (st === 'completed' ? 1 : 0)
-        const semErr = qStatus?.Semantic?.error_count ?? (st === 'failed' ? 1 : 0)
-        const embProc = qStatus?.Embedding?.processed ?? (st === 'completed' ? 1 : 0)
-        const embErr = qStatus?.Embedding?.error_count ?? (st === 'failed' ? 1 : 0)
-
+        // add_resource / add_skill / connector_import 包含：解析 (ExternalParse) -> 语义提炼 (Semantic) + 向量落库 (Embedding)
         if (st === 'running') {
+          map.ExternalParse.processing++
           map.Semantic.processing++
           map.Embedding.processing++
         } else if (st === 'pending') {
+          map.ExternalParse.pending++
           map.Semantic.pending++
           map.Embedding.pending++
         } else if (st === 'completed') {
-          map.Semantic.completed += Math.max(1, semProc)
-          map.Embedding.completed += Math.max(1, embProc)
+          map.ExternalParse.completed++
+          map.Semantic.completed++
+          map.Embedding.completed++
         } else if (st === 'failed') {
-          map.Semantic.errors += Math.max(1, semErr)
-          map.Embedding.errors += Math.max(1, embErr)
+          map.ExternalParse.errors++
+          map.Semantic.errors++
+          map.Embedding.errors++
         }
       }
     }
