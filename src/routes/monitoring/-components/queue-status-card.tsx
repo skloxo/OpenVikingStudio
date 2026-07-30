@@ -1,6 +1,5 @@
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
-import { Badge } from '#/components/ui/badge'
 import { Card, CardTitle } from '#/components/ui/card'
 import { cn } from '#/lib/utils'
 import { parseObserverStatus } from '../-lib/parse-status'
@@ -142,24 +141,6 @@ export function QueueStatusCard({ title, status = '', isHealthy = true, customRo
     <Card className="flex h-full flex-col justify-between gap-2 p-2.5 shadow-none transition-colors hover:border-primary/30">
       <div className="flex items-center justify-between gap-2">
         <CardTitle className="text-sm font-semibold">{title ?? t('queue.title')}</CardTitle>
-
-        <Badge
-          variant="outline"
-          className={cn(
-            'gap-1 text-[11px] font-normal py-0.5 px-2',
-            isHealthy
-              ? 'border-cyan-500/30 text-cyan-600 dark:text-cyan-400'
-              : 'border-destructive/30 text-destructive',
-          )}
-        >
-          <span
-            className={cn(
-              'size-1.5 rounded-full',
-              isHealthy ? 'bg-cyan-500' : 'bg-destructive',
-            )}
-          />
-          {isHealthy ? t('queue.healthy') : t('queue.unhealthy')}
-        </Badge>
       </div>
 
       {rows.length === 0 ? (
