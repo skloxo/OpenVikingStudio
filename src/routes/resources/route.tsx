@@ -31,6 +31,19 @@ function ResourcesRoute() {
   const [paletteOpen, setPaletteOpen] = React.useState(false)
   const [addDialogOpen, setAddDialogOpen] = React.useState(false)
 
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const targetUri = params.get('uri') || params.get('search')
+    if (targetUri) {
+      if (!targetUri.endsWith('/')) {
+        const parent = parentUri(targetUri)
+        setCurrentUri(parent || VIKING_ROOT_URI)
+      } else {
+        setCurrentUri(targetUri)
+      }
+    }
+  }, [])
+
   const normalizedUri = normalizeDirUri(currentUri)
   const listQuery = useVikingFsList(normalizedUri, {
     output: 'agent',
@@ -89,7 +102,7 @@ function ResourcesRoute() {
             onClick={() => setPaletteOpen(true)}
           >
             <Search className="size-3.5" />
-            <span>{t('searchPalette', { defaultValue: '查找与快捷搜索' })}</span>
+            <span>{t('searchPalette.button', { defaultValue: '查找与快捷搜索' })}</span>
           </Button>
           <Button
             type="button"

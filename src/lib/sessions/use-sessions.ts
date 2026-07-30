@@ -63,8 +63,16 @@ export function useSessionListByRecency() {
 export function useSession(sessionId: string | undefined) {
   return useQuery({
     queryKey: [...SESSIONS_KEY, sessionId],
-    queryFn: () => fetchSession(sessionId!),
+    queryFn: async () => {
+      try {
+        return await fetchSession(sessionId!)
+      } catch (err) {
+        console.warn('[useSession] Session fetch error:', err)
+        return null
+      }
+    },
     enabled: Boolean(sessionId),
+    retry: false,
     staleTime: 15_000,
   })
 }
@@ -76,15 +84,22 @@ export function useSessionMessages(sessionId: string | undefined) {
   return useQuery<Message[]>({
     queryKey: [...SESSIONS_KEY, sessionId, 'messages'],
     queryFn: async () => {
-      const session = await queryClient.fetchQuery({
-        queryFn: () => fetchSession(sessionId!),
-        queryKey: [...SESSIONS_KEY, sessionId],
-        staleTime: 15_000,
-      })
-      return fetchSessionMessages(sessionId!, session)
+      try {
+        const session = await queryClient.fetchQuery({
+          queryFn: () => fetchSession(sessionId!),
+          queryKey: [...SESSIONS_KEY, sessionId],
+          staleTime: 15_000,
+        })
+        if (!session) return []
+        return await fetchSessionMessages(sessionId!, session)
+      } catch (err) {
+        console.warn('[useSessionMessages] Session messages fetch error:', err)
+        return []
+      }
     },
     enabled: Boolean(sessionId),
-    staleTime: 30_000, // cache for 30s to avoid flash on session switch
+    retry: false,
+    staleTime: 30_000,
   })
 }
 

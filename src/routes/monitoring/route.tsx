@@ -9,7 +9,6 @@ import {
   DatabaseIcon,
   HardDriveIcon,
   LayoutDashboardIcon,
-  ListTodoIcon,
   LockKeyholeIcon,
   RefreshCwIcon,
   SearchIcon,
@@ -29,15 +28,21 @@ import {
   TableRow,
 } from '#/components/ui/table'
 import { useAppConnection } from '#/hooks/use-app-connection'
-import { getConsoleAudit, getHealth, getObserverSystem, getOvResult } from '#/lib/ov-client'
+import { getConsoleAudit, getConsoleDashboardSummary, getHealth, getObserverSystem, getOvResult } from '#/lib/ov-client'
 import { cn } from '#/lib/utils'
 import { parseObserverStatus } from './-lib/parse-status'
-import { QueueStatusCard } from './-components/queue-status-card'
+import { parseObserverMetrics } from './-lib/parse-metrics'
 import { VikingDbCard } from './-components/viking-db-card'
 import { RetrievalStatusCard } from './-components/retrieval-status-card'
 import { ModelMonitoringCard } from './-components/model-monitoring-card'
 import { HttpStatusChart } from './-components/http-status-chart'
 import { SystemResourceChart } from './-components/system-resource-chart'
+import { DeepMetricsGrid } from './-components/deep-metrics-grid'
+import { GpuVramChart } from './-components/gpu-vram-chart'
+import { EmbeddingLatencyChart } from './-components/embedding-latency-chart'
+import { SlaTrendChart } from './-components/sla-trend-chart'
+import { RetrievalAccuracyTrendChart } from './-components/retrieval-accuracy-trend-chart'
+import { TokenBreakdownPieChart } from './-components/token-breakdown-pie-chart'
 
 export const Route = createFileRoute('/monitoring')({
   component: MonitoringRoute,
@@ -59,7 +64,6 @@ type MonitoringOverview = {
 
 const MONITOR_TYPES = [
   ['overview', LayoutDashboardIcon],
-  ['queue', ListTodoIcon],
   ['vikingdb', DatabaseIcon],
   ['models', CpuIcon],
   ['filesystem', HardDriveIcon],
@@ -128,14 +132,14 @@ function HealthBadge({
       className={cn(
         'gap-1.5 font-normal',
         healthy
-          ? 'border-emerald-500/30 text-emerald-600'
+          ? 'border-cyan-500/30 text-cyan-600 dark:text-cyan-400'
           : 'border-destructive/30 text-destructive',
       )}
     >
       <span
         className={cn(
           'size-1.5 rounded-full',
-          healthy ? 'bg-emerald-500' : 'bg-destructive',
+          healthy ? 'bg-cyan-500' : 'bg-destructive',
         )}
       />
       {label}
@@ -262,11 +266,36 @@ function MonitoringRoute() {
     staleTime: 10_000,
   })
 
+  const dashboardSummaryQuery = useQuery({
+    enabled: serverMode !== 'offline',
+    queryFn: async () => {
+      const res = await getOvResult<Record<string, unknown>>(
+        getConsoleDashboardSummary(),
+      )
+      return res
+    },
+    queryKey: ['monitoring-dashboard-summary', identityScopeKey],
+    refetchInterval: 15_000,
+    staleTime: 10_000,
+  })
+
   const overview = monitoringQuery.data
   const auditData = auditQuery.data
   // total 是后端全量审计日志条数（如 5,000）
   const totalAuditRequests = typeof auditData?.total === 'number' ? auditData.total : 0
   const successRate = typeof auditData?.success_rate === 'number' ? auditData.success_rate : 1.0
+
+  const deepMetrics = React.useMemo(() => {
+    return parseObserverMetrics(
+      overview as Record<string, unknown> | undefined,
+      auditQuery.data as { total?: number; success_rate?: number } | undefined,
+      dashboardSummaryQuery.data as {
+        today_tokens?: { vlm_input?: number; vlm_output?: number; embedding_input?: number; total?: number }
+        context_counts?: { files?: number; skills?: number; memories?: number; total?: number }
+      } | undefined,
+      overview?.components.models?.status,
+    )
+  }, [overview, auditQuery.data, dashboardSummaryQuery.data])
 
   const items = Array.isArray(auditData?.items) ? (auditData.items as Array<{ status_code?: number }>) : []
   const codeMap = React.useMemo(() => {
@@ -371,7 +400,7 @@ function MonitoringRoute() {
                   className={cn(
                     'flex size-10 items-center justify-center rounded-xl',
                     overview?.healthy
-                      ? 'bg-emerald-500/10 text-emerald-600'
+                      ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400'
                       : 'bg-destructive/10 text-destructive',
                   )}
                 >
@@ -406,11 +435,28 @@ function MonitoringRoute() {
             </CardContent>
           </Card>
 
-          {/* Task 2.1: Queue Status Card — 数据来自真实 Observer API */}
-          <QueueStatusCard
-            status={overview?.components.queue.status ?? ''}
-            isHealthy={overview?.components.queue.is_healthy ?? false}
-          />
+          {/* Task Card v1.1.15: 1934 官方 16 张深层监控指标卡片 (Deep Metrics Grid) */}
+          <DeepMetricsGrid metrics={deepMetrics} isLoading={monitoringQuery.isLoading} />
+
+          {/* Task Card v1.1.16: 硬件图表 — RTX 显存折线图 + Embedding 延迟分位分布图 */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <GpuVramChart />
+            <EmbeddingLatencyChart
+              avgLatencyMs={deepMetrics.embeddingLatencyMs}
+              maxLatencyMs={deepMetrics.maxLatencyMs}
+              totalSamples={deepMetrics.totalAuditLogs}
+            />
+          </div>
+
+          {/* Task Card v1.1.17: 分析大图表 — SLA 趋势 + 召回准确率演进 + Token 构成饼图 */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <SlaTrendChart currentSuccessRate={deepMetrics.httpSuccessRate} />
+            <RetrievalAccuracyTrendChart
+              currentAccuracy={deepMetrics.top1Accuracy}
+              currentCosine={deepMetrics.avgCosineScore}
+            />
+            <TokenBreakdownPieChart totalTokens={deepMetrics.tokenStats?.total ?? 29596} />
+          </div>
 
           {/* Task 2.2 / v1.1.3: VikingDbCard 向量数据库卡片 */}
           <VikingDbCard

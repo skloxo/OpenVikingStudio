@@ -82,7 +82,7 @@ export function SystemResourceChart({
           </span>
           <span className="inline-flex items-center gap-1 rounded-xs border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-emerald-600 dark:text-emerald-400">
             <Layers className="size-3" />
-            Vectors: {chartData[chartData.length - 1]?.vectors?.toLocaleString()}
+            {t('systemResource.vectors', { defaultValue: '向量数' })}: {chartData[chartData.length - 1]?.vectors?.toLocaleString()}
           </span>
         </div>
       </div>

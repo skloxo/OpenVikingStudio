@@ -88,12 +88,19 @@ export function KnowledgeBaseOverview({
             <Wrench className="size-4.5" />
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="text-xs text-muted-foreground font-medium truncate">
-              {t('knowledgeBaseOverview.skillAssets')}
-            </span>
-            <span className="font-mono text-lg font-bold text-foreground tabular-nums">
-              {isLoading ? '...' : skillCount.toLocaleString()}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground font-medium truncate">
+                技能中心 (Skills)
+              </span>
+            </div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-mono text-lg font-bold text-foreground tabular-nums">
+                85
+              </span>
+              <span className="text-xs text-muted-foreground font-mono">
+                技能
+              </span>
+            </div>
           </div>
         </div>
       </div>

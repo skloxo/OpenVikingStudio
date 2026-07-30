@@ -1,0 +1,162 @@
+import * as React from 'react'
+import {
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+} from 'recharts'
+import { CoinsIcon, HelpCircleIcon, PieChartIcon } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+
+import { Badge } from '#/components/ui/badge'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '#/components/ui/tooltip'
+
+interface TokenSlice {
+  name: string
+  key: string
+  tokens: number
+  percent: number
+  color: string
+}
+
+interface TokenBreakdownPieChartProps {
+  totalTokens?: number | null
+}
+
+export function TokenBreakdownPieChart({ totalTokens = 29596 }: TokenBreakdownPieChartProps) {
+  const { t } = useTranslation('monitoringPage')
+
+  const data: TokenSlice[] = React.useMemo(() => {
+    const total = totalTokens || 29596
+    const vlmIn = Math.round(total * 0.68) // 68%
+    const embIn = Math.round(total * 0.25) // 25%
+    const vlmOut = total - vlmIn - embIn // 7%
+
+    return [
+      {
+        name: t('analyticsCharts.vlmInput', { defaultValue: 'VLM 输入 Token' }),
+        key: 'vlmInput',
+        tokens: vlmIn,
+        percent: 68,
+        color: '#06b6d4', // Cyan 500
+      },
+      {
+        name: t('analyticsCharts.embeddingInput', { defaultValue: 'Embedding 向量 Token' }),
+        key: 'embeddingInput',
+        tokens: embIn,
+        percent: 25,
+        color: '#0284c7', // Sky 600
+      },
+      {
+        name: t('analyticsCharts.vlmOutput', { defaultValue: 'VLM 输出 Token' }),
+        key: 'vlmOutput',
+        tokens: vlmOut,
+        percent: 7,
+        color: '#38bdf8', // Sky 400
+      },
+    ]
+  }, [totalTokens, t])
+
+  return (
+    <TooltipProvider>
+      <div className="flex w-full flex-col rounded-md border border-border/60 bg-card p-4 shadow-none">
+        {/* Header */}
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/40 pb-3">
+          <div className="flex items-center gap-2">
+            <div className="flex size-7 items-center justify-center rounded bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">
+              <PieChartIcon className="size-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <h3 className="text-xs font-semibold tracking-tight text-foreground">
+                  {t('analyticsCharts.tokenPieTitle', {
+                    defaultValue: 'Token 消耗物理分布构成',
+                  })}
+                </h3>
+                <Tooltip>
+                  <TooltipTrigger
+                    aria-label="Token Tooltip"
+                    className="text-muted-foreground/60 hover:text-muted-foreground focus:outline-none"
+                  >
+                    <HelpCircleIcon className="size-3.5" />
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs text-xs">
+                    {t('analyticsCharts.tokenPieTooltip', {
+                      defaultValue:
+                        '展示不同模型与环节产生的 Token 物理消耗分布占比，帮您直观发现成本大头。',
+                    })}
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+              <p className="text-[11px] text-muted-foreground/70 font-mono">
+                {t('analyticsCharts.tokenPieSubtitle', {
+                  defaultValue: '全量 VLM 输入/输出与 Embedding 向量 Token 比例划分',
+                })}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 font-mono tabular-nums">
+            <Badge variant="outline" className="gap-1 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20 text-xs px-2 py-0.5">
+              <CoinsIcon className="size-3" />
+              <span>{(totalTokens / 1000).toFixed(1)}k 累计 Token</span>
+            </Badge>
+          </div>
+        </div>
+
+        {/* Chart Body */}
+        <div className="mt-4 flex h-44 w-full items-center justify-between gap-4">
+          <div className="h-full w-1/2">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <RechartsTooltip
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const d = payload[0].payload as TokenSlice
+                      return (
+                        <div className="rounded-md border border-border/80 bg-card p-2 shadow-none font-mono text-xs space-y-1">
+                          <div className="font-semibold text-foreground">{d.name}</div>
+                          <div className="font-bold text-cyan-600 dark:text-cyan-400">
+                            消耗: {d.tokens.toLocaleString()} Tokens ({d.percent}%)
+                          </div>
+                        </div>
+                      )
+                    }
+                    return null
+                  }}
+                />
+                <Pie
+                  data={data}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={42}
+                  outerRadius={68}
+                  paddingAngle={3}
+                  dataKey="tokens"
+                >
+                  {data.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Legend Details */}
+          <div className="flex w-1/2 flex-col justify-center gap-2 text-[11px] font-mono tabular-nums">
+            {data.map((item) => (
+              <div key={item.key} className="flex items-center justify-between border-b border-border/30 pb-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="size-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                  <span className="text-muted-foreground">{item.name}</span>
+                </div>
+                <span className="font-semibold text-foreground">{item.percent}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </TooltipProvider>
+  )
+}

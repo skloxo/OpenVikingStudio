@@ -5,8 +5,7 @@ import { Card, CardTitle } from '#/components/ui/card'
 import { cn } from '#/lib/utils'
 import { parseObserverStatus } from '../-lib/parse-status'
 
-// 从 Observer 返回的 status 文本中解析出的队列行数据
-interface ParsedQueueRow {
+export interface ParsedQueueRow {
   name: string
   processing: number
   pending: number
@@ -17,6 +16,7 @@ interface ParsedQueueRow {
 
 // 将 Observer status 字符串解析为结构化队列数据
 function parseQueueStatus(status: string): ParsedQueueRow[] {
+  if (!status) return []
   const blocks = parseObserverStatus(status)
   const tableBlock = blocks.find((b) => b.kind === 'table')
   if (!tableBlock) return []
@@ -42,14 +42,26 @@ function parseQueueStatus(status: string): ParsedQueueRow[] {
 }
 
 export interface QueueStatusCardProps {
+  title?: string
   /** Observer system 返回的 queue 组件的 status 原始文本 */
-  status: string
-  isHealthy: boolean
+  status?: string
+  isHealthy?: boolean
+  customRows?: ParsedQueueRow[]
 }
 
-export function QueueStatusCard({ status, isHealthy }: QueueStatusCardProps) {
+export function QueueStatusCard({ title, status = '', isHealthy = true, customRows }: QueueStatusCardProps) {
   const { t } = useTranslation('monitoringPage')
-  const rows = React.useMemo(() => parseQueueStatus(status), [status])
+  const parsedFromStatus = React.useMemo(() => parseQueueStatus(status), [status])
+  const rows = customRows ?? parsedFromStatus
+
+  const nonTotalRows = React.useMemo(
+    () => rows.filter((r) => r.name.toUpperCase() !== 'TOTAL'),
+    [rows],
+  )
+  const totalRow = React.useMemo(
+    () => rows.find((r) => r.name.toUpperCase() === 'TOTAL'),
+    [rows],
+  )
 
   const getQueueDisplayName = (name: string): string => {
     const lower = name.toLowerCase()
@@ -62,23 +74,88 @@ export function QueueStatusCard({ status, isHealthy }: QueueStatusCardProps) {
     return name
   }
 
+  const renderRow = (row: ParsedQueueRow, isTotalRow: boolean) => {
+    const displayName = getQueueDisplayName(row.name)
+    return (
+      <div
+        key={row.name}
+        className={cn(
+          'grid grid-cols-6 items-center px-2 py-1 text-[11px] rounded font-mono transition-colors',
+          isTotalRow
+            ? 'mt-auto bg-muted/60 font-bold border border-border/80 text-foreground'
+            : 'bg-muted/20 hover:bg-muted/40 text-foreground/90',
+        )}
+      >
+        {/* 队列名 */}
+        <span className="col-span-2 font-sans font-medium truncate">{displayName}</span>
+
+        {/* 处理中 */}
+        <span
+          className={cn(
+            'text-right tabular-nums font-bold',
+            row.processing > 0
+              ? 'text-blue-600 dark:text-blue-400'
+              : 'text-muted-foreground/60',
+          )}
+        >
+          {row.processing}
+        </span>
+
+        {/* 待处理 */}
+        <span
+          className={cn(
+            'text-right tabular-nums font-bold',
+            row.pending > 0
+              ? 'text-amber-600 dark:text-amber-400'
+              : 'text-muted-foreground/60',
+          )}
+        >
+          {row.pending}
+        </span>
+
+        {/* 已完成 */}
+        <span
+          className={cn(
+            'text-right tabular-nums font-bold',
+            row.completed > 0
+              ? 'text-emerald-600 dark:text-emerald-400'
+              : 'text-muted-foreground/60',
+          )}
+        >
+          {row.completed.toLocaleString()}
+        </span>
+
+        {/* 错误数 */}
+        <span
+          className={cn(
+            'text-right tabular-nums font-bold',
+            row.errors > 0 ? 'text-destructive' : 'text-muted-foreground/60',
+          )}
+        >
+          {row.errors}
+        </span>
+      </div>
+    )
+  }
+
   return (
-    <Card className="flex flex-col gap-4 p-4 shadow-none transition-colors hover:border-primary/30">
-      <div className="flex items-center justify-between">
-        <CardTitle className="text-base font-semibold">{t('queue.title')}</CardTitle>
+    <Card className="flex h-full flex-col justify-between gap-2 p-2.5 shadow-none transition-colors hover:border-primary/30">
+      <div className="flex items-center justify-between gap-2">
+        <CardTitle className="text-sm font-semibold">{title ?? t('queue.title')}</CardTitle>
+
         <Badge
           variant="outline"
           className={cn(
-            'gap-1 font-normal',
+            'gap-1 text-[11px] font-normal py-0.5 px-2',
             isHealthy
-              ? 'border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+              ? 'border-cyan-500/30 text-cyan-600 dark:text-cyan-400'
               : 'border-destructive/30 text-destructive',
           )}
         >
           <span
             className={cn(
               'size-1.5 rounded-full',
-              isHealthy ? 'bg-emerald-500' : 'bg-destructive',
+              isHealthy ? 'bg-cyan-500' : 'bg-destructive',
             )}
           />
           {isHealthy ? t('queue.healthy') : t('queue.unhealthy')}
@@ -86,13 +163,13 @@ export function QueueStatusCard({ status, isHealthy }: QueueStatusCardProps) {
       </div>
 
       {rows.length === 0 ? (
-        <div className="rounded-lg border bg-muted/20 p-3 text-center text-xs text-muted-foreground">
+        <div className="rounded-lg border bg-muted/20 p-2.5 text-center text-xs text-muted-foreground">
           {t('queue.noData')}
         </div>
       ) : (
-        <div className="flex flex-col gap-1.5">
-          {/* 统一顶置表头 (只出现一次，彻底消除重复感) */}
-          <div className="grid grid-cols-6 items-center px-3 py-1 text-xs text-muted-foreground font-medium border-b border-border/50">
+        <div className="flex flex-1 flex-col justify-between gap-1">
+          {/* 统一顶置表头 */}
+          <div className="grid grid-cols-6 items-center px-2 py-0.5 text-[11px] text-muted-foreground font-medium border-b border-border/50">
             <span className="col-span-2">{t('queue.queueName')}</span>
             <span className="text-right">{t('queue.processing')}</span>
             <span className="text-right">{t('queue.pending')}</span>
@@ -101,71 +178,12 @@ export function QueueStatusCard({ status, isHealthy }: QueueStatusCardProps) {
           </div>
 
           {/* 数据列表 */}
-          {rows.map((row, i) => {
-            const isTotalRow = row.name.toUpperCase() === 'TOTAL'
-            const displayName = getQueueDisplayName(row.name)
+          <div className="flex flex-col gap-1">
+            {nonTotalRows.map((row) => renderRow(row, false))}
+          </div>
 
-            return (
-              <div
-                key={row.name + i}
-                className={cn(
-                  'grid grid-cols-6 items-center px-3 py-2 text-xs rounded-md font-mono transition-colors',
-                  isTotalRow
-                    ? 'bg-muted/60 font-bold border border-border/80 text-foreground mt-1'
-                    : 'bg-muted/20 hover:bg-muted/40 text-foreground/90',
-                )}
-              >
-                {/* 队列名 */}
-                <span className="col-span-2 font-sans font-medium truncate">{displayName}</span>
-
-                {/* 处理中 */}
-                <span
-                  className={cn(
-                    'text-right tabular-nums font-bold',
-                    row.processing > 0
-                      ? 'text-blue-600 dark:text-blue-400'
-                      : 'text-muted-foreground/60',
-                  )}
-                >
-                  {row.processing}
-                </span>
-
-                {/* 待处理 */}
-                <span
-                  className={cn(
-                    'text-right tabular-nums font-bold',
-                    row.pending > 0
-                      ? 'text-amber-600 dark:text-amber-400'
-                      : 'text-muted-foreground/60',
-                  )}
-                >
-                  {row.pending}
-                </span>
-
-                {/* 已完成 */}
-                <span
-                  className={cn(
-                    'text-right tabular-nums font-bold',
-                    row.completed > 0
-                      ? 'text-emerald-600 dark:text-emerald-400'
-                      : 'text-muted-foreground/60',
-                  )}
-                >
-                  {row.completed.toLocaleString()}
-                </span>
-
-                {/* 错误数 */}
-                <span
-                  className={cn(
-                    'text-right tabular-nums font-bold',
-                    row.errors > 0 ? 'text-destructive' : 'text-muted-foreground/60',
-                  )}
-                >
-                  {row.errors}
-                </span>
-              </div>
-            )
-          })}
+          {/* 底端对齐合计行 */}
+          {totalRow ? renderRow(totalRow, true) : null}
         </div>
       )}
     </Card>
