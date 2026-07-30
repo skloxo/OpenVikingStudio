@@ -16,8 +16,8 @@ export const Route = createFileRoute('/sessions/')({
   component: SessionsPage,
   validateSearch: (search: Record<string, unknown>) =>
     ({
-      s: (search.s as string) || undefined,
-    }) as { s?: string },
+      s: (search.s as string) || (search.search as string) || (search.id as string) || undefined,
+    }) as { s?: string; search?: string; id?: string },
 })
 
 function SessionsPage() {

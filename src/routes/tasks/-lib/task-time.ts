@@ -32,7 +32,7 @@ export function getTaskDate(task: TaskTimestamp): Date | undefined {
 
 export function formatTaskDuration(
   task: TaskTimestamp,
-  isZh: boolean = true,
+  _isZh: boolean = true,
 ): string {
   const status = task.status || 'unknown'
 
@@ -57,29 +57,27 @@ export function formatTaskDuration(
 
   if (status === 'running') {
     const elapsedSec = Math.max(0, Math.floor((Date.now() - startMs) / 1000))
-    return isZh
-      ? `已运行 ${formatDurationString(elapsedSec, isZh)}`
-      : `Running ${formatDurationString(elapsedSec, isZh)}`
+    return formatDurationString(elapsedSec)
   }
 
   // Completed or Failed tasks
   const endMs = updatedDate ? updatedDate.getTime() : createdMs
   const durationSec = Math.max(0, Math.floor((endMs - createdMs) / 1000))
-  return formatDurationString(durationSec, isZh)
+  return formatDurationString(durationSec)
 }
 
-function formatDurationString(diffSec: number, isZh: boolean): string {
-  if (diffSec < 1) return isZh ? '< 1 秒' : '< 1s'
-  if (diffSec < 60) return isZh ? `${diffSec} 秒` : `${diffSec}s`
+function formatDurationString(diffSec: number): string {
+  if (diffSec < 1) return '< 1s'
+  if (diffSec < 60) return `${diffSec}s`
 
   const mins = Math.floor(diffSec / 60)
   const secs = diffSec % 60
 
   if (mins < 60) {
-    return isZh ? `${mins} 分 ${secs} 秒` : `${mins}m ${secs}s`
+    return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`
   }
 
   const hours = Math.floor(mins / 60)
   const remMins = mins % 60
-  return isZh ? `${hours} 小时 ${remMins} 分` : `${hours}h ${remMins}m`
+  return remMins > 0 ? `${hours}h ${remMins}m` : `${hours}h`
 }

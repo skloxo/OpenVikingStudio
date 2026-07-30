@@ -46,8 +46,13 @@
      ```
    - 保证数据刷新时无任何平移跳动与布局抖动。
 
-4. **微动效约束 (Micro-Interactions)**：
-   - 悬停与切换过渡必须在 **100~200ms** 内完成，禁止任何廉价缓动弹跳效果。
+5. **极简性冷淡调性与三态色彩铁律 🔴 (Cold Minimalist & Trinary Color Rules)**：
+   - **冷静沉稳性冷淡风**：拒绝五彩斑斓的营销风或过载修饰，专注高冷静数据观测。
+   - **绝对禁止使用绿色 🚫 (NO GREEN EVER)**：系统全界面严禁出现绿色系列配色。
+   - **严格限定三态语义色彩**：
+     - **正向 / 良好健康** (`positive`) ➔ 冰青 / 湛蓝 (`cyan-500/10 text-cyan-600 dark:text-cyan-400`)
+     - **负向 / 异常问题** (`negative`) ➔ 玫瑰红 (`rose-500/10 text-rose-600 dark:text-rose-400`)
+     - **中性 / 静态指示** (`neutral`) ➔ 沉静哑光灰 (`bg-muted/40 text-muted-foreground`)
 
 ---
 

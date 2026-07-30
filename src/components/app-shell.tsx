@@ -14,6 +14,7 @@ import {
   PlugZapIcon,
   ScrollTextIcon,
   SearchIcon,
+  Share2Icon,
   SparklesIcon,
   SunIcon,
   UsersRoundIcon,
@@ -85,6 +86,13 @@ const NAV_ITEMS: readonly NavItem[] = [
     to: '/home',
   },
   {
+    icon: MonitorUpIcon,
+    id: 'monitoring',
+    section: 'workspace',
+    titleKey: 'navigation.monitoring.title',
+    to: '/monitoring',
+  },
+  {
     icon: PlugZapIcon,
     id: 'playground',
     section: 'workspace',
@@ -113,6 +121,13 @@ const NAV_ITEMS: readonly NavItem[] = [
     to: '/resources',
   },
   {
+    icon: Share2Icon,
+    id: 'graph',
+    section: 'workspace',
+    titleKey: 'navigation.graph.title',
+    to: '/graph',
+  },
+  {
     icon: BlocksIcon,
     id: 'sessions',
     section: 'workspace',
@@ -132,13 +147,6 @@ const NAV_ITEMS: readonly NavItem[] = [
     section: 'operations',
     titleKey: 'navigation.tasks.title',
     to: '/tasks',
-  },
-  {
-    icon: MonitorUpIcon,
-    id: 'monitoring',
-    section: 'operations',
-    titleKey: 'navigation.monitoring.title',
-    to: '/monitoring',
   },
 ]
 

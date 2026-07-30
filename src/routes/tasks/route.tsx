@@ -2,15 +2,18 @@ import * as React from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import {
+  ActivityIcon,
   CheckCircle2Icon,
   CheckIcon,
   CircleDashedIcon,
   CircleXIcon,
   ChevronRightIcon,
+  ClockIcon,
   ClipboardListIcon,
   LoaderCircleIcon,
   RefreshCwIcon,
   RotateCcwIcon,
+  XIcon,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -45,6 +48,7 @@ import { getOvResult, getTasks } from '#/lib/ov-client'
 import { postResources } from '#/gen/ov-client'
 import { commitSession } from '#/lib/sessions/api'
 import { cn } from '#/lib/utils'
+import { QueueStatusCard } from '#/routes/monitoring/-components/queue-status-card'
 import { TaskDetailSheet } from '#/routes/tasks/-components/task-detail-sheet'
 import {
   normalizeTasks,
@@ -90,21 +94,113 @@ const TASK_STATUS_OPTIONS: Exclude<TaskStatusFilter, 'all'>[] = [
   'failed',
 ]
 
+const TASK_HISTORY_STORAGE_KEY = 'ov_studio_task_history'
+
+function getStoredTaskHistory(): TaskRecord[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = localStorage.getItem(TASK_HISTORY_STORAGE_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return parsed
+    }
+  } catch {
+    // Ignore storage errors
+  }
+  return []
+}
+
+function saveStoredTaskHistory(newTasks: TaskRecord[]) {
+  if (typeof window === 'undefined' || !newTasks.length) return
+  try {
+    const existing = getStoredTaskHistory()
+    const map = new Map<string, TaskRecord>()
+    existing.forEach((t) => {
+      if (t.task_id) map.set(t.task_id, t)
+    })
+    newTasks.forEach((t) => {
+      if (t.task_id) map.set(t.task_id, t)
+    })
+    const merged = Array.from(map.values()).sort(
+      (a, b) => Number(b.created_at || 0) - Number(a.created_at || 0),
+    )
+    localStorage.setItem(
+      TASK_HISTORY_STORAGE_KEY,
+      JSON.stringify(merged.slice(0, 500)),
+    )
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+export type TaskDataScope = '24h' | 'all'
+
 async function fetchTasks(
   taskType: TaskTypeFilter,
   status: TaskStatusFilter,
+  dataScope: TaskDataScope = '24h',
 ): Promise<TaskRecord[]> {
   const query = {
-    limit: MAX_TASKS,
+    limit: dataScope === 'all' ? 10000 : MAX_TASKS,
     status: status === 'all' ? undefined : status,
     task_type: taskType === 'all' ? undefined : taskType,
+    include_archived: dataScope === 'all' ? true : undefined,
   }
-  const result = await getOvResult<unknown>(
-    getTasks({
-      query,
-    }),
-  )
-  return normalizeTasks(result)
+  try {
+    const result = await getOvResult<unknown>(
+      getTasks({
+        query: query as any,
+      }),
+    )
+    const fetched = normalizeTasks(result)
+    saveStoredTaskHistory(fetched)
+
+    const history = getStoredTaskHistory()
+    const map = new Map<string, TaskRecord>()
+    history.forEach((t) => {
+      if (t.task_id) map.set(t.task_id, t)
+    })
+    fetched.forEach((t) => {
+      if (t.task_id) map.set(t.task_id, t)
+    })
+    let all = Array.from(map.values()).sort(
+      (a, b) => Number(b.created_at || 0) - Number(a.created_at || 0),
+    )
+    if (dataScope === '24h') {
+      const nowSec = Math.floor(Date.now() / 1000)
+      all = all.filter((t) => {
+        const timeVal = Number(t.created_at || t.updated_at || 0)
+        return timeVal > 0 && nowSec - timeVal <= 86400
+      })
+    }
+    if (status !== 'all') {
+      all = all.filter((t) => normalizeTaskStatus(t.status) === status)
+    }
+    if (taskType !== 'all') {
+      all = all.filter((t) => t.task_type === taskType)
+    }
+    return all
+  } catch (err) {
+    console.warn(
+      '[fetchTasks] Backend fetch failed, falling back to local history:',
+      err,
+    )
+    let history = getStoredTaskHistory()
+    if (dataScope === '24h') {
+      const nowSec = Math.floor(Date.now() / 1000)
+      history = history.filter((t) => {
+        const timeVal = Number(t.created_at || t.updated_at || 0)
+        return timeVal > 0 && nowSec - timeVal <= 86400
+      })
+    }
+    if (status !== 'all') {
+      history = history.filter((t) => normalizeTaskStatus(t.status) === status)
+    }
+    if (taskType !== 'all') {
+      history = history.filter((t) => t.task_type === taskType)
+    }
+    return history
+  }
 }
 
 const REQUEUED_TASKS_STORAGE_KEY = 'ov_studio_requeued_task_ids'
@@ -146,6 +242,7 @@ function TasksRoute() {
   const [taskType, setTaskType] = React.useState<TaskTypeFilter>('all')
   const [statusFilter, setStatusFilter] =
     React.useState<TaskStatusFilter>('all')
+  const [dataScope, setDataScope] = React.useState<TaskDataScope>('24h')
   const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(
     null,
   )
@@ -153,33 +250,12 @@ function TasksRoute() {
     () => getStoredRequeuedTaskIds(),
   )
   const tasksQuery = useQuery({
-    queryFn: () => fetchTasks(taskType, statusFilter),
-    queryKey: ['tasks', identityScopeKey, taskType, statusFilter],
+    queryFn: () => fetchTasks(taskType, statusFilter, dataScope),
+    queryKey: ['tasks', identityScopeKey, taskType, statusFilter, dataScope],
     refetchInterval: 10_000,
   })
   const rawTasks = tasksQuery.data ?? []
-  const allTasks = React.useMemo(() => {
-    if (statusFilter === 'failed') {
-      return rawTasks.filter((task) => {
-        const taskId = task.task_id
-        const isRequeuedByBackend = Boolean(
-          task.resource_id &&
-            task.created_at &&
-            rawTasks.some(
-              (otherTask) =>
-                otherTask.resource_id === task.resource_id &&
-                otherTask.task_id !== task.task_id &&
-                (otherTask.created_at || 0) >= (task.created_at || 0),
-            ),
-        )
-        const isRequeued = Boolean(
-          (taskId && requeuedTaskIds.has(taskId)) || isRequeuedByBackend,
-        )
-        return !isRequeued
-      })
-    }
-    return rawTasks
-  }, [rawTasks, statusFilter, requeuedTaskIds])
+  const allTasks = rawTasks
   const pageOffset = (page - 1) * pageSize
   const tasks = allTasks.slice(pageOffset, pageOffset + pageSize)
   const totalPages = Math.max(1, Math.ceil(allTasks.length / pageSize))
@@ -192,14 +268,23 @@ function TasksRoute() {
       if (taskId) {
         saveStoredRequeuedTaskId(taskId)
         setRequeuedTaskIds((prev) => new Set(prev).add(taskId))
+        const updatedTask: TaskRecord = {
+          ...task,
+          status: 'pending',
+          error: undefined,
+        }
+        saveStoredTaskHistory([updatedTask])
       }
       toast.success(
         i18n.language.startsWith('zh')
-          ? '已提交重新入队指令，后台正在恢复处理'
-          : 'Re-queue command submitted, processing in background',
+          ? '已提交重新入队指令，任务状态已修改恢复为 [等待中]'
+          : 'Re-queue command submitted, task status reset to pending',
       )
     },
     mutationFn: async (task: TaskRecord) => {
+      if (task.task_id?.startsWith('mock_task_')) {
+        return { res: { ok: true }, task }
+      }
       if (!task.resource_id) {
         throw new Error(
           i18n.language.startsWith('zh')
@@ -268,66 +353,231 @@ function TasksRoute() {
   const formatTime = (task: TaskRecord) => {
     const date = getTaskDate(task)
     if (!date) return '-'
-    return new Intl.DateTimeFormat(i18n.resolvedLanguage, {
-      dateStyle: 'medium',
-      timeStyle: 'medium',
-    }).format(date)
+    const y = date.getFullYear()
+    const m = date.getMonth() + 1
+    const d = date.getDate()
+    const hh = String(date.getHours()).padStart(2, '0')
+    const mm = String(date.getMinutes()).padStart(2, '0')
+    const ss = String(date.getSeconds()).padStart(2, '0')
+    return `${y}/${m}/${d} ${hh}:${mm}:${ss}`
   }
 
   const getTaskProgressPct = (task: TaskRecord): number => {
     const status = normalizeTaskStatus(task.status)
     if (status === 'completed') return 100
-    if (status === 'failed') return 0
+    if (status === 'failed') return 35
     if (status === 'pending') return 0
 
+    // Extract real queue metrics from task.result
+    const resObj = (task.result && typeof task.result === 'object') ? (task.result as Record<string, any>) : {}
+    const qStatus = resObj.queue_status
+    const embeddingProcessed = qStatus?.Embedding?.processed
+    const semanticProcessed = qStatus?.Semantic?.processed
+
+    if (typeof embeddingProcessed === 'number') {
+      const totalEmbedding = 20
+      const embedRatio = Math.min(1, embeddingProcessed / totalEmbedding)
+      // Step 1 (20%) + Step 2 (30%) + Step 3 (50% * embedRatio)
+      return Math.round(20 + 30 + (50 * embedRatio))
+    }
+
+    if (typeof semanticProcessed === 'number') {
+      const totalSemantic = 5
+      const semRatio = Math.min(1, semanticProcessed / totalSemantic)
+      // Step 1 (20%) + Step 2 (30% * semRatio)
+      return Math.round(20 + (30 * semRatio))
+    }
+
     const stage = task.stage?.toLowerCase()
-    if (stage === 'completed') return 90
-    if (stage === 'extracting') return 75
-    if (stage === 'archiving') return 50
+    if (stage === 'completed') return 95
+    if (stage === 'extracting') return 65
     if (stage === 'started') return 25
-    return 40
+    return 45
+  }
+
+  const getTaskTotalSteps = (taskType?: string): number => {
+    if (taskType === 'session_commit') return 1
+    if (taskType === 'admin_reindex' || taskType === 'snapshot_restore_reindex') return 2
+    if (taskType === 'connector_import') return 4
+    return 3
   }
 
   const renderStatus = (task: TaskRecord) => {
-    const status = normalizeTaskStatus(task.status)
+    const taskId = task.task_id
+    const rawStatus = normalizeTaskStatus(task.status)
+    const isRequeued = Boolean(
+      taskId && (requeuedTaskIds.has(taskId) || requeuedTaskIds.has(task.resource_id || ''))
+    )
+    const status = isRequeued ? 'pending' : rawStatus
     const pct = getTaskProgressPct(task)
-    const Icon =
-      status === 'completed'
-        ? CheckCircle2Icon
-        : status === 'failed'
-          ? CircleXIcon
-          : status === 'running'
-            ? LoaderCircleIcon
-            : CircleDashedIcon
 
     return (
-      <div className="flex flex-col gap-1 min-w-[120px]">
-        <div className="flex items-center justify-between gap-1.5">
-          <Badge
-            variant={
-              status === 'failed'
-                ? 'destructive'
-                : status === 'completed'
-                  ? 'secondary'
-                  : 'outline'
-            }
-            className="gap-1 font-normal"
-          >
-            <Icon className={status === 'running' ? 'animate-spin' : undefined} />
-            {t(`status.${status}`)}
-          </Badge>
-          {status === 'running' && (
-            <span className="text-xs font-semibold text-primary">{pct}%</span>
-          )}
-        </div>
+      <Badge
+        variant={
+          status === 'failed'
+            ? 'destructive'
+            : status === 'completed'
+              ? 'secondary'
+              : 'outline'
+        }
+        className="gap-1.5 font-normal select-none"
+      >
+        <span>{t(`status.${status}`)}</span>
         {status === 'running' && (
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full bg-primary transition-all duration-300"
-              style={{ width: `${pct}%` }}
-            />
-          </div>
+          <span className="font-mono font-semibold ml-0.5">
+            {pct}%
+          </span>
         )}
+        {status === 'failed' && (
+          <button
+            type="button"
+            className="ml-1 inline-flex items-center justify-center rounded p-0.5 hover:bg-white/25 active:scale-95 transition-all cursor-pointer text-destructive-foreground"
+            title={i18n.language.startsWith('zh') ? '重新加入等待队列' : 'Re-queue into Pending Queue'}
+            onClick={(e) => {
+              e.stopPropagation()
+              if (taskId) {
+                setRequeuedTaskIds((prev) => new Set([...prev, taskId]))
+              }
+              if (task.resource_id) {
+                setRequeuedTaskIds((prev) => new Set([...prev, task.resource_id!]))
+              }
+              retryMutation.mutate(task)
+              toast.success(
+                i18n.language.startsWith('zh')
+                  ? '已将该任务重新加入等待队列！'
+                  : 'Task re-queued into pending queue!',
+              )
+            }}
+          >
+            <RotateCcwIcon className="size-3 shrink-0" />
+          </button>
+        )}
+      </Badge>
+    )
+  }
+
+
+  const renderQueuePipeline = (task: TaskRecord) => {
+    const rawStatus = normalizeTaskStatus(task.status)
+    const isRequeued = Boolean(
+      task.task_id && (requeuedTaskIds.has(task.task_id) || requeuedTaskIds.has(task.resource_id || ''))
+    )
+    const status = isRequeued ? 'pending' : rawStatus
+    const type = task.task_type
+
+    interface StepItem {
+      name: string
+      state: 'completed' | 'running' | 'pending' | 'failed'
+    }
+
+    type PipelineGroup =
+      | { type: 'serial'; step: StepItem }
+      | { type: 'parallel'; steps: StepItem[] }
+
+    // 从 result.queue_status 读取真实的子工序状态
+    const resObj = (task.result && typeof task.result === 'object') ? (task.result as Record<string, any>) : {}
+    const qStatus = resObj.queue_status as Record<string, { processed?: number; error_count?: number }> | undefined
+
+    // 根据子工序真实数据推断单步状态
+    const inferStepState = (
+      qKey: string | null,
+      fallback: StepItem['state'],
+    ): StepItem['state'] => {
+      if (status === 'pending') return 'pending'
+      if (qKey && qStatus?.[qKey]) {
+        const s = qStatus[qKey]
+        if ((s.error_count ?? 0) > 0) return 'failed'
+        if ((s.processed ?? 0) > 0) return 'completed'
+        // has entry but 0 processed: running if task is running, else pending
+        return status === 'running' ? 'running' : fallback
+      }
+      // no queue_status entry yet: fall back to overall task status
+      return fallback
+    }
+
+    let groups: PipelineGroup[] = []
+
+    if (type === 'session_commit') {
+      groups = [
+        { type: 'serial', step: { name: '状态刷盘', state: status === 'completed' ? 'completed' : (status as any) } },
+      ]
+    } else if (type === 'admin_reindex' || type === 'snapshot_restore_reindex') {
+      // 空间清理是第一步：任务只要不是 pending 就代表已跑过
+      const purgeState: StepItem['state'] = status === 'pending' ? 'pending' : 'completed'
+      // 向量重构是第二步：看 Embedding 子工序
+      const rebuildState = inferStepState('Embedding', status === 'completed' ? 'completed' : (status as any))
+      groups = [
+        { type: 'serial', step: { name: '空间清理', state: purgeState } },
+        { type: 'serial', step: { name: '向量重构', state: rebuildState } },
+      ]
+    } else if (type === 'connector_import') {
+      // 鉴权/拉取是串行前置步，只要不是 pending 就视为完成
+      const preState: StepItem['state'] = status === 'pending' ? 'pending' : 'completed'
+      groups = [
+        { type: 'serial', step: { name: '鉴权', state: preState } },
+        { type: 'serial', step: { name: '拉取', state: preState } },
+        {
+          type: 'parallel',
+          steps: [
+            { name: '解析', state: inferStepState('Semantic', status === 'completed' ? 'completed' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'pending') },
+            { name: '落库', state: inferStepState('Embedding', status === 'completed' ? 'completed' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'pending') },
+          ],
+        },
+      ]
+    } else {
+      // add_resource / add_skill: 解析串行完成后，语义提炼+向量落库并发
+      const parseState: StepItem['state'] = status === 'pending' ? 'pending' : 'completed'
+      groups = [
+        { type: 'serial', step: { name: '解析', state: parseState } },
+        {
+          type: 'parallel',
+          steps: [
+            { name: '语义提炼', state: inferStepState('Semantic', status === 'completed' ? 'completed' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'pending') },
+            { name: '向量落库', state: inferStepState('Embedding', status === 'completed' ? 'completed' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'pending') },
+          ],
+        },
+      ]
+    }
+
+    return (
+      <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 min-w-[210px]">
+        {groups.map((grp: PipelineGroup, i: number) => {
+          const stepsInGroup = grp.type === 'serial' ? [grp.step] : grp.steps
+
+          return (
+            <React.Fragment key={i}>
+              {i > 0 && (
+                <span title="串行工序流转" className="inline-flex shrink-0">
+                  <ChevronRightIcon className="size-3 text-muted-foreground/40" />
+                </span>
+              )}
+              <span
+                className="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[11px] font-medium leading-none shrink-0 border border-border/60 bg-secondary/80 text-foreground shadow-2xs transition-all"
+                title={grp.type === 'parallel' ? '并发执行工序批次' : '串行工序批次'}
+              >
+                {stepsInGroup.map((st: StepItem, j: number) => {
+                  const isDone = st.state === 'completed'
+                  const isRun = st.state === 'running'
+                  const isFail = st.state === 'failed'
+                  const isPend = st.state === 'pending'
+
+                  return (
+                    <span
+                      key={j}
+                      className="inline-flex items-center gap-1 shrink-0 transition-colors text-foreground/90 font-medium"
+                    >
+                      {isDone && <CheckIcon className="size-3 text-foreground/75 shrink-0" />}
+                      {isRun && <LoaderCircleIcon className="size-3 text-foreground/75 animate-spin shrink-0" />}
+                      {isPend && <CircleDashedIcon className="size-3 text-foreground/75 shrink-0" />}
+                      {isFail && <XIcon className="size-3 text-foreground/75 shrink-0" />}
+                      <span>{st.name}</span>
+                    </span>
+                  )
+                })}
+              </span>
+            </React.Fragment>
+          )
+        })}
       </div>
     )
   }
@@ -355,25 +605,204 @@ function TasksRoute() {
     refetchInterval: 5_000,
   })
 
-  const stats = taskStatsQuery.data
-  const completedCount = stats
-    ? stats.completed
-    : allTasks.filter((item) => normalizeTaskStatus(item.status) === 'completed').length
-  const runningCount = stats
-    ? stats.running
-    : allTasks.filter((item) => normalizeTaskStatus(item.status) === 'running').length
-  const pendingCount = stats
-    ? stats.pending
-    : allTasks.filter((item) => normalizeTaskStatus(item.status) === 'pending').length
-  const failedCount = stats
-    ? stats.failed
-    : allTasks.filter((item) => normalizeTaskStatus(item.status) === 'failed').length
-  const totalCount = stats ? stats.total : allTasks.length
-  const globalPct =
-    totalCount > 0 ? Math.round((completedCount / totalCount) * 1000) / 10 : 0
+  const queueRows = React.useMemo(() => {
+    const map: Record<
+      string,
+      { processing: number; pending: number; completed: number; errors: number }
+    > = {
+      Embedding: { processing: 0, pending: 0, completed: 0, errors: 0 },
+      Semantic: { processing: 0, pending: 0, completed: 0, errors: 0 },
+      ExternalParse: { processing: 0, pending: 0, completed: 0, errors: 0 },
+      SessionCommit: { processing: 0, pending: 0, completed: 0, errors: 0 },
+      'Semantic-Nodes': { processing: 0, pending: 0, completed: 0, errors: 0 },
+    }
+
+    for (const item of allTasks) {
+      const st = normalizeTaskStatus(item.status)
+      const qStatus = (item.result as any)?.queue_status
+
+      if (item.task_type === 'session_commit') {
+        if (st === 'running') map.SessionCommit.processing++
+        else if (st === 'pending') map.SessionCommit.pending++
+        else if (st === 'completed') map.SessionCommit.completed++
+        else if (st === 'failed') map.SessionCommit.errors++
+      } else if (
+        item.task_type === 'admin_reindex' ||
+        item.task_type === 'snapshot_restore_reindex'
+      ) {
+        if (st === 'pending') map.ExternalParse.pending++
+        else map.ExternalParse.completed++
+
+        if (st === 'running') map.Embedding.processing++
+        else if (st === 'pending') map.Embedding.pending++
+        else if (st === 'completed') map.Embedding.completed++
+        else if (st === 'failed') map.Embedding.errors++
+      } else {
+        const semProc = qStatus?.Semantic?.processed ?? (st === 'completed' ? 1 : 0)
+        const semErr = qStatus?.Semantic?.error_count ?? (st === 'failed' ? 1 : 0)
+        const embProc = qStatus?.Embedding?.processed ?? (st === 'completed' ? 1 : 0)
+        const embErr = qStatus?.Embedding?.error_count ?? (st === 'failed' ? 1 : 0)
+
+        if (st === 'running') {
+          map.Semantic.processing++
+          map.Embedding.processing++
+        } else if (st === 'pending') {
+          map.Semantic.pending++
+          map.Embedding.pending++
+        } else if (st === 'completed') {
+          map.Semantic.completed += Math.max(1, semProc)
+          map.Embedding.completed += Math.max(1, embProc)
+        } else if (st === 'failed') {
+          map.Semantic.errors += Math.max(1, semErr)
+          map.Embedding.errors += Math.max(1, embErr)
+        }
+      }
+    }
+
+    let totProc = 0
+    let totPend = 0
+    let totComp = 0
+    let totErr = 0
+    const rows = Object.entries(map).map(([name, data]) => {
+      totProc += data.processing
+      totPend += data.pending
+      totComp += data.completed
+      totErr += data.errors
+      return {
+        name,
+        processing: data.processing,
+        pending: data.pending,
+        completed: data.completed,
+        errors: data.errors,
+        total: data.processing + data.pending + data.completed,
+      }
+    })
+
+    rows.push({
+      name: 'TOTAL',
+      processing: totProc,
+      pending: totPend,
+      completed: totComp,
+      errors: totErr,
+      total: totProc + totPend + totComp,
+    })
+
+    return rows
+  }, [allTasks])
+
+  const kpiData = React.useMemo(() => {
+    const total = allTasks.length
+    const completed = allTasks.filter(
+      (item) => normalizeTaskStatus(item.status) === 'completed',
+    ).length
+    const running = allTasks.filter(
+      (item) => normalizeTaskStatus(item.status) === 'running',
+    ).length
+    const pending = allTasks.filter(
+      (item) => normalizeTaskStatus(item.status) === 'pending',
+    ).length
+    const failed = allTasks.filter(
+      (item) => normalizeTaskStatus(item.status) === 'failed',
+    ).length
+
+    const successRate = total > 0 ? (completed / total) * 100 : 100
+
+    const durations = allTasks
+      .map((item) => {
+        const start = Number(item.created_at || 0)
+        const end = Number(item.updated_at || start)
+        return start > 0 && end >= start ? end - start : null
+      })
+      .filter((d): d is number => d !== null && d >= 0)
+
+    const avgDurationSec =
+      durations.length > 0
+        ? durations.reduce((a, b) => a + b, 0) / durations.length
+        : 0
+
+    const ALL_TASK_TYPES = [
+      'add_resource',
+      'session_commit',
+      'admin_reindex',
+      'snapshot_restore_reindex',
+      'add_skill',
+      'connector_import',
+      'legacy_migration',
+      'legacy_cleanup',
+    ]
+
+    const typeCounts: Record<string, number> = {}
+    for (const typeKey of ALL_TASK_TYPES) {
+      typeCounts[typeKey] = 0
+    }
+    for (const item of allTasks) {
+      if (item.task_type) {
+        typeCounts[item.task_type] = (typeCounts[item.task_type] || 0) + 1
+      }
+    }
+    let topType = '--'
+    let topCount = 0
+    for (const [typeKey, count] of Object.entries(typeCounts)) {
+      if (count > topCount) {
+        topCount = count
+        topType = typeKey
+      }
+    }
+
+    const baseTypeRows = Object.entries(typeCounts)
+      .map(([typeKey, count]) => {
+        const matchingTasks = allTasks.filter((taskItem) => taskItem.task_type === typeKey)
+        const processing = matchingTasks.filter(
+          (taskItem) => normalizeTaskStatus(taskItem.status) === 'running',
+        ).length
+        const pending = matchingTasks.filter(
+          (taskItem) => normalizeTaskStatus(taskItem.status) === 'pending',
+        ).length
+        const completed = matchingTasks.filter(
+          (taskItem) => normalizeTaskStatus(taskItem.status) === 'completed',
+        ).length
+        const errors = matchingTasks.filter(
+          (taskItem) => normalizeTaskStatus(taskItem.status) === 'failed',
+        ).length
+        return {
+          name: t(`types.${typeKey}` as any, { defaultValue: typeKey }),
+          processing,
+          pending,
+          completed,
+          errors,
+          total: count,
+        }
+      })
+      .sort((a, b) => b.total - a.total)
+
+    const typeRows = [
+      ...baseTypeRows,
+      {
+        name: 'TOTAL',
+        processing: baseTypeRows.reduce((sum, item) => sum + item.processing, 0),
+        pending: baseTypeRows.reduce((sum, item) => sum + item.pending, 0),
+        completed: baseTypeRows.reduce((sum, item) => sum + item.completed, 0),
+        errors: baseTypeRows.reduce((sum, item) => sum + item.errors, 0),
+        total: baseTypeRows.reduce((sum, item) => sum + item.total, 0),
+      },
+    ]
+
+    return {
+      total,
+      completed,
+      running,
+      pending,
+      failed,
+      successRate,
+      avgDurationSec,
+      topType,
+      topCount,
+      typeRows,
+    }
+  }, [allTasks, t])
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-5">
+    <div className="flex w-full min-w-0 flex-col gap-4">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="grid gap-1.5">
           <h1 className="text-2xl font-semibold tracking-tight">
@@ -383,65 +812,128 @@ function TasksRoute() {
             {t('description')}
           </p>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={tasksQuery.isFetching || taskStatsQuery.isFetching}
-          onClick={() => {
-            void tasksQuery.refetch()
-            void taskStatsQuery.refetch()
-          }}
-        >
-          <RefreshCwIcon
-            className={
-              tasksQuery.isFetching || taskStatsQuery.isFetching
-                ? 'animate-spin'
-                : undefined
-            }
-          />
-          {t('refresh')}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={tasksQuery.isFetching || taskStatsQuery.isFetching}
+            onClick={() => {
+              void tasksQuery.refetch()
+              void taskStatsQuery.refetch()
+            }}
+          >
+            <RefreshCwIcon
+              className={
+                tasksQuery.isFetching || taskStatsQuery.isFetching
+                  ? 'animate-spin'
+                  : undefined
+              }
+            />
+            {t('refresh')}
+          </Button>
+        </div>
       </header>
 
-      {/* Global Progress Banner */}
-      <div className="flex flex-col gap-2 rounded-xl border bg-card/60 p-4 shadow-xs">
-        <div className="flex items-center justify-between text-sm">
-          <span className="font-medium text-muted-foreground">
+      {/* 4 大 Task 核心运行 KPI 观察行 */}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <Card className="flex flex-col gap-1 p-3 shadow-none transition-colors hover:border-primary/40">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span className="font-medium">
+              {i18n.language.startsWith('zh') ? '任务成功率' : 'Success Rate'}
+            </span>
+            <CheckCircle2Icon className="size-4 text-emerald-500" />
+          </div>
+          <div className="flex items-baseline gap-1">
+            <span className="font-mono text-xl font-bold tabular-nums text-foreground">
+              {kpiData.successRate.toFixed(1)}%
+            </span>
+          </div>
+          <p className="text-[11px] text-muted-foreground truncate">
             {i18n.language.startsWith('zh')
-              ? '全局处理进度'
-              : 'Global Vectorization Progress'}
-          </span>
-          <span className="font-bold text-primary">{globalPct}%</span>
-        </div>
-        <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-          <div
-            className="h-full rounded-full bg-primary transition-all duration-500"
-            style={{ width: `${globalPct}%` }}
+              ? `共 ${kpiData.total} 条任务 (${kpiData.failed} 异常)`
+              : `Total ${kpiData.total} (${kpiData.failed} Failed)`}
+          </p>
+        </Card>
+
+        <Card className="flex flex-col gap-1 p-3 shadow-none transition-colors hover:border-primary/40">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span className="font-medium">
+              {i18n.language.startsWith('zh') ? '平均处理耗时' : 'Avg Duration'}
+            </span>
+            <ClockIcon className="size-4 text-cyan-500" />
+          </div>
+          <div className="flex items-baseline gap-1">
+            <span className="font-mono text-xl font-bold tabular-nums text-foreground">
+              {kpiData.avgDurationSec < 1
+                ? `${(kpiData.avgDurationSec * 1000).toFixed(0)}ms`
+                : `${kpiData.avgDurationSec.toFixed(1)}s`}
+            </span>
+          </div>
+          <p className="text-[11px] text-muted-foreground truncate">
+            {i18n.language.startsWith('zh')
+              ? '全流程平均处理时长'
+              : 'Avg Processing Time'}
+          </p>
+        </Card>
+
+        <Card className="flex flex-col gap-1 p-3 shadow-none transition-colors hover:border-primary/40">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span className="font-medium">
+              {i18n.language.startsWith('zh') ? '任务总数' : 'Total Tasks'}
+            </span>
+            <ClipboardListIcon className="size-4 text-indigo-500" />
+          </div>
+          <div className="flex items-baseline gap-1">
+            <span className="font-mono text-xl font-bold tabular-nums text-foreground">
+              {kpiData.total} 条
+            </span>
+          </div>
+          <p className="text-[11px] text-muted-foreground truncate">
+            {i18n.language.startsWith('zh')
+              ? `已完成 ${kpiData.completed} 条`
+              : `Completed ${kpiData.completed} Tasks`}
+          </p>
+        </Card>
+
+        <Card className="flex flex-col gap-1 p-3 shadow-none transition-colors hover:border-primary/40">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span className="font-medium">
+              {i18n.language.startsWith('zh') ? '并发与排队' : 'Active/Pending'}
+            </span>
+            <ActivityIcon className="size-4 text-amber-500" />
+          </div>
+          <div className="flex items-baseline gap-1">
+            <span className="font-mono text-xl font-bold tabular-nums text-foreground">
+              {kpiData.running} / {kpiData.pending}
+            </span>
+          </div>
+          <p className="text-[11px] text-muted-foreground truncate">
+            {i18n.language.startsWith('zh')
+              ? '进行中 / 等待中任务'
+              : 'Running / Pending Workloads'}
+          </p>
+        </Card>
+      </div>
+
+      {/* 任务队列 (上层) 与 工序队列 (下层) 50/50 并排观测行 */}
+      <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
+        {/* 左侧 (50% 宽度 - 优先看上层任务): 任务队列状态 (Task Queues) */}
+        <div>
+          <QueueStatusCard
+            title={i18n.language.startsWith('zh') ? '任务队列状态' : 'Task Queue Status'}
+            customRows={kpiData.typeRows}
+            isHealthy={kpiData.failed === 0}
           />
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs text-muted-foreground">
-          <span>
-            {i18n.language.startsWith('zh') ? '已完成' : 'Completed'}:{' '}
-            <strong className="text-foreground">{completedCount}</strong> /{' '}
-            {totalCount}
-          </span>
-          <div className="flex items-center gap-3">
-            <span>
-              {i18n.language.startsWith('zh') ? '进行中' : 'Running'}:{' '}
-              <strong className="text-blue-500">{runningCount}</strong>
-            </span>
-            <span>
-              {i18n.language.startsWith('zh') ? '等待中' : 'Pending'}:{' '}
-              <strong className="text-amber-500">{pendingCount}</strong>
-            </span>
-            {failedCount > 0 && (
-              <span>
-                {i18n.language.startsWith('zh') ? '失败' : 'Failed'}:{' '}
-                <strong className="text-destructive">{failedCount}</strong>
-              </span>
-            )}
-          </div>
+
+        {/* 右侧 (50% 宽度 - 拆分出的下层工序): 工序队列状态 (Process Queues) */}
+        <div>
+          <QueueStatusCard
+            title={i18n.language.startsWith('zh') ? '工序队列状态' : 'Process Queue Status'}
+            customRows={queueRows}
+            isHealthy={kpiData.failed === 0}
+          />
         </div>
       </div>
 
@@ -449,6 +941,29 @@ function TasksRoute() {
         <span className="px-1 text-xs font-medium text-muted-foreground">
           {t('filters.label')}
         </span>
+        <Select
+          value={dataScope}
+          onValueChange={(value) => {
+            setDataScope(value as TaskDataScope)
+            setPage(1)
+          }}
+        >
+          <SelectTrigger
+            size="sm"
+            className="min-w-32 bg-background font-medium"
+            aria-label={t('filters.scope')}
+          >
+            <SelectValue>
+              {dataScope === '24h'
+                ? t('filters.scope24h')
+                : t('filters.scopeAll')}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="24h">{t('filters.scope24h')}</SelectItem>
+            <SelectItem value="all">{t('filters.scopeAll')}</SelectItem>
+          </SelectContent>
+        </Select>
         <Select
           value={taskType}
           onValueChange={(value) => {
@@ -503,7 +1018,7 @@ function TasksRoute() {
             ))}
           </SelectContent>
         </Select>
-        {hasActiveFilters ? (
+        {hasActiveFilters || dataScope !== '24h' ? (
           <Button
             type="button"
             variant="ghost"
@@ -512,6 +1027,7 @@ function TasksRoute() {
             onClick={() => {
               setTaskType('all')
               setStatusFilter('all')
+              setDataScope('24h')
               setPage(1)
             }}
           >
@@ -566,8 +1082,9 @@ function TasksRoute() {
                   <TableHead>{t('table.task')}</TableHead>
                   <TableHead>{t('table.type')}</TableHead>
                   <TableHead>{t('table.resource')}</TableHead>
+                  <TableHead>{i18n.language.startsWith('zh') ? '工序队列流转' : 'Queue Pipeline'}</TableHead>
                   <TableHead>{t('table.status')}</TableHead>
-                  <TableHead>{i18n.language.startsWith('zh') ? '耗时 / 已运行' : 'Duration'}</TableHead>
+                  <TableHead>{i18n.language.startsWith('zh') ? '耗时' : 'Duration'}</TableHead>
                   <TableHead className="text-right">
                     {t('table.createdAt')}
                   </TableHead>
@@ -576,22 +1093,6 @@ function TasksRoute() {
               <TableBody>
                 {tasks.map((task, index) => {
                   const taskId = task.task_id
-                  const status = normalizeTaskStatus(task.status)
-                  const isRunning = status === 'running'
-                  const isRequeuedByBackend = Boolean(
-                    task.resource_id &&
-                      task.created_at &&
-                      allTasks.some(
-                        (otherTask) =>
-                          otherTask.resource_id === task.resource_id &&
-                          otherTask.task_id !== task.task_id &&
-                          (otherTask.created_at || 0) >= (task.created_at || 0),
-                      ),
-                  )
-                  const isRequeued = Boolean(
-                    (taskId && requeuedTaskIds.has(taskId)) ||
-                      isRequeuedByBackend,
-                  )
                   return (
                     <TableRow
                       key={taskId || String(index)}
@@ -626,70 +1127,23 @@ function TasksRoute() {
                           ) : null}
                         </span>
                       </TableCell>
-                      <TableCell className="font-medium">
-                        {task.task_type || '-'}
+                      <TableCell className="text-xs font-medium text-foreground/90 whitespace-nowrap">
+                        {task.task_type
+                          ? t(`types.${task.task_type}`, {
+                              defaultValue: task.task_type,
+                            })
+                          : '-'}
                       </TableCell>
                       <TableCell className="max-w-72 truncate text-muted-foreground">
                         {task.resource_id || '-'}
                       </TableCell>
+                      <TableCell>{renderQueuePipeline(task)}</TableCell>
                       <TableCell>{renderStatus(task)}</TableCell>
-                      <TableCell className="whitespace-nowrap font-mono text-xs">
-                        {isRunning ? (
-                          <span className="inline-flex items-center gap-1.5 rounded-xs bg-sky-500/10 px-1.5 py-0.5 text-sky-600 dark:text-sky-400">
-                            <span className="size-1.5 rounded-full bg-sky-500 animate-pulse" />
-                            {formatTaskDuration(task, i18n.language.startsWith('zh'))}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">
-                            {formatTaskDuration(task, i18n.language.startsWith('zh'))}
-                          </span>
-                        )}
+                      <TableCell className="whitespace-nowrap font-mono text-xs text-muted-foreground">
+                        {formatTaskDuration(task, i18n.language.startsWith('zh'))}
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-right text-muted-foreground">
-                        <span className="inline-flex items-center justify-end gap-2">
-                          {status === 'failed' && task.resource_id ? (
-                            isRequeued ? (
-                              <span
-                                className="inline-flex items-center gap-1 rounded-xs bg-emerald-500/10 px-1.5 py-0.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400"
-                                title={
-                                  i18n.language.startsWith('zh')
-                                    ? '已重新提交放入队列'
-                                    : 'Already Re-queued'
-                                }
-                              >
-                                <CheckIcon className="size-3" />
-                                {i18n.language.startsWith('zh')
-                                  ? '已入队'
-                                  : 'Re-queued'}
-                              </span>
-                            ) : (
-                              <Button
-                                type="button"
-                                size="icon-xs"
-                                variant="outline"
-                                className="rounded-xs"
-                                title={
-                                  i18n.language.startsWith('zh')
-                                    ? '重新入队'
-                                    : 'Re-queue'
-                                }
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  retryMutation.mutate(task)
-                                }}
-                                disabled={retryMutation.isPending}
-                              >
-                                <RotateCcwIcon
-                                  className={cn(
-                                    'size-3',
-                                    retryMutation.isPending && 'animate-spin',
-                                  )}
-                                />
-                              </Button>
-                            )
-                          ) : null}
-                          {formatTime(task)}
-                        </span>
+                        {formatTime(task)}
                       </TableCell>
                     </TableRow>
                   )
