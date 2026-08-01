@@ -9,9 +9,9 @@
 
 ## 📅 当前核心排期阶段：Milestone Phase 1 (技能中心深度重构 ➔ 任务中心 ➔ Harness 引擎 ➔ Loop)
 
-### [x] v1.3.0 — 技能详情抽屉全量源码框物理兜底与防隐形修复 ✅
-- **Git Commit**: `fix(skills): ensure SKILL.md full source code box is always visible v1.3.0`
-- **Tag**: `v1.3.0`
+### [x] v1.2.10 — 技能详情抽屉全量源码框物理兜底与防隐形修复 ✅
+- **Git Commit**: `fix(skills): ensure SKILL.md full source code box is always visible v1.2.10`
+- **Tag**: `v1.2.10`
 - **主要交付**:
   1. 修复当 `detail.content` 为空或从后端网关异步加载延迟时，抽屉内全量源码 `<pre>` 框被 `: null` 物理抹除隐形的漏洞；
   2. 实现了 100% 物理常态保留 `📄 SKILL.md 全量源码 (Full Source)` 窗口，并为 18 个内置工程技能与自定义技能生成优雅的标准规范说明。
