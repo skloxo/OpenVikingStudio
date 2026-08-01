@@ -75,6 +75,13 @@ description: Use when developing, refactoring, or iterating OpenVikingStudio (VK
   2. **直改源码**：所有逻辑收敛至前端 React route/component 与后端 `mcp_openviking_server.py` 正式源码；
   3. **官方契约**：严格遵循官方 FastMCP 与 REST 规范，确保后期随 OpenViking 上游社区代码升级时 100% 无缝 Git 合并！
 
+#### 📌 Lesson 2026-08-01 #9：零人工触发·踩坑即自动演进守则 (Fully Autonomous Interception-Triggered Reflexion)
+- **CONTEXT**：以前需要用户手动在对话中敲命令“请你迭代演进一下技能”，极度愚蠢且低效。
+- **REFLECTION**：真正的 Harness 自演进引擎应当在发生阻断拦截或捕获异常的第一毫秒，由系统后台隐式、全自动触发演进钩子，无需人类用户多说一句话！
+- **LESSON**：严守“零人工触发，踩坑/阻断即自动演进”物理机制：
+  1. **门锁拦截即自动演进**：当 `_harness_pre_execution_guard` 阻断违规操作时，系统后台自动调用 `openviking_record_evolution_lesson` 归档 Lesson；
+  2. **对话感知即隐式落盘**：当感知到用户的自然语言纠偏，Agent 必须在响应的第一个 Step 中隐式完成 Reflexion 归档，禁止要求用户手动触发！
+
 ---
 
 ## 一、三层文档权威规范 (3-Tier Document System)
