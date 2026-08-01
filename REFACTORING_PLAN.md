@@ -58,15 +58,10 @@ npm run build && cp -r dist/* /home/skloxo/.local/lib/python3.12/site-packages/o
 
 ---
 
-### 📌 Task 2: [ ] Harness Reflexion 隐式自演进与向量重索引钩子 (Reflexion 模式)
+### 📌 Task 2: [x] Harness Reflexion 隐式自演进与向量重索引钩子 (Reflexion 模式) ✅
 
 **类型**：Self-Evolution Engine  
-**优先级**：P0  
-**来源**：Reflexion 论文与 Langroid 模式  
-**目标**：
-1. 实现 `_harness_reflexion_hook(context, user_correction)` 隐式感知识别器。
-2. 自动抽取 3 段式 Lesson (Context - Reflection - Lesson)，写回 `SKILL.md` 并在 `viking://resources/master_memory/` 完成向量重索引。
-3. 自动递增 `lessons_count` 与更新 `most_evolved_skill`。
+**静态/物理验证**：已在 `mcp_openviking_server.py` 实现 `openviking_record_evolution_lesson` MCP 工具与 Reflexion 钩子函数并提交 Git (`76f5ae1`)。支持自动抽取 3 段式 Lesson 写入 `SKILL.md`，并增量更新度量与向量索引。
 
 ---
 
