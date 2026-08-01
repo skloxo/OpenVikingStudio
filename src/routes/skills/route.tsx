@@ -540,7 +540,8 @@ function getSkillSource(name: string): { label: string; badgeClass: string } {
 
 
 function SkillsRoute() {
-  const { t } = useTranslation('skillsPage')
+  const { t, i18n } = useTranslation('skillsPage')
+  const isZh = !i18n.language || i18n.language.startsWith('zh')
   const { identityScopeKey } = useAppConnection()
   const [selectedSkill, setSelectedSkill] = React.useState<SkillItem | null>(null)
   const [searchQuery, setSearchQuery] = React.useState('')
@@ -915,8 +916,12 @@ function SkillsRoute() {
             {paginatedSkills.map((skill) => {
               const isAgentScope = skill.scope === 'agent'
               const srcInfo = getSkillSource(skill.name)
-              const displayName = skill.cnName || getChineseSkillName(skill.name)
-              const displayDesc = skill.cnDescription || getChineseSkillDescription(skill.name, skill.description)
+              const displayName = isZh
+                ? (skill.cnName || getChineseSkillName(skill.name))
+                : skill.name
+              const displayDesc = isZh
+                ? (skill.cnDescription || getChineseSkillDescription(skill.name, skill.description))
+                : skill.description
               return (
                 <Card
                   key={`${skill.scope}:${skill.uri}`}
