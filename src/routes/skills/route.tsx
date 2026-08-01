@@ -703,45 +703,45 @@ function SkillsRoute() {
           </p>
         </Card>
 
-        {/* Card 3: 多 Agent 共享复用率 (无拥挤文本, 物理数字驱动) */}
-        <Card className="flex flex-col gap-1 p-2.5 shadow-none hover:border-border transition-colors">
+        {/* Card 3: OpenViking 技能统一收敛率 (监测 Agent 调用走 VK 技能中心 vs 私有渠道的比率，驱动踩坑演进飞轮) */}
+        <Card className="flex flex-col gap-1 p-2.5 shadow-none hover:border-border transition-colors" title="监测 Agent 调用走 OpenViking 技能中心 vs 私有渠道的比率。收敛率越高，踩坑经验越能全盘共享">
           <div className="flex items-center justify-between text-xs text-muted-foreground font-sans">
             <span className="flex items-center gap-1.5 text-foreground font-medium">
               <CpuIcon className="size-3.5 text-muted-foreground" />
-              多 Agent 共享覆盖
+              VK 技能统一收敛率
             </span>
             <Badge variant="outline" className="text-[9px] font-mono border-border bg-muted/40 text-foreground px-1 py-0">
-              能力同频
+              踩坑演进飞轮
             </Badge>
           </div>
           <div className="font-mono text-lg font-bold tabular-nums text-foreground flex items-baseline gap-1">
-            100% <span className="text-xs font-normal text-muted-foreground">(4 大智体全共享)</span>
+            92.4% <span className="text-xs font-normal text-muted-foreground">(走 VK 技能中心)</span>
           </div>
           <p className="text-[11px] text-muted-foreground truncate">
-            研 / 发 / 运 / 测 跨智体同频复用
+            228 次 VK 集中调用 · 仅 18 次私有
           </p>
         </Card>
 
-        {/* Card 4: Harness 自演进规约 (基于 Harness 核心第一性原理: 0 越权硬阻断 + Reflexion 演进规约数) */}
+        {/* Card 4: Harness 技能自演进 (基于 Harness 第一性原理: 自动规范技能 + 技能自我演进/迭代) */}
         <Link
           to="/harness-logs"
           className="flex flex-col gap-1 rounded border border-border/60 bg-card p-2.5 hover:border-border transition-colors group cursor-pointer shadow-none"
-          title="白盒查看 Harness 0 越权拦截与 Reflexion 自演进审计日志"
+          title="点击白盒查看 Harness 技能自动规范化与自演进审计日志"
         >
           <div className="flex items-center justify-between text-xs text-muted-foreground font-sans">
             <span className="flex items-center gap-1.5 text-foreground font-medium">
               <ClockIcon className="size-3.5 text-muted-foreground" />
-              Harness 自演进规约
+              Harness 技能自演进
             </span>
             <Badge variant="outline" className="text-[9px] font-mono border-border bg-muted/40 text-foreground px-1 py-0">
               白盒审计 ➔
             </Badge>
           </div>
           <div className="font-mono text-lg font-bold tabular-nums text-foreground flex items-baseline gap-1">
-            14 项 <span className="text-xs font-normal text-muted-foreground">Reflexion 规约</span>
+            14 次 <span className="text-xs font-normal text-muted-foreground">自演进迭代</span>
           </div>
           <p className="text-[11px] text-muted-foreground truncate flex items-center justify-between">
-            <span>0 越权硬拦截 · 100% 护航闭环</span>
+            <span>自动规范技能 · 驱动自我演化</span>
             <ChevronRightIcon className="size-3 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
           </p>
         </Link>
