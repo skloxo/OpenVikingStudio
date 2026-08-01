@@ -1,13 +1,26 @@
 # OpenViking Studio — 唯一活跃原子工单看板 (REFACTORING_PLAN.md)
 
 > **三层治理体系说明**：
-> 1. **历史交付记录** ➔ 归档至 [DELIVERY_ARCHIVE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)（已交付 `v1.1.0` ~ `v1.1.23b`）
+> 1. **历史交付记录** ➔ 归档至 [DELIVERY_ARCHIVE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)（已交付 `v1.1.0` ~ `v1.1.24`）
 > 2. **远期愿景与 Epic 路线图** ➔ 移入 [ROADMAP.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/ROADMAP.md)（按 Epic 拆解管理）
 > 3. **本文档 (REFACTORING_PLAN.md)** ➔ **唯一活跃原子工单看板**（仅保留当前可调度、数据契约明确、验收标准量化的最小原子工单）
 
 ---
 
 ## 📅 当前正在调度的核心迭代 (Active Scheduled Tasks)
+
+### ✅ v1.1.24 [已验收通过 ✅] 技能中心 KPI 24H 滚动窗口 + 零 Mock 清洗 + 语义 Badge + 崩溃修复
+
+- **Git Tag**: `v1.1.24` (commit `255ca50`)
+- **交付内容**：
+  - 4 大 KPI 卡片统计窗口切换至 **最近 24 小时 (24H Rolling)**，API 参数 `?window=24h` 显式传递
+  - 彻底清洗 `find_calls: 210 / store_calls: 18 / total_calls: 228` 等全部 Mock 假数字，初始值归零
+  - 修复缺失 `SearchIcon` import 导致的页面崩溃（Lesson #29）
+  - 恢复 KPI 卡片 Badge 语义标签（意图感应 / 闭环质量 / 踩坑演进飞轮 / 白盒审计），去除冗余 `24H` 前缀（Lesson #30）
+  - SKILL.md 归档 Lesson #26 ~ #30
+- **修改文件**：`vite.config.ts` · `src/routes/skills/route.tsx` · `.agents/skills/openviking-studio-dev/SKILL.md`
+
+---
 
 ### 📌 P0: [ ] v1.1.23c：技能中心双门锁合规探针、待规范白盒曝光与一键规范化上架流程
 
