@@ -193,6 +193,14 @@ description: Use when developing, refactoring, or iterating OpenVikingStudio (VK
   1. **大数字**：显示物理真实的 **`92.4%`** (`走 VK 技能中心`) 通道占比；
   2. **自解释说明**：`228 次 VK 集中调用 · 仅 18 次私有`，精确指导如何约束 Agent 避免私有野路子，驱动演进飞轮！
 
+#### 📌 Lesson 2026-08-01 #24：Harness 第一性原理平实文案与自演进次数量化守则
+- **CONTEXT**：以前 Card 4 使用“Harness 自演进规约 / Reflexion 规约”等生硬学术词汇，不够直观自解释；缺乏对 Harness 物理能力的平实归纳。
+- **REFLECTION**：Harness 的物理本质在于两点：1. 自动规范技能，让 AI 精准唤醒；2. 驱动技能自演进迭代。文案必须直通平实常识。
+- **LESSON**：重构 Card 4 为 `Harness 技能自演进`：
+  1. **标题**：`Harness 技能自演进` (平实直观)；
+  2. **主大字**：**`14 次`** (`自演进迭代`)；
+  3. **自解释描述**：`自动规范技能 · 驱动自我演化`，直通 Harness 第一性原理。
+
 ---
 
 ## 一、全盘文档三层治理体系与模块导航网 (3-Tier Document Hierarchy & Map)
