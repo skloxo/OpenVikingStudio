@@ -664,7 +664,7 @@ function SkillsRoute() {
               隐式自动唤醒率
             </span>
             <Badge variant="outline" className="text-[9px] font-mono border-border bg-muted/40 text-foreground px-1 py-0">
-              24H 感应
+              意图感应
             </Badge>
           </div>
           <div className="font-mono text-lg font-bold tabular-nums text-foreground flex items-baseline gap-1">
@@ -683,7 +683,7 @@ function SkillsRoute() {
               技能运行成功率
             </span>
             <Badge variant="outline" className="text-[9px] font-mono border-border bg-muted/40 text-foreground px-1 py-0">
-              24H 闭环
+              闭环质量
             </Badge>
           </div>
           <div className="font-mono text-lg font-bold tabular-nums text-foreground flex items-baseline gap-1">
@@ -702,7 +702,7 @@ function SkillsRoute() {
               VK 技能统一收敛率
             </span>
             <Badge variant="outline" className="text-[9px] font-mono border-border bg-muted/40 text-foreground px-1 py-0">
-              24H 收敛
+              踩坑演进飞轮
             </Badge>
           </div>
           <div className="font-mono text-lg font-bold tabular-nums text-foreground flex items-baseline gap-1">
