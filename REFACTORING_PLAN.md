@@ -9,6 +9,20 @@
 
 ## 📅 当前核心排期阶段：Milestone Phase 1 (技能中心深度重构 ➔ 任务中心 ➔ Harness 引擎 ➔ Loop)
 
+### [x] v1.3.0 — 技能详情抽屉全量源码框物理兜底与防隐形修复 ✅
+- **Git Commit**: `fix(skills): ensure SKILL.md full source code box is always visible v1.3.0`
+- **Tag**: `v1.3.0`
+- **主要交付**:
+  1. 修复当 `detail.content` 为空或从后端网关异步加载延迟时，抽屉内全量源码 `<pre>` 框被 `: null` 物理抹除隐形的漏洞；
+  2. 实现了 100% 物理常态保留 `📄 SKILL.md 全量源码 (Full Source)` 窗口，并为 18 个内置工程技能与自定义技能生成优雅的标准规范说明。
+
+### [x] v1.2.9 — 技能中心 175 技能标准分页器与 24H 物理指标曝光 ✅
+- **Git Commit**: `feat(skills): add 175 skills pagination and physical metrics badges v1.2.9`
+- **Tag**: `v1.2.9`
+- **主要交付**:
+  1. 新建 `SkillsPagination` 分页器组件，支持 `12 条/页`、`24 条/页`、`48 条/页` 及 `全部 (175 项)` 动态容量切片展示；
+  2. 技能卡片增设 `🔥 24H 活跃` 物理指标徽章，1933 正式环境通过 GitHub 远程 Tag 干净克隆发布。
+
 ### 📌 [x] [TASK-BUG-01] 技能中心与 Harness 审计专页数据 100% 物理对齐与彻底干洗散装中间件 (已验收通过 ✅)
 - **交付 Tag**：`v1.2.8`
 - **Commit Hash**：`7b3cdfd81da99c041a23cd87340d368653bb23f0`
