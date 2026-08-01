@@ -217,6 +217,14 @@ description: Use when developing, refactoring, or iterating OpenVikingStudio (VK
   2. **动态盘点磁盘**：Card 4 动态读取磁盘 `SKILL.md` 的真实 `lessons_count` (当前物理实时为 `25 次`)；
   3. **严禁硬编码 Mock**：任何时候均以真实的后端与系统底座数据说话！
 
+#### 📌 Lesson 2026-08-01 #27：24H 动态滚动统计窗口与时效性 KPI 规约
+- **CONTEXT**：以前 KPI 卡片未明确时间窗口，给人“从系统上线至今”全量累加的错觉，导致无法反映最近的优化与实时健康度。
+- **REFLECTION**：运维与架构监控的黄金标准是 24 小时动态滚动窗口（24H Rolling Window）；明确界定时间边界才能提供精准的实效决策支撑。
+- **LESSON**：全盘 KPI 24H 统计窗口标准：
+  1. **API 参数化**：向后端 API 传递 `?window=24h` 显式限定时间跨度；
+  2. **UI 明确标示**：在观察行上方标注 `🕒 统计范围: 最近 24 小时 (24H Rolling)` 并在各 Card 标签处使用 `24H` 标识；
+  3. **时效高灵敏度**：确保数据实时反映近 24 小时内 Agent 的调用、阻断与演进情况。
+
 ---
 
 ## 一、全盘文档三层治理体系与模块导航网 (3-Tier Document Hierarchy & Map)
