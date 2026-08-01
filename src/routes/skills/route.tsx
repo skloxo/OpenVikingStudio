@@ -959,7 +959,7 @@ function SkillsRoute() {
             </div>
           </div>
           <p className="text-[11px] text-muted-foreground truncate flex items-center justify-between">
-            <span>人工精编 + Wiki 自动感应双轨驱动</span>
+            <span>人工精编 + VK 自动感应双轨驱动</span>
             <ChevronRightIcon className="size-3 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
           </p>
         </Link>
