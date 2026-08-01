@@ -257,6 +257,7 @@
 
 #### ⏳ v1.1.38: 技能中心 /skills 全维度可观测面板与调用迹追踪 (Skill Observability & Analytics Dashboard)
 - **来源**: 技能中心短板强化 & 用户指引（"能观测到调用的情况是怎么样的"）
+- **架构规范**: 参见 [HARNESS_EVOLUTION_ARCHITECTURE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/HARNESS_EVOLUTION_ARCHITECTURE.md)
 - **目标**:
   1. 展示 85 个技能各自的：激活总次数、触发频率、最近调取时间、调用 Agent 来源 (Antigravity/OpenClaw/Hermes)、成功/失败率
   2. 技能调用轨迹下钻：点击具体技能卡片，查看历史调用的日志片段、输入 Context 与输出 Payload
@@ -264,6 +265,7 @@
 
 #### ⏳ v1.1.39: 基于 Reflexion / Voyager 范式的 Skill-Loop 闭环自进化引擎 (Grounded Critique & Self-Refine Loop)
 - **来源**: 业界最新 Agent 自进化框架 (Reflexion, Voyager, Self-Evolving-Skill)
+- **架构规范**: 参见 [HARNESS_EVOLUTION_ARCHITECTURE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/HARNESS_EVOLUTION_ARCHITECTURE.md)（含多 Agent 拓扑与时序交互图）
 - **目标**:
   1. **反馈捕获 (Grounded Critique)**: 技能执行完毕后，自动捕捉终端编译结果、单元测试状态与用户修正
   2. **经验萃取 (Lesson Extraction)**: 若遇到踩坑/异常，AI 自动生成高密度 `Lesson Learned` 避坑摘要
@@ -272,6 +274,7 @@
 
 #### ⏳ v1.1.40: 技能健康度综合评分与优胜劣汰矩阵 (Skill Health Scoring & Elimination Matrix)
 - **来源**: NousResearch Hermes-Agent / EvoSkills 评估体系
+- **架构规范**: 参见 [HARNESS_EVOLUTION_ARCHITECTURE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/HARNESS_EVOLUTION_ARCHITECTURE.md)
 - **目标**:
   1. 基于【活跃度、成功率、修正频次、避坑积累量】计算 85 个技能的健康度得分 (0~100 分)
   2. 健康度低（频繁导致构建失败/长期无人调用）的技能给予警告、降级或自动修复提醒
@@ -279,6 +282,7 @@
 
 #### ⏳ v1.1.41: 技能创生、克隆与在线沙盒测试器 (Autonomous Skill Creation & Playground)
 - **来源**: EvoSkills 自动构建范式
+- **架构规范**: 参见 [HARNESS_EVOLUTION_ARCHITECTURE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/HARNESS_EVOLUTION_ARCHITECTURE.md)
 - **目标**:
   1. 支持根据自然语言诉求自动生成符合 `SKILL.md` 规范的全新技能模板
   2. 提供在线 SKILL.md 编辑器与 YAML 前言语法校验
