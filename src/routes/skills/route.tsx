@@ -434,29 +434,29 @@ function SkillDetailTabPanel({
         <div className="flex flex-col flex-1 min-h-0 gap-3">
           <DetailSection title="📁 关联源文件结构 (Associated Files)">
             {detail.files.length > 0 ? (
-              <div className="overflow-hidden rounded border border-border/60 bg-background/50 font-mono text-[11px]">
+              <div className="overflow-hidden rounded border border-border/60 bg-card font-mono text-[11px]">
                 {detail.files.map((file) => (
                   <div
                     key={file.path}
                     className="flex items-center gap-2 border-b border-border/40 px-2.5 py-1.5 last:border-b-0"
                   >
-                    <FileCode2Icon className="size-3.5 shrink-0 text-cyan-500" />
+                    <FileCode2Icon className="size-3.5 shrink-0 text-muted-foreground" />
                     <span className="min-w-0 flex-1 truncate text-foreground font-medium">
                       {file.name || file.path}
                     </span>
-                    <Badge variant="outline" className="rounded-xs text-[9px] px-1 py-0 border-cyan-500/30 text-cyan-500 bg-cyan-500/10">
+                    <Badge variant="outline" className="rounded-xs text-[9px] px-1 py-0 border-border bg-muted/40 text-foreground">
                       {file.isDir ? '扩展子目录' : (file.name === 'SKILL.md' ? '主规范说明书' : '辅助脚本')}
                     </Badge>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="overflow-hidden rounded border border-cyan-500/30 bg-cyan-500/5 p-2 font-mono text-[11px] text-cyan-600 dark:text-cyan-400 flex items-center justify-between">
+              <div className="overflow-hidden rounded border border-border/60 bg-card p-2 font-mono text-[11px] text-foreground flex items-center justify-between">
                 <span className="flex items-center gap-1.5 font-bold">
-                  <FileCode2Icon className="size-3.5 text-cyan-500" />
+                  <FileCode2Icon className="size-3.5 text-muted-foreground" />
                   SKILL.md
                 </span>
-                <Badge variant="outline" className="rounded-xs text-[9px] px-1.5 py-0 border-cyan-500/40 text-cyan-500 bg-cyan-500/10">
+                <Badge variant="outline" className="rounded-xs text-[9px] px-1.5 py-0 border-border bg-muted/40 text-foreground">
                   单文件精简规范
                 </Badge>
               </div>
