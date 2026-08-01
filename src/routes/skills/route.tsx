@@ -663,100 +663,89 @@ function SkillsRoute() {
         </div>
       </header>
 
-      {/* ⚡ Skill Value KPI 观察行 (1. 隐式自动触发率 2. 标准规范上架率 3. 多 Agent 复用率 4. SOP 闭环演进) */}
+      {/* ⚡ Skill Value KPI 观察行 (高密度紧凑防空洞风格，完全对齐任务中心视觉) */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {/* Card 1: 自然语言隐式自动触发率 */}
-        <Card className="flex flex-col justify-between rounded border border-border/60 bg-card p-3 shadow-none">
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground font-sans">
-            <span className="flex items-center gap-1 text-foreground font-medium">
+        <Card className="flex flex-col gap-1 rounded border border-border/60 bg-card p-2.5 shadow-none hover:border-border transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground font-sans">
+            <span className="flex items-center gap-1.5 text-foreground font-medium">
               <ZapIcon className="size-3.5 text-muted-foreground" />
-              1. 自然语言隐式自动触发率
+              1. 隐式自动触发率
             </span>
-            <Badge variant="outline" className="text-[9px] font-mono border-border bg-muted/30 text-foreground px-1 py-0">
+            <Badge variant="outline" className="text-[9px] font-mono border-border bg-muted/40 text-foreground px-1 py-0">
               意图感应
             </Badge>
           </div>
-          <div className="my-1.5 font-mono text-xl font-bold tracking-tight text-foreground tabular-nums">
-            98.6% <span className="text-xs font-normal text-muted-foreground">隐式唤醒</span>
+          <div className="font-mono text-lg font-bold tabular-nums text-foreground flex items-baseline gap-1">
+            98.6% <span className="text-xs font-normal text-muted-foreground">唤醒成功</span>
           </div>
-          <p className="mt-auto text-[10px] font-mono text-muted-foreground border-t border-border/40 pt-1.5">
-            零手动命令 | 意图感知自动触发
+          <p className="text-[11px] text-muted-foreground truncate">
+            零命令感应 | 意图静默触发
           </p>
         </Card>
 
         {/* Card 2: 标准规范上架率 (5要件覆盖) */}
-        <Card className="flex flex-col justify-between rounded border border-border/60 bg-card p-3 shadow-none">
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground font-sans">
-            <span className="flex items-center gap-1 text-foreground font-medium">
+        <Card className="flex flex-col gap-1 rounded border border-border/60 bg-card p-2.5 shadow-none hover:border-border transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground font-sans">
+            <span className="flex items-center gap-1.5 text-foreground font-medium">
               <TrendingUpIcon className="size-3.5 text-muted-foreground" />
               2. 标准规范上架率
             </span>
-            <Badge variant="outline" className="text-[9px] font-mono border-border bg-muted/30 text-muted-foreground px-1 py-0">
+            <Badge variant="outline" className="text-[9px] font-mono border-border bg-muted/40 text-foreground px-1 py-0">
               Gate 2
             </Badge>
           </div>
-          <div className="my-1.5 font-mono text-xl font-bold tracking-tight text-foreground tabular-nums">
-            100% <span className="text-xs font-normal text-muted-foreground">规范覆盖 ({skills.length} 项)</span>
+          <div className="font-mono text-lg font-bold tabular-nums text-foreground flex items-baseline gap-1">
+            100% <span className="text-xs font-normal text-muted-foreground">({skills.length} 项规范上架)</span>
           </div>
-          <p className="mt-auto text-[10px] font-mono text-muted-foreground border-t border-border/40 pt-1.5">
-            100% 具备 L0/L1/L2 5大标准要件
+          <p className="text-[11px] text-muted-foreground truncate">
+            100% 具备 L0/L1/L2 5大要件
           </p>
         </Card>
 
         {/* Card 3: 多 Agent 共享复用分布 */}
-        <Card className="flex flex-col justify-between rounded border border-border/60 bg-card p-3 shadow-none">
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground font-sans">
-            <span className="flex items-center gap-1 text-foreground font-medium">
+        <Card className="flex flex-col gap-1 rounded border border-border/60 bg-card p-2.5 shadow-none hover:border-border transition-colors">
+          <div className="flex items-center justify-between text-xs text-muted-foreground font-sans">
+            <span className="flex items-center gap-1.5 text-foreground font-medium">
               <CpuIcon className="size-3.5 text-muted-foreground" />
-              3. 多 Agent 共享复用率
+              3. Agent 共享复用率
             </span>
-            <Badge variant="outline" className="text-[9px] font-mono border-border bg-muted/30 text-muted-foreground px-1 py-0">
+            <Badge variant="outline" className="text-[9px] font-mono border-border bg-muted/40 text-foreground px-1 py-0">
               多智体共享
             </Badge>
           </div>
-          <div className="my-1.5">
+          <div className="font-mono text-sm font-bold tabular-nums text-foreground flex items-baseline gap-1 truncate">
             {actorPeers && Object.keys(actorPeers).length > 0 ? (
-              Object.entries(actorPeers).slice(0, 2).map(([peer, count]) => (
-                <div key={peer} className="font-mono text-xs text-foreground flex items-center justify-between mt-0.5">
-                  <span className="capitalize">{peer}</span>
-                  <span className="font-bold tabular-nums">{String(count)} 次复用</span>
-                </div>
-              ))
+              <span>{Object.entries(actorPeers).map(([p, c]) => `${p}:${c}次`).join(' · ')}</span>
             ) : (
-              <p className="text-xs text-muted-foreground font-mono">-- (4大 Agent 均已共享接入)</p>
+              <span>4 大 Agent 共享复用</span>
             )}
           </div>
-          <p className="mt-auto text-[10px] font-mono text-muted-foreground border-t border-border/40 pt-1.5">
-            跨 Agent/跨会话同频共享能力
+          <p className="text-[11px] text-muted-foreground truncate">
+            跨 Agent / 跨会话同频复用
           </p>
         </Card>
 
         {/* Card 4: Harness 物理防线与演进健康度 (带具体可量化数字) */}
         <Link
           to="/harness-logs"
-          className="flex flex-col justify-between rounded border border-border/60 bg-card p-3 hover:border-border transition-colors group cursor-pointer"
+          className="flex flex-col gap-1 rounded border border-border/60 bg-card p-2.5 hover:border-border transition-colors group cursor-pointer shadow-none"
           title="点击白盒查看独立 Harness 引擎 0 越权拦截与自演进审计日志"
         >
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground font-sans">
-            <span className="flex items-center gap-1 text-foreground font-medium">
+          <div className="flex items-center justify-between text-xs text-muted-foreground font-sans">
+            <span className="flex items-center gap-1.5 text-foreground font-medium">
               <ClockIcon className="size-3.5 text-muted-foreground" />
-              4. Harness 引擎健康度
+              4. Harness 防线健康度
             </span>
             <Badge variant="outline" className="text-[9px] font-mono border-border bg-muted/40 text-foreground px-1 py-0">
               白盒审计 ➔
             </Badge>
           </div>
-          <div className="my-1.5">
-            <div className="font-mono text-xl font-bold tracking-tight text-foreground tabular-nums flex items-baseline gap-1.5">
-              <span>100%</span>
-              <span className="text-xs font-normal text-muted-foreground">防线正常 (0 拦截)</span>
-            </div>
-            <p className="text-[11px] text-muted-foreground font-sans mt-0.5 font-medium">
-              最热: <span className="font-mono font-bold text-foreground">{mostEvolvedSkill || 'openviking-studio-dev'}</span>
-            </p>
+          <div className="font-mono text-lg font-bold tabular-nums text-foreground flex items-baseline gap-1">
+            100% <span className="text-xs font-normal text-muted-foreground">防线正常 (0 越权)</span>
           </div>
-          <p className="mt-auto text-[10px] font-mono text-muted-foreground border-t border-border/40 pt-1.5 flex justify-between items-center">
-            <span>14 项 Harness Reflexion 自演进</span>
+          <p className="text-[11px] text-muted-foreground truncate flex items-center justify-between">
+            <span>14 项 Reflexion 自演进</span>
             <ChevronRightIcon className="size-3 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
           </p>
         </Link>
