@@ -2,7 +2,6 @@ import * as React from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import {
-  ActivityIcon,
   ChevronRightIcon,
   ClockIcon,
   CpuIcon,
@@ -440,8 +439,8 @@ function SkillsRoute() {
 
   const skillsQuery = useQuery({
     queryFn: fetchSkills,
-    queryKey: ['skills', identityScopeKey],
-    staleTime: 30_000,
+    queryKey: ['skills'],
+    staleTime: 300_000,
   })
   const skills = skillsQuery.data ?? []
 
@@ -488,37 +487,28 @@ function SkillsRoute() {
     queryKey: ['skill-detail', identityScopeKey, selectedSkill?.uri],
   })
 
-  // 100% 真实后端数据驱动：调取 /api/v1/system/status 实时 Harness 监控数据
+  // 真实后端数据驱动：调取 /api/v1/system/status 获取 Harness 监控数据
+  // staleTime=5min，无轮询，避免每 10s 闪屏
   const harnessStatusQuery = useQuery({
     queryFn: async () => {
-      try {
-        const res = await getOvResult<Record<string, unknown>>(
-          ovClient.client.get({
-            url: '/api/v1/system/status',
-          })
-        )
-        const resultRec = asRecord(res?.result)
-        const metrics = asRecord(res?.harness_metrics) || asRecord(resultRec?.harness_metrics)
-        if (metrics) return metrics
-      } catch {
-        // Fallback
-      }
-      return {
-        actor_peers: { antigravity: 1, openclaw: 1 },
-        find_calls: 1,
-        store_calls: 1,
-        total_calls: 2,
-      }
+      const res = await getOvResult<Record<string, unknown>>(
+        ovClient.client.get({
+          url: '/api/v1/system/status',
+        })
+      )
+      const resultRec = asRecord(res?.result)
+      const metrics = asRecord(res?.harness_metrics) || asRecord(resultRec?.harness_metrics)
+      return metrics ?? null
     },
-    queryKey: ['harness-status', identityScopeKey],
-    refetchInterval: 10_000,
+    queryKey: ['harness-status'],
+    staleTime: 300_000,
   })
 
-  const metrics = harnessStatusQuery.data
-  const totalCalls = typeof metrics?.total_calls === 'number' ? metrics.total_calls : 2
-  const findCalls = typeof metrics?.find_calls === 'number' ? metrics.find_calls : 1
-  const storeCalls = typeof metrics?.store_calls === 'number' ? metrics.store_calls : 1
-  const actorPeers = asRecord(metrics?.actor_peers) || { antigravity: 1, openclaw: 1 }
+  const metrics = harnessStatusQuery.data ?? null
+  const totalCalls = typeof metrics?.total_calls === 'number' ? metrics.total_calls : null
+  const findCalls = typeof metrics?.find_calls === 'number' ? metrics.find_calls : null
+  const storeCalls = typeof metrics?.store_calls === 'number' ? metrics.store_calls : null
+  const actorPeers = asRecord(metrics?.actor_peers)
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-4">
@@ -602,7 +592,7 @@ function SkillsRoute() {
           <div className="flex items-center justify-between text-[11px] text-muted-foreground font-sans">
             <span className="flex items-center gap-1 text-cyan-600 dark:text-cyan-400 font-medium">
               <ZapIcon className="size-3.5 text-cyan-500" />
-              1. 避坑拦截力 (真实 API)
+              1. 避坑拦截力
             </span>
             <Badge variant="outline" className="text-[9px] font-mono border-cyan-500/40 text-cyan-500 px-1 py-0 bg-cyan-500/10">
               1933 网关
@@ -625,7 +615,7 @@ function SkillsRoute() {
           <div className="flex items-center justify-between text-[11px] text-muted-foreground font-sans">
             <span className="flex items-center gap-1 text-cyan-600 dark:text-cyan-400 font-medium">
               <TrendingUpIcon className="size-3.5 text-cyan-500" />
-              2. 检索 / 存储结构 (真实 API)
+              2. 检索 / 存储结构
             </span>
             <Badge variant="outline" className="text-[9px] font-mono border-cyan-500/40 text-cyan-500 px-1 py-0 bg-cyan-500/10">
               L0 / L1 向量
@@ -677,19 +667,11 @@ function SkillsRoute() {
           <div className="flex items-center justify-between text-[11px] text-muted-foreground font-sans">
             <span className="flex items-center gap-1 text-cyan-600 dark:text-cyan-400 font-medium">
               <ClockIcon className="size-3.5 text-cyan-500" />
-              4. 最热演进技能 (真实 API)
+              4. 最热演进技能
             </span>
-            <Badge variant="outline" className="text-[9px] font-mono border-cyan-500/40 text-cyan-500 px-1 py-0 bg-cyan-500/10">
-              v1.0.0
-            </Badge>
           </div>
           <div className="my-1.5">
-            <div className="font-mono text-xs font-bold text-cyan-600 dark:text-cyan-400 truncate" title="diagnosing-bugs">
-              diagnosing-bugs
-            </div>
-            <p className="text-[11px] text-foreground/80 font-sans mt-0.5">
-              已挂载 Harness 规约
-            </p>
+            <p className="text-xs text-muted-foreground font-mono">-- (暂无数据)</p>
           </div>
           <p className="mt-auto text-[10px] font-mono text-muted-foreground border-t border-cyan-500/20 pt-1.5">
             揭示项目中 Bug 最集中模块
