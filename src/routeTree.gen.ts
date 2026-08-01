@@ -26,6 +26,7 @@ import { Route as UsersRouteRouteImport } from './routes/users/route'
 import { Route as OauthConsentRouteImport } from './routes/oauth/consent'
 import { Route as OauthVerifyRouteImport } from './routes/oauth/verify'
 import { Route as SessionsIndexRouteImport } from './routes/sessions/index'
+import { Route as SkillsHarnessLogsRouteImport } from './routes/skills/harness-logs'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -112,6 +113,11 @@ const SessionsIndexRoute = SessionsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => SessionsRouteRoute,
 } as any)
+const SkillsHarnessLogsRoute = SkillsHarnessLogsRouteImport.update({
+  id: '/harness-logs',
+  path: '/harness-logs',
+  getParentRoute: () => SkillsRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -124,12 +130,13 @@ export interface FileRoutesByFullPath {
   '/retrieval': typeof RetrievalRouteRoute
   '/sessions': typeof SessionsRouteRouteWithChildren
   '/settings': typeof SettingsRouteRoute
-  '/skills': typeof SkillsRouteRoute
+  '/skills': typeof SkillsRouteRouteWithChildren
   '/tasks': typeof TasksRouteRoute
   '/users': typeof UsersRouteRoute
   '/harness-logs': typeof HarnessLogsRoute
   '/oauth/consent': typeof OauthConsentRoute
   '/oauth/verify': typeof OauthVerifyRoute
+  '/skills/harness-logs': typeof SkillsHarnessLogsRoute
   '/sessions/': typeof SessionsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -142,12 +149,13 @@ export interface FileRoutesByTo {
   '/resources': typeof ResourcesRouteRoute
   '/retrieval': typeof RetrievalRouteRoute
   '/settings': typeof SettingsRouteRoute
-  '/skills': typeof SkillsRouteRoute
+  '/skills': typeof SkillsRouteRouteWithChildren
   '/tasks': typeof TasksRouteRoute
   '/users': typeof UsersRouteRoute
   '/harness-logs': typeof HarnessLogsRoute
   '/oauth/consent': typeof OauthConsentRoute
   '/oauth/verify': typeof OauthVerifyRoute
+  '/skills/harness-logs': typeof SkillsHarnessLogsRoute
   '/sessions': typeof SessionsIndexRoute
 }
 export interface FileRoutesById {
@@ -162,12 +170,13 @@ export interface FileRoutesById {
   '/retrieval': typeof RetrievalRouteRoute
   '/sessions': typeof SessionsRouteRouteWithChildren
   '/settings': typeof SettingsRouteRoute
-  '/skills': typeof SkillsRouteRoute
+  '/skills': typeof SkillsRouteRouteWithChildren
   '/tasks': typeof TasksRouteRoute
   '/users': typeof UsersRouteRoute
   '/harness-logs': typeof HarnessLogsRoute
   '/oauth/consent': typeof OauthConsentRoute
   '/oauth/verify': typeof OauthVerifyRoute
+  '/skills/harness-logs': typeof SkillsHarnessLogsRoute
   '/sessions/': typeof SessionsIndexRoute
 }
 export interface FileRouteTypes {
@@ -189,6 +198,7 @@ export interface FileRouteTypes {
     | '/harness-logs'
     | '/oauth/consent'
     | '/oauth/verify'
+    | '/skills/harness-logs'
     | '/sessions/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -207,6 +217,7 @@ export interface FileRouteTypes {
     | '/harness-logs'
     | '/oauth/consent'
     | '/oauth/verify'
+    | '/skills/harness-logs'
     | '/sessions'
   id:
     | '__root__'
@@ -226,6 +237,7 @@ export interface FileRouteTypes {
     | '/harness-logs'
     | '/oauth/consent'
     | '/oauth/verify'
+    | '/skills/harness-logs'
     | '/sessions/'
   fileRoutesById: FileRoutesById
 }
@@ -240,7 +252,7 @@ export interface RootRouteChildren {
   RetrievalRouteRoute: typeof RetrievalRouteRoute
   SessionsRouteRoute: typeof SessionsRouteRouteWithChildren
   SettingsRouteRoute: typeof SettingsRouteRoute
-  SkillsRouteRoute: typeof SkillsRouteRoute
+  SkillsRouteRoute: typeof SkillsRouteRouteWithChildren
   TasksRouteRoute: typeof TasksRouteRoute
   UsersRouteRoute: typeof UsersRouteRoute
   HarnessLogsRoute: typeof HarnessLogsRoute
@@ -369,6 +381,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SessionsIndexRouteImport
       parentRoute: typeof SessionsRouteRoute
     }
+    '/skills/harness-logs': {
+      id: '/skills/harness-logs'
+      path: '/harness-logs'
+      fullPath: '/skills/harness-logs'
+      preLoaderRoute: typeof SkillsHarnessLogsRouteImport
+      parentRoute: typeof SkillsRouteRoute
+    }
   }
 }
 
@@ -384,6 +403,18 @@ const SessionsRouteRouteWithChildren = SessionsRouteRoute._addFileChildren(
   SessionsRouteRouteChildren,
 )
 
+interface SkillsRouteRouteChildren {
+  SkillsHarnessLogsRoute: typeof SkillsHarnessLogsRoute
+}
+
+const SkillsRouteRouteChildren: SkillsRouteRouteChildren = {
+  SkillsHarnessLogsRoute: SkillsHarnessLogsRoute,
+}
+
+const SkillsRouteRouteWithChildren = SkillsRouteRoute._addFileChildren(
+  SkillsRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GraphRouteRoute: GraphRouteRoute,
@@ -395,7 +426,7 @@ const rootRouteChildren: RootRouteChildren = {
   RetrievalRouteRoute: RetrievalRouteRoute,
   SessionsRouteRoute: SessionsRouteRouteWithChildren,
   SettingsRouteRoute: SettingsRouteRoute,
-  SkillsRouteRoute: SkillsRouteRoute,
+  SkillsRouteRoute: SkillsRouteRouteWithChildren,
   TasksRouteRoute: TasksRouteRoute,
   UsersRouteRoute: UsersRouteRoute,
   HarnessLogsRoute: HarnessLogsRoute,
