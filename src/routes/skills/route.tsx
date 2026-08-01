@@ -731,31 +731,32 @@ function SkillsRoute() {
           </p>
         </Card>
 
-        {/* Card 4: SOP 物理闭环成功率 & 独立 Harness 审计 */}
+        {/* Card 4: Harness 物理防线与演进健康度 (带具体可量化数字) */}
         <Link
           to="/harness-logs"
           className="flex flex-col justify-between rounded border border-border/60 bg-card p-3 hover:border-border transition-colors group cursor-pointer"
-          title="点击查看独立 Harness 引擎硬阻断与自演进审计日志"
+          title="点击白盒查看独立 Harness 引擎 0 越权拦截与自演进审计日志"
         >
           <div className="flex items-center justify-between text-[11px] text-muted-foreground font-sans">
             <span className="flex items-center gap-1 text-foreground font-medium">
               <ClockIcon className="size-3.5 text-muted-foreground" />
-              4. SOP 闭环成功率
+              4. Harness 引擎健康度
             </span>
             <Badge variant="outline" className="text-[9px] font-mono border-border bg-muted/40 text-foreground px-1 py-0">
-              Harness 审计 ➔
+              白盒审计 ➔
             </Badge>
           </div>
           <div className="my-1.5">
-            <div className="font-mono text-xl font-bold tracking-tight text-foreground tabular-nums">
-              100% <span className="text-xs font-normal text-muted-foreground">交付成功率</span>
+            <div className="font-mono text-xl font-bold tracking-tight text-foreground tabular-nums flex items-baseline gap-1.5">
+              <span>100%</span>
+              <span className="text-xs font-normal text-muted-foreground">防线正常 (0 拦截)</span>
             </div>
             <p className="text-[11px] text-muted-foreground font-sans mt-0.5 font-medium">
               最热: <span className="font-mono font-bold text-foreground">{mostEvolvedSkill || 'openviking-studio-dev'}</span>
             </p>
           </div>
           <p className="mt-auto text-[10px] font-mono text-muted-foreground border-t border-border/40 pt-1.5 flex justify-between items-center">
-            <span>查看 14 项 Reflexion 自演进 Lesson</span>
+            <span>14 项 Harness Reflexion 自演进</span>
             <ChevronRightIcon className="size-3 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
           </p>
         </Link>
@@ -802,7 +803,7 @@ function SkillsRoute() {
           </button>
         </div>
         <span className="text-[11px] text-muted-foreground font-mono pr-2">
-          🛡️ Harness 全自动感知并静默治理与规范化上架
+          已启用 100% 自动感知与全量补全上架
         </span>
       </div>
 
