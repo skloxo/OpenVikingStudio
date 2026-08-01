@@ -49,6 +49,24 @@ npm run build && cp -r dist/* /home/skloxo/.local/lib/python3.12/site-packages/o
 
 ---
 
+### 📌 P1: [ ] v1.1.23d：全盘游离临时脚本与非源码文件彻底审计清洗专项
+
+**类型**：Refactoring & Cleanup  
+**优先级**：P1 (用户明确指令：技能中心开发完成后立即执行全盘排查)  
+**来源**：用户指导 ("对我们自己开发的这些代码，以及 OpenWiki 所有的内容进行纠偏... 严禁在 scripts/ 或 public/ 乱写临时 .py/.json")  
+**负责人**：Agent (Antigravity)  
+**预计规模**：S (1 个迭代)
+
+#### 1. 问题描述
+历史上在开发调试过程中，可能遗留了某些游离在 `scripts/`、`public/` 或根目录下的临时 `.py`、`.json`、`.sh` 脚本或辅助文件。需要全盘白盒扫描，彻底清理一切违背“直改源码”原则的杂质文件。
+
+#### 2. 目标与验收标准
+1. **全盘扫隐患**：对 `OpenVikingStudio` 及 `mcp-openviking` 进行全盘物理扫描，找出所有不在标准 Git/源码目录下的游离脚本。
+2. **源码级归集**：将所有合理逻辑 100% 收敛至 React 源码 component/route 或 Backend python 服务主逻辑中。
+3. **零杂质交付**：彻底删除 `scripts/` 与 `public/` 下一切临时 `.py`/`.json` 文件，`git status` 显示绝对干净。
+
+---
+
 ## 📋 待调度后续原子工单 (Backlog Queue)
 
 ### 📌 P1-1: [ ] v1.1.23d：检索测试台 `/retrieval` 页 L0/L1 白盒检索轨迹树与得分渲染
