@@ -255,6 +255,35 @@
   1. 调用 `openviking_consistency` 检查 SQLite 元数据与向量索引对齐状态
   2. 提供“一键修复孤立节点” (Orphan Node Repair) 运维按钮
 
+#### ⏳ v1.1.38: 技能中心 /skills 全维度可观测面板与调用迹追踪 (Skill Observability & Analytics Dashboard)
+- **来源**: 技能中心短板强化 & 用户指引（"能观测到调用的情况是怎么样的"）
+- **目标**:
+  1. 展示 85 个技能各自的：激活总次数、触发频率、最近调取时间、调用 Agent 来源 (Antigravity/OpenClaw/Hermes)、成功/失败率
+  2. 技能调用轨迹下钻：点击具体技能卡片，查看历史调用的日志片段、输入 Context 与输出 Payload
+  3. 提供热度榜单与冷门技能排行榜
+
+#### ⏳ v1.1.39: 基于 Reflexion / Voyager 范式的 Skill-Loop 闭环自进化引擎 (Grounded Critique & Self-Refine Loop)
+- **来源**: 业界最新 Agent 自进化框架 (Reflexion, Voyager, Self-Evolving-Skill)
+- **目标**:
+  1. **反馈捕获 (Grounded Critique)**: 技能执行完毕后，自动捕捉终端编译结果、单元测试状态与用户修正
+  2. **经验萃取 (Lesson Extraction)**: 若遇到踩坑/异常，AI 自动生成高密度 `Lesson Learned` 避坑摘要
+  3. **SKILL.md 自动热重写 (Auto Refine)**: 自动追加 `Lesson Learned` 至该技能的 `references/lessons.md` 或 `SKILL.md`，下次触发时自动获得避坑记忆
+  4. **版本控制 (Skill Versioning)**: 为演进后的技能生成 `v1.x.y` 规则版本号
+
+#### ⏳ v1.1.40: 技能健康度综合评分与优胜劣汰矩阵 (Skill Health Scoring & Elimination Matrix)
+- **来源**: NousResearch Hermes-Agent / EvoSkills 评估体系
+- **目标**:
+  1. 基于【活跃度、成功率、修正频次、避坑积累量】计算 85 个技能的健康度得分 (0~100 分)
+  2. 健康度低（频繁导致构建失败/长期无人调用）的技能给予警告、降级或自动修复提醒
+  3. 高频优秀技能获得最高权重倾斜
+
+#### ⏳ v1.1.41: 技能创生、克隆与在线沙盒测试器 (Autonomous Skill Creation & Playground)
+- **来源**: EvoSkills 自动构建范式
+- **目标**:
+  1. 支持根据自然语言诉求自动生成符合 `SKILL.md` 规范的全新技能模板
+  2. 提供在线 SKILL.md 编辑器与 YAML 前言语法校验
+  3. 提供沙盒 Mock 触发测试器：在页面上一键 Simulate 触发该技能并查看 Agent 响应
+
 ---
 
 ## 📊 迭代总览
