@@ -203,6 +203,21 @@
   2. 视口外节点 Viewport Culling 自动剪裁隐去
   3. 优化纯 GPU 顶点着色与 Batching，彻底提升低配 GPU 帧率
 
+#### ⏳ v1.1.32: 360° OpenViking 核心服务可观测性与健康度指标迭代 (Observability & Health Dashboard)
+- **来源**: 2026-08-01 1933 冻结事故与用户可观测性排查反馈
+- **目标**:
+  1. **首页 /home — 存活红绿灯与降级模式指示器 (Health Badge & Mode Indicator)**:
+     - 增加 `1933 API (1.5ms)`、`11432 Embedding-8B (在线)`、`11433 Reranker-0.6b (在线)` 实时心跳徽章。
+     - 显示运行模式指示器（`HTTP + CLI 双模式` 或 `CLI-Only 降级警报`）。
+     - 引入 CPU/内存红线警告 Banner（CPU > 80% 或线程池死锁时高亮预警）。
+  2. **监控页 /monitoring — API 时延分位与降级率图表**:
+     - 新增 API P95 / P99 响应耗时折线图 (`find` / `read` / `write`)。
+     - 新增 Embedding 与 Reranker 本地 LLM 模型推理耗时统计。
+     - 监控并展示 MCP CLI 降级发生率统计。
+  3. **任务中心 /tasks — 概念引导与空状态预警**:
+     - 显式文案说明："任务中心用于呈现离线重索引与长时批处理 Task"。
+     - 列表为空时提供友好空状态提示（"当前离线批处理队列空闲，所有 1933 实时 API 正常运行中"），防止误判挂掉。
+
 ---
 
 ## 📊 迭代总览
