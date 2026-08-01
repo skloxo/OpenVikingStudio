@@ -225,6 +225,21 @@ description: Use when developing, refactoring, or iterating OpenVikingStudio (VK
   2. **UI 明确标示**：在观察行上方标注 `🕒 统计范围: 最近 24 小时 (24H Rolling)` 并在各 Card 标签处使用 `24H` 标识；
   3. **时效高灵敏度**：确保数据实时反映近 24 小时内 Agent 的调用、阻断与演进情况。
 
+#### 📌 Lesson 2026-08-01 #28：零 Mock 默认值彻底清洗与真实 API 绑盘守则
+- **CONTEXT**：代码中曾残留 `find_calls: 210`, `store_calls: 18`, `total_calls: 228` 等默认 fallback Mock 数字，导致页面刚加载时呈现假数据。
+- **REFLECTION**：遵循绝对数据真实性铁律（Absolute Data Integrity），前端与 Vite 代理层严禁硬编码任何拟造数字；无历史记录时默认显示 0 或 100%，真实反映底座状态。
+- **LESSON**：数据真实性清洗标准：
+  1. **切除 Mock 初始值**：在代理层与前端 state 中将初始 fallback 全部清理为真实的 `0`；
+  2. **优雅状态处理**：无调用记录时，显示 `近 24H 全量走 VK 集中通道` / `近 24H 零挂起 · 零报错交付`；
+  3. **数据物理绝对对齐**：确保界面所见即后端真实盘点与磁盘物理实时记录。
+
+#### 📌 Lesson 2026-08-01 #29：全盘语法探针与组件防崩保底守则
+- **CONTEXT**：在清理假数据过程中，误删或遗漏组件 Icon 导入（如 `SearchIcon`），导致路由崩溃。
+- **REFLECTION**：任何代码变更后必须第一时间进行语法探针排查与静态 Lint 校验，确保所有 JSX 图标与类型无缝导出，预防运行时崩溃。
+- **LESSON**：组件防崩 2 大标准：
+  1. **严格 Icon 导盘**：使用到的 Lucide 图标统一在头部集中导入；
+  2. **双重计算防护**：大数字计算算子全量使用空值防御 `Math.max(1, ...)` 避免 `NaN` 或零除崩溃。
+
 ---
 
 ## 一、全盘文档三层治理体系与模块导航网 (3-Tier Document Hierarchy & Map)
