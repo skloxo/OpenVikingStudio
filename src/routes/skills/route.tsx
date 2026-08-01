@@ -663,10 +663,10 @@ function SkillsRoute() {
         </div>
       </header>
 
-      {/* ⚡ Skill Value KPI 观察行 (高密度紧凑防空洞风格，完全对齐任务中心视觉) */}
+      {/* ⚡ Skill Value KPI 观察行 (高密度紧凑防空洞风格，完全对齐任务中心 1px 细边框视觉) */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {/* Card 1: 自然语言隐式自动触发率 */}
-        <Card className="flex flex-col gap-1 rounded border border-border/60 bg-card p-2.5 shadow-none hover:border-border transition-colors">
+        <Card className="flex flex-col gap-1 p-2.5 shadow-none hover:border-border transition-colors">
           <div className="flex items-center justify-between text-xs text-muted-foreground font-sans">
             <span className="flex items-center gap-1.5 text-foreground font-medium">
               <ZapIcon className="size-3.5 text-muted-foreground" />
@@ -685,7 +685,7 @@ function SkillsRoute() {
         </Card>
 
         {/* Card 2: 标准规范上架率 (5要件覆盖) */}
-        <Card className="flex flex-col gap-1 rounded border border-border/60 bg-card p-2.5 shadow-none hover:border-border transition-colors">
+        <Card className="flex flex-col gap-1 p-2.5 shadow-none hover:border-border transition-colors">
           <div className="flex items-center justify-between text-xs text-muted-foreground font-sans">
             <span className="flex items-center gap-1.5 text-foreground font-medium">
               <TrendingUpIcon className="size-3.5 text-muted-foreground" />
@@ -704,7 +704,7 @@ function SkillsRoute() {
         </Card>
 
         {/* Card 3: 多 Agent 共享复用分布 */}
-        <Card className="flex flex-col gap-1 rounded border border-border/60 bg-card p-2.5 shadow-none hover:border-border transition-colors">
+        <Card className="flex flex-col gap-1 p-2.5 shadow-none hover:border-border transition-colors">
           <div className="flex items-center justify-between text-xs text-muted-foreground font-sans">
             <span className="flex items-center gap-1.5 text-foreground font-medium">
               <CpuIcon className="size-3.5 text-muted-foreground" />
@@ -726,7 +726,7 @@ function SkillsRoute() {
           </p>
         </Card>
 
-        {/* Card 4: Harness 物理防线与演进健康度 (带具体可量化数字) */}
+        {/* Card 4: Harness 物理防线与演进健康度 (带具体可量化数字，1px 细边框) */}
         <Link
           to="/harness-logs"
           className="flex flex-col gap-1 rounded border border-border/60 bg-card p-2.5 hover:border-border transition-colors group cursor-pointer shadow-none"
