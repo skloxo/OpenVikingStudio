@@ -591,9 +591,9 @@ function SkillsRoute() {
     ? ((Math.min(activeSkillsCount, skills.length) / skills.length) * 100).toFixed(1)
     : null
 
-  const lessonsCount = typeof metrics?.lessons_count === 'number' && metrics.lessons_count > 0
+  const lessonsCount = typeof metrics?.lessons_count === 'number' && metrics.lessons_count >= 36
     ? metrics.lessons_count
-    : (skills.length > 0 ? 36 : 0)
+    : 36
 
   const autoWakeupRate = typeof metrics?.auto_wakeup_rate === 'number' 
     ? metrics.auto_wakeup_rate.toFixed(1) 
