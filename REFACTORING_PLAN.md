@@ -36,7 +36,7 @@
 
 ---
 
-### 📌 P0: [ ] v1.2.0-A：Harness 自然语言意图碰撞与语义歧义在线探测引擎
+### 📌 P0: [ ] v1.1.26a：Harness 自然语言意图碰撞与语义歧义在线探测引擎
 
 **类型**：Architecture / Feature  
 **优先级**：P0 (高优先级 - 紧随任务中心/技能中心后执行)  
@@ -53,7 +53,7 @@
 
 ---
 
-### 📌 P0: [ ] v1.2.0-B：Harness 技能沙盒静默跑测与基准评估校验 (Sandbox Dry-Run Check)
+### 📌 P0: [ ] v1.1.26b：Harness 技能沙盒静默跑测与基准评估校验 (Sandbox Dry-Run Check)
 
 **类型**：Architecture / Feature  
 **优先级**：P0 (高优先级)  
@@ -70,7 +70,7 @@
 
 ---
 
-### 📌 P0: [ ] v1.2.0-C：Harness SOP 提示词自适应进化与版本回溯飞轮 (Prompt Auto-Tuning)
+### 📌 P0: [ ] v1.1.26c：Harness SOP 提示词自适应进化与版本回溯飞轮 (Prompt Auto-Tuning)
 
 **类型**：Architecture / Feature  
 **优先级**：P0 (高优先级)  
@@ -87,13 +87,14 @@
 
 ---
 
-### 📌 P0: [ ] v1.2.0-D：Harness 运行时最小权限防线与白盒拦截账本 (Runtime Guardrails Ledger)
+### 📌 P0: [ ] v1.1.26d：Harness 运行时最小权限防线与白盒拦截账本 (Runtime Guardrails Ledger)
 
 **类型**：Security / Architecture  
 **优先级**：P0 (高优先级)  
 **来源**：用户指导 (Harness 引擎迭代排期)  
 **负责人**：Agent (Antigravity)  
 **预计规模**：S (1 个迭代)
+
 
 #### 1. 目标
 在 Agent 动态调取技能执行时，Harness 动态管控允许调用的 MCP 工具白名单 (`allowed_tools`)，物理拦截越权操作与高危系统指令，白盒输出拦截账本。
