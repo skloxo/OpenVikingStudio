@@ -498,31 +498,7 @@ function SkillsRoute() {
   const [reindexStatusMsg, setReindexStatusMsg] = React.useState('')
   const [showLessonsDrawer, setShowLessonsDrawer] = React.useState(false)
 
-  const [activeScopeFilter, setActiveScopeFilter] = React.useState<'all' | 'agent' | 'user' | 'governance'>('all')
-
-  const [nonCompliantList, setNonCompliantList] = React.useState<Array<{ name: string; path: string; source: string; missing_reason: string }>>([])
-
-  const handleFixSingleSkill = async (skillName: string) => {
-    try {
-      setIsReindexing(true)
-      setReindexStatusMsg(`正在一键规范化上架 ${skillName}...`)
-      // 物理感应并一键补全 SKILL.md
-      setNonCompliantList((prev) => prev.filter((item) => item.name !== skillName))
-      await getOvResult(
-        ovClient.client.post({
-          url: '/api/v1/system/reindex',
-        })
-      )
-    } catch {
-      // Fallback UI migration
-    } finally {
-      setTimeout(() => {
-        setIsReindexing(false)
-        setReindexStatusMsg('')
-        void skillsQuery.refetch()
-      }, 1500)
-    }
-  }
+  const [activeScopeFilter, setActiveScopeFilter] = React.useState<'all' | 'agent' | 'user'>('all')
 
   const skillsQuery = useQuery({
     queryFn: fetchSkills,
