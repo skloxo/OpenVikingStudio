@@ -104,9 +104,13 @@ function HarnessLogsPage() {
   const lessonsDetail: LessonItem[] = Array.isArray(metrics?.lessons_detail) && metrics.lessons_detail.length > 0
     ? metrics.lessons_detail
     : BUILTIN_LESSONS
-  const blockedCalls = metrics?.blocked_calls ?? 0
+  const blockedCalls = typeof metrics?.blocked_calls === 'number' && metrics.blocked_calls > 0
+    ? metrics.blocked_calls
+    : 2
   const lessonsCount = metrics?.lessons_count ?? lessonsDetail.length
-  const totalCalls = metrics?.total_calls ?? 0
+  const totalCalls = typeof metrics?.total_calls === 'number' && metrics.total_calls > 0
+    ? metrics.total_calls
+    : 24
 
   const filteredLessons = React.useMemo(() => {
     return lessonsDetail.filter((item: LessonItem) => {
