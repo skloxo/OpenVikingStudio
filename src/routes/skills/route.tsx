@@ -7,7 +7,6 @@ import {
   CpuIcon,
   FileCode2Icon,
   LoaderCircleIcon,
-  RefreshCwIcon,
   SearchIcon,
   SparklesIcon,
   TrendingUpIcon,
@@ -495,10 +494,6 @@ function SkillsRoute() {
   const { identityScopeKey } = useAppConnection()
   const [selectedSkill, setSelectedSkill] = React.useState<SkillItem | null>(null)
   const [searchQuery, setSearchQuery] = React.useState('')
-  const [isReindexing, setIsReindexing] = React.useState(false)
-  const [reindexStatusMsg, setReindexStatusMsg] = React.useState('')
-  const [showLessonsDrawer, setShowLessonsDrawer] = React.useState(false)
-
   const [activeScopeFilter, setActiveScopeFilter] = React.useState<'all' | 'agent' | 'user'>('all')
 
   const skillsQuery = useQuery({
@@ -517,30 +512,6 @@ function SkillsRoute() {
       return s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q)
     })
   }, [skills, searchQuery, activeScopeFilter])
-
-  // 移除盲目 3s 轮询，采用 0 开销事件监听：仅在必要时感知后端探针事件
-  const handleTriggerReindex = async () => {
-    try {
-      setIsReindexing(true)
-      setReindexStatusMsg('已触发后台补全...')
-      
-      await getOvResult(
-        ovClient.client.post({
-          url: '/api/v1/system/reindex',
-        })
-      )
-
-      setReindexStatusMsg('后台补全进行中...')
-    } catch (err) {
-      setReindexStatusMsg('后台任务进行中...')
-    } finally {
-      setTimeout(() => {
-        setIsReindexing(false)
-        setReindexStatusMsg('')
-        void skillsQuery.refetch()
-      }, 3000)
-    }
-  }
 
   const connectionUnavailable =
     isOvClientError(skillsQuery.error) &&
@@ -610,37 +581,19 @@ function SkillsRoute() {
           <p className="max-w-3xl text-xs text-muted-foreground font-mono">
             {t('description')}
           </p>
-          {reindexStatusMsg && (
-            <p className="font-mono text-[11px] text-foreground animate-pulse mt-0.5">
-              🛡️ {reindexStatusMsg}
-            </p>
-          )}
+
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* 搜索框与精简触发按钮 */}
-          <div className="relative">
-            <SearchIcon className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="搜索技能名称或简介..."
-              className="h-8 w-48 rounded border border-border bg-background pl-8 pr-3 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:border-cyan-500 focus:outline-hidden transition-colors"
-            />
-          </div>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleTriggerReindex}
-            disabled={isReindexing}
-            className="h-8 gap-1.5 font-mono text-xs text-foreground border-border hover:bg-muted font-normal"
-            title="触发 OpenViking 官方后台自动补全全量技能简介"
-          >
-            <RefreshCwIcon className={cn('size-3.5 text-muted-foreground', isReindexing && 'animate-spin')} />
-            {isReindexing ? '生成中...' : '⚡ 补全简介'}
-          </Button>
+        {/* 搜索框 (补全简介由 Harness 入库时自动完成，无需手动按钮) */}
+        <div className="relative">
+          <SearchIcon className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="搜索技能名称或简介..."
+            className="h-8 w-48 rounded border border-border bg-background pl-8 pr-3 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:border-cyan-500 focus:outline-hidden transition-colors"
+          />
         </div>
       </header>
 
