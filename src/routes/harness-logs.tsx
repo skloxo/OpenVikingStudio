@@ -111,7 +111,9 @@ function HarnessLogsPage() {
   const blockedCalls = typeof metrics?.blocked_calls === 'number' && metrics.blocked_calls > 0
     ? metrics.blocked_calls
     : 2
-  const lessonsCount = BUILTIN_LESSONS.length  // 永远是内置规约数 36
+  const lessonsCount = typeof metrics?.lessons_count === 'number'
+    ? metrics.lessons_count
+    : BUILTIN_LESSONS.length  // fallback to 36 only when API unavailable
   const diskLessonsCount = typeof metrics?.store_calls === 'number'
     ? metrics.store_calls
     : (typeof metrics?.lessons_count === 'number' && metrics.lessons_count < BUILTIN_LESSONS.length
