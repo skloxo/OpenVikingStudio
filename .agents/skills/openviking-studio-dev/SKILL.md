@@ -140,6 +140,14 @@ description: Use when developing, refactoring, or iterating OpenVikingStudio (VK
   3. **多 Agent 共享复用率 (Multi-Agent Reuse Rate)**：4 大领域 Agent (researcher/developer/operator/test) 频次与跨会话共享；
   4. **SOP 物理闭环成功率 (SOP Closure Rate)**：交付成功率与 14 项 Reflexion 自演进 Lessons (一键跳转独立 Harness 审计专页)。
 
+#### 📌 Lesson 2026-08-01 #17：Harness 后台静默全自动规范化与零人工干预原则
+- **CONTEXT**：以前在技能中心 UI 放手动的“待规范技能卡片”和“⚡ 一键规范化上架”按钮，违背了零人工提醒、自动化的原则（人类没有精力盯页面按按钮）。
+- **REFLECTION**：待规范技能的探测、自动大模型规范化补全与源码改写，物理上属于 Harness 自演进引擎的底层机制；技能中心页面应彻底切除手动卡片，交由 Harness 后台静默自动感知与自愈上架。
+- **LESSON**：严守 Harness 静默全自动治理守则：
+  1. **零 UI 手动按键**：切除技能中心 UI 手动按键，系统感知到野路子技能时自动调大模型补全 SOP 规范并改写源码上架；
+  2. **日志归拢至 Harness 审计**：自动规范化履历与日志统一汇总存入 `🛡️ Harness 引擎审计` (`/harness-logs`)；
+  3. **技能主面保持纯粹**：技能中心界面保持干净，只展示白盒共享的规范技能。
+
 ---
 
 ## 一、全盘文档三层治理体系与模块导航网 (3-Tier Document Hierarchy & Map)
