@@ -785,7 +785,7 @@ function SkillsRoute() {
         </Link>
       </div>
 
-      {/* 4px 微圆角 Scope 分类与状态筛选标签栏 */}
+      {/* 4px 微圆角 Scope 分类筛选标签栏 */}
       <div className="flex items-center justify-between gap-2 rounded border border-border/60 bg-muted/20 p-1 font-mono text-xs">
         <div className="flex items-center gap-1">
           <button
@@ -794,7 +794,7 @@ function SkillsRoute() {
             className={cn(
               'rounded-xs px-2.5 py-1 text-center font-medium transition-colors',
               activeScopeFilter === 'all'
-                ? 'bg-background text-cyan-500 shadow-xs border border-border/60'
+                ? 'bg-background text-foreground shadow-xs border border-border/60'
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >
@@ -806,7 +806,7 @@ function SkillsRoute() {
             className={cn(
               'rounded-xs px-2.5 py-1 text-center font-medium transition-colors',
               activeScopeFilter === 'agent'
-                ? 'bg-background text-cyan-500 shadow-xs border border-border/60'
+                ? 'bg-background text-foreground shadow-xs border border-border/60'
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >
@@ -818,88 +818,17 @@ function SkillsRoute() {
             className={cn(
               'rounded-xs px-2.5 py-1 text-center font-medium transition-colors',
               activeScopeFilter === 'user'
-                ? 'bg-background text-indigo-500 shadow-xs border border-border/60'
+                ? 'bg-background text-foreground shadow-xs border border-border/60'
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >
             👤 User 偏好 ({skills.filter((s) => s.scope === 'user').length})
           </button>
-          <button
-            type="button"
-            onClick={() => setActiveScopeFilter('governance')}
-            className={cn(
-              'rounded-xs px-2.5 py-1 text-center font-medium transition-colors flex items-center gap-1.5',
-              activeScopeFilter === 'governance'
-                ? 'bg-background text-rose-500 shadow-xs border border-rose-500/40'
-                : 'text-rose-400/80 hover:text-rose-500'
-            )}
-          >
-            <span className="size-2 rounded-full bg-rose-500 animate-pulse" />
-            ⚠️ 待规范技能 ({nonCompliantList.length})
-          </button>
         </div>
-
         <span className="text-[11px] text-muted-foreground font-mono pr-2">
-          Harness 自动装载双门锁防线已生效
+          🛡️ Harness 全自动感知并静默治理与规范化上架
         </span>
       </div>
-
-      {activeScopeFilter === 'governance' ? (
-        <Card className="p-4 flex flex-col gap-3 border-rose-500/30 bg-rose-500/5">
-          <div className="flex items-center justify-between border-b border-rose-500/20 pb-2">
-            <div>
-              <h3 className="text-sm font-semibold text-rose-500 flex items-center gap-2">
-                🛡️ 技能白盒治理与意图感应优化面板 (Gate 2 Governance)
-              </h3>
-              <p className="text-xs text-muted-foreground mt-0.5 font-sans">
-                物理探针扫出的未完工或缺少 L0 意图/L1 SOP 规范的技能目录。通过补全规范要件提升 Agent 准确理解与高精度触发能力，避免重复造轮子。
-              </p>
-            </div>
-            <Badge variant="outline" className="font-mono text-xs border-rose-500/40 bg-rose-500/10 text-rose-500">
-              {nonCompliantList.length} 项待治理
-            </Badge>
-          </div>
-
-          {nonCompliantList.length === 0 ? (
-            <div className="py-8 text-center text-xs text-muted-foreground font-mono">
-              🎉 完美！当前全量本地技能皆已符合 OpenViking 标准规范并已成功装载上架！
-            </div>
-          ) : (
-            <div className="grid gap-2">
-              {nonCompliantList.map((item) => (
-                <div
-                  key={item.name}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded border border-rose-500/30 bg-background/60 p-2.5 font-mono text-xs"
-                >
-                  <div className="grid gap-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-foreground">{item.name}</span>
-                      <Badge variant="outline" className="text-[10px] border-rose-500/40 text-rose-400 bg-rose-500/10">
-                        {item.missing_reason}
-                      </Badge>
-                    </div>
-                    <span className="text-[11px] text-muted-foreground font-mono">
-                      📁 路径: {item.path}
-                    </span>
-                  </div>
-
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="h-7 text-xs border-border text-foreground hover:bg-muted rounded"
-                    disabled={isReindexing}
-                    onClick={() => void handleFixSingleSkill(item.name)}
-                  >
-                    <SparklesIcon className="size-3.5 text-muted-foreground" />
-                    ⚡ 一键规范化上架
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
-      ) : null}
 
       {skillsQuery.isLoading ? (
         <Card className="min-h-56 items-center justify-center">
