@@ -412,9 +412,9 @@ function SkillDetailTabPanel({
 
       {/* L1 级：SOP 流程概览与工具权限 */}
       {activeTab === 'L1' && (
-        <div className="grid gap-3">
-          <DetailSection title="📋 SOP 核心流程规范 (SOP Core Guidelines)">
-            <pre className="whitespace-pre-wrap rounded border border-border/60 bg-muted/20 p-2.5 font-sans text-xs leading-5 text-muted-foreground max-h-96 overflow-y-auto">
+        <div className="flex flex-col flex-1 min-h-0 gap-3">
+          <DetailSection title="📋 SOP 核心流程规范 (SOP Core Guidelines)" className="flex flex-col flex-1 min-h-0">
+            <pre className="overflow-y-auto flex-1 min-h-[450px] whitespace-pre-wrap rounded border border-border/60 bg-muted/20 p-3 font-sans text-xs leading-5 text-foreground/90">
               {detail.overview || extractSopOverview(detail.content, detail.description)}
             </pre>
           </DetailSection>
@@ -1090,13 +1090,15 @@ function DetailMetric({
 
 function DetailSection({
   children,
+  className,
   title,
 }: {
   children: React.ReactNode
+  className?: string
   title: string
 }) {
   return (
-    <section className="grid gap-1.5">
+    <section className={cn('grid gap-1.5', className)}>
       <h3 className="text-xs font-semibold text-foreground tracking-tight">{title}</h3>
       {children}
     </section>
