@@ -32,15 +32,14 @@ export function RetrievalAccuracyTrendChart({
   const { t } = useTranslation('monitoringPage')
 
   const data: AccuracyDataPoint[] = React.useMemo(() => {
-    const dates = ['07-23', '07-24', '07-25', '07-26', '07-27', '07-28', '今日']
-    const accuracies = [96.2, 97.5, 98.1, 99.0, 99.4, 100.0, currentAccuracy ?? 100.0]
-    const cosines = [0.1820, 0.1890, 0.1940, 0.1990, 0.2010, 0.2045, currentCosine ?? 0.2053]
-
-    return dates.map((date, idx) => ({
-      date,
-      top1Accuracy: accuracies[idx] || 100.0,
-      cosineScore: cosines[idx] || 0.2053,
-    }))
+    const todayStr = '实时采样'
+    return [
+      {
+        date: todayStr,
+        top1Accuracy: currentAccuracy ?? 100.0,
+        cosineScore: currentCosine ?? 0.2053,
+      },
+    ]
   }, [currentAccuracy, currentCosine])
 
   const latestAcc = (data[data.length - 1]?.top1Accuracy || 100.0).toFixed(1)
