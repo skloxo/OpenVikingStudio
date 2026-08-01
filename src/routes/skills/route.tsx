@@ -243,31 +243,6 @@ async function fetchSkillDetail(skill: SkillItem): Promise<SkillDetail> {
     targetUri = targetUri.replace('viking://agent/skills/', 'viking://agent/default/skills/')
   }
 
-  // 物理强透视：优先通过磁盘探针双向扫描文件系统上的真实多文件关联结构 (如 agents/, tests.md, mocking.md)
-  let probeFiles: Array<{ isDir: boolean; name: string; path: string }> = []
-  let probeContent = ''
-  try {
-    const probeRes = await fetch(
-      `/api/v1/system/skill_content?path=${encodeURIComponent(skill.path || '')}&name=${encodeURIComponent(skill.name)}`
-    )
-    if (probeRes.ok) {
-      const probeData = (await probeRes.json()) as {
-        content?: string
-        files?: Array<{ is_dir: boolean; name: string; path: string }>
-      }
-      if (probeData.content) probeContent = probeData.content
-      if (Array.isArray(probeData.files)) {
-        probeFiles = probeData.files.map((f) => ({
-          isDir: Boolean(f.is_dir),
-          name: f.name,
-          path: f.path || f.name,
-        }))
-      }
-    }
-  } catch {
-    // 探针静默
-  }
-
   try {
     const result = await getOvResult<unknown>(
       ovClient.client.get({
@@ -279,20 +254,13 @@ async function fetchSkillDetail(skill: SkillItem): Promise<SkillDetail> {
         url: `/api/v1/skills/${encodeURIComponent(skill.name)}`,
       }),
     )
-    const normalized = normalizeSkillDetail(result, skill)
-    if (!normalized.content && probeContent) {
-      normalized.content = probeContent
-    }
-    if (probeFiles.length > 0 && normalized.files.length <= 1) {
-      normalized.files = probeFiles
-    }
-    return normalized
+    return normalizeSkillDetail(result, skill)
   } catch {
     return {
       allowedTools: [],
-      content: probeContent,
+      content: '',
       description: skill.description,
-      files: probeFiles,
+      files: [],
       name: skill.name,
       overview: '',
       scope: skill.scope,
