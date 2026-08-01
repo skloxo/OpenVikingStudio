@@ -125,12 +125,12 @@ const config = defineConfig({
           const timeWindow = urlParams.searchParams.get('window') || '24h'
           const metricsPath = path.join(os.homedir(), '.openviking', 'harness_metrics.json')
           let metrics: Record<string, any> = {
-            actor_peers: { antigravity: 2, openclaw: 2 },
-            find_calls: 210,
-            lessons_count: 26,
+            actor_peers: {},
+            find_calls: 0,
+            lessons_count: 0,
             most_evolved_skill: 'openviking-studio-dev',
-            store_calls: 18,
-            total_calls: 228,
+            store_calls: 0,
+            total_calls: 0,
             blocked_calls: 0,
             time_window: timeWindow,
             time_window_label: '最近 24 小时 (24H Rolling)',
