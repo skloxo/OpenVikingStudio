@@ -413,6 +413,19 @@ function SkillDetailTabPanel({
   )
 }
 
+function getSkillSource(name: string): { label: string; badgeClass: string } {
+  if (name.startsWith('sn-') || name.startsWith('hermes-') || name.includes('hermes')) {
+    return { label: '🦅 Hermes', badgeClass: 'border-purple-500/40 bg-purple-500/10 text-purple-400' }
+  }
+  if (name.startsWith('tide-') || name.startsWith('vibe-') || name.startsWith('stock-')) {
+    return { label: '📈 TideTrading', badgeClass: 'border-cyan-500/40 bg-cyan-500/10 text-cyan-400' }
+  }
+  if (name.includes('openviking') || name.includes('antigravity') || name.includes('diagnosing')) {
+    return { label: '🚀 Antigravity', badgeClass: 'border-indigo-500/40 bg-indigo-500/10 text-indigo-400' }
+  }
+  return { label: '🤖 OpenClaw', badgeClass: 'border-amber-500/40 bg-amber-500/10 text-amber-400' }
+}
+
 function SkillsRoute() {
   const { t } = useTranslation('skillsPage')
   const { identityScopeKey } = useAppConnection()
@@ -423,15 +436,17 @@ function SkillsRoute() {
 
   const [activeScopeFilter, setActiveScopeFilter] = React.useState<'all' | 'agent' | 'user' | 'governance'>('all')
 
-  const [nonCompliantList, setNonCompliantList] = React.useState<Array<{ name: string; path: string; missing_reason: string }>>([
+  const [nonCompliantList, setNonCompliantList] = React.useState<Array<{ name: string; path: string; source: string; missing_reason: string }>>([
     {
       name: 'untracked-wild-crawler',
       path: '/home/skloxo/aho/openclaw/skills/untracked-wild-crawler',
+      source: '🤖 OpenClaw',
       missing_reason: '❌ 缺失 SKILL.md 规范文本',
     },
     {
       name: 'legacy-unstandardized-script',
       path: '/home/skloxo/aho/openclaw/skills/legacy-unstandardized-script',
+      source: '🤖 OpenClaw',
       missing_reason: '❌ 缺失 SKILL.md 规范文本',
     },
   ])
@@ -873,6 +888,7 @@ function SkillsRoute() {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filteredSkills.map((skill) => {
             const isAgentScope = skill.scope === 'agent'
+            const srcInfo = getSkillSource(skill.name)
             return (
               <Card
                 key={`${skill.scope}:${skill.uri}`}
@@ -889,22 +905,30 @@ function SkillsRoute() {
                         {skill.name}
                       </h3>
                     </div>
-                    <Badge
-                      variant="outline"
-                      className="shrink-0 rounded-xs font-mono text-[10px] uppercase border-border/60 bg-muted/30"
-                    >
-                      {isAgentScope ? (
-                        <span className="flex items-center gap-1 text-cyan-600 dark:text-cyan-400">
-                          <UsersRoundIcon className="size-3" />
-                          Agent
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400">
-                          <UserRoundIcon className="size-3" />
-                          User
-                        </span>
-                      )}
-                    </Badge>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Badge
+                        variant="outline"
+                        className={cn('rounded-xs font-mono text-[10px]', srcInfo.badgeClass)}
+                      >
+                        {srcInfo.label}
+                      </Badge>
+                      <Badge
+                        variant="outline"
+                        className="rounded-xs font-mono text-[10px] uppercase border-border/60 bg-muted/30"
+                      >
+                        {isAgentScope ? (
+                          <span className="flex items-center gap-1 text-cyan-600 dark:text-cyan-400">
+                            <UsersRoundIcon className="size-3" />
+                            Agent
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400">
+                            <UserRoundIcon className="size-3" />
+                            User
+                          </span>
+                        )}
+                      </Badge>
+                    </div>
                   </div>
 
                       <p className="line-clamp-2 min-h-8 text-xs text-muted-foreground/80 leading-4">
