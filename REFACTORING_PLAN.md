@@ -9,6 +9,14 @@
 
 ## 📅 当前核心排期阶段：Milestone Phase 1 (技能中心深度重构 ➔ 任务中心 ➔ Harness 引擎 ➔ Loop)
 
+### [x] v1.2.14 — Harness 自动化标准化扫描全量技能中文化赋能 ✅
+- **Git Commit**: `feat(harness): automated normalization scan and metadata injection for 175 skills v1.2.14`
+- **Tag**: `v1.2.14`
+- **主要交付**:
+  1. 运行 Harness 自动化标准化扫描探针，遍历全量技能清单；
+  2. 自动提炼生成标准化 `cnName` 与 `cnDescription` 字典，100% 覆盖全盘技能的中文信达雅自解释；
+  3. 底层原生 Prompt 描述 100% 物理保持不变，结合 i18n 模式实现智能双轨高精度驱动。
+
 ### [x] v1.2.11 — 拔除假数字门锁，100% 呈现磁盘真实 Harness 演进次数 ✅
 - **Git Commit**: `fix(metrics): remove >= 36 condition to display 100% real backend lessons_count v1.2.11`
 - **Tag**: `v1.2.11`
