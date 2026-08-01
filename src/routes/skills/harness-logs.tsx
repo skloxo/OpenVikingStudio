@@ -2,10 +2,10 @@ import * as React from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { Badge } from '#/components/ui/badge'
+import { Button } from '#/components/ui/button'
 import {
   ArrowLeftIcon,
-  Badge,
-  Button,
   ClockIcon,
   RefreshCwIcon,
   SparklesIcon,

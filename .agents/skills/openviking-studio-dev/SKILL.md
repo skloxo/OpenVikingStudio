@@ -91,6 +91,20 @@ description: Use when developing, refactoring, or iterating OpenVikingStudio (VK
   3. **Harness 物理阻断阻绝率 (Zero Breach Guard)** ➔ 违规脚本与非法部署物理阻断率 `100%`；
   4. **Reflexion 零人工自演进闭环率 (Auto-Reflexion Closure)** ➔ 无需人工敲命令自动落盘与向量重索引率 `100%`。
 
+#### 📌 Lesson 2026-08-01 #11：“信雅达”准则与 i18n 顺手即做守则 (Xinyada & Implicit i18n)
+- **CONTEXT**：代码变更中遗漏多语言适配，需要用户提醒才去补充 i18n，或者 UI 文案同义词混用违背“信雅达”标准。
+- **REFLECTION**：i18n 是现代工程的“出厂必备习惯”，绝不是靠用户催促补救的售后。文案必须达到“信”（准确一致）、“达”（通顺自解释）、“雅”（极客严谨）。
+- **LESSON**：严守“信雅达”与“i18n 顺手即做”标准：
+  1. **i18n 顺手即做**：新增任何 UI 按钮、文案、面板或提示时，同步在 `zh-CN.ts` 与 `en.ts` 中补全 i18n 映射；
+  2. **信雅达审视**：专有名词（Harness 门锁、Reflexion 自演进、NeMo 拦截器）全盘一贯，禁止同义词乱用。
+
+#### 📌 Lesson 2026-08-01 #12：技能详情 100% 防塌陷加载与独立全景专页守则
+- **CONTEXT**：技能详情因为网关 URI 缺失 `/default/` 命名空间导致 HTTP 400 失败，且大量演进日志在主页挤压展开影响体验。
+- **REFLECTION**：1) 详情加载必须建立双端探针保底（网关 API 失败时自动穿透读取物理磁盘 SKILL.md），确保 100% 成功率；2) 海量履历日志必须收敛至独立全景专页，保持主界面极客简洁。
+- **LESSON**：严守 100% 防塌陷加载与全景专页规范：
+  1. **物理磁盘探针保底**：网关 API 异常时，通过 `/api/v1/system/skill_content` 探针物理打底，保障 100% 打开；
+  2. **独立全景专页路由**：海量明细数据路由至专用全景子页面 (如 `/skills/harness-logs`)。
+
 ---
 
 ## 一、全盘文档三层治理体系与模块导航网 (3-Tier Document Hierarchy & Map)
