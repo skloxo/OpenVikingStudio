@@ -155,6 +155,14 @@ description: Use when developing, refactoring, or iterating OpenVikingStudio (VK
   1. **Card 4 物理量化**：明确呈现 `100% 防线正常 (0 拦截/0 越权)` 及 `14 项 Harness Reflexion 自演进`；
   2. **切除游离浮字**：筛选栏标签右侧只保留沉静的系统运行提示，拒绝游离卡片或突兀按钮。
 
+#### 📌 Lesson 2026-08-01 #19：高密度防空洞紧凑卡片排版守则 (100% 对齐任务中心)
+- **CONTEXT**：顶栏 KPI 卡片如果 Padding 过大、纵向高度过高，会导致卡片看起来臃肿、留白过多且严重侵占下方的列表与抽屉展示空间。
+- **REFLECTION**：极客 UI 的核心是“高密度信息流”与“有限空间承载最大有效信息”。必须完全对齐任务中心（`/tasks`）的紧凑卡片设计规范。
+- **LESSON**：高密度卡片排版标准：
+  1. **高度压缩**：Padding 统一使用 `p-2.5`，间距使用 `gap-1`，切除无关的分割线与冗余 padding；
+  2. **信息紧凑**：使用 `font-mono text-lg font-bold tabular-nums` 并排展示大数字与单行微缩描述（`text-[11px]`）；
+  3. **释放空间**：大幅降低顶部观察行占用的物理高度，把最大高度留给下方的技能列表与 SOP 抽屉。
+
 ---
 
 ## 一、全盘文档三层治理体系与模块导航网 (3-Tier Document Hierarchy & Map)
