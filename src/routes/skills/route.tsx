@@ -572,13 +572,13 @@ function SkillsRoute() {
 
   // 新增维度算子计算：物理真实绑定
   const activeSkillsCount = typeof metrics?.active_skills_count === 'number' ? metrics.active_skills_count : 0
-  const activeUtilizationRatio = skills.length > 0 && totalCalls > 0
+  const activeUtilizationRatio = skills.length > 0 && activeSkillsCount > 0
     ? ((Math.min(activeSkillsCount, skills.length) / skills.length) * 100).toFixed(1)
-    : null
+    : (totalCalls > 0 ? '0.0' : null)
   
   const contextCompressionRatio = typeof metrics?.context_compression_ratio === 'number'
     ? metrics.context_compression_ratio.toFixed(1)
-    : (totalCalls > 0 ? '68.5' : null)
+    : null
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-4">
