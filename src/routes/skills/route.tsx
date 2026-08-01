@@ -41,6 +41,7 @@ type SkillItem = {
   name: string
   scope: SkillScope
   uri: string
+  path?: string
 }
 
 type SkillListResult = {
@@ -229,18 +230,51 @@ async function fetchSkills(): Promise<SkillItem[]> {
 }
 
 async function fetchSkillDetail(skill: SkillItem): Promise<SkillDetail> {
-  const targetUri = skill.uri.slice(0, skill.uri.lastIndexOf('/'))
-  const result = await getOvResult<unknown>(
-    ovClient.client.get({
-      query: {
-        include_content: true,
-        include_files: true,
-        target_uri: targetUri,
-      },
-      url: `/api/v1/skills/${encodeURIComponent(skill.name)}`,
-    }),
-  )
-  return normalizeSkillDetail(result, skill)
+  // 补全 /default/ 命名空间，修复 OpenViking 网关 URI 不匹配抛出 HTTP 400 Unsupported Target URI
+  let targetUri = skill.uri.endsWith('/SKILL.md') ? skill.uri.slice(0, -9) : skill.uri
+  if (targetUri.startsWith('viking://user/skills/')) {
+    targetUri = targetUri.replace('viking://user/skills/', 'viking://user/default/skills/')
+  } else if (targetUri.startsWith('viking://agent/skills/')) {
+    targetUri = targetUri.replace('viking://agent/skills/', 'viking://agent/default/skills/')
+  }
+
+  try {
+    const result = await getOvResult<unknown>(
+      ovClient.client.get({
+        query: {
+          include_content: true,
+          include_files: true,
+          target_uri: targetUri,
+        },
+        url: `/api/v1/skills/${encodeURIComponent(skill.name)}`,
+      }),
+    )
+    return normalizeSkillDetail(result, skill)
+  } catch (primaryErr) {
+    // 物理防塌陷保底：若网关 API 返回 HTTP 400/404，通过探针直接读取本地物理磁盘 SKILL.md 源码
+    try {
+      const fallbackRes = await fetch(
+        `/api/v1/system/skill_content?path=${encodeURIComponent(skill.path || '')}&name=${encodeURIComponent(skill.name)}`
+      )
+      if (fallbackRes.ok) {
+        const fallbackData = (await fallbackRes.json()) as { content?: string }
+        if (fallbackData.content) {
+          return normalizeSkillDetail(
+            {
+              content: fallbackData.content,
+              description: skill.description,
+              name: skill.name,
+              uri: skill.uri,
+            },
+            skill
+          )
+        }
+      }
+    } catch {
+      // Ignore
+    }
+    throw primaryErr
+  }
 }
 
 function SkillDetailTabPanel({
@@ -678,10 +712,10 @@ function SkillsRoute() {
           </p>
         </div>
 
-        <div
-          className="flex flex-col justify-between rounded border border-cyan-500/30 bg-cyan-500/5 p-3 cursor-pointer hover:bg-cyan-500/10 transition-colors"
-          onClick={() => setShowLessonsDrawer(!showLessonsDrawer)}
-          title="点击展开查看全部 Harness 自演进 Lessons 日志与纠偏明细"
+        <Link
+          to="/skills/harness-logs"
+          className="flex flex-col justify-between rounded border border-cyan-500/30 bg-cyan-500/5 p-3 hover:bg-cyan-500/10 transition-colors group cursor-pointer"
+          title="点击进入 Harness 物理自演进日志与纠偏明细全景专页"
         >
           <div className="flex items-center justify-between text-[11px] text-muted-foreground font-sans">
             <span className="flex items-center gap-1 text-cyan-600 dark:text-cyan-400 font-medium">
@@ -702,7 +736,7 @@ function SkillsRoute() {
                 </div>
                 <p className="text-[11px] text-cyan-500/90 font-sans mt-0.5 font-medium flex items-center justify-between">
                   <span>已注入 {lessonsCount ?? 1} 项用户纠偏规约</span>
-                  <span className="text-[10px] text-cyan-400 underline">{showLessonsDrawer ? '收起明细 ▲' : '查看明细 ➔'}</span>
+                  <span className="text-[10px] text-cyan-400 group-hover:translate-x-0.5 transition-transform">全景专页 ➔</span>
                 </p>
               </>
             ) : (
@@ -710,71 +744,11 @@ function SkillsRoute() {
             )}
           </div>
           <p className="mt-auto text-[10px] font-mono text-muted-foreground border-t border-cyan-500/20 pt-1.5 flex justify-between items-center">
-            <span>点击白盒透视完整 Lesson 日志</span>
-            <ChevronRightIcon className={cn("size-3 transition-transform text-cyan-500", showLessonsDrawer && "rotate-90")} />
+            <span>白盒透视全量 Lesson 履历专页</span>
+            <ChevronRightIcon className="size-3 text-cyan-500 group-hover:translate-x-0.5 transition-transform" />
           </p>
-        </div>
+        </Link>
       </div>
-
-      {/* 📜 Harness 物理自演进日志与纠偏明细白盒抽屉 */}
-      {showLessonsDrawer && (
-        <div className="rounded border border-cyan-500/30 bg-cyan-500/5 p-3.5 flex flex-col gap-3 font-sans animate-in fade-in duration-200">
-          <div className="flex items-center justify-between border-b border-cyan-500/20 pb-2">
-            <h3 className="text-xs font-semibold text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5">
-              <SparklesIcon className="size-3.5 text-cyan-500" />
-              📜 Harness 物理自演进日志与用户纠偏明细白盒面板 ({metrics?.lessons_detail?.length ?? 0} 条记录)
-            </h3>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              className="h-6 text-[10px] text-muted-foreground hover:text-foreground"
-              onClick={() => setShowLessonsDrawer(false)}
-            >
-              关闭面板 ✕
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 max-h-96 overflow-y-auto pr-1">
-            {Array.isArray(metrics?.lessons_detail) && metrics.lessons_detail.length > 0 ? (
-              metrics.lessons_detail.map((item: any) => (
-                <div
-                  key={item.id}
-                  className="flex flex-col gap-1.5 rounded border border-border/60 bg-background/80 p-2.5 text-xs shadow-2xs hover:border-cyan-500/40 transition-colors"
-                >
-                  <div className="flex items-center justify-between font-mono text-[11px]">
-                    <span className="font-semibold text-cyan-600 dark:text-cyan-400 flex items-center gap-1">
-                      <Badge variant="outline" className="text-[9px] px-1 py-0 border-cyan-500/40 text-cyan-500 bg-cyan-500/10">
-                        Lesson #{item.id}
-                      </Badge>
-                      {item.title}
-                    </span>
-                  </div>
-                  {item.context && (
-                    <div className="text-[11px] text-muted-foreground bg-muted/30 p-1.5 rounded font-mono">
-                      <span className="text-muted-foreground/70 font-semibold">CONTEXT:</span> {item.context}
-                    </div>
-                  )}
-                  {item.reflection && (
-                    <div className="text-[11px] text-foreground/80 bg-cyan-500/5 p-1.5 rounded border border-cyan-500/10">
-                      <span className="text-cyan-500 font-semibold">REFLECTION:</span> {item.reflection}
-                    </div>
-                  )}
-                  {item.lesson && (
-                    <div className="text-[11px] text-cyan-600 dark:text-cyan-400 font-medium bg-cyan-500/10 p-1.5 rounded border border-cyan-500/20">
-                      <span className="font-bold">LESSON:</span> {item.lesson}
-                    </div>
-                  )}
-                </div>
-              ))
-            ) : (
-              <div className="py-6 text-center text-xs font-mono text-muted-foreground col-span-2">
-                暂无演进日志明细，等待物理纠偏触发
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* 4px 微圆角 Scope 分类与状态筛选标签栏 */}
       <div className="flex items-center justify-between gap-2 rounded border border-border/60 bg-muted/20 p-1 font-mono text-xs">
