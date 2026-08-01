@@ -478,15 +478,15 @@ function SkillDetailTabPanel({
 
 function getSkillSource(name: string): { label: string; badgeClass: string } {
   if (name.startsWith('sn-') || name.startsWith('hermes-') || name.includes('hermes')) {
-    return { label: '🦅 Hermes', badgeClass: 'border-purple-500/40 bg-purple-500/10 text-purple-400' }
+    return { label: '🦅 Hermes', badgeClass: 'border-border bg-muted/40 text-foreground' }
   }
   if (name.startsWith('tide-') || name.startsWith('vibe-') || name.startsWith('stock-')) {
-    return { label: '📈 TideTrading', badgeClass: 'border-cyan-500/40 bg-cyan-500/10 text-cyan-400' }
+    return { label: '📈 TideTrading', badgeClass: 'border-border bg-muted/40 text-foreground' }
   }
   if (name.includes('openviking') || name.includes('antigravity') || name.includes('diagnosing')) {
-    return { label: '🚀 Antigravity', badgeClass: 'border-indigo-500/40 bg-indigo-500/10 text-indigo-400' }
+    return { label: '🚀 Antigravity', badgeClass: 'border-border bg-muted/40 text-foreground' }
   }
-  return { label: '🤖 OpenClaw', badgeClass: 'border-amber-500/40 bg-amber-500/10 text-amber-400' }
+  return { label: '🤖 OpenClaw', badgeClass: 'border-border bg-muted/40 text-foreground' }
 }
 
 function SkillsRoute() {
@@ -968,16 +968,16 @@ function SkillsRoute() {
             return (
               <Card
                 key={`${skill.scope}:${skill.uri}`}
-                className="group relative flex cursor-pointer flex-col justify-between rounded border border-border/60 bg-card p-3 transition-all hover:border-cyan-500/40 hover:bg-muted/20"
+                className="group relative flex cursor-pointer flex-col justify-between rounded border border-border/60 bg-card p-3 transition-all hover:border-border hover:bg-muted/30"
                 onClick={() => setSelectedSkill(skill)}
               >
                 <div>
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <div className="flex size-7 shrink-0 items-center justify-center rounded-xs bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">
-                        <SparklesIcon className="size-4" />
+                      <div className="flex size-7 shrink-0 items-center justify-center rounded-xs bg-muted text-foreground">
+                        <SparklesIcon className="size-4 text-muted-foreground" />
                       </div>
-                      <h3 className="truncate text-xs font-semibold text-foreground group-hover:text-cyan-500 transition-colors">
+                      <h3 className="truncate text-xs font-semibold text-foreground group-hover:text-foreground transition-colors">
                         {skill.name}
                       </h3>
                     </div>
@@ -990,16 +990,16 @@ function SkillsRoute() {
                       </Badge>
                       <Badge
                         variant="outline"
-                        className="rounded-xs font-mono text-[10px] uppercase border-border/60 bg-muted/30"
+                        className="rounded-xs font-mono text-[10px] uppercase border-border/60 bg-muted/40 text-foreground"
                       >
                         {isAgentScope ? (
-                          <span className="flex items-center gap-1 text-cyan-600 dark:text-cyan-400">
-                            <UsersRoundIcon className="size-3" />
+                          <span className="flex items-center gap-1 text-foreground">
+                            <UsersRoundIcon className="size-3 text-muted-foreground" />
                             Agent
                           </span>
                         ) : (
-                          <span className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400">
-                            <UserRoundIcon className="size-3" />
+                          <span className="flex items-center gap-1 text-foreground">
+                            <UserRoundIcon className="size-3 text-muted-foreground" />
                             User
                           </span>
                         )}
@@ -1007,16 +1007,16 @@ function SkillsRoute() {
                     </div>
                   </div>
 
-                      <p className="line-clamp-2 min-h-8 text-xs text-muted-foreground/80 leading-4">
+                      <p className="line-clamp-2 min-h-8 text-xs text-muted-foreground leading-4">
                         {skill.description || '暂无简介'}
                       </p>
                 </div>
 
-                <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-2 text-[10px] font-mono text-muted-foreground/80">
+                <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-2 text-[10px] font-mono text-muted-foreground">
                   <span className="truncate max-w-44" title={skill.uri}>
                     {skill.uri}
                   </span>
-                  <ChevronRightIcon className="size-3.5 group-hover:translate-x-0.5 transition-transform text-cyan-500" />
+                  <ChevronRightIcon className="size-3.5 group-hover:translate-x-0.5 transition-transform text-muted-foreground" />
                 </div>
               </Card>
             )
