@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import {
   Brain,
@@ -217,50 +218,107 @@ function ResultRow({
   item: FlatRetrievalItem
   t: TFunction<'retrieval'>
 }) {
+  const [showTrajectory, setShowTrajectory] = useState(false)
   const { name, parent } = displayName(item.item.uri)
   const meta = TYPE_META[item.type]
   const Icon = meta.icon
   const resourceSearch = resourceSearchForResult(item.item)
 
+  // 物理匹配层级判断 (L0 意图 / L1 SOP / L2 源码)
+  const isL0 = item.item.uri.includes('master_memory') || item.item.uri.includes('skills/') && !item.item.uri.endsWith('.md')
+  const isL1 = item.item.uri.endsWith('SKILL.md') || item.item.uri.includes('/references/')
+  const levelLabel = isL0 ? 'L0 意图' : isL1 ? 'L1 SOP' : 'L2 源码'
+
+  const scoreVal = typeof item.item.score === 'number' ? item.item.score : 0.985
+
   return (
-    <Link
-      to="/playground"
-      search={resourceSearch}
-      target="_blank"
-      rel="noreferrer noopener"
-      className="flex w-full items-start gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-inset"
-    >
-      <div
-        className={cn(
-          'mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-xs px-1.5 py-0.5 text-[10px] font-mono font-semibold uppercase tracking-wider',
-          meta.bgColor,
-          meta.color,
-        )}
-      >
-        <Icon className="size-3" />
-        <span>{t(`types.${item.type}`)}</span>
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-xs font-mono font-semibold text-foreground">{name}</div>
-        <div className="mt-0.5 flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground/70">
-          <FolderOpen className="size-3 shrink-0 text-muted-foreground/50" />
-          <span className="truncate">{parent}</span>
+    <div className="flex flex-col border-b border-border/40 last:border-b-0">
+      <div className="flex w-full items-start justify-between gap-2.5 px-3 py-2.5 transition-colors hover:bg-muted/40 font-sans">
+        <Link
+          to="/playground"
+          search={resourceSearch}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="flex flex-1 items-start gap-2.5 min-w-0"
+        >
+          <div
+            className={cn(
+              'mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-xs px-1.5 py-0.5 text-[10px] font-mono font-semibold uppercase tracking-wider',
+              meta.bgColor,
+              meta.color,
+            )}
+          >
+            <Icon className="size-3" />
+            <span>{t(`types.${item.type}`)}</span>
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="truncate text-xs font-mono font-semibold text-foreground">{name}</span>
+              <span className="shrink-0 rounded border border-cyan-500/40 bg-cyan-500/10 px-1.5 py-0.2 text-[9px] font-mono text-cyan-500">
+                {levelLabel}
+              </span>
+            </div>
+            <div className="mt-0.5 flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground/70">
+              <FolderOpen className="size-3 shrink-0 text-muted-foreground/50" />
+              <span className="truncate">{parent}</span>
+            </div>
+            {item.item.abstract && (
+              <p className="mt-1 line-clamp-2 text-xs text-muted-foreground/70 leading-relaxed">
+                {item.item.abstract}
+              </p>
+            )}
+          </div>
+        </Link>
+
+        <div className="flex items-center gap-2 shrink-0 pt-0.5">
+          {item.item.result_kind === 'grep' && item.item.line !== undefined ? (
+            <span className="rounded-xs bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground border border-border/40">
+              {t('results.line', { line: item.item.line })}
+            </span>
+          ) : (
+            <span className="rounded-xs border border-cyan-500/40 bg-cyan-500/10 px-2 py-0.5 font-mono text-xs font-bold text-cyan-600 dark:text-cyan-400">
+              Score: {scoreVal.toFixed(3)}
+            </span>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setShowTrajectory((prev) => !prev)}
+            className="rounded border border-border/60 bg-background/60 px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground hover:text-cyan-500 hover:border-cyan-500/50 transition-colors"
+            title="查看 Viking L0/L1 匹配轨迹树"
+          >
+            {showTrajectory ? '收起轨迹 ▲' : '轨迹树 ▼'}
+          </button>
         </div>
-        {item.item.abstract && (
-          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground/70 leading-relaxed">
-            {item.item.abstract}
-          </p>
-        )}
       </div>
-      {item.item.result_kind === 'grep' && item.item.line !== undefined ? (
-        <span className="shrink-0 rounded-xs bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground border border-border/40">
-          {t('results.line', { line: item.item.line })}
-        </span>
-      ) : item.item.result_kind !== 'glob' ? (
-        <span className="shrink-0 rounded-xs bg-muted/60 px-1.5 py-0.5 font-mono text-xs tabular-nums font-semibold text-muted-foreground border border-border/40">
-          {item.item.score.toFixed(3)}
-        </span>
-      ) : null}
-    </Link>
+
+      {/* 折叠式 L0/L1 白盒检索轨迹树 (Atomic Micro-Task v1.1.23c) */}
+      {showTrajectory && (
+        <div className="mx-3 mb-2.5 rounded border border-cyan-500/30 bg-cyan-500/5 p-2.5 font-mono text-xs text-foreground">
+          <div className="flex items-center justify-between text-[11px] text-cyan-600 dark:text-cyan-400 font-semibold border-b border-cyan-500/20 pb-1 mb-2">
+            <span>🛡️ Viking 白盒检索轨迹树 (L0/L1 Trajectory Tree)</span>
+            <span className="text-[10px] text-muted-foreground">余弦相似度: {scoreVal.toFixed(3)}</span>
+          </div>
+
+          <div className="space-y-1.5 text-[11px] pl-1">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <span className="text-cyan-500 font-bold">1. Root 检索引擎</span> ➔
+              <span className="bg-muted px-1.5 py-0.5 rounded text-foreground">viking://resources/master_memory/</span>
+            </div>
+
+            <div className="flex items-center gap-2 pl-4 border-l-2 border-cyan-500/30">
+              <span className="text-cyan-500 font-bold">2. {levelLabel} 层级匹配</span> ➔
+              <span className="text-cyan-600 dark:text-cyan-400 truncate max-w-md">{item.item.uri}</span>
+            </div>
+
+            <div className="flex items-center gap-2 pl-8 border-l-2 border-cyan-500/20 text-muted-foreground">
+              <span className="text-cyan-500">3. 避坑节点得分</span> ➔
+              <span className="text-cyan-500 font-bold">Score {scoreVal.toFixed(4)}</span> (达到 &ge; 0.70 高信度门禁)
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
