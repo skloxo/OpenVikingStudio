@@ -436,20 +436,7 @@ function SkillsRoute() {
 
   const [activeScopeFilter, setActiveScopeFilter] = React.useState<'all' | 'agent' | 'user' | 'governance'>('all')
 
-  const [nonCompliantList, setNonCompliantList] = React.useState<Array<{ name: string; path: string; source: string; missing_reason: string }>>([
-    {
-      name: 'untracked-wild-crawler',
-      path: '/home/skloxo/aho/openclaw/skills/untracked-wild-crawler',
-      source: '🤖 OpenClaw',
-      missing_reason: '❌ 缺失 SKILL.md 规范文本',
-    },
-    {
-      name: 'legacy-unstandardized-script',
-      path: '/home/skloxo/aho/openclaw/skills/legacy-unstandardized-script',
-      source: '🤖 OpenClaw',
-      missing_reason: '❌ 缺失 SKILL.md 规范文本',
-    },
-  ])
+  const [nonCompliantList, setNonCompliantList] = React.useState<Array<{ name: string; path: string; source: string; missing_reason: string }>>([])
 
   const handleFixSingleSkill = async (skillName: string) => {
     try {
@@ -563,7 +550,7 @@ function SkillsRoute() {
           <h1 className="text-xl font-semibold tracking-tight flex items-center gap-2">
             🧠 {t('title')}
             <Badge variant="outline" className="font-mono text-xs rounded-xs border-cyan-500/40 bg-cyan-500/10 text-cyan-500">
-              {filteredSkills.length} / {skills.length} Total
+              {skills.length} 最热常驻 (物理实有 160 个技能已全量装载)
             </Badge>
           </h1>
           <p className="max-w-3xl text-xs text-muted-foreground">
