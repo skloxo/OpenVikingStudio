@@ -160,18 +160,29 @@
 > - 平台级指标（HTTP/GPU/延迟/SLA）→ 保留首页监控页
 > - 远期：首页监控页逐步收敛精简
 
-#### ⏳ v1.1.23: 零脚本白盒化 Harness 避坑网关与三维可观测面板 (Whitebox Harness Gateway & Observability Dashboard)
-- **来源**: 2026-08-01 用户确定最高优先级方向（"优先级往前提一点，先搞清楚项目再动手"）
-- **优先级**: 🚨 **🔥 最高优先级（当前首要开发迭代）**
-- **架构规范**: 参见 [HARNESS_EVOLUTION_ARCHITECTURE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/HARNESS_EVOLUTION_ARCHITECTURE.md)
-- **物理实施标准 (100% 正式源码，零脚本)**:
-  1. **零外挂脚本**: 100% 修改 `mcp_openviking_server.py` 与 OpenViking 1933 后端 API 正式源码，绝对不写后台死循环 `.py` 脚本。
-  2. **零 Agent 侵入**: 对 OpenClaw、Hermes、Antigravity、MimoCode 保持 0 代码改动，纯依靠 MCP 协议网关与 OpenViking 后端触发。
-  3. **字节 OpenViking L0/L1 范式**: 采用高密度 L0 避坑 Lesson 萃取与加载，接近 0 Token 消耗获得复利避坑收益。
-- **三大前端白盒可观测面板 (OpenViking Studio)**:
-  1. **/retrieval 检索轨迹白盒树 (Retrieval Trajectories)**: 可视化展现 Agent 任务触发时，命中的 Viking L0/L1 避坑节点与余弦匹配度。
-  2. **/skills 技能进化历史链 (Skill Evolution Trace)**: 展示 85 个技能的版本演进（v1.0 ➔ v1.1）、积累的避坑 Lesson 列表、激活次数与成功率。
-  3. **/monitoring Token 节省与 SLA 折线 (Analytics Dashboard)**: 展示 Harness 加载 L0 Lesson 前后的 API 耗时、Token 节省率与一次性成功率。
+#### ⏳ v1.1.23a (原子工单 1): MCP 网关层 Harness 经验统计与 L0 规范打标 (mcp-openviking Backend Gateway)
+- **来源**: 遵循最小粒度拆分与高内聚低耦合原则（纯后端 MCP 网关层，代码改动 < 50 行）
+- **优先级**: 🚨 **🔥 当前首要执行原子工单**
+- **文件与边界**: 仅修改 `/home/skloxo/aho/openclaw/mcp-openviking/mcp_openviking_server.py`
+- **目标**:
+  1. 在 FastMCP 工具层（`openviking_find`, `openviking_store`）增加轻量级调用计数与 Header 校验
+  2. 规范透出 L0 级高密避坑 Lesson 属性，零后台脚本
+  3. 提供独立 API 接口供前端监控，与前端组件 100% 解耦
+
+#### ⏳ v1.1.23b (原子工单 2): 技能中心 /skills 页调用统计与演进版本展示 (Skills Page UI Only)
+- **来源**: 遵循高内聚低耦合原则（纯前端 Skills 视图组件）
+- **文件与边界**: 仅修改 `src/routes/skills/route.tsx`
+- **目标**: 渲染 85 个技能卡片上的调用次数、最近激活时间、演进版本号 (v1.0)，与后端 100% 解耦
+
+#### ⏳ v1.1.23c (原子工单 3): 检索测试台 /retrieval 页 L0/L1 白盒检索轨迹树 (Retrieval Page UI Only)
+- **来源**: 遵循高内聚低耦合原则（纯前端 Retrieval 视图组件）
+- **文件与边界**: 仅修改 `src/routes/retrieval/route.tsx`
+- **目标**: 可视化绘制 Agent 任务触发时命中的 Viking L0/L1 避坑节点树与余弦相似度（如 0.985）
+
+#### ⏳ v1.1.23d (原子工单 4): 监控页 /monitoring Token 节省率与 SLA 时延对比图 (Monitoring Page UI Only)
+- **来源**: 遵循高内聚低耦合原则（纯前端 Monitoring 图表组件）
+- **文件与边界**: 仅修改 `src/routes/monitoring/route.tsx`
+- **目标**: 在监控页中新增 Harness L0 经验加载前后的 SLA 耗时分布与 Token 节省对比折线图
 
 #### ⏳ v1.1.24: 基于 Reflexion / Voyager 范式的 Skill-Loop 闭环自进化引擎 (Grounded Critique & Self-Refine Loop)
 - **来源**: 业界最新 Agent 自进化框架 (Reflexion, Voyager, Self-Evolving-Skill)
