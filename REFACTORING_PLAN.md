@@ -36,17 +36,71 @@
 
 ---
 
-### 📌 P1: [ ] v1.1.26：Harness 引擎深度增强 — 意图碰撞探测 + 自动沙盒跑测 (Dry-Run Check)
+### 📌 P0: [ ] v1.2.0-A：Harness 自然语言意图碰撞与语义歧义在线探测引擎
 
-**类型**：Architecture / Engine Feature  
-**优先级**：P1 (用户评估推进方向)  
-**来源**：Harness 引擎前沿增强讨论  
-**预计规模**：M (1-2 个迭代)
+**类型**：Architecture / Feature  
+**优先级**：P0 (高优先级 - 紧随任务中心/技能中心后执行)  
+**来源**：用户指导 ("把哈尼斯的这个迭代优化写成原子化的任务卡片，优先级提到高一点... 准备做哈尼斯还有 Loop 的迭代")  
+**负责人**：Agent (Antigravity)  
+**预计规模**：S (1 个迭代)
 
 #### 1. 目标
-1. **🕸️ 自然语言意图碰撞探测 (Intent Collision Sensing)**：当新技能入库时，自动计算与已有的 175 个技能描述语义相似度；当重叠度 > 85% 时发出歧义预警并自动辅助微调 `description`。
-2. **🧪 沙盒静默跑测 (Dry-Run Check)**：新技能补全规范后，Harness 引擎在隔离上下文中尝试一次 Dry-Run 测试，验证 SOP 步骤与 MCP 工具参数合规性。
-3. **🛡️ 运行时最小权限防线 (Runtime Guardrails)**：在 Agent 动态调取技能时，物理拦截越权指令并白盒记录日志。
+当 Wiki 或系统入库新技能时，Harness 引擎自动计算其 `description` 与已装载 175 个技能的语义向量距离。当重叠度 > 85% 时在后台发出“意图碰撞预警”并自动辅助微调区分度，彻底解决多技能争抢唤醒词的痛点。
+
+#### 2. 量化验收标准
+- [ ] 后端 `/api/v1/system/harness_collision_check` 接口可返回碰撞度 > 85% 的技能对列表。
+- [ ] 前端技能详情抽屉中透明显示语义相似度警告及建议触发词微调提示。
+
+---
+
+### 📌 P0: [ ] v1.2.0-B：Harness 技能沙盒静默跑测与基准评估校验 (Sandbox Dry-Run Check)
+
+**类型**：Architecture / Feature  
+**优先级**：P0 (高优先级)  
+**来源**：用户指导 (Harness 引擎迭代排期)  
+**负责人**：Agent (Antigravity)  
+**预计规模**：S (1 个迭代)
+
+#### 1. 目标
+新技能完成格式与简介生成后，Harness 引擎在隔离上下文 (Isolated Sandbox) 中试跑一次模拟 Dry-Run 校验，提前验证 SOP 步骤与 MCP 工具参数合规性，实现“上线即保通、零挂起”。
+
+#### 2. 量化验收标准
+- [ ] 隔离沙盒环境支持静默模拟执行技能并生成物理 Dry-Run 校验报告。
+- [ ] `/harness-logs` 审计页同步呈现 Dry-Run 沙盒校验打点及通过状态。
+
+---
+
+### 📌 P0: [ ] v1.2.0-C：Harness SOP 提示词自适应进化与版本回溯飞轮 (Prompt Auto-Tuning)
+
+**类型**：Architecture / Feature  
+**优先级**：P0 (高优先级)  
+**来源**：用户指导 (Harness 引擎迭代排期)  
+**负责人**：Agent (Antigravity)  
+**预计规模**：S (1 个迭代)
+
+#### 1. 目标
+结合近 24 小时技能运行成功率与报错记录，Harness 反思引擎物理自动提炼改写建议，并支持自动调整 `SKILL.md` 中模糊的 SOP 说明，形成版本改写履历。
+
+#### 2. 量化验收标准
+- [ ] 自动提炼微调建议并支持在 `SKILL.md` 中以 diff 履历追溯。
+- [ ] 与 OpenViking 体外大脑 (`viking://resources/master_memory/`) 实时物理同步。
+
+---
+
+### 📌 P0: [ ] v1.2.0-D：Harness 运行时最小权限防线与白盒拦截账本 (Runtime Guardrails Ledger)
+
+**类型**：Security / Architecture  
+**优先级**：P0 (高优先级)  
+**来源**：用户指导 (Harness 引擎迭代排期)  
+**负责人**：Agent (Antigravity)  
+**预计规模**：S (1 个迭代)
+
+#### 1. 目标
+在 Agent 动态调取技能执行时，Harness 动态管控允许调用的 MCP 工具白名单 (`allowed_tools`)，物理拦截越权操作与高危系统指令，白盒输出拦截账本。
+
+#### 2. 量化验收标准
+- [ ] 动态拦截违规 API/MCP 工具调用并生成白盒拦截日志。
+- [ ] `/harness-logs` 呈现实时白盒拦截账本。
 
 ---
 
