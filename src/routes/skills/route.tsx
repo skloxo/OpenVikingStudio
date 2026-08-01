@@ -573,7 +573,7 @@ function SkillsRoute() {
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3">
         <div className="grid gap-1">
           <h1 className="text-xl font-semibold tracking-tight flex items-center gap-2">
-            🧠 {t('title')}
+            🧠 技能中心
             <Badge variant="outline" className="font-mono text-xs rounded-xs border-border bg-muted/40 text-foreground">
               已装载 {skills.length} 个标准技能
             </Badge>
@@ -583,24 +583,13 @@ function SkillsRoute() {
           </p>
 
         </div>
-
-        {/* 搜索框 (补全简介由 Harness 入库时自动完成，无需手动按钮) */}
-        <div className="relative">
-          <SearchIcon className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="搜索技能名称或简介..."
-            className="h-8 w-48 rounded border border-border bg-background pl-8 pr-3 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:border-cyan-500 focus:outline-hidden transition-colors"
-          />
-        </div>
       </header>
 
-      {/* 🕒 24H Rolling 窗口提示说明 */}
+
+      {/* 🕒 24H Rolling KPI 区标题行 */}
       <div className="flex items-center justify-between text-xs text-muted-foreground font-mono px-0.5">
         <span className="flex items-center gap-1.5 text-foreground font-medium">
-          📊 核心运行 KPI 监控
+          📅 技能中心
         </span>
         <Badge variant="outline" className="text-[10px] font-mono border-border bg-muted/30 text-foreground px-1.5 py-0.5">
           🕒 统计范围: 最近 24 小时 (24H Rolling)
@@ -691,7 +680,7 @@ function SkillsRoute() {
         </Link>
       </div>
 
-      {/* 4px 微圆角 Scope 分类筛选标签栏 */}
+      {/* Scope 分类筛选标签栏 + 搜索框 (4px 微圆角) */}
       <div className="flex items-center justify-between gap-2 rounded border border-border/60 bg-muted/20 p-1 font-mono text-xs">
         <div className="flex items-center gap-1">
           <button
@@ -730,6 +719,17 @@ function SkillsRoute() {
           >
             👤 User 偏好 ({skills.filter((s) => s.scope === 'user').length})
           </button>
+        </div>
+        {/* 搜索框栏内右对齐 */}
+        <div className="relative">
+          <SearchIcon className="absolute left-2 top-1/2 size-3 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="搜索技能..."
+            className="h-6 w-36 rounded-xs border border-border/60 bg-background pl-6 pr-2 font-mono text-[11px] text-foreground placeholder:text-muted-foreground focus:border-cyan-500 focus:outline-hidden transition-colors"
+          />
         </div>
       </div>
 
