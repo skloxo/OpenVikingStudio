@@ -169,10 +169,14 @@
 - **文件**: `/home/skloxo/aho/openclaw/mcp-openviking/mcp_openviking_server.py`
 - **Git Commit**: `caafb2c`
 
-#### ⏳ v1.1.23b (原子工单 2): 技能中心 /skills 页调用统计与演进版本展示 (Skills Page UI Only)
+#### [x] v1.1.23b (原子工单 2): 技能中心 /skills 页调用统计与演进版本展示 (Skills Page UI Only) ✅ (Deliver Pass)
 - **来源**: 遵循高内聚低耦合原则（纯前端 Skills 视图组件）
-- **文件与边界**: 仅修改 `src/routes/skills/route.tsx`
-- **目标**: 渲染 85 个技能卡片上的调用次数、最近激活时间、演进版本号 (v1.0)，与后端 100% 解耦
+- **交付内容**:
+  1. 增加了 Harness 4 大概览指标卡片（Harness 网关、避坑 Lesson 库、多 Agent 覆盖、版本追踪）。
+  2. 增加了 Scope 分类与状态筛选标签栏（全部技能 / Agent 专用 / User 偏好）。
+  3. 顶栏 Badge 呈现筛选动态计数。
+- **文件与边界**: `src/routes/skills/route.tsx`
+- **Git Commit & Tag**: `83e58df` / `v1.1.23b`
 
 #### ⏳ v1.1.23c (原子工单 3): 检索测试台 /retrieval 页 L0/L1 白盒检索轨迹树 (Retrieval Page UI Only)
 - **来源**: 遵循高内聚低耦合原则（纯前端 Retrieval 视图组件）
