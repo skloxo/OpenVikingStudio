@@ -82,6 +82,15 @@ description: Use when developing, refactoring, or iterating OpenVikingStudio (VK
   1. **门锁拦截即自动演进**：当 `_harness_pre_execution_guard` 阻断违规操作时，系统后台自动调用 `openviking_record_evolution_lesson` 归档 Lesson；
   2. **对话感知即隐式落盘**：当感知到用户的自然语言纠偏，Agent 必须在响应的第一个 Step 中隐式完成 Reflexion 归档，禁止要求用户手动触发！
 
+#### 📌 Lesson 2026-08-01 #10：技能中心与 Harness 双重核心 KPI 评估体系守则
+- **CONTEXT**：担心技能装载后沦为“僵尸技能”，缺乏量化指标证明技能中心与 Harness 机制运行高效且有价值。
+- **REFLECTION**：必须建立明确的 KPI 物理评估指标体系，从“自动触发命中率”、“技能动销率”、“物理阻断成功率”、“自演进闭环率”四大维度量化健康度。
+- **LESSON**：严守 Skill Center 与 Harness 双重 KPI 量化指标：
+  1. **技能自动触发命中率 (Auto-Trigger Hit Rate)** ➔ `>= 95%` 自然语言意图自动命中激活技能；
+  2. **高频工程技能动销率 (Core Skill Utilization)** ➔ 18 个 Matt Pocock 工程技能动销率 `100%`；
+  3. **Harness 物理阻断阻绝率 (Zero Breach Guard)** ➔ 违规脚本与非法部署物理阻断率 `100%`；
+  4. **Reflexion 零人工自演进闭环率 (Auto-Reflexion Closure)** ➔ 无需人工敲命令自动落盘与向量重索引率 `100%`。
+
 ---
 
 ## 一、全盘文档三层治理体系与模块导航网 (3-Tier Document Hierarchy & Map)
