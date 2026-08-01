@@ -2,961 +2,1401 @@
   {
     "name": "tdd",
     "description": "Test-driven development. Use when the user wants to build features or fix bugs test-first, mentions \"red-green-refactor\", or wants integration tests.",
+    "source": "Antigravity",
+    "path": "/home/skloxo/.gemini/config/skills/tdd",
     "uri": "viking://user/skills/tdd/SKILL.md",
     "scope": "user"
   },
   {
     "name": "domain-modeling",
     "description": "Build and sharpen a project's domain model. Use when the user wants to pin down domain terminology or a ubiquitous language, record an architectural decision, or when another skill needs to maintain the domain model.",
+    "source": "Antigravity",
+    "path": "/home/skloxo/.gemini/config/skills/domain-modeling",
     "uri": "viking://user/skills/domain-modeling/SKILL.md",
     "scope": "user"
   },
   {
     "name": "improve-codebase-architecture",
     "description": "Scan a codebase for deepening opportunities, present them as a visual HTML report, then grill through whichever one you pick.",
+    "source": "Antigravity",
+    "path": "/home/skloxo/.gemini/config/skills/improve-codebase-architecture",
     "uri": "viking://user/skills/improve-codebase-architecture/SKILL.md",
     "scope": "user"
   },
   {
     "name": "research",
     "description": "Investigate a question against high-trust primary sources and capture the findings as a Markdown file in the repo. Use when the user wants a topic researched, docs or API facts gathered, or reading legwork delegated to a background agent.",
+    "source": "Antigravity",
+    "path": "/home/skloxo/.gemini/config/skills/research",
     "uri": "viking://user/skills/research/SKILL.md",
     "scope": "user"
   },
   {
     "name": "codebase-design",
     "description": "Shared vocabulary for designing deep modules. Use when the user wants to design or improve a module's interface, find deepening opportunities, decide where a seam goes, make code more testable or AI-navigable, or when another skill needs the deep-module vocabulary.",
+    "source": "Antigravity",
+    "path": "/home/skloxo/.gemini/config/skills/codebase-design",
     "uri": "viking://user/skills/codebase-design/SKILL.md",
     "scope": "user"
   },
   {
     "name": "prototype",
     "description": "Build a throwaway prototype to answer a design question. Use when the user wants to sanity-check whether a state model or logic feels right, or explore what a UI should look like.",
+    "source": "Antigravity",
+    "path": "/home/skloxo/.gemini/config/skills/prototype",
     "uri": "viking://user/skills/prototype/SKILL.md",
     "scope": "user"
   },
   {
     "name": "grill-me",
     "description": "A relentless interview to sharpen a plan or design.",
+    "source": "Antigravity",
+    "path": "/home/skloxo/.gemini/config/skills/grill-me",
     "uri": "viking://user/skills/grill-me/SKILL.md",
     "scope": "user"
   },
   {
     "name": "grill-with-docs",
     "description": "A relentless interview to sharpen a plan or design, which also creates docs (ADR's and glossary) as we go.",
+    "source": "Antigravity",
+    "path": "/home/skloxo/.gemini/config/skills/grill-with-docs",
     "uri": "viking://user/skills/grill-with-docs/SKILL.md",
     "scope": "user"
   },
   {
     "name": "to-spec",
     "description": "Turn the current conversation into a spec and publish it to the project issue tracker — no interview, just synthesis of what you've already discussed.",
+    "source": "Antigravity",
+    "path": "/home/skloxo/.gemini/config/skills/to-spec",
     "uri": "viking://user/skills/to-spec/SKILL.md",
     "scope": "user"
   },
   {
     "name": "openviking-studio-dev",
     "description": "Use when developing, refactoring, or iterating OpenVikingStudio (VK Studio / Web UI). Enforces 3-tier doc alignment (REFACTORING_PLAN.md, ROADMAP.md, DELIVERY_ARCHIVE.md), NO GREEN EVER color palette (cyan-500 accents), FastMCP 1933 API data contracts, zero-script direct source edits, and dual-brain evaluation rules. Contains a self-evolution loop to continuously reflect and update SKILL.md.",
+    "source": "Antigravity",
+    "path": "/home/skloxo/.gemini/config/skills/openviking-studio-dev",
     "uri": "viking://user/skills/openviking-studio-dev/SKILL.md",
     "scope": "user"
   },
   {
     "name": "to-tickets",
     "description": "Break a plan, spec, or the current conversation into a set of tracer-bullet tickets, each declaring its blocking edges, published to the configured tracker — edges as text in one file per ticket locally, or native blocking links on a real tracker.",
+    "source": "Antigravity",
+    "path": "/home/skloxo/.gemini/config/skills/to-tickets",
     "uri": "viking://user/skills/to-tickets/SKILL.md",
     "scope": "user"
   },
   {
     "name": "resolving-merge-conflicts",
     "description": "Use when you need to resolve an in-progress git merge/rebase conflict.",
+    "source": "Antigravity",
+    "path": "/home/skloxo/.gemini/config/skills/resolving-merge-conflicts",
     "uri": "viking://user/skills/resolving-merge-conflicts/SKILL.md",
     "scope": "user"
   },
   {
     "name": "implement",
     "description": "Implement a piece of work based on a spec or set of tickets.",
+    "source": "Antigravity",
+    "path": "/home/skloxo/.gemini/config/skills/implement",
     "uri": "viking://user/skills/implement/SKILL.md",
     "scope": "user"
   },
   {
     "name": "wayfinder",
     "description": "Plan a huge chunk of work — more than one agent session can hold — as a shared map of decision tickets on your issue tracker, and resolve them one at a time until the way to the destination is clear.",
+    "source": "Antigravity",
+    "path": "/home/skloxo/.gemini/config/skills/wayfinder",
     "uri": "viking://user/skills/wayfinder/SKILL.md",
     "scope": "user"
   },
   {
     "name": "code-review",
     "description": "Review the changes since a fixed point (commit, branch, tag, or merge-base) along two axes — Standards (does the code follow this repo's documented coding standards?) and Spec (does the code match what the originating issue/PRD asked for?). Runs both reviews in parallel sub-agents and reports them side by side. Use when the user wants to review a branch, a PR, work-in-progress changes, or asks to \"review since X\".",
+    "source": "Antigravity",
+    "path": "/home/skloxo/.gemini/config/skills/code-review",
     "uri": "viking://user/skills/code-review/SKILL.md",
     "scope": "user"
   },
   {
     "name": "diagnosing-bugs",
     "description": "Diagnosis loop for hard bugs and performance regressions. Use when the user says \"diagnose\"/\"debug this\", or reports something broken/throwing/failing/slow.",
+    "source": "Antigravity",
+    "path": "/home/skloxo/.gemini/config/skills/diagnosing-bugs",
     "uri": "viking://user/skills/diagnosing-bugs/SKILL.md",
     "scope": "user"
   },
   {
     "name": "setup-matt-pocock-skills",
     "description": "Configure this repo for the engineering skills — set up its issue tracker, triage label vocabulary, and domain doc layout. Run once before first use of the other engineering skills.",
+    "source": "Antigravity",
+    "path": "/home/skloxo/.gemini/config/skills/setup-matt-pocock-skills",
     "uri": "viking://user/skills/setup-matt-pocock-skills/SKILL.md",
     "scope": "user"
   },
   {
     "name": "triage",
     "description": "Move issues and external PRs through a state machine of triage roles — categorise, verify, grill if needed, and write agent-ready briefs.",
+    "source": "Antigravity",
+    "path": "/home/skloxo/.gemini/config/skills/triage",
     "uri": "viking://user/skills/triage/SKILL.md",
     "scope": "user"
   },
   {
     "name": "ask-matt",
     "description": "Ask which skill or flow fits your situation. A router over the skills in this repo.",
+    "source": "Antigravity",
+    "path": "/home/skloxo/.gemini/config/skills/ask-matt",
     "uri": "viking://user/skills/ask-matt/SKILL.md",
     "scope": "user"
   },
   {
     "name": "auto-job-hunter",
     "description": "Automated job hunting system: Perplexity search → resume matching → Feishu Bitable tracking → tailored resume generation → daily reports",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/auto-job-hunter",
     "uri": "viking://user/skills/auto-job-hunter/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "windows-batch-file-creation-base64",
     "description": "Creates files with special characters (e.g., .bat files) on a remote Windows host from a Linux host using base64 encoding to avoid shell escaping issues. NOT for simple file transfers without special characters or when direct write methods work.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/windows-batch-file-creation-base64",
     "uri": "viking://user/skills/windows-batch-file-creation-base64/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "pdf-signature-removal",
     "description": "Strip digital signatures from PDFs to make them editable, using qpdf and pikepdf. Triggered when a user asks to edit a signed PDF, remove PDF signatures, or make a locked PDF modifiable. NOT for: general PDF editing (text extraction, merging, splitting) without signatures, or PDF creation from scratch.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/pdf-signature-removal",
     "uri": "viking://user/skills/pdf-signature-removal/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "server-health-check-start",
     "description": "Standardizes server health checks at the beginning of sessions, including CPU usage, memory, disk space, recent logs, and network connections. Trigger when initiating sessions requiring system monitoring or upon user request. NOT for: application-specific health checks or non-Linux systems.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/server-health-check-start",
     "uri": "viking://user/skills/server-health-check-start/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "untracked-wild-crawler",
     "description": "Automated specification for untracked-wild-crawler skill module. Covers domain SOPs and execution boundaries.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/untracked-wild-crawler",
     "uri": "viking://user/skills/untracked-wild-crawler/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "mcp",
     "description": "Automated specification for mcp skill module. Covers domain SOPs and execution boundaries.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/mcp",
     "uri": "viking://user/skills/mcp/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "enhanced-skill-injection-filtering",
     "description": "Filters large injected skill lists using multi-criteria analysis to retain only contextually relevant skills. Triggering contexts: when more than 10 skills are injected and the user query or conversation topic is unclear. NOT for: sessions with minimal skills already filtered or when domain-specific skills are directly applicable.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/enhanced-skill-injection-filtering",
     "uri": "viking://user/skills/enhanced-skill-injection-filtering/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "heartbeat-check-execution-procedure",
     "description": "Execute heartbeat checks by gathering system metrics, checking Docker containers and Clash proxy, testing network connectivity, and updating the status file. Use for cron-triggered tasks; NOT for ad-hoc monitoring or when environment tools differ.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/heartbeat-check-execution-procedure",
     "uri": "viking://user/skills/heartbeat-check-execution-procedure/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "vibe-trading-cherry-pick-conflict-resolution",
     "description": "For resolving cherry-pick conflicts in the Vibe-Trading project when integrating fork changes or merging branches. Trigger when conflict markers appear in project files (e.g., registry.py, mcp_server.py) and the goal is to remove foreign-market code while preserving A-share data sources. NOT for: general git conflict resolution without the specific Vibe-Trading context.",
+    "source": "TideTrading",
+    "path": "/home/skloxo/aho/openclaw/skills/vibe-trading-cherry-pick-conflict-resolution",
     "uri": "viking://user/skills/vibe-trading-cherry-pick-conflict-resolution/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "system-service-update-audit",
     "description": "Guides a comprehensive audit of all running services to identify available updates and new features. Use when the user asks to check system-wide updates, wants a service inventory with version gaps, or needs to know what new features updates would bring. NOT for: applying actual updates, individual service troubleshooting, or CPA2API updates.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/system-service-update-audit",
     "uri": "viking://user/skills/system-service-update-audit/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "ponytail-audit",
     "description": ">",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/ponytail-audit",
     "uri": "viking://user/skills/ponytail-audit/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "skill-directory-audit",
     "description": "Audits the OpenClaw skill directory to list skills, extract metadata, identify redundancies, and recommend cleanup. Use when user requests skill inventory, cleanup, or redundancy analysis. NOT for: system health checks, proxy diagnostics, or any non-skill-related tasks.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/skill-directory-audit",
     "uri": "viking://user/skills/skill-directory-audit/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "skill-count-verification",
     "description": "当遇到 SkillClaw/OpenClaw 环境中技能数量报告不一致时，例如：预期技能数与实际不符、进行系统审计、健康检查发现异常，或用户报告有技能‘丢失’，请使用本技能。本技能通过直接扫描三个标准技能目录下的 `SKILL.md` 文件来进行精确计数。不适用于：其他上下文的技能计数、通用的技能管理操作、或当有确切证据表明内存/缓存数据完全准确无误的情况。",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/skill-count-verification",
     "uri": "viking://user/skills/skill-count-verification/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "ponytail-help",
     "description": ">",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/ponytail-help",
     "uri": "viking://user/skills/ponytail-help/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "openclaw",
     "description": "Automated specification for openclaw skill module. Covers domain SOPs and execution boundaries.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/openclaw",
     "uri": "viking://user/skills/openclaw/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "injected-skills-reference",
     "description": "Provides a detailed operational reference for the 18 commonly injected diagnostic, monitoring, and system skills in this environment. This document details each skill's purpose, invocation syntax, parameters, outputs, and troubleshooting steps. Use to understand *how* to invoke and manage skills based on user tasks. NOT for: situations where a single, well-known skill is the obvious and only choice.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/injected-skills-reference",
     "uri": "viking://user/skills/injected-skills-reference/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "find-skills-skill",
     "description": "Search and discover OpenClaw skills from various sources. Use when: user wants to find available skills, search for specific functionality, or discover new skills to install.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/find-skills-skill",
     "uri": "viking://user/skills/find-skills-skill/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "memory-search-troubleshooting",
     "description": "Use when memory_search returns errors (e.g., index metadata missing) or empty results. Guides diagnosis of SkillClaw memory index issues, query simplification, and early termination. NOT for: unrelated tool errors, general search optimization, or contexts where memory is not involved.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/memory-search-troubleshooting",
     "uri": "viking://user/skills/memory-search-troubleshooting/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "frontend-design-pro",
     "description": ">",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/frontend-design-pro",
     "uri": "viking://user/skills/frontend-design-pro/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "fund-report-extractor",
     "description": "暂无简介",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/fund-report-extractor",
     "uri": "viking://user/skills/fund-report-extractor/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "devops",
     "description": "Automated specification for devops skill module. Covers domain SOPs and execution boundaries.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/devops",
     "uri": "viking://user/skills/devops/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "cron-schedule-reminder",
     "description": "Schedule one-time or recurring reminders using the `cron` tool. Use when the user asks to be reminded at a specific time, to revisit a topic later, or to schedule a follow-up action. NOT for: memory search or creation (use `memory_write`), general calendar queries, or event management in external services like Feishu calendar.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/cron-schedule-reminder",
     "uri": "viking://user/skills/cron-schedule-reminder/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "diagram-workflow-method",
     "description": "架构图与流程图绘制方法。核心能力：将任何系统/流程/数据结构可视化表达为结构化图表（架构图、流程图、时序图、状态机、ER图、拓扑图等）。覆盖从需求理解、图表类型判定、实体提取、关系编码、布局计算到SVG/Mermaid输出的全流程。8种图表类型、每种图表的组件清单与1个完整实战范本。通用方法，不绑定任何特定领域。触发词：架构图、流程图、时序图、状态机、拓扑图、ER图、数据流图、draw、diagram、flowchart、architecture。",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/diagram-workflow-method",
     "uri": "viking://user/skills/diagram-workflow-method/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "pdf-text-replacement",
     "description": "Replace text in CID-encoded PDFs (especially Chinese documents) using PyMuPDF redaction. Triggered when user asks to find-and-replace text in a PDF. NOT for: PDF signature removal (use pdf-signature-removal), simple text extraction, or PDF-to-Markdown conversion.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/pdf-text-replacement",
     "uri": "viking://user/skills/pdf-text-replacement/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "self-improving",
     "description": "Self-reflection + Self-criticism + Self-learning + Self-organizing memory. Agent evaluates its own work, catches mistakes, and improves permanently. Use when (1) a command, tool, API, or operation fails; (2) the user corrects you or rejects your work; (3) you realize your knowledge is outdated or incorrect; (4) you discover a better approach; (5) the user explicitly installs or references the skill for the current task.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/self-improving",
     "uri": "viking://user/skills/self-improving/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "memory-driven-follow-up",
     "description": "When user interactions involve past conversations or failures recalled via memory systems (e.g., openviking-auto-recall), create structured JSON follow-up tasks to address incomplete actions. Triggered by memory injections or references to previous sessions. NOT for: responding to simple greetings without historical context or when no actionable past tasks are identified.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/memory-driven-follow-up",
     "uri": "viking://user/skills/memory-driven-follow-up/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "vibe-trading-platform-guide",
     "description": "本项目平台的详细使用技能指南，定义了行情网关接口、多租户沙箱隔离规范、实盘交易与回测调用指引。",
+    "source": "TideTrading",
+    "path": "/home/skloxo/aho/openclaw/skills/vibe-trading-platform-guide",
     "uri": "viking://user/skills/vibe-trading-platform-guide/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "clash-verge-url-encoding-fix",
     "description": "当使用 Clash Verge MCP 工具（例如 `clash_delay`, `clash_smart_switch`）时，如果节点名称包含空格、表情符号或特殊字符（如 '🇭🇰 HK 铜锣湾'），底层 API 可能会因‘URL can't contain control characters’错误而失败。触发此技能可在参数中对节点名称进行 URL 编码以避免失败。不适用于节点名称无特殊字符或不涉及节点名称参数的常规代理操作。",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/clash-verge-url-encoding-fix",
     "uri": "viking://user/skills/clash-verge-url-encoding-fix/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "market-review-methodology",
     "description": "A股全市场复盘方法论 - 大盘→题材概念→候选池→精选池的完整三层闭环评估体系，双策略(中线趋势/龙头情绪)，支持报告生成、经验沉淀、持续迭代",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/market-review-methodology",
     "uri": "viking://user/skills/market-review-methodology/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "docker-healthcheck-container-name-verification",
     "description": "Diagnoses silent health check failures caused by container name mismatches in Docker health check scripts. Trigger when: 1) services fail to restart despite health checks appearing to run (e.g., logs show 'Restart unhealthy container' but no action), 2) health check scripts exit successfully but target container remains unhealthy, 3) investigating service cascading failures after container renames, migrations, or Docker Compose project changes. NOT for: generic Docker health check setup, initial container configuration, or diagnosing health check probe failures (e.g., endpoint unresponsive).",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/docker-healthcheck-container-name-verification",
     "uri": "viking://user/skills/docker-healthcheck-container-name-verification/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "vibe-trading-regression-test-setup",
     "description": "用于在 vibe-trading 项目中运行回归测试和执行代码清理。涵盖使用 uv 进行环境设置、标准测试命令、对 backtest 模块依赖的了解，以及测试与清理工作流。不适用于：非 Python 任务、无关项目或此特定代码库之外的常规 Python 测试。",
+    "source": "TideTrading",
+    "path": "/home/skloxo/aho/openclaw/skills/vibe-trading-regression-test-setup",
     "uri": "viking://user/skills/vibe-trading-regression-test-setup/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "skillclaw-proxy-diagnosis",
     "description": "Diagnoses SkillClaw proxy failures by systematically checking systemd service logs, port status, and API connectivity. Use when facing proxy timeouts, connection refused errors, or model availability issues. NOT for general proxy troubleshooting unrelated to SkillClaw or non-systemd environments.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/skillclaw-proxy-diagnosis",
     "uri": "viking://user/skills/skillclaw-proxy-diagnosis/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "empty-search-fallback-strategy",
     "description": "用于当一个核心信息检索操作（如 `memory_search`）返回空结果，或者当代理的上下文与用户查询明显不相关时。此技能提供了一个结构化的恢复流程，以处理‘信息未找到’的状态，并引导对话走向解决方案。**不可用于**：替代或绕过主搜索方法。",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/empty-search-fallback-strategy",
     "uri": "viking://user/skills/empty-search-fallback-strategy/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "heartbeat-network-anomaly-flag",
     "description": "用于在心跳健康检查期间，基于 ping 测试结果识别和报告网络连接问题。当执行定期健康监控中的网络检查时触发。**不适用于**：实时网络监控、非健康检查上下文或通用连接故障排除。",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/heartbeat-network-anomaly-flag",
     "uri": "viking://user/skills/heartbeat-network-anomaly-flag/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "matt-pocock-adapted",
     "description": "Automated specification for matt-pocock-adapted skill module. Covers domain SOPs and execution boundaries.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/matt-pocock-adapted",
     "uri": "viking://user/skills/matt-pocock-adapted/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "vibe-trading-service-deploy",
     "description": "Manages vibe-trading service restarts and deployment verification after code changes (data source additions, loader updates, config changes). Use when restarting vibe-trading services or verifying new data sources are live. Covers Docker container management (current) and systemd (legacy). NOT for: initial project setup, writing new loaders from scratch, or non-service-related vibe-trading code changes.",
+    "source": "TideTrading",
+    "path": "/home/skloxo/aho/openclaw/skills/vibe-trading-service-deploy",
     "uri": "viking://user/skills/vibe-trading-service-deploy/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "memory-search-fallback-to-filesystem",
     "description": "当针对文件路径、文档位置或特定存储信息的查询，经 `memory_search` 工具检索确认无果后，本技能提供后备策略。它指导 AI 使用文件系统工具在常见用户工作目录中进行限定范围的搜索，若仍未找到，则引导用户提供更具体信息以缩小范围。此技能不适用于：`memory_search` 已返回有效结果的查询、关于通用知识的提问、或无法通过文件系统操作解决的查询（如在云端或特定应用内部的位置）。",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/memory-search-fallback-to-filesystem",
     "uri": "viking://user/skills/memory-search-fallback-to-filesystem/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "repo-tracker",
     "description": "管理参考项目的 Git 追踪与自动更新看板。支持自动将新参考项目加入追踪、拉取更新以及按天生成每日增量日志。",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/repo-tracker",
     "uri": "viking://user/skills/repo-tracker/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "openclaw-mcp-idle-timeout-config",
     "description": "Use when diagnosing or fixing MCP process accumulation due to idle timeout in OpenClaw. NOT for: general MCP server setup, non-idle-timeout issues, or when the problem is unrelated to process recycling.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/openclaw-mcp-idle-timeout-config",
     "uri": "viking://user/skills/openclaw-mcp-idle-timeout-config/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "docker-container-rename-cross-reference-update",
     "description": "Systematically rename a Docker container/service and update all cross-references across docker-compose, documentation, skills, health checks, and MCP configs. Triggered when a user requests renaming a container or when a container name mismatch is detected during audits. NOT for: renaming Docker images on a registry, changing application code internals, or modifying historical changelogs.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/docker-container-rename-cross-reference-update",
     "uri": "viking://user/skills/docker-container-rename-cross-reference-update/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "enforce-health-check-data-gathering",
     "description": "Enforces live data collection during system health checks to prevent hallucinations and ensure accurate reporting. Triggered by heartbeat, monitoring, or status update tasks that require system metrics. NOT for: non-system health tasks, data already provided in context, or when performance metrics are cached or stale.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/enforce-health-check-data-gathering",
     "uri": "viking://user/skills/enforce-health-check-data-gathering/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "heartbeat-check-fallback",
     "description": "Fallback procedure for heartbeat checks when primary heartbeat skill files (heartbeat-check-execution, heartbeat-check-full) are missing. Guides the agent to gather system metrics, check Docker, Clash, and network connectivity, and update HEARTBEAT.md. NOT for: situations where the primary heartbeat skill files are available and can be read.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/heartbeat-check-fallback",
     "uri": "viking://user/skills/heartbeat-check-fallback/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "steve-jobs-perspective-v2",
     "description": "|",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/steve-jobs-perspective-v2",
     "uri": "viking://user/skills/steve-jobs-perspective-v2/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "heartbeat-check-log-update",
     "description": "Trigger when performing heartbeat or health checks that require logging results to a file, such as HEARTBEAT.md. Ensures that after data gathering, the status is compiled and written to the specified log file with an updated timestamp. NOT for: checks without file logging requirements or when the log file is not explicitly specified.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/heartbeat-check-log-update",
     "uri": "viking://user/skills/heartbeat-check-log-update/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "cn-stock-analyst",
     "description": "股票智能分析助手，支持A股、港股、美股的行情抓取、技术指标解读和研报生成。触发场景：用户提到\"股票分析\"、\"看一下XX股\"、\"XX的技术面\"、\"买不买XX\"、\"研报\"、\"财报解读\"、\"帮我分析XX\"、\"XX值不值得买\"、\"XX的走势\"、\"技术分析\"、\"MACD\"、\"RSI\"、\"K线\"、\"均线\"、\"PE\"、\"PB\"、\"ROE\"、\"基本面\"等关键词时激活。支持股票代码（SH600519、SZ000001、AAPL、0700.HK）或股票名称（茅台、腾讯、苹果）查询。",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/cn-stock-analyst",
     "uri": "viking://user/skills/cn-stock-analyst/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "handle-missing-skill-files",
     "description": "Use when an injected skill's SKILL.md file cannot be read due to ENOENT errors during tool calls. Triggered by failed reads of skill files for injected skills. NOT for: successfully read skills, general file operations, or when skill files are confirmed present.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/handle-missing-skill-files",
     "uri": "viking://user/skills/handle-missing-skill-files/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "skillclaw-teardown-procedure",
     "description": "Safely remove SkillClaw proxy from the OpenClaw request chain on WSL2 local deployments. Covers architecture verification, symlink safety checks, process identification, and OpenClaw reconfiguration. NOT for: adding SkillClaw, diagnosing SkillClaw latency (use skillclaw-proxy-latency-diagnosis), or fixing skill symlinks (use skillclaw-symlink-fix).",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/skillclaw-teardown-procedure",
     "uri": "viking://user/skills/skillclaw-teardown-procedure/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "tushare-plugin-builder",
     "description": "This skill should be used when the user provides a Tushare API document URL and asks to generate a full plugin in this codebase, including extractor, schema, config, query service, and agent/MCP/http usage with testable curl examples.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/tushare-plugin-builder",
     "uri": "viking://user/skills/tushare-plugin-builder/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "missing-skill-file-fallback",
     "description": "在技能文件读取失败并触发操作系统 ENOENT 错误时自动激活。它指导智能体根据任务上下文和注入的技能列表，检查备用路径或采用默认流程继续执行。不适用于：那些对任务完成至关重要、必须被找到或首先创建的核心技能文件。",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/missing-skill-file-fallback",
     "uri": "viking://user/skills/missing-skill-file-fallback/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "visual-style-ppt",
     "description": "Create style-driven slide images strictly with the Image 2 model, assemble those images into image-only PPTX decks, and manage reusable visual style libraries from documents or visual references. Use when the user asks for a \"PPT Skill\", \"风格驱动 PPT\", \"提炼风格做 PPT\", \"调用某个风格做 PPT\", \"图片版 PPT\", \"保存 PPT 风格\", \"列出 PPT 风格\", \"文档生成 PPT\", \"文章生成 PPT\", \"把文档做成演示文稿\", or wants to extract, save, reuse, and apply visual style keywords specifically for visual slide/image deck creation.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/visual-style-ppt",
     "uri": "viking://user/skills/visual-style-ppt/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "mermaid-diagram",
     "description": "Generate Mermaid diagrams for product managers and developers. Use when: (1) creating flowcharts, system architecture diagrams, sequence diagrams, or mind maps, (2) converting text descriptions or PRDs into visual diagrams, (3) drawing user journey maps, state machines, or ER diagrams, (4) any request that mentions \"画图\", \"流程图\", \"架构图\", \"时序图\", \"脑图\", \"mermaid\". Output valid Mermaid code blocks.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/mermaid-diagram",
     "uri": "viking://user/skills/mermaid-diagram/SKILL.md",
-    "scope": "agent"
-  },
-  {
-    "name": "research",
-    "description": "Automated specification for research skill module. Covers domain SOPs and execution boundaries.",
-    "uri": "viking://user/skills/research/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "vibe-trading-developer-guide",
     "description": "Ultimate development guide, capability map, tool dictionary, and architectural knowledge graph for Vibe-Trading.",
+    "source": "TideTrading",
+    "path": "/home/skloxo/aho/openclaw/skills/vibe-trading-developer-guide",
     "uri": "viking://user/skills/vibe-trading-developer-guide/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "injected-skill-fallback-activation",
     "description": "When a tool call returns empty, errors, or a task output is missing, scan the injected skills list for relevant fallback procedures and apply them. Triggering contexts include memory searches with no results, incomplete monitoring reports, or failed data retrieval. NOT for: successful operations, creative writing tasks, or when primary approach already works.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/injected-skill-fallback-activation",
     "uri": "viking://user/skills/injected-skill-fallback-activation/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "stock-review",
     "description": "暂无简介",
+    "source": "TideTrading",
+    "path": "/home/skloxo/aho/openclaw/skills/stock-review",
     "uri": "viking://user/skills/stock-review/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "oz",
     "description": "Dispatch coding tasks to Warp Oz cloud agents and chain them into multi-agent pipelines — all from chat. Includes a bash wrapper covering every Oz API endpoint (runs, schedules, artifacts, agents) and a Python pipeline orchestrator that chains specialized agents (e.g., architect → developer → security → red-teamer) with automatic severity-based retry loops. Use when you want to kick off cloud coding agents, poll run status, manage cron schedules, run multi-turn conversations in a shared sandbox, or orchestrate multi-agent review pipelines. NOT for local Warp terminal usage.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/oz",
     "uri": "viking://user/skills/oz/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "vibe-trading-project-structure",
     "description": "Provides the architecture, Docker containers, ports, CLI commands, startup/stop procedure, environment dependencies, health checks, and Feishu bot diagnostics for the vibe-trading project. Triggers when user asks about vibe-trading web UI, dashboard, management platform, how to start, stop, or verify the project, or when the Feishu bot doesn't reply. NOT for: general Python/Node project debugging, trading strategy questions, or stock data issues.",
+    "source": "TideTrading",
+    "path": "/home/skloxo/aho/openclaw/skills/vibe-trading-project-structure",
     "uri": "viking://user/skills/vibe-trading-project-structure/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "a-share-risk-alert",
     "description": "A股风险预警/ST预警/退市风险排查。当用户说\"风险预警\"、\"有没有风险\"、\"会不会ST\"、\"退市风险\"、\"爆雷\"、\"暴雷\"、\"风险排查\"、\"XX安全吗\"、\"财务造假\"、\"审计意见\"时触发。基于 cn-stock-data 财务数据，从盈利、现金流、负债、审计等维度排查个股风险信号。支持研报风格（formal）和快速排查风格（brief）。",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/a-share-risk-alert",
     "uri": "viking://user/skills/a-share-risk-alert/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "react-i18next-reactive-language-toggle-fix",
     "description": "Diagnose and fix language toggle buttons or labels that don't update after switching locale in React applications using i18next. Triggered when UI elements like navigation menus or buttons remain in the original language despite toggling. NOT for: initial i18n setup, non-React projects, or issues unrelated to reactivity (e.g., missing translation keys).",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/react-i18next-reactive-language-toggle-fix",
     "uri": "viking://user/skills/react-i18next-reactive-language-toggle-fix/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "react-ts-build-test-exclusion",
     "description": "当构建 React TypeScript 项目时，如果 `npm run build` 因测试文件（特别是 @testing-library/react v16.3.2+ 引起的 `screen` 导出等重大变更）中的 TypeScript 错误而失败，请从 tsconfig 中排除测试目录并重新构建。触发环境：代理运行 `npm run build` 后，看到指向 .test.ts/.test.tsx 文件的 TS 错误。不适用于：修复测试代码、运行测试或非 TypeScript 项目。",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/react-ts-build-test-exclusion",
     "uri": "viking://user/skills/react-ts-build-test-exclusion/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "china-stock-data-curl-workaround",
     "description": "Use curl via subprocess to fetch Chinese A-share historical data from eastmoney.com when Python HTTP clients fail with RemoteDisconnected, or diagnose and resolve eastmoney.com CDN IP blocks on datacenter servers when responses are empty. Triggering contexts: any task requiring Chinese stock market data retrieval from eastmoney.com. NOT for: non-Chinese markets, or when Python HTTP is confirmed working.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/china-stock-data-curl-workaround",
     "uri": "viking://user/skills/china-stock-data-curl-workaround/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "search-with-tavily",
     "description": "Web search using Tavily API - a powerful search engine for AI agents. Use when you need to search the web for current information, news, research, or any topic that requires up-to-date web data. Supports multiple search modes including basic search, Q&A, and context retrieval for RAG applications.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/search-with-tavily",
     "uri": "viking://user/skills/search-with-tavily/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "stock-analyst",
     "description": "Automated specification for stock-analyst skill module. Covers domain SOPs and execution boundaries.",
+    "source": "TideTrading",
+    "path": "/home/skloxo/aho/openclaw/skills/stock-analyst",
     "uri": "viking://user/skills/stock-analyst/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "vibe-trading-frontend-i18n-setup",
     "description": "Guides the agent through implementing Chinese internationalization (i18n) for the Vibe-Trading React frontend using react-i18next. Triggering contexts: when asked to localize, translate, or add Chinese language support to the Vibe-Trading frontend. NOT for: generic i18n advice, other projects, or when i18n framework is already present.",
+    "source": "TideTrading",
+    "path": "/home/skloxo/aho/openclaw/skills/vibe-trading-frontend-i18n-setup",
     "uri": "viking://user/skills/vibe-trading-frontend-i18n-setup/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "openclaw-skill-cleanup",
     "description": "用于清理OpenClaw系统中未使用或冗余的技能。指导定位技能目录、识别符号链接状态，并安全删除。此过程主要针对通过npm安装并链接至用户技能目录的技能。不适用于：通用文件清理、非OpenClaw环境或活动技能的故障诊断。",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/openclaw-skill-cleanup",
     "uri": "viking://user/skills/openclaw-skill-cleanup/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "ignore-irrelevant-injected-skills",
     "description": "Use when injected skills are clearly mismatched to the user's task domain. This skill guides you to triage the injected skill list, identify ones unrelated to the current request (e.g., system diagnostic skills during creative tasks), and focus your attention on the actual user goal. NOT for: scenarios where injected skills directly match the task (e.g., heartbeat-check for a health check request).",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/ignore-irrelevant-injected-skills",
     "uri": "viking://user/skills/ignore-irrelevant-injected-skills/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "github-fetch-empty-response-fallback",
     "description": "Detects when web_fetch to GitHub (raw.githubusercontent.com or api.github.com) returns empty content despite reporting success, and provides fallback strategies. Use when researching GitHub repos via web_fetch and content appears blank. NOT for: fetching non-GitHub URLs, or when local filesystem access to a cloned repo is available.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/github-fetch-empty-response-fallback",
     "uri": "viking://user/skills/github-fetch-empty-response-fallback/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "html-ppt-skill",
     "description": "HTML PPT Studio — author professional static HTML presentations in many styles, layouts, and animations, all driven by templates. Use when the user asks for a presentation, PPT, slides, keynote, deck, slideshow, \"幻灯片\", \"演讲稿\", \"做一份 PPT\", \"做一份 slides\", a reveal-style HTML deck, a 小红书 图文, or any kind of multi-slide pitch/report/sharing document that should look tasteful and be usable with keyboard navigation. Triggers include keywords like \"presentation\", \"ppt\", \"slides\", \"deck\", \"keynote\", \"reveal\", \"slideshow\", \"幻灯片\", \"演讲稿\", \"分享稿\", \"小红书图文\", \"talk slides\", \"pitch deck\", \"tech sharing\", \"technical presentation\".",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/html-ppt-skill",
     "uri": "viking://user/skills/html-ppt-skill/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "awesome-design-md",
     "description": "暂无简介",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/awesome-design-md",
     "uri": "viking://user/skills/awesome-design-md/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "cpa-upstream-api-diagnosis",
     "description": "Diagnose CPA proxy issues when upstream API returns anti-bot blocks (CAPTCHA) or non-standard errors. Check CPA request logs for specific error strings and understand that empty 200 OK responses may indicate upstream errors. NOT for: general CPA configuration issues, OAuth authentication problems, or model not found errors.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/cpa-upstream-api-diagnosis",
     "uri": "viking://user/skills/cpa-upstream-api-diagnosis/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "guizang-ppt-skill",
     "description": "生成横向翻页网页 PPT（单 HTML 文件），含 WebGL 背景、章节幕封、数据大字报、图片网格等模板。提供两种风格：① \"电子杂志 × 电子墨水\"（衬线 + 流体背景 + 暖色） ② \"瑞士国际主义\"（无衬线 + 网格点阵 + IKB/柠檬黄/柠檬绿/安全橙高亮）。当用户需要制作分享 / 演讲 / 发布会风格的网页 PPT，或提到\"杂志风 PPT\"、\"瑞士风 PPT\"、\"Swiss Style\"、\"horizontal swipe deck\"时使用。",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/guizang-ppt-skill",
     "uri": "viking://user/skills/guizang-ppt-skill/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "meta-skill-listing",
     "description": "Handles user requests to list or enumerate all available skills or tools when the output would be very long. Triggering contexts include: 'list all your skills', 'what can you do?', 'show me your capabilities'. NOT for: requests for specific skill details or functionality explanations.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/meta-skill-listing",
     "uri": "viking://user/skills/meta-skill-listing/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "openviking",
     "description": "OpenViking 0.4.x 上下文数据库与体外大脑中枢运维与使用指南。涵盖 User/Peer 模型、记忆/会话管理、RAG 语义搜索、与 Antigravity / OpenClaw / Hermes 多 Agent 协同接入、日志实时同步与运维诊断。",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/openviking",
     "uri": "viking://user/skills/openviking/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "heartbeat-check-full",
     "description": "Perform a comprehensive scheduled heartbeat check of system health, including system resources (CPU/memory/disk/GPU), Docker containers, Clash proxy, and network connectivity, then update HEARTBEAT.md with timestamped status. NOT for: ad-hoc system monitoring, single-metric checks, or when HEARTBEAT.md is not the target file.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/heartbeat-check-full",
     "uri": "viking://user/skills/heartbeat-check-full/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "mimo-code-integration",
     "description": "用于将 MiMo Code CLI 与 OpenClaw/Feishu 环境集成或诊断其配置问题。提供环境特定的路径、CPA 后端详情和验证方法。不适用于：通用的 CLI 工具探索或记忆搜索任务。",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/mimo-code-integration",
     "uri": "viking://user/skills/mimo-code-integration/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "cpa-healthcheck-container-fix",
     "description": "用于诊断CPA服务健康检查失败或Docker容器名称不匹配问题的技能。此技能用于验证并更正 `cpa-healthcheck.service` 中的容器名称，将 'CPA' 修正为 'cpa2api-dev'。不适用于：与CPA无关的健康检查或通用Docker操作。",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/cpa-healthcheck-container-fix",
     "uri": "viking://user/skills/cpa-healthcheck-container-fix/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "stock-data-assistant",
     "description": ">",
+    "source": "TideTrading",
+    "path": "/home/skloxo/aho/openclaw/skills/stock-data-assistant",
     "uri": "viking://user/skills/stock-data-assistant/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "cpa-service-diagnostics",
     "description": "当代理需要与 CPA（Cloudflare Workers AI）代理服务交互以访问模型，并遇到连接性、身份验证或配置问题时使用。提供端口发现、服务状态和 API 密钥检索的分步故障排除。不适用于：通用网络诊断、Clash 代理问题或非 CPA 服务。",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/cpa-service-diagnostics",
     "uri": "viking://user/skills/cpa-service-diagnostics/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "skillclaw-symlink-fix",
     "description": "Diagnose and fix SkillClaw skill pull failures caused by symbolic links in the skills directory. Trigger when SkillClaw logs show errors such as 'backup restore failed: Cannot call rmtree on a symbolic link'. NOT for: general server health checks, memory retrieval issues, or non-SkillClaw infrastructure problems.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/skillclaw-symlink-fix",
     "uri": "viking://user/skills/skillclaw-symlink-fix/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "skillopt-skill-analyzer",
     "description": "用 SkillOpt reflect+gate 机制分析并改进 SKILL.md 文档质量",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/skillopt-skill-analyzer",
     "uri": "viking://user/skills/skillopt-skill-analyzer/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "openclaw-system-audit",
     "description": "Provides a structured checklist for auditing the OpenClaw/SkillClaw system. Audits skill inventory (found vs. loaded), service health, configuration, resource usage, and capability boundaries (comparing available and loaded skills). Use when the user requests a system audit, health check, capability boundary analysis, or skill count verification. NOT for: simple, single-service checks (use server-health-check-start) or proxy-specific diagnostics (use skillclaw-proxy-latency-diagnosis).",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/openclaw-system-audit",
     "uri": "viking://user/skills/openclaw-system-audit/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "mcp-preferred-heartbeat-check",
     "description": "When performing scheduled heartbeat or health checks, prioritize using dedicated MCP tools for system metrics (CPU, memory, disk, GPU) and service health (e.g., Clash proxy) to avoid redundant shell commands and handle authentication/connection issues. Triggering contexts: cron jobs, manual health monitoring, or system status updates. NOT for: environments without MCP tools or when shell access is explicitly required for custom scripts.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/mcp-preferred-heartbeat-check",
     "uri": "viking://user/skills/mcp-preferred-heartbeat-check/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "baoyu-slide-deck",
     "description": "Generates professional slide deck images from content. Creates outlines with style instructions, then generates individual slide images. Use when user asks to \"create slides\", \"make a presentation\", \"generate deck\", \"slide deck\", or \"PPT\".",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/baoyu-slide-deck",
     "uri": "viking://user/skills/baoyu-slide-deck/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "pdf-editing-python-guide",
     "description": "For PDF manipulation tasks requiring password removal, signature removal, or text replacement, especially with Chinese (CJK) fonts. Use this skill to apply Python libraries like PyMuPDF (fitz) and pikepdf with concrete steps. NOT for: general PDF viewing, simple conversions, or tasks not involving editing PDF content or metadata.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/pdf-editing-python-guide",
     "uri": "viking://user/skills/pdf-editing-python-guide/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "mattpocock-productivity",
     "description": "Automated specification for mattpocock-productivity skill module. Covers domain SOPs and execution boundaries.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/mattpocock-productivity",
     "uri": "viking://user/skills/mattpocock-productivity/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "cpa-proxy-region-diagnosis",
     "description": "Diagnose and resolve empty API responses caused by CPA proxy using an IP from a restricted region. Trigger when CPA proxy tests return valid structure but empty content, especially for region-locked services like Qwen (China-based). NOT for: general API errors, authentication failures, or connectivity issues unrelated to geographic restrictions.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/cpa-proxy-region-diagnosis",
     "uri": "viking://user/skills/cpa-proxy-region-diagnosis/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "skill-injection-relevance-enforcement",
     "description": "Filters a large (>10) list of injected skills for high relevance to the current task. It scores each skill based on contextual keyword matching and returns only the most applicable ones. Not intended for tasks with fewer than 10 skills or a pre-filtered list.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/skill-injection-relevance-enforcement",
     "uri": "viking://user/skills/skill-injection-relevance-enforcement/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "mcp-api-key-auth",
     "description": "This skill should be used when the user needs to set up, manage, or troubleshoot MCP API Key authentication and tool usage tracking for this stock data service. Use it when configuring external MCP clients (Claude Code, Cursor) to connect to the data service.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/mcp-api-key-auth",
     "uri": "viking://user/skills/mcp-api-key-auth/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "ponytail-debt",
     "description": ">",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/ponytail-debt",
     "uri": "viking://user/skills/ponytail-debt/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "ppt-master",
     "description": ">",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/ppt-master",
     "uri": "viking://user/skills/ppt-master/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "openclaw-docs",
     "description": "Automated specification for openclaw-docs skill module. Covers domain SOPs and execution boundaries.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/openclaw-docs",
     "uri": "viking://user/skills/openclaw-docs/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "monitoring-task-skill-filter",
     "description": "在例行监控任务（如心跳检查）期间，通过相关性过滤注入的技能，仅优先保留与系统资源、Docker、代理服务和网络连接相关的技能。不适用于：探索性或临时任务，此时更广泛的技能上下文可能有益。",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/monitoring-task-skill-filter",
     "uri": "viking://user/skills/monitoring-task-skill-filter/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "electron-proxy-windows",
     "description": "Configures proxy for Electron/Chromium-based desktop apps on Windows when they fail with geo-restriction errors (e.g., Google API 'User location not supported'). Covers the --proxy-server flag, typical install paths, and launch.bat wrapper creation. NOT for: Linux/macOS Electron apps, non-Electron Node.js apps (those use HTTPS_PROXY env var), or Clash/skillclaw proxy infrastructure itself.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/electron-proxy-windows",
     "uri": "viking://user/skills/electron-proxy-windows/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "filter-injected-skills-by-relevance",
     "description": "Use when a large number of skills are injected into context for a task, most of which are irrelevant. Provides guidance to focus on skills directly related to the current task keywords and ignore unrelated ones. NOT for: tasks where all injected skills are applicable or when skill injection is minimal.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/filter-injected-skills-by-relevance",
     "uri": "viking://user/skills/filter-injected-skills-by-relevance/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "ponytail-review",
     "description": ">",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/ponytail-review",
     "uri": "viking://user/skills/ponytail-review/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "autonomous-ai-agents",
     "description": "Automated specification for autonomous-ai-agents skill module. Covers domain SOPs and execution boundaries.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/autonomous-ai-agents",
     "uri": "viking://user/skills/autonomous-ai-agents/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "tide-agent-core",
     "description": ">",
+    "source": "TideTrading",
+    "path": "/home/skloxo/aho/openclaw/skills/tide-agent-core",
     "uri": "viking://user/skills/tide-agent-core/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "skillclaw-skill-diagnosis",
     "description": "For diagnosing discrepancies in SkillClaw skill counts by verifying skill directories, symlinks, service status, and configuration. Triggered when users report fewer skills than expected in the SkillClaw dashboard. NOT for: general filesystem navigation or unrelated service issues.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/skillclaw-skill-diagnosis",
     "uri": "viking://user/skills/skillclaw-skill-diagnosis/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "skillclaw-proxy-latency-diagnosis",
     "description": "Diagnose slow response times on the SkillClaw proxy at port 30000 when users report latency issues or timeouts. Use for comparing direct CPA backend (port 8317) vs. proxy overhead, checking logs, and identifying root causes like model inference time. NOT for: general network troubleshooting or non-SkillClaw services.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/skillclaw-proxy-latency-diagnosis",
     "uri": "viking://user/skills/skillclaw-proxy-latency-diagnosis/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "legacy-unstandardized-script",
     "description": "Automated specification for legacy-unstandardized-script skill module. Covers domain SOPs and execution boundaries.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/legacy-unstandardized-script",
     "uri": "viking://user/skills/legacy-unstandardized-script/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "empty-search-injected-skill-consult",
     "description": "When the memory_search tool returns empty results, automatically scan the list of injected skills for relevance to the search query and consult those skills to retrieve information. Trigger on memory_search returning empty or 'NONE'. NOT for: when memory search succeeds or when no injected skills are present.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/empty-search-injected-skill-consult",
     "uri": "viking://user/skills/empty-search-injected-skill-consult/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "mattpocock-engineering",
     "description": "Automated specification for mattpocock-engineering skill module. Covers domain SOPs and execution boundaries.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/mattpocock-engineering",
     "uri": "viking://user/skills/mattpocock-engineering/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "instock",
     "description": "A股全市场量化扫描系统 - 支持200+筛选条件、30+技术指标、61种K线形态、11种策略选股，基于QMT数据源，Python实现。",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/instock",
     "uri": "viking://user/skills/instock/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "ponytail",
     "description": ">",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/ponytail",
     "uri": "viking://user/skills/ponytail/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "fallback-memory-and-skill-handling",
     "description": "处理内存（记忆）搜索返回空结果或注入技能过多时的降级策略。触发条件：`memory_search` 结果为空或相关性低（score < 0.5），或注入的技能列表数量超过阈值（默认 >20）。不适用于：内存搜索成功且相关性高，或注入技能数量正常的情况。",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/fallback-memory-and-skill-handling",
     "uri": "viking://user/skills/fallback-memory-and-skill-handling/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "heartbeat-check-fallback-procedure",
     "description": "When the primary heartbeat-check-execution or heartbeat-check-fallback skill files are missing (ENOENT errors), use this procedure to perform standard health checks via MCP tools, Docker, Clash proxy, and network ping, then update HEARTBEAT.md. Triggering context: cron heartbeat tasks where skill file reads fail. NOT for: custom health check procedures or tasks requiring updated skill logic.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/heartbeat-check-fallback-procedure",
     "uri": "viking://user/skills/heartbeat-check-fallback-procedure/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "multi-search-engine",
     "description": "Multi search engine integration with 16 engines (7 CN + 9 Global). Supports advanced search operators, time filters, site search, privacy engines, and WolframAlpha knowledge queries. No API keys required.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/multi-search-engine",
     "uri": "viking://user/skills/multi-search-engine/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "crypto-trading",
     "description": "Automated specification for crypto-trading skill module. Covers domain SOPs and execution boundaries.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/crypto-trading",
     "uri": "viking://user/skills/crypto-trading/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "cron-heartbeat-skill-prioritization",
     "description": "When executing scheduled heartbeat health checks, filter injected skills to focus only on those directly related to system monitoring and health status. NOT for: ad-hoc tasks, general debugging, or when full skill context is required for complex issues.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/cron-heartbeat-skill-prioritization",
     "uri": "viking://user/skills/cron-heartbeat-skill-prioritization/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "scrapling-official",
     "description": "Scrape web pages using Scrapling with anti-bot bypass (like Cloudflare Turnstile), stealth headless browsing, spiders framework, adaptive scraping, and JavaScript rendering. Use when asked to scrape, crawl, or extract data from websites; web_fetch fails; the site has anti-bot protections; write Python code to scrape/crawl; or write spiders.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/scrapling-official",
     "uri": "viking://user/skills/scrapling-official/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "heartbeat-monitoring-skill-pruning",
     "description": "Use this skill for cron-triggered heartbeat health checks to aggressively filter injected skills, focusing only on system monitoring, Docker container status, Clash proxy, and network connectivity. NOT for: general-purpose tasks, non-monitoring operations, or when full skill context is required for complex debugging.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/heartbeat-monitoring-skill-pruning",
     "uri": "viking://user/skills/heartbeat-monitoring-skill-pruning/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "heartbeat-skill-context-filter",
     "description": "Filters injected skills during heartbeat health checks to reduce context noise and focus on relevant tools. Trigger on cron heartbeat tasks; prioritize skills for system monitoring, Docker, Clash proxy, CPA service, and network checks. NOT for: ad-hoc diagnostics, non-heartbeat tasks, or when full skill diversity is needed.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/heartbeat-skill-context-filter",
     "uri": "viking://user/skills/heartbeat-skill-context-filter/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "mcp-external-project-integration",
     "description": "Guidance for integrating external projects with existing MCP servers into OpenClaw, covering SKILL.md creation, CLI wrappers, and MCP config generation. Triggering contexts: when assigned to analyze a project like Vibe-Trading and produce OpenClaw integration artifacts. NOT for: generic MCP troubleshooting, unrelated skill authoring, or tasks without an external MCP server.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/mcp-external-project-integration",
     "uri": "viking://user/skills/mcp-external-project-integration/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "vibe-trading-deploy-and-restart",
     "description": "Deploy Vibe-Trading code changes from project directory to live services. Triggers after code modifications are committed in the project repo and need to be pushed, merged into the deploy directory, and restarted. NOT for: MCP tool injection, frontend i18n, or non-deployment tasks.",
+    "source": "TideTrading",
+    "path": "/home/skloxo/aho/openclaw/skills/vibe-trading-deploy-and-restart",
     "uri": "viking://user/skills/vibe-trading-deploy-and-restart/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "memory-communication-adaptation",
     "description": "Use this skill when the agent detects or recalls user criticism about response formatting, cluttered layouts, or mixed language content. It guides effective memory searches for similar feedback and applies adjustments. NOT for: general memory queries unrelated to communication style or when no feedback is present.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/memory-communication-adaptation",
     "uri": "viking://user/skills/memory-communication-adaptation/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "einstein-research-backtest-engine-dv",
     "description": "Programmatic backtesting framework for trading strategies. Runs backtests with historical price data (yfinance or CSV), supports momentum/mean-reversion/factor/signal-based strategies, walk-forward optimization, out-of-sample testing, transaction cost modeling, regime-aware splits, and full performance metrics (Sharpe, Sortino, Calmar, max drawdown, CAGR, win rate, profit factor). Distinct from einstein-research-backtest (which provides methodology guidance). Use when a user wants to actually run a backtest, test a specific strategy on historical data, or generate performance metrics.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/einstein-research-backtest-engine-dv",
     "uri": "viking://user/skills/einstein-research-backtest-engine-dv/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "software-development",
     "description": "Automated specification for software-development skill module. Covers domain SOPs and execution boundaries.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/software-development",
     "uri": "viking://user/skills/software-development/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "openclaw-mcp-runtime-cleanup",
     "description": "Diagnose and fix MCP process accumulation in OpenClaw environments when MCP connections are unstable or multiple processes are observed. Use when checking for zombie MCP processes, idle TTL issues, or resource contention. NOT for: general MCP setup, non-OpenClaw systems, or MCP server configuration.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/openclaw-mcp-runtime-cleanup",
     "uri": "viking://user/skills/openclaw-mcp-runtime-cleanup/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "vibe-trading-a-share-cleanup",
     "description": "Cleans the Vibe-Trading project to focus on A-share markets by removing foreign market connectors, Python dependencies, and frontend content. Triggered when asked to remove non-A-share references, crypto/US/FAANG examples, or foreign broker integrations. NOT for: general code cleanup unrelated to market focus, frontend i18n setup, or project structure changes.",
+    "source": "TideTrading",
+    "path": "/home/skloxo/aho/openclaw/skills/vibe-trading-a-share-cleanup",
     "uri": "viking://user/skills/vibe-trading-a-share-cleanup/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "skill-injection-context-filter",
     "description": "Helps agents prioritize or ignore injected skills when a large list is provided, by scanning task keywords against skill names to identify relevance. Triggering when more than 10 skills are injected and the task is specific (e.g., project analysis, memory retrieval). NOT for: sessions with few skills or general multi-domain tasks.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/skill-injection-context-filter",
     "uri": "viking://user/skills/skill-injection-context-filter/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "cpa-mimo-integration-diagnostics",
     "description": "When a user asks about connecting to CPA2API as an LLM backend, verifying MiMo model availability, or testing MiMo Code integration, use this skill to perform structured diagnostics. Provides step-by-step commands for checking CPA2API endpoints, authenticating, listing models, and verifying MiMo Code by generating new code. NOT for: general API troubleshooting unrelated to CPA2API/MiMo, or verifying existing integrations without performing new tests.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/cpa-mimo-integration-diagnostics",
     "uri": "viking://user/skills/cpa-mimo-integration-diagnostics/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "stock-mcp-query",
     "description": "Query historical stock market data (A-shares, HK stocks, ETFs, indices) via MCP protocol. Use this skill when the user wants to retrieve historical daily K-line data, financial statements, market indicators, stock screening results, or any other batch data from the stock database. Requires a valid MCP query token purchased from the management platform.",
+    "source": "TideTrading",
+    "path": "/home/skloxo/aho/openclaw/skills/stock-mcp-query",
     "uri": "viking://user/skills/stock-mcp-query/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "heartbeat-check-clash-tun-environment",
     "description": "For performing heartbeat health checks in environments with Clash proxy in TUN mode. Covers tool usage for system metrics, Docker, Clash health, and network tests, plus interpretation of anomalies like ICMP loss. NOT for: general heartbeat checks without Clash or with different network setups.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/heartbeat-check-clash-tun-environment",
     "uri": "viking://user/skills/heartbeat-check-clash-tun-environment/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "skill-injection-filtering-protocol",
     "description": "Provides a step-by-step protocol for filtering a large set of injected skills to avoid context overload and focus on the user's request. Triggering context: when more than 10 skills are injected and the user's request is specific. NOT for: when only a few skills are injected and are clearly relevant to the task.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/skill-injection-filtering-protocol",
     "uri": "viking://user/skills/skill-injection-filtering-protocol/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "feishu-message-parameter-fix",
     "description": "Use when sending notifications via the Feishu message tool to ensure the correct 'message' parameter is used for content. Triggering contexts: Any session that needs to send alerts or summaries to Feishu channels. NOT for: general messaging to non-Feishu channels or when tool schemas differ.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/feishu-message-parameter-fix",
     "uri": "viking://user/skills/feishu-message-parameter-fix/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "stock-rt-subscribe",
     "description": "Subscribe to real-time stock market data via WebSocket long connection from receiver nodes (A-shares, HK stocks, ETFs). Use this skill when the user wants to monitor live stock prices, set up real-time alerts, or stream minute-level K-line data. The skill provides a WebSocket server that connects to receiver nodes and pushes real-time price updates to all connected clients.",
+    "source": "TideTrading",
+    "path": "/home/skloxo/aho/openclaw/skills/stock-rt-subscribe",
     "uri": "viking://user/skills/stock-rt-subscribe/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "openclaw-mcp-server-addition",
     "description": "When adding a new MCP server to OpenClaw's configuration and the config.patch API fails with protected path errors, use this skill to directly edit the JSON file and restart the gateway. Triggering contexts: user requests to add a remote or local MCP server to OpenClaw. NOT for: modifying other configuration aspects that support the patch API, or debugging MCP connectivity issues.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/openclaw-mcp-server-addition",
     "uri": "viking://user/skills/openclaw-mcp-server-addition/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "windows-node-rtx3070",
     "description": ">",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/windows-node-rtx3070",
     "uri": "viking://user/skills/windows-node-rtx3070/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "memory-search-empty-handler",
     "description": "Provides a structured fallback procedure when a memory_search returns empty or low-confidence results. Low-confidence is defined as results where the highest score is below 0.5 (configurable).",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/memory-search-empty-handler",
     "uri": "viking://user/skills/memory-search-empty-handler/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "frontend-slides",
     "description": "Create stunning, animation-rich HTML presentations from scratch or by converting PowerPoint files. Use when the user wants to build a presentation, convert a PPT/PPTX to web, or create slides for a talk/pitch. Helps non-designers discover their aesthetic through visual exploration rather than abstract choices.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/frontend-slides",
     "uri": "viking://user/skills/frontend-slides/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "a-stock-data",
     "description": "A股全栈数据工具包 — 覆盖行情(mootdx+腾讯+百度K线)、研报(东财+同花顺+iwencai)、信号(同花顺热点+北向+龙虎榜+解禁+行业)、资金面(融资融券+大宗交易+股东户数+分红+资金流分钟级+资金流120日)、新闻(东财个股+全球资讯)、基础数据(mootdx财务/F10+东财+新浪三表)、公告(巨潮)七层数据源，内嵌全部调用代码，自包含零依赖外部文件。优先用通达信(mootdx)/腾讯(不封IP)，东财接口已内置限流防封。适用于个股估值、研报检索、题材归因、龙虎榜跟踪、解禁预警、行业轮动、融资融券跟踪、筹码分析、产业链调研、批量筛选等场景。",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/a-stock-data",
     "uri": "viking://user/skills/a-stock-data/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "focus-relevant-skills",
     "description": "在会话开始时，当许多技能被注入时，此技能引导代理识别用户的核心任务，并仅选择最相关的技能。它可防止上下文过载，确保问题解决的专注性。**不适用于**：技能数量很少的会话，或任务明确是关于技能管理的场景。",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/focus-relevant-skills",
     "uri": "viking://user/skills/focus-relevant-skills/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "stock-watcher",
     "description": "Manage and monitor a personal stock watchlist with support for adding, removing, listing stocks, and summarizing their recent performance using data from 10jqka.com.cn. Use when the user wants to track specific stocks, get performance summaries, or manage their watchlist.",
+    "source": "TideTrading",
+    "path": "/home/skloxo/aho/openclaw/skills/stock-watcher",
     "uri": "viking://user/skills/stock-watcher/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "github-repo-research",
     "description": "When the user asks to research open-source projects or GitHub repositories, gather details like star counts, update status, and features. Use this skill to avoid web_fetch failures on GitHub pages by using the GitHub API. NOT for: general web searches not involving GitHub, or when the user asks for non-repository information like tutorials or documentation.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/github-repo-research",
     "uri": "viking://user/skills/github-repo-research/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "heartbeat-check-execution",
     "description": "Automated scheduled execution of a comprehensive heartbeat health check. Collects metrics for system resources (CPU, memory, disk, GPU), Docker containers, Clash proxy status, and basic network connectivity. Compiles the results into a structured report, compares them with the last recorded status, and updates the `HEARTBEAT.md` file with a timestamp. This skill is the operational procedure triggered by a cron job or a manual 'run heartbeat check' request. NOT intended for: in-depth troubleshooting, debugging specific service failures, or one-off ad-hoc diagnostics.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/heartbeat-check-execution",
     "uri": "viking://user/skills/heartbeat-check-execution/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "skillclaw-proxy-session-verify",
     "description": "Verify that agent sessions are correctly routing through the SkillClaw proxy and diagnose routing or skill-pull failures. Use when setting up SkillClaw proxy, checking if sessions are captured, investigating skill pull issues, or determining if the current session uses the correct model. NOT for: general server health (use server-health-check-start), symlink cleanup (use skillclaw-symlink-fix).",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/skillclaw-proxy-session-verify",
     "uri": "viking://user/skills/skillclaw-proxy-session-verify/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "docker-container-cpu-monitoring",
     "description": "Generates a text-based dashboard of Docker container CPU usage on the host. Use when requested to monitor container performance, create system health dashboards, or check resource consumption. NOT for: full container management, log analysis, or modifying running containers.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/docker-container-cpu-monitoring",
     "uri": "viking://user/skills/docker-container-cpu-monitoring/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "mcp-skill-update-consolidated-check",
     "description": "用于检查 MCP 服务与 ClawHub 技能更新状态。通过单一 `exec` 命令一次性获取所有 MCP 版本和 ClawHub 技能更新信息，并以原始文本形式输出结果，便于用户核对或手动整理。**不适用于**：系统健康检查（CPU/内存/磁盘）、记忆搜索或通用 PDF/办公文档任务。",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/mcp-skill-update-consolidated-check",
     "uri": "viking://user/skills/mcp-skill-update-consolidated-check/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "toby-summarize",
     "description": "Summarize URLs or files with the summarize CLI (web, PDFs, images, audio, YouTube).",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/toby-summarize",
     "uri": "viking://user/skills/toby-summarize/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "memory-index-fallback-chain",
     "description": "When memory_search fails with index errors or repeated empty results, immediately pivot to alternative retrieval tools. NOT for: sessions where memory_search works normally, generic retry/rate-limit guidance, or root cause analysis of the index system itself.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/memory-index-fallback-chain",
     "uri": "viking://user/skills/memory-index-fallback-chain/SKILL.md",
     "scope": "agent"
   },
   {
     "name": "skillclaw-core-service-addition",
     "description": "Use when adding SkillClaw to the core services self-check in HEARTBEAT.md and MEMORY.md. Provides the correct health endpoint and file update patterns. NOT for: general heartbeat checks, adding other services, or memory searches that should follow other fallback skills.",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/skills/skillclaw-core-service-addition",
     "uri": "viking://user/skills/skillclaw-core-service-addition/SKILL.md",
+    "scope": "agent"
+  },
+  {
+    "name": "paperclip-dev-workspace-run-verify-fix",
+    "description": ">",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/paperclip-dev-workspace-run-verify-fix",
+    "uri": "viking://user/skills/paperclip-dev-workspace-run-verify-fix/SKILL.md",
+    "scope": "agent"
+  },
+  {
+    "name": "terminal-bench-loop",
+    "description": ">",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/terminal-bench-loop",
+    "uri": "viking://user/skills/terminal-bench-loop/SKILL.md",
+    "scope": "agent"
+  },
+  {
+    "name": "release-changelog",
+    "description": ">",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/release-changelog",
+    "uri": "viking://user/skills/release-changelog/SKILL.md",
+    "scope": "agent"
+  },
+  {
+    "name": "release",
+    "description": ">",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/release",
+    "uri": "viking://user/skills/release/SKILL.md",
+    "scope": "agent"
+  },
+  {
+    "name": "create-issue-interaction-ui",
+    "description": ">",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/create-issue-interaction-ui",
+    "uri": "viking://user/skills/create-issue-interaction-ui/SKILL.md",
+    "scope": "agent"
+  },
+  {
+    "name": "pr-report",
+    "description": ">",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/pr-report",
+    "uri": "viking://user/skills/pr-report/SKILL.md",
+    "scope": "agent"
+  },
+  {
+    "name": "paperclip-page",
+    "description": ">",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/paperclip-page",
+    "uri": "viking://user/skills/paperclip-page/SKILL.md",
+    "scope": "agent"
+  },
+  {
+    "name": "check-pr",
+    "description": ">",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/check-pr",
+    "uri": "viking://user/skills/check-pr/SKILL.md",
+    "scope": "agent"
+  },
+  {
+    "name": "deal-with-security-advisory",
+    "description": ">",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/deal-with-security-advisory",
+    "uri": "viking://user/skills/deal-with-security-advisory/SKILL.md",
+    "scope": "agent"
+  },
+  {
+    "name": "create-agent-adapter",
+    "description": ">",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/create-agent-adapter",
+    "uri": "viking://user/skills/create-agent-adapter/SKILL.md",
+    "scope": "agent"
+  },
+  {
+    "name": "release-changelog-discord-message",
+    "description": ">",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/release-changelog-discord-message",
+    "uri": "viking://user/skills/release-changelog-discord-message/SKILL.md",
+    "scope": "agent"
+  },
+  {
+    "name": "doc-maintenance",
+    "description": ">",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/doc-maintenance",
+    "uri": "viking://user/skills/doc-maintenance/SKILL.md",
+    "scope": "agent"
+  },
+  {
+    "name": "paperclip-create-plugin",
+    "description": ">",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/paperclip-create-plugin",
+    "uri": "viking://user/skills/paperclip-create-plugin/SKILL.md",
+    "scope": "agent"
+  },
+  {
+    "name": "diagnose-why-work-stopped",
+    "description": ">",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/diagnose-why-work-stopped",
+    "uri": "viking://user/skills/diagnose-why-work-stopped/SKILL.md",
+    "scope": "agent"
+  },
+  {
+    "name": "prcheckloop",
+    "description": ">",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/prcheckloop",
+    "uri": "viking://user/skills/prcheckloop/SKILL.md",
+    "scope": "agent"
+  },
+  {
+    "name": "company-creator",
+    "description": ">",
+    "source": "OpenClaw",
+    "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/company-creator",
+    "uri": "viking://user/skills/company-creator/SKILL.md",
     "scope": "agent"
   }
 ]
