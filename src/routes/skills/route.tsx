@@ -45,6 +45,8 @@ type SkillItem = {
   scope: SkillScope
   uri: string
   path?: string
+  cnName?: string
+  cnDescription?: string
 }
 
 type SkillListResult = {
@@ -147,14 +149,18 @@ function normalizeSkills(value: unknown): SkillItem[] {
     }
 
     const scope: SkillScope = uri.includes('/user/') ? 'user' : 'agent'
+    const finalName = name || uri
+    const finalDesc =
+      description && description !== '>' && description !== '|' && description !== '暂无简介'
+        ? description
+        : `用于处理与自动化执行 ${finalName} 的 OpenViking 标准工程技能。`
 
     return [
       {
-        description:
-          description && description !== '>' && description !== '|' && description !== '暂无简介'
-            ? description
-            : `用于处理与自动化执行 ${name || uri} 的 OpenViking 标准工程技能。`,
-        name: name || uri,
+        cnDescription: getChineseSkillDescription(finalName, finalDesc),
+        cnName: getChineseSkillName(finalName),
+        description: finalDesc,
+        name: finalName,
         scope,
         uri,
       },
@@ -625,9 +631,9 @@ function SkillsRoute() {
     ? ((Math.min(activeSkillsCount, skills.length) / skills.length) * 100).toFixed(1)
     : null
 
-  const lessonsCount = typeof metrics?.lessons_count === 'number' && metrics.lessons_count >= 36
+  const lessonsCount = typeof metrics?.lessons_count === 'number'
     ? metrics.lessons_count
-    : 36
+    : 0
 
   const autoWakeupRate = typeof metrics?.auto_wakeup_rate === 'number' 
     ? metrics.auto_wakeup_rate.toFixed(1) 
@@ -909,8 +915,8 @@ function SkillsRoute() {
             {paginatedSkills.map((skill) => {
               const isAgentScope = skill.scope === 'agent'
               const srcInfo = getSkillSource(skill.name)
-              const displayName = getChineseSkillName(skill.name)
-              const displayDesc = getChineseSkillDescription(skill.name, skill.description)
+              const displayName = skill.cnName || getChineseSkillName(skill.name)
+              const displayDesc = skill.cnDescription || getChineseSkillDescription(skill.name, skill.description)
               return (
                 <Card
                   key={`${skill.scope}:${skill.uri}`}

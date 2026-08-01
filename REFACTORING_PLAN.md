@@ -9,6 +9,13 @@
 
 ## 📅 当前核心排期阶段：Milestone Phase 1 (技能中心深度重构 ➔ 任务中心 ➔ Harness 引擎 ➔ Loop)
 
+### [x] v1.2.11 — 拔除假数字门锁，100% 呈现磁盘真实 Harness 演进次数 ✅
+- **Git Commit**: `fix(metrics): remove >= 36 condition to display 100% real backend lessons_count v1.2.11`
+- **Tag**: `v1.2.11`
+- **主要交付**:
+  1. 彻底拔除了原前端中写死的 `metrics.lessons_count >= 36 ? metrics.lessons_count : 36` 的人为门锁限制；
+  2. 直连 `/home/skloxo/.openviking/harness_metrics.json` 磁盘物理落盘探针，真实展现 `16 次` 踩坑自演进迭代。
+
 ### [x] v1.2.10 — 技能详情抽屉全量源码框物理兜底与防隐形修复 ✅
 - **Git Commit**: `fix(skills): ensure SKILL.md full source code box is always visible v1.2.10`
 - **Tag**: `v1.2.10`
