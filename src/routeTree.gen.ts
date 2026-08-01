@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as GraphRouteRouteImport } from './routes/graph/route'
+import { Route as HarnessLogsRouteImport } from './routes/harness-logs'
 import { Route as HomeRouteRouteImport } from './routes/home/route'
 import { Route as MonitoringRouteRouteImport } from './routes/monitoring/route'
 import { Route as PlaygroundRouteRouteImport } from './routes/playground/route'
@@ -34,6 +35,11 @@ const IndexRoute = IndexRouteImport.update({
 const GraphRouteRoute = GraphRouteRouteImport.update({
   id: '/graph',
   path: '/graph',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HarnessLogsRoute = HarnessLogsRouteImport.update({
+  id: '/harness-logs',
+  path: '/harness-logs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HomeRouteRoute = HomeRouteRouteImport.update({
@@ -121,6 +127,7 @@ export interface FileRoutesByFullPath {
   '/skills': typeof SkillsRouteRoute
   '/tasks': typeof TasksRouteRoute
   '/users': typeof UsersRouteRoute
+  '/harness-logs': typeof HarnessLogsRoute
   '/oauth/consent': typeof OauthConsentRoute
   '/oauth/verify': typeof OauthVerifyRoute
   '/sessions/': typeof SessionsIndexRoute
@@ -138,6 +145,7 @@ export interface FileRoutesByTo {
   '/skills': typeof SkillsRouteRoute
   '/tasks': typeof TasksRouteRoute
   '/users': typeof UsersRouteRoute
+  '/harness-logs': typeof HarnessLogsRoute
   '/oauth/consent': typeof OauthConsentRoute
   '/oauth/verify': typeof OauthVerifyRoute
   '/sessions': typeof SessionsIndexRoute
@@ -157,6 +165,7 @@ export interface FileRoutesById {
   '/skills': typeof SkillsRouteRoute
   '/tasks': typeof TasksRouteRoute
   '/users': typeof UsersRouteRoute
+  '/harness-logs': typeof HarnessLogsRoute
   '/oauth/consent': typeof OauthConsentRoute
   '/oauth/verify': typeof OauthVerifyRoute
   '/sessions/': typeof SessionsIndexRoute
@@ -177,6 +186,7 @@ export interface FileRouteTypes {
     | '/skills'
     | '/tasks'
     | '/users'
+    | '/harness-logs'
     | '/oauth/consent'
     | '/oauth/verify'
     | '/sessions/'
@@ -194,6 +204,7 @@ export interface FileRouteTypes {
     | '/skills'
     | '/tasks'
     | '/users'
+    | '/harness-logs'
     | '/oauth/consent'
     | '/oauth/verify'
     | '/sessions'
@@ -212,6 +223,7 @@ export interface FileRouteTypes {
     | '/skills'
     | '/tasks'
     | '/users'
+    | '/harness-logs'
     | '/oauth/consent'
     | '/oauth/verify'
     | '/sessions/'
@@ -231,6 +243,7 @@ export interface RootRouteChildren {
   SkillsRouteRoute: typeof SkillsRouteRoute
   TasksRouteRoute: typeof TasksRouteRoute
   UsersRouteRoute: typeof UsersRouteRoute
+  HarnessLogsRoute: typeof HarnessLogsRoute
   OauthConsentRoute: typeof OauthConsentRoute
   OauthVerifyRoute: typeof OauthVerifyRoute
 }
@@ -249,6 +262,13 @@ declare module '@tanstack/react-router' {
       path: '/graph'
       fullPath: '/graph'
       preLoaderRoute: typeof GraphRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/harness-logs': {
+      id: '/harness-logs'
+      path: '/harness-logs'
+      fullPath: '/harness-logs'
+      preLoaderRoute: typeof HarnessLogsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/home': {
@@ -378,6 +398,7 @@ const rootRouteChildren: RootRouteChildren = {
   SkillsRouteRoute: SkillsRouteRoute,
   TasksRouteRoute: TasksRouteRoute,
   UsersRouteRoute: UsersRouteRoute,
+  HarnessLogsRoute: HarnessLogsRoute,
   OauthConsentRoute: OauthConsentRoute,
   OauthVerifyRoute: OauthVerifyRoute,
 }
