@@ -209,6 +209,14 @@ description: Use when developing, refactoring, or iterating OpenVikingStudio (VK
   2. **主大字**：显示物理真实的 **`99.2%`** (`物理闭环`) 成功率；
   3. **自解释描述**：`228 次执行零挂起 · 零报错交付`，完美回答技能跑得怎么样。
 
+#### 📌 Lesson 2026-08-01 #26：100% 真实后端算子驱动与零 Mock 假数字守则
+- **CONTEXT**：以前 KPI 卡片中写死了静态 fallback 字符串（如 `98.6%`, `14次`），违背了数据绝对真实性铁律。
+- **REFLECTION**：所有 4 大 KPI 卡片必须 100% 绑定 OpenViking 后端 API (`/api/v1/system/harness_metrics`) 的真实链路数据；后端根据 `total_calls`, `blocked_calls`, `find_calls`, `store_calls`, `lessons_count` 实时计算展示。
+- **LESSON**：数据真实性 3 大硬要求：
+  1. **绑定后端算子**：直接由 `harnessStatusQuery` 数据源通过公式驱动卡片大字；
+  2. **动态盘点磁盘**：Card 4 动态读取磁盘 `SKILL.md` 的真实 `lessons_count` (当前物理实时为 `25 次`)；
+  3. **严禁硬编码 Mock**：任何时候均以真实的后端与系统底座数据说话！
+
 ---
 
 ## 一、全盘文档三层治理体系与模块导航网 (3-Tier Document Hierarchy & Map)
