@@ -84,15 +84,18 @@ description: Use when developing, refactoring, or iterating OpenVikingStudio (VK
 
 ---
 
-## 一、三层文档权威规范 (3-Tier Document System)
+## 一、全盘文档三层治理体系与模块导航网 (3-Tier Document Hierarchy & Map)
 
-1. **唯一活跃工单看板** ➔ [REFACTORING_PLAN.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/REFACTORING_PLAN.md)
-   - 仅保留当前 1-2 个迭代即将执行的原子工单（数据契约明确、量化验收标准清晰）。
-   - 禁止在此写入未拆解的远期愿景或大型 Epic。
-2. **远期 Epic 路线图** ➔ [ROADMAP.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/ROADMAP.md)
-   - 存放 `v1.1.24` (Skill-Loop)、`v1.1.25` (Gate Engine) 等大型愿景，进入开发时再拆解为原子工单下发。
-3. **历史交付档案** ➔ [DELIVERY_ARCHIVE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)
-   - 归档所有已验收通过的版本履历 (`v1.1.0` ~ `v1.1.23d`+)。
+### 1. 三层治理体系 (如何使用与迭代)
+- **Tier 1: 活跃调度层** ➔ [REFACTORING_PLAN.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/REFACTORING_PLAN.md) (唯一活跃原子工单看板，仅存当前 1-2 个可调度原子任务)
+- **Tier 2: 路线规划层** ➔ [ROADMAP.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/ROADMAP.md) (远期 Epic 愿景，拆解下发至 Tier 1)
+- **Tier 3: 归档履历层** ➔ [DELIVERY_ARCHIVE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md) (已终验交付履历归档)
+
+### 2. 模块开发与文档映射网 (开发各模块看哪些文档)
+- **技能中心 (`/skills`)** ➔ [SKILL.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/.agents/skills/openviking-studio-dev/SKILL.md) (Harness规约) + [VK_DESIGN.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/VK_DESIGN.md) (4卡布局) + [CODING_RULES.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/CODING_RULES.md) (NO GREEN色盘)
+- **检索测试台 (`/retrieval`)** ➔ [ARCHITECTURE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/ARCHITECTURE.md) (L0/L1/L2向量分层) + [REFACTORING_GUIDE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/REFACTORING_GUIDE.md)
+- **系统监控 (`/monitoring`)** ➔ [UI_SPECIFICATION.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/UI_SPECIFICATION.md) (SLA 图表规范) + [ARCHITECTURE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/ARCHITECTURE.md)
+- **发布与 Sentry 部署** ➔ [AGENTS.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/AGENTS.md) (4-Step SOP) + [DELIVERY_ARCHIVE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md) (Tag明细)
 
 ---
 
