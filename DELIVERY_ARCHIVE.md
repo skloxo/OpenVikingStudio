@@ -7,7 +7,7 @@
 ## 📌 v1.1.23c：技能中心双门锁合规探针、待规范白盒曝光与一键规范化上架流程
 - **交付时间**：2026-08-01
 - **Git Tag**：`v1.1.23c` (`25aa83b`, `797a1d4`)
-- **用户验收**：按指令优先重排调度并完成交付 ✅
+- **用户验收**：⏳ 待用户终验 (开发构建已完成，等待用户在 UI 侧终验)
 - **修改文件**：
   - [src/routes/skills/route.tsx](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/src/routes/skills/route.tsx)
   - [mcp-openviking/mcp_openviking_server.py](file:///home/skloxo/aho/openclaw/mcp-openviking/mcp_openviking_server.py)
