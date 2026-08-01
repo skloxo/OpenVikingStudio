@@ -84,11 +84,11 @@ const config = defineConfig({
 
           if ((!skillMdPath || !fs.existsSync(skillMdPath)) && skillName) {
             const candidates = [
-              path.join('/home/skloxo/aho/openclaw/project/OpenVikingStudio/.agents/skills', skillName, 'SKILL.md'),
-              path.join('/home/skloxo/aho/openclaw/skills/mattpocock-engineering', skillName, 'SKILL.md'),
-              path.join('/home/skloxo/aho/openclaw/skills', skillName, 'SKILL.md'),
-              path.join('/home/skloxo/.gemini/config/skills', skillName, 'SKILL.md'),
-              path.join('/home/skloxo/.openclaw/skills', skillName, 'SKILL.md'),
+              path.join(process.cwd(), '.agents/skills', skillName, 'SKILL.md'),
+              path.join(os.homedir(), 'aho/openclaw/skills/mattpocock-engineering', skillName, 'SKILL.md'),
+              path.join(os.homedir(), 'aho/openclaw/skills', skillName, 'SKILL.md'),
+              path.join(os.homedir(), '.gemini/config/skills', skillName, 'SKILL.md'),
+              path.join(os.homedir(), '.openclaw/skills', skillName, 'SKILL.md'),
             ]
             for (const cand of candidates) {
               if (fs.existsSync(cand)) {
@@ -171,7 +171,7 @@ const config = defineConfig({
               }
             }
 
-            const skillMdPath = '/home/skloxo/aho/openclaw/project/OpenVikingStudio/.agents/skills/openviking-studio-dev/SKILL.md'
+            const skillMdPath = path.join(process.cwd(), '.agents/skills/openviking-studio-dev/SKILL.md')
             if (fs.existsSync(skillMdPath)) {
               const content = fs.readFileSync(skillMdPath, 'utf-8')
               const chunks = content.split('#### 📌 Lesson ')
