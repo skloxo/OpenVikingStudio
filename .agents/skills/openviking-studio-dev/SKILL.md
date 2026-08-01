@@ -67,6 +67,14 @@ description: Use when developing, refactoring, or iterating OpenVikingStudio (VK
   1. **完全适配** ➔ 直接引入官方 PyPI 包（如 `nemoguardrails`）；
   2. **架构改造** ➔ 必须拉取原始源码与原理文档，分析对比多轮子差异，完成防错解构报告，物理排查所有隐性雷区后再落地！
 
+#### 📌 Lesson 2026-08-01 #8：直改源码与官方 API 契约合并保护守则 (Official API & Clean Upstream Merge)
+- **CONTEXT**：写野生的临时胶水脚本，或侵入式破坏官方 API 结构，导致后期合并 OpenViking 上游主线代码时产生大量 Git 冲突与费劲维护。
+- **REFLECTION**：野生胶水脚本是项目劣化与合并死锁的根源。坚决直改项目主源码，且必须严格遵循官方 FastMCP / REST 标准 API 契约，保证架构的高内聚低耦合。
+- **LESSON**：严守“零野生脚本、直改源码、完全契合官方接口”三铁律：
+  1. **零野生脚本**：严禁在 `scripts/` 或 `public/` 创建临时 `.py`/`.json`/`.sh`；
+  2. **直改源码**：所有逻辑收敛至前端 React route/component 与后端 `mcp_openviking_server.py` 正式源码；
+  3. **官方契约**：严格遵循官方 FastMCP 与 REST 规范，确保后期随 OpenViking 上游社区代码升级时 100% 无缝 Git 合并！
+
 ---
 
 ## 一、三层文档权威规范 (3-Tier Document System)
