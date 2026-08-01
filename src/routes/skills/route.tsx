@@ -556,16 +556,17 @@ function SkillsRoute() {
   const findCalls = typeof metrics?.find_calls === 'number' ? metrics.find_calls : 0
   const storeCalls = typeof metrics?.store_calls === 'number' ? metrics.store_calls : 0
   const lessonsCount = typeof metrics?.lessons_count === 'number' ? metrics.lessons_count : 0
+  const autoWakeupRate = typeof metrics?.auto_wakeup_rate === 'number' ? metrics.auto_wakeup_rate.toFixed(1) : null
 
-  // 100% 物理真实算子计算：零 Mock 硬编码，完全由后端 24H 实时链路算子驱动
+  // 100% 物理真实算子计算：无 API 数据或记录时显示 '--'，严禁伪造 100% 或写死 98.6%
   const calculatedSuccessRate = totalCalls > 0 
     ? (((totalCalls - blockedCalls) / totalCalls) * 100).toFixed(1) 
-    : '100.0'
+    : null
   
   const vkCentralizedCalls = findCalls + storeCalls
-  const calculatedCentralizedRatio = vkCentralizedCalls > 0
+  const calculatedCentralizedRatio = totalCalls > 0 || vkCentralizedCalls > 0
     ? (((vkCentralizedCalls) / Math.max(1, totalCalls > 0 ? totalCalls : vkCentralizedCalls)) * 100).toFixed(1)
-    : '100.0'
+    : null
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-4">
@@ -587,7 +588,7 @@ function SkillsRoute() {
 
       {/* ⚡ Skill Value KPI 观察行 (100% 24H 真实后端算子驱动，零 Mock 假数字) */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {/* Card 1: 隐式自动唤醒率 */}
+        {/* Card 1: 隐式自动唤醒率 (从真实算子或无数据 -- 驱动) */}
         <Card className="flex flex-col gap-1 p-2.5 shadow-none hover:border-border transition-colors">
           <div className="flex items-center justify-between text-xs text-muted-foreground font-sans">
             <span className="flex items-center gap-1.5 text-foreground font-medium">
@@ -599,10 +600,13 @@ function SkillsRoute() {
             </Badge>
           </div>
           <div className="font-mono text-lg font-bold tabular-nums text-foreground flex items-baseline gap-1">
-            98.6% <span className="text-xs font-normal text-muted-foreground">唤醒成功</span>
+            {autoWakeupRate !== null ? `${autoWakeupRate}%` : '--'}{' '}
+            <span className="text-xs font-normal text-muted-foreground">
+              {autoWakeupRate !== null ? '唤醒成功' : '暂无采样'}
+            </span>
           </div>
           <p className="text-[11px] text-muted-foreground truncate">
-            零命令感应 · 意图静默触发
+            {autoWakeupRate !== null ? '零命令感应 · 意图静默触发' : '等待 Agent 意图唤醒采样...'}
           </p>
         </Card>
 
@@ -618,10 +622,13 @@ function SkillsRoute() {
             </Badge>
           </div>
           <div className="font-mono text-lg font-bold tabular-nums text-foreground flex items-baseline gap-1">
-            {calculatedSuccessRate}% <span className="text-xs font-normal text-muted-foreground">(物理闭环)</span>
+            {calculatedSuccessRate !== null ? `${calculatedSuccessRate}%` : '--'}{' '}
+            <span className="text-xs font-normal text-muted-foreground">
+              {calculatedSuccessRate !== null ? '(物理闭环)' : '(暂无数据)'}
+            </span>
           </div>
           <p className="text-[11px] text-muted-foreground truncate">
-            {totalCalls > 0 ? `近 24H ${totalCalls} 次执行${blockedCalls > 0 ? ` (${blockedCalls} 次阻断)` : '零挂起'}` : '近 24H 零挂起 · 零报错交付'}
+            {totalCalls > 0 ? `近 24H ${totalCalls} 次执行${blockedCalls > 0 ? ` (${blockedCalls} 次阻断)` : '零挂起'}` : '近 24H 暂无物理执行采样'}
           </p>
         </Card>
 
@@ -637,10 +644,13 @@ function SkillsRoute() {
             </Badge>
           </div>
           <div className="font-mono text-lg font-bold tabular-nums text-foreground flex items-baseline gap-1">
-            {calculatedCentralizedRatio}% <span className="text-xs font-normal text-muted-foreground">(走 VK 技能中心)</span>
+            {calculatedCentralizedRatio !== null ? `${calculatedCentralizedRatio}%` : '--'}{' '}
+            <span className="text-xs font-normal text-muted-foreground">
+              {calculatedCentralizedRatio !== null ? '(走 VK 技能中心)' : '(暂无数据)'}
+            </span>
           </div>
           <p className="text-[11px] text-muted-foreground truncate">
-            {vkCentralizedCalls > 0 ? `近 24H ${vkCentralizedCalls} 次 VK 集中调用` : '近 24H 全量走 VK 集中通道'}
+            {vkCentralizedCalls > 0 ? `近 24H ${vkCentralizedCalls} 次 VK 集中调用` : '近 24H 暂无集中通道采样'}
           </p>
         </Card>
 
