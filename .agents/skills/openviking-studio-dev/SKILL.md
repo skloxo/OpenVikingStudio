@@ -50,6 +50,16 @@ description: Use when developing, refactoring, or iterating OpenVikingStudio (VK
 - **REFLECTION**：Harness 闭环拦截与自动演进机制能够成功物理跑通才是唯一的核心目的。UI 数据卡片只是人类使用者在不懂代码时，用于实时感知系统运行状况与发现缺陷的“白盒诊断雷达”。
 - **LESSON**：牢记“观测是过程，不是目标，不是目的”。一切开发重心必须首先保证底层物理门锁与自演进机制 100% 成功跑通，数据卡片只做 100% 真实无假数据的白盒雷达透视。
 
+#### 📌 Lesson 2026-08-01 #6：集百家所长融熔轮子守则 (Top 5 Harness Wheels Fusion)
+- **CONTEXT**：借鉴开源轮子时陷入单一视角，容易引入有瑕疵的简单库。
+- **REFLECTION**：真正的顶级工程架构应当“集百家所长于一身”，全盘熔铸 GitHub 顶尖开源项目的核心优点。
+- **LESSON**：OpenViking Harness 架构熔铸 5 大开源标杆：
+  1. **NVIDIA NeMo-Guardrails** ➔ 物理前置拦截门锁 (`_harness_pre_execution_guard`)；
+  2. **MIT Reflexion Agent** ➔ 隐式自演进三段式反思闭环 (`openviking_record_evolution_lesson`)；
+  3. **Guardrails AI** ➔ 零 Mock 绝对真实数据契约；
+  4. **AgentOps Telemetry** ➔ 物理阻断与 Peer 分布遥测；
+  5. **E2B & SWE-Agent** ➔ 1936 与 1933 环境物理端口隔离。
+
 ---
 
 ## 一、三层文档权威规范 (3-Tier Document System)
