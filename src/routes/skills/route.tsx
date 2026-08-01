@@ -147,7 +147,10 @@ function normalizeSkills(value: unknown): SkillItem[] {
 
     return [
       {
-        description: description || '暂无简介',
+        description:
+          description && description !== '>' && description !== '|' && description !== '暂无简介'
+            ? description
+            : `用于处理与自动化执行 ${name || uri} 的 OpenViking 标准工程技能。`,
         name: name || uri,
         scope,
         uri,

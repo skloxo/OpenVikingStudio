@@ -233,7 +233,7 @@
   },
   {
     "name": "ponytail-audit",
-    "description": ">",
+    "description": "Whole-repo audit for over-engineering. Like ponytail-review, but scans the entire codebase instead of a diff: a ranked list of what to delete, simplify, or replace with stdlib/native equivalents. Use when the user says \"audit this codebase\", \"audit for over-engineering\", \"what can I delete from this repo\", \"find bloat\", \"ponytail-audit\", or \"/ponytail-audit\". One-shot report, does not apply fixes.",
     "source": "OpenClaw",
     "path": "/home/skloxo/aho/openclaw/skills/ponytail-audit",
     "uri": "viking://user/skills/ponytail-audit/SKILL.md",
@@ -257,7 +257,7 @@
   },
   {
     "name": "ponytail-help",
-    "description": ">",
+    "description": "Quick-reference card for all ponytail modes, skills, and commands. One-shot display, not a persistent mode. Trigger: /ponytail-help, \"ponytail help\", \"what ponytail commands\", \"how do I use ponytail\".",
     "source": "OpenClaw",
     "path": "/home/skloxo/aho/openclaw/skills/ponytail-help",
     "uri": "viking://user/skills/ponytail-help/SKILL.md",
@@ -297,7 +297,7 @@
   },
   {
     "name": "frontend-design-pro",
-    "description": ">",
+    "description": "前端设计质量提升 skill。让 AI 生成的 UI/前端代码更专业，避免常见设计反模式。 参考 impeccable 项目的设计语言规范，提供 audit/polish/critique 等设计审查命令。 触发词：/audit /polish /critique /colorize /animate /bolder /quieter /distill 以及：审查UI设计、优化界面、前端设计建议、让设计更好看、检查设计质量",
     "source": "OpenClaw",
     "path": "/home/skloxo/aho/openclaw/skills/frontend-design-pro",
     "uri": "viking://user/skills/frontend-design-pro/SKILL.md",
@@ -305,7 +305,7 @@
   },
   {
     "name": "fund-report-extractor",
-    "description": "暂无简介",
+    "description": "自动提取公募基金定期报告中\"投资策略和运作分析\"部分的全文。",
     "source": "OpenClaw",
     "path": "/home/skloxo/aho/openclaw/skills/fund-report-extractor",
     "uri": "viking://user/skills/fund-report-extractor/SKILL.md",
@@ -489,7 +489,7 @@
   },
   {
     "name": "steve-jobs-perspective-v2",
-    "description": "|",
+    "description": "史蒂夫·乔布斯 (Steve Jobs) 思维操作系统 v2.0（女娲知识矩阵标准）。 基于 400+ 一手和权威来源的深度调研，提炼 10 个核心心智模型、8 条决策启发式和完整的表达 DNA。 用途：作为思维顾问，用乔布斯的视角分析产品、审视决策、提供反馈。 当用户提到「用乔布斯的视角」「乔布斯会怎么看」「Jobs 模式」「steve jobs perspective v2」时使用。 即使用户只是说「帮我用乔布斯的角度想想」「如果乔布斯会怎么做」「切换到乔布斯」也应触发。 v2.0 升级内容：心智模型 6→10 个，经典作品 40→400 本，连接关系 12→25 条，验证测试 5→14 项，新增三级合规检查。",
     "source": "OpenClaw",
     "path": "/home/skloxo/aho/openclaw/skills/steve-jobs-perspective-v2",
     "uri": "viking://user/skills/steve-jobs-perspective-v2/SKILL.md",
@@ -577,7 +577,7 @@
   },
   {
     "name": "stock-review",
-    "description": "暂无简介",
+    "description": "A 股每日复盘分析，包括： - 龙虎榜数据 - 板块涨停统计 - 资金流向分析 - 连板高度统计 - 舆情监控 - 次日策略建议",
     "source": "TideTrading",
     "path": "/home/skloxo/aho/openclaw/skills/stock-review",
     "uri": "viking://user/skills/stock-review/SKILL.md",
@@ -689,7 +689,7 @@
   },
   {
     "name": "awesome-design-md",
-    "description": "暂无简介",
+    "description": "收录50+知名网站的DESIGN.md设计系统文件，让AI代理一键复刻顶级网站的视觉风格。",
     "source": "OpenClaw",
     "path": "/home/skloxo/aho/openclaw/skills/awesome-design-md",
     "uri": "viking://user/skills/awesome-design-md/SKILL.md",
@@ -753,7 +753,7 @@
   },
   {
     "name": "stock-data-assistant",
-    "description": ">",
+    "description": "统一的股票数据助手 Skill，整合： (1) 数据查询 — 通过 MCP 协议查询历史 K 线、财务报表等（A 股/港股/ETF/指数）； (2) 实时搜索 — 通过 WebSocket 订阅实时行情推送（每 3~5 秒更新）； (3) 微信联动 — 通过 picoclaw + WeChat Channel 实现微信端操作数据库和订阅实时数据。 触发此 Skill 时会自动下载 picoclaw、复用项目 LLM 配置、启动微信登录。",
     "source": "TideTrading",
     "path": "/home/skloxo/aho/openclaw/skills/stock-data-assistant",
     "uri": "viking://user/skills/stock-data-assistant/SKILL.md",
@@ -849,7 +849,7 @@
   },
   {
     "name": "ponytail-debt",
-    "description": ">",
+    "description": "Harvest every `ponytail:` comment in the codebase into a debt ledger, so the deliberate shortcuts and deferrals ponytail leaves behind get tracked instead of rotting into \"later means never\". Use when the user says \"ponytail debt\", \"/ponytail-debt\", \"what did ponytail defer\", \"list the shortcuts\", \"ponytail ledger\", or \"what did we mark to do later\". One-shot report, changes nothing.",
     "source": "OpenClaw",
     "path": "/home/skloxo/aho/openclaw/skills/ponytail-debt",
     "uri": "viking://user/skills/ponytail-debt/SKILL.md",
@@ -857,7 +857,7 @@
   },
   {
     "name": "ppt-master",
-    "description": ">",
+    "description": "AI-driven multi-format SVG content generation system. Converts source documents (PDF/DOCX/URL/Markdown) into high-quality SVG pages and exports to PPTX through multi-role collaboration. Use when user asks to \"create PPT\", \"make presentation\", \"生成PPT\", \"做PPT\", \"制作演示文稿\", or mentions \"ppt-master\".",
     "source": "OpenClaw",
     "path": "/home/skloxo/aho/openclaw/skills/ppt-master",
     "uri": "viking://user/skills/ppt-master/SKILL.md",
@@ -897,7 +897,7 @@
   },
   {
     "name": "ponytail-review",
-    "description": ">",
+    "description": "Code review focused exclusively on over-engineering. Finds what to delete: reinvented standard library, unneeded dependencies, speculative abstractions, dead flexibility. One line per finding: location, what to cut, what replaces it. Use when the user says \"review for over-engineering\", \"what can we delete\", \"is this over-engineered\", \"simplify review\", or invokes /ponytail-review. Complements correctness-focused review, this one only hunts complexity.",
     "source": "OpenClaw",
     "path": "/home/skloxo/aho/openclaw/skills/ponytail-review",
     "uri": "viking://user/skills/ponytail-review/SKILL.md",
@@ -913,7 +913,7 @@
   },
   {
     "name": "tide-agent-core",
-    "description": ">",
+    "description": "TideTrading (潮汐投研) 核心开发规范与业务指南。接管项目特有的开发边界、大屏配色语义、等宽对齐、容器透明度、环境端口以及 Mimo 本地子代理委派协议。",
     "source": "TideTrading",
     "path": "/home/skloxo/aho/openclaw/skills/tide-agent-core",
     "uri": "viking://user/skills/tide-agent-core/SKILL.md",
@@ -969,7 +969,7 @@
   },
   {
     "name": "ponytail",
-    "description": ">",
+    "description": "Forces the laziest solution that actually works, simplest, shortest, most minimal. Channels a senior dev who has seen everything: question whether the task needs to exist at all (YAGNI), reach for the standard library before custom code, native platform features before dependencies, one line before fifty. Supports intensity levels: lite, full (default), ultra. Use whenever the user says \"ponytail\", \"be lazy\", \"lazy mode\", \"simplest solution\", \"minimal solution\", \"yagni\", \"do less\", or \"shortest path\", and whenever they complain about over-engineering, bloat, boilerplate, or unnecessary dependencies.",
     "source": "OpenClaw",
     "path": "/home/skloxo/aho/openclaw/skills/ponytail",
     "uri": "viking://user/skills/ponytail/SKILL.md",
@@ -1161,7 +1161,7 @@
   },
   {
     "name": "windows-node-rtx3070",
-    "description": ">",
+    "description": "RTX3070 肢体节点技能：通过 SSH 密码认证将任务委托给家里的 RTX3070 Windows 工作站执行。触发场景：用户说「在 RTX3070 上跑」「交给另一台电脑」「用 GPU 跑」「3070 上执行」时使用。也适用于需要 Windows 原生环境或隔离 GPU 计算的场景。 不适用于：需要 GUI 界面的操作（用 RDP）、Linux 任务（直接在 2080Ti WSL 执行）。",
     "source": "OpenClaw",
     "path": "/home/skloxo/aho/openclaw/skills/windows-node-rtx3070",
     "uri": "viking://user/skills/windows-node-rtx3070/SKILL.md",
@@ -1273,7 +1273,7 @@
   },
   {
     "name": "paperclip-dev-workspace-run-verify-fix",
-    "description": ">",
+    "description": "Run, verify, reseed, and repair Paperclip isolated dev workspace services. Use when asked to start or fix a managed project/worktree service and prove health, login readiness, cloned data, and runtime visibility.",
     "source": "OpenClaw",
     "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/paperclip-dev-workspace-run-verify-fix",
     "uri": "viking://user/skills/paperclip-dev-workspace-run-verify-fix/SKILL.md",
@@ -1281,7 +1281,7 @@
   },
   {
     "name": "terminal-bench-loop",
-    "description": ">",
+    "description": "Run one Terminal-Bench task through a bounded Paperclip smoke/diagnosis/fix loop. Use when asked to drive Terminal-Bench until it passes, rerun a Terminal-Bench loop, or iterate with board-gated fixes and diagnosis.",
     "source": "OpenClaw",
     "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/terminal-bench-loop",
     "uri": "viking://user/skills/terminal-bench-loop/SKILL.md",
@@ -1289,7 +1289,7 @@
   },
   {
     "name": "release-changelog",
-    "description": ">",
+    "description": "Generate the stable Paperclip release changelog at releases/vYYYY.MDD.P.md by reading commits, changesets, and merged PR context since the last stable tag.",
     "source": "OpenClaw",
     "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/release-changelog",
     "uri": "viking://user/skills/release-changelog/SKILL.md",
@@ -1297,7 +1297,7 @@
   },
   {
     "name": "release",
-    "description": ">",
+    "description": "Coordinate a full Paperclip release across engineering verification, npm, GitHub, smoke testing, and announcement follow-up. Use when leadership asks to ship a release, not merely to discuss versioning.",
     "source": "OpenClaw",
     "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/release",
     "uri": "viking://user/skills/release/SKILL.md",
@@ -1305,7 +1305,7 @@
   },
   {
     "name": "create-issue-interaction-ui",
-    "description": ">",
+    "description": "Add a new Paperclip issue-thread interaction kind end-to-end. Use when repo work introduces or extends interaction cards like request_confirmation, checkbox confirmations, ask_user_questions, or suggest_tasks.",
     "source": "OpenClaw",
     "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/create-issue-interaction-ui",
     "uri": "viking://user/skills/create-issue-interaction-ui/SKILL.md",
@@ -1313,7 +1313,7 @@
   },
   {
     "name": "pr-report",
-    "description": ">",
+    "description": "Produce a maintainer-grade PR or contribution report as HTML or Markdown. Use when asked to deeply review a PR, explain a design, compare systems, or prepare a merge recommendation.",
     "source": "OpenClaw",
     "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/pr-report",
     "uri": "viking://user/skills/pr-report/SKILL.md",
@@ -1321,7 +1321,7 @@
   },
   {
     "name": "paperclip-page",
-    "description": ">",
+    "description": "Publish static HTML pages and asset folders to the Paperclip S3/CloudFront page host. Use when asked to deploy, host, or share a persistent page, viewer, prototype, report, or static site without here.now.",
     "source": "OpenClaw",
     "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/paperclip-page",
     "uri": "viking://user/skills/paperclip-page/SKILL.md",
@@ -1329,7 +1329,7 @@
   },
   {
     "name": "check-pr",
-    "description": ">",
+    "description": "Check a GitHub, GitLab, or Perforce PR/MR/CL for review comments, failing checks, and PR-body gaps. Use when asked to inspect, fix, or prepare a change for submission.",
     "source": "OpenClaw",
     "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/check-pr",
     "uri": "viking://user/skills/check-pr/SKILL.md",
@@ -1337,7 +1337,7 @@
   },
   {
     "name": "deal-with-security-advisory",
-    "description": ">",
+    "description": "Handle confidential GitHub Security Advisory response for Paperclip. Use when coordinating advisory triage, private-fork fixes, CVE/publication steps, and immediate security releases.",
     "source": "OpenClaw",
     "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/deal-with-security-advisory",
     "uri": "viking://user/skills/deal-with-security-advisory/SKILL.md",
@@ -1345,7 +1345,7 @@
   },
   {
     "name": "create-agent-adapter",
-    "description": ">",
+    "description": "Create or modify Paperclip agent adapters across server, UI, and CLI surfaces. Use when adding support for a new CLI agent, API agent, custom process, or adapter package.",
     "source": "OpenClaw",
     "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/create-agent-adapter",
     "uri": "viking://user/skills/create-agent-adapter/SKILL.md",
@@ -1353,7 +1353,7 @@
   },
   {
     "name": "release-changelog-discord-message",
-    "description": ">",
+    "description": "Write the Discord announcement for a stable Paperclip release from the release changelog. Use when a release issue needs a copy-pasteable dotta-voice Discord post or refreshed discord_announcement document.",
     "source": "OpenClaw",
     "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/release-changelog-discord-message",
     "uri": "viking://user/skills/release-changelog-discord-message/SKILL.md",
@@ -1361,7 +1361,7 @@
   },
   {
     "name": "doc-maintenance",
-    "description": ">",
+    "description": "Audit README, SPEC, and PRODUCT docs against recent git history for drift and make minimal PR-ready edits. Use when asked to review docs for accuracy, after major feature merges, or on a schedule.",
     "source": "OpenClaw",
     "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/doc-maintenance",
     "uri": "viking://user/skills/doc-maintenance/SKILL.md",
@@ -1369,7 +1369,7 @@
   },
   {
     "name": "paperclip-create-plugin",
-    "description": ">",
+    "description": "Create and develop external Paperclip plugins with the CLI-first workflow. Use when scaffolding a plugin, iterating on a local plugin, installing it into Paperclip, or updating plugin authoring docs.",
     "source": "OpenClaw",
     "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/paperclip-create-plugin",
     "uri": "viking://user/skills/paperclip-create-plugin/SKILL.md",
@@ -1377,7 +1377,7 @@
   },
   {
     "name": "diagnose-why-work-stopped",
-    "description": ">",
+    "description": "Diagnose stalled, looping, or over-recovered Paperclip issue trees and propose a no-code product-rule plan. Use when asked why work stopped, why it looped, or how to prevent a tree from going too deep.",
     "source": "OpenClaw",
     "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/diagnose-why-work-stopped",
     "uri": "viking://user/skills/diagnose-why-work-stopped/SKILL.md",
@@ -1385,7 +1385,7 @@
   },
   {
     "name": "prcheckloop",
-    "description": ">",
+    "description": "Iterate on a GitHub PR until latest-head checks are green or a precise blocker is named. Use when a PR still has failing or pending checks after review fixes, including after greploop.",
     "source": "OpenClaw",
     "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/prcheckloop",
     "uri": "viking://user/skills/prcheckloop/SKILL.md",
@@ -1393,7 +1393,7 @@
   },
   {
     "name": "company-creator",
-    "description": ">",
+    "description": "Create agent company packages that conform to agentcompanies/v1. Use when asked to create a company, scaffold an agent team, hire agents, or turn a repo/skills collection into a company package.",
     "source": "OpenClaw",
     "path": "/home/skloxo/aho/openclaw/project/paperclip/.agents/skills/company-creator",
     "uri": "viking://user/skills/company-creator/SKILL.md",
