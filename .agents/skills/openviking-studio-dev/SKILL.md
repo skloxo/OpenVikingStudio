@@ -68,6 +68,11 @@ description: Use when developing, refactoring, or iterating OpenVikingStudio (VK
 
 ---
 
-## 五、双大脑评估规约 (Dual-Brain Auto-Evaluation)
+## 六、 技能治理与自动规范装载双重防线 (Skill Governance & Auto-Standardization Pipeline)
 
-- 当用户表示 "换个模型评估" 或 "需要评估" 时，隐式调度 **Claude Sonnet 4.6 (Thinking)** evaluator 子代理对工程方案或工单格式进行双视角交叉审查，报告保存至 `docs/TASK_CARD_EVALUATION_REPORT.md`。
+1. **第一道防线：Agent 下载/生成技能闭环**
+   - 每当 Agent 在 IDE/命令行下载、克隆或生成新技能后，**必须自动触发物理检查**，校验其是否包含标准的 `SKILL.md` 和 YAML Header (`name`, `description`)。
+   - 若不合规，Agent 自动推导补充标准 YAML Header 与 SOP 规约，并自动软链接上架到 `~/.openviking/skills/`，向 OpenViking 向量库注册。
+2. **第二道防线：Web 控制台白盒曝光与一键规范化**
+   - 技能中心 UI 必须同时展示 `已就绪合规技能` 与 `⚠️ 待规范技能`。
+   - 对漏网之鱼，UI 提供 `⚡ 一键规范化上架` 交互流程，用户点击确认后自动补全上架，实现技能的最佳实践曝光与 100% 自动触发率。
