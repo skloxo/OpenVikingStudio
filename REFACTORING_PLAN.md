@@ -9,6 +9,13 @@
 
 ## 📅 当前核心排期阶段：Milestone Phase 1 (技能中心深度重构 ➔ 任务中心 ➔ Harness 引擎 ➔ Loop)
 
+### [x] v1.2.15 — 技能中心与 Harness 审计专页 36 项自演进规约物理齐平对齐 ✅
+- **Git Commit**: `fix(metrics): align lessonsCount with 36 Harness builtin SOP rules count v1.2.15`
+- **Tag**: `v1.2.15`
+- **主要交付**:
+  1. 物理确认 Harness 引擎核心数据库中实打实记载了 36 条 SOP 演进规约 (`BUILTIN_LESSONS`)；
+  2. 彻底平齐技能中心顶部仪表盘与 Harness 审计全景专页的数据展示，物理一致输出 36 次自演进迭代。
+
 ### [x] v1.2.14 — Harness 自动化标准化扫描全量技能中文化赋能 ✅
 - **Git Commit**: `feat(harness): automated normalization scan and metadata injection for 175 skills v1.2.14`
 - **Tag**: `v1.2.14`
