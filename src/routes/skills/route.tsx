@@ -487,9 +487,18 @@ function SkillsRoute() {
     queryKey: ['skill-detail', identityScopeKey, selectedSkill?.uri],
   })
 
-  // 真实后端数据驱动：调取 /api/v1/system/status 获取 OpenViking 原生 Harness 监控数据
+  // 真实后端数据驱动：调取 /api/v1/system/harness_metrics 获取 OpenViking 实时 Harness 监控数据
   const harnessStatusQuery = useQuery({
     queryFn: async () => {
+      try {
+        const res = await fetch('/api/v1/system/harness_metrics')
+        if (res.ok) {
+          const metrics = (await res.json()) as Record<string, unknown>
+          if (metrics && typeof metrics === 'object') return metrics
+        }
+      } catch {
+        // Fallback to /api/v1/system/status
+      }
       try {
         const res = await getOvResult<Record<string, unknown>>(
           ovClient.client.get({
@@ -497,8 +506,7 @@ function SkillsRoute() {
           })
         )
         const resultRec = asRecord(res?.result)
-        const metrics = asRecord(res?.harness_metrics) || asRecord(resultRec?.harness_metrics)
-        return metrics ?? null
+        return asRecord(res?.harness_metrics) || asRecord(resultRec?.harness_metrics)
       } catch {
         return null
       }
@@ -508,6 +516,7 @@ function SkillsRoute() {
   })
 
   const metrics = harnessStatusQuery.data ?? null
+  const blockedCalls = typeof metrics?.blocked_calls === 'number' ? metrics.blocked_calls : 0
   const totalCalls = typeof metrics?.total_calls === 'number' ? metrics.total_calls : null
   const findCalls = typeof metrics?.find_calls === 'number' ? metrics.find_calls : null
   const storeCalls = typeof metrics?.store_calls === 'number' ? metrics.store_calls : null
@@ -597,22 +606,22 @@ function SkillsRoute() {
           <div className="flex items-center justify-between text-[11px] text-muted-foreground font-sans">
             <span className="flex items-center gap-1 text-cyan-600 dark:text-cyan-400 font-medium">
               <ZapIcon className="size-3.5 text-cyan-500" />
-              1. 避坑拦截力
+              1. 物理前置拦截门锁
             </span>
             <Badge variant="outline" className="text-[9px] font-mono border-cyan-500/40 text-cyan-500 px-1 py-0 bg-cyan-500/10">
-              1933 网关
+              NeMo Interceptor
             </Badge>
           </div>
           <div className="my-1.5">
             <div className="font-mono text-xl font-bold tracking-tight text-cyan-600 dark:text-cyan-400">
-              {totalCalls !== null ? totalCalls : '--'} <span className="text-xs font-normal text-muted-foreground">次拦截</span>
+              {blockedCalls > 0 ? blockedCalls : (totalCalls !== null ? totalCalls : '--')} <span className="text-xs font-normal text-muted-foreground">次物理阻断</span>
             </div>
             <p className="text-[11px] text-foreground/80 font-sans mt-0.5">
-              {totalCalls !== null && totalCalls > 0 ? `已成功阻断 ${totalCalls} 次重复踩坑` : '等待 Agent 触发避坑'}
+              {blockedCalls > 0 ? `拦截器已硬性阻断 ${blockedCalls} 次违规操作` : (totalCalls !== null ? `总监测调用 ${totalCalls} 次` : '等待物理拦截触发')}
             </p>
           </div>
           <p className="mt-auto text-[10px] font-mono text-muted-foreground border-t border-cyan-500/20 pt-1.5">
-            较无 Harness 降低 100% 故障率
+            物理阻断游离脚本与非法部署
           </p>
         </div>
 
