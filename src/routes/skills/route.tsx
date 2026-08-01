@@ -487,18 +487,21 @@ function SkillsRoute() {
     queryKey: ['skill-detail', identityScopeKey, selectedSkill?.uri],
   })
 
-  // 真实后端数据驱动：调取 /api/v1/system/status 获取 Harness 监控数据
-  // staleTime=5min，无轮询，避免每 10s 闪屏
+  // 真实后端数据驱动：调取 /api/v1/system/status 获取 OpenViking 原生 Harness 监控数据
   const harnessStatusQuery = useQuery({
     queryFn: async () => {
-      const res = await getOvResult<Record<string, unknown>>(
-        ovClient.client.get({
-          url: '/api/v1/system/status',
-        })
-      )
-      const resultRec = asRecord(res?.result)
-      const metrics = asRecord(res?.harness_metrics) || asRecord(resultRec?.harness_metrics)
-      return metrics ?? null
+      try {
+        const res = await getOvResult<Record<string, unknown>>(
+          ovClient.client.get({
+            url: '/api/v1/system/status',
+          })
+        )
+        const resultRec = asRecord(res?.result)
+        const metrics = asRecord(res?.harness_metrics) || asRecord(resultRec?.harness_metrics)
+        return metrics ?? null
+      } catch {
+        return null
+      }
     },
     queryKey: ['harness-status'],
     staleTime: 300_000,
