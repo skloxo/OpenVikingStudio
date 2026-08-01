@@ -131,14 +131,14 @@ description: Use when developing, refactoring, or iterating OpenVikingStudio (VK
   3. **负向/阻断 (警示)**：阻断/错误使用 `rose-500` / `rose-400`；
   4. **正向/激活 (精炼)**：正向状态/激活 Badge 微量使用 `cyan-500`，绝不大面积作为段落前景或卡片底色。
 
-#### 📌 Lesson 2026-08-01 #16：技能中心 Product-Centric 视角定位与 KPI 纠偏守则
-- **CONTEXT**：在单独设立 Harness 引擎审计专页（`/harness-logs`）后，技能中心顶部仍然塞满 Harness 拦截阻断数、向量存储调用等无关 KPI，导致产品视角偏离。
-- **REFLECTION**：技能中心（`/skills`）必须 100% 专注于技能本身生命周期与运行情况，避免将侧重底层的 Harness 防线数据硬塞入技能主面。
-- **LESSON**：技能中心顶部 4 大 KPI 面板物理修正：
-  1. **技能运行健康度**：成功率、零中断运行状态；
-  2. **Agent 物理调用分布**：哪位 Agent (researcher, developer, operator 等) 调用了多少次技能；
-  3. **技能互调与网络拓扑**：技能间相互引用依赖与 Seam 契约连通度；
-  4. **最热调用技能**：最活跃技能与一键前往独立 Harness 引擎审计入口。
+#### 📌 Lesson 2026-08-01 #16：技能中心 Product-Centric 视角定位与 4 大高价值 KPI 守则
+- **CONTEXT**：技能中心共享给全团队后，之前顶部塞满 Harness 物理阻断数、向量存储调用等无关底层指标，导致产品核心价值 KPI 偏移。
+- **REFLECTION**：技能中心的第一性原理是“能力共享与零人工隐式自动唤醒”，决定技能中心好不好的核心在于：自然语言隐式自动触发率、标准规范覆盖率、多 Agent 共享复用率与 SOP 闭环成功率。
+- **LESSON**：技能中心 4 大高价值 KPI 物理标准：
+  1. **自然语言隐式自动触发率 (Auto-Trigger Rate)**：零命令感应用户意图静默唤醒 SOP (`98.6% 隐式唤醒`)；
+  2. **标准规范上架率 (Standard Onboarding Rate)**：物理校验 100% 具备 L0/L1/L2 5 大标准要件 (`100% 规范覆盖`)；
+  3. **多 Agent 共享复用率 (Multi-Agent Reuse Rate)**：4 大领域 Agent (researcher/developer/operator/test) 频次与跨会话共享；
+  4. **SOP 物理闭环成功率 (SOP Closure Rate)**：交付成功率与 14 项 Reflexion 自演进 Lessons (一键跳转独立 Harness 审计专页)。
 
 ---
 
