@@ -37,6 +37,14 @@ description: Use when developing, refactoring, or iterating OpenVikingStudio (VK
 - **REFLECTION**：缺乏明确测试用例的口头终验是不严谨的。只有测试通过 ➔ 提交终验(带测试用例) ➔ 终验通过(Git Push & Tag) ➔ 用户明确指令“发布到 1933”才是标准闭环。
 - **LESSON**：必须严格遵循 4-Step 交付 SOP：开发1936 ➔ 交付测试用例 ➔ 终验通过推送Git Tag ➔ 明确指令后发布到1933。
 
+#### 📌 Lesson 2026-08-01 #4：“找成功的轮子”第一原则 (Wheel-First Engineering Principle)
+- **CONTEXT**：在设计复杂系统（如 Harness 门锁与自演进）时凭空造轮子，导致功能退化为表面 Dashboard 花架子。
+- **REFLECTION**：开源社区已有大量经过验证的顶级轮子（NeMo Guardrails、Reflexion、Langroid）。盲目闭门造车是低效且易踩坑的。
+- **LESSON**：必须绝对遵循“找成功的轮子”三步法：
+  1. **先找轮子**：有现成轮子，优先搜索全网/GitHub 寻找成熟开源项目；
+  2. **能用即用**：能直接调用的轮子，直接引入使用；
+  3. **解构复用**：不能直接用的轮子，深入源码解构理解其物理架构，复用其最核心的优秀设计思想。
+
 ---
 
 ## 一、三层文档权威规范 (3-Tier Document System)

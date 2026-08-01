@@ -49,6 +49,42 @@ npm run build && cp -r dist/* /home/skloxo/.local/lib/python3.12/site-packages/o
 
 ---
 
+## 📅 Harness 物理级 3 层架构重构细粒度原子工单 (Atomic Harness Tasks)
+
+### 📌 Task 1: [ ] Harness Pre-Tool 物理前置拦截门锁 (NeMo Guardrails 式硬阻断)
+
+**类型**：Architecture & Safety  
+**优先级**：P0  
+**来源**：NeMo Guardrails 物理拦截器借鉴 ("有现成轮子先找轮子，能用就用，不能用解构复用核心思想")  
+**目标**：
+1. 在 `mcp_openviking_server.py` 中编写 `_harness_pre_execution_guard(tool_name, payload)` 拦截中间件。
+2. 当试图在 `scripts/` 或 `public/` 写入 `.py`/`.json` 游离脚本，或未获许可尝试拷贝至 1933 时，物理阻断并抛出 `[Harness Interception Blocked]`。
+3. 阻断触发时自动记录阻断日志并递增 `harness_metrics.json` 的 `total_calls` 拦截计数。
+
+---
+
+### 📌 Task 2: [ ] Harness Reflexion 隐式自演进与向量重索引钩子 (Reflexion 模式)
+
+**类型**：Self-Evolution Engine  
+**优先级**：P0  
+**来源**：Reflexion 论文与 Langroid 模式  
+**目标**：
+1. 实现 `_harness_reflexion_hook(context, user_correction)` 隐式感知识别器。
+2. 自动抽取 3 段式 Lesson (Context - Reflection - Lesson)，写回 `SKILL.md` 并在 `viking://resources/master_memory/` 完成向量重索引。
+3. 自动递增 `lessons_count` 与更新 `most_evolved_skill`。
+
+---
+
+### 📌 Task 3: [ ] 1936 UI 纯真实白盒透视看板对齐
+
+**类型**：UI Alignment  
+**优先级**：P0  
+**目标**：
+1. `/skills` 页面 4 张面板卡片 100% 真实读取 `Task 1` 与 `Task 2` 产生的底层指标日志。
+2. 物理平齐底栏，NO GREEN EVER 色盘，彻底消除任何写死假数据与噪音文案。
+
+---
+
 ### 📌 P1: [ ] v1.1.23d：全盘游离临时脚本与非源码文件彻底审计清洗专项
 
 **类型**：Refactoring & Cleanup  
