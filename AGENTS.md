@@ -37,3 +37,13 @@ Before making ANY modification, analysis, or feature iteration in this workspace
    - **【雅】(Elegance & Clean Architecture / 极客雅致)**：
      - *代码层*：架构高内聚低耦合，遵循 DRY/KISS 原则，充满数学美与架构美；
      - * UI / 文案层*：极客精炼，底边对齐与并排卡片通过 `mt-auto` 实现物理级底边平齐，拒绝随意与死板。
+
+---
+
+## 🔄 自动化双大脑评估与模型调度规则 (Dual-Brain Auto-Evaluation Rule)
+
+当用户发出「换个模型评估」或请求对产出物/任务方案进行评估时：
+1. **零繁琐 Prompt 驱动**：严禁要求用户手动输入重复的评估提示词。
+2. **自动子代理调度**：自动并发分发独立的 `evaluator` 评估子代理，指定选用 **Claude Sonnet 4.6** 深度思考大模型。
+3. **双视角/双大脑碰撞**：形成「主 Agent 实施视角 + Sonnet 4.6 独立评估视角」双大脑交叉验证。
+4. **物理留痕**：评估结果自动生成并更新至 `docs/TASK_CARD_EVALUATION_REPORT.md`，并立即提交 Git Tag / Commit 留痕。
