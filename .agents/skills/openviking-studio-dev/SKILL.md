@@ -122,6 +122,15 @@ description: Use when developing, refactoring, or iterating OpenVikingStudio (VK
   4. **向量库双向索引**：完成在 `viking://` master_memory 的向量同步；
   5. **Gate 2 自动化补全**：技能中心 UI 提供 `⚡ 一键规范化上架` 按钮，物理补齐缺失要件。
 
+#### 📌 Lesson 2026-08-01 #15：四色高对比度极客排版与严禁彩色滥用守则
+- **CONTEXT**：在界面大面积使用高饱和 Accent 色彩或背景，导致 UI “花里胡哨”、视觉杂乱且严重干扰文本阅读。
+- **REFLECTION**：高级极客 UI 必须回归严格的 4 色语义分层规则：正文用标准黑/深灰、次要用哑光灰、负向用玫瑰红、正向/激活微量用冰青，严禁把彩字/彩底铺满全屏。
+- **LESSON**：严守 4 色语义排版守则：
+  1. **正常文本 (100% 纯正)**：主文本、标题、段落只用标准 `text-foreground`（黑/深灰）；
+  2. **次要信息 (沉静)**：路径、时间戳、辅助说明使用 `text-muted-foreground` / `text-slate-500`；
+  3. **负向/阻断 (警示)**：阻断/错误使用 `rose-500` / `rose-400`；
+  4. **正向/激活 (精炼)**：正向状态/激活 Badge 微量使用 `cyan-500`，绝不大面积作为段落前景或卡片底色。
+
 ---
 
 ## 一、全盘文档三层治理体系与模块导航网 (3-Tier Document Hierarchy & Map)
