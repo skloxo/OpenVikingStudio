@@ -256,6 +256,14 @@ description: Use when developing, refactoring, or iterating OpenVikingStudio (VK
   2. **FastMCP 1933 自动构建**：全自动通过 1933 API 完成 L0/L1 语义向量构建与全上架；
   3. **Reflexion 反思沉淀**：调用产生偏回或阻断时，自动提炼 Lesson 存入项目 `SKILL.md` 与 OpenViking 体外大脑（`viking://resources/master_memory/`）。
 
+#### 📌 Lesson 2026-08-01 #32：语义化版本号修改权限边界铁律 (Semantic Versioning Authority)
+- **CONTEXT**：Agent 曾擅自将排期任务的版本号跨阶抬升为 `v1.2.0-A`，超越了自身的权限边界。
+- **REFLECTION**：版本号格式为 `X.Y.Z`。`Z` 位是补丁与优化，Agent 有权自动递增；`Y` 位是次版本号与重大功能迭代，必须由用户明确发出指令后，Agent 才有权限修改。
+- **LESSON**：语义化版本号 2 大权限铁律：
+  1. **Z 位 (v1.1.26a ~ d) 自动维护**：Agent 在日常优化、原子工单排期与修 bug 时，仅能在 `Z` 位及其后缀进行自动递增调整；
+  2. **Y 位 (v1.2.0) 指令授权**：严禁 Agent 擅自升级 `Y` 位！必须由用户显式指令“我们要升为 v1.2.0 / 我们要迭代 1.2 的版本号”后，才可升级。
+
+
 
 ---
 
