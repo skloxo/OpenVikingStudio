@@ -32,6 +32,11 @@ description: Use when developing, refactoring, or iterating OpenVikingStudio (VK
 - **REFLECTION**：游离胶水脚本会引发文件监听死循环（如 Vite HMR 热重载死循环）、难以追踪与维护。
 - **LESSON**：严禁编写任何临时/过渡脚本。遇到 API 或数据缺失，必须同步修改后端 Python 源文件 (`mcp_openviking_server.py`) 与前端 React 源文件，硬核打通源码级链路。
 
+#### 📌 Lesson 2026-08-01 #3：标准 4-Step 开发交付与终验对照 SOP 守则
+- **CONTEXT**：在用户未终验通过时误以为可以自动推进下一工单，且终验时未提供对照测试用例。
+- **REFLECTION**：缺乏明确测试用例的口头终验是不严谨的。只有测试通过 ➔ 提交终验(带测试用例) ➔ 终验通过(Git Push & Tag) ➔ 用户明确指令“发布到 1933”才是标准闭环。
+- **LESSON**：必须严格遵循 4-Step 交付 SOP：开发1936 ➔ 交付测试用例 ➔ 终验通过推送Git Tag ➔ 明确指令后发布到1933。
+
 ---
 
 ## 一、三层文档权威规范 (3-Tier Document System)
