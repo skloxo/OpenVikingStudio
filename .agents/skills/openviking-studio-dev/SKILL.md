@@ -105,6 +105,23 @@ description: Use when developing, refactoring, or iterating OpenVikingStudio (VK
   1. **物理磁盘探针保底**：网关 API 异常时，通过 `/api/v1/system/skill_content` 探针物理打底，保障 100% 打开；
   2. **独立全景专页路由**：海量明细数据路由至专用全景子页面 (如 `/skills/harness-logs`)。
 
+#### 📌 Lesson 2026-08-01 #13：侧边栏独立 Harness 引擎审计入口守则
+- **CONTEXT**：Harness 引擎涵盖物理阻断记录、全量技能调用明细与自演进变更，隐匿在二级子页面不易被排查与观测。
+- **REFLECTION**：物理 Harness 引擎是生产力的第一性原理中枢，必须在侧边栏“运维/活动”导航栏中拥有独立的顶级菜单入口，一键透视阻断、解锁与演进审计。
+- **LESSON**：严守 Harness 顶级侧边栏导航守则：
+  1. **侧边栏物理入口**：AppShell 侧边栏活动/运维组引入 `🛡️ Harness 引擎审计` (`/harness-logs`)；
+  2. **全量明细承载**：汇聚拦截阻断解锁明细、调用频次分布与 Reflexion 演进规约。
+
+#### 📌 Lesson 2026-08-01 #14：OpenViking 技能上架统一标准要件与 Gate 2 治理流水线
+- **CONTEXT**：开源与第三方技能来源五花八门、规范不一，缺乏统一要件规范导致部分技能装载后无法被 Agent 自动触发。
+- **REFLECTION**：入库 OpenViking 的技能必须具备 5 大物理要件方可上架；对于缺乏规范的第三方技能，必须提供 Gate 2 探针白盒诊断与“一键规范化上架”自动化补全流水线。
+- **LESSON**：严守 OpenViking 技能上架五大要件与 Gate 2 治理流：
+  1. **结构化 YAML 头 (Frontmatter)**：必须包含 `name` 标识与 `description` 自然语言高敏触发词；
+  2. **L0-L1-L2 三级渐进式结构**：L0 触发词/标签 + L1 SOP 步骤 + L2 全量源码；
+  3. **显式 MCP 工具白名单**：Frontmatter 显式定义 `allowed_tools`；
+  4. **向量库双向索引**：完成在 `viking://` master_memory 的向量同步；
+  5. **Gate 2 自动化补全**：技能中心 UI 提供 `⚡ 一键规范化上架` 按钮，物理补齐缺失要件。
+
 ---
 
 ## 一、全盘文档三层治理体系与模块导航网 (3-Tier Document Hierarchy & Map)
