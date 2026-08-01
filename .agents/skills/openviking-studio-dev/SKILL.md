@@ -20,6 +20,18 @@ description: Use when developing, refactoring, or iterating OpenVikingStudio (VK
    - **LESSON**：提炼出的永久闭环规范。
 3. **自热更新 (Hot Update)**：自动将最新 Lesson 写回本 `SKILL.md`，并在 OpenViking 1933 体外大脑 (`viking://resources/master_memory/`) 持久化。
 
+### 📜 历史演进 Lesson 归档
+
+#### 📌 Lesson 2026-08-01 #1：1936 开发环境 vs 1933 正式环境物理隔绝守则
+- **CONTEXT**：开发人员在代码未经用户终验通过前，直接将 `build` 产物推送到 1933 正式环境。
+- **REFLECTION**：开发测试通过 ≠ 用户终验通过。1936 (`npm run dev`) 是开发测试端口，1933 (`web_studio`) 是正式物理端口。
+- **LESSON**：开发/调试阶段一律仅在 1936 环境热重载渲染；只有在用户明确指令“发布到 1933”或“终验通过”后，方可打包推送至 1933。
+
+#### 📌 Lesson 2026-08-01 #2：零临时脚本与前后端双端源码硬核打通守则
+- **CONTEXT**：遇到数据契约不齐时试图编写游离胶水脚本或生成临时 JSON 映射。
+- **REFLECTION**：游离胶水脚本会引发文件监听死循环（如 Vite HMR 热重载死循环）、难以追踪与维护。
+- **LESSON**：严禁编写任何临时/过渡脚本。遇到 API 或数据缺失，必须同步修改后端 Python 源文件 (`mcp_openviking_server.py`) 与前端 React 源文件，硬核打通源码级链路。
+
 ---
 
 ## 一、三层文档权威规范 (3-Tier Document System)
