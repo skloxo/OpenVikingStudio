@@ -160,14 +160,14 @@
 > - 平台级指标（HTTP/GPU/延迟/SLA）→ 保留首页监控页
 > - 远期：首页监控页逐步收敛精简
 
-#### ⏳ v1.1.23a (原子工单 1): MCP 网关层 Harness 经验统计与 L0 规范打标 (mcp-openviking Backend Gateway)
+#### [x] v1.1.23a (原子工单 1): MCP 网关层 Harness 经验统计与 L0 规范打标 ✅ (Deliver Pass)
 - **来源**: 遵循最小粒度拆分与高内聚低耦合原则（纯后端 MCP 网关层，代码改动 < 50 行）
-- **优先级**: 🚨 **🔥 当前首要执行原子工单**
-- **文件与边界**: 仅修改 `/home/skloxo/aho/openclaw/mcp-openviking/mcp_openviking_server.py`
-- **目标**:
-  1. 在 FastMCP 工具层（`openviking_find`, `openviking_store`）增加轻量级调用计数与 Header 校验
-  2. 规范透出 L0 级高密避坑 Lesson 属性，零后台脚本
-  3. 提供独立 API 接口供前端监控，与前端组件 100% 解耦
+- **交付内容**:
+  1. 在 `mcp_openviking_server.py` 中新增线程安全的 `HARNESS_METRICS` 内存计数器与 `_record_harness_call()`。
+  2. 注册了新的 MCP 工具 `openviking_harness_stats`，向前端透出实时调用频次、模式与节点头统计。
+  3. 实测运行通过 `python3 -c "import mcp_openviking_server as s; print(s.openviking_harness_stats())"`。
+- **文件**: `/home/skloxo/aho/openclaw/mcp-openviking/mcp_openviking_server.py`
+- **Git Commit**: `caafb2c`
 
 #### ⏳ v1.1.23b (原子工单 2): 技能中心 /skills 页调用统计与演进版本展示 (Skills Page UI Only)
 - **来源**: 遵循高内聚低耦合原则（纯前端 Skills 视图组件）
