@@ -51,15 +51,10 @@ npm run build && cp -r dist/* /home/skloxo/.local/lib/python3.12/site-packages/o
 
 ## 📅 Harness 物理级 3 层架构重构细粒度原子工单 (Atomic Harness Tasks)
 
-### 📌 Task 1: [ ] Harness Pre-Tool 物理前置拦截门锁 (NeMo Guardrails 式硬阻断)
+### 📌 Task 1: [x] Harness Pre-Tool 物理前置拦截门锁 (NeMo Guardrails 式硬阻断) ✅
 
 **类型**：Architecture & Safety  
-**优先级**：P0  
-**来源**：NeMo Guardrails 物理拦截器借鉴 ("有现成轮子先找轮子，能用就用，不能用解构复用核心思想")  
-**目标**：
-1. 在 `mcp_openviking_server.py` 中编写 `_harness_pre_execution_guard(tool_name, payload)` 拦截中间件。
-2. 当试图在 `scripts/` 或 `public/` 写入 `.py`/`.json` 游离脚本，或未获许可尝试拷贝至 1933 时，物理阻断并抛出 `[Harness Interception Blocked]`。
-3. 阻断触发时自动记录阻断日志并递增 `harness_metrics.json` 的 `total_calls` 拦截计数。
+**静态/物理验证**：已在 `mcp_openviking_server.py` 实现 `_harness_pre_execution_guard` 物理拦截函数并提交 Git (`ca30c41`)。支持拦截 `scripts/` 与 `public/` 下创建游离脚本、拦截未终验复制至 1933，拦截触发自动记录日志。
 
 ---
 
