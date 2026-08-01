@@ -776,9 +776,10 @@ function SkillsRoute() {
     ? ((Math.min(activeSkillsCount, skills.length) / skills.length) * 100).toFixed(1)
     : null
 
-  const lessonsCount = typeof metrics?.lessons_count === 'number' && metrics.lessons_count >= 36
+  const lessonsCount = typeof metrics?.lessons_count === 'number'
     ? metrics.lessons_count
-    : 36
+    : null
+  const builtinLessonsCount = 36  // 人工精编规约知识库条目数（固定）
 
   const autoWakeupRate = typeof metrics?.auto_wakeup_rate === 'number' 
     ? metrics.auto_wakeup_rate.toFixed(1) 
@@ -946,11 +947,19 @@ function SkillsRoute() {
               白盒审计 ➔
             </Badge>
           </div>
-          <div className="font-mono text-lg font-bold tabular-nums text-foreground flex items-baseline gap-1">
-            {lessonsCount} 次 <span className="text-xs font-normal text-muted-foreground">自演进迭代</span>
+          <div className="flex items-center gap-3 font-mono tabular-nums">
+            <div className="flex flex-col">
+              <span className="text-lg font-bold text-foreground">{builtinLessonsCount}</span>
+              <span className="text-[10px] text-muted-foreground font-sans">精编规约</span>
+            </div>
+            <div className="text-muted-foreground/30 text-lg font-thin">|</div>
+            <div className="flex flex-col">
+              <span className="text-lg font-bold text-foreground">{lessonsCount !== null ? lessonsCount : '--'}</span>
+              <span className="text-[10px] text-muted-foreground font-sans">自动感应</span>
+            </div>
           </div>
           <p className="text-[11px] text-muted-foreground truncate flex items-center justify-between">
-            <span>自动规范技能 · 驱动自我演化</span>
+            <span>人工精编 + Wiki 自动感应双轨驱动</span>
             <ChevronRightIcon className="size-3 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
           </p>
         </Link>
