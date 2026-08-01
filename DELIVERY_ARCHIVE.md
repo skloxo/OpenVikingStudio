@@ -4,6 +4,22 @@
 
 ---
 
+## 📌 v1.1.23c：技能中心双门锁合规探针、待规范白盒曝光与一键规范化上架流程
+- **交付时间**：2026-08-01
+- **Git Tag**：`v1.1.23c` (`24689fd`, `b8248c7`)
+- **用户验收**：按指令优先重排调度并完成交付 ✅
+- **修改文件**：
+  - [src/routes/skills/route.tsx](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/src/routes/skills/route.tsx)
+  - [mcp-openviking/mcp_openviking_server.py](file:///home/skloxo/aho/openclaw/mcp-openviking/mcp_openviking_server.py)
+  - [.agents/skills/openviking-studio-dev/SKILL.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/.agents/skills/openviking-studio-dev/SKILL.md)
+  - [REFACTORING_PLAN.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/REFACTORING_PLAN.md)
+- **交付内容**：
+  1. 实现了 `/skills` 页面双门锁治理面板，白盒展示 `已就绪标准技能` 与 `⚠️ 待规范技能`。
+  2. 部署 `openviking_audit_skills` 与 `openviking_fix_skill` 探针，支持在 UI 上一键补全规范要件并向 OpenViking 向量库自动装载上架。
+  3. 沉淀多 Agent 生态双门锁治理规范至 Master Memory (`viking://resources/master_memory/skill_download_and_governance_best_practice.md`)。
+
+---
+
 ## 📌 v1.1.23b：技能中心概览卡片硬核物理指标重构
 - **交付时间**：2026-08-01
 - **Git Tag**：`v1.1.23b` (`92bd4f8`, `50b5e7a`)
