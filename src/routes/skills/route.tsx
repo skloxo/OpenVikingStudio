@@ -570,7 +570,7 @@ function SkillsRoute() {
   return (
     <div className="flex w-full min-w-0 flex-col gap-4">
       {/* 头部标题与高密搜索筛选栏 */}
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3">
+      <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="grid gap-1">
           <h1 className="text-xl font-semibold tracking-tight flex items-center gap-2">
             🧠 技能中心
@@ -579,7 +579,7 @@ function SkillsRoute() {
             {t('description')}
           </p>
         </div>
-        <Badge variant="outline" className="text-[10px] font-mono border-border bg-muted/30 text-foreground px-1.5 py-0.5 self-start">
+        <Badge variant="outline" className="text-[10px] font-mono border-border bg-muted/30 text-foreground px-1.5 py-0.5">
           🕒 统计范围: 最近 24 小时 (24H Rolling)
         </Badge>
       </header>
