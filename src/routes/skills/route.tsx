@@ -30,6 +30,7 @@ import {
 } from '#/components/ui/sheet'
 import { useAppConnection } from '#/hooks/use-app-connection'
 import { getOvResult, isOvClientError, ovClient } from '#/lib/ov-client'
+import { SkillsPagination } from './-components/pagination'
 import { cn } from '#/lib/utils'
 
 export const Route = createFileRoute('/skills')({
@@ -522,6 +523,10 @@ function SkillsRoute() {
   const [searchQuery, setSearchQuery] = React.useState('')
   const [activeScopeFilter, setActiveScopeFilter] = React.useState<'all' | 'agent' | 'user'>('all')
 
+  // Pagination states (Default 12 per page)
+  const [currentPage, setCurrentPage] = React.useState(1)
+  const [pageSize, setPageSize] = React.useState(12)
+
   const skillsQuery = useQuery({
     queryFn: fetchSkills,
     queryKey: ['skills'],
@@ -538,6 +543,18 @@ function SkillsRoute() {
       return s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q)
     })
   }, [skills, searchQuery, activeScopeFilter])
+
+  // Reset to page 1 when filter/search changes
+  React.useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, activeScopeFilter])
+
+  // Sliced skills for current page
+  const paginatedSkills = React.useMemo(() => {
+    if (pageSize >= 1000) return filteredSkills
+    const start = (currentPage - 1) * pageSize
+    return filteredSkills.slice(start, start + pageSize)
+  }, [filteredSkills, currentPage, pageSize])
 
   const connectionUnavailable =
     isOvClientError(skillsQuery.error) &&
@@ -861,68 +878,93 @@ function SkillsRoute() {
           </p>
         </Card>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredSkills.map((skill) => {
-            const isAgentScope = skill.scope === 'agent'
-            const srcInfo = getSkillSource(skill.name)
-            const displayName = getChineseSkillName(skill.name)
-            const displayDesc = getChineseSkillDescription(skill.name, skill.description)
-            return (
-              <Card
-                key={`${skill.scope}:${skill.uri}`}
-                className="group relative flex cursor-pointer flex-col justify-between rounded border border-border/60 bg-card p-3 transition-all hover:border-border hover:bg-muted/30"
-                onClick={() => setSelectedSkill(skill)}
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="flex size-7 shrink-0 items-center justify-center rounded-xs bg-muted text-foreground">
-                        <SparklesIcon className="size-4 text-muted-foreground" />
+        <div className="flex flex-col gap-3">
+          {/* Top Pagination */}
+          <SkillsPagination
+            currentPage={currentPage}
+            pageSize={pageSize}
+            totalItems={filteredSkills.length}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+          />
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {paginatedSkills.map((skill) => {
+              const isAgentScope = skill.scope === 'agent'
+              const srcInfo = getSkillSource(skill.name)
+              const displayName = getChineseSkillName(skill.name)
+              const displayDesc = getChineseSkillDescription(skill.name, skill.description)
+              return (
+                <Card
+                  key={`${skill.scope}:${skill.uri}`}
+                  className="group relative flex cursor-pointer flex-col justify-between rounded border border-border/60 bg-card p-3 transition-all hover:border-border hover:bg-muted/30 shadow-2xs hover:shadow-xs"
+                  onClick={() => setSelectedSkill(skill)}
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="flex size-7 shrink-0 items-center justify-center rounded bg-muted text-foreground font-bold">
+                          <SparklesIcon className="size-4 text-cyan-500" />
+                        </div>
+                        <h3 className="truncate text-xs font-semibold text-foreground group-hover:text-cyan-500 transition-colors" title={displayName}>
+                          {displayName}
+                        </h3>
                       </div>
-                      <h3 className="truncate text-xs font-semibold text-foreground group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors" title={displayName}>
-                        {displayName}
-                      </h3>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Badge
+                          variant="outline"
+                          className={cn('rounded-xs font-mono text-[10px]', srcInfo.badgeClass)}
+                        >
+                          {srcInfo.label}
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className="rounded-xs font-mono text-[10px] border-border/60 bg-muted/40 text-foreground"
+                        >
+                          {isAgentScope ? (
+                            <span className="flex items-center gap-1 text-foreground">
+                              <UsersRoundIcon className="size-3 text-muted-foreground" />
+                              工程技能
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1 text-foreground">
+                              <UserRoundIcon className="size-3 text-muted-foreground" />
+                              个人习惯
+                            </span>
+                          )}
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <Badge
-                        variant="outline"
-                        className={cn('rounded-xs font-mono text-[10px]', srcInfo.badgeClass)}
-                      >
-                        {srcInfo.label}
-                      </Badge>
-                      <Badge
-                        variant="outline"
-                        className="rounded-xs font-mono text-[10px] border-border/60 bg-muted/40 text-foreground"
-                      >
-                        {isAgentScope ? (
-                          <span className="flex items-center gap-1 text-foreground">
-                            <UsersRoundIcon className="size-3 text-muted-foreground" />
-                            工程技能
-                          </span>
-                        ) : (
-                          <span className="flex items-center gap-1 text-foreground">
-                            <UserRoundIcon className="size-3 text-muted-foreground" />
-                            个人习惯
-                          </span>
-                        )}
-                      </Badge>
-                    </div>
+
+                    <p className="line-clamp-2 min-h-8 text-xs text-muted-foreground font-mono leading-relaxed" title={displayDesc}>
+                      {displayDesc}
+                    </p>
                   </div>
 
-                  <p className="line-clamp-2 min-h-8 text-xs text-muted-foreground font-mono leading-relaxed" title={displayDesc}>
-                    {displayDesc}
-                  </p>
-                </div>
+                  <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-2 text-[10px] font-mono text-muted-foreground">
+                    <span className="truncate max-w-36" title={skill.uri}>
+                      {skill.uri}
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant="outline" className="text-[9px] px-1 py-0 border-cyan-500/30 bg-cyan-500/5 text-cyan-500 font-mono">
+                        🔥 24H 活跃
+                      </Badge>
+                      <ChevronRightIcon className="size-3.5 group-hover:translate-x-0.5 transition-transform text-muted-foreground" />
+                    </div>
+                  </div>
+                </Card>
+              )
+            })}
+          </div>
 
-                <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-2 text-[10px] font-mono text-muted-foreground">
-                  <span className="truncate max-w-44" title={skill.uri}>
-                    {skill.uri}
-                  </span>
-                  <ChevronRightIcon className="size-3.5 group-hover:translate-x-0.5 transition-transform text-muted-foreground" />
-                </div>
-              </Card>
-            )
-          })}
+          {/* Bottom Pagination */}
+          <SkillsPagination
+            currentPage={currentPage}
+            pageSize={pageSize}
+            totalItems={filteredSkills.length}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+          />
         </div>
       )}
 
