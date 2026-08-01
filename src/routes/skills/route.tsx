@@ -618,7 +618,7 @@ function SkillsRoute() {
         <div className="grid gap-1">
           <h1 className="text-xl font-semibold tracking-tight flex items-center gap-2">
             🧠 {t('title')}
-            <Badge variant="outline" className="font-mono text-xs rounded-xs border-cyan-500/40 bg-cyan-500/10 text-cyan-500">
+            <Badge variant="outline" className="font-mono text-xs rounded-xs border-border bg-muted/40 text-foreground">
               已装载 {skills.length} 个标准技能
             </Badge>
           </h1>
@@ -626,7 +626,7 @@ function SkillsRoute() {
             {t('description')}
           </p>
           {reindexStatusMsg && (
-            <p className="font-mono text-[11px] text-cyan-500 animate-pulse mt-0.5">
+            <p className="font-mono text-[11px] text-foreground animate-pulse mt-0.5">
               🛡️ {reindexStatusMsg}
             </p>
           )}
@@ -636,10 +636,10 @@ function SkillsRoute() {
           {/* 当点击补全时，渲染精美高亮的动态进度 Tag */}
           {isReindexing && (
             <span
-              className="inline-flex items-center gap-1.5 rounded border border-cyan-500/40 bg-cyan-500/10 px-2 py-1 text-[11px] font-mono text-cyan-600 dark:text-cyan-400 animate-pulse"
+              className="inline-flex items-center gap-1.5 rounded border border-border bg-muted px-2 py-1 text-[11px] font-mono text-foreground animate-pulse"
               title="OpenViking 正在后台自动补全技能简介"
             >
-              <SparklesIcon className="size-3 animate-spin text-cyan-500" />
+              <SparklesIcon className="size-3 animate-spin text-muted-foreground" />
               补全简介中...
             </span>
           )}
@@ -651,7 +651,7 @@ function SkillsRoute() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="搜索技能名称或简介..."
-              className="w-full rounded border border-border/60 bg-background/50 px-2.5 py-1 text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-cyan-500/50 focus:outline-none font-sans"
+              className="w-full rounded border border-border/60 bg-background/50 px-2.5 py-1 text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-border focus:outline-none font-sans"
             />
           </div>
 
@@ -660,13 +660,13 @@ function SkillsRoute() {
             type="button"
             variant="outline"
             size="sm"
-            className="h-7 text-xs rounded border-cyan-500/40 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10"
+            className="h-7 text-xs rounded border-border text-foreground hover:bg-muted"
             disabled={isReindexing}
             onClick={() => void handleTriggerReindex()}
             title="触发 OpenViking 官方后台自动补全全量技能简介"
           >
             <SparklesIcon
-              className={isReindexing ? 'size-3.5 animate-spin text-cyan-500' : 'size-3.5 text-cyan-500'}
+              className={isReindexing ? 'size-3.5 animate-spin text-muted-foreground' : 'size-3.5 text-muted-foreground'}
             />
             {isReindexing ? '生成中...' : '⚡ 补全简介'}
           </Button>
