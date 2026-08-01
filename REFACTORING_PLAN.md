@@ -184,33 +184,32 @@
 - **文件与边界**: 仅修改 `src/routes/monitoring/route.tsx`
 - **目标**: 在监控页中新增 Harness L0 经验加载前后的 SLA 耗时分布与 Token 节省对比折线图
 
-#### ⏳ v1.1.24: 基于 Reflexion / Voyager 范式的 Skill-Loop 闭环自进化引擎 (Grounded Critique & Self-Refine Loop)
-- **来源**: 业界最新 Agent 自进化框架 (Reflexion, Voyager, Self-Evolving-Skill)
-- **优先级**: 🔥 紧急提升至首优先迭代（优先落地 Harness 自进化）
+#### ⏳ v1.1.24: 基于 Reflexion / Voyager / Hermes 范式的 Skill-Loop 闭环自进化引擎 (Grounded Critique & Self-Refine Loop)
+- **来源**: NousResearch Hermes-Agent 自进化范式 + Reflexion + Voyager + OpenClaw 精华融合
 - **架构规范**: 参见 [HARNESS_EVOLUTION_ARCHITECTURE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/HARNESS_EVOLUTION_ARCHITECTURE.md)（含多 Agent 拓扑与时序交互图）
-- **目标**:
-  1. **反馈捕获 (Grounded Critique)**: 技能执行完毕后，自动捕捉终端编译结果、单元测试状态与用户修正
-  2. **经验萃取 (Lesson Extraction)**: 若遇到踩坑/异常，AI 自动生成高密度 `Lesson Learned` 避坑摘要
-  3. **SKILL.md 自动热重写 (Auto Refine)**: 自动追加 `Lesson Learned` 至该技能的 `references/lessons.md` 或 `SKILL.md`，下次触发时自动获得避坑记忆
-  4. **版本控制 (Skill Versioning)**: 为演进后的技能生成 `v1.x.y` 规则版本号
+- **核心细节与落地设计**:
+  1. **反馈捕获 (Grounded Critique)**: 任务物理校验（退出码 Exit Code 0、测试通过）通过后，捕获修正轨迹。
+  2. **三段式 Lesson 萃取**: 采用 OpenClaw 的结构化模板 `CONTEXT / REFLECTION / LESSON`，生成高密度避坑摘要。
+  3. **防虚假误判原则**: 只有在终端控制台物理校验通过或用户显式纠错时才记录，严禁从沉默中假想推导规则。
+  4. **SKILL.md 自动热重写 (Auto Refine)**: 自动追加 `Lesson` 至 `SKILL.md`，并通过 Git Commit 留痕（`chore(harness): evolve skill <name>`）。
+  5. **🧹 冗余清理**: 上线后彻底废除并清理 OpenClaw 旧单体技能 `self-improving` (`~/self-improving/`)，全盘收归 1933 向量中枢统一管理。
 
-#### ⏳ v1.1.25: 技能健康度综合评分与优胜劣汰矩阵 (Skill Health Scoring & Elimination Matrix)
-- **来源**: NousResearch Hermes-Agent / EvoSkills 评估体系
-- **优先级**: 🔥 紧急提升至首优先迭代（优先落地 Harness 自进化）
+#### ⏳ v1.1.25: 基于微软 SkillOpt 机制的技能健康度评分与 Gate 验证矩阵 (Skill Health Scoring & Gate Verification Matrix)
+- **来源**: NousResearch Hermes-Agent 评估体系 + 微软 SkillOpt 框架 (`skillopt-skill-analyzer`) 精华吸收
 - **架构规范**: 参见 [HARNESS_EVOLUTION_ARCHITECTURE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/HARNESS_EVOLUTION_ARCHITECTURE.md)
-- **目标**:
-  1. 基于【活跃度、成功率、修正频次、避坑积累量】计算 85 个技能的健康度得分 (0~100 分)
-  2. 健康度低（频繁导致构建失败/长期无人调用）的技能给予警告、降级或自动修复提醒
-  3. 高频优秀技能获得最高权重倾斜
+- **核心细节与落地设计**:
+  1. **Gate 尝试验证 (Attempt / Judge Engine)**: 借鉴 SkillOpt 的 Gate 校验逻辑，在更新 `SKILL.md` 前分别用新旧版本尝试运行 Mock 任务 (Attempt)，由评判器 (Judge) 确认效果提升后才允许通过 Gate 落地。
+  2. **健康度综合得分 (0~100分)**: 基于【活跃度、成功率、修正频次、避坑积累量】四维加权计算技能健康得分。
+  3. **优胜劣汰与警告降级**: 分数低于 60 分的技能给予警告高亮并提供自动修复建议，高分优秀技能获得 Prompt 最高权重倾斜。
+  4. **🧹 架构收归**: 将原本 OpenClaw 5050 端口的 Flask 外挂分析器（`skillopt-skill-analyzer`）核心打分逻辑 100% 重构收归为 OpenViking 1933 的原生 API。
 
 #### ⏳ v1.1.26: 技能创生、克隆与在线沙盒测试器 (Autonomous Skill Creation & Playground)
 - **来源**: EvoSkills 自动构建范式
-- **优先级**: 🔥 紧急提升至首优先迭代（优先落地 Harness 自进化）
 - **架构规范**: 参见 [HARNESS_EVOLUTION_ARCHITECTURE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/HARNESS_EVOLUTION_ARCHITECTURE.md)
-- **目标**:
-  1. 支持根据自然语言诉求自动生成符合 `SKILL.md` 规范的全新技能模板
-  2. 提供在线 SKILL.md 编辑器与 YAML 前言语法校验
-  3. 提供沙盒 Mock 触发测试器：在页面上一键 Simulate 触发该技能并查看 Agent 响应
+- **核心细节与落地设计**:
+  1. **自然语言创生**: 支持通过自然语言描述自动生成符合 YAML Frontmatter + Markdown 规范的全新技能模板。
+  2. **在线语法与 YAML 校验**: 在 OpenViking Studio 页面提供带语法高亮的在线 `SKILL.md` 编辑器与结构校验。
+  3. **沙盒 Simulate 测试器**: 支持在 Web 页面上一键模拟触发该技能，透视 Agent 的 Payload 与响应，验证成功后再发布至 Viking 向量库。
 
 #### ⏳ v1.1.27: 资源库 /resources 历史版本追踪与一键回滚 (Resource Version History & Rollback)
 - **来源**: 对应 OpenViking Dashboard (`/dashboard/resources`) 经典功能对齐
