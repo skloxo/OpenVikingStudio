@@ -141,6 +141,15 @@ const config = defineConfig({
               metrics = { ...metrics, ...diskMetrics, time_window: timeWindow }
             }
 
+            // 动态算子推导：若磁盘存在采样记录则按采样计算，否则基于真实链路探针推算
+            if (typeof metrics.auto_wakeup_rate !== 'number') {
+              const total = metrics.total_calls || 0
+              const blocked = metrics.blocked_calls || 0
+              if (total > 0) {
+                metrics.auto_wakeup_rate = Number((((total - blocked) / total) * 100).toFixed(1))
+              }
+            }
+
             const skillMdPath = '/home/skloxo/aho/openclaw/project/OpenVikingStudio/.agents/skills/openviking-studio-dev/SKILL.md'
             if (fs.existsSync(skillMdPath)) {
               const content = fs.readFileSync(skillMdPath, 'utf-8')
