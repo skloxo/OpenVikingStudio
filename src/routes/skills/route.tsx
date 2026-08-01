@@ -802,9 +802,6 @@ function SkillsRoute() {
             👤 User 偏好 ({skills.filter((s) => s.scope === 'user').length})
           </button>
         </div>
-        <span className="text-[11px] text-muted-foreground font-mono pr-2">
-          已启用 100% 自动感知与全量补全上架
-        </span>
       </div>
 
       {skillsQuery.isLoading ? (
