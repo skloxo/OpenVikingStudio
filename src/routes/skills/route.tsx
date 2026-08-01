@@ -691,19 +691,19 @@ function SkillsRoute() {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Link
           to="/harness-logs"
-          className="flex flex-col justify-between rounded border border-cyan-500/30 bg-cyan-500/5 p-3 hover:bg-cyan-500/10 transition-colors group cursor-pointer"
+          className="flex flex-col justify-between rounded border border-border/60 bg-card p-3 hover:border-border transition-colors group cursor-pointer"
           title="点击查看 Harness 物理前置拦截与硬性阻断日志"
         >
           <div className="flex items-center justify-between text-[11px] text-muted-foreground font-sans">
-            <span className="flex items-center gap-1 text-cyan-600 dark:text-cyan-400 font-medium">
-              <ZapIcon className="size-3.5 text-cyan-500" />
+            <span className="flex items-center gap-1 text-foreground font-medium">
+              <ZapIcon className="size-3.5 text-muted-foreground" />
               1. 物理前置拦截门锁
             </span>
-            <Badge variant="outline" className="text-[9px] font-mono border-cyan-500/40 text-cyan-500 px-1 py-0 bg-cyan-500/10">
+            <Badge variant="outline" className="text-[9px] font-mono border-rose-500/40 text-rose-500 bg-rose-500/10 px-1 py-0">
               NeMo Interceptor
             </Badge>
           </div>
-          <div className="my-1.5 font-mono text-xl font-bold tracking-tight text-cyan-600 dark:text-cyan-400">
+          <div className="my-1.5 font-mono text-xl font-bold tracking-tight text-foreground">
             {blockedCalls !== null ? (
               <>
                 {blockedCalls} <span className="text-xs font-normal text-muted-foreground">次物理阻断</span>
@@ -712,23 +712,23 @@ function SkillsRoute() {
               <span className="text-xs text-muted-foreground font-normal">--</span>
             )}
           </div>
-          <p className="mt-auto text-[10px] font-mono text-muted-foreground border-t border-cyan-500/20 pt-1.5 flex justify-between items-center">
+          <p className="mt-auto text-[10px] font-mono text-muted-foreground border-t border-border/40 pt-1.5 flex justify-between items-center">
             <span>物理阻断游离脚本与非法部署</span>
-            <ChevronRightIcon className="size-3 text-cyan-500 group-hover:translate-x-0.5 transition-transform" />
+            <ChevronRightIcon className="size-3 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
           </p>
         </Link>
 
-        <div className="flex flex-col justify-between rounded border border-cyan-500/30 bg-cyan-500/5 p-3">
+        <div className="flex flex-col justify-between rounded border border-border/60 bg-card p-3">
           <div className="flex items-center justify-between text-[11px] text-muted-foreground font-sans">
-            <span className="flex items-center gap-1 text-cyan-600 dark:text-cyan-400 font-medium">
-              <TrendingUpIcon className="size-3.5 text-cyan-500" />
+            <span className="flex items-center gap-1 text-foreground font-medium">
+              <TrendingUpIcon className="size-3.5 text-muted-foreground" />
               2. 检索 / 存储结构
             </span>
-            <Badge variant="outline" className="text-[9px] font-mono border-cyan-500/40 text-cyan-500 px-1 py-0 bg-cyan-500/10">
+            <Badge variant="outline" className="text-[9px] font-mono border-border bg-muted/30 text-muted-foreground px-1 py-0">
               L0 / L1 向量
             </Badge>
           </div>
-          <div className="my-1.5 text-xs text-foreground/90 font-mono space-y-0.5">
+          <div className="my-1.5 text-xs text-foreground font-mono space-y-0.5">
             <div className="flex justify-between">
               <span>检索 (find)</span>
               <span>{findCalls !== null ? `${findCalls} 次` : '--'}</span>
@@ -738,18 +738,18 @@ function SkillsRoute() {
               <span>{storeCalls !== null ? `${storeCalls} 次` : '--'}</span>
             </div>
           </div>
-          <p className="mt-auto text-[10px] font-mono text-muted-foreground border-t border-cyan-500/20 pt-1.5">
+          <p className="mt-auto text-[10px] font-mono text-muted-foreground border-t border-border/40 pt-1.5">
             100% 真实 Viking 1933 存储调用
           </p>
         </div>
 
-        <div className="flex flex-col justify-between rounded border border-cyan-500/30 bg-cyan-500/5 p-3">
+        <div className="flex flex-col justify-between rounded border border-border/60 bg-card p-3">
           <div className="flex items-center justify-between text-[11px] text-muted-foreground font-sans">
-            <span className="flex items-center gap-1 text-cyan-600 dark:text-cyan-400 font-medium">
-              <CpuIcon className="size-3.5 text-cyan-500" />
+            <span className="flex items-center gap-1 text-foreground font-medium">
+              <CpuIcon className="size-3.5 text-muted-foreground" />
               3. Agent 物理调用分布
             </span>
-            <Badge variant="outline" className="text-[9px] font-mono border-cyan-500/40 text-cyan-500 px-1 py-0 bg-cyan-500/10">
+            <Badge variant="outline" className="text-[9px] font-mono border-border bg-muted/30 text-muted-foreground px-1 py-0">
               Peer 统计
             </Badge>
           </div>
@@ -758,30 +758,30 @@ function SkillsRoute() {
               Object.entries(actorPeers).slice(0, 2).map(([peer, count]) => (
                 <div key={peer} className="font-mono text-xs text-foreground flex items-center justify-between mt-0.5">
                   <span className="capitalize">{peer}</span>
-                  <span className="text-cyan-500">{String(count)} 次</span>
+                  <span>{String(count)} 次</span>
                 </div>
               ))
             ) : (
               <p className="text-xs text-muted-foreground font-mono">-- (尚无 Peer 调用)</p>
             )}
           </div>
-          <p className="mt-auto text-[10px] font-mono text-muted-foreground border-t border-cyan-500/20 pt-1.5">
+          <p className="mt-auto text-[10px] font-mono text-muted-foreground border-t border-border/40 pt-1.5">
             透视哪位 Agent 频繁引发演进
           </p>
         </div>
 
         <Link
           to="/harness-logs"
-          className="flex flex-col justify-between rounded border border-cyan-500/30 bg-cyan-500/5 p-3 hover:bg-cyan-500/10 transition-colors group cursor-pointer"
+          className="flex flex-col justify-between rounded border border-border/60 bg-card p-3 hover:border-border transition-colors group cursor-pointer"
           title="点击进入 Harness 物理自演进日志与纠偏明细全景专页"
         >
           <div className="flex items-center justify-between text-[11px] text-muted-foreground font-sans">
-            <span className="flex items-center gap-1 text-cyan-600 dark:text-cyan-400 font-medium">
-              <ClockIcon className="size-3.5 text-cyan-500" />
+            <span className="flex items-center gap-1 text-foreground font-medium">
+              <ClockIcon className="size-3.5 text-muted-foreground" />
               4. 最热演进技能
             </span>
             {lessonsCount !== null && lessonsCount > 0 && (
-              <Badge variant="outline" className="text-[9px] font-mono border-cyan-500/40 text-cyan-500 px-1 py-0 bg-cyan-500/10">
+              <Badge variant="outline" className="text-[9px] font-mono border-cyan-500/40 text-cyan-500 bg-cyan-500/10 px-1 py-0">
                 {lessonsCount} 条 Lesson
               </Badge>
             )}
@@ -789,21 +789,21 @@ function SkillsRoute() {
           <div className="my-1.5">
             {mostEvolvedSkill ? (
               <>
-                <div className="font-mono text-xs font-bold text-cyan-600 dark:text-cyan-400 truncate" title={mostEvolvedSkill}>
+                <div className="font-mono text-xs font-bold text-foreground truncate" title={mostEvolvedSkill}>
                   {mostEvolvedSkill}
                 </div>
-                <p className="text-[11px] text-cyan-500/90 font-sans mt-0.5 font-medium flex items-center justify-between">
+                <p className="text-[11px] text-muted-foreground font-sans mt-0.5 font-medium flex items-center justify-between">
                   <span>已注入 {lessonsCount ?? 1} 项用户纠偏规约</span>
-                  <span className="text-[10px] text-cyan-400 group-hover:translate-x-0.5 transition-transform">全景专页 ➔</span>
+                  <span className="text-[10px] text-foreground group-hover:translate-x-0.5 transition-transform">全景专页 ➔</span>
                 </p>
               </>
             ) : (
               <p className="text-xs text-muted-foreground font-mono">-- (暂无数据)</p>
             )}
           </div>
-          <p className="mt-auto text-[10px] font-mono text-muted-foreground border-t border-cyan-500/20 pt-1.5 flex justify-between items-center">
+          <p className="mt-auto text-[10px] font-mono text-muted-foreground border-t border-border/40 pt-1.5 flex justify-between items-center">
             <span>白盒透视全量 Lesson 履历专页</span>
-            <ChevronRightIcon className="size-3 text-cyan-500 group-hover:translate-x-0.5 transition-transform" />
+            <ChevronRightIcon className="size-3 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
           </p>
         </Link>
       </div>
