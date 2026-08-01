@@ -578,20 +578,12 @@ function SkillsRoute() {
           <p className="max-w-3xl text-xs text-muted-foreground font-mono">
             {t('description')}
           </p>
-
         </div>
-      </header>
-
-
-      {/* 🕒 24H Rolling KPI 区标题行 */}
-      <div className="flex items-center justify-between text-xs text-muted-foreground font-mono px-0.5">
-        <span className="flex items-center gap-1.5 text-foreground font-medium">
-          📅 技能中心
-        </span>
-        <Badge variant="outline" className="text-[10px] font-mono border-border bg-muted/30 text-foreground px-1.5 py-0.5">
+        <Badge variant="outline" className="text-[10px] font-mono border-border bg-muted/30 text-foreground px-1.5 py-0.5 self-start">
           🕒 统计范围: 最近 24 小时 (24H Rolling)
         </Badge>
-      </div>
+      </header>
+
 
       {/* ⚡ Skill Value KPI 观察行 (100% 24H 真实后端算子驱动，零 Mock 假数字) */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
