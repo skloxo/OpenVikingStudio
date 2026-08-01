@@ -68,16 +68,18 @@ description: Use when developing, refactoring, or iterating OpenVikingStudio (VK
 
 ---
 
-## 四、闭环构建与交付 SOP (Deployment & Verification)
+## 四、4-Step 标准开发与交付 SOP 铁律 (Standard 4-Step Lifecycle SOP)
 
-1. **构建与部署同步命令**：
-   ```bash
-   npm run build && cp -r dist/* /home/skloxo/.local/lib/python3.12/site-packages/openviking/web_studio/dist/
-   ```
-2. **版本留痕与 Release 变更明细铁律 (Mandatory Detailed Changelog for Release Tracing)**：
-   - **禁止简短打 Tag**：每次小版本开发完成打 Tag 时，**必须包含详细的变更明细 (Changelog)**，防止发大 Release 时断层。
-   - **Git Tag 命令格式**：
-     ```bash
+1. **Phase 1: 开发与初步测试 (Dev & Pre-testing)**
+   - 开发与调试统一在 1936 端口 (`npm run dev`) 热更新进行，初步测试由 Agent 自行跑通。
+2. **Phase 2: 提交终验 + 交付测试用例 (Submit for Acceptance with Test Cases)**
+   - 初步测试通过后，向用户提交终验请求，**必须同步附带具体点对点的测试用例 (Test Cases)**，方便用户对照验证。
+3. **Phase 3: 终验通过 ➔ 提交 Git & 打 Tag (Acceptance Pass ➔ Push & Tag)**
+   - 只有用户显式确认“终验通过”后，方可开启下一个功能。
+   - 终验通过后立即向远程 Git 仓库推送代码，并打 Tag（带详细 Changelog 变更明细）。
+4. **Phase 4: 1933 正式环境更新 (Production Update on Explicit Command Only)**
+   - **终验通过 ≠ 自动发布 1933**。
+   - **只有当用户明确输入指令“发布到 1933”时**，方可执行打包构建 `npm run build && cp -r dist/* ...` 推送到 1933 正式环境。
      git tag -a v1.1.x <hash> -m "release: v1.1.x
      
      - 🚀 [Feature]: <具体新增功能明细>
