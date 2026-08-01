@@ -6,8 +6,13 @@ node_modules
 dist
 dist.bak
 
-# Technical Documentation (Do NOT push to Git per project requirement)
+# Technical & Internal Agent Dev Documentation (Keep local only, do NOT push to remote)
 ARCHITECTURE.md
+REFACTORING_PLAN.md
+ROADMAP.md
+DELIVERY_ARCHIVE.md
+release_notes_*.md
+.agents/
 
 # Environment & Logs
 .env
