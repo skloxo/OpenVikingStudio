@@ -574,9 +574,6 @@ function SkillsRoute() {
         <div className="grid gap-1">
           <h1 className="text-xl font-semibold tracking-tight flex items-center gap-2">
             🧠 技能中心
-            <Badge variant="outline" className="font-mono text-xs rounded-xs border-border bg-muted/40 text-foreground">
-              已装载 {skills.length} 个标准技能
-            </Badge>
           </h1>
           <p className="max-w-3xl text-xs text-muted-foreground font-mono">
             {t('description')}
