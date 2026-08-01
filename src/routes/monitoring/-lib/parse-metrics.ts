@@ -14,7 +14,7 @@ export function parseObserverMetrics(
     httpSuccessRate: typeof auditData?.success_rate === 'number' ? auditData.success_rate * 100 : null,
     vectorCount: null,
     vectorHitRate: null,
-    gpuVramUsage: { usedGb: 11.6, totalGb: 22.5, gpuPercent: 5 },
+    gpuVramUsage: null,
     top1Accuracy: null,
     avgCosineScore: null,
     embeddingLatencyMs: null,
@@ -24,7 +24,7 @@ export function parseObserverMetrics(
     queueStats: null,
     fsStats: null,
     tokenStats: dashboardSummary?.today_tokens
-      ? { today: dashboardSummary.today_tokens.total ?? 0, total: (dashboardSummary.today_tokens.total ?? 0) * 14 }
+      ? { today: dashboardSummary.today_tokens.total ?? 0, total: dashboardSummary.today_tokens.total ?? 0 }
       : null,
     memorySlimmingRate: null,
     vectorizationRate: null,
