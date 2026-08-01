@@ -2,13 +2,18 @@ import * as React from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import {
+  ActivityIcon,
   ChevronRightIcon,
+  ClockIcon,
+  CpuIcon,
   FileCode2Icon,
   LoaderCircleIcon,
   RefreshCwIcon,
   SparklesIcon,
+  TrendingUpIcon,
   UserRoundIcon,
   UsersRoundIcon,
+  ZapIcon,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
@@ -416,6 +421,8 @@ function SkillsRoute() {
   const [isReindexing, setIsReindexing] = React.useState(false)
   const [reindexStatusMsg, setReindexStatusMsg] = React.useState('')
 
+  const [activeScopeFilter, setActiveScopeFilter] = React.useState<'all' | 'agent' | 'user'>('all')
+
   const skillsQuery = useQuery({
     queryFn: fetchSkills,
     queryKey: ['skills', identityScopeKey],
@@ -423,14 +430,15 @@ function SkillsRoute() {
   })
   const skills = skillsQuery.data ?? []
 
-  // 客户端毫秒级检索过滤
+  // 客户端毫秒级检索与 Scope 筛选过滤
   const filteredSkills = React.useMemo(() => {
-    if (!searchQuery.trim()) return skills
-    const q = searchQuery.toLowerCase()
-    return skills.filter(
-      (s) => s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q)
-    )
-  }, [skills, searchQuery])
+    return skills.filter((s) => {
+      if (activeScopeFilter !== 'all' && s.scope !== activeScopeFilter) return false
+      if (!searchQuery.trim()) return true
+      const q = searchQuery.toLowerCase()
+      return s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q)
+    })
+  }, [skills, searchQuery, activeScopeFilter])
 
   // 移除盲目 3s 轮询，采用 0 开销事件监听：仅在必要时感知后端探针事件
   const handleTriggerReindex = async () => {
@@ -472,8 +480,8 @@ function SkillsRoute() {
         <div className="grid gap-1">
           <h1 className="text-xl font-semibold tracking-tight flex items-center gap-2">
             🧠 {t('title')}
-            <Badge variant="outline" className="font-mono text-xs rounded-xs">
-              {filteredSkills.length} Total
+            <Badge variant="outline" className="font-mono text-xs rounded-xs border-cyan-500/40 bg-cyan-500/10 text-cyan-500">
+              {filteredSkills.length} / {skills.length} Total
             </Badge>
           </h1>
           <p className="max-w-3xl text-xs text-muted-foreground">
@@ -540,6 +548,127 @@ function SkillsRoute() {
           </Button>
         </div>
       </header>
+
+      {/* ⚡ Atomic Micro-Task v1.1.23b: Harness 自进化与可观测性卡片组 */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="flex flex-col justify-between rounded border border-border/60 bg-muted/20 p-2.5">
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground font-sans">
+            <span className="flex items-center gap-1">
+              <ZapIcon className="size-3 text-cyan-500" />
+              Harness 网关
+            </span>
+            <Badge variant="outline" className="text-[9px] font-mono border-cyan-500/40 text-cyan-500 px-1 py-0">
+              在线
+            </Badge>
+          </div>
+          <p className="mt-1 font-mono text-sm font-semibold text-foreground">
+            FastMCP (1933)
+          </p>
+          <p className="mt-[auto] text-[10px] font-mono text-muted-foreground">
+            原生零脚本打标网关
+          </p>
+        </div>
+
+        <div className="flex flex-col justify-between rounded border border-border/60 bg-muted/20 p-2.5">
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground font-sans">
+            <span className="flex items-center gap-1">
+              <TrendingUpIcon className="size-3 text-cyan-500" />
+              避坑 Lesson 库
+            </span>
+            <Badge variant="outline" className="text-[9px] font-mono border-cyan-500/40 text-cyan-500 px-1 py-0">
+              L0 高密
+            </Badge>
+          </div>
+          <p className="mt-1 font-mono text-sm font-semibold text-foreground">
+            {skills.length} 技能常驻
+          </p>
+          <p className="mt-[auto] text-[10px] font-mono text-muted-foreground">
+            自动萃取 CONTEXT/LESSON
+          </p>
+        </div>
+
+        <div className="flex flex-col justify-between rounded border border-border/60 bg-muted/20 p-2.5">
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground font-sans">
+            <span className="flex items-center gap-1">
+              <CpuIcon className="size-3 text-cyan-500" />
+              多 Agent 覆盖
+            </span>
+            <Badge variant="outline" className="text-[9px] font-mono border-cyan-500/40 text-cyan-500 px-1 py-0">
+              全组共享
+            </Badge>
+          </div>
+          <p className="mt-1 font-mono text-sm font-semibold text-foreground">
+            Antigravity / OpenClaw / Hermes
+          </p>
+          <p className="mt-[auto] text-[10px] font-mono text-muted-foreground">
+            跨节点秒级避坑继承
+          </p>
+        </div>
+
+        <div className="flex flex-col justify-between rounded border border-border/60 bg-muted/20 p-2.5">
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground font-sans">
+            <span className="flex items-center gap-1">
+              <ClockIcon className="size-3 text-cyan-500" />
+              版本追踪
+            </span>
+            <Badge variant="outline" className="text-[9px] font-mono border-cyan-500/40 text-cyan-500 px-1 py-0">
+              v1.0.0
+            </Badge>
+          </div>
+          <p className="mt-1 font-mono text-sm font-semibold text-foreground">
+            Git Tag + REFACTORING_PLAN
+          </p>
+          <p className="mt-[auto] text-[10px] font-mono text-muted-foreground">
+            100% 物理留痕与回退
+          </p>
+        </div>
+      </div>
+
+      {/* 4px 微圆角 Scope 分类与状态筛选标签栏 */}
+      <div className="flex items-center justify-between gap-2 rounded border border-border/60 bg-muted/20 p-1 font-mono text-xs">
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setActiveScopeFilter('all')}
+            className={cn(
+              'rounded-xs px-2.5 py-1 text-center font-medium transition-colors',
+              activeScopeFilter === 'all'
+                ? 'bg-background text-cyan-500 shadow-xs border border-border/60'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            全部技能 ({skills.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveScopeFilter('agent')}
+            className={cn(
+              'rounded-xs px-2.5 py-1 text-center font-medium transition-colors',
+              activeScopeFilter === 'agent'
+                ? 'bg-background text-cyan-500 shadow-xs border border-border/60'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            🤖 Agent 专用 ({skills.filter((s) => s.scope === 'agent').length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveScopeFilter('user')}
+            className={cn(
+              'rounded-xs px-2.5 py-1 text-center font-medium transition-colors',
+              activeScopeFilter === 'user'
+                ? 'bg-background text-indigo-500 shadow-xs border border-border/60'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            👤 User 偏好 ({skills.filter((s) => s.scope === 'user').length})
+          </button>
+        </div>
+
+        <span className="text-[11px] text-muted-foreground font-mono pr-2">
+          Harness 自动演进规则已加载
+        </span>
+      </div>
 
       {skillsQuery.isLoading ? (
         <Card className="min-h-56 items-center justify-center">
