@@ -171,6 +171,14 @@ description: Use when developing, refactoring, or iterating OpenVikingStudio (VK
   2. **标准 4px 圆角**：卡片统一使用 `rounded` (4px 微圆角)，切除死板大圆角 `rounded-xl`；
   3. **100% 全盘物理一致**：确保原生 `<Card>` 与 `<Link>`（如 Card 4）的边框粗细与视觉效果 100% 毫无二致。
 
+#### 📌 Lesson 2026-08-01 #21：信达雅视角下 KPI 卡片第一性原理指标与优雅切除序号守则
+- **CONTEXT**：卡片标题加上死板的 `1.` `2.` `3.` `4.` 序号显得嘈杂且缺乏“信达雅”优雅感；Card 3 拼接字符串导致拥挤溢出；Card 4 描述“100%防线正常”过于抽象。
+- **REFLECTION**：遵循第一性原理（First Principles），指标必须直击物理真理：Harness 的本质是“自纠偏与安全护航”，其核心在于 Reflexion Lesson 规约数与硬阻断；Card 3 采用归一化大字，拒绝长文本拼接。
+- **LESSON**：信达雅 KPI 卡片 3 大铁律：
+  1. **切除死板序号**：彻底切除标题中的 `1.` `2.` `3.` `4.` 机械数字，只保留雅致自解释标题；
+  2. **Card 3 归一化大字**：呈现 `100% (4 大智体全共享)`，避免长文本字符串拼接导致拥挤溢出；
+  3. **Card 4 第一性原理指标**：以物理真实的 **`14 项`** `Reflexion 规约` 作为主指标，附带 `0 越权硬拦截 · 100% 护航闭环`。
+
 ---
 
 ## 一、全盘文档三层治理体系与模块导航网 (3-Tier Document Hierarchy & Map)
