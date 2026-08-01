@@ -163,6 +163,14 @@ description: Use when developing, refactoring, or iterating OpenVikingStudio (VK
   2. **信息紧凑**：使用 `font-mono text-lg font-bold tabular-nums` 并排展示大数字与单行微缩描述（`text-[11px]`）；
   3. **释放空间**：大幅降低顶部观察行占用的物理高度，把最大高度留给下方的技能列表与 SOP 抽屉。
 
+#### 📌 Lesson 2026-08-01 #20：全盘卡片边框 1px 细线与 4px 圆角统一规约 (切除双重边框)
+- **CONTEXT**：以前 shadcn `Card` 组件内置了 `ring-1 ring-foreground/10`，当子组件或自定义卡片额外叠加 `border border-border/60` 时，会导致 Card 1-3 出现“双重重叠边框（边框偏粗、比普通 Link 卡片厚一倍）”的缺陷。
+- **REFLECTION**：所有卡片必须建立严格一致的 1px 物理细线与圆角规范，彻底解决物理边框粗细不一问题。
+- **LESSON**：全盘卡片边框与圆角 3 大统一铁律：
+  1. **标准 1px 细线**：统一在 `card.tsx` 根定义中使用 `border border-border/60`，彻底切除 `ring-1` 重叠边框；
+  2. **标准 4px 圆角**：卡片统一使用 `rounded` (4px 微圆角)，切除死板大圆角 `rounded-xl`；
+  3. **100% 全盘物理一致**：确保原生 `<Card>` 与 `<Link>`（如 Card 4）的边框粗细与视觉效果 100% 毫无二致。
+
 ---
 
 ## 一、全盘文档三层治理体系与模块导航网 (3-Tier Document Hierarchy & Map)
