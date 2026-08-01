@@ -163,8 +163,17 @@
 #### ⏳ v1.1.23: 首页 /home 6 大卡片信达雅视觉精修
 - **目标**: 审查首页 6 大数据卡片布局、颜色、字体、圆角是否 100% 合规
 
-#### ⏳ v1.1.24: 资源库 /resources 历史版本追踪与一键回滚
-- **目标**: 查看资源历史版本，发起回滚
+#### ⏳ v1.1.24: 资源库 /resources 历史版本追踪与一键回滚 (Resource Version History & Rollback)
+- **来源**: 对应 OpenViking Dashboard (`/dashboard/resources`) 经典功能对齐
+- **目标**:
+  1. **资源头部控制**: 资源预览区右上角增加「查看历史版本」主按钮（位于文件 URI 描述旁）。
+  2. **历史版本时间轴弹窗 (History Versions Dialog/Modal)**:
+     - 弹窗呈现目标 URI（如 `viking://resources/.../.abstract.md`）的 Commit 历史版本链。
+     - 时间轴卡片包含：修改摘要 ("更新了产品文档"/"修复错别字")、时间戳 ("2023-10-27 14:30")、操作人 ("by admin")。
+  3. **历史内容预览 (View Content)**:
+     - 弹窗卡片提供「查看文件内容」按钮，支持查看该历史版本文本与 Diff 差异对比。
+  4. **一键恢复/回滚 (One-Click Rollback)**:
+     - 卡片右侧提供「回滚至此版本」动作按钮，触发二次确认后发起版本恢复并更新向量与图谱索引。
 
 #### ⏳ v1.1.25: 检索测试台 /retrieval 命中关键字精确高亮
 - **目标**: Score 滑块实时过滤，命中关键字高亮精准
@@ -217,6 +226,34 @@
   3. **任务中心 /tasks — 概念引导与空状态预警**:
      - 显式文案说明："任务中心用于呈现离线重索引与长时批处理 Task"。
      - 列表为空时提供友好空状态提示（"当前离线批处理队列空闲，所有 1933 实时 API 正常运行中"），防止误判挂掉。
+
+#### ⏳ v1.1.33: WebDAV 云网盘挂载中心与图形化连接配置 (WebDAV Cloud Drive Management)
+- **目标**: 
+  1. 提供 WebDAV 挂载向导（支持 Linux davfs2 / Windows 映射网盘 / macOS Cyberduck 提示）
+  2. 提供 WebDAV 账户/Token 独立管理与鉴权校验
+  3. 提供在线 WebDAV 文件目录流预览
+
+#### ⏳ v1.1.34: 向量库全量/增量备份与一键在线灾备恢复 (Backup & Restore)
+- **目标**:
+  1. 支持手动/定时创建 `~/.openviking/data` 数据快照
+  2. 提供快照历史列表、占用体积展示与 ZIP 导出
+  3. 支持选择历史快照发起一键在线恢复
+
+#### ⏳ v1.1.35: 关系图谱 /graph 可视化手动连线与断开编辑器 (Graph Relation Editor)
+- **目标**:
+  1. 图谱画布支持“连线模式”：鼠标拖拽 Node A -> Node B 弹窗创建关系 (`openviking_link`)
+  2. 点击边线（Edge）支持查看关系属性与一键断开 (`openviking_unlink`)
+  3. 集成 `openviking_get_relations` 关系全路径透视
+
+#### ⏳ v1.1.36: 资源库 /resources 隐私标记 (Privacy Tags) 与 PII 脱敏开关
+- **目标**:
+  1. 支持为资源/记忆设置隐私等级（Public / Private / Confidential）
+  2. 检索测试台与会话中心集成隐私擦除与脱敏展示开关
+
+#### ⏳ v1.1.37: 设置页 /settings 系统一致性校验 (Consistency Check) 与孤立节点修复
+- **目标**:
+  1. 调用 `openviking_consistency` 检查 SQLite 元数据与向量索引对齐状态
+  2. 提供“一键修复孤立节点” (Orphan Node Repair) 运维按钮
 
 ---
 
