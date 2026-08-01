@@ -9,6 +9,20 @@
 
 ## 📅 当前正在调度的核心迭代 (Active Scheduled Tasks)
 
+### ✅ v1.1.25 [已验收通过 ✅] 技能中心 6 卡片 3x2 KPI 观察阵列 + 布局精简 + 0 Mock 数据强约束
+
+- **Git Tag**: `v1.1.25` (commit `f8c3017`)
+- **交付内容**：
+  - 扩张技能中心 KPI 区为 **6 大高价值 KPI 卡片 (3x2 矩形阵列)**
+  - 新增 **`技能资产活跃复用率`** (显示活跃技能数/总技能数，解决僵尸技能盲区)
+  - 新增 **`Context 提示词压缩率`** (显示结构化 SOP 节省 Context 比例，衡量 Token 降本)
+  - 切除 header 冗余分割横线 `border-b`，使用 `items-end` 使 `3小时 Rolling` Badge 与副标题对齐
+  - 移除了 `补全简介` 按钮与 `已装载 N 个技能` 重复 Badge，将搜索框右对齐嵌入 Scope 筛选栏
+  - 彻底清洗硬编码 `98.6%` 和假满分 `100.0%` fallback，无记录时统一物理直白显示 `--`
+- **修改文件**：`vite.config.ts` · `src/routes/skills/route.tsx` · `REFACTORING_PLAN.md`
+
+---
+
 ### ✅ v1.1.24 [已验收通过 ✅] 技能中心 KPI 24H 滚动窗口 + 零 Mock 清洗 + 语义 Badge + 崩溃修复
 
 - **Git Tag**: `v1.1.24` (commit `255ca50`)
