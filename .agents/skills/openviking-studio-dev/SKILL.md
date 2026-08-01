@@ -62,9 +62,17 @@ description: Use when developing, refactoring, or iterating OpenVikingStudio (VK
    ```bash
    npm run build && cp -r dist/* /home/skloxo/.local/lib/python3.12/site-packages/openviking/web_studio/dist/
    ```
-2. **版本留痕铁律**：
-   - 完成迭代后打 Git Tag：`git tag -a v1.1.x <hash> -m "release: v1.1.x <摘要>"`
-   - 将交付记录追加至 `DELIVERY_ARCHIVE.md`，并同步更新 `REFACTORING_PLAN.md`。
+2. **版本留痕与 Release 变更明细铁律 (Mandatory Detailed Changelog for Release Tracing)**：
+   - **禁止简短打 Tag**：每次小版本开发完成打 Tag 时，**必须包含详细的变更明细 (Changelog)**，防止发大 Release 时断层。
+   - **Git Tag 命令格式**：
+     ```bash
+     git tag -a v1.1.x <hash> -m "release: v1.1.x
+     
+     - 🚀 [Feature]: <具体新增功能明细>
+     - 🐛 [Fix]: <具体修复问题明细>
+     - 📝 [Docs]: <文档与卡片变更明细>"
+     ```
+   - **`DELIVERY_ARCHIVE.md` 物理对齐**：必须在 `DELIVERY_ARCHIVE.md` 中同步追加该小版本的详细 Change Summary、Git Commit Hash 与修改文件清单。
 
 ---
 
