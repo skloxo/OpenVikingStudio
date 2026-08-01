@@ -160,14 +160,18 @@
 > - 平台级指标（HTTP/GPU/延迟/SLA）→ 保留首页监控页
 > - 远期：首页监控页逐步收敛精简
 
-#### ⏳ v1.1.23: 技能中心 /skills 全维度可观测面板与调用轨迹追踪 (Skill Observability & Analytics Dashboard)
-- **来源**: 技能中心短板强化 & 用户指引（"能观测到调用的情况是怎么样的"）
-- **优先级**: 🔥 紧急提升至当前首优先迭代（优先落地 Harness 自进化）
+#### ⏳ v1.1.23: 零脚本白盒化 Harness 避坑网关与三维可观测面板 (Whitebox Harness Gateway & Observability Dashboard)
+- **来源**: 2026-08-01 用户确定最高优先级方向（"优先级往前提一点，先搞清楚项目再动手"）
+- **优先级**: 🚨 **🔥 最高优先级（当前首要开发迭代）**
 - **架构规范**: 参见 [HARNESS_EVOLUTION_ARCHITECTURE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/HARNESS_EVOLUTION_ARCHITECTURE.md)
-- **目标**:
-  1. 展示 85 个技能各自的：激活总次数、触发频率、最近调取时间、调用 Agent 来源 (Antigravity/OpenClaw/Hermes)、成功/失败率
-  2. 技能调用轨迹下钻：点击具体技能卡片，查看历史调用的日志片段、输入 Context 与输出 Payload
-  3. 提供热度榜单与冷门技能排行榜
+- **物理实施标准 (100% 正式源码，零脚本)**:
+  1. **零外挂脚本**: 100% 修改 `mcp_openviking_server.py` 与 OpenViking 1933 后端 API 正式源码，绝对不写后台死循环 `.py` 脚本。
+  2. **零 Agent 侵入**: 对 OpenClaw、Hermes、Antigravity、MimoCode 保持 0 代码改动，纯依靠 MCP 协议网关与 OpenViking 后端触发。
+  3. **字节 OpenViking L0/L1 范式**: 采用高密度 L0 避坑 Lesson 萃取与加载，接近 0 Token 消耗获得复利避坑收益。
+- **三大前端白盒可观测面板 (OpenViking Studio)**:
+  1. **/retrieval 检索轨迹白盒树 (Retrieval Trajectories)**: 可视化展现 Agent 任务触发时，命中的 Viking L0/L1 避坑节点与余弦匹配度。
+  2. **/skills 技能进化历史链 (Skill Evolution Trace)**: 展示 85 个技能的版本演进（v1.0 ➔ v1.1）、积累的避坑 Lesson 列表、激活次数与成功率。
+  3. **/monitoring Token 节省与 SLA 折线 (Analytics Dashboard)**: 展示 Harness 加载 L0 Lesson 前后的 API 耗时、Token 节省率与一次性成功率。
 
 #### ⏳ v1.1.24: 基于 Reflexion / Voyager 范式的 Skill-Loop 闭环自进化引擎 (Grounded Critique & Self-Refine Loop)
 - **来源**: 业界最新 Agent 自进化框架 (Reflexion, Voyager, Self-Evolving-Skill)
