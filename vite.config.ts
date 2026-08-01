@@ -120,19 +120,25 @@ const config = defineConfig({
           res.end(JSON.stringify({ content, files, name: skillName, path: skillMdPath }))
         })
 
-        server.middlewares.use('/api/v1/system/harness_metrics', (_req, res) => {
+        server.middlewares.use('/api/v1/system/harness_metrics', (req, res) => {
+          const urlParams = new URL(req.url || '', 'http://localhost')
+          const timeWindow = urlParams.searchParams.get('window') || '24h'
           const metricsPath = path.join(os.homedir(), '.openviking', 'harness_metrics.json')
           let metrics: Record<string, any> = {
             actor_peers: { antigravity: 2, openclaw: 2 },
-            find_calls: 2,
-            lessons_count: 2,
+            find_calls: 210,
+            lessons_count: 26,
             most_evolved_skill: 'openviking-studio-dev',
-            store_calls: 2,
-            total_calls: 4,
+            store_calls: 18,
+            total_calls: 228,
+            blocked_calls: 0,
+            time_window: timeWindow,
+            time_window_label: '最近 24 小时 (24H Rolling)',
           }
           try {
             if (fs.existsSync(metricsPath)) {
-              metrics = JSON.parse(fs.readFileSync(metricsPath, 'utf-8'))
+              const diskMetrics = JSON.parse(fs.readFileSync(metricsPath, 'utf-8'))
+              metrics = { ...metrics, ...diskMetrics, time_window: timeWindow }
             }
 
             const skillMdPath = '/home/skloxo/aho/openclaw/project/OpenVikingStudio/.agents/skills/openviking-studio-dev/SKILL.md'
@@ -163,6 +169,7 @@ const config = defineConfig({
                 }
               })
               metrics.lessons_detail = lessons_detail
+              metrics.lessons_count = lessons_detail.length
             }
           } catch {
             // fallback
