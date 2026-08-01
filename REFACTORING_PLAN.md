@@ -7,112 +7,51 @@
 
 ---
 
-## 📅 当前迭代原子工单看板 (Scheduled Atomic Tasks)
+## 📅 当前正在调度的核心迭代 (Active Scheduled Tasks)
 
-### 📌 P1-1: [ ] v1.1.23c：检索测试台 `/retrieval` 页 L0/L1 白盒检索轨迹树与得分渲染
+### 📌 P0: [ ] v1.1.23c：技能中心双门锁合规探针、待规范白盒曝光与一键规范化上架流程
 
 **类型**：Feature  
-**优先级**：P1  
-**来源**：用户指导 ("去进行终验... 23c 23d 继续开发")  
+**优先级**：P0 (用户明确指令：提前并集中在当前技能中心迭代中完成)  
+**来源**：用户指导 ("关于技能中心进行迭代，往前提一提... 既能显示出合规的又能显示出不合规的... 一键规范化并上架")  
 **负责人**：Agent (Antigravity)  
 **预计规模**：S (1 个迭代)
 
 #### 1. 问题描述
-当前 `/retrieval` 检索测试台仅能展示检索匹配到的最终文档列表，无法直观查验 Viking 1933 在匹配过程中到底是命中 L0 意图抽象层还是 L1 SOP 规约层，且缺少相似度得分（如 `0.985`）与 Trace 节点树结构。
+当前技能中心页面仅展示部分从后端口径读取到的已加载技能（黑盒），缺少对本地所有探针扫描到的“不合规技能（如缺失 `SKILL.md` 或缺 YAML Header）”的白盒曝光，且缺少一键补全规范要件并向 OpenViking 向量库上架的功能。
 
 #### 2. 目标
-在 `/retrieval` 页面为每次检索结果渲染可折叠的 **L0/L1 白盒检索轨迹树**，可视化展示 Viking 向量匹配路径与相似度分值。
+1. **白盒双 Tab 渲染**：在 `/skills` 页面增加 `已就绪标准技能 (146)` 与 `⚠️ 待规范技能 (12)` 双分栏。
+2. **缺件物理诊断**：透明列出待规范技能的名称、绝对路径、及具体缺件原因（如 `❌ 缺失 SKILL.md 文件`）。
+3. **一键规范化上架**：提供 `⚡ 一键规范化上架` 交互按钮，自动补充合规 YAML Header 范本并生成 `SKILL.md`，自动建软链接并触发 1933 向量化索引上架！
 
-#### 3. 非目标
-- 本卡片不修改后端向量检索逻辑或 SQLite 底层存储。
-- 本卡片不改动 `/skills` 或 `/monitoring` 页面。
-
-#### 4. 数据与接口契约 (Data Contract)
-- **API 接口**：`POST /api/v1/search/find` 或 `GET /api/v1/system/status`
+#### 3. 数据与接口契约 (Data Contract)
+- **API 接口**：`GET /api/v1/skills` 及网关本地探针 `_auto_sync_skills()`
 - **关键字段**：
-  - `uri`: string (匹配到的资源/技能 URI)
-  - `score`: number (相似度分值，保留 3 位小数，如 `0.985`)
-  - `level`: `'L0' | 'L1' | 'L2'` (命中层级)
-  - `trace_node`: `{ id: string, label: string, children?: trace_node[] }`
-- **异常处理**：若后端未返回 `trace_node`，优雅收缩轨迹树并标注 `单节点直连`。
+  - `name`: string (技能或目录名称)
+  - `status`: `'compliant' | 'non_compliant'`
+  - `missing_reason`: string (诊断原因，如 `'missing_skill_md' | 'missing_header'`)
+  - `path`: string (本地绝对路径)
 
-#### 5. 实施边界 (Domain Scope)
-- 仅影响 `Retrieval` 页面功能域。
-- 允许在 `src/routes/retrieval/` 目录下新增子组件、Hook 或类型定义文件（如 `src/routes/retrieval/components/TrajectoryTree.tsx`）。
+#### 4. 实施边界 (Domain Scope)
+- 仅修改 `src/routes/skills/route.tsx` 及 `mcp-openviking/mcp_openviking_server.py`。
 
-#### 6. 量化验收标准
-- [ ] **功能验收**：检索响应后，列表项右侧展现 `Level (L0/L1)` 极客徽章与相似度分值 Tag（如 `Score: 0.985`）。
-- [ ] **树状交互**：展开轨迹树节点可层层查看 URI 继承关系。
-- [ ] **空/异常状态**：查无结果或接口异常时，正确显示 `--` 哑光灰色提示，不发生崩溃。
-- [ ] **视觉规范**：遵循 NO GREEN EVER 规则，高亮使用 `cyan-500` 冰青与 dark glassmorphism 风格。
+#### 5. 量化验收标准
+- [ ] **物理诊断曝光**：技能页清晰展示 `已就绪 (146)` 与 `待规范 (12)` 统计，切换 Tab 能全量透视不合规技能清单与具体缺件原因。
+- [ ] **一键规范化上架**：在 UI 点击“⚡ 规范化上架”，自动生成合规 `SKILL.md`，技能状态实时迁移至 `已就绪` 栏。
+- [ ] **视觉规范**：遵循 NO GREEN EVER 规则，警告使用 `rose-500/80`，推荐按钮使用 `cyan-500`。
 - [ ] **构建验证**：`npm run build` 无 TypeScript / Vite 编译报错。
 
-#### 7. 验证命令
+#### 6. 验证命令
 ```bash
 npm run build && cp -r dist/* /home/skloxo/.local/lib/python3.12/site-packages/openviking/web_studio/dist/
 ```
 
 ---
 
-### 📌 P1-2: [ ] v1.1.23d：监控页 `/monitoring` Token 节省率与 SLA 时延对比折线图
-
-**类型**：Feature  
-**优先级**：P1  
-**来源**：Harness 观测降本增效指标诉求  
-**负责人**：Agent (Antigravity)  
-**预计规模**：S (1 个迭代)
-
-#### 1. 问题描述
-当前 `/monitoring` 页缺少将“开启 Harness 避坑拦截”与“传统全量代码塞入”两种模式下的 Token 消耗与 SLA 响应时延进行对比展示的动态图表。
-
-#### 2. 目标
-在 `/monitoring` 页新增双折线对比图，动态渲染有无 L0/L1 避坑拦截机制下的 Token 节省率及 P95 响应时延变化趋势。
-
-#### 3. 数据与接口契约 (Data Contract)
-- **API 接口**：`GET /api/v1/system/status`
-- **关键字段**：
-  - `timestamp_series`: string[]
-  - `token_saved_rate`: number (如 `82.4`)
-  - `latency_p95_ms`: number
-- **异常处理**：数据缺失时折线图平滑过渡，无数据点处显示虚线。
-
-#### 4. 实施边界 (Domain Scope)
-- 仅影响 `Monitoring` 页面功能域 (`src/routes/monitoring/*`)。
-
-#### 5. 量化验收标准
-- [ ] **图表渲染**：在 Monitoring 页面成功绘制对比折线图。
-- [ ] **视觉体验**：符合 `cyan-500` 冰青主题与响应式自适应宽度。
-- [ ] **构建验证**：`npm run build` 成功。
-
----
-
 ## 📋 待调度后续原子工单 (Backlog Queue)
 
-### 📌 P0-1: [ ] v1.1.33b：技能中心待规范技能探针与人机协同标准化上架流程
-
-**类型**：Feature  
-**优先级**：P0  
-**来源**：用户指导 ("当发现有些技能不符合规范的时候，显示出来让用户选择要不要实施某种流程，让这个技能规范起来并加入到技能中心")  
-**负责人**：Agent (Antigravity)  
-**预计规模**：S (1 个迭代)
-
-#### 1. 问题描述
-当前技能中心为纯只读展示页面。当探针扫描到本地存在缺失 `SKILL.md` 或缺 YAML Header 的非标准技能目录时，用户无法在 UI 上察觉，且缺少一键触发人机协同“标准化规范补全”并上架到技能中心的功能。
-
-#### 2. 目标
-在 `/skills` 技能中心新增 **`⚠️ 待规范技能` 分栏与审计清单**，并提供 **`⚡ 一键规范化上架` 流程**，由 AI 自动根据目录结构推导标准的 YAML Header (`name`, `description`) 框架，提交用户确认后一键补全 `SKILL.md` 并向量化上架至 OpenViking。
-
-#### 3. 实施边界 (Domain Scope)
-- 仅影响 `Skills` 页面功能域 (`src/routes/skills/*`) 与 MCP 网关探针。
-
-#### 4. 量化验收标准
-- [ ] **物理探针**：可清晰列出本地缺失 `SKILL.md` 的待规范技能文件夹清单及缺件诊断。
-- [ ] **交互流程**：提供“预览规范”与“一键生成并上架”按钮，完成补全后技能计数动态 +1。
-- [ ] **构建验证**：`npm run build` 成功。
-
----
-
-### 📌 P0-2: [ ] v1.1.36a：核心服务心跳采集与健康探针模型
-### 📌 P0-3: [ ] v1.1.36b：首页健康状态徽章与 CLI 降级告警
-### 📌 P1: [ ] v1.1.35：图谱节点性能 Spike 探查与 LOD 优化
-### 📌 P2: [ ] v1.1.34：任务时间范围过滤能力
+### 📌 P1-1: [ ] v1.1.23d：检索测试台 `/retrieval` 页 L0/L1 白盒检索轨迹树与得分渲染
+### 📌 P1-2: [ ] v1.1.23e：监控页 `/monitoring` Token 节省率与 SLA 时延对比折线图
+### 📌 P2-1: [ ] v1.1.24a：核心服务心跳采集与健康探针模型
+### 📌 P2-2: [ ] v1.1.24b：首页健康状态徽章与 CLI 降级告警
