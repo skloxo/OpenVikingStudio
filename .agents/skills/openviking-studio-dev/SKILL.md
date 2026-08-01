@@ -60,6 +60,13 @@ description: Use when developing, refactoring, or iterating OpenVikingStudio (VK
   4. **AgentOps Telemetry** ➔ 物理阻断与 Peer 分布遥测；
   5. **E2B & SWE-Agent** ➔ 1936 与 1933 环境物理端口隔离。
 
+#### 📌 Lesson 2026-08-01 #7：原版优先，改造必深研，杜绝半瓶水埋雷守则
+- **CONTEXT**：对开源轮子一知半解就盲目拿来使用，未理解其底层 Execution Flow，导致代码中埋下上下文残留与异步死锁隐患。
+- **REFLECTION**：半瓶水地封装开源轮子是极度危险的。要么使用官方 PyPI 原版随社区迭代，要么必须拉取原始 GitHub 源码与架构文档，逐行解构其逻辑结构与防错细节。
+- **LESSON**：必须严守“原版优先，改造必深研”铁律：
+  1. **完全适配** ➔ 直接引入官方 PyPI 包（如 `nemoguardrails`）；
+  2. **架构改造** ➔ 必须拉取原始源码与原理文档，分析对比多轮子差异，完成防错解构报告，物理排查所有隐性雷区后再落地！
+
 ---
 
 ## 一、三层文档权威规范 (3-Tier Document System)
