@@ -65,13 +65,10 @@ npm run build && cp -r dist/* /home/skloxo/.local/lib/python3.12/site-packages/o
 
 ---
 
-### 📌 Task 3: [ ] 1936 UI 纯真实白盒透视看板对齐
+### 📌 Task 3: [x] 1936 UI 纯真实白盒透视看板对齐 ✅
 
 **类型**：UI Alignment  
-**优先级**：P0  
-**目标**：
-1. `/skills` 页面 4 张面板卡片 100% 真实读取 `Task 1` 与 `Task 2` 产生的底层指标日志。
-2. 物理平齐底栏，NO GREEN EVER 色盘，彻底消除任何写死假数据与噪音文案。
+**静态/物理验证**：已在 `/skills` 页面全量对接 `Task 1` 与 `Task 2` 产生的底层指标日志并提交 Git (`2af99b4`)。卡片 1 物理渲染拦截器 `blockedCalls` 物理阻断次数；卡片 4 物理渲染 Reflexion 自演进 `lessons_count`。物理平齐底栏，NO GREEN EVER 色盘，彻底消除任何写死假数据与噪音文案。
 
 ---
 
