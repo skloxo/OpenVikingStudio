@@ -85,6 +85,8 @@ const config = defineConfig({
           if ((!skillMdPath || !fs.existsSync(skillMdPath)) && skillName) {
             const candidates = [
               path.join('/home/skloxo/aho/openclaw/project/OpenVikingStudio/.agents/skills', skillName, 'SKILL.md'),
+              path.join('/home/skloxo/aho/openclaw/skills/mattpocock-engineering', skillName, 'SKILL.md'),
+              path.join('/home/skloxo/aho/openclaw/skills', skillName, 'SKILL.md'),
               path.join('/home/skloxo/.gemini/config/skills', skillName, 'SKILL.md'),
               path.join('/home/skloxo/.openclaw/skills', skillName, 'SKILL.md'),
             ]
