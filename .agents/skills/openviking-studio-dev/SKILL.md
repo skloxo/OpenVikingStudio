@@ -131,6 +131,15 @@ description: Use when developing, refactoring, or iterating OpenVikingStudio (VK
   3. **负向/阻断 (警示)**：阻断/错误使用 `rose-500` / `rose-400`；
   4. **正向/激活 (精炼)**：正向状态/激活 Badge 微量使用 `cyan-500`，绝不大面积作为段落前景或卡片底色。
 
+#### 📌 Lesson 2026-08-01 #16：技能中心 Product-Centric 视角定位与 KPI 纠偏守则
+- **CONTEXT**：在单独设立 Harness 引擎审计专页（`/harness-logs`）后，技能中心顶部仍然塞满 Harness 拦截阻断数、向量存储调用等无关 KPI，导致产品视角偏离。
+- **REFLECTION**：技能中心（`/skills`）必须 100% 专注于技能本身生命周期与运行情况，避免将侧重底层的 Harness 防线数据硬塞入技能主面。
+- **LESSON**：技能中心顶部 4 大 KPI 面板物理修正：
+  1. **技能运行健康度**：成功率、零中断运行状态；
+  2. **Agent 物理调用分布**：哪位 Agent (researcher, developer, operator 等) 调用了多少次技能；
+  3. **技能互调与网络拓扑**：技能间相互引用依赖与 Seam 契约连通度；
+  4. **最热调用技能**：最活跃技能与一键前往独立 Harness 引擎审计入口。
+
 ---
 
 ## 一、全盘文档三层治理体系与模块导航网 (3-Tier Document Hierarchy & Map)
