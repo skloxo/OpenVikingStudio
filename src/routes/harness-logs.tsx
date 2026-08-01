@@ -75,16 +75,19 @@ function HarnessLogsPage() {
       try {
         const res = await fetch('/api/v1/system/harness_metrics')
         if (res.ok) {
-          const data = await res.json()
-          if (data && Array.isArray(data.lessons_detail) && data.lessons_detail.length > 0) {
-            return data as {
-              lessons_count?: number
-              total_calls?: number
-              blocked_calls?: number
-              most_evolved_skill?: string
-              lessons_detail?: LessonItem[]
-            }
+          const data = await res.json() as {
+            lessons_count?: number
+            total_calls?: number
+            blocked_calls?: number
+            most_evolved_skill?: string
+            lessons_detail?: LessonItem[]
+            store_calls?: number
           }
+          if (data && Array.isArray(data.lessons_detail) && data.lessons_detail.length > 0) {
+            return data
+          }
+          // Still return raw metrics even if no lessons_detail (to get disk lessons_count)
+          return { ...data, lessons_detail: BUILTIN_LESSONS }
         }
       } catch {
         // Fallback
@@ -94,6 +97,7 @@ function HarnessLogsPage() {
         lessons_count: BUILTIN_LESSONS.length,
         lessons_detail: BUILTIN_LESSONS,
         total_calls: 24,
+        store_calls: undefined as number | undefined,
       }
     },
     queryKey: ['harness-status-full-logs-page'],
@@ -107,7 +111,12 @@ function HarnessLogsPage() {
   const blockedCalls = typeof metrics?.blocked_calls === 'number' && metrics.blocked_calls > 0
     ? metrics.blocked_calls
     : 2
-  const lessonsCount = metrics?.lessons_count ?? lessonsDetail.length
+  const lessonsCount = BUILTIN_LESSONS.length  // 永远是内置规约数 36
+  const diskLessonsCount = typeof metrics?.store_calls === 'number'
+    ? metrics.store_calls
+    : (typeof metrics?.lessons_count === 'number' && metrics.lessons_count < BUILTIN_LESSONS.length
+        ? metrics.lessons_count
+        : null)
   const totalCalls = typeof metrics?.total_calls === 'number' && metrics.total_calls > 0
     ? metrics.total_calls
     : 24
@@ -174,7 +183,7 @@ function HarnessLogsPage() {
       </div>
 
       {/* 4 核心统计面板 Banner (极简沉稳风) */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-5">
         <div className="flex flex-col justify-between rounded border border-border/60 bg-card p-3">
           <div className="flex items-center justify-between text-[11px] text-muted-foreground font-sans">
             <span className="flex items-center gap-1 text-foreground font-medium">
@@ -244,6 +253,26 @@ function HarnessLogsPage() {
           </div>
           <p className="text-[10px] font-mono text-muted-foreground border-t border-border/40 pt-1">
             master_memory 物理同步
+          </p>
+        </div>
+
+        {/* 5. 磁盘动态演进落盘次数 (store_calls from harness_metrics.json) */}
+        <div className="flex flex-col justify-between rounded border border-border/60 bg-card p-3">
+          <div className="flex items-center justify-between text-[11px] text-muted-foreground font-sans">
+            <span className="flex items-center gap-1 text-foreground font-medium">
+              <ZapIcon className="size-3.5 text-muted-foreground" />
+              5. 磁盘动态落盘次数
+            </span>
+            <Badge variant="outline" className="text-[9px] font-mono border-border bg-muted/30 text-muted-foreground px-1 py-0">
+              store_calls
+            </Badge>
+          </div>
+          <div className="my-1.5 font-mono text-2xl font-bold tracking-tight text-foreground">
+            {diskLessonsCount !== null ? diskLessonsCount : '--'}{' '}
+            <span className="text-xs font-normal text-muted-foreground">次磁盘落盘</span>
+          </div>
+          <p className="text-[10px] font-mono text-muted-foreground border-t border-border/40 pt-1">
+            OpenViking 动态追踪 store 调用记录数
           </p>
         </div>
       </div>
