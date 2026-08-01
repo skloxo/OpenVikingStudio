@@ -277,6 +277,33 @@ async function fetchSkillDetail(skill: SkillItem): Promise<SkillDetail> {
   }
 }
 
+function extractSopOverview(content: string, description: string): string {
+  if (!content) return description || '暂无规范概览'
+  let body = content
+  if (body.startsWith('---')) {
+    const endIdx = body.indexOf('---', 3)
+    if (endIdx !== -1) {
+      body = body.slice(endIdx + 3).trim()
+    }
+  }
+
+  const lines = body.split('\n')
+  const sopLines: string[] = []
+  let capturing = false
+
+  for (const line of lines) {
+    if (line.startsWith('#') || line.startsWith('1.') || line.startsWith('- ') || line.startsWith('## ')) {
+      capturing = true
+    }
+    if (capturing) {
+      sopLines.push(line)
+      if (sopLines.length >= 35) break
+    }
+  }
+
+  return sopLines.length > 0 ? sopLines.join('\n') : (description || body.slice(0, 800))
+}
+
 function SkillDetailTabPanel({
   detail,
   t,
@@ -363,15 +390,11 @@ function SkillDetailTabPanel({
       {/* L1 级：SOP 流程概览与工具权限 */}
       {activeTab === 'L1' && (
         <div className="grid gap-3">
-          {detail.overview ? (
-            <DetailSection title="📋 SOP 核心流程规范 (SOP Core Guidelines)">
-              <pre className="whitespace-pre-wrap rounded border border-border/60 bg-muted/20 p-2.5 font-sans text-xs leading-5 text-muted-foreground">
-                {detail.overview}
-              </pre>
-            </DetailSection>
-          ) : (
-            <p className="text-muted-foreground font-mono text-[11px]">暂无规范概览</p>
-          )}
+          <DetailSection title="📋 SOP 核心流程规范 (SOP Core Guidelines)">
+            <pre className="whitespace-pre-wrap rounded border border-border/60 bg-muted/20 p-2.5 font-sans text-xs leading-5 text-muted-foreground max-h-96 overflow-y-auto">
+              {detail.overview || extractSopOverview(detail.content, detail.description)}
+            </pre>
+          </DetailSection>
 
           {detail.allowedTools.length > 0 && (
             <DetailTagList
@@ -637,7 +660,11 @@ function SkillsRoute() {
 
       {/* ⚡ Atomic Micro-Task v1.1.23b (100% 真实后端 API 数据驱动，零伪造假数字) */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="flex flex-col justify-between rounded border border-cyan-500/30 bg-cyan-500/5 p-3">
+        <Link
+          to="/harness-logs"
+          className="flex flex-col justify-between rounded border border-cyan-500/30 bg-cyan-500/5 p-3 hover:bg-cyan-500/10 transition-colors group cursor-pointer"
+          title="点击查看 Harness 物理前置拦截与硬性阻断日志"
+        >
           <div className="flex items-center justify-between text-[11px] text-muted-foreground font-sans">
             <span className="flex items-center gap-1 text-cyan-600 dark:text-cyan-400 font-medium">
               <ZapIcon className="size-3.5 text-cyan-500" />
@@ -647,18 +674,20 @@ function SkillsRoute() {
               NeMo Interceptor
             </Badge>
           </div>
-          <div className="my-1.5">
-            <div className="font-mono text-xl font-bold tracking-tight text-cyan-600 dark:text-cyan-400">
-              {blockedCalls > 0 ? blockedCalls : (totalCalls !== null ? totalCalls : '--')} <span className="text-xs font-normal text-muted-foreground">次物理阻断</span>
-            </div>
-            <p className="text-[11px] text-foreground/80 font-sans mt-0.5">
-              {blockedCalls > 0 ? `拦截器已硬性阻断 ${blockedCalls} 次违规操作` : (totalCalls !== null ? `总监测调用 ${totalCalls} 次` : '等待物理拦截触发')}
-            </p>
+          <div className="my-1.5 font-mono text-xl font-bold tracking-tight text-cyan-600 dark:text-cyan-400">
+            {blockedCalls !== null ? (
+              <>
+                {blockedCalls} <span className="text-xs font-normal text-muted-foreground">次物理阻断</span>
+              </>
+            ) : (
+              <span className="text-xs text-muted-foreground font-normal">--</span>
+            )}
           </div>
-          <p className="mt-auto text-[10px] font-mono text-muted-foreground border-t border-cyan-500/20 pt-1.5">
-            物理阻断游离脚本与非法部署
+          <p className="mt-auto text-[10px] font-mono text-muted-foreground border-t border-cyan-500/20 pt-1.5 flex justify-between items-center">
+            <span>物理阻断游离脚本与非法部署</span>
+            <ChevronRightIcon className="size-3 text-cyan-500 group-hover:translate-x-0.5 transition-transform" />
           </p>
-        </div>
+        </Link>
 
         <div className="flex flex-col justify-between rounded border border-cyan-500/30 bg-cyan-500/5 p-3">
           <div className="flex items-center justify-between text-[11px] text-muted-foreground font-sans">
@@ -670,12 +699,12 @@ function SkillsRoute() {
               L0 / L1 向量
             </Badge>
           </div>
-          <div className="my-1.5">
-            <div className="font-mono text-sm font-bold text-cyan-600 dark:text-cyan-400 flex items-center justify-between">
+          <div className="my-1.5 text-xs text-foreground/90 font-mono space-y-0.5">
+            <div className="flex justify-between">
               <span>检索 (find)</span>
               <span>{findCalls !== null ? `${findCalls} 次` : '--'}</span>
             </div>
-            <div className="font-mono text-xs text-muted-foreground flex items-center justify-between mt-1">
+            <div className="flex justify-between">
               <span>存储 (store)</span>
               <span>{storeCalls !== null ? `${storeCalls} 次` : '--'}</span>
             </div>
@@ -713,7 +742,7 @@ function SkillsRoute() {
         </div>
 
         <Link
-          to="/skills/harness-logs"
+          to="/harness-logs"
           className="flex flex-col justify-between rounded border border-cyan-500/30 bg-cyan-500/5 p-3 hover:bg-cyan-500/10 transition-colors group cursor-pointer"
           title="点击进入 Harness 物理自演进日志与纠偏明细全景专页"
         >
