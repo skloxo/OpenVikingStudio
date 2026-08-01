@@ -849,10 +849,10 @@ function SkillsRoute() {
           <div className="flex items-center justify-between border-b border-rose-500/20 pb-2">
             <div>
               <h3 className="text-sm font-semibold text-rose-500 flex items-center gap-2">
-                🛡️ 待规范 / 野路子技能白盒审计面板 (Gate 2 Governance)
+                🛡️ 技能白盒治理与意图感应优化面板 (Gate 2 Governance)
               </h3>
               <p className="text-xs text-muted-foreground mt-0.5 font-sans">
-                物理探针扫出的未完工或缺失 SKILL.md 规范的技能目录。提供一键补全规范要件并向 OpenViking 向量库装载上架功能。
+                物理探针扫出的未完工或缺少 L0 意图/L1 SOP 规范的技能目录。通过补全规范要件提升 Agent 准确理解与高精度触发能力，避免重复造轮子。
               </p>
             </div>
             <Badge variant="outline" className="font-mono text-xs border-rose-500/40 bg-rose-500/10 text-rose-500">
@@ -878,7 +878,7 @@ function SkillsRoute() {
                         {item.missing_reason}
                       </Badge>
                     </div>
-                    <span className="text-[11px] text-muted-foreground/80 font-mono">
+                    <span className="text-[11px] text-muted-foreground font-mono">
                       📁 路径: {item.path}
                     </span>
                   </div>
@@ -887,11 +887,11 @@ function SkillsRoute() {
                     type="button"
                     size="sm"
                     variant="outline"
-                    className="h-7 text-xs border-cyan-500/40 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10 rounded"
+                    className="h-7 text-xs border-border text-foreground hover:bg-muted rounded"
                     disabled={isReindexing}
                     onClick={() => void handleFixSingleSkill(item.name)}
                   >
-                    <SparklesIcon className="size-3.5 text-cyan-500" />
+                    <SparklesIcon className="size-3.5 text-muted-foreground" />
                     ⚡ 一键规范化上架
                   </Button>
                 </div>
