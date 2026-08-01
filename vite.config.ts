@@ -67,6 +67,47 @@ const config = defineConfig({
     {
       name: 'harness-metrics-plugin',
       configureServer(server) {
+        server.middlewares.use('/api/v1/system/skill_content', (req, res) => {
+          const urlParams = new URL(req.url || '', 'http://localhost')
+          const skillPath = urlParams.searchParams.get('path') || ''
+          const skillName = urlParams.searchParams.get('name') || ''
+
+          let content = ''
+          let skillMdPath = ''
+
+          if (skillPath) {
+            skillMdPath = path.join(skillPath, 'SKILL.md')
+            if (!fs.existsSync(skillMdPath) && fs.existsSync(skillPath)) {
+              skillMdPath = skillPath
+            }
+          }
+
+          if ((!skillMdPath || !fs.existsSync(skillMdPath)) && skillName) {
+            const candidates = [
+              path.join('/home/skloxo/aho/openclaw/project/OpenVikingStudio/.agents/skills', skillName, 'SKILL.md'),
+              path.join('/home/skloxo/.gemini/config/skills', skillName, 'SKILL.md'),
+              path.join('/home/skloxo/.openclaw/skills', skillName, 'SKILL.md'),
+            ]
+            for (const cand of candidates) {
+              if (fs.existsSync(cand)) {
+                skillMdPath = cand
+                break
+              }
+            }
+          }
+
+          if (skillMdPath && fs.existsSync(skillMdPath)) {
+            try {
+              content = fs.readFileSync(skillMdPath, 'utf-8')
+            } catch {
+              // fallback
+            }
+          }
+
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify({ content, name: skillName, path: skillMdPath }))
+        })
+
         server.middlewares.use('/api/v1/system/harness_metrics', (_req, res) => {
           const metricsPath = path.join(os.homedir(), '.openviking', 'harness_metrics.json')
           let metrics: Record<string, any> = {
