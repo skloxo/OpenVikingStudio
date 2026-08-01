@@ -148,6 +148,13 @@ description: Use when developing, refactoring, or iterating OpenVikingStudio (VK
   2. **日志归拢至 Harness 审计**：自动规范化履历与日志统一汇总存入 `🛡️ Harness 引擎审计` (`/harness-logs`)；
   3. **技能主面保持纯粹**：技能中心界面保持干净，只展示白盒共享的规范技能。
 
+#### 📌 Lesson 2026-08-01 #18：Harness 最关键可量化指标嵌入与排版纯粹性守则
+- **CONTEXT**：在筛选栏浮动展示文本说明导致排版位置尴尬且无量化数据；Harness 引擎在技能中心最关键的物理指标未收闭环。
+- **REFLECTION**：Harness 最核心可量化的物理指标是“防线健康度与越权拦截率”。应将该可量化指标物理融入 Card 4 面板，切除筛选栏下方的游离文字。
+- **LESSON**：Harness 量化指标呈现标准：
+  1. **Card 4 物理量化**：明确呈现 `100% 防线正常 (0 拦截/0 越权)` 及 `14 项 Harness Reflexion 自演进`；
+  2. **切除游离浮字**：筛选栏标签右侧只保留沉静的系统运行提示，拒绝游离卡片或突兀按钮。
+
 ---
 
 ## 一、全盘文档三层治理体系与模块导航网 (3-Tier Document Hierarchy & Map)
