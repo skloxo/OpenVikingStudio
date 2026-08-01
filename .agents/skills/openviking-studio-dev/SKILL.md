@@ -248,6 +248,15 @@ description: Use when developing, refactoring, or iterating OpenVikingStudio (VK
   2. **局部 Badge 说局部**：各卡片 Badge 描述该指标的核心语义（`意图感应 / 闭环质量 / 踩坑演进飞轮 / 白盒审计`）；
   3. **避免视觉噪声**：信息不重复是高密度数据面板的第一视觉原则。
 
+#### 📌 Lesson 2026-08-01 #31：Wiki 与 Harness 简介全自动生成与静默治理守则
+- **CONTEXT**：以前技能中心放有手动的“待规范卡片”与“⚡ 补全简介”按钮，违背了静默全自动治理的原向。当系统或 Wiki 感知到新技能时，人类不应该再去手动按按钮。
+- **REFLECTION**：Harness 的本质是“感知 ➔ 生成 ➔ 规范 ➔ 上架 ➔ 反思”5 阶静默闭环。新技能从 Wiki 入库后，Harness 引擎必须自动提取逻辑生成描述并清洗上架。
+- **LESSON**：全自动技能治理 3 大铁律：
+  1. **零按钮感知流水线**：新技能/Wiki 入库后，Harness 静默自动补全 `description` 描述与结构模板；
+  2. **FastMCP 1933 自动构建**：全自动通过 1933 API 完成 L0/L1 语义向量构建与全上架；
+  3. **Reflexion 反思沉淀**：调用产生偏回或阻断时，自动提炼 Lesson 存入项目 `SKILL.md` 与 OpenViking 体外大脑（`viking://resources/master_memory/`）。
+
+
 ---
 
 ## 一、全盘文档三层治理体系与模块导航网 (3-Tier Document Hierarchy & Map)
