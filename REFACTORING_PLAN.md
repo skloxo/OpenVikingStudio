@@ -160,10 +160,44 @@
 > - 平台级指标（HTTP/GPU/延迟/SLA）→ 保留首页监控页
 > - 远期：首页监控页逐步收敛精简
 
-#### ⏳ v1.1.23: 首页 /home 6 大卡片信达雅视觉精修
-- **目标**: 审查首页 6 大数据卡片布局、颜色、字体、圆角是否 100% 合规
+#### ⏳ v1.1.23: 技能中心 /skills 全维度可观测面板与调用轨迹追踪 (Skill Observability & Analytics Dashboard)
+- **来源**: 技能中心短板强化 & 用户指引（"能观测到调用的情况是怎么样的"）
+- **优先级**: 🔥 紧急提升至当前首优先迭代（优先落地 Harness 自进化）
+- **架构规范**: 参见 [HARNESS_EVOLUTION_ARCHITECTURE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/HARNESS_EVOLUTION_ARCHITECTURE.md)
+- **目标**:
+  1. 展示 85 个技能各自的：激活总次数、触发频率、最近调取时间、调用 Agent 来源 (Antigravity/OpenClaw/Hermes)、成功/失败率
+  2. 技能调用轨迹下钻：点击具体技能卡片，查看历史调用的日志片段、输入 Context 与输出 Payload
+  3. 提供热度榜单与冷门技能排行榜
 
-#### ⏳ v1.1.24: 资源库 /resources 历史版本追踪与一键回滚 (Resource Version History & Rollback)
+#### ⏳ v1.1.24: 基于 Reflexion / Voyager 范式的 Skill-Loop 闭环自进化引擎 (Grounded Critique & Self-Refine Loop)
+- **来源**: 业界最新 Agent 自进化框架 (Reflexion, Voyager, Self-Evolving-Skill)
+- **优先级**: 🔥 紧急提升至首优先迭代（优先落地 Harness 自进化）
+- **架构规范**: 参见 [HARNESS_EVOLUTION_ARCHITECTURE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/HARNESS_EVOLUTION_ARCHITECTURE.md)（含多 Agent 拓扑与时序交互图）
+- **目标**:
+  1. **反馈捕获 (Grounded Critique)**: 技能执行完毕后，自动捕捉终端编译结果、单元测试状态与用户修正
+  2. **经验萃取 (Lesson Extraction)**: 若遇到踩坑/异常，AI 自动生成高密度 `Lesson Learned` 避坑摘要
+  3. **SKILL.md 自动热重写 (Auto Refine)**: 自动追加 `Lesson Learned` 至该技能的 `references/lessons.md` 或 `SKILL.md`，下次触发时自动获得避坑记忆
+  4. **版本控制 (Skill Versioning)**: 为演进后的技能生成 `v1.x.y` 规则版本号
+
+#### ⏳ v1.1.25: 技能健康度综合评分与优胜劣汰矩阵 (Skill Health Scoring & Elimination Matrix)
+- **来源**: NousResearch Hermes-Agent / EvoSkills 评估体系
+- **优先级**: 🔥 紧急提升至首优先迭代（优先落地 Harness 自进化）
+- **架构规范**: 参见 [HARNESS_EVOLUTION_ARCHITECTURE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/HARNESS_EVOLUTION_ARCHITECTURE.md)
+- **目标**:
+  1. 基于【活跃度、成功率、修正频次、避坑积累量】计算 85 个技能的健康度得分 (0~100 分)
+  2. 健康度低（频繁导致构建失败/长期无人调用）的技能给予警告、降级或自动修复提醒
+  3. 高频优秀技能获得最高权重倾斜
+
+#### ⏳ v1.1.26: 技能创生、克隆与在线沙盒测试器 (Autonomous Skill Creation & Playground)
+- **来源**: EvoSkills 自动构建范式
+- **优先级**: 🔥 紧急提升至首优先迭代（优先落地 Harness 自进化）
+- **架构规范**: 参见 [HARNESS_EVOLUTION_ARCHITECTURE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/HARNESS_EVOLUTION_ARCHITECTURE.md)
+- **目标**:
+  1. 支持根据自然语言诉求自动生成符合 `SKILL.md` 规范的全新技能模板
+  2. 提供在线 SKILL.md 编辑器与 YAML 前言语法校验
+  3. 提供沙盒 Mock 触发测试器：在页面上一键 Simulate 触发该技能并查看 Agent 响应
+
+#### ⏳ v1.1.27: 资源库 /resources 历史版本追踪与一键回滚 (Resource Version History & Rollback)
 - **来源**: 对应 OpenViking Dashboard (`/dashboard/resources`) 经典功能对齐
 - **目标**:
   1. **资源头部控制**: 资源预览区右上角增加「查看历史版本」主按钮（位于文件 URI 描述旁）。
@@ -175,20 +209,23 @@
   4. **一键恢复/回滚 (One-Click Rollback)**:
      - 卡片右侧提供「回滚至此版本」动作按钮，触发二次确认后发起版本恢复并更新向量与图谱索引。
 
-#### ⏳ v1.1.25: 检索测试台 /retrieval 命中关键字精确高亮
+#### ⏳ v1.1.28: 首页 /home 6 大卡片信达雅视觉精修
+- **目标**: 审查首页 6 大数据卡片布局、颜色、字体、圆角是否 100% 合规
+
+#### ⏳ v1.1.29: 检索测试台 /retrieval 命中关键字精确高亮
 - **目标**: Score 滑块实时过滤，命中关键字高亮精准
 
-#### ⏳ v1.1.26: 会话中心 /sessions 跨 Agent 共享历史与记忆透视
+#### ⏳ v1.1.30: 会话中心 /sessions 跨 Agent 共享历史与记忆透视
 - **目标**: 查看 Antigravity/OpenClaw/Hermes 各 Agent 对话链及 OpenViking 记忆沉淀节点
 
-#### ⏳ v1.1.27: 设置页面 /settings 1933/1936 反向代理健康诊断与 API Key 管理
+#### ⏳ v1.1.31: 设置页面 /settings 1933/1936 反向代理健康诊断与 API Key 管理
 - **目标**: 准确呈现代理连通性与 Dev/Production 模式鉴权状态
 
-#### ⏳ v1.1.28: 监控数据重分配 — 技能/资源监控指标归位各功能页
+#### ⏳ v1.1.32: 监控数据重分配 — 技能/资源监控指标归位各功能页
 - **背景**: 来自 `3b9ec36b` step 599 架构方向
 - **目标**: 将监控页中技能、资源相关指标卡片迁移至各自功能页，监控页仅保留平台级指标
 
-#### ⏳ v1.1.29: 技能中心 /skills 全面管理迭代 — 入口改名 + 指标展示 + 运营能力
+#### ⏳ v1.1.33: 技能中心 /skills 全面管理迭代 — 入口改名 + 指标展示 + 运营能力
 - **来源**: `d597f5c3` step 469 — "技能中心这块儿增加一个迭代任务，往后排"
 - **目标**:
   1. 侧边栏入口"技能"改名为**"技能中心"**，页面标题同步
@@ -197,7 +234,7 @@
   4. 远期：支持云服务/公网接入，对外开放技能市场
 - **文件**: `src/routes/skills/route.tsx`、侧边栏 i18n
 
-#### ⏳ v1.1.30: 任务中心 /tasks 时间范围自定义下拉选择器
+#### ⏳ v1.1.34: 任务中心 /tasks 时间范围自定义下拉选择器
 - **来源**: `3b9ec36b` step 184 — "在任务中心让用户自己手动去选，他想看几天看几天"
 - **目标**:
   1. 顶部下拉默认选「近 24 小时」，可切换「近 7 天」「近 30 天」「全部数据」
@@ -205,14 +242,14 @@
   3. 切换后任务列表与统计卡片数据同步刷新
 - **文件**: `src/routes/tasks/route.tsx`
 
-#### ⏳ v1.1.31: 关系图谱 /graph 深度性能二次重构（LOD 分级渲染 & WebGL 视口剪裁）
+#### ⏳ v1.1.35: 关系图谱 /graph 深度性能二次重构（LOD 分级渲染 & WebGL 视口剪裁）
 - **来源**: v1.1.22 验收反馈（"太卡了，还是不行。在最后再加个任务卡片，继续优化迭代吧"）
 - **目标**:
   1. 针对 1458 节点与 3,890 条连线引入 LOD (Level of Detail) 视距动态分级渲染
   2. 视口外节点 Viewport Culling 自动剪裁隐去
   3. 优化纯 GPU 顶点着色与 Batching，彻底提升低配 GPU 帧率
 
-#### ⏳ v1.1.32: 360° OpenViking 核心服务可观测性与健康度指标迭代 (Observability & Health Dashboard)
+#### ⏳ v1.1.36: 360° OpenViking 核心服务可观测性与健康度指标迭代 (Observability & Health Dashboard)
 - **来源**: 2026-08-01 1933 冻结事故与用户可观测性排查反馈
 - **目标**:
   1. **首页 /home — 存活红绿灯与降级模式指示器 (Health Badge & Mode Indicator)**:
@@ -227,66 +264,33 @@
      - 显式文案说明："任务中心用于呈现离线重索引与长时批处理 Task"。
      - 列表为空时提供友好空状态提示（"当前离线批处理队列空闲，所有 1933 实时 API 正常运行中"），防止误判挂掉。
 
-#### ⏳ v1.1.33: WebDAV 云网盘挂载中心与图形化连接配置 (WebDAV Cloud Drive Management)
+#### ⏳ v1.1.37: WebDAV 云网盘挂载中心与图形化连接配置 (WebDAV Cloud Drive Management)
 - **目标**: 
   1. 提供 WebDAV 挂载向导（支持 Linux davfs2 / Windows 映射网盘 / macOS Cyberduck 提示）
   2. 提供 WebDAV 账户/Token 独立管理与鉴权校验
   3. 提供在线 WebDAV 文件目录流预览
 
-#### ⏳ v1.1.34: 向量库全量/增量备份与一键在线灾备恢复 (Backup & Restore)
+#### ⏳ v1.1.38: 向量库全量/增量备份与一键在线灾备恢复 (Backup & Restore)
 - **目标**:
   1. 支持手动/定时创建 `~/.openviking/data` 数据快照
   2. 提供快照历史列表、占用体积展示与 ZIP 导出
   3. 支持选择历史快照发起一键在线恢复
 
-#### ⏳ v1.1.35: 关系图谱 /graph 可视化手动连线与断开编辑器 (Graph Relation Editor)
+#### ⏳ v1.1.39: 关系图谱 /graph 可视化手动连线与断开编辑器 (Graph Relation Editor)
 - **目标**:
   1. 图谱画布支持“连线模式”：鼠标拖拽 Node A -> Node B 弹窗创建关系 (`openviking_link`)
   2. 点击边线（Edge）支持查看关系属性与一键断开 (`openviking_unlink`)
   3. 集成 `openviking_get_relations` 关系全路径透视
 
-#### ⏳ v1.1.36: 资源库 /resources 隐私标记 (Privacy Tags) 与 PII 脱敏开关
+#### ⏳ v1.1.40: 资源库 /resources 隐私标记 (Privacy Tags) 与 PII 脱敏开关
 - **目标**:
   1. 支持为资源/记忆设置隐私等级（Public / Private / Confidential）
   2. 检索测试台与会话中心集成隐私擦除与脱敏展示开关
 
-#### ⏳ v1.1.37: 设置页 /settings 系统一致性校验 (Consistency Check) 与孤立节点修复
+#### ⏳ v1.1.41: 设置页 /settings 系统一致性校验 (Consistency Check) 与孤立节点修复
 - **目标**:
   1. 调用 `openviking_consistency` 检查 SQLite 元数据与向量索引对齐状态
   2. 提供“一键修复孤立节点” (Orphan Node Repair) 运维按钮
-
-#### ⏳ v1.1.38: 技能中心 /skills 全维度可观测面板与调用迹追踪 (Skill Observability & Analytics Dashboard)
-- **来源**: 技能中心短板强化 & 用户指引（"能观测到调用的情况是怎么样的"）
-- **架构规范**: 参见 [HARNESS_EVOLUTION_ARCHITECTURE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/HARNESS_EVOLUTION_ARCHITECTURE.md)
-- **目标**:
-  1. 展示 85 个技能各自的：激活总次数、触发频率、最近调取时间、调用 Agent 来源 (Antigravity/OpenClaw/Hermes)、成功/失败率
-  2. 技能调用轨迹下钻：点击具体技能卡片，查看历史调用的日志片段、输入 Context 与输出 Payload
-  3. 提供热度榜单与冷门技能排行榜
-
-#### ⏳ v1.1.39: 基于 Reflexion / Voyager 范式的 Skill-Loop 闭环自进化引擎 (Grounded Critique & Self-Refine Loop)
-- **来源**: 业界最新 Agent 自进化框架 (Reflexion, Voyager, Self-Evolving-Skill)
-- **架构规范**: 参见 [HARNESS_EVOLUTION_ARCHITECTURE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/HARNESS_EVOLUTION_ARCHITECTURE.md)（含多 Agent 拓扑与时序交互图）
-- **目标**:
-  1. **反馈捕获 (Grounded Critique)**: 技能执行完毕后，自动捕捉终端编译结果、单元测试状态与用户修正
-  2. **经验萃取 (Lesson Extraction)**: 若遇到踩坑/异常，AI 自动生成高密度 `Lesson Learned` 避坑摘要
-  3. **SKILL.md 自动热重写 (Auto Refine)**: 自动追加 `Lesson Learned` 至该技能的 `references/lessons.md` 或 `SKILL.md`，下次触发时自动获得避坑记忆
-  4. **版本控制 (Skill Versioning)**: 为演进后的技能生成 `v1.x.y` 规则版本号
-
-#### ⏳ v1.1.40: 技能健康度综合评分与优胜劣汰矩阵 (Skill Health Scoring & Elimination Matrix)
-- **来源**: NousResearch Hermes-Agent / EvoSkills 评估体系
-- **架构规范**: 参见 [HARNESS_EVOLUTION_ARCHITECTURE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/HARNESS_EVOLUTION_ARCHITECTURE.md)
-- **目标**:
-  1. 基于【活跃度、成功率、修正频次、避坑积累量】计算 85 个技能的健康度得分 (0~100 分)
-  2. 健康度低（频繁导致构建失败/长期无人调用）的技能给予警告、降级或自动修复提醒
-  3. 高频优秀技能获得最高权重倾斜
-
-#### ⏳ v1.1.41: 技能创生、克隆与在线沙盒测试器 (Autonomous Skill Creation & Playground)
-- **来源**: EvoSkills 自动构建范式
-- **架构规范**: 参见 [HARNESS_EVOLUTION_ARCHITECTURE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/HARNESS_EVOLUTION_ARCHITECTURE.md)
-- **目标**:
-  1. 支持根据自然语言诉求自动生成符合 `SKILL.md` 规范的全新技能模板
-  2. 提供在线 SKILL.md 编辑器与 YAML 前言语法校验
-  3. 提供沙盒 Mock 触发测试器：在页面上一键 Simulate 触发该技能并查看 Agent 响应
 
 ---
 
