@@ -8,6 +8,7 @@ import {
   FileCode2Icon,
   LoaderCircleIcon,
   RefreshCwIcon,
+  SearchIcon,
   SparklesIcon,
   TrendingUpIcon,
   UserRoundIcon,
@@ -728,7 +729,7 @@ function SkillsRoute() {
             </Badge>
           </div>
           <div className="font-mono text-lg font-bold tabular-nums text-foreground flex items-baseline gap-1">
-            14 次 <span className="text-xs font-normal text-muted-foreground">自演进迭代</span>
+            {lessonsCount} 次 <span className="text-xs font-normal text-muted-foreground">自演进迭代</span>
           </div>
           <p className="text-[11px] text-muted-foreground truncate flex items-center justify-between">
             <span>自动规范技能 · 驱动自我演化</span>
