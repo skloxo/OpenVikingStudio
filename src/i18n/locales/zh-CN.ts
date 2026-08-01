@@ -38,6 +38,9 @@ const zhCN = {
       skills: {
         title: '技能中心',
       },
+      harnessLogs: {
+        title: 'Harness 引擎审计',
+      },
       resources: {
         title: '资源库',
       },

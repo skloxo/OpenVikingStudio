@@ -36,7 +36,10 @@ const en = {
         title: 'Monitoring',
       },
       skills: {
-        title: 'Skills Hub',
+        title: 'Skills',
+      },
+      harnessLogs: {
+        title: 'Harness Engine Audit',
       },
       graph: {
         title: 'Knowledge Graph',
