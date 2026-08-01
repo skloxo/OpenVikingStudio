@@ -511,6 +511,8 @@ function SkillsRoute() {
   const totalCalls = typeof metrics?.total_calls === 'number' ? metrics.total_calls : null
   const findCalls = typeof metrics?.find_calls === 'number' ? metrics.find_calls : null
   const storeCalls = typeof metrics?.store_calls === 'number' ? metrics.store_calls : null
+  const lessonsCount = typeof metrics?.lessons_count === 'number' ? metrics.lessons_count : null
+  const mostEvolvedSkill = typeof metrics?.most_evolved_skill === 'string' ? metrics.most_evolved_skill : null
   const actorPeers = asRecord(metrics?.actor_peers)
 
   return (
@@ -672,12 +674,28 @@ function SkillsRoute() {
               <ClockIcon className="size-3.5 text-cyan-500" />
               4. 最热演进技能
             </span>
+            {lessonsCount !== null && lessonsCount > 0 && (
+              <Badge variant="outline" className="text-[9px] font-mono border-cyan-500/40 text-cyan-500 px-1 py-0 bg-cyan-500/10">
+                {lessonsCount} 条 Lesson
+              </Badge>
+            )}
           </div>
           <div className="my-1.5">
-            <p className="text-xs text-muted-foreground font-mono">-- (暂无数据)</p>
+            {mostEvolvedSkill ? (
+              <>
+                <div className="font-mono text-xs font-bold text-cyan-600 dark:text-cyan-400 truncate" title={mostEvolvedSkill}>
+                  {mostEvolvedSkill}
+                </div>
+                <p className="text-[11px] text-foreground/80 font-sans mt-0.5">
+                  已注入 {lessonsCount ?? 1} 项用户纠偏规约
+                </p>
+              </>
+            ) : (
+              <p className="text-xs text-muted-foreground font-mono">-- (暂无数据)</p>
+            )}
           </div>
           <p className="mt-auto text-[10px] font-mono text-muted-foreground border-t border-cyan-500/20 pt-1.5">
-            揭示项目中 Bug 最集中模块
+            揭示项目中演进最频繁技能
           </p>
         </div>
       </div>
