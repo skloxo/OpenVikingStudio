@@ -684,22 +684,22 @@ function SkillsRoute() {
           </p>
         </Card>
 
-        {/* Card 2: 规范标准覆盖率 */}
+        {/* Card 2: 共享技能资产库 (真正具备信息增量的动态资产规模指标) */}
         <Card className="flex flex-col gap-1 p-2.5 shadow-none hover:border-border transition-colors">
           <div className="flex items-center justify-between text-xs text-muted-foreground font-sans">
             <span className="flex items-center gap-1.5 text-foreground font-medium">
               <TrendingUpIcon className="size-3.5 text-muted-foreground" />
-              规范标准上架率
+              共享技能资产库
             </span>
             <Badge variant="outline" className="text-[9px] font-mono border-border bg-muted/40 text-foreground px-1 py-0">
-              Gate 2
+              向量装载
             </Badge>
           </div>
           <div className="font-mono text-lg font-bold tabular-nums text-foreground flex items-baseline gap-1">
-            100% <span className="text-xs font-normal text-muted-foreground">({skills.length} 项全覆盖)</span>
+            {skills.length} 项 <span className="text-xs font-normal text-muted-foreground">标准技能</span>
           </div>
           <p className="text-[11px] text-muted-foreground truncate">
-            L0 意图 · L1 SOP · L2 源码 5要件
+            已全量装载至 OpenViking 大脑
           </p>
         </Card>
 
