@@ -6,7 +6,7 @@
 
 ## 📌 v1.1.23c：技能中心双门锁合规探针、待规范白盒曝光与一键规范化上架流程
 - **交付时间**：2026-08-01
-- **Git Tag**：`v1.1.23c` (`24689fd`, `b8248c7`)
+- **Git Tag**：`v1.1.23c` (`25aa83b`, `797a1d4`)
 - **用户验收**：按指令优先重排调度并完成交付 ✅
 - **修改文件**：
   - [src/routes/skills/route.tsx](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/src/routes/skills/route.tsx)
@@ -15,8 +15,9 @@
   - [REFACTORING_PLAN.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/REFACTORING_PLAN.md)
 - **交付内容**：
   1. 实现了 `/skills` 页面双门锁治理面板，白盒展示 `已就绪标准技能` 与 `⚠️ 待规范技能`。
-  2. 部署 `openviking_audit_skills` 与 `openviking_fix_skill` 探针，支持在 UI 上一键补全规范要件并向 OpenViking 向量库自动装载上架。
-  3. 沉淀多 Agent 生态双门锁治理规范至 Master Memory (`viking://resources/master_memory/skill_download_and_governance_best_practice.md`)。
+  2. 上线技能来源 Agent 识别徽章（`🤖 OpenClaw`, `🦅 Hermes`, `📈 TideTrading`, `🚀 Antigravity`），极客彩色高亮呈现。
+  3. 部署 `openviking_audit_skills` 与 `openviking_fix_skill` 探针，支持在 UI 上一键补全规范要件并向 OpenViking 向量库自动装载上架。
+  4. 沉淀多 Agent 生态双门锁治理规范与 Git Tag Changelog SOP 至 Master Memory。
 
 ---
 
