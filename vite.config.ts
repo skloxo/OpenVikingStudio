@@ -96,16 +96,26 @@ const config = defineConfig({
             }
           }
 
+          let files: Array<{ name: string; path: string; is_dir: boolean }> = []
           if (skillMdPath && fs.existsSync(skillMdPath)) {
             try {
               content = fs.readFileSync(skillMdPath, 'utf-8')
+              const skillDir = path.dirname(skillMdPath)
+              if (fs.existsSync(skillDir) && fs.statSync(skillDir).isDirectory()) {
+                const entries = fs.readdirSync(skillDir, { withFileTypes: true })
+                files = entries.map((entry) => ({
+                  is_dir: entry.isDirectory(),
+                  name: entry.name,
+                  path: entry.name,
+                }))
+              }
             } catch {
               // fallback
             }
           }
 
           res.setHeader('Content-Type', 'application/json')
-          res.end(JSON.stringify({ content, name: skillName, path: skillMdPath }))
+          res.end(JSON.stringify({ content, files, name: skillName, path: skillMdPath }))
         })
 
         server.middlewares.use('/api/v1/system/harness_metrics', (_req, res) => {

@@ -421,19 +421,25 @@ function SkillDetailTabPanel({
                     className="flex items-center gap-2 border-b border-border/40 px-2.5 py-1.5 last:border-b-0"
                   >
                     <FileCode2Icon className="size-3.5 shrink-0 text-cyan-500" />
-                    <span className="min-w-0 flex-1 truncate text-foreground">
-                      {file.path}
+                    <span className="min-w-0 flex-1 truncate text-foreground font-medium">
+                      {file.name || file.path}
                     </span>
-                    {file.isDir ? (
-                      <Badge variant="outline" className="rounded-xs text-[9px] px-1 py-0">
-                        {t('directory')}
-                      </Badge>
-                    ) : null}
+                    <Badge variant="outline" className="rounded-xs text-[9px] px-1 py-0 border-cyan-500/30 text-cyan-500 bg-cyan-500/10">
+                      {file.isDir ? '扩展子目录' : (file.name === 'SKILL.md' ? '主规范说明书' : '辅助脚本')}
+                    </Badge>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground font-mono text-[11px]">{t('none')}</p>
+              <div className="overflow-hidden rounded border border-cyan-500/30 bg-cyan-500/5 p-2 font-mono text-[11px] text-cyan-600 dark:text-cyan-400 flex items-center justify-between">
+                <span className="flex items-center gap-1.5 font-bold">
+                  <FileCode2Icon className="size-3.5 text-cyan-500" />
+                  SKILL.md
+                </span>
+                <Badge variant="outline" className="rounded-xs text-[9px] px-1.5 py-0 border-cyan-500/40 text-cyan-500 bg-cyan-500/10">
+                  单文件精简规范
+                </Badge>
+              </div>
             )}
           </DetailSection>
 
