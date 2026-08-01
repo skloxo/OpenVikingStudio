@@ -69,7 +69,7 @@ const config = defineConfig({
       configureServer(server) {
         server.middlewares.use('/api/v1/system/harness_metrics', (_req, res) => {
           const metricsPath = path.join(os.homedir(), '.openviking', 'harness_metrics.json')
-          let metrics = {
+          let metrics: Record<string, any> = {
             actor_peers: { antigravity: 2, openclaw: 2 },
             find_calls: 2,
             lessons_count: 2,
@@ -80,6 +80,36 @@ const config = defineConfig({
           try {
             if (fs.existsSync(metricsPath)) {
               metrics = JSON.parse(fs.readFileSync(metricsPath, 'utf-8'))
+            }
+
+            const skillMdPath = '/home/skloxo/aho/openclaw/project/OpenVikingStudio/.agents/skills/openviking-studio-dev/SKILL.md'
+            if (fs.existsSync(skillMdPath)) {
+              const content = fs.readFileSync(skillMdPath, 'utf-8')
+              const chunks = content.split('#### 📌 Lesson ')
+              const lessons_detail: Array<{ id: number; title: string; context: string; reflection: string; lesson: string }> = []
+              
+              chunks.slice(1).forEach((chunk) => {
+                const lines = chunk.split('\n')
+                const headerLine = lines[0] || ''
+                const titleMatch = headerLine.match(/#(\d+)：(.+)/)
+                const id = titleMatch ? Number(titleMatch[1]) : lessons_detail.length + 1
+                const title = titleMatch ? titleMatch[2].trim() : headerLine.trim()
+
+                let context = ''
+                let reflection = ''
+                let lesson = ''
+
+                lines.forEach((line) => {
+                  if (line.includes('**CONTEXT**：')) context = line.split('**CONTEXT**：')[1].trim()
+                  if (line.includes('**REFLECTION**：')) reflection = line.split('**REFLECTION**：')[1].trim()
+                  if (line.includes('**LESSON**：')) lesson = line.split('**LESSON**：')[1].trim()
+                })
+
+                if (title) {
+                  lessons_detail.push({ id, title, context, reflection, lesson })
+                }
+              })
+              metrics.lessons_detail = lessons_detail
             }
           } catch {
             // fallback
