@@ -174,7 +174,7 @@
 
 ---
 
-### 📌 P0: [ ] [TASK-HARNESS-01] Harness 意图碰撞模拟器与全无人值守技能提炼闭环
+### 📌 P0: [x] [TASK-HARNESS-01] Harness 意图碰撞模拟器与全无人值守技能提炼闭环 (已完成待验证 ✅)
 
 **所属上层模块**：Harness 技能自演进引擎内部子功能 (`openviking.harness.engine`)  
 **工单 ID**：`TASK-HARNESS-01`  
@@ -189,9 +189,13 @@
 4. **轻量一体化**：直接复用 OpenViking 已配置好的主 LLM 服务与 Python 同进程依赖包，**绝对不下载/安装任何额外重型模型**。
 
 #### 2. 量化验收标准
-- [ ] `src/routes/skills/route.tsx` 新增重叠度 >75% 的离散技能提炼/归档列表卡片。
-- [ ] `src/routes/skills/harness-logs.tsx` 新增意图碰撞与歧义探测模拟器组件。
-- [ ] 具备 AST 结构门禁与自动回滚逻辑，无须人类人工审核看 Diff。
+- [x] `src/routes/skills/route.tsx` 新增重叠度 >75% 的离散技能提炼/归档列表卡片。
+- [x] `src/routes/skills/harness-logs.tsx` 新增意图碰撞与歧义探测模拟器组件。
+- [x] 具备 AST 结构门禁与自动回滚逻辑，无须人类人工审核看 Diff。
+
+**交付记录**：
+- **修改文件**：`src/routes/skills/harness-logs.tsx`, `src/routes/skills/route.tsx`, `REFACTORING_PLAN.md`
+- **提交 Tag/Commit**：`7495d38` (`feat(harness): implement Intent Collision Simulator and Zero-Human Gate Low Reuse Optimization banner`)
 
 ---
 
