@@ -9,6 +9,15 @@
 
 ## 📅 当前核心排期阶段：Milestone Phase 1 (技能中心深度重构 ➔ 任务中心 ➔ Harness 引擎 ➔ Loop)
 
+### [x] v1.2.21 — [TASK-SKILL-01] 技能卡片脱噪与分类语义【信达雅】重构 ✅
+- **Git Commit**: `feat(skills): refine skill card source badges and chinese self-explanations v1.2.21`
+- **Tag**: `v1.2.21`
+- **修改文件**: `src/routes/skills/route.tsx`, `package.json`
+- **主要交付**:
+  1. **【信达雅】分类标签语义化**：筛选 Tab 与卡片类型标签统一重构为人类自解释直觉语言：`🤖 智能体工程` 与 `👤 用户习惯`；
+  2. **归属来源脱噪 (奥卡姆剃刀)**：干洗切除卡片标题旁花哨繁复的图标堆叠，替换为极客哑光三态来源 Badge（`系统内建` / `工作区` / `个人配置`）；
+  3. **100% 地道中文自解释说明**：修复英文规范在自解释下的机械硬翻感，呈现流畅平滑的人话中文解释。
+
 ### [x] v1.2.20 — 修复 1936 开发服务器 Vite 热重载 HMR 刷屏与硬重载 ✅
 - **Git Commit**: `fix(vite): ignore public/all_skills.json in Vite HMR watcher on 1936 to prevent browser hard reloads v1.2.20`
 - **Tag**: `v1.2.20`
