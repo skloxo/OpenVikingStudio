@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import {
   ChevronRightIcon,
@@ -701,9 +701,12 @@ function SkillsRoute() {
   const [pageSize, setPageSize] = React.useState(12)
 
   const skillsQuery = useQuery({
+    placeholderData: keepPreviousData,
     queryFn: fetchSkills,
     queryKey: ['skills'],
-    staleTime: 300_000,
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
+    staleTime: 600_000,
   })
   const skills = skillsQuery.data ?? []
 
@@ -717,7 +720,7 @@ function SkillsRoute() {
     })
   }, [skills, searchQuery, activeScopeFilter])
 
-  // Reset to page 1 when filter/search changes
+  // Reset to page 1 ONLY when filter or search text actually changes
   React.useEffect(() => {
     setCurrentPage(1)
   }, [searchQuery, activeScopeFilter])
@@ -734,12 +737,17 @@ function SkillsRoute() {
     skillsQuery.error.code === 'NETWORK_ERROR'
   const detailQuery = useQuery({
     enabled: Boolean(selectedSkill),
+    placeholderData: keepPreviousData,
     queryFn: () => fetchSkillDetail(selectedSkill as SkillItem),
     queryKey: ['skill-detail', identityScopeKey, selectedSkill?.uri],
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
+    staleTime: 600_000,
   })
 
   // 真实后端数据驱动：调取 /api/v1/system/harness_metrics?window=24h 获取 OpenViking 最近 24 小时 24H Rolling 监控数据
   const harnessStatusQuery = useQuery({
+    placeholderData: keepPreviousData,
     queryFn: async () => {
       try {
         const res = await fetch('/api/v1/system/harness_metrics?window=24h')
@@ -763,7 +771,9 @@ function SkillsRoute() {
       }
     },
     queryKey: ['harness-status', '24h'],
-    staleTime: 300_000,
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
+    staleTime: 600_000,
   })
 
   const metrics = harnessStatusQuery.data ?? null
