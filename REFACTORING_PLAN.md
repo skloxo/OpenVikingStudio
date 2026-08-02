@@ -9,6 +9,15 @@
 
 ## 📅 当前核心排期阶段：Milestone Phase 1 (技能中心深度重构 ➔ 任务中心 ➔ Harness 引擎 ➔ Loop)
 
+### [x] v1.2.24 — [TASK-TASK-01] 任务中心 📜 任务执行日志 (Execution Trace Log) 与自愈流转交付 ✅
+- **Git Commit**: `feat(tasks): add Line-by-Line Log Viewer and status flow trace in TaskDetailSheet v1.2.24`
+- **Tag**: `v1.2.24`
+- **修改文件**: `src/routes/tasks/-components/task-detail-sheet.tsx`, `package.json`
+- **主要交付**:
+  1. **📜 任务执行日志 (Execution Trace Log)**：在 TaskDetailSheet 中增设极客黑终端日志流，毫秒级还原 worker 物理工序 Trace；
+  2. **一键复制与日志染色**：日志流自动高亮 `[SUCCESS]` / `[ERROR]` / `[WARN]` 并提供一键复制日志功能；
+  3. **自愈流转闭环**：配合 [重新入队/自愈] 指令，实现挂起或异常任务无缝自愈恢复。
+
 ### [x] v1.2.23 — [TASK-SKILL-03] 僵尸闲置技能物理透视分栏与 Harness 精简建议 ✅
 - **Git Commit**: `feat(skills): add idle skills tab and Harness asset optimization suggestion banner v1.2.23`
 - **Tag**: `v1.2.23`
