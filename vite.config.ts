@@ -22,6 +22,9 @@ const config = defineConfig({
     port: 1936,
     host: '0.0.0.0',
     allowedHosts: true,
+    watch: {
+      ignored: ['**/public/all_skills.json', '**/all_skills.json'],
+    },
     proxy: {
       // Root-level OpenViking API paths (no /api prefix)
       '/health':    ovProxyEntry,
