@@ -50,6 +50,7 @@ Before making ANY modification, analysis, or feature iteration in this workspace
 7. **站在巨人的肩膀上 — 组件化嵌入与非侵入式适配原则 (Upstream Wheel Reuse & Adapter Principle)**：
    - **敬畏第一性原理 (Respect Upstream Core)**：拒绝闭门造车手搓劣质轮子；对开源社区最高 Trust 组件的核心数学算法与推理模型保持敬畏，不乱改其核心第一性逻辑；
    - **专精适配层 (Dedicated Viking Adapter)**：绝不机械裸用第三方开源包，必须在其外层封装针对当前项目的专用 Adapter 适配器，强制保护业务 Schema（如 YAML Header、代码块、系统约束）；
+   - **硬核超参数固化保护 (Hardcoded Model Tuning Safeguard)**：针对引入的特定模型组件（如微软 LLMLingua-2），必须将调优后的超参数（`rate=0.50` 兼顾命令与压缩, `threshold=0.35` 保护否定词/控制词, 正则物理冻结 YAML 头部 `^---[\s\S]*?---` 与代码块 ```` ```[\s\S]*?``` ````）硬编码固化至项目源码与默认配置中，防止任何人拉取代码后用泛化默认参数搞坏技能；
    - **编排与优雅自愈 (Orchestration & Fallback)**：将第三方开源轮子作为解耦组件融入系统统一生命周期（同启动、同关闭）；编排层必须设置异常熔断兜底，一旦组件报错自动降级，保障主服务 100% 稳如磐石。
 
 ---
