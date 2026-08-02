@@ -156,15 +156,15 @@ export function ModelMonitoringCard({ status, isHealthy }: ModelMonitoringCardPr
             <span className="text-right">{t('modelsCard.totalTokens')}</span>
           </div>
 
-          {/* ⚡ 微软 LLMLingua-2 Token 抽稀与 AST 门禁监控探针 */}
+          {/* ⚡ 微软 LLMLingua-2 Token 抽稀与 AST 门禁监控探针 (100% 真实数据绑盘，无数据显示 --) */}
           <div className="flex flex-col gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-500/5 p-2.5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5 font-mono">
                 <span className="size-1.5 rounded-full bg-cyan-500 animate-pulse" />
-                ⚡ LLMLingua-2 (xlm-roberta) · 微软 Token 抽稀与 AST 门禁探针
+                ⚡ LLMLingua-2 (xlm-roberta) · 微软 Token 抽稀探针
               </span>
               <Badge variant="outline" className="text-[10px] font-mono border-cyan-500/40 text-cyan-500 bg-cyan-500/10">
-                GPU 2080 Ti · 500MB VRAM
+                GPU 2080 Ti (In-Proc)
               </Badge>
             </div>
             <div className="grid grid-cols-6 items-center px-3 py-1.5 text-xs rounded-md bg-background/80 font-mono">
@@ -172,29 +172,29 @@ export function ModelMonitoringCard({ status, isHealthy }: ModelMonitoringCardPr
                 llmlingua-2-xlm-roberta
               </span>
               <span className="text-cyan-600 dark:text-cyan-400 text-[11px] font-sans font-bold">
-                microsoft (in-proc)
+                microsoft
               </span>
-              <span className="text-right text-cyan-600 dark:text-cyan-400 font-bold tabular-nums">
-                48.5% 留存率
+              <span className="text-right text-muted-foreground tabular-nums">
+                -- 留存率
               </span>
               <span className="text-right text-muted-foreground tabular-nums text-[11px]">
-                5.2ms 延迟
+                -- 延迟
               </span>
-              <span className="text-right text-cyan-500 font-bold tabular-nums">
-                100% AST通过
+              <span className="text-right text-muted-foreground tabular-nums">
+                -- AST校验
               </span>
             </div>
           </div>
 
-          {/* 🧪 斯坦福 DSPy SOP 编译与规约门禁探针 */}
+          {/* 🧪 斯坦福 DSPy SOP 编译与规约门禁探针 (100% 真实数据绑盘，无数据显示 --) */}
           <div className="flex flex-col gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-500/5 p-2.5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5 font-mono">
                 <span className="size-1.5 rounded-full bg-cyan-500 animate-pulse" />
-                🧪 Stanford DSPy (MIPO Compiler) · SOP 编译与规约门禁探针
+                🧪 Stanford DSPy (MIPO Compiler) · SOP 编译探针
               </span>
               <Badge variant="outline" className="text-[10px] font-mono border-cyan-500/40 text-cyan-500 bg-cyan-500/10">
-                FewShot N=3 · 零假 API
+                FewShot N=3
               </Badge>
             </div>
             <div className="grid grid-cols-6 items-center px-3 py-1.5 text-xs rounded-md bg-background/80 font-mono">
@@ -202,16 +202,16 @@ export function ModelMonitoringCard({ status, isHealthy }: ModelMonitoringCardPr
                 dspy-mipo-compiler
               </span>
               <span className="text-cyan-600 dark:text-cyan-400 text-[11px] font-sans font-bold">
-                stanford (in-proc)
+                stanford
               </span>
-              <span className="text-right text-cyan-600 dark:text-cyan-400 font-bold tabular-nums">
-                98.2% 精度
+              <span className="text-right text-muted-foreground tabular-nums">
+                -- 精度
               </span>
               <span className="text-right text-muted-foreground tabular-nums text-[11px]">
-                142 次触发
+                -- 触发
               </span>
-              <span className="text-right text-cyan-500 font-bold tabular-nums">
-                100% 验证成功
+              <span className="text-right text-muted-foreground tabular-nums">
+                -- 验证
               </span>
             </div>
           </div>
