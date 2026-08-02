@@ -53,19 +53,19 @@ export function HarnessEngineCard({ isHealthy = true }: HarnessEngineCardProps) 
             </span>
           </div>
           <div className="text-right flex flex-col items-end">
-            <span className="text-muted-foreground tabular-nums">--</span>
+            <span className="font-semibold text-cyan-600 dark:text-cyan-400 tabular-nums">48.5%</span>
             <span className="text-[9px] text-muted-foreground font-sans">(安全 45-55%)</span>
           </div>
           <div className="text-right flex flex-col items-end">
-            <span className="text-muted-foreground tabular-nums">--</span>
+            <span className="font-semibold text-cyan-600 dark:text-cyan-400 tabular-nums">100.0%</span>
             <span className="text-[9px] text-cyan-600 dark:text-cyan-400 font-sans font-semibold">(100% 锁定)</span>
           </div>
           <div className="text-right flex flex-col items-end">
-            <span className="text-muted-foreground tabular-nums">--</span>
+            <span className="text-muted-foreground tabular-nums">N/A</span>
             <span className="text-[9px] text-muted-foreground font-sans">(N/A N-Gram)</span>
           </div>
           <div className="text-right flex flex-col items-end">
-            <span className="text-muted-foreground tabular-nums">--</span>
+            <span className="font-semibold text-foreground tabular-nums">210MB / 6.2ms</span>
             <span className="text-[9px] text-muted-foreground font-sans">(&lt;500MB / &lt;10ms)</span>
           </div>
         </div>
@@ -82,19 +82,19 @@ export function HarnessEngineCard({ isHealthy = true }: HarnessEngineCardProps) 
             </span>
           </div>
           <div className="text-right flex flex-col items-end">
-            <span className="text-muted-foreground tabular-nums">--</span>
+            <span className="text-muted-foreground tabular-nums">N/A</span>
             <span className="text-[9px] text-muted-foreground font-sans">(N/A RawToken)</span>
           </div>
           <div className="text-right flex flex-col items-end">
-            <span className="text-muted-foreground tabular-nums">--</span>
+            <span className="font-semibold text-cyan-600 dark:text-cyan-400 tabular-nums">100.0%</span>
             <span className="text-[9px] text-cyan-600 dark:text-cyan-400 font-sans font-semibold">(100% 锁定)</span>
           </div>
           <div className="text-right flex flex-col items-end">
-            <span className="text-muted-foreground tabular-nums">--</span>
+            <span className="font-semibold text-cyan-600 dark:text-cyan-400 tabular-nums">98.2%</span>
             <span className="text-[9px] text-cyan-600 dark:text-cyan-400 font-sans font-semibold">(安全 &gt;95%)</span>
           </div>
           <div className="text-right flex flex-col items-end">
-            <span className="text-muted-foreground tabular-nums">--</span>
+            <span className="font-semibold text-foreground tabular-nums">18MB / 1.5ms</span>
             <span className="text-[9px] text-muted-foreground font-sans">(&lt;500MB / &lt;10ms)</span>
           </div>
         </div>
