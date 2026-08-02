@@ -1,6 +1,6 @@
 # OpenViking Studio — 远期路线图与 Epic 规划 (ROADMAP.md)
 
-> **规约**：当前的基线版本为 **`v1.2.24`**。本文档存放远期 Epic 愿景与大型模块规划（按 Milestone Phase 解耦）。当 Epic 准备进入迭代开发时，再拆解为原子工单填入 `REFACTORING_PLAN.md` 并在封板发版时映射具体 Tag。
+> **规约**：当前的基线版本为 **`v1.2.25`**。本文档存放远期 Epic 愿景与大型模块规划（按 Milestone Phase 解耦）。当 Epic 准备进入迭代开发时，再拆解为原子工单填入 `REFACTORING_PLAN.md` 并在封板发版时映射具体 Tag。
 
 ---
 
