@@ -9,6 +9,14 @@
 
 ## 📅 当前核心排期阶段：Milestone Phase 1 (技能中心深度重构 ➔ 任务中心 ➔ Harness 引擎 ➔ Loop)
 
+### [x] v1.2.23 — [TASK-SKILL-03] 僵尸闲置技能物理透视分栏与 Harness 精简建议 ✅
+- **Git Commit**: `feat(skills): add idle skills tab and Harness asset optimization suggestion banner v1.2.23`
+- **Tag**: `v1.2.23`
+- **修改文件**: `src/routes/skills/route.tsx`, `package.json`
+- **主要交付**:
+  1. **`💤 僵尸闲置技能 (166)` 物理透视分栏**：提供专属 Filter Tab 快速切入近 24 小时零感应调用的离散技能视图；
+  2. **Harness 技能资产优化建议 Banner**：当切入闲置试图时，直观提示复用率问题并给出向大 SOP 规约归档合并的白盒提速建议。
+
 ### [x] v1.2.22 — [TASK-SKILL-02] 175 技能卡片 24H 活跃、规范文件规模与健康度曝光 ✅
 - **Git Commit**: `feat(skills): expose 24H activity, file size and readiness health badges on every card v1.2.22`
 - **Tag**: `v1.2.22`
