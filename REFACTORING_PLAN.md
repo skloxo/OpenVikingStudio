@@ -172,6 +172,23 @@
 **来源**：Harness 引擎前沿增强  
 **预计规模**：S (1 个迭代)
 
+### 📌 P0: [ ] [TASK-HARNESS-WHEELS-01] 引入与跟进开源顶级轮子 (LLMLingua-2 & DSPy) 驱动技能自动提炼
+
+**模块**：Harness Engine (自演进引擎)  
+**工单 ID**：`TASK-HARNESS-WHEELS-01`  
+**优先级**：P0 (高优先级)  
+**来源**：用户指令 ("估计这种技能提炼的工具轮子 GitHub 上也有，不要纯手搓... 引入并持续跟进开源改进")  
+**预计规模**：S (1 个迭代)
+
+#### 1. 目标与描述
+1. 物理引入 **`microsoft/LLMLingua-2`** (Prompt/Context 动态提炼与 Token 压缩) 与 **`stanfordnlp/dspy`** (SOP 指令自动编译与优化)，作为 Harness 引擎的核心依赖库。
+2. 建立开源上游版本跟踪与同步机制，长效吸收社区最新演进，拒绝闭门造车纯手搓。
+3. 驱动闲置/重叠技能的一键自动化提炼与归档。
+
+#### 2. 量化验收标准
+- [ ] 物理引入 `llmlingua` 与 `dspy-ai` 包作为 Python 后端核心依赖。
+- [ ] 在 Harness 引擎中融合开源提炼算法，提供闲置技能一键提炼/归档建议。
+
 ---
 
 ### 📌 P0: [ ] [TASK-HARNESS-03] Harness 后台 Daemon 独立自演进与 Prompt Auto-Tuning 飞轮 (解决伪自动化)
