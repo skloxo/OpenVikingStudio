@@ -9,7 +9,7 @@
 
 ## 📅 当前核心排期阶段：Milestone Phase 1 (技能中心深度重构 ➔ 任务中心 ➔ Harness 引擎 ➔ Loop)
 
-### [x] v1.2.24 — [TASK-TASK-01] 任务中心 📜 任务执行日志 (Execution Trace Log) 与自愈流转交付 ✅
+### [x] v1.2.24 — [TASK-TASK-01] 任务中心 📜 任务执行日志 (Execution Trace Log) 与自愈流转交付 (用户已验收通过 ✅)
 - **Git Commit**: `feat(tasks): add Line-by-Line Log Viewer and status flow trace in TaskDetailSheet v1.2.24`
 - **Tag**: `v1.2.24`
 - **修改文件**: `src/routes/tasks/-components/task-detail-sheet.tsx`, `package.json`
