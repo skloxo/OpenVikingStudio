@@ -6,7 +6,10 @@ Before making ANY modification, analysis, or feature iteration in this workspace
 2. Read `docs/USER_DESIGN_RULES.md` completely.
 3. Follow the **Native React Source Build** workflow (`src/` ➡️ `pnpm run build` ➡️ `./dist`).
 4. NEVER write imperative DOM injection scripts in `server.js`.
-5. Keep port 1933 (Production) 100% untouched until explicit user release approval.
+5. **1933 生产环境绝对隔离与锁定 (STRICT PORT 1933 PROD LOCK - 铁律)**：
+   - 研发迭代中的所有代码修改、样式调试与功能验证，**100% 只能在 1936 端口 (Vite Dev Server) 进行**。
+   - **绝对禁止**在开发测试期间私自跑 `build` 覆盖 1933 端口（OpenViking Web Studio dist 目录）。
+   - **只有当用户显式下达「验收完成」、「更新 1933」或「封板发版」命令时**，AI 才有权限执行打包并更新 1933！未获显式指令擅自动用 1933 属于严重违规！
 6. **NO GREEN EVER & 冷静性冷淡三态配色铁律**：
    - 严禁在全系统 UI 中使用任何绿色 (`emerald` / `green`)；
    - 采用极简“性冷淡风”掌控冷静观测视角，全界面严格限定三态语义色彩：
