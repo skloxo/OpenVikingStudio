@@ -9,6 +9,15 @@
 
 ## 📅 当前核心排期阶段：Milestone Phase 1 (技能中心深度重构 ➔ 任务中心 ➔ Harness 引擎 ➔ Loop)
 
+### [x] v1.2.22 — [TASK-SKILL-02] 175 技能卡片 24H 活跃、规范文件规模与健康度曝光 ✅
+- **Git Commit**: `feat(skills): expose 24H activity, file size and readiness health badges on every card v1.2.22`
+- **Tag**: `v1.2.22`
+- **修改文件**: `src/routes/skills/route.tsx`, `package.json`
+- **主要交付**:
+  1. **物理 24H 活跃状态标记**：在每张卡片底部清晰标记 `🔥 24H 活跃` 或 `💤 闲置` 物理曝光；
+  2. **规范文件与 SOP 规模**：卡片底部展现关联文件数与 SOP 规约尺寸 (如 `📁 5 文件 (1.8KB)`)；
+  3. **健康度三态图标**：全量技能统一白盒直观输出 `✅ 规范就绪`。
+
 ### [x] v1.2.21 — [TASK-SKILL-01] 技能卡片脱噪与分类语义【信达雅】重构 ✅
 - **Git Commit**: `feat(skills): refine skill card source badges and chinese self-explanations v1.2.21`
 - **Tag**: `v1.2.21`
