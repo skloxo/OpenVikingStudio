@@ -117,7 +117,7 @@ function HarnessLogsPage() {
               <SparklesIcon className="size-3.5 text-cyan-500" />
               总累积演进 Lessons
             </span>
-            <Badge variant="outline" className="text-[9px] font-mono border-cyan-500/40 text-cyan-500 px-1 py-0 bg-cyan-500/10">
+            <Badge variant="outline" className="text-[11px] font-mono border-cyan-500/40 text-cyan-500 px-1 py-0 bg-cyan-500/10">
               Reflexion Engine
             </Badge>
           </div>
@@ -135,7 +135,7 @@ function HarnessLogsPage() {
               <ZapIcon className="size-3.5 text-cyan-500" />
               拦截器硬性阻断次数
             </span>
-            <Badge variant="outline" className="text-[9px] font-mono border-cyan-500/40 text-cyan-500 px-1 py-0 bg-cyan-500/10">
+            <Badge variant="outline" className="text-[11px] font-mono border-cyan-500/40 text-cyan-500 px-1 py-0 bg-cyan-500/10">
               NeMo Guard
             </Badge>
           </div>
@@ -153,7 +153,7 @@ function HarnessLogsPage() {
               <ClockIcon className="size-3.5 text-cyan-500" />
               演进最频繁技能
             </span>
-            <Badge variant="outline" className="text-[9px] font-mono border-cyan-500/40 text-cyan-500 px-1 py-0 bg-cyan-500/10">
+            <Badge variant="outline" className="text-[11px] font-mono border-cyan-500/40 text-cyan-500 px-1 py-0 bg-cyan-500/10">
               SKILL.md
             </Badge>
           </div>

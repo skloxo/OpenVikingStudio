@@ -426,7 +426,7 @@ function SkillDetailTabPanel({
                     <span className="min-w-0 flex-1 truncate text-foreground font-medium">
                       {file.name || file.path}
                     </span>
-                    <Badge variant="outline" className="rounded-xs text-[9px] px-1 py-0 border-border bg-muted/40 text-foreground">
+                    <Badge variant="outline" className="rounded-xs text-[11px] px-1 py-0 border-border bg-muted/40 text-foreground">
                       {file.isDir ? '扩展子目录' : (file.name === 'SKILL.md' ? '主规范说明书' : '辅助脚本')}
                     </Badge>
                   </div>
@@ -438,7 +438,7 @@ function SkillDetailTabPanel({
                   <FileCode2Icon className="size-3.5 text-muted-foreground" />
                   SKILL.md
                 </span>
-                <Badge variant="outline" className="rounded-xs text-[9px] px-1.5 py-0 border-border bg-muted/40 text-foreground">
+                <Badge variant="outline" className="rounded-xs text-[11px] px-1.5 py-0 border-border bg-muted/40 text-foreground">
                   单文件精简规范
                 </Badge>
               </div>
@@ -858,7 +858,7 @@ function SkillsRoute() {
               <ZapIcon className="size-3.5 text-muted-foreground" />
               隐式自动唤醒率
             </span>
-            <Badge variant="outline" className="text-[9px] font-mono border-border bg-muted/40 text-foreground px-1 py-0">
+            <Badge variant="outline" className="text-[11px] font-mono border-border bg-muted/40 text-foreground px-1 py-0">
               意图感应
             </Badge>
           </div>
@@ -880,7 +880,7 @@ function SkillsRoute() {
               <TrendingUpIcon className="size-3.5 text-muted-foreground" />
               技能运行成功率
             </span>
-            <Badge variant="outline" className="text-[9px] font-mono border-border bg-muted/40 text-foreground px-1 py-0">
+            <Badge variant="outline" className="text-[11px] font-mono border-border bg-muted/40 text-foreground px-1 py-0">
               闭环质量
             </Badge>
           </div>
@@ -902,7 +902,7 @@ function SkillsRoute() {
               <CpuIcon className="size-3.5 text-muted-foreground" />
               VK 技能统一收敛率
             </span>
-            <Badge variant="outline" className="text-[9px] font-mono border-border bg-muted/40 text-foreground px-1 py-0">
+            <Badge variant="outline" className="text-[11px] font-mono border-border bg-muted/40 text-foreground px-1 py-0">
               踩坑演进飞轮
             </Badge>
           </div>
@@ -924,7 +924,7 @@ function SkillsRoute() {
               <LayersIcon className="size-3.5 text-muted-foreground" />
               技能资产活跃复用率
             </span>
-            <Badge variant="outline" className="text-[9px] font-mono border-border bg-muted/40 text-foreground px-1 py-0">
+            <Badge variant="outline" className="text-[11px] font-mono border-border bg-muted/40 text-foreground px-1 py-0">
               资产健康度
             </Badge>
           </div>
@@ -946,7 +946,7 @@ function SkillsRoute() {
               <ShieldCheckIcon className="size-3.5 text-muted-foreground" />
               Context 提示词压缩率
             </span>
-            <Badge variant="outline" className="text-[9px] font-mono border-border bg-muted/40 text-foreground px-1 py-0">
+            <Badge variant="outline" className="text-[11px] font-mono border-border bg-muted/40 text-foreground px-1 py-0">
               Token 降本
             </Badge>
           </div>
@@ -972,7 +972,7 @@ function SkillsRoute() {
               <ClockIcon className="size-3.5 text-muted-foreground" />
               Harness 技能自演进
             </span>
-            <Badge variant="outline" className="text-[9px] font-mono border-border bg-muted/40 text-foreground px-1 py-0">
+            <Badge variant="outline" className="text-[11px] font-mono border-border bg-muted/40 text-foreground px-1 py-0">
               白盒审计 ➔
             </Badge>
           </div>
@@ -1043,7 +1043,7 @@ function SkillsRoute() {
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >
-            💤 僵尸闲置技能 ({skills.filter((s) => !ACTIVE_CORE_SKILLS.includes(s.name)).length})
+            💤 闲置技能 ({skills.filter((s) => !ACTIVE_CORE_SKILLS.includes(s.name)).length})
           </button>
         </div>
         {/* 搜索框栏内右对齐 */}
@@ -1149,18 +1149,12 @@ function SkillsRoute() {
                           {displayName}
                         </h3>
                       </div>
-                      <div className="flex items-center gap-1 shrink-0 font-mono text-[10px]">
+                      <div className="flex items-center gap-1 shrink-0 font-mono text-xs">
                         <Badge
                           variant="outline"
-                          className={cn('rounded-xs px-1.5 py-0', srcInfo.badgeClass)}
+                          className={cn('rounded-xs px-2 py-0.5 text-xs font-medium', srcInfo.badgeClass)}
                         >
                           {srcInfo.label}
-                        </Badge>
-                        <Badge
-                          variant="outline"
-                          className="rounded-xs px-1.5 py-0 border-border/60 bg-muted/40 text-foreground"
-                        >
-                          {isAgentScope ? '智能体工程' : '用户习惯'}
                         </Badge>
                       </div>
                     </div>
@@ -1170,26 +1164,26 @@ function SkillsRoute() {
                     </p>
                   </div>
 
-                  <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-2 text-[10px] font-mono text-muted-foreground">
+                  <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-2.5 text-xs font-mono text-muted-foreground">
                     <div className="flex items-center gap-1.5 min-w-0 truncate">
-                      <Badge variant="outline" className="rounded-xs text-[9px] px-1 py-0 border-border/60 bg-muted/20 text-muted-foreground shrink-0">
+                      <Badge variant="outline" className="rounded-xs text-xs px-2 py-0.5 border-border/70 bg-muted/30 text-foreground/80 font-normal shrink-0">
                         ✅ 规范就绪
                       </Badge>
-                      <Badge variant="outline" className="rounded-xs text-[9px] px-1 py-0 border-border/60 bg-muted/20 text-muted-foreground shrink-0">
+                      <Badge variant="outline" className="rounded-xs text-xs px-2 py-0.5 border-border/70 bg-muted/30 text-foreground/80 font-normal shrink-0">
                         📁 {Array.isArray(skill.files) && skill.files.length > 0 ? skill.files.length : 1} 文件 ({typeof skill.content === 'string' && skill.content.length > 0 ? (skill.content.length > 1024 ? `${(skill.content.length / 1024).toFixed(1)}KB` : `${skill.content.length}B`) : 'SOP'})
                       </Badge>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                       {['diagnosing-bugs', 'tdd', 'codebase-design', 'domain-modeling', 'code-review', 'to-spec', 'research', 'prototype', 'improve-codebase-architecture'].includes(skill.name) ? (
-                        <Badge variant="outline" className="text-[9px] px-1 py-0 border-cyan-500/30 bg-cyan-500/10 text-cyan-500 font-mono">
+                        <Badge variant="outline" className="text-xs px-2 py-0.5 border-cyan-500/40 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-medium">
                           🔥 24H 活跃
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="text-[9px] px-1 py-0 border-border/40 bg-muted/10 text-muted-foreground font-mono">
+                        <Badge variant="outline" className="text-xs px-2 py-0.5 border-border/50 bg-muted/20 text-muted-foreground font-normal">
                           💤 闲置
                         </Badge>
                       )}
-                      <ChevronRightIcon className="size-3.5 group-hover:translate-x-0.5 transition-transform text-muted-foreground" />
+                      <ChevronRightIcon className="size-4 group-hover:translate-x-0.5 transition-transform text-muted-foreground" />
                     </div>
                   </div>
                 </Card>

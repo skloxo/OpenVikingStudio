@@ -29,6 +29,21 @@
 | **时间戳/哈希/代码** | `font-mono` | `text-xs` | `text-muted-foreground/80` |
 | **标题 (Headings)** | `font-sans font-semibold` | `text-sm` / `text-base` | `text-foreground` |
 
+### 1.2.1 字体字号下限与排版硬性守则 (Typography Minimum Size Specification)
+
+为了确保信息在高分辨率屏幕（High-DPI / 4K）与常规显示器上的白盒直观可读性，全系统 100% 遵循以下字体字号硬性守则：
+
+1. **绝对字号下限 (Absolute Minimum Font Size: 11px)**：
+   - **全系统 100% 物理禁用任何 `< 11px` 的微字**（如 `text-[8px]`, `text-[9px]`, `text-[10px]` 彻底封杀！）。
+   - 即使最极简紧凑的辅助标签、卡片脚标、状态 Dot 提示或代码属性，最小也必须为 **`text-[11px]` (11px)**。
+
+2. **系统字号阶梯 (Typography Hierarchy Scale)**：
+   - **`11px` (`text-[11px]`)**：极紧凑的辅助标签、表格次要说明（物理硬下限）。
+   - **`12px` (`text-xs`)**：标准卡片正文、属性 Label、标准 Badge 徽章、按钮文字（高密开发基准字号）。
+   - **`13px - 14px` (`text-sm`)**：卡片标题、输入框文字、常规正文、导航链接。
+   - **`16px` (`text-base` / `text-lg`)**：板块主标题、关键明细卡片头。
+   - **`20px+` (`text-xl` / `text-2xl`)**：顶部大牌 Banner 核心数值。
+
 ### 1.3 间距与布局 Token (Density & Spacing Scale)
 收紧整体组件与页面边距，相比传统 WEB 减半空白占用：
 
