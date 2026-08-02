@@ -265,8 +265,8 @@ export function TaskDetailSheet({
                     )
                   })()}
 
-                {/* Line-by-Line Execution Log Section */}
-                <DetailSection title={i18n.language.startsWith('zh') ? '📜 物理 Step 日志透视 (Line-by-Line Log)' : 'Line-by-Line Execution Log'}>
+                {/* Execution Log Section */}
+                <DetailSection title={i18n.language.startsWith('zh') ? '📜 任务执行日志' : 'Execution Trace Log'}>
                   <div className="relative rounded-xl border bg-black/90 dark:bg-black/95 p-3.5 font-mono text-[11px] leading-relaxed text-cyan-400">
                     <div className="flex items-center justify-between border-b border-cyan-500/20 pb-2 mb-2 text-[10px] text-muted-foreground">
                       <span>LOG TRACE STREAM (ID: {task.task_id})</span>
