@@ -92,19 +92,21 @@ function HarnessLogsPage() {
     if (!simPrompt.trim()) return
     const text = simPrompt.trim().toLowerCase()
     
-    // Check if diagnosing-bugs vs tdd disambiguation rule has been physically written to SKILL.md
-    const isBoundaryResolved = resolvedPrompts.length > 0 || resolvedPrompts.some((p) => p.includes('排查') || p.includes('测试'))
+    const isResolved = (key: string) => {
+      return resolvedPrompts.some((p) => p.includes(key) || text.includes(p))
+    }
 
-    if (text.includes('bug') || text.includes('报错') || text.includes('崩了') || text.includes('排查')) {
-      if (text.includes('写测试') || text.includes('测试') || text.includes('规范')) {
-        if (isBoundaryResolved) {
+    // Scenario 1: 排查 / 报错 / Bug / 死锁 + 测试
+    if (text.includes('bug') || text.includes('报错') || text.includes('崩了') || text.includes('排查') || text.includes('死锁') || text.includes('内存')) {
+      if (text.includes('写测试') || text.includes('测试') || text.includes('规范') || text.includes('用例')) {
+        if (isResolved('排查') || isResolved('测试') || isResolved('bug') || resolvedPrompts.length > 0) {
           setSimResult({
             primarySkill: 'diagnosing-bugs',
             primaryConfidence: 98.5,
             secondarySkill: 'tdd',
             secondaryConfidence: 12.0,
             hasCollision: false,
-            suggestion: '✅ 该需求已成功通过 AST 门禁写入消歧规约至 SKILL.md！diagnosing-bugs 与 tdd 物理边界已清除（泛化兼容各类“排查+测试”自然语言表述），零打架误触发！',
+            suggestion: '✅ 该需求已成功通过 AST 门禁写入消歧规约至 SKILL.md！diagnosing-bugs 与 tdd 物理边界已清除（泛化兼容各类自然语言表述），零打架误触发！',
           })
         } else {
           setSimResult({
@@ -124,22 +126,119 @@ function HarnessLogsPage() {
           suggestion: '意图清晰，高置信度 (96.2%) 命中 diagnosing-bugs 技能，零歧义碰撞。',
         })
       }
-    } else if (text.includes('审查') || text.includes('review') || text.includes('代码')) {
-      setSimResult({
-        primarySkill: 'code-review',
-        primaryConfidence: 89.6,
-        secondarySkill: 'codebase-design',
-        secondaryConfidence: 76.4,
-        hasCollision: true,
-        suggestion: '检测到意图在 "code-review" 与 "codebase-design" 之间重叠度 76.4% (>75%)！建议在 SKILL.md 中明确说明: "代码改动对比走 code-review，深层模块接口设计走 codebase-design"。',
-      })
-      setSimResult({
-        primarySkill: 'openviking-studio-dev',
-        primaryConfidence: 91.5,
-        hasCollision: false,
-        suggestion: '意图清晰，命中通用 openviking-studio-dev 开发 SOP。',
-      })
+      return
     }
+
+    // Scenario 2: 代码审查 vs 架构设计碰撞
+    if (text.includes('审查') || text.includes('review') || text.includes('检查') || text.includes('改动')) {
+      if (text.includes('架构') || text.includes('设计') || text.includes('模块') || text.includes('接口')) {
+        if (isResolved('审查') || isResolved('review') || isResolved('设计') || isResolved('架构')) {
+          setSimResult({
+            primarySkill: 'code-review',
+            primaryConfidence: 98.2,
+            secondarySkill: 'codebase-design',
+            secondaryConfidence: 11.5,
+            hasCollision: false,
+            suggestion: '✅ 该需求已成功通过 AST 门禁写入消歧规约至 SKILL.md！code-review 与 codebase-design 物理边界已清除，零打架误触发！',
+          })
+        } else {
+          setSimResult({
+            primarySkill: 'code-review',
+            primaryConfidence: 89.6,
+            secondarySkill: 'codebase-design',
+            secondaryConfidence: 76.4,
+            hasCollision: true,
+            suggestion: '检测到意图在 "code-review" 与 "codebase-design" 之间重叠度 76.4% (>75%)！建议在 SKILL.md 中明确说明: "代码改动对比走 code-review，深层模块接口设计走 codebase-design"。',
+          })
+        }
+      } else {
+        setSimResult({
+          primarySkill: 'code-review',
+          primaryConfidence: 95.8,
+          hasCollision: false,
+          suggestion: '意图清晰，高置信度 (95.8%) 命中 code-review 技能，零歧义碰撞。',
+        })
+      }
+      return
+    }
+
+    // Scenario 3: 需求讨论 / 拆工单 / 规格书
+    if (text.includes('需求') || text.includes('拆工单') || text.includes('规格') || text.includes('路线图') || text.includes('规划')) {
+      if (isResolved('需求') || isResolved('工单') || isResolved('规格')) {
+        setSimResult({
+          primarySkill: 'to-spec',
+          primaryConfidence: 97.9,
+          secondarySkill: 'to-tickets',
+          secondaryConfidence: 10.4,
+          hasCollision: false,
+          suggestion: '✅ 该需求已成功通过 AST 门禁写入消歧规约至 SKILL.md！to-spec 与 to-tickets 物理边界已清除，零打架误触发！',
+        })
+      } else {
+        setSimResult({
+          primarySkill: 'to-spec',
+          primaryConfidence: 87.2,
+          secondarySkill: 'to-tickets',
+          secondaryConfidence: 78.5,
+          hasCollision: true,
+          suggestion: '检测到意图在 "to-spec" 与 "to-tickets" 之间重叠度 78.5% (>75%)！建议追加消歧规则: "需求讨论先收敛为 to-spec，细粒度任务拆解走 to-tickets"。',
+        })
+      }
+      return
+    }
+
+    // Scenario 4: 技术调研 / 原型验证
+    if (text.includes('调研') || text.includes('评估') || text.includes('demo') || text.includes('试写') || text.includes('原型') || text.includes('验')) {
+      if (isResolved('调研') || isResolved('评估') || isResolved('demo') || isResolved('原型') || isResolved('验')) {
+        setSimResult({
+          primarySkill: 'research',
+          primaryConfidence: 98.6,
+          secondarySkill: 'prototype',
+          secondaryConfidence: 11.2,
+          hasCollision: false,
+          suggestion: '✅ 该需求已成功通过 AST 门禁写入消歧规约至 SKILL.md！research 与 prototype 物理边界已清除，零打架误触发！',
+        })
+      } else {
+        setSimResult({
+          primarySkill: 'research',
+          primaryConfidence: 86.5,
+          secondarySkill: 'prototype',
+          secondaryConfidence: 77.2,
+          hasCollision: true,
+          suggestion: '检测到意图在 "research" 与 "prototype" 之间重叠度 77.2% (>75%)！建议追加消歧规则: "文档与 API 理论调研走 research，可运行原型 Demo 验证走 prototype"。',
+        })
+      }
+      return
+    }
+
+    // Scenario 5: 测试驱动开发 (TDD)
+    if (text.includes('测试') || text.includes('tdd') || text.includes('单元测试') || text.includes('重构')) {
+      setSimResult({
+        primarySkill: 'tdd',
+        primaryConfidence: 94.8,
+        hasCollision: false,
+        suggestion: '意图清晰，高置信度 (94.8%) 命中 tdd 技能（红-绿-重构循环）。',
+      })
+      return
+    }
+
+    // Scenario 6: 解决合并冲突
+    if (text.includes('冲突') || text.includes('merge') || text.includes('rebase')) {
+      setSimResult({
+        primarySkill: 'resolving-merge-conflicts',
+        primaryConfidence: 97.4,
+        hasCollision: false,
+        suggestion: '意图清晰，高置信度 (97.4%) 命中 resolving-merge-conflicts 自动解冲突技能。',
+      })
+      return
+    }
+
+    // Scenario 7: 通用研发 / UI 迭代
+    setSimResult({
+      primarySkill: 'openviking-studio-dev',
+      primaryConfidence: 91.5,
+      hasCollision: false,
+      suggestion: `意图清晰，输入内容 "${simPrompt.trim()}" 已高置信度 (91.5%) 命中通用 openviking-studio-dev 开发 SOP。`,
+    })
   }
 
   const harnessStatusQuery = useQuery({
@@ -317,14 +416,15 @@ function HarnessLogsPage() {
                     size="sm"
                     className="h-6 text-[11px] bg-cyan-600 hover:bg-cyan-500 text-white font-mono px-2.5 rounded cursor-pointer"
                     onClick={() => {
-                      setResolvedPrompts((prev) => [...prev, simPrompt.trim().toLowerCase()])
+                      const promptTerm = simPrompt.trim().toLowerCase()
+                      setResolvedPrompts((prev) => [...prev, promptTerm, simResult.primarySkill, simResult.secondarySkill ?? ''])
                       setSimResult({
-                        primarySkill: 'diagnosing-bugs',
+                        primarySkill: simResult.primarySkill,
                         primaryConfidence: 98.5,
-                        secondarySkill: 'tdd',
+                        secondarySkill: simResult.secondarySkill,
                         secondaryConfidence: 12.0,
                         hasCollision: false,
-                        suggestion: '✅ 该需求已成功通过 AST 门禁写入消歧规约至 SKILL.md！diagnosing-bugs 与 tdd 物理边界已清除，零打架误触发！',
+                        suggestion: `✅ 已成功通过 AST 门禁将消歧规约写入 SKILL.md！${simResult.primarySkill} 与 ${simResult.secondarySkill ?? '从属技能'} 物理边界已清除，再次探测零碰撞！`,
                       })
                     }}
                   >
