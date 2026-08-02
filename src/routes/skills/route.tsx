@@ -45,6 +45,7 @@ type SkillItem = {
   scope: SkillScope
   uri: string
   path?: string
+  source?: string
   cnName?: string
   cnDescription?: string
   content?: string
@@ -667,24 +668,29 @@ function getChineseSkillDescription(name: string, rawDesc: string): string {
   if (!rawDesc || rawDesc === '暂无简介' || rawDesc === '>' || rawDesc === '|') {
     return `用于自动化执行 ${name} 的标准化工程技能规约。`
   }
-  // 简易判断：如果是全英文简介，自动附带中文人话自解释提示
-  if (/^[a-zA-Z0-9\s.,!?'"()-]+$/.test(rawDesc.trim())) {
-    return `[英文规范] ${rawDesc}`
-  }
   return rawDesc
 }
 
-function getSkillSource(name: string): { label: string; badgeClass: string } {
-  if (name.startsWith('sn-') || name.startsWith('hermes-') || name.includes('hermes')) {
-    return { label: 'Hermes 扩展', badgeClass: 'border-border bg-muted/40 text-foreground' }
+function getSkillSource(name: string, scope?: SkillScope, source?: string): { label: string; badgeClass: string } {
+  if (
+    source === 'system' ||
+    name.includes('openviking') ||
+    name.includes('antigravity') ||
+    name.includes('diagnosing') ||
+    name.includes('codebase-design') ||
+    name.includes('tdd') ||
+    name.includes('domain-modeling') ||
+    name.includes('code-review') ||
+    name.includes('prototype') ||
+    name.includes('to-spec') ||
+    name.includes('research')
+  ) {
+    return { badgeClass: 'border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-medium', label: '系统内建' }
   }
-  if (name.startsWith('tide-') || name.startsWith('vibe-') || name.startsWith('stock-')) {
-    return { label: 'TideTrading', badgeClass: 'border-border bg-muted/40 text-foreground' }
+  if (scope === 'user') {
+    return { badgeClass: 'border-border bg-muted/30 text-foreground', label: '个人配置' }
   }
-  if (name.includes('openviking') || name.includes('antigravity') || name.includes('diagnosing')) {
-    return { label: '系统内建', badgeClass: 'border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-medium' }
-  }
-  return { label: '工作区技能', badgeClass: 'border-border bg-muted/30 text-foreground' }
+  return { badgeClass: 'border-border bg-muted/40 text-foreground', label: '工作区' }
 }
 
 
@@ -1083,7 +1089,7 @@ function SkillsRoute() {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {paginatedSkills.map((skill) => {
               const isAgentScope = skill.scope === 'agent'
-              const srcInfo = getSkillSource(skill.name)
+              const srcInfo = getSkillSource(skill.name, skill.scope, skill.source)
               const displayName = isZh
                 ? (skill.cnName || getChineseSkillName(skill.name))
                 : skill.name
@@ -1106,28 +1112,18 @@ function SkillsRoute() {
                           {displayName}
                         </h3>
                       </div>
-                      <div className="flex items-center gap-1 shrink-0">
+                      <div className="flex items-center gap-1 shrink-0 font-mono text-[10px]">
                         <Badge
                           variant="outline"
-                          className={cn('rounded-xs font-mono text-[10px]', srcInfo.badgeClass)}
+                          className={cn('rounded-xs px-1.5 py-0', srcInfo.badgeClass)}
                         >
                           {srcInfo.label}
                         </Badge>
                         <Badge
                           variant="outline"
-                          className="rounded-xs font-mono text-[10px] border-border/60 bg-muted/40 text-foreground"
+                          className="rounded-xs px-1.5 py-0 border-border/60 bg-muted/40 text-foreground"
                         >
-                          {isAgentScope ? (
-                            <span className="flex items-center gap-1 text-foreground">
-                              <UsersRoundIcon className="size-3 text-muted-foreground" />
-                              工程技能
-                            </span>
-                          ) : (
-                            <span className="flex items-center gap-1 text-foreground">
-                              <UserRoundIcon className="size-3 text-muted-foreground" />
-                              个人习惯
-                            </span>
-                          )}
+                          {isAgentScope ? '智能体工程' : '用户习惯'}
                         </Badge>
                       </div>
                     </div>
