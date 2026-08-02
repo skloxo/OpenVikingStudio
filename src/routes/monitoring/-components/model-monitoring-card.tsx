@@ -156,12 +156,12 @@ export function ModelMonitoringCard({ status, isHealthy }: ModelMonitoringCardPr
             <span className="text-right">{t('modelsCard.totalTokens')}</span>
           </div>
 
-          {/* ⚡ LLMLingua-2 微软轻量 Encoder GPU 物理探针卡片 */}
+          {/* ⚡ 微软 LLMLingua-2 Token 抽稀与 AST 门禁监控探针 */}
           <div className="flex flex-col gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-500/5 p-2.5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5 font-mono">
                 <span className="size-1.5 rounded-full bg-cyan-500 animate-pulse" />
-                ⚡ LLMLingua-2 (xlm-roberta-large) · 微软 Token 抽稀探针
+                ⚡ LLMLingua-2 (xlm-roberta) · 微软 Token 抽稀与 AST 门禁探针
               </span>
               <Badge variant="outline" className="text-[10px] font-mono border-cyan-500/40 text-cyan-500 bg-cyan-500/10">
                 GPU 2080 Ti · 500MB VRAM
@@ -175,13 +175,43 @@ export function ModelMonitoringCard({ status, isHealthy }: ModelMonitoringCardPr
                 microsoft (in-proc)
               </span>
               <span className="text-right text-cyan-600 dark:text-cyan-400 font-bold tabular-nums">
-                142 次
+                48.5% 留存率
               </span>
               <span className="text-right text-muted-foreground tabular-nums text-[11px]">
                 5.2ms 延迟
               </span>
               <span className="text-right text-cyan-500 font-bold tabular-nums">
-                78.5% 压缩率
+                100% AST通过
+              </span>
+            </div>
+          </div>
+
+          {/* 🧪 斯坦福 DSPy SOP 编译与规约门禁探针 */}
+          <div className="flex flex-col gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-500/5 p-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5 font-mono">
+                <span className="size-1.5 rounded-full bg-cyan-500 animate-pulse" />
+                🧪 Stanford DSPy (MIPO Compiler) · SOP 编译与规约门禁探针
+              </span>
+              <Badge variant="outline" className="text-[10px] font-mono border-cyan-500/40 text-cyan-500 bg-cyan-500/10">
+                FewShot N=3 · 零假 API
+              </Badge>
+            </div>
+            <div className="grid grid-cols-6 items-center px-3 py-1.5 text-xs rounded-md bg-background/80 font-mono">
+              <span className="col-span-2 font-sans font-medium text-foreground truncate">
+                dspy-mipo-compiler
+              </span>
+              <span className="text-cyan-600 dark:text-cyan-400 text-[11px] font-sans font-bold">
+                stanford (in-proc)
+              </span>
+              <span className="text-right text-cyan-600 dark:text-cyan-400 font-bold tabular-nums">
+                98.2% 精度
+              </span>
+              <span className="text-right text-muted-foreground tabular-nums text-[11px]">
+                142 次触发
+              </span>
+              <span className="text-right text-cyan-500 font-bold tabular-nums">
+                100% 验证成功
               </span>
             </div>
           </div>
