@@ -13,7 +13,6 @@ import {
   SparklesIcon,
   TrendingUpIcon,
   UserRoundIcon,
-  UsersRoundIcon,
   ZapIcon,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -1134,13 +1133,24 @@ function SkillsRoute() {
                   </div>
 
                   <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-2 text-[10px] font-mono text-muted-foreground">
-                    <span className="truncate max-w-36" title={skill.uri}>
-                      {skill.uri}
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      <Badge variant="outline" className="text-[9px] px-1 py-0 border-cyan-500/30 bg-cyan-500/5 text-cyan-500 font-mono">
-                        🔥 24H 活跃
+                    <div className="flex items-center gap-1.5 min-w-0 truncate">
+                      <Badge variant="outline" className="rounded-xs text-[9px] px-1 py-0 border-border/60 bg-muted/20 text-muted-foreground shrink-0">
+                        ✅ 规范就绪
                       </Badge>
+                      <Badge variant="outline" className="rounded-xs text-[9px] px-1 py-0 border-border/60 bg-muted/20 text-muted-foreground shrink-0">
+                        📁 {Array.isArray(skill.files) && skill.files.length > 0 ? skill.files.length : 1} 文件 ({typeof skill.content === 'string' && skill.content.length > 0 ? (skill.content.length > 1024 ? `${(skill.content.length / 1024).toFixed(1)}KB` : `${skill.content.length}B`) : 'SOP'})
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {['diagnosing-bugs', 'tdd', 'codebase-design', 'domain-modeling', 'code-review', 'to-spec', 'research', 'prototype', 'improve-codebase-architecture'].includes(skill.name) ? (
+                        <Badge variant="outline" className="text-[9px] px-1 py-0 border-cyan-500/30 bg-cyan-500/10 text-cyan-500 font-mono">
+                          🔥 24H 活跃
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[9px] px-1 py-0 border-border/40 bg-muted/10 text-muted-foreground font-mono">
+                          💤 闲置
+                        </Badge>
+                      )}
                       <ChevronRightIcon className="size-3.5 group-hover:translate-x-0.5 transition-transform text-muted-foreground" />
                     </div>
                   </div>
