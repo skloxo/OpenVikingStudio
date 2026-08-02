@@ -1007,7 +1007,7 @@ function SkillsRoute() {
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >
-            全部技能 ({skills.length})
+            全部 ({skills.length})
           </button>
           <button
             type="button"
@@ -1019,7 +1019,7 @@ function SkillsRoute() {
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >
-            🤖 智能体工程技能 ({skills.filter((s) => s.scope === 'agent').length})
+            🤖 智能体 ({skills.filter((s) => s.scope === 'agent').length})
           </button>
           <button
             type="button"
@@ -1031,7 +1031,7 @@ function SkillsRoute() {
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >
-            👤 用户习惯与偏好 ({skills.filter((s) => s.scope === 'user').length})
+            👤 个人偏好 ({skills.filter((s) => s.scope === 'user').length})
           </button>
           <button
             type="button"
@@ -1043,7 +1043,7 @@ function SkillsRoute() {
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >
-            💤 闲置技能 ({skills.filter((s) => !ACTIVE_CORE_SKILLS.includes(s.name)).length})
+            💤 闲置 ({skills.filter((s) => !ACTIVE_CORE_SKILLS.includes(s.name)).length})
           </button>
         </div>
         {/* 搜索框栏内右对齐 */}
@@ -1166,9 +1166,6 @@ function SkillsRoute() {
 
                   <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-2.5 text-xs font-mono text-muted-foreground">
                     <div className="flex items-center gap-1.5 min-w-0 truncate">
-                      <Badge variant="outline" className="rounded-xs text-xs px-2 py-0.5 border-border/70 bg-muted/30 text-foreground/80 font-normal shrink-0">
-                        ✅ 规范就绪
-                      </Badge>
                       <Badge variant="outline" className="rounded-xs text-xs px-2 py-0.5 border-border/70 bg-muted/30 text-foreground/80 font-normal shrink-0">
                         📁 {Array.isArray(skill.files) && skill.files.length > 0 ? skill.files.length : 1} 文件 ({typeof skill.content === 'string' && skill.content.length > 0 ? (skill.content.length > 1024 ? `${(skill.content.length / 1024).toFixed(1)}KB` : `${skill.content.length}B`) : 'SOP'})
                       </Badge>
