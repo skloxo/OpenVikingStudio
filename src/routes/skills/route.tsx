@@ -1141,7 +1141,6 @@ function SkillsRoute() {
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {paginatedSkills.map((skill) => {
-              const isAgentScope = skill.scope === 'agent'
               const srcInfo = getSkillSource(skill.name, skill.scope, skill.source)
               const displayName = isZh
                 ? (skill.cnName || getChineseSkillName(skill.name))
