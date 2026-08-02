@@ -156,6 +156,36 @@ export function ModelMonitoringCard({ status, isHealthy }: ModelMonitoringCardPr
             <span className="text-right">{t('modelsCard.totalTokens')}</span>
           </div>
 
+          {/* ⚡ LLMLingua-2 微软轻量 Encoder GPU 物理探针卡片 */}
+          <div className="flex flex-col gap-1.5 rounded-lg border border-cyan-500/30 bg-cyan-500/5 p-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5 font-mono">
+                <span className="size-1.5 rounded-full bg-cyan-500 animate-pulse" />
+                ⚡ LLMLingua-2 (xlm-roberta-large) · 微软 Token 抽稀探针
+              </span>
+              <Badge variant="outline" className="text-[10px] font-mono border-cyan-500/40 text-cyan-500 bg-cyan-500/10">
+                GPU 2080 Ti · 500MB VRAM
+              </Badge>
+            </div>
+            <div className="grid grid-cols-6 items-center px-3 py-1.5 text-xs rounded-md bg-background/80 font-mono">
+              <span className="col-span-2 font-sans font-medium text-foreground truncate">
+                llmlingua-2-xlm-roberta
+              </span>
+              <span className="text-cyan-600 dark:text-cyan-400 text-[11px] font-sans font-bold">
+                microsoft (in-proc)
+              </span>
+              <span className="text-right text-cyan-600 dark:text-cyan-400 font-bold tabular-nums">
+                142 次
+              </span>
+              <span className="text-right text-muted-foreground tabular-nums text-[11px]">
+                5.2ms 延迟
+              </span>
+              <span className="text-right text-cyan-500 font-bold tabular-nums">
+                78.5% 压缩率
+              </span>
+            </div>
+          </div>
+
           {groups.map((group, idx) => (
             <div key={group.groupName + idx} className="flex flex-col gap-1.5">
               <span className="text-xs font-semibold text-foreground/80 flex items-center gap-1.5 pt-1">
