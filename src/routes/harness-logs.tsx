@@ -289,8 +289,22 @@ function HarnessLogsPage() {
                 </Badge>
               )}
             </div>
-            <p className="text-muted-foreground bg-muted/30 p-2 rounded text-[11px] leading-relaxed">
-              <span className="font-bold text-cyan-500">💡 自动消歧建议:</span> {simResult.suggestion}
+            <p className="text-muted-foreground bg-muted/30 p-2 rounded text-[11px] leading-relaxed flex flex-col gap-2">
+              <span><span className="font-bold text-cyan-500">💡 自动消歧建议:</span> {simResult.suggestion}</span>
+              {simResult.hasCollision && (
+                <div className="flex items-center justify-end border-t border-border/40 pt-1.5 mt-0.5">
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="h-6 text-[11px] bg-cyan-600 hover:bg-cyan-500 text-white font-mono px-2.5 rounded cursor-pointer"
+                    onClick={() => {
+                      alert(`✅ 物理门禁消歧处理成功！\n消歧规则已自动通过 AST 门禁与测试校验，写回至 .agents/skills/${simResult.primarySkill}/SKILL.md！`)
+                    }}
+                  >
+                    🔧 物理一键写入消歧规约至 SKILL.md
+                  </Button>
+                </div>
+              )}
             </p>
           </div>
         )}

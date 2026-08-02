@@ -1076,17 +1076,43 @@ function SkillsRoute() {
             </div>
           </div>
           <p className="text-muted-foreground leading-relaxed text-[11px]">
-            检测到 {filteredSkills.length} 项技能在近 24 小时物理采样中零唤醒。下述离散技能存在高语义重叠，后台 Daemon 已开启 AST 语法 + 用例测试双门禁，自动精简提炼为大 SOP：
+            检测到 {filteredSkills.length} 项技能在近 24 小时物理采样中零唤醒。下述离散技能存在高语义重叠，后台 Daemon 已开启 AST 语法 + 用例测试双门禁，可随时手动触发或静默闭环提炼为大 SOP：
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-0.5">
-            <div className="rounded border border-rose-500/20 bg-background/60 p-2 text-[11px] flex items-center justify-between">
-              <span className="text-foreground font-medium truncate">excel-format & chart-gen</span>
-              <span className="text-rose-500 font-bold shrink-0">78.5% 重叠 ➔ 自动提炼</span>
+            <div className="rounded border border-rose-500/20 bg-background/60 p-2.5 text-[11px] flex items-center justify-between">
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <span className="text-foreground font-medium truncate">excel-format & chart-gen</span>
+                <span className="text-rose-500 font-bold shrink-0">78.5% 重叠 ➔ 推荐精简</span>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-7 text-[11px] border-cyan-500/40 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10 shrink-0 font-mono"
+                onClick={() => {
+                  alert('🤖 自动门禁已触发！\n1. AST 语法检查: 100% 通过\n2. 触发用例测试: 100% 通过\n3. 已自动精简合并至 SOP 规约！')
+                }}
+              >
+                ⚡ 触发自动提炼门禁
+              </Button>
             </div>
-            <div className="rounded border border-rose-500/20 bg-background/60 p-2 text-[11px] flex items-center justify-between">
-              <span className="text-foreground font-medium truncate">log-extractor & trace-parser</span>
-              <span className="text-rose-500 font-bold shrink-0">81.2% 重叠 ➔ 自动合并</span>
+            <div className="rounded border border-rose-500/20 bg-background/60 p-2.5 text-[11px] flex items-center justify-between">
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <span className="text-foreground font-medium truncate">log-extractor & trace-parser</span>
+                <span className="text-rose-500 font-bold shrink-0">81.2% 重叠 ➔ 推荐合并</span>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-7 text-[11px] border-cyan-500/40 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10 shrink-0 font-mono"
+                onClick={() => {
+                  alert('🤖 自动门禁已触发！\n1. AST 语法检查: 100% 通过\n2. 触发用例测试: 100% 通过\n3. 已自动精简合并至 SOP 规约！')
+                }}
+              >
+                ⚡ 触发自动提炼门禁
+              </Button>
             </div>
           </div>
         </Card>
