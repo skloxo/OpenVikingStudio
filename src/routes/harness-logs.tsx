@@ -274,24 +274,49 @@ function HarnessLogsPage() {
     staleTime: 30_000,
   })
 
+  const [addedLessons, setAddedLessons] = React.useState<LessonItem[]>([])
+  const [refinedItems, setRefinedItems] = React.useState<Record<string, 'idle' | 'p1' | 'p2' | 'done'>>({})
+
   const metrics = harnessStatusQuery.data ?? null
-  const lessonsDetail: LessonItem[] = Array.isArray(metrics?.lessons_detail) && metrics.lessons_detail.length > 0
+  const baseLessons: LessonItem[] = Array.isArray(metrics?.lessons_detail) && metrics.lessons_detail.length > 0
     ? metrics.lessons_detail
     : BUILTIN_LESSONS
+  const lessonsDetail: LessonItem[] = [...addedLessons, ...baseLessons]
   const blockedCalls = typeof metrics?.blocked_calls === 'number' && metrics.blocked_calls > 0
     ? metrics.blocked_calls
     : 2
-  const lessonsCount = typeof metrics?.lessons_count === 'number'
+  const lessonsCount = (typeof metrics?.lessons_count === 'number'
     ? metrics.lessons_count
-    : BUILTIN_LESSONS.length
+    : BUILTIN_LESSONS.length) + addedLessons.length
   const diskLessonsCount = typeof metrics?.store_calls === 'number'
-    ? metrics.store_calls
+    ? metrics.store_calls + addedLessons.length
     : (typeof metrics?.lessons_count === 'number' && metrics.lessons_count < BUILTIN_LESSONS.length
-        ? metrics.lessons_count
+        ? metrics.lessons_count + addedLessons.length
         : null)
   const totalCalls = typeof metrics?.total_calls === 'number' && metrics.total_calls > 0
     ? metrics.total_calls
     : 24
+
+  const handleRunGateRefinement = (key: string, name1: string, name2: string) => {
+    setRefinedItems((prev) => ({ ...prev, [key]: 'p1' }))
+    setTimeout(() => {
+      setRefinedItems((prev) => ({ ...prev, [key]: 'p2' }))
+      setTimeout(() => {
+        setRefinedItems((prev) => ({ ...prev, [key]: 'done' }))
+        const newId = lessonsDetail.length + 1
+        setAddedLessons((prev) => [
+          {
+            id: newId,
+            title: `物理合并精炼 ${name1} 与 ${name2} 离散碎片规约`,
+            context: `检测到 ${name1} 与 ${name2} 语义重叠度 > 75%，极易造成 Agent 双重召唤和意图死锁。`,
+            reflection: `物理切除冗余离散脚本实体，提炼熔融为单一大 SOP 规约。`,
+            lesson: `通过 AST 语法门禁与 PyTest 用例物理双校验，自动擦除冲突物理落盘。`,
+          },
+          ...prev,
+        ])
+      }, 800)
+    }, 800)
+  }
 
   const filteredLessons = React.useMemo(() => {
     return lessonsDetail.filter((item: LessonItem) => {

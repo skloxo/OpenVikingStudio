@@ -1080,57 +1080,61 @@ function SkillsRoute() {
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-0.5">
-            <div className="rounded border border-rose-500/20 bg-background/60 p-2.5 text-[11px] flex items-center justify-between">
-              <div className="flex flex-col gap-0.5 min-w-0">
-                <span className="text-foreground font-medium truncate">excel-format & chart-gen</span>
-                <span className="text-rose-500 font-bold shrink-0">78.5% 重叠 ➔ 推荐精简</span>
-              </div>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="h-7 text-[11px] border-cyan-500/40 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10 shrink-0 font-mono"
-                onClick={(e) => {
-                  const btn = e.currentTarget
-                  btn.disabled = true
-                  btn.innerText = '⏳ 1/3 AST语法校验中...'
-                  setTimeout(() => {
-                    btn.innerText = '⏳ 2/3 测试用例跑集中...'
+            <div className="rounded border border-rose-500/20 bg-background/60 p-2.5 text-[11px] flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <span className="text-foreground font-medium truncate">excel-format & chart-gen</span>
+                  <span className="text-rose-500 font-bold shrink-0">78.5% 重叠 ➔ 推荐精简</span>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-[11px] border-cyan-500/40 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10 shrink-0 font-mono"
+                  onClick={(e) => {
+                    const btn = e.currentTarget
+                    btn.disabled = true
+                    btn.innerText = '⏳ 1/3 AST语法校验中...'
                     setTimeout(() => {
-                      btn.innerText = '✅ AST+测试100%通过·已安全合并'
-                      btn.className = 'h-7 text-[11px] border-cyan-500/60 bg-cyan-500/20 text-cyan-500 shrink-0 font-mono'
-                    }, 800)
-                  }, 700)
-                }}
-              >
-                ⚡ 触发物理门禁提炼
-              </Button>
+                      btn.innerText = '⏳ 2/3 测试用例跑集中...'
+                      setTimeout(() => {
+                        btn.innerText = '✅ AST+测试100%通过·已安全合并'
+                        btn.className = 'h-7 text-[11px] border-cyan-500/60 bg-cyan-500/20 text-cyan-500 shrink-0 font-mono'
+                      }, 800)
+                    }, 700)
+                  }}
+                >
+                  ⚡ 触发物理门禁提炼
+                </Button>
+              </div>
             </div>
-            <div className="rounded border border-rose-500/20 bg-background/60 p-2.5 text-[11px] flex items-center justify-between">
-              <div className="flex flex-col gap-0.5 min-w-0">
-                <span className="text-foreground font-medium truncate">log-extractor & trace-parser</span>
-                <span className="text-rose-500 font-bold shrink-0">81.2% 重叠 ➔ 推荐合并</span>
-              </div>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="h-7 text-[11px] border-cyan-500/40 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10 shrink-0 font-mono"
-                onClick={(e) => {
-                  const btn = e.currentTarget
-                  btn.disabled = true
-                  btn.innerText = '⏳ 1/3 AST语法校验中...'
-                  setTimeout(() => {
-                    btn.innerText = '⏳ 2/3 测试用例跑集中...'
+            <div className="rounded border border-rose-500/20 bg-background/60 p-2.5 text-[11px] flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <span className="text-foreground font-medium truncate">log-extractor & trace-parser</span>
+                  <span className="text-rose-500 font-bold shrink-0">81.2% 重叠 ➔ 推荐合并</span>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-[11px] border-cyan-500/40 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10 shrink-0 font-mono"
+                  onClick={(e) => {
+                    const btn = e.currentTarget
+                    btn.disabled = true
+                    btn.innerText = '⏳ 1/3 AST语法校验中...'
                     setTimeout(() => {
-                      btn.innerText = '✅ AST+测试100%通过·已安全合并'
-                      btn.className = 'h-7 text-[11px] border-cyan-500/60 bg-cyan-500/20 text-cyan-500 shrink-0 font-mono'
-                    }, 800)
-                  }, 700)
-                }}
-              >
-                ⚡ 触发物理门禁提炼
-              </Button>
+                      btn.innerText = '⏳ 2/3 测试用例跑集中...'
+                      setTimeout(() => {
+                        btn.innerText = '✅ AST+测试100%通过·已安全合并'
+                        btn.className = 'h-7 text-[11px] border-cyan-500/60 bg-cyan-500/20 text-cyan-500 shrink-0 font-mono'
+                      }, 800)
+                    }, 700)
+                  }}
+                >
+                  ⚡ 触发物理门禁提炼
+                </Button>
+              </div>
             </div>
           </div>
         </Card>
