@@ -87,6 +87,7 @@ export function ModelMonitoringCard({ status, isHealthy }: ModelMonitoringCardPr
     if (lower.includes('vlm')) return t('modelsCard.vlmGroup')
     if (lower.includes('embedding')) return t('modelsCard.embeddingGroup')
     if (lower.includes('rerank')) return t('modelsCard.rerankGroup')
+    if (lower.includes('encoder') || lower.includes('compress') || lower.includes('lingua')) return '⚡ Encoder 物理压缩模型 (Local CUDA)'
     return name
   }
 
