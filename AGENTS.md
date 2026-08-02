@@ -10,22 +10,9 @@ Before making ANY modification, analysis, or feature iteration in this workspace
    - 研发迭代中的所有代码修改、样式调试与功能验证，**100% 只能在 1936 端口 (Vite Dev Server) 进行**。
    - **绝对禁止**在开发测试期间私自跑 `build` 覆盖 1933 端口（OpenViking Web Studio dist 目录）。
    - **只有当用户显式下达「验收完成」、「更新 1933」或「封板发版」命令时**，AI 才有权限执行打包并更新 1933！未获显式指令擅自动用 1933 属于严重违规！
-6. **全局字体排版与最小字号硬性下限 (Global Typography Rule)**：
-   - 全系统 **100% 物理禁用 `< 11px` 微字**（如 `text-[8px]`, `text-[9px]`, `text-[10px]` 彻底禁用）。字号下限锁定为 **`11px` (`text-[11px]`)**，高密基准字号为 **`12px` (`text-xs`)**。
-7. **站在巨人的肩膀上 — 组件化嵌入与非侵入式适配原则 (Upstream Wheel Reuse & Adapter Principle)**：
-   - **敬畏第一性原理 (Respect Upstream Core)**：拒绝闭门造车手搓劣质轮子；对开源社区最高 Trust 组件的核心数学算法与推理模型保持敬畏，不乱改其核心第一性逻辑；
-   - **专精适配层 (Dedicated Viking Adapter)**：绝不机械裸用第三方开源包，必须在其外层封装针对当前项目的专用 Adapter 适配器，强制保护业务 Schema（如 YAML Header、代码块、系统约束）；
-   - **编排与优雅自愈 (Orchestration & Fallback)**：将第三方开源轮子作为解耦组件融入系统统一生命周期（同启动、同关闭）；编排层必须设置异常熔断兜底，一旦组件报错自动降级，保障主服务 100% 稳如磐石。
-6. **NO GREEN EVER & 冷静性冷淡三态配色铁律**：
-   - 严禁在全系统 UI 中使用任何绿色 (`emerald` / `green`)；
-   - 采用极简“性冷淡风”掌控冷静观测视角，全界面严格限定三态语义色彩：
-     - **正向 / 良好** ➔ 冰青 / 湛蓝 (`cyan-500/10 text-cyan-600 dark:text-cyan-400`)
-     - **负向 / 异常** ➔ 玫瑰红 (`rose-500/10 text-rose-600 dark:text-rose-400`)
-     - **中性 / 静态** ➔ 沉静哑光灰 (`bg-muted/40 text-muted-foreground`)
-
 ---
 
-## 🏛️ 三大底层工程哲学 (Three Core Philosophies)
+## 🏛️ OpenViking 全局设计与工程哲学 (7 大核心柱石)
 
 1. **第一性原理 (First Principles)**：
    - 回归事物最基础的物理与逻辑真理，剥离表面假象，直击核心物理根因。
@@ -46,6 +33,24 @@ Before making ANY modification, analysis, or feature iteration in this workspace
    - **【雅】(Elegance & Clean Architecture / 极客雅致)**：
      - *代码层*：架构高内聚低耦合，遵循 DRY/KISS 原则，充满数学美与架构美；
      - * UI / 文案层*：极客精炼，底边对齐与并排卡片通过 `mt-auto` 实现物理级底边平齐，拒绝随意与死板。
+
+4. **绝对数据真实性 (Absolute Data Integrity)**：
+   - 100% 真实后端数据驱动，**绝对禁止**伪造假数字或硬编码 mock。无 API 时优雅显示 `--`。
+
+5. **三态语义色彩与 NO GREEN EVER 铁律**：
+   - 严禁在全系统 UI 中使用任何绿色 (`emerald` / `green`)；
+   - 采用极简“性冷淡风”掌控冷静观测视角，全界面严格限定三态语义色彩：
+     - **正向 / 良好** ➔ 冰青 / 湛蓝 (`cyan-500/10 text-cyan-600 dark:text-cyan-400`)
+     - **负向 / 异常** ➔ 玫瑰红 (`rose-500/10 text-rose-600 dark:text-rose-400`)
+     - **中性 / 静态** ➔ 沉静哑光灰 (`bg-muted/40 text-muted-foreground`)
+
+6. **全局字体排版与最小字号硬性下限 (Global Typography Rule)**：
+   - 全系统 **100% 物理禁用 `< 11px` 微字**（如 `text-[8px]`, `text-[9px]`, `text-[10px]` 彻底禁用）。字号下限锁定为 **`11px` (`text-[11px]`)**，高密基准字号为 **`12px` (`text-xs`)**。
+
+7. **站在巨人的肩膀上 — 组件化嵌入与非侵入式适配原则 (Upstream Wheel Reuse & Adapter Principle)**：
+   - **敬畏第一性原理 (Respect Upstream Core)**：拒绝闭门造车手搓劣质轮子；对开源社区最高 Trust 组件的核心数学算法与推理模型保持敬畏，不乱改其核心第一性逻辑；
+   - **专精适配层 (Dedicated Viking Adapter)**：绝不机械裸用第三方开源包，必须在其外层封装针对当前项目的专用 Adapter 适配器，强制保护业务 Schema（如 YAML Header、代码块、系统约束）；
+   - **编排与优雅自愈 (Orchestration & Fallback)**：将第三方开源轮子作为解耦组件融入系统统一生命周期（同启动、同关闭）；编排层必须设置异常熔断兜底，一旦组件报错自动降级，保障主服务 100% 稳如磐石。
 
 ---
 
