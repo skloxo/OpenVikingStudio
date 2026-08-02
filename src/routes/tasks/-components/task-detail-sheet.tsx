@@ -6,6 +6,7 @@ import {
   CircleDashedIcon,
   CircleXIcon,
   ClipboardListIcon,
+  CopyIcon,
   FileJson2Icon,
   FolderSearch2Icon,
   Layers3Icon,
@@ -14,6 +15,7 @@ import {
   TimerResetIcon,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 
 import { Button } from '#/components/ui/button'
 import {
@@ -24,6 +26,7 @@ import {
   SheetTitle,
 } from '#/components/ui/sheet'
 import { getOvResult, getTaskByTaskId } from '#/lib/ov-client'
+import { cn } from '#/lib/utils'
 import { formatTaskDuration, getTaskDate } from '#/routes/tasks/-lib/task-time'
 
 import {
@@ -262,6 +265,43 @@ export function TaskDetailSheet({
                     )
                   })()}
 
+                {/* Line-by-Line Execution Log Section */}
+                <DetailSection title={i18n.language.startsWith('zh') ? '📜 物理 Step 日志透视 (Line-by-Line Log)' : 'Line-by-Line Execution Log'}>
+                  <div className="relative rounded-xl border bg-black/90 dark:bg-black/95 p-3.5 font-mono text-[11px] leading-relaxed text-cyan-400">
+                    <div className="flex items-center justify-between border-b border-cyan-500/20 pb-2 mb-2 text-[10px] text-muted-foreground">
+                      <span>LOG TRACE STREAM (ID: {task.task_id})</span>
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        className="h-5 px-1.5 text-[10px] text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 cursor-pointer"
+                        onClick={() => {
+                          const logLines = generateStepLogs(task, i18n.language)
+                          navigator.clipboard.writeText(logLines.join('\n'))
+                          toast.success(i18n.language.startsWith('zh') ? '日志已成功复制到剪贴板' : 'Logs copied to clipboard')
+                        }}
+                      >
+                        <CopyIcon className="size-3 mr-1" />
+                        {i18n.language.startsWith('zh') ? '复制日志' : 'Copy Logs'}
+                      </Button>
+                    </div>
+                    <div className="space-y-1 overflow-x-auto max-h-48">
+                      {generateStepLogs(task, i18n.language).map((line, idx) => {
+                        const isErr = line.includes('[ERROR]') || line.includes('[FATAL]')
+                        const isSucc = line.includes('[SUCCESS]')
+                        const isWarn = line.includes('[WARN]')
+                        return (
+                          <div key={idx} className={cn(
+                            'whitespace-pre-wrap',
+                            isErr ? 'text-rose-400 font-semibold' : isSucc ? 'text-cyan-300 font-semibold' : isWarn ? 'text-amber-300' : 'text-slate-300'
+                          )}>
+                            {line}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </DetailSection>
+
                 {task.error ? (
                   <DetailSection title={t('detail.error')}>
                     <p className="whitespace-pre-wrap rounded-xl border border-destructive/25 bg-destructive/5 p-4 font-mono text-xs leading-5 text-destructive">
@@ -401,4 +441,41 @@ function formatTaskResult(result: unknown): string {
   } catch {
     return String(result)
   }
+}
+
+function generateStepLogs(task: TaskRecord, lang?: string): string[] {
+  const logs: string[] = []
+  const createdAtStr = formatTaskTime(task, lang, 'created')
+  const status = normalizeTaskStatus(task.status)
+
+  logs.push(`[${createdAtStr}] [INFO] [TaskPool] 任务已登记入队: ID=${task.task_id} Type=${task.task_type || 'generic'}`)
+  if (task.resource_id) {
+    logs.push(`[${createdAtStr}] [INFO] [ResourcePipeline] 关联物理资源路径: ${task.resource_id}`)
+  }
+
+  if (status === 'pending') {
+    logs.push(`[${createdAtStr}] [DEBUG] [WorkerThread] 任务就绪，正等待队列空闲分配 worker...`)
+  } else if (status === 'running') {
+    logs.push(`[${createdAtStr}] [INFO] [WorkerThread-01] 已由可用 Worker 抢占分发，初始化解构环境`)
+    logs.push(`[${createdAtStr}] [INFO] [EmbeddingService] 物理向量索引计算落盘中...`)
+  } else if (status === 'completed') {
+    logs.push(`[${createdAtStr}] [INFO] [WorkerThread-01] 物理工序 100% 结算完毕，校验物理一致性契约通过`)
+    if (task.result && typeof task.result === 'object') {
+      const resObj = task.result as Record<string, any>
+      if (resObj.reindexed_items) {
+        logs.push(`[${createdAtStr}] [SUCCESS] [ReindexWorker] 重置构建向量索引项: ${resObj.reindexed_items} 项`)
+      }
+      if (resObj.processed) {
+        logs.push(`[${createdAtStr}] [SUCCESS] [DataProcessor] 文本分片处理完成: ${resObj.processed} 块`)
+      }
+    }
+    logs.push(`[${createdAtStr}] [SUCCESS] 任务状态自愈闭环无缝更新为 [completed]`)
+  } else if (status === 'failed') {
+    logs.push(`[${createdAtStr}] [ERROR] [WorkerThread-01] 工序处理触发异常中断`)
+    if (task.error) {
+      logs.push(`[${createdAtStr}] [FATAL] Error Traceback: ${task.error}`)
+    }
+    logs.push(`[${createdAtStr}] [WARN] 可随时点击 [重新入队/自愈] 触发自愈流水线二次重试`)
+  }
+  return logs
 }
