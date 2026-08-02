@@ -12,9 +12,10 @@ Before making ANY modification, analysis, or feature iteration in this workspace
    - **只有当用户显式下达「验收完成」、「更新 1933」或「封板发版」命令时**，AI 才有权限执行打包并更新 1933！未获显式指令擅自动用 1933 属于严重违规！
 6. **全局字体排版与最小字号硬性下限 (Global Typography Rule)**：
    - 全系统 **100% 物理禁用 `< 11px` 微字**（如 `text-[8px]`, `text-[9px]`, `text-[10px]` 彻底禁用）。字号下限锁定为 **`11px` (`text-[11px]`)**，高密基准字号为 **`12px` (`text-xs`)**。
-7. **站在巨人的肩膀上 — 优先复用与持续跟进开源顶级轮子 (Upstream Wheel Reuse Rule)**：
-   - **拒绝盲目手搓**：复杂需求（如技能压缩提炼、Prompt 自动优化、意图消歧等）必须优先检索与集成开源最高 Trust 成熟轮子（如 Microsoft `LLMLingua-2`、Stanford `DSPy`）；
-   - **绝非一锤子买卖**：以依赖库形式引入，建立版本跟踪机制，长效吸收上游开源社区的算法演进成果。
+7. **站在巨人的肩膀上 — 组件化嵌入与非侵入式适配原则 (Upstream Wheel Reuse & Adapter Principle)**：
+   - **敬畏第一性原理 (Respect Upstream Core)**：拒绝闭门造车手搓劣质轮子；对开源社区最高 Trust 组件的核心数学算法与推理模型保持敬畏，不乱改其核心第一性逻辑；
+   - **专精适配层 (Dedicated Viking Adapter)**：绝不机械裸用第三方开源包，必须在其外层封装针对当前项目的专用 Adapter 适配器，强制保护业务 Schema（如 YAML Header、代码块、系统约束）；
+   - **编排与优雅自愈 (Orchestration & Fallback)**：将第三方开源轮子作为解耦组件融入系统统一生命周期（同启动、同关闭）；编排层必须设置异常熔断兜底，一旦组件报错自动降级，保障主服务 100% 稳如磐石。
 6. **NO GREEN EVER & 冷静性冷淡三态配色铁律**：
    - 严禁在全系统 UI 中使用任何绿色 (`emerald` / `green`)；
    - 采用极简“性冷淡风”掌控冷静观测视角，全界面严格限定三态语义色彩：
