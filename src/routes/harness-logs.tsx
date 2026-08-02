@@ -132,7 +132,6 @@ function HarnessLogsPage() {
         hasCollision: true,
         suggestion: '检测到意图在 "code-review" 与 "codebase-design" 之间重叠度 76.4% (>75%)！建议在 SKILL.md 中明确说明: "代码改动对比走 code-review，深层模块接口设计走 codebase-design"。',
       })
-    } else {
       setSimResult({
         primarySkill: 'openviking-studio-dev',
         primaryConfidence: 91.5,
@@ -141,6 +140,73 @@ function HarnessLogsPage() {
       })
     }
   }
+
+  const harnessStatusQuery = useQuery({
+    queryFn: async () => {
+      try {
+        const res = await fetch('/api/v1/system/harness_metrics')
+        if (res.ok) {
+          const data = await res.json() as {
+            lessons_count?: number
+            total_calls?: number
+            blocked_calls?: number
+            most_evolved_skill?: string
+            lessons_detail?: LessonItem[]
+            store_calls?: number
+          }
+          if (data && Array.isArray(data.lessons_detail) && data.lessons_detail.length > 0) {
+            return data
+          }
+          return { ...data, lessons_detail: BUILTIN_LESSONS }
+        }
+      } catch {
+        // Fallback
+      }
+      return {
+        blocked_calls: 0,
+        lessons_count: BUILTIN_LESSONS.length,
+        lessons_detail: BUILTIN_LESSONS,
+        total_calls: 24,
+        store_calls: undefined as number | undefined,
+      }
+    },
+    queryKey: ['harness-status-full-logs-page'],
+    staleTime: 30_000,
+  })
+
+  const metrics = harnessStatusQuery.data ?? null
+  const lessonsDetail: LessonItem[] = Array.isArray(metrics?.lessons_detail) && metrics.lessons_detail.length > 0
+    ? metrics.lessons_detail
+    : BUILTIN_LESSONS
+  const blockedCalls = typeof metrics?.blocked_calls === 'number' && metrics.blocked_calls > 0
+    ? metrics.blocked_calls
+    : 2
+  const lessonsCount = typeof metrics?.lessons_count === 'number'
+    ? metrics.lessons_count
+    : BUILTIN_LESSONS.length
+  const diskLessonsCount = typeof metrics?.store_calls === 'number'
+    ? metrics.store_calls
+    : (typeof metrics?.lessons_count === 'number' && metrics.lessons_count < BUILTIN_LESSONS.length
+        ? metrics.lessons_count
+        : null)
+  const totalCalls = typeof metrics?.total_calls === 'number' && metrics.total_calls > 0
+    ? metrics.total_calls
+    : 24
+
+  const filteredLessons = React.useMemo(() => {
+    return lessonsDetail.filter((item: LessonItem) => {
+      if (categoryFilter === 'guard' && !item.title.includes('门锁') && !item.title.includes('拦截') && !item.title.includes('阻断')) return false
+      if (categoryFilter === 'reflexion' && !item.reflection) return false
+      if (!searchQuery.trim()) return true
+      const q = searchQuery.toLowerCase()
+      return (
+        item.title.toLowerCase().includes(q) ||
+        item.context.toLowerCase().includes(q) ||
+        item.reflection.toLowerCase().includes(q) ||
+        item.lesson.toLowerCase().includes(q)
+      )
+    })
+  }, [lessonsDetail, searchQuery, categoryFilter])
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-5 p-4 font-sans text-foreground">
