@@ -31,64 +31,72 @@ export function HarnessEngineCard({ isHealthy = true }: HarnessEngineCardProps) 
         展示物理集成于 OpenViking 同进程内的开源顶级轮子组件（微软 LLMLingua-2 与斯坦福 DSPy）的物理门禁与指标
       </p>
 
-      {/* 专用表头 */}
+      {/* 专用 4 大核心关键物理指标表头 */}
       <div className="flex flex-col gap-2">
         <div className="grid grid-cols-6 items-center px-3 py-1.5 text-xs text-muted-foreground font-medium border-b border-border/50 font-mono">
           <span className="col-span-2">开源组件/轮子名称</span>
-          <span>服务归属层</span>
-          <span className="text-right">核心调优指标</span>
-          <span className="text-right">物理门禁标准</span>
-          <span className="text-right">探针状态</span>
+          <span className="text-right">① Token 抽稀留存率</span>
+          <span className="text-right">② AST 门禁通过率</span>
+          <span className="text-right">③ DSPy 编译准确度</span>
+          <span className="text-right">④ GPU 显存与延迟</span>
         </div>
 
-        {/* 1. 微软 LLMLingua-2 物理卡片 */}
-        <div className="grid grid-cols-6 items-center px-3 py-2 text-xs rounded-md bg-cyan-500/5 border border-cyan-500/20 font-mono">
+        {/* 1. 微软 LLMLingua-2 物理卡片 (精准对齐 4 大物理指标) */}
+        <div className="grid grid-cols-6 items-center px-3 py-2.5 text-xs rounded-md bg-cyan-500/5 border border-cyan-500/20 font-mono">
           <div className="col-span-2 flex flex-col gap-0.5 min-w-0">
             <span className="font-sans font-medium text-foreground truncate flex items-center gap-1.5">
               <CpuIcon className="size-3.5 text-cyan-500 shrink-0" />
               LLMLingua-2 (xlm-roberta)
             </span>
             <span className="text-[10px] text-muted-foreground truncate">
-              微软 Token 抽稀与 AST 物理门禁
+              微软 Token 抽稀探针 · 目标区间 45%-55%
             </span>
           </div>
-          <span className="text-cyan-600 dark:text-cyan-400 text-[11px] font-sans font-bold">
-            harness.engine
-          </span>
-          <span className="text-right text-muted-foreground tabular-nums text-[11px]">
-            rate=0.50 / threshold=0.35
-          </span>
-          <span className="text-right text-cyan-600 dark:text-cyan-400 font-bold tabular-nums">
-            AST 语法锁定
-          </span>
-          <span className="text-right text-muted-foreground font-bold tabular-nums">
-            --
-          </span>
+          <div className="text-right flex flex-col items-end">
+            <span className="text-muted-foreground tabular-nums">--</span>
+            <span className="text-[9px] text-muted-foreground font-sans">(安全 45-55%)</span>
+          </div>
+          <div className="text-right flex flex-col items-end">
+            <span className="text-muted-foreground tabular-nums">--</span>
+            <span className="text-[9px] text-cyan-600 dark:text-cyan-400 font-sans font-semibold">(100% 锁定)</span>
+          </div>
+          <div className="text-right flex flex-col items-end">
+            <span className="text-muted-foreground tabular-nums">--</span>
+            <span className="text-[9px] text-muted-foreground font-sans">(N/A N-Gram)</span>
+          </div>
+          <div className="text-right flex flex-col items-end">
+            <span className="text-muted-foreground tabular-nums">--</span>
+            <span className="text-[9px] text-muted-foreground font-sans">(&lt;500MB / &lt;10ms)</span>
+          </div>
         </div>
 
-        {/* 2. 斯坦福 DSPy 物理卡片 */}
-        <div className="grid grid-cols-6 items-center px-3 py-2 text-xs rounded-md bg-cyan-500/5 border border-cyan-500/20 font-mono">
+        {/* 2. 斯坦福 DSPy 物理卡片 (精准对齐 4 大物理指标) */}
+        <div className="grid grid-cols-6 items-center px-3 py-2.5 text-xs rounded-md bg-cyan-500/5 border border-cyan-500/20 font-mono">
           <div className="col-span-2 flex flex-col gap-0.5 min-w-0">
             <span className="font-sans font-medium text-foreground truncate flex items-center gap-1.5">
               <SparklesIcon className="size-3.5 text-cyan-500 shrink-0" />
               Stanford DSPy (MIPO Compiler)
             </span>
             <span className="text-[10px] text-muted-foreground truncate">
-              斯坦福 SOP 编译与自动消歧
+              斯坦福 SOP 编译探针 · 零假 API 规约
             </span>
           </div>
-          <span className="text-cyan-600 dark:text-cyan-400 text-[11px] font-sans font-bold">
-            harness.engine
-          </span>
-          <span className="text-right text-muted-foreground tabular-nums text-[11px]">
-            FewShot N=3 / Precision
-          </span>
-          <span className="text-right text-cyan-600 dark:text-cyan-400 font-bold tabular-nums">
-            零假 API 锁定
-          </span>
-          <span className="text-right text-muted-foreground font-bold tabular-nums">
-            --
-          </span>
+          <div className="text-right flex flex-col items-end">
+            <span className="text-muted-foreground tabular-nums">--</span>
+            <span className="text-[9px] text-muted-foreground font-sans">(N/A RawToken)</span>
+          </div>
+          <div className="text-right flex flex-col items-end">
+            <span className="text-muted-foreground tabular-nums">--</span>
+            <span className="text-[9px] text-cyan-600 dark:text-cyan-400 font-sans font-semibold">(100% 锁定)</span>
+          </div>
+          <div className="text-right flex flex-col items-end">
+            <span className="text-muted-foreground tabular-nums">--</span>
+            <span className="text-[9px] text-cyan-600 dark:text-cyan-400 font-sans font-semibold">(安全 &gt;95%)</span>
+          </div>
+          <div className="text-right flex flex-col items-end">
+            <span className="text-muted-foreground tabular-nums">--</span>
+            <span className="text-[9px] text-muted-foreground font-sans">(&lt;500MB / &lt;10ms)</span>
+          </div>
         </div>
       </div>
     </Card>
