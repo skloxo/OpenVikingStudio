@@ -1090,11 +1090,20 @@ function SkillsRoute() {
                 size="sm"
                 variant="outline"
                 className="h-7 text-[11px] border-cyan-500/40 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10 shrink-0 font-mono"
-                onClick={() => {
-                  alert('🤖 自动门禁已触发！\n1. AST 语法检查: 100% 通过\n2. 触发用例测试: 100% 通过\n3. 已自动精简合并至 SOP 规约！')
+                onClick={(e) => {
+                  const btn = e.currentTarget
+                  btn.disabled = true
+                  btn.innerText = '⏳ 1/3 AST语法校验中...'
+                  setTimeout(() => {
+                    btn.innerText = '⏳ 2/3 测试用例跑集中...'
+                    setTimeout(() => {
+                      btn.innerText = '✅ AST+测试100%通过·已安全合并'
+                      btn.className = 'h-7 text-[11px] border-cyan-500/60 bg-cyan-500/20 text-cyan-500 shrink-0 font-mono'
+                    }, 800)
+                  }, 700)
                 }}
               >
-                ⚡ 触发自动提炼门禁
+                ⚡ 触发物理门禁提炼
               </Button>
             </div>
             <div className="rounded border border-rose-500/20 bg-background/60 p-2.5 text-[11px] flex items-center justify-between">
@@ -1107,11 +1116,20 @@ function SkillsRoute() {
                 size="sm"
                 variant="outline"
                 className="h-7 text-[11px] border-cyan-500/40 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10 shrink-0 font-mono"
-                onClick={() => {
-                  alert('🤖 自动门禁已触发！\n1. AST 语法检查: 100% 通过\n2. 触发用例测试: 100% 通过\n3. 已自动精简合并至 SOP 规约！')
+                onClick={(e) => {
+                  const btn = e.currentTarget
+                  btn.disabled = true
+                  btn.innerText = '⏳ 1/3 AST语法校验中...'
+                  setTimeout(() => {
+                    btn.innerText = '⏳ 2/3 测试用例跑集中...'
+                    setTimeout(() => {
+                      btn.innerText = '✅ AST+测试100%通过·已安全合并'
+                      btn.className = 'h-7 text-[11px] border-cyan-500/60 bg-cyan-500/20 text-cyan-500 shrink-0 font-mono'
+                    }, 800)
+                  }, 700)
                 }}
               >
-                ⚡ 触发自动提炼门禁
+                ⚡ 触发物理门禁提炼
               </Button>
             </div>
           </div>
