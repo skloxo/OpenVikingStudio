@@ -9,6 +9,16 @@
 
 ## 📅 当前核心排期阶段：Milestone Phase 1 (技能中心深度重构 ➔ 任务中心 ➔ Harness 引擎 ➔ Loop)
 
+### [x] v1.2.25 — 全局字体排版硬下限规范 (≥11px)、分类短命名与伪状态拔除交付 (用户已验收通过 ✅)
+- **Git Commit**: `feat(skills): typography min size >=11px, concise tab labels, and fake status badge removal v1.2.25`
+- **Tag**: `v1.2.25`
+- **修改文件**: `src/routes/skills/route.tsx`, `src/routes/skills/harness-logs.tsx`, `UI_SPECIFICATION.md`, `package.json`
+- **主要交付**:
+  1. **全局字体排版下限 (≥11px)**：全系统物理封杀禁用 `< 11px` 微字，卡片底栏与脚标字号提升至清晰舒适的 `12px` (`text-xs`) 与 `11px`；
+  2. **信达雅分类短命名**：Filter Tab 标签精简干洗为 `全部` | `🤖 智能体` | `👤 个人偏好` | `💤 闲置`；
+  3. **拔除伪状态角标**：彻底切除卡片中无信息增量的 `✅ 规范就绪` 假状态角标；
+  4. **全局规则与开源轮子卡片建立**：在全局配置中确立开源轮子优先复用原则与最小字号规范。
+
 ### [x] v1.2.24 — [TASK-TASK-01] 任务中心 📜 任务执行日志 (Execution Trace Log) 与自愈流转交付 (用户已验收通过 ✅)
 - **Git Commit**: `feat(tasks): add Line-by-Line Log Viewer and status flow trace in TaskDetailSheet v1.2.24`
 - **Tag**: `v1.2.24`

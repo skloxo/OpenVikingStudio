@@ -267,13 +267,13 @@ export function TaskDetailSheet({
 
                 {/* Execution Log Section */}
                 <DetailSection title={i18n.language.startsWith('zh') ? '📜 任务执行日志' : 'Execution Trace Log'}>
-                  <div className="relative rounded-xl border bg-black/90 dark:bg-black/95 p-3.5 font-mono text-[11px] leading-relaxed text-cyan-400">
-                    <div className="flex items-center justify-between border-b border-cyan-500/20 pb-2 mb-2 text-[10px] text-muted-foreground">
+                  <div className="relative rounded-xl border border-border/60 bg-muted/30 p-3 font-mono text-[11px] leading-relaxed">
+                    <div className="flex items-center justify-between border-b border-border/40 pb-2 mb-2 text-[10px] text-muted-foreground font-mono">
                       <span>LOG TRACE STREAM (ID: {task.task_id})</span>
                       <Button
                         variant="ghost"
                         size="xs"
-                        className="h-5 px-1.5 text-[10px] text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 cursor-pointer"
+                        className="h-5 px-1.5 text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted/60 cursor-pointer"
                         onClick={() => {
                           const logLines = generateStepLogs(task, i18n.language)
                           navigator.clipboard.writeText(logLines.join('\n'))
@@ -292,7 +292,7 @@ export function TaskDetailSheet({
                         return (
                           <div key={idx} className={cn(
                             'whitespace-pre-wrap',
-                            isErr ? 'text-rose-400 font-semibold' : isSucc ? 'text-cyan-300 font-semibold' : isWarn ? 'text-amber-300' : 'text-slate-300'
+                            isErr ? 'text-rose-600 dark:text-rose-400 font-medium' : isSucc ? 'text-cyan-600 dark:text-cyan-400 font-medium' : isWarn ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'
                           )}>
                             {line}
                           </div>
