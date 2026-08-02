@@ -1060,19 +1060,35 @@ function SkillsRoute() {
       </div>
 
       {activeScopeFilter === 'idle' && (
-        <Card className="rounded border border-rose-500/30 bg-rose-500/5 p-3 font-mono text-xs shadow-2xs">
-          <div className="flex items-center justify-between text-rose-500 font-semibold mb-1">
+        <Card className="rounded border border-rose-500/30 bg-rose-500/5 p-3.5 font-mono text-xs shadow-2xs flex flex-col gap-2.5">
+          <div className="flex items-center justify-between text-rose-500 font-semibold">
             <span className="flex items-center gap-1.5">
               <SparklesIcon className="size-4" />
               ⚡ Harness 技能资产精简与合并建议 (Low Reuse Optimization)
             </span>
-            <Badge variant="outline" className="border-rose-500/30 text-rose-500 text-[10px] bg-rose-500/10">
-              建议归档/提炼
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="border-rose-500/30 text-rose-500 text-[11px] bg-rose-500/10">
+                重叠度 &gt; 75% 离散提炼
+              </Badge>
+              <Badge variant="outline" className="border-cyan-500/40 text-cyan-500 text-[11px] bg-cyan-500/10">
+                🤖 全无人值守自动门禁
+              </Badge>
+            </div>
           </div>
           <p className="text-muted-foreground leading-relaxed text-[11px]">
-            检测到 {filteredSkills.length} 项技能在近 24 小时物理采样中零唤醒（资产复用率 10.3%）。部分为单一表格格式或图标工具重叠规约，建议通过 Harness 将离散技能归档合并为大模块 SOP，以精简 OpenViking 向量检索空间，大幅提速意图感应。
+            检测到 {filteredSkills.length} 项技能在近 24 小时物理采样中零唤醒。下述离散技能存在高语义重叠，后台 Daemon 已开启 AST 语法 + 用例测试双门禁，自动精简提炼为大 SOP：
           </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-0.5">
+            <div className="rounded border border-rose-500/20 bg-background/60 p-2 text-[11px] flex items-center justify-between">
+              <span className="text-foreground font-medium truncate">excel-format & chart-gen</span>
+              <span className="text-rose-500 font-bold shrink-0">78.5% 重叠 ➔ 自动提炼</span>
+            </div>
+            <div className="rounded border border-rose-500/20 bg-background/60 p-2 text-[11px] flex items-center justify-between">
+              <span className="text-foreground font-medium truncate">log-extractor & trace-parser</span>
+              <span className="text-rose-500 font-bold shrink-0">81.2% 重叠 ➔ 自动合并</span>
+            </div>
+          </div>
         </Card>
       )}
 
