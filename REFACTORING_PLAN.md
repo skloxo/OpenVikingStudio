@@ -9,6 +9,14 @@
 
 ## 📅 当前核心排期阶段：Milestone Phase 1 (技能中心深度重构 ➔ 任务中心 ➔ Harness 引擎 ➔ Loop)
 
+### [x] v1.2.20 — 修复 1936 开发服务器 Vite 热重载 HMR 刷屏与硬重载 ✅
+- **Git Commit**: `fix(vite): ignore public/all_skills.json in Vite HMR watcher on 1936 to prevent browser hard reloads v1.2.20`
+- **Tag**: `v1.2.20`
+- **主要交付**:
+  1. 物理定位 1936 端口 Vite 开发服务器无限热刷新硬重载的物理根因：`mcp_openviking_server.py` 定期同步写 `public/all_skills.json` 触发 Vite 默认 `full-reload` 全页硬重载；
+  2. 在 `vite.config.ts` 的 `server.watch.ignored` 中添加 `**/public/all_skills.json` 与 `**/all_skills.json`，彻底禁止 Vite 对动态 JSON 的打断性硬刷新；
+  3. 双向打通 1936 (Vite Dev Server) 与 1933 (OpenViking Web Studio) 的长效稳定运行。
+
 ### [x] v1.2.19 — 修复 TanStack Query 频繁自动重刷新与页码/抽屉清空倒退 ✅
 - **Git Commit**: `fix(skills): stabilize TanStack query refetching with keepPreviousData to prevent UI flickering and pagination resets v1.2.19`
 - **Tag**: `v1.2.19`
