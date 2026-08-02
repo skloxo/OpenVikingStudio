@@ -9,6 +9,22 @@
 
 ## 📅 当前核心排期阶段：Milestone Phase 1 (技能中心深度重构 ➔ 任务中心 ➔ Harness 引擎 ➔ Loop)
 
+### [x] v1.2.19 — 修复 TanStack Query 频繁自动重刷新与页码/抽屉清空倒退 ✅
+- **Git Commit**: `fix(skills): stabilize TanStack query refetching with keepPreviousData to prevent UI flickering and pagination resets v1.2.19`
+- **Tag**: `v1.2.19`
+- **主要交付**:
+  1. 屏蔽切屏与焦点切换时的打断性自动刷新 (`refetchOnWindowFocus: false`, `refetchOnReconnect: false`)；
+  2. 结合 `placeholderData: keepPreviousData` 保持渲染连续性，彻底根治数据重加载导致 UI 闪烁、抽屉关闭及页码自动弹回第 1 页的问题；
+  3. 技能列表与自演进监控 Query 统一拉长缓存有效期至 10 分钟。
+
+### [x] v1.2.18 — 技能抽屉 L2 级关联源文件树全量探针感知与极速回退 ✅
+- **Git Commit**: `fix(skills): scan and display full subfile/subdirectory trees for all skills v1.2.18`
+- **Tag**: `v1.2.18`
+- **主要交付**:
+  1. 升级 `mcp_openviking_server.py` 的 `_auto_sync_skills()` 探针，物理遍历全盘 175 个技能的真实文件树与 `SKILL.md` 完整源码；
+  2. 生成全量富信息 `all_skills.json`（含 `files` 节点与 `content` 源码），解决 66 个多文件技能在 L2 抽屉退化为单文件 `SKILL.md` 的问题；
+  3. 前端 `fetchSkillDetail` 网关 404 熔断时物理平滑回退至预探针索引数据。
+
 ### [x] v1.2.17 — Harness 技能自演进卡片双轨展示：人工精编 36 + VK 自动感应 16 ✅
 - **Git Commit**: `feat(skills): show dual metric 36-manual + 16-auto in Harness card v1.2.17` + `fix: Wiki -> VK label correction`
 - **Tag**: `v1.2.17`
