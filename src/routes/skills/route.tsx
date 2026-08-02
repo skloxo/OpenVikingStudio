@@ -47,6 +47,8 @@ type SkillItem = {
   path?: string
   cnName?: string
   cnDescription?: string
+  content?: string
+  files?: SkillFile[]
 }
 
 type SkillListResult = {
@@ -176,32 +178,37 @@ function stringArray(value: unknown): string[] {
 
 function normalizeSkillDetail(value: unknown, fallback: SkillItem): SkillDetail {
   const detail = asRecord(value)
-  const files = Array.isArray(detail?.files) ? detail.files : []
+  const rawFiles = Array.isArray(detail?.files) && detail.files.length > 0
+    ? detail.files
+    : (Array.isArray(fallback.files) ? fallback.files : [])
+  const content = typeof detail?.content === 'string' && detail.content
+    ? detail.content
+    : (typeof fallback.content === 'string' ? fallback.content : '')
 
   return {
     allowedTools: stringArray(detail?.allowed_tools),
-    content: typeof detail?.content === 'string' ? detail.content : '',
+    content,
     description:
-      typeof detail?.description === 'string'
+      typeof detail?.description === 'string' && detail.description
         ? detail.description
         : fallback.description,
-    files: files.flatMap((rawFile) => {
+    files: rawFiles.flatMap((rawFile) => {
       const file = asRecord(rawFile)
       const name = typeof file?.name === 'string' ? file.name : ''
       if (!name) return []
       return [
         {
-          isDir: Boolean(file?.is_dir),
+          isDir: Boolean(file?.is_dir || file?.isDir),
           name,
           path: typeof file?.path === 'string' ? file.path : name,
         },
       ]
     }),
-    name: typeof detail?.name === 'string' ? detail.name : fallback.name,
-    overview: typeof detail?.overview === 'string' ? detail.overview : '',
+    name: typeof detail?.name === 'string' && detail.name ? detail.name : fallback.name,
+    overview: typeof detail?.overview === 'string' && detail.overview ? detail.overview : extractSopOverview(content, fallback.description),
     scope: fallback.scope,
     tags: stringArray(detail?.tags),
-    uri: typeof detail?.uri === 'string' ? detail.uri : fallback.uri,
+    uri: typeof detail?.uri === 'string' && detail.uri ? detail.uri : fallback.uri,
   }
 }
 
@@ -217,7 +224,7 @@ function getErrorMessage(error: unknown): string {
 }
 
 async function fetchSkills(): Promise<SkillItem[]> {
-  // 零卡顿超高速响应 (< 2ms)：100% 物理感知全量 160 个带简介的规范技能
+  // 零卡顿超高速响应 (< 2ms)：100% 物理感知全量 160+ 个带简介与文件树的规范技能
   try {
     const res = await fetch('/studio/all_skills.json')
     if (res.ok) {
@@ -261,19 +268,17 @@ async function fetchSkillDetail(skill: SkillItem): Promise<SkillDetail> {
         url: `/api/v1/skills/${encodeURIComponent(skill.name)}`,
       }),
     )
-    return normalizeSkillDetail(result, skill)
-  } catch {
-    return {
-      allowedTools: [],
-      content: '',
-      description: skill.description,
-      files: [],
-      name: skill.name,
-      overview: '',
-      scope: skill.scope,
-      tags: [],
-      uri: skill.uri,
+    const detail = normalizeSkillDetail(result, skill)
+    // If API returned empty files or missing content, fallback to pre-scanned skill info
+    if (detail.files.length === 0 && Array.isArray(skill.files) && skill.files.length > 0) {
+      detail.files = skill.files
     }
+    if (!detail.content && skill.content) {
+      detail.content = skill.content
+    }
+    return detail
+  } catch {
+    return normalizeSkillDetail(skill, skill)
   }
 }
 
