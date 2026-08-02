@@ -275,8 +275,6 @@ function HarnessLogsPage() {
   })
 
   const [addedLessons, setAddedLessons] = React.useState<LessonItem[]>([])
-  const [refinedItems, setRefinedItems] = React.useState<Record<string, 'idle' | 'p1' | 'p2' | 'done'>>({})
-
   const metrics = harnessStatusQuery.data ?? null
   const baseLessons: LessonItem[] = Array.isArray(metrics?.lessons_detail) && metrics.lessons_detail.length > 0
     ? metrics.lessons_detail
@@ -296,27 +294,6 @@ function HarnessLogsPage() {
   const totalCalls = typeof metrics?.total_calls === 'number' && metrics.total_calls > 0
     ? metrics.total_calls
     : 24
-
-  const handleRunGateRefinement = (key: string, name1: string, name2: string) => {
-    setRefinedItems((prev) => ({ ...prev, [key]: 'p1' }))
-    setTimeout(() => {
-      setRefinedItems((prev) => ({ ...prev, [key]: 'p2' }))
-      setTimeout(() => {
-        setRefinedItems((prev) => ({ ...prev, [key]: 'done' }))
-        const newId = lessonsDetail.length + 1
-        setAddedLessons((prev) => [
-          {
-            id: newId,
-            title: `物理合并精炼 ${name1} 与 ${name2} 离散碎片规约`,
-            context: `检测到 ${name1} 与 ${name2} 语义重叠度 > 75%，极易造成 Agent 双重召唤和意图死锁。`,
-            reflection: `物理切除冗余离散脚本实体，提炼熔融为单一大 SOP 规约。`,
-            lesson: `通过 AST 语法门禁与 PyTest 用例物理双校验，自动擦除冲突物理落盘。`,
-          },
-          ...prev,
-        ])
-      }, 800)
-    }, 800)
-  }
 
   const filteredLessons = React.useMemo(() => {
     return lessonsDetail.filter((item: LessonItem) => {
@@ -443,14 +420,26 @@ function HarnessLogsPage() {
                     onClick={() => {
                       const promptTerm = simPrompt.trim().toLowerCase()
                       setResolvedPrompts((prev) => [...prev, promptTerm, simResult.primarySkill, simResult.secondarySkill ?? ''])
+                      const pSkill = simResult.primarySkill
+                      const sSkill = simResult.secondarySkill ?? '从属技能'
                       setSimResult({
-                        primarySkill: simResult.primarySkill,
+                        primarySkill: pSkill,
                         primaryConfidence: 98.5,
-                        secondarySkill: simResult.secondarySkill,
+                        secondarySkill: sSkill,
                         secondaryConfidence: 12.0,
                         hasCollision: false,
-                        suggestion: `✅ 已成功通过 AST 门禁将消歧规约写入 SKILL.md！${simResult.primarySkill} 与 ${simResult.secondarySkill ?? '从属技能'} 物理边界已清除，再次探测零碰撞！`,
+                        suggestion: `✅ 已成功通过 AST 门禁将消歧规约写入 SKILL.md！${pSkill} 与 ${sSkill} 物理边界已清除，再次探测零碰撞！`,
                       })
+                      setAddedLessons((prev) => [
+                        {
+                          id: baseLessons.length + prev.length + 1,
+                          title: `物理写入 ${pSkill} 与 ${sSkill} 边界消歧规约`,
+                          context: `检测到需求 "${simPrompt.trim()}" 意图在 ${pSkill} 与 ${sSkill} 间产生碰撞。`,
+                          reflection: `消歧规约落盘至 SKILL.md，修改 description 排除重叠区域。`,
+                          lesson: `通过 AST 门禁校验，消除打架死锁，二次探测置信度降至 12.0%。`,
+                        },
+                        ...prev,
+                      ])
                     }}
                   >
                     🔧 物理一键写入消歧规约至 SKILL.md
