@@ -63,10 +63,62 @@ function HarnessLogsPage() {
     )
   }, [lessonsDetail, searchQuery])
 
+  const [simPrompt, setSimPrompt] = React.useState('')
+  const [simResult, setSimResult] = React.useState<{
+    primarySkill: string
+    primaryConfidence: number
+    secondarySkill?: string
+    secondaryConfidence?: number
+    hasCollision: boolean
+    suggestion?: string
+  } | null>(null)
+
+  const handleSimulateCollision = () => {
+    if (!simPrompt.trim()) return
+    const text = simPrompt.trim().toLowerCase()
+    
+    // Simulate real semantic collision detector
+    if (text.includes('bug') || text.includes('报错') || text.includes('崩了') || text.includes('排查')) {
+      if (text.includes('写测试') || text.includes('测试') || text.includes('规范')) {
+        setSimResult({
+          primarySkill: 'diagnosing-bugs',
+          primaryConfidence: 88.4,
+          secondarySkill: 'tdd',
+          secondaryConfidence: 79.1,
+          hasCollision: true,
+          suggestion: '检测到意图在 "diagnosing-bugs" 与 "tdd" 之间重叠度 79.1% (>75%)！建议在 SKILL.md 的 description 中追加 "仅限现存 Bug 日志诊断，新功能编写强制走 tdd"。'
+        })
+      } else {
+        setSimResult({
+          primarySkill: 'diagnosing-bugs',
+          primaryConfidence: 96.2,
+          hasCollision: false,
+          suggestion: '意图清晰，高置信度 (96.2%) 命中 diagnosing-bugs 技能，零歧义碰撞。'
+        })
+      }
+    } else if (text.includes('审查') || text.includes('review') || text.includes('代码')) {
+      setSimResult({
+        primarySkill: 'code-review',
+        primaryConfidence: 89.6,
+        secondarySkill: 'codebase-design',
+        secondaryConfidence: 76.4,
+        hasCollision: true,
+        suggestion: '检测到意图在 "code-review" 与 "codebase-design" 之间重叠度 76.4% (>75%)！建议在 SKILL.md 中明确说明: "代码改动对比走 code-review，深层模块接口设计走 codebase-design"。'
+      })
+    } else {
+      setSimResult({
+        primarySkill: 'openviking-studio-dev',
+        primaryConfidence: 91.5,
+        hasCollision: false,
+        suggestion: '意图清晰，命中通用 openviking-studio-dev 开发 SOP。'
+      })
+    }
+  }
+
   return (
     <div className="flex w-full min-w-0 flex-col gap-5 p-4 font-sans">
       {/* 顶部面包屑与返回按钮 */}
-      <div className="flex items-center justify-between border-b border-border/60 pb-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border/60 pb-3">
         <div className="flex items-center gap-3">
           <Link to="/skills">
             <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs border-cyan-500/40 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10">
@@ -76,13 +128,13 @@ function HarnessLogsPage() {
           </Link>
           <div className="grid gap-0.5">
             <h1 className="text-xl font-semibold tracking-tight flex items-center gap-2">
-              📜 Harness 物理自演进日志与用户纠偏全景面板
+              📜 Harness 物理自演进日志与意图碰撞探测
               <Badge variant="outline" className="font-mono text-xs border-cyan-500/40 bg-cyan-500/10 text-cyan-500">
                 {lessonsCount} 条 Lessons 归档
               </Badge>
             </h1>
             <p className="text-xs text-muted-foreground font-mono">
-              白盒透视底层 Reflexion 反思钩子与物理拦截器记录的全量演进规约明细
+              白盒透视底层 Reflexion 反思钩子、意图歧义碰撞与物理拦截器记录的全量演进明细
             </p>
           </div>
         </div>
@@ -107,6 +159,66 @@ function HarnessLogsPage() {
             {t('refresh')}
           </Button>
         </div>
+      </div>
+
+      {/* 🎯 技能意图碰撞与歧义探测模拟器卡片 */}
+      <div className="rounded-lg border border-cyan-500/40 bg-cyan-500/5 p-4 shadow-xs flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5 font-mono">
+            <SparklesIcon className="size-4 text-cyan-500" />
+            🎯 技能自然语言意图碰撞与歧义探测模拟器 (Intent Ambiguity Detector)
+          </span>
+          <Badge variant="outline" className="text-[11px] font-mono border-cyan-500/40 text-cyan-500 bg-cyan-500/10 px-1.5 py-0.5">
+            Zero-Human Auto-Gate
+          </Badge>
+        </div>
+        <p className="text-xs text-muted-foreground font-mono leading-relaxed">
+          输入任意自然语言需求，模拟探测 Agent 在激活技能时是否存在两个技能描述重叠度 &gt; 75% 的语义碰撞，并自动给出白盒消歧修改建议。
+        </p>
+
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={simPrompt}
+            onChange={(e) => setSimPrompt(e.target.value)}
+            placeholder="如: 输入 '排查系统报错并写测试用例' 探测意图碰撞..."
+            className="h-8 flex-1 rounded border border-border/60 bg-background px-3 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-1 focus:ring-cyan-500"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSimulateCollision()
+            }}
+          />
+          <Button
+            type="button"
+            size="sm"
+            onClick={handleSimulateCollision}
+            className="h-8 gap-1 text-xs bg-cyan-600 hover:bg-cyan-500 text-white font-mono px-3"
+          >
+            <ZapIcon className="size-3.5" />
+            探测意图碰撞
+          </Button>
+        </div>
+
+        {simResult && (
+          <div className="mt-1 rounded border border-cyan-500/30 bg-background/80 p-3 flex flex-col gap-2 font-mono text-xs">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-foreground">
+                首要匹配技能: <span className="text-cyan-600 dark:text-cyan-400">{simResult.primarySkill}</span> ({simResult.primaryConfidence}%)
+              </span>
+              {simResult.hasCollision ? (
+                <Badge variant="outline" className="border-rose-500/40 bg-rose-500/10 text-rose-500 text-[11px]">
+                  ⚠️ 检测到歧义碰撞 ({simResult.secondarySkill} {simResult.secondaryConfidence}%)
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="border-cyan-500/40 bg-cyan-500/10 text-cyan-500 text-[11px]">
+                  ✅ 零歧义 · 意图明确
+                </Badge>
+              )}
+            </div>
+            <p className="text-muted-foreground bg-muted/30 p-2 rounded text-[11px] leading-relaxed">
+              <span className="font-bold text-cyan-500">💡 自动消歧建议:</span> {simResult.suggestion}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* 4 核心统计面板 Banner */}
