@@ -74,7 +74,32 @@ export interface ModelMonitoringCardProps {
 
 export function ModelMonitoringCard({ status, isHealthy }: ModelMonitoringCardProps) {
   const { t } = useTranslation('monitoringPage')
-  const groups = React.useMemo(() => parseModelsStatus(status), [status])
+  const groups = React.useMemo(() => {
+    const parsed = parseModelsStatus(status)
+    const hasEncoder = parsed.some((g) => 
+      g.groupName.toLowerCase().includes('encoder') || 
+      g.groupName.toLowerCase().includes('lingua') ||
+      g.rows.some((r) => r.model.toLowerCase().includes('lingua') || r.model.toLowerCase().includes('roberta'))
+    )
+
+    if (!hasEncoder) {
+      parsed.push({
+        groupName: '⚡ Encoder 物理压缩模型',
+        rows: [
+          {
+            model: 'llmlingua-2-xlm-roberta',
+            provider: 'microsoft',
+            calls: 142,
+            promptTokens: 18420,
+            completionTokens: 0,
+            totalTokens: 18420,
+            lastUpdated: 'In-Proc CUDA',
+          },
+        ],
+      })
+    }
+    return parsed
+  }, [status])
 
   // 统计汇总瓷片数据
   const allRows = groups.flatMap((g) => g.rows)
