@@ -9,6 +9,23 @@
 
 ## 📅 当前核心排期阶段：Milestone Phase 1 (技能中心深度重构 ➔ 任务中心 ➔ Harness 引擎 ➔ Loop)
 
+### [x] v1.2.17 — Harness 技能自演进卡片双轨展示：人工精编 36 + VK 自动感应 16 ✅
+- **Git Commit**: `feat(skills): show dual metric 36-manual + 16-auto in Harness card v1.2.17` + `fix: Wiki -> VK label correction`
+- **Tag**: `v1.2.17`
+- **主要交付**:
+  1. 彻底厘清 36 与 16 两个数字的物理本质：36 = 人工精编 SOP 规约知识库条目数，16 = VK 自动感应触发的演进落盘次数；
+  2. 技能中心 Harness 自演进卡片改为双栏并排：`36 精编规约 | 16 自动感应`；
+  3. 卡片底部文案：`人工精编 + VK 自动感应双轨驱动`（修正语音识别 Wiki → VK）；
+  4. Harness 全景监控页新增第 5 张统计卡：`磁盘动态落盘次数（store_calls）`。
+
+### [x] v1.2.16 — Harness 全景监控新增磁盘动态落盘次数卡片 ✅
+- **Git Commit**: `feat(harness): add 5th stat card for disk store_calls (dynamic evolution count) v1.2.16`
+- **Tag**: `v1.2.16`
+- **主要交付**:
+  1. Harness 全景监控页 Banner 从 4 格扩展为 5 格（`sm:grid-cols-5`）；
+  2. 新增第 5 张卡片"磁盘动态落盘次数"，直连 `harness_metrics.json` 的 `store_calls` 字段（17 次），语义与内置规约数（36）完全解耦；
+  3. `lessonsCount` 还原为直连 `metrics.lessons_count` 动态真实值，不再硬锁 >= 36 门锁。
+
 ### [x] v1.2.15 — 技能中心与 Harness 审计专页 36 项自演进规约物理齐平对齐 ✅
 - **Git Commit**: `fix(metrics): align lessonsCount with 36 Harness builtin SOP rules count v1.2.15`
 - **Tag**: `v1.2.15`
