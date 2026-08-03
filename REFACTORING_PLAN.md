@@ -9,6 +9,149 @@
 
 ## 📅 当前核心排期阶段：Milestone Phase 1 (技能中心深度重构 ➔ 任务中心 ➔ Harness 引擎 ➔ Loop)
 
+---
+
+### 📌 P0: [ ] [TASK-HARNESS-SOP-01] 预制规约检查引擎与全量技能简介自动生成闭环 (Builtin SOP & Description Auto-Gen)
+
+**模块**：Harness 引擎 + 技能中心  
+**工单 ID**：`TASK-HARNESS-SOP-01`  
+**优先级**：P0  
+**来源**：用户指导 — 36 条预制规约当前仅为 UI 硬编码数组无检查；260+ 技能无简介显示"暂无额外说明"  
+**预计规模**：M (2 个迭代)
+
+#### 1. 现状与根因
+- `BUILTIN_LESSONS`（36条）在 `harness-logs.tsx` 中为 UI 硬编码数组，缺乏后台 Python 检查逻辑
+- 大量技能 `SKILL.md` 的 YAML frontmatter 缺少 `description` 字段，后端返回空字符串
+- 缺乏自动扫描与后台 LLM 提炼无人值守生成管道
+
+#### 2. 交付目标
+1. **预制规约静态/动态检查**：建立后台算子 `harness_sop_checker.py`，遍历全量技能检查：
+   - 是否包含规范 `SKILL.md` (Rule 14)
+   - `description` 是否存在且 >10 字 (Rule 31)
+   - 检查结果输出至 `harness_metrics.json`，算出合规率并在 Harness 审计页曝光
+2. **简介后台自动生成**：对无描述的技能，调用 Harness LLM 提炼 30 字中文自解释，写回 `SKILL.md` YAML frontmatter
+
+#### 3. 量化验收标准
+- [ ] 36 条规约转换为真正可运行的合规检查器
+- [ ] 260+ 技能卡片中的“暂无额外说明”被自动提炼生成的中文简介替换
+- [ ] Harness 审计页展示全盘技能真实合规率 (%)
+
+---
+
+### 📌 P1: [ ] [TASK-SKILL-FILECOUNT-01] 技能卡片全量关联文件数准确透视 (Skill Card Real File Count)
+
+**模块**：技能中心 API + 前端 View  
+**工单 ID**：`TASK-SKILL-FILECOUNT-01`  
+**优先级**：P1  
+**来源**：用户发现 — `antigravity-ide` 物理有 5 个文件，列表卡片硬编码显示 `1 文件(SOP)`  
+**预计规模**：S (1 个迭代)
+
+#### 1. 现状与根因
+- `/api/v1/skills` 列表 API 未返回 `file_count` 字段
+- 前端 `route.tsx` 在卡片渲染时取不到 `files.length`，退化写死 `1`
+
+#### 2. 交付目标
+1. **后端 API (`skills.py`)**：`_list_skills_from_root` 与 `_skill_summary_from_entry` 中，增加 `file_count` 扫描字段
+2. **前端 View (`route.tsx`)**：卡片 Badge 读取 `skill.file_count || skill.files?.length || 1`，展示真实文件数
+
+#### 3. 量化验收标准
+- [ ] 列表刷出时，`antigravity-ide` 卡片即刻准确显示 `5 文件`
+- [ ] 关联子目录与脚本文件的技能均准确呈现真实物理文件总数
+
+---
+
+### 📌 P1: [ ] [TASK-SESSION-SYNC-01] IDE ↔ OpenViking 全量会话与记忆实时自动同步 (Session & Memory Auto-Sync)
+
+**模块**：OpenViking Session Gateway + MCP  
+**工单 ID**：`TASK-SESSION-SYNC-01`  
+**优先级**：P1  
+**来源**：用户疑问 — IDE 会话是否自动传给 VK？检索次数为何是 0 次？  
+**预计规模**：M (2 个迭代)
+
+#### 1. 交付目标
+1. **会话静默实时流转**：MCP 服务器增加 Hook，在 Agent 与用户交互过程中，自动调用 `openviking.session` 写入会话历史
+2. **检索次数物理统计**：将 MCP 隐式与显式检索统一汇入 `today_retrievals` 统计，使首页“今日检索次数”真实更新
+
+---
+
+### 📌 P1: [ ] [TASK-SKILL-CENTER-01] 隐式自动唤醒率真实数据打通 (auto_wakeup_rate via MCP 主动上报)
+
+**模块**：技能中心 全托管感应引擎 + Harness MCP  
+**工单 ID**：`TASK-SKILL-CENTER-01`  
+**优先级**：P1  
+**来源**：v1.2.34 迭代复盘 — `auto_wakeup_rate` 当前因 `find_calls=0` 显示"暂无采样"  
+**预计规模**：S (1 个迭代)
+
+#### 1. 根因说明
+- `auto_wakeup_rate` 目前定义为 `find_calls / total_calls * 100`，但 `find_calls` 只在 Agent 调用 `openviking_find` MCP 工具时累计
+- `IN_ACCESS` 已从 inotify watch mask 移除（因误触发暴洪），导致"技能被读取"事件无法被动感知
+- 真正的"隐式唤醒"必须靠 **Agent 主动调用 MCP 工具时附带 skill_name 上报**
+
+#### 2. 交付目标
+1. **后端 (`mcp_openviking_server.py`)**：在 `openviking_find` / `openviking_search` MCP 工具内，识别命中的 SKILL.md 路径，将 `skill_name` 写入 `harness_metrics.json` 的 `skill_find_log` 字段（`{skill_name: count}`）
+2. **后端 (`system.py`)**：`get_harness_metrics()` 从 `skill_find_log` 统计 `find_calls` 并派生 `auto_wakeup_rate`
+3. **前端**：`auto_wakeup_rate` 有值时展示百分比，`active_skills_count` 改为取 `skill_find_log` 中的 distinct 技能数（更精准）
+
+#### 3. 量化验收标准
+- [ ] 调用一次 `openviking_find` 后，`harness_metrics` 返回 `auto_wakeup_rate > 0`
+- [ ] 技能中心"隐式自动唤醒率"显示真实百分比，不再"暂无采样"
+- [ ] `active_skills_count` 反映真实被查询过的不同技能数量
+
+---
+
+### 📌 P2: [ ] [TASK-SKILL-CENTER-02] Context 提示词压缩率实现 (context_compression_ratio via LLMLingua-2)
+
+**模块**：技能中心 + Harness 引擎  
+**工单 ID**：`TASK-SKILL-CENTER-02`  
+**优先级**：P2（路线图功能）  
+**来源**：v1.2.34 迭代复盘 — `context_compression_ratio` 字段从未有真实数据  
+**预计规模**：M (2 个迭代)
+
+#### 1. 根因说明
+- `context_compression_ratio` 需要一个运行中的压缩服务提供数据，目前没有任何压缩管道
+- 前端已有 UI 框架（"-- 暂无采样 / 等待需 SOP 注入采样..."），等待后端数据打通
+
+#### 2. 交付目标
+1. **后端压缩适配器**：在 OpenViking 1933 服务启动时，同进程初始化 `LLMLingua-2`（微软开源，通过 Adapter 封装，保护 YAML Header 和代码块不被压缩）
+2. **压缩触发时机**：在 `openviking_find` 或 `openviking_smart_read` 返回大块 Markdown 前，自动调用压缩，记录压缩前/后 Token 数
+3. **指标持久化**：将 `compression_ratio`（压缩率）写入 `harness_metrics.json`，供 `get_harness_metrics()` 读取
+4. **超参数硬编码保护**（依据 AGENTS.md Rule 7）：`rate=0.50`，`threshold=0.35`，正则冻结 YAML Header 与代码块
+
+#### 3. 量化验收标准
+- [ ] 调用 `openviking_smart_read` 后，`harness_metrics` 返回 `context_compression_ratio` 数值
+- [ ] 技能中心"Context 提示词压缩率"显示真实压缩百分比
+- [ ] 压缩服务崩溃时主服务 100% 稳定（熔断兜底）
+
+---
+
+### 📌 P1: [ ] [TASK-HARNESS-LLM-01] Harness 专用可配置大模型接入 (ov.conf harness.llm 配置项)
+
+**模块**：OpenViking 服务配置 + Harness 引擎  
+**工单 ID**：`TASK-HARNESS-LLM-01`  
+**优先级**：P1  
+**来源**：用户需求 — "新增一个 Harness 专用的大模型，可配置可不配置；不配置时默认用 Vicky 大模型"  
+**预计规模**：S (1 个迭代)
+
+#### 1. 交付目标
+1. **`ov.conf` 新增可选 `harness.llm` 配置段**：
+   ```toml
+   [harness]
+   # 可选：不配置时默认使用 [vlm] Vicky 大模型
+   # llm_base_url = "http://localhost:8317/v1"
+   # llm_model = "mimo-v2.5"
+   # llm_api_key = "sk-xxx"
+   ```
+2. **`config.py` 新增 `HarnessConfig` dataclass**：读取 `harness.llm_*` 字段，缺省时回退到 VLM 配置
+3. **Harness 引擎**：所有 LLM 调用（技能描述生成、意图碰撞模拟、Prompt Auto-Tuning）统一走 `get_harness_llm()` 函数，不再直接硬编码 endpoint
+4. **自动技能描述生成**：服务启动后台线程检测无 `description` 的技能，调用 Harness LLM 生成并写回 `SKILL.md` frontmatter
+
+#### 2. 量化验收标准
+- [ ] 配置 `harness.llm_base_url` 后，Harness 使用指定模型（可通过日志验证）
+- [ ] 不配置时，Harness 自动 fallback 到 VLM (`mimo-v2.5` on `http://localhost:8317/v1`)
+- [ ] 至少 1 个无描述技能被自动生成 `description` 并写回 SKILL.md（后台无人值守）
+
+---
+
 ### [x] v1.2.31 — [TASK-AUTH-05] 拔除控制面探针 Header 租户污染与刷新后 Key 校验红灯修复 (Fix Control Probe Header Pollution) (用户已验收通过 ✅)
   - **Git Commit**: `fix(security): sanitize control probe headers to prevent Root API Key tenant assertion failure v1.2.31`
   - **Tag**: `v1.2.31`
