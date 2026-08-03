@@ -43,6 +43,58 @@
 2. **版本快照比对 (Diff Viewer)**：支持选中任意历史版本，高亮展示与当前版本的 Text / Markdown 差异；
 3. **“点击回滚版本”动作 (`RotateCcw Rollback`)**：提供极客风格【回滚至此版本】操作按钮，点击后向 OpenViking 后端发送版本还原请求，并同步刷新 1936 资源列表。
 
+#### 2. 1935 历史参考源码 (1935 Legacy Reference Code)
+```tsx
+// file:///home/skloxo/openviking-ui-ruansheng8/src/components/resources/version-timeline.tsx
+import React from 'react';
+import { Clock, RotateCcw } from 'lucide-react';
+
+interface Version {
+  id: string;
+  timestamp: string;
+  message: string;
+  author: string;
+}
+
+const mockVersions: Version[] = [
+  { id: 'v3', timestamp: '2023-10-27 14:30', message: '更新了产品文档', author: 'admin' },
+  { id: 'v2', timestamp: '2023-10-26 10:15', message: '修复错别字', author: 'user1' },
+  { id: 'v1', timestamp: '2023-10-25 09:00', message: '初始提交', author: 'admin' },
+];
+
+export function VersionTimeline({ resourceUri }: { resourceUri: string }) {
+  return (
+    <div className="space-y-4 p-4 border rounded-lg bg-white">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-medium flex items-center gap-2">
+          <Clock className="w-5 h-5" /> 历史版本
+        </h3>
+      </div>
+      <p className="text-sm text-gray-500 break-all mb-4">目标: {resourceUri}</p>
+      
+      <div className="relative border-l border-gray-200 ml-3 space-y-6 pb-4">
+        {mockVersions.map((v) => (
+          <div key={v.id} className="mb-6 ml-6">
+            <span className="absolute flex items-center justify-center w-6 h-6 bg-blue-100 rounded-full -left-3 ring-8 ring-white">
+               <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+            </span>
+            <div className="flex justify-between items-start">
+              <div>
+                <h4 className="font-semibold text-gray-900">{v.message}</h4>
+                <p className="text-sm text-gray-500">{v.timestamp} by {v.author}</p>
+              </div>
+              <button className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800">
+                <RotateCcw className="w-4 h-4" /> 回滚至此版本
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
 ---
 
 ### 📌 P0: [ ] [TASK-NODE-ACL-01] 节点 NodePermissions 访问控制策略与角色权限配置器
@@ -50,11 +102,40 @@
 **模块**：OpenVikingStudio 前端 (`src/routes/resources` & `src/routes/users`)  
 **工单 ID**：`TASK-NODE-ACL-01`  
 **优先级**：P0  
-**来源**：用户指导 — 1935 中多账号/多角色的节点级权限 ACL 策略配置尚未移植至 1936
+**来源**：用户指导 — 1935 中多账号/多角色的节点级权限 ACL 策略配置移植至 1936
 
 #### 1. 功能定义与技术方案
 - **ACL 策略配置面板 (`NodePermissions.tsx`)**：展示当前资源节点针对特定 Account / User 的权限掩码（Read, Write, Delete, Reindex）；
 - **角色授权开关**：提供极客风格切换 Switch，动态更新 Viking 节点 ACL 权限规则。
+
+#### 2. 1935 历史参考源码 (1935 Legacy Reference Code)
+```tsx
+// file:///home/skloxo/openviking-ui-ruansheng8/src/components/resources/node-permissions.tsx
+import React, { useState } from 'react';
+import { Shield, Plus, X, Save, Check } from 'lucide-react';
+
+interface PermissionEntry {
+  entityId: string;
+  type: 'user' | 'agent';
+  role: 'read' | 'write';
+}
+
+export function NodePermissions({ nodeUri }: { nodeUri: string }) {
+  const storageKey = `mock_permissions_${nodeUri}`;
+  const [permissions, setPermissions] = useState<PermissionEntry[]>(() => [
+    { entityId: "agent-001", type: "agent", role: "read" },
+    { entityId: "user-alice", type: "user", role: "write" },
+  ]);
+  return (
+    <div className="p-4 border rounded-lg bg-white space-y-4">
+      <h3 className="font-medium flex items-center gap-2">
+        <Shield className="w-5 h-5" /> 节点访问控制 (ACL)
+      </h3>
+      {/* 权限规则列表与新增操作 */}
+    </div>
+  );
+}
+```
 
 ---
 
