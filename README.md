@@ -1,68 +1,49 @@
-# OpenViking Studio (v1.2.35)
+# OpenViking Studio
 
-OpenViking Studio 是面向多 Agent 系统的上下文与技能管理工作台。它连接底层 OpenViking 引擎，为 Antigravity、OpenClaw、Hermes 等 Agent 提供长期记忆存储、上下文监控、SOP 质量门禁与技能演进支持。
+中文 / [English](README.md)
 
----
-
-## 视觉与设计哲学
-
-- **克制与性冷淡美学**：切除浮夸宣导与装饰性色彩，全站使用干净沉稳的纯色文字与对比度排版，专注展示真实数据与事实。
-- **极致 4px 硬朗圆角 (`rounded-xs`)**：拒绝大圆角对视口边角空间的切割与浪费。收紧圆弧至 4px，将矩形有效包覆面积与空间利用推向极限。
-- **最小空间展示最大信息密度**：隐藏顶部冗余 Header，纵向空间 100% 利用至 `100vh`；使用 1px 微细低透明度边框隔离，每一像素都为数据呈现而生。
+OpenViking Studio is a management workstation for the OpenViking memory hub. Connecting to OpenViking engines, it provides shared memory storage, context monitoring, SOP quality gates, and automated skill evolution services for agent systems.
 
 ---
 
-## 核心特性
+## Core Features
 
-- **文件系统无感同步**：基于 Linux `inotify` 底层事件监听，感知技能文件的读取与修改，无需手动触发更新。
-- **真实遥测与日志沉淀**：直连底层持久化数据，避免硬编码数值。当 Agent 在复杂任务中沉淀经验时，自动提取结构化 Lesson 并更新技能说明。
-- **对齐官方架构**：无缝对接 OpenViking 0.4.x/0.5.x 原生 FastMCP 接口、WorkMemory v2 内存机制及 `ov dream` 增量同步。
-- **上下文轻量化**：集成 LLMLingua-2 筛选模型，在保护 YAML 头部与代码块结构完整的前提下，平均减少 35% 提示词开销。
+- **File System Event Sensing**: Powered by Linux `inotify` event engine, automatically tracking skill file reads and modifications without manual refresh.
+- **Live Telemetry & Lesson Logging**: Directly connected to backend data stores. Automatically extracts structured lessons and updates documentation when agents resolve complex tasks.
+- **Upstream Architecture Alignment**: Fully integrated with OpenViking 0.4.x/0.5.x native FastMCP interfaces, WorkMemory v2 mechanisms, and `ov dream` incremental sync.
+- **Context Token Optimization**: Built-in LLMLingua-2 model reduces prompt token overhead by an average of 35% while preserving YAML header and code block integrity.
 
 ---
 
-## 架构与演进路线
+## Roadmap
 
 ```text
-  Phase 1: 当前基线 (v1.2.35+)         Phase 2: 渐进演进 (v1.3.x)          Phase 3: 架构拓展 (v2.0)
-+--------------------------------+   +--------------------------------+   +--------------------------------+
-| 技能托管与事件感知             |   | Skill-Loop 经验提取飞轮        |   | 在线技能创建与沙盒验证        |
-| 真实遥测数据链                 | ➔ | SkillOpt 质量评分与门禁        | ➔ | Monaco 编辑器集成             |
-| IDE 与 OpenViking 会话同步     |   | 动态权重与自动排名             |   | 敏感字段过滤与脱敏             |
-+--------------------------------+   +--------------------------------+   +--------------------------------+
+  Phase 1: Current Baseline (v1.2.35+)    Phase 2: Near-Term Evolution (v1.3.x)     Phase 3: Long-Term Vision (v2.0)
++------------------------------------+   +------------------------------------+   +------------------------------------+
+| Skill Management & Event Sensing   |   | Skill-Loop Lesson Flywheel         |   | Online Skill Creation Sandbox      |
+| Telemetry Pipeline                 | ➔ | SkillOpt Quality Gate & Scoring    | ➔ | Monaco Editor Integration          |
+| IDE & OpenViking Session Sync      |   | Dynamic Weighting & Ranking        |   | End-to-End Privacy Auth & Scrub    |
++------------------------------------+   +------------------------------------+   +------------------------------------+
 ```
-
-### 阶段 1 — 当前基线 (已打通在线)
-- **文件监听**：自动感知 `~/.openviking/skills` 与 `~/.gemini/config/skills` 目录。
-- **指标统计**：实时导出唤醒率与活跃技能数。
-- **中枢技能**：提供 `openviking-master` (v2.0) 统一处理使用指南与开发规范。
-
-### 阶段 2 — 质量与演进 (近期规划)
-- **经验提取**：捕获异常日志并自动提炼 Lesson 规范，提供人机确认界面。
-- **质量门禁**：根据执行结果对技能进行健康度评分与修复建议。
-
-### 阶段 3 — 扩展与安全 (远期规划)
-- **在线创建**：提供 Web 端技能编辑与沙盒测试环境。
-- **安全隔离**：提供端到端的敏感信息过滤与日志脱敏。
 
 ---
 
-## 快速开始
+## Quick Start
 
-### 1. 启动 OpenViking 服务
+### 1. Start OpenViking Server
 ```bash
 openviking-server --config ~/.openviking/ov.conf --host 0.0.0.0 --port 1933
 ```
 
-### 2. 启动 Web Studio
+### 2. Launch Web Studio
 ```bash
 npm install
 npm run dev
 ```
-打开 `http://localhost:5173` 访问工作台。
+Open `http://localhost:5173` to access the workstation.
 
 ---
 
-## 许可证
+## License
 
 Apache-2.0 License
