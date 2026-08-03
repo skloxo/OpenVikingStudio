@@ -36,6 +36,32 @@
 - [ ] 260+ 技能卡片中的“暂无额外说明”被自动提炼生成的中文简介替换；
 - [ ] Harness 审计页展示全盘技能真实合规率 (%)。
 
+### 📌 P1: [ ] [TASK-UPSTREAM-SYNC-01] 官方上游 (volcengine/OpenViking:main) 增量代码合并与 Viking Adapter 物理兼容性验证 (Upstream Sync & Adapter Rebase)
+
+**模块**：OpenViking 核心引擎 + Upstream 管道  
+**工单 ID**：`TASK-UPSTREAM-SYNC-01`  
+**优先级**：P1  
+**来源**：`volcengine/OpenViking:main` 官方上游已领先 1890 个提交，遵循 Rule 7 官方轮子优先原则进行增量合并与适配  
+**预计规模**：L (3 个迭代)
+
+#### 1. 现状与根因
+- 上游仓库 (`volcengine/OpenViking:main`) 高速演进，当前分支落后 1890 个提交；
+- 缺乏定期 Upstream 增量 Rebase / Merge 机制；私有定制扩展（`inotify` 5分钟去重、`file_count` 目录透视、`harness_metrics.json` 捕获）需保护并解耦为干净的 Viking Adapter，防止代码拉取时冲突毁损。
+
+#### 2. 交付目标与技术方案
+1. **Upstream Remote 挂载与分段 Fetch**：
+   - 挂载 `git remote add upstream https://github.com/volcengine/OpenViking.git`；
+   - 建立隔离验证分支 `feat/sync-upstream-v0.5.x` 分段拉取 `upstream/main`；
+2. **冲突自动解析与适配器保护**：
+   - 调用技能 `resolving-merge-conflicts` 静默解析冲突，物理保护定制适配逻辑；
+3. **物理终验与自动化测试**：
+   - 跑通 1933 FastMCP / REST API 契约测试，验证 WorkMemory v2 与物理遥测 100% 无缝兼容。
+
+#### 3. 量化验收标准
+- [ ] 物理合并上游 1890+ 提交，完成差异冲突消解与回归测试；
+- [ ] `file_count`、`auto_wakeup_rate` 遥测功能零回归破坏；
+- [ ] 验收完成后打 Tag 封板。
+
 ---
 
 ### 📌 P1: [ ] [TASK-SESSION-SYNC-01] IDE ↔ OpenViking 全量会话与记忆实时自动同步 (Session & Memory Auto-Sync)
