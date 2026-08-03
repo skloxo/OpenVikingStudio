@@ -1110,8 +1110,8 @@ function SkillsRoute() {
             <span className="flex items-center gap-1.5">
               <SparklesIcon className="size-4" />
               {refinedSkills['excel-chart'] === 'done' && refinedSkills['log-trace'] === 'done'
-                ? "✅ Harness 离散技能资产已完成物理提炼与合并 (Low Reuse Optimization Completed)"
-                : "⚡ Harness 技能资产精简与合并建议 (Low Reuse Optimization)"}
+                ? "✨ 技能资产打包精简已完成 (工具箱已瘦身降本)"
+                : "⚡ 技能资产打包与合并建议 (工具箱瘦身 · 降低 Token 消耗)"}
             </span>
             <div className="flex items-center gap-2">
               <Badge variant="outline" className={cn(
@@ -1121,8 +1121,8 @@ function SkillsRoute() {
                   : "border-rose-500/30 text-rose-500 bg-rose-500/10"
               )}>
                 {refinedSkills['excel-chart'] === 'done' && refinedSkills['log-trace'] === 'done'
-                  ? "✅ 离散提炼闭环完成"
-                  : "重叠度 > 75% 离散提炼"}
+                  ? "✅ 打包提炼闭环完成"
+                  : "重叠度 > 75% 推荐合并"}
               </Badge>
               <Badge variant="outline" className="border-cyan-500/40 text-cyan-500 text-[11px] bg-cyan-500/10">
                 🤖 全无人值守自动门禁
@@ -1131,8 +1131,8 @@ function SkillsRoute() {
           </div>
           <p className="text-muted-foreground leading-relaxed text-[11px]">
             {refinedSkills['excel-chart'] === 'done' && refinedSkills['log-trace'] === 'done'
-              ? "🎉 下述高重叠离散技能均已通过 Python AST 语法 + PyTest 双门禁物理提炼落盘为大 SOP，已在全局 Agent 意图库中消除了双重召唤与冗余死锁。"
-              : `检测到 ${filteredSkills.length} 项技能在近 24 小时物理采样中零唤醒。下述离散技能存在高语义重叠，后台 Daemon 已开启 AST 语法 + 用例测试双门禁，可随时手动触发或静默闭环提炼为大 SOP：`}
+              ? "🎉 下述高重叠离散技能已成功打包提炼为统一多功能 SOP，已在全局 Agent 意图库中消除了双重召唤与冗余 Token 浪费。"
+              : "下述离散技能功能高度重叠（>75%）。一键打包合并后可消除冗余提示词，提升 AI 响应速度并降低 Token 算力开销："}
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-0.5">
@@ -1147,7 +1147,7 @@ function SkillsRoute() {
                     "font-bold shrink-0",
                     refinedSkills['excel-chart'] === 'done' ? "text-cyan-500" : "text-rose-500"
                   )}>
-                    {refinedSkills['excel-chart'] === 'done' ? "✅ 78.5% 重叠已完成物理提炼" : "78.5% 重叠 ➔ 推荐精简"}
+                    {refinedSkills['excel-chart'] === 'done' ? "✅ 78.5% 重叠已完成打包合并" : "78.5% 重叠 ➔ 推荐打包"}
                   </span>
                 </div>
                 <Button
@@ -1164,12 +1164,12 @@ function SkillsRoute() {
                   onClick={() => handleRefineSkill('excel-chart', ['excel-format', 'chart-gen'])}
                 >
                   {refinedSkills['excel-chart'] === 'done'
-                    ? '✅ AST+测试100%物理落盘合并'
+                    ? '✅ 已物理打包合并落盘'
                     : refinedSkills['excel-chart'] === 'p2'
-                    ? '⏳ 2/3 测试用例跑集中...'
+                    ? '⏳ 2/3 用例跑集中...'
                     : refinedSkills['excel-chart'] === 'p1'
-                    ? '⏳ 1/3 AST 物理语法校验中...'
-                    : '⚡ 触发物理门禁提炼'}
+                    ? '⏳ 1/3 语法分析中...'
+                    : '⚡ 一键物理打包合并'}
                 </Button>
               </div>
             </div>
@@ -1184,7 +1184,7 @@ function SkillsRoute() {
                     "font-bold shrink-0",
                     refinedSkills['log-trace'] === 'done' ? "text-cyan-500" : "text-rose-500"
                   )}>
-                    {refinedSkills['log-trace'] === 'done' ? "✅ 81.2% 重叠已完成物理提炼" : "81.2% 重叠 ➔ 推荐合并"}
+                    {refinedSkills['log-trace'] === 'done' ? "✅ 81.2% 重叠已完成打包合并" : "81.2% 重叠 ➔ 推荐合并"}
                   </span>
                 </div>
                 <Button
@@ -1201,12 +1201,12 @@ function SkillsRoute() {
                   onClick={() => handleRefineSkill('log-trace', ['log-extractor', 'trace-parser'])}
                 >
                   {refinedSkills['log-trace'] === 'done'
-                    ? '✅ AST+测试100%物理落盘合并'
+                    ? '✅ 已物理打包合并落盘'
                     : refinedSkills['log-trace'] === 'p2'
-                    ? '⏳ 2/3 测试用例跑集中...'
+                    ? '⏳ 2/3 用例跑集中...'
                     : refinedSkills['log-trace'] === 'p1'
-                    ? '⏳ 1/3 AST 物理语法校验中...'
-                    : '⚡ 触发物理门禁提炼'}
+                    ? '⏳ 1/3 语法分析中...'
+                    : '⚡ 一键物理打包合并'}
                 </Button>
               </div>
             </div>
