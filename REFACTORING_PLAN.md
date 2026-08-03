@@ -31,17 +31,17 @@
 
 ---
 
-### 📌 P0: [ ] [TASK-VERSION-TIMELINE-01] 资源 VersionTimeline 版本演进时间轴与历史快照对比组件嵌入
+### 📌 P0: [ ] [TASK-VERSION-TIMELINE-01] .md 文档资源“查看文件版本”时间轴与“点击回滚版本”功能移植
 
 **模块**：OpenVikingStudio 前端 (`src/routes/resources`)  
 **工单 ID**：`TASK-VERSION-TIMELINE-01`  
-**优先级**：P0  
-**来源**：用户指导 — 1935 中 `viking://resources` 的 VersionTimeline 演进时间轴与版本快照比对功能尚未移植至 1936
+**优先级**：P0（最高）  
+**来源**：用户指导 — 1935 中针对 `.md` 文档的【查看文件版本】历史时间轴（VersionTimeline）及【点击回滚版本】（RotateCcw 版本一键还原）功能移植至 1936
 
-#### 1. 功能定义与技术方案
-- **演进时间轴组件 (`VersionTimeline.tsx`)**：在 1936 资源详情侧边栏中渲染资源的物理修改历史（Created, Updated, Reindexed）；
-- **Diff 差异比对 (Monaco Diff / Unified Diff)**：支持选择任意两个历史 Version 版本，展示文件内容与 Header 元数据的差异；
-- **回滚与快照恢复 (Rollback Snapshot)**：支持一键回滚到指定的历史 Version 快照。
+#### 1. 核心功能与交互说明
+1. **.md 文档版本历史入口 (`VersionTimeline.tsx`)**：在 1936 资源管理选中 `.md` 文件或资源节点时，提供【查看文件版本】面板，按时间倒序展现快照历史（版本号、更新时间、变更说明、修改人）；
+2. **版本快照比对 (Diff Viewer)**：支持选中任意历史版本，高亮展示与当前版本的 Text / Markdown 差异；
+3. **“点击回滚版本”动作 (`RotateCcw Rollback`)**：提供极客风格【回滚至此版本】操作按钮，点击后向 OpenViking 后端发送版本还原请求，并同步刷新 1936 资源列表。
 
 ---
 
