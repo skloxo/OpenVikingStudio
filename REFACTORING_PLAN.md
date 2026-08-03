@@ -111,6 +111,80 @@
 
 ---
 
+### 📌 P2: [ ] [TASK-INOTIFY-DEDUP-02] 智能 Intent+Session 粒度去重引擎 (Intent-Aware Skill Dedup)
+
+**模块**：技能中心 FS Watcher + Harness 引擎  
+**工单 ID**：`TASK-INOTIFY-DEDUP-02`  
+**优先级**：P2  
+**来源**：近10小时会话复盘 — 绝对 300s 物理时间去重误杀了短时间内不同意图对同技能的合法唤醒  
+**预计规模**：S (1 个迭代)
+
+#### 1. 现状与根因
+- 之前为防止 grep/server 扫盘暴洪，设了绝对 300 秒时间窗口；
+- 但如果用户在 5 分钟内连续下达了 2 个不同意图的指令唤醒同一技能，第 2 次合法唤醒会被误截流，导致唤醒率统计偏低。
+
+#### 2. 交付目标
+- 改为 `Session ID + Intent Hash` 动态判定去重：同 Session 同意图在 300s 内只计 1 次，新 Session 或新意图唤醒即刻计数。
+
+---
+
+### 📌 P2: [ ] [TASK-REALTIME-WS-01] 页面数据 SSE / WebSocket 实时推送更新 (Realtime Web UI Push)
+
+**模块**：OpenViking Server + Web Studio  
+**工单 ID**：`TASK-REALTIME-WS-01`  
+**优先级**：P2  
+**来源**：近10小时会话复盘 — 当用 CLI `ov add-resource` 或脚本操作时，首页上下文与技能列表需手动 F5 刷新  
+**预计规模**：M (2 个迭代)
+
+#### 1. 交付目标
+- 在服务端 `/api/v1/events/stream` 建立 SSE 订阅通道；
+- 当物理文件或数据库发生变动时，静默向 Web Studio 推送 `data_changed` 事件，前端自动无感知重新加载。
+
+---
+
+### 📌 P2: [ ] [TASK-SKILL-TAGS-01] 全量 260+ 技能动态标签与领域分类引擎 (Skill Tags & Category Classification)
+
+**模块**：技能中心  
+**工单 ID**：`TASK-SKILL-TAGS-01`  
+**优先级**：P2  
+**来源**：近10小时会话复盘 — 大多数技能卡片缺少 `tags`，难以在 260+ 技能中按维度快速维度过滤  
+**预计规模**：S (1 个迭代)
+
+#### 1. 交付目标
+- 后端增加基于 `SCHEMA.md` 标签字典的自动分类器；
+- 动态为技能注入 `[frontend]`, `[backend]`, `[testing]`, `[agent-core]` 等分类标签，支持前端一键多维度筛选。
+
+---
+
+### 📌 P2: [ ] [TASK-SKILL-DRAWER-01] 技能抽屉超长源码高亮与 TOC 目录结构化索引 (Drawer TOC & Syntax Highlighting)
+
+**模块**：技能中心 Detail Drawer  
+**工单 ID**：`TASK-SKILL-DRAWER-01`  
+**优先级**：P2  
+**来源**：近10小时会话复盘 — `L2 (全量源码)` 当 `SKILL.md` 超过 500 行时无目录导航且容易引发 UI 渲染长卡顿  
+**预计规模**：S (1 个迭代)
+
+#### 1. 交付目标
+- 详情抽屉引入虚拟滚动 (Virtual List) 防止卡顿；
+- 自动提取 markdown `#` 标题生成侧边 TOC 快捷跳跃目录。
+
+---
+
+### 📌 P2: [ ] [TASK-SERVER-DOCTOR-01] 全局系统健康探针与一键自愈面板 (System Doctor & One-Click Self-Healing)
+
+**模块**：OpenViking Server + Studio Sidebar  
+**工单 ID**：`TASK-SERVER-DOCTOR-01`  
+**优先级**：P2  
+**来源**：近10小时会话复盘 — 当 FastMCP 或 1933 掉线时，前端仅抛出通用 404/500，缺乏直观警报与修复入口  
+**预计规模**：S (1 个迭代)
+
+#### 1. 交付目标
+- 侧边栏增加 `[系统健康诊断]` 状态指示灯与抽屉面板；
+- 探针检测 1933 HTTP、FastMCP stdio、LevelDB 锁状态，遇到异常提供 `[一键重启/自愈 (ov server doctor)]` 触发按钮。
+
+
+---
+
 ## 📅 第二部分：【远期规划 backlog 阶段：Phase 2 & Phase 3 — 技能自演进与在线创生】
 
 > 说明：本阶段卡片来自 `ROADMAP.md`，当 Phase 1 核心打通并封板发版后，按顺序进入 Phase 2/3 开发。
