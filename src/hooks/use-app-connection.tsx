@@ -79,15 +79,16 @@ const ENV_USER =
     ? import.meta.env.VITE_OV_USER.trim()
     : ''
 
-const ROOT_API_KEY_FALLBACK = 'sk-fbb21afbe35d09986ac6f66ca91f62f44ee6b2536319be7347759f02de8f6227'
+const ROOT_API_KEY_FALLBACK = ''
 
 const DEFAULT_CONNECTION: ConnectionDraft = {
-  accountId: ENV_ACCOUNT || 'default',
+  accountId: ENV_ACCOUNT || '',
   adminApiKey: ENV_ADMIN_API_KEY || ROOT_API_KEY_FALLBACK,
   apiKey: ENV_API_KEY || ROOT_API_KEY_FALLBACK,
   baseUrl: ovClient.getOptions().baseUrl,
-  userId: ENV_USER || 'default',
+  userId: ENV_USER || '',
 }
+
 
 const AppConnectionContext =
   React.createContext<AppConnectionContextValue | null>(null)
