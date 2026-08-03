@@ -13,11 +13,21 @@ import {
   BookOpen, 
   Sun, 
   Moon, 
-  Globe 
+  Globe,
+  X
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
-  const { activeTab, setActiveTab, lang, setLang, theme, toggleTheme } = useStudioStore();
+  const { 
+    activeTab, 
+    setActiveTab, 
+    lang, 
+    setLang, 
+    theme, 
+    toggleTheme,
+    isMobileMenuOpen,
+    setIsMobileMenuOpen
+  } = useStudioStore();
 
   const navItems: { id: ActiveTab; label: string; icon: React.ReactNode }[] = [
     { id: 'home', label: '首页', icon: <Home className="size-4" /> },
@@ -27,16 +37,29 @@ export const Sidebar: React.FC = () => {
     { id: 'sessions', label: '会话', icon: <MessageSquare className="size-4" /> },
   ];
 
-  return (
-    <aside className="w-64 border-r border-slate-200/80 bg-slate-50/50 flex flex-col justify-between p-4 h-[calc(100vh-3.5rem)] text-sm sticky top-14">
+  const SidebarInner = () => (
+    <div className="flex flex-col justify-between h-full p-4 text-sm">
       {/* 顶部主导航菜单 */}
       <div className="space-y-1">
+        <div className="md:hidden flex items-center justify-between pb-3 mb-2 border-b border-slate-200/80">
+          <span className="font-semibold text-slate-800 text-sm">导航菜单</span>
+          <button 
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="p-1 rounded-md text-slate-500 hover:bg-slate-100"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+
         {navItems.map((item) => {
           const isActive = activeTab === item.id;
           return (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id)}
+              onClick={() => {
+                setActiveTab(item.id);
+                setIsMobileMenuOpen(false);
+              }}
               className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-medium transition-all ${
                 isActive 
                   ? 'bg-blue-50 text-blue-600 font-semibold shadow-2xs' 
@@ -50,9 +73,8 @@ export const Sidebar: React.FC = () => {
         })}
       </div>
 
-      {/* 底部功能栏：语言/明暗切换 -> 版本号 -> 连接与身份等 */}
+      {/* 底部功能栏 */}
       <div className="space-y-3 pt-4 border-t border-slate-200/80">
-        {/* 1. 右上角迁移过来的语言与明暗切换控件 */}
         <div className="flex items-center justify-between px-2 py-1 bg-white rounded-lg border border-slate-200/60 shadow-2xs">
           <button 
             onClick={() => setLang(lang === 'zh' ? 'en' : 'zh')}
@@ -71,13 +93,11 @@ export const Sidebar: React.FC = () => {
           </button>
         </div>
 
-        {/* 2. 版本号硬性声明 (位于连接与身份上方) */}
         <div className="px-3 py-1.5 rounded-md bg-slate-100 text-slate-500 text-xs font-mono font-medium flex items-center justify-between border border-slate-200/50">
           <span>系统版本</span>
-          <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold">v{__APP_VERSION__}</span>
+          <span className="bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold">v1.2.35</span>
         </div>
 
-        {/* 3. 底部原有候选与身份入口 */}
         <div className="space-y-1 text-xs font-medium text-slate-600">
           <button className="w-full flex items-center gap-2.5 px-3 py-1.5 rounded-md hover:bg-slate-100 text-slate-700 transition">
             <ShieldCheck className="size-4 text-slate-500" />
@@ -107,6 +127,31 @@ export const Sidebar: React.FC = () => {
           </a>
         </div>
       </div>
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      {/* 桌面端固定的侧边栏 */}
+      <aside className="hidden md:flex w-64 border-r border-slate-200/80 bg-slate-50/50 flex-col justify-between h-[calc(100vh-3.5rem)] text-sm sticky top-14">
+        <SidebarInner />
+      </aside>
+
+      {/* 移动端侧滑抽屉遮罩与面板 */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 z-50 flex">
+          {/* 半透明黑色背景 */}
+          <div 
+            className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+
+          {/* 侧滑抽出内容区 */}
+          <div className="relative w-64 max-w-[80vw] bg-white border-r border-slate-200 shadow-xl flex flex-col h-full z-10 animate-in slide-in-from-left duration-200">
+            <SidebarInner />
+          </div>
+        </div>
+      )}
+    </>
   );
 };
