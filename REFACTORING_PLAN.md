@@ -36,31 +36,44 @@
 - [ ] 260+ 技能卡片中的“暂无额外说明”被自动提炼生成的中文简介替换；
 - [ ] Harness 审计页展示全盘技能真实合规率 (%)。
 
-### 📌 P1: [ ] [TASK-UPSTREAM-SYNC-01] 官方上游 (volcengine/OpenViking:main) 增量代码合并与 Viking Adapter 物理兼容性验证 (Upstream Sync & Adapter Rebase)
+### 📌 P1: [ ] [TASK-UPSTREAM-SYNC-01] 官方上游 (volcengine/OpenViking:main) 渐进式原子合并与 Adapter 兼容验证组 (Progressive Upstream Sync Pipeline)
 
 **模块**：OpenViking 核心引擎 + Upstream 管道  
-**工单 ID**：`TASK-UPSTREAM-SYNC-01`  
+**工单 ID**：`TASK-UPSTREAM-SYNC-01` (含 A/B/C/D 4 个原子工单)  
 **优先级**：P1  
-**来源**：`volcengine/OpenViking:main` 官方上游已领先 1890 个提交，遵循 Rule 7 官方轮子优先原则进行增量合并与适配  
-**预计规模**：L (3 个迭代)
+**来源**：用户指导 — 上游领先 1890+ commit，绝对禁止一次性大合并，必须原子化拆解、完成一个验收测试一个，保障主服务绝不崩溃  
+**预计规模**：L (4 个渐进式小迭代)
 
-#### 1. 现状与根因
-- 上游仓库 (`volcengine/OpenViking:main`) 高速演进，当前分支落后 1890 个提交；
-- 缺乏定期 Upstream 增量 Rebase / Merge 机制；私有定制扩展（`inotify` 5分钟去重、`file_count` 目录透视、`harness_metrics.json` 捕获）需保护并解耦为干净的 Viking Adapter，防止代码拉取时冲突毁损。
+#### 核心防护铁律
+> ⚠️ **严禁一次性暴力 Merge 1890+ 提交**！必须按模块层级严格拆分为以下 4 个独立的原子工单，按顺序逐一合并、逐一跑通 API/MCP 自动化回归测试后才允许推进下一阶段！
 
-#### 2. 交付目标与技术方案
-1. **Upstream Remote 挂载与分段 Fetch**：
-   - 挂载 `git remote add upstream https://github.com/volcengine/OpenViking.git`；
-   - 建立隔离验证分支 `feat/sync-upstream-v0.5.x` 分段拉取 `upstream/main`；
-2. **冲突自动解析与适配器保护**：
-   - 调用技能 `resolving-merge-conflicts` 静默解析冲突，物理保护定制适配逻辑；
-3. **物理终验与自动化测试**：
-   - 跑通 1933 FastMCP / REST API 契约测试，验证 WorkMemory v2 与物理遥测 100% 无缝兼容。
+---
 
-#### 3. 量化验收标准
-- [ ] 物理合并上游 1890+ 提交，完成差异冲突消解与回归测试；
-- [ ] `file_count`、`auto_wakeup_rate` 遥测功能零回归破坏；
-- [ ] 验收完成后打 Tag 封板。
+#### 🔹 [ ] [TASK-UPSTREAM-SYNC-01A] 拓扑分析与 Viking Adapter 物理隔离准备
+- **目标**：挂载 `git remote add upstream https://github.com/volcengine/OpenViking.git`，分析 1890 个提交的变更分布；
+- **操作**：将我们私有的 `inotify` 感应、`file_count` 目录透视、`harness_metrics.json` 写入解耦抽离为干净独立的 Adapter 扩展模块；
+- **验收**：建好 `feat/sync-upstream-v0.5.x` 隔离分支，完成私有 Adapter 模块防冲突保护。
+
+---
+
+#### 🔹 [ ] [TASK-UPSTREAM-SYNC-01B] 阶段 1：底层存储层与 WorkMemory v2 增量合并与单体测试
+- **目标**：仅合并上游关于 Storage、LevelDB、VectorDB 索引及 WorkMemory v2 的底层提交；
+- **操作**：调用 `resolving-merge-conflicts` 解析存储层冲突，进行数据读写与 LevelDB 锁状态单体测试；
+- **验收**：[ ] 存储层单元测试 100% 通过，1933 端口数据库启动正常。
+
+---
+
+#### 🔹 [ ] [TASK-UPSTREAM-SYNC-01C] 阶段 2：FastMCP 门禁、RPC 路由与 Session 会话层增量合并
+- **目标**：合并上游 FastMCP 服务端、REST Router 及 Session 管理模块提交；
+- **操作**：合并路由代码，验证 `/api/v1/skills`、`/api/v1/sessions` 及 FastMCP 工具响应；
+- **验收**：[ ] MCP 工具调用及 REST API 契约无断流、无 500 异常。
+
+---
+
+#### 🔹 [ ] [TASK-UPSTREAM-SYNC-01D] 阶段 3：全系统 Viking Adapter 回归与终验闭环
+- **目标**：重新挂载 Viking Adapter，进行全系统端到端功能终验；
+- **操作**：测试 `file_count` 准确性、`auto_wakeup_rate` 遥测、Harness Logs 持久化等核心能力；
+- **验收**：[ ] 全系统测试 100% 跑通，打 Tag `v1.3.0` 封板交付。
 
 ---
 
