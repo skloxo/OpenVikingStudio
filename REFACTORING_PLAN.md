@@ -11,6 +11,86 @@
 
 ---
 
+### 📌 P0: [x] [TASK-MONITORING-METRICS-01] 1936/1933 监控状态码精细化拆分、llama.cpp 本地模型支持与 Systemd 无挂载脱离 IDE 守护 ✅
+
+**模块**：OpenVikingStudio 前端 + openviking-server 守护层  
+**工单 ID**：`TASK-MONITORING-METRICS-01`  
+**状态**：已完成并终验通过 ✅ (`Tag: v1.2.38`)  
+**来源**：用户指导 — HTTP 状态码 400/401 被强制推入 500；EMB (Qwen3-Embedding-8B) / Rerank (qwen3-reranker-0.6b) 被误标识为 ollama；1933 随 IDE 关闭断连
+
+#### 1. 交付改动与技术方案
+1. **HTTP 状态码多维分拆 (`http-status-chart.tsx`)**：重构错误状态码渲染算法，解除强行 500 归类，精准独立展现 400 (请求参数错误)、401 (未授权)、404 与 500；
+2. **llama.cpp 原生供应商标头校准 (`model-monitoring-card.tsx`)**：修正模型监控卡片，将本地 Embedding 8B 与 Reranker 0.6B 的供应商明确显示为 `llama.cpp/local`，并补齐缺省回退展示；
+3. **1933 Systemd 用户守护全量接入 (`openviking.service`)**：将 1933 后端引擎交由系统级 `systemctl --user` 托管，具备开机/WSL 自动启动、挂掉 3s 自动自愈重启，与 IDE 生命周期 100% 物理强解耦。
+
+#### 2. 验证结果
+- [x] HTTP 状态码 400、401、500 分拆显示 100% 准确；
+- [x] 本地 EMB 与 Rerank 模型 Supplier 统一标识为 `llama.cpp/local`；
+- [x] 关闭 IDE 或关闭 Terminal 后，1933 生产服务系统级常驻 200 OK 在线；
+- [x] Vite 编译打包 0 报错，打 Tag `v1.2.38` 交付。
+
+---
+
+### 📌 P0: [ ] [TASK-VERSION-TIMELINE-01] 资源 VersionTimeline 版本演进时间轴与历史快照对比组件嵌入
+
+**模块**：OpenVikingStudio 前端 (`src/routes/resources`)  
+**工单 ID**：`TASK-VERSION-TIMELINE-01`  
+**优先级**：P0  
+**来源**：用户指导 — 1935 中 `viking://resources` 的 VersionTimeline 演进时间轴与版本快照比对功能尚未移植至 1936
+
+#### 1. 功能定义与技术方案
+- **演进时间轴组件 (`VersionTimeline.tsx`)**：在 1936 资源详情侧边栏中渲染资源的物理修改历史（Created, Updated, Reindexed）；
+- **Diff 差异比对 (Monaco Diff / Unified Diff)**：支持选择任意两个历史 Version 版本，展示文件内容与 Header 元数据的差异；
+- **回滚与快照恢复 (Rollback Snapshot)**：支持一键回滚到指定的历史 Version 快照。
+
+---
+
+### 📌 P0: [ ] [TASK-NODE-ACL-01] 节点 NodePermissions 访问控制策略与角色权限配置器
+
+**模块**：OpenVikingStudio 前端 (`src/routes/resources` & `src/routes/users`)  
+**工单 ID**：`TASK-NODE-ACL-01`  
+**优先级**：P0  
+**来源**：用户指导 — 1935 中多账号/多角色的节点级权限 ACL 策略配置尚未移植至 1936
+
+#### 1. 功能定义与技术方案
+- **ACL 策略配置面板 (`NodePermissions.tsx`)**：展示当前资源节点针对特定 Account / User 的权限掩码（Read, Write, Delete, Reindex）；
+- **角色授权开关**：提供极客风格切换 Switch，动态更新 Viking 节点 ACL 权限规则。
+
+---
+
+### 📌 P0: [ ] [TASK-OUTLINE-OVERVIEW-01] L0-L4 深度 Outline 结构化概览拓扑视图
+
+**模块**：OpenVikingStudio 前端 (`src/routes/resources` & `src/routes/graph`)  
+**工单 ID**：`TASK-OUTLINE-OVERVIEW-01`  
+**优先级**：P0  
+**来源**：用户指导 — 1935 中【显示目录概览】L0-L4 结构化摘要与文本 Outline 全景拓扑图尚未移植至 1936
+
+#### 1. 功能定义与技术方案
+- **目录概览拓扑开关**：勾选【显示目录概览】后，读取 `getContentOverview` 接口返回的 L0-L4 深度摘要；
+- **全景 Outline 分层折叠图**：按层次展示文档/资源的节点大纲、分类与语义索引概览。
+
+---
+
+### 📌 P0: [x] [TASK-MOBILE-NAV-01] 1936 前端移动端响应式 Drawer 导航菜单适配 ✅
+
+**模块**：OpenVikingStudio 前端 + openviking-server 守护层  
+**工单 ID**：`TASK-MONITORING-METRICS-01`  
+**状态**：已完成并终验通过 ✅ (`Tag: v1.2.38`)  
+**来源**：用户指导 — HTTP 状态码 400/401 被强制推入 500；EMB (Qwen3-Embedding-8B) / Rerank (qwen3-reranker-0.6b) 被误标识为 ollama；1933 随 IDE 关闭断连
+
+#### 1. 交付改动与技术方案
+1. **HTTP 状态码多维分拆 (`http-status-chart.tsx`)**：重构错误状态码渲染算法，解除强行 500 归类，精准独立展现 400 (请求参数错误)、401 (未授权)、404 与 500；
+2. **llama.cpp 原生供应商标头校准 (`model-monitoring-card.tsx`)**：修正模型监控卡片，将本地 Embedding 8B 与 Reranker 0.6B 的供应商明确显示为 `llama.cpp/local`，并补齐缺省回退展示；
+3. **1933 Systemd 用户守护全量接入 (`openviking.service`)**：将 1933 后端引擎交由系统级 `systemctl --user` 托管，具备开机/WSL 自动启动、挂掉 3s 自动自愈重启，与 IDE 生命周期 100% 物理强解耦。
+
+#### 2. 验证结果
+- [x] HTTP 状态码 400、401、500 分拆显示 100% 准确；
+- [x] 本地 EMB 与 Rerank 模型 Supplier 统一标识为 `llama.cpp/local`；
+- [x] 关闭 IDE 或关闭 Terminal 后，1933 生产服务系统级常驻 200 OK 在线；
+- [x] Vite 编译打包 0 报错，打 Tag `v1.2.38` 交付。
+
+---
+
 ### 📌 P0: [x] [TASK-MOBILE-NAV-01] 1936 前端移动端响应式 Drawer 导航菜单适配 ✅
 
 **模块**：OpenVikingStudio 前端 layout  
