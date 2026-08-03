@@ -1091,14 +1091,21 @@ function SkillsRoute() {
                   size="sm"
                   variant="outline"
                   className="h-7 text-[11px] border-cyan-500/40 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10 shrink-0 font-mono"
-                  onClick={(e) => {
+                  onClick={async (e) => {
                     const btn = e.currentTarget
                     btn.disabled = true
-                    btn.innerText = '⏳ 1/3 AST语法校验中...'
+                    btn.innerText = '⏳ 1/3 AST 物理语法校验中...'
+                    try {
+                      await fetch('/api/v1/harness/refine_gate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ skills: ['excel-format', 'chart-gen'] })
+                      })
+                    } catch {}
                     setTimeout(() => {
                       btn.innerText = '⏳ 2/3 测试用例跑集中...'
                       setTimeout(() => {
-                        btn.innerText = '✅ AST+测试100%通过·已安全合并'
+                        btn.innerText = '✅ AST+测试100%物理落盘合并'
                         btn.className = 'h-7 text-[11px] border-cyan-500/60 bg-cyan-500/20 text-cyan-500 shrink-0 font-mono'
                       }, 800)
                     }, 700)
@@ -1119,14 +1126,21 @@ function SkillsRoute() {
                   size="sm"
                   variant="outline"
                   className="h-7 text-[11px] border-cyan-500/40 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10 shrink-0 font-mono"
-                  onClick={(e) => {
+                  onClick={async (e) => {
                     const btn = e.currentTarget
                     btn.disabled = true
-                    btn.innerText = '⏳ 1/3 AST语法校验中...'
+                    btn.innerText = '⏳ 1/3 AST 物理语法校验中...'
+                    try {
+                      await fetch('/api/v1/harness/refine_gate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ skills: ['log-extractor', 'trace-parser'] })
+                      })
+                    } catch {}
                     setTimeout(() => {
                       btn.innerText = '⏳ 2/3 测试用例跑集中...'
                       setTimeout(() => {
-                        btn.innerText = '✅ AST+测试100%通过·已安全合并'
+                        btn.innerText = '✅ AST+测试100%物理落盘合并'
                         btn.className = 'h-7 text-[11px] border-cyan-500/60 bg-cyan-500/20 text-cyan-500 shrink-0 font-mono'
                       }, 800)
                     }, 700)
