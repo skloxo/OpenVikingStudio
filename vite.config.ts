@@ -14,6 +14,9 @@ const OV_BACKEND = 'http://127.0.0.1:1933'
 const ovProxyEntry = {
   target: OV_BACKEND,
   changeOrigin: true,
+  headers: {
+    'X-API-Key': 'vk-sk-openviking-master-key',
+  },
 }
 
 const config = defineConfig({
