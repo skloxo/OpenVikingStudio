@@ -519,6 +519,20 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       </Sidebar>
 
       <SidebarInset className="min-h-0 flex-1 overflow-hidden rounded-none border-0 bg-background shadow-none ring-0 md:m-0 md:ml-0">
+        {/* 移动端专用顶栏：展示汉堡包/Sidebar 呼出触发图标与 App 标识 */}
+        <header className="flex md:hidden items-center justify-between border-b border-border/60 bg-background/95 backdrop-blur-md px-3 py-2 sticky top-0 z-40">
+          <div className="flex items-center gap-2">
+            <SidebarTrigger className="h-8 w-8 rounded text-foreground hover:bg-muted font-mono" />
+            <span className="font-semibold text-xs tracking-tight text-foreground flex items-center gap-1.5">
+              <span>🧠</span>
+              <span>OpenViking Studio</span>
+            </span>
+          </div>
+          <span className="text-[10px] font-mono text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded border border-border/40">
+            v1.2.37
+          </span>
+        </header>
+
         <ScrollArea className="min-h-0 flex-1">
           <div className="flex w-full flex-col gap-6 px-4 py-6 md:px-6">
             {!isConnectionRoleLoading &&
