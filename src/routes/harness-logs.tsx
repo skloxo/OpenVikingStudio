@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
+import { useAppConnection } from '#/hooks/use-app-connection'
+
 import {
   ArrowLeftIcon,
   ClockIcon,
@@ -265,10 +267,19 @@ function HarnessLogsPage() {
     })
   }
 
+  const { connection, connectionRole, isConnectionRoleLoading } = useAppConnection()
+  const canQuery = !isConnectionRoleLoading && connectionRole !== 'unknown'
+
   const harnessStatusQuery = useQuery({
+    enabled: canQuery,
     queryFn: async () => {
       try {
-        const res = await fetch('/api/v1/system/harness_metrics')
+        const apiKey = connection.adminApiKey || connection.apiKey
+        const headers: Record<string, string> = {}
+        if (apiKey) {
+          headers['X-API-Key'] = apiKey
+        }
+        const res = await fetch('/api/v1/system/harness_metrics', { headers })
         if (res.ok) {
           const data = await res.json() as {
             lessons_count?: number
@@ -294,9 +305,10 @@ function HarnessLogsPage() {
         store_calls: undefined as number | undefined,
       }
     },
-    queryKey: ['harness-status-full-logs-page'],
+    queryKey: ['harness-status-full-logs-page', connection.adminApiKey, connection.apiKey],
     staleTime: 30_000,
   })
+
 
   const [addedLessons, setAddedLessons] = React.useState<LessonItem[]>([])
   

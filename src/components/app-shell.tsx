@@ -28,10 +28,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '#/components/ui/collapsible'
-import { CrossDeviceVerifyDialog } from '#/components/cross-device-verify-dialog'
+import { AccessRequiredGate } from '#/components/access-required-gate'
 import { AccountSwitcher } from '#/components/account-switcher'
+import { CrossDeviceVerifyDialog } from '#/components/cross-device-verify-dialog'
 import { GeneratedCredentialDialog } from '#/components/generated-credential-dialog'
 import { ScrollArea } from '#/components/ui/scroll-area'
+
 import {
   Sidebar,
   SidebarContent,
@@ -519,10 +521,18 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       <SidebarInset className="min-h-0 flex-1 overflow-hidden rounded-none border-0 bg-background shadow-none ring-0 md:m-0 md:ml-0">
         <ScrollArea className="min-h-0 flex-1">
           <div className="flex w-full flex-col gap-6 px-4 py-6 md:px-6">
-            {children}
+            {!isConnectionRoleLoading &&
+            connectionRole === 'unknown' &&
+            pathname !== '/settings' &&
+            !pathname.startsWith('/oauth') ? (
+              <AccessRequiredGate />
+            ) : (
+              children
+            )}
           </div>
         </ScrollArea>
       </SidebarInset>
+
 
       <CrossDeviceVerifyDialog
         open={crossDeviceVerifyOpen}
