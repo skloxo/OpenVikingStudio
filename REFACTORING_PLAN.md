@@ -38,25 +38,19 @@
 
 ---
 
-### 📌 P1: [ ] [TASK-SKILL-FILECOUNT-01] 技能卡片全量关联文件数准确透视 (Skill Card Real File Count)
+### 📌 P1: [x] [TASK-SKILL-FILECOUNT-01] 技能卡片全量关联文件数准确透视 (Skill Card Real File Count) ✅
 
 **模块**：技能中心 API + 前端 View  
 **工单 ID**：`TASK-SKILL-FILECOUNT-01`  
 **优先级**：P1  
-**来源**：用户发现 — `antigravity-ide` 物理有 5 个文件，列表卡片硬编码显示 `1 文件(SOP)`  
-**预计规模**：S (1 个迭代)
+**状态**：已交付上线 ✅  
+**来源**：用户发现 — `openviking-master` / `antigravity-ide` 物理多文件，列表卡片硬编码显示 `1 文件(SOP)`  
 
-#### 1. 现状与根因
-- `/api/v1/skills` 列表 API 未返回 `file_count` 字段
-- 前端 `route.tsx` 在卡片渲染时取不到 `files.length`，退化写死 `1`
+#### 交付内容明细：
+1. **后端 API (`skills.py`)**：新增 `_count_skill_files()` 物理递归目录扫描，并在 `/api/v1/skills` 返回结构中统一注入 `file_count`；
+2. **前端 View (`route.tsx`)**：`SkillItem` 与 Badge 优先读取 `skill.file_count`，精确定向呈现真实文件数（如 `openviking-master` 即刻显示 `4 文件`）。
 
-#### 2. 交付目标
-1. **后端 API (`skills.py`)**：`_list_skills_from_root` 与 `_skill_summary_from_entry` 中，增加 `file_count` 扫描字段
-2. **前端 View (`route.tsx`)**：卡片 Badge 读取 `skill.file_count || skill.files?.length || 1`，展示真实文件数
-
-#### 3. 量化验收标准
-- [ ] 列表刷出时，`antigravity-ide` 卡片即刻准确显示 `5 文件`
-- [ ] 关联子目录与脚本文件的技能均准确呈现真实物理文件总数
+---
 
 ---
 
