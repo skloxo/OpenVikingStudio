@@ -11,6 +11,26 @@
 
 ---
 
+### 📌 P0: [x] [TASK-MOBILE-NAV-01] 1936 前端移动端响应式 Drawer 导航菜单适配 ✅
+
+**模块**：OpenVikingStudio 前端 layout  
+**工单 ID**：`TASK-MOBILE-NAV-01`  
+**状态**：已完成并终验通过 ✅ (`Commit: 30d2f55+`)  
+**来源**：用户指导 — 移动端视口下原侧边栏隐藏导致找不到导航菜单；需补齐移动端响应式抽屉菜单与汉堡包按钮
+
+#### 1. 交付改动与技术方案
+1. **Zustand 状态库扩展 (`useStudioStore.ts`)**：增加 `isMobileMenuOpen` / `toggleMobileMenu` / `setIsMobileMenuOpen` 移动端抽屉开闭状态控制；
+2. **Navbar 汉堡包切换按钮 (`Navbar.tsx`)**：仅在 `< md` 移动端视口展示 `MenuIcon` / `XIcon` 图标按钮；
+3. **Sidebar 响应式抽屉 (`Sidebar.tsx`)**：桌面端维持 `hidden md:flex` 64px 侧边栏，移动端提供侧滑 Sheet/Drawer + 黑色半透明 Backdrop 遮罩，点击导航项或背景自动收起。
+
+#### 2. 验证结果
+- [x] Vite 编译打包 0 报错；
+- [x] 移动端 `< md` 视口下顶部汉堡包按钮显示正常；
+- [x] 点击汉堡包滑出抽屉菜单，点击路由切换后自动收起；
+- [x] 打包部署至 1933 生产 Web 路径。
+
+---
+
 ### 📌 P0: [ ] [TASK-HARNESS-SOP-01] 预制规约检查引擎与全量技能简介自动生成闭环 (Builtin SOP & Description Auto-Gen)
 
 **模块**：Harness 引擎 + 技能中心  
