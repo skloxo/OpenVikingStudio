@@ -49,6 +49,7 @@ type SkillItem = {
   cnDescription?: string
   content?: string
   files?: SkillFile[]
+  file_count?: number
 }
 
 type SkillListResult = {
@@ -181,11 +182,14 @@ function normalizeSkills(value: unknown): SkillItem[] {
     const finalName = name || uri
     const finalDesc = description.trim() || '暂无额外说明'
 
+    const fileCount = typeof skill?.file_count === 'number' ? skill.file_count : undefined
+
     return [
       {
         cnDescription: getChineseSkillDescription(finalDesc),
         cnName: getChineseSkillName(finalName),
         description: finalDesc,
+        file_count: fileCount,
         name: finalName,
         scope,
         uri,
@@ -1407,9 +1411,11 @@ function SkillsRoute() {
                         className="rounded-xs text-xs px-2 py-0.5 border-border/70 bg-muted/30 text-foreground/80 font-normal shrink-0"
                       >
                         📁{' '}
-                        {Array.isArray(skill.files) && skill.files.length > 0
-                          ? skill.files.length
-                          : 1}{' '}
+                        {typeof skill.file_count === 'number'
+                          ? skill.file_count
+                          : Array.isArray(skill.files) && skill.files.length > 0
+                            ? skill.files.length
+                            : 1}{' '}
                         文件 (
                         {typeof skill.content === 'string' &&
                         skill.content.length > 0
