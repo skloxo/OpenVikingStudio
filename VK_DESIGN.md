@@ -20,7 +20,7 @@
 ```
 +-------------------------------------------------------------------------------+
 | OpenViking Studio                                                            |
-| v1.0.x (纯文本副标题, 与 Logo 字母 left: 16px 像素级精准左对齐)              |
+| v1.2.35 (纯文本副标题, 与 Logo 字母 left: 16px 像素级精准左对齐)             |
 +-------------------------------------------------------------------------------+
 | 首页                                                                         |
 | 实验场                                                                       |
@@ -40,28 +40,29 @@
 
 ### 侧边栏折叠/展开联动规范：
 
-- **展开状态 (`expanded`)**：显示完整标题 `OpenViking Studio`、副标题 `v1.0.x` 及底部 `中 / EN` 胶囊与主题图标。
-- **折叠状态 (`collapsed`)**：副标题 `v1.0.x` 与文本标题自动隐退 (`display: none`)，图标安全列对齐，无任何溢出或挤压。
+- **展开状态 (`expanded`)**：显示完整标题 `OpenViking Studio`、副标题 `v1.2.35` 及底部 `中 / EN` 胶囊与主题图标。
+- **折叠状态 (`collapsed`)**：副标题 `v1.2.35` 与文本标题自动隐退 (`display: none`)，图标安全列对齐，无任何溢出或挤压。
 
 ---
 
 ## 🎨 3. Color Palette & Dark/Light Semantic System (配色与语义色彩矩阵)
 
 全站严格使用语义化配色方案，支持明亮 (`light`) 与暗黑 (`dark`) 真实双模式无缝切换。中性黑/纯灰禁止乱用。
+**NO GREEN EVER 铁律**：禁止使用任何绿色；正向/成功统一采用冰青 (`cyan-500` / `cyan-400`) 或湛蓝 (`blue-500`)。
 
 | 语义角色 (Semantic Role)      | 明亮模式 (Light Hex / Tailwind)       | 暗黑模式 (Dark Hex / Tailwind)        | 用途说明 (Usage)               |
 | :---------------------------- | :------------------------------------ | :------------------------------------ | :----------------------------- |
 | **Viewport Background** | `#f8fafc` (`bg-slate-50`)         | `#090d16` (`bg-[#090d16]`)        | 页面整框底色                   |
 | **Card Surface**        | `#ffffff` (`bg-white`)            | `#0f172a` (`bg-slate-900`)        | 指标卡片、ECharts 图表容器背景 |
 | **Sidebar Surface**     | `#f1f5f9` (`bg-slate-100/70`)     | `#0b1120` (`bg-[#0b1120]`)        | 左侧 Sidebar 容器背景          |
-| **Primary Accent**      | `#2563eb` (`text-blue-600`)       | `#3b82f6` (`text-blue-500`)       | 选中导航、主按键、重点标注     |
+| **Primary Accent**      | `#06b6d4` (`text-cyan-500`)       | `#22d3ee` (`text-cyan-400`)       | 选中导航、主按键、重点标注     |
 | **VLM Input Trend**     | `#0284c7` (`text-sky-600`)        | `#38bdf8` (`text-sky-400`)        | ECharts VLM 输入折线与填充色   |
-| **VLM Output Trend**    | `#0d9488` (`text-teal-600`)       | `#2dd4bf` (`text-teal-400`)       | ECharts VLM 输出折线与填充色   |
-| **Embedding Trend**     | `#3b82f6` (`text-blue-600`)       | `#60a5fa` (`text-blue-400`)       | ECharts Embedding 折线与填充色 |
-| **Heatmap Active**      | `#059669` (`bg-emerald-600`)      | `#34d399` (`bg-emerald-400`)      | 365 天提交热力图活跃波段       |
+| **VLM Output Trend**    | `#8b5cf6` (`text-purple-600`)     | `#a78bfa` (`text-purple-400`)     | ECharts VLM 输出折线与填充色   |
+| **Embedding Trend**     | `#06b6d4` (`text-cyan-500`)       | `#22d3ee` (`text-cyan-400`)       | ECharts Embedding 折线与填充色 |
+| **Heatmap Active**      | `#06b6d4` (`bg-cyan-500`)         | `#22d3ee` (`bg-cyan-400`)         | 365 天提交热力图活跃波段       |
 | **Border Low-Opacity**  | `#e2e8f0` (`border-slate-200/70`) | `#1e293b` (`border-slate-800/80`) | 干净细分割线                   |
 | **Primary Text**        | `#0f172a` (`text-slate-900`)      | `#f8fafc` (`text-slate-50`)       | 主数字、大标题、选中文字       |
-| **Secondary Text**      | `#64748b` (`text-slate-500`)      | `#94a3b8` (`text-slate-400`)      | 标签说明、版本副标题`v1.0.x` |
+| **Secondary Text**      | `#64748b` (`text-slate-500`)      | `#94a3b8` (`text-slate-400`)      | 标签说明、版本副标题`v1.2.35` |
 
 ---
 
