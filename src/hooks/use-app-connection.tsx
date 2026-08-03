@@ -145,8 +145,8 @@ function normalizeConnectionDraft(
 ): ConnectionDraft {
   return {
     accountId: connection.accountId.trim() || 'default',
-    adminApiKey: connection.adminApiKey.trim() || ROOT_API_KEY_FALLBACK,
-    apiKey: connection.apiKey.trim() || ROOT_API_KEY_FALLBACK,
+    adminApiKey: connection.adminApiKey.trim(),
+    apiKey: connection.apiKey.trim(),
     baseUrl: connection.baseUrl.trim(),
     userId: connection.userId.trim() || 'default',
   }

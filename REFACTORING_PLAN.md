@@ -9,6 +9,15 @@
 
 ## 📅 当前核心排期阶段：Milestone Phase 1 (技能中心深度重构 ➔ 任务中心 ➔ Harness 引擎 ➔ Loop)
 
+### [x] v1.2.30 — [TASK-AUTH-04 & FIX-TASKS-01] 拔除空 Key 默认 fallback 预填与任务中心 ClipboardListIcon 遗漏修复 (用户已验收通过 ✅)
+- **Git Commit**: `fix(security & tasks): remove fallback prefilled key and import missing ClipboardListIcon v1.2.30`
+- **Tag**: `v1.2.30`
+- **修改文件**: `src/components/api-key-input.tsx`, `src/routes/tasks/route.tsx`, `package.json`, `REFACTORING_PLAN.md`
+- **主要交付**:
+  1. **拔除 `ROOT_API_KEY_FALLBACK` 补填**：解决新隐身窗口或未配置场景下前端自动把默认失效 Key 填入输入框的漏洞，保持 100% 物理干净；
+  2. **修复任务中心列表报错**：在 `/tasks` 路由补齐 `ClipboardListIcon` 导入，解决下拉筛选“等待中”列表触发 JavaScript 渲染崩溃的问题；
+  3. **双接入点公网隔离验证**：`vk.tide.beer` (1936 Studio UI) 与 `vk.tide.red` (1933 API) 统一使用原标准 API Key 鉴权模型。
+
 ### [x] v1.2.29 — [TASK-AUTH-03] 拔除 index.html 偷跑预填 Key 脚本与物理空安全防线 (Remove index.html Hardcoded Script) (用户已验收通过 ✅)
 - **Git Commit**: `fix(security): remove index.html hardcoded localStorage injection script v1.2.29`
 - **Tag**: `v1.2.29`
