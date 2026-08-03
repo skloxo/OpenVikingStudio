@@ -1100,15 +1100,29 @@ function SkillsRoute() {
       </div>
 
       {activeScopeFilter === 'idle' && (
-        <Card className="rounded border border-rose-500/30 bg-rose-500/5 p-3.5 font-mono text-xs shadow-2xs flex flex-col gap-2.5">
-          <div className="flex items-center justify-between text-rose-500 font-semibold">
+        <Card className={cn(
+          "rounded p-3.5 font-mono text-xs shadow-2xs flex flex-col gap-2.5 transition-colors",
+          refinedSkills['excel-chart'] === 'done' && refinedSkills['log-trace'] === 'done'
+            ? "border-cyan-500/40 bg-cyan-500/5 text-cyan-600 dark:text-cyan-400"
+            : "border-rose-500/30 bg-rose-500/5 text-rose-500"
+        )}>
+          <div className="flex items-center justify-between font-semibold">
             <span className="flex items-center gap-1.5">
               <SparklesIcon className="size-4" />
-              ⚡ Harness 技能资产精简与合并建议 (Low Reuse Optimization)
+              {refinedSkills['excel-chart'] === 'done' && refinedSkills['log-trace'] === 'done'
+                ? "✅ Harness 离散技能资产已完成物理提炼与合并 (Low Reuse Optimization Completed)"
+                : "⚡ Harness 技能资产精简与合并建议 (Low Reuse Optimization)"}
             </span>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="border-rose-500/30 text-rose-500 text-[11px] bg-rose-500/10">
-                重叠度 &gt; 75% 离散提炼
+              <Badge variant="outline" className={cn(
+                "text-[11px]",
+                refinedSkills['excel-chart'] === 'done' && refinedSkills['log-trace'] === 'done'
+                  ? "border-cyan-500/40 text-cyan-500 bg-cyan-500/10"
+                  : "border-rose-500/30 text-rose-500 bg-rose-500/10"
+              )}>
+                {refinedSkills['excel-chart'] === 'done' && refinedSkills['log-trace'] === 'done'
+                  ? "✅ 离散提炼闭环完成"
+                  : "重叠度 > 75% 离散提炼"}
               </Badge>
               <Badge variant="outline" className="border-cyan-500/40 text-cyan-500 text-[11px] bg-cyan-500/10">
                 🤖 全无人值守自动门禁
@@ -1116,15 +1130,25 @@ function SkillsRoute() {
             </div>
           </div>
           <p className="text-muted-foreground leading-relaxed text-[11px]">
-            检测到 {filteredSkills.length} 项技能在近 24 小时物理采样中零唤醒。下述离散技能存在高语义重叠，后台 Daemon 已开启 AST 语法 + 用例测试双门禁，可随时手动触发或静默闭环提炼为大 SOP：
+            {refinedSkills['excel-chart'] === 'done' && refinedSkills['log-trace'] === 'done'
+              ? "🎉 下述高重叠离散技能均已通过 Python AST 语法 + PyTest 双门禁物理提炼落盘为大 SOP，已在全局 Agent 意图库中消除了双重召唤与冗余死锁。"
+              : `检测到 ${filteredSkills.length} 项技能在近 24 小时物理采样中零唤醒。下述离散技能存在高语义重叠，后台 Daemon 已开启 AST 语法 + 用例测试双门禁，可随时手动触发或静默闭环提炼为大 SOP：`}
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-0.5">
-            <div className="rounded border border-rose-500/20 bg-background/60 p-2.5 text-[11px] flex flex-col gap-2">
+            <div className={cn(
+              "rounded p-2.5 text-[11px] flex flex-col gap-2 border transition-colors",
+              refinedSkills['excel-chart'] === 'done' ? "border-cyan-500/30 bg-background/80" : "border-rose-500/20 bg-background/60"
+            )}>
               <div className="flex items-center justify-between">
                 <div className="flex flex-col gap-0.5 min-w-0">
                   <span className="text-foreground font-medium truncate">excel-format & chart-gen</span>
-                  <span className="text-rose-500 font-bold shrink-0">78.5% 重叠 ➔ 推荐精简</span>
+                  <span className={cn(
+                    "font-bold shrink-0",
+                    refinedSkills['excel-chart'] === 'done' ? "text-cyan-500" : "text-rose-500"
+                  )}>
+                    {refinedSkills['excel-chart'] === 'done' ? "✅ 78.5% 重叠已完成物理提炼" : "78.5% 重叠 ➔ 推荐精简"}
+                  </span>
                 </div>
                 <Button
                   type="button"
@@ -1149,11 +1173,19 @@ function SkillsRoute() {
                 </Button>
               </div>
             </div>
-            <div className="rounded border border-rose-500/20 bg-background/60 p-2.5 text-[11px] flex flex-col gap-2">
+            <div className={cn(
+              "rounded p-2.5 text-[11px] flex flex-col gap-2 border transition-colors",
+              refinedSkills['log-trace'] === 'done' ? "border-cyan-500/30 bg-background/80" : "border-rose-500/20 bg-background/60"
+            )}>
               <div className="flex items-center justify-between">
                 <div className="flex flex-col gap-0.5 min-w-0">
                   <span className="text-foreground font-medium truncate">log-extractor & trace-parser</span>
-                  <span className="text-rose-500 font-bold shrink-0">81.2% 重叠 ➔ 推荐合并</span>
+                  <span className={cn(
+                    "font-bold shrink-0",
+                    refinedSkills['log-trace'] === 'done' ? "text-cyan-500" : "text-rose-500"
+                  )}>
+                    {refinedSkills['log-trace'] === 'done' ? "✅ 81.2% 重叠已完成物理提炼" : "81.2% 重叠 ➔ 推荐合并"}
+                  </span>
                 </div>
                 <Button
                   type="button"
