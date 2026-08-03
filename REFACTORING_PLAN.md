@@ -9,7 +9,17 @@
 
 ## 📅 当前核心排期阶段：Milestone Phase 1 (技能中心深度重构 ➔ 任务中心 ➔ Harness 引擎 ➔ Loop)
 
+### [x] v1.2.29 — [TASK-AUTH-03] 拔除 index.html 偷跑预填 Key 脚本与物理空安全防线 (Remove index.html Hardcoded Script) (用户已验收通过 ✅)
+- **Git Commit**: `fix(security): remove index.html hardcoded localStorage injection script v1.2.29`
+- **Tag**: `v1.2.29`
+- **修改文件**: `index.html`, `package.json`, `REFACTORING_PLAN.md`
+- **主要交付**:
+  1. **🎯 拔除 `index.html` 偷跑脚本**：精准拔除了 `index.html` 中第 23-35 行原本用于开发测试的 `<script>` 注入逻辑（该逻辑在任意浏览器打开时均强制向 `localStorage` 自动写入假 Key `sk-fbb21afbe...`）；
+  2. **✨ 真正的物理纯净空白**：隐身窗口与新浏览器打开时，`localStorage` 保持物理干净为空，输入框完全呈现空白未填状态；
+  3. **🔒 访问彻底锁定**：未登录用户在连接设置中不会看到任何伪造点点密文，页面一律拦截呈现 `AccessRequiredGate` 门禁。
+
 ### [x] v1.2.28 — [TASK-AUTH-02] 全局与 Harness 页面公网未授权拦截门禁 (AccessRequiredGate & Zero-Data-Leak Guard) (用户已验收通过 ✅)
+
 - **Git Commit**: `feat(auth): add global AccessRequiredGate and harness-logs zero-leak auth guard v1.2.28`
 - **Tag**: `v1.2.28`
 - **修改文件**: `src/components/access-required-gate.tsx`, `src/components/app-shell.tsx`, `src/routes/harness-logs.tsx`, `package.json`, `REFACTORING_PLAN.md`
