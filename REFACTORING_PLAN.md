@@ -43,6 +43,8 @@
 2. **版本快照比对 (Diff Viewer)**：支持选中任意历史版本，高亮展示与当前版本的 Text / Markdown 差异；
 3. **“点击回滚版本”动作 (`RotateCcw Rollback`)**：提供极客风格【回滚至此版本】操作按钮，点击后向 OpenViking 后端发送版本还原请求，并同步刷新 1936 资源列表。
 
+![.abstract.md 查看历史版本与回滚界面](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/assets/markdown_versioning_rollback_screenshot.png)
+
 #### 2. 1935 历史参考源码 (1935 Legacy Reference Code)
 ```tsx
 // file:///home/skloxo/openviking-ui-ruansheng8/src/components/resources/version-timeline.tsx
