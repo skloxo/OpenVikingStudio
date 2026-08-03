@@ -20,19 +20,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="OpenViking" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <script>
-      (function() {
-        try {
-          const conn = {
-            adminApiKey: '[REDACTED_API_KEY]',
-            apiKey: '[REDACTED_API_KEY]',
-            role: 'root',
-            baseUrl: window.location.origin
-          };
-          localStorage.setItem('ov_console_connection', JSON.stringify(conn));
-        } catch(e) {}
-      })();
-    </script>
+
     <!-- Runs before Vite's module graph so dependencies can safely call crypto.randomUUID. -->
     <script>
       ;(() => {
