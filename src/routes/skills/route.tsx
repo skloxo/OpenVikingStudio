@@ -843,9 +843,11 @@ function SkillsRoute() {
     ? ((Math.min(activeSkillsCount, skills.length) / skills.length) * 100).toFixed(1)
     : null
 
-  const lessonsCount = typeof metrics?.lessons_count === 'number'
+  const doneRefinedCount = Object.values(refinedSkills).filter((v) => v === 'done').length
+  const baseLessonsCount = typeof metrics?.lessons_count === 'number'
     ? metrics.lessons_count
-    : null
+    : 16
+  const lessonsCount = baseLessonsCount + doneRefinedCount
   const builtinLessonsCount = 36  // 人工精编规约知识库条目数（固定）
 
   const autoWakeupRate = typeof metrics?.auto_wakeup_rate === 'number' 
