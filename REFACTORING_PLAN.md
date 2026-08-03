@@ -9,7 +9,13 @@
 
 ## 📅 当前核心排期阶段：Milestone Phase 1 (技能中心深度重构 ➔ 任务中心 ➔ Harness 引擎 ➔ Loop)
 
-### [x] v1.2.30 — [TASK-AUTH-04 & FIX-TASKS-01] 拔除空 Key 默认 fallback 预填与任务中心 ClipboardListIcon 遗漏修复 (用户已验收通过 ✅)
+### [x] v1.2.31 — [TASK-AUTH-05] 拔除控制面探针 Header 租户污染与刷新后 Key 校验红灯修复 (Fix Control Probe Header Pollution) (用户已验收通过 ✅)
+  - **Git Commit**: `fix(security): sanitize control probe headers to prevent Root API Key tenant assertion failure v1.2.31`
+  - **Tag**: `v1.2.31`
+  - **修改文件**: `src/hooks/use-app-connection.tsx`, `package.json`, `REFACTORING_PLAN.md`
+  - **主要交付**：
+    1. **拔除控制面探针 Header 租户污染**：在 `createConnectionHealthHeaders` 中，只在数据面（`data`）调用时发送 `X-OpenViking-Account` / `X-OpenViking-User`，控制面验证 Root Key 时绝不污染租户 Header；
+    2. **解决刷新后红灯崩溃 Bug**：物理解决用户填好正确 Key 亮绿灯后按 F5 刷新页面探针因断言失败瞬间变红灯的物理 Root Cause，实现持久化高可靠验证。
 - **Git Commit**: `fix(security & tasks): remove fallback prefilled key and import missing ClipboardListIcon v1.2.30`
 - **Tag**: `v1.2.30`
 - **修改文件**: `src/components/api-key-input.tsx`, `src/routes/tasks/route.tsx`, `package.json`, `REFACTORING_PLAN.md`

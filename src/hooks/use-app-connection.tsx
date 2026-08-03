@@ -298,11 +298,13 @@ function createConnectionHealthHeaders(
   if (apiKey) {
     headers['X-API-Key'] = apiKey
   }
-  if (connection.accountId) {
-    headers['X-OpenViking-Account'] = connection.accountId
-  }
-  if (connection.userId) {
-    headers['X-OpenViking-User'] = connection.userId
+  if (credential === 'data') {
+    if (connection.accountId) {
+      headers['X-OpenViking-Account'] = connection.accountId
+    }
+    if (connection.userId) {
+      headers['X-OpenViking-User'] = connection.userId
+    }
   }
   return headers
 }
