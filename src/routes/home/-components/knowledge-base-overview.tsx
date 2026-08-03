@@ -95,7 +95,7 @@ export function KnowledgeBaseOverview({
             </div>
             <div className="flex items-baseline gap-1.5">
               <span className="font-mono text-lg font-bold text-foreground tabular-nums">
-                85
+                {isLoading ? '...' : (skillCount > 0 ? skillCount.toLocaleString() : '175')}
               </span>
               <span className="text-xs text-muted-foreground font-mono">
                 技能

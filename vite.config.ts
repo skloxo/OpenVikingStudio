@@ -48,8 +48,7 @@ const config = defineConfig({
       '/sessions':  ovProxyEntry,
       '/tasks':     ovProxyEntry,
       '/system':    ovProxyEntry,
-      // Resources, skills, pack
-      '/skills':    ovProxyEntry,
+      // Resources, pack
       '/resources': ovProxyEntry,
       '/pack':      ovProxyEntry,
       // Relations, privacy, content

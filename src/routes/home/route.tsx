@@ -151,11 +151,7 @@ function HomePage() {
 
       <div className="grid gap-4 md:grid-cols-3">
         <ContextDataPanel
-          data={
-            summary?.context_counts
-              ? { ...summary.context_counts, skills: 85 }
-              : undefined
-          }
+          data={summary?.context_counts}
           disabled={metricsUnavailable}
           disabledMessage={unavailableMessage}
           isError={dashboard.isError}
