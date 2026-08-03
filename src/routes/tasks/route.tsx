@@ -6,6 +6,7 @@ import {
   CircleDashedIcon,
   CircleXIcon,
   ChevronRightIcon,
+  ClipboardListIcon,
   LoaderCircleIcon,
   RefreshCwIcon,
   RotateCcwIcon,
