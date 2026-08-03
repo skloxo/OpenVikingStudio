@@ -9,7 +9,17 @@
 
 ## 📅 当前核心排期阶段：Milestone Phase 1 (技能中心深度重构 ➔ 任务中心 ➔ Harness 引擎 ➔ Loop)
 
+### [x] v1.2.28 — [TASK-AUTH-02] 全局与 Harness 页面公网未授权拦截门禁 (AccessRequiredGate & Zero-Data-Leak Guard) (用户已验收通过 ✅)
+- **Git Commit**: `feat(auth): add global AccessRequiredGate and harness-logs zero-leak auth guard v1.2.28`
+- **Tag**: `v1.2.28`
+- **修改文件**: `src/components/access-required-gate.tsx`, `src/components/app-shell.tsx`, `src/routes/harness-logs.tsx`, `package.json`, `REFACTORING_PLAN.md`
+- **主要交付**:
+  1. **🛡️ 参照 `/request-logs` 全局统一拦截**：创建 `AccessRequiredGate` 通用安全门禁，参考 `request-logs` 拦截方案，当用户处于 `connectionRole === 'unknown'` 且非 `/settings` 路由时，全局拦截渲染未授权警示门禁；
+  2. **🔒 `/harness-logs` 零泄漏锁定**：修复 `/harness-logs` 逃逸 `fetch` 漏洞，添加 `enabled: canQuery` 与 `X-API-Key` 请求头，未鉴权公网访客 100% 无法获取底层数据与履历；
+  3. **✨ 无缝导向【连接设置】**：提供一键接入 `/settings` 引导卡片，解锁前彻底隔离所有敏感数据与控制操作。
+
 ### [x] v1.2.27 — [TASK-AUTH-01] 公网穿透与独立 API Key 鉴权拦截防护交付 (用户已验收通过 ✅)
+
 - **Git Commit**: `feat(auth): public gateway, letsencrypt ssl, and clean auth guard isolation v1.2.27`
 - **Tag**: `v1.2.27`
 - **修改文件**: `vite.config.ts`, `src/hooks/use-app-connection.tsx`, `package.json`, `REFACTORING_PLAN.md`
