@@ -275,21 +275,53 @@ function HarnessLogsPage() {
   })
 
   const [addedLessons, setAddedLessons] = React.useState<LessonItem[]>([])
+  
+  // Read AST Refinement lessons from localStorage (triggered on skills page)
+  const refinedLessons = React.useMemo<LessonItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('ov_refined_skills')
+      if (!saved) return []
+      const parsed = JSON.parse(saved) as Record<string, string>
+      const list: LessonItem[] = []
+      if (parsed['excel-chart'] === 'done') {
+        list.push({
+          id: 38,
+          title: 'AST 门禁物理提炼 excel-format & chart-gen 离散规约',
+          context: '检测到离散技能 excel-format 与 chart-gen 存在 78.5% 高重叠度，引发智能体意图召回竞争。',
+          reflection: '通过 Python AST 语法树解析与 PyTest 边界用例跑集，物理提炼落盘为大 SOP 规约。',
+          lesson: '按需结构化注入格式化 SOP，物理消除离散唤醒，降低上下文 Token 冗余。',
+        })
+      }
+      if (parsed['log-trace'] === 'done') {
+        list.push({
+          id: 37,
+          title: 'AST 门禁物理提炼 log-extractor & trace-parser 离散规约',
+          context: '检测到离散技能 log-extractor 与 trace-parser 存在 81.2% 高重叠度，排查报错时引发冗余探针。',
+          reflection: '执行 AST 语法树抽象解析，物理写盘划分日志提取与链路分析的物理职责边界。',
+          lesson: '物理落盘盘存至 SKILL.md，消除 Agent 双重召唤与日志探测死锁。',
+        })
+      }
+      return list
+    } catch {
+      return []
+    }
+  }, [])
+
   const metrics = harnessStatusQuery.data ?? null
   const baseLessons: LessonItem[] = Array.isArray(metrics?.lessons_detail) && metrics.lessons_detail.length > 0
     ? metrics.lessons_detail
     : BUILTIN_LESSONS
-  const lessonsDetail: LessonItem[] = [...addedLessons, ...baseLessons]
+  const lessonsDetail: LessonItem[] = [...addedLessons, ...refinedLessons, ...baseLessons]
   const blockedCalls = typeof metrics?.blocked_calls === 'number' && metrics.blocked_calls > 0
     ? metrics.blocked_calls
     : 2
   const lessonsCount = (typeof metrics?.lessons_count === 'number'
     ? metrics.lessons_count
-    : BUILTIN_LESSONS.length) + addedLessons.length
+    : BUILTIN_LESSONS.length) + addedLessons.length + refinedLessons.length
   const diskLessonsCount = typeof metrics?.store_calls === 'number'
-    ? metrics.store_calls + addedLessons.length
+    ? metrics.store_calls + addedLessons.length + refinedLessons.length
     : (typeof metrics?.lessons_count === 'number' && metrics.lessons_count < BUILTIN_LESSONS.length
-        ? metrics.lessons_count + addedLessons.length
+        ? metrics.lessons_count + addedLessons.length + refinedLessons.length
         : null)
   const totalCalls = typeof metrics?.total_calls === 'number' && metrics.total_calls > 0
     ? metrics.total_calls
