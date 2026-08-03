@@ -7,7 +7,10 @@
 ## 🪐 1. Brand Identity & Design Atmosphere (品牌调性与设计内核)
 
 - **定位 (Positioning)**：**"Enterprise AI Infrastructure Workstation" (企业级 AI 基础设施工作站)**。
-- **视觉风格 (Style)**：数据密集、紧凑平整、高清晰度字体排版、硬朗轻盈。
+- **美学哲学 (Design Philosophy)**：**克制性冷淡美学 (Minimalist Industrial Normcore)**。
+  - **务实低调**：拒绝浮夸宣导与装饰性假彩虹色，文字使用黑/纯暗色 (`text-slate-900` / `text-slate-50`)，踏踏实实讲清数据与事实。
+  - **极致 4px 硬朗圆角 (`rounded-xs` / `4px`)**：彻底切除大圆角 (`rounded-2xl`) 对视口边角空间的切割与浪费。收紧圆弧至极致硬朗的 4px，将矩形有效包覆面积与几何收敛推向极限。
+  - **最小空间展示最大信息密度**：摒弃大面积无意义留白与厚重阴影 (`box-shadow: none`)，全站采用 1px 低透明度细线边框隔离，每一像素都为了数据展示而生。
 - **空间利用 (Elevation & Boundaries)**：
   - **扁平无阴影**：完全扁平化设计，**禁用重阴影 (`box-shadow: none`)**。
   - **低透明度边框**：全站卡片与侧边栏采用 `1px` 微细低透明度边框 (`border-slate-200/70` / `border-slate-800/80`) 隔离空间。
