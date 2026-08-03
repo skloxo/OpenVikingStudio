@@ -92,27 +92,41 @@ function normalizeSkills(value: unknown): SkillItem[] {
     if (!name && !uri) return []
 
     // 100% 提取 OpenViking 后端原生 abstract / overview / description / content 字段中的自然语言触发词
-    const rawDesc = typeof skill?.description === 'string' ? skill.description.trim() : ''
-    const rawAbstract = typeof skill?.abstract === 'string' ? skill.abstract.trim() : ''
-    const rawOverview = typeof skill?.overview === 'string' ? skill.overview.trim() : ''
-    const rawContent = typeof skill?.content === 'string' ? skill.content.trim() : ''
+    const rawDesc =
+      typeof skill?.description === 'string' ? skill.description.trim() : ''
+    const rawAbstract =
+      typeof skill?.abstract === 'string' ? skill.abstract.trim() : ''
+    const rawOverview =
+      typeof skill?.overview === 'string' ? skill.overview.trim() : ''
+    const rawContent =
+      typeof skill?.content === 'string' ? skill.content.trim() : ''
 
     // 源码级正道解法：针对 description: > 和 description: | 编写坚固的多行 YAML 与自然语言解析器
     const cleanText = (source: string): string => {
       if (!source) return ''
-      
+
       // 1. 匹配多行 YAML description: > 或 description: |
-      const multiLineMatch = source.match(/description:\s*(?:\||>)\s*\n((?:\s{2,}.*\n?)+)/i)
+      const multiLineMatch = source.match(
+        /description:\s*(?:\||>)\s*\n((?:\s{2,}.*\n?)+)/i,
+      )
       if (multiLineMatch && multiLineMatch[1]) {
-        const lines = multiLineMatch[1].split('\n').map((l) => l.trim()).filter(Boolean)
-        const combined = lines.join(' ').replace(/^["'|>\s\-*\d.#:]+/g, '').trim()
+        const lines = multiLineMatch[1]
+          .split('\n')
+          .map((l) => l.trim())
+          .filter(Boolean)
+        const combined = lines
+          .join(' ')
+          .replace(/^["'|>\s\-*\d.#:]+/g, '')
+          .trim()
         if (combined.length >= 3) return combined
       }
 
       // 2. 匹配单行 YAML description: "..."
       const singleLineMatch = source.match(/description:\s*["']?([^"\n\r>|]+)/i)
       if (singleLineMatch && singleLineMatch[1]) {
-        const extracted = singleLineMatch[1].replace(/^["'|>\s\-*\d.#:]+/g, '').trim()
+        const extracted = singleLineMatch[1]
+          .replace(/^["'|>\s\-*\d.#:]+/g, '')
+          .trim()
         if (extracted.length >= 3) return extracted
       }
 
@@ -120,7 +134,13 @@ function normalizeSkills(value: unknown): SkillItem[] {
       const lines = source.split('\n')
       for (const line of lines) {
         const trimmed = line.trim()
-        if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith('---') || trimmed.startsWith('name:')) continue
+        if (
+          !trimmed ||
+          trimmed.startsWith('#') ||
+          trimmed.startsWith('---') ||
+          trimmed.startsWith('name:')
+        )
+          continue
         const cleaned = trimmed
           .replace(/^["'|>\s\-*\d.#:]+/g, '')
           .replace(/^["'\s]+|["'\s]+$/g, '')
@@ -133,33 +153,37 @@ function normalizeSkills(value: unknown): SkillItem[] {
       return ''
     }
 
-    let description = cleanText(rawDesc) || cleanText(rawOverview) || cleanText(rawAbstract) || cleanText(rawContent)
+    let description =
+      cleanText(rawDesc) ||
+      cleanText(rawOverview) ||
+      cleanText(rawAbstract) ||
+      cleanText(rawContent)
     if (!description || description === '|' || description === '>') {
       // 绝密降级：为 computer-use, hermes-config-audit, skill-governance 补齐官方人类可读简介
       const KNOWN_SKILL_DESCRIPTIONS: Record<string, string> = {
-        'computer-use': '桌面后台自动化操作 — 支持后台静默点击、打字、滚动与跨平台 GUI 驱动。',
-        'hermes-config-audit': 'Hermes 配置自检与优化 — 检查 memory/session/fallback/toolset 配置。',
-        'skill-governance': 'Hermes 技能治理规范 — 角色过滤、清理方法论与定期审查。',
+        'computer-use':
+          '桌面后台自动化操作 — 支持后台静默点击、打字、滚动与跨平台 GUI 驱动。',
+        'hermes-config-audit':
+          'Hermes 配置自检与优化 — 检查 memory/session/fallback/toolset 配置。',
+        'skill-governance':
+          'Hermes 技能治理规范 — 角色过滤、清理方法论与定期审查。',
       }
-      description = KNOWN_SKILL_DESCRIPTIONS[name] || (
+      description =
+        KNOWN_SKILL_DESCRIPTIONS[name] ||
         (rawContent || rawOverview || rawAbstract)
           .replace(/---[\s\S]*?---/, '')
           .replace(/^#\s+[^\n]+\n?/, '')
           .replace(/^["'|>\s\-*\d.#:]+/g, '')
           .trim()
-      )
     }
 
     const scope: SkillScope = uri.includes('/user/') ? 'user' : 'agent'
     const finalName = name || uri
-    const finalDesc =
-      description && description !== '>' && description !== '|' && description !== '暂无简介'
-        ? description
-        : `用于处理与自动化执行 ${finalName} 的 OpenViking 标准工程技能。`
+    const finalDesc = description.trim() || '暂无额外说明'
 
     return [
       {
-        cnDescription: getChineseSkillDescription(finalName, finalDesc),
+        cnDescription: getChineseSkillDescription(finalDesc),
         cnName: getChineseSkillName(finalName),
         description: finalDesc,
         name: finalName,
@@ -176,14 +200,23 @@ function stringArray(value: unknown): string[] {
     : []
 }
 
-function normalizeSkillDetail(value: unknown, fallback: SkillItem): SkillDetail {
+function normalizeSkillDetail(
+  value: unknown,
+  fallback: SkillItem,
+): SkillDetail {
   const detail = asRecord(value)
-  const rawFiles = Array.isArray(detail?.files) && detail.files.length > 0
-    ? detail.files
-    : (Array.isArray(fallback.files) ? fallback.files : [])
-  const content = typeof detail?.content === 'string' && detail.content
-    ? detail.content
-    : (typeof fallback.content === 'string' ? fallback.content : '')
+  const rawFiles =
+    Array.isArray(detail?.files) && detail.files.length > 0
+      ? detail.files
+      : Array.isArray(fallback.files)
+        ? fallback.files
+        : []
+  const content =
+    typeof detail?.content === 'string' && detail.content
+      ? detail.content
+      : typeof fallback.content === 'string'
+        ? fallback.content
+        : ''
 
   return {
     allowedTools: stringArray(detail?.allowed_tools),
@@ -204,11 +237,18 @@ function normalizeSkillDetail(value: unknown, fallback: SkillItem): SkillDetail 
         },
       ]
     }),
-    name: typeof detail?.name === 'string' && detail.name ? detail.name : fallback.name,
-    overview: typeof detail?.overview === 'string' && detail.overview ? detail.overview : extractSopOverview(content, fallback.description),
+    name:
+      typeof detail?.name === 'string' && detail.name
+        ? detail.name
+        : fallback.name,
+    overview:
+      typeof detail?.overview === 'string' && detail.overview
+        ? detail.overview
+        : extractSopOverview(content, fallback.description),
     scope: fallback.scope,
     tags: stringArray(detail?.tags),
-    uri: typeof detail?.uri === 'string' && detail.uri ? detail.uri : fallback.uri,
+    uri:
+      typeof detail?.uri === 'string' && detail.uri ? detail.uri : fallback.uri,
   }
 }
 
@@ -224,23 +264,10 @@ function getErrorMessage(error: unknown): string {
 }
 
 async function fetchSkills(): Promise<SkillItem[]> {
-  // 零卡顿超高速响应 (< 2ms)：100% 物理感知全量 160+ 个带简介与文件树的规范技能
-  try {
-    const res = await fetch('/studio/all_skills.json')
-    if (res.ok) {
-      const data = (await res.json()) as SkillItem[]
-      if (Array.isArray(data) && data.length > 0) {
-        return data
-      }
-    }
-  } catch {
-    // 自动回退网关
-  }
-
   const result = await getOvResult<SkillListResult>(
     ovClient.client.get({
       query: {
-        node_limit: 1000,
+        node_limit: 2000,
       },
       url: '/api/v1/skills',
     }),
@@ -250,11 +277,19 @@ async function fetchSkills(): Promise<SkillItem[]> {
 
 async function fetchSkillDetail(skill: SkillItem): Promise<SkillDetail> {
   // 补全 /default/ 命名空间，修复 OpenViking 网关 URI 不匹配抛出 HTTP 400 Unsupported Target URI
-  let targetUri = skill.uri.endsWith('/SKILL.md') ? skill.uri.slice(0, -9) : skill.uri
+  let targetUri = skill.uri.endsWith('/SKILL.md')
+    ? skill.uri.slice(0, -9)
+    : skill.uri
   if (targetUri.startsWith('viking://user/skills/')) {
-    targetUri = targetUri.replace('viking://user/skills/', 'viking://user/default/skills/')
+    targetUri = targetUri.replace(
+      'viking://user/skills/',
+      'viking://user/default/skills/',
+    )
   } else if (targetUri.startsWith('viking://agent/skills/')) {
-    targetUri = targetUri.replace('viking://agent/skills/', 'viking://agent/default/skills/')
+    targetUri = targetUri.replace(
+      'viking://agent/skills/',
+      'viking://agent/default/skills/',
+    )
   }
 
   try {
@@ -270,7 +305,11 @@ async function fetchSkillDetail(skill: SkillItem): Promise<SkillDetail> {
     )
     const detail = normalizeSkillDetail(result, skill)
     // If API returned empty files or missing content, fallback to pre-scanned skill info
-    if (detail.files.length === 0 && Array.isArray(skill.files) && skill.files.length > 0) {
+    if (
+      detail.files.length === 0 &&
+      Array.isArray(skill.files) &&
+      skill.files.length > 0
+    ) {
       detail.files = skill.files
     }
     if (!detail.content && skill.content) {
@@ -297,7 +336,12 @@ function extractSopOverview(content: string, description: string): string {
   let capturing = false
 
   for (const line of lines) {
-    if (line.startsWith('#') || line.startsWith('1.') || line.startsWith('- ') || line.startsWith('## ')) {
+    if (
+      line.startsWith('#') ||
+      line.startsWith('1.') ||
+      line.startsWith('- ') ||
+      line.startsWith('## ')
+    ) {
       capturing = true
     }
     if (capturing) {
@@ -306,7 +350,9 @@ function extractSopOverview(content: string, description: string): string {
     }
   }
 
-  return sopLines.length > 0 ? sopLines.join('\n') : (description || body.slice(0, 800))
+  return sopLines.length > 0
+    ? sopLines.join('\n')
+    : description || body.slice(0, 800)
 }
 
 function SkillDetailTabPanel({
@@ -329,7 +375,7 @@ function SkillDetailTabPanel({
             'flex-1 rounded-xs px-2.5 py-1 text-center font-medium transition-colors',
             activeTab === 'L0'
               ? 'bg-background text-cyan-500 shadow-xs border border-border/60'
-              : 'text-muted-foreground hover:text-foreground'
+              : 'text-muted-foreground hover:text-foreground',
           )}
         >
           L0 (意图触发)
@@ -341,7 +387,7 @@ function SkillDetailTabPanel({
             'flex-1 rounded-xs px-2.5 py-1 text-center font-medium transition-colors',
             activeTab === 'L1'
               ? 'bg-background text-cyan-500 shadow-xs border border-border/60'
-              : 'text-muted-foreground hover:text-foreground'
+              : 'text-muted-foreground hover:text-foreground',
           )}
         >
           L1 (SOP 流程)
@@ -353,7 +399,7 @@ function SkillDetailTabPanel({
             'flex-1 rounded-xs px-2.5 py-1 text-center font-medium transition-colors',
             activeTab === 'L2'
               ? 'bg-background text-cyan-500 shadow-xs border border-border/60'
-              : 'text-muted-foreground hover:text-foreground'
+              : 'text-muted-foreground hover:text-foreground',
           )}
         >
           L2 (全量源码)
@@ -365,7 +411,9 @@ function SkillDetailTabPanel({
         <div className="grid gap-3">
           <DetailSection title="📌 技能自然语言触发描述 (Intent Description)">
             <p className="leading-5 text-muted-foreground bg-muted/20 p-2.5 rounded border border-border/40 font-sans">
-              {detail.description || detail.overview || `用于触发与处理 ${detail.name} 的自动化专业技能。`}
+              {detail.description ||
+                detail.overview ||
+                `用于触发与处理 ${detail.name} 的自动化专业技能。`}
             </p>
           </DetailSection>
 
@@ -395,9 +443,13 @@ function SkillDetailTabPanel({
       {/* L1 级：SOP 流程概览与工具权限 */}
       {activeTab === 'L1' && (
         <div className="flex flex-col flex-1 min-h-0 gap-3">
-          <DetailSection title="📋 SOP 核心流程规范 (SOP Core Guidelines)" className="flex flex-col flex-1 min-h-0">
+          <DetailSection
+            title="📋 SOP 核心流程规范 (SOP Core Guidelines)"
+            className="flex flex-col flex-1 min-h-0"
+          >
             <pre className="overflow-y-auto flex-1 min-h-[450px] whitespace-pre-wrap rounded border border-border/60 bg-muted/20 p-3 font-sans text-xs leading-5 text-foreground/90">
-              {detail.overview || extractSopOverview(detail.content, detail.description)}
+              {detail.overview ||
+                extractSopOverview(detail.content, detail.description)}
             </pre>
           </DetailSection>
 
@@ -426,8 +478,15 @@ function SkillDetailTabPanel({
                     <span className="min-w-0 flex-1 truncate text-foreground font-medium">
                       {file.name || file.path}
                     </span>
-                    <Badge variant="outline" className="rounded-xs text-[11px] px-1 py-0 border-border bg-muted/40 text-foreground">
-                      {file.isDir ? '扩展子目录' : (file.name === 'SKILL.md' ? '主规范说明书' : '辅助脚本')}
+                    <Badge
+                      variant="outline"
+                      className="rounded-xs text-[11px] px-1 py-0 border-border bg-muted/40 text-foreground"
+                    >
+                      {file.isDir
+                        ? '扩展子目录'
+                        : file.name === 'SKILL.md'
+                          ? '主规范说明书'
+                          : '辅助脚本'}
                     </Badge>
                   </div>
                 ))}
@@ -438,7 +497,10 @@ function SkillDetailTabPanel({
                   <FileCode2Icon className="size-3.5 text-muted-foreground" />
                   SKILL.md
                 </span>
-                <Badge variant="outline" className="rounded-xs text-[11px] px-1.5 py-0 border-border bg-muted/40 text-foreground">
+                <Badge
+                  variant="outline"
+                  className="rounded-xs text-[11px] px-1.5 py-0 border-border bg-muted/40 text-foreground"
+                >
                   单文件精简规范
                 </Badge>
               </div>
@@ -447,7 +509,8 @@ function SkillDetailTabPanel({
 
           <DetailSection title="📄 SKILL.md 全量源码 (Full Source)">
             <pre className="overflow-x-auto whitespace-pre-wrap rounded border border-border/60 bg-muted/30 p-3 font-mono text-[11px] leading-relaxed text-foreground/90 min-h-72 flex-1">
-              {detail.content || getFallbackSkillContent(detail.name, detail.description)}
+              {detail.content ||
+                getFallbackSkillContent(detail.name, detail.description)}
             </pre>
           </DetailSection>
         </div>
@@ -477,200 +540,46 @@ ${description || '自动侦测用户自然语言意图并静默唤醒执行。'}
 
 // 技能常见英文名 ➔ 信达雅地道中文自解释映射
 const CHINESE_SKILL_NAME_MAP: Record<string, string> = {
-  "ai-trader": "Ai Trader 自动化工程规约",
-  "antigravity-ide": "Antigravity Ide 自动化工程规约",
-  "bar-chart-visualization": "Bar Chart Visualization 自动化工程规约",
-  "basic-statistics": "Basic Statistics 自动化工程规约",
-  "category-coloring": "Category Coloring 自动化工程规约",
-  "category-filtering": "Category Filtering 自动化工程规约",
-  "category-statistics": "Category Statistics 自动化工程规约",
-  "chart-embedded-export": "Chart Embedded Export 自动化工程规约",
-  "clash-verge-utilities": "Clash Verge Utilities 自动化工程规约",
-  "code-maintenance-utilities": "Code Maintenance Utilities 自动化工程规约",
-  "comparison-analysis": "Comparison Analysis 自动化工程规约",
-  "computer-use": "Computer Use 自动化工程规约",
-  "condition-filtering": "Condition Filtering 自动化工程规约",
-  "data-bar-formatting": "Data Bar Formatting 自动化工程规约",
-  "debugging-and-error-recovery": "Debugging And Error Recovery 自动化工程规约",
-  "deprecation-and-migration": "Deprecation And Migration 自动化工程规约",
-  "duplicate-removal": "Duplicate Removal 自动化工程规约",
-  "duplicate-value-coloring": "Duplicate Value Coloring 自动化工程规约",
-  "formatted-export": "Formatted Export 自动化工程规约",
-  "group-by-analysis": "Group By Analysis 自动化工程规约",
-  "grouped-statistics": "Grouped Statistics 自动化工程规约",
-  "healthcheck": "Healthcheck 自动化工程规约",
-  "hermes-config-audit": "Hermes 智能体记忆与工具链规约",
-  "hermes-desktop-plugins": "Hermes 智能体记忆与工具链规约",
-  "histogram-visualization": "Histogram Visualization 自动化工程规约",
-  "invalid-data-cleaning": "Invalid Data Cleaning 自动化工程规约",
-  "kpi-metric-analysis": "Kpi Metric Analysis 自动化工程规约",
-  "large-excel-reading": "Large Excel Reading 自动化工程规约",
-  "line-chart-visualization": "Line Chart Visualization 自动化工程规约",
-  "missing-value-handling": "Missing Value Handling 自动化工程规约",
-  "multi-file-reading": "Multi File Reading 自动化工程规约",
-  "multi-sheet-reading": "Multi Sheet Reading 自动化工程规约",
-  "numeric-format-normalization": "Numeric Format Normalization 自动化工程规约",
-  "observability-and-instrumentation": "Observability And Instrumentation 自动化工程规约",
-  "openclaw-download-links": "Openclaw Download Links 自动化工程规约",
-  "openclaw-operations": "Openclaw Operations 自动化工程规约",
-  "outlier-coloring": "Outlier Coloring 自动化工程规约",
-  "outlier-detection": "Outlier Detection 自动化工程规约",
-  "percentage-calculation": "Percentage Calculation 自动化工程规约",
-  "pie-chart-visualization": "Pie Chart Visualization 自动化工程规约",
-  "pivot-table-analysis": "Pivot Table Analysis 自动化工程规约",
-  "range-filtering": "Range Filtering 自动化工程规约",
-  "range-reading": "Range Reading 自动化工程规约",
-  "report-generation-export": "Report Generation Export 自动化工程规约",
-  "scatter-plot-visualization": "Scatter Plot Visualization 自动化工程规约",
-  "security-and-hardening": "Security And Hardening 自动化工程规约",
-  "session-logs": "Session Logs 自动化工程规约",
-  "single-sheet-export": "Single Sheet Export 自动化工程规约",
-  "single-sheet-reading": "Single Sheet Reading 自动化工程规约",
-  "skill-creator": "Skill Creator 自动化工程规约",
-  "skill-governance": "Skill Governance 自动化工程规约",
-  "sn-da-excel-workflow": "Hermes 智能体记忆与工具链规约",
-  "sn-da-image-caption": "Hermes 智能体记忆与工具链规约",
-  "sn-da-large-file-analysis": "Hermes 智能体记忆与工具链规约",
-  "sn-deep-research": "深度检索与语义搜索规约",
-  "sn-dimension-research": "深度检索与语义搜索规约",
-  "sn-image-base": "Hermes 智能体记忆与工具链规约",
-  "sn-image-doctor": "Hermes 智能体记忆与工具链规约",
-  "sn-image-imitate": "Hermes 智能体记忆与工具链规约",
-  "sn-image-resume": "Hermes 智能体记忆与工具链规约",
-  "sn-infographic": "Hermes 智能体记忆与工具链规约",
-  "sn-md-to-html-report": "Hermes 智能体记忆与工具链规约",
-  "sn-ppt-creative": "Hermes 智能体记忆与工具链规约",
-  "sn-ppt-doctor": "Hermes 智能体记忆与工具链规约",
-  "sn-ppt-entry": "Hermes 智能体记忆与工具链规约",
-  "sn-ppt-standard": "Hermes 智能体记忆与工具链规约",
-  "sn-report-format-discovery": "Hermes 智能体记忆与工具链规约",
-  "sn-research-planning": "深度检索与语义搜索规约",
-  "sn-research-report": "深度检索与语义搜索规约",
-  "sn-research-synthesis": "深度检索与语义搜索规约",
-  "sn-search-academic": "深度检索与语义搜索规约",
-  "sn-search-code": "深度检索与语义搜索规约",
-  "sn-search-social-cn": "深度检索与语义搜索规约",
-  "sn-search-social-en": "深度检索与语义搜索规约",
-  "sn-update": "Hermes 智能体记忆与工具链规约",
-  "specific-sheet-reading": "自动化测试与质量打磨规约",
-  "stacked-chart-visualization": "Stacked Chart Visualization 自动化工程规约",
-  "structured-header-reading": "Structured Header Reading 自动化工程规约",
-  "table-theme-styling": "Table Theme Styling 自动化工程规约",
-  "text-normalization": "Text Normalization 自动化工程规约",
-  "threshold-cell-coloring": "Threshold Cell Coloring 自动化工程规约",
-  "threshold-filtering": "Threshold Filtering 自动化工程规约",
-  "time-series-analysis": "Time Series Analysis 自动化工程规约",
-  "top-value-coloring": "Top Value Coloring 自动化工程规约",
-  "trend-analysis": "Trend Analysis 自动化工程规约",
+  'ai-trader': 'Ai Trader 自动化工程规约',
+  'antigravity-ide': 'Antigravity Ide 自动化工程规约',
+  'bar-chart-visualization': 'Bar Chart Visualization 自动化工程规约',
+  'basic-statistics': 'Basic Statistics 自动化工程规约',
+  'category-coloring': 'Category Coloring 自动化工程规约',
+  'category-filtering': 'Category Filtering 自动化工程规约',
+  'category-statistics': 'Category Statistics 自动化工程规约',
+  'chart-embedded-export': 'Chart Embedded Export 自动化工程规约',
+  'clash-verge-utilities': 'Clash Verge Utilities 自动化工程规约',
+  'code-maintenance-utilities': 'Code Maintenance Utilities 自动化工程规约',
+  'comparison-analysis': 'Comparison Analysis 自动化工程规约',
+  'computer-use': 'Computer Use 自动化工程规约',
+  'condition-filtering': 'Condition Filtering 自动化工程规约',
+  'data-bar-formatting': 'Data Bar Formatting 自动化工程规约',
+  'debugging-and-error-recovery': 'Debugging And Error Recovery 自动化工程规约',
+  'deprecation-and-migration': 'Deprecation And Migration 自动化工程规约',
+  'duplicate-removal': 'Duplicate Removal 自动化工程规约',
+  'duplicate-value-coloring': 'Duplicate Value Coloring 自动化工程规约',
+  'group-by-analysis': 'Group By Analysis 自动化工程规约',
 }
-
-// 技能英文简介 ➔ 人类直觉地道中文自解释说明映射
-const CHINESE_SKILL_DESC_MAP: Record<string, string> = {
-  "ai-trader": "自动化工程规约：AI-Trader - AI Trading Signal Platform. Publish trading signals, follow traders. Use when user mentions trading signals, copy trading, stock trading, or follow traders.",
-  "antigravity-ide": "用于自动化处理 antigravity-ide 业务逻辑的标准工程规约。",
-  "bar-chart-visualization": "用于自动化处理 bar-chart-visualization 业务逻辑的标准工程规约。",
-  "basic-statistics": "用于自动化处理 basic-statistics 业务逻辑的标准工程规约。",
-  "category-coloring": "用于自动化处理 category-coloring 业务逻辑的标准工程规约。",
-  "category-filtering": "用于自动化处理 category-filtering 业务逻辑的标准工程规约。",
-  "category-statistics": "用于自动化处理 category-statistics 业务逻辑的标准工程规约。",
-  "chart-embedded-export": "用于自动化处理 chart-embedded-export 业务逻辑的标准工程规约。",
-  "clash-verge-utilities": "用于自动化处理 clash-verge-utilities 业务逻辑的标准工程规约。",
-  "code-maintenance-utilities": "用于自动化处理 code-maintenance-utilities 业务逻辑的标准工程规约。",
-  "comparison-analysis": "用于自动化处理 comparison-analysis 业务逻辑的标准工程规约。",
-  "computer-use": "用于自动化处理 computer-use 业务逻辑的标准工程规约。",
-  "condition-filtering": "用于自动化处理 condition-filtering 业务逻辑的标准工程规约。",
-  "data-bar-formatting": "用于自动化处理 data-bar-formatting 业务逻辑的标准工程规约。",
-  "debugging-and-error-recovery": "用于自动化处理 debugging-and-error-recovery 业务逻辑的标准工程规约。",
-  "deprecation-and-migration": "用于自动化处理 deprecation-and-migration 业务逻辑的标准工程规约。",
-  "duplicate-removal": "用于自动化处理 duplicate-removal 业务逻辑的标准工程规约。",
-  "duplicate-value-coloring": "用于自动化处理 duplicate-value-coloring 业务逻辑的标准工程规约。",
-  "formatted-export": "用于自动化处理 formatted-export 业务逻辑的标准工程规约。",
-  "group-by-analysis": "用于自动化处理 group-by-analysis 业务逻辑的标准工程规约。",
-  "grouped-statistics": "用于自动化处理 grouped-statistics 业务逻辑的标准工程规约。",
-  "healthcheck": "用于自动化处理 healthcheck 业务逻辑的标准工程规约。",
-  "hermes-config-audit": "用于 Hermes 会话、记忆与工具链调度的标准化治理规约。",
-  "hermes-desktop-plugins": "用于 Hermes 会话、记忆与工具链调度的标准化治理规约。",
-  "histogram-visualization": "用于自动化处理 histogram-visualization 业务逻辑的标准工程规约。",
-  "invalid-data-cleaning": "用于自动化处理 invalid-data-cleaning 业务逻辑的标准工程规约。",
-  "kpi-metric-analysis": "用于自动化处理 kpi-metric-analysis 业务逻辑的标准工程规约。",
-  "large-excel-reading": "用于自动化处理 large-excel-reading 业务逻辑的标准工程规约。",
-  "line-chart-visualization": "用于自动化处理 line-chart-visualization 业务逻辑的标准工程规约。",
-  "missing-value-handling": "用于自动化处理 missing-value-handling 业务逻辑的标准工程规约。",
-  "multi-file-reading": "用于自动化处理 multi-file-reading 业务逻辑的标准工程规约。",
-  "multi-sheet-reading": "用于自动化处理 multi-sheet-reading 业务逻辑的标准工程规约。",
-  "numeric-format-normalization": "用于自动化处理 numeric-format-normalization 业务逻辑的标准工程规约。",
-  "observability-and-instrumentation": "用于自动化处理 observability-and-instrumentation 业务逻辑的标准工程规约。",
-  "openclaw-download-links": "用于自动化处理 openclaw-download-links 业务逻辑的标准工程规约。",
-  "openclaw-operations": "用于自动化处理 openclaw-operations 业务逻辑的标准工程规约。",
-  "outlier-coloring": "用于自动化处理 outlier-coloring 业务逻辑的标准工程规约。",
-  "outlier-detection": "用于自动化处理 outlier-detection 业务逻辑的标准工程规约。",
-  "percentage-calculation": "用于自动化处理 percentage-calculation 业务逻辑的标准工程规约。",
-  "pie-chart-visualization": "用于自动化处理 pie-chart-visualization 业务逻辑的标准工程规约。",
-  "pivot-table-analysis": "用于自动化处理 pivot-table-analysis 业务逻辑的标准工程规约。",
-  "range-filtering": "用于自动化处理 range-filtering 业务逻辑的标准工程规约。",
-  "range-reading": "用于自动化处理 range-reading 业务逻辑的标准工程规约。",
-  "report-generation-export": "用于自动化处理 report-generation-export 业务逻辑的标准工程规约。",
-  "scatter-plot-visualization": "用于自动化处理 scatter-plot-visualization 业务逻辑的标准工程规约。",
-  "security-and-hardening": "用于自动化处理 security-and-hardening 业务逻辑的标准工程规约。",
-  "session-logs": "用于自动化处理 session-logs 业务逻辑的标准工程规约。",
-  "single-sheet-export": "用于自动化处理 single-sheet-export 业务逻辑的标准工程规约。",
-  "single-sheet-reading": "用于自动化处理 single-sheet-reading 业务逻辑的标准工程规约。",
-  "skill-creator": "用于自动化处理 skill-creator 业务逻辑的标准工程规约。",
-  "skill-governance": "用于自动化处理 skill-governance 业务逻辑的标准工程规约。",
-  "sn-da-excel-workflow": "用于 Hermes 会话、记忆与工具链调度的标准化治理规约。",
-  "sn-da-image-caption": "用于 Hermes 会话、记忆与工具链调度的标准化治理规约。",
-  "sn-da-large-file-analysis": "用于 Hermes 会话、记忆与工具链调度的标准化治理规约。",
-  "sn-deep-research": "用于代码库、文档与数据的高效精准物理检索。",
-  "sn-dimension-research": "用于代码库、文档与数据的高效精准物理检索。",
-  "sn-image-base": "用于 Hermes 会话、记忆与工具链调度的标准化治理规约。",
-  "sn-image-doctor": "用于 Hermes 会话、记忆与工具链调度的标准化治理规约。",
-  "sn-image-imitate": "用于 Hermes 会话、记忆与工具链调度的标准化治理规约。",
-  "sn-image-resume": "用于 Hermes 会话、记忆与工具链调度的标准化治理规约。",
-  "sn-infographic": "用于 Hermes 会话、记忆与工具链调度的标准化治理规约。",
-  "sn-md-to-html-report": "用于 Hermes 会话、记忆与工具链调度的标准化治理规约。",
-  "sn-ppt-creative": "用于 Hermes 会话、记忆与工具链调度的标准化治理规约。",
-  "sn-ppt-doctor": "用于 Hermes 会话、记忆与工具链调度的标准化治理规约。",
-  "sn-ppt-entry": "用于 Hermes 会话、记忆与工具链调度的标准化治理规约。",
-  "sn-ppt-standard": "用于 Hermes 会话、记忆与工具链调度的标准化治理规约。",
-  "sn-report-format-discovery": "用于 Hermes 会话、记忆与工具链调度的标准化治理规约。",
-  "sn-research-planning": "用于代码库、文档与数据的高效精准物理检索。",
-  "sn-research-report": "用于代码库、文档与数据的高效精准物理检索。",
-  "sn-research-synthesis": "用于代码库、文档与数据的高效精准物理检索。",
-  "sn-search-academic": "用于代码库、文档与数据的高效精准物理检索。",
-  "sn-search-code": "用于代码库、文档与数据的高效精准物理检索。",
-  "sn-search-social-cn": "用于代码库、文档与数据的高效精准物理检索。",
-  "sn-search-social-en": "用于代码库、文档与数据的高效精准物理检索。",
-  "sn-update": "用于 Hermes 会话、记忆与工具链调度的标准化治理规约。",
-  "specific-sheet-reading": "用于单元测试、集成测试与代码质量自动化打磨。",
-  "stacked-chart-visualization": "用于自动化处理 stacked-chart-visualization 业务逻辑的标准工程规约。",
-  "structured-header-reading": "用于自动化处理 structured-header-reading 业务逻辑的标准工程规约。",
-  "table-theme-styling": "用于自动化处理 table-theme-styling 业务逻辑的标准工程规约。",
-  "text-normalization": "用于自动化处理 text-normalization 业务逻辑的标准工程规约。",
-  "threshold-cell-coloring": "用于自动化处理 threshold-cell-coloring 业务逻辑的标准工程规约。",
-  "threshold-filtering": "用于自动化处理 threshold-filtering 业务逻辑的标准工程规约。",
-  "time-series-analysis": "用于自动化处理 time-series-analysis 业务逻辑的标准工程规约。",
-  "top-value-coloring": "用于自动化处理 top-value-coloring 业务逻辑的标准工程规约。",
-  "trend-analysis": "用于自动化处理 trend-analysis 业务逻辑的标准工程规约。",
-}
-
 function getChineseSkillName(name: string): string {
-  if (CHINESE_SKILL_NAME_MAP[name]) {
-    return `${name} (${CHINESE_SKILL_NAME_MAP[name]})`
-  }
   return name
 }
 
-function getChineseSkillDescription(name: string, rawDesc: string): string {
-  if (CHINESE_SKILL_DESC_MAP[name]) {
-    return CHINESE_SKILL_DESC_MAP[name]
-  }
-  if (!rawDesc || rawDesc === '暂无简介' || rawDesc === '>' || rawDesc === '|') {
-    return `用于自动化执行 ${name} 的标准化工程技能规约。`
+function getChineseSkillDescription(rawDesc: string): string {
+  if (
+    !rawDesc ||
+    rawDesc.includes('用于自动化处理') ||
+    rawDesc.includes('业务逻辑的标准工程规约')
+  ) {
+    return '暂无额外说明'
   }
   return rawDesc
 }
 
-function getSkillSource(name: string, scope?: SkillScope, source?: string): { label: string; badgeClass: string } {
+function getSkillSource(
+  name: string,
+  scope?: SkillScope,
+  source?: string,
+): { label: string; badgeClass: string } {
   if (
     source === 'system' ||
     name.includes('openviking') ||
@@ -684,24 +593,39 @@ function getSkillSource(name: string, scope?: SkillScope, source?: string): { la
     name.includes('to-spec') ||
     name.includes('research')
   ) {
-    return { badgeClass: 'border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-medium', label: '系统内建' }
+    return {
+      badgeClass:
+        'border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-medium',
+      label: '系统内建',
+    }
   }
   if (scope === 'user') {
-    return { badgeClass: 'border-border bg-muted/30 text-foreground', label: '个人配置' }
+    return {
+      badgeClass: 'border-border bg-muted/30 text-foreground',
+      label: '个人配置',
+    }
   }
-  return { badgeClass: 'border-border bg-muted/40 text-foreground', label: '工作区' }
+  return {
+    badgeClass: 'border-border bg-muted/40 text-foreground',
+    label: '工作区',
+  }
 }
-
 
 function SkillsRoute() {
   const { t, i18n } = useTranslation('skillsPage')
   const isZh = !i18n.language || i18n.language.startsWith('zh')
   const { identityScopeKey } = useAppConnection()
-  const [selectedSkill, setSelectedSkill] = React.useState<SkillItem | null>(null)
+  const [selectedSkill, setSelectedSkill] = React.useState<SkillItem | null>(
+    null,
+  )
   const [searchQuery, setSearchQuery] = React.useState('')
-  const [activeScopeFilter, setActiveScopeFilter] = React.useState<'all' | 'agent' | 'user' | 'idle'>('all')
+  const [activeScopeFilter, setActiveScopeFilter] = React.useState<
+    'all' | 'agent' | 'user' | 'idle'
+  >('all')
 
-  const [refinedSkills, setRefinedSkills] = React.useState<Record<string, 'idle' | 'p1' | 'p2' | 'done'>>(() => {
+  const [refinedSkills, setRefinedSkills] = React.useState<
+    Record<string, 'idle' | 'p1' | 'p2' | 'done'>
+  >(() => {
     try {
       const saved = localStorage.getItem('ov_refined_skills')
       return saved ? JSON.parse(saved) : {}
@@ -713,26 +637,32 @@ function SkillsRoute() {
   const handleRefineSkill = async (key: string, skillsList: string[]) => {
     setRefinedSkills((prev) => {
       const next = { ...prev, [key]: 'p1' as const }
-      try { localStorage.setItem('ov_refined_skills', JSON.stringify(next)) } catch {}
+      try {
+        localStorage.setItem('ov_refined_skills', JSON.stringify(next))
+      } catch {}
       return next
     })
     try {
       await fetch('/api/v1/harness/refine_gate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ skills: skillsList })
+        body: JSON.stringify({ skills: skillsList }),
       })
     } catch {}
     setTimeout(() => {
       setRefinedSkills((prev) => {
         const next = { ...prev, [key]: 'p2' as const }
-        try { localStorage.setItem('ov_refined_skills', JSON.stringify(next)) } catch {}
+        try {
+          localStorage.setItem('ov_refined_skills', JSON.stringify(next))
+        } catch {}
         return next
       })
       setTimeout(() => {
         setRefinedSkills((prev) => {
           const next = { ...prev, [key]: 'done' as const }
-          try { localStorage.setItem('ov_refined_skills', JSON.stringify(next)) } catch {}
+          try {
+            localStorage.setItem('ov_refined_skills', JSON.stringify(next))
+          } catch {}
           return next
         })
       }, 800)
@@ -753,22 +683,39 @@ function SkillsRoute() {
   })
   const skills = skillsQuery.data ?? []
 
-  const ACTIVE_CORE_SKILLS = React.useMemo(() => [
-    'diagnosing-bugs', 'tdd', 'codebase-design', 'domain-modeling', 
-    'code-review', 'to-spec', 'research', 'prototype', 'improve-codebase-architecture'
-  ], [])
+  const ACTIVE_CORE_SKILLS = React.useMemo(
+    () => [
+      'diagnosing-bugs',
+      'tdd',
+      'codebase-design',
+      'domain-modeling',
+      'code-review',
+      'to-spec',
+      'research',
+      'prototype',
+      'improve-codebase-architecture',
+    ],
+    [],
+  )
 
   // 客户端毫秒级检索与 Scope 筛选过滤
   const filteredSkills = React.useMemo(() => {
     return skills.filter((s) => {
       if (activeScopeFilter === 'agent' && s.scope !== 'agent') return false
       if (activeScopeFilter === 'user' && s.scope !== 'user') return false
-      if (activeScopeFilter === 'idle' && ACTIVE_CORE_SKILLS.includes(s.name)) return false
+      if (activeScopeFilter === 'idle' && ACTIVE_CORE_SKILLS.includes(s.name))
+        return false
       if (!searchQuery.trim()) return true
       const q = searchQuery.toLowerCase()
       const cnName = s.cnName || getChineseSkillName(s.name)
-      const cnDesc = s.cnDescription || getChineseSkillDescription(s.name, s.description)
-      return s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q) || cnName.toLowerCase().includes(q) || cnDesc.toLowerCase().includes(q)
+      const cnDesc =
+        s.cnDescription || getChineseSkillDescription(s.description)
+      return (
+        s.name.toLowerCase().includes(q) ||
+        s.description.toLowerCase().includes(q) ||
+        cnName.toLowerCase().includes(q) ||
+        cnDesc.toLowerCase().includes(q)
+      )
     })
   }, [skills, searchQuery, activeScopeFilter, ACTIVE_CORE_SKILLS])
 
@@ -808,68 +755,88 @@ function SkillsRoute() {
           if (metrics && typeof metrics === 'object') return metrics
         }
       } catch {
-        // Fallback to /api/v1/system/status
+        // Fallback to null (NO STATIC MOCK FALLBACK)
       }
-      try {
-        const res = await getOvResult<Record<string, unknown>>(
-          ovClient.client.get({
-            url: '/api/v1/system/status',
-          })
-        )
-        const resultRec = asRecord(res?.result)
-        return asRecord(res?.harness_metrics) || asRecord(resultRec?.harness_metrics)
-      } catch {
-        return null
-      }
+      return null
     },
     queryKey: ['harness-status', '24h'],
     refetchOnReconnect: false,
     refetchOnWindowFocus: false,
-    staleTime: 600_000,
+    staleTime: 0,
   })
 
   const metrics = harnessStatusQuery.data ?? null
-  const blockedCalls = typeof metrics?.blocked_calls === 'number' ? metrics.blocked_calls : 0
-  const totalCalls = typeof metrics?.total_calls === 'number' ? metrics.total_calls : 0
-  const findCalls = typeof metrics?.find_calls === 'number' ? metrics.find_calls : 0
-  const storeCalls = typeof metrics?.store_calls === 'number' ? metrics.store_calls : 0
-  
-  // 100% 物理全环境对齐算子 (无论 1933 还是 1936 端口，走同一套纯正前端算子推算)
-  const activeSkillsCount = typeof metrics?.active_skills_count === 'number' && metrics.active_skills_count > 0
-    ? metrics.active_skills_count
-    : (skills.length > 0 ? Math.min(skills.length, 33) : 0)
+  const hasRealMetrics =
+    metrics !== null &&
+    typeof metrics === 'object' &&
+    ('total_calls' in metrics || 'auto_wakeup_rate' in metrics)
 
-  const activeUtilizationRatio = skills.length > 0 && activeSkillsCount > 0
-    ? ((Math.min(activeSkillsCount, skills.length) / skills.length) * 100).toFixed(1)
-    : null
+  const blockedCalls =
+    hasRealMetrics && typeof metrics?.blocked_calls === 'number'
+      ? metrics.blocked_calls
+      : 0
+  const totalCalls =
+    hasRealMetrics && typeof metrics?.total_calls === 'number'
+      ? metrics.total_calls
+      : 0
+  const findCalls =
+    hasRealMetrics && typeof metrics?.find_calls === 'number'
+      ? metrics.find_calls
+      : 0
+  const storeCalls =
+    hasRealMetrics && typeof metrics?.store_calls === 'number'
+      ? metrics.store_calls
+      : 0
 
-  const doneRefinedCount = Object.values(refinedSkills).filter((v) => v === 'done').length
-  const baseLessonsCount = typeof metrics?.lessons_count === 'number'
-    ? metrics.lessons_count
-    : 16
-  const lessonsCount = baseLessonsCount + doneRefinedCount
-  const builtinLessonsCount = 36  // 人工精编规约知识库条目数（固定）
+  const activeSkillsCount =
+    hasRealMetrics &&
+    typeof metrics?.active_skills_count === 'number' &&
+    metrics.active_skills_count > 0
+      ? metrics.active_skills_count
+      : 0
 
-  const autoWakeupRate = typeof metrics?.auto_wakeup_rate === 'number' 
-    ? metrics.auto_wakeup_rate.toFixed(1) 
-    : (skills.length > 0 ? '90.5' : null)
+  const activeUtilizationRatio =
+    skills.length > 0 && hasRealMetrics && activeSkillsCount > 0
+      ? (
+          (Math.min(activeSkillsCount, skills.length) / skills.length) *
+          100
+        ).toFixed(1)
+      : null
 
-  const calculatedSuccessRate = totalCalls > 0 
-    ? (((totalCalls - blockedCalls) / totalCalls) * 100).toFixed(1) 
-    : (skills.length > 0 ? '90.5' : null)
-  
+  const doneRefinedCount = Object.values(refinedSkills).filter(
+    (v) => v === 'done',
+  ).length
+  const lessonsCount =
+    hasRealMetrics && typeof metrics?.lessons_count === 'number'
+      ? metrics.lessons_count + doneRefinedCount
+      : doneRefinedCount > 0
+        ? doneRefinedCount
+        : null
+  const builtinLessonsCount =
+    hasRealMetrics && typeof metrics?.builtin_lessons_count === 'number'
+      ? metrics.builtin_lessons_count
+      : null
+
+  const autoWakeupRate =
+    hasRealMetrics && typeof metrics?.auto_wakeup_rate === 'number'
+      ? metrics.auto_wakeup_rate.toFixed(1)
+      : null
+
+  const calculatedSuccessRate =
+    hasRealMetrics && totalCalls > 0
+      ? (((totalCalls - blockedCalls) / totalCalls) * 100).toFixed(1)
+      : null
+
   const vkCentralizedCalls = findCalls + storeCalls
-  const calculatedCentralizedRatio = totalCalls > 0 || vkCentralizedCalls > 0
-    ? (((vkCentralizedCalls) / Math.max(1, totalCalls > 0 ? totalCalls : vkCentralizedCalls)) * 100).toFixed(1)
-    : (skills.length > 0 ? '85.7' : null)
+  const calculatedCentralizedRatio =
+    hasRealMetrics && totalCalls > 0 && vkCentralizedCalls > 0
+      ? ((vkCentralizedCalls / totalCalls) * 100).toFixed(1)
+      : null
 
-  const contextCompressionRatio = typeof metrics?.context_compression_ratio === 'number'
-    ? metrics.context_compression_ratio.toFixed(1)
-    : (skills.length > 0 ? '74.2' : null)
-
-
-
-
+  const contextCompressionRatio =
+    hasRealMetrics && typeof metrics?.context_compression_ratio === 'number'
+      ? metrics.context_compression_ratio.toFixed(1)
+      : null
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-4">
@@ -883,11 +850,13 @@ function SkillsRoute() {
             {t('description')}
           </p>
         </div>
-        <Badge variant="outline" className="text-[10px] font-mono border-border bg-muted/30 text-foreground px-1.5 py-0.5">
+        <Badge
+          variant="outline"
+          className="text-[10px] font-mono border-border bg-muted/30 text-foreground px-1.5 py-0.5"
+        >
           🕒 统计范围: 最近 24 小时 (24H Rolling)
         </Badge>
       </header>
-
 
       {/* ⚡ 6 大高价值 Skill Value KPI 观察阵列 (3x2 矩阵分布) */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -898,7 +867,10 @@ function SkillsRoute() {
               <ZapIcon className="size-3.5 text-muted-foreground" />
               隐式自动唤醒率
             </span>
-            <Badge variant="outline" className="text-[11px] font-mono border-border bg-muted/40 text-foreground px-1 py-0">
+            <Badge
+              variant="outline"
+              className="text-[11px] font-mono border-border bg-muted/40 text-foreground px-1 py-0"
+            >
               意图感应
             </Badge>
           </div>
@@ -909,95 +881,141 @@ function SkillsRoute() {
             </span>
           </div>
           <p className="text-[11px] text-muted-foreground truncate">
-            {autoWakeupRate !== null ? '零命令感应 · 意图静默触发' : '等待 Agent 意图唤醒采样...'}
+            {autoWakeupRate !== null
+              ? '零命令感应 · 意图静默触发'
+              : '等待 Agent 意图唤醒采样...'}
           </p>
         </Card>
 
         {/* Card 2: 技能运行成功率 */}
-        <Card className="flex flex-col gap-1 p-2.5 shadow-none hover:border-border transition-colors" title="监测近 24 小时技能被 Agent 唤醒后的执行成功率，反映技能运行情况与闭环质量">
+        <Card
+          className="flex flex-col gap-1 p-2.5 shadow-none hover:border-border transition-colors"
+          title="监测近 24 小时技能被 Agent 唤醒后的执行成功率，反映技能运行情况与闭环质量"
+        >
           <div className="flex items-center justify-between text-xs text-muted-foreground font-sans">
             <span className="flex items-center gap-1.5 text-foreground font-medium">
               <TrendingUpIcon className="size-3.5 text-muted-foreground" />
               技能运行成功率
             </span>
-            <Badge variant="outline" className="text-[11px] font-mono border-border bg-muted/40 text-foreground px-1 py-0">
+            <Badge
+              variant="outline"
+              className="text-[11px] font-mono border-border bg-muted/40 text-foreground px-1 py-0"
+            >
               闭环质量
             </Badge>
           </div>
           <div className="font-mono text-lg font-bold tabular-nums text-foreground flex items-baseline gap-1">
-            {calculatedSuccessRate !== null ? `${calculatedSuccessRate}%` : '--'}{' '}
+            {calculatedSuccessRate !== null
+              ? `${calculatedSuccessRate}%`
+              : '--'}{' '}
             <span className="text-xs font-normal text-muted-foreground">
               {calculatedSuccessRate !== null ? '(物理闭环)' : '(暂无数据)'}
             </span>
           </div>
           <p className="text-[11px] text-muted-foreground truncate">
-            {totalCalls > 0 ? `近 24H ${totalCalls} 次执行${blockedCalls > 0 ? ` (${blockedCalls} 次阻断)` : '零挂起'}` : '近 24H 暂无物理执行采样'}
+            {totalCalls > 0
+              ? `近 24H ${totalCalls} 次执行${blockedCalls > 0 ? ` (${blockedCalls} 次阻断)` : '零挂起'}`
+              : '近 24H 暂无物理执行采样'}
           </p>
         </Card>
 
         {/* Card 3: OpenViking 技能统一收敛率 */}
-        <Card className="flex flex-col gap-1 p-2.5 shadow-none hover:border-border transition-colors" title="监测近 24 小时 Agent 调用走 OpenViking 技能中心 vs 私有渠道的比率">
+        <Card
+          className="flex flex-col gap-1 p-2.5 shadow-none hover:border-border transition-colors"
+          title="监测近 24 小时 Agent 调用走 OpenViking 技能中心 vs 私有渠道的比率"
+        >
           <div className="flex items-center justify-between text-xs text-muted-foreground font-sans">
             <span className="flex items-center gap-1.5 text-foreground font-medium">
               <CpuIcon className="size-3.5 text-muted-foreground" />
               VK 技能统一收敛率
             </span>
-            <Badge variant="outline" className="text-[11px] font-mono border-border bg-muted/40 text-foreground px-1 py-0">
+            <Badge
+              variant="outline"
+              className="text-[11px] font-mono border-border bg-muted/40 text-foreground px-1 py-0"
+            >
               踩坑演进飞轮
             </Badge>
           </div>
           <div className="font-mono text-lg font-bold tabular-nums text-foreground flex items-baseline gap-1">
-            {calculatedCentralizedRatio !== null ? `${calculatedCentralizedRatio}%` : '--'}{' '}
+            {calculatedCentralizedRatio !== null
+              ? `${calculatedCentralizedRatio}%`
+              : '--'}{' '}
             <span className="text-xs font-normal text-muted-foreground">
-              {calculatedCentralizedRatio !== null ? '(走 VK 技能中心)' : '(暂无数据)'}
+              {calculatedCentralizedRatio !== null
+                ? '(走 VK 技能中心)'
+                : '(暂无数据)'}
             </span>
           </div>
           <p className="text-[11px] text-muted-foreground truncate">
-            {vkCentralizedCalls > 0 ? `近 24H ${vkCentralizedCalls} 次 VK 集中调用` : '近 24H 暂无集中通道采样'}
+            {vkCentralizedCalls > 0
+              ? `近 24H ${vkCentralizedCalls} 次 VK 集中调用`
+              : '近 24H 暂无集中通道采样'}
           </p>
         </Card>
 
         {/* Card 4: 技能资产活跃复用率 (新增) */}
-        <Card className="flex flex-col gap-1 p-2.5 shadow-none hover:border-border transition-colors" title="监测已装载的 175 个标准技能中，近 24H 真正被 Agent 命中调用的技能数量与活跃率">
+        <Card
+          className="flex flex-col gap-1 p-2.5 shadow-none hover:border-border transition-colors"
+          title="监测已装载的 175 个标准技能中，近 24H 真正被 Agent 命中调用的技能数量与活跃率"
+        >
           <div className="flex items-center justify-between text-xs text-muted-foreground font-sans">
             <span className="flex items-center gap-1.5 text-foreground font-medium">
               <LayersIcon className="size-3.5 text-muted-foreground" />
               技能资产活跃复用率
             </span>
-            <Badge variant="outline" className="text-[11px] font-mono border-border bg-muted/40 text-foreground px-1 py-0">
+            <Badge
+              variant="outline"
+              className="text-[11px] font-mono border-border bg-muted/40 text-foreground px-1 py-0"
+            >
               资产健康度
             </Badge>
           </div>
           <div className="font-mono text-lg font-bold tabular-nums text-foreground flex items-baseline gap-1">
-            {activeUtilizationRatio !== null ? `${activeUtilizationRatio}%` : '--'}{' '}
+            {activeUtilizationRatio !== null
+              ? `${activeUtilizationRatio}%`
+              : '--'}{' '}
             <span className="text-xs font-normal text-muted-foreground">
               ({activeSkillsCount}/{skills.length} 项活跃)
             </span>
           </div>
           <p className="text-[11px] text-muted-foreground truncate">
-            {skills.length > 0 ? `已装载 ${skills.length} 项技能 · 防范僵尸技能` : '已接入标准化技能资产库'}
+            {skills.length > 0
+              ? `已装载 ${skills.length} 项技能 · 防范僵尸技能`
+              : '已接入标准化技能资产库'}
           </p>
         </Card>
 
         {/* Card 5: SOP 提示词 Context 压缩率 (新增) */}
-        <Card className="flex flex-col gap-1 p-2.5 shadow-none hover:border-border transition-colors" title="监测通过 L0 意图按需唤醒 + L1 SOP 结构化注入，相比把全量 Prompt 塞给 Agent 节省的上下文 Token 比率">
+        <Card
+          className="flex flex-col gap-1 p-2.5 shadow-none hover:border-border transition-colors"
+          title="监测通过 L0 意图按需唤醒 + L1 SOP 结构化注入，相比把全量 Prompt 塞给 Agent 节省的上下文 Token 比率"
+        >
           <div className="flex items-center justify-between text-xs text-muted-foreground font-sans">
             <span className="flex items-center gap-1.5 text-foreground font-medium">
               <ShieldCheckIcon className="size-3.5 text-muted-foreground" />
               Context 提示词压缩率
             </span>
-            <Badge variant="outline" className="text-[11px] font-mono border-border bg-muted/40 text-foreground px-1 py-0">
+            <Badge
+              variant="outline"
+              className="text-[11px] font-mono border-border bg-muted/40 text-foreground px-1 py-0"
+            >
               Token 降本
             </Badge>
           </div>
           <div className="font-mono text-lg font-bold tabular-nums text-foreground flex items-baseline gap-1">
-            {contextCompressionRatio !== null ? `${contextCompressionRatio}%` : '--'}{' '}
+            {contextCompressionRatio !== null
+              ? `${contextCompressionRatio}%`
+              : '--'}{' '}
             <span className="text-xs font-normal text-muted-foreground">
-              {contextCompressionRatio !== null ? '(节省 Context)' : '(暂无采样)'}
+              {contextCompressionRatio !== null
+                ? '(节省 Context)'
+                : '(暂无采样)'}
             </span>
           </div>
           <p className="text-[11px] text-muted-foreground truncate">
-            {contextCompressionRatio !== null ? '按需结构化注入 · 大幅降低 Token 冗余' : '等待按需 SOP 注入采样...'}
+            {contextCompressionRatio !== null
+              ? '按需结构化注入 · 大幅降低 Token 冗余'
+              : '等待按需 SOP 注入采样...'}
           </p>
         </Card>
 
@@ -1012,24 +1030,35 @@ function SkillsRoute() {
               <ClockIcon className="size-3.5 text-muted-foreground" />
               Harness 技能自演进
             </span>
-            <Badge variant="outline" className="text-[11px] font-mono border-border bg-muted/40 text-foreground px-1 py-0">
+            <Badge
+              variant="outline"
+              className="text-[11px] font-mono border-border bg-muted/40 text-foreground px-1 py-0"
+            >
               白盒审计 ➔
             </Badge>
           </div>
           <div className="flex items-center gap-3 font-mono tabular-nums">
             <div className="flex flex-col">
-              <span className="text-lg font-bold text-foreground">{builtinLessonsCount}</span>
-              <span className="text-[10px] text-muted-foreground font-sans">精编规约</span>
+              <span className="text-lg font-bold text-foreground">
+                {builtinLessonsCount !== null ? builtinLessonsCount : '--'}
+              </span>
+              <span className="text-xs text-muted-foreground font-sans">
+                预置规约
+              </span>
             </div>
             <div className="text-muted-foreground/30 text-lg font-thin">|</div>
             <div className="flex flex-col">
-              <span className="text-lg font-bold text-foreground">{lessonsCount !== null ? lessonsCount : '--'}</span>
-              <span className="text-[10px] text-muted-foreground font-sans">自动感应</span>
+              <span className="text-lg font-bold text-foreground">
+                {lessonsCount !== null ? lessonsCount : '--'}
+              </span>
+              <span className="text-xs text-muted-foreground font-sans">
+                动态演进
+              </span>
             </div>
           </div>
-          <p className="text-[11px] text-muted-foreground truncate flex items-center justify-between">
-            <span>人工精编 + VK 自动感应双轨驱动</span>
-            <ChevronRightIcon className="size-3 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
+          <p className="text-xs text-muted-foreground truncate flex items-center justify-between">
+            <span>预置标准规约 + 动态踩坑演进双轨驱动</span>
+            <ChevronRightIcon className="size-3.5 text-muted-foreground group-hover:translate-x-0.5 transition-transform" />
           </p>
         </Link>
       </div>
@@ -1044,7 +1073,7 @@ function SkillsRoute() {
               'rounded-xs px-2.5 py-1 text-center font-medium transition-colors',
               activeScopeFilter === 'all'
                 ? 'bg-background text-foreground shadow-xs border border-border/60'
-                : 'text-muted-foreground hover:text-foreground'
+                : 'text-muted-foreground hover:text-foreground',
             )}
           >
             全部 ({skills.length})
@@ -1056,7 +1085,7 @@ function SkillsRoute() {
               'rounded-xs px-2.5 py-1 text-center font-medium transition-colors',
               activeScopeFilter === 'agent'
                 ? 'bg-background text-cyan-600 dark:text-cyan-400 shadow-xs border border-cyan-500/30 bg-cyan-500/10'
-                : 'text-muted-foreground hover:text-foreground'
+                : 'text-muted-foreground hover:text-foreground',
             )}
           >
             🤖 智能体 ({skills.filter((s) => s.scope === 'agent').length})
@@ -1068,7 +1097,7 @@ function SkillsRoute() {
               'rounded-xs px-2.5 py-1 text-center font-medium transition-colors',
               activeScopeFilter === 'user'
                 ? 'bg-background text-foreground shadow-xs border border-border/60'
-                : 'text-muted-foreground hover:text-foreground'
+                : 'text-muted-foreground hover:text-foreground',
             )}
           >
             👤 个人偏好 ({skills.filter((s) => s.scope === 'user').length})
@@ -1080,10 +1109,11 @@ function SkillsRoute() {
               'rounded-xs px-2.5 py-1 text-center font-medium transition-colors',
               activeScopeFilter === 'idle'
                 ? 'bg-background text-rose-500 shadow-xs border border-rose-500/30 bg-rose-500/10 font-semibold'
-                : 'text-muted-foreground hover:text-foreground'
+                : 'text-muted-foreground hover:text-foreground',
             )}
           >
-            💤 闲置 ({skills.filter((s) => !ACTIVE_CORE_SKILLS.includes(s.name)).length})
+            💤 闲置 (
+            {skills.filter((s) => !ACTIVE_CORE_SKILLS.includes(s.name)).length})
           </button>
         </div>
         {/* 搜索框栏内右对齐 */}
@@ -1100,113 +1130,168 @@ function SkillsRoute() {
       </div>
 
       {activeScopeFilter === 'idle' && (
-        <Card className={cn(
-          "rounded p-3.5 font-mono text-xs shadow-2xs flex flex-col gap-2.5 transition-colors",
-          refinedSkills['excel-chart'] === 'done' && refinedSkills['log-trace'] === 'done'
-            ? "border-cyan-500/40 bg-cyan-500/5 text-cyan-600 dark:text-cyan-400"
-            : "border-rose-500/30 bg-rose-500/5 text-rose-500"
-        )}>
+        <Card
+          className={cn(
+            'rounded p-3.5 font-mono text-xs shadow-2xs flex flex-col gap-2.5 transition-colors',
+            refinedSkills['excel-chart'] === 'done' &&
+              refinedSkills['log-trace'] === 'done'
+              ? 'border-cyan-500/40 bg-cyan-500/5 text-cyan-600 dark:text-cyan-400'
+              : 'border-rose-500/30 bg-rose-500/5 text-rose-500',
+          )}
+        >
           <div className="flex items-center justify-between font-semibold">
             <span className="flex items-center gap-1.5">
               <SparklesIcon className="size-4" />
-              {refinedSkills['excel-chart'] === 'done' && refinedSkills['log-trace'] === 'done'
-                ? "✨ 技能资产打包精简已完成 (工具箱已瘦身降本)"
-                : "⚡ 技能资产打包与合并建议 (工具箱瘦身 · 降低 Token 消耗)"}
+              {refinedSkills['excel-chart'] === 'done' &&
+              refinedSkills['log-trace'] === 'done'
+                ? '✨ 技能资产打包精简已完成 (工具箱已瘦身降本)'
+                : '⚡ 技能资产打包与合并建议 (工具箱瘦身 · 降低 Token 消耗)'}
             </span>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className={cn(
-                "text-[11px]",
-                refinedSkills['excel-chart'] === 'done' && refinedSkills['log-trace'] === 'done'
-                  ? "border-cyan-500/40 text-cyan-500 bg-cyan-500/10"
-                  : "border-rose-500/30 text-rose-500 bg-rose-500/10"
-              )}>
-                {refinedSkills['excel-chart'] === 'done' && refinedSkills['log-trace'] === 'done'
-                  ? "✅ 打包提炼闭环完成"
-                  : "重叠度 > 75% 推荐合并"}
+              <Badge
+                variant="outline"
+                className={cn(
+                  'text-[11px]',
+                  refinedSkills['excel-chart'] === 'done' &&
+                    refinedSkills['log-trace'] === 'done'
+                    ? 'border-cyan-500/40 text-cyan-500 bg-cyan-500/10'
+                    : 'border-rose-500/30 text-rose-500 bg-rose-500/10',
+                )}
+              >
+                {refinedSkills['excel-chart'] === 'done' &&
+                refinedSkills['log-trace'] === 'done'
+                  ? '✅ 打包提炼闭环完成'
+                  : '重叠度 > 75% 推荐合并'}
               </Badge>
-              <Badge variant="outline" className="border-cyan-500/40 text-cyan-500 text-[11px] bg-cyan-500/10">
+              <Badge
+                variant="outline"
+                className="border-cyan-500/40 text-cyan-500 text-[11px] bg-cyan-500/10"
+              >
                 🤖 全无人值守自动门禁
               </Badge>
             </div>
           </div>
           <p className="text-muted-foreground leading-relaxed text-[11px]">
-            {refinedSkills['excel-chart'] === 'done' && refinedSkills['log-trace'] === 'done'
-              ? "🎉 下述高重叠离散技能已成功打包提炼为统一多功能 SOP，已在全局 Agent 意图库中消除了双重召唤与冗余 Token 浪费。"
-              : "下述离散技能功能高度重叠（>75%）。一键打包合并后可消除冗余提示词，提升 AI 响应速度并降低 Token 算力开销："}
+            {refinedSkills['excel-chart'] === 'done' &&
+            refinedSkills['log-trace'] === 'done'
+              ? '🎉 下述高重叠离散技能已成功打包提炼为统一多功能 SOP，已在全局 Agent 意图库中消除了双重召唤与冗余 Token 浪费。'
+              : '下述离散技能功能高度重叠（>75%）。一键打包合并后可消除冗余提示词，提升 AI 响应速度并降低 Token 算力开销：'}
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-0.5">
-            <div className={cn(
-              "rounded p-2.5 text-[11px] flex flex-col gap-2 border transition-colors",
-              refinedSkills['excel-chart'] === 'done' ? "border-cyan-500/30 bg-background/80" : "border-rose-500/20 bg-background/60"
-            )}>
+            <div
+              className={cn(
+                'rounded p-2.5 text-[11px] flex flex-col gap-2 border transition-colors',
+                refinedSkills['excel-chart'] === 'done'
+                  ? 'border-cyan-500/30 bg-background/80'
+                  : 'border-rose-500/20 bg-background/60',
+              )}
+            >
               <div className="flex items-center justify-between">
                 <div className="flex flex-col gap-0.5 min-w-0">
-                  <span className="text-foreground font-medium truncate">excel-format & chart-gen</span>
-                  <span className={cn(
-                    "font-bold shrink-0",
-                    refinedSkills['excel-chart'] === 'done' ? "text-cyan-500" : "text-rose-500"
-                  )}>
-                    {refinedSkills['excel-chart'] === 'done' ? "✅ 78.5% 重叠已完成打包合并" : "78.5% 重叠 ➔ 推荐打包"}
+                  <span className="text-foreground font-medium truncate">
+                    excel-format & chart-gen
+                  </span>
+                  <span
+                    className={cn(
+                      'font-bold shrink-0',
+                      refinedSkills['excel-chart'] === 'done'
+                        ? 'text-cyan-500'
+                        : 'text-rose-500',
+                    )}
+                  >
+                    {refinedSkills['excel-chart'] === 'done'
+                      ? '✅ 78.5% 重叠已完成打包合并'
+                      : '78.5% 重叠 ➔ 推荐打包'}
                   </span>
                 </div>
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
-                  disabled={refinedSkills['excel-chart'] === 'done' || refinedSkills['excel-chart'] === 'p1' || refinedSkills['excel-chart'] === 'p2'}
+                  disabled={
+                    refinedSkills['excel-chart'] === 'done' ||
+                    refinedSkills['excel-chart'] === 'p1' ||
+                    refinedSkills['excel-chart'] === 'p2'
+                  }
                   className={cn(
                     'h-7 text-[11px] shrink-0 font-mono transition-all',
                     refinedSkills['excel-chart'] === 'done'
                       ? 'border-cyan-500/60 bg-cyan-500/20 text-cyan-500'
-                      : 'border-cyan-500/40 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10'
+                      : 'border-cyan-500/40 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10',
                   )}
-                  onClick={() => handleRefineSkill('excel-chart', ['excel-format', 'chart-gen'])}
+                  onClick={() =>
+                    handleRefineSkill('excel-chart', [
+                      'excel-format',
+                      'chart-gen',
+                    ])
+                  }
                 >
                   {refinedSkills['excel-chart'] === 'done'
                     ? '✅ 已物理打包合并落盘'
                     : refinedSkills['excel-chart'] === 'p2'
-                    ? '⏳ 2/3 用例跑集中...'
-                    : refinedSkills['excel-chart'] === 'p1'
-                    ? '⏳ 1/3 语法分析中...'
-                    : '⚡ 一键物理打包合并'}
+                      ? '⏳ 2/3 用例跑集中...'
+                      : refinedSkills['excel-chart'] === 'p1'
+                        ? '⏳ 1/3 语法分析中...'
+                        : '⚡ 一键物理打包合并'}
                 </Button>
               </div>
             </div>
-            <div className={cn(
-              "rounded p-2.5 text-[11px] flex flex-col gap-2 border transition-colors",
-              refinedSkills['log-trace'] === 'done' ? "border-cyan-500/30 bg-background/80" : "border-rose-500/20 bg-background/60"
-            )}>
+            <div
+              className={cn(
+                'rounded p-2.5 text-[11px] flex flex-col gap-2 border transition-colors',
+                refinedSkills['log-trace'] === 'done'
+                  ? 'border-cyan-500/30 bg-background/80'
+                  : 'border-rose-500/20 bg-background/60',
+              )}
+            >
               <div className="flex items-center justify-between">
                 <div className="flex flex-col gap-0.5 min-w-0">
-                  <span className="text-foreground font-medium truncate">log-extractor & trace-parser</span>
-                  <span className={cn(
-                    "font-bold shrink-0",
-                    refinedSkills['log-trace'] === 'done' ? "text-cyan-500" : "text-rose-500"
-                  )}>
-                    {refinedSkills['log-trace'] === 'done' ? "✅ 81.2% 重叠已完成打包合并" : "81.2% 重叠 ➔ 推荐合并"}
+                  <span className="text-foreground font-medium truncate">
+                    log-extractor & trace-parser
+                  </span>
+                  <span
+                    className={cn(
+                      'font-bold shrink-0',
+                      refinedSkills['log-trace'] === 'done'
+                        ? 'text-cyan-500'
+                        : 'text-rose-500',
+                    )}
+                  >
+                    {refinedSkills['log-trace'] === 'done'
+                      ? '✅ 81.2% 重叠已完成打包合并'
+                      : '81.2% 重叠 ➔ 推荐合并'}
                   </span>
                 </div>
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
-                  disabled={refinedSkills['log-trace'] === 'done' || refinedSkills['log-trace'] === 'p1' || refinedSkills['log-trace'] === 'p2'}
+                  disabled={
+                    refinedSkills['log-trace'] === 'done' ||
+                    refinedSkills['log-trace'] === 'p1' ||
+                    refinedSkills['log-trace'] === 'p2'
+                  }
                   className={cn(
                     'h-7 text-[11px] shrink-0 font-mono transition-all',
                     refinedSkills['log-trace'] === 'done'
                       ? 'border-cyan-500/60 bg-cyan-500/20 text-cyan-500'
-                      : 'border-cyan-500/40 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10'
+                      : 'border-cyan-500/40 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10',
                   )}
-                  onClick={() => handleRefineSkill('log-trace', ['log-extractor', 'trace-parser'])}
+                  onClick={() =>
+                    handleRefineSkill('log-trace', [
+                      'log-extractor',
+                      'trace-parser',
+                    ])
+                  }
                 >
                   {refinedSkills['log-trace'] === 'done'
                     ? '✅ 已物理打包合并落盘'
                     : refinedSkills['log-trace'] === 'p2'
-                    ? '⏳ 2/3 用例跑集中...'
-                    : refinedSkills['log-trace'] === 'p1'
-                    ? '⏳ 1/3 语法分析中...'
-                    : '⚡ 一键物理打包合并'}
+                      ? '⏳ 2/3 用例跑集中...'
+                      : refinedSkills['log-trace'] === 'p1'
+                        ? '⏳ 1/3 语法分析中...'
+                        : '⚡ 一键物理打包合并'}
                 </Button>
               </div>
             </div>
@@ -1263,12 +1348,17 @@ function SkillsRoute() {
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {paginatedSkills.map((skill) => {
-              const srcInfo = getSkillSource(skill.name, skill.scope, skill.source)
+              const srcInfo = getSkillSource(
+                skill.name,
+                skill.scope,
+                skill.source,
+              )
               const displayName = isZh
-                ? (skill.cnName || getChineseSkillName(skill.name))
+                ? skill.cnName || getChineseSkillName(skill.name)
                 : skill.name
               const displayDesc = isZh
-                ? (skill.cnDescription || getChineseSkillDescription(skill.name, skill.description))
+                ? skill.cnDescription ||
+                  getChineseSkillDescription(skill.description)
                 : skill.description
               return (
                 <Card
@@ -1282,38 +1372,77 @@ function SkillsRoute() {
                         <div className="flex size-7 shrink-0 items-center justify-center rounded bg-muted text-foreground font-bold">
                           <SparklesIcon className="size-4 text-cyan-500" />
                         </div>
-                        <h3 className="truncate text-xs font-semibold text-foreground group-hover:text-cyan-500 transition-colors" title={displayName}>
+                        <h3
+                          className="truncate text-xs font-semibold text-foreground group-hover:text-cyan-500 transition-colors"
+                          title={displayName}
+                        >
                           {displayName}
                         </h3>
                       </div>
                       <div className="flex items-center gap-1 shrink-0 font-mono text-xs">
                         <Badge
                           variant="outline"
-                          className={cn('rounded-xs px-2 py-0.5 text-xs font-medium', srcInfo.badgeClass)}
+                          className={cn(
+                            'rounded-xs px-2 py-0.5 text-xs font-medium',
+                            srcInfo.badgeClass,
+                          )}
                         >
                           {srcInfo.label}
                         </Badge>
                       </div>
                     </div>
 
-                    <p className="line-clamp-2 min-h-8 text-xs text-muted-foreground font-mono leading-relaxed" title={displayDesc}>
+                    <p
+                      className="line-clamp-2 min-h-8 text-xs text-muted-foreground font-mono leading-relaxed"
+                      title={displayDesc}
+                    >
                       {displayDesc}
                     </p>
                   </div>
 
                   <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-2.5 text-xs font-mono text-muted-foreground">
                     <div className="flex items-center gap-1.5 min-w-0 truncate">
-                      <Badge variant="outline" className="rounded-xs text-xs px-2 py-0.5 border-border/70 bg-muted/30 text-foreground/80 font-normal shrink-0">
-                        📁 {Array.isArray(skill.files) && skill.files.length > 0 ? skill.files.length : 1} 文件 ({typeof skill.content === 'string' && skill.content.length > 0 ? (skill.content.length > 1024 ? `${(skill.content.length / 1024).toFixed(1)}KB` : `${skill.content.length}B`) : 'SOP'})
+                      <Badge
+                        variant="outline"
+                        className="rounded-xs text-xs px-2 py-0.5 border-border/70 bg-muted/30 text-foreground/80 font-normal shrink-0"
+                      >
+                        📁{' '}
+                        {Array.isArray(skill.files) && skill.files.length > 0
+                          ? skill.files.length
+                          : 1}{' '}
+                        文件 (
+                        {typeof skill.content === 'string' &&
+                        skill.content.length > 0
+                          ? skill.content.length > 1024
+                            ? `${(skill.content.length / 1024).toFixed(1)}KB`
+                            : `${skill.content.length}B`
+                          : 'SOP'}
+                        )
                       </Badge>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      {['diagnosing-bugs', 'tdd', 'codebase-design', 'domain-modeling', 'code-review', 'to-spec', 'research', 'prototype', 'improve-codebase-architecture'].includes(skill.name) ? (
-                        <Badge variant="outline" className="text-xs px-2 py-0.5 border-cyan-500/40 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-medium">
+                      {[
+                        'diagnosing-bugs',
+                        'tdd',
+                        'codebase-design',
+                        'domain-modeling',
+                        'code-review',
+                        'to-spec',
+                        'research',
+                        'prototype',
+                        'improve-codebase-architecture',
+                      ].includes(skill.name) ? (
+                        <Badge
+                          variant="outline"
+                          className="text-xs px-2 py-0.5 border-cyan-500/40 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-medium"
+                        >
                           🔥 24H 活跃
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="text-xs px-2 py-0.5 border-border/50 bg-muted/20 text-muted-foreground font-normal">
+                        <Badge
+                          variant="outline"
+                          className="text-xs px-2 py-0.5 border-border/50 bg-muted/20 text-muted-foreground font-normal"
+                        >
                           💤 闲置
                         </Badge>
                       )}
@@ -1365,7 +1494,9 @@ function SkillsRoute() {
               </div>
             ) : detailQuery.isError ? (
               <div className="flex min-h-48 flex-col items-center justify-center gap-1 text-center font-mono text-xs">
-                <p className="font-semibold text-destructive">{t('detailLoadFailed')}</p>
+                <p className="font-semibold text-destructive">
+                  {t('detailLoadFailed')}
+                </p>
                 <p className="max-w-md text-muted-foreground">
                   {getErrorMessage(detailQuery.error)}
                 </p>
@@ -1395,7 +1526,9 @@ function DetailMetric({
         {icon}
         {label}
       </div>
-      <p className="mt-0.5 truncate font-mono font-semibold text-xs text-foreground">{value}</p>
+      <p className="mt-0.5 truncate font-mono font-semibold text-xs text-foreground">
+        {value}
+      </p>
     </div>
   )
 }
@@ -1411,7 +1544,9 @@ function DetailSection({
 }) {
   return (
     <section className={cn('grid gap-1.5', className)}>
-      <h3 className="text-xs font-semibold text-foreground tracking-tight">{title}</h3>
+      <h3 className="text-xs font-semibold text-foreground tracking-tight">
+        {title}
+      </h3>
       {children}
     </section>
   )
