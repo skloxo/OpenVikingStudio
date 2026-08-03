@@ -1,6 +1,6 @@
 export const PLAIN_INPUT_PROPS = {
   autoCapitalize: 'none',
-  autoComplete: 'off',
+  autoComplete: 'new-password',
   autoCorrect: 'off',
   spellCheck: false,
 } as const
