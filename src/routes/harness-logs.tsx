@@ -412,19 +412,19 @@ function HarnessLogsPage() {
         </div>
       </div>
 
-      {/* 🎯 技能自然语言意图碰撞与歧义探测模拟器 */}
+      {/* 🎯 AI 技能冲突预演与一键修复 */}
       <div className="rounded border border-cyan-500/40 bg-cyan-500/5 p-4 shadow-2xs flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5 font-mono">
             <SparklesIcon className="size-4 text-cyan-500" />
-            🎯 技能自然语言意图碰撞与歧义探测模拟器 (Intent Ambiguity Detector)
+            🎯 AI 技能冲突预演与一键修复 (AI Skill Dispatch Sandbox)
           </span>
           <Badge variant="outline" className="text-[11px] font-mono border-cyan-500/40 text-cyan-500 bg-cyan-500/10 px-1.5 py-0.5">
-            Zero-Human Auto-Gate
+            全自动防打架门禁
           </Badge>
         </div>
         <p className="text-xs text-muted-foreground font-mono leading-relaxed">
-          输入任意自然语言需求，模拟探测 Agent 在激活技能时是否存在两个技能描述重叠度 &gt; 75% 的语义碰撞，并自动给出白盒消歧修改建议。
+          输入一句需求，提前预演 AI 会不会在多个相似技能间犹豫打架。如果发现冲突，点击即可一键写入防打架规则至 SKILL.md。
         </p>
 
         <div className="flex items-center gap-2">
@@ -432,7 +432,7 @@ function HarnessLogsPage() {
             type="text"
             value={simPrompt}
             onChange={(e) => setSimPrompt(e.target.value)}
-            placeholder="如: 输入 '排查系统报错并写测试用例' 探测意图碰撞..."
+            placeholder="输入需求句式 (如: 排查系统报错并写测试用例)..."
             className="h-8 flex-1 rounded border border-border/60 bg-background px-3 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-1 focus:ring-cyan-500"
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleSimulateCollision()
@@ -445,7 +445,7 @@ function HarnessLogsPage() {
             className="h-8 gap-1 text-xs bg-cyan-600 hover:bg-cyan-500 text-white font-mono px-3 cursor-pointer"
           >
             <ZapIcon className="size-3.5" />
-            探测意图碰撞
+            ⚡ 预演技能冲突
           </Button>
         </div>
 
