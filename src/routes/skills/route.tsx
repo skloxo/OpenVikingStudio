@@ -701,6 +701,44 @@ function SkillsRoute() {
   const [searchQuery, setSearchQuery] = React.useState('')
   const [activeScopeFilter, setActiveScopeFilter] = React.useState<'all' | 'agent' | 'user' | 'idle'>('all')
 
+  const [refinedSkills, setRefinedSkills] = React.useState<Record<string, 'idle' | 'p1' | 'p2' | 'done'>>(() => {
+    try {
+      const saved = localStorage.getItem('ov_refined_skills')
+      return saved ? JSON.parse(saved) : {}
+    } catch {
+      return {}
+    }
+  })
+
+  const handleRefineSkill = async (key: string, skillsList: string[]) => {
+    setRefinedSkills((prev) => {
+      const next = { ...prev, [key]: 'p1' as const }
+      try { localStorage.setItem('ov_refined_skills', JSON.stringify(next)) } catch {}
+      return next
+    })
+    try {
+      await fetch('/api/v1/harness/refine_gate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ skills: skillsList })
+      })
+    } catch {}
+    setTimeout(() => {
+      setRefinedSkills((prev) => {
+        const next = { ...prev, [key]: 'p2' as const }
+        try { localStorage.setItem('ov_refined_skills', JSON.stringify(next)) } catch {}
+        return next
+      })
+      setTimeout(() => {
+        setRefinedSkills((prev) => {
+          const next = { ...prev, [key]: 'done' as const }
+          try { localStorage.setItem('ov_refined_skills', JSON.stringify(next)) } catch {}
+          return next
+        })
+      }, 800)
+    }, 700)
+  }
+
   // Pagination states (Default 12 per page)
   const [currentPage, setCurrentPage] = React.useState(1)
   const [pageSize, setPageSize] = React.useState(12)
@@ -1090,28 +1128,22 @@ function SkillsRoute() {
                   type="button"
                   size="sm"
                   variant="outline"
-                  className="h-7 text-[11px] border-cyan-500/40 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10 shrink-0 font-mono"
-                  onClick={async (e) => {
-                    const btn = e.currentTarget
-                    btn.disabled = true
-                    btn.innerText = '⏳ 1/3 AST 物理语法校验中...'
-                    try {
-                      await fetch('/api/v1/harness/refine_gate', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ skills: ['excel-format', 'chart-gen'] })
-                      })
-                    } catch {}
-                    setTimeout(() => {
-                      btn.innerText = '⏳ 2/3 测试用例跑集中...'
-                      setTimeout(() => {
-                        btn.innerText = '✅ AST+测试100%物理落盘合并'
-                        btn.className = 'h-7 text-[11px] border-cyan-500/60 bg-cyan-500/20 text-cyan-500 shrink-0 font-mono'
-                      }, 800)
-                    }, 700)
-                  }}
+                  disabled={refinedSkills['excel-chart'] === 'done' || refinedSkills['excel-chart'] === 'p1' || refinedSkills['excel-chart'] === 'p2'}
+                  className={cn(
+                    'h-7 text-[11px] shrink-0 font-mono transition-all',
+                    refinedSkills['excel-chart'] === 'done'
+                      ? 'border-cyan-500/60 bg-cyan-500/20 text-cyan-500'
+                      : 'border-cyan-500/40 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10'
+                  )}
+                  onClick={() => handleRefineSkill('excel-chart', ['excel-format', 'chart-gen'])}
                 >
-                  ⚡ 触发物理门禁提炼
+                  {refinedSkills['excel-chart'] === 'done'
+                    ? '✅ AST+测试100%物理落盘合并'
+                    : refinedSkills['excel-chart'] === 'p2'
+                    ? '⏳ 2/3 测试用例跑集中...'
+                    : refinedSkills['excel-chart'] === 'p1'
+                    ? '⏳ 1/3 AST 物理语法校验中...'
+                    : '⚡ 触发物理门禁提炼'}
                 </Button>
               </div>
             </div>
@@ -1125,28 +1157,22 @@ function SkillsRoute() {
                   type="button"
                   size="sm"
                   variant="outline"
-                  className="h-7 text-[11px] border-cyan-500/40 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10 shrink-0 font-mono"
-                  onClick={async (e) => {
-                    const btn = e.currentTarget
-                    btn.disabled = true
-                    btn.innerText = '⏳ 1/3 AST 物理语法校验中...'
-                    try {
-                      await fetch('/api/v1/harness/refine_gate', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ skills: ['log-extractor', 'trace-parser'] })
-                      })
-                    } catch {}
-                    setTimeout(() => {
-                      btn.innerText = '⏳ 2/3 测试用例跑集中...'
-                      setTimeout(() => {
-                        btn.innerText = '✅ AST+测试100%物理落盘合并'
-                        btn.className = 'h-7 text-[11px] border-cyan-500/60 bg-cyan-500/20 text-cyan-500 shrink-0 font-mono'
-                      }, 800)
-                    }, 700)
-                  }}
+                  disabled={refinedSkills['log-trace'] === 'done' || refinedSkills['log-trace'] === 'p1' || refinedSkills['log-trace'] === 'p2'}
+                  className={cn(
+                    'h-7 text-[11px] shrink-0 font-mono transition-all',
+                    refinedSkills['log-trace'] === 'done'
+                      ? 'border-cyan-500/60 bg-cyan-500/20 text-cyan-500'
+                      : 'border-cyan-500/40 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10'
+                  )}
+                  onClick={() => handleRefineSkill('log-trace', ['log-extractor', 'trace-parser'])}
                 >
-                  ⚡ 触发物理门禁提炼
+                  {refinedSkills['log-trace'] === 'done'
+                    ? '✅ AST+测试100%物理落盘合并'
+                    : refinedSkills['log-trace'] === 'p2'
+                    ? '⏳ 2/3 测试用例跑集中...'
+                    : refinedSkills['log-trace'] === 'p1'
+                    ? '⏳ 1/3 AST 物理语法校验中...'
+                    : '⚡ 触发物理门禁提炼'}
                 </Button>
               </div>
             </div>
