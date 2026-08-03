@@ -9,7 +9,17 @@
 
 ## 📅 当前核心排期阶段：Milestone Phase 1 (技能中心深度重构 ➔ 任务中心 ➔ Harness 引擎 ➔ Loop)
 
+### [x] v1.2.27 — [TASK-AUTH-01] 公网穿透与独立 API Key 鉴权拦截防护交付 (用户已验收通过 ✅)
+- **Git Commit**: `feat(auth): public gateway, letsencrypt ssl, and clean auth guard isolation v1.2.27`
+- **Tag**: `v1.2.27`
+- **修改文件**: `vite.config.ts`, `src/hooks/use-app-connection.tsx`, `package.json`, `REFACTORING_PLAN.md`
+- **主要交付**:
+  1. **🌐 全链路公网穿透与全球 DNS 部署**：基于阿里云 ECS (`8.129.0.26`) 搭建 FRP 双向穿透与 Nginx 443 转发，通过阿里云 Alidns OpenAPI 自动解析公网 `vk.tide.beer` 与 `vk.tide.red` A 记录；
+  2. **🔒 官方 Let's Encrypt 绿色安全 SSL 证书**：成功在中转机为 `vk.tide.beer` 秒级签发并挂载 Let's Encrypt 官方 SSL 证书，全球公网浏览器均显示 100% 绿色安全锁；
+  3. **🛡️ 纯净未登录鉴权拦截 (Auth Guard)**：拔除前端硬编码假 Key (`ROOT_API_KEY_FALLBACK`) 与 Vite 代理自动注入的 Master Key，未输入合法 API Key 的公网访客统一返回 `HTTP 401 Unauthorized` 并处于未授权锁定状态。
+
 ### [x] v1.2.25 — 全局字体排版硬下限规范 (≥11px)、分类短命名与伪状态拔除交付 (用户已验收通过 ✅)
+
 - **Git Commit**: `feat(skills): typography min size >=11px, concise tab labels, and fake status badge removal v1.2.25`
 - **Tag**: `v1.2.25`
 - **修改文件**: `src/routes/skills/route.tsx`, `src/routes/skills/harness-logs.tsx`, `UI_SPECIFICATION.md`, `package.json`
