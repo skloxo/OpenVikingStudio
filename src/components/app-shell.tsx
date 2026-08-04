@@ -529,16 +529,16 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             </span>
           </div>
           <span className="text-[10px] font-mono text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded border border-border/40">
-            v1.2.37
+            v1.2.38
           </span>
         </header>
 
         <ScrollArea className="min-h-0 flex-1">
           <div className="flex w-full flex-col gap-6 px-4 py-6 md:px-6">
-            {!isConnectionRoleLoading &&
-            connectionRole === 'unknown' &&
-            pathname !== '/settings' &&
-            !pathname.startsWith('/oauth') ? (
+            {!settingsActive &&
+            !crossDeviceVerifyActive &&
+            !connection.adminApiKey.trim() &&
+            !connection.apiKey.trim() ? (
               <AccessRequiredGate />
             ) : (
               children
