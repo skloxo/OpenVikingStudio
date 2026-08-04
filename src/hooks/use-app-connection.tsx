@@ -82,11 +82,11 @@ const ENV_USER =
 const ROOT_API_KEY_FALLBACK = ''
 
 const DEFAULT_CONNECTION: ConnectionDraft = {
-  accountId: ENV_ACCOUNT || '',
-  adminApiKey: ENV_ADMIN_API_KEY || ROOT_API_KEY_FALLBACK,
-  apiKey: ENV_API_KEY || ROOT_API_KEY_FALLBACK,
+  accountId: ENV_ACCOUNT || 'default',
+  adminApiKey: ENV_ADMIN_API_KEY || '',
+  apiKey: ENV_API_KEY || '',
   baseUrl: ovClient.getOptions().baseUrl,
-  userId: ENV_USER || '',
+  userId: ENV_USER || 'default',
 }
 
 
@@ -338,13 +338,18 @@ async function detectConnectionIdentity(
   // configured Root key is the credential authorizing Admin API calls. Probe
   // the actual control-plane endpoint so Root capabilities reflect what the
   // browser can really do.
+  const isTrusted = serverMode === 'trusted' || data.auth_mode === 'trusted'
   const role = isDev
     ? 'root'
     : credential === 'control' &&
         connection.adminApiKey &&
         (await canListAccounts(connection))
       ? 'root'
-      : healthRole
+      : healthRole !== 'unknown'
+        ? healthRole
+        : isTrusted
+          ? 'user'
+          : 'unknown'
 
   return {
     accountId: typeof data.account_id === 'string' ? data.account_id : '',
@@ -653,12 +658,7 @@ export function AppConnectionProvider({
     const interceptorId = ovClient.instance.interceptors.response.use(
       (response) => response,
       (error) => {
-        if (
-          shouldRedirectToLoginOnApiError(error) &&
-          Date.now() >= authPromptSuppressedUntilRef.current
-        ) {
-          openConnectionSettings()
-        }
+        // Disable auto-navigating to /settings on background API errors
         return Promise.reject(error)
       },
     )
@@ -666,7 +666,7 @@ export function AppConnectionProvider({
     return () => {
       ovClient.instance.interceptors.response.eject(interceptorId)
     }
-  }, [openConnectionSettings])
+  }, [])
 
   const value = React.useMemo<AppConnectionContextValue>(() => {
     const commitConnection = (next: ConnectionDraft) => {
