@@ -327,7 +327,38 @@ function TasksRoute() {
             : 'Missing resource ID for task',
         )
       }
-      if (task.resource_id.startsWith('viking://resources/')) {
+
+      // ── 1. task_type 精确匹配优先（不受 URI 前缀干扰）──────────────────────
+      if (task.task_type === 'session_commit') {
+        const res = await commitSession(task.resource_id)
+        const resAny = res as any
+        if (resAny?.result?.reason === 'no_messages' || resAny?.reason === 'no_messages') {
+          toast.info(
+            i18n.language.startsWith('zh')
+              ? '该会话无未提交消息，已无需重复入队'
+              : 'Session has no pending uncommitted messages',
+          )
+        }
+        return { res, task }
+      }
+      if (task.task_type === 'add_resource') {
+        // 重新入库：走完整的资源处理流水线（解析 → 向量化）
+        const res = await postResources({
+          body: {
+            path: task.resource_id,
+            reason: `Re-queued task: ${task.task_id}`,
+          } as any,
+        })
+        return { res, task }
+      }
+
+      // ── 2. admin_reindex / snapshot_restore_reindex → 仅重建向量索引 ────────
+      if (
+        task.resource_id.startsWith('viking://resources/') &&
+        (task.task_type === 'admin_reindex' ||
+          task.task_type === 'snapshot_restore_reindex' ||
+          task.task_type === 'connector_import')
+      ) {
         const resp = await ovClient.instance.post('/api/v1/content/reindex', {
           uri: task.resource_id,
           wait: false,
@@ -343,27 +374,7 @@ function TasksRoute() {
         }
         return { res: json, task }
       }
-      if (task.task_type === 'session_commit') {
-        const res = await commitSession(task.resource_id)
-        const resAny = res as any
-        if (resAny?.result?.reason === 'no_messages' || resAny?.reason === 'no_messages') {
-          toast.info(
-            i18n.language.startsWith('zh')
-              ? '该会话无未提交消息，已无需重复入队'
-              : 'Session has no pending uncommitted messages',
-          )
-        }
-        return { res, task }
-      }
-      if (task.task_type === 'add_resource') {
-        const res = await postResources({
-          body: {
-            path: task.resource_id,
-            reason: `Re-queued task: ${task.task_id}`,
-          } as any,
-        })
-        return { res, task }
-      }
+
       throw new Error(
         i18n.language.startsWith('zh')
           ? '此任务类型暂不支持直接重新入队'
