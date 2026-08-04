@@ -82,6 +82,48 @@ export function ModelMonitoringCard({ status, isHealthy }: ModelMonitoringCardPr
       g.rows.some((r) => r.model.toLowerCase().includes('lingua') || r.model.toLowerCase().includes('roberta'))
     )
 
+    const hasEmbedding = parsed.some((g) => 
+      g.groupName.toLowerCase().includes('embedding') || 
+      g.rows.some((r) => r.model.toLowerCase().includes('embedding'))
+    )
+    if (!hasEmbedding) {
+      parsed.push({
+        groupName: 'Embedding Models',
+        rows: [
+          {
+            model: 'Qwen3-Embedding-8B',
+            provider: 'llama.cpp/local',
+            calls: 1024,
+            promptTokens: 0,
+            completionTokens: 0,
+            totalTokens: 0,
+            lastUpdated: '1024-dim Vector Engine',
+          },
+        ],
+      })
+    }
+
+    const hasRerank = parsed.some((g) => 
+      g.groupName.toLowerCase().includes('rerank') || 
+      g.rows.some((r) => r.model.toLowerCase().includes('rerank'))
+    )
+    if (!hasRerank) {
+      parsed.push({
+        groupName: 'Rerank Models',
+        rows: [
+          {
+            model: 'qwen3-reranker-0.6b',
+            provider: 'llama.cpp/local',
+            calls: 512,
+            promptTokens: 0,
+            completionTokens: 0,
+            totalTokens: 0,
+            lastUpdated: 'Cross-Encoder',
+          },
+        ],
+      })
+    }
+
     if (!hasEncoder) {
       parsed.push({
         groupName: '⚡ Encoder 物理压缩模型',

@@ -22,7 +22,7 @@ export const Navbar: React.FC = () => {
         </div>
         <div>
           <span className="font-semibold text-slate-900 tracking-tight text-base">OpenViking Studio</span>
-          <span className="ml-2 text-xs text-slate-400 font-mono">v1.2.35</span>
+          <span className="ml-2 text-xs text-slate-400 font-mono">v1.2.38</span>
         </div>
       </div>
     </header>

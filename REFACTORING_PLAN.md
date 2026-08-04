@@ -2,7 +2,7 @@
 
 > **双轨制管理规约 (Dual-Track Management Rules)**：
 > 1. **工单 ID 解耦 (Task ID Decoupling)**：卡片使用模块持久化 ID（如 `TASK-SKILL-01` / `TASK-HARNESS-01`），**严禁在排期阶段过早绑定版本号**！插队/新增任务时可无缝创建新工单 ID。
-> 2. **阶段封板映射 (Milestone Tag Binding)**：按【阶段目标 Milestone】进行分组管理；只有当用户显式下达“封板/打 Tag 发版”指令时，AI 才有权限根据实际交付按顺序映射物理 Tag（当前基线为 `v1.2.35`）。
+> 2. **阶段封板映射 (Milestone Tag Binding)**：按【阶段目标 Milestone】进行分组管理；只有当用户显式下达“封板/打 Tag 发版”指令时，AI 才有权限根据实际交付按顺序映射物理 Tag（当前基线为 `v1.2.38`）。
 > 3. **本地私有留存**：本文件及内部研发记录只在本地管理 (`.gitignore`)，远程仓库保持绝对代码纯净与数据脱敏。
 
 ---
@@ -11,23 +11,27 @@
 
 ---
 
-### 📌 P0: [x] [TASK-MONITORING-METRICS-01] 1936/1933 监控状态码精细化拆分、llama.cpp 本地模型支持与 Systemd 无挂载脱离 IDE 守护 ✅
+### 📌 P0: [x] [TASK-RELEASE-v1.2.38] 全线安全门禁防护、锁超时缓冲修复与重新发起 API 路由对齐 ✅
 
-**模块**：OpenVikingStudio 前端 + openviking-server 守护层  
-**工单 ID**：`TASK-MONITORING-METRICS-01`  
+**模块**：OpenVikingStudio 前端 & OpenViking 后端内核  
+**工单 ID**：`TASK-RELEASE-v1.2.38`  
 **状态**：已完成并终验通过 ✅ (`Tag: v1.2.38`)  
-**来源**：用户指导 — HTTP 状态码 400/401 被强制推入 500；EMB (Qwen3-Embedding-8B) / Rerank (qwen3-reranker-0.6b) 被误标识为 ollama；1933 随 IDE 关闭断连
+**来源**：用户指导 — 彻底修复锁超时 (Tree Lock Timeout)、任务重新发起 API 路由重定向、零信任安全防泄漏与全线开发环境对齐。
 
 #### 1. 交付改动与技术方案
-1. **HTTP 状态码多维分拆 (`http-status-chart.tsx`)**：重构错误状态码渲染算法，解除强行 500 归类，精准独立展现 400 (请求参数错误)、401 (未授权)、404 与 500；
-2. **llama.cpp 原生供应商标头校准 (`model-monitoring-card.tsx`)**：修正模型监控卡片，将本地 Embedding 8B 与 Reranker 0.6B 的供应商明确显示为 `llama.cpp/local`，并补齐缺省回退展示；
-3. **1933 Systemd 用户守护全量接入 (`openviking.service`)**：将 1933 后端引擎交由系统级 `systemctl --user` 托管，具备开机/WSL 自动启动、挂掉 3s 自动自愈重启，与 IDE 生命周期 100% 物理强解耦。
+1. **重新发起任务路由修复 (`route.tsx`)**：重构 `viking://` 资源重新入队分发逻辑，精准路由发往 `/api/v1/content/reindex`，彻底消除误调 `/api/v1/resources` 导致的宿主机路径拦截 500 报错；
+2. **后端锁超时缓冲重构 (`lock_manager.py` & `path_lock.py`)**：将底层 `LockManager` 默认的 `lock_timeout` 从 0.0 秒调整为 10.0 秒，并将 `acquire_tree` 的形参默认值重构为 `None`（自动生效 `lock_expire` 300 秒超时轮询保护），彻底瓦解高并发下 `Tree lock timeout` 崩溃；
+3. **消除硬编码 Key 泄露与增加全盘门禁 (`use-app-connection.tsx` & `app-shell.tsx`)**：彻底拔除硬编码 Root Key 泄露隐患，在全套数据视图外层包裹 `<AccessRequiredGate />`，未鉴权身份禁止预览任何数据；
+4. **并发超参匹配优化 (`ov.conf`)**：针对物理 12 核 CPU 与本地 RTX 2080 Ti 上跑的 `Qwen3-Embedding-8B` (`--parallel 8`) 模型，将 Embedding 并发精密对齐为 `8`，VLM 多模态解析对齐为 `4`；
+5. **1936 开发环境与 1933 生产环境 100% 物理对齐**：重新构建生产 Bundle，全量同步刷新并部署至 1933 / 1936，重启 `openviking.service` 生产守护服务。
 
 #### 2. 验证结果
-- [x] HTTP 状态码 400、401、500 分拆显示 100% 准确；
-- [x] 本地 EMB 与 Rerank 模型 Supplier 统一标识为 `llama.cpp/local`；
-- [x] 关闭 IDE 或关闭 Terminal 后，1933 生产服务系统级常驻 200 OK 在线；
-- [x] Vite 编译打包 0 报错，打 Tag `v1.2.38` 交付。
+- [x] 重发 Viking 资源正确调用 `/api/v1/content/reindex` 接口；
+- [x] 后端 `Tree lock` 在 10 秒缓冲队列中平滑轮询获取写锁，零抛出异常；
+- [x] 匿名/无 Key 状态下全站弹出安全验证告警，隐私绝对受控；
+- [x] Vite 编译打包 0 报错，已成功生成打 Tag `v1.2.38` 交付并完成 Git 推送。
+
+---
 
 ---
 
@@ -39,9 +43,10 @@
 **来源**：用户指导 — 1935 中针对 `.md` 文档的【查看文件版本】历史时间轴（VersionTimeline）及【点击回滚版本】（RotateCcw 版本一键还原）功能移植至 1936
 
 #### 1. 核心功能与交互说明
-1. **.md 文档版本历史入口 (`VersionTimeline.tsx`)**：在 1936 资源管理选中 `.md` 文件或资源节点时，提供【查看文件版本】面板，按时间倒序展现快照历史（版本号、更新时间、变更说明、修改人）；
-2. **版本快照比对 (Diff Viewer)**：支持选中任意历史版本，高亮展示与当前版本的 Text / Markdown 差异；
-3. **“点击回滚版本”动作 (`RotateCcw Rollback`)**：提供极客风格【回滚至此版本】操作按钮，点击后向 OpenViking 后端发送版本还原请求，并同步刷新 1936 资源列表。
+1. **点开头元数据文件判定 (`.abstract.md` / `.overview.md`)**：在 OpenViking 架构中，系统生成的 `.abstract.md` (L0-L1 摘要) 与 `.overview.md` (L2-L3 概览) 为 Context 演进快照文件。1936 选中以 `.` 开头的元数据文件时，右上方精准唤起【查看历史版本】按钮；
+2. **版本历史时间轴 (`VersionTimeline.tsx`)**：展开后，按时间倒序展现版本的快照历史（版本号、更新时间、变更说明、修改人）；
+3. **版本快照比对 (Diff Viewer)**：支持选中任意历史版本，高亮展示与当前版本的 Text / Markdown 差异；
+4. **“点击回滚版本”动作 (`RotateCcw Rollback`)**：提供极客风格【回滚至此版本】操作按钮，点击后向 OpenViking 后端发送版本还原请求，并同步刷新 1936 资源列表。
 
 ![.abstract.md 查看历史版本与回滚界面](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/assets/markdown_versioning_rollback_screenshot.png)
 

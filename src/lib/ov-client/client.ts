@@ -185,9 +185,7 @@ export function createOvClient(options: OvClientOptions = {}): OvClientAdapter {
     }
 
     if (!readHeader(headers, 'X-API-Key')?.trim()) {
-      const apiKey = shouldUseAdminApiKey(config)
-        ? connection.adminApiKey || connection.apiKey
-        : connection.apiKey || connection.adminApiKey
+      const apiKey = connection.adminApiKey || connection.apiKey
       setOptionalHeader(headers, 'X-API-Key', apiKey)
     }
     if (connection.identityHeaders) {

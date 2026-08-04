@@ -227,10 +227,10 @@ async function probeDataAccess(
   if (input.serverMode === 'checking' || input.serverMode === 'offline') {
     return { state: 'skipped' }
   }
-  if (input.serverMode === 'api_key' && !input.apiKey) {
+  if (!input.apiKey.trim() && !input.adminApiKey.trim()) {
     return {
-      detail: 'A user or account-admin API key is required',
-      state: 'skipped',
+      detail: 'Missing API Key for data authentication.',
+      state: 'error',
     }
   }
   if (
@@ -245,7 +245,11 @@ async function probeDataAccess(
 
   const client = createProbeClient(input.baseUrl)
   const headers: Record<string, string> = {}
-  setApiKeyHeader(headers, input.apiKey)
+  const effectiveApiKey =
+    input.serverMode === 'trusted'
+      ? input.adminApiKey.trim() || input.apiKey.trim()
+      : input.apiKey.trim() || input.adminApiKey.trim()
+  setApiKeyHeader(headers, effectiveApiKey)
 
   if (input.serverMode === 'trusted') {
     setOptionalHeader(headers, 'X-OpenViking-Account', input.accountId)
@@ -258,7 +262,7 @@ async function probeDataAccess(
       params: {
         node_limit: 1,
         output: 'agent',
-        uri: 'viking://',
+        uri: 'viking://resources',
       },
     })
     return {
@@ -266,8 +270,9 @@ async function probeDataAccess(
       state: 'ok',
     }
   } catch (error) {
+    const errMsg = getErrorMessage(error)
     return {
-      detail: getErrorMessage(error),
+      detail: errMsg,
       state: 'error',
     }
   }

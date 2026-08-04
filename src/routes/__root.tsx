@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { RotateCcwIcon, TriangleAlertIcon } from 'lucide-react'
-import { Outlet, createRootRoute } from '@tanstack/react-router'
+import { Outlet, createRootRoute, Navigate } from '@tanstack/react-router'
 import type { ErrorComponentProps } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 
