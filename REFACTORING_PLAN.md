@@ -7,6 +7,26 @@
 
 ---
 
+# OpenViking Studio 渐进式架构重构路线图 (Single Source of Truth)
+
+> **最新版本**：`v1.2.40` (Tag: `v1.2.40`)  
+> **核心原则**：第一性原理 | 奥卡姆剃刀 | 全生命周期信达雅 | 零假数据 | NO GREEN EVER  
+> **更新时间**：2026-08-04 18:22:30
+
+---
+
+## 📌 历史版本交付记录 (Delivery History)
+
+### 🚀 [x] v1.2.40 (Tag: `v1.2.40`) - 8 并发感知智能状态分拆与服务重启僵尸任务自动扫除治理 ✅
+- **Git Commit**: `237db83` / Tag: `v1.2.40`
+- **主要交付内容**：
+  1. **物理硬件超参固化**: 锁定 `Qwen3-Embedding-8B` 并发上限为 `8` (`embedding.max_concurrent = 8`)，`lock_timeout = 10.0s` 彻底清除 `tree lock` 超时。
+  2. **智能 Active/Queued 状态分拆**: 在前端 Task Route 全局引入 `MAX_CONCURRENT_CAP = 8` 物理有效状态映射，解开 `pending` 永远为 0 的假象，使卡片、下拉筛选、列表 Status Badge (`8 / 1`) 100% 物理完全对齐。
+  3. **服务重启僵尸任务清扫**: 运行自动扫除引擎，将 14 个由于服务重启造成的“1h+ 无心跳悬挂僵尸任务”一键 `auto-heal` 标记为中断恢复。
+  4. **OpenViking 体外大脑落盘**: 将本轮性能超参与白盒物理规则写入 `viking://resources/master_memory/openviking_concurrency_and_performance_best_practices.md`。
+
+---
+
 ## 📅 第一部分：【当前核心执行阶段：Phase 1 — 技能中心与 Harness 引擎双向打通】
 
 ---
