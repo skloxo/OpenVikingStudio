@@ -7,6 +7,7 @@ import {
   CircleXIcon,
   ChevronRightIcon,
   ClipboardListIcon,
+  LayersIcon,
   LoaderCircleIcon,
   RefreshCwIcon,
   RotateCcwIcon,
@@ -210,6 +211,7 @@ function TasksRoute() {
   const [statusFilter, setStatusFilter] =
     React.useState<TaskStatusFilter>('all')
   const [dataScope, setDataScope] = React.useState<TaskDataScope>('24h')
+  const [dedupByResource, setDedupByResource] = React.useState<boolean>(true)
   const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(
     null,
   )
@@ -219,7 +221,17 @@ function TasksRoute() {
     refetchInterval: 10_000,
   })
   const rawTasks = tasksQuery.data ?? []
-  const allTasks = rawTasks
+  const allTasks = React.useMemo(() => {
+    if (!dedupByResource) return rawTasks
+    const map = new Map<string, TaskRecord>()
+    for (const t of rawTasks) {
+      const key = t.resource_id ? `res:${t.resource_id}` : `task:${t.task_id}`
+      if (!map.has(key)) {
+        map.set(key, t)
+      }
+    }
+    return Array.from(map.values())
+  }, [rawTasks, dedupByResource])
   const pageOffset = (page - 1) * pageSize
   const tasks = allTasks.slice(pageOffset, pageOffset + pageSize)
   const totalPages = Math.max(1, Math.ceil(allTasks.length / pageSize))
@@ -973,6 +985,22 @@ function TasksRoute() {
             {t('filters.clear')}
           </Button>
         ) : null}
+        <Button
+          type="button"
+          variant={dedupByResource ? 'secondary' : 'outline'}
+          size="sm"
+          className="h-8 text-xs font-normal transition-all gap-1.5"
+          onClick={() => setDedupByResource((prev) => !prev)}
+        >
+          <LayersIcon className="size-3.5 text-muted-foreground" />
+          {i18n.language.startsWith('zh')
+            ? dedupByResource
+              ? '按资源收敛 (最新)'
+              : '全部历史记录'
+            : dedupByResource
+              ? 'Latest per Resource'
+              : 'All History Logs'}
+        </Button>
       </div>
 
       {tasksQuery.isLoading ? (
