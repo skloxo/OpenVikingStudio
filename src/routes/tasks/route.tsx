@@ -634,19 +634,18 @@ function TasksRoute() {
   }, [allTasks])
 
   const kpiData = React.useMemo(() => {
-    const requeuedIds = getStoredRequeuedTaskIds()
     const total = allTasks.length
     const completed = allTasks.filter(
-      (item) => getEffectiveTaskStatus(item, requeuedIds) === 'completed',
+      (item) => normalizeTaskStatus(item.status) === 'completed',
     ).length
     const running = allTasks.filter(
-      (item) => getEffectiveTaskStatus(item, requeuedIds) === 'running',
+      (item) => normalizeTaskStatus(item.status) === 'running',
     ).length
     const pending = allTasks.filter(
-      (item) => getEffectiveTaskStatus(item, requeuedIds) === 'pending',
+      (item) => normalizeTaskStatus(item.status) === 'pending',
     ).length
     const failed = allTasks.filter(
-      (item) => getEffectiveTaskStatus(item, requeuedIds) === 'failed',
+      (item) => normalizeTaskStatus(item.status) === 'failed',
     ).length
 
     const successRate = total > 0 ? (completed / total) * 100 : 100
