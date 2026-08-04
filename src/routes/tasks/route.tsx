@@ -132,36 +132,6 @@ function saveStoredTaskHistory(newTasks: TaskRecord[]) {
 
 export type TaskDataScope = '24h' | 'all'
 
-const REQUEUED_TASKS_STORAGE_KEY = 'ov_studio_requeued_task_ids'
-
-function getStoredRequeuedTaskIds(): Set<string> {
-  if (typeof window === 'undefined') return new Set()
-  try {
-    const raw = localStorage.getItem(REQUEUED_TASKS_STORAGE_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed)) return new Set(parsed)
-    }
-  } catch {
-    // Fallthrough to empty set on parse error
-  }
-  return new Set()
-}
-
-function getEffectiveTaskStatus(
-  item: TaskRecord,
-  requeuedIds?: Set<string>,
-): TaskStatusFilter {
-  const requeued = requeuedIds ?? getStoredRequeuedTaskIds()
-  const isRequeued =
-    Boolean(item.task_id && requeued.has(item.task_id)) ||
-    Boolean(item.resource_id && requeued.has(item.resource_id))
-  if (isRequeued) {
-    return 'pending'
-  }
-  return normalizeTaskStatus(item.status) as TaskStatusFilter
-}
-
 async function fetchTasks(
   taskType: TaskTypeFilter,
   status: TaskStatusFilter,
@@ -173,7 +143,6 @@ async function fetchTasks(
     task_type: taskType === 'all' ? undefined : taskType,
     include_archived: dataScope === 'all' ? true : undefined,
   }
-  const requeuedIds = getStoredRequeuedTaskIds()
   try {
     const result = await getOvResult<unknown>(
       getTasks({
@@ -202,7 +171,7 @@ async function fetchTasks(
       })
     }
     if (status !== 'all') {
-      all = all.filter((t) => getEffectiveTaskStatus(t, requeuedIds) === status)
+      all = all.filter((t) => normalizeTaskStatus(t.status) === status)
     }
     if (taskType !== 'all') {
       all = all.filter((t) => t.task_type === taskType)
@@ -222,49 +191,12 @@ async function fetchTasks(
       })
     }
     if (status !== 'all') {
-      history = history.filter((t) => getEffectiveTaskStatus(t, requeuedIds) === status)
+      history = history.filter((t) => normalizeTaskStatus(t.status) === status)
     }
     if (taskType !== 'all') {
       history = history.filter((t) => t.task_type === taskType)
     }
     return history
-  }
-}
-
-function saveStoredRequeuedTaskId(taskId: string) {
-  if (typeof window === 'undefined') return
-  try {
-    const current = getStoredRequeuedTaskIds()
-    current.add(taskId)
-    localStorage.setItem(
-      REQUEUED_TASKS_STORAGE_KEY,
-      JSON.stringify(Array.from(current)),
-    )
-  } catch {
-    // Ignore storage errors
-  }
-}
-
-function clearStoredRequeuedTaskIds(): void {
-  if (typeof window === 'undefined') return
-  try {
-    localStorage.removeItem(REQUEUED_TASKS_STORAGE_KEY)
-  } catch {
-    // Ignore storage errors
-  }
-}
-
-function removeStoredRequeuedTaskId(id: string): void {
-  if (typeof window === 'undefined') return
-  try {
-    const current = getStoredRequeuedTaskIds()
-    current.delete(id)
-    localStorage.setItem(
-      REQUEUED_TASKS_STORAGE_KEY,
-      JSON.stringify(Array.from(current)),
-    )
-  } catch {
-    // Ignore storage errors
   }
 }
 
@@ -281,9 +213,6 @@ function TasksRoute() {
   const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(
     null,
   )
-  const [requeuedTaskIds, setRequeuedTaskIds] = React.useState<Set<string>>(
-    () => getStoredRequeuedTaskIds(),
-  )
   const tasksQuery = useQuery({
     queryFn: () => fetchTasks(taskType, statusFilter, dataScope),
     queryKey: ['tasks', identityScopeKey, taskType, statusFilter, dataScope],
@@ -298,24 +227,6 @@ function TasksRoute() {
   const hasActiveFilters = taskType !== 'all' || statusFilter !== 'all'
 
   const retryMutation = useMutation({
-    onMutate: (task: TaskRecord) => {
-      const taskId = task.task_id
-      if (taskId) {
-        saveStoredRequeuedTaskId(taskId)
-        setRequeuedTaskIds((prev) => new Set(prev).add(taskId))
-        const updatedTask: TaskRecord = {
-          ...task,
-          status: 'pending',
-          error: undefined,
-        }
-        saveStoredTaskHistory([updatedTask])
-      }
-      toast.success(
-        i18n.language.startsWith('zh')
-          ? '已提交重新入队指令，任务状态已修改恢复为 [等待中]'
-          : 'Re-queue command submitted, task status reset to pending',
-      )
-    },
     mutationFn: async (task: TaskRecord) => {
       if (task.task_id?.startsWith('mock_task_')) {
         return { res: { ok: true }, task }
@@ -381,29 +292,15 @@ function TasksRoute() {
           : 'Retry not supported for this task type',
       )
     },
-    onError: (error, task) => {
-      // Rollback optimistic localStorage state so the badge goes back to its real status
-      if (task.task_id) {
-        removeStoredRequeuedTaskId(task.task_id)
-        const removedTaskId = task.task_id
-        setRequeuedTaskIds((prev) => {
-          const next = new Set(prev)
-          next.delete(removedTaskId)
-          return next
-        })
-      }
-      if (task.resource_id) {
-        removeStoredRequeuedTaskId(task.resource_id)
-        const removedResourceId = task.resource_id
-        setRequeuedTaskIds((prev) => {
-          const next = new Set(prev)
-          next.delete(removedResourceId)
-          return next
-        })
-      }
+    onError: (error) => {
       toast.error(error instanceof Error ? error.message : String(error))
     },
-    onSuccess: async (_data) => {
+    onSuccess: async () => {
+      toast.success(
+        i18n.language.startsWith('zh')
+          ? '重新入队请求已发送，后端正在处理新任务！'
+          : 'Re-queue request submitted successfully!',
+      )
       await queryClient.invalidateQueries({ queryKey: ['tasks'] })
     },
   })
@@ -468,12 +365,9 @@ function TasksRoute() {
 
   const renderStatus = (task: TaskRecord) => {
     const taskId = task.task_id
-    const rawStatus = normalizeTaskStatus(task.status)
-    const isRequeued = Boolean(
-      taskId && (requeuedTaskIds.has(taskId) || requeuedTaskIds.has(task.resource_id || ''))
-    )
-    const status = isRequeued ? 'pending' : rawStatus
+    const status = normalizeTaskStatus(task.status)
     const pct = getTaskProgressPct(task)
+    const isRetrying = retryMutation.isPending && retryMutation.variables?.task_id === taskId
 
     return (
       <Badge
@@ -495,38 +389,27 @@ function TasksRoute() {
         {status === 'failed' && (
           <button
             type="button"
-            className="ml-1 inline-flex items-center justify-center rounded p-0.5 hover:bg-white/25 active:scale-95 transition-all cursor-pointer text-destructive-foreground"
-            title={i18n.language.startsWith('zh') ? '重新加入等待队列' : 'Re-queue into Pending Queue'}
+            disabled={isRetrying}
+            className="ml-1 inline-flex items-center justify-center rounded p-0.5 hover:bg-white/25 active:scale-95 transition-all cursor-pointer text-destructive-foreground disabled:opacity-50"
+            title={i18n.language.startsWith('zh') ? '重新发起任务' : 'Re-trigger Task'}
             onClick={(e) => {
               e.stopPropagation()
-              if (taskId) {
-                setRequeuedTaskIds((prev) => new Set([...prev, taskId]))
-              }
-              if (task.resource_id) {
-                setRequeuedTaskIds((prev) => new Set([...prev, task.resource_id!]))
-              }
               retryMutation.mutate(task)
-              toast.success(
-                i18n.language.startsWith('zh')
-                  ? '已将该任务重新加入等待队列！'
-                  : 'Task re-queued into pending queue!',
-              )
             }}
           >
-            <RotateCcwIcon className="size-3 shrink-0" />
+            {isRetrying ? (
+              <LoaderCircleIcon className="size-3 shrink-0 animate-spin" />
+            ) : (
+              <RotateCcwIcon className="size-3 shrink-0" />
+            )}
           </button>
         )}
       </Badge>
     )
   }
 
-
   const renderQueuePipeline = (task: TaskRecord) => {
-    const rawStatus = normalizeTaskStatus(task.status)
-    const isRequeued = Boolean(
-      task.task_id && (requeuedTaskIds.has(task.task_id) || requeuedTaskIds.has(task.resource_id || ''))
-    )
-    const status = isRequeued ? 'pending' : rawStatus
+    const status = normalizeTaskStatus(task.status)
     const type = task.task_type
 
     interface StepItem {
@@ -1089,25 +972,6 @@ function TasksRoute() {
             }}
           >
             {t('filters.clear')}
-          </Button>
-        ) : null}
-        {requeuedTaskIds.size > 0 ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="text-xs text-muted-foreground hover:text-foreground border-dashed"
-            onClick={() => {
-              clearStoredRequeuedTaskIds()
-              setRequeuedTaskIds(new Set())
-              toast.success(
-                i18n.language.startsWith('zh')
-                  ? '已物理还原后端真实数据库状态 (清除单机重试标记)'
-                  : 'Restored real backend database status',
-              )
-            }}
-          >
-            🔄 {i18n.language.startsWith('zh') ? '还原真实状态' : 'Reset Local Overrides'}
           </Button>
         ) : null}
       </div>
