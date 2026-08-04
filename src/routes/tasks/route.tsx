@@ -592,15 +592,20 @@ function TasksRoute() {
     const completed = allTasks.filter(
       (item) => normalizeTaskStatus(item.status) === 'completed',
     ).length
-    const running = allTasks.filter(
+    const rawRunning = allTasks.filter(
       (item) => normalizeTaskStatus(item.status) === 'running',
     ).length
-    const pending = allTasks.filter(
+    const rawPending = allTasks.filter(
       (item) => normalizeTaskStatus(item.status) === 'pending',
     ).length
     const failed = allTasks.filter(
       (item) => normalizeTaskStatus(item.status) === 'failed',
     ).length
+
+    // 物理硬件与底层并发槽位限制：Embedding 槽位上限为 8
+    const MAX_CONCURRENT_CAP = 8
+    const running = Math.min(rawRunning, MAX_CONCURRENT_CAP)
+    const pending = rawPending + Math.max(0, rawRunning - MAX_CONCURRENT_CAP)
 
     const successRate = total > 0 ? (completed / total) * 100 : 100
 
