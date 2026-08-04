@@ -41,7 +41,7 @@ import {
   TableRow,
 } from '#/components/ui/table'
 import { useAppConnection } from '#/hooks/use-app-connection'
-import { getOvResult, getTasks } from '#/lib/ov-client'
+import { getOvResult, getTasks, ovClient } from '#/lib/ov-client'
 import { postResources } from '#/gen/ov-client'
 import { commitSession } from '#/lib/sessions/api'
 import { cn } from '#/lib/utils'
@@ -132,6 +132,36 @@ function saveStoredTaskHistory(newTasks: TaskRecord[]) {
 
 export type TaskDataScope = '24h' | 'all'
 
+const REQUEUED_TASKS_STORAGE_KEY = 'ov_studio_requeued_task_ids'
+
+function getStoredRequeuedTaskIds(): Set<string> {
+  if (typeof window === 'undefined') return new Set()
+  try {
+    const raw = localStorage.getItem(REQUEUED_TASKS_STORAGE_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return new Set(parsed)
+    }
+  } catch {
+    // Fallthrough to empty set on parse error
+  }
+  return new Set()
+}
+
+function getEffectiveTaskStatus(
+  item: TaskRecord,
+  requeuedIds?: Set<string>,
+): TaskStatusFilter {
+  const requeued = requeuedIds ?? getStoredRequeuedTaskIds()
+  const isRequeued =
+    Boolean(item.task_id && requeued.has(item.task_id)) ||
+    Boolean(item.resource_id && requeued.has(item.resource_id))
+  if (isRequeued) {
+    return 'pending'
+  }
+  return normalizeTaskStatus(item.status) as TaskStatusFilter
+}
+
 async function fetchTasks(
   taskType: TaskTypeFilter,
   status: TaskStatusFilter,
@@ -139,10 +169,11 @@ async function fetchTasks(
 ): Promise<TaskRecord[]> {
   const query = {
     limit: dataScope === 'all' ? 10000 : MAX_TASKS,
-    status: status === 'all' ? undefined : status,
+    status: undefined,
     task_type: taskType === 'all' ? undefined : taskType,
     include_archived: dataScope === 'all' ? true : undefined,
   }
+  const requeuedIds = getStoredRequeuedTaskIds()
   try {
     const result = await getOvResult<unknown>(
       getTasks({
@@ -171,7 +202,7 @@ async function fetchTasks(
       })
     }
     if (status !== 'all') {
-      all = all.filter((t) => normalizeTaskStatus(t.status) === status)
+      all = all.filter((t) => getEffectiveTaskStatus(t, requeuedIds) === status)
     }
     if (taskType !== 'all') {
       all = all.filter((t) => t.task_type === taskType)
@@ -191,7 +222,7 @@ async function fetchTasks(
       })
     }
     if (status !== 'all') {
-      history = history.filter((t) => normalizeTaskStatus(t.status) === status)
+      history = history.filter((t) => getEffectiveTaskStatus(t, requeuedIds) === status)
     }
     if (taskType !== 'all') {
       history = history.filter((t) => t.task_type === taskType)
@@ -200,27 +231,34 @@ async function fetchTasks(
   }
 }
 
-const REQUEUED_TASKS_STORAGE_KEY = 'ov_studio_requeued_task_ids'
-
-function getStoredRequeuedTaskIds(): Set<string> {
-  if (typeof window === 'undefined') return new Set()
-  try {
-    const raw = localStorage.getItem(REQUEUED_TASKS_STORAGE_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed)) return new Set(parsed)
-    }
-  } catch {
-    // Ignore storage errors
-  }
-  return new Set()
-}
-
 function saveStoredRequeuedTaskId(taskId: string) {
   if (typeof window === 'undefined') return
   try {
     const current = getStoredRequeuedTaskIds()
     current.add(taskId)
+    localStorage.setItem(
+      REQUEUED_TASKS_STORAGE_KEY,
+      JSON.stringify(Array.from(current)),
+    )
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+function clearStoredRequeuedTaskIds(): void {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.removeItem(REQUEUED_TASKS_STORAGE_KEY)
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+function removeStoredRequeuedTaskId(id: string): void {
+  if (typeof window === 'undefined') return
+  try {
+    const current = getStoredRequeuedTaskIds()
+    current.delete(id)
     localStorage.setItem(
       REQUEUED_TASKS_STORAGE_KEY,
       JSON.stringify(Array.from(current)),
@@ -290,13 +328,12 @@ function TasksRoute() {
         )
       }
       if (task.resource_id.startsWith('viking://resources/')) {
-        const resp = await fetch('http://127.0.0.1:1933/api/v1/content/reindex', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ uri: task.resource_id, wait: false }),
+        const resp = await ovClient.instance.post('/api/v1/content/reindex', {
+          uri: task.resource_id,
+          wait: false,
         })
-        const json = await resp.json()
-        if (!resp.ok || json.error) {
+        const json = resp.data
+        if (json.error) {
           throw new Error(
             json.error?.message ||
               (i18n.language.startsWith('zh')
@@ -333,7 +370,26 @@ function TasksRoute() {
           : 'Retry not supported for this task type',
       )
     },
-    onError: (error) => {
+    onError: (error, task) => {
+      // Rollback optimistic localStorage state so the badge goes back to its real status
+      if (task.task_id) {
+        removeStoredRequeuedTaskId(task.task_id)
+        const removedTaskId = task.task_id
+        setRequeuedTaskIds((prev) => {
+          const next = new Set(prev)
+          next.delete(removedTaskId)
+          return next
+        })
+      }
+      if (task.resource_id) {
+        removeStoredRequeuedTaskId(task.resource_id)
+        const removedResourceId = task.resource_id
+        setRequeuedTaskIds((prev) => {
+          const next = new Set(prev)
+          next.delete(removedResourceId)
+          return next
+        })
+      }
       toast.error(error instanceof Error ? error.message : String(error))
     },
     onSuccess: async (_data) => {
@@ -684,18 +740,19 @@ function TasksRoute() {
   }, [allTasks])
 
   const kpiData = React.useMemo(() => {
+    const requeuedIds = getStoredRequeuedTaskIds()
     const total = allTasks.length
     const completed = allTasks.filter(
-      (item) => normalizeTaskStatus(item.status) === 'completed',
+      (item) => getEffectiveTaskStatus(item, requeuedIds) === 'completed',
     ).length
     const running = allTasks.filter(
-      (item) => normalizeTaskStatus(item.status) === 'running',
+      (item) => getEffectiveTaskStatus(item, requeuedIds) === 'running',
     ).length
     const pending = allTasks.filter(
-      (item) => normalizeTaskStatus(item.status) === 'pending',
+      (item) => getEffectiveTaskStatus(item, requeuedIds) === 'pending',
     ).length
     const failed = allTasks.filter(
-      (item) => normalizeTaskStatus(item.status) === 'failed',
+      (item) => getEffectiveTaskStatus(item, requeuedIds) === 'failed',
     ).length
 
     const successRate = total > 0 ? (completed / total) * 100 : 100
@@ -1021,6 +1078,25 @@ function TasksRoute() {
             }}
           >
             {t('filters.clear')}
+          </Button>
+        ) : null}
+        {requeuedTaskIds.size > 0 ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="text-xs text-muted-foreground hover:text-foreground border-dashed"
+            onClick={() => {
+              clearStoredRequeuedTaskIds()
+              setRequeuedTaskIds(new Set())
+              toast.success(
+                i18n.language.startsWith('zh')
+                  ? '已物理还原后端真实数据库状态 (清除单机重试标记)'
+                  : 'Restored real backend database status',
+              )
+            }}
+          >
+            🔄 {i18n.language.startsWith('zh') ? '还原真实状态' : 'Reset Local Overrides'}
           </Button>
         ) : null}
       </div>
