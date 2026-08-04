@@ -101,7 +101,8 @@ function UserApiKeyInput({
   userId: string
   value: string
 }) {
-  const identity = `${accountId || DEFAULT_ACCOUNT_ID}/${userId || DEFAULT_USER_ID}`
+  const hasIdentity = Boolean(accountId.trim() && userId.trim())
+  const identity = hasIdentity ? `${accountId}/${userId}` : '未选择身份'
 
   return (
     <div className="flex h-9 w-full min-w-0 items-center gap-2 rounded-md border border-input bg-transparent bg-clip-padding px-2.5 shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30">
@@ -168,28 +169,28 @@ function ConnectionSettingsRoute() {
   }
 
   const probeQuery = useQuery({
-    enabled: Boolean(connection.baseUrl) && serverMode !== 'checking',
+    enabled: Boolean(draft.baseUrl) && serverMode !== 'checking',
     placeholderData: keepPreviousData,
     queryFn: () =>
       probeStudioConnection({
-        accountId: connection.accountId || DEFAULT_ACCOUNT_ID,
-        adminApiKey: connection.adminApiKey,
-        apiKey: connection.apiKey,
-        baseUrl: connection.baseUrl,
+        accountId: draft.accountId || DEFAULT_ACCOUNT_ID,
+        adminApiKey: draft.adminApiKey,
+        apiKey: draft.apiKey,
+        baseUrl: draft.baseUrl,
         serverMode,
-        userId: connection.userId || DEFAULT_USER_ID,
+        userId: draft.userId || DEFAULT_USER_ID,
       }),
     queryKey: [
       'studio-connection-probe',
-      connection.baseUrl,
-      connection.adminApiKey,
-      connection.apiKey,
-      connection.accountId,
-      connection.userId,
+      draft.baseUrl,
+      draft.adminApiKey,
+      draft.apiKey,
+      draft.accountId,
+      draft.userId,
       serverMode,
     ],
     retry: false,
-    staleTime: 15_000,
+    staleTime: 5_000,
   })
   const isDevMode = serverMode === 'dev'
   const rootApiKey = connection.adminApiKey.trim()
