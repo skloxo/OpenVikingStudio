@@ -82,11 +82,11 @@ const ENV_USER =
 const ROOT_API_KEY_FALLBACK = ''
 
 const DEFAULT_CONNECTION: ConnectionDraft = {
-  accountId: ENV_ACCOUNT || 'default',
+  accountId: ENV_ACCOUNT || '',
   adminApiKey: ENV_ADMIN_API_KEY || '',
   apiKey: ENV_API_KEY || '',
   baseUrl: ovClient.getOptions().baseUrl,
-  userId: ENV_USER || 'default',
+  userId: ENV_USER || '',
 }
 
 
@@ -144,11 +144,11 @@ function normalizeConnectionDraft(
   connection: ConnectionDraft,
 ): ConnectionDraft {
   return {
-    accountId: connection.accountId.trim() || 'default',
+    accountId: connection.accountId.trim(),
     adminApiKey: connection.adminApiKey.trim(),
     apiKey: connection.apiKey.trim(),
     baseUrl: connection.baseUrl.trim(),
-    userId: connection.userId.trim() || 'default',
+    userId: connection.userId.trim(),
   }
 }
 

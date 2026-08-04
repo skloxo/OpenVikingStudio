@@ -228,7 +228,12 @@ export function AccountSwitcher() {
     },
   })
 
-  const accountLabel = connection.accountId || t('unset')
+  const hasAuthKeys = Boolean(
+    connection.adminApiKey.trim() || connection.apiKey.trim(),
+  )
+  const accountLabel = hasAuthKeys
+    ? connection.accountId || 'default'
+    : t('unset', { defaultValue: '未验证身份 (Unauthenticated)' })
 
   if (!canManageAccounts) {
     return (
