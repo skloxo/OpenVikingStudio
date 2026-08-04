@@ -197,45 +197,54 @@ function TasksRoute() {
         }
         return { res, task }
       }
-      if (task.task_type === 'add_resource') {
-        // 重新入库：走完整的资源处理流水线（解析 → 向量化）
+      const resourceUri = task.resource_id || ''
+
+      if (resourceUri.startsWith('viking://')) {
+        const resp = await ovClient.instance.post('/api/v1/content/reindex', {
+          uri: resourceUri,
+          wait: false,
+        })
+        const json = resp.data
+        if (json.status === 'error' || json.error) {
+          throw new Error(
+            json.error?.message ||
+              json.message ||
+              (i18n.language.startsWith('zh')
+                ? '重新入队失败'
+                : 'Re-queue failed'),
+          )
+        }
+        return { res: json, task }
+      }
+
+      if (
+        resourceUri.startsWith('http://') ||
+        resourceUri.startsWith('https://')
+      ) {
         const res = await postResources({
           body: {
-            path: task.resource_id,
+            url: resourceUri,
             reason: `Re-queued task: ${task.task_id}`,
           } as any,
         })
         return { res, task }
       }
 
-      // ── 2. admin_reindex / snapshot_restore_reindex → 仅重建向量索引 ────────
-      if (
-        task.resource_id.startsWith('viking://resources/') &&
-        (task.task_type === 'admin_reindex' ||
-          task.task_type === 'snapshot_restore_reindex' ||
-          task.task_type === 'connector_import')
-      ) {
-        const resp = await ovClient.instance.post('/api/v1/content/reindex', {
-          uri: task.resource_id,
-          wait: false,
-        })
-        const json = resp.data
-        if (json.error) {
-          throw new Error(
-            json.error?.message ||
-              (i18n.language.startsWith('zh')
-                ? '重新索引失败'
-                : 'Reindex failed'),
-          )
-        }
-        return { res: json, task }
+      const resp = await ovClient.instance.post('/api/v1/content/reindex', {
+        uri: resourceUri,
+        wait: false,
+      })
+      const json = resp.data
+      if (json.status === 'error' || json.error) {
+        throw new Error(
+          json.error?.message ||
+            json.message ||
+            (i18n.language.startsWith('zh')
+              ? '重新入队失败'
+              : 'Re-queue failed'),
+        )
       }
-
-      throw new Error(
-        i18n.language.startsWith('zh')
-          ? '此任务类型暂不支持直接重新入队'
-          : 'Retry not supported for this task type',
-      )
+      return { res: json, task }
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : String(error))
