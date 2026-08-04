@@ -634,9 +634,9 @@ function TasksRoute() {
   const taskStatsQuery = useQuery({
     queryFn: async () => {
       try {
-        const resp = await fetch('http://127.0.0.1:1933/api/v1/tasks/stats')
-        if (resp.ok) {
-          const json = await resp.json()
+        const resp = await ovClient.instance.get('/api/v1/tasks/stats')
+        const json = resp.data
+        if (json.result) {
           return json.result as {
             total: number
             completed: number
