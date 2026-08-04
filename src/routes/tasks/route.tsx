@@ -92,45 +92,6 @@ const TASK_STATUS_OPTIONS: Exclude<TaskStatusFilter, 'all'>[] = [
   'failed',
 ]
 
-const TASK_HISTORY_STORAGE_KEY = 'ov_studio_task_history'
-
-function getStoredTaskHistory(): TaskRecord[] {
-  if (typeof window === 'undefined') return []
-  try {
-    const raw = localStorage.getItem(TASK_HISTORY_STORAGE_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed)) return parsed
-    }
-  } catch {
-    // Ignore storage errors
-  }
-  return []
-}
-
-function saveStoredTaskHistory(newTasks: TaskRecord[]) {
-  if (typeof window === 'undefined' || !newTasks.length) return
-  try {
-    const existing = getStoredTaskHistory()
-    const map = new Map<string, TaskRecord>()
-    existing.forEach((t) => {
-      if (t.task_id) map.set(t.task_id, t)
-    })
-    newTasks.forEach((t) => {
-      if (t.task_id) map.set(t.task_id, t)
-    })
-    const merged = Array.from(map.values()).sort(
-      (a, b) => Number(b.created_at || 0) - Number(a.created_at || 0),
-    )
-    localStorage.setItem(
-      TASK_HISTORY_STORAGE_KEY,
-      JSON.stringify(merged.slice(0, 500)),
-    )
-  } catch {
-    // Ignore storage errors
-  }
-}
-
 export type TaskDataScope = '24h' | 'all'
 
 async function fetchTasks(
@@ -150,54 +111,26 @@ async function fetchTasks(
         query: query as any,
       }),
     )
-    const fetched = normalizeTasks(result)
-    saveStoredTaskHistory(fetched)
-
-    const history = getStoredTaskHistory()
-    const map = new Map<string, TaskRecord>()
-    history.forEach((t) => {
-      if (t.task_id) map.set(t.task_id, t)
-    })
-    fetched.forEach((t) => {
-      if (t.task_id) map.set(t.task_id, t)
-    })
-    let all = Array.from(map.values()).sort(
+    let fetched = normalizeTasks(result).sort(
       (a, b) => Number(b.created_at || 0) - Number(a.created_at || 0),
     )
     if (dataScope === '24h') {
       const nowSec = Math.floor(Date.now() / 1000)
-      all = all.filter((t) => {
+      fetched = fetched.filter((t) => {
         const timeVal = Number(t.created_at || t.updated_at || 0)
         return timeVal > 0 && nowSec - timeVal <= 86400
       })
     }
     if (status !== 'all') {
-      all = all.filter((t) => normalizeTaskStatus(t.status) === status)
+      fetched = fetched.filter((t) => normalizeTaskStatus(t.status) === status)
     }
     if (taskType !== 'all') {
-      all = all.filter((t) => t.task_type === taskType)
+      fetched = fetched.filter((t) => t.task_type === taskType)
     }
-    return all
+    return fetched
   } catch (err) {
-    console.warn(
-      '[fetchTasks] Backend fetch failed, falling back to local history:',
-      err,
-    )
-    let history = getStoredTaskHistory()
-    if (dataScope === '24h') {
-      const nowSec = Math.floor(Date.now() / 1000)
-      history = history.filter((t) => {
-        const timeVal = Number(t.created_at || t.updated_at || 0)
-        return timeVal > 0 && nowSec - timeVal <= 86400
-      })
-    }
-    if (status !== 'all') {
-      history = history.filter((t) => normalizeTaskStatus(t.status) === status)
-    }
-    if (taskType !== 'all') {
-      history = history.filter((t) => t.task_type === taskType)
-    }
-    return history
+    console.warn('[fetchTasks] Backend fetch failed:', err)
+    return []
   }
 }
 
