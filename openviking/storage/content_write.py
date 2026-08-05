@@ -42,6 +42,7 @@ from openviking.telemetry.request_wait_tracker import get_request_wait_tracker
 from openviking.telemetry.resource_summary import build_queue_status_payload
 from openviking.utils.embedding_utils import vectorize_file
 from openviking.utils.path_safety import validate_safe_viking_uri_path
+from openviking.utils.embedding_utils import vectorize_file
 from openviking.utils.tags import normalize_search_tags
 from openviking_cli.exceptions import (
     AlreadyExistsError,
@@ -832,7 +833,7 @@ class ContentWriteCoordinator:
             summary_dict={"name": name, "summary": ""},
             parent_uri=parent.uri,
             context_type=context_type,
-            ctx=ctx,
+            register_request_wait=True,
         )
 
     def _validate_mode(self, mode: str) -> None:
