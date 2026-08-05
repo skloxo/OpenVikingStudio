@@ -16,7 +16,10 @@ from openviking.retrieve.context_assembler import (
     DEFAULT_LIMIT,
     DEFAULT_MAX_TOKENS,
     MAX_EXCLUDE_URIS,
+<<<<<<< HEAD
     REPORTED_CATEGORY_KEYS,
+=======
+>>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
     AssembleParams,
     DetailRequest,
     assemble_context,
@@ -121,6 +124,7 @@ class FindRequest(BaseModel):
     telemetry: TelemetryRequest = False
 
 
+<<<<<<< HEAD
 def _reject_unknown_categories(value: Any, label: str, allowed: Sequence[str]) -> None:
     if not isinstance(value, dict):
         return
@@ -138,6 +142,18 @@ def _reject_unknown_quota_and_detail(quotas: Any, detail: Any) -> None:
     _reject_unknown_categories(detail, "detail", REPORTED_CATEGORY_KEYS)
 
 
+=======
+def _reject_unknown_categories(value: Any, label: str) -> None:
+    if not isinstance(value, dict):
+        return
+    unknown = sorted(set(value) - set(CATEGORY_KEYS))
+    if unknown:
+        raise ValueError(
+            f"unknown {label} keys: {', '.join(unknown)}; allowed: {', '.join(CATEGORY_KEYS)}"
+        )
+
+
+>>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
 CONTEXT_ONLY_FIELDS = (
     "query_expansion",
     "max_tokens",
@@ -208,7 +224,12 @@ class SearchRequest(BaseModel):
 
         if self.target_uri:
             raise ValueError("target_uri is not supported in mode='context'")
+<<<<<<< HEAD
         _reject_unknown_quota_and_detail(self.quotas, self.detail)
+=======
+        _reject_unknown_categories(self.quotas, "quota")
+        _reject_unknown_categories(self.detail, "detail")
+>>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
         return self
 
 
@@ -244,7 +265,12 @@ class RecallRequest(BaseModel):
 
     @model_validator(mode="after")
     def _validate_quotas(self) -> "RecallRequest":
+<<<<<<< HEAD
         _reject_unknown_quota_and_detail(self.quotas, self.detail)
+=======
+        _reject_unknown_categories(self.quotas, "quota")
+        _reject_unknown_categories(self.detail, "detail")
+>>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
         return self
 
 
