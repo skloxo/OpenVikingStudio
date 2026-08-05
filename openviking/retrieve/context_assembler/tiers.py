@@ -20,10 +20,7 @@ from openviking.retrieve.context_assembler.params import (
     DEFAULT_TIER,
     DEFAULT_TIER_BY_CATEGORY,
     DEPTH_CEILING_BY_CATEGORY,
-<<<<<<< HEAD
     FULL_BODY_ABSTRACT_CATEGORIES,
-=======
->>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
     READ_CONCURRENCY,
     TIER_RANK,
     Tier,
@@ -197,7 +194,6 @@ def start_tier(candidate: Candidate, pin: Optional[Tier] = None) -> Tier:
         return "overview"
     tier = pin or DEFAULT_TIER_BY_CATEGORY.get(candidate.category, DEFAULT_TIER)
     if tier == "abstract" and not candidate.abstract.strip():
-<<<<<<< HEAD
         return abstract_substitute(candidate)
     return tier
 
@@ -214,12 +210,6 @@ def abstract_substitute(candidate: Candidate) -> Tier:
     if candidate.category in FULL_BODY_ABSTRACT_CATEGORIES:
         return "overview"
     return "uri"
-=======
-        # Resources that never went through semantic processing have no stored
-        # abstract; overview keeps them from degrading to a bare URI.
-        return "overview"
-    return tier
->>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
 
 
 def tier_window(candidate: Candidate, pin: Optional[Tier] = None) -> Tuple[Tier, Tier]:
