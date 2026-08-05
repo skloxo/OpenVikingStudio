@@ -494,6 +494,7 @@ async def vectorize_file(
     preserve_existing_created_at: bool = False,
     scalar_override: Optional[Dict[str, Any]] = None,
     ingest_options: IngestOptions | None = None,
+    register_request_wait: bool = True,
 ) -> bool:
     """
     Vectorize a single file.
