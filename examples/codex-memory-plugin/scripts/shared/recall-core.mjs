@@ -138,6 +138,7 @@ export function buildContextSearchBody(cfg = {}, options = {}) {
   return body;
 }
 
+<<<<<<< HEAD
 // The server pipeline is serial and each optional stage has its own fuse. A
 // request is aborted client-side unless its deadline covers every stage it
 // asked for, and aborting discards the whole response rather than just the
@@ -151,10 +152,16 @@ export function buildContextSearchBody(cfg = {}, options = {}) {
 // a quarter to spare.
 const EXPANSION_REQUEST_TIMEOUT_MS = 15000;
 const SERVER_REWRITE_REQUEST_TIMEOUT_MS = 45000;
+=======
+// Server default for retrieval.recall_rewrite_timeout_s plus room for the
+// retrieval that precedes it, still well inside the 60s prompt-hook budget.
+const SERVER_REWRITE_REQUEST_TIMEOUT_MS = 35000;
+>>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
 
 /**
  * HTTP deadline for one context request, or undefined to keep the caller's own.
  *
+<<<<<<< HEAD
  * Derived from the request body, because the body is what states which server
  * stages will run: reading `cfg` alone cannot tell a bare retrieval from one
  * that also spends the expansion or rewrite fuse.
@@ -170,6 +177,18 @@ export function contextRequestTimeoutMs(cfg = {}, body = {}) {
   if (Number.isFinite(configured) && configured > 0) return Math.max(1000, Math.floor(configured));
   const floor = wantsRewrite ? SERVER_REWRITE_REQUEST_TIMEOUT_MS : EXPANSION_REQUEST_TIMEOUT_MS;
   return Math.max(Number(cfg.timeoutMs) || 0, floor);
+=======
+ * The ordinary request timeout is shorter than the server's rewrite fuse, so a
+ * digest that finishes inside its own fuse would be aborted client-side. That
+ * loses the whole response rather than just the digest, including the
+ * uncompressed block the server still returns when a rewrite fails.
+ */
+export function contextRequestTimeoutMs(cfg = {}, serverRewrite = false) {
+  if (!serverRewrite) return undefined;
+  const configured = Number(cfg.recallContextTimeoutMs);
+  if (Number.isFinite(configured) && configured > 0) return Math.max(1000, Math.floor(configured));
+  return Math.max(Number(cfg.timeoutMs) || 0, SERVER_REWRITE_REQUEST_TIMEOUT_MS);
+>>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
 }
 
 /**
@@ -457,7 +476,11 @@ export async function fetchAssembledContext(fetchJSON, cfg, query, options = {})
   const res = await fetchJSON("/api/v1/search/search", {
     method: "POST",
     body: JSON.stringify(body),
+<<<<<<< HEAD
   }, { actorPeerId, timeoutMs: contextRequestTimeoutMs(cfg, body) });
+=======
+  }, { actorPeerId, timeoutMs: contextRequestTimeoutMs(cfg, body.rewrite !== undefined) });
+>>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
 
   if (!res.ok) {
     const status = res.status || 0;

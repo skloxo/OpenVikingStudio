@@ -1773,7 +1773,10 @@ assemble_agent_integration() { # assemble_agent_integration <source-subdir> <des
   for file in \
     agent-hook-runtime.mjs agent-uri-guard.mjs credentials.mjs debug-log.mjs \
     batch-send.mjs mcp-proxy-core.mjs pending-queue.mjs plugin-config.mjs profile-inject.mjs \
+<<<<<<< HEAD
     retryable.mjs \
+=======
+>>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
     recall-compress-core.mjs recall-core.mjs \
     session-model.mjs uri-guard.mjs workspace-peer.mjs; do
     cp "$shared/lib/$file" "$shared_dest.tmp/$file"

@@ -4,8 +4,12 @@
  * ovcli.conf carried connection fields only, so every harness had to keep its
  * tuning knobs in ov.conf's harness section — a server-side file that a
  * client-side plugin has no business editing. The `plugin` section fixes that:
+<<<<<<< HEAD
  * shared keys apply to every harness that reads them, and a per-harness object
  * overrides them.
+=======
+ * shared keys apply to every harness, and a per-harness object overrides them.
+>>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
  *
  *   {
  *     "url": "...", "api_key": "...",
@@ -17,6 +21,7 @@
  *
  * Resolution stays env → ovcli.conf plugin.<harness> → ovcli.conf plugin →
  * ov.conf harness section (legacy) → defaults.
+<<<<<<< HEAD
  *
  * Consumers: Claude Code and Codex only. The other harnesses ship this module
  * through `sync.mjs` but still read their knobs from the environment, so a
@@ -24,6 +29,8 @@
  * loader actually consumes today — add a key here as its loader starts calling
  * `loadPluginSettings`, not before, so the section never promises a knob that
  * silently does nothing.
+=======
+>>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
  */
 
 import { readFileSync } from "node:fs";
@@ -35,6 +42,13 @@ const DEFAULT_OVCLI_CONF_PATH = join(homedir(), ".openviking", "ovcli.conf");
 export const HARNESS_KEYS = {
   claudeCode: "claude_code",
   codex: "codex",
+<<<<<<< HEAD
+=======
+  opencode: "opencode",
+  cursor: "cursor",
+  trae: "trae",
+  pi: "pi",
+>>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
 };
 
 function tryLoadJson(path) {

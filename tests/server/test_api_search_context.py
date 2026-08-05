@@ -322,6 +322,7 @@ async def test_context_mode_dedup_ledger_round_trips_through_agfs(
     second = await client.post("/api/v1/search/search", json=payload)
     assert second.json()["result"]["entries"] == []
     assert second.json()["result"]["stats"]["dedup"]["cooled"] == 1
+<<<<<<< HEAD
 
 
 async def test_context_mode_unknown_session_does_not_create_recall_ledger(
@@ -357,3 +358,5 @@ async def test_context_mode_unknown_session_does_not_create_recall_ledger(
         f"viking://user/default/sessions/{session_id}/.recall_log.json",
         ctx=ctx,
     )
+=======
+>>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))

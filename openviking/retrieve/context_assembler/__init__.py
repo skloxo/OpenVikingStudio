@@ -12,9 +12,13 @@ from openviking.retrieve.context_assembler.params import (
     DEFAULT_TIER_BY_CATEGORY,
     MAX_EXCLUDE_URIS,
     MEMORY_CATEGORIES,
+<<<<<<< HEAD
     OTHER_MEMORY_CATEGORY,
     PURPOSE_PRESETS,
     REPORTED_CATEGORY_KEYS,
+=======
+    PURPOSE_PRESETS,
+>>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
     AssembleParams,
     DetailRequest,
     normalize_detail,
@@ -38,9 +42,13 @@ __all__ = [
     "DetailRequest",
     "MAX_EXCLUDE_URIS",
     "MEMORY_CATEGORIES",
+<<<<<<< HEAD
     "OTHER_MEMORY_CATEGORY",
     "PURPOSE_PRESETS",
     "REPORTED_CATEGORY_KEYS",
+=======
+    "PURPOSE_PRESETS",
+>>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
     "assemble_context",
     "normalize_detail",
     "normalize_digest",

@@ -152,6 +152,7 @@ def load_ovcli_config(config_path: Optional[str] = None) -> Optional[OVCLIConfig
             "root_api_key",
             "gateway_token",
             "plugin",
+<<<<<<< HEAD
             # Authentication
             "auth_mode",
             # LDAP
@@ -159,6 +160,8 @@ def load_ovcli_config(config_path: Optional[str] = None) -> Optional[OVCLIConfig
             "ldap_password",
             # OIDC
             "oidc_token",
+=======
+>>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
         }
         unknown_keys = sorted(set(data) - allowed_keys)
         if unknown_keys:

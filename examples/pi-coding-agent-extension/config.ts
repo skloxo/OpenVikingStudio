@@ -112,7 +112,10 @@ export function loadConfig(extensionDir: string): OVConfig {
     peerId: creds.peerId,
     userAgent: buildUserAgent("pi", EXTENSION_VERSION),
     recallLimitConfigured: Object.prototype.hasOwnProperty.call(file, "recallLimit"),
+<<<<<<< HEAD
     recallQueryExpansionConfigured: Object.prototype.hasOwnProperty.call(file, "recallQueryExpansion"),
+=======
+>>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
     recallTokenBudget: file.recallTokenBudget ?? file.recallBudget ?? DEFAULT_CONFIG.recallTokenBudget,
     scoreThreshold: file.scoreThreshold ?? file.recallScoreThreshold ?? DEFAULT_CONFIG.scoreThreshold,
     minQueryLength: file.minQueryLength ?? file.recallMinQueryLength ?? DEFAULT_CONFIG.minQueryLength,
@@ -140,10 +143,13 @@ export function loadConfig(extensionDir: string): OVConfig {
     config.recallLimit = Number(process.env.OPENVIKING_RECALL_LIMIT);
     config.recallLimitConfigured = true;
   }
+<<<<<<< HEAD
   if (process.env.OPENVIKING_RECALL_QUERY_EXPANSION) {
     config.recallQueryExpansion = process.env.OPENVIKING_RECALL_QUERY_EXPANSION === "off" ? "off" : "auto";
     config.recallQueryExpansionConfigured = true;
   }
+=======
+>>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
 
   config.recallLimit = clampInt(config.recallLimit, 1, 50, DEFAULT_CONFIG.recallLimit);
   config.recallMaxContentChars = clampInt(config.recallMaxContentChars, 100, 5000, DEFAULT_CONFIG.recallMaxContentChars);
