@@ -1,6 +1,5 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
 import { buildUserAgent, resolveOpenVikingCredentials } from "./shared/credentials.mjs";
 import { resolveEffectivePeerId } from "./shared/workspace-peer.mjs";
 
@@ -81,15 +80,11 @@ const DEFAULT_CONFIG: OVConfig = {
   captureToolResults: false,
   captureMode: "semantic",
   captureMaxLength: 24000,
-  captureToolMaxChars: 1000000,
+  captureToolMaxChars: 2000,
   captureAssistantTurns: true,
   bypassPatterns: [],
   logLevel: "error",
 };
-
-export function loadConfigFromModuleUrl(moduleUrl: string): OVConfig {
-  return loadConfig(dirname(fileURLToPath(moduleUrl)));
-}
 
 export function loadConfig(extensionDir: string): OVConfig {
   const configPath = join(extensionDir, "config.json");
@@ -112,10 +107,7 @@ export function loadConfig(extensionDir: string): OVConfig {
     peerId: creds.peerId,
     userAgent: buildUserAgent("pi", EXTENSION_VERSION),
     recallLimitConfigured: Object.prototype.hasOwnProperty.call(file, "recallLimit"),
-<<<<<<< HEAD
     recallQueryExpansionConfigured: Object.prototype.hasOwnProperty.call(file, "recallQueryExpansion"),
-=======
->>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
     recallTokenBudget: file.recallTokenBudget ?? file.recallBudget ?? DEFAULT_CONFIG.recallTokenBudget,
     scoreThreshold: file.scoreThreshold ?? file.recallScoreThreshold ?? DEFAULT_CONFIG.scoreThreshold,
     minQueryLength: file.minQueryLength ?? file.recallMinQueryLength ?? DEFAULT_CONFIG.minQueryLength,
@@ -143,13 +135,10 @@ export function loadConfig(extensionDir: string): OVConfig {
     config.recallLimit = Number(process.env.OPENVIKING_RECALL_LIMIT);
     config.recallLimitConfigured = true;
   }
-<<<<<<< HEAD
   if (process.env.OPENVIKING_RECALL_QUERY_EXPANSION) {
     config.recallQueryExpansion = process.env.OPENVIKING_RECALL_QUERY_EXPANSION === "off" ? "off" : "auto";
     config.recallQueryExpansionConfigured = true;
   }
-=======
->>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
 
   config.recallLimit = clampInt(config.recallLimit, 1, 50, DEFAULT_CONFIG.recallLimit);
   config.recallMaxContentChars = clampInt(config.recallMaxContentChars, 100, 5000, DEFAULT_CONFIG.recallMaxContentChars);
@@ -167,7 +156,7 @@ export function loadConfig(extensionDir: string): OVConfig {
   config.takeoverOverviewPollMs = clampInt(config.takeoverOverviewPollMs, 0, 60000, DEFAULT_CONFIG.takeoverOverviewPollMs);
   config.takeoverOverviewPollMax = clampInt(config.takeoverOverviewPollMax, 1, 120, DEFAULT_CONFIG.takeoverOverviewPollMax);
   config.captureMaxLength = clampInt(config.captureMaxLength, 200, 100000, DEFAULT_CONFIG.captureMaxLength);
-  config.captureToolMaxChars = clampInt(config.captureToolMaxChars, 200, 1000000, DEFAULT_CONFIG.captureToolMaxChars);
+  config.captureToolMaxChars = clampInt(config.captureToolMaxChars, 200, 20000, DEFAULT_CONFIG.captureToolMaxChars);
   config.captureMode = config.captureMode === "keyword" ? "keyword" : "semantic";
   config.recallPeerScope = config.recallPeerScope === "actor" ? "actor" : "all";
   config.recallQueryExpansion = config.recallQueryExpansion === "off" ? "off" : "auto";

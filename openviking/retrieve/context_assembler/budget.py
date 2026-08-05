@@ -22,11 +22,7 @@ from openviking.retrieve.context_assembler.params import (
     normalize_detail,
 )
 from openviking.retrieve.context_assembler.render import fragment_tokens
-<<<<<<< HEAD
 from openviking.retrieve.context_assembler.tiers import abstract_substitute, tier_text, tier_window
-=======
-from openviking.retrieve.context_assembler.tiers import tier_text, tier_window
->>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
 
 SEPARATOR_TOKENS = 1
 
@@ -50,17 +46,10 @@ def per_entry_cap(max_tokens: int, candidate_count: int) -> int:
     return max(1, max_tokens // max(1, candidate_count) * 2)
 
 
-<<<<<<< HEAD
 def _tiers_down_from(candidate: Candidate, tier: Tier) -> List[Tier]:
     order = list(reversed(TIER_ORDER[: TIER_RANK[tier] + 1]))
     if tier == "abstract" and abstract_substitute(candidate) == "overview":
         # The candidate's stored abstract is its whole body, so overview is a
-=======
-def _tiers_down_from(tier: Tier) -> List[Tier]:
-    order = list(reversed(TIER_ORDER[: TIER_RANK[tier] + 1]))
-    if tier == "abstract":
-        # A memory file's stored abstract is its whole body, so overview is a
->>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
         # cheaper substitute here rather than a step up: try it before giving up
         # on showing any content at all.
         order.insert(1, "overview")
@@ -80,7 +69,6 @@ def _make_entry(candidate: Candidate, tier: Tier, text: str) -> AssembledEntry:
     return entry
 
 
-<<<<<<< HEAD
 def oversized_abstract_needs_body(candidate: Candidate, cap: int) -> bool:
     """Whether an over-cap abstract falls back to a tier that reads the body.
 
@@ -90,14 +78,6 @@ def oversized_abstract_needs_body(candidate: Candidate, cap: int) -> bool:
     """
     if abstract_substitute(candidate) != "overview":
         return False
-=======
-def abstract_over_cap(candidate: Candidate, cap: int) -> bool:
-    """Whether this candidate's stored abstract exceeds the per-entry cap.
-
-    Such a candidate falls back to overview, so its body has to be read even
-    though its own tier would not need one.
-    """
->>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
     text = candidate.abstract.strip()
     return bool(text) and fragment_tokens(_make_entry(candidate, "abstract", text)) > cap
 
@@ -128,11 +108,7 @@ def plan_entries(
     for candidate in candidates:
         start, ceiling = tier_window(candidate, pins.for_category(candidate.category))
         placed: Optional[_Slot] = None
-<<<<<<< HEAD
         for tier in _tiers_down_from(candidate, start):
-=======
-        for tier in _tiers_down_from(start):
->>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
             text = tier_text(candidate, tier, contents=contents)
             if text is None:
                 continue

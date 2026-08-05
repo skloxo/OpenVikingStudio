@@ -6,7 +6,6 @@ from types import SimpleNamespace
 
 from openviking.retrieve.context_assembler import pipeline as pipeline_module
 from openviking.retrieve.context_assembler import rewrite as rewrite_module
-<<<<<<< HEAD
 from openviking.retrieve.context_assembler.budget import (
     oversized_abstract_needs_body,
     per_entry_cap,
@@ -24,12 +23,6 @@ from openviking.retrieve.context_assembler.params import (
 from openviking.retrieve.context_assembler.pipeline import assemble_context
 from openviking.retrieve.context_assembler.render import render_entry
 from openviking.retrieve.context_assembler.tiers import tier_window
-=======
-from openviking.retrieve.context_assembler.models import AssembledEntry
-from openviking.retrieve.context_assembler.params import AssembleParams, normalize_quotas
-from openviking.retrieve.context_assembler.pipeline import assemble_context
-from openviking.retrieve.context_assembler.render import render_entry
->>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
 from openviking.server.identity import RequestContext, Role
 from openviking_cli.session.user_id import UserIdentifier
 
@@ -250,11 +243,7 @@ async def test_purpose_quotas_are_not_truncated_by_global_limit():
                     {
                         "uri": f"{target_uri}/{index}.md",
                         "score": 0.9 - index * 0.01,
-<<<<<<< HEAD
                         "abstract": f"{target_uri} {index}",
-=======
-                            "abstract": f"{target_uri} {index}",
->>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
                         "level": 2,
                     }
                     for index in range(count)
@@ -470,7 +459,6 @@ async def test_only_candidates_that_can_deepen_are_read():
         "events": "full",
         "entities": "abstract",
     }
-<<<<<<< HEAD
 
 
 def _resource_candidate(abstract, category="resources", uri=f"{USER_ROOT}/resources/creds.md"):
@@ -595,5 +583,3 @@ async def test_no_relevant_digest_keeps_uris_out_of_the_dedup_ledger(monkeypatch
     assert result.rendered == ""
     assert len(result.entries) == 1
     assert recorded == []
-=======
->>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))

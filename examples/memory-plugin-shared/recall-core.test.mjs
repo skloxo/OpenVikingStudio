@@ -103,7 +103,6 @@ test("a server-side digest outlasts the ordinary request timeout", async () => {
     legacyCachePath: await tempPath("context-face.json"),
   });
 
-<<<<<<< HEAD
   // The server pipeline is serial: the 5s expansion fuse, retrieval and body
   // reads all run before the 30s rewrite fuse even starts, so covering the
   // rewrite alone still aborts requests that stayed inside every server budget.
@@ -134,11 +133,6 @@ test("the deadline follows the stages the request actually asks for", async () =
   // A digest costs the rewrite fuse on top of everything above it.
   const withRewrite = contextRequestTimeoutMs(cfg, { session_id: "s", rewrite: true });
   assert.ok(withRewrite > withSession, "a digest must outlast a plain expanded request");
-=======
-  assert.ok(timeouts[0] > 30000, `server rewrite must outlast the 30s fuse, got ${timeouts[0]}`);
-  assert.equal(timeouts[1], undefined);
-  assert.equal(contextRequestTimeoutMs({ ...cfg, recallContextTimeoutMs: 45000 }, true), 45000);
->>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
 });
 
 test("buildRecallBlock prefers a cited server digest", async () => {
