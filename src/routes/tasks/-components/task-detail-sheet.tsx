@@ -232,7 +232,7 @@ export function TaskDetailSheet({
                     } else {
                       steps = [
                         { name: i18n.language.startsWith('zh') ? '外部解析' : 'Document Parsing', state: status === 'pending' ? 'pending' : 'completed' },
-                        { name: i18n.language.startsWith('zh') ? '语义提炼' : 'Semantic Extraction', state: inferState('Semantic', status === 'completed' ? 'completed' : status as StepState), count: qStatus?.Semantic?.processed },
+                        { name: i18n.language.startsWith('zh') ? '语义处理' : 'Semantic Processing', state: inferState('Semantic', status === 'completed' ? 'completed' : status as StepState), count: qStatus?.Semantic?.processed },
                         { name: i18n.language.startsWith('zh') ? '嵌入向量' : 'Vector Embedding', state: inferState('Embedding', status === 'completed' ? 'completed' : status as StepState), count: qStatus?.Embedding?.processed },
                       ]
                     }
