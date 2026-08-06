@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { addMessage } from "./ov-session.mjs";
+import { addMessage, commitSession } from "./ov-session.mjs";
 import {
   claimForReplay,
   enqueue,
@@ -108,6 +108,40 @@ test("addMessage queues conflicts only when the server marks them retryable", as
     );
     assert.equal(terminal.pendingQueued, undefined);
     assert.equal((await listPending()).length, 1);
+  });
+});
+
+test("commitSession preserves retention payload across retry and replay", async () => {
+  await withPendingDir(async () => {
+    const payload = { keep_recent_count: 10 };
+    const res = await commitSession(
+      async () => ({
+        ok: false,
+        status: 409,
+        error: {
+          code: "CONFLICT",
+          details: { conflict_type: "path_busy", retryable: true },
+        },
+      }),
+      "cc-retryable-commit",
+      payload,
+    );
+
+    assert.equal(res.pendingQueued, true);
+    const pending = await listPending();
+    assert.equal(pending.length, 1);
+    assert.equal(pending[0].entry.type, "commitSession");
+    assert.deepEqual(pending[0].entry.payload, payload);
+
+    const calls = [];
+    const result = await replayPending(async (path, init) => {
+      calls.push({ path, init });
+      return { ok: true };
+    }, () => {});
+
+    assert.deepEqual(result, { replayed: 1, failed: 0, skipped: 0, deferred: 0 });
+    assert.equal(calls[0].path, "/api/v1/sessions/cc-retryable-commit/commit");
+    assert.deepEqual(JSON.parse(calls[0].init.body), payload);
   });
 });
 
