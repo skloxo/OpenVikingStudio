@@ -14,6 +14,8 @@ Design decisions:
 """
 
 import asyncio
+import json
+import os
 import re
 import threading
 import time
@@ -21,7 +23,7 @@ from copy import deepcopy
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set, Tuple
 from uuid import uuid4
 
 from openviking.service.task_store import TaskStore
@@ -160,17 +162,12 @@ class TaskTracker:
     # ── Lifecycle ──
 
     def start_cleanup_loop(self) -> None:
-        """Start the background TTL cleanup coroutine, task consumer loop, and non-blocking store preload.
-
-        Safe to call multiple times; subsequent calls are no-ops.
-        Must be called from within a running event loop.
-        """
+        """Start background task cleanup and store preload."""
         if self._cleanup_task is not None and not self._cleanup_task.done():
             return
         self._cleanup_task = asyncio.create_task(self._cleanup_loop())
-        self._consumer_task = asyncio.create_task(self._consumer_loop())
         asyncio.create_task(self._preload_store())
-        logger.debug("[TaskTracker] Cleanup loop, task consumer & background store preload started")
+        logger.debug("[TaskTracker] Cleanup loop & background store preload started")
 
     async def _preload_store(self) -> None:
         """Non-blocking background store preload across system and default scopes."""
@@ -189,75 +186,10 @@ class TaskTracker:
                             logger.warning("[TaskTracker] Preload failed for %s/%s: %s", acc, usr, e)
 
     def stop_cleanup_loop(self) -> None:
-        """Cancel the background cleanup & consumer tasks. Safe to call if not started."""
+        """Cancel the background cleanup task. Safe to call if not started."""
         if self._cleanup_task is not None and not self._cleanup_task.done():
             self._cleanup_task.cancel()
-        if hasattr(self, "_consumer_task") and self._consumer_task is not None and not self._consumer_task.done():
-            self._consumer_task.cancel()
-        logger.debug("[TaskTracker] Cleanup & consumer loop stopped")
-
-    async def _consumer_loop(self) -> None:
-        """Automatically dispatch pending tasks to running state and execute them."""
-        sem = asyncio.Semaphore(10)
-        active_tasks = set()
-
-        while True:
-            try:
-                await asyncio.sleep(1.0)
-                active_tasks = {t for t in active_tasks if not t.done()}
-
-                with self._lock:
-                    pending_tasks = [
-                        t for t in self._tasks.values()
-                        if t.status == TaskStatus.PENDING and t.resource_id
-                    ]
-
-                for task in pending_tasks:
-                    if len(active_tasks) >= 10:
-                        break
-                    # Avoid re-dispatching if already active in consumer loop
-                    if any(getattr(t, "_task_id", None) == task.task_id for t in active_tasks):
-                        continue
-                    worker = asyncio.create_task(self._process_one_pending_task(task, sem))
-                    setattr(worker, "_task_id", task.task_id)
-                    active_tasks.add(worker)
-            except asyncio.CancelledError:
-                break
-            except Exception as e:
-                logger.warning("[TaskTracker] Consumer loop error: %s", e)
-
-    async def _process_one_pending_task(self, task: TaskRecord, sem: asyncio.Semaphore) -> None:
-        async with sem:
-            from openviking.server.dependencies import get_service
-            service = None
-            for _ in range(30):
-                try:
-                    s = get_service()
-                    if getattr(s, "_initialized", False):
-                        service = s
-                        break
-                except Exception:
-                    pass
-                await asyncio.sleep(0.5)
-
-            if service is None:
-                logger.warning("[TaskTracker] Service not ready for task %s, skipping for next iteration", task.task_id)
-                return
-
-            try:
-                await self.start(task.task_id)
-                if task.resource_id and task.resource_id.startswith("viking://resources/"):
-                    from openviking.server.identity import RequestContext, Role
-                    from openviking_cli.session.user_id import UserIdentifier
-
-                    acc = task.account_id or "default"
-                    usr = task.user_id or "default"
-                    ctx = RequestContext(user=UserIdentifier(acc, usr), role=Role.ROOT)
-                    await service.reindex(uri=task.resource_id, mode="semantic_and_vectors", wait=True, ctx=ctx)
-                await self.complete(task.task_id)
-            except Exception as e:
-                logger.warning("[TaskTracker] Pending task execution failed for %s: %s", task.task_id, e)
-                await self.fail(task.task_id, str(e))
+        logger.debug("[TaskTracker] Cleanup loop stopped")
 
     async def _cleanup_loop(self) -> None:
         while True:
@@ -288,16 +220,21 @@ class TaskTracker:
                     self._tasks.pop(tid, None)
 
                 if len(self._tasks) > self.MAX_TASKS:
-                    # Only evict finished tasks (COMPLETED or FAILED); protect active (PENDING / RUNNING) tasks.
+                    excess = len(self._tasks) - self.MAX_TASKS
                     finished_tasks = [
                         (tid, t)
                         for tid, t in self._tasks.items()
                         if t.status in (TaskStatus.COMPLETED, TaskStatus.FAILED)
                     ]
-                    excess = len(self._tasks) - self.MAX_TASKS
-                    if excess > 0 and finished_tasks:
-                        sorted_finished = sorted(finished_tasks, key=lambda x: x[1].created_at)
-                        for tid, _ in sorted_finished[:excess]:
+                    sorted_finished = sorted(finished_tasks, key=lambda x: x[1].created_at)
+                    evicted = 0
+                    for tid, _ in sorted_finished[:excess]:
+                        self._tasks.pop(tid, None)
+                        evicted += 1
+                    remaining_excess = excess - evicted
+                    if remaining_excess > 0:
+                        sorted_all = sorted(self._tasks.items(), key=lambda x: x[1].created_at)
+                        for tid, _ in sorted_all[:remaining_excess]:
                             self._tasks.pop(tid, None)
 
             if expired_ids:
@@ -454,6 +391,8 @@ class TaskTracker:
         async with self._async_lock:
             task = await self._load_for_update(task_id, account_id, user_id)
             if task:
+                if task.status in (TaskStatus.COMPLETED, TaskStatus.FAILED):
+                    return
                 task.status = TaskStatus.RUNNING
                 if stage is not None:
                     task.stage = stage
@@ -473,6 +412,8 @@ class TaskTracker:
         async with self._async_lock:
             task = await self._load_for_update(task_id, account_id, user_id)
             if task:
+                if task.status in (TaskStatus.COMPLETED, TaskStatus.FAILED):
+                    return
                 task.stage = stage
                 task.updated_at = time.time()
                 await self._store.update(task)
@@ -485,14 +426,20 @@ class TaskTracker:
         result: Optional[Dict[str, Any]] = None,
         account_id: Optional[str] = None,
         user_id: Optional[str] = None,
+        resource_id: Optional[str] = None,
     ) -> None:
-        """Transition task to COMPLETED with optional result."""
+        """Transition task to COMPLETED with optional result and optional resource_id update."""
         async with self._async_lock:
             task = await self._load_for_update(task_id, account_id, user_id)
             if task:
+                if task.status in (TaskStatus.COMPLETED, TaskStatus.FAILED):
+                    return
                 task.status = TaskStatus.COMPLETED
                 task.stage = "completed"
-                task.result = result
+                if result is not None:
+                    task.result = result
+                if resource_id is not None:
+                    task.resource_id = resource_id
                 task.updated_at = time.time()
                 await self._store.update(task)
                 with self._lock:
@@ -510,6 +457,8 @@ class TaskTracker:
         async with self._async_lock:
             task = await self._load_for_update(task_id, account_id, user_id)
             if task:
+                if task.status in (TaskStatus.COMPLETED, TaskStatus.FAILED):
+                    return
                 task.status = TaskStatus.FAILED
                 task.stage = "failed"
                 task.error = _sanitize_error(error)
@@ -546,6 +495,7 @@ class TaskTracker:
         limit: int = 50,
         account_id: Optional[str] = None,
         user_id: Optional[str] = None,
+        include_archived: bool = False,
     ) -> List[TaskRecord]:
         """List tasks with optional filters. Most-recent first. Returns snapshot copies."""
         account_key = (account_id, user_id)
@@ -558,8 +508,18 @@ class TaskTracker:
                         with self._lock:
                             for task in loaded:
                                 self._tasks[task.task_id] = task
+        source_dict: Dict[str, TaskRecord] = {}
         with self._lock:
-            source = list(self._tasks.values())
+            for t in self._tasks.values():
+                source_dict[t.task_id] = t
+
+        if include_archived and account_id is not None:
+            archived = await self._load_all_from_store(account_id, user_id)
+            for t in archived:
+                if t.task_id not in source_dict:
+                    source_dict[t.task_id] = t
+
+        source = list(source_dict.values())
         filtered = [t for t in source if self._matches_owner(t, account_id, user_id)]
         if task_type:
             filtered = [t for t in filtered if t.task_type == task_type]

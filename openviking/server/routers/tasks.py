@@ -88,6 +88,7 @@ async def list_tasks(
     ),
     resource_id: Optional[str] = Query(None, description="Filter by resource ID (e.g. session_id)"),
     limit: int = Query(50, le=10000, description="Max results"),
+    include_archived: bool = Query(False, description="Include tasks older than 24h TTL from disk store"),
     _ctx: RequestContext = Depends(get_request_context),
 ):
     """List background tasks with optional filters."""
@@ -100,6 +101,7 @@ async def list_tasks(
             limit=limit,
             account_id=SYSTEM_TASK_ACCOUNT_ID,
             user_id=SYSTEM_TASK_USER_ID,
+            include_archived=include_archived,
         )
         user_account_id = _ctx.account_id or "default"
         user_user_id = _ctx.user.user_id if (_ctx.user and _ctx.user.user_id) else "default"
@@ -110,6 +112,7 @@ async def list_tasks(
             limit=limit,
             account_id=user_account_id,
             user_id=user_user_id,
+            include_archived=include_archived,
         )
         tasks_by_id = {task.task_id: task for task in cached_tasks}
         tasks_by_id.update({task.task_id: task for task in system_tasks})
@@ -122,5 +125,6 @@ async def list_tasks(
             limit=limit,
             account_id=_ctx.account_id,
             user_id=_ctx.user.user_id,
+            include_archived=include_archived,
         )
     return Response(status="ok", result=[t.to_dict() for t in tasks])
