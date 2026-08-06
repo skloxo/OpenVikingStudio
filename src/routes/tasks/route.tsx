@@ -93,6 +93,19 @@ const TASK_STATUS_OPTIONS: Exclude<TaskStatusFilter, 'all'>[] = [
   'failed',
 ]
 
+// 根据 8 并发物理上限计算任务的物理有效状态 (前 8 个 running, 第 9 个及以后 pending)
+export function getEffectiveTaskStatus(taskItem: any, list: any[]): string {
+  const rawStatus = normalizeTaskStatus(taskItem.status)
+  if (rawStatus !== 'running') {
+    return rawStatus
+  }
+  const runningList = list
+    .filter((t) => normalizeTaskStatus(t.status) === 'running')
+    .sort((a, b) => Number(a.created_at || 0) - Number(b.created_at || 0))
+  const idx = runningList.findIndex((t) => t.task_id === taskItem.task_id)
+  return idx >= 8 ? 'pending' : 'running'
+}
+
 export type TaskDataScope = '24h' | 'all'
 
 async function fetchTasks(
