@@ -35,6 +35,7 @@ import {
   normalizeTaskStatus,
 } from '../-lib/task-record'
 import type { TaskRecord } from '../-lib/task-record'
+import { getTaskPipelineSteps } from '../-lib/task-pipeline'
 
 type TaskDetailSheetProps = {
   identityScopeKey: string
@@ -191,51 +192,7 @@ export function TaskDetailSheet({
 
                   {/* Worker Sub-Queue Pipeline Diagram (Type-Aware) */}
                   {(() => {
-                    const resObj = (task.result && typeof task.result === 'object') ? (task.result as Record<string, any>) : {}
-                    const qStatus = resObj.queue_status as Record<string, { processed?: number; error_count?: number }> | undefined
-                    const type = task.task_type
-
-                    type StepState = 'completed' | 'running' | 'pending' | 'failed'
-                    interface PipelineStep { name: string; state: StepState; count?: number }
-
-                    // Infer real step state from queue_status
-                    const inferState = (qKey: string | null, fallback: StepState): StepState => {
-                      if (status === 'pending') return 'pending'
-                      if (qKey && qStatus?.[qKey]) {
-                        const s = qStatus[qKey]
-                        if ((s.error_count ?? 0) > 0) return 'failed'
-                        if ((s.processed ?? 0) > 0) return 'completed'
-                        return status === 'running' ? 'running' : fallback
-                      }
-                      return fallback
-                    }
-
-                    let steps: PipelineStep[] = []
-
-                    if (type === 'session_commit') {
-                      steps = [
-                        { name: i18n.language.startsWith('zh') ? '会话状态持久化' : 'Session Persistence', state: status === 'completed' ? 'completed' : status as StepState },
-                      ]
-                    } else if (type === 'admin_reindex' || type === 'snapshot_restore_reindex') {
-                      steps = [
-                        { name: i18n.language.startsWith('zh') ? '外部解析' : 'Document Parsing', state: status === 'pending' ? 'pending' : 'completed' },
-                        { name: i18n.language.startsWith('zh') ? '嵌入向量' : 'Vector Embedding', state: inferState('Embedding', status === 'completed' ? 'completed' : status as StepState), count: resObj.reindexed_items },
-                      ]
-                    } else if (type === 'connector_import') {
-                      const preState: StepState = status === 'pending' ? 'pending' : 'completed'
-                      steps = [
-                        { name: i18n.language.startsWith('zh') ? '连接器鉴权' : 'Connector Auth', state: preState },
-                        { name: i18n.language.startsWith('zh') ? '资源拉取' : 'Resource Fetching', state: preState, count: resObj.downloaded_files },
-                        { name: i18n.language.startsWith('zh') ? '外部解析' : 'Document Parsing', state: inferState('Semantic', status === 'completed' ? 'completed' : status as StepState) },
-                        { name: i18n.language.startsWith('zh') ? '嵌入向量' : 'Vector Embedding', state: inferState('Embedding', status === 'completed' ? 'completed' : status as StepState) },
-                      ]
-                    } else {
-                      steps = [
-                        { name: i18n.language.startsWith('zh') ? '外部解析' : 'Document Parsing', state: status === 'pending' ? 'pending' : 'completed' },
-                        { name: i18n.language.startsWith('zh') ? '语义处理' : 'Semantic Processing', state: inferState('Semantic', status === 'completed' ? 'completed' : status as StepState), count: qStatus?.Semantic?.processed },
-                        { name: i18n.language.startsWith('zh') ? '嵌入向量' : 'Vector Embedding', state: inferState('Embedding', status === 'completed' ? 'completed' : status as StepState), count: qStatus?.Embedding?.processed },
-                      ]
-                    }
+                    const steps = getTaskPipelineSteps(task, i18n.language)
 
                     return (
                       <DetailSection title={i18n.language.startsWith('zh') ? '工序进度' : 'Pipeline Steps'}>

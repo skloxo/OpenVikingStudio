@@ -54,6 +54,7 @@ import {
 } from '#/routes/tasks/-lib/task-record'
 import type { TaskRecord, TaskStatus } from '#/routes/tasks/-lib/task-record'
 import { formatTaskDuration, getTaskDate } from '#/routes/tasks/-lib/task-time'
+import { getTaskPipelineGroups } from './-lib/task-pipeline'
 
 export const Route = createFileRoute('/tasks')({
   component: TasksRoute,
@@ -121,8 +122,21 @@ async function fetchTasks(
         return timeVal > 0 && nowSec - timeVal <= 86400
       })
     }
+    // 根据 8 并发物理上限计算任务的物理有效状态 (前 8 个 running, 第 9 个及以后 pending)
+    const getEffectiveTaskStatus = (taskItem: any, list: any[]): string => {
+      const rawStatus = normalizeTaskStatus(taskItem.status)
+      if (rawStatus !== 'running') {
+        return rawStatus
+      }
+      const runningList = list
+        .filter((t) => normalizeTaskStatus(t.status) === 'running')
+        .sort((a, b) => Number(a.created_at || 0) - Number(b.created_at || 0))
+      const idx = runningList.findIndex((t) => t.task_id === taskItem.task_id)
+      return idx >= 8 ? 'pending' : 'running'
+    }
+
     if (status !== 'all') {
-      fetched = fetched.filter((t) => normalizeTaskStatus(t.status) === status)
+      fetched = fetched.filter((t) => getEffectiveTaskStatus(t, fetched) === status)
     }
     if (taskType !== 'all') {
       fetched = fetched.filter((t) => t.task_type === taskType)
@@ -319,7 +333,9 @@ function TasksRoute() {
 
   const renderStatus = (task: TaskRecord) => {
     const taskId = task.task_id
-    const status = normalizeTaskStatus(task.status)
+    // 使用基于 8 并发算力的物理有效状态判定
+    const effStatus = getEffectiveTaskStatus(task, allTasks)
+    const status = normalizeTaskStatus(effStatus)
     const pct = getTaskProgressPct(task)
     const isRetrying = retryMutation.isPending && retryMutation.variables?.task_id === taskId
 
@@ -334,7 +350,11 @@ function TasksRoute() {
         }
         className="gap-1.5 font-normal select-none"
       >
-        <span>{t(`status.${status}`)}</span>
+        <span>
+          {status === 'pending'
+            ? (i18n.language.startsWith('zh') ? '队首等待中' : 'Queued')
+            : t(`status.${status}`)}
+        </span>
         {status === 'running' && (
           <span className="font-mono font-semibold ml-0.5">
             {pct}%
@@ -375,66 +395,7 @@ function TasksRoute() {
       | { type: 'serial'; step: StepItem }
       | { type: 'parallel'; steps: StepItem[] }
 
-    // 从 result.queue_status 读取真实的子工序状态
-    const resObj = (task.result && typeof task.result === 'object') ? (task.result as Record<string, any>) : {}
-    const qStatus = resObj.queue_status as Record<string, { processed?: number; error_count?: number }> | undefined
-
-    // 根据子工序真实数据推断单步状态
-    const inferStepState = (
-      qKey: string | null,
-      fallback: StepItem['state'],
-    ): StepItem['state'] => {
-      if (status === 'pending') return 'pending'
-      if (qKey && qStatus?.[qKey]) {
-        const s = qStatus[qKey]
-        if ((s.error_count ?? 0) > 0) return 'failed'
-        if ((s.processed ?? 0) > 0) return 'completed'
-        // has entry but 0 processed: running if task is running, else pending
-        return status === 'running' ? 'running' : fallback
-      }
-      // no queue_status entry yet: fall back to overall task status
-      return fallback
-    }
-
-    let groups: PipelineGroup[] = []
-
-    if (type === 'session_commit') {
-      groups = [
-        { type: 'serial', step: { name: '会话提交', state: status === 'completed' ? 'completed' : (status as any) } },
-      ]
-    } else if (type === 'admin_reindex' || type === 'snapshot_restore_reindex') {
-      const purgeState: StepItem['state'] = status === 'pending' ? 'pending' : 'completed'
-      const rebuildState = inferStepState('Embedding', status === 'completed' ? 'completed' : (status as any))
-      groups = [
-        { type: 'serial', step: { name: '外部解析', state: purgeState } },
-        { type: 'serial', step: { name: '嵌入向量', state: rebuildState } },
-      ]
-    } else if (type === 'connector_import') {
-      const preState: StepItem['state'] = status === 'pending' ? 'pending' : 'completed'
-      groups = [
-        { type: 'serial', step: { name: '外部解析', state: preState } },
-        {
-          type: 'parallel',
-          steps: [
-            { name: '语义处理', state: inferStepState('Semantic', status === 'completed' ? 'completed' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'pending') },
-            { name: '嵌入向量', state: inferStepState('Embedding', status === 'completed' ? 'completed' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'pending') },
-          ],
-        },
-      ]
-    } else {
-      // add_resource / add_skill: 外部解析 -> 语义处理 + 嵌入向量
-      const parseState: StepItem['state'] = status === 'pending' ? 'pending' : 'completed'
-      groups = [
-        { type: 'serial', step: { name: '外部解析', state: parseState } },
-        {
-          type: 'parallel',
-          steps: [
-            { name: '语义处理', state: inferStepState('Semantic', status === 'completed' ? 'completed' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'pending') },
-            { name: '嵌入向量', state: inferStepState('Embedding', status === 'completed' ? 'completed' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'pending') },
-          ],
-        },
-      ]
-    }
+    const groups = getTaskPipelineGroups(task, i18n.language)
 
     return (
       <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 min-w-[210px]">
