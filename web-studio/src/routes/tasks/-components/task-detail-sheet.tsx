@@ -188,7 +188,7 @@ export function TaskDetailSheet({
                   <DetailField
                     className="col-span-2"
                     icon={<TimerResetIcon />}
-                    label={i18n.language.startsWith('zh') ? '执行耗时 / 已用时长' : 'Duration'}
+                    label={t('detail.duration')}
                     value={formatTaskDuration(task, i18n.language.startsWith('zh'))}
                     mono
                   />
@@ -233,7 +233,7 @@ export function TaskDetailSheet({
                     const steps = getTaskPipelineSteps(task, i18n.language)
 
                     return (
-                      <DetailSection title={i18n.language.startsWith('zh') ? '工序进度' : 'Pipeline Steps'}>
+                      <DetailSection title={t('detail.pipelineSteps')}>
                         <div className="rounded-xl border bg-muted/20 p-3 text-xs">
                           <div className="grid gap-1.5">
                             {steps.map((st, i) => {
@@ -245,10 +245,10 @@ export function TaskDetailSheet({
                                   <span className="font-medium text-foreground">{i + 1}. {st.name}</span>
                                   <span className="flex items-center gap-2 text-[11px]">
                                     {st.count !== undefined && (
-                                      <span className="font-mono text-muted-foreground">{st.count} 项</span>
+                                      <span className="font-mono text-muted-foreground">{t('detail.itemCount', { count: st.count })}</span>
                                     )}
                                     <span className={isDone ? 'text-foreground' : isFail ? 'text-destructive' : 'text-muted-foreground'}>
-                                      {isDone ? '已完成' : isRun ? '进行中' : isFail ? '失败' : '等待中'}
+                                      {isDone ? t('detail.stepCompleted') : isRun ? t('detail.stepRunning') : isFail ? t('detail.stepFailed') : t('detail.stepPending')}
                                     </span>
                                   </span>
                                 </div>
@@ -261,7 +261,7 @@ export function TaskDetailSheet({
                   })()}
 
                 {/* Execution Log Section */}
-                <DetailSection title={i18n.language.startsWith('zh') ? '📜 任务执行日志' : 'Execution Trace Log'}>
+                <DetailSection title={t('detail.executionLogs')}>
                   <div className="relative rounded-xl border border-border/60 bg-muted/30 p-3 font-mono text-[11px] leading-relaxed">
                     <div className="flex items-center justify-between border-b border-border/40 pb-2 mb-2 text-[10px] text-muted-foreground font-mono">
                       <span>LOG TRACE STREAM (ID: {task.task_id})</span>
@@ -272,11 +272,11 @@ export function TaskDetailSheet({
                         onClick={() => {
                           const logLines = generateStepLogs(task, i18n.language)
                           navigator.clipboard.writeText(logLines.join('\n'))
-                          toast.success(i18n.language.startsWith('zh') ? '日志已成功复制到剪贴板' : 'Logs copied to clipboard')
+                          toast.success(t('detail.logsCopied'))
                         }}
                       >
                         <CopyIcon className="size-3 mr-1" />
-                        {i18n.language.startsWith('zh') ? '复制日志' : 'Copy Logs'}
+                        {t('detail.copyLogs')}
                       </Button>
                     </div>
                     <div className="space-y-1 overflow-x-auto max-h-48">
