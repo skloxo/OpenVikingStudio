@@ -89,8 +89,10 @@ const TASK_TYPE_OPTIONS: Exclude<TaskTypeFilter, 'all'>[] = [
 const TASK_STATUS_OPTIONS: Exclude<TaskStatusFilter, 'all'>[] = [
   'pending',
   'running',
+  'cancelling',
   'completed',
   'failed',
+  'cancelled',
 ]
 
 // 根据 8 并发物理上限计算任务的物理有效状态 (前 8 个 running, 第 9 个及以后 pending)
@@ -227,8 +229,13 @@ function TasksRoute() {
       const resourceUri = task.resource_id || ''
 
       if (resourceUri.startsWith('viking://')) {
+        // Use semantic_and_vectors (not the default vectors_only) so that:
+        // 1. Semantic abstracts are regenerated (short summaries, never trigger INPUT_TOO_LARGE)
+        // 2. Vectors are rebuilt from the fresh abstracts
+        // vectors_only would re-send the same raw oversized chunk to the embedder → infinite failure loop
         const resp = await ovClient.instance.post('/api/v1/content/reindex', {
           uri: resourceUri,
+          mode: 'semantic_and_vectors',
           wait: false,
         })
         const json = resp.data
@@ -259,6 +266,7 @@ function TasksRoute() {
 
       const resp = await ovClient.instance.post('/api/v1/content/reindex', {
         uri: resourceUri,
+        mode: 'semantic_and_vectors',
         wait: false,
       })
       const json = resp.data
@@ -365,7 +373,7 @@ function TasksRoute() {
       >
         <span>
           {status === 'pending'
-            ? (i18n.language.startsWith('zh') ? '队首等待中' : 'Queued')
+            ? t('pipeline.queued')
             : t(`status.${status}`)}
         </span>
         {status === 'running' && (
@@ -378,7 +386,7 @@ function TasksRoute() {
             type="button"
             disabled={isRetrying}
             className="ml-1 inline-flex items-center justify-center rounded p-0.5 hover:bg-white/25 active:scale-95 transition-all cursor-pointer text-destructive-foreground disabled:opacity-50"
-            title={i18n.language.startsWith('zh') ? '重新发起任务' : 'Re-trigger Task'}
+            title={t('pipeline.retrigger')}
             onClick={(e) => {
               e.stopPropagation()
               retryMutation.mutate(task)
@@ -418,13 +426,13 @@ function TasksRoute() {
           return (
             <React.Fragment key={i}>
               {i > 0 && (
-                <span title="串行工序流转" className="inline-flex shrink-0">
+                <span title={t('pipeline.serialTransition')} className="inline-flex shrink-0">
                   <ChevronRightIcon className="size-3 text-muted-foreground/40" />
                 </span>
               )}
               <span
                 className="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[11px] font-medium leading-none shrink-0 border border-border/60 bg-secondary/80 text-foreground shadow-2xs transition-all"
-                title={grp.type === 'parallel' ? '并发执行工序批次' : '串行工序批次'}
+                title={grp.type === 'parallel' ? t('pipeline.parallelBatch') : t('pipeline.serialBatch')}
               >
                 {stepsInGroup.map((st: StepItem, j: number) => {
                   const isDone = st.state === 'completed'
@@ -716,7 +724,7 @@ function TasksRoute() {
         <Card className="flex flex-col gap-1 p-3 shadow-none transition-colors hover:border-primary/40">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span className="font-medium">
-              {i18n.language.startsWith('zh') ? '任务成功率' : 'Success Rate'}
+              {t('pipeline.kpi.successRate')}
             </span>
           </div>
           <div className="flex items-baseline gap-1">
@@ -725,16 +733,14 @@ function TasksRoute() {
             </span>
           </div>
           <p className="text-[11px] text-muted-foreground truncate">
-            {i18n.language.startsWith('zh')
-              ? `共 ${kpiData.total} 条任务 (${kpiData.failed} 异常)`
-              : `Total ${kpiData.total} (${kpiData.failed} Failed)`}
+            {t('pipeline.kpi.scopeNote', { total: kpiData.total, failed: kpiData.failed })}
           </p>
         </Card>
 
         <Card className="flex flex-col gap-1 p-3 shadow-none transition-colors hover:border-primary/40">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span className="font-medium">
-              {i18n.language.startsWith('zh') ? '平均处理耗时' : 'Avg Duration'}
+              {t('pipeline.kpi.avgDuration')}
             </span>
           </div>
           <div className="flex items-baseline gap-1">
@@ -745,34 +751,30 @@ function TasksRoute() {
             </span>
           </div>
           <p className="text-[11px] text-muted-foreground truncate">
-            {i18n.language.startsWith('zh')
-              ? '全流程平均处理时长'
-              : 'Avg Processing Time'}
+            {t('pipeline.kpi.avgNote')}
           </p>
         </Card>
 
         <Card className="flex flex-col gap-1 p-3 shadow-none transition-colors hover:border-primary/40">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span className="font-medium">
-              {i18n.language.startsWith('zh') ? '任务总数' : 'Total Tasks'}
+              {t('pipeline.kpi.totalTasks')}
             </span>
           </div>
           <div className="flex items-baseline gap-1">
             <span className="font-mono text-xl font-bold tabular-nums text-foreground">
-              {kpiData.total} 条
+              {t('pipeline.kpi.tasksCount', { count: kpiData.total })}
             </span>
           </div>
           <p className="text-[11px] text-muted-foreground truncate">
-            {i18n.language.startsWith('zh')
-              ? `已完成 ${kpiData.completed} 条`
-              : `Completed ${kpiData.completed} Tasks`}
+            {t('pipeline.kpi.completedNote', { completed: kpiData.completed })}
           </p>
         </Card>
 
         <Card className="flex flex-col gap-1 p-3 shadow-none transition-colors hover:border-primary/40">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span className="font-medium">
-              {i18n.language.startsWith('zh') ? '并发与排队' : 'Active/Pending'}
+              {t('pipeline.kpi.activePending')}
             </span>
           </div>
           <div className="flex items-baseline gap-1">
@@ -781,9 +783,7 @@ function TasksRoute() {
             </span>
           </div>
           <p className="text-[11px] text-muted-foreground truncate">
-            {i18n.language.startsWith('zh')
-              ? '进行中 / 等待中任务'
-              : 'Running / Pending Workloads'}
+            {t('pipeline.kpi.activeNote')}
           </p>
         </Card>
       </div>
@@ -793,7 +793,7 @@ function TasksRoute() {
         {/* 左侧 (50% 宽度 - 优先看上层任务): 任务队列状态 (Task Queues) */}
         <div>
           <QueueStatusCard
-            title={i18n.language.startsWith('zh') ? '任务队列状态' : 'Task Queue Status'}
+            title={t('pipeline.taskQueueStatus')}
             customRows={kpiData.typeRows}
             isHealthy={kpiData.failed === 0}
           />
@@ -802,7 +802,7 @@ function TasksRoute() {
         {/* 右侧 (50% 宽度 - 拆分出的下层工序): 工序队列状态 (Process Queues) */}
         <div>
           <QueueStatusCard
-            title={i18n.language.startsWith('zh') ? '工序队列状态' : 'Process Queue Status'}
+            title={t('pipeline.processQueueStatus')}
             customRows={queueRows}
             isHealthy={kpiData.failed === 0}
           />
@@ -914,13 +914,7 @@ function TasksRoute() {
           onClick={() => setDedupByResource((prev) => !prev)}
         >
           <LayersIcon className="size-3.5 text-muted-foreground" />
-          {i18n.language.startsWith('zh')
-            ? dedupByResource
-              ? '按资源收敛 (最新)'
-              : '全部历史记录'
-            : dedupByResource
-              ? 'Latest per Resource'
-              : 'All History Logs'}
+          {dedupByResource ? t('pipeline.latestByResource') : t('pipeline.allHistory')}
         </Button>
       </div>
 
@@ -970,9 +964,9 @@ function TasksRoute() {
                   <TableHead>{t('table.task')}</TableHead>
                   <TableHead>{t('table.type')}</TableHead>
                   <TableHead>{t('table.resource')}</TableHead>
-                  <TableHead>{i18n.language.startsWith('zh') ? '工序队列流转' : 'Queue Pipeline'}</TableHead>
+                  <TableHead>{t('pipeline.pipelineHeader')}</TableHead>
                   <TableHead>{t('table.status')}</TableHead>
-                  <TableHead>{i18n.language.startsWith('zh') ? '耗时' : 'Duration'}</TableHead>
+                  <TableHead>{t('pipeline.durationHeader')}</TableHead>
                   <TableHead className="text-right">
                     {t('table.createdAt')}
                   </TableHead>

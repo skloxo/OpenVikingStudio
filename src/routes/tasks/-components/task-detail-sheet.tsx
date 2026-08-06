@@ -88,14 +88,18 @@ export function TaskDetailSheet({
     queryKey: ['task-detail', identityScopeKey, taskId],
     refetchInterval: (query) => {
       const status = normalizeTaskStatus(query.state.data?.status)
-      return status === 'pending' || status === 'running' ? 3_000 : false
+      return status === 'pending' ||
+        status === 'running' ||
+        status === 'cancelling'
+        ? 3_000
+        : false
     },
   })
   const task = detailQuery.data
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="gap-0 sm:max-w-xl">
+      <SheetContent className="gap-0 data-[side=right]:sm:max-w-3xl">
         <SheetHeader className="border-b px-6 py-5">
           <div className="flex items-center gap-3 pr-10">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
@@ -184,18 +188,52 @@ export function TaskDetailSheet({
                   <DetailField
                     className="col-span-2"
                     icon={<TimerResetIcon />}
-                    label={i18n.language.startsWith('zh') ? '执行耗时 / 已用时长' : 'Duration'}
+                    label={t('detail.duration')}
                     value={formatTaskDuration(task, i18n.language.startsWith('zh'))}
                     mono
                   />
                 </div>
 
-                  {/* Worker Sub-Queue Pipeline Diagram (Type-Aware) */}
+                {task.error ? (
+                  <DetailSection title={t('detail.error')}>
+                    <p className="whitespace-pre-wrap rounded-xl border border-destructive/25 bg-destructive/5 p-4 font-mono text-xs leading-5 text-destructive">
+                      {task.error}
+                    </p>
+                  </DetailSection>
+                ) : null}
+
+                {hasTaskResult(task.result) ? (
+                  <DetailSection title={t('detail.result')}>
+                    <pre className="max-h-96 overflow-auto rounded-xl border bg-muted/30 p-4 font-mono text-xs leading-5">
+                      {formatTaskResult(task.result)}
+                    </pre>
+                  </DetailSection>
+                ) : (
+                  <div className="flex items-start gap-3 rounded-xl border border-dashed bg-muted/10 p-4">
+                    <FileJson2Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                    <div className="grid gap-0.5">
+                      <p className="text-sm font-medium">
+                        {t('detail.noResult')}
+                      </p>
+                      <p className="text-xs leading-5 text-muted-foreground">
+                        {t(
+                          normalizeTaskStatus(task.status) === 'failed'
+                            ? 'detail.noResultFailedDescription'
+                            : normalizeTaskStatus(task.status) === 'cancelled'
+                              ? 'detail.noResultCancelledDescription'
+                              : 'detail.noResultDescription',
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Worker Sub-Queue Pipeline Diagram (Type-Aware) */}
                   {(() => {
                     const steps = getTaskPipelineSteps(task, i18n.language)
 
                     return (
-                      <DetailSection title={i18n.language.startsWith('zh') ? '工序进度' : 'Pipeline Steps'}>
+                      <DetailSection title={t('detail.pipelineSteps')}>
                         <div className="rounded-xl border bg-muted/20 p-3 text-xs">
                           <div className="grid gap-1.5">
                             {steps.map((st, i) => {
@@ -207,10 +245,10 @@ export function TaskDetailSheet({
                                   <span className="font-medium text-foreground">{i + 1}. {st.name}</span>
                                   <span className="flex items-center gap-2 text-[11px]">
                                     {st.count !== undefined && (
-                                      <span className="font-mono text-muted-foreground">{st.count} 项</span>
+                                      <span className="font-mono text-muted-foreground">{t('detail.itemCount', { count: st.count })}</span>
                                     )}
                                     <span className={isDone ? 'text-foreground' : isFail ? 'text-destructive' : 'text-muted-foreground'}>
-                                      {isDone ? '已完成' : isRun ? '进行中' : isFail ? '失败' : '等待中'}
+                                      {isDone ? t('detail.stepCompleted') : isRun ? t('detail.stepRunning') : isFail ? t('detail.stepFailed') : t('detail.stepPending')}
                                     </span>
                                   </span>
                                 </div>
@@ -223,7 +261,7 @@ export function TaskDetailSheet({
                   })()}
 
                 {/* Execution Log Section */}
-                <DetailSection title={i18n.language.startsWith('zh') ? '📜 任务执行日志' : 'Execution Trace Log'}>
+                <DetailSection title={t('detail.executionLogs')}>
                   <div className="relative rounded-xl border border-border/60 bg-muted/30 p-3 font-mono text-[11px] leading-relaxed">
                     <div className="flex items-center justify-between border-b border-border/40 pb-2 mb-2 text-[10px] text-muted-foreground font-mono">
                       <span>LOG TRACE STREAM (ID: {task.task_id})</span>
@@ -234,11 +272,11 @@ export function TaskDetailSheet({
                         onClick={() => {
                           const logLines = generateStepLogs(task, i18n.language)
                           navigator.clipboard.writeText(logLines.join('\n'))
-                          toast.success(i18n.language.startsWith('zh') ? '日志已成功复制到剪贴板' : 'Logs copied to clipboard')
+                          toast.success(t('detail.logsCopied'))
                         }}
                       >
                         <CopyIcon className="size-3 mr-1" />
-                        {i18n.language.startsWith('zh') ? '复制日志' : 'Copy Logs'}
+                        {t('detail.copyLogs')}
                       </Button>
                     </div>
                     <div className="space-y-1 overflow-x-auto max-h-48">
