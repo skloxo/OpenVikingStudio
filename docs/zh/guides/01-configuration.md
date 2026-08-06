@@ -1125,7 +1125,7 @@ QueueFS Redis 参数：
 - `username` 和 `password` 用于 Redis 数据节点；`sentinel_username` 和 `sentinel_password` 仅用于 Sentinel 节点。
 - Redis backend 使用 `{key_prefix}:ov:*` key；连接同一 Redis database 的不同业务必须配置不同的 `key_prefix`。
 - Redis backend 的实例心跳 TTL 为 30 秒，每 10 秒续约一次。
-- Redis backend 仅在启动时按实例心跳状态执行一次 `recover_stale`，运行期间不周期恢复。
+- Redis backend 会在独立的 startup recovery 线程中按实例心跳状态执行三次有界 `recover_stale` 扫描，时间点分别为启动后立即、30 秒和 60 秒，用于覆盖容器异常退出后旧实例心跳尚未过期的恢复窗口；运行期间不做长期周期恢复。
 - `tls_insecure_skip_verify=true` 时必须同时设置 `tls_enabled=true`。
 - 如果同时设置了 `storage.agfs.queuefs.db_path` 和旧字段 `storage.agfs.queue_db_path`，以前者为准。
 - 如果 QueueFS backend 为 `memory`，则 `db_path` 和旧字段 `queue_db_path` 都会被忽略。
