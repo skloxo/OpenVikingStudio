@@ -645,7 +645,6 @@ class TaskTracker:
         if active_task is not None:
             self._work_index.unregister_active(task_id, active_task)
         await self._finalize_task(task_id)
->>>>>>> origin/main
 
     async def get(
         self,
