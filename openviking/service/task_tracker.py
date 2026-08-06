@@ -183,7 +183,9 @@ class TaskTracker:
                                     for task in loaded:
                                         self._tasks[task.task_id] = task
                         except Exception as e:
-                            logger.warning("[TaskTracker] Preload failed for %s/%s: %s", acc, usr, e)
+                            logger.warning(
+                                "[TaskTracker] Preload failed for %s/%s: %s", acc, usr, e
+                            )
 
     def stop_cleanup_loop(self) -> None:
         """Cancel the background cleanup task. Safe to call if not started."""
@@ -550,6 +552,7 @@ class TaskTracker:
             source = list(self._tasks.values())
         matching = [t for t in source if self._matches_owner(t, account_id, user_id)]
         from collections import Counter
+
         counts = Counter(t.status.value for t in matching)
         return {
             "total": len(matching),
@@ -645,6 +648,7 @@ class TaskTracker:
                 user_id,
             )
             from concurrent.futures import ThreadPoolExecutor
+
             def _update_task(t: TaskRecord) -> None:
                 try:
                     if hasattr(self._store, "_task_dir") and user_id:

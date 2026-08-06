@@ -88,7 +88,9 @@ async def list_tasks(
     ),
     resource_id: Optional[str] = Query(None, description="Filter by resource ID (e.g. session_id)"),
     limit: int = Query(50, le=10000, description="Max results"),
-    include_archived: bool = Query(False, description="Include tasks older than 24h TTL from disk store"),
+    include_archived: bool = Query(
+        False, description="Include tasks older than 24h TTL from disk store"
+    ),
     _ctx: RequestContext = Depends(get_request_context),
 ):
     """List background tasks with optional filters."""
