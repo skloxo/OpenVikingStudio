@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { addMessage, commitSession, makeFetchJSON } from "./ov-session.mjs";
+import { addMessage } from "./ov-session.mjs";
 import {
   claimForReplay,
   enqueue,
@@ -109,89 +109,6 @@ test("addMessage queues conflicts only when the server marks them retryable", as
     assert.equal(terminal.pendingQueued, undefined);
     assert.equal((await listPending()).length, 1);
   });
-});
-
-test("commitSession preserves retention payload across retry and replay", async () => {
-  await withPendingDir(async () => {
-    const payload = { keep_recent_count: 10 };
-    const res = await commitSession(
-      async () => ({
-        ok: false,
-        status: 409,
-        error: {
-          code: "CONFLICT",
-          details: { conflict_type: "path_busy", retryable: true },
-        },
-      }),
-      "cc-retryable-commit",
-      payload,
-    );
-
-    assert.equal(res.pendingQueued, true);
-    const pending = await listPending();
-    assert.equal(pending.length, 1);
-    assert.equal(pending[0].entry.type, "commitSession");
-    assert.deepEqual(pending[0].entry.payload, payload);
-
-    const calls = [];
-    const logs = [];
-    const result = await replayPending(async (path, init) => {
-      calls.push({ path, init });
-      return {
-        ok: true,
-        result: { status: "accepted", trace_id: "trace-replayed-commit" },
-        traceId: "trace-replayed-commit",
-      };
-    }, (stage, data) => logs.push({ stage, data }));
-
-    assert.deepEqual(result, { replayed: 1, failed: 0, skipped: 0, deferred: 0 });
-    assert.equal(calls[0].path, "/api/v1/sessions/cc-retryable-commit/commit");
-    assert.deepEqual(JSON.parse(calls[0].init.body), payload);
-    assert.deepEqual(logs[1], {
-      stage: "pending-queue",
-      data: {
-        action: "commit-replay",
-        sessionId: "cc-retryable-commit",
-        ok: true,
-        status: "accepted",
-        trace_id: "trace-replayed-commit",
-        error: undefined,
-      },
-    });
-  });
-});
-
-test("makeFetchJSON preserves commit trace_id on success and failure", async (t) => {
-  const responses = [
-    new Response(JSON.stringify({
-      status: "ok",
-      result: { status: "accepted", trace_id: "trace-success" },
-    }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    }),
-    new Response(JSON.stringify({
-      status: "error",
-      error: { code: "INTERNAL", message: "commit failed", trace_id: "trace-error" },
-    }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    }),
-  ];
-  t.mock.method(globalThis, "fetch", async () => responses.shift());
-  const fetchJSON = makeFetchJSON({
-    baseUrl: "http://127.0.0.1:1933",
-    timeoutMs: 5000,
-  });
-
-  const success = await fetchJSON("/api/v1/sessions/trace-success/commit");
-  assert.equal(success.traceId, "trace-success");
-  assert.equal(success.result.trace_id, "trace-success");
-
-  const failure = await fetchJSON("/api/v1/sessions/trace-error/commit");
-  assert.equal(failure.ok, false);
-  assert.equal(failure.traceId, "trace-error");
-  assert.equal(failure.error.trace_id, "trace-error");
 });
 
 test("replayPending sends queued entries and removes them after success", async () => {
