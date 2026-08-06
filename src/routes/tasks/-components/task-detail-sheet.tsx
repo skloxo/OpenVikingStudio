@@ -214,26 +214,26 @@ export function TaskDetailSheet({
 
                     if (type === 'session_commit') {
                       steps = [
-                        { name: '会话状态持久化', state: status === 'completed' ? 'completed' : status as StepState },
+                        { name: i18n.language.startsWith('zh') ? '会话状态持久化' : 'Session Persistence', state: status === 'completed' ? 'completed' : status as StepState },
                       ]
                     } else if (type === 'admin_reindex' || type === 'snapshot_restore_reindex') {
                       steps = [
-                        { name: '旧索引清理', state: status === 'pending' ? 'pending' : 'completed' },
-                        { name: '向量重建', state: inferState('Embedding', status === 'completed' ? 'completed' : status as StepState), count: resObj.reindexed_items },
+                        { name: i18n.language.startsWith('zh') ? '外部解析' : 'Document Parsing', state: status === 'pending' ? 'pending' : 'completed' },
+                        { name: i18n.language.startsWith('zh') ? '嵌入向量' : 'Vector Embedding', state: inferState('Embedding', status === 'completed' ? 'completed' : status as StepState), count: resObj.reindexed_items },
                       ]
                     } else if (type === 'connector_import') {
                       const preState: StepState = status === 'pending' ? 'pending' : 'completed'
                       steps = [
-                        { name: '连接器鉴权', state: preState },
-                        { name: '资源拉取', state: preState, count: resObj.downloaded_files },
-                        { name: '文本解析', state: inferState('Semantic', status === 'completed' ? 'completed' : status as StepState) },
-                        { name: '向量写入', state: inferState('Embedding', status === 'completed' ? 'completed' : status as StepState) },
+                        { name: i18n.language.startsWith('zh') ? '连接器鉴权' : 'Connector Auth', state: preState },
+                        { name: i18n.language.startsWith('zh') ? '资源拉取' : 'Resource Fetching', state: preState, count: resObj.downloaded_files },
+                        { name: i18n.language.startsWith('zh') ? '外部解析' : 'Document Parsing', state: inferState('Semantic', status === 'completed' ? 'completed' : status as StepState) },
+                        { name: i18n.language.startsWith('zh') ? '嵌入向量' : 'Vector Embedding', state: inferState('Embedding', status === 'completed' ? 'completed' : status as StepState) },
                       ]
                     } else {
                       steps = [
-                        { name: '文档解析', state: status === 'pending' ? 'pending' : 'completed' },
-                        { name: '语义提炼', state: inferState('Semantic', status === 'completed' ? 'completed' : status as StepState), count: qStatus?.Semantic?.processed },
-                        { name: '向量落库', state: inferState('Embedding', status === 'completed' ? 'completed' : status as StepState), count: qStatus?.Embedding?.processed },
+                        { name: i18n.language.startsWith('zh') ? '外部解析' : 'Document Parsing', state: status === 'pending' ? 'pending' : 'completed' },
+                        { name: i18n.language.startsWith('zh') ? '语义提炼' : 'Semantic Extraction', state: inferState('Semantic', status === 'completed' ? 'completed' : status as StepState), count: qStatus?.Semantic?.processed },
+                        { name: i18n.language.startsWith('zh') ? '嵌入向量' : 'Vector Embedding', state: inferState('Embedding', status === 'completed' ? 'completed' : status as StepState), count: qStatus?.Embedding?.processed },
                       ]
                     }
 
