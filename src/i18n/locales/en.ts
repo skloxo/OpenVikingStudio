@@ -653,6 +653,12 @@ const en = {
       },
       rootHint: 'Lists accounts and users, and mints or rotates keys.',
       title: 'Connection settings',
+      unsupportedAuthMode: {
+        description:
+          'Web Studio does not support the {{mode}} authentication mode. Please use the {{ov}} CLI or Python SDK to interact with this server.',
+        primary: 'This server is configured with {{mode}} authentication.',
+        title: 'Unsupported authentication mode',
+      },
       userHint: 'Used by the Playground and tenant data APIs.',
     },
     connectionPage: {
@@ -772,7 +778,9 @@ const en = {
       api_key: 'API key mode',
       checking: 'Checking...',
       dev: 'Development mode',
+      ldap: 'LDAP mode',
       offline: 'Offline',
+      oidc: 'OIDC mode',
       trusted: 'Trusted mode',
     },
     stats: {
