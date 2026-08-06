@@ -43,10 +43,18 @@ class BaseClient(ABC):
         wait: bool = False,
         timeout: Optional[float] = None,
         watch_interval: float = 0,
+        processing_mode: str = "semantic_and_vectors",
         args: Optional[Dict[str, Any]] = None,
         telemetry: TelemetryRequest = False,
+        add_type: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        tag_mode: str = "replace",
     ) -> Dict[str, Any]:
-        """Add resource to OpenViking."""
+        """Add resource to OpenViking.
+
+        ``add_type`` declares a Connector source and requires an exact ``to``
+        target; it cannot be combined with ``parent``.
+        """
         ...
 
     @abstractmethod
@@ -329,6 +337,7 @@ class BaseClient(ABC):
         session_id: Optional[str] = None,
         telemetry: TelemetryRequest = False,
         memory_policy: Optional[Dict[str, Any]] = None,
+        auto_commit_policy: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Create a new session.
 
@@ -337,6 +346,7 @@ class BaseClient(ABC):
                        If None, creates a new session with auto-generated ID.
             telemetry: Whether to attach operation telemetry data to the result.
             memory_policy: Optional default memory extraction policy.
+            auto_commit_policy: Optional automatic-commit policy overrides.
         """
         ...
 
@@ -440,6 +450,11 @@ class BaseClient(ABC):
     @abstractmethod
     async def get_task(self, task_id: str) -> Optional[Dict[str, Any]]:
         """Query background task status."""
+        ...
+
+    @abstractmethod
+    async def cancel_task(self, task_id: str) -> Optional[Dict[str, Any]]:
+        """Cancel a background task."""
         ...
 
     @abstractmethod

@@ -310,8 +310,6 @@ def _make_provider(config, langfuse_client: Any = None):
     Bot's own VLM configuration. Otherwise the complete root VLM configuration
     is inherited, including its ordered credentials and failover behavior.
     """
-    from vikingbot.providers.litellm_provider import LiteLLMProvider
-
     p = config.agents
     model = p.model if p else None
     temperature = p.temperature if p else 0.7
@@ -321,6 +319,7 @@ def _make_provider(config, langfuse_client: Any = None):
     provider_name = p.provider if p else None
     extra_headers = p.extra_headers if p else {}
     timeout = p.timeout if p else None
+    max_tokens = getattr(p, "max_tokens", None) if p else None
     credentials = list(getattr(p, "credentials", None) or [])
 
     if not model and not credentials:
@@ -347,6 +346,8 @@ def _make_provider(config, langfuse_client: Any = None):
         root_vlm_data["thinking"] = thinking
         if timeout is not None:
             root_vlm_data["timeout"] = timeout
+        if max_tokens is not None:
+            root_vlm_data["max_tokens"] = max_tokens
         if extra_headers:
             root_vlm_data["extra_headers"] = extra_headers
         effective_vlm = VLMConfig.model_validate(root_vlm_data)
@@ -387,6 +388,8 @@ def _make_provider(config, langfuse_client: Any = None):
             bot_vlm_data["provider"] = provider_name
         if timeout is not None:
             bot_vlm_data["timeout"] = timeout
+        if max_tokens is not None:
+            bot_vlm_data["max_tokens"] = max_tokens
         if api_key:
             bot_vlm_data["api_key"] = api_key
         if api_base:
@@ -417,6 +420,8 @@ def _make_provider(config, langfuse_client: Any = None):
         }
         if timeout is not None:
             vlm_config["timeout"] = timeout
+        if max_tokens is not None:
+            vlm_config["max_tokens"] = max_tokens
         if api_key:
             vlm_config["api_key"] = api_key
         if api_base:
@@ -431,20 +436,10 @@ def _make_provider(config, langfuse_client: Any = None):
             langfuse_client=langfuse_client,
         )
 
-    # Fallback: legacy LiteLLMProvider (no explicit provider set)
-    if not api_key and not model.startswith("bedrock/"):
-        console.print("[yellow]Warning: No API key configured.[/yellow]")
-        console.print("You can configure providers later in the Console UI.")
-
-    return LiteLLMProvider(
-        api_key=api_key,
-        api_base=api_base,
-        default_model=model,
-        extra_headers=extra_headers,
-        provider_name=provider_name,
-        timeout=timeout,
-        thinking=thinking,
-        langfuse_client=langfuse_client,
+    raise RuntimeError(
+        "No VLM provider configured for VikingBot. Set bot.agents.provider, "
+        "configure bot.agents.credentials, or inherit the root vlm configuration. "
+        "Set provider to 'litellm' to use LiteLLM."
     )
 
 
@@ -498,14 +493,18 @@ def gateway(
     )
 
     cron = prepare_cron(bus)
+    agent_loop = prepare_agent_loop(config, bus, session_manager, cron)
+    from vikingbot.compile.service import BotCompileService
+
+    compile_service = BotCompileService(agent_loop=agent_loop)
     channels = prepare_channel(
         config,
         bus,
         fastapi_app=fastapi_app,
         enable_openapi=True,
         openapi_port=effective_port,
+        compile_service=compile_service,
     )
-    agent_loop = prepare_agent_loop(config, bus, session_manager, cron)
     heartbeat = prepare_heartbeat(config, agent_loop, session_manager)
 
     async def run():
@@ -523,6 +522,7 @@ def gateway(
         tasks = [
             cron.start(),
             heartbeat.start(),
+            compile_service.start(),
             channels.start_all(),
             agent_loop.run(),
             server.serve(),
@@ -651,7 +651,12 @@ Reminder message to deliver:
 
 
 def prepare_channel(
-    config, bus, fastapi_app=None, enable_openapi: bool = False, openapi_port: int = 18790
+    config,
+    bus,
+    fastapi_app=None,
+    enable_openapi: bool = False,
+    openapi_port: int = 18790,
+    compile_service=None,
 ):
     """Prepare channels for the bot.
 
@@ -677,6 +682,7 @@ def prepare_channel(
             bus,
             app=fastapi_app,  # Pass the external FastAPI app
             global_config=config,
+            compile_service=compile_service,
         )
         channels.add_channel(openapi_channel)
         logger.info(f"OpenAPI channel enabled on port {openapi_port}")
@@ -1136,13 +1142,17 @@ def cron_add(
 
     session_key = SessionKey(type="cli", channel_id="default", chat_id="default")
 
-    job = service.add_job(
-        name=name,
-        schedule=schedule,
-        message=message,
-        deliver=deliver,
-        session_key=session_key,
-    )
+    try:
+        job = service.add_job(
+            name=name,
+            schedule=schedule,
+            message=message,
+            deliver=deliver,
+            session_key=session_key,
+        )
+    except ValueError as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1) from e
 
     console.print(f"[green]✓[/green] Added job '{job.name}' ({job.id})")
 
@@ -1176,7 +1186,11 @@ def cron_enable(
     store_path = get_data_dir() / "cron" / "jobs.json"
     service = CronService(store_path)
 
-    job = service.enable_job(job_id, enabled=not disable)
+    try:
+        job = service.enable_job(job_id, enabled=not disable)
+    except ValueError as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1) from e
     if job:
         status = "disabled" if disable else "enabled"
         console.print(f"[green]✓[/green] Job '{job.name}' {status}")
@@ -1199,10 +1213,16 @@ def cron_run(
     async def run():
         return await service.run_job(job_id, force=force)
 
-    if asyncio.run(run()):
-        console.print("[green]✓[/green] Job executed")
-    else:
+    try:
+        executed = asyncio.run(run())
+    except RuntimeError as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1) from e
+
+    if not executed:
         console.print(f"[red]Failed to run job {job_id}[/red]")
+        raise typer.Exit(1)
+    console.print("[green]✓[/green] Job executed")
 
 
 # ============================================================================

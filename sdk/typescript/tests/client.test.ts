@@ -7,6 +7,7 @@ import {
   OpenVikingError,
   normalizeURI,
 } from "../src/index.js";
+import type { AddResourceOptions } from "../src/index.js";
 
 const ok = (result: unknown) =>
   new Response(JSON.stringify({ status: "ok", result }), {
@@ -15,6 +16,16 @@ const ok = (result: unknown) =>
   });
 
 describe("OpenVikingClient", () => {
+  it("does not expose a top-level resource parse mode option", () => {
+    const options: AddResourceOptions = {
+      // @ts-expect-error parse_mode is configured through args
+      parseMode: "no_split",
+    };
+    expect((options as unknown as Record<string, unknown>).parseMode).toBe(
+      "no_split",
+    );
+  });
+
   it("normalizes URIs", () => {
     expect(normalizeURI("resources/docs")).toBe("viking://resources/docs");
     expect(normalizeURI("viking://resources/docs")).toBe(
@@ -88,6 +99,52 @@ describe("OpenVikingClient", () => {
     });
   });
 
+  it("sends processing_mode for addResource requests", async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(ok({}));
+    const client = new OpenVikingClient({
+      baseUrl: "https://example.com",
+      fetch: fetcher,
+    });
+
+    await client.addResource("https://example.com/guide.md", {
+      to: "viking://resources/guide",
+      processingMode: "vectors_only",
+      wait: true,
+    });
+
+    const [url, init] = fetcher.mock.calls[0]!;
+    expect(String(url)).toBe("https://example.com/api/v1/resources");
+    expect(JSON.parse(String(init?.body))).toMatchObject({
+      path: "https://example.com/guide.md",
+      to: "viking://resources/guide",
+      processing_mode: "vectors_only",
+      wait: true,
+    });
+  });
+
+  it("sends processing_mode for write requests", async () => {
+    const fetcher = vi.fn<typeof fetch>().mockResolvedValue(ok({}));
+    const client = new OpenVikingClient({
+      baseUrl: "https://example.com",
+      fetch: fetcher,
+    });
+
+    await client.write("resources/demo.md", "updated", {
+      processingMode: "vectors_only",
+      wait: true,
+    });
+
+    const [url, init] = fetcher.mock.calls[0]!;
+    expect(String(url)).toBe("https://example.com/api/v1/content/write");
+    expect(JSON.parse(String(init?.body))).toMatchObject({
+      uri: "viking://resources/demo.md",
+      content: "updated",
+      mode: "replace",
+      processing_mode: "vectors_only",
+      wait: true,
+    });
+  });
+
   it("maps response envelopes to typed errors", async () => {
     const fetcher = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(
@@ -141,6 +198,27 @@ describe("OpenVikingClient", () => {
     expect(url.searchParams.get("node_limit")).toBe("200");
     expect(url.searchParams.get("sort_by")).toBe("mtime");
     expect(url.searchParams.get("sort_order")).toBe("desc");
+  });
+
+  it("sends addResource tags and tagMode to the server", async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(ok({ root_uri: "viking://resources/demo" }));
+    const client = new OpenVikingClient({
+      baseUrl: "https://example.com",
+      fetch: fetcher,
+    });
+
+    await client.addResource("https://example.com/demo.md", {
+      tags: ["team=search"],
+      tagMode: "append",
+    });
+
+    expect(JSON.parse(String(fetcher.mock.calls[0]![1]?.body))).toMatchObject({
+      path: "https://example.com/demo.md",
+      tags: ["team=search"],
+      tag_mode: "append",
+    });
   });
 
   it("converts an existing Node.js image path to a data URI", async () => {
@@ -333,6 +411,27 @@ describe("OpenVikingClient", () => {
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
+  });
+
+  it("serializes resource parse mode through args", async () => {
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockImplementation(async () => ok({}));
+    const client = new OpenVikingClient({
+      baseUrl: "https://example.com",
+      fetch: fetcher,
+    });
+
+    await client.addResource("https://example.com/default.md");
+    await client.addResource("https://example.com/raw.pdf", {
+      args: { parse_mode: "no_split" },
+    });
+
+    const defaultBody = JSON.parse(String(fetcher.mock.calls[0]![1]?.body));
+    const noSplitBody = JSON.parse(String(fetcher.mock.calls[1]![1]?.body));
+    expect(defaultBody).not.toHaveProperty("parse_mode");
+    expect(noSplitBody).not.toHaveProperty("parse_mode");
+    expect(noSplitBody.args).toEqual({ parse_mode: "no_split" });
   });
 
   it("streams OVPack exports to a normalized local file", async () => {

@@ -16,6 +16,7 @@ func (c *Client) CreateSession(ctx context.Context, opts *CreateSessionOptions) 
 	payload := map[string]any{}
 	setString(payload, "session_id", opts.SessionID)
 	setAny(payload, "memory_policy", opts.MemoryPolicy)
+	setAny(payload, "auto_commit_policy", opts.AutoCommitPolicy)
 	setAny(payload, "telemetry", opts.Telemetry)
 	var result map[string]any
 	err := c.doJSON(ctx, http.MethodPost, "/api/v1/sessions", nil, payload, &result)
@@ -134,6 +135,23 @@ func (c *Client) GetTask(ctx context.Context, taskID string) (map[string]any, er
 		return nil, err
 	}
 	return result, nil
+}
+
+// CancelTask requests cooperative cancellation of a background task.
+func (c *Client) CancelTask(
+	ctx context.Context,
+	taskID string,
+) (map[string]any, error) {
+	var result map[string]any
+	err := c.doJSON(
+		ctx,
+		http.MethodPost,
+		"/api/v1/tasks/"+url.PathEscape(taskID)+"/cancel",
+		nil,
+		nil,
+		&result,
+	)
+	return result, err
 }
 
 // ListTasks lists background tasks visible to the caller.

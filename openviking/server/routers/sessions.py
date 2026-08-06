@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from openviking.core.path_variables import resolve_path_variables
 from openviking.core.peer_id import normalize_peer_id
 from openviking.message.part import Part, TextPart, part_from_dict
-from openviking.server.auth import get_request_context
+from openviking.server.auth import get_session_request_context
 from openviking.server.dependencies import get_service
 from openviking.server.identity import RequestContext
 from openviking.server.models import ErrorInfo, Response
@@ -73,6 +73,23 @@ class ToolPartRequest(BaseModel):
 PartRequest = TextPartRequest | ContextPartRequest | ToolPartRequest
 
 
+class AutoCommitPolicyRequest(BaseModel):
+    """Session-level auto-commit policy overrides.
+
+    All fields are optional. Bounds are not enforced here: ``AutoCommitPolicy``
+    clamps every value into ``[0, max]`` so clamping lives in one place across
+    the HTTP, SDK, and CLI entrypoints.
+    """
+
+    pending_token_threshold: Optional[int] = None
+    message_count_threshold: Optional[int] = None
+    idle_timeout_seconds: Optional[int] = None
+    keep_recent_count: Optional[int] = None
+    min_commit_interval_seconds: Optional[int] = None
+
+    model_config = {"extra": "forbid"}
+
+
 class AddMessageRequest(BaseModel):
     """Request model for adding a message.
 
@@ -85,8 +102,6 @@ class AddMessageRequest(BaseModel):
 
     role: str
     peer_id: Optional[str] = None
-    agent_id: Optional[str] = None
-    agent_uri: Optional[str] = None
     content: Optional[str] = None
     parts: Optional[List[Dict[str, Any]]] = None
     created_at: Optional[str] = None
@@ -128,6 +143,7 @@ class CreateSessionRequest(BaseModel):
 
     session_id: Optional[str] = None
     memory_policy: Optional[Dict[str, Any]] = None
+    auto_commit_policy: Optional[AutoCommitPolicyRequest] = None
     telemetry: TelemetryRequest = False
 
 
@@ -138,12 +154,17 @@ def _resolve_message_parts(msg_request: AddMessageRequest) -> List[Part]:
     return [TextPart(text=msg_request.content or "")]
 
 
-def _resolve_message_peer_id(msg_request: AddMessageRequest, ctx: RequestContext) -> Optional[str]:
-    if msg_request.peer_id is not None:
-        return msg_request.peer_id
-    if ctx.legacy_agent_id is not None and msg_request.role == "assistant":
-        return ctx.legacy_agent_id
-    return None
+def _session_pending_tokens(session: Any) -> int:
+    """Read the post-write pending-token count from a session.
+
+    Returns 0 when the session object does not expose ``meta`` so the response
+    stays well-formed against lightweight or legacy session implementations.
+    """
+    meta = getattr(session, "meta", None)
+    try:
+        return max(0, int(getattr(meta, "pending_tokens", 0) or 0))
+    except (TypeError, ValueError):
+        return 0
 
 
 def _part_request_to_part(raw_part: Dict[str, Any]) -> Part:
@@ -188,7 +209,7 @@ def _to_jsonable(value: Any) -> Any:
 @router.post("")
 async def create_session(
     request: CreateSessionRequest = Body(default_factory=CreateSessionRequest),
-    _ctx: RequestContext = Depends(get_request_context),
+    _ctx: RequestContext = Depends(get_session_request_context),
 ):
     """Create a new session.
 
@@ -197,17 +218,23 @@ async def create_session(
     """
     service = get_service()
 
+    auto_commit_policy_payload: Optional[Dict[str, Any]] = None
+    if request.auto_commit_policy is not None:
+        auto_commit_policy_payload = request.auto_commit_policy.model_dump(exclude_none=True)
+
     async def _create() -> dict[str, Any]:
         await service.initialize_user_directories(_ctx)
         session = await service.sessions.create(
             _ctx,
             request.session_id,
             memory_policy=request.memory_policy,
+            auto_commit_policy=auto_commit_policy_payload,
         )
         return {
             "session_id": session.session_id,
             "uri": session.uri,
             "user": session.user.to_dict(),
+            "auto_commit_policy": service.sessions.effective_auto_commit_policy(session),
         }
 
     execution = await run_operation(
@@ -220,7 +247,7 @@ async def create_session(
 
 @router.get("")
 async def list_sessions(
-    _ctx: RequestContext = Depends(get_request_context),
+    _ctx: RequestContext = Depends(get_session_request_context),
 ):
     """List all sessions."""
     service = get_service()
@@ -232,7 +259,7 @@ async def list_sessions(
 async def get_session(
     session_id: str = Path(..., description="Session ID"),
     auto_create: bool = Query(False, description="Create the session if it does not exist"),
-    _ctx: RequestContext = Depends(get_request_context),
+    _ctx: RequestContext = Depends(get_session_request_context),
 ):
     """Get session details."""
     from openviking_cli.exceptions import NotFoundError
@@ -246,6 +273,7 @@ async def get_session(
     result["uri"] = session.uri
     result["user"] = session.user.to_dict()
     result["pending_tokens"] = int(session.meta.pending_tokens or 0)
+    result["auto_commit_policy"] = service.sessions.effective_auto_commit_policy(session)
     return Response(status="ok", result=result)
 
 
@@ -254,7 +282,7 @@ async def list_tool_results(
     session_id: str = Path(..., description="Session ID"),
     tool_name: Optional[str] = Query(None, description="Filter by tool name"),
     limit: int = Query(50, ge=1, description="Maximum number of tool results"),
-    _ctx: RequestContext = Depends(get_request_context),
+    _ctx: RequestContext = Depends(get_session_request_context),
 ):
     """List externalized tool results for a session."""
     service = get_service()
@@ -270,7 +298,7 @@ async def read_tool_result(
     offset: int = Query(0, ge=0, description="Unicode character offset"),
     limit: int = Query(20_000, description="Maximum Unicode characters to return"),
     include_metadata: bool = Query(True, description="Include metadata in response"),
-    _ctx: RequestContext = Depends(get_request_context),
+    _ctx: RequestContext = Depends(get_session_request_context),
 ):
     """Read an externalized tool result by Unicode character range."""
     if limit < -1:
@@ -297,7 +325,7 @@ async def search_tool_result(
     q: str = Query(..., min_length=1, description="Search query"),
     limit: int = Query(20, ge=1, description="Maximum matches"),
     context_chars: int = Query(300, ge=0, description="Context characters around each hit"),
-    _ctx: RequestContext = Depends(get_request_context),
+    _ctx: RequestContext = Depends(get_session_request_context),
 ):
     """Search within an externalized tool result."""
     service = get_service()
@@ -315,7 +343,7 @@ async def search_tool_result(
 async def get_session_context(
     session_id: str = Path(..., description="Session ID"),
     token_budget: int = Query(128_000, description="Token budget for session context"),
-    _ctx: RequestContext = Depends(get_request_context),
+    _ctx: RequestContext = Depends(get_session_request_context),
 ):
     """Get assembled session context."""
     if token_budget < 0:
@@ -335,7 +363,7 @@ async def get_session_context(
 async def get_session_archive(
     session_id: str = Path(..., description="Session ID"),
     archive_id: str = Path(..., description="Archive ID"),
-    _ctx: RequestContext = Depends(get_request_context),
+    _ctx: RequestContext = Depends(get_session_request_context),
 ):
     """Get one completed archive for a session."""
     from openviking_cli.exceptions import NotFoundError
@@ -355,7 +383,7 @@ async def get_session_archive(
 @router.delete("/{session_id}")
 async def delete_session(
     session_id: str = Path(..., description="Session ID"),
-    _ctx: RequestContext = Depends(get_request_context),
+    _ctx: RequestContext = Depends(get_session_request_context),
 ):
     """Delete a session."""
     service = get_service()
@@ -427,7 +455,7 @@ class CommitRequest(BaseModel):
 async def commit_session(
     session_id: str = Path(..., description="Session ID"),
     body: CommitRequest = Body(default_factory=CommitRequest),
-    _ctx: RequestContext = Depends(get_request_context),
+    _ctx: RequestContext = Depends(get_session_request_context),
 ):
     """Commit a session (archive and extract memories).
 
@@ -465,7 +493,7 @@ async def commit_session(
 @router.post("/{session_id}/extract")
 async def extract_session(
     session_id: str = Path(..., description="Session ID"),
-    _ctx: RequestContext = Depends(get_request_context),
+    _ctx: RequestContext = Depends(get_session_request_context),
 ):
     """Extract memories from a session."""
     service = get_service()
@@ -477,7 +505,7 @@ async def extract_session(
 async def add_message(
     request: AddMessageRequest,
     session_id: str = Path(..., description="Session ID"),
-    _ctx: RequestContext = Depends(get_request_context),
+    _ctx: RequestContext = Depends(get_session_request_context),
 ):
     """Add a message to a session.
 
@@ -504,7 +532,7 @@ async def add_message(
             {
                 "role": request.role,
                 "parts": parts,
-                "peer_id": _resolve_message_peer_id(request, _ctx),
+                "peer_id": request.peer_id,
                 "created_at": request.created_at,
                 "turn_id": request.turn_id,
                 "message_kind": request.message_kind,
@@ -516,9 +544,18 @@ async def add_message(
             await add_many_async(specs)
         else:
             session.add_messages(specs)
+        await service.sessions.maybe_schedule_auto_commit(
+            session_id,
+            _ctx,
+            reason_hint="message_write",
+            session=session,
+        )
         return {
             "session_id": session_id,
             "message_count": len(session.messages),
+            # Post-write value so a commit policy can decide without a
+            # follow-up get_session round trip.
+            "pending_tokens": _session_pending_tokens(session),
         }
 
     execution = await run_operation(
@@ -533,7 +570,7 @@ async def add_message(
 async def batch_add_messages(
     request: BatchAddMessageRequest,
     session_id: str = Path(..., description="Session ID"),
-    _ctx: RequestContext = Depends(get_request_context),
+    _ctx: RequestContext = Depends(get_session_request_context),
 ):
     """Add multiple messages to a session in a single request.
 
@@ -551,7 +588,7 @@ async def batch_add_messages(
                 {
                     "role": msg_request.role,
                     "parts": parts,
-                    "peer_id": _resolve_message_peer_id(msg_request, _ctx),
+                    "peer_id": msg_request.peer_id,
                     "created_at": msg_request.created_at,
                     "turn_id": msg_request.turn_id,
                     "message_kind": msg_request.message_kind,
@@ -563,10 +600,19 @@ async def batch_add_messages(
             msgs = await add_many_async(specs)
         else:
             msgs = session.add_messages(specs)
+        await service.sessions.maybe_schedule_auto_commit(
+            session_id,
+            _ctx,
+            reason_hint="message_write",
+            session=session,
+        )
         return {
             "session_id": session_id,
             "message_count": len(session.messages),
             "added": len(msgs),
+            # Post-write value so a commit policy can decide without a
+            # follow-up get_session round trip.
+            "pending_tokens": _session_pending_tokens(session),
         }
 
     execution = await run_operation(
@@ -581,7 +627,7 @@ async def batch_add_messages(
 async def record_used(
     request: UsedRequest,
     session_id: str = Path(..., description="Session ID"),
-    _ctx: RequestContext = Depends(get_request_context),
+    _ctx: RequestContext = Depends(get_session_request_context),
 ):
     """Record actually used contexts and skills in a session."""
     service = get_service()

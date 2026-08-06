@@ -110,6 +110,10 @@ Example configuration:
 }
 ```
 
+`autoRecall.limit` is a legacy quota-scaling input, not a final result cap.
+Explicit values from 1 through 5 produce an effective total quota of 6 because
+each coding category keeps one retrieval slot.
+
 It is recommended to provide the API key through an environment variable instead of writing it into the configuration file:
 
 ```bash
@@ -132,7 +136,6 @@ In a new OpenCode session, ask the agent to browse OpenViking memory or search f
 - `openviking_read`, `openviking_list`, `openviking_grep`, `openviking_glob`
 - `openviking_remember`, `openviking_add_resource`, `openviking_forget`, `openviking_health`
 - `openviking_list_watches`, `openviking_cancel_watch`
-- `openviking_code_search`, `openviking_code_outline`, `openviking_code_expand`
 
 If anything looks wrong, check the runtime files:
 
@@ -162,7 +165,6 @@ The plugin registers OpenViking's stdio MCP proxy through OpenCode config. The s
 - `openviking_add_resource`: add a URL, local file, sitemap, or feed.
 - `openviking_forget`: delete a `viking://` URI after explicit user confirmation.
 - `openviking_list_watches` / `openviking_cancel_watch`: inspect or cancel resource watches.
-- `openviking_code_search`, `openviking_code_outline`, `openviking_code_expand`: inspect indexed code symbols.
 - `openviking_health`: check OpenViking server health.
 
 Usage guidance:
