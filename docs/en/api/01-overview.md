@@ -191,7 +191,7 @@ client.initialize()
 #### HTTP Call Examples
 
 - CLI, `SyncHTTPClient`, and `AsyncHTTPClient` automatically upload local files or directories before calling the server API.
-- Python HTTP client and CLI can also opt into shared temporary uploads via client config (`ovcli.conf` -> `upload.mode = "shared"`).
+- Python HTTP clients can opt into shared temporary uploads through `ovcli.conf` (`upload.mode = "shared"`). The Rust `ov` CLI does not read that field; set `OPENVIKING_UPLOAD_MODE=shared` for `ov` instead.
 - Raw HTTP calls don't get this convenience layer. When using `curl` or other HTTP clients, you need to first call `POST /api/v1/resources/temp_upload`, then pass the returned `temp_file_id` to the target API.
 - `temp_upload` defaults to `upload_mode=local`. Use `upload_mode=shared` only when you explicitly want distributed shared temporary uploads.
 - For raw HTTP imports of local directories, you need to first zip them into a `.zip` file and upload using the above method; the server does not accept direct host directory paths.
@@ -436,6 +436,7 @@ This catalog follows the routes actually mounted by the server. Each group headi
 | GET | `/api/v1/content/overview` | Read an overview (L1) |
 | GET | `/api/v1/content/download` | Download original file bytes |
 | POST | `/api/v1/content/write` | Write content and refresh semantic indexes |
+| POST | `/api/v1/content/batch-write` | Apply preconditioned multi-file writes |
 | POST | `/api/v1/content/set_tags` | Set retrieval tags |
 | POST | `/api/v1/content/reindex` | Rebuild semantic or vector indexes |
 
@@ -451,7 +452,7 @@ This catalog follows the routes actually mounted by the server. Each group headi
 | PUT | `/api/v1/skills/{skill_name}` | Update a skill |
 | DELETE | `/api/v1/skills/{skill_name}` | Delete a skill |
 
-### [Sessions](05-sessions.md) and [Memory](16-memory.md)
+### [Sessions](05-sessions.md), [Memory](16-memory.md), and [Agent Evolution](19-agent-evolution.md)
 
 | Method | Path | Description |
 |--------|------|-------------|
@@ -469,19 +470,18 @@ This catalog follows the routes actually mounted by the server. Each group headi
 | POST | `/api/v1/sessions/{session_id}/messages` | Add one message |
 | POST | `/api/v1/sessions/{session_id}/messages/batch` | Add messages in a batch |
 | POST | `/api/v1/sessions/{session_id}/used` | Record context or skills actually used |
-| POST | `/api/v1/search/recall` | Recall memory as injection-ready context |
+| POST | `/api/v1/search/recall` | Deprecated: thin preset over the search endpoint with `mode="context"` |
+| GET | `/api/v1/agent-evolution/experiences/trajectories` | List trajectories that consumed an Experience |
+| GET | `/api/v1/agent-evolution/experiences/outcomes` | Aggregate outcomes of trajectories that consumed an Experience |
 
-### [Retrieval](06-retrieval.md), [Code Retrieval](21-code.md), and [Relations](13-relations.md)
+### [Retrieval](06-retrieval.md) and [Relations](13-relations.md)
 
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/api/v1/search/find` | Semantic search |
-| POST | `/api/v1/search/search` | Context-aware search |
+| POST | `/api/v1/search/search` | Context-aware search; `mode="context"` returns assembled, injection-ready context |
 | POST | `/api/v1/search/grep` | Content pattern search |
 | POST | `/api/v1/search/glob` | File pattern matching |
-| POST | `/api/v1/code/outline` | Extract code structure |
-| POST | `/api/v1/code/search` | Search code |
-| POST | `/api/v1/code/expand` | Expand code context |
 | GET | `/api/v1/relations` | Get resource relations |
 | POST | `/api/v1/relations/link` | Create a resource link |
 | DELETE | `/api/v1/relations/link` | Delete a resource link |
@@ -517,6 +517,7 @@ This catalog follows the routes actually mounted by the server. Each group headi
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/v1/tasks/{task_id}` | Get a background task |
+| POST | `/api/v1/tasks/{task_id}/cancel` | Cancel a background task |
 | GET | `/api/v1/tasks` | List background tasks |
 | GET | `/api/v1/observer/queue` | Queue status |
 | GET | `/api/v1/observer/vikingdb` | VikingDB status |
@@ -531,6 +532,10 @@ This catalog follows the routes actually mounted by the server. Each group headi
 
 | Method | Path | Description |
 |--------|------|-------------|
+| GET | `/api/v1/admin/agent-evolution` | Get the caller account's Agent Evolution status |
+| PUT | `/api/v1/admin/agent-evolution` | Update the caller account's Agent Evolution status |
+| GET | `/api/v1/admin/accounts/{account_id}/settings` | Get effective account settings |
+| PATCH | `/api/v1/admin/accounts/{account_id}/settings` | Update allowlisted account settings |
 | POST | `/api/v1/admin/accounts` | Create an account and its first administrator |
 | GET | `/api/v1/admin/accounts` | List accounts |
 | POST | `/api/v1/admin/migrate` | Migrate legacy identity data |
@@ -538,7 +543,7 @@ This catalog follows the routes actually mounted by the server. Each group headi
 | POST | `/api/v1/admin/accounts/{account_id}/users` | Register a user |
 | GET | `/api/v1/admin/accounts/{account_id}/users` | List users |
 | DELETE | `/api/v1/admin/accounts/{account_id}/users/{user_id}` | Remove a user |
-| PUT | `/api/v1/admin/accounts/{account_id}/users/{user_id}/role` | Change a user role |
+| PUT | `/api/v1/admin/accounts/{account_id}/users/{user_id}/role` | Promote a user to ADMIN |
 | POST | `/api/v1/admin/accounts/{account_id}/users/{user_id}/key` | Regenerate a user key |
 | GET | `/api/v1/privacy-configs` | List privacy configuration categories |
 | GET | `/api/v1/privacy-configs/{category}` | List category targets |
@@ -548,10 +553,12 @@ This catalog follows the routes actually mounted by the server. Each group headi
 | POST | `/api/v1/privacy-configs/{category}/{target_key}` | Write and activate a new version |
 | POST | `/api/v1/privacy-configs/{category}/{target_key}/activate` | Activate a version |
 
-### [WebDAV](20-webdav.md) and [VikingBot API](24-vikingbot.md)
+### [OpenViking Assets](22-openviking-assets.md), [WebDAV](20-webdav.md), and [VikingBot API](24-vikingbot.md)
 
 | Method | Path | Description |
 |--------|------|-------------|
+| POST | `/api/v1/openviking-assets/resolve` | Parse and validate a Catalog and Manifest, returning a normalized asset plan |
+| POST | `/api/v1/openviking-assets/preflight` | Read-only access check for a Git repository and ref |
 | OPTIONS | `/webdav/resources`, `/webdav/resources/{resource_path}` | Query WebDAV capabilities |
 | PROPFIND | `/webdav/resources`, `/webdav/resources/{resource_path}` | Query resource properties |
 | GET / HEAD | `/webdav/resources`, `/webdav/resources/{resource_path}` | Read a file or directory |
@@ -563,6 +570,8 @@ This catalog follows the routes actually mounted by the server. Each group headi
 | POST | `/bot/v1/chat` | Non-streaming VikingBot chat |
 | POST | `/bot/v1/chat/stream` | Streaming VikingBot chat |
 | POST | `/bot/v1/feedback` | Submit feedback for a VikingBot answer |
+| POST | `/bot/v1/compile` | Start a Skill-driven Compile task |
+| GET | `/bot/v1/compile/{task_id}` | Get Compile task status |
 
 ---
 
@@ -577,4 +586,4 @@ The sidebar is organized by responsibility rather than historical file size:
 | Data Lifecycle | Watches, snapshots, and OVPack |
 | Operations & Observability | System, tasks, Observer, and Metrics |
 | Identity & Governance | Administration and privacy configuration |
-| Protocols & Extensions | WebDAV and VikingBot API |
+| Protocols & Extensions | OpenViking Assets, WebDAV, and VikingBot API |

@@ -15,6 +15,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
+from openviking.resource.processing_mode import DEFAULT_PROCESSING_MODE, ProcessingMode
 from openviking.resource.watch_storage import (
     WATCH_TASK_STORAGE_BAK_URI,
     WATCH_TASK_STORAGE_TMP_URI,
@@ -61,12 +62,20 @@ class WatchTask(BaseModel):
     )
     path: str = Field(..., description="Resource path to monitor")
     to_uri: Optional[str] = Field(None, description="Target URI")
+    to_is_directory: Optional[bool] = Field(
+        None,
+        description="Whether the target URI is a directory destination",
+    )
     parent_uri: Optional[str] = Field(None, description="Parent URI")
     reason: str = Field(default="", description="Reason for monitoring")
     instruction: str = Field(default="", description="Monitoring instruction")
     watch_interval: float = Field(default=60.0, description="Monitoring interval in minutes")
     build_index: bool = Field(default=True, description="Whether to build vector index")
     summarize: bool = Field(default=False, description="Whether to generate summary")
+    processing_mode: ProcessingMode = Field(
+        default=DEFAULT_PROCESSING_MODE,
+        description="Post-ingest processing mode for scheduled add_resource runs",
+    )
     processor_kwargs: Dict[str, Any] = Field(
         default_factory=dict, description="Extra kwargs forwarded to processor"
     )
@@ -97,6 +106,7 @@ class WatchTask(BaseModel):
             "watch_interval": self.watch_interval,
             "build_index": self.build_index,
             "summarize": self.summarize,
+            "processing_mode": self.processing_mode,
             "processor_kwargs": self.processor_kwargs,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "last_execution_time": self.last_execution_time.isoformat()
@@ -114,6 +124,7 @@ class WatchTask(BaseModel):
     def to_storage_dict(self) -> Dict[str, Any]:
         """Convert task to dictionary for watch-task persistence."""
         data = self.to_dict()
+        data["to_is_directory"] = self.to_is_directory
         if self.auth_state is not None:
             data["auth_state"] = self.auth_state
         return data
@@ -378,12 +389,14 @@ class WatchManager:
         user_id: str = "default",
         original_role: str = "user",
         to_uri: Optional[str] = None,
+        to_is_directory: Optional[bool] = None,
         parent_uri: Optional[str] = None,
         reason: str = "",
         instruction: str = "",
         watch_interval: float = 60.0,
         build_index: bool = True,
         summarize: bool = False,
+        processing_mode: ProcessingMode = DEFAULT_PROCESSING_MODE,
         processor_kwargs: Optional[Dict[str, Any]] = None,
         auth_state: Optional[Dict[str, Any]] = None,
     ) -> WatchTask:
@@ -421,12 +434,14 @@ class WatchManager:
             task = WatchTask(
                 path=path,
                 to_uri=to_uri,
+                to_is_directory=to_is_directory,
                 parent_uri=parent_uri,
                 reason=reason,
                 instruction=instruction,
                 watch_interval=watch_interval,
                 build_index=build_index,
                 summarize=summarize,
+                processing_mode=processing_mode,
                 processor_kwargs=processor_kwargs or {},
                 auth_state=auth_state,
                 account_id=account_id,
@@ -455,12 +470,14 @@ class WatchManager:
         role: str,
         path: Optional[str] = None,
         to_uri: Optional[str] = None,
+        to_is_directory: Optional[bool] = None,
         parent_uri: Optional[str] = None,
         reason: Optional[str] = None,
         instruction: Optional[str] = None,
         watch_interval: Optional[float] = None,
         build_index: Optional[bool] = None,
         summarize: Optional[bool] = None,
+        processing_mode: Optional[ProcessingMode] = None,
         processor_kwargs: Optional[Dict[str, Any]] = None,
         auth_state: Any = _UNSET,
         is_active: Optional[bool] = None,
@@ -512,6 +529,8 @@ class WatchManager:
                 task.path = path
             if to_uri is not None:
                 task.to_uri = to_uri
+            if to_is_directory is not None:
+                task.to_is_directory = to_is_directory
             if parent_uri is not None:
                 task.parent_uri = parent_uri
             if reason is not None:
@@ -531,6 +550,8 @@ class WatchManager:
                 task.build_index = build_index
             if summarize is not None:
                 task.summarize = summarize
+            if processing_mode is not None:
+                task.processing_mode = processing_mode
             if processor_kwargs is not None:
                 task.processor_kwargs = processor_kwargs
             if auth_state is not _UNSET:

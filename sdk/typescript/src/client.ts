@@ -26,6 +26,7 @@ import type {
   TreeOptions,
   UpdateWatchOptions,
   WaitOptions,
+  WriteOptions,
 } from "./types.js";
 
 const compact = (value: JsonObject): JsonObject =>
@@ -119,10 +120,13 @@ export class OpenVikingClient {
       directly_upload_media: options.directlyUploadMedia ?? true,
       preserve_structure: options.preserveStructure,
       watch_interval: options.watchInterval ?? 0,
+      processing_mode: options.processingMode,
       args:
         options.args && Object.keys(options.args).length
           ? options.args
           : undefined,
+      tags: options.tags,
+      tag_mode: options.tags ? options.tagMode : undefined,
       telemetry: options.telemetry,
     });
     const local = await nodePathToBlob(source);
@@ -499,13 +503,14 @@ export class OpenVikingClient {
   write(
     uri: string,
     content: string,
-    options: WaitOptions & { mode?: string } = {},
+    options: WriteOptions = {},
   ): Promise<JsonObject> {
     return this.request("POST", "/api/v1/content/write", {
       body: compact({
         uri: normalizeURI(uri),
         content,
         mode: options.mode ?? "replace",
+        processing_mode: options.processingMode,
         wait: options.wait ?? false,
         timeout: options.timeout,
         telemetry: options.telemetry,
@@ -549,6 +554,7 @@ export class OpenVikingClient {
       body: compact({
         session_id: options.sessionId,
         memory_policy: options.memoryPolicy,
+        auto_commit_policy: options.autoCommitPolicy,
         telemetry: options.telemetry,
       }),
     });
@@ -750,6 +756,13 @@ export class OpenVikingClient {
       }
       throw error;
     }
+  }
+
+  cancelTask(taskId: string): Promise<JsonObject> {
+    return this.request(
+      "POST",
+      `/api/v1/tasks/${pathPart(taskId)}/cancel`,
+    ) as Promise<JsonObject>;
   }
   /** List background tasks. */
   listTasks(options: TaskListOptions = {}): Promise<unknown[]> {

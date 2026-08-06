@@ -286,11 +286,13 @@ class WatchScheduler:
                         path=task.path,
                         ctx=ctx,
                         to=task.to_uri,
+                        to_is_directory=getattr(task, "to_is_directory", None),
                         parent=task.parent_uri,
                         reason=task.reason,
                         instruction=task.instruction,
                         build_index=getattr(task, "build_index", True),
                         summarize=getattr(task, "summarize", False),
+                        processing_mode=getattr(task, "processing_mode", "semantic_and_vectors"),
                         watch_interval=task.watch_interval,
                         **processor_kwargs,
                     )

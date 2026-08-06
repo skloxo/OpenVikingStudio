@@ -56,18 +56,22 @@ class SyncOpenViking:
         session_id: Optional[str] = None,
         telemetry: TelemetryRequest = False,
         memory_policy: Optional[Dict[str, Any]] = None,
+        auto_commit_policy: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Create a new session.
 
         Args:
             session_id: Optional session ID. If provided, creates a session with the given ID.
                        If None, creates a new session with auto-generated ID.
+            memory_policy: Optional default extraction policy for future commits.
+            auto_commit_policy: Optional automatic-commit policy overrides.
         """
         return run_async(
             self._async_client.create_session(
                 session_id,
                 telemetry=telemetry,
                 memory_policy=memory_policy,
+                auto_commit_policy=auto_commit_policy,
             )
         )
 
@@ -190,6 +194,10 @@ class SyncOpenViking:
         """Query background task status."""
         return run_async(self._async_client.get_task(task_id))
 
+    def cancel_task(self, task_id: str) -> Optional[Dict[str, Any]]:
+        """Cancel a background task."""
+        return run_async(self._async_client.cancel_task(task_id))
+
     def list_tasks(
         self,
         task_type: Optional[str] = None,
@@ -237,6 +245,10 @@ class SyncOpenViking:
         summarize: bool = False,
         args: Optional[Dict[str, Any]] = None,
         telemetry: TelemetryRequest = False,
+        processing_mode: str = "semantic_and_vectors",
+        add_type: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        tag_mode: str = "replace",
         **kwargs,
     ) -> Dict[str, Any]:
         """Add resource to OpenViking (resources scope only)
@@ -247,6 +259,9 @@ class SyncOpenViking:
         refreshed.
 
         Args:
+            add_type: Explicit Connector source type. Requires an exact ``to``
+                target and cannot be combined with ``parent``. The source
+                ``path`` is forwarded verbatim.
             to: Exact target URI. Existing targets keep the add_resource incremental-update behavior.
             parent: Target parent URI for automatic child naming.
             build_index: Whether to build vector index immediately (default: True).
@@ -254,11 +269,18 @@ class SyncOpenViking:
             **kwargs: Extra options forwarded to the parser chain, e.g.
                 ``strict``, ``ignore_dirs``, ``include``, ``exclude``.
         """
+        if add_type is not None:
+            add_type = add_type.strip() or None
+        if add_type and parent:
+            raise ValueError("'add_type' cannot be combined with 'parent'.")
+        if add_type and not to:
+            raise ValueError("'add_type' requires an exact 'to' target.")
         if to and parent:
             raise ValueError("Cannot specify both 'to' and 'parent' at the same time.")
         return run_async(
             self._async_client.add_resource(
                 path=path,
+                add_type=add_type,
                 to=to,
                 parent=parent,
                 reason=reason,
@@ -267,7 +289,10 @@ class SyncOpenViking:
                 timeout=timeout,
                 build_index=build_index,
                 summarize=summarize,
+                processing_mode=processing_mode,
                 args=args,
+                tags=tags,
+                tag_mode=tag_mode,
                 telemetry=telemetry,
                 **kwargs,
             )
@@ -488,6 +513,10 @@ class SyncOpenViking:
         """Read file"""
         return run_async(self._async_client.read(uri, offset=offset, limit=limit))
 
+    def read_raw(self, uri: str, offset: int = 0, limit: int = -1) -> str:
+        """Read raw file content, including hidden MEMORY_FIELDS metadata."""
+        return run_async(self._async_client.read_raw(uri, offset=offset, limit=limit))
+
     def write(
         self,
         uri: str,
@@ -496,6 +525,7 @@ class SyncOpenViking:
         wait: bool = False,
         timeout: Optional[float] = None,
         telemetry: TelemetryRequest = False,
+        processing_mode: str = "semantic_and_vectors",
     ) -> Dict[str, Any]:
         """Write text content to an existing file and refresh semantics/vectors."""
         return run_async(
@@ -506,6 +536,7 @@ class SyncOpenViking:
                 wait=wait,
                 timeout=timeout,
                 telemetry=telemetry,
+                processing_mode=processing_mode,
             )
         )
 
@@ -558,15 +589,22 @@ class SyncOpenViking:
     def import_ovpack(
         self,
         file_path: str,
-        target: str,
+        parent: Optional[str] = None,
         on_conflict: Optional[str] = None,
         vector_mode: Optional[str] = None,
+        *,
+        target: Optional[str] = None,
     ) -> str:
         """Import .ovpack file (triggers vectorization by default)"""
+        if parent is not None and target is not None:
+            raise ValueError("parent cannot be used with legacy target")
+        parent = parent if parent is not None else target
+        if parent is None:
+            raise TypeError("parent or legacy target is required")
         return run_async(
             self._async_client.import_ovpack(
                 file_path,
-                target,
+                parent,
                 on_conflict=on_conflict,
                 vector_mode=vector_mode,
             )
@@ -612,6 +650,14 @@ class SyncOpenViking:
     def wait_processed(self, timeout: float = None) -> Dict[str, Any]:
         """Wait for all async operations to complete"""
         return run_async(self._async_client.wait_processed(timeout))
+
+    def build_index(self, resource_uris: Union[str, List[str]], **kwargs) -> Dict[str, Any]:
+        """Manually trigger index building for resources."""
+        return run_async(self._async_client.build_index(resource_uris, **kwargs))
+
+    def summarize(self, resource_uris: Union[str, List[str]], **kwargs) -> Dict[str, Any]:
+        """Manually trigger summarization for resources."""
+        return run_async(self._async_client.summarize(resource_uris, **kwargs))
 
     def grep(
         self,

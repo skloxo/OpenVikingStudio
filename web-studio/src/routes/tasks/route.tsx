@@ -89,8 +89,10 @@ const TASK_TYPE_OPTIONS: Exclude<TaskTypeFilter, 'all'>[] = [
 const TASK_STATUS_OPTIONS: Exclude<TaskStatusFilter, 'all'>[] = [
   'pending',
   'running',
+  'cancelling',
   'completed',
   'failed',
+  'cancelled',
 ]
 
 // 根据 8 并发物理上限计算任务的物理有效状态 (前 8 个 running, 第 9 个及以后 pending)

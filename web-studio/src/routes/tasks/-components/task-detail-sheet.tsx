@@ -88,14 +88,18 @@ export function TaskDetailSheet({
     queryKey: ['task-detail', identityScopeKey, taskId],
     refetchInterval: (query) => {
       const status = normalizeTaskStatus(query.state.data?.status)
-      return status === 'pending' || status === 'running' ? 3_000 : false
+      return status === 'pending' ||
+        status === 'running' ||
+        status === 'cancelling'
+        ? 3_000
+        : false
     },
   })
   const task = detailQuery.data
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="gap-0 sm:max-w-xl">
+      <SheetContent className="gap-0 data-[side=right]:sm:max-w-3xl">
         <SheetHeader className="border-b px-6 py-5">
           <div className="flex items-center gap-3 pr-10">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
@@ -190,7 +194,41 @@ export function TaskDetailSheet({
                   />
                 </div>
 
-                  {/* Worker Sub-Queue Pipeline Diagram (Type-Aware) */}
+                {task.error ? (
+                  <DetailSection title={t('detail.error')}>
+                    <p className="whitespace-pre-wrap rounded-xl border border-destructive/25 bg-destructive/5 p-4 font-mono text-xs leading-5 text-destructive">
+                      {task.error}
+                    </p>
+                  </DetailSection>
+                ) : null}
+
+                {hasTaskResult(task.result) ? (
+                  <DetailSection title={t('detail.result')}>
+                    <pre className="max-h-96 overflow-auto rounded-xl border bg-muted/30 p-4 font-mono text-xs leading-5">
+                      {formatTaskResult(task.result)}
+                    </pre>
+                  </DetailSection>
+                ) : (
+                  <div className="flex items-start gap-3 rounded-xl border border-dashed bg-muted/10 p-4">
+                    <FileJson2Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                    <div className="grid gap-0.5">
+                      <p className="text-sm font-medium">
+                        {t('detail.noResult')}
+                      </p>
+                      <p className="text-xs leading-5 text-muted-foreground">
+                        {t(
+                          normalizeTaskStatus(task.status) === 'failed'
+                            ? 'detail.noResultFailedDescription'
+                            : normalizeTaskStatus(task.status) === 'cancelled'
+                              ? 'detail.noResultCancelledDescription'
+                              : 'detail.noResultDescription',
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Worker Sub-Queue Pipeline Diagram (Type-Aware) */}
                   {(() => {
                     const steps = getTaskPipelineSteps(task, i18n.language)
 
