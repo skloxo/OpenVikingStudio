@@ -558,12 +558,12 @@ class TaskTracker:
         user_id: Optional[str] = None,
         timeout: Optional[float] = None,
         poll_interval: float = 0.05,
-    ) -> TaskRecord:
+    ) -> Optional[TaskRecord]:
         """Wait for one task's terminal state without changing its lifecycle."""
-        async def _poll() -> TaskRecord:
+        async def _poll() -> Optional[TaskRecord]:
             while True:
                 task = await self.get(task_id, account_id=account_id, user_id=user_id)
-                if task.status in _TERMINAL_STATUSES:
+                if task and task.status in _TERMINAL_STATUSES:
                     return task
                 await asyncio.sleep(poll_interval)
 
@@ -697,10 +697,32 @@ class TaskTracker:
     async def _load_all_from_store(
         self, account_id: str, user_id: Optional[str]
     ) -> List[TaskRecord]:
-        return [
+        records = [
             self._record_from_payload(payload)
             for payload in await self._store.list(account_id, user_id=user_id)
         ]
+        auto_healed = []
+        now = time.time()
+        for task in records:
+            if task.status == TaskStatus.RUNNING:
+                task.status = TaskStatus.FAILED
+                task.stage = "failed"
+                task.error = "[Auto-Healing] Task was interrupted by service restart"
+                task.updated_at = now
+                auto_healed.append(task)
+        if auto_healed:
+            logger.info(
+                "[TaskTracker] Auto-healed %d interrupted task(s) for owner %s/%s",
+                len(auto_healed),
+                account_id,
+                user_id,
+            )
+            for t in auto_healed:
+                try:
+                    await self._store.update(t)
+                except Exception as e:
+                    logger.warning("[TaskTracker] Failed to persist auto-healed task %s: %s", t.task_id, e)
+        return records
 
     @staticmethod
     def _copy(task: TaskRecord) -> TaskRecord:
