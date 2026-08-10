@@ -646,6 +646,22 @@ class Session:
                 raise
             logger.debug(f"Session {self.session_id} not found, starting fresh")
 
+        # Restore compression_index (scan history directory)
+        try:
+            history_items = await self._viking_fs.ls(f"{self._session_uri}/history", ctx=self.ctx)
+            archive_indices = [
+                int(match.group(1))
+                for item in history_items
+                if (match := re.fullmatch(r"archive_(\d+)", item["name"]))
+            ]
+            if archive_indices:
+                max_index = max(archive_indices)
+                self._compression.compression_index = max_index
+                self._stats.compression_count = len(archive_indices)
+                logger.debug(f"Restored compression_index: {max_index}")
+        except Exception as exc:
+            if not _is_storage_not_found(exc):
+                raise
         # Load .meta.json
         try:
             meta_content = await self._viking_fs.read_file(
