@@ -27,7 +27,6 @@ from openviking.service.resource_service import ResourceService
 from openviking.service.search_service import SearchService
 from openviking.service.session_auto_commit import SessionAutoCommitScheduler
 from openviking.service.session_service import SessionService
-from openviking.service.session_auto_commit import SessionAutoCommitScheduler
 from openviking.service.task_tracker import get_task_tracker, set_task_tracker
 from openviking.session import create_session_compressor
 from openviking.storage.collection_schemas import init_context_collection
