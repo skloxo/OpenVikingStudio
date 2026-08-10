@@ -469,37 +469,49 @@ class WatchManager:
         auth_state: Any = _UNSET,
         is_active: Optional[bool] = None,
     ) -> WatchTask:
-        """Update an existing watch task."""
-        async with self._lock:
-            task = self._tasks.get(task_id)
-            if not task:
-                raise NotFoundError(f"Task '{task_id}' not found", resource=task_id)
+        """Update a watch task while its current and requested target URIs are stable."""
+        while True:
+            async with self._lock:
+                snapshot = self._tasks.get(task_id)
+                if not snapshot:
+                    raise NotFoundError(f"Task '{task_id}' not found", resource=task_id)
+                stable_account_id = snapshot.account_id
+                stable_to_uri = snapshot.to_uri
 
-            if not self._check_permission(task, account_id, user_id, role):
-                raise PermissionDeniedError(
-                    f"User {account_id}/{user_id} does not have permission to update task {task_id}"
-                )
+            async with self._uri_mutation_coordinator.access(
+                stable_account_id, [stable_to_uri, to_uri]
+            ):
+                async with self._lock:
+                    task = self._tasks.get(task_id)
+                    if not task:
+                        raise NotFoundError(f"Task '{task_id}' not found", resource=task_id)
+                    if task.account_id != stable_account_id or task.to_uri != stable_to_uri:
+                        continue
+                    if not self._check_permission(task, account_id, user_id, role):
+                        raise PermissionDeniedError(
+                            f"User {account_id}/{user_id} does not have permission to "
+                            f"update task {task_id}"
+                        )
+                    return await self._update_task_unlocked(
+                        task,
+                        account_id=account_id,
+                        user_id=user_id,
+                        path=path,
+                        to_uri=to_uri,
+                        to_is_directory=to_is_directory,
+                        parent_uri=parent_uri,
+                        reason=reason,
+                        instruction=instruction,
+                        watch_interval=watch_interval,
+                        build_index=build_index,
+                        summarize=summarize,
+                        processing_mode=processing_mode,
+                        processor_kwargs=processor_kwargs,
+                        auth_state=auth_state,
+                        is_active=is_active,
+                    )
 
-            return await self._update_task_fields_under_lock(
-                task,
-                account_id=account_id,
-                user_id=user_id,
-                path=path,
-                to_uri=to_uri,
-                to_is_directory=to_is_directory,
-                parent_uri=parent_uri,
-                reason=reason,
-                instruction=instruction,
-                watch_interval=watch_interval,
-                build_index=build_index,
-                summarize=summarize,
-                processing_mode=processing_mode,
-                processor_kwargs=processor_kwargs,
-                auth_state=auth_state,
-                is_active=is_active,
-            )
-
-    async def _update_task_fields_under_lock(
+    async def _update_task_unlocked(
         self,
         task: WatchTask,
         *,
