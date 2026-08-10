@@ -139,8 +139,6 @@ def _report_extraction_telemetry(result: Any) -> None:
     telemetry.set("memory.extract.merged", len(result.edited_uris))
     telemetry.set("memory.extract.deleted", len(result.deleted_uris))
     telemetry.set("memory.extract.skipped", len(result.errors))
-
-
 async def _commit_experience_snapshot(
     viking_fs: Any,
     *,
