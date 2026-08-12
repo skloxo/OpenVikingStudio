@@ -2295,27 +2295,14 @@ class Session:
             if not _is_storage_not_found(exc):
                 raise
         else:
-            all_done = True
-            archive_idx = 1
-            while True:
-                candidate_uri = f"{self._session_uri}/history/archive_{archive_idx:03d}"
-                if not await self._viking_fs.exists(candidate_uri, ctx=self.ctx):
-                    break
-                done_exists = await self._archive_file_exists(candidate_uri, ".done")
-                if not done_exists:
-                    if await self._archive_file_exists(candidate_uri, "messages.jsonl"):
-                        all_done = False
-                        break
-                archive_idx += 1
-
-            if all_done:
-                if task.status.value != "completed":
-                    await tracker.complete(
-                        msg.task_id,
-                        {"session_id": self.session_id, "archive_uri": msg.archive_uri},
-                        account_id=self.ctx.account_id,
-                        user_id=self.ctx.user.user_id,
-                    )
+            if task.status.value == "completed":
+                return True
+            await tracker.complete(
+                msg.task_id,
+                {"session_id": self.session_id, "archive_uri": msg.archive_uri},
+                account_id=self.ctx.account_id,
+                user_id=self.ctx.user.user_id,
+            )
             return True
 
         try:
