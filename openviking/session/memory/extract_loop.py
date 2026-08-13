@@ -808,13 +808,6 @@ The final output of the model must strictly follow the JSON Schema format shown 
                             blocks.append(SearchReplaceBlock(**raw_block))
                 if not blocks:
                     continue
-                patch = StrPatch(blocks=blocks)
-                try:
-                    applied_content = await patch_op.apply(current_content, patch)
-                except Exception:
-                    applied_content = current_content
-                if applied_content != current_content:
-                    continue
                 working_content = current_content
                 for block_index, block in enumerate(blocks, start=1):
                     search = block.search or ""
