@@ -87,9 +87,8 @@ const TASK_TYPE_OPTIONS: Exclude<TaskTypeFilter, 'all'>[] = [
   'legacy_cleanup',
 ]
 const TASK_STATUS_OPTIONS: Exclude<TaskStatusFilter, 'all'>[] = [
-  'pending',
   'running',
-  'cancelling',
+  'pending',
   'completed',
   'failed',
   'cancelled',
@@ -172,7 +171,7 @@ function TasksRoute() {
   const [taskType, setTaskType] = React.useState<TaskTypeFilter>('all')
   const [statusFilter, setStatusFilter] =
     React.useState<TaskStatusFilter>('all')
-  const [dataScope, setDataScope] = React.useState<TaskDataScope>('24h')
+  const [dataScope, setDataScope] = React.useState<TaskDataScope>('all')
   const [dedupByResource, setDedupByResource] = React.useState<boolean>(true)
   const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(
     null,

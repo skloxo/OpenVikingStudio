@@ -17,8 +17,8 @@ const ovProxyEntry = {
 }
 
 
-const config = defineConfig({
-  base: '/',
+const config = defineConfig(({ command }) => ({
+  base: command === 'build' ? '/studio/' : '/',
   server: {
     port: 1936,
     host: '0.0.0.0',
@@ -161,6 +161,6 @@ const config = defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
   },
-})
+}))
 
 export default config

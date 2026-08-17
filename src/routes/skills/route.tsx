@@ -154,11 +154,10 @@ function normalizeSkills(value: unknown): SkillItem[] {
       return ''
     }
 
-    let description =
-      cleanText(rawDesc) ||
-      cleanText(rawOverview) ||
-      cleanText(rawAbstract) ||
-      cleanText(rawContent)
+    let description = rawDesc || rawOverview || rawAbstract
+    if (!description && rawContent) {
+      description = cleanText(rawContent.slice(0, 1000))
+    }
     if (!description || description === '|' || description === '>') {
       // 绝密降级：为 computer-use, hermes-config-audit, skill-governance 补齐官方人类可读简介
       const KNOWN_SKILL_DESCRIPTIONS: Record<string, string> = {
@@ -182,7 +181,36 @@ function normalizeSkills(value: unknown): SkillItem[] {
     const finalName = name || uri
     const finalDesc = description.trim() || '暂无额外说明'
 
-    const fileCount = typeof skill?.file_count === 'number' ? skill.file_count : undefined
+    const rawFiles = Array.isArray(skill?.files) ? skill.files : []
+    const parsedFiles: SkillFile[] = rawFiles.flatMap((rawFile) => {
+      if (typeof rawFile === 'string' && rawFile.trim()) {
+        const cleanPath = rawFile.trim()
+        const cleanName = cleanPath.split('/').pop() || cleanPath
+        return [
+          {
+            isDir: false,
+            name: cleanName,
+            path: cleanPath,
+          },
+        ]
+      }
+      const file = asRecord(rawFile)
+      const fileName = typeof file?.name === 'string' ? file.name : (typeof file?.path === 'string' ? file.path : '')
+      if (!fileName) return []
+      return [
+        {
+          isDir: Boolean(file?.is_dir || file?.isDir),
+          name: fileName,
+          path: typeof file?.path === 'string' ? file.path : fileName,
+        },
+      ]
+    })
+
+    const fileCount = typeof skill?.file_count === 'number'
+      ? skill.file_count
+      : parsedFiles.length > 0
+        ? parsedFiles.length
+        : 1
 
     return [
       {
@@ -190,6 +218,7 @@ function normalizeSkills(value: unknown): SkillItem[] {
         cnName: getChineseSkillName(finalName),
         description: finalDesc,
         file_count: fileCount,
+        files: parsedFiles.length > 0 ? parsedFiles : undefined,
         name: finalName,
         scope,
         uri,
@@ -212,7 +241,7 @@ function normalizeSkillDetail(
   const rawFiles =
     Array.isArray(detail?.files) && detail.files.length > 0
       ? detail.files
-      : Array.isArray(fallback.files)
+      : Array.isArray(fallback.files) && fallback.files.length > 0
         ? fallback.files
         : []
   const content =
@@ -222,6 +251,47 @@ function normalizeSkillDetail(
         ? fallback.content
         : ''
 
+  const parsedFiles: SkillFile[] = rawFiles.flatMap((rawFile) => {
+    if (typeof rawFile === 'string' && rawFile.trim()) {
+      const cleanPath = rawFile.trim()
+      const cleanName = cleanPath.split('/').pop() || cleanPath
+      return [
+        {
+          isDir: false,
+          name: cleanName,
+          path: cleanPath,
+        },
+      ]
+    }
+    const file = asRecord(rawFile)
+    const name =
+      typeof file?.name === 'string'
+        ? file.name
+        : typeof file?.path === 'string'
+          ? file.path
+          : ''
+    if (!name) return []
+    return [
+      {
+        isDir: Boolean(file?.is_dir || file?.isDir),
+        name,
+        path: typeof file?.path === 'string' ? file.path : name,
+      },
+    ]
+  })
+
+  // 兜底：每个有效技能至少包含其自身的 SKILL.md 定义文件
+  const finalFiles =
+    parsedFiles.length > 0
+      ? parsedFiles
+      : [
+          {
+            isDir: false,
+            name: 'SKILL.md',
+            path: 'SKILL.md',
+          },
+        ]
+
   return {
     allowedTools: stringArray(detail?.allowed_tools),
     content,
@@ -229,18 +299,7 @@ function normalizeSkillDetail(
       typeof detail?.description === 'string' && detail.description
         ? detail.description
         : fallback.description,
-    files: rawFiles.flatMap((rawFile) => {
-      const file = asRecord(rawFile)
-      const name = typeof file?.name === 'string' ? file.name : ''
-      if (!name) return []
-      return [
-        {
-          isDir: Boolean(file?.is_dir || file?.isDir),
-          name,
-          path: typeof file?.path === 'string' ? file.path : name,
-        },
-      ]
-    }),
+    files: finalFiles,
     name:
       typeof detail?.name === 'string' && detail.name
         ? detail.name
@@ -268,6 +327,17 @@ function getErrorMessage(error: unknown): string {
 }
 
 async function fetchSkills(): Promise<SkillItem[]> {
+  try {
+    const base = window.location.pathname.startsWith('/studio') ? '/studio' : ''
+    const localRes = await fetch(`${base}/all_skills.json`, { cache: 'no-cache' })
+    if (localRes.ok) {
+      const localSkills = await localRes.json()
+      if (Array.isArray(localSkills) && localSkills.length > 0) {
+        return normalizeSkills({ skills: localSkills })
+      }
+    }
+  } catch {}
+
   const result = await getOvResult<SkillListResult>(
     ovClient.client.get({
       query: {
@@ -544,28 +614,105 @@ ${description || '自动侦测用户自然语言意图并静默唤醒执行。'}
 
 // 技能常见英文名 ➔ 信达雅地道中文自解释映射
 const CHINESE_SKILL_NAME_MAP: Record<string, string> = {
-  'ai-trader': 'Ai Trader 自动化工程规约',
-  'antigravity-ide': 'Antigravity Ide 自动化工程规约',
-  'bar-chart-visualization': 'Bar Chart Visualization 自动化工程规约',
-  'basic-statistics': 'Basic Statistics 自动化工程规约',
-  'category-coloring': 'Category Coloring 自动化工程规约',
-  'category-filtering': 'Category Filtering 自动化工程规约',
-  'category-statistics': 'Category Statistics 自动化工程规约',
-  'chart-embedded-export': 'Chart Embedded Export 自动化工程规约',
-  'clash-verge-utilities': 'Clash Verge Utilities 自动化工程规约',
-  'code-maintenance-utilities': 'Code Maintenance Utilities 自动化工程规约',
-  'comparison-analysis': 'Comparison Analysis 自动化工程规约',
-  'computer-use': 'Computer Use 自动化工程规约',
-  'condition-filtering': 'Condition Filtering 自动化工程规约',
-  'data-bar-formatting': 'Data Bar Formatting 自动化工程规约',
-  'debugging-and-error-recovery': 'Debugging And Error Recovery 自动化工程规约',
-  'deprecation-and-migration': 'Deprecation And Migration 自动化工程规约',
-  'duplicate-removal': 'Duplicate Removal 自动化工程规约',
-  'duplicate-value-coloring': 'Duplicate Value Coloring 自动化工程规约',
-  'group-by-analysis': 'Group By Analysis 自动化工程规约',
+  'master-dev': '顶级通用代码开发与项目迭代总控',
+  'auto-pr': 'Git PR 自动化闭环处理 SOP',
+  'diagnosing-bugs': 'Bug 诊断与性能排查闭环',
+  'tdd': '测试驱动开发 (红绿重构)',
+  'codebase-design': '深度模块设计与 Seam 建模',
+  'domain-modeling': '领域建模与统一语言',
+  'code-review': '代码审查规范 Spec 双轴核验',
+  'to-spec': '需求规格化与 Spec 沉淀',
+  'to-tickets': 'Tracer Bullet 细粒度工单拆解',
+  'research': '一手官方文档技术调研',
+  'prototype': '快速原型验证与探索',
+  'improve-codebase-architecture': '架构扫描与深度重构建议',
+  'triage': '工单分流与状态机推进',
+  'wayfinder': '宏大工程路线图规划',
+  'grill-me': '深度需求拷问与设计对齐',
+  'grill-with-docs': '文档驱动型架构拷问与 ADR 沉淀',
+  'implement': '基于 Spec 的功能标准实现',
+  'resolving-merge-conflicts': 'Git 分支合并冲突消除',
+  'setup-matt-pocock-skills': 'Matt Pocock 工程技能套件配置',
+  'ask-matt': '工程技能智能路由与导航',
+  'openviking-master': 'OpenViking 体外大脑中枢开发总控',
+  'openviking-memory-benchmark': 'OpenViking 记忆中枢基准测试与遥测',
+  'mac-studio-remote-ops': 'Mac Studio 远程运维与 MLX 算力编排',
+  'tide-trading-dev': 'TideTrading 量化交易系统开发',
+  'antigravity-guide': 'Antigravity IDE 官方开发指南',
+  'agy-customizations': 'Antigravity 自定义技能与规则开发',
+  'auto-job-hunter': '自动化职位检索与简历匹配',
+  'a-share-risk-alert': 'A股风险监控与实时预警',
+  'company-creator': '企业信息画像与知识图谱生成',
+  'electron-proxy-windows': 'Windows Electron 代理网络分流',
+  'memory-index-fallback-chain': '记忆索引多级降级链',
+  'openclaw-docs': 'OpenClaw 架构规范与开发文档',
+  'stock-rt-subscribe': '股票实时行情与量化订阅',
+  'skill-creator': '技能资产自动创建与规约提取',
+  'skill-governance': '技能资产治理规范与定期审查',
+  'hermes-config-audit': 'Hermes 运行时配置自检与优化',
+  'repo-tracker': 'Git 仓库代码变动与演进跟踪',
 }
+
+const ENGINEERING_SKILLS = [
+  'master-dev',
+  'auto-pr',
+  'diagnosing-bugs',
+  'tdd',
+  'codebase-design',
+  'domain-modeling',
+  'code-review',
+  'to-spec',
+  'to-tickets',
+  'research',
+  'prototype',
+  'improve-codebase-architecture',
+  'triage',
+  'wayfinder',
+  'grill-me',
+  'grill-with-docs',
+  'implement',
+  'resolving-merge-conflicts',
+  'setup-matt-pocock-skills',
+  'ask-matt',
+  'openviking-master',
+  'openviking-memory-benchmark',
+  'mac-studio-remote-ops',
+  'tide-trading-dev',
+  'antigravity-guide',
+  'agy-customizations',
+  'skill-creator',
+  'skill-governance',
+  'hermes-config-audit',
+  'repo-tracker',
+]
+
+function isEngineeringSkill(name: string, source?: string): boolean {
+  return (
+    ENGINEERING_SKILLS.includes(name) ||
+    source === 'Antigravity' ||
+    name.includes('openviking') ||
+    name.includes('antigravity') ||
+    name.includes('dev') ||
+    name.includes('audit')
+  )
+}
+
+function isDataSkill(name: string): boolean {
+  return (
+    name.startsWith('sn-') ||
+    name.includes('chart') ||
+    name.includes('excel') ||
+    name.includes('statistics') ||
+    name.includes('analysis') ||
+    name.includes('filtering') ||
+    name.includes('coloring') ||
+    name.includes('reading') ||
+    name.includes('export')
+  )
+}
+
 function getChineseSkillName(name: string): string {
-  return name
+  return CHINESE_SKILL_NAME_MAP[name] || name
 }
 
 function getChineseSkillDescription(rawDesc: string): string {
@@ -586,32 +733,29 @@ function getSkillSource(
 ): { label: string; badgeClass: string } {
   if (
     source === 'system' ||
-    name.includes('openviking') ||
-    name.includes('antigravity') ||
-    name.includes('diagnosing') ||
-    name.includes('codebase-design') ||
-    name.includes('tdd') ||
-    name.includes('domain-modeling') ||
-    name.includes('code-review') ||
-    name.includes('prototype') ||
-    name.includes('to-spec') ||
-    name.includes('research')
+    isEngineeringSkill(name, source)
   ) {
     return {
       badgeClass:
         'border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-medium',
-      label: '系统内建',
+      label: '工程研发',
     }
   }
-  if (scope === 'user') {
+  if (scope === 'agent' || name.startsWith('a-share') || name.startsWith('stock') || name.startsWith('auto-job')) {
+    return {
+      badgeClass: 'border-border bg-muted/40 text-foreground',
+      label: '智能体',
+    }
+  }
+  if (isDataSkill(name)) {
     return {
       badgeClass: 'border-border bg-muted/30 text-foreground',
-      label: '个人配置',
+      label: '数据办公',
     }
   }
   return {
-    badgeClass: 'border-border bg-muted/40 text-foreground',
-    label: '工作区',
+    badgeClass: 'border-border bg-muted/30 text-foreground',
+    label: '个人偏好',
   }
 }
 
@@ -624,7 +768,7 @@ function SkillsRoute() {
   )
   const [searchQuery, setSearchQuery] = React.useState('')
   const [activeScopeFilter, setActiveScopeFilter] = React.useState<
-    'all' | 'agent' | 'user' | 'idle'
+    'all' | 'engineering' | 'agent' | 'data' | 'idle'
   >('all')
 
   const [refinedSkills, setRefinedSkills] = React.useState<
@@ -680,10 +824,10 @@ function SkillsRoute() {
   const skillsQuery = useQuery({
     placeholderData: keepPreviousData,
     queryFn: fetchSkills,
-    queryKey: ['skills'],
-    refetchOnReconnect: false,
-    refetchOnWindowFocus: false,
-    staleTime: 600_000,
+    queryKey: ['skills', 'v2', identityScopeKey],
+    refetchOnReconnect: true,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   })
   const skills = skillsQuery.data ?? []
 
@@ -705,9 +849,10 @@ function SkillsRoute() {
   // 客户端毫秒级检索与 Scope 筛选过滤
   const filteredSkills = React.useMemo(() => {
     return skills.filter((s) => {
-      if (activeScopeFilter === 'agent' && s.scope !== 'agent') return false
-      if (activeScopeFilter === 'user' && s.scope !== 'user') return false
-      if (activeScopeFilter === 'idle' && ACTIVE_CORE_SKILLS.includes(s.name))
+      if (activeScopeFilter === 'engineering' && !isEngineeringSkill(s.name, s.source)) return false
+      if (activeScopeFilter === 'agent' && (s.scope !== 'agent' || isEngineeringSkill(s.name, s.source))) return false
+      if (activeScopeFilter === 'data' && !isDataSkill(s.name)) return false
+      if (activeScopeFilter === 'idle' && isEngineeringSkill(s.name, s.source))
         return false
       if (!searchQuery.trim()) return true
       const q = searchQuery.toLowerCase()
@@ -721,7 +866,7 @@ function SkillsRoute() {
         cnDesc.toLowerCase().includes(q)
       )
     })
-  }, [skills, searchQuery, activeScopeFilter, ACTIVE_CORE_SKILLS])
+  }, [skills, searchQuery, activeScopeFilter])
 
   // Reset to page 1 ONLY when filter or search text actually changes
   React.useEffect(() => {
@@ -1084,27 +1229,39 @@ function SkillsRoute() {
           </button>
           <button
             type="button"
+            onClick={() => setActiveScopeFilter('engineering')}
+            className={cn(
+              'rounded-xs px-2.5 py-1 text-center font-medium transition-colors',
+              activeScopeFilter === 'engineering'
+                ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 shadow-xs border border-cyan-500/30'
+                : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            ⚡ 工程研发 ({skills.filter((s) => isEngineeringSkill(s.name, s.source)).length})
+          </button>
+          <button
+            type="button"
             onClick={() => setActiveScopeFilter('agent')}
             className={cn(
               'rounded-xs px-2.5 py-1 text-center font-medium transition-colors',
               activeScopeFilter === 'agent'
-                ? 'bg-background text-cyan-600 dark:text-cyan-400 shadow-xs border border-cyan-500/30 bg-cyan-500/10'
-                : 'text-muted-foreground hover:text-foreground',
-            )}
-          >
-            🤖 智能体 ({skills.filter((s) => s.scope === 'agent').length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveScopeFilter('user')}
-            className={cn(
-              'rounded-xs px-2.5 py-1 text-center font-medium transition-colors',
-              activeScopeFilter === 'user'
                 ? 'bg-background text-foreground shadow-xs border border-border/60'
                 : 'text-muted-foreground hover:text-foreground',
             )}
           >
-            👤 个人偏好 ({skills.filter((s) => s.scope === 'user').length})
+            🤖 智能体 ({skills.filter((s) => s.scope === 'agent' && !isEngineeringSkill(s.name, s.source)).length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveScopeFilter('data')}
+            className={cn(
+              'rounded-xs px-2.5 py-1 text-center font-medium transition-colors',
+              activeScopeFilter === 'data'
+                ? 'bg-background text-foreground shadow-xs border border-border/60'
+                : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            📊 数据办公 ({skills.filter((s) => isDataSkill(s.name)).length})
           </button>
           <button
             type="button"
@@ -1112,12 +1269,12 @@ function SkillsRoute() {
             className={cn(
               'rounded-xs px-2.5 py-1 text-center font-medium transition-colors',
               activeScopeFilter === 'idle'
-                ? 'bg-background text-rose-500 shadow-xs border border-rose-500/30 bg-rose-500/10 font-semibold'
+                ? 'bg-rose-500/10 text-rose-500 shadow-xs border border-rose-500/30 font-semibold'
                 : 'text-muted-foreground hover:text-foreground',
             )}
           >
-            💤 闲置 (
-            {skills.filter((s) => !ACTIVE_CORE_SKILLS.includes(s.name)).length})
+            💤 待提炼 (
+            {skills.filter((s) => !isEngineeringSkill(s.name, s.source)).length})
           </button>
         </div>
         {/* 搜索框栏内右对齐 */}

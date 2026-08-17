@@ -77,9 +77,9 @@ export function DeepMetricsGrid({ metrics, isLoading }: DeepMetricsGridProps) {
         icon: ZapIcon,
         value: metrics.vectorHitRate !== null ? `${metrics.vectorHitRate.toFixed(1)}` : '--',
         unit: '%',
-        subText: t('metricsTiles.vectorHitRate.subText', { defaultValue: '无结果率 21.9%' }),
-        badgeText: t('metricsTiles.vectorHitRate.badgeText', { defaultValue: '高命中' }),
-        badgeVariant: 'positive',
+        subText: metrics.vectorHitRate !== null ? t('metricsTiles.vectorHitRate.activeSubText', { defaultValue: '语义向量召回命中率' }) : t('metricsTiles.vectorHitRate.pendingSubText', { defaultValue: '服务启动后暂无检索请求' }),
+        badgeText: metrics.vectorHitRate !== null ? t('metricsTiles.vectorHitRate.badgeText', { defaultValue: '高命中' }) : t('common.pending', { defaultValue: '等待请求' }),
+        badgeVariant: metrics.vectorHitRate !== null ? 'positive' : 'neutral',
         tooltipKey: 'metricsTiles.vectorHitRate.tooltip',
         category: 'physics',
       },
@@ -89,9 +89,9 @@ export function DeepMetricsGrid({ metrics, isLoading }: DeepMetricsGridProps) {
         icon: CpuIcon,
         value: metrics.gpuVramUsage ? `${metrics.gpuVramUsage.usedGb} / ${metrics.gpuVramUsage.totalGb}` : '--',
         unit: 'GB',
-        subText: t('metricsTiles.gpuVramUsage.subText', { defaultValue: 'RTX 2080 Ti (74.2% 占用)' }),
-        badgeText: t('metricsTiles.gpuVramUsage.badgeText', { defaultValue: '轻载健康' }),
-        badgeVariant: 'positive',
+        subText: metrics.gpuVramUsage ? t('metricsTiles.gpuVramUsage.activeSubText', { defaultValue: '本地 GPU 显存监控' }) : t('metricsTiles.gpuVramUsage.pendingSubText', { defaultValue: '无本地 GPU 或运行于 CPU' }),
+        badgeText: metrics.gpuVramUsage ? t('metricsTiles.gpuVramUsage.badgeText', { defaultValue: '轻载健康' }) : t('metricsTiles.gpuVramUsage.cpuBadge', { defaultValue: 'CPU 模式' }),
+        badgeVariant: metrics.gpuVramUsage ? 'positive' : 'neutral',
         tooltipKey: 'metricsTiles.gpuVramUsage.tooltip',
         category: 'physics',
       },
@@ -101,9 +101,9 @@ export function DeepMetricsGrid({ metrics, isLoading }: DeepMetricsGridProps) {
         icon: SparklesIcon,
         value: metrics.top1Accuracy !== null ? `${metrics.top1Accuracy.toFixed(1)}` : '--',
         unit: '%',
-        subText: t('metricsTiles.top1Accuracy.subText', { defaultValue: 'Top-1 语义精确召回率' }),
-        badgeText: t('metricsTiles.top1Accuracy.badgeText', { defaultValue: '精准召回' }),
-        badgeVariant: 'positive',
+        subText: metrics.top1Accuracy !== null ? t('metricsTiles.top1Accuracy.activeSubText', { defaultValue: 'Rerank 重排全量成功' }) : t('metricsTiles.top1Accuracy.pendingSubText', { defaultValue: '服务启动后暂无重排记录' }),
+        badgeText: metrics.top1Accuracy !== null ? t('metricsTiles.top1Accuracy.badgeText', { defaultValue: '精排就绪' }) : t('common.pending', { defaultValue: '等待请求' }),
+        badgeVariant: metrics.top1Accuracy !== null ? 'positive' : 'neutral',
         tooltipKey: 'metricsTiles.top1Accuracy.tooltip',
         category: 'physics',
       },
@@ -112,9 +112,9 @@ export function DeepMetricsGrid({ metrics, isLoading }: DeepMetricsGridProps) {
         titleKey: 'metricsTiles.avgCosineScore.title',
         icon: GaugeIcon,
         value: metrics.avgCosineScore !== null ? metrics.avgCosineScore.toFixed(4) : '--',
-        subText: t('metricsTiles.avgCosineScore.subText', { defaultValue: '范围: 0.0007 - 0.9972' }),
-        badgeText: t('metricsTiles.avgCosineScore.badgeText', { defaultValue: '基准正常' }),
-        badgeVariant: 'positive',
+        subText: metrics.avgCosineScore !== null ? t('metricsTiles.avgCosineScore.activeSubText', { defaultValue: '高维向量空间余弦相似度均值' }) : t('metricsTiles.avgCosineScore.pendingSubText', { defaultValue: '等待向量相似度查询' }),
+        badgeText: metrics.avgCosineScore !== null ? t('metricsTiles.avgCosineScore.badgeText', { defaultValue: '基准正常' }) : t('common.noData', { defaultValue: '暂无数据' }),
+        badgeVariant: metrics.avgCosineScore !== null ? 'positive' : 'neutral',
         tooltipKey: 'metricsTiles.avgCosineScore.tooltip',
         category: 'physics',
       },
@@ -124,9 +124,9 @@ export function DeepMetricsGrid({ metrics, isLoading }: DeepMetricsGridProps) {
         icon: TimerIcon,
         value: metrics.embeddingLatencyMs !== null ? `${metrics.embeddingLatencyMs.toFixed(1)}` : '--',
         unit: 'ms',
-        subText: t('metricsTiles.embeddingLatency.subText', { defaultValue: '平均向量检索耗时' }),
-        badgeText: t('metricsTiles.embeddingLatency.badgeText', { defaultValue: '极速' }),
-        badgeVariant: 'positive',
+        subText: metrics.embeddingLatencyMs !== null ? t('metricsTiles.embeddingLatency.activeSubText', { defaultValue: '平均向量检索耗时' }) : t('metricsTiles.embeddingLatency.pendingSubText', { defaultValue: '等待向量检索请求' }),
+        badgeText: metrics.embeddingLatencyMs !== null ? t('metricsTiles.embeddingLatency.badgeText', { defaultValue: '极速' }) : t('common.ready', { defaultValue: '就绪' }),
+        badgeVariant: metrics.embeddingLatencyMs !== null ? 'positive' : 'neutral',
         tooltipKey: 'metricsTiles.embeddingLatency.tooltip',
         category: 'physics',
       },
@@ -136,9 +136,9 @@ export function DeepMetricsGrid({ metrics, isLoading }: DeepMetricsGridProps) {
         icon: ActivityIcon,
         value: metrics.maxLatencyMs !== null ? `${metrics.maxLatencyMs.toFixed(0)}` : '--',
         unit: 'ms',
-        subText: t('metricsTiles.maxLatency.subText', { defaultValue: '单次最长请求延迟 Peak' }),
-        badgeText: t('metricsTiles.maxLatency.badgeText', { defaultValue: 'P99 峰值' }),
-        badgeVariant: metrics.maxLatencyMs && metrics.maxLatencyMs > 5000 ? 'neutral' : 'positive',
+        subText: metrics.maxLatencyMs !== null ? t('metricsTiles.maxLatency.activeSubText', { defaultValue: '单次最长请求延迟 Peak' }) : t('metricsTiles.maxLatency.pendingSubText', { defaultValue: '等待 API 请求极值' }),
+        badgeText: metrics.maxLatencyMs !== null ? t('metricsTiles.maxLatency.badgeText', { defaultValue: 'P99 峰值' }) : t('common.ready', { defaultValue: '就绪' }),
+        badgeVariant: metrics.maxLatencyMs && metrics.maxLatencyMs > 5000 ? 'neutral' : (metrics.maxLatencyMs !== null ? 'positive' : 'neutral'),
         tooltipKey: 'metricsTiles.maxLatency.tooltip',
         category: 'physics',
       },
@@ -237,7 +237,7 @@ export function DeepMetricsGrid({ metrics, isLoading }: DeepMetricsGridProps) {
             <h2 className="text-sm font-semibold tracking-tight text-foreground/90">
               {t('metricsTiles.sectionTitle', { defaultValue: '内核深层观测指标' })}
             </h2>
-            <Badge variant="outline" className="font-mono text-[10px] font-normal border-border/60">
+            <Badge variant="outline" className="font-mono text-[11px] font-normal border-border/60">
               {t('metricsTiles.liveBadge', { defaultValue: '16 项指标实时监测' })}
             </Badge>
           </div>
@@ -267,7 +267,7 @@ export function DeepMetricsGrid({ metrics, isLoading }: DeepMetricsGridProps) {
                       <Badge
                         variant="outline"
                         className={cn(
-                          'px-1.5 py-0 text-[10px] font-normal border-0',
+                          'px-1.5 py-0 text-[11px] font-normal border-0',
                           tile.badgeVariant === 'positive' && 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400',
                           tile.badgeVariant === 'negative' && 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
                           tile.badgeVariant === 'neutral' && 'bg-muted/40 text-muted-foreground',

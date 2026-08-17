@@ -22,11 +22,11 @@ export interface HttpStatusChartProps {
 function getStatusCodeInfo(code: number): { color: string; label: string } {
   switch (code) {
     case 200:
-      return { color: '#10b981', label: 'HTTP 200 (成功)' }
+      return { color: '#22c55e', label: 'HTTP 200 (成功)' }
     case 201:
-      return { color: '#34d399', label: 'HTTP 201 (已创建)' }
+      return { color: '#4ade80', label: 'HTTP 201 (已创建)' }
     case 204:
-      return { color: '#6ee7b7', label: 'HTTP 204 (无内容)' }
+      return { color: '#86efac', label: 'HTTP 204 (无内容)' }
     case 304:
       return { color: '#3b82f6', label: 'HTTP 304 (缓存未修改)' }
     case 400:
@@ -44,7 +44,7 @@ function getStatusCodeInfo(code: number): { color: string; label: string } {
     case 503:
       return { color: '#be123c', label: 'HTTP 503 (服务不可用)' }
     default:
-      if (code >= 200 && code < 300) return { color: '#10b981', label: `HTTP ${code} (成功)` }
+      if (code >= 200 && code < 300) return { color: '#22c55e', label: `HTTP ${code} (成功)` }
       if (code >= 300 && code < 400) return { color: '#3b82f6', label: `HTTP ${code} (重定向)` }
       if (code >= 400 && code < 500) return { color: '#f59e0b', label: `HTTP ${code} (客户端错误)` }
       return { color: '#f43f5e', label: `HTTP ${code} (服务端错误)` }
@@ -116,14 +116,14 @@ export function HttpStatusChart({
           className={cn(
             'gap-1 font-normal',
             isHealthy
-              ? 'border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+              ? 'border-primary/20 bg-primary/5 text-primary'
               : 'border-destructive/30 text-destructive',
           )}
         >
           <span
             className={cn(
               'size-1.5 rounded-full',
-              isHealthy ? 'bg-emerald-500' : 'bg-destructive',
+              isHealthy ? 'bg-primary' : 'bg-destructive',
             )}
           />
           {isHealthy ? t('httpStatusCard.healthy') : t('httpStatusCard.unhealthy')}
@@ -138,11 +138,11 @@ export function HttpStatusChart({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
           {/* 左侧：概览指标 */}
           <div className="flex flex-col gap-3">
-            <div className="flex flex-col justify-center rounded-lg border bg-emerald-500/10 border-emerald-500/20 px-3.5 py-2.5">
-              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+            <div className="flex flex-col justify-center rounded-lg border bg-muted/20 px-3.5 py-2.5">
+              <span className="text-xs font-medium text-muted-foreground">
                 {t('httpStatusCard.successRate')}
               </span>
-              <span className="font-mono text-xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums mt-0.5">
+              <span className="font-mono text-xl font-bold text-foreground/90 tabular-nums mt-0.5">
                 {formattedSuccessRate}%
               </span>
             </div>

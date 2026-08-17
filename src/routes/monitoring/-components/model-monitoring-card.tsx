@@ -75,72 +75,7 @@ export interface ModelMonitoringCardProps {
 export function ModelMonitoringCard({ status, isHealthy }: ModelMonitoringCardProps) {
   const { t } = useTranslation('monitoringPage')
   const groups = React.useMemo(() => {
-    const parsed = parseModelsStatus(status)
-    const hasEncoder = parsed.some((g) => 
-      g.groupName.toLowerCase().includes('encoder') || 
-      g.groupName.toLowerCase().includes('lingua') ||
-      g.rows.some((r) => r.model.toLowerCase().includes('lingua') || r.model.toLowerCase().includes('roberta'))
-    )
-
-    const hasEmbedding = parsed.some((g) => 
-      g.groupName.toLowerCase().includes('embedding') || 
-      g.rows.some((r) => r.model.toLowerCase().includes('embedding'))
-    )
-    if (!hasEmbedding) {
-      parsed.push({
-        groupName: 'Embedding Models',
-        rows: [
-          {
-            model: 'Qwen3-Embedding-8B',
-            provider: 'llama.cpp/local',
-            calls: 1024,
-            promptTokens: 0,
-            completionTokens: 0,
-            totalTokens: 0,
-            lastUpdated: '1024-dim Vector Engine',
-          },
-        ],
-      })
-    }
-
-    const hasRerank = parsed.some((g) => 
-      g.groupName.toLowerCase().includes('rerank') || 
-      g.rows.some((r) => r.model.toLowerCase().includes('rerank'))
-    )
-    if (!hasRerank) {
-      parsed.push({
-        groupName: 'Rerank Models',
-        rows: [
-          {
-            model: 'qwen3-reranker-0.6b',
-            provider: 'llama.cpp/local',
-            calls: 512,
-            promptTokens: 0,
-            completionTokens: 0,
-            totalTokens: 0,
-            lastUpdated: 'Cross-Encoder',
-          },
-        ],
-      })
-    }
-
-    if (!hasEncoder) {
-      parsed.push({
-        groupName: '⚡ Encoder 物理压缩模型',
-        rows: [
-          {
-            model: 'llmlingua-2-xlm-roberta',
-            provider: 'microsoft',
-            calls: 142,
-            promptTokens: 18420,
-            completionTokens: 0,
-            totalTokens: 18420,
-            lastUpdated: 'In-Proc CUDA',
-          },
-        ],
-      })
-    }
-    return parsed
+    return parseModelsStatus(status)
   }, [status])
 
   // 统计汇总瓷片数据
@@ -167,14 +102,14 @@ export function ModelMonitoringCard({ status, isHealthy }: ModelMonitoringCardPr
           className={cn(
             'gap-1 font-normal',
             isHealthy
-              ? 'border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+              ? 'border-primary/20 bg-primary/5 text-primary'
               : 'border-destructive/30 text-destructive',
           )}
         >
           <span
             className={cn(
               'size-1.5 rounded-full',
-              isHealthy ? 'bg-emerald-500' : 'bg-destructive',
+              isHealthy ? 'bg-primary' : 'bg-destructive',
             )}
           />
           {isHealthy ? t('modelsCard.healthy') : t('modelsCard.unhealthy')}
@@ -190,16 +125,16 @@ export function ModelMonitoringCard({ status, isHealthy }: ModelMonitoringCardPr
           </span>
         </div>
 
-        <div className="flex flex-col justify-center rounded-lg border bg-blue-500/10 border-blue-500/20 px-3 py-2">
-          <span className="text-[11px] text-blue-600 dark:text-blue-400 font-medium">{t('modelsCard.totalCalls')}</span>
-          <span className="font-mono text-base font-bold text-blue-600 dark:text-blue-400 tabular-nums mt-0.5">
+        <div className="flex flex-col justify-center rounded-lg border bg-muted/20 px-3 py-2">
+          <span className="text-[11px] font-medium text-muted-foreground">{t('modelsCard.totalCalls')}</span>
+          <span className="font-mono text-base font-bold text-foreground tabular-nums mt-0.5">
             {totalCalls.toLocaleString()}
           </span>
         </div>
 
-        <div className="flex flex-col justify-center rounded-lg border bg-emerald-500/10 border-emerald-500/20 px-3 py-2">
-          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">{t('modelsCard.totalTokensTile')}</span>
-          <span className="font-mono text-base font-bold text-emerald-600 dark:text-emerald-400 tabular-nums mt-0.5">
+        <div className="flex flex-col justify-center rounded-lg border bg-muted/20 px-3 py-2">
+          <span className="text-[11px] font-medium text-muted-foreground">{t('modelsCard.totalTokensTile')}</span>
+          <span className="font-mono text-base font-bold text-foreground/90 tabular-nums mt-0.5">
             {totalTokens.toLocaleString()}
           </span>
         </div>
@@ -242,13 +177,13 @@ export function ModelMonitoringCard({ status, isHealthy }: ModelMonitoringCardPr
                   <span className="text-muted-foreground capitalize text-[11px] font-sans">
                     {row.provider}
                   </span>
-                  <span className="text-right text-blue-600 dark:text-blue-400 font-bold tabular-nums">
+                  <span className="text-right font-bold text-foreground tabular-nums">
                     {row.calls.toLocaleString()}
                   </span>
                   <span className="text-right text-muted-foreground tabular-nums">
                     {row.promptTokens.toLocaleString()}
                   </span>
-                  <span className="text-right text-emerald-600 dark:text-emerald-400 font-bold tabular-nums">
+                  <span className="text-right font-bold text-foreground tabular-nums">
                     {row.totalTokens.toLocaleString()}
                   </span>
                 </div>

@@ -93,7 +93,7 @@ export function QueueStatusCard({ title, status = '', isHealthy = true, customRo
           className={cn(
             'text-right tabular-nums font-bold',
             row.processing > 0
-              ? 'text-blue-600 dark:text-blue-400'
+              ? 'font-bold text-foreground'
               : 'text-muted-foreground/60',
           )}
         >
@@ -117,7 +117,7 @@ export function QueueStatusCard({ title, status = '', isHealthy = true, customRo
           className={cn(
             'text-right tabular-nums font-bold',
             row.completed > 0
-              ? 'text-emerald-600 dark:text-emerald-400'
+              ? 'text-foreground/90'
               : 'text-muted-foreground/60',
           )}
         >

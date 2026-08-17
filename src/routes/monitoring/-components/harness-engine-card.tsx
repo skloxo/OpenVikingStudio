@@ -48,25 +48,25 @@ export function HarnessEngineCard({ isHealthy = true }: HarnessEngineCardProps) 
               <CpuIcon className="size-3.5 text-cyan-500 shrink-0" />
               LLMLingua-2 (xlm-roberta)
             </span>
-            <span className="text-[10px] text-muted-foreground truncate">
+            <span className="text-[11px] text-muted-foreground truncate">
               微软 Token 抽稀探针 · 目标区间 45%-55%
             </span>
           </div>
           <div className="text-right flex flex-col items-end">
             <span className="font-semibold text-cyan-600 dark:text-cyan-400 tabular-nums">48.5%</span>
-            <span className="text-[9px] text-muted-foreground font-sans">(安全 45-55%)</span>
+            <span className="text-[11px] text-muted-foreground font-sans">(安全 45-55%)</span>
           </div>
           <div className="text-right flex flex-col items-end">
             <span className="font-semibold text-cyan-600 dark:text-cyan-400 tabular-nums">100.0%</span>
-            <span className="text-[9px] text-cyan-600 dark:text-cyan-400 font-sans font-semibold">(100% 锁定)</span>
+            <span className="text-[11px] text-cyan-600 dark:text-cyan-400 font-sans font-semibold">(100% 锁定)</span>
           </div>
           <div className="text-right flex flex-col items-end">
             <span className="text-muted-foreground tabular-nums">N/A</span>
-            <span className="text-[9px] text-muted-foreground font-sans">(N/A N-Gram)</span>
+            <span className="text-[11px] text-muted-foreground font-sans">(N/A N-Gram)</span>
           </div>
           <div className="text-right flex flex-col items-end">
             <span className="font-semibold text-foreground tabular-nums">210MB / 6.2ms</span>
-            <span className="text-[9px] text-muted-foreground font-sans">(&lt;500MB / &lt;10ms)</span>
+            <span className="text-[11px] text-muted-foreground font-sans">(&lt;500MB / &lt;10ms)</span>
           </div>
         </div>
 
@@ -77,25 +77,25 @@ export function HarnessEngineCard({ isHealthy = true }: HarnessEngineCardProps) 
               <SparklesIcon className="size-3.5 text-cyan-500 shrink-0" />
               Stanford DSPy (MIPO Compiler)
             </span>
-            <span className="text-[10px] text-muted-foreground truncate">
+            <span className="text-[11px] text-muted-foreground truncate">
               斯坦福 SOP 编译探针 · 零假 API 规约
             </span>
           </div>
           <div className="text-right flex flex-col items-end">
             <span className="text-muted-foreground tabular-nums">N/A</span>
-            <span className="text-[9px] text-muted-foreground font-sans">(N/A RawToken)</span>
+            <span className="text-[11px] text-muted-foreground font-sans">(N/A RawToken)</span>
           </div>
           <div className="text-right flex flex-col items-end">
             <span className="font-semibold text-cyan-600 dark:text-cyan-400 tabular-nums">100.0%</span>
-            <span className="text-[9px] text-cyan-600 dark:text-cyan-400 font-sans font-semibold">(100% 锁定)</span>
+            <span className="text-[11px] text-cyan-600 dark:text-cyan-400 font-sans font-semibold">(100% 锁定)</span>
           </div>
           <div className="text-right flex flex-col items-end">
             <span className="font-semibold text-cyan-600 dark:text-cyan-400 tabular-nums">98.2%</span>
-            <span className="text-[9px] text-cyan-600 dark:text-cyan-400 font-sans font-semibold">(安全 &gt;95%)</span>
+            <span className="text-[11px] text-cyan-600 dark:text-cyan-400 font-sans font-semibold">(安全 &gt;95%)</span>
           </div>
           <div className="text-right flex flex-col items-end">
             <span className="font-semibold text-foreground tabular-nums">18MB / 1.5ms</span>
-            <span className="text-[9px] text-muted-foreground font-sans">(&lt;500MB / &lt;10ms)</span>
+            <span className="text-[11px] text-muted-foreground font-sans">(&lt;500MB / &lt;10ms)</span>
           </div>
         </div>
       </div>

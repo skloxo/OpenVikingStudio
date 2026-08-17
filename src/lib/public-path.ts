@@ -5,7 +5,15 @@ function trimTrailingSlash(value: string): string {
 }
 
 export function getRouterBasePath(): string {
-  return '/'
+  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/studio')) {
+    return '/studio'
+  }
+  const baseUrl = PUBLIC_BASE_URL.trim()
+  if (!baseUrl || baseUrl === '/' || baseUrl === './') {
+    return '/'
+  }
+  const withLeadingSlash = baseUrl.startsWith('/') ? baseUrl : `/${baseUrl}`
+  return trimTrailingSlash(withLeadingSlash)
 }
 
 export function resolvePublicAsset(path: string): string {
