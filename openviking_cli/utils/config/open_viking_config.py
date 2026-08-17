@@ -411,13 +411,15 @@ class OpenVikingConfig(BaseModel):
             ]
             raise_unknown_config_fields(
                 data=config_copy,
-                valid_fields=set(cls.model_fields.keys()) | {"server", "bot", "parsers"},
+                valid_fields=set(cls.model_fields.keys()) | {"server", "bot", "parsers", "skills", "harness"},
                 context_name="OpenVikingConfig",
             )
 
             # Remove sections managed by other loaders (e.g. server config)
             config_copy.pop("server", None)
             config_copy.pop("bot", None)
+            config_copy.pop("skills", None)
+            config_copy.pop("harness", None)
 
             # Handle parser configurations from nested "parsers" section
             parser_configs = {}

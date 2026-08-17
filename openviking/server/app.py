@@ -334,6 +334,28 @@ def create_app(
         # Start MCP session manager (must be active before /mcp requests)
         from openviking.server.mcp_endpoint import mcp_lifespan
 
+        # Run skill scanner on startup and start periodic background scan loop
+        skill_scan_task: Optional[asyncio.Task] = None
+        try:
+            from openviking.server.skill_scanner import scan_configured_skills
+
+            scan_configured_skills()
+
+            async def _skill_scan_loop() -> None:
+                while True:
+                    try:
+                        await asyncio.sleep(300)
+                        await asyncio.to_thread(scan_configured_skills)
+                    except asyncio.CancelledError:
+                        break
+                    except Exception as e:  # noqa: BLE001
+                        logger.warning("Periodic skill scan error: %s", e)
+
+            skill_scan_task = asyncio.create_task(_skill_scan_loop())
+            app.state.skill_scan_task = skill_scan_task
+        except Exception as e:  # noqa: BLE001
+            logger.warning("Startup skill scanner failed to initialize: %s", e)
+
         async with mcp_lifespan():
             if service is not None:
                 await _initialize_runtime_state(app, service, config)

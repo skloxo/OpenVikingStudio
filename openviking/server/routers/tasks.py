@@ -25,6 +25,42 @@ from openviking_cli.exceptions import (
 router = APIRouter(prefix="/api/v1", tags=["tasks"])
 
 
+@router.get("/tasks/stats")
+async def get_task_stats(
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """Get aggregated statistics across background tasks."""
+    tracker = get_task_tracker()
+    try:
+        tasks = await tracker.list_tasks(limit=10000)
+        total = len(tasks)
+        pending = sum(1 for t in tasks if getattr(t, "status", None) == "pending")
+        running = sum(1 for t in tasks if getattr(t, "status", None) == "running")
+        completed = sum(1 for t in tasks if getattr(t, "status", None) == "completed")
+        failed = sum(1 for t in tasks if str(getattr(t, "status", "")) in ("failed", "cancelled"))
+        return Response(
+            status="ok",
+            result={
+                "total": total,
+                "pending": pending,
+                "running": running,
+                "completed": completed,
+                "failed": failed,
+            },
+        )
+    except Exception:
+        return Response(
+            status="ok",
+            result={
+                "total": 0,
+                "pending": 0,
+                "running": 0,
+                "completed": 0,
+                "failed": 0,
+            },
+        )
+
+
 @router.get("/tasks/{task_id}")
 async def get_task(
     task_id: str,
@@ -89,12 +125,22 @@ async def list_tasks(
         description="Filter by status (pending/running/cancelling/completed/failed/cancelled)",
     ),
     resource_id: Optional[str] = Query(None, description="Filter by resource ID (e.g. session_id)"),
-    limit: int = Query(50, le=200, description="Max results"),
+    limit: int = Query(50, le=10000, description="Max results"),
     _ctx: RequestContext = Depends(get_request_context),
 ):
     """List background tasks with optional filters."""
     tracker = get_task_tracker()
     if _ctx.role == Role.ROOT:
+        target_account = _ctx.account_id or "default"
+        target_user = _ctx.user.user_id if _ctx.user else "default"
+        tenant_tasks = await tracker.list_tasks(
+            task_type=task_type,
+            status=status,
+            resource_id=resource_id,
+            limit=limit,
+            account_id=target_account,
+            user_id=target_user,
+        )
         system_tasks = await tracker.list_tasks(
             task_type=task_type,
             status=status,
@@ -109,7 +155,8 @@ async def list_tasks(
             resource_id=resource_id,
             limit=limit,
         )
-        tasks_by_id = {task.task_id: task for task in cached_tasks}
+        tasks_by_id = {task.task_id: task for task in tenant_tasks}
+        tasks_by_id.update({task.task_id: task for task in cached_tasks})
         tasks_by_id.update({task.task_id: task for task in system_tasks})
         tasks = sorted(tasks_by_id.values(), key=lambda task: task.created_at, reverse=True)[:limit]
     else:

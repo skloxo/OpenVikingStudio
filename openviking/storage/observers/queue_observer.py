@@ -27,13 +27,58 @@ class QueueObserver(BaseObserver):
     def __init__(self, queue_manager: QueueManager):
         self._queue_manager = queue_manager
 
+    PERSISTENCE_PATH = "~/.openviking/queue_stats.json"
+
+    def _load_persisted_stats(self) -> dict:
+        import json
+        import os
+        path = os.path.expanduser(self.PERSISTENCE_PATH)
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                pass
+        return {}
+
+    def _save_persisted_stats(self, snapshot: dict) -> None:
+        import json
+        import os
+        if not snapshot:
+            return
+        path = os.path.expanduser(self.PERSISTENCE_PATH)
+        try:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            tmp = f"{path}.tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump(snapshot, f, indent=2)
+            os.replace(tmp, path)
+        except Exception:
+            pass
+
     async def get_status_table_async(self) -> str:
         statuses = await self._queue_manager.check_status()
         dag_stats = self._get_semantic_dag_stats()
-        return self._format_status_as_table(statuses, dag_stats)
+        table_str = self._format_status_as_table(statuses, dag_stats)
+        self._save_persisted_stats({"status_table": table_str})
+        return table_str
 
     def get_status_table(self) -> str:
-        return run_async(self.get_status_table_async())
+        try:
+            import asyncio
+            import concurrent.futures
+            try:
+                loop = asyncio.get_running_loop()
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                    return pool.submit(lambda: asyncio.run(self.get_status_table_async())).result(timeout=2.0)
+            except (RuntimeError, Exception):
+                return run_async(self.get_status_table_async())
+        except Exception as e:
+            logger.debug(f"Error getting live queue table: {e}")
+            persisted = self._load_persisted_stats()
+            if persisted and "status_table" in persisted:
+                return persisted["status_table"]
+            return "No queue status data available."
 
     def __str__(self) -> str:
         return self.get_status_table()

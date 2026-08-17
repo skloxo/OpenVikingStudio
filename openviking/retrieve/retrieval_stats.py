@@ -96,9 +96,64 @@ class RetrievalStatsCollector:
         stats = get_stats_collector().snapshot()
     """
 
-    def __init__(self) -> None:
+    def __init__(self, storage_path: str | None = None) -> None:
         self._lock = threading.Lock()
         self._stats = RetrievalStats()
+        if storage_path is None:
+            import os
+            self._storage_path = os.path.expanduser("~/.openviking/retrieval_stats.json")
+        else:
+            self._storage_path = storage_path
+        self._load_from_disk()
+
+    def _load_from_disk(self) -> None:
+        try:
+            import json
+            import os
+            if os.path.exists(self._storage_path):
+                with open(self._storage_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                with self._lock:
+                    self._stats.total_queries = int(data.get("total_queries", 0))
+                    self._stats.total_results = int(data.get("total_results", 0))
+                    self._stats.zero_result_queries = int(data.get("zero_result_queries", 0))
+                    self._stats.total_score_sum = float(data.get("total_score_sum", 0.0))
+                    self._stats.max_score = float(data.get("max_score", 0.0))
+                    min_s = data.get("min_score", 0.0)
+                    self._stats.min_score = float(min_s) if min_s > 0 else float("inf")
+                    self._stats.queries_by_type = dict(data.get("queries_by_type", {}))
+                    self._stats.rerank_used = int(data.get("rerank_used", 0))
+                    self._stats.rerank_fallback = int(data.get("rerank_fallback", 0))
+                    self._stats.total_latency_ms = float(data.get("total_latency_ms", 0.0))
+                    self._stats.max_latency_ms = float(data.get("max_latency_ms", 0.0))
+        except Exception:
+            pass
+
+    def _save_to_disk(self) -> None:
+        try:
+            import json
+            import os
+            os.makedirs(os.path.dirname(self._storage_path), exist_ok=True)
+            with self._lock:
+                data = {
+                    "total_queries": self._stats.total_queries,
+                    "total_results": self._stats.total_results,
+                    "zero_result_queries": self._stats.zero_result_queries,
+                    "total_score_sum": self._stats.total_score_sum,
+                    "max_score": self._stats.max_score,
+                    "min_score": self._stats.min_score if self._stats.min_score != float("inf") else 0.0,
+                    "queries_by_type": self._stats.queries_by_type,
+                    "rerank_used": self._stats.rerank_used,
+                    "rerank_fallback": self._stats.rerank_fallback,
+                    "total_latency_ms": self._stats.total_latency_ms,
+                    "max_latency_ms": self._stats.max_latency_ms,
+                }
+            tmp = f"{self._storage_path}.tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+            os.replace(tmp, self._storage_path)
+        except Exception:
+            pass
 
     def record_query(
         self,
@@ -137,6 +192,8 @@ class RetrievalStatsCollector:
             if latency_ms > self._stats.max_latency_ms:
                 self._stats.max_latency_ms = latency_ms
 
+        self._save_to_disk()
+
         try:
             from openviking.metrics.datasources import RetrievalStatsDataSource
 
@@ -161,6 +218,7 @@ class RetrievalStatsCollector:
         """Reset all counters (useful for testing)."""
         with self._lock:
             self._stats = RetrievalStats()
+        self._save_to_disk()
 
 
 # Module-level singleton.

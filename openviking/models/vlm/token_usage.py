@@ -46,12 +46,17 @@ class TokenUsage:
         Returns:
             Token usage dictionary
         """
+        last_up = (
+            format_iso8601(self.last_updated)
+            if isinstance(self.last_updated, datetime)
+            else str(self.last_updated or "")
+        )
         return {
             "prompt_tokens": self.prompt_tokens,
             "completion_tokens": self.completion_tokens,
             "total_tokens": self.total_tokens,
             "call_count": self.call_count,
-            "last_updated": format_iso8601(self.last_updated),
+            "last_updated": last_up,
         }
 
     def __str__(self) -> str:
@@ -127,10 +132,58 @@ class ModelTokenUsage:
 
 
 class TokenUsageTracker:
-    """Token usage tracker"""
+    """Token usage tracker with zero-loss disk persistence."""
 
-    def __init__(self):
+    def __init__(self, storage_path: str | None = None):
         self._usage_by_model: Dict[str, ModelTokenUsage] = {}
+        if storage_path is None:
+            import os
+            self._storage_path = os.path.expanduser("~/.openviking/models_token_usage.json")
+        else:
+            self._storage_path = storage_path
+        self._load_from_disk()
+
+    def _load_from_disk(self) -> None:
+        try:
+            import json
+            import os
+            if os.path.exists(self._storage_path):
+                with open(self._storage_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                usage_by_model = data.get("usage_by_model", {})
+                for model_name, model_info in usage_by_model.items():
+                    model_usage = ModelTokenUsage(model_name)
+                    for provider_name, pdata in model_info.get("usage_by_provider", {}).items():
+                        provider_usage = TokenUsage()
+                        provider_usage.call_count = int(pdata.get("call_count", 0))
+                        provider_usage.prompt_tokens = int(pdata.get("prompt_tokens", 0))
+                        provider_usage.completion_tokens = int(pdata.get("completion_tokens", 0))
+                        provider_usage.total_tokens = int(pdata.get("total_tokens", 0))
+                        provider_usage.last_updated = pdata.get("last_updated")
+                        model_usage.usage_by_provider[provider_name] = provider_usage
+                    # Recompute model total
+                    tot = TokenUsage()
+                    for pu in model_usage.usage_by_provider.values():
+                        tot.prompt_tokens += pu.prompt_tokens
+                        tot.completion_tokens += pu.completion_tokens
+                        tot.total_tokens += pu.total_tokens
+                    model_usage.total_usage = tot
+                    self._usage_by_model[model_name] = model_usage
+        except Exception:
+            pass
+
+    def _save_to_disk(self) -> None:
+        try:
+            import json
+            import os
+            os.makedirs(os.path.dirname(self._storage_path), exist_ok=True)
+            data = self.to_dict()
+            tmp = f"{self._storage_path}.tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+            os.replace(tmp, self._storage_path)
+        except Exception:
+            pass
 
     def update(
         self, model_name: str, provider: str, prompt_tokens: int, completion_tokens: int
@@ -147,6 +200,7 @@ class TokenUsageTracker:
             self._usage_by_model[model_name] = ModelTokenUsage(model_name)
 
         self._usage_by_model[model_name].update(provider, prompt_tokens, completion_tokens)
+        self._save_to_disk()
 
     def get_model_usage(self, model_name: str) -> Optional[ModelTokenUsage]:
         """Get token usage for specified model

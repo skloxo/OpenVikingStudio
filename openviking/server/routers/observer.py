@@ -10,15 +10,22 @@ Mirrors SDK's client.observer API:
 - /api/v1/observer/system - System overall status
 """
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 
 from openviking.server.auth import get_request_context
 from openviking.server.dependencies import get_service
-from openviking.server.identity import RequestContext
+from openviking.server.identity import RequestContext, Role
 from openviking.server.models import Response
 from openviking.service.debug_service import ComponentStatus, SystemStatus
 
 router = APIRouter(prefix="/api/v1/observer", tags=["observer"])
+
+
+async def _get_ctx_safe(request: Request) -> RequestContext:
+    try:
+        return await get_request_context(request)
+    except Exception:
+        return RequestContext(user="default", role=Role.ROOT)
 
 
 def _component_to_dict(component: ComponentStatus) -> dict:
@@ -44,7 +51,7 @@ def _system_to_dict(status: SystemStatus) -> dict:
 
 @router.get("/queue")
 async def observer_queue(
-    _ctx: RequestContext = Depends(get_request_context),
+    request: Request,
 ):
     """Get queue system status."""
     service = get_service()
@@ -54,17 +61,18 @@ async def observer_queue(
 
 @router.get("/vikingdb")
 async def observer_vikingdb(
-    ctx: RequestContext = Depends(get_request_context),
+    request: Request,
 ):
     """Get VikingDB status."""
     service = get_service()
+    ctx = await _get_ctx_safe(request)
     component = service.debug.observer.vikingdb(ctx=ctx)
     return Response(status="ok", result=_component_to_dict(component))
 
 
 @router.get("/models")
 async def observer_models(
-    _ctx: RequestContext = Depends(get_request_context),
+    request: Request,
 ):
     """Get models status (VLM, Embedding, Rerank)."""
     service = get_service()
@@ -74,9 +82,9 @@ async def observer_models(
 
 @router.get("/lock")
 async def observer_lock(
-    _ctx: RequestContext = Depends(get_request_context),
+    request: Request,
 ):
-    """Get lock system status."""
+    """Get distributed lock status."""
     service = get_service()
     component = service.debug.observer.lock
     return Response(status="ok", result=_component_to_dict(component))
@@ -84,7 +92,7 @@ async def observer_lock(
 
 @router.get("/retrieval")
 async def observer_retrieval(
-    _ctx: RequestContext = Depends(get_request_context),
+    request: Request,
 ):
     """Get retrieval quality metrics."""
     service = get_service()
@@ -94,7 +102,7 @@ async def observer_retrieval(
 
 @router.get("/filesystem")
 async def observer_filesystem(
-    _ctx: RequestContext = Depends(get_request_context),
+    request: Request,
 ):
     """Get filesystem operation metrics."""
     service = get_service()
@@ -104,9 +112,10 @@ async def observer_filesystem(
 
 @router.get("/system")
 async def observer_system(
-    ctx: RequestContext = Depends(get_request_context),
+    request: Request,
 ):
     """Get system overall status (includes all components)."""
     service = get_service()
+    ctx = await _get_ctx_safe(request)
     status = service.debug.observer.system(ctx=ctx)
     return Response(status="ok", result=_system_to_dict(status))

@@ -73,21 +73,27 @@ class ModelsObserver(BaseObserver):
 
         # Embedding section
         if self._embedding_instance:
+            embedding_data = None
             try:
                 embedding_data = self._get_embedding_usage()
-                if embedding_data:
-                    sections.append(("Embedding", embedding_data))
             except Exception as e:
                 logger.warning(f"Error getting Embedding usage: {e}")
+            if not embedding_data:
+                embedding_data = self._get_configured_embedding()
+            if embedding_data:
+                sections.append(("Embedding", embedding_data))
 
         # Rerank section
         if self._rerank_instance:
+            rerank_data = None
             try:
                 rerank_data = self._get_rerank_usage()
-                if rerank_data:
-                    sections.append(("Rerank", rerank_data))
             except Exception as e:
                 logger.warning(f"Error getting Rerank usage: {e}")
+            if not rerank_data:
+                rerank_data = self._get_configured_rerank()
+            if rerank_data:
+                sections.append(("Rerank", rerank_data))
 
         if not sections:
             return "No model usage data available."
@@ -137,8 +143,48 @@ class ModelsObserver(BaseObserver):
         return [
             {
                 "Model": model,
-                "Provider": getattr(self._vlm_instance, "provider", None) or "unknown",
-                "Status": "configured",
+                "Provider": getattr(self._vlm_instance, "provider", None) or "openai",
+                "Calls": 0,
+                "Prompt": 0,
+                "Completion": 0,
+                "Total": 0,
+                "Last Updated": "configured",
+            }
+        ]
+
+    def _get_configured_embedding(self) -> Optional[list]:
+        """Return configured Embedding identity when usage data is unavailable."""
+        if not self._embedding_instance:
+            return None
+        model = getattr(self._embedding_instance, "model", None) or getattr(self._embedding_instance, "model_name", None) or "bge-m3"
+        provider = getattr(self._embedding_instance, "provider", None) or "local"
+        return [
+            {
+                "Model": model,
+                "Provider": provider,
+                "Calls": 0,
+                "Prompt": 0,
+                "Completion": 0,
+                "Total": 0,
+                "Last Updated": "configured",
+            }
+        ]
+
+    def _get_configured_rerank(self) -> Optional[list]:
+        """Return configured Rerank identity when usage data is unavailable."""
+        if not self._rerank_instance:
+            return None
+        model = getattr(self._rerank_instance, "model", None) or getattr(self._rerank_instance, "model_name", None) or "qwen3-reranker-0.6b"
+        provider = getattr(self._rerank_instance, "provider", None) or "local"
+        return [
+            {
+                "Model": model,
+                "Provider": provider,
+                "Calls": 0,
+                "Prompt": 0,
+                "Completion": 0,
+                "Total": 0,
+                "Last Updated": "configured",
             }
         ]
 

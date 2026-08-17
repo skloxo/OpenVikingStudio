@@ -220,6 +220,71 @@ async def system_status(
     )
 
 
+@router.get("/api/v1/system/harness_metrics", tags=["system"])
+async def harness_metrics(
+    window: Optional[str] = "24h",
+):
+    """Return OpenViking Harness telemetry and metrics."""
+    import json
+    import os
+    metrics_path = os.path.expanduser("~/.openviking/harness_metrics.json")
+    if os.path.exists(metrics_path):
+        try:
+            with open(metrics_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, dict):
+                    return data
+        except Exception:
+            pass
+    return {
+        "total_calls": 0,
+        "find_calls": 0,
+        "store_calls": 0,
+        "lessons_count": 0,
+        "most_evolved_skill": "--",
+        "last_active_timestamp": 0,
+        "actor_peers": {},
+        "blocked_calls": 0,
+    }
+
+
+@router.get("/api/v1/system/gpu", tags=["system"])
+async def get_system_gpu():
+    """Get GPU memory and utilization stats."""
+    import subprocess
+    try:
+        res = subprocess.run(
+            [
+                "nvidia-smi",
+                "--query-gpu=name,memory.total,memory.used,memory.free,utilization.gpu",
+                "--format=csv,noheader,nounits",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=2.0,
+        )
+        if res.returncode == 0 and res.stdout.strip():
+            lines = res.stdout.strip().split("\n")
+            gpus = []
+            for line in lines:
+                parts = [p.strip() for p in line.split(",")]
+                if len(parts) >= 5:
+                    gpus.append(
+                        {
+                            "name": parts[0],
+                            "total_mb": float(parts[1]),
+                            "used_mb": float(parts[2]),
+                            "free_mb": float(parts[3]),
+                            "utilization_gpu_pct": float(parts[4]),
+                        }
+                    )
+            if gpus:
+                return Response(status="ok", result={"gpus": gpus, "primary": gpus[0]})
+    except Exception:
+        pass
+    return Response(status="ok", result={"gpus": [], "primary": None})
+
+
 class WaitRequest(BaseModel):
     """Request model for wait."""
 
