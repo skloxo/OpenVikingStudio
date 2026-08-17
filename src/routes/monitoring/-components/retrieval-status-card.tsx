@@ -63,14 +63,14 @@ export function RetrievalStatusCard({ status, isHealthy }: RetrievalStatusCardPr
           className={cn(
             'gap-1 font-normal',
             isHealthy
-              ? 'border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+              ? 'border-primary/20 bg-primary/5 text-primary'
               : 'border-destructive/30 text-destructive',
           )}
         >
           <span
             className={cn(
               'size-1.5 rounded-full',
-              isHealthy ? 'bg-emerald-500' : 'bg-destructive',
+              isHealthy ? 'bg-primary' : 'bg-destructive',
             )}
           />
           {isHealthy ? t('retrievalCard.healthy') : t('retrievalCard.unhealthy')}
@@ -120,7 +120,7 @@ export function RetrievalStatusCard({ status, isHealthy }: RetrievalStatusCardPr
                   'font-mono text-base font-bold tabular-nums mt-0.5',
                   parseFloat(metrics.zeroResultRate) > 15
                     ? 'text-amber-600 dark:text-amber-400'
-                    : 'text-emerald-600 dark:text-emerald-400',
+                    : 'text-foreground/90',
                 )}
               >
                 {metrics.zeroResultRate}
@@ -133,7 +133,7 @@ export function RetrievalStatusCard({ status, isHealthy }: RetrievalStatusCardPr
                 'flex flex-col justify-center rounded-lg border px-3 py-2',
                 metrics.avgLatencyMs > 1000
                   ? 'bg-amber-500/10 border-amber-500/20'
-                  : 'bg-emerald-500/10 border-emerald-500/20',
+                  : 'bg-muted/20',
               )}
             >
               <span className="text-[11px] text-muted-foreground font-medium">{t('retrievalCard.avgLatency')}</span>
@@ -142,7 +142,7 @@ export function RetrievalStatusCard({ status, isHealthy }: RetrievalStatusCardPr
                   'font-mono text-base font-bold tabular-nums mt-0.5',
                   metrics.avgLatencyMs > 1000
                     ? 'text-amber-600 dark:text-amber-400'
-                    : 'text-emerald-600 dark:text-emerald-400',
+                    : 'text-foreground/90',
                 )}
               >
                 {`${metrics.avgLatencyMs.toLocaleString()} ms`}

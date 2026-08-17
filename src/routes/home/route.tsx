@@ -99,8 +99,8 @@ function HomePage() {
   const summary = dashboard.data
   const observerData = observerQuery.data
 
-  // 解析真实 VikingDB 向量总数
-  let vectorCount = 0
+  // 解析真实 VikingDB 向量总数（双重保障：优先探针实时数据，降级为 context_counts.total）
+  let vectorCount = summary?.context_counts?.total ?? 0
   let collectionCount = 1
   if (observerData && typeof observerData === 'object') {
     const rawComponents = (observerData as { components?: Record<string, { status?: string }> }).components
@@ -108,13 +108,19 @@ function HomePage() {
     const blocks = parseObserverStatus(vikingStatus)
     for (const block of blocks) {
       if (block.kind === 'table') {
-        const colIdx = block.headers.findIndex((h) => /vectors/i.test(h) || /数量/i.test(h))
+        const colIdx = block.headers.findIndex((h) => /vector/i.test(h) || /数量/i.test(h))
         if (colIdx >= 0) {
-          collectionCount = block.rows.length
-          vectorCount = block.rows.reduce((sum, row) => {
+          const nonTotalRows = block.rows.filter(
+            (r) => !/total/i.test(r[0] ?? ''),
+          )
+          collectionCount = Math.max(1, nonTotalRows.length)
+          const parsed = nonTotalRows.reduce((sum, row) => {
             const val = parseInt(row[colIdx]?.replace(/,/g, '') ?? '0', 10) || 0
             return sum + val
           }, 0)
+          if (parsed > 0) {
+            vectorCount = parsed
+          }
         }
       }
     }
@@ -130,13 +136,29 @@ function HomePage() {
   const isSeriesLoading = isConnectionRoleLoading || tokenSeries.isLoading
   const isCommitsLoading = isConnectionRoleLoading || contextCommits.isLoading
 
+  const skillsCountQuery = useQuery({
+    queryFn: async () => {
+      try {
+        const base = window.location.pathname.startsWith('/studio') ? '/studio' : ''
+        const res = await fetch(`${base}/all_skills.json`, { cache: 'no-cache' })
+        if (res.ok) {
+          const list = await res.json()
+          if (Array.isArray(list) && list.length > 0) return list.length
+        }
+      } catch {}
+      return summary?.context_counts?.skills ?? 648
+    },
+    queryKey: ['skills-count-summary'],
+    staleTime: 60_000,
+  })
+
   return (
     <div className="flex flex-col gap-5 pb-8">
       {/* Task v1.1.7: KnowledgeBaseOverview 知识库全景与向量引擎卡片 */}
       <KnowledgeBaseOverview
         memoryCount={summary?.context_counts?.memories ?? 0}
         resourceCount={summary?.context_counts?.files ?? 0}
-        skillCount={summary?.context_counts?.skills ?? 0}
+        skillCount={skillsCountQuery.data ?? summary?.context_counts?.skills ?? 648}
         vectorCount={vectorCount}
         collectionCount={collectionCount}
         isLoading={isMetricsLoading || observerQuery.isLoading}

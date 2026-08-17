@@ -77,14 +77,14 @@ export function VikingDbCard({ status, isHealthy }: VikingDbCardProps) {
           className={cn(
             'gap-1 font-normal',
             isHealthy
-              ? 'border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+              ? 'border-primary/20 bg-primary/5 text-primary'
               : 'border-destructive/30 text-destructive',
           )}
         >
           <span
             className={cn(
               'size-1.5 rounded-full',
-              isHealthy ? 'bg-emerald-500' : 'bg-destructive',
+              isHealthy ? 'bg-primary' : 'bg-destructive',
             )}
           />
           {isHealthy ? t('vikingdb.healthy') : t('vikingdb.unhealthy')}
@@ -99,9 +99,9 @@ export function VikingDbCard({ status, isHealthy }: VikingDbCardProps) {
             {collectionCount}
           </span>
         </div>
-        <div className="flex flex-col justify-center rounded-lg border bg-emerald-500/10 border-emerald-500/20 px-3 py-2">
-          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">{t('vikingdb.totalVectors')}</span>
-          <span className="font-mono text-base font-bold text-emerald-600 dark:text-emerald-400 tabular-nums mt-0.5">
+        <div className="flex flex-col justify-center rounded-lg border bg-muted/20 px-3 py-2">
+          <span className="text-[11px] font-medium text-muted-foreground">{t('vikingdb.totalVectors')}</span>
+          <span className="font-mono text-base font-bold text-foreground/90 tabular-nums mt-0.5">
             {totalVectors.toLocaleString()}
           </span>
         </div>
@@ -147,7 +147,7 @@ export function VikingDbCard({ status, isHealthy }: VikingDbCardProps) {
                 <span
                   className={cn(
                     'text-right font-bold tabular-nums',
-                    row.vectorCount > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground/60',
+                    row.vectorCount > 0 ? 'text-foreground/90' : 'text-muted-foreground/60',
                   )}
                 >
                   {row.vectorCount.toLocaleString()}
@@ -158,9 +158,9 @@ export function VikingDbCard({ status, isHealthy }: VikingDbCardProps) {
                 <span className="text-right">
                   <span
                     className={cn(
-                      'inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold',
+                      'inline-block px-1.5 py-0.5 rounded text-[11px] font-semibold',
                       /ok|normal|healthy/i.test(row.status)
-                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                        ? 'bg-muted/20 text-foreground/90'
                         : 'bg-destructive/10 text-destructive',
                     )}
                   >

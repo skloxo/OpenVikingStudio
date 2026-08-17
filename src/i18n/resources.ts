@@ -1,7 +1,7 @@
 import en from './locales/en'
 import zhCN from './locales/zh-CN'
 
-export const defaultLanguage = 'en' as const
+export const defaultLanguage = 'zh-CN' as const
 
 export const resources = {
   en,

@@ -496,6 +496,8 @@ const zhCN = {
       failed: '失败',
       pending: '等待中',
       running: '进行中',
+      cancelling: '取消中',
+      cancelled: '已取消',
       unknown: '未知',
     },
     types: {

@@ -471,6 +471,8 @@ const en = {
       failed: 'Failed',
       pending: 'Pending',
       running: 'Running',
+      cancelling: 'Cancelling',
+      cancelled: 'Cancelled',
       unknown: 'Unknown',
     },
     types: {

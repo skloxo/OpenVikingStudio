@@ -80,7 +80,7 @@ export function SystemResourceChart({
             <HardDrive className="size-3" />
             RAM: {chartData[chartData.length - 1]?.memory}%
           </span>
-          <span className="inline-flex items-center gap-1 rounded-xs border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-emerald-600 dark:text-emerald-400">
+          <span className="inline-flex items-center gap-1 rounded-xs border bg-muted/20 border px-2 py-0.5 text-foreground/90">
             <Layers className="size-3" />
             {t('systemResource.vectors', { defaultValue: '向量数' })}: {chartData[chartData.length - 1]?.vectors?.toLocaleString()}
           </span>
@@ -108,14 +108,14 @@ export function SystemResourceChart({
               dataKey="time"
               stroke="currentColor"
               opacity={0.5}
-              tick={{ fontSize: 10, fontFamily: 'monospace' }}
+              tick={{ fontSize: 11, fontFamily: 'monospace' }}
               tickLine={false}
             />
 
             <YAxis
               stroke="currentColor"
               opacity={0.5}
-              tick={{ fontSize: 10, fontFamily: 'monospace' }}
+              tick={{ fontSize: 11, fontFamily: 'monospace' }}
               tickLine={false}
               domain={[0, 100]}
               unit="%"

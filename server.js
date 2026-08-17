@@ -5,7 +5,7 @@ import { execSync } from 'child_process';
 
 const PORT = process.env.PORT || 1936;
 const BACKEND_PORT = process.env.BACKEND_PORT || 1933;
-const DIST_DIR = '/home/skloxo/.local/lib/python3.12/site-packages/openviking/web_studio/dist.bak';
+const DIST_DIR = process.env.OPENVIKING_WEB_STUDIO_DIR || path.join(__dirname, 'dist');
 const ROOT_API_KEY = process.env.ROOT_API_KEY || '[REDACTED_API_KEY]';
 
 const MIME_TYPES = {
