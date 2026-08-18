@@ -44,7 +44,7 @@
 | **Task Card 5** | **服务端上下文统一召回** | `/search mode="context"` 组装、分层预算裁剪 (`context_assembler`)、Rerank L1 对齐 | `2cc96e39`, `674f5e60`, `cbc39077` | `test_context_assembler_pipeline.py` PASS, 320/320 测试全过, 1933 健康上线 | `v1.3.10` | [x] 已验收并交付 ✅ (Tag: `v1.3.10`) |
 | **Task Card 6** | **企业级认证 (OIDC/LDAP)** | OIDC / LDAP 企业级身份插件、Watch 任务刷新安全 ACL、执行解析器加固 | `444cc87b`, `21029f40`, `03bd4694` | `test_ldap_auth.py` PASS, 37/37 测试全过, 1933 健康上线 | `v1.3.11` | [x] 已验收并交付 ✅ (Tag: `v1.3.11`) |
 | **Task Card 7** | **Storage & VikingFS 容错** | `mkdir` 错误主动透传、`mv` 突破 1000 节点深拷贝、废弃向量后端清理 | `0205914d`, `ecab57e1`, `1d02a72b` | `test_mv_copy_node_limit.py` PASS, 67/67 测试全过, 1933 健康上线 | `v1.3.12` | [x] 已验收并交付 ✅ (Tag: `v1.3.12`) |
-| **Task Card 8** | **Markdown 与内容写入增强** | `content_write` 处理模式、解析后不拆分 (`no_split`)、CJK Token 预算对齐 | `6f43a404`, `8d1d52fe`, `3087f943` | `test_markdown_split_token_budget.py` PASS | `v1.3.13` | ⏳ 待开始 |
+| **Task Card 8** | **Markdown 与内容写入增强** | `content_write` 处理模式、解析后不拆分 (`no_split`)、CJK Token 预算对齐 | `6f43a404`, `8d1d52fe`, `3087f943` | `test_markdown_split_token_budget.py` PASS, 44/44 测试全过, 1933 健康上线 | `v1.3.13` | [x] 已验收并交付 ✅ (Commit: `cfd40888`, Tag: `v1.3.13`) |
 
 ---
 
@@ -155,6 +155,14 @@
 - **`[TASK-PRIVACY-01~03]` Epic-PRIVACY-GOV 敏感信息二次授权**：服务端敏感字段检索二次过滤与鉴权、前端脱敏展示与安全开关、脱敏审计日志与导出隔离。
 
 ---
+
+### [x] v1.3.13 版本已验收通过 🎉
+- **Git Commit**: `cfd40888`, Tag: `v1.3.13`
+- **交付内容**：
+  1. **`content_write` 处理模式与状态汇报 (`processing_mode`)**：支持 `vectors_only` 快速向量索引构建，跳过耗时语义提取；
+  2. **文档导入解析后不拆分 (`no_split`) 模式**：长篇 Markdown / PDF 导入保持单个完整文件节点存储，不按层级切碎；
+  3. **CJK 中文字符 Token 预算硬核保护**：强制切分算法固化 `MAX_TOKENS_PER_CHAR = 0.7` 上限，彻底杜绝中文超长溢出报错；
+  4. **44/44 测试全过**：针对性用例与回归测试全绿通过，1933 生产环境健康上线。
 
 ### [x] v1.3.6 版本已验收通过 🎉
 - **Git Commit**: `6823b728`, Tag: `v1.3.6`
