@@ -42,7 +42,7 @@
 | **Task Card 3** | **QueueFS & Redis 集群化** | QueueFS 支持 Redis 单机/集群/哨兵模式、启动有界过期任务清扫 (0/30/60) | `8c9c2282`, `758fc7f0` | `test_config_validation.py` PASS, 203/203 测试全过, 1933 健康上线 | `v1.3.8` | [x] 已验收并交付 ✅ (Tag: `v1.3.8`) |
 | **Task Card 4** | **Session 自动提交 V2** | Session 自动提交服务 (`SessionAutoCommitService`)、局部捕获异常断点恢复 | `d2056e97`, `0ab48f96`, `8e98a3c7` | `test_session_auto_commit.py` PASS, 301/301 回归测试全过, 1933 健康上线 | `v1.3.9` | [x] 已验收并交付 ✅ (Tag: `v1.3.9`) |
 | **Task Card 5** | **服务端上下文统一召回** | `/search mode="context"` 组装、分层预算裁剪 (`context_assembler`)、Rerank L1 对齐 | `2cc96e39`, `674f5e60`, `cbc39077` | `test_context_assembler_pipeline.py` PASS, 320/320 测试全过, 1933 健康上线 | `v1.3.10` | [x] 已验收并交付 ✅ (Tag: `v1.3.10`) |
-| **Task Card 6** | **企业级认证 (OIDC/LDAP)** | OIDC / LDAP 企业级身份插件、Watch 任务刷新安全 ACL、执行解析器加固 | `444cc87b`, `21029f40`, `03bd4694` | `test_ldap_auth.py` PASS | `v1.3.11` | ⏳ 待开始 |
+| **Task Card 6** | **企业级认证 (OIDC/LDAP)** | OIDC / LDAP 企业级身份插件、Watch 任务刷新安全 ACL、执行解析器加固 | `444cc87b`, `21029f40`, `03bd4694` | `test_ldap_auth.py` PASS, 37/37 测试全过, 1933 健康上线 | `v1.3.11` | [x] 已验收并交付 ✅ (Tag: `v1.3.11`) |
 | **Task Card 7** | **Storage & VikingFS 容错** | `mkdir` 错误主动透传、`mv` 突破 1000 节点深拷贝、废弃向量后端清理 | `0205914d`, `ecab57e1`, `1d02a72b` | `test_mv_copy_node_limit.py` PASS | `v1.3.12` | ⏳ 待开始 |
 | **Task Card 8** | **Markdown 与内容写入增强** | `content_write` 处理模式、解析后不拆分 (`no_split`)、CJK Token 预算对齐 | `6f43a404`, `8d1d52fe`, `3087f943` | `test_markdown_split_token_budget.py` PASS | `v1.3.13` | ⏳ 待开始 |
 

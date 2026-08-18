@@ -63,7 +63,7 @@ function CapabilityStatus({
     <div
       className={cn(
         'flex min-w-0 items-start gap-2 rounded-md border bg-background/70 px-3 py-2 text-sm',
-        state === 'ok' && 'border-emerald-500/35 text-emerald-700',
+        state === 'ok' && 'border-cyan-500/35 text-cyan-500',
         state === 'error' && 'border-destructive/35 text-destructive',
       )}
     >
