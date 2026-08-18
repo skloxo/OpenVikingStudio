@@ -669,6 +669,7 @@ class ResourceProcessor:
                 context_type=context_type_for_uri(entry_uri),
                 ctx=ctx,
                 ingest_options=ingest_options,
+                register_request_wait=True,
             )
 
     async def _vectorize_resource_file(
@@ -687,6 +688,7 @@ class ResourceProcessor:
             summary_dict={"name": name, "summary": ""},
             parent_uri=parent.uri,
             context_type=context_type_for_uri(file_uri),
+            ctx=ctx,
             ingest_options=IngestOptions.from_value(ingest_options),
             register_request_wait=True,
         )
