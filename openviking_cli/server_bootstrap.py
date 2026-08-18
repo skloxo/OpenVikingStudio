@@ -17,7 +17,7 @@ need a running server).
 import os
 import sys
 
-from openviking_cli.utils.config.consts import OPENVIKING_CONFIG_ENV
+from openviking_cli.utils.config import OPENVIKING_CONFIG_ENV
 
 
 def _config_missing() -> bool:

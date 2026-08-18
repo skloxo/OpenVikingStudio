@@ -40,7 +40,7 @@ def create_collection_adapter(config) -> CollectionAdapter:
 
     if adapter_cls is None:
         raise ValueError(
-            f"Vector backend {config.backend} is not supported. "
+            f"Vector backend {backend} is not supported. "
             f"Available backends: {sorted(_ADAPTER_REGISTRY)}"
         )
     return adapter_cls.from_config(config)

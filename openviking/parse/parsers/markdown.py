@@ -155,9 +155,9 @@ class MarkdownParser(BaseParser):
     # Configuration constants
     DEFAULT_MAX_SECTION_SIZE = 2048  # Maximum tokens per section
     DEFAULT_MIN_SECTION_TOKENS = 512  # Minimum tokens to create a separate section
-    # Worst-case token density used by _estimate_token_count (CJK 1.0 tok/char).
+    # Worst-case token density used by _estimate_token_count (CJK ~0.7 tok/char).
     # Used to bound force-split chunk size so it also respects the token budget.
-    MAX_TOKENS_PER_CHAR = 1.0
+    MAX_TOKENS_PER_CHAR = 0.7
     MAX_MERGED_FILENAME_LENGTH = 32  # Maximum length for merged section filenames
 
     # Image validation constants
@@ -177,12 +177,15 @@ class MarkdownParser(BaseParser):
         Initialize the enhanced markdown parser.
 
         Args:
-            extract_frontmatter: Whether to extract YAML frontmatter. When None, uses config.
+            extract_frontmatter: Whether to REMOVE YAML frontmatter from the stored
+                document body. Frontmatter is parsed into the parse result metadata
+                either way. Defaults to False (lossless ingestion); when None, uses
+                config.
             config: Parser configuration (uses default if None)
         """
         self.config = config or ParserConfig()
         if extract_frontmatter is None:
-            extract_frontmatter = getattr(self.config, "extract_frontmatter", True)
+            extract_frontmatter = getattr(self.config, "extract_frontmatter", False)
         self.extract_frontmatter = extract_frontmatter
 
         # Compile regex patterns for better performance
@@ -369,11 +372,16 @@ class MarkdownParser(BaseParser):
         meta: Dict[str, Any] = {}
         warnings: List[str] = []
 
-        # Extract frontmatter if present
+        # Frontmatter is ALWAYS parsed into ``meta`` (it drives doc_title below), but
+        # it is only removed from the stored body when explicitly configured.
+        # ``meta`` is transient — it is returned in the parse result and never written
+        # to VikingFS — so stripping by default silently destroyed the frontmatter of
+        # every ingested markdown file with no way to read those fields back.
+        stripped_content, frontmatter = self._extract_frontmatter(content)
+        if frontmatter:
+            meta["frontmatter"] = frontmatter
         if self.extract_frontmatter:
-            content, frontmatter = self._extract_frontmatter(content)
-            if frontmatter:
-                meta["frontmatter"] = frontmatter
+            content = stripped_content
 
         explicit_name = kwargs.get("resource_name")
         if not explicit_name and kwargs.get("source_name"):
@@ -1677,12 +1685,9 @@ class MarkdownParser(BaseParser):
         }
 
     def _estimate_token_count(self, content: str) -> int:
-        # CJK characters (Chinese, Japanese, Korean): 1.0 token per char
-        # Aligned with openviking.utils.embedding_input.estimate_embedding_input_tokens
-        # so that the Parser's section-size guard and the Embedder's capacity limit use
-        # the same budget. The old coefficient of 0.7 caused the Parser to allow chunks
-        # that exceeded the embedding model's physical batch size (-b) for CJK-dense text.
-        # Other characters: ~0.25 token per char (matching embedding_input.py).
+        # CJK characters (Chinese, Japanese, Korean): ~0.7 token per char
+        # Other characters (including Latin, Arabic, Cyrillic, etc.): ~0.3 token per char
+        # This provides better coverage for multilingual documents
         cjk_chars = len(re.findall(r"[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]", content))
         other_chars = len(re.findall(r"[^\s]", content)) - cjk_chars
-        return int(cjk_chars * 1.0 + other_chars * 0.25)
+        return int(cjk_chars * self.MAX_TOKENS_PER_CHAR + other_chars * 0.3)

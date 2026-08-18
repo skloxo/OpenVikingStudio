@@ -6,52 +6,24 @@ OpenViking - An Agent-native context database
 Data in, Context out.
 """
 
-from typing import TYPE_CHECKING
-
-__version__ = "1.3.6"
+__version__ = "0.1.dev189"
 
 try:
-    from ._version import __version__, __version_tuple__
-except ImportError:
-    __version__ = "1.3.6"
-    __version_tuple__ = (1, 3, 6)
+    from ._version import version as _v
 
-try:
-    from openviking.pyagfs import get_binding_client
-except ImportError as exc:
-    raise ImportError(
-        "Bundled OpenViking AGFS client is unavailable. "
-        "Reinstall openviking or run 'pip install -e .' from the project root."
-    ) from exc
+    __version__ = _v
+except Exception:
+    try:
+        from importlib.metadata import version
 
-if TYPE_CHECKING:
-    from openviking.async_client import AsyncOpenViking
-    from openviking.session import Session
-    from openviking.sync_client import SyncOpenViking
-    from openviking_cli.client.http import AsyncHTTPClient
-    from openviking_cli.client.sync_http import SyncHTTPClient
-    from openviking_cli.session.user_id import UserIdentifier
-
-    OpenViking = SyncOpenViking
+        __version__ = version("openviking")
+    except Exception:
+        pass
 
 
 def __getattr__(name: str):
-    if name == "AsyncOpenViking":
-        from openviking.async_client import AsyncOpenViking
-
-        return AsyncOpenViking
-    if name == "SyncOpenViking":
-        from openviking.sync_client import SyncOpenViking
-
-        return SyncOpenViking
-    if name == "OpenViking":
-        from openviking.sync_client import SyncOpenViking
-
-        return SyncOpenViking
-    if name == "Session":
-        from openviking.session import Session
-
-        return Session
+    if name == "__version__":
+        return __version__
     if name == "AsyncHTTPClient":
         from openviking_cli.client.http import AsyncHTTPClient
 
@@ -60,22 +32,11 @@ def __getattr__(name: str):
         from openviking_cli.client.sync_http import SyncHTTPClient
 
         return SyncHTTPClient
-    if name == "UserIdentifier":
-        from openviking_cli.session.user_id import UserIdentifier
-
-        return UserIdentifier
-    if name == "__version__":
-        return __version__
     raise AttributeError(name)
 
 
 __all__ = [
     "__version__",
-    "OpenViking",
-    "SyncOpenViking",
-    "AsyncOpenViking",
     "SyncHTTPClient",
     "AsyncHTTPClient",
-    "Session",
-    "UserIdentifier",
 ]

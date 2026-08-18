@@ -13,7 +13,6 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from openviking.core.context import ContextLevel
-from openviking.utils.ingest_options import IngestOptions
 from openviking.core.namespace import context_type_for_uri
 from openviking.parse.image_rewrite import rewrite_image_uris
 from openviking.parse.mode import ParseMode, normalize_parse_mode
@@ -25,14 +24,15 @@ from openviking.resource.processing_mode import (
     normalize_processing_mode,
 )
 from openviking.server.identity import RequestContext
-from openviking.storage.vikingdb_manager import VikingDBManager
 from openviking.storage.errors import LockAcquisitionError
 from openviking.storage.expr import And, Eq, PathScope
 from openviking.storage.internal_names import STORAGE_INTERNAL_ENTRY_NAMES
 from openviking.storage.queuefs.semantic_processor import SemanticProcessor
 from openviking.storage.viking_fs import LS_ALL_NODES, get_viking_fs
+from openviking.storage.vikingdb_manager import VikingDBManager
 from openviking.telemetry import get_current_telemetry
 from openviking.utils.embedding_utils import index_resource, vectorize_file
+from openviking.utils.ingest_options import IngestOptions
 from openviking.utils.summarizer import Summarizer
 from openviking_cli.exceptions import OpenVikingError
 from openviking_cli.utils import VikingURI, get_logger
@@ -669,7 +669,6 @@ class ResourceProcessor:
                 context_type=context_type_for_uri(entry_uri),
                 ctx=ctx,
                 ingest_options=ingest_options,
-                register_request_wait=True,
             )
 
     async def _vectorize_resource_file(
@@ -690,7 +689,6 @@ class ResourceProcessor:
             context_type=context_type_for_uri(file_uri),
             ctx=ctx,
             ingest_options=IngestOptions.from_value(ingest_options),
-            register_request_wait=True,
         )
 
     async def reserve_unique_candidate(

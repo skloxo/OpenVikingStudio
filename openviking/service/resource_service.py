@@ -27,6 +27,7 @@ from openviking.resource.feishu_watch_auth import (
     create_feishu_auth_state,
     load_feishu_app_credentials,
 )
+from openviking.resource.git_watch_auth import create_git_http_auth_state
 from openviking.resource.processing_mode import (
     DEFAULT_PROCESSING_MODE,
     ProcessingMode,
@@ -50,6 +51,7 @@ from openviking.telemetry.resource_summary import (
     build_queue_status_payload,
 )
 from openviking.utils import is_git_repo_url, parse_code_hosting_url
+from openviking.utils.git_auth import parse_git_http_auth_config
 from openviking.utils.ingest_options import IngestOptions
 from openviking.utils.media_processor import _smart_stem
 from openviking.utils.network_guard import ensure_public_remote_target
@@ -192,6 +194,12 @@ class ResourceService:
     def _sanitize_watch_processor_kwargs(self, processor_kwargs: Dict[str, Any]) -> Dict[str, Any]:
         sanitized: Dict[str, Any] = {}
         for key, value in processor_kwargs.items():
+            if key in {
+                "auth_config",
+                FEISHU_ACCESS_TOKEN_ARG,
+                FEISHU_REFRESH_TOKEN_ARG,
+            }:
+                continue
             try:
                 json.dumps(value, ensure_ascii=False)
             except TypeError:
@@ -273,22 +281,17 @@ class ResourceService:
                         "Pass 'to' explicitly, or add a resource type that returns root_uri."
                     )
                 if processor_kwargs.get("temp_file_id"):
-                    # An uploaded source is a one-time snapshot: the staged upload is
-                    # consumed at ingest, so a watch task recorded against it would
-                    # re-process the frozen snapshot every interval — silently ignoring
-                    # all edits to the client-side source — instead of watching anything
-                    # live. Reject at creation instead of pretending to watch.
+                    # An uploaded source is a static snapshot, so a watch task recorded
+                    # against it would re-process the frozen snapshot every interval.
                     raise InvalidArgumentError(
                         "watch_interval > 0 is not supported for uploaded content: an "
-                        "upload is consumed as a one-time snapshot at ingest, so the "
-                        "watch would re-process stale content forever. Watch a URL / "
+                        "upload is a static snapshot, so the watch would re-process "
+                        "stale content forever. Watch a URL / "
                         "sitemap / RSS source instead, or re-add the resource when the "
                         "source changes."
                     )
                 try:
                     sanitized = self._sanitize_watch_processor_kwargs(processor_kwargs)
-                    if watch_auth_state is not None:
-                        sanitized.pop(FEISHU_ACCESS_TOKEN_ARG, None)
                     await self._handle_watch_task_creation(
                         path=path,
                         to_uri=watch_to,
@@ -342,9 +345,7 @@ class ResourceService:
         try:
             parse_mode = normalize_parse_mode(raw_parse_mode)
         except InvalidArgumentError as exc:
-            raise InvalidArgumentError(
-                str(exc).replace("parse_mode", "args.parse_mode")
-            ) from exc
+            raise InvalidArgumentError(str(exc).replace("parse_mode", "args.parse_mode")) from exc
         token = normalized.get(FEISHU_ACCESS_TOKEN_ARG)
         refresh_token = normalized.pop(FEISHU_REFRESH_TOKEN_ARG, None)
         watch_auth_state = None
@@ -612,6 +613,12 @@ class ResourceService:
             else normalized_args.parse_mode
         )
         kwargs.update(normalized_args.processor_kwargs)
+        if "auth_config" in kwargs:
+            raise InvalidArgumentError(
+                "args.auth_config cannot be used with enqueue_git_add_resource because "
+                "native Git credentials must be consumed before durable queue submission. "
+                "Call add_resource instead."
+            )
         from openviking.connector.routing import credential_arg_names
 
         credential_args = credential_arg_names("git", kwargs)
@@ -946,9 +953,9 @@ class ResourceService:
                 - watch_interval < 0: Same as watch_interval = 0, cancels any existing watch task.
                 Default is 0 (no monitoring).
 
-                Note: If the target URI already has an active watch task, a ConflictError will be
-                raised. You must first cancel the existing watch (set watch_interval <= 0) before
-                creating a new one.
+                Note: Re-adding the same source to the same target updates its active watch
+                task in place. A different source targeting an active watch raises
+                ConflictError; cancel that watch first with watch_interval <= 0.
             enforce_public_remote_targets: When True, reject non-public remote hosts and
                 validate each outbound HTTP request URL during fetch.
             args: Parser/accessor-specific options forwarded to the processing chain.
@@ -958,7 +965,7 @@ class ResourceService:
             Processing result containing 'root_uri' and other metadata
 
         Raises:
-            ConflictError: If the target URI already has an active watch task
+            ConflictError: If a different source targets an active watch task
             InvalidArgumentError: If the URI scope is not 'resources'
         """
         self._ensure_initialized()
@@ -971,15 +978,14 @@ class ResourceService:
             else normalized_args.parse_mode
         )
         kwargs.update(normalized_args.processor_kwargs)
+        git_repo_source = is_git_repo_url(path)
         if watch_interval > 0 and kwargs.get("temp_file_id"):
-            # Fail fast, before any ingestion: an uploaded source is a one-time
-            # snapshot, so a watch on it can never observe the live source (see the
-            # matching guard in _manage_watch_if_needed, the watch-creation choke
-            # point that protects all other call paths).
+            # Fail fast: a watch on a static upload snapshot can never observe the
+            # live source.
             raise InvalidArgumentError(
                 "watch_interval > 0 is not supported for uploaded content: an "
-                "upload is consumed as a one-time snapshot at ingest, so the "
-                "watch would re-process stale content forever. Watch a URL / "
+                "upload is a static snapshot, so the watch would re-process "
+                "stale content forever. Watch a URL / "
                 "sitemap / RSS source instead, or re-add the resource when the "
                 "source changes."
             )
@@ -1023,28 +1029,73 @@ class ResourceService:
                 **kwargs,
             )
 
-        if is_git_repo_url(path):
-            result = await self.enqueue_git_add_resource(
-                path=path,
-                ctx=ctx,
-                to=to,
-                to_is_directory=to_is_directory,
-                parent=parent,
-                reason=reason,
-                instruction=instruction,
-                timeout=timeout,
-                build_index=build_index,
-                summarize=summarize,
-                processing_mode=processing_mode,
-                parse_mode=mode,
-                watch_interval=watch_interval,
-                manage_watch=manage_watch,
-                tags=tags,
-                tag_mode=tag_mode,
-                allow_local_path_resolution=allow_local_path_resolution,
-                enforce_public_remote_targets=enforce_public_remote_targets,
-                **kwargs,
-            )
+        if git_repo_source:
+            if "auth_config" in kwargs:
+                git_auth = parse_git_http_auth_config(
+                    kwargs["auth_config"],
+                    path,
+                )
+                if git_auth is None:
+                    raise InvalidArgumentError("args.auth_config must be an object.")
+
+                watch_auth_state = normalized_args.watch_auth_state
+                if watch_interval > 0:
+                    watch_auth_state = create_git_http_auth_state(git_auth, path)
+
+                # The native Git queue is durable, so credentials must be consumed
+                # before crossing that boundary. Fetch and parse in this request;
+                # _execute_resource_ingestion only queues the credential-free
+                # prepared post-processing payload when defer_post_processing=True.
+                request_local_kwargs = dict(kwargs)
+                request_local_kwargs["auth_config"] = {
+                    "username": git_auth.username,
+                    "token": git_auth.token,
+                }
+                result = await self._execute_resource_ingestion(
+                    path=path,
+                    ctx=ctx,
+                    to=to,
+                    to_is_directory=to_is_directory,
+                    parent=parent,
+                    reason=reason,
+                    instruction=instruction,
+                    defer_post_processing=True,
+                    timeout=timeout,
+                    build_index=build_index,
+                    summarize=summarize,
+                    processing_mode=processing_mode,
+                    parse_mode=mode,
+                    watch_interval=watch_interval,
+                    manage_watch=manage_watch,
+                    tags=tags,
+                    tag_mode=tag_mode,
+                    allow_local_path_resolution=allow_local_path_resolution,
+                    enforce_public_remote_targets=enforce_public_remote_targets,
+                    watch_auth_state=watch_auth_state,
+                    **request_local_kwargs,
+                )
+            else:
+                result = await self.enqueue_git_add_resource(
+                    path=path,
+                    ctx=ctx,
+                    to=to,
+                    to_is_directory=to_is_directory,
+                    parent=parent,
+                    reason=reason,
+                    instruction=instruction,
+                    timeout=timeout,
+                    build_index=build_index,
+                    summarize=summarize,
+                    processing_mode=processing_mode,
+                    parse_mode=mode,
+                    watch_interval=watch_interval,
+                    manage_watch=manage_watch,
+                    tags=tags,
+                    tag_mode=tag_mode,
+                    allow_local_path_resolution=allow_local_path_resolution,
+                    enforce_public_remote_targets=enforce_public_remote_targets,
+                    **kwargs,
+                )
         else:
             result = await self._execute_resource_ingestion(
                 path=path,
@@ -1596,7 +1647,7 @@ class ResourceService:
             ctx: Request context with user identity
 
         Raises:
-            ConflictError: If target URI is already used by another active task
+            ConflictError: If target URI is actively watched from a different source
         """
         watch_manager = self._get_watch_manager()
         if not watch_manager:
@@ -1609,12 +1660,13 @@ class ResourceService:
             role=str(ctx.role),
         )
         if existing_task:
-            if existing_task.is_active:
+            if existing_task.is_active and existing_task.path != path:
                 raise ConflictError(
                     f"Target URI '{to_uri}' is already being monitored by task {existing_task.task_id}. "
                     f"Please cancel the existing task first.",
                     resource=to_uri,
                 )
+            was_active = existing_task.is_active
             await watch_manager.update_task(
                 task_id=existing_task.task_id,
                 account_id=ctx.account_id,
@@ -1635,7 +1687,8 @@ class ResourceService:
                 is_active=True,
             )
             logger.info(
-                f"[ResourceService] Reactivated and updated watch task {existing_task.task_id} for {to_uri}"
+                f"[ResourceService] {'Updated active' if was_active else 'Reactivated and updated'} "
+                f"watch task {existing_task.task_id} for {to_uri}"
             )
         else:
             task = await watch_manager.create_task(

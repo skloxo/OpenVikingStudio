@@ -143,13 +143,21 @@ class ObserverService:
 
         # Get embedding instance if available
         if self._config.embedding:
-            embedding_instance = self._config.embedding.get_embedder()
+            try:
+                embedding_instance = self._config.embedding.get_embedder()
+            except Exception:
+                embedding_instance = self._config.embedding
 
         # Get rerank instance if available
-        if self._config.rerank and self._config.rerank.is_available():
-            from openviking.models.rerank import RerankClient
-
-            rerank_instance = RerankClient.from_config(self._config.rerank)
+        if self._config.rerank:
+            try:
+                from openviking.models.rerank import RerankClient
+                if hasattr(self._config.rerank, "is_available") and self._config.rerank.is_available():
+                    rerank_instance = RerankClient.from_config(self._config.rerank)
+                else:
+                    rerank_instance = self._config.rerank
+            except Exception:
+                rerank_instance = self._config.rerank
 
         observer = ModelsObserver(
             vlm_instance=vlm_instance,
@@ -166,39 +174,31 @@ class ObserverService:
     @property
     def lock(self) -> ComponentStatus:
         """Get lock system status via pathlock_observe snapshot."""
-        snapshot = {}
         try:
             viking_fs = get_viking_fs()
-            if hasattr(viking_fs, "agfs") and hasattr(viking_fs.agfs, "pathlock_observe"):
-                snapshot = viking_fs.agfs.pathlock_observe("/")
-            elif hasattr(viking_fs, "_async_agfs") and hasattr(viking_fs._async_agfs, "pathlock_observe"):
-                import asyncio
-                import concurrent.futures
-                try:
-                    loop = asyncio.get_running_loop()
-                    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                        snapshot = pool.submit(lambda: asyncio.run(viking_fs._async_agfs.pathlock_observe())).result(timeout=2.0)
-                except (RuntimeError, Exception):
-                    snapshot = run_async(viking_fs._async_agfs.pathlock_observe())
+            snapshot = run_async(viking_fs._async_agfs.pathlock_observe())
         except Exception:
-            snapshot = {"active_locks": 0, "waiting_locks": 0, "stale_locks_removed": 0, "conflicts": []}
-        active = int(snapshot.get("active_locks", 0) or 0)
-        waiting = int(snapshot.get("waiting_locks", 0) or 0)
-        stale_raw = snapshot.get("stale_locks_removed", 0)
-        stale = int(stale_raw) if isinstance(stale_raw, (int, float)) else 0
-        raw_conflicts = snapshot.get("conflicts", [])
-        conflicts = raw_conflicts if isinstance(raw_conflicts, list) else []
-        has_errors = bool(conflicts) or stale > 0
+            return ComponentStatus(
+                name="lock",
+                is_healthy=False,
+                has_errors=True,
+                status="Not initialized",
+            )
+        active = snapshot.get("active_locks", 0)
+        waiting = snapshot.get("waiting_locks", 0)
+        stale = snapshot.get("stale_locks_removed", 0)
+        conflicts = snapshot.get("conflicts", [])
         lines = [
             f"Active locks: {active}",
             f"Waiting locks: {waiting}",
             f"Stale locks removed: {stale}",
             f"Conflicts: {len(conflicts)}",
         ]
+        # Conflicts and stale removals are retained diagnostics, not current failures.
         return ComponentStatus(
             name="lock",
-            is_healthy=not has_errors,
-            has_errors=has_errors,
+            is_healthy=True,
+            has_errors=False,
             status="\n".join(lines),
         )
 

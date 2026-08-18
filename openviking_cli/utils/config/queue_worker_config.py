@@ -21,5 +21,9 @@ class QueueWorkersConfig(BaseModel):
     """Runtime limits for QueueFS consumers."""
 
     external_parse: QueueWorkerConfig = Field(default_factory=QueueWorkerConfig)
+    add_resource: QueueWorkerConfig = Field(default_factory=QueueWorkerConfig)
+    session_commit: QueueWorkerConfig = Field(
+        default_factory=lambda: QueueWorkerConfig(max_concurrent=8)
+    )
 
     model_config = {"extra": "forbid"}
