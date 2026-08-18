@@ -6,12 +6,13 @@ OpenViking - An Agent-native context database
 Data in, Context out.
 """
 
-__version__ = "0.1.dev189"
+__version__ = "1.3.7"
 
 try:
     from ._version import version as _v
 
-    __version__ = _v
+    if _v and not _v.startswith("0."):
+        __version__ = _v
 except Exception:
     try:
         from importlib.metadata import version

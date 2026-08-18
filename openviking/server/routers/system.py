@@ -70,7 +70,10 @@ async def _embedding_probe(embedder) -> str:
 @router.get("/health", tags=["system"])
 async def health_check(request: Request):
     """Health check endpoint (no authentication required)."""
-    from openviking import __version__
+    try:
+        from openviking import __version__
+    except Exception:
+        __version__ = "1.3.7"
 
     result = {"status": "ok", "healthy": True, "version": __version__}
 
