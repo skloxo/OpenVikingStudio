@@ -37,7 +37,14 @@ from openviking.server.mcp_endpoint import (
     search,
 )
 from openviking.server.mcp_endpoint import ls as list_tool
-from openviking_cli.exceptions import FailedPreconditionError, UnauthenticatedError
+from openviking_cli.exceptions import (
+    AlreadyExistsError,
+    FailedPreconditionError,
+    InvalidArgumentError,
+    NotFoundError,
+    PermissionDeniedError,
+    UnauthenticatedError,
+)
 from openviking_cli.session.user_id import UserIdentifier
 
 DEFAULT_CTX = RequestContext(
@@ -900,6 +907,38 @@ async def test_forget_directory_with_recursive_succeeds(service):
 
     result = await forget(uri=dir_uri, recursive=True)
     assert "deleted" in result.lower()
+
+
+@pytest.mark.parametrize(
+    ("uri", "sentinel_uri"),
+    [
+        (
+            "viking://user",
+            "viking://user/test_user/memories/forget_root_guard.md",
+        ),
+        (
+            "viking://resources",
+            "viking://resources/forget_root_guard/sentinel.md",
+        ),
+    ],
+)
+async def test_forget_rejects_namespace_roots_for_non_root(service, uri, sentinel_uri):
+    ctx = RequestContext(
+        user=UserIdentifier.the_default_user("test_user"),
+        role=Role.USER,
+    )
+    parent_uri = sentinel_uri.rsplit("/", 1)[0]
+    await service.viking_fs.mkdir(parent_uri, ctx=ctx, exist_ok=True)
+    await service.viking_fs.write(sentinel_uri, "must survive", ctx=ctx)
+
+    token = _mcp_ctx.set(ctx)
+    try:
+        with pytest.raises(PermissionDeniedError, match="namespace root"):
+            await forget(uri=uri, recursive=True)
+    finally:
+        _mcp_ctx.reset(token)
+
+    assert (await service.viking_fs.read(sentinel_uri, ctx=ctx)).decode("utf-8") == "must survive"
 
 
 # ---------------------------------------------------------------------------
