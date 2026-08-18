@@ -264,7 +264,7 @@ class _AccessMixin:
         if isinstance(lease_ref, str):
             ref = lease_ref
         elif isinstance(lease_ref, dict):
-            ref = lease_ref.get("lease_ref")
+            ref = lease_ref.get("lease_ref") or lease_ref.get("token") or lease_ref.get("lease_id")
         else:
             raise ValueError("lease_ref must be a non-empty string or lease dictionary")
         if not isinstance(ref, str) or not ref:

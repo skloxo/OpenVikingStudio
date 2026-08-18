@@ -17,7 +17,7 @@ from openviking.storage.viking_fs._base import (
 )
 from openviking.telemetry import get_current_telemetry
 from openviking.utils.image_search import build_multimodal_embedding_input
-from openviking_cli.exceptions import NotFoundError
+from openviking_cli.exceptions import FailedPreconditionError, NotFoundError
 
 if TYPE_CHECKING:
     from openviking.storage.viking_vector_index_backend import VikingVectorIndexBackend
@@ -116,14 +116,7 @@ class _SemanticMixin:
                     raise mapped from last_exc
             raise NotFoundError(uri, "directory") from last_exc
         if not info.get("isDir", info.get("is_dir")):
-            parent_path = path.rsplit("/", 1)[0] or "/"
-            parent_uri = self._path_to_uri(parent_path, ctx=ctx)
-            logger.info(
-                "content/abstract: %s is a file, falling back to parent directory %s",
-                uri,
-                parent_uri,
-            )
-            return await self.abstract(parent_uri, ctx=ctx)
+            raise FailedPreconditionError(f"Resource '{uri}' is not a directory", details={"resource": uri})
         return await self._read_abstract_file(path, uri, ctx=ctx)
 
     async def overview(

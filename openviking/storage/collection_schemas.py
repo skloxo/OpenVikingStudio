@@ -647,11 +647,56 @@ class TextEmbeddingHandler(DequeueHandlerBase):
                     config = get_openviking_config()
                     self._initialize_embedder(config)
 
-                # Generate embedding vector(s)
-                if self._embedder:
-                    try:
-                        import time as _time
+                # Generate embedding vector(s) and upsert
+                import time as _time
+                try:
+                    if self._embedder:
+                        from openviking.utils.embedding_input import split_embedding_chunks
 
+                    text_chunks: list[str] = []
+                    if isinstance(embedding_msg.message, str):
+                        text_chunks = split_embedding_chunks(
+                            embedding_msg.message,
+                            max_chunk_tokens=1500,
+                            overlap_tokens=100,
+                        )
+
+                    raw_upsert_options = inserted_data.pop("_upsert_options", {})
+                    upsert_options = normalize_upsert_options(
+                        {**raw_upsert_options, "partial_update": True}
+                    )
+                    uri = inserted_data.get("uri")
+                    id_seed = f"{account_id}:{self._seed_uri_for_id(uri, inserted_data.get('level', 2))}" if uri else ""
+
+                    if len(text_chunks) > 1:
+                        # Multi-chunk transparent slicing
+                        for chunk_idx, chunk_text in enumerate(text_chunks):
+                            chunk_t0 = _time.monotonic()
+                            res = await embed_compat(self._embedder, chunk_text, is_query=False)
+                            chunk_data = dict(inserted_data)
+                            chunk_data["chunk_index"] = chunk_idx
+                            chunk_data["chunk_count"] = len(text_chunks)
+                            if id_seed:
+                                chunk_data["id"] = hashlib.md5(
+                                    f"{id_seed}:chunk_{chunk_idx}".encode("utf-8")
+                                ).hexdigest()
+                            if res.dense_vector:
+                                chunk_data["vector"] = res.dense_vector
+                            if res.sparse_vector:
+                                chunk_data["sparse_vector"] = res.sparse_vector
+                            if self._vikingdb.uses_content_field:
+                                chunk_data["content"] = chunk_text[:VIKINGDB_CONTENT_MAX_SIZE]
+                            await self._vikingdb.upsert(
+                                chunk_data,
+                                ctx=ctx,
+                                options=upsert_options,
+                            )
+                        logger.debug(
+                            "Successfully wrote %d embedding chunks: uri=%s",
+                            len(text_chunks),
+                            uri,
+                        )
+                    else:
                         _embed_t0 = _time.monotonic()
                         result = await embed_compat(
                             self._embedder,
@@ -668,148 +713,39 @@ class TextEmbeddingHandler(DequeueHandlerBase):
                             )
                         except Exception:
                             pass
-                    except Exception as embed_err:
-                        error_msg = self._embedding_error_msg(
-                            embedding_msg,
-                            f"Failed to generate embedding: {embed_err}",
-                        )
-                        error_class = classify_api_error(embed_err)
-                        try:
-                            from openviking.metrics.datasources import EmbeddingEventDataSource
 
-                            EmbeddingEventDataSource.record_error(
-                                error_code=str(error_class or "unknown"),
-                                account_id=embedding_msg.context_data.get("account_id"),
-                            )
-                        except Exception:
-                            pass
-
-                        if error_class == ERROR_CLASS_INPUT_TOO_LARGE:
-                            logger.error(error_msg)
-                            self._merge_request_stats(embedding_msg.telemetry_id, error_count=1)
-                            request_failed_message = error_msg
-                            report_error_args = (error_msg, data)
-                            return None
-
-                        if error_class == ERROR_CLASS_PERMANENT:
-                            logger.critical(error_msg)
-                            self._circuit_breaker.record_failure(embed_err)
-                            self._merge_request_stats(embedding_msg.telemetry_id, error_count=1)
-                            request_failed_message = error_msg
-                            report_error_args = (error_msg, data)
-                            return None
-
-                        if error_class == ERROR_CLASS_AUTH:
-                            # Bad/expired credential: retrying cannot succeed. Fail
-                            # terminally instead of re-enqueueing, which would cycle
-                            # forever and hold this resource's tree lock and its
-                            # add-resource --wait open. Don't trip the breaker: an open
-                            # breaker re-enqueues later messages and reintroduces the
-                            # same leak. See #2916.
-                            logger.error(error_msg)
-                            self._merge_request_stats(embedding_msg.telemetry_id, error_count=1)
-                            request_failed_message = error_msg
-                            report_error_args = (error_msg, data)
-                            return None
-
-                        # Transient or unknown — re-enqueue for retry
-                        logger.warning(error_msg)
-                        self._circuit_breaker.record_failure(embed_err)
-                        if self._vikingdb.has_queue_manager:
-                            try:
-                                await self._vikingdb.enqueue_embedding_msg(embedding_msg)
-                                self._merge_request_stats(
-                                    embedding_msg.telemetry_id,
-                                    requeue_count=1,
+                        if result.dense_vector:
+                            inserted_data["vector"] = result.dense_vector
+                            if len(result.dense_vector) != self._vector_dim:
+                                error_msg = self._embedding_error_msg(
+                                    embedding_msg,
+                                    "Dense vector dimension mismatch: "
+                                    f"expected {self._vector_dim}, got {len(result.dense_vector)}",
                                 )
-                                get_request_wait_tracker().record_embedding_requeue(
-                                    embedding_msg.telemetry_id
-                                )
-                                self.report_requeue()
-                                logger.info(
-                                    "Re-enqueued embedding message after transient error "
-                                    f"({self._embedding_msg_log_context(embedding_msg)})"
-                                )
-                                report_success = True
+                                logger.error(error_msg)
+                                self._merge_request_stats(embedding_msg.telemetry_id, error_count=1)
+                                request_failed_message = error_msg
+                                report_error_args = (error_msg, data)
                                 return None
-                            except Exception as requeue_err:
-                                logger.error(
-                                    self._embedding_error_msg(
-                                        embedding_msg,
-                                        f"Failed to re-enqueue message: {requeue_err}",
-                                    )
-                                )
 
-                        self._merge_request_stats(embedding_msg.telemetry_id, error_count=1)
-                        request_failed_message = error_msg
-                        report_error_args = (error_msg, data)
-                        return None
+                        if result.sparse_vector:
+                            inserted_data["sparse_vector"] = result.sparse_vector
 
-                    # Add dense vector
-                    if result.dense_vector:
-                        inserted_data["vector"] = result.dense_vector
-                        # Validate vector dimension
-                        if len(result.dense_vector) != self._vector_dim:
-                            error_msg = self._embedding_error_msg(
+                        if id_seed:
+                            inserted_data["id"] = hashlib.md5(id_seed.encode("utf-8")).hexdigest()
+
+                        if self._vikingdb.uses_content_field:
+                            inserted_data["content"] = await self._materialize_content(
                                 embedding_msg,
-                                "Dense vector dimension mismatch: "
-                                f"expected {self._vector_dim}, got {len(result.dense_vector)}",
+                                ctx,
                             )
-                            logger.error(error_msg)
-                            self._merge_request_stats(embedding_msg.telemetry_id, error_count=1)
-                            request_failed_message = error_msg
-                            report_error_args = (error_msg, data)
-                            return None
-
-                    # Add sparse vector if present
-                    if result.sparse_vector:
-                        inserted_data["sparse_vector"] = result.sparse_vector
-                        logger.debug(
-                            f"Generated sparse vector with {len(result.sparse_vector)} terms"
+                        await self._vikingdb.upsert(
+                            inserted_data,
+                            ctx=ctx,
+                            options=upsert_options,
                         )
-                else:
-                    error_msg = self._embedding_error_msg(
-                        embedding_msg,
-                        "Embedder not initialized, skipping vector generation",
-                    )
-                    logger.warning(error_msg)
-                    try:
-                        from openviking.metrics.datasources import EmbeddingEventDataSource
-
-                        EmbeddingEventDataSource.record_error(error_code="not_initialized")
-                    except Exception:
-                        pass
-                    self._merge_request_stats(embedding_msg.telemetry_id, error_count=1)
-                    request_failed_message = error_msg
-                    report_error_args = (error_msg, data)
-                    return None
-
-                # Write to vector database
-                try:
-                    raw_upsert_options = inserted_data.pop("_upsert_options", {})
-                    upsert_options = normalize_upsert_options(
-                        {**raw_upsert_options, "partial_update": True}
-                    )
-                    # Ensure vector DB has deterministic IDs per semantic layer.
-                    uri = inserted_data.get("uri")
-                    if uri:
-                        seed_uri = self._seed_uri_for_id(uri, inserted_data.get("level", 2))
-                        id_seed = f"{account_id}:{seed_uri}"
-                        inserted_data["id"] = hashlib.md5(id_seed.encode("utf-8")).hexdigest()
-
-                    if self._vikingdb.uses_content_field:
-                        inserted_data["content"] = await self._materialize_content(
-                            embedding_msg,
-                            ctx,
-                        )
-                    result = await self._vikingdb.upsert(
-                        inserted_data,
-                        ctx=ctx,
-                        options=upsert_options,
-                    )
-                    record_id = result
-                    if record_id:
-                        logger.debug("Successfully wrote embedding: uri=%s", uri)
+                        if uri:
+                            logger.debug("Successfully wrote embedding: uri=%s", uri)
                 except CollectionNotFoundError as db_err:
                     # During shutdown, queue workers may finish one dequeued item.
                     if self._vikingdb.is_closing:
