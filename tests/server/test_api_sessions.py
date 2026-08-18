@@ -1443,8 +1443,7 @@ async def test_commit_failed_when_execution_extraction_fails_does_not_block_next
         del args, kwargs
         raise RuntimeError("synthetic execution failure")
 
-    service.sessions._session_compressor.extract_long_term_memories = _no_memories
-    service.sessions._session_compressor.extract_execution_memories = failing_extract
+    service.sessions._session_compressor.extract_long_term_memories = failing_extract
 
     await client.post(
         f"/api/v1/sessions/{session_id}/messages",

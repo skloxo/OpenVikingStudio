@@ -65,3 +65,73 @@ def resolve_embedding_max_input_tokens(
     if max_tokens <= 0:
         return default
     return max_tokens
+
+
+def split_embedding_chunks(
+    text: str,
+    max_chunk_tokens: int = 1500,
+    overlap_tokens: int = 100,
+) -> list[str]:
+    """Split text into semantic chunks bounded by max_chunk_tokens with optional overlap."""
+    if not text:
+        return []
+    if max_chunk_tokens <= 0:
+        return [text]
+    if estimate_embedding_input_tokens(text) <= max_chunk_tokens:
+        return [text]
+
+    import re
+
+    parts = [p for p in re.split(r"(\n\n+|(?<=\n)(?=#{1,6}\s)|(?<=[。！？\n]))", text) if p]
+    if not parts:
+        parts = [text]
+
+    chunks: list[str] = []
+    current_chunk = ""
+
+    for part in parts:
+        candidate = current_chunk + part
+        cand_tokens = estimate_embedding_input_tokens(candidate)
+        if cand_tokens <= max_chunk_tokens:
+            current_chunk = candidate
+        else:
+            if current_chunk.strip():
+                chunks.append(current_chunk.strip())
+                if overlap_tokens > 0:
+                    low = 0
+                    high = len(current_chunk)
+                    while low < high:
+                        mid = (low + high) // 2
+                        tail = current_chunk[mid:]
+                        if estimate_embedding_input_tokens(tail) <= overlap_tokens:
+                            high = mid
+                        else:
+                            low = mid + 1
+                    overlap_text = current_chunk[low:]
+                    current_chunk = overlap_text + part
+                else:
+                    current_chunk = part
+            else:
+                current_chunk = part
+
+            while estimate_embedding_input_tokens(current_chunk) > max_chunk_tokens:
+                low = 0
+                high = len(current_chunk)
+                while low < high:
+                    mid = (low + high + 1) // 2
+                    if estimate_embedding_input_tokens(current_chunk[:mid]) <= max_chunk_tokens:
+                        low = mid
+                    else:
+                        high = mid - 1
+                slice_len = max(1, low)
+                chunks.append(current_chunk[:slice_len].strip())
+                if overlap_tokens > 0 and slice_len > 0:
+                    tail_start = max(0, slice_len - overlap_tokens)
+                    current_chunk = current_chunk[tail_start:]
+                else:
+                    current_chunk = current_chunk[slice_len:]
+
+    if current_chunk.strip():
+        chunks.append(current_chunk.strip())
+
+    return chunks
