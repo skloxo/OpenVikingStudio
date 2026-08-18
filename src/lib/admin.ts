@@ -1,5 +1,6 @@
 import axios from 'axios'
 
+import type { ServerMode } from '#/hooks/use-server-mode'
 import { createClient } from '#/gen/ov-client/client'
 import {
   deleteAdminAccountIdUserByUserId,
@@ -75,7 +76,7 @@ export type ProbeConnectionInput = {
   adminApiKey: string
   apiKey: string
   baseUrl: string
-  serverMode: 'api_key' | 'trusted' | 'dev' | 'checking' | 'offline'
+  serverMode: ServerMode
   userId: string
 }
 
