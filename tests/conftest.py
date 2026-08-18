@@ -78,6 +78,18 @@ PROJECT_ROOT = Path(__file__).parent.parent
 TEST_TMP_DIR = PROJECT_ROOT / "test_data" / "tmp"
 
 
+@pytest.fixture(autouse=True)
+def isolate_telemetry_db(tmp_path, monkeypatch):
+    """Ensure all unit tests write to an isolated temp SQLite telemetry store."""
+    test_db = tmp_path / "telemetry_test.sqlite3"
+    monkeypatch.setenv("OPENVIKING_TELEMETRY_DB", str(test_db))
+    from openviking.telemetry.telemetry_store import TelemetryStore
+
+    TelemetryStore._instance = None
+    yield
+    TelemetryStore._instance = None
+
+
 @pytest.fixture(scope="session")
 def event_loop():
     """Create session-level event loop"""

@@ -55,7 +55,7 @@ def _get_token_tracker():
     if _token_tracker_instance is None:
         from openviking.models.vlm.token_usage import TokenUsageTracker
 
-        _token_tracker_instance = TokenUsageTracker()
+        _token_tracker_instance = TokenUsageTracker(model_type="embedding")
     return _token_tracker_instance
 
 

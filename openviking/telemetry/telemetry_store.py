@@ -450,38 +450,42 @@ class TelemetryStore:
     # Baseline Recovery & Query Methods
     # -------------------------------------------------------------------------
 
-    def get_model_baseline(self) -> Dict[str, Dict[str, Dict[str, Any]]]:
-        """Load cumulative baseline usage for all models and providers.
-
-        Returns:
-            {
-                model_name: {
-                    provider: {
-                        "call_count": int,
-                        "prompt_tokens": int,
-                        "completion_tokens": int,
-                        "total_tokens": int,
-                        "last_updated": float,
-                    }
-                }
-            }
-        """
+    def get_model_baseline(
+        self, model_type: Optional[str] = None
+    ) -> Dict[str, Dict[str, Dict[str, Any]]]:
+        """Load cumulative baseline usage for models and providers, optionally filtered by model_type."""
         result: Dict[str, Dict[str, Dict[str, Any]]] = {}
         try:
             conn = self._get_connection()
             cur = conn.cursor()
-            cur.execute(
-                """
-                SELECT model_name, provider,
-                       SUM(call_count) as total_calls,
-                       SUM(prompt_tokens) as total_prompt,
-                       SUM(completion_tokens) as total_completion,
-                       SUM(total_tokens) as total_sum,
-                       MAX(timestamp) as last_ts
-                FROM model_metrics_audit
-                GROUP BY model_name, provider
-                """
-            )
+            if model_type:
+                cur.execute(
+                    """
+                    SELECT model_name, provider,
+                           SUM(call_count) as total_calls,
+                           SUM(prompt_tokens) as total_prompt,
+                           SUM(completion_tokens) as total_completion,
+                           SUM(total_tokens) as total_sum,
+                           MAX(timestamp) as last_ts
+                    FROM model_metrics_audit
+                    WHERE model_type = ?
+                    GROUP BY model_name, provider
+                    """,
+                    (model_type,),
+                )
+            else:
+                cur.execute(
+                    """
+                    SELECT model_name, provider,
+                           SUM(call_count) as total_calls,
+                           SUM(prompt_tokens) as total_prompt,
+                           SUM(completion_tokens) as total_completion,
+                           SUM(total_tokens) as total_sum,
+                           MAX(timestamp) as last_ts
+                    FROM model_metrics_audit
+                    GROUP BY model_name, provider
+                    """
+                )
             for row in cur.fetchall():
                 m_name = row["model_name"]
                 provider = row["provider"]
