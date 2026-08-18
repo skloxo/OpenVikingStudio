@@ -44,9 +44,9 @@ def _get_version() -> str:
     try:
         import openviking
 
-        return getattr(openviking, "__version__", "1.3.4")
+        return getattr(openviking, "__version__", "1.3.5")
     except Exception:
-        return "1.3.4"
+        return "1.3.5"
 
 
 VIKINGBOT_DEFAULT_HOST = "127.0.0.1"

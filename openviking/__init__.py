@@ -8,7 +8,7 @@ Data in, Context out.
 
 from typing import TYPE_CHECKING
 
-__version__ = "1.3.4"
+__version__ = "1.3.5"
 
 try:
     from ._version import version as __version__
@@ -18,7 +18,7 @@ except ImportError:
 
         __version__ = version("openviking")
     except Exception:
-        __version__ = "1.3.4"
+        __version__ = "1.3.5"
 
 try:
     from openviking.pyagfs import get_binding_client
