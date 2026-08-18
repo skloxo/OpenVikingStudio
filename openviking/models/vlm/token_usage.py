@@ -140,7 +140,7 @@ class TokenUsageTracker:
         try:
             from openviking.telemetry.telemetry_store import get_telemetry_store
 
-            baseline = get_telemetry_store().get_model_baseline()
+            baseline = get_telemetry_store().get_model_baseline(model_type=self._model_type)
             for model_name, providers in baseline.items():
                 if model_name not in self._usage_by_model:
                     self._usage_by_model[model_name] = ModelTokenUsage(model_name)
