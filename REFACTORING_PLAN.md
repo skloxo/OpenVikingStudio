@@ -29,7 +29,7 @@
   - [x] **多 Chunk 向量映射**：`openviking/storage/collection_schemas.py` 集成自动切片，自动为多 Chunk 分配确定性向量 ID（`{id_seed}:chunk_{idx}`）并批量写入 VikingDB；
   - [x] **死循环拦截与自愈**：切除 Fallback 向量生成后的意外 Re-enqueue 穿透分支，彻底杜绝 15000+ 次死循环；
   - [x] **单元与实测双全通过**：`test_embedding_chunking.py` 5/5 全部通过，并在生产 60KB 真实记忆文件（`Vibe-Trading A股技术评估完成.md` 38,832 字符）实测成功自动拆为 15 个 Chunk 向量秒级完成索引。
-- **交付版本**：`v1.4.0` ｜ **交付 Commit**：`3189a0f`
+- **交付版本**：`v1.3.5` ｜ **交付 Commit**：`8fde13a`
 
 ---
 
