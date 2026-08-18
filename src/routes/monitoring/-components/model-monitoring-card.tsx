@@ -2,7 +2,6 @@ import * as React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '#/components/ui/badge'
 import { Card, CardTitle } from '#/components/ui/card'
-import { cn } from '#/lib/utils'
 import { parseObserverStatus } from '../-lib/parse-status'
 
 export interface ModelUsageRow {
@@ -89,7 +88,7 @@ export function ModelMonitoringCard({ status, isHealthy }: ModelMonitoringCardPr
     if (lower.includes('vlm')) return t('modelsCard.vlmGroup')
     if (lower.includes('embedding')) return t('modelsCard.embeddingGroup')
     if (lower.includes('rerank')) return t('modelsCard.rerankGroup')
-    if (lower.includes('encoder') || lower.includes('compress') || lower.includes('lingua')) return '⚡ Encoder 物理压缩模型 (Local CUDA)'
+    if (lower.includes('encoder') || lower.includes('compress') || lower.includes('lingua')) return t('modelsCard.compressorGroup')
     return name
   }
 
@@ -97,23 +96,15 @@ export function ModelMonitoringCard({ status, isHealthy }: ModelMonitoringCardPr
     <Card className="flex flex-col gap-4 p-4 shadow-none transition-colors hover:border-primary/30">
       <div className="flex items-center justify-between">
         <CardTitle className="text-base font-semibold">{t('modelsCard.title')}</CardTitle>
-        <Badge
-          variant="outline"
-          className={cn(
-            'gap-1 font-normal',
-            isHealthy
-              ? 'border-primary/20 bg-primary/5 text-primary'
-              : 'border-destructive/30 text-destructive',
-          )}
-        >
-          <span
-            className={cn(
-              'size-1.5 rounded-full',
-              isHealthy ? 'bg-primary' : 'bg-destructive',
-            )}
-          />
-          {isHealthy ? t('modelsCard.healthy') : t('modelsCard.unhealthy')}
-        </Badge>
+        {!isHealthy && (
+          <Badge
+            variant="outline"
+            className="gap-1 font-normal border-destructive/30 text-destructive"
+          >
+            <span className="size-1.5 rounded-full bg-destructive" />
+            {t('modelsCard.unhealthy')}
+          </Badge>
+        )}
       </div>
 
       {/* 顶部 3 个关键统计汇总瓷片 */}

@@ -58,23 +58,15 @@ export function RetrievalStatusCard({ status, isHealthy }: RetrievalStatusCardPr
     <Card className="flex flex-col gap-4 p-4 shadow-none transition-colors hover:border-primary/30">
       <div className="flex items-center justify-between">
         <CardTitle className="text-base font-semibold">{t('retrievalCard.title')}</CardTitle>
-        <Badge
-          variant="outline"
-          className={cn(
-            'gap-1 font-normal',
-            isHealthy
-              ? 'border-primary/20 bg-primary/5 text-primary'
-              : 'border-destructive/30 text-destructive',
-          )}
-        >
-          <span
-            className={cn(
-              'size-1.5 rounded-full',
-              isHealthy ? 'bg-primary' : 'bg-destructive',
-            )}
-          />
-          {isHealthy ? t('retrievalCard.healthy') : t('retrievalCard.unhealthy')}
-        </Badge>
+        {!isHealthy && (
+          <Badge
+            variant="outline"
+            className="gap-1 font-normal border-destructive/30 text-destructive"
+          >
+            <span className="size-1.5 rounded-full bg-destructive" />
+            {t('retrievalCard.unhealthy')}
+          </Badge>
+        )}
       </div>
 
       {!metrics ? (
@@ -87,7 +79,7 @@ export function RetrievalStatusCard({ status, isHealthy }: RetrievalStatusCardPr
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {/* 4 大核心关键数据瓷片 */}
+          {/* 4 大核心关键数据瓷片（中性背景，仅在文字上体现语义偏差） */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {/* 总检索数 */}
             <div className="flex flex-col justify-center rounded-lg border bg-muted/20 px-3 py-2">
@@ -106,21 +98,14 @@ export function RetrievalStatusCard({ status, isHealthy }: RetrievalStatusCardPr
             </div>
 
             {/* 零结果率 */}
-            <div
-              className={cn(
-                'flex flex-col justify-center rounded-lg border px-3 py-2',
-                parseFloat(metrics.zeroResultRate) > 15
-                  ? 'bg-amber-500/10 border-amber-500/20'
-                  : 'bg-muted/20',
-              )}
-            >
+            <div className="flex flex-col justify-center rounded-lg border bg-muted/20 px-3 py-2">
               <span className="text-[11px] text-muted-foreground font-medium">{t('retrievalCard.zeroResultRate')}</span>
               <span
                 className={cn(
                   'font-mono text-base font-bold tabular-nums mt-0.5',
                   parseFloat(metrics.zeroResultRate) > 15
                     ? 'text-amber-600 dark:text-amber-400'
-                    : 'text-foreground/90',
+                    : 'text-foreground',
                 )}
               >
                 {metrics.zeroResultRate}
@@ -128,21 +113,14 @@ export function RetrievalStatusCard({ status, isHealthy }: RetrievalStatusCardPr
             </div>
 
             {/* 平均延迟 */}
-            <div
-              className={cn(
-                'flex flex-col justify-center rounded-lg border px-3 py-2',
-                metrics.avgLatencyMs > 1000
-                  ? 'bg-amber-500/10 border-amber-500/20'
-                  : 'bg-muted/20',
-              )}
-            >
+            <div className="flex flex-col justify-center rounded-lg border bg-muted/20 px-3 py-2">
               <span className="text-[11px] text-muted-foreground font-medium">{t('retrievalCard.avgLatency')}</span>
               <span
                 className={cn(
                   'font-mono text-base font-bold tabular-nums mt-0.5',
                   metrics.avgLatencyMs > 1000
                     ? 'text-amber-600 dark:text-amber-400'
-                    : 'text-foreground/90',
+                    : 'text-foreground',
                 )}
               >
                 {`${metrics.avgLatencyMs.toLocaleString()} ms`}
@@ -153,25 +131,25 @@ export function RetrievalStatusCard({ status, isHealthy }: RetrievalStatusCardPr
           {/* 4 列明细数据次级网格 */}
           <div className="grid grid-cols-2 gap-2 rounded-lg border bg-muted/15 p-2.5 text-xs sm:grid-cols-4">
             <div className="flex flex-col gap-0.5">
-              <span className="text-[10px] text-muted-foreground">{t('retrievalCard.avgResultsPerQuery')}</span>
+              <span className="text-[11px] text-muted-foreground">{t('retrievalCard.avgResultsPerQuery')}</span>
               <span className="font-mono font-medium text-foreground tabular-nums">
                 {metrics.avgResultsPerQuery}
               </span>
             </div>
             <div className="flex flex-col gap-0.5">
-              <span className="text-[10px] text-muted-foreground">{t('retrievalCard.rerankUsed')}</span>
+              <span className="text-[11px] text-muted-foreground">{t('retrievalCard.rerankUsed')}</span>
               <span className="font-mono font-medium text-foreground tabular-nums">
                 {metrics.rerankUsed.toLocaleString()}
               </span>
             </div>
             <div className="flex flex-col gap-0.5">
-              <span className="text-[10px] text-muted-foreground">{t('retrievalCard.avgScore')}</span>
+              <span className="text-[11px] text-muted-foreground">{t('retrievalCard.avgScore')}</span>
               <span className="font-mono font-medium text-foreground tabular-nums">
                 {metrics.avgScore}
               </span>
             </div>
             <div className="flex flex-col gap-0.5">
-              <span className="text-[10px] text-muted-foreground">{t('retrievalCard.maxLatency')}</span>
+              <span className="text-[11px] text-muted-foreground">{t('retrievalCard.maxLatency')}</span>
               <span className="font-mono font-medium text-foreground tabular-nums">
                 {`${metrics.maxLatencyMs.toLocaleString()} ms`}
               </span>
