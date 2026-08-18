@@ -39,12 +39,12 @@
 | :--- | :--- | :--- | :--- | :--- | :--- | :---: |
 | **Task Card 1** | **并发锁与 TaskTracker 融合 + Studio v1.3.4** | TaskTracker 细粒度锁池 (`KeyedAsyncLockPool`)、Store I/O 限制、终态 Guard 统一、Studio 视觉瓦片修复 | `7038ba06`, `9113fc92`, `b8738e05`, `bb82c376` | `test_task_tracker_concurrency.py` PASS, 113/113 测试通过, 1933 健康上线 | `v1.3.4` | [x] 已验收并交付 ✅ (Commit: `1ca76e53`, Tag: `v1.3.4`) |
 | **Task Card 2** | **Agent 演进与经验记忆** | Agent 演进服务、经验血缘追踪 (`experience_lineage.py`)、OpenClaw 经验工具 | `61c42e3b`, `73a70195`, `2ced3f15` | `test_api_agent_evolution.py` PASS, 22/22 演进测试全过, 1933 健康上线 | `v1.3.6` | [x] 已验收并交付 ✅ (Tag: `v1.3.6`) |
-| **Task Card 3** | **QueueFS & Redis 集群化** | QueueFS 支持 Redis 单机/集群/哨兵模式、启动有界过期任务清扫 (0/30/60) | `8c9c2282`, `758fc7f0` | `test_config_validation.py` PASS | `v1.3.6` | ⏳ 待开始 |
-| **Task Card 4** | **Session 自动提交 V2** | Session 自动提交服务 (`SessionAutoCommitService`)、局部捕获异常断点恢复 | `d2056e97`, `0ab48f96`, `8e98a3c7` | `test_session_auto_commit.py` PASS | `v1.3.7` | ⏳ 待开始 |
-| **Task Card 5** | **服务端上下文统一召回** | `/search mode="context"` 组装、分层预算裁剪 (`context_assembler`)、Rerank L1 对齐 | `2cc96e39`, `674f5e60`, `cbc39077` | `test_context_assembler_pipeline.py` PASS | `v1.3.8` | ⏳ 待开始 |
-| **Task Card 6** | **企业级认证 (OIDC/LDAP)** | OIDC / LDAP 企业级身份插件、Watch 任务刷新安全 ACL、执行解析器加固 | `444cc87b`, `21029f40`, `03bd4694` | `test_ldap_auth.py` PASS | `v1.3.9` | ⏳ 待开始 |
-| **Task Card 7** | **Storage & VikingFS 容错** | `mkdir` 错误主动透传、`mv` 突破 1000 节点深拷贝、废弃向量后端清理 | `0205914d`, `ecab57e1`, `1d02a72b` | `test_mv_copy_node_limit.py` PASS | `v1.3.10` | ⏳ 待开始 |
-| **Task Card 8** | **Markdown 与内容写入增强** | `content_write` 处理模式、解析后不拆分 (`no_split`)、CJK Token 预算对齐 | `6f43a404`, `8d1d52fe`, `3087f943` | `test_markdown_split_token_budget.py` PASS | `v1.3.11` | ⏳ 待开始 |
+| **Task Card 3** | **QueueFS & Redis 集群化** | QueueFS 支持 Redis 单机/集群/哨兵模式、启动有界过期任务清扫 (0/30/60) | `8c9c2282`, `758fc7f0` | `test_config_validation.py` PASS, 203/203 测试全过, 1933 健康上线 | `v1.3.8` | [x] 已验收并交付 ✅ (Tag: `v1.3.8`) |
+| **Task Card 4** | **Session 自动提交 V2** | Session 自动提交服务 (`SessionAutoCommitService`)、局部捕获异常断点恢复 | `d2056e97`, `0ab48f96`, `8e98a3c7` | `test_session_auto_commit.py` PASS | `v1.3.9` | ⏳ 待开始 |
+| **Task Card 5** | **服务端上下文统一召回** | `/search mode="context"` 组装、分层预算裁剪 (`context_assembler`)、Rerank L1 对齐 | `2cc96e39`, `674f5e60`, `cbc39077` | `test_context_assembler_pipeline.py` PASS | `v1.3.10` | ⏳ 待开始 |
+| **Task Card 6** | **企业级认证 (OIDC/LDAP)** | OIDC / LDAP 企业级身份插件、Watch 任务刷新安全 ACL、执行解析器加固 | `444cc87b`, `21029f40`, `03bd4694` | `test_ldap_auth.py` PASS | `v1.3.11` | ⏳ 待开始 |
+| **Task Card 7** | **Storage & VikingFS 容错** | `mkdir` 错误主动透传、`mv` 突破 1000 节点深拷贝、废弃向量后端清理 | `0205914d`, `ecab57e1`, `1d02a72b` | `test_mv_copy_node_limit.py` PASS | `v1.3.12` | ⏳ 待开始 |
+| **Task Card 8** | **Markdown 与内容写入增强** | `content_write` 处理模式、解析后不拆分 (`no_split`)、CJK Token 预算对齐 | `6f43a404`, `8d1d52fe`, `3087f943` | `test_markdown_split_token_budget.py` PASS | `v1.3.13` | ⏳ 待开始 |
 
 ---
 
@@ -58,6 +58,24 @@
   - [ ] 历史版本列表倒序渲染版本号、时间戳、说明与作者；
   - [ ] 提供 Diff 差异高亮比对；
   - [ ] 点击【回滚至此版本】成功触发还原并刷新列表。
+
+---
+
+### 📌 P1: [ ] [TASK-TASKCENTER-QUEUE-LINK-01] 任务中心切片级真实进度追踪与硬编码 45% 死锁根治 (Task Center Real-Time QueueFS Chunk Progress & Live Telemetry Linkage)
+- **模块**：OpenVikingStudio 前端 (`src/routes/tasks`) + 后端 `openviking/service/reindex_executor.py` / `task_tracker.py`
+- **工单 ID**：`TASK-TASKCENTER-QUEUE-LINK-01` ｜ **优先级**：P1（体验治理 / 真实数据流转）
+- **核心痛点与背景**：
+  1. 当前前端 [`src/routes/tasks/route.tsx:343`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/src/routes/tasks/route.tsx#L320-L344) 中的 `getTaskProgressPct` 存在保底硬编码 `return 45`。当 `admin_reindex` / `add_resource` 处于异步 `running` 状态且 `task.stage` 为 `null` 时，界面上的进度条被恒定死锁在 45%，给用户造成长达半小时假死/无响应的错觉。
+  2. 任务中心单一任务 API (`/api/v1/tasks/{id}`) 与底层真实切片管道 API (`/api/v1/observer/system` 产出的 QueueFS Embedding / Semantic-Nodes 队列指标) 彻底割裂，未能在任务卡片与列表行中展示如 `1,737 / 2,826 切片` 的真实动态吞吐。
+- **技术方案与交付目标**：
+  - [ ] **前端任务中心与 QueueFS 实时遥测联动**：在任务列表与任务详情中，对运行中的重索引/资源导入任务，自动聚合 QueueFS 当前的切片进度（`Processed / Total`），计算真实动态百分比，彻底切除 `return 45` 硬编码；
+  - [ ] **可视化切片进度标签**：在状态徽章或详情抽屉中直观呈现：`正在向量化切片: 1,737 / 2,826 (61.4%) · 8 并发计算中`；
+  - [ ] **后端任务自解释与动态阶段回写 (`reindex_executor.py`)**：在异步重索引与批量资源导入过程中，周期性更新 `task.meta`（记录当前已遍历文件数、切片入队数、完成数）以及 `task.stage`（如 `scanning` -> `extracting_semantics` -> `embedding_chunks` -> `completed`），使单任务接口原生具备精确进度；
+  - [ ] **死锁与超时智能提示**：当任务状态为 `running` 超过阈值且切片计数长时间无递增时，前端提供【检测到可能中断，建议自愈重试】操作提示，避免孤儿任务长久悬挂。
+- **验收标准**：
+  - [ ] 任务列表及详情页彻底切除 45% 硬编码，进度条 100% 随后台切片计算真实平滑递增；
+  - [ ] 界面显式展示 `Processed / Total` 切片数及当前并发速率；
+  - [ ] 单元测试通过，前端 `npm run build` 0 报错。
 
 ---
 
