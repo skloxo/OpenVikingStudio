@@ -32,6 +32,14 @@ def __getattr__(name: str):
         from openviking_cli.client.sync_http import SyncHTTPClient
 
         return SyncHTTPClient
+    if name == "AsyncOpenViking":
+        from openviking.async_client import AsyncOpenViking
+
+        return AsyncOpenViking
+    if name == "OpenViking":
+        from openviking.client import OpenViking
+
+        return OpenViking
     raise AttributeError(name)
 
 
@@ -39,4 +47,7 @@ __all__ = [
     "__version__",
     "SyncHTTPClient",
     "AsyncHTTPClient",
+    "AsyncOpenViking",
+    "OpenViking",
 ]
+

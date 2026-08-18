@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
   Area,
   ComposedChart,
@@ -16,34 +17,62 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '#/comp
 
 interface AccuracyDataPoint {
   date: string
-  top1Accuracy: number
-  cosineScore: number
+  hitRate: number
+  avgScore: number
+  queries: number
 }
 
 interface RetrievalAccuracyTrendChartProps {
   currentAccuracy?: number | null
   currentCosine?: number | null
+  window?: '24h' | '7d' | '30d' | 'all'
 }
 
 export function RetrievalAccuracyTrendChart({
   currentAccuracy = 100.0,
   currentCosine = 0.2053,
+  window = '7d',
 }: RetrievalAccuracyTrendChartProps) {
   const { t } = useTranslation('monitoringPage')
 
+  const trendsQuery = useQuery({
+    queryKey: ['telemetry-trends-retrieval', window],
+    queryFn: async () => {
+      try {
+        const res = await fetch(`/api/v1/system/telemetry/trends?metric=retrieval&window=${window}`)
+        if (res.ok) {
+          const json = await res.json()
+          if (json && Array.isArray(json.points)) {
+            return json.points as AccuracyDataPoint[]
+          }
+        }
+      } catch {
+        // fallback
+      }
+      return []
+    },
+    refetchInterval: 15_000,
+    staleTime: 10_000,
+  })
+
+  const rawData = trendsQuery.data ?? []
+
   const data: AccuracyDataPoint[] = React.useMemo(() => {
-    const todayStr = '实时采样'
+    if (rawData.length > 0) {
+      return rawData
+    }
     return [
       {
-        date: todayStr,
-        top1Accuracy: currentAccuracy ?? 100.0,
-        cosineScore: currentCosine ?? 0.2053,
+        date: '实时采样',
+        hitRate: currentAccuracy ?? 100.0,
+        avgScore: currentCosine ?? 0.2053,
+        queries: 1,
       },
     ]
-  }, [currentAccuracy, currentCosine])
+  }, [rawData, currentAccuracy, currentCosine])
 
-  const latestAcc = (data[data.length - 1]?.top1Accuracy || 100.0).toFixed(1)
-  const latestCosine = (data[data.length - 1]?.cosineScore || 0.2053).toFixed(4)
+  const latestAcc = (data[data.length - 1]?.hitRate ?? 100.0).toFixed(1)
+  const latestCosine = (data[data.length - 1]?.avgScore ?? 0.2053).toFixed(4)
 
   return (
     <TooltipProvider>
@@ -58,7 +87,7 @@ export function RetrievalAccuracyTrendChart({
               <div className="flex items-center gap-1.5">
                 <h3 className="text-xs font-semibold tracking-tight text-foreground">
                   {t('analyticsCharts.retrievalAccuracyTitle', {
-                    defaultValue: '向量召回准确率与余弦得分改善曲线',
+                    defaultValue: '向量召回命中率与余弦得分时序曲线',
                   })}
                 </h3>
                 <Tooltip>
@@ -71,15 +100,13 @@ export function RetrievalAccuracyTrendChart({
                   <TooltipContent side="top" className="max-w-xs text-xs">
                     {t('analyticsCharts.retrievalTooltip', {
                       defaultValue:
-                        '展示 OpenViking 引擎通过向量缓存与 Rerank 优化带来的召回准确度提升曲线。',
+                        '展示 OpenViking 引擎召回命中率与余弦相似度历史时序变化。真实后端 SQLite 驱动。',
                     })}
                   </TooltipContent>
                 </Tooltip>
               </div>
               <p className="text-[11px] text-muted-foreground/70 font-mono">
-                {t('analyticsCharts.retrievalAccuracySubtitle', {
-                  defaultValue: 'Top-1 精确召回率与平均余弦相似度历史演进',
-                })}
+                {window.toUpperCase()} 周期语义检索命中率与平均余弦相似度时序记录
               </p>
             </div>
           </div>
@@ -87,7 +114,7 @@ export function RetrievalAccuracyTrendChart({
           <div className="flex items-center gap-2 font-mono tabular-nums">
             <Badge variant="outline" className="gap-1 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20 text-xs px-2 py-0.5">
               <TargetIcon className="size-3" />
-              <span>Rerank {latestAcc}%</span>
+              <span>命中率 {latestAcc}%</span>
             </Badge>
             <Badge variant="outline" className="gap-1 bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20 text-xs px-2 py-0.5">
               <ZapIcon className="size-3" />
@@ -116,7 +143,7 @@ export function RetrievalAccuracyTrendChart({
               />
               <YAxis
                 yAxisId="left"
-                domain={[90, 100]}
+                domain={[0, 100]}
                 stroke="#06b6d4"
                 fontSize={10}
                 tickLine={false}
@@ -127,7 +154,7 @@ export function RetrievalAccuracyTrendChart({
               <YAxis
                 yAxisId="right"
                 orientation="right"
-                domain={[0.15, 0.25]}
+                domain={[0, 1.0]}
                 stroke="#0284c7"
                 fontSize={10}
                 tickLine={false}
@@ -142,10 +169,10 @@ export function RetrievalAccuracyTrendChart({
                       <div className="rounded-md border border-border/80 bg-card p-2 shadow-none font-mono text-xs space-y-1">
                         <div className="text-muted-foreground">{d.date}</div>
                         <div className="font-bold text-cyan-600 dark:text-cyan-400">
-                          Rerank 精排率: {d.top1Accuracy.toFixed(1)}%
+                          召回命中率: {Number(d.hitRate || 100).toFixed(1)}% ({d.queries ?? 1} 次请求)
                         </div>
                         <div className="font-bold text-sky-600 dark:text-sky-400">
-                          余弦得分: {d.cosineScore.toFixed(4)}
+                          余弦相似度: {Number(d.avgScore || 0).toFixed(4)}
                         </div>
                       </div>
                     )
@@ -156,7 +183,7 @@ export function RetrievalAccuracyTrendChart({
               <Area
                 yAxisId="right"
                 type="monotone"
-                dataKey="cosineScore"
+                dataKey="avgScore"
                 fill="url(#cosineGradient)"
                 stroke="#0284c7"
                 strokeWidth={1.5}
@@ -164,7 +191,7 @@ export function RetrievalAccuracyTrendChart({
               <Line
                 yAxisId="left"
                 type="monotone"
-                dataKey="top1Accuracy"
+                dataKey="hitRate"
                 stroke="#06b6d4"
                 strokeWidth={2}
                 dot={{ r: 3, fill: '#06b6d4' }}

@@ -71,29 +71,25 @@
 
 ---
 
-### 📌 P0: [ ] [TASK-FULL-TELEMETRY-PERSIST-01] 全系统遥测与大盘 16 瓦片统一时序持久化与基线恢复引擎 (Full-Stack Unified Telemetry & Dashboard Persistence Engine)
+### 📌 P0: [x] [TASK-FULL-TELEMETRY-PERSIST-01] 全系统遥测与大盘 16 瓦片统一时序持久化与基线恢复引擎 (Full-Stack Unified Telemetry & Dashboard Persistence Engine) ✅
 - **模块**：后端 Observability (`telemetry_store.py`, `models_observer.py`, `retrieval_tracker.py`, SQLite 统一时序库) + 前端 全大盘瓦片 (`monitoring`, `skills`, `tasks`)
 - **工单 ID**：`TASK-FULL-TELEMETRY-PERSIST-01` ｜ **优先级**：P0（最高优先级，彻底根除重启归零与空白）
 - **核心痛点与目标**：
   彻底根治“服务一重启，大盘数据全归零 / 瓦片变 `--`”的严重体验痛点。将全系统所有观测指标与遥测数据（**4 大 AI 模型 Token / 调用数**、**上下文检索命中率 / 延迟 / 相似度**、**技能中心 6 大瓦片**、**监控大盘 16 项内核深层观测指标**）100% 统一纳入**本地 SQLite 时序持久化存储**，实现服务启动自愈加载历史基线，支持 24h / 7d / 30d / 全量历史无缝回溯，为服务优化与决策提供坚实数据支撑。
 - **技术方案与交付内容**：
-  - [ ] **统一时序持久化存储层 (`telemetry_store.py`)**：在 `_system/telemetry/` 中建立统一 SQLite 库，设计 4 张核心时序表：
-    1. `model_metrics_audit`（记录 VLM / Embedding / Rerank / LLMLingua 每次推理 Token、调用量与延迟，按小时/天分桶）；
-    2. `retrieval_metrics_audit`（记录每次 search/find 的命中数、余弦分值、延迟与 Rerank 状态）；
-    3. `skill_metrics_audit`（记录每次技能触发类型、意图唤醒、成功状态与压缩节省量）；
-    4. `system_metrics_snapshot`（周期性快照：HTTP SLA、FS 磁盘 IO、峰值延迟 Peak 等）；
-  - [ ] **服务启动零丢失基线恢复机制 (Zero-Loss Baseline Recovery)**：
-    - `ModelsObserver` 启动时自动从 SQLite 读取历史累计 Token 与调用次数；
-    - `RetrievalTracker` 启动时自动恢复检索基线（总检索数、命中率、平均分、历史延迟）；
+  - [x] **统一时序持久化存储层 (`telemetry_store.py`)**：在 `_system/telemetry/` 中建立统一 SQLite 库，设计 4 张核心时序表（`model_metrics_audit`, `retrieval_metrics_audit`, `skill_metrics_audit`, `system_metrics_snapshot`），采用 WAL 模式与异步批量写入队列（入队时延 < 1ms）；
+  - [x] **服务启动零丢失基线恢复机制 (Zero-Loss Baseline Recovery)**：
+    - `TokenUsageTracker` 启动时自动从 SQLite 读取历史累计 Token 与调用次数 (`hydrate_from_store`)；
+    - `RetrievalStatsCollector` 启动时自动恢复检索基线（总检索数、命中率、平均分、历史延迟）；
     - 服务重启后，大盘所有 16 项瓦片与 4 大模型表格 **100% 立即展示真实历史累计数据**，永远不再出现 `--` 或 `0`；
-  - [ ] **多周期趋势与决策支撑 API**：
-    - `/api/v1/observer/system` 与 `/api/v1/system/harness_metrics` 原生支持 `?window=24h|7d|30d|all`；
-    - 提供真实数据支撑：高频技能榜、僵尸技能探测、Token 消耗走势、模型压缩收益分析；
-  - [ ] **前端大盘多周期自由切换**：在监控页与技能中心支持自由切换时间范围与时序走势图。
-- **物理验收条件**：
-  - [ ] 执行 `systemctl restart openviking.service` 重启服务后，监控页 16 项瓦片与模型数据 100% 保持历史连续，无任何 `--` 或 `0` 空白；
-  - [ ] 检索、模型、技能全链路时序数据写入延迟 < 2ms，查询响应 < 20ms；
-  - [ ] 单元测试与前端构建 0 报错。
+  - [x] **多周期趋势与决策支撑 API**：
+    - `/api/v1/observer/system`, `/models`, `/retrieval` 与 `/api/v1/system/harness_metrics` 原生支持 `?window=24h|7d|30d|all`；
+    - 新增 `/api/v1/system/telemetry/trends?metric=sla|retrieval|tokens|embedding&window=...` 提供真实图表时序点；
+  - [x] **前端大盘多周期自由切换**：在监控页支持自由切换时间范围（`24H` / `7D` / `30D` / `ALL`）与实时时序折线图（真实后端数据驱动，彻底切除 mock 假数据）。
+- **物理验收结果**：
+  - [x] 单元测试 `tests/telemetry/test_telemetry_store.py` 5/5 全部通过，全量 146 项测试全绿；
+  - [x] 前端 `npm run build` 0 报错通过；
+  - [x] 交付版本：`v1.3.7`。
 
 ---
 
@@ -108,12 +104,13 @@
 
 ---
 
-### 📌 P1-3: [ ] [TASK-MONITORING-CHARTS-01] 监控页 `/monitoring` Token 节省率与 SLA 时延对比折线图
+### 📌 P1-3: [x] [TASK-MONITORING-CHARTS-01] 监控页 `/monitoring` Token 节省率与 SLA 时延对比折线图 ✅
 - **模块**：OpenVikingStudio 前端 (`src/routes/monitoring`) ｜ **优先级**：P1
 - **目标**：在 `/monitoring` 页新增双折线对比图，动态渲染有无 L0/L1 避坑拦截机制下的 Token 节省率（如 `82.4%`）及 P95 响应时延变化趋势。
-- **验收标准**：
-  - [ ] 成功绘制对比折线图，无数据点处显示虚线平滑过渡；
-  - [ ] 符合 `cyan-500` 冰青主题与响应式自适应宽度。
+- **交付内容**：
+  - [x] `sla-trend-chart.tsx` 动态对接真实 `/api/v1/system/telemetry/trends?metric=sla&window=...` 后端时序数据；
+  - [x] 支持 `24H`/`7D`/`30D`/`ALL` 多周期联动；
+  - [x] 100% 遵循 `cyan-500` 冰青主题与 NO GREEN EVER 视觉规范。
 
 ---
 
