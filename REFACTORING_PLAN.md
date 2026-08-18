@@ -71,7 +71,23 @@
 
 ---
 
-### 📌 P1-1: [ ] [TASK-RETRIEVAL-TREE-01] 检索测试台 `/retrieval` 页 L0/L1 白盒检索轨迹树与得分渲染
+### 📌 P1-1: [ ] [TASK-MODEL-PERSIST-01] AI 模型监控全维度 Token / 调用量物理持久化与历史聚合引擎 (Model Metrics Persistence & Aggregation Engine)
+- **模块**：后端 Observability / Storage (`models_tracker.py`, `models_observer.py`, 持久化存储) + 前端 Monitoring (`model-monitoring-card.tsx`)
+- **工单 ID**：`TASK-MODEL-PERSIST-01` ｜ **优先级**：P1
+- **目标**：彻底根除模型监控数据随服务重启丢失归零的痛点，将 4 大模型（VLM `command-r-plus`、Embedding `Qwen3-Embedding-8B`、Rerank `qwen3-reranker-0.6b`、Compressor `LLMLingua-2`）的调用次数、Prompt Tokens、Completion Tokens 及总 Tokens 物理落盘持久化，支持跨重启连续累加与大盘历史回溯。
+- **技术方案与交付内容**：
+  - [ ] **物理持久化存储层**：在 `_system/models_usage/`（或 SQLite 审计库）中设计 `ModelUsageStore`，按小时/按天桶存储每次模型推理的调用指标；
+  - [ ] **跨重启基线恢复**：`TokenUsageTracker` 与 `ModelsObserver` 初始化时自动从持久化存储中读取历史累计值，保证重启后调用量与 Token 消耗平滑累加；
+  - [ ] **全量 4 模型统一适配**：完善 VLM、Embedding（`DenseEmbedder`）、Rerank（`RerankClient`）、LLMLingua 压缩器的数据上报与持久化链路；
+  - [ ] **前端大盘支持历史维度**：`ModelMonitoringCard` 展示“累计总消耗”与“今日/24h 增量”，并支持切换时间范围。
+- **物理验收条件**：
+  - [ ] 重启 `openviking.service` 后，AI 模型监控中的调用数与 Token 总数 100% 保持历史连续累加；
+  - [ ] 4 大模型状态与 Token 指标 0 缺失；
+  - [ ] 单元测试与端到端构建 0 报错。
+
+---
+
+### 📌 P1-2: [ ] [TASK-RETRIEVAL-TREE-01] 检索测试台 `/retrieval` 页 L0/L1 白盒检索轨迹树与得分渲染
 - **模块**：OpenVikingStudio 前端 (`src/routes/retrieval`) ｜ **优先级**：P1
 - **目标**：在 `/retrieval` 页面为每次检索结果渲染可折叠的 **L0/L1 白盒检索轨迹树**，展示 Viking 向量匹配路径与相似度分值（如 `Score: 0.985`）。
 - **验收标准**：
@@ -82,7 +98,7 @@
 
 ---
 
-### 📌 P1-2: [ ] [TASK-MONITORING-CHARTS-01] 监控页 `/monitoring` Token 节省率与 SLA 时延对比折线图
+### 📌 P1-3: [ ] [TASK-MONITORING-CHARTS-01] 监控页 `/monitoring` Token 节省率与 SLA 时延对比折线图
 - **模块**：OpenVikingStudio 前端 (`src/routes/monitoring`) ｜ **优先级**：P1
 - **目标**：在 `/monitoring` 页新增双折线对比图，动态渲染有无 L0/L1 避坑拦截机制下的 Token 节省率（如 `82.4%`）及 P95 响应时延变化趋势。
 - **验收标准**：
