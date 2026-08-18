@@ -71,36 +71,28 @@
 
 ---
 
-### 📌 P1-1: [ ] [TASK-MODEL-PERSIST-01] AI 模型监控时序分桶持久化与趋势分析引擎 (Model Metrics Time-Series Persistence & Trend Engine)
-- **模块**：后端 Observability / Storage (`models_tracker.py`, `models_observer.py`, 时序存储) + 前端 Monitoring (`model-monitoring-card.tsx`, 趋势分析图表)
-- **工单 ID**：`TASK-MODEL-PERSIST-01` ｜ **优先级**：P1
-- **目标**：以**时间序列（小时 1h / 天 1d）分桶落盘**为核心，对全量 4 大模型（VLM `command-r-plus`、Embedding `Qwen3-Embedding-8B`、Rerank `qwen3-reranker-0.6b`、Compressor `LLMLingua-2`）的调用量、Tokens 消耗与时延进行结构化持久化，为系统容量规划、Token 成本控制与模型调用调优提供精确的数据支撑。
+### 📌 P0: [ ] [TASK-FULL-TELEMETRY-PERSIST-01] 全系统遥测与大盘 16 瓦片统一时序持久化与基线恢复引擎 (Full-Stack Unified Telemetry & Dashboard Persistence Engine)
+- **模块**：后端 Observability (`telemetry_store.py`, `models_observer.py`, `retrieval_tracker.py`, SQLite 统一时序库) + 前端 全大盘瓦片 (`monitoring`, `skills`, `tasks`)
+- **工单 ID**：`TASK-FULL-TELEMETRY-PERSIST-01` ｜ **优先级**：P0（最高优先级，彻底根除重启归零与空白）
+- **核心痛点与目标**：
+  彻底根治“服务一重启，大盘数据全归零 / 瓦片变 `--`”的严重体验痛点。将全系统所有观测指标与遥测数据（**4 大 AI 模型 Token / 调用数**、**上下文检索命中率 / 延迟 / 相似度**、**技能中心 6 大瓦片**、**监控大盘 16 项内核深层观测指标**）100% 统一纳入**本地 SQLite 时序持久化存储**，实现服务启动自愈加载历史基线，支持 24h / 7d / 30d / 全量历史无缝回溯，为服务优化与决策提供坚实数据支撑。
 - **技术方案与交付内容**：
-  - [ ] **时序分桶落盘架构 (Time-Bucket Persistence)**：在 `_system/models_usage/`（或 SQLite 库）中设计 `model_usage_buckets` 时序表，记录维度字段（`bucket_time`, `model_type`, `model_name`, `provider`, `calls`, `prompt_tokens`, `completion_tokens`, `total_tokens`, `avg_latency_ms`）；
-  - [ ] **多粒度聚合与趋势 API**：新增 `/api/v1/observer/models/trends` 端点，支持按 `1h` / `1d` 粒度查询任意时间窗口（24h / 7d / 30d / 全量）的调用与 Token 趋势；
-  - [ ] **服务重启平滑聚合**：`ModelsObserver` 启动时自动聚合全量历史分桶数据，大盘卡片显示“历史总累计”与“周期增量”，彻底杜绝重启归零；
-  - [ ] **全量 4 大模型全链路打通**：VLM、Embedding（`DenseEmbedder`）、Rerank（`RerankClient`）、LLMLingua 压缩器统一注入分桶上报探针；
-  - [ ] **前端趋势分析面板**：`ModelMonitoringCard` 新增时序走势图，直观呈现不同时间段各模型的调用波峰波谷与 Token 吞吐变化，为业务调优提供直观依据。
+  - [ ] **统一时序持久化存储层 (`telemetry_store.py`)**：在 `_system/telemetry/` 中建立统一 SQLite 库，设计 4 张核心时序表：
+    1. `model_metrics_audit`（记录 VLM / Embedding / Rerank / LLMLingua 每次推理 Token、调用量与延迟，按小时/天分桶）；
+    2. `retrieval_metrics_audit`（记录每次 search/find 的命中数、余弦分值、延迟与 Rerank 状态）；
+    3. `skill_metrics_audit`（记录每次技能触发类型、意图唤醒、成功状态与压缩节省量）；
+    4. `system_metrics_snapshot`（周期性快照：HTTP SLA、FS 磁盘 IO、峰值延迟 Peak 等）；
+  - [ ] **服务启动零丢失基线恢复机制 (Zero-Loss Baseline Recovery)**：
+    - `ModelsObserver` 启动时自动从 SQLite 读取历史累计 Token 与调用次数；
+    - `RetrievalTracker` 启动时自动恢复检索基线（总检索数、命中率、平均分、历史延迟）；
+    - 服务重启后，大盘所有 16 项瓦片与 4 大模型表格 **100% 立即展示真实历史累计数据**，永远不再出现 `--` 或 `0`；
+  - [ ] **多周期趋势与决策支撑 API**：
+    - `/api/v1/observer/system` 与 `/api/v1/system/harness_metrics` 原生支持 `?window=24h|7d|30d|all`；
+    - 提供真实数据支撑：高频技能榜、僵尸技能探测、Token 消耗走势、模型压缩收益分析；
+  - [ ] **前端大盘多周期自由切换**：在监控页与技能中心支持自由切换时间范围与时序走势图。
 - **物理验收条件**：
-  - [ ] 模型数据按时间序列分桶落盘，支持任意历史时间区间的聚合与趋势回溯；
-  - [ ] 重启 `openviking.service` 后历史累计与时序数据 100% 完整连续；
-  - [ ] 全量 4 大模型指标完整覆盖，端到端测试与前端构建 0 报错。
-
-### 📌 P1-2: [ ] [TASK-SKILL-METRICS-PERSIST-01] 技能中心与 Harness 遥测时序分桶持久化与决策优化引擎 (Skill & Harness Telemetry Time-Series Persistence Engine)
-- **模块**：后端 Observability / System Router (`system.py`, SQLite 遥测审计表) + 前端 Skills Route (`src/routes/skills`)
-- **工单 ID**：`TASK-SKILL-METRICS-PERSIST-01` ｜ **优先级**：P1
-- **目标**：对技能中心 6 大核心遥测指标（隐式自动唤醒率、技能执行成功率、VK集中通道收效率、资产活跃复用率、Context 提示词压缩率、Harness 自演进成果）进行**时间序列（1h / 1d）分桶物理落盘持久化**，彻底摆脱进程生命周期限制，为技能生命周期治理、Agent 调度策略改进与服务调优提供坚实的数据证据。
-- **技术方案与交付内容**：
-  - [ ] **技能调用与遥测时序持久化表**：在 `_system/usage_audit/` 中建立 `skill_telemetry_audit` 表，记录每次技能被调用的明细（`timestamp_bucket`, `skill_name`, `trigger_type: implicit/explicit/mcp`, `duration_ms`, `tokens_saved`, `compression_ratio`, `is_success`）；
-  - [ ] **多周期遥测 API**：扩展 `/api/v1/system/harness_metrics?window=24h|7d|30d|all`，支持按小时/按天分桶拉取历史趋势与聚合数据；
-  - [ ] **服务调优决策数据支撑 (Decision Support Insights)**：
-    - **资产健康度**：自动输出 Top 20 高频技能与 0 调用僵尸技能清单，指导资产瘦身；
-    - **意图唤醒漏斗**：统计隐式意图唤醒 vs 显式指定比例，量化 Agent 自主调度精度；
-    - **压缩收益时序**：记录 LLMLingua-2 实际 Token 节省走势，为动态调整压缩阈值提供实测基准；
-  - [ ] **前端大盘多周期切换**：技能中心顶部支持在 `24H Rolling`、`近 7 天`、`近 30 天`、`全量历史` 之间平滑切换查看趋势。
-- **物理验收条件**：
-  - [ ] 技能遥测数据按时间分桶落盘，服务重启后历史数据 100% 连续；
-  - [ ] 支持 24h / 7d / 30d 多维度查询且性能响应 < 50ms；
+  - [ ] 执行 `systemctl restart openviking.service` 重启服务后，监控页 16 项瓦片与模型数据 100% 保持历史连续，无任何 `--` 或 `0` 空白；
+  - [ ] 检索、模型、技能全链路时序数据写入延迟 < 2ms，查询响应 < 20ms；
   - [ ] 单元测试与前端构建 0 报错。
 
 ---
