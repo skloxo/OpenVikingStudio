@@ -37,10 +37,10 @@ tracing = "0.1"
 
 # Git (gitoxide)
 gix-hash = "0.14"
-gix-object = "0.42"
-gix-features = { version = "0.38", features = ["zlib"] }
+gix-object = "0.60"
+gix-features = { version = "0.48", features = ["zlib"] }
 gix-actor = "0.31"
-gix-date = "0.8"
+gix-date = "0.15"
 
 # Git backend dependencies
 dashmap = "5.0"
@@ -78,7 +78,7 @@ aws-sdk-s3 = { version = "1", optional = true }
 aws-types = { version = "1", optional = true }
 
 # Cache
-lru = "0.12"
+lru = "0.16"
 
 # Regular expressions for grep
 regex = "1.10"
@@ -90,7 +90,7 @@ aes-gcm = "0.10"
 hkdf = "0.12"
 sha2 = "0.10"
 sha1 = "0.10"
-rand = "0.8"
+rand = "0.10"
 
 # Stream combinators for concurrent I/O
 futures = "0.3"
@@ -113,7 +113,7 @@ tokio = { version = "1.38", features = ["full"] }
 toml = "0.8"
 # Used by the S3/TOS git integration tests (crates/ragfs/tests/git_s3_integration.rs)
 gix-hash = "0.14"
-gix-object = "0.42"
+gix-object = "0.60"
 bytes = "1.5"
 serde_json = "1.0"
 uuid = { version = "1.0", features = ["v4"] }
