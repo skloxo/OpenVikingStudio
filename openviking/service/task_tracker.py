@@ -18,6 +18,7 @@ import math
 import re
 import threading
 import time
+from collections import Counter, defaultdict
 from copy import deepcopy
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
@@ -166,10 +167,10 @@ class TaskTracker:
     only protects short, synchronous accesses to immutable cache snapshots.
     """
 
-    MAX_TASKS = 10_000
-    TTL_COMPLETED = 86_400  # 24 hours
-    TTL_FAILED = 604_800  # 7 days
-    CLEANUP_INTERVAL = 300  # 5 minutes
+    MAX_TASKS = 50_000
+    TTL_COMPLETED = 2_592_000  # 30 days
+    TTL_FAILED = 2_592_000  # 30 days
+    CLEANUP_INTERVAL = 86_400  # 24 hours
 
     def __init__(self, store: TaskStore, *, max_concurrent_store_io: int = 8) -> None:
         self._store = store
@@ -263,27 +264,65 @@ class TaskTracker:
     async def _evict_expired_on_owner(self) -> None:
         now = time.time()
         with self._lock:
-            expired_ids = []
-            for tid, t in self._tasks.items():
-                if (
-                    t.status in (TaskStatus.COMPLETED, TaskStatus.CANCELLED)
-                    and (now - t.updated_at) > self.TTL_COMPLETED
-                ):
-                    expired_ids.append(tid)
-                elif t.status == TaskStatus.FAILED and (now - t.updated_at) > self.TTL_FAILED:
-                    expired_ids.append(tid)
+            expired_ids = [
+                task_id for task_id, task in self._tasks.items() if self._is_expired(task, now)
+            ]
 
-            for tid in expired_ids:
-                self._tasks.pop(tid, None)
+        evicted_count = 0
+        for task_id in expired_ids:
+            evicted_count += await self._delete_expired_task_on_owner(task_id, now)
 
+        with self._lock:
             if len(self._tasks) > self.MAX_TASKS:
                 sorted_tasks = sorted(self._tasks.items(), key=lambda x: x[1].created_at)
                 excess = len(self._tasks) - self.MAX_TASKS
                 for tid, _ in sorted_tasks[:excess]:
                     self._tasks.pop(tid, None)
 
-        if expired_ids:
-            logger.debug("[TaskTracker] Evicted %d expired tasks", len(expired_ids))
+        if evicted_count:
+            logger.debug("[TaskTracker] Evicted %d expired tasks", evicted_count)
+
+    def _is_expired(self, task: TaskRecord, now: float) -> bool:
+        age = now - task.updated_at
+        if task.status in (TaskStatus.COMPLETED, TaskStatus.CANCELLED):
+            return age > self.TTL_COMPLETED
+        return task.status == TaskStatus.FAILED and age > self.TTL_FAILED
+
+    async def _delete_expired_task_on_owner(self, task_id: str, now: float) -> bool:
+        async with self._task_locks.acquire(task_id):
+            task = self._cached_task(task_id)
+            if task is None or not self._is_expired(task, now):
+                return False
+            account_id = task.account_id
+            user_id = task.user_id
+            if not account_id or not user_id:
+                logger.warning(
+                    "[TaskTracker] Cannot delete expired ownerless task %s",
+                    task_id,
+                )
+                return False
+            try:
+                await self._store_io.run(
+                    "delete",
+                    lambda: run_to_completion(
+                        lambda: self._store.delete(
+                            task_id,
+                            account_id=account_id,
+                            user_id=user_id,
+                        )
+                    ),
+                )
+            except Exception:
+                logger.warning(
+                    "[TaskTracker] Failed to delete expired task %s",
+                    task_id,
+                    exc_info=True,
+                )
+                return False
+
+            with self._lock:
+                self._tasks.pop(task_id, None)
+            return True
 
     @staticmethod
     def _matches_owner(
@@ -686,8 +725,9 @@ class TaskTracker:
         user_id: Optional[str] = None,
         timeout: Optional[float] = None,
         poll_interval: float = 0.05,
-    ) -> Optional[TaskRecord]:
+    ) -> TaskRecord:
         """Wait for one task's terminal state without changing its lifecycle."""
+
         async def _poll() -> TaskRecord:
             while True:
                 task = await self.get(task_id, account_id=account_id, user_id=user_id)
@@ -701,10 +741,61 @@ class TaskTracker:
             return await _poll()
         return await asyncio.wait_for(_poll(), timeout)
 
+    async def delete_user_tasks(self, account_id: str, user_id: str) -> int:
+        """Delete terminal task records for one user from storage and cache."""
+        self._validate_owner(account_id, user_id)
+        return await self._dispatcher.run(
+            lambda: self._delete_user_tasks_on_owner(account_id, user_id)
+        )
+
+    async def _delete_user_tasks_on_owner(self, account_id: str, user_id: str) -> int:
+        self._merge_loaded_tasks(await self._load_all_from_store(account_id, user_id))
+        tasks = [
+            task
+            for task in self._cache_snapshot()
+            if self._matches_owner(task, account_id, user_id)
+        ]
+        active = [task for task in tasks if task.status in _ACTIVE_STATUSES]
+        if active:
+            raise RuntimeError(
+                "Cannot delete active task records: "
+                + ", ".join(f"{task.task_id}({task.task_type})" for task in active)
+            )
+
+        deleted = 0
+        for task in tasks:
+            async with self._task_locks.acquire(task.task_id):
+                current = self._cached_task(task.task_id)
+                if current is None or not self._matches_owner(current, account_id, user_id):
+                    continue
+                if current.status in _ACTIVE_STATUSES or self._work_index.has_work(task.task_id):
+                    raise RuntimeError(
+                        f"Cannot delete active task record: {task.task_id}({task.task_type})"
+                    )
+                await self._store_io.run(
+                    "delete",
+                    lambda task_id=task.task_id: run_to_completion(
+                        lambda: self._store.delete(
+                            task_id,
+                            account_id=account_id,
+                            user_id=user_id,
+                        )
+                    ),
+                )
+                with self._lock:
+                    self._tasks.pop(task.task_id, None)
+                self._work_index.clear_failure(task.task_id)
+                deleted += 1
+        return deleted
+
     async def wait_for_descendants(self, task_id: str, current_work_id: str) -> None:
         """Wait on the same durable work index used by completion and cancellation."""
         while self._work_index.has_work(task_id, exclude_work_id=current_work_id):
             await asyncio.sleep(0.05)
+
+    def has_work(self, task_id: str) -> bool:
+        """Return whether a task still owns durable or active queue work."""
+        return self._work_index.has_work(task_id)
 
     def register_running_task(self, task_id: str) -> None:
         """Register the current asyncio task so cancellation can interrupt it."""
@@ -829,6 +920,38 @@ class TaskTracker:
             for t in tasks
         )
 
+    def get_stats(
+        self,
+        account_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+    ) -> Dict[str, int]:
+        """Return task counts by status."""
+        tasks = self._cache_snapshot()
+        matching = [t for t in tasks if self._matches_owner(t, account_id, user_id)]
+        counts = Counter(t.status.value for t in matching)
+        return {
+            "total": len(matching),
+            "completed": counts.get(TaskStatus.COMPLETED.value, 0),
+            "pending": counts.get(TaskStatus.PENDING.value, 0),
+            "running": counts.get(TaskStatus.RUNNING.value, 0),
+            "failed": counts.get(TaskStatus.FAILED.value, 0),
+            "cancelled": counts.get(TaskStatus.CANCELLED.value, 0),
+        }
+
+    def get_grouped_stats(
+        self,
+        account_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+    ) -> Dict[str, Dict[str, int]]:
+        """Return task counts grouped by task_type and status."""
+        tasks = self._cache_snapshot()
+        matching = [t for t in tasks if self._matches_owner(t, account_id, user_id)]
+        grouped: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
+        for t in matching:
+            grouped[t.task_type][t.status.value] += 1
+            grouped[t.task_type]["total"] += 1
+        return {k: dict(v) for k, v in grouped.items()}
+
     async def _load_for_update(
         self,
         task_id: str,
@@ -865,38 +988,13 @@ class TaskTracker:
     async def _load_all_from_store(
         self, account_id: str, user_id: Optional[str]
     ) -> List[TaskRecord]:
-        records = [
+        return [
             self._record_from_payload(payload)
             for payload in await self._store_io.run(
                 "list",
                 lambda: self._store.list(account_id, user_id=user_id),
             )
         ]
-        auto_healed = []
-        now = time.time()
-        for task in records:
-            cached = self._cached_task(task.task_id)
-            if cached is not None:
-                continue
-            if task.status == TaskStatus.RUNNING:
-                task.status = TaskStatus.FAILED
-                task.stage = "failed"
-                task.error = "[Auto-Healing] Task was interrupted by service restart"
-                task.updated_at = now
-                auto_healed.append(task)
-        if auto_healed:
-            logger.info(
-                "[TaskTracker] Auto-healed %d interrupted task(s) for owner %s/%s",
-                len(auto_healed),
-                account_id,
-                user_id,
-            )
-            for t in auto_healed:
-                try:
-                    await self._store.update(t)
-                except Exception as e:
-                    logger.warning("[TaskTracker] Failed to persist auto-healed task %s: %s", t.task_id, e)
-        return records
 
     async def _persist_and_publish(self, operation: str, task: TaskRecord) -> None:
         committed = False

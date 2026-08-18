@@ -95,10 +95,10 @@ class ModelsObserver(BaseObserver):
             if rerank_data:
                 sections.append(("Rerank", rerank_data))
 
-        # Encoder / LLMLingua-2 Prompt Compressor section
-        compressor_data = self._get_compressor_usage()
+        # Compressor (LLMLingua-2) section
+        compressor_data = self._get_configured_compressor()
         if compressor_data:
-            sections.append(("Encoder / LLMLingua-2", compressor_data))
+            sections.append(("Compressor", compressor_data))
 
         if not sections:
             return "No model usage data available."
@@ -113,7 +113,7 @@ class ModelsObserver(BaseObserver):
         return "\n".join(lines)
 
     def _get_vlm_usage(self) -> Optional[list]:
-        """Get VLM token usage data — only rows matching this VLM instance's model."""
+        """Get VLM token usage data."""
         if not self._vlm_instance:
             return None
 
@@ -122,15 +122,8 @@ class ModelsObserver(BaseObserver):
         if not usage_data.get("usage_by_model"):
             return None
 
-        # Filter: only show the model name this VLM instance is configured to use.
-        # The shared TokenUsageTracker stores ALL models; without filtering, every
-        # group (VLM / Embedding / Rerank) would show all models — wrong.
-        own_model = getattr(self._vlm_instance, "model", None)
-
         data = []
         for model_name, model_data in usage_data["usage_by_model"].items():
-            if own_model and model_name != own_model:
-                continue  # skip models that belong to other roles
             for provider_name, provider_data in model_data["usage_by_provider"].items():
                 data.append(
                     {
@@ -155,12 +148,8 @@ class ModelsObserver(BaseObserver):
         return [
             {
                 "Model": model,
-                "Provider": getattr(self._vlm_instance, "provider", None) or "openai",
-                "Calls": 0,
-                "Prompt": 0,
-                "Completion": 0,
-                "Total": 0,
-                "Last Updated": "configured",
+                "Provider": getattr(self._vlm_instance, "provider", None) or "unknown",
+                "Status": "configured",
             }
         ]
 
@@ -168,17 +157,29 @@ class ModelsObserver(BaseObserver):
         """Return configured Embedding identity when usage data is unavailable."""
         if not self._embedding_instance:
             return None
-        model = getattr(self._embedding_instance, "model", None) or getattr(self._embedding_instance, "model_name", None) or "bge-m3"
-        provider = getattr(self._embedding_instance, "provider", None) or "local"
+        model = getattr(self._embedding_instance, "model", None)
+        if not model and hasattr(self._embedding_instance, "model_name"):
+            model = getattr(self._embedding_instance, "model_name")
+        if not model and hasattr(self._embedding_instance, "dense") and hasattr(self._embedding_instance.dense, "model"):
+            model = self._embedding_instance.dense.model
+        if not model and hasattr(self._embedding_instance, "_embedder"):
+            model = getattr(self._embedding_instance._embedder, "model_name", None) or getattr(self._embedding_instance._embedder, "model", None)
+        if not model:
+            model = "Qwen3-Embedding-8B"
+
+        provider = getattr(self._embedding_instance, "provider", None)
+        if not provider and hasattr(self._embedding_instance, "dense") and hasattr(self._embedding_instance.dense, "provider"):
+            provider = self._embedding_instance.dense.provider
+        if not provider and hasattr(self._embedding_instance, "_embedder"):
+            provider = getattr(self._embedding_instance._embedder, "provider", "openai")
+        if not provider:
+            provider = "openai"
+
         return [
             {
                 "Model": model,
                 "Provider": provider,
-                "Calls": 0,
-                "Prompt": 0,
-                "Completion": 0,
-                "Total": 0,
-                "Last Updated": "configured",
+                "Status": "configured",
             }
         ]
 
@@ -186,22 +187,38 @@ class ModelsObserver(BaseObserver):
         """Return configured Rerank identity when usage data is unavailable."""
         if not self._rerank_instance:
             return None
-        model = getattr(self._rerank_instance, "model", None) or getattr(self._rerank_instance, "model_name", None) or "qwen3-reranker-0.6b"
-        provider = getattr(self._rerank_instance, "provider", None) or "local"
+        model = getattr(self._rerank_instance, "model", None)
+        if not model and hasattr(self._rerank_instance, "model_name"):
+            model = getattr(self._rerank_instance, "model_name")
+        if not model and hasattr(self._rerank_instance, "_model"):
+            model = getattr(self._rerank_instance, "_model")
+        if not model:
+            model = "qwen3-reranker-0.6b"
+
+        provider = getattr(self._rerank_instance, "provider", None)
+        if not provider:
+            provider = "openai"
+
         return [
             {
                 "Model": model,
                 "Provider": provider,
-                "Calls": 0,
-                "Prompt": 0,
-                "Completion": 0,
-                "Total": 0,
-                "Last Updated": "configured",
+                "Status": "configured",
+            }
+        ]
+
+    def _get_configured_compressor(self) -> Optional[list]:
+        """Return configured LLMLingua-2 Prompt Compressor identity."""
+        return [
+            {
+                "Model": "LLMLingua-2 (xlm-roberta)",
+                "Provider": "Microsoft",
+                "Status": "active",
             }
         ]
 
     def _get_embedding_usage(self) -> Optional[list]:
-        """Get Embedding token usage data — only rows matching this embedder's model."""
+        """Get Embedding token usage data."""
         if not self._embedding_instance:
             return None
 
@@ -215,16 +232,8 @@ class ModelsObserver(BaseObserver):
         if not usage_data.get("usage_by_model"):
             return None
 
-        # Filter: only the model name this embedding instance is configured to use.
-        own_model = (
-            getattr(self._embedding_instance, "model", None)
-            or getattr(self._embedding_instance, "model_name", None)
-        )
-
         data = []
         for model_name, model_data in usage_data["usage_by_model"].items():
-            if own_model and model_name != own_model:
-                continue  # skip models that belong to other roles
             for provider_name, provider_data in model_data["usage_by_provider"].items():
                 data.append(
                     {
@@ -241,7 +250,7 @@ class ModelsObserver(BaseObserver):
         return data
 
     def _get_rerank_usage(self) -> Optional[list]:
-        """Get Rerank token usage data — only rows matching this reranker's model."""
+        """Get Rerank token usage data."""
         if not self._rerank_instance:
             return None
 
@@ -255,16 +264,8 @@ class ModelsObserver(BaseObserver):
         if not usage_data.get("usage_by_model"):
             return None
 
-        # Filter: only the model name this rerank instance is configured to use.
-        own_model = (
-            getattr(self._rerank_instance, "model", None)
-            or getattr(self._rerank_instance, "model_name", None)
-        )
-
         data = []
         for model_name, model_data in usage_data["usage_by_model"].items():
-            if own_model and model_name != own_model:
-                continue  # skip models that belong to other roles
             for provider_name, provider_data in model_data["usage_by_provider"].items():
                 data.append(
                     {
@@ -279,27 +280,6 @@ class ModelsObserver(BaseObserver):
                 )
 
         return data
-
-    def _get_compressor_usage(self) -> Optional[list]:
-        """Get LLMLingua-2 prompt compressor model telemetry data."""
-        try:
-            import torch
-            has_cuda = torch.cuda.is_available()
-            provider = "local-cuda" if has_cuda else "local-cpu"
-        except Exception:
-            provider = "local-cuda"
-
-        return [
-            {
-                "Model": "llmlingua-2-xlm-roberta",
-                "Provider": provider,
-                "Calls": 0,
-                "Prompt": 0,
-                "Completion": 0,
-                "Total": 0,
-                "Last Updated": "ready",
-            }
-        ]
 
     def __str__(self) -> str:
         return self.get_status_table()

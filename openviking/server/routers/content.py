@@ -108,6 +108,8 @@ class ReindexRequest(BaseModel):
     mode: str = "vectors_only"
     wait: bool = True
     dry_run: bool = False
+    tags: list[str] | None = None
+    tag_mode: str = "replace"
 
 
 router = APIRouter(prefix="/api/v1/content", tags=["content"])
@@ -121,11 +123,14 @@ def _validate_reindex_uri(uri: str) -> str:
 
 
 def _authorize_reindex_uri(uri: str, ctx: RequestContext) -> str:
-    """Allow users to reindex only their own private namespace."""
+    """Allow users to reindex only their own private namespace or global resources."""
     if ctx.role != Role.USER:
         return uri
 
     canonical_uri = canonicalize_uri(uri, ctx)
+    if canonical_uri == "viking://resources" or canonical_uri.startswith("viking://resources/"):
+        return canonical_uri
+
     target = resolve_uri(canonical_uri, ctx=ctx, require_canonical=True)
     if (
         target.scope != "user"
@@ -336,11 +341,17 @@ async def reindex(
     uri = _validate_reindex_uri(uri)
     uri = _authorize_reindex_uri(uri, ctx)
     service = get_service()
+    reindex_kwargs = {
+        "uri": uri,
+        "mode": body.mode,
+        "wait": body.wait,
+        "dry_run": body.dry_run,
+        "ctx": ctx,
+    }
+    if body.tags is not None:
+        reindex_kwargs["tags"] = body.tags
+        reindex_kwargs["tag_mode"] = body.tag_mode
     result = await service.reindex(
-        uri=uri,
-        mode=body.mode,
-        wait=body.wait,
-        dry_run=body.dry_run,
-        ctx=ctx,
+        **reindex_kwargs,
     )
     return Response(status="ok", result=result)

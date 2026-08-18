@@ -27,34 +27,17 @@ const config = defineConfig(({ command }) => ({
       ignored: ['**/public/all_skills.json', '**/all_skills.json'],
     },
     proxy: {
-      // Root-level OpenViking API paths (no /api prefix)
+      // Root-level OpenViking API paths
       '/health':    ovProxyEntry,
       '/ready':     ovProxyEntry,
       '/metrics':   ovProxyEntry,
-      // Standard /api paths
+      '/mcp':       ovProxyEntry,
+      // Standard /api paths (All OpenViking REST APIs are under /api/v1)
       '/api':       ovProxyEntry,
       // Bot API
       '/bot':       ovProxyEntry,
-      // Admin API
-      '/admin':     ovProxyEntry,
-      // Console API
-      '/console':   ovProxyEntry,
-      // File system
-      '/fs':        ovProxyEntry,
+      // WebDAV
       '/webdav':    ovProxyEntry,
-      // Search
-      '/search':    ovProxyEntry,
-      // Sessions, tasks, system
-      '/sessions':  ovProxyEntry,
-      '/tasks':     ovProxyEntry,
-      '/system':    ovProxyEntry,
-      // Resources, pack
-      '/resources': ovProxyEntry,
-      '/pack':      ovProxyEntry,
-      // Relations, privacy, content
-      '/relations': ovProxyEntry,
-      '/privacy':   ovProxyEntry,
-      '/content':   ovProxyEntry,
     }
   },
   plugins: [

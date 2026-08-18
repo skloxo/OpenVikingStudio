@@ -6,11 +6,10 @@ Session Service for OpenViking.
 Provides session management operations: session, sessions, add_message, commit, delete.
 """
 
+import asyncio
 from dataclasses import replace
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
-
-import asyncio
 
 from openviking.core.namespace import canonical_session_uri
 from openviking.server.agent_evolution_config import AgentEvolutionConfigProvider
@@ -34,6 +33,7 @@ from openviking.session.memory.memory_type_registry import MemoryTypeRegistry
 from openviking.session.memory_policy import MemoryPolicy
 from openviking.storage.viking_fs import VikingFS
 from openviking.storage.vikingdb_manager import VikingDBManager
+from openviking.utils.tags import normalize_search_tags
 from openviking.utils.time_utils import parse_iso_datetime
 from openviking_cli.exceptions import (
     AlreadyExistsError,
@@ -46,7 +46,7 @@ from openviking_cli.utils.config.memory_config import SessionAutoCommitConfig
 logger = get_logger(__name__)
 
 if TYPE_CHECKING:
-    from openviking.session.compressor_v2 import SessionCompressorV2
+    from openviking.session.compressor_v3 import SessionCompressorV3
     from openviking.usage_reporter import UsageReporter
 
 
@@ -57,21 +57,18 @@ class SessionService:
         self,
         vikingdb: Optional[VikingDBManager] = None,
         viking_fs: Optional[VikingFS] = None,
-        session_compressor: Optional["SessionCompressorV2"] = None,
+        session_compressor: Optional["SessionCompressorV3"] = None,
     ):
         self._vikingdb = vikingdb
         self._viking_fs = viking_fs
         self._session_compressor = session_compressor
         self._tool_output_externalization_config = ToolOutputExternalizationConfig()
-        # Embedded clients do not load ServerConfig. Preserve their historical
-        # Agent memory behavior; HTTP servers always override this from
-        # server.agent_evolution during app setup.
-        self._agent_evolution_enabled = True
+        self._agent_evolution_enabled = AgentEvolutionConfig().enabled
         self._agent_evolution_config_provider: Optional[AgentEvolutionConfigProvider] = None
         self._agent_evolution_config_path: Optional[str] = None
+        self._configure_agent_evolution_provider()
         self._usage_reporter: Optional["UsageReporter"] = None
-        # Server-wide controls; embedded clients keep the disabled defaults
-        # unless set_session_auto_commit_config() pushes a config in.
+        # Server-wide controls remain disabled until configured during app setup.
         self._session_auto_commit_config = SessionAutoCommitConfig()
         # Per-worker in-flight guard so bursts don't spawn duplicate commit
         # tasks. Cross-worker correctness relies on has_running(), not this set.
@@ -84,7 +81,7 @@ class SessionService:
         self,
         vikingdb: VikingDBManager,
         viking_fs: VikingFS,
-        session_compressor: "SessionCompressorV2",
+        session_compressor: "SessionCompressorV3",
     ) -> None:
         """Set dependencies (for deferred initialization)."""
         self._vikingdb = vikingdb
@@ -212,6 +209,8 @@ class SessionService:
         session_id: Optional[str] = None,
         memory_policy: Optional[Dict[str, Any]] = None,
         auto_commit_policy: Optional[Dict[str, Any]] = None,
+        update_auto_commit_policy: bool = False,
+        event_tags: Optional[List[str]] = None,
     ) -> Session:
         """Create a session and persist its root path.
 
@@ -221,7 +220,10 @@ class SessionService:
                        If None, creates a new session with auto-generated ID.
             memory_policy: Optional default extraction policy for future commits.
             auto_commit_policy: Optional automatic-commit policy overrides. Missing
-                fields fall back to the recommended defaults. Immutable after creation.
+                fields fall back to the recommended defaults.
+            event_tags: Optional default custom scalar tags for event memories
+                (``config.memory_extraction_config.events.tags``). Normalized to
+                canonical ``key=value`` form; ``None`` leaves no session default.
 
         Raises:
             AlreadyExistsError: If a session with the given ID already exists
@@ -241,12 +243,19 @@ class SessionService:
                 session.meta.memory_policy = policy.to_dict()
             # Auto-commit is enabled when the caller supplies a policy, or when
             # the server default turns it on. Absent both, it stays disabled.
-            if auto_commit_policy is not None or self._session_auto_commit_config.default_enabled:
+            if update_auto_commit_policy and auto_commit_policy is None:
+                session.meta.auto_commit_policy = None
+            elif auto_commit_policy is not None or self._session_auto_commit_config.default_enabled:
                 session.meta.auto_commit_policy = AutoCommitPolicy.from_dict(
                     auto_commit_policy
                 ).to_dict()
             else:
                 session.meta.auto_commit_policy = None
+            if event_tags is not None:
+                session.meta.event_search_tags = normalize_search_tags(
+                    event_tags,
+                    discard_invalid=True,
+                )
             await session.ensure_exists()
             self._record_lifecycle_metric("create", "ok")
             return session
@@ -363,6 +372,7 @@ class SessionService:
         keep_recent_turn_count: Optional[int] = None,
         retained_message_token_budget: Optional[int] = None,
         min_raw_tail_steps: Optional[int] = None,
+        event_tags: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """Commit a session (archive messages and extract memories).
 
@@ -383,6 +393,7 @@ class SessionService:
             keep_recent_turn_count=keep_recent_turn_count,
             retained_message_token_budget=retained_message_token_budget,
             min_raw_tail_steps=min_raw_tail_steps,
+            event_tags=event_tags,
         )
 
     async def commit_async(
@@ -395,6 +406,7 @@ class SessionService:
         keep_recent_turn_count: Optional[int] = None,
         retained_message_token_budget: Optional[int] = None,
         min_raw_tail_steps: Optional[int] = None,
+        event_tags: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """Async commit a session.
 
@@ -422,6 +434,8 @@ class SessionService:
         commit_kwargs.update(
             {key: value for key, value in optional_retention.items() if value is not None}
         )
+        if event_tags is not None:
+            commit_kwargs["event_tags"] = event_tags
         result = await session.commit_async(**commit_kwargs)
         self._record_lifecycle_metric("commit", "ok" if result.get("status") else "error")
         self._record_archive_metric("ok" if result.get("archived") else "skip")
@@ -447,7 +461,7 @@ class SessionService:
         """
         self._ensure_initialized()
         if not self._session_compressor:
-            raise NotInitializedError("SessionCompressorV2")
+            raise NotInitializedError("SessionCompressorV3")
 
         session = await self.get(session_id, ctx)
         archive_uri = f"{session.uri}/manual_extract"
@@ -469,6 +483,44 @@ class SessionService:
         if session.meta.auto_commit_policy is None:
             return None
         return AutoCommitPolicy.from_dict(session.meta.auto_commit_policy).to_dict()
+
+    @staticmethod
+    def effective_memory_extraction_config(session: Session) -> Dict[str, Any]:
+        """Return the caller-facing memory extraction config."""
+        return {
+            "events": {"tags": list(session.meta.event_search_tags or [])},
+        }
+
+    async def update_config(
+        self,
+        session_id: str,
+        ctx: RequestContext,
+        *,
+        event_tags: Optional[List[str]] = None,
+        auto_commit_policy: Optional[Dict[str, Any]] = None,
+        update_auto_commit_policy: bool = False,
+    ) -> Session:
+        """Update the mutable parts of a session's config.
+
+        Only fields explicitly provided are changed. ``event_tags`` uses
+        ``None`` for no change and ``[]`` to clear. ``auto_commit_policy`` is
+        merged field-by-field when ``update_auto_commit_policy`` is true; a
+        policy value of ``None`` disables automatic commits.
+        """
+        self._ensure_initialized()
+        session = await self.get(session_id, ctx)
+        normalized_event_tags = (
+            normalize_search_tags(event_tags, discard_invalid=True)
+            if event_tags is not None
+            else None
+        )
+        if normalized_event_tags is not None or update_auto_commit_policy:
+            await session.update_config(
+                event_search_tags=normalized_event_tags,
+                auto_commit_policy=auto_commit_policy,
+                update_auto_commit_policy=update_auto_commit_policy,
+            )
+        return session
 
     async def maybe_schedule_auto_commit(
         self,

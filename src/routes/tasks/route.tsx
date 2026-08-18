@@ -74,7 +74,7 @@ type TaskTypeFilter =
   | 'all'
 
 const DEFAULT_PAGE_SIZE = 20
-const MAX_TASKS = 300
+const MAX_TASKS = 200
 const PAGE_SIZE_OPTIONS = [20, 50, 100] as const
 const TASK_TYPE_OPTIONS: Exclude<TaskTypeFilter, 'all'>[] = [
   'session_commit',
@@ -115,10 +115,9 @@ async function fetchTasks(
   dataScope: TaskDataScope = '24h',
 ): Promise<TaskRecord[]> {
   const query = {
-    limit: dataScope === 'all' ? 10000 : MAX_TASKS,
+    limit: MAX_TASKS,
     status: undefined,
     task_type: taskType === 'all' ? undefined : taskType,
-    include_archived: dataScope === 'all' ? true : undefined,
   }
   try {
     const result = await getOvResult<unknown>(

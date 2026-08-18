@@ -13,8 +13,8 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query
 
 from openviking.core.path_variables import resolve_path_variables
-from openviking.server import dependencies
 from openviking.server.auth import get_request_context
+from openviking.server.dependencies import get_service
 from openviking.server.identity import RequestContext
 from openviking.server.models import ErrorInfo, Response
 from openviking.server.responses import error_response
@@ -28,7 +28,7 @@ async def debug_health(
     _ctx: RequestContext = Depends(get_request_context),
 ):
     """Quick health check."""
-    service = dependencies.get_service()
+    service = get_service()
     is_healthy = service.debug.is_healthy()
     return Response(status="ok", result={"healthy": is_healthy})
 
@@ -41,7 +41,7 @@ async def debug_vector_scroll(
     _ctx: RequestContext = Depends(get_request_context),
 ):
     """Get paginated vector records with tenant isolation."""
-    service = dependencies.get_service()
+    service = get_service()
     if not service.vikingdb_manager:
         return error_response(
             code="NO_VECTOR_DB", message="Vector DB not initialized"
@@ -69,7 +69,7 @@ async def debug_vector_count(
     """Get count of vector records with tenant isolation."""
     import json
 
-    service = dependencies.get_service()
+    service = get_service()
     if not service.vikingdb_manager:
         return error_response(
             code="NO_VECTOR_DB", message="Vector DB not initialized"

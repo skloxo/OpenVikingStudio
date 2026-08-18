@@ -96,53 +96,21 @@ class TrustedAuthPlugin(AuthPlugin):
         x_openviking_user: Optional[str] = None,
     ) -> ResolvedIdentity:
         configured_root_api_key = _configured_root_api_key(request)
-        user_key_identity = None
-        is_root_authenticated = False
         if configured_root_api_key:
             if not api_key:
                 raise UnauthenticatedError(
                     "Missing API Key in trusted mode with Root API Key enabled."
                 )
-            if hmac.compare_digest(api_key, configured_root_api_key):
-                is_root_authenticated = True
-            else:
-                api_key_mgr = getattr(request.app.state, "api_key_manager", None)
-                if api_key_mgr is not None and hasattr(api_key_mgr, "resolve"):
-                    try:
-                        resolved = api_key_mgr.resolve(api_key)
-                        if resolved is not None:
-                            user_key_identity = resolved
-                    except Exception:
-                        pass
-                if not user_key_identity:
-                    raise UnauthenticatedError(
-                        "Invalid API Key in trusted mode with Root API Key enabled."
-                    )
-
-        explicit_account_id, explicit_user_id = _explicit_identity_from_request(request)
-
-        if user_key_identity is not None:
-            effective_account_id = user_key_identity.account_id
-            effective_user_id = user_key_identity.user_id
-            user_role = getattr(user_key_identity, "role", Role.USER)
-            return ResolvedIdentity(
-                role=user_role,
-                account_id=effective_account_id,
-                user_id=effective_user_id,
-            )
-
-        if is_root_authenticated:
-            effective_account_id = explicit_account_id or x_openviking_account or "default"
-            effective_user_id = explicit_user_id or x_openviking_user or "default"
-            return ResolvedIdentity(
-                role=Role.ROOT,
-                account_id=effective_account_id,
-                user_id=effective_user_id,
-            )
+            if not hmac.compare_digest(api_key, configured_root_api_key):
+                raise UnauthenticatedError(
+                    "Invalid API Key in trusted mode with Root API Key enabled."
+                )
         asserted_role = _asserted_role_from_header(
             request,
             allow_assertion=bool(configured_root_api_key),
         )
+
+        explicit_account_id, explicit_user_id = _explicit_identity_from_request(request)
         if (
             x_openviking_account
             and explicit_account_id

@@ -246,7 +246,7 @@ class TempUploadConfig(BaseModel):
 
     default_mode: Literal["local", "shared"] = "local"
     shared_max_size_bytes: int = 512 * 1024 * 1024
-    shared_prefix: str = "viking://upload"
+    ttl_seconds: int = Field(12 * 60 * 60, ge=0)
 
     model_config = {"extra": "forbid"}
 
@@ -266,32 +266,18 @@ class ToolOutputExternalizationConfig(BaseModel):
     model_config = {"extra": "forbid"}
 
 
-class SkillSourceConfig(BaseModel):
-    """Configuration for an individual skill scan source directory."""
-
-    path: str
-    category: str = "General"
-    source: str = "System"
-    scope: str = "user"
-
-    model_config = {"extra": "allow"}
-
-
-class SkillScannerConfig(BaseModel):
-    """Configuration for automated multi-source skill discovery and synchronization."""
-
-    auto_scan_on_startup: bool = True
-    rescan_interval_seconds: int = 300
-    sources: List[SkillSourceConfig] = Field(default_factory=list)
-    output_targets: List[str] = Field(default_factory=list)
-
-    model_config = {"extra": "allow"}
-
-
 class ServerConfig(BaseModel):
     host: str = "127.0.0.1"
     port: int = 1933
     workers: int = 1
+    # Seconds an idle HTTP keep-alive connection is kept open before the server
+    # closes it. Defaults to 5 to match uvicorn's built-in default and preserve
+    # the existing service behavior. Raise it above the idle-connection lifetime
+    # of any upstream client or load balancer that reuses connections (e.g. the
+    # serverless VKE forwarder keeps idle connections for up to 60s via
+    # WithMaxIdleConnDuration(1*time.Minute)); otherwise the server may close
+    # connections the client still believes are reusable, causing sporadic
+    # connection-reset / EOF errors.
     timeout_keep_alive: int = 5
     auth_mode: Optional[str] = None  # If None, auto-detect based on root_api_key
     root_api_key: Optional[str] = None
@@ -304,8 +290,18 @@ class ServerConfig(BaseModel):
     bot_api_url: str = "http://localhost:18790"  # Vikingbot OpenAPIChannel URL (default port)
     encryption_enabled: bool = False  # Whether file-level AES encryption is enabled
     api_key_hashing_enabled: bool = False  # Whether API key Argon2id hashing is enabled (default: false, rely on file encryption)
+    # When true, poll the shared key store and reload the in-memory index on change so
+    # read replicas pick up writer-side user add/rotate/remove. Default off (single writer).
+    api_key_watch_enabled: bool = False
+    # Poll interval; each check only stats registry files and reads fully on change.
+    api_key_watch_interval_seconds: float = 30.0
     observability: ObservabilityConfig = Field(default_factory=ObservabilityConfig)
     usage_reporter: UsageReporterConfig = Field(default_factory=UsageReporterConfig)
+    # Public-facing base URL emitted in MCP-issued upload instructions. See
+    # ``openviking.server.mcp_endpoint._resolve_public_base_url`` for the full
+    # resolution chain: env var > this field > X-Forwarded-Host/Proto > Host header
+    # > listen-address fallback. Set this (or the env var) when the server runs
+    # behind a reverse proxy that does not forward X-Forwarded-* headers.
     public_base_url: Optional[str] = None
     upload_signed_ttl_seconds: int = 600
     temp_upload: TempUploadConfig = Field(default_factory=TempUploadConfig)
@@ -314,7 +310,6 @@ class ServerConfig(BaseModel):
     tool_output_externalization: ToolOutputExternalizationConfig = Field(
         default_factory=ToolOutputExternalizationConfig
     )
-    skills: SkillScannerConfig = Field(default_factory=SkillScannerConfig)
 
     model_config = {"extra": "forbid"}
 
@@ -437,11 +432,6 @@ def load_server_config(config_path: Optional[str] = None) -> ServerConfig:
             "To maintain the previous behavior, set encryption.api_key_hashing.enabled=true. "
             "See documentation for more details."
         )
-
-    # Extract skills scanner configuration from top-level or server-level section
-    skills_data = data.get("skills") or server_data.get("skills")
-    if skills_data is not None and isinstance(skills_data, dict):
-        server_data["skills"] = skills_data
 
     try:
         config = ServerConfig.model_validate(server_data)

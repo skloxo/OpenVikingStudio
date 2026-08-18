@@ -9,11 +9,7 @@ from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from openviking.pyagfs import AGFSSyncClientProtocol, AsyncAGFSClient
-from openviking.pyagfs.exceptions import (
-    AGFSAlreadyExistsError,
-    AGFSInvalidOperationError,
-    AGFSNotFoundError,
-)
+from openviking.pyagfs.exceptions import AGFSAlreadyExistsError, AGFSClientError, AGFSNotFoundError
 from openviking.service.task_work_index import (
     TaskWorkIndex,
     TaskWorkRejected,
@@ -147,11 +143,16 @@ class NamedQueue:
 
         # Inject callbacks to handler
         if self._dequeue_handler:
-            self._dequeue_handler.set_callbacks(
-                on_success=self._on_process_success,
-                on_requeue=self._on_process_requeue,
-                on_error=self._on_process_error,
-            )
+            self.set_dequeue_handler(self._dequeue_handler)
+
+    def set_dequeue_handler(self, handler: DequeueHandlerBase) -> None:
+        """Bind the consumer after its runtime dependencies are initialized."""
+        self._dequeue_handler = handler
+        handler.set_callbacks(
+            on_success=self._on_process_success,
+            on_requeue=self._on_process_requeue,
+            on_error=self._on_process_error,
+        )
 
     def _on_dequeue_start(self) -> None:
         """Called on dequeue."""
@@ -410,7 +411,7 @@ class NamedQueue:
                 raise TypeError(f"Unexpected queue size response: {type(content).__name__}")
             text = text.strip()
             return int(text) if text else 0
-        except (AGFSNotFoundError, FileNotFoundError):
+        except (AGFSClientError, FileNotFoundError, OSError):
             return 0
 
     async def snapshot(self) -> List[Dict[str, Any]]:
@@ -418,7 +419,7 @@ class NamedQueue:
         await self._ensure_initialized()
         try:
             content = await self._async_agfs.read(f"{self.path}/messages")
-        except (AGFSNotFoundError, FileNotFoundError, AGFSInvalidOperationError, Exception):
+        except (AGFSClientError, FileNotFoundError, OSError):
             return []
         if not content:
             return []

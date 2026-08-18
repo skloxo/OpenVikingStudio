@@ -125,35 +125,6 @@ class FilesystemObserver(BaseObserver):
 
         return "\n".join(result)
 
-    PERSISTENCE_PATH = "~/.openviking/fs_stats.json"
-
-    def _load_persisted_stats(self) -> dict:
-        import json
-        import os
-        path = os.path.expanduser(self.PERSISTENCE_PATH)
-        if os.path.exists(path):
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    return json.load(f)
-            except Exception:
-                pass
-        return {}
-
-    def _save_persisted_stats(self, stats_data: dict) -> None:
-        import json
-        import os
-        if not stats_data:
-            return
-        path = os.path.expanduser(self.PERSISTENCE_PATH)
-        try:
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            tmp = f"{path}.tmp"
-            with open(tmp, "w", encoding="utf-8") as f:
-                json.dump(stats_data, f, indent=2)
-            os.replace(tmp, path)
-        except Exception:
-            pass
-
     def get_status_table(self) -> str:
         """
         Format filesystem statistics as a string table.
@@ -161,28 +132,13 @@ class FilesystemObserver(BaseObserver):
         Returns:
             Formatted table string.
         """
-        stats_data = {}
         try:
             observer_service = self._get_collector()
-            import asyncio
-            import concurrent.futures
-            try:
-                loop = asyncio.get_running_loop()
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                    stats_data = pool.submit(lambda: asyncio.run(observer_service.get_filesystem_stats(self.mount_path))).result(timeout=2.0)
-            except (RuntimeError, Exception):
-                stats_data = run_async(observer_service.get_filesystem_stats(self.mount_path))
+            stats_data = run_async(observer_service.get_filesystem_stats(self.mount_path))
+            return self._format_stats_table(stats_data)
         except Exception as e:
-            logger.debug(f"Error getting live filesystem stats: {e}")
-
-        if stats_data and isinstance(stats_data, dict) and stats_data.get("mounts"):
-            self._save_persisted_stats(stats_data)
-        else:
-            persisted = self._load_persisted_stats()
-            if persisted:
-                stats_data = persisted
-
-        return self._format_stats_table(stats_data)
+            logger.error(f"Error getting filesystem stats: {e}")
+            return f"Error retrieving filesystem statistics: {e}"
 
     def __str__(self) -> str:
         return self.get_status_table()

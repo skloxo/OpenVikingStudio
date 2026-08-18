@@ -3,7 +3,6 @@
 """Agent-scope skill management endpoints for OpenViking HTTP Server."""
 
 import asyncio
-import logging
 import shutil
 import uuid
 from pathlib import Path
@@ -13,8 +12,6 @@ import yaml
 from fastapi import APIRouter, Depends, Request
 from fastapi import Path as ApiPath
 from pydantic import BaseModel, ConfigDict, model_validator
-
-logger = logging.getLogger(__name__)
 
 from openviking.core.namespace import canonical_user_root
 from openviking.core.path_variables import resolve_path_variables
@@ -375,21 +372,11 @@ async def list_skills(
             service, _ctx, f"{canonical_user_root(_ctx)}/skills"
         )
         agent_skills = await _list_skills_from_root(service, _ctx, "viking://agent/skills")
+        # Intentionally concatenate without deduplication: when the same skill
+        # name exists in both the user-private and the account-shared agent
+        # scope, both entries should be visible so the caller can tell them
+        # apart by ``root_uri``.
         merged_skills = [*user_skills, *agent_skills]
-
-        # Merge with skills discovered in configured scan directories
-        try:
-            from openviking.server.skill_scanner import scan_configured_skills
-
-            configured_skills, _ = scan_configured_skills()
-            seen_names = {s.get("name") for s in merged_skills if isinstance(s, dict)}
-            for cs in configured_skills:
-                if cs.get("name") not in seen_names:
-                    seen_names.add(cs.get("name"))
-                    merged_skills.append(cs)
-        except Exception as e:
-            logger.debug("Failed merging configured skills: %s", e)
-
         return Response(
             status="ok",
             result={
@@ -501,19 +488,6 @@ async def validate_skill(
     return Response(status="ok", result=result)
 
 
-@router.post("/rescan")
-@router.post("/sync")
-@router.get("/rescan")
-async def rescan_skills(
-    _ctx: RequestContext = Depends(get_request_context),
-):
-    """Configuration-driven Automated Skill Scanner and Synchronizer."""
-    from openviking.server.skill_scanner import scan_configured_skills
-
-    skills, stats = scan_configured_skills()
-    return Response(status="ok", result={"stats": stats, "total_skills": len(skills)})
-
-
 @router.get("/{skill_name}")
 async def get_skill(
     skill_name: str = ApiPath(..., description="Skill name"),
@@ -531,43 +505,35 @@ async def get_skill(
             details={"field": "level", "allowed": [0, 1, 2]},
         )
     service = get_service()
-    try:
-        root_uri = await _require_skill(service, _ctx, skill_name, target_uri)
-        abstract = await service.fs.abstract(root_uri, ctx=_ctx)
-        result = _skill_summary_from_meta(skill_name, root_uri, _parse_abstract_meta(abstract))
-        if level is None or level == 0:
-            result["abstract"] = abstract
-        if level is None or level == 1:
-            result["overview"] = await service.fs.overview(root_uri, ctx=_ctx)
-        if level == 2 or include_content is True or (level is None and include_content is not False):
-            result["content"] = await service.fs.read(_skill_md_uri(root_uri), ctx=_ctx)
-        if include_files:
-            entries = await _list_skill_files(service, _ctx, root_uri)
-            result["files"] = [
-                {
-                    "name": entry.get("name") or _skill_name_from_uri(entry.get("uri", "")),
-                    "uri": entry.get("uri", ""),
-                    "path": _relative_skill_path(root_uri, entry.get("uri", "")),
-                    "is_dir": entry.get("isDir", False),
-                    "kind": _skill_file_kind(
-                        _relative_skill_path(root_uri, entry.get("uri", "")),
-                        entry.get("isDir", False),
-                    ),
-                }
-                for entry in entries
-                if isinstance(entry, dict)
-                and _relative_skill_path(root_uri, entry.get("uri", "")) != SOURCE_METADATA_FILENAME
-            ]
-        if include_source:
-            result["source"] = await read_skill_source_metadata(service, _ctx, root_uri)
-        return Response(status="ok", result=result)
-    except NotFoundError:
-        from openviking.server.skill_scanner import get_skill_by_name
-
-        disk_skill = get_skill_by_name(skill_name)
-        if disk_skill:
-            return Response(status="ok", result=disk_skill)
-        raise
+    root_uri = await _require_skill(service, _ctx, skill_name, target_uri)
+    abstract = await service.fs.abstract(root_uri, ctx=_ctx)
+    result = _skill_summary_from_meta(skill_name, root_uri, _parse_abstract_meta(abstract))
+    if level is None or level == 0:
+        result["abstract"] = abstract
+    if level is None or level == 1:
+        result["overview"] = await service.fs.overview(root_uri, ctx=_ctx)
+    if level == 2 or include_content is True or (level is None and include_content is not False):
+        result["content"] = await service.fs.read(_skill_md_uri(root_uri), ctx=_ctx)
+    if include_files:
+        entries = await _list_skill_files(service, _ctx, root_uri)
+        result["files"] = [
+            {
+                "name": entry.get("name") or _skill_name_from_uri(entry.get("uri", "")),
+                "uri": entry.get("uri", ""),
+                "path": _relative_skill_path(root_uri, entry.get("uri", "")),
+                "is_dir": entry.get("isDir", False),
+                "kind": _skill_file_kind(
+                    _relative_skill_path(root_uri, entry.get("uri", "")),
+                    entry.get("isDir", False),
+                ),
+            }
+            for entry in entries
+            if isinstance(entry, dict)
+            and _relative_skill_path(root_uri, entry.get("uri", "")) != SOURCE_METADATA_FILENAME
+        ]
+    if include_source:
+        result["source"] = await read_skill_source_metadata(service, _ctx, root_uri)
+    return Response(status="ok", result=result)
 
 
 @router.put("/{skill_name}")
@@ -590,8 +556,9 @@ async def update_skill(
         "operation": "update",
     }
     if request.temp_file_id:
-        store = TempUploadStore.build(http_request.app.state.config)
-        resolved = await store.resolve_for_consume(request.temp_file_id, _ctx)
+        resolved = await TempUploadStore.build(http_request.app.state.config).resolve_for_consume(
+            request.temp_file_id, _ctx
+        )
         data = Path(resolved.local_path)
         allow_local_path_resolution = True
         if request.source_metadata is None:
@@ -605,8 +572,6 @@ async def update_skill(
             source_metadata["original_filename"] = resolved.original_filename
 
     source_path_hint = resolved.original_filename if resolved else None
-    store = TempUploadStore.build(http_request.app.state.config) if resolved else None
-
     async def _update() -> Dict[str, Any]:
         # Derive backup root from the actual skill root URI to keep backup in the same scope.
         skill_root_parent = root_uri.rsplit("/", 1)[0]
@@ -671,14 +636,10 @@ async def update_skill(
                     await _restore_skill_privacy(service, _ctx, skill_name, previous_privacy)
                 except Exception:
                     pass
-            if resolved and store:
-                await store.mark_failed(resolved, _ctx)
             raise
         else:
             if backup_created:
                 await service.fs.rm(backup_uri, ctx=_ctx, recursive=True)
-            if resolved and store:
-                await store.mark_consumed(resolved, _ctx)
             result["action"] = "update"
             return result
         finally:

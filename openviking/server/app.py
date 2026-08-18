@@ -139,6 +139,14 @@ async def _initialize_runtime_state(
     """Initialize service and auth dependencies before traffic is accepted."""
     await service.initialize()
     await _initialize_auth_plugin(app, service, config)
+    from openviking.service.user_deletion import setup_user_deletion
+
+    app.state.user_deletion_service = await setup_user_deletion(
+        service=service,
+        manager=app.state.api_key_manager,
+        oauth_store=getattr(app.state, "oauth_store", None),
+        usage_audit_runtime=getattr(app.state, "usage_audit_runtime", None),
+    )
     logger.info("OpenVikingService initialization complete")
 
 
@@ -334,28 +342,6 @@ def create_app(
         # Start MCP session manager (must be active before /mcp requests)
         from openviking.server.mcp_endpoint import mcp_lifespan
 
-        # Run skill scanner on startup and start periodic background scan loop
-        skill_scan_task: Optional[asyncio.Task] = None
-        try:
-            from openviking.server.skill_scanner import scan_configured_skills
-
-            scan_configured_skills()
-
-            async def _skill_scan_loop() -> None:
-                while True:
-                    try:
-                        await asyncio.sleep(300)
-                        await asyncio.to_thread(scan_configured_skills)
-                    except asyncio.CancelledError:
-                        break
-                    except Exception as e:  # noqa: BLE001
-                        logger.warning("Periodic skill scan error: %s", e)
-
-            skill_scan_task = asyncio.create_task(_skill_scan_loop())
-            app.state.skill_scan_task = skill_scan_task
-        except Exception as e:  # noqa: BLE001
-            logger.warning("Startup skill scanner failed to initialize: %s", e)
-
         async with mcp_lifespan():
             if service is not None:
                 await _initialize_runtime_state(app, service, config)
@@ -368,6 +354,12 @@ def create_app(
         await shutdown_usage_audit(app=app)
         await shutdown_metrics_async(app=app)
         task_tracker.stop_cleanup_loop()
+        auth_plugin_state = getattr(app.state, "auth_plugin", None)
+        if auth_plugin_state is not None:
+            try:
+                await auth_plugin_state.shutdown()
+            except Exception as e:  # noqa: BLE001
+                logger.warning("Auth plugin shutdown failed: %s", e)
         if oauth_gc_task is not None:
             oauth_gc_task.cancel()
             try:
@@ -400,6 +392,7 @@ def create_app(
 
     app.state.config = config
     app.state.api_key_manager = None
+    app.state.user_deletion_service = None
     set_server_config(config)
 
     # Body dump middleware must be registered BEFORE observability so it ends up
@@ -745,12 +738,7 @@ def create_app(
     if _studio_env:
         _studio_dir = Path(_studio_env)
     else:
-        _monorepo_dist = Path(__file__).resolve().parent.parent.parent / "dist"
-        _bundled_dist = Path(__file__).resolve().parent.parent / "web_studio" / "dist"
-        if _monorepo_dist.is_dir() and (_monorepo_dist / "index.html").is_file():
-            _studio_dir = _monorepo_dist
-        else:
-            _studio_dir = _bundled_dist
+        _studio_dir = Path(__file__).resolve().parent.parent / "web_studio" / "dist"
 
     if _studio_dir.is_dir() and (_studio_dir / "index.html").is_file():
         _studio_root = _studio_dir.resolve()
@@ -790,8 +778,9 @@ def create_app(
     else:
         logger.info("Web Studio bundle not found at %s; skipping /studio mount", _studio_dir)
 
-    # MCP endpoint — serves 5 tools (search, read, store, forget, health)
-    # via streamable HTTP for Claude Code and other MCP clients.
+    # MCP endpoint — serves 16 tools (find, search, recall, read, write, edit,
+    # list, tree, remember, add_resource, list_watches, cancel_watch, grep,
+    # glob, forget, health) via streamable HTTP for MCP clients.
     from starlette.routing import Match, Route
 
     from openviking.server.mcp_endpoint import create_mcp_app
