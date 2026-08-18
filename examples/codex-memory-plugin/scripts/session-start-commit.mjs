@@ -1,0 +1,452 @@
+#!/usr/bin/env node
+
+/**
+ * SessionStart hook for Codex.
+ *
+ * Triggers (matcher = "clear|startup|resume" in hooks.json):
+ *   - source=startup → fresh codex CLI / `/new` / zouk daemon spawn-without-sessionId
+ *   - source=clear   → `/clear` (orphans the current process's previous session)
+ *   - source=resume  → `/resume` or short reconnect (no commit/sweep;
+ *     may inject latest archive summary if the live OV session was already committed)
+ *
+ * Every source injects the shared OpenViking profile block unless
+ * OPENVIKING_NO_AUTO_INJECT=1. The block contains profile.md plus
+ * abstract-annotated indexes of preferences/ and entities/, capped by
+ * OPENVIKING_PROFILE_TOKEN_BUDGET with the shared CJK-aware estimator.
+ *
+ * Behavior (see DESIGN.md §3 — "SessionStart source=startup, heuristic"):
+ *   On `startup` or `clear`, run the active-window heuristic over state files
+ *   excluding the new session_id:
+ *     - 0 recently-active     → no-op
+ *     - 1 recently-active     → commit it (the just-ended session)
+ *     - ≥2 recently-active    → skip; rely on idle TTL
+ *   "Recently-active" means lastUpdatedAt within ACTIVE_WINDOW_MS (default 2 min).
+ *
+ *   At the tail (regardless of which branch above ran), run an idle-TTL sweep:
+ *   any state file (including the new session_id, but in practice it's just
+ *   been created and is fresh) older than IDLE_TTL_MS (default 30 min) gets
+ *   committed and cleared. This catches SIGTERM/Ctrl+C/`/exit` exits and
+ *   crashes that left state files orphaned.
+ *
+ * Commit failure handling:
+ *   On any /commit failure (OV unreachable, non-2xx, timeout) we DO NOT call
+ *   clearState — we keep the state file with ovSessionId still set so the
+ *   next sweep retries. A transient OV outage shouldn't lose memory.
+ *
+ * Output may contain hookSpecificOutput.additionalContext for profile/archive
+ * injection and systemMessage for commit status at the same time.
+ */
+
+import { loadConfig } from "./config.mjs";
+import { createLogger } from "./debug-log.mjs";
+import { detectRecallCompressorProfile } from "./recall-compressor-profile.mjs";
+import { clearState, deriveOvSessionId, listStates, loadState, saveState } from "./session-state.mjs";
+import { buildProfileBlock } from "./shared/profile-inject.mjs";
+import { resolveEffectivePeerId } from "./shared/workspace-peer.mjs";
+
+const cfg = loadConfig();
+const { log, logError } = createLogger("session-start");
+let activePeerId = cfg.peerId || "";
+
+const ACTIVE_WINDOW_MS = (() => {
+  const v = Number(process.env.OPENVIKING_CODEX_ACTIVE_WINDOW_MS);
+  return Number.isFinite(v) && v > 0 ? Math.floor(v) : 120_000;
+})();
+
+const IDLE_TTL_MS = (() => {
+  const v = Number(process.env.OPENVIKING_CODEX_IDLE_TTL_MS);
+  return Number.isFinite(v) && v > 0 ? Math.floor(v) : 1_800_000;
+})();
+
+function output(obj) {
+  process.stdout.write(JSON.stringify(obj) + "\n");
+}
+
+function noop(message) {
+  output(message ? { systemMessage: message } : {});
+}
+
+function emitSessionStartOutput({ contexts = [], systemMessage = "" } = {}) {
+  const additionalContext = contexts.filter(Boolean).join("\n\n");
+  const response = {};
+  if (additionalContext) {
+    response.hookSpecificOutput = {
+      hookEventName: "SessionStart",
+      additionalContext,
+    };
+  }
+  if (systemMessage) response.systemMessage = systemMessage;
+  output(response);
+}
+
+function responseTraceId(body) {
+  return body?.result?.trace_id || body?.error?.trace_id || body?.trace_id || undefined;
+}
+
+async function requestJSON(path, init = {}, options = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), cfg.captureTimeoutMs);
+  try {
+    const headers = { "Content-Type": "application/json" };
+    if (cfg.apiKey) {
+      headers["Authorization"] = `Bearer ${cfg.apiKey}`;
+      headers["X-API-Key"] = cfg.apiKey;
+    }
+    if (cfg.sendIdentityHeaders && cfg.account) headers["X-OpenViking-Account"] = cfg.account;
+    if (cfg.sendIdentityHeaders && cfg.user) headers["X-OpenViking-User"] = cfg.user;
+    const actorPeerId = options.actorPeerId ?? activePeerId;
+    if (actorPeerId) headers["X-OpenViking-Actor-Peer"] = actorPeerId;
+    if (cfg.userAgent) headers["User-Agent"] = cfg.userAgent;
+    const res = await fetch(`${cfg.baseUrl}${path}`, { ...init, headers, signal: controller.signal });
+    const body = await res.json().catch(() => null);
+    if (!body) return { ok: false, status: res.status };
+    const traceId = responseTraceId(body);
+    if (!res.ok || body.status === "error") {
+      return { ok: false, status: res.status, error: body.error || body, traceId };
+    }
+    return { ok: true, status: res.status, result: body.result ?? body, traceId };
+  } catch (error) {
+    return { ok: false, status: 0, error: { message: error?.message || String(error) } };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function fetchJSON(path, init = {}, options = {}) {
+  const response = await requestJSON(path, init, options);
+  return response.ok ? response.result : null;
+}
+
+async function commitOvSession(ovSessionId) {
+  if (!ovSessionId) return null;
+  return requestJSON(
+    `/api/v1/sessions/${encodeURIComponent(ovSessionId)}/commit`,
+    { method: "POST", body: JSON.stringify({}) },
+  );
+}
+
+function truncateText(text, maxChars) {
+  const value = String(text || "").trim();
+  if (value.length <= maxChars) return value;
+  return `${value.slice(0, Math.max(0, maxChars - 20)).trimEnd()}\n[truncated]`;
+}
+
+function formatResumeArchiveContext(ovSessionId, context) {
+  const overview = String(context?.latest_archive_overview || "").trim();
+  if (!overview) return "";
+  const archiveUri = `viking://user/sessions/${ovSessionId}/history/`;
+  const body = truncateText(overview, cfg.resumeArchiveMaxChars);
+  return [
+    "OpenViking session archive digest:",
+    `Latest committed archive for resumed Codex session ${ovSessionId}:`,
+    body,
+    "",
+    `More detail: use the OpenViking MCP read/search tools with ${archiveUri} if you need exact prior commands, files, tool outputs, or messages.`,
+  ].join("\n");
+}
+
+function wrapResumeContext(additionalContext) {
+  const body = String(additionalContext || "")
+    .replace(/<\/?openviking-context\b[^>]*>/gi, "openviking context marker")
+    .trim();
+  if (!body) return "";
+  return [
+    '<openviking-context source="session-resume" format="archive-digest">',
+    body,
+    "</openviking-context>",
+  ].join("\n");
+}
+
+function wrapProfileContext(profileBlock) {
+  if (!profileBlock) return "";
+  return [
+    '<openviking-context source="session-start">',
+    profileBlock,
+    "</openviking-context>",
+  ].join("\n");
+}
+
+async function buildSessionProfileContext() {
+  if (cfg.noAutoInject) {
+    log("skip", { stage: "profile_inject", reason: "disabled" });
+    return "";
+  }
+  try {
+    const profile = await buildProfileBlock(
+      requestJSON,
+      cfg.profileTokenBudget,
+      activePeerId,
+    );
+    if (!profile?.block) {
+      log("skip", { stage: "profile_inject", reason: "no profile content" });
+      return "";
+    }
+    log("profile_inject", {
+      chars: profile.chars,
+      tokens: profile.tokens,
+      profileChars: profile.profileChars,
+      prefCount: profile.prefCount,
+      entCount: profile.entCount,
+      droppedPref: profile.droppedPref,
+      droppedEnt: profile.droppedEnt,
+    });
+    return wrapProfileContext(profile.block);
+  } catch (error) {
+    logError("profile_inject", error);
+    return "";
+  }
+}
+
+async function buildResumeArchiveContext(newSessionId) {
+  if (!cfg.resumeArchiveInject) {
+    log("skip", { stage: "resume_archive", reason: "disabled" });
+    return "";
+  }
+
+  const state = await loadState(newSessionId);
+  if (state.ovSessionId) {
+    log("skip", {
+      stage: "resume_archive",
+      reason: "live OV session still open",
+      ovSessionId: state.ovSessionId,
+    });
+    return "";
+  }
+
+  const ovSessionId = deriveOvSessionId(newSessionId);
+  const context = await fetchJSON(
+    `/api/v1/sessions/${encodeURIComponent(ovSessionId)}/context?token_budget=${cfg.resumeArchiveTokenBudget}`,
+  );
+  const additionalContext = formatResumeArchiveContext(ovSessionId, context);
+  if (!additionalContext) {
+    log("skip", { stage: "resume_archive", reason: "no archive overview", ovSessionId });
+    return "";
+  }
+
+  log("resume_archive_inject", {
+    ovSessionId,
+    chars: additionalContext.length,
+    tokenBudget: cfg.resumeArchiveTokenBudget,
+  });
+  return wrapResumeContext(additionalContext);
+}
+
+/**
+ * Commit and clear a single state file. On commit failure, preserve state
+ * (don't call clearState) so the next sweep retries.
+ *
+ * Returns { committed: bool, ovSessionId: string|null }.
+ */
+async function commitAndClear(state, reason) {
+  if (state.ovSessionId) {
+    const ovSessionId = state.ovSessionId;
+    const commit = await commitOvSession(state.ovSessionId);
+    if (!commit?.ok) {
+      log("commit", {
+        reason,
+        codexSessionId: state.codexSessionId,
+        ovSessionId: state.ovSessionId,
+        ok: false,
+        status: commit?.status,
+        trace_id: commit?.traceId,
+        error: commit?.error?.message || commit?.error?.code,
+      });
+      return { committed: false, ovSessionId: null, traceId: commit?.traceId || "" };
+    }
+    const traceId = commit.traceId || commit.result?.trace_id || "";
+    log("commit", {
+      reason,
+      codexSessionId: state.codexSessionId,
+      ovSessionId,
+      archived: commit.result?.archived ?? false,
+      taskId: commit.result?.task_id,
+      status: commit.result?.status,
+      trace_id: traceId || undefined,
+    });
+    await clearState(state.codexSessionId);
+    return { committed: true, ovSessionId, traceId };
+  }
+  // No OV session attached — nothing to commit on the server, but the local
+  // state file is still stale and should be removed.
+  log("clear_no_ov", { reason, codexSessionId: state.codexSessionId });
+  await clearState(state.codexSessionId);
+  return { committed: true, ovSessionId: null, traceId: "" };
+}
+
+function describeCommittedSessions(commits) {
+  if (commits.length === 1) {
+    return `OpenViking session ${commits[0].ovSessionId} is committed` +
+      (commits[0].traceId ? ` (trace_id=${commits[0].traceId})` : "");
+  }
+  const ovSessionIds = commits.map((item) => item.ovSessionId);
+  if (ovSessionIds.length > 1) {
+    const traceIds = commits.map((item) => item.traceId).filter(Boolean);
+    return `OpenViking sessions ${ovSessionIds.join(", ")} are committed` +
+      (traceIds.length ? ` (trace_ids=${traceIds.join(",")})` : "");
+  }
+  return "OpenViking session state is cleared";
+}
+
+async function main() {
+  let input;
+  try {
+    const chunks = [];
+    for await (const chunk of process.stdin) chunks.push(chunk);
+    input = JSON.parse(Buffer.concat(chunks).toString());
+  } catch {
+    log("skip", { stage: "stdin_parse", reason: "invalid input" });
+    noop();
+    return;
+  }
+
+  const source = input.source || "unknown";
+  const newSessionId = input.session_id || "unknown";
+  const cwd = typeof input.cwd === "string" && input.cwd.trim() ? input.cwd : process.cwd();
+  const effectivePeer = resolveEffectivePeerId({ cfg, cwd });
+  activePeerId = effectivePeer.peerId;
+  if (newSessionId !== "unknown") {
+    const state = await loadState(newSessionId);
+    await saveState({
+      ...state,
+      workspacePeerId: effectivePeer.source === "workspace" ? effectivePeer.peerId : "",
+    });
+  }
+  log("start", {
+    source,
+    newSessionId,
+    activeWindowMs: ACTIVE_WINDOW_MS,
+    idleTtlMs: IDLE_TTL_MS,
+    peerSource: effectivePeer.source,
+  });
+
+  try {
+    await detectRecallCompressorProfile(cfg, { log, logError });
+  } catch (err) {
+    logError("compress_profile_detect_uncaught", err);
+  }
+
+  if (source === "resume") {
+    const health = await fetchJSON("/health");
+    if (!health) {
+      logError("health_check", "server unreachable; skipping profile + archive injection");
+      noop();
+      return;
+    }
+    const [profileContext, archiveContext] = await Promise.all([
+      buildSessionProfileContext(),
+      buildResumeArchiveContext(newSessionId),
+    ]);
+    emitSessionStartOutput({ contexts: [profileContext, archiveContext] });
+    return;
+  }
+
+  // Other non-startup sources are hard no-ops. We don't sweep there, because
+  // reconnect-like sources may fire often and sweep should stay tied to a new
+  // session boundary.
+  if (source !== "startup" && source !== "clear") {
+    log("skip", { stage: "source_check", reason: `source=${source} (only startup|clear act)` });
+    noop();
+    return;
+  }
+
+  const health = await fetchJSON("/health");
+  if (!health) {
+    logError("health_check", "server unreachable; skipping profile injection + commit + sweep");
+    noop();
+    return;
+  }
+
+  const profileContext = await buildSessionProfileContext();
+  const now = Date.now();
+  const states = await listStates();
+
+  // -------------------------------------------------------------------------
+  // Active-window heuristic (DESIGN.md §3)
+  // -------------------------------------------------------------------------
+  const otherStates = states.filter(
+    (s) => s?.codexSessionId && s.codexSessionId !== newSessionId,
+  );
+
+  const recentlyActive = otherStates.filter(
+    (s) => typeof s.lastUpdatedAt === "number"
+      && (now - s.lastUpdatedAt) <= ACTIVE_WINDOW_MS,
+  );
+
+  let heuristicCommitted = 0;
+  const heuristicCommits = [];
+  const skippedSessionIds = new Set();
+
+  if (recentlyActive.length === 0) {
+    log("heuristic", { branch: "0_active", action: "noop", otherStates: otherStates.length });
+  } else if (recentlyActive.length === 1) {
+    const target = recentlyActive[0];
+    log("heuristic", {
+      branch: "1_active",
+      action: "commit",
+      codexSessionId: target.codexSessionId,
+      ovSessionId: target.ovSessionId,
+    });
+    const r = await commitAndClear(target, "heuristic_1_active");
+    if (r.committed) {
+      heuristicCommitted += 1;
+      if (r.ovSessionId) heuristicCommits.push(r);
+    }
+  } else {
+    log("heuristic", {
+      branch: ">=2_active",
+      action: "skip; rely on idle TTL",
+      activeCount: recentlyActive.length,
+      activeIds: recentlyActive.map((s) => s.codexSessionId),
+    });
+    for (const s of recentlyActive) skippedSessionIds.add(s.codexSessionId);
+  }
+
+  // -------------------------------------------------------------------------
+  // Idle TTL sweep (tail) — applies to ALL state files including ones we just
+  // skipped above (≥2 active path). We re-list because the heuristic branch
+  // may have removed entries.
+  // -------------------------------------------------------------------------
+  const postHeuristic = await listStates();
+  let idleCommitted = 0;
+  const idleCommits = [];
+
+  for (const s of postHeuristic) {
+    if (!s?.codexSessionId) continue;
+    if (typeof s.lastUpdatedAt !== "number") continue;
+    if ((now - s.lastUpdatedAt) <= IDLE_TTL_MS) continue;
+    log("idle_sweep", {
+      codexSessionId: s.codexSessionId,
+      ovSessionId: s.ovSessionId,
+      ageMs: now - s.lastUpdatedAt,
+    });
+    const r = await commitAndClear(s, "idle_ttl");
+    if (r.committed) {
+      idleCommitted += 1;
+      if (r.ovSessionId) idleCommits.push(r);
+    }
+  }
+
+  const totalCommitted = heuristicCommitted + idleCommitted;
+  const commits = [...heuristicCommits, ...idleCommits];
+  const ovSessionIds = commits.map((item) => item.ovSessionId);
+
+  log("done", {
+    source,
+    heuristicCommitted,
+    idleCommitted,
+    totalCommitted,
+    ovSessionIds,
+    skipped: [...skippedSessionIds],
+  });
+
+  if (totalCommitted > 0) {
+    emitSessionStartOutput({
+      contexts: [profileContext],
+      systemMessage: describeCommittedSessions(commits),
+    });
+  } else {
+    emitSessionStartOutput({ contexts: [profileContext] });
+  }
+}
+
+main().catch((err) => { logError("uncaught", err); noop(); });

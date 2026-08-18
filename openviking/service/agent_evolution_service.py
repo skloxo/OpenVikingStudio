@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import date, datetime, time, timedelta, timezone
 from typing import TYPE_CHECKING, Any, Optional
 
 from openviking.core.namespace import canonicalize_uri
@@ -15,7 +16,7 @@ from openviking.session.memory.experience_lineage import (
     experience_source_tag,
     trajectory_outcome_tag,
 )
-from openviking.storage.expr import And, Eq, PathScope
+from openviking.storage.expr import And, Eq, PathScope, TimeRange
 from openviking.storage.viking_fs import VikingFS
 from openviking_cli.exceptions import InvalidArgumentError, NotInitializedError
 
@@ -32,6 +33,61 @@ _TRAJECTORY_OUTPUT_FIELDS = [
     "created_at",
     "updated_at",
 ]
+
+
+def _trajectory_created_at_range(
+    start_date: Optional[str],
+    end_date: Optional[str],
+) -> Optional[TimeRange]:
+    """Build a UTC, end-date-inclusive filter over trajectory creation time."""
+    normalized_start = (start_date or "").strip()
+    normalized_end = (end_date or "").strip()
+    if not normalized_start and not normalized_end:
+        return None
+
+    def parse_date(value: str, field: str) -> date:
+        try:
+            parsed = date.fromisoformat(value)
+        except ValueError as exc:
+            raise InvalidArgumentError(f"{field} must be a valid YYYY-MM-DD date") from exc
+        if parsed.isoformat() != value:
+            raise InvalidArgumentError(f"{field} must use YYYY-MM-DD format")
+        return parsed
+
+    start = parse_date(normalized_start, "start_date") if normalized_start else None
+    end = parse_date(normalized_end, "end_date") if normalized_end else None
+    if start is not None and end is not None and start > end:
+        raise InvalidArgumentError("start_date must be earlier than or equal to end_date")
+
+    start_time = (
+        datetime.combine(start, time.min, tzinfo=timezone.utc).isoformat()
+        if start is not None
+        else None
+    )
+    # TimeRange uses an exclusive upper bound. Advancing one day keeps end_date inclusive.
+    end_time = (
+        datetime.combine(end + timedelta(days=1), time.min, tzinfo=timezone.utc).isoformat()
+        if end is not None
+        else None
+    )
+    return TimeRange("created_at", start=start_time, end=end_time)
+
+
+def _experience_trajectory_conditions(
+    *,
+    trajectory_root: str,
+    experience_uri: str,
+    created_at_range: Optional[TimeRange],
+) -> list[Any]:
+    conditions: list[Any] = [
+        PathScope("uri", trajectory_root, depth=1),
+        Eq("context_type", "memory"),
+        Eq("level", 2),
+        Eq("search_tags", experience_source_tag(experience_uri)),
+    ]
+    if created_at_range is not None:
+        conditions.append(created_at_range)
+    return conditions
 
 
 class AgentEvolutionService:
@@ -87,24 +143,26 @@ class AgentEvolutionService:
         ctx: RequestContext,
         limit: int = DEFAULT_TRAJECTORY_PAGE_LIMIT,
         offset: int = 0,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
     ) -> dict[str, Any]:
         """List trajectories produced by commits that read an Experience."""
         if limit < 1 or limit > MAX_TRAJECTORY_PAGE_LIMIT:
             raise InvalidArgumentError(f"limit must be between 1 and {MAX_TRAJECTORY_PAGE_LIMIT}")
         if offset < 0:
             raise InvalidArgumentError("offset must be greater than or equal to 0")
+        created_at_range = _trajectory_created_at_range(start_date, end_date)
 
         canonical_uri, trajectory_root, vikingdb = await self._prepare_experience_query(
             experience_uri=experience_uri,
             ctx=ctx,
         )
         lineage_filter = And(
-            [
-                PathScope("uri", trajectory_root, depth=1),
-                Eq("context_type", "memory"),
-                Eq("level", 2),
-                Eq("search_tags", experience_source_tag(canonical_uri)),
-            ]
+            _experience_trajectory_conditions(
+                trajectory_root=trajectory_root,
+                experience_uri=canonical_uri,
+                created_at_range=created_at_range,
+            )
         )
         records, total = await asyncio.gather(
             vikingdb.filter(
@@ -136,18 +194,20 @@ class AgentEvolutionService:
         *,
         experience_uri: str,
         ctx: RequestContext,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
     ) -> dict[str, Any]:
         """Count application trajectories by outcome for an Experience."""
+        created_at_range = _trajectory_created_at_range(start_date, end_date)
         canonical_uri, trajectory_root, vikingdb = await self._prepare_experience_query(
             experience_uri=experience_uri,
             ctx=ctx,
         )
-        base_conditions = [
-            PathScope("uri", trajectory_root, depth=1),
-            Eq("context_type", "memory"),
-            Eq("level", 2),
-            Eq("search_tags", experience_source_tag(canonical_uri)),
-        ]
+        base_conditions = _experience_trajectory_conditions(
+            trajectory_root=trajectory_root,
+            experience_uri=canonical_uri,
+            created_at_range=created_at_range,
+        )
         counts = await asyncio.gather(
             *[
                 vikingdb.count(
