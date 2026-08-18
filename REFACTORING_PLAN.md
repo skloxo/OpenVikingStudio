@@ -86,9 +86,26 @@
   - [ ] 重启 `openviking.service` 后历史累计与时序数据 100% 完整连续；
   - [ ] 全量 4 大模型指标完整覆盖，端到端测试与前端构建 0 报错。
 
+### 📌 P1-2: [ ] [TASK-SKILL-METRICS-PERSIST-01] 技能中心与 Harness 遥测时序分桶持久化与决策优化引擎 (Skill & Harness Telemetry Time-Series Persistence Engine)
+- **模块**：后端 Observability / System Router (`system.py`, SQLite 遥测审计表) + 前端 Skills Route (`src/routes/skills`)
+- **工单 ID**：`TASK-SKILL-METRICS-PERSIST-01` ｜ **优先级**：P1
+- **目标**：对技能中心 6 大核心遥测指标（隐式自动唤醒率、技能执行成功率、VK集中通道收效率、资产活跃复用率、Context 提示词压缩率、Harness 自演进成果）进行**时间序列（1h / 1d）分桶物理落盘持久化**，彻底摆脱进程生命周期限制，为技能生命周期治理、Agent 调度策略改进与服务调优提供坚实的数据证据。
+- **技术方案与交付内容**：
+  - [ ] **技能调用与遥测时序持久化表**：在 `_system/usage_audit/` 中建立 `skill_telemetry_audit` 表，记录每次技能被调用的明细（`timestamp_bucket`, `skill_name`, `trigger_type: implicit/explicit/mcp`, `duration_ms`, `tokens_saved`, `compression_ratio`, `is_success`）；
+  - [ ] **多周期遥测 API**：扩展 `/api/v1/system/harness_metrics?window=24h|7d|30d|all`，支持按小时/按天分桶拉取历史趋势与聚合数据；
+  - [ ] **服务调优决策数据支撑 (Decision Support Insights)**：
+    - **资产健康度**：自动输出 Top 20 高频技能与 0 调用僵尸技能清单，指导资产瘦身；
+    - **意图唤醒漏斗**：统计隐式意图唤醒 vs 显式指定比例，量化 Agent 自主调度精度；
+    - **压缩收益时序**：记录 LLMLingua-2 实际 Token 节省走势，为动态调整压缩阈值提供实测基准；
+  - [ ] **前端大盘多周期切换**：技能中心顶部支持在 `24H Rolling`、`近 7 天`、`近 30 天`、`全量历史` 之间平滑切换查看趋势。
+- **物理验收条件**：
+  - [ ] 技能遥测数据按时间分桶落盘，服务重启后历史数据 100% 连续；
+  - [ ] 支持 24h / 7d / 30d 多维度查询且性能响应 < 50ms；
+  - [ ] 单元测试与前端构建 0 报错。
+
 ---
 
-### 📌 P1-2: [ ] [TASK-RETRIEVAL-TREE-01] 检索测试台 `/retrieval` 页 L0/L1 白盒检索轨迹树与得分渲染
+### 📌 P1-3: [ ] [TASK-RETRIEVAL-TREE-01] 检索测试台 `/retrieval` 页 L0/L1 白盒检索轨迹树与得分渲染
 - **模块**：OpenVikingStudio 前端 (`src/routes/retrieval`) ｜ **优先级**：P1
 - **目标**：在 `/retrieval` 页面为每次检索结果渲染可折叠的 **L0/L1 白盒检索轨迹树**，展示 Viking 向量匹配路径与相似度分值（如 `Score: 0.985`）。
 - **验收标准**：
