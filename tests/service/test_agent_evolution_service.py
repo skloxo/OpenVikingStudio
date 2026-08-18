@@ -12,7 +12,7 @@ from openviking.session.memory.experience_lineage import (
     experience_source_tag,
     trajectory_outcome_tag,
 )
-from openviking.storage.expr import And, Eq, PathScope
+from openviking.storage.expr import And, Eq, PathScope, TimeRange
 from openviking_cli.exceptions import InvalidArgumentError
 from openviking_cli.session.user_id import UserIdentifier
 
@@ -89,6 +89,53 @@ async def test_list_trajectories_by_experience_rejects_other_user_uri():
         await service.list_trajectories_by_experience(
             experience_uri="viking://user/bob/memories/experiences/exchange.md",
             ctx=_ctx(),
+        )
+
+
+@pytest.mark.asyncio
+async def test_list_trajectories_by_experience_filters_created_at_by_utc_date():
+    experience_uri = "viking://user/alice/memories/experiences/exchange.md"
+    viking_fs = Mock()
+    viking_fs.stat = AsyncMock(return_value={"isDir": False})
+    vikingdb = Mock()
+    vikingdb.filter = AsyncMock(return_value=[])
+    vikingdb.count = AsyncMock(return_value=0)
+    service = AgentEvolutionService(viking_fs=viking_fs, vikingdb=vikingdb)
+
+    await service.list_trajectories_by_experience(
+        experience_uri=experience_uri,
+        ctx=_ctx(),
+        start_date="2026-08-01",
+        end_date="2026-08-10",
+    )
+
+    expected_filter = And(
+        [
+            PathScope("uri", "viking://user/alice/memories/trajectories", depth=1),
+            Eq("context_type", "memory"),
+            Eq("level", 2),
+            Eq("search_tags", experience_source_tag(experience_uri)),
+            TimeRange(
+                "created_at",
+                start="2026-08-01T00:00:00+00:00",
+                end="2026-08-11T00:00:00+00:00",
+            ),
+        ]
+    )
+    assert vikingdb.filter.await_args.kwargs["filter"] == expected_filter
+    assert vikingdb.count.await_args.kwargs["filter"] == expected_filter
+
+
+@pytest.mark.asyncio
+async def test_list_trajectories_by_experience_rejects_invalid_date_range():
+    service = AgentEvolutionService(viking_fs=Mock(), vikingdb=Mock())
+
+    with pytest.raises(InvalidArgumentError, match="start_date must be earlier"):
+        await service.list_trajectories_by_experience(
+            experience_uri="viking://user/alice/memories/experiences/exchange.md",
+            ctx=_ctx(),
+            start_date="2026-08-11",
+            end_date="2026-08-10",
         )
 
 
@@ -177,6 +224,39 @@ async def test_get_experience_outcome_distribution_counts_two_tags_on_same_list_
                 Eq("context_type", "memory"),
                 Eq("level", 2),
                 Eq("search_tags", experience_source_tag(experience_uri)),
+                Eq("search_tags", trajectory_outcome_tag(outcome)),
+            ]
+        )
+
+
+@pytest.mark.asyncio
+async def test_get_experience_outcome_distribution_filters_created_at_by_utc_date():
+    experience_uri = "viking://user/alice/memories/experiences/exchange.md"
+    viking_fs = Mock()
+    viking_fs.stat = AsyncMock(return_value={"isDir": False})
+    vikingdb = Mock()
+    vikingdb.count = AsyncMock(return_value=0)
+    service = AgentEvolutionService(viking_fs=viking_fs, vikingdb=vikingdb)
+
+    await service.get_experience_outcome_distribution(
+        experience_uri=experience_uri,
+        ctx=_ctx(),
+        start_date="2026-08-10",
+        end_date="2026-08-10",
+    )
+
+    for call, outcome in zip(vikingdb.count.await_args_list, TRAJECTORY_OUTCOMES, strict=True):
+        assert call.kwargs["filter"] == And(
+            [
+                PathScope("uri", "viking://user/alice/memories/trajectories", depth=1),
+                Eq("context_type", "memory"),
+                Eq("level", 2),
+                Eq("search_tags", experience_source_tag(experience_uri)),
+                TimeRange(
+                    "created_at",
+                    start="2026-08-10T00:00:00+00:00",
+                    end="2026-08-11T00:00:00+00:00",
+                ),
                 Eq("search_tags", trajectory_outcome_tag(outcome)),
             ]
         )

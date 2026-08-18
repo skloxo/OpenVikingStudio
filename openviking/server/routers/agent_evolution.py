@@ -25,6 +25,8 @@ async def list_experience_trajectories(
         le=MAX_TRAJECTORY_PAGE_LIMIT,
     ),
     offset: int = Query(0, ge=0),
+    start_date: str | None = Query(None, description="UTC start date, inclusive (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="UTC end date, inclusive (YYYY-MM-DD)"),
     _ctx: RequestContext = Depends(get_request_context),
 ):
     """List trajectories produced by commits that read an Experience."""
@@ -34,6 +36,8 @@ async def list_experience_trajectories(
         ctx=_ctx,
         limit=limit,
         offset=offset,
+        start_date=start_date,
+        end_date=end_date,
     )
     return Response(status="ok", result=result)
 
@@ -41,6 +45,8 @@ async def list_experience_trajectories(
 @router.get("/experiences/outcomes")
 async def get_experience_outcome_distribution(
     experience_uri: str = Query(..., description="Experience file URI"),
+    start_date: str | None = Query(None, description="UTC start date, inclusive (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="UTC end date, inclusive (YYYY-MM-DD)"),
     _ctx: RequestContext = Depends(get_request_context),
 ):
     """Count application trajectories by outcome for an Experience."""
@@ -48,5 +54,7 @@ async def get_experience_outcome_distribution(
     result = await service.agent_evolution.get_experience_outcome_distribution(
         experience_uri=experience_uri,
         ctx=_ctx,
+        start_date=start_date,
+        end_date=end_date,
     )
     return Response(status="ok", result=result)

@@ -71,7 +71,7 @@ async def _embedding_probe(embedder) -> str:
 async def health_check(request: Request):
     """Health check endpoint (no authentication required)."""
     import openviking
-    __version__ = getattr(openviking, "__version__", "1.3.5")
+    __version__ = getattr(openviking, "__version__", "1.3.6")
 
     result = {"status": "ok", "healthy": True, "version": __version__}
 
