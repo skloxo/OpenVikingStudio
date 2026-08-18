@@ -333,11 +333,6 @@ function MonitoringRoute() {
             <h1 className="text-2xl font-semibold tracking-tight">
               {t('title')}
             </h1>
-            {overview?.version ? (
-              <Badge variant="outline" className="font-mono font-normal">
-                {t('version', { version: overview.version })}
-              </Badge>
-            ) : null}
           </div>
           <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
             {t('description')}
