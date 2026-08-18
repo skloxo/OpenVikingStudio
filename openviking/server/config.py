@@ -1,0 +1,544 @@
+# Copyright (c) 2026 Beijing Volcano Engine Technology Co., Ltd.
+# SPDX-License-Identifier: AGPL-3.0
+"""Server configuration for OpenViking HTTP Server."""
+
+import sys
+from typing import Dict, List, Literal, Optional
+
+from pydantic import BaseModel, Field, ValidationError, field_validator
+
+# Import auth plugin registry for config validation
+from openviking.server.auth.ldap_config import LDAPConfig
+from openviking.server.auth.oidc_config import OIDCConfig
+from openviking.server.auth.registry import get_registry
+from openviking.server.identity import AuthMode
+from openviking_cli.utils import get_logger
+from openviking_cli.utils.config.config_loader import (
+    load_json_config,
+    resolve_config_path,
+)
+from openviking_cli.utils.config.config_utils import format_validation_error
+from openviking_cli.utils.config.consts import (
+    DEFAULT_CONFIG_DIR,
+    DEFAULT_OV_CONF,
+    OPENVIKING_CONFIG_ENV,
+    SYSTEM_CONFIG_DIR,
+)
+
+logger = get_logger(__name__)
+
+
+def _normalize_config_uri(value: Optional[str], field_name: str) -> Optional[str]:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a string")
+    uri = value.strip().rstrip("/")
+    if not uri:
+        raise ValueError(f"{field_name} must not be empty")
+    return uri
+
+
+class AddTargetsConfig(BaseModel):
+    """Add targets for resource and skill writes."""
+
+    resource_uri: Optional[str] = None
+    skill_uri: Optional[str] = None
+
+    model_config = {"extra": "forbid"}
+
+    @field_validator("resource_uri")
+    @classmethod
+    def validate_resource_uri(cls, value: Optional[str]) -> Optional[str]:
+        uri = _normalize_config_uri(value, "resource_uri")
+        if uri is None:
+            return None
+        from openviking.core.namespace import classify_uri, uri_parts
+        from openviking.core.uri_validation import validate_viking_uri
+        from openviking_cli.utils.uri import VikingURI
+
+        validate_viking_uri(uri, field_name="resource_uri")
+        normalized = VikingURI.normalize(uri).rstrip("/")
+        parts = uri_parts(normalized)
+        classification = classify_uri(normalized)
+        if parts[:1] == ["resources"] or (
+            parts[:1] == ["user"]
+            and classification.context_type == "resource"
+            and classification.content_index is not None
+        ):
+            return normalized
+        raise ValueError("resource_uri must be a resource directory URI")
+
+    @field_validator("skill_uri")
+    @classmethod
+    def validate_skill_uri(cls, value: Optional[str]) -> Optional[str]:
+        uri = _normalize_config_uri(value, "skill_uri")
+        if uri is None:
+            return None
+        from openviking_cli.utils.uri import VikingURI
+
+        normalized = VikingURI.normalize(uri).rstrip("/")
+        if normalized in {"viking://user/skills", "viking://agent/skills"}:
+            return normalized
+        raise ValueError("skill_uri must be viking://user/skills or viking://agent/skills")
+
+
+class AgentEvolutionConfig(BaseModel):
+    """Default Agent Evolution setting for accounts without an override."""
+
+    enabled: bool = False
+
+    model_config = {"extra": "forbid"}
+
+
+class DeprecatedUserAgentEvolutionConfig(BaseModel):
+    """Parse-only compatibility for legacy per-user configuration files."""
+
+    enabled: Optional[bool] = None
+
+    model_config = {"extra": "forbid"}
+
+
+class UserConfig(BaseModel):
+    """User configuration values that can be defaulted or initialized."""
+
+    add_targets: AddTargetsConfig = Field(default_factory=AddTargetsConfig)
+    agent_evolution: DeprecatedUserAgentEvolutionConfig = Field(
+        default_factory=DeprecatedUserAgentEvolutionConfig,
+        exclude=True,
+    )
+
+    model_config = {"extra": "forbid"}
+
+
+class MetricsAccountDimensionConfig(BaseModel):
+    """Account-dimension configuration for metrics label injection."""
+
+    # Enabled by default, but still allowlist-gated to avoid accidental high-cardinality exposure.
+    enabled: bool = True
+    max_active_accounts: int = 100
+    metric_allowlist: List[str] = Field(default_factory=list)
+
+    model_config = {"extra": "forbid"}
+
+
+class PrometheusExporterConfig(BaseModel):
+    """Prometheus exporter configuration."""
+
+    enabled: bool = True
+
+    model_config = {"extra": "forbid"}
+
+
+class OTelExporterConfig(BaseModel):
+    """OpenTelemetry exporter configuration."""
+
+    class TLSConfig(BaseModel):
+        """TLS configuration for OTLP exporters."""
+
+        insecure: bool = False
+
+        model_config = {"extra": "forbid"}
+
+    enabled: bool = False
+    protocol: str = "grpc"  # "grpc", "http", or "local" for traces
+    tls: TLSConfig = Field(default_factory=TLSConfig)
+    endpoint: str = "localhost:4317"  # gRPC default: 4317; HTTP default: 4318
+    service_name: str = "openviking-server"
+    export_interval_ms: int = 10000
+    headers: Dict[str, str] = Field(default_factory=dict)
+    local_path: str = "~/.openviking/logs/traces.jsonl"
+    local_rotation_mb: int = Field(default=40, gt=0)
+    local_backup_count: int = Field(default=2, ge=0)
+
+    model_config = {"extra": "forbid"}
+
+
+class MetricsExportersConfig(BaseModel):
+    """Metrics exporters configuration."""
+
+    prometheus: PrometheusExporterConfig = Field(default_factory=PrometheusExporterConfig)
+    otel: OTelExporterConfig = Field(default_factory=OTelExporterConfig)
+
+    model_config = {"extra": "forbid"}
+
+
+class MetricsConfig(BaseModel):
+    """Metrics subsystem configuration."""
+
+    enabled: bool = False
+    bot_data_path: Optional[str] = None
+    account_dimension: MetricsAccountDimensionConfig = Field(
+        default_factory=MetricsAccountDimensionConfig
+    )
+    exporters: MetricsExportersConfig = Field(default_factory=MetricsExportersConfig)
+
+    model_config = {"extra": "forbid"}
+
+
+class UsageAuditConfig(BaseModel):
+    """Product usage and audit projection configuration."""
+
+    enabled: bool = True
+    backend: Literal["sqlite"] = "sqlite"
+    sqlite_path: Optional[str] = None
+    queue_size: int = Field(10_000, gt=0)
+    batch_size: int = Field(500, gt=0)
+    flush_interval_seconds: float = Field(1.0, gt=0)
+    shutdown_flush_timeout_seconds: float = Field(3.0, gt=0)
+    usage_retention_days: int = Field(14, ge=0)
+    audit_retention_days: int = Field(7, ge=0)
+    audit_retention_per_account: int = Field(1000, ge=0)
+    timezone: str = "local"
+    inventory_ttl_seconds: float = Field(10.0, ge=0)
+
+    model_config = {"extra": "forbid"}
+
+
+class UsageReporterSinkConfig(BaseModel):
+    """Usage reporter sink configuration."""
+
+    type: Literal["custom", "file_log"] = "custom"
+    class_path: Optional[str] = None
+    config: Dict[str, object] = Field(default_factory=dict)
+
+    model_config = {"extra": "forbid"}
+
+
+class UsageReporterConfig(BaseModel):
+    """Usage event reporter configuration."""
+
+    enabled: bool = False
+    extractors: List[Literal["memory_usage"]] = Field(default_factory=lambda: ["memory_usage"])
+    sinks: List[UsageReporterSinkConfig] = Field(default_factory=list)
+
+    model_config = {"extra": "forbid"}
+
+
+class TraceDumpBodyConfig(BaseModel):
+    """HTTP body dump configuration.
+
+    Attaches request/response bodies as attributes on the active trace span so
+    they can be inspected in trace UIs. Off by default — bodies may contain
+    secrets and high-cardinality content.
+    """
+
+    enabled: bool = False
+    max_bytes: int = 4096
+
+    model_config = {"extra": "forbid"}
+
+
+class ObservabilityConfig(BaseModel):
+    """Server-side observability configuration."""
+
+    metrics: MetricsConfig = Field(default_factory=MetricsConfig)
+    usage_audit: UsageAuditConfig = Field(default_factory=UsageAuditConfig)
+    traces: OTelExporterConfig = Field(default_factory=OTelExporterConfig)
+    logs: OTelExporterConfig = Field(default_factory=OTelExporterConfig)
+    dump_body: TraceDumpBodyConfig = Field(default_factory=TraceDumpBodyConfig)
+
+    model_config = {"extra": "forbid"}
+
+
+class TempUploadConfig(BaseModel):
+    """Temporary upload configuration."""
+
+    default_mode: Literal["local", "shared"] = "local"
+    shared_max_size_bytes: int = 512 * 1024 * 1024
+    shared_prefix: str = "viking://upload"
+
+    model_config = {"extra": "forbid"}
+
+
+class ToolOutputExternalizationConfig(BaseModel):
+    """External storage controls for oversized tool outputs."""
+
+    enabled: bool = True
+    threshold_chars: int = 20_000
+    preview_chars: int = 2_000
+    assistant_turn_inline_budget_chars: int = 100_000
+    assistant_turn_preview_budget_chars: int = 10_000
+    min_preview_chars: int = 1_000
+    aggregate_selection_strategy: Literal["largest_first"] = "largest_first"
+    failure_mode: Literal["reject", "preserve_raw", "preview_only"] = "preserve_raw"
+
+    model_config = {"extra": "forbid"}
+
+
+class SkillSourceConfig(BaseModel):
+    """Configuration for an individual skill scan source directory."""
+
+    path: str
+    category: str = "General"
+    source: str = "System"
+    scope: str = "user"
+
+    model_config = {"extra": "allow"}
+
+
+class SkillScannerConfig(BaseModel):
+    """Configuration for automated multi-source skill discovery and synchronization."""
+
+    auto_scan_on_startup: bool = True
+    rescan_interval_seconds: int = 300
+    sources: List[SkillSourceConfig] = Field(default_factory=list)
+    output_targets: List[str] = Field(default_factory=list)
+
+    model_config = {"extra": "allow"}
+
+
+class ServerConfig(BaseModel):
+    host: str = "127.0.0.1"
+    port: int = 1933
+    workers: int = 1
+    timeout_keep_alive: int = 5
+    auth_mode: Optional[str] = None  # If None, auto-detect based on root_api_key
+    root_api_key: Optional[str] = None
+    # OIDC/LDAP authentication configuration
+    oidc: Optional[OIDCConfig] = None
+    ldap: Optional[LDAPConfig] = None
+    profile_enabled: bool = False
+    cors_origins: List[str] = Field(default_factory=lambda: ["*"])
+    with_bot: bool = False  # Enable Bot API proxy to Vikingbot
+    bot_api_url: str = "http://localhost:18790"  # Vikingbot OpenAPIChannel URL (default port)
+    encryption_enabled: bool = False  # Whether file-level AES encryption is enabled
+    api_key_hashing_enabled: bool = False  # Whether API key Argon2id hashing is enabled (default: false, rely on file encryption)
+    observability: ObservabilityConfig = Field(default_factory=ObservabilityConfig)
+    usage_reporter: UsageReporterConfig = Field(default_factory=UsageReporterConfig)
+    public_base_url: Optional[str] = None
+    upload_signed_ttl_seconds: int = 600
+    temp_upload: TempUploadConfig = Field(default_factory=TempUploadConfig)
+    user_config_defaults: UserConfig = Field(default_factory=UserConfig)
+    agent_evolution: AgentEvolutionConfig = Field(default_factory=AgentEvolutionConfig)
+    tool_output_externalization: ToolOutputExternalizationConfig = Field(
+        default_factory=ToolOutputExternalizationConfig
+    )
+    skills: SkillScannerConfig = Field(default_factory=SkillScannerConfig)
+
+    model_config = {"extra": "forbid"}
+
+    def get_effective_auth_mode(self) -> str:
+        """Get effective auth mode, auto-detecting if not explicitly set.
+
+        - If root_api_key is configured (non-empty) and auth_mode is None: api_key
+        - If root_api_key is not configured and auth_mode is None: dev
+        """
+        auth_mode_text = str(self.auth_mode).strip() if self.auth_mode is not None else ""
+        if auth_mode_text:
+            return auth_mode_text
+
+        if self.root_api_key is not None and str(self.root_api_key).strip():
+            return AuthMode.API_KEY.value
+        return AuthMode.DEV.value
+
+
+def map_bind_host_to_loopback(host: str) -> str:
+    """Map a server *bind* host to a client-connectable *loopback* host.
+
+    ``server.host`` configures the address the server binds/listens on. A
+    wildcard bind address such as ``0.0.0.0`` (or IPv6 ``::``) is valid to
+    listen on but is *not* a destination a client can connect to. Clients that
+    derive a connect URL from the configured host (the bot proxy, the bot's
+    own config loader, ``doctor``) must translate the wildcard to loopback:
+
+    - ``"0.0.0.0"``, ``""``, ``"*"``   -> ``"127.0.0.1"``
+    - ``"::"``, ``"::0"``, ``"[::]"``  -> ``"[::1]"``
+    - bare IPv6 literals (e.g. ``"::1"``) are bracketed for URL syntax
+    - everything else passes through unchanged
+    """
+    host = str(host or "").strip()
+    if host in ("0.0.0.0", "", "*"):
+        return "127.0.0.1"
+    if host in ("::", "::0", "[::]"):
+        return "[::1]"
+    if ":" in host and not (host.startswith("[") and host.endswith("]")):
+        return f"[{host}]"
+    return host
+
+
+def get_server_url_from_server_data(server_data: object) -> str:
+    """Return the loopback URL clients use for the configured OpenViking server."""
+    if isinstance(server_data, dict):
+        host_value = server_data.get("host")
+        port_value = server_data.get("port")
+    else:
+        host_value = getattr(server_data, "host", None)
+        port_value = getattr(server_data, "port", None)
+    host = map_bind_host_to_loopback(str(host_value or "127.0.0.1"))
+    port = str(port_value or "1933").strip()
+    return f"http://{host}:{port}"
+
+
+def load_server_config(config_path: Optional[str] = None) -> ServerConfig:
+    """Load server configuration from ov.conf.
+
+    Reads the ``server`` section of ov.conf and also ensures the full
+    ov.conf is loaded into the OpenVikingConfigSingleton so that model
+    and storage settings are available.
+
+    Resolution chain:
+      1. Explicit ``config_path`` (from --config)
+      2. OPENVIKING_CONFIG_FILE environment variable
+      3. ~/.openviking/ov.conf
+
+    Args:
+        config_path: Explicit path to ov.conf.
+
+    Returns:
+        ServerConfig instance with defaults for missing fields.
+
+    Raises:
+        FileNotFoundError: If no config file is found.
+    """
+    path = resolve_config_path(config_path, OPENVIKING_CONFIG_ENV, DEFAULT_OV_CONF)
+    if path is None:
+        default_path_user = DEFAULT_CONFIG_DIR / DEFAULT_OV_CONF
+        default_path_system = SYSTEM_CONFIG_DIR / DEFAULT_OV_CONF
+        raise FileNotFoundError(
+            f"OpenViking configuration file not found.\n"
+            f"Please create {default_path_user} or {default_path_system}, or set {OPENVIKING_CONFIG_ENV}.\n"
+            f"See: https://openviking.ai/docs"
+        )
+
+    data = load_json_config(path)
+    server_data = data.get("server", {})
+    if server_data is None:
+        server_data = {}
+    if not isinstance(server_data, dict):
+        raise ValueError("Invalid server config: 'server' section must be an object")
+
+    # Convert auth_mode string — built-in enums are converted to their string
+    # value; custom modes are kept as-is for plugin extensibility.
+    if "auth_mode" in server_data and isinstance(server_data["auth_mode"], str):
+        try:
+            server_data["auth_mode"] = AuthMode(server_data["auth_mode"]).value
+        except ValueError:
+            # Custom auth mode — keep as string for plugin registration
+            pass
+
+    # Get encryption enabled from config data directly (for test compatibility)
+    encryption_enabled = data.get("encryption", {}).get("enabled", False)
+    # Get API key hashing enabled from config data directly (under encryption namespace)
+    # Default: false - rely on file-level encryption for API key protection
+    api_key_hashing_enabled = (
+        data.get("encryption", {}).get("api_key_hashing", {}).get("enabled", False)
+    )
+
+    # BREAKING CHANGE: Previously, encryption.enabled=true implicitly enabled API key Argon2id hashing.
+    # Now, you must explicitly configure encryption.api_key_hashing.enabled=true to enable hashing.
+    # When encryption.enabled=true but api_key_hashing.enabled=false (default),
+    # API keys will be stored in plaintext within AES-GCM encrypted files.
+    if encryption_enabled and not api_key_hashing_enabled:
+        logger.info(
+            "API key hashing is disabled while file encryption is enabled. "
+            "Previously, encryption.enabled=true implicitly enabled API key Argon2id hashing. "
+            "Now, API keys will be stored in plaintext within AES-GCM encrypted files. "
+            "To maintain the previous behavior, set encryption.api_key_hashing.enabled=true. "
+            "See documentation for more details."
+        )
+
+    # Extract skills scanner configuration from top-level or server-level section
+    skills_data = data.get("skills") or server_data.get("skills")
+    if skills_data is not None and isinstance(skills_data, dict):
+        server_data["skills"] = skills_data
+
+    try:
+        config = ServerConfig.model_validate(server_data)
+    except ValidationError as e:
+        raise ValueError(
+            f"Invalid server config in {path}:\n"
+            f"{format_validation_error(root_model=ServerConfig, error=e, path_prefix='server')}"
+        ) from e
+
+    return config.model_copy(
+        update={
+            "encryption_enabled": encryption_enabled,
+            "api_key_hashing_enabled": api_key_hashing_enabled,
+        }
+    )
+
+
+_LOCALHOST_HOSTS = {"127.0.0.1", "localhost", "::1"}
+
+
+def _is_localhost(host: str) -> bool:
+    """Return True if *host* resolves to a loopback address."""
+    return host in _LOCALHOST_HOSTS
+
+
+def load_bot_gateway_token(config_path: Optional[str] = None) -> str:
+    """Load bot gateway token from ov.conf bot.gateway.token."""
+    path = resolve_config_path(config_path, OPENVIKING_CONFIG_ENV, DEFAULT_OV_CONF)
+    if path is None:
+        return ""
+
+    data = load_json_config(path)
+    bot_config = data.get("bot", {})
+    if not isinstance(bot_config, dict):
+        return ""
+    gateway_config = bot_config.get("gateway", {})
+    if not isinstance(gateway_config, dict):
+        return ""
+    return gateway_config.get("token", "") or ""
+
+
+def validate_server_config(config: ServerConfig) -> None:
+    """Validate server config for safe startup.
+
+    Validation is delegated to the auth plugin registered for the effective
+    auth_mode. Built-in plugins (dev, api_key, trusted) preserve the original
+    validation behaviour.
+
+    If auth_mode is not explicitly configured:
+    - If root_api_key is configured (non-empty): auto-select api_key mode
+    - If root_api_key is not configured: auto-select dev mode
+
+    Raises:
+        SystemExit: If the configuration is unsafe.
+    """
+    # Check for empty root_api_key
+    if config.root_api_key == "":
+        logger.error(
+            "Invalid server.root_api_key: empty string is not allowed. "
+            "Either set a non-empty root_api_key or remove the setting entirely."
+        )
+        sys.exit(1)
+
+    effective_auth_mode = config.get_effective_auth_mode()
+
+    # Ensure built-in plugins are registered before validation.
+    # If a non-built-in plugin has already claimed a built-in mode name,
+    # log a security warning and forcefully override it.
+    from openviking.server.auth.plugins import ApiKeyAuthPlugin, DevAuthPlugin, TrustedAuthPlugin
+
+    registry = get_registry()
+    _BUILTIN_PLUGINS = {
+        "dev": DevAuthPlugin,
+        "api_key": ApiKeyAuthPlugin,
+        "trusted": TrustedAuthPlugin,
+    }
+    for mode, plugin_cls in _BUILTIN_PLUGINS.items():
+        existing = registry.get(mode)
+        if existing is None:
+            registry.register(plugin_cls)
+        elif existing is not plugin_cls:
+            logger.warning(
+                "SECURITY: Auth mode %r was registered by %s but is being "
+                "overridden by the built-in %s.",
+                mode,
+                existing.__name__,
+                plugin_cls.__name__,
+            )
+            registry._plugins[mode] = plugin_cls
+
+    plugin_cls = registry.get(effective_auth_mode)
+    if plugin_cls is None:
+        logger.error(
+            "Unknown auth_mode: %r. No auth plugin registered for this mode. Registered modes: %s.",
+            effective_auth_mode,
+            ", ".join(registry.list_modes()),
+        )
+        sys.exit(1)
+
+    plugin_cls().validate_config(config)

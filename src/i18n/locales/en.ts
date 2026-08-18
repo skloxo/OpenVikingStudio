@@ -294,6 +294,7 @@ const en = {
       vlmGroup: 'VLM Models',
       embeddingGroup: 'Embedding Models',
       rerankGroup: 'Rerank Models',
+      compressorGroup: 'LLMLingua-2 Prompt Compressor',
     },
     httpStatusCard: {
       title: 'HTTP Status Code Distribution',

@@ -1,15 +1,14 @@
 # AGENTS.md - OpenViking Studio Project Instructions
 
-## Mandatory First Step
-Before making ANY modification, analysis, or feature iteration in this workspace, you MUST:
-1. Read `REFACTORING_GUIDE.md` completely.
-2. Read `docs/USER_DESIGN_RULES.md` completely.
-3. Follow the **Native React Source Build** workflow (`src/` ➡️ `pnpm run build` ➡️ `./dist`).
-4. NEVER write imperative DOM injection scripts in `server.js`.
-5. **1933 生产环境绝对隔离与锁定 (STRICT PORT 1933 PROD LOCK - 铁律)**：
-   - 研发迭代中的所有代码修改、样式调试与功能验证，**100% 只能在 1936 端口 (Vite Dev Server) 进行**。
-   - **绝对禁止**在开发测试期间私自跑 `build` 覆盖 1933 端口（OpenViking Web Studio dist 目录）。
-   - **只有当用户显式下达「验收完成」、「更新 1933」或「封板发版」命令时**，AI 才有权限执行打包并更新 1933！未获显式指令擅自动用 1933 属于严重违规！
+## Mandatory First Step & Standard Iteration SOP (全流程迭代铁律)
+
+所有研发迭代必须 100% 严格遵守以下标准化 SOP：
+1. **源码开发与 1936 测试验收**：所有修改必须在源码上进行，通过 Vite HMR 实时热更新至 1936 端口进行测试、调试与验收。
+2. **验收通过后构建 1933 生产环境**：只有在 1936 测试验收确认无误后，方可从源码执行构建并部署至 1933 正式环境。
+3. **Git 留痕与版本 Tag 自动化发布**：构建部署完成后，将源码推送到 Git 仓库，自动迭代一个版本号，发布 Git Tag 并清晰记录更新内容。
+4. **任务卡片状态即时闭环**：每完成一张原子化任务卡片，必须在 `REFACTORING_PLAN.md` 中将其状态更新为 `[x] 已验收通过 ✅`，并附带 Commit Hash 与交付摘要。
+5. **设计规范遵循**：必须完全遵循 `REFACTORING_GUIDE.md` 与 `docs/USER_DESIGN_RULES.md` 规范。
+6. **严禁在 `server.js` 中写入命令式 DOM 注入脚本**。
 ---
 
 ## 🏛️ OpenViking 全局设计与工程哲学 (7 大核心柱石)

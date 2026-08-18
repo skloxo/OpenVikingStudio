@@ -72,23 +72,15 @@ export function VikingDbCard({ status, isHealthy }: VikingDbCardProps) {
     <Card className="flex flex-col gap-4 p-4 shadow-none transition-colors hover:border-primary/30">
       <div className="flex items-center justify-between">
         <CardTitle className="text-base font-semibold">{t('vikingdb.title')}</CardTitle>
-        <Badge
-          variant="outline"
-          className={cn(
-            'gap-1 font-normal',
-            isHealthy
-              ? 'border-primary/20 bg-primary/5 text-primary'
-              : 'border-destructive/30 text-destructive',
-          )}
-        >
-          <span
-            className={cn(
-              'size-1.5 rounded-full',
-              isHealthy ? 'bg-primary' : 'bg-destructive',
-            )}
-          />
-          {isHealthy ? t('vikingdb.healthy') : t('vikingdb.unhealthy')}
-        </Badge>
+        {!isHealthy && (
+          <Badge
+            variant="outline"
+            className="gap-1 font-normal border-destructive/30 text-destructive"
+          >
+            <span className="size-1.5 rounded-full bg-destructive" />
+            {t('vikingdb.unhealthy')}
+          </Badge>
+        )}
       </div>
 
       {/* 顶部 3 个关键汇总指标瓷片 */}

@@ -326,6 +326,7 @@ const zhCN = {
       vlmGroup: 'VLM 视觉模型',
       embeddingGroup: 'Embedding 向量模型',
       rerankGroup: 'Rerank 重排模型',
+      compressorGroup: 'LLMLingua-2 提示词压缩模型',
     },
     httpStatusCard: {
       title: 'HTTP 请求状态码分布',
