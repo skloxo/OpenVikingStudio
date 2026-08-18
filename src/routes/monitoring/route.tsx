@@ -245,10 +245,11 @@ function MonitoringRoute() {
   const { i18n, t } = useTranslation('monitoringPage')
   const { identityScopeKey, serverMode } = useAppConnection()
   const [activeType, setActiveType] = React.useState<MonitorType>('overview')
+  const [timeWindow, setTimeWindow] = React.useState<'24h' | '7d' | '30d' | 'all'>('24h')
   const monitoringQuery = useQuery({
     enabled: serverMode !== 'offline',
     queryFn: fetchMonitoringOverview,
-    queryKey: ['monitoring-overview', identityScopeKey],
+    queryKey: ['monitoring-overview', identityScopeKey, timeWindow],
     refetchInterval: 10_000,
     retry: false,
     staleTime: 5_000,
@@ -343,6 +344,25 @@ function MonitoringRoute() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {/* Time Window Switcher */}
+          <div className="flex items-center rounded-lg border border-border/60 bg-muted/20 p-0.5 font-mono text-xs">
+            {(['24h', '7d', '30d', 'all'] as const).map((w) => (
+              <button
+                key={w}
+                type="button"
+                onClick={() => setTimeWindow(w)}
+                className={cn(
+                  'rounded px-2.5 py-1 text-[11px] font-medium transition-colors',
+                  timeWindow === w
+                    ? 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 font-bold shadow-none'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {w.toUpperCase()}
+              </button>
+            ))}
+          </div>
+
           {updatedAt ? (
             <span className="text-xs text-muted-foreground">
               {t('updatedAt', { time: updatedAt })}
@@ -451,10 +471,11 @@ function MonitoringRoute() {
 
           {/* Task Card v1.1.17: 分析大图表 — SLA 趋势 + 召回准确率演进 + Token 构成饼图 */}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            <SlaTrendChart currentSuccessRate={deepMetrics.httpSuccessRate} />
+            <SlaTrendChart currentSuccessRate={deepMetrics.httpSuccessRate} window={timeWindow} />
             <RetrievalAccuracyTrendChart
               currentAccuracy={deepMetrics.top1Accuracy}
               currentCosine={deepMetrics.avgCosineScore}
+              window={timeWindow}
             />
             <TokenBreakdownPieChart totalTokens={deepMetrics.tokenStats?.total ?? 29596} />
           </div>
