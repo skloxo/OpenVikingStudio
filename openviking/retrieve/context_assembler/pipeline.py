@@ -41,6 +41,8 @@ async def _load_session(service: Any, ctx: RequestContext, session_id: Optional[
         return None
     try:
         session = service.sessions.session(ctx, session_id)
+        if not await session.is_materialized():
+            return None
         await session.load()
         return session
     except Exception as exc:
