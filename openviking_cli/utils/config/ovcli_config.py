@@ -50,15 +50,12 @@ class OVCLIConfig(BaseModel):
     # Client-side harness plugin settings, owned by the memory plugins. Kept
     # opaque so a harness can add its own knobs without touching this schema.
     plugin: Optional[Dict[str, Any]] = None
-<<<<<<< HEAD
 
     # Authentication mode: "api_key", "ldap", "oidc"
     auth_mode: Optional[str] = None
     # LDAP credentials
     ldap_username: Optional[str] = None
     ldap_password: Optional[str] = None
-=======
->>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
 
     model_config = {"extra": "forbid"}
 

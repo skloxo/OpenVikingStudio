@@ -102,24 +102,29 @@ async def _enqueue_embedding_message(
 ) -> bool:
     """Persist one embedding message and settle request tracking on enqueue failure."""
     wait_tracker = get_request_wait_tracker()
-    wait_tracker.register_embedding_root(embedding_msg.telemetry_id, embedding_msg.id)
+    telemetry_id = getattr(embedding_msg, "telemetry_id", None)
+    msg_id = getattr(embedding_msg, "id", None)
+    if telemetry_id and msg_id:
+        wait_tracker.register_embedding_root(telemetry_id, msg_id)
 
     try:
         enqueue_id = await embedding_queue.enqueue(embedding_msg)
     except BaseException as exc:
-        wait_tracker.mark_embedding_failed(
-            embedding_msg.telemetry_id,
-            embedding_msg.id,
-            f"{failure_message}: {exc}",
-        )
+        if telemetry_id and msg_id:
+            wait_tracker.mark_embedding_failed(
+                telemetry_id,
+                msg_id,
+                f"{failure_message}: {exc}",
+            )
         raise
 
     if not enqueue_id:
-        wait_tracker.mark_embedding_failed(
-            embedding_msg.telemetry_id,
-            embedding_msg.id,
-            failure_message,
-        )
+        if telemetry_id and msg_id:
+            wait_tracker.mark_embedding_failed(
+                telemetry_id,
+                msg_id,
+                failure_message,
+            )
         return False
     return True
 
