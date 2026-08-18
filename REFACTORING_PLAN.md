@@ -115,7 +115,20 @@
 
 ---
 
-## 📦 第五部分：已交付历史版本履历 (Delivery Ledger)
+### [x] v1.3.6 版本已验收通过 🎉
+- **Git Commit**: `6823b728`, Tag: `v1.3.6`
+- **交付内容**：
+  1. **Agent 演进与经验血缘追踪引擎 (`experience_lineage.py`)**：支持多形态工具调用血缘追踪与 5 态胜率统计；
+  2. **演进查询与日期过滤 API**：实现 `/api/v1/agent-evolution/experiences/trajectories` 与 `/outcomes` 路由；
+  3. **OpenClaw / 多 IDE 插件矩阵沉淀**：引入 `examples/` 全量插件与经验工具链。
+
+### [x] v1.3.5 版本已验收通过 🎉
+- **Git Commit**: `8fde13a`, Tag: `v1.3.5`
+- **交付内容**：
+  1. **单仓库 (Monorepo) 物理归一**：前后端统一收口至 `OpenVikingStudio`；
+  2. **向量网关 Chunk 自动语义切片**：实现 1500 Tokens 黄金切片与多 Chunk 批量入库，根治长文本 400 报错；
+  3. **GPU 穿透死循环拦截**：修复 Fallback 向量后的死循环入队，功耗彻底降回 42W；
+  4. **模型架构白皮书 SSOT 建立**：创建 `docs/MODEL_ARCHITECTURE_SPEC.md`。
 
 ### [x] v1.3.4 版本已验收通过 🎉
 - **Git Commit**: `1ca76e53` (openviking-shallow), Tag: `v1.3.4`
@@ -135,3 +148,20 @@
 ### [x] v1.3.0 ~ v1.3.2 补丁版本已验收通过 ✅
 - **交付 Tag**：`v1.3.0` / `v1.3.1` / `v1.3.2`
 - **内容**：多语言 i18n 体系 100% 覆盖、Parser CJK Token 准确估算、任务自愈重新入队引擎、MCP 无状态 HTTP 与超时控制。
+
+---
+
+## 🎨 第六部分：无头功能 (API-Only) 可视化专项工单矩阵
+
+> **目标**：在上游后端合并全部完成后，对以下 **8 大“有 API 无界面”的后端核心能力** 逐一进行 Studio 可视化页面建设与交互闭环。
+
+| 工单 ID | 对应后端路由 / 模块 | 核心可视化交付目标 | 优先级 |
+| :--- | :--- | :--- | :---: |
+| **`TASK-UI-AGENT-EVOL-01`** | `routers/agent_evolution.py` | **Agent 经验实战胜率与调用轨迹面板**：在经验详情抽屉展示被调用次数、5 态胜率环形图、历史关联任务列表与血缘谱系。 | 🔴 P1 |
+| **`TASK-UI-WATCHES-01`** | `routers/watches.py` | **资源自动订阅与 Watch 监控看板**：提供 GitHub Repo / Web 资源订阅任务管理、自动同步触发器、运行流水线日志查看。 | 🔴 P1 |
+| **`TASK-UI-PRIVACY-01`** | `routers/privacy_configs.py` | **隐私安全与敏感信息脱敏治理中心**：脱敏规则配置、敏感字段打码开关、二次授权弹窗与合规审计日志导出。 | 🟡 P2 |
+| **`TASK-UI-OVPACK-01`** | `routers/pack.py` | **知识大脑一键打包与迁移导入中心**：提供 OVPack 便携知识包一键导出、本地 ZIP 拖拽导入与解包校验面板。 | 🟡 P2 |
+| **`TASK-UI-SNAPSHOT-01`** | `routers/snapshot.py` | **VikingFS 物理快照与历史版本回滚中枢**：全盘快照时间线、快照内容树比对、一键安全还原与灾备演练。 | 🟡 P2 |
+| **`TASK-UI-RELATIONS-01`** | `routers/relations.py` | **知识图谱关系与血缘动态编辑面板**：资源与记忆 Link / Unlink 交互连线、关系类型打标与多跳图谱遍历。 | 🟢 P3 |
+| **`TASK-UI-WEBDAV-01`** | `routers/webdav.py` | **WebDAV 挂载与网络存储连接管理面板**：一键生成/吊销 WebDAV 挂载凭据、连接指引（Windows/Mac 挂载盘）与实时流量。 | 🟢 P3 |
+| **`TASK-UI-OBSERVER-01`** | `routers/observer.py` | **实时事件观测流与慢查询白盒调试器**：Server-Sent Events (SSE) 实时事件流水、向量检索慢查询火焰图与白盒 Trace。 | 🟢 P3 |
