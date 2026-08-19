@@ -8,19 +8,6 @@ Data in, Context out.
 
 __version__ = "1.3.19"
 
-try:
-    from ._version import version as _v
-
-    if _v and not _v.startswith("0."):
-        __version__ = _v
-except Exception:
-    try:
-        from importlib.metadata import version
-
-        __version__ = version("openviking")
-    except Exception:
-        pass
-
 
 def __getattr__(name: str):
     if name == "__version__":
