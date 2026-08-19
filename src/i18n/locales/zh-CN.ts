@@ -1341,6 +1341,28 @@ const zhCN = {
       title: '没有找到匹配的内容',
       subtitle: '试试换个关键词或调整路径范围',
     },
+    trajectory: {
+      title: 'Viking 白盒检索轨迹树',
+      hide: '收起轨迹 ▲',
+      show: '轨迹树 ▼',
+      score: '余弦相似度: {{score}}',
+      scoreBadge: 'Score: {{score}}',
+      rootEngine: '1. Root 检索引擎',
+      levelMatch: '2. {{level}} 层级匹配',
+      similarityCheck: '3. 避坑节点得分',
+      highConfidence: '达到 ≥ 0.70 高信度门禁',
+      scoreGateLow: '未达 0.70 门禁',
+      relationsTitle: '4. 关联节点扩展',
+      matchReason: '匹配原因: {{reason}}',
+      overviewTitle: '概览说明',
+      copyUri: '复制 URI',
+      uriCopied: 'URI 已复制到剪贴板',
+      levels: {
+        l0: 'L0 意图抽象 (Abstract)',
+        l1: 'L1 概览/SOP (Overview)',
+        l2: 'L2 叶子切片 (Detail)',
+      },
+    },
   },
   sessions: {
     page: {
