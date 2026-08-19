@@ -24,25 +24,48 @@ export interface QuantifiedWorkload {
   pct?: number
 }
 
-function inferState(
+function inferStepState(
   qKey: string | null,
-  fallback: StepState,
-  status: string | undefined,
+  stepOrder: number, // 1-based index
+  totalSteps: number,
+  taskStatus: string | null | undefined,
+  taskStage: string | null | undefined,
   qStatus: Record<string, { error_count?: number; processed?: number }> | undefined,
 ): StepState {
-  if (status === 'pending') return 'pending'
-  if (qKey && qStatus?.[qKey]) {
-    const s = qStatus[qKey]
-    if ((s.error_count ?? 0) > 0) return 'failed'
-    if ((s.processed ?? 0) > 0) return 'completed'
-    return status === 'running' ? 'running' : fallback
+  const normStatus = taskStatus?.toLowerCase()
+  if (normStatus === 'completed') return 'completed'
+  if (normStatus === 'failed') {
+    // If we have explicit queue error
+    if (qKey && qStatus?.[qKey] && (qStatus[qKey].error_count ?? 0) > 0) return 'failed'
+    return stepOrder === totalSteps ? 'failed' : 'completed'
   }
-  return fallback
+  if (normStatus === 'pending') return 'pending'
+
+  // If task is running
+  if (normStatus === 'running') {
+    const stage = taskStage?.toLowerCase() || ''
+    if (qKey === 'Embedding' && (stage.includes('embedding') || stage.includes('reindex'))) return 'running'
+    if (qKey === 'Semantic' && (stage.includes('semantic') || stage.includes('extract'))) return 'running'
+    if (qKey === 'ExternalParse' && (stage.includes('parse') || stage.includes('scan'))) return 'running'
+
+    // If queue has explicit processed count, mark previous steps as completed
+    if (qKey && qStatus?.[qKey]) {
+      const s = qStatus[qKey]
+      if ((s.error_count ?? 0) > 0) return 'failed'
+      if ((s.processed ?? 0) > 0) return 'completed'
+    }
+
+    if (stepOrder === 1) return 'completed'
+    if (stepOrder === 2) return 'running'
+    return 'pending'
+  }
+
+  return 'pending'
 }
 
 /**
  * Single Source of Truth (SSOT) for task pipeline steps list.
- * Used by Task Detail Sheet Drawer for all 12 task types.
+ * 100% physically aligned with getTaskPipelineGroups.
  */
 export function getTaskPipelineSteps(
   task: TaskRecord,
@@ -51,46 +74,50 @@ export function getTaskPipelineSteps(
   const isZh = language.startsWith('zh')
   const type = task.task_type
   const status = task.status
-  const resObj = (task.result || {}) as Record<string, any>
-  const metaObj = (task.meta || {}) as Record<string, any>
+  const stage = task.stage
+  const resObj = (task.result && typeof task.result === 'object') ? (task.result as Record<string, any>) : {}
+  const metaObj = (task.meta && typeof task.meta === 'object') ? (task.meta as Record<string, any>) : {}
   const qStatus = resObj.queue_status as Record<string, { error_count?: number; processed?: number }> | undefined
 
   if (type === 'session_commit') {
+    const turns = metaObj.turns_count ?? resObj.turns_processed ?? metaObj.messages_count
+    const lessons = resObj.lessons_extracted ?? metaObj.lessons_count
     return [
       {
-        name: isZh ? '对话轮次归档' : 'Dialogue Archival',
+        name: isZh ? '对话归档' : 'Archival',
         state: status === 'pending' ? 'pending' : 'completed',
-        count: metaObj.turns_count ?? metaObj.messages_count,
+        count: turns,
         unit: isZh ? '轮' : 'turns',
       },
       {
-        name: isZh ? '经验 Lesson 萃取' : 'Lesson Extraction',
-        state: status === 'pending' ? 'pending' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'completed',
-        count: resObj.lessons_extracted ?? metaObj.lessons_count,
+        name: isZh ? '经验萃取' : 'Lessons',
+        state: inferStepState(null, 2, 3, status, stage, qStatus),
+        count: lessons,
         unit: isZh ? '条经验' : 'lessons',
       },
       {
-        name: isZh ? '快照持久化提交' : 'Snapshot Persistence',
-        state: status === 'completed' ? 'completed' : (status as StepState),
+        name: isZh ? '快照提交' : 'Snapshot',
+        state: status === 'completed' ? 'completed' : 'pending',
       },
     ]
   }
 
   if (type === 'add_skill') {
+    const skills = resObj.valid_skills ?? metaObj.valid_skills ?? resObj.scanned_skills
     return [
       {
-        name: isZh ? '目录递归扫描' : 'Directory Discovery',
+        name: isZh ? '目录扫描' : 'Discovery',
         state: status === 'pending' ? 'pending' : 'completed',
       },
       {
-        name: isZh ? 'Frontmatter 规范校验' : 'Frontmatter Validation',
-        state: status === 'pending' ? 'pending' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'completed',
-        count: resObj.valid_skills ?? metaObj.valid_skills,
+        name: isZh ? '规范校验' : 'Spec Validation',
+        state: inferStepState(null, 2, 3, status, stage, qStatus),
+        count: skills,
         unit: isZh ? '技能' : 'skills',
       },
       {
-        name: isZh ? '技能向量化建库' : 'Skill Embedding Indexing',
-        state: inferState('Embedding', status === 'completed' ? 'completed' : (status as StepState), status, qStatus),
+        name: isZh ? '向量建库' : 'Vector Embedding',
+        state: inferStepState('Embedding', 3, 3, status, stage, qStatus),
       },
     ]
   }
@@ -98,18 +125,18 @@ export function getTaskPipelineSteps(
   if (type === 'user_delete' || type === 'user_deletion') {
     return [
       {
-        name: isZh ? '命名空间解绑' : 'Namespace Unbinding',
+        name: isZh ? '空间解绑' : 'Namespace Unbind',
         state: status === 'pending' ? 'pending' : 'completed',
       },
       {
-        name: isZh ? 'VikingDB 向量注销' : 'Vector Deletion',
-        state: status === 'pending' ? 'pending' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'completed',
+        name: isZh ? '向量注销' : 'Vector Purge',
+        state: inferStepState('UserDeletion', 2, 3, status, stage, qStatus),
         count: resObj.deleted_vectors ?? metaObj.deleted_vectors,
         unit: isZh ? '向量' : 'vectors',
       },
       {
-        name: isZh ? 'AGFS 磁盘物理擦除' : 'AGFS Disk Cleanup',
-        state: status === 'completed' ? 'completed' : (status as StepState),
+        name: isZh ? '磁盘擦除' : 'Disk Wipe',
+        state: status === 'completed' ? 'completed' : 'pending',
         count: resObj.deleted_files ?? metaObj.deleted_files,
         unit: isZh ? '项' : 'items',
       },
@@ -119,20 +146,20 @@ export function getTaskPipelineSteps(
   if (type === 'admin_reindex') {
     return [
       {
-        name: isZh ? '全盘资源扫描' : 'Resource Scanning',
+        name: isZh ? '资源扫描' : 'Scanning',
         state: status === 'pending' ? 'pending' : 'completed',
         count: resObj.scanned_records ?? metaObj.scanned_records,
-        unit: isZh ? '条目' : 'items',
+        unit: isZh ? '项' : 'items',
       },
       {
-        name: isZh ? '孤儿向量修剪' : 'Orphan Pruning',
-        state: status === 'pending' ? 'pending' : 'completed',
+        name: isZh ? '孤儿修剪' : 'Pruning',
+        state: inferStepState(null, 2, 3, status, stage, qStatus),
         count: resObj.deleted_records ?? metaObj.deleted_records,
         unit: isZh ? '孤儿块' : 'orphans',
       },
       {
-        name: isZh ? '批量切片重构' : 'Batch Chunk Embedding',
-        state: inferState('Embedding', status === 'completed' ? 'completed' : (status as StepState), status, qStatus),
+        name: isZh ? '切片重构' : 'Embedding',
+        state: inferStepState('Embedding', 3, 3, status, stage, qStatus),
         count: resObj.rebuilt_records ?? resObj.reindexed_items ?? metaObj.rebuilt_records,
         unit: isZh ? '切片' : 'chunks',
       },
@@ -142,18 +169,18 @@ export function getTaskPipelineSteps(
   if (type === 'snapshot_restore_reindex') {
     return [
       {
-        name: isZh ? '快照状态回滚' : 'Snapshot Rollback',
+        name: isZh ? '快照回滚' : 'Rollback',
         state: status === 'pending' ? 'pending' : 'completed',
       },
       {
-        name: isZh ? 'AGFS 节点树还原' : 'Inode Tree Restoration',
-        state: status === 'pending' ? 'pending' : 'completed',
+        name: isZh ? '节点还原' : 'Inodes',
+        state: inferStepState(null, 2, 3, status, stage, qStatus),
         count: resObj.restored_inodes ?? metaObj.restored_inodes,
         unit: isZh ? '节点' : 'inodes',
       },
       {
-        name: isZh ? '增量向量重算' : 'Incremental Embedding',
-        state: inferState('Embedding', status === 'completed' ? 'completed' : (status as StepState), status, qStatus),
+        name: isZh ? '增量向量' : 'Embedding',
+        state: inferStepState('Embedding', 3, 3, status, stage, qStatus),
         count: resObj.reindexed_items ?? metaObj.reindexed_items,
         unit: isZh ? '切片' : 'chunks',
       },
@@ -161,99 +188,72 @@ export function getTaskPipelineSteps(
   }
 
   if (type === 'connector_import') {
-    const preState: StepState = status === 'pending' ? 'pending' : 'completed'
     return [
-      { name: isZh ? '连接器鉴权' : 'Connector Auth', state: preState },
-      { name: isZh ? '远程资源拉取' : 'Resource Fetching', state: preState, count: resObj.downloaded_files ?? metaObj.downloaded_files, unit: isZh ? '篇文档' : 'docs' },
-      { name: isZh ? '外部多格式解析' : 'Document Parsing', state: inferState('Semantic', status === 'completed' ? 'completed' : (status as StepState), status, qStatus) },
-      { name: isZh ? '语义处理' : 'Semantic Extraction', state: inferState('Semantic', status === 'completed' ? 'completed' : (status as StepState), status, qStatus), count: qStatus?.Semantic?.processed, unit: isZh ? '节点' : 'nodes' },
-      { name: isZh ? '嵌入向量' : 'Vector Embedding', state: inferState('Embedding', status === 'completed' ? 'completed' : (status as StepState), status, qStatus), count: qStatus?.Embedding?.processed, unit: isZh ? '切片' : 'chunks' },
+      { name: isZh ? '连接鉴权' : 'Auth', state: status === 'pending' ? 'pending' : 'completed' },
+      { name: isZh ? '资源拉取' : 'Fetch', state: inferStepState(null, 2, 5, status, stage, qStatus), count: resObj.downloaded_files ?? metaObj.downloaded_files, unit: isZh ? '篇' : 'docs' },
+      { name: isZh ? '文档解析' : 'Parse', state: inferStepState('ExternalParse', 3, 5, status, stage, qStatus), count: metaObj.parsed_pages, unit: isZh ? '页' : 'pages' },
+      { name: isZh ? '语义提取' : 'Semantic', state: inferStepState('Semantic', 4, 5, status, stage, qStatus), count: metaObj.semantic_nodes, unit: isZh ? '节点' : 'nodes' },
+      { name: isZh ? '向量建库' : 'Embedding', state: inferStepState('Embedding', 5, 5, status, stage, qStatus), count: metaObj.processed_chunks, unit: isZh ? '切片' : 'chunks' },
     ]
   }
 
   if (type === 'legacy_migration') {
     return [
-      {
-        name: isZh ? '历史数据读取' : 'Legacy Data Reading',
-        state: status === 'pending' ? 'pending' : 'completed',
-      },
-      {
-        name: isZh ? 'Schema 格式转换' : 'Schema Conversion',
-        state: status === 'pending' ? 'pending' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'completed',
-        count: resObj.migrated_count ?? metaObj.migrated_count,
-        unit: isZh ? '条记录' : 'records',
-      },
-      {
-        name: isZh ? 'AGFS 新结构写入' : 'AGFS Target Ingestion',
-        state: status === 'completed' ? 'completed' : (status as StepState),
-      },
+      { name: isZh ? '数据读取' : 'Read', state: status === 'pending' ? 'pending' : 'completed' },
+      { name: isZh ? 'Schema 转换' : 'Transform', state: inferStepState(null, 2, 3, status, stage, qStatus), count: resObj.migrated_count ?? metaObj.migrated_count, unit: isZh ? '条' : 'records' },
+      { name: isZh ? 'AGFS 写入' : 'Write', state: status === 'completed' ? 'completed' : 'pending' },
     ]
   }
 
   if (type === 'legacy_cleanup') {
     return [
-      {
-        name: isZh ? '引用图谱遍历' : 'Graph Traversal',
-        state: status === 'pending' ? 'pending' : 'completed',
-      },
-      {
-        name: isZh ? '孤儿数据回收' : 'Orphan Garbage Collection',
-        state: status === 'pending' ? 'pending' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'completed',
-        count: resObj.cleaned_items ?? metaObj.cleaned_items,
-        unit: isZh ? '孤儿块' : 'items',
-      },
-      {
-        name: isZh ? '存储空间释放' : 'Storage Reclamation',
-        state: status === 'completed' ? 'completed' : (status as StepState),
-      },
+      { name: isZh ? '图谱遍历' : 'Traverse', state: status === 'pending' ? 'pending' : 'completed' },
+      { name: isZh ? '孤儿回收' : 'GC', state: inferStepState(null, 2, 3, status, stage, qStatus), count: resObj.cleaned_items ?? metaObj.cleaned_items, unit: isZh ? '项' : 'items' },
+      { name: isZh ? '空间释放' : 'Free', state: status === 'completed' ? 'completed' : 'pending' },
     ]
   }
 
   if (type === 'watch_sync') {
     return [
-      {
-        name: isZh ? '文件变更事件监听' : 'File Event Listening',
-        state: status === 'pending' ? 'pending' : 'completed',
-        count: metaObj.events_count,
-        unit: isZh ? '事件' : 'events',
-      },
-      {
-        name: isZh ? '防抖增量解析' : 'Debounced Parsing',
-        state: status === 'pending' ? 'pending' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'completed',
-        count: resObj.synced_files ?? metaObj.synced_files,
-        unit: isZh ? '文件' : 'files',
-      },
-      {
-        name: isZh ? '增量向量同步' : 'Incremental Sync',
-        state: inferState('Embedding', status === 'completed' ? 'completed' : (status as StepState), status, qStatus),
-      },
+      { name: isZh ? '事件监听' : 'Events', state: status === 'pending' ? 'pending' : 'completed', count: metaObj.events_count, unit: isZh ? '事件' : 'events' },
+      { name: isZh ? '增量解析' : 'Parse', state: inferStepState('ExternalParse', 2, 3, status, stage, qStatus), count: resObj.synced_files ?? metaObj.synced_files, unit: isZh ? '文件' : 'files' },
+      { name: isZh ? '向量同步' : 'Sync', state: inferStepState('Embedding', 3, 3, status, stage, qStatus) },
     ]
   }
 
-  // Default resource ingestion pipeline: 文件扫描 -> 外部解析 -> (语义处理 + 嵌入向量)
+  // Default resource ingestion pipeline (add_resource): 资源入库 -> 文档解析 -> (语义提取 + 向量建库)
+  const isEmbedStage = stage?.toLowerCase().includes('embedding')
+  const isSemStage = stage?.toLowerCase().includes('semantic') || stage?.toLowerCase().includes('extract')
+  const isParseStage = stage?.toLowerCase().includes('parse') || stage?.toLowerCase().includes('scan')
+
+  const s1: StepState = status === 'pending' ? 'pending' : 'completed'
+  const s2: StepState = status === 'completed' ? 'completed' : isParseStage ? 'running' : status === 'running' ? 'completed' : 'pending'
+  const s3: StepState = status === 'completed' ? 'completed' : isSemStage ? 'running' : status === 'running' ? (isEmbedStage ? 'completed' : 'running') : 'pending'
+  const s4: StepState = status === 'completed' ? 'completed' : isEmbedStage ? 'running' : status === 'running' ? 'running' : 'pending'
+
   return [
     {
-      name: isZh ? '资源扫描与入库' : 'Resource Ingestion',
-      state: status === 'pending' ? 'pending' : 'completed',
+      name: isZh ? '资源入库' : 'Ingestion',
+      state: s1,
       count: metaObj.file_count,
       unit: isZh ? '文件' : 'files',
     },
     {
-      name: isZh ? '外部多格式解析' : 'Document Parsing',
-      state: inferState('ExternalParse', status === 'completed' ? 'completed' : (status as StepState), status, qStatus),
-      count: qStatus?.ExternalParse?.processed ?? metaObj.parsed_pages,
+      name: isZh ? '文档解析' : 'Parsing',
+      state: s2,
+      count: metaObj.parsed_pages,
       unit: isZh ? '页' : 'pages',
     },
     {
-      name: isZh ? '语义处理' : 'Semantic Extraction',
-      state: inferState('Semantic', status === 'completed' ? 'completed' : (status as StepState), status, qStatus),
-      count: qStatus?.Semantic?.processed ?? metaObj.semantic_nodes,
+      name: isZh ? '语义提取' : 'Semantic',
+      state: s3,
+      count: metaObj.semantic_nodes,
       unit: isZh ? '节点' : 'nodes',
     },
     {
-      name: isZh ? '嵌入向量' : 'Vector Embedding',
-      state: inferState('Embedding', status === 'completed' ? 'completed' : (status as StepState), status, qStatus),
-      count: qStatus?.Embedding?.processed ?? metaObj.processed_chunks,
+      name: isZh ? '向量建库' : 'Embedding',
+      state: s4,
+      count: metaObj.processed_chunks,
       unit: isZh ? '切片' : 'chunks',
     },
   ]
@@ -261,7 +261,7 @@ export function getTaskPipelineSteps(
 
 /**
  * Single Source of Truth (SSOT) for task pipeline diagram groups.
- * Used by Task Table Row column "工序队列流转".
+ * 100% physically aligned with getTaskPipelineSteps.
  */
 export function getTaskPipelineGroups(
   task: TaskRecord,
@@ -269,149 +269,98 @@ export function getTaskPipelineGroups(
 ): PipelineGroup[] {
   const isZh = language.startsWith('zh')
   const type = task.task_type
-  const status = task.status
-  const resObj = (task.result || {}) as Record<string, any>
-  const qStatus = resObj.queue_status as Record<string, { error_count?: number; processed?: number }> | undefined
+  const steps = getTaskPipelineSteps(task, language)
 
   if (type === 'session_commit') {
     return [
-      {
-        type: 'serial',
-        step: {
-          name: isZh ? '对话归档' : 'Archival',
-          state: status === 'pending' ? 'pending' : 'completed',
-        },
-      },
-      {
-        type: 'serial',
-        step: {
-          name: isZh ? '经验萃取' : 'Lessons',
-          state: status === 'pending' ? 'pending' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'completed',
-        },
-      },
-      {
-        type: 'serial',
-        step: {
-          name: isZh ? '快照提交' : 'Snapshot',
-          state: status === 'completed' ? 'completed' : (status as StepState),
-        },
-      },
+      { type: 'serial', step: steps[0] },
+      { type: 'serial', step: steps[1] },
+      { type: 'serial', step: steps[2] },
     ]
   }
 
   if (type === 'add_skill') {
     return [
-      {
-        type: 'serial',
-        step: { name: isZh ? '目录扫描' : 'Discovery', state: status === 'pending' ? 'pending' : 'completed' },
-      },
-      {
-        type: 'serial',
-        step: { name: isZh ? '规范校验' : 'Spec', state: status === 'pending' ? 'pending' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'completed' },
-      },
-      {
-        type: 'serial',
-        step: { name: isZh ? '向量建库' : 'Embedding', state: inferState('Embedding', status === 'completed' ? 'completed' : (status as StepState), status, qStatus) },
-      },
+      { type: 'serial', step: steps[0] },
+      { type: 'serial', step: steps[1] },
+      { type: 'serial', step: steps[2] },
     ]
   }
 
   if (type === 'user_delete' || type === 'user_deletion') {
     return [
-      {
-        type: 'serial',
-        step: { name: isZh ? '空间解绑' : 'Unbind', state: status === 'pending' ? 'pending' : 'completed' },
-      },
-      {
-        type: 'serial',
-        step: { name: isZh ? '向量注销' : 'Vector Purge', state: status === 'pending' ? 'pending' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'completed' },
-      },
-      {
-        type: 'serial',
-        step: { name: isZh ? '磁盘擦除' : 'Disk Wipe', state: status === 'completed' ? 'completed' : (status as StepState) },
-      },
+      { type: 'serial', step: steps[0] },
+      { type: 'serial', step: steps[1] },
+      { type: 'serial', step: steps[2] },
     ]
   }
 
   if (type === 'admin_reindex') {
-    const purgeState: StepState = status === 'pending' ? 'pending' : 'completed'
-    const rebuildState = inferState('Embedding', status === 'completed' ? 'completed' : (status as StepState), status, qStatus)
     return [
-      { type: 'serial', step: { name: isZh ? '资源扫描' : 'Scan', state: purgeState } },
-      { type: 'serial', step: { name: isZh ? '孤儿修剪' : 'Prune', state: purgeState } },
-      { type: 'serial', step: { name: isZh ? '切片重构' : 'Embedding', state: rebuildState } },
+      { type: 'serial', step: steps[0] },
+      { type: 'serial', step: steps[1] },
+      { type: 'serial', step: steps[2] },
     ]
   }
 
   if (type === 'snapshot_restore_reindex') {
     return [
-      { type: 'serial', step: { name: isZh ? '快照回滚' : 'Restore', state: status === 'pending' ? 'pending' : 'completed' } },
-      { type: 'serial', step: { name: isZh ? '节点还原' : 'Inodes', state: status === 'pending' ? 'pending' : 'completed' } },
-      { type: 'serial', step: { name: isZh ? '增量向量' : 'Embedding', state: inferState('Embedding', status === 'completed' ? 'completed' : (status as StepState), status, qStatus) } },
+      { type: 'serial', step: steps[0] },
+      { type: 'serial', step: steps[1] },
+      { type: 'serial', step: steps[2] },
     ]
   }
 
   if (type === 'connector_import') {
-    const preState: StepState = status === 'pending' ? 'pending' : 'completed'
-    const semState = inferState('Semantic', status === 'completed' ? 'completed' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'pending', status, qStatus)
-    const embState = inferState('Embedding', status === 'completed' ? 'completed' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'pending', status, qStatus)
     return [
-      { type: 'serial', step: { name: isZh ? '连接鉴权' : 'Auth', state: preState } },
-      { type: 'serial', step: { name: isZh ? '资源拉取' : 'Fetch', state: preState } },
-      { type: 'serial', step: { name: isZh ? '外部解析' : 'Parse', state: preState } },
+      { type: 'serial', step: steps[0] },
+      { type: 'serial', step: steps[1] },
+      { type: 'serial', step: steps[2] },
       {
         type: 'parallel',
-        steps: [
-          { name: isZh ? '语义处理' : 'Semantic', state: semState },
-          { name: isZh ? '嵌入向量' : 'Embedding', state: embState },
-        ],
+        steps: [steps[3], steps[4]],
       },
     ]
   }
 
   if (type === 'legacy_migration') {
     return [
-      { type: 'serial', step: { name: isZh ? '数据读取' : 'Read', state: status === 'pending' ? 'pending' : 'completed' } },
-      { type: 'serial', step: { name: isZh ? 'Schema 转换' : 'Transform', state: status === 'pending' ? 'pending' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'completed' } },
-      { type: 'serial', step: { name: isZh ? 'AGFS 写入' : 'Write', state: status === 'completed' ? 'completed' : (status as StepState) } },
+      { type: 'serial', step: steps[0] },
+      { type: 'serial', step: steps[1] },
+      { type: 'serial', step: steps[2] },
     ]
   }
 
   if (type === 'legacy_cleanup') {
     return [
-      { type: 'serial', step: { name: isZh ? '图谱遍历' : 'Traverse', state: status === 'pending' ? 'pending' : 'completed' } },
-      { type: 'serial', step: { name: isZh ? '孤儿回收' : 'GC', state: status === 'pending' ? 'pending' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'completed' } },
-      { type: 'serial', step: { name: isZh ? '空间释放' : 'Free', state: status === 'completed' ? 'completed' : (status as StepState) } },
+      { type: 'serial', step: steps[0] },
+      { type: 'serial', step: steps[1] },
+      { type: 'serial', step: steps[2] },
     ]
   }
 
   if (type === 'watch_sync') {
     return [
-      { type: 'serial', step: { name: isZh ? '事件监听' : 'Events', state: status === 'pending' ? 'pending' : 'completed' } },
-      { type: 'serial', step: { name: isZh ? '增量解析' : 'Parse', state: status === 'pending' ? 'pending' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'completed' } },
-      { type: 'serial', step: { name: isZh ? '向量同步' : 'Sync', state: inferState('Embedding', status === 'completed' ? 'completed' : (status as StepState), status, qStatus) } },
+      { type: 'serial', step: steps[0] },
+      { type: 'serial', step: steps[1] },
+      { type: 'serial', step: steps[2] },
     ]
   }
 
-  // Default resource ingestion pipeline: 外部解析 -> (语义处理 + 嵌入向量)
-  const parseState: StepState = status === 'pending' ? 'pending' : 'completed'
-  const semState = inferState('Semantic', status === 'completed' ? 'completed' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'pending', status, qStatus)
-  const embState = inferState('Embedding', status === 'completed' ? 'completed' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'pending', status, qStatus)
+  // Default resource ingestion pipeline: 资源入库 -> 文档解析 -> [ 语义提取 ∥ 向量建库 ]
   return [
-    { type: 'serial', step: { name: isZh ? '外部解析' : 'Parse', state: parseState } },
+    { type: 'serial', step: steps[0] },
+    { type: 'serial', step: steps[1] },
     {
       type: 'parallel',
-      steps: [
-        { name: isZh ? '语义处理' : 'Semantic', state: semState },
-        { name: isZh ? '嵌入向量' : 'Embedding', state: embState },
-      ],
+      steps: [steps[2], steps[3]],
     },
   ]
 }
 
 /**
- * Extract rich quantified physical workload for a task.
- * Returns quantified metrics like "1,192 / 14,689 切片", "48 / 320 节点", "16 / 54 页", etc.
+ * Extract rich quantified physical workload ONLY from task's OWN data or active running stage.
+ * NEVER falsely leaks global QueueFS observer totals to unrelated tasks.
  */
 export function getTaskQuantifiedWorkload(
   task: TaskRecord,
@@ -420,10 +369,11 @@ export function getTaskQuantifiedWorkload(
 ): QuantifiedWorkload | null {
   const isZh = language.startsWith('zh')
   const type = task.task_type
+  const status = task.status?.toLowerCase()
   const meta = (task.meta && typeof task.meta === 'object') ? (task.meta as Record<string, any>) : {}
   const resObj = (task.result && typeof task.result === 'object') ? (task.result as Record<string, any>) : {}
 
-  // 1. Direct Explicit Meta Workload (Highest precision)
+  // 1. Task's OWN Explicit Numerical Quantities (Highest precision)
   if (typeof meta.processed_chunks === 'number' && typeof meta.total_chunks === 'number' && meta.total_chunks > 0) {
     const pct = Math.round((meta.processed_chunks / meta.total_chunks) * 100)
     return {
@@ -466,18 +416,25 @@ export function getTaskQuantifiedWorkload(
     }
   }
 
-  // 2. Type-specific result/meta synthesis
+  // 2. Type-specific result/meta for this task
   if (type === 'session_commit') {
     const turns = meta.turns_count ?? resObj.turns_processed ?? meta.messages_count
     const lessons = resObj.lessons_extracted ?? meta.lessons_count
     if (turns !== undefined || lessons !== undefined) {
       const parts: string[] = []
       if (turns !== undefined) parts.push(isZh ? `${turns} 轮对话` : `${turns} turns`)
-      if (lessons !== undefined) parts.push(isZh ? `${lessons} 条新经验` : `${lessons} lessons`)
+      if (lessons !== undefined) parts.push(isZh ? `${lessons} 条经验` : `${lessons} lessons`)
       return {
         icon: '💾',
         label: parts.join(isZh ? ' ｜ ' : ' | '),
         unit: isZh ? '轮对话' : 'turns',
+      }
+    }
+    if (status === 'completed') {
+      return {
+        icon: '💾',
+        label: isZh ? '会话已归档' : 'Committed',
+        unit: isZh ? '会话' : 'session',
       }
     }
   }
@@ -489,6 +446,17 @@ export function getTaskQuantifiedWorkload(
         icon: '🤹',
         label: isZh ? `${skills} 项技能` : `${skills} skills`,
         unit: isZh ? '项技能' : 'skills',
+      }
+    }
+  }
+
+  if (type === 'admin_reindex') {
+    const items = resObj.rebuilt_records ?? resObj.reindexed_items
+    if (items !== undefined) {
+      return {
+        icon: '⚡',
+        label: isZh ? `${items.toLocaleString()} 重构切片` : `${items.toLocaleString()} chunks`,
+        unit: isZh ? '切片' : 'chunks',
       }
     }
   }
@@ -535,65 +503,59 @@ export function getTaskQuantifiedWorkload(
     }
   }
 
-  // 3. Match Live QueueFS Rows
-  const embeddingRow = queueRows.find((r) => r.name.toLowerCase().includes('embedding'))
-  const semanticRow = queueRows.find((r) => r.name.toLowerCase().includes('semantic'))
-  const parseRow = queueRows.find((r) => r.name.toLowerCase().includes('parse'))
-  const resourceRow = queueRows.find((r) => r.name.toLowerCase().includes('resource'))
+  // 3. ONLY for currently RUNNING tasks, match active QueueFS throughput
+  if (status === 'running') {
+    const stage = task.stage?.toLowerCase() || ''
+    const embeddingRow = queueRows.find((r) => r.name.toLowerCase().includes('embedding'))
+    const semanticRow = queueRows.find((r) => r.name.toLowerCase().includes('semantic'))
+    const parseRow = queueRows.find((r) => r.name.toLowerCase().includes('parse'))
 
-  if (embeddingRow && embeddingRow.total > 0) {
-    const pct = Math.round((embeddingRow.completed / embeddingRow.total) * 100)
-    return {
-      icon: '⚡',
-      label: isZh
-        ? `${embeddingRow.completed.toLocaleString()} / ${embeddingRow.total.toLocaleString()} 切片 (${pct}%)`
-        : `${embeddingRow.completed.toLocaleString()} / ${embeddingRow.total.toLocaleString()} chunks (${pct}%)`,
-      processed: embeddingRow.completed,
-      total: embeddingRow.total,
-      unit: isZh ? '切片' : 'chunks',
-      pct,
+    if (stage.includes('extract') || stage.includes('semantic')) {
+      if (semanticRow && semanticRow.total > 0) {
+        const pct = Math.round((semanticRow.completed / semanticRow.total) * 100)
+        return {
+          icon: '🧠',
+          label: isZh
+            ? `${semanticRow.completed.toLocaleString()} / ${semanticRow.total.toLocaleString()} 节点 (${pct}%)`
+            : `${semanticRow.completed.toLocaleString()} / ${semanticRow.total.toLocaleString()} nodes (${pct}%)`,
+          processed: semanticRow.completed,
+          total: semanticRow.total,
+          unit: isZh ? '节点' : 'nodes',
+          pct,
+        }
+      }
     }
-  }
 
-  if (semanticRow && semanticRow.total > 0) {
-    const pct = Math.round((semanticRow.completed / semanticRow.total) * 100)
-    return {
-      icon: '🧠',
-      label: isZh
-        ? `${semanticRow.completed.toLocaleString()} / ${semanticRow.total.toLocaleString()} 节点 (${pct}%)`
-        : `${semanticRow.completed.toLocaleString()} / ${semanticRow.total.toLocaleString()} nodes (${pct}%)`,
-      processed: semanticRow.completed,
-      total: semanticRow.total,
-      unit: isZh ? '节点' : 'nodes',
-      pct,
+    if (stage.includes('parse') || stage.includes('scan')) {
+      if (parseRow && parseRow.total > 0) {
+        const pct = Math.round((parseRow.completed / parseRow.total) * 100)
+        return {
+          icon: '📑',
+          label: isZh
+            ? `${parseRow.completed.toLocaleString()} / ${parseRow.total.toLocaleString()} 页 (${pct}%)`
+            : `${parseRow.completed.toLocaleString()} / ${parseRow.total.toLocaleString()} pages (${pct}%)`,
+          processed: parseRow.completed,
+          total: parseRow.total,
+          unit: isZh ? '页' : 'pages',
+          pct,
+        }
+      }
     }
-  }
 
-  if (parseRow && parseRow.total > 0) {
-    const pct = Math.round((parseRow.completed / parseRow.total) * 100)
-    return {
-      icon: '📑',
-      label: isZh
-        ? `${parseRow.completed.toLocaleString()} / ${parseRow.total.toLocaleString()} 页 (${pct}%)`
-        : `${parseRow.completed.toLocaleString()} / ${parseRow.total.toLocaleString()} pages (${pct}%)`,
-      processed: parseRow.completed,
-      total: parseRow.total,
-      unit: isZh ? '页' : 'pages',
-      pct,
-    }
-  }
-
-  if (resourceRow && resourceRow.total > 0) {
-    const pct = Math.round((resourceRow.completed / resourceRow.total) * 100)
-    return {
-      icon: '📦',
-      label: isZh
-        ? `${resourceRow.completed.toLocaleString()} / ${resourceRow.total.toLocaleString()} 文件 (${pct}%)`
-        : `${resourceRow.completed.toLocaleString()} / ${resourceRow.total.toLocaleString()} files (${pct}%)`,
-      processed: resourceRow.completed,
-      total: resourceRow.total,
-      unit: isZh ? '文件' : 'files',
-      pct,
+    if (stage.includes('embed') || stage.includes('reindex') || type === 'add_resource' || type === 'connector_import') {
+      if (embeddingRow && embeddingRow.total > 0 && embeddingRow.processing > 0) {
+        const pct = Math.round((embeddingRow.completed / embeddingRow.total) * 100)
+        return {
+          icon: '⚡',
+          label: isZh
+            ? `${embeddingRow.completed.toLocaleString()} / ${embeddingRow.total.toLocaleString()} 切片 (${pct}%)`
+            : `${embeddingRow.completed.toLocaleString()} / ${embeddingRow.total.toLocaleString()} chunks (${pct}%)`,
+          processed: embeddingRow.completed,
+          total: embeddingRow.total,
+          unit: isZh ? '切片' : 'chunks',
+          pct,
+        }
+      }
     }
   }
 
