@@ -25,9 +25,10 @@ import {
   SheetHeader,
   SheetTitle,
 } from '#/components/ui/sheet'
-import { getOvResult, getTaskByTaskId } from '#/lib/ov-client'
+import { getOvResult, getTaskByTaskId, ovClient } from '#/lib/ov-client'
 import { cn } from '#/lib/utils'
 import { formatTaskDuration, getTaskDate } from '#/routes/tasks/-lib/task-time'
+import { parseQueueStatus } from '#/routes/monitoring/-components/queue-status-card'
 
 import {
   hasTaskResult,
@@ -96,6 +97,22 @@ export function TaskDetailSheet({
     },
   })
   const task = detailQuery.data
+
+  const queueObserverQuery = useQuery({
+    enabled: open,
+    queryKey: ['queue-observer-status'],
+    queryFn: async () => {
+      try {
+        const resp = await ovClient.instance.get('/api/v1/observer/queue')
+        const statusText = resp.data?.result?.status || ''
+        return parseQueueStatus(statusText)
+      } catch {
+        return []
+      }
+    },
+    refetchInterval: open ? 2_000 : false,
+  })
+  const queueObserverRows = queueObserverQuery.data || []
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -230,7 +247,7 @@ export function TaskDetailSheet({
 
                 {/* Worker Sub-Queue Pipeline Diagram (Type-Aware) */}
                   {(() => {
-                    const steps = getTaskPipelineSteps(task, i18n.language)
+                    const steps = getTaskPipelineSteps(task, queueObserverRows, i18n.language)
 
                     return (
                       <DetailSection title={t('detail.pipelineSteps')}>
