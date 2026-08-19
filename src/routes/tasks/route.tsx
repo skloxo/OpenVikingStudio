@@ -45,6 +45,7 @@ import { useAppConnection } from '#/hooks/use-app-connection'
 import { getOvResult, getTasks, ovClient } from '#/lib/ov-client'
 import { postResources } from '#/gen/ov-client'
 import { commitSession } from '#/lib/sessions/api'
+import { cn } from '#/lib/utils'
 import {
   QueueStatusCard,
   parseQueueStatus,
