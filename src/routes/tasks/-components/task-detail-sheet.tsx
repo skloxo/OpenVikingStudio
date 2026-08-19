@@ -235,24 +235,44 @@ export function TaskDetailSheet({
                     return (
                       <DetailSection title={t('detail.pipelineSteps')}>
                         <div className="rounded-xl border bg-muted/20 p-3 text-xs">
-                          <div className="grid gap-1.5">
+                          <div className="grid gap-2">
                             {steps.map((st, i) => {
                               const isDone = st.state === 'completed'
                               const isRun = st.state === 'running'
                               const isFail = st.state === 'failed'
+                              const hasFraction = st.processed !== undefined && st.total !== undefined && st.total > 0
+                              const pct = hasFraction ? Math.round(((st.processed ?? 0) / (st.total ?? 1)) * 100) : null
+
                               return (
-                                <div key={i} className="flex items-center justify-between rounded-lg border bg-background/60 px-3 py-2">
-                                  <span className="font-medium text-foreground">{i + 1}. {st.name}</span>
-                                  <span className="flex items-center gap-2 text-[11px]">
-                                    {st.count !== undefined && (
-                                      <span className="font-mono text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded border border-border/50 tabular-nums">
+                                <div key={i} className="flex items-center justify-between rounded-lg border bg-background/80 px-3.5 py-2.5 shadow-2xs">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-mono text-muted-foreground text-[11px] font-semibold">{i + 1}.</span>
+                                    <span className="font-medium text-foreground text-xs">{st.name}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2.5 text-[11px]">
+                                    {hasFraction ? (
+                                      <span className="font-mono font-medium text-foreground bg-muted/60 px-2 py-0.5 rounded border border-border/60 tabular-nums">
+                                        {(st.processed ?? 0).toLocaleString()} / {(st.total ?? 0).toLocaleString()} {st.unit ?? ''}
+                                        <span className="text-muted-foreground ml-1.5 font-normal">({pct}%)</span>
+                                      </span>
+                                    ) : st.count !== undefined ? (
+                                      <span className="font-mono font-medium text-foreground bg-muted/60 px-2 py-0.5 rounded border border-border/60 tabular-nums">
                                         {st.count.toLocaleString()} {st.unit ?? ''}
                                       </span>
-                                    )}
-                                    <span className={isDone ? 'text-foreground' : isFail ? 'text-destructive' : 'text-muted-foreground'}>
+                                    ) : null}
+                                    <span className={cn(
+                                      'px-2 py-0.5 rounded text-[11px] font-medium select-none',
+                                      isDone
+                                        ? 'bg-secondary text-foreground'
+                                        : isRun
+                                          ? 'bg-primary/10 text-primary animate-pulse font-semibold ring-1 ring-primary/20'
+                                          : isFail
+                                            ? 'bg-destructive/10 text-destructive'
+                                            : 'bg-muted/40 text-muted-foreground'
+                                    )}>
                                       {isDone ? t('detail.stepCompleted') : isRun ? t('detail.stepRunning') : isFail ? t('detail.stepFailed') : t('detail.stepPending')}
                                     </span>
-                                  </span>
+                                  </div>
                                 </div>
                               )
                             })}
