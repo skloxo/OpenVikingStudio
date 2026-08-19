@@ -66,9 +66,11 @@ export function QueueStatusCard({ title, status = '', isHealthy = true, customRo
     const lower = name.toLowerCase()
     if (lower === 'total') return t('queue.totalRow')
     if (lower.includes('embedding')) return t('queue.embedding')
-    if (lower.includes('semantic-node') || lower.includes('semantic_node')) return t('queue.semanticNodes')
+    if (lower.includes('semantic-node') || lower.includes('semantic_node') || lower.includes('semantic-nodes')) return t('queue.semanticNodes')
     if (lower.includes('semantic')) return t('queue.semantic')
     if (lower.includes('externalparse') || lower.includes('external_parse')) return t('queue.externalParse')
+    if (lower.includes('addresource') || lower.includes('add_resource') || lower.includes('resource')) return t('queue.addResource')
+    if (lower.includes('userdeletion') || lower.includes('user_deletion') || lower.includes('user_delete')) return t('queue.userDeletion')
     if (lower.includes('sessioncommit') || lower.includes('session_commit')) return t('queue.sessionCommit')
     return name
   }
