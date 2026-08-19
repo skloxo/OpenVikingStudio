@@ -399,48 +399,50 @@ function TasksRoute() {
     const workload = getTaskQuantifiedWorkload(task, queueObserverRows, i18n.language)
 
     return (
-      <div className="flex items-center gap-1.5 flex-wrap">
-        <Badge
-          variant={
-            status === 'failed'
-              ? 'destructive'
-              : status === 'completed'
-                ? 'secondary'
-                : 'outline'
-          }
-          className="gap-1.5 font-normal select-none"
-        >
-          <span>
-            {status === 'pending'
-              ? t('pipeline.queued')
-              : t(`status.${status}`)}
-          </span>
-          {status === 'running' && (
-            <span className="font-mono font-semibold ml-0.5">
-              {pct}%
+      <div className="flex flex-col gap-1 items-start min-w-[100px] py-0.5">
+        <div className="flex items-center gap-1.5">
+          <Badge
+            variant={
+              status === 'failed'
+                ? 'destructive'
+                : status === 'completed'
+                  ? 'secondary'
+                  : 'outline'
+            }
+            className="gap-1 font-normal select-none px-1.5 py-0 h-5 text-[11px]"
+          >
+            <span>
+              {status === 'pending'
+                ? t('pipeline.queued')
+                : t(`status.${status}`)}
             </span>
-          )}
-          {status === 'failed' && (
-            <button
-              type="button"
-              disabled={isRetrying}
-              className="ml-1 inline-flex items-center justify-center rounded p-0.5 hover:bg-white/25 active:scale-95 transition-all cursor-pointer text-destructive-foreground disabled:opacity-50"
-              title={t('pipeline.retrigger')}
-              onClick={(e) => {
-                e.stopPropagation()
-                retryMutation.mutate(task)
-              }}
-            >
-              {isRetrying ? (
-                <LoaderCircleIcon className="size-3 shrink-0 animate-spin" />
-              ) : (
-                <RotateCcwIcon className="size-3 shrink-0" />
-              )}
-            </button>
-          )}
-        </Badge>
+            {status === 'running' && (
+              <span className="font-mono font-semibold ml-0.5">
+                {pct}%
+              </span>
+            )}
+            {status === 'failed' && (
+              <button
+                type="button"
+                disabled={isRetrying}
+                className="ml-1 inline-flex items-center justify-center rounded p-0.5 hover:bg-white/25 active:scale-95 transition-all cursor-pointer text-destructive-foreground disabled:opacity-50"
+                title={t('pipeline.retrigger')}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  retryMutation.mutate(task)
+                }}
+              >
+                {isRetrying ? (
+                  <LoaderCircleIcon className="size-3 shrink-0 animate-spin" />
+                ) : (
+                  <RotateCcwIcon className="size-3 shrink-0" />
+                )}
+              </button>
+            )}
+          </Badge>
+        </div>
         {workload && (
-          <span className="inline-flex items-center gap-1 text-[11px] font-mono font-medium text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded border border-border/50 tabular-nums">
+          <span className="inline-flex items-center gap-1 text-[11px] font-mono text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded border border-border/50 tabular-nums whitespace-nowrap">
             <span>{workload.icon}</span>
             <span>{workload.label}</span>
           </span>
@@ -450,22 +452,10 @@ function TasksRoute() {
   }
 
   const renderQueuePipeline = (task: TaskRecord) => {
-    const status = normalizeTaskStatus(task.status)
-    const type = task.task_type
-
-    interface StepItem {
-      name: string
-      state: 'completed' | 'running' | 'pending' | 'failed'
-    }
-
-    type PipelineGroup =
-      | { type: 'serial'; step: StepItem }
-      | { type: 'parallel'; steps: StepItem[] }
-
     const groups = getTaskPipelineGroups(task, i18n.language)
 
     return (
-      <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 min-w-[210px]">
+      <div className="flex items-center gap-1 overflow-x-auto py-0.5">
         {groups.map((grp: PipelineGroup, i: number) => {
           const stepsInGroup = grp.type === 'serial' ? [grp.step] : grp.steps
 
@@ -473,30 +463,32 @@ function TasksRoute() {
             <React.Fragment key={i}>
               {i > 0 && (
                 <span title={t('pipeline.serialTransition')} className="inline-flex shrink-0">
-                  <ChevronRightIcon className="size-3 text-muted-foreground/40" />
+                  <ChevronRightIcon className="size-2.5 text-muted-foreground/30" />
                 </span>
               )}
               <span
-                className="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[11px] font-medium leading-none shrink-0 border border-border/60 bg-secondary/80 text-foreground shadow-2xs transition-all"
+                className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium leading-none shrink-0 border border-border/60 bg-secondary/80 text-foreground shadow-2xs transition-all"
                 title={grp.type === 'parallel' ? t('pipeline.parallelBatch') : t('pipeline.serialBatch')}
               >
-                {stepsInGroup.map((st: StepItem, j: number) => {
+                {stepsInGroup.map((st: PipelineStep, j: number) => {
                   const isDone = st.state === 'completed'
                   const isRun = st.state === 'running'
                   const isFail = st.state === 'failed'
                   const isPend = st.state === 'pending'
 
                   return (
-                    <span
-                      key={j}
-                      className="inline-flex items-center gap-1 shrink-0 transition-colors text-foreground/90 font-medium"
-                    >
-                      {isDone && <CheckIcon className="size-3 text-foreground/75 shrink-0" />}
-                      {isRun && <LoaderCircleIcon className="size-3 text-foreground/75 animate-spin shrink-0" />}
-                      {isPend && <CircleDashedIcon className="size-3 text-foreground/75 shrink-0" />}
-                      {isFail && <XIcon className="size-3 text-foreground/75 shrink-0" />}
-                      <span>{st.name}</span>
-                    </span>
+                    <React.Fragment key={j}>
+                      {j > 0 && <span className="text-muted-foreground/40 text-[10px] mx-0.5 font-mono">∥</span>}
+                      <span
+                        className="inline-flex items-center gap-1 shrink-0 transition-colors text-foreground/90 font-medium"
+                      >
+                        {isDone && <CheckIcon className="size-2.5 text-foreground/75 shrink-0" />}
+                        {isRun && <LoaderCircleIcon className="size-2.5 text-foreground/75 animate-spin shrink-0" />}
+                        {isPend && <CircleDashedIcon className="size-2.5 text-foreground/75 shrink-0" />}
+                        {isFail && <XIcon className="size-2.5 text-foreground/75 shrink-0" />}
+                        <span>{st.name}</span>
+                      </span>
+                    </React.Fragment>
                   )
                 })}
               </span>
