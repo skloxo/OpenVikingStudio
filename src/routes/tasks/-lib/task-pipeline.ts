@@ -69,17 +69,29 @@ function inferStepState(
  * Single Source of Truth (SSOT) for task pipeline steps list.
  * 100% physically aligned with getTaskPipelineGroups.
  */
+/**
+ * Single Source of Truth (SSOT) for task pipeline steps list.
+ * 100% physically aligned with getTaskPipelineGroups.
+ */
 export function getTaskPipelineSteps(
   task: TaskRecord,
+  queueRows: ParsedQueueRow[] | string = [],
   language: string = 'zh',
 ): PipelineStep[] {
-  const isZh = language.startsWith('zh')
+  const actualQueueRows: ParsedQueueRow[] = Array.isArray(queueRows) ? queueRows : []
+  const actualLang: string = typeof queueRows === 'string' ? queueRows : language
+  const isZh = actualLang.startsWith('zh')
   const type = task.task_type
   const status = task.status
+  const normStatus = status?.toLowerCase()
   const stage = task.stage
   const resObj = (task.result && typeof task.result === 'object') ? (task.result as Record<string, any>) : {}
   const metaObj = (task.meta && typeof task.meta === 'object') ? (task.meta as Record<string, any>) : {}
-  const qStatus = resObj.queue_status as Record<string, { error_count?: number; processed?: number }> | undefined
+  const qStatus = resObj.queue_status as Record<string, { error_count?: number; processed?: number; total?: number }> | undefined
+
+  const embeddingRow = actualQueueRows.find((r) => r.name.toLowerCase().includes('embedding'))
+  const semanticRow = actualQueueRows.find((r) => r.name.toLowerCase().includes('semantic') && !r.name.toLowerCase().includes('node'))
+  const parseRow = actualQueueRows.find((r) => r.name.toLowerCase().includes('parse'))
 
   if (type === 'session_commit') {
     const turns = metaObj.turns_count ?? resObj.turns_processed ?? metaObj.messages_count
@@ -233,14 +245,37 @@ export function getTaskPipelineSteps(
   const s3: StepState = status === 'completed' ? 'completed' : isSemStage ? 'running' : status === 'running' ? (isEmbedStage ? 'completed' : 'running') : 'pending'
   const s4: StepState = status === 'completed' ? 'completed' : isEmbedStage ? 'running' : status === 'running' ? 'running' : 'pending'
 
-  const extParseProcessed = qStatus?.ExternalParse?.processed ?? metaObj.processed_pages
-  const extParseTotal = qStatus?.ExternalParse?.total ?? metaObj.total_pages ?? metaObj.parsed_pages
+  // 1. ExternalParse
+  let extParseProcessed = qStatus?.ExternalParse?.processed ?? metaObj.processed_pages
+  let extParseTotal = qStatus?.ExternalParse?.total ?? metaObj.total_pages ?? metaObj.parsed_pages
+  if (extParseTotal === undefined && (normStatus === 'running' || normStatus === 'completed')) {
+    extParseTotal = 1
+    extParseProcessed = 1
+  }
 
-  const semProcessed = qStatus?.Semantic?.processed ?? metaObj.processed_nodes
-  const semTotal = qStatus?.Semantic?.total ?? metaObj.total_nodes ?? metaObj.semantic_nodes
+  // 2. Semantic
+  let semProcessed = qStatus?.Semantic?.processed ?? metaObj.processed_nodes
+  let semTotal = qStatus?.Semantic?.total ?? metaObj.total_nodes ?? metaObj.semantic_nodes
+  if (normStatus === 'running') {
+    if (semProcessed === undefined) {
+      semProcessed = semanticRow?.completed ?? (qStatus?.Semantic?.processed !== undefined ? qStatus.Semantic.processed : 0)
+    }
+    if (semTotal === undefined) {
+      semTotal = (semanticRow && semanticRow.total > 0) ? semanticRow.total : 5
+    }
+  }
 
-  const embProcessed = qStatus?.Embedding?.processed ?? metaObj.processed_chunks
-  const embTotal = qStatus?.Embedding?.total ?? metaObj.total_chunks ?? metaObj.processed_chunks
+  // 3. Embedding
+  let embProcessed = qStatus?.Embedding?.processed ?? metaObj.processed_chunks
+  let embTotal = qStatus?.Embedding?.total ?? metaObj.total_chunks ?? metaObj.processed_chunks
+  if (normStatus === 'running') {
+    if (embProcessed === undefined) {
+      embProcessed = embeddingRow?.completed ?? (qStatus?.Embedding?.processed !== undefined ? qStatus.Embedding.processed : 0)
+    }
+    if (embTotal === undefined) {
+      embTotal = (embeddingRow && embeddingRow.total > 0) ? embeddingRow.total : 8
+    }
+  }
 
   return [
     {
@@ -284,11 +319,11 @@ export function getTaskPipelineSteps(
  */
 export function getTaskPipelineGroups(
   task: TaskRecord,
+  queueRows: ParsedQueueRow[] | string = [],
   language: string = 'zh',
 ): PipelineGroup[] {
-  const isZh = language.startsWith('zh')
+  const steps = getTaskPipelineSteps(task, queueRows, language)
   const type = task.task_type
-  const steps = getTaskPipelineSteps(task, language)
 
   if (type === 'session_commit') {
     return [
