@@ -6,7 +6,7 @@ OpenViking - An Agent-native context database
 Data in, Context out.
 """
 
-__version__ = "1.3.19"
+__version__ = "1.3.20"
 
 
 def __getattr__(name: str):

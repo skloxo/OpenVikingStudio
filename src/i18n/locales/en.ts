@@ -535,6 +535,9 @@ const en = {
       snapshot_restore_reindex: 'Snapshot reindex',
       legacy_migration: 'Legacy migration',
       legacy_cleanup: 'Legacy cleanup',
+      user_delete: 'User space purge',
+      user_deletion: 'User space purge',
+      watch_sync: 'Watch sync',
     },
   },
   accountSwitcher: {
