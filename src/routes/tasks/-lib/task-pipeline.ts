@@ -6,6 +6,8 @@ export type StepState = 'completed' | 'running' | 'pending' | 'failed'
 export type PipelineStep = {
   name: string
   state: StepState
+  processed?: number
+  total?: number
   count?: number
   unit?: string
   detail?: string
@@ -231,28 +233,45 @@ export function getTaskPipelineSteps(
   const s3: StepState = status === 'completed' ? 'completed' : isSemStage ? 'running' : status === 'running' ? (isEmbedStage ? 'completed' : 'running') : 'pending'
   const s4: StepState = status === 'completed' ? 'completed' : isEmbedStage ? 'running' : status === 'running' ? 'running' : 'pending'
 
+  const extParseProcessed = qStatus?.ExternalParse?.processed ?? metaObj.processed_pages
+  const extParseTotal = qStatus?.ExternalParse?.total ?? metaObj.total_pages ?? metaObj.parsed_pages
+
+  const semProcessed = qStatus?.Semantic?.processed ?? metaObj.processed_nodes
+  const semTotal = qStatus?.Semantic?.total ?? metaObj.total_nodes ?? metaObj.semantic_nodes
+
+  const embProcessed = qStatus?.Embedding?.processed ?? metaObj.processed_chunks
+  const embTotal = qStatus?.Embedding?.total ?? metaObj.total_chunks ?? metaObj.processed_chunks
+
   return [
     {
       name: isZh ? '资源入库' : 'Ingestion',
       state: s1,
-      count: metaObj.file_count,
+      processed: metaObj.file_count ? metaObj.file_count : 1,
+      total: metaObj.file_count ? metaObj.file_count : 1,
+      count: metaObj.file_count ?? 1,
       unit: isZh ? '文件' : 'files',
     },
     {
       name: isZh ? '文档解析' : 'Parsing',
       state: s2,
+      processed: extParseProcessed,
+      total: extParseTotal,
       count: metaObj.parsed_pages,
       unit: isZh ? '页' : 'pages',
     },
     {
       name: isZh ? '语义提取' : 'Semantic',
       state: s3,
+      processed: semProcessed,
+      total: semTotal,
       count: metaObj.semantic_nodes,
       unit: isZh ? '节点' : 'nodes',
     },
     {
       name: isZh ? '向量建库' : 'Embedding',
       state: s4,
+      processed: embProcessed,
+      total: embTotal,
       count: metaObj.processed_chunks,
       unit: isZh ? '切片' : 'chunks',
     },
