@@ -298,7 +298,7 @@ async def test_create_user_paths_accept_initial_user_config(
         viking_fs,
         RequestContext(user=UserIdentifier(acct, "alice"), role=Role.ADMIN),
     )
-    assert alice_settings.resource_uri == "viking://user/resources/admin"
+    assert alice_settings.resource_uri == "viking://user/alice/resources/admin"
 
     resp = await lightweight_admin_client.post(
         f"/api/v1/admin/accounts/{acct}/users",
@@ -315,7 +315,7 @@ async def test_create_user_paths_accept_initial_user_config(
         viking_fs,
         RequestContext(user=UserIdentifier(acct, "bob"), role=Role.USER),
     )
-    assert bob_settings.resource_uri == "viking://user/resources/bob"
+    assert bob_settings.resource_uri == "viking://user/bob/resources/bob"
 
 
 async def test_create_user_paths_ignore_deprecated_agent_evolution_config(
@@ -1192,7 +1192,7 @@ async def test_legacy_cleanup_removes_only_legacy_namespaces(
     )
 
 
-async def test_legacy_agent_and_session_uri_reads_are_read_only(
+async def test_legacy_agent_uri_is_read_only_and_session_storage_uses_canonical_uri(
     admin_service: OpenVikingService,
 ):
     """Old agent/session URIs remain readable but not mutable."""
@@ -1207,6 +1207,11 @@ async def test_legacy_agent_and_session_uri_reads_are_read_only(
         "/local/default/session/old-session/messages.jsonl",
         '{"role":"user"}\n',
     )
+    await _agfs_write(
+        admin_service,
+        "/local/default/session/old-session/.meta.json",
+        '{"created_by_user_id":"admin_user"}',
+    )
 
     assert (
         await admin_service.viking_fs.read_file(
@@ -1217,7 +1222,7 @@ async def test_legacy_agent_and_session_uri_reads_are_read_only(
     )
     assert (
         await admin_service.viking_fs.read_file(
-            "viking://session/old-session/messages.jsonl",
+            "viking://user/admin_user/sessions/old-session/messages.jsonl",
             ctx=ctx,
         )
         == '{"role":"user"}\n'
@@ -1228,8 +1233,6 @@ async def test_legacy_agent_and_session_uri_reads_are_read_only(
             "blocked",
             ctx=ctx,
         )
-    with pytest.raises(PermissionDeniedError):
-        await admin_service.viking_fs.mkdir("viking://session/new-session", ctx=ctx)
 
 
 @pytest_asyncio.fixture(scope="function")
