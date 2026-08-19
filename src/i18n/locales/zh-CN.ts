@@ -478,6 +478,8 @@ const zhCN = {
       processQueueStatus: '工序队列状态',
       latestByResource: '按资源收敛 (最新)',
       allHistory: '全部历史记录',
+      chunksCount: '{{current}}/{{total}} 切片',
+      liveThroughput: '切片索引中: {{processed}}/{{total}} ({{pct}}%)',
       kpi: {
         successRate: '任务成功率',
         avgDuration: '平均处理耗时',

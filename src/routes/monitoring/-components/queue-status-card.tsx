@@ -14,7 +14,7 @@ export interface ParsedQueueRow {
 }
 
 // 将 Observer status 字符串解析为结构化队列数据
-function parseQueueStatus(status: string): ParsedQueueRow[] {
+export function parseQueueStatus(status: string): ParsedQueueRow[] {
   if (!status) return []
   const blocks = parseObserverStatus(status)
   const tableBlock = blocks.find((b) => b.kind === 'table')

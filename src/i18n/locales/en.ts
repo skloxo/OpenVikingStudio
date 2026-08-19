@@ -452,6 +452,8 @@ const en = {
       processQueueStatus: 'Process Queue Status',
       latestByResource: 'Latest per resource',
       allHistory: 'All history',
+      chunksCount: '{{current}}/{{total}} chunks',
+      liveThroughput: 'Indexing chunks: {{processed}}/{{total}} ({{pct}}%)',
       kpi: {
         successRate: 'Success Rate',
         avgDuration: 'Avg Duration',

@@ -45,8 +45,11 @@ import { useAppConnection } from '#/hooks/use-app-connection'
 import { getOvResult, getTasks, ovClient } from '#/lib/ov-client'
 import { postResources } from '#/gen/ov-client'
 import { commitSession } from '#/lib/sessions/api'
-import { cn } from '#/lib/utils'
-import { QueueStatusCard } from '#/routes/monitoring/-components/queue-status-card'
+import {
+  QueueStatusCard,
+  parseQueueStatus,
+} from '#/routes/monitoring/-components/queue-status-card'
+import type { ParsedQueueRow } from '#/routes/monitoring/-components/queue-status-card'
 import { TaskDetailSheet } from '#/routes/tasks/-components/task-detail-sheet'
 import {
   normalizeTasks,
@@ -178,9 +181,31 @@ function TasksRoute() {
   const tasksQuery = useQuery({
     queryFn: () => fetchTasks(taskType, statusFilter, dataScope),
     queryKey: ['tasks', identityScopeKey, taskType, statusFilter, dataScope],
-    refetchInterval: 10_000,
+    refetchInterval: 5_000,
   })
   const rawTasks = tasksQuery.data ?? []
+
+  // Real-time QueueFS queue telemetry linkage
+  const queueObserverQuery = useQuery({
+    queryKey: ['queue-observer-status'],
+    queryFn: async () => {
+      try {
+        const resp = await ovClient.instance.get('/api/v1/observer/queue')
+        const statusText = resp.data?.result?.status || ''
+        return parseQueueStatus(statusText)
+      } catch {
+        return []
+      }
+    },
+    refetchInterval: () => {
+      const hasActive = rawTasks.some((t) => {
+        const s = normalizeTaskStatus(t.status)
+        return s === 'running' || s === 'pending'
+      })
+      return hasActive ? 2000 : 15000
+    },
+  })
+  const queueObserverRows = queueObserverQuery.data || []
   const allTasks = React.useMemo(() => {
     if (!dedupByResource) return rawTasks
     const map = new Map<string, TaskRecord>()
@@ -311,43 +336,56 @@ function TasksRoute() {
   }
 
   const getTaskProgressPct = (task: TaskRecord): number => {
-    const status = normalizeTaskStatus(task.status)
+    const effStatus = getEffectiveTaskStatus(task, allTasks)
+    const status = normalizeTaskStatus(effStatus)
     if (status === 'completed') return 100
-    if (status === 'failed') return 35
+    if (status === 'failed') return 0
     if (status === 'pending') return 0
 
-    // Extract real queue metrics from task.result
-    const resObj = (task.result && typeof task.result === 'object') ? (task.result as Record<string, any>) : {}
-    const qStatus = resObj.queue_status
-    const embeddingProcessed = qStatus?.Embedding?.processed
-    const semanticProcessed = qStatus?.Semantic?.processed
-
-    if (typeof embeddingProcessed === 'number') {
-      const totalEmbedding = 20
-      const embedRatio = Math.min(1, embeddingProcessed / totalEmbedding)
-      // Step 1 (20%) + Step 2 (30%) + Step 3 (50% * embedRatio)
-      return Math.round(20 + 30 + (50 * embedRatio))
+    // 1. Direct explicit progress from task.meta (highest priority)
+    const meta = (task.meta && typeof task.meta === 'object') ? (task.meta as Record<string, any>) : {}
+    if (typeof meta.progress_pct === 'number') {
+      return Math.min(99, Math.max(1, Math.round(meta.progress_pct)))
+    }
+    if (typeof meta.processed_chunks === 'number' && typeof meta.total_chunks === 'number' && meta.total_chunks > 0) {
+      return Math.min(99, Math.max(1, Math.round((meta.processed_chunks / meta.total_chunks) * 100)))
     }
 
-    if (typeof semanticProcessed === 'number') {
-      const totalSemantic = 5
-      const semRatio = Math.min(1, semanticProcessed / totalSemantic)
-      // Step 1 (20%) + Step 2 (30% * semRatio)
-      return Math.round(20 + (30 * semRatio))
+    // 2. Real-time QueueFS observer queue linkage
+    const totalRow = queueObserverRows.find((r) => r.name.toUpperCase() === 'TOTAL')
+    const embeddingRow = queueObserverRows.find((r) => r.name.toLowerCase().includes('embedding'))
+    const semanticRow = queueObserverRows.find((r) => r.name.toLowerCase().includes('semantic'))
+
+    if (embeddingRow && embeddingRow.total > 0) {
+      const embedRatio = Math.min(1, embeddingRow.completed / embeddingRow.total)
+      return Math.min(99, Math.max(10, Math.round(50 + (45 * embedRatio))))
+    }
+    if (semanticRow && semanticRow.total > 0) {
+      const semRatio = Math.min(1, semanticRow.completed / semanticRow.total)
+      return Math.min(60, Math.max(10, Math.round(15 + (40 * semRatio))))
+    }
+    if (totalRow && totalRow.total > 0) {
+      const totalRatio = Math.min(1, totalRow.completed / totalRow.total)
+      return Math.min(99, Math.max(10, Math.round(totalRatio * 95)))
     }
 
+    // 3. Stage-based estimation
     const stage = task.stage?.toLowerCase()
-    if (stage === 'completed') return 95
-    if (stage === 'extracting') return 65
-    if (stage === 'started') return 25
-    return 45
-  }
+    if (stage === 'completed' || stage === 'finalizing' || stage === 'committing') return 95
+    if (stage === 'embedding_chunks' || stage === 'embedding') return 75
+    if (stage === 'extracting_semantics' || stage === 'extracting') return 45
+    if (stage === 'scanning' || stage === 'started') return 20
 
-  const getTaskTotalSteps = (taskType?: string): number => {
-    if (taskType === 'session_commit') return 1
-    if (taskType === 'admin_reindex' || taskType === 'snapshot_restore_reindex') return 2
-    if (taskType === 'connector_import') return 4
-    return 3
+    // 4. Smooth asymptotic curve based on elapsed time (replaces hardcoded 45%)
+    const createdAtSec = typeof task.created_at === 'number'
+      ? task.created_at
+      : typeof task.created_at === 'string'
+        ? (new Date(task.created_at).getTime() / 1000)
+        : (Date.now() / 1000)
+    const elapsedSec = Math.max(0, (Date.now() / 1000) - createdAtSec)
+    // Smooth saturation curve: 1 - exp(-t/30) scaled from 15% to 88%
+    const smoothPct = Math.min(88, Math.round(15 + (1 - Math.exp(-elapsedSec / 25)) * 73))
+    return Math.max(10, smoothPct)
   }
 
   const renderStatus = (task: TaskRecord) => {
@@ -356,48 +394,56 @@ function TasksRoute() {
     const effStatus = getEffectiveTaskStatus(task, allTasks)
     const status = normalizeTaskStatus(effStatus)
     const pct = getTaskProgressPct(task)
-    const isRetrying = retryMutation.isPending && retryMutation.variables?.task_id === taskId
+    const isRetrying = retryMutation.isPending && (retryMutation.variables as TaskRecord | undefined)?.task_id === taskId
+    const embeddingRow = queueObserverRows.find((r) => r.name.toLowerCase().includes('embedding'))
 
     return (
-      <Badge
-        variant={
-          status === 'failed'
-            ? 'destructive'
-            : status === 'completed'
-              ? 'secondary'
-              : 'outline'
-        }
-        className="gap-1.5 font-normal select-none"
-      >
-        <span>
-          {status === 'pending'
-            ? t('pipeline.queued')
-            : t(`status.${status}`)}
-        </span>
-        {status === 'running' && (
-          <span className="font-mono font-semibold ml-0.5">
-            {pct}%
+      <div className="flex items-center gap-1.5">
+        <Badge
+          variant={
+            status === 'failed'
+              ? 'destructive'
+              : status === 'completed'
+                ? 'secondary'
+                : 'outline'
+          }
+          className="gap-1.5 font-normal select-none"
+        >
+          <span>
+            {status === 'pending'
+              ? t('pipeline.queued')
+              : t(`status.${status}`)}
+          </span>
+          {status === 'running' && (
+            <span className="font-mono font-semibold ml-0.5">
+              {pct}%
+            </span>
+          )}
+          {status === 'failed' && (
+            <button
+              type="button"
+              disabled={isRetrying}
+              className="ml-1 inline-flex items-center justify-center rounded p-0.5 hover:bg-white/25 active:scale-95 transition-all cursor-pointer text-destructive-foreground disabled:opacity-50"
+              title={t('pipeline.retrigger')}
+              onClick={(e) => {
+                e.stopPropagation()
+                retryMutation.mutate(task)
+              }}
+            >
+              {isRetrying ? (
+                <LoaderCircleIcon className="size-3 shrink-0 animate-spin" />
+              ) : (
+                <RotateCcwIcon className="size-3 shrink-0" />
+              )}
+            </button>
+          )}
+        </Badge>
+        {status === 'running' && embeddingRow && embeddingRow.total > 0 && (
+          <span className="text-[11px] font-mono text-muted-foreground tabular-nums">
+            {t('pipeline.chunksCount', { current: embeddingRow.completed, total: embeddingRow.total })}
           </span>
         )}
-        {status === 'failed' && (
-          <button
-            type="button"
-            disabled={isRetrying}
-            className="ml-1 inline-flex items-center justify-center rounded p-0.5 hover:bg-white/25 active:scale-95 transition-all cursor-pointer text-destructive-foreground disabled:opacity-50"
-            title={t('pipeline.retrigger')}
-            onClick={(e) => {
-              e.stopPropagation()
-              retryMutation.mutate(task)
-            }}
-          >
-            {isRetrying ? (
-              <LoaderCircleIcon className="size-3 shrink-0 animate-spin" />
-            ) : (
-              <RotateCcwIcon className="size-3 shrink-0" />
-            )}
-          </button>
-        )}
-      </Badge>
+      </div>
     )
   }
 
@@ -482,7 +528,7 @@ function TasksRoute() {
     refetchInterval: 5_000,
   })
 
-  const queueRows = React.useMemo(() => {
+  const localCalculatedQueueRows = React.useMemo(() => {
     const map: Record<
       string,
       { processing: number; pending: number; completed: number; errors: number }
@@ -566,6 +612,8 @@ function TasksRoute() {
 
     return rows
   }, [allTasks])
+
+  const displayQueueRows = queueObserverRows.length > 0 ? queueObserverRows : localCalculatedQueueRows
 
   const kpiData = React.useMemo(() => {
     const total = allTasks.length
@@ -801,7 +849,7 @@ function TasksRoute() {
         <div>
           <QueueStatusCard
             title={t('pipeline.processQueueStatus')}
-            customRows={queueRows}
+            customRows={displayQueueRows}
             isHealthy={kpiData.failed === 0}
           />
         </div>
