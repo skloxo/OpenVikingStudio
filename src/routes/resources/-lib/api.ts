@@ -8,6 +8,7 @@ import {
   getFsTree,
   getOvResult,
   normalizeOvClientError,
+  ovClient,
   postContentWrite,
 } from '#/lib/ov-client'
 import type {
@@ -219,6 +220,98 @@ export async function saveFileContent(
         },
       }),
     )
+  } catch (error) {
+    throw toVikingApiError(error)
+  }
+}
+
+export interface SnapshotCommit {
+  oid: string
+  tree?: string
+  parents?: string[]
+  author?: {
+    name: string
+    email?: string
+    time_seconds?: number
+    tz_offset_seconds?: number
+  }
+  committer?: {
+    name: string
+    email?: string
+    time_seconds?: number
+    tz_offset_seconds?: number
+  }
+  message: string
+}
+
+export async function fetchSnapshotLog(
+  path?: string,
+  limit = 30,
+): Promise<SnapshotCommit[]> {
+  try {
+    const params: Record<string, any> = { limit }
+    if (path) {
+      params.paths = path
+    }
+    const response = await ovClient.instance.get('/api/v1/snapshot/log', {
+      params,
+    })
+    return response.data?.result || []
+  } catch (error) {
+    throw toVikingApiError(error)
+  }
+}
+
+export async function fetchSnapshotDiff(
+  path: string,
+  fromRef?: string,
+  toRef = 'HEAD',
+): Promise<string> {
+  try {
+    const params: Record<string, any> = { path, to: toRef }
+    if (fromRef) {
+      params.from = fromRef
+    }
+    const response = await ovClient.instance.get('/api/v1/snapshot/diff', {
+      params,
+    })
+    const result = response.data?.result
+    if (result && typeof result === 'object' && 'diff_text' in result) {
+      return result.diff_text || ''
+    }
+    return typeof result === 'string' ? result : ''
+  } catch (error) {
+    throw toVikingApiError(error)
+  }
+}
+
+export async function fetchSnapshotShow(
+  targetRef: string,
+  path: string,
+): Promise<string> {
+  try {
+    const response = await ovClient.instance.get('/api/v1/snapshot/show', {
+      params: { target_ref: targetRef, path, raw: false },
+      responseType: 'text',
+    })
+    return typeof response.data === 'string' ? response.data : JSON.stringify(response.data)
+  } catch (error) {
+    throw toVikingApiError(error)
+  }
+}
+
+export async function restoreSnapshotCommit(
+  sourceCommit: string,
+  projectDir?: string,
+  message?: string,
+): Promise<any> {
+  try {
+    const response = await ovClient.instance.post('/api/v1/snapshot/restore', {
+      source_commit: sourceCommit,
+      project_dir: projectDir,
+      message: message || `Restore ${projectDir || 'file'} to ${sourceCommit.slice(0, 8)}`,
+    })
+    return response.data?.result
   } catch (error) {
     throw toVikingApiError(error)
   }

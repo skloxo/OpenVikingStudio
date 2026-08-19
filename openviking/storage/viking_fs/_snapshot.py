@@ -387,6 +387,8 @@ class _SnapshotMixin:
         author, committer, message). ``path=str`` returns the blob bytes
         directly, stripping the oid/size envelope returned by the binding.
         """
+        if target_ref == "HEAD":
+            target_ref = "main"
         real_ctx = self._ctx_or_default(ctx)
         account = real_ctx.account_id
         tree_path = self._uri_to_tree_path(path, ctx=real_ctx) if path else None
@@ -413,8 +415,10 @@ class _SnapshotMixin:
 
         Returns ``{"oid": str, "size": int, "bytes": bytes}`` without
         stripping. Used by the HTTP snapshot router to populate
-        ``X-Snapshot-Oid`` / ``X-Snapshot-Size`` response headers.
+        ``ETag`` / ``X-Viking-Commit-OID`` headers.
         """
+        if target_ref == "HEAD":
+            target_ref = "main"
         real_ctx = self._ctx_or_default(ctx)
         account = real_ctx.account_id
         tree_path = self._uri_to_tree_path(path, ctx=real_ctx)
@@ -440,6 +444,10 @@ class _SnapshotMixin:
         ctx: Optional[RequestContext] = None,
     ) -> Dict[str, Any]:
         """Return a unified text diff for one path between two snapshots."""
+        if from_ref == "HEAD":
+            from_ref = "main"
+        if to_ref == "HEAD":
+            to_ref = "main"
         real_ctx = self._ctx_or_default(ctx)
         path = canonicalize_uri(path, ctx=real_ctx)
         self._ensure_access(path, real_ctx)
@@ -466,7 +474,7 @@ class _SnapshotMixin:
                     max_blob_bytes=_pkg().SNAPSHOT_DIFF_MAX_FILE_BYTES,
                     ctx=real_ctx,
                 )
-            except AGFSPathNotFoundError:
+            except (AGFSPathNotFoundError, AGFSNotFoundError, NotFoundError):
                 return None
             except AGFSResourceExhaustedError as exc:
                 raise ResourceExhaustedError(
@@ -513,15 +521,37 @@ class _SnapshotMixin:
             max_lines=_pkg().SNAPSHOT_DIFF_MAX_LINES,
         )
         try:
-            diff_text = await self._async_agfs.run(
-                "git_diff_text",
-                before=before,
-                after=after,
-                fromfile=f"{path}@{from_oid}",
-                tofile=f"{path}@{to_oid}",
-                timeout_ms=_pkg().SNAPSHOT_DIFF_TIMEOUT_MS,
-                max_output_bytes=_pkg().SNAPSHOT_DIFF_MAX_OUTPUT_BYTES,
-            )
+            if hasattr(getattr(self._async_agfs, "_client", None), "git_diff_text"):
+                diff_text = await self._async_agfs.run(
+                    "git_diff_text",
+                    before=before,
+                    after=after,
+                    fromfile=f"{path}@{from_oid}",
+                    tofile=f"{path}@{to_oid}",
+                    timeout_ms=_pkg().SNAPSHOT_DIFF_TIMEOUT_MS,
+                    max_output_bytes=_pkg().SNAPSHOT_DIFF_MAX_OUTPUT_BYTES,
+                )
+            else:
+                import difflib
+
+                before_lines = before.splitlines(keepends=True)
+                after_lines = after.splitlines(keepends=True)
+                diff_lines = list(
+                    difflib.unified_diff(
+                        before_lines,
+                        after_lines,
+                        fromfile=f"{path}@{from_oid}",
+                        tofile=f"{path}@{to_oid}",
+                    )
+                )
+                formatted_lines = []
+                for l in diff_lines:
+                    if l.endswith("\n"):
+                        formatted_lines.append(l)
+                    else:
+                        formatted_lines.append(l + "\n")
+                        formatted_lines.append("\\ No newline at end of file\n")
+                diff_text = "".join(formatted_lines)
         except AGFSResourceExhaustedError as exc:
             raise ResourceExhaustedError(
                 f"snapshot diff output size limit exceeded "

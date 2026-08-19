@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import hljs from 'highlight.js/lib/core'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { X, Pencil, Save, XCircle, Loader2 } from 'lucide-react'
+import { X, Pencil, Save, XCircle, Loader2, History } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '#/components/ui/button'
@@ -23,6 +23,7 @@ import {
 } from '../-hooks/viking-fm'
 import type { VikingFsEntry } from '../-types/viking-fm'
 import type { CodeEditorHandle } from './code-editor'
+import { VersionTimelineDialog } from './version-timeline-dialog'
 
 const LazyCodeEditor = lazy(() =>
   import('./code-editor').then((m) => ({ default: m.CodeEditor })),
@@ -1048,6 +1049,7 @@ export function FilePreview({
   >(new Set(['abstract', 'overview']))
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [timelineOpen, setTimelineOpen] = useState(false)
   const editorRef = useRef<CodeEditorHandle>(null)
   const { invalidatePreview } = useInvalidateVikingFs()
 
@@ -1251,16 +1253,29 @@ export function FilePreview({
                 </Button>
               </div>
             ) : (
-              canEdit && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setEditing(true)}
-                >
-                  <Pencil className="mr-1 size-3.5" />
-                  {t('filePreview.edit')}
-                </Button>
-              )
+              <div className="flex items-center gap-1">
+                {!file.isDir && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 text-xs text-muted-foreground hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors"
+                    onClick={() => setTimelineOpen(true)}
+                  >
+                    <History className="mr-1 size-3.5" />
+                    {t('filePreview.versionHistory')}
+                  </Button>
+                )}
+                {canEdit && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setEditing(true)}
+                  >
+                    <Pencil className="mr-1 size-3.5" />
+                    {t('filePreview.edit')}
+                  </Button>
+                )}
+              </div>
             )}
           </div>
           {showCloseButton ? (
@@ -1546,6 +1561,18 @@ export function FilePreview({
             ) : null}
           </div>
         </ScrollArea>
+      )}
+
+      {!file.isDir && (
+        <VersionTimelineDialog
+          open={timelineOpen}
+          onOpenChange={setTimelineOpen}
+          file={file}
+          onRestored={() => {
+            invalidatePreview(file.uri)
+            previewQuery.refetch()
+          }}
+        />
       )}
     </div>
   )
