@@ -10,7 +10,6 @@ import asyncio
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from openviking.core.namespace import classify_uri, context_type_for_uri
-from openviking.core.uri_validation import validate_optional_viking_uri, validate_viking_uri
 from openviking.privacy import (
     UserPrivacyConfigService,
     get_skill_name_from_uri,
@@ -132,7 +131,6 @@ class FSService:
             sort_order: Sort direction, "asc" or "desc"
         """
         viking_fs = self._ensure_initialized()
-        uri = validate_viking_uri(uri)
 
         if simple:
             # Only return URIs — skip expensive abstract fetching to save tokens
@@ -187,7 +185,6 @@ class FSService:
         description: Optional[str] = None,
     ) -> None:
         """Create directory."""
-        uri = validate_viking_uri(uri)
         viking_fs = self._ensure_initialized()
         await viking_fs.mkdir(uri, ctx=ctx)
         abstract = self._normalize_directory_description(description)
@@ -227,7 +224,6 @@ class FSService:
         timeout: Optional[float] = None,
     ) -> Optional[Dict[str, Any]]:
         """Remove resource."""
-        uri = validate_viking_uri(uri)
         viking_fs = self._ensure_initialized()
         cleanup_result: Optional[Dict[str, Any]] = None
         context_type = context_type_for_uri(uri)
@@ -414,8 +410,6 @@ class FSService:
 
     async def mv(self, from_uri: str, to_uri: str, ctx: RequestContext) -> None:
         """Move resource."""
-        from_uri = validate_viking_uri(from_uri, field_name="from_uri")
-        to_uri = validate_viking_uri(to_uri, field_name="to_uri")
         viking_fs = self._ensure_initialized()
         watch_manager = self._get_watch_manager()
         if not watch_manager or context_type_for_uri(from_uri) != "resource":
@@ -523,7 +517,6 @@ class FSService:
     ) -> List[Dict[str, Any]]:
         """Get directory tree."""
         viking_fs = self._ensure_initialized()
-        uri = validate_viking_uri(uri)
         return await viking_fs.tree(
             uri,
             ctx=ctx,
@@ -537,25 +530,21 @@ class FSService:
     async def stat(self, uri: str, ctx: RequestContext) -> Dict[str, Any]:
         """Get resource status."""
         viking_fs = self._ensure_initialized()
-        uri = validate_viking_uri(uri)
         return await viking_fs.stat(uri, ctx=ctx)
 
     async def system_sync_status(self, uri: str, ctx: RequestContext) -> Dict[str, Any]:
         """Return multi-write sync status for one Viking URI subtree."""
         viking_fs = self._ensure_initialized()
-        uri = validate_viking_uri(uri)
         return await viking_fs.system_sync_status(uri, ctx=ctx)
 
     async def system_sync_retry(self, uri: str, ctx: RequestContext) -> Dict[str, Any]:
         """Retry multi-write sync work for one Viking URI subtree."""
         viking_fs = self._ensure_initialized()
-        uri = validate_viking_uri(uri)
         return await viking_fs.system_sync_retry(uri, ctx=ctx)
 
     async def read(self, uri: str, ctx: RequestContext, offset: int = 0, limit: int = -1) -> str:
         """Read file content."""
         viking_fs = self._ensure_initialized()
-        uri = validate_viking_uri(uri)
         content = await viking_fs.read_file(uri, ctx=ctx)
         skill_name = get_skill_name_from_uri(uri)
         if skill_name and self._privacy_config_service:
@@ -581,7 +570,6 @@ class FSService:
         limit: int = -1,
     ) -> str:
         """Read public content, hiding reserved metadata from memory files."""
-        uri = validate_viking_uri(uri)
         if not classify_uri(uri).is_memory:
             return await self.read(uri, ctx=ctx, offset=offset, limit=limit)
         content = await self.read(uri, ctx=ctx)
@@ -590,13 +578,11 @@ class FSService:
     async def abstract(self, uri: str, ctx: RequestContext) -> str:
         """Read L0 abstract (.abstract.md)."""
         viking_fs = self._ensure_initialized()
-        uri = validate_viking_uri(uri)
         return await viking_fs.abstract(uri, ctx=ctx)
 
     async def overview(self, uri: str, ctx: RequestContext) -> str:
         """Read L1 overview (.overview.md)."""
         viking_fs = self._ensure_initialized()
-        uri = validate_viking_uri(uri)
         return await viking_fs.overview(uri, ctx=ctx)
 
     async def grep(
@@ -611,8 +597,6 @@ class FSService:
     ) -> Dict:
         """Content search."""
         viking_fs = self._ensure_initialized()
-        uri = validate_viking_uri(uri)
-        exclude_uri = validate_optional_viking_uri(exclude_uri, field_name="exclude_uri") or None
         kwargs = {
             "exclude_uri": exclude_uri,
             "case_insensitive": case_insensitive,
@@ -633,13 +617,11 @@ class FSService:
     ) -> Dict:
         """File pattern matching."""
         viking_fs = self._ensure_initialized()
-        uri = validate_viking_uri(uri)
         return await viking_fs.glob(pattern, uri=uri, node_limit=node_limit, ctx=ctx)
 
     async def read_file_bytes(self, uri: str, ctx: RequestContext) -> bytes:
         """Read file as raw bytes."""
         viking_fs = self._ensure_initialized()
-        uri = validate_viking_uri(uri)
         return await viking_fs.read_file_bytes(uri, ctx=ctx)
 
     async def write(
@@ -653,7 +635,6 @@ class FSService:
         processing_mode: str = "semantic_and_vectors",
     ) -> Dict[str, Any]:
         """Write to an existing file and refresh semantics/vectors."""
-        uri = validate_viking_uri(uri)
         viking_fs = self._ensure_initialized()
         coordinator = ContentWriteCoordinator(viking_fs=viking_fs, vikingdb=self._vikingdb)
         return await coordinator.write(
@@ -676,7 +657,6 @@ class FSService:
         timeout: Optional[float] = None,
     ) -> Dict[str, Any]:
         """Apply a preconditioned multi-file write and aggregate downstream refresh."""
-        root_uri = validate_viking_uri(root_uri, field_name="root_uri")
         viking_fs = self._ensure_initialized()
         coordinator = ContentWriteCoordinator(viking_fs=viking_fs, vikingdb=self._vikingdb)
         return await coordinator.batch_write(
@@ -696,7 +676,6 @@ class FSService:
         ctx: RequestContext,
     ) -> Dict[str, Any]:
         """Set explicit retrieval tags for a file or directory semantic nodes."""
-        uri = validate_viking_uri(uri)
         viking_fs = self._ensure_initialized()
         coordinator = ContentWriteCoordinator(viking_fs=viking_fs)
         return await coordinator.set_tags(
@@ -719,10 +698,9 @@ class FSService:
     ) -> Dict[str, Any]:
         """Forward to VikingFS.commit. See viking_fs.commit for semantics."""
         viking_fs = self._ensure_initialized()
-        validated = [validate_viking_uri(p) for p in paths] if paths is not None else None
         return await viking_fs.commit(
             message=message,
-            paths=validated,
+            paths=paths,
             branch=branch,
             author_name=author_name,
             author_email=author_email,
@@ -743,8 +721,6 @@ class FSService:
     ) -> Dict[str, Any]:
         """Forward to VikingFS.restore. See viking_fs.restore for semantics."""
         viking_fs = self._ensure_initialized()
-        if project_dir is not None:
-            project_dir = validate_viking_uri(project_dir, field_name="project_dir")
         return await viking_fs.restore(
             project_dir=project_dir,
             source_commit=source_commit,
@@ -765,8 +741,6 @@ class FSService:
     ) -> Any:
         """Forward to VikingFS.show. Returns dict (metadata) or bytes (blob)."""
         viking_fs = self._ensure_initialized()
-        # validate_optional_viking_uri returns "" for None input; VikingFS.show needs None.
-        path = validate_optional_viking_uri(path, field_name="path") or None
         return await viking_fs.show(target_ref, path=path, ctx=ctx)
 
     async def show_blob_raw(
@@ -778,7 +752,6 @@ class FSService:
     ) -> Dict[str, Any]:
         """Forward to VikingFS.show_blob_raw. Returns ``{"oid", "size", "bytes"}``."""
         viking_fs = self._ensure_initialized()
-        path = validate_viking_uri(path, field_name="path")
         return await viking_fs.show_blob_raw(target_ref, path=path, ctx=ctx)
 
     async def diff(
@@ -792,7 +765,6 @@ class FSService:
     ) -> Dict[str, Any]:
         """Return a unified text diff for one path between two snapshots."""
         viking_fs = self._ensure_initialized()
-        path = validate_viking_uri(path, field_name="path")
         return await viking_fs.diff(
             path=path,
             from_ref=from_ref,
@@ -811,10 +783,6 @@ class FSService:
     ) -> List[Dict[str, Any]]:
         """Forward to VikingFS.log. Walks parents[0] up to limit commits."""
         viking_fs = self._ensure_initialized()
-        if paths is not None:
-            paths = [validate_viking_uri(path, field_name="paths") for path in paths]
-            if not paths:
-                paths = None
         return await viking_fs.log(branch=branch, limit=limit, paths=paths, ctx=ctx)
 
     async def get_gitignore(self, *, ctx: RequestContext) -> str:

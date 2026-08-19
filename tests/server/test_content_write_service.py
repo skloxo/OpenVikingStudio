@@ -792,8 +792,7 @@ async def test_create_mode_new_file_success(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_create_mode_canonicalizes_user_shorthand_memory_uri(monkeypatch):
-    input_uri = "viking://user/memories/new_file.md"
+async def test_create_mode_refreshes_canonical_user_memory_uri(monkeypatch):
     canonical_uri = "viking://user/default/memories/new_file.md"
     root_uri = "viking://user/default/memories"
     ctx = RequestContext(user=UserIdentifier.the_default_user(), role=Role.USER)
@@ -828,7 +827,7 @@ async def test_create_mode_canonicalizes_user_shorthand_memory_uri(monkeypatch):
     )
 
     result = await coordinator.write(
-        uri=input_uri, content="new content", mode="create", ctx=ctx, wait=True
+        uri=canonical_uri, content="new content", mode="create", ctx=ctx, wait=True
     )
 
     assert result["uri"] == canonical_uri

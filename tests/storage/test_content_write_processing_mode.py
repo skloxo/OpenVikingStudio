@@ -159,8 +159,8 @@ async def test_memory_write_accepts_processing_mode_without_switching_refresh(mo
     coordinator._write_in_place = AsyncMock()
 
     result = await coordinator._write_memory_with_refresh(
-        uri="viking://user/memories/demo.md",
-        root_uri="viking://user/memories",
+        uri="viking://user/user-1/memories/demo.md",
+        root_uri="viking://user/user-1/memories",
         content="updated",
         mode="replace",
         wait=True,

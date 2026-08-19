@@ -122,11 +122,11 @@ class TestUriToTreePath:
         )
 
     def test_session_uri(self, vfs):
-        # ``session`` is a virtual scope: it canonicalizes into the owning
-        # user's sessions subtree, and the git tree path mirrors that real
-        # storage layout (so commit/restore target the actual stored bytes).
         ctx = _make_ctx()
-        assert vfs._uri_to_tree_path("viking://session", ctx=ctx) == "user/user1/sessions"
+        assert (
+            vfs._uri_to_tree_path("viking://user/user1/sessions", ctx=ctx)
+            == "user/user1/sessions"
+        )
 
     def test_trailing_slash_kept_as_directory(self, vfs):
         # Normalization may strip trailing slash; this is acceptable
