@@ -538,19 +538,25 @@ function TasksRoute() {
       Embedding: { processing: 0, pending: 0, completed: 0, errors: 0 },
       Semantic: { processing: 0, pending: 0, completed: 0, errors: 0 },
       ExternalParse: { processing: 0, pending: 0, completed: 0, errors: 0 },
+      AddResource: { processing: 0, pending: 0, completed: 0, errors: 0 },
       SessionCommit: { processing: 0, pending: 0, completed: 0, errors: 0 },
+      UserDeletion: { processing: 0, pending: 0, completed: 0, errors: 0 },
       'Semantic-Nodes': { processing: 0, pending: 0, completed: 0, errors: 0 },
     }
 
     for (const item of allTasks) {
       const st = normalizeTaskStatus(item.status)
-      const qStatus = (item.result as any)?.queue_status
 
       if (item.task_type === 'session_commit') {
         if (st === 'running') map.SessionCommit.processing++
         else if (st === 'pending') map.SessionCommit.pending++
         else if (st === 'completed') map.SessionCommit.completed++
         else if (st === 'failed') map.SessionCommit.errors++
+      } else if (item.task_type === 'user_delete' || item.task_type === 'user_deletion') {
+        if (st === 'running') map.UserDeletion.processing++
+        else if (st === 'pending') map.UserDeletion.pending++
+        else if (st === 'completed') map.UserDeletion.completed++
+        else if (st === 'failed') map.UserDeletion.errors++
       } else if (
         item.task_type === 'admin_reindex' ||
         item.task_type === 'snapshot_restore_reindex'
@@ -563,20 +569,24 @@ function TasksRoute() {
         else if (st === 'completed') map.Embedding.completed++
         else if (st === 'failed') map.Embedding.errors++
       } else {
-        // add_resource / add_skill / connector_import 包含：解析 (ExternalParse) -> 语义提炼 (Semantic) + 向量落库 (Embedding)
+        // add_resource / add_skill / connector_import 包含：资源入库 -> 解析 -> 语义提炼 -> 向量落库
         if (st === 'running') {
+          map.AddResource.processing++
           map.ExternalParse.processing++
           map.Semantic.processing++
           map.Embedding.processing++
         } else if (st === 'pending') {
+          map.AddResource.pending++
           map.ExternalParse.pending++
           map.Semantic.pending++
           map.Embedding.pending++
         } else if (st === 'completed') {
+          map.AddResource.completed++
           map.ExternalParse.completed++
           map.Semantic.completed++
           map.Embedding.completed++
         } else if (st === 'failed') {
+          map.AddResource.errors++
           map.ExternalParse.errors++
           map.Semantic.errors++
           map.Embedding.errors++

@@ -307,7 +307,7 @@ export function getTaskPipelineGroups(
       },
       {
         type: 'serial',
-        step: { name: isZh ? 'Frontmatter 校验' : 'Frontmatter', state: status === 'pending' ? 'pending' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'completed' },
+        step: { name: isZh ? '规范校验' : 'Spec', state: status === 'pending' ? 'pending' : status === 'running' ? 'running' : status === 'failed' ? 'failed' : 'completed' },
       },
       {
         type: 'serial',
