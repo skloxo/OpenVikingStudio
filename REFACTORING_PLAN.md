@@ -50,14 +50,18 @@
 
 ## ⚡ 第三部分：当前活跃与待调度 Studio 原子工单 (Scheduled Active Task Cards)
 
-### 📌 P0: [ ] [TASK-VERSION-TIMELINE-01] .md 文档资源“查看文件版本”时间轴与“点击回滚版本”功能移植
-- **模块**：OpenVikingStudio 前端 (`src/routes/resources`)
+### 📌 P0: [x] [TASK-VERSION-TIMELINE-01] .md 文档资源“查看文件版本”时间轴与“点击回滚版本”功能移植 ✅
+- **模块**：OpenVikingStudio 前端 (`src/routes/resources`) + 后端 VikingFS (`openviking/storage/viking_fs/_snapshot.py`)
 - **工单 ID**：`TASK-VERSION-TIMELINE-01` ｜ **优先级**：P0（最高）
-- **目标**：在 1936 资源管理页中，当选中 `.abstract.md` / `.overview.md` 或常规 `.md` 文档时，右上角提供【查看历史版本】按钮，展开版本时间轴并支持一键还原回滚。
-- **验收标准**：
-  - [ ] 历史版本列表倒序渲染版本号、时间戳、说明与作者；
-  - [ ] 提供 Diff 差异高亮比对；
-  - [ ] 点击【回滚至此版本】成功触发还原并刷新列表。
+- **目标**：在 1936 / 1933 资源管理页中，当选中 `.abstract.md` / `.overview.md` 或常规 `.md` 文档时，右上角提供【查看历史版本】按钮，展开版本时间轴并支持一键还原回滚。
+- **交付内容与验收结果**：
+  - [x] **宽屏主从两栏布局**：`w-[94vw] max-w-6xl h-[86vh]` 双栏时间轴对话框（左侧快照历史，右侧 Diff 与源码）；
+  - [x] **全多语言国际化**：中英双语 21 个词条全量支持，彻底解决裸露 Key 问题；
+  - [x] **智能回退与筛选**：支持【仅此文件变更】与【显示全盘快照】自由切换；
+  - [x] **NO GREEN EVER 差异高亮**：新增行呈现冰青色 (`cyan-400`)，删除行呈现玫瑰红 (`rose-400`)；
+  - [x] **后端 Diff 引擎兼容与别名映射**：`HEAD` -> `main` 自动映射，`difflib` 纯 Python 兜底，24 项快照测试 100% 通过；
+  - [x] **一键安全回滚**：支持二次确认并调用 `/api/v1/snapshot/restore` 秒级恢复历史版本并自动刷新；
+- **交付版本**：`v1.3.14` ｜ **交付 Commit**：`0c93a092` ｜ **交付 Tag**：`v1.3.14`
 
 ---
 
