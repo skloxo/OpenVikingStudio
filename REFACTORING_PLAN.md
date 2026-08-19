@@ -172,6 +172,9 @@
 ## 📅 第四部分：远期规划与 Epic 卡片 (Milestone Phase 2 & 3)
 
 ### 🚀 Milestone Phase 2：技能自演进闭环与质量门禁引擎
+- **`[TASK-PIPELINE-QUANTIFY-01]` 全工序切片/节点/页数物理工作量全景量化透视**：
+  - **模块**：后端 `TaskTracker` / `QueueFS` Processors + 前端 `src/routes/tasks` 工序流水线组件；
+  - **目标**：为「语义处理 (X/Y 节点)」、「外部解析 (X/Y 页)」、「AddResource (X/Y 文件)」、「会话提交 (X/Y 轮)」、「UserDeletion (X/Y 项)」全量上线切片级真实物理工作量标签与动态吞吐进度，彻底消除模糊状态。
 - **`[TASK-LOOP-01~07]` Epic-SKILL-LOOP 自进化闭环引擎**：修正事件数据模型、异常 Trace 自动捕获、`CONTEXT / REFLECTION / LESSON` 3 段式自动萃取、Lesson 审核 View、`SKILL.md` 受控版本更新与 Git 自动回滚。
 - **`[TASK-SKILLOPT-01~03]` Epic-SKILLOPT 质量门禁引擎**：Attempt 执行引擎与 Judge Gate 评分验证器、健康评分与自动修复建议生成、技能权重动态微调与排名。
 

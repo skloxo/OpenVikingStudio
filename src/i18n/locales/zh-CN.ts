@@ -1373,7 +1373,7 @@ const zhCN = {
       scoreBadge: 'Score: {{score}}',
       rootEngine: '1. Root 检索引擎',
       levelMatch: '2. {{level}} 层级匹配',
-      similarityCheck: '3. 避坑节点得分',
+      similarityCheck: '3. 命中相似度得分',
       highConfidence: '达到 ≥ 0.70 高信度门禁',
       scoreGateLow: '未达 0.70 门禁',
       relationsTitle: '4. 关联节点扩展',
