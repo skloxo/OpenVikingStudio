@@ -2,11 +2,16 @@ import * as React from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import {
+  AlignLeftIcon,
+  CheckIcon,
   ChevronRightIcon,
   ClockIcon,
+  CopyIcon,
   CpuIcon,
   FileCode2Icon,
+  HashIcon,
   LayersIcon,
+  ListTreeIcon,
   LoaderCircleIcon,
   SearchIcon,
   ShieldCheckIcon,
@@ -16,6 +21,7 @@ import {
   ZapIcon,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
@@ -581,14 +587,195 @@ function SkillDetailTabPanel({
             )}
           </DetailSection>
 
-          <DetailSection title="📄 SKILL.md 全量源码 (Full Source)">
-            <pre className="overflow-x-auto whitespace-pre-wrap rounded border border-border/60 bg-muted/30 p-3 font-mono text-[11px] leading-relaxed text-foreground/90 min-h-72 flex-1">
-              {detail.content ||
-                getFallbackSkillContent(detail.name, detail.description)}
-            </pre>
+          <DetailSection title="📄 SKILL.md 全量源码与 TOC 结构索引 (Full Source & TOC)">
+            <SkillSourceViewer
+              content={detail.content || getFallbackSkillContent(detail.name, detail.description)}
+              t={t}
+            />
           </DetailSection>
         </div>
       )}
+    </div>
+  )
+}
+
+interface SkillTocItem {
+  level: number
+  title: string
+  lineIndex: number
+  id: string
+}
+
+function extractSkillToc(content: string): SkillTocItem[] {
+  const lines = content.split('\n')
+  const toc: SkillTocItem[] = []
+  lines.forEach((line, idx) => {
+    const match = line.match(/^(#{1,4})\s+(.+)$/)
+    if (match) {
+      const level = match[1].length
+      const title = match[2].trim()
+      toc.push({
+        level,
+        title,
+        lineIndex: idx,
+        id: `toc-line-${idx}`,
+      })
+    }
+  })
+  return toc
+}
+
+function SkillSourceViewer({
+  content,
+  t,
+}: {
+  content: string
+  t: (key: string) => string
+}) {
+  const [copied, setCopied] = React.useState(false)
+  const [showToc, setShowToc] = React.useState(true)
+  const [activeTocIdx, setActiveTocIdx] = React.useState<number | null>(null)
+  const lines = React.useMemo(() => content.split('\n'), [content])
+  const toc = React.useMemo(() => extractSkillToc(content), [content])
+  const lineRefs = React.useRef<(HTMLDivElement | null)[]>([])
+
+  const handleCopy = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    void navigator.clipboard.writeText(content)
+    setCopied(true)
+    toast.success(t('skillsPage.toc.copied'))
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleJumpToLine = (lineIdx: number) => {
+    setActiveTocIdx(lineIdx)
+    const el = lineRefs.current[lineIdx]
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2 flex-1 min-h-0">
+      {/* Top Header Action Bar */}
+      <div className="flex items-center justify-between gap-2 rounded border border-border/60 bg-muted/20 px-3 py-1.5 font-mono text-[11px]">
+        <div className="flex items-center gap-2">
+          <span className="flex items-center gap-1 font-semibold text-foreground">
+            <FileCode2Icon className="size-3.5 text-cyan-500" />
+            SKILL.md
+          </span>
+          <span className="text-muted-foreground/40">|</span>
+          <span className="text-muted-foreground">{lines.length} 行代码</span>
+          {toc.length > 0 && (
+            <>
+              <span className="text-muted-foreground/40">|</span>
+              <button
+                type="button"
+                onClick={() => setShowToc((prev) => !prev)}
+                className={cn(
+                  'flex items-center gap-1 rounded px-1.5 py-0.5 transition-colors cursor-pointer',
+                  showToc
+                    ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-semibold'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+                title="切换 TOC 目录视图"
+              >
+                <ListTreeIcon className="size-3" />
+                <span>{toc.length} 个章节</span>
+              </button>
+            </>
+          )}
+        </div>
+
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleCopy}
+          className="h-6 rounded px-2 text-[11px] font-mono gap-1 text-muted-foreground hover:text-foreground cursor-pointer"
+        >
+          {copied ? (
+            <>
+              <CheckIcon className="size-3 text-cyan-500" />
+              <span>已复制</span>
+            </>
+          ) : (
+            <>
+              <CopyIcon className="size-3" />
+              <span>复制源码</span>
+            </>
+          )}
+        </Button>
+      </div>
+
+      {/* TOC Quick Jump Drawer / List */}
+      {showToc && toc.length > 0 && (
+        <div className="rounded border border-cyan-500/30 bg-cyan-500/5 p-2.5 space-y-1 font-mono text-[11px]">
+          <div className="flex items-center justify-between text-cyan-600 dark:text-cyan-400 font-semibold border-b border-cyan-500/20 pb-1 mb-1.5 font-sans">
+            <span className="flex items-center gap-1">
+              <AlignLeftIcon className="size-3.5" />
+              TOC 结构化章节索引
+            </span>
+            <span className="text-[11px] text-muted-foreground">{toc.length} 节</span>
+          </div>
+          <div className="max-h-36 overflow-y-auto space-y-0.5 pr-1">
+            {toc.map((item, idx) => (
+              <button
+                key={`${item.id}-${idx}`}
+                type="button"
+                onClick={() => handleJumpToLine(item.lineIndex)}
+                className={cn(
+                  'w-full text-left flex items-center gap-1.5 rounded px-2 py-0.5 transition-colors truncate cursor-pointer',
+                  activeTocIdx === item.lineIndex
+                    ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 font-bold'
+                    : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground',
+                  item.level === 1 && 'font-semibold text-foreground',
+                  item.level === 2 && 'pl-4',
+                  item.level >= 3 && 'pl-7 text-muted-foreground/80',
+                )}
+                title={`跳转至第 ${item.lineIndex + 1} 行: ${item.title}`}
+              >
+                <HashIcon className="size-2.5 shrink-0 opacity-50" />
+                <span className="truncate">{item.title}</span>
+                <span className="ml-auto text-[11px] opacity-40 font-mono">L{item.lineIndex + 1}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Line-by-line Source Code Viewer */}
+      <div className="rounded border border-border/60 bg-muted/20 overflow-hidden min-h-80 max-h-[520px] flex flex-col">
+        <div className="overflow-y-auto overflow-x-auto flex-1 font-mono text-[11px] leading-5 p-2">
+          {lines.map((line, idx) => {
+            const isHeading = line.startsWith('#')
+            const isYaml = line.startsWith('---') || line.startsWith('name:') || line.startsWith('description:')
+            const isCodeFence = line.startsWith('```')
+
+            return (
+              <div
+                key={idx}
+                ref={(el) => {
+                  lineRefs.current[idx] = el
+                }}
+                className={cn(
+                  'flex items-start gap-3 px-1 py-0.5 rounded transition-colors group',
+                  activeTocIdx === idx && 'bg-cyan-500/10 border-l-2 border-cyan-500',
+                  isHeading && 'font-semibold text-cyan-600 dark:text-cyan-400 bg-muted/30 my-0.5',
+                  isYaml && 'text-amber-600 dark:text-amber-400',
+                  isCodeFence && 'text-sky-600 dark:text-sky-400 bg-muted/40',
+                )}
+              >
+                <span className="w-8 shrink-0 text-right text-muted-foreground/40 select-none text-[11px] group-hover:text-muted-foreground/70">
+                  {idx + 1}
+                </span>
+                <span className="flex-1 whitespace-pre-wrap break-all text-foreground/90 font-mono">
+                  {line || ' '}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
     </div>
   )
 }
@@ -1732,7 +1919,7 @@ function DetailTagList({
             <Badge
               key={value}
               variant="outline"
-              className="rounded-xs font-mono text-[10px] bg-muted/30 border-border/60"
+              className="rounded-xs font-mono text-[11px] bg-muted/30 border-border/60"
             >
               {value}
             </Badge>

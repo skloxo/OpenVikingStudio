@@ -402,6 +402,15 @@ const zhCN = {
       user: '用户技能',
       agent: '共享技能',
     },
+    toc: {
+      title: 'TOC 目录大纲',
+      copy: '复制源码',
+      copied: '已复制到剪贴板',
+      sections: '{{count}} 个章节',
+      lines: '{{count}} 行',
+      noToc: '暂无结构化大纲',
+      jumpTo: '跳转至章节',
+    },
     harness: {
       preExecutionGuard: '1. 物理前置拦截门锁',
       preExecutionGuardBadge: 'NeMo Interceptor',
