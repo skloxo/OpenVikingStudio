@@ -490,18 +490,20 @@ class TaskTracker:
         self,
         task_id: str,
         stage: str,
+        meta: Optional[Dict[str, Any]] = None,
         account_id: Optional[str] = None,
         user_id: Optional[str] = None,
     ) -> None:
-        """Update task stage without changing its lifecycle status."""
+        """Update task stage and optional meta fields without changing its lifecycle status."""
         await self._dispatcher.run(
-            lambda: self._update_stage_on_owner(task_id, stage, account_id, user_id)
+            lambda: self._update_stage_on_owner(task_id, stage, meta, account_id, user_id)
         )
 
     async def _update_stage_on_owner(
         self,
         task_id: str,
         stage: str,
+        meta: Optional[Dict[str, Any]],
         account_id: Optional[str],
         user_id: Optional[str],
     ) -> None:
@@ -510,6 +512,8 @@ class TaskTracker:
             if task and task.status in (TaskStatus.PENDING, TaskStatus.RUNNING):
                 updated = deepcopy(task)
                 updated.stage = stage
+                if meta:
+                    updated.meta = {**updated.meta, **meta}
                 updated.updated_at = self._next_updated_at(task)
                 await self._persist_and_publish("update", updated)
 

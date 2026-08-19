@@ -101,6 +101,14 @@ class _FakeAgfs:
                     children[name] = {"name": name, "path": f"{prefix}/{name}", "is_dir": False}
         return list(children.values())
 
+    def rm(self, path: str, recursive: bool = False, force: bool = False):
+        if path in self.files:
+            del self.files[path]
+            return "OK"
+        if not force:
+            raise FileNotFoundError(path)
+        return "OK"
+
 
 class _FakeAgfsExistingDir(_FakeAgfs):
     def mkdir(self, path: str, mode: str = "755"):

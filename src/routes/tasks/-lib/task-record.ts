@@ -15,6 +15,9 @@ export type TaskRecord = TaskTimestamp & {
   status?: string
   task_id?: string
   task_type?: string
+  meta?: Record<string, any> | null
+  created_at?: number | string
+  created_at_iso?: string
   updated_at?: number | string
   updated_at_iso?: string
 }
