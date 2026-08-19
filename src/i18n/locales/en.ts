@@ -374,6 +374,15 @@ const en = {
       user: 'User Skill',
       agent: 'Shared Skill',
     },
+    toc: {
+      title: 'Table of Contents',
+      copy: 'Copy Source',
+      copied: 'Copied to clipboard',
+      sections: '{{count}} sections',
+      lines: '{{count}} lines',
+      noToc: 'No structured outline',
+      jumpTo: 'Jump to section',
+    },
     harness: {
       preExecutionGuard: '1. Physical Pre-Guard Lock',
       preExecutionGuardBadge: 'NeMo Interceptor',
