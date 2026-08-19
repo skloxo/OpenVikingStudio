@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import {
+  ActivityIcon,
   BlocksIcon,
   BookOpenIcon,
   BracesIcon,
@@ -32,6 +33,7 @@ import { AccessRequiredGate } from '#/components/access-required-gate'
 import { AccountSwitcher } from '#/components/account-switcher'
 import { CrossDeviceVerifyDialog } from '#/components/cross-device-verify-dialog'
 import { GeneratedCredentialDialog } from '#/components/generated-credential-dialog'
+import { ServerDoctorDialog } from '#/components/server-doctor-dialog'
 import { ScrollArea } from '#/components/ui/scroll-area'
 
 import {
@@ -262,6 +264,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   }/api/01-overview`
   const [crossDeviceVerifyOpen, setCrossDeviceVerifyOpen] =
     React.useState(false)
+  const [doctorOpen, setDoctorOpen] = React.useState(false)
   const { connection, connectionRole, isConnectionRoleLoading, serverMode } =
     useAppConnection()
   const settingsActive = pathname === '/settings'
@@ -454,6 +457,29 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                     </span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+
+                {/* 🩺 系统健康探针与一键自愈 (TASK-SERVER-DOCTOR-01) */}
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => setDoctorOpen(true)}
+                    tooltip={t('sidebar.doctorPillTooltip', {
+                      ns: 'appShell',
+                      defaultValue: '点击打开系统健康探针与自愈面板',
+                    })}
+                    className="h-9 group/doctor cursor-pointer"
+                  >
+                    <ActivityIcon className="size-4 text-cyan-500 shrink-0 animate-pulse" />
+                    <span className="flex-1 text-left truncate">
+                      {t('sidebar.doctorPill', {
+                        ns: 'appShell',
+                        defaultValue: '1933 核心健康',
+                      })}
+                    </span>
+                    <span className="text-[11px] font-mono font-medium px-1.5 py-0.2 rounded border border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 group-data-[collapsible=icon]:hidden">
+                      Doctor
+                    </span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -528,8 +554,8 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               <span>OpenViking Studio</span>
             </span>
           </div>
-          <span className="text-[10px] font-mono text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded border border-border/40">
-            v1.2.38
+          <span className="text-[11px] font-mono text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded border border-border/40">
+            v{__APP_VERSION__}
           </span>
         </header>
 
@@ -547,13 +573,17 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         </ScrollArea>
       </SidebarInset>
 
-
       <CrossDeviceVerifyDialog
         open={crossDeviceVerifyOpen}
         onOpenChange={setCrossDeviceVerifyOpen}
       />
 
       <GeneratedCredentialDialog />
+
+      <ServerDoctorDialog
+        open={doctorOpen}
+        onOpenChange={setDoctorOpen}
+      />
     </SidebarProvider>
   )
 }

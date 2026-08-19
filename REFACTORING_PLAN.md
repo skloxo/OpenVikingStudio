@@ -153,9 +153,19 @@
 
 ---
 
-### 📌 P2: [ ] [TASK-SERVER-DOCTOR-01] 全局系统健康探针与一键自愈面板
-- **模块**：OpenViking Server + Studio Sidebar ｜ **优先级**：P2
-- **目标**：侧边栏增加健康诊断状态指示灯，遇到异常提供 `[一键重启/自愈 (ov server doctor)]` 触发按钮。
+### 📌 P2: [x] [TASK-SERVER-DOCTOR-01] 全局系统健康探针与一键自愈面板 ✅
+- **模块**：OpenViking Server + Studio Sidebar (`src/components/server-doctor-dialog.tsx`, `src/components/app-shell.tsx`) ｜ **优先级**：P2
+- **目标**：侧边栏增加健康诊断状态指示灯，实时监控 1933 RPC 服务与内核连接，提供白盒诊断面板与一键自愈触发能力。
+- **交付内容与验收结果**：
+  - [x] **侧边栏实时状态指示徽章**：在 Sidebar 设置区集成 `1933 核心健康 (Doctor)` 脉冲指示灯；
+  - [x] **4 维系统核心诊断矩阵**：1933 RPC 核心信道（BaseURL、RTT 延时毫秒、Auth Mode）、AGFS 虚拟文件系统挂载状态、VectorDB 向量引擎状态与安全门禁凭据角色；
+  - [x] **一键全自动系统物理自愈 (Run Doctor Pipeline)**：执行信道探测、AGFS 事务锁刷新、客户端通讯上下文复位与 React Query 缓存同步 3 步自愈流水线；
+  - [x] **自愈实时终端流日志**：带时序时间戳与自愈步骤进度展示；
+  - [x] **移动端适配与版本对齐**：移动端顶栏同步对齐动态版本号；
+  - [x] **NO GREEN EVER 与字号规范**：100% 采用 `cyan-500` / `sky-500` / `amber-500` / `rose-500` 语义着色，字体 $\ge 11\text{px}$；
+  - [x] **中英双语 i18n**：10+ 项词条平行收录；
+  - [x] **构建验证**：`npm run build` 0 报错；
+- **交付版本**：`v1.3.18` ｜ **交付 Commit**：待打 Tag ｜ **交付 Tag**：`v1.3.18`
 
 ---
 
