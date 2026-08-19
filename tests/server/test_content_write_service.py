@@ -243,12 +243,27 @@ async def test_memory_write_ignores_resource_uri_in_inline_code(service):
 @pytest.mark.asyncio
 async def test_memory_create_refreshes_nested_schema_overview(service):
     ctx = RequestContext(user=service.user, role=Role.USER)
+    memory_type_dir = f"viking://user/{ctx.user.user_space_name()}/memories/entities"
     memory_dir = f"viking://user/{ctx.user.user_space_name()}/memories/entities/动漫角色"
     memory_uri = f"{memory_dir}/不二周助-link-test.md"
 
+    # Reproduce writes after the memory type root already exists. Previously this
+    # collapsed the refresh root to memories/entities and skipped the category overview.
+    await service.viking_fs.mkdir(memory_type_dir, exist_ok=True, ctx=ctx)
+
     result = await service.fs.write(
         memory_uri,
-        content="用户保存了一张[不二周助](viking://resources/images/2026/06/10/不二周助_jpeg)的照片",
+        content=MemoryFileUtils.write(
+            MemoryFile(
+                uri=memory_uri,
+                memory_type="entities",
+                content=(
+                    "用户保存了一张[不二周助]"
+                    "(viking://resources/images/2026/06/10/不二周助_jpeg)的照片"
+                ),
+                extra_fields={"category": "动漫角色", "name": "不二周助-link-test"},
+            )
+        ),
         ctx=ctx,
         mode="create",
         wait=False,
