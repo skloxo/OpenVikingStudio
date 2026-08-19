@@ -113,14 +113,18 @@
 
 ---
 
-### 📌 P1-3: [ ] [TASK-RETRIEVAL-TREE-01] 检索测试台 `/retrieval` 页 L0/L1 白盒检索轨迹树与得分渲染
+### 📌 P1: [x] [TASK-RETRIEVAL-TREE-01] 检索测试台 `/retrieval` 页 L0/L1/L2 白盒检索轨迹树与得分渲染 ✅
 - **模块**：OpenVikingStudio 前端 (`src/routes/retrieval`) ｜ **优先级**：P1
-- **目标**：在 `/retrieval` 页面为每次检索结果渲染可折叠的 **L0/L1 白盒检索轨迹树**，展示 Viking 向量匹配路径与相似度分值（如 `Score: 0.985`）。
-- **验收标准**：
-  - [ ] 列表项右侧展现 `Level (L0/L1)` 徽章与 `Score: 0.985` 标签；
-  - [ ] 展开轨迹树节点可查看 URI 继承关系；
-  - [ ] 符合 `cyan-500` 冰青与 NO GREEN EVER 视觉规约；
-  - [ ] `npm run build` 0 报错。
+- **目标**：在 `/retrieval` 页面为每次检索结果渲染可折叠的 **L0/L1/L2 白盒检索轨迹树**，展示 Viking 向量匹配路径与相似度分值（如 `Score: 0.985`）。
+- **交付内容与验收结果**：
+  - [x] **物理匹配层级徽章**：列表项右侧展现 `L0` (Abstract) / `L1` (Overview/SOP) / `L2` (Detail 切片) 徽章；
+  - [x] **相似度高信度标签**：`Score: 0.985` 标签自适应高信度（$\ge 0.70$ 门禁）着色；
+  - [x] **白盒检索轨迹树展开**：支持折叠展开 Root 检索引擎、层级匹配链路、相似度得分、匹配理由（`match_reason`）及关联扩展节点（`relations`）；
+  - [x] **一键复制 URI**：支持一键复制完整 URI 并提供 Toast 提示；
+  - [x] **NO GREEN EVER 与字号规范**：100% 遵循 `cyan-500` 冰青主题，全面切除 `< 11px` 微小字体，硬下限 $\ge 11\text{px}$；
+  - [x] **全量 i18n 国际化**：中英双语 10+ 词条完全平行维护；
+  - [x] **构建验证**：`npm run build` 0 报错；
+- **交付版本**：`v1.3.16` ｜ **交付 Commit**：待打 Tag ｜ **交付 Tag**：`v1.3.16`
 
 ---
 

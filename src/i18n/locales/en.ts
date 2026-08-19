@@ -1328,6 +1328,28 @@ const en = {
       title: 'No matching content found',
       subtitle: 'Try another keyword or adjust the path scope',
     },
+    trajectory: {
+      title: 'Viking Whitebox Retrieval Trajectory Tree',
+      hide: 'Hide Tree ▲',
+      show: 'Trajectory Tree ▼',
+      score: 'Cosine Similarity: {{score}}',
+      scoreBadge: 'Score: {{score}}',
+      rootEngine: '1. Root Engine',
+      levelMatch: '2. {{level}} Hierarchy Match',
+      similarityCheck: '3. Node Score',
+      highConfidence: 'Passed ≥ 0.70 high-confidence gate',
+      scoreGateLow: 'Below 0.70 Gate',
+      relationsTitle: '4. Linked Relations',
+      matchReason: 'Match reason: {{reason}}',
+      overviewTitle: 'Overview',
+      copyUri: 'Copy URI',
+      uriCopied: 'URI copied to clipboard',
+      levels: {
+        l0: 'L0 Abstract (Intent)',
+        l1: 'L1 Overview (SOP)',
+        l2: 'L2 Detail (Chunk/Leaf)',
+      },
+    },
   },
   sessions: {
     page: {
