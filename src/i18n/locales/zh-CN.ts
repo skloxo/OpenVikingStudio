@@ -560,6 +560,9 @@ const zhCN = {
       snapshot_restore_reindex: '快照恢复索引',
       legacy_migration: '旧数据迁移',
       legacy_cleanup: '旧数据清理',
+      user_delete: '用户空间注销',
+      user_deletion: '用户空间注销',
+      watch_sync: 'Watch 增量同步',
     },
   },
   accountSwitcher: {

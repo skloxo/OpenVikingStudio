@@ -245,7 +245,9 @@ export function TaskDetailSheet({
                                   <span className="font-medium text-foreground">{i + 1}. {st.name}</span>
                                   <span className="flex items-center gap-2 text-[11px]">
                                     {st.count !== undefined && (
-                                      <span className="font-mono text-muted-foreground">{t('detail.itemCount', { count: st.count })}</span>
+                                      <span className="font-mono text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded border border-border/50 tabular-nums">
+                                        {st.count.toLocaleString()} {st.unit ?? ''}
+                                      </span>
                                     )}
                                     <span className={isDone ? 'text-foreground' : isFail ? 'text-destructive' : 'text-muted-foreground'}>
                                       {isDone ? t('detail.stepCompleted') : isRun ? t('detail.stepRunning') : isFail ? t('detail.stepFailed') : t('detail.stepPending')}
@@ -264,11 +266,11 @@ export function TaskDetailSheet({
                 <DetailSection title={t('detail.executionLogs')}>
                   <div className="relative rounded-xl border border-border/60 bg-muted/30 p-3 font-mono text-[11px] leading-relaxed">
                     <div className="flex items-center justify-between border-b border-border/40 pb-2 mb-2 text-[10px] text-muted-foreground font-mono">
-                      <span>LOG TRACE STREAM (ID: {task.task_id})</span>
+                      <span>{t('detail.logTraceHeader', { id: task.task_id, defaultValue: `LOG TRACE STREAM (ID: ${task.task_id})` })}</span>
                       <Button
                         variant="ghost"
                         size="xs"
-                        className="h-5 px-1.5 text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted/60 cursor-pointer"
+                        className="h-5 px-1.5 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted/60 cursor-pointer"
                         onClick={() => {
                           const logLines = generateStepLogs(task, i18n.language)
                           navigator.clipboard.writeText(logLines.join('\n'))
@@ -308,7 +310,7 @@ export function TaskDetailSheet({
                 {status === 'completed' ? (
                   hasTaskResult(task.result) ? (
                     <DetailSection title={t('detail.result')}>
-                      <pre className="min-h-[200px] max-h-[400px] overflow-auto rounded-xl border bg-muted/30 p-4 font-mono text-xs leading-5">
+                      <pre className="min-h-50 max-h-100 overflow-auto rounded-xl border bg-muted/30 p-4 font-mono text-xs leading-5">
                         {formatTaskResult(task.result)}
                       </pre>
                     </DetailSection>

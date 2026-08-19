@@ -58,7 +58,7 @@ import {
 } from '#/routes/tasks/-lib/task-record'
 import type { TaskRecord, TaskStatus } from '#/routes/tasks/-lib/task-record'
 import { formatTaskDuration, getTaskDate } from '#/routes/tasks/-lib/task-time'
-import { getTaskPipelineGroups } from './-lib/task-pipeline'
+import { getTaskPipelineGroups, getTaskQuantifiedWorkload } from './-lib/task-pipeline'
 
 export const Route = createFileRoute('/tasks')({
   component: TasksRoute,
@@ -396,10 +396,10 @@ function TasksRoute() {
     const status = normalizeTaskStatus(effStatus)
     const pct = getTaskProgressPct(task)
     const isRetrying = retryMutation.isPending && (retryMutation.variables as TaskRecord | undefined)?.task_id === taskId
-    const embeddingRow = queueObserverRows.find((r) => r.name.toLowerCase().includes('embedding'))
+    const workload = getTaskQuantifiedWorkload(task, queueObserverRows, i18n.language)
 
     return (
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1.5 flex-wrap">
         <Badge
           variant={
             status === 'failed'
@@ -439,9 +439,10 @@ function TasksRoute() {
             </button>
           )}
         </Badge>
-        {status === 'running' && embeddingRow && embeddingRow.total > 0 && (
-          <span className="text-[11px] font-mono text-muted-foreground tabular-nums">
-            {t('pipeline.chunksCount', { current: embeddingRow.completed, total: embeddingRow.total })}
+        {workload && (
+          <span className="inline-flex items-center gap-1 text-[11px] font-mono font-medium text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded border border-border/50 tabular-nums">
+            <span>{workload.icon}</span>
+            <span>{workload.label}</span>
           </span>
         )}
       </div>
