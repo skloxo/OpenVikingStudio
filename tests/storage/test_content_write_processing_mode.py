@@ -138,12 +138,18 @@ async def test_vectors_only_write_wait_reports_skipped_when_nothing_enqueued(mon
 
 
 @pytest.mark.asyncio
-async def test_memory_write_accepts_processing_mode_without_switching_refresh(monkeypatch, ctx):
+@pytest.mark.parametrize(
+    ("overview_refreshed", "expected_overview_status"),
+    [(True, "complete"), (False, "skipped")],
+)
+async def test_memory_write_accepts_processing_mode_without_switching_refresh(
+    monkeypatch, ctx, overview_refreshed, expected_overview_status
+):
     fake_fs = _FakeVikingFS()
     monkeypatch.setattr(
         content_write_module.MemoryUpdater,
         "refresh_schema_overview",
-        AsyncMock(),
+        AsyncMock(return_value=overview_refreshed),
     )
     monkeypatch.setattr(
         content_write_module.MemoryUpdater,
@@ -175,4 +181,4 @@ async def test_memory_write_accepts_processing_mode_without_switching_refresh(mo
     content_write_module.MemoryUpdater.refresh_file_embedding.assert_awaited_once()
     assert result["context_type"] == "memory"
     assert result["semantic_status"] == "skipped"
-    assert result["overview_status"] == "complete"
+    assert result["overview_status"] == expected_overview_status

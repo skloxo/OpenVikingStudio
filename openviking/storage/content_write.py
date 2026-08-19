@@ -1047,7 +1047,7 @@ class ContentWriteCoordinator:
             if wait and telemetry_id and self._vikingdb_has_queue():
                 get_request_wait_tracker().register_request(telemetry_id)
                 request_registered = True
-            await MemoryUpdater.refresh_schema_overview(
+            overview_refreshed = await MemoryUpdater.refresh_schema_overview(
                 viking_fs=self._viking_fs,
                 directory_uri=root_uri,
                 ctx=ctx,
@@ -1081,7 +1081,7 @@ class ContentWriteCoordinator:
                 queue_status=queue_status,
                 semantic_status="skipped",
                 vector_status=vector_status,
-                overview_status="complete",
+                overview_status="complete" if overview_refreshed else "skipped",
             )
         except Exception:
             if not released:
@@ -1325,7 +1325,12 @@ class ContentWriteCoordinator:
                     raise InvalidArgumentError(
                         f"memory write target must be inside a memory type directory: {uri}"
                     )
-                root_uri = VikingURI.build(*parts[: memories_idx + 2])
+                if anchor_to_parent:
+                    parent = parsed.parent
+                    if parent is not None:
+                        root_uri = parent.uri
+                else:
+                    root_uri = VikingURI.build(*parts[: memories_idx + 2])
             else:
                 # Plain files directly under the user root are allowed (e.g. a
                 # persona file at viking://user/<user>/persona.md); the managed
