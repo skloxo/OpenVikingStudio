@@ -472,7 +472,7 @@ const en = {
       serialTransition: 'Serial pipeline transition',
       serialBatch: 'Serial process batch',
       parallelBatch: 'Parallel process batch',
-      pipelineHeader: 'Pipeline Steps',
+      pipelineHeader: 'Execution Progress',
       durationHeader: 'Duration',
       taskQueueStatus: 'Business Task Status (8 Types)',
       processQueueStatus: 'Execution Engine Status (7 Engines)',
