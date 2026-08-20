@@ -300,7 +300,7 @@ export function QueueStatusCard({
                           </p>
                           <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-border/40 font-mono text-[11px] text-foreground/80">
                             <span className="font-sans text-[11px] text-muted-foreground">
-                              {isZh ? '承接工序：' : 'Assigned Step:'}
+                              {isZh ? '承接算子：' : 'Assigned Operator:'}
                             </span>
                             <span className="inline-flex items-center gap-1 font-semibold text-foreground bg-muted/60 px-1.5 py-0.5 rounded border border-border/40">
                               <CpuIcon className="size-3 text-primary shrink-0" />
@@ -344,7 +344,7 @@ export function QueueStatusCard({
                                 </p>
                                 <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-border/40 font-mono text-[11px] text-foreground/80">
                                   <span className="font-sans text-[11px] text-muted-foreground">
-                                    {isZh ? '承接工序：' : 'Assigned Step:'}
+                                    {isZh ? '承接算子：' : 'Assigned Operator:'}
                                   </span>
                                   <span className="inline-flex items-center gap-1 font-semibold text-foreground bg-muted/60 px-1.5 py-0.5 rounded border border-border/40">
                                     <CpuIcon className="size-3 text-primary shrink-0" />
