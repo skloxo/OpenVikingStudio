@@ -701,6 +701,7 @@ function TasksRoute() {
         ).length
         return {
           name: t(`types.${typeKey}` as any, { defaultValue: typeKey }),
+          typeKey,
           processing,
           pending,
           completed,
@@ -847,6 +848,7 @@ function TasksRoute() {
             title={t('pipeline.taskQueueStatus')}
             customRows={kpiData.typeRows}
             isHealthy={kpiData.failed === 0}
+            isTaskCard={true}
           />
         </div>
 
