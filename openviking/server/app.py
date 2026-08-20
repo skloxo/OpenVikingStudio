@@ -271,6 +271,15 @@ def create_app(
         agent_evolution_setter = getattr(sessions, "set_agent_evolution_config", None)
         if callable(agent_evolution_setter):
             agent_evolution_setter(config.agent_evolution)
+
+        user_memory_policy_setter = getattr(
+            sessions,
+            "set_default_user_memory_policy",
+            None,
+        )
+        if callable(user_memory_policy_setter):
+            user_memory_policy_setter(config.user_config_defaults.memory_policy)
+
         agent_evolution_path_setter = getattr(
             sessions,
             "set_agent_evolution_config_path",

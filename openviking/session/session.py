@@ -63,6 +63,9 @@ if TYPE_CHECKING:
     from openviking.storage.viking_fs import VikingFS
     from openviking.usage_reporter import UsageReporter
 
+MemoryPolicyData = Optional[Dict[str, Any]]
+MemoryPolicyProvider = Callable[[], Awaitable[MemoryPolicyData]]
+
 logger = get_logger(__name__)
 
 _PHASE2_QUEUE_WAIT_TIMEOUT_SECONDS = 1800.0
@@ -593,6 +596,7 @@ class Session:
         agent_evolution_enabled: bool = True,
         usage_reporter: Optional["UsageReporter"] = None,
         agent_evolution_enabled_provider: Optional[Callable[[], bool | Awaitable[bool]]] = None,
+        memory_policy_provider: Optional[MemoryPolicyProvider] = None,
     ):
         self._viking_fs = viking_fs
         self._vikingdb_manager = vikingdb_manager
@@ -625,7 +629,16 @@ class Session:
         )
         self._agent_evolution_enabled = agent_evolution_enabled
         self._agent_evolution_enabled_provider = agent_evolution_enabled_provider
+        self._memory_policy_provider = memory_policy_provider
         self._usage_reporter = usage_reporter
+
+    async def _resolve_memory_policy(
+        self, override: Optional[Dict[str, Any]] = None
+    ) -> MemoryPolicy:
+        policy = override if override is not None else self._meta.memory_policy
+        if policy is None and self._memory_policy_provider is not None:
+            policy = await self._memory_policy_provider()
+        return MemoryPolicy.from_dict(policy)
 
     async def load(self):
         """Load session data from storage."""
@@ -1868,10 +1881,6 @@ class Session:
         if turn_mode and effective_token_budget <= 0:
             raise ValueError("retained_message_token_budget must be greater than 0")
         in_memory_default_memory_policy = self._meta.memory_policy
-        effective_policy = MemoryPolicy.from_dict(
-            memory_policy if memory_policy is not None else self._meta.memory_policy
-        )
-        _validate_memory_policy_types(effective_policy)
         agent_evolution_enabled = self._agent_evolution_enabled
         if self._agent_evolution_enabled_provider is not None:
             provided_enabled = self._agent_evolution_enabled_provider()
@@ -1880,16 +1889,19 @@ class Session:
                 if inspect.isawaitable(provided_enabled)
                 else provided_enabled
             )
-        effective_policy = _apply_agent_evolution_setting(
-            effective_policy,
-            agent_evolution_enabled=agent_evolution_enabled,
-        )
-        effective_memory_policy = effective_policy.to_dict()
-        effective_memory_types = sorted(_effective_memory_types(effective_policy))
-        agent_memory_skip_reason = _agent_memory_skip_reason(
-            agent_evolution_enabled=agent_evolution_enabled,
-            effective_memory_types=set(effective_memory_types),
-        )
+        if memory_policy is not None:
+            effective_policy = await self._resolve_memory_policy(memory_policy)
+            _validate_memory_policy_types(effective_policy)
+            effective_policy = _apply_agent_evolution_setting(
+                effective_policy,
+                agent_evolution_enabled=agent_evolution_enabled,
+            )
+            effective_memory_policy = effective_policy.to_dict()
+            effective_memory_types = sorted(_effective_memory_types(effective_policy))
+            agent_memory_skip_reason = _agent_memory_skip_reason(
+                agent_evolution_enabled=agent_evolution_enabled,
+                effective_memory_types=set(effective_memory_types),
+            )
         logger.info(
             f"[TRACER] session_commit started, trace_id={trace_id}, "
             f"keep_recent_count={keep_recent_count}, retention_mode={retention_mode}, "
@@ -1946,7 +1958,7 @@ class Session:
             # messages being archived, unless this commit supplied an explicit
             # override.
             if memory_policy is None:
-                effective_policy = MemoryPolicy.from_dict(self._meta.memory_policy)
+                effective_policy = await self._resolve_memory_policy()
                 _validate_memory_policy_types(effective_policy)
                 effective_policy = _apply_agent_evolution_setting(
                     effective_policy,
