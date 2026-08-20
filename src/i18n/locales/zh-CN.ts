@@ -498,7 +498,7 @@ const zhCN = {
       serialTransition: '串行工序流转',
       serialBatch: '串行工序批次',
       parallelBatch: '并发执行工序批次',
-      pipelineHeader: '工序执行进度',
+      pipelineHeader: '执行状态与进度',
       durationHeader: '耗时',
       taskQueueStatus: '任务统计 (8 种任务)',
       processQueueStatus: '算子队列 (7 大算子)',

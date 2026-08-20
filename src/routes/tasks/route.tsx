@@ -394,55 +394,8 @@ function TasksRoute() {
     return Math.max(10, smoothPct)
   }
 
-  const renderStatus = (task: TaskRecord) => {
-    const taskId = task.task_id
-    // 使用基于 8 并发算力的物理有效状态判定
-    const effStatus = getEffectiveTaskStatus(task, allTasks)
-    const status = normalizeTaskStatus(effStatus)
-    const pct = getTaskProgressPct(task)
-    const isRetrying = retryMutation.isPending && (retryMutation.variables as TaskRecord | undefined)?.task_id === taskId
-
-    return (
-      <div className="flex items-center gap-1.5 py-0.5 select-none">
-        <Badge
-          variant={
-            status === 'failed'
-              ? 'destructive'
-              : status === 'completed'
-                ? 'secondary'
-                : 'outline'
-          }
-          className="gap-1 font-normal select-none px-2 py-0.5 h-6 text-[11px]"
-        >
-          <span>
-            {status === 'pending'
-              ? t('pipeline.queued')
-              : t(`status.${status}`)}
-          </span>
-          {status === 'failed' && (
-            <button
-              type="button"
-              disabled={isRetrying}
-              className="ml-1 inline-flex items-center justify-center rounded p-0.5 hover:bg-white/25 active:scale-95 transition-all cursor-pointer text-destructive-foreground disabled:opacity-50"
-              title={t('pipeline.retrigger')}
-              onClick={(e) => {
-                e.stopPropagation()
-                retryMutation.mutate(task)
-              }}
-            >
-              {isRetrying ? (
-                <LoaderCircleIcon className="size-3 shrink-0 animate-spin" />
-              ) : (
-                <RotateCcwIcon className="size-3 shrink-0" />
-              )}
-            </button>
-          )}
-        </Badge>
-      </div>
-    )
-  }
-
   const renderExecutionProgress = (task: TaskRecord) => {
+    const taskId = task.task_id
     const dynamic = getTaskExecutionDynamic(
       task,
       queueObserverRows,
@@ -451,14 +404,22 @@ function TasksRoute() {
     )
     const effStatus = getEffectiveTaskStatus(task, allTasks)
     const status = normalizeTaskStatus(effStatus)
+    const durationText = formatTaskDuration(task, i18n.language.startsWith('zh'))
+    const isRetrying =
+      retryMutation.isPending &&
+      (retryMutation.variables as TaskRecord | undefined)?.task_id === taskId
 
-    // 1. 已完成：极简素雅交付态
+    // 1. 已完成：极简素雅交付态 (带已完成状态徽章与耗时)
     if (status === 'completed') {
       return (
         <div className="flex items-center gap-2 py-0.5 select-none text-foreground/85">
-          <div className="flex size-4 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary border border-primary/20">
-            <CheckIcon className="size-2.5 stroke-[2.5]" />
-          </div>
+          <Badge
+            variant="outline"
+            className="text-[11px] px-1.5 py-0 h-5 border-border/60 text-muted-foreground bg-muted/30 font-sans font-medium shrink-0"
+          >
+            <CheckIcon className="size-2.5 stroke-[2.5] mr-1 text-primary" />
+            {t('status.completed')}
+          </Badge>
           <span className="font-sans text-xs font-medium truncate max-w-sm">
             {dynamic.summaryText}
           </span>
@@ -468,24 +429,42 @@ function TasksRoute() {
               <span>{dynamic.workloadText}</span>
             </span>
           )}
+          {durationText && (
+            <span className="font-mono text-[11px] text-muted-foreground/60 shrink-0 select-none">
+              · {durationText}
+            </span>
+          )}
         </div>
       )
     }
 
-    // 2. 进行中：聚焦当前活跃工序与具体量化吞吐进度（切除多余重复标签）
+    // 2. 进行中：左上角进行中徽章 + 聚焦当前活跃工序与具体量化吞吐 + 耗时与进度
     if (status === 'running') {
       return (
         <div className="flex flex-col gap-1 min-w-64 max-w-md py-0.5 select-none">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 min-w-0">
-              <LoaderCircleIcon className="size-3.5 shrink-0 animate-spin text-primary" />
+              <Badge
+                variant="outline"
+                className="text-[11px] px-1.5 py-0 h-5 border-primary/30 text-primary bg-primary/10 font-sans font-medium shrink-0"
+              >
+                <LoaderCircleIcon className="size-2.5 shrink-0 animate-spin mr-1 text-primary" />
+                {t('status.running')}
+              </Badge>
               <span className="font-sans text-xs font-semibold text-foreground truncate">
                 {dynamic.activeStepName}
               </span>
             </div>
-            <span className="font-mono text-[11px] font-bold text-primary tabular-nums shrink-0">
-              {dynamic.progressPct}%
-            </span>
+            <div className="flex items-center gap-1.5 shrink-0 font-mono text-[11px]">
+              {durationText && (
+                <span className="text-muted-foreground/70 tabular-nums">
+                  {durationText}
+                </span>
+              )}
+              <span className="font-bold text-primary tabular-nums">
+                {dynamic.progressPct}%
+              </span>
+            </div>
           </div>
 
           {/* 微进度条 + 当前活跃工序的实际量化吞吐 */}
@@ -497,7 +476,7 @@ function TasksRoute() {
               />
             </div>
             {dynamic.workloadText && (
-              <span className="font-mono text-[10px] text-muted-foreground font-medium shrink-0 tabular-nums">
+              <span className="font-mono text-[11px] text-muted-foreground font-medium shrink-0 tabular-nums">
                 {dynamic.workloadText}
               </span>
             )}
@@ -506,28 +485,66 @@ function TasksRoute() {
       )
     }
 
-    // 3. 排队中：沉静等待态
+    // 3. 排队中：沉静等待态 (带排队中徽章与耗时)
     if (status === 'pending') {
       return (
         <div className="flex items-center gap-2 py-0.5 text-muted-foreground select-none">
-          <CircleDashedIcon className="size-3.5 shrink-0 text-muted-foreground/60" />
-          <span className="font-sans text-xs text-muted-foreground">
+          <Badge
+            variant="outline"
+            className="text-[11px] px-1.5 py-0 h-5 border-border/60 text-muted-foreground bg-muted/20 font-sans font-medium shrink-0"
+          >
+            <CircleDashedIcon className="size-2.5 mr-1 text-muted-foreground/60" />
+            {t('pipeline.queued')}
+          </Badge>
+          <span className="font-sans text-xs text-muted-foreground truncate max-w-sm">
             {dynamic.summaryText}
           </span>
+          {durationText && (
+            <span className="font-mono text-[11px] text-muted-foreground/60 shrink-0 select-none">
+              · {durationText}
+            </span>
+          )}
         </div>
       )
     }
 
-    // 4. 失败：精准定位中断工序
+    // 4. 失败：精准定位中断工序 (带失败徽章、重试按钮与耗时)
     return (
       <div className="flex items-center gap-2 py-0.5 text-destructive select-none">
-        <CircleXIcon className="size-3.5 shrink-0 text-destructive" />
+        <Badge
+          variant="destructive"
+          className="text-[11px] px-1.5 py-0 h-5 font-sans font-medium shrink-0 gap-1"
+        >
+          <CircleXIcon className="size-2.5 mr-0.5" />
+          {t('status.failed')}
+          <button
+            type="button"
+            disabled={isRetrying}
+            className="ml-1 inline-flex items-center justify-center rounded p-0.5 hover:bg-white/25 active:scale-95 transition-all cursor-pointer text-destructive-foreground disabled:opacity-50"
+            title={t('pipeline.retrigger')}
+            onClick={(e) => {
+              e.stopPropagation()
+              retryMutation.mutate(task)
+            }}
+          >
+            {isRetrying ? (
+              <LoaderCircleIcon className="size-2.5 shrink-0 animate-spin" />
+            ) : (
+              <RotateCcwIcon className="size-2.5 shrink-0" />
+            )}
+          </button>
+        </Badge>
         <span className="font-sans text-xs font-medium text-destructive truncate max-w-sm">
           {dynamic.summaryText}
         </span>
         {dynamic.workloadText && (
-          <span className="font-mono text-[10px] text-muted-foreground bg-destructive/5 px-1.5 py-0.5 rounded border border-destructive/20 shrink-0">
+          <span className="font-mono text-[11px] text-muted-foreground bg-destructive/5 px-1.5 py-0.5 rounded border border-destructive/20 shrink-0">
             {dynamic.workloadText}
+          </span>
+        )}
+        {durationText && (
+          <span className="font-mono text-[11px] text-destructive/70 shrink-0 select-none">
+            · {durationText}
           </span>
         )}
       </div>
@@ -1052,8 +1069,6 @@ function TasksRoute() {
                   <TableHead>{t('table.type')}</TableHead>
                   <TableHead>{t('table.resource')}</TableHead>
                   <TableHead>{t('pipeline.pipelineHeader')}</TableHead>
-                  <TableHead>{t('table.status')}</TableHead>
-                  <TableHead>{t('pipeline.durationHeader')}</TableHead>
                   <TableHead className="text-right">
                     {t('table.createdAt')}
                   </TableHead>
@@ -1107,10 +1122,6 @@ function TasksRoute() {
                         {task.resource_id || '-'}
                       </TableCell>
                       <TableCell>{renderExecutionProgress(task)}</TableCell>
-                      <TableCell>{renderStatus(task)}</TableCell>
-                      <TableCell className="whitespace-nowrap font-mono text-xs text-muted-foreground">
-                        {formatTaskDuration(task, i18n.language.startsWith('zh'))}
-                      </TableCell>
                       <TableCell className="whitespace-nowrap text-right text-muted-foreground">
                         {formatTime(task)}
                       </TableCell>
