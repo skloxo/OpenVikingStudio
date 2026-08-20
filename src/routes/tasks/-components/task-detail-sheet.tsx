@@ -255,6 +255,7 @@ export function TaskDetailSheet({
                   const groups = getTaskPipelineGroups(task, queueObserverRows, i18n.language)
                   const outcome = getTaskFinalOutcome(task, i18n.language)
                   const isDoneAll = normalizeTaskStatus(task.status) === 'completed'
+                  let runningStepIndex = 0
 
                   const renderMetrics = (st: PipelineStep) => {
                     const hasFraction = st.processed !== undefined && st.total !== undefined && st.total > 0
@@ -275,105 +276,98 @@ export function TaskDetailSheet({
                     return null
                   }
 
-                  const renderBadge = (st: PipelineStep) => {
-                    const isDone = st.state === 'completed'
-                    const isRun = st.state === 'running'
-                    const isFail = st.state === 'failed'
-                    return (
-                      <span className={cn(
-                        'px-2 py-0.5 rounded text-[11px] font-medium select-none shrink-0',
-                        isDone
-                          ? 'bg-secondary text-foreground'
-                          : isRun
-                            ? 'bg-primary/10 text-primary animate-pulse font-semibold ring-1 ring-primary/20'
-                            : isFail
-                              ? 'bg-destructive/10 text-destructive'
-                              : 'bg-muted/40 text-muted-foreground'
-                      )}>
-                        {isDone ? t('detail.stepCompleted') : isRun ? t('detail.stepRunning') : isFail ? t('detail.stepFailed') : t('detail.stepPending')}
-                      </span>
-                    )
-                  }
-
                   return (
                     <DetailSection title={t('detail.pipelineSteps')}>
                       <div className="rounded-xl border bg-muted/20 p-3 text-xs space-y-2.5">
                         <div className="grid gap-2">
                           {groups.map((group, i) => {
                             if (group.type === 'serial') {
+                              runningStepIndex += 1
+                              const currentNum = runningStepIndex
+
                               return (
                                 <div key={i} className="flex items-center justify-between rounded-lg border bg-background/80 px-3.5 py-2.5 shadow-2xs">
                                   <div className="flex items-center gap-2 min-w-0 pr-2">
-                                    <span className="font-mono text-muted-foreground text-[11px] font-semibold">{i + 1}.</span>
+                                    <span className="font-mono text-muted-foreground text-[11px] font-semibold">{currentNum}.</span>
                                     <span className="font-medium text-foreground text-xs">{group.step.name}</span>
                                   </div>
                                   <div className="flex items-center gap-2.5 text-[11px] shrink-0">
                                     {renderMetrics(group.step)}
-                                    {renderBadge(group.step)}
                                   </div>
                                 </div>
                               )
                             }
 
-                            // Parallel Steps: 50/50 side-by-side sibling cards with identical height & style
+                            // Parallel Steps: 50/50 side-by-side sibling cards with unique incremental numbers & identical style
                             return (
                               <div key={i} className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                {group.steps.map((st, sIdx) => (
-                                  <div key={sIdx} className="flex items-center justify-between rounded-lg border bg-background/80 px-3.5 py-2.5 shadow-2xs">
-                                    <div className="flex items-center gap-2 min-w-0 pr-1.5">
-                                      <span className="font-mono text-muted-foreground text-[11px] font-semibold">{i + 1}.</span>
-                                      <span className="font-medium text-foreground text-xs truncate">{st.name}</span>
+                                {group.steps.map((st, sIdx) => {
+                                  runningStepIndex += 1
+                                  const currentNum = runningStepIndex
+
+                                  return (
+                                    <div key={sIdx} className="flex items-center justify-between rounded-lg border bg-background/80 px-3.5 py-2.5 shadow-2xs">
+                                      <div className="flex items-center gap-2 min-w-0 pr-1.5">
+                                        <span className="font-mono text-muted-foreground text-[11px] font-semibold">{currentNum}.</span>
+                                        <span className="font-medium text-foreground text-xs truncate">{st.name}</span>
+                                      </div>
+                                      <div className="flex items-center gap-2 text-[11px] shrink-0">
+                                        {renderMetrics(st)}
+                                      </div>
                                     </div>
-                                    <div className="flex items-center gap-2 text-[11px] shrink-0">
-                                      {renderMetrics(st)}
-                                      {renderBadge(st)}
-                                    </div>
-                                  </div>
-                                ))}
+                                  )
+                                })}
                               </div>
                             )
                           })}
 
                           {/* 终点工序：最终输出的结果 (Final Deliverable Outcome Milestone) */}
-                          <div className={cn(
-                            'flex items-center justify-between rounded-lg border px-3.5 py-2.5 shadow-2xs transition-colors',
-                            isDoneAll
-                              ? 'border-primary/30 bg-primary/5'
-                              : 'border-dashed border-border/80 bg-muted/20'
-                          )}>
-                            <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                              <span className="font-mono text-primary text-[11px] font-semibold">
-                                {groups.length + 1}.
-                              </span>
-                              <div className="flex flex-col min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold text-foreground text-xs">{outcome.title}</span>
-                                  <span className="text-[10px] font-mono text-muted-foreground bg-muted/60 px-1.5 py-0.2 rounded border border-border/60">
-                                    {isZh ? '最终输出结果' : 'Final Deliverable'}
+                          {(() => {
+                            runningStepIndex += 1
+                            const finalNum = runningStepIndex
+
+                            return (
+                              <div className={cn(
+                                'flex items-center justify-between rounded-lg border px-3.5 py-2.5 shadow-2xs transition-colors',
+                                isDoneAll
+                                  ? 'border-primary/30 bg-primary/5'
+                                  : 'border-dashed border-border/80 bg-muted/20'
+                              )}>
+                                <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                                  <span className="font-mono text-primary text-[11px] font-semibold">
+                                    {finalNum}.
+                                  </span>
+                                  <div className="flex flex-col min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-semibold text-foreground text-xs">{outcome.title}</span>
+                                      <span className="text-[10px] font-mono text-muted-foreground bg-muted/60 px-1.5 py-0.2 rounded border border-border/60">
+                                        {isZh ? '最终输出结果' : 'Final Deliverable'}
+                                      </span>
+                                    </div>
+                                    <span className="text-[11px] text-muted-foreground truncate mt-0.5">
+                                      {isDoneAll ? outcome.deliverableText : (isZh ? `预期产出：${outcome.expectedText}` : `Expected: ${outcome.expectedText}`)}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2 text-[11px] shrink-0">
+                                  <span className={cn(
+                                    'px-2 py-0.5 rounded text-[11px] font-medium select-none shrink-0',
+                                    isDoneAll
+                                      ? 'bg-secondary text-foreground font-semibold'
+                                      : task.status === 'failed'
+                                        ? 'bg-destructive/10 text-destructive'
+                                        : 'bg-muted/50 text-muted-foreground'
+                                  )}>
+                                    {isDoneAll
+                                      ? (isZh ? '已就绪' : 'Delivered')
+                                      : task.status === 'failed'
+                                        ? (isZh ? '交付中断' : 'Aborted')
+                                        : (isZh ? '待前置交付' : 'Pending')}
                                   </span>
                                 </div>
-                                <span className="text-[11px] text-muted-foreground truncate mt-0.5">
-                                  {isDoneAll ? outcome.deliverableText : (isZh ? `预期产出：${outcome.expectedText}` : `Expected: ${outcome.expectedText}`)}
-                                </span>
                               </div>
-                            </div>
-                            <div className="flex items-center gap-2 text-[11px] shrink-0">
-                              <span className={cn(
-                                'px-2 py-0.5 rounded text-[11px] font-medium select-none shrink-0',
-                                isDoneAll
-                                  ? 'bg-secondary text-foreground font-semibold'
-                                  : task.status === 'failed'
-                                    ? 'bg-destructive/10 text-destructive'
-                                    : 'bg-muted/50 text-muted-foreground'
-                              )}>
-                                {isDoneAll
-                                  ? (isZh ? '已就绪' : 'Delivered')
-                                  : task.status === 'failed'
-                                    ? (isZh ? '交付中断' : 'Aborted')
-                                    : (isZh ? '待前置交付' : 'Pending')}
-                              </span>
-                            </div>
-                          </div>
+                            )
+                          })()}
                         </div>
                       </div>
                     </DetailSection>
