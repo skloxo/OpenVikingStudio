@@ -182,20 +182,21 @@ export function QueueStatusCard({
                         <TooltipContent
                           side="top"
                           align="center"
-                          className="text-xs max-w-xs p-2.5 space-y-1.5 bg-popover text-popover-foreground border shadow-md"
+                          sideOffset={6}
+                          className="w-72 max-w-xs p-3 space-y-2 bg-popover text-popover-foreground border border-border shadow-xl rounded-lg text-left"
                         >
-                          <div className="flex items-center justify-between gap-3 border-b pb-1">
-                            <span className="font-sans font-bold text-foreground">
+                          <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-1.5">
+                            <span className="font-sans font-bold text-xs text-foreground">
                               {isZh ? item.step.nameZh : item.step.nameEn}
                             </span>
-                            <span className="font-mono text-[11px] text-primary font-medium bg-primary/10 px-1.5 py-0.2 rounded border border-primary/20">
+                            <span className="font-mono text-[11px] font-medium text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded border border-border/50">
                               {isZh ? `量化单位: ${item.step.unitZh}` : `Unit: ${item.step.unitEn}`}
                             </span>
                           </div>
                           <p className="font-sans text-[11px] text-muted-foreground leading-relaxed">
                             {isZh ? item.step.descriptionZh : item.step.descriptionEn}
                           </p>
-                          <div className="flex items-center gap-1 font-mono text-[11px] text-muted-foreground/90 pt-0.5 border-t border-border/40">
+                          <div className="flex items-center gap-1.5 font-mono text-[11px] text-foreground/85 bg-muted/40 px-2 py-1 rounded border border-border/50">
                             <CpuIcon className="size-3 text-primary shrink-0" />
                             <span>
                               {isZh ? '承接引擎' : 'Engine'}: {isZh ? item.step.engineNameZh : item.step.engineNameEn}
@@ -220,20 +221,21 @@ export function QueueStatusCard({
                               <TooltipContent
                                 side="top"
                                 align="center"
-                                className="text-xs max-w-xs p-2.5 space-y-1.5 bg-popover text-popover-foreground border shadow-md"
+                                sideOffset={6}
+                                className="w-72 max-w-xs p-3 space-y-2 bg-popover text-popover-foreground border border-border shadow-xl rounded-lg text-left"
                               >
-                                <div className="flex items-center justify-between gap-3 border-b pb-1">
-                                  <span className="font-sans font-bold text-foreground">
+                                <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-1.5">
+                                  <span className="font-sans font-bold text-xs text-foreground">
                                     {isZh ? st.nameZh : st.nameEn}
                                   </span>
-                                  <span className="font-mono text-[11px] text-primary font-medium bg-primary/10 px-1.5 py-0.2 rounded border border-primary/20">
+                                  <span className="font-mono text-[11px] text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded border border-border/50">
                                     {isZh ? `量化单位: ${st.unitZh}` : `Unit: ${st.unitEn}`}
                                   </span>
                                 </div>
                                 <p className="font-sans text-[11px] text-muted-foreground leading-relaxed">
                                   {isZh ? st.descriptionZh : st.descriptionEn}
                                 </p>
-                                <div className="flex items-center gap-1 font-mono text-[11px] text-muted-foreground/90 pt-0.5 border-t border-border/40">
+                                <div className="flex items-center gap-1.5 font-mono text-[11px] text-foreground/85 bg-muted/40 px-2 py-1 rounded border border-border/50">
                                   <CpuIcon className="size-3 text-primary shrink-0" />
                                   <span>
                                     {isZh ? '承接引擎' : 'Engine'}: {isZh ? st.engineNameZh : st.engineNameEn}
