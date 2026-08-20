@@ -409,7 +409,7 @@ function TasksRoute() {
       retryMutation.isPending &&
       (retryMutation.variables as TaskRecord | undefined)?.task_id === taskId
 
-    // 1. 已完成：极简素雅交付态 (带已完成状态徽章与耗时)
+    // 1. 已完成：极致素雅（仅状态徽章 + 耗时，详情全部移至抽屉）
     if (status === 'completed') {
       return (
         <div className="flex items-center gap-2 py-0.5 select-none text-foreground/85">
@@ -420,17 +420,8 @@ function TasksRoute() {
             <CheckIcon className="size-2.5 stroke-[2.5] mr-1 text-primary" />
             {t('status.completed')}
           </Badge>
-          <span className="font-sans text-xs font-medium truncate max-w-sm">
-            {dynamic.summaryText}
-          </span>
-          {dynamic.workloadText && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-mono text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded border border-border/40 shrink-0 tabular-nums">
-              <span>{dynamic.workloadIcon}</span>
-              <span>{dynamic.workloadText}</span>
-            </span>
-          )}
           {durationText && (
-            <span className="font-mono text-[11px] text-muted-foreground/60 shrink-0 select-none">
+            <span className="font-mono text-[11px] text-muted-foreground/70 shrink-0 select-none tabular-nums">
               · {durationText}
             </span>
           )}
@@ -438,54 +429,38 @@ function TasksRoute() {
       )
     }
 
-    // 2. 进行中：左上角进行中徽章 + 聚焦当前活跃工序与具体量化吞吐 + 耗时与进度
+    // 2. 进行中：单行高密平铺 [进行中] 耗时 百分比 当前工序 量化吞吐 (切除进度条)
     if (status === 'running') {
       return (
-        <div className="flex flex-col gap-1 min-w-64 max-w-md py-0.5 select-none">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <Badge
-                variant="outline"
-                className="text-[11px] px-1.5 py-0 h-5 border-primary/30 text-primary bg-primary/10 font-sans font-medium shrink-0"
-              >
-                <LoaderCircleIcon className="size-2.5 shrink-0 animate-spin mr-1 text-primary" />
-                {t('status.running')}
-              </Badge>
-              <span className="font-sans text-xs font-semibold text-foreground truncate">
-                {dynamic.activeStepName}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 shrink-0 font-mono text-[11px]">
-              {durationText && (
-                <span className="text-muted-foreground/70 tabular-nums">
-                  {durationText}
-                </span>
-              )}
-              <span className="font-bold text-primary tabular-nums">
-                {dynamic.progressPct}%
-              </span>
-            </div>
-          </div>
-
-          {/* 微进度条 + 当前活跃工序的实际量化吞吐 */}
-          <div className="flex items-center gap-2">
-            <div className="h-1.5 flex-1 rounded-full bg-muted/80 overflow-hidden border border-border/30">
-              <div
-                className="h-full bg-primary rounded-full transition-all duration-500"
-                style={{ width: `${Math.max(5, dynamic.progressPct)}%` }}
-              />
-            </div>
-            {dynamic.workloadText && (
-              <span className="font-mono text-[11px] text-muted-foreground font-medium shrink-0 tabular-nums">
-                {dynamic.workloadText}
-              </span>
-            )}
-          </div>
+        <div className="flex items-center gap-2.5 py-0.5 select-none whitespace-nowrap">
+          <Badge
+            variant="outline"
+            className="text-[11px] px-1.5 py-0 h-5 border-primary/30 text-primary bg-primary/10 font-sans font-medium shrink-0"
+          >
+            <LoaderCircleIcon className="size-2.5 shrink-0 animate-spin mr-1 text-primary" />
+            {t('status.running')}
+          </Badge>
+          {durationText && (
+            <span className="font-mono text-[11px] text-muted-foreground/70 tabular-nums shrink-0">
+              {durationText}
+            </span>
+          )}
+          <span className="font-mono text-[11px] font-bold text-primary tabular-nums shrink-0">
+            {dynamic.progressPct}%
+          </span>
+          <span className="font-sans text-xs font-semibold text-foreground shrink-0">
+            {dynamic.activeStepName}
+          </span>
+          {dynamic.workloadText && (
+            <span className="font-mono text-[11px] text-muted-foreground font-medium shrink-0 tabular-nums">
+              {dynamic.workloadText}
+            </span>
+          )}
         </div>
       )
     }
 
-    // 3. 排队中：沉静等待态 (带排队中徽章与耗时)
+    // 3. 排队中：单行等待态
     if (status === 'pending') {
       return (
         <div className="flex items-center gap-2 py-0.5 text-muted-foreground select-none">
@@ -497,10 +472,10 @@ function TasksRoute() {
             {t('pipeline.queued')}
           </Badge>
           <span className="font-sans text-xs text-muted-foreground truncate max-w-sm">
-            {dynamic.summaryText}
+            {dynamic.activeStepName || dynamic.summaryText || t('pipeline.queued')}
           </span>
           {durationText && (
-            <span className="font-mono text-[11px] text-muted-foreground/60 shrink-0 select-none">
+            <span className="font-mono text-[11px] text-muted-foreground/60 shrink-0 select-none tabular-nums">
               · {durationText}
             </span>
           )}
@@ -535,15 +510,10 @@ function TasksRoute() {
           </button>
         </Badge>
         <span className="font-sans text-xs font-medium text-destructive truncate max-w-sm">
-          {dynamic.summaryText}
+          {dynamic.activeStepName || dynamic.summaryText}
         </span>
-        {dynamic.workloadText && (
-          <span className="font-mono text-[11px] text-muted-foreground bg-destructive/5 px-1.5 py-0.5 rounded border border-destructive/20 shrink-0">
-            {dynamic.workloadText}
-          </span>
-        )}
         {durationText && (
-          <span className="font-mono text-[11px] text-destructive/70 shrink-0 select-none">
+          <span className="font-mono text-[11px] text-destructive/70 shrink-0 select-none tabular-nums">
             · {durationText}
           </span>
         )}
