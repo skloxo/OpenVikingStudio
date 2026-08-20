@@ -166,10 +166,10 @@ export function getTaskPipelineSteps(
         unit: isZh ? '项' : 'items',
       },
       {
-        name: isZh ? '孤儿修剪' : 'Pruning',
+        name: isZh ? '悬空修剪' : 'Pruning',
         state: inferStepState(null, 2, 3, status, stage, qStatus),
         count: resObj.deleted_records ?? metaObj.deleted_records,
-        unit: isZh ? '孤儿块' : 'orphans',
+        unit: isZh ? '切片' : 'chunks',
       },
       {
         name: isZh ? '切片重构' : 'Embedding',
@@ -214,15 +214,15 @@ export function getTaskPipelineSteps(
   if (type === 'legacy_migration') {
     return [
       { name: isZh ? '数据读取' : 'Read', state: status === 'pending' ? 'pending' : 'completed' },
-      { name: isZh ? 'Schema 转换' : 'Transform', state: inferStepState(null, 2, 3, status, stage, qStatus), count: resObj.migrated_count ?? metaObj.migrated_count, unit: isZh ? '条' : 'records' },
-      { name: isZh ? 'AGFS 写入' : 'Write', state: status === 'completed' ? 'completed' : 'pending' },
+      { name: isZh ? '格式转换' : 'Transform', state: inferStepState(null, 2, 3, status, stage, qStatus), count: resObj.migrated_count ?? metaObj.migrated_count, unit: isZh ? '条' : 'records' },
+      { name: isZh ? '存储落盘' : 'Write', state: status === 'completed' ? 'completed' : 'pending' },
     ]
   }
 
   if (type === 'legacy_cleanup') {
     return [
       { name: isZh ? '图谱遍历' : 'Traverse', state: status === 'pending' ? 'pending' : 'completed' },
-      { name: isZh ? '孤儿回收' : 'GC', state: inferStepState(null, 2, 3, status, stage, qStatus), count: resObj.cleaned_items ?? metaObj.cleaned_items, unit: isZh ? '项' : 'items' },
+      { name: isZh ? '碎片回收' : 'GC', state: inferStepState(null, 2, 3, status, stage, qStatus), count: resObj.cleaned_items ?? metaObj.cleaned_items, unit: isZh ? '项' : 'items' },
       { name: isZh ? '空间释放' : 'Free', state: status === 'completed' ? 'completed' : 'pending' },
     ]
   }
