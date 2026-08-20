@@ -97,10 +97,20 @@ def test_agent_evolution_can_be_enabled_as_account_default():
     assert config.agent_evolution.enabled is True
 
 
-async def test_embedded_session_service_preserves_agent_evolution_default():
-    service = SessionService()
+def test_server_default_memory_policy_is_configured_on_session_service(fake_viking_fs):
+    sessions = SessionService(viking_fs=fake_viking_fs)
+    service = SimpleNamespace(sessions=sessions)
+    config = ServerConfig(
+        user_config_defaults=UserConfig(memory_policy={"memory_types": ["profile"]})
+    )
 
-    assert await service.get_agent_evolution_enabled("default") is True
+    create_app(config=config, service=service)
+
+    assert sessions._default_user_memory_policy == {
+        "self": {"enabled": True},
+        "peer": {"enabled": True},
+        "memory_types": ["profile"],
+    }
 
 
 async def test_existing_session_observes_updated_account_value(fake_viking_fs):
