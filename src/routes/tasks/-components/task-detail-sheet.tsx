@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query'
 import {
   ActivityIcon,
   CalendarClockIcon,
-  CheckCircle2Icon,
   CircleDashedIcon,
   CircleXIcon,
   ClipboardListIcon,
@@ -39,7 +38,7 @@ import {
 import type { TaskRecord } from '../-lib/task-record'
 import type { PipelineStep } from '../-lib/task-pipeline'
 import {
-  getTaskExecutionDynamic,
+  getTaskFinalOutcome,
   getTaskPipelineGroups,
 } from '../-lib/task-pipeline'
 
@@ -254,7 +253,7 @@ export function TaskDetailSheet({
                 {(() => {
                   const isZh = i18n.language.startsWith('zh')
                   const groups = getTaskPipelineGroups(task, queueObserverRows, i18n.language)
-                  const dynamic = getTaskExecutionDynamic(task, queueObserverRows, i18n.language)
+                  const outcome = getTaskFinalOutcome(task, i18n.language)
                   const isDoneAll = normalizeTaskStatus(task.status) === 'completed'
 
                   const renderMetrics = (st: PipelineStep) => {
@@ -318,7 +317,7 @@ export function TaskDetailSheet({
 
                             // Parallel Group Container (并发工序组合卡片)
                             return (
-                              <div key={i} className="rounded-lg border border-primary/25 bg-primary/[0.02] p-2.5 space-y-2 shadow-2xs">
+                              <div key={i} className="rounded-lg border border-primary/25 bg-primary/2 p-2.5 space-y-2 shadow-2xs">
                                 <div className="flex items-center justify-between px-0.5 text-[11px]">
                                   <div className="flex items-center gap-1.5 font-medium text-foreground">
                                     <span className="font-mono text-muted-foreground text-[11px] font-semibold">{i + 1}.</span>
@@ -344,25 +343,48 @@ export function TaskDetailSheet({
                               </div>
                             )
                           })}
-                        </div>
 
-                        {/* 任务交付产出结果摘要 (仅任务完全完成后展示，执行中不产生冗余提示) */}
-                        {isDoneAll && dynamic.summaryText && (
-                          <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg border bg-primary/5 border-primary/25 text-foreground text-xs">
-                            <CheckCircle2Icon className="size-4 shrink-0 text-primary" />
-                            <div className="flex flex-1 items-center justify-between gap-2 min-w-0">
-                              <div className="flex items-center gap-2 truncate">
-                                <span className="font-medium text-muted-foreground text-[11px]">
-                                  {isZh ? '产出结果：' : 'Outcome:'}
+                          {/* 终点工序：最终输出的结果 (Final Deliverable Outcome Milestone) */}
+                          <div className={cn(
+                            'flex items-center justify-between rounded-lg border px-3.5 py-2.5 shadow-2xs transition-colors',
+                            isDoneAll
+                              ? 'border-primary/30 bg-primary/5'
+                              : 'border-dashed border-border/80 bg-muted/20'
+                          )}>
+                            <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                              <span className="font-mono text-primary text-[11px] font-semibold">
+                                {groups.length + 1}.
+                              </span>
+                              <div className="flex flex-col min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-foreground text-xs">{outcome.title}</span>
+                                  <span className="text-[10px] font-mono text-muted-foreground bg-muted/60 px-1.5 py-0.2 rounded border border-border/60">
+                                    {isZh ? '最终输出结果' : 'Final Deliverable'}
+                                  </span>
+                                </div>
+                                <span className="text-[11px] text-muted-foreground truncate mt-0.5">
+                                  {isDoneAll ? outcome.deliverableText : (isZh ? `预期产出：${outcome.expectedText}` : `Expected: ${outcome.expectedText}`)}
                                 </span>
-                                <span className="font-semibold text-foreground truncate">{dynamic.summaryText}</span>
                               </div>
-                              <span className="font-mono text-[11px] text-muted-foreground/80 shrink-0">
-                                {isZh ? '交付就绪' : 'Delivered'}
+                            </div>
+                            <div className="flex items-center gap-2 text-[11px] shrink-0">
+                              <span className={cn(
+                                'px-2 py-0.5 rounded text-[11px] font-medium select-none shrink-0',
+                                isDoneAll
+                                  ? 'bg-secondary text-foreground font-semibold'
+                                  : task.status === 'failed'
+                                    ? 'bg-destructive/10 text-destructive'
+                                    : 'bg-muted/50 text-muted-foreground'
+                              )}>
+                                {isDoneAll
+                                  ? (isZh ? '已就绪' : 'Delivered')
+                                  : task.status === 'failed'
+                                    ? (isZh ? '交付中断' : 'Aborted')
+                                    : (isZh ? '待前置交付' : 'Pending')}
                               </span>
                             </div>
                           </div>
-                        )}
+                        </div>
                       </div>
                     </DetailSection>
                   )
