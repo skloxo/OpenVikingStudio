@@ -429,7 +429,7 @@ function TasksRoute() {
       )
     }
 
-    // 2. 进行中：单行高密平铺 [进行中] 耗时 百分比 当前工序 量化吞吐 (切除进度条)
+    // 2. 进行中：单行高密平铺 [进行中] 耗时 当前工序 算子量化工作量 (切除百分比与进度条)
     if (status === 'running') {
       return (
         <div className="flex items-center gap-2.5 py-0.5 select-none whitespace-nowrap">
@@ -442,12 +442,9 @@ function TasksRoute() {
           </Badge>
           {durationText && (
             <span className="font-mono text-[11px] text-muted-foreground/70 tabular-nums shrink-0">
-              {durationText}
+              · {durationText}
             </span>
           )}
-          <span className="font-mono text-[11px] font-bold text-primary tabular-nums shrink-0">
-            {dynamic.progressPct}%
-          </span>
           <span className="font-sans text-xs font-semibold text-foreground shrink-0">
             {dynamic.activeStepName}
           </span>
