@@ -315,31 +315,21 @@ export function TaskDetailSheet({
                               )
                             }
 
-                            // Parallel Group Container (并发工序组合卡片)
+                            // Parallel Steps: 50/50 side-by-side sibling cards with identical height & style
                             return (
-                              <div key={i} className="rounded-lg border border-primary/25 bg-primary/2 p-2.5 space-y-2 shadow-2xs">
-                                <div className="flex items-center justify-between px-0.5 text-[11px]">
-                                  <div className="flex items-center gap-1.5 font-medium text-foreground">
-                                    <span className="font-mono text-muted-foreground text-[11px] font-semibold">{i + 1}.</span>
-                                    <span>{isZh ? '并发工序' : 'Parallel Process'}</span>
-                                  </div>
-                                  <span className="font-mono text-[10px] text-primary bg-primary/10 px-1.5 py-0.2 rounded border border-primary/20 font-semibold">
-                                    {group.steps.length} {isZh ? '路并发' : 'Parallel'}
-                                  </span>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                  {group.steps.map((st, sIdx) => (
-                                    <div key={sIdx} className="flex items-center justify-between rounded-md border bg-background/90 px-3 py-2 shadow-2xs">
-                                      <div className="flex items-center gap-1.5 min-w-0 pr-1">
-                                        <span className="font-medium text-foreground text-xs truncate">{st.name}</span>
-                                      </div>
-                                      <div className="flex items-center gap-1.5 text-[11px] shrink-0">
-                                        {renderMetrics(st)}
-                                        {renderBadge(st)}
-                                      </div>
+                              <div key={i} className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {group.steps.map((st, sIdx) => (
+                                  <div key={sIdx} className="flex items-center justify-between rounded-lg border bg-background/80 px-3.5 py-2.5 shadow-2xs">
+                                    <div className="flex items-center gap-2 min-w-0 pr-1.5">
+                                      <span className="font-mono text-muted-foreground text-[11px] font-semibold">{i + 1}.</span>
+                                      <span className="font-medium text-foreground text-xs truncate">{st.name}</span>
                                     </div>
-                                  ))}
-                                </div>
+                                    <div className="flex items-center gap-2 text-[11px] shrink-0">
+                                      {renderMetrics(st)}
+                                      {renderBadge(st)}
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
                             )
                           })}
