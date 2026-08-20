@@ -1001,9 +1001,9 @@ function SkillsRoute() {
     placeholderData: keepPreviousData,
     queryFn: fetchSkills,
     queryKey: ['skills', 'v2', identityScopeKey],
-    refetchOnReconnect: true,
-    refetchOnWindowFocus: true,
-    staleTime: 0,
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
+    staleTime: 60_000,
   })
   const skills = skillsQuery.data ?? []
 
@@ -1087,7 +1087,7 @@ function SkillsRoute() {
     queryKey: ['harness-status', '24h'],
     refetchOnReconnect: false,
     refetchOnWindowFocus: false,
-    staleTime: 0,
+    staleTime: 60_000,
   })
 
   const metrics = harnessStatusQuery.data ?? null
