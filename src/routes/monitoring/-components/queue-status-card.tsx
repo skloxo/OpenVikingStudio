@@ -206,19 +206,16 @@ export function QueueStatusCard({
                         </TooltipContent>
                       </Tooltip>
                     ) : (
-                      /* 并发工序组合框 (Unified Parallel Container Box) */
-                      <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-sans font-medium bg-primary/10 text-foreground border border-primary/30 whitespace-nowrap shrink-0 shadow-2xs">
-                        <span className="inline-flex items-center gap-0.5 text-[10px] font-mono text-primary font-bold bg-primary/15 px-1 py-0.2 rounded border border-primary/25">
-                          ⚡ {isZh ? '并发' : 'PARALLEL'}
-                        </span>
+                      /* 并发工序组合框 (Neutral Container Box with &) */
+                      <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-sans font-medium bg-muted/60 text-foreground/90 border border-border/50 whitespace-nowrap shrink-0 transition-all shadow-2xs">
                         {item.steps.map((st, sIdx) => (
                           <React.Fragment key={st.id}>
                             {sIdx > 0 && (
-                              <span className="text-primary/60 font-mono text-[10px] font-bold select-none">&</span>
+                              <span className="text-muted-foreground/60 font-mono text-[10px] font-bold select-none px-0.5">&</span>
                             )}
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <span className="hover:text-primary hover:underline underline-offset-2 cursor-help transition-all">
+                                <span className="hover:text-foreground hover:underline underline-offset-2 cursor-help transition-all">
                                   {isZh ? st.nameZh : st.nameEn}
                                 </span>
                               </TooltipTrigger>
