@@ -187,7 +187,7 @@ export function getTaskPipelineSteps(
 
   if (type === 'admin_reindex') {
     const scanned = resObj.scanned_records ?? metaObj.scanned_records ?? 14661
-    const deleted = resObj.deleted_records ?? metaObj.deleted_records ?? 0
+    const deleted = resObj.deleted_records ?? resObj.deleted_chunks ?? metaObj.deleted_records ?? metaObj.deleted_chunks ?? 0
     const rebuilt = resObj.rebuilt_records ?? resObj.reindexed_items ?? metaObj.rebuilt_records ?? scanned
     return [
       {
@@ -767,8 +767,10 @@ export function getTaskExecutionDynamic(
       let metric = ''
       if (s.processed !== undefined && s.total !== undefined && s.total > 0) {
         metric = `${s.processed.toLocaleString()}/${s.total.toLocaleString()} ${s.unit ?? ''}`.trim()
-      } else if (s.count !== undefined && s.count > 0) {
+      } else if (s.count !== undefined) {
         metric = `${s.count.toLocaleString()} ${s.unit ?? ''}`.trim()
+      } else if (s.processed !== undefined) {
+        metric = `${s.processed.toLocaleString()} ${s.unit ?? ''}`.trim()
       }
       return {
         name: s.name,

@@ -266,10 +266,11 @@ export function TaskDetailSheet({
                         </span>
                       )
                     }
-                    if (st.count !== undefined) {
+                    if (st.count !== undefined || st.processed !== undefined) {
+                      const countVal = st.count ?? st.processed ?? 0
                       return (
                         <span className="font-mono font-medium text-foreground bg-muted/60 px-2 py-0.5 rounded border border-border/60 tabular-nums">
-                          {st.count.toLocaleString()} {st.unit ?? ''}
+                          {countVal.toLocaleString()} {st.unit ?? ''}
                         </span>
                       )
                     }
