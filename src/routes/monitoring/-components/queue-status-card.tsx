@@ -22,6 +22,45 @@ export interface ParsedQueueRow {
   total: number
 }
 
+export type TaskFlowItem =
+  | { kind: 'single'; step: PanoramaStepDef }
+  | { kind: 'parallel'; steps: PanoramaStepDef[] }
+
+export function getTaskFlowItems(taskType: string): TaskFlowItem[] {
+  if (taskType === 'add_resource') {
+    const s1 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_ingestion')
+    const s2 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_parse')
+    const s3 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_semantic')
+    const s4 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_embedding')
+    const res: TaskFlowItem[] = []
+    if (s1) res.push({ kind: 'single', step: s1 })
+    if (s2) res.push({ kind: 'single', step: s2 })
+    if (s3 && s4) res.push({ kind: 'parallel', steps: [s3, s4] })
+    return res
+  }
+
+  if (taskType === 'connector_import') {
+    const s1 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_auth')
+    const s2 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_fetch')
+    const s3 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_parse')
+    const s4 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_semantic')
+    const s5 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_embedding')
+    const res: TaskFlowItem[] = []
+    if (s1) res.push({ kind: 'single', step: s1 })
+    if (s2) res.push({ kind: 'single', step: s2 })
+    if (s3) res.push({ kind: 'single', step: s3 })
+    if (s4 && s5) res.push({ kind: 'parallel', steps: [s4, s5] })
+    return res
+  }
+
+  const flow = TASK_FLOWS.find((f) => f.typeKey === taskType)
+  if (!flow) return []
+  return flow.stepIds
+    .map((id) => ALL_PANORAMA_STEPS.find((s) => s.id === id))
+    .filter((s): s is PanoramaStepDef => s !== undefined)
+    .map((step) => ({ kind: 'single' as const, step }))
+}
+
 // 将 Observer status 字符串解析为结构化队列数据
 export function parseQueueStatus(status: string): ParsedQueueRow[] {
   if (!status) return []
@@ -103,19 +142,8 @@ export function QueueStatusCard({
 
   const renderRow = (row: ParsedQueueRow, isTotalRow: boolean) => {
     const displayName = isTaskCard ? row.name : getQueueDisplayName(row.name)
-
-    // Lookup matching task flow definition for Task Cards
-    const taskFlow = isTaskCard && row.typeKey
-      ? TASK_FLOWS.find((f) => f.typeKey === row.typeKey)
-      : isTaskCard
-        ? TASK_FLOWS.find((f) => f.nameZh === row.name || f.nameEn === row.name)
-        : null
-
-    const taskSteps: PanoramaStepDef[] = taskFlow
-      ? taskFlow.stepIds
-          .map((id) => ALL_PANORAMA_STEPS.find((s) => s.id === id))
-          .filter((s): s is PanoramaStepDef => s !== undefined)
-      : []
+    const taskTypeKey = row.typeKey ?? (TASK_FLOWS.find((f) => f.nameZh === row.name || f.nameEn === row.name)?.typeKey)
+    const flowItems = isTaskCard && taskTypeKey ? getTaskFlowItems(taskTypeKey) : []
 
     return (
       <div
@@ -133,62 +161,95 @@ export function QueueStatusCard({
             {displayName}
           </span>
 
-          {/* 如果是任务卡片，展示其专属的流水线工序链（与任务名同单行，带并发符 ∥ 与 Tooltip 物理职责及量化单位） */}
-          {isTaskCard && taskSteps.length > 0 && !isTotalRow && (
+          {/* 如果是任务卡片，展示其专属的流水线工序链（与任务名同单行，并发工序统一外框合并） */}
+          {isTaskCard && flowItems.length > 0 && !isTotalRow && (
             <div className="flex items-center gap-1.5 shrink-0 select-none py-0.2">
               <span className="font-mono text-muted-foreground/40 text-[11px] shrink-0">:</span>
-              {taskSteps.map((st, sIdx) => {
-                // 特殊标记：add_resource 与 connector_import 中语义提取与向量建库为并行 (∥)
-                const isParallel =
-                  (row.typeKey === 'add_resource' || row.typeKey === 'connector_import') &&
-                  st.id === 'step_embedding'
-
+              {flowItems.map((item, itemIdx) => {
                 return (
-                  <React.Fragment key={st.id}>
-                    {sIdx > 0 && (
-                      <span
-                        className={cn(
-                          'font-mono text-[11px] shrink-0 select-none px-0.5',
-                          isParallel
-                            ? 'text-primary font-bold'
-                            : 'text-muted-foreground/40',
-                        )}
-                        title={isParallel ? (isZh ? '并行工序 (Parallel Batch)' : 'Parallel Batch') : (isZh ? '串行流转 (Serial)' : 'Serial')}
-                      >
-                        {isParallel ? '∥' : '➔'}
+                  <React.Fragment key={itemIdx}>
+                    {itemIdx > 0 && (
+                      <span className="font-mono text-[11px] text-muted-foreground/40 shrink-0 select-none px-0.5">
+                        ➔
                       </span>
                     )}
 
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-sans font-medium bg-muted/60 text-foreground/90 hover:text-foreground hover:bg-muted hover:border-primary/40 cursor-help border border-border/50 whitespace-nowrap shrink-0 transition-all shadow-2xs">
-                          {isZh ? st.nameZh : st.nameEn}
+                    {item.kind === 'single' ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-sans font-medium bg-muted/60 text-foreground/90 hover:text-foreground hover:bg-muted hover:border-primary/40 cursor-help border border-border/50 whitespace-nowrap shrink-0 transition-all shadow-2xs">
+                            {isZh ? item.step.nameZh : item.step.nameEn}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent
+                          side="top"
+                          align="center"
+                          className="text-xs max-w-xs p-2.5 space-y-1.5 bg-popover text-popover-foreground border shadow-md"
+                        >
+                          <div className="flex items-center justify-between gap-3 border-b pb-1">
+                            <span className="font-sans font-bold text-foreground">
+                              {isZh ? item.step.nameZh : item.step.nameEn}
+                            </span>
+                            <span className="font-mono text-[11px] text-primary font-medium bg-primary/10 px-1.5 py-0.2 rounded border border-primary/20">
+                              {isZh ? `量化单位: ${item.step.unitZh}` : `Unit: ${item.step.unitEn}`}
+                            </span>
+                          </div>
+                          <p className="font-sans text-[11px] text-muted-foreground leading-relaxed">
+                            {isZh ? item.step.descriptionZh : item.step.descriptionEn}
+                          </p>
+                          <div className="flex items-center gap-1 font-mono text-[11px] text-muted-foreground/90 pt-0.5 border-t border-border/40">
+                            <CpuIcon className="size-3 text-primary shrink-0" />
+                            <span>
+                              {isZh ? '承接引擎' : 'Engine'}: {isZh ? item.step.engineNameZh : item.step.engineNameEn}
+                            </span>
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      /* 并发工序组合框 (Unified Parallel Container Box) */
+                      <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-sans font-medium bg-primary/10 text-foreground border border-primary/30 whitespace-nowrap shrink-0 shadow-2xs">
+                        <span className="inline-flex items-center gap-0.5 text-[10px] font-mono text-primary font-bold bg-primary/15 px-1 py-0.2 rounded border border-primary/25">
+                          ⚡ {isZh ? '并发' : 'PARALLEL'}
                         </span>
-                      </TooltipTrigger>
-                      <TooltipContent
-                        side="top"
-                        align="center"
-                        className="text-xs max-w-xs p-2.5 space-y-1.5 bg-popover text-popover-foreground border shadow-md"
-                      >
-                        <div className="flex items-center justify-between gap-3 border-b pb-1">
-                          <span className="font-sans font-bold text-foreground">
-                            {isZh ? st.nameZh : st.nameEn}
-                          </span>
-                          <span className="font-mono text-[11px] text-primary font-medium bg-primary/10 px-1.5 py-0.2 rounded border border-primary/20">
-                            {isZh ? `量化单位: ${st.unitZh}` : `Unit: ${st.unitEn}`}
-                          </span>
-                        </div>
-                        <p className="font-sans text-[11px] text-muted-foreground leading-relaxed">
-                          {isZh ? st.descriptionZh : st.descriptionEn}
-                        </p>
-                        <div className="flex items-center gap-1 font-mono text-[11px] text-muted-foreground/90 pt-0.5 border-t border-border/40">
-                          <CpuIcon className="size-3 text-primary shrink-0" />
-                          <span>
-                            {isZh ? '承接引擎' : 'Engine'}: {isZh ? st.engineNameZh : st.engineNameEn}
-                          </span>
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
+                        {item.steps.map((st, sIdx) => (
+                          <React.Fragment key={st.id}>
+                            {sIdx > 0 && (
+                              <span className="text-primary/60 font-mono text-[10px] font-bold select-none">&</span>
+                            )}
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="hover:text-primary hover:underline underline-offset-2 cursor-help transition-all">
+                                  {isZh ? st.nameZh : st.nameEn}
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent
+                                side="top"
+                                align="center"
+                                className="text-xs max-w-xs p-2.5 space-y-1.5 bg-popover text-popover-foreground border shadow-md"
+                              >
+                                <div className="flex items-center justify-between gap-3 border-b pb-1">
+                                  <span className="font-sans font-bold text-foreground">
+                                    {isZh ? st.nameZh : st.nameEn}
+                                  </span>
+                                  <span className="font-mono text-[11px] text-primary font-medium bg-primary/10 px-1.5 py-0.2 rounded border border-primary/20">
+                                    {isZh ? `量化单位: ${st.unitZh}` : `Unit: ${st.unitEn}`}
+                                  </span>
+                                </div>
+                                <p className="font-sans text-[11px] text-muted-foreground leading-relaxed">
+                                  {isZh ? st.descriptionZh : st.descriptionEn}
+                                </p>
+                                <div className="flex items-center gap-1 font-mono text-[11px] text-muted-foreground/90 pt-0.5 border-t border-border/40">
+                                  <CpuIcon className="size-3 text-primary shrink-0" />
+                                  <span>
+                                    {isZh ? '承接引擎' : 'Engine'}: {isZh ? st.engineNameZh : st.engineNameEn}
+                                  </span>
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    )}
                   </React.Fragment>
                 )
               })}
