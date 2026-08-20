@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   ActivityIcon,
   CalendarClockIcon,
+  CheckCircle2Icon,
   CircleDashedIcon,
   CircleXIcon,
   ClipboardListIcon,
@@ -36,7 +37,7 @@ import {
   normalizeTaskStatus,
 } from '../-lib/task-record'
 import type { TaskRecord } from '../-lib/task-record'
-import { getTaskPipelineSteps } from '../-lib/task-pipeline'
+import { getTaskExecutionDynamic, getTaskPipelineSteps } from '../-lib/task-pipeline'
 
 type TaskDetailSheetProps = {
   identityScopeKey: string
@@ -247,18 +248,21 @@ export function TaskDetailSheet({
 
                 {/* Worker Sub-Queue Pipeline Diagram (Type-Aware) */}
                   {(() => {
+                    const isZh = i18n.language.startsWith('zh')
                     const steps = getTaskPipelineSteps(task, queueObserverRows, i18n.language)
+                    const dynamic = getTaskExecutionDynamic(task, queueObserverRows, i18n.language)
+                    const isDoneAll = normalizeTaskStatus(task.status) === 'completed'
+                    const isRunningAny = normalizeTaskStatus(task.status) === 'running'
 
                     return (
                       <DetailSection title={t('detail.pipelineSteps')}>
-                        <div className="rounded-xl border bg-muted/20 p-3 text-xs">
+                        <div className="rounded-xl border bg-muted/20 p-3 text-xs space-y-2.5">
                           <div className="grid gap-2">
                             {steps.map((st, i) => {
                               const isDone = st.state === 'completed'
                               const isRun = st.state === 'running'
                               const isFail = st.state === 'failed'
                               const hasFraction = st.processed !== undefined && st.total !== undefined && st.total > 0
-                              const pct = hasFraction ? Math.round(((st.processed ?? 0) / (st.total ?? 1)) * 100) : null
 
                               return (
                                 <div key={i} className="flex items-center justify-between rounded-lg border bg-background/80 px-3.5 py-2.5 shadow-2xs">
@@ -270,7 +274,6 @@ export function TaskDetailSheet({
                                     {hasFraction ? (
                                       <span className="font-mono font-medium text-foreground bg-muted/60 px-2 py-0.5 rounded border border-border/60 tabular-nums">
                                         {(st.processed ?? 0).toLocaleString()} / {(st.total ?? 0).toLocaleString()} {st.unit ?? ''}
-                                        <span className="text-muted-foreground ml-1.5 font-normal">({pct}%)</span>
                                       </span>
                                     ) : st.count !== undefined ? (
                                       <span className="font-mono font-medium text-foreground bg-muted/60 px-2 py-0.5 rounded border border-border/60 tabular-nums">
@@ -294,6 +297,37 @@ export function TaskDetailSheet({
                               )
                             })}
                           </div>
+
+                          {/* 任务交付产出结果摘要 (Outcome Summary Banner) */}
+                          {dynamic.summaryText && (
+                            <div className={cn(
+                              'flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg border text-xs transition-colors',
+                              isDoneAll
+                                ? 'bg-primary/5 border-primary/25 text-foreground'
+                                : isRunningAny
+                                  ? 'bg-muted/50 border-border/60 text-foreground/90'
+                                  : 'bg-muted/30 border-border/40 text-muted-foreground'
+                            )}>
+                              {isDoneAll ? (
+                                <CheckCircle2Icon className="size-4 shrink-0 text-primary" />
+                              ) : isRunningAny ? (
+                                <LoaderCircleIcon className="size-4 shrink-0 animate-spin text-primary" />
+                              ) : (
+                                <Layers3Icon className="size-4 shrink-0 text-muted-foreground" />
+                              )}
+                              <div className="flex flex-1 items-center justify-between gap-2 min-w-0">
+                                <div className="flex items-center gap-2 truncate">
+                                  <span className="font-medium text-muted-foreground text-[11px]">
+                                    {isDoneAll ? (isZh ? '产出结果：' : 'Outcome:') : (isZh ? '当前状态：' : 'Current Status:')}
+                                  </span>
+                                  <span className="font-semibold text-foreground truncate">{dynamic.summaryText}</span>
+                                </div>
+                                <span className="font-mono text-[11px] text-muted-foreground/80 shrink-0">
+                                  {isDoneAll ? (isZh ? '交付就绪' : 'Delivered') : (isZh ? '工序流转中' : 'Processing')}
+                                </span>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </DetailSection>
                     )
