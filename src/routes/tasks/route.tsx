@@ -429,7 +429,7 @@ function TasksRoute() {
       )
     }
 
-    // 2. 进行中：单行高密平铺 [进行中] 耗时 当前工序 算子量化工作量 (切除百分比与进度条)
+    // 2. 进行中：一体化动态工序与工作量胶囊 [进行中] 耗时 [工序 3/4: 语义提取 · 0 / 5 节点]
     if (status === 'running') {
       return (
         <div className="flex items-center gap-2 py-0.5 select-none whitespace-nowrap text-xs">
@@ -445,22 +445,27 @@ function TasksRoute() {
               · {durationText}
             </span>
           )}
-          <span className="font-sans text-xs text-foreground/90 font-medium shrink-0">
-            {dynamic.activeStepName}
-          </span>
-          {dynamic.workloadText && (
-            <span className="inline-flex items-center text-[11px] font-mono text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded border border-border/40 shrink-0 tabular-nums">
-              {dynamic.workloadText}
+          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs bg-muted/40 text-foreground/85 border border-border/50 font-sans shrink-0">
+            <span className="font-medium text-foreground/90">
+              {dynamic.activeStepName}
             </span>
-          )}
+            {dynamic.workloadText && (
+              <>
+                <span className="text-muted-foreground/40 font-mono text-[10px] select-none">·</span>
+                <span className="font-mono text-[11px] text-muted-foreground tabular-nums">
+                  {dynamic.workloadText}
+                </span>
+              </>
+            )}
+          </div>
         </div>
       )
     }
 
-    // 3. 排队中：单行等待态
+    // 3. 排队中：单行等待态 (带等待工序胶囊)
     if (status === 'pending') {
       return (
-        <div className="flex items-center gap-2 py-0.5 text-muted-foreground select-none">
+        <div className="flex items-center gap-2 py-0.5 text-muted-foreground select-none whitespace-nowrap text-xs">
           <Badge
             variant="outline"
             className="text-[11px] px-1.5 py-0 h-5 border-border/60 text-muted-foreground bg-muted/20 font-sans font-medium shrink-0"
@@ -468,21 +473,21 @@ function TasksRoute() {
             <CircleDashedIcon className="size-2.5 mr-1 text-muted-foreground/60" />
             {t('pipeline.queued')}
           </Badge>
-          <span className="font-sans text-xs text-muted-foreground truncate max-w-sm">
-            {dynamic.activeStepName || dynamic.summaryText || t('pipeline.queued')}
-          </span>
           {durationText && (
             <span className="font-mono text-[11px] text-muted-foreground/60 shrink-0 select-none tabular-nums">
               · {durationText}
             </span>
           )}
+          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs bg-muted/20 text-muted-foreground border border-border/40 font-sans shrink-0">
+            <span>{dynamic.activeStepName || dynamic.summaryText || t('pipeline.queued')}</span>
+          </div>
         </div>
       )
     }
 
-    // 4. 失败：精准定位中断工序 (带失败徽章、重试按钮与耗时)
+    // 4. 失败：精准定位中断工序 (带失败徽章、重试按钮与异常工序胶囊)
     return (
-      <div className="flex items-center gap-2 py-0.5 text-destructive select-none">
+      <div className="flex items-center gap-2 py-0.5 text-destructive select-none whitespace-nowrap text-xs">
         <Badge
           variant="destructive"
           className="text-[11px] px-1.5 py-0 h-5 font-sans font-medium shrink-0 gap-1"
@@ -506,14 +511,14 @@ function TasksRoute() {
             )}
           </button>
         </Badge>
-        <span className="font-sans text-xs font-medium text-destructive truncate max-w-sm">
-          {dynamic.activeStepName || dynamic.summaryText}
-        </span>
         {durationText && (
           <span className="font-mono text-[11px] text-destructive/70 shrink-0 select-none tabular-nums">
             · {durationText}
           </span>
         )}
+        <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs bg-destructive/5 text-destructive border border-destructive/20 font-sans shrink-0">
+          <span>{dynamic.activeStepName || dynamic.summaryText}</span>
+        </div>
       </div>
     )
   }
