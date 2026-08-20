@@ -679,6 +679,11 @@ export function getTaskQuantifiedWorkload(
   return null
 }
 
+export interface ActiveStepPair {
+  name: string
+  metric?: string
+}
+
 export interface TaskExecutionDynamic {
   status: 'completed' | 'running' | 'pending' | 'failed'
   activeStepName: string
@@ -686,6 +691,7 @@ export interface TaskExecutionDynamic {
   activeStepIndex: number
   totalSteps: number
   progressPct: number
+  activeStepPairs?: ActiveStepPair[]
   workloadText?: string
   workloadIcon?: string
   summaryText: string
@@ -756,8 +762,22 @@ export function getTaskExecutionDynamic(
       runningSteps = pendingStep ? [pendingStep] : []
     }
 
+    // Pair each active step with its own quantified metric
+    const activeStepPairs: ActiveStepPair[] = runningSteps.map((s) => {
+      let metric = ''
+      if (s.processed !== undefined && s.total !== undefined && s.total > 0) {
+        metric = `${s.processed.toLocaleString()}/${s.total.toLocaleString()} ${s.unit ?? ''}`.trim()
+      } else if (s.count !== undefined && s.count > 0) {
+        metric = `${s.count.toLocaleString()} ${s.unit ?? ''}`.trim()
+      }
+      return {
+        name: s.name,
+        metric: metric || undefined,
+      }
+    })
+
     // Step names joined directly without "工序 X/Y:" prefix
-    const stepName = runningSteps.map((s) => s.name).join(isZh ? ' + ' : ' + ') || (isZh ? '正在处理' : 'Processing')
+    const stepName = runningSteps.map((s) => s.name).join(isZh ? ' & ' : ' & ') || (isZh ? '正在处理' : 'Processing')
 
     // Map active engine name
     const engines = runningSteps.map((s) => {
@@ -773,22 +793,9 @@ export function getTaskExecutionDynamic(
     })
     const engineName = Array.from(new Set(engines)).join(' + ')
 
-    // Extract exact quantitative data of all active steps
-    const stepMetrics = runningSteps
-      .map((s) => {
-        if (s.processed !== undefined && s.total !== undefined && s.total > 0) {
-          return `${s.processed.toLocaleString()} / ${s.total.toLocaleString()} ${s.unit ?? ''}`.trim()
-        }
-        if (s.count !== undefined && s.count > 0) {
-          return `${s.count.toLocaleString()} ${s.unit ?? ''}`.trim()
-        }
-        return ''
-      })
-      .filter(Boolean)
-
-    const joinedMetric = stepMetrics.length > 0
-      ? stepMetrics.join(' · ')
-      : workload?.label
+    // Joined combined workload text (for fallback)
+    const stepMetrics = activeStepPairs.map((p) => p.metric ? `${p.name} · ${p.metric}` : p.name)
+    const joinedMetric = stepMetrics.length > 0 ? stepMetrics.join(' & ') : workload?.label
 
     return {
       status: 'running',
@@ -797,6 +804,7 @@ export function getTaskExecutionDynamic(
       activeStepIndex: 0,
       totalSteps,
       progressPct,
+      activeStepPairs,
       workloadText: joinedMetric,
       workloadIcon: workload?.icon ?? '⚡',
       summaryText: isZh ? `执行中 (${progressPct}%)` : `Running (${progressPct}%)`,

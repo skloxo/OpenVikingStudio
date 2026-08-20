@@ -429,8 +429,12 @@ function TasksRoute() {
       )
     }
 
-    // 2. 进行中：一体化动态工序与工作量胶囊 [进行中] 耗时 [工序 3/4: 语义提取 · 0 / 5 节点]
+    // 2. 进行中：工序与量化吞吐一对一内聚胶囊 (如: 语义提取 · 0/5 节点 & 向量建库 · 0/8 切片)
     if (status === 'running') {
+      const stepPairs = dynamic.activeStepPairs && dynamic.activeStepPairs.length > 0
+        ? dynamic.activeStepPairs
+        : [{ name: dynamic.activeStepName, metric: dynamic.workloadText }]
+
       return (
         <div className="flex items-center gap-2 py-0.5 select-none whitespace-nowrap text-xs">
           <Badge
@@ -446,17 +450,20 @@ function TasksRoute() {
             </span>
           )}
           <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs bg-muted/40 text-foreground/85 border border-border/50 font-sans shrink-0">
-            <span className="font-medium text-foreground/90">
-              {dynamic.activeStepName}
-            </span>
-            {dynamic.workloadText && (
-              <>
-                <span className="text-muted-foreground/40 font-mono text-[10px] select-none">·</span>
-                <span className="font-mono text-[11px] text-muted-foreground tabular-nums">
-                  {dynamic.workloadText}
-                </span>
-              </>
-            )}
+            {stepPairs.map((pair, idx) => (
+              <React.Fragment key={pair.name || idx}>
+                {idx > 0 && (
+                  <span className="text-muted-foreground/50 font-mono text-[11px] px-0.5 select-none font-semibold">&</span>
+                )}
+                <span className="font-medium text-foreground/90">{pair.name}</span>
+                {pair.metric && (
+                  <>
+                    <span className="text-muted-foreground/40 font-mono text-[10px] select-none">·</span>
+                    <span className="font-mono text-[11px] text-muted-foreground tabular-nums">{pair.metric}</span>
+                  </>
+                )}
+              </React.Fragment>
+            ))}
           </div>
         </div>
       )
