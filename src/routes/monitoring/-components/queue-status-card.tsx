@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
-import { CpuIcon } from 'lucide-react'
+import { ChevronRightIcon, CpuIcon } from 'lucide-react'
 
 import { Card, CardTitle } from '#/components/ui/card'
 import { Tooltip, TooltipContent, TooltipTrigger } from '#/components/ui/tooltip'
@@ -169,9 +169,7 @@ export function QueueStatusCard({
                 return (
                   <React.Fragment key={itemIdx}>
                     {itemIdx > 0 && (
-                      <span className="font-mono text-[11px] text-muted-foreground/40 shrink-0 select-none px-0.5">
-                        ➔
-                      </span>
+                      <ChevronRightIcon className="size-3 text-muted-foreground/40 shrink-0 select-none -mx-0.5" />
                     )}
 
                     {item.kind === 'single' ? (
