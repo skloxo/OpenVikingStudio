@@ -141,24 +141,38 @@ export function QueueStatusCard({
     return name
   }
 
-  const renderRow = (row: ParsedQueueRow, isTotalRow: boolean) => {
-    const displayName = isTaskCard ? row.name : getQueueDisplayName(row.name)
-    const taskTypeKey = row.typeKey ?? (TASK_FLOWS.find((f) => f.nameZh === row.name || f.nameEn === row.name)?.typeKey)
-    const flowItems = isTaskCard && taskTypeKey ? getTaskFlowItems(taskTypeKey) : []
+  const renderRow = (row: ParsedQueueRow, isRowTotal: boolean) => {
+    const isTotalRow =
+      isRowTotal ||
+      row.name.toUpperCase() === 'TOTAL' ||
+      row.name === t('queue.total') ||
+      row.name === '合计'
+
+    const displayName = isTotalRow
+      ? t('queue.total')
+      : isTaskCard
+        ? row.name
+        : getQueueDisplayName(row.name)
+
+    const taskTypeKey =
+      row.typeKey ??
+      TASK_FLOWS.find((f) => f.nameZh === row.name || f.nameEn === row.name)?.typeKey
+    const flowItems = isTaskCard && taskTypeKey && !isTotalRow ? getTaskFlowItems(taskTypeKey) : []
 
     // Lookup matching Engine Definition for Engine Card
-    const engineDef = !isTaskCard && !isTotalRow
-      ? ENGINE_DEFINITIONS.find((e) => {
-          const rawLower = row.name.toLowerCase()
-          const keyLower = e.key.toLowerCase()
-          return (
-            rawLower === keyLower ||
-            rawLower.includes(keyLower) ||
-            e.nameZh === displayName ||
-            e.nameEn === displayName
-          )
-        })
-      : null
+    const engineDef =
+      !isTaskCard && !isTotalRow
+        ? ENGINE_DEFINITIONS.find((e) => {
+            const rawLower = row.name.toLowerCase()
+            const keyLower = e.key.toLowerCase()
+            return (
+              rawLower === keyLower ||
+              rawLower.includes(keyLower) ||
+              e.nameZh === displayName ||
+              e.nameEn === displayName
+            )
+          })
+        : null
 
     const assignedSteps = engineDef
       ? ALL_PANORAMA_STEPS.filter((s) => s.engineKey === engineDef.key)
@@ -170,12 +184,13 @@ export function QueueStatusCard({
         className={cn(
           'grid grid-cols-12 gap-1 items-center px-3 py-1.5 text-[11px] rounded font-mono transition-colors',
           isTotalRow
-            ? 'mt-auto bg-muted/60 font-bold border border-border/80 text-foreground'
+            ? 'mt-auto bg-muted/60 font-bold border border-border/80 text-foreground shadow-2xs'
             : 'bg-muted/20 hover:bg-muted/40 text-foreground/90',
         )}
       >
-        {/* 任务名 / 引擎名 + 工序微胶囊链 (单行高密对齐) */}
-        <div className="col-span-8 flex items-center gap-2 min-w-0 pr-2 overflow-x-auto select-none no-scrollbar">
+        {/* 任务名 / 引擎名 + 工序微胶囊链 (单行高密对齐，防溢出截断保护) */}
+        <div className="col-span-8 flex items-center min-w-0 pr-2 overflow-hidden select-none">
+          {/* 如果是引擎卡片且非合计行：支持悬浮画像卡片 */}
           {engineDef ? (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -204,7 +219,7 @@ export function QueueStatusCard({
                       </span>
                     </div>
                   </div>
-                  <span className="font-mono text-[11px] font-medium text-foreground/80 bg-muted/60 px-2 py-0.5 rounded-full border border-border/50">
+                  <span className="font-mono text-[10px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
                     {assignedSteps.length} {isZh ? '道工序' : 'Steps'}
                   </span>
                 </div>
@@ -216,11 +231,11 @@ export function QueueStatusCard({
 
                 {/* 底部: 承接工序清单 */}
                 {assignedSteps.length > 0 && (
-                  <div className="space-y-1.5 pt-1 border-t border-border/40">
-                    <span className="font-sans text-[11px] text-muted-foreground/80 font-medium">
+                  <div className="space-y-1.5 pt-1.5 border-t border-border/40">
+                    <span className="font-sans text-[11px] text-muted-foreground font-medium">
                       {isZh ? '承接工序清单：' : 'Assigned Steps:'}
                     </span>
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-1.5 pt-0.5">
                       {assignedSteps.map((s) => (
                         <span
                           key={s.id}
@@ -238,15 +253,20 @@ export function QueueStatusCard({
               </TooltipContent>
             </Tooltip>
           ) : (
-            <span className="font-sans font-semibold text-xs text-foreground shrink-0">
+            <span
+              className={cn(
+                'font-sans font-semibold text-xs text-foreground shrink-0',
+                isTaskCard && !isTotalRow && 'w-22 truncate text-left',
+              )}
+            >
               {displayName}
             </span>
           )}
 
-          {/* 如果是任务卡片，展示其专属的流水线工序链（与任务名同单行，并发工序统一外框合并） */}
+          {/* 如果是任务卡片且非合计行：展示结构化对齐的发丝分界线与工序链 */}
           {isTaskCard && flowItems.length > 0 && !isTotalRow && (
-            <div className="flex items-center gap-1.5 shrink-0 select-none py-0.2">
-              <span className="font-mono text-muted-foreground/40 text-[11px] shrink-0">:</span>
+            <div className="flex items-center gap-1 min-w-0 flex-1 overflow-x-auto no-scrollbar py-0.5 select-none pl-1">
+              <div className="h-3 w-px bg-border/60 shrink-0 mx-0.5" />
               {flowItems.map((item, itemIdx) => {
                 return (
                   <React.Fragment key={itemIdx}>
@@ -265,23 +285,26 @@ export function QueueStatusCard({
                           side="top"
                           align="center"
                           sideOffset={6}
-                          className="w-72 max-w-xs p-3 space-y-2 bg-popover text-popover-foreground border border-border shadow-xl rounded-lg text-left"
+                          className="w-80 max-w-sm p-3.5 space-y-2.5 bg-popover text-popover-foreground border border-border shadow-xl rounded-lg text-left"
                         >
-                          <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-1.5">
+                          <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-2">
                             <span className="font-sans font-bold text-xs text-foreground">
                               {isZh ? item.step.nameZh : item.step.nameEn}
                             </span>
-                            <span className="font-mono text-[11px] font-medium text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded border border-border/50">
-                              {isZh ? `量化单位: ${item.step.unitZh}` : `Unit: ${item.step.unitEn}`}
+                            <span className="font-mono text-[10px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
+                              {isZh ? `单位: ${item.step.unitZh}` : `Unit: ${item.step.unitEn}`}
                             </span>
                           </div>
                           <p className="font-sans text-[11px] text-muted-foreground leading-relaxed">
                             {isZh ? item.step.descriptionZh : item.step.descriptionEn}
                           </p>
-                          <div className="flex items-center gap-1.5 font-mono text-[11px] text-foreground/85 bg-muted/40 px-2 py-1 rounded border border-border/50">
-                            <CpuIcon className="size-3 text-primary shrink-0" />
-                            <span>
-                              {isZh ? '承接引擎' : 'Engine'}: {isZh ? item.step.engineNameZh : item.step.engineNameEn}
+                          <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-border/40 font-mono text-[11px] text-foreground/80">
+                            <span className="font-sans text-[11px] text-muted-foreground">
+                              {isZh ? '承接执行引擎：' : 'Assigned Engine:'}
+                            </span>
+                            <span className="inline-flex items-center gap-1 font-semibold text-foreground bg-muted/60 px-1.5 py-0.5 rounded border border-border/40">
+                              <CpuIcon className="size-3 text-primary shrink-0" />
+                              {isZh ? item.step.engineNameZh : item.step.engineNameEn}
                             </span>
                           </div>
                         </TooltipContent>
@@ -292,7 +315,9 @@ export function QueueStatusCard({
                         {item.steps.map((st, sIdx) => (
                           <React.Fragment key={st.id}>
                             {sIdx > 0 && (
-                              <span className="text-muted-foreground/60 font-mono text-[10px] font-bold select-none px-0.5">&</span>
+                              <span className="text-muted-foreground/60 font-mono text-[10px] font-bold select-none px-0.5">
+                                &
+                              </span>
                             )}
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -304,23 +329,26 @@ export function QueueStatusCard({
                                 side="top"
                                 align="center"
                                 sideOffset={6}
-                                className="w-72 max-w-xs p-3 space-y-2 bg-popover text-popover-foreground border border-border shadow-xl rounded-lg text-left"
+                                className="w-80 max-w-sm p-3.5 space-y-2.5 bg-popover text-popover-foreground border border-border shadow-xl rounded-lg text-left"
                               >
-                                <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-1.5">
+                                <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-2">
                                   <span className="font-sans font-bold text-xs text-foreground">
                                     {isZh ? st.nameZh : st.nameEn}
                                   </span>
-                                  <span className="font-mono text-[11px] text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded border border-border/50">
-                                    {isZh ? `量化单位: ${st.unitZh}` : `Unit: ${st.unitEn}`}
+                                  <span className="font-mono text-[10px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
+                                    {isZh ? `单位: ${st.unitZh}` : `Unit: ${st.unitEn}`}
                                   </span>
                                 </div>
                                 <p className="font-sans text-[11px] text-muted-foreground leading-relaxed">
                                   {isZh ? st.descriptionZh : st.descriptionEn}
                                 </p>
-                                <div className="flex items-center gap-1.5 font-mono text-[11px] text-foreground/85 bg-muted/40 px-2 py-1 rounded border border-border/50">
-                                  <CpuIcon className="size-3 text-primary shrink-0" />
-                                  <span>
-                                    {isZh ? '承接引擎' : 'Engine'}: {isZh ? st.engineNameZh : st.engineNameEn}
+                                <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-border/40 font-mono text-[11px] text-foreground/80">
+                                  <span className="font-sans text-[11px] text-muted-foreground">
+                                    {isZh ? '承接执行引擎：' : 'Assigned Engine:'}
+                                  </span>
+                                  <span className="inline-flex items-center gap-1 font-semibold text-foreground bg-muted/60 px-1.5 py-0.5 rounded border border-border/40">
+                                    <CpuIcon className="size-3 text-primary shrink-0" />
+                                    {isZh ? st.engineNameZh : st.engineNameEn}
                                   </span>
                                 </div>
                               </TooltipContent>
