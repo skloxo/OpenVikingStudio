@@ -840,26 +840,23 @@ function TasksRoute() {
         </Card>
       </div>
 
-      {/* 任务队列 (上层) 与 工序队列 (下层) 50/50 并排观测行 */}
-      <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">
-        {/* 左侧 (50% 宽度 - 优先看上层任务): 任务队列状态 (Task Queues) */}
-        <div>
-          <QueueStatusCard
-            title={t('pipeline.taskQueueStatus')}
-            customRows={kpiData.typeRows}
-            isHealthy={kpiData.failed === 0}
-            isTaskCard={true}
-          />
-        </div>
+      {/* 业务任务状态 (8 种任务) - 独占整行 Full Width */}
+      <div className="w-full">
+        <QueueStatusCard
+          title={t('pipeline.taskQueueStatus')}
+          customRows={kpiData.typeRows}
+          isHealthy={kpiData.failed === 0}
+          isTaskCard={true}
+        />
+      </div>
 
-        {/* 右侧 (50% 宽度 - 拆分出的下层工序): 工序队列状态 (Process Queues) */}
-        <div>
-          <QueueStatusCard
-            title={t('pipeline.processQueueStatus')}
-            customRows={displayQueueRows}
-            isHealthy={kpiData.failed === 0}
-          />
-        </div>
+      {/* 执行引擎状态 (7 大引擎) - 独占整行 Full Width */}
+      <div className="w-full">
+        <QueueStatusCard
+          title={t('pipeline.processQueueStatus')}
+          customRows={displayQueueRows}
+          isHealthy={kpiData.failed === 0}
+        />
       </div>
 
       {/* 23 道流水线全工序全景大盘 (8 任务 · 23 工序 · 7 引擎) */}

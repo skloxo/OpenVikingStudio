@@ -121,15 +121,15 @@ export function QueueStatusCard({
       <div
         key={row.name}
         className={cn(
-          'grid grid-cols-12 gap-1 items-center px-2.5 py-1.5 text-[11px] rounded font-mono transition-colors',
+          'grid grid-cols-12 gap-1 items-center px-3 py-2 text-[11px] rounded font-mono transition-colors',
           isTotalRow
             ? 'mt-auto bg-muted/60 font-bold border border-border/80 text-foreground'
             : 'bg-muted/20 hover:bg-muted/40 text-foreground/90',
         )}
       >
         {/* 任务名 / 引擎名 + 工序微胶囊链 */}
-        <div className="col-span-7 flex flex-col justify-center min-w-0 pr-1">
-          <div className="flex items-center gap-1.5">
+        <div className="col-span-8 flex flex-col justify-center min-w-0 pr-2">
+          <div className="flex items-center gap-2">
             <span className="font-sans font-semibold text-xs text-foreground truncate">
               {displayName}
             </span>
@@ -137,7 +137,7 @@ export function QueueStatusCard({
 
           {/* 如果是任务卡片，展示其专属的流水线工序链（带并发符 ∥ 与 Tooltip 物理职责） */}
           {isTaskCard && taskSteps.length > 0 && !isTotalRow && (
-            <div className="flex items-center gap-1 mt-1 overflow-x-auto select-none py-0.5">
+            <div className="flex flex-wrap items-center gap-1.5 mt-1 select-none py-0.5">
               {taskSteps.map((st, sIdx) => {
                 // 特殊标记：add_resource 与 connector_import 中语义提取与向量建库为并行 (∥)
                 const isParallel =
@@ -149,7 +149,7 @@ export function QueueStatusCard({
                     {sIdx > 0 && (
                       <span
                         className={cn(
-                          'font-mono text-[10px] shrink-0 select-none px-0.5',
+                          'font-mono text-[11px] shrink-0 select-none px-0.5',
                           isParallel
                             ? 'text-primary font-bold'
                             : 'text-muted-foreground/40',
@@ -162,7 +162,7 @@ export function QueueStatusCard({
 
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[11px] font-sans font-medium bg-muted/70 text-foreground/90 hover:text-foreground hover:bg-muted hover:border-primary/40 cursor-help border border-border/50 whitespace-nowrap shrink-0 transition-all shadow-2xs">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-sans font-medium bg-muted/70 text-foreground/90 hover:text-foreground hover:bg-muted hover:border-primary/40 cursor-help border border-border/50 whitespace-nowrap shrink-0 transition-all shadow-2xs">
                           <span>{isZh ? st.nameZh : st.nameEn}</span>
                           <span className="font-mono text-[10px] text-muted-foreground">
                             {isZh ? st.unitZh : st.unitEn}
@@ -227,7 +227,7 @@ export function QueueStatusCard({
         {/* 已完成 */}
         <span
           className={cn(
-            'col-span-2 text-right tabular-nums font-bold text-xs',
+            'col-span-1 text-right tabular-nums font-bold text-xs',
             row.completed > 0 ? 'text-foreground/90' : 'text-muted-foreground/60',
           )}
         >
@@ -260,13 +260,13 @@ export function QueueStatusCard({
       ) : (
         <div className="flex flex-1 flex-col justify-between gap-1">
           {/* 统一顶置表头 (12 列格栅 100% 对齐) */}
-          <div className="grid grid-cols-12 gap-1 items-center px-2.5 py-1 text-[11px] text-muted-foreground font-medium border-b border-border/60">
-            <span className="col-span-7">
+          <div className="grid grid-cols-12 gap-1 items-center px-3 py-1 text-[11px] text-muted-foreground font-medium border-b border-border/60">
+            <span className="col-span-8">
               {isTaskCard ? (isZh ? '业务任务与工序流转' : 'Task Type & Steps') : (isZh ? '执行引擎名称' : 'Engine Name')}
             </span>
             <span className="col-span-1 text-right">{t('queue.processing')}</span>
             <span className="col-span-1 text-right">{t('queue.pending')}</span>
-            <span className="col-span-2 text-right">{t('queue.completed')}</span>
+            <span className="col-span-1 text-right">{t('queue.completed')}</span>
             <span className="col-span-1 text-right">{t('queue.errors')}</span>
           </div>
 
