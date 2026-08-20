@@ -120,24 +120,15 @@ export function QueueStatusCard({
   )
 
   const getQueueDisplayName = (name: string): string => {
-    const lower = name.toLowerCase()
-    if (lower === 'total') return t('queue.totalRow')
-    if (lower.includes('embedding')) return t('queue.embedding')
-    if (
-      lower.includes('semantic-node') ||
-      lower.includes('semantic_node') ||
-      lower.includes('semantic-nodes')
-    )
-      return t('queue.semanticNodes')
-    if (lower.includes('semantic')) return t('queue.semantic')
-    if (lower.includes('externalparse') || lower.includes('external_parse'))
-      return t('queue.externalParse')
-    if (lower.includes('addresource') || lower.includes('add_resource') || lower.includes('resource'))
-      return t('queue.addResource')
-    if (lower.includes('userdeletion') || lower.includes('user_deletion') || lower.includes('user_delete'))
-      return t('queue.userDeletion')
-    if (lower.includes('sessioncommit') || lower.includes('session_commit'))
-      return t('queue.sessionCommit')
+    const clean = name.toLowerCase().replace(/[-_]/g, '')
+    if (clean === 'total') return t('queue.totalRow')
+    if (clean === 'embedding') return t('queue.embedding')
+    if (clean === 'semanticnodes' || clean === 'semanticnode') return t('queue.semanticNodes')
+    if (clean === 'semantic') return t('queue.semantic')
+    if (clean === 'externalparse') return t('queue.externalParse')
+    if (clean === 'addresource' || clean === 'resource') return t('queue.addResource')
+    if (clean === 'userdeletion' || clean === 'userdelete') return t('queue.userDeletion')
+    if (clean === 'sessioncommit') return t('queue.sessionCommit')
     return name
   }
 
@@ -159,15 +150,14 @@ export function QueueStatusCard({
       TASK_FLOWS.find((f) => f.nameZh === row.name || f.nameEn === row.name)?.typeKey
     const flowItems = isTaskCard && taskTypeKey && !isTotalRow ? getTaskFlowItems(taskTypeKey) : []
 
-    // Lookup matching Engine Definition for Engine Card
+    // Lookup matching Engine Definition for Engine Card (Exact match only, preventing partial substring shadowing)
     const engineDef =
       !isTaskCard && !isTotalRow
         ? ENGINE_DEFINITIONS.find((e) => {
-            const rawLower = row.name.toLowerCase()
-            const keyLower = e.key.toLowerCase()
+            const rawClean = row.name.toLowerCase().replace(/[-_]/g, '')
+            const keyClean = e.key.toLowerCase().replace(/[-_]/g, '')
             return (
-              rawLower === keyLower ||
-              rawLower.includes(keyLower) ||
+              rawClean === keyClean ||
               e.nameZh === displayName ||
               e.nameEn === displayName
             )
