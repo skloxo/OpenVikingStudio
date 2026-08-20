@@ -121,23 +121,22 @@ export function QueueStatusCard({
       <div
         key={row.name}
         className={cn(
-          'grid grid-cols-12 gap-1 items-center px-3 py-2 text-[11px] rounded font-mono transition-colors',
+          'grid grid-cols-12 gap-1 items-center px-3 py-1.5 text-[11px] rounded font-mono transition-colors',
           isTotalRow
             ? 'mt-auto bg-muted/60 font-bold border border-border/80 text-foreground'
             : 'bg-muted/20 hover:bg-muted/40 text-foreground/90',
         )}
       >
-        {/* 任务名 / 引擎名 + 工序微胶囊链 */}
-        <div className="col-span-8 flex flex-col justify-center min-w-0 pr-2">
-          <div className="flex items-center gap-2">
-            <span className="font-sans font-semibold text-xs text-foreground truncate">
-              {displayName}
-            </span>
-          </div>
+        {/* 任务名 / 引擎名 + 工序微胶囊链 (单行高密对齐) */}
+        <div className="col-span-8 flex items-center gap-2 min-w-0 pr-2 overflow-x-auto select-none no-scrollbar">
+          <span className="font-sans font-semibold text-xs text-foreground shrink-0">
+            {displayName}
+          </span>
 
-          {/* 如果是任务卡片，展示其专属的流水线工序链（带并发符 ∥ 与 Tooltip 物理职责） */}
+          {/* 如果是任务卡片，展示其专属的流水线工序链（与任务名同单行，带并发符 ∥ 与 Tooltip 物理职责及量化单位） */}
           {isTaskCard && taskSteps.length > 0 && !isTotalRow && (
-            <div className="flex flex-wrap items-center gap-1.5 mt-1 select-none py-0.5">
+            <div className="flex items-center gap-1.5 shrink-0 select-none py-0.2">
+              <span className="font-mono text-muted-foreground/40 text-[11px] shrink-0">:</span>
               {taskSteps.map((st, sIdx) => {
                 // 特殊标记：add_resource 与 connector_import 中语义提取与向量建库为并行 (∥)
                 const isParallel =
@@ -154,7 +153,7 @@ export function QueueStatusCard({
                             ? 'text-primary font-bold'
                             : 'text-muted-foreground/40',
                         )}
-                        title={isParallel ? '并行工序 (Parallel Batch)' : '串行流转 (Serial)'}
+                        title={isParallel ? (isZh ? '并行工序 (Parallel Batch)' : 'Parallel Batch') : (isZh ? '串行流转 (Serial)' : 'Serial')}
                       >
                         {isParallel ? '∥' : '➔'}
                       </span>
@@ -162,24 +161,21 @@ export function QueueStatusCard({
 
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-sans font-medium bg-muted/70 text-foreground/90 hover:text-foreground hover:bg-muted hover:border-primary/40 cursor-help border border-border/50 whitespace-nowrap shrink-0 transition-all shadow-2xs">
-                          <span>{isZh ? st.nameZh : st.nameEn}</span>
-                          <span className="font-mono text-[10px] text-muted-foreground">
-                            {isZh ? st.unitZh : st.unitEn}
-                          </span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-sans font-medium bg-muted/60 text-foreground/90 hover:text-foreground hover:bg-muted hover:border-primary/40 cursor-help border border-border/50 whitespace-nowrap shrink-0 transition-all shadow-2xs">
+                          {isZh ? st.nameZh : st.nameEn}
                         </span>
                       </TooltipTrigger>
                       <TooltipContent
                         side="top"
-                        align="start"
+                        align="center"
                         className="text-xs max-w-xs p-2.5 space-y-1.5 bg-popover text-popover-foreground border shadow-md"
                       >
-                        <div className="flex items-center justify-between gap-2 border-b pb-1">
+                        <div className="flex items-center justify-between gap-3 border-b pb-1">
                           <span className="font-sans font-bold text-foreground">
                             {isZh ? st.nameZh : st.nameEn}
                           </span>
-                          <span className="font-mono text-[11px] text-primary font-medium bg-primary/10 px-1 rounded">
-                            {isZh ? `单位: ${st.unitZh}` : `Unit: ${st.unitEn}`}
+                          <span className="font-mono text-[11px] text-primary font-medium bg-primary/10 px-1.5 py-0.2 rounded border border-primary/20">
+                            {isZh ? `量化单位: ${st.unitZh}` : `Unit: ${st.unitEn}`}
                           </span>
                         </div>
                         <p className="font-sans text-[11px] text-muted-foreground leading-relaxed">
@@ -271,7 +267,7 @@ export function QueueStatusCard({
           </div>
 
           {/* 数据列表 */}
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1">
             {nonTotalRows.map((row) => renderRow(row, false))}
           </div>
 
