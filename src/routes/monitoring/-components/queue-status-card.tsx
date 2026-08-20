@@ -416,7 +416,7 @@ export function QueueStatusCard({
           {/* 统一顶置表头 (12 列格栅 100% 对齐) */}
           <div className="grid grid-cols-12 gap-1 items-center px-3 py-1 text-[11px] text-muted-foreground font-medium border-b border-border/60">
             <span className="col-span-8">
-              {isTaskCard ? (isZh ? '任务类型' : 'Task Type') : (isZh ? '算子名称' : 'Operator Name')}
+              {isTaskCard ? (isZh ? '任务类型' : 'Task Type') : (isZh ? '引擎名称' : 'Engine Name')}
             </span>
             <span className="col-span-1 text-right">{t('queue.processing')}</span>
             <span className="col-span-1 text-right">{t('queue.pending')}</span>
