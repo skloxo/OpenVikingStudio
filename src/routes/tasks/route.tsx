@@ -469,7 +469,7 @@ function TasksRoute() {
       )
     }
 
-    // 3. 排队中：单行等待态 (带等待工序胶囊)
+    // 3. 排队中：干净单行等待态 (无需附加多余的“等待调度”胶囊)
     if (status === 'pending') {
       return (
         <div className="flex items-center gap-2 py-0.5 text-muted-foreground select-none whitespace-nowrap text-xs">
@@ -478,21 +478,18 @@ function TasksRoute() {
             className="text-[11px] px-1.5 py-0 h-5 border-border/60 text-muted-foreground bg-muted/20 font-sans font-medium shrink-0"
           >
             <CircleDashedIcon className="size-2.5 mr-1 text-muted-foreground/60" />
-            {t('pipeline.queued')}
+            {t('status.pending', { defaultValue: '等待中' })}
           </Badge>
           {durationText && (
             <span className="font-mono text-[11px] text-muted-foreground/60 shrink-0 select-none tabular-nums">
               · {durationText}
             </span>
           )}
-          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs bg-muted/20 text-muted-foreground border border-border/40 font-sans shrink-0">
-            <span>{dynamic.activeStepName || dynamic.summaryText || t('pipeline.queued')}</span>
-          </div>
         </div>
       )
     }
 
-    // 4. 失败：精准定位中断工序 (带失败徽章、重试按钮与异常工序胶囊)
+    // 4. 失败：干净失败态 (带失败徽章与重试按钮，无需多余胶囊，详情去抽屉查看)
     return (
       <div className="flex items-center gap-2 py-0.5 text-destructive select-none whitespace-nowrap text-xs">
         <Badge
@@ -523,9 +520,6 @@ function TasksRoute() {
             · {durationText}
           </span>
         )}
-        <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs bg-destructive/5 text-destructive border border-destructive/20 font-sans shrink-0">
-          <span>{dynamic.activeStepName || dynamic.summaryText}</span>
-        </div>
       </div>
     )
   }
