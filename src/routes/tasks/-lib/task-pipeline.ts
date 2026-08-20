@@ -777,6 +777,14 @@ export function getTaskExecutionDynamic(
       engineName = isZh ? '语义拓扑' : 'Semantic Topology'
     }
 
+    // Extract exact quantitative data of the active step
+    let stepMetric = ''
+    if (runningStep?.processed !== undefined && runningStep.total !== undefined && runningStep.total > 0) {
+      stepMetric = `${runningStep.processed.toLocaleString()} / ${runningStep.total.toLocaleString()} ${runningStep.unit ?? ''}`.trim()
+    } else if (runningStep?.count !== undefined && runningStep.count > 0) {
+      stepMetric = `${runningStep.count.toLocaleString()} ${runningStep.unit ?? ''}`.trim()
+    }
+
     return {
       status: 'running',
       activeStepName: isZh ? `工序 ${activeIdx}/${totalSteps}: ${stepName}` : `Step ${activeIdx}/${totalSteps}: ${stepName}`,
@@ -784,8 +792,8 @@ export function getTaskExecutionDynamic(
       activeStepIndex: activeIdx,
       totalSteps,
       progressPct,
-      workloadText: workload?.label,
-      workloadIcon: workload?.icon,
+      workloadText: stepMetric || workload?.label,
+      workloadIcon: workload?.icon ?? '⚡',
       summaryText: isZh ? `执行中 (${progressPct}%)` : `Running (${progressPct}%)`,
     }
   }

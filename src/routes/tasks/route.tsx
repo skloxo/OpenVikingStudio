@@ -448,61 +448,96 @@ function TasksRoute() {
   }
 
   const renderExecutionProgress = (task: TaskRecord) => {
-    const steps = getTaskPipelineSteps(task, queueObserverRows, i18n.language)
+    const dynamic = getTaskExecutionDynamic(
+      task,
+      queueObserverRows,
+      i18n.language,
+      getTaskProgressPct,
+    )
+    const effStatus = getEffectiveTaskStatus(task, allTasks)
+    const status = normalizeTaskStatus(effStatus)
 
-    return (
-      <div className="flex items-center gap-1 overflow-x-auto py-0.5 no-scrollbar select-none">
-        {steps.map((st: PipelineStep, idx: number) => {
-          const isDone = st.state === 'completed'
-          const isRun = st.state === 'running'
-          const isFail = st.state === 'failed'
-          const isPend = st.state === 'pending'
+    // 1. 已完成：极简素雅交付态
+    if (status === 'completed') {
+      return (
+        <div className="flex items-center gap-2 py-0.5 select-none text-foreground/85">
+          <div className="flex size-4 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary border border-primary/20">
+            <CheckIcon className="size-2.5 stroke-[2.5]" />
+          </div>
+          <span className="font-sans text-xs font-medium truncate max-w-sm">
+            {dynamic.summaryText}
+          </span>
+          {dynamic.workloadText && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-mono text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded border border-border/40 shrink-0 tabular-nums">
+              <span>{dynamic.workloadIcon}</span>
+              <span>{dynamic.workloadText}</span>
+            </span>
+          )}
+        </div>
+      )
+    }
 
-          // 格式化量化指标：如 "0 / 5 节点"、"1 / 1 页"、"0 / 8 切片"
-          let metricText = ''
-          if (st.processed !== undefined && st.total !== undefined && st.total > 0) {
-            metricText = `${st.processed.toLocaleString()} / ${st.total.toLocaleString()} ${st.unit ?? ''}`.trim()
-          } else if (st.count !== undefined && st.count > 0) {
-            metricText = `${st.count.toLocaleString()} ${st.unit ?? ''}`.trim()
-          } else if (st.unit && isDone) {
-            metricText = `1 ${st.unit}`
-          }
-
-          return (
-            <React.Fragment key={idx}>
-              {idx > 0 && (
-                <span className="inline-flex shrink-0 text-muted-foreground/35 font-mono text-[10px]">
-                  ›
-                </span>
-              )}
-              <span
-                className={cn(
-                  'inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium leading-none shrink-0 border transition-all whitespace-nowrap',
-                  isDone && 'border-border/60 bg-muted/30 text-foreground/90',
-                  isRun && 'border-primary/50 bg-primary/10 text-primary font-semibold shadow-2xs',
-                  isPend && 'border-border/40 bg-muted/15 text-muted-foreground/60 font-normal',
-                  isFail && 'border-destructive/40 bg-destructive/10 text-destructive',
-                )}
-              >
-                {isDone && <CheckIcon className="size-2.5 text-primary shrink-0 stroke-[2.5]" />}
-                {isRun && <LoaderCircleIcon className="size-2.5 text-primary animate-spin shrink-0" />}
-                {isPend && <CircleDashedIcon className="size-2.5 text-muted-foreground/40 shrink-0" />}
-                {isFail && <XIcon className="size-2.5 text-destructive shrink-0" />}
-                <span>{st.name}</span>
-                {metricText && (
-                  <span
-                    className={cn(
-                      'font-mono text-[10px] tabular-nums ml-0.5',
-                      isRun ? 'text-primary font-bold' : isDone ? 'text-muted-foreground' : 'text-muted-foreground/60',
-                    )}
-                  >
-                    {metricText}
-                  </span>
-                )}
+    // 2. 进行中：聚焦当前活跃工序、承接执行引擎与具体量化吞吐进度
+    if (status === 'running') {
+      return (
+        <div className="flex flex-col gap-1 min-w-64 max-w-md py-0.5 select-none">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <LoaderCircleIcon className="size-3.5 shrink-0 animate-spin text-primary" />
+              <span className="font-sans text-xs font-semibold text-foreground truncate">
+                {dynamic.activeStepName}
               </span>
-            </React.Fragment>
-          )
-        })}
+              <span className="font-mono text-[10px] text-muted-foreground bg-muted/60 px-1.5 py-0.2 rounded border border-border/40 shrink-0">
+                {dynamic.activeEngineName}
+              </span>
+            </div>
+            <span className="font-mono text-[11px] font-bold text-primary tabular-nums shrink-0">
+              {dynamic.progressPct}%
+            </span>
+          </div>
+
+          {/* 微进度条 + 当前活跃工序的实际量化吞吐 */}
+          <div className="flex items-center gap-2">
+            <div className="h-1.5 flex-1 rounded-full bg-muted/80 overflow-hidden border border-border/30">
+              <div
+                className="h-full bg-primary rounded-full transition-all duration-500"
+                style={{ width: `${Math.max(5, dynamic.progressPct)}%` }}
+              />
+            </div>
+            {dynamic.workloadText && (
+              <span className="font-mono text-[10px] text-muted-foreground font-medium shrink-0 tabular-nums">
+                {dynamic.workloadText}
+              </span>
+            )}
+          </div>
+        </div>
+      )
+    }
+
+    // 3. 排队中：沉静等待态
+    if (status === 'pending') {
+      return (
+        <div className="flex items-center gap-2 py-0.5 text-muted-foreground select-none">
+          <CircleDashedIcon className="size-3.5 shrink-0 text-muted-foreground/60" />
+          <span className="font-sans text-xs text-muted-foreground">
+            {dynamic.summaryText}
+          </span>
+        </div>
+      )
+    }
+
+    // 4. 失败：精准定位中断工序
+    return (
+      <div className="flex items-center gap-2 py-0.5 text-destructive select-none">
+        <CircleXIcon className="size-3.5 shrink-0 text-destructive" />
+        <span className="font-sans text-xs font-medium text-destructive truncate max-w-sm">
+          {dynamic.summaryText}
+        </span>
+        {dynamic.workloadText && (
+          <span className="font-mono text-[10px] text-muted-foreground bg-destructive/5 px-1.5 py-0.5 rounded border border-destructive/20 shrink-0">
+            {dynamic.workloadText}
+          </span>
+        )}
       </div>
     )
   }
