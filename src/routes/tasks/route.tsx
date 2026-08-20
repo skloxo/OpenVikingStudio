@@ -52,7 +52,6 @@ import {
 } from '#/routes/monitoring/-components/queue-status-card'
 import type { ParsedQueueRow } from '#/routes/monitoring/-components/queue-status-card'
 import { TaskDetailSheet } from '#/routes/tasks/-components/task-detail-sheet'
-import { PipelineStepsPanoramaCard } from '#/routes/tasks/-components/pipeline-steps-panorama'
 import {
   normalizeTasks,
   normalizeTaskStatus,
@@ -861,9 +860,6 @@ function TasksRoute() {
           />
         </div>
       </div>
-
-      {/* 23 道流水线全工序全景大盘 (8 任务 · 23 工序 · 7 引擎) */}
-      <PipelineStepsPanoramaCard />
 
       <div className="flex flex-wrap items-center gap-2 rounded-xl border bg-card/60 p-2 shadow-xs">
         <span className="px-1 text-xs font-medium text-muted-foreground">
