@@ -493,7 +493,7 @@ const zhCN = {
       stepRunning: '进行中',
     },
     pipeline: {
-      queued: '队首等待中',
+      queued: '等待中',
       retrigger: '重新发起任务',
       serialTransition: '串行工序流转',
       serialBatch: '串行工序批次',
