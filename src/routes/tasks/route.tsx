@@ -60,6 +60,7 @@ import type { TaskRecord, TaskStatus } from '#/routes/tasks/-lib/task-record'
 import { formatTaskDuration, getTaskDate } from '#/routes/tasks/-lib/task-time'
 import {
   getTaskPipelineGroups,
+  getTaskPipelineSteps,
   getTaskQuantifiedWorkload,
   getTaskExecutionDynamic,
 } from './-lib/task-pipeline'
