@@ -615,3 +615,142 @@ export function getTaskQuantifiedWorkload(
 
   return null
 }
+
+export interface TaskExecutionDynamic {
+  status: 'completed' | 'running' | 'pending' | 'failed'
+  activeStepName: string
+  activeEngineName: string
+  activeStepIndex: number
+  totalSteps: number
+  progressPct: number
+  workloadText?: string
+  workloadIcon?: string
+  summaryText: string
+}
+
+export function getTaskExecutionDynamic(
+  task: TaskRecord,
+  queueRows: ParsedQueueRow[] = [],
+  language: string = 'zh',
+  calcProgressPct?: (t: TaskRecord) => number,
+): TaskExecutionDynamic {
+  const isZh = language.startsWith('zh')
+  const status = (task.status?.toLowerCase() || 'pending') as 'completed' | 'running' | 'pending' | 'failed'
+  const type = task.task_type || ''
+  const meta = (task.meta && typeof task.meta === 'object') ? (task.meta as Record<string, any>) : {}
+  const result = (task.result && typeof task.result === 'object') ? (task.result as Record<string, any>) : {}
+  const steps = getTaskPipelineSteps(task, queueRows, language)
+  const totalSteps = Math.max(1, steps.length)
+  const workload = getTaskQuantifiedWorkload(task, queueRows, language)
+  const progressPct = calcProgressPct ? calcProgressPct(task) : (status === 'completed' ? 100 : 50)
+
+  // 1. Completed
+  if (status === 'completed') {
+    let summary = isZh ? '全工序已完成' : 'All steps completed'
+    if (type === 'session_commit') {
+      const turns = meta.turns_count ?? result.turns_processed ?? meta.messages_count
+      const lessons = result.lessons_extracted ?? meta.lessons_count
+      summary = turns
+        ? (isZh ? `${turns} 轮对话已归档` : `${turns} turns archived`) + (lessons ? (isZh ? ` · ${lessons} 经验沉淀` : ` · ${lessons} lessons`) : '')
+        : (isZh ? '会话经验已完成归档' : 'Session committed')
+    } else if (type === 'add_resource') {
+      const files = meta.file_count ?? 1
+      summary = isZh ? `${files} 个文件已落盘索引` : `${files} files persisted & indexed`
+    } else if (type === 'add_skill') {
+      const skills = result.valid_skills ?? meta.valid_skills ?? result.scanned_skills
+      summary = skills ? (isZh ? `${skills} 项技能已校验入库` : `${skills} skills validated`) : (isZh ? '技能已完成入库' : 'Skills loaded')
+    } else if (type === 'admin_reindex') {
+      summary = isZh ? '全量索引重构完成' : 'Global reindex completed'
+    } else if (type === 'snapshot_restore_reindex') {
+      summary = isZh ? '快照状态已成功还原' : 'Snapshot restored'
+    } else if (type === 'connector_import') {
+      const docs = result.downloaded_files ?? meta.downloaded_files
+      summary = docs ? (isZh ? `${docs} 篇外部文档已导入` : `${docs} docs imported`) : (isZh ? '外部数据已导入' : 'Data imported')
+    } else if (type === 'legacy_migration') {
+      summary = isZh ? '旧数据已完成格式迁移' : 'Legacy data migrated'
+    } else if (type === 'legacy_cleanup') {
+      summary = isZh ? '历史无用碎片已清理释放' : 'Storage space cleaned'
+    }
+
+    return {
+      status: 'completed',
+      activeStepName: steps[steps.length - 1]?.name || (isZh ? '完成' : 'Done'),
+      activeEngineName: isZh ? '就绪' : 'Ready',
+      activeStepIndex: totalSteps,
+      totalSteps,
+      progressPct: 100,
+      workloadText: workload?.label,
+      workloadIcon: workload?.icon,
+      summaryText: summary,
+    }
+  }
+
+  // 2. Running
+  if (status === 'running') {
+    let runningStep = steps.find((s) => s.state === 'running')
+    let activeIdx = runningStep ? steps.indexOf(runningStep) + 1 : 1
+    if (!runningStep) {
+      runningStep = steps.find((s) => s.state === 'pending') || steps[0]
+      activeIdx = runningStep ? steps.indexOf(runningStep) + 1 : 1
+    }
+
+    // Map active engine name
+    const stepName = runningStep?.name || (isZh ? '正在处理' : 'Processing')
+    let engineName = isZh ? '计算中' : 'Running'
+    const stage = task.stage?.toLowerCase() || ''
+    if (stage.includes('embed') || stepName.includes('向量') || stepName.includes('切片')) {
+      engineName = isZh ? '向量计算' : 'Embedding'
+    } else if (stage.includes('extract') || stage.includes('semantic') || stepName.includes('语义')) {
+      engineName = isZh ? '语义提取' : 'Semantic'
+    } else if (stage.includes('parse') || stage.includes('scan') || stepName.includes('解析') || stepName.includes('扫描')) {
+      engineName = isZh ? '文档解析' : 'ExternalParse'
+    } else if (stepName.includes('入库') || stepName.includes('写入') || stepName.includes('落盘') || stepName.includes('拉取')) {
+      engineName = isZh ? '资源入库' : 'AddResource'
+    } else if (stepName.includes('归档') || stepName.includes('萃取') || stepName.includes('快照')) {
+      engineName = isZh ? '会话归档' : 'SessionCommit'
+    } else if (stepName.includes('修剪') || stepName.includes('回收') || stepName.includes('释放') || stepName.includes('注销')) {
+      engineName = isZh ? '空间注销' : 'UserDeletion'
+    } else if (stepName.includes('图谱') || stepName.includes('遍历')) {
+      engineName = isZh ? '语义拓扑' : 'Semantic Topology'
+    }
+
+    return {
+      status: 'running',
+      activeStepName: isZh ? `工序 ${activeIdx}/${totalSteps}: ${stepName}` : `Step ${activeIdx}/${totalSteps}: ${stepName}`,
+      activeEngineName: engineName,
+      activeStepIndex: activeIdx,
+      totalSteps,
+      progressPct,
+      workloadText: workload?.label,
+      workloadIcon: workload?.icon,
+      summaryText: isZh ? `执行中 (${progressPct}%)` : `Running (${progressPct}%)`,
+    }
+  }
+
+  // 3. Pending
+  if (status === 'pending') {
+    return {
+      status: 'pending',
+      activeStepName: isZh ? '等待调度' : 'Pending',
+      activeEngineName: isZh ? '排队中' : 'Queued',
+      activeStepIndex: 0,
+      totalSteps,
+      progressPct: 0,
+      summaryText: isZh ? '排队等待执行引擎调度分配' : 'Queued, awaiting execution engine',
+    }
+  }
+
+  // 4. Failed
+  const failedStep = steps.find((s) => s.state === 'failed') || steps[steps.length - 1]
+  return {
+    status: 'failed',
+    activeStepName: failedStep?.name || (isZh ? '异常' : 'Failed'),
+    activeEngineName: isZh ? '执行中断' : 'Interrupted',
+    activeStepIndex: failedStep ? steps.indexOf(failedStep) + 1 : totalSteps,
+    totalSteps,
+    progressPct: 0,
+    summaryText: isZh
+      ? `在工序 [${failedStep?.name || '未知'}] 执行中断`
+      : `Aborted at step [${failedStep?.name || 'unknown'}]`,
+  }
+}
