@@ -432,7 +432,7 @@ function TasksRoute() {
     // 2. 进行中：单行高密平铺 [进行中] 耗时 当前工序 算子量化工作量 (切除百分比与进度条)
     if (status === 'running') {
       return (
-        <div className="flex items-center gap-2.5 py-0.5 select-none whitespace-nowrap">
+        <div className="flex items-center gap-2 py-0.5 select-none whitespace-nowrap text-xs">
           <Badge
             variant="outline"
             className="text-[11px] px-1.5 py-0 h-5 border-primary/30 text-primary bg-primary/10 font-sans font-medium shrink-0"
@@ -445,11 +445,11 @@ function TasksRoute() {
               · {durationText}
             </span>
           )}
-          <span className="font-sans text-xs font-semibold text-foreground shrink-0">
+          <span className="font-sans text-xs text-foreground/90 font-medium shrink-0">
             {dynamic.activeStepName}
           </span>
           {dynamic.workloadText && (
-            <span className="font-mono text-[11px] text-muted-foreground font-medium shrink-0 tabular-nums">
+            <span className="inline-flex items-center text-[11px] font-mono text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded border border-border/40 shrink-0 tabular-nums">
               {dynamic.workloadText}
             </span>
           )}
