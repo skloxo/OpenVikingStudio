@@ -429,7 +429,7 @@ function TasksRoute() {
       )
     }
 
-    // 2. 进行中：工序与量化吞吐一对一内聚胶囊 (如: 语义提取 · 0/5 节点 & 向量建库 · 0/8 切片)
+    // 2. 进行中：并发工序多胶囊并排呈现 (每个工序为独立色块，自然表达并发)
     if (status === 'running') {
       const stepPairs = dynamic.activeStepPairs && dynamic.activeStepPairs.length > 0
         ? dynamic.activeStepPairs
@@ -449,12 +449,12 @@ function TasksRoute() {
               · {durationText}
             </span>
           )}
-          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs bg-muted/40 text-foreground/85 border border-border/50 font-sans shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
             {stepPairs.map((pair, idx) => (
-              <React.Fragment key={pair.name || idx}>
-                {idx > 0 && (
-                  <span className="text-muted-foreground/50 font-mono text-[11px] px-0.5 select-none font-semibold">&</span>
-                )}
+              <div
+                key={pair.name || idx}
+                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs bg-muted/40 text-foreground/85 border border-border/50 font-sans shrink-0"
+              >
                 <span className="font-medium text-foreground/90">{pair.name}</span>
                 {pair.metric && (
                   <>
@@ -462,7 +462,7 @@ function TasksRoute() {
                     <span className="font-mono text-[11px] text-muted-foreground tabular-nums">{pair.metric}</span>
                   </>
                 )}
-              </React.Fragment>
+              </div>
             ))}
           </div>
         </div>
