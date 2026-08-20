@@ -38,6 +38,73 @@ export interface PanoramaStepDef {
   descriptionEn: string
 }
 
+export interface EngineDef {
+  key:
+    | 'AddResource'
+    | 'ExternalParse'
+    | 'Semantic'
+    | 'Semantic-Nodes'
+    | 'Embedding'
+    | 'SessionCommit'
+    | 'UserDeletion'
+  nameZh: string
+  nameEn: string
+  descZh: string
+  descEn: string
+}
+
+export const ENGINE_DEFINITIONS: EngineDef[] = [
+  {
+    key: 'AddResource',
+    nameZh: '资源入库',
+    nameEn: 'Resource Ingestion',
+    descZh: '负责文件系统落盘、SHA256 校验、Inode 创建与外部源下载拉取',
+    descEn: 'AGFS disk writes, SHA256 hashing, Inode creation, connector fetch',
+  },
+  {
+    key: 'ExternalParse',
+    nameZh: '文档解析',
+    nameEn: 'Document Parsing',
+    descZh: '多格式解析器（PDF, Markdown, HTML, 代码）段落结构化与分页',
+    descEn: 'Multi-format parser for PDF, Markdown, HTML, code structuring',
+  },
+  {
+    key: 'Semantic',
+    nameZh: '语义提取',
+    nameEn: 'Semantic Extraction',
+    descZh: '调用大语言模型（LLM/VLM）提取 L0 概要与 L1 核心概念节点',
+    descEn: 'Invoke LLM/VLM to extract L0 summary and L1 concept nodes',
+  },
+  {
+    key: 'Embedding',
+    nameZh: '向量计算',
+    nameEn: 'Vector Embedding',
+    descZh: '文本切片分块，GPU 并发计算稠密向量并写入 VikingDB 向量库',
+    descEn: 'Chunk text, GPU vector computation, insert into VikingDB',
+  },
+  {
+    key: 'SessionCommit',
+    nameZh: '会话归档',
+    nameEn: 'Session Archival',
+    descZh: '处理多轮对话流水、萃取长程经验 Lesson 并打上 AGFS 快照',
+    descEn: 'Process multi-turn dialogue, extract lessons, commit AGFS snapshot',
+  },
+  {
+    key: 'UserDeletion',
+    nameZh: '空间注销',
+    nameEn: 'Space Purge',
+    descZh: '租户空间解绑、向量集合批量 Drop 擦除与无主孤儿垃圾回收',
+    descEn: 'Namespace unbinding, vector drop, disk erase and orphan GC',
+  },
+  {
+    key: 'Semantic-Nodes',
+    nameZh: '语义拓扑',
+    nameEn: 'Semantic Topology',
+    descZh: '知识图谱关联遍历与跨资源实体网状关联构建',
+    descEn: 'Knowledge graph traversal and cross-resource relation building',
+  },
+]
+
 export const ALL_PANORAMA_STEPS: PanoramaStepDef[] = [
   // 1-4: 资源处理相关
   {
@@ -673,57 +740,7 @@ export function PipelineStepsPanoramaCard() {
           {/* View 3: 7 大执行引擎承接图 (Engine Mappings) */}
           {activeTab === 'engines' && (
             <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 lg:grid-cols-3">
-              {[
-                {
-                  key: 'AddResource',
-                  nameZh: '资源入库',
-                  nameEn: 'Resource Ingestion',
-                  descZh: '负责文件系统落盘、SHA256 校验、Inode 创建与外部源下载拉取',
-                  descEn: 'AGFS disk writes, SHA256 hashing, Inode creation, connector fetch',
-                },
-                {
-                  key: 'ExternalParse',
-                  nameZh: '文档解析',
-                  nameEn: 'Document Parsing',
-                  descZh: '多格式解析器（PDF, Markdown, HTML, 代码）段落结构化与分页',
-                  descEn: 'Multi-format parser for PDF, Markdown, HTML, code structuring',
-                },
-                {
-                  key: 'Semantic',
-                  nameZh: '语义提取',
-                  nameEn: 'Semantic Extraction',
-                  descZh: '调用大语言模型（LLM/VLM）提取 L0 概要与 L1 核心概念节点',
-                  descEn: 'Invoke LLM/VLM to extract L0 summary and L1 concept nodes',
-                },
-                {
-                  key: 'Embedding',
-                  nameZh: '向量计算',
-                  nameEn: 'Vector Embedding',
-                  descZh: '文本切片分块，GPU 并发计算稠密向量并写入 VikingDB 向量库',
-                  descEn: 'Chunk text, GPU vector computation, insert into VikingDB',
-                },
-                {
-                  key: 'SessionCommit',
-                  nameZh: '会话归档',
-                  nameEn: 'Session Archival',
-                  descZh: '处理多轮对话流水、萃取长程经验 Lesson 并打上 AGFS 快照',
-                  descEn: 'Process multi-turn dialogue, extract lessons, commit AGFS snapshot',
-                },
-                {
-                  key: 'UserDeletion',
-                  nameZh: '空间注销',
-                  nameEn: 'Space Purge',
-                  descZh: '租户空间解绑、向量集合批量 Drop 擦除与无主孤儿垃圾回收',
-                  descEn: 'Namespace unbinding, vector drop, disk erase and orphan GC',
-                },
-                {
-                  key: 'Semantic-Nodes',
-                  nameZh: '语义拓扑',
-                  nameEn: 'Semantic Topology',
-                  descZh: '知识图谱关联遍历与跨资源实体网状关联构建',
-                  descEn: 'Knowledge graph traversal and cross-resource relation building',
-                },
-              ].map((eng) => {
+              {ENGINE_DEFINITIONS.map((eng) => {
                 const assignedSteps = ALL_PANORAMA_STEPS.filter((s) => s.engineKey === eng.key)
 
                 return (
