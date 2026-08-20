@@ -37,7 +37,11 @@ import {
   normalizeTaskStatus,
 } from '../-lib/task-record'
 import type { TaskRecord } from '../-lib/task-record'
-import { getTaskExecutionDynamic, getTaskPipelineSteps } from '../-lib/task-pipeline'
+import type { PipelineStep } from '../-lib/task-pipeline'
+import {
+  getTaskExecutionDynamic,
+  getTaskPipelineGroups,
+} from '../-lib/task-pipeline'
 
 type TaskDetailSheetProps = {
   identityScopeKey: string
@@ -247,91 +251,122 @@ export function TaskDetailSheet({
                 )}
 
                 {/* Worker Sub-Queue Pipeline Diagram (Type-Aware) */}
-                  {(() => {
-                    const isZh = i18n.language.startsWith('zh')
-                    const steps = getTaskPipelineSteps(task, queueObserverRows, i18n.language)
-                    const dynamic = getTaskExecutionDynamic(task, queueObserverRows, i18n.language)
-                    const isDoneAll = normalizeTaskStatus(task.status) === 'completed'
-                    const isRunningAny = normalizeTaskStatus(task.status) === 'running'
+                {(() => {
+                  const isZh = i18n.language.startsWith('zh')
+                  const groups = getTaskPipelineGroups(task, queueObserverRows, i18n.language)
+                  const dynamic = getTaskExecutionDynamic(task, queueObserverRows, i18n.language)
+                  const isDoneAll = normalizeTaskStatus(task.status) === 'completed'
 
+                  const renderMetrics = (st: PipelineStep) => {
+                    const hasFraction = st.processed !== undefined && st.total !== undefined && st.total > 0
+                    if (hasFraction) {
+                      return (
+                        <span className="font-mono font-medium text-foreground bg-muted/60 px-2 py-0.5 rounded border border-border/60 tabular-nums">
+                          {(st.processed ?? 0).toLocaleString()} / {(st.total ?? 0).toLocaleString()} {st.unit ?? ''}
+                        </span>
+                      )
+                    }
+                    if (st.count !== undefined) {
+                      return (
+                        <span className="font-mono font-medium text-foreground bg-muted/60 px-2 py-0.5 rounded border border-border/60 tabular-nums">
+                          {st.count.toLocaleString()} {st.unit ?? ''}
+                        </span>
+                      )
+                    }
+                    return null
+                  }
+
+                  const renderBadge = (st: PipelineStep) => {
+                    const isDone = st.state === 'completed'
+                    const isRun = st.state === 'running'
+                    const isFail = st.state === 'failed'
                     return (
-                      <DetailSection title={t('detail.pipelineSteps')}>
-                        <div className="rounded-xl border bg-muted/20 p-3 text-xs space-y-2.5">
-                          <div className="grid gap-2">
-                            {steps.map((st, i) => {
-                              const isDone = st.state === 'completed'
-                              const isRun = st.state === 'running'
-                              const isFail = st.state === 'failed'
-                              const hasFraction = st.processed !== undefined && st.total !== undefined && st.total > 0
+                      <span className={cn(
+                        'px-2 py-0.5 rounded text-[11px] font-medium select-none shrink-0',
+                        isDone
+                          ? 'bg-secondary text-foreground'
+                          : isRun
+                            ? 'bg-primary/10 text-primary animate-pulse font-semibold ring-1 ring-primary/20'
+                            : isFail
+                              ? 'bg-destructive/10 text-destructive'
+                              : 'bg-muted/40 text-muted-foreground'
+                      )}>
+                        {isDone ? t('detail.stepCompleted') : isRun ? t('detail.stepRunning') : isFail ? t('detail.stepFailed') : t('detail.stepPending')}
+                      </span>
+                    )
+                  }
 
+                  return (
+                    <DetailSection title={t('detail.pipelineSteps')}>
+                      <div className="rounded-xl border bg-muted/20 p-3 text-xs space-y-2.5">
+                        <div className="grid gap-2">
+                          {groups.map((group, i) => {
+                            if (group.type === 'serial') {
                               return (
                                 <div key={i} className="flex items-center justify-between rounded-lg border bg-background/80 px-3.5 py-2.5 shadow-2xs">
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-2 min-w-0 pr-2">
                                     <span className="font-mono text-muted-foreground text-[11px] font-semibold">{i + 1}.</span>
-                                    <span className="font-medium text-foreground text-xs">{st.name}</span>
+                                    <span className="font-medium text-foreground text-xs">{group.step.name}</span>
                                   </div>
-                                  <div className="flex items-center gap-2.5 text-[11px]">
-                                    {hasFraction ? (
-                                      <span className="font-mono font-medium text-foreground bg-muted/60 px-2 py-0.5 rounded border border-border/60 tabular-nums">
-                                        {(st.processed ?? 0).toLocaleString()} / {(st.total ?? 0).toLocaleString()} {st.unit ?? ''}
-                                      </span>
-                                    ) : st.count !== undefined ? (
-                                      <span className="font-mono font-medium text-foreground bg-muted/60 px-2 py-0.5 rounded border border-border/60 tabular-nums">
-                                        {st.count.toLocaleString()} {st.unit ?? ''}
-                                      </span>
-                                    ) : null}
-                                    <span className={cn(
-                                      'px-2 py-0.5 rounded text-[11px] font-medium select-none',
-                                      isDone
-                                        ? 'bg-secondary text-foreground'
-                                        : isRun
-                                          ? 'bg-primary/10 text-primary animate-pulse font-semibold ring-1 ring-primary/20'
-                                          : isFail
-                                            ? 'bg-destructive/10 text-destructive'
-                                            : 'bg-muted/40 text-muted-foreground'
-                                    )}>
-                                      {isDone ? t('detail.stepCompleted') : isRun ? t('detail.stepRunning') : isFail ? t('detail.stepFailed') : t('detail.stepPending')}
-                                    </span>
+                                  <div className="flex items-center gap-2.5 text-[11px] shrink-0">
+                                    {renderMetrics(group.step)}
+                                    {renderBadge(group.step)}
                                   </div>
                                 </div>
                               )
-                            })}
-                          </div>
+                            }
 
-                          {/* 任务交付产出结果摘要 (Outcome Summary Banner) */}
-                          {dynamic.summaryText && (
-                            <div className={cn(
-                              'flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg border text-xs transition-colors',
-                              isDoneAll
-                                ? 'bg-primary/5 border-primary/25 text-foreground'
-                                : isRunningAny
-                                  ? 'bg-muted/50 border-border/60 text-foreground/90'
-                                  : 'bg-muted/30 border-border/40 text-muted-foreground'
-                            )}>
-                              {isDoneAll ? (
-                                <CheckCircle2Icon className="size-4 shrink-0 text-primary" />
-                              ) : isRunningAny ? (
-                                <LoaderCircleIcon className="size-4 shrink-0 animate-spin text-primary" />
-                              ) : (
-                                <Layers3Icon className="size-4 shrink-0 text-muted-foreground" />
-                              )}
-                              <div className="flex flex-1 items-center justify-between gap-2 min-w-0">
-                                <div className="flex items-center gap-2 truncate">
-                                  <span className="font-medium text-muted-foreground text-[11px]">
-                                    {isDoneAll ? (isZh ? '产出结果：' : 'Outcome:') : (isZh ? '当前状态：' : 'Current Status:')}
+                            // Parallel Group Container (并发工序组合卡片)
+                            return (
+                              <div key={i} className="rounded-lg border border-primary/25 bg-primary/[0.02] p-2.5 space-y-2 shadow-2xs">
+                                <div className="flex items-center justify-between px-0.5 text-[11px]">
+                                  <div className="flex items-center gap-1.5 font-medium text-foreground">
+                                    <span className="font-mono text-muted-foreground text-[11px] font-semibold">{i + 1}.</span>
+                                    <span>{isZh ? '并发工序' : 'Parallel Process'}</span>
+                                  </div>
+                                  <span className="font-mono text-[10px] text-primary bg-primary/10 px-1.5 py-0.2 rounded border border-primary/20 font-semibold">
+                                    {group.steps.length} {isZh ? '路并发' : 'Parallel'}
                                   </span>
-                                  <span className="font-semibold text-foreground truncate">{dynamic.summaryText}</span>
                                 </div>
-                                <span className="font-mono text-[11px] text-muted-foreground/80 shrink-0">
-                                  {isDoneAll ? (isZh ? '交付就绪' : 'Delivered') : (isZh ? '工序流转中' : 'Processing')}
-                                </span>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                  {group.steps.map((st, sIdx) => (
+                                    <div key={sIdx} className="flex items-center justify-between rounded-md border bg-background/90 px-3 py-2 shadow-2xs">
+                                      <div className="flex items-center gap-1.5 min-w-0 pr-1">
+                                        <span className="font-medium text-foreground text-xs truncate">{st.name}</span>
+                                      </div>
+                                      <div className="flex items-center gap-1.5 text-[11px] shrink-0">
+                                        {renderMetrics(st)}
+                                        {renderBadge(st)}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            )
+                          })}
                         </div>
-                      </DetailSection>
-                    )
-                  })()}
+
+                        {/* 任务交付产出结果摘要 (仅任务完全完成后展示，执行中不产生冗余提示) */}
+                        {isDoneAll && dynamic.summaryText && (
+                          <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg border bg-primary/5 border-primary/25 text-foreground text-xs">
+                            <CheckCircle2Icon className="size-4 shrink-0 text-primary" />
+                            <div className="flex flex-1 items-center justify-between gap-2 min-w-0">
+                              <div className="flex items-center gap-2 truncate">
+                                <span className="font-medium text-muted-foreground text-[11px]">
+                                  {isZh ? '产出结果：' : 'Outcome:'}
+                                </span>
+                                <span className="font-semibold text-foreground truncate">{dynamic.summaryText}</span>
+                              </div>
+                              <span className="font-mono text-[11px] text-muted-foreground/80 shrink-0">
+                                {isZh ? '交付就绪' : 'Delivered'}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </DetailSection>
+                  )
+                })()}
 
                 {/* Execution Log Section */}
                 <DetailSection title={t('detail.executionLogs')}>
