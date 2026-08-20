@@ -246,14 +246,11 @@ function TasksRoute() {
       if (task.task_type === 'session_commit') {
         const res = await commitSession(task.resource_id)
         const resAny = res as any
-        if (resAny?.result?.reason === 'no_messages' || resAny?.reason === 'no_messages') {
-          toast.info(
-            i18n.language.startsWith('zh')
-              ? '该会话无未提交消息，已无需重复入队'
-              : 'Session has no pending uncommitted messages',
-          )
+        const resultData = resAny?.result || resAny
+        if (resultData?.status === 'skipped' || resultData?.reason === 'no_messages') {
+          return { res, task, skipped: true, reason: 'no_messages' }
         }
-        return { res, task }
+        return { res, task, newTaskId: resultData?.task_id }
       }
       const resourceUri = task.resource_id || ''
 
@@ -277,7 +274,7 @@ function TasksRoute() {
                 : 'Re-queue failed'),
           )
         }
-        return { res: json, task }
+        return { res: json, task, newTaskId: json.result?.task_id }
       }
 
       if (
@@ -290,7 +287,8 @@ function TasksRoute() {
             reason: `Re-queued task: ${task.task_id}`,
           } as any,
         })
-        return { res, task }
+        const resAny = res as any
+        return { res, task, newTaskId: resAny?.result?.task_id }
       }
 
       const resp = await ovClient.instance.post('/api/v1/content/reindex', {
@@ -308,17 +306,26 @@ function TasksRoute() {
               : 'Re-queue failed'),
         )
       }
-      return { res: json, task }
+      return { res: json, task, newTaskId: json.result?.task_id }
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : String(error))
     },
-    onSuccess: async () => {
-      toast.success(
-        i18n.language.startsWith('zh')
-          ? '重新入队请求已发送，后端正在处理新任务！'
-          : 'Re-queue request submitted successfully!',
-      )
+    onSuccess: async (data) => {
+      if (data?.skipped) {
+        toast.info(
+          i18n.language.startsWith('zh')
+            ? '该会话消息此前已完成阶段一归档，无新增未提交消息。如需触发新提取，请在会话中追加对话后重新提交。'
+            : 'Session messages already archived. Add new messages to trigger a new extraction.',
+        )
+      } else {
+        const newTaskId = data?.newTaskId
+        toast.success(
+          i18n.language.startsWith('zh')
+            ? `重新入队成功！${newTaskId ? `已生成新任务 (${newTaskId.slice(0, 8)}...)` : '后端正在调度处理。'}`
+            : `Re-queued successfully! ${newTaskId ? `New task ID: ${newTaskId.slice(0, 8)}...` : ''}`,
+        )
+      }
       await queryClient.invalidateQueries({ queryKey: ['tasks'] })
     },
   })
