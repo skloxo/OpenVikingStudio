@@ -750,49 +750,54 @@ export function getTaskExecutionDynamic(
 
   // 2. Running
   if (status === 'running') {
-    let runningStep = steps.find((s) => s.state === 'running')
-    let activeIdx = runningStep ? steps.indexOf(runningStep) + 1 : 1
-    if (!runningStep) {
-      runningStep = steps.find((s) => s.state === 'pending') || steps[0]
-      activeIdx = runningStep ? steps.indexOf(runningStep) + 1 : 1
+    let runningSteps = steps.filter((s) => s.state === 'running')
+    if (runningSteps.length === 0) {
+      const pendingStep = steps.find((s) => s.state === 'pending') || steps[0]
+      runningSteps = pendingStep ? [pendingStep] : []
     }
+
+    // Step names joined directly without "工序 X/Y:" prefix
+    const stepName = runningSteps.map((s) => s.name).join(isZh ? ' + ' : ' + ') || (isZh ? '正在处理' : 'Processing')
 
     // Map active engine name
-    const stepName = runningStep?.name || (isZh ? '正在处理' : 'Processing')
-    let engineName = isZh ? '计算中' : 'Running'
-    const stage = task.stage?.toLowerCase() || ''
-    if (stage.includes('embed') || stepName.includes('向量') || stepName.includes('切片')) {
-      engineName = isZh ? '向量计算' : 'Embedding'
-    } else if (stage.includes('extract') || stage.includes('semantic') || stepName.includes('语义')) {
-      engineName = isZh ? '语义提取' : 'Semantic'
-    } else if (stage.includes('parse') || stage.includes('scan') || stepName.includes('解析') || stepName.includes('扫描')) {
-      engineName = isZh ? '文档解析' : 'ExternalParse'
-    } else if (stepName.includes('入库') || stepName.includes('写入') || stepName.includes('落盘') || stepName.includes('拉取')) {
-      engineName = isZh ? '资源入库' : 'AddResource'
-    } else if (stepName.includes('归档') || stepName.includes('萃取') || stepName.includes('快照')) {
-      engineName = isZh ? '会话归档' : 'SessionCommit'
-    } else if (stepName.includes('修剪') || stepName.includes('回收') || stepName.includes('释放') || stepName.includes('注销')) {
-      engineName = isZh ? '空间注销' : 'UserDeletion'
-    } else if (stepName.includes('图谱') || stepName.includes('遍历')) {
-      engineName = isZh ? '语义拓扑' : 'Semantic Topology'
-    }
+    const engines = runningSteps.map((s) => {
+      const sName = s.name
+      if (sName.includes('向量') || sName.includes('切片')) return isZh ? '向量计算' : 'Embedding'
+      if (sName.includes('语义')) return isZh ? '语义提取' : 'Semantic'
+      if (sName.includes('解析') || sName.includes('扫描')) return isZh ? '文档解析' : 'ExternalParse'
+      if (sName.includes('入库') || sName.includes('写入') || sName.includes('落盘') || sName.includes('拉取')) return isZh ? '资源入库' : 'AddResource'
+      if (sName.includes('归档') || sName.includes('萃取') || sName.includes('快照')) return isZh ? '会话归档' : 'SessionCommit'
+      if (sName.includes('修剪') || sName.includes('回收') || sName.includes('释放') || sName.includes('注销')) return isZh ? '空间注销' : 'UserDeletion'
+      if (sName.includes('图谱') || sName.includes('遍历')) return isZh ? '语义拓扑' : 'Semantic Topology'
+      return isZh ? '计算中' : 'Running'
+    })
+    const engineName = Array.from(new Set(engines)).join(' + ')
 
-    // Extract exact quantitative data of the active step
-    let stepMetric = ''
-    if (runningStep?.processed !== undefined && runningStep.total !== undefined && runningStep.total > 0) {
-      stepMetric = `${runningStep.processed.toLocaleString()} / ${runningStep.total.toLocaleString()} ${runningStep.unit ?? ''}`.trim()
-    } else if (runningStep?.count !== undefined && runningStep.count > 0) {
-      stepMetric = `${runningStep.count.toLocaleString()} ${runningStep.unit ?? ''}`.trim()
-    }
+    // Extract exact quantitative data of all active steps
+    const stepMetrics = runningSteps
+      .map((s) => {
+        if (s.processed !== undefined && s.total !== undefined && s.total > 0) {
+          return `${s.processed.toLocaleString()} / ${s.total.toLocaleString()} ${s.unit ?? ''}`.trim()
+        }
+        if (s.count !== undefined && s.count > 0) {
+          return `${s.count.toLocaleString()} ${s.unit ?? ''}`.trim()
+        }
+        return ''
+      })
+      .filter(Boolean)
+
+    const joinedMetric = stepMetrics.length > 0
+      ? stepMetrics.join(' · ')
+      : workload?.label
 
     return {
       status: 'running',
-      activeStepName: isZh ? `工序 ${activeIdx}/${totalSteps}: ${stepName}` : `Step ${activeIdx}/${totalSteps}: ${stepName}`,
+      activeStepName: stepName,
       activeEngineName: engineName,
-      activeStepIndex: activeIdx,
+      activeStepIndex: 0,
       totalSteps,
       progressPct,
-      workloadText: stepMetric || workload?.label,
+      workloadText: joinedMetric,
       workloadIcon: workload?.icon ?? '⚡',
       summaryText: isZh ? `执行中 (${progressPct}%)` : `Running (${progressPct}%)`,
     }
@@ -821,7 +826,7 @@ export function getTaskExecutionDynamic(
     totalSteps,
     progressPct: 0,
     summaryText: isZh
-      ? `在工序 [${failedStep?.name || '未知'}] 执行中断`
-      : `Aborted at step [${failedStep?.name || 'unknown'}]`,
+      ? `[${failedStep?.name || '未知'}] 执行中断`
+      : `Aborted at [${failedStep?.name || 'unknown'}]`,
   }
 }
