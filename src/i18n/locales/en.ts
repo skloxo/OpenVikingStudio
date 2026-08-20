@@ -460,7 +460,7 @@ const en = {
       executionLogs: 'Execution Trace Log',
       itemCount: '{{count}} items',
       logsCopied: 'Logs copied to clipboard',
-      pipelineSteps: 'Pipeline Steps Detail',
+      pipelineSteps: 'Process Execution Steps',
       stepCompleted: 'Completed',
       stepFailed: 'Failed',
       stepPending: 'Pending',
