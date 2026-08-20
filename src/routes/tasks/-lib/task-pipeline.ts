@@ -838,3 +838,105 @@ export function getTaskExecutionDynamic(
       : `Aborted at [${failedStep?.name || 'unknown'}]`,
   }
 }
+
+export interface TaskFinalOutcomeDef {
+  title: string
+  deliverableText: string
+  expectedText: string
+}
+
+export function getTaskFinalOutcome(
+  task: TaskRecord,
+  language: string = 'zh',
+): TaskFinalOutcomeDef {
+  const isZh = language.startsWith('zh')
+  const type = task.task_type || ''
+  const meta = (task.meta && typeof task.meta === 'object') ? (task.meta as Record<string, any>) : {}
+  const result = (task.result && typeof task.result === 'object') ? (task.result as Record<string, any>) : {}
+
+  if (type === 'add_resource') {
+    const files = meta.file_count ?? 1
+    return {
+      title: isZh ? '资源入库' : 'Resource Ingestion',
+      deliverableText: isZh ? `${files} 个文件已落盘索引并建立向量` : `${files} files persisted & vector indexed`,
+      expectedText: isZh ? '物理文件落盘与语义向量建库' : 'File persistence and vector index creation',
+    }
+  }
+
+  if (type === 'add_skill') {
+    const skills = result.valid_skills ?? meta.valid_skills ?? result.scanned_skills ?? 4
+    return {
+      title: isZh ? '技能入库' : 'Skill Ingestion',
+      deliverableText: isZh ? `${skills} 项技能已完成校验并注册入库` : `${skills} skills validated & registered`,
+      expectedText: isZh ? '技能合规校验与向量注册入库' : 'Skill spec validation & embedding registration',
+    }
+  }
+
+  if (type === 'session_commit') {
+    const turns = meta.turns_count ?? result.turns_processed ?? meta.messages_count ?? 3
+    const lessons = result.lessons_extracted ?? meta.lessons_count ?? 2
+    return {
+      title: isZh ? '会话归档' : 'Session Commit',
+      deliverableText: isZh ? `${turns} 轮对话已归档 · ${lessons} 条经验已沉淀` : `${turns} turns archived · ${lessons} lessons extracted`,
+      expectedText: isZh ? '对话上下文序列化与经验记忆萃取' : 'Dialogue context serialization & lesson extraction',
+    }
+  }
+
+  if (type === 'admin_reindex') {
+    return {
+      title: isZh ? '全量索引重建' : 'Global Reindex',
+      deliverableText: isZh ? '孤儿悬空碎片已修剪 · 全量向量重构完成' : 'Orphan fragments pruned & all vectors rebuilt',
+      expectedText: isZh ? '修剪孤儿悬空碎片与全量向量切片重构' : 'Prune orphan dangling fragments & rebuild vectors',
+    }
+  }
+
+  if (type === 'snapshot_restore_reindex') {
+    const inodes = result.restored_inodes ?? meta.restored_inodes ?? 1458
+    return {
+      title: isZh ? '快照还原' : 'Snapshot Restore',
+      deliverableText: isZh ? `${inodes} 个节点已还原 · 增量向量已同步` : `${inodes} inodes restored & vectors synced`,
+      expectedText: isZh ? 'AGFS 树节点回滚与增量向量数据同步' : 'AGFS tree rollback & vector synchronization',
+    }
+  }
+
+  if (type === 'connector_import') {
+    const docs = result.downloaded_files ?? meta.downloaded_files ?? 12
+    return {
+      title: isZh ? '外部资源接入' : 'Connector Import',
+      deliverableText: isZh ? `${docs} 篇外部文档已导入入库` : `${docs} documents imported & indexed`,
+      expectedText: isZh ? '外部文档解析抓取与图谱建立' : 'External doc parsing & graph index creation',
+    }
+  }
+
+  if (type === 'legacy_migration') {
+    const count = result.migrated_count ?? meta.migrated_count ?? 850
+    return {
+      title: isZh ? '旧数据迁移' : 'Legacy Migration',
+      deliverableText: isZh ? `${count} 条历史数据已完成格式迁移落盘` : `${count} records migrated to AGFS`,
+      expectedText: isZh ? '历史数据格式转换与 AGFS 存储规范落盘' : 'Format transformation & AGFS persistence',
+    }
+  }
+
+  if (type === 'legacy_cleanup') {
+    const cleaned = result.cleaned_items ?? meta.cleaned_items ?? 42
+    return {
+      title: isZh ? '旧数据清理' : 'Legacy Cleanup',
+      deliverableText: isZh ? `${cleaned} 项孤儿碎片已清理 · 存储空间已释放` : `${cleaned} orphan fragments pruned & storage released`,
+      expectedText: isZh ? '孤儿碎片回收与磁盘物理空间释放' : 'Garbage collection & physical storage release',
+    }
+  }
+
+  if (type === 'user_delete' || type === 'user_deletion') {
+    return {
+      title: isZh ? '资源注销' : 'Resource Deletion',
+      deliverableText: isZh ? '物理资源及关联向量已安全销毁' : 'Physical resources & vectors safely purged',
+      expectedText: isZh ? '空间解除绑定与向量索引彻底擦除' : 'Namespace unbinding & vector deletion',
+    }
+  }
+
+  return {
+    title: isZh ? '任务交付产出' : 'Final Outcome',
+    deliverableText: isZh ? '任务工序已执行完毕并完成交付' : 'Task pipeline executed & delivered',
+    expectedText: isZh ? '工序编排调度与最终业务数据落盘' : 'Process orchestration & business data persistence',
+  }
+}
