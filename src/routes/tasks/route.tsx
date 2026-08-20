@@ -419,11 +419,6 @@ function TasksRoute() {
               ? t('pipeline.queued')
               : t(`status.${status}`)}
           </span>
-          {status === 'running' && (
-            <span className="font-mono font-semibold ml-0.5">
-              {pct}%
-            </span>
-          )}
           {status === 'failed' && (
             <button
               type="button"
@@ -477,7 +472,7 @@ function TasksRoute() {
       )
     }
 
-    // 2. 进行中：聚焦当前活跃工序、承接执行引擎与具体量化吞吐进度
+    // 2. 进行中：聚焦当前活跃工序与具体量化吞吐进度（切除多余重复标签）
     if (status === 'running') {
       return (
         <div className="flex flex-col gap-1 min-w-64 max-w-md py-0.5 select-none">
@@ -486,9 +481,6 @@ function TasksRoute() {
               <LoaderCircleIcon className="size-3.5 shrink-0 animate-spin text-primary" />
               <span className="font-sans text-xs font-semibold text-foreground truncate">
                 {dynamic.activeStepName}
-              </span>
-              <span className="font-mono text-[10px] text-muted-foreground bg-muted/60 px-1.5 py-0.2 rounded border border-border/40 shrink-0">
-                {dynamic.activeEngineName}
               </span>
             </div>
             <span className="font-mono text-[11px] font-bold text-primary tabular-nums shrink-0">
