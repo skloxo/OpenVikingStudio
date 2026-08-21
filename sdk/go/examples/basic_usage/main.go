@@ -319,7 +319,7 @@ func main() {
 	fmt.Printf("   recent session commit tasks=%d\n", len(tasks))
 
 	memoryResults, err := client.Find(ctx, memoryMarker, &openviking.FindOptions{
-		TargetURI:   "viking://user/memories",
+		TargetURI:   "viking://~/memories",
 		Limit:       5,
 		ContextType: []string{"memory"},
 	})
@@ -346,7 +346,7 @@ func main() {
 	defer peerClient.CloseIdleConnections()
 
 	peerMemoryResults, err := peerClient.Find(ctx, peerMarker, &openviking.FindOptions{
-		TargetURI:   "viking://user/memories",
+		TargetURI:   "viking://~/memories",
 		Limit:       5,
 		ContextType: []string{"memory"},
 	})

@@ -288,6 +288,7 @@ async def test_create_user_paths_accept_initial_user_config(
         json={
             "account_id": acct,
             "admin_user_id": "alice",
+            # Legacy uid-less spelling, normalized to the viking://~ home alias.
             "user_config": {"add_targets": {"resource_uri": "viking://user/resources/admin"}},
         },
         headers=root_headers(),
@@ -305,7 +306,7 @@ async def test_create_user_paths_accept_initial_user_config(
         json={
             "user_id": "bob",
             "role": "user",
-            "user_config": {"add_targets": {"resource_uri": "viking://user/resources/bob"}},
+            "user_config": {"add_targets": {"resource_uri": "viking://~/resources/bob"}},
         },
         headers=root_headers(),
     )

@@ -413,7 +413,7 @@ class VikingClient:
         user_space = self._user_space_fragment(user_id)
         if user_space:
             return f"viking://user/{user_space}/memories/"
-        return "viking://user/memories/"
+        return "viking://~/memories/"
 
     def _owner_user_id_for_uri(self, uri: Optional[str]) -> Optional[str]:
         if not self._is_root_key_mode():
@@ -424,6 +424,11 @@ class VikingClient:
             return None
         if len(parts) < 2 or parts[0] != "user":
             return None
+        # Mirrors the server's reserved user-space segment set. We keep the duplicated
+        # allowlist so legacy ``viking://user/<reserved>/...`` URIs (still present in stored
+        # bot configs and occasionally produced by LLM output) are not misrouted to a user
+        # named e.g. "memories" while running in root-key mode. Home-alias URIs
+        # (``viking://~/...``) never reach this branch and return None naturally.
         if parts[1] in {"memories", "resources", "skills", "peers", "privacy", "sessions"}:
             return None
         owner_user_id = parts[1]
@@ -451,7 +456,7 @@ class VikingClient:
         if not normalized_peer_id:
             raise ValueError("peer_id is required for peer memory target")
         if self._is_user_key_mode() or self._has_request_connection():
-            return f"viking://user/peers/{normalized_peer_id}/memories/"
+            return f"viking://~/peers/{normalized_peer_id}/memories/"
         user_space = self._current_user_space_fragment()
         if not user_space:
             raise ValueError("peer memory target requires current user_id")
@@ -730,7 +735,7 @@ class VikingClient:
         """读取用户 profile。"""
         effective_user_id = self._effective_user_id(user_id)
         if not effective_user_id:
-            return await self.read_content(uri="viking://user/memories/profile.md", level="read")
+            return await self.read_content(uri="viking://~/memories/profile.md", level="read")
 
         uri = f"{self._memory_target_uri(effective_user_id)}profile.md"
         result = await self.read_content(uri=uri, level="read", user_id=effective_user_id)

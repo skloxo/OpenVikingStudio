@@ -57,7 +57,7 @@ async def test_reindex_user_can_only_target_own_user_scope(monkeypatch):
     monkeypatch.setattr("openviking.server.routers.content.get_service", lambda: FakeService())
 
     own_scope = await reindex(
-        body=ReindexRequest(uri="viking://user/resources", mode="vectors_only"),
+        body=ReindexRequest(uri="viking://~/resources", mode="vectors_only"),
         ctx=ctx,
     )
     assert own_scope.status == "ok"

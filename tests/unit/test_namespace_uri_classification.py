@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """Tests for shared Viking URI namespace/content classification."""
 
+import re
+
 import pytest
 
 from openviking.core.namespace import (
@@ -107,10 +109,10 @@ def test_session_uri_helpers_use_user_namespace():
     assert canonical_session_uri(ctx) == "viking://user/alice/sessions"
     assert canonical_session_uri(ctx, "s1") == "viking://user/alice/sessions/s1"
     assert resolve_uri("viking://user/sessions/s1").uri == "viking://user/sessions/s1"
-    assert (
+    # The uid-less 'sessions' shorthand no longer expands; it fails closed with a
+    # hint pointing at the '~' home alias.
+    with pytest.raises(NamespaceShapeError, match=re.escape("viking://~/sessions/s1")):
         resolve_request_uri("viking://user/sessions/s1", ctx)
-        == "viking://user/alice/sessions/s1"
-    )
     assert (
         resolve_request_uri("viking://session/s1", ctx)
         == "viking://user/alice/sessions/s1"
@@ -130,29 +132,24 @@ def test_session_uri_helpers_use_user_namespace():
     assert "viking://agent/skills" in roots
 
 
-def test_request_boundary_expands_current_user_content_roots():
+def test_request_boundary_rejects_reserved_user_root_shorthand():
     ctx = RequestContext(
         user=UserIdentifier(account_id="acct", user_id="alice"),
         role=Role.USER,
     )
 
-    assert (
+    with pytest.raises(NamespaceShapeError, match=re.escape("viking://~/resources")):
         resolve_request_uri("viking://user/resources", ctx)
-        == "viking://user/alice/resources"
-    )
-    assert (
+    with pytest.raises(NamespaceShapeError, match=re.escape("viking://~/resources/docs")):
         resolve_request_uri("viking://user/resources/docs", ctx)
-        == "viking://user/alice/resources/docs"
-    )
-    assert (
+    with pytest.raises(InvalidURIError, match=re.escape("viking://~/resources")):
         validate_content_target_uri(
             "viking://user/resources",
             ctx,
             kind="resource",
             field_name="parent",
         )
-        == "viking://user/alice/resources"
-    )
+    # Account-shared resources are untouched by the removal.
     assert (
         validate_content_target_uri(
             "viking://resources/docs/",
@@ -163,6 +160,8 @@ def test_request_boundary_expands_current_user_content_roots():
         == "viking://resources/docs"
     )
     assert resolve_uri("viking://user/alice/resources").uri == "viking://user/alice/resources"
+    # Self-id escape: a caller literally named 'resources' keeps the literal URI
+    # as their own canonical root.
     collision_ctx = RequestContext(
         user=UserIdentifier(account_id="acct", user_id="resources"),
         role=Role.USER,
@@ -175,14 +174,11 @@ def test_request_boundary_expands_current_user_content_roots():
         user=UserIdentifier(account_id="acct", user_id="admin"),
         role=Role.ADMIN,
     )
-    assert (
+    with pytest.raises(NamespaceShapeError, match=re.escape("viking://~/resources")):
         resolve_request_uri("viking://user/resources", admin_ctx)
-        == "viking://user/admin/resources"
-    )
-    assert (
+    with pytest.raises(NamespaceShapeError, match=re.escape("viking://~/skills")):
         resolve_request_uri("viking://user/skills", admin_ctx)
-        == "viking://user/admin/skills"
-    )
+    # ROOT requests never enter current-user resolution, so the literal parse stands.
     root_ctx = RequestContext(
         user=UserIdentifier(account_id="acct", user_id="root-actor"),
         role=Role.ROOT,
@@ -192,6 +188,41 @@ def test_request_boundary_expands_current_user_content_roots():
         == "viking://user/resources"
     )
     assert is_content_root_uri("viking://resources", kind="resource")
+
+
+@pytest.mark.parametrize(
+    "segment", ["memories", "resources", "skills", "peers", "privacy", "sessions"]
+)
+@pytest.mark.parametrize("role", [Role.USER, Role.ADMIN])
+def test_reserved_user_root_shorthand_rejection_message(segment, role):
+    ctx = RequestContext(
+        user=UserIdentifier(account_id="acct", user_id="alice"),
+        role=role,
+    )
+
+    with pytest.raises(NamespaceShapeError) as excinfo:
+        resolve_request_uri(f"viking://user/{segment}", ctx)
+    message = str(excinfo.value)
+    assert f"viking://~/{segment}" in message
+    assert f"viking://user/{{user_id}}/{segment}" in message
+
+    with pytest.raises(NamespaceShapeError) as nested:
+        resolve_request_uri(f"viking://user/{segment}/nested/leaf.md", ctx)
+    nested_message = str(nested.value)
+    assert f"viking://~/{segment}/nested/leaf.md" in nested_message
+    assert f"viking://user/{{user_id}}/{segment}/nested/leaf.md" in nested_message
+
+
+def test_bare_user_uri_stays_the_user_space_container():
+    ctx = RequestContext(
+        user=UserIdentifier(account_id="acct", user_id="alice"),
+        role=Role.USER,
+    )
+
+    assert resolve_request_uri("viking://user", ctx) == "viking://user"
+    assert resolve_request_uri("viking://user/", ctx) == "viking://user"
+    assert resolve_uri("viking://user").is_container is True
+    assert resolve_uri("viking://user").owner_user_id is None
 
 
 def test_unreserved_user_root_segment_keeps_canonical_meaning():
