@@ -2,6 +2,10 @@
 
 Long-term semantic memory for [Codex](https://developers.openai.com/codex), powered by [OpenViking](https://github.com/volcengine/OpenViking).
 
+> **Requires an OpenViking server with `viking://~` home-alias support.** Recall targets the
+> caller's own context space through `viking://~/memories` and `viking://~/skills`; the uid-less
+> `viking://user/memories` shorthand is rejected by newer servers.
+
 This is the Codex counterpart to [`claude-code-memory-plugin`](../claude-code-memory-plugin). It hooks Codex's lifecycle to:
 
 - **Session-start profile injection** on `startup`, `clear`, and `resume`: load `profile.md` plus abstract-annotated indexes of `preferences/` and `entities/` through the shared CJK-aware profile builder.
@@ -192,7 +196,7 @@ On `startup` or `clear`, the script:
 
 On any /commit failure (OV unreachable, non-2xx, timeout) we **preserve state** (don't `clearState`) so the next sweep can retry.
 
-On `resume`, the script skips commit/sweep. It still injects the profile block. If local state has no live `ovSessionId`, it also reads `/api/v1/sessions/{cx-session-id}/context` and combines the latest committed archive overview into the same `SessionStart` output. The archive block includes a `viking://user/sessions/{cx-session-id}/history/` URI and tells the model to use the OpenViking MCP `read`/`search` tools for exact prior commands, file paths, tool outputs, or messages. Set `OPENVIKING_RESUME_ARCHIVE_INJECT=0` to disable the archive half without disabling profile injection.
+On `resume`, the script skips commit/sweep. It still injects the profile block. If local state has no live `ovSessionId`, it also reads `/api/v1/sessions/{cx-session-id}/context` and combines the latest committed archive overview into the same `SessionStart` output. The archive block includes a `viking://~/sessions/{cx-session-id}/history/` URI and tells the model to use the OpenViking MCP `read`/`search` tools for exact prior commands, file paths, tool outputs, or messages. Set `OPENVIKING_RESUME_ARCHIVE_INJECT=0` to disable the archive half without disabling profile injection.
 
 ### Auto-recall (every UserPromptSubmit)
 

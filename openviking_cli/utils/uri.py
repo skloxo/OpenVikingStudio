@@ -20,8 +20,7 @@ class VikingURI:
     Scopes:
     - resources: Independent resource scope (viking://resources/{project}/...)
     - user: Explicit user scope (viking://user/{user_id}/...), including sessions under
-      viking://user/{user_id}/sessions/{session_id}. Authenticated API boundaries may
-      accept documented current-user shorthands and expand them before internal use.
+      viking://user/{user_id}/sessions/{session_id}.
     - session: Legacy alias for user sessions (viking://session/{session_id}/...)
     - agent: Agent capabilities scope (viking://agent/skills/..., viking://agent/endpoints/...)
     - queue: Queue scope (viking://queue/...)

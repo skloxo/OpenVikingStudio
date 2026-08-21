@@ -131,8 +131,8 @@ content = client.read("viking://resources/my-project/README.md")
 This same URI model applies to memories and skills as well:
 
 - `viking://resources/`
-- `viking://user/memories/`
-- `viking://user/skills/`
+- `viking://~/memories/`
+- `viking://~/skills/`
 
 ### Retrieval
 
@@ -192,7 +192,7 @@ After commit, you can retrieve those memories through normal search APIs:
 ```python
 memories = client.find(
     query="user programming preferences",
-    target_uri="viking://user/memories/",
+    target_uri="viking://~/memories/",
 )
 ```
 

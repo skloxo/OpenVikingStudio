@@ -275,8 +275,8 @@ root_client.admin_register_user(
     seed="alice-seed",
     user_config={
         "add_targets": {
-            "resource_uri": "viking://user/resources/project-a",
-            "skill_uri": "viking://user/skills",
+            "resource_uri": "viking://~/resources/project-a",
+            "skill_uri": "viking://~/skills",
         }
     },
 )

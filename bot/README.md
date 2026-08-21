@@ -13,6 +13,11 @@ VikingBot is the multi-channel AI agent built into OpenViking. You can use it di
 
 ## Installation
 
+> **OpenViking Server requirement**: VikingBot addresses the caller's own context space through the
+> `viking://~` home alias (for example `viking://~/memories/`), so it requires a server with
+> `viking://~` support. The uid-less shorthand `viking://user/memories` is no longer emitted and is
+> rejected by newer servers.
+
 ### Install from PyPI
 
 ```bash

@@ -59,6 +59,9 @@ def test_recall_expands_default_user_root_to_explicit_user_space(monkeypatch) ->
         client._resolve_target_uri("viking://user/default/memories/")
         == "viking://user/default/memories/"
     )
+    # Home alias resolves to the same explicit-uid target as the legacy spelling.
+    assert client._resolve_target_uri("viking://~/memories") == "viking://user/default/memories/"
+    assert client._resolve_target_uri("viking://~/memories/") == "viking://user/default/memories/"
 
 
 def test_recall_default_target_uri_is_user_root() -> None:

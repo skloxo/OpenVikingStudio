@@ -132,8 +132,8 @@ content = client.read("viking://resources/my-project/README.md")
 同样的 URI 模型也适用于记忆和技能：
 
 - `viking://resources/`
-- `viking://user/memories/`
-- `viking://user/skills/`
+- `viking://~/memories/`
+- `viking://~/skills/`
 
 ### 检索
 
@@ -193,7 +193,7 @@ client.commit_session(session_id)
 ```python
 memories = client.find(
     query="用户编程偏好",
-    target_uri="viking://user/memories/",
+    target_uri="viking://~/memories/",
 )
 ```
 

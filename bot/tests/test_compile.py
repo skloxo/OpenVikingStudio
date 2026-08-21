@@ -1118,7 +1118,7 @@ async def test_submit_tool_reads_explicit_workspace_file_and_rejects_memory_file
     memory_tool = SubmitWikiBundleTool(
         source_ids={"src_1"},
         catalog_uris=set(),
-        target_uri="viking://user/memories/preferences/wiki",
+        target_uri="viking://user/alice/memories/preferences/wiki",
         limits=CompileLimits(),
     )
     rejected = await memory_tool.execute(

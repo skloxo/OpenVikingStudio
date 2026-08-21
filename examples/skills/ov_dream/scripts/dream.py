@@ -13,7 +13,10 @@ from urllib.request import Request, urlopen
 
 DEFAULT_BASE_URL = "http://127.0.0.1:1933"
 DEFAULT_TARGET_URI = "viking://user/default"
+# Legacy uid-less spelling, still accepted from existing configs.
 LEGACY_TARGET_URI = "viking://user/memories"
+# Home alias for the caller's own user space; emitted URIs stay explicit-uid.
+HOME_MEMORIES_TARGET_URI = "viking://~/memories"
 SERVERLESS_BASE_URL = "https://api.vikingdb.cn-beijing.volces.com/openviking"
 
 
@@ -78,7 +81,7 @@ class OpenVikingClient:
         if normalized == DEFAULT_TARGET_URI:
             user_space = self._headers().get("X-OpenViking-User", "default") or "default"
             return f"viking://user/{user_space}"
-        if normalized == LEGACY_TARGET_URI:
+        if normalized in {LEGACY_TARGET_URI, HOME_MEMORIES_TARGET_URI}:
             user_space = self._headers().get("X-OpenViking-User", "default") or "default"
             return f"viking://user/{user_space}/memories/"
         return target_uri
