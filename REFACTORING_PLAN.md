@@ -292,6 +292,7 @@
 
 | 工单 ID | 对应后端路由 / 模块 | 核心可视化交付目标 | 优先级 |
 | :--- | :--- | :--- | :---: |
+| **`TASK-UI-CONFIG-SETTINGS-01`** | `routers/settings.py` / `skills.py` | **项目全局可视化配置中心 & 技能扫描源管理**：提供全局常用配置可视化操作面板。支持用户自定义填写/增删技能文件夹物理路径，一键挂载到 Wiki 并触发实时扫描入库；支持模型网关、环境变量与存储参数可视化调整。 | 🔴 P1（核心交互门面） |
 | **`TASK-UI-AGENT-EVOL-01`** | `routers/agent_evolution.py` | **Agent Evolution 演进全景可视化大屏（路径、轨迹与成果全透视）**：新增独立演进全景看板，提供【成长路径时间轴】、【执行动作与纠偏轨迹拓扑】、【经验胜率与正负向成效分布图】三大视界，让用户直观透明看到智能体的进化过程。 | 🔴 P1（重点前调） |
 | **`TASK-UI-WATCHES-01`** | `routers/watches.py` | **资源自动订阅与 Watch 监控看板**：提供 GitHub Repo / Web 资源订阅任务管理、自动同步触发器、运行流水线日志查看。 | 🔴 P1 |
 | **`TASK-UI-PRIVACY-01`** | `routers/privacy_configs.py` | **隐私安全与敏感信息脱敏治理中心**：脱敏规则配置、敏感字段打码开关、二次授权弹窗与合规审计日志导出。 | 🟡 P2 |
@@ -320,4 +321,25 @@
 - **视觉规范约定**：
   - 严格遵循 Layer 1：亮暗双模支持、极客性冷淡设计、NO GREEN EVER（冰青 `cyan-500` 正向、玫瑰红 `rose-500` 负向/报错、沉静哑光灰 `muted`）、字号硬下限 $\ge 11\text{px}$、卡片内边距 `p-3.5`、`mt-auto` 物理平齐。
 - **状态**：⬜ 待开发（已完成设计规格化与工单锁定）。
+
+---
+
+### 🎴 [专项工单详情] TASK-UI-CONFIG-SETTINGS-01：项目全局可视化配置中心 & 技能扫描源动态管理 (Project Settings & Skill Sources Dashboard)
+- **模块**：OpenVikingStudio 前端 (`src/routes/settings` / `src/routes/config`) + 后端 `ConfigService` (`/api/v1/config/*`) 与 `SkillScanner`
+- **工单 ID**：`TASK-UI-CONFIG-SETTINGS-01` ｜ **优先级**：P1（核心配置白盒化与用户自定义门面）
+- **核心目标**：将所有常用系统配置（尤其技能扫描源、模型节点、存储参数、环境变量）彻底告别黑盒与命令行，打造所见即所得的可视化配置中心。包含以下核心模块：
+  1. 📂 **【技能扫描源动态管理 (Skill Sources Manager)】**：
+     - 用户可在界面自由添加/删除技能物理目录绝对路径（如 `/path/to/my-custom-skills`、`~/.hermes/` 等）；
+     - 提供 **“一键挂载到 Wiki (Mount to VikingFS)”** 与 **“立即重新扫描 (Trigger Rescan)”** 按钮；
+     - 实时展示各路径下的技能扫描状态、入库成功数、异常 YAML 提示；
+     - 自动持久化保存已配置的路径列表，系统重启自动重新监听并增量入库。
+  2. 🧠 **【模型与算力节点路由配置 (AI Models & Compute Nodes)】**：
+     - 可视化配置 Mac Studio 256G (M3 Ultra `13100` MLX)、Windows 2080Ti 与第三方 API Provider 密钥与 Endpoints；
+     - 实时一键 Ping 测连通性与 VRAM 状态探测。
+  3. ⚙️ **【系统运行参数与存储策略 (Runtime & Storage Settings)】**：
+     - VikingFS 存储工作区、CJK 切分阈值、向量引擎并发数的 UI 开关与滑动调节器。
+- **视觉规范约定**：
+  - 极客性冷淡排版、最小字号 $\ge 11\text{px}$、NO GREEN EVER、50/50 紧凑网格。
+- **状态**：⬜ 待调度（排期在上游代码合并完成后优先推进落地）。
+
 
