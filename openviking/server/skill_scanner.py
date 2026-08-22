@@ -69,6 +69,18 @@ DEFAULT_SKILL_SOURCES: List[Dict[str, str]] = [
         "scope": "user",
     },
     {
+        "path": "/home/skloxo/aho/tide-trading/agent/src/skills",
+        "category": "Financial / Trading",
+        "source": "TideTrading",
+        "scope": "user",
+    },
+    {
+        "path": "/home/skloxo/aho/tide-trading/daily_stock_analysis/.claude/skills",
+        "category": "Financial / Stock Analysis",
+        "source": "TideTrading",
+        "scope": "user",
+    },
+    {
         "path": "/home/skloxo/aho/openclaw/project",
         "category": "Project Submodules",
         "source": "Project",

@@ -108,6 +108,7 @@ class _ReindexRunContext:
     counters: _ReindexCounters
     lock: dict | None = None
     ingest_options: IngestOptions | None = None
+    task_id: str | None = None
 
 
 @dataclass
@@ -449,6 +450,7 @@ class ReindexExecutor:
         dry_run: bool = False,
         ingest_options: IngestOptions | None = None,
         ctx: RequestContext,
+        task_id: str | None = None,
     ) -> dict[str, Any]:
         service = get_service()
         if service.viking_fs is None or service.vikingdb_manager is None:
@@ -481,8 +483,15 @@ class ReindexExecutor:
                 counters=counters,
                 lock=borrowed,
                 ingest_options=ingest_options,
+                task_id=task_id,
             )
+            tracker = get_task_tracker()
             if mode == "prune_orphans":
+                if task_id:
+                    try:
+                        await tracker.update_stage(task_id, "prune_orphans", account_id=ctx.account_id, user_id=ctx.user.user_id)
+                    except Exception:
+                        pass
                 await self._prune_orphan_vectors(
                     uri=uri,
                     object_type=object_type,
@@ -491,36 +500,72 @@ class ReindexExecutor:
                     ctx=ctx,
                 )
             elif object_type == "global_namespace":
+                if task_id:
+                    try:
+                        initial_stage = "semantic_generation" if mode == "semantic_and_vectors" else "vector_indexing"
+                        await tracker.update_stage(task_id, initial_stage, account_id=ctx.account_id, user_id=ctx.user.user_id)
+                    except Exception:
+                        pass
                 await self._reindex_global_namespace(
                     uri=uri,
                     mode=mode,
                     run=run,
                 )
             elif object_type == "user_namespace":
+                if task_id:
+                    try:
+                        initial_stage = "semantic_generation" if mode == "semantic_and_vectors" else "vector_indexing"
+                        await tracker.update_stage(task_id, initial_stage, account_id=ctx.account_id, user_id=ctx.user.user_id)
+                    except Exception:
+                        pass
                 await self._reindex_user_namespace(
                     uri=uri,
                     mode=mode,
                     run=run,
                 )
             elif object_type == "skill_namespace":
+                if task_id:
+                    try:
+                        initial_stage = "semantic_generation" if mode == "semantic_and_vectors" else "vector_indexing"
+                        await tracker.update_stage(task_id, initial_stage, account_id=ctx.account_id, user_id=ctx.user.user_id)
+                    except Exception:
+                        pass
                 await self._reindex_skill_namespace(
                     uri=uri,
                     mode=mode,
                     run=run,
                 )
             elif object_type == "resource":
+                if task_id:
+                    try:
+                        initial_stage = "semantic_generation" if mode == "semantic_and_vectors" else "vector_indexing"
+                        await tracker.update_stage(task_id, initial_stage, account_id=ctx.account_id, user_id=ctx.user.user_id)
+                    except Exception:
+                        pass
                 await self._reindex_resource(
                     uri=uri,
                     mode=mode,
                     run=run,
                 )
             elif object_type == "skill":
+                if task_id:
+                    try:
+                        initial_stage = "semantic_generation" if mode == "semantic_and_vectors" else "vector_indexing"
+                        await tracker.update_stage(task_id, initial_stage, account_id=ctx.account_id, user_id=ctx.user.user_id)
+                    except Exception:
+                        pass
                 await self._reindex_skill(
                     uri=uri,
                     mode=mode,
                     run=run,
                 )
             elif object_type == "memory":
+                if task_id:
+                    try:
+                        initial_stage = "semantic_generation" if mode == "semantic_and_vectors" else "vector_indexing"
+                        await tracker.update_stage(task_id, initial_stage, account_id=ctx.account_id, user_id=ctx.user.user_id)
+                    except Exception:
+                        pass
                 await self._reindex_memory(
                     uri=uri,
                     mode=mode,
@@ -573,7 +618,8 @@ class ReindexExecutor:
         tracker = get_task_tracker()
         tracker.register_running_task(task_id)
         try:
-            await tracker.start(task_id, account_id=ctx.account_id, user_id=ctx.user.user_id)
+            initial_stage = "prune_orphans" if mode == "prune_orphans" else ("semantic_generation" if mode == "semantic_and_vectors" else "vector_indexing")
+            await tracker.start(task_id, stage=initial_stage, account_id=ctx.account_id, user_id=ctx.user.user_id)
             with bind_task_context(task_id, ctx.account_id, ctx.user.user_id):
                 result = await self._run(
                     uri=uri,
@@ -582,6 +628,7 @@ class ReindexExecutor:
                     dry_run=dry_run,
                     ingest_options=ingest_options,
                     ctx=ctx,
+                    task_id=task_id,
                 )
             await tracker.complete(
                 task_id,

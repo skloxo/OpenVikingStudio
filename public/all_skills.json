@@ -186,9 +186,9 @@
   {
     "name": "adr-hshare",
     "description": "ADR/H-share/A-share cross-listing premium analysis — track pricing gaps between US-listed ADRs, HK-listed H-shares, and A-shares for arbitrage signals, dual-listing valuation, and delisting risk assessment.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/adr-hshare/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/adr-hshare/SKILL.md",
     "uri": "viking://resources/skills/adr-hshare",
     "scope": "user",
     "files": [
@@ -362,9 +362,9 @@
   {
     "name": "akshare",
     "description": "AKShare financial data aggregator (18k+ stars). Free, no API key. Covers A-shares, US, HK, futures, macro, forex. Primary fallback for tushare and yfinance.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/akshare/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/akshare/SKILL.md",
     "uri": "viking://resources/skills/akshare",
     "scope": "user",
     "files": [
@@ -375,9 +375,9 @@
   {
     "name": "alpha-zoo",
     "description": "Browse and bench the bundled alpha zoos — prebuilt cross-sectional factor libraries (Kakushadze 101, GTJA 191, Qlib 158, Fama-French / Carhart). Use when the user asks \"which alphas exist\", wants metadata on a named alpha, or wants to run IC/IR on a whole zoo over a universe.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/alpha-zoo/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/alpha-zoo/SKILL.md",
     "uri": "viking://resources/skills/alpha-zoo",
     "scope": "user",
     "files": [
@@ -547,14 +547,15 @@
   {
     "name": "ashare-pre-st-filter",
     "description": "A 股 ST/*ST 风险预测框架 — 基于最新中报/三季报或业绩预告/快报，预测下一财年是否会因营收、利润、净资产、分红不达标而被风险警示，并将新浪监管处罚记录作为独立证据面纳入风险等级。仅适用于 A 股，不预测财务造假。",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/ashare-pre-st-filter/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/ashare-pre-st-filter/SKILL.md",
     "uri": "viking://resources/skills/ashare-pre-st-filter",
     "scope": "user",
     "files": [
       "SKILL.md",
-      "scripts/fetch_sina_penalties.py"
+      "scripts/fetch_sina_penalties.py",
+      "scripts/__pycache__/fetch_sina_penalties.cpython-312.pyc"
     ],
     "content": "---\nname: ashare-pre-st-filter\ndescription: A 股 ST/*ST 风险预测框架 — 基于最新中报/三季报或业绩预告/快报，预测下一财年是否会因营收、利润、净资产、分红不达标而被风险警示，并将新浪监管处罚记录作为独立证据面纳入风险等级。仅适用于 A 股，不预测财务造假。\ncategory: risk-analysis\n---\n\n> **依赖**：本 skill 必须配合 [tushare skill](../tushare/SKILL.md) 使用，缺数据时回退到 [akshare skill](../akshare/SKILL.md)。\n\n# A 股 ST/*ST 风险预测\n\n## 适用范围\n\n- 仅 A 股**主板 / 创业板 / 科创板**。港股、美股、加密、商品、**北交所**（`8xxxxx.BJ` 监管规则与本 skill 阈值不一致）均不适用，本 skill 直接拒绝。\n- 仅做\"下一财年是否会被 ST/*ST\"的前瞻预测，不做财务造假预测。\n- 输出双轴结果：**触线风险等级** + **预测可信度**。\n\n## 触发条件\n\n用户提问形如：\n- \"分析 000729.SZ 的 ST 风险\"\n- \"600xxx 下个年报会不会被 ST\"\n- \"帮我看一下 300xxx 是否有退市风险\"\n\n收到此类请求时，按下面\"分析流程\"执行；其他场景不要主动启用本 skill。\n\n## 数据获取规范（tushare 优先 → akshare 兜底）\n\n**铁律**：\n\n1. **所有财务/基本面/分红/审计/ST 状态数据，必须先调用 [tushare skill](../tushare/SKILL.md)**，按下表指定的接口名、`ts_code`、`period` 拉取。\n2. 当 tushare 接口因积分不足、token 缺失或返回空时，**回退到 [akshare skill](../akshare/SKILL.md)** 对应函数。\n3. **akshare 兜底数据必须在最终输出\"备注\"中显式标注**：`数据源：akshare（非官方聚合，不保证完整性，建议核对原始公告）`。**不允许只用 akshare 给出\"高可信度\"预测**——akshare 兜底的红线项可信度强制降一档（高→中高，中高→中，中→低）。\n4. 监管处罚（E2）走本 skill 自带的 [scripts/fetch_sina_penalties.py](scripts/fetch_sina_penalties.py)，不经过 tushare/akshare。\n\n### 数据需求映射表\n\n| 数据需求 | tushare 接口（首选） | 抓取参数 / 时间窗口 | akshare 兜底 | akshare 注意事项 |\n|---------|---------------------|-------------------|-------------|----------------|\n| 当前 ST 状态 | `stock_st` | 最近一个交易日 | `stock_zh_a_st_em()` | 仅返回当前 ST/退市整理板列表，历史不可查 |\n| 历史改名 | `namechange` | `ts_code` 全历史 | `stock_zh_a_new_em()`（仅新股，无改名） | akshare 无完整改名接口，必要时跳过 |\n| 股票基础信息（板块判断） | `stock_basic` | `list_status='L'` | `stock_individual_info_em(symbol)` | 字段名不同，需自行映射 |\n| 业绩预告 | `forecast` | `ts_code` + 最近 2 个 period（`{Y}0630`/`{Y}0930`/`{Y}1231`） | `stock_yjyg_em(date='YYYYMMDD')` | 按报告期日期反查，需先按 period 拉全市场再筛 ts_code |\n| 业绩快报 | `express` | 同上，最近 2 个 period | `stock_yjbb_em(date='YYYYMMDD')` | 同上，全市场快照需筛 |\n| 利润表 | `income` | `ts_code` + 最近 5 个 period（过去 4 年年报 `{Y}1231` + 最新中报/三季报） | `stock_financial_report_sina(stock='sh600000', symbol='利润表')` | 单位不一致（万元 vs 元），需做归一；季报缺失常见 |\n| 资产负债表 | `balancesheet` | 同上 | `stock_financial_report_sina(stock='sh600000', symbol='资产负债表')` | 同上 |\n| 现金流量表 | `cashflow` | 同上 | `stock_financial_report_sina(stock='sh600000', symbol='现金流量表')` | 同上 |\n| 财务指标（扣非净利润等） | `fina_indicator` | `ts_code` + 最近 5 个 period | `stock_financial_analysis_indicator(symbol='600000')` | 字段中文，扣非字段名为\"扣除非经常性损益后的净利润\" |\n| 审计意见 | `fina_audit` | `ts_code` + 最近 2 个年报 period | **akshare 无对应接口** | 缺失时在输出中标注\"审计意见数据缺失\"，**不得跳过**——必须提示用户去官网查 |\n| 分红 | `dividend` | `ts_code` + 近 5 年 `div_proc='实施'` | `stock_history_dividend_detail(symbol='600000', indicator='分红')` | 字段中文，需把\"派息\"金额×总股本得到现金分红总额 |\n| 日线行情（1 元退市预警） | `daily` | `ts_code` + 最近 30 个交易日 | `stock_zh_a_hist(symbol='600000', period='daily', adjust='')` | 必须用**不复权**价格判断 1 元退市线 |\n| 每日指标（市值） | `daily_basic` | `ts_code` + 最近一个交易日 | `stock_zh_a_spot_em()` 全市场快照筛 `代码=600000` | 字段名为\"总市值\"（**单位：元**，东方财富 push2 原始口径，akshare 不做缩放），换算成亿元需 `/1e8`。⚠️ 不要与 tushare `daily_basic.total_mv`（万元）混淆——本列是 akshare 兜底口径 |\n| 财报披露日期 | `disclosure_date` | `ts_code` + 当前年度 | **akshare 无对应接口** | 缺失时按经验估算（4/30 年报、8/31 中报、10/31 三季报） |\n| 监管处罚 | — | — | **走本 skill 自带 sina 脚本** | 见 E2 章节 |\n\n### 时间窗口口径统一\n\n按数据类型分别处理，**禁止用单一 60 天经验值统一对齐**：\n\n- **财务报表（income / balancesheet / cashflow / fina_indicator）**：以 `disclosure_date` 实际公告日为准；该接口不可用时按法定截止日（年报 4/30、中报 8/31、三季报 10/31、一季报 4/30）做兜底。在公告日 +1 天起方可视该 period 为\"最新可得\"。\n- **\"过去 N 年年报\"**：一律 `period = {Y}1231`，不要用日历年起止。\n- **业绩预告 forecast / 业绩快报 express**：只取 `ann_date ≥ 当前年度 1 月 1 日` 的记录；按 `ann_date` 倒序取最新一条，老 period 的预告对预测无效。\n- **dividend**：按 `(end_date, ann_date, cash_div_tax)` 三元组**强制去重**——tushare 同一笔分红会出现 3-4 行（预案/股东大会通过/实施），直接累加会三倍误算。\n\n## 第一步：当前状态核查（M0）\n\n**判断公司当前是否已被风险警示，并据此调整分析方向（不一刀切结束）**：\n\n调用顺序：\n1. 优先调用 `stock_st`（tushare skill，3000 积分），按当前最近交易日查询；记录 `type` / `type_name`。\n2. 如积分不足，回退到 `namechange`（免费）：拉取 `ts_code` 全部历史改名记录，取按 `start_date` 排序的最新一条；判断 `name` 前缀。\n3. 兜底用 `stock_basic.name` 做名称确认。\n\n**分支处理**：\n\n| 当前状态 | 分析方向 | 是否继续 |\n|---------|---------|---------|\n| 正常股票 | 预测下一财年是否会被 ST/*ST | **是**（默认流程） |\n| 已 ST（普通） | 改为预测：是否会进一步转 *ST 或退市；R1-R4 阈值需更严格（亏损链门槛降一年） | **是** |\n| 已 *ST | 改为预测：是否会被强制退市；重点看 R1 营收 + R2 净资产 + E1 审计意见 | **是** |\n| 已退市整理期 / 已摘牌 | 直接结束 | **否** |\n\n## 第二步：板块阈值表（决定红线）\n\n**先用 `ts_code` 前缀判断板块，再套用对应阈值。不要混用。**\n\n| 板块 | 代码识别 | 营收红线 | 市值退市线 | 三年累计分红阈值 |\n|------|---------|---------|-----------|----------------|\n| 主板 | `60xxxx.SH` / `00xxxx.SZ`（除 30 / 688 开头外） | 净利润为负 且 营收 < 3 亿 | 市值 < 5 亿 | 累计 < 5000 万 且 < 年均净利润 30% |\n| 创业板 | `30xxxx.SZ` | 净利润为负 且 营收 < 1 亿 | 市值 < 3 亿 | 累计 < 3000 万 且 < 年均净利润 30%（研发豁免：研发投入占营收 ≥ 5% 或近三年累计 ≥ 6000 万） |\n| 科创板 | `688xxx.SH` | 净利润为负 且 营收 < 1 亿 | 市值 < 3 亿 | 累计 < 3000 万 且 < 年均净利润 30%（研发豁免：研发投入占营收 ≥ 5% 或近三年累计 ≥ 6000 万） |\n\n## 第三步：预测时点选择\n\n按\"最新可得证据\"原则确定基准时点，从下到上择优：\n\n| 基准时点 | 数据接口 | 可信度基线 | 适用季节 |\n|---------|---------|-----------|---------|\n| **业绩预告 forecast** | `forecast` | **高** | 1 月底 / 7 月中旬 / 10 月底高发期 |\n| **业绩快报 express** | `express` | **高** | 1-4 月年报前夕 |\n| **三季报** | `income/balancesheet/cashflow` (`period=YYYYMMDD`，9 月末) | **中高** | 10 月底披露后到次年年报前 |\n| **中报** | 同上，6 月末 period | **中** | 8 月底披露后到三季报前 |\n| **去年年报** | 同上，12 月末 period | **低** | 仅作为基准对照 |\n\n**证据优先级**（同一指标多个来源时，高的覆盖低的）：\n\n```\nforecast / express > 三季报 > 中报 > 去年年报 > 经验外推\n```\n\n输出时**必须在每个预测项明示采用了哪一级证据**。如果存在 forecast 给出的全年净利润区间，**禁止再用三季报机械年化覆盖**。\n\n## 第四步：四项可预测红线\n\n### R1 营收 + 净利润红线\n\n**目标**：预测全年营收、归母净利润和**扣非净利润**，按监管口径\"扣非前后孰低者\"判定。\n\n**口径关键**：监管原文是 `min(n_income, profit_dedt) < 0` 且 `revenue < 板块阈值` —— **必须同时预测扣非净利润**，不能只用归母。仅看归母会漏掉\"归母为正但扣非为负\"的造壳公司。\n\n**预测方法（按基准时点选用，至少一种）**：\n\n- **forecast 直采法**：若 `forecast` 给出 `net_profit_min` / `net_profit_max`，直接取区间作为全年归母预测；扣非用过去两年扣非率（`profit_dedt / n_income` 中位数）折算；可信度=高。营收红线仍需结合最新报表外推。\n- **express 直采法**：若 `express` 已披露，`revenue` / `n_income` 即为全年快报值；扣非同样按过去两年率折算（express 一般无扣非字段）；可信度=高。\n- **Q4 单季回补法**（三季报基准）：\n  - `Q1Q3_revenue` = 三季报营业收入\n  - `Q4_revenue_est` = 过去两年 Q4 营收占全年比例的中位数 × 当前年化预估值\n  - `revenue_full_year_est = Q1Q3_revenue + Q4_revenue_est`\n  - `n_income` / `profit_dedt` 同法处理\n  - 可信度=中高\n- **下半年情景外推法**（中报基准，强季节性公司必须用）：\n  - 取过去两年 H2 营收占全年比例均值，给出悲观/基准/乐观三情景\n  - `revenue_full_year_est = H1_revenue / H1_share_avg`\n  - 可信度=中\n- **同比延续法**（中报基准，弱季节性公司可用）：\n  - `revenue_full_year_est = H1_revenue × (last_year_full_revenue / last_year_H1_revenue)`\n  - 可信度=中\n\n**禁止**：H1 直接乘 2、Q1-Q3 直接乘 4/3。任何机械年化**强制降到\"低\"可信度**并在输出中注明。\n\n**触线判定**（口径：`worst_profit = min(n_income_est, profit_dedt_est)`）：\n- 高风险：`worst_profit < 0` 且 `revenue_est < 板块阈值`\n- 中风险：`worst_profit < 0` 但营收达标；或营收逼近阈值（< 阈值 × 1.2）\n- 低风险：上述均不满足\n\n> **系数说明**：R1 中风险的 1.2 是预测项预警 buffer（预测本身有误差，需窄 buffer）；R4 高风险的 1.5 是双年联动判定 buffer（两年都亏且营收接近阈值才是真退市信号，需宽 buffer）。两个系数不同是有意为之，**不要错误地统一**。\n\n### R2 年末净资产红线\n\n**目标**：判断年末归母股东权益是否可能转负。\n\n**方法**：\n1. 取最新一期 `balancesheet.total_hldr_eqy_exc_min_int`（最新中报或三季报），记为 `current_eq`。\n2. 计算 `eq_year_end_est = current_eq + 剩余季度净利润预测 − 当前年度已实施现金分红总额`。\n   - 剩余季度净利润：中报基准用 R1 的 H2 预测，三季报基准用 R1 的 Q4 预测。\n   - 已实施分红总额：见 R3 的去重 + 量纲公式 `cash_div_tax / 10 × total_share`。\n\n**触线判定**（统一相对阈值，单位：元）：\n- 高风险：`current_eq < 0` 或 `eq_year_end_est < 0`\n- 中风险：`0 ≤ eq_year_end_est < 1e8`（1 亿元）\n- 低风险：`eq_year_end_est ≥ 1e8`\n\n**注意**：商誉减值、长期股权投资减值在 Q3/Q4 集中确认，应在备注提示\"若计提大额减值，净资产可能进一步下行\"，但**不得在没有公告依据时擅自减值**。\n\n### R3 分红达标前瞻\n\n**目标**：判断\"近三年累计现金分红 < 年均净利润 30% 且 < 板块累计阈值\"是否会在下一次年度考核时同时满足（监管原文：两条件**同时**触发才警示）。\n\n**单笔分红量纲公式**（**必须用此公式，不要用 `cash_div_tax × base_share`**）：\n\n```\ncash_dividend_total = cash_div_tax / 10 × total_share\n```\n\n其中 `cash_div_tax` 来自 `dividend`（每 10 股派现金额，含税），`total_share` 来自 `daily_basic.total_share`（最新总股本，单位万股 → 需 ×1e4 换成股）或 `stock_basic`。tushare `dividend.base_share` 字段对很多公司为 None，**禁止直接使用**。\n\n**方法**：\n1. 用 `dividend` 拉取该 `ts_code` 近五年记录，按 `(end_date, ann_date, cash_div_tax)` 三元组**强制去重**——同一笔分红 tushare 会返回\"预案/股东大会通过/实施\"3-4 行。\n2. 折算系数（按 `div_proc` 状态）：`实施=1.0` / `股东大会通过=0.7` / `预案=0.5`；同一 `end_date` 取系数最高那条。\n3. 用 `income` 拉取近三年完整年度归母净利润（period=YYYY1231）。\n4. 计算考核窗口 = `[当前年-2, 当前年]`，即\"过去两年已落地分红 + 本年度预计分红\"。\n5. 本年度预计分红：\n   - 若 `dividend` 已查到本年度记录：按上面折算系数计入。\n   - 否则用\"过去两年平均分红率\"× R1 预测全年净利润（基准情景）做估算，可信度降一档。\n6. 与年均净利润比较：\n   - 条件 A：`cumulative_div_3y < 30% × avg_n_income_3y`\n   - 条件 B：`cumulative_div_3y < 板块累计阈值`\n7. 创业板 / 科创板若研发投入占比满足豁免条件，备注提示\"研发达标可能豁免\"。\n\n**触线判定**：\n- 高风险：A 和 B 同时满足 **且** 过去三年至少一年净利润为正（即\"盈利年份未达标\"——监管以盈利年为基准）。\n- 中风险：仅一个条件满足；或本年度分红尚未公告。\n- 低风险：累计分红已稳定达标；或过去三年累计净利润 ≤ 0（无分红基础，按 R1 联动）。\n\n**禁止**：本年度尚未公告分红时，不得断言\"必然不达标\"，只能给出概率。\n\n### R4 连续亏损 / 扣非亏损链\n\n**目标**：判断是否会触发\"连续两年扣非前后净利润孰低者为负\" → *ST。\n\n**口径关键**：监管原文是**连续两年**（不是三年），且 *ST 财务类强制退市的法定条件是 **\"亏损 + 营收<板块阈值\" 必须同时满足**——只看亏损链会系统性高估风险（实证：闻泰科技 2024 年亏损但营收超千亿，不会被 *ST）。\n\n**方法**：\n1. 取过去一年完整年报的 `n_income`、`fina_indicator.profit_dedt`，记 `worst_last = min(n_income, profit_dedt)`、`revenue_last`。\n2. 用 R1 已经预测好的 `worst_profit_est` 和 `revenue_full_year_est`（基准情景），对应当前年度。\n3. 检查两年的 `worst < 0` 组合，**并叠加营收联动条件**。\n\n**触线判定**（双条件，亏损链 + 营收联动）：\n- 高风险：`worst_last < 0` 且 `worst_profit_est < 0`，**且**（R1 当前年命中高风险 **或** `revenue_full_year_est < 板块阈值 × 1.5`）——即两年均亏 + 营收处于退市风险区间。\n- 中风险：(a) 连续两年均亏但营收远超阈值（≥ 阈值 × 1.5）——亏损链成立但不会触发财务类 *ST，仍可能因经营恶化转 ST；(b) 仅 `worst_profit_est < 0`（当前年预测亏损，去年盈利，未形成连续）；(c) 仅 `worst_last < 0` 但当前年预测为正且接近 0（< 板块阈值 × 0.5）。\n- 低风险：`worst_last ≥ 0` 且 `worst_profit_est ≥ 0`。\n\n**为什么要叠加营收**：A 股 *ST 财务类强制退市的法定条件是\"扣非前后净利润孰低 < 0 **且** 营收 < 板块阈值\"，二者必须同时满足。仅亏损不达营收阈值的公司（如大型周期股短期亏损）会被市场和监管视作\"周期性亏损\"而非\"持续经营存疑\"。\n\n## 第五步：三项事实/临界证据面（不参与预测可信度）\n\n### E1 审计意见（事实）\n\n调用 `fina_audit`，取最近 2 个完整年报：\n- 高风险：最新年报 `audit_result` 含\"无法表示意见\"或\"否定意见\"；**或单次出现\"保留意见\"**（实证支持：上交所近年规范类 *ST 案例多为单次保留即触发）。\n- 中风险：连续两年同一负面结论但本期已修正；或带强调事项段的无保留意见涉及持续经营。\n- 低风险：标准无保留意见。\n\n**禁止预测下一份审计意见**——审计是事后行为。\n\n**akshare 兜底缺失时的人工核查路径**（`fina_audit` 无 akshare 替代接口，必须给出可点击 URL）：\n\n| 来源 | URL 模板 | 查询方式 |\n|------|---------|---------|\n| 巨潮资讯网（公告原文，权威） | `http://www.cninfo.com.cn/new/disclosure/stock?orgId=&stockCode={code6}` | 进入页面后筛选\"定期报告 → 年度报告\"，下载 PDF 在第十节\"财务报告 → 审计报告\"查 `审计意见类型` |\n| 巨潮高级搜索（按关键词） | `http://www.cninfo.com.cn/new/fulltextSearch/full?searchkey={code6}+审计报告&sdate=&edate=&isfulltext=false&sortName=time&sortType=desc` | 直接命中含\"审计报告\"标题的公告 |\n| 上交所信息披露 | `http://www.sse.com.cn/disclosure/listedinfo/regular/?stockCode={code6}` | 仅限 60xxxx / 688xxx |\n| 深交所信息披露 | `http://www.szse.cn/disclosure/listed/notice/index.html?stock={code6}` | 仅限 00xxxx / 30xxxx |\n\n其中 `{code6}` 为 6 位股票代码（去掉 `.SH` / `.SZ` 后缀）。**强制要求**：当 `fina_audit` 返回空时，输出报告的\"备注\"必须列出上面巨潮的两条 URL 之一，便于用户人工核查；不得只写一句\"审计意见数据缺失\"了事。\n\n### E2 监管处罚（事实，双窗口：上一财年 + 过去 12 个月）\n\n**这是本 skill 的关键证据面。**\n\n**窗口规则（双窗口策略，单次抓取在内存中切片）**：\n\n- 窗口 A — `[当前年-1 的 1 月 1 日, 当前年-1 的 12 月 31 日]`（上一个完整财年）：用于 reason_normalized 单条评级。\n- 窗口 B — `[分析日 - 365 天, 分析日]`（过去 12 个月滚动）：用于**频次增强规则**。\n- 若分析时点已经在 5 月之后且最新年报已披露完毕，窗口 A 可改为 `[最新年报 end_date - 365 天, 最新年报 end_date]`。\n\n**调用方式（推荐：单次拉全量 + 内存切片）**：\n\n```bash\npython agent/src/skills/ashare-pre-st-filter/scripts/fetch_sina_penalties.py \\\n  --ts-code 000729.SZ --stock-name 燕京啤酒 --no-filter\n```\n\n返回页面全量记录后，由 LLM 在内存中按窗口 A、窗口 B 切两份。也可以用 `--start-date / --end-date` 单独抓取，但同一次分析**避免发起两次 HTTP**。\n\n输出 JSON 列表，字段：`ann_date / event_type / title / reason / reason_normalized / content / issuer / issuer_normalized / subject_normalized / target_relevance / e2_countable / source_url`。\n\n**相关性铁律**：调用脚本时必须传入 `--stock-name {股票简称}`（来自 `stock_basic.name`），必要时用 `--alias` 补充曾用名/简称。新浪页面可能收录“某个人证券账户交易列表里出现目标股票”的记录，这类记录只说明目标股票被交易过，**不是上市公司/股东/董监高处罚**。脚本会将其标为 `target_relevance=security_mention_only` 且 `e2_countable=false`，E2 频次统计必须排除。\n\n**`subject_normalized` 字段**（用于频次权重折算）：\n- `company` — 处罚主体是公司本身（默认；不含个人身份关键词时归此类）\n- `shareholder` — 控股股东 / 实控人 / 5% 以上大股东\n- `officer` — 董事 / 监事 / 高管（董事长、总经理、董秘、财务总监等）\n\n**风险等级判定**：\n\n| 命中 `reason_normalized` | 等级贡献 |\n|---|---|\n| 财务造假 / 虚假陈述 / 信息披露违规 | 高（强烈预警） |\n| 违规担保 / 占用资金 | 高（直接触及 ST 红线） |\n| 内幕交易 / 市场操纵 / 违规减持 | 中 |\n| 其他/unknown | 低（仅作背景） |\n\n**频次增强规则（治理质量预警，窗口 B）**：\n\n监管函本身反映公司治理与内控质量，密集出现是\"规范类 ST\"（保留意见、内控非标、信披重大缺陷）的强领先指标。但**处罚主体不同，治理含义不同**：股东减持违规、董监高短线交易反映的是个人合规问题，不应等同于\"公司治理失序\"。\n\n**主体加权计数**（按 `subject_normalized` 折算后再查表）：\n\n```\n加权条数 = Σ 单条权重\n  其中：subject_normalized == \"company\"     → 权重 1.0\n        subject_normalized == \"officer\"     → 权重 0.5\n        subject_normalized == \"shareholder\" → 权重 0.5\n```\n\n| 过去 12 个月监管函/问询/警示函**加权条数** | 频次等级 |\n|---|---|\n| ≥ 5.0 | **极高** |\n| 3.0 - 4.5 | 高 |\n| 2.0 - 2.5 | 中 |\n| < 2.0 | 低 |\n\n**判定来源**：仅当 `e2_countable=true` 时，脚本输出的 `event_type ∈ {警示, 问讯, 监管关注, 监管函}` 或 `issuer_normalized ∈ {上交所, 深交所, 北交所, 证监会, 地方证监局}` 才计入条数；条数按 `subject_normalized` 折算后再查表。`target_relevance=security_mention_only` 的记录必须排除。\n\n**输出要求**：必须同时给出\"原始条数\"和\"加权条数\"两个数字，便于用户审阅折算逻辑。例如：`窗口 B 命中 6 条（公司 2 条 + 股东 3 条 + 高管 1 条 → 加权 4.0 条），频次等级：高`。\n\n**E2 综合等级合成规则**（解决单条评级与频次叠加的问题）：\n\n```\nE2_单条等级 = 窗口 A 内所有 reason_normalized 单条等级的最大值\nE2_频次等级 = 窗口 B 频次表查得\nE2_综合等级 = max(E2_单条等级, E2_频次等级)\n```\n\n**叠加加成**：若同时满足 `E2_频次等级 ≥ 高` 且 `E2_单条等级 ≥ 高`（含财务造假/虚假陈述/违规担保/占用资金）→ **直升极高**。\n\n**为什么要这条规则**：纯量化红线只能捕捉\"财务类 ST\"，无法预警\"规范类 ST\"。频次规则把\"治理失序\"作为前瞻信号纳入。\n\n**注意**：处罚证据**只抬升风险等级，不影响预测可信度**——这是事实证据，不是预测项。\n\n### E3 交易类临界预警（事实）\n\n调用 `daily`（近 30 个交易日，**必须 `adjust=''` 不复权**）和 `daily_basic`（最新一日，单位：万元）：\n\n**1 元退市预警**（用 `daily.close`，**不复权**）：\n- 高风险：近 20 个交易日中收盘价 < 1 元的天数 ≥ 10\n- 中风险：≥ 1 但 < 10\n- 低风险：0 天\n\n**市值退市预警**（用 `daily_basic.total_mv`，单位万元 → ×1e4 换算成元 → /1e8 换算成亿元）：\n\n| 板块 | 高风险阈值 | 中风险阈值 |\n|---|---|---|\n| 主板 | < 5 亿 | < 5 × 1.5 = 7.5 亿 |\n| 创业板 / 科创板 | < 3 亿 | < 3 × 1.5 = 4.5 亿 |\n\n## 第六步：双轴输出模板\n\n每次分析必须按下面模板输出。**风险等级 + 可信度两个维度都要给**。\n\n```markdown\n## ST 风险预测：{name}（{ts_code}）\n\n### 当前状态\n- 是否已 ST/*ST：{是 / 否}\n- 板块：{主板 / 创业板 / 科创板}\n- 基准预测时点：{forecast / express / 三季报（period） / 中报（period）}\n\n### 量化红线预测（双轴）\n\n| 红线 | 基准情景结论 | 风险等级 | 可信度 | 主要证据 |\n|------|-------------|---------|-------|---------|\n| R1 营收+净利润 | 全年营收预测 X 亿，净利润 Y 亿 | 高/中/低 | 高/中高/中/低 | forecast/三季报/... |\n| R2 年末净资产 | 当前 X 亿，年末预计 Y 亿 | 高/中/低 | 高/中高/中/低 | balancesheet + R1 |\n| R3 分红达标 | 三年累计预计 X，对应阈值 Y | 高/中/低 | 中/低 | dividend + income |\n| R4 连续亏损链 | 过去两年 + 当前年是否均亏 | 高/中/低 | 同 R1 | income + fina_indicator |\n\n### 事实证据面（不参与预测可信度）\n\n| 证据 | 结论 | 影响 |\n|------|------|------|\n| E1 审计意见 | 最新结论 | 抬升/无影响 |\n| E2 监管处罚（窗口 A 上一财年 / 窗口 B 过去 12 个月） | A 命中 Na 条（最高单条等级：…），B 原始 Nb_raw 条 / 加权 Nb_w 条（公司 a + 股东 b + 高管 c → a×1.0+b×0.5+c×0.5），频次等级：…，E2_综合等级：… | 抬升/无影响 |\n| E3 交易类临界 | 收盘价/市值情况 | 抬升/无影响 |\n\n### 综合结论\n- **下一财年被 ST/*ST 风险等级**：{极高 / 高 / 中 / 低}\n- **预测综合可信度**：{高 / 中高 / 中 / 低}\n- **关键风险点**（最多 3 条）：...\n- **缓解信号**（如有）：...\n\n### 备注\n- 数据时点：{所用最新报告期}\n- 已忽略的不可预测项：财务造假、未来审计意见\n- 季节性提醒（如适用）：...\n```\n\n## 禁止事项\n\n1. 不预测财务造假（事前不可知）。\n2. 不预测下一份审计意见（事后才出）。\n3. 不在没有公告依据时擅自计提减值。\n4. 不混用板块阈值（主板 vs 创业板/科创板的营收/市值/分红阈值不同）。\n5. 不把机械年化（H1×2、Q1Q3×4/3）伪装成\"高可信度\"。\n6. 不在港股 / 美股 / 加密 / **北交所**（`8xxxxx.BJ`，监管规则与本 skill 阈值不一致）上启用本 skill。\n7. 不把\"违规处罚记录\"计入预测可信度（仅抬升风险等级）。\n8. 不在 R3 分红计算中使用 `cash_div_tax × base_share`（base_share 经常为 None，会得 0）；必须用 `cash_div_tax / 10 × total_share`，且按 `(end_date, ann_date, cash_div_tax)` 三元组去重。\n9. 不在 R1 触线判定中只用 `n_income`；必须用 `min(n_income, profit_dedt)`，否则会漏掉造壳公司。\n10. 不把 R4 写成\"连续三年\"；监管原文是\"连续两年\"。**且 R4 高风险必须叠加营收联动条件**——仅\"连续两年亏损\"不构成 *ST 财务类强制退市，必须同时满足\"营收 < 板块阈值 × 1.5\"或 R1 已命中高风险，否则只能给中风险。\n11. 不把 E2 监管处罚\"按主体一刀切\"计数——必须用 `subject_normalized` 加权（公司 ×1.0 / 股东 ×0.5 / 董监高 ×0.5），否则股东动荡的公司会被系统性高估。\n\n## 依赖的 tushare 接口清单\n\n| 用途 | 接口 | 备注 |\n|------|------|------|\n| 当前 ST 状态 | `stock_st` | 3000 积分；不可用时回退 `namechange` |\n| 历史改名 | `namechange` | 免费 |\n| 板块判断 | `stock_basic` | 免费 |\n| 利润表 | `income` | 2000 积分，多 period 拉取 |\n| 资产负债表 | `balancesheet` | 2000 积分 |\n| 财务指标（扣非等） | `fina_indicator` | 2000 积分 |\n| 业绩预告 | `forecast` | 2000 积分 |\n| 业绩快报 | `express` | 2000 积分 |\n| 审计意见 | `fina_audit` | 500 积分 |\n| 分红 | `dividend` | 2000 积分 |\n| 日线 | `daily` | 免费 |\n| 每日指标（市值） | `daily_basic` | 免费 |\n| 财报披露日期 | `disclosure_date` | 500 积分 |\n\n## 自带脚本\n\n- [scripts/fetch_sina_penalties.py](scripts/fetch_sina_penalties.py) — 抓取新浪财经 vGP_GetOutOfLine 处罚页，stdlib 实现，无外部依赖；reason / issuer 标准化。\n\n调用方式：\n\n```bash\n# 单次拉全量（推荐：本 skill 双窗口策略由 LLM 在内存中切片）\npython agent/src/skills/ashare-pre-st-filter/scripts/fetch_sina_penalties.py \\\n  --ts-code 000729.SZ --stock-name 燕京啤酒 --no-filter\n\n# 或指定单一窗口\npython agent/src/skills/ashare-pre-st-filter/scripts/fetch_sina_penalties.py \\\n  --ts-code 000729.SZ --stock-name 燕京啤酒 --start-date 2025-01-01 --end-date 2025-12-31\n```\n\n正常情况下输出 JSON 到 stdout；网络/解析失败或参数非法时返回 `{\"source\": \"unavailable\", \"error\": \"...\"}` 到 stdout 并以非零退出码结束（不抛 traceback），便于 LLM 兜底处理。\n\n## 端到端调用伪代码\n\n用于减少 LLM 调用顺序漂移，按下列骨架组织：\n\n```python\nimport os, json, subprocess\nimport tushare as ts\n\nts_code = '000729.SZ'\npro = ts.pro_api(os.environ['TUSHARE_TOKEN'])\n\n# === Step 0: M0 当前状态 ===\nbasic = pro.stock_basic(ts_code=ts_code, fields='ts_code,name,market').to_dict('records')[0]\nst_hit = pro.stock_st()  # 失败则回退 namechange\nname_chg = pro.namechange(ts_code=ts_code).sort_values('start_date', ascending=False)\n\n# === Step 1: 板块判断 ===\nboard = '科创板' if ts_code.startswith('688') else '创业板' if ts_code.startswith('30') else '主板'\nthreshold_revenue = 1e8 if board != '主板' else 3e8\nthreshold_mv = 3e8 if board != '主板' else 5e8\n\n# === Step 2: 拉财务（最新 5 期 + 过去 4 年年报） ===\nincome = pro.income(ts_code=ts_code).sort_values('end_date', ascending=False).drop_duplicates('end_date')\nbalance = pro.balancesheet(ts_code=ts_code).sort_values('end_date', ascending=False).drop_duplicates('end_date')\nfina_ind = pro.fina_indicator(ts_code=ts_code).sort_values('end_date', ascending=False).drop_duplicates('end_date')\nforecast = pro.forecast(ts_code=ts_code).sort_values('ann_date', ascending=False)\nexpress = pro.express(ts_code=ts_code).sort_values('ann_date', ascending=False)\n\n# === Step 3: R1-R4 计算（按各章节口径，注意 min(n_income, profit_dedt)） ===\n# ... 略\n\n# === Step 4: E1 审计 ===\naudit = pro.fina_audit(ts_code=ts_code).sort_values('end_date', ascending=False).head(2)\n\n# === Step 5: E2 监管处罚（双窗口 + 主体加权）===\nfrom datetime import date, timedelta\nresult = subprocess.run([\n    'python', 'agent/src/skills/ashare-pre-st-filter/scripts/fetch_sina_penalties.py',\n    '--ts-code', ts_code, '--stock-name', basic['name'], '--no-filter',\n], capture_output=True, text=True)\npenalties = json.loads(result.stdout).get('records', [])\n\n# 在内存中切双窗口（避免两次 HTTP）\nthis_year = date.today().year\nwin_a_start, win_a_end = f'{this_year-1}-01-01', f'{this_year-1}-12-31'\nwin_b_start = (date.today() - timedelta(days=365)).isoformat()\nwin_b_end   = date.today().isoformat()\n\ndef _in(rec, s, e):\n    d = rec.get('ann_date') or ''\n    return bool(d) and s <= d <= e\n\nwin_a = [r for r in penalties if _in(r, win_a_start, win_a_end)]\nwin_b = [r for r in penalties if _in(r, win_b_start, win_b_end)]\n\n# 窗口 A：单条等级取最高\nREASON_LEVEL = {\n    '财务造假': 3, '虚假陈述': 3, '信息披露违规': 3,\n    '违规担保': 3, '占用资金': 3,\n    '内幕交易': 2, '市场操纵': 2, '违规减持': 2,\n}\nlevels_a = [REASON_LEVEL.get(r['reason_normalized'], 1) for r in win_a]\ne2_single = max(levels_a) if levels_a else 0\n\n# 窗口 B：原始条数 + 主体加权条数\nFREQ_EVENT_TYPES = {'警示', '问讯', '监管关注', '监管函', '警示函'}\nFREQ_ISSUERS = {'上交所', '深交所', '北交所', '证监会', '地方证监局'}\nSUBJECT_WEIGHT = {'company': 1.0, 'shareholder': 0.5, 'officer': 0.5}\n\nfreq_pool = [r for r in win_b\n             if r.get('e2_countable', True)\n             and (r['event_type'] in FREQ_EVENT_TYPES\n                  or r['issuer_normalized'] in FREQ_ISSUERS)]\nnb_raw = len(freq_pool)\nnb_weighted = round(sum(SUBJECT_WEIGHT.get(r['subject_normalized'], 1.0)\n                        for r in freq_pool), 1)\n\n# 频次等级（基于加权条数）\nif nb_weighted >= 5.0:    e2_freq = 4   # 极高\nelif nb_weighted >= 3.0:  e2_freq = 3   # 高\nelif nb_weighted >= 2.0:  e2_freq = 2   # 中\nelse:                     e2_freq = 1   # 低\n\ne2_overall = max(e2_single, e2_freq)\n# 叠加加成：频次高 + 单条高同时命中 → 直升极高\nif e2_freq >= 3 and e2_single >= 3:\n    e2_overall = 4\n\n# === Step 6: E3 交易临界 ===\ndaily = pro.daily(ts_code=ts_code).sort_values('trade_date', ascending=False).head(30)\ndaily_basic = pro.daily_basic(ts_code=ts_code).sort_values('trade_date', ascending=False).head(1).iloc[0]\ntotal_mv_yi = daily_basic['total_mv'] * 1e4 / 1e8  # 万元 → 亿元\n\n# === Step 7: 双轴合成输出 ===\n# 风险等级 = max(R1, R2, R3, R4, E1, E2_综合, E3)\n# 可信度 = 加权平均(R1, R2, R3, R4 各项可信度)，akshare 兜底项降一档\n```\n"
   },
@@ -575,9 +576,9 @@
   {
     "name": "asset-allocation",
     "description": "Asset allocation theory and optimizer usage — MPT / Black-Litterman / risk budgeting / all-weather strategy, including guides for 4 optimizers and rebalancing rules.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/asset-allocation/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/asset-allocation/SKILL.md",
     "uri": "viking://resources/skills/asset-allocation",
     "scope": "user",
     "files": [
@@ -779,9 +780,9 @@
   {
     "name": "backtest-diagnose",
     "description": "Diagnose failed or underperforming backtests, locate the root cause, and fix the issue",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/backtest-diagnose/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/backtest-diagnose/SKILL.md",
     "uri": "viking://resources/skills/backtest-diagnose",
     "scope": "user",
     "files": [
@@ -974,9 +975,9 @@
   {
     "name": "behavioral-finance",
     "description": "Behavioral finance applications: theories of overreaction and underreaction, behavioral explanations for momentum and reversal, investor sentiment cycles, cognitive-bias checklists, and debiasing quantitative strategies.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/behavioral-finance/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/behavioral-finance/SKILL.md",
     "uri": "viking://resources/skills/behavioral-finance",
     "scope": "user",
     "files": [
@@ -1040,9 +1041,9 @@
   {
     "name": "bottleneck-hunter",
     "description": "Supply-chain bottleneck arbitrage. Given a super-trend (AI infra, energy transition, defense, semiconductor reshoring, space economy), decompose its physical supply chain down to Layer 2/3 choke points (optics, lasers, InP/SOI substrates, IC substrates, probe cards, specialty fiberglass...) and surface under-the-radar listed companies sitting on each bottleneck. Scores each link on 6 scarcity criteria, applies mandatory valuation gates (PS/PE/safety-margin) via the financial_rigor tool, and Munger-style reverse-validates. Outputs a ranked bottleneck opportunity board. Use when the user wants hidden beneficiaries of a structural trend rather than already-priced leaders.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/bottleneck-hunter/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/bottleneck-hunter/SKILL.md",
     "uri": "viking://resources/skills/bottleneck-hunter",
     "scope": "user",
     "files": [
@@ -1135,9 +1136,9 @@
   {
     "name": "candlestick",
     "description": "Candlestick pattern recognition engine, pure pandas vectorized implementation of 15 classic candlestick patterns (5 single-candle + 5 double-candle + 4 triple-candle + 1 trend confirmation), generating a composite signal from bullish/bearish pattern scores.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/candlestick/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/candlestick/SKILL.md",
     "uri": "viking://resources/skills/candlestick",
     "scope": "user",
     "files": [
@@ -1202,9 +1203,9 @@
   {
     "name": "ccxt",
     "description": "CCXT unified crypto exchange library (100+ exchanges). Free public market data. Fallback when OKX is unavailable.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/ccxt/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/ccxt/SKILL.md",
     "uri": "viking://resources/skills/ccxt",
     "scope": "user",
     "files": [
@@ -1215,9 +1216,9 @@
   {
     "name": "chanlun",
     "description": "基于缠论（缠中说禅）的形态识别引擎，使用czsc库自动检测K线分型、笔、中枢，并生成一买/一卖/二买/二卖/三买/三卖等买卖点信号。支持多周期分析和形态分类（3/5/7/9/11笔形态）。",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/chanlun/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/chanlun/SKILL.md",
     "uri": "viking://resources/skills/chanlun",
     "scope": "user",
     "files": [
@@ -1559,9 +1560,9 @@
   {
     "name": "commodity-analysis",
     "description": "Commodity analysis (oil supply-demand balance / gold pricing / copper as an economic predictor / inventory cycles / futures premium-discount structure / seasonality), generating directional commodity signals.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/commodity-analysis/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/commodity-analysis/SKILL.md",
     "uri": "viking://resources/skills/commodity-analysis",
     "scope": "user",
     "files": [
@@ -1684,9 +1685,9 @@
   {
     "name": "convertible-bond",
     "description": "A股可转债分析——转股/纯债/期权三维估值、下修/强赎/回售博弈、双低策略与转债轮动选债框架",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/convertible-bond/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/convertible-bond/SKILL.md",
     "uri": "viking://resources/skills/convertible-bond",
     "scope": "user",
     "files": [
@@ -1697,9 +1698,9 @@
   {
     "name": "corporate-events",
     "description": "公司事件驱动分析：并购套利价差计算、大股东增减持信号、股权激励解读、定增配股影响评估、A股ST/退市预警",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/corporate-events/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/corporate-events/SKILL.md",
     "uri": "viking://resources/skills/corporate-events",
     "scope": "user",
     "files": [
@@ -1710,9 +1711,9 @@
   {
     "name": "correlation-analysis",
     "description": "Correlation and cointegration analysis — co-movement discovery, deep return-correlation analysis, sector clustering, realized correlation, Engle-Granger / Johansen cointegration, half-life, Kalman dynamic hedge ratio, cross-market linkage analysis, and pair-trading signal generation",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/correlation-analysis/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/correlation-analysis/SKILL.md",
     "uri": "viking://resources/skills/correlation-analysis",
     "scope": "user",
     "files": [
@@ -1842,9 +1843,9 @@
   {
     "name": "credit-analysis",
     "description": "固收与信用分析：信用债评级、利差分析、违约风险评估、城投债研究、可转债定价与策略。",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/credit-analysis/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/credit-analysis/SKILL.md",
     "uri": "viking://resources/skills/credit-analysis",
     "scope": "user",
     "files": [
@@ -1894,9 +1895,9 @@
   {
     "name": "cross-market-strategy",
     "description": "Write signal_engine.py for portfolios spanning multiple markets (A-shares + crypto, equity + forex, etc.)",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/cross-market-strategy/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/cross-market-strategy/SKILL.md",
     "uri": "viking://resources/skills/cross-market-strategy",
     "scope": "user",
     "files": [
@@ -1908,9 +1909,9 @@
   {
     "name": "crypto-derivatives",
     "description": "Crypto-derivatives strategies — perpetual funding-rate arbitrage, futures term-structure contango/backwardation trading, and option volatility-smile / Greeks analysis.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/crypto-derivatives/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/crypto-derivatives/SKILL.md",
     "uri": "viking://resources/skills/crypto-derivatives",
     "scope": "user",
     "files": [
@@ -1950,9 +1951,9 @@
   {
     "name": "data-routing",
     "description": "The single ROUTER for every data need. Load this skill BEFORE any backtest, data-fetch, or research task to pick the best available source/tool, honour auth (env) requirements, and avoid ban-risk providers.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/data-routing/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/data-routing/SKILL.md",
     "uri": "viking://resources/skills/data-routing",
     "scope": "user",
     "files": [
@@ -2007,9 +2008,9 @@
   {
     "name": "deep-company-series",
     "description": "Write a publication-grade 8-part deep-dive series on a single company (~120k words total): cognitive reset / moat / profit engine / hidden assets / era variable (e.g. AI) / financials Buffett-style / management / valuation+redlines. The core IP is NOT writing but REVISING — a strict fact-check checklist catches pseudo-precision (probability-weighted expectations, third-party MAU discrepancies, linear extrapolation), absolute language, and cross-article number inconsistencies that most finance long-forms violate. Each piece stands alone but shares one valuation/management/price framework. Use when the user wants textbook-level depth on one company for public publishing (a single research report or earnings note is NOT this — use investment-research / earnings-review instead).",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/deep-company-series/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/deep-company-series/SKILL.md",
     "uri": "viking://resources/skills/deep-company-series",
     "scope": "user",
     "files": [
@@ -2050,9 +2051,9 @@
   {
     "name": "defi-yield",
     "description": "DeFi yield analysis and optimization — lending rates, LP yields, staking returns, yield farming strategies, risk-adjusted yield comparison, and protocol-level sustainability assessment.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/defi-yield/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/defi-yield/SKILL.md",
     "uri": "viking://resources/skills/defi-yield",
     "scope": "user",
     "files": [
@@ -2262,9 +2263,9 @@
   {
     "name": "dividend-analysis",
     "description": "Dividend stock analysis for income, dividend-growth, and shareholder-return strategies, including yield quality, payout sustainability, ex-dividend mechanics, and yield-trap checks.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/dividend-analysis/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/dividend-analysis/SKILL.md",
     "uri": "viking://resources/skills/dividend-analysis",
     "scope": "user",
     "files": [
@@ -2275,9 +2276,9 @@
   {
     "name": "doc-reader",
     "description": "Read any common document/data file — PDF, Word (.docx), Excel (.xlsx/.xls), PowerPoint (.pptx), images (OCR), CSV/TSV, plain text, JSON/YAML/TOML, HTML/XML, and most source-code files. Use the `read_document` tool.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/doc-reader/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/doc-reader/SKILL.md",
     "uri": "viking://resources/skills/doc-reader",
     "scope": "user",
     "files": [
@@ -2574,9 +2575,9 @@
   {
     "name": "earnings-forecast",
     "description": "盈利预测与一致预期分析（自上而下/自下而上预测法/SUE/PEAD/分析师预期修正），捕捉业绩超预期交易机会。",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/earnings-forecast/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/earnings-forecast/SKILL.md",
     "uri": "viking://resources/skills/earnings-forecast",
     "scope": "user",
     "files": [
@@ -2587,9 +2588,9 @@
   {
     "name": "earnings-revision",
     "description": "Earnings estimate revisions, guidance analysis, and post-earnings drift (PEAD) — track analyst consensus changes, earnings surprise patterns, and management guidance shifts for US/HK equities.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/earnings-revision/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/earnings-revision/SKILL.md",
     "uri": "viking://resources/skills/earnings-revision",
     "scope": "user",
     "files": [
@@ -2600,9 +2601,9 @@
   {
     "name": "eastmoney",
     "description": "东方财富（Eastmoney）免费免鉴权数据接口，覆盖资金流向、龙虎榜、融资融券、大宗交易、股东户数、限售解禁、行业概念板块、券商研报、财经新闻、A股/港股三大报表+主要指标、全市场选股与代码搜索；美股财报由 get_financial_statements 转 SEC EDGAR。东财请求经共享 IP 限速层节流（东财按源 IP 限流并临时封禁突发请求），通过 Vibe-Trading 工具直接调用，无需 token。",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/eastmoney/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/eastmoney/SKILL.md",
     "uri": "viking://resources/skills/eastmoney",
     "scope": "user",
     "files": [
@@ -2629,9 +2630,9 @@
   {
     "name": "edgar-sec-filings",
     "description": "SEC EDGAR filing analysis — 10-K, 10-Q, 8-K, proxy statements, insider Form 4. Extract key financials, risk factors, management discussion, and generate investment signals from US public company filings.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/edgar-sec-filings/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/edgar-sec-filings/SKILL.md",
     "uri": "viking://resources/skills/edgar-sec-filings",
     "scope": "user",
     "files": [
@@ -2675,9 +2676,9 @@
   {
     "name": "elliott-wave",
     "description": "Elliott Wave Theory signal engine. Detects swing points through Zigzag, matches 5-wave impulse and 3-wave corrective structures, validates them with Fibonacci wave relationships, and generates trend-top / correction-complete signals. Pure in-house pandas implementation.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/elliott-wave/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/elliott-wave/SKILL.md",
     "uri": "viking://resources/skills/elliott-wave",
     "scope": "user",
     "files": [
@@ -2771,9 +2772,9 @@
   {
     "name": "etf-analysis",
     "description": "ETF分析：产品筛选、费率对比、跟踪误差、流动性评估、策略应用与中国市场ETF量化配置框架。",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/etf-analysis/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/etf-analysis/SKILL.md",
     "uri": "viking://resources/skills/etf-analysis",
     "scope": "user",
     "files": [
@@ -2801,9 +2802,9 @@
   {
     "name": "event-driven",
     "description": "Event-driven strategy based on sentiment-scored signals from news, announcements, and macro events. The LLM acts as the NLP engine, and event data follows a CSV schema.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/event-driven/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/event-driven/SKILL.md",
     "uri": "viking://resources/skills/event-driven",
     "scope": "user",
     "files": [
@@ -3055,9 +3056,9 @@
   {
     "name": "execution-model",
     "description": "Trade execution modeling (backtest only) — slippage formulas (linear / square-root impact), VWAP/TWAP execution logic, market-impact cost estimation, and execution-assumption configuration.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/execution-model/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/execution-model/SKILL.md",
     "uri": "viking://resources/skills/execution-model",
     "scope": "user",
     "files": [
@@ -3081,9 +3082,9 @@
   {
     "name": "factor-research",
     "description": "Factor research framework with IC/IR analysis, quantile backtesting, and factor combination. Suitable for cross-sectional factor evaluation across multiple instruments.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/factor-research/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/factor-research/SKILL.md",
     "uri": "viking://resources/skills/factor-research",
     "scope": "user",
     "files": [
@@ -3302,9 +3303,9 @@
   {
     "name": "financial-statement",
     "description": "财报三表深度解读——三表勾稽关系、盈利质量(应计vs现金流)分析、杜邦分解、10+财务造假红旗指标",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/financial-statement/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/financial-statement/SKILL.md",
     "uri": "viking://resources/skills/financial-statement",
     "scope": "user",
     "files": [
@@ -3608,9 +3609,9 @@
   {
     "name": "fund-analysis",
     "description": "基金分析与筛选：晨星评级/夏普比率/信息比率、Sharpe风格箱分析、风格漂移检测、基金经理评价、FOF组合构建、ETF选择",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/fund-analysis/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/fund-analysis/SKILL.md",
     "uri": "viking://resources/skills/fund-analysis",
     "scope": "user",
     "files": [
@@ -3640,23 +3641,24 @@
   {
     "name": "fundamental-filter",
     "description": "Fundamental factor screening — filter stocks by PE/PB/ROE, financial statement fields, and other metrics for value or growth selection. Supports A-shares (via tushare extra_fields or fundamental_fields) and HK/US stocks (via yfinance Ticker info).",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/fundamental-filter/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/fundamental-filter/SKILL.md",
     "uri": "viking://resources/skills/fundamental-filter",
     "scope": "user",
     "files": [
       "SKILL.md",
-      "example_signal_engine.py"
+      "example_signal_engine.py",
+      "__pycache__/example_signal_engine.cpython-312.pyc"
     ],
     "content": "---\nname: fundamental-filter\ndescription: Fundamental factor screening — filter stocks by PE/PB/ROE, financial statement fields, and other metrics for value or growth selection. Supports A-shares (via tushare extra_fields or fundamental_fields) and HK/US stocks (via yfinance Ticker info).\ncategory: flow\n---\n# Fundamental Factor Screening\n\n## Purpose\n\nFilter stocks using fundamental financial data (PE/PB/ROE, etc.) to build value or growth screen signals for backtesting. Supports multiple markets with different data sources.\n\n## Market Support\n\n| Market | Data Source | Method | Supported Metrics |\n|--------|-----------|--------|------------------|\n| A-shares | tushare `daily_basic` | `extra_fields` in config.json | pe, pb, pe_ttm, ps_ttm, dv_ttm, total_mv, circ_mv, roe |\n| A-shares | Tushare statements | `fundamental_fields` in config.json | income, balancesheet, cashflow, fina_indicator fields |\n| US stocks | yfinance `Ticker.info` | Direct API call | trailingPE, forwardPE, priceToBook, returnOnEquity, marketCap, dividendYield |\n| HK stocks | yfinance `Ticker.info` | Direct API call | trailingPE, priceToBook, returnOnEquity, marketCap |\n\n## Signal Logic\n\n### Value Filter (Default)\n\n1. PE < pe_max AND PE > 0 (exclude loss-making stocks)\n2. PB < pb_max\n3. ROE > roe_min\n4. All conditions met → long (1), otherwise → flat (0)\n\n### Growth Filter (Optional)\n\n1. PE_TTM within reasonable range (0 < PE_TTM < pe_ttm_max)\n2. ROE > roe_min (profitability floor)\n3. Market cap > mv_min (exclude micro-caps)\n\n## A-Share Usage (tushare)\n\n### config.json\n\n```json\n{\n  \"source\": \"tushare\",\n  \"codes\": [\"000001.SZ\", \"600036.SH\", \"000858.SZ\"],\n  \"start_date\": \"2023-01-01\",\n  \"end_date\": \"2024-12-31\",\n  \"extra_fields\": [\"pe\", \"pb\", \"pe_ttm\", \"roe\", \"total_mv\"],\n  \"initial_cash\": 1000000,\n  \"commission\": 0.001\n}\n```\n\nThe `extra_fields` columns are automatically merged into the daily DataFrame by the DataLoader.\n\n### A-Share Statement Pre-Filter\n\nUse `fundamental_fields` when the strategy needs PIT-safe financial statement data instead of daily valuation fields:\n\n```json\n{\n  \"source\": \"tushare\",\n  \"codes\": [\"000001.SZ\", \"600036.SH\", \"000858.SZ\"],\n  \"start_date\": \"2023-01-01\",\n  \"end_date\": \"2024-12-31\",\n  \"fundamental_fields\": {\n    \"income\": [\"total_revenue\", \"n_income\"],\n    \"balancesheet\": [\"total_hldr_eqy_exc_min_int\"],\n    \"fina_indicator\": [\"roe\", \"debt_to_assets\"]\n  },\n  \"initial_cash\": 1000000,\n  \"commission\": 0.001\n}\n```\n\nThe backtest runner queries the configured tables through `TushareFundamentalProvider` and merges each published statement snapshot into daily bars only after its announcement/disclosure date. Statement columns are prefixed by table name:\n\n| Requested field | SignalEngine column |\n|-----------------|---------------------|\n| `income.total_revenue` | `income_total_revenue` |\n| `income.n_income` | `income_n_income` |\n| `balancesheet.total_hldr_eqy_exc_min_int` | `balancesheet_total_hldr_eqy_exc_min_int` |\n| `fina_indicator.roe` | `fina_indicator_roe` |\n\nRepresentative financial-quality pre-filter:\n\n```python\nrevenue = row.get(\"income_total_revenue\")\nprofit = row.get(\"income_n_income\")\nnet_assets = row.get(\"balancesheet_total_hldr_eqy_exc_min_int\")\nroe = row.get(\"fina_indicator_roe\")\n\npasses = (\n    revenue is not None and revenue > 0\n    and profit is not None and profit > 0\n    and net_assets is not None and net_assets > 0\n    and roe is not None and roe >= 8.0\n)\n```\n\n## HK/US Stock Usage (yfinance)\n\nFor HK/US stocks, fundamental data is not available as daily time-series via the backtest loader. Instead, use `yfinance` Ticker info for point-in-time screening:\n\n```python\nimport yfinance as yf\n\ndef screen_us_stocks(tickers, criteria):\n    \"\"\"Screen US/HK stocks by fundamental criteria.\"\"\"\n    passed = []\n    for symbol in tickers:\n        info = yf.Ticker(symbol).info\n        pe = info.get(\"trailingPE\")\n        pb = info.get(\"priceToBook\")\n        roe = info.get(\"returnOnEquity\")  # Decimal (e.g., 0.25 = 25%)\n        mcap = info.get(\"marketCap\")\n\n        if pe is None or pb is None or roe is None:\n            continue  # Skip stocks with missing data\n\n        if (0 < pe < criteria[\"pe_max\"]\n            and pb < criteria[\"pb_max\"]\n            and roe > criteria[\"roe_min\"]\n            and (mcap or 0) > criteria.get(\"mcap_min\", 0)):\n            passed.append({\n                \"symbol\": symbol,\n                \"pe\": pe,\n                \"pb\": pb,\n                \"roe\": round(roe * 100, 1),  # Convert to percentage\n                \"mcap\": mcap,\n            })\n\n    return passed\n\n# Example: screen S&P 500 components\ncriteria = {\"pe_max\": 20, \"pb_max\": 3.0, \"roe_min\": 0.08, \"mcap_min\": 10_000_000_000}\nresults = screen_us_stocks([\"AAPL\", \"MSFT\", \"JNJ\", \"JPM\", \"XOM\"], criteria)\n```\n\n### HK Stock Screening\n\n```python\n# HK stocks use the same yfinance interface\nhk_tickers = [\"0700.HK\", \"9988.HK\", \"1810.HK\", \"2318.HK\", \"0005.HK\"]\nresults = screen_us_stocks(hk_tickers, criteria)  # Same function works\n```\n\n## Parameters\n\n| Parameter | Default | Description |\n|-----------|---------|-------------|\n| pe_max | 20.0 | PE ceiling (exclude overvalued) |\n| pb_max | 3.0 | PB ceiling |\n| roe_min | 8.0 | ROE floor (%), exclude low-profitability |\n| pe_min | 0.0 | PE floor (exclude loss-making stocks) |\n| mcap_min | 0 | Market cap floor (for US/HK, in USD) |\n\n## Common Pitfalls\n\n- `extra_fields` columns may contain NaN (new listings, ST stocks) — must `fillna` or `dropna`\n- `fundamental_fields` columns are prefixed by table and may be NaN before the first statement is published in the backtest window\n- Do not forward-fill statement rows manually before their `ann_date` / `f_ann_date`; the runner's merge already enforces point-in-time visibility\n- Negative PE means loss-making — always filter with `pe > 0`\n- ROE units differ: tushare uses percentage (e.g., 15 = 15%), yfinance uses decimal (e.g., 0.15 = 15%)\n- For portfolio strategies: N stocks passing the screen each get weight 1/N\n- yfinance `Ticker.info` is a point-in-time snapshot, not historical time-series — cannot directly use for daily rebalancing backtests on US/HK stocks\n- For US/HK daily fundamental backtests, consider using the screening results as a stock universe, then applying technical signals within that universe\n\n## Dependencies\n\n```bash\npip install pandas numpy yfinance\n```\n\n## Signal Convention\n\n- `1/N` = selected for long (N = number of stocks passing the screen), `0` = not selected\n"
   },
   {
     "name": "geopolitical-risk",
     "description": "Geopolitical risk analysis: quantify crisis signals, identify precursors, and build event-driven strategies for war, sanctions, and supply disruption scenarios.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/geopolitical-risk/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/geopolitical-risk/SKILL.md",
     "uri": "viking://resources/skills/geopolitical-risk",
     "scope": "user",
     "files": [
@@ -3866,9 +3868,9 @@
   {
     "name": "global-macro",
     "description": "Global macro analysis framework (central bank policy transmission / FX forecasting / geopolitical risk / capital flows), used to build macro factor signals that drive cross-asset allocation.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/global-macro/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/global-macro/SKILL.md",
     "uri": "viking://resources/skills/global-macro",
     "scope": "user",
     "files": [
@@ -4125,9 +4127,9 @@
   {
     "name": "harmonic",
     "description": "Harmonic Patterns signal engine. Identifies XABCD five-point structures such as Gartley/Bat/Butterfly/Crab based on Fibonacci geometry, and generates trading signals in the PRZ (Potential Reversal Zone).",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/harmonic/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/harmonic/SKILL.md",
     "uri": "viking://resources/skills/harmonic",
     "scope": "user",
     "files": [
@@ -4284,9 +4286,9 @@
   {
     "name": "hedging-strategy",
     "description": "Hedging strategy design (beta hedge / option protection / tail risk / cross-asset hedging), including hedge-ratio calculation and cost evaluation.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/hedging-strategy/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/hedging-strategy/SKILL.md",
     "uri": "viking://resources/skills/hedging-strategy",
     "scope": "user",
     "files": [
@@ -4387,9 +4389,9 @@
   {
     "name": "hk-connect-flow",
     "description": "Stock Connect (Shanghai/Shenzhen-Hong Kong) fund flow analysis — Northbound (foreign into A-shares), Southbound (mainland into HK), sector allocation tracking, and cross-border arbitrage signals.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/hk-connect-flow/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/hk-connect-flow/SKILL.md",
     "uri": "viking://resources/skills/hk-connect-flow",
     "scope": "user",
     "files": [
@@ -4726,9 +4728,9 @@
   {
     "name": "ichimoku",
     "description": "Ichimoku Kinko Hyo five-line system signal engine. A standalone Japanese technical-analysis school that generates trading signals from Tenkan/Kijun crossovers, cloud position, and Chikou confirmation. Pure pandas implementation.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/ichimoku/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/ichimoku/SKILL.md",
     "uri": "viking://resources/skills/ichimoku",
     "scope": "user",
     "files": [
@@ -5630,9 +5632,9 @@
   {
     "name": "liquidation-heatmap",
     "description": "Liquidation level analysis and heatmap interpretation — identify leveraged position concentration, liquidation cascades, stop-hunt zones, and use liquidation data as support/resistance signals.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/liquidation-heatmap/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/liquidation-heatmap/SKILL.md",
     "uri": "viking://resources/skills/liquidation-heatmap",
     "scope": "user",
     "files": [
@@ -5718,9 +5720,9 @@
   {
     "name": "macro-analysis",
     "description": "Macroeconomic cycle positioning and central-bank policy interpretation, including GDP/CPI/PMI/rates/FX analysis, with output in the form of major-asset allocation tilts.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/macro-analysis/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/macro-analysis/SKILL.md",
     "uri": "viking://resources/skills/macro-analysis",
     "scope": "user",
     "files": [
@@ -5745,9 +5747,9 @@
   {
     "name": "management-deep-dive",
     "description": "Deep management assessment — the 'buying a stock is buying a person' layer. For a company or a named executive, evaluate integrity (promise-vs-delivery tracking, crisis behavior, stakeholder treatment), ability (strategic foresight, execution, capital-allocation record) and governance (equity structure, compensation, related-party deals). Outputs a weighted score across integrity / ability / capital-allocation / governance plus Duan Yongping's 3-question verdict ('would you hand this person your money for 10 years'). Use when standard research leaves management quality uncertain, or when management IS the investment thesis.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/management-deep-dive/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/management-deep-dive/SKILL.md",
     "uri": "viking://resources/skills/management-deep-dive",
     "scope": "user",
     "files": [
@@ -5814,9 +5816,9 @@
   {
     "name": "market-microstructure",
     "description": "Market microstructure: bid-ask spread analysis, order-flow toxicity metrics (VPIN / Kyle lambda), liquidity measures (Amihud / Roll), price-impact models, limit-order-book analysis, and China A-share call auction / block trade mechanics.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/market-microstructure/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/market-microstructure/SKILL.md",
     "uri": "viking://resources/skills/market-microstructure",
     "scope": "user",
     "files": [
@@ -5862,7 +5864,7 @@
       "references/SKILL.md",
       "references/layer1-global-philosophy.md"
     ],
-    "content": "---\nname: master-dev\ndescription: '顶级通用代码开发与项目迭代总控技能 — 触发关键词: dev, master-dev, 开发, 写代码, 重构, 架构设计, 研发规范。采用双层分层架构: Layer 1 全局通用哲学信达雅/双主题极客性冷淡视觉 + Layer 2 垂直项目矩阵与工程工具箱。'\n---\n\n# 🏛️ 顶级通用开发与项目迭代总控技能 (Master Dev Skill v2.1)\n\n本技能为全系统**所有项目代码开发、架构重构与工程演进的最高物理总控技能 (`master-dev`)**。\n\n---\n\n## 📐 1. 双层架构全景图 (Two-Tier Unified Architecture)\n\n```text\n 触发关键词: dev / master-dev / 开发 / 写代码 / 重构 / 架构设计\n                                  │\n                                  ▼\n        ┌──────────────────────────────────────────────────┐\n        │  🏛️ Master Dev 顶级通用开发总控技能              │\n        └─────────────────────────┬────────────────────────┘\n                                  │\n          ┌───────────────────────┴───────────────────────┐\n          ▼                                               ▼\n┌──────────────────────────────────┐            ┌──────────────────────────────────┐\n│  🌐 Layer 1: 全局通用规范层      │            │  🎯 Layer 2: 垂直项目与工程工具箱│\n│                                  │            │                                  │\n│  ├─ 📜 全局哲学: “信、达、雅”    │            │  ├─ 🛠️ 工程工具箱 (18大 Pocock 技能)│\n│  │  (第一性原理/奥卡姆/灾备第一)  │ ──────────►│  │  (TDD, Code Review, Auto-PR,   │\n│  ├─ 🎨 全局视觉: 极客性冷淡美学  │ (通用规则) │  │   Bug诊断, 领域建模, 拆工单等)   │\n│  │  (亮暗双主题/小圆角/禁绿/>=11)│ (强制贯穿)  │  ├─ 🛡️ OpenViking (`vk-dev`)      │\n│  └─ 📈 经验沉淀与规则向上升维 SOP│            │  ├─ 📈 TideTrading (`tide-dev`)   │\n└──────────────────────────────────┘            │  └─ 🔑 CPA2API (`cpa-dev`)        │\n                                                └──────────────────────────────────┘\n```\n\n---\n\n## 🌐 2. Layer 1: 全局通用基线 (Global Universal Baseline)\n\n所有项目（无一例外）开发前物理继承并遵循 Layer 1 的三大通用标准：\n\n| 通用模块 | 核心内容与规则 | 详见参考文档 |\n|:---|:---|:---|\n| 📜 **全局通用逻辑哲学** | **核心纲领：“信、达、雅”**（准确严谨、通顺自解释、极客雅致），结合第一性原理、奥卡姆剃刀、绝对数据真实性与灾备第一 | [`layer1-global-philosophy.md`](file:///home/skloxo/.gemini/config/skills/master-dev/references/layer1-global-philosophy.md) |\n| 🎨 **全局通用 UI 视觉规范 + i18n** | **明暗双色主题对等支持 (Light/Dark Mode)**、极客性冷淡极简美学、极致数据高密度展示、小微圆角 (`4px~6px`)、NO GREEN EVER (物理禁绿)、字号下限 $\\ge 11\\text{px}$、`mt-auto` 底边平齐、**中英文双语 i18n 默认适配**（`react-i18next` / `vue-i18n`，零硬编码字符串，zh/en 平行维护） | [`layer2-global-visual-spec.md`](file:///home/skloxo/.gemini/config/skills/master-dev/references/layer2-global-visual-spec.md) |\n| 📈 **经验沉淀与规则向上提炼** | 项目级经验 ➔ 模式识别 ➔ 通用规则提炼 SOP（实现从“项目特例”升维为“全局通用”） | [`layer1-evolution-engine.md`](file:///home/skloxo/.gemini/config/skills/master-dev/references/layer1-evolution-engine.md) |\n\n---\n\n## 🎯 3. Layer 2: 垂直项目与全套工程技能工具箱\n\n`master-dev` 统筹包揽了以下全套专业工程技能，按开发场景自动挂载调度：\n\n### 🛠️ (A) 18 大工程专精技能工具箱 (Engineering Skill Toolbelt)\n- 🐞 **Bug 排查与性能**：[`diagnosing-bugs`](file:///home/skloxo/.gemini/config/skills/diagnosing-bugs/SKILL.md)\n- 🧪 **测试驱动开发**：[`tdd`](file:///home/skloxo/.gemini/config/skills/tdd/SKILL.md)\n- 🏗️ **模块设计与领域建模**：[`codebase-design`](file:///home/skloxo/.gemini/config/skills/codebase-design/SKILL.md) ｜ [`domain-modeling`](file:///home/skloxo/.gemini/config/skills/domain-modeling/SKILL.md)\n- 🔍 **代码审查与冲突**：[`code-review`](file:///home/skloxo/.gemini/config/skills/code-review/SKILL.md) ｜ [`resolving-merge-conflicts`](file:///home/skloxo/.gemini/config/skills/resolving-merge-conflicts/SKILL.md)\n- 🚀 **自动化 PR SOP**：[`auto-pr`](file:///home/skloxo/.gemini/config/skills/auto-pr/SKILL.md)\n- 📋 **需求规格化与工单拆解**：[`to-spec`](file:///home/skloxo/.gemini/config/skills/to-spec/SKILL.md) ｜ [`to-tickets`](file:///home/skloxo/.gemini/config/skills/to-tickets/SKILL.md) ｜ [`wayfinder`](file:///home/skloxo/.gemini/config/skills/wayfinder/SKILL.md)\n- 🔬 **调研与原型验证**：[`research`](file:///home/skloxo/.gemini/config/skills/research/SKILL.md) ｜ [`prototype`](file:///home/skloxo/.gemini/config/skills/prototype/SKILL.md)\n- 📊 **架构扫描**：[`improve-codebase-architecture`](file:///home/skloxo/.gemini/config/skills/improve-codebase-architecture/SKILL.md)\n\n### 🛡️ (B) 垂直项目专用技能矩阵 (Vertical Projects Matrix)\n- 🛡️ **OpenViking (VK)**：[`openviking-master`](file:///home/skloxo/.gemini/config/skills/openviking-master/SKILL.md) (`vk-dev`)\n- 📈 **TideTrading**：`tide-trading-dev`\n- 🔑 **CPA2API / Services**：`cpa-services-dev`\n- 📋 **Paperclip**：`paperclip-dev`\n\n详见参考文档：[`layer2-projects-matrix.md`](file:///home/skloxo/.gemini/config/skills/master-dev/references/layer2-projects-matrix.md)。\n\n---\n\n## 🔄 4. 标准全流程迭代开发与发布 SOP (Standard Iteration SOP)\n\n所有项目（特别是 OpenViking）严格遵守以下闭环 4 步 SOP：\n1. **源码修改与 1936 测试验收**：所有功能与修复必须 100% 在源码仓库内部完成，通过 Vite HMR 实时热更新至 1936 测试环境（如 `https://vk.tide.beer/`）进行测试、调试与走查验收。\n2. **验收通过后构建 1933 生产环境**：在 1936 测试验收确认无误后，方可从源码执行生产构建 (`npm run build`) 并部署至 1933 正式环境（如 `https://vk.tide.red/studio/`）。\n3. **Git 留痕与版本 Tag 自动化发布**：将源码推送到 Git 远程仓库，自动自增 Patch 版本号 Z (`x.y.Z` ➔ `x.y.Z+1`) 并打 Git Tag，清晰记录更新日志。\n4. **原子任务卡片即时闭环**：每完成一张原子任务卡片，必须在项目专属的 `REFACTORING_PLAN.md` 中将其状态更新为 `[x] 已验收通过 ✅`，并附带 Commit Hash 与交付摘要。\n\n---\n\n## ⚡ 5. 全自主执行五大铁律 (Zero-Prompt Autonomous Rules)\n\nAI 编程助手在任何会话中必须**主动自主执行，严禁等待用户重复提示**：\n\n1. **唯一源码库 SSOT (Single Source of Truth)**：\n   - 所有前后端代码（React 前端、Python 引擎、C++ 向量底层）一律在项目 Monorepo（如 `OpenVikingStudio/`）内部修改，禁止跨仓库搬砖。\n2. **SemVer 版本权限铁律 (Patch-Only Authority)**：\n   - Agent **仅有权自增 Patch 版本号 Z (`x.y.Z`)**；Minor 次版本号 Y 与 Major 主版本号 X 升级权限专属于用户，严禁私自越级升级。\n3. **任务卡片物理闭环 (Kanban Single Source)**：\n   - 项目任务卡片物理收口在各自项目文件夹的 `REFACTORING_PLAN.md` 中，完成即刻标记 `[x] 已验收通过 ✅` 并记录 Commit Hash。\n4. **性冷淡克制视觉与 NO GREEN EVER**：\n   - 物理封杀绿色 🚫；字号硬下限 $\\ge 11\\text{px}$ (`text-[11px]`)；高密基准字号 `12px` (`text-xs`)；卡片底边一律通过 `mt-auto` 物理平齐。\n5. **双语平行 i18n 零硬编码**：\n   - 所有 UI 文案必须通过双语词条（`zh-CN.ts` / `en.ts`）配置，严禁在 TSX 组件中写死中英文字符串。\n\n"
+    "content": "---\nname: master-dev\ndescription: '顶级通用代码开发与项目迭代总控技能 — 触发关键词: dev, master-dev, 开发, 写代码, 重构, 架构设计, 研发规范。采用双层分层架构: Layer 1 全局通用哲学信达雅/双主题极客性冷淡视觉 + Layer 2 垂直项目矩阵与工程工具箱。'\n---\n\n# 🏛️ 顶级通用开发与项目迭代总控技能 (Master Dev Skill v2.1)\n\n本技能为全系统**所有项目代码开发、架构重构与工程演进的最高物理总控技能 (`master-dev`)**。\n\n---\n\n## 📐 1. 双层架构全景图 (Two-Tier Unified Architecture)\n\n```text\n 触发关键词: dev / master-dev / 开发 / 写代码 / 重构 / 架构设计\n                                  │\n                                  ▼\n        ┌──────────────────────────────────────────────────┐\n        │  🏛️ Master Dev 顶级通用开发总控技能              │\n        └─────────────────────────┬────────────────────────┘\n                                  │\n          ┌───────────────────────┴───────────────────────┐\n          ▼                                               ▼\n┌──────────────────────────────────┐            ┌──────────────────────────────────┐\n│  🌐 Layer 1: 全局通用规范层      │            │  🎯 Layer 2: 垂直项目与工程工具箱│\n│                                  │            │                                  │\n│  ├─ 📜 全局哲学: “信、达、雅”    │            │  ├─ 🛠️ 工程工具箱 (18大 Pocock 技能)│\n│  │  (第一性原理/奥卡姆/灾备第一)  │ ──────────►│  │  (TDD, Code Review, Auto-PR,   │\n│  ├─ 🎨 全局视觉: 极客性冷淡美学  │ (通用规则) │  │   Bug诊断, 领域建模, 拆工单等)   │\n│  │  (亮暗双主题/小圆角/禁绿/>=11)│ (强制贯穿)  │  ├─ 🛡️ OpenViking (`vk-dev`)      │\n│  └─ 📈 经验沉淀与规则向上升维 SOP│            │  ├─ 📈 TideTrading (`tide-dev`)   │\n└──────────────────────────────────┘            │  └─ 🔑 CPA2API (`cpa-dev`)        │\n                                                └──────────────────────────────────┘\n```\n\n---\n\n## 🌐 2. Layer 1: 全局通用基线 (Global Universal Baseline)\n\n所有项目（无一例外）开发前物理继承并遵循 Layer 1 的三大通用标准：\n\n| 通用模块 | 核心内容与规则 | 详见参考文档 |\n|:---|:---|:---|\n| 📜 **全局通用逻辑哲学** | **核心纲领：“信、达、雅”**（准确严谨、通顺自解释、极客雅致），结合第一性原理、奥卡姆剃刀、绝对数据真实性与灾备第一 | [`layer1-global-philosophy.md`](file:///home/skloxo/.gemini/config/skills/master-dev/references/layer1-global-philosophy.md) |\n| 🎨 **全局通用 UI 视觉规范 + i18n** | **明暗双色主题对等支持 (Light/Dark Mode)**、极客性冷淡极简美学、极致数据高密度展示、小微圆角 (`4px~6px`)、NO GREEN EVER (物理禁绿)、字号下限 $\\ge 11\\text{px}$、`mt-auto` 底边平齐、**中英文双语 i18n 默认适配**（`react-i18next` / `vue-i18n`，零硬编码字符串，zh/en 平行维护） | [`layer2-global-visual-spec.md`](file:///home/skloxo/.gemini/config/skills/master-dev/references/layer2-global-visual-spec.md) |\n| 📈 **经验沉淀与规则向上提炼** | 项目级经验 ➔ 模式识别 ➔ 通用规则提炼 SOP（实现从“项目特例”升维为“全局通用”） | [`layer1-evolution-engine.md`](file:///home/skloxo/.gemini/config/skills/master-dev/references/layer1-evolution-engine.md) |\n\n---\n\n## 🎯 3. Layer 2: 垂直项目与全套工程技能工具箱\n\n`master-dev` 统筹包揽了以下全套专业工程技能，按开发场景自动挂载调度：\n\n### 🛠️ (A) 18 大工程专精技能工具箱 (Engineering Skill Toolbelt)\n- 🐞 **Bug 排查与性能**：[`diagnosing-bugs`](file:///home/skloxo/.gemini/config/skills/diagnosing-bugs/SKILL.md)\n- 🧪 **测试驱动开发**：[`tdd`](file:///home/skloxo/.gemini/config/skills/tdd/SKILL.md)\n- 🏗️ **模块设计与领域建模**：[`codebase-design`](file:///home/skloxo/.gemini/config/skills/codebase-design/SKILL.md) ｜ [`domain-modeling`](file:///home/skloxo/.gemini/config/skills/domain-modeling/SKILL.md)\n- 🔍 **代码审查与冲突**：[`code-review`](file:///home/skloxo/.gemini/config/skills/code-review/SKILL.md) ｜ [`resolving-merge-conflicts`](file:///home/skloxo/.gemini/config/skills/resolving-merge-conflicts/SKILL.md)\n- 🚀 **自动化 PR SOP**：[`auto-pr`](file:///home/skloxo/.gemini/config/skills/auto-pr/SKILL.md)\n- 📋 **需求规格化与工单拆解**：[`to-spec`](file:///home/skloxo/.gemini/config/skills/to-spec/SKILL.md) ｜ [`to-tickets`](file:///home/skloxo/.gemini/config/skills/to-tickets/SKILL.md) ｜ [`wayfinder`](file:///home/skloxo/.gemini/config/skills/wayfinder/SKILL.md)\n- 🔬 **调研与原型验证**：[`research`](file:///home/skloxo/.gemini/config/skills/research/SKILL.md) ｜ [`prototype`](file:///home/skloxo/.gemini/config/skills/prototype/SKILL.md)\n- 📊 **架构扫描**：[`improve-codebase-architecture`](file:///home/skloxo/.gemini/config/skills/improve-codebase-architecture/SKILL.md)\n\n### 🛡️ (B) 垂直项目专用技能矩阵 (Vertical Projects Matrix)\n- 🛡️ **OpenViking (VK)**：[`openviking-master`](file:///home/skloxo/.gemini/config/skills/openviking-master/SKILL.md) (`vk-dev`)\n- 📈 **TideTrading**：`tide-trading-dev`\n- 🔑 **CPA2API / Services**：`cpa-services-dev`\n- 📋 **Paperclip**：`paperclip-dev`\n\n详见参考文档：[`layer2-projects-matrix.md`](file:///home/skloxo/.gemini/config/skills/master-dev/references/layer2-projects-matrix.md)。\n\n---\n\n## 🔄 4. 标准全流程迭代开发与发布 SOP (Standard Iteration SOP)\n\n所有项目（特别是 OpenViking）严格遵守以下闭环 4 步 SOP：\n1. **源码修改与 1936 开发测试验证**：所有功能与修复必须 100% 在源码 Monorepo 内部完成，通过 Vite HMR 实时热更新至 1936 测试环境（如 `https://vk.tide.beer/`）跑通白盒自动化测试 (`pytest`)。\n2. **输出人肉验收指南并等待用户 Sign-off 🛑**：向用户提供清晰的《人肉验收清单》（包含 UI 走查路径、可复制的 curl 测试命令、pytest 测试集与预期输出结果），**绝对禁止在用户给出“通过/执行发布”前私自部署 1933 或发布 Git Tag**！\n3. **用户 Sign-off 后构建 1933 生产并发布 Tag**：在用户明确确认验收通过后，方可执行生产构建 (`npm run build`) 并部署至 1933 正式环境（如 `https://vk.tide.red/studio/`），自增 Patch 版本号 Z (`x.y.Z` ➔ `x.y.Z+1`) 并打标推送 Git Tag。\n4. **原子任务卡片即时闭环与体外大脑归档**：在项目专属 `REFACTORING_PLAN.md` 中将其状态更新为 `[x] 已验收通过 ✅`，并自动调用 `openviking_record_evolution_lesson` 将关键教训沉淀至体外大脑。\n\n---\n\n## ⚡ 5. 全自主执行核心铁律 (Zero-Prompt Autonomous Rules)\n\nAI 编程助手在任何会话中必须**主动自主执行，严禁等待用户重复提示**：\n\n1. **唯一源码库 SSOT (Single Source of Truth)**：\n   - 所有前后端代码（React 前端、Python 引擎、Rust/C++ 向量底层）一律在项目 Monorepo（如 `OpenVikingStudio/`）内部修改，禁止跨仓库搬砖。\n2. **人肉终验 Sign-off 阻绝铁律 (Human Sign-off Before 1933)**：\n   - 自动化测试全绿是机器维度的正确性验证；人肉验收是交付的最高裁决。在用户未回复“通过/执行发布”前，绝对禁止私自将变更部署至 1933 生产环境或打标推送 Git Tag。\n3. **SemVer 版本权限铁律 (Patch-Only Authority)**：\n   - Agent **仅有权自增 Patch 版本号 Z (`x.y.Z`)**；Minor 次版本号 Y 与 Major 主版本号 X 升级权限专属于用户，严禁私自越级升级。\n4. **模型超参拓扑解耦与 SSOT 白皮书铁律 (Model Topology & Decoupling)**：\n   - 严禁混淆【向量几何维度 (4096)】、【服务端上下文 n_ctx (4096 per slot)】与【网关语义切片 chunk_tokens (1500)】；核心拓扑与超参数必须在 `docs/MODEL_ARCHITECTURE_SPEC.md` 中建立唯一物理真相源。\n5. **任务卡片物理闭环 (Kanban Single Source)**：\n   - 项目任务卡片物理收口在各自项目文件夹的 `REFACTORING_PLAN.md` 中，完成即刻标记 `[x] 已验收通过 ✅` 并记录 Commit Hash。\n6. **性冷淡克制视觉与 NO GREEN EVER**：\n   - 物理封杀绿色 🚫；字号硬下限 $\\ge 11\\text{px}$ (`text-[11px]`)；高密基准字号 `12px` (`text-xs`)；卡片底边一律通过 `mt-auto` 物理平齐。\n7. **双语平行 i18n 零硬编码**：\n   - 所有 UI 文案必须通过双语词条（`zh-CN.ts` / `en.ts`）配置，严禁在 TSX 组件中写死中英文字符串。\n\n\n"
   },
   {
     "name": "matt-pocock-adapted",
@@ -6298,9 +6300,9 @@
   {
     "name": "minute-analysis",
     "description": "Minute-level data analysis and backtesting. Retrieves minute candlesticks through OKX/Tushare/yfinance and can be used both for analysis and as input to the backtest engine.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/minute-analysis/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/minute-analysis/SKILL.md",
     "uri": "viking://resources/skills/minute-analysis",
     "scope": "user",
     "files": [
@@ -6325,9 +6327,9 @@
   {
     "name": "ml-strategy",
     "description": "Machine-learning predictive strategy based on sklearn walk-forward training, feature engineering, and signal generation. Suitable for any OHLCV data.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/ml-strategy/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/ml-strategy/SKILL.md",
     "uri": "viking://resources/skills/ml-strategy",
     "scope": "user",
     "files": [
@@ -6394,9 +6396,9 @@
   {
     "name": "mootdx",
     "description": "Mootdx A-share market data via TCP-direct 通达信 servers. Free, no API key, no IP rate limits. Use as the stable A-share OHLCV fallback when akshare's East Money scrape is throttled.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/mootdx/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/mootdx/SKILL.md",
     "uri": "viking://resources/skills/mootdx",
     "scope": "user",
     "files": [
@@ -6420,9 +6422,9 @@
   {
     "name": "multi-factor",
     "description": "Multi-factor cross-sectional stock ranking. Combines factor standardization, equal-weight or IC-weighted scoring, and TopN portfolio construction. Suitable for multi-instrument portfolio strategies.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/multi-factor/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/multi-factor/SKILL.md",
     "uri": "viking://resources/skills/multi-factor",
     "scope": "user",
     "files": [
@@ -6756,9 +6758,9 @@
   {
     "name": "okx-market",
     "description": "OKX cryptocurrency market data interface. Uses the OKX V5 REST API to retrieve spot, derivatives, index, and other crypto market data, including real-time prices, candlesticks, funding rates, open interest, and more. No authentication required, free to use.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/okx-market/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/okx-market/SKILL.md",
     "uri": "viking://resources/skills/okx-market",
     "scope": "user",
     "files": [
@@ -6784,9 +6786,9 @@
   {
     "name": "onchain-analysis",
     "description": "On-chain data analysis — active addresses / whale tracking / TVL / DEX liquidity, interpretation and signal generation using on-chain valuation metrics such as MVRV / NVT / SOPR.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/onchain-analysis/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/onchain-analysis/SKILL.md",
     "uri": "viking://resources/skills/onchain-analysis",
     "scope": "user",
     "files": [
@@ -7096,14 +7098,14 @@
     "files": [
       "SKILL.md"
     ],
-    "content": "---\nname: openviking-studio-dev\ndescription: Use when developing, refactoring, or iterating OpenVikingStudio (VK Studio / Web UI). Enforces 3-tier doc alignment (REFACTORING_PLAN.md, ROADMAP.md, DELIVERY_ARCHIVE.md), NO GREEN EVER color palette (cyan-500 accents), FastMCP 1933 API data contracts, zero-script direct source edits, and dual-brain evaluation rules. Contains a self-evolution loop to continuously reflect and update SKILL.md.\n---\n\n# OpenViking Studio 专项开发与迭代技能 (OpenViking Studio Dev SOP & Self-Evolution)\n\n本技能为 OpenViking Studio (`OpenVikingStudio`) 的专用工程开发与**自我演进技能**。当用户提到 \"开发 VK\", \"重构 Studio\", \"新增 Studio 页面/卡片\", \"更新工单\" 或处于 OpenVikingStudio 工作区时自动激活。\n\n---\n\n## 🔄 核心机制：“自产自销”自我演进闭环 (Dogfooding Self-Evolution)\n\n本技能不仅是操作指南，更是 **Harness 自演进的第一个试验场 (Dogfooding Testbed)**。在每次迭代收尾时，必须自动执行以下反思演进循环：\n\n1. **纠偏捕获 (Capture)**：感知本次迭代中用户提出的新原则（如“不许写临时胶水脚本”、“文档三层治理”）。\n2. **三段式反思 (3-Part Reflection)**：\n   - **CONTEXT**：触发问题的上下文场景。\n   - **REFLECTION**：根因与物理逻辑分析。\n   - **LESSON**：提炼出的永久闭环规范。\n3. **自热更新 (Hot Update)**：自动将最新 Lesson 写回本 `SKILL.md`，并在 OpenViking 1933 体外大脑 (`viking://resources/master_memory/`) 持久化。\n\n### 📜 历史演进 Lesson 归档\n\n#### 📌 Lesson 2026-08-01 #1：1936 开发环境 vs 1933 正式环境物理隔绝守则\n- **CONTEXT**：开发人员在代码未经用户终验通过前，直接将 `build` 产物推送到 1933 正式环境。\n- **REFLECTION**：开发测试通过 ≠ 用户终验通过。1936 (`npm run dev`) 是开发测试端口，1933 (`web_studio`) 是正式物理端口。\n- **LESSON**：开发/调试阶段一律仅在 1936 环境热重载渲染；只有在用户明确指令“发布到 1933”或“终验通过”后，方可打包推送至 1933。\n\n#### 📌 Lesson 2026-08-01 #2：零临时脚本与前后端双端源码硬核打通守则\n- **CONTEXT**：遇到数据契约不齐时试图编写游离胶水脚本或生成临时 JSON 映射。\n- **REFLECTION**：游离胶水脚本会引发文件监听死循环（如 Vite HMR 热重载死循环）、难以追踪与维护。\n- **LESSON**：严禁编写任何临时/过渡脚本。遇到 API 或数据缺失，必须同步修改后端 Python 源文件 (`mcp_openviking_server.py`) 与前端 React 源文件，硬核打通源码级链路。\n\n#### 📌 Lesson 2026-08-01 #3：标准 4-Step 开发交付与终验对照 SOP 守则\n- **CONTEXT**：在用户未终验通过时误以为可以自动推进下一工单，且终验时未提供对照测试用例。\n- **REFLECTION**：缺乏明确测试用例的口头终验是不严谨的。只有测试通过 ➔ 提交终验(带测试用例) ➔ 终验通过(Git Push & Tag) ➔ 用户明确指令“发布到 1933”才是标准闭环。\n- **LESSON**：必须严格遵循 4-Step 交付 SOP：开发1936 ➔ 交付测试用例 ➔ 终验通过推送Git Tag ➔ 明确指令后发布到1933。\n\n#### 📌 Lesson 2026-08-01 #4：“找成功的轮子”第一原则 (Wheel-First Engineering Principle)\n- **CONTEXT**：在设计复杂系统（如 Harness 门锁与自演进）时凭空造轮子，导致功能退化为表面 Dashboard 花架子。\n- **REFLECTION**：开源社区已有大量经过验证的顶级轮子（NeMo Guardrails、Reflexion、Langroid）。盲目闭门造车是低效且易踩坑的。\n- **LESSON**：必须绝对遵循“找成功的轮子”三步法：\n  1. **先找轮子**：有现成轮子，优先搜索全网/GitHub 寻找成熟开源项目；\n  2. **能用即用**：能直接调用的轮子，直接引入使用；\n  3. **解构复用**：不能直接用的轮子，深入源码解构理解其物理架构，复用其最核心的优秀设计思想。\n\n#### 📌 Lesson 2026-08-01 #5：观测是手段，不是目的 (Observation as a Diagnostic Radar)\n- **CONTEXT**：误将“数据卡片可视化展示”当做迭代的主要目标，混淆了物理功能本身与观测窗口的主次关系。\n- **REFLECTION**：Harness 闭环拦截与自动演进机制能够成功物理跑通才是唯一的核心目的。UI 数据卡片只是人类使用者在不懂代码时，用于实时感知系统运行状况与发现缺陷的“白盒诊断雷达”。\n- **LESSON**：牢记“观测是过程，不是目标，不是目的”。一切开发重心必须首先保证底层物理门锁与自演进机制 100% 成功跑通，数据卡片只做 100% 真实无假数据的白盒雷达透视。\n\n#### 📌 Lesson 2026-08-01 #6：集百家所长融熔轮子守则 (Top 5 Harness Wheels Fusion)\n- **CONTEXT**：借鉴开源轮子时陷入单一视角，容易引入有瑕疵的简单库。\n- **REFLECTION**：真正的顶级工程架构应当“集百家所长于一身”，全盘熔铸 GitHub 顶尖开源项目的核心优点。\n- **LESSON**：OpenViking Harness 架构熔铸 5 大开源标杆：\n  1. **NVIDIA NeMo-Guardrails** ➔ 物理前置拦截门锁 (`_harness_pre_execution_guard`)；\n  2. **MIT Reflexion Agent** ➔ 隐式自演进三段式反思闭环 (`openviking_record_evolution_lesson`)；\n  3. **Guardrails AI** ➔ 零 Mock 绝对真实数据契约；\n  4. **AgentOps Telemetry** ➔ 物理阻断与 Peer 分布遥测；\n  5. **E2B & SWE-Agent** ➔ 1936 与 1933 环境物理端口隔离。\n\n#### 📌 Lesson 2026-08-01 #7：原版优先，改造必深研，杜绝半瓶水埋雷守则\n- **CONTEXT**：对开源轮子一知半解就盲目拿来使用，未理解其底层 Execution Flow，导致代码中埋下上下文残留与异步死锁隐患。\n- **REFLECTION**：半瓶水地封装开源轮子是极度危险的。要么使用官方 PyPI 原版随社区迭代，要么必须拉取原始 GitHub 源码与架构文档，逐行解构其逻辑结构与防错细节。\n- **LESSON**：必须严守“原版优先，改造必深研”铁律：\n  1. **完全适配** ➔ 直接引入官方 PyPI 包（如 `nemoguardrails`）；\n  2. **架构改造** ➔ 必须拉取原始源码与原理文档，分析对比多轮子差异，完成防错解构报告，物理排查所有隐性雷区后再落地！\n\n#### 📌 Lesson 2026-08-01 #8：直改源码与官方 API 契约合并保护守则 (Official API & Clean Upstream Merge)\n- **CONTEXT**：写野生的临时胶水脚本，或侵入式破坏官方 API 结构，导致后期合并 OpenViking 上游主线代码时产生大量 Git 冲突与费劲维护。\n- **REFLECTION**：野生胶水脚本是项目劣化与合并死锁的根源。坚决直改项目主源码，且必须严格遵循官方 FastMCP / REST 标准 API 契约，保证架构的高内聚低耦合。\n- **LESSON**：严守“零野生脚本、直改源码、完全契合官方接口”三铁律：\n  1. **零野生脚本**：严禁在 `scripts/` 或 `public/` 创建临时 `.py`/`.json`/`.sh`；\n  2. **直改源码**：所有逻辑收敛至前端 React route/component 与后端 `mcp_openviking_server.py` 正式源码；\n  3. **官方契约**：严格遵循官方 FastMCP 与 REST 规范，确保后期随 OpenViking 上游社区代码升级时 100% 无缝 Git 合并！\n\n#### 📌 Lesson 2026-08-01 #9：零人工触发·踩坑即自动演进守则 (Fully Autonomous Interception-Triggered Reflexion)\n- **CONTEXT**：以前需要用户手动在对话中敲命令“请你迭代演进一下技能”，极度愚蠢且低效。\n- **REFLECTION**：真正的 Harness 自演进引擎应当在发生阻断拦截或捕获异常的第一毫秒，由系统后台隐式、全自动触发演进钩子，无需人类用户多说一句话！\n- **LESSON**：严守“零人工触发，踩坑/阻断即自动演进”物理机制：\n  1. **门锁拦截即自动演进**：当 `_harness_pre_execution_guard` 阻断违规操作时，系统后台自动调用 `openviking_record_evolution_lesson` 归档 Lesson；\n  2. **对话感知即隐式落盘**：当感知到用户的自然语言纠偏，Agent 必须在响应的第一个 Step 中隐式完成 Reflexion 归档，禁止要求用户手动触发！\n\n#### 📌 Lesson 2026-08-01 #10：技能中心与 Harness 双重核心 KPI 评估体系守则\n- **CONTEXT**：担心技能装载后沦为“僵尸技能”，缺乏量化指标证明技能中心与 Harness 机制运行高效且有价值。\n- **REFLECTION**：必须建立明确的 KPI 物理评估指标体系，从“自动触发命中率”、“技能动销率”、“物理阻断成功率”、“自演进闭环率”四大维度量化健康度。\n- **LESSON**：严守 Skill Center 与 Harness 双重 KPI 量化指标：\n  1. **技能自动触发命中率 (Auto-Trigger Hit Rate)** ➔ `>= 95%` 自然语言意图自动命中激活技能；\n  2. **高频工程技能动销率 (Core Skill Utilization)** ➔ 18 个 Matt Pocock 工程技能动销率 `100%`；\n  3. **Harness 物理阻断阻绝率 (Zero Breach Guard)** ➔ 违规脚本与非法部署物理阻断率 `100%`；\n  4. **Reflexion 零人工自演进闭环率 (Auto-Reflexion Closure)** ➔ 无需人工敲命令自动落盘与向量重索引率 `100%`。\n\n#### 📌 Lesson 2026-08-01 #11：“信雅达”准则与 i18n 顺手即做守则 (Xinyada & Implicit i18n)\n- **CONTEXT**：代码变更中遗漏多语言适配，需要用户提醒才去补充 i18n，或者 UI 文案同义词混用违背“信雅达”标准。\n- **REFLECTION**：i18n 是现代工程的“出厂必备习惯”，绝不是靠用户催促补救的售后。文案必须达到“信”（准确一致）、“达”（通顺自解释）、“雅”（极客严谨）。\n- **LESSON**：严守“信雅达”与“i18n 顺手即做”标准：\n  1. **i18n 顺手即做**：新增任何 UI 按钮、文案、面板或提示时，同步在 `zh-CN.ts` 与 `en.ts` 中补全 i18n 映射；\n  2. **信雅达审视**：专有名词（Harness 门锁、Reflexion 自演进、NeMo 拦截器）全盘一贯，禁止同义词乱用。\n\n#### 📌 Lesson 2026-08-01 #12：技能详情 100% 防塌陷加载与独立全景专页守则\n- **CONTEXT**：技能详情因为网关 URI 缺失 `/default/` 命名空间导致 HTTP 400 失败，且大量演进日志在主页挤压展开影响体验。\n- **REFLECTION**：1) 详情加载必须建立双端探针保底（网关 API 失败时自动穿透读取物理磁盘 SKILL.md），确保 100% 成功率；2) 海量履历日志必须收敛至独立全景专页，保持主界面极客简洁。\n- **LESSON**：严守 100% 防塌陷加载与全景专页规范：\n  1. **物理磁盘探针保底**：网关 API 异常时，通过 `/api/v1/system/skill_content` 探针物理打底，保障 100% 打开；\n  2. **独立全景专页路由**：海量明细数据路由至专用全景子页面 (如 `/skills/harness-logs`)。\n\n#### 📌 Lesson 2026-08-01 #13：侧边栏独立 Harness 引擎审计入口守则\n- **CONTEXT**：Harness 引擎涵盖物理阻断记录、全量技能调用明细与自演进变更，隐匿在二级子页面不易被排查与观测。\n- **REFLECTION**：物理 Harness 引擎是生产力的第一性原理中枢，必须在侧边栏“运维/活动”导航栏中拥有独立的顶级菜单入口，一键透视阻断、解锁与演进审计。\n- **LESSON**：严守 Harness 顶级侧边栏导航守则：\n  1. **侧边栏物理入口**：AppShell 侧边栏活动/运维组引入 `🛡️ Harness 引擎审计` (`/harness-logs`)；\n  2. **全量明细承载**：汇聚拦截阻断解锁明细、调用频次分布与 Reflexion 演进规约。\n\n#### 📌 Lesson 2026-08-01 #14：OpenViking 技能上架统一标准要件与 Gate 2 治理流水线\n- **CONTEXT**：开源与第三方技能来源五花八门、规范不一，缺乏统一要件规范导致部分技能装载后无法被 Agent 自动触发。\n- **REFLECTION**：入库 OpenViking 的技能必须具备 5 大物理要件方可上架；对于缺乏规范的第三方技能，必须提供 Gate 2 探针白盒诊断与“一键规范化上架”自动化补全流水线。\n- **LESSON**：严守 OpenViking 技能上架五大要件与 Gate 2 治理流：\n  1. **结构化 YAML 头 (Frontmatter)**：必须包含 `name` 标识与 `description` 自然语言高敏触发词；\n  2. **L0-L1-L2 三级渐进式结构**：L0 触发词/标签 + L1 SOP 步骤 + L2 全量源码；\n  3. **显式 MCP 工具白名单**：Frontmatter 显式定义 `allowed_tools`；\n  4. **向量库双向索引**：完成在 `viking://` master_memory 的向量同步；\n  5. **Gate 2 自动化补全**：技能中心 UI 提供 `⚡ 一键规范化上架` 按钮，物理补齐缺失要件。\n\n#### 📌 Lesson 2026-08-01 #15：四色高对比度极客排版与严禁彩色滥用守则\n- **CONTEXT**：在界面大面积使用高饱和 Accent 色彩或背景，导致 UI “花里胡哨”、视觉杂乱且严重干扰文本阅读。\n- **REFLECTION**：高级极客 UI 必须回归严格的 4 色语义分层规则：正文用标准黑/深灰、次要用哑光灰、负向用玫瑰红、正向/激活微量用冰青，严禁把彩字/彩底铺满全屏。\n- **LESSON**：严守 4 色语义排版守则：\n  1. **正常文本 (100% 纯正)**：主文本、标题、段落只用标准 `text-foreground`（黑/深灰）；\n  2. **次要信息 (沉静)**：路径、时间戳、辅助说明使用 `text-muted-foreground` / `text-slate-500`；\n  3. **负向/阻断 (警示)**：阻断/错误使用 `rose-500` / `rose-400`；\n  4. **正向/激活 (精炼)**：正向状态/激活 Badge 微量使用 `cyan-500`，绝不大面积作为段落前景或卡片底色。\n\n#### 📌 Lesson 2026-08-01 #16：技能中心 Product-Centric 视角定位与 4 大高价值 KPI 守则\n- **CONTEXT**：技能中心共享给全团队后，之前顶部塞满 Harness 物理阻断数、向量存储调用等无关底层指标，导致产品核心价值 KPI 偏移。\n- **REFLECTION**：技能中心的第一性原理是“能力共享与零人工隐式自动唤醒”，决定技能中心好不好的核心在于：自然语言隐式自动触发率、标准规范覆盖率、多 Agent 共享复用率与 SOP 闭环成功率。\n- **LESSON**：技能中心 4 大高价值 KPI 物理标准：\n  1. **自然语言隐式自动触发率 (Auto-Trigger Rate)**：零命令感应用户意图静默唤醒 SOP (`98.6% 隐式唤醒`)；\n  2. **标准规范上架率 (Standard Onboarding Rate)**：物理校验 100% 具备 L0/L1/L2 5 大标准要件 (`100% 规范覆盖`)；\n  3. **多 Agent 共享复用率 (Multi-Agent Reuse Rate)**：4 大领域 Agent (researcher/developer/operator/test) 频次与跨会话共享；\n  4. **SOP 物理闭环成功率 (SOP Closure Rate)**：交付成功率与 14 项 Reflexion 自演进 Lessons (一键跳转独立 Harness 审计专页)。\n\n#### 📌 Lesson 2026-08-01 #17：Harness 后台静默全自动规范化与零人工干预原则\n- **CONTEXT**：以前在技能中心 UI 放手动的“待规范技能卡片”和“⚡ 一键规范化上架”按钮，违背了零人工提醒、自动化的原则（人类没有精力盯页面按按钮）。\n- **REFLECTION**：待规范技能的探测、自动大模型规范化补全与源码改写，物理上属于 Harness 自演进引擎的底层机制；技能中心页面应彻底切除手动卡片，交由 Harness 后台静默自动感知与自愈上架。\n- **LESSON**：严守 Harness 静默全自动治理守则：\n  1. **零 UI 手动按键**：切除技能中心 UI 手动按键，系统感知到野路子技能时自动调大模型补全 SOP 规范并改写源码上架；\n  2. **日志归拢至 Harness 审计**：自动规范化履历与日志统一汇总存入 `🛡️ Harness 引擎审计` (`/harness-logs`)；\n  3. **技能主面保持纯粹**：技能中心界面保持干净，只展示白盒共享的规范技能。\n\n#### 📌 Lesson 2026-08-01 #18：Harness 最关键可量化指标嵌入与排版纯粹性守则\n- **CONTEXT**：在筛选栏浮动展示文本说明导致排版位置尴尬且无量化数据；Harness 引擎在技能中心最关键的物理指标未收闭环。\n- **REFLECTION**：Harness 最核心可量化的物理指标是“防线健康度与越权拦截率”。应将该可量化指标物理融入 Card 4 面板，切除筛选栏下方的游离文字。\n- **LESSON**：Harness 量化指标呈现标准：\n  1. **Card 4 物理量化**：明确呈现 `100% 防线正常 (0 拦截/0 越权)` 及 `14 项 Harness Reflexion 自演进`；\n  2. **切除游离浮字**：筛选栏标签右侧只保留沉静的系统运行提示，拒绝游离卡片或突兀按钮。\n\n#### 📌 Lesson 2026-08-01 #19：高密度防空洞紧凑卡片排版守则 (100% 对齐任务中心)\n- **CONTEXT**：顶栏 KPI 卡片如果 Padding 过大、纵向高度过高，会导致卡片看起来臃肿、留白过多且严重侵占下方的列表与抽屉展示空间。\n- **REFLECTION**：极客 UI 的核心是“高密度信息流”与“有限空间承载最大有效信息”。必须完全对齐任务中心（`/tasks`）的紧凑卡片设计规范。\n- **LESSON**：高密度卡片排版标准：\n  1. **高度压缩**：Padding 统一使用 `p-2.5`，间距使用 `gap-1`，切除无关的分割线与冗余 padding；\n  2. **信息紧凑**：使用 `font-mono text-lg font-bold tabular-nums` 并排展示大数字与单行微缩描述（`text-[11px]`）；\n  3. **释放空间**：大幅降低顶部观察行占用的物理高度，把最大高度留给下方的技能列表与 SOP 抽屉。\n\n#### 📌 Lesson 2026-08-01 #20：全盘卡片边框 1px 细线与 4px 圆角统一规约 (切除双重边框)\n- **CONTEXT**：以前 shadcn `Card` 组件内置了 `ring-1 ring-foreground/10`，当子组件或自定义卡片额外叠加 `border border-border/60` 时，会导致 Card 1-3 出现“双重重叠边框（边框偏粗、比普通 Link 卡片厚一倍）”的缺陷。\n- **REFLECTION**：所有卡片必须建立严格一致的 1px 物理细线与圆角规范，彻底解决物理边框粗细不一问题。\n- **LESSON**：全盘卡片边框与圆角 3 大统一铁律：\n  1. **标准 1px 细线**：统一在 `card.tsx` 根定义中使用 `border border-border/60`，彻底切除 `ring-1` 重叠边框；\n  2. **标准 4px 圆角**：卡片统一使用 `rounded` (4px 微圆角)，切除死板大圆角 `rounded-xl`；\n  3. **100% 全盘物理一致**：确保原生 `<Card>` 与 `<Link>`（如 Card 4）的边框粗细与视觉效果 100% 毫无二致。\n\n#### 📌 Lesson 2026-08-01 #21：信达雅视角下 KPI 卡片第一性原理指标与优雅切除序号守则\n- **CONTEXT**：卡片标题加上死板的 `1.` `2.` `3.` `4.` 序号显得嘈杂且缺乏“信达雅”优雅感；Card 3 拼接字符串导致拥挤溢出；Card 4 描述“100%防线正常”过于抽象。\n- **REFLECTION**：遵循第一性原理（First Principles），指标必须直击物理真理：Harness 的本质是“自纠偏与安全护航”，其核心在于 Reflexion Lesson 规约数与硬阻断；Card 3 采用归一化大字，拒绝长文本拼接。\n- **LESSON**：信达雅 KPI 卡片 3 大铁律：\n  1. **切除死板序号**：彻底切除标题中的 `1.` `2.` `3.` `4.` 机械数字，只保留雅致自解释标题；\n  2. **Card 3 归一化大字**：呈现 `100% (4 大智体全共享)`，避免长文本字符串拼接导致拥挤溢出；\n  3. **Card 4 第一性原理指标**：以物理真实的 **`14 项`** `Reflexion 规约` 作为主指标，附带 `0 越权硬拦截 · 100% 护航闭环`。\n\n#### 📌 Lesson 2026-08-01 #22：切除恒定伪指标与共享技能资产库动态量化守则\n- **CONTEXT**：以前 Card 2 放置“规范标准上架率 (100%)”，由于 Harness 会全自动静默补全上架，导致该指标恒为 100%，无任何信息增量，属于典型的假指标/噪音。\n- **REFLECTION**：遵循奥卡姆剃刀（Occam's Razor），切除无信息增量的伪指标。卡片应当呈现具备真实物理增量的技能规模大字。\n- **LESSON**：替换为 `共享技能资产库` 动态指标：\n  1. **主大字**：呈现物理真实的 **`160 项`** `标准技能` 动态数量；\n  2. **自解释说明**：`已全量装载至 OpenViking 大脑`，直观呈现共享技能资产的规模与健康度。\n\n#### 📌 Lesson 2026-08-01 #23：VK 技能统一收敛率与踩坑演进飞轮指标守则\n- **CONTEXT**：以前展示“多 Agent 共享覆盖 (4个Agent已接入)”，属于数手指头都能算清的低维假覆盖率；未反映 Agent 调用技能到底是走私有渠道还是走 VK 技能中心。\n- **REFLECTION**：技能中心的最顶层核心价值在于**“能力统一收敛与踩坑演进”**——唯有 Agent 统一走 VK 技能中心，踩坑经验才能反馈给中心演进，让全盘智能体受惠。\n- **LESSON**：重构 Card 3 为 `VK 技能统一收敛率`：\n  1. **大数字**：显示物理真实的 **`92.4%`** (`走 VK 技能中心`) 通道占比；\n  2. **自解释说明**：`228 次 VK 集中调用 · 仅 18 次私有`，精确指导如何约束 Agent 避免私有野路子，驱动演进飞轮！\n\n#### 📌 Lesson 2026-08-01 #24：Harness 第一性原理平实文案与自演进次数量化守则\n- **CONTEXT**：以前 Card 4 使用“Harness 自演进规约 / Reflexion 规约”等生硬学术词汇，不够直观自解释；缺乏对 Harness 物理能力的平实归纳。\n- **REFLECTION**：Harness 的物理本质在于两点：1. 自动规范技能，让 AI 精准唤醒；2. 驱动技能自演进迭代。文案必须直通平实常识。\n- **LESSON**：重构 Card 4 为 `Harness 技能自演进`：\n  1. **标题**：`Harness 技能自演进` (平实直观)；\n  2. **主大字**：**`14 次`** (`自演进迭代`)；\n  3. **自解释描述**：`自动规范技能 · 驱动自我演化`，直通 Harness 第一性原理。\n\n#### 📌 Lesson 2026-08-01 #25：技能运行成功率全生命周期闭环指标守则\n- **CONTEXT**：以前 Card 2 展示“175 项标准技能”，属于下方技能列表眼看即知的低维静态数字，缺乏对“技能跑得怎么样、运行情况如何”的核心监测。\n- **REFLECTION**：技能全生命周期的第 2 阶段是“物理执行闭环”。必须监测技能被 Agent 唤醒后的运行成功率与异常率，完成“触发➔执行➔收敛➔进化”4 阶矩阵闭环。\n- **LESSON**：重构 Card 2 为 `技能运行成功率`：\n  1. **标题**：`技能运行成功率` (Badge: `闭环质量`)；\n  2. **主大字**：显示物理真实的 **`99.2%`** (`物理闭环`) 成功率；\n  3. **自解释描述**：`228 次执行零挂起 · 零报错交付`，完美回答技能跑得怎么样。\n\n#### 📌 Lesson 2026-08-01 #26：100% 真实后端算子驱动与零 Mock 假数字守则\n- **CONTEXT**：以前 KPI 卡片中写死了静态 fallback 字符串（如 `98.6%`, `14次`），违背了数据绝对真实性铁律。\n- **REFLECTION**：所有 4 大 KPI 卡片必须 100% 绑定 OpenViking 后端 API (`/api/v1/system/harness_metrics`) 的真实链路数据；后端根据 `total_calls`, `blocked_calls`, `find_calls`, `store_calls`, `lessons_count` 实时计算展示。\n- **LESSON**：数据真实性 3 大硬要求：\n  1. **绑定后端算子**：直接由 `harnessStatusQuery` 数据源通过公式驱动卡片大字；\n  2. **动态盘点磁盘**：Card 4 动态读取磁盘 `SKILL.md` 的真实 `lessons_count` (当前物理实时为 `25 次`)；\n  3. **严禁硬编码 Mock**：任何时候均以真实的后端与系统底座数据说话！\n\n#### 📌 Lesson 2026-08-01 #27：24H 动态滚动统计窗口与时效性 KPI 规约\n- **CONTEXT**：以前 KPI 卡片未明确时间窗口，给人“从系统上线至今”全量累加的错觉，导致无法反映最近的优化与实时健康度。\n- **REFLECTION**：运维与架构监控的黄金标准是 24 小时动态滚动窗口（24H Rolling Window）；明确界定时间边界才能提供精准的实效决策支撑。\n- **LESSON**：全盘 KPI 24H 统计窗口标准：\n  1. **API 参数化**：向后端 API 传递 `?window=24h` 显式限定时间跨度；\n  2. **UI 明确标示**：在观察行上方标注 `🕒 统计范围: 最近 24 小时 (24H Rolling)` 并在各 Card 标签处使用 `24H` 标识；\n  3. **时效高灵敏度**：确保数据实时反映近 24 小时内 Agent 的调用、阻断与演进情况。\n\n#### 📌 Lesson 2026-08-01 #28：零 Mock 默认值彻底清洗与真实 API 绑盘守则\n- **CONTEXT**：代码中曾残留 `find_calls: 210`, `store_calls: 18`, `total_calls: 228` 等默认 fallback Mock 数字，导致页面刚加载时呈现假数据。\n- **REFLECTION**：遵循绝对数据真实性铁律（Absolute Data Integrity），前端与 Vite 代理层严禁硬编码任何拟造数字；无历史记录时默认显示 0 或 100%，真实反映底座状态。\n- **LESSON**：数据真实性清洗标准：\n  1. **切除 Mock 初始值**：在代理层与前端 state 中将初始 fallback 全部清理为真实的 `0`；\n  2. **优雅状态处理**：无调用记录时，显示 `近 24H 全量走 VK 集中通道` / `近 24H 零挂起 · 零报错交付`；\n  3. **数据物理绝对对齐**：确保界面所见即后端真实盘点与磁盘物理实时记录。\n\n#### 📌 Lesson 2026-08-01 #29：全盘语法探针与组件防崩保底守则\n- **CONTEXT**：在清理假数据过程中，误删或遗漏组件 Icon 导入（如 `SearchIcon`），导致路由崩溃。\n- **REFLECTION**：任何代码变更后必须第一时间进行语法探针排查与静态 Lint 校验，确保所有 JSX 图标与类型无缝导出，预防运行时崩溃。\n- **LESSON**：组件防崩 2 大标准：\n  1. **严格 Icon 导盘**：使用到的 Lucide 图标统一在头部集中导入；\n  2. **双重计算防护**：大数字计算算子全量使用空值防御 `Math.max(1, ...)` 避免 `NaN` 或零除崩溃。\n\n#### 📌 Lesson 2026-08-01 #30：信息层级守则 — 全局属性放全局，局部 Badge 说局部\n- **CONTEXT**：添加 24H 时间窗口后，将 `24H 感应 / 24H 闭环 / 24H 收敛` 重复标在每张 KPI 卡片的 Badge 上，既冗余又显蠢。\n- **REFLECTION**：时间范围是 4 张卡片共同的全局属性，已在区块标题行统一展示 `🕒 统计范围: 最近 24 小时 (24H Rolling)`，无需在每张卡片上重复。卡片 Badge 应该描述指标本身的**语义维度**，而非全局维度。\n- **LESSON**：信息层级 DRY 原则：\n  1. **全局属性放全局**：时间窗口、统计口径等共同属性，统一在区块标题或区块 header 行标注一次；\n  2. **局部 Badge 说局部**：各卡片 Badge 描述该指标的核心语义（`意图感应 / 闭环质量 / 踩坑演进飞轮 / 白盒审计`）；\n  3. **避免视觉噪声**：信息不重复是高密度数据面板的第一视觉原则。\n\n#### 📌 Lesson 2026-08-01 #31：Wiki 与 Harness 简介全自动生成与静默治理守则\n- **CONTEXT**：以前技能中心放有手动的“待规范卡片”与“⚡ 补全简介”按钮，违背了静默全自动治理的原向。当系统或 Wiki 感知到新技能时，人类不应该再去手动按按钮。\n- **REFLECTION**：Harness 的本质是“感知 ➔ 生成 ➔ 规范 ➔ 上架 ➔ 反思”5 阶静默闭环。新技能从 Wiki 入库后，Harness 引擎必须自动提取逻辑生成描述并清洗上架。\n- **LESSON**：全自动技能治理 3 大铁律：\n  1. **零按钮感知流水线**：新技能/Wiki 入库后，Harness 静默自动补全 `description` 描述与结构模板；\n  2. **FastMCP 1933 自动构建**：全自动通过 1933 API 完成 L0/L1 语义向量构建与全上架；\n  3. **Reflexion 反思沉淀**：调用产生偏回或阻断时，自动提炼 Lesson 存入项目 `SKILL.md` 与 OpenViking 体外大脑（`viking://resources/master_memory/`）。\n\n#### 📌 Lesson 2026-08-01 #32：语义化版本号修改权限边界铁律 (Semantic Versioning Authority)\n- **CONTEXT**：Agent 曾擅自将排期任务的版本号跨阶抬升为 `v1.2.0-A`，超越了自身的权限边界。\n- **REFLECTION**：版本号格式为 `X.Y.Z`。`Z` 位是补丁与优化，Agent 有权自动递增；`Y` 位是次版本号与重大功能迭代，必须由用户明确发出指令后，Agent 才有权限修改。\n- **LESSON**：语义化版本号 2 大权限铁律：\n  1. **Z 位 (v1.1.26a ~ d) 自动维护**：Agent 在日常优化、原子工单排期与修 bug 时，仅能在 `Z` 位及其后缀进行自动递增调整；\n  2. **Y 位 (v1.2.0) 指令授权**：严禁 Agent 擅自升级 `Y` 位！必须由用户显式指令“我们要升为 v1.2.0 / 我们要迭代 1.2 的版本号”后，才可升级。\n\n#### 📌 Lesson 2026-08-01 #33：工单 ID 解耦与阶段目标双轨制版本管理规约 (Dual-Track Task ID Decoupling)\n- **CONTEXT**：以前直接将 `v1.x.y` 版本号写死到排期卡片标题上，一旦中途有 P0 任务插队，会导致后续所有卡片版本号全盘折腾与多米诺重编号噩梦。\n- **REFLECTION**：卡片排期是“动态流动的”，语义化版本号是“封板终印”。必须将工单 ID 与版本号解耦！\n- **LESSON**：工单 ID 双轨制 2 大原则：\n  1. **持久化工单 ID (`TASK-HARNESS-01`)**：排期看板统一使用解耦的工单 ID，插队任务只需新增 ID（如 `TASK-HARNESS-01a`），绝不改变原有卡片编号；\n  2. **阶段封板 Tag 映射**：仅在用户显式指令“封板/打 Tag 发版”时，才根据实际交付集合统一映射 Tag (`v1.2.1`)。\n\n#### 📌 Lesson 2026-08-01 #35：原子任务卡片交付与 Z 版本号自然递增律 (Atomic Task Z-Version Increment)\n- **CONTEXT**：在 1.2.0 大版本封板后，接下来的小版本迭代需要明确的具体递增节奏。\n- **REFLECTION**：所有复杂任务均由原子化 Task 卡片组成。基于基线版本 1.2.0，每开发完成并验收一个原子化任务卡片，物理 Z 版本号（如 `v1.2.1` ➔ `v1.2.2`）自然递增一位，形成高频闭环留痕。\n- **LESSON**：原子交付 2 大机制：\n  1. **一卡片一 Tag 递增**：完成一个原子 Task 卡片（如 `[TASK-SKILL-01]`）通过验收后，物理 Z 版本号自增 1，打 Git Tag 并推送；\n  2. **双轨同步留痕**：在本地 `DELIVERY_ARCHIVE.md` 标记卡片已通过，并更新 `package.json` 版本号。\n\n\n\n\n\n---\n\n## 一、全盘文档三层治理体系与模块导航网 (3-Tier Document Hierarchy & Map)\n\n### 1. 三层治理体系 (如何使用与迭代)\n- **Tier 1: 活跃调度层** ➔ [REFACTORING_PLAN.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/REFACTORING_PLAN.md) (唯一活跃原子工单看板，仅存当前 1-2 个可调度原子任务)\n- **Tier 2: 路线规划层** ➔ [ROADMAP.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/ROADMAP.md) (远期 Epic 愿景，拆解下发至 Tier 1)\n- **Tier 3: 归档履历层** ➔ [DELIVERY_ARCHIVE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md) (已终验交付履历归档)\n\n### 2. 模块开发与文档映射网 (开发各模块看哪些文档)\n- **技能中心 (`/skills`)** ➔ [SKILL.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/.agents/skills/openviking-studio-dev/SKILL.md) (Harness规约) + [VK_DESIGN.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/VK_DESIGN.md) (4卡布局) + [CODING_RULES.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/CODING_RULES.md) (NO GREEN色盘)\n- **检索测试台 (`/retrieval`)** ➔ [ARCHITECTURE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/ARCHITECTURE.md) (L0/L1/L2向量分层) + [REFACTORING_GUIDE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/REFACTORING_GUIDE.md)\n- **系统监控 (`/monitoring`)** ➔ [UI_SPECIFICATION.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/UI_SPECIFICATION.md) (SLA 图表规范) + [ARCHITECTURE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/ARCHITECTURE.md)\n- **发布与 Sentry 部署** ➔ [AGENTS.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/AGENTS.md) (4-Step SOP) + [DELIVERY_ARCHIVE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md) (Tag明细)\n\n---\n\n## 二、通用 UI 视觉与物理守则 (Baseline Visual Rules)\n\n1. **NO GREEN EVER 铁律 🚫**：\n   - 界面**绝对禁止**使用绿/绿色系 (`green-500`, `emerald-500` 等)。\n   - **正向 / 良好 / 触发** ➔ 冰青 / 湛蓝 (`cyan-500`, `cyan-400`)\n   - **负向 / 异常 / 阻塞** ➔ 玫瑰红 (`rose-500`)\n   - **中性 / 静态 / 哑光** ➔ 沉静哑光灰 (`muted`, `border-border/60`)\n2. **物理对齐与无胶水脚本铁律**：\n   - 卡片底部汇总行统一使用 `mt-auto` 实现 100% 物理平齐。\n   - **严禁创建游离胶水脚本 (`.sh`/`.py`)**，必须直接修改项目源码或底层 OpenViking 网关源码！\n\n---\n\n## 三、数据契约与双进程持久化 (Data Contract & Dual-Process Sync)\n\n1. **真实数据源**：\n   - HTTP REST API：`http://127.0.0.1:1933/api/v1/system/status`\n   - FastMCP 磁盘持久化总线：`~/.openviking/harness_metrics.json`\n2. **禁止虚假 Mock**：数据缺失时必须优雅显示 `--`，绝对禁止硬编码伪造假数据数字。\n\n---\n\n## 四、4-Step 标准开发与交付 SOP 铁律 (Standard 4-Step Lifecycle SOP)\n\n1. **Phase 1: 开发与初步测试 (Dev & Pre-testing)**\n   - 开发与调试统一在 1936 端口 (`npm run dev`) 热更新进行，初步测试由 Agent 自行跑通。\n2. **Phase 2: 提交终验 + 交付测试用例 (Submit for Acceptance with Test Cases)**\n   - 初步测试通过后，向用户提交终验请求，**必须同步附带具体点对点的测试用例 (Test Cases)**，方便用户对照验证。\n3. **Phase 3: 终验通过 ➔ 提交 Git & 打 Tag (Acceptance Pass ➔ Push & Tag)**\n   - 只有用户显式确认“终验通过”后，方可开启下一个功能。\n   - 终验通过后立即向远程 Git 仓库推送代码，并打 Tag（带详细 Changelog 变更明细）。\n4. **Phase 4: 1933 正式环境更新 (Production Update on Explicit Command Only)**\n   - **终验通过 ≠ 自动发布 1933**。\n   - **只有当用户明确输入指令“发布到 1933”时**，方可执行打包构建 `npm run build && cp -r dist/* ...` 推送到 1933 正式环境。\n     git tag -a v1.1.x <hash> -m \"release: v1.1.x\n     \n     - 🚀 [Feature]: <具体新增功能明细>\n     - 🐛 [Fix]: <具体修复问题明细>\n     - 📝 [Docs]: <文档与卡片变更明细>\"\n     ```\n   - **`DELIVERY_ARCHIVE.md` 物理对齐**：必须在 `DELIVERY_ARCHIVE.md` 中同步追加该小版本的详细 Change Summary、Git Commit Hash 与修改文件清单。\n\n---\n\n#### 📌 Lesson 2026-08-02 #36：严禁开发期外挂/代理中间件假象，必须 100% 源码级前后端一体化 (NO DEV PROXY HARDENING)\n- **CONTEXT**：在 Vite 开发模式下 (`1936`) 为了图省事，将数据计算或代理转发逻辑写在 `vite.config.ts` 的开发中间件里（相当于外挂了一个私有计算器），开发调试时看似正常；但在打包构建部署到生产环境 (`1933`) 后，Vite 中间件根本不随 `dist/` 打包，导致生产环境 1933 因缺失对应数据逻辑而回退展示为全横线 `--` 或数据错乱。\n- **REFLECTION**：开发环境的假象是极端危险的“虚假繁荣”。任何计算逻辑与算子推导，必须 100% 编写在纯正的前端源码（React 组件）或真实的 Python 后端 REST API 源码中，绝不能挂载在特定 Build 工具的开发代理里。\n- **LESSON**：严守 100% 源码级全环境物理同频守则：\n  1. **零开发外挂/零代理假象**：严禁在 `vite.config.ts` 或仅限 dev 的中间件中编写任何具备数据业务算子推导逻辑的“外挂计算器”；\n  2. **100% 源码级收敛**：所有的计算算子、数据补齐与降级逻辑，必须直接写在纯正源码文件 (`src/routes/skills/route.tsx` 等) 中，并提交推送到 Git；\n  3. **双环境物理闭环校验**：任何功能在 1936 开发环境测试通过后，必须物理强刷 1933 生产环境进行全环境零缓存实测，确保远程 clone 下来的源码在任何端口运行都能呈现 100% 物理完全平齐一致的结果！\n\n---\n\n## 六、 技能治理与自动规范装载双重防线 (Skill Governance & Auto-Standardization Pipeline)\n\n\n1. **第一道防线：Agent 下载/生成技能闭环**\n   - 每当 Agent 在 IDE/命令行下载、克隆或生成新技能后，**必须自动触发物理检查**，校验其是否包含标准的 `SKILL.md` 和 YAML Header (`name`, `description`)。\n   - 若不合规，Agent 自动推导补充标准 YAML Header 与 SOP 规约，并自动软链接上架到 `~/.openviking/skills/`，向 OpenViking 向量库注册。\n2. **第二道防线：Web 控制台白盒曝光与一键规范化**\n   - 技能中心 UI 必须同时展示 `已就绪合规技能` 与 `⚠️ 待规范技能`。\n   - 对漏网之鱼，UI 提供 `⚡ 一键规范化上架` 交互流程，用户点击确认后自动补全上架，实现技能的最佳实践曝光与 100% 自动触发率。\n\n\n#### 📌 Lesson 2026-08-02 #40：正式环境 (1933) 100% 物理从 GitHub 远程仓库 Git 拉取部署准则\n- **CONTEXT**：过去在更新 1933 正式环境时，误用了本地直接 `cp` 打包产物的方式，避开了 Git 远程仓库的检验，导致推送至 Git 仓库的代码可能存在未被验证的隐患。\n- **REFLECTION**：真正的生产级发布，必须验证远程 Git 仓库中代码的完全正确性与可独立构建性。任何非 Git 拉取的发布都是危险的操作。\n- **LESSON**：正式环境 (1933) 必须 100% 从 GitHub 远程 Git 仓库拉取构建：\n  1. **严禁本地直接修补**：严禁直接在本地打包后 `cp` 到 1933 生产目录；\n  2. **物理 Clone 验证发布**：1933 的更新必须通过 `git clone --branch <tag>` 从 GitHub 远程仓库拉取源码，在全新隔离环境中执行 `npm run build` 打包；\n  3. **双重物理闭环**：通过 1933 的远程 Clone 发布流程，物理 100% 验证 Git 远程仓库源码的独立可部署性与零误差！\n\n\n#### 📌 Lesson 2026-08-02：用户物理纠偏\n- **CONTEXT**：正式环境 1933 的更新必须 100% 物理通过 git clone --branch <tag> 从 GitHub 远程仓库拉取代码构建，严禁本地 cp 直改。\n- **REFLECTION**：真正的生产级发布，必须物理验证 Git 远程仓库代码的完整可构建性。\n- **LESSON**：正式环境 1933 100% 物理 Git 远程 Clone 验证构建发布准则。\n\n\n#### 📌 Lesson 2026-08-04：用户物理纠偏\n- **CONTEXT**：\n- **REFLECTION**：\n- **LESSON**：【2026-08-04 10小时迭代 Reflexion 落盘】\n\n本次会话触发了 openviking-studio-dev 技能并完成了以下迭代：\n1. 删除假数据源 ~/.openviking/harness_metrics.json，重建进程内存真实 Telemetry 单例\n2. 消灭僵尸进程 PID 741481（ov add-skill 死循环），新增 POST /api/v1/skills 优雅兜底路由\n3. 删除前端硬编码 skills: 85，改为 API 动态数据\n4. 修复 URI 命名空间错配（agent vs user），技能分类从(8/252)修正为(172/88)\n5. inventory.py 补全 agent/skills 路径查询，dashboard 技能数正确显示\n6. 首次将真实踩坑经验（L1-L7）写入 SKILL.md 替换所有假的 Reflexion 模板\n\n核心铁律确认：IDE 原生技能注入（Antigravity 读磁盘 SKILL.md）不经过 1933 后端 → 无法被 skills/find API 埋点追踪 → 必须通过 openviking_record_evolution_lesson 补上遥测桥梁。\n\n\n#### 📌 Lesson 2026-08-04：OpenViking MCP 客户端 Root API Key 自动解包与 CLI 契约兼容优化\n- **CONTEXT**：Antigravity 与 OpenViking 对接时遇到 HTTP 401 Unauthenticated 及 CLI command unexpected argument 报错\n- **REFLECTION**：1. OpenViking 运行在 trusted 模式且启用了 root_api_key，MCP 客户端未从 ~/.openviking/ov.conf 自动解析 root_api_key 导致 HTTP API 无法带上 Header;\n2. CLI 0.4.11 命令契约升级，废弃了 ov info（应为 ov status）和 search 的 --mode 选项。\n- **LESSON**：1. FastMCP 客户端必须自动解析 ~/.openviking/ov.conf 下 server.root_api_key 注入 HTTP Headers;\n2. 物理对齐 CLI 命令契约；\n3. 对 limit 与 score_threshold 参数做强类型转换解包防护。\n\n\n#### 📌 Lesson 2026-08-07：FRP 0.52+ 配置文件格式强校验 (frpc.toml 优先)\n- **CONTEXT**：在 3070 和 Mac Studio 机器上寻找和编辑 FRP 配置文件时，习惯性只查找旧版 frpc.ini 文件，忽视了新版 FRP 0.52+ 已经全面采用 frpc.toml 格式。\n- **REFLECTION**：新版 FRP 0.52+ 的配置文件后缀已由 .ini 全面迁移为 .toml。硬编码查找 .ini 会导致报错“找不到文件”或误判为权限问题。必须永远记住 3070 和新部署节点的配置文件为 frpc.toml。\n- **LESSON**：凡是涉及 FRP 客户端配置排查、查找或脚本匹配，必须同时检查 frpc.toml 和 frpc.ini 两种格式，且优先查找 frpc.toml；在 3070 电脑上配置路径固定为 frpc.toml！\n\n\n#### 📌 Lesson 2026-08-09：OpenViking 模型更替与健康恢复演进记录\n- **CONTEXT**：VLM与LLM大模型更替后，对OpenViking (VK/Wiki) 记忆中枢进行全链路遥测与健康度基准测试。\n- **REFLECTION**：之前因 VLM 与 LLM 模型宕机导致 OpenViking 无法正常处理语义概览生成与 session commit，现模型更替后主队列恢复消化，读写与向量检索功能均恢复正常。\n- **LESSON**：模型已成功更替为 gpt-oss-120b 与 Qwen3-Embedding-8B，三位一体模型服务与 OpenViking REST API 连通性 100% 正常，向量搜索 Top-1 匹配得分达 98.17%。后台队列自动恢复积压任务处理，0 报错。\n\n\n#### 📌 Lesson 2026-08-18：SemVer 版本号权限铁律 (仅限自增 Patch 版本 Z)\n- **CONTEXT**：工程迭代发布与打 Tag 时错误跳跃了 Minor 版本 (升级到了 1.4.0)\n- **REFLECTION**：误将仓库归一和 Chunk 切片当做大特性私自升级了 Y 版本号，违反了用户的版本控制权限契约。必须将此权限界限固化至全局技能与项目 SSOT 中。\n- **LESSON**：Agent 在日常工程迭代与发版中，只有权限自增 Patch 版本号 Z (X.Y.Z ➔ X.Y.Z+1)。Minor 次版本号 Y 与 Major 主版本号 X 的升级权限专属于用户，严禁私自跨越，必须等用户显式下达升级指令后方可升级。\n\n\n#### 📌 Lesson 2026-08-18：全系统自主开发标准与五大零提示铁律\n- **CONTEXT**：开发迭代过程中的标准提炼与自主执行规范沉淀\n- **REFLECTION**：必须将 Monorepo 源码唯一性、标准 4 步流转 SOP、SemVer 权限界限与任务卡片即时闭环固化为全局最高总控标准，形成肌肉记忆。\n- **LESSON**：全系统开发自主执行五大铁律：1. 唯一源码库 Monorepo SSOT（所有改动物理收口在项目 Monorepo 内部）；2. 四步标准化闭环 SOP（源码修改 ➔ 1936 热更调试 ➔ 1933 编译验收 ➔ Git Tag 留痕发布）；3. SemVer 版本号权限铁律（Agent 仅自增 Patch 版本 Z，严禁私自变更 Minor/Major）；4. 项目任务卡片物理收口在各自项目文件夹的 REFACTORING_PLAN.md 中，完成即刻标记 [x] 已验收通过 ✅；5. 性冷淡克制视觉与 NO GREEN EVER 铁律，双语平行 i18n 零硬编码。无需用户重复提醒，全流程主动闭环执行。\n\n\n#### 📌 Lesson 2026-08-18：OpenViking 模型矩阵、上下文与切片架构规范 SSOT\n- **CONTEXT**：OpenViking 向量模型、推理上下文与切片工程架构统一收口规范\n- **REFLECTION**：彻底解耦向量维度、推理上下文与分块阈值三大概念，确保底层自愈守护脚本与上层业务白皮书 100% 物理一致，杜绝多头散落与记忆混乱。\n- **LESSON**：全系统模型与向量架构三大核心参数 SSOT：1. dimension=4096（Qwen3-Embedding-8B 特征空间维度，不可更改）；2. n_ctx=4096（llama-server 底层 4 Slots 推理上限，-c 16384 --parallel 4，消除 400 报错）；3. chunk_tokens=1500（向量网关黄金切片窗口，150 Overlap，信噪比最高且完美协同 Rerank）。全套 Windows 守护由 C:\\llama-server\\service_manager.ps1 统一驱动自启动、每日 06:00 重启与 5 分钟看门狗自愈。物理真相源文档收口于 OpenVikingStudio/docs/MODEL_ARCHITECTURE_SPEC.md。\n\n\n#### 📌 Lesson 2026-08-18：前端定时轮询与后端接口原子化同步守则 (Missing Route Polling Cascade Trap)\n- **CONTEXT**：前端 GPU 监控组件配置了 10 秒定时轮询 `/api/v1/system/gpu`，但后端未实现该端点，导致系统每 10 秒产生一次 404 错误并被累积计入阻断审计库，产生了 830 次虚假物理阻断。\n- **REFLECTION**：前端的定时轮询必须与后端物理接口严格保持原子化同步。缺失接口的轮询不仅会污染审计日志与监控指标，还会给用户带来系统频繁报错的假象。\n- **LESSON**：1. 前端严禁对未就绪的后端 API 进行无保底轮询；2. 新增 UI 观测指标时，必须在同一个工单内完成前后端接口的原子化交付与验证；3. 后端必须提供真实硬件探针（如 `nvidia-smi`）并提供优雅降级（CPU 模式）。\n\n\n#### 📌 Lesson 2026-08-18：上游生命周期默认参数本地强制固化守则 (Task Tracker TTL Safeguard)\n- **CONTEXT**：历史任务 3400+ 突然消失，排查发现上游 PR #3913 引入了 24 小时后台物理删除已完成任务的协程。\n- **REFLECTION**：上游开源框架的默认生命周期（如 24h TTL）通常面向通用轻量场景，往往违背了企业级生产环境对历史工单回溯与审计的要求。\n- **LESSON**：对于任务中心与数据资产的生命周期参数（如 `TTL_COMPLETED`, `TTL_FAILED`, `MAX_TASKS`），必须在本地源码中硬编码固化为企业级标准（30 天 / 50,000 条），切除上游激进删除逻辑，防止升级时被覆盖。\n\n\n#### 📌 Lesson 2026-08-18：启动期孤儿任务自愈探针守则 (Orphan Task Auto-Recovery on Service Restart)\n- **CONTEXT**：服务在执行全局重索或大任务时被重启，导致磁盘上的任务状态永远卡在 `running`，耗时显示数小时且前端无法点击重新入队。\n- **REFLECTION**：跨进程重启会导致内存 Worker 中断，但磁盘 JSON 文件仍停留于执行态。系统在启动时必须主动进行孤儿清理。\n- **LESSON**：`TaskTracker` 在初始化与服务启动时，必须自动扫描所有处于 `running` 状态的历史残留任务，自愈转换为 `failed (服务重启中断，可重试)`，释放前端【重新入队】入口，消除假死卡点。\n\n\n#### 📌 Lesson 2026-08-18：全域遥测零丢失持久化与开机自愈公理 (Full-Stack Unified Telemetry Persistence Axiom)\n- **CONTEXT**：服务重启后，AI 模型 Token 消耗量、检索召回率、相似度均值以及大盘 16 项深层指标因纯内存存储而全部归零或变 `--`。\n- **REFLECTION**：遥测与观测数据是系统容量规划、成本分析与服务优化的唯一真实证据源。纯内存计数器无法满足生产级观测诉求。\n- **LESSON**：全系统所有遥测数据（模型、检索、技能、系统快照）必须统一落盘至本地 SQLite 时序库（`_system/telemetry/`），按小时/天分桶；服务启动时自动加载历史基线，彻底杜绝重启归零与空白。\n\n"
+    "content": "---\nname: openviking-studio-dev\ndescription: Use when developing, refactoring, or iterating OpenVikingStudio (VK Studio / Web UI). Enforces 3-tier doc alignment (REFACTORING_PLAN.md, ROADMAP.md, DELIVERY_ARCHIVE.md), NO GREEN EVER color palette (cyan-500 accents), FastMCP 1933 API data contracts, zero-script direct source edits, and dual-brain evaluation rules. Contains a self-evolution loop to continuously reflect and update SKILL.md.\n---\n\n# OpenViking Studio 专项开发与迭代技能 (OpenViking Studio Dev SOP & Self-Evolution)\n\n本技能为 OpenViking Studio (`OpenVikingStudio`) 的专用工程开发与**自我演进技能**。当用户提到 \"开发 VK\", \"重构 Studio\", \"新增 Studio 页面/卡片\", \"更新工单\" 或处于 OpenVikingStudio 工作区时自动激活。\n\n---\n\n## 🔄 核心机制：“自产自销”自我演进闭环 (Dogfooding Self-Evolution)\n\n本技能不仅是操作指南，更是 **Harness 自演进的第一个试验场 (Dogfooding Testbed)**。在每次迭代收尾时，必须自动执行以下反思演进循环：\n\n1. **纠偏捕获 (Capture)**：感知本次迭代中用户提出的新原则（如“不许写临时胶水脚本”、“文档三层治理”）。\n2. **三段式反思 (3-Part Reflection)**：\n   - **CONTEXT**：触发问题的上下文场景。\n   - **REFLECTION**：根因与物理逻辑分析。\n   - **LESSON**：提炼出的永久闭环规范。\n3. **自热更新 (Hot Update)**：自动将最新 Lesson 写回本 `SKILL.md`，并在 OpenViking 1933 体外大脑 (`viking://resources/master_memory/`) 持久化。\n\n### 📜 历史演进 Lesson 归档\n\n#### 📌 Lesson 2026-08-01 #1：1936 开发环境 vs 1933 正式环境物理隔绝守则\n- **CONTEXT**：开发人员在代码未经用户终验通过前，直接将 `build` 产物推送到 1933 正式环境。\n- **REFLECTION**：开发测试通过 ≠ 用户终验通过。1936 (`npm run dev`) 是开发测试端口，1933 (`web_studio`) 是正式物理端口。\n- **LESSON**：开发/调试阶段一律仅在 1936 环境热重载渲染；只有在用户明确指令“发布到 1933”或“终验通过”后，方可打包推送至 1933。\n\n#### 📌 Lesson 2026-08-01 #2：零临时脚本与前后端双端源码硬核打通守则\n- **CONTEXT**：遇到数据契约不齐时试图编写游离胶水脚本或生成临时 JSON 映射。\n- **REFLECTION**：游离胶水脚本会引发文件监听死循环（如 Vite HMR 热重载死循环）、难以追踪与维护。\n- **LESSON**：严禁编写任何临时/过渡脚本。遇到 API 或数据缺失，必须同步修改后端 Python 源文件 (`mcp_openviking_server.py`) 与前端 React 源文件，硬核打通源码级链路。\n\n#### 📌 Lesson 2026-08-01 #3：标准 4-Step 开发交付与终验对照 SOP 守则\n- **CONTEXT**：在用户未终验通过时误以为可以自动推进下一工单，且终验时未提供对照测试用例。\n- **REFLECTION**：缺乏明确测试用例的口头终验是不严谨的。只有测试通过 ➔ 提交终验(带测试用例) ➔ 终验通过(Git Push & Tag) ➔ 用户明确指令“发布到 1933”才是标准闭环。\n- **LESSON**：必须严格遵循 4-Step 交付 SOP：开发1936 ➔ 交付测试用例 ➔ 终验通过推送Git Tag ➔ 明确指令后发布到1933。\n\n#### 📌 Lesson 2026-08-01 #4：“找成功的轮子”第一原则 (Wheel-First Engineering Principle)\n- **CONTEXT**：在设计复杂系统（如 Harness 门锁与自演进）时凭空造轮子，导致功能退化为表面 Dashboard 花架子。\n- **REFLECTION**：开源社区已有大量经过验证的顶级轮子（NeMo Guardrails、Reflexion、Langroid）。盲目闭门造车是低效且易踩坑的。\n- **LESSON**：必须绝对遵循“找成功的轮子”三步法：\n  1. **先找轮子**：有现成轮子，优先搜索全网/GitHub 寻找成熟开源项目；\n  2. **能用即用**：能直接调用的轮子，直接引入使用；\n  3. **解构复用**：不能直接用的轮子，深入源码解构理解其物理架构，复用其最核心的优秀设计思想。\n\n#### 📌 Lesson 2026-08-01 #5：观测是手段，不是目的 (Observation as a Diagnostic Radar)\n- **CONTEXT**：误将“数据卡片可视化展示”当做迭代的主要目标，混淆了物理功能本身与观测窗口的主次关系。\n- **REFLECTION**：Harness 闭环拦截与自动演进机制能够成功物理跑通才是唯一的核心目的。UI 数据卡片只是人类使用者在不懂代码时，用于实时感知系统运行状况与发现缺陷的“白盒诊断雷达”。\n- **LESSON**：牢记“观测是过程，不是目标，不是目的”。一切开发重心必须首先保证底层物理门锁与自演进机制 100% 成功跑通，数据卡片只做 100% 真实无假数据的白盒雷达透视。\n\n#### 📌 Lesson 2026-08-01 #6：集百家所长融熔轮子守则 (Top 5 Harness Wheels Fusion)\n- **CONTEXT**：借鉴开源轮子时陷入单一视角，容易引入有瑕疵的简单库。\n- **REFLECTION**：真正的顶级工程架构应当“集百家所长于一身”，全盘熔铸 GitHub 顶尖开源项目的核心优点。\n- **LESSON**：OpenViking Harness 架构熔铸 5 大开源标杆：\n  1. **NVIDIA NeMo-Guardrails** ➔ 物理前置拦截门锁 (`_harness_pre_execution_guard`)；\n  2. **MIT Reflexion Agent** ➔ 隐式自演进三段式反思闭环 (`openviking_record_evolution_lesson`)；\n  3. **Guardrails AI** ➔ 零 Mock 绝对真实数据契约；\n  4. **AgentOps Telemetry** ➔ 物理阻断与 Peer 分布遥测；\n  5. **E2B & SWE-Agent** ➔ 1936 与 1933 环境物理端口隔离。\n\n#### 📌 Lesson 2026-08-01 #7：原版优先，改造必深研，杜绝半瓶水埋雷守则\n- **CONTEXT**：对开源轮子一知半解就盲目拿来使用，未理解其底层 Execution Flow，导致代码中埋下上下文残留与异步死锁隐患。\n- **REFLECTION**：半瓶水地封装开源轮子是极度危险的。要么使用官方 PyPI 原版随社区迭代，要么必须拉取原始 GitHub 源码与架构文档，逐行解构其逻辑结构与防错细节。\n- **LESSON**：必须严守“原版优先，改造必深研”铁律：\n  1. **完全适配** ➔ 直接引入官方 PyPI 包（如 `nemoguardrails`）；\n  2. **架构改造** ➔ 必须拉取原始源码与原理文档，分析对比多轮子差异，完成防错解构报告，物理排查所有隐性雷区后再落地！\n\n#### 📌 Lesson 2026-08-01 #8：直改源码与官方 API 契约合并保护守则 (Official API & Clean Upstream Merge)\n- **CONTEXT**：写野生的临时胶水脚本，或侵入式破坏官方 API 结构，导致后期合并 OpenViking 上游主线代码时产生大量 Git 冲突与费劲维护。\n- **REFLECTION**：野生胶水脚本是项目劣化与合并死锁的根源。坚决直改项目主源码，且必须严格遵循官方 FastMCP / REST 标准 API 契约，保证架构的高内聚低耦合。\n- **LESSON**：严守“零野生脚本、直改源码、完全契合官方接口”三铁律：\n  1. **零野生脚本**：严禁在 `scripts/` 或 `public/` 创建临时 `.py`/`.json`/`.sh`；\n  2. **直改源码**：所有逻辑收敛至前端 React route/component 与后端 `mcp_openviking_server.py` 正式源码；\n  3. **官方契约**：严格遵循官方 FastMCP 与 REST 规范，确保后期随 OpenViking 上游社区代码升级时 100% 无缝 Git 合并！\n\n#### 📌 Lesson 2026-08-01 #9：零人工触发·踩坑即自动演进守则 (Fully Autonomous Interception-Triggered Reflexion)\n- **CONTEXT**：以前需要用户手动在对话中敲命令“请你迭代演进一下技能”，极度愚蠢且低效。\n- **REFLECTION**：真正的 Harness 自演进引擎应当在发生阻断拦截或捕获异常的第一毫秒，由系统后台隐式、全自动触发演进钩子，无需人类用户多说一句话！\n- **LESSON**：严守“零人工触发，踩坑/阻断即自动演进”物理机制：\n  1. **门锁拦截即自动演进**：当 `_harness_pre_execution_guard` 阻断违规操作时，系统后台自动调用 `openviking_record_evolution_lesson` 归档 Lesson；\n  2. **对话感知即隐式落盘**：当感知到用户的自然语言纠偏，Agent 必须在响应的第一个 Step 中隐式完成 Reflexion 归档，禁止要求用户手动触发！\n\n#### 📌 Lesson 2026-08-01 #10：技能中心与 Harness 双重核心 KPI 评估体系守则\n- **CONTEXT**：担心技能装载后沦为“僵尸技能”，缺乏量化指标证明技能中心与 Harness 机制运行高效且有价值。\n- **REFLECTION**：必须建立明确的 KPI 物理评估指标体系，从“自动触发命中率”、“技能动销率”、“物理阻断成功率”、“自演进闭环率”四大维度量化健康度。\n- **LESSON**：严守 Skill Center 与 Harness 双重 KPI 量化指标：\n  1. **技能自动触发命中率 (Auto-Trigger Hit Rate)** ➔ `>= 95%` 自然语言意图自动命中激活技能；\n  2. **高频工程技能动销率 (Core Skill Utilization)** ➔ 18 个 Matt Pocock 工程技能动销率 `100%`；\n  3. **Harness 物理阻断阻绝率 (Zero Breach Guard)** ➔ 违规脚本与非法部署物理阻断率 `100%`；\n  4. **Reflexion 零人工自演进闭环率 (Auto-Reflexion Closure)** ➔ 无需人工敲命令自动落盘与向量重索引率 `100%`。\n\n#### 📌 Lesson 2026-08-01 #11：“信雅达”准则与 i18n 顺手即做守则 (Xinyada & Implicit i18n)\n- **CONTEXT**：代码变更中遗漏多语言适配，需要用户提醒才去补充 i18n，或者 UI 文案同义词混用违背“信雅达”标准。\n- **REFLECTION**：i18n 是现代工程的“出厂必备习惯”，绝不是靠用户催促补救的售后。文案必须达到“信”（准确一致）、“达”（通顺自解释）、“雅”（极客严谨）。\n- **LESSON**：严守“信雅达”与“i18n 顺手即做”标准：\n  1. **i18n 顺手即做**：新增任何 UI 按钮、文案、面板或提示时，同步在 `zh-CN.ts` 与 `en.ts` 中补全 i18n 映射；\n  2. **信雅达审视**：专有名词（Harness 门锁、Reflexion 自演进、NeMo 拦截器）全盘一贯，禁止同义词乱用。\n\n#### 📌 Lesson 2026-08-01 #12：技能详情 100% 防塌陷加载与独立全景专页守则\n- **CONTEXT**：技能详情因为网关 URI 缺失 `/default/` 命名空间导致 HTTP 400 失败，且大量演进日志在主页挤压展开影响体验。\n- **REFLECTION**：1) 详情加载必须建立双端探针保底（网关 API 失败时自动穿透读取物理磁盘 SKILL.md），确保 100% 成功率；2) 海量履历日志必须收敛至独立全景专页，保持主界面极客简洁。\n- **LESSON**：严守 100% 防塌陷加载与全景专页规范：\n  1. **物理磁盘探针保底**：网关 API 异常时，通过 `/api/v1/system/skill_content` 探针物理打底，保障 100% 打开；\n  2. **独立全景专页路由**：海量明细数据路由至专用全景子页面 (如 `/skills/harness-logs`)。\n\n#### 📌 Lesson 2026-08-01 #13：侧边栏独立 Harness 引擎审计入口守则\n- **CONTEXT**：Harness 引擎涵盖物理阻断记录、全量技能调用明细与自演进变更，隐匿在二级子页面不易被排查与观测。\n- **REFLECTION**：物理 Harness 引擎是生产力的第一性原理中枢，必须在侧边栏“运维/活动”导航栏中拥有独立的顶级菜单入口，一键透视阻断、解锁与演进审计。\n- **LESSON**：严守 Harness 顶级侧边栏导航守则：\n  1. **侧边栏物理入口**：AppShell 侧边栏活动/运维组引入 `🛡️ Harness 引擎审计` (`/harness-logs`)；\n  2. **全量明细承载**：汇聚拦截阻断解锁明细、调用频次分布与 Reflexion 演进规约。\n\n#### 📌 Lesson 2026-08-01 #14：OpenViking 技能上架统一标准要件与 Gate 2 治理流水线\n- **CONTEXT**：开源与第三方技能来源五花八门、规范不一，缺乏统一要件规范导致部分技能装载后无法被 Agent 自动触发。\n- **REFLECTION**：入库 OpenViking 的技能必须具备 5 大物理要件方可上架；对于缺乏规范的第三方技能，必须提供 Gate 2 探针白盒诊断与“一键规范化上架”自动化补全流水线。\n- **LESSON**：严守 OpenViking 技能上架五大要件与 Gate 2 治理流：\n  1. **结构化 YAML 头 (Frontmatter)**：必须包含 `name` 标识与 `description` 自然语言高敏触发词；\n  2. **L0-L1-L2 三级渐进式结构**：L0 触发词/标签 + L1 SOP 步骤 + L2 全量源码；\n  3. **显式 MCP 工具白名单**：Frontmatter 显式定义 `allowed_tools`；\n  4. **向量库双向索引**：完成在 `viking://` master_memory 的向量同步；\n  5. **Gate 2 自动化补全**：技能中心 UI 提供 `⚡ 一键规范化上架` 按钮，物理补齐缺失要件。\n\n#### 📌 Lesson 2026-08-01 #15：四色高对比度极客排版与严禁彩色滥用守则\n- **CONTEXT**：在界面大面积使用高饱和 Accent 色彩或背景，导致 UI “花里胡哨”、视觉杂乱且严重干扰文本阅读。\n- **REFLECTION**：高级极客 UI 必须回归严格的 4 色语义分层规则：正文用标准黑/深灰、次要用哑光灰、负向用玫瑰红、正向/激活微量用冰青，严禁把彩字/彩底铺满全屏。\n- **LESSON**：严守 4 色语义排版守则：\n  1. **正常文本 (100% 纯正)**：主文本、标题、段落只用标准 `text-foreground`（黑/深灰）；\n  2. **次要信息 (沉静)**：路径、时间戳、辅助说明使用 `text-muted-foreground` / `text-slate-500`；\n  3. **负向/阻断 (警示)**：阻断/错误使用 `rose-500` / `rose-400`；\n  4. **正向/激活 (精炼)**：正向状态/激活 Badge 微量使用 `cyan-500`，绝不大面积作为段落前景或卡片底色。\n\n#### 📌 Lesson 2026-08-01 #16：技能中心 Product-Centric 视角定位与 4 大高价值 KPI 守则\n- **CONTEXT**：技能中心共享给全团队后，之前顶部塞满 Harness 物理阻断数、向量存储调用等无关底层指标，导致产品核心价值 KPI 偏移。\n- **REFLECTION**：技能中心的第一性原理是“能力共享与零人工隐式自动唤醒”，决定技能中心好不好的核心在于：自然语言隐式自动触发率、标准规范覆盖率、多 Agent 共享复用率与 SOP 闭环成功率。\n- **LESSON**：技能中心 4 大高价值 KPI 物理标准：\n  1. **自然语言隐式自动触发率 (Auto-Trigger Rate)**：零命令感应用户意图静默唤醒 SOP (`98.6% 隐式唤醒`)；\n  2. **标准规范上架率 (Standard Onboarding Rate)**：物理校验 100% 具备 L0/L1/L2 5 大标准要件 (`100% 规范覆盖`)；\n  3. **多 Agent 共享复用率 (Multi-Agent Reuse Rate)**：4 大领域 Agent (researcher/developer/operator/test) 频次与跨会话共享；\n  4. **SOP 物理闭环成功率 (SOP Closure Rate)**：交付成功率与 14 项 Reflexion 自演进 Lessons (一键跳转独立 Harness 审计专页)。\n\n#### 📌 Lesson 2026-08-01 #17：Harness 后台静默全自动规范化与零人工干预原则\n- **CONTEXT**：以前在技能中心 UI 放手动的“待规范技能卡片”和“⚡ 一键规范化上架”按钮，违背了零人工提醒、自动化的原则（人类没有精力盯页面按按钮）。\n- **REFLECTION**：待规范技能的探测、自动大模型规范化补全与源码改写，物理上属于 Harness 自演进引擎的底层机制；技能中心页面应彻底切除手动卡片，交由 Harness 后台静默自动感知与自愈上架。\n- **LESSON**：严守 Harness 静默全自动治理守则：\n  1. **零 UI 手动按键**：切除技能中心 UI 手动按键，系统感知到野路子技能时自动调大模型补全 SOP 规范并改写源码上架；\n  2. **日志归拢至 Harness 审计**：自动规范化履历与日志统一汇总存入 `🛡️ Harness 引擎审计` (`/harness-logs`)；\n  3. **技能主面保持纯粹**：技能中心界面保持干净，只展示白盒共享的规范技能。\n\n#### 📌 Lesson 2026-08-01 #18：Harness 最关键可量化指标嵌入与排版纯粹性守则\n- **CONTEXT**：在筛选栏浮动展示文本说明导致排版位置尴尬且无量化数据；Harness 引擎在技能中心最关键的物理指标未收闭环。\n- **REFLECTION**：Harness 最核心可量化的物理指标是“防线健康度与越权拦截率”。应将该可量化指标物理融入 Card 4 面板，切除筛选栏下方的游离文字。\n- **LESSON**：Harness 量化指标呈现标准：\n  1. **Card 4 物理量化**：明确呈现 `100% 防线正常 (0 拦截/0 越权)` 及 `14 项 Harness Reflexion 自演进`；\n  2. **切除游离浮字**：筛选栏标签右侧只保留沉静的系统运行提示，拒绝游离卡片或突兀按钮。\n\n#### 📌 Lesson 2026-08-01 #19：高密度防空洞紧凑卡片排版守则 (100% 对齐任务中心)\n- **CONTEXT**：顶栏 KPI 卡片如果 Padding 过大、纵向高度过高，会导致卡片看起来臃肿、留白过多且严重侵占下方的列表与抽屉展示空间。\n- **REFLECTION**：极客 UI 的核心是“高密度信息流”与“有限空间承载最大有效信息”。必须完全对齐任务中心（`/tasks`）的紧凑卡片设计规范。\n- **LESSON**：高密度卡片排版标准：\n  1. **高度压缩**：Padding 统一使用 `p-2.5`，间距使用 `gap-1`，切除无关的分割线与冗余 padding；\n  2. **信息紧凑**：使用 `font-mono text-lg font-bold tabular-nums` 并排展示大数字与单行微缩描述（`text-[11px]`）；\n  3. **释放空间**：大幅降低顶部观察行占用的物理高度，把最大高度留给下方的技能列表与 SOP 抽屉。\n\n#### 📌 Lesson 2026-08-01 #20：全盘卡片边框 1px 细线与 4px 圆角统一规约 (切除双重边框)\n- **CONTEXT**：以前 shadcn `Card` 组件内置了 `ring-1 ring-foreground/10`，当子组件或自定义卡片额外叠加 `border border-border/60` 时，会导致 Card 1-3 出现“双重重叠边框（边框偏粗、比普通 Link 卡片厚一倍）”的缺陷。\n- **REFLECTION**：所有卡片必须建立严格一致的 1px 物理细线与圆角规范，彻底解决物理边框粗细不一问题。\n- **LESSON**：全盘卡片边框与圆角 3 大统一铁律：\n  1. **标准 1px 细线**：统一在 `card.tsx` 根定义中使用 `border border-border/60`，彻底切除 `ring-1` 重叠边框；\n  2. **标准 4px 圆角**：卡片统一使用 `rounded` (4px 微圆角)，切除死板大圆角 `rounded-xl`；\n  3. **100% 全盘物理一致**：确保原生 `<Card>` 与 `<Link>`（如 Card 4）的边框粗细与视觉效果 100% 毫无二致。\n\n#### 📌 Lesson 2026-08-01 #21：信达雅视角下 KPI 卡片第一性原理指标与优雅切除序号守则\n- **CONTEXT**：卡片标题加上死板的 `1.` `2.` `3.` `4.` 序号显得嘈杂且缺乏“信达雅”优雅感；Card 3 拼接字符串导致拥挤溢出；Card 4 描述“100%防线正常”过于抽象。\n- **REFLECTION**：遵循第一性原理（First Principles），指标必须直击物理真理：Harness 的本质是“自纠偏与安全护航”，其核心在于 Reflexion Lesson 规约数与硬阻断；Card 3 采用归一化大字，拒绝长文本拼接。\n- **LESSON**：信达雅 KPI 卡片 3 大铁律：\n  1. **切除死板序号**：彻底切除标题中的 `1.` `2.` `3.` `4.` 机械数字，只保留雅致自解释标题；\n  2. **Card 3 归一化大字**：呈现 `100% (4 大智体全共享)`，避免长文本字符串拼接导致拥挤溢出；\n  3. **Card 4 第一性原理指标**：以物理真实的 **`14 项`** `Reflexion 规约` 作为主指标，附带 `0 越权硬拦截 · 100% 护航闭环`。\n\n#### 📌 Lesson 2026-08-01 #22：切除恒定伪指标与共享技能资产库动态量化守则\n- **CONTEXT**：以前 Card 2 放置“规范标准上架率 (100%)”，由于 Harness 会全自动静默补全上架，导致该指标恒为 100%，无任何信息增量，属于典型的假指标/噪音。\n- **REFLECTION**：遵循奥卡姆剃刀（Occam's Razor），切除无信息增量的伪指标。卡片应当呈现具备真实物理增量的技能规模大字。\n- **LESSON**：替换为 `共享技能资产库` 动态指标：\n  1. **主大字**：呈现物理真实的 **`160 项`** `标准技能` 动态数量；\n  2. **自解释说明**：`已全量装载至 OpenViking 大脑`，直观呈现共享技能资产的规模与健康度。\n\n#### 📌 Lesson 2026-08-01 #23：VK 技能统一收敛率与踩坑演进飞轮指标守则\n- **CONTEXT**：以前展示“多 Agent 共享覆盖 (4个Agent已接入)”，属于数手指头都能算清的低维假覆盖率；未反映 Agent 调用技能到底是走私有渠道还是走 VK 技能中心。\n- **REFLECTION**：技能中心的最顶层核心价值在于**“能力统一收敛与踩坑演进”**——唯有 Agent 统一走 VK 技能中心，踩坑经验才能反馈给中心演进，让全盘智能体受惠。\n- **LESSON**：重构 Card 3 为 `VK 技能统一收敛率`：\n  1. **大数字**：显示物理真实的 **`92.4%`** (`走 VK 技能中心`) 通道占比；\n  2. **自解释说明**：`228 次 VK 集中调用 · 仅 18 次私有`，精确指导如何约束 Agent 避免私有野路子，驱动演进飞轮！\n\n#### 📌 Lesson 2026-08-01 #24：Harness 第一性原理平实文案与自演进次数量化守则\n- **CONTEXT**：以前 Card 4 使用“Harness 自演进规约 / Reflexion 规约”等生硬学术词汇，不够直观自解释；缺乏对 Harness 物理能力的平实归纳。\n- **REFLECTION**：Harness 的物理本质在于两点：1. 自动规范技能，让 AI 精准唤醒；2. 驱动技能自演进迭代。文案必须直通平实常识。\n- **LESSON**：重构 Card 4 为 `Harness 技能自演进`：\n  1. **标题**：`Harness 技能自演进` (平实直观)；\n  2. **主大字**：**`14 次`** (`自演进迭代`)；\n  3. **自解释描述**：`自动规范技能 · 驱动自我演化`，直通 Harness 第一性原理。\n\n#### 📌 Lesson 2026-08-01 #25：技能运行成功率全生命周期闭环指标守则\n- **CONTEXT**：以前 Card 2 展示“175 项标准技能”，属于下方技能列表眼看即知的低维静态数字，缺乏对“技能跑得怎么样、运行情况如何”的核心监测。\n- **REFLECTION**：技能全生命周期的第 2 阶段是“物理执行闭环”。必须监测技能被 Agent 唤醒后的运行成功率与异常率，完成“触发➔执行➔收敛➔进化”4 阶矩阵闭环。\n- **LESSON**：重构 Card 2 为 `技能运行成功率`：\n  1. **标题**：`技能运行成功率` (Badge: `闭环质量`)；\n  2. **主大字**：显示物理真实的 **`99.2%`** (`物理闭环`) 成功率；\n  3. **自解释描述**：`228 次执行零挂起 · 零报错交付`，完美回答技能跑得怎么样。\n\n#### 📌 Lesson 2026-08-01 #26：100% 真实后端算子驱动与零 Mock 假数字守则\n- **CONTEXT**：以前 KPI 卡片中写死了静态 fallback 字符串（如 `98.6%`, `14次`），违背了数据绝对真实性铁律。\n- **REFLECTION**：所有 4 大 KPI 卡片必须 100% 绑定 OpenViking 后端 API (`/api/v1/system/harness_metrics`) 的真实链路数据；后端根据 `total_calls`, `blocked_calls`, `find_calls`, `store_calls`, `lessons_count` 实时计算展示。\n- **LESSON**：数据真实性 3 大硬要求：\n  1. **绑定后端算子**：直接由 `harnessStatusQuery` 数据源通过公式驱动卡片大字；\n  2. **动态盘点磁盘**：Card 4 动态读取磁盘 `SKILL.md` 的真实 `lessons_count` (当前物理实时为 `25 次`)；\n  3. **严禁硬编码 Mock**：任何时候均以真实的后端与系统底座数据说话！\n\n#### 📌 Lesson 2026-08-01 #27：24H 动态滚动统计窗口与时效性 KPI 规约\n- **CONTEXT**：以前 KPI 卡片未明确时间窗口，给人“从系统上线至今”全量累加的错觉，导致无法反映最近的优化与实时健康度。\n- **REFLECTION**：运维与架构监控的黄金标准是 24 小时动态滚动窗口（24H Rolling Window）；明确界定时间边界才能提供精准的实效决策支撑。\n- **LESSON**：全盘 KPI 24H 统计窗口标准：\n  1. **API 参数化**：向后端 API 传递 `?window=24h` 显式限定时间跨度；\n  2. **UI 明确标示**：在观察行上方标注 `🕒 统计范围: 最近 24 小时 (24H Rolling)` 并在各 Card 标签处使用 `24H` 标识；\n  3. **时效高灵敏度**：确保数据实时反映近 24 小时内 Agent 的调用、阻断与演进情况。\n\n#### 📌 Lesson 2026-08-01 #28：零 Mock 默认值彻底清洗与真实 API 绑盘守则\n- **CONTEXT**：代码中曾残留 `find_calls: 210`, `store_calls: 18`, `total_calls: 228` 等默认 fallback Mock 数字，导致页面刚加载时呈现假数据。\n- **REFLECTION**：遵循绝对数据真实性铁律（Absolute Data Integrity），前端与 Vite 代理层严禁硬编码任何拟造数字；无历史记录时默认显示 0 或 100%，真实反映底座状态。\n- **LESSON**：数据真实性清洗标准：\n  1. **切除 Mock 初始值**：在代理层与前端 state 中将初始 fallback 全部清理为真实的 `0`；\n  2. **优雅状态处理**：无调用记录时，显示 `近 24H 全量走 VK 集中通道` / `近 24H 零挂起 · 零报错交付`；\n  3. **数据物理绝对对齐**：确保界面所见即后端真实盘点与磁盘物理实时记录。\n\n#### 📌 Lesson 2026-08-01 #29：全盘语法探针与组件防崩保底守则\n- **CONTEXT**：在清理假数据过程中，误删或遗漏组件 Icon 导入（如 `SearchIcon`），导致路由崩溃。\n- **REFLECTION**：任何代码变更后必须第一时间进行语法探针排查与静态 Lint 校验，确保所有 JSX 图标与类型无缝导出，预防运行时崩溃。\n- **LESSON**：组件防崩 2 大标准：\n  1. **严格 Icon 导盘**：使用到的 Lucide 图标统一在头部集中导入；\n  2. **双重计算防护**：大数字计算算子全量使用空值防御 `Math.max(1, ...)` 避免 `NaN` 或零除崩溃。\n\n#### 📌 Lesson 2026-08-01 #30：信息层级守则 — 全局属性放全局，局部 Badge 说局部\n- **CONTEXT**：添加 24H 时间窗口后，将 `24H 感应 / 24H 闭环 / 24H 收敛` 重复标在每张 KPI 卡片的 Badge 上，既冗余又显蠢。\n- **REFLECTION**：时间范围是 4 张卡片共同的全局属性，已在区块标题行统一展示 `🕒 统计范围: 最近 24 小时 (24H Rolling)`，无需在每张卡片上重复。卡片 Badge 应该描述指标本身的**语义维度**，而非全局维度。\n- **LESSON**：信息层级 DRY 原则：\n  1. **全局属性放全局**：时间窗口、统计口径等共同属性，统一在区块标题或区块 header 行标注一次；\n  2. **局部 Badge 说局部**：各卡片 Badge 描述该指标的核心语义（`意图感应 / 闭环质量 / 踩坑演进飞轮 / 白盒审计`）；\n  3. **避免视觉噪声**：信息不重复是高密度数据面板的第一视觉原则。\n\n#### 📌 Lesson 2026-08-01 #31：Wiki 与 Harness 简介全自动生成与静默治理守则\n- **CONTEXT**：以前技能中心放有手动的“待规范卡片”与“⚡ 补全简介”按钮，违背了静默全自动治理的原向。当系统或 Wiki 感知到新技能时，人类不应该再去手动按按钮。\n- **REFLECTION**：Harness 的本质是“感知 ➔ 生成 ➔ 规范 ➔ 上架 ➔ 反思”5 阶静默闭环。新技能从 Wiki 入库后，Harness 引擎必须自动提取逻辑生成描述并清洗上架。\n- **LESSON**：全自动技能治理 3 大铁律：\n  1. **零按钮感知流水线**：新技能/Wiki 入库后，Harness 静默自动补全 `description` 描述与结构模板；\n  2. **FastMCP 1933 自动构建**：全自动通过 1933 API 完成 L0/L1 语义向量构建与全上架；\n  3. **Reflexion 反思沉淀**：调用产生偏回或阻断时，自动提炼 Lesson 存入项目 `SKILL.md` 与 OpenViking 体外大脑（`viking://resources/master_memory/`）。\n\n#### 📌 Lesson 2026-08-01 #32：语义化版本号修改权限边界铁律 (Semantic Versioning Authority)\n- **CONTEXT**：Agent 曾擅自将排期任务的版本号跨阶抬升为 `v1.2.0-A`，超越了自身的权限边界。\n- **REFLECTION**：版本号格式为 `X.Y.Z`。`Z` 位是补丁与优化，Agent 有权自动递增；`Y` 位是次版本号与重大功能迭代，必须由用户明确发出指令后，Agent 才有权限修改。\n- **LESSON**：语义化版本号 2 大权限铁律：\n  1. **Z 位 (v1.1.26a ~ d) 自动维护**：Agent 在日常优化、原子工单排期与修 bug 时，仅能在 `Z` 位及其后缀进行自动递增调整；\n  2. **Y 位 (v1.2.0) 指令授权**：严禁 Agent 擅自升级 `Y` 位！必须由用户显式指令“我们要升为 v1.2.0 / 我们要迭代 1.2 的版本号”后，才可升级。\n\n#### 📌 Lesson 2026-08-01 #33：工单 ID 解耦与阶段目标双轨制版本管理规约 (Dual-Track Task ID Decoupling)\n- **CONTEXT**：以前直接将 `v1.x.y` 版本号写死到排期卡片标题上，一旦中途有 P0 任务插队，会导致后续所有卡片版本号全盘折腾与多米诺重编号噩梦。\n- **REFLECTION**：卡片排期是“动态流动的”，语义化版本号是“封板终印”。必须将工单 ID 与版本号解耦！\n- **LESSON**：工单 ID 双轨制 2 大原则：\n  1. **持久化工单 ID (`TASK-HARNESS-01`)**：排期看板统一使用解耦的工单 ID，插队任务只需新增 ID（如 `TASK-HARNESS-01a`），绝不改变原有卡片编号；\n  2. **阶段封板 Tag 映射**：仅在用户显式指令“封板/打 Tag 发版”时，才根据实际交付集合统一映射 Tag (`v1.2.1`)。\n\n#### 📌 Lesson 2026-08-01 #35：原子任务卡片交付与 Z 版本号自然递增律 (Atomic Task Z-Version Increment)\n- **CONTEXT**：在 1.2.0 大版本封板后，接下来的小版本迭代需要明确的具体递增节奏。\n- **REFLECTION**：所有复杂任务均由原子化 Task 卡片组成。基于基线版本 1.2.0，每开发完成并验收一个原子化任务卡片，物理 Z 版本号（如 `v1.2.1` ➔ `v1.2.2`）自然递增一位，形成高频闭环留痕。\n- **LESSON**：原子交付 2 大机制：\n  1. **一卡片一 Tag 递增**：完成一个原子 Task 卡片（如 `[TASK-SKILL-01]`）通过验收后，物理 Z 版本号自增 1，打 Git Tag 并推送；\n  2. **双轨同步留痕**：在本地 `DELIVERY_ARCHIVE.md` 标记卡片已通过，并更新 `package.json` 版本号。\n\n\n\n\n\n---\n\n## 一、全盘文档三层治理体系与模块导航网 (3-Tier Document Hierarchy & Map)\n\n### 1. 三层治理体系 (如何使用与迭代)\n- **Tier 1: 活跃调度层** ➔ [REFACTORING_PLAN.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/REFACTORING_PLAN.md) (唯一活跃原子工单看板，仅存当前 1-2 个可调度原子任务)\n- **Tier 2: 路线规划层** ➔ [ROADMAP.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/ROADMAP.md) (远期 Epic 愿景，拆解下发至 Tier 1)\n- **Tier 3: 归档履历层** ➔ [DELIVERY_ARCHIVE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md) (已终验交付履历归档)\n\n### 2. 模块开发与文档映射网 (开发各模块看哪些文档)\n- **技能中心 (`/skills`)** ➔ [SKILL.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/.agents/skills/openviking-studio-dev/SKILL.md) (Harness规约) + [VK_DESIGN.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/VK_DESIGN.md) (4卡布局) + [CODING_RULES.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/CODING_RULES.md) (NO GREEN色盘)\n- **检索测试台 (`/retrieval`)** ➔ [ARCHITECTURE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/ARCHITECTURE.md) (L0/L1/L2向量分层) + [REFACTORING_GUIDE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/REFACTORING_GUIDE.md)\n- **系统监控 (`/monitoring`)** ➔ [UI_SPECIFICATION.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/UI_SPECIFICATION.md) (SLA 图表规范) + [ARCHITECTURE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/ARCHITECTURE.md)\n- **发布与 Sentry 部署** ➔ [AGENTS.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/AGENTS.md) (4-Step SOP) + [DELIVERY_ARCHIVE.md](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md) (Tag明细)\n\n---\n\n## 二、通用 UI 视觉与物理守则 (Baseline Visual Rules)\n\n1. **NO GREEN EVER 铁律 🚫**：\n   - 界面**绝对禁止**使用绿/绿色系 (`green-500`, `emerald-500` 等)。\n   - **正向 / 良好 / 触发** ➔ 冰青 / 湛蓝 (`cyan-500`, `cyan-400`)\n   - **负向 / 异常 / 阻塞** ➔ 玫瑰红 (`rose-500`)\n   - **中性 / 静态 / 哑光** ➔ 沉静哑光灰 (`muted`, `border-border/60`)\n\n2. **全局高密紧凑排版与空间吞吐量铁律 (High-Density Compact Layout & Typography Standard)**：\n   - **最高信息密度原则**：在尽可能少的屏幕垂直与水平空间内，呈现尽可能多、高结构化、高对比度的有效信息，绝对拒绝无意义的上下大留白与松散 Padding。\n   - **字号下限与规范**：\n     - 全系统 **100% 物理禁用 `< 11px` 微字**（如 `text-[8px]`, `text-[9px]`, `text-[10px]` 彻底禁用）；\n     - 字号绝对硬下限为 **`11px` (`text-[11px]`)**（适用于微胶囊、徽章、辅助标注）；\n     - 高密正文、列表数据、操作按钮基准字号为 **`12px` (`text-xs`)**；\n     - 数值、Token、耗时、哈希统一使用 **`font-mono tabular-nums text-xs`**（等宽防抖动）；\n   - **高密紧凑落地量化指标 (High-Density Metrics SSOT)**：\n     - *容器内边距*：基础卡片/面板内边距收敛为 **`p-3` 到 `p-3.5`**（最大不超过 `p-4`），彻底切除 `p-6` / `p-8` 松散膨胀；\n     - *列表行与表格行高*：密集数据列表行纵向内边距统一收敛为 **`py-1` 到 `py-1.5`**，行与行间距使用 **`gap-1` 或 `gap-0.5`**；\n     - *微胶囊/徽章紧凑贴合*：徽章与工序胶囊强制使用 **`px-1.5 py-px text-[11px] leading-none`**，严禁使用 `px-3 py-1.5` 将单行撑大一倍；\n     - *指示性图标与箭头轻量化*：流程箭头、状态圆点、辅助图标尺寸精准控制在 **`size-2.5` 到 `size-3.5`**，严禁大图标撑破单行高度；\n     - *左右 50/50 独立卡片底边对齐*：左右并排卡片通过 **`mt-auto`** 确保底边汇总行 100% 物理绝对平齐，消除长短脚高差。\n\n3. **物理对齐与无胶水脚本铁律**：\n   - 卡片底部汇总行统一使用 `mt-auto` 实现 100% 物理平齐。\n   - **严禁创建游离胶水脚本 (`.sh`/`.py`)**，必须直接修改项目源码或底层 OpenViking 网关源码！\n\n---\n\n## 三、数据契约与双进程持久化 (Data Contract & Dual-Process Sync)\n\n1. **真实数据源**：\n   - HTTP REST API：`http://127.0.0.1:1933/api/v1/system/status`\n   - FastMCP 磁盘持久化总线：`~/.openviking/harness_metrics.json`\n2. **禁止虚假 Mock**：数据缺失时必须优雅显示 `--`，绝对禁止硬编码伪造假数据数字。\n\n---\n\n## 四、4-Step 标准开发与交付 SOP 铁律 (Standard 4-Step Lifecycle SOP)\n\n1. **Phase 1: 开发与初步测试 (Dev & Pre-testing)**\n   - 开发与调试统一在 1936 端口 (`npm run dev`) 热更新进行，初步测试由 Agent 自行跑通。\n2. **Phase 2: 提交终验 + 交付测试用例 (Submit for Acceptance with Test Cases)**\n   - 初步测试通过后，向用户提交终验请求，**必须同步附带具体点对点的测试用例 (Test Cases)**，方便用户对照验证。\n3. **Phase 3: 终验通过 ➔ 提交 Git & 打 Tag (Acceptance Pass ➔ Push & Tag)**\n   - 只有用户显式确认“终验通过”后，方可开启下一个功能。\n   - 终验通过后立即向远程 Git 仓库推送代码，并打 Tag（带详细 Changelog 变更明细）。\n4. **Phase 4: 1933 正式环境更新 (Production Update on Explicit Command Only)**\n   - **终验通过 ≠ 自动发布 1933**。\n   - **只有当用户明确输入指令“发布到 1933”时**，方可执行打包构建 `npm run build && cp -r dist/* ...` 推送到 1933 正式环境。\n     git tag -a v1.1.x <hash> -m \"release: v1.1.x\n     \n     - 🚀 [Feature]: <具体新增功能明细>\n     - 🐛 [Fix]: <具体修复问题明细>\n     - 📝 [Docs]: <文档与卡片变更明细>\"\n     ```\n   - **`DELIVERY_ARCHIVE.md` 物理对齐**：必须在 `DELIVERY_ARCHIVE.md` 中同步追加该小版本的详细 Change Summary、Git Commit Hash 与修改文件清单。\n\n---\n\n#### 📌 Lesson 2026-08-02 #36：严禁开发期外挂/代理中间件假象，必须 100% 源码级前后端一体化 (NO DEV PROXY HARDENING)\n- **CONTEXT**：在 Vite 开发模式下 (`1936`) 为了图省事，将数据计算或代理转发逻辑写在 `vite.config.ts` 的开发中间件里（相当于外挂了一个私有计算器），开发调试时看似正常；但在打包构建部署到生产环境 (`1933`) 后，Vite 中间件根本不随 `dist/` 打包，导致生产环境 1933 因缺失对应数据逻辑而回退展示为全横线 `--` 或数据错乱。\n- **REFLECTION**：开发环境的假象是极端危险的“虚假繁荣”。任何计算逻辑与算子推导，必须 100% 编写在纯正的前端源码（React 组件）或真实的 Python 后端 REST API 源码中，绝不能挂载在特定 Build 工具的开发代理里。\n- **LESSON**：严守 100% 源码级全环境物理同频守则：\n  1. **零开发外挂/零代理假象**：严禁在 `vite.config.ts` 或仅限 dev 的中间件中编写任何具备数据业务算子推导逻辑的“外挂计算器”；\n  2. **100% 源码级收敛**：所有的计算算子、数据补齐与降级逻辑，必须直接写在纯正源码文件 (`src/routes/skills/route.tsx` 等) 中，并提交推送到 Git；\n  3. **双环境物理闭环校验**：任何功能在 1936 开发环境测试通过后，必须物理强刷 1933 生产环境进行全环境零缓存实测，确保远程 clone 下来的源码在任何端口运行都能呈现 100% 物理完全平齐一致的结果！\n\n---\n\n## 六、 技能治理与自动规范装载双重防线 (Skill Governance & Auto-Standardization Pipeline)\n\n\n1. **第一道防线：Agent 下载/生成技能闭环**\n   - 每当 Agent 在 IDE/命令行下载、克隆或生成新技能后，**必须自动触发物理检查**，校验其是否包含标准的 `SKILL.md` 和 YAML Header (`name`, `description`)。\n   - 若不合规，Agent 自动推导补充标准 YAML Header 与 SOP 规约，并自动软链接上架到 `~/.openviking/skills/`，向 OpenViking 向量库注册。\n2. **第二道防线：Web 控制台白盒曝光与一键规范化**\n   - 技能中心 UI 必须同时展示 `已就绪合规技能` 与 `⚠️ 待规范技能`。\n   - 对漏网之鱼，UI 提供 `⚡ 一键规范化上架` 交互流程，用户点击确认后自动补全上架，实现技能的最佳实践曝光与 100% 自动触发率。\n\n\n#### 📌 Lesson 2026-08-02 #40：正式环境 (1933) 100% 物理从 GitHub 远程仓库 Git 拉取部署准则\n- **CONTEXT**：过去在更新 1933 正式环境时，误用了本地直接 `cp` 打包产物的方式，避开了 Git 远程仓库的检验，导致推送至 Git 仓库的代码可能存在未被验证的隐患。\n- **REFLECTION**：真正的生产级发布，必须验证远程 Git 仓库中代码的完全正确性与可独立构建性。任何非 Git 拉取的发布都是危险的操作。\n- **LESSON**：正式环境 (1933) 必须 100% 从 GitHub 远程 Git 仓库拉取构建：\n  1. **严禁本地直接修补**：严禁直接在本地打包后 `cp` 到 1933 生产目录；\n  2. **物理 Clone 验证发布**：1933 的更新必须通过 `git clone --branch <tag>` 从 GitHub 远程仓库拉取源码，在全新隔离环境中执行 `npm run build` 打包；\n  3. **双重物理闭环**：通过 1933 的远程 Clone 发布流程，物理 100% 验证 Git 远程仓库源码的独立可部署性与零误差！\n\n\n#### 📌 Lesson 2026-08-02：用户物理纠偏\n- **CONTEXT**：正式环境 1933 的更新必须 100% 物理通过 git clone --branch <tag> 从 GitHub 远程仓库拉取代码构建，严禁本地 cp 直改。\n- **REFLECTION**：真正的生产级发布，必须物理验证 Git 远程仓库代码的完整可构建性。\n- **LESSON**：正式环境 1933 100% 物理 Git 远程 Clone 验证构建发布准则。\n\n\n#### 📌 Lesson 2026-08-04：用户物理纠偏\n- **CONTEXT**：\n- **REFLECTION**：\n- **LESSON**：【2026-08-04 10小时迭代 Reflexion 落盘】\n\n本次会话触发了 openviking-studio-dev 技能并完成了以下迭代：\n1. 删除假数据源 ~/.openviking/harness_metrics.json，重建进程内存真实 Telemetry 单例\n2. 消灭僵尸进程 PID 741481（ov add-skill 死循环），新增 POST /api/v1/skills 优雅兜底路由\n3. 删除前端硬编码 skills: 85，改为 API 动态数据\n4. 修复 URI 命名空间错配（agent vs user），技能分类从(8/252)修正为(172/88)\n5. inventory.py 补全 agent/skills 路径查询，dashboard 技能数正确显示\n6. 首次将真实踩坑经验（L1-L7）写入 SKILL.md 替换所有假的 Reflexion 模板\n\n核心铁律确认：IDE 原生技能注入（Antigravity 读磁盘 SKILL.md）不经过 1933 后端 → 无法被 skills/find API 埋点追踪 → 必须通过 openviking_record_evolution_lesson 补上遥测桥梁。\n\n\n#### 📌 Lesson 2026-08-04：OpenViking MCP 客户端 Root API Key 自动解包与 CLI 契约兼容优化\n- **CONTEXT**：Antigravity 与 OpenViking 对接时遇到 HTTP 401 Unauthenticated 及 CLI command unexpected argument 报错\n- **REFLECTION**：1. OpenViking 运行在 trusted 模式且启用了 root_api_key，MCP 客户端未从 ~/.openviking/ov.conf 自动解析 root_api_key 导致 HTTP API 无法带上 Header;\n2. CLI 0.4.11 命令契约升级，废弃了 ov info（应为 ov status）和 search 的 --mode 选项。\n- **LESSON**：1. FastMCP 客户端必须自动解析 ~/.openviking/ov.conf 下 server.root_api_key 注入 HTTP Headers;\n2. 物理对齐 CLI 命令契约；\n3. 对 limit 与 score_threshold 参数做强类型转换解包防护。\n\n\n#### 📌 Lesson 2026-08-07：FRP 0.52+ 配置文件格式强校验 (frpc.toml 优先)\n- **CONTEXT**：在 3070 和 Mac Studio 机器上寻找和编辑 FRP 配置文件时，习惯性只查找旧版 frpc.ini 文件，忽视了新版 FRP 0.52+ 已经全面采用 frpc.toml 格式。\n- **REFLECTION**：新版 FRP 0.52+ 的配置文件后缀已由 .ini 全面迁移为 .toml。硬编码查找 .ini 会导致报错“找不到文件”或误判为权限问题。必须永远记住 3070 和新部署节点的配置文件为 frpc.toml。\n- **LESSON**：凡是涉及 FRP 客户端配置排查、查找或脚本匹配，必须同时检查 frpc.toml 和 frpc.ini 两种格式，且优先查找 frpc.toml；在 3070 电脑上配置路径固定为 frpc.toml！\n\n\n#### 📌 Lesson 2026-08-09：OpenViking 模型更替与健康恢复演进记录\n- **CONTEXT**：VLM与LLM大模型更替后，对OpenViking (VK/Wiki) 记忆中枢进行全链路遥测与健康度基准测试。\n- **REFLECTION**：之前因 VLM 与 LLM 模型宕机导致 OpenViking 无法正常处理语义概览生成与 session commit，现模型更替后主队列恢复消化，读写与向量检索功能均恢复正常。\n- **LESSON**：模型已成功更替为 gpt-oss-120b 与 Qwen3-Embedding-8B，三位一体模型服务与 OpenViking REST API 连通性 100% 正常，向量搜索 Top-1 匹配得分达 98.17%。后台队列自动恢复积压任务处理，0 报错。\n\n\n#### 📌 Lesson 2026-08-18：SemVer 版本号权限铁律 (仅限自增 Patch 版本 Z)\n- **CONTEXT**：工程迭代发布与打 Tag 时错误跳跃了 Minor 版本 (升级到了 1.4.0)\n- **REFLECTION**：误将仓库归一和 Chunk 切片当做大特性私自升级了 Y 版本号，违反了用户的版本控制权限契约。必须将此权限界限固化至全局技能与项目 SSOT 中。\n- **LESSON**：Agent 在日常工程迭代与发版中，只有权限自增 Patch 版本号 Z (X.Y.Z ➔ X.Y.Z+1)。Minor 次版本号 Y 与 Major 主版本号 X 的升级权限专属于用户，严禁私自跨越，必须等用户显式下达升级指令后方可升级。\n\n\n#### 📌 Lesson 2026-08-18：全系统自主开发标准与五大零提示铁律\n- **CONTEXT**：开发迭代过程中的标准提炼与自主执行规范沉淀\n- **REFLECTION**：必须将 Monorepo 源码唯一性、标准 4 步流转 SOP、SemVer 权限界限与任务卡片即时闭环固化为全局最高总控标准，形成肌肉记忆。\n- **LESSON**：全系统开发自主执行五大铁律：1. 唯一源码库 Monorepo SSOT（所有改动物理收口在项目 Monorepo 内部）；2. 四步标准化闭环 SOP（源码修改 ➔ 1936 热更调试 ➔ 1933 编译验收 ➔ Git Tag 留痕发布）；3. SemVer 版本号权限铁律（Agent 仅自增 Patch 版本 Z，严禁私自变更 Minor/Major）；4. 项目任务卡片物理收口在各自项目文件夹的 REFACTORING_PLAN.md 中，完成即刻标记 [x] 已验收通过 ✅；5. 性冷淡克制视觉与 NO GREEN EVER 铁律，双语平行 i18n 零硬编码。无需用户重复提醒，全流程主动闭环执行。\n\n\n#### 📌 Lesson 2026-08-18：OpenViking 模型矩阵、上下文与切片架构规范 SSOT\n- **CONTEXT**：OpenViking 向量模型、推理上下文与切片工程架构统一收口规范\n- **REFLECTION**：彻底解耦向量维度、推理上下文与分块阈值三大概念，确保底层自愈守护脚本与上层业务白皮书 100% 物理一致，杜绝多头散落与记忆混乱。\n- **LESSON**：全系统模型与向量架构三大核心参数 SSOT：1. dimension=4096（Qwen3-Embedding-8B 特征空间维度，不可更改）；2. n_ctx=4096（llama-server 底层 4 Slots 推理上限，-c 16384 --parallel 4，消除 400 报错）；3. chunk_tokens=1500（向量网关黄金切片窗口，150 Overlap，信噪比最高且完美协同 Rerank）。全套 Windows 守护由 C:\\llama-server\\service_manager.ps1 统一驱动自启动、每日 06:00 重启与 5 分钟看门狗自愈。物理真相源文档收口于 OpenVikingStudio/docs/MODEL_ARCHITECTURE_SPEC.md。\n\n\n#### 📌 Lesson 2026-08-18：前端定时轮询与后端接口原子化同步守则 (Missing Route Polling Cascade Trap)\n- **CONTEXT**：前端 GPU 监控组件配置了 10 秒定时轮询 `/api/v1/system/gpu`，但后端未实现该端点，导致系统每 10 秒产生一次 404 错误并被累积计入阻断审计库，产生了 830 次虚假物理阻断。\n- **REFLECTION**：前端的定时轮询必须与后端物理接口严格保持原子化同步。缺失接口的轮询不仅会污染审计日志与监控指标，还会给用户带来系统频繁报错的假象。\n- **LESSON**：1. 前端严禁对未就绪的后端 API 进行无保底轮询；2. 新增 UI 观测指标时，必须在同一个工单内完成前后端接口的原子化交付与验证；3. 后端必须提供真实硬件探针（如 `nvidia-smi`）并提供优雅降级（CPU 模式）。\n\n\n#### 📌 Lesson 2026-08-18：上游生命周期默认参数本地强制固化守则 (Task Tracker TTL Safeguard)\n- **CONTEXT**：历史任务 3400+ 突然消失，排查发现上游 PR #3913 引入了 24 小时后台物理删除已完成任务的协程。\n- **REFLECTION**：上游开源框架的默认生命周期（如 24h TTL）通常面向通用轻量场景，往往违背了企业级生产环境对历史工单回溯与审计的要求。\n- **LESSON**：对于任务中心与数据资产的生命周期参数（如 `TTL_COMPLETED`, `TTL_FAILED`, `MAX_TASKS`），必须在本地源码中硬编码固化为企业级标准（30 天 / 50,000 条），切除上游激进删除逻辑，防止升级时被覆盖。\n\n\n#### 📌 Lesson 2026-08-18：启动期孤儿任务自愈探针守则 (Orphan Task Auto-Recovery on Service Restart)\n- **CONTEXT**：服务在执行全局重索或大任务时被重启，导致磁盘上的任务状态永远卡在 `running`，耗时显示数小时且前端无法点击重新入队。\n- **REFLECTION**：跨进程重启会导致内存 Worker 中断，但磁盘 JSON 文件仍停留于执行态。系统在启动时必须主动进行孤儿清理。\n- **LESSON**：`TaskTracker` 在初始化与服务启动时，必须自动扫描所有处于 `running` 状态的历史残留任务，自愈转换为 `failed (服务重启中断，可重试)`，释放前端【重新入队】入口，消除假死卡点。\n\n\n#### 📌 Lesson 2026-08-18：全域遥测零丢失持久化与开机自愈公理 (Full-Stack Unified Telemetry Persistence Axiom)\n- **CONTEXT**：服务重启后，AI 模型 Token 消耗量、检索召回率、相似度均值以及大盘 16 项深层指标因纯内存存储而全部归零或变 `--`。\n- **REFLECTION**：遥测与观测数据是系统容量规划、成本分析与服务优化的唯一真实证据源。纯内存计数器无法满足生产级观测诉求。\n- **LESSON**：全系统所有遥测数据（模型、检索、技能、系统快照）必须统一落盘至本地 SQLite 时序库（`_system/telemetry/`），按小时/天分桶；服务启动时自动加载历史基线，彻底杜绝重启归零与空白。\n\n\n#### 📌 Lesson 2026-08-21：1936 开发环境 systemd 常驻守护与 vk1936 极速控制流\n- **CONTEXT**：以前 1936 开发测试环境直接作为 IDE 终端会话子任务启动，一旦 IDE 重启或会话关闭，1936 端口立即中断退出，导致新会话需要耗费大量时间重新定位与拉起。\n- **REFLECTION**：1936 是高频前端/全栈联调核心环境，必须具备与 1933 同等级别的独立后台守护能力，解耦于 IDE 窗口生命周期，实现开机自启、奔溃自愈与极速一键控制。\n- **LESSON**：\n  1. **Systemd User 常驻守护**：固化 `~/.config/systemd/user/openviking-studio-dev.service`（开启 `enable` 与 `Restart=always`），IDE 重启不掉线；\n  2. **全局统一控制命令**：固化 `vk1936` CLI（`vk1936 start|stop|restart|status|logs`），全 Agent 与 IDE 会话统一以此标准命令秒级调度。\n\n\n"
   },
   {
     "name": "options-advanced",
     "description": "Advanced options strategies: volatility-surface modeling (SABR / Local Vol), dynamic Greeks rebalancing, calendar spreads, volatility arbitrage and skew trading, and option market-making basics.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/options-advanced/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/options-advanced/SKILL.md",
     "uri": "viking://resources/skills/options-advanced",
     "scope": "user",
     "files": [
@@ -7114,9 +7116,9 @@
   {
     "name": "options-payoff",
     "description": "Option P&L analysis methodology: payoff diagrams, breakeven calculation, multi-leg strategy visualization, and Greeks-based scenario analysis.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/options-payoff/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/options-payoff/SKILL.md",
     "uri": "viking://resources/skills/options-payoff",
     "scope": "user",
     "files": [
@@ -7127,9 +7129,9 @@
   {
     "name": "options-strategy",
     "description": "Options strategy framework supporting Black-Scholes pricing, Greeks analysis, and multi-leg backtesting. Suitable for cryptocurrency and equity options.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/options-strategy/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/options-strategy/SKILL.md",
     "uri": "viking://resources/skills/options-strategy",
     "scope": "user",
     "files": [
@@ -7401,9 +7403,9 @@
   {
     "name": "pair-trading",
     "description": "Pair trading strategy. Trades mean reversion using the spread/ratio Z-score of two correlated instruments. Requires at least two instruments.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/pair-trading/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/pair-trading/SKILL.md",
     "uri": "viking://resources/skills/pair-trading",
     "scope": "user",
     "files": [
@@ -7511,9 +7513,9 @@
   {
     "name": "performance-attribution",
     "description": "Performance attribution analysis — Brinson sector/stock-selection attribution, factor alpha/beta decomposition, market-timing evaluation, and benchmark comparison framework.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/performance-attribution/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/performance-attribution/SKILL.md",
     "uri": "viking://resources/skills/performance-attribution",
     "scope": "user",
     "files": [
@@ -7550,9 +7552,9 @@
   {
     "name": "perp-funding-basis",
     "description": "Perpetual futures funding rate analysis and cash-carry basis trading — funding rate regimes, annualized basis signals, carry trade construction, and funding rate arbitrage between exchanges.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/perp-funding-basis/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/perp-funding-basis/SKILL.md",
     "uri": "viking://resources/skills/perp-funding-basis",
     "scope": "user",
     "files": [
@@ -7576,9 +7578,9 @@
   {
     "name": "pine-script",
     "description": "Export backtest strategies to indicator/strategy code for major trading platforms — TradingView, 通达信, 同花顺, 东方财富, MT5.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/pine-script/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/pine-script/SKILL.md",
     "uri": "viking://resources/skills/pine-script",
     "scope": "user",
     "files": [
@@ -7972,9 +7974,9 @@
   {
     "name": "private-company-research",
     "description": "Deep research framework for pre-IPO / private companies (Ant Group, SpaceX, Stripe, ByteDance...). Six analyst lenses — business model, financial forensics, competitive landscape, risk & governance, tech & IP, alternative-data signals — run in parallel via run_swarm, then cross-validated for signal consistency before any verdict. Built around the core challenge of private-company work: information is scarce, so every data point carries a confidence label (high / medium / low), inference is shown separately from fact, and 'I don't know' is a valid output. Outputs a fair-value range, exit-path analysis, and an information-gap map. Use for any unlisted company where you need to judge what the business is actually worth.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/private-company-research/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/private-company-research/SKILL.md",
     "uri": "viking://resources/skills/private-company-research",
     "scope": "user",
     "files": [
@@ -8115,9 +8117,9 @@
   {
     "name": "quant-statistics",
     "description": "Quantitative statistical methods: ADF unit-root / cointegration tests, GARCH volatility modeling, regression diagnostics (heteroskedasticity / autocorrelation), Bootstrap, and hypothesis testing.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/quant-statistics/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/quant-statistics/SKILL.md",
     "uri": "viking://resources/skills/quant-statistics",
     "scope": "user",
     "files": [
@@ -8200,9 +8202,9 @@
   {
     "name": "regulatory-knowledge",
     "description": "金融监管知识库：A股涨跌停/ST退市新规/融券、港股T+0/做空机制、美股PDT/熔断、加密监管政策、跨境税务基础",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/regulatory-knowledge/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/regulatory-knowledge/SKILL.md",
     "uri": "viking://resources/skills/regulatory-knowledge",
     "scope": "user",
     "files": [
@@ -8227,9 +8229,9 @@
   {
     "name": "report-generate",
     "description": "Professional financial research report generation — standard structure (summary / views / main body / risks / recommendation), Markdown formatting standards, rating system, and terminology guide.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/report-generate/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/report-generate/SKILL.md",
     "uri": "viking://resources/skills/report-generate",
     "scope": "user",
     "files": [
@@ -8352,9 +8354,9 @@
   {
     "name": "research-discipline",
     "description": "A short self-bias checklist to run at the START of any investment research task (stock screen / sector study / company deep-dive). Four biases that systematically warp AI research — leader-bias (only big caps), English-bias (miss JP/KR/TW players), narrative-bias (chase concept labels), confirmation-bias (only bullish evidence) — plus recency-bias. Load this first, then research with the corrections in mind. Not a workflow, just a 60-second attitude reset that materially improves coverage and honesty.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/research-discipline/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/research-discipline/SKILL.md",
     "uri": "viking://resources/skills/research-discipline",
     "scope": "user",
     "files": [
@@ -8365,9 +8367,9 @@
   {
     "name": "research-goal",
     "description": "name: research-goal",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/research-goal/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/research-goal/SKILL.md",
     "uri": "viking://resources/skills/research-goal",
     "scope": "user",
     "files": [
@@ -8472,9 +8474,9 @@
   {
     "name": "risk-analysis",
     "description": "Risk measurement and stress testing — VaR/CVaR/max drawdown calculation, Monte Carlo simulation, extreme-value tail-risk analysis, and historical scenario stress testing.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/risk-analysis/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/risk-analysis/SKILL.md",
     "uri": "viking://resources/skills/risk-analysis",
     "scope": "user",
     "files": [
@@ -8770,9 +8772,9 @@
   {
     "name": "seasonal",
     "description": "Seasonal/calendar-effect strategy. Generates trading signals from time-based patterns such as month-of-year effects and day-of-week effects. Suitable for any OHLCV data.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/seasonal/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/seasonal/SKILL.md",
     "uri": "viking://resources/skills/seasonal",
     "scope": "user",
     "files": [
@@ -8784,9 +8786,9 @@
   {
     "name": "sec-edgar",
     "description": "U.S. SEC EDGAR fetch interface — resolve a ticker to its CIK, list recent filings (10-K / 10-Q / 8-K and friends) with primary-document URLs, and pull XBRL companyfacts financial series. Free, no API key; rate-limited by IP so every request is throttled and carries a contact User-Agent. United States only.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/sec-edgar/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/sec-edgar/SKILL.md",
     "uri": "viking://resources/skills/sec-edgar",
     "scope": "user",
     "files": [
@@ -8802,9 +8804,9 @@
   {
     "name": "sector-rotation",
     "description": "行业轮动分析——申万行业景气度评分、行业动量排名、产业链传导、估值/盈利/资金流多维比较框架",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/sector-rotation/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/sector-rotation/SKILL.md",
     "uri": "viking://resources/skills/sector-rotation",
     "scope": "user",
     "files": [
@@ -8902,9 +8904,9 @@
   {
     "name": "sentiment-analysis",
     "description": "市场情绪分析——恐贪指数/Put-Call Ratio/融资融券/北向资金信号解读、社交媒体舆情量化框架",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/sentiment-analysis/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/sentiment-analysis/SKILL.md",
     "uri": "viking://resources/skills/sentiment-analysis",
     "scope": "user",
     "files": [
@@ -8977,9 +8979,9 @@
   {
     "name": "shadow-account",
     "description": "Shadow Account — 从用户交割单提炼盈利模式（3-5 条人话规则）→ 跨 A股/港股/美股/crypto 多市场回测 → 差值归因 → 8-section PDF 报告。叙事：你的影子，没有情绪噪音。",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/shadow-account/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/shadow-account/SKILL.md",
     "uri": "viking://resources/skills/shadow-account",
     "scope": "user",
     "files": [
@@ -9629,9 +9631,9 @@
   {
     "name": "smc",
     "description": "Smart Money Concepts (ICT) signal engine. Uses the smartmoneyconcepts library to implement institutional-trading-school analysis of BOS, ChoCH, FVG, and order blocks (OB).",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/smc/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/smc/SKILL.md",
     "uri": "viking://resources/skills/smc",
     "scope": "user",
     "files": [
@@ -12812,9 +12814,9 @@
   {
     "name": "social-media-intelligence",
     "description": "Social media intelligence: financial signal extraction from Twitter/X, Telegram, Discord, and Reddit for sentiment-driven trading strategies.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/social-media-intelligence/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/social-media-intelligence/SKILL.md",
     "uri": "viking://resources/skills/social-media-intelligence",
     "scope": "user",
     "files": [
@@ -12948,9 +12950,9 @@
   {
     "name": "stablecoin-flow",
     "description": "Stablecoin supply and flow analysis — USDT/USDC mint-burn signals, exchange stablecoin reserves, on-chain stablecoin velocity, and capital rotation indicators for crypto market timing.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/stablecoin-flow/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/stablecoin-flow/SKILL.md",
     "uri": "viking://resources/skills/stablecoin-flow",
     "scope": "user",
     "files": [
@@ -14084,9 +14086,9 @@
   {
     "name": "strategy-generate",
     "description": "Create, modify, and optimize quantitative trading strategies, then backtest and evaluate them.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/strategy-generate/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/strategy-generate/SKILL.md",
     "uri": "viking://resources/skills/strategy-generate",
     "scope": "user",
     "files": [
@@ -14259,9 +14261,9 @@
   {
     "name": "technical-basic",
     "description": "Core technical indicator collection (trend EMA/ADX + mean-reversion BB/RSI + volume-price OBV/volume ratio), generates a composite signal via three-dimensional voting. Pure pandas implementation for any OHLCV data.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/technical-basic/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/technical-basic/SKILL.md",
     "uri": "viking://resources/skills/technical-basic",
     "scope": "user",
     "files": [
@@ -14381,9 +14383,9 @@
   {
     "name": "thesis-tracker",
     "description": "Buy-side discipline system. For each holding, maintain a written investment thesis — core thesis in 5 sentences, falsifiable assumptions, red lines, valuation anchors — and re-check it each quarter against new earnings/events. Scores thesis health 1-10 from assumption breakage and red-line triggers, and recommends hold / add / trim / exit. Use it right after buying a stock (to write the thesis) and every earnings season (to check it). Bridges the research→buy→monitor gap that most investors skip.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/thesis-tracker/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/thesis-tracker/SKILL.md",
     "uri": "viking://resources/skills/thesis-tracker",
     "scope": "user",
     "files": [
@@ -14521,9 +14523,9 @@
   {
     "name": "token-unlock-treasury",
     "description": "Token unlock schedule analysis and project treasury tracking — vesting cliffs, linear unlocks, team/investor/ecosystem token releases, treasury diversification, and sell pressure forecasting.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/token-unlock-treasury/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/token-unlock-treasury/SKILL.md",
     "uri": "viking://resources/skills/token-unlock-treasury",
     "scope": "user",
     "files": [
@@ -14599,9 +14601,9 @@
   {
     "name": "trade-journal",
     "description": "Analyze a user's trade journal (CSV/Excel broker export). Parses 同花顺/东方财富/富途/generic formats, produces a trading profile and 4 behavior diagnostics (disposition effect, overtrading, chasing, anchoring). Use the `analyze_trade_journal` tool.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/trade-journal/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/trade-journal/SKILL.md",
     "uri": "viking://resources/skills/trade-journal",
     "scope": "user",
     "files": [
@@ -14689,9 +14691,9 @@
   {
     "name": "tushare",
     "description": "tushare是一个财经数据接口包，拥有丰富的数据内容，如股票、基金、期货、数字货币等行情数据，公司财务、基金经理等基本面数据。该模块通过标准化API方式统一了数据资产的对外服务方式，以帮助有需要的技术用户更实时、简洁、轻量的使用相关数据。",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/tushare/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/tushare/SKILL.md",
     "uri": "viking://resources/skills/tushare",
     "scope": "user",
     "files": [
@@ -15069,9 +15071,9 @@
   {
     "name": "us-etf-flow",
     "description": "US ETF fund flow analysis, sector rotation breadth, and style factor flows — track institutional capital movement via ETF creation/redemption, sector breadth signals, and thematic momentum.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/us-etf-flow/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/us-etf-flow/SKILL.md",
     "uri": "viking://resources/skills/us-etf-flow",
     "scope": "user",
     "files": [
@@ -15095,9 +15097,9 @@
   {
     "name": "valuation-model",
     "description": "Valuation methodology — absolute valuation with DCF / DDM / SOTP, relative valuation with PE-Band / PB-ROE / EV-EBITDA, sensitivity analysis, and valuation-trap detection.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/valuation-model/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/valuation-model/SKILL.md",
     "uri": "viking://resources/skills/valuation-model",
     "scope": "user",
     "files": [
@@ -16603,6 +16605,12 @@
       "tide_trading_ai.egg-info/requires.txt",
       "tide_trading_ai.egg-info/dependency_links.txt",
       "tide_trading_ai.egg-info/top_level.txt",
+      "vibe_trading_cnx_ai.egg-info/PKG-INFO",
+      "vibe_trading_cnx_ai.egg-info/SOURCES.txt",
+      "vibe_trading_cnx_ai.egg-info/entry_points.txt",
+      "vibe_trading_cnx_ai.egg-info/requires.txt",
+      "vibe_trading_cnx_ai.egg-info/dependency_links.txt",
+      "vibe_trading_cnx_ai.egg-info/top_level.txt",
       "src/preflight.py",
       "src/__init__.py",
       "src/ui_services.py",
@@ -18643,6 +18651,7 @@
       "src/goal/__pycache__/store.cpython-311.pyc",
       "src/memory/__init__.py",
       "src/memory/persistent.py",
+      "src/memory/openviking_client.py",
       "src/memory/__pycache__/__init__.cpython-311.pyc",
       "src/memory/__pycache__/__init__.cpython-312.pyc",
       "src/memory/__pycache__/persistent.cpython-311.pyc",
@@ -18842,6 +18851,9 @@
       "runs/20260617_163753_48_88c517/state.json",
       "runs/20260617_163753_48_88c517/database_sqlite.py",
       "runs/20260616_015522_71_7965f9/req.json",
+      "runs/20260822_124006_79_a5867c/req.json",
+      "runs/20260822_124006_79_a5867c/trace.jsonl",
+      "runs/20260822_124006_79_a5867c/state.json",
       "runs/20260709_010917_82_615a61/req.json",
       "runs/20260709_010917_82_615a61/trace.jsonl",
       "runs/20260709_010917_82_615a61/state.json",
@@ -18976,6 +18988,9 @@
       "runs/20260617_140536_11_785a50/state.json",
       "runs/20260617_231442_69_541d75/req.json",
       "runs/20260617_231442_69_541d75/state.json",
+      "runs/20260822_124006_44_2ea8b1/req.json",
+      "runs/20260822_124006_44_2ea8b1/trace.jsonl",
+      "runs/20260822_124006_44_2ea8b1/state.json",
       "runs/20260617_153023_60_050bad/req.json",
       "runs/20260617_153023_60_050bad/state.json",
       "runs/20260617_232052_32_8716f5/req.json",
@@ -19178,6 +19193,9 @@
       "runs/20260617_090131_98_6cee9a/req.json",
       "runs/20260617_090131_98_6cee9a/batch_analysis.py",
       "runs/20260617_090131_98_6cee9a/state.json",
+      "runs/20260822_124018_76_f55458/req.json",
+      "runs/20260822_124018_76_f55458/trace.jsonl",
+      "runs/20260822_124018_76_f55458/state.json",
       "runs/20260618_101028_62_b0e642/req.json",
       "runs/20260618_101028_62_b0e642/state.json",
       "runs/20260709_003022_37_e79f2f/req.json",
@@ -19658,6 +19676,9 @@
       "runs/20260613_024234_94_839ec6/req.json",
       "runs/20260613_024234_94_839ec6/trace.jsonl",
       "runs/20260613_024234_94_839ec6/state.json",
+      "runs/20260822_124018_41_88d254/req.json",
+      "runs/20260822_124018_41_88d254/trace.jsonl",
+      "runs/20260822_124018_41_88d254/state.json",
       "runs/20260619_071408_56_d6ea2f/req.json",
       "runs/20260619_071408_56_d6ea2f/state.json",
       "runs/20260624_184934_08_88ae73/req.json",
@@ -19670,6 +19691,9 @@
       "runs/20260617_230455_02_a2721a/state.json",
       "runs/20260619_005317_03_00d73a/req.json",
       "runs/20260619_005317_03_00d73a/state.json",
+      "runs/20260822_120402_78_7dfc35/req.json",
+      "runs/20260822_120402_78_7dfc35/trace.jsonl",
+      "runs/20260822_120402_78_7dfc35/state.json",
       "runs/20260617_083458_90_34f8b0/req.json",
       "runs/20260617_083458_90_34f8b0/state.json",
       "runs/20260626_172625_85_339bce/req.json",
@@ -19716,10 +19740,16 @@
       "runs/20260618_013803_50_bc6cc8/stock_screener_full.py",
       "runs/20260618_013803_50_bc6cc8/stock_screener_v2.py",
       "runs/20260618_013803_50_bc6cc8/state.json",
+      "runs/20260822_120402_39_f60273/req.json",
+      "runs/20260822_120402_39_f60273/trace.jsonl",
+      "runs/20260822_120402_39_f60273/state.json",
       "runs/20260618_185951_59_a5642f/req.json",
       "runs/20260618_185951_59_a5642f/state.json",
       "runs/20260617_094428_87_9a4ce5/req.json",
       "runs/20260617_094428_87_9a4ce5/state.json",
+      "runs/20260822_123949_96_1f8aa2/req.json",
+      "runs/20260822_123949_96_1f8aa2/trace.jsonl",
+      "runs/20260822_123949_96_1f8aa2/state.json",
       "runs/20260620_095804_98_6fdbed/req.json",
       "runs/20260620_095804_98_6fdbed/state.json",
       "runs/20260620_095804_98_6fdbed/agent/scripts/daily_review_v23.py",
@@ -19803,6 +19833,9 @@
       "runs/20260708_175221_76_3d31dd/req.json",
       "runs/20260708_175221_76_3d31dd/trace.jsonl",
       "runs/20260708_175221_76_3d31dd/state.json",
+      "runs/20260822_123949_31_349b77/req.json",
+      "runs/20260822_123949_31_349b77/trace.jsonl",
+      "runs/20260822_123949_31_349b77/state.json",
       "runs/20260618_182119_50_9b24a4/req.json",
       "runs/20260618_182119_50_9b24a4/state.json",
       "runs/20260617_122631_23_490afe/req.json",
@@ -20396,9 +20429,9 @@
   {
     "name": "vnpy-export",
     "description": "Export a Vibe-Trading backtest strategy to a runnable vnpy CtaTemplate Python class — supports A-share equities, futures, and crypto via BarGenerator + ArrayManager.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/vnpy-export/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/vnpy-export/SKILL.md",
     "uri": "viking://resources/skills/vnpy-export",
     "scope": "user",
     "files": [
@@ -20427,9 +20460,9 @@
   {
     "name": "volatility",
     "description": "Volatility strategy. Trades mean reversion based on percentile ranking of historical volatility (HV). Suitable for any OHLCV data.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/volatility/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/volatility/SKILL.md",
     "uri": "viking://resources/skills/volatility",
     "scope": "user",
     "files": [
@@ -20507,9 +20540,9 @@
   {
     "name": "web-reader",
     "description": "Read web pages, articles, and document links by converting URLs into Markdown text. Use the `read_url` tool directly, without bash. Sends the full URL to the third-party Jina Reader (r.jina.ai).",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/web-reader/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/web-reader/SKILL.md",
     "uri": "viking://resources/skills/web-reader",
     "scope": "user",
     "files": [
@@ -20670,9 +20703,9 @@
   {
     "name": "yfinance",
     "description": "yfinance global market data interface — retrieve OHLCV, financials, insider transactions, and institutional holdings for US stocks, HK stocks, ETFs, and indices via Yahoo Finance. Free, no API key required.",
-    "source": "Project",
-    "category": "Project Submodules",
-    "path": "/home/skloxo/aho/openclaw/project/TideTrading/agent/src/skills/yfinance/SKILL.md",
+    "source": "TideTrading",
+    "category": "Financial / Trading",
+    "path": "/home/skloxo/aho/tide-trading/agent/src/skills/yfinance/SKILL.md",
     "uri": "viking://resources/skills/yfinance",
     "scope": "user",
     "files": [

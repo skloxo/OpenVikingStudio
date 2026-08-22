@@ -95,6 +95,7 @@ export interface QueueStatusCardProps {
   status?: string
   isHealthy?: boolean
   isTaskCard?: boolean
+  isLoading?: boolean
   customRows?: ParsedQueueRow[]
 }
 
@@ -103,6 +104,7 @@ export function QueueStatusCard({
   status = '',
   isHealthy = true,
   isTaskCard = false,
+  isLoading = false,
   customRows,
 }: QueueStatusCardProps) {
   const { t, i18n } = useTranslation('monitoringPage')
@@ -114,10 +116,26 @@ export function QueueStatusCard({
     () => rows.filter((r) => r.name.toUpperCase() !== 'TOTAL'),
     [rows],
   )
-  const totalRow = React.useMemo(
-    () => rows.find((r) => r.name.toUpperCase() === 'TOTAL'),
-    [rows],
-  )
+  const computedTotalRow = React.useMemo<ParsedQueueRow>(() => {
+    let processing = 0
+    let pending = 0
+    let completed = 0
+    let errors = 0
+    for (const r of nonTotalRows) {
+      processing += r.processing || 0
+      pending += r.pending || 0
+      completed += r.completed || 0
+      errors += r.errors || 0
+    }
+    return {
+      name: 'TOTAL',
+      processing,
+      pending,
+      completed,
+      errors,
+      total: processing + pending + completed,
+    }
+  }, [nonTotalRows])
 
   const getQueueDisplayName = (name: string): string => {
     const clean = name.toLowerCase().replace(/[-_]/g, '')
@@ -172,9 +190,9 @@ export function QueueStatusCard({
       <div
         key={row.name}
         className={cn(
-          'grid grid-cols-12 gap-1 items-center px-3 py-1.5 text-[11px] rounded font-mono transition-colors',
+          'grid grid-cols-12 gap-1 items-center px-2.5 py-1 text-[11px] rounded font-mono transition-colors leading-tight',
           isTotalRow
-            ? 'mt-auto bg-muted/60 font-bold border border-border/80 text-foreground shadow-2xs'
+            ? 'mt-auto bg-muted/60 font-bold border border-border/80 text-foreground shadow-2xs py-1.5'
             : 'bg-muted/20 hover:bg-muted/40 text-foreground/90',
         )}
       >
@@ -255,19 +273,19 @@ export function QueueStatusCard({
 
           {/* 如果是任务卡片且非合计行：展示结构化对齐的发丝分界线与工序链 */}
           {isTaskCard && flowItems.length > 0 && !isTotalRow && (
-            <div className="flex items-center gap-1 min-w-0 flex-1 overflow-x-auto no-scrollbar py-0.5 select-none pl-1">
-              <div className="h-3 w-px bg-border/60 shrink-0 mx-0.5" />
+            <div className="flex items-center gap-1 min-w-0 flex-1 overflow-x-auto no-scrollbar select-none pl-1">
+              <div className="h-2.5 w-px bg-border/60 shrink-0 mx-0.5" />
               {flowItems.map((item, itemIdx) => {
                 return (
                   <React.Fragment key={itemIdx}>
                     {itemIdx > 0 && (
-                      <ChevronRightIcon className="size-3 text-muted-foreground/40 shrink-0 select-none -mx-0.5" />
+                      <ChevronRightIcon className="size-2.5 text-muted-foreground/40 shrink-0 select-none -mx-0.5" />
                     )}
 
                     {item.kind === 'single' ? (
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-sans font-medium bg-muted/60 text-foreground/90 hover:text-foreground hover:bg-muted hover:border-primary/40 cursor-help border border-border/50 whitespace-nowrap shrink-0 transition-all shadow-2xs">
+                          <span className="inline-flex items-center px-1 py-px rounded text-[11px] font-sans font-medium bg-muted/60 text-foreground/90 hover:text-foreground hover:bg-muted hover:border-primary/40 cursor-help border border-border/50 whitespace-nowrap shrink-0 transition-all shadow-2xs leading-none">
                             {isZh ? item.step.nameZh : item.step.nameEn}
                           </span>
                         </TooltipTrigger>
@@ -301,7 +319,7 @@ export function QueueStatusCard({
                       </Tooltip>
                     ) : (
                       /* 并发工序组合框 (Neutral Container Box with &) */
-                      <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-sans font-medium bg-muted/60 text-foreground/90 border border-border/50 whitespace-nowrap shrink-0 transition-all shadow-2xs">
+                      <div className="inline-flex items-center gap-1 px-1 py-px rounded text-[11px] font-sans font-medium bg-muted/60 text-foreground/90 border border-border/50 whitespace-nowrap shrink-0 transition-all shadow-2xs leading-none">
                         {item.steps.map((st, sIdx) => (
                           <React.Fragment key={st.id}>
                             {sIdx > 0 && (
@@ -402,7 +420,7 @@ export function QueueStatusCard({
   }
 
   return (
-    <Card className="flex h-full flex-col justify-between gap-2 p-3 shadow-xs transition-colors hover:border-primary/30">
+    <Card className="flex h-full flex-col justify-between gap-1.5 p-3 shadow-xs transition-colors hover:border-primary/30">
       <div className="flex items-center justify-between gap-2">
         <CardTitle className="text-sm font-semibold">{title ?? t('queue.title')}</CardTitle>
       </div>
@@ -412,9 +430,9 @@ export function QueueStatusCard({
           {t('queue.noData')}
         </div>
       ) : (
-        <div className="flex flex-1 flex-col justify-between gap-1">
+        <div className="flex flex-1 flex-col justify-between gap-0.5">
           {/* 统一顶置表头 (12 列格栅 100% 对齐) */}
-          <div className="grid grid-cols-12 gap-1 items-center px-3 py-1 text-[11px] text-muted-foreground font-medium border-b border-border/60">
+          <div className="grid grid-cols-12 gap-1 items-center px-2.5 py-1 text-[11px] text-muted-foreground font-medium border-b border-border/60">
             <span className="col-span-8">
               {isTaskCard ? (isZh ? '任务类型' : 'Task Type') : (isZh ? '引擎名称' : 'Engine Name')}
             </span>
@@ -425,12 +443,12 @@ export function QueueStatusCard({
           </div>
 
           {/* 数据列表 */}
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-0.5">
             {nonTotalRows.map((row) => renderRow(row, false))}
           </div>
 
           {/* 底端对齐合计行 */}
-          {totalRow ? renderRow(totalRow, true) : null}
+          {renderRow(computedTotalRow, true)}
         </div>
       )}
     </Card>
