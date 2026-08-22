@@ -340,6 +340,14 @@
      - VikingFS 存储工作区、CJK 切分阈值、向量引擎并发数的 UI 开关与滑动调节器。
 - **视觉规范约定**：
   - 极客性冷淡排版、最小字号 $\ge 11\text{px}$、NO GREEN EVER、50/50 紧凑网格。
-- **状态**：⬜ 待调度（排期在上游代码合并完成后优先推进落地）。
+### [x] v1.3.52 版本已验收通过 🎉
+- **Git Commit**: `0c0db7af`, Tag: `v1.3.52`
+- **对应任务卡片**：`[TASK-UPSTREAM-MEMORY-V3-01]` Memory V3 会话提取、归档解耦与全链路零硬编码对齐
+- **交付内容**：
+  1. **Memory V3 记忆提取引擎与会话提交稳定性提升**：合并 `ed1bd4b8` / `c96fbcb8` / `0ea10190` / `6a252eba` / `b9ec4f5b` / `056f875e`，实现全异步非阻塞 Phase 2 记忆归档；
+  2. **绝对数据真实性 (100% Zero Hardcoding)**：彻底切除前端 `all_skills.json` 静态文件与 `648` 兜底硬编码，100% 真实后端数据驱动；
+  3. **技能中心防抖防闪烁加固**：优化 React Query 缓存与焦点行为 (`staleTime: 60_000`, `refetchOnWindowFocus: false`)，杜绝窗口切换带来的微闪；
+  4. **全套自动化测试 131/131 全绿通过**：`test_api_sessions.py` (51/51), `test_session_commit.py` (18/18), `test_namespace_uri_classification.py` (24/24), `test_config_loader.py` (38/38) 全部物理绿灯。
+
 
 
