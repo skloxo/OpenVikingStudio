@@ -1067,3 +1067,42 @@ class TaskTracker:
         for t in tasks:
             grouped[t.task_type][t.status.value] += 1
         return {k: dict(v) for k, v in grouped.items()}
+
+    def get_stats(
+        self,
+        account_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+    ) -> Dict[str, int]:
+        """Return total, completed, pending, running, failed, cancelled stats."""
+        with self._lock:
+            tasks = list(self._tasks.values())
+        if account_id is not None or user_id is not None:
+            tasks = [t for t in tasks if self._matches_owner(t, account_id, user_id)]
+
+        return {
+            "total": len(tasks),
+            "pending": sum(1 for t in tasks if t.status == TaskStatus.PENDING),
+            "running": sum(1 for t in tasks if t.status == TaskStatus.RUNNING),
+            "cancelling": sum(1 for t in tasks if t.status == TaskStatus.CANCELLING),
+            "completed": sum(1 for t in tasks if t.status == TaskStatus.COMPLETED),
+            "failed": sum(1 for t in tasks if t.status == TaskStatus.FAILED),
+            "cancelled": sum(1 for t in tasks if t.status == TaskStatus.CANCELLED),
+        }
+
+    def get_grouped_stats(
+        self,
+        account_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+    ) -> Dict[str, Dict[str, int]]:
+        """Return counts grouped by task_type and status."""
+        from collections import defaultdict
+
+        grouped: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
+        with self._lock:
+            tasks = list(self._tasks.values())
+        if account_id is not None or user_id is not None:
+            tasks = [t for t in tasks if self._matches_owner(t, account_id, user_id)]
+        for t in tasks:
+            grouped[t.task_type][t.status.value] += 1
+        return {k: dict(v) for k, v in grouped.items()}
+
