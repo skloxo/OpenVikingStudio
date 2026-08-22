@@ -33,7 +33,7 @@
 
 ---
 
-## 🗺️ 第二部分：上游 OpenViking 全景演进与合并原子化看板 (112 Commits Full Roadmap)
+## 🗺️ 第二部分：上游 OpenViking 全景演进与合并原子化看板 (131 Commits 持续演进矩阵)
 
 | 任务卡片 ID | 模块领域 | 包含上游核心特性 | 上游 Commits | 物理验收条件 | 计划 Tag 版本 | 当前状态 |
 | :--- | :--- | :--- | :--- | :--- | :--- | :---: |
@@ -45,6 +45,12 @@
 | **Task Card 6** | **企业级认证 (OIDC/LDAP)** | OIDC / LDAP 企业级身份插件、Watch 任务刷新安全 ACL、执行解析器加固 | `444cc87b`, `21029f40`, `03bd4694` | `test_ldap_auth.py` PASS, 37/37 测试全过, 1933 健康上线 | `v1.3.11` | [x] 已验收并交付 ✅ (Tag: `v1.3.11`) |
 | **Task Card 7** | **Storage & VikingFS 容错** | `mkdir` 错误主动透传、`mv` 突破 1000 节点深拷贝、废弃向量后端清理 | `0205914d`, `ecab57e1`, `1d02a72b` | `test_mv_copy_node_limit.py` PASS, 67/67 测试全过, 1933 健康上线 | `v1.3.12` | [x] 已验收并交付 ✅ (Tag: `v1.3.12`) |
 | **Task Card 8** | **Markdown 与内容写入增强** | `content_write` 处理模式、解析后不拆分 (`no_split`)、CJK Token 预算对齐 | `6f43a404`, `8d1d52fe`, `3087f943` | `test_markdown_split_token_budget.py` PASS, 44/44 测试全过, 1933 健康上线 | `v1.3.13` | [x] 已验收并交付 ✅ (Commit: `cfd40888`, Tag: `v1.3.13`) |
+| **Task Card 9** | **VikingFS 存储与 Pathlock 锁健壮性** | 目录递归删除标志、add-resource 向量 4xx 异常捕获、命名空间根保护、Pathlock 租约保活与争用退避、资源移动无锁化 | `9791c875`, `9097fef4`, `8acaf7f8`, `10fd775a`, `8ef840da`, `efbe012d`, `b84395d6`, `1ec848e0`, `421c73be`, `2b926247`, `d88967aa` | `pytest tests/storage/` PASS, `test_viking_fs.py` PASS, 1936 健康上线 | `v1.3.49` | ⏳ 待开始（当前第一批次） |
+| **Task Card 10** | **Viking URI 规范化与 viking://~ 用户家目录** | `viking://~` 用户根路径别名、废除无 UID 模糊简写、Server 入口 URI 规范化校验、Entity URI 大小写对齐 | `a83b8171`, `ff38bb5d`, `1ed5e211`, `81eba498`, `84467b1b` | `pytest tests/test_uri.py` PASS, API URI 路由测试通过 | `v1.3.50` | ⬜ 待调度 |
+| **Task Card 11** | **Memory 提取 V3 与 Session 异步非阻塞归档** | 统一 V3 提取与评测、跨会话更新稳定性、JSONL 纯物理换行切分、会话归档非阻塞、Event Tag 过滤 | `c96fbcb8`, `c1cc592a`, `ed1bd4b8`, `996128ab`, `eeff5a49`, `b9ec4f5b`, `7f6085a2`, `056f875e`, `a779c62a`, `bca5a673` | `pytest tests/test_session_*.py` PASS, `test_memory_*.py` PASS | `v1.3.51` | ⬜ 待调度 |
+| **Task Card 12** | **QueueFS 流式调度与并发 Reindex** | 语义任务流式调度、延迟内容实体化、Reindex 向量并发入队、过期任务自动清扫、上传 Task Token 用量透视 | `b877abab`, `75a1447d`, `6617a92c`, `22f00033`, `5de59a11`, `84c0895c`, `67603473`, `da138de7`, `482434ef` | `pytest tests/test_reindex.py` PASS, `test_task_tracker_*.py` PASS | `v1.3.52` | ⬜ 待调度 |
+| **Task Card 13** | **多模态与外部连接器升级** | PDF MinerU 官方 `file_parse` API 重构、飞书云盘与文件夹导入兼容、TOS Connector 参数与 404 容错、大图降采样 | `6e772912`, `c1345a1f`, `592c0fe0`, `5aed7f72`, `00bc9625`, `3bdf9995`, `24cc8c6e` | 连接器单元测试 PASS, 外部资源导入测试通过 | `v1.3.53` | ⬜ 待调度 |
+| **Task Card 14** | **MCP 协议工作区与 Agent 插件矩阵** | MCP `write/edit/tree` 工具 (支持 viking:// 作为工作目录)、recall 收敛统一 context search、Agent Plugins 1.0、TraeCode / DSH 记忆插件 | `4920297c`, `eb5aaf78`, `f6ba06bb`, `868a9600`, `c7044075`, `2cc7ec47`, `8abd61fc`, `b7aa01d2`, `d7ab37c7` | MCP 工具链测试 PASS, `openviking_system_status` 正常 | `v1.3.54` | ⬜ 待调度 |
 
 ---
 
@@ -88,6 +94,32 @@
   - [x] `openviking/server/skill_scanner.py` 实现配置驱动的递归扫描与 YAML 解析；
   - [x] 服务启动时自动扫描，并在后台按 300s 周期自愈同步；
   - [x] 准确索引去重后的全量 **682** 项技能。
+
+---
+
+### 📌 P0: [x] [TASK-COMPUTE-DUALBRAIN-01] Mac Studio (M3 Ultra 256G) 本地原生算力节点挂载与 Dual-Brain 智能网关 (auto-router) 优化部署 ✅
+- **模块**：多端分布式算力肢体 / 智能模型网关 / MLX 原生推理引擎
+- **工单 ID**：`TASK-COMPUTE-DUALBRAIN-01` ｜ **优先级**：P0（算力基础设施与智能分流中枢）
+- **核心目标与背景**：
+  为 OpenViking 体外大脑记忆中枢、OpenClaw 与 Hermes 提供零外部依赖、100% 本地私有化的高性能大模型推理基座。在 Mac Studio（M3 Ultra 256GB 统一内存，800GB/s 内存总线）上基于 Apple 原生 **MLX** 框架部署双模型常驻与智能网关，解决传统大模型推理冷启动延迟高、思考链与 Tool Calling 格式破坏 JSON 解析等核心瓶颈。
+- **技术方案与交付成果**：
+  - [x] **双模型原生 BF16 无损全精度物理常驻**：
+    - 🧠 **奥尼 35B (Ornith-1.5-35B-A3B-MLX)**：MoE 混合专家架构（总 35B / 激活 3.5B），实测吞吐 **50+ Tokens/s**，承载 90% 的纯文本推理、代码重构、数学推演与 Tool Calling；
+    - 👁️ **千问 27B-VL (Qwen3.8-27B-MTPLX-bf16)**：Dense 27B 密集视觉模型，承载 10% 的屏幕截图、UI 解析与图表 OCR；
+    - 静态显存占用 122.9GB (48%)，动态显存留存 126.8GB (52%)，并发 128k 上下文零 OOM 风险；
+  - [x] **智能网关 (`gateway.py` 端口 13389) 四重无损优化**：
+    - **自动多模态分流**：检测到图片毫秒级分流千问 27B-VL，纯文本自动分流奥尼 35B，支持自动 HA 容灾热切；
+    - **开机 Metal 预编译预热 (In-Memory Warmup)**：启动时自动预热 1-Token 计算图，首字延迟（TTFT）压至 **1.4s** 级别；
+    - **思维链与结构化工具解耦**：非流式模式下自动分离 `<think>` 推理内容至 `reasoning_content`，Tool Calling 自动编译为标准 OpenAI 结构，彻底根除 OpenViking `Expected dict` 报错；
+    - **显存锁死与长连接**：`sysctl iogpu.wired_limit_mb=249856` (244GB) + `mx.set_wired_limit(210GB)` + `mx.set_cache_limit(32GB)` + Uvicorn 120s Keep-Alive；
+  - [x] **中央网关 (CPA 8317) 统一调度与零直连铁律**：
+    - CPA `config.yaml` 映射 `Mac Studio` (`http://8.129.0.26:13389/v1`)；
+    - OpenViking (`ov.conf`)、OpenClaw (`openclaw.json`) 与 Hermes (`config.yaml`) 统一向 `http://127.0.0.1:8317/v1` 请求 `auto-router`，零客户端直连配置；
+  - [x] **全维质量与速度基准回归验收 100% 通过**：
+    - 数学概率严格推导 4.75s（答案 $P=1/2$ 100% 正确）；
+    - 原生 Tool Calling 1.57s（标准 JSON 结构 100% 正确提取）；
+    - OpenViking 生产级会话提取端到端 HTTP 200 成功入库。
+- **交付版本**：`v1.3.16` ｜ **数字层归档**：`viking://resources/master_memory/mac_studio_deployment_architecture.md`
 
 ---
 
@@ -260,7 +292,7 @@
 
 | 工单 ID | 对应后端路由 / 模块 | 核心可视化交付目标 | 优先级 |
 | :--- | :--- | :--- | :---: |
-| **`TASK-UI-AGENT-EVOL-01`** | `routers/agent_evolution.py` | **Agent 经验实战胜率与调用轨迹面板**：在经验详情抽屉展示被调用次数、5 态胜率环形图、历史关联任务列表与血缘谱系。 | 🔴 P1 |
+| **`TASK-UI-AGENT-EVOL-01`** | `routers/agent_evolution.py` | **Agent Evolution 演进全景可视化大屏（路径、轨迹与成果全透视）**：新增独立演进全景看板，提供【成长路径时间轴】、【执行动作与纠偏轨迹拓扑】、【经验胜率与正负向成效分布图】三大视界，让用户直观透明看到智能体的进化过程。 | 🔴 P1（重点前调） |
 | **`TASK-UI-WATCHES-01`** | `routers/watches.py` | **资源自动订阅与 Watch 监控看板**：提供 GitHub Repo / Web 资源订阅任务管理、自动同步触发器、运行流水线日志查看。 | 🔴 P1 |
 | **`TASK-UI-PRIVACY-01`** | `routers/privacy_configs.py` | **隐私安全与敏感信息脱敏治理中心**：脱敏规则配置、敏感字段打码开关、二次授权弹窗与合规审计日志导出。 | 🟡 P2 |
 | **`TASK-UI-OVPACK-01`** | `routers/pack.py` | **知识大脑一键打包与迁移导入中心**：提供 OVPack 便携知识包一键导出、本地 ZIP 拖拽导入与解包校验面板。 | 🟡 P2 |
@@ -268,3 +300,24 @@
 | **`TASK-UI-RELATIONS-01`** | `routers/relations.py` | **知识图谱关系与血缘动态编辑面板**：资源与记忆 Link / Unlink 交互连线、关系类型打标与多跳图谱遍历。 | 🟢 P3 |
 | **`TASK-UI-WEBDAV-01`** | `routers/webdav.py` | **WebDAV 挂载与网络存储连接管理面板**：一键生成/吊销 WebDAV 挂载凭据、连接指引（Windows/Mac 挂载盘）与实时流量。 | 🟢 P3 |
 | **`TASK-UI-OBSERVER-01`** | `routers/observer.py` | **实时事件观测流与慢查询白盒调试器**：Server-Sent Events (SSE) 实时事件流水、向量检索慢查询火焰图与白盒 Trace。 | 🟢 P3 |
+
+---
+
+### 🎴 [专项工单详情] TASK-UI-AGENT-EVOL-01：Agent Evolution 演进全景可视化看板 (Evolution Path, Trajectories & Outcomes Dashboard)
+- **模块**：OpenVikingStudio 前端 (`src/routes/evolution` / `src/routes/harness-logs`) + 后端 `AgentEvolutionService` (`/api/v1/agent-evolution/*`)
+- **工单 ID**：`TASK-UI-AGENT-EVOL-01` ｜ **优先级**：P1（核心心智感知与成果透视）
+- **核心目标**：彻底解决 Agent Evolution 后端有轨迹、有经验但前端用户“看不见、摸不着、感知弱”的黑盒问题。打造简单、直白、极具科技质感的三大核心可视化视界：
+  1. 🛤️ **【视界一：演进里程碑与成长时间轴 (Evolution Path)】**：
+     - 按时间瀑布流直观展示智能体随交互发生的认知跃迁点；
+     - 自动打标：`[规则固化]`、`[避坑经验]`、`[正向策略]`、`[工具参数修正]`，并提供原会话溯源直达。
+  2. ⚡ **【视界二：执行动作与碰壁纠偏轨迹拓扑 (Execution Trajectories Flow)】**：
+     - 结构化展开智能体执行任务时的完整流水线：`思考 -> 工具调用 -> 报错拦截 -> 自我纠偏 -> 交付`；
+     - 突出高亮展示哪里碰壁（如 429、格式异常）以及如何自愈，让机器决策过程 100% 透明白盒化。
+  3. 📊 **【视界三：成果成效与经验分布仪表盘 (Outcomes & Distribution Analytics)】**：
+     - **经验胜率与正负向成效分布图**：对接 `/api/v1/agent-evolution/experiences/outcome-distribution`，直观呈现 Positive / Negative 经验比例与演进健康度；
+     - **Few-Shot 经验复用与命中热力统计**：展示沉淀的案例与经验在后续任务中被召回的频次与成效；
+     - **提效 ROI 量化看板**：统计因经验沉淀带来的交互轮次减少量与 Token 节省估算。
+- **视觉规范约定**：
+  - 严格遵循 Layer 1：亮暗双模支持、极客性冷淡设计、NO GREEN EVER（冰青 `cyan-500` 正向、玫瑰红 `rose-500` 负向/报错、沉静哑光灰 `muted`）、字号硬下限 $\ge 11\text{px}$、卡片内边距 `p-3.5`、`mt-auto` 物理平齐。
+- **状态**：⬜ 待开发（已完成设计规格化与工单锁定）。
+

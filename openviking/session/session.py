@@ -1957,6 +1957,84 @@ class Session:
                 self._compression.compression_index += 1
 
             if not self._messages:
+                # First Principles: Check if there are any uncompleted historical archives
+                # that were interrupted or failed in Phase 2 extraction (e.g. earlier LLM 429/restart).
+                # If found, resume them by re-enqueuing Phase 2 extraction with a fresh task.
+                uncompleted_archives: List[str] = []
+                archive_idx = 1
+                while True:
+                    candidate_uri = f"{self._session_uri}/history/archive_{archive_idx:03d}"
+                    if not await self._viking_fs.exists(candidate_uri, ctx=self.ctx):
+                        break
+                    done_exists = await self._archive_file_exists(candidate_uri, ".done")
+                    if not done_exists:
+                        if await self._archive_file_exists(candidate_uri, "messages.jsonl"):
+                            uncompleted_archives.append(candidate_uri)
+                    archive_idx += 1
+
+                if uncompleted_archives:
+                    master_task_id = str(uuid4())
+                    last_archive_uri = uncompleted_archives[-1]
+                    usage_snapshot = self._usage_records.copy()
+
+                    await get_task_tracker().create(
+                        "session_commit",
+                        resource_id=self.session_id,
+                        account_id=self.ctx.account_id,
+                        user_id=self.ctx.user.user_id,
+                        task_id=master_task_id,
+                    )
+
+                    for uncompleted_uri in uncompleted_archives:
+                        # Clear stale failure marker so resume_queued_commit runs fresh
+                        if await self._archive_file_exists(uncompleted_uri, ".failed.json"):
+                            try:
+                                await self._viking_fs.rm(
+                                    f"{uncompleted_uri}/.failed.json",
+                                    ctx=self.ctx,
+                                    lease_ref=lease,
+                                )
+                            except Exception:
+                                pass
+
+                        queue_msg = SessionCommitMsg(
+                            task_id=master_task_id,
+                            session_id=self.session_id,
+                            session_uri=self._session_uri,
+                            archive_uri=uncompleted_uri,
+                            user=self.ctx.user.to_dict(),
+                            memory_policy=effective_memory_policy,
+                            usage_uris=list(dict.fromkeys(u.uri for u in usage_snapshot if u.uri)),
+                            record_auto_commit_success=record_auto_commit_success,
+                            event_search_tags=list(effective_event_tags),
+                        )
+                        await get_queue_manager().enqueue(
+                            QueueManager.SESSION_COMMIT,
+                            queue_msg.to_dict(),
+                        )
+
+                    self._meta.pending_tokens = 0
+                    self._remember_retention_policy(
+                        keep_recent_count=stored_keep_recent_count,
+                        retention_mode=retention_mode,
+                        keep_recent_turn_count=effective_keep_turns if turn_mode else 0,
+                        retained_message_token_budget=effective_token_budget if turn_mode else 0,
+                        min_raw_tail_steps=effective_min_tail,
+                    )
+                    await self._save_meta(lease_ref=lease)
+                    return {
+                        "session_id": self.session_id,
+                        "status": "accepted",
+                        "task_id": master_task_id,
+                        "archive_uri": last_archive_uri,
+                        "archived": True,
+                        "resumed": True,
+                        "uncompleted_count": len(uncompleted_archives),
+                        "trace_id": trace_id,
+                        "estimated_active_tokens": 0,
+                        "budget_exceeded": False,
+                    }
+
                 self._meta.pending_tokens = 0
                 self._remember_retention_policy(
                     keep_recent_count=stored_keep_recent_count,
@@ -2201,14 +2279,27 @@ class Session:
             if not _is_storage_not_found(exc):
                 raise
         else:
-            if task.status.value == "completed":
-                return True
-            await tracker.complete(
-                msg.task_id,
-                {"session_id": self.session_id, "archive_uri": msg.archive_uri},
-                account_id=self.ctx.account_id,
-                user_id=self.ctx.user.user_id,
-            )
+            all_done = True
+            archive_idx = 1
+            while True:
+                candidate_uri = f"{self._session_uri}/history/archive_{archive_idx:03d}"
+                if not await self._viking_fs.exists(candidate_uri, ctx=self.ctx):
+                    break
+                done_exists = await self._archive_file_exists(candidate_uri, ".done")
+                if not done_exists:
+                    if await self._archive_file_exists(candidate_uri, "messages.jsonl"):
+                        all_done = False
+                        break
+                archive_idx += 1
+
+            if all_done:
+                if task.status.value != "completed":
+                    await tracker.complete(
+                        msg.task_id,
+                        {"session_id": self.session_id, "archive_uri": msg.archive_uri},
+                        account_id=self.ctx.account_id,
+                        user_id=self.ctx.user.user_id,
+                    )
             return True
 
         try:

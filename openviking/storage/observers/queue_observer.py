@@ -81,17 +81,25 @@ class QueueObserver(BaseObserver):
             total_requeues += status.requeue_count
             total_errors += status.error_count
 
+        dag_pending = getattr(dag_stats, "pending_nodes", 0) if dag_stats else 0
+        dag_in_progress = getattr(dag_stats, "in_progress_nodes", 0) if dag_stats else 0
+        dag_processed = getattr(dag_stats, "done_nodes", 0) if dag_stats else 0
+        dag_total = getattr(dag_stats, "total_nodes", 0) if dag_stats else 0
+
         data.append(
             {
                 "Queue": "Semantic-Nodes",
-                "Pending": getattr(dag_stats, "pending_nodes", 0) if dag_stats else 0,
-                "In Progress": getattr(dag_stats, "in_progress_nodes", 0) if dag_stats else 0,
-                "Processed": getattr(dag_stats, "done_nodes", 0) if dag_stats else 0,
+                "Pending": dag_pending,
+                "In Progress": dag_in_progress,
+                "Processed": dag_processed,
                 "Requeued": 0,
                 "Errors": 0,
-                "Total": getattr(dag_stats, "total_nodes", 0) if dag_stats else 0,
+                "Total": dag_total,
             }
         )
+        total_pending += dag_pending
+        total_in_progress += dag_in_progress
+        total_processed += dag_processed
 
         # Add total row
         total_total = total_pending + total_in_progress + total_processed

@@ -38,7 +38,13 @@ export function normalizeTasks(value: unknown): TaskRecord[] {
     .filter((item): item is TaskRecord => Boolean(item))
 }
 
-export function normalizeTaskStatus(status: string | undefined): TaskStatus {
+export function normalizeTaskStatus(
+  status: string | undefined,
+  error?: string | null,
+): TaskStatus {
+  if (error && (status === 'running' || status === 'pending')) {
+    return 'failed'
+  }
   if (
     status === 'completed' ||
     status === 'failed' ||

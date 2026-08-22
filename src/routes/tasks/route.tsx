@@ -105,12 +105,12 @@ const TASK_STATUS_OPTIONS: Exclude<TaskStatusFilter, 'all'>[] = [
 
 // 根据 8 并发物理上限计算任务的物理有效状态 (前 8 个 running, 第 9 个及以后 pending)
 export function getEffectiveTaskStatus(taskItem: any, list: any[]): string {
-  const rawStatus = normalizeTaskStatus(taskItem.status)
+  const rawStatus = normalizeTaskStatus(taskItem.status, taskItem.error)
   if (rawStatus !== 'running') {
     return rawStatus
   }
   const runningList = list
-    .filter((t) => normalizeTaskStatus(t.status) === 'running')
+    .filter((t) => normalizeTaskStatus(t.status, t.error) === 'running')
     .sort((a, b) => Number(a.created_at || 0) - Number(b.created_at || 0))
   const idx = runningList.findIndex((t) => t.task_id === taskItem.task_id)
   return idx >= 8 ? 'pending' : 'running'
@@ -118,15 +118,9 @@ export function getEffectiveTaskStatus(taskItem: any, list: any[]): string {
 
 export type TaskDataScope = '24h' | 'all'
 
-async function fetchTasks(
-  taskType: TaskTypeFilter,
-  status: TaskStatusFilter,
-  dataScope: TaskDataScope = '24h',
-): Promise<TaskRecord[]> {
+async function fetchTasks(dataScope: TaskDataScope = '24h'): Promise<TaskRecord[]> {
   const query = {
     limit: MAX_TASKS,
-    status: undefined,
-    task_type: taskType === 'all' ? undefined : taskType,
   }
   try {
     const result = await getOvResult<unknown>(
@@ -144,28 +138,9 @@ async function fetchTasks(
         return timeVal > 0 && nowSec - timeVal <= 86400
       })
     }
-    // 根据 8 并发物理上限计算任务的物理有效状态 (前 8 个 running, 第 9 个及以后 pending)
-    const getEffectiveTaskStatus = (taskItem: any, list: any[]): string => {
-      const rawStatus = normalizeTaskStatus(taskItem.status)
-      if (rawStatus !== 'running') {
-        return rawStatus
-      }
-      const runningList = list
-        .filter((t) => normalizeTaskStatus(t.status) === 'running')
-        .sort((a, b) => Number(a.created_at || 0) - Number(b.created_at || 0))
-      const idx = runningList.findIndex((t) => t.task_id === taskItem.task_id)
-      return idx >= 8 ? 'pending' : 'running'
-    }
-
-    if (status !== 'all') {
-      fetched = fetched.filter((t) => getEffectiveTaskStatus(t, fetched) === status)
-    }
-    if (taskType !== 'all') {
-      fetched = fetched.filter((t) => t.task_type === taskType)
-    }
     return fetched
-  } catch (err) {
-    console.warn('[fetchTasks] Backend fetch failed:', err)
+  } catch (error) {
+    console.error('Failed to fetch tasks:', error)
     return []
   }
 }
@@ -185,9 +160,16 @@ function TasksRoute() {
     null,
   )
   const tasksQuery = useQuery({
-    queryFn: () => fetchTasks(taskType, statusFilter, dataScope),
-    queryKey: ['tasks', identityScopeKey, taskType, statusFilter, dataScope],
-    refetchInterval: 5_000,
+    queryFn: () => fetchTasks(dataScope),
+    queryKey: ['tasks', identityScopeKey, dataScope],
+    refetchInterval: (query) => {
+      const currentTasks = query.state.data || []
+      const hasActive = currentTasks.some((t) => {
+        const s = normalizeTaskStatus(t.status, t.error)
+        return s === 'running' || s === 'pending'
+      })
+      return hasActive ? 3000 : 10000
+    },
   })
   const rawTasks = tasksQuery.data ?? []
 
@@ -205,24 +187,48 @@ function TasksRoute() {
     },
     refetchInterval: () => {
       const hasActive = rawTasks.some((t) => {
-        const s = normalizeTaskStatus(t.status)
+        const s = normalizeTaskStatus(t.status, t.error)
         return s === 'running' || s === 'pending'
       })
       return hasActive ? 2000 : 15000
     },
   })
   const queueObserverRows = queueObserverQuery.data || []
+
+  // 按资源聚合时，优先保留该资源当前真实活跃的任务 (running > pending > 终态最新记录)
   const allTasks = React.useMemo(() => {
-    if (!dedupByResource) return rawTasks
-    const map = new Map<string, TaskRecord>()
-    for (const t of rawTasks) {
-      const key = t.resource_id ? `res:${t.resource_id}` : `task:${t.task_id}`
-      if (!map.has(key)) {
-        map.set(key, t)
+    let list = rawTasks
+    if (dedupByResource) {
+      const map = new Map<string, TaskRecord>()
+      const sorted = [...rawTasks].sort((a, b) => {
+        const aStatus = normalizeTaskStatus(a.status, a.error)
+        const bStatus = normalizeTaskStatus(b.status, b.error)
+        const aActive = aStatus === 'running' ? 2 : aStatus === 'pending' ? 1 : 0
+        const bActive = bStatus === 'running' ? 2 : bStatus === 'pending' ? 1 : 0
+        if (aActive !== bActive) return bActive - aActive
+        return Number(b.created_at || 0) - Number(a.created_at || 0)
+      })
+
+      for (const t of sorted) {
+        const key = t.resource_id ? `res:${t.resource_id}` : `task:${t.task_id}`
+        if (!map.has(key)) {
+          map.set(key, t)
+        }
       }
+      list = Array.from(map.values())
     }
-    return Array.from(map.values())
-  }, [rawTasks, dedupByResource])
+
+    if (taskType !== 'all') {
+      list = list.filter((t) => t.task_type === taskType)
+    }
+
+    if (statusFilter !== 'all') {
+      list = list.filter((t) => getEffectiveTaskStatus(t, list) === statusFilter)
+    }
+
+    return list
+  }, [rawTasks, dedupByResource, taskType, statusFilter])
+
   const pageOffset = (page - 1) * pageSize
   const tasks = allTasks.slice(pageOffset, pageOffset + pageSize)
   const totalPages = Math.max(1, Math.ceil(allTasks.length / pageSize))
@@ -554,103 +560,6 @@ function TasksRoute() {
     refetchInterval: 5_000,
   })
 
-  const localCalculatedQueueRows = React.useMemo(() => {
-    const map: Record<
-      string,
-      { processing: number; pending: number; completed: number; errors: number }
-    > = {
-      Embedding: { processing: 0, pending: 0, completed: 0, errors: 0 },
-      Semantic: { processing: 0, pending: 0, completed: 0, errors: 0 },
-      ExternalParse: { processing: 0, pending: 0, completed: 0, errors: 0 },
-      AddResource: { processing: 0, pending: 0, completed: 0, errors: 0 },
-      SessionCommit: { processing: 0, pending: 0, completed: 0, errors: 0 },
-      UserDeletion: { processing: 0, pending: 0, completed: 0, errors: 0 },
-      'Semantic-Nodes': { processing: 0, pending: 0, completed: 0, errors: 0 },
-    }
-
-    for (const item of allTasks) {
-      const st = normalizeTaskStatus(item.status)
-
-      if (item.task_type === 'session_commit') {
-        if (st === 'running') map.SessionCommit.processing++
-        else if (st === 'pending') map.SessionCommit.pending++
-        else if (st === 'completed') map.SessionCommit.completed++
-        else if (st === 'failed') map.SessionCommit.errors++
-      } else if (item.task_type === 'user_delete' || item.task_type === 'user_deletion') {
-        if (st === 'running') map.UserDeletion.processing++
-        else if (st === 'pending') map.UserDeletion.pending++
-        else if (st === 'completed') map.UserDeletion.completed++
-        else if (st === 'failed') map.UserDeletion.errors++
-      } else if (
-        item.task_type === 'admin_reindex' ||
-        item.task_type === 'snapshot_restore_reindex'
-      ) {
-        if (st === 'pending') map.ExternalParse.pending++
-        else map.ExternalParse.completed++
-
-        if (st === 'running') map.Embedding.processing++
-        else if (st === 'pending') map.Embedding.pending++
-        else if (st === 'completed') map.Embedding.completed++
-        else if (st === 'failed') map.Embedding.errors++
-      } else {
-        // add_resource / add_skill / connector_import 包含：资源入库 -> 解析 -> 语义提炼 -> 向量落库
-        if (st === 'running') {
-          map.AddResource.processing++
-          map.ExternalParse.processing++
-          map.Semantic.processing++
-          map.Embedding.processing++
-        } else if (st === 'pending') {
-          map.AddResource.pending++
-          map.ExternalParse.pending++
-          map.Semantic.pending++
-          map.Embedding.pending++
-        } else if (st === 'completed') {
-          map.AddResource.completed++
-          map.ExternalParse.completed++
-          map.Semantic.completed++
-          map.Embedding.completed++
-        } else if (st === 'failed') {
-          map.AddResource.errors++
-          map.ExternalParse.errors++
-          map.Semantic.errors++
-          map.Embedding.errors++
-        }
-      }
-    }
-
-    let totProc = 0
-    let totPend = 0
-    let totComp = 0
-    let totErr = 0
-    const rows = Object.entries(map).map(([name, data]) => {
-      totProc += data.processing
-      totPend += data.pending
-      totComp += data.completed
-      totErr += data.errors
-      return {
-        name,
-        processing: data.processing,
-        pending: data.pending,
-        completed: data.completed,
-        errors: data.errors,
-        total: data.processing + data.pending + data.completed,
-      }
-    })
-
-    rows.push({
-      name: 'TOTAL',
-      processing: totProc,
-      pending: totPend,
-      completed: totComp,
-      errors: totErr,
-      total: totProc + totPend + totComp,
-    })
-
-    return rows
-  }, [allTasks])
-
-  const displayQueueRows = queueObserverRows.length > 0 ? queueObserverRows : localCalculatedQueueRows
-
   const kpiData = React.useMemo(() => {
     const total = allTasks.length
     const completed = allTasks.filter(
@@ -887,7 +796,8 @@ function TasksRoute() {
         <div>
           <QueueStatusCard
             title={t('pipeline.processQueueStatus')}
-            customRows={displayQueueRows}
+            customRows={queueObserverRows}
+            isLoading={queueObserverQuery.isLoading && queueObserverRows.length === 0}
             isHealthy={kpiData.failed === 0}
           />
         </div>
