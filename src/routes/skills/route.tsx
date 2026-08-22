@@ -333,17 +333,6 @@ function getErrorMessage(error: unknown): string {
 }
 
 async function fetchSkills(): Promise<SkillItem[]> {
-  try {
-    const base = window.location.pathname.startsWith('/studio') ? '/studio' : ''
-    const localRes = await fetch(`${base}/all_skills.json`, { cache: 'no-cache' })
-    if (localRes.ok) {
-      const localSkills = await localRes.json()
-      if (Array.isArray(localSkills) && localSkills.length > 0) {
-        return normalizeSkills({ skills: localSkills })
-      }
-    }
-  } catch {}
-
   const result = await getOvResult<SkillListResult>(
     ovClient.client.get({
       query: {

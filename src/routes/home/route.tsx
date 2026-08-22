@@ -138,15 +138,13 @@ function HomePage() {
 
   const skillsCountQuery = useQuery({
     queryFn: async () => {
-      try {
-        const base = window.location.pathname.startsWith('/studio') ? '/studio' : ''
-        const res = await fetch(`${base}/all_skills.json`, { cache: 'no-cache' })
-        if (res.ok) {
-          const list = await res.json()
-          if (Array.isArray(list) && list.length > 0) return list.length
-        }
-      } catch {}
-      return summary?.context_counts?.skills ?? 648
+      const result = await getOvResult<{ skills?: unknown[]; total?: number }>(
+        ovClient.client.get({
+          query: { node_limit: 2000 },
+          url: '/api/v1/skills',
+        }),
+      )
+      return result?.total ?? (Array.isArray(result?.skills) ? result.skills.length : (summary?.context_counts?.skills ?? 0))
     },
     queryKey: ['skills-count-summary'],
     staleTime: 60_000,
@@ -158,7 +156,7 @@ function HomePage() {
       <KnowledgeBaseOverview
         memoryCount={summary?.context_counts?.memories ?? 0}
         resourceCount={summary?.context_counts?.files ?? 0}
-        skillCount={skillsCountQuery.data ?? summary?.context_counts?.skills ?? 648}
+        skillCount={skillsCountQuery.data ?? summary?.context_counts?.skills ?? 0}
         vectorCount={vectorCount}
         collectionCount={collectionCount}
         isLoading={isMetricsLoading || observerQuery.isLoading}
