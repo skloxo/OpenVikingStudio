@@ -156,7 +156,7 @@ class _OpsMixin:
         # Check existence and determine lock strategy
         try:
             stat = await self._async_agfs.stat(path)
-            is_dir = stat.get("isDir", False) if isinstance(stat, dict) else False
+            is_dir = bool(stat.get("isDir") or stat.get("is_dir")) if isinstance(stat, dict) else False
         except Exception as exc:
             if not is_not_found_error(exc):
                 mapped = map_exception(exc, resource=uri)

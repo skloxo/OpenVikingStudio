@@ -95,7 +95,7 @@ class MockLocalAGFS:
         if not p.exists():
             raise FileNotFoundError(path)
         s = p.stat()
-        return {"size": s.st_size, "mtime": s.st_mtime, "is_dir": p.is_dir()}
+        return {"size": s.st_size, "mtime": s.st_mtime, "isDir": p.is_dir(), "is_dir": p.is_dir()}
 
     def bind_request_context(self, ctx):
         return MagicMock(__enter__=lambda x: None, __exit__=lambda x, y, z: None)
