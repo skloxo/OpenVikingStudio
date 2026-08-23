@@ -56,6 +56,21 @@
 
 ## ⚡ 第三部分：当前活跃与待调度 Studio 原子工单 (Scheduled Active Task Cards)
 
+### 📌 P0: [x] [TASK-CONSOLIDATE-PLAYGROUND-01] 资源库与实验场极简降维收口 & 全屏文件画布 (Consolidate Resources into Playground & Focus Canvas Mode) ✅
+- **模块**：OpenVikingStudio 前端 (`src/routes/playground`, `src/routes/resources`, `src/components/app-shell.tsx`)
+- **工单 ID**：`TASK-CONSOLIDATE-PLAYGROUND-01` ｜ **优先级**：P0（架构极简 / 奥卡姆剃刀）
+- **目标**：贯彻“如无必要，勿增实体”哲学，消除资源库与实验场的功能重叠与心智摩擦，将资源库能力与入口 100% 收口归并在实验场，并提供全屏/聚焦文件画布模式。
+- **交付内容与验收结果**：
+  - [x] **导航栏精简**：从 `app-shell.tsx` 侧边栏移除重复的【资源库】菜单项，统一以【实验场】作为核心工作台；
+  - [x] **平滑路由重定向**：访问 `/resources`（含 `?uri=...`、`?search=...`）时通过 `beforeLoad` 自动无缝转发至 `/playground`，完美兼容历史外链与书签；
+  - [x] **全屏/聚焦文件画布 (Focus Canvas Mode)**：在 Context Explorer 顶部工具栏增加 `PanelRightClose / PanelRightOpen` 聚焦切换按钮，一键隐藏中右栏调试终端，让中间文件预览/编辑器撑满 100% 全屏，满足宽屏沉浸式阅读需求；
+  - [x] **偏好持久化**：全屏视图偏好自动记录在 `localStorage`；
+  - [x] **全功能 100% 物理对齐**：L0/L1/L2 分级摘要预览、Git 版本时间线与代码 Diff 对比、全文搜索 Palette、批量上传与目录树增删改查一站式闭环；
+  - [x] **编译构建通过**：前端 `npm run build` 0 报错通过；
+- **交付版本**：`v1.3.53` ｜ **交付 Commit**：`2dfcfa7c` ｜ **交付 Tag**：`v1.3.53`
+
+---
+
 ### 📌 P0: [x] [TASK-VERSION-TIMELINE-01] .md 文档资源“查看文件版本”时间轴与“点击回滚版本”功能移植 ✅
 - **模块**：OpenVikingStudio 前端 (`src/routes/resources`) + 后端 VikingFS (`openviking/storage/viking_fs/_snapshot.py`)
 - **工单 ID**：`TASK-VERSION-TIMELINE-01` ｜ **优先级**：P0（最高）
