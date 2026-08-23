@@ -155,6 +155,25 @@ function PlaygroundWorkbench() {
   const [resizingPane, setResizingPane] = useState<'context' | 'action' | null>(
     null,
   )
+  const [isFocusCanvas, setIsFocusCanvas] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false
+    return (
+      window.localStorage.getItem('openviking:playground:focus_mode') === 'true'
+    )
+  })
+
+  const handleToggleFocusCanvas = useCallback(() => {
+    setIsFocusCanvas((prev) => {
+      const next = !prev
+      try {
+        window.localStorage.setItem(
+          'openviking:playground:focus_mode',
+          String(next),
+        )
+      } catch {}
+      return next
+    })
+  }, [])
   const isDraggingPaneRef = useRef(false)
   const activeResizeTeardownRef = useRef<(() => void) | null>(null)
   const leftWidthRef = useRef(leftWidth)
@@ -512,6 +531,7 @@ function PlaygroundWorkbench() {
             activeTaskCount={activeTaskCount}
             hasActiveTasks={hasActiveTasks}
             hasTasks={tasks.length > 0}
+            isFocusCanvas={isFocusCanvas}
             isRefreshing={listQuery.isFetching}
             isRefreshingTasks={isRefreshingTasks}
             onAddResource={() => setUploadDialogOpen(true)}
@@ -521,6 +541,7 @@ function PlaygroundWorkbench() {
               void invalidateList(currentUri)
               void listQuery.refetch()
             }}
+            onToggleFocusCanvas={handleToggleFocusCanvas}
           />
           <div className="min-h-0 flex-1">
             <ContextTree
@@ -600,13 +621,15 @@ function PlaygroundWorkbench() {
             />
           </div>
         </main>
-        <PlaygroundResizeHandle
-          active={resizingPane === 'action'}
-          label={t('resizeAction')}
-          onPointerDown={(event) => handleResizeStart('action', event)}
-        />
+        {!isFocusCanvas && (
+          <PlaygroundResizeHandle
+            active={resizingPane === 'action'}
+            label={t('resizeAction')}
+            onPointerDown={(event) => handleResizeStart('action', event)}
+          />
+        )}
 
-        {!isCompactLayout ? (
+        {!isFocusCanvas && !isCompactLayout ? (
           <aside className="hidden min-h-0 min-w-0 flex-col bg-muted/15 lg:flex lg:w-[var(--playground-right-width)] lg:min-w-[var(--playground-right-width)]">
             <PlaygroundActionPanel
               activePanel={activePanel}

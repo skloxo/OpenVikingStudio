@@ -119,13 +119,6 @@ const NAV_ITEMS: readonly NavItem[] = [
     to: '/skills',
   },
   {
-    icon: BookOpenIcon,
-    id: 'resources',
-    section: 'workspace',
-    titleKey: 'navigation.resources.title',
-    to: '/resources',
-  },
-  {
     icon: Share2Icon,
     id: 'graph',
     section: 'workspace',

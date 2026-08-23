@@ -8,6 +8,8 @@ import {
   FolderIcon,
   FolderTreeIcon,
   Loader2Icon,
+  PanelRightClose,
+  PanelRightOpen,
   PlusIcon,
   RefreshCcwIcon,
   SearchIcon,
@@ -30,22 +32,26 @@ export function ContextExplorerHeader({
   activeTaskCount,
   hasActiveTasks,
   hasTasks,
+  isFocusCanvas = false,
   isRefreshing,
   isRefreshingTasks,
   onAddResource,
   onOpenProcessingTasks,
   onOpenSearch,
   onRefresh,
+  onToggleFocusCanvas,
 }: {
   activeTaskCount: number
   hasActiveTasks: boolean
   hasTasks: boolean
+  isFocusCanvas?: boolean
   isRefreshing: boolean
   isRefreshingTasks: boolean
   onAddResource: () => void
   onOpenProcessingTasks: () => void
   onOpenSearch: () => void
   onRefresh: () => void
+  onToggleFocusCanvas?: () => void
 }) {
   const { t } = useTranslation(['playground', 'resources'])
   const showProcessingTasks = hasTasks || isRefreshingTasks
@@ -110,6 +116,26 @@ export function ContextExplorerHeader({
             className={cn('size-4', isRefreshing && 'animate-spin')}
           />
         </Button>
+        {onToggleFocusCanvas ? (
+          <Button
+            type="button"
+            size="icon-sm"
+            variant="ghost"
+            title={
+              isFocusCanvas
+                ? t('explorer.restoreLayout', { defaultValue: '恢复三栏工作台' })
+                : t('explorer.focusCanvas', { defaultValue: '全屏/聚焦文件画布' })
+            }
+            onClick={onToggleFocusCanvas}
+            className={cn(isFocusCanvas && 'text-primary bg-primary/10')}
+          >
+            {isFocusCanvas ? (
+              <PanelRightOpen className="size-4" />
+            ) : (
+              <PanelRightClose className="size-4" />
+            )}
+          </Button>
+        ) : null}
       </div>
     </div>
   )
