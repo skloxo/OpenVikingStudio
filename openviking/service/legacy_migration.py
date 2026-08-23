@@ -260,6 +260,14 @@ class LegacyDataMigration:
                 result.skipped.append(skipped)
                 continue
             await self._agfs.rm(target.source_path, recursive=True)
+            parent_dir = target.source_path.rsplit("/", 1)[0]
+            if parent_dir.endswith("/agent") or parent_dir.endswith("/session"):
+                remaining = await self._ls(parent_dir)
+                if not remaining:
+                    try:
+                        await self._agfs.rm(parent_dir, recursive=True)
+                    except Exception:
+                        pass
             result.removed.append(target_to_dict(target))
         return result.to_dict()
 

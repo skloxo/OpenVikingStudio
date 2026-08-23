@@ -239,7 +239,14 @@ async def client_with_resource(client, service, sample_markdown_file):
         reason="test resource",
         wait=True,
     )
-    yield client, result.get("root_uri", "")
+    root_uri = result.get("root_uri", "")
+    if not root_uri and result.get("task_id"):
+        tracker = get_task_tracker()
+        task = await tracker.wait(result["task_id"], timeout=10.0)
+        root_uri = (task.result or {}).get("root_uri", "")
+    if not root_uri:
+        root_uri = f"viking://resources/{sample_markdown_file.stem}"
+    yield client, root_uri
 
 
 # ---------------------------------------------------------------------------

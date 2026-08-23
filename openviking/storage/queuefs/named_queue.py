@@ -411,7 +411,7 @@ class NamedQueue:
                 raise TypeError(f"Unexpected queue size response: {type(content).__name__}")
             text = text.strip()
             return int(text) if text else 0
-        except (AGFSClientError, FileNotFoundError, OSError):
+        except (AGFSNotFoundError, FileNotFoundError):
             return 0
 
     async def snapshot(self) -> List[Dict[str, Any]]:
@@ -419,7 +419,7 @@ class NamedQueue:
         await self._ensure_initialized()
         try:
             content = await self._async_agfs.read(f"{self.path}/messages")
-        except (AGFSClientError, FileNotFoundError, OSError):
+        except (AGFSNotFoundError, FileNotFoundError, AGFSClientError, Exception):
             return []
         if not content:
             return []

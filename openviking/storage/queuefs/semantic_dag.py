@@ -13,11 +13,20 @@ from weakref import WeakKeyDictionary
 from openviking.parse.parsers.media import get_media_type
 from openviking.server.identity import RequestContext
 from openviking.service.task_work_index import bind_task_context, get_task_context
-from openviking.storage.queuefs.semantic_sidecar import write_semantic_sidecars
+from openviking.storage.abstract_overview import (
+    AbstractOverviewFormatError,
+    AbstractOverviewWriteResult,
+    body_for_preview,
+    deterministic_sample,
+    freshness_metadata,
+    read_abstract_overview_pending_snapshot,
+    write_abstract_overview,
+)
 from openviking.storage.viking_fs import LS_ALL_NODES, get_viking_fs
 from openviking.telemetry import bind_telemetry, get_current_telemetry
 from openviking.utils.ingest_options import IngestOptions
 from openviking_cli.utils import VikingURI
+from openviking_cli.utils.config import get_openviking_config
 from openviking_cli.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -40,6 +49,9 @@ class DirNode:
     file_summaries: List[Optional[Dict[str, str]]]
     children_abstracts: List[Optional[Dict[str, str]]]
     pending: int
+    pending_snapshot: int = 0
+    sampled_children_dirs: Optional[Set[str]] = None
+    sampled_file_paths: Optional[Set[str]] = None
     dispatched: bool = False
     overview_scheduled: bool = False
     lock: asyncio.Lock = field(default_factory=asyncio.Lock)
@@ -158,6 +170,9 @@ class SemanticDagExecutor:
         ingest_options: IngestOptions | None = None,
         coalesce_key: str = "",
         coalesce_version: int = 0,
+        source: Optional[Dict[str, str]] = None,
+        generation_trigger: str = "semantic_refresh",
+        aggregate_directory: bool = True,
     ):
         self._processor = processor
         self._context_type = context_type
@@ -172,6 +187,9 @@ class SemanticDagExecutor:
         self._ingest_options = IngestOptions.from_value(ingest_options)
         self._coalesce_key = coalesce_key
         self._coalesce_version = coalesce_version
+        self._source = dict(source) if source else None
+        self._generation_trigger = generation_trigger
+        self._aggregate_directory = aggregate_directory
         self._task_context = get_task_context()
         self._telemetry = get_current_telemetry()
         self._stale = False
@@ -196,6 +214,7 @@ class SemanticDagExecutor:
         self._dir_change_status: Dict[str, bool] = {}
         self._overview_cache: Dict[str, Dict[str, str]] = {}
         self._overview_cache_lock = asyncio.Lock()
+        self._root_write_result = AbstractOverviewWriteResult(wrote=False)
 
     async def run(self, root_uri: str) -> None:
         """Run DAG execution starting from root_uri."""
@@ -346,12 +365,53 @@ class SemanticDagExecutor:
 
         try:
             children_dirs, file_paths = await self._list_dir(dir_uri, "_dispatch_dir")
+            sample_limit = getattr(
+                get_openviking_config().semantic,
+                "overview_sample_limit",
+                32,
+            )
+            direct_entries = sorted(
+                [("directory", uri) for uri in children_dirs]
+                + [("file", uri) for uri in file_paths],
+                key=lambda item: item[1].rsplit("/", 1)[-1],
+            )
+            sampled_entries = deterministic_sample(direct_entries, sample_limit)
+            sampled_children_dirs = {
+                uri for kind, uri in sampled_entries if kind == "directory"
+            }
+            sampled_file_paths = {uri for kind, uri in sampled_entries if kind == "file"}
+            pending_snapshot = (
+                await read_abstract_overview_pending_snapshot(
+                    viking_fs=self._viking_fs,
+                    dir_uri=dir_uri,
+                    ctx=self._ctx,
+                    lock=self._lock,
+                )
+                if self._aggregate_directory
+                else 0
+            )
             file_index = {path: idx for idx, path in enumerate(file_paths)}
             child_index = {path: idx for idx, path in enumerate(children_dirs)}
+            # Recursive/initial work still maintains every file. Incremental
+            # parent aggregation prepares only sampled inputs plus files that
+            # changed and therefore need their own vector maintenance.
+            required_file_paths = (
+                set(file_paths)
+                if self._recursive
+                else (
+                    set(file_paths) & self._changed_paths
+                    if not self._aggregate_directory
+                    else (
+                        sampled_file_paths | (set(file_paths) & self._changed_paths)
+                        if self._incremental_update
+                        else sampled_file_paths
+                    )
+                )
+            )
             if self._recursive:
-                pending = len(children_dirs) + len(file_paths)
+                pending = len(children_dirs) + len(required_file_paths)
             else:
-                pending = len(file_paths)
+                pending = len(required_file_paths)
 
             node = DirNode(
                 uri=dir_uri,
@@ -362,6 +422,9 @@ class SemanticDagExecutor:
                 file_summaries=[None] * len(file_paths),
                 children_abstracts=[None] * len(children_dirs),
                 pending=pending,
+                pending_snapshot=pending_snapshot,
+                sampled_children_dirs=sampled_children_dirs,
+                sampled_file_paths=sampled_file_paths,
                 dispatched=True,
             )
             self._nodes[dir_uri] = node
@@ -371,6 +434,8 @@ class SemanticDagExecutor:
                 return False
 
             for file_path in file_paths:
+                if file_path not in required_file_paths:
+                    continue
                 self._schedule_file(dir_uri, file_path)
 
             if children_dirs:
@@ -410,7 +475,7 @@ class SemanticDagExecutor:
             else:
                 file_paths.append(item_uri)
 
-        return children_dirs, file_paths
+        return sorted(children_dirs), sorted(file_paths)
 
     def _get_target_file_path(self, current_uri: str) -> Optional[str]:
         if not self._incremental_update or not self._target_uri or not self._root_uri:
@@ -492,7 +557,7 @@ class SemanticDagExecutor:
                         )
                         if overview_content:
                             self._overview_cache[parent_uri] = self._processor._parse_overview_md(
-                                overview_content
+                                body_for_preview(overview_content)
                             )
                         else:
                             self._overview_cache[parent_uri] = {}
@@ -510,6 +575,8 @@ class SemanticDagExecutor:
             if file_name in existing_summaries:
                 return {"name": file_name, "summary": existing_summaries[file_name]}
 
+        except AbstractOverviewFormatError:
+            raise
         except Exception as e:
             logger.debug(f"Failed to read existing summary from overview.md for {file_path}: {e}")
 
@@ -563,7 +630,9 @@ class SemanticDagExecutor:
         try:
             overview = await self._viking_fs.read_file(f"{target_path}/.overview.md", ctx=self._ctx)
             abstract = await self._viking_fs.read_file(f"{target_path}/.abstract.md", ctx=self._ctx)
-            return overview, abstract
+            return body_for_preview(overview), body_for_preview(abstract)
+        except AbstractOverviewFormatError:
+            raise
         except Exception:
             return None, None
 
@@ -577,19 +646,39 @@ class SemanticDagExecutor:
             if self._incremental_update:
                 content_changed = await self._check_file_content_changed(file_path)
                 self._file_change_status[file_path] = content_changed
+                node = self._nodes.get(parent_uri)
+                regenerate_sampled_summary = bool(
+                    self._aggregate_directory
+                    and node is not None
+                    and node.pending_snapshot > 0
+                    and node.sampled_file_paths is not None
+                    and file_path in node.sampled_file_paths
+                )
 
-                if not content_changed:
+                if not content_changed and not regenerate_sampled_summary:
                     summary_dict = await self._read_existing_summary(file_path)
                     if summary_dict is not None:
                         need_vectorize = False
                     else:
                         self._file_change_status[file_path] = True
+                elif not content_changed:
+                    # Pending freshness only records a count, not the changed
+                    # child URIs. Once that debt triggers aggregation, rebuild
+                    # every sampled input instead of trusting the old L1 body.
+                    # Deferred messages already maintained file vectors, so
+                    # this forced summary rebuild does not imply vector work.
+                    need_vectorize = False
             else:
                 self._file_change_status[file_path] = True
             if summary_dict is None:
                 summary_dict = await self._processor._generate_single_file_summary(
                     file_path, llm_sem=self._llm_sem, ctx=self._ctx
                 )
+        except AbstractOverviewFormatError:
+            # A generated sidecar that opted into OKF must never be treated as
+            # an empty file summary; doing so would silently feed metadata or
+            # corrupted YAML into a later regeneration.
+            raise
         except Exception as e:
             logger.warning(f"Failed to generate summary for {file_path}: {e}")
             summary_dict = {"name": file_name, "summary": ""}
@@ -637,7 +726,9 @@ class SemanticDagExecutor:
 
         async with node.lock:
             idx = node.file_index.get(file_path)
-            if idx is not None:
+            if idx is not None and (
+                node.sampled_file_paths is None or file_path in node.sampled_file_paths
+            ):
                 node.file_summaries[idx] = summary_dict
             node.pending -= 1
             if node.pending == 0 and not node.overview_scheduled:
@@ -651,7 +742,9 @@ class SemanticDagExecutor:
         child_name = child_uri.split("/")[-1]
         async with node.lock:
             idx = node.child_index.get(child_uri)
-            if idx is not None:
+            if idx is not None and (
+                node.sampled_children_dirs is None or child_uri in node.sampled_children_dirs
+            ):
                 node.children_abstracts[idx] = {"name": child_name, "abstract": abstract}
             node.pending -= 1
             if node.pending == 0 and not node.overview_scheduled:
@@ -667,6 +760,8 @@ class SemanticDagExecutor:
     def _finalize_file_summaries(self, node: DirNode) -> List[Dict[str, str]]:
         summaries: List[Dict[str, str]] = []
         for idx, file_path in enumerate(node.file_paths):
+            if node.sampled_file_paths is not None and file_path not in node.sampled_file_paths:
+                continue
             item = node.file_summaries[idx]
             if item is None:
                 summaries.append({"name": file_path.split("/")[-1], "summary": ""})
@@ -714,6 +809,11 @@ class SemanticDagExecutor:
     async def _finalize_children_abstracts(self, node: DirNode) -> List[Dict[str, str]]:
         results: List[Dict[str, str]] = []
         for idx, child_uri in enumerate(node.children_dirs):
+            if (
+                node.sampled_children_dirs is not None
+                and child_uri not in node.sampled_children_dirs
+            ):
+                continue
             item = node.children_abstracts[idx]
             if item is None:
                 try:
@@ -735,18 +835,33 @@ class SemanticDagExecutor:
         dir_uri: str,
         overview: str,
         abstract: str,
-    ) -> bool:
-        wrote = await write_semantic_sidecars(
+        *,
+        total_entries: int,
+        sampled_entries: int,
+        consume_pending: int,
+    ) -> AbstractOverviewWriteResult:
+        metadata: Dict[str, Any] = {
+            "generated_by": {
+                "component": "SemanticProcessor",
+                "trigger": self._generation_trigger,
+            },
+            "freshness": freshness_metadata(total_entries, sampled_entries),
+        }
+        if dir_uri == self._root_uri and self._source:
+            metadata["source"] = self._source
+        wrote = await write_abstract_overview(
             viking_fs=self._viking_fs,
             dir_uri=dir_uri,
             overview=overview,
             abstract=abstract,
             ctx=self._ctx,
             is_stale=self._is_stale,
+            metadata=metadata,
+            consume_pending=consume_pending,
             lock=self._lock,
             log_prefix="[SemanticDag]",
         )
-        if not wrote:
+        if not wrote.wrote:
             self._stale = True
         return wrote
 
@@ -754,8 +869,18 @@ class SemanticDagExecutor:
         node = self._nodes.get(dir_uri)
         if not node:
             return
+        if not self._aggregate_directory:
+            # Deferred aggregation still ran changed-file work. Finish without
+            # touching directory sidecars or their vectors.
+            self._stats.done_nodes += 1
+            self._stats.in_progress_nodes = max(0, self._stats.in_progress_nodes - 1)
+            self._release_dir_node(dir_uri)
+            if dir_uri == self._root_uri and self._root_done:
+                self._root_done.set()
+            return
         need_vectorize = True
         children_changed = True
+        should_write = True
         abstract = ""
         try:
             overview = None
@@ -768,15 +893,27 @@ class SemanticDagExecutor:
                 if not children_changed:
                     need_vectorize = False
                     overview, abstract = await self._read_existing_overview_abstract(dir_uri)
+                    should_write = overview is None or abstract is None
             if overview is None or abstract is None:
                 async with node.lock:
                     file_summaries = self._finalize_file_summaries(node)
                     children_abstracts = await self._finalize_children_abstracts(node)
+                # Freshness describes the directory itself, including direct
+                # entries whose summaries failed. Those entries remain visible
+                # as unsampled coverage instead of disappearing from the count.
+                total_entries = len(node.file_paths) + len(node.children_dirs)
+                # Sampling happened in _dispatch_dir, before summary work was
+                # scheduled. Only the prepared bounded inputs reach the prompt.
+                sampled_entries = len(file_summaries) + len(children_abstracts)
                 overview = self._select_direct_media_overview(node, file_summaries)
                 if overview is None:
                     async with self._llm_sem:
                         overview = await self._processor._generate_overview(
-                            dir_uri, file_summaries, children_abstracts
+                            dir_uri,
+                            file_summaries,
+                            children_abstracts,
+                            total_files=len(node.file_paths),
+                            total_children=len(node.children_dirs),
                         )
                 overview, abstract = self._processor._normalize_overview_generation(overview)
 
@@ -784,13 +921,27 @@ class SemanticDagExecutor:
                 return
 
             # Write directly, protected by the outer semantic lock.
-            try:
-                wrote = await self._write_directory_semantics(dir_uri, overview, abstract)
-                if not wrote:
-                    need_vectorize = False
-            except Exception:
-                logger.info(f"[SemanticDag] {dir_uri} write failed, skipping")
+            if should_write:
+                try:
+                    wrote = await self._write_directory_semantics(
+                        dir_uri,
+                        overview,
+                        abstract,
+                        total_entries=total_entries,
+                        sampled_entries=sampled_entries,
+                        consume_pending=node.pending_snapshot,
+                    )
+                    if dir_uri == self._root_uri:
+                        self._root_write_result = wrote
+                    if not wrote.wrote:
+                        need_vectorize = False
+                except AbstractOverviewFormatError:
+                    raise
+                except Exception:
+                    logger.info(f"[SemanticDag] {dir_uri} write failed, skipping")
 
+        except AbstractOverviewFormatError:
+            raise
         except Exception as e:
             logger.error(f"Failed to generate overview for {dir_uri}: {e}", exc_info=True)
         else:
@@ -835,6 +986,12 @@ class SemanticDagExecutor:
             in_progress_nodes=self._stats.in_progress_nodes,
             done_nodes=self._stats.done_nodes,
         )
+
+    @property
+    def root_write_result(self) -> AbstractOverviewWriteResult:
+        """Visible-body changes produced for the executor root."""
+
+        return self._root_write_result
 
 
 if False:  # pragma: no cover - for type checkers only
