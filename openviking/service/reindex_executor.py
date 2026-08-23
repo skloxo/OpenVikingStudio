@@ -1793,6 +1793,13 @@ class ReindexExecutor:
         assert service.vikingdb_manager is not None
         merged_meta = dict(meta or {})
         owner_ctx = self._content_owner_ctx(uri, ctx)
+        existing = await self._fetch_existing_record(uri=uri, level=int(level), ctx=owner_ctx)
+        if (
+            existing
+            and existing.get("search_tags") is not None
+            and "search_tags" not in merged_meta
+        ):
+            merged_meta["search_tags"] = existing.get("search_tags")
 
         context = Context(
             uri=uri,

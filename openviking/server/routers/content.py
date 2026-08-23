@@ -12,6 +12,7 @@ from pydantic import BaseModel, ConfigDict, model_validator
 from openviking.core.namespace import (
     is_hidden_by_actor_peer_view,
     may_include_hidden_actor_peers,
+    resolve_current_user_uri,
     resolve_uri,
 )
 from openviking.core.path_variables import resolve_path_variables
@@ -48,28 +49,13 @@ class WriteContentRequest(BaseModel):
     processing_mode: ProcessingMode = DEFAULT_PROCESSING_MODE
 
 
-class BatchWritePrecondition(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    kind: Literal["create_if_absent", "replace_if_hash"]
-    base_hash: str | None = None
-
-    @model_validator(mode="after")
-    def validate_hash_shape(self) -> "BatchWritePrecondition":
-        if self.kind == "replace_if_hash" and not self.base_hash:
-            raise ValueError("base_hash is required for replace_if_hash")
-        if self.kind == "create_if_absent" and self.base_hash is not None:
-            raise ValueError("base_hash is not allowed for create_if_absent")
-        return self
-
-
 class BatchWriteOperation(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     uri: str
     content: str | None = None
     content_base64: str | None = None
-    precondition: BatchWritePrecondition
+    mode: Literal["replace", "append", "create", "upsert"] = "replace"
 
     @model_validator(mode="after")
     def validate_content_shape(self) -> "BatchWriteOperation":
@@ -107,6 +93,7 @@ class ReindexRequest(BaseModel):
     mode: str = "vectors_only"
     wait: bool = True
     dry_run: bool = False
+    recursive: bool = True
     tags: list[str] | None = None
     tag_mode: str = "replace"
 
@@ -115,25 +102,23 @@ router = APIRouter(prefix="/api/v1/content", tags=["content"])
 
 
 def _authorize_reindex_uri(uri: str, ctx: RequestContext) -> str:
-    """Allow users to reindex only their own private namespace or global resources."""
+    """Allow users to reindex only their own private namespace."""
     if ctx.role != Role.USER:
         return uri
 
-    if uri == "viking://resources" or uri.startswith("viking://resources/"):
-        return uri
-
-    target = resolve_uri(uri)
+    canonical_uri = resolve_current_user_uri(uri, ctx)
+    target = resolve_uri(canonical_uri)
     if (
         target.scope != "user"
         or target.owner_user_id != ctx.user.user_id
-        or is_hidden_by_actor_peer_view(uri, ctx)
-        or may_include_hidden_actor_peers(uri, ctx)
+        or is_hidden_by_actor_peer_view(canonical_uri, ctx)
+        or may_include_hidden_actor_peers(canonical_uri, ctx)
     ):
         raise PermissionDeniedError(
             "USER can only reindex their own user namespace.",
-            resource=uri,
+            resource=canonical_uri,
         )
-    return uri
+    return canonical_uri
 
 
 @router.get("/read")
@@ -270,7 +255,7 @@ async def batch_write(
     request: BatchWriteRequest = Body(...),
     _ctx: RequestContext = Depends(get_request_context),
 ):
-    """Apply preconditioned file writes and refresh their indexes as one request."""
+    """Apply file writes and refresh their indexes once after the batch is written."""
     service = get_service()
     root_uri = validate_request_viking_uri(resolve_path_variables(request.root_uri), _ctx)
     operations = [operation.model_dump(exclude_none=True) for operation in request.operations]
@@ -340,6 +325,8 @@ async def reindex(
         "dry_run": body.dry_run,
         "ctx": ctx,
     }
+    if not body.recursive:
+        reindex_kwargs["recursive"] = False
     if body.tags is not None:
         reindex_kwargs["tags"] = body.tags
         reindex_kwargs["tag_mode"] = body.tag_mode

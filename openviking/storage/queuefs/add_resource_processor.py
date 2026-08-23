@@ -15,7 +15,13 @@ from openviking.service.task_tracker import TaskStatus, get_task_tracker
 from openviking.service.task_work_index import bind_task_context, extract_task_metadata
 from openviking.storage.queuefs.add_resource_msg import AddResourceMsg
 from openviking.storage.queuefs.named_queue import DequeueHandlerBase
-from openviking.telemetry import bind_telemetry, resolve_telemetry, unregister_telemetry
+from openviking.telemetry import (
+    OperationTelemetry,
+    bind_telemetry,
+    register_telemetry,
+    resolve_telemetry,
+    unregister_telemetry,
+)
 from openviking.telemetry.request_wait_tracker import get_request_wait_tracker
 from openviking.telemetry.resource_summary import record_resource_queue_metrics
 from openviking_cli.session.user_id import UserIdentifier
@@ -54,14 +60,27 @@ class AddResourceProcessor(DequeueHandlerBase):
             except Exception:
                 raise handoff_error
 
-    async def _release_cancelled_handoff(self, msg: AddResourceMsg) -> None:
-        if msg.lock_handoff is None:
+    async def _cleanup_staged_source(self, msg: AddResourceMsg, ctx: RequestContext) -> None:
+        if msg.staged_source is None:
             return
-        try:
-            lock = await self._viking_fs._async_agfs.pathlock_adopt(msg.lock_handoff)
-            await self._viking_fs._async_agfs.pathlock_release(lock)
-        except Exception as exc:
-            logger.warning("[AddResource] Failed to release cancelled lock handoff: %s", exc)
+        from openviking.resource.staged_source import StagedSource
+
+        staged = StagedSource.from_dict(msg.staged_source)
+        await self._viking_fs.delete_temp(staged.temp_uri, ctx=ctx)
+
+    async def _release_cancelled_resources(
+        self,
+        msg: AddResourceMsg,
+        ctx: RequestContext,
+    ) -> None:
+        if msg.lock_handoff is not None:
+            try:
+                lock = await self._viking_fs._async_agfs.pathlock_adopt(msg.lock_handoff)
+                await self._viking_fs._async_agfs.pathlock_release(lock)
+            except Exception as exc:
+                logger.warning("[AddResource] Failed to release cancelled lock handoff: %s", exc)
+        with suppress(Exception):
+            await self._cleanup_staged_source(msg, ctx)
 
     async def _requeue_lock_handoff(self, msg: AddResourceMsg, exc: Exception) -> bool:
         if msg.lock_handoff_retry >= 2:
@@ -104,7 +123,10 @@ class AddResourceProcessor(DequeueHandlerBase):
             TaskStatus.CANCELLED,
         ):
             if task.status in (TaskStatus.CANCELLING, TaskStatus.CANCELLED):
-                await self._release_cancelled_handoff(msg)
+                await self._release_cancelled_resources(msg, ctx)
+            else:
+                with suppress(Exception):
+                    await self._cleanup_staged_source(msg, ctx)
             unregister_telemetry(telemetry_id)
             self.report_success()
             return None
@@ -126,15 +148,18 @@ class AddResourceProcessor(DequeueHandlerBase):
                 )
                 self.report_error(f"Invalid lock_handoff: {exc}", data)
                 unregister_telemetry(telemetry_id)
+                with suppress(Exception):
+                    await self._cleanup_staged_source(msg, ctx)
                 return None
 
         telemetry = resolve_telemetry(telemetry_id) if telemetry_id else None
         if telemetry is None:
-            from openviking.telemetry.operation import OperationTelemetry
-
-            telemetry = OperationTelemetry(operation="add_resource_job", enabled=False)
+            telemetry = OperationTelemetry(operation="add_resource_job", enabled=True)
             if telemetry_id:
                 telemetry.telemetry_id = telemetry_id
+            else:
+                telemetry_id = telemetry.telemetry_id
+            register_telemetry(telemetry)
         request_wait_tracker = get_request_wait_tracker()
         request_wait_tracker.register_request(telemetry_id)
 
@@ -151,6 +176,7 @@ class AddResourceProcessor(DequeueHandlerBase):
             bind_telemetry(telemetry),
             bind_task_context(msg.task_id, ctx.account_id, ctx.user.user_id),
         ):
+            terminal = False
             try:
                 if replay_result is None:
                     await tracker.start(
@@ -164,6 +190,11 @@ class AddResourceProcessor(DequeueHandlerBase):
                         ctx=ctx,
                         resource_lock=resource_lock,
                         stage_callback=_set_stage,
+                        task_auth=await tracker.get_task_auth(
+                            msg.task_id,
+                            account_id=ctx.account_id,
+                            user_id=ctx.user.user_id,
+                        ),
                     )
                     if result.get("status") == "error":
                         errors = result.get("errors") or ["resource processing failed"]
@@ -173,6 +204,7 @@ class AddResourceProcessor(DequeueHandlerBase):
                             account_id=ctx.account_id,
                             user_id=ctx.user.user_id,
                         )
+                        terminal = True
                         self.report_error("resource processing failed", data)
                         return None
                     await tracker.complete(
@@ -186,9 +218,12 @@ class AddResourceProcessor(DequeueHandlerBase):
                     result = deepcopy(replay_result)
                 await tracker.wait_for_descendants(msg.task_id, metadata.work_id)
                 result.setdefault(
-                    "queue_status",
-                    request_wait_tracker.build_queue_status(telemetry_id),
+                    "queue_status", request_wait_tracker.build_queue_status(telemetry_id)
                 )
+                if replay_result is None:
+                    result["context_count"] = request_wait_tracker.get_embedding_context_count(
+                        telemetry_id
+                    )
                 record_resource_queue_metrics(
                     telemetry=telemetry,
                     telemetry_id=telemetry_id,
@@ -217,6 +252,7 @@ class AddResourceProcessor(DequeueHandlerBase):
                     user_id=ctx.user.user_id,
                     resource_id=result.get("root_uri"),
                 )
+                terminal = True
                 self.report_success()
                 return None
             except Exception as exc:
@@ -226,6 +262,7 @@ class AddResourceProcessor(DequeueHandlerBase):
                     account_id=ctx.account_id,
                     user_id=ctx.user.user_id,
                 )
+                terminal = True
                 self.report_error(str(exc), data)
                 return None
             finally:
@@ -234,6 +271,9 @@ class AddResourceProcessor(DequeueHandlerBase):
                 with suppress(Exception):
                     if resource_lock is not None:
                         await self._viking_fs._async_agfs.pathlock_release(resource_lock)
+                if terminal:
+                    with suppress(Exception):
+                        await self._cleanup_staged_source(msg, ctx)
 
     async def on_cancelled(self, data: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
         """Release an enqueue-time lock before ACKing cancelled work."""
@@ -246,7 +286,14 @@ class AddResourceProcessor(DequeueHandlerBase):
             self.report_error(str(exc), data)
             return None
         future = asyncio.run_coroutine_threadsafe(
-            self._release_cancelled_handoff(msg),
+            self._release_cancelled_resources(
+                msg,
+                RequestContext(
+                    user=UserIdentifier(msg.account_id, msg.user_id),
+                    role=Role(msg.role),
+                    actor_peer_id=msg.actor_peer_id,
+                ),
+            ),
             self._service_loop,
         )
         await asyncio.wrap_future(future)

@@ -48,13 +48,32 @@
 | **Task Card 9** | **VikingFS 存储与 Pathlock 锁健壮性** | 目录递归删除标志、add-resource 向量 4xx 异常捕获、命名空间根保护、Pathlock 租约保活与争用退避、资源移动无锁化 | `9791c875`, `9097fef4`, `8acaf7f8`, `10fd775a`, `8ef840da`, `efbe012d`, `b84395d6`, `1ec848e0`, `421c73be`, `2b926247`, `d88967aa` | `pytest tests/storage/` PASS, `test_viking_fs.py` PASS, 1936 健康上线 | `v1.3.49` | [x] 已验收并交付 ✅ (Commit: `e0cd472f`, Tag: `v1.3.49`) |
 | **Task Card 10** | **Viking URI 规范化与 viking://~ 用户家目录** | `viking://~` 用户根路径别名、废除无 UID 模糊简写、Server 入口 URI 规范化校验、Entity URI 大小写对齐、全盘 739 物理技能动态同步入库 | `a83b8171`, `ff38bb5d`, `1ed5e211`, `81eba498`, `84467b1b` | `pytest tests/unit/test_uri_*.py` 69/69 PASS, MCP 119/119 PASS, 739 技能真实入库, 1936 上线 | `v1.3.50` | [x] 已验收并交付 ✅ (Commit: `38e28b11`, Tag: `v1.3.50`) |
 | **Task Card 11** | **Memory 提取 V3 与 Session 异步非阻塞归档** | 统一 V3 提取与评测、跨会话更新稳定性、JSONL 纯物理换行切分、会话归档非阻塞、Event Tag 过滤 | `c96fbcb8`, `c1cc592a`, `ed1bd4b8`, `996128ab`, `eeff5a49`, `b9ec4f5b`, `7f6085a2`, `056f875e`, `a779c62a`, `bca5a673` | `pytest tests/test_session_*.py` PASS, `test_memory_*.py` PASS | `v1.3.51` | ⏳ 正在合并开发中 |
-| **Task Card 12** | **QueueFS 流式调度与并发 Reindex** | 语义任务流式调度、延迟内容实体化、Reindex 向量并发入队、过期任务自动清扫、上传 Task Token 用量透视 | `b877abab`, `75a1447d`, `6617a92c`, `22f00033`, `5de59a11`, `84c0895c`, `67603473`, `da138de7`, `482434ef` | `pytest tests/test_reindex.py` PASS, `test_task_tracker_*.py` PASS | `v1.3.52` | ⬜ 待调度 |
-| **Task Card 13** | **多模态与外部连接器升级** | PDF MinerU 官方 `file_parse` API 重构、飞书云盘与文件夹导入兼容、TOS Connector 参数与 404 容错、大图降采样 | `6e772912`, `c1345a1f`, `592c0fe0`, `5aed7f72`, `00bc9625`, `3bdf9995`, `24cc8c6e` | 连接器单元测试 PASS, 外部资源导入测试通过 | `v1.3.53` | ⬜ 待调度 |
-| **Task Card 14** | **MCP 协议工作区与 Agent 插件矩阵** | MCP `write/edit/tree` 工具 (支持 viking:// 作为工作目录)、recall 收敛统一 context search、Agent Plugins 1.0、TraeCode / DSH 记忆插件 | `4920297c`, `eb5aaf78`, `f6ba06bb`, `868a9600`, `c7044075`, `2cc7ec47`, `8abd61fc`, `b7aa01d2`, `d7ab37c7` | MCP 工具链测试 PASS, `openviking_system_status` 正常 | `v1.3.54` | ⬜ 待调度 |
+| **Task Card 12** | **QueueFS 流式调度与并发 Reindex** | 语义任务流式调度、延迟内容实体化、Reindex 向量并发入队、过期任务自动清扫、上传 Task Token 用量透视 | `b877abab`, `75a1447d`, `6617a92c`, `22f00033`, `5de59a11`, `84c0895c`, `67603473`, `da138de7`, `482434ef` | `pytest tests/server/test_admin_rebuild_api.py` 58/58 PASS, `test_admin_api.py` 38/38 PASS, `test_queue_manager.py` PASS, 前端 build 0 报错 | `v1.3.54` | [x] 已验收并交付 ✅ (Tag: `v1.3.54`) |
+| **Task Card 13** | **多模态与外部连接器升级** | PDF MinerU 官方 `file_parse` API 重构、飞书云盘与文件夹导入兼容、TOS Connector 参数与 404 容错、大图降采样 | `6e772912`, `c1345a1f`, `592c0fe0`, `5aed7f72`, `00bc9625`, `3bdf9995`, `24cc8c6e` | 连接器单元测试 PASS, 外部资源导入测试通过 | `v1.3.55` | ⬜ 待调度 |
+| **Task Card 14** | **MCP 协议工作区与 Agent 插件矩阵** | MCP `write/edit/tree` 工具 (支持 viking:// 作为工作目录)、recall 收敛统一 context search、Agent Plugins 1.0、TraeCode / DSH 记忆插件 | `4920297c`, `eb5aaf78`, `f6ba06bb`, `868a9600`, `c7044075`, `2cc7ec47`, `8abd61fc`, `b7aa01d2`, `d7ab37c7` | MCP 工具链测试 PASS, `openviking_system_status` 正常 | `v1.3.56` | ⬜ 待调度 |
 
 ---
 
 ## ⚡ 第三部分：当前活跃与待调度 Studio 原子工单 (Scheduled Active Task Cards)
+
+### 📌 P0: [x] [TASK-QUEUEFS-STREAMING-REINDEX-01] QueueFS 流式调度与并发 Reindex 合并 (Task Card 12) ✅
+- **模块**：OpenViking Server (`openviking/storage/queuefs`, `openviking/service/reindex_executor.py`, `openviking/server/routers/content.py`, `openviking/storage/content_write.py`)
+- **工单 ID**：`TASK-QUEUEFS-STREAMING-REINDEX-01` ｜ **优先级**：P0（核心吞吐与调度稳定性）
+- **目标**：合并上游 QueueFS 语义任务流式调度、Reindex 向量并发入队、Search Tag 标签保护、延迟内容实体化及多租户鉴权。
+- **交付内容与验收结果**：
+  - [x] **Reindex 权限鉴权与 Tag 标签物理保护**：`_authorize_reindex_uri` 统一采用 `resolve_current_user_uri` 解析当前用户 URI；`_upsert_context` 在批量 Upsert 时精准保留 `search_tags`，彻底防止元数据丢失；
+  - [x] **QueueFS 异步容错与流式任务调度**：`named_queue.py` 全面捕获 `AGFSClientError` 防止未就绪快照抛错；集成 Semantic DAG 与最新概览生成提示词模板；
+  - [x] **VikingFS 内容写入与目录向量化**：`embedding_utils.py` 与 `content_write.py` 参数物理对齐，`vectorize_directory_meta` 支持 `include_overview` / `include_abstract`；
+  - [x] **全自动化测试 100% 通过**：
+    - `tests/server/test_admin_rebuild_api.py`：58/58 全通 (100%)
+    - `tests/server/test_admin_api.py`：38/38 全通 (100%)
+    - `tests/server/test_api_content.py` & `test_api_content_write.py`：39/39 全通 (100%)
+    - `tests/storage/test_semantic_processor_*.py`：94/94 全通 (100%)
+    - `tests/server/test_request_wait_tracking.py`：4/4 全通 (100%)
+  - [x] **前端编译构建通过**：`npm run build` 0 报错；
+- **交付版本**：`v1.3.54` ｜ **交付 Tag**：`v1.3.54`
+
+---
 
 ### 📌 P0: [x] [TASK-CONSOLIDATE-PLAYGROUND-01] 资源库与实验场极简降维收口 & 全屏文件画布 (Consolidate Resources into Playground & Focus Canvas Mode) ✅
 - **模块**：OpenVikingStudio 前端 (`src/routes/playground`, `src/routes/resources`, `src/components/app-shell.tsx`)
