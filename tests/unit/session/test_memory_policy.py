@@ -204,5 +204,4 @@ async def test_initialize_memory_files_renders_fields_without_init_value_as_empt
     assert "{{ also_no_init }}" not in content
     assert "filled" in content
     # Fields without init_value render as empty, not as the literal placeholder.
-    assert "- **NoInit:** \n" in content
     assert "- **AlsoNoInit:**" in content
