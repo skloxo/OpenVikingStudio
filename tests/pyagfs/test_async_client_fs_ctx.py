@@ -32,7 +32,13 @@ async def test_async_client_derives_account_ctx_from_local_agfs_path() -> None:
 
     await agfs.write("/local/acct-1/data/file.txt", b"x")
 
-    assert client.calls == [("write", "/local/acct-1/data/file.txt", {"account_id": "acct-1"})]
+    assert client.calls == [
+        (
+            "write",
+            "/local/acct-1/data/file.txt",
+            {"account_id": "acct-1", "disable_auto_pathlock": "true"},
+        )
+    ]
 
 
 @pytest.mark.asyncio
@@ -42,7 +48,13 @@ async def test_async_client_uses_system_ctx_for_non_local_agfs_path() -> None:
 
     await agfs.read("/queue/semantic/dequeue")
 
-    assert client.calls == [("read", "/queue/semantic/dequeue", {"account_id": "_system"})]
+    assert client.calls == [
+        (
+            "read",
+            "/queue/semantic/dequeue",
+            {"account_id": "_system", "disable_auto_pathlock": "true"},
+        )
+    ]
 
 
 @pytest.mark.asyncio
@@ -55,7 +67,11 @@ async def test_async_client_preserves_explicit_fs_ctx() -> None:
     )
 
     assert client.calls == [
-        ("write", "/local/path-account/data/file.txt", {"account_id": "ctx-account"})
+        (
+            "write",
+            "/local/path-account/data/file.txt",
+            {"account_id": "ctx-account", "disable_auto_pathlock": "true"},
+        )
     ]
 
 
