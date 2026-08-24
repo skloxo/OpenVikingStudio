@@ -21,7 +21,7 @@ DEFAULT_TIMEOUT = 30
 
 headers = {
     "Content-Type": "application/json",
-    "User-Agent": f"openviking/{getattr(openviking, '__version__', '0.1.0')}",
+    "User-Agent": f"openviking/{openviking.__version__}",
 }
 
 

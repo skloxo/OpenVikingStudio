@@ -79,13 +79,10 @@ function emitSessionStartOutput({ contexts = [], systemMessage = "" } = {}) {
   output(response);
 }
 
-<<<<<<< HEAD
 function responseTraceId(body) {
   return body?.result?.trace_id || body?.error?.trace_id || body?.trace_id || undefined;
 }
 
-=======
->>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
 async function requestJSON(path, init = {}, options = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), cfg.captureTimeoutMs);
@@ -103,18 +100,11 @@ async function requestJSON(path, init = {}, options = {}) {
     const res = await fetch(`${cfg.baseUrl}${path}`, { ...init, headers, signal: controller.signal });
     const body = await res.json().catch(() => null);
     if (!body) return { ok: false, status: res.status };
-<<<<<<< HEAD
     const traceId = responseTraceId(body);
     if (!res.ok || body.status === "error") {
       return { ok: false, status: res.status, error: body.error || body, traceId };
     }
     return { ok: true, status: res.status, result: body.result ?? body, traceId };
-=======
-    if (!res.ok || body.status === "error") {
-      return { ok: false, status: res.status, error: body.error || body };
-    }
-    return { ok: true, status: res.status, result: body.result ?? body };
->>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
   } catch (error) {
     return { ok: false, status: 0, error: { message: error?.message || String(error) } };
   } finally {
@@ -452,11 +442,7 @@ async function main() {
   if (totalCommitted > 0) {
     emitSessionStartOutput({
       contexts: [profileContext],
-<<<<<<< HEAD
       systemMessage: describeCommittedSessions(commits),
-=======
-      systemMessage: describeCommittedSessions(ovSessionIds),
->>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
     });
   } else {
     emitSessionStartOutput({ contexts: [profileContext] });

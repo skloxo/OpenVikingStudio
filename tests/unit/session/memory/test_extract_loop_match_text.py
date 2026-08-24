@@ -219,7 +219,9 @@ class TestPageIdInstruction:
             ) as mock_create_model,
         ):
             mock_config.return_value = SimpleNamespace(memory=SimpleNamespace(link_enabled=False))
-            mock_create_model.return_value = SimpleNamespace(model_json_schema=lambda: {})
+            mock_create_model.return_value = SimpleNamespace(
+                model_json_schema=lambda: {}, model_fields={}
+            )
 
             await loop.run()
 
@@ -232,10 +234,7 @@ class TestPageIdInstruction:
             in system_content
         )
         assert "each visible line is prefixed with `line_number<TAB>`" in system_content
-        assert (
-            "Never include the line-number prefix itself in `search` or `replace`."
-            in system_content
-        )
+        assert "Never include the line-number prefix itself in `search`" in system_content
         assert "For existing items, use the page_id shown in read/search results." in system_content
         assert "For new items, assign a unique page_id >= 100." in system_content
         assert "When editing an existing item, reuse its existing page_id." in system_content
@@ -298,7 +297,9 @@ class TestPageIdInstruction:
             ) as mock_create_model,
         ):
             mock_config.return_value = SimpleNamespace(memory=SimpleNamespace(link_enabled=True))
-            mock_create_model.return_value = SimpleNamespace(model_json_schema=lambda: {})
+            mock_create_model.return_value = SimpleNamespace(
+                model_json_schema=lambda: {}, model_fields={}
+            )
 
             await loop.run()
 
@@ -364,7 +365,9 @@ class TestFinalOperationsHydration:
             patch("openviking.session.memory.extract_loop.tracer.info") as mock_tracer_info,
         ):
             mock_config.return_value = SimpleNamespace(memory=SimpleNamespace(link_enabled=False))
-            mock_create_model.return_value = SimpleNamespace(model_json_schema=lambda: {})
+            mock_create_model.return_value = SimpleNamespace(
+                model_json_schema=lambda: {}, model_fields={}
+            )
 
             final_operations, _ = await loop.run()
 

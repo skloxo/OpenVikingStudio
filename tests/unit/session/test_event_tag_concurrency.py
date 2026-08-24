@@ -40,6 +40,10 @@ class _MetaVikingFS:
         del uri, ctx
         return "/sessions/session-1"
 
+    async def exists(self, uri, ctx=None):
+        del ctx
+        return uri in self.files
+
     async def read_file(self, uri, ctx=None):
         del ctx
         if uri not in self.files:

@@ -96,35 +96,9 @@ class RetrievalStatsCollector:
         stats = get_stats_collector().snapshot()
     """
 
-    def __init__(self, auto_hydrate: bool = True) -> None:
+    def __init__(self) -> None:
         self._lock = threading.Lock()
         self._stats = RetrievalStats()
-        if auto_hydrate:
-            self.hydrate_from_store()
-
-    def hydrate_from_store(self) -> None:
-        """Hydrate historical baseline retrieval statistics from TelemetryStore."""
-        try:
-            from openviking.telemetry.telemetry_store import get_telemetry_store
-
-            baseline = get_telemetry_store().get_retrieval_baseline()
-            with self._lock:
-                if baseline.get("total_queries", 0) > 0:
-                    self._stats.total_queries = baseline["total_queries"]
-                    self._stats.total_results = baseline["total_results"]
-                    self._stats.zero_result_queries = baseline["zero_result_queries"]
-                    self._stats.total_score_sum = baseline["total_score_sum"]
-                    self._stats.max_score = baseline["max_score"]
-                    if baseline.get("min_score", float("inf")) < float("inf"):
-                        self._stats.min_score = baseline["min_score"]
-                    self._stats.queries_by_type = dict(baseline.get("queries_by_type", {}))
-                    self._stats.rerank_used = baseline.get("rerank_used", 0)
-                    self._stats.rerank_fallback = baseline.get("rerank_fallback", 0)
-                    self._stats.total_latency_ms = baseline.get("total_latency_ms", 0.0)
-                    self._stats.max_latency_ms = baseline.get("max_latency_ms", 0.0)
-        except Exception:
-            # Baseline hydration is best-effort
-            pass
 
     def record_query(
         self,
@@ -164,28 +138,14 @@ class RetrievalStatsCollector:
                 self._stats.max_latency_ms = latency_ms
 
         try:
-            from openviking.telemetry.telemetry_store import get_telemetry_store
-
-            get_telemetry_store().record_retrieval(
-                context_type=context_type,
-                result_count=result_count,
-                scores=scores,
-                latency_ms=latency_ms,
-                rerank_used=rerank_used,
-                rerank_fallback=rerank_fallback,
-            )
-        except Exception:
-            pass
-
-        try:
             from openviking.metrics.datasources import RetrievalStatsDataSource
 
             RetrievalStatsDataSource.record_retrieval(
-                context_type=context_type or "unknown",
-                result_count=result_count,
+                context_type=str(context_type or "unknown"),
+                result_count=int(result_count),
                 latency_seconds=latency_ms / 1000.0,
-                rerank_used=rerank_used,
-                rerank_fallback=rerank_fallback,
+                rerank_used=bool(rerank_used),
+                rerank_fallback=bool(rerank_fallback),
             )
         except Exception:
             pass

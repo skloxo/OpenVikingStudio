@@ -7,16 +7,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from openviking.client.local import LocalClient
-    from openviking.client.session import Session
     from openviking_cli.client.http import AsyncHTTPClient
     from openviking_cli.client.sync_http import SyncHTTPClient
 
 __all__ = [
     "AsyncHTTPClient",
     "SyncHTTPClient",
-    "LocalClient",
-    "Session",
 ]
 
 
@@ -29,13 +25,4 @@ def __getattr__(name: str):
         from openviking_cli.client.sync_http import SyncHTTPClient
 
         return SyncHTTPClient
-    if name == "LocalClient":
-        from openviking.client.local import LocalClient
-
-        return LocalClient
-    if name == "Session":
-        from openviking.client.session import Session
-
-        return Session
     raise AttributeError(name)
-

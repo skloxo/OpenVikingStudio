@@ -48,23 +48,25 @@ class TestGeminiDimension:
 
 
 class TestGeminiContextRouting:
-    @patch("openviking.models.embedder.gemini_embedders.genai.Client")
-    def test_nonsymmetric_passes_query_document_params(self, _mock):
+    @patch("openviking.models.embedder.gemini_embedders.genai")
+    def test_nonsymmetric_passes_query_document_params(self, _mock_genai):
         """get_embedder() passes query_param/document_param to GeminiDenseEmbedder."""
-        cfg = EmbeddingConfig(
-            dense=_gcfg(query_param="RETRIEVAL_QUERY", document_param="RETRIEVAL_DOCUMENT")
-        )
-        embedder = cfg.get_embedder()
-        assert embedder.query_param == "retrieval_query"
-        assert embedder.document_param == "retrieval_document"
+        with patch("openviking.models.embedder.gemini_embedders._GENAI_AVAILABLE", True):
+            cfg = EmbeddingConfig(
+                dense=_gcfg(query_param="RETRIEVAL_QUERY", document_param="RETRIEVAL_DOCUMENT")
+            )
+            embedder = cfg.get_embedder()
+            assert embedder.query_param == "retrieval_query"
+            assert embedder.document_param == "retrieval_document"
 
-    @patch("openviking.models.embedder.gemini_embedders.genai.Client")
-    def test_only_query_param_set(self, _mock):
+    @patch("openviking.models.embedder.gemini_embedders.genai")
+    def test_only_query_param_set(self, _mock_genai):
         """When only query_param is set, document_param is None."""
-        cfg = EmbeddingConfig(dense=_gcfg(query_param="RETRIEVAL_QUERY"))
-        embedder = cfg.get_embedder()
-        assert embedder.query_param == "retrieval_query"
-        assert embedder.document_param is None
+        with patch("openviking.models.embedder.gemini_embedders._GENAI_AVAILABLE", True):
+            cfg = EmbeddingConfig(dense=_gcfg(query_param="RETRIEVAL_QUERY"))
+            embedder = cfg.get_embedder()
+            assert embedder.query_param == "retrieval_query"
+            assert embedder.document_param is None
 
 
 class TestGeminiConfigValidation:
@@ -73,11 +75,11 @@ class TestGeminiConfigValidation:
             EmbeddingModelConfig(model="gemini-embedding-2-preview", provider="gemini")
 
     def test_invalid_query_param_raises(self):
-        with pytest.raises(ValueError, match="Invalid query_param"):
+        with pytest.raises(ValueError, match="[Ii]nvalid query_param"):
             _gcfg(query_param="NOT_A_VALID_TYPE")
 
     def test_invalid_document_param_raises(self):
-        with pytest.raises(ValueError, match="Invalid document_param"):
+        with pytest.raises(ValueError, match="[Ii]nvalid document_param"):
             _gcfg(document_param="ALSO_INVALID")
 
     def test_query_document_param_case_normalized(self):

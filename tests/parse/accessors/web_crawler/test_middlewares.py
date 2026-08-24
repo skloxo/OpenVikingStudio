@@ -1,7 +1,10 @@
 from unittest.mock import MagicMock
 
 import pytest
-from scrapy.exceptions import IgnoreRequest
+try:
+    from scrapy.exceptions import IgnoreRequest
+except (ImportError, AttributeError):
+    pytest.skip("scrapy not functional due to OpenSSL environment", allow_module_level=True)
 
 from openviking.parse.accessors.web_crawler.config import CrawlConfig
 from openviking.parse.accessors.web_crawler.middlewares import RequestValidatorMiddleware

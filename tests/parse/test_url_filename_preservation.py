@@ -426,7 +426,7 @@ def _patch_httpx_client(
         async def __aexit__(self, *_args):
             return False
 
-        async def head(self, _url):
+        async def head(self, _url, headers=None):
             if fail_head:
                 raise RuntimeError("SignatureDoesNotMatch")
             return FakeResponse(response_head_headers, b"", head_status_code)

@@ -6,6 +6,8 @@ import datetime
 import platform
 import subprocess
 
+import pytest
+
 
 def get_openclaw_version():
     """获取 OpenClaw 版本"""
@@ -74,11 +76,13 @@ def get_openviking_version():
     return "Unknown"
 
 
+@pytest.hookimpl(optionalhook=True)
 def pytest_html_report_title(report):
     """自定义报告标题"""
     report.title = "OpenClaw + OpenViking 端到端自动化测试报告"
 
 
+@pytest.hookimpl(optionalhook=True)
 def pytest_html_results_summary(prefix, summary, postfix):
     """自定义报告摘要 - 添加环境信息和测试说明"""
     openclaw_version = get_openclaw_version()
@@ -122,11 +126,13 @@ def pytest_html_results_summary(prefix, summary, postfix):
     )
 
 
+@pytest.hookimpl(optionalhook=True)
 def pytest_html_results_table_header(cells):
     """自定义结果表格表头"""
     cells.insert(2, '<th style="width: 35%;">📝 测试描述</th>')
 
 
+@pytest.hookimpl(optionalhook=True)
 def pytest_html_results_table_row(report, cells):
     """自定义结果表格行 - 添加中文测试描述"""
     description = "暂无描述"

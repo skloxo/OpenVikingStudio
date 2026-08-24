@@ -27,6 +27,7 @@ class _FakeConfig:
             path="/tmp/ov-test",
             backend="local",
             cache=_FakeCacheConfig(),
+            pathlock=_FakeCacheConfig(),
         ),
         skip_process_lock=False,
     )
@@ -72,6 +73,14 @@ async def test_build_ragfs_binding_config_works_inside_running_event_loop(monkey
         "cache": {
             "enabled": False,
             "provider": "memory",
+        },
+        "pathlock": {
+            "enabled": False,
+            "provider": "memory",
+        },
+        "log": {
+            "level": "INFO",
+            "output": "stdout",
         },
         "encryption": {
             "root_key": b"k" * 32,

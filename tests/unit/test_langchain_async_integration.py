@@ -4,7 +4,6 @@ import asyncio
 import copy
 import sys
 import threading
-from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -204,6 +203,37 @@ async def test_injected_async_client_is_initialized_only_once_across_adapters():
 
     assert all(resolved is client for resolved in clients)
     assert client.initialize_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_acall_openviking_adapts_flat_kwargs_to_sdk_options():
+    calls = []
+
+    class OptionsClient:
+        async def search(self, query, options=None):
+            calls.append((query, options))
+            return {"query": query}
+
+    result = await acall_openviking(
+        OptionsClient(),
+        "search",
+        query="recover",
+        session_id="session-1",
+        limit=5,
+        include_provenance=False,
+    )
+
+    assert result == {"query": "recover"}
+    assert calls == [
+        (
+            "recover",
+            {
+                "session_id": "session-1",
+                "limit": 5,
+                "include_provenance": False,
+            },
+        )
+    ]
 
 
 @pytest.mark.asyncio
@@ -839,74 +869,6 @@ async def test_sync_client_async_fallback_runs_outside_event_loop_thread():
     assert result["query"] == "fallback"
     assert call_thread_ids
     assert call_thread_ids[0] != main_thread_id
-
-
-@pytest.mark.asyncio
-async def test_embedded_path_async_uses_owned_sync_client_in_worker(monkeypatch, tmp_path):
-    main_thread_id = threading.get_ident()
-    instances: list[Any] = []
-
-    class FakeSyncOpenViking:
-        def __init__(self, *, path: str, actor_peer_id: str | None = None):
-            self.path = path
-            self.actor_peer_id = actor_peer_id
-            self._initialized = False
-            self.initialize_thread_id: int | None = None
-            self.find_thread_id: int | None = None
-            self.closed = False
-            instances.append(self)
-
-        def initialize(self) -> None:
-            self.initialize_thread_id = threading.get_ident()
-            self._initialized = True
-
-        def find(self, **_kwargs: Any) -> dict[str, Any]:
-            self.find_thread_id = threading.get_ident()
-            return {
-                "memories": [
-                    {
-                        "uri": "viking://user/memories/example",
-                        "abstract": "Embedded result.",
-                        "level": 1,
-                    }
-                ],
-                "resources": [],
-                "skills": [],
-            }
-
-        def close(self) -> None:
-            self.closed = True
-
-    import langchain_openviking.client as client_module
-
-    monkeypatch.setattr(
-        client_module,
-        "import_module",
-        lambda name: SimpleNamespace(SyncOpenViking=FakeSyncOpenViking),
-    )
-    retriever = OpenVikingRetriever(path=str(tmp_path), actor_peer_id="assistant-a")
-
-    documents = await retriever.ainvoke("embedded")
-    client = await retriever.get_async_client()
-
-    assert [document.page_content for document in documents] == ["Embedded result."]
-    assert len(instances) == 1
-    assert client is instances[0]
-    assert client is retriever._get_client()
-    assert client.actor_peer_id == "assistant-a"
-    assert client.initialize_thread_id != main_thread_id
-    assert client.find_thread_id != main_thread_id
-
-    await retriever.aclose()
-    assert client.closed is True
-
-    recorder = OpenVikingSessionRecorder(path=str(tmp_path / "recorder"))
-    recorder_client = await recorder.get_async_client()
-
-    assert recorder_client is recorder.client
-    recorder.close()
-    assert recorder._closed is True
-    assert recorder_client.closed is True
 
 
 @pytest.mark.asyncio

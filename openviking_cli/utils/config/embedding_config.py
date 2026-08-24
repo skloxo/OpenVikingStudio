@@ -43,6 +43,9 @@ class EmbeddingModelConfig(BaseModel):
     api_key: Optional[str] = Field(default=None, description="API key")
     api_base: Optional[str] = Field(default=None, description="API base URL")
     dimension: Optional[int] = Field(default=None, description="Embedding dimension")
+    max_tokens: Optional[int] = Field(
+        default=None, description="Max token limit for embeddings input truncation"
+    )
     batch_size: int = Field(default=32, description="Batch size for embedding generation")
     input: str = Field(default="multimodal", description="Input type: 'text' or 'multimodal'")
     query_param: Optional[str] = Field(
@@ -768,6 +771,7 @@ class EmbeddingConfig(BaseModel):
                         else {}
                     ),
                     **({"extra_body": cfg.extra_body} if cfg.extra_body else {}),
+                    **({"max_tokens": cfg.max_tokens} if cfg.max_tokens is not None else {}),
                 },
             ),
             ("azure", "dense"): (
@@ -790,6 +794,7 @@ class EmbeddingConfig(BaseModel):
                         else {}
                     ),
                     **({"extra_body": cfg.extra_body} if cfg.extra_body else {}),
+                    **({"max_tokens": cfg.max_tokens} if cfg.max_tokens is not None else {}),
                 },
             ),
             ("volcengine", "dense"): (
@@ -904,6 +909,7 @@ class EmbeddingConfig(BaseModel):
                     "dimension": cfg.dimension,
                     "configured_provider": "ollama",
                     "config": dict(runtime_config),
+                    **({"max_tokens": cfg.max_tokens} if cfg.max_tokens is not None else {}),
                 },
             ),
             ("voyage", "dense"): (

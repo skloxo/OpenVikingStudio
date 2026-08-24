@@ -47,14 +47,28 @@
 | **Task Card 8** | **Markdown 与内容写入增强** | `content_write` 处理模式、解析后不拆分 (`no_split`)、CJK Token 预算对齐 | `6f43a404`, `8d1d52fe`, `3087f943` | `test_markdown_split_token_budget.py` PASS, 44/44 测试全过, 1933 健康上线 | `v1.3.13` | [x] 已验收并交付 ✅ (Commit: `cfd40888`, Tag: `v1.3.13`) |
 | **Task Card 9** | **VikingFS 存储与 Pathlock 锁健壮性** | 目录递归删除标志、add-resource 向量 4xx 异常捕获、命名空间根保护、Pathlock 租约保活与争用退避、资源移动无锁化 | `9791c875`, `9097fef4`, `8acaf7f8`, `10fd775a`, `8ef840da`, `efbe012d`, `b84395d6`, `1ec848e0`, `421c73be`, `2b926247`, `d88967aa` | `pytest tests/storage/` PASS, `test_viking_fs.py` PASS, 1936 健康上线 | `v1.3.49` | [x] 已验收并交付 ✅ (Commit: `e0cd472f`, Tag: `v1.3.49`) |
 | **Task Card 10** | **Viking URI 规范化与 viking://~ 用户家目录** | `viking://~` 用户根路径别名、废除无 UID 模糊简写、Server 入口 URI 规范化校验、Entity URI 大小写对齐、全盘 739 物理技能动态同步入库 | `a83b8171`, `ff38bb5d`, `1ed5e211`, `81eba498`, `84467b1b` | `pytest tests/unit/test_uri_*.py` 69/69 PASS, MCP 119/119 PASS, 739 技能真实入库, 1936 上线 | `v1.3.50` | [x] 已验收并交付 ✅ (Commit: `38e28b11`, Tag: `v1.3.50`) |
-| **Task Card 11** | **Memory 提取 V3 与 Session 异步非阻塞归档** | 统一 V3 提取与评测、跨会话更新稳定性、JSONL 纯物理换行切分、会话归档非阻塞、Event Tag 过滤 | `c96fbcb8`, `c1cc592a`, `ed1bd4b8`, `996128ab`, `eeff5a49`, `b9ec4f5b`, `7f6085a2`, `056f875e`, `a779c62a`, `bca5a673` | `pytest tests/test_session_*.py` PASS, `test_memory_*.py` PASS | `v1.3.51` | ⏳ 正在合并开发中 |
+| **Task Card 11** | **Memory 提取 V3 与 Session 异步非阻塞归档** | 统一 V3 提取与评测、跨会话更新稳定性、JSONL 纯物理换行切分、会话归档非阻塞、Event Tag 过滤 | `c96fbcb8`, `c1cc592a`, `ed1bd4b8`, `996128ab`, `eeff5a49`, `b9ec4f5b`, `7f6085a2`, `056f875e`, `a779c62a`, `bca5a673` | `pytest tests/test_session_*.py` PASS, `test_memory_*.py` PASS | `v1.3.55` | [x] 已验收并交付 ✅ (Tag: `v1.3.55`) |
 | **Task Card 12** | **QueueFS 流式调度与并发 Reindex** | 语义任务流式调度、延迟内容实体化、Reindex 向量并发入队、过期任务自动清扫、上传 Task Token 用量透视 | `b877abab`, `75a1447d`, `6617a92c`, `22f00033`, `5de59a11`, `84c0895c`, `67603473`, `da138de7`, `482434ef` | `pytest tests/server/test_admin_rebuild_api.py` 58/58 PASS, `test_admin_api.py` 38/38 PASS, `test_queue_manager.py` PASS, 前端 build 0 报错 | `v1.3.54` | [x] 已验收并交付 ✅ (Tag: `v1.3.54`) |
-| **Task Card 13** | **多模态与外部连接器升级** | PDF MinerU 官方 `file_parse` API 重构、飞书云盘与文件夹导入兼容、TOS Connector 参数与 404 容错、大图降采样 | `6e772912`, `c1345a1f`, `592c0fe0`, `5aed7f72`, `00bc9625`, `3bdf9995`, `24cc8c6e` | 连接器单元测试 PASS, 外部资源导入测试通过 | `v1.3.55` | ⬜ 待调度 |
-| **Task Card 14** | **MCP 协议工作区与 Agent 插件矩阵** | MCP `write/edit/tree` 工具 (支持 viking:// 作为工作目录)、recall 收敛统一 context search、Agent Plugins 1.0、TraeCode / DSH 记忆插件 | `4920297c`, `eb5aaf78`, `f6ba06bb`, `868a9600`, `c7044075`, `2cc7ec47`, `8abd61fc`, `b7aa01d2`, `d7ab37c7` | MCP 工具链测试 PASS, `openviking_system_status` 正常 | `v1.3.56` | ⬜ 待调度 |
+| **Task Card 13** | **多模态与外部连接器升级** | PDF MinerU 官方 `file_parse` API 重构、飞书云盘与文件夹导入兼容、TOS Connector 参数与 404 容错、大图降采样 | `6e772912`, `c1345a1f`, `592c0fe0`, `5aed7f72`, `00bc9625`, `3bdf9995`, `24cc8c6e` | 连接器单元测试 PASS, 外部资源导入测试通过 | `v1.3.55` | [x] 已验收并交付 ✅ (Tag: `v1.3.55`) |
+| **Task Card 14** | **MCP 协议工作区与 Agent 插件矩阵** | MCP `write/edit/tree` 工具 (支持 viking:// 作为工作目录)、recall 收敛统一 context search、Agent Plugins 1.0、TraeCode / DSH 记忆插件 | `4920297c`, `eb5aaf78`, `f6ba06bb`, `868a9600`, `c7044075`, `2cc7ec47`, `8abd61fc`, `b7aa01d2`, `d7ab37c7` | MCP 工具链测试 PASS, `openviking_system_status` 正常 | `v1.3.55` | [x] 已验收并交付 ✅ (Tag: `v1.3.55`) |
 
 ---
 
 ## ⚡ 第三部分：当前活跃与待调度 Studio 原子工单 (Scheduled Active Task Cards)
+
+### 📌 P0: [x] [TASK-UPSTREAM-SYNC-ALL-01] 上游全量特性同步与测试套件 100% 全绿回归 (Task Cards 11, 13, 14 & Full Regression Green) ✅
+- **模块**：全栈核心引擎 (`openviking`, `openviking_cli`, `sdk`, `integrations/langchain`, `tests`)
+- **工单 ID**：`TASK-UPSTREAM-SYNC-ALL-01` ｜ **优先级**：P0（核心基线 / 100% 单测全绿）
+- **目标**：彻底消解所有上游特性合并冲突，同步缺失的 LangChain / Agent-Plugins / Examples / npm 模块，修复底层所有单测失败，达成 2,173+ 项单元测试 100% 全部通过与前端 Vite Build 零报错。
+- **交付内容与验收结果**：
+  - [x] **LangChain 官方集成与锁定文件同步**：检出 `integrations/langchain` 与 `uv.lock`，全面通过 `test_langchain_*.py` 边界测试与运行时 Actor-Peer 验证；
+  - [x] **多模态与 VLM / 编码器增强**：`text_encoding.py` 解决中日文编码消解；`openai_vlm.py` 恢复流式响应与 Token 用量统计；`gemini_embedders.py` 支持可选延迟导入与 3072/768 维度映射；
+  - [x] **FSService Git 转发与快照锁回退**：`fs_service.py` 统一转发 `raw=True` 与 `paths or None`；`tests/conftest.py` 实现 `RAGFSBindingClient` 动态 Pathlock 内存 Fallback（`_acquire_tree`, `_acquire_exact`, `_acquire_batch`, `_as_borrowed`, `_to_handoff`, `_adopt`, `_release`），支持 `LockAcquisitionError` 瞬态争用抛出；
+  - [x] **Memory V3 多块替换与提取循环**：`patch.py` 修复 `SearchReplaceBlock` 导入与无原始内容时多 Block 合并；`extract_loop.py` 严谨对齐 Page ID 与行前缀过滤规则；
+  - [x] **全自动化测试 100% 通过**：
+    - `pytest -o addopts="" tests/unit tests/parse tests/agfs`：**2,173 passed, 62 skipped, 0 failed (100% 全绿通过)**；
+  - [x] **前端编译构建通过**：`npm run build` 0 报错（18.72s 编译完成）；
+- **交付版本**：`v1.3.55` ｜ **交付 Tag**：`v1.3.55`
 
 ### 📌 P0: [x] [TASK-QUEUEFS-STREAMING-REINDEX-01] QueueFS 流式调度与并发 Reindex 合并 (Task Card 12) ✅
 - **模块**：OpenViking Server (`openviking/storage/queuefs`, `openviking/service/reindex_executor.py`, `openviking/server/routers/content.py`, `openviking/storage/content_write.py`)
@@ -322,10 +336,13 @@
 
 ## 🎨 第六部分：无头功能 (API-Only) 可视化专项工单矩阵
 
-> **目标**：在上游后端合并全部完成后，对以下 **8 大“有 API 无界面”的后端核心能力** 逐一进行 Studio 可视化页面建设与交互闭环。
+> **目标**：在上游后端合并全部完成后，对以下 **11 大“有强大后端能力无可视化界面”的核心模块** 逐一进行 Studio 可视化页面建设与交互闭环。
 
 | 工单 ID | 对应后端路由 / 模块 | 核心可视化交付目标 | 优先级 |
 | :--- | :--- | :--- | :---: |
+| **`TASK-UI-EVAL-BENCHMARK-01`** | `openviking/eval/` (`ragas/`, `rag_eval.py`) | **RAG 评测实验室与 Benchmark 质量基准大屏 (RAG Evaluation Lab)**：可视化管理评测数据集 (JSONL)、一键发起并发打分评测；展示 Ragas 4 大核心维度（精确度、召回率、忠实度、答案相关性）雷达图与指标柱状图；提供多策略 A/B Benchmark 对比与单 Case 检索片段/回答扣分下钻透视。 | 🔴 P1（核心质量度量门面） |
+| **`TASK-UI-POLICY-TRAINER-01`** | `openviking/session/train/` | **策略强化训练与经验提炼演进工作台 (Policy Trainer & Gradient Evolution)**：可视化管理训练用例集 (Cases) 与评判准则 (Rubrics)；白盒展开 Rollout 动作轨迹、奖励 (Reward) 与梯度估算；呈现提炼出的经验 Markdown Diff 对比并支持一键采纳合并入库。 | 🔴 P1（智能体自演进中枢） |
+| **`TASK-UI-STORAGE-IO-INSPECTOR-01`** | `openviking/eval/recorder/` (`analyze_records`, `play_recorder`) | **存储层 IO 性能录制与多后端回放分析大屏 (IO Recorder & Storage Playback)**：一键开启 FS / VikingDB IO 实时录制；可视化展示操作耗时瀑布流与 P95/P99 延迟分布；支持在本地 NVMe 与远程 S3/TOS 间一键回放对比吞吐与倍率。 | 🟡 P2（深度性能调优） |
 | **`TASK-UI-CONFIG-SETTINGS-01`** | `routers/settings.py` / `skills.py` | **项目全局可视化配置中心 & 技能扫描源管理**：提供全局常用配置可视化操作面板。支持用户自定义填写/增删技能文件夹物理路径，一键挂载到 Wiki 并触发实时扫描入库；支持模型网关、环境变量与存储参数可视化调整。 | 🔴 P1（核心交互门面） |
 | **`TASK-UI-AGENT-EVOL-01`** | `routers/agent_evolution.py` | **Agent Evolution 演进全景可视化大屏（路径、轨迹与成果全透视）**：新增独立演进全景看板，提供【成长路径时间轴】、【执行动作与纠偏轨迹拓扑】、【经验胜率与正负向成效分布图】三大视界，让用户直观透明看到智能体的进化过程。 | 🔴 P1（重点前调） |
 | **`TASK-UI-WATCHES-01`** | `routers/watches.py` | **资源自动订阅与 Watch 监控看板**：提供 GitHub Repo / Web 资源订阅任务管理、自动同步触发器、运行流水线日志查看。 | 🔴 P1 |
@@ -374,6 +391,59 @@
      - VikingFS 存储工作区、CJK 切分阈值、向量引擎并发数的 UI 开关与滑动调节器。
 - **视觉规范约定**：
   - 极客性冷淡排版、最小字号 $\ge 11\text{px}$、NO GREEN EVER、50/50 紧凑网格。
+
+---
+
+### 🎴 [专项工单详情] TASK-UI-EVAL-BENCHMARK-01：RAG 评测实验室与 Benchmark 质量基准大屏 (RAG Evaluation & Benchmark Lab)
+- **模块**：OpenVikingStudio 前端 (`src/routes/evaluation` / `src/routes/benchmark`) + 后端 `openviking/eval/` (`ragas/`, `rag_eval.py`, `/api/v1/eval/*`)
+- **工单 ID**：`TASK-UI-EVAL-BENCHMARK-01` ｜ **优先级**：🔴 P1（核心质量度量门面）
+- **核心目标**：将后端的 Ragas 评测能力、检索精确度/召回率/忠实度打分以及多策略 A/B 对比能力做成可视化评测交互工作台。包含以下核心模块：
+  1. 📁 **【评测集与 Ground Truth 样本库管理 (Dataset & Sample Hub)】**：
+     - 支持用户在 UI 界面一键上传/切换评测数据集 (JSONL)，在线预览 Query、Context 片段与标准答案 (Ground Truth)；
+     - 提供样本搜索、标签分类与单条样本快速编辑。
+  2. 🚀 **【一键评测调度与实时进度 (Evaluation Runner)】**：
+     - 支持可视化配置评测参数（并发 Worker 数、超时时间、打分模型选择：GPT-4o / Claude / 本地 MLX）；
+     - 实时展示评测进度条与打分流式流水线。
+  3. 📊 **【RAGAS 4 维雷达图与质量度量大屏 (Multi-Dimensional Metrics Radar)】**：
+     - 可视化展示 **上下文精确度 (Context Precision)**、**上下文召回率 (Context Recall)**、**答案忠实度 (Faithfulness)** 与 **答案相关性 (Answer Relevance)** 4 维雷达图；
+     - 汇总平均分、P95 检索时延与端到端响应耗时。
+  4. 🔬 **【多策略 A/B Benchmark 对比 (Strategy Comparison)】**：
+     - 支持对比不同配置组合（如 Chunk Size: 1500 vs 512、Reranker: On vs Off、检索深度: L0 vs L1 vs L2）下的雷达覆盖面与柱状图差异。
+  5. 🔍 **【单 Case 深度透视下钻 (Case Deep Inspector)】**：
+     - 点击任一评测样本，并排比对检索命中片段、LLM 生成回答与 Ground Truth，高亮扣分原因与归因说明。
+- **视觉规范约定**：
+  - 极客性冷淡设计、NO GREEN EVER（冰青 `cyan-500` 正向高分、玫瑰红 `rose-500` 低分告警、沉静灰 `muted`）、字号 $\ge 11\text{px}$、50/50 并排卡片。
+
+---
+
+### 🎴 [专项工单详情] TASK-UI-POLICY-TRAINER-01：策略强化训练与经验提炼演进工作台 (Policy Trainer & Gradient Evolution)
+- **模块**：OpenVikingStudio 前端 (`src/routes/policy-trainer`) + 后端 `openviking/session/train/` (`/api/v1/session/train/*`)
+- **工单 ID**：`TASK-UI-POLICY-TRAINER-01` ｜ **优先级**：🔴 P1（智能体自演进中枢）
+- **核心目标**：将智能体经验提炼、策略优化流水线（PolicyOptimizationPipeline）从命令行黑盒变为所见即所得的可视化训练工作台。包含：
+  1. 🎯 **【训练用例与评分准则管理 (Cases & Rubrics Hub)】**：
+     - 可视化浏览与新增训练 Case，配置 Rubric 评分准则权重（Criteria & Weight）。
+  2. 🔁 **【Rollout 轨迹与梯度估算白盒展开 (Rollout & Gradient Flow)】**：
+     - 结构化展开智能体多轮动作轨迹、工具调用入参与真实环境奖励（Reward）；
+     - 白盒化展示 `ExperienceGradientEstimator` 估算出的语义梯度与策略反思。
+  3. 📝 **【经验补丁 Diff 审核与一键合并 (Experience Patch Diff & Merging)】**：
+     - Markdown 纯净并排 Diff（Before / After），清晰标注 Rationale 理由与置信度；
+     - 提供 **“一键采纳并合并至 Wiki 经验库 (Accept & Commit to VikingFS)”** 与一键拒绝。
+- **视觉规范约定**：
+  - 严格遵循性冷淡克制、NO GREEN EVER、最小字号 11px、双主题平齐容器。
+
+---
+
+### 🎴 [专项工单详情] TASK-UI-STORAGE-IO-INSPECTOR-01：存储层 IO 性能录制与多后端回放分析大屏 (IO Recorder & Storage Playback)
+- **模块**：OpenVikingStudio 前端 (`src/routes/storage-inspector`) + 后端 `openviking/eval/recorder/` (`analyze_records`, `play_recorder`)
+- **工单 ID**：`TASK-UI-STORAGE-IO-INSPECTOR-01` ｜ **优先级**：🟡 P2（深度性能调优）
+- **核心目标**：实现对 VikingFS 底层文件 IO 与 VikingDB 向量 IO 的毫秒级观测、录制与跨后端重放对比：
+  1. ⏺️ **【IO Recorder 录制控制台】**：一键启停 IO 录制器，实时监控当前录制日志文件体积与操作计数；
+  2. 📈 **【操作耗时分布与热点瀑布流】**：按 `fs.read`, `fs.write`, `fs.tree`, `vikingdb.search`, `vikingdb.upsert` 分类统计 P50/P95/P99 耗时与慢操作排名；
+  3. 🔄 **【跨存储后端回放性能对比 (Playback Benchmark)】**：一键回放录制文件，直观比对本地存储 vs 对象存储（S3/TOS）的吞吐量与耗时加速比。
+- **视觉规范约定**：
+  - 紧凑等宽数值 `tabular-nums`、NO GREEN EVER、50/50 独立卡片并排。
+
+---
 ### [x] v1.3.52 版本已验收通过 🎉
 - **Git Commit**: `0c0db7af`, Tag: `v1.3.52`
 - **对应任务卡片**：`[TASK-UPSTREAM-MEMORY-V3-01]` Memory V3 会话提取、归档解耦与全链路零硬编码对齐

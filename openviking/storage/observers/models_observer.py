@@ -73,32 +73,21 @@ class ModelsObserver(BaseObserver):
 
         # Embedding section
         if self._embedding_instance:
-            embedding_data = None
             try:
                 embedding_data = self._get_embedding_usage()
+                if embedding_data:
+                    sections.append(("Embedding", embedding_data))
             except Exception as e:
                 logger.warning(f"Error getting Embedding usage: {e}")
-            if not embedding_data:
-                embedding_data = self._get_configured_embedding()
-            if embedding_data:
-                sections.append(("Embedding", embedding_data))
 
         # Rerank section
         if self._rerank_instance:
-            rerank_data = None
             try:
                 rerank_data = self._get_rerank_usage()
+                if rerank_data:
+                    sections.append(("Rerank", rerank_data))
             except Exception as e:
                 logger.warning(f"Error getting Rerank usage: {e}")
-            if not rerank_data:
-                rerank_data = self._get_configured_rerank()
-            if rerank_data:
-                sections.append(("Rerank", rerank_data))
-
-        # Compressor (LLMLingua-2) section
-        compressor_data = self._get_configured_compressor()
-        if compressor_data:
-            sections.append(("Compressor", compressor_data))
 
         if not sections:
             return "No model usage data available."
@@ -150,70 +139,6 @@ class ModelsObserver(BaseObserver):
                 "Model": model,
                 "Provider": getattr(self._vlm_instance, "provider", None) or "unknown",
                 "Status": "configured",
-            }
-        ]
-
-    def _get_configured_embedding(self) -> Optional[list]:
-        """Return configured Embedding identity when usage data is unavailable."""
-        if not self._embedding_instance:
-            return None
-        model = getattr(self._embedding_instance, "model", None)
-        if not model and hasattr(self._embedding_instance, "model_name"):
-            model = getattr(self._embedding_instance, "model_name")
-        if not model and hasattr(self._embedding_instance, "dense") and hasattr(self._embedding_instance.dense, "model"):
-            model = self._embedding_instance.dense.model
-        if not model and hasattr(self._embedding_instance, "_embedder"):
-            model = getattr(self._embedding_instance._embedder, "model_name", None) or getattr(self._embedding_instance._embedder, "model", None)
-        if not model:
-            model = "Qwen3-Embedding-8B"
-
-        provider = getattr(self._embedding_instance, "provider", None)
-        if not provider and hasattr(self._embedding_instance, "dense") and hasattr(self._embedding_instance.dense, "provider"):
-            provider = self._embedding_instance.dense.provider
-        if not provider and hasattr(self._embedding_instance, "_embedder"):
-            provider = getattr(self._embedding_instance._embedder, "provider", "openai")
-        if not provider:
-            provider = "openai"
-
-        return [
-            {
-                "Model": model,
-                "Provider": provider,
-                "Status": "configured",
-            }
-        ]
-
-    def _get_configured_rerank(self) -> Optional[list]:
-        """Return configured Rerank identity when usage data is unavailable."""
-        if not self._rerank_instance:
-            return None
-        model = getattr(self._rerank_instance, "model", None)
-        if not model and hasattr(self._rerank_instance, "model_name"):
-            model = getattr(self._rerank_instance, "model_name")
-        if not model and hasattr(self._rerank_instance, "_model"):
-            model = getattr(self._rerank_instance, "_model")
-        if not model:
-            model = "qwen3-reranker-0.6b"
-
-        provider = getattr(self._rerank_instance, "provider", None)
-        if not provider:
-            provider = "openai"
-
-        return [
-            {
-                "Model": model,
-                "Provider": provider,
-                "Status": "configured",
-            }
-        ]
-
-    def _get_configured_compressor(self) -> Optional[list]:
-        """Return configured LLMLingua-2 Prompt Compressor identity."""
-        return [
-            {
-                "Model": "LLMLingua-2 (xlm-roberta)",
-                "Provider": "Microsoft",
-                "Status": "active",
             }
         ]
 

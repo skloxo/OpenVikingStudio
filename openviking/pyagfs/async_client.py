@@ -272,8 +272,6 @@ class AsyncAGFSClient:
         fs_ctx: Dict[str, str] | None = None,
     ) -> Dict[str, Any]:
         """Acquire an exact lock on a single path."""
-        if not hasattr(self._client, "pathlock_acquire_exact"):
-            return {"lease_id": "fallback", "path": path, "token": "fallback", "kind": "exact"}
         return await self.run(
             "pathlock_acquire_exact",
             _fs_ctx_or_default(path, fs_ctx),
@@ -291,8 +289,6 @@ class AsyncAGFSClient:
         fs_ctx: Dict[str, str] | None = None,
     ) -> Dict[str, Any]:
         """Acquire exact locks on multiple paths."""
-        if not hasattr(self._client, "pathlock_acquire_exact_batch"):
-            return {"lease_id": "fallback", "paths": paths, "token": "fallback", "kind": "exact_batch"}
         return await self.run(
             "pathlock_acquire_exact_batch",
             _fs_ctx_or_default(paths[0] if paths else "/", fs_ctx),
@@ -310,8 +306,6 @@ class AsyncAGFSClient:
         fs_ctx: Dict[str, str] | None = None,
     ) -> Dict[str, Any]:
         """Acquire a tree lock on a single path."""
-        if not hasattr(self._client, "pathlock_acquire_tree"):
-            return {"lease_id": "fallback", "path": path, "token": "fallback", "kind": "tree"}
         return await self.run(
             "pathlock_acquire_tree",
             _fs_ctx_or_default(path, fs_ctx),
@@ -329,8 +323,6 @@ class AsyncAGFSClient:
         fs_ctx: Dict[str, str] | None = None,
     ) -> Dict[str, Any]:
         """Acquire tree locks on multiple paths."""
-        if not hasattr(self._client, "pathlock_acquire_tree_batch"):
-            return {"lease_id": "fallback", "paths": paths, "token": "fallback", "kind": "tree_batch"}
         return await self.run(
             "pathlock_acquire_tree_batch",
             _fs_ctx_or_default(paths[0] if paths else "/", fs_ctx),
@@ -349,8 +341,6 @@ class AsyncAGFSClient:
         fs_ctx: Dict[str, str] | None = None,
     ) -> Dict[str, Any]:
         """Acquire a mixed batch of exact and tree locks."""
-        if not hasattr(self._client, "pathlock_acquire_exact_tree_batch"):
-            return {"lease_id": "fallback", "token": "fallback", "kind": "exact_tree_batch"}
         first = exact_paths[0] if exact_paths else (tree_paths[0] if tree_paths else "/")
         return await self.run(
             "pathlock_acquire_exact_tree_batch",
@@ -378,8 +368,6 @@ class AsyncAGFSClient:
                 raise ValueError("pathlock request.path must be an absolute path")
             if request.get("kind") not in {"exact", "tree"}:
                 raise ValueError("pathlock request.kind must be 'exact' or 'tree'")
-        if not hasattr(self._client, "pathlock_acquire_batch"):
-            return {"lease_id": "fallback", "token": "fallback", "kind": "batch"}
         first = requests[0]["path"]
         return await self.run(
             "pathlock_acquire_batch",
@@ -396,8 +384,6 @@ class AsyncAGFSClient:
         fs_ctx: Dict[str, str] | None = None,
     ) -> Dict[str, Any]:
         """Create a borrowed view of an owned lease."""
-        if not hasattr(self._client, "pathlock_as_borrowed"):
-            return dict(owned_lease_ref)
         return await self.run(
             "pathlock_as_borrowed",
             _fs_ctx_or_default("/", fs_ctx),
@@ -411,8 +397,6 @@ class AsyncAGFSClient:
         fs_ctx: Dict[str, str] | None = None,
     ) -> str:
         """Refresh an owned lease. Returns 'refreshed', 'lost', or 'failed'."""
-        if not hasattr(self._client, "pathlock_refresh"):
-            return "refreshed"
         return await self.run(
             "pathlock_refresh",
             _fs_ctx_or_default("/", fs_ctx),
@@ -426,8 +410,6 @@ class AsyncAGFSClient:
         fs_ctx: Dict[str, str] | None = None,
     ) -> None:
         """Release an owned lease."""
-        if not hasattr(self._client, "pathlock_release"):
-            return
         await self.run(
             "pathlock_release",
             _fs_ctx_or_default("/", fs_ctx),
@@ -442,8 +424,6 @@ class AsyncAGFSClient:
         fs_ctx: Dict[str, str] | None = None,
     ) -> None:
         """Release selected lock paths from an owned lease."""
-        if not hasattr(self._client, "pathlock_release_selected"):
-            return
         await self.run(
             "pathlock_release_selected",
             _fs_ctx_or_default("/", fs_ctx),
@@ -458,8 +438,6 @@ class AsyncAGFSClient:
         fs_ctx: Dict[str, str] | None = None,
     ) -> Dict[str, Any]:
         """Export a handoff ref from an owned lease."""
-        if not hasattr(self._client, "pathlock_to_handoff"):
-            return dict(owned_lease_ref)
         return await self.run(
             "pathlock_to_handoff",
             _fs_ctx_or_default("/", fs_ctx),
@@ -473,8 +451,6 @@ class AsyncAGFSClient:
         fs_ctx: Dict[str, str] | None = None,
     ) -> None:
         """Mark an owned lease as handed off."""
-        if not hasattr(self._client, "pathlock_handoff"):
-            return
         await self.run(
             "pathlock_handoff",
             _fs_ctx_or_default("/", fs_ctx),
@@ -488,8 +464,6 @@ class AsyncAGFSClient:
         fs_ctx: Dict[str, str] | None = None,
     ) -> Dict[str, Any]:
         """Adopt a handoff ref, returning a new owned lease."""
-        if not hasattr(self._client, "pathlock_adopt"):
-            return dict(handoff_ref)
         return await self.run(
             "pathlock_adopt",
             _fs_ctx_or_default("/", fs_ctx),
@@ -504,8 +478,6 @@ class AsyncAGFSClient:
         fs_ctx: Dict[str, str] | None = None,
     ) -> bool:
         """Check if a path is locked."""
-        if not hasattr(self._client, "pathlock_is_locked"):
-            return False
         return await self.run(
             "pathlock_is_locked",
             _fs_ctx_or_default(path, fs_ctx),
@@ -519,15 +491,7 @@ class AsyncAGFSClient:
         fs_ctx: Dict[str, str] | None = None,
     ) -> Dict[str, Any]:
         """Return an observability snapshot of current lock state."""
-        if not hasattr(self._client, "pathlock_observe"):
-            return {
-                "active_locks": 0,
-                "waiting_locks": 0,
-                "stale_locks_removed": 0,
-                "conflicts": [],
-            }
         return await self.run(
             "pathlock_observe",
             _fs_ctx_or_default("/", fs_ctx),
         )
-

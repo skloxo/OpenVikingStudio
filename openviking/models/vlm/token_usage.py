@@ -127,54 +127,13 @@ class ModelTokenUsage:
 
 
 class TokenUsageTracker:
-    """Token usage tracker with optional SQLite time-series telemetry persistence."""
+    """Token usage tracker"""
 
-    def __init__(self, auto_hydrate: bool = True, model_type: Optional[str] = None):
+    def __init__(self):
         self._usage_by_model: Dict[str, ModelTokenUsage] = {}
-        self._model_type = model_type
-        if auto_hydrate:
-            self.hydrate_from_store(model_type=model_type)
-
-    def hydrate_from_store(self, model_type: Optional[str] = None) -> None:
-        """Hydrate historical cumulative token usage from TelemetryStore."""
-        try:
-            from openviking.telemetry.telemetry_store import get_telemetry_store
-
-            baseline = get_telemetry_store().get_model_baseline(model_type=self._model_type)
-            for model_name, providers in baseline.items():
-                if model_name not in self._usage_by_model:
-                    self._usage_by_model[model_name] = ModelTokenUsage(model_name)
-                for provider_name, usage_info in providers.items():
-                    if provider_name not in self._usage_by_model[model_name].usage_by_provider:
-                        self._usage_by_model[model_name].usage_by_provider[provider_name] = TokenUsage()
-                    p_usage = self._usage_by_model[model_name].usage_by_provider[provider_name]
-                    p_usage.call_count = max(p_usage.call_count, usage_info.get("call_count", 0))
-                    p_usage.prompt_tokens = max(p_usage.prompt_tokens, usage_info.get("prompt_tokens", 0))
-                    p_usage.completion_tokens = max(p_usage.completion_tokens, usage_info.get("completion_tokens", 0))
-                    p_usage.total_tokens = p_usage.prompt_tokens + p_usage.completion_tokens
-                    if usage_info.get("last_updated"):
-                        p_usage.last_updated = datetime.fromtimestamp(usage_info["last_updated"])
-
-                # Recalculate total usage for the model
-                tot_p = sum(p.prompt_tokens for p in self._usage_by_model[model_name].usage_by_provider.values())
-                tot_c = sum(p.completion_tokens for p in self._usage_by_model[model_name].usage_by_provider.values())
-                tot_calls = sum(p.call_count for p in self._usage_by_model[model_name].usage_by_provider.values())
-                self._usage_by_model[model_name].total_usage.prompt_tokens = tot_p
-                self._usage_by_model[model_name].total_usage.completion_tokens = tot_c
-                self._usage_by_model[model_name].total_usage.total_tokens = tot_p + tot_c
-                self._usage_by_model[model_name].total_usage.call_count = tot_calls
-        except Exception:
-            # Hydration is best-effort and must never block initialization
-            pass
 
     def update(
-        self,
-        model_name: str,
-        provider: str,
-        prompt_tokens: int,
-        completion_tokens: int,
-        duration_ms: float = 0.0,
-        model_type: Optional[str] = None,
+        self, model_name: str, provider: str, prompt_tokens: int, completion_tokens: int
     ) -> None:
         """Update token usage
 
@@ -183,29 +142,11 @@ class TokenUsageTracker:
             provider: Provider name
             prompt_tokens: Number of input tokens
             completion_tokens: Number of output tokens
-            duration_ms: Request duration in milliseconds
-            model_type: Optional model type ('vlm', 'embedding', 'rerank')
         """
         if model_name not in self._usage_by_model:
             self._usage_by_model[model_name] = ModelTokenUsage(model_name)
 
         self._usage_by_model[model_name].update(provider, prompt_tokens, completion_tokens)
-
-        # Enqueue record to persistent SQLite telemetry store
-        try:
-            from openviking.telemetry.telemetry_store import get_telemetry_store
-
-            resolved_type = model_type or self._model_type or "vlm"
-            get_telemetry_store().record_model_usage(
-                model_type=resolved_type,
-                model_name=model_name,
-                provider=provider,
-                prompt_tokens=prompt_tokens,
-                completion_tokens=completion_tokens,
-                duration_ms=duration_ms,
-            )
-        except Exception:
-            pass
 
     def get_model_usage(self, model_name: str) -> Optional[ModelTokenUsage]:
         """Get token usage for specified model
@@ -236,8 +177,8 @@ class TokenUsageTracker:
         for model_usage in self._usage_by_model.values():
             total.prompt_tokens += model_usage.total_usage.prompt_tokens
             total.completion_tokens += model_usage.total_usage.completion_tokens
+
             total.total_tokens += model_usage.total_usage.total_tokens
-            total.call_count += model_usage.total_usage.call_count
 
         return total
 

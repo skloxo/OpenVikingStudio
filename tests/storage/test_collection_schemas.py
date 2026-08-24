@@ -1,7 +1,6 @@
 # Copyright (c) 2026 Beijing Volcano Engine Technology Co., Ltd.
 # SPDX-License-Identifier: AGPL-3.0
 
-import asyncio
 import hashlib
 import inspect
 import json
@@ -41,8 +40,8 @@ from openviking.storage.vectordb_adapters.base import (
 )
 from openviking.storage.vectordb_adapters.local_adapter import LocalCollectionAdapter
 from openviking.storage.viking_vector_index_backend import (
-    UpsertOptions,
     VIKINGDB_CONTENT_MAX_SIZE,
+    UpsertOptions,
     VikingVectorIndexBackend,
     _SingleAccountBackend,
 )
@@ -395,6 +394,8 @@ async def test_embedding_auth_error_fails_terminally_without_reenqueue(monkeypat
 @pytest.mark.asyncio
 async def test_embedding_handler_treats_shutdown_write_lock_as_success(monkeypatch):
     class _ClosingDuringUpsertVikingDB:
+        uses_content_field = False
+
         def __init__(self):
             self.is_closing = False
             self.calls = 0
@@ -453,6 +454,60 @@ async def test_embedding_handler_propagates_account_id_on_success(monkeypatch):
     await handler.on_dequeue(_build_queue_payload_for_account("acct-embed-success"))
 
     assert captured["account_id"] == "acct-embed-success"
+
+
+@pytest.mark.asyncio
+async def test_embedding_handler_materialize_content_read_failure_is_not_hidden(monkeypatch):
+    class _DummyVikingDB:
+        is_closing = False
+
+    class _BrokenFS:
+        async def read_file(self, uri, *, ctx):
+            raise FileNotFoundError(uri)
+
+    embedder = _DummyEmbedder()
+    monkeypatch.setattr(
+        "openviking_cli.utils.config.get_openviking_config",
+        lambda: _DummyConfig(embedder),
+    )
+    monkeypatch.setattr("openviking.storage.viking_fs.get_viking_fs", lambda: _BrokenFS())
+    handler = TextEmbeddingHandler(_DummyVikingDB())
+    msg = EmbeddingMsg(
+        "embedding text",
+        {
+            "uri": "viking://resources/missing.txt",
+            "abstract": "abstract fallback",
+            "is_leaf": True,
+            "context_type": "resource",
+        },
+    )
+    ctx = RequestContext(user=UserIdentifier("default", "default"), role=Role.ROOT)
+
+    with pytest.raises(FileNotFoundError):
+        await handler._materialize_content(msg, ctx)
+
+
+@pytest.mark.asyncio
+async def test_embedding_handler_materialize_content_keeps_inline(monkeypatch):
+    class _DummyVikingDB:
+        is_closing = False
+
+    embedder = _DummyEmbedder()
+    monkeypatch.setattr(
+        "openviking_cli.utils.config.get_openviking_config",
+        lambda: _DummyConfig(embedder),
+    )
+
+    handler = TextEmbeddingHandler(_DummyVikingDB())
+    msg = EmbeddingMsg(
+        "already inline",
+        {"abstract": "abstract fallback", "is_leaf": False},
+    )
+    ctx = RequestContext(user=UserIdentifier("default", "default"), role=Role.ROOT)
+
+    content = await handler._materialize_content(msg, ctx)
+
+    assert content == "already inline"
 
 
 @pytest.mark.asyncio
@@ -585,6 +640,7 @@ async def test_embedding_handler_preserves_parent_uri_for_backend_upsert_logic(m
     class _CapturingVikingDB:
         is_closing = False
         mode = "local"
+        uses_content_field = False
 
         async def upsert(self, data, *, ctx, options=UpsertOptions()):
             assert options.partial_update is True
@@ -611,10 +667,11 @@ async def test_embedding_handler_preserves_parent_uri_for_backend_upsert_logic(m
 
 
 @pytest.mark.asyncio
-async def test_embedding_handler_marks_success_only_after_tracker_completion(monkeypatch):
+async def test_embedding_handler_settles_request_wait_by_message_id(monkeypatch):
     class _CapturingVikingDB:
         is_closing = False
         mode = "local"
+        uses_content_field = False
 
         async def upsert(self, _data, *, ctx, options=UpsertOptions()):
             assert options.partial_update is True
@@ -626,46 +683,25 @@ async def test_embedding_handler_marks_success_only_after_tracker_completion(mon
         lambda: _DummyConfig(embedder),
     )
 
-    decrement_started = asyncio.Event()
-    allow_decrement_finish = asyncio.Event()
-
-    class _FakeTracker:
-        async def decrement(self, _semantic_msg_id):
-            decrement_started.set()
-            await allow_decrement_finish.wait()
-            return 0
-
+    completed = []
     monkeypatch.setattr(
-        "openviking.storage.queuefs.embedding_tracker.EmbeddingTaskTracker.get_instance",
-        lambda: _FakeTracker(),
+        "openviking.storage.collection_schemas.get_request_wait_tracker",
+        lambda: SimpleNamespace(
+            mark_embedding_done=lambda telemetry_id, root_id, **kwargs: completed.append(
+                (telemetry_id, root_id, kwargs)
+            )
+        ),
     )
 
     handler = TextEmbeddingHandler(_CapturingVikingDB())
-    status = {"success": 0, "requeue": 0, "error": 0}
-    handler.set_callbacks(
-        on_success=lambda: status.__setitem__("success", status["success"] + 1),
-        on_requeue=lambda: status.__setitem__("requeue", status["requeue"] + 1),
-        on_error=lambda *_: status.__setitem__("error", status["error"] + 1),
-    )
-
     payload = _build_queue_payload()
     queue_data = json.loads(payload["data"])
-    queue_data["semantic_msg_id"] = "semantic-1"
+    queue_data["telemetry_id"] = "request-1"
     payload["data"] = json.dumps(queue_data)
 
-    task = asyncio.create_task(handler.on_dequeue(payload))
-    await decrement_started.wait()
+    await handler.on_dequeue(payload)
 
-    assert status["success"] == 0
-    assert status["requeue"] == 0
-    assert status["error"] == 0
-
-    allow_decrement_finish.set()
-    await task
-
-    assert status["success"] == 1
-    assert status["requeue"] == 0
-    assert status["error"] == 0
+    assert completed == [("request-1", queue_data["id"], {"vector_written": True})]
 
 
 def test_context_collection_excludes_parent_uri():
@@ -2018,9 +2054,7 @@ async def test_viking_vector_index_backend_upsert_partial_update_delegates_to_ac
     )
 
     assert result == "rec-1"
-    assert calls == [
-        ({"id": "rec-1", "abstract": "patched"}, UpsertOptions(True, "append"))
-    ]
+    assert calls == [({"id": "rec-1", "abstract": "patched"}, UpsertOptions(True, "append"))]
 
 
 @pytest.mark.asyncio

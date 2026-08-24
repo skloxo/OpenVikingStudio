@@ -1350,10 +1350,10 @@ async def test_legacy_cleanup_removes_only_legacy_namespaces(
     removed = {
         (item["account_id"], item["source"]) for item in task["result"]["cleanup"]["targets"]
     }
-    assert (acct, "viking://agent/code-agent") in removed or (acct, "viking://agent") in removed
+    assert (acct, "viking://agent") in removed
     assert (acct, "viking://session") in removed
     assert (acct, "viking://user/alice/agent") in removed
-    assert (other_acct, "viking://agent/code-agent") in removed or (other_acct, "viking://agent") in removed
+    assert (other_acct, "viking://agent") in removed
 
     assert not await _agfs_exists(admin_service, f"/local/{acct}/agent")
     assert not await _agfs_exists(admin_service, f"/local/{acct}/session")

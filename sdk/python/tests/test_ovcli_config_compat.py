@@ -24,6 +24,8 @@ def test_async_http_client_loads_connection_fields_from_ovcli_config(tmp_path, m
     monkeypatch.setenv("OPENVIKING_CLI_CONFIG_FILE", str(config_path))
     monkeypatch.delenv("OPENVIKING_URL", raising=False)
     monkeypatch.delenv("OPENVIKING_API_KEY", raising=False)
+    monkeypatch.delenv("OPENVIKING_ACCOUNT", raising=False)
+    monkeypatch.delenv("OPENVIKING_USER", raising=False)
 
     client = AsyncHTTPClient()
 

@@ -50,36 +50,16 @@ def _is_pid_alive(pid: int) -> bool:
         return False
     try:
         os.kill(pid, 0)
+        return True
     except ProcessLookupError:
         return False
     except PermissionError:
         # Process exists but we can't signal it.
-        pass
+        return True
     except (OSError, SystemError):
         if sys.platform == "win32":
             return False
         raise
-
-    # PID exists, but on Linux PIDs are recycled. Verify this is actually
-    # an OpenViking process by checking /proc/{pid}/cmdline to avoid false
-    # positives from PID reuse (see issue #1088).
-    if sys.platform.startswith("linux"):
-        try:
-            with open(f"/proc/{pid}/cmdline", "rb") as f:
-                cmdline = f.read().decode("utf-8", errors="replace").lower()
-            if "openviking" not in cmdline and "openviking-server" not in cmdline:
-                logger.info(
-                    "PID %d is alive but not an OpenViking process (cmdline: %.100s). "
-                    "Assuming stale lock from recycled PID.",
-                    pid,
-                    cmdline[:100],
-                )
-                return False
-        except OSError:
-            # /proc not available or process exited between kill and open
-            pass
-
-    return True
 
 
 def _remove_owned_lock(lock_path: str, owner_pid: int) -> None:

@@ -86,11 +86,11 @@ class _FakeWaitTracker:
     def register_request(self, telemetry_id):
         self.registered_requests.append(telemetry_id)
 
-    def register_semantic_root(self, telemetry_id, semantic_msg_id):
+    def register_semantic_root(self, telemetry_id, root_id):
         self.registered_roots.append(
             {
                 "telemetry_id": telemetry_id,
-                "semantic_msg_id": semantic_msg_id,
+                "root_id": root_id,
                 "request_was_registered": telemetry_id in self.registered_requests,
             }
         )
@@ -104,7 +104,7 @@ class _FakeWaitTracker:
             "Embedding": {"processed": 0, "error_count": 0, "errors": []},
         }
 
-    def mark_semantic_failed(self, telemetry_id, semantic_msg_id, message):
+    def mark_semantic_failed(self, telemetry_id, root_id, message):
         pass
 
     def cleanup(self, telemetry_id):
@@ -230,6 +230,7 @@ async def test_resource_rm_enqueues_parent_delete_refresh_and_waits(request_cont
         deleted_uri=uri,
         context_type="resource",
         ctx=request_context,
+        force_refresh=True,
     )
     service._wait_for_refresh.assert_awaited_once_with(timeout=12.0)
     assert result["semantic_root_uri"] == "viking://resources/images/2026/06/10"
@@ -277,6 +278,24 @@ async def test_resource_rm_without_wait_only_queues_refresh(request_context):
     service._enqueue_delete_refresh.assert_awaited_once()
     service._wait_for_refresh.assert_not_awaited()
     assert result["semantic_status"] == "queued"
+
+
+@pytest.mark.asyncio
+async def test_resource_scope_rm_does_not_refresh_global_root(request_context):
+    service = FSService(viking_fs=_FakeVikingFS())
+    service._enqueue_delete_refresh = AsyncMock()
+    service._wait_for_refresh = AsyncMock()
+
+    result = await service.rm(
+        "viking://resources",
+        ctx=request_context,
+        recursive=True,
+        wait=True,
+    )
+
+    service._enqueue_delete_refresh.assert_not_awaited()
+    service._wait_for_refresh.assert_not_awaited()
+    assert "semantic_root_uri" not in result
 
 
 @pytest.mark.asyncio
