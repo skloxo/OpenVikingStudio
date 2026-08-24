@@ -831,6 +831,97 @@ class TaskTracker:
                 deleted += 1
         return deleted
 
+    async def delete_task(
+        self,
+        task_id: str,
+        *,
+        account_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+    ) -> bool:
+        """Delete a single terminal task record from store and cache."""
+        return await self._dispatcher.run(
+            lambda: self._delete_task_on_owner(task_id, account_id=account_id, user_id=user_id)
+        )
+
+    async def _delete_task_on_owner(
+        self,
+        task_id: str,
+        *,
+        account_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+    ) -> bool:
+        async with self._task_locks.acquire(task_id):
+            task = self._cached_task(task_id)
+            if task is None and account_id and user_id:
+                raw = await self._store_io.run(
+                    "get",
+                    lambda: run_to_completion(
+                        lambda: self._store.get(task_id, account_id=account_id, user_id=user_id)
+                    ),
+                )
+                if raw:
+                    task = self._record_from_payload(raw)
+            if task is None:
+                return False
+            if account_id and user_id and not self._matches_owner(task, account_id, user_id):
+                return False
+            if task.status in _ACTIVE_STATUSES or self._work_index.has_work(task_id):
+                raise RuntimeError(f"Cannot delete active task record: {task_id}({task.task_type})")
+            eff_account_id = task.account_id or account_id
+            eff_user_id = task.user_id or user_id
+            if eff_account_id and eff_user_id:
+                await self._store_io.run(
+                    "delete",
+                    lambda: run_to_completion(
+                        lambda: self._store.delete(
+                            task_id,
+                            account_id=eff_account_id,
+                            user_id=eff_user_id,
+                        )
+                    ),
+                )
+            with self._lock:
+                self._tasks.pop(task_id, None)
+            self._work_index.clear_failure(task_id)
+            return True
+
+    async def clear_terminal_tasks(
+        self,
+        *,
+        statuses: Optional[set[TaskStatus]] = None,
+        account_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+    ) -> int:
+        """Delete multiple terminal tasks matching status filter."""
+        target_statuses = statuses or {TaskStatus.FAILED, TaskStatus.CANCELLED}
+        return await self._dispatcher.run(
+            lambda: self._clear_terminal_tasks_on_owner(target_statuses, account_id=account_id, user_id=user_id)
+        )
+
+    async def _clear_terminal_tasks_on_owner(
+        self,
+        target_statuses: set[TaskStatus],
+        *,
+        account_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+    ) -> int:
+        if account_id and user_id:
+            self._merge_loaded_tasks(await self._load_all_from_store(account_id, user_id))
+        matching_tasks = [
+            task
+            for task in self._cache_snapshot()
+            if task.status in target_statuses
+            and (account_id is None or self._matches_owner(task, account_id, user_id or ""))
+        ]
+        deleted = 0
+        for task in matching_tasks:
+            try:
+                if await self._delete_task_on_owner(task.task_id, account_id=account_id, user_id=user_id):
+                    deleted += 1
+            except Exception:
+                pass
+        return deleted
+
     async def wait_for_descendants(self, task_id: str, current_work_id: str) -> None:
         """Wait on the same durable work index used by completion and cancellation."""
         while self._work_index.has_work(task_id, exclude_work_id=current_work_id):

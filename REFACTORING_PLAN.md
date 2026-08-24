@@ -288,6 +288,15 @@
 - **`[TASK-LIVEGEN-01~03]` Epic-LIVE-GEN Skill Live Generator**：SKILL.md 在线 Monaco 编辑器与 YAML Header 语法校验、沙盒环境模拟触发测试、一键自动向量化发布至 Viking 1933 存储。
 - **`[TASK-PRIVACY-01~03]` Epic-PRIVACY-GOV 敏感信息二次授权**：服务端敏感字段检索二次过滤与鉴权、前端脱敏展示与安全开关、脱敏审计日志与导出隔离。
 
+### [x] v1.4.3 补丁版本已验收发布 🎉
+- **Git Tag**: `v1.4.3` ｜ **版本类型**：Patch Release (Z 交互与任务治理版本)
+- **交付内容**：
+  1. **任务中心失败与已取消任务一键清理 API (`POST /api/v1/tasks/clear-failed`)**：支持批量永久清除所有历史失败和取消状态的死结任务单据，瞬间恢复看板整洁与 100% 成功率；
+  2. **单任务物理删除接口与交互 (`DELETE /api/v1/tasks/{task_id}`)**：TaskTracker 底层与 HTTP 服务端新增单任务安全删除能力，前端表格行支持单个终态任务快速清理；
+  3. **Web Studio 任务看板交互增强**：顶部工具栏新增 `🗑️ 清除失败与取消任务` 快捷按钮，失败徽章旁集成快速删除与重试双按钮。
+
+---
+
 ### [x] v1.4.2 补丁版本已验收发布 🎉
 - **Git Tag**: `v1.4.2` ｜ **版本类型**：Patch Release (Z 策略增强版本)
 - **交付内容**：

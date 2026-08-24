@@ -11,6 +11,7 @@ import {
   LoaderCircleIcon,
   RefreshCwIcon,
   RotateCcwIcon,
+  Trash2Icon,
   XIcon,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -336,6 +337,43 @@ function TasksRoute() {
     },
   })
 
+  const clearFailedMutation = useMutation({
+    mutationFn: async () => {
+      const resp = await ovClient.instance.post('/api/v1/tasks/clear-failed')
+      return resp.data
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : String(error))
+    },
+    onSuccess: async (data) => {
+      const count = data?.result?.deleted_count ?? 0
+      toast.success(
+        i18n.language.startsWith('zh')
+          ? `已成功清除 ${count} 条失败与取消任务！`
+          : `Successfully cleared ${count} failed & cancelled tasks!`,
+      )
+      await queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      await queryClient.invalidateQueries({ queryKey: ['taskStats'] })
+    },
+  })
+
+  const deleteTaskMutation = useMutation({
+    mutationFn: async (taskId: string) => {
+      const resp = await ovClient.instance.delete(`/api/v1/tasks/${taskId}`)
+      return resp.data
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : String(error))
+    },
+    onSuccess: async () => {
+      toast.success(
+        i18n.language.startsWith('zh') ? '已删除该任务记录' : 'Task record deleted',
+      )
+      await queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      await queryClient.invalidateQueries({ queryKey: ['taskStats'] })
+    },
+  })
+
   React.useEffect(() => {
     if (page > totalPages) {
       setPage(totalPages)
@@ -526,6 +564,20 @@ function TasksRoute() {
             ) : (
               <RotateCcwIcon className="size-2.5 shrink-0" />
             )}
+          </button>
+          <button
+            type="button"
+            disabled={deleteTaskMutation.isPending}
+            className="ml-0.5 inline-flex items-center justify-center rounded p-0.5 hover:bg-white/25 active:scale-95 transition-all cursor-pointer text-destructive-foreground disabled:opacity-50"
+            title={i18n.language.startsWith('zh') ? '删除此任务记录' : 'Delete task'}
+            onClick={(e) => {
+              e.stopPropagation()
+              if (task.task_id) {
+                deleteTaskMutation.mutate(task.task_id)
+              }
+            }}
+          >
+            <Trash2Icon className="size-2.5 shrink-0" />
           </button>
         </Badge>
         {durationText && (
@@ -910,6 +962,23 @@ function TasksRoute() {
           <LayersIcon className="size-3.5 text-muted-foreground" />
           {dedupByResource ? t('pipeline.latestByResource') : t('pipeline.allHistory')}
         </Button>
+        {allTasks.some((it) => ['failed', 'cancelled'].includes(normalizeTaskStatus(it.status))) ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={clearFailedMutation.isPending}
+            className="h-8 text-xs font-normal transition-all gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/30"
+            onClick={() => clearFailedMutation.mutate()}
+          >
+            {clearFailedMutation.isPending ? (
+              <LoaderCircleIcon className="size-3.5 animate-spin" />
+            ) : (
+              <Trash2Icon className="size-3.5" />
+            )}
+            {i18n.language.startsWith('zh') ? '清除失败与取消任务' : 'Clear Failed/Cancelled'}
+          </Button>
+        ) : null}
       </div>
 
       {tasksQuery.isLoading ? (
