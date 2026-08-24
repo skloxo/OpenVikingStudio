@@ -20,7 +20,7 @@ import threading
 import time
 from copy import deepcopy
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, time as time_cls, timedelta, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
@@ -168,10 +168,9 @@ class TaskTracker:
     only protects short, synchronous accesses to immutable cache snapshots.
     """
 
-    MAX_TASKS = 10_000
-    TTL_COMPLETED = 86_400  # 24 hours
-    TTL_FAILED = 604_800  # 7 days
-    CLEANUP_INTERVAL = 300  # 5 minutes
+    MAX_TASKS = 50_000
+    TTL_COMPLETED = 30 * 86_400  # 30 calendar days (2,592,000s)
+    TTL_FAILED = 30 * 86_400     # 30 calendar days (2,592,000s)
 
     def __init__(self, store: TaskStore, *, max_concurrent_store_io: int = 8) -> None:
         self._store = store
@@ -187,7 +186,7 @@ class TaskTracker:
         self._work_index = TaskWorkIndex()
         self._install_work_index_callbacks()
         logger.info(
-            "[TaskTracker] Initialized (store=%s, max_tasks=%d)",
+            "[TaskTracker] Initialized (store=%s, max_tasks=%d, ttl=30d)",
             self._store.__class__.__name__,
             self.MAX_TASKS,
         )
@@ -240,7 +239,7 @@ class TaskTracker:
             return
         self._dispatcher.bind_current_loop()
         self._cleanup_task = asyncio.create_task(self._cleanup_loop())
-        logger.debug("[TaskTracker] Cleanup loop started")
+        logger.debug("[TaskTracker] Cleanup loop started (daily midnight schedule)")
 
     def stop_cleanup_loop(self) -> None:
         """Cancel the background cleanup task. Safe to call if not started."""
@@ -248,18 +247,35 @@ class TaskTracker:
             self._cleanup_task.cancel()
             logger.debug("[TaskTracker] Cleanup loop stopped")
 
+    @staticmethod
+    def _seconds_until_next_midnight() -> float:
+        """Calculate seconds until the next local calendar day midnight (00:00:00)."""
+        now = datetime.now()
+        tomorrow = now.date() + timedelta(days=1)
+        next_midnight = datetime.combine(tomorrow, time_cls(0, 0, 0))
+        delta = (next_midnight - now).total_seconds()
+        return max(60.0, delta)
+
     async def _cleanup_loop(self) -> None:
         while True:
             try:
-                await asyncio.sleep(self.CLEANUP_INTERVAL)
+                sleep_secs = self._seconds_until_next_midnight()
+                logger.info(
+                    "[TaskTracker] Next daily midnight cleanup scheduled in %.1f seconds (~%.1f hours)",
+                    sleep_secs,
+                    sleep_secs / 3600.0,
+                )
+                await asyncio.sleep(sleep_secs)
                 await self._evict_expired()
             except asyncio.CancelledError:
                 break
             except Exception:
                 logger.exception("[TaskTracker] Cleanup error")
+                await asyncio.sleep(3600)  # On unexpected error, retry in 1 hour
 
     async def _evict_expired(self) -> None:
         """Remove expired tasks and enforce MAX_TASKS."""
+        await self._dispatcher.run(self._evict_expired_on_owner)
         await self._dispatcher.run(self._evict_expired_on_owner)
 
     async def _evict_expired_on_owner(self) -> None:
