@@ -108,11 +108,14 @@ def test_local_embedder_downloads_default_model_and_prefixes_query(monkeypatch, 
         downloaded["count"] += 1
         return _FakeResponse(b"gguf")
 
+    import openviking.models.embedder.local_embedders as le_mod
+
+    monkeypatch.setattr(le_mod.requests, "get", _fake_get)
     monkeypatch.setattr(
-        "openviking.models.embedder.local_embedders.importlib.import_module",
+        le_mod.importlib,
+        "import_module",
         lambda _name: SimpleNamespace(Llama=_FakeLlama),
     )
-    monkeypatch.setattr("openviking.models.embedder.local_embedders.requests.get", _fake_get)
 
     embedder = LocalDenseEmbedder(cache_dir=str(tmp_path))
 

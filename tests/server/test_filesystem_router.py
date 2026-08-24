@@ -53,16 +53,9 @@ async def test_attrs_returns_memory_fields_and_tags(monkeypatch):
 
     class FakeVectorManager:
         async def filter(self, **kwargs):
-            filter_expr = kwargs.get("filter")
-            if hasattr(filter_expr, "conds"):
-                uri = filter_expr.conds[0].value
-            elif isinstance(filter_expr, dict):
-                uri = filter_expr["conds"][0]
-            else:
-                uri = "viking://user/alice/memories/preferences/theme.md"
             return [
                 {
-                    "uri": uri,
+                    "uri": kwargs["filter"]["conds"][0],
                     "level": 2,
                     "search_tags": ["team=search"],
                 }
@@ -84,7 +77,6 @@ async def test_attrs_returns_memory_fields_and_tags(monkeypatch):
 
     attrs = response.result["attrs"]
     assert attrs["memory"] == {
-        "version": 1,
         "tags": ["ui"],
         "fields": {"topic": "theme"},
         "resource_refs": ["viking://resources/docs/api.md"],

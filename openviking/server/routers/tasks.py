@@ -25,25 +25,6 @@ from openviking_cli.exceptions import (
 router = APIRouter(prefix="/api/v1", tags=["tasks"])
 
 
-@router.get("/tasks/stats")
-async def task_stats(
-    _ctx: RequestContext = Depends(get_request_context),
-):
-    """Return exact global task statistics (total, completed, pending, running, failed, cancelled)."""
-    tracker = get_task_tracker()
-    account_id = None if _ctx.role == Role.ROOT else _ctx.account_id
-    user_id = None if _ctx.role == Role.ROOT else _ctx.user.user_id
-    stats = tracker.get_stats(account_id=account_id, user_id=user_id)
-    grouped = tracker.get_grouped_stats(account_id=account_id, user_id=user_id)
-    return Response(
-        status="ok",
-        result={
-            **stats,
-            "grouped": grouped,
-        },
-    )
-
-
 @router.get("/tasks/{task_id}")
 async def get_task(
     task_id: str,
@@ -108,7 +89,7 @@ async def list_tasks(
         description="Filter by status (pending/running/cancelling/completed/failed/cancelled)",
     ),
     resource_id: Optional[str] = Query(None, description="Filter by resource ID (e.g. session_id)"),
-    limit: int = Query(50, le=10000, description="Max results"),
+    limit: int = Query(50, le=200, description="Max results"),
     _ctx: RequestContext = Depends(get_request_context),
 ):
     """List background tasks with optional filters."""

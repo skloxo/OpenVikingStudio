@@ -44,6 +44,7 @@ from .parser_config import (
 )
 from .prompts_config import PromptsConfig
 from .queue_worker_config import QueueWorkersConfig
+from .reindex_config import ReindexConfig
 from .rerank_config import RerankConfig
 from .retrieval_config import RetrievalConfig
 from .storage_config import StorageConfig
@@ -241,6 +242,11 @@ class OpenVikingConfig(BaseModel):
         description="Queue worker runtime configuration",
     )
 
+    reindex: ReindexConfig = Field(
+        default_factory=ReindexConfig,
+        description="Admin reindex runtime configuration",
+    )
+
     parser_api: ParserApiConfig = Field(
         default_factory=ParserApiConfig,
         description="Third-party parser API configuration (files/responses)",
@@ -410,7 +416,15 @@ class OpenVikingConfig(BaseModel):
             ]
             raise_unknown_config_fields(
                 data=config_copy,
-                valid_fields=set(cls.model_fields.keys()) | {"server", "bot", "parsers", "skills"},
+                valid_fields=set(cls.model_fields.keys())
+                | {
+                    "server",
+                    "bot",
+                    "parsers",
+                    "skills",
+                    "output_language_override",
+                    "allow_private_networks",
+                },
                 context_name="OpenVikingConfig",
             )
 
@@ -418,6 +432,8 @@ class OpenVikingConfig(BaseModel):
             config_copy.pop("server", None)
             config_copy.pop("bot", None)
             config_copy.pop("skills", None)
+            config_copy.pop("output_language_override", None)
+            config_copy.pop("allow_private_networks", None)
 
             # Handle parser configurations from nested "parsers" section
             parser_configs = {}

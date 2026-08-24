@@ -2,18 +2,28 @@
 # SPDX-License-Identifier: AGPL-3.0
 """Gemini Embedding 2 provider using the official google-genai SDK."""
 
+from __future__ import annotations
+
 from typing import Any, Dict, Optional
 
-from google import genai
-from google.genai import types
-from google.genai.errors import APIError, ClientError
-
 try:
-    from google.genai.types import HttpOptions, HttpRetryOptions
+    from google import genai
+    from google.genai import types
+    from google.genai.errors import APIError, ClientError
 
-    _HTTP_RETRY_AVAILABLE = True
+    try:
+        from google.genai.types import HttpOptions, HttpRetryOptions
+
+        _HTTP_RETRY_AVAILABLE = True
+    except ImportError:
+        _HTTP_RETRY_AVAILABLE = False
+    _GENAI_AVAILABLE = True
 except ImportError:
+    genai = None  # type: ignore
+    types = None  # type: ignore
+    APIError = ClientError = Exception  # type: ignore
     _HTTP_RETRY_AVAILABLE = False
+    _GENAI_AVAILABLE = False
 
 from openviking.models.embedder.base import (
     DenseEmbedderBase,
@@ -129,6 +139,10 @@ class GeminiDenseEmbedder(DenseEmbedderBase):
         self.provider = "gemini"
         if not api_key:
             raise ValueError("Gemini provider requires api_key")
+        if not _GENAI_AVAILABLE or genai is None:
+            raise ImportError(
+                "google-genai is required for Gemini embeddings. Install with 'pip install google-genai'."
+            )
         if task_type and task_type not in _VALID_TASK_TYPES:
             raise ValueError(
                 f"Invalid task_type '{task_type}'. "

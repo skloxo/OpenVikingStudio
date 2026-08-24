@@ -1,5 +1,6 @@
 import { readFileSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { buildUserAgent, resolveOpenVikingCredentials } from "./shared/credentials.mjs";
 import { resolveEffectivePeerId } from "./shared/workspace-peer.mjs";
 
@@ -24,6 +25,7 @@ export interface OVConfig {
   recallPreferAbstract: boolean;
   recallLimit: number;
   recallLimitConfigured: boolean;
+  recallLedger: boolean;
   scoreThreshold: number;
   minQueryLength: number;
   profileTokenBudget: number;
@@ -65,6 +67,9 @@ const DEFAULT_CONFIG: OVConfig = {
   recallPreferAbstract: true,
   recallLimit: 10,
   recallLimitConfigured: false,
+  // Persist injected recall blocks and re-apply them to historical user
+  // messages so provider prompt-prefix caches keep hitting (#4137).
+  recallLedger: true,
   scoreThreshold: 0.35,
   minQueryLength: 3,
   profileTokenBudget: 10000,
@@ -80,11 +85,15 @@ const DEFAULT_CONFIG: OVConfig = {
   captureToolResults: false,
   captureMode: "semantic",
   captureMaxLength: 24000,
-  captureToolMaxChars: 2000,
+  captureToolMaxChars: 1000000,
   captureAssistantTurns: true,
   bypassPatterns: [],
   logLevel: "error",
 };
+
+export function loadConfigFromModuleUrl(moduleUrl: string): OVConfig {
+  return loadConfig(dirname(fileURLToPath(moduleUrl)));
+}
 
 export function loadConfig(extensionDir: string): OVConfig {
   const configPath = join(extensionDir, "config.json");
@@ -139,6 +148,9 @@ export function loadConfig(extensionDir: string): OVConfig {
     config.recallQueryExpansion = process.env.OPENVIKING_RECALL_QUERY_EXPANSION === "off" ? "off" : "auto";
     config.recallQueryExpansionConfigured = true;
   }
+  if (process.env.OPENVIKING_RECALL_LEDGER !== undefined) {
+    config.recallLedger = envBool(process.env.OPENVIKING_RECALL_LEDGER, config.recallLedger);
+  }
 
   config.recallLimit = clampInt(config.recallLimit, 1, 50, DEFAULT_CONFIG.recallLimit);
   config.recallMaxContentChars = clampInt(config.recallMaxContentChars, 100, 5000, DEFAULT_CONFIG.recallMaxContentChars);
@@ -156,10 +168,11 @@ export function loadConfig(extensionDir: string): OVConfig {
   config.takeoverOverviewPollMs = clampInt(config.takeoverOverviewPollMs, 0, 60000, DEFAULT_CONFIG.takeoverOverviewPollMs);
   config.takeoverOverviewPollMax = clampInt(config.takeoverOverviewPollMax, 1, 120, DEFAULT_CONFIG.takeoverOverviewPollMax);
   config.captureMaxLength = clampInt(config.captureMaxLength, 200, 100000, DEFAULT_CONFIG.captureMaxLength);
-  config.captureToolMaxChars = clampInt(config.captureToolMaxChars, 200, 20000, DEFAULT_CONFIG.captureToolMaxChars);
+  config.captureToolMaxChars = clampInt(config.captureToolMaxChars, 200, 1000000, DEFAULT_CONFIG.captureToolMaxChars);
   config.captureMode = config.captureMode === "keyword" ? "keyword" : "semantic";
   config.recallPeerScope = config.recallPeerScope === "actor" ? "actor" : "all";
   config.recallQueryExpansion = config.recallQueryExpansion === "off" ? "off" : "auto";
+  config.recallLedger = config.recallLedger !== false;
   if (!Array.isArray(config.bypassPatterns)) config.bypassPatterns = [];
   config.peerId = resolveEffectivePeerId({ cfg: config as any, cwd: process.cwd() }).peerId;
   return config;

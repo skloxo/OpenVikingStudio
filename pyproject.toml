@@ -252,7 +252,8 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = [".", "bot"]
+norecursedirs = ["tests/oc2ov_test", "node_modules", ".git", ".venv", "dist"]
+pythonpath = [".", "bot", "tests/cli", "sdk/python"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]

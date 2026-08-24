@@ -6,9 +6,15 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from openviking.core.context import ContextLevel
 from openviking.server.identity import RequestContext, Role
 from openviking.storage import content_write as content_write_module
+from openviking.storage.abstract_overview import (
+    parse_abstract_overview,
+    render_abstract_overview,
+)
 from openviking.storage.content_write import ContentWriteCoordinator
+from openviking.storage.queuefs.semantic_ops.freshness_policy import FreshnessAction
 from openviking_cli.session.user_id import UserIdentifier
 
 
@@ -37,13 +43,32 @@ class _FakeVikingFS:
         return f"/fake/{uri}"
 
 
+def _sidecar(level=ContextLevel.ABSTRACT, body="Original body."):
+    return render_abstract_overview(
+        level,
+        "viking://resources/demo",
+        body,
+        {
+            "generated_by": {"component": "test", "trigger": "test"},
+            "freshness": {
+                "total_entries": 1,
+                "sampled_entries": 1,
+                "unsampled_entries": 0,
+                "pending_child_changes": 0,
+            },
+        },
+    )
+
+
 @pytest.fixture
 def ctx():
     return RequestContext(user=UserIdentifier("account-1", "user-1"), role=Role.USER)
 
 
 @pytest.mark.asyncio
-async def test_vectors_only_write_skips_semantic_refresh_and_vectorizes_file(monkeypatch, ctx):
+async def test_direct_write_skips_semantic_refresh_for_vectors_only_and_sidecar_body_edits(
+    monkeypatch, ctx
+):
     fake_fs = _FakeVikingFS()
     vectorize_file = AsyncMock(return_value=True)
     semantic_refresh = AsyncMock(side_effect=AssertionError("semantic refresh should not run"))
@@ -73,9 +98,44 @@ async def test_vectors_only_write_skips_semantic_refresh_and_vectorizes_file(mon
         "name": "demo.md",
         "summary": "",
     }
-    assert vectorize_file.await_args.kwargs["register_request_wait"] is True
+    assert "register_request_wait" not in vectorize_file.await_args.kwargs
     assert result["semantic_status"] == "skipped"
     assert result["vector_status"] == "queued"
+
+    current = _sidecar()
+    sidecar_fs = _FakeVikingFS()
+    sidecar_fs.read_file.side_effect = [
+        current,
+        current,
+        _sidecar(ContextLevel.OVERVIEW, "Overview."),
+    ]
+    vectorize_directory = AsyncMock()
+    monkeypatch.setattr(content_write_module, "vectorize_directory_meta", vectorize_directory)
+    sidecar_coordinator = ContentWriteCoordinator(viking_fs=sidecar_fs)
+    sidecar_coordinator._enqueue_semantic_refresh = AsyncMock(
+        side_effect=AssertionError("sidecar body writes must not regenerate semantics")
+    )
+
+    sidecar_result = await sidecar_coordinator._write_direct_with_refresh(
+        uri="viking://resources/demo/.abstract.md",
+        root_uri="viking://resources/demo",
+        content="Updated body only.",
+        mode="replace",
+        context_type="resource",
+        wait=False,
+        timeout=None,
+        ctx=ctx,
+        written_bytes=len("Updated body only.".encode()),
+        telemetry_id="",
+    )
+
+    written = sidecar_fs.write_file.await_args.args[1]
+    assert parse_abstract_overview(written).body == "Updated body only.\n"
+    assert parse_abstract_overview(written).metadata == parse_abstract_overview(current).metadata
+    sidecar_coordinator._enqueue_semantic_refresh.assert_not_awaited()
+    vectorize_directory.assert_awaited_once()
+    assert sidecar_result["semantic_status"] == "skipped"
+    assert sidecar_result["vector_status"] == "queued"
 
 
 @pytest.mark.asyncio
@@ -135,6 +195,31 @@ async def test_vectors_only_write_wait_reports_skipped_when_nothing_enqueued(mon
 
     assert result["semantic_status"] == "skipped"
     assert result["vector_status"] == "skipped"
+
+
+@pytest.mark.asyncio
+async def test_automatic_wide_directory_delay_reports_deferred(monkeypatch, ctx):
+    fake_fs = _FakeVikingFS()
+    coordinator = ContentWriteCoordinator(viking_fs=fake_fs)
+    coordinator._enqueue_semantic_refresh = AsyncMock(
+        return_value=FreshnessAction.MARK_PENDING
+    )
+
+    result = await coordinator._write_direct_with_refresh(
+        uri="viking://resources/wide/demo.md",
+        root_uri="viking://resources/wide",
+        content="updated",
+        mode="replace",
+        context_type="resource",
+        wait=False,
+        timeout=None,
+        ctx=ctx,
+        written_bytes=7,
+        telemetry_id="",
+    )
+
+    assert result["semantic_status"] == "deferred"
+    assert result["vector_status"] == "queued"
 
 
 @pytest.mark.asyncio

@@ -12,7 +12,6 @@ from pydantic import BaseModel, ConfigDict, model_validator
 from openviking.core.namespace import (
     is_hidden_by_actor_peer_view,
     may_include_hidden_actor_peers,
-    resolve_current_user_uri,
     resolve_uri,
 )
 from openviking.core.path_variables import resolve_path_variables
@@ -106,19 +105,18 @@ def _authorize_reindex_uri(uri: str, ctx: RequestContext) -> str:
     if ctx.role != Role.USER:
         return uri
 
-    canonical_uri = resolve_current_user_uri(uri, ctx)
-    target = resolve_uri(canonical_uri)
+    target = resolve_uri(uri)
     if (
         target.scope != "user"
         or target.owner_user_id != ctx.user.user_id
-        or is_hidden_by_actor_peer_view(canonical_uri, ctx)
-        or may_include_hidden_actor_peers(canonical_uri, ctx)
+        or is_hidden_by_actor_peer_view(uri, ctx)
+        or may_include_hidden_actor_peers(uri, ctx)
     ):
         raise PermissionDeniedError(
             "USER can only reindex their own user namespace.",
-            resource=canonical_uri,
+            resource=uri,
         )
-    return canonical_uri
+    return uri
 
 
 @router.get("/read")

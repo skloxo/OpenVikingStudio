@@ -64,7 +64,6 @@ async def observer_vikingdb(
 
 @router.get("/models")
 async def observer_models(
-    window: str = "all",
     _ctx: RequestContext = Depends(get_request_context),
 ):
     """Get models status (VLM, Embedding, Rerank)."""
@@ -85,7 +84,6 @@ async def observer_lock(
 
 @router.get("/retrieval")
 async def observer_retrieval(
-    window: str = "all",
     _ctx: RequestContext = Depends(get_request_context),
 ):
     """Get retrieval quality metrics."""
@@ -106,11 +104,9 @@ async def observer_filesystem(
 
 @router.get("/system")
 async def observer_system(
-    window: str = "all",
     ctx: RequestContext = Depends(get_request_context),
 ):
     """Get system overall status (includes all components)."""
     service = get_service()
     status = service.debug.observer.system(ctx=ctx)
     return Response(status="ok", result=_system_to_dict(status))
-

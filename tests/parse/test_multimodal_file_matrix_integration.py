@@ -329,6 +329,7 @@ def test_build_client_prefers_current_openviking_config(tmp_path, monkeypatch):
     monkeypatch.delenv("OPENVIKING_URL", raising=False)
     monkeypatch.delenv("OPENVIKING_BASE_URL", raising=False)
     monkeypatch.delenv("OPENVIKING_API_KEY", raising=False)
+    monkeypatch.delenv("OPENVIKING_ACCOUNT", raising=False)
 
     client = _build_client()
 

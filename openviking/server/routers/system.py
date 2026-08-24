@@ -3,7 +3,7 @@
 """System endpoints for OpenViking HTTP Server."""
 
 import asyncio
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
@@ -70,10 +70,7 @@ async def _embedding_probe(embedder) -> str:
 @router.get("/health", tags=["system"])
 async def health_check(request: Request):
     """Health check endpoint (no authentication required)."""
-    try:
-        from openviking import __version__
-    except Exception:
-        __version__ = "1.3.7"
+    from openviking import __version__
 
     result = {"status": "ok", "healthy": True, "version": __version__}
 
@@ -132,7 +129,7 @@ async def readiness_check(request: Request):
             content={"status": "not_ready", "reason": "initializing"},
         )
 
-    checks: Dict[str, Any] = {}
+    checks = {}
 
     # 1. AGFS: probe filesystem access and multi-write sync health
     try:
@@ -313,90 +310,3 @@ async def admin_sync_retry(
     uri = validate_request_viking_uri(resolve_path_variables(sync_path), ctx)
     result = await service.fs.system_sync_retry(uri, ctx=ctx)
     return Response(status="ok", result=result)
-
-
-@router.get("/api/v1/system/harness_metrics", tags=["system"])
-async def get_harness_metrics(window: str = "24h"):
-    """Return rolling Harness & Skill center telemetry metrics backed by TelemetryStore."""
-    try:
-        from openviking.telemetry.telemetry_store import get_telemetry_store
-
-        store = get_telemetry_store()
-        return store.get_harness_metrics_by_window(window=window)
-    except Exception as e:
-        logger.warning("Error getting harness metrics from TelemetryStore: %s", e)
-        return {
-            "status": "ok",
-            "window": window,
-            "total_calls": 0,
-            "blocked_calls": 0,
-            "find_calls": 0,
-            "store_calls": 0,
-            "active_skills_count": 48,
-            "lessons_count": 18,
-            "builtin_lessons_count": 18,
-            "auto_wakeup_rate": 99.2,
-            "context_compression_ratio": 51.5,
-            "compression_retention_rate": 48.5,
-            "tokens_saved_total": 0,
-        }
-
-
-@router.get("/api/v1/system/telemetry/trends", tags=["system"])
-async def get_telemetry_trends(metric: str = "sla", window: str = "7d"):
-    """Return real time-series trend points for frontend charts."""
-    try:
-        from openviking.telemetry.telemetry_store import get_telemetry_store
-
-        store = get_telemetry_store()
-        points = store.get_trends(metric=metric, window=window)
-        return {
-            "status": "ok",
-            "metric": metric,
-            "window": window,
-            "points": points,
-        }
-    except Exception as e:
-        logger.warning("Error querying telemetry trends: %s", e)
-        return {
-            "status": "ok",
-            "metric": metric,
-            "window": window,
-            "points": [],
-        }
-
-
-
-@router.get("/api/v1/system/gpu", tags=["system"])
-async def get_gpu_telemetry():
-    """Return live NVIDIA GPU telemetry via nvidia-smi."""
-    import subprocess
-    try:
-        res = subprocess.run(
-            ["nvidia-smi", "--query-gpu=memory.used,memory.total,utilization.gpu,name", "--format=csv,noheader,nounits"],
-            capture_output=True,
-            text=True,
-            timeout=2,
-        )
-        if res.returncode == 0 and res.stdout.strip():
-            parts = [p.strip() for p in res.stdout.strip().split("\n")[0].split(",")]
-            used_mb = float(parts[0])
-            total_mb = float(parts[1])
-            gpu_util = float(parts[2])
-            gpu_name = parts[3] if len(parts) > 3 else "NVIDIA GPU"
-            return {
-                "status": "ok",
-                "used_gb": round(used_mb / 1024, 1),
-                "total_gb": round(total_mb / 1024, 1),
-                "gpu_percent": int(gpu_util),
-                "gpu_name": gpu_name,
-            }
-    except Exception as e:
-        logger.debug("nvidia-smi probe failed: %s", e)
-    return {
-        "status": "ok",
-        "used_gb": 0.0,
-        "total_gb": 0.0,
-        "gpu_percent": 0,
-        "mode": "cpu",
-    }

@@ -6,12 +6,18 @@ OpenViking - An Agent-native context database
 Data in, Context out.
 """
 
-__version__ = "1.3.20"
+try:
+    from ._version import version as __version__
+except ImportError:
+    try:
+        from importlib.metadata import version
+
+        __version__ = version("openviking")
+    except ImportError:
+        __version__ = "0.0.0+unknown"
 
 
 def __getattr__(name: str):
-    if name == "__version__":
-        return __version__
     if name == "AsyncHTTPClient":
         from openviking_cli.client.http import AsyncHTTPClient
 
@@ -20,22 +26,10 @@ def __getattr__(name: str):
         from openviking_cli.client.sync_http import SyncHTTPClient
 
         return SyncHTTPClient
-    if name == "AsyncOpenViking":
-        from openviking.async_client import AsyncOpenViking
-
-        return AsyncOpenViking
-    if name == "OpenViking":
-        from openviking.client import OpenViking
-
-        return OpenViking
     raise AttributeError(name)
 
 
 __all__ = [
-    "__version__",
     "SyncHTTPClient",
     "AsyncHTTPClient",
-    "AsyncOpenViking",
-    "OpenViking",
 ]
-

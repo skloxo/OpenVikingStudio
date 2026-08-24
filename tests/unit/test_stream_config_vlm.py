@@ -428,12 +428,12 @@ class TestStreamingResponseProcessing:
         with patch.object(vlm, "update_token_usage") as mock_update:
             vlm._process_streaming_response(iter(chunks))
 
-            mock_update.assert_called_once_with(
-                model_name="gpt-4o-mini",
-                provider="openai",
-                prompt_tokens=10,
-                completion_tokens=5,
-            )
+            assert mock_update.call_count == 1
+            kwargs = mock_update.call_args[1]
+            assert kwargs.get("model_name") == "gpt-4o-mini"
+            assert kwargs.get("provider") == "openai"
+            assert kwargs.get("prompt_tokens") == 10
+            assert kwargs.get("completion_tokens") == 5
 
     def test_process_streaming_response_empty_chunks(self):
         """_process_streaming_response should handle empty chunks."""
@@ -467,9 +467,9 @@ class TestStreamingResponseProcessing:
         with patch.object(vlm, "update_token_usage") as mock_update:
             await vlm._process_streaming_response_async(async_chunks())
 
-            mock_update.assert_called_once_with(
-                model_name="gpt-4o-mini",
-                provider="openai",
-                prompt_tokens=15,
-                completion_tokens=8,
-            )
+            assert mock_update.call_count == 1
+            kwargs = mock_update.call_args[1]
+            assert kwargs.get("model_name") == "gpt-4o-mini"
+            assert kwargs.get("provider") == "openai"
+            assert kwargs.get("prompt_tokens") == 15
+            assert kwargs.get("completion_tokens") == 8

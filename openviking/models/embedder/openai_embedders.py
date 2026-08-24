@@ -79,6 +79,7 @@ class OpenAIDenseEmbedder(DenseEmbedderBase):
         configured_provider: Optional[str] = None,
         encoding_format: Optional[Literal["float", "base64"]] = None,
         extra_body: Optional[Dict[str, Any]] = None,
+        max_tokens: int = 8000,
     ):
         """Initialize OpenAI-Compatible Dense Embedder
 
@@ -112,6 +113,7 @@ class OpenAIDenseEmbedder(DenseEmbedderBase):
                        (e.g., OpenRouter provider routing:
                        {'provider': {'sort': 'latency'}}). Keys set explicitly via
                        query_param/document_param take precedence on conflict.
+            max_tokens: Maximum token limit for input truncation (default: 8000).
 
         Raises:
             ValueError: If api_key is not provided and env vars are not set
@@ -128,6 +130,7 @@ class OpenAIDenseEmbedder(DenseEmbedderBase):
         self.api_base = api_base
         self.api_version = api_version
         self.dimension = dimension
+        self.max_tokens = max_tokens
         self.query_param = query_param
         self.document_param = document_param
         self.encoding_format = encoding_format

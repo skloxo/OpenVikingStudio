@@ -72,7 +72,11 @@ def fake_viking_fs():
 
 
 @pytest_asyncio.fixture
-async def settings_http(fake_viking_fs):
+async def settings_http(fake_viking_fs, monkeypatch):
+    monkeypatch.setattr(
+        "openviking.server.routers.admin.get_openviking_config",
+        lambda: SimpleNamespace(default_account="default"),
+    )
     sessions = SessionService(viking_fs=fake_viking_fs)
     service = SimpleNamespace(sessions=sessions, viking_fs=fake_viking_fs)
     app = create_app(config=ServerConfig(), service=service)

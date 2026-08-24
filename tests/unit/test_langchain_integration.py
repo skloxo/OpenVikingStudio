@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -454,32 +453,6 @@ def test_ensure_client_defaults_to_http_client(monkeypatch):
     assert created["url"] is None
 
 
-def test_ensure_client_keeps_local_path_clients_direct(monkeypatch, tmp_path):
-    created = {}
-
-    class FakeLocalClient:
-        def __init__(self, path, actor_peer_id=None):
-            created["path"] = path
-            created["actor_peer_id"] = actor_peer_id
-            self._initialized = False
-
-        def initialize(self):
-            self._initialized = True
-
-    monkeypatch.setattr(
-        client_helpers,
-        "import_module",
-        lambda name: SimpleNamespace(SyncOpenViking=FakeLocalClient),
-    )
-
-    client = ensure_client(OpenVikingConnection(path=str(tmp_path)))
-
-    assert isinstance(client, FakeLocalClient)
-    assert client._initialized is True
-    assert created["path"] == str(tmp_path)
-    assert created["actor_peer_id"] is None
-
-
 def test_openviking_client_retries_recoverable_read_with_fresh_client(monkeypatch):
     instances = []
 
@@ -543,6 +516,73 @@ def test_openviking_client_handle_filters_kwargs_for_direct_calls(monkeypatch):
     result = client.find("recover", unsupported="ignored")
 
     assert result == {"query": "recover"}
+
+
+def test_call_openviking_adapts_flat_kwargs_to_sdk_options():
+    calls = []
+
+    class OptionsClient:
+        def find(self, query, options=None):
+            calls.append(("find", query, options))
+            return {"query": query}
+
+        def create_session(self, options=None):
+            calls.append(("create_session", options))
+            return {"session_id": options["session_id"]}
+
+        def add_message(self, session_id, message):
+            calls.append(("add_message", session_id, message))
+            return {"ok": True}
+
+        def write(self, uri, content, options=None):
+            calls.append(("write", uri, content, options))
+            return {"ok": True}
+
+    client = OptionsClient()
+
+    call_openviking(
+        client,
+        "find",
+        query="recover",
+        target_uri="viking://resources",
+        limit=5,
+    )
+    call_openviking(client, "create_session", session_id="session-1")
+    call_openviking(
+        client,
+        "add_message",
+        session_id="session-1",
+        role="user",
+        content="hello",
+    )
+    call_openviking(
+        client,
+        "write",
+        uri="viking://resources/a.md",
+        content="hello",
+        mode="replace",
+        wait=False,
+    )
+
+    assert calls == [
+        (
+            "find",
+            "recover",
+            {"target_uri": "viking://resources", "limit": 5},
+        ),
+        ("create_session", {"session_id": "session-1"}),
+        (
+            "add_message",
+            "session-1",
+            {"role": "user", "content": "hello"},
+        ),
+        (
+            "write",
+            "viking://resources/a.md",
+            "hello",
+            {"mode": "replace", "wait": False},
+        ),
+    ]
 
 
 def test_openviking_client_evicts_but_does_not_retry_mutating_call(monkeypatch):

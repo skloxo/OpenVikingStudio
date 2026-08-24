@@ -79,7 +79,7 @@ class VLMBase(ABC):
         self.thinking = config.get("thinking", False)
 
         # Token usage tracking
-        self._token_tracker = TokenUsageTracker(model_type="vlm")
+        self._token_tracker = TokenUsageTracker()
 
     @abstractmethod
     def get_completion(

@@ -1,10 +1,13 @@
 import pytest
 from unittest.mock import MagicMock
 
-from scrapy.exceptions import CloseSpider
+try:
+    from scrapy.exceptions import CloseSpider
+    from openviking.parse.accessors.web_crawler.scrapy_spider import OpenVikingWebSpider
+except (ImportError, AttributeError):
+    pytest.skip("scrapy not functional due to OpenSSL environment", allow_module_level=True)
 
 from openviking.parse.accessors.web_crawler.config import CrawlConfig
-from openviking.parse.accessors.web_crawler.scrapy_spider import OpenVikingWebSpider
 
 
 def _make_spider(config=None, root_url="http://example.com/"):

@@ -2,10 +2,12 @@
  * Shared configuration loader for the Codex OpenViking memory plugin.
  *
  * Credential source:
- *   - Default: active ovcli.conf wins when present, so `ov config switch`
+ *   - Default (auto): env-var credentials win when any credential env var is
+ *     set; otherwise the active ovcli.conf is used, so `ov config switch`
  *     changes hooks, MCP, and in-process `ov` commands together on next launch.
- *   - Set OPENVIKING_CREDENTIAL_SOURCE=env to force env-var credentials.
- *   - Without ovcli.conf, env vars and then ov.conf/defaults are used.
+ *   - Set OPENVIKING_CREDENTIAL_SOURCE=cli to force ovcli.conf, or =env to
+ *     force env-var credentials.
+ *   - Without env vars or ovcli.conf, ov.conf/defaults are used.
  *
  * Tuning resolution remains env vars > ov.conf codex.* > built-in defaults.
  *
@@ -32,6 +34,7 @@
  *   OPENVIKING_TIMEOUT_MS, OPENVIKING_CAPTURE_TIMEOUT_MS
  *   OPENVIKING_RECALL_TIMEOUT_MS, OPENVIKING_RECALL_COMPRESS_TIMEOUT_MS
  *   OPENVIKING_RECALL_COMPRESS_MODEL, OPENVIKING_RECALL_COMPRESS_THINKING
+ *   OPENVIKING_RECALL_COMPRESS_BASE_URL
  *   OPENVIKING_RECALL_LIMIT, OPENVIKING_SCORE_THRESHOLD
  *   OPENVIKING_WORKSPACE_PEER, OPENVIKING_RECALL_PEER_SCOPE
  *   OPENVIKING_NO_AUTO_INJECT, OPENVIKING_PROFILE_TOKEN_BUDGET
@@ -137,6 +140,10 @@ export function loadConfig() {
     process.env.OPENVIKING_RECALL_COMPRESS_MODEL,
     hasOwn(cx, "recallCompressModel") ? str(cx.recallCompressModel, "") : "",
   );
+  const recallCompressBaseUrl = str(
+    process.env.OPENVIKING_RECALL_COMPRESS_BASE_URL,
+    hasOwn(cx, "recallCompressBaseUrl") ? str(cx.recallCompressBaseUrl, "") : "",
+  );
   const cxRecallCompressThinking = hasOwn(cx, "recallCompressThinking")
     ? cx.recallCompressThinking
     : (hasOwn(cx, "recallCompressReasoningEffort") ? cx.recallCompressReasoningEffort : "");
@@ -184,6 +191,7 @@ export function loadConfig() {
     recallPeerScope,
     recallCompress: envBool("OPENVIKING_RECALL_COMPRESS") ?? configBool(cx.recallCompress, true),
     recallCompressModel,
+    recallCompressBaseUrl,
     recallCompressThinking,
     recallCompressConfigured: Boolean(recallCompressModel || recallCompressThinking),
     recallCompressTimeoutMs,

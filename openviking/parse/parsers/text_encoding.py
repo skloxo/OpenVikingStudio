@@ -22,7 +22,7 @@ _BOM_ENCODINGS = (
     (codecs.BOM_UTF8, "utf-8-sig"),
 )
 
-_DETECTION_ENCODINGS = (
+_DETECTION_ENCODINGS = [
     "gb18030",
     "gbk",
     "gb2312",
@@ -35,7 +35,7 @@ _DETECTION_ENCODINGS = (
     "cp949",
     "cp1252",
     "latin_1",
-)
+]
 
 # These values use codecs.lookup(...).name canonical forms because candidates
 # are canonicalized before set membership checks.
@@ -198,13 +198,19 @@ def _choose_candidate(candidates: Iterable[_EncodingCandidate]) -> Optional[_Enc
     if first.encoding not in _CJK_ENCODINGS:
         return first
 
+    preferred_chinese = _preferred_chinese_candidate(consistent)
+    detected_chinese = _preferred_chinese_candidate(consistent, from_detector_only=True)
+
     # Short CJK-only samples can remain ambiguous across Chinese, Japanese, and
     # Korean encodings without source charset or language metadata.
     if first.encoding in _JAPANESE_ENCODINGS:
+        first_profile = _script_profile(first.decoded)
+        if detected_chinese is not None:
+            chinese_profile = _script_profile(detected_chinese.decoded)
+            if chinese_profile.cjk > first_profile.cjk:
+                return detected_chinese
         return first
 
-    preferred_chinese = _preferred_chinese_candidate(consistent)
-    detected_chinese = _preferred_chinese_candidate(consistent, from_detector_only=True)
     for candidate in consistent:
         profile = _script_profile(candidate.decoded)
         if (

@@ -13,7 +13,6 @@ from .operation import OperationTelemetry, TelemetrySnapshot
 from .registry import register_telemetry, resolve_telemetry, unregister_telemetry
 from .request import TelemetryRequest, TelemetrySelection, normalize_telemetry_request
 from .runtime import get_telemetry_runtime, set_telemetry_runtime
-from .telemetry_store import TelemetryStore, get_telemetry_store
 from .tracer import start_current_span, tracer
 
 __all__ = [
@@ -21,13 +20,11 @@ __all__ = [
     "TelemetryRequest",
     "TelemetrySelection",
     "TelemetrySnapshot",
-    "TelemetryStore",
     "bind_telemetry",
     "bind_telemetry_stage",
     "get_current_telemetry",
     "get_current_telemetry_stage",
     "get_telemetry_runtime",
-    "get_telemetry_store",
     "normalize_telemetry_request",
     "register_telemetry",
     "resolve_telemetry",
@@ -37,4 +34,3 @@ __all__ = [
     "tracer_module",
     "unregister_telemetry",
 ]
-

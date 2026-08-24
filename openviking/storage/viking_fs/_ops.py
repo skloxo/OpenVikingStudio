@@ -156,7 +156,7 @@ class _OpsMixin:
         # Check existence and determine lock strategy
         try:
             stat = await self._async_agfs.stat(path)
-            is_dir = bool(stat.get("isDir") or stat.get("is_dir")) if isinstance(stat, dict) else False
+            is_dir = stat.get("isDir", False) if isinstance(stat, dict) else False
         except Exception as exc:
             if not is_not_found_error(exc):
                 mapped = map_exception(exc, resource=uri)
@@ -1011,8 +1011,7 @@ class _OpsMixin:
             raise NotFoundError(uri, "file") from last_not_found
         if isinstance(stat, dict) and stat.get("isDir", False):
             raise InvalidArgumentError(
-                f"Directory URI is not readable as a file: {uri}. "
-                "List it first, then read a file URI.",
+                f"Cannot read directory as file: {uri}",
                 details={"resource": uri, "expected": "file", "actual": "directory"},
             )
         try:

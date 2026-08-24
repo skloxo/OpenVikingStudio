@@ -56,8 +56,7 @@ derives account and user identity from the key. Set `Account` and `User` only
 for trusted deployments or gateways where the upstream explicitly forwards
 tenant identity through OpenViking headers.
 
-This SDK is HTTP-only. It does not implement Python embedded mode or legacy
-`agent_id` compatibility.
+This SDK does not implement legacy `agent_id` compatibility.
 
 ## Common Operations
 
@@ -145,7 +144,6 @@ Implemented:
 | Watch management | `ListWatches`, `GetWatch`, `UpdateWatch`, `DeleteWatch`, `TriggerWatch` |
 | Filesystem and content | `List`, `Tree`, `Stat`, `Attrs`, `Mkdir`, `Remove`, `Move`, `Read`, `Abstract`, `Overview`, `Write`, `SetTags`, `Reindex` |
 | Retrieval | `Find`, `Search`, `Grep`, `Glob` |
-| Relations | `Relations`, `Link`, `Unlink` |
 | Sessions and tasks | `CreateSession`, `ListSessions`, `GetSession`, `UpdateSessionConfig`, `SessionExists`, `GetSessionContext`, `GetSessionArchive`, `DeleteSession`, `AddMessage`, `BatchAddMessages`, `CommitSession`, `GetTask`, `ListTasks` |
 | Packs | `ExportOVPack`, `BackupOVPack`, `ImportOVPack`, `RestoreOVPack` |
 | System and observer | `Health`, `CheckConsistency`, `GetStatus`, `IsHealthy`, `QueueStatus`, `VikingDBStatus`, `ModelsStatus` |
@@ -155,7 +153,6 @@ Not implemented in Go SDK v1:
 
 | Area | Reason |
 |------|--------|
-| Python embedded mode | Go SDK is HTTP-only. |
 | Legacy `agent_id` compatibility | New SDKs use `ActorPeerID` only. |
 | Privacy config routes | Server-only management surface today; not in Python HTTP client. |
 | Metrics endpoint | Prometheus text scrape endpoint, not a JSON SDK API. |

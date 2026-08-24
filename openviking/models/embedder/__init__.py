@@ -31,10 +31,7 @@ from openviking.models.embedder.base import (
 from openviking.models.embedder.cohere_embedders import CohereDenseEmbedder
 from openviking.models.embedder.dashscope_embedders import DashScopeDenseEmbedder
 
-try:
-    from openviking.models.embedder.gemini_embedders import GeminiDenseEmbedder
-except ImportError:
-    GeminiDenseEmbedder = None  # google-genai not installed
+from openviking.models.embedder.gemini_embedders import GeminiDenseEmbedder
 from openviking.models.embedder.jina_embedders import JinaDenseEmbedder
 from openviking.models.embedder.local_embedders import LocalDenseEmbedder
 

@@ -2,11 +2,16 @@
 # SPDX-License-Identifier: Apache-2.0
 """Tests for memory-context semantic enqueue deduplication (#769)."""
 
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
 
+from openviking.storage.abstract_overview import (
+    AbstractOverviewWriteResult,
+    parse_abstract_overview,
+)
 from openviking.storage.queuefs.named_queue import NamedQueue
 from openviking.storage.queuefs.semantic_msg import SemanticMsg
 from openviking.storage.queuefs.semantic_processor import SemanticProcessor
@@ -125,8 +130,8 @@ class _FakeVikingFS:
         del ctx
         return f"/fake/{uri.replace('://', '/').strip('/')}"
 
-    async def write_file(self, uri, content, ctx=None):
-        del ctx
+    async def write_file(self, uri, content, ctx=None, lease_ref=None):
+        del ctx, lease_ref
         self.writes.append((uri, content))
 
 
@@ -137,6 +142,13 @@ class _FakeMemoryDirFS:
             {"name": "first.md", "isDir": False},
             {"name": "second.md", "isDir": False},
         ]
+
+
+def _patch_semantic_config(monkeypatch, *, overview_sample_limit=32):
+    monkeypatch.setattr(
+        "openviking.storage.queuefs.semantic_processor.get_openviking_config",
+        lambda: SimpleNamespace(semantic=SimpleNamespace(overview_sample_limit=overview_sample_limit)),
+    )
 
 
 @pytest.mark.asyncio
@@ -186,9 +198,13 @@ async def test_stale_memory_semantic_write_is_skipped(monkeypatch):
             "/fake/viking/user/default/memories/preferences/.abstract.md",
         ]
     ]
-    assert viking_fs.writes == [
-        ("viking://user/default/memories/preferences/.overview.md", "latest overview"),
-        ("viking://user/default/memories/preferences/.abstract.md", "latest abstract"),
+    assert [uri for uri, _ in viking_fs.writes] == [
+        "viking://user/default/memories/preferences/.overview.md",
+        "viking://user/default/memories/preferences/.abstract.md",
+    ]
+    assert [parse_abstract_overview(raw).body.strip() for _, raw in viking_fs.writes] == [
+        "latest overview",
+        "latest abstract",
     ]
 
 
@@ -209,12 +225,15 @@ async def test_memory_directory_summarizes_all_uncached_files(monkeypatch):
 
     async def write_semantics(**kwargs):
         del kwargs
-        return True
+        return AbstractOverviewWriteResult(
+            wrote=True, overview_body_changed=True, abstract_body_changed=True
+        )
 
     monkeypatch.setattr(
         "openviking.storage.queuefs.semantic_processor.get_viking_fs",
         lambda: _FakeMemoryDirFS(),
     )
+    _patch_semantic_config(monkeypatch)
     monkeypatch.setattr(processor, "_generate_single_file_summary", generate_file_summary)
     monkeypatch.setattr(processor, "_generate_overview", generate_overview)
     monkeypatch.setattr(
@@ -246,15 +265,19 @@ async def test_memory_directory_vectorizes_changed_files_with_generated_summary(
     async def generate_file_summary(file_path, llm_sem=None, ctx=None):
         del llm_sem, ctx
         name = file_path.rsplit("/", 1)[-1]
-        return {"name": name, "summary": f"summary:{name}"}
+        return {"name": name, "summary": f"summary:{name}", "content": "raw content"}
 
     async def generate_overview(dir_uri, file_summaries, children_abstracts, llm_sem=None):
-        del dir_uri, file_summaries, children_abstracts, llm_sem
+        del dir_uri, children_abstracts, llm_sem
+        assert len(captured_file_vectorize) == 1
+        assert all("content" not in summary for summary in file_summaries)
         return "overview"
 
     async def write_semantics(**kwargs):
         del kwargs
-        return True
+        return AbstractOverviewWriteResult(
+            wrote=True, overview_body_changed=True, abstract_body_changed=True
+        )
 
     async def vectorize_single_file(**kwargs):
         captured_file_vectorize.append(kwargs)
@@ -266,6 +289,7 @@ async def test_memory_directory_vectorizes_changed_files_with_generated_summary(
         "openviking.storage.queuefs.semantic_processor.get_viking_fs",
         lambda: _FakeMemoryDirFS(),
     )
+    _patch_semantic_config(monkeypatch)
     monkeypatch.setattr(processor, "_generate_single_file_summary", generate_file_summary)
     monkeypatch.setattr(processor, "_generate_overview", generate_overview)
     monkeypatch.setattr(
@@ -292,7 +316,49 @@ async def test_memory_directory_vectorizes_changed_files_with_generated_summary(
     assert captured_file_vectorize[0]["summary_dict"] == {
         "name": "first.md",
         "summary": "summary:first.md",
+        "content": "raw content",
     }
     assert captured_file_vectorize[0]["preserve_existing_created_at"] is True
     assert len(captured_directory_vectorize) == 1
     assert captured_directory_vectorize[0]["uri"] == dir_uri
+
+
+@pytest.mark.asyncio
+async def test_memory_directory_skips_vectorization_when_visible_semantics_are_unchanged(
+    monkeypatch,
+):
+    processor = SemanticProcessor(max_concurrent_llm=4)
+    vectorize_directory = AsyncMock()
+    vectorize_file = AsyncMock()
+
+    monkeypatch.setattr(
+        "openviking.storage.queuefs.semantic_processor.get_viking_fs",
+        lambda: _FakeMemoryDirFS(),
+    )
+    _patch_semantic_config(monkeypatch)
+    monkeypatch.setattr(
+        processor,
+        "_generate_single_file_summary",
+        AsyncMock(return_value={"name": "file.md", "summary": "summary"}),
+    )
+    monkeypatch.setattr(processor, "_generate_overview", AsyncMock(return_value="overview"))
+    monkeypatch.setattr(
+        processor, "_normalize_overview_generation", lambda overview: (overview, "abstract")
+    )
+    monkeypatch.setattr(
+        processor,
+        "_write_memory_directory_semantics",
+        AsyncMock(return_value=AbstractOverviewWriteResult(wrote=True)),
+    )
+    monkeypatch.setattr(processor, "_vectorize_single_file", vectorize_file)
+    monkeypatch.setattr(processor, "_vectorize_directory", vectorize_directory)
+
+    await processor._process_memory_directory(
+        SemanticMsg(
+            uri="viking://user/default/memories/preferences",
+            context_type="memory",
+        )
+    )
+
+    assert vectorize_file.await_count == 2
+    vectorize_directory.assert_not_awaited()

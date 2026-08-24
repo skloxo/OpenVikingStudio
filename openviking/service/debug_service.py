@@ -143,21 +143,13 @@ class ObserverService:
 
         # Get embedding instance if available
         if self._config.embedding:
-            try:
-                embedding_instance = self._config.embedding.get_embedder()
-            except Exception:
-                embedding_instance = self._config.embedding
+            embedding_instance = self._config.embedding.get_embedder()
 
         # Get rerank instance if available
-        if self._config.rerank:
-            try:
-                from openviking.models.rerank import RerankClient
-                if hasattr(self._config.rerank, "is_available") and self._config.rerank.is_available():
-                    rerank_instance = RerankClient.from_config(self._config.rerank)
-                else:
-                    rerank_instance = self._config.rerank
-            except Exception:
-                rerank_instance = self._config.rerank
+        if self._config.rerank and self._config.rerank.is_available():
+            from openviking.models.rerank import RerankClient
+
+            rerank_instance = RerankClient.from_config(self._config.rerank)
 
         observer = ModelsObserver(
             vlm_instance=vlm_instance,

@@ -47,18 +47,9 @@ class _FakeVikingFS:
         self._file_uri = file_uri
         self._root_uri = root_uri
         self.content = {file_uri: "original"}
-
-        async def _acquire(lock_path):
-            del lock_path
-            return SimpleNamespace(id="lock-1")
-
-        async def _release(lease):
-            del lease
-            return None
-
         self._async_agfs = SimpleNamespace(
-            pathlock_acquire_exact=_acquire,
-            pathlock_release=_release,
+            pathlock_acquire_exact=lambda lock_path: SimpleNamespace(id="lock-1"),
+            pathlock_release=lambda lease: None,
         )
 
     async def stat(self, uri: str, ctx=None):
@@ -88,10 +79,6 @@ class _FakeVikingFS:
     async def rm(self, uri: str, ctx=None, lock_handle=None, lease_ref=None):
         del ctx, lock_handle, lease_ref
         self.content.pop(uri, None)
-
-    def _ensure_mutable_access(self, uri: str, ctx=None):
-        del uri, ctx
-        return None
 
 
 @pytest.mark.asyncio
