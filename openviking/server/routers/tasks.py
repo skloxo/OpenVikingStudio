@@ -122,3 +122,45 @@ async def list_tasks(
             user_id=_ctx.user.user_id,
         )
     return Response(status="ok", result=[t.to_dict() for t in tasks])
+
+
+@router.delete("/tasks/{task_id}")
+async def delete_task_endpoint(
+    task_id: str,
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """Delete a single terminal (completed/failed/cancelled) task record."""
+    tracker = get_task_tracker()
+    account_id = None if _ctx.role == Role.ROOT else _ctx.account_id
+    user_id = None if _ctx.role == Role.ROOT else _ctx.user.user_id
+    try:
+        deleted = await tracker.delete_task(
+            task_id,
+            account_id=account_id,
+            user_id=user_id,
+        )
+    except RuntimeError as exc:
+        raise FailedPreconditionError(str(exc)) from exc
+    if not deleted:
+        raise OpenVikingError(
+            "Task not found or active",
+            code="NOT_FOUND",
+            details={"resource": task_id, "type": "task"},
+        )
+    return Response(status="ok", result={"task_id": task_id, "deleted": True})
+
+
+@router.post("/tasks/clear-failed")
+async def clear_failed_tasks(
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """Batch delete all failed and cancelled task records."""
+    tracker = get_task_tracker()
+    account_id = None if _ctx.role == Role.ROOT else _ctx.account_id
+    user_id = None if _ctx.role == Role.ROOT else _ctx.user.user_id
+    deleted_count = await tracker.clear_terminal_tasks(
+        account_id=account_id,
+        user_id=user_id,
+    )
+    return Response(status="ok", result={"deleted_count": deleted_count})
+
