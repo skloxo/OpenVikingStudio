@@ -288,6 +288,15 @@
 - **`[TASK-LIVEGEN-01~03]` Epic-LIVE-GEN Skill Live Generator**：SKILL.md 在线 Monaco 编辑器与 YAML Header 语法校验、沙盒环境模拟触发测试、一键自动向量化发布至 Viking 1933 存储。
 - **`[TASK-PRIVACY-01~03]` Epic-PRIVACY-GOV 敏感信息二次授权**：服务端敏感字段检索二次过滤与鉴权、前端脱敏展示与安全开关、脱敏审计日志与导出隔离。
 
+### [x] v1.4.1 补丁版本已验收发布 🎉
+- **Git Tag**: `v1.4.1` ｜ **版本类型**：Patch Release (Z 修复版本)
+- **交付内容**：
+  1. **Pathlock 锁机制与 Native 绑定兼容性修复 (Cherry-pick 4130de0f)**：解决 `ragfs_python.abi3.so` 原生库缺失 `pathlock_acquire_tree` 导致 Session Commit 与 Admin Reindex 任务启动崩溃报错（`AttributeError: 'RAGFSBindingClient' object has no attribute 'pathlock_acquire_tree'`）的问题；
+  2. **默认 Pathlock 优雅降级与 Bypass 机制**：未重新编译 native binding 期间自动跳过底层锁调用，避免任务死锁与超时；
+  3. **任务中心僵尸/孤儿任务彻底清空与自愈**：完成全量 42h+ 残留运行态孤儿任务批量取消，恢复任务队列与调度器健康。
+
+---
+
 ### [x] v1.4.0 重大里程碑版本已验收发布 🎉
 - **Git Tag**: `v1.4.0` ｜ **版本类型**：Major Monorepo & Exocortex Release (中版本 Y 升级)
 - **交付内容**：
