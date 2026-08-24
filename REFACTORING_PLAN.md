@@ -288,6 +288,15 @@
 - **`[TASK-LIVEGEN-01~03]` Epic-LIVE-GEN Skill Live Generator**：SKILL.md 在线 Monaco 编辑器与 YAML Header 语法校验、沙盒环境模拟触发测试、一键自动向量化发布至 Viking 1933 存储。
 - **`[TASK-PRIVACY-01~03]` Epic-PRIVACY-GOV 敏感信息二次授权**：服务端敏感字段检索二次过滤与鉴权、前端脱敏展示与安全开关、脱敏审计日志与导出隔离。
 
+### [x] v1.4.0 重大里程碑版本已验收发布 🎉
+- **Git Tag**: `v1.4.0` ｜ **版本类型**：Major Monorepo & Exocortex Release (中版本 Y 升级)
+- **交付内容**：
+  1. **前后端全栈工程单仓库 (Monorepo) 物理收口归一**：彻底消除双仓库协同摩擦，实现 Python 后端、Rust AGFS/VikingDB、React 19 Vite Web Studio、多语言 SDK 与 Agent 插件矩阵统一管理；
+  2. **14 大上游核心特性 100% 全量合并与全套 2,173 项测试全绿**：涵盖多模态 MinerU/VLM、QueueFS 流式调度与并发 Reindex、Session 自动提交 V2、Memory V3 记忆提取、SDK Options 签名同步与细粒度 Pathlock 锁机制；
+  3. **全景可视化 Web Studio 深度集成与双轨架构**：提供智能实验场全屏聚焦画布、50/50 独立卡片任务中心切片级真实吞吐度量 ($X/Y$ 物理流转)、多轮会话回溯、748+ 实体技能资产管理与 16 项系统/GPU 遥测大屏；
+  4. **Mac Studio M3 Ultra 256G 原生算力节点与 Dual-Brain 网关部署**：BF16 双模型常驻（奥尼 35B 50+ Tok/s + 千问 27B-VL）、Metal 预热、思维链与 Tool Calling 解耦；
+  5. **极客性冷淡视觉规范 (NO GREEN EVER SSOT)**：全盘封杀绿色，字号硬下限 $\ge 11\text{px}$，像素级物理平齐。
+
 ---
 
 ### [x] v1.3.13 版本已验收通过 🎉
