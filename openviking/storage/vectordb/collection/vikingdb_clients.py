@@ -84,7 +84,7 @@ class VikingDBClient:
         headers = {
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "User-Agent": f"openviking/{openviking.__version__}",
+            "User-Agent": f"openviking/{getattr(openviking, '__version__', '1.4.0')}",
         }
         headers.update(self.headers)
 

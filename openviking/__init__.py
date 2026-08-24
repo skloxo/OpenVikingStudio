@@ -6,15 +6,19 @@ OpenViking - An Agent-native context database
 Data in, Context out.
 """
 
+__version__ = "1.4.0"
+
 try:
-    from ._version import version as __version__
-except ImportError:
+    from ._version import version as _v
+
+    __version__ = _v
+except Exception:
     try:
         from importlib.metadata import version
 
         __version__ = version("openviking")
-    except ImportError:
-        __version__ = "0.0.0+unknown"
+    except Exception:
+        pass
 
 
 def __getattr__(name: str):
@@ -26,10 +30,11 @@ def __getattr__(name: str):
         from openviking_cli.client.sync_http import SyncHTTPClient
 
         return SyncHTTPClient
-    raise AttributeError(name)
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
 
 
 __all__ = [
+    "__version__",
     "SyncHTTPClient",
     "AsyncHTTPClient",
 ]

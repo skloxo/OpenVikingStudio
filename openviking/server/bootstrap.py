@@ -42,11 +42,16 @@ class BotProcess:
 
 def _get_version() -> str:
     try:
-        from openviking import __version__
+        from openviking._version import version as __version__
 
         return __version__
-    except ImportError:
-        return "unknown"
+    except Exception:
+        try:
+            import openviking
+
+            return getattr(openviking, "__version__", "1.4.0")
+        except Exception:
+            return "1.4.0"
 
 
 VIKINGBOT_DEFAULT_HOST = "127.0.0.1"

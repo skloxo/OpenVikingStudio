@@ -756,7 +756,12 @@ def create_app(
     if _studio_env:
         _studio_dir = Path(_studio_env)
     else:
-        _studio_dir = Path(__file__).resolve().parent.parent / "web_studio" / "dist"
+        _candidate_repo_dist = Path(__file__).resolve().parent.parent.parent / "dist"
+        _candidate_pkg_dist = Path(__file__).resolve().parent.parent / "web_studio" / "dist"
+        if _candidate_repo_dist.is_dir() and (_candidate_repo_dist / "index.html").is_file():
+            _studio_dir = _candidate_repo_dist
+        else:
+            _studio_dir = _candidate_pkg_dist
 
     if _studio_dir.is_dir() and (_studio_dir / "index.html").is_file():
         _studio_root = _studio_dir.resolve()
