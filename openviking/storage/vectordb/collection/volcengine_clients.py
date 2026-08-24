@@ -49,7 +49,7 @@ class ClientForConsoleApi:
             "Accept": "application/json",
             "Content-Type": "application/json",
             "Host": self.host,
-            "User-Agent": f"openviking/{openviking.__version__}",
+            "User-Agent": f"openviking/{getattr(openviking, '__version__', '1.4.0')}",
         }
         r.set_headers(mheaders)
         if params:
@@ -114,7 +114,7 @@ class ClientForDataApi:
             "Accept": "application/json",
             "Content-Type": "application/json",
             "Host": self.host,
-            "User-Agent": f"openviking/{openviking.__version__}",
+            "User-Agent": f"openviking/{getattr(openviking, '__version__', '1.4.0')}",
         }
         r.set_headers(mheaders)
         if params:
@@ -174,7 +174,7 @@ class ClientForDataApiWithApiKey:
             "Content-Type": "application/json",
             "Host": self.host,
             "Authorization": f"Bearer {self.api_key}",
-            "User-Agent": f"openviking/{openviking.__version__}",
+            "User-Agent": f"openviking/{getattr(openviking, '__version__', '1.4.0')}",
         }
         r.set_headers(mheaders)
         if params:
