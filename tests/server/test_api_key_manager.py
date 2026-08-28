@@ -361,15 +361,21 @@ async def test_get_users(manager: APIKeyManager):
 # ---- Persistence tests ----
 
 
-async def test_persistence_across_reload(manager_service):
-    """Keys should survive manager reload from AGFS."""
+async def test_user_and_group_persistence_across_reload(manager_service):
+    """Reload preserves keys/groups, while user deletion removes membership."""
     mgr1 = APIKeyManager(root_key=ROOT_KEY, viking_fs=manager_service.viking_fs)
     await mgr1.load()
 
     acct = _uid()
     key = await mgr1.create_account(acct, "alice")
+    await mgr1.register_user(acct, "bob")
+    created_group = await mgr1.create_group(acct, "engineering")
+    assert created_group == {"group_id": "engineering", "member_count": 0}
+    group_id = created_group["group_id"]
+    assert await mgr1.add_group_member(acct, group_id, "bob") is True
+    assert await mgr1.add_group_member(acct, group_id, "bob") is True
+    assert mgr1._accounts[acct].groups == {"engineering": {"members": ["bob"]}}
 
-    # Create new manager instance and reload
     mgr2 = APIKeyManager(root_key=ROOT_KEY, viking_fs=manager_service.viking_fs)
     await mgr2.load()
 
@@ -377,6 +383,21 @@ async def test_persistence_across_reload(manager_service):
     assert identity.account_id == acct
     assert identity.user_id == "alice"
     assert identity.role == Role.ADMIN
+    assert mgr2.get_user_group_ids(acct, "bob") == (group_id,)
+
+    await mgr2.begin_user_deletion(
+        acct,
+        "bob",
+        task_id="delete-bob",
+        owner_account_id=acct,
+        owner_user_id="alice",
+    )
+    await mgr2.finish_user_deletion(acct, "bob", "delete-bob")
+
+    mgr3 = APIKeyManager(root_key=ROOT_KEY, viking_fs=manager_service.viking_fs)
+    await mgr3.load()
+    assert mgr3.get_user_group_ids(acct, "bob") == ()
+    assert mgr3.get_group_members(acct, group_id) == []
 
 
 async def test_legacy_account_without_settings_loads_without_namespace_settings(manager_service):
