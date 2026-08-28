@@ -381,6 +381,7 @@ def test_add_resource_message_round_trips_internal_fields():
         account_id="account-1",
         user_id="user-1",
         role="user",
+        bypass_acl=True,
         defer_target_resolution=True,
         understanding_response_id="response-1",
     )
@@ -389,6 +390,7 @@ def test_add_resource_message_round_trips_internal_fields():
 
     assert restored.args == {}
     assert "feishu_access_token" not in json.dumps(restored.to_dict())
+    assert restored.bypass_acl is True
     assert restored.defer_target_resolution is True
     assert restored.understanding_response_id == "response-1"
     assert restored.job_phase is AddResourcePhase.SOURCE
@@ -681,6 +683,8 @@ async def test_uat_producer_cancellation_respects_queue_ownership(
         viking_fs=SimpleNamespace(
             _uri_to_path=lambda _uri, ctx: "/resources/fixed",
             _async_agfs=agfs,
+            exists=AsyncMock(return_value=False),
+            _ensure_access=AsyncMock(),
         ),
         resource_processor=resource_processor,
         skill_processor=SimpleNamespace(),
@@ -910,6 +914,7 @@ async def test_add_resource_processor_persists_final_uri_and_cleans_staged_sourc
         account_id="account-1",
         user_id="user-1",
         role="user",
+        bypass_acl=True,
         telemetry_id=telemetry_id,
         defer_target_resolution=True,
         staged_source={
@@ -931,6 +936,7 @@ async def test_add_resource_processor_persists_final_uri_and_cleans_staged_sourc
     data[TASK_WORK_ID_FIELD] = "work-1"
     await processor._process(msg, data)
 
+    assert service.execute_add_resource_job.await_args.kwargs["ctx"].bypass_acl is True
     task_tracker.create.assert_awaited_once_with(
         "add_resource",
         resource_id=None,
