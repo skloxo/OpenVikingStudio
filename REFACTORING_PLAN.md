@@ -47,6 +47,35 @@
 
 ---
 
+### 📌 P0: [ ] TASK-STUDIO-MODELS-MONITOR-01: AI 模型监控面板 (Models) 分类治理、去重防串与高密信达雅重构
+- **类型**：UI / Architecture Refactoring ｜ **优先级**：🔴 P0（核心运行态观测白盒雷达）
+- **背景病灶**：
+  1. **模型分类错位与重复统计 (Misclassification & Duplication)**：`qwen3-vl-emb` 是 4096 维密集向量嵌入模型，却同时在“VLM 视觉模型”下统计了 1,405 次，在“Embedding 向量模型”下显示 0 次；`auto-router`、`command-r-plus` 等纯文本/路由模型被粗暴机械归入 VLM，分类定义混乱；
+  2. **供应商机械死板写死 "Openai"**：所有使用 OpenAI 兼容协议的模型，供应商列均机械展示为 `openai`，无法区分实际物理部署源（如 CPA 网关 8317、本地 2080Ti 11432/11433、Mac Studio 13389、本地 CPU 等）；
+  3. **历史僵尸模型堆积未归档**：历史弃用模型（如 INT8, W8A16, text-embedding-3-small, 0次调用的 llmlingua-2）缺乏时间窗口切分（24H 活跃 vs 全量历史），面板信噪比严重劣化；
+  4. **高密视觉排版不达标**：行高松散、信息密度低，缺少状态微胶囊、P95 响应时延、调用成功率与自解释相对时间戳。
+- **重构方案 (第一性原理)**：
+  1. **前后端模型四态语义精准重构 (Semantic Categorizer)**：
+     - `LLM & VLM 认知/多模态推理模型`：`qwen3.8-flash-next`, `ornith-1.5-35b-a3b-vl` 等；
+     - `Embedding 向量表征模型`：`qwen3-vl-emb`（物理收口于此，彻底清除跨类重复项）、`Qwen3-Embedding-8B` 等；
+     - `Rerank 语义重排模型`：`qwen3-reranker-0.6b` / `qwen3-vl-rer`；
+     - `Prompt Compressor 提示词压缩模型`：`microsoft/llmlingua-2...`。
+  2. **真实物理供应商来源映射 (Physical Node Mapping)**：
+     - 结合端口与路由特征，将 `openai` 替换为自解释真实物理来源：`CPA 网关 (8317)`、`Local 2080Ti (11432/11433)`、`Mac Studio`、`Local CPU`。
+  3. **24H 动态滚动窗口与历史归档抽屉**：
+     - 新增 `🕒 24H 活跃` / `全量历史` 切换，历史 0 调用模型默认归档折叠，主面板仅高亮活跃实时模型。
+  4. **高密紧凑排版与 NO GREEN EVER 落地**：
+     - 表格内边距压缩为 `py-1`，数值统一采用 `font-mono tabular-nums text-xs`，字号下限 `>= 11px`；
+     - 增加状态指示微胶囊（`活跃 / 待命 / 归档`）与相对时间自解释展示。
+- **验收标准**：
+  - [ ] `qwen3-vl-emb` 不再跨类重复出现，分类 100% 准确；
+  - [ ] 供应商列真实反映物理节点，消除一刀切 `openai` 假象；
+  - [ ] 支持 24H 活跃筛选与历史折叠；
+  - [ ] 严格遵守 NO GREEN EVER（冰青 `cyan-500` / 沉静灰 `muted` / 玫瑰红 `rose-500`）；
+  - [ ] 中英文双语 i18n 100% 同步覆盖，`pnpm build` PASS。
+
+---
+
 ### 📌 P1-1: [ ] v1.1.23c：检索测试台 `/retrieval` 页 L0/L1 白盒检索轨迹树与得分渲染
 - **类型**：Feature ｜ **优先级**：P1
 - **目标**：在 `/retrieval` 页面为每次检索结果渲染可折叠的 **L0/L1 白盒检索轨迹树**，可视化展示 Viking 向量匹配路径与相似度分值（如 `Score: 0.985`）。
