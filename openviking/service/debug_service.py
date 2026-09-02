@@ -143,18 +143,75 @@ class ObserverService:
 
         # Get embedding instance if available
         if self._config.embedding:
-            embedding_instance = self._config.embedding.get_embedder()
+            try:
+                embedding_instance = self._config.embedding.get_embedder()
+            except Exception as e:
+                logger.debug(f"Failed to get_embedder: {e}")
+            if embedding_instance is None:
+                dense_model = (
+                    getattr(self._config.embedding.dense, "model", "Qwen3-Embedding-8B")
+                    if hasattr(self._config.embedding, "dense")
+                    else "Qwen3-Embedding-8B"
+                )
+                dense_provider = (
+                    getattr(self._config.embedding.dense, "provider", "openai")
+                    if hasattr(self._config.embedding, "dense")
+                    else "openai"
+                )
+
+                class _ConfiguredEmbedding:
+                    model = dense_model
+                    provider = dense_provider
+
+                embedding_instance = _ConfiguredEmbedding()
 
         # Get rerank instance if available
-        if self._config.rerank and self._config.rerank.is_available():
-            from openviking.models.rerank import RerankClient
+        if self._config.rerank:
+            try:
+                if self._config.rerank.is_available():
+                    from openviking.models.rerank import RerankClient
 
-            rerank_instance = RerankClient.from_config(self._config.rerank)
+                    rerank_instance = RerankClient.from_config(self._config.rerank)
+            except Exception as e:
+                logger.debug(f"Failed to load RerankClient: {e}")
+            if rerank_instance is None:
+                rerank_model = getattr(self._config.rerank, "model", "qwen3-reranker-0.6b")
+                rerank_provider = getattr(self._config.rerank, "provider", "openai")
+
+                class _ConfiguredRerank:
+                    model = rerank_model
+                    provider = rerank_provider
+
+                rerank_instance = _ConfiguredRerank()
+
+        # Get compressor instance if available (Microsoft LLMLingua-2)
+        compressor_instance = None
+        try:
+            from openviking.server.dependencies import get_service
+
+            svc = get_service()
+            if hasattr(svc, "session_compressor") and svc.session_compressor is not None:
+                compressor_instance = svc.session_compressor
+            elif hasattr(svc, "_session_compressor") and svc._session_compressor is not None:
+                compressor_instance = svc._session_compressor
+            else:
+                class _ConfiguredCompressor:
+                    model_name = "microsoft/llmlingua-2-xlm-roberta-large-meetingbank"
+                    provider = "local"
+
+                compressor_instance = _ConfiguredCompressor()
+        except Exception:
+            class _ConfiguredCompressor:
+                model_name = "microsoft/llmlingua-2-xlm-roberta-large-meetingbank"
+                provider = "local"
+
+            compressor_instance = _ConfiguredCompressor()
 
         observer = ModelsObserver(
             vlm_instance=vlm_instance,
             embedding_instance=embedding_instance,
             rerank_instance=rerank_instance,
+            compressor_instance=compressor_instance,
         )
         return ComponentStatus(
             name="models",

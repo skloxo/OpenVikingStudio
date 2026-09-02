@@ -14,18 +14,16 @@ import { useTranslation } from 'react-i18next'
 
 import { Badge } from '#/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '#/components/ui/tooltip'
-
-interface AccuracyDataPoint {
-  date: string
-  hitRate: number
-  avgScore: number
-  queries: number
-}
+import {
+  fetchTelemetryTrends,
+  type RetrievalAccuracyDataPoint,
+  type TelemetryTimeWindow,
+} from '#/lib/telemetry'
 
 interface RetrievalAccuracyTrendChartProps {
   currentAccuracy?: number | null
   currentCosine?: number | null
-  window?: '24h' | '7d' | '30d' | 'all'
+  window?: TelemetryTimeWindow
 }
 
 export function RetrievalAccuracyTrendChart({
@@ -37,27 +35,15 @@ export function RetrievalAccuracyTrendChart({
 
   const trendsQuery = useQuery({
     queryKey: ['telemetry-trends-retrieval', window],
-    queryFn: async () => {
-      try {
-        const res = await fetch(`/api/v1/system/telemetry/trends?metric=retrieval&window=${window}`)
-        if (res.ok) {
-          const json = await res.json()
-          if (json && Array.isArray(json.points)) {
-            return json.points as AccuracyDataPoint[]
-          }
-        }
-      } catch {
-        // fallback
-      }
-      return []
-    },
+    queryFn: () =>
+      fetchTelemetryTrends<RetrievalAccuracyDataPoint>('retrieval', window),
     refetchInterval: 15_000,
     staleTime: 10_000,
   })
 
   const rawData = trendsQuery.data ?? []
 
-  const data: AccuracyDataPoint[] = React.useMemo(() => {
+  const data: RetrievalAccuracyDataPoint[] = React.useMemo(() => {
     if (rawData.length > 0) {
       return rawData
     }
@@ -164,7 +150,7 @@ export function RetrievalAccuracyTrendChart({
               <RechartsTooltip
                 content={({ active, payload }) => {
                   if (active && payload && payload.length) {
-                    const d = payload[0].payload as AccuracyDataPoint
+                    const d = payload[0].payload as RetrievalAccuracyDataPoint
                     return (
                       <div className="rounded-md border border-border/80 bg-card p-2 shadow-none font-mono text-xs space-y-1">
                         <div className="text-muted-foreground">{d.date}</div>

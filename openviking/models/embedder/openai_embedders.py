@@ -337,6 +337,21 @@ class OpenAIDenseEmbedder(DenseEmbedderBase):
                 operation_name="OpenAI embedding",
             )
         except openai.APIError as e:
+            if "exceed" in str(e).lower() and len(text) > 3000:
+                logger.warning(
+                    f"Embedding text exceeded model context length ({len(text)} chars). "
+                    "Auto-truncating text to 3000 chars for safe embedding fallback."
+                )
+                try:
+                    fallback_response = self.client.embeddings.create(
+                        **self._build_kwargs(text[:3000], is_query=is_query)
+                    )
+                    self._update_telemetry_token_usage(fallback_response)
+                    return EmbedResult(
+                        dense_vector=self._truncate_vector(fallback_response.data[0].embedding)
+                    )
+                except Exception as fallback_err:
+                    logger.error(f"Fallback truncated embedding failed: {fallback_err}")
             raise RuntimeError(f"OpenAI API error: {e.message}") from e
         except Exception as e:
             raise RuntimeError(f"Embedding failed: {str(e)}") from e
@@ -356,6 +371,21 @@ class OpenAIDenseEmbedder(DenseEmbedderBase):
                 operation_name="OpenAI async embedding",
             )
         except openai.APIError as e:
+            if "exceed" in str(e).lower() and len(text) > 3000:
+                logger.warning(
+                    f"Async embedding text exceeded model context length ({len(text)} chars). "
+                    "Auto-truncating text to 3000 chars for safe embedding fallback."
+                )
+                try:
+                    fallback_response = await client.embeddings.create(
+                        **self._build_kwargs(text[:3000], is_query=is_query)
+                    )
+                    self._update_telemetry_token_usage(fallback_response)
+                    return EmbedResult(
+                        dense_vector=self._truncate_vector(fallback_response.data[0].embedding)
+                    )
+                except Exception as fallback_err:
+                    logger.error(f"Async fallback truncated embedding failed: {fallback_err}")
             raise RuntimeError(f"OpenAI API error: {e.message}") from e
         except Exception as e:
             raise RuntimeError(f"Embedding failed: {str(e)}") from e

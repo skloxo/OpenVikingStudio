@@ -21,6 +21,7 @@ import {
   useAppConnection,
 } from '#/hooks/use-app-connection'
 import { useIdentityDirectory } from '#/hooks/use-identity-directory'
+import { ovClient } from '#/lib/ov-client'
 
 type ConsentSearch = {
   pending: string
@@ -219,23 +220,10 @@ function ConsentPage() {
     }
     setPhase({ kind: decision === 'approve' ? 'verifying' : 'denying' })
     try {
-      const resp = await fetch('/api/v1/auth/oauth-verify', {
-        method: 'POST',
-        cache: 'no-store',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(effectiveKey ? { Authorization: `Bearer ${effectiveKey}` } : {}),
-        },
-        body: JSON.stringify({ pending_id: pending, decision }),
+      await ovClient.instance.post('/api/v1/auth/oauth-verify', {
+        pending_id: pending,
+        decision,
       })
-      if (!resp.ok) {
-        const text = await resp.text().catch(() => '')
-        setPhase({
-          kind: 'error',
-          message: extractMessage(text) || String(resp.status),
-        })
-        return
-      }
       if (decision === 'deny') {
         setPhase({ kind: 'denied' })
         return

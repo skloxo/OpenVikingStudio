@@ -23,7 +23,7 @@ use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
 
 use cache::{S3ListDirCache, S3StatCache};
-use client::{ListTreePage, S3Client};
+use client::{ListTreePage, S3Client, S3Vendor};
 use futures::stream::{self, StreamExt};
 use regex::Regex;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -1176,6 +1176,12 @@ impl S3FSPlugin {
                     "Use path-style addressing (bucket/key vs bucket.host/key)",
                 ),
                 ConfigParameter::optional(
+                    "s3_vendor",
+                    "string",
+                    "standard",
+                    "S3 vendor behavior: standard, aliyun_oss",
+                ),
+                ConfigParameter::optional(
                     "prefix",
                     "string",
                     "",
@@ -1320,7 +1326,9 @@ plugins:
     config:
       bucket: my-oss-bucket
       region: cn-beijing
-      endpoint: http://s3.oss-cn-beijing.aliyuncs.com
+      endpoint: https://s3.oss-cn-beijing.aliyuncs.com
+      s3_vendor: aliyun_oss
+      use_path_style: false
       disable_batch_delete: true
 ```
 
@@ -1376,6 +1384,8 @@ plugins:
                 ));
             }
         }
+
+        S3Vendor::from_config(&config.params)?;
 
         if let Some(value) = config.params.get("auto_detect_content_type") {
             if value.as_bool().is_none() {

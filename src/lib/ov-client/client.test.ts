@@ -5,15 +5,12 @@ import { describe, expect, it } from 'vitest'
 import { createOvClient } from './client'
 
 function readRequestHeader(config: AxiosRequestConfig, name: string): string {
-  const headers = config.headers as
-    | { get?: (headerName: string) => unknown }
-    | Record<string, unknown>
-    | undefined
+  const headers = config.headers as Record<string, unknown> | undefined
   if (!headers) {
     return ''
   }
-  if ('get' in headers && typeof headers.get === 'function') {
-    const value = headers.get(name)
+  if (typeof (headers as { get?: (k: string) => unknown }).get === 'function') {
+    const value = (headers as { get: (k: string) => unknown }).get(name)
     return typeof value === 'string' ? value : ''
   }
   const value = headers[name] ?? headers[name.toLowerCase()]
@@ -43,7 +40,7 @@ function createRecordingClient() {
 }
 
 describe('createOvClient API key selection', () => {
-  it('uses the data API key for dashboard metrics when both keys are configured', async () => {
+  it('uses the admin API key for dashboard metrics when configured', async () => {
     const { client, requests } = createRecordingClient()
     client.setConnection({
       adminApiKey: 'admin-key',
@@ -54,12 +51,12 @@ describe('createOvClient API key selection', () => {
     await client.instance.get('/api/v1/console/tokens')
     await client.instance.get('/api/v1/console/context-commits')
 
-    expect(readRequestHeader(requests[0], 'X-API-Key')).toBe('user-key')
-    expect(readRequestHeader(requests[1], 'X-API-Key')).toBe('user-key')
-    expect(readRequestHeader(requests[2], 'X-API-Key')).toBe('user-key')
+    expect(readRequestHeader(requests[0], 'X-API-Key')).toBe('admin-key')
+    expect(readRequestHeader(requests[1], 'X-API-Key')).toBe('admin-key')
+    expect(readRequestHeader(requests[2], 'X-API-Key')).toBe('admin-key')
   })
 
-  it('uses the data API key for scoped audit logs when both keys are configured', async () => {
+  it('uses the admin API key for scoped audit logs when configured', async () => {
     const { client, requests } = createRecordingClient()
     client.setConnection({
       adminApiKey: 'admin-key',
@@ -68,7 +65,7 @@ describe('createOvClient API key selection', () => {
 
     await client.instance.get('/api/v1/console/audit')
 
-    expect(readRequestHeader(requests[0], 'X-API-Key')).toBe('user-key')
+    expect(readRequestHeader(requests[0], 'X-API-Key')).toBe('admin-key')
   })
 
   it('keeps admin endpoints on the admin API key', async () => {

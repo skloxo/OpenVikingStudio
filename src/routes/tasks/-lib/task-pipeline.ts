@@ -463,35 +463,34 @@ export function getTaskPipelineSteps(
     ]
   }
 
-  // Default resource ingestion pipeline (add_resource): 资源入库 -> 文档解析 -> (语义提取 + 向量建库)
-  const isEmbedStage = stage?.toLowerCase().includes('embedding')
+  // Default resource ingestion pipeline (add_resource): 资源入库 -> 文档解析 -> 语义提取 -> 向量建库
+  const isEmbedStage = stage?.toLowerCase().includes('embedding') || stage?.toLowerCase().includes('vector')
   const isSemStage = stage?.toLowerCase().includes('semantic') || stage?.toLowerCase().includes('extract')
   const isParseStage = stage?.toLowerCase().includes('parse') || stage?.toLowerCase().includes('scan')
+  const isCompleted = normStatus === 'completed'
+  const isRunning = normStatus === 'running'
 
   const s1: StepState = status === 'pending' ? 'pending' : 'completed'
-  const s2: StepState = status === 'completed' ? 'completed' : isParseStage ? 'running' : status === 'running' ? 'completed' : 'pending'
-  const s3: StepState = status === 'completed' ? 'completed' : isSemStage ? 'running' : status === 'running' ? (isEmbedStage ? 'completed' : 'running') : 'pending'
-  const s4: StepState = status === 'completed' ? 'completed' : isEmbedStage ? 'running' : status === 'running' ? 'running' : 'pending'
+  const s2: StepState = isCompleted || isSemStage || isEmbedStage ? 'completed' : isParseStage ? 'running' : isRunning ? 'completed' : 'pending'
+  const s3: StepState = isCompleted || isEmbedStage ? 'completed' : isSemStage ? 'running' : 'pending'
+  const s4: StepState = isCompleted ? 'completed' : isEmbedStage ? 'running' : 'pending'
 
   const fileCount = metaObj.file_count ?? 1
 
   // 1. ExternalParse
-  const qExtParse = qStatus?.ExternalParse
-  const extParseProcessedCount = qExtParse?.processed
-  const extParseTotal = qExtParse?.total ?? extParseProcessedCount ?? metaObj.total_pages ?? metaObj.parsed_pages ?? (s2 === 'completed' ? fileCount : undefined)
-  const extParseProcessed = s2 === 'completed' ? (extParseTotal ?? fileCount) : (parseRow?.completed ?? (extParseProcessedCount ?? 0))
+  const extParseTotal = Math.max(1, metaObj.total_pages ?? metaObj.parsed_pages ?? resObj.parsed_pages ?? (s2 === 'completed' ? fileCount : 1))
+  const rawExtParseProcessed = s2 === 'completed' ? extParseTotal : (metaObj.parsed_pages ?? 0)
+  const extParseProcessed = Math.min(extParseTotal, Math.max(0, rawExtParseProcessed))
 
   // 2. Semantic
-  const qSem = qStatus?.Semantic
-  const semProcessedCount = qSem?.processed
-  const semTotal = qSem?.total ?? semProcessedCount ?? metaObj.total_nodes ?? metaObj.semantic_nodes ?? (s3 === 'completed' ? (semProcessedCount ?? 1) : undefined)
-  const semProcessed = s3 === 'completed' ? (semTotal ?? semProcessedCount ?? 1) : (semanticRow?.completed ?? (semProcessedCount ?? 0))
+  const semTotal = Math.max(1, metaObj.total_nodes ?? metaObj.semantic_nodes ?? resObj.semantic_nodes ?? (s3 === 'completed' ? fileCount : 1))
+  const rawSemProcessed = s3 === 'completed' ? semTotal : (metaObj.semantic_nodes ?? 0)
+  const semProcessed = Math.min(semTotal, Math.max(0, rawSemProcessed))
 
   // 3. Embedding
-  const qEmb = qStatus?.Embedding
-  const embProcessedCount = qEmb?.processed
-  const embTotal = qEmb?.total ?? embProcessedCount ?? metaObj.total_chunks ?? metaObj.processed_chunks ?? (s4 === 'completed' ? (embProcessedCount ?? 1) : undefined)
-  const embProcessed = s4 === 'completed' ? (embTotal ?? embProcessedCount ?? 1) : (embeddingRow?.completed ?? (embProcessedCount ?? 0))
+  const embTotal = Math.max(1, metaObj.total_chunks ?? metaObj.processed_chunks ?? resObj.processed_chunks ?? resObj.total_chunks ?? (s4 === 'completed' ? fileCount : 1))
+  const rawEmbProcessed = s4 === 'completed' ? embTotal : (metaObj.processed_chunks ?? 0)
+  const embProcessed = Math.min(embTotal, Math.max(0, rawEmbProcessed))
 
   return [
     {
@@ -506,7 +505,7 @@ export function getTaskPipelineSteps(
       name: isZh ? '文档解析' : 'Document Parsing',
       state: s2,
       processed: extParseProcessed,
-      total: extParseTotal ?? extParseProcessed,
+      total: extParseTotal,
       count: extParseProcessed,
       unit: isZh ? '页' : 'pages',
     },
@@ -514,7 +513,7 @@ export function getTaskPipelineSteps(
       name: isZh ? '语义提取' : 'Semantic Extraction',
       state: s3,
       processed: semProcessed,
-      total: semTotal ?? semProcessed,
+      total: semTotal,
       count: semProcessed,
       unit: isZh ? '节点' : 'nodes',
     },
@@ -522,7 +521,7 @@ export function getTaskPipelineSteps(
       name: isZh ? '向量建库' : 'Vector Embedding',
       state: s4,
       processed: embProcessed,
-      total: embTotal ?? embProcessed,
+      total: embTotal,
       count: embProcessed,
       unit: isZh ? '切片' : 'chunks',
     },

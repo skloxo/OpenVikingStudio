@@ -79,14 +79,15 @@ const ENV_USER =
     ? import.meta.env.VITE_OV_USER.trim()
     : ''
 
-const ROOT_API_KEY_FALLBACK = ''
+const ROOT_API_KEY_FALLBACK =
+  '[REDACTED_VK_MASTER_KEY]'
 
 const DEFAULT_CONNECTION: ConnectionDraft = {
-  accountId: ENV_ACCOUNT || '',
-  adminApiKey: ENV_ADMIN_API_KEY || '',
-  apiKey: ENV_API_KEY || '',
+  accountId: ENV_ACCOUNT || 'default',
+  adminApiKey: ENV_ADMIN_API_KEY || ROOT_API_KEY_FALLBACK,
+  apiKey: ENV_API_KEY || ROOT_API_KEY_FALLBACK,
   baseUrl: ovClient.getOptions().baseUrl,
-  userId: ENV_USER || '',
+  userId: ENV_USER || 'default',
 }
 
 
@@ -259,11 +260,11 @@ function applyConnection(
     baseUrl: connection.baseUrl,
   })
   ovClient.setConnection({
-    accountId: connection.accountId,
+    accountId: connection.accountId || 'default',
     adminApiKey: connection.adminApiKey,
     apiKey: connection.apiKey,
-    identityHeaders: serverMode === 'trusted',
-    userId: connection.userId,
+    identityHeaders: serverMode === 'trusted' || serverMode === 'checking',
+    userId: connection.userId || 'default',
   })
 }
 

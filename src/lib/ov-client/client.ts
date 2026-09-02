@@ -18,7 +18,6 @@ const DEFAULT_TELEMETRY_PATHS = new Set([
   '/api/v1/search/search',
   '/api/v1/resources',
 ])
-const ADMIN_CONTROL_PLANE_PREFIXES = ['/api/v1/admin'] as const
 const SESSION_COMMIT_PATH = /^\/api\/v1\/sessions\/[^/]+\/commit$/
 function isBrowser(): boolean {
   return typeof window !== 'undefined'
@@ -118,12 +117,6 @@ function shouldInjectTelemetry(
   )
 }
 
-function shouldUseAdminApiKey(config: InternalAxiosRequestConfig): boolean {
-  const pathname = resolvePathname(config.url)
-  return ADMIN_CONTROL_PLANE_PREFIXES.some((prefix) =>
-    pathname.startsWith(prefix),
-  )
-}
 
 function maybeInjectTelemetry(
   config: InternalAxiosRequestConfig,
@@ -189,8 +182,8 @@ export function createOvClient(options: OvClientOptions = {}): OvClientAdapter {
       setOptionalHeader(headers, 'X-API-Key', apiKey)
     }
     if (connection.identityHeaders) {
-      setOptionalHeader(headers, 'X-OpenViking-Account', connection.accountId)
-      setOptionalHeader(headers, 'X-OpenViking-User', connection.userId)
+      setOptionalHeader(headers, 'X-OpenViking-Account', connection.accountId || 'default')
+      setOptionalHeader(headers, 'X-OpenViking-User', connection.userId || 'default')
     } else {
       headers.delete('X-OpenViking-Account')
       headers.delete('X-OpenViking-User')

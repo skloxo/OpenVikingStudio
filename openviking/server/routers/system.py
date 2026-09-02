@@ -3,7 +3,7 @@
 """System endpoints for OpenViking HTTP Server."""
 
 import asyncio
-from typing import Optional
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
@@ -136,7 +136,7 @@ async def readiness_check(request: Request):
             content={"status": "not_ready", "reason": "initializing"},
         )
 
-    checks = {}
+    checks: dict[str, Any] = {}
 
     # 1. AGFS: probe filesystem access and multi-write sync health
     try:
@@ -205,6 +205,33 @@ async def readiness_check(request: Request):
         status_code=status_code,
         content={"status": "ready" if all_ok else "not_ready", "checks": checks},
     )
+
+
+@router.get("/api/v1/system/harness_metrics", tags=["system"])
+async def get_harness_metrics(
+    window: str = "24h",
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """Get Harness and Skill Center telemetry metrics within the specified time window."""
+    try:
+        from openviking.telemetry.telemetry_store import get_telemetry_store
+
+        store = get_telemetry_store()
+        metrics = store.get_harness_metrics_by_window(window=window)
+        return JSONResponse(status_code=200, content=metrics)
+    except Exception as e:
+        logger.warning(f"Error fetching harness metrics: {e}")
+        return JSONResponse(
+            status_code=200,
+            content={
+                "total_calls": 0,
+                "blocked_calls": 0,
+                "find_calls": 0,
+                "store_calls": 0,
+                "active_skills_count": 0,
+                "tokens_saved_total": 0,
+            },
+        )
 
 
 @router.get("/api/v1/system/status", tags=["system"])
@@ -317,3 +344,22 @@ async def admin_sync_retry(
     uri = validate_request_viking_uri(resolve_path_variables(sync_path), ctx)
     result = await service.fs.system_sync_retry(uri, ctx=ctx)
     return Response(status="ok", result=result)
+
+
+@router.get("/api/v1/system/telemetry/trends", tags=["system"])
+async def get_telemetry_trends(
+    metric: str = "sla",
+    window: str = "7d",
+    ctx: RequestContext = Depends(get_request_context),
+):
+    """Return timeseries trend data points from SQLite TelemetryStore."""
+    try:
+        from openviking.telemetry.telemetry_store import TelemetryStore
+
+        ts = TelemetryStore()
+        points = ts.get_trends(metric=metric, window=window)
+        return {"status": "ok", "metric": metric, "window": window, "points": points}
+    except Exception as e:
+        logger.warning(f"Error getting telemetry trends: {e}")
+        return {"status": "ok", "metric": metric, "window": window, "points": []}
+

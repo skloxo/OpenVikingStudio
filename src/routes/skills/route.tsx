@@ -35,6 +35,7 @@ import {
 } from '#/components/ui/sheet'
 import { useAppConnection } from '#/hooks/use-app-connection'
 import { getOvResult, isOvClientError, ovClient } from '#/lib/ov-client'
+import { fileNameFromUri } from '#/lib/viking-uri'
 import { SkillsPagination } from './-components/pagination'
 import { cn } from '#/lib/utils'
 
@@ -80,6 +81,37 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object'
     ? (value as Record<string, unknown>)
     : null
+}
+
+function parseSkillFiles(rawFiles: unknown[]): SkillFile[] {
+  return rawFiles.flatMap((rawFile) => {
+    if (typeof rawFile === 'string' && rawFile.trim()) {
+      const cleanPath = rawFile.trim()
+      const cleanName = fileNameFromUri(cleanPath)
+      return [
+        {
+          isDir: false,
+          name: cleanName,
+          path: cleanPath,
+        },
+      ]
+    }
+    const file = asRecord(rawFile)
+    const fileName =
+      typeof file?.name === 'string'
+        ? file.name
+        : typeof file?.path === 'string'
+          ? fileNameFromUri(file.path)
+          : ''
+    if (!fileName) return []
+    return [
+      {
+        isDir: Boolean(file?.is_dir || file?.isDir),
+        name: fileName,
+        path: typeof file?.path === 'string' ? file.path : fileName,
+      },
+    ]
+  })
 }
 
 function normalizeSkills(value: unknown): SkillItem[] {
@@ -188,35 +220,14 @@ function normalizeSkills(value: unknown): SkillItem[] {
     const finalDesc = description.trim() || '暂无额外说明'
 
     const rawFiles = Array.isArray(skill?.files) ? skill.files : []
-    const parsedFiles: SkillFile[] = rawFiles.flatMap((rawFile) => {
-      if (typeof rawFile === 'string' && rawFile.trim()) {
-        const cleanPath = rawFile.trim()
-        const cleanName = cleanPath.split('/').pop() || cleanPath
-        return [
-          {
-            isDir: false,
-            name: cleanName,
-            path: cleanPath,
-          },
-        ]
-      }
-      const file = asRecord(rawFile)
-      const fileName = typeof file?.name === 'string' ? file.name : (typeof file?.path === 'string' ? file.path : '')
-      if (!fileName) return []
-      return [
-        {
-          isDir: Boolean(file?.is_dir || file?.isDir),
-          name: fileName,
-          path: typeof file?.path === 'string' ? file.path : fileName,
-        },
-      ]
-    })
+    const parsedFiles = parseSkillFiles(rawFiles)
 
-    const fileCount = typeof skill?.file_count === 'number'
-      ? skill.file_count
-      : parsedFiles.length > 0
-        ? parsedFiles.length
-        : 1
+    const fileCount =
+      typeof skill?.file_count === 'number'
+        ? skill.file_count
+        : parsedFiles.length > 0
+          ? parsedFiles.length
+          : 1
 
     return [
       {
@@ -257,34 +268,7 @@ function normalizeSkillDetail(
         ? fallback.content
         : ''
 
-  const parsedFiles: SkillFile[] = rawFiles.flatMap((rawFile) => {
-    if (typeof rawFile === 'string' && rawFile.trim()) {
-      const cleanPath = rawFile.trim()
-      const cleanName = cleanPath.split('/').pop() || cleanPath
-      return [
-        {
-          isDir: false,
-          name: cleanName,
-          path: cleanPath,
-        },
-      ]
-    }
-    const file = asRecord(rawFile)
-    const name =
-      typeof file?.name === 'string'
-        ? file.name
-        : typeof file?.path === 'string'
-          ? file.path
-          : ''
-    if (!name) return []
-    return [
-      {
-        isDir: Boolean(file?.is_dir || file?.isDir),
-        name,
-        path: typeof file?.path === 'string' ? file.path : name,
-      },
-    ]
-  })
+  const parsedFiles = parseSkillFiles(rawFiles)
 
   // 兜底：每个有效技能至少包含其自身的 SKILL.md 定义文件
   const finalFiles =
@@ -967,11 +951,7 @@ function SkillsRoute() {
       return next
     })
     try {
-      await fetch('/api/v1/harness/refine_gate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ skills: skillsList }),
-      })
+      await ovClient.instance.post('/api/v1/harness/refine_gate', { skills: skillsList })
     } catch {}
     setTimeout(() => {
       setRefinedSkills((prev) => {
@@ -1074,17 +1054,19 @@ function SkillsRoute() {
     placeholderData: keepPreviousData,
     queryFn: async () => {
       try {
-        const res = await fetch('/api/v1/system/harness_metrics?window=24h')
-        if (res.ok) {
-          const metrics = (await res.json()) as Record<string, unknown>
-          if (metrics && typeof metrics === 'object') return metrics
+        const res = await ovClient.instance.get<Record<string, unknown>>(
+          '/api/v1/system/harness_metrics',
+          { params: { window: '24h' } },
+        )
+        if (res.data && typeof res.data === 'object') {
+          return res.data
         }
       } catch {
         // Fallback to null (NO STATIC MOCK FALLBACK)
       }
       return null
     },
-    queryKey: ['harness-status', '24h'],
+    queryKey: ['harness-status', '24h', identityScopeKey],
     refetchOnReconnect: false,
     refetchOnWindowFocus: false,
     staleTime: 60_000,

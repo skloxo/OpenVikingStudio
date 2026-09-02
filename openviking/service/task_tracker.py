@@ -865,7 +865,9 @@ class TaskTracker:
                 return False
             if account_id and user_id and not self._matches_owner(task, account_id, user_id):
                 return False
-            if task.status in _ACTIVE_STATUSES or self._work_index.has_work(task_id):
+            # Only block deletion if there is genuine in-flight work and no recorded error
+            has_live_work = self._work_index.has_work(task_id)
+            if has_live_work and task.status in _ACTIVE_STATUSES and not task.error:
                 raise RuntimeError(f"Cannot delete active task record: {task_id}({task.task_type})")
             eff_account_id = task.account_id or account_id
             eff_user_id = task.user_id or user_id
@@ -910,7 +912,7 @@ class TaskTracker:
         matching_tasks = [
             task
             for task in self._cache_snapshot()
-            if task.status in target_statuses
+            if (task.status in target_statuses or bool(task.error) or not self._work_index.has_work(task.task_id))
             and (account_id is None or self._matches_owner(task, account_id, user_id or ""))
         ]
         deleted = 0

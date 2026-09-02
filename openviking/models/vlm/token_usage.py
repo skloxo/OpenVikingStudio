@@ -2,11 +2,19 @@
 # SPDX-License-Identifier: AGPL-3.0
 """VLM Token usage monitoring data structures"""
 
+import json
+import os
 from dataclasses import dataclass, field
 from datetime import datetime
+from pathlib import Path
 from typing import Dict, Optional
 
 from openviking.utils.time_utils import format_iso8601
+from openviking_cli.utils.logger import get_logger
+
+logger = get_logger(__name__)
+
+_DEFAULT_USAGE_FILE = Path(os.path.expanduser("~/.openviking/models_token_usage.json"))
 
 
 @dataclass
@@ -127,10 +135,71 @@ class ModelTokenUsage:
 
 
 class TokenUsageTracker:
-    """Token usage tracker"""
+    """Token usage tracker with JSON persistence"""
 
-    def __init__(self):
+    def __init__(self, persistence_file: Optional[Path] = None, auto_load: bool = True):
         self._usage_by_model: Dict[str, ModelTokenUsage] = {}
+        self._persistence_file = persistence_file or _DEFAULT_USAGE_FILE
+        if auto_load:
+            self.load_from_disk()
+
+    def load_from_disk(self, file_path: Optional[Path] = None) -> None:
+        """Load persistent token usage data from JSON file."""
+        target_path = file_path or self._persistence_file
+        if not target_path or not target_path.is_file():
+            return
+        try:
+            with open(target_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            usage_by_model = data.get("usage_by_model", {})
+            for model_name, m_data in usage_by_model.items():
+                if model_name not in self._usage_by_model:
+                    self._usage_by_model[model_name] = ModelTokenUsage(model_name)
+                for provider_name, p_data in m_data.get("usage_by_provider", {}).items():
+                    prompt = p_data.get("prompt_tokens", 0)
+                    completion = p_data.get("completion_tokens", 0)
+                    calls = p_data.get("call_count", 0)
+                    last_updated_str = p_data.get("last_updated")
+
+                    if provider_name not in self._usage_by_model[model_name].usage_by_provider:
+                        self._usage_by_model[model_name].usage_by_provider[provider_name] = TokenUsage()
+
+                    p_usage = self._usage_by_model[model_name].usage_by_provider[provider_name]
+                    p_usage.prompt_tokens = prompt
+                    p_usage.completion_tokens = completion
+                    p_usage.total_tokens = prompt + completion
+                    p_usage.call_count = calls
+                    if last_updated_str:
+                        try:
+                            clean_str = last_updated_str.replace("Z", "+00:00")
+                            p_usage.last_updated = datetime.fromisoformat(clean_str)
+                        except Exception:
+                            pass
+
+                # Recompute total usage for model
+                total = TokenUsage()
+                for p_usage in self._usage_by_model[model_name].usage_by_provider.values():
+                    total.prompt_tokens += p_usage.prompt_tokens
+                    total.completion_tokens += p_usage.completion_tokens
+                    total.total_tokens += p_usage.total_tokens
+                    total.call_count += p_usage.call_count
+                self._usage_by_model[model_name].total_usage = total
+        except Exception as e:
+            logger.debug(f"Error loading models_token_usage.json: {e}")
+
+    def save_to_disk(self, file_path: Optional[Path] = None) -> None:
+        """Persist current token usage data to JSON file."""
+        target_path = file_path or self._persistence_file
+        if not target_path:
+            return
+        try:
+            target_path.parent.mkdir(parents=True, exist_ok=True)
+            tmp_path = target_path.with_suffix(".tmp")
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                json.dump(self.to_dict(), f, indent=2, ensure_ascii=False)
+            tmp_path.replace(target_path)
+        except Exception as e:
+            logger.debug(f"Error saving models_token_usage.json: {e}")
 
     def update(
         self, model_name: str, provider: str, prompt_tokens: int, completion_tokens: int
@@ -147,6 +216,7 @@ class TokenUsageTracker:
             self._usage_by_model[model_name] = ModelTokenUsage(model_name)
 
         self._usage_by_model[model_name].update(provider, prompt_tokens, completion_tokens)
+        self.save_to_disk()
 
     def get_model_usage(self, model_name: str) -> Optional[ModelTokenUsage]:
         """Get token usage for specified model

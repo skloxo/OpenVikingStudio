@@ -13,13 +13,12 @@ import { useQuery } from '@tanstack/react-query'
 
 import { Badge } from '#/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '#/components/ui/tooltip'
+import { ovClient } from '#/lib/ov-client'
 
 interface GpuTelemetryResponse {
-  used_mb?: number
-  total_mb?: number
-  used_gb?: number
-  total_gb?: number
-  gpu_percent?: number
+  used_gb: number
+  total_gb: number
+  gpu_percent: number
 }
 
 interface TelemetryPoint {
@@ -35,27 +34,28 @@ export function GpuVramChart() {
   const { t } = useTranslation('monitoringPage')
   const [history, setHistory] = React.useState<TelemetryPoint[]>([])
 
-  const telemetryQuery = useQuery<GpuTelemetryResponse>({
+  const telemetryQuery = useQuery<GpuTelemetryResponse | null>({
     queryKey: ['gpuTelemetry'],
     queryFn: async () => {
       try {
-        const res = await fetch('/api/v1/system/gpu')
-        if (!res.ok) throw new Error('Failed to fetch GPU telemetry')
-        return (await res.json()) as GpuTelemetryResponse
+        const res = await ovClient.instance.get<GpuTelemetryResponse>('/api/v1/system/gpu')
+        return res.data
       } catch {
-        return { used_gb: 11.6, total_gb: 22.5, gpu_percent: 5 }
+        return null
       }
     },
     refetchInterval: 10000, // 10s refresh
   })
 
   React.useEffect(() => {
+    if (!telemetryQuery.data) return
+
     const now = new Date()
     const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`
 
-    const currentUsed = telemetryQuery.data?.used_gb ?? 11.6
-    const currentTotal = telemetryQuery.data?.total_gb ?? 22.5
-    const currentGpu = telemetryQuery.data?.gpu_percent ?? 5
+    const currentUsed = telemetryQuery.data.used_gb
+    const currentTotal = telemetryQuery.data.total_gb
+    const currentGpu = telemetryQuery.data.gpu_percent
 
     setHistory((prev) => {
       const nextPoint: TelemetryPoint = {

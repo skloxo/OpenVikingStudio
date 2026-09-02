@@ -79,20 +79,20 @@ Observability Event Bus
 
 字段说明：
 
-| 字段 | 默认值 | 说明 |
-| --- | --- | --- |
-| `enabled` | `true` | 是否启用 Usage/Audit |
-| `backend` | `"sqlite"` | 当前仅支持 SQLite |
-| `sqlite_path` | `null` | SQLite 文件路径；为空时使用当前 OpenViking workspace 下的 `_system/usage_audit/usage_audit.sqlite3` |
-| `queue_size` | `10000` | 后台写入队列大小 |
-| `batch_size` | `500` | 单次批量写入的最大事件数 |
-| `flush_interval_seconds` | `1.0` | worker 定时 flush 间隔 |
-| `shutdown_flush_timeout_seconds` | `3.0` | 服务关闭时 flush 等待时间 |
-| `usage_retention_days` | `14` | 统计聚合数据保留天数，包含 Token、检索、上下文写入热力图、Agent 活跃；`0` 表示不按天裁剪 |
-| `audit_retention_days` | `7` | 请求审计日志保留天数；`0` 表示不按天裁剪 |
-| `audit_retention_per_account` | `1000` | 每个 account 保留的最新请求审计条数；`0` 表示不按条数裁剪 |
-| `timezone` | `"local"` | Console 请求未传 `timezone` 时的兜底查询时区；写入始终按 UTC 保存。`"local"` 表示 server 进程所在机器/容器的本地时区 |
-| `inventory_ttl_seconds` | `10.0` | 上下文当前数据量查询缓存时间 |
+| 字段                               | 默认值       | 说明                                                                                                                    |
+| ---------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| `enabled`                        | `true`     | 是否启用 Usage/Audit                                                                                                    |
+| `backend`                        | `"sqlite"` | 当前仅支持 SQLite                                                                                                       |
+| `sqlite_path`                    | `null`     | SQLite 文件路径；为空时使用当前 OpenViking workspace 下的`_system/usage_audit/usage_audit.sqlite3`                    |
+| `queue_size`                     | `10000`    | 后台写入队列大小                                                                                                        |
+| `batch_size`                     | `500`      | 单次批量写入的最大事件数                                                                                                |
+| `flush_interval_seconds`         | `1.0`      | worker 定时 flush 间隔                                                                                                  |
+| `shutdown_flush_timeout_seconds` | `3.0`      | 服务关闭时 flush 等待时间                                                                                               |
+| `usage_retention_days`           | `14`       | 统计聚合数据保留天数，包含 Token、检索、上下文写入热力图、Agent 活跃；`0` 表示不按天裁剪                              |
+| `audit_retention_days`           | `7`        | 请求审计日志保留天数；`0` 表示不按天裁剪                                                                              |
+| `audit_retention_per_account`    | `1000`     | 每个 account 保留的最新请求审计条数；`0` 表示不按条数裁剪                                                             |
+| `timezone`                       | `"local"`  | Console 请求未传`timezone` 时的兜底查询时区；写入始终按 UTC 保存。`"local"` 表示 server 进程所在机器/容器的本地时区 |
+| `inventory_ttl_seconds`          | `10.0`     | 上下文当前数据量查询缓存时间                                                                                            |
 
 本地版使用 SQLite 没问题。分布式生产环境如果多实例同时提供 Console，建议后续增加共享
 store backend，而不是让多个实例各写各的本地 SQLite。
@@ -103,19 +103,19 @@ store backend，而不是让多个实例各写各的本地 SQLite。
 
 来自模型调用事件：
 
-| 事件 | 当前 Console 展示口径 |
-| --- | --- |
-| `vlm.call` | `prompt_tokens` 计入 `vlm_input`，`completion_tokens` 计入 `vlm_output` |
-| `embedding.call` | `prompt_tokens` 计入 `embedding_input` |
-| `rerank.call` | 已可落库，当前 Console summary/series 暂不展示 |
+| 事件               | 当前 Console 展示口径                                                           |
+| ------------------ | ------------------------------------------------------------------------------- |
+| `vlm.call`       | `prompt_tokens` 计入 `vlm_input`，`completion_tokens` 计入 `vlm_output` |
+| `embedding.call` | `prompt_tokens` 计入 `embedding_input`                                      |
+| `rerank.call`    | 已可落库，当前 Console summary/series 暂不展示                                  |
 
 ### 今日检索
 
 来自 HTTP 请求完成事件 `http.request`：
 
-| API route | operation |
-| --- | --- |
-| `POST /api/v1/search/find` | `find` |
+| API route                      | operation  |
+| ------------------------------ | ---------- |
+| `POST /api/v1/search/find`   | `find`   |
 | `POST /api/v1/search/search` | `search` |
 
 `2xx` 和 `3xx` 记为 `success`，`4xx/5xx` 记为 `error`。Dashboard 今日检索只展示成功请求数。
@@ -124,12 +124,12 @@ store backend，而不是让多个实例各写各的本地 SQLite。
 
 来自成功的公开写请求：
 
-| API route | operation |
-| --- | --- |
-| `POST /api/v1/resources` | `add_resource` |
-| `POST /api/v1/skills` | `add_skill` |
+| API route                                       | operation               |
+| ----------------------------------------------- | ----------------------- |
+| `POST /api/v1/resources`                      | `add_resource`        |
+| `POST /api/v1/skills`                         | `add_skill`           |
 | `POST /api/v1/sessions/{session_id}/messages` | `session_add_message` |
-| `POST /api/v1/sessions/{session_id}/commit` | `session_commit` |
+| `POST /api/v1/sessions/{session_id}/commit`   | `session_commit`      |
 
 只有 `2xx/3xx` 会进入上下文提交统计。
 
@@ -212,9 +212,9 @@ GET /api/v1/console/dashboard/summary
 
 参数：
 
-| 参数 | 必填 | 说明 |
-| --- | --- | --- |
-| `timezone` | 否 | IANA 时区名（如 `Asia/Shanghai`）；省略时回退到 server 时区，用于确定"今日"的时区边界 |
+| 参数         | 必填 | 说明                                                                                   |
+| ------------ | ---- | -------------------------------------------------------------------------------------- |
+| `timezone` | 否   | IANA 时区名（如`Asia/Shanghai`）；省略时回退到 server 时区，用于确定"今日"的时区边界 |
 
 返回示例：
 
@@ -263,12 +263,12 @@ GET /api/v1/console/tokens?start_date=2026-05-01&end_date=2026-05-12&bucket=day
 
 参数：
 
-| 参数 | 必填 | 说明 |
-| --- | --- | --- |
-| `start_date` | 是 | 开始日期，格式 `YYYY-MM-DD`（按 `timezone` 指定的时区解释） |
-| `end_date` | 是 | 结束日期，格式 `YYYY-MM-DD`（按 `timezone` 指定的时区解释） |
-| `bucket` | 否 | 当前仅支持 `day` |
-| `timezone` | 否 | IANA 时区名（如 `Asia/Shanghai`）；省略时回退到 server 时区，返回的 `date` 分桶按该时区 |
+| 参数           | 必填 | 说明                                                                                       |
+| -------------- | ---- | ------------------------------------------------------------------------------------------ |
+| `start_date` | 是   | 开始日期，格式`YYYY-MM-DD`（按 `timezone` 指定的时区解释）                             |
+| `end_date`   | 是   | 结束日期，格式`YYYY-MM-DD`（按 `timezone` 指定的时区解释）                             |
+| `bucket`     | 否   | 当前仅支持`day`                                                                          |
+| `timezone`   | 否   | IANA 时区名（如`Asia/Shanghai`）；省略时回退到 server 时区，返回的 `date` 分桶按该时区 |
 
 返回中会补齐日期范围内没有数据的日期。
 
@@ -280,12 +280,12 @@ GET /api/v1/console/context-commits?start_date=2026-05-01&end_date=2026-05-12&bu
 
 参数：
 
-| 参数 | 必填 | 说明 |
-| --- | --- | --- |
-| `start_date` | 是 | 开始日期，格式 `YYYY-MM-DD`（按 `timezone` 指定的时区解释） |
-| `end_date` | 是 | 结束日期，格式 `YYYY-MM-DD`（按 `timezone` 指定的时区解释） |
-| `bucket` | 否 | `hour` 或 `4h`，默认 `hour` |
-| `timezone` | 否 | IANA 时区名（如 `Asia/Shanghai`）；省略时回退到 server 时区，返回的 `date` / `hour` 分桶按该时区 |
+| 参数           | 必填 | 说明                                                                                                  |
+| -------------- | ---- | ----------------------------------------------------------------------------------------------------- |
+| `start_date` | 是   | 开始日期，格式`YYYY-MM-DD`（按 `timezone` 指定的时区解释）                                        |
+| `end_date`   | 是   | 结束日期，格式`YYYY-MM-DD`（按 `timezone` 指定的时区解释）                                        |
+| `bucket`     | 否   | `hour` 或 `4h`，默认 `hour`                                                                     |
+| `timezone`   | 否   | IANA 时区名（如`Asia/Shanghai`）；省略时回退到 server 时区，返回的 `date` / `hour` 分桶按该时区 |
 
 返回中会补齐日期和小时段范围内没有数据的 bucket。
 
@@ -297,13 +297,13 @@ GET /api/v1/console/audit?page=1&page_size=20&status=success,error&api_type=sear
 
 参数：
 
-| 参数 | 必填 | 说明 |
-| --- | --- | --- |
-| `page` | 否 | 页码，从 `1` 开始 |
-| `page_size` | 否 | 每页条数，范围 `1..100` |
-| `request_id` | 否 | 精确匹配 request id |
-| `status` | 否 | 可重复传，也可逗号分隔 |
-| `api_type` | 否 | 可重复传，也可逗号分隔 |
+| 参数           | 必填 | 说明                     |
+| -------------- | ---- | ------------------------ |
+| `page`       | 否   | 页码，从`1` 开始       |
+| `page_size`  | 否   | 每页条数，范围`1..100` |
+| `request_id` | 否   | 精确匹配 request id      |
+| `status`     | 否   | 可重复传，也可逗号分隔   |
+| `api_type`   | 否   | 可重复传，也可逗号分隔   |
 
 `status` 支持：
 

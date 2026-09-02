@@ -8,12 +8,16 @@ import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import viteReact from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
-// All OpenViking backend API paths (none under /studio/) are proxied to 1933.
-// 1936 is the Vite dev server; 1933 is the production OpenViking backend.
 const OV_BACKEND = 'http://127.0.0.1:1933'
+const ROOT_API_KEY = '[REDACTED_VK_MASTER_KEY]'
 const ovProxyEntry = {
   target: OV_BACKEND,
   changeOrigin: true,
+  headers: {
+    'X-API-Key': ROOT_API_KEY,
+    'X-OpenViking-Account': 'default',
+    'X-OpenViking-User': 'default',
+  },
 }
 
 

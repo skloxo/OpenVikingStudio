@@ -113,12 +113,21 @@ class TestRetrievalStatsCollector:
 
 
 class TestRetrievalObserver:
-    def _setup_collector(self):
+    def _setup_collector(self, monkeypatch=None):
         """Replace the global collector with a fresh one for testing."""
         import openviking.retrieve.retrieval_stats as mod
 
-        collector = RetrievalStatsCollector()
+        collector = RetrievalStatsCollector(auto_load=False)
         mod._collector = collector
+        try:
+            from openviking.telemetry.telemetry_store import TelemetryStore
+
+            if monkeypatch:
+                monkeypatch.setattr(TelemetryStore, "get_retrieval_baseline", lambda self: None)
+            else:
+                TelemetryStore.get_retrieval_baseline = lambda self: None
+        except Exception:
+            pass
         return collector
 
     def test_healthy_when_no_queries(self):
