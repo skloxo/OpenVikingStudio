@@ -23,7 +23,7 @@
 | 任务工单 ID | 模块与合并主题 | 涵盖上游核心特性与 Commits / 治理范围 | 物理验收与测试条件 | 计划 Tag 版本 | 当前状态 |
 | :--- | :--- | :--- | :--- | :---: | :---: |
 | **Task-Clean-00** | **全盘源码深度审查、死代码清理与公用轮子统一收口** | 清理历史遗留废弃文件/Mock/幽灵客户端，消除多层嵌套 Wrapper，将零散方法收敛至统一 Shared 工具库与官方轮子，根治发包失效与深坑隐患 | 全局单测 100% PASS，零冗余胶水脚本，构建打包耗时缩短，代码极简自解释 | 贯穿全生命周期 | 🚀 执行中 |
-| **Merge-Card-01** | **存储底座、CacheRuntime 与锁自愈** | DynamicProvider C ABI (`e7f58639`)、Redis CacheRuntime (`3123e8d8`)、阿里云 OSS (`63c25306`)、PathLock 恢复 (`9262df7a`)、分桶上传 (`550ef796`) | `pytest tests/storage/` PASS，Redis 缓存与小时分桶上传测试正常 | `v1.4.7` | ⏳ 待开始 |
+| **Merge-Card-01** | **存储底座、CacheRuntime 与锁自愈** | DynamicProvider C ABI (`e7f58639`)、Redis CacheRuntime (`3123e8d8`)、阿里云 OSS (`63c25306`)、PathLock 恢复 (`9262df7a`)、分桶上传 (`550ef796`) | `pytest tests/storage/` PASS，Redis 缓存与小时分桶上传测试正常 | `v1.4.7` | [x] 已验收通过 ✅ |
 | **Merge-Card-02** | **记忆提纯、会话解耦与 URI 规范** | 记忆度量 (`b1780a4d`)、Event Page 复用 (`6248d4e4`)、Token 移出事件循环 (`ed4bb192`)、图片脱敏 (`78962c32`)、Windows URI (`76ab53ac`)、Session 结束 Hook (`7200cdb1`) | `pytest tests/session/` PASS，主事件循环零卡顿，图片字节彻底脱敏 | `v1.4.8` | ⏳ 待开始 |
 | **Merge-Card-03** | **AnyDoc 0.2 文档解析与语义检索升级** | AnyDoc 0.2 统一文档模型 (`7ee75611`, `1c954ea9`)、稀疏嵌入降级 (`41044af7`)、Reranker `top_n` (`687167f1`)、概览摘要缓存复用 (`42c0ee13`) | `pytest tests/parse/` & `pytest tests/retrieve/` PASS，Office 解析无异常 | `v1.4.9` | ⏳ 待开始 |
 | **Merge-Card-04** | **企业级权限系统与资源 ACL** | 资源 ACL 与用户组授权 (`e357af6a`)、向量检索权限过滤、账号级授权开关 (`170e17c1`)、禁用认证锁 (`66dc4c6a`) | `pytest tests/auth/` PASS，向量多租户权限隔离验证成功 | `v1.4.10` | ⏳ 待开始 |
@@ -34,6 +34,20 @@
 ---
 
 ## ⚡ 二、 当前活跃与待调度 Studio 原子工单 (Scheduled Active Task Cards)
+
+### 📌 P0: [x] Merge-Card-01 (v1.4.7): 存储底座、统一 CacheRuntime、阿里云 OSS 与 PathLock 空锁自愈 ✅
+- **类型**：Core Storage & Infrastructure ｜ **优先级**：🔴 P0（底层存储与缓存中枢）
+- **Git Commit**：`7c1222c4` ｜ **Git Tag**：`v1.4.7`
+- **交付内容**：
+  1. `crates/ragfs/src/cache_runtime/`：统一 CacheRuntime 与 Redis 后端 CacheFS/QueueFS，解耦底层存储；
+  2. `crates/ragfs/src/cache_runtime/dynamic/`：实现 DynamicProvider C ABI 动态加载与版本化扩展 (`openviking_cache_provider_v1.h`)；
+  3. `crates/ragfs/src/plugins/s3fs/client.rs`：新增阿里云 OSS 原生适配与 AGFS 签名配置；
+  4. `crates/ragfs/src/lock/provider.rs`：PathLock 过期空锁 Token 自动回收与抢锁自愈；
+  5. `openviking/server/temp_upload_store.py`：UTC 小时分桶 (`YYYYMMDDHH`) 隔离上传与后台非阻塞异步防爆盘清扫；
+  6. 验证：存储与配置单测 101/101 100% PASS，Vite 生产构建 31.84s 成功。
+- **验收结果**：已验收通过 ✅
+
+---
 
 ### 📌 P0: [x] TASK-VL-DEPLOY-01 (v1.4.4): 2080Ti (22GB) 本地 Qwen3-VL 双模型自主拉起、INT8显存治理与全系统对接闭环 ✅
 - **类型**：Core Infrastructure ｜ **优先级**：🔴 P0（知识库与多模态检索中枢）

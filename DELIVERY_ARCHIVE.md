@@ -9,6 +9,7 @@
 
 | 版本 Tag | 交付日期 | Git Commit | 核心交付特性与工单 | 单元测试状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.4.7`** | 2026-09-03 | `7c1222c4` | `Merge-Card-01`：存储底座、统一 CacheRuntime、阿里云 OSS 与 PathLock 空锁自愈 | 101/101 PASS |
 | **`v1.4.6`** | 2026-08-30 | `ec2b039` | `TASK-MAC-AUTOHEAL-03`：Mac Studio (M3 Ultra) 无头双网卡分流、8大LaunchDaemons守护矩阵与黑屏秒级唤醒 | 100% PASS |
 | **`v1.4.5`** | 2026-08-28 | `1d3c94a` | `TASK-VL-OPTI-02`：RTX 2080Ti 显存防溢出锁定 (<20.0GB)、Dual-Gate 32 门禁与 MCP 桥梁自愈 | 100% PASS |
 | **`v1.4.4`** | 2026-08-26 | `76f940d4` | `TASK-VL-DEPLOY-01`：2080Ti (22GB) 本地 Qwen3-VL 双模型拉起与 INT8 显存治理 | 100% PASS |
@@ -36,6 +37,16 @@
 ---
 
 ## 📌 Milestone 1 关键版本详细交付履历
+
+### [x] v1.4.7：存储底座、CacheRuntime 与锁自愈 (2026-09-03)
+- **Git Commit**：`7c1222c4` ｜ **Git Tag**：`v1.4.7`
+- **交付内容**：
+  1. `crates/ragfs/src/cache_runtime/`：统一 CacheRuntime 与 Redis 后端 CacheFS/QueueFS，解耦底层存储；
+  2. `crates/ragfs/src/cache_runtime/dynamic/`：实现 DynamicProvider C ABI 动态加载与版本化扩展 (`openviking_cache_provider_v1.h`)；
+  3. `crates/ragfs/src/plugins/s3fs/client.rs`：新增阿里云 OSS 原生适配与 AGFS 签名配置；
+  4. `crates/ragfs/src/lock/provider.rs`：PathLock 过期空锁 Token 自动自愈与抢锁回收；
+  5. `openviking/server/temp_upload_store.py`：UTC 小时分桶 (`YYYYMMDDHH`) 隔离上传与后台非阻塞异步清扫；
+  6. 验证：存储与配置单测 101/101 100% PASS，Vite 生产构建 31.84s 成功。
 
 ### [x] v1.4.3：任务中心失败任务清理与删除动作 (2026-08-24)
 - **Git Commit**：`321657d2` ｜ **Git Tag**：`v1.4.3`
