@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 from openviking.server.identity import RequestContext
 from openviking.session.memory.experience_lineage import (
+    _EXPERIENCE_SIDECAR_FILENAMES,
     TRAJECTORY_OUTCOMES,
     canonical_experience_uri,
     experience_source_tag,
@@ -135,31 +136,46 @@ class AgentEvolutionService:
     async def list_trajectories_by_experience(
         self,
         *,
-        experience_uri: str,
+        experience_uri: Optional[str] = None,
         ctx: RequestContext,
         limit: int = DEFAULT_TRAJECTORY_PAGE_LIMIT,
         offset: int = 0,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
     ) -> dict[str, Any]:
-        """List trajectories produced by commits that read an Experience."""
+        """List trajectories produced by commits, optionally filtered by an Experience."""
         if limit < 1 or limit > MAX_TRAJECTORY_PAGE_LIMIT:
             raise InvalidArgumentError(f"limit must be between 1 and {MAX_TRAJECTORY_PAGE_LIMIT}")
         if offset < 0:
             raise InvalidArgumentError("offset must be greater than or equal to 0")
         created_at_range = _trajectory_created_at_range(start_date, end_date)
 
-        canonical_uri, trajectory_root, vikingdb = await self._prepare_experience_query(
-            experience_uri=experience_uri,
-            ctx=ctx,
-        )
-        lineage_filter = And(
-            _experience_trajectory_conditions(
+        trajectory_root = f"viking://user/{ctx.user.user_id}/memories/trajectories"
+        if self._vikingdb is None:
+            raise NotInitializedError("VikingDB")
+
+        if experience_uri:
+            canonical_uri, trajectory_root, vikingdb = await self._prepare_experience_query(
+                experience_uri=experience_uri,
+                ctx=ctx,
+            )
+            conditions = _experience_trajectory_conditions(
                 trajectory_root=trajectory_root,
                 experience_uri=canonical_uri,
                 created_at_range=created_at_range,
             )
-        )
+        else:
+            canonical_uri = None
+            vikingdb = self._vikingdb
+            conditions = [
+                PathScope("uri", trajectory_root, depth=1),
+                Eq("context_type", "memory"),
+                Eq("level", 2),
+            ]
+            if created_at_range is not None:
+                conditions.append(created_at_range)
+
+        lineage_filter = And(conditions)
         records, total = await asyncio.gather(
             vikingdb.filter(
                 filter=lineage_filter,
@@ -188,22 +204,38 @@ class AgentEvolutionService:
     async def get_experience_outcome_distribution(
         self,
         *,
-        experience_uri: str,
+        experience_uri: Optional[str] = None,
         ctx: RequestContext,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
     ) -> dict[str, Any]:
-        """Count application trajectories by outcome for an Experience."""
+        """Count application trajectories by outcome, optionally for an Experience."""
         created_at_range = _trajectory_created_at_range(start_date, end_date)
-        canonical_uri, trajectory_root, vikingdb = await self._prepare_experience_query(
-            experience_uri=experience_uri,
-            ctx=ctx,
-        )
-        base_conditions = _experience_trajectory_conditions(
-            trajectory_root=trajectory_root,
-            experience_uri=canonical_uri,
-            created_at_range=created_at_range,
-        )
+        trajectory_root = f"viking://user/{ctx.user.user_id}/memories/trajectories"
+        if self._vikingdb is None:
+            raise NotInitializedError("VikingDB")
+
+        if experience_uri:
+            canonical_uri, trajectory_root, vikingdb = await self._prepare_experience_query(
+                experience_uri=experience_uri,
+                ctx=ctx,
+            )
+            base_conditions = _experience_trajectory_conditions(
+                trajectory_root=trajectory_root,
+                experience_uri=canonical_uri,
+                created_at_range=created_at_range,
+            )
+        else:
+            canonical_uri = None
+            vikingdb = self._vikingdb
+            base_conditions = [
+                PathScope("uri", trajectory_root, depth=1),
+                Eq("context_type", "memory"),
+                Eq("level", 2),
+            ]
+            if created_at_range is not None:
+                base_conditions.append(created_at_range)
+
         counts = await asyncio.gather(
             *[
                 vikingdb.count(
@@ -224,4 +256,151 @@ class AgentEvolutionService:
                 {"outcome": outcome, "count": count}
                 for outcome, count in zip(TRAJECTORY_OUTCOMES, counts, strict=True)
             ],
+        }
+
+    async def get_evolution_overview(
+        self,
+        *,
+        ctx: RequestContext,
+    ) -> dict[str, Any]:
+        """Aggregate high-level evolution metrics (trajectories, experiences, outcomes, 24h activity)."""
+        viking_fs = self._ensure_initialized()
+        if self._vikingdb is None:
+            raise NotInitializedError("VikingDB")
+
+        trajectory_root = f"viking://user/{ctx.user.user_id}/memories/trajectories"
+        experience_root = f"viking://user/{ctx.user.user_id}/memories/experiences"
+
+        base_filter = And(
+            [
+                PathScope("uri", trajectory_root, depth=1),
+                Eq("context_type", "memory"),
+                Eq("level", 2),
+            ]
+        )
+
+        # 24H time range
+        now = datetime.now(timezone.utc)
+        one_day_ago = (now - timedelta(days=1)).isoformat()
+        active_24h_filter = And(
+            [
+                PathScope("uri", trajectory_root, depth=1),
+                Eq("context_type", "memory"),
+                Eq("level", 2),
+                TimeRange("created_at", start=one_day_ago),
+            ]
+        )
+
+        outcome_tasks = [
+            self._vikingdb.count(
+                filter=And([base_filter, Eq("search_tags", trajectory_outcome_tag(outcome))]),
+                ctx=ctx,
+            )
+            for outcome in TRAJECTORY_OUTCOMES
+        ]
+
+        total_trajectories_task = self._vikingdb.count(filter=base_filter, ctx=ctx)
+        active_24h_task = self._vikingdb.count(filter=active_24h_filter, ctx=ctx)
+
+        async def count_experiences() -> int:
+            try:
+                entries = await viking_fs.ls(experience_root, ctx=ctx)
+                return sum(
+                    1
+                    for entry in (entries if isinstance(entries, list) else [])
+                    if isinstance(entry, dict)
+                    and not entry.get("isDir", False)
+                    and entry.get("name", "") not in _EXPERIENCE_SIDECAR_FILENAMES
+                )
+            except Exception:
+                return 0
+
+        total_trajectories, active_24h, total_experiences, *outcome_counts = await asyncio.gather(
+            total_trajectories_task,
+            active_24h_task,
+            count_experiences(),
+            *outcome_tasks,
+        )
+
+        outcomes_summary = {
+            outcome: count
+            for outcome, count in zip(TRAJECTORY_OUTCOMES, outcome_counts, strict=True)
+        }
+
+        success_count = outcomes_summary.get("success", 0)
+        failure_count = outcomes_summary.get("failure", 0)
+        resolved_count = success_count + failure_count
+        success_rate = round((success_count / resolved_count) * 100, 1) if resolved_count > 0 else 0.0
+
+        return {
+            "total_trajectories": total_trajectories,
+            "total_experiences": total_experiences,
+            "outcomes_summary": outcomes_summary,
+            "success_rate": success_rate,
+            "recent_24h_active_count": active_24h,
+        }
+
+    async def list_user_experiences(
+        self,
+        *,
+        ctx: RequestContext,
+        limit: int = DEFAULT_TRAJECTORY_PAGE_LIMIT,
+        offset: int = 0,
+    ) -> dict[str, Any]:
+        """List all Experience files owned by the current user with associated trajectory stats."""
+        viking_fs = self._ensure_initialized()
+        experience_root = f"viking://user/{ctx.user.user_id}/memories/experiences"
+
+        try:
+            entries = await viking_fs.ls(experience_root, ctx=ctx)
+        except Exception:
+            entries = []
+
+        valid_entries = [
+            entry
+            for entry in (entries if isinstance(entries, list) else [])
+            if isinstance(entry, dict)
+            and not entry.get("isDir", False)
+            and entry.get("name", "") not in _EXPERIENCE_SIDECAR_FILENAMES
+        ]
+
+        total = len(valid_entries)
+        paged_entries = valid_entries[offset : offset + limit]
+
+        items = []
+        for entry in paged_entries:
+            uri = entry.get("uri") or f"{experience_root}/{entry.get('name')}"
+            name = entry.get("name") or uri.split("/")[-1]
+
+            traj_count = 0
+            if self._vikingdb is not None:
+                try:
+                    trajectory_root = f"viking://user/{ctx.user.user_id}/memories/trajectories"
+                    lineage_filter = And(
+                        _experience_trajectory_conditions(
+                            trajectory_root=trajectory_root,
+                            experience_uri=uri,
+                            created_at_range=None,
+                        )
+                    )
+                    traj_count = await self._vikingdb.count(filter=lineage_filter, ctx=ctx)
+                except Exception:
+                    traj_count = 0
+
+            items.append(
+                {
+                    "uri": uri,
+                    "name": name,
+                    "trajectory_count": traj_count,
+                    "updated_at": entry.get("updated_at") or entry.get("mtime") or None,
+                    "size": entry.get("size", 0),
+                }
+            )
+
+        return {
+            "items": items,
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "has_more": offset + len(items) < total,
         }

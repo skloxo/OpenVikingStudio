@@ -2832,6 +2832,15 @@ class Session:
                 stage="cancelled",
                 error="session commit cancelled",
             )
+            try:
+                await tracker.fail(
+                    task_id,
+                    "session commit cancelled",
+                    account_id=self.ctx.account_id,
+                    user_id=self.ctx.user.user_id,
+                )
+            except Exception:
+                pass
             raise
         except Exception as e:
             await self._write_failed_marker(

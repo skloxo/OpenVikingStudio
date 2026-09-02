@@ -14,6 +14,7 @@ import {
   useAppConnection,
 } from '#/hooks/use-app-connection'
 import { useIdentityDirectory } from '#/hooks/use-identity-directory'
+import { ovClient } from '#/lib/ov-client'
 
 type Phase =
   | { kind: 'idle' }
@@ -139,30 +140,22 @@ export function CrossDeviceVerifyForm({
     }
     setPhase({ kind: 'verifying' })
     try {
-      const resp = await fetch('/api/v1/auth/oauth-verify', {
-        method: 'POST',
-        cache: 'no-store',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${effectiveKey}`,
-        },
-        body: JSON.stringify({ code: normalized, decision: 'approve' }),
-      })
-      if (!resp.ok) {
-        const text = await resp.text().catch(() => '')
-        setPhase({
-          kind: 'error',
-          message: extractMessage(text) || String(resp.status),
-        })
-        return
-      }
-      const body = (await resp.json()) as {
+      const resp = await ovClient.instance.post<{
         client_name?: string | null
-      }
-      setPhase({ kind: 'success', clientName: body.client_name ?? null })
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err)
-      setPhase({ kind: 'error', message })
+        scopes?: string[]
+      }>('/api/v1/auth/oauth-verify', {
+        code: normalized,
+        decision: 'approve',
+      })
+      const body = resp.data || {}
+      setPhase({
+        kind: 'success',
+        clientName: body.client_name ?? null,
+        scopes: Array.isArray(body.scopes) ? body.scopes : [],
+      })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Verification failed'
+      setPhase({ kind: 'error', message: msg })
     }
   }
 

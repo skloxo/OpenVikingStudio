@@ -7,9 +7,14 @@ the ``RetrievalObserver`` can report aggregate health and quality data
 via the observer API.
 """
 
+import json
+import os
 import threading
 from dataclasses import dataclass, field
-from typing import Dict
+from pathlib import Path
+from typing import Dict, Optional
+
+_DEFAULT_RETRIEVAL_STATS_FILE = Path(os.path.expanduser("~/.openviking/retrieval_stats.json"))
 
 
 @dataclass
@@ -76,29 +81,65 @@ class RetrievalStats:
 
 
 class RetrievalStatsCollector:
-    """Thread-safe singleton that accumulates retrieval metrics.
+    """Thread-safe singleton that accumulates retrieval metrics with disk persistence."""
 
-    Usage in the retriever::
-
-        from openviking.retrieve.retrieval_stats import get_stats_collector
-
-        collector = get_stats_collector()
-        collector.record_query(
-            context_type="memory",
-            result_count=3,
-            scores=[0.82, 0.71, 0.55],
-            latency_ms=42.5,
-            rerank_used=True,
-        )
-
-    Usage in the observer::
-
-        stats = get_stats_collector().snapshot()
-    """
-
-    def __init__(self) -> None:
+    def __init__(self, persistence_file: Optional[Path] = None, auto_load: bool = False) -> None:
         self._lock = threading.Lock()
         self._stats = RetrievalStats()
+        self._persistence_file = persistence_file or _DEFAULT_RETRIEVAL_STATS_FILE
+        if auto_load:
+            self.load_from_disk()
+
+    def load_from_disk(self, file_path: Optional[Path] = None) -> None:
+        """Load persistent retrieval statistics from JSON file."""
+        target_path = file_path or self._persistence_file
+        if not target_path or not target_path.is_file():
+            return
+        try:
+            with open(target_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            with self._lock:
+                self._stats.total_queries = data.get("total_queries", 0)
+                self._stats.total_results = data.get("total_results", 0)
+                self._stats.zero_result_queries = data.get("zero_result_queries", 0)
+                self._stats.total_score_sum = data.get("total_score_sum", 0.0)
+                self._stats.max_score = data.get("max_score", 0.0)
+                self._stats.min_score = data.get("min_score", float("inf"))
+                self._stats.queries_by_type = dict(data.get("queries_by_type", {}))
+                self._stats.rerank_used = data.get("rerank_used", 0)
+                self._stats.rerank_fallback = data.get("rerank_fallback", 0)
+                self._stats.total_latency_ms = data.get("total_latency_ms", 0.0)
+                self._stats.max_latency_ms = data.get("max_latency_ms", 0.0)
+        except Exception:
+            pass
+
+    def save_to_disk(self, file_path: Optional[Path] = None) -> None:
+        """Persist current retrieval statistics to JSON file."""
+        target_path = file_path or self._persistence_file
+        if not target_path:
+            return
+        try:
+            target_path.parent.mkdir(parents=True, exist_ok=True)
+            tmp_path = target_path.with_suffix(".tmp")
+            with self._lock:
+                data = {
+                    "total_queries": self._stats.total_queries,
+                    "total_results": self._stats.total_results,
+                    "zero_result_queries": self._stats.zero_result_queries,
+                    "total_score_sum": self._stats.total_score_sum,
+                    "max_score": self._stats.max_score,
+                    "min_score": self._stats.min_score,
+                    "queries_by_type": self._stats.queries_by_type,
+                    "rerank_used": self._stats.rerank_used,
+                    "rerank_fallback": self._stats.rerank_fallback,
+                    "total_latency_ms": self._stats.total_latency_ms,
+                    "max_latency_ms": self._stats.max_latency_ms,
+                }
+            with open(tmp_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+            tmp_path.replace(target_path)
+        except Exception:
+            pass
 
     def record_query(
         self,
@@ -137,6 +178,8 @@ class RetrievalStatsCollector:
             if latency_ms > self._stats.max_latency_ms:
                 self._stats.max_latency_ms = latency_ms
 
+        self.save_to_disk()
+
         try:
             from openviking.metrics.datasources import RetrievalStatsDataSource
 
@@ -174,5 +217,5 @@ def get_stats_collector() -> RetrievalStatsCollector:
     if _collector is None:
         with _collector_lock:
             if _collector is None:
-                _collector = RetrievalStatsCollector()
+                _collector = RetrievalStatsCollector(auto_load=True)
     return _collector

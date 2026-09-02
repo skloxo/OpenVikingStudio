@@ -1,7 +1,6 @@
 # 🗺️ OpenViking 项目主线重构与原子化任务卡片总看板 (Master Task Cards Kanban - SSOT)
 
-> **关联主蓝图**：[OpenViking 研发迭代大蓝图 (`viking://resources/home_projects/openviking_blueprint/OpenViking_R_and_D_Iteration_Blueprint.md`)](file:///home/skloxo/.openviking/data/viking/default/resources/home_projects/openviking_blueprint/OpenViking_R_and_D_Iteration_Blueprint.md)  
-> **关联远期 Epic**：[ROADMAP.md (Studio 远期路线图)](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/ROADMAP.md) | [DELIVERY_ARCHIVE.md (交付履历库)](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)  
+> **关联主蓝图与白皮书**：[BLUEPRINT.md (研发大蓝图与白皮书)](file:///home/skloxo/aho/openclaw/project/.agents/BLUEPRINT.md) ｜ [DELIVERY_ARCHIVE.md (交付履历库)](file:///home/skloxo/aho/openclaw/project/DELIVERY_ARCHIVE.md)  
 > **唯一真相源 (SSOT)**：所有主线任务卡片、包含此前规划的所有活跃工单与远期 Epic，均在此统筹物理收口，严禁遗漏散落。
 
 ---
@@ -16,18 +15,21 @@
 
 ---
 
-## 🗺️ 上游 OpenViking 全景合并与演进原子化看板 (112 Commits Full Roadmap)
+## 🗺️ 一、 上游 OpenViking 全景原子化合并与深度代码治理专区 (176 Commits Roadmap - 先合并后开发)
 
-| 任务卡片 ID | 模块领域 | 包含上游核心特性 | 上游 Commits | 物理验收条件 | 计划 Tag 版本 | 当前状态 |
-| :--- | :--- | :--- | :--- | :--- | :--- | :---: |
-| **Task Card 1** | **并发锁与 TaskTracker 融合 + Studio v1.3.4** | TaskTracker 细粒度锁池 (`KeyedAsyncLockPool`)、Store I/O 限制、终态 Guard 统一、Studio 视觉瓦片修复 | `7038ba06`, `9113fc92`, `b8738e05`, `bb82c376` | `test_task_tracker_concurrency.py` PASS, 113/113 测试通过, 1933 健康上线 | `v1.3.4` | [x] 已验收并交付 ✅ (Commit: `1ca76e53`, Tag: `v1.3.4`) |
-| **Task Card 2** | **Agent 演进与经验记忆** | Agent 演进服务、经验血缘追踪 (`experience_lineage.py`)、OpenClaw 经验工具 | `61c42e3b`, `73a70195`, `2ced3f15` | `test_api_agent_evolution.py` PASS | `v1.3.3` | ⏳ 待开始 |
-| **Task Card 3** | **QueueFS & Redis 集群化** | QueueFS 支持 Redis 单机/集群/哨兵模式、启动有界过期任务清扫 (0/30/60) | `8c9c2282`, `758fc7f0` | `test_config_validation.py` PASS | `v1.3.4` | ⏳ 待开始 |
-| **Task Card 4** | **Session 自动提交 V2** | Session 自动提交服务 (`SessionAutoCommitService`)、局部捕获异常断点恢复 | `d2056e97`, `0ab48f96`, `8e98a3c7` | `test_session_auto_commit.py` PASS | `v1.3.5` | ⏳ 待开始 |
-| **Task Card 5** | **服务端上下文统一召回** | `/search mode="context"` 组装、分层预算裁剪 (`context_assembler`)、Rerank L1 对齐 | `2cc96e39`, `674f5e60`, `cbc39077` | `test_context_assembler_pipeline.py` PASS | `v1.3.6` | ⏳ 待开始 |
-| **Task Card 6** | **企业级认证 (OIDC/LDAP)** | OIDC / LDAP 企业级身份插件、Watch 任务刷新安全 ACL、执行解析器加固 | `444cc87b`, `21029f40`, `03bd4694` | `test_ldap_auth.py` PASS | `v1.3.7` | ⏳ 待开始 |
-| **Task Card 7** | **Storage & VikingFS 容错** | `mkdir` 错误主动透传、`mv` 突破 1000 节点深拷贝、废弃向量后端清理 | `0205914d`, `ecab57e1`, `1d02a72b` | `test_mv_copy_node_limit.py` PASS | `v1.3.8` | ⏳ 待开始 |
-| **Task Card 8** | **Markdown 与内容写入增强** | `content_write` 处理模式、解析后不拆分 (`no_split`)、CJK Token 预算对齐 | `6f43a404`, `8d1d52fe`, `3087f943` | `test_markdown_split_token_budget.py` PASS | `v1.3.9` | ⏳ 待开始 |
+> **核心原则**：全系统严格遵循“**先合并上游，后开发新功能**”与“**彻底切除代码堆叠与掩盖式补丁**”铁律。
+> **代码治理四大哲学**：(1) 能用公用方法组件的 100% 用公用组件；(2) 有成熟现成轮子的 100% 用现成轮子；(3) 能复用必复用，不能复用找轮子适配；(4) 极致简洁，直击物理根因，严禁写新方法掩盖旧隐患。
+
+| 任务工单 ID | 模块与合并主题 | 涵盖上游核心特性与 Commits / 治理范围 | 物理验收与测试条件 | 计划 Tag 版本 | 当前状态 |
+| :--- | :--- | :--- | :--- | :---: | :---: |
+| **Task-Clean-00** | **全盘源码深度审查、死代码清理与公用轮子统一收口** | 清理历史遗留废弃文件/Mock/幽灵客户端，消除多层嵌套 Wrapper，将零散方法收敛至统一 Shared 工具库与官方轮子，根治发包失效与深坑隐患 | 全局单测 100% PASS，零冗余胶水脚本，构建打包耗时缩短，代码极简自解释 | 贯穿全生命周期 | 🚀 执行中 |
+| **Merge-Card-01** | **存储底座、CacheRuntime 与锁自愈** | DynamicProvider C ABI (`e7f58639`)、Redis CacheRuntime (`3123e8d8`)、阿里云 OSS (`63c25306`)、PathLock 恢复 (`9262df7a`)、分桶上传 (`550ef796`) | `pytest tests/storage/` PASS，Redis 缓存与小时分桶上传测试正常 | `v1.4.7` | ⏳ 待开始 |
+| **Merge-Card-02** | **记忆提纯、会话解耦与 URI 规范** | 记忆度量 (`b1780a4d`)、Event Page 复用 (`6248d4e4`)、Token 移出事件循环 (`ed4bb192`)、图片脱敏 (`78962c32`)、Windows URI (`76ab53ac`)、Session 结束 Hook (`7200cdb1`) | `pytest tests/session/` PASS，主事件循环零卡顿，图片字节彻底脱敏 | `v1.4.8` | ⏳ 待开始 |
+| **Merge-Card-03** | **AnyDoc 0.2 文档解析与语义检索升级** | AnyDoc 0.2 统一文档模型 (`7ee75611`, `1c954ea9`)、稀疏嵌入降级 (`41044af7`)、Reranker `top_n` (`687167f1`)、概览摘要缓存复用 (`42c0ee13`) | `pytest tests/parse/` & `pytest tests/retrieve/` PASS，Office 解析无异常 | `v1.4.9` | ⏳ 待开始 |
+| **Merge-Card-04** | **企业级权限系统与资源 ACL** | 资源 ACL 与用户组授权 (`e357af6a`)、向量检索权限过滤、账号级授权开关 (`170e17c1`)、禁用认证锁 (`66dc4c6a`) | `pytest tests/auth/` PASS，向量多租户权限隔离验证成功 | `v1.4.10` | ⏳ 待开始 |
+| **Merge-Card-05** | **双模态 MCP 架构重构与 Monorepo 物理收口** | 1. **核心 MCP (Core)**：本地主 Agent 全量 30+ 接口（全量记忆读写、VikingFS 控制、技能治理、图谱、服务端快照）；<br>2. **卫星 MCP (Satellite)**：3070 / Mac 等远程节点精简安全模式（远程知识召回、经验上报、抖动自愈，隔离底层危险指令）；<br>3. `mcp-openviking/` 物理纳入 Monorepo 随 Git 统一版本化迭代；<br>4. 合并 MCP 原生多模态内容块 (`0e77cd4e`) 与 OpenClaw 2026.8.1 契约 (`2c88269d`)。 | `pytest tests/server/test_mcp_endpoint.py` PASS，本地 Core 与远程 Satellite 双模自适应拉起 | `v1.4.11` | ⏳ 待开始 |
+| **Merge-Card-06** | **CLI 命名 Zip 下载与多语言 SDK 对齐** | `ov get` 目录 ZIP 下载 (`crates/ov_cli`)、CLI 终端明暗自适应主题 (`33210990`)、Go/TS SDK 批量写入对齐 (`36931716`) | `cargo test -p ov_cli` PASS，Go/TS/Python SDK 单元测试全绿 | `v1.4.12` | ⏳ 待开始 |
+| **Merge-Card-07** | **Web Studio 前端能力合并与视觉对齐** | 搜索模式切换与 JSONL 渲染 (`303e1172`)、L0/L1 Sidecar 元数据 (`30ef75ce`)、受信任用户切换 (`460f57c1`)、上下文树键盘导航 (`4738df66`) | 前端 `pnpm build` PASS，严格符合 **NO GREEN EVER**、双主题与 $\ge 11\text{px}$ 规范 | `v1.4.13` | ⏳ 待开始 |
 
 ---
 
@@ -36,43 +38,39 @@
 ### 📌 P0: [x] TASK-VL-DEPLOY-01 (v1.4.4): 2080Ti (22GB) 本地 Qwen3-VL 双模型自主拉起、INT8显存治理与全系统对接闭环 ✅
 - **类型**：Core Infrastructure ｜ **优先级**：🔴 P0（知识库与多模态检索中枢）
 - **目标**：在 Windows 宿主机 2080Ti (22GB) 上完成 Qwen3-VL-Embedding-8B-W8A16 与 Qwen3-VL-Reranker-2B 双模型拉起，进行算子层与 INT8 显存治理，保留 2.8GB+ 动态空间，打通 11432 统一 REST 服务，完成 OpenViking 与 OpenClaw 全系统对接。
-- **交付清单**：
-  1. `C:\openviking_offline\offline_serve.py`：高吞吐原生多模态双模型服务（`/v1/embeddings` 4096 维 + `/v1/rerank` 相关性评分）；
-  2. 修复 `compressed_tensors` 算子解压与 `transformers` 命名空间绑定，实现 100% 真实数学参数还原；
-  3. Reranker 2B 引入 `bitsandbytes` INT8 量化，显存从 21.6GB 峰值彻底优化至 18.6GB，保留 2.81GB 动态显存池；
-  4. `~/.openviking/ov.conf` 绑定 4096 维 dense embedding 与 rerank 接口；
-  5. `~/.openclaw/openclaw.json` 挂载 `local-vl` 供应商；
-  6. Wiki 沉淀：`viking://resources/master_memory/retrieval_bvl_r12_architecture.md`。
 - **验收结果**：已验收通过 ✅ ｜ **服务端口**：`http://127.0.0.1:11432`
 
 ---
 
-### 📌 P0: [ ] TASK-STUDIO-MODELS-MONITOR-01: AI 模型监控面板 (Models) 分类治理、去重防串与高密信达雅重构
-- **类型**：UI / Architecture Refactoring ｜ **优先级**：🔴 P0（核心运行态观测白盒雷达）
-- **背景病灶**：
-  1. **模型分类错位与重复统计 (Misclassification & Duplication)**：`qwen3-vl-emb` 是 4096 维密集向量嵌入模型，却同时在“VLM 视觉模型”下统计了 1,405 次，在“Embedding 向量模型”下显示 0 次；`auto-router`、`command-r-plus` 等纯文本/路由模型被粗暴机械归入 VLM，分类定义混乱；
-  2. **供应商机械死板写死 "Openai"**：所有使用 OpenAI 兼容协议的模型，供应商列均机械展示为 `openai`，无法区分实际物理部署源（如 CPA 网关 8317、本地 2080Ti 11432/11433、Mac Studio 13389、本地 CPU 等）；
-  3. **历史僵尸模型堆积未归档**：历史弃用模型（如 INT8, W8A16, text-embedding-3-small, 0次调用的 llmlingua-2）缺乏时间窗口切分（24H 活跃 vs 全量历史），面板信噪比严重劣化；
-  4. **高密视觉排版不达标**：行高松散、信息密度低，缺少状态微胶囊、P95 响应时延、调用成功率与自解释相对时间戳。
-- **重构方案 (第一性原理)**：
-  1. **前后端模型四态语义精准重构 (Semantic Categorizer)**：
-     - `LLM & VLM 认知/多模态推理模型`：`qwen3.8-flash-next`, `ornith-1.5-35b-a3b-vl` 等；
-     - `Embedding 向量表征模型`：`qwen3-vl-emb`（物理收口于此，彻底清除跨类重复项）、`Qwen3-Embedding-8B` 等；
-     - `Rerank 语义重排模型`：`qwen3-reranker-0.6b` / `qwen3-vl-rer`；
-     - `Prompt Compressor 提示词压缩模型`：`microsoft/llmlingua-2...`。
-  2. **真实物理供应商来源映射 (Physical Node Mapping)**：
-     - 结合端口与路由特征，将 `openai` 替换为自解释真实物理来源：`CPA 网关 (8317)`、`Local 2080Ti (11432/11433)`、`Mac Studio`、`Local CPU`。
-  3. **24H 动态滚动窗口与历史归档抽屉**：
-     - 新增 `🕒 24H 活跃` / `全量历史` 切换，历史 0 调用模型默认归档折叠，主面板仅高亮活跃实时模型。
-  4. **高密紧凑排版与 NO GREEN EVER 落地**：
-     - 表格内边距压缩为 `py-1`，数值统一采用 `font-mono tabular-nums text-xs`，字号下限 `>= 11px`；
-     - 增加状态指示微胶囊（`活跃 / 待命 / 归档`）与相对时间自解释展示。
-- **验收标准**：
-  - [ ] `qwen3-vl-emb` 不再跨类重复出现，分类 100% 准确；
-  - [ ] 供应商列真实反映物理节点，消除一刀切 `openai` 假象；
-  - [ ] 支持 24H 活跃筛选与历史折叠；
-  - [ ] 严格遵守 NO GREEN EVER（冰青 `cyan-500` / 沉静灰 `muted` / 玫瑰红 `rose-500`）；
-  - [ ] 中英文双语 i18n 100% 同步覆盖，`pnpm build` PASS。
+### 📌 P0: [x] TASK-VL-OPTI-02 (v1.4.5): RTX 2080 Ti 显存防溢出硬顶锁定 (<20.0GB)、双层门禁准入与 MCP 桥梁全栈自愈加固 ✅
+- **类型**：Core Infrastructure & Reliability ｜ **优先级**：🔴 P0（系统稳定性与防雪崩中枢）
+- **物理根因消解**：根治了 WDDM 驱动在显存 21.8G 触顶时向系统 RAM 分页溢出 31.0GB 导致的 100% CPU 颠簸雪崩。
+- **交付清单与核心参数**：
+  1. `C:\models\run_emb_service.py`：锁顶 14.625GB (`fraction: 0.65`)，`CUDA_MANAGED_FORCE_DEVICE_ALLOC=1`，Dual-Gate 32 并发门禁，1920×1920 HD 视觉支持，Hot-Standby 深度预热；
+  2. `C:\models\run_rer_service.py`：锁顶 5.400GB (`fraction: 0.24`)，Dual-Gate 32 并发门禁，Hot-Standby 深度预热；
+  3. `C:\models\daemon_watchdog.py`：单例 11439 互斥锁，5秒探活自愈，开局先杀后拉；
+  4. `~/.openviking/ov.conf`：放宽 `overview_max_chars: 8000`，对齐 32K/8K 窗口；
+  5. `mcp-openviking/mcp_openviking_server.py`：100% REST-First 动态自愈，清洗 FastMCP `FieldInfo` 序列化崩溃，归一化全格式 Level；
+  6. 运维与排障 SSOT 手册：`docs/EMBEDDING_RERANKER_VK_OPERATIONS_MANUAL.md` 及 `viking://resources/master_memory/` 同步。
+- **验收结果**：已验收通过 ✅ ｜ **实测指标**：显存严格锁在 12.18GB 峰值，RAM 0 溢出，Embedding 延迟 ~350ms，MCP 6 大接口 100% PASS。
+
+---
+
+### 📌 P0: [x] TASK-MAC-AUTOHEAL-03 (v1.4.6): Mac Studio (M3 Ultra) 无头双网卡智能分流、8大LaunchDaemons守护矩阵与远程黑屏秒级唤醒闭环 ✅
+- **类型**：Core Infrastructure & High Availability ｜ **优先级**：🔴 P0（远程算力与无头自愈中枢）
+- **物理根因消解**：
+  1. 根治了 FRP 客户端在开机网络未就绪时因 `loginFailExit=true` 单次超时直接自杀退出的问题；
+  2. 根治了插内网网线抢占 `0.0.0.0/0` 默认网关导致公网 SSH/FRP 掉线的问题（部署 Host Route Pinning 与 `com.mac.dualroute` 热插拔监听）；
+  3. 根治了热拔插显示器导致 WindowServer 物理 Framebuffer 销毁呈现远程黑屏的问题（部署 `wake_headless_display.sh` SIGHUP 虚拟屏幕重协商）。
+- **交付清单与核心参数**：
+  1. `/Users/fsk/.config/frp/frpc.toml`：固化 `loginFailExit = false`，收口 13100 (SSH), 13389 (LLM), 18000 (GMP)；
+  2. `/Users/fsk/bin/auto_dual_route.sh` + `/Library/LaunchDaemons/com.mac.dualroute.plist`：系统事件热插拔监听，公网锁定 Wi-Fi，内网 `10.x`/`172.x` 走网线；
+  3. `/Users/fsk/bin/system_watchdog.sh` + `/Library/LaunchDaemons/com.mac.watchdog.plist`：60s 定时全栈巡检 13389/18001/18002/8000 端口并秒级 kickstart 自愈；
+  4. `/Library/LaunchDaemons/com.pm2.fsk.plist`：开机 Headless 自动 `pm2 resurrect` 园区平台 (`8000`/`3000`)；
+  5. `/Users/fsk/bin/wake_headless_display.sh`：一键 SIGHUP WindowServer 重新协商虚拟屏幕，RayLink 画面秒级唤醒；
+  6. 运维 SSOT 沉淀：更新 `proxy/Mac_Studio运维档案.md`、`.agents/skills/mac-studio-remote-ops/SKILL.md` 并全量同步至 OpenViking Master Memory (`viking://resources/master_memory/mac_studio_remote_ops_and_headless_self_healing.md`)。
+- **验收结果**：已验收通过 ✅ ｜ **实测指标**：公网 SSH 零抖动直连，`https://api.tide.red/v1/models` (1.1s 直出)、`https://fsk.tide.red` (200 OK)、内网直连 (`10.128.226.5`) 双轨并发 100% 满血运行。
+- **Git Commit**：`ec2b039` ｜ **Git Tag**：`v1.4.6`
 
 ---
 
@@ -117,6 +115,22 @@
 
 ---
 
+### 📌 P0: [x] TASK-EVALUATOR-01: OpenViking 大模型 5 场景工业级准入评估标准化体系 (Model Evaluator SSOT) ✅
+- **类型**：Core Infrastructure / Evaluation ｜ **优先级**：🔴 P0（大模型选型与准入中枢）
+- **交付内容**：
+  1. `openviking_model_evaluator.py`：实现 S1~S5 真实业务管道拟真评测（资源分级提纯、意图重写、跨会话主记忆提纯、图谱拓扑推导、技能规范审计）；
+  2. 标准答案客观断言链 (Ground Truth)：格式合规 (25分) + 标准答案命中 (40分) + 端到端速率 (20分) + 正文纯净度 (15分)；
+  3. 欧尼 35B 实机测试：**94.0 分** 满分命中标准答案，固化为官方黄金基准；
+  4. 评测注册表：自动沉淀至 `docs/benchmarks/openviking_model_evaluator_registry.json` 与 `.agents/skills/openviking-model-evaluator/SKILL.md`。
+
+---
+
+### 📌 P0: [ ] TASK-STUDIO-MODELS-MONITOR-01：Models 监控大屏真数据驱动重构与双主题对齐
+- **类型**：Observability / Feature ｜ **优先级**：🔴 P0
+- **目标**：重构 Studio `/monitoring` 中 Models 监控卡片，彻底切除任何静态数字与假 Mock，100% 绑定后端 `models_observer.py` 的真实模型状态、显存与时延接口；严格遵守 NO GREEN EVER 与双主题。
+
+---
+
 ### 📌 P1-3: [ ] Card-Studio-01：Agent Evolution (演进轨迹) 可视化看板集成
 - **类型**：Feature ｜ **优先级**：P1
 - **目标**：在 Studio 导航中新增 “Evolution / 演进看板”，调用 `/api/v1/agent-evolution/outcomes` 渲染 Agent 经验演进轨迹树与成效对比。
@@ -139,12 +153,33 @@
 
 ---
 
-### 📌 P2-2: [ ] Card-Studio-03：企业级 Auth 状态自适应与只读模式 Banner
+### 📌 P2-1: [ ] Card-Studio-05：全局配置与数据源管理中心 (Settings & Sources)
 - **类型**：Feature ｜ **优先级**：P2
-- **目标**：对齐上游企业级认证模式，当服务端开启 OIDC/LDAP 时在 Studio 设置页优雅展示认证源状态与权限级别。
-- **关联后端**：Task Card 6 (`v1.3.7`)
-- **验收标准**：
-  - [ ] 认证模式下优雅提示只读/管理员状态，无假控制台报错。
+- **目标**：在 Studio 设置中提供可视化动态配置面板，直观查看与管理 `ov.conf` 中的全域技能源、模型端点与存储驱动。
+
+---
+
+### 📌 P2-2: [ ] Card-Studio-06：RAG 评测实验室可视化面板 (RAGAS Benchmark)
+- **类型**：Feature ｜ **优先级**：P2
+- **目标**：在控制台集成 RAG 检索召回率、准确率与忠实度 (Faithfulness) 评测实验室。
+
+---
+
+### 📌 P2-3: [ ] Card-Studio-07：策略强化训练台 (Policy Trainer)
+- **类型**：Feature ｜ **优先级**：P2
+- **目标**：可视化展示 Agent 策略反馈日志与奖励信号分布。
+
+---
+
+### 📌 P2-4: [ ] Card-Studio-08：隐私脱敏治理中心 (Privacy Gov)
+- **类型**：Feature ｜ **优先级**：P2
+- **目标**：对齐后端隐私过滤接口，提供敏感字段查看脱敏与审计日志导出。
+
+---
+
+### 📌 P2-5: [ ] Card-Studio-09：知识大脑迁移打包中心 (OVPack Hub)
+- **类型**：Feature ｜ **优先级**：P2
+- **目标**：提供图形化 `ovpack` 导出、导入与 VikingFS 快照恢复界面。
 
 ---
 

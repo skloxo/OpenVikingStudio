@@ -6,7 +6,7 @@ OpenViking - An Agent-native context database
 Data in, Context out.
 """
 
-__version__ = "1.4.3"
+__version__ = "1.4.4"
 
 try:
     from ._version import version as _v

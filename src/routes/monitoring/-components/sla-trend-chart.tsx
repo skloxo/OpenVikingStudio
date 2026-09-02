@@ -13,18 +13,15 @@ import { useTranslation } from 'react-i18next'
 
 import { Badge } from '#/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '#/components/ui/tooltip'
-
-interface SlaDataPoint {
-  date: string
-  successRate: number
-  totalRequests: number
-  tokenSavingRate: number
-  latencyMs: number
-}
+import {
+  fetchTelemetryTrends,
+  type SlaDataPoint,
+  type TelemetryTimeWindow,
+} from '#/lib/telemetry'
 
 interface SlaTrendChartProps {
   currentSuccessRate?: number | null
-  window?: '24h' | '7d' | '30d' | 'all'
+  window?: TelemetryTimeWindow
 }
 
 export function SlaTrendChart({
@@ -35,20 +32,7 @@ export function SlaTrendChart({
 
   const trendsQuery = useQuery({
     queryKey: ['telemetry-trends-sla', window],
-    queryFn: async () => {
-      try {
-        const res = await fetch(`/api/v1/system/telemetry/trends?metric=sla&window=${window}`)
-        if (res.ok) {
-          const json = await res.json()
-          if (json && Array.isArray(json.points)) {
-            return json.points as SlaDataPoint[]
-          }
-        }
-      } catch {
-        // network fallback
-      }
-      return []
-    },
+    queryFn: () => fetchTelemetryTrends<SlaDataPoint>('sla', window),
     refetchInterval: 15_000,
     staleTime: 10_000,
   })

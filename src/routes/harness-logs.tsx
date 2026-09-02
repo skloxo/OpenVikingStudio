@@ -4,7 +4,11 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#/components/ui/card'
+import { Input } from '#/components/ui/input'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '#/components/ui/tooltip'
 import { useAppConnection } from '#/hooks/use-app-connection'
+import { ovClient } from '#/lib/ov-client'
 
 import {
   ArrowLeftIcon,
@@ -67,7 +71,7 @@ export const Route = createFileRoute('/harness-logs')({
   component: HarnessLogsPage,
 })
 
-function HarnessLogsPage() {
+export function HarnessLogsPage() {
   const { t } = useTranslation('skillsPage')
   const [searchQuery, setSearchQuery] = React.useState('')
   const [categoryFilter, setCategoryFilter] = React.useState<'all' | 'guard' | 'reflexion' | 'call'>('all')
@@ -274,26 +278,19 @@ function HarnessLogsPage() {
     enabled: canQuery,
     queryFn: async () => {
       try {
-        const apiKey = connection.adminApiKey || connection.apiKey
-        const headers: Record<string, string> = {}
-        if (apiKey) {
-          headers['X-API-Key'] = apiKey
+        const res = await ovClient.instance.get<{
+          lessons_count?: number
+          total_calls?: number
+          blocked_calls?: number
+          most_evolved_skill?: string
+          lessons_detail?: LessonItem[]
+          store_calls?: number
+        }>('/api/v1/system/harness_metrics')
+        const data = res.data
+        if (data && Array.isArray(data.lessons_detail) && data.lessons_detail.length > 0) {
+          return data
         }
-        const res = await fetch('/api/v1/system/harness_metrics', { headers })
-        if (res.ok) {
-          const data = await res.json() as {
-            lessons_count?: number
-            total_calls?: number
-            blocked_calls?: number
-            most_evolved_skill?: string
-            lessons_detail?: LessonItem[]
-            store_calls?: number
-          }
-          if (data && Array.isArray(data.lessons_detail) && data.lessons_detail.length > 0) {
-            return data
-          }
-          return { ...data, lessons_detail: BUILTIN_LESSONS }
-        }
+        return { ...data, lessons_detail: BUILTIN_LESSONS }
       } catch {
         // Fallback
       }
@@ -495,13 +492,11 @@ function HarnessLogsPage() {
                       const sSkill = simResult.secondarySkill ?? '从属技能'
                       
                       try {
-                        const res = await fetch('/api/v1/harness/write_disambiguation', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ skill_name: pSkill, rule: simResult.suggestion })
-                        })
-                        const data = await res.json()
-                        const targetPath = data.file_path || 'SKILL.md'
+                        const res = await ovClient.instance.post<{ file_path?: string }>(
+                          '/api/v1/harness/write_disambiguation',
+                          { skill_name: pSkill, rule: simResult.suggestion }
+                        )
+                        const targetPath = res.data?.file_path || 'SKILL.md'
                         
                         setSimResult({
                           primarySkill: pSkill,

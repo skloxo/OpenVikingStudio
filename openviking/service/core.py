@@ -537,6 +537,13 @@ class OpenVikingService:
             await self._vikingdb_manager.close()
             self._vikingdb_manager = None
 
+        if self._agfs_client:
+            close_agfs = getattr(self._agfs_client, "close", None)
+            if callable(close_agfs):
+                await asyncio.to_thread(close_agfs)
+            self._agfs_client = None
+            logger.info("RAGFS binding closed")
+
         self._viking_fs = None
         self._resource_processor = None
         self._skill_processor = None

@@ -10,9 +10,10 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Callable, Optional
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.exceptions import ExceptionMiddleware
@@ -585,6 +586,7 @@ def create_app(
     # Keep exception rendering inside the request-ID and CORS layers. This lets
     # those middleware own their response headers without special error paths.
     app.add_middleware(ExceptionMiddleware, handlers={Exception: general_error_handler})
+    app.add_middleware(GZipMiddleware, minimum_size=1000)
     app.add_middleware(RequestIdMiddleware)
     app.add_middleware(
         CORSMiddleware,
@@ -766,36 +768,53 @@ def create_app(
     if _studio_dir.is_dir() and (_studio_dir / "index.html").is_file():
         _studio_root = _studio_dir.resolve()
         _studio_index = _studio_root / "index.html"
-        _studio_no_store = {"Cache-Control": "no-store"}
+        _studio_no_cache = {"Cache-Control": "no-cache, must-revalidate"}
+        _studio_immutable_cache = {"Cache-Control": "public, max-age=31536000, immutable"}
 
-        def _studio_response(path: Path, *, no_store: bool = False) -> FileResponse:
-            return FileResponse(path, headers=_studio_no_store if no_store else None)
+        def _studio_response(path: Path, *, immutable: bool = False) -> FileResponse:
+            headers = _studio_immutable_cache if immutable else _studio_no_cache
+            return FileResponse(path, headers=headers)
 
-        @app.get("/", include_in_schema=False)
+        @app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
         async def _root_redirect_to_studio():
             # When web-studio is bundled, treat / as a convenience entry to
             # /studio/ so users hitting the bare origin land on the UI.
             return RedirectResponse(url="/studio/", status_code=302)
 
-        @app.get("/studio", include_in_schema=False)
+        @app.api_route("/studio", methods=["GET", "HEAD"], include_in_schema=False)
         async def _studio_root_handler():
-            return _studio_response(_studio_index, no_store=True)
+            return _studio_response(_studio_index, immutable=False)
 
-        @app.get("/studio/{path:path}", include_in_schema=False)
+        @app.api_route("/studio/{path:path}", methods=["GET", "HEAD"], include_in_schema=False)
         async def _studio_assets(path: str):
-            # SPA fallback: serve real files when present, otherwise return
-            # index.html so TanStack Router can resolve the deep link.
+            # SPA fallback: serve real files when present.
+            # If a missing asset (.js, .css, etc.) is requested, return 404 so
+            # the browser module loader can trigger vite:preloadError reload
+            # instead of receiving index.html and throwing a syntax error.
             try:
                 requested = (_studio_root / path).resolve()
             except OSError:
-                return _studio_response(_studio_index, no_store=True)
+                return _studio_response(_studio_index, immutable=False)
 
             if not requested.is_relative_to(_studio_root):
-                return _studio_response(_studio_index, no_store=True)
+                return _studio_response(_studio_index, immutable=False)
 
             if requested.is_file():
-                return _studio_response(requested)
-            return _studio_response(_studio_index, no_store=True)
+                # Assets with hashes get 1-year immutable cache; root index gets no-cache
+                is_hashed_asset = path.startswith("assets/") and any(
+                    path.endswith(ext) for ext in (".js", ".css", ".wasm", ".woff", ".woff2", ".png", ".jpg", ".svg", ".ico")
+                )
+                return _studio_response(requested, immutable=is_hashed_asset)
+
+            # Do not return index.html for static asset subpaths
+            is_static_asset = path.startswith("assets/") or any(
+                path.endswith(ext)
+                for ext in (".js", ".css", ".png", ".jpg", ".svg", ".ico", ".json", ".wasm", ".woff", ".woff2", ".map")
+            )
+            if is_static_asset:
+                raise HTTPException(status_code=404, detail="Static asset not found")
+
+            return _studio_response(_studio_index, immutable=False)
 
         logger.info("Web Studio mounted at /studio from %s", _studio_root)
     else:

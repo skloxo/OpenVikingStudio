@@ -13,7 +13,11 @@ from fastapi import Request
 from openviking.server.api_keys import APIKeyManager
 from openviking.server.auth.plugin import AuthPlugin
 from openviking.server.identity import ResolvedIdentity, Role
-from openviking_cli.exceptions import InvalidArgumentError, UnauthenticatedError
+from openviking_cli.exceptions import (
+    InvalidArgumentError,
+    PermissionDeniedError,
+    UnauthenticatedError,
+)
 
 _LOCALHOST_HOSTS = {"127.0.0.1", "localhost", "::1"}
 _TRUSTED_RELAXED_IDENTITY_PREFIXES = ("/api/v1/admin",)
@@ -96,12 +100,25 @@ class TrustedAuthPlugin(AuthPlugin):
         x_openviking_user: Optional[str] = None,
     ) -> ResolvedIdentity:
         configured_root_api_key = _configured_root_api_key(request)
+        api_key_manager = getattr(request.app.state, "api_key_manager", None)
+        resolved_key_identity = None
+
+        is_root = False
+        if configured_root_api_key and api_key:
+            is_root = hmac.compare_digest(api_key, configured_root_api_key)
+
+        if not is_root and api_key and api_key_manager:
+            try:
+                resolved_key_identity = api_key_manager.resolve(api_key)
+            except Exception:
+                resolved_key_identity = None
+
         if configured_root_api_key:
             if not api_key:
                 raise UnauthenticatedError(
                     "Missing API Key in trusted mode with Root API Key enabled."
                 )
-            if not hmac.compare_digest(api_key, configured_root_api_key):
+            if not is_root and resolved_key_identity is None:
                 raise UnauthenticatedError(
                     "Invalid API Key in trusted mode with Root API Key enabled."
                 )
@@ -127,6 +144,20 @@ class TrustedAuthPlugin(AuthPlugin):
         effective_account_id = explicit_account_id or x_openviking_account
         effective_user_id = explicit_user_id or x_openviking_user
 
+        if resolved_key_identity is not None:
+            if effective_account_id and effective_account_id != resolved_key_identity.account_id:
+                raise PermissionDeniedError(
+                    "X-OpenViking-Account cannot override account bound to User API Key."
+                )
+            if effective_user_id and effective_user_id != resolved_key_identity.user_id:
+                raise PermissionDeniedError(
+                    "X-OpenViking-User cannot override user bound to User API Key."
+                )
+            effective_account_id = resolved_key_identity.account_id
+            effective_user_id = resolved_key_identity.user_id
+            if asserted_role is None and resolved_key_identity.role:
+                asserted_role = resolved_key_identity.role
+
         # A verified Root key is the caller identity for admin routes. Path
         # parameters such as ``account_id`` identify the managed resource, so
         # they must not be mistaken for a partial caller identity.
@@ -150,6 +181,10 @@ class TrustedAuthPlugin(AuthPlugin):
                     account_id="trusted",
                     user_id="trusted",
                 )
+
+        if is_root:
+            effective_account_id = effective_account_id or "default"
+            effective_user_id = effective_user_id or "default"
 
         if _trusted_request_requires_explicit_identity(request.url.path):
             missing_fields = []

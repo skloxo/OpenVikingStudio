@@ -94,9 +94,15 @@ class ApiKeyAuthPlugin(AuthPlugin):
         identity.account_id = identity.account_id or "default"
         identity.user_id = identity.user_id or "default"
 
-        # Silently ignore identity assertion headers in api_key mode.
-        # Older clients may send these headers out of habit; clearing them
-        # avoids breaking compatibility without weakening security.
+        if x_openviking_account and x_openviking_account != identity.account_id:
+            raise PermissionDeniedError(
+                "X-OpenViking-Account cannot override account bound to API Key."
+            )
+        if x_openviking_user and x_openviking_user != identity.user_id:
+            raise PermissionDeniedError(
+                "X-OpenViking-Account and X-OpenViking-User cannot override user bound to API Key."
+            )
+
         if x_openviking_account:
             _remove_header(request, b"x-openviking-account")
         if x_openviking_user:

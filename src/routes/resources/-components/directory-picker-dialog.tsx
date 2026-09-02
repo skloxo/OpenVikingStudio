@@ -15,7 +15,7 @@ import {
 import { ScrollArea } from '#/components/ui/scroll-area'
 import { Spinner } from '#/components/ui/spinner'
 import type { FSListResult } from '@ov-server/api/v1/fs'
-import { normalizeDirUri, normalizeFsEntries } from '../-lib/normalize'
+import { fileNameFromUri, normalizeDirUri, normalizeFsEntries } from '../-lib/normalize'
 import type { VikingFsEntry } from '../-types/viking-fm'
 
 function getErrorMessage(error: unknown): string {
@@ -130,8 +130,7 @@ export function DirectoryPickerDialog({
           ) : dirQuery.data && dirQuery.data.length > 0 ? (
             <div className="p-1">
               {dirQuery.data.map((entry: VikingFsEntry) => {
-                const name =
-                  entry.uri.replace(/\/$/, '').split('/').pop() || entry.uri
+                const name = fileNameFromUri(entry.uri)
                 return (
                   <button
                     key={entry.uri}

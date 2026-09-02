@@ -120,6 +120,7 @@ class _OpsMixin:
         recursive: bool = False,
         ctx: Optional[RequestContext] = None,
         lease_ref: Dict[str, Any] | None = None,
+        auto_pathlock: bool = True,
     ) -> Dict[str, Any]:
         """Delete file/directory + recursively update vector index.
 
@@ -129,6 +130,12 @@ class _OpsMixin:
         Acquires a path lock, deletes VectorDB records, then FS files.
         Raises ResourceBusyError when the target is locked by an ongoing
         operation (e.g. semantic processing).
+
+        When ``auto_pathlock`` is False and no outer ``lease_ref`` is supplied,
+        the VikingFS-level tree/exact lease is skipped and the underlying AGFS
+        delete runs with automatic pathlock disabled. Callers must guarantee the
+        target is not concurrently mutated (e.g. best-effort shared upload
+        cleanup that only deletes already-expired directories).
 
         Returns:
             Dict with 'estimated_deleted_count' indicating the estimated number
@@ -183,8 +190,12 @@ class _OpsMixin:
             recursive = False
             lock_method = self._async_agfs.pathlock_acquire_exact
 
+        # When an outer lease is supplied we always honor it. Otherwise callers
+        # can opt out of the VikingFS-level lease via auto_pathlock=False, in
+        # which case the AGFS delete also runs with automatic pathlock disabled.
+        skip_lock = lease_ref is None and not auto_pathlock
         lease = lease_ref
-        if lease is None:
+        if lease is None and not skip_lock:
             try:
                 lease = await lock_method(path)
             except LockAcquisitionError:
@@ -201,6 +212,7 @@ class _OpsMixin:
                     path,
                     recursive=recursive,
                     fs_ctx=self._pathlock_fs_ctx(ctx, lease),
+                    auto_pathlock=auto_pathlock,
                 )
             except AGFSDirectoryNotEmptyError:
                 raise FailedPreconditionError(
@@ -220,8 +232,39 @@ class _OpsMixin:
                 result = {"estimated_deleted_count": estimated_count}
             return result
         finally:
-            if lease_ref is None:
+            if lease_ref is None and lease is not None:
                 await self._async_agfs.pathlock_release(lease)
+
+    async def remove_files(
+        self,
+        uri: str,
+        recursive: bool = False,
+        ctx: Optional[RequestContext] = None,
+        lease_ref: Dict[str, Any] | None = None,
+        auto_pathlock: bool = True,
+    ) -> Dict[str, Any]:
+        """Delete a file/directory from AGFS storage only, skipping vector-index cleanup.
+
+        Unlike :meth:`rm`, this never touches the vector store. Use it for URIs
+        that carry no vector-index records — e.g. raw temporary uploads under
+        ``viking://upload`` — so cleanup avoids pointless ``delete_by_filter``
+        round-trips. Despite the plural name it deletes a single URI (a file or,
+        with ``recursive=True``, a directory subtree). URI safety and account
+        isolation are still enforced by ``_uri_to_path``; this method performs no
+        ACL checks, so callers must scope the URI themselves.
+
+        ``auto_pathlock`` / ``lease_ref`` are forwarded to AGFS exactly like the
+        underlying delete in :meth:`rm`. Callers that pass ``auto_pathlock=False``
+        must guarantee the target is not concurrently mutated (best-effort
+        cleanup of already-expired, uniquely-named upload directories).
+        """
+        path = self._uri_to_path(uri, ctx=ctx)
+        return await self._async_agfs.rm(
+            path,
+            recursive=recursive,
+            fs_ctx=self._pathlock_fs_ctx(ctx, lease_ref),
+            auto_pathlock=auto_pathlock,
+        )
 
     async def mv(
         self,
@@ -914,8 +957,14 @@ class _OpsMixin:
         content: Union[str, bytes],
         ctx: Optional[RequestContext] = None,
         lease_ref: Dict[str, Any] | None = None,
+        auto_pathlock: bool = True,
     ) -> None:
-        """Write file directly. Encryption lock handled internally by EncryptionWrappedFS."""
+        """Write file directly. Encryption lock handled internally by EncryptionWrappedFS.
+
+        When ``auto_pathlock`` is False the underlying AGFS write runs with
+        automatic pathlock disabled. Only safe for URIs that are never written
+        concurrently (e.g. unique-per-request shared upload directories).
+        """
         self._ensure_mutable_access(uri, ctx)
         path = self._uri_to_path(uri, ctx=ctx)
         await self._ensure_parent_dirs(path, ctx=ctx, lease_ref=lease_ref)
@@ -923,7 +972,12 @@ class _OpsMixin:
         if isinstance(content, str):
             content = content.encode("utf-8")
 
-        await self._async_agfs.write(path, content, fs_ctx=self._pathlock_fs_ctx(ctx, lease_ref))
+        await self._async_agfs.write(
+            path,
+            content,
+            fs_ctx=self._pathlock_fs_ctx(ctx, lease_ref),
+            auto_pathlock=auto_pathlock,
+        )
 
     async def read_file(
         self,
@@ -1026,13 +1080,24 @@ class _OpsMixin:
         content: bytes,
         ctx: Optional[RequestContext] = None,
         lease_ref: Dict[str, Any] | None = None,
+        auto_pathlock: bool = True,
     ) -> None:
-        """Write single binary file. Encryption lock handled internally by EncryptionWrappedFS."""
+        """Write single binary file. Encryption lock handled internally by EncryptionWrappedFS.
+
+        When ``auto_pathlock`` is False the underlying AGFS write runs with
+        automatic pathlock disabled. Only safe for URIs that are never written
+        concurrently (e.g. unique-per-request shared upload directories).
+        """
         self._ensure_mutable_access(uri, ctx)
         path = self._uri_to_path(uri, ctx=ctx)
         await self._ensure_parent_dirs(path, ctx=ctx, lease_ref=lease_ref)
 
-        await self._async_agfs.write(path, content, fs_ctx=self._pathlock_fs_ctx(ctx, lease_ref))
+        await self._async_agfs.write(
+            path,
+            content,
+            fs_ctx=self._pathlock_fs_ctx(ctx, lease_ref),
+            auto_pathlock=auto_pathlock,
+        )
 
     async def append_file(
         self,

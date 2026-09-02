@@ -169,3 +169,96 @@ async def test_get_experience_outcome_distribution_passes_date_range(
     assert response.status_code == 200
     assert captured["start_date"] == "2026-08-01"
     assert captured["end_date"] == "2026-08-10"
+
+
+async def test_get_agent_evolution_overview(
+    client: httpx.AsyncClient,
+    service,
+    monkeypatch,
+):
+    fake_overview = {
+        "total_trajectories": 18,
+        "total_experiences": 3,
+        "outcomes_summary": {
+            "success": 15,
+            "failure": 2,
+            "partial": 1,
+            "unknown": 0,
+            "unfinished": 0,
+        },
+        "success_rate": 88.2,
+        "recent_24h_active_count": 5,
+    }
+
+    async def fake_get(*, ctx):
+        return fake_overview
+
+    monkeypatch.setattr(service.agent_evolution, "get_evolution_overview", fake_get)
+    response = await client.get("/api/v1/agent-evolution/overview")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "ok"
+    assert data["result"]["total_trajectories"] == 18
+    assert data["result"]["success_rate"] == 88.2
+
+
+async def test_list_user_experiences(
+    client: httpx.AsyncClient,
+    service,
+    monkeypatch,
+):
+    fake_experiences = {
+        "items": [
+            {
+                "uri": "viking://user/default/memories/experiences/exchange.md",
+                "name": "exchange.md",
+                "trajectory_count": 12,
+                "updated_at": "2026-08-24T10:00:00Z",
+                "size": 1024,
+            }
+        ],
+        "total": 1,
+        "limit": 50,
+        "offset": 0,
+        "has_more": False,
+    }
+
+    async def fake_list(*, ctx, limit, offset):
+        return fake_experiences
+
+    monkeypatch.setattr(service.agent_evolution, "list_user_experiences", fake_list)
+    response = await client.get("/api/v1/agent-evolution/experiences")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "ok"
+    assert len(data["result"]["items"]) == 1
+    assert data["result"]["items"][0]["name"] == "exchange.md"
+    assert data["result"]["items"][0]["trajectory_count"] == 12
+
+
+async def test_list_experience_trajectories_optional_uri(
+    client: httpx.AsyncClient,
+    service,
+    monkeypatch,
+):
+    captured = {}
+
+    async def fake_list(*, experience_uri, ctx, limit, offset, start_date, end_date):
+        captured.update(experience_uri=experience_uri)
+        return {
+            "experience_uri": experience_uri,
+            "items": [],
+            "total": 0,
+            "limit": limit,
+            "offset": offset,
+            "has_more": False,
+        }
+
+    monkeypatch.setattr(service.agent_evolution, "list_trajectories_by_experience", fake_list)
+    response = await client.get("/api/v1/agent-evolution/experiences/trajectories")
+
+    assert response.status_code == 200
+    assert captured["experience_uri"] is None
+
