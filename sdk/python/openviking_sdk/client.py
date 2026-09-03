@@ -151,6 +151,14 @@ class VikingURI:
             cleaned = cleaned[1:]
         return f"viking://{cleaned}"
 
+    @staticmethod
+    def normalize_file_reference(uri_or_id: str) -> str:
+        """Normalize a URI while preserving record IDs for read-only file lookup APIs."""
+        cleaned = uri_or_id.strip()
+        if len(cleaned) == 32 and all(char in "0123456789abcdef" for char in cleaned):
+            return cleaned
+        return VikingURI.normalize(uri_or_id)
+
 
 class Session:
     def __init__(self, client: "AsyncHTTPClient", session_id: str):
@@ -344,6 +352,7 @@ class AsyncHTTPClient:
         self._ldap_password = config.ldap_password
         self._oidc_token = config.oidc_token
         self._event_hooks = {event: list(hooks) for event, hooks in (event_hooks or {}).items()}
+        self._http_limits: Optional[httpx.Limits] = None
         self._http: Optional[httpx.AsyncClient] = None
         self._observer: Optional[_HTTPObserver] = None
         self._snapshot: Optional["AsyncHTTPSnapshotNamespace"] = None
@@ -377,13 +386,16 @@ class AsyncHTTPClient:
                 headers["Authorization"] = f"Bearer {token}"
 
         headers.update(self._extra_headers)
-        self._http = httpx.AsyncClient(
-            base_url=self._url,
-            headers=headers,
-            timeout=self._timeout,
-            event_hooks=self._event_hooks,
-            params={"profile": "1"} if self._profile_enabled else None,
-        )
+        client_kwargs: Dict[str, Any] = {
+            "base_url": self._url,
+            "headers": headers,
+            "timeout": self._timeout,
+            "event_hooks": self._event_hooks,
+            "params": {"profile": "1"} if self._profile_enabled else None,
+        }
+        if self._http_limits is not None:
+            client_kwargs["limits"] = self._http_limits
+        self._http = httpx.AsyncClient(**client_kwargs)
         self._observer = _HTTPObserver(self)
 
     @staticmethod
@@ -644,11 +656,16 @@ class AsyncHTTPClient:
         if exc_class == NotFoundError:
             resource = details.get("resource", "") if details else ""
             resource_type = details.get("type", "resource") if details else "resource"
-            raise exc_class(resource, resource_type)
+            reason = details.get("reason") if details else None
+            raise exc_class(resource, resource_type, reason=reason)
         if exc_class == AlreadyExistsError:
             resource = details.get("resource", "") if details else ""
             resource_type = details.get("type", "resource") if details else "resource"
             raise exc_class(resource, resource_type)
+        if exc_class == UnavailableError:
+            service = details.get("service", "service") if details else "service"
+            reason = details.get("reason", "") if details else message
+            raise exc_class(service, reason)
         raise exc_class(message)
 
     def _zip_directory(self, dir_path: str) -> str:
@@ -702,19 +719,8 @@ class AsyncHTTPClient:
         wait: bool = False,
         timeout: Optional[float] = None,
         options: Optional[AddResourceOptions] = None,
-        *,
-        args: Optional[Dict[str, Any]] = None,
-        parse_mode: Optional[str] = None,
-        **kwargs: Any,
     ) -> Dict[str, Any]:
         option_values = dict(options or {})
-        for k, v in kwargs.items():
-            if v is not None and k not in option_values:
-                option_values[k] = v
-        if args is not None and "args" not in option_values:
-            option_values["args"] = args
-        if parse_mode is not None and "parse_mode" not in option_values:
-            option_values["parse_mode"] = parse_mode
         add_type = option_values.get("add_type")
         if add_type is not None:
             add_type = add_type.strip() or None
@@ -1056,6 +1062,9 @@ class AsyncHTTPClient:
         node_limit: int = 1000,
         sort_by: Optional[str] = None,
         sort_order: str = "asc",
+        extra_fields: Optional[List[str]] = None,
+        tags: Optional[List[str]] = None,
+        include_tags: bool = False,
     ) -> List[Any]:
         params: Dict[str, Any] = {
             "uri": VikingURI.normalize(uri),
@@ -1069,6 +1078,12 @@ class AsyncHTTPClient:
         if sort_by is not None:
             params["sort_by"] = sort_by
             params["sort_order"] = sort_order
+        if extra_fields:
+            params["extra_fields"] = list(extra_fields)
+        if tags is not None:
+            params["tags"] = tags
+        if include_tags:
+            params["include_tags"] = True
         response = await self._request(
             "GET",
             "/api/v1/fs/ls",
@@ -1084,24 +1099,36 @@ class AsyncHTTPClient:
         show_all_hidden: bool = False,
         node_limit: int = 1000,
         level_limit: int = 3,
+        extra_fields: Optional[List[str]] = None,
+        tags: Optional[List[str]] = None,
+        include_tags: bool = False,
     ) -> List[Dict[str, Any]]:
+        params: Dict[str, Any] = {
+            "uri": VikingURI.normalize(uri),
+            "output": output,
+            "abs_limit": abs_limit,
+            "show_all_hidden": show_all_hidden,
+            "node_limit": node_limit,
+            "level_limit": level_limit,
+        }
+        if extra_fields:
+            params["extra_fields"] = list(extra_fields)
+        if tags is not None:
+            params["tags"] = tags
+        if include_tags:
+            params["include_tags"] = True
         response = await self._request(
             "GET",
             "/api/v1/fs/tree",
-            params={
-                "uri": VikingURI.normalize(uri),
-                "output": output,
-                "abs_limit": abs_limit,
-                "show_all_hidden": show_all_hidden,
-                "node_limit": node_limit,
-                "level_limit": level_limit,
-            },
+            params=params,
         )
         return self._handle_response(response)
 
     async def stat(self, uri: str) -> Dict[str, Any]:
         response = await self._request(
-            "GET", "/api/v1/fs/stat", params={"uri": VikingURI.normalize(uri)}
+            "GET",
+            "/api/v1/fs/stat",
+            params={"uri": VikingURI.normalize_file_reference(uri)},
         )
         return self._handle_response(response)
 
@@ -1143,7 +1170,11 @@ class AsyncHTTPClient:
         response = await self._request(
             "GET",
             "/api/v1/content/read",
-            params={"uri": VikingURI.normalize(uri), "offset": offset, "limit": limit},
+            params={
+                "uri": VikingURI.normalize_file_reference(uri),
+                "offset": offset,
+                "limit": limit,
+            },
         )
         return self._handle_response(response)
 
@@ -1153,7 +1184,7 @@ class AsyncHTTPClient:
             "GET",
             "/api/v1/content/read",
             params={
-                "uri": VikingURI.normalize(uri),
+                "uri": VikingURI.normalize_file_reference(uri),
                 "offset": offset,
                 "limit": limit,
                 "raw": True,
@@ -1314,29 +1345,8 @@ class AsyncHTTPClient:
         limit: int = 10,
         image: Any = None,
         options: Optional[FindOptions] = None,
-        *,
-        score_threshold: Optional[float] = None,
-        filter: Optional[Dict[str, Any]] = None,
-        context_type: Optional[str] = None,
-        tags: Optional[List[str]] = None,
-        telemetry: Any = None,
-        **kwargs: Any,
     ) -> Dict[str, Any]:
         search_options = dict(options or {})
-        for k, v in kwargs.items():
-            if v is not None and k not in search_options:
-                search_options[k] = v
-        if tags is not None and "tags" not in search_options:
-            search_options["tags"] = tags
-        if context_type is not None and "context_type" not in search_options:
-            search_options["context_type"] = context_type
-        if score_threshold is not None and "score_threshold" not in search_options:
-            search_options["score_threshold"] = score_threshold
-        if filter is not None and "filter" not in search_options:
-            search_options["filter"] = filter
-        if telemetry is not None and "telemetry" not in search_options:
-            search_options["telemetry"] = telemetry
-        search_options.setdefault("telemetry", False)
         if image is not None:
             search_options["image"] = image
         payload = self._search_options_payload(
@@ -1359,29 +1369,8 @@ class AsyncHTTPClient:
         limit: int = 10,
         image: Any = None,
         options: Optional[SearchOptions] = None,
-        *,
-        score_threshold: Optional[float] = None,
-        filter: Optional[Dict[str, Any]] = None,
-        context_type: Optional[str] = None,
-        tags: Optional[List[str]] = None,
-        telemetry: Any = None,
-        **kwargs: Any,
     ) -> Dict[str, Any]:
         search_options = dict(options or {})
-        for k, v in kwargs.items():
-            if v is not None and k not in search_options:
-                search_options[k] = v
-        if tags is not None and "tags" not in search_options:
-            search_options["tags"] = tags
-        if context_type is not None and "context_type" not in search_options:
-            search_options["context_type"] = context_type
-        if score_threshold is not None and "score_threshold" not in search_options:
-            search_options["score_threshold"] = score_threshold
-        if filter is not None and "filter" not in search_options:
-            search_options["filter"] = filter
-        if telemetry is not None and "telemetry" not in search_options:
-            search_options["telemetry"] = telemetry
-        search_options.setdefault("telemetry", False)
         if image is not None:
             search_options["image"] = image
         payload = self._search_options_payload(
@@ -1430,6 +1419,8 @@ class AsyncHTTPClient:
         case_insensitive: bool = False,
         node_limit: int = 256,
         exclude_uri: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        include_tags: bool = False,
     ) -> Dict[str, Any]:
         request_json = {
             "uri": VikingURI.normalize(uri),
@@ -1439,6 +1430,10 @@ class AsyncHTTPClient:
         }
         if exclude_uri is not None:
             request_json["exclude_uri"] = VikingURI.normalize(exclude_uri)
+        if tags is not None:
+            request_json["tags"] = list(tags)
+        if include_tags:
+            request_json["include_tags"] = True
         response = await self._request("POST", "/api/v1/search/grep", json=request_json)
         return self._handle_response(response)
 
@@ -1447,15 +1442,25 @@ class AsyncHTTPClient:
         pattern: str,
         uri: str = "viking://",
         node_limit: int = 256,
+        extra_fields: Optional[List[str]] = None,
+        tags: Optional[List[str]] = None,
+        include_tags: bool = False,
     ) -> Dict[str, Any]:
+        json_body: Dict[str, Any] = {
+            "pattern": pattern,
+            "uri": VikingURI.normalize(uri),
+            "node_limit": node_limit,
+        }
+        if extra_fields is not None:
+            json_body["extra_fields"] = list(extra_fields)
+        if tags is not None:
+            json_body["tags"] = list(tags)
+        if include_tags:
+            json_body["include_tags"] = True
         response = await self._request(
             "POST",
             "/api/v1/search/glob",
-            json={
-                "pattern": pattern,
-                "uri": VikingURI.normalize(uri),
-                "node_limit": node_limit,
-            },
+            json=json_body,
         )
         return self._handle_response(response)
 
@@ -1727,18 +1732,16 @@ class AsyncHTTPClient:
         recursive: bool = True,
         options: Optional[ReindexOptions] = None,
     ) -> Dict[str, Any]:
-        fixed_reindex = {
-            "uri": VikingURI.normalize(uri),
-            "mode": mode,
-            "wait": wait,
-            "dry_run": dry_run,
-        }
-        if recursive is False:
-            fixed_reindex["recursive"] = False
         payload = self._build_options_payload(
             options,
             ReindexOptions,
-            fixed=fixed_reindex,
+            fixed={
+                "uri": VikingURI.normalize(uri),
+                "mode": mode,
+                "wait": wait,
+                "dry_run": dry_run,
+                "recursive": recursive,
+            },
         )
         response = await self._request(
             "POST",
@@ -1782,8 +1785,19 @@ class AsyncHTTPClient:
         )
         return self._handle_response(response)
 
-    async def admin_list_accounts(self) -> List[Any]:
-        response = await self._request("GET", "/api/v1/admin/accounts")
+    async def admin_list_accounts(
+        self,
+        name: Optional[str] = None,
+        limit: Optional[int] = None,
+        page: int = 1,
+    ) -> List[Any]:
+        params: Dict[str, Any] = {}
+        if name is not None:
+            params["name"] = name
+        if limit is not None:
+            params["limit"] = limit
+            params["page"] = page
+        response = await self._request("GET", "/api/v1/admin/accounts", params=params)
         return self._handle_response(response)
 
     async def admin_delete_account(self, account_id: str) -> Dict[str, Any]:
@@ -1810,8 +1824,25 @@ class AsyncHTTPClient:
         )
         return self._handle_response(response)
 
-    async def admin_list_users(self, account_id: str) -> List[Any]:
-        response = await self._request("GET", f"/api/v1/admin/accounts/{account_id}/users")
+    async def admin_list_users(
+        self,
+        account_id: str,
+        limit: Optional[int] = None,
+        name: Optional[str] = None,
+        role: Optional[str] = None,
+        page: int = 1,
+    ) -> List[Any]:
+        params: Dict[str, Any] = {}
+        if limit is not None:
+            params["limit"] = limit
+            params["page"] = page
+        if name is not None:
+            params["name"] = name
+        if role is not None:
+            params["role"] = role
+        response = await self._request(
+            "GET", f"/api/v1/admin/accounts/{account_id}/users", params=params
+        )
         return self._handle_response(response)
 
     async def admin_remove_user(self, account_id: str, user_id: str) -> Dict[str, Any]:
@@ -2184,9 +2215,7 @@ class SyncHTTPClient:
         messages: list[Message],
         options: Optional[BatchAddMessagesOptions] = None,
     ) -> Dict[str, Any]:
-        if options is not None:
-            return run_async(self._async_client.batch_add_messages(session_id, messages, options))
-        return run_async(self._async_client.batch_add_messages(session_id, messages))
+        return run_async(self._async_client.batch_add_messages(session_id, messages, options))
 
     def add_skill(
         self,
@@ -2354,6 +2383,9 @@ class SyncHTTPClient:
         node_limit: int = 1000,
         sort_by: Optional[str] = None,
         sort_order: str = "asc",
+        extra_fields: Optional[List[str]] = None,
+        tags: Optional[List[str]] = None,
+        include_tags: bool = False,
     ) -> List[Any]:
         return run_async(
             self._async_client.ls(
@@ -2366,6 +2398,9 @@ class SyncHTTPClient:
                 node_limit=node_limit,
                 sort_by=sort_by,
                 sort_order=sort_order,
+                extra_fields=extra_fields,
+                tags=tags,
+                include_tags=include_tags,
             )
         )
 
@@ -2377,6 +2412,9 @@ class SyncHTTPClient:
         show_all_hidden: bool = False,
         node_limit: int = 1000,
         level_limit: int = 3,
+        extra_fields: Optional[List[str]] = None,
+        tags: Optional[List[str]] = None,
+        include_tags: bool = False,
     ) -> List[Dict[str, Any]]:
         return run_async(
             self._async_client.tree(
@@ -2386,6 +2424,9 @@ class SyncHTTPClient:
                 show_all_hidden=show_all_hidden,
                 node_limit=node_limit,
                 level_limit=level_limit,
+                extra_fields=extra_fields,
+                tags=tags,
+                include_tags=include_tags,
             )
         )
 
@@ -2548,6 +2589,8 @@ class SyncHTTPClient:
         case_insensitive: bool = False,
         node_limit: int = 256,
         exclude_uri: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        include_tags: bool = False,
     ) -> Dict[str, Any]:
         return run_async(
             self._async_client.grep(
@@ -2556,6 +2599,8 @@ class SyncHTTPClient:
                 case_insensitive=case_insensitive,
                 node_limit=node_limit,
                 exclude_uri=exclude_uri,
+                tags=tags,
+                include_tags=include_tags,
             )
         )
 
@@ -2564,8 +2609,20 @@ class SyncHTTPClient:
         pattern: str,
         uri: str = "viking://",
         node_limit: int = 256,
+        extra_fields: Optional[List[str]] = None,
+        tags: Optional[List[str]] = None,
+        include_tags: bool = False,
     ) -> Dict[str, Any]:
-        return run_async(self._async_client.glob(pattern, uri=uri, node_limit=node_limit))
+        return run_async(
+            self._async_client.glob(
+                pattern,
+                uri=uri,
+                node_limit=node_limit,
+                extra_fields=extra_fields,
+                tags=tags,
+                include_tags=include_tags,
+            )
+        )
 
     def create_session(
         self,
@@ -2705,17 +2762,16 @@ class SyncHTTPClient:
         recursive: bool = True,
         options: Optional[ReindexOptions] = None,
     ) -> Dict[str, Any]:
-        kwargs: Dict[str, Any] = {
-            "uri": uri,
-            "mode": mode,
-            "wait": wait,
-            "dry_run": dry_run,
-        }
-        if recursive is False:
-            kwargs["recursive"] = False
-        if options is not None:
-            kwargs["options"] = options
-        return run_async(self._async_client.reindex(**kwargs))
+        return run_async(
+            self._async_client.reindex(
+                uri,
+                mode=mode,
+                wait=wait,
+                dry_run=dry_run,
+                recursive=recursive,
+                options=options,
+            )
+        )
 
     def admin_create_account(
         self,
@@ -2733,8 +2789,15 @@ class SyncHTTPClient:
             )
         )
 
-    def admin_list_accounts(self) -> List[Any]:
-        return run_async(self._async_client.admin_list_accounts())
+    def admin_list_accounts(
+        self,
+        name: Optional[str] = None,
+        limit: Optional[int] = None,
+        page: int = 1,
+    ) -> List[Any]:
+        return run_async(
+            self._async_client.admin_list_accounts(name=name, limit=limit, page=page)
+        )
 
     def admin_delete_account(self, account_id: str) -> Dict[str, Any]:
         return run_async(self._async_client.admin_delete_account(account_id))
@@ -2757,8 +2820,19 @@ class SyncHTTPClient:
             )
         )
 
-    def admin_list_users(self, account_id: str) -> List[Any]:
-        return run_async(self._async_client.admin_list_users(account_id))
+    def admin_list_users(
+        self,
+        account_id: str,
+        limit: Optional[int] = None,
+        name: Optional[str] = None,
+        role: Optional[str] = None,
+        page: int = 1,
+    ) -> List[Any]:
+        return run_async(
+            self._async_client.admin_list_users(
+                account_id, limit=limit, name=name, role=role, page=page
+            )
+        )
 
     def admin_remove_user(self, account_id: str, user_id: str) -> Dict[str, Any]:
         return run_async(self._async_client.admin_remove_user(account_id, user_id))
