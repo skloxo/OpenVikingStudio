@@ -182,8 +182,12 @@ export function createOvClient(options: OvClientOptions = {}): OvClientAdapter {
       setOptionalHeader(headers, 'X-API-Key', apiKey)
     }
     if (connection.identityHeaders) {
-      setOptionalHeader(headers, 'X-OpenViking-Account', connection.accountId || 'default')
-      setOptionalHeader(headers, 'X-OpenViking-User', connection.userId || 'default')
+      if (!readHeader(headers, 'X-OpenViking-Account')?.trim()) {
+        setOptionalHeader(headers, 'X-OpenViking-Account', connection.accountId || 'default')
+      }
+      if (!readHeader(headers, 'X-OpenViking-User')?.trim()) {
+        setOptionalHeader(headers, 'X-OpenViking-User', connection.userId || 'default')
+      }
     } else {
       headers.delete('X-OpenViking-Account')
       headers.delete('X-OpenViking-User')
