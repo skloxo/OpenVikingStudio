@@ -264,19 +264,28 @@ class SemanticProcessor(DequeueHandlerBase):
             return
         parent_ctx = self._ctx_from_semantic_msg(msg)
         semantic_config = get_openviking_config().semantic
-        decision = await plan_abstract_overview_refresh(
-            viking_fs=get_viking_fs(),
-            dir_uri=parent_uri,
-            changed_entries=1,
-            ctx=parent_ctx,
-            l0_body_changed=l0_body_changed,
-            # This helper handles automatic upward propagation only. Manual
-            # refresh/ingest bypasses the threshold for its requested root,
-            # not for every ancestor reached afterwards.
-            force_refresh=False,
-            overview_sample_limit=getattr(semantic_config, "overview_sample_limit", 32),
-            refresh_ratio=getattr(semantic_config, "freshness_refresh_ratio", 0.10),
-        )
+        try:
+            decision = await plan_abstract_overview_refresh(
+                viking_fs=get_viking_fs(),
+                dir_uri=parent_uri,
+                changed_entries=1,
+                ctx=parent_ctx,
+                l0_body_changed=l0_body_changed,
+                # This helper handles automatic upward propagation only. Manual
+                # refresh/ingest bypasses the threshold for its requested root,
+                # not for every ancestor reached afterwards.
+                force_refresh=False,
+                overview_sample_limit=getattr(semantic_config, "overview_sample_limit", 32),
+                refresh_ratio=getattr(semantic_config, "freshness_refresh_ratio", 0.10),
+                lock_timeout_secs=1.0,
+            )
+        except LockAcquisitionError:
+            logger.info(
+                "Skipping best-effort parent freshness update because sidecars are busy: %s",
+                parent_uri,
+            )
+            return
+
         if decision.action is not FreshnessAction.REFRESH_NOW:
             logger.debug(
                 "Parent semantic refresh %s for %s (pending=%d, total=%d)",
@@ -290,8 +299,6 @@ class SemanticProcessor(DequeueHandlerBase):
         from openviking.storage.queuefs import get_queue_manager
 
         queue_manager = get_queue_manager()
-        if queue_manager is None:
-            return
         semantic_queue = queue_manager.get_queue(queue_manager.SEMANTIC, allow_create=True)
         parent_msg = SemanticMsg(
             uri=parent_uri,
