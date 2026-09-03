@@ -47,8 +47,14 @@ pub trait PathLockProvider: Send + Sync {
     ) -> PathLockResult<bool>;
 
     /// Remove the token at `lock_path` if owned by `owner_id`.
+    /// `force` bypasses storage CAS after the ownership check.
     /// Returns `true` if removed, `false` if not found or wrong owner.
-    async fn remove_token(&self, lock_path: &str, owner_id: &str) -> PathLockResult<bool>;
+    async fn remove_token(
+        &self,
+        lock_path: &str,
+        owner_id: &str,
+        force: bool,
+    ) -> PathLockResult<bool>;
 
     /// Scan all descendant lock paths under `root`.
     async fn scan_descendant_locks(&self, root: &str) -> PathLockResult<Vec<String>>;
@@ -131,7 +137,12 @@ impl PathLockProvider for MemoryPathLockProvider {
         }
     }
 
-    async fn remove_token(&self, lock_path: &str, owner_id: &str) -> PathLockResult<bool> {
+    async fn remove_token(
+        &self,
+        lock_path: &str,
+        owner_id: &str,
+        _force: bool,
+    ) -> PathLockResult<bool> {
         let mut tokens = self.tokens.write().await;
         match tokens.get(lock_path) {
             Some(token) if token.owner_id == owner_id => {
@@ -438,13 +449,29 @@ impl PathLockProvider for FilesystemPathLockProvider {
             .map_err(|e| Self::map_cas_error("refresh", lock_path, e))
     }
 
-    async fn remove_token(&self, lock_path: &str, owner_id: &str) -> PathLockResult<bool> {
+    async fn remove_token(
+        &self,
+        lock_path: &str,
+        owner_id: &str,
+        force: bool,
+    ) -> PathLockResult<bool> {
         let Some(raw) = self.read_token_raw(lock_path).await? else {
             return Ok(false);
         };
         let token = LockTokenCodec::decode(&String::from_utf8_lossy(&raw).trim())?;
         if token.owner_id != owner_id {
             return Ok(false);
+        }
+        if force {
+            return match self.fs.remove(lock_path).await {
+                Ok(()) => Ok(true),
+                Err(
+                    crate::core::Error::NotFound(_) | crate::core::Error::MountPointNotFound(_),
+                ) => Ok(false),
+                Err(error) => Err(PathLockError::Io(format!(
+                    "failed to force remove lock token at '{lock_path}': {error}"
+                ))),
+            };
         }
         self.fs
             .compare_and_remove(lock_path, &raw)
