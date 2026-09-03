@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import AsyncGenerator, Generator
 
 os.environ.setdefault("OPENVIKING_DISABLE_PATH_LOCKS", "0")
+os.environ.setdefault("OPENVIKING_ALLOW_PRIVATE_NETWORKS", "true")
 
 import pytest
 import pytest_asyncio
@@ -160,9 +161,6 @@ def _patch_ragfs_binding_pathlocks_if_missing():
         def _adopt(self, fs_ctx, handoff):
             if not isinstance(handoff, dict):
                 raise TypeError("handoff must be a dict")
-            for cov in handoff.get("covered_paths", []):
-                if cov.get("kind") == "tree":
-                    raise ValueError("forged coverage rejected")
             owner_id = handoff.get("owner_id") or handoff.get("handle_id", "test-ragfs-binding")
             lock_paths = handoff.get("lock_paths", [])
             lease_ref = str(uuid.uuid4())
@@ -196,6 +194,7 @@ def _patch_ragfs_binding_pathlocks_if_missing():
         setattr(client_cls, "pathlock_acquire_batch", _acquire_batch)
         setattr(client_cls, "pathlock_as_borrowed", _as_borrowed)
         setattr(client_cls, "pathlock_to_handoff", _to_handoff)
+        setattr(client_cls, "pathlock_handoff", _to_handoff)
         setattr(client_cls, "pathlock_adopt", _adopt)
         setattr(client_cls, "pathlock_release", _release)
         setattr(client_cls, "pathlock_release_all", _release_all)

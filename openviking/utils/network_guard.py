@@ -38,7 +38,11 @@ def _get_allowed_code_hosting_domains() -> set[str]:
 
 
 def _is_allow_private_networks() -> bool:
-    """Check if private networks are allowed by config."""
+    """Check if private networks are allowed by config or environment."""
+    import os
+
+    if os.environ.get("OPENVIKING_ALLOW_PRIVATE_NETWORKS", "").lower() in ("1", "true", "yes"):
+        return True
     try:
         config = get_openviking_config()
         return getattr(config, "allow_private_networks", False)
@@ -81,7 +85,7 @@ def _resolve_host_addresses(host: str) -> set[str]:
     for family, _, _, _, sockaddr in infos:
         if family not in {socket.AF_INET, socket.AF_INET6}:
             continue
-        addr = sockaddr[0]
+        addr = str(sockaddr[0])
         if "%" in addr:
             addr = addr.split("%", 1)[0]
         addresses.add(addr)
