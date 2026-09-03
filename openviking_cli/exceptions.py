@@ -106,7 +106,7 @@ class UnauthenticatedError(OpenVikingError):
         super().__init__(message, code="UNAUTHENTICATED")
 
 
-class PermissionDeniedError(OpenVikingError):
+class PermissionDeniedError(OpenVikingError, PermissionError):
     """Permission denied for the requested operation."""
 
     def __init__(self, message: str = "Permission denied", resource: Optional[str] = None):
