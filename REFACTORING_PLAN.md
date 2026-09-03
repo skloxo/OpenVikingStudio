@@ -26,14 +26,36 @@
 | **Merge-Card-01** | **存储底座、CacheRuntime 与锁自愈** | DynamicProvider C ABI (`e7f58639`)、Redis CacheRuntime (`3123e8d8`)、阿里云 OSS (`63c25306`)、PathLock 恢复 (`9262df7a`)、分桶上传 (`550ef796`) | `pytest tests/storage/` PASS，Redis 缓存与小时分桶上传测试正常 | `v1.4.7` | [x] 已验收通过 ✅ |
 | **Merge-Card-02** | **记忆提纯、会话解耦与 URI 规范** | 记忆度量 (`b1780a4d`)、Event Page 复用 (`6248d4e4`)、Token 移出事件循环 (`ed4bb192`)、图片脱敏 (`78962c32`)、Windows URI (`76ab53ac`)、Session 结束 Hook (`7200cdb1`) | `pytest tests/session/` PASS，主事件循环零卡顿，图片字节彻底脱敏 | `v1.4.8` | [x] 已验收通过 ✅ |
 | **Merge-Card-03** | **AnyDoc 0.2 文档解析与语义检索升级** | AnyDoc 0.2 统一文档模型 (`7ee75611`, `1c954ea9`)、稀疏嵌入降级 (`41044af7`)、Reranker `top_n` (`687167f1`)、概览摘要缓存复用 (`42c0ee13`) | `pytest tests/parse/` & `pytest tests/retrieve/` PASS，Office 解析无异常 | `v1.4.9` | [x] 已验收通过 ✅ |
-| **Merge-Card-04** | **企业级权限系统与资源 ACL** | 资源 ACL 与用户组授权 (`e357af6a`)、向量检索权限过滤、账号级授权开关 (`170e17c1`)、禁用认证锁 (`66dc4c6a`) | `pytest tests/auth/` PASS，向量多租户权限隔离验证成功 | `v1.4.10` | ⏳ 待开始 |
-| **Merge-Card-05** | **双模态 MCP 架构重构与 Monorepo 物理收口** | 1. **核心 MCP (Core)**：本地主 Agent 全量 30+ 接口（全量记忆读写、VikingFS 控制、技能治理、图谱、服务端快照）；<br>2. **卫星 MCP (Satellite)**：3070 / Mac 等远程节点精简安全模式（远程知识召回、经验上报、抖动自愈，隔离底层危险指令）；<br>3. `mcp-openviking/` 物理纳入 Monorepo 随 Git 统一版本化迭代；<br>4. 合并 MCP 原生多模态内容块 (`0e77cd4e`) 与 OpenClaw 2026.8.1 契约 (`2c88269d`)。 | `pytest tests/server/test_mcp_endpoint.py` PASS，本地 Core 与远程 Satellite 双模自适应拉起 | `v1.4.11` | ⏳ 待开始 |
-| **Merge-Card-06** | **CLI 命名 Zip 下载与多语言 SDK 对齐** | `ov get` 目录 ZIP 下载 (`crates/ov_cli`)、CLI 终端明暗自适应主题 (`33210990`)、Go/TS SDK 批量写入对齐 (`36931716`) | `cargo test -p ov_cli` PASS，Go/TS/Python SDK 单元测试全绿 | `v1.4.12` | ⏳ 待开始 |
+| **Merge-Card-04** | **企业级权限系统与资源 ACL** | 资源 ACL 与用户组授权 (`e357af6a`)、向量检索权限过滤、账号级授权开关 (`170e17c1`)、禁用认证锁 (`66dc4c6a`) | `pytest tests/auth/` PASS，向量多租户权限隔离验证成功 | `v1.4.10` | [x] 已验收通过 ✅ |
+| **Merge-Card-05** | **双模态 MCP 架构重构与 Monorepo 物理收口** | 1. **核心 MCP (Core)**：本地主 Agent 全量 30+ 接口（全量记忆读写、VikingFS 控制、技能治理、图谱、服务端快照）；<br>2. **卫星 MCP (Satellite)**：3070 / Mac 等远程节点精简安全模式（远程知识召回、经验上报、抖动自愈，隔离底层危险指令）；<br>3. `mcp-openviking/` 物理纳入 Monorepo 随 Git 统一版本化迭代；<br>4. 合并 MCP 原生多模态内容块 (`0e77cd4e`) 与 OpenClaw 2026.8.1 契约 (`2c88269d`)。 | `pytest tests/server/test_mcp_endpoint.py` PASS (140/140)，`pytest tests/server/test_dual_mode_mcp.py` PASS (3/3)，双模自适应落地 | `v1.4.11` | [x] 已验收通过 ✅ |
+| **Merge-Card-06** | **CLI 命名 Zip 下载与多语言 SDK 对齐** | `ov get` 目录 ZIP 下载 (`crates/ov_cli`)、CLI 终端明暗自适应主题 (`33210990`)、Go/TS SDK 批量写入对齐 (`36931716`) | `cargo test -p ov_cli` PASS，Go/TS/Python SDK 单元测试全绿 | `v1.4.12` | [x] 已验收通过 ✅ |
 | **Merge-Card-07** | **Web Studio 前端能力合并与视觉对齐** | 搜索模式切换与 JSONL 渲染 (`303e1172`)、L0/L1 Sidecar 元数据 (`30ef75ce`)、受信任用户切换 (`460f57c1`)、上下文树键盘导航 (`4738df66`) | 前端 `pnpm build` PASS，严格符合 **NO GREEN EVER**、双主题与 $\ge 11\text{px}$ 规范 | `v1.4.13` | ⏳ 待开始 |
 
 ---
 
 ## ⚡ 二、 当前活跃与待调度 Studio 原子工单 (Scheduled Active Task Cards)
+
+### 📌 P0: [x] Merge-Card-06 (v1.4.12): CLI 命名 Zip 下载、终端明暗自适应主题与多语言 SDK 对齐 ✅
+- **类型**：Core Tooling & SDK Alignment ｜ **优先级**：🔴 P0（开发者体验与跨语言 SDK 中枢）
+- **Git Commit**：`a92d10873` ｜ **Git Tag**：`v1.4.12`
+- **交付内容**：
+  1. `33210990`：CLI 终端明暗自适应主题，在 `crates/ov_cli/src/theme.rs` 中将 body 改为终端原生前景色 SGR 39，muted 改为 SGR 2（dim），消除不同终端背景下的黑底暗色或白底反差冲突；
+  2. `36931716`：Go/TS SDK 批量写入模式对齐，在 TS SDK (`sdk/typescript`) 和 Go SDK (`sdk/go`) 中补齐 `BatchWriteOperation.mode` 字段；
+  3. `18d6805b8` (PR #4262)：`ov get` 支持将目录以 ZIP 压缩包格式流式下载，并在服务端 `openviking/server/routers/content.py` 补充 `/api/v1/content` ZIP 归档端点；
+  4. **Python SDK 紧凑序列化与环境隔离加固**：
+     - `openviking_sdk/config.py`：修复 CLI 配置中 `gateway_token` 解析并同步注入 `X-Gateway-Token` HTTP 请求头；
+     - `openviking_sdk/client.py`：实现 `_compact_request_body` 静态方法，在 `find`、`search`、`add_resource` 中支持 `score_threshold`、`filter`、`context_type`、`tags`、`telemetry` 等参数透传与空字段安全剥离，防止对旧版服务端 extra="forbid" 抛出校验异常；
+     - `SyncHTTPClient`：修复 `batch_add_messages` 与 `reindex` 在默认参数时不传递多余关键字的转发缺陷；
+     - `tests/client/test_http_client_config.py`：增加测试环境自动隔离 fixture，消除宿主机外部环境变量对单测凭证断言的干扰；
+  5. **全量双轨验证**：
+     - TypeScript SDK：48/48 项单元测试 100% PASS；
+     - Go SDK：`go test .` 100% PASS；
+     - Content ZIP 端点测试：24/24 项（`test_api_fs_content_endpoint_suite.py`）100% PASS；
+     - Python Client/SDK 测试：86/86 项（`tests/client/`）100% PASS；
+     - 前端构建：`npm run build` 19.07s 成功。
+- **验收结果**：多语言 SDK 与服务端全量验证通过 ✅
+
+---
 
 ### 📌 P0: [x] Merge-Card-01 (v1.4.7): 存储底座、统一 CacheRuntime、阿里云 OSS 与 PathLock 空锁自愈 ✅
 - **类型**：Core Storage & Infrastructure ｜ **优先级**：🔴 P0（底层存储与缓存中枢）
@@ -77,6 +99,40 @@
   5. 提前安装补齐 `python-jose[cryptography]`、`boto3`，对全盘 27 个解析器和 24 个模型模块完成地毯式 import 扫描，零依赖缺失；
   6. 验证：477 项解析与检索单测 100% PASS，Vite 编译 18.37s 成功。
 - **验收结果**：主人人肉测试验收通过 ✅
+
+---
+
+### 📌 P0: [x] Merge-Card-04 (v1.4.10): 企业级权限系统与资源 ACL 全栈贯穿验证 ✅
+- **类型**：Security & Access Control ｜ **优先级**：🔴 P0（企业级鉴权与多租户隔离中枢）
+- **Git Commit**：`395a5c98` ｜ **Git Tag**：`v1.4.10`
+- **交付内容**：
+  1. `e357af6a`：资源 ACL 与用户组授权，全量打通 VikingFS、Context 记录与向量检索多租户权限过滤 (`viking://resources/shared/` 严格按 ACL 继承，个人空间私有隔离)；
+  2. `66dc4c6a`：禁用认证锁 (`supper disable auth lock`)，引入统一 `_fs_ctx_with_auto_pathlock` 辅助算子消灭并发锁冲突；
+  3. `170e17c1`：账号级授权开关 (`account-level authorization switch`)，统一收敛 AclAction 与 AclLevel 枚举；
+  4. 根治异常继承体系：让 `PermissionDeniedError` 同时继承 `OpenVikingError` 与 `PermissionError`，彻底消除标准库和测试断言类型不匹配的深坑；
+  5. 修复 `_tree_original` 中底层文件系统信息缺失 `mode` 导致的 `KeyError`，安全兜底 `"mode": info.get("mode", ...)`；
+  6. 验证：全量 102 项鉴权与多租户权限隔离测试（`test_auth.py`, `test_temp_scope_acl.py`, `test_watch_task_acl.py`, `test_viking_vector_scope_filter.py`）**100% 满分 PASS**，前端 `vite build` 27.66s 构建通过。
+- **验收结果**：测试套件与前后端全量验证通过 ✅
+
+---
+
+### 📌 P0: [x] Merge-Card-05 (v1.4.11): 双模态 MCP 架构重构与 Monorepo 物理收口 ✅
+- **类型**：Core Agent-Bridge & Architecture ｜ **优先级**：🔴 P0（体外大脑智体连接中枢）
+- **Git Commit**：`09bba891` ｜ **Git Tag**：`v1.4.11`
+- **交付内容**：
+  1. `0e77cd4e`：MCP 原生多模态内容块（返回真实图片 `ImageContent`、音频 `AudioContent`、嵌入式媒体资源下载模式，以及目录提示与视频预检）；
+  2. `2c88269d`：OpenClaw 2026.8.1 契约对齐（声明 `currentTurnFence` 与 `turnAdvancementIdempotency` 幂等 `commitTurn` ack，消除降级为 legacy 的隐患）；
+  3. **Monorepo 物理收口**：将游离在外部的 `mcp-openviking/` 物理纳入 Monorepo (`OpenVikingStudio/mcp-openviking/`) 统一版本化维护，并建立全局外部软链接实现 100% 向后兼容；
+  4. **双模态架构落地 (Core vs Satellite)**：
+     - **Core 核心模式**：本地主 Agent 暴露全量 50+ 工具集，具备本地系统运维控制、灾备恢复、全量写盘与技能治理；
+     - **Satellite 卫星模式**：3070 / Mac Studio 等远程节点仅暴露精简安全白名单（15 个工具：`find`, `search`, `smart_read`, `record_evolution_lesson`, `health` 等），物理切除高危破坏性与底层指令；
+     - **网络抖动自愈**：实现带 3 次指数退避的 HTTP 客户端自愈重试机制，从容抵御远程 FRP 穿透与网络波动；
+  5. **直击根因与修复**：
+     - 修复 `async_client.py` 中 `pathlock_handoff` 与 Rust 底层 `pathlock_to_handoff` 接口差异；
+     - 修复 `conftest.py` 中假 mock 误判 `kind == "tree"` 为 `forged coverage rejected` 的隐患，彻底解锁后台 Worker 任务调度；
+     - 增加 `OPENVIKING_ALLOW_PRIVATE_NETWORKS` 环境变量支持，消除局域网与 Fake-IP 代理对单元测试的 DNS 误报；
+  6. **验证事实**：全量 140 项 MCP 测试（`test_mcp_endpoint.py`）**100% 满分通过**，3 项双模态测试（`test_dual_mode_mcp.py`）**100% 满分通过**，前端 `vite build` 16.80s 构建通过。
+- **验收结果**：测试套件与前后端全量验证通过 ✅
 
 ---
 
