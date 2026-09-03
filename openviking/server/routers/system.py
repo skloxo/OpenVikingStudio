@@ -363,3 +363,40 @@ async def get_telemetry_trends(
         logger.warning(f"Error getting telemetry trends: {e}")
         return {"status": "ok", "metric": metric, "window": window, "points": []}
 
+
+@router.get("/api/v1/system/gpu", tags=["system"])
+async def get_gpu_telemetry(
+    ctx: RequestContext = Depends(get_request_context),
+):
+    """Return real GPU VRAM usage and compute utilization via nvidia-smi probe."""
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "nvidia-smi",
+            "--query-gpu=memory.used,memory.total,utilization.gpu",
+            "--format=csv,noheader,nounits",
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.DEVNULL,
+        )
+        stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=2.0)
+        if proc.returncode == 0 and stdout:
+            line = stdout.decode().strip().split("\n")[0]
+            parts = [p.strip() for p in line.split(",")]
+            if len(parts) >= 3:
+                used_mb = float(parts[0])
+                total_mb = float(parts[1])
+                gpu_util = float(parts[2])
+                return {
+                    "used_gb": round(used_mb / 1024.0, 2),
+                    "total_gb": round(total_mb / 1024.0, 2),
+                    "gpu_percent": round(gpu_util, 1),
+                }
+    except Exception as e:
+        logger.debug(f"GPU telemetry probe unavailable: {e}")
+
+    return {
+        "used_gb": 0.0,
+        "total_gb": 0.0,
+        "gpu_percent": 0.0,
+    }
+
+

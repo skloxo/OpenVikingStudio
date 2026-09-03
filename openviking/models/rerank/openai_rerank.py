@@ -65,12 +65,16 @@ class OpenAIRerankClient(RerankBase):
         """
         super().__init__()
         self.api_key = api_key
-        self.api_base = api_base
+        # Normalize api_base: if user passed base URL without /rerank(s), auto-append it
+        normalized_base = api_base.rstrip("/")
+        if not (normalized_base.endswith("/rerank") or normalized_base.endswith("/reranks")):
+            normalized_base = f"{normalized_base}/rerank"
+        self.api_base = normalized_base
         self.model_name = model_name
         self.extra_headers = extra_headers or {}
         self.timeout = timeout
         self.provider = "openai"
-        self._uses_nested_envelope = _uses_nested_envelope(api_base)
+        self._uses_nested_envelope = _uses_nested_envelope(normalized_base)
 
     def _build_request_body(self, query: str, documents: List[str]) -> dict:
         """Build the request body for the rerank API.
