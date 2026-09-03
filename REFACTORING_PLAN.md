@@ -25,7 +25,7 @@
 | **Task-Clean-00** | **全盘源码深度审查、死代码清理与公用轮子统一收口** | 清理历史遗留废弃文件/Mock/幽灵客户端，消除多层嵌套 Wrapper，将零散方法收敛至统一 Shared 工具库与官方轮子，根治发包失效与深坑隐患 | 全局单测 100% PASS，零冗余胶水脚本，构建打包耗时缩短，代码极简自解释 | 贯穿全生命周期 | 🚀 执行中 |
 | **Merge-Card-01** | **存储底座、CacheRuntime 与锁自愈** | DynamicProvider C ABI (`e7f58639`)、Redis CacheRuntime (`3123e8d8`)、阿里云 OSS (`63c25306`)、PathLock 恢复 (`9262df7a`)、分桶上传 (`550ef796`) | `pytest tests/storage/` PASS，Redis 缓存与小时分桶上传测试正常 | `v1.4.7` | [x] 已验收通过 ✅ |
 | **Merge-Card-02** | **记忆提纯、会话解耦与 URI 规范** | 记忆度量 (`b1780a4d`)、Event Page 复用 (`6248d4e4`)、Token 移出事件循环 (`ed4bb192`)、图片脱敏 (`78962c32`)、Windows URI (`76ab53ac`)、Session 结束 Hook (`7200cdb1`) | `pytest tests/session/` PASS，主事件循环零卡顿，图片字节彻底脱敏 | `v1.4.8` | [x] 已验收通过 ✅ |
-| **Merge-Card-03** | **AnyDoc 0.2 文档解析与语义检索升级** | AnyDoc 0.2 统一文档模型 (`7ee75611`, `1c954ea9`)、稀疏嵌入降级 (`41044af7`)、Reranker `top_n` (`687167f1`)、概览摘要缓存复用 (`42c0ee13`) | `pytest tests/parse/` & `pytest tests/retrieve/` PASS，Office 解析无异常 | `v1.4.9` | ⏳ 待开始 |
+| **Merge-Card-03** | **AnyDoc 0.2 文档解析与语义检索升级** | AnyDoc 0.2 统一文档模型 (`7ee75611`, `1c954ea9`)、稀疏嵌入降级 (`41044af7`)、Reranker `top_n` (`687167f1`)、概览摘要缓存复用 (`42c0ee13`) | `pytest tests/parse/` & `pytest tests/retrieve/` PASS，Office 解析无异常 | `v1.4.9` | [x] 已验收通过 ✅ |
 | **Merge-Card-04** | **企业级权限系统与资源 ACL** | 资源 ACL 与用户组授权 (`e357af6a`)、向量检索权限过滤、账号级授权开关 (`170e17c1`)、禁用认证锁 (`66dc4c6a`) | `pytest tests/auth/` PASS，向量多租户权限隔离验证成功 | `v1.4.10` | ⏳ 待开始 |
 | **Merge-Card-05** | **双模态 MCP 架构重构与 Monorepo 物理收口** | 1. **核心 MCP (Core)**：本地主 Agent 全量 30+ 接口（全量记忆读写、VikingFS 控制、技能治理、图谱、服务端快照）；<br>2. **卫星 MCP (Satellite)**：3070 / Mac 等远程节点精简安全模式（远程知识召回、经验上报、抖动自愈，隔离底层危险指令）；<br>3. `mcp-openviking/` 物理纳入 Monorepo 随 Git 统一版本化迭代；<br>4. 合并 MCP 原生多模态内容块 (`0e77cd4e`) 与 OpenClaw 2026.8.1 契约 (`2c88269d`)。 | `pytest tests/server/test_mcp_endpoint.py` PASS，本地 Core 与远程 Satellite 双模自适应拉起 | `v1.4.11` | ⏳ 待开始 |
 | **Merge-Card-06** | **CLI 命名 Zip 下载与多语言 SDK 对齐** | `ov get` 目录 ZIP 下载 (`crates/ov_cli`)、CLI 终端明暗自适应主题 (`33210990`)、Go/TS SDK 批量写入对齐 (`36931716`) | `cargo test -p ov_cli` PASS，Go/TS/Python SDK 单元测试全绿 | `v1.4.12` | ⏳ 待开始 |
@@ -62,6 +62,20 @@
   7. `openviking/pyagfs/async_client.py`：修复 AGFS Client `auto_pathlock` 签名缺陷与默认锁自愈；
   8. `src/routes/skills/route.tsx`：优化 L2 全量源码查看器，去除 `max-h-[520px]` 嵌套滚动，源码全高度展开一滚到底；技能卡片徽章自解释为 `SOP 规约 (标准件)`，彻底消解与抽屉文件数的歧义；
   9. 验证：149/149 会话核心单测 + 40/40 长程并发锁测试 100% PASS，Vite 编译 18.68s 成功。
+- **验收结果**：主人人肉测试验收通过 ✅
+
+---
+
+### 📌 P0: [x] Merge-Card-03 (v1.4.9): AnyDoc 0.2 文档解析、Rerank 自愈、真实 GPU 探针与依赖地毯式排查 ✅
+- **类型**：Core Parser, Semantic Retrieval & Hardware Reliability ｜ **优先级**：🔴 P0（解析底座与模型安全）
+- **Git Commit**：`6bc31701` ｜ **Git Tag**：`v1.4.9`
+- **交付内容**：
+  1. `openviking/parse/parsers/anydoc.py`, `anydoc_converter.py`, `anydoc_renderer.py`：统一 Office (Word/Excel/PPT)、EPUB 解析管线，内联媒体图片保留，支持表格 GFM 规范转换，并正式安装补齐 `firecrawl-anydoc>=0.2.4` 轮子；
+  2. `openviking/models/rerank/openai_rerank.py`：对齐上游 `top_n` 请求体参数传递，并实施第一性原理自愈机制：若 `api_base` 缺少 `/rerank` 后缀自动补全，消灭 404 静默降级；
+  3. `openviking/server/routers/system.py`：新增 `/api/v1/system/gpu` 真实硬件探针，调用 `nvidia-smi` 实时采集 2080Ti VRAM 与利用率，彻底消灭前端每 10 秒轮询产生的虚假 404 报警；
+  4. `openviking/models/embedder/`：稀疏嵌入针对复杂多模态视频/二进制的纯文本降级保护；
+  5. 提前安装补齐 `python-jose[cryptography]`、`boto3`，对全盘 27 个解析器和 24 个模型模块完成地毯式 import 扫描，零依赖缺失；
+  6. 验证：477 项解析与检索单测 100% PASS，Vite 编译 18.37s 成功。
 - **验收结果**：主人人肉测试验收通过 ✅
 
 ---
