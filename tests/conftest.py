@@ -4,9 +4,12 @@
 """Global test fixtures"""
 
 import asyncio
+import os
 import shutil
 from pathlib import Path
 from typing import AsyncGenerator, Generator
+
+os.environ.setdefault("OPENVIKING_DISABLE_PATH_LOCKS", "0")
 
 import pytest
 import pytest_asyncio

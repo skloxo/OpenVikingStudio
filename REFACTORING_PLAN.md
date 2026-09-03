@@ -215,6 +215,68 @@
 
 ---
 
+### 📌 P1: [x] Card-VK-02：WikiSkill & SKILL.state 技能原子化上架与中枢广播 ✅
+- **类型**：Core Architecture / Meta-Skill ｜ **优先级**：🔴 P1
+- **三维评估**：效果 ⭐⭐⭐⭐⭐ ｜ 风险 ⭐ 零风险 ｜ 工程量 ⭐ 极小
+- **目标**：将 Google 2026 双顶会论文核心成果直接提炼为 `wikiskill-evolution`（知识提纯与自演进）与 `skill-state-fsm`（确定性状态机）两大元技能，挂载至 OpenViking 共享技能中心并同步体外大脑记忆中枢。
+- **交付内容**：
+  1. 编写封顶两大标准技能，分发至 `/home/skloxo/.gemini/config/skills/` 与 `.agents/skills/`；
+  2. 标准化部署至 `viking://agent/skills/` 与 `viking://user/default/skills/`，通过 `GET /api/v1/skills` 100% 验收；
+  3. 物理入脑至 `viking://resources/master_memory/wiki_skills/` 并完成向量语义重索引；
+  4. 跨 Agent 盲测 100% 成功激活 FSM 状态机流转与【技能可回滚、知识不回滚】。
+- **验收结果**：已验收通过 ✅
+
+---
+
+### 📌 P1: [ ] Card-VK-01：Harness Lesson 知识镜像双写至 Master Memory
+- **类型**：Core Infrastructure / Resilience ｜ **优先级**：🔴 P1
+- **三维评估**：效果 ⭐⭐⭐⭐⭐ ｜ 风险 ⭐ 极低 ｜ 工程量 ⭐ 极小
+- **目标**：在现有 `openviking_record_evolution_lesson` 逻辑中增加 ~15 行代码，当追加写入目标 `SKILL.md` 时，自动在 `viking://resources/master_memory/evolution_lessons/` 双写一份纯 Markdown 镜像。
+- **验收标准**：
+  - [ ] 现有 35 条 lessons 兼容无损；
+  - [ ] 新触发演进时，知识自动入脑，后续即便代码回滚，客观排坑知识永久留存。
+
+---
+
+### 📌 P2: [ ] Card-VK-03：Mac Studio 离线知识编译批处理脚本 (`offline_wiki_compiler.py`)
+- **类型**：AI Tooling / Automation ｜ **优先级**：🟡 P2
+- **三维评估**：效果 ⭐⭐⭐⭐ ｜ 风险 ⭐ 零在线风险 ｜ 工程量 ⭐⭐ 中等
+- **目标**：编写纯外挂批处理脚本，定期通过只读 API 拉取 VK 中沉淀的 lessons，由 Mac Studio 本地 Qwen 3.8 Flash Next (125B MoE) 进行聚类去重，输出精炼 Recipes/Anti-patterns 写回 VK。
+- **验收标准**：
+  - [ ] 纯后台只读批处理，绝不阻塞或干扰 1933 生产请求；
+  - [ ] 成功生成结构化经验周报并存入 VK。
+
+---
+
+### 📌 P2: [ ] Card-VK-04：Mac Studio 定时排程与自愈守护 (`LaunchDaemon`)
+- **类型**：Infrastructure / High Availability ｜ **优先级**：🟡 P2
+- **三维评估**：效果 ⭐⭐⭐ ｜ 风险 ⭐ 极低 ｜ 工程量 ⭐ 小
+- **目标**：在 Mac Studio 部署 `com.mac.wikicompiler.plist`，每周日凌晨低峰期自动唤醒执行，低优先级 nice 运行不抢占推理资源。
+- **验收标准**：
+  - [ ] `launchctl list` 正常注册并自愈守护；
+  - [ ] 日志输出至 `/var/log/wiki_compiler.log`。
+
+---
+
+### 📌 P3: [ ] Card-VK-05：通用确定性 FSM 接口抽象与 JSON 补丁校验器
+- **类型**：Core Framework ｜ **优先级**：🟣 P3
+- **三维评估**：效果 ⭐⭐⭐⭐⭐ ｜ 风险 ⭐⭐ 中低 ｜ 工程量 ⭐⭐ 中等
+- **目标**：将 `GenericFSM` 封装为轻量通用 Python 工具包，提供标准的 `(P, Σ, o) -> (ΔΣ, a)` 单步状态推进接口，彻底阻断上下文堆叠。
+- **验收标准**：
+  - [ ] 单元测试验证非法状态转移 100% 阻断；
+  - [ ] 合法补丁原子合并，单步完成后物理销毁推理链。
+
+---
+
+### 📌 P3: [ ] Card-VK-06：单场景外挂试点与 Token 降本基准实测
+- **类型**：Evaluation / Benchmark ｜ **优先级**：🟣 P3
+- **三维评估**：效果 ⭐⭐⭐⭐ ｜ 风险 ⭐ 极低 ｜ 工程量 ⭐ 小
+- **目标**：在 watchdog 巡检或非核心长程批处理脚本中实测对比 Token 消耗与自愈表现，形成实测白皮书后再向全系统推广。
+- **验收标准**：
+  - [ ] 拿到真实对比数据（Token 消耗压降比例、0步自愈恢复能力）。
+
+---
+
 ## 🧪 三、 主线课题与 Epic 远期规划卡片 (Far-Term Architecture Task Cards)
 
 ### 💳 [ ] Task Card 1 (Far-Term): 记忆治理物理灾备与快照还原机制

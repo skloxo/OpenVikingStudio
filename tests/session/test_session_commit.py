@@ -13,6 +13,7 @@ from openviking.server.identity import RequestContext
 from openviking.service.core import OpenVikingService
 from openviking.service.task_tracker import get_task_tracker
 from openviking.session import Session
+from openviking.storage.abstract_overview import body_for_preview
 
 
 async def _wait_for_task(task_id: str, timeout: float = 30.0) -> dict:
@@ -653,9 +654,11 @@ class TestCommit:
         result1 = await session.commit_async()
         await _wait_for_task(result1["task_id"])
 
-        previous_overview = await session._viking_fs.read_file(
-            f"{result1['archive_uri']}/.overview.md",
-            ctx=session.ctx,
+        previous_overview = body_for_preview(
+            await session._viking_fs.read_file(
+                f"{result1['archive_uri']}/.overview.md",
+                ctx=session.ctx,
+            )
         )
         seen: dict[str, str] = {}
 
