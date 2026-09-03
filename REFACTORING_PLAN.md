@@ -24,7 +24,7 @@
 | :--- | :--- | :--- | :--- | :---: | :---: |
 | **Task-Clean-00** | **全盘源码深度审查、死代码清理与公用轮子统一收口** | 清理历史遗留废弃文件/Mock/幽灵客户端，消除多层嵌套 Wrapper，将零散方法收敛至统一 Shared 工具库与官方轮子，根治发包失效与深坑隐患 | 全局单测 100% PASS，零冗余胶水脚本，构建打包耗时缩短，代码极简自解释 | 贯穿全生命周期 | 🚀 执行中 |
 | **Merge-Card-01** | **存储底座、CacheRuntime 与锁自愈** | DynamicProvider C ABI (`e7f58639`)、Redis CacheRuntime (`3123e8d8`)、阿里云 OSS (`63c25306`)、PathLock 恢复 (`9262df7a`)、分桶上传 (`550ef796`) | `pytest tests/storage/` PASS，Redis 缓存与小时分桶上传测试正常 | `v1.4.7` | [x] 已验收通过 ✅ |
-| **Merge-Card-02** | **记忆提纯、会话解耦与 URI 规范** | 记忆度量 (`b1780a4d`)、Event Page 复用 (`6248d4e4`)、Token 移出事件循环 (`ed4bb192`)、图片脱敏 (`78962c32`)、Windows URI (`76ab53ac`)、Session 结束 Hook (`7200cdb1`) | `pytest tests/session/` PASS，主事件循环零卡顿，图片字节彻底脱敏 | `v1.4.8` | ⏳ 待开始 |
+| **Merge-Card-02** | **记忆提纯、会话解耦与 URI 规范** | 记忆度量 (`b1780a4d`)、Event Page 复用 (`6248d4e4`)、Token 移出事件循环 (`ed4bb192`)、图片脱敏 (`78962c32`)、Windows URI (`76ab53ac`)、Session 结束 Hook (`7200cdb1`) | `pytest tests/session/` PASS，主事件循环零卡顿，图片字节彻底脱敏 | `v1.4.8` | [x] 已验收通过 ✅ |
 | **Merge-Card-03** | **AnyDoc 0.2 文档解析与语义检索升级** | AnyDoc 0.2 统一文档模型 (`7ee75611`, `1c954ea9`)、稀疏嵌入降级 (`41044af7`)、Reranker `top_n` (`687167f1`)、概览摘要缓存复用 (`42c0ee13`) | `pytest tests/parse/` & `pytest tests/retrieve/` PASS，Office 解析无异常 | `v1.4.9` | ⏳ 待开始 |
 | **Merge-Card-04** | **企业级权限系统与资源 ACL** | 资源 ACL 与用户组授权 (`e357af6a`)、向量检索权限过滤、账号级授权开关 (`170e17c1`)、禁用认证锁 (`66dc4c6a`) | `pytest tests/auth/` PASS，向量多租户权限隔离验证成功 | `v1.4.10` | ⏳ 待开始 |
 | **Merge-Card-05** | **双模态 MCP 架构重构与 Monorepo 物理收口** | 1. **核心 MCP (Core)**：本地主 Agent 全量 30+ 接口（全量记忆读写、VikingFS 控制、技能治理、图谱、服务端快照）；<br>2. **卫星 MCP (Satellite)**：3070 / Mac 等远程节点精简安全模式（远程知识召回、经验上报、抖动自愈，隔离底层危险指令）；<br>3. `mcp-openviking/` 物理纳入 Monorepo 随 Git 统一版本化迭代；<br>4. 合并 MCP 原生多模态内容块 (`0e77cd4e`) 与 OpenClaw 2026.8.1 契约 (`2c88269d`)。 | `pytest tests/server/test_mcp_endpoint.py` PASS，本地 Core 与远程 Satellite 双模自适应拉起 | `v1.4.11` | ⏳ 待开始 |
@@ -46,6 +46,23 @@
   5. `openviking/server/temp_upload_store.py`：UTC 小时分桶 (`YYYYMMDDHH`) 隔离上传与后台非阻塞异步防爆盘清扫；
   6. 验证：存储与配置单测 101/101 100% PASS，Vite 生产构建 31.84s 成功。
 - **验收结果**：已验收通过 ✅
+
+---
+
+### 📌 P0: [x] Merge-Card-02 (v1.4.8): 记忆提纯、会话解耦、Token移出事件循环与图片脱敏 ✅
+- **类型**：Core Session & Memory Architecture ｜ **优先级**：🔴 P0（会话吞吐量与记忆安全）
+- **Git Commit**：`f8606692` ｜ **Git Tag**：`v1.4.8`
+- **交付内容**：
+  1. `openviking/session/session.py` & `openviking/utils/token_estimation.py`：Token 估算完全移出主事件循环（`asyncio.to_thread` 异步化），Quarter-unit 极速整数算法，彻底消灭长文本/高并发下 1933 FastAPI 事件循环假死毛刺；
+  2. `openviking/session/session.py` & `test_wm_v2_guards.py`：内联 Base64 多模态图片字节提取脱敏，彻底杜绝兆级 raw base64 污染提纯上下文与日志；
+  3. `openviking/session/memory/utils/uri.py`：Windows 反斜杠与盘符脏路径安全规范化与跨平台自愈；
+  4. `openviking/session/memory/extract_loop.py` & `page_id_map.py`：Event Page 内存缓冲复用机制，消解 GC 抖动；
+  5. `openviking/metrics/collectors/telemetry_bridge.py`：记忆提取度量指标跟踪（created/merged/deleted/skipped/failed）；
+  6. `examples/codex-memory-plugin/`：升级 0.8.1 版本，支持 SessionEnd hook 自动提交与原子锁防竞争；
+  7. `openviking/pyagfs/async_client.py`：修复 AGFS Client `auto_pathlock` 签名缺陷与默认锁自愈；
+  8. `src/routes/skills/route.tsx`：优化 L2 全量源码查看器，去除 `max-h-[520px]` 嵌套滚动，源码全高度展开一滚到底；技能卡片徽章自解释为 `SOP 规约 (标准件)`，彻底消解与抽屉文件数的歧义；
+  9. 验证：149/149 会话核心单测 + 40/40 长程并发锁测试 100% PASS，Vite 编译 18.68s 成功。
+- **验收结果**：主人人肉测试验收通过 ✅
 
 ---
 
