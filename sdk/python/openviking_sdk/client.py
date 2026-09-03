@@ -702,8 +702,19 @@ class AsyncHTTPClient:
         wait: bool = False,
         timeout: Optional[float] = None,
         options: Optional[AddResourceOptions] = None,
+        *,
+        args: Optional[Dict[str, Any]] = None,
+        parse_mode: Optional[str] = None,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         option_values = dict(options or {})
+        for k, v in kwargs.items():
+            if v is not None and k not in option_values:
+                option_values[k] = v
+        if args is not None and "args" not in option_values:
+            option_values["args"] = args
+        if parse_mode is not None and "parse_mode" not in option_values:
+            option_values["parse_mode"] = parse_mode
         add_type = option_values.get("add_type")
         if add_type is not None:
             add_type = add_type.strip() or None
@@ -1303,8 +1314,29 @@ class AsyncHTTPClient:
         limit: int = 10,
         image: Any = None,
         options: Optional[FindOptions] = None,
+        *,
+        score_threshold: Optional[float] = None,
+        filter: Optional[Dict[str, Any]] = None,
+        context_type: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        telemetry: Any = None,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         search_options = dict(options or {})
+        for k, v in kwargs.items():
+            if v is not None and k not in search_options:
+                search_options[k] = v
+        if tags is not None and "tags" not in search_options:
+            search_options["tags"] = tags
+        if context_type is not None and "context_type" not in search_options:
+            search_options["context_type"] = context_type
+        if score_threshold is not None and "score_threshold" not in search_options:
+            search_options["score_threshold"] = score_threshold
+        if filter is not None and "filter" not in search_options:
+            search_options["filter"] = filter
+        if telemetry is not None and "telemetry" not in search_options:
+            search_options["telemetry"] = telemetry
+        search_options.setdefault("telemetry", False)
         if image is not None:
             search_options["image"] = image
         payload = self._search_options_payload(
@@ -1327,8 +1359,29 @@ class AsyncHTTPClient:
         limit: int = 10,
         image: Any = None,
         options: Optional[SearchOptions] = None,
+        *,
+        score_threshold: Optional[float] = None,
+        filter: Optional[Dict[str, Any]] = None,
+        context_type: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+        telemetry: Any = None,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         search_options = dict(options or {})
+        for k, v in kwargs.items():
+            if v is not None and k not in search_options:
+                search_options[k] = v
+        if tags is not None and "tags" not in search_options:
+            search_options["tags"] = tags
+        if context_type is not None and "context_type" not in search_options:
+            search_options["context_type"] = context_type
+        if score_threshold is not None and "score_threshold" not in search_options:
+            search_options["score_threshold"] = score_threshold
+        if filter is not None and "filter" not in search_options:
+            search_options["filter"] = filter
+        if telemetry is not None and "telemetry" not in search_options:
+            search_options["telemetry"] = telemetry
+        search_options.setdefault("telemetry", False)
         if image is not None:
             search_options["image"] = image
         payload = self._search_options_payload(
@@ -1674,16 +1727,18 @@ class AsyncHTTPClient:
         recursive: bool = True,
         options: Optional[ReindexOptions] = None,
     ) -> Dict[str, Any]:
+        fixed_reindex = {
+            "uri": VikingURI.normalize(uri),
+            "mode": mode,
+            "wait": wait,
+            "dry_run": dry_run,
+        }
+        if recursive is False:
+            fixed_reindex["recursive"] = False
         payload = self._build_options_payload(
             options,
             ReindexOptions,
-            fixed={
-                "uri": VikingURI.normalize(uri),
-                "mode": mode,
-                "wait": wait,
-                "dry_run": dry_run,
-                "recursive": recursive,
-            },
+            fixed=fixed_reindex,
         )
         response = await self._request(
             "POST",
@@ -2129,7 +2184,9 @@ class SyncHTTPClient:
         messages: list[Message],
         options: Optional[BatchAddMessagesOptions] = None,
     ) -> Dict[str, Any]:
-        return run_async(self._async_client.batch_add_messages(session_id, messages, options))
+        if options is not None:
+            return run_async(self._async_client.batch_add_messages(session_id, messages, options))
+        return run_async(self._async_client.batch_add_messages(session_id, messages))
 
     def add_skill(
         self,
@@ -2648,16 +2705,17 @@ class SyncHTTPClient:
         recursive: bool = True,
         options: Optional[ReindexOptions] = None,
     ) -> Dict[str, Any]:
-        return run_async(
-            self._async_client.reindex(
-                uri,
-                mode=mode,
-                wait=wait,
-                dry_run=dry_run,
-                recursive=recursive,
-                options=options,
-            )
-        )
+        kwargs: Dict[str, Any] = {
+            "uri": uri,
+            "mode": mode,
+            "wait": wait,
+            "dry_run": dry_run,
+        }
+        if recursive is False:
+            kwargs["recursive"] = False
+        if options is not None:
+            kwargs["options"] = options
+        return run_async(self._async_client.reindex(**kwargs))
 
     def admin_create_account(
         self,

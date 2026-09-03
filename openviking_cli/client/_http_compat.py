@@ -168,6 +168,17 @@ class AsyncHTTPClient(import_openviking_sdk().AsyncHTTPClient):
         if observer_cls is not None:
             self._observer = observer_cls(self)
 
+    @staticmethod
+    def _compact_request_body(body: Dict[str, Any]) -> Dict[str, Any]:
+        compacted: Dict[str, Any] = {}
+        for key, value in body.items():
+            if value is None:
+                continue
+            if key == "args" and isinstance(value, dict) and not value:
+                continue
+            compacted[key] = value
+        return compacted
+
     def _raise_exception(self, error: Dict[str, Any]) -> None:
         _raise_legacy_exception(error)
 

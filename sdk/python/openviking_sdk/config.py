@@ -309,8 +309,10 @@ def resolve_client_config(
     if extra_headers is None and cli_config is not None:
         resolved_extra_headers = dict(cli_config.extra_headers)
     resolved_gateway_token = None
-    if cli_config is not None and url is None:
+    if cli_config is not None:
         resolved_gateway_token = cli_config.gateway_token
+        if resolved_gateway_token and "X-Gateway-Token" not in resolved_extra_headers:
+            resolved_extra_headers["X-Gateway-Token"] = resolved_gateway_token
 
     resolved_upload_mode = upload_mode
     if resolved_upload_mode is None and cli_config is not None:
