@@ -29,11 +29,39 @@
 | **Merge-Card-04** | **企业级权限系统与资源 ACL** | 资源 ACL 与用户组授权 (`e357af6a`)、向量检索权限过滤、账号级授权开关 (`170e17c1`)、禁用认证锁 (`66dc4c6a`) | `pytest tests/auth/` PASS，向量多租户权限隔离验证成功 | `v1.4.10` | [x] 已验收通过 ✅ |
 | **Merge-Card-05** | **双模态 MCP 架构重构与 Monorepo 物理收口** | 1. **核心 MCP (Core)**：本地主 Agent 全量 30+ 接口（全量记忆读写、VikingFS 控制、技能治理、图谱、服务端快照）；<br>2. **卫星 MCP (Satellite)**：3070 / Mac 等远程节点精简安全模式（远程知识召回、经验上报、抖动自愈，隔离底层危险指令）；<br>3. `mcp-openviking/` 物理纳入 Monorepo 随 Git 统一版本化迭代；<br>4. 合并 MCP 原生多模态内容块 (`0e77cd4e`) 与 OpenClaw 2026.8.1 契约 (`2c88269d`)。 | `pytest tests/server/test_mcp_endpoint.py` PASS (140/140)，`pytest tests/server/test_dual_mode_mcp.py` PASS (3/3)，双模自适应落地 | `v1.4.11` | [x] 已验收通过 ✅ |
 | **Merge-Card-06** | **CLI 命名 Zip 下载与多语言 SDK 对齐** | `ov get` 目录 ZIP 下载 (`crates/ov_cli`)、CLI 终端明暗自适应主题 (`33210990`)、Go/TS SDK 批量写入对齐 (`36931716`) | `cargo test -p ov_cli` PASS，Go/TS/Python SDK 单元测试全绿 | `v1.4.12` | [x] 已验收通过 ✅ |
-| **Merge-Card-07** | **Web Studio 前端能力合并与视觉对齐** | 搜索模式切换与 JSONL 渲染 (`303e1172`)、L0/L1 Sidecar 元数据 (`30ef75ce`)、受信任用户切换 (`460f57c1`)、上下文树键盘导航 (`4738df66`) | 前端 `pnpm build` PASS，严格符合 **NO GREEN EVER**、双主题与 $\ge 11\text{px}$ 规范 | `v1.4.13` | ⏳ 待开始 |
+| **Merge-Card-07** | **Web Studio 前端能力合并与视觉对齐** | 搜索模式切换与 JSONL 渲染 (`303e1172`)、L0/L1 Sidecar 元数据 (`30ef75ce`)、受信任用户切换 (`460f57c1`)、上下文树键盘导航 (`4738df66`) | 前端 `pnpm build` PASS，严格符合 **NO GREEN EVER**、双主题与 $\ge 11\text{px}$ 规范 | `v1.4.13` | [x] 已验收通过 ✅ |
 
 ---
 
 ## ⚡ 二、 当前活跃与待调度 Studio 原子工单 (Scheduled Active Task Cards)
+
+### 📌 P0: [x] Merge-Card-07 (v1.4.13): Web Studio 前端能力合并与视觉对齐 ✅
+- **类型**：Web Studio Frontend & UX Alignment ｜ **优先级**：🔴 P0（前端工作台与开发者体验中枢）
+- **Git Commit**：`4a47699df` ｜ **Git Tag**：`v1.4.13`
+- **交付内容**：
+  1. `4738df667`：**上下文树键盘导航与无障碍语义化**：
+     - 重构 `context-explorer.tsx`，将目录节点重构为标准的无障碍嵌套列表与语义化按钮，支持 Tab / Enter / Space 键盘焦点流转与展开/收起；
+     - 严格贯彻字号下限铁律，消除所有微小 `< 11px` 字体，徽章全面升级为 `text-[11px]`。
+  2. `460f57c1a`：**受信任用户无感切换 (Trusted User Switching)**：
+     - 在 `current-user-menu.tsx` 中实现受信任用户切换面板，有管理凭证时自动拉取用户列表，无管理凭证时支持手动输入 Target User ID；
+     - 深度贯穿 `ov-client/client.ts` 与 `users/route.tsx`，允许在 `serverMode === 'trusted'` 时免 User API Key 自由切换身份。
+  3. `303e11723`：**搜索模式切换、工作台面板折叠与结构化 JSONL 渲染**：
+     - 实现 `find-palette.tsx` 多搜索模式快速切换（`/` 与 `//` 目录浏览模式），增加 `Ctrl/Cmd + F` 快捷触发；
+     - 实现 `playground/route.tsx` 右侧面板一键收起/展开折叠能力，提供 `<PanelRightCloseIcon />` 与 `<PanelRightOpenIcon />`，状态自动持久化本地存储；
+     - 重构 `file-preview.tsx` 中的 JSONL 渲染管线，支持按 Anthropic / OpenViking 规范解析 `text`, `tool-call`, `tool-result` 结构化多卡片渲染，支持折叠展开与格式化查看。
+  4. `30ef75ce0`：**L0/L1 OKF Sidecar 元数据抽屉面板**：
+     - 编写 `okf-markdown.ts` 解析器，自动解析并渲染 `.abstract.md` 与 `.overview.md` 的 YAML 头部元数据（生成组件、触发方式、来源 URI、新鲜度、采样覆盖率）；
+     - 实现 `okf-metadata-panel.tsx` 专属抽屉面板，严格遵循 NO GREEN EVER 冰青色系与 $\ge 11\text{px}$ 规范；
+     - 引入 `remark-breaks` 与 `yaml` 依赖，优化 Markdown 硬换行与 YAML 解析。
+  5. **双语 i18n 同步维护**：
+     - 100% 对齐补齐 `src/i18n/locales/zh-CN.ts` 与 `src/i18n/locales/en.ts` 中新增的 `activity.actionPanel`, `resources.searchPalette.modes`, `resources.filePreview.yamlMetadata` 等 20+ 个多语言词条。
+  6. **全量双轨验证**：
+     - 前端单测套件：`src/` 目录下全部 28 个测试文件、**128/128 项单测 100% PASS**；
+     - Vite 生产构建：`npm run build` **27.32s 零警告完美编译**；
+     - 正式服务状态：1933 端口 `/health` 返回 `version: 1.4.13, status: ok`，1936 开发服务秒级热更新就绪。
+- **验收结果**：前后端全量测试套件验证通过 ✅
+
+---
 
 ### 📌 P0: [x] Merge-Card-06 (v1.4.12): CLI 命名 Zip 下载、终端明暗自适应主题与多语言 SDK 对齐 ✅
 - **类型**：Core Tooling & SDK Alignment ｜ **优先级**：🔴 P0（开发者体验与跨语言 SDK 中枢）
