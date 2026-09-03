@@ -96,7 +96,7 @@ const zhCN = {
         title: '连接与设置',
       },
       playground: {
-        title: '实验场',
+        title: '沙盘',
       },
     },
     sidebar: {
@@ -1587,18 +1587,18 @@ const zhCN = {
     agent: {
       history: '历史会话',
       newSession: '新建会话',
-      creating: '正在创建 Playground 会话...',
+      creating: '正在创建沙盘会话...',
       detectingBot: '正在检测 bot 模式...',
       createFailed: '创建会话失败：{{error}}',
       retry: '重试',
       botDisabledFooter: '开启 bot 模式后可使用 Agent 对话',
       historyTitle: 'Agent 会话历史',
       historyDescription:
-        '这里只展示实验场右侧 Agent 使用过的会话；新建会话会开启一个空白 Agent 上下文。',
+        '这里只展示沙盘右侧 Agent 使用过的会话；新建会话会开启一个空白 Agent 上下文。',
       loadingSessions: '正在加载会话...',
       noSessions: '暂无历史会话',
-      createTimeout: '创建 Playground 会话超时，请检查连接设置后重试。',
-      newSessionTitle: '新建 Playground 会话',
+      createTimeout: '创建沙盘会话超时，请检查连接设置后重试。',
+      newSessionTitle: '新建沙盘会话',
       botPrompt: {
         title: '请开启 bot 模式',
         description:

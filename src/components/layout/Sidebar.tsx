@@ -31,7 +31,7 @@ export const Sidebar: React.FC = () => {
 
   const navItems: { id: ActiveTab; label: string; icon: React.ReactNode }[] = [
     { id: 'home', label: '首页', icon: <Home className="size-4" /> },
-    { id: 'playground', label: '实验场', icon: <FlaskConical className="size-4" /> },
+    { id: 'playground', label: '沙盘', icon: <FlaskConical className="size-4" /> },
     { id: 'search', label: '检索', icon: <Search className="size-4" /> },
     { id: 'logs', label: '请求日志', icon: <FileText className="size-4" /> },
     { id: 'sessions', label: '会话', icon: <MessageSquare className="size-4" /> },
