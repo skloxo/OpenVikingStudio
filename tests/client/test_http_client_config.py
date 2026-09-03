@@ -31,6 +31,15 @@ class FakeSearchHTTP:
         )
 
 
+@pytest.fixture(autouse=True)
+def _clean_identity_environment(monkeypatch):
+    """Ensure host environment credentials do not pollute client config tests."""
+    monkeypatch.delenv("OPENVIKING_USER", raising=False)
+    monkeypatch.delenv("OPENVIKING_ACCOUNT", raising=False)
+    monkeypatch.delenv("OPENVIKING_ACTOR_PEER_ID", raising=False)
+    monkeypatch.delenv("OPENVIKING_API_KEY", raising=False)
+
+
 def test_async_http_client_loads_missing_fields_from_ovcli_config(tmp_path, monkeypatch):
     config_path = tmp_path / "ovcli.conf"
     config_path.write_text(
