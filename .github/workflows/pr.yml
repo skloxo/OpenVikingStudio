@@ -38,10 +38,10 @@ jobs:
             examples/codex-memory-plugin/scripts/recall-compressor-profile.test.mjs \
             examples/codex-memory-plugin/scripts/auto-recall.test.mjs \
             examples/codex-memory-plugin/scripts/session-start-commit.test.mjs \
-<<<<<<< HEAD
+            examples/codex-memory-plugin/scripts/session-end.test.mjs \
+            examples/codex-memory-plugin/scripts/pre-compact-capture.test.mjs \
+            examples/codex-memory-plugin/scripts/session-state.test.mjs \
             examples/claude-code-memory-plugin/scripts/auto-capture.test.mjs \
-=======
->>>>>>> 2cc96e39 (feat(retrieval): assemble auto-recall context server-side via /search mode="context" (#3534))
             examples/claude-code-memory-plugin/scripts/marketplace.test.mjs \
             examples/claude-code-memory-plugin/scripts/skill-experience.test.mjs \
             examples/claude-code-memory-plugin/scripts/uri-guard.test.mjs \

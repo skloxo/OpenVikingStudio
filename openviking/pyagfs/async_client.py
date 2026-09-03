@@ -155,11 +155,15 @@ class AsyncAGFSClient:
         max_retries: int = 3,
         *,
         fs_ctx: Dict[str, str] | None = None,
+        auto_pathlock: bool = True,
     ) -> str:
+        ctx = dict(_fs_ctx_or_default(path, fs_ctx))
+        if not auto_pathlock:
+            ctx["disable_auto_pathlock"] = "true"
         if max_retries == 3:
-            return await self.run("write", path, data, ctx=_fs_ctx_or_default(path, fs_ctx))
+            return await self.run("write", path, data, ctx=ctx)
         return await self.run(
-            "write", path, data, max_retries=max_retries, ctx=_fs_ctx_or_default(path, fs_ctx)
+            "write", path, data, max_retries=max_retries, ctx=ctx
         )
 
     async def mkdir(
@@ -185,13 +189,17 @@ class AsyncAGFSClient:
         force: bool = True,
         *,
         fs_ctx: Dict[str, str] | None = None,
+        auto_pathlock: bool = True,
     ) -> Dict[str, Any]:
+        ctx = dict(_fs_ctx_or_default(path, fs_ctx))
+        if not auto_pathlock:
+            ctx["disable_auto_pathlock"] = "true"
         kwargs: Dict[str, Any] = {}
         if recursive:
             kwargs["recursive"] = recursive
         if not force:
             kwargs["force"] = force
-        return await self.run("rm", path, **kwargs, ctx=_fs_ctx_or_default(path, fs_ctx))
+        return await self.run("rm", path, **kwargs, ctx=ctx)
 
     async def stat(
         self, path: str, *, fs_ctx: Dict[str, str] | None = None, bypass_cache: bool = False

@@ -716,9 +716,9 @@ function SkillSourceViewer({
         </div>
       )}
 
-      {/* Line-by-line Source Code Viewer */}
-      <div className="rounded border border-border/60 bg-muted/20 overflow-hidden min-h-80 max-h-[520px] flex flex-col">
-        <div className="overflow-y-auto overflow-x-auto flex-1 font-mono text-[11px] leading-5 p-2">
+      {/* Line-by-line Source Code Viewer - Full Height Natural Flow */}
+      <div className="rounded border border-border/60 bg-muted/20 overflow-hidden flex flex-col">
+        <div className="overflow-x-auto flex-1 font-mono text-[11px] leading-5 p-2 divide-y divide-border/10">
           {lines.map((line, idx) => {
             const isHeading = line.startsWith('#')
             const isYaml = line.startsWith('---') || line.startsWith('name:') || line.startsWith('description:')
@@ -731,7 +731,7 @@ function SkillSourceViewer({
                   lineRefs.current[idx] = el
                 }}
                 className={cn(
-                  'flex items-start gap-3 px-1 py-0.5 rounded transition-colors group',
+                  'flex items-start gap-3 px-1.5 py-0.5 rounded transition-colors group',
                   activeTocIdx === idx && 'bg-cyan-500/10 border-l-2 border-cyan-500',
                   isHeading && 'font-semibold text-cyan-600 dark:text-cyan-400 bg-muted/30 my-0.5',
                   isYaml && 'text-amber-600 dark:text-amber-400',
@@ -1726,18 +1726,16 @@ function SkillsRoute() {
                         className="rounded-xs text-xs px-2 py-0.5 border-border/70 bg-muted/30 text-foreground/80 font-normal shrink-0"
                       >
                         📁{' '}
-                        {typeof skill.file_count === 'number'
-                          ? skill.file_count
-                          : Array.isArray(skill.files) && skill.files.length > 0
-                            ? skill.files.length
-                            : 1}{' '}
-                        文件 (
+                        {typeof skill.file_count === 'number' && skill.file_count > 0
+                          ? `${skill.file_count} 文件`
+                          : 'SOP 规约'}{' '}
+                        (
                         {typeof skill.content === 'string' &&
                         skill.content.length > 0
                           ? skill.content.length > 1024
                             ? `${(skill.content.length / 1024).toFixed(1)}KB`
                             : `${skill.content.length}B`
-                          : 'SOP'}
+                          : '标准件'}
                         )
                       </Badge>
                     </div>
