@@ -107,6 +107,44 @@ class FakeAGFS:
             }
         return list(children.values())
 
+    def tree_directory(
+        self,
+        path,
+        show_hidden=False,
+        node_limit=None,
+        level_limit=None,
+        ctx=None,
+    ):
+        if path not in self.dirs:
+            raise FileNotFoundError(path)
+        prefix = path.rstrip("/") + "/"
+        entries = []
+        for candidate in sorted([*self.dirs, *self.files]):
+            if not candidate.startswith(prefix):
+                continue
+            rel_path = candidate[len(prefix) :]
+            if not rel_path:
+                continue
+            if level_limit is not None and len(rel_path.split("/")) > level_limit:
+                continue
+            is_dir = candidate in self.dirs
+            entry = {
+                "path": candidate,
+                "rel_path": rel_path,
+                "info": {
+                    "name": candidate.rsplit("/", 1)[-1],
+                    "isDir": is_dir,
+                    "size": 0 if is_dir else len(self.files.get(candidate, b"")),
+                    "mode": "0755" if is_dir else "0644",
+                    "modTime": datetime.now(timezone.utc).isoformat(),
+                },
+                "extra": {},
+            }
+            entries.append(entry)
+            if node_limit is not None and len(entries) >= node_limit:
+                break
+        return entries
+
 
 @pytest.fixture
 def viking_fs():

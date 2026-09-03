@@ -885,7 +885,7 @@ class _OpsMixin:
             new_entry.update({
                 "name": info["name"],
                 "size": info["size"],
-                "mode": info["mode"],
+                "mode": info.get("mode", "0755" if info.get("isDir") else "0644"),
                 "modTime": info["modTime"],
                 "isDir": info["isDir"],
                 "rel_path": entry["rel_path"],
