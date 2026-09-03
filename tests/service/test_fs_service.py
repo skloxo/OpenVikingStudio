@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: AGPL-3.0
 """Tests for file-system service coordination behavior."""
 
+import asyncio
+from contextlib import asynccontextmanager
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -16,6 +18,7 @@ class _FakeVikingFS:
     def __init__(self, *, rm_error=None, events=None):
         self.rm_calls = []
         self.mv_calls = []
+        self.cp_calls = []
         self.rm_error = rm_error
         self.events = events
 
@@ -30,9 +33,47 @@ class _FakeVikingFS:
         if self.events is not None:
             self.events.append(("mv", from_uri, to_uri))
 
+    async def cp(self, from_uri, to_uri, recursive=False, ctx=None):
+        self.cp_calls.append(
+            {
+                "from_uri": from_uri,
+                "to_uri": to_uri,
+                "recursive": recursive,
+                "ctx": ctx,
+            }
+        )
+        if self.events is not None:
+            self.events.append(("cp", from_uri, to_uri))
+        return {
+            "operation_id": "copy-1",
+            "operation": "copy",
+            "from": from_uri,
+            "to": to_uri,
+            "recursive": recursive,
+        }
+
+
+class _FakeMutationCoordinator:
+    def __init__(self, events=None):
+        self.calls = []
+        self.events = events
+
+    @asynccontextmanager
+    async def mutation(self, account_id, uris):
+        self.calls.append({"account_id": account_id, "uris": list(uris)})
+        if self.events is not None:
+            self.events.append(("mutation-enter", *uris))
+        try:
+            yield
+        finally:
+            if self.events is not None:
+                self.events.append(("mutation-exit", *uris))
+
 
 @pytest.mark.asyncio
-async def test_write_forwards_tags_and_tag_mode_to_content_coordinator(monkeypatch, request_context):
+async def test_write_forwards_tags_and_tag_mode_to_content_coordinator(
+    monkeypatch, request_context
+):
     seen = {}
 
     class FakeCoordinator:
@@ -409,9 +450,7 @@ async def test_glob_tag_filter_keeps_zero_node_limit_unbounded(request_context):
             ]
 
     service = FSService(viking_fs=viking_fs, vikingdb=FakeVikingDB())
-    result = await service.glob(
-        "**/*.md", ctx=request_context, tags=["env=prod"], node_limit=0
-    )
+    result = await service.glob("**/*.md", ctx=request_context, tags=["env=prod"], node_limit=0)
 
     assert result["count"] == 2
     assert [entry["uri"] for entry in result["matches"]] == [
@@ -523,8 +562,7 @@ async def test_ls_tag_filter_keeps_zero_node_limit_unbounded_for_entry_and_simpl
     class FakeVikingDB:
         async def filter(self, **_kwargs):
             return [
-                {"uri": entry["uri"], "level": 2, "search_tags": ["env=prod"]}
-                for entry in entries
+                {"uri": entry["uri"], "level": 2, "search_tags": ["env=prod"]} for entry in entries
             ]
 
     entry_service = FSService(
@@ -593,8 +631,7 @@ async def test_tree_tag_filter_keeps_zero_node_limit_unbounded(request_context):
     class FakeVikingDB:
         async def filter(self, **_kwargs):
             return [
-                {"uri": entry["uri"], "level": 2, "search_tags": ["env=prod"]}
-                for entry in entries
+                {"uri": entry["uri"], "level": 2, "search_tags": ["env=prod"]} for entry in entries
             ]
 
     service = FSService(viking_fs=viking_fs, vikingdb=FakeVikingDB())
@@ -740,6 +777,20 @@ async def test_resource_mv_validates_then_moves_then_rewrites_watch_tasks(reques
         watch_scheduler=_FakeWatchScheduler(watch_manager),
     )
 
+    async def enqueue_refresh(**kwargs):
+        events.append(("refresh", kwargs["root_uri"]))
+        assert kwargs == {
+            "root_uri": "viking://resources/codeask",
+            "source_uri": "viking://resources/codeask/wiki",
+            "copied_uri": "viking://resources/codeask/wiki-renamed",
+            "change_kind": "added",
+            "context_type": "resource",
+            "ctx": request_context,
+        }
+        return "queued"
+
+    service._enqueue_copy_refresh = enqueue_refresh
+
     await service.mv(
         "viking://resources/codeask/wiki",
         "viking://resources/codeask/wiki-renamed",
@@ -762,7 +813,7 @@ async def test_resource_mv_validates_then_moves_then_rewrites_watch_tasks(reques
             "ctx": request_context,
         }
     ]
-    assert [event[0] for event in events] == ["validate", "mv", "rewrite"]
+    assert [event[0] for event in events] == ["validate", "mv", "rewrite", "refresh"]
 
 
 @pytest.mark.asyncio
@@ -788,22 +839,312 @@ async def test_resource_mv_conflict_fails_before_resource_move(request_context):
 
 @pytest.mark.asyncio
 async def test_resource_mv_without_watch_scheduler_moves_resource_directly(request_context):
-    viking_fs = _FakeVikingFS()
+    events = []
+    viking_fs = _FakeVikingFS(events=events)
     service = FSService(viking_fs=viking_fs)
+    refresh_calls = []
+
+    async def enqueue_refresh(**kwargs):
+        events.append(("refresh", kwargs["root_uri"]))
+        refresh_calls.append(kwargs)
+        return "queued"
+
+    service._enqueue_copy_refresh = enqueue_refresh
 
     await service.mv(
         "viking://resources/codeask/wiki",
-        "viking://resources/codeask/wiki-renamed",
+        "viking://resources/archive/wiki",
         ctx=request_context,
     )
 
     assert viking_fs.mv_calls == [
         {
             "from_uri": "viking://resources/codeask/wiki",
-            "to_uri": "viking://resources/codeask/wiki-renamed",
+            "to_uri": "viking://resources/archive/wiki",
             "ctx": request_context,
         }
     ]
+    assert refresh_calls == [
+        {
+            "root_uri": "viking://resources/codeask",
+            "source_uri": "viking://resources/codeask/wiki",
+            "copied_uri": "viking://resources/codeask/wiki",
+            "change_kind": "deleted",
+            "context_type": "resource",
+            "ctx": request_context,
+        },
+        {
+            "root_uri": "viking://resources/archive",
+            "source_uri": "viking://resources/codeask/wiki",
+            "copied_uri": "viking://resources/archive/wiki",
+            "change_kind": "added",
+            "context_type": "resource",
+            "ctx": request_context,
+        },
+    ]
+    assert [event[0] for event in events] == ["mv", "refresh", "refresh"]
+
+
+@pytest.mark.asyncio
+async def test_resource_mv_watch_control_file_skips_parent_refresh(request_context):
+    viking_fs = _FakeVikingFS()
+    service = FSService(
+        viking_fs=viking_fs,
+        watch_scheduler=_FakeWatchScheduler(_FakeWatchManager()),
+    )
+    service._enqueue_copy_refresh = AsyncMock()
+
+    await service.mv(
+        "viking://resources/.watch_tasks.json",
+        "viking://resources/watch-tasks-backup.json",
+        ctx=request_context,
+    )
+
+    service._enqueue_copy_refresh.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_resource_cp_coordinates_mutation_without_copying_watch_tasks(request_context):
+    source = "viking://resources/codeask/wiki"
+    target = "viking://resources/archive/wiki"
+    events = []
+    viking_fs = _FakeVikingFS(events=events)
+    coordinator = _FakeMutationCoordinator(events=events)
+    watch_manager = _FakeWatchManager(events=events)
+    service = FSService(
+        viking_fs=viking_fs,
+        watch_scheduler=_FakeWatchScheduler(watch_manager),
+        uri_mutation_coordinator=coordinator,
+    )
+
+    async def enqueue_refresh(**kwargs):
+        events.append(("refresh", kwargs["root_uri"]))
+        assert kwargs == {
+            "root_uri": "viking://resources/archive",
+            "source_uri": source,
+            "copied_uri": target,
+            "context_type": "resource",
+            "ctx": request_context,
+        }
+        return "queued"
+
+    service._enqueue_copy_refresh = enqueue_refresh
+
+    result = await service.cp(source, target, recursive=True, ctx=request_context)
+
+    assert coordinator.calls == [{"account_id": "default", "uris": [source, target]}]
+    assert viking_fs.cp_calls == [
+        {
+            "from_uri": source,
+            "to_uri": target,
+            "recursive": True,
+            "ctx": request_context,
+        }
+    ]
+    assert [event[0] for event in events] == [
+        "mutation-enter",
+        "cp",
+        "mutation-exit",
+        "refresh",
+    ]
+    assert watch_manager.validate_calls == []
+    assert watch_manager.rewrite_calls == []
+    assert result["from"] == source
+    assert result["to"] == target
+    assert result["semantic_root_uri"] == "viking://resources/archive"
+    assert result["semantic_status"] == "queued"
+
+
+@pytest.mark.asyncio
+async def test_resource_cp_refresh_failure_does_not_roll_back_copy(request_context):
+    source = "viking://resources/source.md"
+    target = "viking://resources/archive/copied.md"
+    viking_fs = _FakeVikingFS()
+    service = FSService(viking_fs=viking_fs)
+    service._enqueue_copy_refresh = AsyncMock(side_effect=RuntimeError("queue unavailable"))
+
+    result = await service.cp(source, target, recursive=False, ctx=request_context)
+
+    assert len(viking_fs.cp_calls) == 1
+    assert viking_fs.mv_calls == []
+    assert result["semantic_status"] == "failed"
+    assert result["semantic_error"] == "queue unavailable"
+
+
+@pytest.mark.asyncio
+async def test_resource_cp_finishes_transfer_and_refresh_after_caller_cancel(request_context):
+    source = "viking://resources/source.md"
+    target = "viking://resources/archive/copied.md"
+    started = asyncio.Event()
+    release = asyncio.Event()
+    completed = asyncio.Event()
+    viking_fs = _FakeVikingFS()
+
+    async def blocked_cp(from_uri, to_uri, recursive=False, ctx=None):
+        del from_uri, to_uri, recursive, ctx
+        started.set()
+        await release.wait()
+        completed.set()
+        return {"operation_id": "copy-cancel"}
+
+    viking_fs.cp = blocked_cp
+    service = FSService(viking_fs=viking_fs)
+    service._enqueue_copy_refresh = AsyncMock(return_value="queued")
+
+    task = asyncio.create_task(service.cp(source, target, recursive=False, ctx=request_context))
+    await started.wait()
+    task.cancel()
+    await asyncio.sleep(0)
+    release.set()
+
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+    assert completed.is_set()
+    service._enqueue_copy_refresh.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_resource_cp_finishes_inflight_refresh_after_caller_cancel(request_context):
+    source = "viking://resources/source.md"
+    target = "viking://resources/archive/copied.md"
+    refresh_started = asyncio.Event()
+    release_refresh = asyncio.Event()
+    refresh_completed = asyncio.Event()
+    service = FSService(viking_fs=_FakeVikingFS())
+
+    async def blocked_refresh(**kwargs):
+        del kwargs
+        refresh_started.set()
+        await release_refresh.wait()
+        refresh_completed.set()
+        return "queued"
+
+    service._enqueue_copy_refresh = blocked_refresh
+    task = asyncio.create_task(service.cp(source, target, recursive=False, ctx=request_context))
+    await refresh_started.wait()
+    task.cancel()
+    await asyncio.sleep(0)
+    release_refresh.set()
+
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+    assert refresh_completed.is_set()
+
+
+@pytest.mark.asyncio
+async def test_resource_mv_finishes_transfer_and_refresh_after_caller_cancel(request_context):
+    source = "viking://resources/source.md"
+    target = "viking://resources/archive/moved.md"
+    started = asyncio.Event()
+    release = asyncio.Event()
+    completed = asyncio.Event()
+    viking_fs = _FakeVikingFS()
+
+    async def blocked_mv(from_uri, to_uri, ctx=None):
+        del from_uri, to_uri, ctx
+        started.set()
+        await release.wait()
+        completed.set()
+
+    viking_fs.mv = blocked_mv
+    service = FSService(viking_fs=viking_fs)
+    service._enqueue_copy_refresh = AsyncMock(return_value="queued")
+
+    task = asyncio.create_task(service.mv(source, target, ctx=request_context))
+    await started.wait()
+    task.cancel()
+    await asyncio.sleep(0)
+    release.set()
+
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+    assert completed.is_set()
+    assert service._enqueue_copy_refresh.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_non_resource_cp_skips_parent_semantic_refresh(request_context):
+    viking_fs = _FakeVikingFS()
+    service = FSService(viking_fs=viking_fs)
+    service._enqueue_copy_refresh = AsyncMock()
+
+    result = await service.cp(
+        "viking://user/ryoma/memories/source.md",
+        "viking://user/ryoma/memories/copied.md",
+        recursive=False,
+        ctx=request_context,
+    )
+
+    service._enqueue_copy_refresh.assert_not_awaited()
+    assert "semantic_root_uri" not in result
+
+
+@pytest.mark.asyncio
+async def test_copy_refresh_message_only_rebuilds_parent_semantics(
+    request_context,
+    monkeypatch,
+):
+    service = FSService(viking_fs=_FakeVikingFS())
+    queue_manager = _FakeQueueManager()
+    mark_pending = AsyncMock()
+    monkeypatch.setattr(
+        "openviking.service.fs_service.get_queue_manager",
+        lambda: queue_manager,
+    )
+    monkeypatch.setattr(
+        "openviking.service.fs_service.mark_abstract_overview_pending",
+        mark_pending,
+    )
+
+    status = await service._enqueue_copy_refresh(
+        root_uri="viking://resources/archive",
+        source_uri="viking://resources/source.md",
+        copied_uri="viking://resources/archive/copied.md",
+        context_type="resource",
+        ctx=request_context,
+    )
+
+    assert status == "queued"
+    assert len(queue_manager.messages) == 1
+    msg = queue_manager.messages[0]
+    assert msg.uri == "viking://resources/archive"
+    assert msg.recursive is False
+    assert msg.skip_vectorization is False
+    assert msg.changes == {"added": ["viking://resources/archive/copied.md"]}
+    assert msg.generation_trigger == "content_copy"
+    assert msg.copy_source_uri == "viking://resources/source.md"
+
+
+@pytest.mark.asyncio
+async def test_transfer_refresh_message_records_deleted_source_entry(
+    request_context,
+    monkeypatch,
+):
+    service = FSService(viking_fs=_FakeVikingFS())
+    queue_manager = _FakeQueueManager()
+    monkeypatch.setattr(
+        "openviking.service.fs_service.get_queue_manager",
+        lambda: queue_manager,
+    )
+    monkeypatch.setattr(
+        "openviking.service.fs_service.mark_abstract_overview_pending",
+        AsyncMock(),
+    )
+
+    status = await service._enqueue_copy_refresh(
+        root_uri="viking://resources/source",
+        source_uri="viking://resources/source/moved.md",
+        copied_uri="viking://resources/source/moved.md",
+        change_kind="deleted",
+        context_type="resource",
+        ctx=request_context,
+    )
+
+    assert status == "queued"
+    assert queue_manager.messages[0].changes == {"deleted": ["viking://resources/source/moved.md"]}
 
 
 @pytest.mark.asyncio

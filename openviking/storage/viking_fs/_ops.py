@@ -3,20 +3,29 @@
 """Core filesystem operations mixin for VikingFS."""
 
 import asyncio
+import uuid
 from dataclasses import replace
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Union
 
+from openviking.core.context import ContextLevel
 from openviking.core.namespace import (
+    is_hidden_by_actor_peer_view,
     may_include_hidden_actor_peers,
+    uri_parts,
 )
 from openviking.pyagfs.exceptions import (
     AGFSClientError,
     AGFSDirectoryNotEmptyError,
     AGFSHTTPError,
 )
+from openviking.resource.watch_storage import is_watch_task_control_uri
 from openviking.server.error_mapping import is_not_found_error, map_exception
-from openviking.server.identity import RequestContext
+from openviking.server.identity import RequestContext, Role
+from openviking.storage.abstract_overview import (
+    ABSTRACT_OVERVIEW_FILENAMES,
+    rewrite_abstract_overview_for_transfer,
+)
 from openviking.storage.acl import AclAction, is_acl_uri
 from openviking.storage.expr import PathScope
 from openviking.storage.internal_names import STORAGE_INTERNAL_ENTRY_NAMES
@@ -29,11 +38,34 @@ from openviking.storage.viking_fs._base import (
 )
 from openviking.utils.time_utils import format_iso8601, parse_iso_datetime
 from openviking_cli.exceptions import (
+    ConflictError,
     FailedPreconditionError,
     InvalidArgumentError,
     NotFoundError,
+    PermissionDeniedError,
 )
 from openviking_cli.utils.uri import VikingURI
+
+
+def _glob_match_uri(entry_uri: str, is_dir: Optional[bool]) -> str:
+    """Mark directory matches with a trailing slash.
+
+    `glob` returns a flat list of uri strings, so the trailing slash is the only
+    way a caller can tell a directory match from a file match. Matches the
+    convention `normalize_dir_uri` and the tree renderer already use.
+    """
+    if not is_dir or entry_uri.endswith("/"):
+        return entry_uri
+    return f"{entry_uri}/"
+
+
+class TransferRollbackError(RuntimeError):
+    """A filesystem transfer failed and left a compensation failure to repair."""
+
+    def __init__(self, message: str, *, phase: str, residual_uri: str):
+        super().__init__(message)
+        self.phase = phase
+        self.residual_uri = residual_uri
 
 
 class _OpsMixin:
@@ -284,6 +316,266 @@ class _OpsMixin:
             auto_pathlock=auto_pathlock,
         )
 
+    async def cp(
+        self,
+        old_uri: str,
+        new_uri: str,
+        recursive: bool = False,
+        ctx: Optional[RequestContext] = None,
+        lease_ref: Dict[str, Any] | None = None,
+    ) -> Dict[str, Any]:
+        """Copy a file or directory together with its vector records."""
+        await self._ensure_copy_source_access(old_uri, recursive=recursive, ctx=ctx)
+        await self._ensure_access(new_uri, ctx, action=AclAction.WRITE)
+        old_scope = old_uri.rstrip("/")
+        new_scope = new_uri.rstrip("/")
+        if old_scope == new_scope:
+            raise InvalidArgumentError("cp source and target must be different")
+        if new_scope.startswith(old_scope + "/"):
+            raise InvalidArgumentError("cp target cannot be inside the source subtree")
+
+        old_path = self._uri_to_path(old_uri, ctx=ctx)
+        new_path = self._uri_to_path(new_uri, ctx=ctx)
+        try:
+            stat = await self._async_agfs.stat(old_path)
+        except Exception as exc:
+            if is_not_found_error(exc):
+                raise FileNotFoundError(f"cp source not found: {old_uri}") from exc
+            mapped = map_exception(exc, resource=old_uri)
+            if mapped is not None:
+                raise mapped from exc
+            raise
+        is_dir = stat.get("isDir", False) if isinstance(stat, dict) else False
+        if is_dir and not recursive:
+            raise FailedPreconditionError(
+                f"Cannot copy directory without --recursive: {old_uri}",
+                details={"resource": old_uri, "expected_flag": "recursive"},
+            )
+        if not is_dir and new_uri.rstrip("/") != new_uri:
+            raise InvalidArgumentError(
+                f"cp destination for a file must include the target file name: {new_uri}"
+            )
+
+        await self._ensure_transfer_parent_directory(new_path, new_uri, operation="cp")
+        await self._ensure_transfer_target_missing(new_path, new_uri)
+        lock_requests = (
+            self._directory_transfer_lock_requests(old_path, new_path)
+            if is_dir
+            else [
+                {"path": old_path, "kind": "exact"},
+                {"path": new_path, "kind": "exact"},
+            ]
+        )
+        lease = await self._async_agfs.pathlock_acquire_batch(
+            lock_requests,
+            owner_lease_ref=lease_ref,
+        )
+        operation_id = uuid.uuid4().hex
+        try:
+            await self._ensure_transfer_target_missing(new_path, new_uri)
+            try:
+                files_created = await self._copy_agfs_entry(
+                    old_path,
+                    new_path,
+                    old_uri=old_uri,
+                    new_uri=new_uri,
+                    is_dir=is_dir,
+                    ctx=ctx,
+                    lease_ref=lease,
+                )
+                vector_result = await self._copy_vector_store_uris(
+                    old_uri,
+                    new_uri,
+                    recursive=is_dir,
+                    ctx=ctx,
+                )
+            except Exception as transfer_error:
+                try:
+                    await self._cleanup_transfer_target(
+                        new_path,
+                        is_dir=is_dir,
+                        ctx=ctx,
+                        lease_ref=lease,
+                    )
+                except Exception as rollback_error:
+                    if not is_not_found_error(rollback_error):
+                        raise TransferRollbackError(
+                            f"cp failed and target cleanup failed for {new_uri}: {rollback_error}",
+                            phase="target_cleanup",
+                            residual_uri=new_uri,
+                        ) from transfer_error
+                raise
+            result: Dict[str, Any] = {
+                "operation_id": operation_id,
+                "operation": "copy",
+                "from": old_uri,
+                "to": new_uri,
+                "recursive": is_dir,
+                "phase": "completed",
+                "files_created": files_created,
+            }
+            if vector_result is not None:
+                result["vectors"] = {
+                    "scanned": vector_result.scanned,
+                    "written": vector_result.written,
+                    "deleted": vector_result.deleted,
+                    "restored": vector_result.restored,
+                    "batches": vector_result.batches,
+                }
+            logger.info(
+                "Filesystem transfer completed: operation_id=%s operation=copy "
+                "object_type=%s recursive=%s result=success",
+                operation_id,
+                "directory" if is_dir else "file",
+                is_dir,
+            )
+            return result
+        finally:
+            await self._async_agfs.pathlock_release(lease)
+
+    async def _ensure_transfer_target_missing(self, path: str, uri: str) -> None:
+        try:
+            await self._async_agfs.stat(path)
+        except Exception as exc:
+            if is_not_found_error(exc):
+                return
+            mapped = map_exception(exc, resource=uri)
+            if mapped is not None:
+                raise mapped from exc
+            raise
+        raise ConflictError(f"transfer target already exists: {uri}", resource=uri)
+
+    async def _ensure_copy_source_access(
+        self,
+        uri: str,
+        *,
+        recursive: bool,
+        ctx: Optional[RequestContext],
+    ) -> None:
+        """Require a copy source to stay inside the caller's visible data view."""
+        await self._ensure_access(uri, ctx)
+        real_ctx = self._ctx_or_default(ctx)
+        canonical_uri = uri
+        if is_watch_task_control_uri(canonical_uri):
+            raise PermissionDeniedError(
+                "Copying watch-task control state is not allowed",
+                resource=canonical_uri,
+            )
+        if recursive and (
+            is_hidden_by_actor_peer_view(canonical_uri, real_ctx)
+            or may_include_hidden_actor_peers(canonical_uri, real_ctx)
+        ):
+            raise PermissionDeniedError(
+                "Copy source may include hidden peer data",
+                resource=canonical_uri,
+            )
+        if real_ctx.role != Role.ROOT and uri_parts(canonical_uri) in (
+            [],
+            ["user"],
+            ["resources"],
+            ["temp"],
+        ):
+            raise PermissionDeniedError(
+                "Copying a namespace container root requires root access",
+                resource=canonical_uri,
+            )
+
+    async def _ensure_transfer_parent_directory(
+        self, path: str, uri: str, *, operation: str
+    ) -> None:
+        parent_path = self._transfer_parent_path(path)
+        try:
+            parent_stat = await self._async_agfs.stat(parent_path)
+        except Exception as exc:
+            if is_not_found_error(exc):
+                parent_uri = VikingURI(uri).parent
+                raise NotFoundError(
+                    parent_uri.uri if parent_uri is not None else "",
+                    "directory",
+                ) from exc
+            mapped = map_exception(exc, resource=uri)
+            if mapped is not None:
+                raise mapped from exc
+            raise
+        if not isinstance(parent_stat, dict) or not parent_stat.get("isDir", False):
+            raise InvalidArgumentError(f"{operation} target parent is not a directory: {uri}")
+
+    @staticmethod
+    def _transfer_parent_path(path: str) -> str:
+        return path.rstrip("/").rsplit("/", 1)[0] or "/"
+
+    @classmethod
+    def _directory_transfer_lock_requests(
+        cls, old_path: str, new_path: str
+    ) -> List[Dict[str, str]]:
+        """Lock stable parents so directory deletion and recreation stay covered."""
+
+        parents: List[str] = []
+        for parent in (
+            cls._transfer_parent_path(old_path),
+            cls._transfer_parent_path(new_path),
+        ):
+            if any(cls._tree_lock_covers(existing, parent) for existing in parents):
+                continue
+            parents = [
+                existing for existing in parents if not cls._tree_lock_covers(parent, existing)
+            ]
+            parents.append(parent)
+        return [{"path": parent, "kind": "tree"} for parent in parents]
+
+    @staticmethod
+    def _tree_lock_covers(ancestor: str, path: str) -> bool:
+        normalized_ancestor = ancestor.rstrip("/") or "/"
+        normalized_path = path.rstrip("/") or "/"
+        if normalized_ancestor == "/":
+            return True
+        return normalized_path == normalized_ancestor or normalized_path.startswith(
+            f"{normalized_ancestor}/"
+        )
+
+    async def _copy_agfs_entry(
+        self,
+        old_path: str,
+        new_path: str,
+        *,
+        old_uri: str,
+        new_uri: str,
+        is_dir: bool,
+        ctx: Optional[RequestContext],
+        lease_ref: Dict[str, Any],
+    ) -> int:
+        if is_dir:
+            return await self._copy_directory_under_parent_locks(
+                old_path,
+                new_path,
+                old_uri=old_uri,
+                new_uri=new_uri,
+                ctx=ctx,
+                lease_ref=lease_ref,
+            )
+
+        await self._async_agfs.cp(
+            old_path,
+            new_path,
+            recursive=False,
+            fs_ctx=self._pathlock_fs_ctx(ctx, lease_ref),
+        )
+        return 1
+
+    async def _cleanup_transfer_target(
+        self,
+        path: str,
+        *,
+        is_dir: bool,
+        ctx: Optional[RequestContext],
+        lease_ref: Dict[str, Any],
+    ) -> None:
+        await self._async_agfs.rm(
+            path,
+            recursive=is_dir,
+            fs_ctx=self._pathlock_fs_ctx(ctx, lease_ref),
+        )
+
     async def mv(
         self,
         old_uri: str,
@@ -303,9 +595,16 @@ class _OpsMixin:
         await self._ensure_access(old_uri, guard_ctx, action=AclAction.MANAGE)
         await self._ensure_access(old_uri, ctx, action=AclAction.WRITE)
         await self._ensure_access(new_uri, ctx, action=AclAction.WRITE)
+        old_scope = old_uri.rstrip("/")
+        new_scope = new_uri.rstrip("/")
+        if old_scope == new_scope:
+            raise InvalidArgumentError("mv source and target must be different")
+        if new_scope.startswith(old_scope + "/"):
+            raise InvalidArgumentError("mv target cannot be inside the source subtree")
         old_path = self._uri_to_path(old_uri, ctx=ctx)
         new_path = self._uri_to_path(new_uri, ctx=ctx)
-        target_uri = self._path_to_uri(old_path, ctx=ctx)
+        source_vector_uri = self._path_to_uri(old_path, ctx=ctx)
+        target_uri = source_vector_uri
         new_acl_scope = acl_enabled and is_acl_uri(new_uri)
 
         # Verify source exists and determine type before locking.
@@ -322,6 +621,8 @@ class _OpsMixin:
 
         if is_dir:
             await self._ensure_access(old_uri, ctx, action=AclAction.MANAGE)
+        await self._ensure_transfer_parent_directory(new_path, new_uri, operation="mv")
+        await self._ensure_transfer_target_missing(new_path, new_uri)
 
         if not is_dir:
             if new_uri.rstrip("/") != new_uri:
@@ -346,10 +647,7 @@ class _OpsMixin:
 
         if is_dir:
             lease = await self._async_agfs.pathlock_acquire_batch(
-                [
-                    {"path": old_path, "kind": "tree"},
-                    {"path": new_path, "kind": "exact"},
-                ],
+                self._directory_transfer_lock_requests(old_path, new_path),
                 owner_lease_ref=lease_ref,
             )
         else:
@@ -361,6 +659,7 @@ class _OpsMixin:
                 owner_lease_ref=lease_ref,
             )
 
+        operation_id = uuid.uuid4().hex
         try:
             uris_to_move = (
                 await self._collect_uris(
@@ -375,29 +674,52 @@ class _OpsMixin:
             uris_to_move.append(target_uri)
             if is_dir:
                 await self._ensure_access_many(uris_to_move, ctx, action=AclAction.MANAGE)
+            await self._ensure_transfer_target_missing(new_path, new_uri)
 
             # Check if it's temp directory (files already encrypted)
             is_temp = old_uri.startswith("viking://temp/")
 
             # Copy source to destination. Source must stay intact until vector updates succeed.
             try:
-                await self._copy_for_mv(
-                    old_uri=old_uri,
-                    new_uri=new_uri,
-                    old_path=old_path,
-                    new_path=new_path,
-                    is_dir=is_dir,
-                    is_temp=is_temp,
-                    ctx=ctx,
-                    lease_ref=lease,
+                files_created = (
+                    await self._copy_for_mv(
+                        old_uri=old_uri,
+                        new_uri=new_uri,
+                        old_path=old_path,
+                        new_path=new_path,
+                        is_dir=is_dir,
+                        is_temp=is_temp,
+                        ctx=ctx,
+                        lease_ref=lease,
+                    )
+                    or 0
                 )
-            except Exception as e:
-                if "not found" in str(e).lower():
+            except Exception as transfer_error:
+                try:
+                    await self._cleanup_transfer_target(
+                        new_path,
+                        is_dir=is_dir,
+                        ctx=ctx,
+                        lease_ref=lease,
+                    )
+                except Exception as rollback_error:
+                    if not is_not_found_error(rollback_error):
+                        raise TransferRollbackError(
+                            f"mv AGFS copy failed and target cleanup failed for "
+                            f"{new_uri}: {rollback_error}",
+                            phase="target_cleanup",
+                            residual_uri=new_uri,
+                        ) from transfer_error
+                if is_not_found_error(transfer_error):
                     try:
                         await self._delete_from_vector_store(uris_to_move, ctx=ctx)
-                    except Exception:
-                        # Orphan cleanup is best effort here; preserve the copy error.
-                        pass
+                    except Exception as vector_cleanup_error:
+                        raise TransferRollbackError(
+                            f"mv source disappeared and orphan vector cleanup failed for "
+                            f"{old_uri}: {vector_cleanup_error}",
+                            phase="source_vector_cleanup",
+                            residual_uri=old_uri,
+                        ) from transfer_error
                     else:
                         logger.info(
                             f"[VikingFS] mv source not found, cleaned orphan index: {old_uri}"
@@ -405,49 +727,122 @@ class _OpsMixin:
                 raise
 
             # Update VectorDB URIs (on failure, clean up the copy)
-            vector_mappings: List[tuple[str, str]] = []
+            vector_transfer_completed = False
             try:
-                vector_mappings = await self._update_vector_store_uris(
-                    uris_to_move, old_uri, new_uri, ctx=ctx
+                vector_result = await self._update_vector_store_uris(
+                    old_uri,
+                    new_uri,
+                    recursive=is_dir,
+                    ctx=ctx,
                 )
+                vector_transfer_completed = True
                 if acl_manager is not None and new_acl_scope:
                     await acl_manager.refresh_context_subtree(
                         new_uri,
                         self._ctx_or_default(ctx),
                     )
-            except Exception:
-                if vector_mappings:
-                    await self._restore_vector_store_uris(vector_mappings, ctx=ctx)
+            except Exception as transfer_error:
+                if vector_transfer_completed:
+                    try:
+                        await self._update_vector_store_uris(
+                            new_uri,
+                            old_uri,
+                            recursive=is_dir,
+                            ctx=ctx,
+                        )
+                    except Exception as rollback_error:
+                        raise TransferRollbackError(
+                            f"mv post-vector step failed and vector restore was incomplete for "
+                            f"{old_uri} -> {new_uri}: {rollback_error}",
+                            phase="vector_restore",
+                            residual_uri=new_uri,
+                        ) from transfer_error
                 try:
-                    if is_dir:
-                        cleanup_lease = await self._async_agfs.pathlock_acquire_tree(
-                            new_path,
-                            owner_lease_ref=lease,
-                        )
-                        try:
-                            await self._async_agfs.rm(
-                                new_path,
-                                recursive=True,
-                                fs_ctx=self._pathlock_fs_ctx(ctx, cleanup_lease),
-                            )
-                        finally:
-                            await self._async_agfs.pathlock_release(cleanup_lease)
-                    else:
-                        await self._async_agfs.rm(
-                            new_path,
-                            fs_ctx=self._pathlock_fs_ctx(ctx, lease),
-                        )
-                except Exception:
-                    pass
+                    await self._cleanup_transfer_target(
+                        new_path,
+                        is_dir=is_dir,
+                        ctx=ctx,
+                        lease_ref=lease,
+                    )
+                except Exception as rollback_error:
+                    raise TransferRollbackError(
+                        f"mv vector transfer failed and target cleanup failed for "
+                        f"{new_uri}: {rollback_error}",
+                        phase="target_cleanup",
+                        residual_uri=new_uri,
+                    ) from transfer_error
                 raise
 
             # Delete source
-            await self._async_agfs.rm(
-                old_path,
-                recursive=is_dir,
-                fs_ctx=self._pathlock_fs_ctx(ctx, lease),
+            try:
+                await self._async_agfs.rm(
+                    old_path,
+                    recursive=is_dir,
+                    fs_ctx=self._pathlock_fs_ctx(ctx, lease),
+                )
+            except Exception as delete_error:
+                try:
+                    await self._cleanup_transfer_target(
+                        old_path,
+                        is_dir=is_dir,
+                        ctx=ctx,
+                        lease_ref=lease,
+                    )
+                    await self._copy_agfs_entry(
+                        new_path,
+                        old_path,
+                        old_uri=new_uri,
+                        new_uri=old_uri,
+                        is_dir=is_dir,
+                        ctx=ctx,
+                        lease_ref=lease,
+                    )
+                    await self._update_vector_store_uris(
+                        new_uri,
+                        old_uri,
+                        recursive=is_dir,
+                        ctx=ctx,
+                    )
+                    await self._cleanup_transfer_target(
+                        new_path,
+                        is_dir=is_dir,
+                        ctx=ctx,
+                        lease_ref=lease,
+                    )
+                except Exception as rollback_error:
+                    raise TransferRollbackError(
+                        f"mv source deletion failed and rollback was incomplete for "
+                        f"{old_uri} -> {new_uri}: {rollback_error}",
+                        phase="source_restore",
+                        residual_uri=old_uri,
+                    ) from delete_error
+                raise
+            result: Dict[str, Any] = {
+                "operation_id": operation_id,
+                "operation": "move",
+                "from": old_uri,
+                "to": new_uri,
+                "recursive": is_dir,
+                "phase": "completed",
+                "files_created": files_created,
+                "files_deleted": files_created,
+            }
+            if vector_result is not None:
+                result["vectors"] = {
+                    "scanned": vector_result.scanned,
+                    "written": vector_result.written,
+                    "deleted": vector_result.deleted,
+                    "restored": vector_result.restored,
+                    "batches": vector_result.batches,
+                }
+            logger.info(
+                "Filesystem transfer completed: operation_id=%s operation=move "
+                "object_type=%s recursive=%s result=success",
+                operation_id,
+                "directory" if is_dir else "file",
+                is_dir,
             )
-            return {}
+            return result
         finally:
             await self._async_agfs.pathlock_release(lease)
 
@@ -461,52 +856,50 @@ class _OpsMixin:
         is_temp: bool,
         ctx: Optional[RequestContext] = None,
         lease_ref: Dict[str, Any] | None = None,
-    ) -> None:
+    ) -> int:
         """Copy source to destination for mv without deleting source."""
-        if is_temp:
-            if is_dir:
-                await self._copy_temp_dir_with_exact_locks(
-                    old_path,
-                    new_path,
-                    ctx=ctx,
-                    lease_ref=lease_ref,
-                )
-            else:
-                await self._async_agfs.cp(
-                    old_path,
-                    new_path,
-                    recursive=False,
-                    fs_ctx=self._pathlock_fs_ctx(ctx, lease_ref),
-                )
-            return
+        del is_temp
+        if lease_ref is None:
+            raise ValueError("mv copy requires a pathlock lease")
+        return await self._copy_agfs_entry(
+            old_path,
+            new_path,
+            old_uri=old_uri,
+            new_uri=new_uri,
+            is_dir=is_dir,
+            ctx=ctx,
+            lease_ref=lease_ref,
+        )
 
-        if is_dir:
-            await self._copy_dir_through_vikingfs(old_uri, new_uri, ctx=ctx, lease_ref=lease_ref)
-        else:
-            await self._copy_file_through_vikingfs(old_uri, new_uri, ctx=ctx, lease_ref=lease_ref)
-
-    async def _copy_temp_dir_with_exact_locks(
+    async def _copy_directory_under_parent_locks(
         self,
         old_path: str,
         new_path: str,
+        old_uri: str,
+        new_uri: str,
         ctx: Optional[RequestContext],
         lease_ref: Dict[str, Any] | None,
-    ) -> None:
-        """Copy an encrypted temp directory while locking every destination entry.
+        transfer_source_uri: str | None = None,
+        transfer_target_uri: str | None = None,
+    ) -> int:
+        """Copy a directory under the operation's stable parent Tree leases.
 
         Args:
             old_path: Source backend directory path.
             new_path: Destination backend directory path.
             ctx: Request context used for filesystem operations.
-            lease_ref: Exact lease covering the current destination directory.
+            lease_ref: Batch lease covering the source and destination parents.
 
         Returns:
-            None.
+            Number of created directories and files.
         """
         if lease_ref is None:
-            raise ValueError("temp directory copy requires a pathlock lease")
+            raise ValueError("directory copy requires a pathlock lease")
+        transfer_source_uri = transfer_source_uri or old_uri
+        transfer_target_uri = transfer_target_uri or new_uri
         fs_ctx = self._pathlock_fs_ctx(ctx, lease_ref)
         await self._async_agfs.mkdir(new_path, fs_ctx=fs_ctx)
+        copied = 1
         entries = await self._async_agfs.ls(old_path, fs_ctx=fs_ctx)
         for entry in entries:
             name = entry.get("name", "")
@@ -514,27 +907,52 @@ class _OpsMixin:
                 continue
             old_child = f"{old_path.rstrip('/')}/{name}"
             new_child = f"{new_path.rstrip('/')}/{name}"
-            child_lease = await self._async_agfs.pathlock_acquire_exact(
-                new_child,
-                owner_lease_ref=lease_ref,
+            old_child_uri = f"{old_uri.rstrip('/')}/{name}"
+            new_child_uri = f"{new_uri.rstrip('/')}/{name}"
+            await self._ensure_copy_source_access(
+                old_child_uri,
+                recursive=bool(entry.get("isDir", False)),
+                ctx=ctx,
             )
-            try:
-                if entry.get("isDir", False):
-                    await self._copy_temp_dir_with_exact_locks(
-                        old_child,
+            if entry.get("isDir", False):
+                copied += await self._copy_directory_under_parent_locks(
+                    old_child,
+                    new_child,
+                    old_uri=old_child_uri,
+                    new_uri=new_child_uri,
+                    ctx=ctx,
+                    lease_ref=lease_ref,
+                    transfer_source_uri=transfer_source_uri,
+                    transfer_target_uri=transfer_target_uri,
+                )
+            else:
+                if name in ABSTRACT_OVERVIEW_FILENAMES:
+                    raw = await self._async_agfs.cat(old_child, fs_ctx=fs_ctx)
+                    level = (
+                        ContextLevel.ABSTRACT if name == ".abstract.md" else ContextLevel.OVERVIEW
+                    )
+                    rewritten = rewrite_abstract_overview_for_transfer(
+                        raw,
+                        level=level,
+                        source_dir_uri=old_uri,
+                        target_dir_uri=new_uri,
+                        source_scope_uri=transfer_source_uri,
+                        target_scope_uri=transfer_target_uri,
+                    )
+                    await self._async_agfs.write(
                         new_child,
-                        ctx=ctx,
-                        lease_ref=child_lease,
+                        rewritten.encode("utf-8"),
+                        fs_ctx=fs_ctx,
                     )
                 else:
                     await self._async_agfs.cp(
                         old_child,
                         new_child,
                         recursive=False,
-                        fs_ctx=self._pathlock_fs_ctx(ctx, child_lease),
+                        fs_ctx=fs_ctx,
                     )
-            finally:
-                await self._async_agfs.pathlock_release(child_lease)
+                copied += 1
+        return copied
 
     async def _copy_dir_through_vikingfs(
         self,
@@ -845,6 +1263,7 @@ class _OpsMixin:
         await self._ensure_access(uri, ctx)
         if output == "original":
             return await self._tree_original(uri, show_all_hidden, node_limit, level_limit, ctx=ctx)
+
         elif output == "agent":
             return await self._tree_agent(
                 uri, abs_limit, show_all_hidden, node_limit, level_limit, ctx=ctx
@@ -891,6 +1310,7 @@ class _OpsMixin:
                 "rel_path": entry["rel_path"],
                 "uri": entry_uri,
             })
+
             result.append(new_entry)
         return result
 
@@ -925,13 +1345,15 @@ class _OpsMixin:
                     }
                 )
                 continue
-            result.append({
-                "uri": entry_uri,
-                "size": 0 if is_dir else info["size"],
-                "isDir": is_dir,
-                "modTime": format_iso8601(parse_iso_datetime(info["modTime"])),
-                "rel_path": entry["rel_path"],
-            })
+            result.append(
+                {
+                    "uri": entry_uri,
+                    "size": 0 if is_dir else info["size"],
+                    "isDir": is_dir,
+                    "modTime": format_iso8601(parse_iso_datetime(info["modTime"])),
+                    "rel_path": entry["rel_path"],
+                }
+            )
 
         await self._batch_fetch_abstracts(
             [entry for entry in result if entry.get("access") != "denied"],
@@ -1477,6 +1899,58 @@ class _OpsMixin:
                 )
         return browsable
 
+    async def _augment_entries_extra_fields(
+        self,
+        entries: List[Dict[str, Any]],
+        extra_fields: List[str],
+        ctx: Optional[RequestContext] = None,
+    ) -> None:
+        """Augment entries in-place with extra fields (locked, id, count)."""
+        real_ctx = self._ctx_or_default(ctx)
+        need_locked = "locked" in extra_fields
+        need_id = "id" in extra_fields
+        need_count = "count" in extra_fields
+        vector_store = self._get_vector_store() if need_count else None
+
+        lock_paths: List[tuple[int, str]] = []
+        for i, entry in enumerate(entries):
+            # ACL directory enumeration may expose only a name/type placeholder.
+            # Do not enrich denied entries with metadata from inaccessible paths.
+            if entry.get("access") == "denied":
+                continue
+            entry_uri = entry.get("uri", "")
+            is_dir = entry.get("isDir", False)
+            if need_locked:
+                path = self._try_uri_to_path(entry_uri, ctx=ctx)
+                if path is not None:
+                    lock_paths.append((i, path))
+            if need_id and not is_dir:
+                entry["id"] = vector_record_id(real_ctx.account_id, entry_uri, level=2)
+            if need_count and is_dir and vector_store and entry_uri:
+                try:
+                    if not may_include_hidden_actor_peers(entry_uri, real_ctx):
+                        filter_expr = PathScope("uri", entry_uri, depth=-1)
+                        entry["count"] = await vector_store.count(
+                            filter=filter_expr,
+                            ctx=real_ctx,
+                        )
+                except Exception as e:
+                    logger.warning(f"[VikingFS] Failed to count nodes for {entry_uri}: {e}")
+
+        if need_locked and lock_paths:
+            for i, path in lock_paths:
+                try:
+                    entries[i]["isLocked"] = await self._is_path_locked_async(path)
+                except Exception:
+                    entries[i]["isLocked"] = False
+
+    def _try_uri_to_path(self, uri: str, ctx: Optional[RequestContext] = None) -> Optional[str]:
+        """Best-effort URI to path conversion; returns None on failure."""
+        try:
+            return self._uri_to_path(uri, ctx=ctx)
+        except Exception:
+            return None
+
     async def move_file(
         self,
         from_uri: str,
@@ -1523,6 +1997,7 @@ class _OpsMixin:
             dst_path,
             recursive=True,
             fs_ctx=fs_ctx or {"account_id": self._ctx_or_default(ctx).account_id},
+            allow_same_mount_fast_path=True,
         )
 
     async def delete_temp(
