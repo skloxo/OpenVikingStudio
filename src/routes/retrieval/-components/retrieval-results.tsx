@@ -21,6 +21,7 @@ import { toast } from 'sonner'
 
 import { Button } from '#/components/ui/button'
 import { cn } from '#/lib/utils'
+import { retrievalResultNameFromUri } from '#/lib/viking-uri'
 import type { FindContextType, FindQueryPlanItem } from '#/lib/retrieval'
 
 import { LoadingHint } from './loading-hint'
@@ -231,7 +232,8 @@ function ResultRow({
 }) {
   const [showTrajectory, setShowTrajectory] = useState(false)
   const [copied, setCopied] = useState(false)
-  const { name, parent } = displayName(item.item.uri)
+  const { parent } = displayName(item.item.uri)
+  const name = retrievalResultNameFromUri(item.item.uri)
   const meta = TYPE_META[item.type]
   const Icon = meta.icon
   const resourceSearch = resourceSearchForResult(item.item)

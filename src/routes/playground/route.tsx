@@ -6,6 +6,8 @@ import {
   ArrowLeftIcon,
   BotIcon,
   ClipboardIcon,
+  PanelRightCloseIcon,
+  PanelRightOpenIcon,
   TerminalIcon,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -54,6 +56,7 @@ import {
   PLAYGROUND_LEFT_WIDTH,
   PLAYGROUND_LEFT_WIDTH_STORAGE_KEY,
   PLAYGROUND_MAIN_MIN_WIDTH,
+  PLAYGROUND_RIGHT_COLLAPSED_STORAGE_KEY,
   PLAYGROUND_RIGHT_WIDTH,
   PLAYGROUND_RIGHT_WIDTH_STORAGE_KEY,
 } from './-lib/constants'
@@ -154,6 +157,23 @@ function PlaygroundWorkbench() {
   )
   const [resizingPane, setResizingPane] = useState<'context' | 'action' | null>(
     null,
+  )
+  const [rightCollapsed, setRightCollapsed] = useState(
+    () =>
+      typeof window !== 'undefined' &&
+      window.localStorage.getItem(PLAYGROUND_RIGHT_COLLAPSED_STORAGE_KEY) ===
+        '1',
+  )
+  const toggleRightCollapsed = useCallback(
+    () =>
+      setRightCollapsed((collapsed) => {
+        window.localStorage.setItem(
+          PLAYGROUND_RIGHT_COLLAPSED_STORAGE_KEY,
+          collapsed ? '0' : '1',
+        )
+        return !collapsed
+      }),
+    [],
   )
   const [isFocusCanvas, setIsFocusCanvas] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false
@@ -404,6 +424,12 @@ function PlaygroundWorkbench() {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault()
         setFindPaletteOpen((open) => !open)
+        return
+      }
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'f') {
+        if ((event.target as HTMLElement | null)?.closest('.cm-editor')) return
+        event.preventDefault()
+        setFindPaletteOpen(true)
       }
     }
 
@@ -611,6 +637,19 @@ function PlaygroundWorkbench() {
                 <BotIcon className="size-4" />
               </Button>
             </div>
+            {rightCollapsed && !isFocusCanvas ? (
+              <Button
+                type="button"
+                size="icon-sm"
+                variant="ghost"
+                className="hidden shrink-0 lg:inline-flex"
+                title={t('actionPanel.expand')}
+                aria-label={t('actionPanel.expand')}
+                onClick={toggleRightCollapsed}
+              >
+                <PanelRightOpenIcon className="size-4" />
+              </Button>
+            ) : null}
           </div>
           <div className="min-h-0 flex-1">
             <LazyFilePreview
@@ -621,7 +660,7 @@ function PlaygroundWorkbench() {
             />
           </div>
         </main>
-        {!isFocusCanvas && (
+        {!isFocusCanvas && !rightCollapsed && (
           <PlaygroundResizeHandle
             active={resizingPane === 'action'}
             label={t('resizeAction')}
@@ -629,12 +668,13 @@ function PlaygroundWorkbench() {
           />
         )}
 
-        {!isFocusCanvas && !isCompactLayout ? (
+        {!isFocusCanvas && !isCompactLayout && !rightCollapsed ? (
           <aside className="hidden min-h-0 min-w-0 flex-col bg-muted/15 lg:flex lg:w-[var(--playground-right-width)] lg:min-w-[var(--playground-right-width)]">
             <PlaygroundActionPanel
               activePanel={activePanel}
               currentUri={currentUri}
               entries={entries}
+              onCollapse={toggleRightCollapsed}
               onOpenAddResource={() => setUploadDialogOpen(true)}
               onOpenResource={revealResource}
               onPanelChange={handlePanelChange}
@@ -729,6 +769,7 @@ function PlaygroundActionPanel({
   activePanel,
   currentUri,
   entries,
+  onCollapse,
   onOpenAddResource,
   onOpenResource,
   onPanelChange,
@@ -739,6 +780,7 @@ function PlaygroundActionPanel({
   activePanel: PlaygroundPanel
   currentUri: string
   entries: VikingFsEntry[]
+  onCollapse: () => void
   onOpenAddResource: () => void
   onOpenResource: ResourceOpenHandler
   onPanelChange: (panel: PlaygroundPanel) => void
@@ -761,6 +803,17 @@ function PlaygroundActionPanel({
           ref={setToolbarContainer}
           className="ml-auto flex min-w-0 items-center gap-1"
         />
+        <Button
+          type="button"
+          size="icon-sm"
+          variant="ghost"
+          className="shrink-0"
+          title={t('actionPanel.collapse')}
+          aria-label={t('actionPanel.collapse')}
+          onClick={onCollapse}
+        >
+          <PanelRightCloseIcon className="size-4" />
+        </Button>
       </div>
 
       <PlaygroundActionContent
