@@ -562,8 +562,9 @@ class AsyncAGFSClient:
         """Mark an owned lease as handed off."""
         if _path_locks_disabled():
             return
+        method = "pathlock_handoff" if hasattr(self._client, "pathlock_handoff") else "pathlock_to_handoff"
         await self.run(
-            "pathlock_handoff",
+            method,
             _fs_ctx_or_default("/", fs_ctx),
             owned_lease_ref,
         )
