@@ -11,6 +11,7 @@ Verifies that:
 """
 
 import importlib
+import json
 import os
 import sys
 import pytest
@@ -96,3 +97,50 @@ def test_dual_mode_satellite_http_retry_resilience():
             assert resp.get("status") == "ok"
             assert resp.get("recovered") is True
             assert attempt_count == 3
+
+
+def test_record_evolution_lesson_dual_writes_to_master_memory(tmp_path):
+    """Verify openviking_record_evolution_lesson appends to local skill and mirrors to Master Memory."""
+    mod = _reload_mcp_module("satellite")
+    
+    # 模拟目标 skill 路径
+    test_skill_dir = tmp_path / "skills" / "test-skill"
+    test_skill_dir.mkdir(parents=True)
+    test_skill_file = test_skill_dir / "SKILL.md"
+    test_skill_file.write_text("# Test Skill\nInitial content\n", encoding="utf-8")
+
+    written_payloads = []
+
+    def fake_post(endpoint, payload):
+        written_payloads.append((endpoint, payload))
+        return {"status": "ok", "result": {"uri": payload.get("uri")}}
+
+    orig_exists = os.path.exists
+    with patch("mcp_openviking_server.http_client.post", side_effect=fake_post):
+        with patch("mcp_openviking_server.os.path.exists", side_effect=lambda p: str(p) == str(test_skill_file) or orig_exists(p)):
+            res_str = mod.openviking_record_evolution_lesson(
+                skill_name=str(test_skill_file),
+                lesson_title="测试防丢镜像",
+                context="单元测试验证",
+                reflection="验证双写机制",
+                lesson="知识永远不回滚"
+            )
+
+    res = json.loads(res_str)
+    assert res.get("status") == "ok"
+    assert "master_memory_uri" in res
+    assert res["master_memory_uri"].startswith("viking://resources/master_memory/evolution_lessons/")
+    assert res["mirror_status"] == "synced"
+
+    # 验证本地技能内容被追加
+    assert "测试防丢镜像" in test_skill_file.read_text(encoding="utf-8")
+    assert "知识永远不回滚" in test_skill_file.read_text(encoding="utf-8")
+
+    # 验证向 Master Memory 提交了双写请求
+    assert len(written_payloads) == 1
+    endpoint, payload = written_payloads[0]
+    assert endpoint == "/api/v1/content/write"
+    assert payload["uri"] == res["master_memory_uri"]
+    assert "测试防丢镜像" in payload["content"]
+    assert "知识永远不回滚" in payload["content"]
+
