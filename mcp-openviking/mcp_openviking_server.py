@@ -20,6 +20,7 @@ OpenViking MCP Server — AI Agent 可调用的 OpenViking 语义记忆管理工
 import glob
 import json
 import os
+import re
 import subprocess
 import logging
 import time
@@ -165,13 +166,60 @@ def openviking_record_evolution_lesson(
     reflection: str = Field(default="", description="根因与物理逻辑分析"),
     lesson: str = Field(default="", description="提炼出的永久闭环规范"),
 ) -> str:
-    """Harness Reflexion 隐式自演进钩子：自动写入 SKILL.md 归档 Lesson，并增量更新底层 Harness 度量与向量重索引"""
+    """Harness Reflexion 隐式自演进钩子：自动写入 SKILL.md 归档 Lesson，并双写纯 Markdown 镜像至 OpenViking Master Memory 永久存盘"""
     try:
-        target_md = "/home/skloxo/aho/openclaw/project/OpenVikingStudio/.agents/skills/openviking-studio-dev/SKILL.md"
-        if os.path.exists(target_md):
-            lesson_entry = f"\n\n#### 📌 Lesson {time.strftime('%Y-%m-%d')}：{lesson_title}\n- **CONTEXT**：{context}\n- **REFLECTION**：{reflection}\n- **LESSON**：{lesson}\n"
-            with open(target_md, "a", encoding="utf-8") as f:
-                f.write(lesson_entry)
+        # 1. 动态查找目标技能文件
+        candidate_paths = []
+        if os.path.exists(skill_name):
+            candidate_paths.append(skill_name)
+        candidate_paths.extend([
+            f"/home/skloxo/aho/openclaw/project/OpenVikingStudio/.agents/skills/{skill_name}/SKILL.md",
+            f"/home/skloxo/aho/openclaw/project/.agents/skills/{skill_name}/SKILL.md",
+            os.path.expanduser(f"~/.gemini/config/skills/{skill_name}/SKILL.md"),
+            f"/home/skloxo/aho/openclaw/skills/{skill_name}/SKILL.md",
+            os.path.expanduser(f"~/.openclaw/skills/{skill_name}/SKILL.md"),
+        ])
+        local_written_file = None
+        lesson_entry = f"\n\n#### 📌 Lesson {time.strftime('%Y-%m-%d')}：{lesson_title}\n- **CONTEXT**：{context}\n- **REFLECTION**：{reflection}\n- **LESSON**：{lesson}\n"
+        for p in candidate_paths:
+            if os.path.exists(p):
+                with open(p, "a", encoding="utf-8") as f:
+                    f.write(lesson_entry)
+                local_written_file = p
+                break
+
+        # 2. 双写镜像至 OpenViking Master Memory (体外大脑永久记忆，技能可回滚、知识不回滚)
+        clean_slug = re.sub(r'[^a-zA-Z0-9_\u4e00-\u9fa5]+', '_', lesson_title).strip('_').lower()
+        if not clean_slug:
+            clean_slug = "lesson"
+        date_str = time.strftime('%Y%m%d_%H%M%S')
+        mirror_filename = f"{date_str}_{skill_name}_{clean_slug}.md"
+        master_uri = f"viking://resources/master_memory/evolution_lessons/{mirror_filename}"
+
+        mirror_content = f"""# Evolution Lesson: {lesson_title}
+- **Skill**: `{skill_name}`
+- **Recorded At**: {time.strftime('%Y-%m-%d %H:%M:%S')}
+- **Context**: {context}
+
+## 🔍 Reflection & Root Cause Analysis
+{reflection}
+
+## 📜 Permanent Guidelines & Lesson
+{lesson}
+"""
+        mirror_status = "skipped"
+        try:
+            res = http_client.post("/api/v1/content/write", {
+                "uri": master_uri,
+                "content": mirror_content,
+                "mode": "create"
+            })
+            if isinstance(res, dict) and (res.get("status") == "ok" or "result" in res):
+                mirror_status = "synced"
+            else:
+                mirror_status = f"response: {res}"
+        except Exception as write_err:
+            mirror_status = f"error: {str(write_err)}"
 
         HARNESS_METRICS["lessons_count"] = HARNESS_METRICS.get("lessons_count", 0) + 1
         HARNESS_METRICS["most_evolved_skill"] = skill_name
@@ -179,9 +227,12 @@ def openviking_record_evolution_lesson(
 
         return _format_result({
             "status": "ok",
-            "message": f"成功归档 Lesson '{lesson_title}' 至 {skill_name}",
+            "message": f"成功归档 Lesson '{lesson_title}' 至 {skill_name} 并镜像入脑 Master Memory",
             "lessons_count": HARNESS_METRICS["lessons_count"],
             "most_evolved_skill": skill_name,
+            "local_written_file": local_written_file,
+            "master_memory_uri": master_uri,
+            "mirror_status": mirror_status,
         })
     except Exception as e:
         return _format_result({"status": "error", "error": str(e)})
