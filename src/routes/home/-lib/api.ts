@@ -3,7 +3,9 @@ import {
   getConsoleDashboardSummary,
   getConsoleTokens,
   getOvResult,
+  ovClient,
 } from '#/lib/ov-client'
+import type { PeerAgentItem } from '../-components/peer-memory-grid'
 
 import { COMMIT_SERIES_DAYS, TOKEN_SERIES_DAYS } from '../-constants/dashboard'
 import type {
@@ -44,4 +46,13 @@ export function fetchConsoleContextCommits(): Promise<ConsoleContextCommitsResul
   return getOvResult<ConsoleContextCommitsResult>(
     getConsoleContextCommits({ query }),
   )
+}
+
+export async function fetchConsolePeers(): Promise<PeerAgentItem[]> {
+  try {
+    const res = await ovClient.instance.get<{ status?: string; result?: PeerAgentItem[] }>('/api/v1/console/peers')
+    return Array.isArray(res.data.result) ? res.data.result : []
+  } catch {
+    return []
+  }
 }

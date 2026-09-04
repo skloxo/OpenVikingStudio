@@ -72,7 +72,19 @@ class PersistentTaskStore:
 
     async def list(self, account_id: str, *, user_id: Optional[str] = None) -> List[Dict[str, Any]]:
         if not user_id:
-            return []
+            task_root = self._task_root_dir(account_id)
+            try:
+                items = await self._agfs.ls(task_root)
+            except (AGFSNotFoundError, FileNotFoundError):
+                return []
+            tasks: List[Dict[str, Any]] = []
+            for item in items:
+                u_name = item.get("name")
+                if not u_name or u_name.startswith("."):
+                    continue
+                tasks.extend(await self.list(account_id, user_id=u_name))
+            return tasks
+
         directory = self._task_dir(account_id, user_id)
         try:
             items = await self._agfs.ls(directory)
@@ -88,6 +100,20 @@ class PersistentTaskStore:
             except (AGFSNotFoundError, FileNotFoundError):
                 continue
             tasks.append(json.loads(_decode_bytes(raw)))
+        return tasks
+
+    async def list_all(self) -> List[Dict[str, Any]]:
+        """List tasks across all accounts."""
+        try:
+            items = await self._agfs.ls(self.ROOT_PREFIX)
+        except (AGFSNotFoundError, FileNotFoundError):
+            return []
+        tasks: List[Dict[str, Any]] = []
+        for item in items:
+            acc_name = item.get("name")
+            if not acc_name or acc_name.startswith("."):
+                continue
+            tasks.extend(await self.list(acc_name))
         return tasks
 
     async def delete(self, task_id: str, *, account_id: str, user_id: Optional[str] = None) -> None:

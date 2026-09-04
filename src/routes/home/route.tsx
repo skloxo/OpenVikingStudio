@@ -15,6 +15,7 @@ import {
   fetchConsoleContextCommits,
   fetchConsoleDashboardSummary,
   fetchConsoleTokenSeries,
+  fetchConsolePeers,
 } from './-lib/api'
 import { isDisabledPayload } from './-lib/format'
 import { useAppConnection } from '#/hooks/use-app-connection'
@@ -22,7 +23,7 @@ import type {
   ConnectionDraft,
   ConnectionRole,
 } from '#/hooks/use-app-connection'
-import { getObserverSystem, getOvResult } from '#/lib/ov-client'
+import { getObserverSystem, getOvResult, ovClient } from '#/lib/ov-client'
 import { parseObserverStatus } from '../monitoring/-lib/parse-status'
 
 export const Route = createFileRoute('/home')({
@@ -104,7 +105,7 @@ function HomePage() {
   let collectionCount = 1
   if (observerData && typeof observerData === 'object') {
     const rawComponents = (observerData as { components?: Record<string, { status?: string }> }).components
-    const vikingStatus = rawComponents?.vikingdb?.status ?? ''
+    const vikingStatus = rawComponents?.vikingdb.status ?? ''
     const blocks = parseObserverStatus(vikingStatus)
     for (const block of blocks) {
       if (block.kind === 'table') {
@@ -144,10 +145,17 @@ function HomePage() {
           url: '/api/v1/skills',
         }),
       )
-      return result?.total ?? (Array.isArray(result?.skills) ? result.skills.length : (summary?.context_counts?.skills ?? 0))
+      return result.total ?? (Array.isArray(result.skills) ? result.skills.length : (summary?.context_counts?.skills ?? 0))
     },
     queryKey: ['skills-count-summary'],
     staleTime: 60_000,
+  })
+
+  const peersQuery = useQuery({
+    queryFn: fetchConsolePeers,
+    queryKey: ['console-peers', metricsScopeKey],
+    refetchInterval: 30_000,
+    staleTime: 15_000,
   })
 
   return (
@@ -162,16 +170,34 @@ function HomePage() {
         isLoading={isMetricsLoading || observerQuery.isLoading}
       />
 
-      {/* Task v1.1.8: PeerMemoryGrid 6 大 Agent 体外大脑协同网络 */}
+      {/* Task v1.1.8: PeerMemoryGrid 真实 Agent 体外大脑协同网络 */}
       <PeerMemoryGrid
-        isLoading={isMetricsLoading || observerQuery.isLoading}
-        totalMemories={summary?.context_counts?.memories ?? 0}
-        totalSkills={summary?.context_counts?.skills ?? 0}
+        isLoading={isMetricsLoading || observerQuery.isLoading || peersQuery.isLoading}
+        peerList={peersQuery.data}
       />
 
       <div className="grid gap-4 md:grid-cols-3">
         <ContextDataPanel
-          data={summary?.context_counts}
+          data={
+            summary?.context_counts
+              ? {
+                  ...summary.context_counts,
+                  skills: skillsCountQuery.data ?? summary.context_counts.skills,
+                  total:
+                    (summary.context_counts.files ?? 0) +
+                    (skillsCountQuery.data ?? summary.context_counts.skills ?? 0) +
+                    (summary.context_counts.memories ?? 0),
+                }
+              : summary?.context_counts
+          }
+          disabled={metricsUnavailable}
+          disabledMessage={unavailableMessage}
+          isError={dashboard.isError}
+          isLoading={isMetricsLoading}
+          t={t}
+        />
+        <TodayTokensPanel
+          data={summary?.today_tokens}
           disabled={metricsUnavailable}
           disabledMessage={unavailableMessage}
           isError={dashboard.isError}

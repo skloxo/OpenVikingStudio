@@ -32,7 +32,7 @@ function inferStepState(
   totalSteps: number,
   taskStatus: string | null | undefined,
   taskStage: string | null | undefined,
-  qStatus: Record<string, { error_count?: number; processed?: number }> | undefined,
+  qStatus: Record<string, { error_count?: number; processed?: number } | undefined> | undefined,
 ): StepState {
   const normStatus = taskStatus?.toLowerCase()
   if (normStatus === 'completed') return 'completed'
@@ -130,7 +130,7 @@ export function getTaskPipelineSteps(
   const stage = task.stage
   const resObj: Record<string, any> = (task.result && typeof task.result === 'object') ? (task.result as Record<string, any>) : {}
   const metaObj = (task.meta && typeof task.meta === 'object') ? task.meta : {}
-  const qStatus = resObj.queue_status as Record<string, { error_count?: number; processed?: number; total?: number }> | undefined
+  const qStatus = resObj.queue_status as Record<string, { error_count?: number; processed?: number; total?: number } | undefined> | undefined
 
   const embeddingRow = actualQueueRows.find((r) => r.name.toLowerCase().includes('embedding'))
   const semanticNodesRow = actualQueueRows.find((r) => r.name.toLowerCase().includes('semantic') && r.name.toLowerCase().includes('node'))
@@ -239,7 +239,7 @@ export function getTaskPipelineSteps(
       {
         name: isZh ? '向量注销' : 'Vector Purge',
         state: step2State,
-        processed: step2State === 'completed' ? deletedVectors : (qStatus?.UserDeletion.processed ?? 0),
+        processed: step2State === 'completed' ? deletedVectors : (qStatus?.UserDeletion?.processed ?? 0),
         total: deletedVectors,
         count: deletedVectors,
         unit: isZh ? '向量' : 'vectors',
@@ -258,9 +258,9 @@ export function getTaskPipelineSteps(
   if (type === 'resource_build' || type === 'knowledge_pack') {
     const totalFiles = metaObj.total_files ?? resObj.processed_files ?? 1
     const isCompleted = normStatus === 'completed'
-    const parseCount = isCompleted ? (qStatus?.ExternalParse.processed ?? totalFiles) : (parseRow?.completed ?? 0)
-    const semanticCount = isCompleted ? (qStatus?.Semantic.processed ?? totalFiles) : (semanticRow?.completed ?? 0)
-    const embeddingCount = isCompleted ? (qStatus?.Embedding.processed ?? totalFiles) : (embeddingRow?.completed ?? 0)
+    const parseCount = isCompleted ? (qStatus?.ExternalParse?.processed ?? totalFiles) : (parseRow?.completed ?? 0)
+    const semanticCount = isCompleted ? (qStatus?.Semantic?.processed ?? totalFiles) : (semanticRow?.completed ?? 0)
+    const embeddingCount = isCompleted ? (qStatus?.Embedding?.processed ?? totalFiles) : (embeddingRow?.completed ?? 0)
     return [
       {
         name: isZh ? '文档解析' : 'Parsing',
@@ -300,8 +300,8 @@ export function getTaskPipelineSteps(
 
     if (!isGlobalRootReindex) {
       // 单文件/指定独立资源的局部重新索引任务
-      const nodes = qStatus?.Semantic.processed ?? metaObj.semantic_nodes ?? resObj.semantic_nodes ?? metaObj.processed_nodes ?? 1
-      const chunks = qStatus?.Embedding.processed ?? metaObj.processed_chunks ?? resObj.rebuilt_records ?? resObj.reindexed_items ?? metaObj.total_chunks ?? 1
+      const nodes = qStatus?.Semantic?.processed ?? metaObj.semantic_nodes ?? resObj.semantic_nodes ?? metaObj.processed_nodes ?? 1
+      const chunks = qStatus?.Embedding?.processed ?? metaObj.processed_chunks ?? resObj.rebuilt_records ?? resObj.reindexed_items ?? metaObj.total_chunks ?? 1
       const isCompleted = normStatus === 'completed'
       const isRunning = normStatus === 'running'
       const isEmbedStage = stage?.toLowerCase().includes('vector') || stage?.toLowerCase().includes('embed')
@@ -379,7 +379,7 @@ export function getTaskPipelineSteps(
 
   if (type === 'snapshot_restore_reindex') {
     const inodes = resObj.restored_inodes ?? metaObj.restored_inodes ?? 1
-    const items = qStatus?.Embedding.processed ?? resObj.reindexed_items ?? metaObj.reindexed_items ?? 1
+    const items = qStatus?.Embedding?.processed ?? resObj.reindexed_items ?? metaObj.reindexed_items ?? 1
     const isCompleted = normStatus === 'completed'
     const isRunning = normStatus === 'running'
     const isEmbedStage = stage?.toLowerCase().includes('embed') || stage?.toLowerCase().includes('vector')
@@ -418,9 +418,9 @@ export function getTaskPipelineSteps(
 
   if (type === 'connector_import') {
     const docs = resObj.downloaded_files ?? metaObj.downloaded_files ?? 1
-    const pages = qStatus?.ExternalParse.processed ?? metaObj.parsed_pages ?? docs
-    const nodes = qStatus?.Semantic.processed ?? metaObj.semantic_nodes ?? docs
-    const chunks = qStatus?.Embedding.processed ?? metaObj.processed_chunks ?? docs
+    const pages = qStatus?.ExternalParse?.processed ?? metaObj.parsed_pages ?? docs
+    const nodes = qStatus?.Semantic?.processed ?? metaObj.semantic_nodes ?? docs
+    const chunks = qStatus?.Embedding?.processed ?? metaObj.processed_chunks ?? docs
     const isCompleted = normStatus === 'completed'
     return [
       { name: isZh ? '连接鉴权' : 'Auth', state: status === 'pending' ? 'pending' : 'completed', processed: isCompleted ? 1 : (status === 'pending' ? 0 : 1), total: 1, unit: isZh ? '连接' : 'auth' },
@@ -454,7 +454,7 @@ export function getTaskPipelineSteps(
   if (type === 'watch_sync') {
     const events = metaObj.events_count ?? 1
     const synced = resObj.synced_files ?? metaObj.synced_files ?? 1
-    const chunks = qStatus?.Embedding.processed ?? metaObj.processed_chunks ?? synced
+    const chunks = qStatus?.Embedding?.processed ?? metaObj.processed_chunks ?? synced
     const isCompleted = normStatus === 'completed'
     return [
       { name: isZh ? '事件监听' : 'Events', state: status === 'pending' ? 'pending' : 'completed', processed: isCompleted ? events : 0, total: events, count: events, unit: isZh ? '事件' : 'events' },
@@ -741,9 +741,9 @@ export function getTaskQuantifiedWorkload(
   }
 
   if (type === 'add_resource' || type === 'resource_build') {
-    const qStatus = resObj.queue_status as Record<string, { processed?: number }> | undefined
-    const embProcessed = qStatus?.Embedding.processed ?? meta.processed_chunks
-    const semProcessed = qStatus?.Semantic.processed ?? meta.processed_nodes
+    const qStatus = resObj.queue_status as Record<string, { processed?: number } | undefined> | undefined
+    const embProcessed = qStatus?.Embedding?.processed ?? meta.processed_chunks
+    const semProcessed = qStatus?.Semantic?.processed ?? meta.processed_nodes
     if (embProcessed !== undefined || semProcessed !== undefined) {
       const parts: string[] = []
       if (semProcessed !== undefined) parts.push(isZh ? `${semProcessed} 节点` : `${semProcessed} nodes`)

@@ -94,7 +94,16 @@ async def list_tasks(
 ):
     """List background tasks with optional filters."""
     tracker = get_task_tracker()
+    tasks_by_id = {}
     if _ctx.role == Role.ROOT:
+        all_store_tasks = []
+        if hasattr(tracker._store, "list_all"):
+            try:
+                for payload in await tracker._store.list_all():
+                    all_store_tasks.append(tracker._record_from_payload(payload))
+                tracker._merge_loaded_tasks(all_store_tasks)
+            except Exception:
+                pass
         system_tasks = await tracker.list_tasks(
             task_type=task_type,
             status=status,
@@ -103,17 +112,28 @@ async def list_tasks(
             account_id=SYSTEM_TASK_ACCOUNT_ID,
             user_id=SYSTEM_TASK_USER_ID,
         )
+        default_tasks = await tracker.list_tasks(
+            task_type=task_type,
+            status=status,
+            resource_id=resource_id,
+            limit=limit,
+            account_id="default",
+            user_id=None,
+        )
         cached_tasks = await tracker.list_tasks(
             task_type=task_type,
             status=status,
             resource_id=resource_id,
             limit=limit,
         )
-        tasks_by_id = {task.task_id: task for task in cached_tasks}
-        tasks_by_id.update({task.task_id: task for task in system_tasks})
-        tasks = sorted(tasks_by_id.values(), key=lambda task: task.created_at, reverse=True)[:limit]
+        for task in cached_tasks:
+            tasks_by_id[task.task_id] = task
+        for task in default_tasks:
+            tasks_by_id[task.task_id] = task
+        for task in system_tasks:
+            tasks_by_id[task.task_id] = task
     else:
-        tasks = await tracker.list_tasks(
+        user_tasks = await tracker.list_tasks(
             task_type=task_type,
             status=status,
             resource_id=resource_id,
@@ -121,6 +141,20 @@ async def list_tasks(
             account_id=_ctx.account_id,
             user_id=_ctx.user.user_id,
         )
+        system_tasks = await tracker.list_tasks(
+            task_type=task_type,
+            status=status,
+            resource_id=resource_id,
+            limit=limit,
+            account_id=SYSTEM_TASK_ACCOUNT_ID,
+            user_id=SYSTEM_TASK_USER_ID,
+        )
+        for task in user_tasks:
+            tasks_by_id[task.task_id] = task
+        for task in system_tasks:
+            tasks_by_id.setdefault(task.task_id, task)
+
+    tasks = sorted(tasks_by_id.values(), key=lambda task: task.created_at, reverse=True)[:limit]
     return Response(status="ok", result=[t.to_dict() for t in tasks])
 
 

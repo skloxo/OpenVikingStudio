@@ -45,10 +45,10 @@ class ContextInventoryProvider:
     async def _read_counts(self, ctx: RequestContext) -> dict[str, int]:
         user_root = canonical_user_root(ctx)
 
-        files, skills, memories = await asyncio.gather(
+        files, memories, skills = await asyncio.gather(
             self._stat_count("viking://resources", ctx=ctx),
-            self._stat_count(f"{user_root}/skills", ctx=ctx),
             self._stat_count(f"{user_root}/memories", ctx=ctx),
+            self._count_skills(ctx=ctx, user_root=user_root),
         )
         return {
             "files": files,
@@ -56,6 +56,30 @@ class ContextInventoryProvider:
             "memories": memories,
             "total": files + skills + memories,
         }
+
+    async def _count_skills(self, *, ctx: RequestContext, user_root: str) -> int:
+        fs_service = getattr(self._service, "fs", None)
+        if fs_service is None:
+            return 0
+        total = 0
+        for root_uri in (f"{user_root}/skills", "viking://agent/skills"):
+            try:
+                entries = await fs_service.ls(
+                    root_uri,
+                    ctx=ctx,
+                    output="agent",
+                    abs_limit=1024,
+                    node_limit=2000,
+                )
+                if isinstance(entries, list):
+                    for entry in entries:
+                        if isinstance(entry, dict) and entry.get("isDir", False):
+                            name = entry.get("name") or entry.get("uri", "").rstrip("/").split("/")[-1]
+                            if not name.startswith("."):
+                                total += 1
+            except Exception as exc:
+                logger.debug("Inventory skill count failed for %s: %s", root_uri, exc)
+        return total
 
     async def _stat_count(self, uri: str, *, ctx: RequestContext) -> int:
         fs_service = getattr(self._service, "fs", None)

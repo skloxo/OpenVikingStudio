@@ -134,6 +134,20 @@ def project_events(
                 input_tokens=payload.get("prompt_tokens"),
                 output_tokens=payload.get("completion_tokens"),
             )
+        if event.event_name == "retrieval.query":
+            operation = str(payload.get("operation") or "search")
+            status = str(payload.get("status") or "success")
+            retrieval_key = (
+                account_id,
+                user_id,
+                event_date,
+                event_hour,
+                operation,
+                status,
+            )
+            prev_count, prev_results = retrieval_rows[retrieval_key]
+            result_count = safe_int(payload.get("result_count"), 0)
+            retrieval_rows[retrieval_key] = (prev_count + 1, prev_results + result_count)
             continue
 
         if event.event_name == "http.request":
@@ -292,13 +306,7 @@ def should_skip_audit_route(route: str) -> bool:
 
 
 def retrieval_operation_for_http(method: str, route: str) -> str | None:
-    """Map successful public search APIs from `http.request` into dashboard counters."""
-    if method != "POST":
-        return None
-    if route == "/api/v1/search/find":
-        return "find"
-    if route == "/api/v1/search/search":
-        return "search"
+    """Legacy mapper for HTTP search requests; now centrally handled by retrieval.query event."""
     return None
 
 
