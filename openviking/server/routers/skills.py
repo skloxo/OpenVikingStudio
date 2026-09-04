@@ -7,6 +7,7 @@ import hashlib
 import json
 import shutil
 import uuid
+import re
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, AsyncIterator, Dict, Optional
@@ -138,16 +139,31 @@ async def _list_skills_from_root(
     return results
 
 
+_DATE_ARCHIVE_REGEX = re.compile(r"^\d{4}-\d{2}-\d{2}", re.IGNORECASE)
+
+
 async def _entry_looks_like_skill(service, ctx: RequestContext, entry: Dict[str, Any]) -> bool:
     """Decide whether a directory entry from ``ls`` represents a real skill."""
     entry_uri = entry.get("uri", "")
     if not entry_uri:
         return False
 
+    dir_name = entry.get("name") or _skill_name_from_uri(entry_uri)
+    if not dir_name or dir_name.startswith(".") or dir_name.startswith("__"):
+        return False
+    if _DATE_ARCHIVE_REGEX.match(dir_name) or "backup" in dir_name.lower() or "curator" in dir_name.lower():
+        return False
+
     meta = _parse_abstract_meta(entry.get("abstract", ""))
     if meta:
+        meta_name = meta.get("name")
+        if not meta_name or not isinstance(meta_name, str):
+            return False
+        meta_name = meta_name.strip()
+        if meta_name.startswith(".") or _DATE_ARCHIVE_REGEX.match(meta_name):
+            return False
         try:
-            validate_skill_name(meta.get("name"))
+            validate_skill_name(meta_name)
         except Exception:
             return False
         description = meta.get("description")
@@ -156,8 +172,12 @@ async def _entry_looks_like_skill(service, ctx: RequestContext, entry: Dict[str,
         return True
 
     # Abstract is missing or unparsable — fall back to checking that the
-    # directory actually contains a SKILL.md file before listing it.  Any
-    # error (including NotFound) means we cannot confirm it is a skill.
+    # directory actually contains a SKILL.md file before listing it.
+    try:
+        validate_skill_name(dir_name)
+    except Exception:
+        return False
+
     try:
         skill_md_stat = await service.fs.stat(_skill_md_uri(entry_uri), ctx=ctx)
     except Exception:
