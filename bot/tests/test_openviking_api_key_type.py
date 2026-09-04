@@ -56,8 +56,11 @@ class _DummyHTTPClient:
     async def initialize(self):
         return None
 
-    async def create_session(self, session_id=None, memory_policy=None):
-        return {"session_id": session_id or "s-1", "memory_policy": memory_policy}
+    async def create_session(self, session_id=None, options=None):
+        return {
+            "session_id": session_id or "s-1",
+            "memory_policy": (options or {}).get("memory_policy"),
+        }
 
     async def session_exists(self, _session_id):
         return False
@@ -1906,9 +1909,9 @@ async def test_viking_client_ensure_session_creates_after_legacy_not_found(monke
     async def _get_session(_session_id):
         raise NotFoundError("Resource not found")
 
-    async def _create_session(session_id=None, memory_policy=None):
-        created.append((session_id, memory_policy))
-        return {"session_id": session_id, "memory_policy": memory_policy}
+    async def _create_session(session_id=None, options=None):
+        created.append((session_id, options))
+        return {"session_id": session_id, "memory_policy": (options or {}).get("memory_policy")}
 
     monkeypatch.setattr(client.client, "get_session", _get_session)
     monkeypatch.setattr(client.client, "create_session", _create_session)
