@@ -18,7 +18,7 @@ function TaskStatusBadge({ status }: { status: ResourceUploadTask['status'] }) {
 
   if (status === 'success') {
     return (
-      <Badge variant="secondary" className="bg-emerald-500/12 text-emerald-400">
+      <Badge variant="secondary" className="border border-cyan-500/30 bg-cyan-500/15 text-cyan-600 dark:text-cyan-400">
         {t('processingTasks.status.success')}
       </Badge>
     )
@@ -26,14 +26,22 @@ function TaskStatusBadge({ status }: { status: ResourceUploadTask['status'] }) {
 
   if (status === 'failed') {
     return (
-      <Badge variant="secondary" className="bg-rose-500/12 text-black">
+      <Badge variant="secondary" className="border border-rose-500/30 bg-rose-500/15 text-rose-600 dark:text-rose-400">
         {t('processingTasks.status.failed')}
       </Badge>
     )
   }
 
+  if (status === 'cancelled') {
+    return (
+      <Badge variant="secondary" className="border border-border/60 bg-muted/30 text-muted-foreground">
+        {t('processingTasks.status.cancelled', { defaultValue: '已取消' })}
+      </Badge>
+    )
+  }
+
   return (
-    <Badge variant="secondary" className="bg-amber-500/12 text-amber-300">
+    <Badge variant="secondary" className="border border-amber-500/30 bg-amber-500/15 text-amber-600 dark:text-amber-400">
       {t('processingTasks.status.processing')}
     </Badge>
   )

@@ -1192,6 +1192,7 @@ const zhCN = {
         processing: '处理中',
         success: '处理成功',
         failed: '处理失败',
+        cancelled: '已取消',
       },
     },
     searchPalette: {
