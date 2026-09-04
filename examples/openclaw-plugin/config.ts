@@ -30,7 +30,8 @@ export type OpenVikingSecretRef =
 export type MemoryOpenVikingConfig = {
   mode?: "remote";
   baseUrl?: string;
-  peer_role?: "none" | "assistant" | "person";
+  /** `person` is a legacy alias for `sender`. */
+  peer_role?: "none" | "assistant" | "sender" | "person";
   peer_prefix?: string;
   apiKey?: string | OpenVikingSecretRef;
   /** Optional HTTP headers merged into every OpenViking request. */
@@ -127,10 +128,12 @@ export type MemoryOpenVikingConfig = {
 
 /** Runtime config after memoryOpenVikingConfigSchema.parse() has applied defaults. */
 export type ParsedMemoryOpenVikingConfig = Required<
-  Omit<MemoryOpenVikingConfig, "agentExperience" | "recallTargetTypes" | "apiKey">
+  Omit<MemoryOpenVikingConfig, "agentExperience" | "recallTargetTypes" | "apiKey" | "peer_role">
 > & {
   /** parse() resolves SecretRef values, so the runtime shape is always a plain string. */
   apiKey: string;
+  /** Runtime uses the canonical name; legacy `person` input normalizes to `sender`. */
+  peer_role: "none" | "assistant" | "sender";
   agentExperience: Required<NonNullable<MemoryOpenVikingConfig["agentExperience"]>>;
   recallTargetTypes: Array<"resource" | "user" | "agent">;
 };
@@ -150,7 +153,7 @@ const DEFAULT_COMMIT_TOKEN_THRESHOLD_RATIO = 0.5;
 const DEFAULT_COMMIT_KEEP_RECENT_COUNT = 10;
 const DEFAULT_BYPASS_SESSION_PATTERNS: string[] = [];
 const DEFAULT_EMIT_STANDARD_DIAGNOSTICS = false;
-const DEFAULT_PEER_ROLE = "assistant" as const;
+const DEFAULT_PEER_ROLE = "none" as const;
 const DEFAULT_PEER_PREFIX = "";
 const DEFAULT_TRACE_RECALL_DIR = "~/.openclaw/openviking/recall-traces";
 const DEFAULT_TRACE_RECALL_RETENTION_DAYS = 14;
@@ -290,16 +293,23 @@ function resolveSecret(
   }
 }
 
-function resolvePeerRole(configured: unknown) {
+function resolvePeerRole(configured: unknown): "none" | "assistant" | "sender" {
   if (typeof configured === "string") {
     const role = configured.trim().toLowerCase();
-    if (role === "none" || role === "assistant" || role === "person") {
+    if (role === "none" || role === "assistant" || role === "sender") {
       return role;
     }
-    throw new Error(`openviking peer_role must be "none", "assistant", or "person"`);
+    if (role === "person") {
+      return "sender";
+    }
+    throw new Error(
+      `openviking peer_role must be "none", "assistant", or "sender" (legacy alias: "person")`,
+    );
   }
   if (configured !== undefined) {
-    throw new Error(`openviking peer_role must be "none", "assistant", or "person"`);
+    throw new Error(
+      `openviking peer_role must be "none", "assistant", or "sender" (legacy alias: "person")`,
+    );
   }
   return DEFAULT_PEER_ROLE;
 }
@@ -774,14 +784,17 @@ export const memoryOpenVikingConfigSchema = {
       help: "HTTP URL when mode is remote (or use ${OPENVIKING_BASE_URL})",
     },
     peer_role: {
-      label: "Peer Role",
+      label: "Memory Scope (peer_role)",
       placeholder: DEFAULT_PEER_ROLE,
-      help: 'Controls which session messages get peer_id: "none", "assistant", or "person".',
+      help:
+        'Where peer-scoped memories are stored. "none" (default): viking://user/<user_id>/memories. ' +
+        '"assistant": viking://user/<user_id>/peers/<assistant_id>/memories. ' +
+        '"sender": viking://user/<user_id>/peers/<sender_id>/memories. Legacy "person" is accepted as "sender".',
     },
     peer_prefix: {
       label: "Peer Prefix",
       placeholder: "optional-prefix",
-      help: "Optional prefix applied to assistant peer_id values derived from OpenClaw runtime agent IDs.",
+      help: 'Only used when Memory Scope is "assistant". Prefix added to the peer id derived from the OpenClaw agent id.',
     },
     apiKey: {
       label: "OpenViking API Key",
