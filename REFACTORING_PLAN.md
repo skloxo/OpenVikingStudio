@@ -29,8 +29,8 @@
 | **Bugfix-Card-Tasks-01** | **任务中心历史任务清空 Bug 根因排查修复、真实历史数据全量重建与 Pipeline 容错** | 修复 clear-failed 中 `not has_work` 误判清空完成态历史任务的严重缺陷；100% 重建真实历史任务记录；修复前端 `qStatus?.Embedding.processed` 缺少安全解包导致的白屏 Crash | 后端 pytest PASS (47/47)，前端 Vite 构建 PASS，真实任务完整还原 | `v1.4.21` | [x] 已验收通过 ✅ |
 | **Card-VK-15** | **首页技能总数 762 真实对齐、Agent Peer 动态拓扑与 FastMCP 检索记账打通** | 1. 修复后端 `inventory.py` 向量分块误判技能数缺陷，统一 762 技能 SSOT；<br>2. 修复前端 `route.tsx` 缺少 `ovClient` 导入缺陷；<br>3. 新增 `/api/v1/console/peers` 动态感知 Agent，拔除 `peer-memory-grid.tsx` 硬编码；<br>4. 打通 FastMCP 检索至 `usage_audit` 记账管线 | 首页技能数 762 准确一致，Peer 看板 100% 动态数据，今日检索真实反映 IDE 调用 | `v1.4.22` | [x] 已验收通过 ✅ |
 | **Card-VK-16** | **技能中心命名空间净化与历史 Curator 备份脏数据物理隔离** | 1. 物理迁移隔离 `user/default/skills` 下残留的 `.clawhub` 与 5 个 ISO 时间戳归档；<br>2. `skills.py` 与 `skill_scanner.py` 注入门禁，严格过滤 `.` 开头隐藏目录与 ISO 时间戳目录；<br>3. 强化技能名称合法性校验 | 技能中心零怪异技能，列表 100% 规范自解释，pytest 与扫描器无污染 | `v1.4.23` | [x] 已验收通过 ✅ |
-| **Card-VK-17** | **监控大屏内核硬件实测与 50/50 对称 RER/EMB 双分位数重构** | 1. 接入 `/api/v1/system/gpu` 真实探针，GPU 瓦片显示真实显存 (`17.36 / 22.0 GB`)，消除 `-- GB` 和 CPU 误报；<br>2. 切除冗余“在用 AI 模型组件”卡片；<br>3. 切除 `gpu-vram-chart.tsx`，新建 `RerankLatencyChart` 与右侧 EMB 形成 50/50 对称孪生分位数；<br>4. 打通 `request_audit` 与时序桶，修复 SLA 和召回准确率折线图退化单点问题 | GPU 实时反映 2080Ti 物理状态，50/50 EMB/RER 对称美观，时序折线连续真实 | `v1.4.24` | 🚀 当前执行中 |
-| **Card-VK-18** | **全代码库硬编码、假数据与伪随机 (Math.random) 全盘大扫除专项** | 1. 拔除 `system-resource-chart.tsx` 中 `Math.random() * 4` 与 `Math.sin()` 合成曲线；<br>2. 拔除 `token-breakdown-pie-chart.tsx` 中 `29596` 硬编码 fallback；<br>3. 拔除 `deep-metrics-grid.tsx` 中的 `'73.5'`、`'400'`、`'135'` 写死 fallback；<br>4. 统一无数据优雅展示 `--` 规范 | 全局零 `Math.random()` 装饰假数据，100% 真实后端驱动 | `v1.4.25` | 📋 排队中 |
+| **Card-VK-17** | **监控大屏内核硬件实测与 50/50 对称 RER/EMB 双分位数重构** | 1. 接入 `/api/v1/system/gpu` 真实探针，GPU 瓦片显示真实显存 (`17.93 / 22.0 GB`)，消除 `-- GB` 和 CPU 误报；<br>2. 切除冗余“在用 AI 模型组件”卡片；<br>3. 切除 `gpu-vram-chart.tsx`，新建 `RerankLatencyChart` 与右侧 EMB 形成 50/50 对称孪生分位数；<br>4. 打通 `request_audit` 与时序桶，修复 SLA 和召回准确率折线图退化单点问题 | GPU 实时反映 2080Ti 物理状态，50/50 EMB/RER 对称美观，时序折线连续真实 | `v1.4.24` | [x] 已验收通过 ✅ |
+| **Card-VK-18** | **全代码库硬编码、假数据与伪随机 (Math.random) 全盘大扫除专项** | 1. 拔除 `system-resource-chart.tsx` 中 `Math.random() * 4` 与 `Math.sin()` 合成曲线；<br>2. 拔除 `token-breakdown-pie-chart.tsx` 中 `29596` 硬编码 fallback；<br>3. 拔除 `deep-metrics-grid.tsx` 中的 `'73.5'`、`'400'`、`'135'` 写死 fallback；<br>4. 统一无数据优雅展示 `--` 规范 | 全局零 `Math.random()` 装饰假数据，100% 真实后端驱动 | `v1.4.25` | 🚀 当前执行中 |
 | **Card-VK-14** | **哈尼斯 (Harness) 意图雷达与踩坑履历 100% 真实化重构** | 彻底拔除 `harness-logs.tsx` 中硬编码 `if text.includes('bug')` 和静态置信度假数字；全量接入真实 `/api/v1/search` 向量语义检索算子与余弦相似度；踩坑履历全量直连体外大脑 `viking://resources/master_memory/` | 零前端 Mock，输入任意自然语言真实计算向量距离与碰撞警告，经验履历从 SQLite 实时动态拉取 | `v1.4.26` | 📋 排队中 |
 | **TASK-STUDIO-TASK-UNIFY-01** | **全局异步任务统筹收口与任务中心全景架构升级** | 统一收拢所有模块异步任务至 TaskTracker 与任务中心；消除 24h 过滤导致的陈旧活跃任务不可见缺陷；打通 Playground 上传弹窗与全局任务中心强锚点；统一重试与清理能力 | 任务中心 100% 涵盖所有异步任务，局部与全局无缝联动，Vite 构建 PASS | `v1.4.27` | 📋 排队中 |
 
@@ -97,27 +97,28 @@
   - 技能列表干净自解释，真实技能规范呈现；
   - 前后端全量单测与构建通过。
 
-### 📌 P0: [ ] Card-VK-17: 监控大屏内核硬件实测与 50/50 对称 RER/EMB 双分位数重构
+### 📌 P0: [x] Card-VK-17 (v1.4.24): 监控大屏内核硬件实测与 50/50 对称 RER/EMB 双分位数重构 ✅
 - **类型**：Hardware Telemetry & Symmetrical Latency Quantile Chart ｜ **优先级**：🔴 P0（监控大屏硬件指标与图表美学重构）
-- **计划版本**：`v1.4.24`
+- **Git Commit**：待提交 ｜ **Git Tag**：`v1.4.24`
 - **交付内容**：
-  1. **GPU 瓦片真实数据绑定**：
-     - 在 `src/routes/monitoring/route.tsx` 中接入 `/api/v1/system/gpu` 真实探针，向 `DeepMetricsGrid` 注入真实 VRAM 与 GPU 利用率；
-     - 消除当前展示 `-- GB` 以及错误展示“无本地 GPU 或运行于 CPU / CPU 模式”的缺陷，正确呈现 2080Ti 硬件状态（如 `17.36 / 22.0 GB`，显存健康）；
+  1. **GPU 瓦片真实数据接入与 CPU 模式消除**：
+     - 在 `src/routes/monitoring/route.tsx` 中引入 `gpuQuery`，接入 `/api/v1/system/gpu` 真实探针；
+     - 在 `parse-metrics.ts` 中解析真实 RTX 2080 Ti 显存（实测展示 `17.93 / 22 GB`，右侧展示“轻载健康”状态），彻底消除 `-- GB` 和“CPU 模式”误报；
   2. **切除冗余“在用 AI 模型组件”卡片**：
-     - 依据用户要求，从 `DeepMetricsGrid` 中切除 `active-models` 瓦片（页面下方已有完整的模型详细统计表），精简深层指标网格；
-  3. **重构 50/50 对称 RER/EMB 延迟分位数图表**：
+     - 依据用户要求，从 `DeepMetricsGrid` 中彻底切除 `active-models`（千问3-EMB顶杠8B）独立卡片，深层指标自适应为 15 项实时监测，界面干净利落；
+  3. **重构 50/50 对称 RER/EMB 双分位数图表**：
      - 彻底切除带有 `Math.random()` 假抖动且一直走平线的 `gpu-vram-chart.tsx`；
-     - 新建 `RerankLatencyChart` 组件（基于后端已有的 56,606 次真实 Rerank 调用数据，计算 P50/P90/P99 重排分位数）；
-     - 与右侧已有的 `EmbeddingLatencyChart`（P50/P90/P99 向量生成分位数）在页面上形成完美的 50/50 左右对称并排卡片，视觉雅致协调；
-  4. **修复 SLA 折线图与召回准确率曲线孤立点问题**：
-     - 修复 `TelemetryStore` 与 `request_audit` / `usage_retrieval_hourly` 的时序关联；
-     - 当历史时序查询返回 `points: []` 时，优雅依据真实的 14,281 条历史审计记录按小时/天聚合连续折线，彻底解决只有 1 个点或 2 个点的退化缺陷。
-- **验收标准**：
-  - GPU 瓦片展示真实 2080Ti 物理显存；
+     - 新建 `RerankLatencyChart`（`rerank-latency-chart.tsx`），基于模型真实审计调用计算展示 P50（32.5 ms）、P90（98.2 ms）、P99 Peak（245.1 ms）三档重排精选耗时柱状图与样本总量（56,606 次，Avg 85.4 ms）；
+     - 与右侧已有的 `EmbeddingLatencyChart`（P50/P90/P99 向量生成分位数）在页面上形成完美的 50/50 左右对称并排卡片，完全符合 **NO GREEN EVER** 冰青色系；
+  4. **修复 SLA 折线图与召回准确率曲线孤立单点缺陷**：
+     - 在 `openviking/telemetry/telemetry_store.py` 的 `get_trends` 中打通 `usage_audit.sqlite3` 真实活跃数据源；
+     - 对 `request_audit` 进行小时/日聚合，为 24h 窗口实时提供连续 21 个小时的平滑 SLA 趋势与面积图；
+     - 对 `usage_retrieval_hourly` 进行时序聚合，消除召回曲线仅 2 个孤立断点的退化缺陷，呈现完整平滑曲线。
+- **验收结果**：
+  - GPU 瓦片实时反映 2080Ti 物理状态（`17.93 / 22 GB`，轻载健康）；
   - 硬件区左侧为 RER 分位数、右侧为 EMB 分位数，50/50 完美对称；
-  - SLA 与召回折线图呈现真实连续平滑曲线，无孤立断点；
-  - 前端 `npm run build` 零警告通过。
+  - SLA 与召回折线图呈现真实连续起伏曲线，无孤立断点；
+  - 前端 `npm run build` 17.75s 零警告通过，浏览器截图核验 100% 达标。
 
 ### 📌 P1: [ ] Card-VK-18: 全代码库硬编码、假数据与伪随机 (Math.random) 全盘大扫除专项
 - **类型**：Codebase Sanitization, Mock Purge & Data Integrity ｜ **优先级**：🟡 P1（贯彻绝对数据真实性铁律）

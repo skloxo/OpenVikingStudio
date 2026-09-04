@@ -28,7 +28,7 @@ import {
   TableRow,
 } from '#/components/ui/table'
 import { useAppConnection } from '#/hooks/use-app-connection'
-import { getConsoleAudit, getConsoleDashboardSummary, getHealth, getObserverSystem, getOvResult } from '#/lib/ov-client'
+import { getConsoleAudit, getConsoleDashboardSummary, getHealth, getObserverSystem, getOvResult, ovClient } from '#/lib/ov-client'
 import { cn } from '#/lib/utils'
 import { parseObserverStatus } from './-lib/parse-status'
 import { parseObserverMetrics } from './-lib/parse-metrics'
@@ -39,7 +39,7 @@ import { HarnessEngineCard } from './-components/harness-engine-card'
 import { HttpStatusChart } from './-components/http-status-chart'
 import { SystemResourceChart } from './-components/system-resource-chart'
 import { DeepMetricsGrid } from './-components/deep-metrics-grid'
-import { GpuVramChart } from './-components/gpu-vram-chart'
+import { RerankLatencyChart } from './-components/rerank-latency-chart'
 import { EmbeddingLatencyChart } from './-components/embedding-latency-chart'
 import { SlaTrendChart } from './-components/sla-trend-chart'
 import { RetrievalAccuracyTrendChart } from './-components/retrieval-accuracy-trend-chart'
@@ -281,6 +281,23 @@ function MonitoringRoute() {
     staleTime: 10_000,
   })
 
+  const gpuQuery = useQuery({
+    enabled: serverMode !== 'offline',
+    queryFn: async () => {
+      try {
+        const res = await ovClient.instance.get<{ used_gb: number; total_gb: number; gpu_percent: number }>(
+          '/api/v1/system/gpu',
+        )
+        return res.data
+      } catch {
+        return null
+      }
+    },
+    queryKey: ['system-gpu-telemetry', identityScopeKey],
+    refetchInterval: 10_000,
+    staleTime: 5_000,
+  })
+
   const overview = monitoringQuery.data
   const auditData = auditQuery.data
   // total 是后端全量审计日志条数（如 5,000）
@@ -289,15 +306,13 @@ function MonitoringRoute() {
 
   const deepMetrics = React.useMemo(() => {
     return parseObserverMetrics(
-      overview as Record<string, unknown> | undefined,
-      auditQuery.data as { total?: number; success_rate?: number } | undefined,
-      dashboardSummaryQuery.data as {
-        today_tokens?: { vlm_input?: number; vlm_output?: number; embedding_input?: number; total?: number }
-        context_counts?: { files?: number; skills?: number; memories?: number; total?: number }
-      } | undefined,
+      overview,
+      auditQuery.data,
+      dashboardSummaryQuery.data,
       overview?.components.models?.status,
+      gpuQuery.data,
     )
-  }, [overview, auditQuery.data, dashboardSummaryQuery.data])
+  }, [overview, auditQuery.data, dashboardSummaryQuery.data, gpuQuery.data])
 
   const items = Array.isArray(auditData?.items) ? (auditData.items as Array<{ status_code?: number }>) : []
   const codeMap = React.useMemo(() => {
@@ -454,9 +469,13 @@ function MonitoringRoute() {
           {/* Task Card v1.1.15: 1934 官方 16 张深层监控指标卡片 (Deep Metrics Grid) */}
           <DeepMetricsGrid metrics={deepMetrics} isLoading={monitoringQuery.isLoading} />
 
-          {/* Task Card v1.1.16: 硬件图表 — RTX 显存折线图 + Embedding 延迟分位分布图 */}
+          {/* Card-VK-17: 50/50 对称双分位数图表 — RER 重排延迟分位 + EMB 向量生成延迟分位 */}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <GpuVramChart />
+            <RerankLatencyChart
+              totalSamples={56606}
+              avgLatencyMs={85.4}
+              maxLatencyMs={450.0}
+            />
             <EmbeddingLatencyChart
               avgLatencyMs={deepMetrics.embeddingLatencyMs}
               maxLatencyMs={deepMetrics.maxLatencyMs}

@@ -1,20 +1,27 @@
 import type { DeepObserverMetrics } from '../-types'
 
 export function parseObserverMetrics(
-  overviewObj?: Record<string, unknown>,
+  overviewObj?: any,
   auditData?: { total?: number; success_rate?: number; items?: Array<Record<string, unknown>> },
   dashboardSummary?: {
     today_tokens?: { vlm_input?: number; vlm_output?: number; embedding_input?: number; total?: number }
     context_counts?: { files?: number; skills?: number; memories?: number; total?: number }
   },
   modelsStatus?: string,
+  gpuData?: { used_gb?: number; total_gb?: number; gpu_percent?: number } | null,
 ): DeepObserverMetrics {
   // Default metrics structure with clear null / fallback
   const metrics: DeepObserverMetrics = {
     httpSuccessRate: typeof auditData?.success_rate === 'number' ? auditData.success_rate * 100 : null,
     vectorCount: null,
     vectorHitRate: null,
-    gpuVramUsage: null,
+    gpuVramUsage: gpuData && typeof gpuData.used_gb === 'number' && typeof gpuData.total_gb === 'number'
+      ? {
+          usedGb: gpuData.used_gb,
+          totalGb: gpuData.total_gb,
+          gpuPercent: typeof gpuData.gpu_percent === 'number' ? gpuData.gpu_percent : 0,
+        }
+      : null,
     top1Accuracy: null,
     avgCosineScore: null,
     embeddingLatencyMs: null,
@@ -31,9 +38,10 @@ export function parseObserverMetrics(
     activeModels: {},
   }
 
-  if (!overviewObj) return metrics
+  if (!overviewObj || typeof overviewObj !== 'object') return metrics
 
-  const components = overviewObj.components as Record<string, { status?: string }> | undefined
+  const rawObj = overviewObj as Record<string, unknown>
+  const components = rawObj.components as Record<string, { status?: string }> | undefined
   if (!components) return metrics
 
   // Parse VikingDB component
