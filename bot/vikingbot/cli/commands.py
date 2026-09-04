@@ -1123,6 +1123,12 @@ def cron_add(
     cron_expr: str = typer.Option(None, "--cron", "-c", help="Cron expression (e.g. '0 9 * * *')"),
     at: str = typer.Option(None, "--at", help="Run once at time (ISO format)"),
     deliver: bool = typer.Option(False, "--deliver", "-d", help="Deliver response to channel"),
+    timezone: str = typer.Option(
+        None,
+        "--timezone",
+        "--tz",
+        help="IANA timezone for --cron (e.g. Asia/Shanghai)",
+    ),
 ):
     """Add a scheduled job."""
     from vikingbot.config.loader import get_data_dir
@@ -1130,10 +1136,13 @@ def cron_add(
     from vikingbot.cron.types import CronSchedule
 
     # Determine schedule type
+    if timezone and not cron_expr:
+        console.print("[red]Error: --timezone requires --cron[/red]")
+        raise typer.Exit(1)
     if every:
         schedule = CronSchedule(kind="every", every_ms=every * 1000)
     elif cron_expr:
-        schedule = CronSchedule(kind="cron", expr=cron_expr)
+        schedule = CronSchedule(kind="cron", expr=cron_expr, tz=timezone)
     elif at:
         try:
             dt = parse_iso_datetime(at)

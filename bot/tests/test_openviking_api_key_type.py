@@ -1919,7 +1919,52 @@ async def test_viking_client_ensure_session_creates_after_legacy_not_found(monke
     )
 
     assert result == {"session_id": "session-1", "memory_policy": {"strategy": "compact"}}
-    assert created == [("session-1", {"strategy": "compact"})]
+    assert created == [
+        ("session-1", {"memory_policy": {"strategy": "compact"}}),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_viking_client_find_forwards_advanced_fields_via_sdk_options(monkeypatch):
+    monkeypatch.setattr(ov_server_module, "load_config", lambda: _make_config("root"))
+    client = VikingClient(workspace_id="workspace")
+    calls = []
+
+    async def _find(query="", target_uri="", limit=10, image=None, options=None):
+        calls.append(
+            {
+                "query": query,
+                "target_uri": target_uri,
+                "limit": limit,
+                "image": image,
+                "options": options,
+            }
+        )
+        return {"memories": []}
+
+    monkeypatch.setattr(client.client, "find", _find)
+
+    result = await client.find(
+        "hello",
+        target_uri="viking://~/memories/",
+        context_type="memory",
+        filter={"tags": ["important"]},
+        limit=3,
+    )
+
+    assert result == {"memories": []}
+    assert calls == [
+        {
+            "query": "hello",
+            "target_uri": "viking://~/memories/",
+            "limit": 3,
+            "image": None,
+            "options": {
+                "context_type": "memory",
+                "filter": {"tags": ["important"]},
+            },
+        }
+    ]
 
 
 @pytest.mark.asyncio
