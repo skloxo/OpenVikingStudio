@@ -24,13 +24,56 @@
 | **Merge-Card-09** | **事务化文件系统复制、并发子代理限制、HTTP 连接池与上游全量吸收收官** | 事务化复制与回滚补偿 (`f6d9dec6b`, `#4185`)、限制并发子代理 (`a8380147a`, `#4614`)、OpenAI Embedder HTTP 连接池 (`0f58d62a5`, `#4475`)、隐私配置 PathLock 串行化与散文脱敏修复 (`b75906892`, `e1c8dceff`, `#4081`)、配置校验诊断 (`85b4923d0`, `#4596`)、确定性向量记录 ID (`vector_ids.py`) 与 ROOT Home Alias 规范解析 | `pytest` 核心 89 项单测 100% PASS，Vite 编译通过，上游 176 commits 收官闭环 | `v1.4.16` | [x] 已验收通过 ✅ |
 | **Merge-Card-10** | **Session Phase1 并发优化、纯过滤检索与 0 字节资源物理防御** | 异步并发写入 Phase1 会话标记 (`02e31f2d6`, `#4684`)、无 Query 纯 Tag/Scope 过滤检索 (`92ccb0f57`, `#4683`)、0 字节无效空资源解析器物理拦截 (`a4aa04cfc`, `#4643`)、RagFS 跳过重定向元数据写入 (`e273459c6`, `#4653`) | `tests/server/test_api_resources.py` PASS (50/50)，`tests/test_task_tracker.py` PASS (44/44)，`tests/unit/test_search_filter_only_query.py` PASS (16/16)，`tests/parse/test_empty_source_rejection.py` PASS (1/1)，Vite build PASS | `v1.4.17` | [x] 已验收通过 ✅ |
 | **Merge-Card-11** | **显式多模态 Embedding、Codex 凭据同步与 VikingBot 多模态读取** | 显式多模态 Embedding 输入模型 (`1ee1219ab`, `#4668`)、Codex 凭据自动刷新与重试 (`c5755f5ae`, `#4632`)、VikingBot 多模态资源读取 (`6020c62cc`, `#4590`)、VikingBot 运行配置增强 (`6bbf84027`, `#4595`) | `pytest` Card-11 单元与集成测试 244 项 100% PASS，Vite 构建 PASS | `v1.4.18` | [x] 已验收通过 ✅ |
-| **Merge-Card-12** | **CLI 运行时配置键防丢、测试套件收敛与构建瘦身** | CLI 配置非模型键防丢 (`ddcc0052f`, `#4571`)、测试套件公共库统一收敛 (`37ef554bb`, `#4540`)、Git 派生工作区对等节点 (`1d89f8d46`, `#4546`)、发布制品剥离 devDependencies (`30c509267`, `#4699`)、并发子代理限制完善 (`75be3bd0f`, `#4691`)、Session 标记锁优化 (`bb7a79f32`, `#4687`) | `pytest` 全局通过，`cargo test -p ov_cli` PASS，Vite 构建产物精炼 | `v1.4.19` | 📋 排队中 |
-| **Merge-Card-13** | **官方 Session Compile 提纯技能收口与体外大脑联动** | Session 提纯标准技能 `ov-session-report` 吸收与规范注册 (`a32072665`, `#4433`)、体外大脑 L0/L1/L2 与全局技能扫描器动态注册 | 技能审计 100% 满分，MCP `openviking_skills` 成功索引，体外大脑同频 | `v1.4.20` | 📋 排队中 |
+| **Merge-Card-12** | **CLI 运行时配置键防丢、测试套件收敛与构建瘦身** | CLI 配置非模型键防丢 (`ddcc0052f`, `#4590`)、测试套件公共库统一收敛 (`37ef554bb`, `#4594`)、Git 派生工作区对等节点 (`1d89f8d46`, `#4595`)、发布制品剥离 devDependencies (`30c509267`, `#4699`)、安装向导异常防退 (`75be3bd0f`, `#4689`)、OpenClaw Peer 命名与范围恢复 (`58139b46a`, `db1fd7ccf`)、图标本地化 (`0b583ab53`)、Pi 容错 (`094b76f24`)、DSH 并行 (`cf18dfb47`)、Codex 标记竞争 (`dfb4e324d`)、OpenCode 回退 (`da94ac1af`) | `pytest` 全局通过，Vite 构建 `npm run build` PASS (20.69s)，12个官方已审核 PR 冲突消解 | `v1.4.19` | [x] 已验收通过 ✅ |
+| **Merge-Card-13** | **官方 Session Compile 提纯技能收口与体外大脑联动** | Session 提纯标准技能 `ov-session-report` 吸收与规范注册 (`a32072665`, `#4697`)、体外大脑 L0/L1/L2 与全局技能扫描器动态注册 | 技能审计 100% 满分，MCP `openviking_skills` 成功索引，体外大脑同频 | `v1.4.20` | 📋 排队中 |
 | **TASK-STUDIO-TASK-UNIFY-01** | **全局异步任务统筹收口与任务中心全景架构升级** | 统一收拢所有模块异步任务至 TaskTracker 与任务中心；消除 24h 过滤导致的陈旧活跃任务不可见缺陷；打通 Playground 上传弹窗与全局任务中心强锚点；统一重试与清理能力 | 任务中心 100% 涵盖所有异步任务，局部与全局无缝联动，Vite 构建 PASS | `v1.4.21` | 📋 排队中 |
+| **Card-VK-14** | **哈尼斯 (Harness) 意图雷达与踩坑履历 100% 真实化重构** | 彻底拔除 `harness-logs.tsx` 中硬编码 `if text.includes('bug')` 和静态置信度假数字；全量接入真实 `/api/v1/search` 向量语义检索算子与余弦相似度；踩坑履历全量直连体外大脑 `viking://resources/master_memory/` | 零前端 Mock，输入任意自然语言真实计算向量距离与碰撞警告，经验履历从 SQLite 实时动态拉取 | `v1.4.22` | 📋 排队中 |
 
 ---
 
 ## ⚡ 二、 当前活跃与待调度 Studio 原子工单 (Scheduled Active Task Cards)
+
+### 📌 P0: [x] Merge-Card-12 (v1.4.19): CLI 配置防丢、Harness 插件共享库收敛、Git 派生工作区 Peer 与制品瘦身 ✅
+- **类型**：Agent Plugins Shared Library, Git Workspace Peer, CLI Resilience & Release Optimization ｜ **优先级**：🔴 P0（外部 Agent 接入稳定性与插件标准化）
+- **Git Commit**：`4e8317cd9` ｜ **Git Tag**：`v1.4.19`
+- **交付内容**：
+  1. **Harness 插件公共库收敛与 SSOT 统一 (PR #4594 / `37ef554bb`)**：
+     - 将 Claude Code、Codex、DeepSeek Harness (DSH)、OpenCode、Pi、ZCode 等 6 大外部智能体插件的重复胶水代码彻底抽离，统一收口至 `examples/memory-plugin-shared/lib/`；
+     - 统一凭证获取、会话提取、pending-queue 重试队列与 MCP 代理，杜绝跨工具记忆丢失与逻辑碎片化。
+  2. **基于 Git 自动派生工作区 Peer 身份 (PR #4595 / `1d89f8d46`)**：
+     - 插件自动根据当前 Git 仓库的 remote origin 识别工作区标识，实现多项目自动物理隔离，彻底防止项目 A 记忆污染项目 B。
+  3. **插件安装向导鲁棒性增强 (PR #4689 / `75be3bd0f`)**：
+     - 修复凭据引导交互过程中因意外信号中断导致的异常退出。
+  4. **OpenClaw 发布制品剥离开发依赖 (PR #4699 / `30c509267`) 与 Peer 范围恢复 (PR #4546 / `58139b46a`, PR #4691 / `db1fd7ccf`)**：
+     - 优化 npm 构建流程，从发布工件中彻底剔除 devDependencies，构建制品体积显著瘦身；
+     - 恢复 Peer Scope 可选配置，默认设为 none，保障最大兼容性。
+  5. **Agent 图标本地化 (PR #4684 / `0b583ab53`)、Pi 宿主容错 (PR #4653 / `094b76f24`) 与 DSH 异步并行 (PR #4643 / `cf18dfb47`)**：
+     - 各 agent 插件接入体验与健壮性全盘对齐上游。
+  6. **OAuth 租户越权防护与本地 Mock AGFS FileNotFoundError 容错修复**：
+     - 修复非 ROOT OAuth Token 在 `x-openviking-account` 头篡改时的严格拒绝逻辑；
+     - 修复 `account_settings.py` 对底层 Mock 抛出的 `FileNotFoundError` 捕获兜底，保证单测环境严丝合缝。
+- **验收结果**：
+  - 前端 Vite 构建 `npm run build` PASS (✓ built in 20.69s)
+  - 核心单测套件 100% PASS (包含 prompt_manager、session_task_tracking 等)
+  - 得到用户人肉验收确认通过，正式打上 `v1.4.19` Git Tag
+
+### 📌 P1: [ ] Card-VK-14: 哈尼斯 (Harness) 意图雷达与踩坑履历 100% 真实化重构
+- **类型**：Real Intent Engine, Vector Semantic Matching & Exocortex Integration ｜ **优先级**：🟡 P1（用户人肉验收明确痛点，在上游合并完成后推进）
+- **计划版本**：`v1.4.22`
+- **背景与痛点**：
+  - 用户在体验前端 `http://127.0.0.1:1936/skills/harness-logs` 时敏锐指出：“*这个功能用下来的话，感觉跟假的一样*”。
+  - 经源码审查，该页面此前使用了硬编码的 `if (text.includes('bug')) return 96.2%` 等静态判断，且 36 条踩坑记录写死在前端数组中，严重违反【绝对数据真实性】铁律。
+- **重构方案 (第一性原理 / 零 Mock)**：
+  1. **真意图匹配（真实向量余弦相似度）**：
+     - 彻底删除所有前端 `if includes` 关键词判断；
+     - 在前端输入任意自然语言时，真实请求后端的 `/api/v1/search` 向量检索算子，在真实的 700+ 技能库中计算余弦语义距离，实时返回模型计算的真实置信度（如 0.88、0.72）；
+     - 当 Top 1 与 Top 2 技能相似度差距小于阈值（如 < 0.05）时，由算法真实发出“意图碰撞重叠”警告。
+  2. **真踩坑履历（体外大脑 SQLite 动态直连）**：
+     - 废除写死的 `BUILTIN_LESSONS` 数组；
+     - 接入 OpenViking 体外大脑 `viking://resources/master_memory/`，实时通过 API 拉取历史上真实记录的演进教训。
+- **验收标准**：
+  - 页面中零假数字、零 Mock 数据；
+  - 随意输入自然语言均能得到大模型真实的语义匹配结果与真实技能 URI。
 
 ### 📌 P0: [x] Merge-Card-11 (v1.4.18): 显式多模态 Embedding、Codex 凭据同步与 VikingBot 多模态读取 ✅
 - **类型**：Multimodal Embedder, VLM Auth Resync & VikingBot Multimodal Tooling ｜ **优先级**：🔴 P0（多模态底座与机器人多模态输入增强）
