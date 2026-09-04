@@ -122,7 +122,7 @@ def _patch_ragfs_binding_pathlocks_if_missing():
                 "kind": "tree",
             }
             with _pathlocks_guard:
-                _pathlock_leases[lease_ref] = lock
+                _pathlock_leases[lease_ref] = (path, lock)
             return lease
 
         def _acquire_exact(self, fs_ctx, path, timeout_secs=0.0, owner_lease_ref=None):
@@ -152,10 +152,12 @@ def _patch_ragfs_binding_pathlocks_if_missing():
             if not isinstance(owned_lease_ref, dict):
                 raise TypeError("owned_lease_ref must be a dict")
             path = owned_lease_ref.get("path", "")
+            lock_paths = owned_lease_ref.get("lock_paths", [path] if path else [])
             return {
                 "owner_id": owned_lease_ref.get("owner_id", "test-ragfs-binding"),
-                "lock_paths": owned_lease_ref.get("lock_paths", [path]),
-                "covered_paths": [{"path": path, "kind": owned_lease_ref.get("kind", "exact")}],
+                "lock_paths": lock_paths,
+                "covered_paths": [{"path": p, "kind": owned_lease_ref.get("kind", "exact")} for p in lock_paths],
+                "origin_lease_ref": owned_lease_ref.get("lease_ref", ""),
             }
 
         def _adopt(self, fs_ctx, handoff):
@@ -164,6 +166,16 @@ def _patch_ragfs_binding_pathlocks_if_missing():
             owner_id = handoff.get("owner_id") or handoff.get("handle_id", "test-ragfs-binding")
             lock_paths = handoff.get("lock_paths", [])
             lease_ref = str(uuid.uuid4())
+            origin_lease_ref = handoff.get("origin_lease_ref")
+            with _pathlocks_guard:
+                if origin_lease_ref and origin_lease_ref in _pathlock_leases:
+                    path, lock = _pathlock_leases[origin_lease_ref]
+                    _pathlock_leases[lease_ref] = (path, lock)
+                elif lock_paths:
+                    path = lock_paths[0]
+                    lock = _pathlocks.get(path)
+                    if lock:
+                        _pathlock_leases[lease_ref] = (path, lock)
             return {
                 "lease_ref": lease_ref,
                 "ownership_ref": str(uuid.uuid4()),
@@ -179,8 +191,9 @@ def _patch_ragfs_binding_pathlocks_if_missing():
                 raise ValueError("cannot release a non-owned/borrowed lease")
             lease_ref = str(owned_lease_ref.get("lease_ref", ""))
             with _pathlocks_guard:
-                lock = _pathlock_leases.pop(lease_ref, None)
-            if lock:
+                entry = _pathlock_leases.pop(lease_ref, None)
+            if entry:
+                path, lock = entry
                 try:
                     lock.release()
                 except RuntimeError:
@@ -189,9 +202,35 @@ def _patch_ragfs_binding_pathlocks_if_missing():
         def _release_all(self, fs_ctx, owner_id):
             return 0
 
+        def _acquire_exact_batch(self, fs_ctx, paths, timeout_secs=0.0, owner_lease_ref=None):
+            del owner_lease_ref
+            lease_ref = str(uuid.uuid4())
+            return {
+                "lease_ref": lease_ref,
+                "ownership_ref": str(uuid.uuid4()),
+                "owner_id": "test-ragfs-binding",
+                "owned": True,
+                "lock_paths": list(paths),
+                "covered_paths": [{"path": p, "kind": "exact"} for p in paths],
+            }
+
+        def _acquire_tree_batch(self, fs_ctx, paths, timeout_secs=0.0, owner_lease_ref=None):
+            del owner_lease_ref
+            lease_ref = str(uuid.uuid4())
+            return {
+                "lease_ref": lease_ref,
+                "ownership_ref": str(uuid.uuid4()),
+                "owner_id": "test-ragfs-binding",
+                "owned": True,
+                "lock_paths": list(paths),
+                "covered_paths": [{"path": p, "kind": "tree"} for p in paths],
+            }
+
         setattr(client_cls, "pathlock_acquire_tree", _acquire_tree)
         setattr(client_cls, "pathlock_acquire_exact", _acquire_exact)
         setattr(client_cls, "pathlock_acquire_batch", _acquire_batch)
+        setattr(client_cls, "pathlock_acquire_exact_batch", _acquire_exact_batch)
+        setattr(client_cls, "pathlock_acquire_tree_batch", _acquire_tree_batch)
         setattr(client_cls, "pathlock_as_borrowed", _as_borrowed)
         setattr(client_cls, "pathlock_to_handoff", _to_handoff)
         setattr(client_cls, "pathlock_handoff", _to_handoff)
