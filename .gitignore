@@ -33,3 +33,9 @@ target/
 *.log
 .DS_Store
 test_data/
+
+# OpenViking workspace scratch
+.openviking/media/
+.openviking/downloads/
+.openviking/config.local.json
+

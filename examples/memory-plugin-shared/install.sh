@@ -1997,10 +1997,10 @@ assemble_agent_integration() { # assemble_agent_integration <source-subdir> <des
   mkdir -p "$shared_dest.tmp"
   for file in \
     agent-hook-runtime.mjs agent-uri-guard.mjs credentials.mjs debug-log.mjs \
-    batch-send.mjs mcp-proxy-core.mjs pending-queue.mjs plugin-config.mjs profile-inject.mjs \
+    batch-send.mjs mcp-proxy-core.mjs pending-queue.mjs profile-inject.mjs \
     retryable.mjs \
     recall-compress-core.mjs recall-core.mjs \
-    session-model.mjs uri-guard.mjs workspace-peer.mjs; do
+    session-model.mjs uri-guard.mjs workspace-identity.mjs workspace-peer.mjs; do
     cp "$shared/lib/$file" "$shared_dest.tmp/$file"
   done
   rm -rf "$shared_dest"

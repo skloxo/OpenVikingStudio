@@ -245,6 +245,7 @@ function normalizeConfig(config) {
   config.accountId = config.account
   config.userId = config.user
   config.userAgent = USER_AGENT
+  config.harness = "opencode"
   config.timeoutMs = normalizeNumber(config.timeoutMs, DEFAULT_CONFIG.timeoutMs, 1000, 300000)
   config.repoContext.cacheTtlMs = normalizeNumber(
     config.repoContext.cacheTtlMs,
