@@ -13,7 +13,6 @@ import {
   FileTextIcon,
   RefreshCwIcon,
   HardDriveIcon,
-  BoxIcon,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
@@ -183,7 +182,7 @@ export function DeepMetricsGrid({ metrics, isLoading }: DeepMetricsGridProps) {
         id: 'token-total',
         titleKey: 'metricsTiles.tokenTotal.title',
         icon: LayersIcon,
-        value: metrics.tokenStats ? metrics.tokenStats.today.toLocaleString() : '135',
+        value: metrics.tokenStats ? metrics.tokenStats.today.toLocaleString() : '--',
         unit: 'Tokens',
         subText: t('metricsTiles.tokenTotal.subText', { defaultValue: '今日 Embedding 输入 Token' }),
         badgeText: t('metricsTiles.tokenTotal.badgeText', { defaultValue: '精约高效' }),
@@ -195,7 +194,7 @@ export function DeepMetricsGrid({ metrics, isLoading }: DeepMetricsGridProps) {
         id: 'memory-slimming-rate',
         titleKey: 'metricsTiles.memorySlimmingRate.title',
         icon: SparklesIcon,
-        value: metrics.memorySlimmingRate !== null ? `${metrics.memorySlimmingRate}` : '73.5',
+        value: metrics.memorySlimmingRate !== null ? `${metrics.memorySlimmingRate}` : '--',
         unit: '%',
         subText: t('metricsTiles.memorySlimmingRate.subText', { defaultValue: '原始文件 ➔ 记忆 Token 压缩率' }),
         badgeText: t('metricsTiles.memorySlimmingRate.badgeText', { defaultValue: '高效瘦身' }),
@@ -207,23 +206,12 @@ export function DeepMetricsGrid({ metrics, isLoading }: DeepMetricsGridProps) {
         id: 'vectorization-rate',
         titleKey: 'metricsTiles.vectorizationRate.title',
         icon: ZapIcon,
-        value: metrics.vectorizationRate !== null ? metrics.vectorizationRate.toLocaleString() : '400',
+        value: metrics.vectorizationRate !== null ? metrics.vectorizationRate.toLocaleString() : '--',
         unit: 'Vec/s',
         subText: t('metricsTiles.vectorizationRate.subText', { defaultValue: 'OpenViking EMB 吞吐效率' }),
         badgeText: t('metricsTiles.vectorizationRate.badgeText', { defaultValue: '高吞吐' }),
         badgeVariant: 'positive',
         tooltipKey: 'metricsTiles.vectorizationRate.tooltip',
-        category: 'engine',
-      },
-      {
-        id: 'active-models',
-        titleKey: 'metricsTiles.activeModels.title',
-        icon: BoxIcon,
-        value: metrics.activeModels.embedding || 'Qwen3-Embedding',
-        subText: t('metricsTiles.activeModels.subText', { defaultValue: `VLM: ${metrics.activeModels.vlm || 'mimo-v2.5'} · Rerank: ${metrics.activeModels.rerank || 'qwen3-reranker'}` }),
-        badgeText: t('metricsTiles.activeModels.badgeText', { defaultValue: '全量就绪' }),
-        badgeVariant: 'positive',
-        tooltipKey: 'metricsTiles.activeModels.tooltip',
         category: 'engine',
       },
     ]
@@ -238,7 +226,7 @@ export function DeepMetricsGrid({ metrics, isLoading }: DeepMetricsGridProps) {
               {t('metricsTiles.sectionTitle', { defaultValue: '内核深层观测指标' })}
             </h2>
             <Badge variant="outline" className="font-mono text-[11px] font-normal border-border/60">
-              {t('metricsTiles.liveBadge', { defaultValue: '16 项指标实时监测' })}
+              {t('metricsTiles.liveBadge', { defaultValue: `${tileConfigs.length} 项指标实时监测` })}
             </Badge>
           </div>
         </div>
