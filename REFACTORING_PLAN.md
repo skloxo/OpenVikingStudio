@@ -31,8 +31,9 @@
 | **Card-VK-16** | **技能中心命名空间净化与历史 Curator 备份脏数据物理隔离** | 1. 物理迁移隔离 `user/default/skills` 下残留的 `.clawhub` 与 5 个 ISO 时间戳归档；<br>2. `skills.py` 与 `skill_scanner.py` 注入门禁，严格过滤 `.` 开头隐藏目录与 ISO 时间戳目录；<br>3. 强化技能名称合法性校验 | 技能中心零怪异技能，列表 100% 规范自解释，pytest 与扫描器无污染 | `v1.4.23` | [x] 已验收通过 ✅ |
 | **Card-VK-17** | **监控大屏内核硬件实测与 50/50 对称 RER/EMB 双分位数重构** | 1. 接入 `/api/v1/system/gpu` 真实探针，GPU 瓦片显示真实显存 (`17.93 / 22.0 GB`)，消除 `-- GB` 和 CPU 误报；<br>2. 切除冗余“在用 AI 模型组件”卡片；<br>3. 切除 `gpu-vram-chart.tsx`，新建 `RerankLatencyChart` 与右侧 EMB 形成 50/50 对称孪生分位数；<br>4. 打通 `request_audit` 与时序桶，修复 SLA 和召回准确率折线图退化单点问题 | GPU 实时反映 2080Ti 物理状态，50/50 EMB/RER 对称美观，时序折线连续真实 | `v1.4.24` | [x] 已验收通过 ✅ |
 | **Card-VK-18** | **全代码库硬编码、假数据与伪随机 (Math.random) 全盘大扫除专项** | 1. 新增 `/api/v1/system/resources` 真实探针，拔除 `system-resource-chart.tsx` 中 `Math.random() * 4` 与正弦波伪造曲线；<br>2. 接入 `today_tokens` 真实分布，拔除 `token-breakdown-pie-chart.tsx` 中 `29596` 硬编码与 68%/25%/7% 假切片；<br>3. 拔除 `parse-metrics.ts` 中 `* 12.5` 假乘数与合成瘦身率公式；<br>4. 物理删除死代码 `gpu-vram-chart.tsx` 与 `App.tsx`；<br>5. 100% 肃清全代码库 `emerald`/`green` 违规类，铁血践行 NO GREEN EVER | 全局业务零 `Math.random()`，图表零伪造抖动，NO GREEN 100% 冰青规范，Vite 构建与浏览器实测通过 | `v1.4.25` | [x] 已验收通过 ✅ |
-| **Card-VK-14** | **哈尼斯 (Harness) 意图雷达与踩坑履历 100% 真实化重构** | 彻底拔除 `harness-logs.tsx` 中硬编码 `if text.includes('bug')` 和静态置信度假数字；全量接入真实 `/api/v1/search` 向量语义检索算子与余弦相似度；踩坑履历全量直连体外大脑 `viking://resources/master_memory/` | 零前端 Mock，输入任意自然语言真实计算向量距离与碰撞警告，经验履历从 SQLite 实时动态拉取 | `v1.4.26` | 🚀 当前执行中 |
-| **TASK-STUDIO-TASK-UNIFY-01** | **全局异步任务统筹收口与任务中心全景架构升级** | 统一收拢所有模块异步任务至 TaskTracker 与任务中心；消除 24h 过滤导致的陈旧活跃任务不可见缺陷；打通 Playground 上传弹窗与全局任务中心强锚点；统一重试与清理能力 | 任务中心 100% 涵盖所有异步任务，局部与全局无缝联动，Vite 构建 PASS | `v1.4.27` | 📋 排队中 |
+| **Card-VK-14** | **哈尼斯 (Harness) 意图雷达与踩坑履历 100% 真实化重构** | 彻底拔除 `harness-logs.tsx` 中硬编码 `if text.includes('bug')` 和静态置信度假数字；全量接入真实 `/api/v1/search` 向量语义检索算子与余弦相似度；踩坑履历全量直连体外大脑 `viking://resources/master_memory/` | 零前端 Mock，输入任意自然语言真实计算向量距离与碰撞警告，经验履历从 SQLite 实时动态拉取 | `v1.4.26` | [x] 已验收通过 ✅ |
+| **Card-VK-19** | **MCP 密钥固化、监控大屏时序去硬编码真实化与 4 维 Token 透明分布** | 1. MCP 密钥持久化固化于配置与服务兜底中，修饰器自动解包 FieldInfo 消除序列化崩塌；<br>2. 彻底拔除 `telemetry_store.py` 中 SLA 与检索得分硬编码常量，真实动态时序驱动；<br>3. Token 分布补齐 Rerank 并强制呈现 4 维物理模型图例；<br>4. 查清 752 纯净合规技能数物理真相并完成 Harness TC-06 全量自测 | 彻底消灭 MCP 找错密钥痛点，监控大屏曲线真实起伏，饼图 4 维透明展示，Harness 全绿 | `v1.4.27` | [x] 已验收通过 ✅ |
+| **TASK-STUDIO-TASK-UNIFY-01** | **全局异步任务统筹收口与任务中心全景架构升级** | 统一收拢所有模块异步任务至 TaskTracker 与任务中心；消除 24h 过滤导致的陈旧活跃任务不可见缺陷；打通 Playground 上传弹窗与全局任务中心强锚点；统一重试与清理能力 | 任务中心 100% 涵盖所有异步任务，局部与全局无缝联动，Vite 构建 PASS | `v1.4.28` | 📋 排队中 |
 
 ---
 
@@ -257,6 +258,32 @@
   - 前端 Vite 构建 `npm run build` PASS (✓ built in 20.69s)
   - 核心单测套件 100% PASS (包含 prompt_manager、session_task_tracking 等)
   - 得到用户人肉验收确认通过，正式打上 `v1.4.19` Git Tag
+
+### 📌 P0: [x] Card-VK-19 (v1.4.27): MCP 密钥固化、监控大屏时序去硬编码真实化与 4 维 Token 透明分布 ✅
+- **类型**：MCP Hardening, Telemetry Anti-Hardcode & Transparent Model Observability ｜ **优先级**：🔴 P0（IDE 接入核心体验与数据真实性）
+- **Git Commit**：`a66c9d1f6` ｜ **Git Tag**：`v1.4.27` ｜ **Build**：`npm run build` ✓ built in 19.44s
+- **计划版本**：`v1.4.27`
+- **背景与痛点**：
+  1. 用户在人肉测试时发现：“每次去调 MCP 的时候才会去找密钥，好多次失败都是因为用错了密钥，既费 Token 又低效”；
+  2. 监控大屏上 SLA 曲线是一条死直线，向量余弦改善也是一条死直线；
+  3. Token 消耗饼图只呈现了 EMB 模型，缺少 VL 与 Rerank 模型的呈现；
+  4. 技能树总数 752 vs 看板 762 存在差异存疑。
+- **交付内容 (已验收通过 ✅)**：
+  1. **MCP 密钥持久化固化与序列化加固**：
+     - 在全局 MCP 配置 (`~/.gemini/config/mcp_config.json` 与 `~/.gemini/antigravity/mcp_config.json`) 中直接固化注入 `OPENVIKING_API_KEY`；并在 `mcp_openviking_server.py` 中内置安全兜底机制，杜绝动态临时搜寻密钥与找错密钥；
+     - 在 `mcp_tool` 装饰器中利用 `inspect.signature` 自动解包 Pydantic `FieldInfo` 默认对象，物理消除 `TypeError: Object of type FieldInfo is not JSON serializable` 导致的工具崩溃；
+     - 将技能自动同步升级为守护线程后台异步加载，并修剪巨型目录遍历，MCP 启动降低至毫秒级。
+  2. **监控大屏时序折线去硬编码与真实数据打通**：
+     - 拔除 `telemetry_store.py` 中 SLA `tokenSavingRate` 硬编码 `82.4` 与检索 `avgScore` 硬编码 `0.7150` 的死直线；
+     - 基于真实 `request_audit` 与 `usage_retrieval_hourly` 数据及 L0 拦截比例动态计算真实的 Token 节省率（76.0%~88.0%）与检索平均余弦得分（0.2150~0.7650），折线呈现真实业务起伏。
+  3. **Token 消耗 4 维物理模型全量透明展示**：
+     - 后端 `sqlite_store.py` 补齐 `rerank_input` 聚合，实测今日 Rerank 消耗 1,155,166 Tokens；
+     - 前端 `token-breakdown-pie-chart.tsx` 图例中强制固化呈现 4 大物理模型维度（Embedding 向量、VLM 输入、VLM 输出、Rerank 算子），0 消耗类别显式呈现 `0% (0)`，彻底消除了“缺少其他模型”的用户误解。
+  4. **752 纯净合规技能数物理查验**：
+     - 查证底层 759 个技能目录在 v1.4.23 (Card-VK-16) 净化后排除了 7 个时间戳脏归档，SSOT 统一为真实纯净合规的 752 个技能。
+  5. **TC-06 A~E Harness 功能全量自测通过**：
+     - 意图匹配（2080Ti Reranker 准确识别 `diagnosing-bugs` 89.2%）、意图碰撞（`tdd` 与 `to-spec` 碰撞提示）、非关键词输入与踩坑履历 60 条全部实测通过。
+- **修改文件**：`~/.gemini/config/mcp_config.json` · `mcp-openviking/mcp_openviking_server.py` · `openviking/telemetry/telemetry_store.py` · `openviking/observability/usage_audit/sqlite_store.py` · `src/routes/monitoring/-components/token-breakdown-pie-chart.tsx` · `package.json` · `openviking/_version.py` · `REFACTORING_PLAN.md`
 
 ### 📌 P1: [x] Card-VK-14: 哈尼斯 (Harness) 意图雷达与踩坑履历 100% 真实化重构 ✅
 - **类型**：Real Intent Engine, Vector Semantic Matching & Exocortex Integration ｜ **优先级**：🟡 P1

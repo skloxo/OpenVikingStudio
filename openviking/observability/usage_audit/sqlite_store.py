@@ -388,11 +388,13 @@ class SQLiteUsageAuditStore:
         rows = self._fetch_hourly_token_rows(
             account_id, utc_start, utc_end, user_id=user_id
         )
-        result = {"vlm_input": 0, "vlm_output": 0, "embedding_input": 0}
+        result = {"vlm_input": 0, "vlm_output": 0, "embedding_input": 0, "rerank_input": 0}
         for source, token_type, _, _, total in rows:
             key = f"{source}_{token_type}"
             if key in result:
                 result[key] += total
+            elif source == "rerank":
+                result["rerank_input"] += total
         result["total"] = sum(result.values())
         return result
 

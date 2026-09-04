@@ -24,6 +24,7 @@ export interface TokenDistribution {
   vlm_input?: number
   vlm_output?: number
   embedding_input?: number
+  rerank_input?: number
   total?: number
 }
 
@@ -40,48 +41,56 @@ export function TokenBreakdownPieChart({
 
   const total = tokenDistribution?.total ?? totalTokens ?? null
 
-  const data: TokenSlice[] = React.useMemo(() => {
+  const { slices, allCategories } = React.useMemo(() => {
     if (!tokenDistribution || typeof total !== 'number' || total <= 0) {
-      return []
+      return { slices: [], allCategories: [] }
     }
 
     const vlmIn = tokenDistribution.vlm_input ?? 0
-    const embIn = tokenDistribution.embedding_input ?? 0
     const vlmOut = tokenDistribution.vlm_output ?? 0
+    const embIn = tokenDistribution.embedding_input ?? 0
+    const rerankIn = tokenDistribution.rerank_input ?? 0
 
     const pctVlmIn = Math.round((vlmIn / total) * 100)
     const pctVlmOut = Math.round((vlmOut / total) * 100)
-    const pctEmbIn = Math.max(0, 100 - pctVlmIn - pctVlmOut)
+    const pctRerankIn = Math.round((rerankIn / total) * 100)
+    const pctEmbIn = Math.max(0, 100 - pctVlmIn - pctVlmOut - pctRerankIn)
 
-    const list: TokenSlice[] = []
-    if (vlmIn > 0) {
-      list.push({
-        name: t('analyticsCharts.vlmInput', { defaultValue: 'VLM 输入 Token' }),
-        key: 'vlmInput',
-        tokens: vlmIn,
-        percent: pctVlmIn,
-        color: '#06b6d4', // Cyan 500
-      })
-    }
-    if (vlmOut > 0) {
-      list.push({
-        name: t('analyticsCharts.vlmOutput', { defaultValue: 'VLM 输出 Token' }),
-        key: 'vlmOutput',
-        tokens: vlmOut,
-        percent: pctVlmOut,
-        color: '#38bdf8', // Sky 400
-      })
-    }
-    if (embIn > 0) {
-      list.push({
+    const categories: TokenSlice[] = [
+      {
         name: t('analyticsCharts.embeddingInput', { defaultValue: 'Embedding 向量 Token' }),
         key: 'embeddingInput',
         tokens: embIn,
         percent: pctEmbIn,
         color: '#0284c7', // Sky 600
-      })
+      },
+      {
+        name: t('analyticsCharts.vlmInput', { defaultValue: 'VLM 输入 Token' }),
+        key: 'vlmInput',
+        tokens: vlmIn,
+        percent: pctVlmIn,
+        color: '#06b6d4', // Cyan 500
+      },
+      {
+        name: t('analyticsCharts.vlmOutput', { defaultValue: 'VLM 输出 Token' }),
+        key: 'vlmOutput',
+        tokens: vlmOut,
+        percent: pctVlmOut,
+        color: '#38bdf8', // Sky 400
+      },
+      {
+        name: t('analyticsCharts.rerankInput', { defaultValue: 'Rerank 算子 Token' }),
+        key: 'rerankInput',
+        tokens: rerankIn,
+        percent: pctRerankIn,
+        color: '#818cf8', // Indigo 400
+      },
+    ]
+
+    return {
+      slices: categories.filter((c) => c.tokens > 0),
+      allCategories: categories,
     }
-    return list
   }, [tokenDistribution, total, t])
 
   const totalBadgeText = typeof total === 'number' && total > 0
@@ -138,7 +147,7 @@ export function TokenBreakdownPieChart({
         </div>
 
         {/* Chart Body */}
-        {data.length > 0 ? (
+        {slices.length > 0 ? (
           <div className="mt-4 flex h-44 w-full items-center justify-between gap-4">
             <div className="h-full w-1/2">
               <ResponsiveContainer width="100%" height="100%">
@@ -161,15 +170,15 @@ export function TokenBreakdownPieChart({
                     }}
                   />
                   <Pie
-                    data={data}
+                    data={slices}
                     cx="50%"
                     cy="50%"
                     innerRadius={42}
                     outerRadius={68}
-                    paddingAngle={3}
+                    paddingAngle={slices.length > 1 ? 3 : 0}
                     dataKey="tokens"
                   >
-                    {data.map((entry, index) => (
+                    {slices.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
@@ -177,15 +186,45 @@ export function TokenBreakdownPieChart({
               </ResponsiveContainer>
             </div>
 
-            {/* Legend Details */}
+            {/* Legend Details: Explicitly render all 4 physical categories */}
             <div className="flex w-1/2 flex-col justify-center gap-2 text-[11px] font-mono tabular-nums">
-              {data.map((item) => (
-                <div key={item.key} className="flex items-center justify-between border-b border-border/30 pb-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className="size-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                    <span className="text-muted-foreground">{item.name}</span>
+              {allCategories.map((item) => (
+                <div
+                  key={item.key}
+                  className="flex items-center justify-between border-b border-border/30 pb-1"
+                >
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span
+                      className="size-2.5 shrink-0 rounded-full"
+                      style={{
+                        backgroundColor: item.tokens > 0 ? item.color : '#64748b',
+                        opacity: item.tokens > 0 ? 1 : 0.4,
+                      }}
+                    />
+                    <span
+                      className={`truncate ${
+                        item.tokens > 0
+                          ? 'text-foreground font-medium'
+                          : 'text-muted-foreground/60'
+                      }`}
+                    >
+                      {item.name}
+                    </span>
                   </div>
-                  <span className="font-semibold text-foreground">{item.percent}%</span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span
+                      className={
+                        item.tokens > 0
+                          ? 'font-bold text-foreground'
+                          : 'text-muted-foreground/50'
+                      }
+                    >
+                      {item.percent}%
+                    </span>
+                    <span className="text-[10px] text-muted-foreground/60">
+                      ({item.tokens > 0 ? item.tokens.toLocaleString() : '0'})
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
