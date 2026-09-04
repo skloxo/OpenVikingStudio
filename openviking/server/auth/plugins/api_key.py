@@ -169,7 +169,18 @@ class ApiKeyAuthPlugin(AuthPlugin):
                     "please re-authorize the client."
                 )
 
-        # Silently ignore identity assertion headers in api_key mode.
+        if x_openviking_account and x_openviking_account != record.account_id:
+            if role != Role.ROOT:
+                raise PermissionDeniedError(
+                    "X-OpenViking-Account cannot override account bound to OAuth token."
+                )
+        if x_openviking_user and x_openviking_user != record.user_id:
+            if role != Role.ROOT:
+                raise PermissionDeniedError(
+                    "X-OpenViking-Account and X-OpenViking-User cannot override user bound to OAuth token."
+                )
+
+        # Clear identity assertion headers from downstream handlers
         if x_openviking_account:
             _remove_header(request, b"x-openviking-account")
         if x_openviking_user:
