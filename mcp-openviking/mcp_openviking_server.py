@@ -24,6 +24,8 @@ import re
 import subprocess
 import logging
 import time
+import inspect
+from functools import wraps
 from typing import Any, Dict, List, Optional
 from urllib.request import Request, urlopen
 from urllib.error import URLError, HTTPError
@@ -39,6 +41,7 @@ logger = logging.getLogger("openviking-mcp")
 
 DEFAULT_API = "http://127.0.0.1:1933"
 DEFAULT_CLI = "openviking"
+DEFAULT_ROOT_API_KEY = "vk-sk-495222a7957adda63fdce225acfaa551a1a5378fb9795f5a1df4d1d76a0918bc"
 
 # 全局模式标志：True 时所有工具仅使用 CLI，跳过 HTTP API
 CLI_ONLY_MODE = False
@@ -73,6 +76,7 @@ SATELLITE_ALLOWED_TOOLS = {
 
 def mcp_tool(*args, **kwargs):
     """双模态感知的 MCP 工具注册装饰器。
+    自动解包 FastMCP/Pydantic FieldInfo 默认对象，防止序列化崩塌；
     在 Satellite 模式下只注册安全白名单工具，物理阻断破坏性运维与写指令。
     """
     def decorator(fn):
@@ -80,7 +84,29 @@ def mcp_tool(*args, **kwargs):
         if MCP_MODE == "satellite" and tool_name not in SATELLITE_ALLOWED_TOOLS:
             logger.info(f"[Dual-Mode MCP] Satellite mode: skipping registration of sensitive tool '{tool_name}'")
             return fn
-        return mcp.tool(*args, **kwargs)(fn)
+
+        sig = inspect.signature(fn)
+
+        @wraps(fn)
+        def cleaned_fn(*f_args, **f_kwargs):
+            try:
+                bound = sig.bind_partial(*f_args, **f_kwargs)
+                for name, param in sig.parameters.items():
+                    if name not in bound.arguments:
+                        val = param.default
+                        if hasattr(val, "default"):
+                            d = getattr(val, "default")
+                            bound.arguments[name] = "" if d is None or "PydanticUndefined" in str(type(d)) else d
+                    else:
+                        val = bound.arguments[name]
+                        if hasattr(val, "default"):
+                            d = getattr(val, "default")
+                            bound.arguments[name] = "" if d is None or "PydanticUndefined" in str(type(d)) else d
+                return fn(*bound.args, **bound.kwargs)
+            except Exception:
+                return fn(*f_args, **f_kwargs)
+
+        return mcp.tool(*args, **kwargs)(cleaned_fn)
     return decorator
 
 
@@ -284,8 +310,7 @@ def _auto_sync_skills():
             if not os.path.exists(base):
                 continue
             for root, dirs, files in os.walk(base):
-                if any(skip in root for skip in ["node_modules", ".git", ".cache", ".npm", "cleanup-backup", "fastapi", ".venv"]):
-                    continue
+                dirs[:] = [d for d in dirs if not d.startswith(".") and d not in ("node_modules", ".git", ".cache", ".npm", "cleanup-backup", "fastapi", ".venv", "dist", "build", ".next", "__pycache__")]
                 if "SKILL.md" in files:
                     skill_name = os.path.basename(root)
                     skill_md = os.path.join(root, "SKILL.md")
@@ -355,7 +380,8 @@ def _auto_sync_skills():
         logger.warning(f"技能自动同步异常: {e}")
 
 
-_auto_sync_skills()
+import threading
+threading.Thread(target=_auto_sync_skills, daemon=True, name="skill-sync").start()
 
 
 def _get_config():
@@ -369,6 +395,8 @@ def _get_config():
                     api_key = conf_data.get("server", {}).get("root_api_key", "")
             except Exception:
                 pass
+    if not api_key:
+        api_key = DEFAULT_ROOT_API_KEY
     return {
         "api": os.environ.get("OPENVIKING_API", DEFAULT_API).rstrip("/"),
         "api_key": api_key,
@@ -784,13 +812,15 @@ def openviking_find(
         body = {"query": query_str, "limit": limit}
         if target_uri_str:
             body["target_uri"] = target_uri_str
+        else:
+            body["target_uri"] = "viking://resources"
         if score_threshold > 0:
             body["score_threshold"] = score_threshold
         if level_str:
             body["level"] = level_str
         if filter_tags_str:
             body["filter"] = {"tags": [t.strip() for t in filter_tags_str.split(",") if t.strip()]}
-        return http_client.post("/api/v1/search/find", body)
+        return http_client.post("/api/v1/search/find", body, timeout=60)
 
     def _cli():
         args = ["search", query, "--limit", str(limit)]
@@ -1226,6 +1256,9 @@ def openviking_search(
     limit: int = Field(default=5, description="返回结果数量"),
     score_threshold: float = Field(default=0.0, description="最低相关性分数"),
 ) -> str:
+    query_str = str(query) if not hasattr(query, 'default') else ""
+    target_uri_str = str(target_uri) if isinstance(target_uri, str) else ""
+
     if not isinstance(limit, int):
         try:
             limit = int(getattr(limit, 'default', 5))
@@ -1238,7 +1271,7 @@ def openviking_search(
             score_threshold = 0.0
 
     for err in [
-        _validate_uri(target_uri, "target_uri") if target_uri else None,
+        _validate_uri(target_uri_str, "target_uri") if target_uri_str else None,
         _validate_limit(limit),
         _validate_score_threshold(score_threshold),
     ]:
@@ -1246,22 +1279,22 @@ def openviking_search(
             return _make_error(err)
 
     def _api():
-        body = {"query": query, "limit": limit}
-        if target_uri:
-            body["target_uri"] = target_uri
+        body = {"query": query_str, "limit": limit}
+        if target_uri_str:
+            body["target_uri"] = target_uri_str
         if score_threshold > 0:
             body["score_threshold"] = score_threshold
         return http_client.post("/api/v1/search/search", body)
 
     def _cli():
-        args = ["search", query, "--limit", str(limit)]
+        args = ["search", query_str, "--limit", str(limit)]
         if score_threshold > 0:
             args.extend(["--score-threshold", str(score_threshold)])
-        if target_uri:
-            args.extend(["--uri", target_uri])
+        if target_uri_str:
+            args.extend(["--uri", target_uri_str])
         return _run_cli(args)
 
-    return _api_then_cli(_api, ["search", query, "--limit", str(limit)])
+    return _api_then_cli(_api, ["search", query_str, "--limit", str(limit)])
 
 
 @mcp_tool()
