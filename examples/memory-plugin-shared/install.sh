@@ -1320,7 +1320,9 @@ resolve_self_checkout() {
   local src dir
   src="${BASH_SOURCE[0]}"
   dir="$(cd "$(dirname "$src")" >/dev/null 2>&1 && pwd -P)" || return 0
-  if [ -d "$dir/../../.git" ] && [ -d "$dir/../claude-code-memory-plugin" ]; then
+  # A linked worktree keeps `.git` as a file pointing at the real gitdir, so
+  # test for existence rather than for a directory.
+  if [ -e "$dir/../../.git" ] && [ -d "$dir/../claude-code-memory-plugin" ]; then
     CHECKOUT_DIR="$(cd "$dir/../.." >/dev/null 2>&1 && pwd -P)"
   fi
 }

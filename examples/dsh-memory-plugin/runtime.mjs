@@ -87,10 +87,14 @@ export class OpenVikingRuntime {
       state.initializationRetryable = isRetryableFailure(ensured);
       return state;
     }
-    await replayPending(
-      (path, init) => this.client.fetchJSON(path, init),
-      (stage, data) => this.log(stage, data),
-    );
+    // Replay is a write, so it stays behind the same toggle: a backlog queued
+    // while capture was on waits for a session that still writes.
+    if (state.config.syncTurns) {
+      await replayPending(
+        (path, init) => this.client.fetchJSON(path, init),
+        (stage, data) => this.log(stage, data),
+      );
+    }
     await this.refreshPendingState(state);
     const profile = await buildProfileBlock(
       (path, init, options) => this.client.fetchJSON(path, init, options),
@@ -172,6 +176,7 @@ export class OpenVikingRuntime {
   maybeCommit(session, event) {
     if (event.type !== "turn/end") return;
     const state = this.stateFor(session);
+    if (!state.config.syncTurns) return;
     this.enqueueWrite(state, async () => {
       if (state.hasPendingWrites) return;
       if (!state.ready && !(await this.ensureState(state)).ready) return;
@@ -204,6 +209,7 @@ export class OpenVikingRuntime {
     if (state.disposing) return state.disposing;
     state.disposing = (async () => {
       this.enqueueWrite(state, async () => {
+        if (!state.config.syncTurns) return;
         const commitPayload = {
           keep_recent_count: state.config.commitKeepRecentCount,
         };

@@ -81,6 +81,7 @@ Credential environment variables:
 | `OPENVIKING_PEER_ID` | Actor peer id |
 | `OPENVIKING_WORKSPACE_PEER` | Derive an actor peer from the workspace's git identity by default; set `0` to send no peer |
 | `OPENVIKING_RECALL_PEER_SCOPE` | `all` recalls other project memories with a score penalty; `actor` only sees global plus the current project |
+| `OPENVIKING_DEBUG_LOG` | Write JSON Lines debug records to this path. `OV_DEBUG_LOG` is a deprecated alias kept for existing setups |
 
 Recall asks the server to assemble the context block in one request
 (`POST /api/v1/search/search` with `mode="context"`), so token budgeting, detail
@@ -193,6 +194,7 @@ recent live tail.
 |--------------------------|------------|--------------------------------------------------------------------------|
 | `bypassPatterns`         | `[]`       | Glob patterns to skip extension processing                               |
 | `logLevel`               | `"error"`  | `"silent"`, `"error"`, or `"info"`                                      |
+| `debugLogPath`           | `""`       | Write JSON Lines debug records to this path; empty disables the log      |
 
 ## Architecture
 
@@ -322,7 +324,7 @@ All TypeScript files are loaded directly by pi's built-in `jiti` transpiler — 
 | Tools not showing after `pi -c` resume  | Known pi issue (tools not re-registered on resume)   | Workaround built in — tools register in `before_agent_start`|
 | Extension crashes on load               | Wrong OV server URL or network issue                 | Check `logLevel` and server accessibility                   |
 | No memories extracted                   | Wrong embedding/extraction model in OV config        | Check OV's `embedding` / `vlm` configuration                |
-| Takeover never advances                  | Pending addMessage replay, commit, or overview polling failed | Set `OV_DEBUG_LOG=/tmp/ov-pi.log` and retry `/viking commit` |
+| Takeover never advances                  | Pending addMessage replay, commit, or overview polling failed | Set `OPENVIKING_DEBUG_LOG=/tmp/ov-pi.log` and retry `/viking commit` |
 
 ## License
 

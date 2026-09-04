@@ -18,7 +18,6 @@ const HOOK_SHARED_FILES = [
   "session-model.mjs",
   "pending-queue.mjs",
   "debug-log.mjs",
-  "setup-wizard.mjs",
   "recall-compress-core.mjs",
   "recall-core.mjs",
   "retryable.mjs",
@@ -27,24 +26,33 @@ const HOOK_SHARED_FILES = [
   "profile-inject.mjs",
   "uri-guard.mjs",
 ];
+/** The interactive installer, for the plugins that ship a `scripts/setup.mjs`. */
+const SETUP_WIZARD_SHARED_FILES = ["setup-wizard.mjs"];
 /** The stdio MCP proxy, for the plugins that bundle one. */
 const MCP_PROXY_SHARED_FILES = ["mcp-proxy-core.mjs", "mcp-proxy-config.mjs"];
 /** Batched session sends, for the plugins that flush off the hook's hot path. */
-const BATCH_SHARED_FILES = ["async-writer.mjs", "batch-send.mjs"];
+const BATCH_SHARED_FILES = ["batch-send.mjs"];
+/** The detached write path, for the plugins whose hooks are short-lived subprocesses. */
+const ASYNC_WRITE_SHARED_FILES = ["async-writer.mjs"];
 /** The layered workspace config, its per-machine registry, and the loader over both. */
 const WORKSPACE_CONFIG_SHARED_FILES = ["plugin-config.mjs", "workspace-config.mjs", "workspace-registry.mjs"];
 
 const DOCTOR_SHARED_FILES = [
   ...HOOK_SHARED_FILES,
+  ...SETUP_WIZARD_SHARED_FILES,
   ...MCP_PROXY_SHARED_FILES,
   ...BATCH_SHARED_FILES,
+  ...ASYNC_WRITE_SHARED_FILES,
   ...WORKSPACE_CONFIG_SHARED_FILES,
   "doctor-core.mjs",
 ];
-const OPENCODE_SHARED_FILES = [...HOOK_SHARED_FILES, ...MCP_PROXY_SHARED_FILES, ...BATCH_SHARED_FILES];
-const ZCODE_SHARED_FILES = [...HOOK_SHARED_FILES, ...MCP_PROXY_SHARED_FILES, ...BATCH_SHARED_FILES, "agent-hook-runtime.mjs", "agent-uri-guard.mjs"];
+// opencode is imported in-process by its host, so it has no hook subprocess to
+// detach from: it takes the batch sender without the async write path.
+const OPENCODE_SHARED_FILES = [...HOOK_SHARED_FILES, ...SETUP_WIZARD_SHARED_FILES, ...MCP_PROXY_SHARED_FILES, ...BATCH_SHARED_FILES];
+// dsh and zcode ship no setup entry point, so nothing there calls the wizard.
+const ZCODE_SHARED_FILES = [...HOOK_SHARED_FILES, ...MCP_PROXY_SHARED_FILES, ...BATCH_SHARED_FILES, ...ASYNC_WRITE_SHARED_FILES, "agent-hook-runtime.mjs", "agent-uri-guard.mjs"];
 const DSH_SHARED_FILES = [...HOOK_SHARED_FILES, ...MCP_PROXY_SHARED_FILES];
-const PI_SHARED_FILES = [...HOOK_SHARED_FILES];
+const PI_SHARED_FILES = [...HOOK_SHARED_FILES, ...SETUP_WIZARD_SHARED_FILES];
 // Agent Plugins 1.0 has no hooks: it is the proxy and nothing else.
 const AGENT_PLUGINS_SHARED_FILES = ["credentials.mjs", "debug-log.mjs", ...MCP_PROXY_SHARED_FILES];
 // openclaw assembles recall server-side, so it takes the recall pair alone.
