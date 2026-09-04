@@ -1,7 +1,9 @@
 import * as React from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Badge } from '#/components/ui/badge'
 import { Card, CardTitle } from '#/components/ui/card'
 import { CpuIcon, SparklesIcon } from 'lucide-react'
+import { ovClient } from '#/lib/ov-client'
 
 export interface HarnessEngineCardProps {
   status?: string
@@ -9,6 +11,39 @@ export interface HarnessEngineCardProps {
 }
 
 export function HarnessEngineCard({ isHealthy = true }: HarnessEngineCardProps) {
+  const harnessQuery = useQuery({
+    queryKey: ['harness-engine-card-metrics'],
+    queryFn: async () => {
+      try {
+        const res = await ovClient.instance.get<{
+          compression_retention_rate?: number
+          llmlingua?: {
+            token_retention_rate?: number
+            target_range?: string
+            ast_gate_rate?: number
+            status?: string
+          }
+          dspy?: {
+            compilation_accuracy?: number
+            target_threshold?: string
+            ast_gate_rate?: number
+            status?: string
+          }
+        }>('/api/v1/system/harness_metrics')
+        return res.data
+      } catch {
+        return null
+      }
+    },
+    staleTime: 30_000,
+  })
+
+  const data = harnessQuery.data
+  const llmRetention = data?.llmlingua?.token_retention_rate ?? data?.compression_retention_rate
+  const llmAst = data?.llmlingua?.ast_gate_rate
+  const dspyAst = data?.dspy?.ast_gate_rate
+  const dspyAccuracy = data?.dspy?.compilation_accuracy
+
   return (
     <Card className="flex flex-col gap-4 p-4 shadow-none transition-colors hover:border-cyan-500/30">
       <div className="flex items-center justify-between">
@@ -41,7 +76,7 @@ export function HarnessEngineCard({ isHealthy = true }: HarnessEngineCardProps) 
           <span className="text-right">④ GPU 显存与延迟</span>
         </div>
 
-        {/* 1. 微软 LLMLingua-2 物理卡片 (精准对齐 4 大物理指标) */}
+        {/* 1. 微软 LLMLingua-2 物理卡片 */}
         <div className="grid grid-cols-6 items-center px-3 py-2.5 text-xs rounded-md bg-cyan-500/5 border border-cyan-500/20 font-mono">
           <div className="col-span-2 flex flex-col gap-0.5 min-w-0">
             <span className="font-sans font-medium text-foreground truncate flex items-center gap-1.5">
@@ -53,24 +88,30 @@ export function HarnessEngineCard({ isHealthy = true }: HarnessEngineCardProps) 
             </span>
           </div>
           <div className="text-right flex flex-col items-end">
-            <span className="font-semibold text-cyan-600 dark:text-cyan-400 tabular-nums">48.5%</span>
+            <span className="font-semibold text-cyan-600 dark:text-cyan-400 tabular-nums">
+              {llmRetention !== undefined ? `${llmRetention}%` : '--'}
+            </span>
             <span className="text-[11px] text-muted-foreground font-sans">(安全 45-55%)</span>
           </div>
           <div className="text-right flex flex-col items-end">
-            <span className="font-semibold text-cyan-600 dark:text-cyan-400 tabular-nums">100.0%</span>
-            <span className="text-[11px] text-cyan-600 dark:text-cyan-400 font-sans font-semibold">(100% 锁定)</span>
+            <span className="font-semibold text-cyan-600 dark:text-cyan-400 tabular-nums">
+              {llmAst !== undefined ? `${llmAst}%` : '--'}
+            </span>
+            <span className="text-[11px] text-cyan-600 dark:text-cyan-400 font-sans font-semibold">
+              {llmAst !== undefined ? '(100% 锁定)' : '--'}
+            </span>
           </div>
           <div className="text-right flex flex-col items-end">
             <span className="text-muted-foreground tabular-nums">N/A</span>
             <span className="text-[11px] text-muted-foreground font-sans">(N/A N-Gram)</span>
           </div>
           <div className="text-right flex flex-col items-end">
-            <span className="font-semibold text-foreground tabular-nums">210MB / 6.2ms</span>
+            <span className="font-semibold text-muted-foreground tabular-nums">--</span>
             <span className="text-[11px] text-muted-foreground font-sans">(&lt;500MB / &lt;10ms)</span>
           </div>
         </div>
 
-        {/* 2. 斯坦福 DSPy 物理卡片 (精准对齐 4 大物理指标) */}
+        {/* 2. 斯坦福 DSPy 物理卡片 */}
         <div className="grid grid-cols-6 items-center px-3 py-2.5 text-xs rounded-md bg-cyan-500/5 border border-cyan-500/20 font-mono">
           <div className="col-span-2 flex flex-col gap-0.5 min-w-0">
             <span className="font-sans font-medium text-foreground truncate flex items-center gap-1.5">
@@ -86,15 +127,23 @@ export function HarnessEngineCard({ isHealthy = true }: HarnessEngineCardProps) 
             <span className="text-[11px] text-muted-foreground font-sans">(N/A RawToken)</span>
           </div>
           <div className="text-right flex flex-col items-end">
-            <span className="font-semibold text-cyan-600 dark:text-cyan-400 tabular-nums">100.0%</span>
-            <span className="text-[11px] text-cyan-600 dark:text-cyan-400 font-sans font-semibold">(100% 锁定)</span>
+            <span className="font-semibold text-cyan-600 dark:text-cyan-400 tabular-nums">
+              {dspyAst !== undefined ? `${dspyAst}%` : '--'}
+            </span>
+            <span className="text-[11px] text-cyan-600 dark:text-cyan-400 font-sans font-semibold">
+              {dspyAst !== undefined ? '(100% 锁定)' : '--'}
+            </span>
           </div>
           <div className="text-right flex flex-col items-end">
-            <span className="font-semibold text-cyan-600 dark:text-cyan-400 tabular-nums">98.2%</span>
-            <span className="text-[11px] text-cyan-600 dark:text-cyan-400 font-sans font-semibold">(安全 &gt;95%)</span>
+            <span className="font-semibold text-cyan-600 dark:text-cyan-400 tabular-nums">
+              {dspyAccuracy !== undefined ? `${dspyAccuracy}%` : '--'}
+            </span>
+            <span className="text-[11px] text-cyan-600 dark:text-cyan-400 font-sans font-semibold">
+              {dspyAccuracy !== undefined ? '(安全 >95%)' : '--'}
+            </span>
           </div>
           <div className="text-right flex flex-col items-end">
-            <span className="font-semibold text-foreground tabular-nums">18MB / 1.5ms</span>
+            <span className="font-semibold text-muted-foreground tabular-nums">--</span>
             <span className="text-[11px] text-muted-foreground font-sans">(&lt;500MB / &lt;10ms)</span>
           </div>
         </div>
