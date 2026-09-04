@@ -261,6 +261,9 @@ def resolve_request_uri(uri: str, ctx: RequestContext) -> str:
     The uid-less ``viking://user/<reserved>`` shorthand is no longer expanded:
     it fails closed with a hint pointing at ``viking://~/...``.
     """
+    parts = uri_parts(uri)
+    if parts and parts[0] == "~":
+        return resolve_current_user_uri(uri, ctx)
     if ctx.role in {Role.USER, Role.ADMIN}:
         return resolve_current_user_uri(uri, ctx)
     return resolve_uri(uri).uri
