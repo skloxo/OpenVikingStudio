@@ -5,6 +5,7 @@ import {
   getTasks,
   getOvResult,
   isOvClientError,
+  ovClient,
   postResources,
   postResourcesTempUpload,
 } from '#/lib/ov-client'
@@ -71,6 +72,7 @@ type ResourceUploadContextValue = {
   startRemote: (params: RemoteStartParams) => void
   resetRemote: () => void
   refreshTasks: () => Promise<void>
+  clearTasks: () => Promise<void>
   isRefreshingTasks: boolean
   hasActiveTasks: boolean
   activeTaskCount: number
@@ -362,6 +364,15 @@ export function ResourceUploadProvider({
     },
     [],
   )
+
+  const clearTasks = React.useCallback(async () => {
+    try {
+      await ovClient.instance.post('/api/v1/tasks/clear-failed')
+      setTasks((prev) => prev.filter((t) => isUploadStatusActive(t.status)))
+    } catch (error) {
+      toast.error(getErrorMessage(error))
+    }
+  }, [])
 
   const processFileUpload = React.useCallback(
     async (
@@ -736,6 +747,7 @@ export function ResourceUploadProvider({
       startRemote,
       resetRemote,
       refreshTasks,
+      clearTasks,
       isRefreshingTasks,
       hasActiveTasks,
       activeTaskCount,
@@ -747,6 +759,7 @@ export function ResourceUploadProvider({
       startRemote,
       resetRemote,
       refreshTasks,
+      clearTasks,
       isRefreshingTasks,
       hasActiveTasks,
       activeTaskCount,
