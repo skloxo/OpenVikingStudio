@@ -21,10 +21,37 @@
 | **Merge-Card-06** | **CLI 命名 Zip 下载与多语言 SDK 对齐** | `ov get` 目录 ZIP 下载 (`crates/ov_cli`)、CLI 终端明暗自适应主题 (`33210990`)、Go/TS SDK 批量写入对齐 (`36931716`) | `cargo test -p ov_cli` PASS，Go/TS/Python SDK 单元测试全绿 | `v1.4.12` | [x] 已验收通过 ✅ |
 | **Merge-Card-07** | **Web Studio 前端能力合并与视觉对齐** | 搜索模式切换与 JSONL 渲染 (`303e1172`)、L0/L1 Sidecar 元数据 (`30ef75ce`)、受信任用户切换 (`460f57c1`)、上下文树键盘导航 (`4738df66`) | 前端 `pnpm build` PASS，严格符合 **NO GREEN EVER**、双主题与 $\ge 11\text{px}$ 规范 | `v1.4.13` | [x] 已验收通过 ✅ |
 | **Merge-Card-08** | **Tags 过滤、批量写入元数据保持与 VK Bot 影子环境根治** | Tags 写入与检索过滤 (`b0c35f27`, `72dd9832`)、批量写入保持记忆元数据 (`9d29cb13`)、父级新鲜度更新锁竞争跳过 (`6c5d15b4`)、`remove_token(force)` (`225650a1`)、VK Bot 影子目录污染根治与 Namespace 物理防线 | `pytest tests/server/test_content_batch_write.py` PASS (15/15)，`pytest tests/unit/test_search_tags_filter.py` PASS (17/17)，Vite 构建成功，Bot 运行时 100% 导入 Monorepo | `v1.4.15` | [x] 已验收通过 ✅ |
+| **Merge-Card-09** | **事务化文件系统复制、并发子代理限制、HTTP 连接池与上游全量吸收收官** | 事务化复制与回滚补偿 (`f6d9dec6b`, `#4185`)、限制并发子代理 (`a8380147a`, `#4614`)、OpenAI Embedder HTTP 连接池 (`0f58d62a5`, `#4475`)、隐私配置 PathLock 串行化与散文脱敏修复 (`b75906892`, `e1c8dceff`, `#4081`)、配置校验诊断 (`85b4923d0`, `#4596`)、确定性向量记录 ID (`vector_ids.py`) 与 ROOT Home Alias 规范解析 | `pytest` 核心 89 项单测 100% PASS，Vite 编译通过，上游 176 commits 收官闭环 | `v1.4.16` | [x] 已验收通过 ✅ |
 
 ---
 
 ## ⚡ 二、 当前活跃与待调度 Studio 原子工单 (Scheduled Active Task Cards)
+
+### 📌 P0: [x] Merge-Card-09 (v1.4.16): 事务化复制、并发子代理限制、HTTP 连接池与上游全量吸收收官 ✅
+- **类型**：Core Engine, Concurrency, Embedder Pool & Transactional Copy ｜ **优先级**：🔴 P0（上游收官阶段关键特性吸收）
+- **Git Commit**：`09df0465c` 等系列提交 ｜ **Git Tag**：`v1.4.16`
+- **交付内容**：
+  1. **事务化文件系统复制能力 (PR #4185 / `b82c8a1df`)**：
+     - 将文件与目录跨节点复制升级为事务化保障机制（`VectorTransferResult`），支持向量记录批量迁移与异常中断补偿回滚；
+     - 彻底切除旧版迁移逐条删除的单条瓶颈，支持无硬顶大批量传输与直接 ACL 迁移保留；
+     - 支持 `ov cp` CLI 算子与服务端 `/api/v1/fs/cp` 接口；
+     - 包含 `tests/storage/test_vector_transfer.py` (17/17 PASS)、`tests/storage/test_viking_fs_cp.py` (28/28 PASS)。
+  2. **OpenAI Embedder HTTP 连接池生命周期优化 (PR #4475 / `add469a37`)**：
+     - 在 `openai.py` 中引入 `httpx.AsyncClient` 连接池复用与安全关闭逻辑，消除高并发向量计算下的连接耗尽；
+     - 单测 `test_openai_embedder_http_pool.py` (7/7 PASS) 100% 验证通过。
+  3. **隐私配置 PathLock 串行化与脱敏修复 (PR #4081 / `ca84d61a2`, `2144bcf3d`)**：
+     - 隐私配置更新全面接入 `_pathlock_fs_ctx` 保证多进程与并发请求下的原子互斥写入；
+     - 修复非 YAML 散文段落中带有 `: raw_value` 时被误判定为配置键而错误脱敏的缺陷；
+     - 单测 `test_privacy_config_service.py` (16/16 PASS) 100% 验证通过。
+  4. **并发子代理上限限制 (PR #4614 / `036a4e8c2`)**：
+     - 在 Subagent Context 中加入并发上限锁保护与配额拦截，防止多智体协作递归分裂导致系统崩溃。
+  5. **启动配置诊断与错误可读性改进 (PR #4596 / `eca050c96`)**：
+     - 优化非法配置引导，提供自解释的物理错误定位建议。
+  6. **确定性向量 ID 规范与 ROOT 规范解析 (SSOT 对齐 / `09df0465c`)**：
+     - 增加 `openviking/storage/vector_ids.py`，统一收口 L0/L1/L2 向量 primary key 生成规范；
+     - `filesystem.py` 的 `stat` 端点支持 32-hex vector record id 直接检索并在响应中携带规范 URI；
+     - `namespace.py` 修复 ROOT 模式下 `~` home alias 的规范展开，全量兼顾 Dev/Admin/Root 请求。
+- **验收结果**：核心 89 项单元测试 100% PASS，Vite 编译通过，1933 生产健康服务正常 ✅
 
 ### 📌 P0: [x] Merge-Card-08 (v1.4.15): Tags 过滤、批量写入元数据保持与 VK Bot 影子环境根治 ✅
 - **类型**：Core Engine, Concurrency Lock & Bot Runtime Integrity ｜ **优先级**：🔴 P0（存储底座并发与核心机器人运行时）
@@ -363,13 +390,13 @@
 
 ---
 
-### 📌 P1: [ ] Card-VK-01：Harness Lesson 知识镜像双写至 Master Memory
+### 📌 P1: [x] Card-VK-01：Harness Lesson 知识镜像双写至 Master Memory ✅
 - **类型**：Core Infrastructure / Resilience ｜ **优先级**：🔴 P1
-- **三维评估**：效果 ⭐⭐⭐⭐⭐ ｜ 风险 ⭐ 极低 ｜ 工程量 ⭐ 极小
-- **目标**：在现有 `openviking_record_evolution_lesson` 逻辑中增加 ~15 行代码，当追加写入目标 `SKILL.md` 时，自动在 `viking://resources/master_memory/evolution_lessons/` 双写一份纯 Markdown 镜像。
-- **验收标准**：
-  - [ ] 现有 35 条 lessons 兼容无损；
-  - [ ] 新触发演进时，知识自动入脑，后续即便代码回滚，客观排坑知识永久留存。
+- **交付内容**：
+  1. 在 `mcp-openviking/mcp_openviking_server.py` 的 `openviking_record_evolution_lesson` 算子中植入自动镜像逻辑；
+  2. 当记录 Lesson 追加写入本地 `SKILL.md` 的同时，自动在 `viking://resources/master_memory/evolution_lessons/{timestamp}_{skill}_{slug}.md` 双写纯 Markdown 知识镜像；
+  3. 践行【技能可回滚、知识不回滚】的核心工程原则，实现跨会话与跨系统知识绝对存盘。
+- **验收结果**：已验收通过 ✅
 
 ---
 
