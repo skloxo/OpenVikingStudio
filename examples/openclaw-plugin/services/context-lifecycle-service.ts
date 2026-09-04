@@ -501,8 +501,8 @@ export async function assembleOpenVikingSession({
       const routingRef = sessionId ?? sessionKey ?? ovSessionId;
       const agentId = resolveAgentId(routingRef, sessionKey, ovSessionId);
       const actorPeerId = resolveOpenVikingActorPeerId({
-        peerRole: cfg.peer_role ?? "assistant",
-        personPeerId: sanitizeOpenVikingPeerId(sender.senderId),
+        peerRole: cfg.peer_role ?? "none",
+        senderPeerId: sanitizeOpenVikingPeerId(sender.senderId),
         assistantPeerId: agentId,
       });
       const queryConfig = await queryConfigStore?.getEffective({
@@ -914,9 +914,9 @@ export async function afterTurnOpenVikingSession({
           undefined,
           createdAt,
           resolveOpenVikingMessagePeerId({
-            peerRole: cfg.peer_role ?? "assistant",
+            peerRole: cfg.peer_role ?? "none",
             role: msg.role,
-            personPeerId: senderRoleId,
+            senderPeerId: senderRoleId,
             assistantPeerId: agentId,
           }),
         );
