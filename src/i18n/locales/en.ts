@@ -1177,6 +1177,7 @@ const en = {
         processing: 'Processing',
         success: 'Processed',
         failed: 'Processing failed',
+        cancelled: 'Cancelled',
       },
     },
     searchPalette: {

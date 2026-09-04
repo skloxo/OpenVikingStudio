@@ -21,6 +21,7 @@ export type ResourceUploadTaskStatus =
   | 'processing'
   | 'success'
   | 'failed'
+  | 'cancelled'
 
 export type ResourceUploadTask = {
   id: string
@@ -208,6 +209,9 @@ function toUploadStatus(
   if (status === 'failed') {
     return 'failed'
   }
+  if (status === 'cancelled' || status === 'cancelling') {
+    return 'cancelled'
+  }
   return 'processing'
 }
 
@@ -224,7 +228,7 @@ function mergeServerTask(
     existing && existing.source !== 'server'
       ? existing.fileName
       : getServerTaskName(record)
-  const isFinished = status === 'success' || status === 'failed'
+  const isFinished = status === 'success' || status === 'failed' || status === 'cancelled'
 
   return {
     id: existing?.id ?? `server-${record.task_id}`,
