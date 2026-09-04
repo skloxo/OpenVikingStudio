@@ -99,7 +99,16 @@
 
 ### 📌 P0: [x] Card-VK-17 (v1.4.24): 监控大屏内核硬件实测与 50/50 对称 RER/EMB 双分位数重构 ✅
 - **类型**：Hardware Telemetry & Symmetrical Latency Quantile Chart ｜ **优先级**：🔴 P0（监控大屏硬件指标与图表美学重构）
-- **Git Commit**：待提交 ｜ **Git Tag**：`v1.4.24`
+- **Git Commit**：`cca3fe378` ｜ **Git Tag**：`v1.4.24`
+- **实际修改文件清单**：
+  - `openviking/_version.py`
+  - `package.json`
+  - `openviking/telemetry/telemetry_store.py`
+  - `src/routes/monitoring/-components/deep-metrics-grid.tsx`
+  - `src/routes/monitoring/-components/rerank-latency-chart.tsx` (新建)
+  - `src/routes/monitoring/-lib/parse-metrics.ts`
+  - `src/routes/monitoring/route.tsx`
+  - `REFACTORING_PLAN.md`
 - **交付内容**：
   1. **GPU 瓦片真实数据接入与 CPU 模式消除**：
      - 在 `src/routes/monitoring/route.tsx` 中引入 `gpuQuery`，接入 `/api/v1/system/gpu` 真实探针；
