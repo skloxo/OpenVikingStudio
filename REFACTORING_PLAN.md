@@ -22,11 +22,41 @@
 | **Merge-Card-07** | **Web Studio 前端能力合并与视觉对齐** | 搜索模式切换与 JSONL 渲染 (`303e1172`)、L0/L1 Sidecar 元数据 (`30ef75ce`)、受信任用户切换 (`460f57c1`)、上下文树键盘导航 (`4738df66`) | 前端 `pnpm build` PASS，严格符合 **NO GREEN EVER**、双主题与 $\ge 11\text{px}$ 规范 | `v1.4.13` | [x] 已验收通过 ✅ |
 | **Merge-Card-08** | **Tags 过滤、批量写入元数据保持与 VK Bot 影子环境根治** | Tags 写入与检索过滤 (`b0c35f27`, `72dd9832`)、批量写入保持记忆元数据 (`9d29cb13`)、父级新鲜度更新锁竞争跳过 (`6c5d15b4`)、`remove_token(force)` (`225650a1`)、VK Bot 影子目录污染根治与 Namespace 物理防线 | `pytest tests/server/test_content_batch_write.py` PASS (15/15)，`pytest tests/unit/test_search_tags_filter.py` PASS (17/17)，Vite 构建成功，Bot 运行时 100% 导入 Monorepo | `v1.4.15` | [x] 已验收通过 ✅ |
 | **Merge-Card-09** | **事务化文件系统复制、并发子代理限制、HTTP 连接池与上游全量吸收收官** | 事务化复制与回滚补偿 (`f6d9dec6b`, `#4185`)、限制并发子代理 (`a8380147a`, `#4614`)、OpenAI Embedder HTTP 连接池 (`0f58d62a5`, `#4475`)、隐私配置 PathLock 串行化与散文脱敏修复 (`b75906892`, `e1c8dceff`, `#4081`)、配置校验诊断 (`85b4923d0`, `#4596`)、确定性向量记录 ID (`vector_ids.py`) 与 ROOT Home Alias 规范解析 | `pytest` 核心 89 项单测 100% PASS，Vite 编译通过，上游 176 commits 收官闭环 | `v1.4.16` | [x] 已验收通过 ✅ |
-| **TASK-STUDIO-TASK-UNIFY-01** | **全局异步任务统筹收口与任务中心全景架构升级** | 统一收拢所有模块异步任务至 TaskTracker 与任务中心；消除 24h 过滤导致的陈旧活跃任务不可见缺陷；打通 Playground 上传弹窗与全局任务中心强锚点；统一重试与清理能力 | 任务中心 100% 涵盖所有异步任务，局部与全局无缝联动，Vite 构建 PASS | `v1.4.17` | 📋 排队中 |
+| **Merge-Card-10** | **Session Phase1 并发优化、纯过滤检索与 0 字节资源物理防御** | 异步并发写入 Phase1 会话标记 (`02e31f2d6`, `#4684`)、无 Query 纯 Tag/Scope 过滤检索 (`92ccb0f57`, `#4683`)、0 字节无效空资源解析器物理拦截 (`a4aa04cfc`, `#4643`)、RagFS 跳过重定向元数据写入 (`e273459c6`, `#4653`) | `tests/server/test_api_resources.py` PASS (50/50)，`tests/test_task_tracker.py` PASS (44/44)，`tests/unit/test_search_filter_only_query.py` PASS (16/16)，`tests/parse/test_empty_source_rejection.py` PASS (1/1)，Vite build PASS | `v1.4.17` | [x] 已验收通过 ✅ |
+| **Merge-Card-11** | **显式多模态 Embedding、Codex 凭据同步与 VikingBot 多模态读取** | 显式多模态 Embedding 输入模型 (`1ee1219ab`, `#4668`)、Codex 凭据自动刷新与重试 (`c5755f5ae`, `#4632`)、VikingBot 多模态资源读取 (`6020c62cc`, `#4590`)、VikingBot 运行配置增强 (`6bbf84027`, `#4595`) | `pytest tests/unit/test_openai_embedder.py` PASS，`pytest tests/unit/test_codex_vlm.py` PASS | `v1.4.18` | 📋 排队中 |
+| **Merge-Card-12** | **CLI 运行时配置键防丢、测试套件收敛与构建瘦身** | CLI 配置非模型键防丢 (`ddcc0052f`, `#4571`)、测试套件公共库统一收敛 (`37ef554bb`, `#4540`)、Git 派生工作区对等节点 (`1d89f8d46`, `#4546`)、发布制品剥离 devDependencies (`30c509267`, `#4699`)、并发子代理限制完善 (`75be3bd0f`, `#4691`)、Session 标记锁优化 (`bb7a79f32`, `#4687`) | `pytest` 全局通过，`cargo test -p ov_cli` PASS，Vite 构建产物精炼 | `v1.4.19` | 📋 排队中 |
+| **Merge-Card-13** | **官方 Session Compile 提纯技能收口与体外大脑联动** | Session 提纯标准技能 `ov-session-report` 吸收与规范注册 (`a32072665`, `#4433`)、体外大脑 L0/L1/L2 与全局技能扫描器动态注册 | 技能审计 100% 满分，MCP `openviking_skills` 成功索引，体外大脑同频 | `v1.4.20` | 📋 排队中 |
+| **TASK-STUDIO-TASK-UNIFY-01** | **全局异步任务统筹收口与任务中心全景架构升级** | 统一收拢所有模块异步任务至 TaskTracker 与任务中心；消除 24h 过滤导致的陈旧活跃任务不可见缺陷；打通 Playground 上传弹窗与全局任务中心强锚点；统一重试与清理能力 | 任务中心 100% 涵盖所有异步任务，局部与全局无缝联动，Vite 构建 PASS | `v1.4.21` | 📋 排队中 |
 
 ---
 
 ## ⚡ 二、 当前活跃与待调度 Studio 原子工单 (Scheduled Active Task Cards)
+
+### 📌 P0: [x] Merge-Card-10 (v1.4.17): Session Phase1 并发优化、纯过滤检索与 0 字节资源物理防御 ✅
+- **类型**：Core Engine, Session Latency, Search Filter & Resource Guard ｜ **优先级**：🔴 P0（上游核心性能与检索能力增强）
+- **Git Commit**：`f2c9ada5e` ｜ **Git Tag**：`v1.4.17`
+- **交付内容**：
+  1. **Phase1 会话提纯异步并发写入优化 (PR #4684 / `02e31f2d6`)**：
+     - 在 `openviking/session/session.py` 中将 `_write_phase1_marker` 与主会话文件物理持久化解耦为并发异步执行，显著消除跨文件系统存储延迟，避免长文本提纯阻塞事件循环；
+     - 深度化解合并冲突，保留完整的分布式租约锁引用（`lease_ref=lease`），拒绝一切胶水 Wrapper。
+  2. **支持无 Query 纯过滤检索能力 (PR #4683 / `92ccb0f57`)**：
+     - 支持检索 API 在未提供文本 Query 的工况下，仅根据 `tags`、`scope`、`time_range` 等结构化元数据执行高吞吐物理倒排过滤；
+     - 单测 `tests/unit/test_search_filter_only_query.py` 16/16 PASS (100%)。
+  3. **0 字节无效空资源解析器物理防御拦截 (PR #4643 / `a4aa04cfc`)**：
+     - 在解析器接入层建立物理前置防御，零字节/空文件物理拦截并快速失败，杜绝空文件消耗下游大模型 Token 与触发无效后台任务；
+     - 单测 `tests/parse/test_empty_source_rejection.py` 1/1 PASS (100%)。
+  4. **RagFS 存储层跳过重定向元数据写入 (PR #4653 / `e273459c6`)**：
+     - 优化多后端包装器 `crates/ragfs` 路由机制，跳过内部临时重定向元数据的无效写入，减轻存储 IO。
+  5. **TaskTracker 严谨防御与测试套件自愈**：
+     - 修复 `tests/test_task_tracker.py` 中 Mock AGFS 的 `disable_auto_pathlock` 上下文穿透传递；
+     - 修复 `resource_service.py` 异步任务入队在无即时解析目标时回传 `source_path` 契约；
+     - 修复 `test_api_resources.py` 中遗留的历史单测脏状态，保证 TaskTracker 单例契约绝对严谨。
+- **验收结果**：
+  - `tests/server/test_api_resources.py` (50/50 PASS)
+  - `tests/test_task_tracker.py` (44/44 PASS)
+  - `tests/unit/test_search_filter_only_query.py` (16/16 PASS)
+  - `tests/parse/test_empty_source_rejection.py` (1/1 PASS)
+  - 前端 Vite 构建 `npm run build` PASS (✓ built in 18.50s)
 
 ### 📌 P0: [x] Merge-Card-09 (v1.4.16): 事务化复制、并发子代理限制、HTTP 连接池与上游全量吸收收官 ✅
 - **类型**：Core Engine, Concurrency, Embedder Pool & Transactional Copy ｜ **优先级**：🔴 P0（上游收官阶段关键特性吸收）
