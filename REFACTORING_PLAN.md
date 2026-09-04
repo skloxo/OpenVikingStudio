@@ -30,10 +30,40 @@
 | **Merge-Card-05** | **双模态 MCP 架构重构与 Monorepo 物理收口** | 1. **核心 MCP (Core)**：本地主 Agent 全量 30+ 接口（全量记忆读写、VikingFS 控制、技能治理、图谱、服务端快照）；<br>2. **卫星 MCP (Satellite)**：3070 / Mac 等远程节点精简安全模式（远程知识召回、经验上报、抖动自愈，隔离底层危险指令）；<br>3. `mcp-openviking/` 物理纳入 Monorepo 随 Git 统一版本化迭代；<br>4. 合并 MCP 原生多模态内容块 (`0e77cd4e`) 与 OpenClaw 2026.8.1 契约 (`2c88269d`)。 | `pytest tests/server/test_mcp_endpoint.py` PASS (140/140)，`pytest tests/server/test_dual_mode_mcp.py` PASS (3/3)，双模自适应落地 | `v1.4.11` | [x] 已验收通过 ✅ |
 | **Merge-Card-06** | **CLI 命名 Zip 下载与多语言 SDK 对齐** | `ov get` 目录 ZIP 下载 (`crates/ov_cli`)、CLI 终端明暗自适应主题 (`33210990`)、Go/TS SDK 批量写入对齐 (`36931716`) | `cargo test -p ov_cli` PASS，Go/TS/Python SDK 单元测试全绿 | `v1.4.12` | [x] 已验收通过 ✅ |
 | **Merge-Card-07** | **Web Studio 前端能力合并与视觉对齐** | 搜索模式切换与 JSONL 渲染 (`303e1172`)、L0/L1 Sidecar 元数据 (`30ef75ce`)、受信任用户切换 (`460f57c1`)、上下文树键盘导航 (`4738df66`) | 前端 `pnpm build` PASS，严格符合 **NO GREEN EVER**、双主题与 $\ge 11\text{px}$ 规范 | `v1.4.13` | [x] 已验收通过 ✅ |
+| **Merge-Card-08** | **Tags 过滤、批量写入元数据保持与 VK Bot 影子环境根治** | Tags 写入与检索过滤 (`b0c35f27`, `72dd9832`)、批量写入保持记忆元数据 (`9d29cb13`)、父级新鲜度更新锁竞争跳过 (`6c5d15b4`)、`remove_token(force)` (`225650a1`)、VK Bot 影子目录污染根治与 Namespace 物理防线 | `pytest tests/server/test_content_batch_write.py` PASS (15/15)，`pytest tests/unit/test_search_tags_filter.py` PASS (17/17)，Vite 构建成功，Bot 运行时 100% 导入 Monorepo | `v1.4.15` | [x] 已验收通过 ✅ |
 
 ---
 
 ## ⚡ 二、 当前活跃与待调度 Studio 原子工单 (Scheduled Active Task Cards)
+
+### 📌 P0: [x] Merge-Card-08 (v1.4.15): Tags 过滤、批量写入元数据保持与 VK Bot 影子环境根治 ✅
+- **类型**：Core Engine, Concurrency Lock & Bot Runtime Integrity ｜ **优先级**：🔴 P0（存储底座并发与核心机器人运行时）
+- **Git Commit**：`b3a292bbb` ｜ **Git Tag**：`v1.4.15`
+- **交付内容**：
+  1. **上游 5 大核心提交合并**：
+     - `b0c35f27b`：支持标签化写入与文件系统过滤 (`#4457`)；
+     - `9d29cb139`：批量写入中保留记忆元数据 (memory metadata preservation) (`#4386`)；
+     - `6c5d15b49`：锁竞争态下跳过父级新鲜度更新，消除锁阻塞卡死 (`#4559`)；
+     - `225650a1c`：为 `remove_token` 增加 `force` 强制释放参数 (`#4575`)；
+     - `72dd9832f`：统一 tags 命令行参数规范 (`#4599`)。
+  2. **VK Bot 导入污染根治与运行时防护专项**：
+     - 彻底清除历史 `~/.local/lib/python3.12/site-packages/openviking/` 影子残留并物理销毁；
+     - `skill_scanner.py` 切除向 site-packages 写入产物的默认路径；
+     - `bootstrap.py` 与 systemd 服务强注入 `PYTHONSAFEPATH=1` + `cwd=repo_root`，物理确保永远优先导入本地 Monorepo 源码；
+     - 在 `openviking/__init__.py` 中植入 `_verify_package_integrity()` 自检机制，检测到 degenerate PEP 420 namespace package 即刻抛出致命自愈异常，彻底封死第三个包重蹈覆辙；
+     - 核心服务健康恢复（`http://127.0.0.1:1933/health` 返回 `200 ok, version 1.4.15`）。
+  3. **Skill 扫描器过滤与全量沙盘资产收口**：
+     - `skill_scanner.py` 中彻底过滤 `.clawhub`、`.curator_backups` 等隐藏目录与 `__pycache__`；
+     - 完整解析 YAML Frontmatter 规范名称（SenseNova Excel 28 个技能与 ClawTrader 4 个技能正规化）；
+     - `public/all_skills.json` 导出 677 个有效技能并按全局字典序稳定排序。
+  4. **并发测试与自愈降级加固**：
+     - 修复 `tests/conftest.py` 中 RAGFS mock 的 `pathlock_adopt` 与 `_to_handoff` 原始锁追踪，消除测试并发锁泄漏；
+     - 在 `openviking/pyagfs/async_client.py` 中为 `pathlock_acquire_exact_batch` 增加优雅降级自愈逻辑；
+     - `test_content_batch_write.py` 15/15 项单测集成测试全绿，`test_search_tags_filter.py` 17/17 项单测全绿；
+     - 前端 Vite 生产编译零警告通过（`✓ built in 17.66s`）。
+- **验收结果**：前后端全量单测与集成测试通过，Vite 编译打包通过，网关与主服务健康就绪 ✅
+
+---
 
 ### 📌 P0: [x] Merge-Card-07 (v1.4.13): Web Studio 前端能力合并与视觉对齐 ✅
 - **类型**：Web Studio Frontend & UX Alignment ｜ **优先级**：🔴 P0（前端工作台与开发者体验中枢）
