@@ -134,6 +134,23 @@ class SearchService:
             level=level,
             image_url=resolved_image_url,
         )
+        try:
+            from openviking.observability.events import try_publish_event
+            result_count = len(result) if hasattr(result, "__len__") else 0
+            account_id = getattr(ctx, "account_id", None) or "default"
+            user_id = getattr(getattr(ctx, "user", None), "user_id", None) or "default"
+            try_publish_event(
+                "retrieval.query",
+                {
+                    "operation": "search",
+                    "status": "success",
+                    "result_count": result_count,
+                    "account_id": account_id,
+                    "user_id": user_id,
+                },
+            )
+        except Exception:
+            pass
         return result
 
     async def find(
@@ -173,4 +190,21 @@ class SearchService:
             level=level,
             image_url=resolved_image_url,
         )
+        try:
+            from openviking.observability.events import try_publish_event
+            result_count = len(result) if hasattr(result, "__len__") else 0
+            account_id = getattr(ctx, "account_id", None) or "default"
+            user_id = getattr(getattr(ctx, "user", None), "user_id", None) or "default"
+            try_publish_event(
+                "retrieval.query",
+                {
+                    "operation": "find",
+                    "status": "success",
+                    "result_count": result_count,
+                    "account_id": account_id,
+                    "user_id": user_id,
+                },
+            )
+        except Exception:
+            pass
         return result

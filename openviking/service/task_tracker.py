@@ -915,12 +915,13 @@ class TaskTracker:
         account_id: Optional[str] = None,
         user_id: Optional[str] = None,
     ) -> int:
-        if account_id and user_id:
+        if account_id:
             self._merge_loaded_tasks(await self._load_all_from_store(account_id, user_id))
         matching_tasks = [
             task
             for task in self._cache_snapshot()
-            if (task.status in target_statuses or bool(task.error) or not self._work_index.has_work(task.task_id))
+            if task.status in target_statuses
+            and not self._work_index.has_work(task.task_id)
             and (account_id is None or self._matches_owner(task, account_id, user_id or ""))
         ]
         deleted = 0

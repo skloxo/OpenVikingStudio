@@ -678,3 +678,77 @@ async def test_session_service_get_commit_task_also_filters_account():
     )
 
     assert other_account_result is None
+
+
+# ── clear_terminal_tasks Safety & Preservation ──
+
+
+async def test_clear_terminal_tasks_preserves_completed_tasks():
+    agfs = _FakeAgfs()
+    tracker = TaskTracker(store=PersistentTaskStore(agfs))
+
+    # 1. Create a completed task
+    completed = await tracker.create("add_resource", resource_id="res-1", **_owner_kwargs())
+    await tracker.start(completed.task_id, **_owner_kwargs())
+    await tracker.complete(completed.task_id, {"root_uri": "res-1"}, **_owner_kwargs())
+
+    # 2. Create a failed task
+    failed = await tracker.create("add_resource", resource_id="res-2", **_owner_kwargs())
+    await tracker.start(failed.task_id, **_owner_kwargs())
+    await tracker.fail(failed.task_id, "download error", **_owner_kwargs())
+
+    # 3. Create a cancelled task
+    cancelled = await tracker.create("add_resource", resource_id="res-3", **_owner_kwargs())
+    await tracker.start(cancelled.task_id, **_owner_kwargs())
+    await tracker.cancel(cancelled.task_id, **_owner_kwargs())
+
+    # Run clear_terminal_tasks (simulates POST /api/v1/tasks/clear-failed)
+    deleted = await tracker.clear_terminal_tasks(**_owner_kwargs())
+
+    # Failed and Cancelled should be deleted
+    assert deleted == 2
+    assert await tracker.get(failed.task_id, **_owner_kwargs()) is None
+    assert await tracker.get(cancelled.task_id, **_owner_kwargs()) is None
+
+    # CRITICAL: Completed task MUST be preserved in both memory and store!
+    loaded_completed = await tracker.get(completed.task_id, **_owner_kwargs())
+    assert loaded_completed is not None
+    assert loaded_completed.status == TaskStatus.COMPLETED
+    assert await tracker._store.get(completed.task_id, **_owner_kwargs()) is not None
+
+
+async def test_clear_terminal_tasks_without_work_does_not_delete_completed():
+    agfs = _FakeAgfs()
+    tracker = TaskTracker(store=PersistentTaskStore(agfs))
+
+    completed = await tracker.create("session_commit", resource_id="sess-abc", **_owner_kwargs())
+    await tracker.start(completed.task_id, **_owner_kwargs())
+    await tracker.complete(completed.task_id, {"status": "ok"}, **_owner_kwargs())
+
+    # Completed tasks have NO work in work_index
+    assert not tracker.has_work(completed.task_id)
+
+    deleted = await tracker.clear_terminal_tasks(**_owner_kwargs())
+    assert deleted == 0
+
+    # Task MUST NOT be deleted even though has_work() is false
+    assert await tracker.get(completed.task_id, **_owner_kwargs()) is not None
+    assert await tracker._store.get(completed.task_id, **_owner_kwargs()) is not None
+
+
+async def test_persistent_task_store_list_all_users_when_user_id_none():
+    agfs = _FakeAgfs()
+    store = PersistentTaskStore(agfs)
+    tracker = TaskTracker(store=store)
+
+    # Create task for alice and bob in account "acme"
+    t_alice = await tracker.create("add_resource", resource_id="r1", account_id="acme", user_id="alice")
+    t_bob = await tracker.create("add_resource", resource_id="r2", account_id="acme", user_id="bob")
+
+    # List all tasks for "acme" with user_id=None
+    all_acme_tasks = await store.list("acme", user_id=None)
+    task_ids = {t["task_id"] for t in all_acme_tasks}
+
+    assert t_alice.task_id in task_ids
+    assert t_bob.task_id in task_ids
+
