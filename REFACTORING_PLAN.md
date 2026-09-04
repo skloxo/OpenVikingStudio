@@ -73,7 +73,7 @@
 
 ### 📌 P0: [x] Card-VK-16 (v1.4.23): 技能中心命名空间净化与历史 Curator 备份脏数据物理隔离 ✅
 - **类型**：Namespace Sanitization & Curator Artifact Isolation ｜ **优先级**：🔴 P0（技能中心整洁度与命名规范防御）
-- **Git Commit**：待提交 ｜ **Git Tag**：`v1.4.23`
+- **Git Commit**：`ccd527454` ｜ **Git Tag**：`v1.4.23`
 - **交付内容**：
   1. **物理隔离历史残留 Curator 归档与隐藏目录**：
      - 将 `/home/skloxo/.openviking/data/viking/default/user/default/skills/` 下历史残留的 `.clawhub` 与 5 个 ISO 时间戳备份归档目录（`2026-05-06T09-55-26Z`、`2026-05-13T10-17-45Z`、`2026-05-20T10-26-59Z`、`2026-05-27T11-02-29Z`、`2026-06-03T11-22-57Z`）安全物理隔离迁移至 `~/.openviking/backups/curator_archives/`；
