@@ -22,6 +22,7 @@
 | **Merge-Card-07** | **Web Studio 前端能力合并与视觉对齐** | 搜索模式切换与 JSONL 渲染 (`303e1172`)、L0/L1 Sidecar 元数据 (`30ef75ce`)、受信任用户切换 (`460f57c1`)、上下文树键盘导航 (`4738df66`) | 前端 `pnpm build` PASS，严格符合 **NO GREEN EVER**、双主题与 $\ge 11\text{px}$ 规范 | `v1.4.13` | [x] 已验收通过 ✅ |
 | **Merge-Card-08** | **Tags 过滤、批量写入元数据保持与 VK Bot 影子环境根治** | Tags 写入与检索过滤 (`b0c35f27`, `72dd9832`)、批量写入保持记忆元数据 (`9d29cb13`)、父级新鲜度更新锁竞争跳过 (`6c5d15b4`)、`remove_token(force)` (`225650a1`)、VK Bot 影子目录污染根治与 Namespace 物理防线 | `pytest tests/server/test_content_batch_write.py` PASS (15/15)，`pytest tests/unit/test_search_tags_filter.py` PASS (17/17)，Vite 构建成功，Bot 运行时 100% 导入 Monorepo | `v1.4.15` | [x] 已验收通过 ✅ |
 | **Merge-Card-09** | **事务化文件系统复制、并发子代理限制、HTTP 连接池与上游全量吸收收官** | 事务化复制与回滚补偿 (`f6d9dec6b`, `#4185`)、限制并发子代理 (`a8380147a`, `#4614`)、OpenAI Embedder HTTP 连接池 (`0f58d62a5`, `#4475`)、隐私配置 PathLock 串行化与散文脱敏修复 (`b75906892`, `e1c8dceff`, `#4081`)、配置校验诊断 (`85b4923d0`, `#4596`)、确定性向量记录 ID (`vector_ids.py`) 与 ROOT Home Alias 规范解析 | `pytest` 核心 89 项单测 100% PASS，Vite 编译通过，上游 176 commits 收官闭环 | `v1.4.16` | [x] 已验收通过 ✅ |
+| **TASK-STUDIO-TASK-UNIFY-01** | **全局异步任务统筹收口与任务中心全景架构升级** | 统一收拢所有模块异步任务至 TaskTracker 与任务中心；消除 24h 过滤导致的陈旧活跃任务不可见缺陷；打通 Playground 上传弹窗与全局任务中心强锚点；统一重试与清理能力 | 任务中心 100% 涵盖所有异步任务，局部与全局无缝联动，Vite 构建 PASS | `v1.4.17` | 📋 排队中 |
 
 ---
 
@@ -304,6 +305,29 @@
 ### 📌 P0: [ ] TASK-STUDIO-MODELS-MONITOR-01：Models 监控大屏真数据驱动重构与双主题对齐
 - **类型**：Observability / Feature ｜ **优先级**：🔴 P0
 - **目标**：重构 Studio `/monitoring` 中 Models 监控卡片，彻底切除任何静态数字与假 Mock，100% 绑定后端 `models_observer.py` 的真实模型状态、显存与时延接口；严格遵守 NO GREEN EVER 与双主题。
+
+---
+
+### 📌 P0: [ ] TASK-STUDIO-TASK-UNIFY-01：全局异步任务统筹收口与任务中心全景架构升级 (Unified Task Center & Ambient Projection)
+- **类型**：Architecture / UX / Observability ｜ **优先级**：🔴 P0（系统全局单一真相源建设）
+- **痛点与第一性原理 (First Principles)**：
+  1. **SSOT 唯一真相源原则**：凡是系统内触发的异步作业（无论是文件解析 `add_resource`、会话归档蒸馏 `session_commit`、向量维护 `admin_reindex` 还是技能导入），都必须且绝对在【任务中心 (`/tasks`)】统筹展示，严禁局部视图与总账割裂；
+  2. **总账与投影解耦 (Master Ledger vs. Ambient View)**：
+     - **总账 (Master Ledger)**：`/tasks` 页面作为系统唯一的异步任务中枢，对所有类型的任务提供全生命周期管控（阶段耗时、Token 账单、重试、取消、日志、多维过滤与时间跨度选择）；
+     - **伴随视图 (Ambient Projection)**：Playground 等局部业务弹窗/悬浮条仅作为“跟手投影”，底层状态与任务中心 100% 实时同步；并在弹窗内提供清晰锚点 `前往任务中心查看完整详情 ↗`；
+  3. **时间窗口与过滤对齐**：
+     - 根治任务中心 `dataScope = '24h'` 导致陈旧活跃/未完成任务在总盘被隐形过滤的缺陷；
+     - 统一局部与全局的任务时间窗口、去重策略与终态清理规则。
+- **实施清单**：
+  - [ ] 1. **任务中心时间范围与未终结保护**：未终结任务（running/pending）不受 24h 时间硬截断限制，永远置顶可见；支持灵活切换时间跨度（24h / 7d / 全部）；
+  - [ ] 2. **任务中心对 `add_resource` 的富上下文渲染**：展示文件名称、资源 URI、源文件大小、分阶段流转（Ingestion -> Parse -> Semantic -> Embedding -> Memory Linking）；
+  - [ ] 3. **局部弹窗与任务中心强链接互通**：在 Playground 文件处理任务弹窗中加入 `在任务中心查看完整调度 ↗`，支持点击直达任务中心并高亮对应任务行；
+  - [ ] 4. **统一重试与清理能力**：将重试（Retry/Reindex）和清理接口在全局和局部实现标准复用。
+- **验收标准**：
+  - [ ] 任意子系统发起的异步任务，在【任务中心】100% 即时可见、可查、可管；
+  - [ ] 彻底消除任何“局部弹窗有、任务中心找不到”的断层现象；
+  - [ ] 严格遵循 NO GREEN EVER、双主题与 $\ge 11\text{px}$ 规范；
+  - [ ] `npm run build` PASS。
 
 ---
 
