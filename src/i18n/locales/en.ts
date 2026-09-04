@@ -1179,6 +1179,8 @@ const en = {
         failed: 'Processing failed',
         cancelled: 'Cancelled',
       },
+      clearTerminal: 'Clear records',
+      clearedSuccess: 'Terminal task records cleared',
     },
     searchPalette: {
       modes: {

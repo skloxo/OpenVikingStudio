@@ -211,6 +211,7 @@ function PlaygroundWorkbench() {
     hasActiveTasks,
     isRefreshingTasks,
     refreshTasks,
+    clearTasks,
     tasks,
   } = useResourceUpload()
   const { invalidateList } = useInvalidateVikingFs()
@@ -732,6 +733,7 @@ function PlaygroundWorkbench() {
         open={taskDialogOpen}
         onOpenChange={setTaskDialogOpen}
         tasks={tasks}
+        onClearTasks={clearTasks}
       />
       <FindPalette
         open={findPaletteOpen}

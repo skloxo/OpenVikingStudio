@@ -1194,6 +1194,8 @@ const zhCN = {
         failed: '处理失败',
         cancelled: '已取消',
       },
+      clearTerminal: '清理记录',
+      clearedSuccess: '历史任务记录已清理',
     },
     searchPalette: {
       modes: {
