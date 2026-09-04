@@ -129,6 +129,9 @@ function normalizeSkills(value: unknown): SkillItem[] {
           : ''
 
     if (!name && !uri) return []
+    if (name.startsWith('.') || /^\d{4}-\d{2}-\d{2}/.test(name) || name.toLowerCase().includes('curator')) {
+      return []
+    }
 
     // 100% 提取 OpenViking 后端原生 abstract / overview / description / content 字段中的自然语言触发词
     const rawDesc =

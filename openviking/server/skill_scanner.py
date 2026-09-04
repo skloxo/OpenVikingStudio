@@ -5,12 +5,15 @@
 import json
 import logging
 import os
+import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import yaml
 
 logger = logging.getLogger(__name__)
+
+_DATE_ARCHIVE_REGEX = re.compile(r"^\d{4}-\d{2}-\d{2}", re.IGNORECASE)
 
 # Default SSOT Source Paths if not specified in ov.conf
 DEFAULT_SKILL_SOURCES: List[Dict[str, str]] = [
@@ -100,6 +103,11 @@ def parse_skill_file(filepath: str, category: str, source: str, scope: str = "us
     """Parse a single SKILL.md file and return standardized skill metadata."""
     skill_dir = os.path.dirname(filepath)
     dirname = os.path.basename(skill_dir)
+    if not dirname or dirname.startswith(".") or dirname == "__pycache__":
+        return None
+    if _DATE_ARCHIVE_REGEX.match(dirname) or "backup" in dirname.lower() or "curator" in dirname.lower():
+        return None
+
     try:
         with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
             content = f.read()
@@ -120,6 +128,9 @@ def parse_skill_file(filepath: str, category: str, source: str, scope: str = "us
                     description = str(fm.get("description", "")).strip()
             except Exception:
                 pass
+
+    if not name or name.startswith(".") or _DATE_ARCHIVE_REGEX.match(name) or "backup" in name.lower() or "curator" in name.lower():
+        return None
 
     if not description:
         lines = [l.strip() for l in content.split("\n") if l.strip() and not l.startswith("---")]
@@ -171,10 +182,14 @@ def scan_configured_skills(
             continue
 
         for dirpath, dirnames, filenames in os.walk(root_path):
-            # Prune hidden directories (dot-dirs like .clawhub, .git, __pycache__) in-place
+            # Prune hidden directories (dot-dirs like .clawhub, .git, __pycache__) and backup archives in-place
             dirnames[:] = [
                 d for d in dirnames
-                if not d.startswith(".") and d != "__pycache__"
+                if not d.startswith(".")
+                and d != "__pycache__"
+                and not _DATE_ARCHIVE_REGEX.match(d)
+                and "backup" not in d.lower()
+                and "curator" not in d.lower()
             ]
             if "SKILL.md" in filenames:
                 skill_file = os.path.join(dirpath, "SKILL.md")

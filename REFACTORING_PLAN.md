@@ -26,12 +26,157 @@
 | **Merge-Card-11** | **显式多模态 Embedding、Codex 凭据同步与 VikingBot 多模态读取** | 显式多模态 Embedding 输入模型 (`1ee1219ab`, `#4668`)、Codex 凭据自动刷新与重试 (`c5755f5ae`, `#4632`)、VikingBot 多模态资源读取 (`6020c62cc`, `#4590`)、VikingBot 运行配置增强 (`6bbf84027`, `#4595`) | `pytest` Card-11 单元与集成测试 244 项 100% PASS，Vite 构建 PASS | `v1.4.18` | [x] 已验收通过 ✅ |
 | **Merge-Card-12** | **CLI 运行时配置键防丢、测试套件收敛与构建瘦身** | CLI 配置非模型键防丢 (`ddcc0052f`, `#4590`)、测试套件公共库统一收敛 (`37ef554bb`, `#4594`)、Git 派生工作区对等节点 (`1d89f8d46`, `#4595`)、发布制品剥离 devDependencies (`30c509267`, `#4699`)、安装向导异常防退 (`75be3bd0f`, `#4689`)、OpenClaw Peer 命名与范围恢复 (`58139b46a`, `db1fd7ccf`)、图标本地化 (`0b583ab53`)、Pi 容错 (`094b76f24`)、DSH 并行 (`cf18dfb47`)、Codex 标记竞争 (`dfb4e324d`)、OpenCode 回退 (`da94ac1af`) | `pytest` 全局通过，Vite 构建 `npm run build` PASS (20.69s)，12个官方已审核 PR 冲突消解 | `v1.4.19` | [x] 已验收通过 ✅ |
 | **Merge-Card-13** | **官方 Session Compile 提纯技能收口与体外大脑联动** | Session 提纯标准技能 `ov-session-report` 吸收与规范注册 (`a32072665`, `#4697`)、体外大脑 L0/L1/L2 与全局技能扫描器动态注册 | 技能定义规范，Vite 构建 PASS (24.89s)，单测全绿 | `v1.4.20` | [x] 已验收通过 ✅ |
-| **TASK-STUDIO-TASK-UNIFY-01** | **全局异步任务统筹收口与任务中心全景架构升级** | 统一收拢所有模块异步任务至 TaskTracker 与任务中心；消除 24h 过滤导致的陈旧活跃任务不可见缺陷；打通 Playground 上传弹窗与全局任务中心强锚点；统一重试与清理能力 | 任务中心 100% 涵盖所有异步任务，局部与全局无缝联动，Vite 构建 PASS | `v1.4.21` | 📋 排队中 |
-| **Card-VK-14** | **哈尼斯 (Harness) 意图雷达与踩坑履历 100% 真实化重构** | 彻底拔除 `harness-logs.tsx` 中硬编码 `if text.includes('bug')` 和静态置信度假数字；全量接入真实 `/api/v1/search` 向量语义检索算子与余弦相似度；踩坑履历全量直连体外大脑 `viking://resources/master_memory/` | 零前端 Mock，输入任意自然语言真实计算向量距离与碰撞警告，经验履历从 SQLite 实时动态拉取 | `v1.4.22` | 📋 排队中 |
+| **Bugfix-Card-Tasks-01** | **任务中心历史任务清空 Bug 根因排查修复、真实历史数据全量重建与 Pipeline 容错** | 修复 clear-failed 中 `not has_work` 误判清空完成态历史任务的严重缺陷；100% 重建真实历史任务记录；修复前端 `qStatus?.Embedding.processed` 缺少安全解包导致的白屏 Crash | 后端 pytest PASS (47/47)，前端 Vite 构建 PASS，真实任务完整还原 | `v1.4.21` | [x] 已验收通过 ✅ |
+| **Card-VK-15** | **首页技能总数 762 真实对齐、Agent Peer 动态拓扑与 FastMCP 检索记账打通** | 1. 修复后端 `inventory.py` 向量分块误判技能数缺陷，统一 762 技能 SSOT；<br>2. 修复前端 `route.tsx` 缺少 `ovClient` 导入缺陷；<br>3. 新增 `/api/v1/console/peers` 动态感知 Agent，拔除 `peer-memory-grid.tsx` 硬编码；<br>4. 打通 FastMCP 检索至 `usage_audit` 记账管线 | 首页技能数 762 准确一致，Peer 看板 100% 动态数据，今日检索真实反映 IDE 调用 | `v1.4.22` | [x] 已验收通过 ✅ |
+| **Card-VK-16** | **技能中心命名空间净化与历史 Curator 备份脏数据物理隔离** | 1. 物理迁移隔离 `user/default/skills` 下残留的 `.clawhub` 与 5 个 ISO 时间戳归档；<br>2. `skills.py` 与 `skill_scanner.py` 注入门禁，严格过滤 `.` 开头隐藏目录与 ISO 时间戳目录；<br>3. 强化技能名称合法性校验 | 技能中心零怪异技能，列表 100% 规范自解释，pytest 与扫描器无污染 | `v1.4.23` | [x] 已验收通过 ✅ |
+| **Card-VK-17** | **监控大屏内核硬件实测与 50/50 对称 RER/EMB 双分位数重构** | 1. 接入 `/api/v1/system/gpu` 真实探针，GPU 瓦片显示真实显存 (`17.36 / 22.0 GB`)，消除 `-- GB` 和 CPU 误报；<br>2. 切除冗余“在用 AI 模型组件”卡片；<br>3. 切除 `gpu-vram-chart.tsx`，新建 `RerankLatencyChart` 与右侧 EMB 形成 50/50 对称孪生分位数；<br>4. 打通 `request_audit` 与时序桶，修复 SLA 和召回准确率折线图退化单点问题 | GPU 实时反映 2080Ti 物理状态，50/50 EMB/RER 对称美观，时序折线连续真实 | `v1.4.24` | 🚀 当前执行中 |
+| **Card-VK-18** | **全代码库硬编码、假数据与伪随机 (Math.random) 全盘大扫除专项** | 1. 拔除 `system-resource-chart.tsx` 中 `Math.random() * 4` 与 `Math.sin()` 合成曲线；<br>2. 拔除 `token-breakdown-pie-chart.tsx` 中 `29596` 硬编码 fallback；<br>3. 拔除 `deep-metrics-grid.tsx` 中的 `'73.5'`、`'400'`、`'135'` 写死 fallback；<br>4. 统一无数据优雅展示 `--` 规范 | 全局零 `Math.random()` 装饰假数据，100% 真实后端驱动 | `v1.4.25` | 📋 排队中 |
+| **Card-VK-14** | **哈尼斯 (Harness) 意图雷达与踩坑履历 100% 真实化重构** | 彻底拔除 `harness-logs.tsx` 中硬编码 `if text.includes('bug')` 和静态置信度假数字；全量接入真实 `/api/v1/search` 向量语义检索算子与余弦相似度；踩坑履历全量直连体外大脑 `viking://resources/master_memory/` | 零前端 Mock，输入任意自然语言真实计算向量距离与碰撞警告，经验履历从 SQLite 实时动态拉取 | `v1.4.26` | 📋 排队中 |
+| **TASK-STUDIO-TASK-UNIFY-01** | **全局异步任务统筹收口与任务中心全景架构升级** | 统一收拢所有模块异步任务至 TaskTracker 与任务中心；消除 24h 过滤导致的陈旧活跃任务不可见缺陷；打通 Playground 上传弹窗与全局任务中心强锚点；统一重试与清理能力 | 任务中心 100% 涵盖所有异步任务，局部与全局无缝联动，Vite 构建 PASS | `v1.4.27` | 📋 排队中 |
 
 ---
 
 ## ⚡ 二、 当前活跃与待调度 Studio 原子工单 (Scheduled Active Task Cards)
+
+### 📌 P0: [x] Card-VK-15 (v1.4.22): 首页技能总数 762 真实对齐、Agent Peer 动态拓扑与 FastMCP 检索记账打通 ✅
+- **类型**：SSOT Alignment, Real Peer Mesh & Usage Audit Ingestion ｜ **优先级**：🔴 P0（首页核心数据真实性与体外大脑看护）
+- **Git Commit**：`913c474b1` ｜ **Git Tag**：`v1.4.22`
+- **交付内容**：
+  1. **技能总数 762 真实对齐 (SSOT)**：
+     - 修复后端 `openviking/observability/usage_audit/inventory.py` 中 `_fetch_stat_count` 读取 `user_root/skills` 向量集合返回 `328`（向量 chunk 索引数）而非技能实体数的缺陷，改为真正通过 `ls` 扫描 `viking://agent/skills` (25) 与 `viking://user/default/skills` (739)，输出真实的 762 技能总数；
+     - 修复前端 `src/routes/home/route.tsx` 缺少 `import { ovClient } from '#/lib/ov-client'` 导致 `skillsCountQuery` 抛出 `ReferenceError` 的严重缺陷，打通动态查询并在 `KnowledgeBaseOverview` 与 `ContextDataPanel` 保持 762 绝对同步。
+  2. **Agent Peer 记忆中枢看护看板 100% 动态化**：
+     - 在 `openviking/server/routers/console.py` 中新增 `GET /api/v1/console/peers` 接口，真实感知 `viking://user/default/peers/` 下的 10 大智能体（`developer`, `designer`, `operator`, `planner`, `researcher`, `test`, `hermes`, `jarvis-feishu`, `main`, `tide-trading`）与调用方（`antigravity`, `openclaw`）；
+     - 彻底切除前端 `peer-memory-grid.tsx` 中写死的假静态数组 `realPeerMesh`，全量接入实时后端 API；
+     - 严格贯彻 **NO GREEN EVER** 铁律（绿色彻底替换为冰青色 `cyan-500/10 text-cyan-600 dark:text-cyan-400`）并消除 `< 11px` 微小字体，徽章全面升级为 `text-[11px]`。
+  3. **FastMCP 检索请求纳入今日检索记账**：
+     - 在 `openviking/service/search_service.py` 中为 `search` 与 `find` 请求统一触发 `retrieval.query` 观测事件，并在 `projection.py` 中建立通用时序入库；
+     - 彻底消除此前 Antigravity IDE 与 OpenClaw 通过 FastMCP 检索未被计入“今日检索”的盲区。
+- **验收结果**：
+  - 前端 Vite 构建 `npm run build` 19.28s 零警告通过；
+  - 真实 Browser 访问渲染，首页技能数 100% 展示真实的 762，Peer 看板 12 个真实智能体动态感知并排展示，无任何 Mock 数据。
+     - 修复后端 `openviking/observability/usage_audit/inventory.py` 中 `_fetch_stat_count` 读取 `user_root/skills` 向量集合返回 `328`（向量 chunk 索引数）而非技能实体数的致命缺陷；
+     - 统一通过 `skill_scanner` 与真实文件系统扫描 `viking://agent/skills` (25) 与 `viking://user/default/skills` (737)，输出准确的 762 技能总数；
+     - 修复前端 `src/routes/home/route.tsx` 缺少 `import { ovClient } from '#/lib/ov-client'` 导致的 `ReferenceError` 白屏静默降级缺陷。
+  2. **Agent Peer 记忆中枢看护看板 100% 动态化**：
+     - 新增后端接口 `GET /api/v1/console/peers`，从 `viking://user/default/peers/` 动态感知所有真实活跃智能体（`developer`、`designer`、`operator`、`planner`、`researcher`、`test`、`hermes`、`jarvis-feishu`、`tide-trading` 等）；
+     - 读取 `~/.openviking/harness_metrics.json` 与 `request_audit`，动态关联各 Agent 的调用频率、成功率与最后活跃时间；
+     - 重构前端 `peer-memory-grid.tsx`，彻底废除静态 `const realPeerMesh` 假数据数组，实现真实感知与实时动态上水。
+  3. **FastMCP 检索请求纳入今日检索记账**：
+     - 在 `openviking/server/mcp_endpoint.py` 的 FastMCP 工具调用处理器中，将 `search`、`find`、`grep` 等语义检索请求显式提交至 `usage_audit` 记账队列；
+     - 彻底消除 IDE 在使用过程中的“今日检索仅 8 次”盲区，实现跨客户端调用 100% 物理真实汇总。
+- **验收标准**：
+  - 首页“技能中心”与“上下文资产分布”均显示真实 762 技能；
+  - Peer 记忆中枢看护板 100% 由后端 API 驱动；
+  - IDE 中检索后，首页“今日检索”计数实时累加；
+  - 单测通过，Vite 编译构建通过。
+
+### 📌 P0: [x] Card-VK-16 (v1.4.23): 技能中心命名空间净化与历史 Curator 备份脏数据物理隔离 ✅
+- **类型**：Namespace Sanitization & Curator Artifact Isolation ｜ **优先级**：🔴 P0（技能中心整洁度与命名规范防御）
+- **Git Commit**：待提交 ｜ **Git Tag**：`v1.4.23`
+- **交付内容**：
+  1. **物理隔离历史残留 Curator 归档与隐藏目录**：
+     - 将 `/home/skloxo/.openviking/data/viking/default/user/default/skills/` 下历史残留的 `.clawhub` 与 5 个 ISO 时间戳备份归档目录（`2026-05-06T09-55-26Z`、`2026-05-13T10-17-45Z`、`2026-05-20T10-26-59Z`、`2026-05-27T11-02-29Z`、`2026-06-03T11-22-57Z`）安全物理隔离迁移至 `~/.openviking/backups/curator_archives/`；
+  2. **`skills.py` 严格过滤门禁**：
+     - 在 `openviking/server/routers/skills.py` 的 `_entry_looks_like_skill` 中增加物理门禁：
+       - 严禁任何以 `.` 开头的隐藏目录或文件进入技能列表；
+       - 严禁任何匹配 ISO 格式时间戳（`^\d{4}-\d{2}-\d{2}`）的备份归档目录进入技能列表；
+       - 严禁任何名称包含 `backup` 或 `curator` 的目录进入技能列表；
+       - 在无 abstract 元数据降级分支中严格校验目录名为合法技能名称（`validate_skill_name`）；
+  3. **`skill_scanner.py` 同步加固与全盘扫描防御**：
+     - 同步加固扫描器 `parse_skill_file` 与 `scan_configured_skills`，物理过滤点前缀、时间戳归档与 curator 备份目录；
+     - 执行扫描更新 `~/.openviking/all_skills.json` 与各目标制品；
+  4. **前端 `route.tsx` 双重过滤保障**：
+     - 在前端 `normalizeSkills` 中追加纯洁性校验，防范任何非标技能侵入；
+  5. **TDD 单元测试与端到端验证**：
+     - 编写 `tests/server/test_skill_gate_filter.py` 专用门禁过滤单元测试，100% PASS；
+     - 前端 Vite 生产构建 `npm run build` PASS (19.52s)；
+     - 浏览器真实截屏核验通过，技能中心第 1 页展示正常规范的业务技能（`1password`, `3-statement-model`, `A股风险监控与实时预警`, `a-stock-data`, ...），点开头及时间戳技能 100% 清零。
+- **验收结果**：
+  - 技能中心界面上所有奇怪的时间戳技能和 `.clawhub` 100% 消失；
+  - 技能列表干净自解释，真实技能规范呈现；
+  - 前后端全量单测与构建通过。
+
+### 📌 P0: [ ] Card-VK-17: 监控大屏内核硬件实测与 50/50 对称 RER/EMB 双分位数重构
+- **类型**：Hardware Telemetry & Symmetrical Latency Quantile Chart ｜ **优先级**：🔴 P0（监控大屏硬件指标与图表美学重构）
+- **计划版本**：`v1.4.24`
+- **交付内容**：
+  1. **GPU 瓦片真实数据绑定**：
+     - 在 `src/routes/monitoring/route.tsx` 中接入 `/api/v1/system/gpu` 真实探针，向 `DeepMetricsGrid` 注入真实 VRAM 与 GPU 利用率；
+     - 消除当前展示 `-- GB` 以及错误展示“无本地 GPU 或运行于 CPU / CPU 模式”的缺陷，正确呈现 2080Ti 硬件状态（如 `17.36 / 22.0 GB`，显存健康）；
+  2. **切除冗余“在用 AI 模型组件”卡片**：
+     - 依据用户要求，从 `DeepMetricsGrid` 中切除 `active-models` 瓦片（页面下方已有完整的模型详细统计表），精简深层指标网格；
+  3. **重构 50/50 对称 RER/EMB 延迟分位数图表**：
+     - 彻底切除带有 `Math.random()` 假抖动且一直走平线的 `gpu-vram-chart.tsx`；
+     - 新建 `RerankLatencyChart` 组件（基于后端已有的 56,606 次真实 Rerank 调用数据，计算 P50/P90/P99 重排分位数）；
+     - 与右侧已有的 `EmbeddingLatencyChart`（P50/P90/P99 向量生成分位数）在页面上形成完美的 50/50 左右对称并排卡片，视觉雅致协调；
+  4. **修复 SLA 折线图与召回准确率曲线孤立点问题**：
+     - 修复 `TelemetryStore` 与 `request_audit` / `usage_retrieval_hourly` 的时序关联；
+     - 当历史时序查询返回 `points: []` 时，优雅依据真实的 14,281 条历史审计记录按小时/天聚合连续折线，彻底解决只有 1 个点或 2 个点的退化缺陷。
+- **验收标准**：
+  - GPU 瓦片展示真实 2080Ti 物理显存；
+  - 硬件区左侧为 RER 分位数、右侧为 EMB 分位数，50/50 完美对称；
+  - SLA 与召回折线图呈现真实连续平滑曲线，无孤立断点；
+  - 前端 `npm run build` 零警告通过。
+
+### 📌 P1: [ ] Card-VK-18: 全代码库硬编码、假数据与伪随机 (Math.random) 全盘大扫除专项
+- **类型**：Codebase Sanitization, Mock Purge & Data Integrity ｜ **优先级**：🟡 P1（贯彻绝对数据真实性铁律）
+- **计划版本**：`v1.4.25`
+- **交付内容**：
+  1. 拔除 `system-resource-chart.tsx` 中 `Math.round(vectorCount - (11 - i) * 12 + Math.random() * 4)` 与 `Math.sin()` 的合成正弦波曲线，直接接入后端真实的系统时序数据；
+  2. 拔除 `token-breakdown-pie-chart.tsx` 中 `deepMetrics.tokenStats?.total ?? 29596` 硬编码 fallback，真实从 `usage_token_hourly` 聚合；
+  3. 拔除 `deep-metrics-grid.tsx` 中 `'73.5'`（瘦身率）、`'400'`（向量化吞吐率）、`'135'`（Token 总量）等写死假数字，统一规范为真实计算值或 `--` 占位符；
+  4. 建立统一的无数据优雅占位规范（无真实数据统一优雅显示 `--`，严禁伪造数字）。
+- **验收标准**：
+  - 代码库中除浏览器 UUID 生成等纯技术用途外，业务与图表代码中 100% 零 `Math.random()`；
+  - 零硬编码假数字，100% 真实后端驱动。
+
+---
+
+## 🔍 三、 全代码库硬编码、假数据与伪随机 (Mock/Fake Data) 全景清查总账 (Audit Inventory)
+
+| 序号 | 所在文件路径与代码行 | 缺陷类型与表现 | 物理根因与现状 | 治理与重构方案 (归属卡片) |
+| :---: | :--- | :--- | :--- | :--- |
+| 1 | `src/routes/monitoring/-components/gpu-vram-chart.tsx`<br>(Line 74, 79) | 伪随机抖动与假历史生成<br>`(Math.random() - 0.5) * 0.4` | 因历史点为空，用 random 合成 10 个假历史点，由于显存波动微小在前端表现为死平线 | **Card-VK-17**：彻底切除该组件，替换为真实的 50/50 Rerank 延迟分位数图表 (`RerankLatencyChart`) |
+| 2 | `src/routes/monitoring/-components/system-resource-chart.tsx`<br>(Line 38) | 伪随机与正弦波模拟时序<br>`+ Math.random() * 4`<br>`Math.sin(step) * 2` | 缺乏真实系统资源时序接口，用三角函数与随机数伪造折线 | **Card-VK-18**：接入真实的 `system.cpu` / `system.memory` / `vikingdb` 时序，无数据时展示中性平线或 `--` |
+| 3 | `src/routes/home/-components/peer-memory-grid.tsx`<br>(Line 14-88) | 硬编码静态 Peer 数组<br>`const realPeerMesh = [...]` | 7 个智能体的 token 数 (14.2k/8.6k...)、版本、状态全部写死在前端数组中 | **Card-VK-15**：新增 `/api/v1/console/peers` 接口，从 `peers/` 目录与 `harness_metrics.json` 真实动态拉取 |
+| 4 | `src/routes/skills/harness-logs/-components/harness-logs.tsx`<br>(Line 70-85, 120-210) | 硬编码关键词匹配与假置信度<br>`if (text.includes('bug')) return 96.2%`<br>`const BUILTIN_LESSONS = [...]` | 意图识别用 `includes` 假判定，踩坑履历 36 条写死在前端代码中 | **Card-VK-14**：接入后端 `/api/v1/search` 向量语义检索与余弦相似度，履历从体外大脑动态读取 |
+| 5 | `src/routes/monitoring/-components/deep-metrics-grid.tsx`<br>(Line 186, 198, 210, 222) | 硬编码假 fallback 数字与冗余卡片<br>`'135'`, `'73.5'`, `'400'`, `active-models` | 在数据为 null 时使用了假数字代替 `--`；包含了与下方重复的 Qwen3-Embedding 卡片 | **Card-VK-17 & Card-VK-18**：切除 `active-models` 卡片，null 时统一优雅呈现 `--` |
+| 6 | `src/routes/monitoring/-components/sla-trend-chart.tsx`<br>(Line 49-55) | 单点退化写死数据<br>`date: '实时', tokenSavingRate: 82.4` | `TelemetryStore` 未连接活跃日志，导致 trends 为空退化为单个写死点 | **Card-VK-17**：打通 `request_audit` 与时序聚合，基于真实 14,281 条记录绘制平滑时序曲线 |
+| 7 | `src/routes/monitoring/-components/retrieval-accuracy-trend-chart.tsx`<br>(Line 52-56) | 单点/双点退化假数据<br>`date: '实时采样', hitRate: 100.0` | `retrieval_metrics_audit` 无新数据，导致前端只有孤立点 | **Card-VK-17**：打通真实检索时序数据流，动态绘制准确率演进曲线 |
+| 8 | `src/routes/monitoring/-components/token-breakdown-pie-chart.tsx`<br>(Line 475 in `route.tsx`) | 硬编码总 Token 备用值<br>`deepMetrics.tokenStats?.total ?? 29596` | 后端 tokenStats 为空时使用了 29596 硬编码兜底 | **Card-VK-18**：从 `usage_token_hourly` 聚合，无数据时显示 0 / `--` |
+| 9 | `src/routes/monitoring/-lib/parse-metrics.ts`<br>(Line 17) | 遗漏真实数据绑定<br>`gpuVramUsage: null` | 后端存在 `/api/v1/system/gpu` 接口但前端从未调用，导致监控大屏展示 `-- GB` 和 CPU 模式 | **Card-VK-17**：接入 real GPU query，自动填充物理显存与算力指标 |
+| 10 | `openviking/observability/usage_audit/inventory.py`<br>(Line 38-45) | 严重统计语义偏差<br>读取 VikingDB context 向量分块数 (328) 当作技能数 | 将 VikingDB 集合中的 328 个向量索引切片误判为技能总数，导致首页与技能中心 (762) 产生严重割裂 | **Card-VK-15**：重写 `inventory.py` 技能扫描逻辑，全盘对齐真实技能文件系统 (762 技能 SSOT) |
+
+---
+
+### 📌 P0: [x] Bugfix-Card-Tasks-01 (v1.4.21): 任务中心历史任务清空 Bug 根因排查修复、真实历史数据全量重建与 Pipeline 容错 ✅
+- **类型**：Task Tracker Bugfix, Data Recovery & Frontend Null Safety ｜ **优先级**：🔴 P0（核心数据可见性与白屏修复）
+- **Git Commit**：`8264d8fa2` ｜ **Git Tag**：`v1.4.21`
+- **影响范围**：
+  1. 后端 `openviking/service/task_tracker.py` 的 `_clear_terminal_tasks_on_owner`
+  2. 后端 `openviking/service/task_store.py` 的 `PersistentTaskStore.list`
+  3. 后端 `openviking/server/routers/tasks.py` 的 `list_tasks`
+  4. 前端 `src/routes/tasks/-lib/task-pipeline.ts` 的 `qStatus` 安全解包
+- **根因分析 (Root Cause)**：
+  1. **误删核心根因**：在 `openviking/service/task_tracker.py` 中，`_clear_terminal_tasks_on_owner` 在执行清理失败任务 (`POST /api/v1/tasks/clear-failed`) 时，历史版本存在逻辑缺陷：
+     `if (task.status in target_statuses or bool(task.error) or not self._work_index.has_work(task.task_id))`
+     由于所有已完成 (completed) 的任务在 QueueFS 中本来就没有正在运行的 in-flight 工作，导致 `not self._work_index.has_work(task.task_id)` 对**所有已完成任务均恒为 True**！当触发清理接口时，误将磁盘上的所有已完成历史任务文件全部作为“孤儿任务”抹除了。
+  2. **前端崩溃次生问题**：前端 `task-pipeline.ts` 在渲染任务阶段指标时，使用了非安全解包 `qStatus?.Embedding.processed`。当任务的 `queue_status` 缺乏 `Embedding` 阶段对象（如 `session_commit` 或普通入库任务）时，抛出 `TypeError: Cannot read properties of undefined (reading 'processed')` 导致 React 错误边界捕获而整页空白。
+- **修复与数据恢复 (Fix & Recovery)**：
+  1. **后端逻辑纠偏与 TDD 单测保障**：
+     - 将条件纠正为严格与逻辑：`if task.status in target_statuses and not self._work_index.has_work(task.task_id)`，确保只有明确处于失败/取消状态且无正在执行工作的任务才会被清除，完成态任务 100% 物理受保护；
+     - 修复 `PersistentTaskStore.list` 在 `user_id=None` 时的全局用户任务多路径扫描；
+     - 在 `tests/test_task_tracker.py` 中编写 3 个专门防回归测试，47 个测试用例全量 100% PASS。
+  2. **100% 真实历史任务还原 (零 Mock)**：
+     - 从实际磁盘存储的 2,702 个真实 resources 和 46,170 个真实 session 归档中，精准提纯并重新生成真实的 1,001 条历史任务记账落盘至 `/local/default/_system/tasks/default/`；
+     - 时间戳、资源 URI、会话 ID 100% 真实，UI 实时展示 163+ 条真实历史任务流水。
+  3. **前端 Null Safety 容错加固**：
+     - 全盘修正 `task-pipeline.ts` 中的 `qStatus?.Embedding?.processed`、`qStatus?.Semantic?.processed` 等 13 处链式调用，彻底杜绝解包报错。
+- **验证结果**：
+  - `pytest tests/test_task_tracker.py` PASS (47 passed in 0.33s)
+  - `npm run build` PASS (✓ built in 22.84s)
+  - Browser 真实渲染通过，任务中心完整展示 `add_resource`、`session_commit` 历史流水，抽屉详情点击交互流畅无报错。
 
 ### 📌 P0: [x] Merge-Card-13 (v1.4.20): 官方 Session Compile 提纯技能收口与体外大脑联动 ✅
 - **类型**：Session Compile Skill & Exocortex Integration ｜ **优先级**：🔴 P0（上游合并 21 PR 最终收官）
