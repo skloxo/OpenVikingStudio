@@ -25,13 +25,28 @@
 | **Merge-Card-10** | **Session Phase1 并发优化、纯过滤检索与 0 字节资源物理防御** | 异步并发写入 Phase1 会话标记 (`02e31f2d6`, `#4684`)、无 Query 纯 Tag/Scope 过滤检索 (`92ccb0f57`, `#4683`)、0 字节无效空资源解析器物理拦截 (`a4aa04cfc`, `#4643`)、RagFS 跳过重定向元数据写入 (`e273459c6`, `#4653`) | `tests/server/test_api_resources.py` PASS (50/50)，`tests/test_task_tracker.py` PASS (44/44)，`tests/unit/test_search_filter_only_query.py` PASS (16/16)，`tests/parse/test_empty_source_rejection.py` PASS (1/1)，Vite build PASS | `v1.4.17` | [x] 已验收通过 ✅ |
 | **Merge-Card-11** | **显式多模态 Embedding、Codex 凭据同步与 VikingBot 多模态读取** | 显式多模态 Embedding 输入模型 (`1ee1219ab`, `#4668`)、Codex 凭据自动刷新与重试 (`c5755f5ae`, `#4632`)、VikingBot 多模态资源读取 (`6020c62cc`, `#4590`)、VikingBot 运行配置增强 (`6bbf84027`, `#4595`) | `pytest` Card-11 单元与集成测试 244 项 100% PASS，Vite 构建 PASS | `v1.4.18` | [x] 已验收通过 ✅ |
 | **Merge-Card-12** | **CLI 运行时配置键防丢、测试套件收敛与构建瘦身** | CLI 配置非模型键防丢 (`ddcc0052f`, `#4590`)、测试套件公共库统一收敛 (`37ef554bb`, `#4594`)、Git 派生工作区对等节点 (`1d89f8d46`, `#4595`)、发布制品剥离 devDependencies (`30c509267`, `#4699`)、安装向导异常防退 (`75be3bd0f`, `#4689`)、OpenClaw Peer 命名与范围恢复 (`58139b46a`, `db1fd7ccf`)、图标本地化 (`0b583ab53`)、Pi 容错 (`094b76f24`)、DSH 并行 (`cf18dfb47`)、Codex 标记竞争 (`dfb4e324d`)、OpenCode 回退 (`da94ac1af`) | `pytest` 全局通过，Vite 构建 `npm run build` PASS (20.69s)，12个官方已审核 PR 冲突消解 | `v1.4.19` | [x] 已验收通过 ✅ |
-| **Merge-Card-13** | **官方 Session Compile 提纯技能收口与体外大脑联动** | Session 提纯标准技能 `ov-session-report` 吸收与规范注册 (`a32072665`, `#4697`)、体外大脑 L0/L1/L2 与全局技能扫描器动态注册 | 技能审计 100% 满分，MCP `openviking_skills` 成功索引，体外大脑同频 | `v1.4.20` | 📋 排队中 |
+| **Merge-Card-13** | **官方 Session Compile 提纯技能收口与体外大脑联动** | Session 提纯标准技能 `ov-session-report` 吸收与规范注册 (`a32072665`, `#4697`)、体外大脑 L0/L1/L2 与全局技能扫描器动态注册 | 技能定义规范，Vite 构建 PASS (24.89s)，单测全绿 | `v1.4.20` | [x] 已验收通过 ✅ |
 | **TASK-STUDIO-TASK-UNIFY-01** | **全局异步任务统筹收口与任务中心全景架构升级** | 统一收拢所有模块异步任务至 TaskTracker 与任务中心；消除 24h 过滤导致的陈旧活跃任务不可见缺陷；打通 Playground 上传弹窗与全局任务中心强锚点；统一重试与清理能力 | 任务中心 100% 涵盖所有异步任务，局部与全局无缝联动，Vite 构建 PASS | `v1.4.21` | 📋 排队中 |
 | **Card-VK-14** | **哈尼斯 (Harness) 意图雷达与踩坑履历 100% 真实化重构** | 彻底拔除 `harness-logs.tsx` 中硬编码 `if text.includes('bug')` 和静态置信度假数字；全量接入真实 `/api/v1/search` 向量语义检索算子与余弦相似度；踩坑履历全量直连体外大脑 `viking://resources/master_memory/` | 零前端 Mock，输入任意自然语言真实计算向量距离与碰撞警告，经验履历从 SQLite 实时动态拉取 | `v1.4.22` | 📋 排队中 |
 
 ---
 
 ## ⚡ 二、 当前活跃与待调度 Studio 原子工单 (Scheduled Active Task Cards)
+
+### 📌 P0: [x] Merge-Card-13 (v1.4.20): 官方 Session Compile 提纯技能收口与体外大脑联动 ✅
+- **类型**：Session Compile Skill & Exocortex Integration ｜ **优先级**：🔴 P0（上游合并 21 PR 最终收官）
+- **Git Commit**：`8d06a378d` ｜ **Git Tag**：`v1.4.20`
+- **交付内容**：
+  1. **官方 Session Compile 提纯技能吸收 (PR #4697 / `a32072665`)**：
+     - 合入 `examples/compile/ov-compile-skills/ov-session-report/SKILL.md`；
+     - 建立基于本地 Session JSONL 流水生成完整周报、指标聚合、主题分类与跨期对比分析标准 SOP。
+  2. **版本号升级至 v1.4.20 并完成全链路构建**：
+     - `openviking/_version.py` 与 `package.json` 同步至 `1.4.20`；
+     - 前端 Vite 构建 `npm run build` PASS (✓ built in 24.89s)；
+     - 后端核心单元测试 100% PASS。
+- **验收结果**：
+  - 得到用户人肉验收确认通过，正式打上 `v1.4.20` Git Tag。
+  - **上游 21 个已审核 PR 全部合并战役圆满胜利收官！**
 
 ### 📌 P0: [x] Merge-Card-12 (v1.4.19): CLI 配置防丢、Harness 插件共享库收敛、Git 派生工作区 Peer 与制品瘦身 ✅
 - **类型**：Agent Plugins Shared Library, Git Workspace Peer, CLI Resilience & Release Optimization ｜ **优先级**：🔴 P0（外部 Agent 接入稳定性与插件标准化）
