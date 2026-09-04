@@ -1006,6 +1006,8 @@ class ResourceService:
         response = {"status": "success", "task_id": task.task_id}
         if not defer_target_resolution:
             response["root_uri"] = root_uri
+            if msg.source_path:
+                response["source_path"] = msg.source_path
         return response
 
     async def _plan_source_job_target(
@@ -1543,10 +1545,15 @@ class ResourceService:
             return completed
         if task.status == TaskStatus.CANCELLED:
             return {"status": "cancelled"}
-        return {
+        failure: Dict[str, Any] = {
             "status": "error",
             "errors": [task.error],
         }
+        if isinstance(task.result, dict):
+            code = task.result.get("code")
+            if isinstance(code, str) and code:
+                failure["code"] = code
+        return failure
 
     async def _execute_resource_ingestion(
         self,
@@ -1712,6 +1719,8 @@ class ResourceService:
                     resource_lock=enqueue_lock,
                 )
                 result["task_id"] = task.task_id
+                if msg.source_path:
+                    result["source_path"] = msg.source_path
                 job_enqueued = True
             else:
                 processing_lock = deferred_lock
