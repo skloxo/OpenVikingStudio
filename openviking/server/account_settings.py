@@ -105,7 +105,7 @@ def _parse_account_settings(raw: bytes) -> AccountSettings:
 async def _read_raw(client: AsyncAGFSClient, path: str) -> Optional[bytes]:
     try:
         return _decode_read_result(await client.read(path))
-    except AGFSNotFoundError:
+    except (AGFSNotFoundError, FileNotFoundError):
         return None
 
 
