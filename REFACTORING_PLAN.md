@@ -30,8 +30,8 @@
 | **Card-VK-15** | **首页技能总数 762 真实对齐、Agent Peer 动态拓扑与 FastMCP 检索记账打通** | 1. 修复后端 `inventory.py` 向量分块误判技能数缺陷，统一 762 技能 SSOT；<br>2. 修复前端 `route.tsx` 缺少 `ovClient` 导入缺陷；<br>3. 新增 `/api/v1/console/peers` 动态感知 Agent，拔除 `peer-memory-grid.tsx` 硬编码；<br>4. 打通 FastMCP 检索至 `usage_audit` 记账管线 | 首页技能数 762 准确一致，Peer 看板 100% 动态数据，今日检索真实反映 IDE 调用 | `v1.4.22` | [x] 已验收通过 ✅ |
 | **Card-VK-16** | **技能中心命名空间净化与历史 Curator 备份脏数据物理隔离** | 1. 物理迁移隔离 `user/default/skills` 下残留的 `.clawhub` 与 5 个 ISO 时间戳归档；<br>2. `skills.py` 与 `skill_scanner.py` 注入门禁，严格过滤 `.` 开头隐藏目录与 ISO 时间戳目录；<br>3. 强化技能名称合法性校验 | 技能中心零怪异技能，列表 100% 规范自解释，pytest 与扫描器无污染 | `v1.4.23` | [x] 已验收通过 ✅ |
 | **Card-VK-17** | **监控大屏内核硬件实测与 50/50 对称 RER/EMB 双分位数重构** | 1. 接入 `/api/v1/system/gpu` 真实探针，GPU 瓦片显示真实显存 (`17.93 / 22.0 GB`)，消除 `-- GB` 和 CPU 误报；<br>2. 切除冗余“在用 AI 模型组件”卡片；<br>3. 切除 `gpu-vram-chart.tsx`，新建 `RerankLatencyChart` 与右侧 EMB 形成 50/50 对称孪生分位数；<br>4. 打通 `request_audit` 与时序桶，修复 SLA 和召回准确率折线图退化单点问题 | GPU 实时反映 2080Ti 物理状态，50/50 EMB/RER 对称美观，时序折线连续真实 | `v1.4.24` | [x] 已验收通过 ✅ |
-| **Card-VK-18** | **全代码库硬编码、假数据与伪随机 (Math.random) 全盘大扫除专项** | 1. 拔除 `system-resource-chart.tsx` 中 `Math.random() * 4` 与 `Math.sin()` 合成曲线；<br>2. 拔除 `token-breakdown-pie-chart.tsx` 中 `29596` 硬编码 fallback；<br>3. 拔除 `deep-metrics-grid.tsx` 中的 `'73.5'`、`'400'`、`'135'` 写死 fallback；<br>4. 统一无数据优雅展示 `--` 规范 | 全局零 `Math.random()` 装饰假数据，100% 真实后端驱动 | `v1.4.25` | 🚀 当前执行中 |
-| **Card-VK-14** | **哈尼斯 (Harness) 意图雷达与踩坑履历 100% 真实化重构** | 彻底拔除 `harness-logs.tsx` 中硬编码 `if text.includes('bug')` 和静态置信度假数字；全量接入真实 `/api/v1/search` 向量语义检索算子与余弦相似度；踩坑履历全量直连体外大脑 `viking://resources/master_memory/` | 零前端 Mock，输入任意自然语言真实计算向量距离与碰撞警告，经验履历从 SQLite 实时动态拉取 | `v1.4.26` | 📋 排队中 |
+| **Card-VK-18** | **全代码库硬编码、假数据与伪随机 (Math.random) 全盘大扫除专项** | 1. 新增 `/api/v1/system/resources` 真实探针，拔除 `system-resource-chart.tsx` 中 `Math.random() * 4` 与正弦波伪造曲线；<br>2. 接入 `today_tokens` 真实分布，拔除 `token-breakdown-pie-chart.tsx` 中 `29596` 硬编码与 68%/25%/7% 假切片；<br>3. 拔除 `parse-metrics.ts` 中 `* 12.5` 假乘数与合成瘦身率公式；<br>4. 物理删除死代码 `gpu-vram-chart.tsx` 与 `App.tsx`；<br>5. 100% 肃清全代码库 `emerald`/`green` 违规类，铁血践行 NO GREEN EVER | 全局业务零 `Math.random()`，图表零伪造抖动，NO GREEN 100% 冰青规范，Vite 构建与浏览器实测通过 | `v1.4.25` | [x] 已验收通过 ✅ |
+| **Card-VK-14** | **哈尼斯 (Harness) 意图雷达与踩坑履历 100% 真实化重构** | 彻底拔除 `harness-logs.tsx` 中硬编码 `if text.includes('bug')` 和静态置信度假数字；全量接入真实 `/api/v1/search` 向量语义检索算子与余弦相似度；踩坑履历全量直连体外大脑 `viking://resources/master_memory/` | 零前端 Mock，输入任意自然语言真实计算向量距离与碰撞警告，经验履历从 SQLite 实时动态拉取 | `v1.4.26` | 🚀 当前执行中 |
 | **TASK-STUDIO-TASK-UNIFY-01** | **全局异步任务统筹收口与任务中心全景架构升级** | 统一收拢所有模块异步任务至 TaskTracker 与任务中心；消除 24h 过滤导致的陈旧活跃任务不可见缺陷；打通 Playground 上传弹窗与全局任务中心强锚点；统一重试与清理能力 | 任务中心 100% 涵盖所有异步任务，局部与全局无缝联动，Vite 构建 PASS | `v1.4.27` | 📋 排队中 |
 
 ---
@@ -129,17 +129,42 @@
   - SLA 与召回折线图呈现真实连续起伏曲线，无孤立断点；
   - 前端 `npm run build` 17.75s 零警告通过，浏览器截图核验 100% 达标。
 
-### 📌 P1: [ ] Card-VK-18: 全代码库硬编码、假数据与伪随机 (Math.random) 全盘大扫除专项
-- **类型**：Codebase Sanitization, Mock Purge & Data Integrity ｜ **优先级**：🟡 P1（贯彻绝对数据真实性铁律）
-- **计划版本**：`v1.4.25`
+### 📌 P1: [x] Card-VK-18 (v1.4.25): 全代码库硬编码、假数据与伪随机 (Math.random) 全盘大扫除专项 ✅
+- **类型**：Codebase Sanitization, Mock Purge & Absolute Data Integrity ｜ **优先级**：🟡 P1（贯彻绝对数据真实性铁律）
+- **Git Commit**：`ad41cfae7` ｜ **Git Tag**：`v1.4.25`
+- **实际修改文件清单**：
+  - `openviking/_version.py` (升级至 1.4.25)
+  - `package.json` (升级至 1.4.25)
+  - `openviking/server/routers/system.py` (新增 `/api/v1/system/resources` 真实主机资源探针)
+  - `src/routes/monitoring/-components/system-resource-chart.tsx` (拔除 Math.random 与正弦假曲线，直连物理 CPU/RAM)
+  - `src/routes/monitoring/-components/token-breakdown-pie-chart.tsx` (拔除 29596 与 68%/25%/7% 假切片，直连真实今日 Token)
+  - `src/routes/monitoring/-lib/parse-metrics.ts` (切除 `* 12.5` 假乘数与合成瘦身率假公式)
+  - `src/routes/monitoring/route.tsx` (打通 hostResourcesQuery，严密防御 components 嵌套安全访问)
+  - `src/routes/home/-components/knowledge-base-overview.tsx` (消灭 emerald 绿色违规类，统一采用 cyan 冰青)
+  - `src/routes/sessions/-components/memory-impact.tsx` (消灭 emerald 绿色类并消灭 `< 11px` 微小字体)
+  - `src/routes/request-logs/-lib/format.ts` (消灭 emerald 绿色类)
+  - `src/routes/resources/-components/add-resource-page.tsx` (消灭 green 绿色类)
+  - `src/routes/monitoring/-components/gpu-vram-chart.tsx` (物理删除死代码)
+  - `src/App.tsx` (物理删除原型死代码)
+  - `REFACTORING_PLAN.md` (SSOT 文档留痕)
 - **交付内容**：
-  1. 拔除 `system-resource-chart.tsx` 中 `Math.round(vectorCount - (11 - i) * 12 + Math.random() * 4)` 与 `Math.sin()` 的合成正弦波曲线，直接接入后端真实的系统时序数据；
-  2. 拔除 `token-breakdown-pie-chart.tsx` 中 `deepMetrics.tokenStats?.total ?? 29596` 硬编码 fallback，真实从 `usage_token_hourly` 聚合；
-  3. 拔除 `deep-metrics-grid.tsx` 中 `'73.5'`（瘦身率）、`'400'`（向量化吞吐率）、`'135'`（Token 总量）等写死假数字，统一规范为真实计算值或 `--` 占位符；
-  4. 建立统一的无数据优雅占位规范（无真实数据统一优雅显示 `--`，严禁伪造数字）。
-- **验收标准**：
-  - 代码库中除浏览器 UUID 生成等纯技术用途外，业务与图表代码中 100% 零 `Math.random()`；
-  - 零硬编码假数字，100% 真实后端驱动。
+  1. **系统物理资源与 VikingDB 索引真实化**：
+     - 在 `openviking/server/routers/system.py` 新增 `/api/v1/system/resources` 接口，通过 `/proc/stat` 与 `/proc/meminfo` 实时采集宿主机真实 CPU 利用率与 RAM 显存（实测准确返回 CPU 6.9%、RAM 51.2% 24.08/47.05 GB）；
+     - 重写 `system-resource-chart.tsx`，彻底拔除 `Math.round(vectorCount - (11 - i) * 12 + Math.random() * 4)` 与 `Math.sin()` / `Math.cos()` 正弦波假数据，直连真实探针；
+  2. **Token 消耗物理分布饼图真实化**：
+     - 重写 `token-breakdown-pie-chart.tsx`，彻底切除 `29596` 硬编码 fallback 与 `0.68`/`0.25`/`0.07` 固定百分比假切片；
+     - 直连 `/api/v1/console/dashboard/summary` 的 `today_tokens`，精准动态展示 VLM 输入 (275,054，55%)、VLM 输出 (222,653，45%)、Embedding 输入 (240，0%) 真实物理消耗；
+  3. **指标解析公式净化与死代码清零**：
+     - 切除 `parse-metrics.ts` 中 `Math.round(calls * 12.5)` 假向量化吞吐率公式与 `(1 - memories / (files * 2)) * 100` 假瘦身率公式，无基准实测时统一规范展示 `--`；
+     - 物理删除带伪随机抖动的孤儿文件 `gpu-vram-chart.tsx` 与原型遗留死代码 `App.tsx`；
+  4. **全代码库 NO GREEN EVER 铁律全面肃清**：
+     - 彻底清除 `knowledge-base-overview.tsx`、`memory-impact.tsx`、`format.ts`、`add-resource-page.tsx` 中残留的 `emerald-*` 与 `green-*` 样式，全盘收口冰青色系 (`cyan-500`)；
+     - 清除 `memory-impact.tsx` 中低于 11px 的 `text-[10px]` 微字，全盘符合硬下限规范。
+- **验收结果**：
+  - 监控大屏在浏览器中 100% 正常渲染，无任何报错；
+  - 饼图精准反映 497.9k 真实今日累计 Token；
+  - 全局业务与图表代码 100% 零 `Math.random()`，NO GREEN 100% 达标；
+  - 前端 `npm run build` 21.06s 零警告通过。
 
 ---
 
@@ -147,16 +172,22 @@
 
 | 序号 | 所在文件路径与代码行 | 缺陷类型与表现 | 物理根因与现状 | 治理与重构方案 (归属卡片) |
 | :---: | :--- | :--- | :--- | :--- |
-| 1 | `src/routes/monitoring/-components/gpu-vram-chart.tsx`<br>(Line 74, 79) | 伪随机抖动与假历史生成<br>`(Math.random() - 0.5) * 0.4` | 因历史点为空，用 random 合成 10 个假历史点，由于显存波动微小在前端表现为死平线 | **Card-VK-17**：彻底切除该组件，替换为真实的 50/50 Rerank 延迟分位数图表 (`RerankLatencyChart`) |
-| 2 | `src/routes/monitoring/-components/system-resource-chart.tsx`<br>(Line 38) | 伪随机与正弦波模拟时序<br>`+ Math.random() * 4`<br>`Math.sin(step) * 2` | 缺乏真实系统资源时序接口，用三角函数与随机数伪造折线 | **Card-VK-18**：接入真实的 `system.cpu` / `system.memory` / `vikingdb` 时序，无数据时展示中性平线或 `--` |
+| 1 | `src/routes/monitoring/-components/gpu-vram-chart.tsx`<br>(Line 74, 79) | 伪随机抖动与假历史生成<br>`(Math.random() - 0.5) * 0.4` | 因历史点为空，用 random 合成 10 个假历史点，由于显存波动微小在前端表现为死平线 | **Card-VK-17 & Card-VK-18**：彻底切除该组件并物理删除该死代码文件 |
+| 2 | `src/routes/monitoring/-components/system-resource-chart.tsx`<br>(Line 38) | 伪随机与正弦波模拟时序<br>`+ Math.random() * 4`<br>`Math.sin(step) * 2` | 缺乏真实系统资源时序接口，用三角函数与随机数伪造折线 | **Card-VK-18**：新增 `/api/v1/system/resources` 真实探针，彻底拔除三角函数与随机数，直连物理 CPU/RAM |
 | 3 | `src/routes/home/-components/peer-memory-grid.tsx`<br>(Line 14-88) | 硬编码静态 Peer 数组<br>`const realPeerMesh = [...]` | 7 个智能体的 token 数 (14.2k/8.6k...)、版本、状态全部写死在前端数组中 | **Card-VK-15**：新增 `/api/v1/console/peers` 接口，从 `peers/` 目录与 `harness_metrics.json` 真实动态拉取 |
 | 4 | `src/routes/skills/harness-logs/-components/harness-logs.tsx`<br>(Line 70-85, 120-210) | 硬编码关键词匹配与假置信度<br>`if (text.includes('bug')) return 96.2%`<br>`const BUILTIN_LESSONS = [...]` | 意图识别用 `includes` 假判定，踩坑履历 36 条写死在前端代码中 | **Card-VK-14**：接入后端 `/api/v1/search` 向量语义检索与余弦相似度，履历从体外大脑动态读取 |
 | 5 | `src/routes/monitoring/-components/deep-metrics-grid.tsx`<br>(Line 186, 198, 210, 222) | 硬编码假 fallback 数字与冗余卡片<br>`'135'`, `'73.5'`, `'400'`, `active-models` | 在数据为 null 时使用了假数字代替 `--`；包含了与下方重复的 Qwen3-Embedding 卡片 | **Card-VK-17 & Card-VK-18**：切除 `active-models` 卡片，null 时统一优雅呈现 `--` |
 | 6 | `src/routes/monitoring/-components/sla-trend-chart.tsx`<br>(Line 49-55) | 单点退化写死数据<br>`date: '实时', tokenSavingRate: 82.4` | `TelemetryStore` 未连接活跃日志，导致 trends 为空退化为单个写死点 | **Card-VK-17**：打通 `request_audit` 与时序聚合，基于真实 14,281 条记录绘制平滑时序曲线 |
 | 7 | `src/routes/monitoring/-components/retrieval-accuracy-trend-chart.tsx`<br>(Line 52-56) | 单点/双点退化假数据<br>`date: '实时采样', hitRate: 100.0` | `retrieval_metrics_audit` 无新数据，导致前端只有孤立点 | **Card-VK-17**：打通真实检索时序数据流，动态绘制准确率演进曲线 |
-| 8 | `src/routes/monitoring/-components/token-breakdown-pie-chart.tsx`<br>(Line 475 in `route.tsx`) | 硬编码总 Token 备用值<br>`deepMetrics.tokenStats?.total ?? 29596` | 后端 tokenStats 为空时使用了 29596 硬编码兜底 | **Card-VK-18**：从 `usage_token_hourly` 聚合，无数据时显示 0 / `--` |
+| 8 | `src/routes/monitoring/-components/token-breakdown-pie-chart.tsx`<br>(Line 27-59) | 硬编码总 Token 备用值与固定切片<br>`totalTokens = 29596`<br>`total * 0.68 / 0.25 / 0.07` | 后端 tokenStats 为空时使用了 29596 兜底，且强行用固定比例切分假数据 | **Card-VK-18**：直连 `today_tokens` (VLM/EMB 真实分布)，动态计算实际比例，空时优雅展示 `--` |
 | 9 | `src/routes/monitoring/-lib/parse-metrics.ts`<br>(Line 17) | 遗漏真实数据绑定<br>`gpuVramUsage: null` | 后端存在 `/api/v1/system/gpu` 接口但前端从未调用，导致监控大屏展示 `-- GB` 和 CPU 模式 | **Card-VK-17**：接入 real GPU query，自动填充物理显存与算力指标 |
 | 10 | `openviking/observability/usage_audit/inventory.py`<br>(Line 38-45) | 严重统计语义偏差<br>读取 VikingDB context 向量分块数 (328) 当作技能数 | 将 VikingDB 集合中的 328 个向量索引切片误判为技能总数，导致首页与技能中心 (762) 产生严重割裂 | **Card-VK-15**：重写 `inventory.py` 技能扫描逻辑，全盘对齐真实技能文件系统 (762 技能 SSOT) |
+| 11 | `src/routes/monitoring/-lib/parse-metrics.ts`<br>(Line 158, 167) | 合成公式与伪造乘数<br>`calls * 12.5` (向量吞吐)<br>`(1 - memories / (files * 2)) * 100` | 缺乏真实测试探针时采用伪造数学公式拼凑 97% 压缩率与 808k Vec/s | **Card-VK-18**：彻底切除假乘数与假瘦身率计算，无真实探针时优雅回退 `--` |
+| 12 | `src/routes/monitoring/-components/harness-engine-card.tsx`<br>(Line 56-98) | 表格硬编码写死指标<br>`48.5%`, `100.0%`, `210MB / 6.2ms`, `98.2%` | LLMLingua-2 与 DSPy 表格数据纯静态写死在 JSX 中 | **Card-VK-14/19**：绑定真实 `/api/v1/system/harness_metrics`，无数据时展示 `--` |
+| 13 | `src/App.tsx`<br>(Line 29-53) | 历史废弃原型死代码<br>含 `'11,513'`, `'10,786'`, `'137,464'`, `'4,605'` 等假数据 | 项目早已全量收敛至 TanStack Router (`src/routes/`)，遗留未路由的原型文件 | **Card-VK-18**：物理彻底删除该文件，保持代码库极简无死代码 |
+| 14 | `src/routes/home/-components/knowledge-base-overview.tsx`<br>(Line 46, 127) | 违背 NO GREEN EVER 铁律<br>`text-emerald-600`, `border-emerald-500` | 使用绿色作为引擎健康态和向量数字染色 | **Card-VK-18**：全盘替换为 `cyan-500` 冰青与中性灰 |
+| 15 | `src/routes/sessions/-components/memory-impact.tsx`<br>(Line 38, 259, 261, 372) | 违背 NO GREEN EVER 铁律与 `< 11px` 微字<br>`text-emerald-600`, `text-[10px]` | 差异新增项使用绿色，且底部使用了 10px 微小字体 | **Card-VK-18**：全盘替换为 `cyan-600`，字号提升至 `text-[11px]` 物理硬下限 |
+| 16 | `src/routes/request-logs/-lib/format.ts` & `add-resource-page.tsx`<br>(Line 45, 53, 340) | 违背 NO GREEN EVER 铁律<br>`text-emerald-700`, `text-green-600` | 请求状态与成功上传徽章使用了绿色 | **Card-VK-18**：全盘替换为 `cyan-700` 与 `cyan-600` 冰青规范 |
 
 ---
 
