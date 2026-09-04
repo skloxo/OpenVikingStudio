@@ -1,17 +1,22 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { realpathSync } from "node:fs";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, test } from "node:test";
 import { enqueue, listPending } from "./shared/pending-queue.mjs";
+import { deriveWorkspacePeerId } from "./shared/workspace-peer.mjs";
 import { OpenVikingRuntime } from "./runtime.mjs";
 
 const originalPendingDir = process.env.OPENVIKING_PENDING_DIR;
+const originalStateDir = process.env.OPENVIKING_STATE_DIR;
 const tempDirs = [];
 
 afterEach(async () => {
   if (originalPendingDir === undefined) delete process.env.OPENVIKING_PENDING_DIR;
   else process.env.OPENVIKING_PENDING_DIR = originalPendingDir;
+  if (originalStateDir === undefined) delete process.env.OPENVIKING_STATE_DIR;
+  else process.env.OPENVIKING_STATE_DIR = originalStateDir;
   await Promise.all(tempDirs.splice(0).map(dir => rm(dir, { recursive: true, force: true })));
 });
 
@@ -280,6 +285,32 @@ test("disposeAll drains every live session", async () => {
 
   assert.deepEqual(committed.sort(), ["dsh-one", "dsh-two"]);
   assert.equal(runtime.states.size, 0);
+});
+
+test("the per-session peer honors peerSource", async () => {
+  const root = realpathSync(await mkdtemp(join(tmpdir(), "dsh-memory-peer-")));
+  tempDirs.push(root);
+  await mkdir(join(root, ".git"), { recursive: true });
+  await writeFile(
+    join(root, ".git", "config"),
+    '[remote "origin"]\n\turl = git@github.com:volcengine/OpenViking.git\n',
+  );
+  process.env.OPENVIKING_STATE_DIR = join(root, ".state");
+  const session = { id: "peer", header: { cwd: root } };
+
+  const byGit = new OpenVikingRuntime({}, {
+    ...config(),
+    workspacePeer: true,
+  }, { debug() {} }).stateFor(session).config;
+  const byCwd = new OpenVikingRuntime({}, {
+    ...config(),
+    workspacePeer: true,
+    peerSource: "cwd",
+  }, { debug() {} }).stateFor(session).config;
+
+  assert.equal(byGit.peerId, "github.com-volcengine-openviking");
+  assert.equal(byGit.legacyPeerId, deriveWorkspacePeerId(root));
+  assert.equal(byCwd.peerId, deriveWorkspacePeerId(root));
 });
 
 function config() {

@@ -5,6 +5,7 @@ import { resolve as resolvePath } from "node:path";
 
 import { loadAgentHookConfig } from "../scripts/shared/agent-hook-runtime.mjs";
 import { createLogger } from "../scripts/shared/debug-log.mjs";
+import { resolveMcpActorPeerId } from "../scripts/shared/mcp-proxy-config.mjs";
 import { createOpenVikingMcpProxy } from "../scripts/shared/mcp-proxy-core.mjs";
 
 function readConfig() {
@@ -14,7 +15,7 @@ function readConfig() {
     apiKey: cfg.apiKey,
     account: cfg.account,
     user: cfg.user,
-    peerId: cfg.peerId,
+    peerId: resolveMcpActorPeerId(cfg),
     userAgent: cfg.userAgent,
     timeoutMs: cfg.timeoutMs,
     debug: cfg.debug,

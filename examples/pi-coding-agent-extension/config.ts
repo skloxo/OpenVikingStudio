@@ -15,6 +15,7 @@ export interface OVConfig {
   user: string;
   peerId: string;
   userAgent: string;
+  harness: string;
   workspacePeer: boolean;
   recallPeerScope: "actor" | "all";
   recallQueryExpansion: "auto" | "off";
@@ -55,6 +56,7 @@ const DEFAULT_CONFIG: OVConfig = {
   user: "",
   peerId: "",
   userAgent: "",
+  harness: "pi",
   workspacePeer: true,
   recallPeerScope: "all",
   // Server-side query expansion costs a model call before retrieval starts, so
@@ -115,6 +117,7 @@ export function loadConfig(extensionDir: string): OVConfig {
     user: creds.user,
     peerId: creds.peerId,
     userAgent: buildUserAgent("pi", EXTENSION_VERSION),
+    harness: "pi",
     recallLimitConfigured: Object.prototype.hasOwnProperty.call(file, "recallLimit"),
     recallQueryExpansionConfigured: Object.prototype.hasOwnProperty.call(file, "recallQueryExpansion"),
     recallTokenBudget: file.recallTokenBudget ?? file.recallBudget ?? DEFAULT_CONFIG.recallTokenBudget,

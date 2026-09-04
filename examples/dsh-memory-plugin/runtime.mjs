@@ -28,17 +28,19 @@ export class OpenVikingRuntime {
     let state = this.states.get(session.id);
     if (state) return state;
     const cwd = session.header?.cwd || process.cwd();
-    const peerId = resolveEffectivePeerId({
+    const peer = resolveEffectivePeerId({
       cfg: {
         peerId: this.config.explicitPeerId,
+        peerSource: this.config.peerSource,
         workspacePeer: this.config.workspacePeer,
+        harness: this.config.harness,
       },
       cwd,
-    }).peerId;
+    });
     state = {
       dshSessionId: String(session.id),
       ovSessionId: deriveHarnessSessionId("dsh-", String(session.id)),
-      config: { ...this.config, peerId },
+      config: { ...this.config, peerId: peer.peerId, legacyPeerId: peer.legacyPeerId },
       ready: false,
       profileBlock: "",
       profileDelivered: false,
@@ -128,6 +130,7 @@ export class OpenVikingRuntime {
       query,
       {
         actorPeerId: state.config.peerId,
+        legacyPeerId: state.config.legacyPeerId,
         sessionId: state.ovSessionId,
         log: (stage, data) => this.log(stage, data),
       },

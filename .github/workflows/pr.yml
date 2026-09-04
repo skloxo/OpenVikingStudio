@@ -54,13 +54,20 @@ jobs:
             examples/zcode-memory-plugin/scripts/zcode-turns.test.mjs \
             examples/memory-plugin-shared/batch-send.test.mjs \
             examples/memory-plugin-shared/install-agent-hooks.test.mjs \
+            examples/memory-plugin-shared/install-lib-closure.test.mjs \
             examples/memory-plugin-shared/install-opencode-jsonc.test.mjs \
             examples/memory-plugin-shared/install-tui.test.mjs \
             examples/memory-plugin-shared/release-marketplace.test.mjs \
             examples/memory-plugin-shared/sync.test.mjs \
             examples/memory-plugin-shared/recall-compress-core.test.mjs \
             examples/memory-plugin-shared/recall-core.test.mjs \
+            examples/memory-plugin-shared/recall-session-wiring.test.mjs \
             examples/memory-plugin-shared/workspace-peer.test.mjs \
+            examples/memory-plugin-shared/peer-guidance.test.mjs \
+            examples/memory-plugin-shared/workspace-identity.test.mjs \
+            examples/memory-plugin-shared/workspace-config.test.mjs \
+            examples/memory-plugin-shared/workspace-registry.test.mjs \
+            examples/memory-plugin-shared/plugin-known-keys.test.mjs \
             examples/memory-plugin-shared/uri-guard.test.mjs \
             examples/opencode-plugin/tests/*.test.mjs \
             examples/opencode-plugin/servers/mcp-proxy.test.mjs \

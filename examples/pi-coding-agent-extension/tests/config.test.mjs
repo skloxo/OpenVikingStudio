@@ -121,9 +121,13 @@ test("loadConfig clamps invalid takeover values", async () => {
 });
 
 test("loadConfig derives workspace peer by default", async () => {
-  const oldCwd = process.cwd();
+  // The default is now the repository, so the expectation follows whichever
+  // template resolves where the suite runs — inside a checkout that is the
+  // remote, and outside one it is still the old working-directory id.
+  const { resolveEffectivePeerId } = await import("../shared/workspace-peer.mjs");
+  const expected = resolveEffectivePeerId({ cfg: {}, cwd: process.cwd() });
   await withConfigFile({}, (cfg) => {
-    assert.equal(cfg.peerId, oldCwd.replace(/[^A-Za-z0-9]/g, "-"));
+    assert.equal(cfg.peerId, expected.peerId);
     assert.equal(cfg.workspacePeer, true);
     assert.equal(cfg.recallPeerScope, "all");
   });
