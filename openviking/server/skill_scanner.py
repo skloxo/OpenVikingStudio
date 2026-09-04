@@ -88,12 +88,11 @@ DEFAULT_SKILL_SOURCES: List[Dict[str, str]] = [
     },
 ]
 
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 DEFAULT_OUTPUT_TARGETS: List[str] = [
-    "/home/skloxo/.openviking/all_skills.json",
-    "/home/skloxo/aho/openclaw/project/OpenVikingStudio/public/all_skills.json",
-    "/home/skloxo/aho/openclaw/project/OpenVikingStudio/dist/all_skills.json",
-    "/home/skloxo/openviking-shallow/openviking/web_studio/dist/all_skills.json",
-    "/home/skloxo/.local/lib/python3.12/site-packages/openviking/web_studio/dist/all_skills.json",
+    os.path.expanduser("~/.openviking/all_skills.json"),
+    str(_REPO_ROOT / "public" / "all_skills.json"),
+    str(_REPO_ROOT / "dist" / "all_skills.json"),
 ]
 
 
@@ -172,6 +171,11 @@ def scan_configured_skills(
             continue
 
         for dirpath, dirnames, filenames in os.walk(root_path):
+            # Prune hidden directories (dot-dirs like .clawhub, .git, __pycache__) in-place
+            dirnames[:] = [
+                d for d in dirnames
+                if not d.startswith(".") and d != "__pycache__"
+            ]
             if "SKILL.md" in filenames:
                 skill_file = os.path.join(dirpath, "SKILL.md")
                 parsed = parse_skill_file(skill_file, category, source, scope)

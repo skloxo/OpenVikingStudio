@@ -380,12 +380,21 @@ class AsyncAGFSClient:
         """Acquire exact locks on multiple paths."""
         if _path_locks_disabled():
             return _disabled_pathlock_lease(paths)
-        return await self.run(
-            "pathlock_acquire_exact_batch",
-            _fs_ctx_or_default(paths[0] if paths else "/", fs_ctx),
-            paths,
-            timeout_secs,
-            owner_lease_ref,
+        if hasattr(self._client, "pathlock_acquire_exact_batch"):
+            return await self.run(
+                "pathlock_acquire_exact_batch",
+                _fs_ctx_or_default(paths[0] if paths else "/", fs_ctx),
+                paths,
+                timeout_secs,
+                owner_lease_ref,
+            )
+        # Graceful fallback: convert to batch request with exact kind
+        requests = [{"path": p, "kind": "exact"} for p in paths]
+        return await self.pathlock_acquire_batch(
+            requests,
+            timeout_secs=timeout_secs,
+            owner_lease_ref=owner_lease_ref,
+            fs_ctx=fs_ctx,
         )
 
     async def pathlock_acquire_tree(

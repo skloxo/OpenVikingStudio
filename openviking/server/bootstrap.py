@@ -13,7 +13,7 @@ import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import uvicorn
 
@@ -37,7 +37,7 @@ from openviking_cli.utils.logger import configure_uvicorn_logging
 @dataclass
 class BotProcess:
     process: subprocess.Popen
-    log_file: Optional[object] = None
+    log_file: Optional[Any] = None
 
 
 def _get_version() -> str:
@@ -423,6 +423,14 @@ def _start_vikingbot_gateway(
         if cli_config_path is not None:
             env[OPENVIKING_CLI_CONFIG_ENV] = cli_config_path
         env["VIKINGBOT_WITH_OPENVIKING_SERVER"] = "1"
+        repo_root = str(Path(__file__).resolve().parent.parent.parent)
+        existing_pp = env.get("PYTHONPATH", "")
+        env["PYTHONPATH"] = f"{repo_root}:{existing_pp}" if existing_pp else repo_root
+        # PYTHONSAFEPATH=1 (Python 3.11+): strips the unsafe '' cwd entry and any relative
+        # path that would otherwise shadow editable packages when cwd=$HOME.
+        # cwd=repo_root is a belt-and-suspenders safeguard so that even if PYTHONSAFEPATH
+        # is somehow unset, sys.path[0] resolves to repo_root (not $HOME).
+        env["PYTHONSAFEPATH"] = "1"
         if managed_server_url:
             env["VIKINGBOT_MANAGED_OV_SERVER_URL"] = managed_server_url
 
@@ -432,7 +440,9 @@ def _start_vikingbot_gateway(
             stderr=stderr_handler,
             text=True,
             env=env,
+            cwd=repo_root,
         )
+
 
         # Wait a moment to check if it started successfully
         time.sleep(2)
