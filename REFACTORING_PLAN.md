@@ -5,16 +5,6 @@
 
 ---
 
-## 🛠️ TideTrading 架构第一性原理重构看板 (TideTrading Refactoring Roadmap)
-
-| 任务卡片 ID | 模块与重构目标 | 物理重构方案 (第一性原理) | 当前状态 |
-| :--- | :--- | :--- | :---: |
-| **Card-TT-01** | **`initialize_history_data.py` 纯程序化计算改造** | 彻底切除用大模型扫描 1 年历史数据的滥用工程，重构为 100% 纯 Python (Pandas/NumPy/SQL) 历史行情指标与因子算法计算。 | ⏳ 待实施 (已断模型) |
-| **Card-TT-02** | **Crontab 盘中监控与选股程序化优先** | 遵守“能用程序实现 100% 用程序，只在最终文本输出时按需使用 LLM”。重构 `intraday_monitor.py` 与 `daily_screening_v5.py`。 | ⏳ 待实施 (已断模型) |
-| **Card-TT-03** | **Paperclip (回形针) 彻底卸载与进程清理** | 已从 PM2 中物理 `delete` 终止 `paperclip` 进程，清空内存占用。 | [x] 已完成 ✅ |
-
----
-
 ## 🗺️ 一、 上游 OpenViking 全景原子化合并与深度代码治理专区 (176 Commits Roadmap - 先合并后开发)
 
 > **核心原则**：全系统严格遵循“**先合并上游，后开发新功能**”与“**彻底切除代码堆叠与掩盖式补丁**”铁律。
