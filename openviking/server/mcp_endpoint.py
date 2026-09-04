@@ -61,6 +61,7 @@ from openviking.server.resource_ingest import ingest_temp_upload
 from openviking.server.temp_upload_store import TempUploadStore
 from openviking.server.upload_token_store import upload_token_store
 from openviking.telemetry.span_models import update_root_span_identity
+from openviking.utils.media_limits import MAX_INLINE_TOOL_RESULT_MEDIA_BYTES
 from openviking.utils.search_filters import SearchContextTypeInput, merge_search_filter
 from openviking_cli.exceptions import (
     InvalidArgumentError,
@@ -440,9 +441,7 @@ async def _format_search_result(result, *, service, ctx, read_content: bool = Fa
 _MCP_IMAGE_EXTENSIONS = {".gif", ".jpeg", ".jpg", ".png", ".webp"}
 _MCP_AUDIO_EXTENSIONS = {".flac", ".m4a", ".mp3", ".oga", ".ogg", ".wav"}
 _MCP_VIDEO_EXTENSIONS = {".avi", ".m4v", ".mkv", ".mov", ".mp4", ".webm"}
-# Common clients cap an inline result at 5 MiB base64, or 3.75 MiB raw.
-# Apply the same limit to one file and to the aggregate media in one tool call.
-_MCP_MEDIA_MAX_BYTES = 3_932_160
+_MCP_MEDIA_MAX_BYTES = MAX_INLINE_TOOL_RESULT_MEDIA_BYTES
 
 
 def _mcp_uri_suffix(uri: str) -> str:
