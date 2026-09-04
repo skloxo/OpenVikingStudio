@@ -261,7 +261,7 @@
 
 ### 📌 P0: [x] Card-VK-19 (v1.4.27): MCP 密钥固化、监控大屏时序去硬编码真实化与 4 维 Token 透明分布 ✅
 - **类型**：MCP Hardening, Telemetry Anti-Hardcode & Transparent Model Observability ｜ **优先级**：🔴 P0（IDE 接入核心体验与数据真实性）
-- **Git Commit**：`a66c9d1f6` ｜ **Git Tag**：`v1.4.27` ｜ **Build**：`npm run build` ✓ built in 19.44s
+- **Git Commit**：`d98ec0bf3` ｜ **Git Tag**：`v1.4.27` ｜ **Build**：`npm run build` ✓ built in 19.44s
 - **计划版本**：`v1.4.27`
 - **背景与痛点**：
   1. 用户在人肉测试时发现：“每次去调 MCP 的时候才会去找密钥，好多次失败都是因为用错了密钥，既费 Token 又低效”；
