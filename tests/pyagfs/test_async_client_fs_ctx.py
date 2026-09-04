@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 
-from openviking.pyagfs.async_client import AsyncAGFSClient
+from openviking.pyagfs.async_client import AsyncAGFSClient, _path_locks_disabled
 from openviking.pyagfs.helpers import cp
 
 
@@ -32,13 +32,11 @@ async def test_async_client_derives_account_ctx_from_local_agfs_path() -> None:
 
     await agfs.write("/local/acct-1/data/file.txt", b"x")
 
-    assert client.calls == [
-        (
-            "write",
-            "/local/acct-1/data/file.txt",
-            {"account_id": "acct-1", "disable_auto_pathlock": "true"},
-        )
-    ]
+    expected_ctx = {"account_id": "acct-1"}
+    if _path_locks_disabled():
+        expected_ctx["disable_auto_pathlock"] = "true"
+
+    assert client.calls == [("write", "/local/acct-1/data/file.txt", expected_ctx)]
 
 
 @pytest.mark.asyncio
@@ -48,13 +46,11 @@ async def test_async_client_uses_system_ctx_for_non_local_agfs_path() -> None:
 
     await agfs.read("/queue/semantic/dequeue")
 
-    assert client.calls == [
-        (
-            "read",
-            "/queue/semantic/dequeue",
-            {"account_id": "_system", "disable_auto_pathlock": "true"},
-        )
-    ]
+    expected_ctx = {"account_id": "_system"}
+    if _path_locks_disabled():
+        expected_ctx["disable_auto_pathlock"] = "true"
+
+    assert client.calls == [("read", "/queue/semantic/dequeue", expected_ctx)]
 
 
 @pytest.mark.asyncio
@@ -66,13 +62,11 @@ async def test_async_client_preserves_explicit_fs_ctx() -> None:
         "/local/path-account/data/file.txt", b"x", fs_ctx={"account_id": "ctx-account"}
     )
 
-    assert client.calls == [
-        (
-            "write",
-            "/local/path-account/data/file.txt",
-            {"account_id": "ctx-account", "disable_auto_pathlock": "true"},
-        )
-    ]
+    expected_ctx = {"account_id": "ctx-account"}
+    if _path_locks_disabled():
+        expected_ctx["disable_auto_pathlock"] = "true"
+
+    assert client.calls == [("write", "/local/path-account/data/file.txt", expected_ctx)]
 
 
 @pytest.mark.asyncio
