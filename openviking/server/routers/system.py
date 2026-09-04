@@ -400,3 +400,69 @@ async def get_gpu_telemetry(
     }
 
 
+_LAST_CPU_TIMES: Optional[tuple[float, float]] = None
+
+
+def _read_host_mem() -> dict[str, float]:
+    try:
+        with open("/proc/meminfo") as f:
+            lines = f.readlines()
+        mem = {}
+        for line in lines:
+            parts = line.split(":")
+            if len(parts) == 2:
+                mem[parts[0].strip()] = int(parts[1].strip().split()[0])
+        total_kb = mem.get("MemTotal", 0)
+        avail_kb = mem.get("MemAvailable", 0)
+        used_kb = max(0, total_kb - avail_kb)
+        mem_percent = round((used_kb / total_kb) * 100, 1) if total_kb > 0 else 0.0
+        return {
+            "total_gb": round(total_kb / (1024 * 1024), 2),
+            "used_gb": round(used_kb / (1024 * 1024), 2),
+            "memory_percent": mem_percent,
+        }
+    except Exception as e:
+        logger.debug(f"Host meminfo probe unavailable: {e}")
+        return {"total_gb": 0.0, "used_gb": 0.0, "memory_percent": 0.0}
+
+
+def _read_host_cpu() -> float:
+    global _LAST_CPU_TIMES
+    try:
+        with open("/proc/stat") as f:
+            cpu_line = f.readline()
+        fields = [float(x) for x in cpu_line.split()[1:8]]
+        if len(fields) >= 4:
+            idle = fields[3]
+            total = sum(fields)
+            if _LAST_CPU_TIMES:
+                prev_idle, prev_total = _LAST_CPU_TIMES
+                diff_idle = idle - prev_idle
+                diff_total = total - prev_total
+                _LAST_CPU_TIMES = (idle, total)
+                if diff_total > 0:
+                    cpu_percent = round((1.0 - (diff_idle / diff_total)) * 100, 1)
+                    return max(0.0, min(100.0, cpu_percent))
+            _LAST_CPU_TIMES = (idle, total)
+            return round((1.0 - (idle / total)) * 100, 1) if total > 0 else 0.0
+    except Exception as e:
+        logger.debug(f"Host cpu stat probe unavailable: {e}")
+    return 0.0
+
+
+@router.get("/api/v1/system/resources", tags=["system"])
+async def get_system_host_resources(
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """Return real host CPU, memory, and system resource metrics."""
+    mem_info = _read_host_mem()
+    cpu_percent = _read_host_cpu()
+    return {
+        "status": "ok",
+        "cpu_percent": cpu_percent,
+        "memory_percent": mem_info["memory_percent"],
+        "memory_used_gb": mem_info["used_gb"],
+        "memory_total_gb": mem_info["total_gb"],
+    }
+
+

@@ -150,23 +150,12 @@ export function parseObserverMetrics(
       embedding: embedding || 'Qwen3-Embedding-8B',
       rerank: rerank || 'qwen3-reranker-0.6b',
     }
-
-    // Estimate EMB Vectorization Rate
-    const callsMatch = modelsRaw.match(/Embedding Models:[\s\S]*?\|\s*[\w.-]+\s*\|\s*[\w.-]+\s*\|\s*(\d+)\s*\|/i)
-    if (callsMatch) {
-      const calls = parseInt(callsMatch[1], 10)
-      metrics.vectorizationRate = Math.round(calls * 12.5) // Vec/s
-    }
   }
 
-  // Memory Slimming Rate calculation from context counts if available
-  if (dashboardSummary?.context_counts) {
-    const { memories = 0, files = 0 } = dashboardSummary.context_counts
-    if (files > 0) {
-      // Compression ratio: (1 - memories / files) * 100
-      metrics.memorySlimmingRate = Math.min(99, Math.max(10, Math.round((1 - memories / (files * 2)) * 100)))
-    }
-  }
+  // Vectorization rate and Memory slimming rate default to null (renders clean '--')
+  // unless real benchmark telemetry is explicitly measured and provided
+  metrics.vectorizationRate = null
+  metrics.memorySlimmingRate = null
 
   return metrics
 }

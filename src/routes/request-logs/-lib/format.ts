@@ -42,7 +42,7 @@ export function getStatusTone(
     return 'border-destructive/20 bg-destructive/10 text-destructive'
   }
 
-  return 'border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+  return 'border-cyan-500/20 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300'
 }
 
 export function methodTone(method: string): string {
@@ -50,7 +50,7 @@ export function methodTone(method: string): string {
     case 'GET':
       return 'text-sky-700 dark:text-sky-300'
     case 'POST':
-      return 'text-emerald-700 dark:text-emerald-300'
+      return 'text-cyan-700 dark:text-cyan-300'
     case 'PUT':
     case 'PATCH':
       return 'text-amber-700 dark:text-amber-300'

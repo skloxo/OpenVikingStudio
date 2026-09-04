@@ -43,9 +43,9 @@ export function KnowledgeBaseOverview({
         </div>
         <Badge
           variant="outline"
-          className="gap-1 border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-normal px-2.5 py-1"
+          className="gap-1 border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-normal px-2.5 py-1"
         >
-          <Sparkles className="size-3 text-emerald-500" />
+          <Sparkles className="size-3 text-cyan-500" />
           {t('knowledgeBaseOverview.healthyEngine')}
         </Badge>
       </div>
@@ -124,7 +124,7 @@ export function KnowledgeBaseOverview({
             <span className="text-[11px] text-muted-foreground font-medium">
               {t('knowledgeBaseOverview.totalVectors')}
             </span>
-            <span className="font-mono text-base font-bold text-emerald-600 dark:text-emerald-400 tabular-nums mt-0.5">
+            <span className="font-mono text-base font-bold text-cyan-600 dark:text-cyan-400 tabular-nums mt-0.5">
               {isLoading ? '...' : vectorCount.toLocaleString()}
             </span>
           </div>
