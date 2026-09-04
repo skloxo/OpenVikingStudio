@@ -287,6 +287,52 @@ test("disposeAll drains every live session", async () => {
   assert.equal(runtime.states.size, 0);
 });
 
+test("syncTurns false sends nothing: no capture, no commit, no dispose flush, no replay", async () => {
+  const pendingDir = await mkdtemp(join(tmpdir(), "dsh-memory-sync-off-"));
+  tempDirs.push(pendingDir);
+  process.env.OPENVIKING_PENDING_DIR = pendingDir;
+  await enqueue("addMessage", "dsh-earlier", { content: "queued while capture was on" });
+
+  const writes = [];
+  const runtime = new OpenVikingRuntime({
+    async healthResult() {
+      return { ok: true };
+    },
+    async ensureSessionResult() {
+      return { ok: true };
+    },
+    async fetchJSON(path, init) {
+      if (init?.method === "POST" && /\/(messages|commit)$/.test(path)) writes.push(path);
+      return { ok: false, status: 503, error: { code: "UNAVAILABLE" } };
+    },
+    async addMessage() {
+      writes.push("addMessage");
+      return { ok: true };
+    },
+    async getSession() {
+      return { pending_tokens: 1000000 };
+    },
+    async commitSession() {
+      writes.push("commitSession");
+      return { ok: true };
+    },
+  }, { ...config(), syncTurns: false }, { debug() {} });
+  const session = { id: "sync-off", header: { cwd: "/workspace" } };
+
+  runtime.capture(session, userEvent("Never sent."));
+  runtime.maybeCommit(session, { type: "turn/end" });
+  // The recall path reaches initialization even when nothing is captured, and
+  // the toggle takes the replay out of it without taking the reads with it.
+  assert.equal((await runtime.initialize({ session })).ready, true);
+  await runtime.flush(session);
+  await runtime.dispose(session);
+
+  assert.deepEqual(writes, []);
+  const pending = await listPending();
+  assert.deepEqual(pending.map(item => item.entry.sessionId), ["dsh-earlier"]);
+  assert.ok(!pending[0].entry.retries);
+});
+
 test("the per-session peer honors peerSource", async () => {
   const root = realpathSync(await mkdtemp(join(tmpdir(), "dsh-memory-peer-")));
   tempDirs.push(root);

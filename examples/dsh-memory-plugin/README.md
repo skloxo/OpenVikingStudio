@@ -138,6 +138,7 @@ The patch can also carry plugin config:
             recallTokenBudget: 2000
             scoreThreshold: 0.35
             captureToolResults: false
+            skipSubagentSessions: true
             commitTokenThreshold: 20000
             mcpToolCallTimeoutMs: 60000
 ```
@@ -148,6 +149,8 @@ The patch can also carry plugin config:
 - `agent/pre-step` retrieves with the current step input and appends a durable plugin message to that same step.
 - `session/event` captures user, assistant, and optionally tool-result messages without scraping a transcript.
 - `turn/end` checks the OpenViking pending-token threshold and commits when required.
+- `skipSubagentSessions: true` excludes sessions marked with `header.origin: subagent` from automatic profile, recall, capture, and commit; it defaults to `false`.
+- `syncTurns: false` stops every write: no captured messages, no threshold or shutdown commit, and no replay of writes an earlier session queued — those stay queued for a session that still writes. Profile injection and recall are unaffected; it defaults to `true`.
 - Failed writes enter the shared OpenViking pending queue for replay at the next session start.
 - `tools/pre-execute` blocks DSH filesystem and shell tools from treating `viking://` URIs as local paths, pointing the model at the bridged `mcp__openviking__*` tools instead.
 

@@ -41,13 +41,16 @@ jobs:
             examples/codex-memory-plugin/scripts/session-end.test.mjs \
             examples/codex-memory-plugin/scripts/pre-compact-capture.test.mjs \
             examples/codex-memory-plugin/scripts/session-state.test.mjs \
+            examples/codex-memory-plugin/scripts/config.test.mjs \
             examples/claude-code-memory-plugin/scripts/auto-capture.test.mjs \
             examples/claude-code-memory-plugin/scripts/marketplace.test.mjs \
             examples/claude-code-memory-plugin/scripts/skill-experience.test.mjs \
             examples/claude-code-memory-plugin/scripts/uri-guard.test.mjs \
             examples/claude-code-memory-plugin/scripts/lib/pending-queue.test.mjs \
+            examples/claude-code-memory-plugin/scripts/lib/recall-core-timeout.test.mjs \
             examples/cursor-memory-plugin/scripts/cursor-plugin.test.mjs \
             examples/trae-memory-hooks/scripts/trae-hooks.test.mjs \
+            examples/trae-cli-memory-hooks/scripts/trae-cli-hooks.test.mjs \
             examples/zcode-memory-plugin/scripts/zcode-async.test.mjs \
             examples/zcode-memory-plugin/scripts/zcode-capture.test.mjs \
             examples/zcode-memory-plugin/scripts/zcode-hooks.test.mjs \
