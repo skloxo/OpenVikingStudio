@@ -337,7 +337,7 @@ export function AddResourceForm({
 
         {activeMode === 'remote' && remotePhase === 'done' ? (
           <div className="space-y-3 rounded-lg border border-border/50 bg-muted/10 p-4">
-            <div className="flex items-center gap-2 text-sm font-medium text-green-600 dark:text-green-400">
+            <div className="flex items-center gap-2 text-sm font-medium text-cyan-600 dark:text-cyan-400">
               <CheckCircle2 className="size-4" />
               {t('result.success')}
             </div>

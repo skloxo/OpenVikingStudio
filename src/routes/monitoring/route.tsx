@@ -298,6 +298,27 @@ function MonitoringRoute() {
     staleTime: 5_000,
   })
 
+  const hostResourcesQuery = useQuery({
+    enabled: serverMode !== 'offline',
+    queryFn: async () => {
+      try {
+        const res = await ovClient.instance.get<{
+          status: string
+          cpu_percent: number
+          memory_percent: number
+          memory_used_gb: number
+          memory_total_gb: number
+        }>('/api/v1/system/resources')
+        return res.data
+      } catch {
+        return null
+      }
+    },
+    queryKey: ['system-host-resources', identityScopeKey],
+    refetchInterval: 10_000,
+    staleTime: 5_000,
+  })
+
   const overview = monitoringQuery.data
   const auditData = auditQuery.data
   // total 是后端全量审计日志条数（如 5,000）
@@ -309,7 +330,7 @@ function MonitoringRoute() {
       overview,
       auditQuery.data,
       dashboardSummaryQuery.data,
-      overview?.components.models?.status,
+      overview?.components.models.status,
       gpuQuery.data,
     )
   }, [overview, auditQuery.data, dashboardSummaryQuery.data, gpuQuery.data])
@@ -491,25 +512,28 @@ function MonitoringRoute() {
               currentCosine={deepMetrics.avgCosineScore}
               window={timeWindow}
             />
-            <TokenBreakdownPieChart totalTokens={deepMetrics.tokenStats?.total ?? 29596} />
+            <TokenBreakdownPieChart
+              tokenDistribution={dashboardSummaryQuery.data?.today_tokens as any}
+              totalTokens={deepMetrics.tokenStats?.total}
+            />
           </div>
 
           {/* Task 2.2 / v1.1.3: VikingDbCard 向量数据库卡片 */}
           <VikingDbCard
-            status={overview?.components.vikingdb.status ?? ''}
-            isHealthy={overview?.components.vikingdb.is_healthy ?? false}
+            status={overview?.components.vikingdb?.status ?? ''}
+            isHealthy={overview?.components.vikingdb?.is_healthy ?? false}
           />
 
           {/* Task v1.1.4: RetrievalStatusCard 检索状态卡片 */}
           <RetrievalStatusCard
-            status={overview?.components.retrieval.status ?? ''}
-            isHealthy={overview?.components.retrieval.is_healthy ?? false}
+            status={overview?.components.retrieval?.status ?? ''}
+            isHealthy={overview?.components.retrieval?.is_healthy ?? false}
           />
 
           {/* Task v1.1.5: ModelMonitoringCard AI 模型消耗监控卡片 */}
           <ModelMonitoringCard
-            status={overview?.components.models.status ?? ''}
-            isHealthy={overview?.components.models.is_healthy ?? false}
+            status={overview?.components.models?.status ?? ''}
+            isHealthy={overview?.components.models?.is_healthy ?? false}
           />
 
           {/* Task HARNESS-01: Harness 技能自演进引擎与第三方轮子组件监控卡片 */}
@@ -519,7 +543,11 @@ function MonitoringRoute() {
           />
 
           {/* Task v1.1.6: HttpStatusChart HTTP 状态码分布环形图 */}
-          <SystemResourceChart isLoading={monitoringQuery.isLoading} />
+          <SystemResourceChart
+            isLoading={monitoringQuery.isLoading}
+            vectorCount={deepMetrics.vectorCount}
+            hostResources={hostResourcesQuery.data}
+          />
           <HttpStatusChart
             total={totalAuditRequests}
             successRate={successRate}

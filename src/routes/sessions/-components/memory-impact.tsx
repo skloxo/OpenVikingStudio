@@ -35,7 +35,7 @@ const KIND_STYLES: Record<
 > = {
   add: {
     icon: FilePlus2Icon,
-    text: 'text-emerald-600 dark:text-emerald-400',
+    text: 'text-cyan-600 dark:text-cyan-400',
   },
   update: {
     icon: FilePenLineIcon,
@@ -256,9 +256,9 @@ function ImpactCounts({
   totals: { adds: number; deletes: number; updates: number }
 }) {
   return (
-    <span className="flex items-center gap-1 font-mono text-[10px]">
+    <span className="flex items-center gap-1 font-mono text-[11px]">
       {totals.adds > 0 ? (
-        <span className="text-emerald-600 dark:text-emerald-400">
+        <span className="text-cyan-600 dark:text-cyan-400">
           +{totals.adds}
         </span>
       ) : null}
@@ -369,7 +369,7 @@ function ContentBlock({
       <div
         className={`mb-1.5 text-[11px] font-medium ${
           tone === 'add'
-            ? 'text-emerald-600 dark:text-emerald-400'
+            ? 'text-cyan-600 dark:text-cyan-400'
             : 'text-rose-600 dark:text-rose-400'
         }`}
       >

@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Area,
@@ -11,46 +11,106 @@ import {
 } from 'recharts'
 import { Cpu, HardDrive, Layers, Microchip } from 'lucide-react'
 
+export interface HostResources {
+  cpu_percent?: number
+  memory_percent?: number
+  memory_used_gb?: number
+  memory_total_gb?: number
+}
+
 interface SystemResourceChartProps {
   isLoading?: boolean
-  vectorCount?: number
+  vectorCount?: number | null
+  hostResources?: HostResources | null
+}
+
+interface ResourcePoint {
+  time: string
+  cpu: number
+  memory: number
+  vectors: number
 }
 
 export function SystemResourceChart({
   isLoading = false,
-  vectorCount = 13949,
+  vectorCount = null,
+  hostResources = null,
 }: SystemResourceChartProps) {
   const { t } = useTranslation('monitoring')
 
-  // 生成具备极客质感的系统资源与 VikingDB 向量增长高密走势模拟点（高平滑真实渲染）
+  const [history, setHistory] = useState<ResourcePoint[]>([])
+
+  useEffect(() => {
+    if (!hostResources || typeof hostResources.cpu_percent !== 'number') return
+
+    const now = new Date()
+    const timeLabel = now.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    })
+
+    const point: ResourcePoint = {
+      time: timeLabel,
+      cpu: hostResources.cpu_percent,
+      memory: hostResources.memory_percent ?? 0,
+      vectors: vectorCount ?? 0,
+    }
+
+    setHistory((prev) => {
+      if (prev.length === 0) {
+        return Array.from({ length: 8 }).map((_, i) => {
+          const tPoint = new Date(now.getTime() - (7 - i) * 15 * 1000)
+          return {
+            time: tPoint.toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+            }),
+            cpu: hostResources.cpu_percent ?? 0,
+            memory: hostResources.memory_percent ?? 0,
+            vectors: vectorCount ?? 0,
+          }
+        })
+      }
+      const next = [...prev, point]
+      return next.slice(-12)
+    })
+  }, [hostResources, vectorCount])
+
   const chartData = useMemo(() => {
+    if (history.length > 0) return history
     const baseTime = new Date()
-    return Array.from({ length: 12 }).map((_, i) => {
-      const time = new Date(baseTime.getTime() - (11 - i) * 5 * 60 * 1000)
-      const timeLabel = time.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-
-      // CPU / Memory / 向量存储增长平滑模拟
-      const cpuUsage = Math.round(12 + Math.sin(i * 0.8) * 6 + (i % 3) * 2)
-      const memoryUsage = Math.round(42 + (i * 0.5) + Math.cos(i) * 3)
-      const vectors = Math.round(vectorCount - (11 - i) * 12 + Math.random() * 4)
-
+    return Array.from({ length: 8 }).map((_, i) => {
+      const time = new Date(baseTime.getTime() - (7 - i) * 15 * 1000)
       return {
-        time: timeLabel,
-        cpu: cpuUsage,
-        memory: memoryUsage,
-        vectors: vectors,
+        time: time.toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        }),
+        cpu: hostResources?.cpu_percent ?? 0,
+        memory: hostResources?.memory_percent ?? 0,
+        vectors: vectorCount ?? 0,
       }
     })
-  }, [vectorCount])
+  }, [history, hostResources, vectorCount])
 
   if (isLoading) {
     return (
       <div className="h-64 animate-pulse rounded border border-border/40 bg-muted/20 p-4" />
     )
   }
+
+  const latestCpu = hostResources && typeof hostResources.cpu_percent === 'number'
+    ? `${hostResources.cpu_percent.toFixed(1)}%`
+    : '--'
+  const latestMem = hostResources && typeof hostResources.memory_percent === 'number'
+    ? `${hostResources.memory_percent.toFixed(1)}%`
+    : '--'
+  const vectorStr = typeof vectorCount === 'number'
+    ? vectorCount.toLocaleString()
+    : '--'
 
   return (
     <div className="rounded border border-border/60 bg-card p-3.5 transition-colors">
@@ -74,15 +134,15 @@ export function SystemResourceChart({
         <div className="flex items-center gap-2 font-mono text-[11px]">
           <span className="inline-flex items-center gap-1 rounded-xs border border-cyan-500/30 bg-cyan-500/10 px-2 py-0.5 text-cyan-600 dark:text-cyan-400">
             <Cpu className="size-3" />
-            CPU: {chartData[chartData.length - 1]?.cpu}%
+            {t('systemResource.cpuLabel', { defaultValue: 'CPU' })}: {latestCpu}
           </span>
           <span className="inline-flex items-center gap-1 rounded-xs border border-indigo-500/30 bg-indigo-500/10 px-2 py-0.5 text-indigo-600 dark:text-indigo-400">
             <HardDrive className="size-3" />
-            RAM: {chartData[chartData.length - 1]?.memory}%
+            {t('systemResource.ramLabel', { defaultValue: 'RAM' })}: {latestMem}
           </span>
-          <span className="inline-flex items-center gap-1 rounded-xs border bg-muted/20 border px-2 py-0.5 text-foreground/90">
+          <span className="inline-flex items-center gap-1 rounded-xs border border-border/60 bg-muted/20 px-2 py-0.5 text-foreground/90">
             <Layers className="size-3" />
-            {t('systemResource.vectors', { defaultValue: '向量数' })}: {chartData[chartData.length - 1]?.vectors?.toLocaleString()}
+            {t('systemResource.vectors', { defaultValue: '向量数' })}: {vectorStr}
           </span>
         </div>
       </div>
@@ -123,7 +183,7 @@ export function SystemResourceChart({
 
             <Tooltip
               content={({ active, payload, label }) => {
-                if (active && payload && payload.length) {
+                if (active) {
                   return (
                     <div className="rounded border border-border/80 bg-background/95 p-2 text-xs shadow-lg backdrop-blur-md font-mono">
                       <p className="font-semibold text-foreground mb-1 border-b border-border/40 pb-1">
