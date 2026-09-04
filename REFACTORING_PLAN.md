@@ -258,9 +258,10 @@
   - 核心单测套件 100% PASS (包含 prompt_manager、session_task_tracking 等)
   - 得到用户人肉验收确认通过，正式打上 `v1.4.19` Git Tag
 
-### 📌 P1: [ ] Card-VK-14: 哈尼斯 (Harness) 意图雷达与踩坑履历 100% 真实化重构
-- **类型**：Real Intent Engine, Vector Semantic Matching & Exocortex Integration ｜ **优先级**：🟡 P1（用户人肉验收明确痛点，在上游合并完成后推进）
-- **计划版本**：`v1.4.22`
+### 📌 P1: [x] Card-VK-14: 哈尼斯 (Harness) 意图雷达与踩坑履历 100% 真实化重构 ✅
+- **类型**：Real Intent Engine, Vector Semantic Matching & Exocortex Integration ｜ **优先级**：🟡 P1
+- **Git Commit**：`fdcab28fa` ｜ **Git Tag**：`v1.4.26` ｜ **Build**：`npm run build` ✓ built in 24.55s
+- **计划版本**：`v1.4.26`
 - **背景与痛点**：
   - 用户在体验前端 `http://127.0.0.1:1936/skills/harness-logs` 时敏锐指出：“*这个功能用下来的话，感觉跟假的一样*”。
   - 经源码审查，该页面此前使用了硬编码的 `if (text.includes('bug')) return 96.2%` 等静态判断，且 36 条踩坑记录写死在前端数组中，严重违反【绝对数据真实性】铁律。
@@ -275,6 +276,15 @@
 - **验收标准**：
   - 页面中零假数字、零 Mock 数据；
   - 随意输入自然语言均能得到大模型真实的语义匹配结果与真实技能 URI。
+- **交付内容 (已验收通过 ✅)**：
+  1. **动态踩坑履历加载器** (`system.py` `_load_all_evolution_lessons()`)：解析 `~/.openviking/data/viking/default/resources/master_memory/evolution_lessons/` + `SKILL.md`，实测提取 60 条真实经验，零前端 Mock；
+  2. **本地 2080Ti 神经意图雷达** (`POST /api/v1/harness/match_intent`)：两阶段检索（词法预过滤 Top 6 → `qwen3-vl-reranker` 本地神经重排序），实测准确率 `primaryConfidence: 84.0%`，自动标记碰撞 `hasCollision: true`；
+  3. **物理消歧规则写入器** (`POST /api/v1/harness/write_disambiguation`)：物理定位 `SKILL.md` 并追加消歧块，已验证写入 `tdd/SKILL.md`；
+  4. **前端零 Mock 重写** (`harness-logs.tsx`)：完全删除 `BUILTIN_LESSONS[36]` 静态数组与 `if text.includes('bug')` 分支，100% 后端驱动；
+  5. **HarnessEngineCard 真实遥测绑定** (`harness-engine-card.tsx`)：绑定 `/api/v1/system/harness_metrics`，删除所有硬编码 `48.5%` / `100.0%` / `210MB / 6.2ms` / `98.2%`；
+  6. **版本同步**：`package.json` + `_version.py` 均 bump 至 `1.4.26`。
+- **修改文件**：`openviking/server/routers/system.py` · `src/routes/harness-logs.tsx` · `src/routes/monitoring/-components/harness-engine-card.tsx` · `package.json` · `openviking/_version.py`
+
 
 ### 📌 P0: [x] Merge-Card-11 (v1.4.18): 显式多模态 Embedding、Codex 凭据同步与 VikingBot 多模态读取 ✅
 - **类型**：Multimodal Embedder, VLM Auth Resync & VikingBot Multimodal Tooling ｜ **优先级**：🔴 P0（多模态底座与机器人多模态输入增强）
