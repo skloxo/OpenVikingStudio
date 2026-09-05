@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 # ─── MODULE: mcp_openviking_server ─────────────────────────────────────────
 """
-OpenViking MCP Server — AI Agent 可调用的 OpenViking 语义记忆管理工具集 (v1.4.32)
+OpenViking MCP Server — AI Agent 可调用的 OpenViking 语义记忆管理工具集 (v1.4.33)
 
 封装 OpenViking CLI 命令和 HTTP API，提供结构化的 MCP 工具接口。
 支持：资源管理、语义搜索、分层读取、会话管理、系统监控。

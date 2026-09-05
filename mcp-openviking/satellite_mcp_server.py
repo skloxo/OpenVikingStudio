@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 # ─── MODULE: satellite_mcp_server ──────────────────────────────────────────
 """
-OpenViking Satellite MCP Server (Standalone Zero-Dependency Distribution - v1.4.32)
+OpenViking Satellite MCP Server (Standalone Zero-Dependency Distribution - v1.4.33)
 
 专为远程算力节点 (Mac Studio / 2080Ti / 远程工作站) 与外部 Agent (WorkBuddy / Cursor / Claude Code) 设计的独立单文件轻量分发包。
 特点：
@@ -453,7 +453,7 @@ def openviking_ping() -> str:
     status = {
         "status": "ok",
         "client_distribution": "standalone_satellite",
-        "server_version": "1.4.32",
+        "server_version": "1.4.33",
         "mode": "satellite",
         "api_url": cfg["api"],
         "authenticated": bool(cfg["api_key"]),
