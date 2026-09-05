@@ -338,20 +338,32 @@ def _parse_skill_description(skill_md_path: str) -> str:
     return "暂无简介"
 
 
+def _get_skill_base_sources() -> List[str]:
+    """跨平台动态探测技能扫描基目录，兼容 Windows/WSL/Linux/macOS 任意用户。"""
+    home = Path.home()
+    cwd = Path.cwd()
+    candidates = [
+        str(home / ".gemini" / "config" / "skills"),
+        str(home / ".openclaw" / "skills"),
+        str(home / ".agents" / "skills"),
+        str(cwd / ".agents" / "skills"),
+        str(cwd / "skills"),
+        # 兼容本机开发者历史路径（仅本机存在时才生效，外部机器不存在自动跳过）
+        str(home / "aho" / "openclaw" / "skills"),
+        str(home / "aho" / "openclaw" / "project"),
+        str(home / "a" / "SenseNova-Skills" / "skills"),
+        str(home / ".hermes" / "hermes-agent" / "optional-skills"),
+    ]
+    return candidates
+
+
 def _auto_sync_skills():
     """自动探针：全量递归扫描 IDE/OpenClaw/Gemini/Project 技能目录，生成全量带简介的 ~/.openviking/all_skills.json"""
     try:
         target_base = os.path.expanduser("~/.openviking/skills")
         os.makedirs(target_base, exist_ok=True)
 
-        base_sources = [
-            os.path.expanduser("~/.gemini/config/skills"),
-            "/home/skloxo/aho/openclaw/skills",
-            "/home/skloxo/aho/openclaw/project",
-            "/home/skloxo/.openclaw/skills",
-            "/home/skloxo/a/SenseNova-Skills/skills",
-            "/home/skloxo/.hermes/hermes-agent/optional-skills"
-        ]
+        base_sources = _get_skill_base_sources()
 
         found = {}
         for base in base_sources:
@@ -931,14 +943,7 @@ def _parse_skill_description(skill_md_path: str) -> str:
 def openviking_audit_skills() -> str:
     """物理白盒审计本地技能与模型目录：透视符合 Wiki 规范技能与待规范模型/技能，标识来源 Agent (v1.1.24)"""
     try:
-        base_sources = [
-            os.path.expanduser("~/.gemini/config/skills"),
-            "/home/skloxo/aho/openclaw/skills",
-            "/home/skloxo/aho/openclaw/project",
-            "/home/skloxo/.openclaw/skills",
-            "/home/skloxo/a/SenseNova-Skills/skills",
-            "/home/skloxo/.hermes/hermes-agent/optional-skills"
-        ]
+        base_sources = _get_skill_base_sources()
         compliant_dict = {}
         non_compliant_dict = {}
 
@@ -1167,14 +1172,7 @@ def openviking_auto_onboard_skills(
 ) -> str:
     """全自动发现新技能/模型，通过【单并发+强制冷却限流队列】调用 LLM 规范化生成 SKILL.md 并上架至 OpenViking (v1.1.26)"""
     try:
-        base_sources = [
-            os.path.expanduser("~/.gemini/config/skills"),
-            "/home/skloxo/aho/openclaw/skills",
-            "/home/skloxo/aho/openclaw/project",
-            "/home/skloxo/.openclaw/skills",
-            "/home/skloxo/a/SenseNova-Skills/skills",
-            "/home/skloxo/.hermes/hermes-agent/optional-skills"
-        ]
+        base_sources = _get_skill_base_sources()
         non_compliant_dirs = []
 
         for base in base_sources:
@@ -1265,14 +1263,7 @@ def openviking_get_onboard_queue_status() -> str:
 def openviking_fix_skill(skill_name: str = Field(description="要进行规范化修复上架的技能名称")) -> str:
     """一键规范化未完工技能并上架到 OpenViking 向量库 (v1.1.25)"""
     try:
-        base_sources = [
-            os.path.expanduser("~/.gemini/config/skills"),
-            "/home/skloxo/aho/openclaw/skills",
-            "/home/skloxo/aho/openclaw/project",
-            "/home/skloxo/.openclaw/skills",
-            "/home/skloxo/a/SenseNova-Skills/skills",
-            "/home/skloxo/.hermes/hermes-agent/optional-skills"
-        ]
+        base_sources = _get_skill_base_sources()
         target_dir = None
         for base in base_sources:
             if not os.path.exists(base):
