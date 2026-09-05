@@ -103,7 +103,7 @@ class HierarchicalRetriever:
         query: TypedQuery,
         ctx: RequestContext,
         limit: int = 5,
-        mode: Optional[RetrieverMode] = None,
+        mode: Optional[RetrieverMode | str] = None,
         score_threshold: Optional[float] = None,
         score_gte: bool = False,
         scope_dsl: Optional[FilterExpr | Dict[str, Any]] = None,
@@ -123,10 +123,13 @@ class HierarchicalRetriever:
         telemetry = get_current_telemetry()
         effective_threshold = self._resolve_threshold(score_threshold)
         image_query = bool(getattr(query, "image_query", False))
-        if mode is None:
-            mode = RetrieverMode.QUICK if not self._rerank_client else RetrieverMode.THINKING
+        resolved_mode: str = str(
+            mode
+            if mode is not None
+            else (RetrieverMode.QUICK if not self._rerank_client else RetrieverMode.THINKING)
+        )
         if image_query:
-            mode = RetrieverMode.QUICK
+            resolved_mode = RetrieverMode.QUICK
             if level is None:
                 level = [2]
 
@@ -275,7 +278,7 @@ class HierarchicalRetriever:
 
             # Step 3: Pick recursive entry points from directory hits and explicit roots.
             directory_scores = [self._finite_score(r.get("_score", 0.0)) for r in global_results]
-            if self._rerank_client and mode == RetrieverMode.THINKING:
+            if self._rerank_client and resolved_mode == RetrieverMode.THINKING:
                 directory_scores = await self._rerank_scores(
                     query.query,
                     [str(r.get("abstract", "")) for r in global_results],
@@ -315,7 +318,7 @@ class HierarchicalRetriever:
                     sparse_query_vector=sparse_query_vector,
                     starting_points=starting_points,
                     limit=limit,
-                    mode=mode,
+                    mode=resolved_mode,
                     threshold=effective_threshold,
                     score_gte=score_gte,
                     context_type=context_type,
@@ -325,7 +328,7 @@ class HierarchicalRetriever:
                     level=level,
                 )
             apply_hotness = True
-            rerank_used = self._rerank_client is not None and mode == RetrieverMode.THINKING
+            rerank_used = self._rerank_client is not None and resolved_mode == RetrieverMode.THINKING
 
         # Step 6: Convert results
         matched = await self._convert_to_matched_contexts(
@@ -494,15 +497,16 @@ class HierarchicalRetriever:
 
         parallelism = max(1, self.MAX_PARALLEL_CHILD_SEARCHES)
 
-        while dir_queue:
+        MAX_VISITED_DIRS = 20
+        while dir_queue and len(visited) < MAX_VISITED_DIRS:
             batch: List[Tuple[str, float]] = []
-            while dir_queue and len(batch) < parallelism:
+            while dir_queue and len(batch) < parallelism and len(visited) + len(batch) < MAX_VISITED_DIRS:
                 temp_score, current_uri = heapq.heappop(dir_queue)
                 current_score = -temp_score
                 if current_uri in visited:
                     continue
                 visited.add(current_uri)
-                logger.info(f"[RecursiveSearch] Entering URI: {current_uri}")
+                logger.debug(f"[RecursiveSearch] Entering URI: {current_uri}")
                 batch.append((current_uri, current_score))
 
             if not batch:

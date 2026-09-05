@@ -39,9 +39,9 @@ logger = logging.getLogger("openviking-mcp")
 
 # ─── Configuration ──────────────────────────────────────────────
 
-DEFAULT_API = "http://127.0.0.1:1933"
-DEFAULT_CLI = "openviking"
-DEFAULT_ROOT_API_KEY = "vk-sk-495222a7957adda63fdce225acfaa551a1a5378fb9795f5a1df4d1d76a0918bc"
+DEFAULT_API = os.environ.get("OPENVIKING_API", "http://127.0.0.1:1933")
+DEFAULT_CLI = os.environ.get("OPENVIKING_CLI", "openviking")
+DEFAULT_ROOT_API_KEY = os.environ.get("OPENVIKING_ROOT_API_KEY", "")
 
 # 全局模式标志：True 时所有工具仅使用 CLI，跳过 HTTP API
 CLI_ONLY_MODE = False
@@ -385,7 +385,7 @@ threading.Thread(target=_auto_sync_skills, daemon=True, name="skill-sync").start
 
 
 def _get_config():
-    api_key = os.environ.get("OPENVIKING_API_KEY", "")
+    api_key = os.environ.get("OPENVIKING_API_KEY") or os.environ.get("OPENVIKING_ROOT_API_KEY") or ""
     if not api_key:
         conf_path = os.path.expanduser("~/.openviking/ov.conf")
         if os.path.exists(conf_path):
@@ -396,7 +396,14 @@ def _get_config():
             except Exception:
                 pass
     if not api_key:
-        api_key = DEFAULT_ROOT_API_KEY
+        cli_conf = os.path.expanduser("~/.openviking/ovcli.conf")
+        if os.path.exists(cli_conf):
+            try:
+                with open(cli_conf, "r", encoding="utf-8") as f:
+                    conf_data = json.load(f)
+                    api_key = conf_data.get("root_api_key", "")
+            except Exception:
+                pass
     return {
         "api": os.environ.get("OPENVIKING_API", DEFAULT_API).rstrip("/"),
         "api_key": api_key,
