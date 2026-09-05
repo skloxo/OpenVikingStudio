@@ -78,14 +78,17 @@
   2. **纯 User Key 契约与非特权鉴权**：
      - 卫星 MCP 仅需配置普通 User API Key (`OPENVIKING_API_KEY`)；
      - 客户端代码彻底切除对 Root Key 的强制校验与回退提示，普通用户凭证即可完整读写数据面；
-  3. **跨平台兼容与脏默认参数肃清**：
-     - 彻底切除 Linux 个人路径硬编码（`/home/skloxo/...`），采用跨平台 `Path.home()` 与规范 URI；
-     - 拔除 `openviking_store` 中写死的测试参数，提供通用的 `uri`, `content`, `tags`, `metadata` 签名；
-     - 确保 Windows 11、macOS、Linux 下开箱即用，零路径报错。
+  3. **Windows / WSL / macOS / Linux 深度跨平台原生通用加固 (Cross-Platform Resilience)**：
+     - **彻底切除硬编码绝对路径**：全量采用 `pathlib.Path.home()` 与 `os.environ`，配置按跨平台优先级探测（`$OPENVIKING_CONFIG` -> `~/.openviking/ov.conf` -> `~/.openviking/ovcli.conf`），Windows 自动对齐 `%USERPROFILE%\.openviking\`；
+     - **标准 Stdio UTF-8 编码硬重置**：在入口处强制执行 `sys.stdin.reconfigure(encoding='utf-8')` 与 `sys.stdout.reconfigure(encoding='utf-8')`，物理杜绝 Windows 下 `cp936/gbk` 遇特殊字符导致的 `UnicodeEncodeError` 进程崩溃与 JSON-RPC 断流；
+     - **严格 POSIX 规范 URI 契约**：彻底切除在 VikingFS URI 上的 `os.path.join` 操作，全量收敛为标准 POSIX `/` 路径拼接，物理杜绝 Windows 反斜杠 `\` 侵入 URI 引发服务端 404 缺陷；
+     - **WSL 与 Windows 路径智能归一化**：内置轻量 `normalize_path`，智能兼容 WSL `/mnt/c/...` 与原生 Windows `C:\...` 格式互转；
+     - **纯 HTTP/REST 驱动，零操作系统 Shell 依赖**：彻底切除任何对本地 `bash`/`sh` 命令行工具的子进程调用，依赖仅限于跨平台纯 Python 库 `httpx` 与 `mcp`，实现 Windows/WSL/Mac/Linux 裸机秒启；
+     - **拔除开发期脏默认参数**：彻底清理 `openviking-studio-dev`、`用户物理纠偏` 等特定测试值，提供纯净通用的方法签名。
 - **验收标准**：
-  - 启动卫星模式后，客户端 `tools/list` 仅返回 8 个精益数据工具；
-  - 仅配置 User Key 下，`find`、`read`、`store` 读写闭环验证 100% 成功；
-  - Windows 环境下无路径错误，自动化单测 100% PASS。
+  - 启动卫星模式后，客户端 `tools/list` 稳定返回 12 个精益数据工具；
+  - 仅配置 User Key 下，`find`、`smart_read`、`code_search`、`store` 闭环验证 100% 成功；
+  - 在 Windows 11 原生环境、WSL2 Ubuntu 环境与 macOS 环境下均无路径与编码报错，自动化单测 100% PASS。
 
 ### 📌 P0: [ ] Card-VK-24 (v1.4.32): 外部客户端 Agent 平滑升级体系、版本协商与轻量化独立分发
 - **类型**：Agent Smooth Upgrade, Lightweight Distribution & Backward Compatibility Shim ｜ **优先级**：🔴 P0（外部生态接入、平滑无感演进与架构解耦）
