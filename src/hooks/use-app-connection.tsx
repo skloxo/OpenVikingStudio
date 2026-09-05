@@ -79,13 +79,10 @@ const ENV_USER =
     ? import.meta.env.VITE_OV_USER.trim()
     : ''
 
-const ROOT_API_KEY_FALLBACK =
-  'vk-sk-495222a7957adda63fdce225acfaa551a1a5378fb9795f5a1df4d1d76a0918bc'
-
 const DEFAULT_CONNECTION: ConnectionDraft = {
   accountId: ENV_ACCOUNT || 'default',
-  adminApiKey: ENV_ADMIN_API_KEY || ROOT_API_KEY_FALLBACK,
-  apiKey: ENV_API_KEY || ROOT_API_KEY_FALLBACK,
+  adminApiKey: ENV_ADMIN_API_KEY || '',
+  apiKey: ENV_API_KEY || '',
   baseUrl: ovClient.getOptions().baseUrl,
   userId: ENV_USER || 'default',
 }

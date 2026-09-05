@@ -8,8 +8,29 @@ import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import viteReact from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
-const OV_BACKEND = 'http://127.0.0.1:1933'
-const ROOT_API_KEY = 'vk-sk-495222a7957adda63fdce225acfaa551a1a5378fb9795f5a1df4d1d76a0918bc'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+
+const OV_BACKEND = process.env.OPENVIKING_BACKEND || 'http://127.0.0.1:1933'
+
+function resolveRootApiKey(): string {
+  if (process.env.OPENVIKING_ROOT_API_KEY) {
+    return process.env.OPENVIKING_ROOT_API_KEY
+  }
+  try {
+    const confPath = path.join(os.homedir(), '.openviking', 'ov.conf')
+    if (fs.existsSync(confPath)) {
+      const conf = JSON.parse(fs.readFileSync(confPath, 'utf-8'))
+      return conf.server?.root_api_key || ''
+    }
+  } catch {
+    // ignore
+  }
+  return ''
+}
+
+const ROOT_API_KEY = resolveRootApiKey()
 const ovProxyEntry = {
   target: OV_BACKEND,
   changeOrigin: true,
