@@ -58,13 +58,31 @@ def test_dual_mode_satellite_registers_safe_subset_only():
     # Satellite mode must have exact whitelist subset (<= 20 tools)
     assert len(registered_tools) <= 20
 
-    # Must contain essential remote recall and self-evolution tools
-    assert "openviking_find" in registered_tools
-    assert "openviking_search" in registered_tools
-    assert "openviking_smart_read" in registered_tools
-    assert "openviking_record_evolution_lesson" in registered_tools
-    assert "openviking_health" in registered_tools
-    assert "openviking_ping" in registered_tools
+    # Must contain essential remote recall, code search, and self-evolution tools
+    expected_satellite_tools = {
+        "openviking_find",
+        "openviking_search",
+        "openviking_smart_read",
+        "openviking_read",
+        "openviking_store",
+        "openviking_write",
+        "openviking_code_search",
+        "openviking_code_outline",
+        "openviking_code_expand",
+        "openviking_grep",
+        "openviking_tree",
+        "openviking_skills",
+        "openviking_get_relations",
+        "openviking_ping",
+        "openviking_health",
+        "openviking_record_evolution_lesson",
+    }
+    for tool_name in expected_satellite_tools:
+        assert tool_name in registered_tools, f"Expected {tool_name} in satellite tools"
+
+    # Verify strong attention trigger header in openviking_find docstring
+    find_tool = next(t for t in mod.mcp._tool_manager.list_tools() if t.name == "openviking_find")
+    assert "【Mandatory First Step / 开局必调】" in (find_tool.description or "")
 
     # Must NOT contain destructive or system-level tools
     assert "openviking_server_control" not in registered_tools
@@ -72,6 +90,20 @@ def test_dual_mode_satellite_registers_safe_subset_only():
     assert "openviking_restore" not in registered_tools
     assert "openviking_delete_resource" not in registered_tools
     assert "openviking_server_init" not in registered_tools
+    assert "openviking_privacy" not in registered_tools
+
+
+def test_openviking_ping_metadata_handshake():
+    """Verify openviking_ping returns mode, auth, tools count and platform info."""
+    mod = _reload_mcp_module("satellite")
+    res_str = mod.openviking_ping()
+    data = json.loads(res_str)
+
+    assert data.get("mode") == "satellite"
+    assert "tools_count" in data
+    assert "platform" in data
+    assert "authenticated" in data
+
 
 
 def test_dual_mode_satellite_http_retry_resilience():

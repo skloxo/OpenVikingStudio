@@ -25,11 +25,22 @@ import subprocess
 import logging
 import time
 import inspect
+import sys
+from pathlib import Path
 from functools import wraps
 from typing import Any, Dict, List, Optional
 from urllib.request import Request, urlopen
 from urllib.error import URLError, HTTPError
 from urllib.parse import urlencode
+
+# 物理杜绝 Windows cmd/powershell 下默认 cp936/gbk 抛出 UnicodeEncodeError 导致 MCP 断流
+if sys.platform == "win32":
+    try:
+        sys.stdin.reconfigure(encoding="utf-8")
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
 
 from mcp.server.fastmcp import FastMCP
 from pydantic import Field
@@ -47,43 +58,76 @@ DEFAULT_ROOT_API_KEY = os.environ.get("OPENVIKING_ROOT_API_KEY", "")
 CLI_ONLY_MODE = False
 
 # ─── Dual-Mode MCP Architecture (Core vs Satellite) ──────────────────────
-# - Core Mode (本地核心模式, 默认): 暴露全量 50+ 接口，带本地系统控制、灾备恢复与记忆治理
-# - Satellite Mode (远程卫星模式): 暴露精简安全接口，专注远程知识召回、经验上报与容错自愈
-MCP_MODE = os.environ.get("OPENVIKING_MCP_MODE", "core").strip().lower()
+# - Core Mode (本地核心模式): 暴露全量 50+ 接口，带本地系统控制、灾备恢复与全量治理
+# - Satellite Mode (远程卫星模式): 暴露 13 个全能安全数据接口，纯普通 User Key 驱动，零破坏性特权
+# 智能决议顺序：1. 命令行参数 --mode=... -> 2. 环境变量 -> 3. 自动智能协商 (远程/无RootKey默认satellite)
 
+_cli_mode = None
+for _idx, _arg in enumerate(sys.argv[1:], start=1):
+    if _arg.startswith("--mode="):
+        _cli_mode = _arg.split("=", 1)[1].strip().lower()
+    elif _arg == "--mode" and _idx < len(sys.argv) - 1:
+        _cli_mode = sys.argv[_idx + 1].strip().lower()
+
+_env_mode = os.environ.get("OPENVIKING_MCP_MODE") or os.environ.get("OPENVIKING_MODE")
+if _cli_mode in ("satellite", "core"):
+    MCP_MODE = _cli_mode
+elif _env_mode and _env_mode.strip().lower() in ("satellite", "core"):
+    MCP_MODE = _env_mode.strip().lower()
+else:
+    # 自动协商：目标为远程 API (https:// 或非本地) 或未设置 Root Key 时，默认启动 satellite 卫星模式
+    _target_api = os.environ.get("OPENVIKING_API", DEFAULT_API).lower()
+    _has_root = bool(os.environ.get("OPENVIKING_ROOT_API_KEY"))
+    _is_local = "127.0.0.1" in _target_api or "localhost" in _target_api
+    if _is_local and _has_root:
+        MCP_MODE = "core"
+    else:
+        MCP_MODE = "satellite"
+
+logger.info(f"[Dual-Mode MCP] Resolved active mode: [{MCP_MODE.upper()}]")
+
+# 卫星模式精选 13 个全能实用数据工具（4 检索 + 5 攻坚 + 4 感知）
 SATELLITE_ALLOWED_TOOLS = {
-    # 状态探活与基线度量
-    "openviking_ping",
-    "openviking_health",
-    "openviking_system_status",
-    "openviking_metrics",
-    "openviking_harness_stats",
-    # 知识召回与语义检索核心
+    # 4 大日常检索基石
     "openviking_find",
     "openviking_search",
     "openviking_smart_read",
     "openviking_read",
+    "openviking_store",
+    # 5 大代码与排障攻坚
+    "openviking_write",
     "openviking_code_search",
     "openviking_code_outline",
     "openviking_code_expand",
-    # 经验提纯与自演进
+    "openviking_grep",
     "openviking_record_evolution_lesson",
-    # 关系与比对
+    # 4 大结构与环境感知
+    "openviking_tree",
+    "openviking_skills",
     "openviking_get_relations",
-    "openviking_diff",
+    "openviking_ping",
+    "openviking_health",
 }
 
 
 def mcp_tool(*args, **kwargs):
     """双模态感知的 MCP 工具注册装饰器。
+    在 Satellite 模式下只注册 13 个安全实用数据工具，物理阻断 40+ 运维特权；
     自动解包 FastMCP/Pydantic FieldInfo 默认对象，防止序列化崩塌；
-    在 Satellite 模式下只注册安全白名单工具，物理阻断破坏性运维与写指令。
+    针对 openviking_find 自动注入【Mandatory First Step】强注意力触发头。
     """
     def decorator(fn):
         tool_name = kwargs.get("name") or fn.__name__
         if MCP_MODE == "satellite" and tool_name not in SATELLITE_ALLOWED_TOOLS:
-            logger.info(f"[Dual-Mode MCP] Satellite mode: skipping registration of sensitive tool '{tool_name}'")
+            logger.debug(f"[Dual-Mode MCP] Satellite mode: skipping registration of sensitive tool '{tool_name}'")
             return fn
+
+        tool_kwargs = dict(kwargs)
+        if tool_name == "openviking_find":
+            orig_desc = tool_kwargs.get("description") or fn.__doc__ or ""
+            prefix = "【Mandatory First Step / 开局必调】在开始回答任何工程、架构或排障问题前，必须首先调用此工具查询体外大脑（VK）中的历史经验与避坑规则。\n"
+            if prefix not in orig_desc:
+                tool_kwargs["description"] = prefix + orig_desc
 
         sig = inspect.signature(fn)
 
@@ -106,7 +150,7 @@ def mcp_tool(*args, **kwargs):
             except Exception:
                 return fn(*f_args, **f_kwargs)
 
-        return mcp.tool(*args, **kwargs)(cleaned_fn)
+        return mcp.tool(*args, **tool_kwargs)(cleaned_fn)
     return decorator
 
 
@@ -186,32 +230,36 @@ def _harness_pre_execution_guard(tool_name: str, payload: Dict[str, Any]) -> tup
 
 @mcp_tool()
 def openviking_record_evolution_lesson(
-    skill_name: str = Field(default="openviking-studio-dev", description="目标演进技能名称"),
-    lesson_title: str = Field(default="用户物理纠偏", description="Lesson 简短标题"),
+    skill_name: str = Field(description="目标演进技能名称（例如 diagnosing-bugs, tdd 等）"),
+    lesson_title: str = Field(description="Lesson 简短标题（概括踩坑教训与物理原则）"),
     context: str = Field(default="", description="触发纠偏的上下文场景"),
     reflection: str = Field(default="", description="根因与物理逻辑分析"),
     lesson: str = Field(default="", description="提炼出的永久闭环规范"),
 ) -> str:
-    """Harness Reflexion 隐式自演进钩子：自动写入 SKILL.md 归档 Lesson，并双写纯 Markdown 镜像至 OpenViking Master Memory 永久存盘"""
+    """Harness Reflexion 隐式自演进钩子：自动写入本地 SKILL.md 归档 Lesson，并双写纯 Markdown 镜像至 OpenViking Master Memory 永久存盘"""
     try:
-        # 1. 动态查找目标技能文件
+        # 1. 跨平台动态查找目标技能文件 (支持 Windows, WSL, Linux, macOS)
         candidate_paths = []
         if os.path.exists(skill_name):
-            candidate_paths.append(skill_name)
+            candidate_paths.append(Path(skill_name))
+
+        home = Path.home()
+        cwd = Path.cwd()
         candidate_paths.extend([
-            f"/home/skloxo/aho/openclaw/project/OpenVikingStudio/.agents/skills/{skill_name}/SKILL.md",
-            f"/home/skloxo/aho/openclaw/project/.agents/skills/{skill_name}/SKILL.md",
-            os.path.expanduser(f"~/.gemini/config/skills/{skill_name}/SKILL.md"),
-            f"/home/skloxo/aho/openclaw/skills/{skill_name}/SKILL.md",
-            os.path.expanduser(f"~/.openclaw/skills/{skill_name}/SKILL.md"),
+            cwd / ".agents" / "skills" / skill_name / "SKILL.md",
+            cwd / "skills" / skill_name / "SKILL.md",
+            cwd / "openclaw" / "skills" / skill_name / "SKILL.md",
+            home / ".agents" / "skills" / skill_name / "SKILL.md",
+            home / ".gemini" / "config" / "skills" / skill_name / "SKILL.md",
+            home / ".openclaw" / "skills" / skill_name / "SKILL.md",
         ])
         local_written_file = None
         lesson_entry = f"\n\n#### 📌 Lesson {time.strftime('%Y-%m-%d')}：{lesson_title}\n- **CONTEXT**：{context}\n- **REFLECTION**：{reflection}\n- **LESSON**：{lesson}\n"
         for p in candidate_paths:
-            if os.path.exists(p):
+            if p.exists():
                 with open(p, "a", encoding="utf-8") as f:
                     f.write(lesson_entry)
-                local_written_file = p
+                local_written_file = str(p)
                 break
 
         # 2. 双写镜像至 OpenViking Master Memory (体外大脑永久记忆，技能可回滚、知识不回滚)
@@ -372,9 +420,10 @@ def _auto_sync_skills():
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump(all_skills, f, ensure_ascii=False, indent=2)
 
-        studio_public_json = "/home/skloxo/aho/openclaw/project/OpenVikingStudio/public/all_skills.json"
-        if os.path.exists(os.path.dirname(studio_public_json)):
-            with open(studio_public_json, "w", encoding="utf-8") as f:
+        # 动态探测开发工作区 public/ 目录
+        cwd_public = Path.cwd() / "public" / "all_skills.json"
+        if cwd_public.parent.exists():
+            with open(cwd_public, "w", encoding="utf-8") as f:
                 json.dump(all_skills, f, ensure_ascii=False, indent=2)
     except Exception as e:
         logger.warning(f"技能自动同步异常: {e}")
@@ -387,8 +436,8 @@ threading.Thread(target=_auto_sync_skills, daemon=True, name="skill-sync").start
 def _get_config():
     api_key = os.environ.get("OPENVIKING_API_KEY") or os.environ.get("OPENVIKING_ROOT_API_KEY") or ""
     if not api_key:
-        conf_path = os.path.expanduser("~/.openviking/ov.conf")
-        if os.path.exists(conf_path):
+        conf_path = Path.home() / ".openviking" / "ov.conf"
+        if conf_path.exists():
             try:
                 with open(conf_path, "r", encoding="utf-8") as f:
                     conf_data = json.load(f)
@@ -396,8 +445,8 @@ def _get_config():
             except Exception:
                 pass
     if not api_key:
-        cli_conf = os.path.expanduser("~/.openviking/ovcli.conf")
-        if os.path.exists(cli_conf):
+        cli_conf = Path.home() / ".openviking" / "ovcli.conf"
+        if cli_conf.exists():
             try:
                 with open(cli_conf, "r", encoding="utf-8") as f:
                     conf_data = json.load(f)
@@ -415,7 +464,10 @@ def _get_config():
 # ─── CLI Runner ─────────────────────────────────────────────────
 
 def _run_cli(args: List[str], timeout: int = 30) -> Dict[str, Any]:
-    """执行 OpenViking CLI 命令并返回结果 (自动注入 LD_LIBRARY_PATH)"""
+    """执行 OpenViking CLI 命令并返回结果。卫星模式下不调用本地子进程。"""
+    if MCP_MODE == "satellite":
+        return {"error": "卫星模式为纯 HTTP 数据客户端，不调用本地 CLI 二进制"}
+
     cfg = _get_config()
     cmd = [cfg["cli"]] + args
     logger.info(f"CLI: {' '.join(cmd)}")
@@ -423,7 +475,6 @@ def _run_cli(args: List[str], timeout: int = 30) -> Dict[str, Any]:
         env = {
             **os.environ,
             "NO_COLOR": "1",
-            "LD_LIBRARY_PATH": f"/home/skloxo/.local/lib:/usr/lib/x86_64-linux-gnu:{os.environ.get('LD_LIBRARY_PATH', '')}"
         }
         result = subprocess.run(
             cmd,
@@ -816,11 +867,9 @@ def openviking_find(
             return _make_error(err)
 
     def _api():
-        body = {"query": query_str, "limit": limit}
+        body: Dict[str, Any] = {"query": query_str, "limit": limit}
         if target_uri_str:
             body["target_uri"] = target_uri_str
-        else:
-            body["target_uri"] = "viking://resources"
         if score_threshold > 0:
             body["score_threshold"] = score_threshold
         if level_str:
@@ -2269,12 +2318,17 @@ def openviking_usage_stats(
 
 @mcp_tool()
 def openviking_ping() -> str:
-    """检测 OpenViking 连接状态。返回 HTTP API 和 CLI 的可用性。"""
+    """检测 OpenViking 连接状态与模式自检。返回运行模式、连通性与可用工具数。"""
+    cfg = _get_config()
     status = {
+        "status": "ok",
+        "mode": MCP_MODE,
+        "api_url": cfg["api"],
+        "authenticated": bool(cfg["api_key"]),
+        "tools_count": len(SATELLITE_ALLOWED_TOOLS) if MCP_MODE == "satellite" else 54,
+        "platform": sys.platform,
         "http_available": False,
         "cli_available": False,
-        "mode": "unknown",
-        "api_url": _get_config()["api"],
     }
 
     # 测试 HTTP API
@@ -2283,29 +2337,22 @@ def openviking_ping() -> str:
         if "error" not in result:
             status["http_available"] = True
             status["http_health"] = result
+        else:
+            status["status"] = "degraded"
+            status["http_error"] = result.get("error")
     except Exception as e:
+        status["status"] = "degraded"
         status["http_error"] = str(e)
 
-    # 测试 CLI
-    try:
-        result = _run_cli(["--version"], timeout=10)
-        if not _has_error(result):
-            status["cli_available"] = True
-            status["cli_version"] = result.get("output", result.get("version", "unknown"))
-    except Exception as e:
-        status["cli_error"] = str(e)
-
-    # 设置模式
-    if status["http_available"] and status["cli_available"]:
-        status["mode"] = "both"
-    elif status["http_available"]:
-        status["mode"] = "http_only"
-    elif status["cli_available"]:
-        status["mode"] = "cli_only"
-    else:
-        status["mode"] = "disconnected"
-
-    status["cli_only_mode"] = CLI_ONLY_MODE
+    # 卫星模式下不强制要求本地 CLI
+    if MCP_MODE == "core":
+        try:
+            result = _run_cli(["--version"], timeout=10)
+            if not _has_error(result):
+                status["cli_available"] = True
+                status["cli_version"] = result.get("output", result.get("version", "unknown"))
+        except Exception as e:
+            status["cli_error"] = str(e)
 
     return _format_result(status)
 
