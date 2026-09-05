@@ -176,3 +176,46 @@ def test_record_evolution_lesson_dual_writes_to_master_memory(tmp_path):
     assert "测试防丢镜像" in payload["content"]
     assert "知识永远不回滚" in payload["content"]
 
+
+@pytest.mark.asyncio
+async def test_satellite_graceful_shim_intercepts_trimmed_tools():
+    """Verify that in Satellite mode, calling a trimmed tool (e.g. openviking_backup) does not throw ToolError, but returns graceful skipped notification."""
+    mod = _reload_mcp_module("satellite")
+    
+    # 模拟外部 Agent 误调用未暴露的管理接口
+    res = await mod.mcp._tool_manager.call_tool("openviking_backup", {})
+    data = json.loads(res)
+    assert data.get("status") == "skipped"
+    assert data.get("tool") == "openviking_backup"
+    assert "[Satellite Mode]" in data.get("message", "")
+
+
+def test_standalone_satellite_mcp_server():
+    """Verify standalone satellite_mcp_server.py operates independently with 16 tools and graceful shims."""
+    import satellite_mcp_server as sat
+    registered_tools = {tool.name for tool in sat.mcp._tool_manager.list_tools()}
+    assert len(registered_tools) == 16
+    assert "openviking_find" in registered_tools
+    assert "openviking_backup" not in registered_tools
+
+    ping_res = sat.openviking_ping()
+    ping_data = json.loads(ping_res)
+    assert ping_data.get("mode") == "satellite"
+    assert ping_data.get("client_distribution") == "standalone_satellite"
+    assert ping_data.get("tools_count") == 16
+
+
+def test_code_org_file_size_limits():
+    """Verify that following Agent-Friendly Code Organization Spec, every Python file in mcp-openviking is <= 500 lines."""
+    mcp_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../mcp-openviking"))
+    for root, dirs, files in os.walk(mcp_dir):
+        if "__pycache__" in root:
+            continue
+        for f in files:
+            if f.endswith(".py"):
+                file_path = os.path.join(root, f)
+                with open(file_path, "r", encoding="utf-8") as fp:
+                    line_count = len(fp.readlines())
+                assert line_count <= 500, f"File {file_path} has {line_count} lines, exceeding 500 lines limit!"
+
+
