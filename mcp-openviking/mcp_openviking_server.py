@@ -753,7 +753,7 @@ def openviking_list_resources(
         return _make_error(err)
 
     def _api():
-        return http_client.get("/api/v1/resources", {"uri": target_uri})
+        return http_client.get("/api/v1/fs/ls", {"uri": target_uri})
 
     def _cli():
         return _run_cli(["ls", target_uri])
@@ -771,7 +771,7 @@ def openviking_delete_resource(
         return _make_error(err)
 
     def _api():
-        return http_client.delete(f"/api/v1/resources?uri={target_uri}")
+        return http_client.delete(f"/api/v1/fs?uri={target_uri}")
 
     return _api_then_cli(_api, ["rm", target_uri])
 
