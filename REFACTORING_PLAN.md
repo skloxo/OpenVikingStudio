@@ -262,7 +262,7 @@
 
 ### 📌 P0: [x] Card-VK-20 (v1.4.28): TelemetryStore 幽灵线程泄漏彻底根治与系统高负载雪崩自愈 ✅
 - **类型**：Thread Leak Fix, Strict Singleton & Concurrency Resilience ｜ **优先级**：🔴 P0（系统高可用与防雪崩崩塌）
-- **Git Commit**：`待提交` ｜ **Git Tag**：`v1.4.28`
+- **Git Commit**：`da99d4e16` ｜ **Git Tag**：`v1.4.28` ｜ **Build**：`npm run build` ✓ built in 22.40s
 - **计划版本**：`v1.4.28`
 - **背景与痛点**：
   1. 用户询问“看看VK运行正常吗”，排查发现服务存在严重的隐蔽性能恶化：Load Average 高达 **189.25**，进程任务线程数暴涨至 **2,471** 个，HTTP 响应时延恶化至 **400+ 秒**；
