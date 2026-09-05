@@ -273,7 +273,7 @@ def register_system_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Callabl
 
         status = {
             "status": "ok",
-            "server_version": "1.4.32",
+            "server_version": "1.4.33",
             "mode": active_mode,
             "api_url": cfg["api"],
             "authenticated": bool(cfg["api_key"]),

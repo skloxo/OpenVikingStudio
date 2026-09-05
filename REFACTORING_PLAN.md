@@ -38,10 +38,11 @@
 | **Card-VK-22** | **重大安全漏洞加固（Root Key 轮换与硬编码铲除、强制 api_key 鉴权）、监控速率打通与检索超时治理** | 1. 彻底拔除代码库硬编码 key，启用环境变量/配置文件分级安全读取；<br>2. 废除旧泄露 key，服务端强制开启 `api_key` 模式，401 阻断未经授权请求；<br>3. 打通监控大盘真实记忆瘦身率 (94.9%) 与 2080Ti 向量化速率 (425 Vec/s)；<br>4. 注入遍历深度防御网，治理检索 58s 严重超时卡死问题 | 外部未授权与旧 key 100% 物理阻断，监控大盘零 `--` 缺失，检索 5.2s 内极速完成，18 项单测全绿，Vite 构建 PASS | `v1.4.30` | [x] 已验收通过 ✅ |
 | **Card-VK-23** | **卫星 MCP (Satellite MCP) 纯 User Key 契约、非特权工具切除与通用数据面重构** | 1. 卫星与核心 MCP 物理解耦，卫星模式精选暴露 16 个全能数据工具（4大检索基石+6大代码排障+6大结构环境）；<br>2. 彻底切除 42 个服务端运维控制与危险特权工具；<br>3. 卫星 MCP 纯普通 User Key 驱动，彻底解除对 Root Key 依赖；<br>4. 拔除 Linux 个人路径与开发期脏默认参数，pathlib.Path.home() 跨平台动态探测；<br>5. `openviking_find` 注入强注意力触发头 `【Mandatory First Step / 开局必调】`；<br>6. `openviking_ping` 升级为模式自检握手，返回 mode/authenticated/tools_count/platform；<br>7. 卫星模式短路 `_run_cli`，彻底禁止本地子进程调用；<br>8. 增加针对 16 工具白名单、注意力头、ping 元数据的单测（5/5 PASS）；<br>**Commit Hash**：（本次提交）\| **修改文件**：`mcp-openviking/mcp_openviking_server.py`, `tests/server/test_dual_mode_mcp.py`, `openviking/_version.py`, `package.json` | 卫星模式 16 个全能工具全部覆盖（超出规划），零特权泄露，单测 5/5 全绿，`npm run build` 21.48s PASS | `v1.4.31` | [x] 已验收通过 ✅ |
 
-| **Card-VK-24** | **外部客户端 Agent 平滑升级体系、版本协商与轻量化独立分发** | 1. 卫星 MCP 独立轻量单文件分发（解耦整个前端 Monorepo，依赖仅 `mcp`+`httpx`）；<br>2. 双模式向后兼容垫片 (Shim)，旧特权工具调用返回友好引导而非崩溃报错；<br>3. `openviking_ping` 增加版本协商与环境健康握手诊断；<br>4. 一键平滑升级与环境配置脚本 | 现有外部 Agent（如 WorkBuddy）平滑升级无中断，零 401/403 踩坑，启动自检清晰自解释 | `v1.4.32` | 📋 排队中 (P0) |
-| **Card-VK-25** | **检索冷启动性能削峰、分级遍历防线与并发超时治理** | 1. 服务端生命周期模型预热（消除首次调用 20s 冷启动雪崩）；<br>2. 目录遍历分级剪枝与最大深度硬拦截（`MAX_DEPTH=3`, `MAX_DIRS=15`）；<br>3. 边缘 LRU 短暂缓存高频 Query，彻底杜绝 IDE 30s 击穿超时 | 首次检索响应缩短至 1s 内，深层非结构化遍历稳定在 2s 内，单测与并发压测 100% PASS | `v1.4.33` | 📋 排队中 (P1) |
-| **Card-VK-26** | **外部 Agent “系统级强制调用 VK” 简约高鲁棒实施框架与实战规范 (Pragmatic Auto-Dispatch)** | 1. 坚决切除笨重易碎的反向代理网关，践行奥卡姆剃刀；<br>2. 开放宿主落地极简原生 Hook（开局预取、收尾存盘）；<br>3. 封闭宿主（WorkBuddy等）采用“高注意力触发 Schema + 契约自驱 + 分级渐进展开 (Progressive Disclosure)”；<br>4. 融入 Antigravity 实战经验（极简高密摘要、防上下文膨胀、超时容错兜底） | WorkBuddy 等任何外部 Agent 形成“以 find 起手、以 store 收尾”的高确定性习惯，零额外代理进程，稳定鲁棒 | `v1.4.34` | 📋 排队中 (P1) |
-| **Card-VK-27** | **全局异步任务统筹收口与任务中心全景架构升级** | 统一收拢所有模块异步任务至 TaskTracker 与任务中心；消除 24h 过滤导致的陈旧活跃任务不可见缺陷；打通 Playground 上传弹窗与全局任务中心强锚点；统一重试与清理能力 | 任务中心 100% 涵盖所有异步任务，局部与全局无缝联动，Vite 构建 PASS | `v1.4.35` | 📋 排队中 (P2) |
+| **Card-VK-24** | **外部客户端 Agent 平滑升级体系、版本协商与轻量化独立分发** | 1. 卫星 MCP 独立轻量单文件分发（解耦整个前端 Monorepo，依赖仅 `mcp`+`httpx`）；<br>2. 双模式向后兼容垫片 (Shim)，旧特权工具调用返回友好引导而非崩溃报错；<br>3. `openviking_ping` 增加版本协商与环境健康握手诊断；<br>4. 一键平滑升级与环境配置脚本 | 现有外部 Agent（如 WorkBuddy）平滑升级无中断，零 401/403 踩坑，启动自检清晰自解释 | `v1.4.32` | [x] 已验收通过 ✅ |
+| **Card-VK-24.1** | **核心 MCP 54 项全量能力遍历回归自检与平滑迭代交付** | 1. 核心 MCP 54 项原生工具物理连通遍历回归测试 (`test_core_capabilities_regression.py`) 覆盖 6 大业务域；<br>2. 修复代码搜索等参数签名对齐；<br>3. 全量版本升级至 v1.4.33 并提供外部 Agent 升级联调提示词 | 7 大测试组全部 PASS (54/54 工具 100% 连通无损)，双模 MCP 8/8 单测 PASS，Vite 构建 PASS | `v1.4.33` | [x] 已验收通过 ✅ |
+| **Card-VK-25** | **检索冷启动性能削峰、分级遍历防线与并发超时治理** | 1. 服务端生命周期模型预热（消除首次调用 20s 冷启动雪崩）；<br>2. 目录遍历分级剪枝与最大深度硬拦截（`MAX_DEPTH=3`, `MAX_DIRS=15`）；<br>3. 边缘 LRU 短暂缓存高频 Query，彻底杜绝 IDE 30s 击穿超时 | 首次检索响应缩短至 1s 内，深层非结构化遍历稳定在 2s 内，单测与并发压测 100% PASS | `v1.4.34` | 📋 排队中 (P1) |
+| **Card-VK-26** | **外部 Agent “系统级强制调用 VK” 简约高鲁棒实施框架与实战规范 (Pragmatic Auto-Dispatch)** | 1. 坚决切除笨重易碎的反向代理网关，践行奥卡姆剃刀；<br>2. 开放宿主落地极简原生 Hook（开局预取、收尾存盘）；<br>3. 封闭宿主（WorkBuddy等）采用“高注意力触发 Schema + 契约自驱 + 分级渐进展开 (Progressive Disclosure)”；<br>4. 融入 Antigravity 实战经验（极简高密摘要、防上下文膨胀、超时容错兜底） | WorkBuddy 等任何外部 Agent 形成“以 find 起手、以 store 收尾”的高确定性习惯，零额外代理进程，稳定鲁棒 | `v1.4.35` | 📋 排队中 (P1) |
+| **Card-VK-27** | **全局异步任务统筹收口与任务中心全景架构升级** | 统一收拢所有模块异步任务至 TaskTracker 与任务中心；消除 24h 过滤导致的陈旧活跃任务不可见缺陷；打通 Playground 上传弹窗与全局任务中心强锚点；统一重试与清理能力 | 任务中心 100% 涵盖所有异步任务，局部与全局无缝联动，Vite 构建 PASS | `v1.4.36` | 📋 排队中 (P2) |
 
 ---
 
@@ -129,9 +130,37 @@
   - 调用被精简工具时优雅返回提示，无 JSON-RPC 异常；
   - 双模 MCP 单元测试与前端 Vite 构建 100% PASS。
 
-### 📌 P1: [ ] Card-VK-25 (v1.4.33): 检索冷启动性能削峰、分级遍历防线与并发超时治理
+### 📌 P0: [x] Card-VK-24.1 (v1.4.33): 核心 MCP 54 项全量能力遍历回归自检与平滑迭代交付 ✅
+- **类型**：Core MCP Full-Traversal Regression & Capability Resilience ｜ **优先级**：🔴 P0（核心能力基石、全量连通性与交付质量）
+- **计划版本**：`v1.4.33`（实际交付版本: `v1.4.33`）
+- **背景与痛点**：
+  1. 核心 MCP 从 2369 行巨型单文件按照《Agent 友好代码组织规约》拆解为 `_core/` + `tools/` 模块化架构后，必须确保所有 54 项能力物理连通 100% 无损；
+  2. 严防工具签名与参数清洗装饰器导致任何异常；
+  3. 为跨机器、已安装旧版 MCP 的外部 Agent 提供标准平滑升级提示词与测试矩阵。
+- **交付内容**：
+  1. **构建核心全量回归套件**：编写 `tests/server/test_core_capabilities_regression.py`，全量遍历 Core 模式下 54 个原生工具，覆盖 6 大业务领域（观测、记忆、文件系统、代码智能、技能、系统运维），直连 1933 端口完成端到端调用自检（7/7 测试组 100% PASS）；
+  2. **方法签名与容错清洗修复**：修复 `openviking_code_search` 等工具参数签名对齐；
+  3. **版本链平滑递增至 v1.4.33**：`package.json`, `_version.py`, `mcp_openviking_server.py`, `tools/system.py`, `satellite_mcp_server.py` 全链路同步更新至 `1.4.33`；
+  4. **双模态测试与构建双全验证**：`tests/server/test_dual_mode_mcp.py` (8/8 PASS)，`npm run build` (25.05s PASS)；
+  5. **外部旧版 Agent 升级联调提示词**：输出针对已安装旧版 MCP 机器的标准化升级提示词与回归自检指南。
+- **验收记录**：
+  - Commit: `744998ed7` (测试套件) + 本次版本发布 Commit
+  - Tag: `v1.4.33`
+  - 交付文件清单：
+    - `tests/server/test_core_capabilities_regression.py`
+    - `package.json`, `openviking/_version.py`
+    - `mcp-openviking/mcp_openviking_server.py`
+    - `mcp-openviking/satellite_mcp_server.py`
+    - `mcp-openviking/tools/system.py`
+    - `REFACTORING_PLAN.md`
+- **验收标准**：
+  - Core 54 工具全量回归 100% PASS；
+  - 前端与单测全绿；
+  - Git Tag `v1.4.33` 物理打标并推流。
+
+### 📌 P1: [ ] Card-VK-25 (v1.4.34): 检索冷启动性能削峰、分级遍历防线与并发超时治理
 - **类型**：Retriever Cold-Start Elimination, Hierarchical Pruning & Concurrency Guard ｜ **优先级**：🟡 P1（稳定性与检索极速体验）
-- **计划版本**：`v1.4.33`
+- **计划版本**：`v1.4.34`
 - **背景与痛点**：
   1. **冷启动首敲雪崩**：外部 Agent 报告中反映首次调用 `find` 耗时高达 20.3 秒，重试后恢复为 2.4 秒。原因是 2080Ti 本地 Reranker (Cross-Encoder) 与 Embedding 模型在收到第一个请求时才被加载编译进显存；
   2. **目录树遍历深层放大**：深层非结构化目录在缺乏摘要时仍可能退化为递归广度搜索，增加重排并发压力。
