@@ -36,11 +36,122 @@
 | **Card-VK-20** | **TelemetryStore 幽灵线程泄漏彻底根治与系统高负载雪崩自愈** | 1. 根治 `TelemetryStore` 未严格单例导致每次观测轮询反复新建后台写入线程的致命缺陷；<br>2. 引入 `__new__` + 初始化锁硬核防线，全系统收口 `get_instance()`；<br>3. 彻底消除高频轮询导致的数千线程雪崩与 Load Average 189 假死危机 | 系统线程稳定收敛至 ~50 个，Load Average 从 189 极速回落至 2.2，接口时延由 400s 降至毫秒级 | `v1.4.28` | [x] 已验收通过 ✅ |
 | **Card-VK-21** | **观测大屏与核心服务物理级解耦、轻量快照削峰填谷与前端优雅休眠防线** | 1. 坚决贯彻奥卡姆剃刀与第一性原理，优先保障核心服务（FastMCP、VikingFS、检索），观测居次要地位；<br>2. 后端 observer 引入极轻量 10s 内存快照缓存 (`_get_cached_or_compute`)，GPU/主机探针 5s 缓存阻断高频进程派生；<br>3. 前端监控大屏优雅降频 (30s/60s) 并强制注入 `refetchIntervalInBackground: false`，离开页面物理断流休眠 | 观测接口毫秒级极速响应 (4.5ms)，零多余框架依赖，页面切后台零请求，CPU Load 稳降至 1.2，构建 100% PASS | `v1.4.29` | [x] 已验收通过 ✅ |
 | **Card-VK-22** | **重大安全漏洞加固（Root Key 轮换与硬编码铲除、强制 api_key 鉴权）、监控速率打通与检索超时治理** | 1. 彻底拔除代码库硬编码 key，启用环境变量/配置文件分级安全读取；<br>2. 废除旧泄露 key，服务端强制开启 `api_key` 模式，401 阻断未经授权请求；<br>3. 打通监控大盘真实记忆瘦身率 (94.9%) 与 2080Ti 向量化速率 (425 Vec/s)；<br>4. 注入遍历深度防御网，治理检索 58s 严重超时卡死问题 | 外部未授权与旧 key 100% 物理阻断，监控大盘零 `--` 缺失，检索 5.2s 内极速完成，18 项单测全绿，Vite 构建 PASS | `v1.4.30` | [x] 已验收通过 ✅ |
-| **TASK-STUDIO-TASK-UNIFY-01** | **全局异步任务统筹收口与任务中心全景架构升级** | 统一收拢所有模块异步任务至 TaskTracker 与任务中心；消除 24h 过滤导致的陈旧活跃任务不可见缺陷；打通 Playground 上传弹窗与全局任务中心强锚点；统一重试与清理能力 | 任务中心 100% 涵盖所有异步任务，局部与全局无缝联动，Vite 构建 PASS | `v1.4.31` | 📋 排队中 |
+| **Card-VK-23** | **卫星 MCP (Satellite MCP) 纯 User Key 契约、非特权工具切除与通用数据面重构** | 1. 卫星与核心 MCP 物理解耦，卫星模式仅暴露 ~8 个核心数据面工具；<br>2. 彻底切除 40+ 服务端运维控制与危险破坏性特权工具；<br>3. 卫星 MCP 纯普通 User Key 驱动，彻底解除对 Root Key 依赖；<br>4. 拔除 Linux 个人路径与开发期脏默认参数，支持 Windows/Mac/Linux 原生秒启；<br>5. 重构通用 `openviking_store` 契约，支持结构化沉淀记忆/资源/洞察 | 卫星模式工具列表纯净（8~10 个），外部 Agent 使用普通 User Key 正常读写数据面，零特权泄露，单测全绿 | `v1.4.31` | 📋 排队中 (P0) |
+| **Card-VK-24** | **外部客户端 Agent 平滑升级体系、版本协商与轻量化独立分发** | 1. 卫星 MCP 独立轻量单文件分发（解耦整个前端 Monorepo，依赖仅 `mcp`+`httpx`）；<br>2. 双模式向后兼容垫片 (Shim)，旧特权工具调用返回友好引导而非崩溃报错；<br>3. `openviking_ping` 增加版本协商与环境健康握手诊断；<br>4. 一键平滑升级与环境配置脚本 | 现有外部 Agent（如 WorkBuddy）平滑升级无中断，零 401/403 踩坑，启动自检清晰自解释 | `v1.4.32` | 📋 排队中 (P0) |
+| **Card-VK-25** | **检索冷启动性能削峰、分级遍历防线与并发超时治理** | 1. 服务端生命周期模型预热（消除首次调用 20s 冷启动雪崩）；<br>2. 目录遍历分级剪枝与最大深度硬拦截（`MAX_DEPTH=3`, `MAX_DIRS=15`）；<br>3. 边缘 LRU 短暂缓存高频 Query，彻底杜绝 IDE 30s 击穿超时 | 首次检索响应缩短至 1s 内，深层非结构化遍历稳定在 2s 内，单测与并发压测 100% PASS | `v1.4.33` | 📋 排队中 (P1) |
+| **Card-VK-26** | **外部 Agent “系统级强制调用 VK” 简约高鲁棒实施框架与实战规范 (Pragmatic Auto-Dispatch)** | 1. 坚决切除笨重易碎的反向代理网关，践行奥卡姆剃刀；<br>2. 开放宿主落地极简原生 Hook（开局预取、收尾存盘）；<br>3. 封闭宿主（WorkBuddy等）采用“高注意力触发 Schema + 契约自驱 + 分级渐进展开 (Progressive Disclosure)”；<br>4. 融入 Antigravity 实战经验（极简高密摘要、防上下文膨胀、超时容错兜底） | WorkBuddy 等任何外部 Agent 形成“以 find 起手、以 store 收尾”的高确定性习惯，零额外代理进程，稳定鲁棒 | `v1.4.34` | 📋 排队中 (P1) |
+| **Card-VK-27** | **全局异步任务统筹收口与任务中心全景架构升级** | 统一收拢所有模块异步任务至 TaskTracker 与任务中心；消除 24h 过滤导致的陈旧活跃任务不可见缺陷；打通 Playground 上传弹窗与全局任务中心强锚点；统一重试与清理能力 | 任务中心 100% 涵盖所有异步任务，局部与全局无缝联动，Vite 构建 PASS | `v1.4.35` | 📋 排队中 (P2) |
 
 ---
 
 ## ⚡ 二、 当前活跃与待调度 Studio 原子工单 (Scheduled Active Task Cards)
+
+### 📋 待调度工单队列 (Pending Pipeline Cards - 优先顺序开发)
+
+### 📌 P0: [ ] Card-VK-23 (v1.4.31): 卫星 MCP (Satellite MCP) 纯 User Key 契约、非特权工具切除与通用数据面重构
+- **类型**：Satellite MCP Hardening, Privilege Decoupling, Pure User-Key & Generic Store ｜ **优先级**：🔴 P0（客户端权限安全、模型注意力保护与跨平台开箱即用）
+- **计划版本**：`v1.4.31`
+- **背景与痛点**：
+  1. **权限混乱与特权外泄**：原 `mcp_openviking_server.py` 无差别暴露 54 个全量工具，外部 Agent（如 WorkBuddy 等）拉取后，误以为必须配置管理员级 Root Key。一旦配置，外部普通客户端便获得了备份、快照还原、甚至重启服务端的特权；若配置普通 User Key 则调用数据面被拒；
+  2. **注意力稀释与大模型幻觉**：54 个工具全部注入客户端 Prompt，导致 LLM 在工具路由时选择困难，高频选错工具或在日常问答中盲目尝试调用运维工具；
+  3. **跨平台兼容缺陷与开发期脏默认参数**：工具实现中硬编码了个人路径 `/home/skloxo/...`，导致 Windows 外部客户端抛出路径不存在错误；默认参数中遗留了 `openviking-studio-dev`、`用户物理纠偏` 等脏调试值；
+  4. **存盘能力不通用**：`openviking_store` 被绑定在开发期特定入参，外部 Agent 无法将自主总结的经验、长文本或任务记忆灵活结构化存盘。
+- **交付内容**：
+  1. **卫星模式 (Satellite Mode) 工具精炼与解耦**：
+     - 当以卫星模式运行（未提供 Root Key 或设置 `OPENVIKING_MODE=satellite`）时，**有且仅暴露 8 个核心数据面工具**：
+       - `openviking_find`：两阶段快速语义检索（语义粗排 + 2080Ti Rerank 深度重排，带语义阈值与 top_k）；
+       - `openviking_search`：深度全文与命名空间/Tag 过滤检索；
+       - `openviking_read`：按 URI 安全读取记忆与文档切片（支持 offset 与 limit 分片）；
+       - `openviking_store`：通用记忆与知识持久化存盘（支持结构化 URI、内容、元数据与标签）；
+       - `openviking_record_evolution_lesson`：智能体踩坑事实与演进经验上报至 `viking://resources/master_memory/`；
+       - `openviking_ls`：安全命名空间目录只读查看（仅限 `user/` 与 `resources/`，物理隔离 `_system`）；
+       - `openviking_skills`：只读发现当前知识中枢托管的技能规范与提示词；
+       - `openviking_ping`：连通性与健康状态自检。
+     - **彻底切除 40+ 管理类特权接口**（`server_control`, `server_init`, `server_doctor`, `backup`, `restore`, `delete_resource`, `consistency`, `metrics`, `usage_stats` 等）。
+  2. **纯 User Key 契约与非特权鉴权**：
+     - 卫星 MCP 仅需配置普通 User API Key (`OPENVIKING_API_KEY`)；
+     - 客户端代码彻底切除对 Root Key 的强制校验与回退提示，普通用户凭证即可完整读写数据面；
+  3. **跨平台兼容与脏默认参数肃清**：
+     - 彻底切除 Linux 个人路径硬编码（`/home/skloxo/...`），采用跨平台 `Path.home()` 与规范 URI；
+     - 拔除 `openviking_store` 中写死的测试参数，提供通用的 `uri`, `content`, `tags`, `metadata` 签名；
+     - 确保 Windows 11、macOS、Linux 下开箱即用，零路径报错。
+- **验收标准**：
+  - 启动卫星模式后，客户端 `tools/list` 仅返回 8 个精益数据工具；
+  - 仅配置 User Key 下，`find`、`read`、`store` 读写闭环验证 100% 成功；
+  - Windows 环境下无路径错误，自动化单测 100% PASS。
+
+### 📌 P0: [ ] Card-VK-24 (v1.4.32): 外部客户端 Agent 平滑升级体系、版本协商与轻量化独立分发
+- **类型**：Agent Smooth Upgrade, Lightweight Distribution & Backward Compatibility Shim ｜ **优先级**：🔴 P0（外部生态接入、平滑无感演进与架构解耦）
+- **计划版本**：`v1.4.32`
+- **背景与痛点**：
+  1. **Monorepo 笨重捆绑**：现有外部 Agent（如 WorkBuddy、Mac 节点）为了运行一个轻量 MCP，需要 git clone 整个几百兆的 OpenVikingStudio 代码库并拉取庞大依赖；
+  2. **版本突变崩溃风险**：若客户端升级直接物理剔除旧特权工具，外部 Agent 在已有会话中如果触发了旧工具调用会引发 JSON-RPC Protocol Error 崩溃；
+  3. **缺乏握手与自检**：客户端启动时无法得知当前连接的服务端版本、是否连接成功、是核心模式还是卫星模式。
+- **交付内容**：
+  1. **独立轻量分发包 (Satellite Standalone Distribution)**：
+     - 抽离出单文件/独立运行脚本 `satellite_mcp_server.py`，依赖仅限于标准 `mcp` 与 `httpx`，外部 Agent 无需拉取任何前端源码与服务端重量级库，10 秒内完成配置；
+  2. **向后兼容优雅垫片 (Graceful Deprecation Shim)**：
+     - 在卫星模式下，若客户端意外调用了被精简的管理工具（如 `openviking_backup`），不抛出 RPC 错误，而是返回明确友好的声明：`{"status": "skipped", "message": "[Satellite Mode] 该运维管理功能受权限保护，仅限本地核心 MCP 管理员调用。当前卫星客户端只执行数据面协同。"}`；
+  3. **版本协商与环境健康握手 (`openviking_ping`)**：
+     - 丰富 `openviking_ping` 输出，返回：`server_version`、`client_mode: satellite`、`authenticated_user`、`latency_ms`、`available_tools_count`，供外部 Agent 在初始化时自检并输出日志；
+  4. **外部 Agent 接入标准模板与一键升级脚本**：
+     - 提供 `install_satellite.sh` 与 `install_satellite.bat`，以及标准的 WorkBuddy / Cursor / Claude Code MCP 配置 JSON 样例。
+- **验收标准**：
+  - 独立脚本在全新 Python 虚拟环境中（仅 pip install mcp httpx）秒级启动；
+  - 调用被精简工具时优雅返回提示，无 JSON-RPC 异常；
+  - 交付完备的《外部 Agent 接入与升级指南》。
+
+### 📌 P1: [ ] Card-VK-25 (v1.4.33): 检索冷启动性能削峰、分级遍历防线与并发超时治理
+- **类型**：Retriever Cold-Start Elimination, Hierarchical Pruning & Concurrency Guard ｜ **优先级**：🟡 P1（稳定性与检索极速体验）
+- **计划版本**：`v1.4.33`
+- **背景与痛点**：
+  1. **冷启动首敲雪崩**：外部 Agent 报告中反映首次调用 `find` 耗时高达 20.3 秒，重试后恢复为 2.4 秒。原因是 2080Ti 本地 Reranker (Cross-Encoder) 与 Embedding 模型在收到第一个请求时才被加载编译进显存；
+  2. **目录树遍历深层放大**：深层非结构化目录在缺乏摘要时仍可能退化为递归广度搜索，增加重排并发压力。
+- **交付内容**：
+  1. **服务端启动期模型预热 (Warmup Pipeline)**：
+     - 在 FastAPI 启动生命周期（`lifespan`）中注入异步预热任务，自动执行一次 dummy 向量化与重排计算，完成 CUDA context 初始化与权重显存装载，使首次客户端请求耗时从 20s 压降至 500ms 内；
+  2. **分级遍历剪枝防线 (Hierarchical Pruning Gate)**：
+     - 在 `hierarchical_retriever.py` 中建立两阶段剪枝：第一阶段先基于目录 L0 Summary 计算余弦相关度，低于阈值的子树整枝剔除；第二阶段对遍历目录数实施硬性熔断（`MAX_VISITED_DIRS = 15`，`MAX_DEPTH = 3`）；
+  3. **边缘短期查询缓存 (Edge Query Cache)**：
+     - 为高频重复检索（如 Agent 重试或多轮对话引用相同关键词）提供 60s TTL 的极轻量 LRU 结果缓存。
+- **验收标准**：
+  - 服务重启后，首个客户端 `openviking_find` 请求响应时间 $\le 1.0\text{s}$；
+  - 深层复杂检索无任何超时或 502 崩溃；
+  - 自动化检索单测与基准压测 100% PASS。
+
+### 📌 P1: [ ] Card-VK-26 (v1.4.34): 外部 Agent “系统级强制调用 VK” 简约高鲁棒实施框架与实战规范 (Pragmatic Auto-Dispatch SSOT)
+- **类型**：Agent Auto-Dispatch, High-Attention Trigger Schema & Progressive Disclosure ｜ **优先级**：🟡 P1（大模型使用习惯、生态闭环与第一性原则规范）
+- **计划版本**：`v1.4.34`
+- **设计哲学与第一性原则 (Anti-Overengineering & Occam's Razor)**：
+  1. **切除过度工程化**：坚决不开发本地 HTTP 反向代理网关（避免引入流式 SSE 协议差异、端口冲突与多进程故障单点）；
+  2. **回归 Transformer 第一性原理**：LLM 的行为由【输入上下文 (Prompt)】与【工具注意力激活 (Tool Attention Schema)】共同决定；只要给足注意力触发头，大模型在规划阶段首选率即达 95%+；
+  3. **融入 Antigravity 自身实操经验 (Self-Experience Reflexion)**：
+     - *经验 ① 概念等价公理化*：开局注入 `Wiki ≡ VK ≡ OpenViking ≡ 体外大脑`，消除概念混淆；
+     - *经验 ② 分级展开 (Progressive Disclosure)*：`find` 绝不返回整篇长文，仅返回【极简高密摘要 (L0/L1) + 权威 URI + 余弦得分】，绝不撑爆上下文；长文由 `read` 按需懒加载；
+     - *经验 ③ 留痕仪式闭环 (Closing Ritual)*：将“结题必须 store”与任务完成状态强绑定，干活必留痕；
+     - *经验 ④ 优雅降级与超时熔断*：客户端 5s 超时断流保护，服务端卡顿平滑降级，绝不卡死 Agent 思考环。
+- **交付内容**：
+  1. **极简双轨自驱架构落地 (Dual-Track Pragmatic Framework)**：
+     - **轨道 A（开放宿主原生 Hook - Native Hook）**：
+       - 针对 OpenClaw、Antigravity、Claude Code 等具备事件钩子的宿主，提供原生 10 行极简钩子：
+         - `pre_user_turn`：截获输入，静默调用 `VK.find(query)` 并将 top-3 极简摘要拼接进 User Prompt 头部；
+         - `post_agent_turn`：任务结束触发异步提纯，调用 `VK.store()`；
+         - 零中间进程，100% 物理必然注入。
+     - **轨道 B（封闭宿主：强注意力触发 Schema + 契约自驱 - Attention Trigger & Contract FSM）**：
+       - 针对 WorkBuddy、Cursor 等封闭商业桌面端（无法修改宿主二进制与注入原生 Hook）：
+         - **Schema 改造**：在卫星 MCP 的 `openviking_find` 描述开头注入强注意力激活头：`Description: "【Mandatory First Step / 开局必调】在开始分析、回答任何工程、架构或排障问题前，必须首先调用此工具查询体外大脑（VK）中的历史经验、设计偏好与避坑规则。"`
+         - **分级展开 (Progressive Disclosure)**：`find` 输出统一采用标准紧凑 Markdown 卡片，严禁直接返回成千上万字原始上下文；
+         - **标准化极简 System Prompt 契约模板**：提取 100 字自解释规则（直接复制至客户端 System Prompt 中即可生效），强制 Agent 状态机遵循：`[开局 find] -> [按需 read] -> [执行] -> [收尾 store/lesson]`。
+  2. **交付《外部 Agent 接入 OpenViking 极简自驱与规范落地白皮书》**。
+- **验收标准**：
+  - 在 WorkBuddy 真实会话中，Agent 面对工程/架构提问时，100% 自动以 `openviking_find` 起手；
+  - 检索返回高密摘要（单条 <= 200 字），Agent 上下文不膨胀，问答流畅；
+  - 任务解决后主动触发 `openviking_record_evolution_lesson` 留痕；
+  - 零多余常驻网关进程，架构极简、高内聚、高鲁棒。
+
+---
+
+### 📦 历史已交付工单履历 (Delivered Release Cards)
 
 ### 📌 P0: [x] Card-VK-15 (v1.4.22): 首页技能总数 762 真实对齐、Agent Peer 动态拓扑与 FastMCP 检索记账打通 ✅
 - **类型**：SSOT Alignment, Real Peer Mesh & Usage Audit Ingestion ｜ **优先级**：🔴 P0（首页核心数据真实性与体外大脑看护）
