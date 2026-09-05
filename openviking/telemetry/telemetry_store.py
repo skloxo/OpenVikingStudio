@@ -58,25 +58,35 @@ class TelemetryStore:
     _instance: Optional[TelemetryStore] = None
     _instance_lock = threading.Lock()
 
-    def __init__(self, db_path: Optional[Path | str] = None) -> None:
-        self._db_path = self._resolve_db_path(db_path)
-        self._lock = threading.Lock()
-        self._queue: queue.Queue = queue.Queue(maxsize=10000)
-        self._running = True
-        self._worker_thread: Optional[threading.Thread] = None
+    def __new__(cls, db_path: Optional[Path | str] = None) -> TelemetryStore:
+        if cls._instance is None:
+            with cls._instance_lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
+                    cls._instance._initialized = False
+        return cls._instance
 
-        self._ensure_db_dir()
-        self._init_db_schema()
-        self._start_worker()
+    def __init__(self, db_path: Optional[Path | str] = None) -> None:
+        if getattr(self, "_initialized", False):
+            return
+        with self._instance_lock:
+            if getattr(self, "_initialized", False):
+                return
+            self._db_path = self._resolve_db_path(db_path)
+            self._lock = threading.Lock()
+            self._queue: queue.Queue = queue.Queue(maxsize=10000)
+            self._running = True
+            self._worker_thread: Optional[threading.Thread] = None
+
+            self._ensure_db_dir()
+            self._init_db_schema()
+            self._start_worker()
+            self._initialized = True
 
     @classmethod
     def get_instance(cls, db_path: Optional[Path | str] = None) -> TelemetryStore:
         """Get or create singleton instance."""
-        if cls._instance is None:
-            with cls._instance_lock:
-                if cls._instance is None:
-                    cls._instance = cls(db_path)
-        return cls._instance
+        return cls(db_path)
 
     @staticmethod
     def _resolve_db_path(explicit_path: Optional[Path | str] = None) -> Path:

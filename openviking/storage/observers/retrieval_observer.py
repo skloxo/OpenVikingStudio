@@ -40,7 +40,7 @@ class RetrievalObserver(BaseObserver):
         try:
             from openviking.telemetry.telemetry_store import TelemetryStore
 
-            ts = TelemetryStore()
+            ts = TelemetryStore.get_instance()
             baseline = ts.get_retrieval_baseline()
         except Exception as e:
             logger.debug(f"Failed to query retrieval baseline from TelemetryStore: {e}")

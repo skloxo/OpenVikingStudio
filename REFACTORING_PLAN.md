@@ -33,7 +33,8 @@
 | **Card-VK-18** | **全代码库硬编码、假数据与伪随机 (Math.random) 全盘大扫除专项** | 1. 新增 `/api/v1/system/resources` 真实探针，拔除 `system-resource-chart.tsx` 中 `Math.random() * 4` 与正弦波伪造曲线；<br>2. 接入 `today_tokens` 真实分布，拔除 `token-breakdown-pie-chart.tsx` 中 `29596` 硬编码与 68%/25%/7% 假切片；<br>3. 拔除 `parse-metrics.ts` 中 `* 12.5` 假乘数与合成瘦身率公式；<br>4. 物理删除死代码 `gpu-vram-chart.tsx` 与 `App.tsx`；<br>5. 100% 肃清全代码库 `emerald`/`green` 违规类，铁血践行 NO GREEN EVER | 全局业务零 `Math.random()`，图表零伪造抖动，NO GREEN 100% 冰青规范，Vite 构建与浏览器实测通过 | `v1.4.25` | [x] 已验收通过 ✅ |
 | **Card-VK-14** | **哈尼斯 (Harness) 意图雷达与踩坑履历 100% 真实化重构** | 彻底拔除 `harness-logs.tsx` 中硬编码 `if text.includes('bug')` 和静态置信度假数字；全量接入真实 `/api/v1/search` 向量语义检索算子与余弦相似度；踩坑履历全量直连体外大脑 `viking://resources/master_memory/` | 零前端 Mock，输入任意自然语言真实计算向量距离与碰撞警告，经验履历从 SQLite 实时动态拉取 | `v1.4.26` | [x] 已验收通过 ✅ |
 | **Card-VK-19** | **MCP 密钥固化、监控大屏时序去硬编码真实化与 4 维 Token 透明分布** | 1. MCP 密钥持久化固化于配置与服务兜底中，修饰器自动解包 FieldInfo 消除序列化崩塌；<br>2. 彻底拔除 `telemetry_store.py` 中 SLA 与检索得分硬编码常量，真实动态时序驱动；<br>3. Token 分布补齐 Rerank 并强制呈现 4 维物理模型图例；<br>4. 查清 752 纯净合规技能数物理真相并完成 Harness TC-06 全量自测 | 彻底消灭 MCP 找错密钥痛点，监控大屏曲线真实起伏，饼图 4 维透明展示，Harness 全绿 | `v1.4.27` | [x] 已验收通过 ✅ |
-| **TASK-STUDIO-TASK-UNIFY-01** | **全局异步任务统筹收口与任务中心全景架构升级** | 统一收拢所有模块异步任务至 TaskTracker 与任务中心；消除 24h 过滤导致的陈旧活跃任务不可见缺陷；打通 Playground 上传弹窗与全局任务中心强锚点；统一重试与清理能力 | 任务中心 100% 涵盖所有异步任务，局部与全局无缝联动，Vite 构建 PASS | `v1.4.28` | 📋 排队中 |
+| **Card-VK-20** | **TelemetryStore 幽灵线程泄漏彻底根治与系统高负载雪崩自愈** | 1. 根治 `TelemetryStore` 未严格单例导致每次观测轮询反复新建后台写入线程的致命缺陷；<br>2. 引入 `__new__` + 初始化锁硬核防线，全系统收口 `get_instance()`；<br>3. 彻底消除高频轮询导致的数千线程雪崩与 Load Average 189 假死危机 | 系统线程稳定收敛至 ~50 个，Load Average 从 189 极速回落至 2.2，接口时延由 400s 降至毫秒级 | `v1.4.28` | [x] 已验收通过 ✅ |
+| **TASK-STUDIO-TASK-UNIFY-01** | **全局异步任务统筹收口与任务中心全景架构升级** | 统一收拢所有模块异步任务至 TaskTracker 与任务中心；消除 24h 过滤导致的陈旧活跃任务不可见缺陷；打通 Playground 上传弹窗与全局任务中心强锚点；统一重试与清理能力 | 任务中心 100% 涵盖所有异步任务，局部与全局无缝联动，Vite 构建 PASS | `v1.4.29` | 📋 排队中 |
 
 ---
 
@@ -258,6 +259,25 @@
   - 前端 Vite 构建 `npm run build` PASS (✓ built in 20.69s)
   - 核心单测套件 100% PASS (包含 prompt_manager、session_task_tracking 等)
   - 得到用户人肉验收确认通过，正式打上 `v1.4.19` Git Tag
+
+### 📌 P0: [x] Card-VK-20 (v1.4.28): TelemetryStore 幽灵线程泄漏彻底根治与系统高负载雪崩自愈 ✅
+- **类型**：Thread Leak Fix, Strict Singleton & Concurrency Resilience ｜ **优先级**：🔴 P0（系统高可用与防雪崩崩塌）
+- **Git Commit**：`待提交` ｜ **Git Tag**：`v1.4.28`
+- **计划版本**：`v1.4.28`
+- **背景与痛点**：
+  1. 用户询问“看看VK运行正常吗”，排查发现服务存在严重的隐蔽性能恶化：Load Average 高达 **189.25**，进程任务线程数暴涨至 **2,471** 个，HTTP 响应时延恶化至 **400+ 秒**；
+  2. 经第一性原理诊断与调用链反查，前端监控大屏每 3~5 秒轮询 `/api/v1/observer/system`、`/models`、`/retrieval` 与 `telemetry/trends`；而 `models_observer.py`、`retrieval_observer.py` 与 `system.py` 中散落了裸调用的 `ts = TelemetryStore()`；
+  3. `TelemetryStore` 在每次实例化时均无条件启动守护线程 `_worker_thread = threading.Thread(target=self._worker_loop, ...)`，导致单次观测轮询泄露 4~5 个死循环线程，5 小时内累积生成逾 2,400 个僵尸线程竞争 Python GIL 与内存，导致服务濒临假死。
+- **交付内容 (已验收通过 ✅)**：
+  1. **TelemetryStore 强制单例防线 (`__new__`)**：
+     - 在 `TelemetryStore` 中实现 `__new__`，双检锁拦截重复实例化，并注入 `_initialized` 锁保护；无论何处以何种方式调用 `TelemetryStore()` 或 `get_instance()`，全系统生命周期有且仅初始化单个持久化实例与单条工作线程；
+  2. **全面收敛全局调用方**：
+     - 全量将 `models_observer.py`、`retrieval_observer.py` 与 `system.py` 中的 `ts = TelemetryStore()` 收拢为 `TelemetryStore.get_instance()`；
+  3. **压测断言验证 (Zero Thread Leak Benchmark)**：
+     - 对全量 11 个观测与业务接口执行 110 次高密并发压测，全部端点线程增量 `delta = 0`，系统总线程从 2,471 彻底收敛稳定在 **50** 左右；
+     - 系统 Load Average 从 189 骤降至 **2.24**，接口时延从 400+ 秒极速回落至 **6.7ms ~ 494ms**；
+     - MCP 接口 `openviking_ping` (0.2s)、`openviking_health` (2s)、`openviking_system_status` (0.3s) 全绿极速响应。
+- **修改文件**：`openviking/telemetry/telemetry_store.py` · `openviking/storage/observers/models_observer.py` · `openviking/storage/observers/retrieval_observer.py` · `openviking/server/routers/system.py` · `package.json` · `openviking/_version.py` · `REFACTORING_PLAN.md`
 
 ### 📌 P0: [x] Card-VK-19 (v1.4.27): MCP 密钥固化、监控大屏时序去硬编码真实化与 4 维 Token 透明分布 ✅
 - **类型**：MCP Hardening, Telemetry Anti-Hardcode & Transparent Model Observability ｜ **优先级**：🔴 P0（IDE 接入核心体验与数据真实性）

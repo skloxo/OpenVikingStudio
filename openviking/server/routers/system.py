@@ -689,7 +689,7 @@ async def get_telemetry_trends(
     try:
         from openviking.telemetry.telemetry_store import TelemetryStore
 
-        ts = TelemetryStore()
+        ts = TelemetryStore.get_instance()
         points = ts.get_trends(metric=metric, window=window)
         return {"status": "ok", "metric": metric, "window": window, "points": points}
     except Exception as e:
