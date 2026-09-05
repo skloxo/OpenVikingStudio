@@ -264,7 +264,7 @@
 
 ### 📌 P0: [x] Card-VK-22 (v1.4.30): 重大安全漏洞加固（Root Key 轮换与硬编码铲除、强制 api_key 鉴权）、监控速率打通与检索超时治理 ✅
 - **类型**：Critical Security Hardening, Key Rotation, Telemetry Real-Data Binding & Retriever Timeout Fix ｜ **优先级**：🔴 P0（公开仓库严重安全隐患加固与核心检索可用性）
-- **Git Commit**：(待提交) ｜ **Git Tag**：`v1.4.30` ｜ **Build**：`npm run build` ✓ built in 20.97s
+- **Git Commit**：`68e518646` ｜ **Git Tag**：`v1.4.30` ｜ **Build**：`npm run build` ✓ built in 20.97s
 - **计划版本**：`v1.4.30`
 - **背景与痛点**：
   1. **重大安全漏洞**：用户在阅读源码时发现 `DEFAULT_ROOT_API_KEY` 硬编码在公开 GitHub 仓库代码中，该 key 具备 54 个 core 工具 root 权限（含写入、备份、服务器控制）；且此前服务端处于 `auth_mode: trusted`，在 FRP 公网暴露下任何克隆代码的人均可未授权读写体外大脑记忆中枢。
