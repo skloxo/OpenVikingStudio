@@ -37,7 +37,7 @@ def _get_telemetry_model_usage() -> Dict[str, Any]:
     try:
         from openviking.telemetry.telemetry_store import TelemetryStore
 
-        ts = TelemetryStore()
+        ts = TelemetryStore.get_instance()
         return ts.get_model_usage_by_window(window="all").get("by_model_type", {})
     except Exception as e:
         logger.debug(f"Failed to query model usage from TelemetryStore: {e}")
