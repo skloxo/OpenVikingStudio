@@ -36,7 +36,7 @@
 | **Card-VK-20** | **TelemetryStore 幽灵线程泄漏彻底根治与系统高负载雪崩自愈** | 1. 根治 `TelemetryStore` 未严格单例导致每次观测轮询反复新建后台写入线程的致命缺陷；<br>2. 引入 `__new__` + 初始化锁硬核防线，全系统收口 `get_instance()`；<br>3. 彻底消除高频轮询导致的数千线程雪崩与 Load Average 189 假死危机 | 系统线程稳定收敛至 ~50 个，Load Average 从 189 极速回落至 2.2，接口时延由 400s 降至毫秒级 | `v1.4.28` | [x] 已验收通过 ✅ |
 | **Card-VK-21** | **观测大屏与核心服务物理级解耦、轻量快照削峰填谷与前端优雅休眠防线** | 1. 坚决贯彻奥卡姆剃刀与第一性原理，优先保障核心服务（FastMCP、VikingFS、检索），观测居次要地位；<br>2. 后端 observer 引入极轻量 10s 内存快照缓存 (`_get_cached_or_compute`)，GPU/主机探针 5s 缓存阻断高频进程派生；<br>3. 前端监控大屏优雅降频 (30s/60s) 并强制注入 `refetchIntervalInBackground: false`，离开页面物理断流休眠 | 观测接口毫秒级极速响应 (4.5ms)，零多余框架依赖，页面切后台零请求，CPU Load 稳降至 1.2，构建 100% PASS | `v1.4.29` | [x] 已验收通过 ✅ |
 | **Card-VK-22** | **重大安全漏洞加固（Root Key 轮换与硬编码铲除、强制 api_key 鉴权）、监控速率打通与检索超时治理** | 1. 彻底拔除代码库硬编码 key，启用环境变量/配置文件分级安全读取；<br>2. 废除旧泄露 key，服务端强制开启 `api_key` 模式，401 阻断未经授权请求；<br>3. 打通监控大盘真实记忆瘦身率 (94.9%) 与 2080Ti 向量化速率 (425 Vec/s)；<br>4. 注入遍历深度防御网，治理检索 58s 严重超时卡死问题 | 外部未授权与旧 key 100% 物理阻断，监控大盘零 `--` 缺失，检索 5.2s 内极速完成，18 项单测全绿，Vite 构建 PASS | `v1.4.30` | [x] 已验收通过 ✅ |
-| **Card-VK-23** | **卫星 MCP (Satellite MCP) 纯 User Key 契约、非特权工具切除与通用数据面重构** | 1. 卫星与核心 MCP 物理解耦，卫星模式仅暴露 ~8 个核心数据面工具；<br>2. 彻底切除 40+ 服务端运维控制与危险破坏性特权工具；<br>3. 卫星 MCP 纯普通 User Key 驱动，彻底解除对 Root Key 依赖；<br>4. 拔除 Linux 个人路径与开发期脏默认参数，支持 Windows/Mac/Linux 原生秒启；<br>5. 重构通用 `openviking_store` 契约，支持结构化沉淀记忆/资源/洞察 | 卫星模式工具列表纯净（8~10 个），外部 Agent 使用普通 User Key 正常读写数据面，零特权泄露，单测全绿 | `v1.4.31` | 📋 排队中 (P0) |
+| **Card-VK-23** | **卫星 MCP (Satellite MCP) 纯 User Key 契约、非特权工具切除与通用数据面重构** | 1. 卫星与核心 MCP 物理解耦，卫星模式精选暴露 12 个核心实用工具（4大检索基石+4大代码排障+4大环境感知）；<br>2. 彻底切除 42 个服务端运维控制与危险特权工具；<br>3. 卫星 MCP 纯普通 User Key 驱动，彻底解除对 Root Key 依赖；<br>4. 拔除 Linux 个人路径与开发期脏默认参数，跨平台原生秒启；<br>5. 重构通用 `openviking_store` 契约，支持结构化沉淀记忆/资源/洞察 | 卫星模式工具列表纯净且全能（12 个），外部 Agent 使用普通 User Key 正常读写数据面，零特权泄露，单测全绿 | `v1.4.31` | 📋 排队中 (P0) |
 | **Card-VK-24** | **外部客户端 Agent 平滑升级体系、版本协商与轻量化独立分发** | 1. 卫星 MCP 独立轻量单文件分发（解耦整个前端 Monorepo，依赖仅 `mcp`+`httpx`）；<br>2. 双模式向后兼容垫片 (Shim)，旧特权工具调用返回友好引导而非崩溃报错；<br>3. `openviking_ping` 增加版本协商与环境健康握手诊断；<br>4. 一键平滑升级与环境配置脚本 | 现有外部 Agent（如 WorkBuddy）平滑升级无中断，零 401/403 踩坑，启动自检清晰自解释 | `v1.4.32` | 📋 排队中 (P0) |
 | **Card-VK-25** | **检索冷启动性能削峰、分级遍历防线与并发超时治理** | 1. 服务端生命周期模型预热（消除首次调用 20s 冷启动雪崩）；<br>2. 目录遍历分级剪枝与最大深度硬拦截（`MAX_DEPTH=3`, `MAX_DIRS=15`）；<br>3. 边缘 LRU 短暂缓存高频 Query，彻底杜绝 IDE 30s 击穿超时 | 首次检索响应缩短至 1s 内，深层非结构化遍历稳定在 2s 内，单测与并发压测 100% PASS | `v1.4.33` | 📋 排队中 (P1) |
 | **Card-VK-26** | **外部 Agent “系统级强制调用 VK” 简约高鲁棒实施框架与实战规范 (Pragmatic Auto-Dispatch)** | 1. 坚决切除笨重易碎的反向代理网关，践行奥卡姆剃刀；<br>2. 开放宿主落地极简原生 Hook（开局预取、收尾存盘）；<br>3. 封闭宿主（WorkBuddy等）采用“高注意力触发 Schema + 契约自驱 + 分级渐进展开 (Progressive Disclosure)”；<br>4. 融入 Antigravity 实战经验（极简高密摘要、防上下文膨胀、超时容错兜底） | WorkBuddy 等任何外部 Agent 形成“以 find 起手、以 store 收尾”的高确定性习惯，零额外代理进程，稳定鲁棒 | `v1.4.34` | 📋 排队中 (P1) |
@@ -57,17 +57,24 @@
   3. **跨平台兼容缺陷与开发期脏默认参数**：工具实现中硬编码了个人路径 `/home/skloxo/...`，导致 Windows 外部客户端抛出路径不存在错误；默认参数中遗留了 `openviking-studio-dev`、`用户物理纠偏` 等脏调试值；
   4. **存盘能力不通用**：`openviking_store` 被绑定在开发期特定入参，外部 Agent 无法将自主总结的经验、长文本或任务记忆灵活结构化存盘。
 - **交付内容**：
-  1. **卫星模式 (Satellite Mode) 工具精炼与解耦**：
-     - 当以卫星模式运行（未提供 Root Key 或设置 `OPENVIKING_MODE=satellite`）时，**有且仅暴露 8 个核心数据面工具**：
-       - `openviking_find`：两阶段快速语义检索（语义粗排 + 2080Ti Rerank 深度重排，带语义阈值与 top_k）；
-       - `openviking_search`：深度全文与命名空间/Tag 过滤检索；
-       - `openviking_read`：按 URI 安全读取记忆与文档切片（支持 offset 与 limit 分片）；
-       - `openviking_store`：通用记忆与知识持久化存盘（支持结构化 URI、内容、元数据与标签）；
-       - `openviking_record_evolution_lesson`：智能体踩坑事实与演进经验上报至 `viking://resources/master_memory/`；
-       - `openviking_ls`：安全命名空间目录只读查看（仅限 `user/` 与 `resources/`，物理隔离 `_system`）；
-       - `openviking_skills`：只读发现当前知识中枢托管的技能规范与提示词；
-       - `openviking_ping`：连通性与健康状态自检。
-     - **彻底切除 40+ 管理类特权接口**（`server_control`, `server_init`, `server_doctor`, `backup`, `restore`, `delete_resource`, `consistency`, `metrics`, `usage_stats` 等）。
+  1. **卫星模式 (Satellite Mode) 工具精炼与解耦（12 大黄金平衡点工具）**：
+     - 当以卫星模式运行（未提供 Root Key 或设置 `OPENVIKING_MODE=satellite`）时，**暴露 12 个核心实用工具（4 大检索基石 + 4 大代码排障 + 4 大环境感知）**：
+       - **【4 大日常检索基石】**：
+         - `openviking_find`：两阶段语义初筛 + 2080Ti Rerank 深度重排，带语义阈值与 top_k；
+         - `openviking_smart_read`：Combo 高频神器，一次调用同时完成语义检索与 Top 结果详细内容读取，直接减少 1 轮工具交互往返；
+         - `openviking_read`：按 URI 安全读取记忆与长文档切片（支持 offset 与 limit 分片）；
+         - `openviking_store`：通用记忆与知识持久化存盘（支持结构化 URI、内容、元数据与标签）；
+       - **【4 大代码与排障攻坚】**：
+         - `openviking_code_search`：代码符号、函数名与类名精准语义搜寻；
+         - `openviking_code_outline`：直接提取文件/模块的类与函数结构大纲，免去通篇阅读浪费上下文；
+         - `openviking_grep`：文件级精确正则行匹配，专治报错排查与关键词碰撞；
+         - `openviking_record_evolution_lesson`：智能体踩坑事实与演进经验上报至 `viking://resources/master_memory/`；
+       - **【4 大结构与环境感知】**：
+         - `openviking_tree`：全景递归目录树（远比反复调 `ls` 效率高 10 倍）；
+         - `openviking_skills`：只读发现当前知识中枢托管的 752 项技能规范；
+         - `openviking_get_relations`：图谱因果关系与概念依赖拓扑查询；
+         - `openviking_ping`：连通性、身份与延迟握手自检。
+     - **彻底切除 42 个管理类特权接口**（`server_control`, `server_init`, `server_doctor`, `backup`, `restore`, `delete_resource`, `consistency`, `metrics`, `usage_stats`, `audit_skills`, `reindex`, `manage_watch` 等）。
   2. **纯 User Key 契约与非特权鉴权**：
      - 卫星 MCP 仅需配置普通 User API Key (`OPENVIKING_API_KEY`)；
      - 客户端代码彻底切除对 Root Key 的强制校验与回退提示，普通用户凭证即可完整读写数据面；
@@ -1005,6 +1012,15 @@
 
 ### 💳 [ ] Task Card 11 (Far-Term): Epic-PRIVACY-GOV 数据隐私治理 (`PRIVACY-01 ~ 03`)
 - **目标**：服务端敏感字段二次过滤与前端脱敏展示。
+
+### 💳 [ ] Task Card 12 (Far-Term / 暂缓): Wiki-as-a-Model 虚拟增强大模型 API 网关 (`MODEL-GW-01 ~ 03`)
+- **关联设计讨论**：用户与 Antigravity 针对“大模型 API 虚拟化强制召回记忆”架构推演（2026-09-05）。
+- **目标**：将 OpenViking + 真实大模型（GLM/DeepSeek/Claude）封装为标准 OpenAI 兼容的 `/v1/chat/completions` API 端点，外部客户端（如 WorkBuddy、Cursor）无需感知 MCP，直接作为默认模型调用；网关自动在后台静默提取 Query、检索记忆、注入 Context，并异步回写萃取经验。
+- **技术难点与暂缓实施原因 (SSOT 记录)**：
+  1. **过度工程化与高复杂度**：需完整自研/维护生产级流式 SSE (Server-Sent Events) 事件流、网络背压与 Chunk 编解码，极易因断流造成客户端转圈崩溃；
+  2. **多厂商 Function Calling 协议不兼容**：不同模型在流式输出 `tool_calls` delta 时的 JSON 序列化规范存在巨大差异，网关中继代理极易破坏参数造成工具解析灾难；
+  3. **职责越位与维护泥潭**：网关若强行把 8~12 个工具意图“自动识别并内部处理”，网关自身将退化为不可控的“黑盒影子 Agent”，时延不可控且死循环风险剧增；
+  4. **战略定调**：当前坚决贯彻奥卡姆剃刀，优先采用成熟简约的“宿主原生 Hook + 强注意力 Schema / 提示契约 + 工作区规则镜像”双轨轻量方案，本课题作为远期架构储备暂缓开发。
 
 ---
 
