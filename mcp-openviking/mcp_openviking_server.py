@@ -2316,7 +2316,7 @@ def openviking_ping() -> str:
         "mode": MCP_MODE,
         "api_url": cfg["api"],
         "authenticated": bool(cfg["api_key"]),
-        "tools_count": len(SATELLITE_ALLOWED_TOOLS) if MCP_MODE == "satellite" else 54,
+        "tools_count": len(list(mcp._tool_manager.list_tools())),
         "platform": sys.platform,
         "http_available": False,
         "cli_available": False,
