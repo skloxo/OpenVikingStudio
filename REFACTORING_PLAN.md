@@ -263,7 +263,7 @@
 
 ### 📌 P0: [x] Card-VK-21 (v1.4.29): 观测大屏与核心服务物理级解耦、轻量快照削峰填谷与前端优雅休眠防线 ✅
 - **类型**：Observability Decoupling, Lightweight Snapshot Caching & Zero-Overhead Sleep Resilience ｜ **优先级**：🔴 P0（系统高可用与架构第一性原理）
-- **Git Tag**：`v1.4.29` ｜ **Build**：`npm run build` ✓ built in 18.95s
+- **Git Commit**：`7ab639f91` ｜ **Git Tag**：`v1.4.29` ｜ **Build**：`npm run build` ✓ built in 18.95s
 - **计划版本**：`v1.4.29`
 - **背景与痛点**：
   1. 用户深刻指出核心工程哲学：“监控、数据大屏、可视化这些东西应该是异步的、次要的。首先要确保服务正常，有余力、有资源的时候再同步给前端展示出来。优先保障服务、MCP 等 VK 真正有价值的服务正常运行，其他的都是正常运行之余的锦上添花。另外务必遵循：奥卡姆剃刀、第一性原理、信达雅、聚合解耦、鲁棒、避免孤独工程化、保持代码的简洁、可以共用的优先共用。”
