@@ -250,9 +250,10 @@ function MonitoringRoute() {
     enabled: serverMode !== 'offline',
     queryFn: fetchMonitoringOverview,
     queryKey: ['monitoring-overview', identityScopeKey, timeWindow],
-    refetchInterval: 10_000,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
     retry: false,
-    staleTime: 5_000,
+    staleTime: 15_000,
   })
 
   const auditQuery = useQuery({
@@ -264,8 +265,9 @@ function MonitoringRoute() {
       return res
     },
     queryKey: ['monitoring-audit-summary', identityScopeKey],
-    refetchInterval: 15_000,
-    staleTime: 10_000,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
+    staleTime: 15_000,
   })
 
   const dashboardSummaryQuery = useQuery({
@@ -277,8 +279,9 @@ function MonitoringRoute() {
       return res
     },
     queryKey: ['monitoring-dashboard-summary', identityScopeKey],
-    refetchInterval: 15_000,
-    staleTime: 10_000,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
+    staleTime: 15_000,
   })
 
   const gpuQuery = useQuery({
@@ -294,8 +297,9 @@ function MonitoringRoute() {
       }
     },
     queryKey: ['system-gpu-telemetry', identityScopeKey],
-    refetchInterval: 10_000,
-    staleTime: 5_000,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
+    staleTime: 15_000,
   })
 
   const hostResourcesQuery = useQuery({
@@ -315,8 +319,9 @@ function MonitoringRoute() {
       }
     },
     queryKey: ['system-host-resources', identityScopeKey],
-    refetchInterval: 10_000,
-    staleTime: 5_000,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
+    staleTime: 15_000,
   })
 
   const overview = monitoringQuery.data

@@ -10,6 +10,9 @@ Mirrors SDK's client.observer API:
 - /api/v1/observer/system - System overall status
 """
 
+import logging
+import time
+from typing import Any, Callable, Dict, Tuple
 from fastapi import APIRouter, Depends
 
 from openviking.server.auth import get_request_context
@@ -18,7 +21,29 @@ from openviking.server.identity import RequestContext
 from openviking.server.models import Response
 from openviking.service.debug_service import ComponentStatus, SystemStatus
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api/v1/observer", tags=["observer"])
+
+# 轻量内存快照缓存：削峰填谷，彻底保护核心服务不受高频观测请求冲击
+_OBSERVER_CACHE: Dict[str, Tuple[float, Any]] = {}
+_CACHE_TTL_SEC = 10.0
+
+
+def _get_cached_or_compute(key: str, compute_fn: Callable[[], Any]) -> Any:
+    now = time.monotonic()
+    cached = _OBSERVER_CACHE.get(key)
+    if cached is not None and (now - cached[0]) < _CACHE_TTL_SEC:
+        return cached[1]
+    try:
+        res = compute_fn()
+        _OBSERVER_CACHE[key] = (now, res)
+        return res
+    except Exception as e:
+        logger.warning(f"Observer compute error for '{key}': {e}")
+        if cached is not None:
+            return cached[1]
+        raise
 
 
 def _component_to_dict(component: ComponentStatus) -> dict:
@@ -47,9 +72,11 @@ async def observer_queue(
     _ctx: RequestContext = Depends(get_request_context),
 ):
     """Get queue system status."""
-    service = get_service()
-    component = service.debug.observer.queue
-    return Response(status="ok", result=_component_to_dict(component))
+    result = _get_cached_or_compute(
+        "queue",
+        lambda: _component_to_dict(get_service().debug.observer.queue),
+    )
+    return Response(status="ok", result=result)
 
 
 @router.get("/vikingdb")
@@ -57,9 +84,11 @@ async def observer_vikingdb(
     ctx: RequestContext = Depends(get_request_context),
 ):
     """Get VikingDB status."""
-    service = get_service()
-    component = service.debug.observer.vikingdb(ctx=ctx)
-    return Response(status="ok", result=_component_to_dict(component))
+    result = _get_cached_or_compute(
+        "vikingdb",
+        lambda: _component_to_dict(get_service().debug.observer.vikingdb(ctx=ctx)),
+    )
+    return Response(status="ok", result=result)
 
 
 @router.get("/models")
@@ -67,9 +96,11 @@ async def observer_models(
     _ctx: RequestContext = Depends(get_request_context),
 ):
     """Get models status (VLM, Embedding, Rerank)."""
-    service = get_service()
-    component = service.debug.observer.models
-    return Response(status="ok", result=_component_to_dict(component))
+    result = _get_cached_or_compute(
+        "models",
+        lambda: _component_to_dict(get_service().debug.observer.models),
+    )
+    return Response(status="ok", result=result)
 
 
 @router.get("/lock")
@@ -77,9 +108,11 @@ async def observer_lock(
     _ctx: RequestContext = Depends(get_request_context),
 ):
     """Get lock system status."""
-    service = get_service()
-    component = service.debug.observer.lock
-    return Response(status="ok", result=_component_to_dict(component))
+    result = _get_cached_or_compute(
+        "lock",
+        lambda: _component_to_dict(get_service().debug.observer.lock),
+    )
+    return Response(status="ok", result=result)
 
 
 @router.get("/retrieval")
@@ -87,9 +120,11 @@ async def observer_retrieval(
     _ctx: RequestContext = Depends(get_request_context),
 ):
     """Get retrieval quality metrics."""
-    service = get_service()
-    component = service.debug.observer.retrieval
-    return Response(status="ok", result=_component_to_dict(component))
+    result = _get_cached_or_compute(
+        "retrieval",
+        lambda: _component_to_dict(get_service().debug.observer.retrieval),
+    )
+    return Response(status="ok", result=result)
 
 
 @router.get("/filesystem")
@@ -97,9 +132,11 @@ async def observer_filesystem(
     _ctx: RequestContext = Depends(get_request_context),
 ):
     """Get filesystem operation metrics."""
-    service = get_service()
-    component = service.debug.observer.filesystem
-    return Response(status="ok", result=_component_to_dict(component))
+    result = _get_cached_or_compute(
+        "filesystem",
+        lambda: _component_to_dict(get_service().debug.observer.filesystem),
+    )
+    return Response(status="ok", result=result)
 
 
 @router.get("/system")
@@ -107,6 +144,8 @@ async def observer_system(
     ctx: RequestContext = Depends(get_request_context),
 ):
     """Get system overall status (includes all components)."""
-    service = get_service()
-    status = service.debug.observer.system(ctx=ctx)
-    return Response(status="ok", result=_system_to_dict(status))
+    result = _get_cached_or_compute(
+        "system",
+        lambda: _system_to_dict(get_service().debug.observer.system(ctx=ctx)),
+    )
+    return Response(status="ok", result=result)

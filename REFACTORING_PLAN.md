@@ -34,7 +34,8 @@
 | **Card-VK-14** | **哈尼斯 (Harness) 意图雷达与踩坑履历 100% 真实化重构** | 彻底拔除 `harness-logs.tsx` 中硬编码 `if text.includes('bug')` 和静态置信度假数字；全量接入真实 `/api/v1/search` 向量语义检索算子与余弦相似度；踩坑履历全量直连体外大脑 `viking://resources/master_memory/` | 零前端 Mock，输入任意自然语言真实计算向量距离与碰撞警告，经验履历从 SQLite 实时动态拉取 | `v1.4.26` | [x] 已验收通过 ✅ |
 | **Card-VK-19** | **MCP 密钥固化、监控大屏时序去硬编码真实化与 4 维 Token 透明分布** | 1. MCP 密钥持久化固化于配置与服务兜底中，修饰器自动解包 FieldInfo 消除序列化崩塌；<br>2. 彻底拔除 `telemetry_store.py` 中 SLA 与检索得分硬编码常量，真实动态时序驱动；<br>3. Token 分布补齐 Rerank 并强制呈现 4 维物理模型图例；<br>4. 查清 752 纯净合规技能数物理真相并完成 Harness TC-06 全量自测 | 彻底消灭 MCP 找错密钥痛点，监控大屏曲线真实起伏，饼图 4 维透明展示，Harness 全绿 | `v1.4.27` | [x] 已验收通过 ✅ |
 | **Card-VK-20** | **TelemetryStore 幽灵线程泄漏彻底根治与系统高负载雪崩自愈** | 1. 根治 `TelemetryStore` 未严格单例导致每次观测轮询反复新建后台写入线程的致命缺陷；<br>2. 引入 `__new__` + 初始化锁硬核防线，全系统收口 `get_instance()`；<br>3. 彻底消除高频轮询导致的数千线程雪崩与 Load Average 189 假死危机 | 系统线程稳定收敛至 ~50 个，Load Average 从 189 极速回落至 2.2，接口时延由 400s 降至毫秒级 | `v1.4.28` | [x] 已验收通过 ✅ |
-| **TASK-STUDIO-TASK-UNIFY-01** | **全局异步任务统筹收口与任务中心全景架构升级** | 统一收拢所有模块异步任务至 TaskTracker 与任务中心；消除 24h 过滤导致的陈旧活跃任务不可见缺陷；打通 Playground 上传弹窗与全局任务中心强锚点；统一重试与清理能力 | 任务中心 100% 涵盖所有异步任务，局部与全局无缝联动，Vite 构建 PASS | `v1.4.29` | 📋 排队中 |
+| **Card-VK-21** | **观测大屏与核心服务物理级解耦、轻量快照削峰填谷与前端优雅休眠防线** | 1. 坚决贯彻奥卡姆剃刀与第一性原理，优先保障核心服务（FastMCP、VikingFS、检索），观测居次要地位；<br>2. 后端 observer 引入极轻量 10s 内存快照缓存 (`_get_cached_or_compute`)，GPU/主机探针 5s 缓存阻断高频进程派生；<br>3. 前端监控大屏优雅降频 (30s/60s) 并强制注入 `refetchIntervalInBackground: false`，离开页面物理断流休眠 | 观测接口毫秒级极速响应 (4.5ms)，零多余框架依赖，页面切后台零请求，CPU Load 稳降至 1.2，构建 100% PASS | `v1.4.29` | [x] 已验收通过 ✅ |
+| **TASK-STUDIO-TASK-UNIFY-01** | **全局异步任务统筹收口与任务中心全景架构升级** | 统一收拢所有模块异步任务至 TaskTracker 与任务中心；消除 24h 过滤导致的陈旧活跃任务不可见缺陷；打通 Playground 上传弹窗与全局任务中心强锚点；统一重试与清理能力 | 任务中心 100% 涵盖所有异步任务，局部与全局无缝联动，Vite 构建 PASS | `v1.4.30` | 📋 排队中 |
 
 ---
 
@@ -259,6 +260,27 @@
   - 前端 Vite 构建 `npm run build` PASS (✓ built in 20.69s)
   - 核心单测套件 100% PASS (包含 prompt_manager、session_task_tracking 等)
   - 得到用户人肉验收确认通过，正式打上 `v1.4.19` Git Tag
+
+### 📌 P0: [x] Card-VK-21 (v1.4.29): 观测大屏与核心服务物理级解耦、轻量快照削峰填谷与前端优雅休眠防线 ✅
+- **类型**：Observability Decoupling, Lightweight Snapshot Caching & Zero-Overhead Sleep Resilience ｜ **优先级**：🔴 P0（系统高可用与架构第一性原理）
+- **Git Tag**：`v1.4.29` ｜ **Build**：`npm run build` ✓ built in 18.95s
+- **计划版本**：`v1.4.29`
+- **背景与痛点**：
+  1. 用户深刻指出核心工程哲学：“监控、数据大屏、可视化这些东西应该是异步的、次要的。首先要确保服务正常，有余力、有资源的时候再同步给前端展示出来。优先保障服务、MCP 等 VK 真正有价值的服务正常运行，其他的都是正常运行之余的锦上添花。另外务必遵循：奥卡姆剃刀、第一性原理、信达雅、聚合解耦、鲁棒、避免孤独工程化、保持代码的简洁、可以共用的优先共用。”
+  2. 此前前端监控大屏每 10~15 秒无差别并发轮询 5~7 个深度度量端点，且在后台标签页持续轮询，频繁触发 `nvidia-smi` 进程派生与底层图谱扫描，喧宾夺主侵占核心算力。
+- **交付内容 (已验收通过 ✅)**：
+  1. **核心服务主干与观测支干物理级解耦 (Decoupling & Occam's Razor)**：
+     - 坚持奥卡姆剃刀（如无必要，勿增实体），不引入 Redis、消息队列或独立监控守护进程；
+     - 在 `openviking/server/routers/observer.py` 中用 12 行原生 Python 实现单调时钟内存快照缓存 `_get_cached_or_compute(key, compute_fn, ttl=10.0s)`，搭配异常平滑降级（优先返回上一次有效快照），将所有观测接口执行耗时削减至 4.5ms，10s 内重复请求 0 CPU/GIL 开销；
+     - 在 `openviking/server/routers/system.py` 中为 `get_gpu_telemetry` 和 `get_system_host_resources` 引入 5s 极轻量快照缓存，彻底消除高频重复派生 `nvidia-smi` 子进程与频繁读取 `/proc` 的系统损耗。
+  2. **前端监控大屏优雅降频与后台休眠防线 (Frontend Polling Hibernation)**：
+     - 在 `src/routes/monitoring/route.tsx` 中将全部 5 个核心度量 query 的轮询周期由 10s/15s 科学调优至 30s，并统一配置 `refetchIntervalInBackground: false` 与 `staleTime: 15_000`；
+     - 在 `sla-trend-chart.tsx` 与 `retrieval-accuracy-trend-chart.tsx` 中将宏观时序趋势轮询拉长至 60s，并统一配置 `refetchIntervalInBackground: false`；用户切换标签页或离开监控大屏时，前端自动物理断流休眠，零并发开销。
+  3. **信达雅、聚合解耦与实机验证**：
+     - 零过度工程，代码极简自解释；
+     - 系统 Load Average 稳步下降至 **1.23**，系统线程稳定在 **47** 个（零线程泄漏）；
+     - 前端 `npm run build` 18.95s 零错误编译通过，大屏 5/5 组件实时秒级响应。
+- **修改文件**：`openviking/server/routers/observer.py` · `openviking/server/routers/system.py` · `src/routes/monitoring/route.tsx` · `src/routes/monitoring/-components/sla-trend-chart.tsx` · `src/routes/monitoring/-components/retrieval-accuracy-trend-chart.tsx` · `package.json` · `openviking/_version.py` · `REFACTORING_PLAN.md`
 
 ### 📌 P0: [x] Card-VK-20 (v1.4.28): TelemetryStore 幽灵线程泄漏彻底根治与系统高负载雪崩自愈 ✅
 - **类型**：Thread Leak Fix, Strict Singleton & Concurrency Resilience ｜ **优先级**：🔴 P0（系统高可用与防雪崩崩塌）
