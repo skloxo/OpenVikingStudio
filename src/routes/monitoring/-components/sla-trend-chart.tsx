@@ -13,11 +13,8 @@ import { useTranslation } from 'react-i18next'
 
 import { Badge } from '#/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '#/components/ui/tooltip'
-import {
-  fetchTelemetryTrends,
-  type SlaDataPoint,
-  type TelemetryTimeWindow,
-} from '#/lib/telemetry'
+import { fetchTelemetryTrends } from '#/lib/telemetry'
+import type { SlaDataPoint, TelemetryTimeWindow } from '#/lib/telemetry'
 
 interface SlaTrendChartProps {
   currentSuccessRate?: number | null
@@ -33,8 +30,9 @@ export function SlaTrendChart({
   const trendsQuery = useQuery({
     queryKey: ['telemetry-trends-sla', window],
     queryFn: () => fetchTelemetryTrends<SlaDataPoint>('sla', window),
-    refetchInterval: 15_000,
-    staleTime: 10_000,
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
+    staleTime: 30_000,
   })
 
   const rawData = trendsQuery.data ?? []
@@ -137,7 +135,7 @@ export function SlaTrendChart({
               />
               <RechartsTooltip
                 content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
+                  if (active && payload.length > 0) {
                     const d = payload[0].payload as SlaDataPoint
                     return (
                       <div className="rounded-md border border-border/80 bg-card p-2 shadow-none font-mono text-xs space-y-1">

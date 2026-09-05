@@ -14,10 +14,10 @@ import { useTranslation } from 'react-i18next'
 
 import { Badge } from '#/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '#/components/ui/tooltip'
-import {
-  fetchTelemetryTrends,
-  type RetrievalAccuracyDataPoint,
-  type TelemetryTimeWindow,
+import { fetchTelemetryTrends } from '#/lib/telemetry'
+import type {
+  RetrievalAccuracyDataPoint,
+  TelemetryTimeWindow,
 } from '#/lib/telemetry'
 
 interface RetrievalAccuracyTrendChartProps {
@@ -37,8 +37,9 @@ export function RetrievalAccuracyTrendChart({
     queryKey: ['telemetry-trends-retrieval', window],
     queryFn: () =>
       fetchTelemetryTrends<RetrievalAccuracyDataPoint>('retrieval', window),
-    refetchInterval: 15_000,
-    staleTime: 10_000,
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
+    staleTime: 30_000,
   })
 
   const rawData = trendsQuery.data ?? []
@@ -149,13 +150,13 @@ export function RetrievalAccuracyTrendChart({
               />
               <RechartsTooltip
                 content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
+                  if (active && payload.length > 0) {
                     const d = payload[0].payload as RetrievalAccuracyDataPoint
                     return (
                       <div className="rounded-md border border-border/80 bg-card p-2 shadow-none font-mono text-xs space-y-1">
                         <div className="text-muted-foreground">{d.date}</div>
                         <div className="font-bold text-cyan-600 dark:text-cyan-400">
-                          召回命中率: {Number(d.hitRate || 100).toFixed(1)}% ({d.queries ?? 1} 次请求)
+                          召回命中率: {Number(d.hitRate || 100).toFixed(1)}% ({d.queries} 次请求)
                         </div>
                         <div className="font-bold text-sky-600 dark:text-sky-400">
                           余弦相似度: {Number(d.avgScore || 0).toFixed(4)}

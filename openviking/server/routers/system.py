@@ -6,6 +6,7 @@ import asyncio
 import json
 import os
 import re
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -697,11 +698,21 @@ async def get_telemetry_trends(
         return {"status": "ok", "metric": metric, "window": window, "points": []}
 
 
+_GPU_CACHE: Optional[tuple[float, dict]] = None
+_SYS_RES_CACHE: Optional[tuple[float, dict]] = None
+_SYSTEM_TELEMETRY_CACHE_TTL = 5.0  # 5秒内存快照缓存，阻断高频重复的 nvidia-smi 进程分叉与 /proc 读取
+
+
 @router.get("/api/v1/system/gpu", tags=["system"])
 async def get_gpu_telemetry(
     ctx: RequestContext = Depends(get_request_context),
 ):
     """Return real GPU VRAM usage and compute utilization via nvidia-smi probe."""
+    global _GPU_CACHE
+    now = time.monotonic()
+    if _GPU_CACHE is not None and (now - _GPU_CACHE[0]) < _SYSTEM_TELEMETRY_CACHE_TTL:
+        return _GPU_CACHE[1]
+
     try:
         proc = await asyncio.create_subprocess_exec(
             "nvidia-smi",
@@ -718,19 +729,23 @@ async def get_gpu_telemetry(
                 used_mb = float(parts[0])
                 total_mb = float(parts[1])
                 gpu_util = float(parts[2])
-                return {
+                res = {
                     "used_gb": round(used_mb / 1024.0, 2),
                     "total_gb": round(total_mb / 1024.0, 2),
                     "gpu_percent": round(gpu_util, 1),
                 }
+                _GPU_CACHE = (now, res)
+                return res
     except Exception as e:
         logger.debug(f"GPU telemetry probe unavailable: {e}")
 
-    return {
+    fallback = {
         "used_gb": 0.0,
         "total_gb": 0.0,
         "gpu_percent": 0.0,
     }
+    _GPU_CACHE = (now, fallback)
+    return fallback
 
 
 _LAST_CPU_TIMES: Optional[tuple[float, float]] = None
@@ -788,14 +803,21 @@ async def get_system_host_resources(
     _ctx: RequestContext = Depends(get_request_context),
 ):
     """Return real host CPU, memory, and system resource metrics."""
+    global _SYS_RES_CACHE
+    now = time.monotonic()
+    if _SYS_RES_CACHE is not None and (now - _SYS_RES_CACHE[0]) < _SYSTEM_TELEMETRY_CACHE_TTL:
+        return _SYS_RES_CACHE[1]
+
     mem_info = _read_host_mem()
     cpu_percent = _read_host_cpu()
-    return {
+    res = {
         "status": "ok",
         "cpu_percent": cpu_percent,
         "memory_percent": mem_info["memory_percent"],
         "memory_used_gb": mem_info["used_gb"],
         "memory_total_gb": mem_info["total_gb"],
     }
+    _SYS_RES_CACHE = (now, res)
+    return res
 
 
