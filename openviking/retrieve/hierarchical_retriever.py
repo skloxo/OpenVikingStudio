@@ -59,6 +59,33 @@ class HierarchicalRetriever:
     GLOBAL_SEARCH_TOPK = 10  # Global retrieval count (more candidates = better rerank precision)
     MAX_PARALLEL_CHILD_SEARCHES = 4  # Limit per-request fan-out against remote vector stores
     LEVEL_URI_SUFFIX = {0: ".abstract.md", 1: ".overview.md"}
+    PLACEHOLDER_MARKERS = (
+        "[Directory abstract is not ready]",
+        "[Directory abstract is not generated]",
+        "[Directory overview is not ready]",
+        "[Directory overview is not generated]",
+        "is not generated]",
+        "is not ready]",
+    )
+
+    @classmethod
+    def _is_placeholder_result(cls, r: Dict[str, Any]) -> bool:
+        """Check if a search result is an ungenerated VikingFS directory placeholder or phantom stub."""
+        text = str(r.get("abstract", "") or r.get("overview", "") or r.get("content", "")).strip()
+        if not text:
+            uri = r.get("uri", "")
+            if uri.endswith((".abstract.md", ".overview.md")):
+                return True
+            return False
+        for marker in cls.PLACEHOLDER_MARKERS:
+            if marker in text:
+                return True
+        uri = r.get("uri", "")
+        if uri.endswith((".abstract.md", ".overview.md")):
+            lines = [line.strip() for line in text.splitlines() if line.strip() and not line.strip().startswith("#")]
+            if not lines:
+                return True
+        return False
 
     def __init__(
         self,
@@ -218,13 +245,13 @@ class HierarchicalRetriever:
                     for p_list in partition_results:
                         for r in p_list:
                             u = r.get("uri", "")
-                            if not u:
+                            if not u or self._is_placeholder_result(r):
                                 continue
                             if u not in merged_by_uri or r.get("_score", 0.0) > merged_by_uri[u].get("_score", 0.0):
                                 merged_by_uri[u] = r
                     quick_results = list(merged_by_uri.values())
                 else:
-                    quick_results = await vector_proxy.search_in_tenant(
+                    raw_quick = await vector_proxy.search_in_tenant(
                         query_vector=query_vector,
                         sparse_query_vector=sparse_query_vector,
                         context_type=context_type,
@@ -233,6 +260,7 @@ class HierarchicalRetriever:
                         level=level,
                         limit=search_limit,
                     )
+                    quick_results = [r for r in raw_quick if not self._is_placeholder_result(r)]
                     telemetry.count("vector.searches", 1)
 
             telemetry.count("vector.scored", len(quick_results))
@@ -256,8 +284,9 @@ class HierarchicalRetriever:
                     rerank_candidates: List[Dict[str, Any]] = []
                     # 1. Take top-2 from each partition
                     for p_list in partition_results:
+                        p_filtered = [item for item in p_list if not self._is_placeholder_result(item)]
                         p_sorted = sorted(
-                            p_list,
+                            p_filtered,
                             key=lambda x: self._finite_score(x.get("_score", 0.0)),
                             reverse=True,
                         )
@@ -266,7 +295,7 @@ class HierarchicalRetriever:
                             if u and u not in selected_uris:
                                 selected_uris.add(u)
                                 r_match = merged_by_uri.get(u)
-                                if r_match:
+                                if r_match and not self._is_placeholder_result(r_match):
                                     rerank_candidates.append(r_match)
                     # 2. Fill remaining budget by global vector score
                     sorted_all = sorted(
@@ -278,7 +307,7 @@ class HierarchicalRetriever:
                         if len(rerank_candidates) >= rerank_budget:
                             break
                         u = r.get("uri", "")
-                        if u and u not in selected_uris:
+                        if u and u not in selected_uris and not self._is_placeholder_result(r):
                             selected_uris.add(u)
                             rerank_candidates.append(r)
                 else:
@@ -309,6 +338,8 @@ class HierarchicalRetriever:
             source_pool = rerank_candidates if (rerank_used and rerank_candidates) else quick_results
             collected_by_uri: Dict[str, Dict[str, Any]] = {}
             for result in source_pool:
+                if self._is_placeholder_result(result):
+                    continue
                 uri = result.get("uri", "")
                 if not uri:
                     continue
@@ -719,6 +750,8 @@ class HierarchicalRetriever:
         """
         results = []
         for c in candidates:
+            if self._is_placeholder_result(c):
+                continue
             # Fix: clamp inf/nan scores from vector search (#inf-score)
             semantic_score = self._finite_score(c.get("_final_score", c.get("_score", 0.0)))
 
