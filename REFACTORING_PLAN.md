@@ -41,6 +41,7 @@
 | **Card-VK-24** | **外部客户端 Agent 平滑升级体系、版本协商与轻量化独立分发** | 1. 卫星 MCP 独立轻量单文件分发（解耦整个前端 Monorepo，依赖仅 `mcp`+`httpx`）；<br>2. 双模式向后兼容垫片 (Shim)，旧特权工具调用返回友好引导而非崩溃报错；<br>3. `openviking_ping` 增加版本协商与环境健康握手诊断；<br>4. 一键平滑升级与环境配置脚本 | 现有外部 Agent（如 WorkBuddy）平滑升级无中断，零 401/403 踩坑，启动自检清晰自解释 | `v1.4.32` | [x] 已验收通过 ✅ |
 | **Card-VK-24.1** | **核心 MCP 54 项全量能力遍历回归自检与平滑迭代交付** | 1. 核心 MCP 54 项原生工具物理连通遍历回归测试 (`test_core_capabilities_regression.py`) 覆盖 6 大业务域；<br>2. 修复代码搜索等参数签名对齐；<br>3. 全量版本升级至 v1.4.33 并提供外部 Agent 升级联调提示词 | 7 大测试组全部 PASS (54/54 工具 100% 连通无损)，双模 MCP 8/8 单测 PASS，Vite 构建 PASS | `v1.4.33` | [x] 已验收通过 ✅ |
 | **Card-VK-25** | **两阶段 FAST 检索模式 (Single RER) 落地与端到端耗时归一** | 1. 深入物理根因纠偏（澄清 Embedding 并非瓶颈，定位 THINKING 递归 6~15 次 RER 性能黑洞）；<br>2. 落地 RetrieverMode.FAST 两阶段检索（1 次 EMB + Top-N 向量召回 + 1 次全局 RER 打分）；<br>3. 卫星端与 Hook 默认启用 fast 模式，彻底根治 2s 超时降级 | 检索单测 19/19 全绿，冷检索耗时由 32s 缩短至 2.1s (提速 15x)，GPU RER 调用减少 85%，L0 缓存 2ms | `v1.4.35` | [x] 已验收通过 ✅ |
+| **Card-VK-25.1** | **FAST 检索模式知识分区召回保障与未生成目录占位符物理切除** | 1. 揭秘 0.372314453125 物理真相（Cross-Encoder 重排占位符固定得分）；<br>2. 落地知识分区并行检索 (`skills` + `master_memory` + 全局目标)，消除 5000+ 文件 int8 粗排分数并列对核心技能的淹没；<br>3. 建立 `_is_meaningful` 门禁，物理切除 `[Directory overview is not generated]` 脏占位符；<br>4. 坚守单次向量召回 + 单次批量 RER 契约，补齐单元测试 (60/60 PASS) | 目标查询准确召回 `mac-studio-remote-ops.md` 为 Rank 1 (Score: 0.7539)，占位符彻底归零，冷查 2s，L0 缓存 31ms | `v1.4.36` | [x] 已验收通过 ✅ |
 | **Card-VK-26** | **外部 Agent “系统级强制调用 VK” 简约高鲁棒实施框架与实战规范 (Pragmatic Auto-Dispatch)** | 1. 坚决切除笨重易碎的反向代理网关，践行奥卡姆剃刀；<br>2. 开放宿主落地极简原生 Hook（开局预取、收尾存盘）；<br>3. 封闭宿主（WorkBuddy等）采用“高注意力触发 Schema + 契约自驱 + 分级渐进展开 (Progressive Disclosure)”；<br>4. 融入 Antigravity 实战经验（极简高密摘要、防上下文膨胀、超时容错兜底） | WorkBuddy 等任何外部 Agent 形成“以 find 起手、以 store 收尾”的高确定性习惯，零额外代理进程，稳定鲁棒 | `v1.4.35` | 📋 排队中 (P1) |
 | **Card-VK-27** | **全局异步任务统筹收口与任务中心全景架构升级** | 统一收拢所有模块异步任务至 TaskTracker 与任务中心；消除 24h 过滤导致的陈旧活跃任务不可见缺陷；打通 Playground 上传弹窗与全局任务中心强锚点；统一重试与清理能力 | 任务中心 100% 涵盖所有异步任务，局部与全局无缝联动，Vite 构建 PASS | `v1.4.36` | 📋 排队中 (P2) |
 
@@ -180,6 +181,36 @@
   - 单元测试 19/19 项 PASS，Vite 构建 PASS；
   - 实测冷查询 2.1s 内完成，命中缓存 2ms 内完成；
   - Git Tag `v1.4.35` 物理对齐。
+
+### 📌 P0: [x] Card-VK-25.1 (v1.4.36): FAST 检索模式知识分区召回保障与未生成目录占位符物理切除 ✅
+- **类型**：Retriever Partition Isolation Fix & Placeholder Defense ｜ **优先级**：🔴 P0（知识中枢准确定位、体外大脑质量与目录噪声封杀）
+- **Git Commit**：`1d338206f` ｜ **Git Tag**：`v1.4.36`
+- **背景与物理根因深度复盘**：
+  1. **揭秘 0.372314453125 物理真相**：WorkBuddy 卫星节点在 v1.4.35 下检索目标查询时，返回了 3 个完全不相干的根目录且带有 `abstract: "[Directory overview is not generated]"`，得分均为精准的 `0.372314453125`。实测证实：当 2080Ti Cross-Encoder 重排文本为 `"[Directory overview is not generated]"` 时，模型输出的标准分数恰为 **0.372314453125**，实锤说明脏占位符被无差别喂给重排模型并污染了最终结果；
+  2. **VikingDB int8 量化分数并列对知识分区的淹没 (Root Cause A)**：在 5,000+ 文件的全局向量库中，大量文档的 int8 内积打分并列（0.9995）。普通扁平粗排仅取前 20 条，导致位于 `skills/` 与 `master_memory/` 的核心高价值专有知识被大量通用项目文档稀释挤出；
+  3. **FAST 模式递归破坏与单测拦截 (Root Cause B & C)**：FAST 模式此前误入 `_recursive_search`，跳过了重排打分，且导致 `QuickSearchStorage` 触发了非预期的 `should-not-be-returned` 递归子检索断言失败。
+- **交付内容**：
+  1. **落地知识分区并行检索 (Knowledge Partition Concurrency)**：
+     - 在 `HierarchicalRetriever` 的 FAST 模式下，当目标目录覆盖 `viking://resources` 时，通过 `asyncio.gather` 并行派发 3 路正交粗排：`viking://resources/skills`、`viking://resources/master_memory` 与全局目标目录；
+     - 按 URI 合并保优去重，确保无论全局文档多庞大，技能与主记忆分区候选集 100% 稳固进入 Cross-Encoder 精排池；
+  2. **建立 `_is_meaningful` 物理防御门禁**：
+     - 新增静态方法 `_is_meaningful`，在 FAST 粗排候选池、QUICK 模式以及 `_recursive_search` 候选收集阶段，100% 物理剔除包含 `[Directory overview is not generated]` 或内容全空的无效占位符（除非显式请求 `level=[0]`）；
+  3. **恢复 FAST 模式纯粹架构契约**：
+     - 严格遵守“单次并行向量检索 + 单次全局 Cross-Encoder 批量重排”的极简物理契约，彻底杜绝递归下沉带来的多次串行重排开销；
+  4. **全量单元测试与线上实机对齐验证**：
+     - 补齐占位符过滤与多分区并行检索的 2 项新单测，`pytest tests/retrieve/` 全量 60 项 100% PASS；
+     - 线上实机验证（2080Ti 端口 1933）：
+       - 查询 `跨设备卫星接入 FRP SSH 双跳风控 与 Mac Studio MLX-LM 显存参数调优规范`：
+         - **Top 1**: `viking://resources/skills/mac_studio_remote_ops/mac-studio-remote-ops.md` (Score: **0.75390625**)
+         - **Top 2**: `viking://resources/master_memory/public_ports_summary.md` (Score: **0.609375**)
+         - **Top 3**: `viking://resources/master_memory/mac_studio_deployment_architecture.md/...` (Score: **0.5947265625**)
+         - 占位符彻底归零！
+       - 冷查询耗时稳定在 2s 级别，L0 缓存命中耗时极速至 **31ms**（提速超 100 倍）；
+     - 同步完成 Windows 工作站独立单文件分发包 `satellite_mcp_server.py` 覆盖更新。
+- **验收标准**：
+  - 单元测试 60/60 项 PASS，Vite 构建 PASS；
+  - 目标查询 Rank 1 准确命中 `mac-studio-remote-ops.md` (Score >= 0.75)；
+  - Git Tag `v1.4.36` 物理对齐。
 
 ### 📌 P1: [ ] Card-VK-26 (v1.4.34): 外部 Agent “系统级强制调用 VK” 简约高鲁棒实施框架与实战规范 (Pragmatic Auto-Dispatch SSOT)
 - **类型**：Agent Auto-Dispatch, High-Attention Trigger Schema & Progressive Disclosure ｜ **优先级**：🟡 P1（大模型使用习惯、生态闭环与第一性原则规范）
