@@ -43,6 +43,7 @@
 | **Card-VK-25** | **两阶段 FAST 检索模式 (Single RER) 落地与端到端耗时归一** | 1. 深入物理根因纠偏（澄清 Embedding 并非瓶颈，定位 THINKING 递归 6~15 次 RER 性能黑洞）；<br>2. 落地 RetrieverMode.FAST 两阶段检索（1 次 EMB + Top-N 向量召回 + 1 次全局 RER 打分）；<br>3. 卫星端与 Hook 默认启用 fast 模式，彻底根治 2s 超时降级 | 检索单测 19/19 全绿，冷检索耗时由 32s 缩短至 2.1s (提速 15x)，GPU RER 调用减少 85%，L0 缓存 2ms | `v1.4.35` | [x] 已验收通过 ✅ |
 | **Card-VK-25.1** | **FAST 检索模式知识分区召回保障与未生成目录占位符物理切除** | 1. 揭秘 0.372314453125 物理真相（Cross-Encoder 重排占位符固定得分）；<br>2. 落地知识分区并行检索 (`skills` + `master_memory` + 全局目标)，消除 5000+ 文件 int8 粗排分数并列对核心技能的淹没；<br>3. 建立 `_is_meaningful` 门禁，物理切除 `[Directory overview is not generated]` 脏占位符；<br>4. 坚守单次向量召回 + 单次批量 RER 契约，补齐单元测试 (60/60 PASS) | 目标查询准确召回 `mac-studio-remote-ops.md` 为 Rank 1 (Score: 0.7539)，占位符彻底归零，冷查 2s，L0 缓存 31ms | `v1.4.36` | [x] 已验收通过 ✅ |
 | **Card-VK-25.2** | **入库门禁与占位符根治、714虚假向量物理肃清与大盘可视化透传** | 1. 哨兵双向兼容（解决 not ready vs not generated 历史断层）；<br>2. 入库门禁阻断 + LLM 摘要指数退避重试 (2s, 5s)；<br>3. 切除检索侧过度工程（移除临时 `_is_meaningful`）；<br>4. 官方原生 `prune_orphans` 15.6s 极速肃清 714 个占位向量（总数从 21,506 降至 20,792，0 LLM 消耗）；<br>5. 监控大盘增加【占位待提纯目录】瓦片、表头琥珀色徽章与一键安全自愈提纯按钮 | 714 虚假向量彻底清空，大盘 100% 透传 4,257 待提纯目录，59+7 单测全绿，Vite 构建 PASS，NO GREEN 规范 | `v1.4.37` | [x] 已验收通过 ✅ |
+| **Card-VK-25.3** | **跨进程显存与编码死锁根治、目录摘要节点穿透阻断与优先级动态语义召回收官** | 1. 彻底定位 `run_rer_service.py` 遇 Unicode/Emoji 触发 Windows GBK 控制台编码崩溃 (`UnicodeEncodeError`) 根因，注入 UTF-8 免疫与安全字符串过滤；<br>2. 优化 2080Ti 双模型显存配比 (Embedding 0.74 / Reranker 0.24)，降低 `MAX_LENGTH=4096` 并注入单条 OOM 2000 字符自愈截断；<br>3. 落地 Priority-Aware Dual-Gate 控制器，短 Query 自动获取 HIGH 优先级插队通道，跳过后台批处理 Reindex 队列；<br>4. 检索端 `_is_directory_summary_node` 物理阻断 `.abstract.md` / `.overview.md` 目录路由泄露，拔除僵化分区配额，Fast 重排预算精炼至 6 篇；<br>5. 3 大验收目标 Query (`Mac Studio launchd 配置`, `卫星节点接入 WorkBuddy`, `Clash 双跳防风控`) Rank 1 得分 0.47 ~ 0.76，精准命中叶子文件，耗时 1.79s ~ 2.75s 100% 达标通过 | 冷查询 1.79s~2.75s 全部达标 (<=3.5s SLA)，目录路由节点 100% 阻断，单调轮转彻底切除，Vite 构建 PASS | `v1.4.38` | [x] 已验收通过 ✅ |
 | **Card-VK-26** | **外部 Agent “系统级强制调用 VK” 简约高鲁棒实施框架与实战规范 (Pragmatic Auto-Dispatch)** | 1. 坚决切除笨重易碎的反向代理网关，践行奥卡姆剃刀；<br>2. 开放宿主落地极简原生 Hook（开局预取、收尾存盘）；<br>3. 封闭宿主（WorkBuddy等）采用“高注意力触发 Schema + 契约自驱 + 分级渐进展开 (Progressive Disclosure)”；<br>4. 融入 Antigravity 实战经验（极简高密摘要、防上下文膨胀、超时容错兜底） | WorkBuddy 等任何外部 Agent 形成“以 find 起手、以 store 收尾”的高确定性习惯，零额外代理进程，稳定鲁棒 | `v1.4.35` | 📋 排队中 (P1) |
 | **Card-VK-27** | **全局异步任务统筹收口与任务中心全景架构升级** | 统一收拢所有模块异步任务至 TaskTracker 与任务中心；消除 24h 过滤导致的陈旧活跃任务不可见缺陷；打通 Playground 上传弹窗与全局任务中心强锚点；统一重试与清理能力 | 任务中心 100% 涵盖所有异步任务，局部与全局无缝联动，Vite 构建 PASS | `v1.4.36` | 📋 排队中 (P2) |
 
@@ -243,6 +244,38 @@
   - 向量库中 714 个虚假向量物理删除完毕，总数准确显示 20,792；
   - 前端大盘直观清晰透传 `4257 个占位目录待提纯`，支持一键安全自愈提纯；
   - Git Tag `v1.4.37` 物理对齐。
+
+### 📌 P0: [x] Card-VK-25.3 (v1.4.38): 跨进程显存与编码死锁根治、目录摘要节点穿透阻断与优先级动态语义召回收官 ✅
+- **类型**：Model Engine Hardening, UTF-8 Encoding Safeguard, Priority Dual-Gate & Semantic Retrieval Convergence ｜ **优先级**：🔴 P0（根治 2080Ti 双模型服务端崩溃、解除目录节点穿透、消除单调轮转与冷检索 SLA 收官）
+- **Git Commit**：`f3257d06d` ｜ **Git Tag**：`v1.4.38`
+- **背景与物理根因分析**：
+  1. **Windows 控制台 GBK 编码崩溃引发 500 降级**：`run_rer_service.py` 内部打印语句直接对 incoming query 包含的 Unicode / Emoji 字符（如 `✅`）进行未转义控制台输出，在 Windows 默认 CP936/GBK 编码下直接抛出 `UnicodeEncodeError` 导致 FastAPI 报 HTTP 500，检索流程被迫降级为未重排粗排向量分，直接破坏重排阶段；
+  2. **Embedding-8B 显存预算卡死导致 OOM**：原 `set_per_process_memory_fraction(0.62)` (13.64GB) 对 12.25GB 底模仅留出 1.39GB 激活显存，长文本 SDPA 注意力计算即刻触发 `OutOfMemoryError`，打爆 OpenViking 熔断器并导致文档入库向量全部退化为全零/相同向量（造成语义检索所有 query 命中同一份 `pdca`）；
+  3. **目录路由节点 `.abstract.md` / `.overview.md` 穿透泄露**：当调用方未显式指定 `level` 时，内部目录路由节点侵入候选池；
+  4. **僵化分区配额淹没全局最优解**：原 retriever 强行从各知识分区提取 Top-2，导致特定分区固定轮转霸榜；
+  5. **批处理 Reindex 队列挤占即时检索**：大量文档后台 Reindex 时持续霸占 Embedding 门禁，导致前台检索 Query 排队超过 10s。
+- **交付内容**：
+  1. **控制台 UTF-8 全局免疫与安全日志打印 (Unicode Encoding Immunity)**：
+     - `run_rer_service.py` 与 `run_emb_service.py` 顶部注入 `sys.stdout.reconfigure(encoding="utf-8", errors="replace")` 与 `sys.stderr.reconfigure`；
+     - 日志输出严格做截断与安全编码清洗，彻底消除任何 Emoji 或特殊标点导致的 500 异常；
+  2. **显存物理预算重新调谐与单条超长文本 OOM 截断自愈 (VRAM Rebalancing & Truncation Fallback)**：
+     - Embedding 显存份额由 0.62 升至 0.74 (16.28GB)，Reranker-2B 收敛至 0.24 (5.28GB，底模实测仅 2.29GB)，总和安全锁定在 2080Ti 22GB 物理显存内；
+     - `qwen3_vl_embedding.py` 的 `MAX_LENGTH` 由 8192 收敛至 4096；
+     - `run_emb_service.py` 在 `_run_embedding_chunk` 注入单条超长文本 OOM 自愈保护：遭遇极端超长文本时自动截断至 2000 字符重试，绝不抛 500；
+  3. **优先级动态门禁控制器 (Priority-Aware Dual-Gate Controller)**：
+     - 在 `run_emb_service.py` 落地 HIGH / LOW 双优先级等待队列；单条短文本 (len < 500) 检索 Query 自动标记为 HIGH 优先级，跳过正在排队的低优先级 Reindex 批处理任务，仅需等待当前在执行的单条任务完成（~1s）即可立刻插队执行；
+  4. **目录路由节点严格阻断与分区配额切除 (Directory Node Pruning & Quota Purge)**：
+     - `openviking/retrieve/hierarchical_retriever.py` 增加 `_is_directory_summary_node`：`level is None` 时严格阻断 `.abstract.md` / `.overview.md` 与 level 0/1 路由节点进入候选池；
+     - 拔除按分区强行 Top-2 配额的僵化逻辑，统一采用全局向量余弦相似度排序，并在 Fast 模式下将 Reranker 候选预算精炼至 6 篇（`max(limit * 2, 6)`）；
+     - `mcp_endpoint.py` 补充最终结果按 score 降序排序。
+  5. **全量知识中枢向量重建与收官验收 (Reindex & Verification)**：
+     - 成功完成 `viking://resources/skills` 与 `viking://resources/master_memory` 全量高质量 Qwen3-VL 向量物理重建；
+     - 收官复验 3 大 Query 耗时均控制在 1.79s ~ 2.75s（均低于 3.5s SLA），Rank 1 语义得分由 0.26~0.32 大幅跃升至 0.47~0.76，精准命中叶子文件，单调轮转彻底切除。
+- **验收标准**：
+  - 3 大目标 Query 耗时：`Mac Studio launchd 配置` (2.75s ✅), `卫星节点接入 WorkBuddy` (1.79s ✅), `Clash 双跳防风控` (1.97s ✅) 全部落在 3.5s 窗口内；
+  - 目录摘要节点 `.abstract.md` 泄露率为 0.0%；
+  - 检索结果彻底告别 `pdca` 单调轮转，语义高度对齐；
+  - Git Tag `v1.4.38` 物理对齐。
 
 ### 📌 P1: [ ] Card-VK-26 (v1.4.34): 外部 Agent “系统级强制调用 VK” 简约高鲁棒实施框架与实战规范 (Pragmatic Auto-Dispatch SSOT)
 - **类型**：Agent Auto-Dispatch, High-Attention Trigger Schema & Progressive Disclosure ｜ **优先级**：🟡 P1（大模型使用习惯、生态闭环与第一性原则规范）
