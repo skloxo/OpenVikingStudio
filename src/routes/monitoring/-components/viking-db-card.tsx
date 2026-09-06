@@ -103,15 +103,6 @@ export function VikingDbCard({ status, isHealthy }: VikingDbCardProps) {
       <div className="flex items-center justify-between">
         <CardTitle className="text-base font-semibold">{t('vikingdb.title')}</CardTitle>
         <div className="flex items-center gap-2">
-          {unreadyCount > 0 && (
-            <Badge
-              variant="outline"
-              className="gap-1 font-normal border-amber-500/30 bg-amber-500/10 text-amber-400 text-[11px]"
-            >
-              <span className="size-1.5 rounded-full bg-amber-400" />
-              {t('vikingdb.hasUnready', { count: unreadyCount })}
-            </Badge>
-          )}
           {!isHealthy && (
             <Badge
               variant="outline"
@@ -144,36 +135,26 @@ export function VikingDbCard({ status, isHealthy }: VikingDbCardProps) {
             {totalIndexes}
           </span>
         </div>
-        <div
-          className={cn(
-            'flex flex-col justify-center rounded-lg border px-3 py-2 transition-colors',
-            unreadyCount > 0 ? 'border-amber-500/30 bg-amber-500/10' : 'bg-muted/20',
-          )}
-        >
+        <div className="flex flex-col justify-center rounded-lg border bg-muted/20 px-3 py-2">
           <span className="text-[11px] text-muted-foreground font-medium">
             {t('vikingdb.unreadyDirectories')}
           </span>
-          <span
-            className={cn(
-              'font-mono text-base font-bold tabular-nums mt-0.5',
-              unreadyCount > 0 ? 'text-amber-400' : 'text-foreground',
-            )}
-          >
+          <span className="font-mono text-base font-bold text-foreground tabular-nums mt-0.5">
             {unreadyCount > 0 ? unreadyCount.toLocaleString() : t('vikingdb.fullyReady')}
           </span>
         </div>
       </div>
 
-      {/* 占位符告警与一键自愈条 */}
+      {/* 隔离目录信息说明条（中性，非告警） */}
       {unreadyCount > 0 && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-border/50 bg-muted/20 px-3 py-2 text-xs">
           <span className="text-muted-foreground text-[12px] leading-relaxed">
-            {reindexSuccessMsg || t('vikingdb.unreadyHint')}
+            {reindexSuccessMsg || t('vikingdb.unreadyHint', { count: unreadyCount })}
           </span>
           <Button
             size="sm"
             variant="outline"
-            className="h-7 shrink-0 text-xs border-amber-500/40 text-amber-400 hover:bg-amber-500/15"
+            className="h-7 shrink-0 text-xs"
             onClick={handleTriggerReindex}
             disabled={isReindexing}
           >
