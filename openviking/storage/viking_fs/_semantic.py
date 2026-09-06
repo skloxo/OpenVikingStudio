@@ -194,6 +194,7 @@ class _SemanticMixin:
         ctx: Optional[RequestContext] = None,
         level: Optional[List[int]] = None,
         image_url: Optional[str] = None,
+        mode: Optional[str] = None,
     ):
         """Semantic search.
 
@@ -203,6 +204,7 @@ class _SemanticMixin:
             limit: Return count
             score_threshold: Score threshold
             filter: Metadata filter
+            mode: Retrieval mode ('fast', 'thinking', 'quick')
 
         Returns:
             FindResult
@@ -272,13 +274,14 @@ class _SemanticMixin:
 
         logger.debug(
             "[VikingFS.find] Calling retriever.retrieve with "
-            f"ctx.account_id={real_ctx.account_id}, ctx.user={real_ctx.user}"
+            f"ctx.account_id={real_ctx.account_id}, ctx.user={real_ctx.user}, mode={mode}"
         )
 
         result = await retriever.retrieve(
             typed_query,
             ctx=real_ctx,
             limit=limit,
+            mode=mode,
             score_threshold=score_threshold,
             scope_dsl=filter,
             level=level,

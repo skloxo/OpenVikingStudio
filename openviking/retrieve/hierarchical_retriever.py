@@ -48,6 +48,7 @@ logger = get_logger(__name__)
 class RetrieverMode(str):
     THINKING = "thinking"
     QUICK = "quick"
+    FAST = "fast"
 
 
 class HierarchicalRetriever:
@@ -123,11 +124,16 @@ class HierarchicalRetriever:
         telemetry = get_current_telemetry()
         effective_threshold = self._resolve_threshold(score_threshold)
         image_query = bool(getattr(query, "image_query", False))
-        resolved_mode: str = str(
-            mode
-            if mode is not None
-            else (RetrieverMode.QUICK if not self._rerank_client else RetrieverMode.THINKING)
-        )
+        target_dirs = [d for d in (query.target_directories or []) if d]
+        if mode is not None:
+            resolved_mode: str = str(mode)
+        elif not self._rerank_client:
+            resolved_mode = RetrieverMode.QUICK
+        elif target_dirs or limit <= 3:
+            resolved_mode = RetrieverMode.FAST
+        else:
+            resolved_mode = RetrieverMode.THINKING
+
         if image_query:
             resolved_mode = RetrieverMode.QUICK
             if level is None:
@@ -135,8 +141,6 @@ class HierarchicalRetriever:
 
         # 创建 proxy 包装器，绑定当前 ctx
         vector_proxy = VikingDBManagerProxy(self.vector_store, ctx)
-
-        target_dirs = [d for d in (query.target_directories or []) if d]
 
         if not await vector_proxy.collection_exists_bound():
             logger.warning(
@@ -175,10 +179,15 @@ class HierarchicalRetriever:
         if image_query and context_type is None:
             context_type = ContextType.RESOURCE.value
 
-        if mode == RetrieverMode.QUICK:
-            search_limit = (
-                max(limit * 5, 50) if image_query else max(limit, self.GLOBAL_SEARCH_TOPK)
-            )
+        if resolved_mode in (RetrieverMode.QUICK, RetrieverMode.FAST):
+            if resolved_mode == RetrieverMode.FAST:
+                search_limit = (
+                    max(limit * 5, 50) if image_query else max(limit * 3, self.GLOBAL_SEARCH_TOPK, 20)
+                )
+            else:
+                search_limit = (
+                    max(limit * 5, 50) if image_query else max(limit, self.GLOBAL_SEARCH_TOPK)
+                )
             with telemetry.measure("search.vector_retrieval"):
                 quick_results = await vector_proxy.search_in_tenant(
                     query_vector=query_vector,
@@ -193,13 +202,28 @@ class HierarchicalRetriever:
             telemetry.count("vector.scored", len(quick_results))
             telemetry.count("vector.scanned", len(quick_results))
 
+            # FAST mode: Single-pass Cross-Encoder rerank on the vector candidate pool
+            if resolved_mode == RetrieverMode.FAST and self._rerank_client and quick_results:
+                docs = [
+                    str(r.get("abstract", "") or r.get("overview", "") or r.get("content", ""))
+                    for r in quick_results
+                ]
+                fallback_scores = [self._finite_score(r.get("_score", 0.0)) for r in quick_results]
+                rerank_scores = await self._rerank_scores(query.query, docs, fallback_scores)
+                for r, score in zip(quick_results, rerank_scores, strict=True):
+                    r["_score"] = score
+                    r["_final_score"] = score
+                rerank_used = True
+            else:
+                rerank_used = False
+
             collected_by_uri: Dict[str, Dict[str, Any]] = {}
             for result in quick_results:
                 uri = result.get("uri", "")
                 if not uri:
                     continue
 
-                score = self._finite_score(result.get("_score", 0.0))
+                score = self._finite_score(result.get("_final_score", result.get("_score", 0.0)))
                 if not self._passes_threshold(score, effective_threshold, score_gte):
                     continue
 
@@ -216,8 +240,7 @@ class HierarchicalRetriever:
                 key=lambda x: x.get("_final_score", 0.0),
                 reverse=True,
             )
-            apply_hotness = False
-            rerank_used = False
+            apply_hotness = (resolved_mode == RetrieverMode.FAST)
         else:
             # Step 2: Global vector search to supplement starting points
             with telemetry.measure("search.vector_retrieval"):

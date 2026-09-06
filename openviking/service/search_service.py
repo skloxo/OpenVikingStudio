@@ -74,6 +74,7 @@ class SearchService:
         level: Optional[List[int]],
         image_url: Optional[str],
         ctx: RequestContext,
+        mode: Optional[str] = None,
     ) -> str:
         account_id = getattr(ctx, "account_id", None) or getattr(getattr(ctx, "user", None), "account_id", "default")
         user_id = getattr(getattr(ctx, "user", None), "user_id", None) or "default"
@@ -81,7 +82,8 @@ class SearchService:
         lvl = tuple(level) if isinstance(level, list) else (level or "")
         flt = json.dumps(filter, sort_keys=True) if filter else ""
         img = (image_url[:100] + str(len(image_url))) if (image_url and len(image_url) > 100) else (image_url or "")
-        raw = f"{account_id}:{user_id}:{op}:{query.strip().lower()}:{t_uri}:{limit}:{score_threshold}:{lvl}:{flt}:{img}"
+        m = str(mode or "")
+        raw = f"{account_id}:{user_id}:{op}:{query.strip().lower()}:{t_uri}:{limit}:{score_threshold}:{lvl}:{flt}:{img}:{m}"
         return hashlib.md5(raw.encode("utf-8")).hexdigest()
 
     def _get_cached(self, cache_key: str) -> Optional[Any]:
@@ -216,6 +218,7 @@ class SearchService:
         filter: Optional[Dict] = None,
         level: Optional[List[int]] = None,
         image_url: Optional[str] = None,
+        mode: Optional[str] = None,
     ) -> Any:
         """Semantic search without session context.
 
@@ -226,6 +229,7 @@ class SearchService:
             score_threshold: Score threshold
             filter: Metadata filters
             level: Filter by level (0=abstract, 1=overview, 2=file)
+            mode: Retrieval mode ('fast', 'thinking', 'quick')
 
         Returns:
             FindResult
@@ -244,6 +248,7 @@ class SearchService:
             level=level,
             image_url=resolved_image_url,
             ctx=ctx,
+            mode=mode,
         )
         cached = self._get_cached(cache_key)
         if cached is not None:
@@ -258,6 +263,7 @@ class SearchService:
             filter=filter,
             level=level,
             image_url=resolved_image_url,
+            mode=mode,
         )
         self._set_cached(cache_key, result)
 

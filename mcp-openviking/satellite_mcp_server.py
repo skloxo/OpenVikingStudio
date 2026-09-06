@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 # ─── MODULE: satellite_mcp_server ──────────────────────────────────────────
 """
-OpenViking Satellite MCP Server (Standalone Zero-Dependency Distribution - v1.4.34)
+OpenViking Satellite MCP Server (Standalone Zero-Dependency Distribution - v1.4.35)
 
 专为远程算力节点 (Mac Studio / 2080Ti / 远程工作站) 与外部 Agent (WorkBuddy / Cursor / Claude Code) 设计的独立单文件轻量分发包。
 特点：
@@ -229,9 +229,12 @@ def openviking_find(
     score_threshold: float = Field(default=0.0, description="最低相关性分数（0-1）"),
     level: str = Field(default="", description="限定层级：0(L0摘要), 1(L1概览), 2(L2全文), 0,1,2(全部)"),
     filter_tags: str = Field(default="", description="过滤标签（逗号分隔）"),
+    mode: str = Field(default="fast", description="检索模式：fast(极速两阶段单次重排, 默认), thinking(深层递归树探索), quick(纯向量检索)"),
 ) -> str:
     """两阶段混合语义召回 + Cross-Encoder 深度重排。返回综合评分最高的相关上下文。"""
     body: Dict[str, Any] = {"query": query, "limit": limit}
+    if mode:
+        body["mode"] = mode.strip()
     if target_uri:
         body["target_uri"] = target_uri
     if score_threshold > 0:
@@ -453,7 +456,7 @@ def openviking_ping() -> str:
     status = {
         "status": "ok",
         "client_distribution": "standalone_satellite",
-        "server_version": "1.4.34",
+        "server_version": "1.4.35",
         "mode": "satellite",
         "api_url": cfg["api"],
         "authenticated": bool(cfg["api_key"]),

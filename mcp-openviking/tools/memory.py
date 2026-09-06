@@ -123,12 +123,14 @@ def register_memory_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Callabl
         score_threshold: float = Field(default=0.0, description="最低相关性分数（0-1）"),
         level: str = Field(default="", description="限定层级：0(L0摘要), 1(L1概览), 2(L2全文), 0,1,2(全部)"),
         filter_tags: str = Field(default="", description="过滤标签（逗号分隔）"),
+        mode: str = Field(default="fast", description="检索模式：fast(两阶段单次重排, 默认), thinking(深层递归树探索), quick(纯向量检索)"),
     ) -> str:
         """两阶段混合语义召回 + Cross-Encoder 深度重排。返回综合评分最高的相关上下文。"""
         query_str = str(query) if not hasattr(query, 'default') else ""
         target_uri_str = str(target_uri) if isinstance(target_uri, str) else ""
         level_str = str(level).strip() if isinstance(level, str) else ""
         filter_tags_str = str(filter_tags).strip() if isinstance(filter_tags, str) else ""
+        mode_str = str(mode).strip() if isinstance(mode, str) else ""
 
         if not isinstance(limit, int):
             try:
@@ -151,6 +153,8 @@ def register_memory_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Callabl
 
         def _api():
             body: Dict[str, Any] = {"query": query_str, "limit": limit}
+            if mode_str:
+                body["mode"] = mode_str
             if target_uri_str:
                 body["target_uri"] = target_uri_str
             if score_threshold > 0:
