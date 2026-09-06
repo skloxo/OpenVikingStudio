@@ -399,6 +399,8 @@ async def _format_search_result(result, *, service, ctx, read_content: bool = Fa
         for m in contexts:
             items.append((ctx_type, m))
 
+    items.sort(key=lambda x: getattr(x[1], "score", 0.0), reverse=True)
+
     if not items:
         return "No matching context found."
 
