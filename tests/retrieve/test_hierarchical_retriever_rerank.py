@@ -748,3 +748,106 @@ async def test_convert_to_matched_contexts_defaults_tags_and_body_previews():
         "# Visible overview",
         markdown,
     ]
+
+
+@pytest.mark.asyncio
+async def test_fast_mode_filters_ungenerated_directory_placeholders(monkeypatch):
+    fake_client = FakeRerankClient([0.95, 0.90])
+    monkeypatch.setattr(
+        "openviking.retrieve.hierarchical_retriever.RerankClient.from_config",
+        lambda config: fake_client,
+    )
+    storage = QuickSearchStorage([
+        _result(
+            "viking://resources/placeholder_dir/.abstract.md",
+            0.99,
+            level=0,
+            abstract="# placeholder_dir\n\n[Directory overview is not generated]",
+        ),
+        _result(
+            "viking://resources/empty_doc.md",
+            0.98,
+            level=2,
+            abstract="",
+        ),
+        _result(
+            "viking://resources/valid_doc.md",
+            0.95,
+            level=2,
+            abstract="Valid content for document",
+        ),
+    ])
+
+    retriever = HierarchicalRetriever(
+        storage=storage,
+        embedder=DummyEmbedder(),
+        rerank_config=_config(),
+    )
+
+    result = await retriever.retrieve(_query(), ctx=_ctx(), limit=3, mode=RetrieverMode.FAST)
+
+    assert [ctx.uri for ctx in result.matched_contexts] == [
+        "viking://resources/valid_doc.md",
+    ]
+    # Reranker should only have been called on the valid candidate, NOT the placeholders
+    assert len(fake_client.calls) == 1
+    assert fake_client.calls[0][1] == ["Valid content for document"]
+
+
+@pytest.mark.asyncio
+async def test_fast_mode_parallel_partition_when_resources_targeted(monkeypatch):
+    fake_client = FakeRerankClient([0.9, 0.8, 0.7])
+    monkeypatch.setattr(
+        "openviking.retrieve.hierarchical_retriever.RerankClient.from_config",
+        lambda config: fake_client,
+    )
+
+    class PartitionStorage(DummyStorage):
+        def __init__(self):
+            super().__init__()
+            self.queried_targets = []
+
+        async def search_in_tenant(
+            self,
+            ctx,
+            query_vector=None,
+            sparse_query_vector=None,
+            context_type=None,
+            target_directories=None,
+            extra_filter=None,
+            level=None,
+            limit: int = 10,
+            offset: int = 0,
+        ):
+            self.queried_targets.append(list(target_directories or []))
+            if target_directories == ["viking://resources/skills"]:
+                return [_result("viking://resources/skills/test_skill.md", 0.85, abstract="Skill doc")]
+            elif target_directories == ["viking://resources/master_memory"]:
+                return [_result("viking://resources/master_memory/test_mem.md", 0.80, abstract="Memory doc")]
+            else:
+                return [_result("viking://resources/general.md", 0.75, abstract="General doc")]
+
+    storage = PartitionStorage()
+    retriever = HierarchicalRetriever(
+        storage=storage,
+        embedder=DummyEmbedder(),
+        rerank_config=_config(),
+    )
+
+    q = TypedQuery(
+        query="hello",
+        context_type=ContextType.RESOURCE,
+        intent="",
+        target_directories=["viking://resources"],
+    )
+    result = await retriever.retrieve(q, ctx=_ctx(), limit=5, mode=RetrieverMode.FAST)
+
+    assert ["viking://resources/skills"] in storage.queried_targets
+    assert ["viking://resources/master_memory"] in storage.queried_targets
+    assert ["viking://resources"] in storage.queried_targets
+    assert len(result.matched_contexts) == 3
+    uris = [ctx.uri for ctx in result.matched_contexts]
+    assert "viking://resources/skills/test_skill.md" in uris
+    assert "viking://resources/master_memory/test_mem.md" in uris
+    assert "viking://resources/general.md" in uris
+
