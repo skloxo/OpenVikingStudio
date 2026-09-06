@@ -306,8 +306,9 @@ class HierarchicalRetriever:
                     r["_final_score"] = score
                 rerank_used = False
 
+            source_pool = rerank_candidates if (rerank_used and rerank_candidates) else quick_results
             collected_by_uri: Dict[str, Dict[str, Any]] = {}
-            for result in quick_results:
+            for result in source_pool:
                 uri = result.get("uri", "")
                 if not uri:
                     continue
