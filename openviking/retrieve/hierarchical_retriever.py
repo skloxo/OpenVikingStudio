@@ -87,6 +87,21 @@ class HierarchicalRetriever:
                 return True
         return False
 
+    @classmethod
+    def _is_directory_summary_node(
+        cls, r: Dict[str, Any], requested_level: Optional[List[int]] = None
+    ) -> bool:
+        """Internal directory summary nodes (.abstract.md, .overview.md, or level 0/1)
+        must not crowd out real content files unless the caller explicitly requested them."""
+        if requested_level is not None and (0 in requested_level or 1 in requested_level):
+            return False
+        uri = r.get("uri", "")
+        if uri.endswith((".abstract.md", ".overview.md")):
+            return True
+        if r.get("level") in (0, 1):
+            return True
+        return False
+
     def __init__(
         self,
         storage: VikingDBManager,
@@ -245,7 +260,7 @@ class HierarchicalRetriever:
                     for p_list in partition_results:
                         for r in p_list:
                             u = r.get("uri", "")
-                            if not u or self._is_placeholder_result(r):
+                            if not u or self._is_placeholder_result(r) or self._is_directory_summary_node(r, requested_level=level):
                                 continue
                             if u not in merged_by_uri or r.get("_score", 0.0) > merged_by_uri[u].get("_score", 0.0):
                                 merged_by_uri[u] = r
@@ -260,7 +275,11 @@ class HierarchicalRetriever:
                         level=level,
                         limit=search_limit,
                     )
-                    quick_results = [r for r in raw_quick if not self._is_placeholder_result(r)]
+                    quick_results = [
+                        r for r in raw_quick
+                        if not self._is_placeholder_result(r)
+                        and not self._is_directory_summary_node(r, requested_level=level)
+                    ]
                     telemetry.count("vector.searches", 1)
 
             telemetry.count("vector.scored", len(quick_results))
@@ -275,48 +294,15 @@ class HierarchicalRetriever:
                     r["_final_score"] = score
 
                 # Select Top-N candidates for fine Cross-Encoder reranking
-                # Cap rerank budget to prevent 2080Ti Cross-Encoder batch overload (6~8 docs ~ 1.5-2.0s SLA)
-                rerank_budget = min(len(quick_results), max(limit * 2, 6))
+                # Cap rerank budget to prevent 2080Ti Cross-Encoder batch overload (up to 8 docs ~ 1.5-1.8s SLA)
+                rerank_budget = min(len(quick_results), max(limit * 2, 8))
 
-                # If partition targets were used, select balanced representation across partitions
-                if 'partition_results' in locals() and partition_results:
-                    selected_uris = set()
-                    rerank_candidates: List[Dict[str, Any]] = []
-                    # 1. Take top-2 from each partition
-                    for p_list in partition_results:
-                        p_filtered = [item for item in p_list if not self._is_placeholder_result(item)]
-                        p_sorted = sorted(
-                            p_filtered,
-                            key=lambda x: self._finite_score(x.get("_score", 0.0)),
-                            reverse=True,
-                        )
-                        for item in p_sorted[:2]:
-                            u = item.get("uri", "")
-                            if u and u not in selected_uris:
-                                selected_uris.add(u)
-                                r_match = merged_by_uri.get(u)
-                                if r_match and not self._is_placeholder_result(r_match):
-                                    rerank_candidates.append(r_match)
-                    # 2. Fill remaining budget by global vector score
-                    sorted_all = sorted(
-                        quick_results,
-                        key=lambda x: self._finite_score(x.get("_score", 0.0)),
-                        reverse=True,
-                    )
-                    for r in sorted_all:
-                        if len(rerank_candidates) >= rerank_budget:
-                            break
-                        u = r.get("uri", "")
-                        if u and u not in selected_uris and not self._is_placeholder_result(r):
-                            selected_uris.add(u)
-                            rerank_candidates.append(r)
-                else:
-                    sorted_all = sorted(
-                        quick_results,
-                        key=lambda x: self._finite_score(x.get("_score", 0.0)),
-                        reverse=True,
-                    )
-                    rerank_candidates = sorted_all[:rerank_budget]
+                sorted_all = sorted(
+                    quick_results,
+                    key=lambda x: self._finite_score(x.get("_score", 0.0)),
+                    reverse=True,
+                )
+                rerank_candidates = sorted_all[:rerank_budget]
 
                 docs = [
                     str(r.get("abstract", "") or r.get("overview", "") or r.get("content", ""))
@@ -338,7 +324,7 @@ class HierarchicalRetriever:
             source_pool = rerank_candidates if (rerank_used and rerank_candidates) else quick_results
             collected_by_uri: Dict[str, Dict[str, Any]] = {}
             for result in source_pool:
-                if self._is_placeholder_result(result):
+                if self._is_placeholder_result(result) or self._is_directory_summary_node(result, requested_level=level):
                     continue
                 uri = result.get("uri", "")
                 if not uri:
