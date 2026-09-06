@@ -44,6 +44,7 @@
 | **Card-VK-25.1** | **FAST 检索模式知识分区召回保障与未生成目录占位符物理切除** | 1. 揭秘 0.372314453125 物理真相（Cross-Encoder 重排占位符固定得分）；<br>2. 落地知识分区并行检索 (`skills` + `master_memory` + 全局目标)，消除 5000+ 文件 int8 粗排分数并列对核心技能的淹没；<br>3. 建立 `_is_meaningful` 门禁，物理切除 `[Directory overview is not generated]` 脏占位符；<br>4. 坚守单次向量召回 + 单次批量 RER 契约，补齐单元测试 (60/60 PASS) | 目标查询准确召回 `mac-studio-remote-ops.md` 为 Rank 1 (Score: 0.7539)，占位符彻底归零，冷查 2s，L0 缓存 31ms | `v1.4.36` | [x] 已验收通过 ✅ |
 | **Card-VK-25.2** | **入库门禁与占位符根治、714虚假向量物理肃清与大盘可视化透传** | 1. 哨兵双向兼容（解决 not ready vs not generated 历史断层）；<br>2. 入库门禁阻断 + LLM 摘要指数退避重试 (2s, 5s)；<br>3. 切除检索侧过度工程（移除临时 `_is_meaningful`）；<br>4. 官方原生 `prune_orphans` 15.6s 极速肃清 714 个占位向量（总数从 21,506 降至 20,792，0 LLM 消耗）；<br>5. 监控大盘增加【占位待提纯目录】瓦片、表头琥珀色徽章与一键安全自愈提纯按钮 | 714 虚假向量彻底清空，大盘 100% 透传 4,257 待提纯目录，59+7 单测全绿，Vite 构建 PASS，NO GREEN 规范 | `v1.4.37` | [x] 已验收通过 ✅ |
 | **Card-VK-25.3** | **跨进程显存与编码死锁根治、目录摘要节点穿透阻断与优先级动态语义召回收官** | 1. 彻底定位 `run_rer_service.py` 遇 Unicode/Emoji 触发 Windows GBK 控制台编码崩溃 (`UnicodeEncodeError`) 根因，注入 UTF-8 免疫与安全字符串过滤；<br>2. 优化 2080Ti 双模型显存配比 (Embedding 0.74 / Reranker 0.24)，降低 `MAX_LENGTH=4096` 并注入单条 OOM 2000 字符自愈截断；<br>3. 落地 Priority-Aware Dual-Gate 控制器，短 Query 自动获取 HIGH 优先级插队通道，跳过后台批处理 Reindex 队列；<br>4. 检索端 `_is_directory_summary_node` 物理阻断 `.abstract.md` / `.overview.md` 目录路由泄露，拔除僵化分区配额，Fast 重排预算精炼至 6 篇；<br>5. 3 大验收目标 Query (`Mac Studio launchd 配置`, `卫星节点接入 WorkBuddy`, `Clash 双跳防风控`) Rank 1 得分 0.47 ~ 0.76，精准命中叶子文件，耗时 1.79s ~ 2.75s 100% 达标通过 | 冷查询 1.79s~2.75s 全部达标 (<=3.5s SLA)，目录路由节点 100% 阻断，单调轮转彻底切除，Vite 构建 PASS | `v1.4.38` | [x] 已验收通过 ✅ |
+| **Card-VK-28** | **全集群卫星节点 Hook 与 MCP 职责边界架构规范落地、向量库隔离目录中性呈现与版本对齐** | 1. VikingDB 卡片告警降维与语义纠偏：去刺眼橙色 Badge，改中性“隔离占位目录”，按钮改为“向量库孤儿巡检”，展示 0 孤儿真实结论；<br>2. 确立全集群卫星节点 Hook 与 MCP 职责边界四大物理军规（解耦律、毫秒熔断律、零扰动静默律、权威专区隔离律）；<br>3. 建立 Hook 与 MCP 接力协同契约（事实已知效应、由搜转读、只读与沉淀权责）；<br>4. 全链路版本升级至 v1.4.39，ping 探针动态解包健康版本号，规约镜像入脑 Master Memory | 监控大盘 0 误导性告警，卫星 Hook <2.0s 毫秒级静默响应，体外大脑成功沉淀，Vite 构建 PASS (20.26s) | `v1.4.39` | [x] 已验收通过 ✅ |
 | **Card-VK-26** | **外部 Agent “系统级强制调用 VK” 简约高鲁棒实施框架与实战规范 (Pragmatic Auto-Dispatch)** | 1. 坚决切除笨重易碎的反向代理网关，践行奥卡姆剃刀；<br>2. 开放宿主落地极简原生 Hook（开局预取、收尾存盘）；<br>3. 封闭宿主（WorkBuddy等）采用“高注意力触发 Schema + 契约自驱 + 分级渐进展开 (Progressive Disclosure)”；<br>4. 融入 Antigravity 实战经验（极简高密摘要、防上下文膨胀、超时容错兜底） | WorkBuddy 等任何外部 Agent 形成“以 find 起手、以 store 收尾”的高确定性习惯，零额外代理进程，稳定鲁棒 | `v1.4.35` | 📋 排队中 (P1) |
 | **Card-VK-27** | **全局异步任务统筹收口与任务中心全景架构升级** | 统一收拢所有模块异步任务至 TaskTracker 与任务中心；消除 24h 过滤导致的陈旧活跃任务不可见缺陷；打通 Playground 上传弹窗与全局任务中心强锚点；统一重试与清理能力 | 任务中心 100% 涵盖所有异步任务，局部与全局无缝联动，Vite 构建 PASS | `v1.4.36` | 📋 排队中 (P2) |
 
@@ -276,6 +277,37 @@
   - 目录摘要节点 `.abstract.md` 泄露率为 0.0%；
   - 检索结果彻底告别 `pdca` 单调轮转，语义高度对齐；
   - Git Tag `v1.4.38` 物理对齐。
+
+### 📌 P0: [x] Card-VK-28 (v1.4.39): 全集群卫星节点 Hook 与 MCP 职责边界架构规范落地、向量库隔离目录中性呈现与版本对齐 ✅
+- **类型**：Satellite Hook & MCP Boundary Spec, UI Alarm De-escalation & Cluster SSOT ｜ **优先级**：🔴 P0（全集群卫星节点交互架构基石、UI 真实性与版本协商一致）
+- **Git Commit**：`61acc3785` (版本对齐) + `488778d23` (发布) + `51ce44be2` (UI 修复) ｜ **Git Tag**：`v1.4.39`
+- **背景与物理根因**：
+  1. **UI 误导与伪告警引发用户焦虑**：监控大盘原“4257 个占位目录待提纯”使用刺眼琥珀色告警徽章与警示条，且按钮命名为“安全自愈提纯”。用户点击后任务中心生成任务并提示完成，但数字依然显示 4257，产生“此功能坏了/没用”的错觉。物理真相：4257 是已被系统安全隔离的中间层目录，根本无需也不该做向量化，向量库真实扫描孤儿泄露为 0；
+  2. **卫星节点架构边界模糊**：卫星节点（如 Windows 3070、Mac Studio、WorkBuddy）在接入 OpenViking 时，若无明确职责边界，容易将 Hook 膨胀为重型工具箱（深读、大文件解析、双写），导致 IDE 回车后界面假死转圈；或者模型缺乏上下文已知意识，拿到小抄后又发起盲搜造成资源内耗；
+  3. **版本号脱节**：MCP ping 与健康探针写死 1.4.37，与 1.4.38/1.4.39 协议脱节。
+- **交付内容**：
+  1. **UI 语义纠偏与中性呈现 (UI De-escalation & Neutral Semantics)**：
+     - `src/routes/monitoring/-components/viking-db-card.tsx`：彻底切除卡片右上角刺眼的“4257 待提纯”告警 Badge；
+     - 数字瓦片由橙色告警转为中性灰 (`text-foreground`)，文案更名为“隔离占位目录 (Isolated Directories)”；
+     - 提示条由橙色告警条转为沉静中性说明条，如实解释：“底层 4,257 个中间占位目录已被系统安全隔离（无需向量化），非故障隐患”；
+     - 巡检按钮更名为“向量库孤儿巡检”，点击后提示真实结论：“巡检完成：扫描全量向量记录，0 孤儿泄露，向量库 100% 纯净 ✓”；
+  2. **全集群卫星节点 Hook 与 MCP 职责边界四大物理军规 (Satellite Hook & MCP Boundary Spec)**：
+     - **职责严格解耦律**：Hook 只负责开局轻量预取（递小抄）；大文件深读、代码解析与双写存盘 100% 留给 MCP 动态工具；
+     - **毫秒预算熔断律**：命中本地缓存 < 5ms；网络超时硬卡 2.0s（极限 2.5s）；抖动或超时在 50ms 内静默返回 `{}` 并以退出码 0 退出；
+     - **零扰动静默降级律**：仅在 `PreInvocation` 或 `UserPromptSubmit` 单点挂载；对 `continue`、`ok`、`？` 等无实质语义的单字步进词直接跳过；
+     - **权威专区隔离律**：Hook 探针限定只检索 `master_memory/` 脱水专区（Top-2 结果，单条 <= 200 字符），严禁全量遍历未脱水代码树；
+  3. **Hook 与 MCP 接力协同契约**：
+     - **事实已知效应**：上下文头部已注入摘要时，模型天然将其视为已知事实直接推理，严禁相同关键词再次发起 `find` 盲搜；
+     - **由搜转读 (Find ➔ Read)**：小抄不足以支撑复杂操作时，直接调用 `openviking_read` 深读全文；
+     - **只读与沉淀权责**：Hook 绝对只读；演进经验通过 MCP `openviking_record_evolution_lesson` 双向存盘；
+  4. **版本协商动态解包与平滑升级**：
+     - `package.json`, `_version.py`, `__init__.py`, `mcp_openviking_server.py`, `satellite_mcp_server.py`, `tools/system.py` 全链路对齐升级至 `v1.4.39`；
+     - `openviking_ping` 自动从 HTTP `/health` 动态解包提取真实服务端版本号。
+- **验收标准**：
+  - 前端大盘 VikingDB 卡片彻底告别刺眼告警色，4257 中性呈现，巡检按钮语义清晰；
+  - 卫星节点 Hook 压测无阻塞，静默降级耗时 < 50ms；
+  - 《规范》成功归档至 `viking://resources/master_memory/evolution_lessons/`；
+  - Vite 构建 PASS (20.26s)，Git Tag `v1.4.39` 物理对齐并推流。
 
 ### 📌 P1: [ ] Card-VK-26 (v1.4.34): 外部 Agent “系统级强制调用 VK” 简约高鲁棒实施框架与实战规范 (Pragmatic Auto-Dispatch SSOT)
 - **类型**：Agent Auto-Dispatch, High-Attention Trigger Schema & Progressive Disclosure ｜ **优先级**：🟡 P1（大模型使用习惯、生态闭环与第一性原则规范）
