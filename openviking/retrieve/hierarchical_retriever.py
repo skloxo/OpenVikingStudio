@@ -238,15 +238,64 @@ class HierarchicalRetriever:
             telemetry.count("vector.scored", len(quick_results))
             telemetry.count("vector.scanned", len(quick_results))
 
-            # FAST mode: Single-pass Cross-Encoder rerank on the vector candidate pool
+            # FAST mode: Single-pass Cross-Encoder rerank on top-ranked vector candidates
             if resolved_mode == RetrieverMode.FAST and self._rerank_client and quick_results:
+                # Default all candidates to their coarse vector score
+                for r in quick_results:
+                    score = self._finite_score(r.get("_score", 0.0))
+                    r["_score"] = score
+                    r["_final_score"] = score
+
+                # Select Top-N candidates for fine Cross-Encoder reranking
+                # Cap rerank budget to prevent 2080Ti Cross-Encoder batch overload (6~8 docs ~ 1.5-2.0s SLA)
+                rerank_budget = min(len(quick_results), max(limit * 2, 6))
+
+                # If partition targets were used, select balanced representation across partitions
+                if 'partition_results' in locals() and partition_results:
+                    selected_uris = set()
+                    rerank_candidates: List[Dict[str, Any]] = []
+                    # 1. Take top-2 from each partition
+                    for p_list in partition_results:
+                        p_sorted = sorted(
+                            p_list,
+                            key=lambda x: self._finite_score(x.get("_score", 0.0)),
+                            reverse=True,
+                        )
+                        for item in p_sorted[:2]:
+                            u = item.get("uri", "")
+                            if u and u not in selected_uris:
+                                selected_uris.add(u)
+                                r_match = merged_by_uri.get(u)
+                                if r_match:
+                                    rerank_candidates.append(r_match)
+                    # 2. Fill remaining budget by global vector score
+                    sorted_all = sorted(
+                        quick_results,
+                        key=lambda x: self._finite_score(x.get("_score", 0.0)),
+                        reverse=True,
+                    )
+                    for r in sorted_all:
+                        if len(rerank_candidates) >= rerank_budget:
+                            break
+                        u = r.get("uri", "")
+                        if u and u not in selected_uris:
+                            selected_uris.add(u)
+                            rerank_candidates.append(r)
+                else:
+                    sorted_all = sorted(
+                        quick_results,
+                        key=lambda x: self._finite_score(x.get("_score", 0.0)),
+                        reverse=True,
+                    )
+                    rerank_candidates = sorted_all[:rerank_budget]
+
                 docs = [
                     str(r.get("abstract", "") or r.get("overview", "") or r.get("content", ""))
-                    for r in quick_results
+                    for r in rerank_candidates
                 ]
-                fallback_scores = [self._finite_score(r.get("_score", 0.0)) for r in quick_results]
+                fallback_scores = [self._finite_score(r.get("_score", 0.0)) for r in rerank_candidates]
                 rerank_scores = await self._rerank_scores(query.query, docs, fallback_scores)
-                for r, score in zip(quick_results, rerank_scores, strict=True):
+                for r, score in zip(rerank_candidates, rerank_scores, strict=True):
                     r["_score"] = score
                     r["_final_score"] = score
                 rerank_used = True
