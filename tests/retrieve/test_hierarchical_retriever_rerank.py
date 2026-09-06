@@ -471,6 +471,47 @@ async def test_quick_mode_uses_single_vector_search_without_rerank_or_recursion(
 
 
 @pytest.mark.asyncio
+async def test_fast_mode_uses_single_vector_search_with_single_rerank(monkeypatch):
+    # Fake reranker flips the scores: root=0.2, file=0.99, dir=0.5
+    fake_client = FakeRerankClient([0.2, 0.99, 0.5])
+    monkeypatch.setattr(
+        "openviking.retrieve.hierarchical_retriever.RerankClient.from_config",
+        lambda config: fake_client,
+    )
+    storage = QuickSearchStorage(
+        [
+            _result("viking://resources/root", 0.95, level=0, abstract="root abstract"),
+            _result("viking://resources/file", 0.90, abstract="file abstract"),
+            _result("viking://resources/dir", 0.85, level=1, abstract="dir overview"),
+        ]
+    )
+
+    retriever = HierarchicalRetriever(
+        storage=storage,
+        embedder=DummyEmbedder(),
+        rerank_config=_config(),
+    )
+
+    result = await retriever.retrieve(_query(), ctx=_ctx(), limit=3, mode=RetrieverMode.FAST)
+
+    # file should now be top-1 because rerank gave it 0.99
+    assert [ctx.uri for ctx in result.matched_contexts] == [
+        "viking://resources/file",
+        "viking://resources/dir/.overview.md",
+        "viking://resources/root/.abstract.md",
+    ]
+    assert [ctx.score for ctx in result.matched_contexts] == [
+        pytest.approx(0.99),
+        pytest.approx(0.5),
+        pytest.approx(0.2),
+    ]
+    assert len(storage.search_calls) == 1
+    assert storage.child_search_calls == []
+    # Exactly ONE single rerank call on the candidate pool
+    assert len(fake_client.calls) == 1
+
+
+@pytest.mark.asyncio
 async def test_quick_mode_pushes_explicit_level_filter_to_vector_search():
     storage = QuickSearchStorage(
         [

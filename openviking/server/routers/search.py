@@ -138,6 +138,7 @@ class FindRequest(BaseModel):
     level: Optional[Union[int, str, List[int]]] = None
     read_content: bool = False
     telemetry: TelemetryRequest = False
+    mode: Optional[str] = None
 
 
 def _reject_unknown_categories(value: Any, label: str, allowed: Sequence[str]) -> None:
@@ -353,6 +354,7 @@ async def find(
             filter=effective_filter,
             level=_resolve_levels(request.level) or None,
             image_url=resolved_image_url,
+            mode=request.mode,
         ),
     )
     result = execution.result
