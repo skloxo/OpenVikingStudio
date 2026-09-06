@@ -294,8 +294,8 @@ class HierarchicalRetriever:
                     r["_final_score"] = score
 
                 # Select Top-N candidates for fine Cross-Encoder reranking
-                # Cap rerank budget to prevent 2080Ti Cross-Encoder batch overload (up to 8 docs ~ 1.5-1.8s SLA)
-                rerank_budget = min(len(quick_results), max(limit * 2, 8))
+                # Cap rerank budget to prevent 2080Ti Cross-Encoder batch overload (6 docs ~ 1.0-1.2s SLA)
+                rerank_budget = min(len(quick_results), max(limit * 2, 6))
 
                 sorted_all = sorted(
                     quick_results,
