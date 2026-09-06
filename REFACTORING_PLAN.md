@@ -44,9 +44,9 @@
 | **Card-VK-25.1** | **FAST 检索模式知识分区召回保障与未生成目录占位符物理切除** | 1. 揭秘 0.372314453125 物理真相（Cross-Encoder 重排占位符固定得分）；<br>2. 落地知识分区并行检索 (`skills` + `master_memory` + 全局目标)，消除 5000+ 文件 int8 粗排分数并列对核心技能的淹没；<br>3. 建立 `_is_meaningful` 门禁，物理切除 `[Directory overview is not generated]` 脏占位符；<br>4. 坚守单次向量召回 + 单次批量 RER 契约，补齐单元测试 (60/60 PASS) | 目标查询准确召回 `mac-studio-remote-ops.md` 为 Rank 1 (Score: 0.7539)，占位符彻底归零，冷查 2s，L0 缓存 31ms | `v1.4.36` | [x] 已验收通过 ✅ |
 | **Card-VK-25.2** | **入库门禁与占位符根治、714虚假向量物理肃清与大盘可视化透传** | 1. 哨兵双向兼容（解决 not ready vs not generated 历史断层）；<br>2. 入库门禁阻断 + LLM 摘要指数退避重试 (2s, 5s)；<br>3. 切除检索侧过度工程（移除临时 `_is_meaningful`）；<br>4. 官方原生 `prune_orphans` 15.6s 极速肃清 714 个占位向量（总数从 21,506 降至 20,792，0 LLM 消耗）；<br>5. 监控大盘增加【占位待提纯目录】瓦片、表头琥珀色徽章与一键安全自愈提纯按钮 | 714 虚假向量彻底清空，大盘 100% 透传 4,257 待提纯目录，59+7 单测全绿，Vite 构建 PASS，NO GREEN 规范 | `v1.4.37` | [x] 已验收通过 ✅ |
 | **Card-VK-25.3** | **跨进程显存与编码死锁根治、目录摘要节点穿透阻断与优先级动态语义召回收官** | 1. 彻底定位 `run_rer_service.py` 遇 Unicode/Emoji 触发 Windows GBK 控制台编码崩溃 (`UnicodeEncodeError`) 根因，注入 UTF-8 免疫与安全字符串过滤；<br>2. 优化 2080Ti 双模型显存配比 (Embedding 0.74 / Reranker 0.24)，降低 `MAX_LENGTH=4096` 并注入单条 OOM 2000 字符自愈截断；<br>3. 落地 Priority-Aware Dual-Gate 控制器，短 Query 自动获取 HIGH 优先级插队通道，跳过后台批处理 Reindex 队列；<br>4. 检索端 `_is_directory_summary_node` 物理阻断 `.abstract.md` / `.overview.md` 目录路由泄露，拔除僵化分区配额，Fast 重排预算精炼至 6 篇；<br>5. 3 大验收目标 Query (`Mac Studio launchd 配置`, `卫星节点接入 WorkBuddy`, `Clash 双跳防风控`) Rank 1 得分 0.47 ~ 0.76，精准命中叶子文件，耗时 1.79s ~ 2.75s 100% 达标通过 | 冷查询 1.79s~2.75s 全部达标 (<=3.5s SLA)，目录路由节点 100% 阻断，单调轮转彻底切除，Vite 构建 PASS | `v1.4.38` | [x] 已验收通过 ✅ |
-| **Card-VK-28** | **全集群卫星节点 Hook 与 MCP 职责边界架构规范落地、向量库隔离目录中性呈现与版本对齐** | 1. VikingDB 卡片告警降维与语义纠偏：去刺眼橙色 Badge，改中性“隔离占位目录”，按钮改为“向量库孤儿巡检”，展示 0 孤儿真实结论；<br>2. 确立全集群卫星节点 Hook 与 MCP 职责边界四大物理军规（解耦律、毫秒熔断律、零扰动静默律、权威专区隔离律）；<br>3. 建立 Hook 与 MCP 接力协同契约（事实已知效应、由搜转读、只读与沉淀权责）；<br>4. 全链路版本升级至 v1.4.39，ping 探针动态解包健康版本号，规约镜像入脑 Master Memory | 监控大盘 0 误导性告警，卫星 Hook <2.0s 毫秒级静默响应，体外大脑成功沉淀，Vite 构建 PASS (20.26s) | `v1.4.39` | [x] 已验收通过 ✅ |
-| **Card-VK-26** | **外部 Agent “系统级强制调用 VK” 简约高鲁棒实施框架与实战规范 (Pragmatic Auto-Dispatch)** | 1. 坚决切除笨重易碎的反向代理网关，践行奥卡姆剃刀；<br>2. 开放宿主落地极简原生 Hook（开局预取、收尾存盘）；<br>3. 封闭宿主（WorkBuddy等）采用“高注意力触发 Schema + 契约自驱 + 分级渐进展开 (Progressive Disclosure)”；<br>4. 融入 Antigravity 实战经验（极简高密摘要、防上下文膨胀、超时容错兜底） | WorkBuddy 等任何外部 Agent 形成“以 find 起手、以 store 收尾”的高确定性习惯，零额外代理进程，稳定鲁棒 | `v1.4.35` | 📋 排队中 (P1) |
-| **Card-VK-27** | **全局异步任务统筹收口与任务中心全景架构升级** | 统一收拢所有模块异步任务至 TaskTracker 与任务中心；消除 24h 过滤导致的陈旧活跃任务不可见缺陷；打通 Playground 上传弹窗与全局任务中心强锚点；统一重试与清理能力 | 任务中心 100% 涵盖所有异步任务，局部与全局无缝联动，Vite 构建 PASS | `v1.4.36` | 📋 排队中 (P2) |
+| **Card-VK-26** | **外部 Agent “系统级强制调用 VK” 极简自驱规范与 System Prompt 契约模板** | 1. 结合 Card-28 已落地的 Hook 与 MCP 职责边界，提炼 100 字外部 Agent（WorkBuddy/Cursor等）极简 System Prompt 契约模板；<br>2. 规范“开局 find ➔ 按需 read ➔ 执行 ➔ 收尾 store/lesson”自驱状态机；<br>3. 交付开箱接入白皮书与自动化验证 | WorkBuddy 等外部 Agent 100% 形成开局查 VK、收工存 VK 习惯，零多余网关进程 | `v1.4.40` | 📋 排队中 (P1) |
+| **Card-VK-27** | **全局异步任务统筹收口与任务中心全景架构升级** | 1. 统一收拢所有模块异步任务至 TaskTracker 与任务中心，解除未终结任务 24h 过滤截断（永远置顶可见）；<br>2. 打通 Playground 上传弹窗与全局任务中心强跳转锚点；<br>3. 任务中心对 `add_resource` 展现分阶段流转与状态；<br>4. 统一重试 (Retry) 与清理标准接口 | 任务中心 100% 涵盖所有异步任务，局部与全局无缝联动，彻底消除任务不可见盲区 | `v1.4.41` | 📋 排队中 (P1) |
+| **Card-Studio-Settings** | **全局设置与数据管理中枢 (Unified Settings & Data Ops)** | 1. 践行奥卡姆剃刀，将原本分散的配置 (05)、隐私脱敏 (08)、OVPack 导入导出 (09) 3 页面高度聚合为单一轻量 `/settings` 路由；<br>2. 并在 `/retrieval` 检索页右上角集成轻量 RAG 评测抽屉 (Drawer)；<br>3. 彻底切除独立空壳页面与花架子，保持系统极客精炼 | 单面板统一管理配置、敏感词开关与知识库打包备份，切除 3 个冗余路由，Vite 构建 PASS | `v1.4.42` | 📋 排队中 (P2) |
 
 ---
 
@@ -54,7 +54,90 @@
 
 ### 📋 待调度工单队列 (Pending Pipeline Cards - 优先顺序开发)
 
-### 📌 P0: [ ] Card-VK-23 (v1.4.31): 卫星 MCP (Satellite MCP) 纯 User Key 契约、非特权工具切除与通用数据面重构
+### 📌 P1: [ ] Card-VK-26 (v1.4.40): 外部 Agent “系统级强制调用 VK” 极简自驱规范与 System Prompt 契约模板 (Pragmatic Auto-Dispatch SSOT)
+- **类型**：Agent Auto-Dispatch, High-Attention Trigger Schema & Progressive Disclosure ｜ **优先级**：🔴 P1（大模型使用习惯、生态闭环与第一性原则规范）
+- **计划版本**：`v1.4.40`
+- **设计哲学与第一性原则 (Anti-Overengineering & Occam's Razor)**：
+  1. **切除过度工程化**：坚决不开发本地 HTTP 反向代理网关（避免引入流式 SSE 协议差异、端口冲突与多进程故障单点）；
+  2. **回归 Transformer 第一性原理**：LLM 的行为由【输入上下文 (Prompt)】与【工具注意力激活 (Tool Attention Schema)】共同决定；只要给足注意力触发头，大模型在规划阶段首选率即达 95%+；
+  3. **收割与提炼 Card-VK-28 最新成果**：
+     - *经验 ① 概念等价公理化*：开局注入 `Wiki ≡ VK ≡ OpenViking ≡ 体外大脑`，消除概念混淆；
+     - *经验 ② 分级展开 (Progressive Disclosure)*：`find` 绝不返回整篇长文，仅返回【极简高密摘要 (L0/L1) + 权威 URI + 余弦得分】，绝不撑爆上下文；长文由 `read` 按需懒加载；
+     - *经验 ③ 留痕仪式闭环 (Closing Ritual)*：将“结题必须 store/lesson”与任务完成状态强绑定，干活必留痕；
+     - *经验 ④ 优雅降级与超时熔断*：客户端 5s 超时断流保护，服务端卡顿平滑降级，绝不卡死 Agent 思考环。
+- **交付内容**：
+  1. **极简双轨自驱架构落地 (Dual-Track Pragmatic Framework)**：
+     - **轨道 A（开放宿主原生 Hook - Native Hook）**：
+       - 针对 OpenClaw、Antigravity、Claude Code 等具备事件钩子的宿主，提供原生 10 行极简钩子：
+         - `pre_user_turn`：截获输入，静默调用 `VK.find(query)` 并将 top-3 极简摘要拼接进 User Prompt 头部；
+         - `post_agent_turn` / `stop_guard`：任务结束触发异步提纯或物理拦截走查，调用 `VK.store()` / 打 Git Tag；
+         - 零中间进程，100% 物理必然注入。
+     - **轨道 B（封闭宿主：强注意力触发 Schema + 契约自驱 - Attention Trigger & Contract FSM）**：
+       - 针对 WorkBuddy、Cursor 等封闭商业桌面端（无法修改宿主二进制与注入原生 Hook）：
+         - **Schema 改造**：在卫星 MCP 的 `openviking_find` 描述开头注入强注意力激活头：`Description: "【Mandatory First Step / 开局必调】在开始分析、回答任何工程、架构或排障问题前，必须首先调用此工具查询体外大脑（VK）中的历史经验、设计偏好与避坑规则。"`；
+         - **分级展开 (Progressive Disclosure)**：`find` 输出统一采用标准紧凑 Markdown 卡片，严禁直接返回成千上万字原始上下文；
+         - **标准化极简 System Prompt 契约模板**：提取 100 字自解释规则（直接复制至客户端 System Prompt 中即可生效），强制 Agent 状态机遵循：`[开局 find] -> [按需 read] -> [执行] -> [收尾 store/lesson]`。
+  2. **交付《外部 Agent 接入 OpenViking 极简自驱与规范落地白皮书》**。
+- **验收标准**：
+  - 在 WorkBuddy 真实会话中，Agent 面对工程/架构提问时，100% 自动以 `openviking_find` 起手；
+  - 检索返回高密摘要（单条 <= 200 字），Agent 上下文不膨胀，问答流畅；
+  - 任务解决后主动触发 `openviking_record_evolution_lesson` 留痕；
+  - 零多余常驻网关进程，架构极简、高内聚、高鲁棒。
+
+---
+
+### 📌 P1: [ ] Card-VK-27 (v1.4.41): 全局异步任务统筹收口与任务中心全景架构升级 (Unified Task Center & Ambient Projection)
+- **类型**：Architecture / UX / Observability ｜ **优先级**：🔴 P1（系统全局单一真相源建设与体验断层自愈）
+- **计划版本**：`v1.4.41`
+- **痛点与第一性原理 (First Principles)**：
+  1. **SSOT 唯一真相源原则**：凡是系统内触发的异步作业（文件解析 `add_resource`、会话归档蒸馏 `session_commit`、向量维护 `admin_reindex` 还是技能导入），都必须且绝对在【任务中心 (`/tasks`)】统筹展示，严禁局部视图与总账割裂；
+  2. **总账与投影解耦 (Master Ledger vs. Ambient View)**：
+     - **总账 (Master Ledger)**：`/tasks` 页面作为系统唯一的异步任务中枢，对所有类型的任务提供全生命周期管控（阶段耗时、Token 账单、重试、取消、日志、多维过滤与时间跨度选择）；
+     - **伴随视图 (Ambient Projection)**：Playground 等局部业务弹窗/悬浮条仅作为“跟手投影”，底层状态与任务中心 100% 实时同步；并在弹窗内提供清晰锚点 `前往任务中心查看完整详情 ↗`；
+  3. **时间窗口与过滤对齐**：
+     - 根治任务中心 `dataScope = '24h'` 导致陈旧活跃/未完成任务在总盘被隐形过滤的缺陷；
+     - 统一局部与全局的任务时间窗口、去重策略与终态清理规则。
+- **实施清单**：
+  - [ ] 1. **任务中心时间范围与未终结保护**：未终结任务（running/pending）不受 24h 时间硬截断限制，永远置顶可见；支持灵活切换时间跨度（24h / 7d / 全部）；
+  - [ ] 2. **任务中心对 `add_resource` 的富上下文渲染**：展示文件名称、资源 URI、源文件大小、分阶段流转（Ingestion -> Parse -> Semantic -> Embedding -> Memory Linking）；
+  - [ ] 3. **局部弹窗与任务中心强链接互通**：在 Playground 文件处理任务弹窗中加入 `在任务中心查看完整调度 ↗`，支持点击直达任务中心并高亮对应任务行；
+  - [ ] 4. **统一重试与清理能力**：将重试（Retry/Reindex）和清理接口在全局和局部实现标准复用。
+- **验收标准**：
+  - 任意子系统发起的异步任务，在【任务中心】100% 即时可见、可查、可管；
+  - 彻底消除任何“局部弹窗有、任务中心找不到”的断层现象；
+  - 严格遵循 NO GREEN EVER、双主题与 $\ge 11\text{px}$ 规范；
+  - `npm run build` PASS。
+
+---
+
+### 📌 P2: [ ] Card-Studio-Settings (v1.4.42): 全局设置与数据管理中枢 (Unified Settings & Data Ops)
+- **类型**：Architecture / UI / Consolidation ｜ **优先级**：🟡 P2（三合一聚合治理与奥卡姆剃刀）
+- **计划版本**：`v1.4.42`
+- **设计哲学与重构动因 (Occam's Razor & High Cohesion)**：
+  1. **切除碎片化空壳页面**：此前计划分别建设 `Card-Studio-05` (配置中心)、`Card-Studio-08` (隐私中心) 与 `Card-Studio-09` (打包中心)，导致侧边栏膨胀 3 个极低频次页面，严重违背高内聚原则；
+  2. **高度聚合收口**：将全域配置查看修改 (`ov.conf` 技能源、模型端点)、隐私脱敏敏感词开关、以及知识库打包迁移 (`.ovpack` 导出/导入/快照) 统合为单一的 `/settings` 路由；
+  3. **RAGAS 评测抽屉化**：将 `Card-Studio-06` (RAG 评测) 降维为在 `/retrieval` 检索测试台右上角的一个极简“跑分抽屉 (Drawer)”，绝不浪费整页空间；
+  4. **演进看板归一**：将 `Card-Studio-01` (Agent 演进) 整合至现有的 `🛡️ Harness 引擎审计` (`/harness-logs`)，坚决不新建多余路由。
+- **交付内容**：
+  1. **新建高内聚 `/settings` 页面**：
+     - **Tab 1 基础与模型配置**：读取 `GET /api/v1/system/status` 与 `ov.conf`，可视化呈现向量源、模型端点与根工作区；
+     - **Tab 2 隐私与安全脱敏**：敏感字段打码开关、脱敏预览与只读审计；
+     - **Tab 3 知识大脑备份与打包 (OVPack)**：提供基于底层 `openviking_export` / `openviking_import` 的 `.ovpack` 导出与快照还原；
+  2. **检索测试台集成轻量 RAG 抽屉**：
+     - 在 `/retrieval` 页面右上角增加 `🧪 评测抽屉`，可快速输入 Benchmark Query 批量核验 Top-1 得分与耗时，保持主界面极客简洁；
+  3. **全盘遵从设计规范**：
+     - 严格践行 NO GREEN EVER、双主题自适应、`text-[11px]` 下限与中英文 i18n 100% 对等。
+- **验收标准**：
+  - 侧边栏仅新增一个自解释的 `⚙️ 设置中枢` 入口，零多余空壳页面；
+  - 可以在一个页面内完成配置查看、敏感词管理与知识库备份；
+  - 前端 Vite 构建通过，页面加载极速。
+
+---
+
+### 📦 历史已交付工单履历 (Delivered Release Cards)
+
+### 📌 P0: [x] Card-VK-23 (v1.4.31): 卫星 MCP (Satellite MCP) 纯 User Key 契约、非特权工具切除与通用数据面重构 ✅
+- **Git Commit**：`808b1a32a` ｜ **Git Tag**：`v1.4.31`
 - **类型**：Satellite MCP Hardening, Privilege Decoupling, Pure User-Key & Generic Store ｜ **优先级**：🔴 P0（客户端权限安全、模型注意力保护与跨平台开箱即用）
 - **计划版本**：`v1.4.31`
 - **背景与痛点**：
@@ -309,39 +392,7 @@
   - 《规范》成功归档至 `viking://resources/master_memory/evolution_lessons/`；
   - Vite 构建 PASS (20.26s)，Git Tag `v1.4.39` 物理对齐并推流。
 
-### 📌 P1: [ ] Card-VK-26 (v1.4.34): 外部 Agent “系统级强制调用 VK” 简约高鲁棒实施框架与实战规范 (Pragmatic Auto-Dispatch SSOT)
-- **类型**：Agent Auto-Dispatch, High-Attention Trigger Schema & Progressive Disclosure ｜ **优先级**：🟡 P1（大模型使用习惯、生态闭环与第一性原则规范）
-- **计划版本**：`v1.4.34`
-- **设计哲学与第一性原则 (Anti-Overengineering & Occam's Razor)**：
-  1. **切除过度工程化**：坚决不开发本地 HTTP 反向代理网关（避免引入流式 SSE 协议差异、端口冲突与多进程故障单点）；
-  2. **回归 Transformer 第一性原理**：LLM 的行为由【输入上下文 (Prompt)】与【工具注意力激活 (Tool Attention Schema)】共同决定；只要给足注意力触发头，大模型在规划阶段首选率即达 95%+；
-  3. **融入 Antigravity 自身实操经验 (Self-Experience Reflexion)**：
-     - *经验 ① 概念等价公理化*：开局注入 `Wiki ≡ VK ≡ OpenViking ≡ 体外大脑`，消除概念混淆；
-     - *经验 ② 分级展开 (Progressive Disclosure)*：`find` 绝不返回整篇长文，仅返回【极简高密摘要 (L0/L1) + 权威 URI + 余弦得分】，绝不撑爆上下文；长文由 `read` 按需懒加载；
-     - *经验 ③ 留痕仪式闭环 (Closing Ritual)*：将“结题必须 store”与任务完成状态强绑定，干活必留痕；
-     - *经验 ④ 优雅降级与超时熔断*：客户端 5s 超时断流保护，服务端卡顿平滑降级，绝不卡死 Agent 思考环。
-- **交付内容**：
-  1. **极简双轨自驱架构落地 (Dual-Track Pragmatic Framework)**：
-     - **轨道 A（开放宿主原生 Hook - Native Hook）**：
-       - 针对 OpenClaw、Antigravity、Claude Code 等具备事件钩子的宿主，提供原生 10 行极简钩子：
-         - `pre_user_turn`：截获输入，静默调用 `VK.find(query)` 并将 top-3 极简摘要拼接进 User Prompt 头部；
-         - `post_agent_turn`：任务结束触发异步提纯，调用 `VK.store()`；
-         - 零中间进程，100% 物理必然注入。
-     - **轨道 B（封闭宿主：强注意力触发 Schema + 契约自驱 - Attention Trigger & Contract FSM）**：
-       - 针对 WorkBuddy、Cursor 等封闭商业桌面端（无法修改宿主二进制与注入原生 Hook）：
-         - **Schema 改造**：在卫星 MCP 的 `openviking_find` 描述开头注入强注意力激活头：`Description: "【Mandatory First Step / 开局必调】在开始分析、回答任何工程、架构或排障问题前，必须首先调用此工具查询体外大脑（VK）中的历史经验、设计偏好与避坑规则。"`
-         - **分级展开 (Progressive Disclosure)**：`find` 输出统一采用标准紧凑 Markdown 卡片，严禁直接返回成千上万字原始上下文；
-         - **标准化极简 System Prompt 契约模板**：提取 100 字自解释规则（直接复制至客户端 System Prompt 中即可生效），强制 Agent 状态机遵循：`[开局 find] -> [按需 read] -> [执行] -> [收尾 store/lesson]`。
-  2. **交付《外部 Agent 接入 OpenViking 极简自驱与规范落地白皮书》**。
-- **验收标准**：
-  - 在 WorkBuddy 真实会话中，Agent 面对工程/架构提问时，100% 自动以 `openviking_find` 起手；
-  - 检索返回高密摘要（单条 <= 200 字），Agent 上下文不膨胀，问答流畅；
-  - 任务解决后主动触发 `openviking_record_evolution_lesson` 留痕；
-  - 零多余常驻网关进程，架构极简、高内聚、高鲁棒。
-
 ---
-
-### 📦 历史已交付工单履历 (Delivered Release Cards)
 
 ### 📌 P0: [x] Card-VK-15 (v1.4.22): 首页技能总数 762 真实对齐、Agent Peer 动态拓扑与 FastMCP 检索记账打通 ✅
 - **类型**：SSOT Alignment, Real Peer Mesh & Usage Audit Ingestion ｜ **优先级**：🔴 P0（首页核心数据真实性与体外大脑看护）
@@ -948,47 +999,6 @@
 
 ---
 
-### 📌 P1-1: [ ] v1.1.23c：检索测试台 `/retrieval` 页 L0/L1 白盒检索轨迹树与得分渲染
-- **类型**：Feature ｜ **优先级**：P1
-- **目标**：在 `/retrieval` 页面为每次检索结果渲染可折叠的 **L0/L1 白盒检索轨迹树**，可视化展示 Viking 向量匹配路径与相似度分值（如 `Score: 0.985`）。
-- **数据契约**：使用 `POST /api/v1/search/find` 返回的 `uri`、`score` (保留3位小数) 与 `level` (`'L0' | 'L1' | 'L2'`)。
-- **验收标准**：
-  - [ ] 检索响应后，列表项右侧展现 `Level (L0/L1)` 徽章与 `Score: 0.985` 标签；
-  - [ ] 展开轨迹树节点可查看 URI 继承关系；
-  - [ ] 符合 `cyan-500` 冰青与 NO GREEN EVER 视觉规约；
-  - [ ] `npm run build` 无报错。
-
----
-
-### 📌 P1-2: [ ] v1.1.23d：监控页 `/monitoring` Token 节省率与 SLA 时延对比折线图
-- **类型**：Feature ｜ **优先级**：P1
-- **目标**：在 `/monitoring` 页新增双折线对比图，动态渲染有无 L0/L1 避坑拦截机制下的 Token 节省率（如 `82.4%`）及 P95 响应时延变化趋势。
-- **数据契约**：消费 `GET /api/v1/system/status` 的 `token_saved_rate` 与 `latency_p95_ms`。
-- **验收标准**：
-  - [ ] 成功绘制对比折线图，无数据点处显示虚线平滑过渡；
-  - [ ] 符合 `cyan-500` 冰青主题与响应式自适应宽度。
-
----
-
-### 📌 P0: [ ] v1.1.36a/b：核心服务心跳采集与健康探针模型
-- **类型**：Infrastructure ｜ **优先级**：P0
-- **目标**：在首页和控制台新增核心服务心跳探针，展示健康状态徽章与 CLI 降级告警。
-- **验收标准**：
-  - [ ] 消费 `/system/status` 输出 27ms 心跳徽章；
-  - [ ] 异常时触发哑光红告警。
-
----
-
-### 📌 P1: [ ] v1.1.35：图谱节点性能 Spike 探查与 LOD 优化
-- **目标**：优化 3D/2D 知识图谱在高密度节点下的 LOD 渲染性能，防止卡顿。
-
----
-
-### 📌 P2: [ ] v1.1.34：任务时间范围自定义筛选能力
-- **目标**：在 Task Center 增加自定义 Date-picker 时间筛选器。
-
----
-
 ### 📌 P0: [x] TASK-EVALUATOR-01: OpenViking 大模型 5 场景工业级准入评估标准化体系 (Model Evaluator SSOT) ✅
 - **类型**：Core Infrastructure / Evaluation ｜ **优先级**：🔴 P0（大模型选型与准入中枢）
 - **交付内容**：
@@ -996,87 +1006,6 @@
   2. 标准答案客观断言链 (Ground Truth)：格式合规 (25分) + 标准答案命中 (40分) + 端到端速率 (20分) + 正文纯净度 (15分)；
   3. 欧尼 35B 实机测试：**94.0 分** 满分命中标准答案，固化为官方黄金基准；
   4. 评测注册表：自动沉淀至 `docs/benchmarks/openviking_model_evaluator_registry.json` 与 `.agents/skills/openviking-model-evaluator/SKILL.md`。
-
----
-
-### 📌 P0: [ ] TASK-STUDIO-MODELS-MONITOR-01：Models 监控大屏真数据驱动重构与双主题对齐
-- **类型**：Observability / Feature ｜ **优先级**：🔴 P0
-- **目标**：重构 Studio `/monitoring` 中 Models 监控卡片，彻底切除任何静态数字与假 Mock，100% 绑定后端 `models_observer.py` 的真实模型状态、显存与时延接口；严格遵守 NO GREEN EVER 与双主题。
-
----
-
-### 📌 P0: [ ] TASK-STUDIO-TASK-UNIFY-01：全局异步任务统筹收口与任务中心全景架构升级 (Unified Task Center & Ambient Projection)
-- **类型**：Architecture / UX / Observability ｜ **优先级**：🔴 P0（系统全局单一真相源建设）
-- **痛点与第一性原理 (First Principles)**：
-  1. **SSOT 唯一真相源原则**：凡是系统内触发的异步作业（无论是文件解析 `add_resource`、会话归档蒸馏 `session_commit`、向量维护 `admin_reindex` 还是技能导入），都必须且绝对在【任务中心 (`/tasks`)】统筹展示，严禁局部视图与总账割裂；
-  2. **总账与投影解耦 (Master Ledger vs. Ambient View)**：
-     - **总账 (Master Ledger)**：`/tasks` 页面作为系统唯一的异步任务中枢，对所有类型的任务提供全生命周期管控（阶段耗时、Token 账单、重试、取消、日志、多维过滤与时间跨度选择）；
-     - **伴随视图 (Ambient Projection)**：Playground 等局部业务弹窗/悬浮条仅作为“跟手投影”，底层状态与任务中心 100% 实时同步；并在弹窗内提供清晰锚点 `前往任务中心查看完整详情 ↗`；
-  3. **时间窗口与过滤对齐**：
-     - 根治任务中心 `dataScope = '24h'` 导致陈旧活跃/未完成任务在总盘被隐形过滤的缺陷；
-     - 统一局部与全局的任务时间窗口、去重策略与终态清理规则。
-- **实施清单**：
-  - [ ] 1. **任务中心时间范围与未终结保护**：未终结任务（running/pending）不受 24h 时间硬截断限制，永远置顶可见；支持灵活切换时间跨度（24h / 7d / 全部）；
-  - [ ] 2. **任务中心对 `add_resource` 的富上下文渲染**：展示文件名称、资源 URI、源文件大小、分阶段流转（Ingestion -> Parse -> Semantic -> Embedding -> Memory Linking）；
-  - [ ] 3. **局部弹窗与任务中心强链接互通**：在 Playground 文件处理任务弹窗中加入 `在任务中心查看完整调度 ↗`，支持点击直达任务中心并高亮对应任务行；
-  - [ ] 4. **统一重试与清理能力**：将重试（Retry/Reindex）和清理接口在全局和局部实现标准复用。
-- **验收标准**：
-  - [ ] 任意子系统发起的异步任务，在【任务中心】100% 即时可见、可查、可管；
-  - [ ] 彻底消除任何“局部弹窗有、任务中心找不到”的断层现象；
-  - [ ] 严格遵循 NO GREEN EVER、双主题与 $\ge 11\text{px}$ 规范；
-  - [ ] `npm run build` PASS。
-
----
-
-### 📌 P1-3: [ ] Card-Studio-01：Agent Evolution (演进轨迹) 可视化看板集成
-- **类型**：Feature ｜ **优先级**：P1
-- **目标**：在 Studio 导航中新增 “Evolution / 演进看板”，调用 `/api/v1/agent-evolution/outcomes` 渲染 Agent 经验演进轨迹树与成效对比。
-- **关联后端**：Task Card 2 (`v1.3.3`)
-- **验收标准**：
-  - [ ] 双主题自适应切换正常；
-  - [ ] 严格遵守 NO GREEN EVER 与三态语义色彩；
-  - [ ] 中英文 i18n 100% 对等覆盖；
-  - [ ] `pnpm build` PASS。
-
----
-
-### 📌 P1-4: [ ] Card-Studio-02：Context Assembler 检索测试台白盒分层调优面板
-- **类型**：Feature ｜ **优先级**：P1
-- **目标**：在 `/retrieval` 检索测试台中支持 `mode="context"` 模式切换，可视化展示 Tier 分层、Token 预算消耗与去重冷却状态。
-- **关联后端**：Task Card 5 (`v1.3.6`)
-- **验收标准**：
-  - [ ] 检索轨迹树节点支持折叠/展开与分层标记；
-  - [ ] 动态展示 Token 预算与实际消耗比率。
-
----
-
-### 📌 P2-1: [ ] Card-Studio-05：全局配置与数据源管理中心 (Settings & Sources)
-- **类型**：Feature ｜ **优先级**：P2
-- **目标**：在 Studio 设置中提供可视化动态配置面板，直观查看与管理 `ov.conf` 中的全域技能源、模型端点与存储驱动。
-
----
-
-### 📌 P2-2: [ ] Card-Studio-06：RAG 评测实验室可视化面板 (RAGAS Benchmark)
-- **类型**：Feature ｜ **优先级**：P2
-- **目标**：在控制台集成 RAG 检索召回率、准确率与忠实度 (Faithfulness) 评测实验室。
-
----
-
-### 📌 P2-3: [ ] Card-Studio-07：策略强化训练台 (Policy Trainer)
-- **类型**：Feature ｜ **优先级**：P2
-- **目标**：可视化展示 Agent 策略反馈日志与奖励信号分布。
-
----
-
-### 📌 P2-4: [ ] Card-Studio-08：隐私脱敏治理中心 (Privacy Gov)
-- **类型**：Feature ｜ **优先级**：P2
-- **目标**：对齐后端隐私过滤接口，提供敏感字段查看脱敏与审计日志导出。
-
----
-
-### 📌 P2-5: [ ] Card-Studio-09：知识大脑迁移打包中心 (OVPack Hub)
-- **类型**：Feature ｜ **优先级**：P2
-- **目标**：提供图形化 `ovpack` 导出、导入与 VikingFS 快照恢复界面。
 
 ---
 
@@ -1118,26 +1047,6 @@
   2. 当记录 Lesson 追加写入本地 `SKILL.md` 的同时，自动在 `viking://resources/master_memory/evolution_lessons/{timestamp}_{skill}_{slug}.md` 双写纯 Markdown 知识镜像；
   3. 践行【技能可回滚、知识不回滚】的核心工程原则，实现跨会话与跨系统知识绝对存盘。
 - **验收结果**：已验收通过 ✅
-
----
-
-### 📌 P2: [ ] Card-VK-03：Mac Studio 离线知识编译批处理脚本 (`offline_wiki_compiler.py`)
-- **类型**：AI Tooling / Automation ｜ **优先级**：🟡 P2
-- **三维评估**：效果 ⭐⭐⭐⭐ ｜ 风险 ⭐ 零在线风险 ｜ 工程量 ⭐⭐ 中等
-- **目标**：编写纯外挂批处理脚本，定期通过只读 API 拉取 VK 中沉淀的 lessons，由 Mac Studio 本地 Qwen 3.8 Flash Next (125B MoE) 进行聚类去重，输出精炼 Recipes/Anti-patterns 写回 VK。
-- **验收标准**：
-  - [ ] 纯后台只读批处理，绝不阻塞或干扰 1933 生产请求；
-  - [ ] 成功生成结构化经验周报并存入 VK。
-
----
-
-### 📌 P2: [ ] Card-VK-04：Mac Studio 定时排程与自愈守护 (`LaunchDaemon`)
-- **类型**：Infrastructure / High Availability ｜ **优先级**：🟡 P2
-- **三维评估**：效果 ⭐⭐⭐ ｜ 风险 ⭐ 极低 ｜ 工程量 ⭐ 小
-- **目标**：在 Mac Studio 部署 `com.mac.wikicompiler.plist`，每周日凌晨低峰期自动唤醒执行，低优先级 nice 运行不抢占推理资源。
-- **验收标准**：
-  - [ ] `launchctl list` 正常注册并自愈守护；
-  - [ ] 日志输出至 `/var/log/wiki_compiler.log`。
 
 ---
 
