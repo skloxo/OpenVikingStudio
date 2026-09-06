@@ -215,7 +215,7 @@
 
 ### 📌 P0: [x] Card-VK-25.2 (v1.4.37): 入库门禁与占位符根治、714虚假向量物理肃清与大盘可视化透传 ✅
 - **类型**：Ingestion Gatekeeper, Vector Pruning & Observability Telemetry ｜ **优先级**：🔴 P0（入库质量把控、官方机制复用、零无效消耗与人类实时感知）
-- **Git Commit**：`（本次提交）` ｜ **Git Tag**：`v1.4.37`
+- **Git Commit**：`1da7791da` ｜ **Git Tag**：`v1.4.37`
 - **背景与物理根因分析**：
   1. **入库门禁失效与历史断层**：检索只是存储的投影，垃圾跑出来本质是入库门禁与脏数据清理失效。上游 Issue #2434 曾设计 `_is_not_ready_sentinel` 与 `prune_orphans`，但上游检查的是 `"[Directory overview is not ready]"`，而 `semantic_processor.py` 写入的却是 `"[Directory overview is not generated]"`。这一词之差导致官方清理工具误认为占位符是用户正常文档，714 个虚假向量常年驻留在向量数据库；
   2. **检索侧临时过度工程的反思**：在检索侧新增 `_is_meaningful` 属于“用新方法掩盖旧隐患”的代码叠代码，严重违背第一性原理。应彻底铲除检索侧补丁，恢复官方原生检索逻辑；
