@@ -292,6 +292,13 @@ const en = {
       activeCollections: 'Active Collections',
       totalVectors: 'Total Vectors',
       searchIndexes: 'Search Indexes',
+      unreadyDirectories: 'Unready Directories',
+      fullyReady: '100% Ready',
+      hasUnready: '{{count}} unready summaries',
+      unreadyHint: 'Detected ungenerated directory placeholders in storage. Vector store is protected. Safe curation available:',
+      triggerReindex: 'Safe Reindex',
+      reindexing: 'Reindexing...',
+      reindexSuccess: 'Safe curation task started successfully in background',
     },
     queue: {
       title: 'Operator Engines',

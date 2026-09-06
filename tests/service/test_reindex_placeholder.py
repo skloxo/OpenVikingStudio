@@ -21,8 +21,10 @@ def test_real_abstract_sentinel_is_detected():
 
 
 def test_real_overview_sentinel_is_detected():
-    rendered = "# viking://memory/projects/foo\n\n[Directory overview is not ready]"
-    assert _is_not_ready_sentinel(rendered, _OVERVIEW_NOT_READY_SUFFIX)
+    rendered_ready = "# viking://memory/projects/foo\n\n[Directory overview is not ready]"
+    rendered_generated = "# viking://memory/projects/foo\n\n[Directory overview is not generated]"
+    assert _is_not_ready_sentinel(rendered_ready, _OVERVIEW_NOT_READY_SUFFIX)
+    assert _is_not_ready_sentinel(rendered_generated, _OVERVIEW_NOT_READY_SUFFIX)
 
 
 def test_sentinel_detection_is_uri_agnostic():

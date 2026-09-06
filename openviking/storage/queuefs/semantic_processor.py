@@ -1421,8 +1421,19 @@ class SemanticProcessor(DequeueHandlerBase):
                 },
             )
 
-            with bind_telemetry_stage("resource_summarize"):
-                overview = await vlm.get_completion_async(prompt)
+            overview = None
+            last_err = None
+            for attempt in range(3):
+                try:
+                    with bind_telemetry_stage("resource_summarize"):
+                        overview = await vlm.get_completion_async(prompt)
+                    break
+                except Exception as ex:
+                    last_err = ex
+                    if attempt < 2:
+                        await asyncio.sleep(2 * (attempt + 1))
+            if overview is None:
+                raise last_err or RuntimeError("LLM completion failed")
 
             overview = self._replace_link_references(overview, link_map)
 
@@ -1433,7 +1444,7 @@ class SemanticProcessor(DequeueHandlerBase):
                 f"Failed to generate overview for {dir_uri}: {e}",
                 exc_info=True,
             )
-            return f"# {dir_uri.split('/')[-1]}\n\n[Directory overview is not generated]"
+            return f"# {dir_uri.split('/')[-1]}\n\n[Directory overview is not ready]"
 
     async def _batched_generate_overview(
         self,
@@ -1514,7 +1525,7 @@ class SemanticProcessor(DequeueHandlerBase):
         partial_overviews = [p for p in partial_overviews if p is not None]
 
         if not partial_overviews:
-            return f"# {dir_name}\n\n[Directory overview is not generated]"
+            return f"# {dir_name}\n\n[Directory overview is not ready]"
 
         # If only one batch succeeded, use it directly
         if len(partial_overviews) == 1:
@@ -1558,6 +1569,23 @@ class SemanticProcessor(DequeueHandlerBase):
         creator_acl_grant: CreatorAclGrant | None = None,
     ) -> None:
         """Create directory Context and enqueue to EmbeddingQueue."""
+        from openviking.service.reindex_executor import (
+            _is_not_ready_sentinel,
+            _ABSTRACT_NOT_READY_SUFFIX,
+            _OVERVIEW_NOT_READY_SUFFIX,
+        )
+
+        if (
+            _is_not_ready_sentinel(abstract, _ABSTRACT_NOT_READY_SUFFIX)
+            or _is_not_ready_sentinel(overview, _OVERVIEW_NOT_READY_SUFFIX)
+            or "[Directory overview is not" in (overview or "")
+            or "[Directory abstract is not" in (abstract or "")
+        ):
+            logger.info(
+                "Skipping directory vectorization for %s (placeholder sentinel detected)",
+                uri,
+            )
+            return
 
         from openviking.utils.embedding_utils import vectorize_directory_meta
 

@@ -1,8 +1,10 @@
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Badge } from '#/components/ui/badge'
+import { Button } from '#/components/ui/button'
 import { Card, CardTitle } from '#/components/ui/card'
 import { cn } from '#/lib/utils'
+import { postContentReindex } from '#/gen/ov-client'
 import { parseObserverStatus } from '../-lib/parse-status'
 
 interface ParsedVikingDbRow {
@@ -35,6 +37,11 @@ function parseVikingDbStatus(status: string): ParsedVikingDbRow[] {
   }))
 }
 
+function parseUnreadyDirectories(status: string): number {
+  const m = status.match(/unready\s*directories:\s*(\d+)/i)
+  return m ? parseInt(m[1], 10) : 0
+}
+
 export interface VikingDbCardProps {
   /** Observer system 返回的 vikingdb 组件 status 文本 */
   status: string
@@ -44,6 +51,29 @@ export interface VikingDbCardProps {
 export function VikingDbCard({ status, isHealthy }: VikingDbCardProps) {
   const { t } = useTranslation('monitoringPage')
   const rows = React.useMemo(() => parseVikingDbStatus(status), [status])
+  const unreadyCount = React.useMemo(() => parseUnreadyDirectories(status), [status])
+
+  const [isReindexing, setIsReindexing] = React.useState(false)
+  const [reindexSuccessMsg, setReindexSuccessMsg] = React.useState<string | null>(null)
+
+  const handleTriggerReindex = async () => {
+    setIsReindexing(true)
+    setReindexSuccessMsg(null)
+    try {
+      await postContentReindex({
+        body: {
+          uri: 'viking://resources',
+          mode: 'prune_orphans',
+          wait: false,
+        },
+      })
+      setReindexSuccessMsg(t('vikingdb.reindexSuccess'))
+    } catch (e) {
+      console.error('Failed to trigger reindex:', e)
+    } finally {
+      setIsReindexing(false)
+    }
+  }
 
   const getCollectionDisplayName = (name: string): string => {
     const lower = name.toLowerCase()
@@ -72,19 +102,30 @@ export function VikingDbCard({ status, isHealthy }: VikingDbCardProps) {
     <Card className="flex flex-col gap-4 p-4 shadow-none transition-colors hover:border-primary/30">
       <div className="flex items-center justify-between">
         <CardTitle className="text-base font-semibold">{t('vikingdb.title')}</CardTitle>
-        {!isHealthy && (
-          <Badge
-            variant="outline"
-            className="gap-1 font-normal border-destructive/30 text-destructive"
-          >
-            <span className="size-1.5 rounded-full bg-destructive" />
-            {t('vikingdb.unhealthy')}
-          </Badge>
-        )}
+        <div className="flex items-center gap-2">
+          {unreadyCount > 0 && (
+            <Badge
+              variant="outline"
+              className="gap-1 font-normal border-amber-500/30 bg-amber-500/10 text-amber-400 text-[11px]"
+            >
+              <span className="size-1.5 rounded-full bg-amber-400" />
+              {t('vikingdb.hasUnready', { count: unreadyCount })}
+            </Badge>
+          )}
+          {!isHealthy && (
+            <Badge
+              variant="outline"
+              className="gap-1 font-normal border-destructive/30 text-destructive text-[11px]"
+            >
+              <span className="size-1.5 rounded-full bg-destructive" />
+              {t('vikingdb.unhealthy')}
+            </Badge>
+          )}
+        </div>
       </div>
 
-      {/* 顶部 3 个关键汇总指标瓷片 */}
-      <div className="grid grid-cols-3 gap-3">
+      {/* 顶部 4 个关键汇总指标瓷片 */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="flex flex-col justify-center rounded-lg border bg-muted/20 px-3 py-2">
           <span className="text-[11px] text-muted-foreground font-medium">{t('vikingdb.activeCollections')}</span>
           <span className="font-mono text-base font-bold text-foreground tabular-nums mt-0.5">
@@ -103,7 +144,43 @@ export function VikingDbCard({ status, isHealthy }: VikingDbCardProps) {
             {totalIndexes}
           </span>
         </div>
+        <div
+          className={cn(
+            'flex flex-col justify-center rounded-lg border px-3 py-2 transition-colors',
+            unreadyCount > 0 ? 'border-amber-500/30 bg-amber-500/10' : 'bg-muted/20',
+          )}
+        >
+          <span className="text-[11px] text-muted-foreground font-medium">
+            {t('vikingdb.unreadyDirectories')}
+          </span>
+          <span
+            className={cn(
+              'font-mono text-base font-bold tabular-nums mt-0.5',
+              unreadyCount > 0 ? 'text-amber-400' : 'text-foreground',
+            )}
+          >
+            {unreadyCount > 0 ? unreadyCount.toLocaleString() : t('vikingdb.fullyReady')}
+          </span>
+        </div>
       </div>
+
+      {/* 占位符告警与一键自愈条 */}
+      {unreadyCount > 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs">
+          <span className="text-muted-foreground text-[12px] leading-relaxed">
+            {reindexSuccessMsg || t('vikingdb.unreadyHint')}
+          </span>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 shrink-0 text-xs border-amber-500/40 text-amber-400 hover:bg-amber-500/15"
+            onClick={handleTriggerReindex}
+            disabled={isReindexing}
+          >
+            {isReindexing ? t('vikingdb.reindexing') : t('vikingdb.triggerReindex')}
+          </Button>
+        </div>
+      )}
 
       {rows.length === 0 ? (
         <div className="rounded-lg border bg-muted/20 p-3 text-center text-xs text-muted-foreground">

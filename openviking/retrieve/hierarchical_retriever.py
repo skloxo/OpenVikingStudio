@@ -238,32 +238,27 @@ class HierarchicalRetriever:
             telemetry.count("vector.scored", len(quick_results))
             telemetry.count("vector.scanned", len(quick_results))
 
-            # Filter out ungenerated directory placeholders and non-meaningful content
-            filtered_quick_results = [
-                r for r in quick_results if self._is_meaningful(r, requested_level=level)
-            ]
-
-            # FAST mode: Single-pass Cross-Encoder rerank on the meaningful vector candidate pool
-            if resolved_mode == RetrieverMode.FAST and self._rerank_client and filtered_quick_results:
+            # FAST mode: Single-pass Cross-Encoder rerank on the vector candidate pool
+            if resolved_mode == RetrieverMode.FAST and self._rerank_client and quick_results:
                 docs = [
                     str(r.get("abstract", "") or r.get("overview", "") or r.get("content", ""))
-                    for r in filtered_quick_results
+                    for r in quick_results
                 ]
-                fallback_scores = [self._finite_score(r.get("_score", 0.0)) for r in filtered_quick_results]
+                fallback_scores = [self._finite_score(r.get("_score", 0.0)) for r in quick_results]
                 rerank_scores = await self._rerank_scores(query.query, docs, fallback_scores)
-                for r, score in zip(filtered_quick_results, rerank_scores, strict=True):
+                for r, score in zip(quick_results, rerank_scores, strict=True):
                     r["_score"] = score
                     r["_final_score"] = score
                 rerank_used = True
             else:
-                for r in filtered_quick_results:
+                for r in quick_results:
                     score = self._finite_score(r.get("_score", 0.0))
                     r["_score"] = score
                     r["_final_score"] = score
                 rerank_used = False
 
             collected_by_uri: Dict[str, Dict[str, Any]] = {}
-            for result in filtered_quick_results:
+            for result in quick_results:
                 uri = result.get("uri", "")
                 if not uri:
                     continue
@@ -439,30 +434,6 @@ class HierarchicalRetriever:
             return score >= threshold
         return score > threshold
 
-    @staticmethod
-    def _is_meaningful(
-        candidate: Dict[str, Any],
-        requested_level: Optional[List[int]] = None,
-    ) -> bool:
-        """
-        Check if a candidate contains meaningful semantic content.
-        Ungenerated directory placeholders ('[Directory overview is not generated]')
-        and empty content are filtered out unless the caller explicitly requested L0 level.
-        """
-        if requested_level is not None and 0 in requested_level:
-            return True
-        abstract = str(candidate.get("abstract", "") or "").strip()
-        overview = str(candidate.get("overview", "") or "").strip()
-        content = str(candidate.get("content", "") or "").strip()
-
-        placeholder = "[Directory overview is not generated]"
-        if placeholder in abstract or placeholder in overview or placeholder in content:
-            return False
-
-        if not abstract and not overview and not content:
-            return False
-
-        return True
 
     async def _rerank_scores(
         self,
@@ -558,9 +529,7 @@ class HierarchicalRetriever:
                 uri = r.get("uri", "")
                 if not uri:
                     continue
-                if (level is None or r.get("level", 2) in level) and self._is_meaningful(
-                    r, requested_level=level
-                ):
+                if level is None or r.get("level", 2) in level:
                     score = self._finite_score(r.get("_score", 0.0))
                     if not self._passes_threshold(score, effective_threshold, score_gte):
                         logger.debug(
@@ -638,9 +607,7 @@ class HierarchicalRetriever:
                         continue
 
                     telemetry.count("vector.passed", 1)
-                    if (level is None or r.get("level", 2) in level) and self._is_meaningful(
-                        r, requested_level=level
-                    ):
+                    if level is None or r.get("level", 2) in level:
                         # Deduplicate by URI and keep the highest-scored candidate.
                         previous = collected_by_uri.get(uri)
                         if previous is None or final_score > previous.get("_final_score", 0):
