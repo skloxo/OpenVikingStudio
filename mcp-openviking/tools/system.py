@@ -273,7 +273,7 @@ def register_system_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Callabl
 
         status = {
             "status": "ok",
-            "server_version": "1.4.37",
+            "server_version": "1.4.39",
             "mode": active_mode,
             "api_url": cfg["api"],
             "authenticated": bool(cfg["api_key"]),
@@ -293,6 +293,8 @@ def register_system_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Callabl
                 status["http_available"] = True
                 status["http_health"] = result
                 status["latency_ms"] = round(latency, 2)
+                if isinstance(result, dict) and "version" in result:
+                    status["server_version"] = str(result["version"])
             else:
                 status["status"] = "degraded"
                 status["http_error"] = result.get("error")
