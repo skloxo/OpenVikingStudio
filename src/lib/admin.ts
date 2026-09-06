@@ -145,6 +145,7 @@ function createProbeClient(baseUrl: string) {
     headers: {
       Accept: 'application/json',
     },
+    timeout: 8000,
   })
 }
 
@@ -258,23 +259,31 @@ async function probeDataAccess(
   }
 
   try {
-    await client.get('/api/v1/fs/ls', {
-      headers,
-      params: {
-        node_limit: 1,
-        output: 'agent',
-        uri: 'viking://resources',
-      },
-    })
+    await client.get('/api/v1/system/status', { headers })
     return {
       detail: 'Tenant data access available',
       state: 'ok',
     }
-  } catch (error) {
-    const errMsg = getErrorMessage(error)
-    return {
-      detail: errMsg,
-      state: 'error',
+  } catch (_statusError) {
+    try {
+      await client.get('/api/v1/fs/ls', {
+        headers,
+        params: {
+          node_limit: 1,
+          output: 'original',
+          uri: 'viking://resources',
+        },
+      })
+      return {
+        detail: 'Tenant data access available',
+        state: 'ok',
+      }
+    } catch (error) {
+      const errMsg = getErrorMessage(error)
+      return {
+        detail: errMsg,
+        state: 'error',
+      }
     }
   }
 }

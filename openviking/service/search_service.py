@@ -6,7 +6,12 @@ Search Service for OpenViking.
 Provides semantic search operations: search, find.
 """
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+import asyncio
+import hashlib
+import json
+import time
+from collections import OrderedDict
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union
 
 from openviking.server.identity import RequestContext
 from openviking.storage.viking_fs import VikingFS
@@ -23,6 +28,9 @@ if TYPE_CHECKING:
     from openviking.session import Session
 
 logger = get_logger(__name__)
+
+QUERY_CACHE_TTL = 120.0  # 120s TTL to shield downstream models from storm amplification
+QUERY_CACHE_MAXSIZE = 1000  # LRU capacity
 
 
 def _ensure_non_empty_query(
@@ -45,10 +53,55 @@ def _ensure_non_empty_query(
 
 
 class SearchService:
-    """Semantic search service."""
+    """Semantic search service with lightweight L0 query cache."""
 
     def __init__(self, viking_fs: Optional[VikingFS] = None):
         self._viking_fs = viking_fs
+        self._query_cache: OrderedDict[str, tuple[float, Any]] = OrderedDict()
+
+    def clear_cache(self) -> None:
+        """Clear all in-memory query cache entries."""
+        self._query_cache.clear()
+
+    def _make_cache_key(
+        self,
+        op: str,
+        query: str,
+        target_uri: Union[str, List[str]],
+        limit: int,
+        score_threshold: Optional[float],
+        filter: Optional[Dict],
+        level: Optional[List[int]],
+        image_url: Optional[str],
+        ctx: RequestContext,
+    ) -> str:
+        account_id = getattr(ctx, "account_id", None) or getattr(getattr(ctx, "user", None), "account_id", "default")
+        user_id = getattr(getattr(ctx, "user", None), "user_id", None) or "default"
+        t_uri = tuple(sorted(target_uri)) if isinstance(target_uri, list) else target_uri
+        lvl = tuple(level) if isinstance(level, list) else (level or "")
+        flt = json.dumps(filter, sort_keys=True) if filter else ""
+        img = (image_url[:100] + str(len(image_url))) if (image_url and len(image_url) > 100) else (image_url or "")
+        raw = f"{account_id}:{user_id}:{op}:{query.strip().lower()}:{t_uri}:{limit}:{score_threshold}:{lvl}:{flt}:{img}"
+        return hashlib.md5(raw.encode("utf-8")).hexdigest()
+
+    def _get_cached(self, cache_key: str) -> Optional[Any]:
+        if cache_key in self._query_cache:
+            ts, res = self._query_cache[cache_key]
+            if (time.time() - ts) < QUERY_CACHE_TTL:
+                self._query_cache.move_to_end(cache_key)
+                try:
+                    from openviking.metrics.datasources.cache import CacheEventDataSource
+                    CacheEventDataSource.record_hit("L0")
+                except Exception:
+                    pass
+                return res
+            del self._query_cache[cache_key]
+        return None
+
+    def _set_cached(self, cache_key: str, res: Any) -> None:
+        self._query_cache[cache_key] = (time.time(), res)
+        if len(self._query_cache) > QUERY_CACHE_MAXSIZE:
+            self._query_cache.popitem(last=False)
 
     def set_viking_fs(self, viking_fs: VikingFS) -> None:
         """Set VikingFS instance (for deferred initialization)."""
@@ -180,6 +233,22 @@ class SearchService:
         resolved_image_url = await self._resolve_image_url(image_url, ctx)
         _ensure_non_empty_query(query, resolved_image_url, filter)
         viking_fs = self._ensure_initialized()
+
+        cache_key = self._make_cache_key(
+            op="find",
+            query=query,
+            target_uri=target_uri,
+            limit=limit,
+            score_threshold=score_threshold,
+            filter=filter,
+            level=level,
+            image_url=resolved_image_url,
+            ctx=ctx,
+        )
+        cached = self._get_cached(cache_key)
+        if cached is not None:
+            return cached
+
         result = await viking_fs.find(
             query=query,
             ctx=ctx,
@@ -190,6 +259,8 @@ class SearchService:
             level=level,
             image_url=resolved_image_url,
         )
+        self._set_cached(cache_key, result)
+
         try:
             from openviking.observability.events import try_publish_event
             result_count = len(result) if hasattr(result, "__len__") else 0
