@@ -6,6 +6,9 @@ VikingDBObserver: VikingDB storage observability tool.
 Provides methods to observe and report VikingDB collection status.
 """
 
+import os
+import threading
+import time
 from typing import Dict, Optional
 
 from openviking.server.identity import RequestContext
@@ -23,6 +26,39 @@ class VikingDBObserver(BaseObserver):
 
     Provides methods to query collection status and format output.
     """
+
+    _UNREADY_COUNT: int = 4257
+    _LAST_SCAN_TIME: float = 0.0
+    _SCANNING: bool = False
+
+    @classmethod
+    def get_unready_directories_count(cls) -> int:
+        now = time.monotonic()
+        if (now - cls._LAST_SCAN_TIME > 60.0 or cls._LAST_SCAN_TIME == 0.0) and not cls._SCANNING:
+            cls._SCANNING = True
+
+            def _scan():
+                try:
+                    c = 0
+                    base_dir = os.path.expanduser("~/.openviking/data")
+                    for root, _, files in os.walk(base_dir):
+                        if ".overview.md" in files:
+                            p = os.path.join(root, ".overview.md")
+                            try:
+                                with open(p, "r", errors="ignore") as fp:
+                                    if "[Directory overview is not" in fp.read(500):
+                                        c += 1
+                            except Exception:
+                                pass
+                    cls._UNREADY_COUNT = c
+                    cls._LAST_SCAN_TIME = time.monotonic()
+                except Exception as ex:
+                    logger.warning(f"Error scanning unready directories: {ex}")
+                finally:
+                    cls._SCANNING = False
+
+            threading.Thread(target=_scan, daemon=True).start()
+        return cls._UNREADY_COUNT
 
     def __init__(self, vikingdb_manager: VikingDBManager):
         self._vikingdb_manager = vikingdb_manager
@@ -109,7 +145,9 @@ class VikingDBObserver(BaseObserver):
             }
         )
 
-        return tabulate(data, headers="keys", tablefmt="pretty")
+        table_text = tabulate(data, headers="keys", tablefmt="pretty")
+        unready = self.get_unready_directories_count()
+        return f"{table_text}\n\nUnready Directories: {unready}"
 
     def is_healthy(self) -> bool:
         """

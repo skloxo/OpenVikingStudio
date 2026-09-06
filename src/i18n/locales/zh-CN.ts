@@ -324,6 +324,13 @@ const zhCN = {
       activeCollections: '活动集合数',
       totalVectors: '总向量数据量',
       searchIndexes: '检索索引数',
+      unreadyDirectories: '占位待提纯目录',
+      fullyReady: '100% 语义就绪',
+      hasUnready: '{{count}} 个占位目录待提纯',
+      unreadyHint: '检测到底层存在未生成摘要的占位符目录，向量库已拦截隔离。可调度安全自愈提纯：',
+      triggerReindex: '安全自愈提纯',
+      reindexing: '提纯任务调度中...',
+      reindexSuccess: '自愈提纯任务已成功创建并进入后台执行',
     },
     queue: {
       title: '算子引擎',

@@ -60,13 +60,20 @@ _MAX_FILE_VECTORIZATION_CONCURRENCY = 64
 
 
 # Trailing markers VikingFS appends when a directory has no generated .abstract.md/.overview.md
-# (see openviking/storage/viking_fs.py). The rendered value is a placeholder, not semantic
-# content, and must never be embedded as an ABSTRACT (L0) / OVERVIEW (L1) vector (issue #2434).
-_ABSTRACT_NOT_READY_SUFFIX = "[Directory abstract is not ready]"
-_OVERVIEW_NOT_READY_SUFFIX = "[Directory overview is not ready]"
+# (see openviking/storage/viking_fs.py and openviking/storage/queuefs/semantic_processor.py).
+# The rendered value is a placeholder, not semantic content, and must never be embedded
+# as an ABSTRACT (L0) / OVERVIEW (L1) vector (issue #2434).
+_ABSTRACT_NOT_READY_SUFFIX: tuple[str, ...] = (
+    "[Directory abstract is not ready]",
+    "[Directory abstract is not generated]",
+)
+_OVERVIEW_NOT_READY_SUFFIX: tuple[str, ...] = (
+    "[Directory overview is not ready]",
+    "[Directory overview is not generated]",
+)
 
 
-def _is_not_ready_sentinel(text: str, suffix: str) -> bool:
+def _is_not_ready_sentinel(text: str, suffix: str | tuple[str, ...]) -> bool:
     """Return True if *text* is a VikingFS not-ready directory placeholder.
 
     VikingFS renders these as a single ``# <uri>`` header followed only by the not-ready marker.
@@ -77,9 +84,18 @@ def _is_not_ready_sentinel(text: str, suffix: str) -> bool:
     if not text:
         return False
     head = text.rstrip()
-    if not head.endswith(suffix):
+    matched_suffix: str | None = None
+    if isinstance(suffix, (tuple, list)):
+        for s in suffix:
+            if head.endswith(s):
+                matched_suffix = s
+                break
+    elif head.endswith(suffix):
+        matched_suffix = suffix
+
+    if not matched_suffix:
         return False
-    head = head[: -len(suffix)].strip()
+    head = head[: -len(matched_suffix)].strip()
     return head.startswith("#") and "\n" not in head
 
 

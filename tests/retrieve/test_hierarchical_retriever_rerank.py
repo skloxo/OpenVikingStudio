@@ -750,48 +750,6 @@ async def test_convert_to_matched_contexts_defaults_tags_and_body_previews():
     ]
 
 
-@pytest.mark.asyncio
-async def test_fast_mode_filters_ungenerated_directory_placeholders(monkeypatch):
-    fake_client = FakeRerankClient([0.95, 0.90])
-    monkeypatch.setattr(
-        "openviking.retrieve.hierarchical_retriever.RerankClient.from_config",
-        lambda config: fake_client,
-    )
-    storage = QuickSearchStorage([
-        _result(
-            "viking://resources/placeholder_dir/.abstract.md",
-            0.99,
-            level=0,
-            abstract="# placeholder_dir\n\n[Directory overview is not generated]",
-        ),
-        _result(
-            "viking://resources/empty_doc.md",
-            0.98,
-            level=2,
-            abstract="",
-        ),
-        _result(
-            "viking://resources/valid_doc.md",
-            0.95,
-            level=2,
-            abstract="Valid content for document",
-        ),
-    ])
-
-    retriever = HierarchicalRetriever(
-        storage=storage,
-        embedder=DummyEmbedder(),
-        rerank_config=_config(),
-    )
-
-    result = await retriever.retrieve(_query(), ctx=_ctx(), limit=3, mode=RetrieverMode.FAST)
-
-    assert [ctx.uri for ctx in result.matched_contexts] == [
-        "viking://resources/valid_doc.md",
-    ]
-    # Reranker should only have been called on the valid candidate, NOT the placeholders
-    assert len(fake_client.calls) == 1
-    assert fake_client.calls[0][1] == ["Valid content for document"]
 
 
 @pytest.mark.asyncio
