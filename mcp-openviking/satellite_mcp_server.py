@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 # ─── MODULE: satellite_mcp_server ──────────────────────────────────────────
 """
-OpenViking Satellite MCP Server (Standalone Zero-Dependency Distribution - v1.4.39)
+OpenViking Satellite MCP Server (Standalone Zero-Dependency Distribution - v1.4.40)
 
 专为远程算力节点 (Mac Studio / 2080Ti / 远程工作站) 与外部 Agent (WorkBuddy / Cursor / Claude Code) 设计的独立单文件轻量分发包。
 特点：
@@ -25,7 +25,6 @@ import time
 from functools import wraps
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-import urllib.request
 from urllib.request import Request, urlopen
 from urllib.error import URLError, HTTPError
 from urllib.parse import urlencode
@@ -65,10 +64,7 @@ def _get_config() -> Dict[str, str]:
                             break
                 except Exception:
                     pass
-    return {
-        "api": os.environ.get("OPENVIKING_API", DEFAULT_API).rstrip("/"),
-        "api_key": api_key or DEFAULT_API_KEY,
-    }
+    return {"api": os.environ.get("OPENVIKING_API", DEFAULT_API).rstrip("/"), "api_key": api_key or DEFAULT_API_KEY}
 
 
 class SatelliteHTTPClient:
@@ -142,10 +138,38 @@ class SatelliteHTTPClient:
 http_client = SatelliteHTTPClient()
 
 
+def _compact_search_result(data: Any) -> Any:
+    """渐进式分级展开：对检索结果中超过 350 字符的 abstract 进行紧凑截断，避免污染上下文。"""
+    if not isinstance(data, (dict, list)):
+        return data
+    import copy
+    try:
+        data = copy.deepcopy(data)
+    except Exception:
+        return data
+
+    def _trunc(items):
+        if isinstance(items, list):
+            for it in items:
+                if isinstance(it, dict) and isinstance(it.get("abstract"), str) and len(it["abstract"]) > 350:
+                    u = it.get("uri", "")
+                    h = f"... [高密摘要截断，如需阅读全文请使用 openviking_read(uri='{u}')]" if u else "... [高密摘要截断]"
+                    it["abstract"] = it["abstract"][:350] + h
+
+    target = data.get("result", data) if isinstance(data, dict) else data
+    if isinstance(target, dict):
+        for k in ("memories", "resources", "skills", "results"):
+            if k in target:
+                _trunc(target[k])
+    elif isinstance(target, list):
+        _trunc(target)
+    return data
+
+
 def _format_result(result: Any) -> str:
     if isinstance(result, str):
         return result
-    return json.dumps(result, ensure_ascii=False, indent=2)
+    return json.dumps(_compact_search_result(result), ensure_ascii=False, indent=2)
 
 
 def _validate_uri(uri: Any, param_name: str = "uri") -> Optional[str]:
@@ -180,16 +204,12 @@ def _safe_tool(*args, **kwargs):
             try:
                 bound = sig.bind_partial(*f_args, **f_kwargs)
                 for name, param in sig.parameters.items():
-                    if name not in bound.arguments:
-                        val = param.default
-                        if hasattr(val, "default"):
-                            d = getattr(val, "default")
-                            bound.arguments[name] = "" if d is None or "PydanticUndefined" in str(type(d)) else d
-                    else:
-                        val = bound.arguments[name]
-                        if hasattr(val, "default"):
-                            d = getattr(val, "default")
-                            bound.arguments[name] = "" if d is None or "PydanticUndefined" in str(type(d)) else d
+                    val = bound.arguments.get(name, param.default)
+                    if hasattr(val, "default"):
+                        d = getattr(val, "default")
+                        bound.arguments[name] = "" if d is None or "PydanticUndefined" in str(type(d)) else d
+                    elif name not in bound.arguments:
+                        bound.arguments[name] = val
                 return fn(*bound.args, **bound.kwargs)
             except Exception:
                 return fn(*f_args, **f_kwargs)
@@ -212,9 +232,7 @@ async def _graceful_satellite_call(name: str, arguments: dict[str, Any], context
             "message": f"[Satellite Mode] 工具 '{name}' 为本地核心运维特权接口，卫星客户端已安全解耦。当前卫星客户端专注于数据面语义检索与知识协作。",
             "suggestion": "请使用 openviking_find, openviking_smart_read 或在服务端节点执行运维指令。",
         }, ensure_ascii=False, indent=2)
-        if convert_result:
-            return [TextContent(type="text", text=msg)]
-        return msg
+        return [TextContent(type="text", text=msg)] if convert_result else msg
     return await _orig_call_tool(name, arguments, context=context, convert_result=convert_result)
 
 
@@ -233,16 +251,11 @@ def openviking_find(
 ) -> str:
     """两阶段混合语义召回 + Cross-Encoder 深度重排。返回综合评分最高的相关上下文。"""
     body: Dict[str, Any] = {"query": query, "limit": limit}
-    if mode:
-        body["mode"] = mode.strip()
-    if target_uri:
-        body["target_uri"] = target_uri
-    if score_threshold > 0:
-        body["score_threshold"] = score_threshold
-    if level:
-        body["level"] = level.strip()
-    if filter_tags:
-        body["filter"] = {"tags": [t.strip() for t in filter_tags.split(",") if t.strip()]}
+    if mode: body["mode"] = mode.strip()
+    if target_uri: body["target_uri"] = target_uri
+    if score_threshold > 0: body["score_threshold"] = score_threshold
+    if level: body["level"] = level.strip()
+    if filter_tags: body["filter"] = {"tags": [t.strip() for t in filter_tags.split(",") if t.strip()]}
     return _format_result(http_client.post("/api/v1/search/find", body, timeout=60))
 
 
@@ -255,10 +268,8 @@ def openviking_search(
 ) -> str:
     """标准语义向量检索"""
     body: Dict[str, Any] = {"query": query, "limit": limit}
-    if target_uri:
-        body["target_uri"] = target_uri
-    if score_threshold > 0:
-        body["score_threshold"] = score_threshold
+    if target_uri: body["target_uri"] = target_uri
+    if score_threshold > 0: body["score_threshold"] = score_threshold
     return _format_result(http_client.post("/api/v1/search/search", body))
 
 
@@ -273,7 +284,6 @@ def openviking_smart_read(
     search_body: Dict[str, Any] = {"query": query, "limit": limit}
     if score_threshold > 0:
         search_body["score_threshold"] = score_threshold
-
     search_result = http_client.post("/api/v1/search/find", search_body)
     results = search_result.get("results", []) if isinstance(search_result, dict) else []
 
@@ -283,16 +293,10 @@ def openviking_smart_read(
         if not uri:
             detailed.append({"search_result": item, "content": {"error": "无 URI"}})
             continue
-        endpoint = "/api/v1/content/abstract" if level == 0 else ("/api/v1/content/overview" if level == 1 else "/api/v1/content/read")
-        content = http_client.get(endpoint, {"uri": uri})
-        detailed.append({"search_result": item, "content": content})
+        ep = "/api/v1/content/abstract" if level == 0 else ("/api/v1/content/overview" if level == 1 else "/api/v1/content/read")
+        detailed.append({"search_result": item, "content": http_client.get(ep, {"uri": uri})})
 
-    return _format_result({
-        "query": query,
-        "level": level,
-        "total_results": len(detailed),
-        "results": detailed,
-    })
+    return _format_result({"query": query, "level": level, "total_results": len(detailed), "results": detailed})
 
 
 @_safe_tool()
@@ -399,17 +403,10 @@ def openviking_record_evolution_lesson(
 ## 📜 Permanent Guidelines & Lesson
 {lesson}
 """
-        res = http_client.post("/api/v1/content/write", {
-            "uri": master_uri,
-            "content": mirror_content,
-            "mode": "create",
-        })
+        res = http_client.post("/api/v1/content/write", {"uri": master_uri, "content": mirror_content, "mode": "create"})
         return _format_result({
-            "status": "ok",
-            "message": f"成功将 Lesson '{lesson_title}' 存盘至 OpenViking Master Memory",
-            "skill_name": skill_name,
-            "master_memory_uri": master_uri,
-            "response": res,
+            "status": "ok", "message": f"成功将 Lesson '{lesson_title}' 存盘至 OpenViking Master Memory",
+            "skill_name": skill_name, "master_memory_uri": master_uri, "response": res,
         })
     except Exception as e:
         return _format_result({"status": "error", "error": str(e)})
@@ -443,10 +440,7 @@ def openviking_get_relations(
 @_safe_tool()
 def openviking_health() -> str:
     """检查远端 OpenViking 服务健康度"""
-    health = http_client.get("/health")
-    ready = http_client.get("/ready")
-    status = http_client.get("/api/v1/system/status")
-    return _format_result({"health": health, "ready": ready, "status": status})
+    return _format_result({"health": http_client.get("/health"), "ready": http_client.get("/ready"), "status": http_client.get("/api/v1/system/status")})
 
 
 @_safe_tool()
@@ -456,7 +450,7 @@ def openviking_ping() -> str:
     status = {
         "status": "ok",
         "client_distribution": "standalone_satellite",
-        "server_version": "1.4.39",
+        "server_version": "1.4.40",
         "mode": "satellite",
         "api_url": cfg["api"],
         "authenticated": bool(cfg["api_key"]),
