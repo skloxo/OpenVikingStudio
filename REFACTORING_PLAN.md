@@ -74,6 +74,22 @@
 
 ### 📦 历史已交付工单履历 (Delivered Release Cards)
 
+### 📌 P1: [x] Card-Studio-RAGAS-Fix (v1.4.56): RAGAS 评测抽屉宽度自适应、横向防截断与 UI 体验极致优化 ✅
+- **类型**：Bugfix / UI Layout / User Experience Refinement ｜ **优先级**：🔴 P1（UI 截断与挤压变形体验彻底根治）
+- **Git Tag**：`v1.4.56`（Commit: `830f3961d`）
+- **实际修改文件清单**：
+  - `src/routes/retrieval/-components/benchmark-drawer.tsx` (突破 Sheet 原生 384px 宽度限制，覆盖为响应式宽屏 `data-[side=right]:w-[95vw] data-[side=right]:sm:max-w-2xl data-[side=right]:md:max-w-3xl data-[side=right]:lg:max-w-4xl data-[side=right]:xl:max-w-5xl`；Header 增加 `pr-14` 安全边距彻底消除关闭按钮重叠；统一使用官方 `fetchFind` 轮子)
+  - `src/routes/retrieval/-components/benchmark/query-suite.tsx` (操作栏响应式流式布局，Segment 切换与按钮组自适应换行，增加 `shrink-0`，彻底根治按钮折行挤压)
+  - `src/routes/retrieval/-components/benchmark/metrics-tiles.tsx` (重构 RAGAS 综合指数主看板与 4 维微瓦片，增加 `min-w-0` 与 `title` 属性，消除长文本截断)
+  - `src/routes/retrieval/-components/benchmark/results-table.tsx` (增加 `overflow-x-auto min-w-0` 容器并为数据表格设置 `min-w-[700px]`，保障 7 列数据宽敞舒展展开，彻底根治水平溢出裁切)
+  - `package.json` (版本号升级至 1.4.56)
+- **交付内容摘要**：
+  1. 彻底根治用户反馈的“UI 展示不全、好难受”痛点，将原本窄小挤压（384px）的右侧抽屉升级为宽敞舒展的专业实验室工作台；
+  2. 修复右上角 Badge 与绝对定位关闭按钮 (`X`) 重叠盖字的视觉 Bug；
+  3. 表格包裹标准横向自适应滚动容器，7 大列（Query、Top-1 匹配项、精度、忠实度、RAGAS、耗时、状态）全面舒展展现，彻底消除文本裁切；
+  4. 接入标准 `fetchFind` 管道与端到端 API Key 鉴权，实机跑分 5/5 测试用例 100% 命中通过，平均时延 3010ms，四维调和指数 0.563；
+  5. Vite 生产构建 100% PASS，生产端口 1933 部署生效，CDP 浏览器端实机核验并留存截图 `ragas_benchmark_results.png`，Git Tag `v1.4.56` 物理留痕。
+
 ### 📌 P2: [x] Card-Studio-RAGAS (v1.4.55): RAGAS 自动化评测实验室轻量抽屉集成 (457 行 ➔ ≤ 220 行容器 + 5 子模块) ✅
 - **类型**：Feature / Agent-Friendly Refactoring / Domain Seam Splitting ｜ **优先级**：🟢 P2（RAGAS 评测实验室集成与单文件红线治理）
 - **Git Tag**：`v1.4.55`（Commit: `2018ecf8b`）
