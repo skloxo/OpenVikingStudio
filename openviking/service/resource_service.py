@@ -499,13 +499,28 @@ class ResourceService:
         task = None
         enqueued = False
         try:
+            source_path = getattr(msg, "source_path", None)
+            source_name = getattr(msg, "source_name", None)
+            if not source_name and source_path:
+                import os
+                source_name = os.path.basename(source_path)
+            file_size = getattr(msg, "file_size", None)
+            root_uri = getattr(msg, "root_uri", None)
+            task_meta = {"source_path": source_path}
+            if source_name:
+                task_meta["source_name"] = source_name
+            if file_size is not None:
+                task_meta["file_size"] = file_size
+            if root_uri:
+                task_meta["root_uri"] = root_uri
+
             task = await tracker.create(
                 "add_resource",
                 resource_id=None if msg.defer_target_resolution else msg.root_uri,
                 account_id=msg.account_id,
                 user_id=msg.user_id,
                 task_id=msg.task_id,
-                meta={"source_path": msg.source_path},
+                meta=task_meta,
                 auth=task_auth,
             )
             await get_queue_manager().enqueue(queue_name, msg.to_dict())

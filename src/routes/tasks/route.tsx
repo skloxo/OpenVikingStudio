@@ -7,6 +7,7 @@ import {
   CircleXIcon,
   ChevronRightIcon,
   ClipboardListIcon,
+  FileTextIcon,
   LayersIcon,
   LoaderCircleIcon,
   RefreshCwIcon,
@@ -47,6 +48,7 @@ import { getOvResult, getTasks, ovClient } from '#/lib/ov-client'
 import { postResources } from '#/gen/ov-client'
 import { commitSession } from '#/lib/sessions/api'
 import { cn } from '#/lib/utils'
+import { formatFileSize } from '#/routes/resources/-lib/upload'
 import {
   QueueStatusCard,
   parseQueueStatus,
@@ -66,7 +68,22 @@ import {
   getTaskExecutionDynamic,
 } from './-lib/task-pipeline'
 
+export type TaskDataScope = '24h' | '7d' | 'all'
+
+interface TasksSearch {
+  taskId?: string
+  dataScope?: TaskDataScope
+}
+
 export const Route = createFileRoute('/tasks')({
+  validateSearch: (search: Record<string, unknown>): TasksSearch => {
+    return {
+      taskId: typeof search.taskId === 'string' ? search.taskId : undefined,
+      dataScope: (search.dataScope === '24h' || search.dataScope === '7d' || search.dataScope === 'all')
+        ? search.dataScope
+        : undefined,
+    }
+  },
   component: TasksRoute,
 })
 
@@ -117,8 +134,6 @@ export function getEffectiveTaskStatus(taskItem: any, list: any[]): string {
   return idx >= 8 ? 'pending' : 'running'
 }
 
-export type TaskDataScope = '24h' | 'all'
-
 async function fetchTasks(dataScope: TaskDataScope = '24h'): Promise<TaskRecord[]> {
   const query = {
     limit: MAX_TASKS,
@@ -132,11 +147,17 @@ async function fetchTasks(dataScope: TaskDataScope = '24h'): Promise<TaskRecord[
     let fetched = normalizeTasks(result).sort(
       (a, b) => Number(b.created_at || 0) - Number(a.created_at || 0),
     )
-    if (dataScope === '24h') {
+    if (dataScope !== 'all') {
       const nowSec = Math.floor(Date.now() / 1000)
+      const windowSec = dataScope === '24h' ? 86400 : 7 * 86400
       fetched = fetched.filter((t) => {
+        const status = normalizeTaskStatus(t.status, t.error)
+        // 未终结任务保护：进行中或排队中的任务，绝不可被时间范围过滤掉！
+        if (status === 'running' || status === 'pending') {
+          return true
+        }
         const timeVal = Number(t.created_at || t.updated_at || 0)
-        return timeVal > 0 && nowSec - timeVal <= 86400
+        return timeVal > 0 && nowSec - timeVal <= windowSec
       })
     }
     return fetched
@@ -150,15 +171,19 @@ function TasksRoute() {
   const { i18n, t } = useTranslation('tasksPage')
   const { identityScopeKey } = useAppConnection()
   const queryClient = useQueryClient()
+  const searchParams = Route.useSearch()
+  const urlTaskId = searchParams.taskId
+  const urlDataScope = searchParams.dataScope
+
   const [page, setPage] = React.useState(1)
   const [pageSize, setPageSize] = React.useState(DEFAULT_PAGE_SIZE)
   const [taskType, setTaskType] = React.useState<TaskTypeFilter>('all')
   const [statusFilter, setStatusFilter] =
     React.useState<TaskStatusFilter>('all')
-  const [dataScope, setDataScope] = React.useState<TaskDataScope>('all')
+  const [dataScope, setDataScope] = React.useState<TaskDataScope>(urlDataScope || 'all')
   const [dedupByResource, setDedupByResource] = React.useState<boolean>(true)
   const [selectedTaskId, setSelectedTaskId] = React.useState<string | null>(
-    null,
+    urlTaskId || null,
   )
   const tasksQuery = useQuery({
     queryFn: () => fetchTasks(dataScope),
@@ -229,6 +254,17 @@ function TasksRoute() {
 
     return list
   }, [rawTasks, dedupByResource, taskType, statusFilter])
+
+  React.useEffect(() => {
+    if (urlTaskId && allTasks.length > 0) {
+      setSelectedTaskId(urlTaskId)
+      const idx = allTasks.findIndex((t) => t.task_id === urlTaskId)
+      if (idx >= 0) {
+        const targetPage = Math.floor(idx / pageSize) + 1
+        setPage(targetPage)
+      }
+    }
+  }, [urlTaskId, allTasks, pageSize])
 
   const pageOffset = (page - 1) * pageSize
   const tasks = allTasks.slice(pageOffset, pageOffset + pageSize)
@@ -589,6 +625,45 @@ function TasksRoute() {
     )
   }
 
+  function renderTaskResourceCell(task: TaskRecord) {
+    const meta = (task.meta && typeof task.meta === 'object') ? (task.meta as Record<string, any>) : {}
+    const sourceName = meta.source_name || (meta.source_path ? String(meta.source_path).split(/[\\/]/).pop() : null)
+    const fileSize = meta.file_size !== undefined ? Number(meta.file_size) : undefined
+    const resourceUri = task.resource_id || ''
+
+    if (sourceName || fileSize !== undefined) {
+      return (
+        <div className="flex flex-col gap-0.5 max-w-72">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <FileTextIcon className="size-3.5 shrink-0 text-muted-foreground" />
+            <span className="truncate text-xs font-medium text-foreground">
+              {sourceName || (resourceUri ? resourceUri.split('/').pop() : '-')}
+            </span>
+            {fileSize !== undefined && (
+              <Badge
+                variant="outline"
+                className="text-[11px] px-1 py-0 h-4 border-border/50 text-muted-foreground bg-muted/20 font-mono shrink-0 tabular-nums"
+              >
+                {formatFileSize(fileSize)}
+              </Badge>
+            )}
+          </div>
+          {resourceUri && (
+            <span className="font-mono text-[11px] text-muted-foreground/70 truncate" title={resourceUri}>
+              {resourceUri}
+            </span>
+          )}
+        </div>
+      )
+    }
+
+    return (
+      <div className="max-w-72 truncate text-xs text-muted-foreground" title={resourceUri || '-'}>
+        {resourceUri || '-'}
+      </div>
+    )
+  }
+
   const taskStatsQuery = useQuery({
     queryFn: async () => {
       try {
@@ -874,11 +949,14 @@ function TasksRoute() {
             <SelectValue>
               {dataScope === '24h'
                 ? t('filters.scope24h')
+                : dataScope === '7d'
+                ? t('filters.scope7d')
                 : t('filters.scopeAll')}
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="24h">{t('filters.scope24h')}</SelectItem>
+            <SelectItem value="7d">{t('filters.scope7d')}</SelectItem>
             <SelectItem value="all">{t('filters.scopeAll')}</SelectItem>
           </SelectContent>
         </Select>
@@ -936,7 +1014,7 @@ function TasksRoute() {
             ))}
           </SelectContent>
         </Select>
-        {hasActiveFilters || dataScope !== '24h' ? (
+        {hasActiveFilters || dataScope !== 'all' ? (
           <Button
             type="button"
             variant="ghost"
@@ -945,7 +1023,7 @@ function TasksRoute() {
             onClick={() => {
               setTaskType('all')
               setStatusFilter('all')
-              setDataScope('24h')
+              setDataScope('all')
               setPage(1)
             }}
           >
@@ -1045,7 +1123,8 @@ function TasksRoute() {
                       }
                       className={cn(
                         taskId &&
-                          'cursor-pointer outline-none hover:bg-muted/35 focus-visible:bg-muted/35 focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-inset',
+                          'cursor-pointer outline-none hover:bg-muted/35 focus-visible:bg-muted/35 focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-inset transition-colors',
+                        taskId && (taskId === selectedTaskId || taskId === urlTaskId) && 'ring-1 ring-cyan-500/80 bg-cyan-500/5 dark:bg-cyan-500/10',
                       )}
                       onClick={() => {
                         if (taskId) setSelectedTaskId(taskId)
@@ -1077,8 +1156,8 @@ function TasksRoute() {
                             })
                           : '-'}
                       </TableCell>
-                      <TableCell className="max-w-72 truncate text-muted-foreground">
-                        {task.resource_id || '-'}
+                      <TableCell className="max-w-72">
+                        {renderTaskResourceCell(task)}
                       </TableCell>
                       <TableCell>{renderExecutionProgress(task)}</TableCell>
                       <TableCell className="whitespace-nowrap text-right text-muted-foreground">

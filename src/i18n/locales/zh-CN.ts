@@ -545,6 +545,7 @@ const zhCN = {
       status: '任务状态',
       scope: '数据范围',
       scope24h: '最近 24 小时',
+      scope7d: '最近 7 天',
       scopeAll: '全部时间范围',
       allTypes: '全部类型',
       allStatuses: '全部状态',
@@ -1203,6 +1204,8 @@ const zhCN = {
       },
       clearTerminal: '清理记录',
       clearedSuccess: '历史任务记录已清理',
+      viewInTaskCenter: '在任务中心查看完整调度 ↗',
+      openInTaskCenter: '在任务中心查看',
     },
     searchPalette: {
       modes: {

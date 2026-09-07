@@ -519,6 +519,7 @@ const en = {
       status: 'Task status',
       scope: 'Data Scope',
       scope24h: 'Last 24 Hours',
+      scope7d: 'Last 7 Days',
       scopeAll: 'All Time',
       allTypes: 'All types',
       allStatuses: 'All statuses',
@@ -1188,6 +1189,8 @@ const en = {
       },
       clearTerminal: 'Clear records',
       clearedSuccess: 'Terminal task records cleared',
+      viewInTaskCenter: 'View in Task Center ↗',
+      openInTaskCenter: 'Open in Task Center',
     },
     searchPalette: {
       modes: {

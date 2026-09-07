@@ -5,6 +5,7 @@ export type TaskStatus =
   | 'failed'
   | 'pending'
   | 'running'
+  | 'cancelled'
   | 'unknown'
 
 export type TaskRecord = TaskTimestamp & {
@@ -49,7 +50,8 @@ export function normalizeTaskStatus(
     status === 'completed' ||
     status === 'failed' ||
     status === 'pending' ||
-    status === 'running'
+    status === 'running' ||
+    status === 'cancelled'
   ) {
     return status
   }
