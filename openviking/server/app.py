@@ -354,6 +354,11 @@ def create_app(
         task_tracker = get_task_tracker()
         task_tracker.start_cleanup_loop()
 
+        # Start EntropyWatchdog automated daemon
+        from openviking.service.entropy_watchdog import get_entropy_watchdog
+        entropy_watchdog = get_entropy_watchdog()
+        entropy_watchdog.start(task_tracker)
+
         # Initialize tracing and OTLP log export from server.observability.
         from openviking.telemetry import tracer_module
 
@@ -375,6 +380,7 @@ def create_app(
         await shutdown_usage_audit(app=app)
         await shutdown_metrics_async(app=app)
         task_tracker.stop_cleanup_loop()
+        entropy_watchdog.stop()
         auth_plugin_state = getattr(app.state, "auth_plugin", None)
         if auth_plugin_state is not None:
             try:
