@@ -285,7 +285,16 @@ def openviking_smart_read(
     if score_threshold > 0:
         search_body["score_threshold"] = score_threshold
     search_result = http_client.post("/api/v1/search/find", search_body)
-    results = search_result.get("results", []) if isinstance(search_result, dict) else []
+    if isinstance(search_result, dict):
+        res_obj = search_result.get("result", {})
+        if isinstance(res_obj, dict):
+            results = search_result.get("results") or (res_obj.get("resources", []) + res_obj.get("memories", []))
+        elif isinstance(res_obj, list):
+            results = res_obj
+        else:
+            results = search_result.get("results", [])
+    else:
+        results = []
 
     detailed = []
     for item in results:
@@ -309,7 +318,6 @@ def openviking_read(
     endpoint = "/api/v1/content/abstract" if lvl in ("0", "l0", "abstract") else ("/api/v1/content/overview" if lvl in ("1", "l1", "overview") else "/api/v1/content/read")
     return _format_result(http_client.get(endpoint, {"uri": target_uri}))
 
-
 @_safe_tool()
 def openviking_store(
     session_id: str = Field(default="", description="会话 ID（留空使用当前会话）"),
@@ -317,12 +325,15 @@ def openviking_store(
     content: str = Field(default="", description="消息内容（为空时仅提交会话）"),
 ) -> str:
     """存储消息到长期记忆。content 为空时提交并归档记忆。"""
-    if content:
-        body = {"role": role, "parts": [{"type": "text", "text": content}]}
-        if session_id:
-            return _format_result(http_client.post(f"/api/v1/sessions/{session_id}/messages", body))
-        return _format_result(http_client.post("/api/v1/sessions", {"session_id": "default", "message": body}))
-    return _format_result(http_client.post(f"/api/v1/sessions/{session_id or 'default'}/commit"))
+    sid = str(session_id).strip() if (isinstance(session_id, str) and not hasattr(session_id, "default")) else ""
+    sid = sid or "default"
+    role_str = str(role) if (isinstance(role, str) and not hasattr(role, "default")) else "user"
+    content_str = str(content) if (isinstance(content, str) and not hasattr(content, "default")) else ""
+
+    if content_str:
+        body = {"role": role_str, "parts": [{"type": "text", "text": content_str}]}
+        return _format_result(http_client.post(f"/api/v1/sessions/{sid}/messages", body))
+    return _format_result(http_client.post(f"/api/v1/sessions/{sid}/commit"))
 
 
 @_safe_tool()
