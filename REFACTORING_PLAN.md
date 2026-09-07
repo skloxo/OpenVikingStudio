@@ -70,6 +70,10 @@
 | **Card-Remediation-DLQ** | **自愈死信队列 (DLQ)、指数退避熔断器与快照可逆回滚防线** | 解决自愈死循环 (Remediation Storm) 与蒸馏误伤不可逆问题；设置最大重试预算 (max_retries=2)、死信队列 (DLQ)、VikingFS.commit 快照与影子索引双缓冲 | 严格阻断无限递归，快照可原子回滚 | 🔴 P1 极高 | `v1.4.61` |
 | **Card-Trigger-Daemon** | **无头后台三级自动触发探针与动态金标采掘池** | 解决人工触发与静态用例过拟合问题；落地写入累积阈值探针 (>=50 Chunks)、凌晨低峰 Cron (03:00)、线上低置信度 (<0.45) 反向唤醒；构建真实 Query 动态自进化金标池 | 真正实现 100% 无感自动化闭环 | 🔴 P1 极高 | `v1.4.62` |
 | **Card-Retrieval-Optimize** | **检索质量突破 90+ 专项：LLMLingua-2 结构脱水、意图重写与混合多路召回 (Hybrid RRF)** | 解决指标未达满分瓶颈；引入微软 LLMLingua-2 结构感知脱水 (率0.50/阈0.35/代码块保护) 提升纯净度至 95%+；BM25+HNSW 互惠排序融合 (RRF) 提升 RAGAS 指数至 0.920+；L0 语义快照缓存压缩耗时至 <8ms | RAGAS >= 0.900，纯净度 >= 95%，耗时 < 10ms | 🟡 P2 进阶 | `v1.4.63` |
+| **Card-AntiEntropy-Gate** | **治未病·前门入库守门门禁 (Ingestion Gatekeeper) 与软标记演进链 (Superseding DAG)** | 践行“治未病高于治已病”哲学；入库前置准入，Sim > 0.95 重复去重跳过，Sim > 0.88 自动识别版本推翻并打 status: superseded，0 Token 0 耗时消灭 90% 熵增 | 前门精准把关，零冗余入库 | ⏸️ 择机迭代 | `v1.5.0` |
+| **Card-Memory-Tiering** | **降维打击·三层记忆动态冷热分层体系 (Hot/Warm/Cold Tiering) 与时效动力学衰减** | 借鉴家庭基线与 Stanford 智能体公式；落地 Hot (1,000条高频) / Warm (5,000条温记忆) / Cold (冷存归档排除索引)；配合艾宾浩斯衰减与多因子公式，保证检索永远 O(1) 常数级 | 向量空间轻量常数级，时延不随时间劣化 | ⏸️ 择机迭代 | `v1.5.1` |
+| **Card-Remediation-Bypass** | **奥卡姆裁决·自愈流水线快慢双轨机制 (Fast-Path Bypass vs Deep ov_dream 蒸馏)** | 贯彻奥卡姆剃刀“如无必要勿增实体”；自愈工序引入轻量快轨（纯元数据/软墓碑失效，0 Token 毫秒自愈）与慢轨（夜间低峰调度 35B 执行同主题深度归纳提纯），禁止凡事调大模型 | 简单问题 0 Token，复杂问题深度蒸馏 | ⏸️ 择机迭代 | `v1.5.2` |
+| **Card-Retrieval-AdvancedCards** | **检索大屏第二排高阶运营看板扩展 (Advanced Operational Telemetry)** | 为检索中心拓展第二排运营级数据卡片：冷热层分布率 (Hot/Warm/Cold)、L0 语义缓存命中率、知识信噪比与冲突率 (SNR & Conflict Rate)、混合召回协同度 | 全面透传向量空间内部健康度与熵态 | ⏸️ 择机迭代 | `v1.5.3` |
 
 ---
 
@@ -125,6 +129,73 @@
   - 上下文纯净度实测达标 $\ge 95.0\%$；
   - 平均检索耗时实测达标 $< 10\text{ms}$；
   - 严格遵守 NO GREEN EVER 与 $\le 500$ 行安全红线。
+
+### 📌 P3: [ ] Card-AntiEntropy-Gate (v1.5.0): 治未病·前门入库守门门禁与软标记演进链 (Superseding DAG)
+- **类型**：Ingestion Gatekeeper / Version Lineage / Zero-Token Anti-Entropy ｜ **优先级**：⏸️ 择机迭代（治未病哲学）
+- **计划版本**：`v1.5.0`
+- **核心治理目标与场景**：
+  1. **前门入库查重与增量判定门禁 (Ingestion Gate)**：
+     - 当新知识请求写入时，执行前置邻域余弦检索：
+       - $Sim \ge 0.95$：完全同质重复，拒绝生成重复冗余条目，仅累加 `access_count` 并刷新时间戳；
+       - $0.88 \le Sim < 0.95$：启动冲突仲裁探针，自动识别新旧决策演进，对旧节点标记 `status: "superseded"` 并绑定 `superseded_by: <new_uri>` 指针；
+       - $0.70 \le Sim < 0.88$：相关知识增量，建立图谱拓扑关联 (`relates_to`)，补充实体属性；
+       - $Sim < 0.70$：全新领域知识，直接正常建档入库；
+  2. **检索端软失效屏蔽**：
+     - 检索查询自动过滤 `status: "superseded"` 节点，彻底切断被推翻的陈旧经验对 Agent 推理的污染；
+  3. **0 Token 开销杜绝 90% 熵增**：
+     - 践行“治未病高于治已病”哲学，将知识淘汰收敛至入库准入阶段，避免日后动用昂贵大模型进行全盘重蒸馏。
+- **物理验收与测试条件**：
+  - 单测验证 $Sim \ge 0.95$ 写入幂等去重；
+  - 单测验证 $0.88 \le Sim < 0.95$ 旧条目被标记 `superseded` 且在 `ovClient.search` 中被自动过滤；
+  - Pytest & Vitest 100% PASS。
+
+### 📌 P3: [ ] Card-Memory-Tiering (v1.5.1): 降维打击·三层记忆动态冷热分层体系 (Hot/Warm/Cold Tiering) 与时效动力学衰减
+- **类型**：Memory Tiering / Temporal Dynamics / Ebbinghaus Decay ｜ **优先级**：⏸️ 择机迭代（降维打击）
+- **计划版本**：`v1.5.1`
+- **核心治理目标与场景**：
+  1. **三层动态冷热分层体系**：
+     - **热记忆 (Hot Tier)**：近 7 天高频访问且计数 $>10$ 次，限额 1,000 条，驻留快速内存区，享有第一检索优先级；
+     - **温记忆 (Warm Tier)**：近 30 天有访问且计数 $>3$ 次，限额 5,000 条，次级检索优先级；
+     - **冷记忆 (Cold Tier)**：超 30 天无访问或低频碎片，无上限，仅归档备用，默认排除出常规日常检索，彻底为 HNSW 索引减负；
+  2. **时效动力学与多因子检索打分公式**：
+     - 借鉴 Stanford Generative Agents 与内部基线衰减算法：
+       $$Score_{final} = Score_{semantic} \times e^{-\lambda \cdot \Delta t} \times (1 + \beta \log(1 + N_{hits}))$$
+     - 针对规范永久事实 ($\lambda = 0$)、踩坑经验 ($\lambda = 0.007$)、过程事件 ($\lambda = 0.05$) 分级应用衰减，高频采纳知识越用越强，过时经验自然沉底；
+  3. **常数级检索时延保障**：
+     - 日常检索仅扫描 Hot + Warm 分区，彻底摆脱随知识库总体积膨胀导致的性能雪崩，保证检索耗时永恒维持在 $O(1)$ 常数级。
+- **物理验收与测试条件**：
+  - 模拟冷热升降级迁移任务，验证 Hot 1000 边界驱逐正常；
+  - 衰减打分函数单元测试覆盖 3 种记忆类型；
+  - 端到端检索耗时在 50,000 条冷数据注入下依然维持在 $\le 10\text{ms}$。
+
+### 📌 P3: [ ] Card-Remediation-Bypass (v1.5.2): 奥卡姆裁决·自愈流水线快慢双轨机制 (Fast-Path Bypass vs Deep ov_dream 蒸馏)
+- **类型**：Fast-Path Bypass / Asynchronous Dream Consolidation ｜ **优先级**：⏸️ 择机迭代（奥卡姆剃刀）
+- **计划版本**：`v1.5.2`
+- **核心治理目标与场景**：
+  1. **自愈工序快慢双轨解耦 (Fast-Path vs Deep-Path)**：
+     - **轻量快轨 (Fast-Path)**：针对单纯的版本替代或格式噪音，直接在工序二【冲突仲裁】执行元数据软失效或规则切削，**直通跳过昂贵的工序三【靶向重蒸馏】**，实现 0 Token 开销、毫秒级快速自愈；
+     - **深度慢轨 (Deep-Path / ov_dream)**：仅当同主题下积攒多篇碎片冲突笔记、确实需要大模型推演整合时，才触发工序三，并调度夜间闲时算力（Mac Studio 35B / 2080Ti）执行低优先级深度提纯蒸馏；
+  2. **主客解耦与前台零干扰**：
+     - 严格贯彻“次要仆人原则”，深度慢轨蒸馏永远以 `nice 19` 低优先级后台静默运行，前台 Agent 编码推理享有一级 GPU 抢占特权，永不卡顿。
+- **物理验收与测试条件**：
+  - 验证版本更新类型自愈工单 100% 走 Fast-Path，工序三耗时 0ms 且 Token 消耗为 0；
+  - 验证复杂多篇冲突正确触发 Deep-Path，且前台并发检索时延无抖动。
+
+### 📌 P3: [ ] Card-Retrieval-AdvancedCards (v1.5.3): 检索大屏第二排高阶运营看板扩展 (Advanced Operational Telemetry)
+- **类型**：Observability / Advanced Entropy Dashboard / High-Density UI ｜ **优先级**：⏸️ 择机迭代（全局透明）
+- **计划版本**：`v1.5.3`
+- **核心治理目标与场景**：
+  1. **第二排高阶运营指标瓦片集成**：
+     - 在 `/studio/retrieval` 首屏核心 KPI 下方，新增可折叠/常驻的第二排 4 大运营指标卡：
+       1. **冷热层分布率 (Hot/Warm/Cold Ratio)**：实时透传系统在热层、温层、冷归档层的数量分布与比例；
+       2. **L0 语义快照命中率 (Cache Hit Rate)**：展示高频重复意图在 0.5ms 内直接命中的百分比；
+       3. **知识信噪比与冲突率 (SNR & Conflict Rate)**：量化展示当前系统中活跃权威事实与 `superseded` 废弃条目的比例（目标冲突率 $\to 0$）；
+       4. **混合召回协同度 (Hybrid RRF Synergy)**：展示 BM25 词法与 HNSW 稠密向量在 Top-1 排名上的互补对齐率；
+  2. **性冷淡高密排版规范**：
+     - 严格执行 NO GREEN EVER 规范，并排卡片 `mt-auto` 平齐，字号硬下限 $\ge 11\text{px}$，单文件规模严格 $\le 300$ 行。
+- **物理验收与测试条件**：
+  - Vite 生产构建 100% PASS，无类型警告；
+  - 浏览器实机验证第二排卡片在暗色/亮色主题下优雅渲染，折叠流畅，真实后端探针驱动。
 
 ---
 
