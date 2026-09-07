@@ -135,6 +135,7 @@ class _ReindexRunContext:
     counters: _ReindexCounters
     lock: dict | None = None
     ingest_options: IngestOptions | None = None
+    task_id: str | None = None
 
 
 @dataclass
@@ -504,6 +505,7 @@ class ReindexExecutor:
         recursive: bool = True,
         ingest_options: IngestOptions | None = None,
         ctx: RequestContext,
+        task_id: str | None = None,
     ) -> dict[str, Any]:
         service = get_service()
         if service.viking_fs is None or service.vikingdb_manager is None:
@@ -536,6 +538,7 @@ class ReindexExecutor:
                 counters=counters,
                 lock=borrowed,
                 ingest_options=ingest_options,
+                task_id=task_id,
             )
             if mode == "prune_orphans":
                 await self._prune_orphan_vectors(
@@ -602,6 +605,7 @@ class ReindexExecutor:
             "object_type": object_type,
             "mode": mode,
             "scanned_records": counters.scanned_records,
+            "semantic_records": counters.scanned_records,
             "rebuilt_records": counters.rebuilt_records,
             "deleted_records": counters.deleted_records,
             "would_delete_records": counters.would_delete_records,
@@ -636,6 +640,7 @@ class ReindexExecutor:
                     recursive=recursive,
                     ingest_options=ingest_options,
                     ctx=ctx,
+                    task_id=task_id,
                 )
             await tracker.complete(
                 task_id,
@@ -1025,6 +1030,17 @@ class ReindexExecutor:
         counters = run.counters
         ctx = run.ctx
         if mode == "semantic_and_vectors":
+            if run.task_id:
+                try:
+                    await get_task_tracker().update_stage(
+                        run.task_id,
+                        "semantic",
+                        account_id=ctx.account_id,
+                        user_id=ctx.user.user_id,
+                        meta_patch={"stage_name": "semantic"},
+                    )
+                except Exception:
+                    pass
             stat = await get_viking_fs().stat(uri, ctx=ctx)
             if stat.get("isDir", stat.get("is_dir")):
                 semantic_kwargs = {
@@ -1036,6 +1052,17 @@ class ReindexExecutor:
                 if not recursive:
                     semantic_kwargs["recursive"] = False
                 await self._run_semantic_processor(**semantic_kwargs)
+            if run.task_id:
+                try:
+                    await get_task_tracker().update_stage(
+                        run.task_id,
+                        "vector",
+                        account_id=ctx.account_id,
+                        user_id=ctx.user.user_id,
+                        meta_patch={"stage_name": "vector", "semantic_records": counters.scanned_records},
+                    )
+                except Exception:
+                    pass
             vector_kwargs = {"uri": uri, "counters": counters, "ctx": ctx}
             if not recursive:
                 vector_kwargs["recursive"] = False
@@ -1046,6 +1073,17 @@ class ReindexExecutor:
                 )
             )
             return
+        if run.task_id:
+            try:
+                await get_task_tracker().update_stage(
+                    run.task_id,
+                    "vector",
+                    account_id=ctx.account_id,
+                    user_id=ctx.user.user_id,
+                    meta_patch={"stage_name": "vector"},
+                )
+            except Exception:
+                pass
         await self._reindex_memory_vectors(
             **self._with_ingest_options(
                 {"uri": uri, "counters": counters, "ctx": ctx},
