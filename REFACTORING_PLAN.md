@@ -47,6 +47,7 @@
 | **Card-VK-26** | **外部 Agent “系统级强制调用 VK” 极简自驱规范与 System Prompt 契约模板** | 1. 结合 Card-28 已落地的 Hook 与 MCP 职责边界，提炼 100 字外部 Agent（WorkBuddy/Cursor等）极简 System Prompt 契约模板；<br>2. 规范“开局 find ➔ 按需 read ➔ 执行 ➔ 收尾 store/lesson”自驱状态机；<br>3. 渐进式展开 (Progressive Disclosure) 截断长 abstract 防止上下文撑爆；<br>4. 交付开箱接入白皮书与双轨自动化验证 | WorkBuddy/Cursor 等外部 Agent 100% 形成开局查 VK、收工存 VK 习惯，上下文零污染，零多余网关进程 | `v1.4.40` | [x] 已验收通过 ✅ |
 | **Card-VK-27** | **全局异步任务统筹收口与任务中心全景架构升级** | 1. 统一收拢所有模块异步任务至 TaskTracker 与任务中心，解除未终结任务 24h 过滤截断（永远置顶可见）；<br>2. 打通 Playground 上传弹窗与全局任务中心强跳转锚点；<br>3. 任务中心对 `add_resource` 展现分阶段流转与状态；<br>4. 统一重试 (Retry) 与清理标准接口 | 任务中心 100% 涵盖所有异步任务，局部与全局无缝联动，彻底消除任务不可见盲区 | `v1.4.41` | [x] 已验收通过 ✅ |
 | **Card-Studio-Settings** | **全局设置与数据管理中枢 (Unified Settings & Data Ops)** | 1. 践行奥卡姆剃刀，将原本分散的配置 (05)、隐私脱敏 (08)、OVPack 导入导出 (09) 3 页面高度聚合为单一轻量 `/settings` 路由；<br>2. 并在 `/retrieval` 检索页右上角集成轻量 RAG 评测抽屉 (Drawer)；<br>3. 彻底切除独立空壳页面与花架子，保持系统极客精炼 | 单面板统一管理配置、敏感词开关与知识库打包备份，切除 3 个冗余路由，Vite 构建 PASS | `v1.4.42` | [x] 已验收通过 ✅ |
+| **Card-Tasks-02** | **任务工序进度绝对数据真实性治理与假数据 (0/1) 物理切除** | 1. 物理封杀未激活工序渲染虚假分数，`pending` 状态统一展示中性胶囊 `待前置工序`；<br>2. 切除 `task-pipeline.ts` 中 `?? 1` 假分母兜底，保留 `undefined` 由真实数据驱动；<br>3. `fetchTask` 100% 优先请求后端最新 API，消除 `localStorage` 抢跑问题；<br>4. 任务大盘实时队列指标直传详情抽屉，消除初次打开 2 秒探针盲区 | 前端 Vite 构建 PASS (19.98s)，详情抽屉 100% 真实队列进度展示，待前置工序零虚假数字 | `v1.4.43` | [x] 已验收通过 ✅ |
 
 ---
 
@@ -315,6 +316,28 @@
   - 卫星节点 Hook 压测无阻塞，静默降级耗时 < 50ms；
   - 《规范》成功归档至 `viking://resources/master_memory/evolution_lessons/`；
   - Vite 构建 PASS (20.26s)，Git Tag `v1.4.39` 物理对齐并推流。
+
+### 📌 P1: [x] Card-Tasks-02 (v1.4.43): 任务工序进度绝对数据真实性治理与假数据 (0/1) 物理切除 (Task Pipeline Absolute Data Integrity & Anti-Mock Safeguard) ✅
+- **类型**：Data Integrity / Architecture / UI ｜ **优先级**：🔴 P1（数据真实性军规与防前端虚构 Mock 治理）
+- **Git Commit**：`07223a2fd` ｜ **Git Tag**：`v1.4.43`
+- **实际修改文件清单**：
+  - `OpenVikingStudio/src/routes/tasks/-components/task-detail-sheet.tsx` (注入 `queueRows` 直传 prop；纠正 `fetchTask` 优先级为 100% 后端 API 优先，切除 Stale localStorage 抢跑；重构 `renderMetrics` 物理封杀未激活 pending 工序显示数字与分数，统一输出中性胶囊 `待前置工序`；运行中排除伪 0/1 状态)
+  - `OpenVikingStudio/src/routes/tasks/-lib/task-pipeline.ts` (重构 `admin_reindex` 等任务工序解析，彻底切除 `?? 1` 假分母兜底，总量未决或 pending 状态保留 `undefined`，运行态由后台队列真实度量驱动)
+  - `OpenVikingStudio/src/routes/tasks/route.tsx` (任务大盘已拉取的实时 `queueObserverRows` 毫秒级直传注入给 `TaskDetailSheet`，消灭初次打开抽屉 2 秒探针盲区)
+  - `OpenVikingStudio/package.json` (对齐升级版本 1.4.43)
+  - `OpenVikingStudio/openviking/_version.py` (对齐升级版本 1.4.43)
+  - `OpenVikingStudio/openviking/__init__.py` (对齐升级版本 1.4.43)
+  - `OpenVikingStudio/mcp-openviking/tools/system.py` (对齐升级版本 1.4.43)
+  - `OpenVikingStudio/mcp-openviking/mcp_openviking_server.py` (对齐升级版本 1.4.43)
+  - `OpenVikingStudio/mcp-openviking/satellite_mcp_server.py` (对齐升级版本 1.4.43)
+- **交付内容摘要**：
+  1. **直击物理根因，切除未激活工序假分数**：彻底根治后置工序在 `pending` 状态下早产虚假指标的逻辑缺陷。工序 2（切片重构）与工序 3（悬空修剪）在前置语义提炼未完成前总数未知，代码中强制封杀伪造的 `0 / 1 切片`，优雅展示中性状态胶囊 `待前置工序`；
+  2. **消除全局 `?? 1` 假分母反模式**：清理防御性兜底滥用，总量未知时严格保留 `undefined`，避免分母硬编码为 1 导致的假死与误导；
+  3. **后端真实数据优先 (SSOT) 与队列指标毫秒直传**：`fetchTask` 彻底贯彻后端真实数据驱动，消除历史静态快照缓存污染；大盘队列探针无缝直传给详情抽屉；
+  4. **严格工程铁律闭环**：
+     - 全界面 100% 遵守 NO GREEN EVER 铁律，字号 `>= 11px`；
+     - 前端 Vite 生产构建 100% PASS (19.98s)；
+     - Git Tag `v1.4.43` 物理锚定并推流至 GitHub。
 
 ---
 
