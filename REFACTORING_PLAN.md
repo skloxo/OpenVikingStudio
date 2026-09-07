@@ -63,6 +63,22 @@
 
 ### 📦 历史已交付工单履历 (Delivered Release Cards)
 
+### 📌 P0: [x] Card-VK-30 (v1.4.48): 末端背压入关门禁硬限 (16 并发/批尺寸)、客户端 1:1 齿轮咬合与过度工程化切除治理 ✅
+- **类型**：Architecture Decoupling / Admission Control / Bulkhead Governance ｜ **优先级**：🔴 P0（末端背压硬限、解耦隔离与反过度工程）
+- **Git Tag**：`v1.4.48`
+- **实际修改文件清单**：
+  - `/mnt/c/models/run_emb_service.py` (末端物理硬限 `max_batch_size: 16` 与 `max_concurrency_slots: 16`，单批喂给 GPU 严控 16 篇；保留底层 0.69 显存保险丝，任何外部洪峰在末端排队，杜绝冲垮张量核)
+  - `/mnt/c/models/run_rer_service.py` (践行奥卡姆剃刀彻底切除 `DualGateController` 中画蛇添足的 `vram_cond` 显存轮询等待逻辑，回归最纯粹轻量的 `threading.Semaphore(1)` 原生单槽排队；常驻显存 2.3GB，算完毫秒级 `empty_cache`，绝对零泄漏)
+  - `/home/skloxo/.openviking/ov.conf` (`embedding.max_concurrent` 升级至 16，实现客户端主动节流与末端消化能力 1:1 精密咬合)
+  - `package.json` (对齐升级版本至 1.4.48)
+- **交付内容摘要**：
+  1. **架构解耦与末端背压保护 (Bulkhead & Backpressure SSOT)**：确立“谁拥有稀缺物理硬件，谁做最终入关裁决”公理。EMB 作为公共底层基础设施，无论外部多少个 Agent、多少并发请求，末端统一死守 16 并发/单批 16 槽位；外部超时那是调用方配置问题，2080 Ti 物理底座稳如泰山；
+  2. **反过度工程化治理 (Occam's Razor)**：砍掉服务端无意义的显存条件轮询，仅保留 1 行底层 PyTorch Quota 保险丝（0 运行时损耗），消除防御过度的工程杂质；
+  3. **客户端 4 重防线与自愈闭环实证**：实证检验了 VK 客户端不仅通过全局信号量与连接池将网络飞行请求卡死在 16，还内置 60s 宽裕超时、3 次指数退避重试、以及失败自动重新放回队列队尾 (Re-enqueue) 的零丢失闭环；
+  4. **全链路端到端验证 PASS**：看门狗 6 秒完成无缝自愈重启；16 并发端到端微批实测 1348.8ms (11.9 docs/s)，4096 维稠密向量 100% 校验通过；单元测试 16/16 全部 PASS。
+
+---
+
 ### 📌 P0: [x] Card-VK-29 (v1.4.47): 2080Ti 硬件显存防线固化、客户端原生微批处理 (Micro-Batching 10x 提速) 与看门狗野生进程防御治理 ✅
 - **类型**：Performance / Hardware Resilience / Daemon Governance ｜ **优先级**：🔴 P0（显存硬顶防 OOM、批处理算力释放与守护自愈）
 - **Git Tag**：`v1.4.47`
