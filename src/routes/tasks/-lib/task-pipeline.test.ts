@@ -118,6 +118,24 @@ describe('task-pipeline RFC 治理与真实数据契约测试', () => {
     expect(groups.length).toBe(3)
   })
 
+  it('按需展示原则: 当 mode 为 prune_orphans 但实际修剪 0 个碎片时，已完成任务坚决剔除“悬空修剪”伪工序', () => {
+    const taskZeroPrune: TaskRecord = {
+      ...completedReindexTask,
+      meta: { mode: 'prune_orphans' },
+      result: {
+        scanned_records: 1010,
+        rebuilt_records: 1112,
+        deleted_records: 0,
+      },
+    }
+    const steps = getTaskPipelineSteps(taskZeroPrune, mockGlobalQueueRows, 'zh')
+    // 删除了 0 个碎片，属于无修剪产出，已完成视图下坚决不显示伪工序
+    expect(steps.length).toBe(2)
+    expect(steps.some((s) => s.name.includes('修剪'))).toBe(false)
+    const groups = getTaskPipelineGroups(taskZeroPrune, mockGlobalQueueRows, 'zh')
+    expect(groups.length).toBe(2)
+  })
+
   it('缺陷 4: 语义提炼阶段透出真实的量化成果指标 (1,010 篇)', () => {
     const steps = getTaskPipelineSteps(completedReindexTask, mockGlobalQueueRows, 'zh')
     const semanticStep = steps[0]
@@ -229,5 +247,74 @@ describe('task-pipeline RFC 治理与真实数据契约测试', () => {
       expect(workload.processed).not.toBe(32444)
       expect(workload.total).not.toBe(32737)
     }
+  })
+
+  it('实事求是铁律: add_skill 完成态绝不再捏造“10 / 10 源目录”硬编码假数据', () => {
+    const completedSkillTask: TaskRecord = {
+      task_id: 'skill-task-done',
+      task_type: 'add_skill',
+      status: 'completed',
+      stage: 'completed',
+      created_at: 1772800000,
+      result: {
+        valid_skills: 3,
+        scanned_skills: 3,
+      },
+    }
+    const steps = getTaskPipelineSteps(completedSkillTask, mockGlobalQueueRows, 'zh')
+    // 技能扫描工序绝不捏造 processed: 10, total: 10
+    const scanStep = steps.find((s) => s.name === '技能扫描')
+    if (scanStep) {
+      expect(scanStep.processed).not.toBe(10)
+      expect(scanStep.total).not.toBe(10)
+    }
+    // 规范审计与向量建库均真实透出 3 技能
+    const auditStep = steps.find((s) => s.name === '规范审计')
+    expect(auditStep?.count).toBe(3)
+    const embedStep = steps.find((s) => s.name === '向量建库')
+    expect(embedStep?.count).toBe(3)
+  })
+
+  it('实事求是铁律: snapshot_restore_reindex 纯动作工序绝不再捏造“1 / 1 快照”', () => {
+    const completedRestoreTask: TaskRecord = {
+      task_id: 'restore-task-done',
+      task_type: 'snapshot_restore_reindex',
+      status: 'completed',
+      stage: 'completed',
+      created_at: 1772800000,
+      result: {
+        restored_inodes: 45,
+        reindexed_items: 45,
+      },
+    }
+    const steps = getTaskPipelineSteps(completedRestoreTask, mockGlobalQueueRows, 'zh')
+    const rollbackStep = steps.find((s) => s.name === '快照回滚')
+    expect(rollbackStep).toBeDefined()
+    expect(rollbackStep?.isActionOnly).toBe(true)
+    // 纯动作工序绝不捏造 processed: 1, total: 1
+    expect(rollbackStep?.processed).toBeUndefined()
+    expect(rollbackStep?.total).toBeUndefined()
+    // 节点还原真实透出 45 节点
+    const inodeStep = steps.find((s) => s.name === '节点还原')
+    expect(inodeStep?.count).toBe(45)
+  })
+
+  it('实事求是铁律: legacy_cleanup 纯动作工序绝不再捏造“1 / 1 空间”', () => {
+    const completedCleanupTask: TaskRecord = {
+      task_id: 'cleanup-task-done',
+      task_type: 'legacy_cleanup',
+      status: 'completed',
+      stage: 'completed',
+      created_at: 1772800000,
+      result: {
+        cleaned_items: 88,
+      },
+    }
+    const steps = getTaskPipelineSteps(completedCleanupTask, mockGlobalQueueRows, 'zh')
+    const releaseStep = steps.find((s) => s.name === '空间释放')
+    expect(releaseStep).toBeDefined()
+    expect(releaseStep?.isActionOnly).toBe(true)
+    expect(releaseStep?.processed).toBeUndefined()
+    expect(releaseStep?.total).toBeUndefined()
   })
 })

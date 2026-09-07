@@ -10,8 +10,8 @@ import {
   ALL_PANORAMA_STEPS,
   ENGINE_DEFINITIONS,
   TASK_FLOWS,
-  type PanoramaStepDef,
 } from '#/routes/tasks/-components/pipeline-steps-panorama'
+import type { PanoramaStepDef } from '#/routes/tasks/-components/pipeline-steps-panorama'
 
 export interface ParsedQueueRow {
   name: string
@@ -33,10 +33,12 @@ export function getTaskFlowItems(taskType: string): TaskFlowItem[] {
     const s2 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_parse')
     const s3 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_semantic')
     const s4 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_embedding')
+    const s5 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_memory_linking')
     const res: TaskFlowItem[] = []
     if (s1) res.push({ kind: 'single', step: s1 })
     if (s2) res.push({ kind: 'single', step: s2 })
     if (s3 && s4) res.push({ kind: 'parallel', steps: [s3, s4] })
+    if (s5) res.push({ kind: 'single', step: s5 })
     return res
   }
 
