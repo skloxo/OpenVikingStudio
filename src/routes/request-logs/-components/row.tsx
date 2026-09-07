@@ -28,8 +28,10 @@ export function RequestLogRow({ log }: RequestLogRowProps) {
       <TableCell className="text-muted-foreground tabular-nums">
         {formatTime(log.created_at)}
       </TableCell>
-      <TableCell className="max-w-40 truncate font-mono text-xs text-muted-foreground">
-        {log.api_type || '-'}
+      <TableCell className="max-w-44 truncate font-mono text-xs text-muted-foreground">
+        {log.api_type
+          ? t(`apiTypes.${log.api_type}`, { defaultValue: log.api_type })
+          : '-'}
       </TableCell>
       <TableCell>
         <span
@@ -38,7 +40,7 @@ export function RequestLogRow({ log }: RequestLogRowProps) {
           {method}
         </span>
       </TableCell>
-      <TableCell className="max-w-[34rem]">
+      <TableCell className="max-w-136">
         <div className="truncate font-mono text-xs text-foreground">
           {log.route || '/'}
         </div>
