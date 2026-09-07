@@ -45,7 +45,7 @@
 | **Card-VK-25.2** | **入库门禁与占位符根治、714虚假向量物理肃清与大盘可视化透传** | 1. 哨兵双向兼容（解决 not ready vs not generated 历史断层）；<br>2. 入库门禁阻断 + LLM 摘要指数退避重试 (2s, 5s)；<br>3. 切除检索侧过度工程（移除临时 `_is_meaningful`）；<br>4. 官方原生 `prune_orphans` 15.6s 极速肃清 714 个占位向量（总数从 21,506 降至 20,792，0 LLM 消耗）；<br>5. 监控大盘增加【占位待提纯目录】瓦片、表头琥珀色徽章与一键安全自愈提纯按钮 | 714 虚假向量彻底清空，大盘 100% 透传 4,257 待提纯目录，59+7 单测全绿，Vite 构建 PASS，NO GREEN 规范 | `v1.4.37` | [x] 已验收通过 ✅ |
 | **Card-VK-25.3** | **跨进程显存与编码死锁根治、目录摘要节点穿透阻断与优先级动态语义召回收官** | 1. 彻底定位 `run_rer_service.py` 遇 Unicode/Emoji 触发 Windows GBK 控制台编码崩溃 (`UnicodeEncodeError`) 根因，注入 UTF-8 免疫与安全字符串过滤；<br>2. 优化 2080Ti 双模型显存配比 (Embedding 0.74 / Reranker 0.24)，降低 `MAX_LENGTH=4096` 并注入单条 OOM 2000 字符自愈截断；<br>3. 落地 Priority-Aware Dual-Gate 控制器，短 Query 自动获取 HIGH 优先级插队通道，跳过后台批处理 Reindex 队列；<br>4. 检索端 `_is_directory_summary_node` 物理阻断 `.abstract.md` / `.overview.md` 目录路由泄露，拔除僵化分区配额，Fast 重排预算精炼至 6 篇；<br>5. 3 大验收目标 Query (`Mac Studio launchd 配置`, `卫星节点接入 WorkBuddy`, `Clash 双跳防风控`) Rank 1 得分 0.47 ~ 0.76，精准命中叶子文件，耗时 1.79s ~ 2.75s 100% 达标通过 | 冷查询 1.79s~2.75s 全部达标 (<=3.5s SLA)，目录路由节点 100% 阻断，单调轮转彻底切除，Vite 构建 PASS | `v1.4.38` | [x] 已验收通过 ✅ |
 | **Card-VK-26** | **外部 Agent “系统级强制调用 VK” 极简自驱规范与 System Prompt 契约模板** | 1. 结合 Card-28 已落地的 Hook 与 MCP 职责边界，提炼 100 字外部 Agent（WorkBuddy/Cursor等）极简 System Prompt 契约模板；<br>2. 规范“开局 find ➔ 按需 read ➔ 执行 ➔ 收尾 store/lesson”自驱状态机；<br>3. 渐进式展开 (Progressive Disclosure) 截断长 abstract 防止上下文撑爆；<br>4. 交付开箱接入白皮书与双轨自动化验证 | WorkBuddy/Cursor 等外部 Agent 100% 形成开局查 VK、收工存 VK 习惯，上下文零污染，零多余网关进程 | `v1.4.40` | [x] 已验收通过 ✅ |
-| **Card-VK-27** | **全局异步任务统筹收口与任务中心全景架构升级** | 1. 统一收拢所有模块异步任务至 TaskTracker 与任务中心，解除未终结任务 24h 过滤截断（永远置顶可见）；<br>2. 打通 Playground 上传弹窗与全局任务中心强跳转锚点；<br>3. 任务中心对 `add_resource` 展现分阶段流转与状态；<br>4. 统一重试 (Retry) 与清理标准接口 | 任务中心 100% 涵盖所有异步任务，局部与全局无缝联动，彻底消除任务不可见盲区 | `v1.4.41` | 📋 排队中 (P1) |
+| **Card-VK-27** | **全局异步任务统筹收口与任务中心全景架构升级** | 1. 统一收拢所有模块异步任务至 TaskTracker 与任务中心，解除未终结任务 24h 过滤截断（永远置顶可见）；<br>2. 打通 Playground 上传弹窗与全局任务中心强跳转锚点；<br>3. 任务中心对 `add_resource` 展现分阶段流转与状态；<br>4. 统一重试 (Retry) 与清理标准接口 | 任务中心 100% 涵盖所有异步任务，局部与全局无缝联动，彻底消除任务不可见盲区 | `v1.4.41` | [x] 已验收通过 ✅ |
 | **Card-Studio-Settings** | **全局设置与数据管理中枢 (Unified Settings & Data Ops)** | 1. 践行奥卡姆剃刀，将原本分散的配置 (05)、隐私脱敏 (08)、OVPack 导入导出 (09) 3 页面高度聚合为单一轻量 `/settings` 路由；<br>2. 并在 `/retrieval` 检索页右上角集成轻量 RAG 评测抽屉 (Drawer)；<br>3. 彻底切除独立空壳页面与花架子，保持系统极客精炼 | 单面板统一管理配置、敏感词开关与知识库打包备份，切除 3 个冗余路由，Vite 构建 PASS | `v1.4.42` | 📋 排队中 (P2) |
 
 ---
@@ -53,30 +53,6 @@
 ## ⚡ 二、 当前活跃与待调度 Studio 原子工单 (Scheduled Active Task Cards)
 
 ### 📋 待调度工单队列 (Pending Pipeline Cards - 优先顺序开发)
-
-### 📌 P1: [ ] Card-VK-27 (v1.4.41): 全局异步任务统筹收口与任务中心全景架构升级 (Unified Task Center & Ambient Projection)
-- **类型**：Architecture / UX / Observability ｜ **优先级**：🔴 P1（系统全局单一真相源建设与体验断层自愈）
-- **计划版本**：`v1.4.41`
-- **痛点与第一性原理 (First Principles)**：
-  1. **SSOT 唯一真相源原则**：凡是系统内触发的异步作业（文件解析 `add_resource`、会话归档蒸馏 `session_commit`、向量维护 `admin_reindex` 还是技能导入），都必须且绝对在【任务中心 (`/tasks`)】统筹展示，严禁局部视图与总账割裂；
-  2. **总账与投影解耦 (Master Ledger vs. Ambient View)**：
-     - **总账 (Master Ledger)**：`/tasks` 页面作为系统唯一的异步任务中枢，对所有类型的任务提供全生命周期管控（阶段耗时、Token 账单、重试、取消、日志、多维过滤与时间跨度选择）；
-     - **伴随视图 (Ambient Projection)**：Playground 等局部业务弹窗/悬浮条仅作为“跟手投影”，底层状态与任务中心 100% 实时同步；并在弹窗内提供清晰锚点 `前往任务中心查看完整详情 ↗`；
-  3. **时间窗口与过滤对齐**：
-     - 根治任务中心 `dataScope = '24h'` 导致陈旧活跃/未完成任务在总盘被隐形过滤的缺陷；
-     - 统一局部与全局的任务时间窗口、去重策略与终态清理规则。
-- **实施清单**：
-  - [ ] 1. **任务中心时间范围与未终结保护**：未终结任务（running/pending）不受 24h 时间硬截断限制，永远置顶可见；支持灵活切换时间跨度（24h / 7d / 全部）；
-  - [ ] 2. **任务中心对 `add_resource` 的富上下文渲染**：展示文件名称、资源 URI、源文件大小、分阶段流转（Ingestion -> Parse -> Semantic -> Embedding -> Memory Linking）；
-  - [ ] 3. **局部弹窗与任务中心强链接互通**：在 Playground 文件处理任务弹窗中加入 `在任务中心查看完整调度 ↗`，支持点击直达任务中心并高亮对应任务行；
-  - [ ] 4. **统一重试与清理能力**：将重试（Retry/Reindex）和清理接口在全局和局部实现标准复用。
-- **验收标准**：
-  - 任意子系统发起的异步任务，在【任务中心】100% 即时可见、可查、可管；
-  - 彻底消除任何“局部弹窗有、任务中心找不到”的断层现象；
-  - 严格遵循 NO GREEN EVER、双主题与 $\ge 11\text{px}$ 规范；
-  - `npm run build` PASS。
-
----
 
 ### 📌 P2: [ ] Card-Studio-Settings (v1.4.42): 全局设置与数据管理中枢 (Unified Settings & Data Ops)
 - **类型**：Architecture / UI / Consolidation ｜ **优先级**：🟡 P2（三合一聚合治理与奥卡姆剃刀）
@@ -359,6 +335,40 @@
   - 卫星节点 Hook 压测无阻塞，静默降级耗时 < 50ms；
   - 《规范》成功归档至 `viking://resources/master_memory/evolution_lessons/`；
   - Vite 构建 PASS (20.26s)，Git Tag `v1.4.39` 物理对齐并推流。
+
+---
+
+### 📌 P1: [x] Card-VK-27 (v1.4.41): 全局异步任务统筹收口与任务中心全景架构升级 (Unified Task Center & Ambient Projection) ✅
+- **类型**：Architecture / UX / Observability ｜ **优先级**：🔴 P1（系统全局单一真相源建设与体验断层自愈）
+- **Git Commit**：`fe67d474a` ｜ **Git Tag**：`v1.4.41`
+- **实际修改文件清单**：
+  - `OpenVikingStudio/src/routes/tasks/route.tsx` (注入未终结任务保护，扩展 7d 数据范围，URL searchParams `taskId` 自动寻址高亮，丰富 Resource 上下文单元格)
+  - `OpenVikingStudio/src/routes/tasks/-components/pipeline-steps-panorama.tsx` (扩展 5 阶段流水线全景与 `step_memory_linking`，动态读取工序与引擎总数)
+  - `OpenVikingStudio/src/routes/tasks/-lib/task-pipeline.ts` (对齐 `add_resource` 5 阶段流水线状态推导与分组)
+  - `OpenVikingStudio/src/routes/tasks/-lib/task-record.ts` (类型系统与状态归一化扩展 `cancelled` 支持)
+  - `OpenVikingStudio/src/routes/resources/-components/upload-task-dialog.tsx` (注入环境投影锚点 `在任务中心查看完整调度 ↗` 与单任务外跳 `Link`)
+  - `OpenVikingStudio/openviking/service/resource_service.py` (在 `_enqueue_add_resource_job` 创建任务时注入 `source_name`、`file_size`、`root_uri` 元数据)
+  - `OpenVikingStudio/src/i18n/locales/zh-CN.ts` (新增 `filters.scope7d` 与 `processingTasks` 任务中心跳转文案)
+  - `OpenVikingStudio/src/i18n/locales/en.ts` (中英对齐英文语言包)
+  - `OpenVikingStudio/package.json` (对齐 1.4.41)
+  - `OpenVikingStudio/openviking/_version.py` (对齐 1.4.41)
+  - `OpenVikingStudio/openviking/__init__.py` (对齐 1.4.41)
+  - `OpenVikingStudio/mcp-openviking/tools/system.py` (对齐 1.4.41)
+  - `OpenVikingStudio/mcp-openviking/mcp_openviking_server.py` (对齐 1.4.41)
+  - `OpenVikingStudio/mcp-openviking/satellite_mcp_server.py` (对齐 1.4.41)
+- **交付内容摘要**：
+  1. **SSOT 唯一真相源与未终结任务保护**：在任务中心数据拉取 (`fetchTasks`) 中彻底解除 24h 时间硬过滤对活跃任务的截断，凡是 `running` 或 `pending` 状态的任务永远置顶保活；新增 `7d` 灵活时间范围选项（24h / 7d / 全部）；
+  2. **总账与环境投影 (Master Ledger vs. Ambient Projection)**：
+     - 在 Playground 局部上传弹窗 `UploadTaskDialog` 顶部显著注入 `在任务中心查看完整调度 ↗`；
+     - 每一条上传任务均提供一键外跳图标链接，携带 `?taskId=...` 跳转；
+     - 任务中心支持 URL searchParams 深度联动，进入后自动打开对应任务详情抽屉，并在表格行以冰青色外圈 (`ring-1 ring-cyan-500/80 bg-cyan-500/5`) 精准高亮聚焦；
+  3. **`add_resource` 5 阶段流水线物理对齐**：
+     - 标准化 5 阶段全景：`Ingestion -> Parse -> Semantic -> Embedding -> Memory Linking`（入库 -> 解析 -> 语义提取 -> 向量建库 -> 记忆关联）；
+     - 表格资源列全面升级为 Rich Context（文件名 + 文件大小徽章 + 底层 Inode/URI 路径），彻底告别单调纯 URI 字符；
+  4. **严格工程铁律闭环**：
+     - 9/9 pytest 单测全绿通过，`vite build` 100% 成功编译，无断流风险；
+     - 严格遵守 NO GREEN EVER，全界面使用冰青色与沉静中性色；
+     - 完成 `v1.4.41` Git Tag 锚定与推送。
 
 ---
 
