@@ -280,6 +280,7 @@ export function computeTaskKpiData(
     'connector_import',
     'legacy_migration',
     'legacy_cleanup',
+    'quality_gate',
   ]
 
   const typeCounts: Record<string, number> = {}

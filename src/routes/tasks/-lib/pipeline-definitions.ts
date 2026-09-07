@@ -15,6 +15,7 @@ export interface PanoramaStepDef {
   unitZh: string
   unitEn: string
   taskTypes: string[]
+  operators?: string[]
   descriptionZh: string
   descriptionEn: string
 }
@@ -51,10 +52,10 @@ export const ENGINE_DEFINITIONS: EngineDef[] = [
   },
   {
     key: 'Semantic',
-    nameZh: '语义提取',
-    nameEn: 'Semantic Extraction',
-    descZh: '调用大语言模型（LLM/VLM）提取 L0 概要与 L1 核心概念节点',
-    descEn: 'Invoke LLM/VLM to extract L0 summary and L1 concept nodes',
+    nameZh: '语义分析',
+    nameEn: 'Semantic Extraction & Gate',
+    descZh: '调用大模型提取概念概要、萃取经验记忆并执行抗熵增质检四大算子',
+    descEn: 'Invoke LLM/VLM for concepts, lesson extraction, and quality gate operators',
   },
   {
     key: 'Embedding',
@@ -426,6 +427,7 @@ export const ALL_PANORAMA_STEPS: PanoramaStepDef[] = [
     unitZh: '用例',
     unitEn: 'cases',
     taskTypes: ['quality_gate', 'benchmark_eval'],
+    operators: ['QuerySample', 'VectorRetrieve', 'RagasJudge', 'MetricAssert'],
     descriptionZh: '执行 RAGAS 四维抗熵增质检（排布精度、覆盖率、忠实度、相关度），断言检索质量',
     descriptionEn: 'Execute RAGAS 4D anti-entropy evaluation verifying retrieval precision and health',
   },
