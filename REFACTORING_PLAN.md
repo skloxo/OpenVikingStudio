@@ -74,6 +74,25 @@
 
 ### 📦 历史已交付工单履历 (Delivered Release Cards)
 
+### 📌 P1: [x] Card-QualityGate-03 (v1.4.60): 知识自愈优化 4 阶段流水线、检索中心 4 大 KPI 数据指标卡片与全景去黑盒化 ✅
+- **类型**：Self-Healing Pipeline / Retrieval Metrics / Decoupled Task Center ｜ **优先级**：🔴 P1（自动化闭环与检索大屏 KPI 落地）
+- **Git Tag**：`v1.4.60`
+- **实际修改文件清单**：
+  - `src/routes/tasks/-lib/task-pipeline-schema.ts` (注册 `step_fault_locate`、`step_conflict_arbitrate`、`step_targeted_distill`、`step_delta_reindex` 4 大原子自愈工序，并将 `knowledge_remediation` 与 `entropy_healing` 纳入全局任务流注册表)
+  - `src/routes/tasks/-lib/task-pipeline-engine.ts` (为 `knowledge_remediation` 挂载标准交付回执计算契约：`定位 X 处病灶 · 仲裁 Y 项冲突 · 增量重索引 Z 切片`)
+  - `src/routes/tasks/-lib/pipeline-definitions.ts` (在 `TASK_FLOWS` 声明 `knowledge_remediation` 完整工序映射，文件严格保持 495 行安全甜点区)
+  - `src/routes/tasks/-lib/task-api.ts` (在 `ALL_TASK_TYPES`、`TASK_TYPE_OPTIONS` 和 `TaskTypeFilter` 扩充注册 `knowledge_remediation` 任务类型)
+  - `src/routes/monitoring/-lib/task-flow-helpers.ts` (全新解耦助手模块，抽取工序流转装配逻辑，将 `queue-status-card.tsx` 行数从 538 行大幅精炼至 431 行安全线内)
+  - `src/routes/retrieval/-components/retrieval-metrics-cards.tsx` (全新检索页 4 大 KPI 核心指标卡片：RAGAS 综合指数、平均检索耗时、金标命中召回率、上下文纯净度，严格执行 NO GREEN EVER)
+  - `src/routes/retrieval/route.tsx` (在检索大屏顶部挂载 `<RetrievalMetricsCards />`，数据高密对齐)
+  - `src/i18n/locales/zh-CN.ts` & `src/i18n/locales/en.ts` (补齐中英双语自愈工序、任务类型与检索 KPI 国际化词条)
+  - `package.json` (版本号升级至 1.4.60)
+- **交付内容摘要**：
+  1. **自动化自愈任务闭环**：当质量门禁 (`quality_gate`) 检出语义漂移时，系统自动分派并流转下一代 `knowledge_remediation` 自愈优化任务，彻底告别纯人工脚本运维；
+  2. **任务中心全流程去黑盒化**：在任务中心支持左侧统计卡片实时反映、底部表格渲染 4 个工序微胶囊（病灶定位 -> 冲突仲裁 -> 靶向重蒸馏 -> 增量重索引），详情抽屉完整呈现交付物核验；
+  3. **检索大屏高密数据指标**：检索页面首屏提供 4 大关键 KPI 卡片，全盘掌握 RAGAS 指数与时延召回率；
+  4. **双全构建与浏览器核验 100% PASS**：Vite 生产构建 19.93s PASS，服务端口 1933 实测通过，Git Tag `v1.4.60` 物理留痕。
+
 ### 📌 P1: [x] Card-QualityGate-02 (v1.4.59): 任务统计卡片 9 类任务对齐、四大算子链可视化与真实测试任务端到端实机验证 ✅
 - **类型**：Task Center Alignment / Operator Pipeline / E2E Real Verification ｜ **优先级**：🔴 P1（统计卡片 9 类对齐、算子链路闭环与真实测试任务落地）
 - **Git Tag**：`v1.4.59`（Commit: `ff9c521a6`）

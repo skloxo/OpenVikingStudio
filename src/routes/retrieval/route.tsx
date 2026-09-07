@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 
 import { RetrievalBenchmarkDrawer } from './-components/benchmark-drawer'
 import { RetrievalControls } from './-components/retrieval-controls'
+import { RetrievalMetricsCards } from './-components/retrieval-metrics-cards'
 import { RetrievalResults } from './-components/retrieval-results'
 import { RetrievalSearchBar } from './-components/search-bar'
 import {
@@ -176,7 +177,10 @@ function RetrievalPage() {
   ])
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-5">
+    <div className="flex w-full min-w-0 flex-col gap-4">
+      {/* 4 大核心检索运行与质量基准 KPI 指标卡片 */}
+      <RetrievalMetricsCards />
+
       <div className="flex items-center gap-2">
         <div className="flex-1 min-w-0">
           <RetrievalSearchBar
