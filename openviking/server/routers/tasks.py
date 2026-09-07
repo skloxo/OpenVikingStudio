@@ -198,3 +198,16 @@ async def clear_failed_tasks(
     )
     return Response(status="ok", result={"deleted_count": deleted_count})
 
+
+@router.post("/tasks/trigger-quality-gate")
+async def trigger_quality_gate(
+    reason: str = Query("manual_api_trigger", description="Reason for triggering"),
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """Trigger an immediate automated Quality Gate and Remediation cycle."""
+    from openviking.service.entropy_watchdog import get_entropy_watchdog
+
+    watchdog = get_entropy_watchdog()
+    res = await watchdog.trigger_cycle(reason=reason)
+    return Response(status="ok", result=res)
+
