@@ -44,7 +44,7 @@
 | **Card-VK-25.1** | **FAST 检索模式知识分区召回保障与未生成目录占位符物理切除** | 1. 揭秘 0.372314453125 物理真相（Cross-Encoder 重排占位符固定得分）；<br>2. 落地知识分区并行检索 (`skills` + `master_memory` + 全局目标)，消除 5000+ 文件 int8 粗排分数并列对核心技能的淹没；<br>3. 建立 `_is_meaningful` 门禁，物理切除 `[Directory overview is not generated]` 脏占位符；<br>4. 坚守单次向量召回 + 单次批量 RER 契约，补齐单元测试 (60/60 PASS) | 目标查询准确召回 `mac-studio-remote-ops.md` 为 Rank 1 (Score: 0.7539)，占位符彻底归零，冷查 2s，L0 缓存 31ms | `v1.4.36` | [x] 已验收通过 ✅ |
 | **Card-VK-25.2** | **入库门禁与占位符根治、714虚假向量物理肃清与大盘可视化透传** | 1. 哨兵双向兼容（解决 not ready vs not generated 历史断层）；<br>2. 入库门禁阻断 + LLM 摘要指数退避重试 (2s, 5s)；<br>3. 切除检索侧过度工程（移除临时 `_is_meaningful`）；<br>4. 官方原生 `prune_orphans` 15.6s 极速肃清 714 个占位向量（总数从 21,506 降至 20,792，0 LLM 消耗）；<br>5. 监控大盘增加【占位待提纯目录】瓦片、表头琥珀色徽章与一键安全自愈提纯按钮 | 714 虚假向量彻底清空，大盘 100% 透传 4,257 待提纯目录，59+7 单测全绿，Vite 构建 PASS，NO GREEN 规范 | `v1.4.37` | [x] 已验收通过 ✅ |
 | **Card-VK-25.3** | **跨进程显存与编码死锁根治、目录摘要节点穿透阻断与优先级动态语义召回收官** | 1. 彻底定位 `run_rer_service.py` 遇 Unicode/Emoji 触发 Windows GBK 控制台编码崩溃 (`UnicodeEncodeError`) 根因，注入 UTF-8 免疫与安全字符串过滤；<br>2. 优化 2080Ti 双模型显存配比 (Embedding 0.74 / Reranker 0.24)，降低 `MAX_LENGTH=4096` 并注入单条 OOM 2000 字符自愈截断；<br>3. 落地 Priority-Aware Dual-Gate 控制器，短 Query 自动获取 HIGH 优先级插队通道，跳过后台批处理 Reindex 队列；<br>4. 检索端 `_is_directory_summary_node` 物理阻断 `.abstract.md` / `.overview.md` 目录路由泄露，拔除僵化分区配额，Fast 重排预算精炼至 6 篇；<br>5. 3 大验收目标 Query (`Mac Studio launchd 配置`, `卫星节点接入 WorkBuddy`, `Clash 双跳防风控`) Rank 1 得分 0.47 ~ 0.76，精准命中叶子文件，耗时 1.79s ~ 2.75s 100% 达标通过 | 冷查询 1.79s~2.75s 全部达标 (<=3.5s SLA)，目录路由节点 100% 阻断，单调轮转彻底切除，Vite 构建 PASS | `v1.4.38` | [x] 已验收通过 ✅ |
-| **Card-VK-26** | **外部 Agent “系统级强制调用 VK” 极简自驱规范与 System Prompt 契约模板** | 1. 结合 Card-28 已落地的 Hook 与 MCP 职责边界，提炼 100 字外部 Agent（WorkBuddy/Cursor等）极简 System Prompt 契约模板；<br>2. 规范“开局 find ➔ 按需 read ➔ 执行 ➔ 收尾 store/lesson”自驱状态机；<br>3. 交付开箱接入白皮书与自动化验证 | WorkBuddy 等外部 Agent 100% 形成开局查 VK、收工存 VK 习惯，零多余网关进程 | `v1.4.40` | 📋 排队中 (P1) |
+| **Card-VK-26** | **外部 Agent “系统级强制调用 VK” 极简自驱规范与 System Prompt 契约模板** | 1. 结合 Card-28 已落地的 Hook 与 MCP 职责边界，提炼 100 字外部 Agent（WorkBuddy/Cursor等）极简 System Prompt 契约模板；<br>2. 规范“开局 find ➔ 按需 read ➔ 执行 ➔ 收尾 store/lesson”自驱状态机；<br>3. 渐进式展开 (Progressive Disclosure) 截断长 abstract 防止上下文撑爆；<br>4. 交付开箱接入白皮书与双轨自动化验证 | WorkBuddy/Cursor 等外部 Agent 100% 形成开局查 VK、收工存 VK 习惯，上下文零污染，零多余网关进程 | `v1.4.40` | [x] 已验收通过 ✅ |
 | **Card-VK-27** | **全局异步任务统筹收口与任务中心全景架构升级** | 1. 统一收拢所有模块异步任务至 TaskTracker 与任务中心，解除未终结任务 24h 过滤截断（永远置顶可见）；<br>2. 打通 Playground 上传弹窗与全局任务中心强跳转锚点；<br>3. 任务中心对 `add_resource` 展现分阶段流转与状态；<br>4. 统一重试 (Retry) 与清理标准接口 | 任务中心 100% 涵盖所有异步任务，局部与全局无缝联动，彻底消除任务不可见盲区 | `v1.4.41` | 📋 排队中 (P1) |
 | **Card-Studio-Settings** | **全局设置与数据管理中枢 (Unified Settings & Data Ops)** | 1. 践行奥卡姆剃刀，将原本分散的配置 (05)、隐私脱敏 (08)、OVPack 导入导出 (09) 3 页面高度聚合为单一轻量 `/settings` 路由；<br>2. 并在 `/retrieval` 检索页右上角集成轻量 RAG 评测抽屉 (Drawer)；<br>3. 彻底切除独立空壳页面与花架子，保持系统极客精炼 | 单面板统一管理配置、敏感词开关与知识库打包备份，切除 3 个冗余路由，Vite 构建 PASS | `v1.4.42` | 📋 排队中 (P2) |
 
@@ -53,38 +53,6 @@
 ## ⚡ 二、 当前活跃与待调度 Studio 原子工单 (Scheduled Active Task Cards)
 
 ### 📋 待调度工单队列 (Pending Pipeline Cards - 优先顺序开发)
-
-### 📌 P1: [ ] Card-VK-26 (v1.4.40): 外部 Agent “系统级强制调用 VK” 极简自驱规范与 System Prompt 契约模板 (Pragmatic Auto-Dispatch SSOT)
-- **类型**：Agent Auto-Dispatch, High-Attention Trigger Schema & Progressive Disclosure ｜ **优先级**：🔴 P1（大模型使用习惯、生态闭环与第一性原则规范）
-- **计划版本**：`v1.4.40`
-- **设计哲学与第一性原则 (Anti-Overengineering & Occam's Razor)**：
-  1. **切除过度工程化**：坚决不开发本地 HTTP 反向代理网关（避免引入流式 SSE 协议差异、端口冲突与多进程故障单点）；
-  2. **回归 Transformer 第一性原理**：LLM 的行为由【输入上下文 (Prompt)】与【工具注意力激活 (Tool Attention Schema)】共同决定；只要给足注意力触发头，大模型在规划阶段首选率即达 95%+；
-  3. **收割与提炼 Card-VK-28 最新成果**：
-     - *经验 ① 概念等价公理化*：开局注入 `Wiki ≡ VK ≡ OpenViking ≡ 体外大脑`，消除概念混淆；
-     - *经验 ② 分级展开 (Progressive Disclosure)*：`find` 绝不返回整篇长文，仅返回【极简高密摘要 (L0/L1) + 权威 URI + 余弦得分】，绝不撑爆上下文；长文由 `read` 按需懒加载；
-     - *经验 ③ 留痕仪式闭环 (Closing Ritual)*：将“结题必须 store/lesson”与任务完成状态强绑定，干活必留痕；
-     - *经验 ④ 优雅降级与超时熔断*：客户端 5s 超时断流保护，服务端卡顿平滑降级，绝不卡死 Agent 思考环。
-- **交付内容**：
-  1. **极简双轨自驱架构落地 (Dual-Track Pragmatic Framework)**：
-     - **轨道 A（开放宿主原生 Hook - Native Hook）**：
-       - 针对 OpenClaw、Antigravity、Claude Code 等具备事件钩子的宿主，提供原生 10 行极简钩子：
-         - `pre_user_turn`：截获输入，静默调用 `VK.find(query)` 并将 top-3 极简摘要拼接进 User Prompt 头部；
-         - `post_agent_turn` / `stop_guard`：任务结束触发异步提纯或物理拦截走查，调用 `VK.store()` / 打 Git Tag；
-         - 零中间进程，100% 物理必然注入。
-     - **轨道 B（封闭宿主：强注意力触发 Schema + 契约自驱 - Attention Trigger & Contract FSM）**：
-       - 针对 WorkBuddy、Cursor 等封闭商业桌面端（无法修改宿主二进制与注入原生 Hook）：
-         - **Schema 改造**：在卫星 MCP 的 `openviking_find` 描述开头注入强注意力激活头：`Description: "【Mandatory First Step / 开局必调】在开始分析、回答任何工程、架构或排障问题前，必须首先调用此工具查询体外大脑（VK）中的历史经验、设计偏好与避坑规则。"`；
-         - **分级展开 (Progressive Disclosure)**：`find` 输出统一采用标准紧凑 Markdown 卡片，严禁直接返回成千上万字原始上下文；
-         - **标准化极简 System Prompt 契约模板**：提取 100 字自解释规则（直接复制至客户端 System Prompt 中即可生效），强制 Agent 状态机遵循：`[开局 find] -> [按需 read] -> [执行] -> [收尾 store/lesson]`。
-  2. **交付《外部 Agent 接入 OpenViking 极简自驱与规范落地白皮书》**。
-- **验收标准**：
-  - 在 WorkBuddy 真实会话中，Agent 面对工程/架构提问时，100% 自动以 `openviking_find` 起手；
-  - 检索返回高密摘要（单条 <= 200 字），Agent 上下文不膨胀，问答流畅；
-  - 任务解决后主动触发 `openviking_record_evolution_lesson` 留痕；
-  - 零多余常驻网关进程，架构极简、高内聚、高鲁棒。
-
----
 
 ### 📌 P1: [ ] Card-VK-27 (v1.4.41): 全局异步任务统筹收口与任务中心全景架构升级 (Unified Task Center & Ambient Projection)
 - **类型**：Architecture / UX / Observability ｜ **优先级**：🔴 P1（系统全局单一真相源建设与体验断层自愈）
@@ -391,6 +359,32 @@
   - 卫星节点 Hook 压测无阻塞，静默降级耗时 < 50ms；
   - 《规范》成功归档至 `viking://resources/master_memory/evolution_lessons/`；
   - Vite 构建 PASS (20.26s)，Git Tag `v1.4.39` 物理对齐并推流。
+
+---
+
+### 📌 P1: [x] Card-VK-26 (v1.4.40): 外部 Agent “系统级强制调用 VK” 极简自驱规范与 System Prompt 契约模板 (Pragmatic Auto-Dispatch SSOT) ✅
+- **类型**：Agent Auto-Dispatch, High-Attention Trigger Schema & Progressive Disclosure ｜ **优先级**：🔴 P1（大模型使用习惯、生态闭环与第一性原则规范）
+- **Git Commit**：`ce17e4b10` ｜ **Git Tag**：`v1.4.40`
+- **实际修改文件清单**：
+  - `OpenVikingStudio/mcp-openviking/_core/config.py` (注入 `_compact_search_result` 渐进式展开，截断长 abstract 并添加 `openviking_read` 引导)
+  - `OpenVikingStudio/mcp-openviking/_core/__init__.py` (导出 `_compact_search_result`)
+  - `OpenVikingStudio/mcp-openviking/satellite_mcp_server.py` (注入渐进式展开，优化参数默认绑定，平滑升级至 v1.4.40)
+  - `OpenVikingStudio/mcp-openviking/mcp_openviking_server.py` (对齐 v1.4.40)
+  - `OpenVikingStudio/mcp-openviking/tools/system.py` (升级 ping server_version 至 1.4.40)
+  - `OpenVikingStudio/openviking/__init__.py` (对齐 1.4.40)
+  - `OpenVikingStudio/openviking/_version.py` (对齐 1.4.40)
+  - `OpenVikingStudio/package.json` (对齐 1.4.40)
+  - `OpenVikingStudio/tests/server/test_dual_mode_mcp.py` (新增渐进式分级截断单元测试，9/9 PASS)
+  - `OpenVikingStudio/docs/PRAGMATIC_AGENT_AUTO_DISPATCH_WHITEPAPER.md` (发布外部 Agent 强制调用与接入实战白皮书)
+  - `docs/PRAGMATIC_AGENT_AUTO_DISPATCH_WHITEPAPER.md` (根目录同步副本)
+  - `REFACTORING_PLAN.md` (工单履历状态对齐更新)
+- **交付内容摘要**：
+  1. **渐进式展开 (Progressive Disclosure)**：在 `_format_result` 层拦截检索结果，将 `memories`/`resources`/`results` 中超过 350 字符的 abstract 紧凑截断并附加 URI 引导，彻底根治万字 raw Markdown 撑爆外部 Agent 上下文窗口缺陷；
+  2. **双轨分层治理体系 (Dual-Track SSOT)**：
+     - Track A (开放生态)：PreInvocation Hook (< 5ms 意图命中 / < 1.5s 熔断降级) + StopGuard 验收防线；
+     - Track B (封闭生态)：Satellite MCP (16 Safe Tools, 强注意力头 `【Mandatory First Step / 开局必调】`) + 100 字黄金系统提示词契约模板 (中英双语)，实现确定性状态机 `[开局 find] -> [按需 read] -> [执行] -> [收尾 store/lesson]`；
+  3. **生态客户端全景接入**：提供 WorkBuddy, Cursor, Claude Code, Cline, Antigravity 开箱即用配置范例；
+  4. **全套自动化测试与验证**：9/9 pytest 单测全绿，Vite 前端构建 100% 成功 (17.48s)，严格遵守 NO GREEN 与高密字号底线。
 
 ---
 
