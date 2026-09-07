@@ -98,7 +98,7 @@ export function PipelineStepsPanoramaCard() {
                     : 'text-muted-foreground hover:text-foreground',
                 )}
               >
-                {isZh ? '① 任务流转全景 (8 任务)' : '① Task Flows (8 Tasks)'}
+                {isZh ? `① 任务流转全景 (${TASK_FLOWS.length} 任务)` : `① Task Flows (${TASK_FLOWS.length} Tasks)`}
               </button>
               <button
                 type="button"
@@ -110,7 +110,7 @@ export function PipelineStepsPanoramaCard() {
                     : 'text-muted-foreground hover:text-foreground',
                 )}
               >
-                {isZh ? '② 23 道工序总字典' : '② 23 Steps Dictionary'}
+                {isZh ? `② ${ALL_PANORAMA_STEPS.length} 道工序总字典` : `② ${ALL_PANORAMA_STEPS.length} Steps Dictionary`}
               </button>
               <button
                 type="button"
@@ -122,7 +122,7 @@ export function PipelineStepsPanoramaCard() {
                     : 'text-muted-foreground hover:text-foreground',
                 )}
               >
-                {isZh ? '③ 7 大引擎承接图' : '③ 7 Engine Mappings'}
+                {isZh ? `③ ${ENGINE_DEFINITIONS.length} 大引擎承接图` : `③ ${ENGINE_DEFINITIONS.length} Engine Mappings`}
               </button>
             </div>
 
@@ -138,7 +138,7 @@ export function PipelineStepsPanoramaCard() {
                       : 'bg-muted/20 text-muted-foreground hover:bg-muted/40',
                   )}
                 >
-                  {isZh ? '全部任务 (8)' : 'All (8)'}
+                  {isZh ? `全部任务 (${TASK_FLOWS.length})` : `All (${TASK_FLOWS.length})`}
                 </button>
                 {TASK_FLOWS.map((f) => (
                   <button
@@ -274,7 +274,18 @@ export function PipelineStepsPanoramaCard() {
                         </div>
                       </td>
                       <td className="px-3 py-2 font-sans text-muted-foreground text-[11px]">
-                        {isZh ? st.descriptionZh : st.descriptionEn}
+                        <div>{isZh ? st.descriptionZh : st.descriptionEn}</div>
+                        {st.operators && st.operators.length > 0 && (
+                          <div className="mt-1 flex items-center gap-1 font-mono text-[11px] text-foreground/80">
+                            <span className="text-muted-foreground">{isZh ? '执行算子：' : 'Operators:'}</span>
+                            {st.operators.map((op, opIdx) => (
+                              <React.Fragment key={op}>
+                                <span className="bg-muted/70 px-1 py-0.2 rounded border border-border/50 text-[11px]">{op}</span>
+                                {opIdx < st.operators!.length - 1 && <span className="text-muted-foreground/60">➔</span>}
+                              </React.Fragment>
+                            ))}
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))}
