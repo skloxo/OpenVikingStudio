@@ -279,7 +279,7 @@ export const ALL_PANORAMA_STEPS: PanoramaStepDef[] = [
     unitZh: '切片',
     unitEn: 'chunks',
     taskTypes: ['admin_reindex'],
-    descriptionZh: '清理已删除或断开关联的悬空切片与历史悬空记录',
+    descriptionZh: '清理已删除或断开关联的悬空切片与历史悬空记录（仅在指定修剪模式或检测到孤儿碎片时按需触发）',
     descriptionEn: 'Clean up orphaned chunks and dangling historical records',
   },
 
