@@ -184,6 +184,19 @@
 
 ### 📦 历史已交付工单履历 (Delivered Release Cards)
 
+### 📌 P1: [x] Card-ClosedLoop-Trigger (v1.4.63): 知识写入防抖触发与消费侧零命中失真反哺双轨闭环机制 ✅
+- **类型**：Autonomous Closed Loop / Event-Driven Quality Gate / Zero-Hit Probe ｜ **优先级**：🔴 P1（告别全靠人工手动触发，彻底形成全自动自驱闭环）
+- **Git Tag**：`v1.4.63`
+- **实际修改文件清单**：
+  - `openviking/service/entropy_watchdog.py` (新增 `notify_mutation` 写入防抖调度器与 `notify_zero_hit` 线上零结果失真滑动窗口探针，支持动态故障用例挂载与自适应巡检)
+  - `openviking/service/task_tracker.py` (在 `_record_outcome_on_owner` 任务终结状态中注入事件钩子，当 `add_resource`/`import_ovpack`/`vector_reindex`/`add_skill` 写入成功后自动唤醒 5s 防抖门禁)
+  - `openviking/server/routers/search.py` (在 `/api/v1/search/find` 检索出口处捕获 `total == 0` 零命中失真现场，动态反哺进入自愈待诊断队列)
+  - `package.json` (版本号升级至 1.4.63)
+- **交付内容摘要**：
+  1. **写入即测 (Mutation-Driven with 5s Debounce)**：新文档或技能入库完成 5 秒后，系统自动唤醒执行抗熵增门禁，核验新知识是否产生干扰或漂移；
+  2. **碰壁即修 (Zero-Hit Dynamic Probe)**：真实检索遇到零结果连续失真时，自动把故障 Query 加入探针池并触发自愈；
+  3. **彻底形成自主闭环**：从此再也不用全靠人工点击或调 API 触发，系统成为具备自我感知、自动体检与自愈能力的有机生命体。
+
 ### 📌 P1: [x] Card-RealData-Purge (v1.4.62): 门禁与自愈引擎真伪甄别彻底重构、100% 物理向量检索实测与第一性原理条件守卫（没病绝不吃药） ✅
 - **类型**：Root-Cause Real Data Engine / Anti-Mock Purge / First-Principles Self-Healing Gate ｜ **优先级**：🔴 P1（数据真实性绝对防线与假数据肃清）
 - **Git Tag**：`v1.4.62`

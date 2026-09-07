@@ -63,8 +63,11 @@ class EntropyWatchdog:
     def __init__(self) -> None:
         self._running = False
         self._loop_task: Optional[asyncio.Task[None]] = None
+        self._debounce_task: Optional[asyncio.Task[None]] = None
         self._interval_seconds = 1800  # Run every 30 minutes in production
         self._initial_delay = 8        # Fast initial run 8 seconds after boot
+        self._dynamic_probes: List[str] = []
+        self._recent_zero_hits: List[Dict[str, Any]] = []
 
     @classmethod
     def get_instance(cls) -> "EntropyWatchdog":
@@ -86,7 +89,56 @@ class EntropyWatchdog:
         self._running = False
         if self._loop_task and not self._loop_task.done():
             self._loop_task.cancel()
+        if self._debounce_task and not self._debounce_task.done():
+            self._debounce_task.cancel()
         logger.info("[EntropyWatchdog] Automated quality gate daemon stopped")
+
+    def notify_mutation(self, task_type: str = "mutation", resource_id: Optional[str] = None) -> None:
+        """Triggered automatically when knowledge ingestion/mutation completes (with 5s debounce)."""
+        if not self._running:
+            return
+        if self._debounce_task and not self._debounce_task.done():
+            self._debounce_task.cancel()
+
+        async def _debounced_sweep() -> None:
+            try:
+                await asyncio.sleep(5.0)  # 5s debounce window for batch ingestion to settle
+                logger.info("[EntropyWatchdog] Debounce window expired. Auto-triggering quality gate for mutation: %s", task_type)
+                await self.trigger_cycle(reason=f"mutation_debounce_{task_type}")
+            except asyncio.CancelledError:
+                pass
+            except Exception as e:
+                logger.warning("[EntropyWatchdog] Debounced sweep error: %s", e)
+
+        self._debounce_task = asyncio.create_task(_debounced_sweep())
+        logger.info("[EntropyWatchdog] Mutation event received (%s, resource=%s). Scheduled debounced quality gate in 5s", task_type, resource_id)
+
+    def notify_zero_hit(self, query: str) -> None:
+        """Triggered when live search returns zero hits or extreme low confidence."""
+        if not self._running or not query:
+            return
+        now = time.time()
+        self._recent_zero_hits = [z for z in self._recent_zero_hits if now - z["time"] <= 60.0]
+        self._recent_zero_hits.append({"query": query, "time": now})
+        if query not in self._dynamic_probes:
+            self._dynamic_probes.append(query)
+            if len(self._dynamic_probes) > 5:
+                self._dynamic_probes.pop(0)
+
+        if len(self._recent_zero_hits) >= 2:
+            if self._debounce_task and not self._debounce_task.done():
+                self._debounce_task.cancel()
+
+            async def _debounced_zero_hit_sweep() -> None:
+                try:
+                    await asyncio.sleep(3.0)
+                    logger.info("[EntropyWatchdog] Repeated zero-hits detected. Auto-triggering quality gate probe...")
+                    await self.trigger_cycle(reason=f"zero_hit_probe_{query[:20]}")
+                except asyncio.CancelledError:
+                    pass
+
+            self._debounce_task = asyncio.create_task(_debounced_zero_hit_sweep())
+            logger.info("[EntropyWatchdog] Zero-hit probe registered (%s). Debounced sweep scheduled in 3s", query)
 
     async def _run_loop(self) -> None:
         """Main background loop."""
@@ -110,11 +162,15 @@ class EntropyWatchdog:
             logger.exception("[EntropyWatchdog] Unexpected loop error: %s", e)
 
     async def _run_real_evaluation(self) -> List[Dict[str, Any]]:
-        """Run real physical vector search against local port 1933 for each gold query."""
+        """Run real physical vector search against local port 1933 for gold queries + dynamic probes."""
         api_key = _resolve_api_key()
         results: List[Dict[str, Any]] = []
+        active_queries = list(GOLD_QUERIES)
+        if self._dynamic_probes:
+            active_queries.extend(self._dynamic_probes[:2])
+
         async with httpx.AsyncClient(trust_env=False, timeout=8.0) as client:
-            for q in GOLD_QUERIES:
+            for q in active_queries:
                 t0 = time.time()
                 try:
                     resp = await client.post(

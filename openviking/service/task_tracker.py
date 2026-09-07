@@ -754,6 +754,21 @@ class TaskTracker:
                 await self._persist_and_publish("update", updated)
                 self._work_index.clear_failure(task_id)
                 logger.info("[TaskTracker] Task %s %s", task_id, updated.status.value)
+                if updated.status == TaskStatus.COMPLETED and updated.task_type in (
+                    "add_resource",
+                    "import_ovpack",
+                    "vector_reindex",
+                    "build_index",
+                    "add_skill",
+                ):
+                    try:
+                        from openviking.service.entropy_watchdog import get_entropy_watchdog
+                        get_entropy_watchdog().notify_mutation(
+                            task_type=updated.task_type,
+                            resource_id=updated.resource_id,
+                        )
+                    except Exception as e:
+                        logger.debug("[TaskTracker] Error notifying EntropyWatchdog: %s", e)
 
     async def wait(
         self,
