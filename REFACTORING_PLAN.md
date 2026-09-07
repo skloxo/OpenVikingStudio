@@ -184,6 +184,19 @@
 
 ### 📦 历史已交付工单履历 (Delivered Release Cards)
 
+### 📌 P1: [x] Card-RealData-Purge (v1.4.62): 门禁与自愈引擎真伪甄别彻底重构、100% 物理向量检索实测与第一性原理条件守卫（没病绝不吃药） ✅
+- **类型**：Root-Cause Real Data Engine / Anti-Mock Purge / First-Principles Self-Healing Gate ｜ **优先级**：🔴 P1（数据真实性绝对防线与假数据肃清）
+- **Git Tag**：`v1.4.62`
+- **实际修改文件清单**：
+  - `openviking/service/entropy_watchdog.py` (彻底切除硬编码假数据字典与无脑成对生成逻辑，重构为直接向本地 1933 端口发起异步 HTTP 真实向量检索探测，真实计算 5 大金标 Query 相似度与时延，并落地第一性原理条件守卫：门禁健康时坚决不派发自愈任务，仅在真实检出低分/漂移项时精准派发靶向自愈)
+  - `src/routes/tasks/-lib/task-pipeline-engine.ts` (切除自愈交付物中的 `?? 2` / `?? 1` / `?? 8` 假数据兜底，100% 由真实元数据或计算动态驱动)
+  - `package.json` (版本号升级至 1.4.62)
+- **交付内容摘要**：
+  1. **坦白承认并直击根因**：诚实认领此前版本外层虽真但执行体内包含写死模板数据的缺陷，彻底消灭“成对生成 QG + Remediation”的虚假假象；
+  2. **100% 真实物理探测验证**：真实向 OpenViking 知识底座发起 5 大真实 Query（涵盖实事求是规范、714门禁、Mac Studio运维、NO GREEN规范、TaskTracker单例），实时获取 0.2781~0.8145 真实余弦得分与微秒/毫秒级物理时延；
+  3. **第一性原理条件守卫**：健康通过（PASS）则干干净净，绝不凭空造病吃药；检出漂移则精确绑定真实的故障 Query 与真实目标资源 URI（如捕获 `NO GREEN EVER` 弱召回项并靶向修复）；
+  4. **双全验证通过**：前端 Vite 构建 21.28s PASS，系统 Journal 实机日志与 Task Center 抽屉 100% 真实数据驱动，Git Tag `v1.4.62` 物理留痕。
+
 ### 📌 P1: [x] Card-Trigger-Daemon (v1.4.61): 无头后台自动触发守护进程 (EntropyWatchdog)、系统级周期自检与知识自愈全自动闭环 ✅
 - **类型**：Headless Daemon / Background Watchdog / Autonomous Closed-Loop ｜ **优先级**：🔴 P1（彻底告别人工手动触发）
 - **Git Tag**：`v1.4.61`

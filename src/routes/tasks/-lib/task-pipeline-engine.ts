@@ -309,9 +309,9 @@ export function deriveUniversalFinalOutcome(
 
   // 6. 知识自愈优化 (Knowledge Remediation)
   if (type === 'knowledge_remediation' || type === 'entropy_healing') {
-    const faults = resObj.located_faults ?? metaObj.located_faults ?? 2
-    const conflicts = resObj.resolved_conflicts ?? metaObj.resolved_conflicts ?? 1
-    const chunks = resObj.reindexed_chunks ?? metaObj.reindexed_chunks ?? 8
+    const faults = resObj.located_faults ?? metaObj.located_faults ?? (metaObj.fault_queries?.length || 0)
+    const conflicts = resObj.resolved_conflicts ?? metaObj.resolved_conflicts ?? 0
+    const chunks = resObj.reindexed_chunks ?? metaObj.reindexed_chunks ?? 0
 
     return {
       title: isZh ? '知识自愈优化' : 'Knowledge Remediation',
