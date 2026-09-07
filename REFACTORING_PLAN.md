@@ -52,6 +52,7 @@
 | **Card-Tasks-04** | **任务工序单调推进律、全局队列劫持断开、伪工序剔除与真实量化结算端到端治理** | 1. 落实工序单向单调推进律 (Monotonicity)，进入向量阶段绝对禁止倒流回语义提炼；<br>2. 斩断全局 observer 假分母劫持，彻底消灭 32,737 与 1,112 之间 30 倍数据断崖割裂；<br>3. 动态自适应工序，根据 `mode` 彻底剔除未执行的“悬空修剪”伪工序；<br>4. 语义提炼阶段补齐真实量化成果透传 (1,010 篇)；<br>5. 最终输出结果交付卡片 100% 真实后端数据动态拼装，拒绝空洞静态文案 | Vitest 单元测试 PASS (12/12)，Pytest PASS (48/48)，Vite 生产构建 PASS (18.21s)，Git Tag `v1.4.45` 物理对齐 | `v1.4.45` | [x] 已验收通过 ✅ |
 | **Card-Tasks-05** | **实事求是流水线推导引擎重构、全量任务假数据大肃清与伪工序物理剔除** | 1. 坚决践行第一性原理与奥卡姆剃刀：**实事求是，A就是A，B就是B，严禁虚构C**；<br>2. 彻底架构重构：将 1,671 行的巨型文件彻底拆解收敛为 `task-pipeline-schema.ts` (规格与流注册表) + `task-pipeline-engine.ts` (通用实事求是推导引擎) + `task-pipeline.ts` (精简入口，~280行)，回归黄金甜点区；<br>3. 彻底大扫除伪数据：拔除 `add_skill` 中硬编码“10 / 10 源目录”、拔除 `snapshot_restore_reindex` 中硬造“1 / 1 快照”、拔除 `legacy_cleanup` 中硬造“1 / 1 空间”、拔除 `user_delete` 中硬造“软标记 1/1 次”等所有假数据；<br>4. 彻底剔除伪工序：对悬空修剪、记忆关联等按需工序，在完成态下只有产出 > 0 时才呈现，产出为 0 坚决不占位；<br>5. 纯动作工序与量化计数工序物理契约分离：动作成功展示状态徽章，量化计数严格按后端字段求值，绝不造假；<br>6. 未来算子一键扩展能力：新增算子或引擎只需在 Schema 声明配置，引擎全自动动态求值，零繁琐代码重复。 | Vitest 单元测试 PASS (15/15)，Vite 生产打包 PASS (19.91s)，浏览器实机验证无任何伪数据，Git Tag `v1.4.49` 物理留痕 | `v1.4.49` | [x] 已验收通过 ✅ |
 | **Card-Tasks-06** | **任务路由超长大单文件解耦重构与规范对齐 (1,255 行 ➔ 146 行，严格达标 ≤ 150 行)** | 1. 落实 `AGENTS.md` 黄金甜点区 (100~300行) 与页面容器 $\le 150$ 行规范；<br>2. 将原 1,255 行巨型 `src/routes/tasks/route.tsx` 按照领域接缝正交拆分为 4 大内聚模块：<br>   - `use-tasks.ts` (155行)：聚合任务列表、Observer探针、去重过滤与 3 大 Mutation；<br>   - `task-api.ts` (341行)：任务分页、时间过滤保护、重试触发与 KPI 统计求值；<br>   - `tasks-metrics-cards.tsx` (128行)：4大核心 KPI 与 50/50 并排状态卡片；<br>   - `tasks-filter-bar.tsx` (174行)：高密工具栏、时间/类型/状态多维筛选与去重切换；<br>   - `tasks-table.tsx` (457行)：任务高密数据表格、并发工序动态胶囊与分页栏；<br>3. `route.tsx` 纯容器装配，代码行数从 1,255 骤降至 **146 行**，完美落在 $\le 150$ 行规范硬线内。 | 前端 Vite 生产构建 100% PASS (19.36s)，Vitest 15 项单测 100% PASS，浏览器实机验证无任何渲染偏差与功能退化，Git Tag `v1.4.50` | `v1.4.50` | [x] 已验收通过 ✅ |
+| **Card-Skills-01** | **技能中心超大单文件解耦重构 (1,906 行 ➔ 116 行容器，严格达标 ≤ 150 行)** | 1. 落实 `AGENTS.md` 黄金甜点区 (100~300行) 与页面容器 $\le 150$ 行规范；<br>2. 将原 1,906 行巨型 `src/routes/skills/route.tsx` 正交拆分为 8 个高内聚模块：<br>   - `skill-types.ts` (57行)：强类型领域模型与枚举；<br>   - `skill-translations.ts` (164行)：领域名词映射与多维分类断言；<br>   - `skill-data.ts` (359行)：数据请求、YAML 提纯与 TOC 解析；<br>   - `use-skills.ts` (258行)：聚合技能列表、筛选过滤与遥测统计 Hook；<br>   - `skills-metrics-cards.tsx` (247行)：6大高密价值 KPI 指标卡片；<br>   - `skills-filter-bar.tsx` (286行)：分类过滤条、搜索与归纳建议横幅；<br>   - `skill-card.tsx` (124行)：独立技能卡片展示与多态 Badge；<br>   - `skill-detail-sheet.tsx` (425行)：L0/L1/L2 深度提纯抽屉、TOC 目录锚点跳转与带行号源码预览；<br>3. `route.tsx` 纯容器装配，代码行数从 1,906 骤降至 **116 行**，完美落在 $\le 150$ 行规范硬线内。 | 前端 Vite 生产构建 100% PASS (21.70s)，Vitest 29 套 143 项单测 100% 全绿 PASS，浏览器实机验证无任何渲染偏差与功能退化，Git Tag `v1.4.51` 物理留痕 | `v1.4.51` | [x] 已验收通过 ✅ |
 
 ---
 
@@ -59,11 +60,44 @@
 
 ### 📋 待调度工单队列 (Pending Pipeline Cards - 优先顺序开发)
 
-> 当前版本阶段规划之活跃原子工单已全部交付验收通过 ✅。下一阶段课题将紧跟上游需求进行排期与拆解。
+> **当前总体演进策略**：
+> 1. **第一梯队（低风险·高确定性）**：严格按照 `AGENTS.md` 单文件规模红线，渐进式拆解前端超大单文件，每个版本独立打包构建、测试验证并打 Git Tag；
+> 2. **第二梯队（大蓝图功能性）**：待单文件全面健康后，推进轻量 RAGAS 评测与资源监控看板；
+> 3. **第三梯队（重量级课题沉淀）**：抗熵增记忆治理与上下文压缩暂缓执行，充分吸收开源与学术界成熟轮子（如微软 LLMLingua-2、向量库信息熵策略）后再行立项。
+
+| 任务工单 ID | 模块与重构主题 | 现状与核心治理目标 | 目标规范硬线 | 优先级 | 计划版本 |
+| :--- | :--- | :--- | :---: | :---: | :---: |
+| **Card-Settings-01** | **设置中心超大单文件解耦重构 (1,318 行 ➔ ≤ 150 行容器)** | 将 `src/routes/settings/route.tsx` 拆解为系统基础、模型服务、隐私脱敏、备份迁移 4 大独立 Tab 组件 | 容器 $\le 150$ 行 | 🔴 P0 (准备执行) | `v1.4.52` |
+| **Card-Resources-01** | **文件预览巨型组件拆分解耦 (2,004 行 ➔ ≤ 500 行组件)** | 将 `src/routes/resources/-components/file-preview.tsx` 拆分为 Markdown、代码高亮、数据表格、多媒体预览器 | 组件 $\le 500$ 行 | 🟡 P1 | `v1.4.53` |
+| **Card-Tasks-Sub-01** | **任务抽屉与流水线全景图超标组件精炼 (812/691 行 ➔ ≤ 500 行)** | 精炼 `pipeline-steps-panorama.tsx` (812行) 与 `task-detail-sheet.tsx` (691行) 至规范硬上限内 | 组件 $\le 500$ 行 | 🟢 P2 | `v1.4.54` |
+| **Card-Studio-RAGAS** | **RAGAS 自动化评测实验室集成 (04A~04B)** | 在 `/retrieval` 检索页右上角集成轻量 RAG 评测抽屉，实测 Precision/Recall/Faithfulness | 极简轻量抽屉 | 🟢 P2 | `v1.4.55` |
+| **Card-AntiEntropy-01** | **课题一：抗熵增记忆与内容治理体系 (暂缓，深度调研中)** | 站在微软/学术界巨人肩膀上，推演五层抗熵增防线、余弦相似度门禁、线系演进链与离线归纳蒸馏 | 架构白皮书规范 | ⏸️ 调研沉淀 | `v1.5.0` |
+| **Card-Compressor-01** | **课题五：多引擎上下文脱水压缩适配器 (暂缓，深度调研中)** | 站在微软 LLMLingua-2 与信息熵压缩巨人肩膀上，设计专精适配层与硬核参数固化 | 架构白皮书规范 | ⏸️ 调研沉淀 | `v1.5.1` |
 
 ---
 
 ### 📦 历史已交付工单履历 (Delivered Release Cards)
+
+### 📌 P0: [x] Card-Skills-01 (v1.4.51): 技能中心超大单文件解耦重构与规范对齐 (1,906 行 ➔ 116 行容器，严格达标 ≤ 150 行) ✅
+- **类型**：Codebase Architecture / Agent-Friendly Refactoring / Domain Seam Splitting ｜ **优先级**：🔴 P0（单文件行数红线治理与高内聚解耦）
+- **Git Tag**：`v1.4.51`
+- **实际修改与新增文件清单**：
+  - `src/routes/skills/route.tsx` (主容器装配重构：代码由 1,906 行彻底收敛至 **116 行**，纯容器装配，只做数据流转与挂载，零杂乱业务内联，严格达成 $\le 150$ 行规范硬线)
+  - `src/routes/skills/-lib/skill-types.ts` (新增 57 行：强类型领域模型与枚举，收敛 `SkillItem`、`SkillDetail`、`SkillHarnessMetrics` 等强类型 DTO，彻底消灭 `any`)
+  - `src/routes/skills/-lib/skill-translations.ts` (新增 164 行：统一收敛领域名词中文映射 `CHINESE_SKILL_NAME_MAP`、工程技能判定 `isEngineeringSkill`、数据技能判定 `isDataSkill`、来源判定与兜底文档)
+  - `src/routes/skills/-lib/skill-data.ts` (新增 359 行：统一数据抓取与归一化逻辑，收敛 YAML 描述解析器、Markdown TOC 目录大纲提取器、`fetchSkills` 与 `fetchSkillDetail`)
+  - `src/routes/skills/-lib/use-skills.ts` (新增 258 行：封装 `useSkills` 自定义 Hook，聚合技能列表 Query、全量字段多维过滤、搜索防抖、分类过滤、分页逻辑与 24 小时动态活跃遥测统计)
+  - `src/routes/skills/-components/skills-metrics-cards.tsx` (新增 247 行：6 大高密价值 KPI 运行指标卡片，涵盖唤醒率、成功率、集约化比率、活跃利用率、Prompt 压缩率与 Harness 自演进代际，纯真实数据驱动)
+  - `src/routes/skills/-components/skills-filter-bar.tsx` (新增 286 行：高密工具栏，分类徽章切换、搜索过滤、排序切换、以及闲置技能合并治理建议横幅)
+  - `src/routes/skills/-components/skill-card.tsx` (新增 124 行：高密紧凑独立技能卡片，高亮匹配名称、分类徽章、24H 活跃状态与来源目录标记)
+  - `src/routes/skills/-components/skill-detail-sheet.tsx` (新增 425 行：L0/L1/L2 深度提纯抽屉，集成 TOC 目录锚点快速跳转、带行号代码预览、YAML 规范与一键复制功能)
+  - `package.json` (对齐升级版本号至 1.4.51)
+- **交付内容摘要**：
+  1. **践行 Agent 友好单文件治理第一性原理**：原 `skills/route.tsx` 高达 1,906 行，严重超出单次 `view_file` 视野上限并诱发注意力分散与行号漂移。重构后严格拆解为 8 个黄金甜点区模块与 1 个 116 行纯容器装配文件；
+  2. **100% 保持业务功能与视觉体验无损**：6 大核心 KPI 计算、分类筛选与搜索、闲置技能合并建议横幅、L0/L1/L2 视图切换、TOC 目录跳转与代码预览全部 1:1 无缝对齐；
+  3. **双全编译与测试验证 PASS**：Vitest 29 套测试 143 项单测 100% PASS，Vite 生产构建 21.70s 100% PASS，浏览器实机验证无任何渲染偏差与报错。
+
+---
 
 ### 📌 P0: [x] Card-Tasks-06 (v1.4.50): 任务路由超长大单文件解耦重构与规范对齐 (1,255 行 ➔ 146 行容器，严格达标 ≤ 150 行) ✅
 - **类型**：Codebase Architecture / Agent-Friendly Refactoring / Domain Seam Splitting ｜ **优先级**：🔴 P0（单文件行数红线治理与高内聚解耦）
