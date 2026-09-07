@@ -3,13 +3,28 @@
 
 import type { BenchmarkResultItem, BenchmarkSummaryMetrics, RagasScoreBreakdown } from './types'
 
-export const DEFAULT_BENCHMARK_QUERIES: string[] = [
+export const DEFAULT_BENCHMARK_QUERIES_ZH: string[] = [
   'OpenViking 核心架构与设计哲学',
   'VikingFS 文件系统与分层存储',
   '卫星 MCP 与主节点职责边界',
   '跨会话体外大脑记忆持久化',
   '任务流转 23 道工序全景字典',
 ]
+
+export const DEFAULT_BENCHMARK_QUERIES_EN: string[] = [
+  'OpenViking Core Architecture & Design Philosophy',
+  'VikingFS Hierarchical Storage & File System',
+  'Satellite MCP & Master Node Boundary Spec',
+  'Cross-Session Exocortex Master Memory Persistence',
+  'Task Pipeline 23-Step Panorama Specification',
+]
+
+export function getDefaultBenchmarkQueries(lang?: string): string[] {
+  const isEn = lang ? lang.toLowerCase().startsWith('en') : false
+  return isEn ? DEFAULT_BENCHMARK_QUERIES_EN : DEFAULT_BENCHMARK_QUERIES_ZH
+}
+
+export const DEFAULT_BENCHMARK_QUERIES: string[] = DEFAULT_BENCHMARK_QUERIES_ZH
 
 interface RawHitItem {
   uri: string
@@ -29,9 +44,9 @@ interface RawHitItem {
  */
 export function evaluateRagasSample(
   hits: RawHitItem[],
-  query: string,
+  _query?: string,
 ): RagasScoreBreakdown {
-  if (!hits || hits.length === 0) {
+  if (hits.length === 0) {
     return {
       contextPrecision: 0,
       contextRecall: 0,
