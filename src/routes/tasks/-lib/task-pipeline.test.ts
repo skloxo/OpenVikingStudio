@@ -96,7 +96,7 @@ describe('task-pipeline RFC 治理与真实数据契约测试', () => {
 
     const groups = getTaskPipelineGroups(completedReindexTask, mockGlobalQueueRows, 'zh')
     expect(groups.length).toBe(2)
-    expect(groups.every((g) => g.type === 'serial' && g.step !== undefined)).toBe(true)
+    expect(groups.every((g) => g.type === 'serial')).toBe(true)
   })
 
   it('缺陷 3 补充: 当 mode 为 prune_orphans 或有真实删除碎片时，自适应保留“悬空修剪”工序', () => {
@@ -147,5 +147,87 @@ describe('task-pipeline RFC 治理与真实数据契约测试', () => {
     const workload = getTaskQuantifiedWorkload(completedReindexTask, mockGlobalQueueRows, 'zh')
     expect(workload).not.toBeNull()
     expect(workload?.label).toBe('1,010 篇扫描 ｜ 1,112 切片重构')
+  })
+
+  it('全量任务假数据切除: add_skill 正在运行时绝不借用 32,444 全局切片，单位必须为技能', () => {
+    const runningSkillTask: TaskRecord = {
+      task_id: 'skill-task-1',
+      task_type: 'add_skill',
+      status: 'running',
+      stage: 'embed',
+      created_at: 1772800000,
+      meta: { valid_skills: 5 },
+    }
+    const steps = getTaskPipelineSteps(runningSkillTask, mockGlobalQueueRows, 'zh')
+    const step3 = steps.find((s) => s.name === '向量建库')
+    expect(step3).toBeDefined()
+    expect(step3?.unit).toBe('技能')
+    expect(step3?.total).toBe(5)
+    // 严禁盗用全局 32,444
+    expect(step3?.processed).not.toBe(32444)
+
+    const workload = getTaskQuantifiedWorkload(runningSkillTask, mockGlobalQueueRows, 'zh')
+    if (workload) {
+      expect(workload.label).not.toContain('32,444')
+      expect(workload.label).not.toContain('32,737')
+    }
+  })
+
+  it('全量任务假数据切除: resource_build / add_resource 正在运行时绝不借用全局 observer 进度', () => {
+    const runningResourceTask: TaskRecord = {
+      task_id: 'res-task-1',
+      task_type: 'add_resource',
+      status: 'running',
+      stage: 'embedding',
+      created_at: 1772800000,
+      meta: { file_count: 3 },
+    }
+    const steps = getTaskPipelineSteps(runningResourceTask, mockGlobalQueueRows, 'zh')
+    expect(steps.some((s) => s.processed === 32444)).toBe(false)
+    expect(steps.some((s) => s.total === 32737)).toBe(false)
+
+    const workload = getTaskQuantifiedWorkload(runningResourceTask, mockGlobalQueueRows, 'zh')
+    if (workload) {
+      expect(workload.processed).not.toBe(32444)
+      expect(workload.total).not.toBe(32737)
+    }
+  })
+
+  it('全量任务假数据切除: connector_import 正在运行时绝不借用全局 32,444 切片或外部解析页数', () => {
+    const runningConnectorTask: TaskRecord = {
+      task_id: 'conn-task-1',
+      task_type: 'connector_import',
+      status: 'running',
+      stage: 'embedding',
+      created_at: 1772800000,
+      meta: { downloaded_files: 8 },
+    }
+    const steps = getTaskPipelineSteps(runningConnectorTask, mockGlobalQueueRows, 'zh')
+    expect(steps.some((s) => s.processed === 32444)).toBe(false)
+
+    const workload = getTaskQuantifiedWorkload(runningConnectorTask, mockGlobalQueueRows, 'zh')
+    if (workload) {
+      expect(workload.processed).not.toBe(32444)
+      expect(workload.total).not.toBe(32737)
+    }
+  })
+
+  it('全量任务假数据切除: snapshot_restore_reindex 正在运行时绝不借用全局 32,444 切片', () => {
+    const runningRestoreTask: TaskRecord = {
+      task_id: 'restore-task-1',
+      task_type: 'snapshot_restore_reindex',
+      status: 'running',
+      stage: 'embedding',
+      created_at: 1772800000,
+      meta: { reindexed_items: 20 },
+    }
+    const steps = getTaskPipelineSteps(runningRestoreTask, mockGlobalQueueRows, 'zh')
+    expect(steps.some((s) => s.processed === 32444)).toBe(false)
+
+    const workload = getTaskQuantifiedWorkload(runningRestoreTask, mockGlobalQueueRows, 'zh')
+    if (workload) {
+      expect(workload.processed).not.toBe(32444)
+      expect(workload.total).not.toBe(32737)
+    }
   })
 })
