@@ -48,6 +48,8 @@
 | **Card-VK-27** | **全局异步任务统筹收口与任务中心全景架构升级** | 1. 统一收拢所有模块异步任务至 TaskTracker 与任务中心，解除未终结任务 24h 过滤截断（永远置顶可见）；<br>2. 打通 Playground 上传弹窗与全局任务中心强跳转锚点；<br>3. 任务中心对 `add_resource` 展现分阶段流转与状态；<br>4. 统一重试 (Retry) 与清理标准接口 | 任务中心 100% 涵盖所有异步任务，局部与全局无缝联动，彻底消除任务不可见盲区 | `v1.4.41` | [x] 已验收通过 ✅ |
 | **Card-Studio-Settings** | **全局设置与数据管理中枢 (Unified Settings & Data Ops)** | 1. 践行奥卡姆剃刀，将原本分散的配置 (05)、隐私脱敏 (08)、OVPack 导入导出 (09) 3 页面高度聚合为单一轻量 `/settings` 路由；<br>2. 并在 `/retrieval` 检索页右上角集成轻量 RAG 评测抽屉 (Drawer)；<br>3. 彻底切除独立空壳页面与花架子，保持系统极客精炼 | 单面板统一管理配置、敏感词开关与知识库打包备份，切除 3 个冗余路由，Vite 构建 PASS | `v1.4.42` | [x] 已验收通过 ✅ |
 | **Card-Tasks-02** | **任务工序进度绝对数据真实性治理与假数据 (0/1) 物理切除** | 1. 物理封杀未激活工序渲染虚假分数，`pending` 状态统一展示中性胶囊 `待前置工序`；<br>2. 切除 `task-pipeline.ts` 中 `?? 1` 假分母兜底，保留 `undefined` 由真实数据驱动；<br>3. `fetchTask` 100% 优先请求后端最新 API，消除 `localStorage` 抢跑问题；<br>4. 任务大盘实时队列指标直传详情抽屉，消除初次打开 2 秒探针盲区 | 前端 Vite 构建 PASS (19.98s)，详情抽屉 100% 真实队列进度展示，待前置工序零虚假数字 | `v1.4.43` | [x] 已验收通过 ✅ |
+| **Card-Tasks-03** | **工序执行明细待前置工序胶囊样式与文案 100% 物理对齐统一治理** | 1. 彻底消灭用词割裂，全生命周期统一收敛为标准专有名词 `待前置交付` (Pending)；<br>2. 统一工序 1~3 与终点里程碑卡片胶囊规范为标准中性胶囊 (`px-2 py-0.5 rounded text-[11px] font-medium select-none shrink-0 border bg-muted/50 text-muted-foreground border-border/40`)，消灭裸灰字与未带边框造成的视觉高低不平与样式割裂；<br>3. 终点工序标签严格提升至合规字号 `>= 11px` (`text-[11px]`)；<br>4. 零硬编码字符串，中英文双语语言包 100% 物理同步注入 (`pendingPreceding`, `finalDeliverable`, `expectedOutputPrefix`, `delivered`, `aborted`) | 前端 Vite 构建 PASS (21.59s)，i18n 无硬编码警告，工序列表与最终交付卡片样式文案 100% 像素级平齐一致 | `v1.4.44` | [x] 已验收通过 ✅ |
+| **Card-Tasks-04** | **任务工序单调推进律、全局队列劫持断开、伪工序剔除与真实量化结算端到端治理** | 1. 落实工序单向单调推进律 (Monotonicity)，进入向量阶段绝对禁止倒流回语义提炼；<br>2. 斩断全局 observer 假分母劫持，彻底消灭 32,737 与 1,112 之间 30 倍数据断崖割裂；<br>3. 动态自适应工序，根据 `mode` 彻底剔除未执行的“悬空修剪”伪工序；<br>4. 语义提炼阶段补齐真实量化成果透传 (1,010 篇)；<br>5. 最终输出结果交付卡片 100% 真实后端数据动态拼装，拒绝空洞静态文案 | Vitest 单元测试 PASS (12/12)，Pytest PASS (48/48)，Vite 生产构建 PASS (18.21s)，Git Tag `v1.4.45` 物理对齐 | `v1.4.45` | [x] 已验收通过 ✅ |
 
 ---
 
@@ -60,6 +62,31 @@
 ---
 
 ### 📦 历史已交付工单履历 (Delivered Release Cards)
+
+### 📌 P0: [x] Card-Tasks-04 (v1.4.45): 任务工序单调推进律、全局队列劫持断开、伪工序剔除与真实量化结算端到端治理 (Pipeline Monotonicity & Real Data Decoupling) ✅
+- **类型**：Data Integrity / Architecture / UX Pipeline ｜ **优先级**：🔴 P0（工序倒流阻断、指标真实性与去伪工序治理）
+- **Git Commit**：`c5fc1ef7e` ｜ **Git Tag**：`v1.4.45`
+- **实际修改文件清单**：
+  - `openviking/service/task_tracker.py` (`update_stage` 支持 `meta_patch` 增量原子持久化到任务元数据，使得单任务执行阶段与私有切片数能够持久入库)
+  - `openviking/service/reindex_executor.py` (`_run_tracked` 传递 `task_id`，在语义提炼与向量重构开始时精准上报私有 stage；最终结算字典补全 `semantic_records: scanned_records` 与 `mode`)
+  - `src/routes/tasks/-lib/task-pipeline.ts` (落实工序单向单调递进律 Monotonicity 杜绝倒流；斩断全局 observer 假分母劫持；按 mode 动态自适应工序，彻底剔除未执行的“悬空修剪”；补齐语义量化透传 1,010 篇；动态拼装最终交付卡片真实成果)
+  - `src/routes/tasks/-lib/task-pipeline.test.ts` (新增针对 RFC 5 大缺陷的专项 Vitest 测试用例，断言覆盖工序单调性、断开假分母、剔除伪工序、语义量化、动态交付卡片与大盘摘要)
+  - `tests/test_task_tracker.py` (新增 `test_update_stage_with_meta_patch` 覆盖阶段与元数据原子更新)
+  - `package.json` (对齐升级版本 1.4.45)
+  - `openviking/_version.py` (对齐升级版本 1.4.45)
+- **交付内容摘要**：
+  1. **工序单向单调推进律 (Pipeline Monotonicity)**：严格规约流水线单向不可逆，当任务进入 `vector` / `prune` 或 `completed` 阶段后，第一道工序（语义提炼）永久锁定为 `completed`，彻底根治全局 Semantic 队列外部波动导致已跑完 3 万切片的任务突然倒退回“语义提炼 · 25/26 节点”的恶性反复横跳；
+  2. **切断全局 observer 假分母劫持，根除数据割裂**：彻底移除借用全局累积大盘 `embeddingRow?.total` (32,737) 冒充单任务总量的做法。运行中若后端未上报私有切片总量，展示中性进行中状态；任务完成态 100% 采用自身结算产生的真实数据 (1,112)，彻底消灭 30 倍数据腰斩假象；
+  3. **动态自适应工序，彻底剔除未执行的伪工序**：践行奥卡姆剃刀，工序严格由任务参数 `mode` 决定。`semantic_and_vectors` 模式下仅生成【语义提炼】与【切片重构】两道工序，彻底切除【悬空修剪】卡片；仅在显式声明修剪或真实产生修剪碎片时才呈现；
+  4. **全生命周期语义阶段量化指标透传**：后端在结算返回中补全 `semantic_records`，前端工序第一阶段真实呈现 `1,010/1,010 篇`，告别干瘪的空徽章；
+  5. **最终输出结果卡片 100% 真实后端数据动态驱动**：终点里程碑卡片彻底切除写死的静态空洞文案，动态输出 `已完成 1,010 篇记忆扫描 · 重构 1,112 个向量切片 · 成功率 100%`，让硬核成果清晰可查；
+  6. **严格工程铁律闭环**：
+     - Vitest 单元测试 12/12 全部 PASS；
+     - Pytest 单元测试 48/48 全部 PASS；
+     - 前端 Vite 生产构建 100% PASS (18.21s)；
+     - Git Tag `v1.4.45` 物理锚定并推流至 GitHub。
+
+---
 
 ### 📌 P0: [x] Card-VK-23 (v1.4.31): 卫星 MCP (Satellite MCP) 纯 User Key 契约、非特权工具切除与通用数据面重构 ✅
 - **Git Commit**：`808b1a32a` ｜ **Git Tag**：`v1.4.31`
