@@ -5,6 +5,7 @@ export type TaskStatus =
   | 'failed'
   | 'pending'
   | 'running'
+  | 'cancelling'
   | 'cancelled'
   | 'unknown'
 
@@ -27,7 +28,7 @@ export function normalizeTaskRecord(value: unknown): TaskRecord | undefined {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return undefined
   }
-  return value as TaskRecord
+  return value as unknown as TaskRecord
 }
 
 export function normalizeTasks(value: unknown): TaskRecord[] {
@@ -51,6 +52,7 @@ export function normalizeTaskStatus(
     status === 'failed' ||
     status === 'pending' ||
     status === 'running' ||
+    status === 'cancelling' ||
     status === 'cancelled'
   ) {
     return status

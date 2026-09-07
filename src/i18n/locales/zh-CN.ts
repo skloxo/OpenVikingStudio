@@ -478,6 +478,9 @@ const zhCN = {
     loadFailed: '任务加载失败',
     detail: {
       title: '任务详情',
+      cancelTask: '取消任务',
+      cancelSuccess: '任务已取消',
+      cancelFailed: '取消任务失败',
       loading: '正在加载任务详情...',
       loadFailed: '任务详情加载失败',
       retry: '重试',
