@@ -143,14 +143,11 @@ function extractSessionCommitMetrics(
 
 export function getTaskPipelineSteps(
   task: TaskRecord,
-  queueRows: ParsedQueueRow[] | string = [],
+  _queueRows: ParsedQueueRow[] | string = [],
   language: string = 'zh',
 ): PipelineStep[] {
-  const actualQueueRows: ParsedQueueRow[] = Array.isArray(queueRows)
-    ? queueRows
-    : []
   const actualLang: string =
-    typeof queueRows === 'string' ? queueRows : language
+    typeof _queueRows === 'string' ? _queueRows : language
   const isZh = actualLang.startsWith('zh')
   const type = task.task_type
   const status = task.status
@@ -168,23 +165,7 @@ export function getTaskPipelineSteps(
       >
     | undefined
 
-  const embeddingRow = actualQueueRows.find((r) =>
-    r.name.toLowerCase().includes('embedding'),
-  )
-  const semanticNodesRow = actualQueueRows.find(
-    (r) =>
-      r.name.toLowerCase().includes('semantic') &&
-      r.name.toLowerCase().includes('node'),
-  )
-  const semanticRow =
-    actualQueueRows.find(
-      (r) =>
-        r.name.toLowerCase().includes('semantic') &&
-        !r.name.toLowerCase().includes('node'),
-    ) || semanticNodesRow
-  const parseRow = actualQueueRows.find((r) =>
-    r.name.toLowerCase().includes('parse'),
-  )
+
 
   if (type === 'session_commit') {
     const { turns, lessons } = extractSessionCommitMetrics(
@@ -313,11 +294,11 @@ export function getTaskPipelineSteps(
           step3State === 'completed'
             ? skills
             : step3State === 'running'
-              ? (embeddingRow?.completed ?? 0)
+              ? (resObj.embedded_skills ?? metaObj.embedded_skills ?? (resObj.slices_count ?? 0))
               : 0,
         total: skills,
         count: skills,
-        unit: isZh ? '切片' : 'chunks',
+        unit: isZh ? '技能' : 'skills',
       },
     ]
   }
@@ -350,23 +331,20 @@ export function getTaskPipelineSteps(
 
     return [
       {
-        name: isZh ? '空间解绑' : 'Namespace Unbind',
+        name: isZh ? '软标记清理' : 'Soft Mark',
         state: step1State,
-        processed: step1State === 'completed' ? 1 : 0,
+        processed: 1,
         total: 1,
         count: 1,
-        unit: isZh ? '空间' : 'namespaces',
+        unit: isZh ? '次' : 'ops',
       },
       {
         name: isZh ? '向量注销' : 'Vector Purge',
         state: step2State,
-        processed:
-          step2State === 'completed'
-            ? deletedVectors
-            : (qStatus?.UserDeletion?.processed ?? 0),
+        processed: step2State === 'completed' ? deletedVectors : 0,
         total: deletedVectors,
         count: deletedVectors,
-        unit: isZh ? '向量' : 'vectors',
+        unit: isZh ? '条' : 'vectors',
       },
       {
         name: isZh ? '磁盘擦除' : 'Disk Wipe',
@@ -383,14 +361,14 @@ export function getTaskPipelineSteps(
     const totalFiles = metaObj.total_files ?? resObj.processed_files ?? 1
     const isCompleted = normStatus === 'completed'
     const parseCount = isCompleted
-      ? (qStatus?.ExternalParse?.processed ?? totalFiles)
-      : (parseRow?.completed ?? 0)
+      ? (qStatus?.ExternalParse?.processed ?? resObj.parsed_files ?? totalFiles)
+      : (resObj.parsed_files ?? metaObj.parsed_files ?? qStatus?.ExternalParse?.processed ?? 0)
     const semanticCount = isCompleted
-      ? (qStatus?.Semantic?.processed ?? totalFiles)
-      : (semanticRow?.completed ?? 0)
+      ? (qStatus?.Semantic?.processed ?? resObj.semantic_files ?? totalFiles)
+      : (resObj.semantic_files ?? metaObj.semantic_files ?? qStatus?.Semantic?.processed ?? 0)
     const embeddingCount = isCompleted
-      ? (qStatus?.Embedding?.processed ?? totalFiles)
-      : (embeddingRow?.completed ?? 0)
+      ? (qStatus?.Embedding?.processed ?? resObj.embedded_files ?? totalFiles)
+      : (resObj.embedded_files ?? metaObj.embedded_files ?? qStatus?.Embedding?.processed ?? 0)
     return [
       {
         name: isZh ? '文档解析' : 'Parsing',
@@ -588,7 +566,9 @@ export function getTaskPipelineSteps(
         name: isZh ? '增量向量' : 'Embedding',
         state: step3State,
         processed:
-          step3State === 'completed' ? items : (embeddingRow?.completed ?? 0),
+          step3State === 'completed'
+            ? items
+            : (resObj.reindexed_items ?? metaObj.reindexed_items ?? 0),
         total: items,
         count: items,
         unit: isZh ? '切片' : 'chunks',
@@ -623,7 +603,9 @@ export function getTaskPipelineSteps(
       {
         name: isZh ? '文档解析' : 'Parse',
         state: inferStepState('ExternalParse', 3, 5, status, stage, qStatus),
-        processed: isCompleted ? pages : (parseRow?.completed ?? 0),
+        processed: isCompleted
+          ? pages
+          : (resObj.parsed_pages ?? metaObj.parsed_pages ?? qStatus?.ExternalParse?.processed ?? 0),
         total: pages,
         count: pages,
         unit: isZh ? '页' : 'pages',
@@ -631,7 +613,9 @@ export function getTaskPipelineSteps(
       {
         name: isZh ? '语义提取' : 'Semantic',
         state: inferStepState('Semantic', 4, 5, status, stage, qStatus),
-        processed: isCompleted ? nodes : (semanticRow?.completed ?? 0),
+        processed: isCompleted
+          ? nodes
+          : (resObj.semantic_nodes ?? metaObj.semantic_nodes ?? qStatus?.Semantic?.processed ?? 0),
         total: nodes,
         count: nodes,
         unit: isZh ? '节点' : 'nodes',
@@ -639,7 +623,9 @@ export function getTaskPipelineSteps(
       {
         name: isZh ? '向量建库' : 'Embedding',
         state: inferStepState('Embedding', 5, 5, status, stage, qStatus),
-        processed: isCompleted ? chunks : (embeddingRow?.completed ?? 0),
+        processed: isCompleted
+          ? chunks
+          : (resObj.processed_chunks ?? metaObj.processed_chunks ?? qStatus?.Embedding?.processed ?? 0),
         total: chunks,
         count: chunks,
         unit: isZh ? '切片' : 'chunks',
@@ -727,7 +713,9 @@ export function getTaskPipelineSteps(
       {
         name: isZh ? '增量解析' : 'Parse',
         state: inferStepState('ExternalParse', 2, 3, status, stage, qStatus),
-        processed: isCompleted ? synced : (parseRow?.completed ?? 0),
+        processed: isCompleted
+          ? synced
+          : (resObj.synced_files ?? metaObj.synced_files ?? qStatus?.ExternalParse?.processed ?? 0),
         total: synced,
         count: synced,
         unit: isZh ? '文件' : 'files',
@@ -735,7 +723,9 @@ export function getTaskPipelineSteps(
       {
         name: isZh ? '向量同步' : 'Sync',
         state: inferStepState('Embedding', 3, 3, status, stage, qStatus),
-        processed: isCompleted ? chunks : (embeddingRow?.completed ?? 0),
+        processed: isCompleted
+          ? chunks
+          : (resObj.processed_chunks ?? metaObj.processed_chunks ?? qStatus?.Embedding?.processed ?? 0),
         total: chunks,
         unit: isZh ? '切片' : 'chunks',
       },
@@ -998,7 +988,7 @@ export function getTaskPipelineGroups(
  */
 export function getTaskQuantifiedWorkload(
   task: TaskRecord,
-  queueRows: ParsedQueueRow[] = [],
+  _queueRows: ParsedQueueRow[] = [],
   language: string = 'zh',
 ): QuantifiedWorkload | null {
   const isZh = language.startsWith('zh')
@@ -1145,8 +1135,14 @@ export function getTaskQuantifiedWorkload(
   if (type === 'add_resource' || type === 'resource_build') {
     const qStatus = resObj.queue_status as
       Record<string, { processed?: number } | undefined> | undefined
-    const embProcessed = qStatus?.Embedding?.processed ?? meta.processed_chunks
-    const semProcessed = qStatus?.Semantic?.processed ?? meta.processed_nodes
+    const embProcessed =
+      qStatus?.Embedding?.processed ??
+      resObj.processed_chunks ??
+      meta.processed_chunks
+    const semProcessed =
+      qStatus?.Semantic?.processed ??
+      resObj.processed_nodes ??
+      meta.processed_nodes
     if (embProcessed !== undefined || semProcessed !== undefined) {
       const parts: string[] = []
       if (semProcessed !== undefined)
@@ -1160,6 +1156,14 @@ export function getTaskQuantifiedWorkload(
         total: embProcessed ?? semProcessed,
         unit: isZh ? '切片' : 'chunks',
         pct: 100,
+      }
+    }
+    const files = resObj.processed_files ?? meta.file_count ?? meta.total_files
+    if (files !== undefined) {
+      return {
+        icon: '📦',
+        label: isZh ? `${files} 个文件` : `${files} files`,
+        unit: isZh ? '个文件' : 'files',
       }
     }
   }
@@ -1193,81 +1197,42 @@ export function getTaskQuantifiedWorkload(
     }
   }
 
-  // 3. ONLY for currently RUNNING tasks, match active QueueFS throughput
-  if (status === 'running') {
-    const stage = task.stage?.toLowerCase() || ''
-    const embeddingRow = queueRows.find((r) =>
-      r.name.toLowerCase().includes('embedding'),
-    )
-    const semanticRow = queueRows.find((r) =>
-      r.name.toLowerCase().includes('semantic'),
-    )
-    const parseRow = queueRows.find((r) =>
-      r.name.toLowerCase().includes('parse'),
-    )
-
-    if (stage.includes('extract') || stage.includes('semantic')) {
-      if (semanticRow && semanticRow.total > 0) {
-        const pct = Math.round(
-          (semanticRow.completed / semanticRow.total) * 100,
-        )
-        return {
-          icon: '🧠',
-          label: isZh
-            ? `${semanticRow.completed.toLocaleString()} / ${semanticRow.total.toLocaleString()} 节点 (${pct}%)`
-            : `${semanticRow.completed.toLocaleString()} / ${semanticRow.total.toLocaleString()} nodes (${pct}%)`,
-          processed: semanticRow.completed,
-          total: semanticRow.total,
-          unit: isZh ? '节点' : 'nodes',
-          pct,
-        }
-      }
-    }
-
-    if (stage.includes('parse') || stage.includes('scan')) {
-      if (parseRow && parseRow.total > 0) {
-        const pct = Math.round((parseRow.completed / parseRow.total) * 100)
-        return {
-          icon: '📑',
-          label: isZh
-            ? `${parseRow.completed.toLocaleString()} / ${parseRow.total.toLocaleString()} 页 (${pct}%)`
-            : `${parseRow.completed.toLocaleString()} / ${parseRow.total.toLocaleString()} pages (${pct}%)`,
-          processed: parseRow.completed,
-          total: parseRow.total,
-          unit: isZh ? '页' : 'pages',
-          pct,
-        }
-      }
-    }
-
-    if (
-      stage.includes('embed') ||
-      stage.includes('reindex') ||
-      type === 'add_resource' ||
-      type === 'connector_import'
-    ) {
-      if (
-        embeddingRow &&
-        embeddingRow.total > 0 &&
-        embeddingRow.processing > 0
-      ) {
-        const pct = Math.round(
-          (embeddingRow.completed / embeddingRow.total) * 100,
-        )
-        return {
-          icon: '⚡',
-          label: isZh
-            ? `${embeddingRow.completed.toLocaleString()} / ${embeddingRow.total.toLocaleString()} 切片 (${pct}%)`
-            : `${embeddingRow.completed.toLocaleString()} / ${embeddingRow.total.toLocaleString()} chunks (${pct}%)`,
-          processed: embeddingRow.completed,
-          total: embeddingRow.total,
-          unit: isZh ? '切片' : 'chunks',
-          pct,
-        }
+  if (type === 'legacy_migration') {
+    const count = resObj.migrated_count ?? meta.migrated_count
+    if (count !== undefined) {
+      return {
+        icon: '📦',
+        label: isZh ? `${count} 条迁移记录` : `${count} records migrated`,
+        unit: isZh ? '条' : 'records',
       }
     }
   }
 
+  if (type === 'legacy_cleanup') {
+    const cleaned = resObj.cleaned_records ?? meta.cleaned_records
+    if (cleaned !== undefined) {
+      return {
+        icon: '🧹',
+        label: isZh ? `${cleaned} 条清理碎片` : `${cleaned} records cleaned`,
+        unit: isZh ? '条' : 'records',
+      }
+    }
+  }
+
+  if (type === 'watch_sync') {
+    const synced = resObj.synced_files ?? meta.synced_files
+    if (synced !== undefined) {
+      return {
+        icon: '👀',
+        label: isZh ? `${synced} 个监听文件同步` : `${synced} files synced`,
+        unit: isZh ? '文件' : 'files',
+      }
+    }
+  }
+
+  // 严格遵守第一性原理与绝对数据真实性：
+  // 任何 running 或 pending 状态的任务，若自身 meta/result 尚无明确物理数字，
+  // 坚决返回 null（由工序状态直接中性展示“进行中”），100% 杜绝冒充借用全局 QueueFS 的假切片假节点！
   return null
 }
 
