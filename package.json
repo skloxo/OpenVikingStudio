@@ -1,7 +1,7 @@
 {
   "name": "openviking-studio",
   "private": true,
-  "version": "1.4.39",
+  "version": "1.4.40",
   "type": "module",
   "imports": {
     "#/*": "./src/*"

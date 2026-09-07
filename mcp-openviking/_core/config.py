@@ -276,12 +276,39 @@ class OpenVikingHTTPClient:
 
 http_client = OpenVikingHTTPClient()
 
-# SECTION: Formatting & Fallback Helpers
+def _compact_search_result(data: Any) -> Any:
+    """渐进式分级展开：对检索结果中超过 350 字符的 abstract 进行紧凑截断，避免污染上下文。"""
+    if not isinstance(data, (dict, list)):
+        return data
+    import copy
+    try:
+        data = copy.deepcopy(data)
+    except Exception:
+        return data
+
+    def _trunc(items):
+        if isinstance(items, list):
+            for it in items:
+                if isinstance(it, dict) and isinstance(it.get("abstract"), str) and len(it["abstract"]) > 350:
+                    u = it.get("uri", "")
+                    h = f"... [高密摘要截断，如需阅读全文请使用 openviking_read(uri='{u}')]" if u else "... [高密摘要截断]"
+                    it["abstract"] = it["abstract"][:350] + h
+
+    target = data.get("result", data) if isinstance(data, dict) else data
+    if isinstance(target, dict):
+        for k in ("memories", "resources", "skills", "results"):
+            if k in target:
+                _trunc(target[k])
+    elif isinstance(target, list):
+        _trunc(target)
+    return data
+
+
 def _format_result(result: Any) -> str:
-    """格式化输出结果为美化 JSON 字符串"""
+    """格式化输出结果为美化 JSON 字符串，并自动应用渐进式分级展开截断"""
     if isinstance(result, str):
         return result
-    return json.dumps(result, ensure_ascii=False, indent=2)
+    return json.dumps(_compact_search_result(result), ensure_ascii=False, indent=2)
 
 
 def _api_then_cli(api_call, cli_args: List[str], timeout: int = 30) -> str:

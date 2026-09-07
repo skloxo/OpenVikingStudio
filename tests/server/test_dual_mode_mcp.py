@@ -205,6 +205,51 @@ def test_standalone_satellite_mcp_server():
     assert ping_data.get("tools_count") == 16
 
 
+def test_progressive_disclosure_truncates_oversized_abstracts():
+    """Verify progressive disclosure truncates search abstracts > 350 chars with URI guidance while leaving file contents untouched."""
+    mod = _reload_mcp_module("satellite")
+    from _core.config import _format_result, _compact_search_result
+
+    long_abstract = "A" * 1000
+    search_payload = {
+        "status": 200,
+        "result": {
+            "memories": [
+                {
+                    "uri": "viking://resources/test.md",
+                    "abstract": long_abstract,
+                    "score": 0.95
+                }
+            ],
+            "resources": [
+                {
+                    "uri": "viking://resources/doc.md",
+                    "abstract": "Short abstract",
+                    "score": 0.88
+                }
+            ]
+        }
+    }
+
+    formatted = _format_result(search_payload)
+    data = json.loads(formatted)
+    
+    # 1. Long abstract must be truncated to 350 chars + hint
+    mem_abs = data["result"]["memories"][0]["abstract"]
+    assert len(mem_abs) < 500
+    assert "高密摘要截断" in mem_abs
+    assert "openviking_read(uri='viking://resources/test.md')" in mem_abs
+    assert mem_abs.startswith("A" * 350)
+
+    # 2. Short abstract must remain unchanged
+    res_abs = data["result"]["resources"][0]["abstract"]
+    assert res_abs == "Short abstract"
+
+    # 3. Direct file content string (e.g. from openviking_read) must never be truncated
+    read_payload = "B" * 5000
+    assert _format_result(read_payload) == read_payload
+
+
 def test_code_org_file_size_limits():
     """Verify that following Agent-Friendly Code Organization Spec, every Python file in mcp-openviking is <= 500 lines."""
     mcp_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../mcp-openviking"))
@@ -217,5 +262,6 @@ def test_code_org_file_size_limits():
                 with open(file_path, "r", encoding="utf-8") as fp:
                     line_count = len(fp.readlines())
                 assert line_count <= 500, f"File {file_path} has {line_count} lines, exceeding 500 lines limit!"
+
 
 
