@@ -437,6 +437,61 @@ class OpenAIDenseEmbedder(DenseEmbedderBase):
         except Exception as e:
             raise RuntimeError(f"Embedding failed: {str(e)}") from e
 
+    def embed_batch(
+        self, contents: List[EmbeddingInput], is_query: bool = False
+    ) -> List[EmbedResult]:
+        if not contents:
+            return []
+        prepared = [self._prepare_embedding_input(c) for c in contents]
+
+        def _call() -> List[EmbedResult]:
+            response = self.client.embeddings.create(
+                **self._build_kwargs(prepared, is_query=is_query)
+            )
+            self._update_telemetry_token_usage(response)
+            return [
+                EmbedResult(dense_vector=self._truncate_vector(item.embedding))
+                for item in response.data
+            ]
+
+        try:
+            return self._run_with_retry(
+                _call,
+                logger=logger,
+                operation_name="OpenAI batch embedding",
+            )
+        except Exception as e:
+            logger.warning(f"Batch embedding failed, falling back to sequential: {e}")
+            return [self.embed(c, is_query=is_query) for c in contents]
+
+    async def embed_batch_async(
+        self, contents: List[EmbeddingInput], is_query: bool = False
+    ) -> List[EmbedResult]:
+        if not contents:
+            return []
+        client = self._get_async_client()
+        prepared = [self._prepare_embedding_input(c) for c in contents]
+
+        async def _call() -> List[EmbedResult]:
+            response = await client.embeddings.create(
+                **self._build_kwargs(prepared, is_query=is_query)
+            )
+            self._update_telemetry_token_usage(response)
+            return [
+                EmbedResult(dense_vector=self._truncate_vector(item.embedding))
+                for item in response.data
+            ]
+
+        try:
+            return await self._run_with_async_retry(
+                _call,
+                logger=logger,
+                operation_name="OpenAI async batch embedding",
+            )
+        except Exception as e:
+            logger.warning(f"Async batch embedding failed, falling back to sequential: {e}")
+            return [await self.embed_async(c, is_query=is_query) for c in contents]
+
     def get_dimension(self) -> int:
         """Get embedding dimension
 

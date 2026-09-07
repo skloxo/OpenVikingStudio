@@ -14,10 +14,10 @@ import threading
 import time
 from contextlib import nullcontext
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from openviking.core.context import ContextType, ResourceContentType
-from openviking.models.embedder.base import embed_compat
+from openviking.models.embedder.base import EmbedResult, embed_compat
 from openviking.server.identity import RequestContext, Role
 from openviking.storage.acl import ACL_CONTEXT_FIELDS, ACL_GRANT_FIELDS
 from openviking.storage.errors import (
@@ -488,10 +488,73 @@ class TextEmbeddingHandler(DequeueHandlerBase):
         self._breaker_open_last_log_at = 0.0
         self._breaker_open_suppressed_count = 0
         self._breaker_open_log_interval = 30.0
+        self._batch_queue: List[Tuple[Any, asyncio.Future]] = []
+        self._batch_lock: Optional[asyncio.Lock] = None
+        self._batch_task: Optional[asyncio.Task] = None
+        self._max_batch_size = max(1, min(int(config.embedding.max_concurrent), 16))
+        self._linger_s = 0.005
 
     def _initialize_embedder(self, config: "OpenVikingConfig"):
         """Initialize the embedder instance from config."""
         self._embedder = config.embedding.get_embedder()
+
+    def _ensure_batch_lock(self) -> asyncio.Lock:
+        if self._batch_lock is None:
+            self._batch_lock = asyncio.Lock()
+        return self._batch_lock
+
+    async def _dispatch_embed(self, message: Any) -> "EmbedResult":
+        loop = asyncio.get_running_loop()
+        future: asyncio.Future = loop.create_future()
+        lock = self._ensure_batch_lock()
+        async with lock:
+            self._batch_queue.append((message, future))
+            if len(self._batch_queue) >= self._max_batch_size:
+                batch = list(self._batch_queue)
+                self._batch_queue.clear()
+                if self._batch_task and not self._batch_task.done():
+                    self._batch_task.cancel()
+                self._batch_task = None
+                asyncio.create_task(self._process_batch_items(batch))
+            elif self._batch_task is None or self._batch_task.done():
+                self._batch_task = asyncio.create_task(self._batch_timer())
+        return await future
+
+    async def _batch_timer(self) -> None:
+        await asyncio.sleep(self._linger_s)
+        lock = self._ensure_batch_lock()
+        async with lock:
+            if not self._batch_queue:
+                return
+            batch = list(self._batch_queue)
+            self._batch_queue.clear()
+            self._batch_task = None
+        await self._process_batch_items(batch)
+
+    async def _process_batch_items(self, batch: List[Tuple[Any, asyncio.Future]]) -> None:
+        if not batch:
+            return
+        contents = [c for c, _ in batch]
+        try:
+            from openviking.models.embedder.base import embed_compat_batch
+            results = await embed_compat_batch(self._embedder, contents, is_query=False)
+            if len(results) == len(batch):
+                for (_, fut), res in zip(batch, results):
+                    if not fut.done():
+                        fut.set_result(res)
+                return
+        except Exception as e:
+            logger.debug(f"[TextEmbeddingHandler] Micro-batch failed, falling back: {e}")
+
+        for c, fut in batch:
+            if fut.done():
+                continue
+            try:
+                from openviking.models.embedder.base import embed_compat
+                res = await embed_compat(self._embedder, c, is_query=False)
+                fut.set_result(res)
+            except Exception as exc:
+                fut.set_exception(exc)
 
     def _log_breaker_open_reenqueue_summary(self) -> None:
         """Log a throttled warning when embeddings are re-enqueued due to an open circuit breaker."""
@@ -695,11 +758,7 @@ class TextEmbeddingHandler(DequeueHandlerBase):
                         import time as _time
 
                         _embed_t0 = _time.monotonic()
-                        result = await embed_compat(
-                            self._embedder,
-                            embedding_msg.message,
-                            is_query=False,
-                        )
+                        result = await self._dispatch_embed(embedding_msg.message)
                         _embed_elapsed = _time.monotonic() - _embed_t0
                         try:
                             from openviking.metrics.datasources import EmbeddingEventDataSource
