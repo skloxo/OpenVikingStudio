@@ -74,6 +74,24 @@
 
 ### 📦 历史已交付工单履历 (Delivered Release Cards)
 
+### 📌 P1: [x] Card-Tasks-QualityGate (v1.4.58): 抗熵增质量门禁与全景工序/任务中心原生集成 ✅
+- **类型**：Task Pipeline Architecture / Anti-Entropy Governance / Quality Gate ｜ **优先级**：🔴 P1（告别幽灵后台，任务中心统一留痕、可视、可重试）
+- **Git Tag**：`v1.4.58`（Commit: `8b5e3cc57`）
+- **实际修改文件清单**：
+  - `src/routes/tasks/-lib/pipeline-definitions.ts` (注册第 24 道全景标准工序 `step_quality_gate`，关联 Semantic 引擎与 `['quality_gate', 'benchmark_eval']`；在 `TASK_FLOWS` 中收录标准门禁流，精简排版控制在 492 行)
+  - `src/routes/tasks/-lib/task-pipeline-schema.ts` (在 `ATOMIC_STEP_SPECS` 中补充 `step_quality_gate` 算子规则，在 `TASK_FLOW_REGISTRY` 中注册 `quality_gate` 与 `benchmark_eval`)
+  - `src/routes/tasks/-lib/task-pipeline-engine.ts` (在 `deriveUniversalFinalOutcome` 中新增质量门禁交付成果收据解析，支持金标用例数、RAGAS 四维综合调和指数与命中率动态展示)
+  - `src/routes/tasks/-lib/task-api.ts` (在 `executeTaskRetry` 中增加对 `quality_gate` 任务类型的原生重试支持，消灭 unnecessary type assertions 修复 linter)
+  - `src/i18n/locales/zh-CN.ts` & `src/i18n/locales/en.ts` (中英双语同步新增 `types.quality_gate` 与 `types.benchmark_eval`)
+  - `openviking/service/task_tracker.py` (在后端 `_CANCELLABLE_TASK_TYPES` 中注册 `quality_gate` 与 `benchmark_eval`)
+  - `package.json` (版本号升级至 1.4.58)
+- **交付内容摘要**：
+  1. 彻底落实用户关于“自动化质检必须在任务中心留痕、让人类全生命周期可感知”的核心诉求，切除后台幽灵黑盒跑分；
+  2. 任务中心 24 道全景流水线与 10 大流程正式接入 `quality_gate`，严格遵循 $X/Y$ 真实物理进度度量与单向单调递进律；
+  3. 任务详情与列表全面支持失败重新执行（Retry on Failure），交付收据原生展示四维调和指数；
+  4. 严格确立 100% 只读探针与防丢隔离铁律（Quarantine, Never Delete），消除数据误裁与丢失风险；
+  5. 自动化构建与测试 100% PASS，Git Tag `v1.4.58` 物理留痕。
+
 ### 📌 P1: [x] Card-Studio-RAGAS-i18n (v1.4.57): RAGAS 评测抽屉中文优先 i18n 规范重构与中英双语动态测试集 ✅
 - **类型**：i18n / Domain Precision / Architecture SSOT ｜ **优先级**：🔴 P1（彻底消灭英文优先与括号中文等倒置瑕疵）
 - **Git Tag**：`v1.4.57`（Commit: `019c4d625`）
