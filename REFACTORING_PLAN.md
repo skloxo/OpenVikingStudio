@@ -74,6 +74,24 @@
 
 ### 📦 历史已交付工单履历 (Delivered Release Cards)
 
+### 📌 P1: [x] Card-Studio-RAGAS-i18n (v1.4.57): RAGAS 评测抽屉中文优先 i18n 规范重构与中英双语动态测试集 ✅
+- **类型**：i18n / Domain Precision / Architecture SSOT ｜ **优先级**：🔴 P1（彻底消灭英文优先与括号中文等倒置瑕疵）
+- **Git Tag**：`v1.4.57`（Commit: `019c4d625`）
+- **实际修改文件清单**：
+  - `src/i18n/locales/zh-CN.ts` (全面落实中文优先原则：四维微瓦片由英文优先改为“中文优先+括号英文”：`排布精度 (Context Precision)`、`知识覆盖 (Context Recall)`、`语义忠实度 (Faithfulness)`、`答案相关度 (Answer Relevance)`；新增展开详情 `detailPrecision` 等 5 大中文键名；新增 `defaultQueries` 中文默认测试集)
+  - `src/i18n/locales/en.ts` (平行补齐纯英文标签、展开行键名与英文默认用例 `defaultQueries`)
+  - `src/routes/retrieval/-components/benchmark/eval-engine.ts` (解耦中英文默认测试集常数 `DEFAULT_BENCHMARK_QUERIES_ZH` 与 `DEFAULT_BENCHMARK_QUERIES_EN`，新增 `getDefaultBenchmarkQueries(lang)` 纯函数工厂)
+  - `src/routes/retrieval/-components/benchmark-drawer.tsx` (接入动态 `t('benchmark.defaultQueries')`，支持中英文切换时自动同步对应语言默认用例；修复 TS 严格类型)
+  - `src/routes/retrieval/-components/benchmark/metrics-tiles.tsx` (四维微瓦片与综合指数描述文本 100% 走 i18n key，彻底消灭硬编码)
+  - `src/routes/retrieval/-components/benchmark/results-table.tsx` (展开指标折叠卡片 5 大指标与运行/异常状态徽章 100% 接入 i18n，指标数值统一格式化为 `toFixed(2)`)
+  - `package.json` (版本号升级至 1.4.57)
+- **交付内容摘要**：
+  1. 彻底纠正 i18n 中文环境下“英文优先、括号中文”的不规范展示，确立“中文优先展示、必要时括号附注英文专有名词”的标准范式；
+  2. 彻底解决展开指标详情卡片硬编码问题（如原 `Precision: 1 Recall: 1...` 升级为中文规范 `排布精度 : 1.00`, `知识覆盖 : 1.00`, `语义忠实度 : 0.68`, `答案相关度 : 0.65`, `综合调和指数 : 0.80`）；
+  3. 彻底解决默认测试 Query 未做国际化问题，支持中英双语动态切换测试集；
+  4. 单元测试 100% PASS (4/4)，Vite 生产构建成功部署至端口 1933，CDP 实机自动化核验通过并留存截图 `ragas_expanded_drawer_1788793776699.png`；
+  5. 严格遵行双轨版本回溯铁律，Git Tag `v1.4.57` 与 REFACTORING_PLAN.md 物理对齐留痕。
+
 ### 📌 P1: [x] Card-Studio-RAGAS-Fix (v1.4.56): RAGAS 评测抽屉宽度自适应、横向防截断与 UI 体验极致优化 ✅
 - **类型**：Bugfix / UI Layout / User Experience Refinement ｜ **优先级**：🔴 P1（UI 截断与挤压变形体验彻底根治）
 - **Git Tag**：`v1.4.56`（Commit: `830f3961d`）
