@@ -94,6 +94,20 @@ async def embed_compat(
         return await embedder.embed_async(embedding_input, is_query=is_query)
 
 
+async def embed_compat_batch(
+    embedder: "EmbedderBase", contents: List["EmbeddingInput"], *, is_query: bool = False
+) -> List["EmbedResult"]:
+    """Prepare input batch, then call the embedder's async-compatible batch entrypoint."""
+    from openviking.telemetry import bind_telemetry_stage
+
+    if not contents:
+        return []
+    stage = "embed_query" if is_query else "embed_resource"
+    prepared_inputs = [embedder.prepare_embedding_input(c) for c in contents]
+    with bind_telemetry_stage(stage):
+        return await embedder.embed_batch_async(prepared_inputs, is_query=is_query)
+
+
 def truncate_and_normalize(embedding: List[float], dimension: Optional[int]) -> List[float]:
     """Truncate and L2 normalize embedding vector
 
@@ -234,6 +248,18 @@ class EmbedderBase(ABC):
 
     async def embed_query_async(self, text: str) -> EmbedResult:
         return await self.embed_async(text, is_query=True)
+
+    def embed_batch(
+        self, contents: List["EmbeddingInput"], is_query: bool = False
+    ) -> List[EmbedResult]:
+        """Embed a batch of contents. Subclasses should override with vectorised/batched API call."""
+        return [self.embed(c, is_query=is_query) for c in contents]
+
+    async def embed_batch_async(
+        self, contents: List["EmbeddingInput"], is_query: bool = False
+    ) -> List[EmbedResult]:
+        """Async embed a batch of contents. Subclasses should override with vectorised/batched API call."""
+        return [await self.embed_async(c, is_query=is_query) for c in contents]
 
     def close(self):
         """Release resources, subclasses can override as needed"""
