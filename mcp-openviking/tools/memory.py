@@ -291,15 +291,16 @@ def register_memory_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Callabl
         content: str = Field(default="", description="消息内容（为空时仅提交会话）"),
     ) -> str:
         """存储消息到长期记忆。content 为空时等同于 commit。"""
+        sid = str(session_id).strip() if (isinstance(session_id, str) and not hasattr(session_id, "default")) else ""
+        sid = sid or "default"
+        role_str = str(role) if (isinstance(role, str) and not hasattr(role, "default")) else "user"
+        content_str = str(content) if (isinstance(content, str) and not hasattr(content, "default")) else ""
+
         def _api():
-            if content:
-                body = {"role": role, "parts": [{"type": "text", "text": content}]}
-                if session_id:
-                    return http_client.post(f"/api/v1/sessions/{session_id}/messages", body)
-                return http_client.post("/api/v1/sessions", {"session_id": session_id or "default", "message": body})
-            if session_id:
-                return http_client.post(f"/api/v1/sessions/{session_id}/commit")
-            return http_client.post("/api/v1/sessions/default/commit")
+            if content_str:
+                body = {"role": role_str, "parts": [{"type": "text", "text": content_str}]}
+                return http_client.post(f"/api/v1/sessions/{sid}/messages", body)
+            return http_client.post(f"/api/v1/sessions/{sid}/commit")
 
         _record_harness_call("store")
         return _api_then_cli(_api, ["session", "commit"], timeout=60)
@@ -310,10 +311,11 @@ def register_memory_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Callabl
         session_id: str = Field(default="", description="会话 ID（留空使用当前会话）"),
     ) -> str:
         """提交当前会话记忆（归档消息 + 异步提取长期记忆）"""
+        sid = str(session_id).strip() if (isinstance(session_id, str) and not hasattr(session_id, "default")) else ""
+        sid = sid or "default"
+
         def _api():
-            if session_id:
-                return http_client.post(f"/api/v1/sessions/{session_id}/commit")
-            return http_client.post("/api/v1/sessions/default/commit")
+            return http_client.post(f"/api/v1/sessions/{sid}/commit")
 
         return _api_then_cli(_api, ["session", "commit"], timeout=60)
     registered["openviking_commit"] = openviking_commit
@@ -355,7 +357,16 @@ def register_memory_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Callabl
                 search_result = _run_cli(search_args)
                 if _has_error(search_result):
                     return _handle_cli_error(search_result)
-            results = search_result.get("results", [])
+            if isinstance(search_result, dict):
+                res_obj = search_result.get("result", {})
+                if isinstance(res_obj, dict):
+                    results = search_result.get("results") or (res_obj.get("resources", []) + res_obj.get("memories", []))
+                elif isinstance(res_obj, list):
+                    results = res_obj
+                else:
+                    results = search_result.get("results", [])
+            else:
+                results = []
 
         detailed_results = []
         for item in results:

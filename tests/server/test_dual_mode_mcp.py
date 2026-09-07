@@ -264,4 +264,58 @@ def test_code_org_file_size_limits():
                 assert line_count <= 500, f"File {file_path} has {line_count} lines, exceeding 500 lines limit!"
 
 
+def test_smart_read_result_extraction_compatibility():
+    """Verify openviking_smart_read robustly handles both {result: {resources: [...]}} and {results: [...]} schemas."""
+    import satellite_mcp_server as sat
+    from unittest.mock import patch
+
+    fake_find_response = {
+        "status": "ok",
+        "result": {
+            "resources": [
+                {"uri": "viking://resources/doc1.md", "score": 0.85},
+                {"uri": "viking://resources/doc2.md", "score": 0.75}
+            ],
+            "memories": []
+        }
+    }
+    fake_read_response = "Mocked File Content"
+
+    with patch.object(sat.http_client, "post", return_value=fake_find_response):
+        with patch.object(sat.http_client, "get", return_value=fake_read_response):
+            res_str = sat.openviking_smart_read(query="test", limit=2, level=2)
+            data = json.loads(res_str)
+            assert data["total_results"] == 2
+            assert len(data["results"]) == 2
+            assert data["results"][0]["search_result"]["uri"] == "viking://resources/doc1.md"
+            assert data["results"][0]["content"] == "Mocked File Content"
+
+
+def test_store_and_commit_default_params_sanitization():
+    """Verify calling openviking_store without params safely defaults to commit on 'default' session."""
+    import satellite_mcp_server as sat
+    from unittest.mock import patch
+
+    posted_urls = []
+    def fake_post(url, json=None):
+        posted_urls.append((url, json))
+        return {"status": "ok", "result": {}}
+
+    with patch.object(sat.http_client, "post", side_effect=fake_post):
+        # 1. Store with no content -> commits default session
+        sat.openviking_store()
+        assert len(posted_urls) == 1
+        assert posted_urls[0][0] == "/api/v1/sessions/default/commit"
+
+        # 2. Store with content but no session_id
+        sat.openviking_store(content="Hello World")
+        assert len(posted_urls) == 2
+        assert posted_urls[1][0] == "/api/v1/sessions/default/messages"
+        payload = posted_urls[1][1]
+        assert isinstance(payload, dict)
+        assert payload["role"] == "user"
+        assert payload["parts"][0]["text"] == "Hello World"
+
+
+
 
