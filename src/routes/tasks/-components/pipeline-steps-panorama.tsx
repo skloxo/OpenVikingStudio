@@ -159,6 +159,19 @@ export const ALL_PANORAMA_STEPS: PanoramaStepDef[] = [
     descriptionZh: '文本切片分块，GPU 并发计算稠密向量并存入 VikingDB',
     descriptionEn: 'Text chunking, compute dense vectors on GPU and insert into VikingDB',
   },
+  {
+    id: 'step_memory_linking',
+    nameZh: '记忆关联',
+    nameEn: 'Memory Linking',
+    engineKey: 'Semantic-Nodes',
+    engineNameZh: '语义拓扑',
+    engineNameEn: 'Semantic Topology Engine',
+    unitZh: '关联',
+    unitEn: 'links',
+    taskTypes: ['add_resource'],
+    descriptionZh: '跨资源实体网状关系提炼，构建知识图谱与全局拓扑记忆关联',
+    descriptionEn: 'Cross-resource entity relation distillation, building knowledge graph & memory topology links',
+  },
 
   // 5-6: 技能导入相关
   {
@@ -434,7 +447,7 @@ export const TASK_FLOWS: TaskTypeFlowDef[] = [
     typeKey: 'add_resource',
     nameZh: '资源处理',
     nameEn: 'Resource Ingestion',
-    stepIds: ['step_ingestion', 'step_parse', 'step_semantic', 'step_embedding'],
+    stepIds: ['step_ingestion', 'step_parse', 'step_semantic', 'step_embedding', 'step_memory_linking'],
   },
   {
     typeKey: 'add_skill',
@@ -509,19 +522,19 @@ export function PipelineStepsPanoramaCard() {
                 {isZh ? '流水线全工序全景大盘' : 'Pipeline Steps Panorama'}
               </span>
               <Badge variant="outline" className="text-[11px] font-mono px-1.5 py-0 h-4.5 bg-muted/30">
-                {isZh ? '8 业务任务' : '8 Tasks'}
+                {isZh ? `${TASK_FLOWS.length} 业务任务` : `${TASK_FLOWS.length} Tasks`}
               </Badge>
               <Badge variant="outline" className="text-[11px] font-mono px-1.5 py-0 h-4.5 bg-primary/10 text-primary border-primary/20">
-                {isZh ? '23 原子工序' : '23 Steps'}
+                {isZh ? `${ALL_PANORAMA_STEPS.length} 原子工序` : `${ALL_PANORAMA_STEPS.length} Steps`}
               </Badge>
               <Badge variant="outline" className="text-[11px] font-mono px-1.5 py-0 h-4.5 bg-muted/30">
-                {isZh ? '7 执行引擎' : '7 Engines'}
+                {isZh ? `${ENGINE_DEFINITIONS.length} 执行引擎` : `${ENGINE_DEFINITIONS.length} Engines`}
               </Badge>
             </div>
             <p className="text-[11px] text-muted-foreground mt-0.5">
               {isZh
-                ? '任务（业务目标）➔ 编排拆解出 23 道流水线工序 ➔ 调度驱动底层 7 大执行引擎物理计算'
-                : 'Business Tasks ➔ Decomposed into 23 Pipeline Steps ➔ Dispatched to 7 Execution Engines'}
+                ? `任务（业务目标）➔ 编排拆解出 ${ALL_PANORAMA_STEPS.length} 道流水线工序 ➔ 调度驱动底层 ${ENGINE_DEFINITIONS.length} 大执行引擎物理计算`
+                : `Business Tasks ➔ Decomposed into ${ALL_PANORAMA_STEPS.length} Pipeline Steps ➔ Dispatched to ${ENGINE_DEFINITIONS.length} Execution Engines`}
             </p>
           </div>
         </div>

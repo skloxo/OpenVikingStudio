@@ -1,6 +1,7 @@
-import { ChevronDown, ChevronUp, FileIcon, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, ExternalLink, FileIcon, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from '@tanstack/react-router'
 
 import { Badge } from '#/components/ui/badge'
 import {
@@ -84,9 +85,18 @@ export function UploadTaskDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[min(80vh,640px)] gap-0 overflow-hidden p-0 sm:max-w-3xl">
         <DialogHeader className="flex flex-row items-center justify-between border-b px-6 py-4 pr-14">
-          <DialogTitle className="truncate text-lg">
-            {t('processingTasks.title')}
-          </DialogTitle>
+          <div className="flex items-center gap-3 min-w-0">
+            <DialogTitle className="truncate text-lg">
+              {t('processingTasks.title')}
+            </DialogTitle>
+            <Link
+              to="/tasks"
+              onClick={() => onOpenChange(false)}
+              className="inline-flex items-center gap-1 text-xs font-medium text-cyan-600 hover:text-cyan-500 dark:text-cyan-400 hover:underline transition-all shrink-0 select-none"
+            >
+              <span>{t('processingTasks.viewInTaskCenter', { defaultValue: '在任务中心查看完整调度 ↗' })}</span>
+            </Link>
+          </div>
           {sortedTasks.length > 0 && onClearTasks ? (
             <button
               type="button"
@@ -106,10 +116,11 @@ export function UploadTaskDialog({
             </div>
           ) : (
             <div className="overflow-hidden rounded-lg border border-border/60 bg-muted/10">
-              <div className="grid grid-cols-[minmax(0,1fr)_140px_96px] gap-4 border-b border-border/60 px-4 py-3 text-xs font-medium text-muted-foreground">
+              <div className="grid grid-cols-[minmax(0,1fr)_130px_90px_36px] gap-3 border-b border-border/60 px-4 py-3 text-xs font-medium text-muted-foreground">
                 <div>{t('processingTasks.columns.fileName')}</div>
                 <div>{t('processingTasks.columns.status')}</div>
                 <div>{t('processingTasks.columns.size')}</div>
+                <div className="text-right sr-only">{t('processingTasks.columns.action', { defaultValue: '操作' })}</div>
               </div>
 
               <div>
@@ -126,7 +137,7 @@ export function UploadTaskDialog({
                     >
                       <div
                         className={cn(
-                          'grid grid-cols-[minmax(0,1fr)_140px_96px] gap-4 px-4 py-3 text-sm',
+                          'grid grid-cols-[minmax(0,1fr)_130px_90px_36px] gap-3 px-4 py-3 text-sm items-center',
                           isFailed && 'bg-rose-500/6',
                         )}
                       >
@@ -157,10 +168,22 @@ export function UploadTaskDialog({
                           ) : null}
                         </div>
 
-                        <div className="flex items-center text-muted-foreground">
+                        <div className="flex items-center text-muted-foreground font-mono text-xs tabular-nums">
                           {typeof task.fileSize === 'number'
                             ? formatFileSize(task.fileSize)
                             : '-'}
+                        </div>
+
+                        <div className="flex items-center justify-end">
+                          <Link
+                            to="/tasks"
+                            search={{ taskId: task.id }}
+                            onClick={() => onOpenChange(false)}
+                            className="inline-flex items-center justify-center size-6 rounded hover:bg-muted/40 text-muted-foreground hover:text-cyan-500 transition-colors cursor-pointer"
+                            title={t('processingTasks.openInTaskCenter', { defaultValue: '在任务中心查看' })}
+                          >
+                            <ExternalLink className="size-3.5" />
+                          </Link>
                         </div>
                       </div>
 

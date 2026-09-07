@@ -463,17 +463,19 @@ export function getTaskPipelineSteps(
     ]
   }
 
-  // Default resource ingestion pipeline (add_resource): 资源入库 -> 文档解析 -> 语义提取 -> 向量建库
+  // Default resource ingestion pipeline (add_resource): 资源入库 -> 文档解析 -> 语义提取 -> 向量建库 -> 记忆关联
   const isEmbedStage = stage?.toLowerCase().includes('embedding') || stage?.toLowerCase().includes('vector')
   const isSemStage = stage?.toLowerCase().includes('semantic') || stage?.toLowerCase().includes('extract')
   const isParseStage = stage?.toLowerCase().includes('parse') || stage?.toLowerCase().includes('scan')
+  const isLinkingStage = stage?.toLowerCase().includes('link') || stage?.toLowerCase().includes('relation') || stage?.toLowerCase().includes('memory')
   const isCompleted = normStatus === 'completed'
   const isRunning = normStatus === 'running'
 
   const s1: StepState = status === 'pending' ? 'pending' : 'completed'
-  const s2: StepState = isCompleted || isSemStage || isEmbedStage ? 'completed' : isParseStage ? 'running' : isRunning ? 'completed' : 'pending'
-  const s3: StepState = isCompleted || isEmbedStage ? 'completed' : isSemStage ? 'running' : 'pending'
-  const s4: StepState = isCompleted ? 'completed' : isEmbedStage ? 'running' : 'pending'
+  const s2: StepState = isCompleted || isSemStage || isEmbedStage || isLinkingStage ? 'completed' : isParseStage ? 'running' : isRunning ? 'completed' : 'pending'
+  const s3: StepState = isCompleted || isEmbedStage || isLinkingStage ? 'completed' : isSemStage ? 'running' : 'pending'
+  const s4: StepState = isCompleted || isLinkingStage ? 'completed' : isEmbedStage ? 'running' : 'pending'
+  const s5: StepState = isCompleted ? 'completed' : isLinkingStage ? 'running' : 'pending'
 
   const fileCount = metaObj.file_count ?? 1
 
@@ -491,6 +493,11 @@ export function getTaskPipelineSteps(
   const embTotal = Math.max(1, metaObj.total_chunks ?? metaObj.processed_chunks ?? resObj.processed_chunks ?? resObj.total_chunks ?? (s4 === 'completed' ? fileCount : 1))
   const rawEmbProcessed = s4 === 'completed' ? embTotal : (metaObj.processed_chunks ?? 0)
   const embProcessed = Math.min(embTotal, Math.max(0, rawEmbProcessed))
+
+  // 4. Memory Linking
+  const linkTotal = Math.max(1, metaObj.total_links ?? resObj.total_links ?? (s5 === 'completed' ? fileCount : 1))
+  const rawLinkProcessed = s5 === 'completed' ? linkTotal : (resObj.linked_memories ?? metaObj.linked_memories ?? 0)
+  const linkProcessed = Math.min(linkTotal, Math.max(0, rawLinkProcessed))
 
   return [
     {
@@ -524,6 +531,14 @@ export function getTaskPipelineSteps(
       total: embTotal,
       count: embProcessed,
       unit: isZh ? '切片' : 'chunks',
+    },
+    {
+      name: isZh ? '记忆关联' : 'Memory Linking',
+      state: s5,
+      processed: linkProcessed,
+      total: linkTotal,
+      count: linkProcessed,
+      unit: isZh ? '关联' : 'links',
     },
   ]
 }
@@ -616,7 +631,19 @@ export function getTaskPipelineGroups(
     ]
   }
 
-  // Default resource ingestion pipeline: 资源入库 -> 文档解析 -> [ 语义提取 ∥ 向量建库 ]
+  // Default resource ingestion pipeline: 资源入库 -> 文档解析 -> [ 语义提取 ∥ 向量建库 ] -> 记忆关联
+  if (steps[4]) {
+    return [
+      { type: 'serial', step: steps[0] },
+      { type: 'serial', step: steps[1] },
+      {
+        type: 'parallel',
+        steps: [steps[2], steps[3]],
+      },
+      { type: 'serial', step: steps[4] },
+    ]
+  }
+
   return [
     { type: 'serial', step: steps[0] },
     { type: 'serial', step: steps[1] },
