@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { RetrievalBenchmarkDrawer } from './-components/benchmark-drawer'
 import { RetrievalControls } from './-components/retrieval-controls'
 import { RetrievalResults } from './-components/retrieval-results'
 import { RetrievalSearchBar } from './-components/search-bar'
@@ -176,14 +177,19 @@ function RetrievalPage() {
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-5">
-      <RetrievalSearchBar
-        inputRef={inputRef}
-        onChange={setQuery}
-        onSubmit={handleSubmit}
-        placeholder={t(`placeholders.${retrievalMode}`)}
-        query={query}
-        sendLabel={t('send')}
-      />
+      <div className="flex items-center gap-2">
+        <div className="flex-1 min-w-0">
+          <RetrievalSearchBar
+            inputRef={inputRef}
+            onChange={setQuery}
+            onSubmit={handleSubmit}
+            placeholder={t(`placeholders.${retrievalMode}`)}
+            query={query}
+            sendLabel={t('send')}
+          />
+        </div>
+        <RetrievalBenchmarkDrawer />
+      </div>
 
       <RetrievalControls
         customPathInput={customPathInput}

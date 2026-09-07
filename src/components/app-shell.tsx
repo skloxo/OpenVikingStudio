@@ -15,6 +15,7 @@ import {
   PlugZapIcon,
   ScrollTextIcon,
   SearchIcon,
+  SettingsIcon,
   Share2Icon,
   ShieldAlertIcon,
   SparklesIcon,
@@ -180,7 +181,6 @@ function NavGroupItem({ item, pathname, title, t }: NavGroupItemProps) {
   return (
     <Collapsible
       key={item.id}
-      asChild
       defaultOpen={isGroupActive}
       className="group/collapsible"
     >
@@ -368,11 +368,11 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                   <SidebarMenuButton
                     render={<Link to="/settings" />}
                     isActive={settingsActive}
-                    tooltip={t('footer.connection', { ns: 'appShell' })}
+                    tooltip={t('navigation.settings.title', { ns: 'appShell' })}
                     className="h-9"
                   >
-                    <PlugZapIcon />
-                    <span>{t('footer.connection', { ns: 'appShell' })}</span>
+                    <SettingsIcon />
+                    <span>{t('navigation.settings.title', { ns: 'appShell' })}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 {canManageUsers ? (
