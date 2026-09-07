@@ -492,6 +492,13 @@ const en = {
       stepFailed: 'Failed',
       stepPending: 'Pending',
       stepRunning: 'Running',
+      pendingPreceding: 'Pending',
+      finalDeliverable: 'Final Deliverable',
+      expectedOutputPrefix: 'Expected: ',
+      delivered: 'Delivered',
+      aborted: 'Aborted',
+      stepRunningText: 'Processing',
+      stepCompletedText: 'Completed',
     },
     pipeline: {
       queued: 'Queued',
