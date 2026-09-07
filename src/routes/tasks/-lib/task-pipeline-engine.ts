@@ -285,6 +285,28 @@ export function deriveUniversalFinalOutcome(
     }
   }
 
+  // 5. 质量门禁 (Quality Gate)
+  if (type === 'quality_gate' || type === 'benchmark_eval') {
+    const composite = resObj.composite_score ?? metaObj.composite_score
+    const totalCases = resObj.total_queries ?? resObj.total_cases ?? metaObj.total_queries ?? 10
+    const hitRate = resObj.hit_rate ?? metaObj.hit_rate
+
+    let deliverableText = isZh ? '抗熵增质量门禁已执行' : 'Anti-entropy quality gate completed'
+    if (composite !== undefined) {
+      const compStr = typeof composite === 'number' ? composite.toFixed(3) : String(composite)
+      const hitStr = hitRate !== undefined ? (typeof hitRate === 'number' ? `${(hitRate * 100).toFixed(0)}%` : String(hitRate)) : undefined
+      deliverableText = isZh
+        ? `评测 ${totalCases} 组金标用例 · RAGAS 综合指数 ${compStr}` + (hitStr ? ` · 命中率 ${hitStr}` : '')
+        : `Evaluated ${totalCases} test cases · RAGAS Composite ${compStr}` + (hitStr ? ` · Hit Rate ${hitStr}` : '')
+    }
+
+    return {
+      title: isZh ? '抗熵增质量门禁' : 'Anti-Entropy Quality Gate',
+      deliverableText,
+      expectedText: isZh ? '四维指标调和评测与抗熵增基线断言' : '4D RAGAS harmonic evaluation & baseline assertion',
+    }
+  }
+
   // 默认通用兜底：实事求是
   return {
     title: isZh ? '任务交付成果' : 'Task Deliverable',

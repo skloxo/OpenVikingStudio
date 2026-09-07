@@ -294,6 +294,18 @@ export const ATOMIC_STEP_SPECS: Record<string, AtomicStepSpec> = {
     isActionOnly: true,
     engineKey: 'viking_fs',
   },
+  // 24. 质量门禁 (量化计数: 用例 / cases)
+  step_quality_gate: {
+    id: 'step_quality_gate',
+    nameZh: '质量门禁',
+    nameEn: 'Quality Gate',
+    unitZh: '用例',
+    unitEn: 'cases',
+    stageKeywords: ['eval', 'benchmark', 'gate', 'quality'],
+    metricKeys: ['evaluated_cases', 'passed_cases', 'total_queries', 'completed_queries'],
+    totalKeys: ['total_queries', 'total_cases'],
+    engineKey: 'semantic',
+  },
 }
 
 /**
@@ -364,5 +376,11 @@ export const TASK_FLOW_REGISTRY: Record<string, string[]> = {
     'step_soft_mark',
     'step_vector_purge',
     'step_disk_wipe',
+  ],
+  quality_gate: [
+    'step_quality_gate',
+  ],
+  benchmark_eval: [
+    'step_quality_gate',
   ],
 }

@@ -575,6 +575,8 @@ const en = {
       user_delete: 'User space purge',
       user_deletion: 'User space purge',
       watch_sync: 'Watch sync',
+      quality_gate: 'Quality Gate',
+      benchmark_eval: 'Benchmark Eval',
     },
   },
   accountSwitcher: {

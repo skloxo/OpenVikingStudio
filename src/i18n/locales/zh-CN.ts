@@ -597,6 +597,8 @@ const zhCN = {
       user_delete: '用户空间注销',
       user_deletion: '用户空间注销',
       watch_sync: 'Watch 增量同步',
+      quality_gate: '抗熵增质量门禁',
+      benchmark_eval: '基准质检评测',
     },
   },
   accountSwitcher: {
