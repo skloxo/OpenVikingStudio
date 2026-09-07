@@ -46,8 +46,7 @@ const DEFAULT_BENCHMARK_QUERIES: string[] = [
 ]
 
 export function RetrievalBenchmarkDrawer() {
-  const { t, i18n } = useTranslation('retrieval')
-  const isZh = i18n.resolvedLanguage?.startsWith('zh')
+  const { t } = useTranslation('retrieval')
 
   const [isOpen, setIsOpen] = React.useState(false)
   const [queries, setQueries] = React.useState<string[]>(DEFAULT_BENCHMARK_QUERIES)
@@ -111,7 +110,7 @@ export function RetrievalBenchmarkDrawer() {
         })
 
         const latencyMs = Math.round(performance.now() - startTime)
-        const payload = res.data?.result
+        const payload = res.data.result
         const hits = [
           ...(payload?.resources || []),
           ...(payload?.memories || []),
@@ -379,10 +378,10 @@ export function RetrievalBenchmarkDrawer() {
                         status === 'hit' && 'hover:bg-muted/30',
                       )}
                     >
-                      <td className="py-2 px-3 font-medium text-foreground max-w-[180px] truncate" title={q}>
+                      <td className="py-2 px-3 font-medium text-foreground max-w-45 truncate" title={q}>
                         {q}
                       </td>
-                      <td className="py-2 px-3 max-w-[200px]">
+                      <td className="py-2 px-3 max-w-50">
                         {result?.top1Title ? (
                           <div className="truncate">
                             <span className="font-medium text-foreground" title={result.top1Title}>
@@ -438,7 +437,7 @@ export function RetrievalBenchmarkDrawer() {
                             type="button"
                             onClick={() => handleRemoveQuery(idx)}
                             className="text-muted-foreground hover:text-rose-500 transition-colors cursor-pointer"
-                            title={isZh ? '移除用例' : 'Remove Query'}
+                            title={t('benchmark.removeQuery')}
                           >
                             <Trash2Icon className="size-3.5" />
                           </button>

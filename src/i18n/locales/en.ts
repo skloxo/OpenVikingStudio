@@ -691,11 +691,16 @@ const en = {
         vlm: 'VLM Multimodal Model',
         embedding: 'Embedding Vector Engine',
         rerank: 'Rerank Reordering Engine',
+        compressor: 'Context Compressor',
         dimension: 'Dimensions',
         provider: 'Provider',
         status: 'Endpoint Status',
         healthy: 'Ready',
         noModels: 'No custom model endpoints detected; default rule set is active',
+        calls: 'Calls',
+        tokens: 'Tokens',
+        lastUpdated: 'Last Updated',
+        noActiveModel: 'No active model data',
       },
       workspace: {
         title: 'Workspace & Storage',
@@ -826,6 +831,8 @@ const en = {
       },
       rootHint: 'Lists accounts and users, and mints or rotates keys.',
       title: 'Connection settings',
+      recheck: 'Re-check',
+      rechecking: 'Re-checking service probe...',
       unsupportedAuthMode: {
         description:
           'Web Studio does not support the {{mode}} authentication mode. Please use the {{ov}} CLI or Python SDK to interact with this server.',
@@ -1433,10 +1440,10 @@ const en = {
     controls: {
       function: 'Retrieval Function',
       modes: {
-        find: 'find',
-        search: 'search',
-        grep: 'grep',
-        glob: 'glob',
+        find: 'Hybrid Semantic (find)',
+        search: 'Vector Semantic (search)',
+        grep: 'Exact Text (grep)',
+        glob: 'File Path (glob)',
       },
       ignoreCase: 'Ignore case',
       resultCount: 'Results',
@@ -1467,9 +1474,9 @@ const en = {
       line: 'Line {{line}}',
     },
     types: {
-      resource: 'Resources',
-      memory: 'Memories',
-      skill: 'Skills',
+      resource: 'Resource',
+      memory: 'Memory',
+      skill: 'Skill',
     },
     queryPlan: {
       title: '{{count}} planned queries',
@@ -1542,6 +1549,7 @@ const en = {
       addQueryBtn: 'Add Query',
       exportReport: 'Export Report (JSON)',
       resetSuite: 'Reset to Defaults',
+      removeQuery: 'Remove Query',
     },
   },
   sessions: {
