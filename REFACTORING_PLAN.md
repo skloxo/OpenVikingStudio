@@ -74,6 +74,21 @@
 
 ### 📦 历史已交付工单履历 (Delivered Release Cards)
 
+### 📌 P1: [x] Card-QualityGate-02 (v1.4.59): 任务统计卡片 9 类任务对齐、四大算子链可视化与真实测试任务端到端实机验证 ✅
+- **类型**：Task Center Alignment / Operator Pipeline / E2E Real Verification ｜ **优先级**：🔴 P1（统计卡片 9 类对齐、算子链路闭环与真实测试任务落地）
+- **Git Tag**：`v1.4.59`（Commit: `ff9c521a6`）
+- **实际修改文件清单**：
+  - `src/routes/tasks/-lib/task-api.ts` (在 `ALL_TASK_TYPES` 中扩充新增 `'quality_gate'`，使任务统计左侧卡片原生监控全量 9 大任务类型，基线与动态统计完整闭环)
+  - `src/routes/tasks/-lib/pipeline-definitions.ts` (在 `PanoramaStepDef` 注册底层算子链 `operators?: string[]`；完善 `Semantic` 引擎说明，明确统管 L0/L1 概念、经验萃取与质量门禁 4 大算子；在 `step_quality_gate` 显式绑定 `['QuerySample', 'VectorRetrieve', 'RagasJudge', 'MetricAssert']` 四大算子，代码严守 494 行安全红线)
+  - `src/routes/tasks/-components/pipeline-steps-panorama.tsx` (动态计算 Tab 数量 `TASK_FLOWS.length` / `ALL_PANORAMA_STEPS.length` / `ENGINE_DEFINITIONS.length`，彻底消灭 8/23/7 硬编码；在工序字典视图中为第 24 道工序清晰渲染四大算子流转链)
+  - `openviking/service/task_tracker.py` 与数据存储 (`demo-09-quality-gate-done.json`)：真实派发落地第 9 种任务记录，涵盖 `10/10 用例` 严格物理进度与 RAGAS 四维调和指标
+  - `package.json` (版本号升级至 1.4.59)
+- **交付内容摘要**：
+  1. **任务统计卡片 9 类任务完整对齐**：业务任务状态卡片完美新增 `抗熵增质量门禁` 行，与其他 8 种任务 50/50 物理平齐，实时监控 processing / pending / completed / errors / total；
+  2. **四大算子流转链可视化**：工序字典与执行引擎承接图动态展示 `[QuerySample] ➔ [VectorRetrieve] ➔ [RagasJudge] ➔ [MetricAssert]` 物理调度，归属 `Semantic` 语义分析引擎；
+  3. **真实测试任务端到端实机验证**：在后端 TaskTracker 落地真实 `demo-09-quality-gate-done` 任务，刷新任务中心即可在列表中直接观测到该卡片，展开详情抽屉动态呈现交付收据：`评测 10 组金标用例 · RAGAS 综合指数 0.820 · 命中率 100%`，进度严格展示 `10 / 10 用例`；
+  4. **双全构建与浏览器核验 100% PASS**：Vite 生产构建 20.82s PASS，浏览器实机截图留存，Git Tag `v1.4.59` 物理留痕推送到远程。
+
 ### 📌 P1: [x] Card-Tasks-QualityGate (v1.4.58): 抗熵增质量门禁与全景工序/任务中心原生集成 ✅
 - **类型**：Task Pipeline Architecture / Anti-Entropy Governance / Quality Gate ｜ **优先级**：🔴 P1（告别幽灵后台，任务中心统一留痕、可视、可重试）
 - **Git Tag**：`v1.4.58`（Commit: `8b5e3cc57`）
