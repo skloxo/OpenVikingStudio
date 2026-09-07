@@ -28,13 +28,18 @@ export function BenchmarkMetricsTiles({ metrics, mode }: BenchmarkMetricsTilesPr
       <div className="space-y-2">
         {/* RAGAS 主综合指数看板 */}
         <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg border border-cyan-500/30 bg-cyan-500/5">
-          <div className="flex flex-col">
-            <span className="text-[11px] font-semibold text-cyan-500 tracking-tight">
-              {t('benchmark.metrics.compositeScore', 'RAGAS 综合指数 (Harmonic Mean)')}
-            </span>
-            <span className="font-mono text-2xl font-bold text-cyan-500 tabular-nums">
+          <div className="flex items-center gap-3">
+            <div className="flex size-11 items-center justify-center rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-500 font-mono text-2xl font-bold tabular-nums">
               {ragas.compositeScore}
-            </span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xs font-semibold text-cyan-500 tracking-tight">
+                {t('benchmark.metrics.compositeScore', 'RAGAS 综合指数 (Harmonic Mean)')}
+              </span>
+              <span className="text-[11px] text-muted-foreground">
+                调和平均四维综合评分 (0.00 ~ 1.00)
+              </span>
+            </div>
           </div>
           <div className="flex items-center gap-4 text-xs font-mono text-muted-foreground">
             <div>
@@ -60,7 +65,7 @@ export function BenchmarkMetricsTiles({ metrics, mode }: BenchmarkMetricsTilesPr
         {/* 4 维微瓦片 */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {/* Precision */}
-          <div className="flex flex-col rounded-md border bg-muted/20 px-3 py-2">
+          <div className="flex flex-col rounded-md border bg-muted/20 px-3 py-2 min-w-0" title="Context Precision (检索精确率)">
             <span className="text-[11px] text-muted-foreground font-medium truncate">
               {t('benchmark.metrics.precision', 'Context Precision')}
             </span>
@@ -73,7 +78,7 @@ export function BenchmarkMetricsTiles({ metrics, mode }: BenchmarkMetricsTilesPr
           </div>
 
           {/* Recall */}
-          <div className="flex flex-col rounded-md border bg-muted/20 px-3 py-2">
+          <div className="flex flex-col rounded-md border bg-muted/20 px-3 py-2 min-w-0" title="Context Recall (检索召回率)">
             <span className="text-[11px] text-muted-foreground font-medium truncate">
               {t('benchmark.metrics.recall', 'Context Recall')}
             </span>
@@ -86,7 +91,7 @@ export function BenchmarkMetricsTiles({ metrics, mode }: BenchmarkMetricsTilesPr
           </div>
 
           {/* Faithfulness */}
-          <div className="flex flex-col rounded-md border bg-muted/20 px-3 py-2">
+          <div className="flex flex-col rounded-md border bg-muted/20 px-3 py-2 min-w-0" title="Faithfulness (生成忠实度)">
             <span className="text-[11px] text-muted-foreground font-medium truncate">
               {t('benchmark.metrics.faithfulness', 'Faithfulness')}
             </span>
@@ -99,7 +104,7 @@ export function BenchmarkMetricsTiles({ metrics, mode }: BenchmarkMetricsTilesPr
           </div>
 
           {/* Answer Relevance */}
-          <div className="flex flex-col rounded-md border bg-muted/20 px-3 py-2">
+          <div className="flex flex-col rounded-md border bg-muted/20 px-3 py-2 min-w-0" title="Answer Relevance (回答相关度)">
             <span className="text-[11px] text-muted-foreground font-medium truncate">
               {t('benchmark.metrics.relevance', 'Answer Relevance')}
             </span>

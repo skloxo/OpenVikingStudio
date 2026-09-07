@@ -33,24 +33,24 @@ export function BenchmarkResultsTable({
   }
 
   return (
-    <div className="rounded-md border border-border/80 overflow-hidden bg-background">
-      <table className="w-full text-left text-xs border-collapse">
+    <div className="w-full overflow-x-auto min-w-0 rounded-md border border-border/80 bg-background shadow-xs">
+      <table className="w-full min-w-[700px] text-left text-xs border-collapse">
         <thead>
           <tr className="border-b bg-muted/30 text-[11px] text-muted-foreground font-medium">
-            <th className="py-2 px-3">{t('benchmark.table.query')}</th>
-            <th className="py-2 px-3">{t('benchmark.table.top1')}</th>
+            <th className="py-2.5 px-3 min-w-[180px]">{t('benchmark.table.query')}</th>
+            <th className="py-2.5 px-3 min-w-[160px]">{t('benchmark.table.top1')}</th>
             {mode === 'ragas' ? (
               <>
-                <th className="py-2 px-2 text-right">{t('benchmark.table.precision', '精度')}</th>
-                <th className="py-2 px-2 text-right">{t('benchmark.table.faithfulness', '忠实度')}</th>
-                <th className="py-2 px-2 text-right">{t('benchmark.table.composite', 'RAGAS')}</th>
+                <th className="py-2.5 px-2 text-right w-16">{t('benchmark.table.precision', '精度')}</th>
+                <th className="py-2.5 px-2 text-right w-16">{t('benchmark.table.faithfulness', '忠实度')}</th>
+                <th className="py-2.5 px-2 text-right w-16">{t('benchmark.table.composite', 'RAGAS')}</th>
               </>
             ) : (
-              <th className="py-2 px-3 text-right">{t('benchmark.table.score')}</th>
+              <th className="py-2.5 px-3 text-right w-18">{t('benchmark.table.score')}</th>
             )}
-            <th className="py-2 px-3 text-right">{t('benchmark.table.latency')}</th>
-            <th className="py-2 px-3 text-center">{t('benchmark.table.status')}</th>
-            {!isRunning && <th className="py-2 px-2 w-8 text-center" />}
+            <th className="py-2.5 px-3 text-right w-18">{t('benchmark.table.latency')}</th>
+            <th className="py-2.5 px-3 text-center w-20">{t('benchmark.table.status')}</th>
+            {!isRunning && <th className="py-2.5 px-2 w-9 text-center" />}
           </tr>
         </thead>
         <tbody className="divide-y divide-border/50">
@@ -69,13 +69,13 @@ export function BenchmarkResultsTable({
                     status === 'hit' && 'hover:bg-muted/30',
                   )}
                 >
-                  <td className="py-2 px-3 font-medium text-foreground max-w-40 truncate" title={q}>
-                    <div className="flex items-center gap-1.5">
+                  <td className="py-2 px-3 font-medium text-foreground max-w-56 truncate" title={q}>
+                    <div className="flex items-center gap-1.5 min-w-0">
                       {mode === 'ragas' && result?.ragas && (
                         <button
                           type="button"
                           onClick={() => result.id && toggleExpand(result.id)}
-                          className="text-muted-foreground hover:text-cyan-500 cursor-pointer"
+                          className="text-muted-foreground hover:text-cyan-500 cursor-pointer shrink-0"
                         >
                           {isExpanded ? (
                             <ChevronDownIcon className="size-3 text-cyan-500" />
@@ -87,10 +87,10 @@ export function BenchmarkResultsTable({
                       <span className="truncate">{q}</span>
                     </div>
                   </td>
-                  <td className="py-2 px-3 max-w-48">
+                  <td className="py-2 px-3 max-w-56 min-w-0">
                     {result?.top1Title ? (
                       <div className="truncate">
-                        <span className="font-medium text-foreground" title={result.top1Title}>
+                        <span className="font-medium text-foreground truncate block" title={result.top1Title}>
                           {result.top1Title}
                         </span>
                         <span className="block font-mono text-[11px] text-muted-foreground truncate" title={result.top1Uri}>

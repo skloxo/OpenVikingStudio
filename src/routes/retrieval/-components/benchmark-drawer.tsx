@@ -14,7 +14,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '#/components/ui/sheet'
-import { ovClient } from '#/lib/ov-client'
+import { fetchFind } from '#/lib/retrieval'
 import { computeSummaryMetrics, DEFAULT_BENCHMARK_QUERIES, evaluateRagasSample } from './benchmark/eval-engine'
 import { BenchmarkMetricsTiles } from './benchmark/metrics-tiles'
 import { BenchmarkQuerySuite } from './benchmark/query-suite'
@@ -70,26 +70,16 @@ export function RetrievalBenchmarkDrawer() {
 
       const startTime = performance.now()
       try {
-        const res = await ovClient.instance.post<{
-          status: string
-          result?: {
-            resources?: Array<{ uri: string; title?: string; score?: number; abstract?: string }>
-            memories?: Array<{ uri: string; title?: string; score?: number; abstract?: string }>
-            skills?: Array<{ uri: string; title?: string; score?: number; abstract?: string }>
-            total?: number
-          }
-        }>('/api/v1/search/find', {
-          query: queries[i],
-          target_uri: 'viking://',
+        const grouped = await fetchFind(queries[i], {
           limit: 3,
+          targetUri: 'viking://',
         })
 
         const latencyMs = Math.round(performance.now() - startTime)
-        const payload = res.data.result
         const hits = [
-          ...(payload?.resources || []),
-          ...(payload?.memories || []),
-          ...(payload?.skills || []),
+          ...grouped.resources,
+          ...grouped.memories,
+          ...grouped.skills,
         ]
 
         if (hits.length > 0) {
@@ -99,7 +89,7 @@ export function RetrievalBenchmarkDrawer() {
 
           updated[i] = {
             ...updated[i],
-            top1Title: top1.title || top1.uri.split('/').pop() || top1.uri,
+            top1Title: top1.abstract || top1.uri.split('/').pop() || top1.uri,
             top1Uri: top1.uri,
             score: top1Score,
             latencyMs,
@@ -183,9 +173,9 @@ export function RetrievalBenchmarkDrawer() {
 
       <SheetContent
         side="right"
-        className="w-full sm:max-w-xl md:max-w-2xl flex flex-col gap-0 p-0 border-l bg-background text-foreground shadow-2xl"
+        className="w-full data-[side=right]:w-[95vw] data-[side=right]:sm:max-w-2xl data-[side=right]:md:max-w-3xl data-[side=right]:lg:max-w-4xl data-[side=right]:xl:max-w-5xl flex flex-col gap-0 p-0 border-l bg-background text-foreground shadow-2xl"
       >
-        <SheetHeader className="border-b px-5 py-3.5 bg-muted/20">
+        <SheetHeader className="border-b px-5 py-3.5 pr-14 bg-muted/20">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <div className="flex size-7 items-center justify-center rounded-md bg-cyan-500/10 text-cyan-500 border border-cyan-500/30">
@@ -196,10 +186,10 @@ export function RetrievalBenchmarkDrawer() {
                 )}
               </div>
               <SheetTitle className="text-sm font-semibold tracking-tight">
-                {mode === 'ragas' ? t('benchmark.ragasDrawerTitle', 'RAGAS 评测实验室 (04A~04B)') : t('benchmark.drawerTitle')}
+                {mode === 'ragas' ? t('benchmark.ragasDrawerTitle', 'RAGAS 自动化评测实验室 (04A~04B)') : t('benchmark.drawerTitle')}
               </SheetTitle>
             </div>
-            <Badge variant="outline" className="text-[11px] font-mono px-2 py-0.5 border-border">
+            <Badge variant="outline" className="text-[11px] font-mono px-2 py-0.5 border-border shrink-0">
               {mode === 'ragas' ? 'Ragas v0.2+' : 'Fast / 1933'}
             </Badge>
           </div>
