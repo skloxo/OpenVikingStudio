@@ -491,4 +491,5 @@ export const TASK_FLOWS: TaskTypeFlowDef[] = [
   },
   { typeKey: 'quality_gate', nameZh: '质量门禁', nameEn: 'Quality Gate', stepIds: ['step_quality_gate'] },
   { typeKey: 'benchmark_eval', nameZh: '基准质检', nameEn: 'Benchmark Evaluation', stepIds: ['step_quality_gate'] },
+  { typeKey: 'knowledge_remediation', nameZh: '知识自愈优化', nameEn: 'Knowledge Remediation', stepIds: ['step_fault_locate', 'step_conflict_arbitrate', 'step_targeted_distill', 'step_delta_reindex'] },
 ]

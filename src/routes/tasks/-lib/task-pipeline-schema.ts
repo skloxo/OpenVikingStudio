@@ -306,6 +306,50 @@ export const ATOMIC_STEP_SPECS: Record<string, AtomicStepSpec> = {
     totalKeys: ['total_queries', 'total_cases'],
     engineKey: 'semantic',
   },
+  // 25. 病灶定位 (量化计数: 处)
+  step_fault_locate: {
+    id: 'step_fault_locate',
+    nameZh: '病灶定位',
+    nameEn: 'Fault Locate',
+    unitZh: '处',
+    unitEn: 'faults',
+    stageKeywords: ['locate', 'fault', 'diagnose'],
+    metricKeys: ['located_faults', 'fault_nodes_count', 'failed_cases'],
+    engineKey: 'semantic',
+  },
+  // 26. 冲突仲裁 (量化计数: 项)
+  step_conflict_arbitrate: {
+    id: 'step_conflict_arbitrate',
+    nameZh: '冲突仲裁',
+    nameEn: 'Conflict Arbitrate',
+    unitZh: '项',
+    unitEn: 'items',
+    stageKeywords: ['conflict', 'arbitrate', 'supersede'],
+    metricKeys: ['resolved_conflicts', 'superseded_chunks', 'arbitrated_items'],
+    engineKey: 'semantic',
+  },
+  // 27. 靶向重蒸馏 (量化计数: 篇)
+  step_targeted_distill: {
+    id: 'step_targeted_distill',
+    nameZh: '靶向重蒸馏',
+    nameEn: 'Targeted Distill',
+    unitZh: '篇',
+    unitEn: 'docs',
+    stageKeywords: ['distill', 're_distill', 'targeted_summarize'],
+    metricKeys: ['distilled_docs', 'targeted_files', 're_summarized_nodes'],
+    engineKey: 'semantic',
+  },
+  // 28. 增量重索引 (量化计数: 切片)
+  step_delta_reindex: {
+    id: 'step_delta_reindex',
+    nameZh: '增量重索引',
+    nameEn: 'Delta Reindex',
+    unitZh: '切片',
+    unitEn: 'chunks',
+    stageKeywords: ['reindex', 'delta_embed', 'vector_patch'],
+    metricKeys: ['reindexed_chunks', 'patched_vectors', 'updated_embeddings'],
+    engineKey: 'embedding',
+  },
 }
 
 /**
@@ -382,5 +426,17 @@ export const TASK_FLOW_REGISTRY: Record<string, string[]> = {
   ],
   benchmark_eval: [
     'step_quality_gate',
+  ],
+  knowledge_remediation: [
+    'step_fault_locate',
+    'step_conflict_arbitrate',
+    'step_targeted_distill',
+    'step_delta_reindex',
+  ],
+  entropy_healing: [
+    'step_fault_locate',
+    'step_conflict_arbitrate',
+    'step_targeted_distill',
+    'step_delta_reindex',
   ],
 }

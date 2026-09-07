@@ -23,6 +23,8 @@ export type TaskTypeFilter =
   | 'legacy_migration'
   | 'session_commit'
   | 'snapshot_restore_reindex'
+  | 'quality_gate'
+  | 'knowledge_remediation'
   | 'all'
 
 export const DEFAULT_PAGE_SIZE = 20
@@ -37,6 +39,8 @@ export const TASK_TYPE_OPTIONS: Exclude<TaskTypeFilter, 'all'>[] = [
   'snapshot_restore_reindex',
   'legacy_migration',
   'legacy_cleanup',
+  'quality_gate',
+  'knowledge_remediation',
 ]
 export const TASK_STATUS_OPTIONS: Exclude<TaskStatusFilter, 'all'>[] = [
   'running',
@@ -281,6 +285,7 @@ export function computeTaskKpiData(
     'legacy_migration',
     'legacy_cleanup',
     'quality_gate',
+    'knowledge_remediation',
   ]
 
   const typeCounts: Record<string, number> = {}

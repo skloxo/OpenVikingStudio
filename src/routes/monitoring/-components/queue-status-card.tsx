@@ -11,7 +11,11 @@ import {
   ENGINE_DEFINITIONS,
   TASK_FLOWS,
 } from '#/routes/tasks/-components/pipeline-steps-panorama'
-import type { PanoramaStepDef } from '#/routes/tasks/-components/pipeline-steps-panorama'
+import { getTaskFlowItems } from '../-lib/task-flow-helpers'
+import type { TaskFlowItem } from '../-lib/task-flow-helpers'
+
+export type { TaskFlowItem }
+export { getTaskFlowItems }
 
 export interface ParsedQueueRow {
   name: string
@@ -21,47 +25,6 @@ export interface ParsedQueueRow {
   completed: number
   errors: number
   total: number
-}
-
-export type TaskFlowItem =
-  | { kind: 'single'; step: PanoramaStepDef }
-  | { kind: 'parallel'; steps: PanoramaStepDef[] }
-
-export function getTaskFlowItems(taskType: string): TaskFlowItem[] {
-  if (taskType === 'add_resource') {
-    const s1 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_ingestion')
-    const s2 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_parse')
-    const s3 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_semantic')
-    const s4 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_embedding')
-    const s5 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_memory_linking')
-    const res: TaskFlowItem[] = []
-    if (s1) res.push({ kind: 'single', step: s1 })
-    if (s2) res.push({ kind: 'single', step: s2 })
-    if (s3 && s4) res.push({ kind: 'parallel', steps: [s3, s4] })
-    if (s5) res.push({ kind: 'single', step: s5 })
-    return res
-  }
-
-  if (taskType === 'connector_import') {
-    const s1 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_auth')
-    const s2 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_fetch')
-    const s3 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_parse')
-    const s4 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_semantic')
-    const s5 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_embedding')
-    const res: TaskFlowItem[] = []
-    if (s1) res.push({ kind: 'single', step: s1 })
-    if (s2) res.push({ kind: 'single', step: s2 })
-    if (s3) res.push({ kind: 'single', step: s3 })
-    if (s4 && s5) res.push({ kind: 'parallel', steps: [s4, s5] })
-    return res
-  }
-
-  const flow = TASK_FLOWS.find((f) => f.typeKey === taskType)
-  if (!flow) return []
-  return flow.stepIds
-    .map((id) => ALL_PANORAMA_STEPS.find((s) => s.id === id))
-    .filter((s): s is PanoramaStepDef => s !== undefined)
-    .map((step) => ({ kind: 'single' as const, step }))
 }
 
 // 将 Observer status 字符串解析为结构化队列数据
@@ -435,9 +398,19 @@ export function QueueStatusCard({
         <div className="flex flex-1 flex-col justify-between gap-0.5">
           {/* 统一顶置表头 (12 列格栅 100% 对齐) */}
           <div className="grid grid-cols-12 gap-1 items-center px-2.5 py-1 text-[11px] text-muted-foreground font-medium border-b border-border/60">
-            <span className="col-span-8">
-              {isTaskCard ? (isZh ? '任务类型' : 'Task Type') : (isZh ? '引擎名称' : 'Engine Name')}
-            </span>
+            <div className="col-span-8 flex items-center min-w-0 pr-2 overflow-hidden select-none">
+              <span className={cn('shrink-0', isTaskCard && 'w-22 text-left')}>
+                {isTaskCard ? t('queue.taskType') : t('queue.queueName')}
+              </span>
+              {isTaskCard && (
+                <div className="flex items-center gap-1 min-w-0 flex-1 pl-1">
+                  <div className="h-2.5 w-px bg-border/60 shrink-0 mx-0.5" />
+                  <span className="text-muted-foreground/80 pl-1 font-sans">
+                    {t('queue.taskFlow')}
+                  </span>
+                </div>
+              )}
+            </div>
             <span className="col-span-1 text-right">{t('queue.processing')}</span>
             <span className="col-span-1 text-right">{t('queue.pending')}</span>
             <span className="col-span-1 text-right">{t('queue.completed')}</span>

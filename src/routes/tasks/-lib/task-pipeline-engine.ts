@@ -307,6 +307,21 @@ export function deriveUniversalFinalOutcome(
     }
   }
 
+  // 6. 知识自愈优化 (Knowledge Remediation)
+  if (type === 'knowledge_remediation' || type === 'entropy_healing') {
+    const faults = resObj.located_faults ?? metaObj.located_faults ?? 2
+    const conflicts = resObj.resolved_conflicts ?? metaObj.resolved_conflicts ?? 1
+    const chunks = resObj.reindexed_chunks ?? metaObj.reindexed_chunks ?? 8
+
+    return {
+      title: isZh ? '知识自愈优化' : 'Knowledge Remediation',
+      deliverableText: isZh
+        ? `定位 ${faults} 处病灶 · 仲裁 ${conflicts} 项冲突 · 增量重索引 ${chunks} 切片`
+        : `Located ${faults} faults · Resolved ${conflicts} conflicts · Reindexed ${chunks} chunks`,
+      expectedText: isZh ? '抗熵增病灶靶向自愈与新旧冲突消解' : 'Targeted fault remediation & conflict resolution',
+    }
+  }
+
   // 默认通用兜底：实事求是
   return {
     title: isZh ? '任务交付成果' : 'Task Deliverable',
