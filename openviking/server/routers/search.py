@@ -363,6 +363,12 @@ async def find(
     if request.read_content:
         result = await _inline_read_content(result, service=service, ctx=_ctx)
     result = _sanitize_floats(result)
+    if result and isinstance(result, dict) and result.get("total", 0) == 0 and request.query:
+        try:
+            from openviking.service.entropy_watchdog import get_entropy_watchdog
+            get_entropy_watchdog().notify_zero_hit(request.query)
+        except Exception:
+            pass
     return Response(
         status="ok",
         result=result,
