@@ -46,7 +46,7 @@
 | **Card-VK-25.3** | **跨进程显存与编码死锁根治、目录摘要节点穿透阻断与优先级动态语义召回收官** | 1. 彻底定位 `run_rer_service.py` 遇 Unicode/Emoji 触发 Windows GBK 控制台编码崩溃 (`UnicodeEncodeError`) 根因，注入 UTF-8 免疫与安全字符串过滤；<br>2. 优化 2080Ti 双模型显存配比 (Embedding 0.74 / Reranker 0.24)，降低 `MAX_LENGTH=4096` 并注入单条 OOM 2000 字符自愈截断；<br>3. 落地 Priority-Aware Dual-Gate 控制器，短 Query 自动获取 HIGH 优先级插队通道，跳过后台批处理 Reindex 队列；<br>4. 检索端 `_is_directory_summary_node` 物理阻断 `.abstract.md` / `.overview.md` 目录路由泄露，拔除僵化分区配额，Fast 重排预算精炼至 6 篇；<br>5. 3 大验收目标 Query (`Mac Studio launchd 配置`, `卫星节点接入 WorkBuddy`, `Clash 双跳防风控`) Rank 1 得分 0.47 ~ 0.76，精准命中叶子文件，耗时 1.79s ~ 2.75s 100% 达标通过 | 冷查询 1.79s~2.75s 全部达标 (<=3.5s SLA)，目录路由节点 100% 阻断，单调轮转彻底切除，Vite 构建 PASS | `v1.4.38` | [x] 已验收通过 ✅ |
 | **Card-VK-26** | **外部 Agent “系统级强制调用 VK” 极简自驱规范与 System Prompt 契约模板** | 1. 结合 Card-28 已落地的 Hook 与 MCP 职责边界，提炼 100 字外部 Agent（WorkBuddy/Cursor等）极简 System Prompt 契约模板；<br>2. 规范“开局 find ➔ 按需 read ➔ 执行 ➔ 收尾 store/lesson”自驱状态机；<br>3. 渐进式展开 (Progressive Disclosure) 截断长 abstract 防止上下文撑爆；<br>4. 交付开箱接入白皮书与双轨自动化验证 | WorkBuddy/Cursor 等外部 Agent 100% 形成开局查 VK、收工存 VK 习惯，上下文零污染，零多余网关进程 | `v1.4.40` | [x] 已验收通过 ✅ |
 | **Card-VK-27** | **全局异步任务统筹收口与任务中心全景架构升级** | 1. 统一收拢所有模块异步任务至 TaskTracker 与任务中心，解除未终结任务 24h 过滤截断（永远置顶可见）；<br>2. 打通 Playground 上传弹窗与全局任务中心强跳转锚点；<br>3. 任务中心对 `add_resource` 展现分阶段流转与状态；<br>4. 统一重试 (Retry) 与清理标准接口 | 任务中心 100% 涵盖所有异步任务，局部与全局无缝联动，彻底消除任务不可见盲区 | `v1.4.41` | [x] 已验收通过 ✅ |
-| **Card-Studio-Settings** | **全局设置与数据管理中枢 (Unified Settings & Data Ops)** | 1. 践行奥卡姆剃刀，将原本分散的配置 (05)、隐私脱敏 (08)、OVPack 导入导出 (09) 3 页面高度聚合为单一轻量 `/settings` 路由；<br>2. 并在 `/retrieval` 检索页右上角集成轻量 RAG 评测抽屉 (Drawer)；<br>3. 彻底切除独立空壳页面与花架子，保持系统极客精炼 | 单面板统一管理配置、敏感词开关与知识库打包备份，切除 3 个冗余路由，Vite 构建 PASS | `v1.4.42` | 📋 排队中 (P2) |
+| **Card-Studio-Settings** | **全局设置与数据管理中枢 (Unified Settings & Data Ops)** | 1. 践行奥卡姆剃刀，将原本分散的配置 (05)、隐私脱敏 (08)、OVPack 导入导出 (09) 3 页面高度聚合为单一轻量 `/settings` 路由；<br>2. 并在 `/retrieval` 检索页右上角集成轻量 RAG 评测抽屉 (Drawer)；<br>3. 彻底切除独立空壳页面与花架子，保持系统极客精炼 | 单面板统一管理配置、敏感词开关与知识库打包备份，切除 3 个冗余路由，Vite 构建 PASS | `v1.4.42` | [x] 已验收通过 ✅ |
 
 ---
 
@@ -54,27 +54,7 @@
 
 ### 📋 待调度工单队列 (Pending Pipeline Cards - 优先顺序开发)
 
-### 📌 P2: [ ] Card-Studio-Settings (v1.4.42): 全局设置与数据管理中枢 (Unified Settings & Data Ops)
-- **类型**：Architecture / UI / Consolidation ｜ **优先级**：🟡 P2（三合一聚合治理与奥卡姆剃刀）
-- **计划版本**：`v1.4.42`
-- **设计哲学与重构动因 (Occam's Razor & High Cohesion)**：
-  1. **切除碎片化空壳页面**：此前计划分别建设 `Card-Studio-05` (配置中心)、`Card-Studio-08` (隐私中心) 与 `Card-Studio-09` (打包中心)，导致侧边栏膨胀 3 个极低频次页面，严重违背高内聚原则；
-  2. **高度聚合收口**：将全域配置查看修改 (`ov.conf` 技能源、模型端点)、隐私脱敏敏感词开关、以及知识库打包迁移 (`.ovpack` 导出/导入/快照) 统合为单一的 `/settings` 路由；
-  3. **RAGAS 评测抽屉化**：将 `Card-Studio-06` (RAG 评测) 降维为在 `/retrieval` 检索测试台右上角的一个极简“跑分抽屉 (Drawer)”，绝不浪费整页空间；
-  4. **演进看板归一**：将 `Card-Studio-01` (Agent 演进) 整合至现有的 `🛡️ Harness 引擎审计` (`/harness-logs`)，坚决不新建多余路由。
-- **交付内容**：
-  1. **新建高内聚 `/settings` 页面**：
-     - **Tab 1 基础与模型配置**：读取 `GET /api/v1/system/status` 与 `ov.conf`，可视化呈现向量源、模型端点与根工作区；
-     - **Tab 2 隐私与安全脱敏**：敏感字段打码开关、脱敏预览与只读审计；
-     - **Tab 3 知识大脑备份与打包 (OVPack)**：提供基于底层 `openviking_export` / `openviking_import` 的 `.ovpack` 导出与快照还原；
-  2. **检索测试台集成轻量 RAG 抽屉**：
-     - 在 `/retrieval` 页面右上角增加 `🧪 评测抽屉`，可快速输入 Benchmark Query 批量核验 Top-1 得分与耗时，保持主界面极客简洁；
-  3. **全盘遵从设计规范**：
-     - 严格践行 NO GREEN EVER、双主题自适应、`text-[11px]` 下限与中英文 i18n 100% 对等。
-- **验收标准**：
-  - 侧边栏仅新增一个自解释的 `⚙️ 设置中枢` 入口，零多余空壳页面；
-  - 可以在一个页面内完成配置查看、敏感词管理与知识库备份；
-  - 前端 Vite 构建通过，页面加载极速。
+> 当前版本阶段规划之活跃原子工单已全部交付验收通过 ✅。下一阶段课题将紧跟上游需求进行排期与拆解。
 
 ---
 
@@ -335,6 +315,36 @@
   - 卫星节点 Hook 压测无阻塞，静默降级耗时 < 50ms；
   - 《规范》成功归档至 `viking://resources/master_memory/evolution_lessons/`；
   - Vite 构建 PASS (20.26s)，Git Tag `v1.4.39` 物理对齐并推流。
+
+---
+
+### 📌 P2: [x] Card-Studio-Settings (v1.4.42): 全局设置与数据管理中枢与轻量 RAG 评测抽屉 (Unified Settings Hub & Retrieval Benchmark Drawer) ✅
+- **类型**：Architecture / UI / Consolidation ｜ **优先级**：🟡 P2（三合一聚合治理与奥卡姆剃刀）
+- **Git Commit**：`5527f882a` ｜ **Git Tag**：`v1.4.42`
+- **实际修改文件清单**：
+  - `OpenVikingStudio/src/routes/settings/route.tsx` (彻底重构为 3-Tab 高内聚架构：基础与服务配置、隐私与安全脱敏、知识大脑备份与打包 OVPack)
+  - `OpenVikingStudio/src/routes/retrieval/-components/benchmark-drawer.tsx` (新建极简 RAG 评测抽屉，内置 5 组黄金 Benchmark Query，支持自定义增删、多路检索验证与 JSON 报告导出)
+  - `OpenVikingStudio/src/routes/retrieval/route.tsx` (检索测试台右上角无缝集成挂载 Benchmark Drawer 入口)
+  - `OpenVikingStudio/src/components/app-shell.tsx` (侧边栏连接设置入口规范升级为自解释设置中枢，统一图标与路由)
+  - `OpenVikingStudio/src/i18n/locales/zh-CN.ts` (新增 settings.hub 3 大 Tab 与 retrieval.benchmark 完整中文字典)
+  - `OpenVikingStudio/src/i18n/locales/en.ts` (同步 settings.hub 与 retrieval.benchmark 完整英文字典)
+  - `OpenVikingStudio/package.json` (对齐升级版本 1.4.42)
+  - `OpenVikingStudio/openviking/_version.py` (对齐升级版本 1.4.42)
+  - `OpenVikingStudio/openviking/__init__.py` (对齐升级版本 1.4.42)
+  - `OpenVikingStudio/mcp-openviking/tools/system.py` (对齐升级版本 1.4.42)
+  - `OpenVikingStudio/mcp-openviking/mcp_openviking_server.py` (对齐升级版本 1.4.42)
+  - `OpenVikingStudio/mcp-openviking/satellite_mcp_server.py` (对齐升级版本 1.4.42)
+- **交付内容摘要**：
+  1. **奥卡姆剃刀与三合一聚合治理**：践行“如无必要，勿增实体”工程哲学，将原定分散的配置中心 (05)、隐私中心 (08) 与打包中心 (09) 彻底切除并聚合为单一轻量 `/settings` 路由，侧边栏保持极客精炼：
+     - **Tab 1 基础与服务配置**：统一读取与呈现服务端口、Root/User Key 凭据、VLM/Embedding/Rerank 模型端点拓扑、双通道健康探针及 AGFS 物理根目录；
+     - **Tab 2 隐私与安全脱敏**：敏感凭据脱敏开关、5 大核心脱敏规则字典表格、实时脱敏沙盒模拟与只读审计；
+     - **Tab 3 知识大脑备份与打包 (OVPack)**：基于底层 Pack API 提供资源打包导出 (`/api/v1/pack/export`)、全量系统灾备备份 (`/api/v1/pack/backup`)、知识包上传与解压导入 (`/api/v1/pack/import`) 及系统全量快照还原 (`/api/v1/pack/restore`)；
+  2. **检索测试台轻量 RAG 评测抽屉**：将原本臃肿的评测页面降维为在 `/retrieval` 检索页右上角的一个极简跑分抽屉 (`RetrievalBenchmarkDrawer`)，内置 5 组黄金 Query，一键并行评估 Top-1 匹配度、相似度得分与毫秒级时延，支持用例增删与 JSON 报告导出；
+  3. **严格工程铁律闭环**：
+     - 全界面 100% 遵守 NO GREEN EVER 铁律（正向冰青 `cyan-500`，负向玫瑰红 `rose-500`，中性沉静灰），字体字号 `>= 11px`；
+     - 中英文双语 i18n 100% 对齐维护；
+     - 后端 29+9 pytest 测试全部通过，Vite 前端构建 100% PASS (16.72s)；
+     - Git Tag `v1.4.42` 锚定推流至 GitHub。
 
 ---
 
