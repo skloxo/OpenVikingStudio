@@ -752,3 +752,19 @@ async def test_persistent_task_store_list_all_users_when_user_id_none():
     assert t_alice.task_id in task_ids
     assert t_bob.task_id in task_ids
 
+
+async def test_update_stage_with_meta_patch(tracker: TaskTracker):
+    task = await tracker.create("admin_reindex", resource_id="viking://user/default/memories", **_owner_kwargs())
+    await tracker.start(task.task_id, **_owner_kwargs())
+
+    await tracker.update_stage(
+        task.task_id,
+        "semantic",
+        meta_patch={"stage_name": "semantic", "semantic_records": 1010},
+        **_owner_kwargs(),
+    )
+    loaded = await tracker.get(task.task_id, **_owner_kwargs())
+    assert loaded is not None
+    assert loaded.stage == "semantic"
+    assert loaded.meta.get("semantic_records") == 1010
+
