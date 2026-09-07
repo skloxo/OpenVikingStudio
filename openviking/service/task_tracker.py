@@ -61,6 +61,8 @@ _CANCELLABLE_TASK_TYPES = {
     "session_commit",
     "admin_reindex",
     "snapshot_restore_reindex",
+    "quality_gate",
+    "benchmark_eval",
 }
 
 

@@ -126,7 +126,7 @@ export function getTaskProgressPct(
   if (status === 'failed') return 0
   if (status === 'pending') return 0
 
-  const meta = (task.meta && typeof task.meta === 'object') ? (task.meta as Record<string, any>) : {}
+  const meta = (task.meta && typeof task.meta === 'object') ? task.meta : {}
   if (typeof meta.progress_pct === 'number') {
     return Math.min(99, Math.max(1, Math.round(meta.progress_pct)))
   }
@@ -177,6 +177,19 @@ export async function executeTaskRetry(
   if (task.task_id?.startsWith('mock_task_')) {
     return { res: { ok: true }, task }
   }
+
+  // 质量门禁重新执行 (Retry Quality Gate)
+  if (task.task_type === 'quality_gate' || task.task_type === 'benchmark_eval') {
+    const resp = await ovClient.instance.post('/api/v1/tasks/quality_gate', {
+      mode: task.meta?.mode || 'smoke',
+      resource_id: task.resource_id || undefined,
+      threshold: task.meta?.threshold ?? 0.7,
+      queries: task.meta?.queries,
+    })
+    const json = resp.data
+    return { res: json, task, newTaskId: json?.result?.task_id }
+  }
+
   if (!task.resource_id) {
     throw new Error(isZh ? '任务缺少关联资源 ID，无法重新入队' : 'Missing resource ID for task')
   }
@@ -303,7 +316,7 @@ export function computeTaskKpiData(
         (taskItem) => normalizeTaskStatus(taskItem.status) === 'failed',
       ).length
       return {
-        name: t(`types.${typeKey}` as any, { defaultValue: typeKey }),
+        name: t(`types.${typeKey}`, { defaultValue: typeKey }),
         typeKey,
         processing,
         pending: pendingCount,

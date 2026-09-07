@@ -414,6 +414,21 @@ export const ALL_PANORAMA_STEPS: PanoramaStepDef[] = [
     descriptionZh: '物理释放磁盘占用，整理存储空间并更新配额',
     descriptionEn: 'Physically release disk storage and update namespace quotas',
   },
+
+  // 24: 质量门禁与抗熵增质检
+  {
+    id: 'step_quality_gate',
+    nameZh: '质量门禁',
+    nameEn: 'Quality Gate',
+    engineKey: 'Semantic',
+    engineNameZh: '语义提取',
+    engineNameEn: 'Semantic Extraction Engine',
+    unitZh: '用例',
+    unitEn: 'cases',
+    taskTypes: ['quality_gate', 'benchmark_eval'],
+    descriptionZh: '执行 RAGAS 四维抗熵增质检（排布精度、覆盖率、忠实度、相关度），断言检索质量',
+    descriptionEn: 'Execute RAGAS 4D anti-entropy evaluation verifying retrieval precision and health',
+  },
 ]
 
 export interface TaskTypeFlowDef {
@@ -472,4 +487,6 @@ export const TASK_FLOWS: TaskTypeFlowDef[] = [
     nameEn: 'Legacy Cleanup',
     stepIds: ['step_traverse', 'step_gc', 'step_free'],
   },
+  { typeKey: 'quality_gate', nameZh: '质量门禁', nameEn: 'Quality Gate', stepIds: ['step_quality_gate'] },
+  { typeKey: 'benchmark_eval', nameZh: '基准质检', nameEn: 'Benchmark Evaluation', stepIds: ['step_quality_gate'] },
 ]
