@@ -233,8 +233,8 @@ def test_group4_retrieval_and_code_intelligence():
     glob_res = json.loads(core_server.openviking_glob(pattern="*.md", target_uri="viking://resources/"))
     assert isinstance(glob_res, dict)
 
-    # 9. openviking_reindex
-    reindex_res = json.loads(core_server.openviking_reindex(target_uri="viking://resources/", mode="vectors_only"))
+    # 9. openviking_reindex (use isolated single test fixture to avoid triggering massive 10,000+ vectorization storm)
+    reindex_res = json.loads(core_server.openviking_reindex(target_uri="viking://resources/test_core_regression.txt", mode="vectors_only"))
     assert isinstance(reindex_res, dict)
 
 
