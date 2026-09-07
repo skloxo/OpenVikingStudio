@@ -711,11 +711,16 @@ const zhCN = {
         vlm: 'VLM 多模态大模型',
         embedding: 'Embedding 向量模型',
         rerank: 'Rerank 语义重排',
+        compressor: '端侧上下文压缩器 (Compressor)',
         dimension: '向量维度',
         provider: '提供方',
         status: '端点状态',
         healthy: '已就绪',
         noModels: '未检测到模型端点配置，正在使用默认规则',
+        calls: '调用',
+        tokens: 'Token',
+        lastUpdated: '最后活跃',
+        noActiveModel: '无活跃模型数据',
       },
       workspace: {
         title: '工作区与存储配置',
@@ -844,6 +849,8 @@ const zhCN = {
       },
       rootHint: '用于列出 account / user，以及生成或轮换 key。',
       title: '连接设置',
+      recheck: '重新检测',
+      rechecking: '正在重新检测服务连通性与探针...',
       unsupportedAuthMode: {
         description:
           'Web Studio 不支持 {{mode}} 认证模式。请使用 {{ov}} CLI 或 Python SDK 连接此服务器。',
@@ -1443,10 +1450,10 @@ const zhCN = {
     controls: {
       function: '检索函数',
       modes: {
-        find: 'find',
-        search: 'search',
-        grep: 'grep',
-        glob: 'glob',
+        find: '混合语义 (find)',
+        search: '向量语义 (search)',
+        grep: '文本行搜 (grep)',
+        glob: '路径匹配 (glob)',
       },
       ignoreCase: '忽略大小写',
       resultCount: '返回数量',
@@ -1477,9 +1484,9 @@ const zhCN = {
       line: '第 {{line}} 行',
     },
     types: {
-      resource: 'Resources',
-      memory: 'Memories',
-      skill: 'Skills',
+      resource: '资源',
+      memory: '记忆',
+      skill: '技能',
     },
     queryPlan: {
       title: '查询计划 {{count}} 条',
@@ -1509,7 +1516,7 @@ const zhCN = {
       hide: '收起轨迹 ▲',
       show: '轨迹树 ▼',
       score: '余弦相似度: {{score}}',
-      scoreBadge: 'Score: {{score}}',
+      scoreBadge: '得分: {{score}}',
       rootEngine: '1. Root 检索引擎',
       levelMatch: '2. {{level}} 层级匹配',
       similarityCheck: '3. 命中相似度得分',
@@ -1552,6 +1559,7 @@ const zhCN = {
       addQueryBtn: '追加 Query',
       exportReport: '导出评测报告 (JSON)',
       resetSuite: '重置为默认用例',
+      removeQuery: '移除用例',
     },
   },
   sessions: {

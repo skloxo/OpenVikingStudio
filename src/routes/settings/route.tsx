@@ -159,6 +159,138 @@ function applyClientRedaction(text: string, options: { maskCredentials: boolean;
   return out
 }
 
+interface ParsedModelItem {
+  model: string
+  provider: string
+  calls: string
+  totalTokens: string
+  lastUpdated: string
+}
+
+interface ParsedObserverModels {
+  vlm: ParsedModelItem[]
+  embedding: ParsedModelItem[]
+  rerank: ParsedModelItem[]
+  compressor: ParsedModelItem[]
+}
+
+function parseSectionTable(sectionText: string): ParsedModelItem[] {
+  const lines = sectionText.split('\n')
+  const results: ParsedModelItem[] = []
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed.startsWith('|') || !trimmed.endsWith('|')) continue
+    const parts = trimmed
+      .split('|')
+      .map((p) => p.trim())
+      .filter((p) => p.length > 0)
+    if (parts.length < 5) continue
+    if (
+      parts[0].toLowerCase() === 'model' ||
+      parts[1]?.toLowerCase() === 'provider'
+    ) {
+      continue
+    }
+    results.push({
+      model: parts[0],
+      provider: parts[1] || '--',
+      calls: parts[2] || '0',
+      totalTokens: parts[5] || parts[parts.length - 2] || '--',
+      lastUpdated: parts[parts.length - 1] || '--',
+    })
+  }
+  return results
+}
+
+function parseObserverModelsTable(statusText?: string | null): ParsedObserverModels {
+  if (!statusText) {
+    return { vlm: [], embedding: [], rerank: [], compressor: [] }
+  }
+  const extractSection = (heading: string, nextHeadings: string[]) => {
+    const startIdx = statusText.indexOf(heading)
+    if (startIdx === -1) return ''
+    let endIdx = statusText.length
+    for (const nh of nextHeadings) {
+      const idx = statusText.indexOf(nh, startIdx + heading.length)
+      if (idx !== -1 && idx < endIdx) {
+        endIdx = idx
+      }
+    }
+    return statusText.slice(startIdx + heading.length, endIdx)
+  }
+
+  return {
+    vlm: parseSectionTable(
+      extractSection('VLM Models:', [
+        'Embedding Models:',
+        'Rerank Models:',
+        'Compressor Models:',
+      ]),
+    ),
+    embedding: parseSectionTable(
+      extractSection('Embedding Models:', [
+        'Rerank Models:',
+        'Compressor Models:',
+      ]),
+    ),
+    rerank: parseSectionTable(
+      extractSection('Rerank Models:', ['Compressor Models:']),
+    ),
+    compressor: parseSectionTable(extractSection('Compressor Models:', [])),
+  }
+}
+
+function ModelTile({
+  item,
+  title,
+  showTokens = true,
+}: {
+  item: ParsedModelItem | undefined
+  title: string
+  showTokens?: boolean
+}) {
+  const { t } = useTranslation('settings')
+  return (
+    <div className="flex flex-col rounded-md border bg-muted/20 p-3 space-y-1.5">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+          {title}
+        </span>
+        <Badge
+          variant="outline"
+          className={cn(
+            'px-1.5 py-0 text-[11px]',
+            item
+              ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-500'
+              : 'border-border text-muted-foreground',
+          )}
+        >
+          {item ? 'Ready' : '--'}
+        </Badge>
+      </div>
+      <div
+        className="font-mono text-xs font-semibold text-foreground truncate"
+        title={item?.model || '--'}
+      >
+        {item?.model || '--'}
+      </div>
+      <div className="text-[11px] text-muted-foreground">
+        {t('hub.models.provider')}:{' '}
+        <span className="font-mono text-foreground">
+          {item?.provider || '--'}
+        </span>
+      </div>
+      <div className="text-[11px] text-muted-foreground/80 font-mono tabular-nums truncate">
+        {item
+          ? showTokens
+            ? `${t('hub.models.calls')}: ${Number(item.calls).toLocaleString()} · ${t('hub.models.tokens')}: ${Number(item.totalTokens).toLocaleString()}`
+            : `${t('hub.models.calls')}: ${Number(item.calls).toLocaleString()}`
+          : t('hub.models.noActiveModel')}
+      </div>
+    </div>
+  )
+}
+
 function UnifiedSettingsRoute() {
   const { i18n, t } = useTranslation('settings')
   const isZh = i18n.resolvedLanguage?.startsWith('zh')
@@ -255,6 +387,26 @@ function UnifiedSettingsRoute() {
     queryKey: ['system-observer-models', draft.baseUrl, draft.adminApiKey, draft.apiKey],
     staleTime: 15_000,
   })
+
+  const parsedModels = React.useMemo(
+    () => parseObserverModelsTable(modelsQuery.data?.status),
+    [modelsQuery.data?.status],
+  )
+
+  const activeVlm =
+    parsedModels.vlm.find((m) => m.model === 'qwen3.8-flash-next') ||
+    parsedModels.vlm.find((m) => Number(m.calls) > 0) ||
+    parsedModels.vlm[0]
+
+  const activeEmbedding =
+    parsedModels.embedding.find((m) => Number(m.calls) > 0) ||
+    parsedModels.embedding[0]
+
+  const activeRerank =
+    parsedModels.rerank.find((m) => Number(m.calls) > 0) ||
+    parsedModels.rerank[0]
+
+  const activeCompressor = parsedModels.compressor[0]
 
   // Tab 1 Workspace Ingest Target Query
   const workspaceQuery = useQuery({
@@ -484,9 +636,6 @@ function UnifiedSettingsRoute() {
             <h1 className="text-xl font-semibold tracking-tight">
               {t('hub.title')}
             </h1>
-            <Badge variant="outline" className="text-[11px] font-mono border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">
-              v1.4.42
-            </Badge>
           </div>
           <Badge variant="outline" className="text-[11px] font-normal border-border/80">
             {t(`serverMode.${serverMode}`)}
@@ -556,6 +705,29 @@ function UnifiedSettingsRoute() {
                     <p className="text-[11px] text-muted-foreground">{t('connectionPage.description')}</p>
                   </div>
                 </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={probeQuery.isFetching || modelsQuery.isFetching}
+                  onClick={() => {
+                    void probeQuery.refetch()
+                    void modelsQuery.refetch()
+                    void workspaceQuery.refetch()
+                    toast.info(t('connection.rechecking'))
+                  }}
+                  className="h-7 rounded px-2.5 text-xs gap-1.5 cursor-pointer font-sans"
+                >
+                  <RotateCcwIcon
+                    className={cn(
+                      'size-3',
+                      (probeQuery.isFetching || modelsQuery.isFetching) &&
+                        'animate-spin text-cyan-500',
+                    )}
+                  />
+                  <span>{t('connection.recheck')}</span>
+                </Button>
               </div>
             </CardHeader>
             <CardContent className="grid gap-4 px-5 py-4">
@@ -696,60 +868,11 @@ function UnifiedSettingsRoute() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="grid gap-3 px-5 py-4 sm:grid-cols-3">
-              {/* VLM Tile */}
-              <div className="flex flex-col rounded-md border bg-muted/20 p-3 space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    {t('hub.models.vlm')}
-                  </span>
-                  <Badge variant="outline" className="px-1.5 py-0 text-[11px] border-cyan-500/30 bg-cyan-500/10 text-cyan-500">
-                    Ready
-                  </Badge>
-                </div>
-                <div className="font-mono text-xs font-semibold text-foreground">
-                  Qwen2.5-VL-7B-Instruct
-                </div>
-                <div className="text-[11px] text-muted-foreground">
-                  Provider: <span className="font-mono text-foreground">Volcengine Ark / Local</span>
-                </div>
-              </div>
-
-              {/* Embedding Tile */}
-              <div className="flex flex-col rounded-md border bg-muted/20 p-3 space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    {t('hub.models.embedding')}
-                  </span>
-                  <Badge variant="outline" className="px-1.5 py-0 text-[11px] border-cyan-500/30 bg-cyan-500/10 text-cyan-500">
-                    Ready
-                  </Badge>
-                </div>
-                <div className="font-mono text-xs font-semibold text-foreground">
-                  bge-m3 / text-embedding-3
-                </div>
-                <div className="text-[11px] text-muted-foreground">
-                  Dim: <span className="font-mono text-foreground">1024 / 1536</span> · Provider: <span className="font-mono text-foreground">VikingDB</span>
-                </div>
-              </div>
-
-              {/* Rerank Tile */}
-              <div className="flex flex-col rounded-md border bg-muted/20 p-3 space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    {t('hub.models.rerank')}
-                  </span>
-                  <Badge variant="outline" className="px-1.5 py-0 text-[11px] border-cyan-500/30 bg-cyan-500/10 text-cyan-500">
-                    Ready
-                  </Badge>
-                </div>
-                <div className="font-mono text-xs font-semibold text-foreground">
-                  bge-reranker-large
-                </div>
-                <div className="text-[11px] text-muted-foreground">
-                  Accelerator: <span className="font-mono text-foreground">2080Ti Local / Metal 4</span>
-                </div>
-              </div>
+            <CardContent className="grid gap-3 px-5 py-4 sm:grid-cols-2 lg:grid-cols-4">
+              <ModelTile title={t('hub.models.vlm')} item={activeVlm} />
+              <ModelTile title={t('hub.models.embedding')} item={activeEmbedding} />
+              <ModelTile title={t('hub.models.rerank')} item={activeRerank} />
+              <ModelTile title={t('hub.models.compressor')} item={activeCompressor} showTokens={false} />
             </CardContent>
           </Card>
 
