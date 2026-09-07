@@ -515,6 +515,13 @@ const zhCN = {
       stepFailed: '失败',
       stepPending: '等待中',
       stepRunning: '进行中',
+      pendingPreceding: '待前置交付',
+      finalDeliverable: '最终输出结果',
+      expectedOutputPrefix: '预期产出：',
+      delivered: '已就绪',
+      aborted: '交付中断',
+      stepRunningText: '正在执行',
+      stepCompletedText: '已完成',
     },
     pipeline: {
       queued: '等待中',

@@ -298,18 +298,17 @@ export function TaskDetailSheet({
 
                 {/* Worker Sub-Queue Pipeline Diagram (Type-Aware) */}
                 {(() => {
-                  const isZh = i18n.language.startsWith('zh')
                   const groups = getTaskPipelineGroups(task, effectiveQueueRows, i18n.language)
                   const outcome = getTaskFinalOutcome(task, i18n.language)
                   const isDoneAll = normalizeTaskStatus(task.status) === 'completed'
                   let runningStepIndex = 0
 
                   const renderMetrics = (st: PipelineStep) => {
-                    // 1. 若工序尚未开始（等待前置工序交付），绝对禁止展示伪造的 0/1 分数或假指标
+                    // 1. 若工序尚未开始（等待前置工序交付），统一展示标准中性胶囊与连贯文案 (SSOT)
                     if (st.state === 'pending') {
                       return (
-                        <span className="text-[11px] font-medium text-muted-foreground/60 select-none">
-                          {isZh ? '待前置工序' : 'Pending'}
+                        <span className="px-2 py-0.5 rounded text-[11px] font-medium select-none shrink-0 bg-muted/50 text-muted-foreground border border-border/40">
+                          {t('detail.pendingPreceding', { defaultValue: '待前置交付' })}
                         </span>
                       )
                     }
@@ -339,9 +338,9 @@ export function TaskDetailSheet({
                       }
 
                       return (
-                        <span className="text-[11px] font-medium text-primary select-none flex items-center gap-1.5">
+                        <span className="px-2 py-0.5 rounded text-[11px] font-medium select-none shrink-0 bg-primary/10 text-primary border border-primary/20 flex items-center gap-1.5">
                           <span className="size-1.5 rounded-full bg-primary animate-ping" />
-                          {isZh ? '正在执行' : 'Processing'}
+                          {t('detail.stepRunningText', { defaultValue: '正在执行' })}
                         </span>
                       )
                     }
@@ -365,14 +364,14 @@ export function TaskDetailSheet({
                         )
                       }
                       return (
-                        <span className="text-[11px] font-medium text-muted-foreground select-none">
-                          {isZh ? '已完成' : 'Completed'}
+                        <span className="px-2 py-0.5 rounded text-[11px] font-medium select-none shrink-0 bg-muted/40 text-muted-foreground border border-border/30">
+                          {t('detail.stepCompletedText', { defaultValue: '已完成' })}
                         </span>
                       )
                     }
 
                     return (
-                      <span className="text-[11px] font-medium text-muted-foreground select-none">
+                      <span className="px-2 py-0.5 rounded text-[11px] font-medium select-none shrink-0 bg-muted/30 text-muted-foreground/60 border border-border/30">
                         --
                       </span>
                     )
@@ -442,29 +441,29 @@ export function TaskDetailSheet({
                                   <div className="flex flex-col min-w-0">
                                     <div className="flex items-center gap-2">
                                       <span className="font-semibold text-foreground text-xs">{outcome.title}</span>
-                                      <span className="text-[10px] font-mono text-muted-foreground bg-muted/60 px-1.5 py-0.2 rounded border border-border/60">
-                                        {isZh ? '最终输出结果' : 'Final Deliverable'}
+                                      <span className="text-[11px] font-mono text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded border border-border/60">
+                                        {t('detail.finalDeliverable', { defaultValue: '最终输出结果' })}
                                       </span>
                                     </div>
                                     <span className="text-[11px] text-muted-foreground truncate mt-0.5">
-                                      {isDoneAll ? outcome.deliverableText : (isZh ? `预期产出：${outcome.expectedText}` : `Expected: ${outcome.expectedText}`)}
+                                      {isDoneAll ? outcome.deliverableText : `${t('detail.expectedOutputPrefix', { defaultValue: '预期产出：' })}${outcome.expectedText}`}
                                     </span>
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-2 text-[11px] shrink-0">
                                   <span className={cn(
-                                    'px-2 py-0.5 rounded text-[11px] font-medium select-none shrink-0',
+                                    'px-2 py-0.5 rounded text-[11px] font-medium select-none shrink-0 border',
                                     isDoneAll
-                                      ? 'bg-secondary text-foreground font-semibold'
+                                      ? 'bg-secondary text-foreground font-semibold border-border/60'
                                       : task.status === 'failed'
-                                        ? 'bg-destructive/10 text-destructive'
-                                        : 'bg-muted/50 text-muted-foreground'
+                                        ? 'bg-destructive/10 text-destructive border-destructive/20'
+                                        : 'bg-muted/50 text-muted-foreground border-border/40'
                                   )}>
                                     {isDoneAll
-                                      ? (isZh ? '已就绪' : 'Delivered')
+                                      ? t('detail.delivered', { defaultValue: '已就绪' })
                                       : task.status === 'failed'
-                                        ? (isZh ? '交付中断' : 'Aborted')
-                                        : (isZh ? '待前置交付' : 'Pending')}
+                                        ? t('detail.aborted', { defaultValue: '交付中断' })
+                                        : t('detail.pendingPreceding', { defaultValue: '待前置交付' })}
                                   </span>
                                 </div>
                               </div>
