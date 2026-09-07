@@ -299,33 +299,68 @@ export function getTaskPipelineSteps(
       resourceId === 'viking://resources/'
 
     if (!isGlobalRootReindex) {
-      // 单文件/指定独立资源的局部重新索引任务
-      const nodes = qStatus?.Semantic?.processed ?? metaObj.semantic_nodes ?? resObj.semantic_nodes ?? metaObj.processed_nodes ?? 1
-      const chunks = qStatus?.Embedding?.processed ?? metaObj.processed_chunks ?? resObj.rebuilt_records ?? resObj.reindexed_items ?? metaObj.total_chunks ?? 1
+      // 局部/子目录重新索引任务（如 viking://user/default/memories）
       const isCompleted = normStatus === 'completed'
       const isRunning = normStatus === 'running'
       const isEmbedStage = stage?.toLowerCase().includes('vector') || stage?.toLowerCase().includes('embed')
       const isPruneStage = stage?.toLowerCase().includes('prune')
 
-      const step1State: StepState = isCompleted || isEmbedStage || isPruneStage ? 'completed' : isRunning ? 'running' : 'pending'
-      const step2State: StepState = isCompleted || isPruneStage ? 'completed' : isEmbedStage ? 'running' : 'pending'
-      const step3State: StepState = isCompleted ? 'completed' : isPruneStage ? 'running' : 'pending'
+      // 若处于运行态且队列有活跃节点，以队列活跃态优先
+      const isSemanticActive = semanticNodesRow
+        ? (semanticNodesRow.pending > 0 || semanticNodesRow.processing > 0)
+        : (!isEmbedStage && !isPruneStage && isRunning)
+      const isEmbeddingActive =
+        isRunning &&
+        (isEmbedStage || (!isSemanticActive && (embeddingRow?.processing ?? 0) > 0))
+
+      const step1State: StepState =
+        isCompleted || isEmbedStage || isPruneStage || (!isSemanticActive && isRunning)
+          ? 'completed'
+          : isSemanticActive
+            ? 'running'
+            : 'pending'
+      const step2State: StepState =
+        isCompleted || isPruneStage
+          ? 'completed'
+          : isEmbeddingActive
+            ? 'running'
+            : 'pending'
+      const step3State: StepState =
+        isCompleted ? 'completed' : isPruneStage ? 'running' : 'pending'
+
+      const liveSemanticTotal = semanticNodesRow?.total ?? semanticRow?.total
+      const liveSemanticCompleted = semanticNodesRow?.completed ?? semanticRow?.completed
+      const nodes = isCompleted
+        ? (qStatus?.Semantic?.processed ?? metaObj.semantic_nodes ?? resObj.semantic_nodes ?? metaObj.processed_nodes ?? liveSemanticTotal ?? 1)
+        : (liveSemanticTotal ?? qStatus?.Semantic?.processed ?? metaObj.semantic_nodes ?? resObj.semantic_nodes ?? metaObj.processed_nodes ?? 1)
+      const nodesProcessed = isCompleted
+        ? nodes
+        : (step1State === 'running' ? (liveSemanticCompleted ?? 0) : (step1State === 'completed' ? nodes : 0))
+
+      const liveEmbeddingTotal = embeddingRow?.total
+      const liveEmbeddingCompleted = embeddingRow?.completed
+      const chunks = isCompleted
+        ? (qStatus?.Embedding?.processed ?? metaObj.processed_chunks ?? resObj.rebuilt_records ?? resObj.reindexed_items ?? metaObj.total_chunks ?? liveEmbeddingTotal ?? 1)
+        : (liveEmbeddingTotal ?? qStatus?.Embedding?.processed ?? metaObj.processed_chunks ?? resObj.rebuilt_records ?? resObj.reindexed_items ?? metaObj.total_chunks ?? 1)
+      const chunksProcessed = isCompleted
+        ? chunks
+        : (step2State === 'running' ? (liveEmbeddingCompleted ?? 0) : (step2State === 'completed' ? chunks : 0))
 
       return [
         {
           name: isZh ? '语义提炼' : 'Semantic',
           state: step1State,
-          processed: step1State === 'completed' ? nodes : 0,
+          processed: nodesProcessed,
           total: nodes,
-          count: nodes,
+          count: nodesProcessed,
           unit: isZh ? '节点' : 'nodes',
         },
         {
           name: isZh ? '切片重构' : 'Embedding',
           state: step2State,
-          processed: step2State === 'completed' ? chunks : 0,
+          processed: chunksProcessed,
           total: chunks,
-          count: chunks,
+          count: chunksProcessed,
           unit: isZh ? '切片' : 'chunks',
         },
         {
