@@ -455,6 +455,9 @@ const en = {
     loadFailed: 'Could not load tasks',
     detail: {
       title: 'Task details',
+      cancelTask: 'Cancel Task',
+      cancelSuccess: 'Task cancelled',
+      cancelFailed: 'Failed to cancel task',
       loading: 'Loading task details...',
       loadFailed: 'Could not load task details',
       retry: 'Retry',

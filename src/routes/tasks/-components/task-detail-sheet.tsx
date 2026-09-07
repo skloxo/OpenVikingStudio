@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ActivityIcon,
   CalendarClockIcon,
@@ -118,20 +118,62 @@ export function TaskDetailSheet({
   })
   const queueObserverRows = queueObserverQuery.data || []
 
+  const queryClient = useQueryClient()
+  const cancelMutation = useMutation({
+    mutationFn: async () => {
+      if (!taskId) return
+      await ovClient.instance.post(`/api/v1/tasks/${taskId}/cancel`)
+    },
+    onSuccess: () => {
+      toast.success(t('detail.cancelSuccess'))
+      void detailQuery.refetch()
+      void queryClient.invalidateQueries({ queryKey: ['tasks'] })
+    },
+    onError: (err: any) => {
+      toast.error(
+        err?.response?.data?.error?.message ||
+          err?.message ||
+          t('detail.cancelFailed'),
+      )
+    },
+  })
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="gap-0 data-[side=right]:sm:max-w-3xl">
         <SheetHeader className="border-b px-6 py-5">
-          <div className="flex items-center gap-3 pr-10">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
-              <ClipboardListIcon className="size-4.5" />
+          <div className="flex items-center justify-between gap-3 pr-8">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
+                <ClipboardListIcon className="size-4.5" />
+              </div>
+              <div className="min-w-0">
+                <SheetTitle className="text-lg">{t('detail.title')}</SheetTitle>
+                <SheetDescription className="truncate font-mono text-xs">
+                  {taskId}
+                </SheetDescription>
+              </div>
             </div>
-            <div className="min-w-0">
-              <SheetTitle className="text-lg">{t('detail.title')}</SheetTitle>
-              <SheetDescription className="truncate font-mono text-xs">
-                {taskId}
-              </SheetDescription>
-            </div>
+            {task &&
+              ['pending', 'running'].includes(
+                normalizeTaskStatus(task.status),
+              ) && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={cancelMutation.isPending}
+                  className="shrink-0 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/30 gap-1.5 h-8"
+                  onClick={() => cancelMutation.mutate()}
+                >
+                  {cancelMutation.isPending ? (
+                    <LoaderCircleIcon className="size-3.5 animate-spin" />
+                  ) : (
+                    <CircleXIcon className="size-3.5" />
+                  )}
+                  {t('detail.cancelTask')}
+                </Button>
+              )}
           </div>
         </SheetHeader>
 
