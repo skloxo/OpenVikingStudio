@@ -15,7 +15,11 @@ import {
   SheetTrigger,
 } from '#/components/ui/sheet'
 import { fetchFind } from '#/lib/retrieval'
-import { computeSummaryMetrics, DEFAULT_BENCHMARK_QUERIES, evaluateRagasSample } from './benchmark/eval-engine'
+import {
+  computeSummaryMetrics,
+  evaluateRagasSample,
+  getDefaultBenchmarkQueries,
+} from './benchmark/eval-engine'
 import { BenchmarkMetricsTiles } from './benchmark/metrics-tiles'
 import { BenchmarkQuerySuite } from './benchmark/query-suite'
 import { BenchmarkResultsTable } from './benchmark/results-table'
@@ -24,14 +28,33 @@ import type { BenchmarkMode, BenchmarkResultItem } from './benchmark/types'
 export type { BenchmarkMode, BenchmarkResultItem }
 
 export function RetrievalBenchmarkDrawer() {
-  const { t } = useTranslation('retrieval')
+  const { t, i18n } = useTranslation('retrieval')
+
+  const defaultQueries = React.useMemo(() => {
+    const fromI18n = t('benchmark.defaultQueries', { returnObjects: true })
+    if (Array.isArray(fromI18n) && fromI18n.length > 0) {
+      return fromI18n as string[]
+    }
+    return getDefaultBenchmarkQueries(i18n.language)
+  }, [t, i18n.language])
 
   const [isOpen, setIsOpen] = React.useState(false)
   const [mode, setMode] = React.useState<BenchmarkMode>('ragas')
-  const [queries, setQueries] = React.useState<string[]>(DEFAULT_BENCHMARK_QUERIES)
+  const [queries, setQueries] = React.useState<string[]>(() => getDefaultBenchmarkQueries(i18n.language))
   const [isRunning, setIsRunning] = React.useState(false)
   const [currentIndex, setCurrentIndex] = React.useState(-1)
   const [results, setResults] = React.useState<BenchmarkResultItem[]>([])
+
+  // 当系统语言切换且未产生评测数据时，自动对齐语言专属默认用例集
+  const prevLangRef = React.useRef(i18n.language)
+  React.useEffect(() => {
+    if (prevLangRef.current !== i18n.language) {
+      prevLangRef.current = i18n.language
+      if (!isRunning && results.length === 0) {
+        setQueries(defaultQueries)
+      }
+    }
+  }, [i18n.language, isRunning, results.length, defaultQueries])
 
   const handleAddQuery = (newQ: string) => {
     setQueries((prev) => [...prev, newQ])
@@ -44,7 +67,7 @@ export function RetrievalBenchmarkDrawer() {
 
   const handleResetDefaults = () => {
     if (isRunning) return
-    setQueries(DEFAULT_BENCHMARK_QUERIES)
+    setQueries(defaultQueries)
     setResults([])
     setCurrentIndex(-1)
   }

@@ -146,7 +146,7 @@ export function BenchmarkResultsTable({
                     {status === 'running' ? (
                       <Badge variant="outline" className="px-1.5 py-0 text-[11px] border-cyan-500/40 text-cyan-500 gap-1 animate-pulse">
                         <Loader2Icon className="size-2.5 animate-spin" />
-                        <span>Run</span>
+                        <span>{t('benchmark.statusRun', '运行中')}</span>
                       </Badge>
                     ) : status === 'hit' ? (
                       <Badge variant="outline" className="px-1.5 py-0 text-[11px] border-cyan-500/40 bg-cyan-500/10 text-cyan-500 gap-1">
@@ -160,7 +160,7 @@ export function BenchmarkResultsTable({
                       </Badge>
                     ) : status === 'error' ? (
                       <Badge variant="outline" className="px-1.5 py-0 text-[11px] border-rose-500/40 bg-rose-500/10 text-rose-500 gap-1">
-                        <span>Err</span>
+                        <span>{t('benchmark.statusError', '异常')}</span>
                       </Badge>
                     ) : (
                       <span className="text-[11px] text-muted-foreground">--</span>
@@ -184,27 +184,27 @@ export function BenchmarkResultsTable({
                 {/* 展开的 RAGAS 4 维指标详情折叠卡片 */}
                 {isExpanded && result?.ragas && (
                   <tr className="bg-muted/10">
-                    <td colSpan={mode === 'ragas' ? 8 : 6} className="px-4 py-2 text-xs border-y border-cyan-500/20">
-                      <div className="flex flex-wrap items-center gap-4 text-[11px] font-mono text-muted-foreground">
-                        <div>
-                          <span>Precision: </span>
-                          <span className="text-foreground font-bold">{result.ragas.contextPrecision}</span>
+                    <td colSpan={mode === 'ragas' ? 8 : 6} className="px-4 py-2.5 text-xs border-y border-cyan-500/20">
+                      <div className="flex flex-wrap items-center gap-5 text-[11px] font-mono text-muted-foreground">
+                        <div className="flex items-center gap-1.5">
+                          <span>{t('benchmark.table.detailPrecision')}:</span>
+                          <span className="text-foreground font-bold">{result.ragas.contextPrecision.toFixed(2)}</span>
                         </div>
-                        <div>
-                          <span>Recall: </span>
-                          <span className="text-foreground font-bold">{result.ragas.contextRecall}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span>{t('benchmark.table.detailRecall')}:</span>
+                          <span className="text-foreground font-bold">{result.ragas.contextRecall.toFixed(2)}</span>
                         </div>
-                        <div>
-                          <span>Faithfulness: </span>
-                          <span className="text-foreground font-bold">{result.ragas.faithfulness}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span>{t('benchmark.table.detailFaithfulness')}:</span>
+                          <span className="text-foreground font-bold">{result.ragas.faithfulness.toFixed(2)}</span>
                         </div>
-                        <div>
-                          <span>Relevance: </span>
-                          <span className="text-foreground font-bold">{result.ragas.answerRelevance}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span>{t('benchmark.table.detailRelevance')}:</span>
+                          <span className="text-foreground font-bold">{result.ragas.answerRelevance.toFixed(2)}</span>
                         </div>
-                        <div>
-                          <span>Composite (调和): </span>
-                          <span className="text-cyan-500 font-bold">{result.ragas.compositeScore}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span>{t('benchmark.table.detailComposite')}:</span>
+                          <span className="text-cyan-500 font-bold">{result.ragas.compositeScore.toFixed(2)}</span>
                         </div>
                       </div>
                     </td>
