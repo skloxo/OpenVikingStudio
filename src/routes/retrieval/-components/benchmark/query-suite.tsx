@@ -46,9 +46,9 @@ export function BenchmarkQuerySuite({
 
   return (
     <div className="space-y-3">
-      {/* 模式选择 Segment */}
-      <div className="flex items-center justify-between gap-2 p-1.5 rounded-lg border border-border/70 bg-muted/20">
-        <div className="flex items-center gap-1.5">
+      {/* 模式选择 Segment 与操作按钮栏 */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-2 rounded-lg border border-border/70 bg-muted/20">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <button
             type="button"
             disabled={isRunning}
@@ -80,12 +80,12 @@ export function BenchmarkQuerySuite({
         </div>
 
         {/* 状态动作区 */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
           <Button
             onClick={onRun}
             disabled={isRunning || queries.length === 0}
             size="sm"
-            className="h-7 gap-1.5 text-xs font-medium bg-cyan-600 hover:bg-cyan-700 text-white cursor-pointer px-3"
+            className="h-7.5 gap-1.5 text-xs font-medium bg-cyan-600 hover:bg-cyan-700 text-white cursor-pointer px-3 shrink-0"
           >
             {isRunning ? (
               <>
@@ -95,7 +95,7 @@ export function BenchmarkQuerySuite({
             ) : (
               <>
                 <PlayIcon className="size-3 fill-current" />
-                <span>{mode === 'ragas' ? t('benchmark.runRagasBtn', '▶ 开始 RAGAS 评测') : t('benchmark.runBtn')}</span>
+                <span>{mode === 'ragas' ? t('benchmark.runRagasBtn', '开始 RAGAS 评测') : t('benchmark.runBtn')}</span>
               </>
             )}
           </Button>
@@ -105,11 +105,11 @@ export function BenchmarkQuerySuite({
             disabled={isRunning}
             variant="ghost"
             size="sm"
-            className="h-7 gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer px-2"
+            className="h-7.5 gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer px-2 shrink-0 border border-border/40 hover:border-border"
             title={t('benchmark.resetSuite')}
           >
             <RotateCcwIcon className="size-3" />
-            <span className="text-[11px] hidden sm:inline">{t('benchmark.resetSuite')}</span>
+            <span className="text-[11px]">{t('benchmark.resetSuite')}</span>
           </Button>
 
           {hasCompletedResults && (
@@ -117,7 +117,7 @@ export function BenchmarkQuerySuite({
               onClick={onExport}
               variant="outline"
               size="sm"
-              className="h-7 gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer px-2.5"
+              className="h-7.5 gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer px-2.5 shrink-0"
             >
               <DownloadIcon className="size-3" />
               <span className="text-[11px]">{t('benchmark.exportReport')}</span>
