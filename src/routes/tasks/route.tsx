@@ -1244,6 +1244,7 @@ function TasksRoute() {
         identityScopeKey={identityScopeKey}
         open={Boolean(selectedTaskId)}
         taskId={selectedTaskId}
+        queueRows={queueObserverRows}
         onOpenChange={(open) => {
           if (!open) setSelectedTaskId(null)
         }}

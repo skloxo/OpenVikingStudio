@@ -29,6 +29,7 @@ import { getOvResult, getTaskByTaskId, ovClient } from '#/lib/ov-client'
 import { cn } from '#/lib/utils'
 import { formatTaskDuration, getTaskDate } from '#/routes/tasks/-lib/task-time'
 import { parseQueueStatus } from '#/routes/monitoring/-components/queue-status-card'
+import type { ParsedQueueRow } from '#/routes/monitoring/-components/queue-status-card'
 
 import {
   hasTaskResult,
@@ -47,9 +48,24 @@ type TaskDetailSheetProps = {
   onOpenChange: (open: boolean) => void
   open: boolean
   taskId: string | null
+  queueRows?: ParsedQueueRow[]
 }
 
 async function fetchTask(taskId: string): Promise<TaskRecord> {
+  // 1. 优先尝试从后端获取最新实时真实任务状态 (Absolute Data Integrity SSOT)
+  try {
+    const result = await getOvResult<unknown>(
+      getTaskByTaskId({
+        path: { task_id: taskId },
+      }),
+    )
+    const task = normalizeTaskRecord(result)
+    if (task) return task
+  } catch (err) {
+    console.warn('[fetchTask] Backend fetch failed for taskId, trying local cache fallback:', taskId, err)
+  }
+
+  // 2. 仅当后端 404 或网络断开时，才降级从本地历史快照兜底
   if (typeof window !== 'undefined') {
     try {
       const raw = localStorage.getItem('ov_studio_task_history')
@@ -65,18 +81,6 @@ async function fetchTask(taskId: string): Promise<TaskRecord> {
     }
   }
 
-  try {
-    const result = await getOvResult<unknown>(
-      getTaskByTaskId({
-        path: { task_id: taskId },
-      }),
-    )
-    const task = normalizeTaskRecord(result)
-    if (task) return task
-  } catch (err) {
-    console.warn('[fetchTask] Backend fetch failed for taskId:', taskId, err)
-  }
-
   throw new Error('Task not found or expired')
 }
 
@@ -85,6 +89,7 @@ export function TaskDetailSheet({
   onOpenChange,
   open,
   taskId,
+  queueRows,
 }: TaskDetailSheetProps) {
   const { i18n, t } = useTranslation('tasksPage')
   const detailQuery = useQuery({
@@ -103,7 +108,7 @@ export function TaskDetailSheet({
   const task = detailQuery.data
 
   const queueObserverQuery = useQuery({
-    enabled: open,
+    enabled: open && (!queueRows || queueRows.length === 0),
     queryKey: ['queue-observer-status'],
     queryFn: async () => {
       try {
@@ -116,7 +121,7 @@ export function TaskDetailSheet({
     },
     refetchInterval: open ? 2_000 : false,
   })
-  const queueObserverRows = queueObserverQuery.data || []
+  const effectiveQueueRows = (queueRows && queueRows.length > 0) ? queueRows : (queueObserverQuery.data || [])
 
   const queryClient = useQueryClient()
   const cancelMutation = useMutation({
@@ -294,29 +299,83 @@ export function TaskDetailSheet({
                 {/* Worker Sub-Queue Pipeline Diagram (Type-Aware) */}
                 {(() => {
                   const isZh = i18n.language.startsWith('zh')
-                  const groups = getTaskPipelineGroups(task, queueObserverRows, i18n.language)
+                  const groups = getTaskPipelineGroups(task, effectiveQueueRows, i18n.language)
                   const outcome = getTaskFinalOutcome(task, i18n.language)
                   const isDoneAll = normalizeTaskStatus(task.status) === 'completed'
                   let runningStepIndex = 0
 
                   const renderMetrics = (st: PipelineStep) => {
-                    const hasFraction = st.processed !== undefined && st.total !== undefined && st.total > 0
-                    if (hasFraction) {
+                    // 1. 若工序尚未开始（等待前置工序交付），绝对禁止展示伪造的 0/1 分数或假指标
+                    if (st.state === 'pending') {
                       return (
-                        <span className="font-mono font-medium text-foreground bg-muted/60 px-2 py-0.5 rounded border border-border/60 tabular-nums">
-                          {(st.processed ?? 0).toLocaleString()} / {(st.total ?? 0).toLocaleString()} {st.unit ?? ''}
+                        <span className="text-[11px] font-medium text-muted-foreground/60 select-none">
+                          {isZh ? '待前置工序' : 'Pending'}
                         </span>
                       )
                     }
-                    if (st.count !== undefined || st.processed !== undefined) {
-                      const countVal = st.count ?? st.processed ?? 0
+
+                    // 2. 若工序正在执行中 (Running)
+                    if (st.state === 'running') {
+                      const hasValidFraction =
+                        st.processed !== undefined &&
+                        st.total !== undefined &&
+                        st.total > 0 &&
+                        !(st.total === 1 && st.processed === 0)
+
+                      if (hasValidFraction) {
+                        return (
+                          <span className="font-mono font-medium text-foreground bg-muted/60 px-2 py-0.5 rounded border border-border/60 tabular-nums">
+                            {(st.processed ?? 0).toLocaleString()} / {st.total!.toLocaleString()} {st.unit ?? ''}
+                          </span>
+                        )
+                      }
+
+                      if (st.processed !== undefined && st.processed > 0) {
+                        return (
+                          <span className="font-mono font-medium text-foreground bg-muted/60 px-2 py-0.5 rounded border border-border/60 tabular-nums">
+                            {st.processed.toLocaleString()} {st.unit ?? ''}
+                          </span>
+                        )
+                      }
+
                       return (
-                        <span className="font-mono font-medium text-foreground bg-muted/60 px-2 py-0.5 rounded border border-border/60 tabular-nums">
-                          {countVal.toLocaleString()} {st.unit ?? ''}
+                        <span className="text-[11px] font-medium text-primary select-none flex items-center gap-1.5">
+                          <span className="size-1.5 rounded-full bg-primary animate-ping" />
+                          {isZh ? '正在执行' : 'Processing'}
                         </span>
                       )
                     }
-                    return null
+
+                    // 3. 若工序已完成 (Completed)
+                    if (st.state === 'completed') {
+                      const hasFraction = st.processed !== undefined && st.total !== undefined && st.total > 0
+                      if (hasFraction && st.total !== undefined && st.total > 1) {
+                        return (
+                          <span className="font-mono font-medium text-foreground bg-muted/60 px-2 py-0.5 rounded border border-border/60 tabular-nums">
+                            {(st.processed ?? 0).toLocaleString()} / {st.total.toLocaleString()} {st.unit ?? ''}
+                          </span>
+                        )
+                      }
+                      const countVal = st.count ?? st.processed ?? st.total
+                      if (countVal !== undefined && countVal > 0) {
+                        return (
+                          <span className="font-mono font-medium text-foreground bg-muted/60 px-2 py-0.5 rounded border border-border/60 tabular-nums">
+                            {countVal.toLocaleString()} {st.unit ?? ''}
+                          </span>
+                        )
+                      }
+                      return (
+                        <span className="text-[11px] font-medium text-muted-foreground select-none">
+                          {isZh ? '已完成' : 'Completed'}
+                        </span>
+                      )
+                    }
+
+                    return (
+                      <span className="text-[11px] font-medium text-muted-foreground select-none">
+                        --
+                      </span>
+                    )
                   }
 
                   return (

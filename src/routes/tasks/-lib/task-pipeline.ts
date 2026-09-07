@@ -331,44 +331,44 @@ export function getTaskPipelineSteps(
       const liveSemanticTotal = semanticNodesRow?.total ?? semanticRow?.total
       const liveSemanticCompleted = semanticNodesRow?.completed ?? semanticRow?.completed
       const nodes = isCompleted
-        ? (qStatus?.Semantic?.processed ?? metaObj.semantic_nodes ?? resObj.semantic_nodes ?? metaObj.processed_nodes ?? liveSemanticTotal ?? 1)
-        : (liveSemanticTotal ?? qStatus?.Semantic?.processed ?? metaObj.semantic_nodes ?? resObj.semantic_nodes ?? metaObj.processed_nodes ?? 1)
+        ? (qStatus?.Semantic?.processed ?? metaObj.semantic_nodes ?? resObj.semantic_nodes ?? metaObj.processed_nodes ?? liveSemanticTotal)
+        : (liveSemanticTotal ?? qStatus?.Semantic?.processed ?? metaObj.semantic_nodes ?? resObj.semantic_nodes ?? metaObj.processed_nodes)
       const nodesProcessed = isCompleted
         ? nodes
-        : (step1State === 'running' ? (liveSemanticCompleted ?? 0) : (step1State === 'completed' ? nodes : 0))
+        : (step1State === 'running' ? liveSemanticCompleted : (step1State === 'completed' ? nodes : undefined))
 
       const liveEmbeddingTotal = embeddingRow?.total
       const liveEmbeddingCompleted = embeddingRow?.completed
       const chunks = isCompleted
-        ? (qStatus?.Embedding?.processed ?? metaObj.processed_chunks ?? resObj.rebuilt_records ?? resObj.reindexed_items ?? metaObj.total_chunks ?? liveEmbeddingTotal ?? 1)
-        : (liveEmbeddingTotal ?? qStatus?.Embedding?.processed ?? metaObj.processed_chunks ?? resObj.rebuilt_records ?? resObj.reindexed_items ?? metaObj.total_chunks ?? 1)
+        ? (qStatus?.Embedding?.processed ?? metaObj.processed_chunks ?? resObj.rebuilt_records ?? resObj.reindexed_items ?? metaObj.total_chunks ?? liveEmbeddingTotal)
+        : (liveEmbeddingTotal ?? qStatus?.Embedding?.processed ?? metaObj.processed_chunks ?? resObj.rebuilt_records ?? resObj.reindexed_items ?? metaObj.total_chunks)
       const chunksProcessed = isCompleted
         ? chunks
-        : (step2State === 'running' ? (liveEmbeddingCompleted ?? 0) : (step2State === 'completed' ? chunks : 0))
+        : (step2State === 'running' ? liveEmbeddingCompleted : (step2State === 'completed' ? chunks : undefined))
 
       return [
         {
           name: isZh ? '语义提炼' : 'Semantic',
           state: step1State,
-          processed: nodesProcessed,
-          total: nodes,
+          processed: step1State === 'pending' ? undefined : nodesProcessed,
+          total: step1State === 'pending' ? undefined : (nodes && nodes > 0 ? nodes : undefined),
           count: nodesProcessed,
           unit: isZh ? '节点' : 'nodes',
         },
         {
           name: isZh ? '切片重构' : 'Embedding',
           state: step2State,
-          processed: chunksProcessed,
-          total: chunks,
+          processed: step2State === 'pending' ? undefined : chunksProcessed,
+          total: step2State === 'pending' ? undefined : (chunks && chunks > 0 ? chunks : undefined),
           count: chunksProcessed,
           unit: isZh ? '切片' : 'chunks',
         },
         {
           name: isZh ? '悬空修剪' : 'Pruning',
           state: step3State,
-          processed: step3State === 'completed' ? 1 : 0,
-          total: 1,
-          count: 1,
+          processed: step3State === 'completed' ? (resObj.deleted_chunks ?? metaObj.deleted_chunks ?? 0) : undefined,
+          total: step3State === 'completed' ? (resObj.deleted_chunks ?? metaObj.deleted_chunks ?? 0) : undefined,
+          count: step3State === 'completed' ? (resObj.deleted_chunks ?? metaObj.deleted_chunks ?? 0) : undefined,
           unit: isZh ? '切片' : 'chunks',
         },
       ]
@@ -380,33 +380,37 @@ export function getTaskPipelineSteps(
     const rebuilt = resObj.rebuilt_records ?? resObj.reindexed_items ?? metaObj.rebuilt_records
     const isCompleted = normStatus === 'completed'
     const semanticTotal = semanticNodesRow?.total ?? semanticRow?.total ?? scanned
-    const semanticProcessed = isCompleted ? semanticTotal : (semanticNodesRow?.completed ?? semanticRow?.completed ?? 0)
+    const semanticProcessed = isCompleted ? semanticTotal : (semanticNodesRow?.completed ?? semanticRow?.completed)
     const isSemanticRunning = semanticNodesRow ? (semanticNodesRow.pending > 0 || semanticNodesRow.processing > 0) : (normStatus === 'running' && !stage?.includes('embed') && !stage?.includes('prune'))
     const isEmbeddingRunning = normStatus === 'running' && (stage?.includes('embed') || stage?.includes('vector') || (!isSemanticRunning && (embeddingRow?.processing ?? 0) > 0))
+
+    const step1State: StepState = isSemanticRunning ? 'running' : (isCompleted || isEmbeddingRunning || stage?.includes('prune') ? 'completed' : 'pending')
+    const step2State: StepState = isEmbeddingRunning ? 'running' : (isCompleted || stage?.includes('prune') ? 'completed' : 'pending')
+    const step3State: StepState = stage?.includes('prune') ? 'running' : (isCompleted ? 'completed' : 'pending')
 
     return [
       {
         name: isZh ? '语义提炼' : 'Semantic',
-        state: isSemanticRunning ? 'running' : (isCompleted || isEmbeddingRunning || stage?.includes('prune') ? 'completed' : 'pending'),
-        processed: semanticProcessed,
-        total: semanticTotal,
+        state: step1State,
+        processed: step1State === 'pending' ? undefined : (isCompleted ? semanticTotal : semanticProcessed),
+        total: step1State === 'pending' ? undefined : (semanticTotal && semanticTotal > 0 ? semanticTotal : undefined),
         count: semanticProcessed,
         unit: isZh ? '节点' : 'nodes',
       },
       {
         name: isZh ? '切片重构' : 'Embedding',
-        state: isEmbeddingRunning ? 'running' : (isCompleted || stage?.includes('prune') ? 'completed' : 'pending'),
-        processed: isCompleted ? rebuilt : (isEmbeddingRunning ? (embeddingRow?.completed ?? 0) : 0),
-        total: rebuilt ?? (isEmbeddingRunning ? embeddingRow?.total : undefined),
+        state: step2State,
+        processed: step2State === 'pending' ? undefined : (isCompleted ? rebuilt : (isEmbeddingRunning ? (embeddingRow?.completed ?? 0) : undefined)),
+        total: step2State === 'pending' ? undefined : (rebuilt ?? (isEmbeddingRunning ? embeddingRow?.total : undefined)),
         count: rebuilt ?? (isEmbeddingRunning ? embeddingRow?.completed : 0),
         unit: isZh ? '切片' : 'chunks',
       },
       {
         name: isZh ? '悬空修剪' : 'Pruning',
-        state: stage?.includes('prune') ? 'running' : (isCompleted ? 'completed' : 'pending'),
-        processed: isCompleted ? deleted : 0,
-        total: deleted,
-        count: deleted,
+        state: step3State,
+        processed: step3State === 'completed' ? deleted : undefined,
+        total: step3State === 'completed' ? deleted : undefined,
+        count: step3State === 'completed' ? deleted : undefined,
         unit: isZh ? '切片' : 'chunks',
       },
     ]
