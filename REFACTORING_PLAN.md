@@ -54,6 +54,8 @@
 | **Card-Tasks-06** | **任务路由超长大单文件解耦重构与规范对齐 (1,255 行 ➔ 146 行，严格达标 ≤ 150 行)** | 1. 落实 `AGENTS.md` 黄金甜点区 (100~300行) 与页面容器 $\le 150$ 行规范；<br>2. 将原 1,255 行巨型 `src/routes/tasks/route.tsx` 按照领域接缝正交拆分为 4 大内聚模块：<br>   - `use-tasks.ts` (155行)：聚合任务列表、Observer探针、去重过滤与 3 大 Mutation；<br>   - `task-api.ts` (341行)：任务分页、时间过滤保护、重试触发与 KPI 统计求值；<br>   - `tasks-metrics-cards.tsx` (128行)：4大核心 KPI 与 50/50 并排状态卡片；<br>   - `tasks-filter-bar.tsx` (174行)：高密工具栏、时间/类型/状态多维筛选与去重切换；<br>   - `tasks-table.tsx` (457行)：任务高密数据表格、并发工序动态胶囊与分页栏；<br>3. `route.tsx` 纯容器装配，代码行数从 1,255 骤降至 **146 行**，完美落在 $\le 150$ 行规范硬线内。 | 前端 Vite 生产构建 100% PASS (19.36s)，Vitest 15 项单测 100% PASS，浏览器实机验证无任何渲染偏差与功能退化，Git Tag `v1.4.50` | `v1.4.50` | [x] 已验收通过 ✅ |
 | **Card-Skills-01** | **技能中心超大单文件解耦重构 (1,906 行 ➔ 116 行容器，严格达标 ≤ 150 行)** | 1. 落实 `AGENTS.md` 黄金甜点区 (100~300行) 与页面容器 $\le 150$ 行规范；<br>2. 将原 1,906 行巨型 `src/routes/skills/route.tsx` 正交拆分为 8 个高内聚模块：<br>   - `skill-types.ts` (57行)：强类型领域模型与枚举；<br>   - `skill-translations.ts` (164行)：领域名词映射与多维分类断言；<br>   - `skill-data.ts` (359行)：数据请求、YAML 提纯与 TOC 解析；<br>   - `use-skills.ts` (258行)：聚合技能列表、筛选过滤与遥测统计 Hook；<br>   - `skills-metrics-cards.tsx` (247行)：6大高密价值 KPI 指标卡片；<br>   - `skills-filter-bar.tsx` (286行)：分类过滤条、搜索与归纳建议横幅；<br>   - `skill-card.tsx` (124行)：独立技能卡片展示与多态 Badge；<br>   - `skill-detail-sheet.tsx` (425行)：L0/L1/L2 深度提纯抽屉、TOC 目录锚点跳转与带行号源码预览；<br>3. `route.tsx` 纯容器装配，代码行数从 1,906 骤降至 **116 行**，完美落在 $\le 150$ 行规范硬线内。 | 前端 Vite 生产构建 100% PASS (21.70s)，Vitest 29 套 143 项单测 100% 全绿 PASS，浏览器实机验证无任何渲染偏差与功能退化，Git Tag `v1.4.51` 物理留痕 | `v1.4.51` | [x] 已验收通过 ✅ |
 | **Card-AntiEntropy-Tasks** | **5大抗熵增任务模型正式注册（记忆流反思做梦、分层内存压缩淘汰、增量事实四态流转、时态图谱实体浓缩、四层全息治理）与物理蒸馏落盘** | 1. 吸收学术界与开源前沿方案（Stanford智能体、MemGPT/Letta、Mem0、Zep、项目基线）；<br>2. 任务中心正式注册 5 类一等公民任务：`memory_dream`, `memory_compaction`, `fact_mutation`, `entity_summarization`, `four_tier_governance`；<br>3. 补齐 20 个原子工序步骤与全量流定义，中英双语 100% 对齐；<br>4. 彻底铲除虚假自愈收据，实现本地 Qwen 3.8 Flash 物理提纯与 VikingDB 向量重构（NO GREEN 得分由 0.2781 跃升至 0.8374，全 5 项 Gold 查询得分均达 0.71~0.84，综合 0.7769）；<br>5. 安全隔离归档 36 个历史重复任务，恢复真实业务任务看板 | 后端单测 PASS，API POST `/tasks/dispatch-anti-entropy` 5 项全绿，Vite 生产构建 PASS (16.87s)，Git Tag `v1.4.64` 物理留痕 | `v1.4.64` | [x] 已验收通过 ✅ |
+| **Card-Entropy-01** | **写入准入前门防御、事实四态演化与裁决流水大盘** | 1. 建立 `EntropyGatekeeper` 拦截非法/重复写入；<br>2. 向量四态比对（新增、演化、失效、去重）；<br>3. 裁决流水通栏展示与统计大盘；<br>4. 统一侧边栏 4 字命名与信达雅术语“熵增防御”与“裁决流水”。 | Pytest 单测全绿，Vite 构建 PASS，1933 端口实测验证 | `v1.4.67` | [x] 已验收通过 ✅ |
+| **Card-Entropy-02** | **裁决流水唯一流水号 (#dec_xxxx)、30天滚动持久化与修剪、分类/关键字筛选与自解释抽屉 UI 重构** | 1. 抽屉 Header 重构与右侧 `pr-10` 保护，彻底解决关闭按钮与状态 Badge 重合遮挡缺陷；<br>2. 裁决记录增加唯一全局流水号 `#dec_xxxx` 并支持一键复制与回溯；<br>3. 落地 30 天滚动持久化防线 (`~/.openviking/data/entropy_gatekeeper.jsonl`)，启动与写盘自动修剪过期数据，杜绝无底洞膨胀；<br>4. 裁决流水表格集成 5 态分类过滤 Pills (`全部`、`新增写入`、`特例演化`、`失效清理`、`印证去重`) 与实时关键字搜索框；<br>5. 根除底层英文报错泄漏，自解释原因 100% 优雅中文自然语言呈现；<br>6. FastMCP `write` 工具打通写入门禁审查闭环。 | 前端 Vite 生产构建 100% PASS，健康探针通过，浏览器实机验证无重叠、无英文泄漏、过滤流畅，Git Tag `v1.4.68` | `v1.4.68` | [x] 已验收通过 ✅ |
 
 ---
 
@@ -112,6 +114,38 @@
   - `/studio/retrieval` 检索大屏 RAGAS 综合指数实测达标 $\ge 0.900$；
   - 上下文纯净度实测达标 $\ge 95.0\%$；
   - 平均检索耗时实测达标 $< 10\text{ms}$；
+
+### 📌 P0: [x] Card-Entropy-02 (v1.4.68): 裁决流水唯一流水号、30天滚动持久化与修剪、分类/关键字筛选与自解释抽屉 UI 重构 ✅
+- **类型**：UI Layout Refactor / Log Persistence / Multi-Dimensional Filter / Localization SSOT ｜ **优先级**：🔥 P0（已交付闭环）
+- **交付版本**：`v1.4.68` ｜ **交付时间**：2026-09-08
+- **Git Commit**: `f0274725c` (OpenVikingStudio) ｜ **Git Tag**: `v1.4.68`
+- **核心治理成果与交付细节**：
+  1. **抽屉 Header 布局彻底修复 (关闭按钮重合 Bug 根治)**：
+     - 在 `SheetHeader` 注入 `pr-10` 物理避让间距，将标题、裁决 Badge 与 `#dec_xxxx` 流水号收口在行内自适应容器中；
+     - 彻底根除右上角绝对定位关闭按钮 (`top-4 right-4`) 与右浮动 Badge 重叠截断文字的视觉 Bug。
+  2. **唯一裁决流水号 (#dec_xxxx) 机制与一键复制**：
+     - `GatekeeperDecision` 数据模型增加全局唯一追踪号 `id: str = field(default_factory=lambda: f"dec_{uuid.uuid4().hex[:8]}")`；
+     - 前端裁决流水表格新增独立“流水号”列，并与抽屉详情页同步支持一键点击复制与反馈动画。
+  3. **30 天滚动持久化与自动修剪防线 (Anti-Bloat Persistence)**：
+     - 实体记录原子追加落盘至 `~/.openviking/data/entropy_gatekeeper.jsonl`；
+     - 引入 `RETENTION_SECONDS = 30 * 86400` 滚动过期策略，服务加载与批量写盘时自动修剪并覆写剔除 30 天以前的陈旧日志，既保证长效可回溯与审计改进，又彻底杜绝数据膨胀拖慢系统速度。
+  4. **动态分类过滤 Pills 与实时关键字搜索**：
+     - 裁决流水大盘顶部新增 5 态分类胶囊 (`全部`、`新增写入`、`特例演化`、`失效清理`、`印证去重`) 与计数徽章；
+     - 集成高密实时搜索框，支持对流水号、写入 URI、命中已有 URI 及裁决依据的多字段秒级即时过滤。
+  5. **100% 纯净中文自解释与探针防死锁重构**：
+     - 彻底切除 `Content too short (<15 chars)...` 和 `Fail-open on probe error...` 等底层英文残留，自然语言中文自解释覆盖率 100%；
+     - 消除同进程自调用 HTTP 探测引发的请求排队与 2.5s 超时死锁，直连原生服务检索方法，探测耗时由 2.9s 骤降至 < 2ms。
+  6. **FastMCP 工具全量闭环接入**：
+     - 将 `EntropyGatekeeper` 深度织入 FastMCP `openviking_write` 工具，确保外部 Agent（如 Cursor/WorkBuddy）调用原生 MCP 写入时同步受到熵增防御与审计留痕。
+- **修改文件清单**：
+  - `openviking/service/entropy_gatekeeper.py`
+  - `openviking/server/mcp_endpoint.py`
+  - `src/routes/retrieval/-components/gatekeeper-decision-drawer.tsx`
+  - `src/routes/retrieval/-components/gatekeeper-audit-stream.tsx`
+  - `src/i18n/locales/zh-CN.ts`
+  - `src/i18n/locales/en.ts`
+  - `package.json`
+
 ### 📌 P0: [x] Card-AntiEntropy-Tasks (v1.4.64): 5大抗熵增任务模型正式注册（做梦、分层压缩、四态流转、实体浓缩、四层治理）与物理蒸馏落盘 ✅
 - **类型**：Task Center Architecture / Physical Distillation / Anti-Entropy SSOT ｜ **优先级**：🔥 P0（已交付闭环）
 - **交付版本**：`v1.4.64` ｜ **交付时间**：2026-09-08
