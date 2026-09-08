@@ -11,10 +11,10 @@ import {
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { formatTaskDuration } from '#/routes/tasks/-lib/task-time'
+import type { TaskRecord } from '../../-lib/task-record'
 import {
   hasTaskResult,
   normalizeTaskStatus,
-  type TaskRecord,
 } from '../../-lib/task-record'
 import {
   DetailField,
@@ -90,30 +90,6 @@ export function TaskOverviewGrid({ task }: TaskOverviewGridProps) {
           </p>
         </DetailSection>
       ) : null}
-
-      {hasTaskResult(task.result) ? (
-        <DetailSection title={t('detail.result')}>
-          <pre className="max-h-96 overflow-auto rounded-xl border bg-muted/30 p-4 font-mono text-xs leading-5">
-            {formatTaskResult(task.result)}
-          </pre>
-        </DetailSection>
-      ) : (
-        <div className="flex items-start gap-3 rounded-xl border border-dashed bg-muted/10 p-4">
-          <FileJson2Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-          <div className="grid gap-0.5">
-            <p className="text-sm font-medium">{t('detail.noResult')}</p>
-            <p className="text-xs leading-5 text-muted-foreground">
-              {t(
-                status === 'failed'
-                  ? 'detail.noResultFailedDescription'
-                  : status === 'cancelled'
-                    ? 'detail.noResultCancelledDescription'
-                    : 'detail.noResultDescription',
-              )}
-            </p>
-          </div>
-        </div>
-      )}
     </>
   )
 }
