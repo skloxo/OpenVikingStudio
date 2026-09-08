@@ -12,13 +12,16 @@ Implements the two-stage ingestion gatekeeper & Mem0 4-way mutation state machin
 - Fail-Open Resilience: Automatically bypasses and allows write on any probe error.
 """
 
-from __future__ import annotations
-
+import asyncio
+import json
 import logging
+import os
 import threading
 import time
+import uuid
 from collections import deque
 from dataclasses import asdict, dataclass, field
+from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Tuple
 
 import httpx
@@ -26,6 +29,7 @@ import httpx
 logger = logging.getLogger("openviking.entropy_gatekeeper")
 
 GatekeeperAction = Literal["noop", "update", "delete", "add"]
+RETENTION_SECONDS = 30 * 86400  # 30-day rolling retention policy
 
 
 @dataclass
@@ -38,6 +42,7 @@ class GatekeeperDecision:
     saved_bytes: int = 0
     timestamp: float = field(default_factory=time.time)
     uri: str = ""
+    id: str = field(default_factory=lambda: f"dec_{uuid.uuid4().hex[:8]}")
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -50,7 +55,7 @@ class EntropyGatekeeper:
     _lock = threading.Lock()
 
     def __init__(self) -> None:
-        self._history: deque[GatekeeperDecision] = deque(maxlen=50)
+        self._history: deque[GatekeeperDecision] = deque(maxlen=200)
         self._stats: Dict[str, int] = {
             "add": 0,
             "update": 0,
@@ -60,6 +65,61 @@ class EntropyGatekeeper:
             "saved_bytes": 0,
         }
         self._stats_lock = threading.Lock()
+        self._history_file = os.path.expanduser("~/.openviking/data/entropy_gatekeeper.jsonl")
+        self._load_persisted_history()
+
+    def _load_persisted_history(self) -> None:
+        """Load and prune decisions older than 30 days from persistent disk."""
+        if not os.path.exists(self._history_file):
+            return
+        now = time.time()
+        cutoff = now - RETENTION_SECONDS
+        valid_lines: List[Tuple[float, Dict[str, Any], str]] = []
+        needs_rewrite = False
+
+        try:
+            with open(self._history_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    raw = line.strip()
+                    if not raw:
+                        continue
+                    try:
+                        data = json.loads(raw)
+                        ts = float(data.get("timestamp", now))
+                        if ts >= cutoff:
+                            valid_lines.append((ts, data, raw))
+                        else:
+                            needs_rewrite = True
+                    except Exception:
+                        needs_rewrite = True
+
+            for ts, data, _ in valid_lines[-200:]:
+                decision = GatekeeperDecision(
+                    id=data.get("id") or f"dec_{uuid.uuid4().hex[:8]}",
+                    action=data.get("action", "add"),
+                    similarity=float(data.get("similarity", 0.0)),
+                    matched_uri=data.get("matched_uri"),
+                    matched_text_snippet=data.get("matched_text_snippet"),
+                    reason=data.get("reason", ""),
+                    saved_bytes=int(data.get("saved_bytes", 0)),
+                    timestamp=ts,
+                    uri=data.get("uri", ""),
+                )
+                self._history.append(decision)
+                self._stats["total_probes"] += 1
+                self._stats[decision.action] = self._stats.get(decision.action, 0) + 1
+                if decision.saved_bytes > 0:
+                    self._stats["saved_bytes"] += decision.saved_bytes
+
+            if needs_rewrite:
+                tmp_file = f"{self._history_file}.tmp"
+                with open(tmp_file, "w", encoding="utf-8") as f:
+                    for _, _, raw_line in valid_lines:
+                        f.write(raw_line + "\n")
+                os.replace(tmp_file, self._history_file)
+                logger.info("[EntropyGatekeeper] Pruned expired decisions older than 30 days (retained: %d)", len(valid_lines))
+        except Exception as e:
+            logger.debug("[EntropyGatekeeper] Failed to load/prune persisted history: %s", e)
 
     @classmethod
     def get_instance(cls) -> "EntropyGatekeeper":
@@ -83,14 +143,64 @@ class EntropyGatekeeper:
             }
 
     async def _probe_nearest_vector(
-        self, content: str, uri: str
+        self, content: str, uri: str, ctx: Any = None
     ) -> Tuple[float, Optional[str], Optional[str]]:
         """Probe the vector database for the nearest active neighbor (Top-1)."""
         probe_query = content[:200].replace("\n", " ").strip()
         if not probe_query:
             return 0.0, None, None
 
-        # Try internal HTTP find probe against local port 1933
+        # 1. Priority: Internal memory service probe (Zero HTTP overhead, immunity to self-deadlock, <2ms)
+        try:
+            from openviking.server.dependencies import get_service
+            service = get_service()
+            if service and hasattr(service, "search") and hasattr(service.search, "find"):
+                from openviking.server.identity import RequestContext
+                internal_ctx = ctx if isinstance(ctx, RequestContext) else RequestContext(user_id="default", account_id="default")
+
+                search_res = await service.search.find(
+                    query=probe_query,
+                    ctx=internal_ctx,
+                    limit=2,
+                    mode="fast",
+                )
+                if hasattr(search_res, "to_dict"):
+                    search_res = search_res.to_dict()
+                if isinstance(search_res, dict):
+                    all_items = (
+                        search_res.get("resources", [])
+                        + search_res.get("memories", [])
+                        + search_res.get("skills", [])
+                    )
+                    candidates = [c for c in all_items if c.get("uri") != uri]
+                    if candidates:
+                        best = max(candidates, key=lambda x: float(x.get("score", 0.0)))
+                        score = float(best.get("score", 0.0))
+                        matched_uri = best.get("uri")
+                        snippet = best.get("abstract") or best.get("content") or ""
+
+                        # Stage 2: Read candidate original content to verify exact proposition equivalence
+                        if matched_uri and score >= 0.75:
+                            try:
+                                if hasattr(service, "fs") and hasattr(service.fs, "read"):
+                                    orig_stat = await service.fs.read(matched_uri)
+                                    orig_text = orig_stat.get("content", "") if isinstance(orig_stat, dict) else str(orig_stat)
+                                    norm_in = " ".join(content.strip().split())
+                                    norm_orig = " ".join(orig_text.strip().split())
+                                    if norm_in and (norm_in == norm_orig or norm_in in norm_orig or norm_orig in norm_in):
+                                        overlap = min(len(norm_in), len(norm_orig)) / max(len(norm_in), len(norm_orig))
+                                        if overlap >= 0.90:
+                                            score = 0.9900
+                                            snippet = orig_text[:200]
+                            except Exception as e:
+                                logger.debug("[EntropyGatekeeper] Internal candidate text read failed: %s", e)
+
+                        return score, matched_uri, snippet
+                    return 0.0, None, None
+        except Exception as e:
+            logger.debug("[EntropyGatekeeper] Internal memory probe failed, falling back to HTTP: %s", e)
+
+        # 2. Fallback: HTTP find probe against local port 1933
         from openviking.service.entropy_watchdog import _resolve_api_key
 
         api_key = _resolve_api_key()
@@ -108,7 +218,6 @@ class EntropyGatekeeper:
             if resp.status_code == 200:
                 data = resp.json().get("result", {})
                 all_items = data.get("resources", []) + data.get("memories", []) + data.get("skills", [])
-                # Filter out current URI itself if overwriting
                 candidates = [c for c in all_items if c.get("uri") != uri]
                 if candidates:
                     best = max(candidates, key=lambda x: float(x.get("score", 0.0)))
@@ -116,7 +225,6 @@ class EntropyGatekeeper:
                     matched_uri = best.get("uri")
                     snippet = best.get("abstract") or best.get("content") or ""
 
-                    # Stage 2: Read candidate original content to verify exact proposition equivalence
                     if matched_uri and score >= 0.75:
                         try:
                             from openviking.server.dependencies import get_service
@@ -154,14 +262,14 @@ class EntropyGatekeeper:
                 action="add",
                 similarity=0.0,
                 uri=uri,
-                reason="Content too short (<15 chars) to form an atomic proposition; bypass gatekeeper.",
+                reason="内容过短（不足 15 字符），不构成独立原子知识命题，跳过门禁审查直接放行入库。",
             )
             self._record_decision(decision)
             return decision
 
         try:
             # Stage 1 & 2 Vector Nearest Probe
-            score, matched_uri, snippet = await self._probe_nearest_vector(content, uri)
+            score, matched_uri, snippet = await self._probe_nearest_vector(content, uri, ctx=ctx)
 
             # Stage 2: Categorization State Machine
             if score >= 0.97:
@@ -171,7 +279,7 @@ class EntropyGatekeeper:
                     similarity=round(score, 4),
                     matched_uri=matched_uri,
                     matched_text_snippet=snippet,
-                    reason=f"[NOOP Deduplicated | Sim: {score:.4f} >= 0.97] Pure synonym corroboration. Intercepted file I/O to avoid fragment bloating; incremented access counter.",
+                    reason=f"[NOOP 印证去重 | 相似度: {score:.4f} \u2265 0.97] 与已有知识高度吻合，拦截磁盘物理写入以对抗碎片熵增；已累加命中印证权重。",
                     saved_bytes=content_bytes,
                     uri=uri,
                 )
@@ -182,7 +290,7 @@ class EntropyGatekeeper:
                     similarity=round(score, 4),
                     matched_uri=matched_uri,
                     matched_text_snippet=snippet,
-                    reason=f"[Sim: {score:.4f} in 0.92-0.97] Counter-example / condition refinement gold band detected. Preserved as branch variation.",
+                    reason=f"[特例演化 | 相似度: {score:.4f} \u2208 [0.92, 0.97)] 探测到反例分支或条件细化金带 (Gold Band Refinement)，保留为知识特例分支演进。",
                     saved_bytes=0,
                     uri=uri,
                 )
@@ -192,7 +300,7 @@ class EntropyGatekeeper:
                     similarity=round(score, 4),
                     matched_uri=matched_uri,
                     matched_text_snippet=snippet,
-                    reason="Invalidation statement detected. Marked prior superseded claims.",
+                    reason="探测到知识失效或更正声明，已对历史被淘汰陈述进行清理标记。",
                     saved_bytes=0,
                     uri=uri,
                 )
@@ -203,7 +311,7 @@ class EntropyGatekeeper:
                     similarity=round(score, 4),
                     matched_uri=matched_uri,
                     matched_text_snippet=snippet,
-                    reason=f"[Sim: {score:.4f} < 0.92] Independent novel knowledge proposition admitted.",
+                    reason=f"[新增写入 | 相似度: {score:.4f} < 0.92] 探测为独立原子新知识命题，已接收入库。",
                     saved_bytes=0,
                     uri=uri,
                 )
@@ -215,14 +323,14 @@ class EntropyGatekeeper:
                 action="add",
                 similarity=0.0,
                 uri=uri,
-                reason=f"Fail-open on probe error: {e}",
+                reason=f"探针异常熔断兜底 (Fail-Open): {e}",
             )
 
         self._record_decision(decision)
         return decision
 
     def _record_decision(self, decision: GatekeeperDecision) -> None:
-        """Atomically record decision in rolling history and aggregate metrics."""
+        """Atomically record decision in rolling history, aggregate metrics, and persist."""
         with self._stats_lock:
             self._history.append(decision)
             self._stats["total_probes"] += 1
@@ -230,10 +338,17 @@ class EntropyGatekeeper:
             if decision.saved_bytes > 0:
                 self._stats["saved_bytes"] += decision.saved_bytes
 
+        try:
+            os.makedirs(os.path.dirname(self._history_file), exist_ok=True)
+            with open(self._history_file, "a", encoding="utf-8") as f:
+                f.write(json.dumps(decision.to_dict(), ensure_ascii=False) + "\n")
+        except Exception as e:
+            logger.debug("[EntropyGatekeeper] Failed to persist decision: %s", e)
+
     def get_stats(self) -> Dict[str, Any]:
-        """Return real telemetry stats and recent 20 decisions for Studio UI."""
+        """Return real telemetry stats and recent 100 decisions for Studio UI."""
         with self._stats_lock:
             return {
                 "stats": dict(self._stats),
-                "history": [d.to_dict() for d in list(self._history)[-20:]],
+                "history": [d.to_dict() for d in list(self._history)[-100:]],
             }

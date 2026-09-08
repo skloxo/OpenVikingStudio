@@ -772,6 +772,26 @@ async def write(
     ctx = _get_ctx()
     uri = _resolve_mcp_workspace_uri(uri, ctx)
 
+    # Ingestion Gatekeeper defense (Card-Entropy-01-Gatekeeper)
+    from openviking.service.entropy_gatekeeper import EntropyGatekeeper
+
+    gatekeeper_decision = await EntropyGatekeeper.get_instance().evaluate_and_intercept(
+        uri=uri,
+        content=content,
+        ctx=ctx,
+    )
+    if gatekeeper_decision.action == "noop":
+        logger.info(
+            "[EntropyGatekeeper][MCP] Intercepted redundant write for %s (matched: %s, sim: %.4f)",
+            uri,
+            gatekeeper_decision.matched_uri,
+            gatekeeper_decision.similarity,
+        )
+        return (
+            f"[Entropy Defense] NOOP (印证去重): 事实已高度存在于 {gatekeeper_decision.matched_uri} "
+            f"(余弦相似度: {gatekeeper_decision.similarity:.4f} \u2265 0.97)。已拦截物理磁盘写入以阻断碎片冗余，节约 {gatekeeper_decision.saved_bytes} B。"
+        )
+
     try:
         result = await service.fs.write(
             uri=uri, content=content, ctx=ctx, mode=mode, wait=wait, timeout=timeout
