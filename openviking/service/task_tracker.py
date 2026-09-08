@@ -68,6 +68,7 @@ _CANCELLABLE_TASK_TYPES = {
     "fact_mutation",
     "entity_summarization",
     "four_tier_governance",
+    "managed_ingestion",
 }
 
 

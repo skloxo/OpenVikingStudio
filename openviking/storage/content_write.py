@@ -7,8 +7,10 @@ from __future__ import annotations
 import base64
 import binascii
 import os
+import time
 from collections import defaultdict
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Dict, Optional
 
 from openviking.core.namespace import (
@@ -134,6 +136,59 @@ class ContentWriteCoordinator:
         normalized_uri = self._validate_uri_path(uri, field_name="uri")
         self._ensure_content_write_policy(normalized_uri)
         await self._viking_fs._ensure_access(normalized_uri, ctx, action=AclAction.WRITE)
+
+        # Choke Point: Ingestion Gatekeeper defense for core knowledge domains
+        skip_gk = False
+        if isinstance(ctx, dict):
+            skip_gk = bool(ctx.get("skip_gatekeeper"))
+        elif hasattr(ctx, "skip_gatekeeper"):
+            skip_gk = bool(getattr(ctx, "skip_gatekeeper", False))
+
+        if not skip_gk and any(
+            k in normalized_uri for k in ["viking://resources/", "memories/", "master_memory/"]
+        ):
+            if not any(k in normalized_uri for k in ["staging/", "sessions/", "/scratch/", "/tmp/"]):
+                from openviking.service.entropy_gatekeeper import EntropyGatekeeper
+                gatekeeper = EntropyGatekeeper.get_instance()
+                decision = await gatekeeper.evaluate_and_intercept(
+                    uri=normalized_uri,
+                    content=content,
+                    ctx=ctx,
+                )
+                if decision.action == "noop":
+                    logger.info(
+                        "[EntropyGatekeeper][ChokePoint] Intercepted redundant write for %s (matched: %s, sim: %.4f)",
+                        normalized_uri,
+                        decision.matched_uri,
+                        decision.similarity,
+                    )
+                    return {
+                        "uri": normalized_uri,
+                        "mode": mode,
+                        "written_bytes": 0,
+                        "action": "noop",
+                        "similarity": decision.similarity,
+                        "matched_uri": decision.matched_uri,
+                        "message": f"NOOP (印证去重): 事实已高度存在于 {decision.matched_uri} (相似度: {decision.similarity:.4f} >= 0.95)，已拦截落盘。",
+                    }
+                elif decision.action == "dlq":
+                    logger.warning(
+                        "[EntropyGatekeeper][ChokePoint] Blocked malicious content for %s, trapped in DLQ",
+                        normalized_uri,
+                    )
+                    import uuid
+                    dlq_dir = Path(os.path.expanduser("~/.openviking/data/dlq"))
+                    dlq_dir.mkdir(parents=True, exist_ok=True)
+                    dlq_file = dlq_dir / f"dlq_{int(time.time())}_{uuid.uuid4().hex[:6]}.txt"
+                    dlq_file.write_text(f"URI: {normalized_uri}\nReason: {decision.reason}\n\n{content}", encoding="utf-8")
+                    return {
+                        "uri": normalized_uri,
+                        "mode": mode,
+                        "written_bytes": 0,
+                        "action": "dlq",
+                        "message": f"DLQ (死信拦截): 探测到安全威胁，已拦截并隔离至 {dlq_file.name}。",
+                    }
+
         ingest_options = IngestOptions.from_search_tags(tags, mode=tag_mode)
 
         if mode == "create":

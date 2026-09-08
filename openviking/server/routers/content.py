@@ -345,13 +345,37 @@ async def download(
 @router.post("/write")
 async def write(
     request: WriteContentRequest = Body(...),
+    valet: bool = Query(True, description="Enable valet parking async ingestion (<2ms handover)"),
     _ctx: RequestContext = Depends(get_request_context),
 ):
     """Write text content to a file (replace, append, or create) and refresh semantics/vectors."""
     service = get_service()
     uri = validate_request_viking_uri(resolve_path_variables(request.uri), _ctx)
 
-    # Ingestion Gatekeeper defense (Card-Entropy-01-Gatekeeper)
+    # Valet Parking Ingestion: driver drops keys, returns ticket immediately (<2ms)
+    if valet or not request.wait:
+        from openviking.service.valet_ingestion import ValetIngestionEngine
+        caller_name = _ctx.user.user_id if hasattr(_ctx, "user") and _ctx.user else "Agent"
+        ticket = ValetIngestionEngine.get_instance().handover(
+            uri=uri,
+            content=request.content,
+            source="content_write",
+            metadata={"tags": request.tags, "tag_mode": request.tag_mode, "mode": request.mode},
+            caller=caller_name,
+        )
+        return Response(
+            status="ok",
+            result={
+                "uri": uri,
+                "ticket_id": ticket.ticket_id,
+                "status": ticket.status,
+                "message": ticket.message,
+                "mode": "valet_parking",
+            },
+            telemetry=None,
+        ).model_dump(exclude_none=True)
+
+    # Ingestion Gatekeeper defense (Card-Entropy-01-Gatekeeper - Sync fallback)
     from openviking.service.entropy_gatekeeper import EntropyGatekeeper
 
     gatekeeper_decision = await EntropyGatekeeper.get_instance().evaluate_and_intercept(

@@ -30,12 +30,15 @@ export type TaskTypeFilter =
   | 'fact_mutation'
   | 'entity_summarization'
   | 'four_tier_governance'
+  | 'managed_ingestion'
+  | 'valet_parking'
   | 'all'
 
 export const DEFAULT_PAGE_SIZE = 20
 export const MAX_TASKS = 200
 export const PAGE_SIZE_OPTIONS = [20, 50, 100] as const
 export const TASK_TYPE_OPTIONS: Exclude<TaskTypeFilter, 'all'>[] = [
+  'managed_ingestion',
   'session_commit',
   'add_resource',
   'add_skill',
@@ -51,6 +54,7 @@ export const TASK_TYPE_OPTIONS: Exclude<TaskTypeFilter, 'all'>[] = [
   'fact_mutation',
   'entity_summarization',
   'four_tier_governance',
+  'valet_parking',
 ]
 export const TASK_STATUS_OPTIONS: Exclude<TaskStatusFilter, 'all'>[] = [
   'running',
@@ -202,6 +206,17 @@ export async function executeTaskRetry(
     })
     const json = resp.data
     return { res: json, task, newTaskId: json?.result?.task_id }
+  }
+
+  // 异步托管入库重新执行 (Retry Managed Ingestion)
+  if (task.task_type === 'managed_ingestion' || task.task_type === 'valet_parking') {
+    const resp = await ovClient.instance.post('/api/v1/content/write', {
+      uri: task.meta?.uri || task.resource_id,
+      content: task.meta?.content || '',
+      valet: true,
+    })
+    const json = resp.data
+    return { res: json, task, newTaskId: json?.result?.task_id || json?.result?.ticket_id }
   }
 
   if (!task.resource_id) {
