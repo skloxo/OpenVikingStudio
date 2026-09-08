@@ -81,7 +81,7 @@ const en = {
         title: 'Task Center',
       },
       retrieval: {
-        title: 'Memory Governance',
+        title: 'Information Governance',
       },
       sessions: {
         title: 'Session Center',

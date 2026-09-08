@@ -204,7 +204,7 @@ class EntropyGatekeeper:
         from openviking.service.entropy_watchdog import _resolve_api_key
 
         api_key = _resolve_api_key()
-        async with httpx.AsyncClient(trust_env=False, timeout=2.5) as client:
+        async with httpx.AsyncClient(trust_env=False, timeout=0.8) as client:
             resp = await client.post(
                 "http://127.0.0.1:1933/api/v1/search/find",
                 json={"query": probe_query, "limit": 2, "mode": "fast"},
@@ -256,13 +256,22 @@ class EntropyGatekeeper:
         stripped = (content or "").strip()
         content_bytes = len(content.encode("utf-8")) if content else 0
 
+        # Stage 0: Staging & Temporary Bypass (Zero overhead for session dumps and scratchpad)
+        if any(k in uri for k in ["staging/", "sessions/", "/scratch/", "/tmp/"]):
+            return GatekeeperDecision(
+                action="add",
+                similarity=0.0,
+                uri=uri,
+                reason="临时草稿/会话归档专区，直接放行入库。",
+            )
+
         # Stage 1: Length & Trivial Filter (Short token bypass)
         if len(stripped) < 15:
             decision = GatekeeperDecision(
                 action="add",
                 similarity=0.0,
                 uri=uri,
-                reason="内容过短（不足 15 字符），不构成独立原子知识命题，跳过门禁审查直接放行入库。",
+                reason="内容过短（不足 15 字符，too short），不构成独立原子知识命题，跳过门禁审查直接放行入库。",
             )
             self._record_decision(decision)
             return decision
@@ -271,50 +280,78 @@ class EntropyGatekeeper:
             # Stage 1 & 2 Vector Nearest Probe
             score, matched_uri, snippet = await self._probe_nearest_vector(content, uri, ctx=ctx)
 
-            # Stage 2: Categorization State Machine
-            if score >= 0.97:
-                # Pure synonym / proposition corroboration
-                decision = GatekeeperDecision(
-                    action="noop",
-                    similarity=round(score, 4),
-                    matched_uri=matched_uri,
-                    matched_text_snippet=snippet,
-                    reason=f"[NOOP 印证去重 | 相似度: {score:.4f} \u2265 0.97] 与已有知识高度吻合，拦截磁盘物理写入以对抗碎片熵增；已累加命中印证权重。",
-                    saved_bytes=content_bytes,
-                    uri=uri,
-                )
-            elif score >= 0.92:
-                # Counter-example & condition refinement gold band (Claude Opus-5 SSOT)
-                decision = GatekeeperDecision(
-                    action="update",
-                    similarity=round(score, 4),
-                    matched_uri=matched_uri,
-                    matched_text_snippet=snippet,
-                    reason=f"[特例演化 | 相似度: {score:.4f} \u2208 [0.92, 0.97)] 探测到反例分支或条件细化金带 (Gold Band Refinement)，保留为知识特例分支演进。",
-                    saved_bytes=0,
-                    uri=uri,
-                )
-            elif any(term in stripped.lower() for term in ["deprecated", "已废弃", "已失效", "bug fixed", "已修正"]):
-                decision = GatekeeperDecision(
-                    action="delete",
-                    similarity=round(score, 4),
-                    matched_uri=matched_uri,
-                    matched_text_snippet=snippet,
-                    reason="探测到知识失效或更正声明，已对历史被淘汰陈述进行清理标记。",
-                    saved_bytes=0,
-                    uri=uri,
-                )
+            # Stage 2: Categorization State Machine (Type-Aware Tiered Threshold)
+            is_audit_or_health = any(
+                k in (uri + " " + stripped).lower()
+                for k in ["自检", "self_check", "heartbeat", "health_check", "巡检", "闭环自检", "全链路自检"]
+            )
+
+            if is_audit_or_health:
+                if score >= 0.85:
+                    decision = GatekeeperDecision(
+                        action="noop",
+                        similarity=round(score, 4),
+                        matched_uri=matched_uri,
+                        matched_text_snippet=snippet,
+                        reason=f"[NOOP 自检去重 | 相似度: {score:.4f} >= 0.85] 探测到同类自检/巡检健康记录，拦截物理重复落盘，原子递增打卡印证。",
+                        saved_bytes=content_bytes,
+                        uri=uri,
+                    )
+                else:
+                    decision = GatekeeperDecision(
+                        action="add",
+                        similarity=round(score, 4),
+                        matched_uri=matched_uri,
+                        matched_text_snippet=snippet,
+                        reason=f"[自检首登 | 相似度: {score:.4f} < 0.85] 首次或显著差异的自检记录，放行入库。",
+                        saved_bytes=0,
+                        uri=uri,
+                    )
             else:
-                # Independent new knowledge
-                decision = GatekeeperDecision(
-                    action="add",
-                    similarity=round(score, 4),
-                    matched_uri=matched_uri,
-                    matched_text_snippet=snippet,
-                    reason=f"[新增写入 | 相似度: {score:.4f} < 0.92] 探测为独立原子新知识命题，已接收入库。",
-                    saved_bytes=0,
-                    uri=uri,
-                )
+                # Standard Core Knowledge
+                if score >= 0.95:
+                    # Pure synonym / proposition corroboration
+                    decision = GatekeeperDecision(
+                        action="noop",
+                        similarity=round(score, 4),
+                        matched_uri=matched_uri,
+                        matched_text_snippet=snippet,
+                        reason=f"[NOOP 印证去重 | 相似度: {score:.4f} >= 0.95] 与已有知识高度吻合，拦截磁盘物理写入以对抗碎片熵增；已累加命中印证权重。",
+                        saved_bytes=content_bytes,
+                        uri=uri,
+                    )
+                elif score >= 0.88:
+                    # Counter-example & condition refinement gold band (Claude Opus-5 SSOT)
+                    decision = GatekeeperDecision(
+                        action="update",
+                        similarity=round(score, 4),
+                        matched_uri=matched_uri,
+                        matched_text_snippet=snippet,
+                        reason=f"[特例演化 | 相似度: {score:.4f} in [0.88, 0.95)] 探测到反例分支或条件细化金带 (Gold Band Refinement)，保留为知识特例分支演进。",
+                        saved_bytes=0,
+                        uri=uri,
+                    )
+                elif any(term in stripped.lower() for term in ["deprecated", "已废弃", "已失效", "bug fixed", "已修正"]):
+                    decision = GatekeeperDecision(
+                        action="delete",
+                        similarity=round(score, 4),
+                        matched_uri=matched_uri,
+                        matched_text_snippet=snippet,
+                        reason="探测到知识失效或更正声明，已对历史被淘汰陈述进行清理标记。",
+                        saved_bytes=0,
+                        uri=uri,
+                    )
+                else:
+                    # Independent new knowledge
+                    decision = GatekeeperDecision(
+                        action="add",
+                        similarity=round(score, 4),
+                        matched_uri=matched_uri,
+                        matched_text_snippet=snippet,
+                        reason=f"[新增写入 | 相似度: {score:.4f} < 0.88] 探测为独立原子新知识命题，已接收入库。",
+                        saved_bytes=0,
+                        uri=uri,
+                    )
 
         except Exception as e:
             # Fail-Open Principle: Runtime errors must never crash or block normal writes
