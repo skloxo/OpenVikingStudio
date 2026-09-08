@@ -118,16 +118,21 @@
   - `openviking/_version.py`
   - `REFACTORING_PLAN.md`
 
-### 📌 P2: [ ] Card-LLMLingua-01 (v1.4.71): 微软开源顶级轮子 LLMLingua-2 (xlm-roberta) 2080Ti GPU 实机部署与保真度无损调优评测专项
-- **类型**：Model Optimization / GPU Tensor Acceleration / Precision Tuning ｜ **优先级**：🟡 P2（进阶·指标跃迁）
+### 📌 P2: [ ] Card-LLMLingua-01 (v1.4.71): 微软开源顶级轮子 LLMLingua-2 (xlm-roberta) 2080Ti GPU 实机部署与入库知识无损脱水降噪专项
+- **类型**：Model Optimization / Ingestion Compression / GPU Tensor Acceleration / Precision Tuning ｜ **优先级**：🟡 P2（进阶·指标跃迁）
 - **计划版本**：`v1.4.71`
 - **核心治理目标与场景**：
-  1. **2080Ti GPU 物理装载与加速**：
-     - 将 `LLMLingua-2 (xlm-roberta-large)`（560M 参数，约占 1.1GB 显存）装载进 2080Ti GPU 富余的 9.1GB 显存中，单次脱水延迟压缩至 <15ms；
-  2. **中文实机语料调优与参数固化**：
-     - 针对中文知识、代码块和 YAML 头部跑严格的压榨对比测试，把 `threshold` 和 `rate` 调到物理最优；
-  3. **100% 毫无语义损失的物理断言证明**：
-     - 给出基准评测报告，证实语义损失率 0% 后，正式合上流水线中的脱水开关。
+  1. **入库知识/外部长文无损脱水减熵 (Ingestion Noise Reduction)**：
+     - 当新知识、外部抓取文章或长文本通过托管入库流水线落盘前，调用微软轮子执行前置结构脱水，滤除 30%~50% 的客套废话、修辞语气与冗余修饰，大幅降低向量空间熵增并节约显存；
+  2. **核心内容与关键实体绝对保真底线 (Zero Loss of Core Truths)**：
+     - **核心事实不丢**：核心实体、专业术语、数字指标、因果逻辑 100% 毫无损失；
+     - **代码块物理冻结**：对所有代码块（```` ```[\s\S]*?``` ````）实施正则物理冻结，不脱掉一个字符；
+     - **YAML 头部物理冻结**：对元数据头部（`^---[\s\S]*?---`）实施绝对冻结保护；
+     - **否定与控制词锁定**：固化超参数 (`threshold=0.35`, `rate=0.50`)，死死锁住“禁止”、“严禁”、“不”等关键控制语义；
+  3. **2080Ti GPU 物理装载与加速**：
+     - 将 `LLMLingua-2 (xlm-roberta-large)`（560M 参数，仅占约 1.1GB 显存）装载进 2080Ti GPU 富余的 9.1GB 显存中，单次推理延迟压制在 <15ms；
+  4. **严格的物理对比评测与基准报告**：
+     - 在实机中文知识语料上跑严格的对照断言测试，确认语义损失率 0% 后，正式合上托管入库流水线的脱水插件开关。
 
 ---
 
