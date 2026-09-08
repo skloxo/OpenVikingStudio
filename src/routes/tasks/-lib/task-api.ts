@@ -25,6 +25,11 @@ export type TaskTypeFilter =
   | 'snapshot_restore_reindex'
   | 'quality_gate'
   | 'knowledge_remediation'
+  | 'memory_dream'
+  | 'memory_compaction'
+  | 'fact_mutation'
+  | 'entity_summarization'
+  | 'four_tier_governance'
   | 'all'
 
 export const DEFAULT_PAGE_SIZE = 20
@@ -41,6 +46,11 @@ export const TASK_TYPE_OPTIONS: Exclude<TaskTypeFilter, 'all'>[] = [
   'legacy_cleanup',
   'quality_gate',
   'knowledge_remediation',
+  'memory_dream',
+  'memory_compaction',
+  'fact_mutation',
+  'entity_summarization',
+  'four_tier_governance',
 ]
 export const TASK_STATUS_OPTIONS: Exclude<TaskStatusFilter, 'all'>[] = [
   'running',
@@ -286,6 +296,11 @@ export function computeTaskKpiData(
     'legacy_cleanup',
     'quality_gate',
     'knowledge_remediation',
+    'memory_dream',
+    'memory_compaction',
+    'fact_mutation',
+    'entity_summarization',
+    'four_tier_governance',
   ]
 
   const typeCounts: Record<string, number> = {}

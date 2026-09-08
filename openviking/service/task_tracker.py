@@ -63,6 +63,11 @@ _CANCELLABLE_TASK_TYPES = {
     "snapshot_restore_reindex",
     "quality_gate",
     "benchmark_eval",
+    "memory_dream",
+    "memory_compaction",
+    "fact_mutation",
+    "entity_summarization",
+    "four_tier_governance",
 }
 
 
