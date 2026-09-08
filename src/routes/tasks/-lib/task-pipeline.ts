@@ -271,6 +271,76 @@ export function getTaskQuantifiedWorkload(
     }
   }
 
+  if (type === 'memory_dream') {
+    const insights = resObj.insights_extracted ?? meta.distilled_insights_count
+    if (insights !== undefined) {
+      return {
+        icon: '🌙',
+        label: isZh ? `${insights} 条洞察提炼` : `${insights} insights distilled`,
+        unit: isZh ? '条洞察' : 'insights',
+        processed: Number(insights),
+        total: Number(insights),
+        pct: 100,
+      }
+    }
+  }
+
+  if (type === 'memory_compaction') {
+    const pruned = resObj.pruned_duplicates ?? meta.pruned_duplicates
+    if (pruned !== undefined) {
+      return {
+        icon: '🗜️',
+        label: isZh ? `去重剪枝 ${pruned} 条` : `Pruned ${pruned} items`,
+        unit: isZh ? '条' : 'items',
+        processed: Number(pruned),
+        total: Number(pruned),
+        pct: 100,
+      }
+    }
+  }
+
+  if (type === 'fact_mutation') {
+    const facts = resObj.net_new_facts ?? meta.extracted_facts
+    if (facts !== undefined) {
+      return {
+        icon: '⚛️',
+        label: isZh ? `${facts} 条事实入谱` : `${facts} facts committed`,
+        unit: isZh ? '事实' : 'facts',
+        processed: Number(facts),
+        total: Number(facts),
+        pct: 100,
+      }
+    }
+  }
+
+  if (type === 'entity_summarization') {
+    const contradictions = resObj.resolved_contradictions ?? meta.resolved_contradictions
+    if (contradictions !== undefined) {
+      return {
+        icon: '🧬',
+        label: isZh ? `消解 ${contradictions} 处矛盾` : `Resolved ${contradictions} contradictions`,
+        unit: isZh ? '处矛盾' : 'contradictions',
+        processed: Number(contradictions),
+        total: Number(contradictions),
+        pct: 100,
+      }
+    }
+  }
+
+  if (type === 'four_tier_governance') {
+    const notes = meta.merged_notes_count
+    if (notes !== undefined) {
+      return {
+        icon: '🏛️',
+        label: isZh ? `合并 ${notes} 篇碎片` : `Consolidated ${notes} notes`,
+        unit: isZh ? '篇碎片' : 'notes',
+        processed: Number(notes),
+        total: Number(notes),
+        pct: 100,
+      }
+    }
+  }
+
   return null
 }
 
