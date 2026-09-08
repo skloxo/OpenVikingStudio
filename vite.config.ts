@@ -45,7 +45,6 @@ const ovProxyEntry = {
 const config = defineConfig(({ command }) => ({
   base: command === 'build' ? '/studio/' : '/',
   server: {
-    port: 1936,
     host: '0.0.0.0',
     allowedHosts: true,
     watch: {
