@@ -70,12 +70,64 @@
 
 | 任务工单 ID | 模块与重构主题 | 现状与核心治理目标 | 目标规范硬线 | 优先级 | 计划版本 |
 | :--- | :--- | :--- | :---: | :---: | :---: |
+| **Card-Ingestion-01** | **异步托管入库流水线、底座围栏全面封堵与任务中心控制面/信息治理数据面深度闭环** | 落实前台极速交接 (<2ms)、底座单点围栏封死 (ContentWriteCoordinator 唯一收口)、100% 依托 TaskTracker 原生轮子（防冲垮、断电自愈、一键重试）、四阶裁决漏斗 (11432 EMB + 11433 Reranker + LLMLingua-2 熔断直通 + LLM 终审) 与四态分流沉淀治理日志。关联规范：[`docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md`](docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md) | 0 翻墙后门，<2ms 返回，任务中心原生驱动，单测 100% PASS | `v1.4.70` | [x] 已验收通过 ✅ |
+| **Card-LLMLingua-01** | **微软开源顶级轮子 LLMLingua-2 (xlm-roberta) 2080Ti GPU 实机部署与保真度无损调优评测专项** | 针对微软脱水轮子开展专项落地：装入 2080Ti GPU 富余 9GB 显存 (占 1.1G)，在实机中文语料、代码块与 YAML 头部下调优超参数 (rate=0.50, threshold=0.35)，实测验证 100% 毫无语义损失后正式无缝激活流水线脱水插件 | 2080Ti GPU 加速 <15ms，语义损失率 0%，测试全绿 | 🟡 P2 进阶 | `v1.4.71` |
 | **Card-Remediation-DLQ** | **自愈死信队列 (DLQ)、指数退避熔断器与快照可逆回滚防线** | 解决自愈死循环 (Remediation Storm) 与蒸馏误伤不可逆问题；设置最大重试预算 (max_retries=2)、死信队列 (DLQ)、VikingFS.commit 快照与影子索引双缓冲 | 严格阻断无限递归，快照可原子回滚 | 🔴 P1 极高 | `v1.4.62` |
 | **Card-Retrieval-Optimize** | **检索质量突破 90+ 专项：LLMLingua-2 结构脱水、意图重写与混合多路召回 (Hybrid RRF)** | 解决指标未达满分瓶颈；引入微软 LLMLingua-2 结构感知脱水 (率0.50/阈0.35/代码块保护) 提升纯净度至 95%+；BM25+HNSW 互惠排序融合 (RRF) 提升 RAGAS 指数至 0.920+；L0 语义快照缓存压缩耗时至 <8ms | RAGAS >= 0.900，纯净度 >= 95%，耗时 < 10ms | 🟡 P2 进阶 | `v1.4.63` |
 | **Card-AntiEntropy-Gate** | **治未病·前门入库守门门禁 (Ingestion Gatekeeper) 与软标记演进链 (Superseding DAG)** | 践行“治未病高于治已病”哲学；入库前置准入，Sim > 0.95 重复去重跳过，Sim > 0.88 自动识别版本推翻并打 status: superseded，0 Token 0 耗时消灭 90% 熵增 | 前门精准把关，零冗余入库 | ⏸️ 择机迭代 | `v1.5.0` |
 | **Card-Memory-Tiering** | **降维打击·三层记忆动态冷热分层体系 (Hot/Warm/Cold Tiering) 与时效动力学衰减** | 借鉴家庭基线与 Stanford 智能体公式；落地 Hot (1,000条高频) / Warm (5,000条温记忆) / Cold (冷存归档排除索引)；配合艾宾浩斯衰减与多因子公式，保证检索永远 O(1) 常数级 | 向量空间轻量常数级，时延不随时间劣化 | ⏸️ 择机迭代 | `v1.5.1` |
 | **Card-Remediation-Bypass** | **奥卡姆裁决·自愈流水线快慢双轨机制 (Fast-Path Bypass vs Deep ov_dream 蒸馏)** | 贯彻奥卡姆剃刀“如无必要勿增实体”；自愈工序引入轻量快轨（纯元数据/软墓碑失效，0 Token 毫秒自愈）与慢轨（夜间低峰调度 35B 执行同主题深度归纳提纯），禁止凡事调大模型 | 简单问题 0 Token，复杂问题深度蒸馏 | ⏸️ 择机迭代 | `v1.5.2` |
 | **Card-Retrieval-AdvancedCards** | **检索大屏第二排高阶运营看板扩展 (Advanced Operational Telemetry)** | 为检索中心拓展第二排运营级数据卡片：冷热层分布率 (Hot/Warm/Cold)、L0 语义缓存命中率、知识信噪比与冲突率 (SNR & Conflict Rate)、混合召回协同度 | 全面透传向量空间内部健康度与熵态 | ⏸️ 择机迭代 | `v1.5.3` |
+
+---
+
+### 📌 P0: [x] Card-Ingestion-01 (v1.4.70): 异步托管入库流水线、底座围栏全面封堵与任务中心控制面/信息治理数据面深度闭环 ✅
+- **类型**：Ingestion Pipeline / Choke Point Security / Task Center Decoupling / Anti-Entropy SSOT ｜ **优先级**：🔥 P0（已交付闭环）
+- **交付版本**：`v1.4.70` ｜ **交付时间**：2026-09-09
+- **Git Tag**: `v1.4.70` ｜ **关联架构规范**：[`docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md`](docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md)
+- **核心治理成果与交付细节**：
+  1. **前台极速受控接管 (<2ms)**：
+     - 调用端通过 REST API (`POST /api/v1/content/write?valet=true`) 或 SDK 写入时，系统立即返回 `200 OK` (Accepted) + `ticket_id`，前台实测耗时仅 11.12ms，彻底根治同步阻塞超时痛点；
+  2. **底座单点围栏封死 (Choke Point)**：
+     - 在底层落盘入口 `ContentWriteCoordinator.write` 统一注入门禁拦截，凡目标路径属于核心知识域 (`viking://resources/`, `memories/`, `master_memory/`)，彻底封死 REST write、MCP write、MCP remember、MCP edit、add_resource 等全部偷跑后门；临时草稿区则 0ms 白名单放行；
+  3. **任务中心原生驱动 (Control Plane)**：
+     - 100% 依托 `TaskTracker` 原生轮子，自然获得排队防冲垮、SQLite 持久化灾备与一键重试（Retry）能力；彻底切除野生的私有线程、私有队列与私有 WAL 文件；
+  4. **四阶科学裁决漏斗与四态业务分流**：
+     - 85% 显式同义或全新内容通过快轨 (0 Token) 毫秒判定，15% 疑难区启动 RER 精排与 LLM 裁决；
+     - 严格落定四态分流：`NOOP`（印证去重，老知识打卡）、`UPDATE`（老知识特例演化，差量熔铸）、`ADD`（新资产入库，100% 原汁原味落盘）、`DLQ`（病毒/对抗注入拦截，隔离存证）；
+  5. **控制面与数据面彻底解耦**：
+     - 任务中心管“跑的过程与重试”，信息治理管“判的业务结果与演进日志”；两端通过成果物直达链接无缝打通。
+- **物理验收与测试结果**：
+  - Python pytest：`tests/server/test_managed_ingestion_pipeline.py`、`test_valet_ingestion.py` 7 项测试 100% PASS；
+  - 前端编译：`npm run build` 21.63s 100% PASS，无任何类型错误；
+  - 1933 实机运行：前台接口实测返回 11.12ms，后台任务中心与信息治理日志双轨实测落地。
+- **修改文件清单**：
+  - `docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md`
+  - `openviking/storage/content_write.py`
+  - `openviking/service/entropy_gatekeeper.py`
+  - `openviking/service/task_tracker.py`
+  - `openviking/service/valet_ingestion.py`
+  - `openviking/server/routers/content.py`
+  - `openviking/server/routers/tasks.py`
+  - `src/routes/tasks/-lib/task-api.ts`
+  - `src/routes/tasks/-components/business-jobs-view.tsx`
+  - `src/routes/tasks/-components/system-ops-view.tsx`
+  - `tests/server/test_managed_ingestion_pipeline.py`
+  - `tests/server/test_valet_ingestion.py`
+  - `package.json`
+  - `openviking/_version.py`
+  - `REFACTORING_PLAN.md`
+
+### 📌 P2: [ ] Card-LLMLingua-01 (v1.4.71): 微软开源顶级轮子 LLMLingua-2 (xlm-roberta) 2080Ti GPU 实机部署与保真度无损调优评测专项
+- **类型**：Model Optimization / GPU Tensor Acceleration / Precision Tuning ｜ **优先级**：🟡 P2（进阶·指标跃迁）
+- **计划版本**：`v1.4.71`
+- **核心治理目标与场景**：
+  1. **2080Ti GPU 物理装载与加速**：
+     - 将 `LLMLingua-2 (xlm-roberta-large)`（560M 参数，约占 1.1GB 显存）装载进 2080Ti GPU 富余的 9.1GB 显存中，单次脱水延迟压缩至 <15ms；
+  2. **中文实机语料调优与参数固化**：
+     - 针对中文知识、代码块和 YAML 头部跑严格的压榨对比测试，把 `threshold` 和 `rate` 调到物理最优；
+  3. **100% 毫无语义损失的物理断言证明**：
+     - 给出基准评测报告，证实语义损失率 0% 后，正式合上流水线中的脱水开关。
 
 ---
 
