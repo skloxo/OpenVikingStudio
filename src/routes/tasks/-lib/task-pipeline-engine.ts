@@ -322,6 +322,76 @@ export function deriveUniversalFinalOutcome(
     }
   }
 
+  // 7. 记忆流与反思做梦 (Memory Dream)
+  if (type === 'memory_dream') {
+    const rawCount = metaObj.raw_observations_count ?? 0
+    const insights = resObj.insights_extracted ?? metaObj.distilled_insights_count ?? 0
+    const theme = resObj.theme ?? metaObj.theme ?? 'general'
+    return {
+      title: isZh ? '记忆流反思做梦' : 'Memory Reflection & Dream',
+      deliverableText: isZh
+        ? `扫描 ${rawCount} 条观察碎片 · 提炼 ${insights} 条认知洞察 · 沉淀主题 [${theme}]`
+        : `Scanned ${rawCount} observations · Distilled ${insights} insights · Topic [${theme}]`,
+      expectedText: isZh ? '经验流时效衰减扫描与高阶因果洞察提炼' : 'Observation recency decay & high-level insight distillation',
+    }
+  }
+
+  // 8. 分层内存与压缩淘汰 (Memory Compaction)
+  if (type === 'memory_compaction') {
+    const scanned = metaObj.scanned_records ?? 0
+    const pruned = resObj.pruned_duplicates ?? metaObj.pruned_duplicates ?? 0
+    const ratio = resObj.hot_tier_ratio ? `${(resObj.hot_tier_ratio * 100).toFixed(0)}%` : '30%'
+    return {
+      title: isZh ? '分层内存压缩淘汰' : 'Memory Compaction & Pruning',
+      deliverableText: isZh
+        ? `分层体检 ${scanned} 条记忆 · 余弦去重剪枝 ${pruned} 条 · 热层占比 ${ratio}`
+        : `Evaluated ${scanned} memories · Pruned ${pruned} duplicates · Hot tier ${ratio}`,
+      expectedText: isZh ? '冷热温三层动态分层与艾宾浩斯剪枝归档' : 'Hierarchical tiering & Ebbinghaus decay pruning',
+    }
+  }
+
+  // 9. 增量事实四态流转 (Fact Mutation)
+  if (type === 'fact_mutation') {
+    const facts = metaObj.extracted_facts ?? 0
+    const newFacts = resObj.net_new_facts ?? 0
+    const conflicts = resObj.conflicts_resolved ?? 0
+    return {
+      title: isZh ? '增量事实四态流转' : 'Atomic Fact Mutation',
+      deliverableText: isZh
+        ? `抽取 ${facts} 条原子事实 · 净新增 ${newFacts} 条 · 消解冲突 ${conflicts} 项`
+        : `Extracted ${facts} atomic facts · Net added ${newFacts} · Resolved ${conflicts} conflicts`,
+      expectedText: isZh ? '原子事实抽取与四态流转 (ADD/UPDATE/DEL/NOOP)' : 'Atomic fact extraction & 4-way mutation routing',
+    }
+  }
+
+  // 10. 时态图谱实体浓缩 (Entity Summarization)
+  if (type === 'entity_summarization') {
+    const entity = resObj.entity ?? metaObj.target_entity ?? 'OpenViking'
+    const events = metaObj.timeline_events_count ?? 0
+    const conflicts = resObj.resolved_contradictions ?? metaObj.resolved_contradictions ?? 0
+    return {
+      title: isZh ? '时态图谱实体浓缩' : 'Entity Summarization',
+      deliverableText: isZh
+        ? `追踪实体 [${entity}] · 编排 ${events} 条时序事件 · 消解 ${conflicts} 处矛盾`
+        : `Entity [${entity}] · Ordered ${events} timeline events · Resolved ${conflicts} contradictions`,
+      expectedText: isZh ? '实体时序版本链排序与单一真相源 (SSOT) 浓缩' : 'Temporal timeline ordering & entity SSOT summarization',
+    }
+  }
+
+  // 11. 四层全息治理 (Four-Tier Governance)
+  if (type === 'four_tier_governance') {
+    const topic = resObj.topic ?? metaObj.topic ?? 'vector_entropy'
+    const notes = metaObj.merged_notes_count ?? 0
+    const pct = resObj.token_compression_pct ?? metaObj.token_compression_pct ?? 0
+    return {
+      title: isZh ? '四层治理同主题合并' : 'Four-Tier Governance',
+      deliverableText: isZh
+        ? `主题 [${topic}] · 归纳合并 ${notes} 篇碎片 · Token 压缩率 ${pct}%`
+        : `Topic [${topic}] · Consolidated ${notes} fragments · Token compression ${pct}%`,
+      expectedText: isZh ? '四层全息诊断与跨目录同主题深度归纳写回' : '4-Tier diagnosis & cross-directory topic consolidation',
+    }
+  }
+
   // 默认通用兜底：实事求是
   return {
     title: isZh ? '任务交付成果' : 'Task Deliverable',

@@ -765,6 +765,9 @@ class TaskTracker:
                     "vector_reindex",
                     "build_index",
                     "add_skill",
+                    "session_commit",
+                    "store_memory",
+                    "record_lesson",
                 ):
                     try:
                         from openviking.service.entropy_watchdog import get_entropy_watchdog
