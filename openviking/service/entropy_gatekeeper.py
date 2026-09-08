@@ -207,7 +207,7 @@ class EntropyGatekeeper:
         from openviking.service.entropy_watchdog import _resolve_api_key
 
         api_key = _resolve_api_key()
-        async with httpx.AsyncClient(trust_env=False, timeout=0.8) as client:
+        async with httpx.AsyncClient(trust_env=False, timeout=5.0) as client:
             resp = await client.post(
                 "http://127.0.0.1:1933/api/v1/search/find",
                 json={"query": probe_query, "limit": 2, "mode": "fast"},
@@ -389,12 +389,13 @@ class EntropyGatekeeper:
 
         except Exception as e:
             # Fail-Open Principle: Runtime errors must never crash or block normal writes
-            logger.warning("[EntropyGatekeeper] Probe exception (failing-open): %s", e)
+            err_detail = f"{type(e).__name__}: {e}" if str(e) else type(e).__name__
+            logger.warning("[EntropyGatekeeper] Probe exception (failing-open): %s", err_detail)
             decision = GatekeeperDecision(
                 action="add",
                 similarity=0.0,
                 uri=uri,
-                reason=f"探针异常熔断兜底 (Fail-Open): {e}",
+                reason=f"探针异常熔断兜底 (Fail-Open): {err_detail}",
             )
 
         if decision.action in ("add", "update"):
