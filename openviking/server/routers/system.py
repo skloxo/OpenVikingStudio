@@ -821,3 +821,18 @@ async def get_system_host_resources(
     return res
 
 
+@router.get("/api/v1/system/entropy/gatekeeper", tags=["system"])
+async def get_entropy_gatekeeper_stats(
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """Retrieve real-time telemetry stats and recent decisions from EntropyGatekeeper."""
+    from openviking.service.entropy_gatekeeper import EntropyGatekeeper
+
+    stats = EntropyGatekeeper.get_instance().get_stats()
+    return Response(
+        status="ok",
+        result=stats,
+    ).model_dump(exclude_none=True)
+
+
+

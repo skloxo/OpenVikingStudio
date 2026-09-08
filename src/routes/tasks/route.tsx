@@ -7,6 +7,7 @@ import { Button } from '#/components/ui/button'
 import { useAppConnection } from '#/hooks/use-app-connection'
 import { TaskDetailSheet } from '#/routes/tasks/-components/task-detail-sheet'
 import { TasksMetricsCards } from '#/routes/tasks/-components/tasks-metrics-cards'
+import { GatekeeperMetricsCard } from '#/routes/tasks/-components/gatekeeper-metrics-card'
 import { TasksFilterBar } from '#/routes/tasks/-components/tasks-filter-bar'
 import { TasksTable } from '#/routes/tasks/-components/tasks-table'
 import { DEFAULT_PAGE_SIZE, MAX_TASKS } from '#/routes/tasks/-lib/task-api'
@@ -95,6 +96,8 @@ function TasksRoute() {
         queueObserverRows={queueObserverRows}
         isQueueLoading={queueObserverQuery.isLoading}
       />
+
+      <GatekeeperMetricsCard />
 
       <TasksFilterBar
         dataScope={dataScope}

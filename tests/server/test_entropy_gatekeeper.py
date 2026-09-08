@@ -1,0 +1,132 @@
+# Copyright (c) 2026 Beijing Volcano Engine Technology Co., Ltd.
+# SPDX-License-Identifier: AGPL-3.0
+"""Unit tests for EntropyGatekeeper (Card-Entropy-01-Gatekeeper)."""
+
+import pytest
+import asyncio
+from unittest.mock import AsyncMock, MagicMock, patch
+
+from openviking.service.entropy_gatekeeper import (
+    EntropyGatekeeper,
+    GatekeeperDecision,
+)
+
+
+@pytest.fixture
+def gatekeeper():
+    gk = EntropyGatekeeper.get_instance()
+    gk.reset_for_testing()
+    return gk
+
+
+def test_gatekeeper_singleton():
+    gk1 = EntropyGatekeeper.get_instance()
+    gk2 = EntropyGatekeeper.get_instance()
+    assert gk1 is gk2
+
+
+@pytest.mark.asyncio
+async def test_gatekeeper_short_content_bypass(gatekeeper):
+    """Very short strings or trivial tokens should directly pass without vector probing."""
+    decision = await gatekeeper.evaluate_and_intercept(
+        uri="viking://resources/test.md",
+        content="short",
+    )
+    assert decision.action == "add"
+    assert "too short" in decision.reason.lower()
+
+
+@pytest.mark.asyncio
+async def test_gatekeeper_noop_deduplication(gatekeeper):
+    """Similarity >= 0.97 should be flagged as NOOP (deduplicated) to save file I/O."""
+    mock_hit = MagicMock()
+    mock_hit.score = 0.985
+    mock_hit.uri = "viking://resources/master_memory/lesson_1.md"
+    mock_hit.content = "Existing stable lesson about 2080Ti VRAM allocation."
+
+    with patch.object(gatekeeper, "_probe_nearest_vector", new_callable=AsyncMock) as mock_probe:
+        mock_probe.return_value = (mock_hit.score, mock_hit.uri, mock_hit.content)
+
+        text = "Existing stable lesson about 2080Ti VRAM allocation."
+        decision = await gatekeeper.evaluate_and_intercept(
+            uri="viking://resources/master_memory/lesson_duplicate.md",
+            content=text,
+        )
+
+        assert decision.action == "noop"
+        assert decision.similarity == 0.985
+        assert decision.matched_uri == mock_hit.uri
+        assert decision.saved_bytes == len(text.encode("utf-8"))
+        assert "noop" in decision.reason.lower() or "deduplicated" in decision.reason.lower()
+
+    # Check telemetry stats
+    stats = gatekeeper.get_stats()
+    assert stats["stats"]["noop"] == 1
+    assert stats["stats"]["saved_bytes"] > 0
+    assert len(stats["history"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_gatekeeper_update_gold_band(gatekeeper):
+    """Similarity in [0.92, 0.97) is the counter-example & condition refinement gold band."""
+    mock_hit = MagicMock()
+    mock_hit.score = 0.942
+    mock_hit.uri = "viking://resources/master_memory/lesson_1.md"
+    mock_hit.content = "Support CUDA 12 on Linux x86_64 host."
+
+    with patch.object(gatekeeper, "_probe_nearest_vector", new_callable=AsyncMock) as mock_probe:
+        mock_probe.return_value = (mock_hit.score, mock_hit.uri, mock_hit.content)
+
+        text = "Notice: CUDA 12 crashes on macOS arm64 host under emulation."
+        decision = await gatekeeper.evaluate_and_intercept(
+            uri="viking://resources/master_memory/lesson_macos_counter.md",
+            content=text,
+        )
+
+        assert decision.action == "update"
+        assert decision.similarity == 0.942
+        assert decision.matched_uri == mock_hit.uri
+        assert "gold band" in decision.reason.lower() or "refinement" in decision.reason.lower()
+
+    stats = gatekeeper.get_stats()
+    assert stats["stats"]["update"] == 1
+
+
+@pytest.mark.asyncio
+async def test_gatekeeper_add_new_knowledge(gatekeeper):
+    """Similarity < 0.92 is independent new knowledge."""
+    mock_hit = MagicMock()
+    mock_hit.score = 0.450
+    mock_hit.uri = "viking://resources/master_memory/other.md"
+    mock_hit.content = "Unrelated database schema documentation."
+
+    with patch.object(gatekeeper, "_probe_nearest_vector", new_callable=AsyncMock) as mock_probe:
+        mock_probe.return_value = (mock_hit.score, mock_hit.uri, mock_hit.content)
+
+        text = "Brand new financial technical analysis momentum factor formulation."
+        decision = await gatekeeper.evaluate_and_intercept(
+            uri="viking://resources/master_memory/factor_momentum.md",
+            content=text,
+        )
+
+        assert decision.action == "add"
+        assert decision.similarity == 0.450
+
+    stats = gatekeeper.get_stats()
+    assert stats["stats"]["add"] == 1
+
+
+@pytest.mark.asyncio
+async def test_gatekeeper_fail_open_on_exception(gatekeeper):
+    """If vector probe encounters any runtime failure, Gatekeeper must fail-open safely."""
+    with patch.object(gatekeeper, "_probe_nearest_vector", new_callable=AsyncMock) as mock_probe:
+        mock_probe.side_effect = RuntimeError("GPU memory bus timeout")
+
+        decision = await gatekeeper.evaluate_and_intercept(
+            uri="viking://resources/master_memory/lesson_safety.md",
+            content="Critical safety lesson that should not be blocked by probe error.",
+        )
+
+        # Fail-open contract: must return "add" so business write continues normally
+        assert decision.action == "add"
+        assert "fail-open" in decision.reason.lower()

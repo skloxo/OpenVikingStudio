@@ -350,6 +350,33 @@ async def write(
     """Write text content to a file (replace, append, or create) and refresh semantics/vectors."""
     service = get_service()
     uri = validate_request_viking_uri(resolve_path_variables(request.uri), _ctx)
+
+    # Ingestion Gatekeeper defense (Card-Entropy-01-Gatekeeper)
+    from openviking.service.entropy_gatekeeper import EntropyGatekeeper
+
+    gatekeeper_decision = await EntropyGatekeeper.get_instance().evaluate_and_intercept(
+        uri=uri,
+        content=request.content,
+        ctx=_ctx,
+    )
+    if gatekeeper_decision.action == "noop":
+        # Pure synonym (Sim >= 0.97): Zero file I/O interception
+        logger.info(
+            "[EntropyGatekeeper] Intercepted redundant write for %s (matched: %s, sim: %.4f)",
+            uri,
+            gatekeeper_decision.matched_uri,
+            gatekeeper_decision.similarity,
+        )
+        return Response(
+            status="ok",
+            result={
+                "uri": uri,
+                "action": "noop",
+                "gatekeeper": gatekeeper_decision.to_dict(),
+            },
+            telemetry=None,
+        ).model_dump(exclude_none=True)
+
     execution = await run_operation(
         operation="content.write",
         telemetry=request.telemetry,
@@ -367,9 +394,14 @@ async def write(
     )
     if hasattr(service, "search") and hasattr(service.search, "clear_cache"):
         service.search.clear_cache()
+
+    result_payload = execution.result
+    if isinstance(result_payload, dict):
+        result_payload["gatekeeper"] = gatekeeper_decision.to_dict()
+
     return Response(
         status="ok",
-        result=execution.result,
+        result=result_payload,
         telemetry=execution.telemetry,
     ).model_dump(exclude_none=True)
 
