@@ -130,3 +130,26 @@ async def test_gatekeeper_fail_open_on_exception(gatekeeper):
         # Fail-open contract: must return "add" so business write continues normally
         assert decision.action == "add"
         assert "fail-open" in decision.reason.lower()
+
+
+@pytest.mark.asyncio
+async def test_gatekeeper_self_check_dedup_at_85(gatekeeper):
+    """Self-check and audit reports should be deduplicated (NOOP) at similarity >= 0.85."""
+    mock_hit = MagicMock()
+    mock_hit.score = 0.8862
+    mock_hit.uri = "viking://resources/master_memory/evolution_lessons/3070_self_check_1.md"
+    mock_hit.content = "3070 卫星节点全链路自检通过，双向读写链路畅通验证。"
+
+    with patch.object(gatekeeper, "_probe_nearest_vector", new_callable=AsyncMock) as mock_probe:
+        mock_probe.return_value = (mock_hit.score, mock_hit.uri, mock_hit.content)
+
+        text = "3070 WorkBuddy 卫星节点体外大脑全链路自检，4项自检通过。"
+        decision = await gatekeeper.evaluate_and_intercept(
+            uri="viking://resources/master_memory/evolution_lessons/3070_self_check_2.md",
+            content=text,
+        )
+
+        assert decision.action == "noop"
+        assert decision.similarity == 0.8862
+        assert "自检去重" in decision.reason or "noop" in decision.reason.lower()
+

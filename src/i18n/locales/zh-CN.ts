@@ -84,7 +84,7 @@ const zhCN = {
         title: '任务中心',
       },
       retrieval: {
-        title: '记忆治理',
+        title: '信息治理',
       },
       sessions: {
         title: '会话中心',
