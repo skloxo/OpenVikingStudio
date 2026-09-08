@@ -54,7 +54,7 @@ const en = {
     },
     navigation: {
       home: {
-        title: 'Home',
+        title: 'System Home',
       },
       crossDeviceVerify: {
         title: 'OAuth verify',
@@ -66,13 +66,13 @@ const en = {
         title: 'Request Logs',
       },
       monitoring: {
-        title: 'Monitoring',
+        title: 'System Monitoring',
       },
       skills: {
         title: 'Skills',
       },
       harnessLogs: {
-        title: 'Harness Engine Audit',
+        title: 'Harness Audit',
       },
       graph: {
         title: 'Knowledge Graph',
@@ -81,16 +81,16 @@ const en = {
         title: 'Task Center',
       },
       retrieval: {
-        title: 'Retrieval',
+        title: 'Memory Governance',
       },
       sessions: {
-        title: 'Sessions',
+        title: 'Session Center',
       },
       settings: {
         title: 'Settings',
       },
       playground: {
-        title: 'Playground',
+        title: 'Interactive Playground',
       },
     },
     sidebar: {

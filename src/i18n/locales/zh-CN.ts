@@ -54,7 +54,7 @@ const zhCN = {
     },
     navigation: {
       home: {
-        title: '首页',
+        title: '系统首页',
       },
       crossDeviceVerify: {
         title: 'OAuth 验证',
@@ -66,13 +66,13 @@ const zhCN = {
         title: '请求日志',
       },
       monitoring: {
-        title: '监控',
+        title: '系统监控',
       },
       skills: {
         title: '技能中心',
       },
       harnessLogs: {
-        title: 'Harness 引擎审计',
+        title: '护栏审计',
       },
       resources: {
         title: '资源库',
@@ -84,10 +84,10 @@ const zhCN = {
         title: '任务中心',
       },
       retrieval: {
-        title: '检索',
+        title: '记忆治理',
       },
       sessions: {
-        title: '会话',
+        title: '会话中心',
       },
       users: {
         title: '用户管理',
@@ -96,7 +96,7 @@ const zhCN = {
         title: '设置中枢',
       },
       playground: {
-        title: '沙盘',
+        title: '交互沙盘',
       },
     },
     sidebar: {
