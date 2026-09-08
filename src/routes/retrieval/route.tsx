@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { RetrievalBenchmarkDrawer } from './-components/benchmark-drawer'
+import { GatekeeperMetricsCard } from './-components/gatekeeper-metrics-card'
 import { RetrievalControls } from './-components/retrieval-controls'
 import { RetrievalMetricsCards } from './-components/retrieval-metrics-cards'
 import { RetrievalResults } from './-components/retrieval-results'
@@ -178,6 +179,9 @@ function RetrievalPage() {
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-4">
+      {/* 抗熵写入门禁与事实增量变异指标卡片 */}
+      <GatekeeperMetricsCard />
+
       {/* 4 大核心检索运行与质量基准 KPI 指标卡片 */}
       <RetrievalMetricsCards />
 

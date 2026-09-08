@@ -5,6 +5,7 @@ import {
   BlocksIcon,
   BookOpenIcon,
   BracesIcon,
+  BrainCircuitIcon,
   ChevronRightIcon,
   ClipboardListIcon,
   GlobeIcon,
@@ -14,7 +15,6 @@ import {
   MonitorUpIcon,
   PlugZapIcon,
   ScrollTextIcon,
-  SearchIcon,
   SettingsIcon,
   Share2Icon,
   ShieldAlertIcon,
@@ -106,7 +106,7 @@ const NAV_ITEMS: readonly NavItem[] = [
     to: '/playground',
   },
   {
-    icon: SearchIcon,
+    icon: BrainCircuitIcon,
     id: 'retrieval',
     section: 'workspace',
     titleKey: 'navigation.retrieval.title',
@@ -194,7 +194,7 @@ function NavGroupItem({ item, pathname, title, t }: NavGroupItemProps) {
             >
               <Icon />
               <span>{title}</span>
-              <ChevronRightIcon className="ml-auto transition-transform duration-200 group-data-[open]/collapsible:rotate-90" />
+              <ChevronRightIcon className="ml-auto transition-transform duration-200 group-data-open/collapsible:rotate-90" />
             </SidebarMenuButton>
           }
         />
