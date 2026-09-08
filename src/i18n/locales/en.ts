@@ -579,6 +579,11 @@ const en = {
       watch_sync: 'Watch sync',
       quality_gate: 'Quality Gate',
       benchmark_eval: 'Benchmark Eval',
+      memory_dream: 'Memory Stream & Reflection',
+      memory_compaction: 'Hierarchical Compaction',
+      fact_mutation: 'Fact 4-Way Mutation',
+      entity_summarization: 'Entity Summarization',
+      four_tier_governance: 'Four-Tier Governance',
     },
   },
   accountSwitcher: {

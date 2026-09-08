@@ -211,3 +211,32 @@ async def trigger_quality_gate(
     res = await watchdog.trigger_cycle(reason=reason)
     return Response(status="ok", result=res)
 
+
+@router.post("/tasks/dispatch-anti-entropy")
+async def dispatch_anti_entropy_task(
+    task_type: str = Query(..., description="memory_dream | memory_compaction | fact_mutation | entity_summarization | four_tier_governance"),
+    target: Optional[str] = Query(None, description="Optional target parameter (theme/URI/statement/entity/domain)"),
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """Dispatch an anti-entropy task (memory_dream, memory_compaction, fact_mutation, entity_summarization, four_tier_governance)."""
+    from openviking.service.entropy_watchdog import get_entropy_watchdog
+
+    watchdog = get_entropy_watchdog()
+    account_id = "default" if _ctx.role == Role.ROOT else _ctx.account_id
+
+    if task_type == "memory_dream":
+        tid = await watchdog.dispatch_memory_dream(theme=target or "general_reflection", account_id=account_id)
+    elif task_type == "memory_compaction":
+        tid = await watchdog.dispatch_memory_compaction(account_id=account_id)
+    elif task_type == "fact_mutation":
+        tid = await watchdog.dispatch_fact_mutation(source_doc=target or "session_stream", account_id=account_id)
+    elif task_type == "entity_summarization":
+        tid = await watchdog.dispatch_entity_summarization(entity=target or "OpenViking", account_id=account_id)
+    elif task_type == "four_tier_governance":
+        tid = await watchdog.dispatch_four_tier_governance(topic=target or "vector_entropy", account_id=account_id)
+    else:
+        raise OpenVikingError(f"Unsupported anti-entropy task type: {task_type}", code="INVALID_ARGUMENT")
+
+    return Response(status="ok", result={"task_id": tid, "task_type": task_type})
+
+

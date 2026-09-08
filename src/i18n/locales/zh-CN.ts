@@ -603,6 +603,11 @@ const zhCN = {
       benchmark_eval: '基准质检评测',
       knowledge_remediation: '知识自愈优化',
       entropy_healing: '抗熵增自愈',
+      memory_dream: '记忆流与反思做梦',
+      memory_compaction: '分层内存与压缩淘汰',
+      fact_mutation: '增量事实与四态流转',
+      entity_summarization: '时态图谱与实体浓缩',
+      four_tier_governance: '四层治理与同主题合并',
     },
   },
   accountSwitcher: {
