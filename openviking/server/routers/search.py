@@ -6,7 +6,7 @@ import asyncio
 import math
 from typing import Any, Dict, List, Literal, Optional, Sequence, Union
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from fastapi import Response as FastAPIResponse
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -327,6 +327,7 @@ class GlobRequest(BaseModel):
 @router.post("/find")
 async def find(
     request: FindRequest,
+    raw_request: Request,
     _ctx: RequestContext = Depends(get_request_context),
 ):
     """Semantic search without session context."""
@@ -362,13 +363,17 @@ async def find(
         result = result.to_dict(include_provenance=request.include_provenance)
     if request.read_content:
         result = await _inline_read_content(result, service=service, ctx=_ctx)
-    result = _sanitize_floats(result)
-    if result and isinstance(result, dict) and result.get("total", 0) == 0 and request.query:
-        try:
-            from openviking.service.entropy_watchdog import get_entropy_watchdog
-            get_entropy_watchdog().notify_zero_hit(request.query)
-        except Exception:
-            pass
+    is_internal_probe = raw_request.headers.get("x-openviking-internal-probe") == "1"
+    if result and isinstance(result, dict) and request.query and not is_internal_probe:
+        total = result.get("total", 0)
+        all_hits = result.get("resources", []) + result.get("memories", []) + result.get("skills", [])
+        top_score = max([float(x.get("score", 0.0)) for x in all_hits]) if all_hits else 0.0
+        if total == 0 or top_score < 0.45:
+            try:
+                from openviking.service.entropy_watchdog import get_entropy_watchdog
+                get_entropy_watchdog().notify_zero_hit(request.query)
+            except Exception:
+                pass
     return Response(
         status="ok",
         result=result,
