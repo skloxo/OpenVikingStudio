@@ -365,6 +365,8 @@ async def write(
             tag_mode=request.tag_mode,
         ),
     )
+    if hasattr(service, "search") and hasattr(service.search, "clear_cache"):
+        service.search.clear_cache()
     return Response(
         status="ok",
         result=execution.result,
@@ -455,4 +457,6 @@ async def reindex(
     result = await service.reindex(
         **reindex_kwargs,
     )
+    if hasattr(service, "search") and hasattr(service.search, "clear_cache"):
+        service.search.clear_cache()
     return Response(status="ok", result=result)
