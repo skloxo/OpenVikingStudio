@@ -1,4 +1,3 @@
-import * as React from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Sheet,
@@ -41,25 +40,25 @@ export function GatekeeperDecisionDrawer({
       case 'noop':
         return (
           <Badge variant="outline" className="border-border/60 bg-muted/30 text-muted-foreground text-[11px] font-mono font-medium">
-            NOOP (Deduplicated)
+            {t('gatekeeper.noop')}
           </Badge>
         )
       case 'update':
         return (
           <Badge variant="outline" className="border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[11px] font-mono font-medium">
-            UPDATE (Gold Band)
+            {t('gatekeeper.update')}
           </Badge>
         )
       case 'delete':
         return (
           <Badge variant="outline" className="border-rose-500/40 bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[11px] font-mono font-medium">
-            DELETE (Superseded)
+            {t('gatekeeper.delete')}
           </Badge>
         )
       default:
         return (
           <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary text-[11px] font-mono font-medium">
-            ADD (Novel Knowledge)
+            {t('gatekeeper.add')}
           </Badge>
         )
     }
@@ -107,8 +106,12 @@ export function GatekeeperDecisionDrawer({
               )}>
                 {decision.similarity.toFixed(4)}
               </span>
-              <span className="text-[11px] text-muted-foreground">
-                {decision.similarity >= 0.97 ? '(Sim >= 0.97)' : decision.similarity >= 0.92 ? '(0.92 <= Sim < 0.97)' : '(Sim < 0.92)'}
+              <span className="font-mono text-[11px] text-muted-foreground">
+                {decision.similarity >= 0.97
+                  ? t('gatekeeper.simBandHigh')
+                  : decision.similarity >= 0.92
+                    ? t('gatekeeper.simBandMed')
+                    : t('gatekeeper.simBandLow')}
               </span>
             </div>
           </div>
