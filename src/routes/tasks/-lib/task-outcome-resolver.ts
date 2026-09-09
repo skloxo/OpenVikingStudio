@@ -138,77 +138,47 @@ export function deriveUniversalFinalOutcome(
     }
   }
 
-  // 7. 记忆流与反思做梦 (Memory Dream)
-  if (type === 'memory_dream') {
-    const rawCount = metaObj.raw_observations_count ?? 0
-    const insights = resObj.insights_extracted ?? metaObj.distilled_insights_count ?? 0
-    const theme = resObj.theme ?? metaObj.theme ?? 'general'
+  // 7. 连接器导入 (Connector Import)
+  if (type === 'connector_import') {
+    const count = metaObj.item_count ?? resObj.item_count ?? 1
     return {
-      title: isZh ? '记忆流反思做梦' : 'Memory Reflection & Dream',
-      deliverableText: isZh
-        ? `扫描 ${rawCount} 条观察碎片 · 提炼 ${insights} 条认知洞察 · 沉淀主题 [${theme}]`
-        : `Scanned ${rawCount} observations · Distilled ${insights} insights · Topic [${theme}]`,
-      expectedText: isZh ? '经验流时效衰减扫描与高阶因果洞察提炼' : 'Observation recency decay & high-level insight distillation',
+      title: isZh ? '连接器导入' : 'Connector Import',
+      deliverableText: isZh ? `连接器握手成功 · 抓取 ${count} 条资源 · 语义分析并向量入库` : `Connector authenticated · Fetched ${count} items · Embedded into vector index`,
+      expectedText: isZh ? '外部源鉴权握手、数据拉取与向量入库' : 'Connector auth, fetch, and vector indexing',
     }
   }
 
-  // 8. 分层内存与压缩淘汰 (Memory Compaction)
-  if (type === 'memory_compaction') {
-    const scanned = metaObj.scanned_records ?? 0
-    const pruned = resObj.pruned_duplicates ?? metaObj.pruned_duplicates ?? 0
-    const ratio = resObj.hot_tier_ratio ? `${(resObj.hot_tier_ratio * 100).toFixed(0)}%` : '30%'
+  // 8. 快照恢复索引 (Snapshot Restore Reindex)
+  if (type === 'snapshot_restore_reindex') {
+    const inodes = resObj.restored_inodes ?? metaObj.restored_inodes ?? 0
     return {
-      title: isZh ? '分层内存压缩淘汰' : 'Memory Compaction & Pruning',
-      deliverableText: isZh
-        ? `分层体检 ${scanned} 条记忆 · 余弦去重剪枝 ${pruned} 条 · 热层占比 ${ratio}`
-        : `Evaluated ${scanned} memories · Pruned ${pruned} duplicates · Hot tier ${ratio}`,
-      expectedText: isZh ? '冷热温三层动态分层与艾宾浩斯剪枝归档' : 'Hierarchical tiering & Ebbinghaus decay pruning',
+      title: isZh ? '快照恢复索引' : 'Snapshot Restore',
+      deliverableText: isZh ? `快照回滚完成 · 恢复 ${inodes} 个 Inodes · 增量向量重建就绪` : `Snapshot rolled back · Restored ${inodes} inodes · Incremental vectors ready`,
+      expectedText: isZh ? '快照回滚、Inode 恢复与增量向量重建' : 'Snapshot rollback, inode restore & incremental vectors',
     }
   }
 
-  // 9. 增量事实四态流转 (Fact Mutation)
-  if (type === 'fact_mutation') {
-    const facts = metaObj.extracted_facts ?? 0
-    const newFacts = resObj.net_new_facts ?? 0
-    const conflicts = resObj.conflicts_resolved ?? 0
+  // 9. 旧数据迁移 (Legacy Migration)
+  if (type === 'legacy_migration') {
+    const migrated = resObj.migrated_records ?? metaObj.migrated_records ?? 0
     return {
-      title: isZh ? '增量事实四态流转' : 'Atomic Fact Mutation',
-      deliverableText: isZh
-        ? `抽取 ${facts} 条原子事实 · 净新增 ${newFacts} 条 · 消解冲突 ${conflicts} 项`
-        : `Extracted ${facts} atomic facts · Net added ${newFacts} · Resolved ${conflicts} conflicts`,
-      expectedText: isZh ? '原子事实抽取与四态流转 (ADD/UPDATE/DEL/NOOP)' : 'Atomic fact extraction & 4-way mutation routing',
+      title: isZh ? '旧数据迁移' : 'Legacy Migration',
+      deliverableText: isZh ? `读取旧版数据 · 转换 Schema · ${migrated} 条数据安全落盘` : `Legacy read · Schema transformed · ${migrated} records written`,
+      expectedText: isZh ? '旧格式解析、Schema 转换与 AGFS 存储写入' : 'Legacy read, schema transformation & storage write',
     }
   }
 
-  // 10. 时态图谱实体浓缩 (Entity Summarization)
-  if (type === 'entity_summarization') {
-    const entity = resObj.entity ?? metaObj.target_entity ?? 'OpenViking'
-    const events = metaObj.timeline_events_count ?? 0
-    const conflicts = resObj.resolved_contradictions ?? metaObj.resolved_contradictions ?? 0
+  // 10. 旧数据清理 (Legacy Cleanup)
+  if (type === 'legacy_cleanup') {
+    const freed = resObj.freed_mb ?? metaObj.freed_mb ?? 0
     return {
-      title: isZh ? '时态图谱实体浓缩' : 'Entity Summarization',
-      deliverableText: isZh
-        ? `追踪实体 [${entity}] · 编排 ${events} 条时序事件 · 消解 ${conflicts} 处矛盾`
-        : `Entity [${entity}] · Ordered ${events} timeline events · Resolved ${conflicts} contradictions`,
-      expectedText: isZh ? '实体时序版本链排序与单一真相源 (SSOT) 浓缩' : 'Temporal timeline ordering & entity SSOT summarization',
+      title: isZh ? '旧数据清理' : 'Legacy Cleanup',
+      deliverableText: isZh ? `图遍历排查 · 清理孤儿节点 · 释放 ${freed} MB 存储空间` : `Graph traversal · Cleaned orphans · Freed ${freed} MB space`,
+      expectedText: isZh ? '依赖图遍历、孤儿垃圾回收与空间释放' : 'Graph traversal, orphan GC & space release',
     }
   }
 
-  // 11. 四层全息治理 (Four-Tier Governance)
-  if (type === 'four_tier_governance') {
-    const topic = resObj.topic ?? metaObj.topic ?? 'vector_entropy'
-    const notes = metaObj.merged_notes_count ?? 0
-    const pct = resObj.token_compression_pct ?? metaObj.token_compression_pct ?? 0
-    return {
-      title: isZh ? '四层治理同主题合并' : 'Four-Tier Governance',
-      deliverableText: isZh
-        ? `主题 [${topic}] · 归纳合并 ${notes} 篇碎片 · Token 压缩率 ${pct}%`
-        : `Topic [${topic}] · Consolidated ${notes} fragments · Token compression ${pct}%`,
-      expectedText: isZh ? '四层全息诊断与跨目录同主题深度归纳写回' : '4-Tier diagnosis & cross-directory topic consolidation',
-    }
-  }
-
-  // 12. 轻量增量入库 (Lightweight Ingestion)
+  // 11. 轻量增量入库 (Lightweight Ingestion)
   if (type === 'valet_parking') {
     const rawAction = String(resObj.action || metaObj.action || 'add').toLowerCase()
     const simVal = resObj.similarity ?? metaObj.similarity
@@ -227,17 +197,6 @@ export function deriveUniversalFinalOutcome(
       title: isZh ? '轻量增量入库' : 'Lightweight Ingestion',
       deliverableText,
       expectedText: isZh ? '快速接管暂存、向量相似度探针与准入判定' : 'Fast handover, vector probe & admission check',
-    }
-  }
-
-  // 13. 托管数据摄取 (Managed Ingestion)
-  if (type === 'managed_ingestion') {
-    const files = metaObj.file_count ?? resObj.file_count ?? 1
-    const chunks = resObj.processed_chunks ?? metaObj.processed_chunks ?? 1
-    return {
-      title: isZh ? '托管数据摄取' : 'Managed Ingestion',
-      deliverableText: isZh ? `摄取校验通过 · 解析 ${files} 个文件 · 生成 ${chunks} 个向量切片 · 成果已就绪` : `Validated · Parsed ${files} file(s) · Generated ${chunks} chunk(s) · Deliverable ready`,
-      expectedText: isZh ? '数据校验、文档解析与向量建库交付' : 'Data validation, document parsing & vector indexing',
     }
   }
 

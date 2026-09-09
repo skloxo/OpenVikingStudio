@@ -15,23 +15,15 @@ export type TaskDataScope = '24h' | '7d' | 'all'
 export type TaskStatusFilter = Exclude<TaskStatus, 'unknown'> | 'all'
 
 export type TaskTypeFilter =
-  | 'add_resource'
-  | 'add_skill'
-  | 'admin_reindex'
-  | 'connector_import'
-  | 'legacy_cleanup'
-  | 'legacy_migration'
-  | 'session_commit'
-  | 'snapshot_restore_reindex'
-  | 'quality_gate'
-  | 'knowledge_remediation'
-  | 'memory_dream'
-  | 'memory_compaction'
-  | 'fact_mutation'
-  | 'entity_summarization'
-  | 'four_tier_governance'
-  | 'managed_ingestion'
   | 'valet_parking'
+  | 'add_resource'
+  | 'session_commit'
+  | 'add_skill'
+  | 'connector_import'
+  | 'admin_reindex'
+  | 'snapshot_restore_reindex'
+  | 'legacy_migration'
+  | 'legacy_cleanup'
   | 'user_delete'
   | 'all'
 
@@ -39,23 +31,15 @@ export const DEFAULT_PAGE_SIZE = 20
 export const MAX_TASKS = 200
 export const PAGE_SIZE_OPTIONS = [20, 50, 100] as const
 export const TASK_TYPE_OPTIONS: Exclude<TaskTypeFilter, 'all'>[] = [
-  'managed_ingestion',
-  'session_commit',
+  'valet_parking',
   'add_resource',
+  'session_commit',
   'add_skill',
   'connector_import',
   'admin_reindex',
   'snapshot_restore_reindex',
   'legacy_migration',
   'legacy_cleanup',
-  'quality_gate',
-  'knowledge_remediation',
-  'memory_dream',
-  'memory_compaction',
-  'fact_mutation',
-  'entity_summarization',
-  'four_tier_governance',
-  'valet_parking',
   'user_delete',
 ]
 export const TASK_STATUS_OPTIONS: Exclude<TaskStatusFilter, 'all'>[] = [
@@ -303,23 +287,15 @@ export function computeTaskKpiData(
       : 0
 
   const ALL_TASK_TYPES = [
+    'valet_parking',
     'add_resource',
     'session_commit',
-    'admin_reindex',
-    'snapshot_restore_reindex',
     'add_skill',
     'connector_import',
+    'admin_reindex',
+    'snapshot_restore_reindex',
     'legacy_migration',
     'legacy_cleanup',
-    'quality_gate',
-    'knowledge_remediation',
-    'memory_dream',
-    'memory_compaction',
-    'fact_mutation',
-    'entity_summarization',
-    'four_tier_governance',
-    'valet_parking',
-    'managed_ingestion',
     'user_delete',
   ]
 

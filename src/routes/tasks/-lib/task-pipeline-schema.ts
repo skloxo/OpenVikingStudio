@@ -104,64 +104,10 @@ export const TASK_FLOW_REGISTRY: Record<string, string[]> = {
     'step_vector_purge',
     'step_disk_wipe',
   ],
-  quality_gate: [
-    'step_quality_gate',
-  ],
-  benchmark_eval: [
-    'step_quality_gate',
-  ],
-  knowledge_remediation: [
-    'step_fault_locate',
-    'step_conflict_arbitrate',
-    'step_targeted_distill',
-    'step_delta_reindex',
-  ],
-  entropy_healing: [
-    'step_fault_locate',
-    'step_conflict_arbitrate',
-    'step_targeted_distill',
-    'step_delta_reindex',
-  ],
-  memory_dream: [
-    'step_scan_observations',
-    'step_cluster_themes',
-    'step_distill_insights',
-    'step_consolidate_master',
-  ],
-  memory_compaction: [
-    'step_evaluate_tiers',
-    'step_cosine_deduplication',
-    'step_prune_and_archive',
-    'step_rebalance_index',
-  ],
-  fact_mutation: [
-    'step_extract_atomic_facts',
-    'step_semantic_conflict_check',
-    'step_execute_4way_mutation',
-    'step_commit_knowledge_graph',
-  ],
-  entity_summarization: [
-    'step_extract_entities_relations',
-    'step_temporal_timeline_ordering',
-    'step_merge_temporal_contradictions',
-    'step_update_entity_index',
-  ],
-  four_tier_governance: [
-    'step_tier_diagnosis',
-    'step_topic_grouping',
-    'step_llm_topic_synthesis',
-    'step_writeback_and_cleanup',
-  ],
   valet_parking: [
     'step_valet_handover',
     'step_valet_probe',
     'step_valet_decision',
     'step_valet_parking',
-  ],
-  managed_ingestion: [
-    'step_managed_validate',
-    'step_parsing',
-    'step_embedding',
-    'step_managed_deliver',
   ],
 }

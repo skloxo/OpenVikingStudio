@@ -1,5 +1,4 @@
 import { CORE_PANORAMA_STEPS } from './panorama-steps-core'
-import { ENTROPY_PANORAMA_STEPS } from './panorama-steps-entropy'
 
 export interface PanoramaStepDef {
   id: string
@@ -90,10 +89,7 @@ export const ENGINE_DEFINITIONS: EngineDef[] = [
   },
 ]
 
-export const ALL_PANORAMA_STEPS: PanoramaStepDef[] = [
-  ...CORE_PANORAMA_STEPS,
-  ...ENTROPY_PANORAMA_STEPS,
-]
+export const ALL_PANORAMA_STEPS: PanoramaStepDef[] = CORE_PANORAMA_STEPS
 
 export interface TaskTypeFlowDef {
   typeKey: string
@@ -102,12 +98,27 @@ export interface TaskTypeFlowDef {
   stepIds: string[]
 }
 
+/**
+ * 10 大真实车间工序流定义 (9 个经典基建车间 + 1 个轻量增量入库)
+ */
 export const TASK_FLOWS: TaskTypeFlowDef[] = [
+  {
+    typeKey: 'valet_parking',
+    nameZh: '轻量增量入库',
+    nameEn: 'Lightweight Ingestion',
+    stepIds: ['step_valet_handover', 'step_valet_probe', 'step_valet_decision', 'step_valet_parking'],
+  },
   {
     typeKey: 'add_resource',
     nameZh: '资源处理',
     nameEn: 'Resource Ingestion',
     stepIds: ['step_ingestion', 'step_parse', 'step_semantic', 'step_embedding', 'step_memory_linking'],
+  },
+  {
+    typeKey: 'session_commit',
+    nameZh: '会话提交',
+    nameEn: 'Session Commit',
+    stepIds: ['step_archival', 'step_lessons', 'step_snapshot'],
   },
   {
     typeKey: 'add_skill',
@@ -116,10 +127,10 @@ export const TASK_FLOWS: TaskTypeFlowDef[] = [
     stepIds: ['step_discovery', 'step_validation', 'step_embedding'],
   },
   {
-    typeKey: 'session_commit',
-    nameZh: '会话提交',
-    nameEn: 'Session Commit',
-    stepIds: ['step_archival', 'step_lessons', 'step_snapshot'],
+    typeKey: 'connector_import',
+    nameZh: '连接器导入',
+    nameEn: 'Connector Import',
+    stepIds: ['step_auth', 'step_fetch', 'step_parse', 'step_semantic', 'step_embedding'],
   },
   {
     typeKey: 'admin_reindex',
@@ -134,12 +145,6 @@ export const TASK_FLOWS: TaskTypeFlowDef[] = [
     stepIds: ['step_rollback', 'step_inodes', 'step_incremental_vector'],
   },
   {
-    typeKey: 'connector_import',
-    nameZh: '连接器导入',
-    nameEn: 'Connector Import',
-    stepIds: ['step_auth', 'step_fetch', 'step_parse', 'step_semantic', 'step_embedding'],
-  },
-  {
     typeKey: 'legacy_migration',
     nameZh: '旧数据迁移',
     nameEn: 'Legacy Migration',
@@ -151,16 +156,10 @@ export const TASK_FLOWS: TaskTypeFlowDef[] = [
     nameEn: 'Legacy Cleanup',
     stepIds: ['step_traverse', 'step_gc', 'step_free'],
   },
-  { typeKey: 'quality_gate', nameZh: '质量门禁', nameEn: 'Quality Gate', stepIds: ['step_quality_gate'] },
-  { typeKey: 'benchmark_eval', nameZh: '基准质检', nameEn: 'Benchmark Evaluation', stepIds: ['step_quality_gate'] },
-  { typeKey: 'knowledge_remediation', nameZh: '知识自愈优化', nameEn: 'Knowledge Remediation', stepIds: ['step_fault_locate', 'step_conflict_arbitrate', 'step_targeted_distill', 'step_delta_reindex'] },
-  { typeKey: 'memory_dream', nameZh: '记忆流反思做梦', nameEn: 'Memory Stream & Reflection', stepIds: ['step_scan_observations', 'step_cluster_themes', 'step_distill_insights', 'step_consolidate_master'] },
-  { typeKey: 'memory_compaction', nameZh: '分层内存压缩淘汰', nameEn: 'Hierarchical Compaction', stepIds: ['step_evaluate_tiers', 'step_cosine_deduplication', 'step_prune_and_archive', 'step_rebalance_index'] },
-  { typeKey: 'fact_mutation', nameZh: '增量事实四态流转', nameEn: 'Fact 4-Way Mutation', stepIds: ['step_extract_atomic_facts', 'step_semantic_conflict_check', 'step_execute_4way_mutation', 'step_commit_knowledge_graph'] },
-  { typeKey: 'entity_summarization', nameZh: '时态图谱实体浓缩', nameEn: 'Entity Summarization', stepIds: ['step_extract_entities_relations', 'step_temporal_timeline_ordering', 'step_merge_temporal_contradictions', 'step_update_entity_index'] },
-  { typeKey: 'four_tier_governance', nameZh: '四层治理同主题合并', nameEn: 'Four-Tier Governance', stepIds: ['step_tier_diagnosis', 'step_topic_grouping', 'step_llm_topic_synthesis', 'step_writeback_and_cleanup'] },
-  { typeKey: 'valet_parking', nameZh: '轻量增量入库', nameEn: 'Lightweight Ingestion', stepIds: ['step_valet_handover', 'step_valet_probe', 'step_valet_decision', 'step_valet_parking'] },
-  { typeKey: 'managed_ingestion', nameZh: '托管数据摄取', nameEn: 'Managed Ingestion', stepIds: ['step_managed_validate', 'step_parse', 'step_embedding', 'step_managed_deliver'] },
-  { typeKey: 'user_delete', nameZh: '用户空间注销', nameEn: 'User Space Purge', stepIds: ['step_soft_mark', 'step_vector_purge', 'step_disk_wipe'] },
-  { typeKey: 'user_deletion', nameZh: '用户空间注销', nameEn: 'User Space Purge', stepIds: ['step_soft_mark', 'step_vector_purge', 'step_disk_wipe'] },
+  {
+    typeKey: 'user_delete',
+    nameZh: '用户空间注销',
+    nameEn: 'User Space Purge',
+    stepIds: ['step_soft_mark', 'step_vector_purge', 'step_disk_wipe'],
+  },
 ]
