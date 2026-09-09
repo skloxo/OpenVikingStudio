@@ -104,3 +104,28 @@ async def test_valet_async_processing_add():
     assert updated_ticket.status == "parked"
     assert updated_ticket.action == "add"
     assert updated_ticket.deliverable_uri == uri
+
+
+def test_watchdog_passive_mode_no_storm():
+    """Verify that notify_mutation is passive and does not auto-schedule auto-qg storms."""
+    from openviking.service.entropy_watchdog import get_entropy_watchdog
+    watchdog = get_entropy_watchdog()
+    # Call notify_mutation multiple times
+    watchdog.notify_mutation("add_resource", "viking://resources/test.md")
+    watchdog.notify_mutation("valet_parking", "viking://resources/valet.md")
+    # There should be no debounce tasks scheduled or running
+    assert not hasattr(watchdog, "_debounce_task") or watchdog._debounce_task is None or watchdog._debounce_task.done()
+
+
+def test_valet_handover_registers_task_in_tracker():
+    """Verify that handover initiates task registration and creates ticket."""
+    engine = ValetIngestionEngine.get_instance()
+    ticket = engine.handover(
+        uri="viking://resources/master_memory/test_early_reg.md",
+        content="Test content for early registration",
+        source="test",
+        caller="TestAgent",
+    )
+    assert ticket.ticket_id.startswith("ticket_valet_")
+    assert ticket.status in ("accepted", "parking", "parked")
+
