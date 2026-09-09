@@ -10,7 +10,7 @@ import {
   ALL_PANORAMA_STEPS,
   ENGINE_DEFINITIONS,
   TASK_FLOWS,
-} from '#/routes/tasks/-components/pipeline-steps-panorama'
+} from '#/routes/tasks/-lib/pipeline-definitions'
 import { getTaskFlowItems } from '../-lib/task-flow-helpers'
 import type { TaskFlowItem } from '../-lib/task-flow-helpers'
 

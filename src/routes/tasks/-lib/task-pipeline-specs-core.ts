@@ -325,4 +325,70 @@ export const CORE_STEP_SPECS: Record<string, AtomicStepSpec> = {
     metricKeys: ['reindexed_chunks', 'patched_vectors', 'updated_embeddings'],
     engineKey: 'embedding',
   },
+  // 29. 快速接管 (异步托管入库)
+  step_valet_handover: {
+    id: 'step_valet_handover',
+    nameZh: '快速接管',
+    nameEn: 'Fast Handover',
+    unitZh: '次',
+    unitEn: 'calls',
+    stageKeywords: ['valet', 'handover', 'enqueue', 'ticket'],
+    isActionOnly: true,
+    engineKey: 'viking_fs',
+  },
+  // 30. 向量探针
+  step_valet_probe: {
+    id: 'step_valet_probe',
+    nameZh: '向量探针',
+    nameEn: 'Vector Probe',
+    unitZh: '探针',
+    unitEn: 'probes',
+    stageKeywords: ['probe', 'similarity', 'candidate'],
+    metricKeys: ['probed_nodes', 'candidates_count'],
+    engineKey: 'embedding',
+  },
+  // 31. 门禁裁决
+  step_valet_decision: {
+    id: 'step_valet_decision',
+    nameZh: '门禁裁决',
+    nameEn: 'Gate Decision',
+    unitZh: '裁决',
+    unitEn: 'verdicts',
+    stageKeywords: ['decision', 'verdict', 'admission'],
+    metricKeys: ['evaluated_decisions', 'verdict_count'],
+    engineKey: 'semantic',
+  },
+  // 32. 车位泊入
+  step_valet_parking: {
+    id: 'step_valet_parking',
+    nameZh: '车位泊入',
+    nameEn: 'Space Parking',
+    unitZh: '节点',
+    unitEn: 'nodes',
+    stageKeywords: ['parking', 'persist', 'slot'],
+    metricKeys: ['parked_nodes', 'merged_nodes'],
+    engineKey: 'viking_fs',
+  },
+  // 33. 摄取校验 (托管数据摄取)
+  step_managed_validate: {
+    id: 'step_managed_validate',
+    nameZh: '摄取校验',
+    nameEn: 'Ingest Validate',
+    unitZh: '校验',
+    unitEn: 'checks',
+    stageKeywords: ['validate', 'schema', 'compliance'],
+    isActionOnly: true,
+    engineKey: 'viking_fs',
+  },
+  // 34. 成果交付
+  step_managed_deliver: {
+    id: 'step_managed_deliver',
+    nameZh: '成果交付',
+    nameEn: 'Deliverable Ready',
+    unitZh: '成果',
+    unitEn: 'deliverables',
+    stageKeywords: ['deliver', 'deliverable', 'mount'],
+    isActionOnly: true,
+    engineKey: 'viking_fs',
+  },
 }

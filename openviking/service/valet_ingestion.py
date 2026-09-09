@@ -105,30 +105,6 @@ class ValetIngestionEngine:
         with self._tickets_lock:
             self._tickets[ticket_id] = ticket
 
-        # Register BusinessJob in TaskTracker for UI observability
-        try:
-            task_tracker = get_task_tracker()
-            asyncio.run_coroutine_threadsafe(
-                task_tracker.register_task(
-                    task_type="valet_parking",
-                    resource_id=ticket_id,
-                    account_id="default",
-                    user_id="default",
-                    meta={
-                        "is_business": True,
-                        "human_title": human_title,
-                        "initiator": caller,
-                        "uri": uri,
-                        "source": source,
-                        "ticket_id": ticket_id,
-                        "progress": {"completed": 0, "total": 1, "unit": "个节点"},
-                    },
-                ),
-                asyncio.get_event_loop() if asyncio.get_event_loop().is_running() else asyncio.new_event_loop(),
-            )
-        except Exception as e:
-            logger.debug("Task registration fallback: %s", e)
-
         # Append to high-speed write-ahead log (WAL)
         try:
             record = {
@@ -196,6 +172,38 @@ class ValetIngestionEngine:
         except Exception:
             pass
 
+        # Register and start in TaskTracker for UI observability
+        caller = record.get("caller", "Agent")
+        source = record.get("source", "api")
+        title_summary = meta.get("title") or Path(uri).name
+        if title_summary.endswith(".md"):
+            title_summary = title_summary[:-3]
+        if not title_summary:
+            title_summary = content[:24].replace("\n", " ").strip()
+        human_title = f"📥 异步托管入库：{title_summary}"
+
+        if task_tracker is not None:
+            try:
+                await task_tracker.create(
+                    task_type="valet_parking",
+                    task_id=ticket_id,
+                    resource_id=uri,
+                    account_id="default",
+                    user_id="default",
+                    meta={
+                        "is_business": True,
+                        "human_title": human_title,
+                        "initiator": caller,
+                        "uri": uri,
+                        "source": source,
+                        "ticket_id": ticket_id,
+                        "progress": {"completed": 0, "total": 1, "unit": "个节点"},
+                    },
+                )
+                await task_tracker.start(ticket_id, account_id="default", user_id="default")
+            except Exception as e:
+                logger.debug("Task tracker create/start error: %s", e)
+
         # Update status to parking
         with self._tickets_lock:
             if ticket_id in self._tickets:
@@ -250,7 +258,7 @@ class ValetIngestionEngine:
         # Update TaskTracker record to completed with progress 1/1
         if task_tracker is not None:
             try:
-                await task_tracker.finish_task(
+                await task_tracker.complete(
                     task_id=ticket_id,
                     result={
                         "status": "ok",
@@ -261,9 +269,11 @@ class ValetIngestionEngine:
                         "deliverable": deliverable,
                         "progress": {"completed": 1, "total": 1, "unit": "个节点"},
                     },
+                    account_id="default",
+                    user_id="default",
                 )
             except Exception as e:
-                logger.debug("Task tracker finish notification: %s", e)
+                logger.debug("Task tracker complete notification: %s", e)
 
     def _write_local_file(self, uri: str, content: str) -> None:
         """Physical disk write helper for viking:// URIs."""

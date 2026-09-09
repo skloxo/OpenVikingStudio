@@ -152,4 +152,16 @@ export const TASK_FLOW_REGISTRY: Record<string, string[]> = {
     'step_llm_topic_synthesis',
     'step_writeback_and_cleanup',
   ],
+  valet_parking: [
+    'step_valet_handover',
+    'step_valet_probe',
+    'step_valet_decision',
+    'step_valet_parking',
+  ],
+  managed_ingestion: [
+    'step_managed_validate',
+    'step_parsing',
+    'step_embedding',
+    'step_managed_deliver',
+  ],
 }

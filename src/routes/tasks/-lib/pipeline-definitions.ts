@@ -159,4 +159,8 @@ export const TASK_FLOWS: TaskTypeFlowDef[] = [
   { typeKey: 'fact_mutation', nameZh: '增量事实四态流转', nameEn: 'Fact 4-Way Mutation', stepIds: ['step_extract_atomic_facts', 'step_semantic_conflict_check', 'step_execute_4way_mutation', 'step_commit_knowledge_graph'] },
   { typeKey: 'entity_summarization', nameZh: '时态图谱实体浓缩', nameEn: 'Entity Summarization', stepIds: ['step_extract_entities_relations', 'step_temporal_timeline_ordering', 'step_merge_temporal_contradictions', 'step_update_entity_index'] },
   { typeKey: 'four_tier_governance', nameZh: '四层治理同主题合并', nameEn: 'Four-Tier Governance', stepIds: ['step_tier_diagnosis', 'step_topic_grouping', 'step_llm_topic_synthesis', 'step_writeback_and_cleanup'] },
+  { typeKey: 'valet_parking', nameZh: '异步托管入库', nameEn: 'Valet Ingestion', stepIds: ['step_valet_handover', 'step_valet_probe', 'step_valet_decision', 'step_valet_parking'] },
+  { typeKey: 'managed_ingestion', nameZh: '托管数据摄取', nameEn: 'Managed Ingestion', stepIds: ['step_managed_validate', 'step_parse', 'step_embedding', 'step_managed_deliver'] },
+  { typeKey: 'user_delete', nameZh: '用户空间注销', nameEn: 'User Space Purge', stepIds: ['step_soft_mark', 'step_vector_purge', 'step_disk_wipe'] },
+  { typeKey: 'user_deletion', nameZh: '用户空间注销', nameEn: 'User Space Purge', stepIds: ['step_soft_mark', 'step_vector_purge', 'step_disk_wipe'] },
 ]
