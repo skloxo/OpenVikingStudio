@@ -439,7 +439,7 @@ export function deriveUniversalFinalOutcome(
     }
   }
 
-  // 12. 异步托管入库 (Valet Ingestion)
+  // 12. 轻量增量入库 (Lightweight Ingestion)
   if (type === 'valet_parking') {
     const rawAction = String(resObj.action || metaObj.action || 'add').toLowerCase()
     const simVal = resObj.similarity ?? metaObj.similarity
@@ -455,7 +455,7 @@ export function deriveUniversalFinalOutcome(
       deliverableText = isZh ? `门禁裁决: 增量演进 (UPDATE) · 向量相似度 ${sim} · 既有知识节点已版本升级` : `Gate: UPDATE · Similarity ${sim} · Node version updated`
     }
     return {
-      title: isZh ? '异步托管入库' : 'Valet Ingestion',
+      title: isZh ? '轻量增量入库' : 'Lightweight Ingestion',
       deliverableText,
       expectedText: isZh ? '快速接管暂存、向量相似度探针与入库门禁裁决' : 'Fast handover, vector probe & gatekeeper admission',
     }

@@ -1,10 +1,7 @@
-import * as React from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   ExternalLinkIcon,
-  CheckCircle2Icon,
   ClockIcon,
-  SparklesIcon,
   BotIcon,
   UserIcon,
   InboxIcon,
@@ -51,7 +48,7 @@ export function BusinessJobsView({
 }: BusinessJobsViewProps) {
   const { t } = useTranslation('tasksPage')
 
-  if (!jobs || jobs.length === 0) {
+  if (jobs.length === 0) {
     return (
       <Card className="flex flex-col items-center justify-center p-8 text-center border-dashed bg-muted/10">
         <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-3">
@@ -61,7 +58,7 @@ export function BusinessJobsView({
           {t('dualTrack.emptyBusiness', '暂无活动业务作业')}
         </h3>
         <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-          {t('dualTrack.emptyBusinessSub', '所有提交任务均已完成异步托管入库，知识库秩序井然。')}
+          {t('dualTrack.emptyBusinessSub', '所有提交任务均已完成轻量增量入库，知识库秩序井然。')}
         </p>
       </Card>
     )

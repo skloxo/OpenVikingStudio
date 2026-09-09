@@ -92,14 +92,14 @@ class ValetIngestionEngine:
             title_summary = title_summary[:-3]
         if not title_summary:
             title_summary = content[:24].replace("\n", " ").strip()
-        human_title = f"📥 异步托管入库：{title_summary}"
+        human_title = f"📥 轻量增量入库：{title_summary}"
 
         ticket = ValetTicket(
             ticket_id=ticket_id,
             uri=uri,
             human_title=human_title,
             initiator=caller,
-            message=f"已接管「{title_summary}」，正在执行异步治理与入库裁决...",
+            message=f"已接管「{title_summary}」，正在执行轻量增量入库与门禁裁决...",
         )
 
         with self._tickets_lock:
@@ -180,7 +180,7 @@ class ValetIngestionEngine:
             title_summary = title_summary[:-3]
         if not title_summary:
             title_summary = content[:24].replace("\n", " ").strip()
-        human_title = f"📥 异步托管入库：{title_summary}"
+        human_title = f"📥 轻量增量入库：{title_summary}"
 
         if task_tracker is not None:
             try:
