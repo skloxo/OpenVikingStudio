@@ -304,7 +304,7 @@ export function computeTaskKpiData(
     typeCounts[typeKey] = 0
   }
   for (const item of allTasks) {
-    if (item.task_type) {
+    if (item.task_type && ALL_TASK_TYPES.includes(item.task_type)) {
       typeCounts[item.task_type] = (typeCounts[item.task_type] || 0) + 1
     }
   }
