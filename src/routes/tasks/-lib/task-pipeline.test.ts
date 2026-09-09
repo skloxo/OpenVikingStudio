@@ -463,4 +463,32 @@ describe('task-pipeline RFC 治理与真实数据契约测试', () => {
     expect(tier4Outcome.deliverableText).toContain('合并 8 篇碎片')
     expect(tier4Outcome.deliverableText).toContain('58.4%')
   })
+
+  it('异步托管入库任务流水线与量化交付物测试', () => {
+    const valetTask: TaskRecord = {
+      task_id: 'ticket_valet_test_01',
+      task_type: 'valet_parking',
+      status: 'completed',
+      stage: 'completed',
+      created_at: 1772800000,
+      meta: { human_title: '异步托管入库：测试节点' },
+      result: {
+        status: 'ok',
+        action: 'add',
+        similarity: 0.0,
+        progress: { completed: 1, total: 1, unit: '个节点' },
+      },
+    }
+    const steps = getTaskPipelineSteps(valetTask, [], 'zh')
+    expect(steps).toHaveLength(4)
+    expect(steps.map((s) => s.name)).toEqual(['快速接管', '向量探针', '门禁裁决', '存储落盘'])
+    expect(steps[0]).toMatchObject({ processed: 1, total: 1, detail: '接管暂存' })
+    expect(steps[1]).toMatchObject({ processed: 1, total: 1, detail: '相似度 0.0000' })
+    expect(steps[2]).toMatchObject({ processed: 1, total: 1, detail: '裁决: 独立新增' })
+    expect(steps[3]).toMatchObject({ processed: 1, total: 1, detail: '存储落盘' })
+
+    const outcome = getTaskFinalOutcome(valetTask, 'zh')
+    expect(outcome.deliverableText).toContain('门禁裁决: 独立新增 (ADD)')
+    expect(outcome.deliverableText).toContain('1 个知识节点已存储落盘')
+  })
 })

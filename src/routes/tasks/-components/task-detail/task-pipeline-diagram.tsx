@@ -1,15 +1,13 @@
 import { useTranslation } from 'react-i18next'
 import { cn } from '#/lib/utils'
 import type { ParsedQueueRow } from '#/routes/monitoring/-components/queue-status-card'
-import {
-  normalizeTaskStatus,
-  type TaskRecord,
-} from '../../-lib/task-record'
+import { normalizeTaskStatus } from '../../-lib/task-record'
+import type { TaskRecord } from '../../-lib/task-record'
 import {
   getTaskFinalOutcome,
   getTaskPipelineGroups,
-  type PipelineStep,
 } from '../../-lib/task-pipeline'
+import type { PipelineStep } from '../../-lib/task-pipeline'
 import { DetailSection } from './task-detail-common'
 
 interface TaskPipelineDiagramProps {
@@ -72,7 +70,7 @@ export function TaskPipelineDiagram({
     // 3. 若工序已完成 (Completed)
     if (st.state === 'completed') {
       const hasFraction = st.processed !== undefined && st.total !== undefined && st.total > 0
-      if (hasFraction && st.total !== undefined && st.total > 1) {
+      if (hasFraction && st.total !== undefined && st.total >= 1) {
         return (
           <span className="font-mono font-medium text-foreground bg-muted/60 px-2 py-0.5 rounded border border-border/60 tabular-nums">
             {(st.processed ?? 0).toLocaleString()} / {st.total.toLocaleString()} {st.unit ?? ''}
@@ -123,7 +121,12 @@ export function TaskPipelineDiagram({
                       {group.step.name}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2.5 text-[11px] shrink-0">
+                  <div className="flex items-center gap-2 text-[11px] shrink-0">
+                    {group.step.detail && (
+                      <span className="font-mono text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded border border-border/40 text-[11px]">
+                        {group.step.detail}
+                      </span>
+                    )}
                     {renderMetrics(group.step)}
                   </div>
                 </div>
@@ -151,6 +154,11 @@ export function TaskPipelineDiagram({
                         </span>
                       </div>
                       <div className="flex items-center gap-2 text-[11px] shrink-0">
+                        {st.detail && (
+                          <span className="font-mono text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded border border-border/40 text-[11px]">
+                            {st.detail}
+                          </span>
+                        )}
                         {renderMetrics(st)}
                       </div>
                     </div>

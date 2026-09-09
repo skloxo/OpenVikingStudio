@@ -165,17 +165,63 @@ export function deriveUniversalPipelineSteps(
     }
 
     // 量化计数工序：严格使用真实物理数据
-    const effectiveMetric =
+    let effectiveMetric =
       state === 'completed'
         ? metricVal
         : state === 'running'
           ? (metricVal ?? 0)
           : undefined
 
-    const effectiveTotal =
+    let effectiveTotal =
       state === 'completed'
         ? (totalVal ?? metricVal)
         : (totalVal ?? undefined)
+
+    let detail: string | undefined
+
+    // 针对异步托管入库任务进行高保真业务详情与度量注记 (Valet Ingestion Enrichment)
+    if (type === 'valet_parking' && (state === 'completed' || state === 'running')) {
+      if (spec.id === 'step_valet_handover') {
+        effectiveMetric = effectiveMetric ?? (state === 'completed' ? 1 : 0)
+        effectiveTotal = effectiveTotal ?? 1
+        detail = isZh ? '接管暂存' : 'Buffered'
+      } else if (spec.id === 'step_valet_probe') {
+        effectiveMetric = effectiveMetric ?? (state === 'completed' ? 1 : 0)
+        effectiveTotal = effectiveTotal ?? 1
+        const simVal = resObj.similarity ?? metaObj.similarity
+        if (simVal !== undefined) {
+          const simStr = typeof simVal === 'number' ? simVal.toFixed(4) : Number(simVal).toFixed(4)
+          detail = isZh ? `相似度 ${simStr}` : `Sim ${simStr}`
+        }
+      } else if (spec.id === 'step_valet_decision') {
+        effectiveMetric = effectiveMetric ?? (state === 'completed' ? 1 : 0)
+        effectiveTotal = effectiveTotal ?? 1
+        const rawAction = String(resObj.action || metaObj.action || 'add').toLowerCase()
+        const actionZh = rawAction === 'noop' ? '同义合并' : rawAction === 'update' ? '增量演进' : '独立新增'
+        detail = isZh ? `裁决: ${actionZh}` : `Decision: ${rawAction.toUpperCase()}`
+      } else if (spec.id === 'step_valet_parking') {
+        effectiveMetric = effectiveMetric ?? resObj.progress?.completed ?? (state === 'completed' ? 1 : 0)
+        effectiveTotal = effectiveTotal ?? resObj.progress?.total ?? 1
+        const rawAction = String(resObj.action || metaObj.action || 'add').toLowerCase()
+        detail = rawAction === 'noop' ? (isZh ? '零冗余合并' : 'Merged') : (isZh ? '存储落盘' : 'Persisted')
+      }
+    } else if (type === 'managed_ingestion' && (state === 'completed' || state === 'running')) {
+      if (spec.id === 'step_managed_validate') {
+        effectiveMetric = effectiveMetric ?? (state === 'completed' ? 1 : 0)
+        effectiveTotal = effectiveTotal ?? 1
+        detail = isZh ? '模式合规' : 'Schema OK'
+      } else if (spec.id === 'step_managed_deliver') {
+        effectiveMetric = effectiveMetric ?? (state === 'completed' ? 1 : 0)
+        effectiveTotal = effectiveTotal ?? 1
+        detail = isZh ? '成果就绪' : 'Delivered'
+      }
+    } else if ((type === 'user_delete' || type === 'user_deletion') && (state === 'completed' || state === 'running')) {
+      if (spec.id === 'step_soft_mark') {
+        effectiveMetric = effectiveMetric ?? (state === 'completed' ? 1 : 0)
+        effectiveTotal = effectiveTotal ?? 1
+        detail = isZh ? '软标锁定' : 'Marked'
+      }
+    }
 
     steps.push({
       name: isZh ? spec.nameZh : spec.nameEn,
@@ -184,6 +230,7 @@ export function deriveUniversalPipelineSteps(
       total: effectiveTotal,
       count: effectiveMetric,
       unit: isZh ? spec.unitZh : spec.unitEn,
+      detail,
     })
   }
 
@@ -392,12 +439,54 @@ export function deriveUniversalFinalOutcome(
     }
   }
 
+  // 12. 异步托管入库 (Valet Ingestion)
+  if (type === 'valet_parking') {
+    const rawAction = String(resObj.action || metaObj.action || 'add').toLowerCase()
+    const simVal = resObj.similarity ?? metaObj.similarity
+    const sim = typeof simVal === 'number' ? simVal.toFixed(4) : (simVal !== undefined ? Number(simVal).toFixed(4) : '0.0000')
+    const saved = Number(resObj.saved_bytes || metaObj.saved_bytes || 0)
+    const nodes = resObj.progress?.completed ?? resObj.parked_nodes ?? 1
+    let deliverableText = isZh ? `门禁裁决: 独立新增 (ADD) · 向量探针相似度 ${sim} · ${nodes} 个知识节点已存储落盘` : `Gate: ADD · Similarity ${sim} · ${nodes} node(s) persisted`
+    if (rawAction === 'noop') {
+      deliverableText = isZh
+        ? `门禁裁决: 同义合并 (NOOP) · 向量相似度 ${sim}` + (saved > 0 ? ` · 节约物理存储 ${(saved / 1024).toFixed(1)} KB` : ' · 零冗余新增')
+        : `Gate: NOOP · Similarity ${sim}` + (saved > 0 ? ` · Saved ${(saved / 1024).toFixed(1)} KB` : ' · Zero Redundancy')
+    } else if (rawAction === 'update') {
+      deliverableText = isZh ? `门禁裁决: 增量演进 (UPDATE) · 向量相似度 ${sim} · 既有知识节点已版本升级` : `Gate: UPDATE · Similarity ${sim} · Node version updated`
+    }
+    return {
+      title: isZh ? '异步托管入库' : 'Valet Ingestion',
+      deliverableText,
+      expectedText: isZh ? '快速接管暂存、向量相似度探针与入库门禁裁决' : 'Fast handover, vector probe & gatekeeper admission',
+    }
+  }
+
+  // 13. 托管数据摄取 (Managed Ingestion)
+  if (type === 'managed_ingestion') {
+    const files = metaObj.file_count ?? resObj.file_count ?? 1
+    const chunks = resObj.processed_chunks ?? metaObj.processed_chunks ?? 1
+    return {
+      title: isZh ? '托管数据摄取' : 'Managed Ingestion',
+      deliverableText: isZh ? `摄取校验通过 · 解析 ${files} 个文件 · 生成 ${chunks} 个向量切片 · 成果已就绪` : `Validated · Parsed ${files} file(s) · Generated ${chunks} chunk(s) · Deliverable ready`,
+      expectedText: isZh ? '数据校验、文档解析与向量建库交付' : 'Data validation, document parsing & vector indexing',
+    }
+  }
+
+  // 14. 用户空间注销 (User Delete)
+  if (type === 'user_delete' || type === 'user_deletion') {
+    const vectors = resObj.deleted_vectors ?? metaObj.deleted_vectors ?? 0
+    const files = resObj.deleted_files ?? metaObj.deleted_files ?? 0
+    return {
+      title: isZh ? '用户空间注销' : 'User Space Purge',
+      deliverableText: isZh ? `空间软标已标记 · 抹除 ${vectors} 条向量切片 · 擦除 ${files} 个物理文件` : `Soft mark tagged · Purged ${vectors} vectors · Wiped ${files} files`,
+      expectedText: isZh ? '空间软标、向量注销与物理磁盘擦除' : 'Soft marking, vector purging & physical disk wiping',
+    }
+  }
+
   // 默认通用兜底：实事求是
   return {
     title: isZh ? '任务交付成果' : 'Task Deliverable',
-    deliverableText: isCompleted
-      ? (isZh ? '物理工序已全部执行完毕并校验入库' : 'All stages physically completed & verified')
-      : (isZh ? '正在按序流转执行' : 'Executing pipeline stages'),
+    deliverableText: isCompleted ? (isZh ? '物理工序已全部执行完毕并校验入库' : 'All stages physically completed & verified') : (isZh ? '正在按序流转执行' : 'Executing pipeline stages'),
     expectedText: isZh ? '物理计算与状态同步' : 'Physical computation & state sync',
   }
 }
