@@ -464,14 +464,14 @@ describe('task-pipeline RFC 治理与真实数据契约测试', () => {
     expect(tier4Outcome.deliverableText).toContain('58.4%')
   })
 
-  it('异步托管入库任务流水线与量化交付物测试', () => {
+  it('轻量增量入库任务流水线与量化交付物测试', () => {
     const valetTask: TaskRecord = {
       task_id: 'ticket_valet_test_01',
       task_type: 'valet_parking',
       status: 'completed',
       stage: 'completed',
       created_at: 1772800000,
-      meta: { human_title: '异步托管入库：测试节点' },
+      meta: { human_title: '轻量增量入库：测试节点' },
       result: {
         status: 'ok',
         action: 'add',

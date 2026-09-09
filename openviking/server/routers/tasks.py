@@ -86,7 +86,7 @@ async def get_dual_track_tasks(
             name = Path(vt.uri).name
             if name.endswith(".md"):
                 name = name[:-3]
-            title = f"📥 异步托管入库：{name}"
+            title = f"📥 轻量增量入库：{name}"
 
             business_jobs.append({
                 "task_id": vt.ticket_id,
