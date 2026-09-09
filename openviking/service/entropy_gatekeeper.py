@@ -186,21 +186,6 @@ class EntropyGatekeeper:
             self._record_decision(decision)
             return decision
 
-        # Stage 0.6: Anti-Scratch & Encoded Script Filter (DLQ Trap)
-        is_scratch_script = (
-            any(k in uri.lower() for k in ["_scratch_", "cmd_encoded", "_b64."])
-            or (stripped.startswith("CgAk") and len(stripped) > 100)
-        )
-        if is_scratch_script:
-            decision = GatekeeperDecision(
-                action="dlq",
-                similarity=0.0,
-                uri=uri,
-                reason="[DLQ 临时脚本阻断] 探测为临时自动化脚本或 Base64 编码批处理代码，物理阻断入库并隔离，保护向量空间纯净。",
-            )
-            self._record_decision(decision)
-            return decision
-
         # Stage 0.8: Fast-Path Exact Fingerprint Deduplication (0 Token / <0.1ms NOOP)
         content_hash = hashlib.sha256(stripped.encode("utf-8")).hexdigest()
         if content_hash in self._content_fingerprints:
