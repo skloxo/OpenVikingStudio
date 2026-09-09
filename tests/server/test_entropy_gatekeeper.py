@@ -153,3 +153,24 @@ async def test_gatekeeper_self_check_dedup_at_85(gatekeeper):
         assert decision.similarity == 0.8862
         assert "自检去重" in decision.reason or "noop" in decision.reason.lower()
 
+
+@pytest.mark.asyncio
+async def test_gatekeeper_blocks_scratch_and_encoded_scripts(gatekeeper):
+    """Temporary scratch scripts and Base64 encoded commands must be intercepted to DLQ."""
+    # Test 1: URI containing _scratch_
+    decision1 = await gatekeeper.evaluate_and_intercept(
+        uri="viking://resources/windows_work_干部宿舍_docs_scratch_cmd_encoded.md",
+        content="some powershell script content",
+    )
+    assert decision1.action == "dlq"
+    assert "临时脚本阻断" in decision1.reason
+
+    # Test 2: Content is Base64 encoded PowerShell blob
+    raw_b64 = "CgAkAGQAYQB0AGEARABpAHIAIAA9ACAAJwBjADoAXABVAHMAZQByAHMAXABTAGsAbABcAE8AbgBlAEQAcgBpAHYAZQAgAC0AIABzAGsAbABvAHgAbwBcAFcAbwByAGsAXABy"
+    decision2 = await gatekeeper.evaluate_and_intercept(
+        uri="viking://resources/some_script.md",
+        content=raw_b64,
+    )
+    assert decision2.action == "dlq"
+    assert "临时脚本阻断" in decision2.reason
+

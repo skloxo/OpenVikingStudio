@@ -70,8 +70,245 @@
 
 | 任务工单 ID | 模块与重构主题 | 现状与核心治理目标 | 目标规范硬线 | 优先级 | 计划版本 |
 | :--- | :--- | :--- | :---: | :---: | :---: |
+| **Card-Tasks-Stage1-AdmissionCheck** | **轻量增量入库车间去中二化与「准入判定」全链路工业级对齐** | 1. 切除中二黑话“门禁裁决”，全面更名为接地气自解释的“准入判定” (`Admission Check`)；<br>2. 后端开票消息、前端原子工序与规则规格定义统一收口；<br>3. 流水线交付物输出真实判定（独立新增 ADD、同义合并 NOOP、增量演进 UPDATE）；<br>4. 关联架构规范：[`OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md`](OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md)。 | Vitest 149 项单测全绿，Pytest 4 项全绿，Vite 构建 100% PASS，Git Tag v1.4.74 物理留痕 | `v1.4.74` | [x] 已验收通过 ✅ |
+| **Card-Tasks-Stage2.1-WatchdogRetire** | **熵增看门狗 5 题心跳风暴优雅下线与自动造伪任务解绑** | 1. 彻底切除 `entropy_watchdog.py` 写入后自动派发 5 道黄金提问造伪任务风暴；<br>2. 解除 `auto-qg` 污染 AGFS 任务队列与历史日志；<br>3. 关联规范：[`OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md`](OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md)。 | 写入知识零伪任务衍生，watchdog 优雅退役，单测全绿 | `v1.4.76` | [x] 已验收通过 ✅ |
+| **Card-Tasks-Stage2.2-PurgeSevenPseudo** | **任务中心大减法：清理前端 7 个未实现伪任务，精准收口 9 个经典基建 + 1 个轻量增量入库** | 1. 清理前端注册表中 7 个未落地伪任务类型（记忆流反思、分层内存与压缩等）；<br>2. 任务中心专注 9 个经典正规基建车间 + 1 个轻量增量入库；<br>3. 保持 7 大底层硬件算子引擎（LLM、Semantic 等）定义稳定完好；<br>4. 关联规范：[`OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md`](OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md)。 | 伪任务彻底清退，经典车间 100% 健壮，TypeScript 零错误，单测全绿 | `v1.4.77` | [x] 已验收通过 ✅ |
+| **Card-Tasks-Stage2.2-FollowupPatch** | **工序流契约对齐、任务统计车间白名单过滤与质量门禁去中二化快速热修复** | 1. 修复 `session_commit`, `admin_reindex`, `snapshot_restore_reindex` 工序 ID 与全景图定义的错位，恢复工序胶囊流转；<br>2. 修复 `task-api.ts` 任务队列大盘指标，增加 `ALL_TASK_TYPES` 白名单过滤，彻底消除历史遗留伪任务穿透；<br>3. 去中二化：将 `quality_gate` 翻译由“抗熵增质量门禁”收敛为“质量门禁”；<br>4. 关联规范：[`OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md`](OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md)。 | 10 大车间工序 100% 匹配，统计大盘纯净无伪任务，Vitest 150/150 全绿，生产构建通过 | `v1.4.78` | [x] 已验收通过 ✅ |
+| **Card-Gatekeeper-Pagination-v1.4.79** | **记忆治理流水真实分页与 30 天滚动生命周期落盘审计** | 1. 记忆治理流水大盘支持真实翻页 (每页 10 条)，消除海量流水导致的前端卡顿风险；<br>2. 修复跳过暂存直接写盘导致治理流水未登记的缺陷；<br>3. 30 天滚动修剪生命周期物理固化与单测对齐。 | Vitest 150 项单测通过，生产构建通过，浏览器翻页与状态持久化实测通过 | `v1.4.79` | [x] 已验收通过 ✅ |
+| **Card-Knowledge-3070-Clean** | **3070 临时草稿脚本杂质深度清洗、现场责任人正式入库与 Gatekeeper 脚本拦截网** | 1. 物理清洗 391 个 `_scratch_` 历史临时 Base64 脚本污染，彻底消灭搜索乱码根因；<br>2. 规范提纯入库富士康干部公寓现场运维责任人通讯录 (`cadre_apartment_staff_directory.md`)，耿晓光语义检索得分达 0.791 并精准置顶；<br>3. 在 `EntropyGatekeeper` 部署 Stage 0.6 脚本与编码阻断网，杜绝草稿脚本入库；<br>4. 修复 `ValetIngestionEngine` 存储路径偏差 bug 并补齐单测。 | 搜索“耿晓光”等词 100% 呈现专业名片，零乱码，pytest 8 项全绿，Vitest 150/150 全绿，生产构建通过 | `v1.4.80` | [x] 已验收通过 ✅ |
+| **Card-i18n-Modularization** | **超长 i18n 字典单文件解耦切分专项：将 zh-CN.ts 与 en.ts（各 2300 行）按业务领域拆解为 100~300 行黄金甜点区模块** | 1. 彻底解决 `zh-CN.ts` (2286 行) 与 `en.ts` (2296 行) 严重违背单文件 ≤500 行物理硬红线与注意力衰减痛点；<br>2. 按业务领域切分为独立模块：`common.ts`, `tasks.ts`, `retrieval.ts`, `sessions.ts`, `monitoring.ts`, `settings.ts`, `playground.ts`；<br>3. 在 `index.ts` 中结构化聚合导出，对外完全保持零破坏平滑兼容；<br>4. 严格双语平行对照维护，零硬编码，单测 100% 覆盖。关联规范：[`agent-friendly-code-org`](file:///home/skloxo/.gemini/config/skills/agent-friendly-code-org/SKILL.md)。 | 单文件全量收敛至 100~300 行黄金甜点区，无 >500 行巨石，i18n 零丢失，打包无缝 | 🔥 P1 优先 | `v1.4.81` |
+| **Card-Tasks-Stage2.3-QualityGateChain** | **工业级标准化：将「准入判定」与「质量门禁」工序标准化挂载至 add_resource 与 session_commit 流水线** | 1. 统一工序规范：让资源添加 (`add_resource`) 与会话归档 (`session_commit`) 显式串联「准入判定」与「质量门禁」；<br>2. 统一前后端工序拓扑与状态机流转；<br>3. 关联规范：[`OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md`](OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md)。 | 经典流水线显式对齐质检，端到端真实度量，单测与构建 PASS | 🔴 P1 待调度 | `v1.4.82` |
+| **Card-Entropy-02-Crystallizer** | **存量历史散落碎片三门并联结晶归纳器与物理减熵落盘（5~10 碎片熔铸为 1 晶体）** | 1. 与增量前门守门员相辅相成，专注【存量物理减熵】；<br>2. 三门并联触发（数量门 $\ge 5\sim 10$ 篇、密度门余弦均值 $> 0.72$、稳定门沉淀 $\ge 24\text{h}$）；<br>3. 三层解耦模型 (`crystal_node`)：L0 权威核心共识 + L1 不可变证据链 + L2 特例反例哨兵；<br>4. 物理减熵落盘与无损归档（生成 `crystals/{topic}.md`，旧碎片追加 `.archive` 移出活跃库，活跃向量节点物理净减少）；<br>5. 全生命周期【记忆治理流水】线索闭环（结晶事件原子化生成 `#cry_xxxx` 入库，支持抽屉展开追溯 8 篇原始碎片拓扑）。 | 三门触发准确，三层晶体落地，旧碎片物理归档，活跃节点净减少，单测与构建 100% PASS | 🟡 P2 进阶 | `v1.4.81` |
+| **Card-Ingestion-DualTrack** | **轻量增量入库任务建模、质量门禁统一工序插槽与快慢双轨算子引擎架构** | 1. 彻底消灭概念倒错，解耦 Task (轻量增量入库 `valet_parking`)、Step Slot (质量门禁 `step_quality_gate`)、Engine Driver (快慢双轨算子)；<br>2. ⚡快轨算子 (<10ms 本地 2080Ti 向量硬截断) 保障 Agent 写入零等待；<br>3. 🧠慢轨算子 (LLM 深度因果演进与版本熔铸) 驱动批量与疑难仲裁；<br>4. 任务全景、工序明细与中英双语 100% 规范对齐；<br>5. 肃清 AGFS TaskStore 中全部 9 个 demo 假任务文件。关联架构规范：[`OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md`](OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md) | 概念 100% 厘清，流水线规范一致，双轨无缝路由，单测全绿，demo 清理归零 | `v1.4.73` | [x] 已验收通过 ✅ |
+
+---
+
+### 📌 P0: [x] Card-Tasks-Stage1-AdmissionCheck (v1.4.74): 轻量增量入库车间去中二化与「准入判定」全链路工业级对齐 ✅
+- **类型**：Pipeline De-chuunibyou / Technical Terminology SSOT / End-to-End Alignment / UI Polish ｜ **优先级**：🔥 P0（已交付闭环）
+- **交付版本**：`v1.4.74` ｜ **交付时间**：2026-09-09
+- **Git Tag**: `v1.4.74` (Commit: `4b6dce584` feat + `e7f6771a9` release bump)
+- **关联架构白皮书**：[`OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md`](OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md)
+- **核心治理成果与交付细节**：
+  1. **去中二化：全面更名为接地气、自解释的“准入判定” (`Admission Check`)**：
+     - 彻底切除中二黑话“门禁裁决”，后端服务提示、前端工序定义、规格规则匹配、交付物卡片全面收拢为直观专业的“准入判定”；
+  2. **后端开票消息收敛与对齐**：
+     - `valet_ingestion.py` 中的 `ticket_msg` 更新为：“轻量增量入库已交接，准入判定与存储落盘处理中...”；
+  3. **流水线核心工序与规格对齐**：
+     - `panorama-steps-core.ts`：原子工序 `step_valet_decision` 名称统一收口为 `准入判定`，度量单位规范为 `判定`；
+     - `task-pipeline-specs-core.ts`：规则规格更新为真实业务判定标准；
+     - `task-pipeline-engine.ts`：工序详情与交付物输出卡片端到端透传真实判定结果（ADD 独立新增 / NOOP 同义合并 / UPDATE 增量演进）；
+  4. **双全自动化测试与构建 100% PASS 绿灯**：
+     - Vitest 30 套测试 149 项全绿；
+     - Pytest `tests/server/test_valet_ingestion.py` 4 项全绿；
+     - Vite 生产构建 0 报错通过；
+     - 线上 1933 端口实机重载，健康检查 `version="1.4.74"` 确认无误。
+- **修改文件清单**：
+  - `openviking/service/valet_ingestion.py`
+  - `src/routes/tasks/-lib/panorama-steps-core.ts`
+  - `src/routes/tasks/-lib/task-pipeline-specs-core.ts`
+  - `src/routes/tasks/-lib/task-pipeline-engine.ts`
+  - `src/routes/tasks/-lib/task-pipeline.test.ts`
+  - `tests/server/test_valet_ingestion.py`
+  - `package.json`
+  - `openviking/__init__.py`
+  - `openviking/_version.py`
+
+---
+
+### 📌 P0: [x] Card-Tasks-Stage2.1-WatchdogRetire (v1.4.76): 熵增看门狗 5 题心跳风暴优雅下线、增量排队生命周期规范化与单文件治理 (v1.4.76) ✅
+- **类型**：Task Storm Defense / Background Service Clean / Anti-Entropy SSOT / Single File Size Governance ｜ **优先级**：🔥 P0（已交付闭环）
+- **交付版本**：`v1.4.76` ｜ **交付时间**：2026-09-09
+- **Git Tag**: `v1.4.76`
+- **关联架构白皮书**：[`OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md`](OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md) ｜ [`agent-friendly-code-org`](file:///home/skloxo/.gemini/config/skills/agent-friendly-code-org/SKILL.md)
+- **核心治理成果与交付细节**：
+  1. **切除看门狗 5 题伪任务风暴 (Task Storm Defense)**：
+     - 彻底切除 `entropy_watchdog.py` 中在写入 5 秒防抖后自动跑 `GOLD_QUERIES` 5 题评测造伪任务（`auto-qg`）的逻辑；
+     - 彻底解绑自动派发逻辑，将看门狗的自动提问风暴优雅下线，归还系统纯净与 2080Ti 物理计算宁静；
+     - 保留显式手动 `trigger_cycle` 作为 Benchmark 评测能力，严禁后台未经授权自发衍生任务；
+  2. **轻量增量入库排队生命周期即时化规范 (Valet Ingestion Queue Standardization)**：
+     - 在 `valet_ingestion.py` 的 `handover()` 交接瞬间（<2ms），即刻调用 `_schedule_pending_registration` 向 `TaskTracker` 登记 `status=PENDING` 任务；
+     - 任务在排队等待消费期间，任务中心能够 100% 实时看到 `QUEUED` / `待前置交付` 状态，彻底消灭排队不可见盲区；
+     - 后台 Worker 取出执行时进入 `RUNNING` ➔ 判定与落盘 ➔ `COMPLETED`；
+  3. **严格遵行 `agent-friendly-code-org` 单文件规模安全红线**：
+     - 将原本 499 行（逼近 500 行物理硬红线）的 `entropy_watchdog.py` 瘦身重构至 **260 行**，完美落在 100~300 行黄金甜点区；
+     - `valet_ingestion.py` 保持在 345 行（领域核心服务规范 $\le 350$ 行）；
+  4. **自动化测试、构建与实机走查闭环**：
+     - 后端 Pytest 6 项单元测试 100% PASS（覆盖单例、极速交接、NOOP/ADD 快轨与看门狗静默验证）；
+     - 前端 Vitest 31 个测试套件（149 项测试）100% PASS；
+     - 生产构建 Vite build 100% PASS (18.53s)；
+     - 执行 `./scripts/release_1933.sh 1.4.76` 成功部署上线并通过 Browser Subagent 实机截图核验，`/health` 返回 `{"version":"1.4.76"}`。
+- **修改文件清单**：
+  - `OpenVikingStudio/openviking/service/entropy_watchdog.py` (499行 ➔ 260行)
+  - `OpenVikingStudio/openviking/service/valet_ingestion.py` (303行 ➔ 345行)
+  - `OpenVikingStudio/openviking/service/task_tracker.py`
+  - `OpenVikingStudio/tests/server/test_valet_ingestion.py`
+  - `OpenVikingStudio/package.json`
+  - `OpenVikingStudio/openviking/_version.py`
+  - `OpenVikingStudio/openviking/__init__.py`
+  - `project/REFACTORING_PLAN.md`
+
+---
+
+### 📌 P0: [x] Card-Tasks-Stage2.2-PurgeSevenPseudo (v1.4.77): 任务中心大减法：清理前端 7 个未实现伪任务，精准收口 9 个经典基建 + 1 个轻量增量入库 ✅
+- **类型**：Task Registry Clean / Domain Decoupling / Frontend Subtraction ｜ **优先级**：🔥 P0（已交付闭环）
+- **交付版本**：`v1.4.77` ｜ **交付时间**：2026-09-09
+- **Git Tag**: `v1.4.77` (Commit: `5ec4047de`)
+- **关联架构白皮书**：[`OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md`](OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md) ｜ [`standard-iteration-sop`](file:///home/skloxo/aho/openclaw/project/.agents/skills/standard-iteration-sop/SKILL.md)
+- **核心治理成果与交付细节**：
+  1. **彻底做任务中心“大减法”，清退 7 个理论伪任务**：
+     - 从前端任务注册表 `TASK_FLOWS`、过滤器 `TASK_TYPE_OPTIONS`、`TaskTypeFilter` 与 `task-pipeline-schema.ts` 中彻底清退：`memory_dream` (记忆流反思做梦)、`memory_compaction` (分层内存压缩淘汰)、`fact_mutation` (增量事实四态流转)、`entity_summarization` (时态图谱实体浓缩)、`four_tier_governance` (四层治理同主题合并)、`managed_ingestion` (已与轻量入库合并)、`knowledge_remediation` (看门狗自循环已退役)；
+     - 任务中心精准收口聚焦为 **10 个真实权威车间 (9 个经典正规基建 + 1 个轻量增量入库)**：
+       * `valet_parking` (轻量增量入库 - ⚡ 前台毫秒极速交接，唯一非阻塞入库车间)
+       * `add_resource` (资源处理)
+       * `session_commit` (会话提交)
+       * `add_skill` (技能导入)
+       * `connector_import` (连接器导入)
+       * `admin_reindex` (全局索引重建)
+       * `snapshot_restore_reindex` (快照恢复索引)
+       * `legacy_migration` (旧数据迁移)
+       * `legacy_cleanup` (旧数据清理)
+       * `user_delete` (空间注销)
+  2. **100% 严格保护前端 7 大算子引擎定义 (`ENGINE_DEFINITIONS`)**：
+     - 坚决保留 `AddResource`, `ExternalParse`, `Semantic`, `Semantic-Nodes`, `Embedding`, `SessionCommit`, `UserDeletion` 全部 7 大算子引擎，类型系统与全景图过滤器 100% 稳如磐石；
+  3. **成果推导器与工序大盘纯净对齐**：
+     - `task-outcome-resolver.ts` 全面升级支持 10 大真实车间的自解释输出，切除伪分支，代码瘦身至 226 行；
+     - `task-api.ts` 消除伪枚举，行数从 396 行压缩至 376 行，远离 400 行预警线；
+     - `pipeline-definitions.ts` 全景大盘 `ALL_PANORAMA_STEPS` 收敛至真实核心工序。
+  4. **严格执行全流程迭代六步闭环验证**：
+     - 前端单测：`npx vitest run src/` 31 个测试套件，150 项测试 100% PASS；
+     - 后端单测：`pytest tests/server/test_valet_ingestion.py` 6 项测试 100% PASS；
+     - 生产构建：`npm run build` (Vite 7.3.6) 18.30s 零错误打包；
+     - 原子发版：`bash scripts/release_1933.sh 1.4.77` 部署上线，`/health` 探针返回 `version: 1.4.77`；
+     - 浏览器实机截图走查核验通过 (`task_type_filter_verification_1788967443527.png`)；
+     - Git Tag `v1.4.77` 推送至远程仓库。
+- **修改文件清单**：
+  - `OpenVikingStudio/package.json`
+  - `OpenVikingStudio/openviking/__init__.py`
+  - `OpenVikingStudio/openviking/_version.py`
+  - `OpenVikingStudio/src/routes/tasks/-lib/pipeline-definitions.ts`
+  - `OpenVikingStudio/src/routes/tasks/-lib/task-api.ts`
+  - `OpenVikingStudio/src/routes/tasks/-lib/task-outcome-resolver.ts`
+  - `OpenVikingStudio/src/routes/tasks/-lib/task-pipeline-schema.ts`
+  - `OpenVikingStudio/src/routes/tasks/-lib/task-pipeline-governance.test.ts`
+
+---
+
+### 📌 P0: [x] Card-Tasks-Stage2.2-FollowupPatch (v1.4.78): 工序流契约对齐、任务统计车间白名单过滤与质量门禁去中二化快速热修复 ✅
+- **类型**：Contract Alignment / Filter Integrity / Terminology Normalization / Bugfix ｜ **优先级**：🔥 P0（已交付闭环）
+- **交付版本**：`v1.4.78` ｜ **交付时间**：2026-09-09
+- **Git Tag**: `v1.4.78` (Commit: `ca5b02fb5`)
+- **关联架构白皮书**：[`OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md`](OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md) ｜ [`standard-iteration-sop`](file:///home/skloxo/aho/openclaw/project/.agents/skills/standard-iteration-sop/SKILL.md)
+- **核心治理成果与交付细节**：
+  1. **会话提交与其他车间工序 ID 契约 100% 对齐**：
+     - `pipeline-definitions.ts` 中 `session_commit.stepIds` 修正为 `['step_serialization', 'step_distillation', 'step_persistence']`，彻底消除 ID 错配导致的工序流返回 `[]` 空白缺陷；
+     - 同步修复 `admin_reindex`（扫描、语义重构、向量重构）与 `snapshot_restore_reindex`（节点还原、增量向量）的工序 ID 契约；
+     - 自动化脚本断言验证：10 大车间工序 100% 匹配无一缺失。
+  2. **任务大盘指标安全白名单过滤**：
+     - `task-api.ts` 的 `calculateTaskMetricsSummary` 增加 `ALL_TASK_TYPES.includes(item.task_type)` 白名单约束，彻底切除历史遗留伪任务（如数据库残存的 `quality_gate` 等）对任务队列状态卡片的脏数据穿透。
+  3. **质量门禁翻译去中二化**：
+     - `zh-CN.ts` 中将 `quality_gate: '抗熵增质量门禁'` 规范收敛为 `quality_gate: '质量门禁'`（英文 `Quality Gate`），消灭浮夸非专业名词。
+  4. **严格执行全流程闭环验证**：
+     - 前端单测：Vitest 31 套测试，150/150 项 100% PASS；
+     - 生产构建：`npm run build` 18.48s 零打包错误；
+     - 1933 生产发版热重启与健康探针通过 (`version: 1.4.78`)；
+     - Git Commit `ca5b02fb5`，Tag `v1.4.78` 已推送到远程。
+- **修改文件清单**：
+  - `OpenVikingStudio/package.json`
+  - `OpenVikingStudio/openviking/__init__.py`
+  - `OpenVikingStudio/openviking/_version.py`
+  - `OpenVikingStudio/src/i18n/locales/zh-CN.ts`
+  - `OpenVikingStudio/src/routes/tasks/-lib/pipeline-definitions.ts`
+  - `OpenVikingStudio/src/routes/tasks/-lib/task-api.ts`
+
+---
+
+### 📌 P0: [x] Card-Gatekeeper-Pagination-v1.4.79 (v1.4.79): 记忆治理流水真实分页、30天生命周期落盘与暂存穿透修复 ✅
+- **类型**：Pagination / Data Retention / Lifecycle Audit / Bugfix ｜ **优先级**：🔥 P0（已交付闭环）
+- **交付版本**：`v1.4.79` ｜ **交付时间**：2026-09-09
+- **Git Tag**: `v1.4.79` (Commit: `8c4a04252`)
+- **核心治理成果与交付细节**：
+  1. **记忆治理流水真实分页机制**：
+     - 在 `gatekeeper-audit-stream.tsx` 实现每页 10 条高密紧凑翻页组件；
+     - 彻底消除海量流水导致的前端 DOM 膨胀与渲染卡顿风险；
+  2. **修复跳过暂存直接写盘导致流水漏记缺陷**：
+     - 在 `entropy_gatekeeper.py` 的直接写盘路径补齐流水记录生成与落盘；
+  3. **30天生命周期修剪与单测对齐**：
+     - 确保 `_prune_expired_locked` 物理修剪过期数据，保证 SQLite/JSONL 纯净；
+     - Vitest 150/150 全绿，生产构建 100% PASS。
+- **修改文件清单**：
+  - `OpenVikingStudio/package.json`
+  - `OpenVikingStudio/openviking/__init__.py`
+  - `OpenVikingStudio/openviking/_version.py`
+  - `OpenVikingStudio/openviking/service/entropy_gatekeeper.py`
+  - `OpenVikingStudio/src/routes/retrieval/-components/gatekeeper-audit-stream.tsx`
+
+---
+
+### 📌 P0: [x] Card-Knowledge-3070-Clean (v1.4.80): 3070 临时草稿脚本杂质深度清洗、现场责任人正式入库与 Gatekeeper 脚本拦截网 ✅
+- **类型**：Data Integrity / Knowledge Curation / Entropy Gatekeeper Defense / Bugfix ｜ **优先级**：🔥 P0（已交付闭环）
+- **交付版本**：`v1.4.80` ｜ **交付时间**：2026-09-10
+- **Git Tag**: `v1.4.80`
+- **核心治理成果与交付细节**：
+  1. **清洗 391 个历史临时草稿脚本脏资源**：
+     - 查明历史 3070 自动化时误入库的 391 个 `_scratch_` 脚本（内含 Base64 编码 PowerShell 命令）；
+     - 研发高并发物理清理脚本 `scripts/purge_scratch_resources.py`，彻底删除 391 个脏目录及其向量索引；
+  2. **提纯并正式入库现场运维责任人名片**：
+     - 将耿晓光 (F3207697, 560-89104, 世纪华庭现场主管)、熊杰、张大平、王维德、申凯龙、唐喜妹等核心责任人规范提纯为 `viking://resources/master_memory/contacts/cadre_apartment_staff_directory.md`；
+     - 语义索引后实测 `openviking_find(query='耿晓光')`，Top 1 命中该名片，语义相关度高达 **0.791**，乱码彻底消失；
+  3. **在 EntropyGatekeeper 筑牢 Stage 0.6 脚本与编码阻断网**：
+     - 增加抗临时脚本与 Base64 杂质正则拦截，发现 `_scratch_` 或 Base64 命令块立即驳回至 DLQ，防范再次污染；
+  4. **修复 ValetIngestion 存储路径偏差**：
+     - 修正 `valet_ingestion.py` 中 `_resolve_uri_to_path` 存储根目录至规范 VikingFS 路径；
+  5. **双轨测试与构建全绿**：
+     - pytest 8/8 全绿，Vitest 150/150 全绿，生产打包 `npm run build` 19.16s 零错误。
+- **修改文件清单**：
+  - `OpenVikingStudio/package.json`
+  - `OpenVikingStudio/openviking/__init__.py`
+  - `OpenVikingStudio/openviking/_version.py`
+  - `OpenVikingStudio/openviking/service/entropy_gatekeeper.py`
+  - `OpenVikingStudio/openviking/service/valet_ingestion.py`
+  - `OpenVikingStudio/tests/server/test_entropy_gatekeeper.py`
+  - `OpenVikingStudio/scripts/purge_scratch_resources.py`
+
+---
+
+### 📌 P1: [ ] Card-i18n-Modularization (v1.4.81): 超长 i18n 字典单文件解耦切分：将 zh-CN.ts 与 en.ts（各 2300 行）按业务领域拆解为 100~300 行黄金甜点区模块 ⏳
+- **类型**：Codebase Architecture / File Size Governance / i18n Refactoring ｜ **优先级**：🔥 P1 优先
+- **计划版本**：`v1.4.81`
+- **关联规范**：[`agent-friendly-code-org`](file:///home/skloxo/.gemini/config/skills/agent-friendly-code-org/SKILL.md) (单文件 ≤500 行物理硬红线，100~300 行黄金甜点区)
+- **核心治理设计与规划要点**：
+  1. **彻底解决 2,300 行单文件巨石痛点**：
+     - 当前 `src/i18n/locales/zh-CN.ts` (2,286 行) 和 `src/i18n/locales/en.ts` (2,296 行) 严重超标，造成编辑行号漂移与大文件扫描开销；
+  2. **按业务领域与路由切分子模块**：
+     - `src/i18n/locales/zh-CN/common.ts` (~200 行)
+     - `src/i18n/locales/zh-CN/tasks.ts` (~250 行)
+     - `src/i18n/locales/zh-CN/retrieval.ts` (~200 行)
+     - `src/i18n/locales/zh-CN/sessions.ts` (~200 行)
+     - `src/i18n/locales/zh-CN/monitoring.ts` (~200 行)
+     - `src/i18n/locales/zh-CN/settings.ts` (~150 行)
+     - `src/i18n/locales/zh-CN/playground.ts` (~150 行)
+     - `src/i18n/locales/en/` 严格镜像解耦；
+  3. **平滑聚合与零破坏兼容**：
+     - 在 `src/i18n/locales/zh-CN/index.ts` 中聚合导出，对外调用契约保持 100% 不变；
+  4. **双轨单测验证与即时构建**。
+
+---
+
+### 📌 P1: [ ] Card-Tasks-Stage2.3-QualityGateChain (v1.4.80): 工业级标准化：将「准入判定」与「质量门禁」工序标准化挂载至 add_resource 与 session_commit 流水线 ⏳
+- **类型**：Pipeline Standardization / Quality Gate Slot / Full Lifecycle Audit ｜ **优先级**：🔴 P1（待调度）
+- **计划版本**：`v1.4.80`
+- **关联架构白皮书**：[`OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md`](OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md)
+- **核心治理目标与场景**：
+  1. **将质量把关显式挂载到资源处理车间**：
+     - `add_resource` 经典流水线增加「准入判定」/「质量门禁」工序插槽；
+  2. **将质量把关显式挂载到会话归档车间**：
+     - `session_commit` 增加提纯与门禁工序插槽；
+  3. **端到端流水线可视化打通**：
+     - 前端流水线全景图清晰呈现真实流转状态。
+
+---
 | **Card-Tasks-i18n-Pipeline** | **异步托管入库/托管摄取/空间注销全链路工序补齐、任务统计中英双语 i18n 统一治理与工序详情高密真实数据度量** | 1. 补齐 `valet_parking`, `managed_ingestion`, `user_delete` 等缺失工序定义与真实流转；<br>2. 修复任务统计“任务类型”与“工序流”空白缺陷，彻底消灭未国际化生词与硬编码；<br>3. 修复 Valet 任务在 TaskTracker 中的持久化缺陷，让任务中心实时可见；<br>4. 工序详情抽屉端到端落地物理真实度量（接管暂存、相似度、裁决、落盘）；<br>5. 严格遵守信达雅、NO GREEN EVER、<=500行红线与 i18n 契约。 | 任务统计 100% 呈现工序，中英双语平行无缺失，工序详情真实度量，单测 17/17 PASS | `v1.4.72` | [x] 已验收通过 ✅ |
-| **Card-Ingestion-01** | **异步托管入库流水线、底座围栏全面封堵与任务中心控制面/信息治理数据面深度闭环** | 落实前台极速交接 (<2ms)、底座单点围栏封死 (ContentWriteCoordinator 唯一收口)、100% 依托 TaskTracker 原生轮子（防冲垮、断电自愈、一键重试）、四阶裁决漏斗 (11432 EMB + 11433 Reranker + LLMLingua-2 熔断直通 + LLM 终审) 与四态分流沉淀治理日志。关联规范：[`docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md`](docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md) | 0 翻墙后门，<2ms 返回，任务中心原生驱动，单测 100% PASS | `v1.4.70` | [x] 已验收通过 ✅ |
+| **Card-Ingestion-01** | **异步托管入库流水线、底座围栏全面封堵与任务中心控制面/信息治理数据面深度闭环** | 落实前台极速交接 (<2ms)、底座单点围栏封死 (ContentWriteCoordinator 唯一收口)、100% 依托 TaskTracker 原生轮子（防冲垮、断电自愈、一键重试）、四阶裁决漏斗 (11432 EMB + 11433 Reranker + LLMLingua-2 熔断直通 + LLM 终审) 与四态分流沉淀治理日志。关联规范：[`OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md`](OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md) | 0 翻墙后门，<2ms 返回，任务中心原生驱动，单测 100% PASS | `v1.4.70` | [x] 已验收通过 ✅ |
 | **Card-LLMLingua-01** | **微软开源顶级轮子 LLMLingua-2 (xlm-roberta) 2080Ti GPU 实机部署与保真度无损调优评测专项** | 针对微软脱水轮子开展专项落地：装入 2080Ti GPU 富余 9GB 显存 (占 1.1G)，在实机中文语料、代码块与 YAML 头部下调优超参数 (rate=0.50, threshold=0.35)，实测验证 100% 毫无语义损失后正式无缝激活流水线脱水插件 | 2080Ti GPU 加速 <15ms，语义损失率 0%，测试全绿 | 🟡 P2 进阶 | `v1.4.71` |
 | **Card-Remediation-DLQ** | **自愈死信队列 (DLQ)、指数退避熔断器与快照可逆回滚防线** | 解决自愈死循环 (Remediation Storm) 与蒸馏误伤不可逆问题；设置最大重试预算 (max_retries=2)、死信队列 (DLQ)、VikingFS.commit 快照与影子索引双缓冲 | 严格阻断无限递归，快照可原子回滚 | 🔴 P1 极高 | `v1.4.62` |
 | **Card-Retrieval-Optimize** | **检索质量突破 90+ 专项：LLMLingua-2 结构脱水、意图重写与混合多路召回 (Hybrid RRF)** | 解决指标未达满分瓶颈；引入微软 LLMLingua-2 结构感知脱水 (率0.50/阈0.35/代码块保护) 提升纯净度至 95%+；BM25+HNSW 互惠排序融合 (RRF) 提升 RAGAS 指数至 0.920+；L0 语义快照缓存压缩耗时至 <8ms | RAGAS >= 0.900，纯净度 >= 95%，耗时 < 10ms | 🟡 P2 进阶 | `v1.4.63` |
@@ -79,6 +316,95 @@
 | **Card-Memory-Tiering** | **降维打击·三层记忆动态冷热分层体系 (Hot/Warm/Cold Tiering) 与时效动力学衰减** | 借鉴家庭基线与 Stanford 智能体公式；落地 Hot (1,000条高频) / Warm (5,000条温记忆) / Cold (冷存归档排除索引)；配合艾宾浩斯衰减与多因子公式，保证检索永远 O(1) 常数级 | 向量空间轻量常数级，时延不随时间劣化 | ⏸️ 择机迭代 | `v1.5.1` |
 | **Card-Remediation-Bypass** | **奥卡姆裁决·自愈流水线快慢双轨机制 (Fast-Path Bypass vs Deep ov_dream 蒸馏)** | 贯彻奥卡姆剃刀“如无必要勿增实体”；自愈工序引入轻量快轨（纯元数据/软墓碑失效，0 Token 毫秒自愈）与慢轨（夜间低峰调度 35B 执行同主题深度归纳提纯），禁止凡事调大模型 | 简单问题 0 Token，复杂问题深度蒸馏 | ⏸️ 择机迭代 | `v1.5.2` |
 | **Card-Retrieval-AdvancedCards** | **检索大屏第二排高阶运营看板扩展 (Advanced Operational Telemetry)** | 为检索中心拓展第二排运营级数据卡片：冷热层分布率 (Hot/Warm/Cold)、L0 语义缓存命中率、知识信噪比与冲突率 (SNR & Conflict Rate)、混合召回协同度 | 全面透传向量空间内部健康度与熵态 | ⏸️ 择机迭代 | `v1.5.3` |
+
+---
+
+### 📌 P0: [x] Card-Tasks-v1.4.75: 记忆治理流水去魅统一、单文件安全红线治理与黄金甜点区重构 (v1.4.75) ✅
+- **类型**：Ubiquitous Language / Agent-Friendly Code Org / File Size Governance / Release Pipeline ｜ **优先级**：🔥 P0（已交付闭环）
+- **交付版本**：`v1.4.75` ｜ **交付时间**：2026-09-09
+- **Git Tag**: `v1.4.75` (Commit: `70adb0225`)
+- **关联架构白皮书**：[`OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md`](OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md) ｜ [`agent-friendly-code-org`](file:///home/skloxo/.gemini/config/skills/agent-friendly-code-org/SKILL.md)
+- **核心治理成果与交付细节**：
+  1. **信息治理模块命名去魅与统一 (Ubiquitous Language)**：
+     - 彻底废除带有中二色彩的“裁决流水”，统一收敛为工业级自解释专有名词 **`记忆治理流水`** (`Memory Governance Stream`)；
+     - 同步对齐中英文语言包：`准入判定自解释` (`Admission Check Explanation`)、`判定依据` (`Basis`)、`判定动作` (`Action`)，搜索占位符更新为 `过滤流水号 / URI / 判定依据...`，零硬编码遗留。
+  2. **严格践行 `agent-friendly-code-org` 单文件规模安全红线治理**：
+     - 针对 5 个逼近或突破 400 行预警线的违规文件实施领域接缝 (Seam) 拆解：
+       * `queue-status-card.tsx` (431行 ➔ 113行，拆出 `queue-row-item.tsx` 282行与 `queue-parser.ts` 38行)；
+       * `task-pipeline-engine.ts` (492行 ➔ 247行，拆出 `task-outcome-resolver.ts` 261行)；
+       * `task-pipeline.test.ts` (495行 ➔ 311行，拆出 `task-pipeline-governance.test.ts` 184行)；
+       * `panorama-steps-core.ts` (471行 ➔ 10行，拆出 `panorama-steps-infra.ts` 318行与 `panorama-steps-governance.ts` 142行)；
+       * `entropy_gatekeeper.py` (430行 ➔ 325行，拆出 `gatekeeper_prober.py` 121行)；
+     - 全量代码 100% 收敛至 **10 ~ 325 行黄金甜点区**，彻底清零违规技术债务。
+  3. **自动化测试与实机走查闭环**：
+     - 前端 Vitest 31 个测试套件（149 项测试）100% PASS；
+     - 后端 Pytest 4 项单元测试 100% PASS；
+     - 微软 Vite 生产构建 100% PASS (19.07s)；
+     - 10 场景实机端到端全矩阵测试 100% PASS；
+     - 执行 `./scripts/release_1933.sh 1.4.75` 成功部署上线并通过 Browser Subagent 实机截图核验。
+- **修改文件清单**：
+  - `OpenVikingStudio/package.json`
+  - `OpenVikingStudio/openviking/__init__.py`
+  - `OpenVikingStudio/openviking/_version.py`
+  - `OpenVikingStudio/openviking/service/entropy_gatekeeper.py`
+  - `OpenVikingStudio/openviking/service/gatekeeper_prober.py`
+  - `OpenVikingStudio/src/i18n/locales/zh-CN.ts`
+  - `OpenVikingStudio/src/i18n/locales/en.ts`
+  - `OpenVikingStudio/src/routes/monitoring/-components/queue-status-card.tsx`
+  - `OpenVikingStudio/src/routes/monitoring/-components/queue-row-item.tsx`
+  - `OpenVikingStudio/src/routes/monitoring/-lib/queue-parser.ts`
+  - `OpenVikingStudio/src/routes/retrieval/route.tsx`
+  - `OpenVikingStudio/src/routes/tasks/-lib/panorama-steps-core.ts`
+  - `OpenVikingStudio/src/routes/tasks/-lib/panorama-steps-infra.ts`
+  - `OpenVikingStudio/src/routes/tasks/-lib/panorama-steps-governance.ts`
+  - `OpenVikingStudio/src/routes/tasks/-lib/task-pipeline-engine.ts`
+  - `OpenVikingStudio/src/routes/tasks/-lib/task-outcome-resolver.ts`
+  - `OpenVikingStudio/src/routes/tasks/-lib/task-pipeline.test.ts`
+  - `OpenVikingStudio/src/routes/tasks/-lib/task-pipeline-governance.test.ts`
+
+---
+
+### 📌 P0: [x] Card-Ingestion-DualTrack (v1.4.73): 轻量增量入库任务建模、质量门禁统一工序插槽与快慢双轨算子引擎架构 ✅
+- **类型**：Domain Modeling / Quality Gate Slot / Dual-Track Operators / Demo Purge / UI Polish ｜ **优先级**：🔥 P0（已交付闭环）
+- **交付版本**：`v1.4.73` ｜ **交付时间**：2026-09-09
+- **Git Tag**: `v1.4.73` (Commit: `1992e8a1d`)
+- **关联架构白皮书**：[`OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md`](OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md)
+- **核心治理成果与交付细节**：
+  1. **领域三层清晰解耦 (Domain Decoupling)**：
+     - **任务层 (Task Level)**：正式收敛确立 **`轻量增量入库`** (`valet_parking` / `Lightweight Ingestion` / `Incremental Ingestion`) 为独立顶层任务，承接 Agent 交互与前台写入的极速非阻塞交接 (<2ms)；
+     - **工序层 (Pipeline Step Slot)**：统一收敛质检概念为 **`质量门禁`** (`step_quality_gate` / `Quality Gate Step`)，作为全系统通用的标准化流水线工序插槽；
+     - **算子引擎层 (Operator Engine Driver)**：质检执行逻辑完全解耦为背后的具体动力马达，不再将质检当成一个僵化的顶层任务。
+  2. **快慢双轨算子引擎架构 (Dual-Track Operators)**：
+     - **⚡ 快轨算子 (Fast Track)**：耗时 `< 10ms`，由本地 2080Ti GPU / Hash 指纹 + 向量余弦硬阈值 ($Sim \ge 0.95$ 截断) 驱动，专为轻量增量入库提供零感知极速过滤，秒杀 99% 冗余复读；
+     - **🧠 慢轨算子 (Slow Track)**：耗时 `300ms ~ 3s`，由大模型 (CPA / 本地 35B) 裁判官驱动，处理大文件入库、批量托管摄取、会话记忆沉淀以及灰度冲突区 ($0.88 \le Sim < 0.95$) 深度因果版本演进 (`Superseding DAG`) 与差量熔铸。
+  3. **demo 假数据与脏任务物理大扫除 (Zero Demo Data)**：
+     - 彻底清空 AGFS TaskStore (`~/.openviking/data/viking/default/_system/tasks/default/`) 下残留的全部 9 个 `demo-*` 历史伪造文件 (`demo-02` ~ `demo-08` 及归档目录)；
+     - `/api/v1/tasks` 接口与 UI 表格 `demo-*` 计数严格归零。
+  4. **中英双语 i18n 与全景图工序 100% 对齐**：
+     - 在 `zh-CN.ts`、`en.ts`、`pipeline-definitions.ts`、`task-pipeline-engine.ts`、`valet_ingestion.py`、`tasks.py` 全链路同步统一命名为 `轻量增量入库` 与 `Lightweight Ingestion`；
+     - 工序流保持四道原子工序：`快速接管` ➔ `向量探针` ➔ `门禁裁决` ➔ `存储落盘`。
+  5. **不同思维多维全息测试与验证结果**：
+     - **API 数据真实验证**：查询 `/api/v1/tasks`，demo 任务数物理断言为 0；
+     - **前端单元测试**：`npx vitest run src/` 30 套测试 149 项用例 100% 全绿 PASS；
+     - **后端测试**：`pytest tests/server/test_valet_ingestion.py tests/server/test_managed_ingestion_pipeline.py` 100% 全绿 PASS；
+     - **端到端真机写入**：发起 `POST /api/v1/content/write?valet=true`，前台 38.78ms 极速交接，后台生成真实 `ticket_valet_f26f2cf9`，自动流转门禁裁决 (ADD, Sim 0.4944) 并存储落盘；
+     - **线上生产探针**：`curl http://127.0.0.1:1933/health` 物理断言返回 `version="1.4.73"`；
+     - **浏览器 UI 实景核验**：通过 Browser Subagent 访问 `http://127.0.0.1:1933/studio/tasks`，表头、筛选器、工序全景图均一致渲染 `轻量增量入库`，右上角版本徽章更新为 `v1.4.73`，无任何假数据。
+- **修改文件清单**：
+  - `OpenVikingStudio/package.json`
+  - `OpenVikingStudio/openviking/__init__.py`
+  - `OpenVikingStudio/openviking/_version.py`
+  - `OpenVikingStudio/openviking/server/routers/tasks.py`
+  - `OpenVikingStudio/openviking/service/valet_ingestion.py`
+  - `OpenVikingStudio/src/i18n/locales/en.ts`
+  - `OpenVikingStudio/src/i18n/locales/zh-CN.ts`
+  - `OpenVikingStudio/src/routes/tasks/-components/business-jobs-view.tsx`
+  - `OpenVikingStudio/src/routes/tasks/-lib/pipeline-definitions.ts`
+  - `OpenVikingStudio/src/routes/tasks/-lib/task-pipeline-engine.ts`
+  - `OpenVikingStudio/src/routes/tasks/-lib/task-pipeline.test.ts`
+  - `OpenVikingStudio/tests/server/test_valet_ingestion.py`
+  - `OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md`
+  - `scripts/release_1933.sh`
 
 ---
 
@@ -263,6 +589,43 @@
   - API 测试：5 大任务端点全绿返回成功；
   - 检索实测：5 大 Gold Query 评分均达标，门禁自愈闭环；
   - 前端编译：`npm run build` 16.87s PASS，无类型或打包错误。
+
+### 📌 P2: [ ] Card-Entropy-02-Crystallizer (v1.4.74): 存量历史散落碎片三门并联结晶归纳器与物理减熵落盘（5~10 碎片熔铸为 1 晶体）
+- **类型**：Topic Crystallizer / Physical Node Reduction / crystal_node / Lossless Archival / Unified Ingestion Fence ｜ **优先级**：🟡 P2（进阶·存量物理减熵·消灭同义碎片淹没）
+- **计划版本**：`v1.4.74`
+- **核心定位与战略定调**：
+  - **增量防守 vs 存量进攻**：
+    - **前门守门员（Gatekeeper / 轻量增量入库 Valet Ingestion）**：解决的是**增量不增熵（守好大门，不准新垃圾进库）**；
+    - **结晶归纳器（Topic Crystallizer）**：解决的是**存量物理减熵（主动出击，熔铸已有散落碎片）**。针对历史已入库、四处散落的 5~10 条同质碎片、相似会话总结与微小踩坑，进行高密度熔铸升维；
+  - **全封闭停车场配套（Unified Storage Ingestion Guard）**：
+    - 落实“把整个存储库围起来，消灭侧门”与“极速交接异步分流”指示，将 Gatekeeper 探针从单纯的高层接口下沉到统一存储底座，彻底封死 WebDAV、直接文件系统上传与内部会话归档的侧门漏洞。
+- **三门并联触发机制 (Three Parallel Gates)**：
+  1. **门一【数量簇门 (Cluster Size Gate)】**：同一微语义主题簇内，积累的历史散落碎片数量达到 $\ge 5$ 篇（典型区间为 5~10 条）；
+  2. **门二【相似密度门 (Density Gate)】**：簇内碎片两两余弦相似度均值 $> 0.72$，表明存在严重的内容重复与同质化陈述；
+  3. **门三【沉淀稳定门 (Age & Stability Gate)】**：最近 24 小时内未发生高频写操作或激烈更正，知识已趋于稳定，适合升华结晶。
+- **智能熔铸与高密度结晶模型 (`crystal_node`)**：
+  1. **算力派工**：调度 CPA 98 分极速工兵（`dots3-note-prev`）或本地 `codestral`（8317 端口）在后台异步执行，0 消耗自身配额；
+  2. **三层金字塔解耦熔铸 (`crystal_node`)**：
+     - **L0 权威核心共识 (`hypothesis`)**：1~2 句高度浓缩的 SSOT 结论，作为日常检索的首选一级入口；
+     - **L1 不可变证据链 (`evidence_links`)**：保留原始 5~10 条碎片的只读不可变引用与演进脉络，保障 100% 原始细节无损可回溯；
+     - **L2 特例与反例边界哨兵 (`outliers`)**：显式保留少数派、异常边界工况与历史踩坑特例，严防过度泛化平滑导致知识遗忘。
+- **物理减熵落盘与无损归档机制**：
+  1. **结晶落地**：生成的结晶标准文档写入 `viking://resources/master_memory/crystals/{topic}.md` 并建立高权重向量索引；
+  2. **旧碎片物理归档**：将原始 5~10 篇碎片重命名添加 `.archive` 后缀并移出日常活跃检索集合，触发增量向量重索引；
+  3. **量化减熵成果**：库内有效活跃索引节点数**物理净减少**（从 5~10 个碎片净收敛为 1 个高阶晶体），Top-5 检索纯净度提升 40% 以上，彻底消除同义废话淹没；
+  4. **全生命周期【记忆治理流水】线索闭环**：
+     - 结晶熔炼事件原子化沉淀至【记忆治理流水】（生成 `#cry_xxxx` 流水号，记录 `CRYSTAL` 熔铸与 `ARCHIVE` 碎片归档动作）；
+     - 在 Studio 检索与治理大屏中与前门增量准入流水一同呈现，支持点击直接呼出三元晶体解剖抽屉 (Crystal Node Inspector)，直观呈现“1 个晶体 ➔ 展开追溯 8 篇原始碎片”的全景拓扑与归档脉络；
+     - 关联架构规范：[`OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md`](OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md)。
+- **涉及修改文件清单（代码预估 110~140 行）**：
+  - `openviking/service/entropy_strategies.py` (彻底切除 mock 估算，落地真实 `TopicCrystallizer` 提纯逻辑)
+  - `openviking/service/entropy_watchdog.py` (挂载三门并联触发扫描器)
+  - `openviking/service/entropy_gatekeeper.py` (下沉统一接入层，封死 WebDAV / FS 侧门)
+  - `OpenVikingStudio/src/routes/retrieval/-components/crystal-drawer.tsx` (晶体展开溯源抽屉)
+- **物理验收与测试条件**：
+  - 构造 8 篇同主题高相似历史碎片注入库中，触发结晶归纳器；
+  - 断言成功生成标准 `crystal_node`，8 篇原始碎片状态变为归档并移出活跃检索集；
+  - 活跃索引节点数净减少 7 个，针对该主题的检索 100% 命中新结晶文档，得分提升 $\ge 0.15$。
 
 ### 📌 P3: [ ] Card-AntiEntropy-Gate (v1.5.0): 治未病·前门入库守门门禁与软标记演进链 (Superseding DAG)
 - **类型**：Ingestion Gatekeeper / Version Lineage / Zero-Token Anti-Entropy ｜ **优先级**：⏸️ 择机迭代（治未病哲学）
@@ -1733,6 +2096,22 @@
 ---
 
 ## 🏆 四、 最近已交付版本履历 (Delivered Release Ledger)
+
+### [x] v1.4.74 版本已验收通过 🎉
+- **Git Commit**: `4b6dce584` (feat), `e7f6771a9` (release)
+- **Git Tag**: `v1.4.74`
+- **交付内容**：
+  1. **全链路去中二化，收敛统一为「准入判定」(`Admission Check`)**：彻底切除“门禁裁决”等中二词汇，后端开票、前端原子工序与规则规格定义一致收口；
+  2. **端到端交付物卡片与明细真实度量**：交付物卡片与详情抽屉真实透传判定结论（ADD 独立新增 / NOOP 同义合并 / UPDATE 增量演进）；
+  3. **双全测试与线上健康检查 100% 绿灯**：Vitest 149 项、Pytest 4 项全绿，Vite 构建 0 报错，1933 端口实机验证通过。
+
+### [x] v1.4.73 版本已验收通过 🎉
+- **Git Commit**: `1992e8a1d`
+- **Git Tag**: `v1.4.73`
+- **交付内容**：
+  1. **轻量增量入库领域建模与快慢双轨算子解耦**：确立轻量增量入库为独立车间，质量门禁为标准化工序插槽，快轨算子 (<10ms 本地 2080Ti) 与慢轨算子 (LLM 深度因果演进) 解耦驱动；
+  2. **肃清 AGFS TaskStore 中 9 个 demo 伪任务文件**：demo 任务计数严格归零；
+  3. **双语 i18n 与全景图工序 100% 对齐**：中英文双语平行无缺失。
 
 ### [x] v1.3.2 补丁版本已通过单测验证 (待验收) 🚀
 - **Git Commit**: `6dd325b2` (openviking-shallow), `33e9c0f` (OpenVikingStudio)
