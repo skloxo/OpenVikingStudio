@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
-import { ActivityIcon, FileSearchIcon, SearchIcon, CopyIcon, CheckIcon } from 'lucide-react'
+import { ActivityIcon, FileSearchIcon, SearchIcon, CopyIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 
 import { Card } from '#/components/ui/card'
 import { Badge } from '#/components/ui/badge'
@@ -46,6 +46,9 @@ export function GatekeeperAuditStream() {
     setTimeout(() => setCopiedId(null), 2000)
   }
 
+  const [currentPage, setCurrentPage] = React.useState(1)
+  const PAGE_SIZE = 10
+
   const filteredHistory = React.useMemo(() => {
     const kw = searchKeyword.trim().toLowerCase()
     return history.slice().reverse().filter((rec) => {
@@ -64,6 +67,16 @@ export function GatekeeperAuditStream() {
       return true
     })
   }, [history, actionFilter, searchKeyword])
+
+  React.useEffect(() => {
+    setCurrentPage(1)
+  }, [actionFilter, searchKeyword])
+
+  const totalPages = Math.max(1, Math.ceil(filteredHistory.length / PAGE_SIZE))
+  const paginatedHistory = React.useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE
+    return filteredHistory.slice(start, start + PAGE_SIZE)
+  }, [filteredHistory, currentPage])
 
   const formatTime = (timestamp?: number) => {
     if (!timestamp) return '--:--:--'
@@ -189,7 +202,7 @@ export function GatekeeperAuditStream() {
 
             {/* 数据体 */}
             <div className="flex flex-col divide-y divide-border/40 max-h-85 overflow-y-auto">
-              {filteredHistory.map((rec, idx) => {
+              {paginatedHistory.map((rec: GatekeeperDecisionRecord, idx: number) => {
                 const targetUri = rec.uri || rec.matched_uri || '--'
                 const recId = rec.id || `dec_${(rec.timestamp ? Math.floor(rec.timestamp * 1000) : idx).toString(16).slice(-6)}`
                 return (
@@ -275,6 +288,44 @@ export function GatekeeperAuditStream() {
                 )
               })}
             </div>
+
+            {/* 分页控制栏 */}
+            {filteredHistory.length > 0 && (
+              <div className="flex items-center justify-between border-t border-border/50 bg-muted/20 px-3 py-1.5 text-[11px] text-muted-foreground">
+                <span className="font-mono">
+                  {t('gatekeeper.paginationSummary', {
+                    count: filteredHistory.length,
+                    current: currentPage,
+                    total: totalPages,
+                    defaultValue: `共 ${filteredHistory.length} 条 · 第 ${currentPage}/${totalPages} 页`,
+                  })}
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage <= 1}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    className="h-6 px-2 text-[11px] cursor-pointer"
+                  >
+                    <ChevronLeftIcon className="size-3 mr-0.5" />
+                    {t('gatekeeper.prevPage', { defaultValue: '上一页' })}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    className="h-6 px-2 text-[11px] cursor-pointer"
+                  >
+                    {t('gatekeeper.nextPage', { defaultValue: '下一页' })}
+                    <ChevronRightIcon className="size-3 ml-0.5" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </Card>

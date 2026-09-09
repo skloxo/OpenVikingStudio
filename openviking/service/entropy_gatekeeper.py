@@ -162,12 +162,14 @@ class EntropyGatekeeper:
 
         # Stage 0: Staging & Temporary Bypass (Zero overhead for session dumps and scratchpad)
         if any(k in uri for k in ["staging/", "sessions/", "/scratch/", "/tmp/"]):
-            return GatekeeperDecision(
+            decision = GatekeeperDecision(
                 action="add",
                 similarity=0.0,
                 uri=uri,
                 reason="临时草稿/会话归档专区，直接放行入库。",
             )
+            self._record_decision(decision)
+            return decision
 
         # Stage 0.5: Fast-Path Malicious & Injection Check (DLQ Trap)
         is_malicious = any(
