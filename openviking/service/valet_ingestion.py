@@ -341,5 +341,5 @@ class ValetIngestionEngine:
 
     def _resolve_uri_to_path(self, uri: str) -> Optional[Path]:
         clean = uri.replace("viking://resources/", "").lstrip("/")
-        base = Path.home() / ".openviking" / "data" / "resources"
+        base = Path.home() / ".openviking" / "data" / "viking" / "default" / "resources"
         return base / clean
