@@ -112,12 +112,12 @@ sequenceDiagram
   - 路由：`/tasks`
   - 核心组件：`TasksTable`, `TasksFilterBar`, `TaskDetailSheet`
   - 核心指标：任务状态、排队数量、执行耗时、失败一键重试、成果物直达链接。
-- **信息治理 (Retrieval & Governance - 数据面)**：
-  - 路由：`/retrieval`
-  - 核心组件：`GatekeeperAuditStream`, `GatekeeperDecisionDrawer`, `GatekeeperMetricsCard`
-  - 核心指标：裁决流水号 `#dec_xxxx`、四态分类统计、余弦相似度分布、节约字节数、历史匹配 URI。
+- **记忆治理 (Memory Governance - 数据面)**：
+  - 路由：`/retrieval`（大屏下半区）
+  - 核心组件：`GatekeeperAuditStream` (记忆治理流水), `GatekeeperDecisionDrawer` (治理依据抽屉), `GatekeeperMetricsCard` (治理统计卡片)
+  - 核心指标：治理流水号 `#dec_xxxx` / `#cry_xxxx`、动作分类统计、余弦相似度分布、节约磁盘字节数、历史匹配或被熔铸碎片 URI。
 - **两端无缝贯通**：
-  - 任务中心表格的成果物操作列中，增加【🔗 裁决日志】按钮，点击自动联动打开信息治理对应的决策抽屉。
+  - 任务中心表格的成果物操作列中，增加【🔗 治理流水】按钮，点击自动联动打开记忆治理对应的决策详情抽屉。
 
 ---
 
@@ -168,3 +168,67 @@ sequenceDiagram
    - 灰度降级：遇冲突边界（$0.88 \le Sim < 0.95$）标记后抛入后台慢轨精审。
 2. **托管数据摄取 (`managed_ingestion`)** / **资源文件导入** / **会话记忆沉淀**：
    - 包含多道批处理工序，在质检阶段挂载 **🧠 慢轨算子**，调用大模型进行因果树修正与版本演化 (`Superseding DAG`)。
+
+---
+
+## 七、 全生命周期【记忆治理流水】统一总账架构与存量结晶线索设计 (Memory Governance Stream & Crystallizer SSOT)
+
+### 1. 唯一领域定义：全生命周期记忆物理流变档案总账
+
+系统彻底废弃带有中二色彩的“裁决流水”，统一收敛为工业级自解释专有名词：**「记忆治理流水」** (`Memory Governance Stream`)。
+
+OpenViking 作为智能体体外大脑，其记忆中枢的物理变动天然由两大齿轮驱动：
+1. **前门齿轮（增量准入治理 - Ingress Admission）**：
+   - 包含 `轻量增量入库`、`资源处理`、`会话提交` 等任务车间；
+   - 在【准入判定】工序把关外部知识准入，生成 `ADD` (新增)、`NOOP` (去重)、`UPDATE` (版本升级)、`DLQ` (对抗拦截) 判定。
+2. **后院齿轮（存量结晶治理 - Stock Crystallization & Pruning）**：
+   - 由 `存量知识结晶器` (`Card-Entropy-02-Crystallizer`) 任务车间驱动；
+   - 专注于对存量散落记忆进行物理减熵，三门并联触发（数量门 $\ge 5\sim 10$ 篇、密度门余弦均值 $> 0.72$、稳定门 $\ge 24\text{h}$），将多个碎片提炼融铸为 1 个高纯度晶体，并将原始碎片物理归档移出活跃库。
+
+**核心第一性原理**：
+无论是增量准入还是存量结晶，其本质都是**“记忆库发生物理变动、事实演化与生命周期治理的过程”**。全系统必须将其统一沉淀于单一总账，确保任何知识的来龙去脉（从哪篇碎片融出来的、何时被推翻的、何时被去重的）全生命周期 100% 可审计、可溯源、可解剖。
+
+### 2. 统一数据模型规范 (`GovernanceAuditRecord`)
+
+底层审计流水物理收口于 `~/.openviking/data/entropy_gatekeeper.jsonl`（具备 30 天自动滚动修剪机制），数据结构全面对齐如下契约：
+
+```typescript
+export interface GovernanceAuditRecord {
+  /** 唯一流水号：增量为 dec_xxxxxxxx，存量结晶为 cry_xxxxxxxx */
+  id: string
+  /** 治理时间戳 (秒级浮点数) */
+  timestamp: number
+  /** 来源车间/任务类型：valet_parking | add_resource | session_commit | crystallizer */
+  source_workshop?: string
+  /** 关联任务实例 ID (若由 TaskTracker 驱动) */
+  task_id?: string
+  /** 治理动作类型 */
+  action: 'add' | 'update' | 'noop' | 'dlq' | 'crystallize' | 'archive' | 'prune'
+  /** 治理动作作用的主体/产物目标 URI */
+  uri: string
+  /** 匹配到的既有节点 URI，或结晶熔铸的原始碎片 URIs 列表 */
+  matched_uri?: string
+  fragment_uris?: string[]
+  /** 余弦相似度或结晶置信度 (0.0000 ~ 1.0000) */
+  similarity: number
+  /** 治理依据自解释 (Plain language why this action was taken) */
+  reason: string
+  /** 节约磁盘/向量计算开销字节数 (B) */
+  saved_bytes: number
+  /** 晶体或新知识的 L0/L1 摘要透传 */
+  summary_snippet?: string
+}
+```
+
+### 3. Studio 前端大盘交互与多维过滤
+
+在 `/studio/retrieval` 页面下半区，治理流水表格提供工业级可观测体验：
+1. **多维动作过滤药丸 (Filter Pills)**：
+   - `全部` (All) ｜ `新增入库` (ADD) ｜ `印证去重` (NOOP) ｜ `特例演进` (UPDATE) ｜ `碎片结晶` (CRYSTAL) ｜ `失效归档` (ARCHIVE)
+2. **存量结晶双向溯源抽屉**：
+   - 点击 `#cry_xxxx` 结晶流水行，打开【晶体结构与溯源解剖抽屉】；
+   - 左侧展示生成的全新晶体全文（L0 核心共识 + L1 证据链 + L2 反例哨兵）；
+   - 右侧展示被熔铸归档的 5~10 篇原始碎片卡片列表，直观呈现“减熵前 vs 减熵后”的物理对比。
+3. **任务中心双向直达**：
+   - 在任务中心的任何任务详情中，点击工序【准入判定】或【结晶熔铸】交付物卡片，可秒级直达记忆治理流水的对应行。
+
