@@ -7,7 +7,7 @@ import {
   SparklesIcon,
   BotIcon,
   UserIcon,
-  CarIcon,
+  InboxIcon,
   FileCheckIcon,
 } from 'lucide-react'
 
@@ -33,7 +33,7 @@ export interface BusinessJobItem {
   progress?: {
     completed: number
     total: number
-    unit: string
+    unit?: string
   }
   result?: any
 }
@@ -55,13 +55,13 @@ export function BusinessJobsView({
     return (
       <Card className="flex flex-col items-center justify-center p-8 text-center border-dashed bg-muted/10">
         <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-3">
-          <CarIcon className="size-5" />
+          <InboxIcon className="size-5" />
         </div>
         <h3 className="text-sm font-semibold text-foreground">
           {t('dualTrack.emptyBusiness', '暂无活动业务作业')}
         </h3>
         <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-          {t('dualTrack.emptyBusinessSub', '所有提交任务均已完成自动泊车入库，车库秩序井然。')}
+          {t('dualTrack.emptyBusinessSub', '所有提交任务均已完成异步托管入库，知识库秩序井然。')}
         </p>
       </Card>
     )
@@ -96,8 +96,8 @@ export function BusinessJobsView({
                   </span>
                   {job.task_type === 'valet_parking' && (
                     <Badge variant="outline" className="px-1.5 py-px text-[11px] leading-none bg-primary/10 text-primary border-primary/20">
-                      <CarIcon className="size-2.5 mr-1" />
-                      {t('dualTrack.valetTag', '自动泊车')}
+                      <InboxIcon className="size-2.5 mr-1" />
+                      {t('dualTrack.valetTag', '托管入库')}
                     </Badge>
                   )}
                 </div>
@@ -124,7 +124,7 @@ export function BusinessJobsView({
                   isFailed && 'bg-destructive/10 text-destructive border-destructive/30'
                 )}
               >
-                {isCompleted ? '已泊入' : isRunning ? '泊车中' : job.status}
+                {isCompleted ? t('dualTrack.statusCompleted', '已入库') : isRunning ? t('dualTrack.statusProcessing', '处理中') : job.status}
               </Badge>
             </div>
 

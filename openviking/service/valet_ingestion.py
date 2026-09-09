@@ -127,7 +127,7 @@ class ValetIngestionEngine:
         except queue.Full:
             logger.error("Valet inbox queue full, rejecting ticket %s", ticket_id)
             ticket.status = "rejected"
-            ticket.message = "泊车队列已满，稍后重试"
+            ticket.message = "处理队列已满，稍后重试"
 
         return ticket
 
@@ -217,16 +217,16 @@ class ValetIngestionEngine:
         deliverable = None
         action_msg = ""
         if decision.action == "noop":
-            action_msg = f"同义车辆已并入既有车位 (相似度 {decision.similarity:.4f})，零占新车位"
+            action_msg = f"同义知识已合并至既有节点 (相似度 {decision.similarity:.4f})，零冗余新增"
             deliverable = {
                 "uri": decision.matched_uri or uri,
-                "label": "查看既有车位知识",
+                "label": "查看既有节点知识",
                 "action_type": "view_memory",
             }
         elif decision.action == "update":
             # Physically write updated content
             self._write_local_file(uri, content)
-            action_msg = f"车位已成功升级演进 (相似度 {decision.similarity:.4f})"
+            action_msg = f"既有节点已成功升级演进 (相似度 {decision.similarity:.4f})"
             deliverable = {
                 "uri": uri,
                 "label": "查看升级演进知识",
@@ -235,7 +235,7 @@ class ValetIngestionEngine:
         elif decision.action == "add":
             # Physically write new atomic content
             self._write_local_file(uri, content)
-            action_msg = f"已成功泊入新车位 (独立新知识)"
+            action_msg = f"已成功存储落盘 (独立新知识)"
             deliverable = {
                 "uri": uri,
                 "label": "查看全新入库知识",
