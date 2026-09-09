@@ -19,13 +19,7 @@ import { useResourceContextProbe } from './-hooks/use-resource-context-probe'
 import { useRetrievalQuery } from './-hooks/use-retrieval-query'
 import { flattenResults } from './-lib/results'
 import { resolveScopeTargetUri } from './-lib/scope'
-import {
-  buildSubmittedSearch,
-  hasRetrievalSearch,
-  readLastRetrievalSearch,
-  validateRetrievalSearch,
-  writeLastRetrievalSearch,
-} from './-lib/search-state'
+import { validateRetrievalSearch } from './-lib/search-state'
 import type { RetrievalMode, RetrievalScope } from './-types/retrieval'
 
 export const Route = createFileRoute('/retrieval')({
@@ -37,24 +31,17 @@ function RetrievalPage() {
   const { t } = useTranslation('retrieval')
   const navigate = useNavigate({ from: Route.fullPath })
   const search = Route.useSearch()
-  const hasUrlSearch = hasRetrievalSearch(search)
-  const restoredSearch = useMemo(
-    () => (hasUrlSearch ? undefined : readLastRetrievalSearch()),
-    [hasUrlSearch],
-  )
-  const activeSearch = hasUrlSearch ? search : (restoredSearch ?? search)
 
-  const initialQuery = activeSearch.q ?? ''
-  const initialMode = activeSearch.mode ?? DEFAULT_RETRIEVAL_MODE
-  const initialResultCount = activeSearch.count ?? DEFAULT_RESULT_COUNT
-  const initialScope = activeSearch.scope ?? DEFAULT_RETRIEVAL_SCOPE
-  const initialCustomPath = activeSearch.path ?? DEFAULT_CUSTOM_PATH_INPUT
-  const initialSessionId = activeSearch.session ?? ''
-  const initialIgnoreCase = activeSearch.ignoreCase ?? false
+  const initialMode = search.mode ?? DEFAULT_RETRIEVAL_MODE
+  const initialResultCount = search.count ?? DEFAULT_RESULT_COUNT
+  const initialScope = search.scope ?? DEFAULT_RETRIEVAL_SCOPE
+  const initialCustomPath = search.path ?? DEFAULT_CUSTOM_PATH_INPUT
+  const initialSessionId = search.session ?? ''
+  const initialIgnoreCase = search.ignoreCase ?? false
 
   const [retrievalMode, setRetrievalMode] = useState<RetrievalMode>(initialMode)
-  const [query, setQuery] = useState(initialQuery)
-  const [submittedQuery, setSubmittedQuery] = useState(initialQuery)
+  const [query, setQuery] = useState('')
+  const [submittedQuery, setSubmittedQuery] = useState('')
   const [resultCount, setResultCount] = useState<number>(initialResultCount)
   const [retrievalScope, setRetrievalScope] =
     useState<RetrievalScope>(initialScope)
@@ -92,32 +79,8 @@ function RetrievalPage() {
       return
     }
 
-    const nextSearch = buildSubmittedSearch({
-      count: resultCount,
-      ignoreCase,
-      mode: retrievalMode,
-      path: customPathInput,
-      q: trimmed,
-      scope: retrievalScope,
-      session: sessionIdInput,
-    })
-
     setSubmittedQuery(trimmed)
-    writeLastRetrievalSearch(nextSearch)
-    void navigate({
-      replace: true,
-      search: nextSearch,
-    })
-  }, [
-    customPathInput,
-    ignoreCase,
-    navigate,
-    query,
-    resultCount,
-    retrievalMode,
-    retrievalScope,
-    sessionIdInput,
-  ])
+  }, [query])
 
   const handleUploadClick = useCallback(() => {
     void navigate({ to: '/playground', search: { upload: true } })
@@ -125,58 +88,22 @@ function RetrievalPage() {
 
   useEffect(() => {
     inputRef.current?.focus()
+    // Clear legacy sessionStorage search so it never haunts the user on page reopen
+    try {
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.removeItem('last_retrieval_search')
+      }
+    } catch {
+      // Ignore in sandbox environments
+    }
   }, [])
 
+  // If page was loaded with a ?q= in URL, clean the URL immediately to avoid re-triggering on F5
   useEffect(() => {
-    if (!activeSearch.q) {
-      return
+    if (search.q) {
+      void navigate({ replace: true, search: {} })
     }
-
-    const nextMode = activeSearch.mode ?? DEFAULT_RETRIEVAL_MODE
-    const nextResultCount = activeSearch.count ?? DEFAULT_RESULT_COUNT
-    const nextScope = activeSearch.scope ?? DEFAULT_RETRIEVAL_SCOPE
-    const nextCustomPath = activeSearch.path ?? DEFAULT_CUSTOM_PATH_INPUT
-    const nextSessionId = activeSearch.session ?? ''
-    const nextIgnoreCase = activeSearch.ignoreCase ?? false
-
-    setRetrievalMode(nextMode)
-    setQuery(activeSearch.q)
-    setSubmittedQuery(activeSearch.q)
-    setResultCount(nextResultCount)
-    setRetrievalScope(nextScope)
-    setCustomPathInput(nextCustomPath)
-    setSessionIdInput(nextSessionId)
-    setIgnoreCase(nextIgnoreCase)
-
-    const nextSearch = buildSubmittedSearch({
-      count: nextResultCount,
-      ignoreCase: nextIgnoreCase,
-      mode: nextMode,
-      path: nextCustomPath,
-      q: activeSearch.q,
-      scope: nextScope,
-      session: nextSessionId,
-    })
-
-    writeLastRetrievalSearch(nextSearch)
-
-    if (!hasUrlSearch) {
-      void navigate({
-        replace: true,
-        search: nextSearch,
-      })
-    }
-  }, [
-    activeSearch.count,
-    activeSearch.ignoreCase,
-    activeSearch.mode,
-    activeSearch.path,
-    activeSearch.q,
-    activeSearch.scope,
-    activeSearch.session,
-    hasUrlSearch,
-    navigate,
-  ])
+  }, [navigate, search.q])
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-4">

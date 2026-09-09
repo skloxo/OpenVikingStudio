@@ -79,6 +79,7 @@
 | **Card-i18n-Modularization** | **超长 i18n 字典单文件解耦切分专项：将 zh-CN.ts 与 en.ts（各 2300 行）按业务领域拆解为 100~300 行黄金甜点区模块** | 1. 彻底解决 `zh-CN.ts` (2286 行) 与 `en.ts` (2296 行) 严重违背单文件 ≤500 行物理硬红线与注意力衰减痛点；<br>2. 按业务领域切分为独立模块：`common.ts`, `tasks.ts`, `retrieval.ts`, `sessions.ts`, `monitoring.ts`, `settings.ts`, `playground.ts`；<br>3. 在 `index.ts` 中结构化聚合导出，对外完全保持零破坏平滑兼容；<br>4. 严格双语平行对照维护，零硬编码，单测 100% 覆盖。关联规范：[`agent-friendly-code-org`](file:///home/skloxo/.gemini/config/skills/agent-friendly-code-org/SKILL.md)。 | 单文件全量收敛至 100~300 行黄金甜点区，无 >500 行巨石，i18n 零丢失，打包无缝 | 🔥 P1 优先 | `v1.4.81` |
 | **Card-Tasks-Stage2.3-QualityGateChain** | **工业级标准化：将「准入判定」与「质量门禁」工序标准化挂载至 add_resource 与 session_commit 流水线** | 1. 统一工序规范：让资源添加 (`add_resource`) 与会话归档 (`session_commit`) 显式串联「准入判定」与「质量门禁」；<br>2. 统一前后端工序拓扑与状态机流转；<br>3. 关联规范：[`OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md`](OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md)。 | 经典流水线显式对齐质检，端到端真实度量，单测与构建 PASS | 🔴 P1 待调度 | `v1.4.82` |
 | **Card-Entropy-02-Crystallizer** | **存量历史散落碎片三门并联结晶归纳器与物理减熵落盘（5~10 碎片熔铸为 1 晶体）** | 1. 与增量前门守门员相辅相成，专注【存量物理减熵】；<br>2. 三门并联触发（数量门 $\ge 5\sim 10$ 篇、密度门余弦均值 $> 0.72$、稳定门沉淀 $\ge 24\text{h}$）；<br>3. 三层解耦模型 (`crystal_node`)：L0 权威核心共识 + L1 不可变证据链 + L2 特例反例哨兵；<br>4. 物理减熵落盘与无损归档（生成 `crystals/{topic}.md`，旧碎片追加 `.archive` 移出活跃库，活跃向量节点物理净减少）；<br>5. 全生命周期【记忆治理流水】线索闭环（结晶事件原子化生成 `#cry_xxxx` 入库，支持抽屉展开追溯 8 篇原始碎片拓扑）。 | 三门触发准确，三层晶体落地，旧碎片物理归档，活跃节点净减少，单测与构建 100% PASS | 🟡 P2 进阶 | `v1.4.81` |
+| **Card-Knowledge-Scaffolding-Loop** | **知识盲区频次漏斗、反思骨架铸造与工兵/人机双轨补全自进化闭环** | 1. 召回未命中 (Miss) 触发两阶段解耦任务 `knowledge_remediation`；<br>2. 频次漏斗分级 (P3 仅记数，P1/P0 高频启动攻坚)；<br>3. 外生知识分发工兵 (Researcher) 自动抓取，内生企业私密知识请求人类协助；<br>4. 关联架构规范：[`OpenVikingStudio/docs/architecture/KNOWLEDGE_DEFICIT_SCAFFOLDING_SPEC.md`](OpenVikingStudio/docs/architecture/KNOWLEDGE_DEFICIT_SCAFFOLDING_SPEC.md)。 | 杜绝发疯任务风暴，频次聚合准确，骨架卡片生成即闭环，单测与构建 PASS | ⏸️ 评估中 (择机迭代) | `v1.5.x` |
 | **Card-Ingestion-DualTrack** | **轻量增量入库任务建模、质量门禁统一工序插槽与快慢双轨算子引擎架构** | 1. 彻底消灭概念倒错，解耦 Task (轻量增量入库 `valet_parking`)、Step Slot (质量门禁 `step_quality_gate`)、Engine Driver (快慢双轨算子)；<br>2. ⚡快轨算子 (<10ms 本地 2080Ti 向量硬截断) 保障 Agent 写入零等待；<br>3. 🧠慢轨算子 (LLM 深度因果演进与版本熔铸) 驱动批量与疑难仲裁；<br>4. 任务全景、工序明细与中英双语 100% 规范对齐；<br>5. 肃清 AGFS TaskStore 中全部 9 个 demo 假任务文件。关联架构规范：[`OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md`](OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md) | 概念 100% 厘清，流水线规范一致，双轨无缝路由，单测全绿，demo 清理归零 | `v1.4.73` | [x] 已验收通过 ✅ |
 
 ---
@@ -316,6 +317,25 @@
 | **Card-Memory-Tiering** | **降维打击·三层记忆动态冷热分层体系 (Hot/Warm/Cold Tiering) 与时效动力学衰减** | 借鉴家庭基线与 Stanford 智能体公式；落地 Hot (1,000条高频) / Warm (5,000条温记忆) / Cold (冷存归档排除索引)；配合艾宾浩斯衰减与多因子公式，保证检索永远 O(1) 常数级 | 向量空间轻量常数级，时延不随时间劣化 | ⏸️ 择机迭代 | `v1.5.1` |
 | **Card-Remediation-Bypass** | **奥卡姆裁决·自愈流水线快慢双轨机制 (Fast-Path Bypass vs Deep ov_dream 蒸馏)** | 贯彻奥卡姆剃刀“如无必要勿增实体”；自愈工序引入轻量快轨（纯元数据/软墓碑失效，0 Token 毫秒自愈）与慢轨（夜间低峰调度 35B 执行同主题深度归纳提纯），禁止凡事调大模型 | 简单问题 0 Token，复杂问题深度蒸馏 | ⏸️ 择机迭代 | `v1.5.2` |
 | **Card-Retrieval-AdvancedCards** | **检索大屏第二排高阶运营看板扩展 (Advanced Operational Telemetry)** | 为检索中心拓展第二排运营级数据卡片：冷热层分布率 (Hot/Warm/Cold)、L0 语义缓存命中率、知识信噪比与冲突率 (SNR & Conflict Rate)、混合召回协同度 | 全面透传向量空间内部健康度与熵态 | ⏸️ 择机迭代 | `v1.5.3` |
+
+---
+
+### 📌 ⏸️ Card-Knowledge-Scaffolding-Loop (v1.5.x): 知识盲区频次漏斗、反思骨架铸造与工兵/人机双轨补全自进化闭环（评估中·择机迭代）
+- **类型**：Self-Evolution / Knowledge Deficit Funnel / Scaffolding Engine / Human-in-the-Loop ｜ **优先级**：⏸️ 评估中（择机迭代）
+- **计划版本**：`v1.5.x`
+- **关联架构白皮书**：[`OpenVikingStudio/docs/architecture/KNOWLEDGE_DEFICIT_SCAFFOLDING_SPEC.md`](OpenVikingStudio/docs/architecture/KNOWLEDGE_DEFICIT_SCAFFOLDING_SPEC.md)
+- **核心治理设计与规划要点**：
+  1. **两阶段生命周期物理解耦**：
+     - **阶段一（骨架铸造任务）**：检索未命中时，反思算子在 1 秒内生成标准待补全骨架卡片，该任务立即标记为 `[COMPLETED]` 交付闭环，绝不长事务挂起阻塞主链路；
+     - **阶段二（知识补全与熔铸）**：待办工单独立沉淀于知识盲区池，下游异步领单补全。
+  2. **频次聚合与热度漏斗（奥卡姆剃刀，消灭任务爆炸）**：
+     - **P3 偶发低频 (Count = 1)**：静默沉淀在观察池，仅累加计数，0 Token / 0 进程开销，绝不骚扰人类或派工兵；
+     - **P1 / P0 高价值热点盲区 (Count >= 3)**：正式升级为攻坚任务，避免无谓消耗。
+  3. **双轨智能路由分流**：
+     - **外生公共知识（技术/API/开源文档）** ➔ 派发异步工兵子代理（Researcher / CPA 快速模型）联网抓取补齐；
+     - **内生企业私有事实（人名/分机/内部流程）** ➔ 标星置顶并在任务中心优雅提示人类协助填空。
+  4. **防过度工程化自省防线**：
+     - 实施前先行打样 7 天未命中 Query 真实分布，评估算力 ROI 与语义聚类效果后再行编码落地。
 
 ---
 
