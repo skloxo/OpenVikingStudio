@@ -58,6 +58,7 @@ class ValetIngestionEngine:
         self._wal_file = os.path.expanduser("~/.openviking/data/valet_inbox.jsonl")
         os.makedirs(os.path.dirname(self._wal_file), exist_ok=True)
         self._stop_event = threading.Event()
+        self._worker_loop: Optional[asyncio.AbstractEventLoop] = None
         self._worker_thread = threading.Thread(
             target=self._valet_worker_loop,
             name="ValetIngestionWorker",
@@ -105,6 +106,9 @@ class ValetIngestionEngine:
         with self._tickets_lock:
             self._tickets[ticket_id] = ticket
 
+        # Real-time TaskCenter observability: register as PENDING immediately
+        self._schedule_pending_registration(ticket_id, uri, caller, source, human_title)
+
         # Append to high-speed write-ahead log (WAL)
         try:
             record = {
@@ -131,6 +135,44 @@ class ValetIngestionEngine:
 
         return ticket
 
+    def _schedule_pending_registration(
+        self,
+        ticket_id: str,
+        uri: str,
+        caller: str,
+        source: str,
+        human_title: str,
+    ) -> None:
+        """Register the valet ticket as PENDING in TaskTracker immediately for real-time observability."""
+        async def _register() -> None:
+            try:
+                tracker = get_task_tracker()
+                await tracker.create(
+                    task_type="valet_parking",
+                    task_id=ticket_id,
+                    resource_id=uri,
+                    account_id="default",
+                    user_id="default",
+                    meta={
+                        "is_business": True,
+                        "human_title": human_title,
+                        "initiator": caller,
+                        "uri": uri,
+                        "source": source,
+                        "ticket_id": ticket_id,
+                        "progress": {"completed": 0, "total": 1, "unit": "个节点"},
+                    },
+                )
+            except Exception as e:
+                logger.debug("Task tracker early PENDING registration note: %s", e)
+
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(_register())
+        except RuntimeError:
+            if self._worker_loop and self._worker_loop.is_running():
+                asyncio.run_coroutine_threadsafe(_register(), self._worker_loop)
+
     def get_ticket(self, ticket_id: str) -> Optional[ValetTicket]:
         with self._tickets_lock:
             return self._tickets.get(ticket_id)
@@ -145,6 +187,7 @@ class ValetIngestionEngine:
         """Background thread taking cars from inbox, evaluating, and parking."""
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
+        self._worker_loop = loop
 
         while not self._stop_event.is_set():
             try:

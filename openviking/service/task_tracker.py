@@ -69,6 +69,7 @@ _CANCELLABLE_TASK_TYPES = {
     "entity_summarization",
     "four_tier_governance",
     "managed_ingestion",
+    "valet_parking",
 }
 
 
