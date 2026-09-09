@@ -358,15 +358,15 @@ export const CORE_STEP_SPECS: Record<string, AtomicStepSpec> = {
     metricKeys: ['evaluated_decisions', 'verdict_count'],
     engineKey: 'semantic',
   },
-  // 32. 车位泊入
+  // 32. 存储落盘
   step_valet_parking: {
     id: 'step_valet_parking',
-    nameZh: '车位泊入',
-    nameEn: 'Space Parking',
+    nameZh: '存储落盘',
+    nameEn: 'Storage Persistence',
     unitZh: '节点',
     unitEn: 'nodes',
-    stageKeywords: ['parking', 'persist', 'slot'],
-    metricKeys: ['parked_nodes', 'merged_nodes'],
+    stageKeywords: ['parking', 'persist', 'slot', 'write', 'commit'],
+    metricKeys: ['parked_nodes', 'merged_nodes', 'persisted_nodes'],
     engineKey: 'viking_fs',
   },
   // 33. 摄取校验 (托管数据摄取)

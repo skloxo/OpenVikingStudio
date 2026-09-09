@@ -387,16 +387,16 @@ export const CORE_PANORAMA_STEPS: PanoramaStepDef[] = [
   },
   {
     id: 'step_valet_parking',
-    nameZh: '车位泊入',
-    nameEn: 'Space Parking',
+    nameZh: '存储落盘',
+    nameEn: 'Storage Persistence',
     engineKey: 'AddResource',
     engineNameZh: '资源入库',
     engineNameEn: 'Resource Ingestion Engine',
     unitZh: '节点',
     unitEn: 'nodes',
     taskTypes: ['valet_parking'],
-    descriptionZh: '将新知识原子落盘泊入独立车位，或无缝并入既有车位知识并交付成果物',
-    descriptionEn: 'Physically persist into atomic memory slot or merge with existing parking space',
+    descriptionZh: '将新知识原子物理落盘入库，或无缝合并既有节点知识并交付成果物',
+    descriptionEn: 'Physically persist knowledge into atomic storage or merge with existing node',
   },
 
   // 29-30: 托管数据摄取 (Managed Ingestion)
