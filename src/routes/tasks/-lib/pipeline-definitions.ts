@@ -118,7 +118,7 @@ export const TASK_FLOWS: TaskTypeFlowDef[] = [
     typeKey: 'session_commit',
     nameZh: '会话提交',
     nameEn: 'Session Commit',
-    stepIds: ['step_archival', 'step_lessons', 'step_snapshot'],
+    stepIds: ['step_serialization', 'step_distillation', 'step_persistence'],
   },
   {
     typeKey: 'add_skill',
@@ -136,13 +136,13 @@ export const TASK_FLOWS: TaskTypeFlowDef[] = [
     typeKey: 'admin_reindex',
     nameZh: '全局索引重建',
     nameEn: 'Global Reindex',
-    stepIds: ['step_scan', 'step_reconstruction', 'step_pruning'],
+    stepIds: ['step_scan', 'step_rebuild_semantic', 'step_rebuild_vectors'],
   },
   {
     typeKey: 'snapshot_restore_reindex',
     nameZh: '快照恢复索引',
     nameEn: 'Snapshot Restore',
-    stepIds: ['step_rollback', 'step_inodes', 'step_incremental_vector'],
+    stepIds: ['step_inode_restore', 'step_incremental_vector'],
   },
   {
     typeKey: 'legacy_migration',
