@@ -183,7 +183,7 @@ function RetrievalPage() {
       {/* 熵增防御：写入准入与四态变异宏观 KPI */}
       <GatekeeperMetricsCard />
 
-      {/* 裁决流水：实时写入判定轨迹与向量审查大盘 */}
+      {/* 记忆治理流水：实时写入判定轨迹与向量审查大盘 */}
       <GatekeeperAuditStream />
 
       {/* 4 大核心检索运行与质量基准 KPI 指标卡片 */}
