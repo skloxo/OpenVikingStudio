@@ -76,7 +76,7 @@
 | **Card-Tasks-Stage2.2-FollowupPatch** | **工序流契约对齐、任务统计车间白名单过滤与质量门禁去中二化快速热修复** | 1. 修复 `session_commit`, `admin_reindex`, `snapshot_restore_reindex` 工序 ID 与全景图定义的错位，恢复工序胶囊流转；<br>2. 修复 `task-api.ts` 任务队列大盘指标，增加 `ALL_TASK_TYPES` 白名单过滤，彻底消除历史遗留伪任务穿透；<br>3. 去中二化：将 `quality_gate` 翻译由“抗熵增质量门禁”收敛为“质量门禁”；<br>4. 关联规范：[`OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md`](OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md)。 | 10 大车间工序 100% 匹配，统计大盘纯净无伪任务，Vitest 150/150 全绿，生产构建通过 | `v1.4.78` | [x] 已验收通过 ✅ |
 | **Card-Gatekeeper-Pagination-v1.4.79** | **记忆治理流水真实分页与 30 天滚动生命周期落盘审计** | 1. 记忆治理流水大盘支持真实翻页 (每页 10 条)，消除海量流水导致的前端卡顿风险；<br>2. 修复跳过暂存直接写盘导致治理流水未登记的缺陷；<br>3. 30 天滚动修剪生命周期物理固化与单测对齐。 | Vitest 150 项单测通过，生产构建通过，浏览器翻页与状态持久化实测通过 | `v1.4.79` | [x] 已验收通过 ✅ |
 | **Card-Knowledge-3070-Clean** | **3070 临时草稿脚本杂质深度清洗、现场责任人正式入库与 Gatekeeper 脚本拦截网** | 1. 物理清洗 391 个 `_scratch_` 历史临时 Base64 脚本污染，彻底消灭搜索乱码根因；<br>2. 规范提纯入库富士康干部公寓现场运维责任人通讯录 (`cadre_apartment_staff_directory.md`)，耿晓光语义检索得分达 0.791 并精准置顶；<br>3. 在 `EntropyGatekeeper` 部署 Stage 0.6 脚本与编码阻断网，杜绝草稿脚本入库；<br>4. 修复 `ValetIngestionEngine` 存储路径偏差 bug 并补齐单测。 | 搜索“耿晓光”等词 100% 呈现专业名片，零乱码，pytest 8 项全绿，Vitest 150/150 全绿，生产构建通过 | `v1.4.80` | [x] 已验收通过 ✅ |
-| **Card-i18n-Modularization** | **超长 i18n 字典单文件解耦切分专项：将 zh-CN.ts 与 en.ts（各 2300 行）按业务领域拆解为 100~300 行黄金甜点区模块** | 1. 彻底解决 `zh-CN.ts` (2286 行) 与 `en.ts` (2296 行) 严重违背单文件 ≤500 行物理硬红线与注意力衰减痛点；<br>2. 按业务领域切分为独立模块：`common.ts`, `tasks.ts`, `retrieval.ts`, `sessions.ts`, `monitoring.ts`, `settings.ts`, `playground.ts`；<br>3. 在 `index.ts` 中结构化聚合导出，对外完全保持零破坏平滑兼容；<br>4. 严格双语平行对照维护，零硬编码，单测 100% 覆盖。关联规范：[`agent-friendly-code-org`](file:///home/skloxo/.gemini/config/skills/agent-friendly-code-org/SKILL.md)。 | 单文件全量收敛至 100~300 行黄金甜点区，无 >500 行巨石，i18n 零丢失，打包无缝 | 🔥 P1 优先 | `v1.4.81` |
+| **Card-i18n-Modularization** | **超长 i18n 字典单文件解耦切分专项：将 zh-CN.ts 与 en.ts（各 2300 行）按业务领域拆解为 100~300 行黄金甜点区模块** | 1. 彻底解决 `zh-CN.ts` (2286 行) 与 `en.ts` (2296 行) 严重违背单文件 ≤500 行物理硬红线与注意力衰减痛点；<br>2. 按业务领域切分为 9 大独立模块：`common.ts`, `tasks.ts`, `retrieval.ts`, `resources.ts`, `sessions.ts`, `monitoring.ts`, `settings.ts`, `home.ts`, `playground.ts`；<br>3. 在 `index.ts` 中结构化聚合导出，对外完全保持零破坏平滑兼容；<br>4. 严格双语平行对照维护，零硬编码，自动化深度键名契约测试 100% 覆盖。关联规范：[`agent-friendly-code-org`](file:///home/skloxo/.gemini/config/skills/agent-friendly-code-org/SKILL.md)。 | 单文件全量收敛至 100~300 行黄金甜点区，无 >500 行巨石，i18n 零丢失，Vitest 154/154 全绿，构建无缝通过 | `v1.4.81` | [x] 已验收通过 ✅ |
 | **Card-Tasks-Stage2.3-QualityGateChain** | **工业级标准化：将「准入判定」与「质量门禁」工序标准化挂载至 add_resource 与 session_commit 流水线** | 1. 统一工序规范：让资源添加 (`add_resource`) 与会话归档 (`session_commit`) 显式串联「准入判定」与「质量门禁」；<br>2. 统一前后端工序拓扑与状态机流转；<br>3. 关联规范：[`OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md`](OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md)。 | 经典流水线显式对齐质检，端到端真实度量，单测与构建 PASS | 🔴 P1 待调度 | `v1.4.82` |
 | **Card-Entropy-02-Crystallizer** | **存量历史散落碎片三门并联结晶归纳器与物理减熵落盘（5~10 碎片熔铸为 1 晶体）** | 1. 与增量前门守门员相辅相成，专注【存量物理减熵】；<br>2. 三门并联触发（数量门 $\ge 5\sim 10$ 篇、密度门余弦均值 $> 0.72$、稳定门沉淀 $\ge 24\text{h}$）；<br>3. 三层解耦模型 (`crystal_node`)：L0 权威核心共识 + L1 不可变证据链 + L2 特例反例哨兵；<br>4. 物理减熵落盘与无损归档（生成 `crystals/{topic}.md`，旧碎片追加 `.archive` 移出活跃库，活跃向量节点物理净减少）；<br>5. 全生命周期【记忆治理流水】线索闭环（结晶事件原子化生成 `#cry_xxxx` 入库，支持抽屉展开追溯 8 篇原始碎片拓扑）。 | 三门触发准确，三层晶体落地，旧碎片物理归档，活跃节点净减少，单测与构建 100% PASS | 🟡 P2 进阶 | `v1.4.81` |
 | **Card-Knowledge-Scaffolding-Loop** | **知识盲区频次漏斗、反思骨架铸造与工兵/人机双轨补全自进化闭环** | 1. 召回未命中 (Miss) 触发两阶段解耦任务 `knowledge_remediation`；<br>2. 频次漏斗分级 (P3 仅记数，P1/P0 高频启动攻坚)；<br>3. 外生知识分发工兵 (Researcher) 自动抓取，内生企业私密知识请求人类协助；<br>4. 关联架构规范：[`OpenVikingStudio/docs/architecture/KNOWLEDGE_DEFICIT_SCAFFOLDING_SPEC.md`](OpenVikingStudio/docs/architecture/KNOWLEDGE_DEFICIT_SCAFFOLDING_SPEC.md)。 | 杜绝发疯任务风暴，频次聚合准确，骨架卡片生成即闭环，单测与构建 PASS | ⏸️ 评估中 (择机迭代) | `v1.5.x` |
@@ -273,25 +273,44 @@
 
 ---
 
-### 📌 P1: [ ] Card-i18n-Modularization (v1.4.81): 超长 i18n 字典单文件解耦切分：将 zh-CN.ts 与 en.ts（各 2300 行）按业务领域拆解为 100~300 行黄金甜点区模块 ⏳
+### 📌 P1: [x] Card-i18n-Modularization (v1.4.81): 超长 i18n 字典单文件解耦切分：将 zh-CN.ts 与 en.ts（各 2300 行）按业务领域拆解为 100~300 行黄金甜点区模块 ✅
 - **类型**：Codebase Architecture / File Size Governance / i18n Refactoring ｜ **优先级**：🔥 P1 优先
-- **计划版本**：`v1.4.81`
+- **交付版本**：`v1.4.81` ｜ **交付时间**：2026-09-10
+- **Git Tag**: `v1.4.81`
 - **关联规范**：[`agent-friendly-code-org`](file:///home/skloxo/.gemini/config/skills/agent-friendly-code-org/SKILL.md) (单文件 ≤500 行物理硬红线，100~300 行黄金甜点区)
 - **核心治理设计与规划要点**：
   1. **彻底解决 2,300 行单文件巨石痛点**：
-     - 当前 `src/i18n/locales/zh-CN.ts` (2,286 行) 和 `src/i18n/locales/en.ts` (2,296 行) 严重超标，造成编辑行号漂移与大文件扫描开销；
-  2. **按业务领域与路由切分子模块**：
-     - `src/i18n/locales/zh-CN/common.ts` (~200 行)
-     - `src/i18n/locales/zh-CN/tasks.ts` (~250 行)
-     - `src/i18n/locales/zh-CN/retrieval.ts` (~200 行)
-     - `src/i18n/locales/zh-CN/sessions.ts` (~200 行)
-     - `src/i18n/locales/zh-CN/monitoring.ts` (~200 行)
-     - `src/i18n/locales/zh-CN/settings.ts` (~150 行)
-     - `src/i18n/locales/zh-CN/playground.ts` (~150 行)
-     - `src/i18n/locales/en/` 严格镜像解耦；
-  3. **平滑聚合与零破坏兼容**：
-     - 在 `src/i18n/locales/zh-CN/index.ts` 中聚合导出，对外调用契约保持 100% 不变；
-  4. **双轨单测验证与即时构建**。
+     - 原 `src/i18n/locales/zh-CN.ts` (2,286 行) 和 `src/i18n/locales/en.ts` (2,296 行) 超标 4.5 倍，收口为各 4 行的桶装重新导出入口；
+  2. **按业务领域与路由切分为 9 大黄金甜点区子模块**：
+     - `src/i18n/locales/{zh-CN,en}/common.ts` (~265 行，包含 common, appShell, accountSwitcher, connection, oauth)
+     - `src/i18n/locales/{zh-CN,en}/home.ts` (~140 行，包含 home, systemResourceChart)
+     - `src/i18n/locales/{zh-CN,en}/tasks.ts` (~215 行，包含 tasksPage, operations)
+     - `src/i18n/locales/{zh-CN,en}/retrieval.ts` (~167 行，包含 retrieval)
+     - `src/i18n/locales/{zh-CN,en}/resources.ts` (~255 行，包含 resources, addResource, versionTimeline)
+     - `src/i18n/locales/{zh-CN,en}/sessions.ts` (~145 行，包含 sessions, skillsPage)
+     - `src/i18n/locales/{zh-CN,en}/settings.ts` (~315 行，包含 settings)
+     - `src/i18n/locales/{zh-CN,en}/monitoring.ts` (~375 行，包含 monitoringPage, requestLogs)
+     - `src/i18n/locales/{zh-CN,en}/playground.ts` (~460 行，包含 playground)
+     - 全量 20 个子文件 100% 满足 `<= 500 行` 物理硬红线，7 个模块在 `100~300 行` 黄金甜点区；
+  3. **自动化双语深度键名契约与文件规模门禁**：
+     - 新增 `src/i18n/i18n.test.ts`，递归校验全量 18 个顶级命名空间及其深层子键 100% 平行对称；
+     - 自动化断言门禁检查全量 i18n 文件行数 $\le 500$；
+     - 补齐了原先遗漏在英文中的 `resources`/`users` 导航项、`systemResourceChart`、`metricsTiles` 的 16 项指标 badge 与 `fsIoOps`，实现真正信达雅；
+  4. **构建与实机验证**：
+     - Vitest 32 套套件 154/154 测试全部 PASS；
+     - Vite 生产构建 19.40s 零错误；
+     - 浏览器实机走查中英切换流畅丝滑，控制台 0 错误。
+- **实际修改与交付文件清单**：
+  - `OpenVikingStudio/src/i18n/locales/zh-CN.ts` (收敛至 4 行)
+  - `OpenVikingStudio/src/i18n/locales/en.ts` (收敛至 4 行)
+  - `OpenVikingStudio/src/i18n/locales/zh-CN/index.ts` (23 行)
+  - `OpenVikingStudio/src/i18n/locales/en/index.ts` (23 行)
+  - `OpenVikingStudio/src/i18n/locales/zh-CN/*.ts` (9 个领域模块)
+  - `OpenVikingStudio/src/i18n/locales/en/*.ts` (9 个领域模块)
+  - `OpenVikingStudio/src/i18n/i18n.test.ts` (新增单元测试)
+  - `OpenVikingStudio/package.json`
+  - `OpenVikingStudio/openviking/__init__.py`
+  - `OpenVikingStudio/openviking/_version.py`
 
 ---
 
