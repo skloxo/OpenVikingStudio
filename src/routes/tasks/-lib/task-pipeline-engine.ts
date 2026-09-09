@@ -198,7 +198,7 @@ export function deriveUniversalPipelineSteps(
         effectiveTotal = effectiveTotal ?? 1
         const rawAction = String(resObj.action || metaObj.action || 'add').toLowerCase()
         const actionZh = rawAction === 'noop' ? '同义合并' : rawAction === 'update' ? '增量演进' : '独立新增'
-        detail = isZh ? `裁决: ${actionZh}` : `Decision: ${rawAction.toUpperCase()}`
+        detail = isZh ? `判定: ${actionZh}` : `Admission: ${rawAction.toUpperCase()}`
       } else if (spec.id === 'step_valet_parking') {
         effectiveMetric = effectiveMetric ?? resObj.progress?.completed ?? (state === 'completed' ? 1 : 0)
         effectiveTotal = effectiveTotal ?? resObj.progress?.total ?? 1
@@ -446,18 +446,18 @@ export function deriveUniversalFinalOutcome(
     const sim = typeof simVal === 'number' ? simVal.toFixed(4) : (simVal !== undefined ? Number(simVal).toFixed(4) : '0.0000')
     const saved = Number(resObj.saved_bytes || metaObj.saved_bytes || 0)
     const nodes = resObj.progress?.completed ?? resObj.parked_nodes ?? 1
-    let deliverableText = isZh ? `门禁裁决: 独立新增 (ADD) · 向量探针相似度 ${sim} · ${nodes} 个知识节点已存储落盘` : `Gate: ADD · Similarity ${sim} · ${nodes} node(s) persisted`
+    let deliverableText = isZh ? `准入判定: 独立新增 (ADD) · 向量探针相似度 ${sim} · ${nodes} 个知识节点已存储落盘` : `Admission: ADD · Similarity ${sim} · ${nodes} node(s) persisted`
     if (rawAction === 'noop') {
       deliverableText = isZh
-        ? `门禁裁决: 同义合并 (NOOP) · 向量相似度 ${sim}` + (saved > 0 ? ` · 节约物理存储 ${(saved / 1024).toFixed(1)} KB` : ' · 零冗余新增')
-        : `Gate: NOOP · Similarity ${sim}` + (saved > 0 ? ` · Saved ${(saved / 1024).toFixed(1)} KB` : ' · Zero Redundancy')
+        ? `准入判定: 同义合并 (NOOP) · 向量相似度 ${sim}` + (saved > 0 ? ` · 节约物理存储 ${(saved / 1024).toFixed(1)} KB` : ' · 零冗余新增')
+        : `Admission: NOOP · Similarity ${sim}` + (saved > 0 ? ` · Saved ${(saved / 1024).toFixed(1)} KB` : ' · Zero Redundancy')
     } else if (rawAction === 'update') {
-      deliverableText = isZh ? `门禁裁决: 增量演进 (UPDATE) · 向量相似度 ${sim} · 既有知识节点已版本升级` : `Gate: UPDATE · Similarity ${sim} · Node version updated`
+      deliverableText = isZh ? `准入判定: 增量演进 (UPDATE) · 向量相似度 ${sim} · 既有知识节点已版本升级` : `Admission: UPDATE · Similarity ${sim} · Node version updated`
     }
     return {
       title: isZh ? '轻量增量入库' : 'Lightweight Ingestion',
       deliverableText,
-      expectedText: isZh ? '快速接管暂存、向量相似度探针与入库门禁裁决' : 'Fast handover, vector probe & gatekeeper admission',
+      expectedText: isZh ? '快速接管暂存、向量相似度探针与准入判定' : 'Fast handover, vector probe & admission check',
     }
   }
 
