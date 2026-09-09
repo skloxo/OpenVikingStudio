@@ -99,7 +99,7 @@ class ValetIngestionEngine:
             uri=uri,
             human_title=human_title,
             initiator=caller,
-            message=f"已接管「{title_summary}」，正在执行轻量增量入库与门禁裁决...",
+            message=f"已接管「{title_summary}」，正在执行轻量增量入库与准入判定...",
         )
 
         with self._tickets_lock:

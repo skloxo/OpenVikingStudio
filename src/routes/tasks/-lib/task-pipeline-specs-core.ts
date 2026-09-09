@@ -349,13 +349,13 @@ export const CORE_STEP_SPECS: Record<string, AtomicStepSpec> = {
     totalKeys: ['total_candidates', 'candidates_count', 'probed_nodes'],
     engineKey: 'embedding',
   },
-  // 31. 门禁裁决
+  // 31. 准入判定
   step_valet_decision: {
     id: 'step_valet_decision',
-    nameZh: '门禁裁决',
-    nameEn: 'Gate Decision',
-    unitZh: '裁决',
-    unitEn: 'verdicts',
+    nameZh: '准入判定',
+    nameEn: 'Admission Check',
+    unitZh: '判定',
+    unitEn: 'checks',
     stageKeywords: ['decision', 'verdict', 'admission'],
     metricKeys: ['evaluated_decisions', 'verdict_count'],
     totalKeys: ['total_decisions', 'verdict_count'],

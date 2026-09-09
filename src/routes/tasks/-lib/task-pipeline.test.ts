@@ -481,14 +481,14 @@ describe('task-pipeline RFC 治理与真实数据契约测试', () => {
     }
     const steps = getTaskPipelineSteps(valetTask, [], 'zh')
     expect(steps).toHaveLength(4)
-    expect(steps.map((s) => s.name)).toEqual(['快速接管', '向量探针', '门禁裁决', '存储落盘'])
+    expect(steps.map((s) => s.name)).toEqual(['快速接管', '向量探针', '准入判定', '存储落盘'])
     expect(steps[0]).toMatchObject({ processed: 1, total: 1, detail: '接管暂存' })
     expect(steps[1]).toMatchObject({ processed: 1, total: 1, detail: '相似度 0.0000' })
-    expect(steps[2]).toMatchObject({ processed: 1, total: 1, detail: '裁决: 独立新增' })
+    expect(steps[2]).toMatchObject({ processed: 1, total: 1, detail: '判定: 独立新增' })
     expect(steps[3]).toMatchObject({ processed: 1, total: 1, detail: '存储落盘' })
 
     const outcome = getTaskFinalOutcome(valetTask, 'zh')
-    expect(outcome.deliverableText).toContain('门禁裁决: 独立新增 (ADD)')
+    expect(outcome.deliverableText).toContain('准入判定: 独立新增 (ADD)')
     expect(outcome.deliverableText).toContain('1 个知识节点已存储落盘')
   })
 })
