@@ -330,10 +330,11 @@ export const CORE_STEP_SPECS: Record<string, AtomicStepSpec> = {
     id: 'step_valet_handover',
     nameZh: '快速接管',
     nameEn: 'Fast Handover',
-    unitZh: '次',
-    unitEn: 'calls',
+    unitZh: '批次',
+    unitEn: 'batches',
     stageKeywords: ['valet', 'handover', 'enqueue', 'ticket'],
-    isActionOnly: true,
+    metricKeys: ['handover_count', 'nodes_count', 'file_count'],
+    totalKeys: ['handover_total', 'total_nodes', 'file_count'],
     engineKey: 'viking_fs',
   },
   // 30. 向量探针
@@ -344,7 +345,8 @@ export const CORE_STEP_SPECS: Record<string, AtomicStepSpec> = {
     unitZh: '探针',
     unitEn: 'probes',
     stageKeywords: ['probe', 'similarity', 'candidate'],
-    metricKeys: ['probed_nodes', 'candidates_count'],
+    metricKeys: ['probed_candidates', 'candidates_count', 'probed_nodes'],
+    totalKeys: ['total_candidates', 'candidates_count', 'probed_nodes'],
     engineKey: 'embedding',
   },
   // 31. 门禁裁决
@@ -356,6 +358,7 @@ export const CORE_STEP_SPECS: Record<string, AtomicStepSpec> = {
     unitEn: 'verdicts',
     stageKeywords: ['decision', 'verdict', 'admission'],
     metricKeys: ['evaluated_decisions', 'verdict_count'],
+    totalKeys: ['total_decisions', 'verdict_count'],
     engineKey: 'semantic',
   },
   // 32. 存储落盘
@@ -366,7 +369,8 @@ export const CORE_STEP_SPECS: Record<string, AtomicStepSpec> = {
     unitZh: '节点',
     unitEn: 'nodes',
     stageKeywords: ['parking', 'persist', 'slot', 'write', 'commit'],
-    metricKeys: ['parked_nodes', 'merged_nodes', 'persisted_nodes'],
+    metricKeys: ['parked_nodes', 'persisted_nodes', 'merged_nodes'],
+    totalKeys: ['total_nodes', 'parked_nodes'],
     engineKey: 'viking_fs',
   },
   // 33. 摄取校验 (托管数据摄取)
@@ -377,7 +381,8 @@ export const CORE_STEP_SPECS: Record<string, AtomicStepSpec> = {
     unitZh: '校验',
     unitEn: 'checks',
     stageKeywords: ['validate', 'schema', 'compliance'],
-    isActionOnly: true,
+    metricKeys: ['validated_items', 'file_count'],
+    totalKeys: ['total_items', 'file_count'],
     engineKey: 'viking_fs',
   },
   // 34. 成果交付
@@ -388,7 +393,8 @@ export const CORE_STEP_SPECS: Record<string, AtomicStepSpec> = {
     unitZh: '成果',
     unitEn: 'deliverables',
     stageKeywords: ['deliver', 'deliverable', 'mount'],
-    isActionOnly: true,
+    metricKeys: ['delivered_items', 'file_count'],
+    totalKeys: ['total_items', 'file_count'],
     engineKey: 'viking_fs',
   },
 }

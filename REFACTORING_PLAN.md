@@ -70,6 +70,7 @@
 
 | 任务工单 ID | 模块与重构主题 | 现状与核心治理目标 | 目标规范硬线 | 优先级 | 计划版本 |
 | :--- | :--- | :--- | :---: | :---: | :---: |
+| **Card-Tasks-i18n-Pipeline** | **异步托管入库/托管摄取/空间注销全链路工序补齐、任务统计中英双语 i18n 统一治理与工序详情高密真实数据度量** | 1. 补齐 `valet_parking`, `managed_ingestion`, `user_delete` 等缺失工序定义与真实流转；<br>2. 修复任务统计“任务类型”与“工序流”空白缺陷，彻底消灭未国际化生词与硬编码；<br>3. 修复 Valet 任务在 TaskTracker 中的持久化缺陷，让任务中心实时可见；<br>4. 工序详情抽屉端到端落地物理真实度量（接管暂存、相似度、裁决、落盘）；<br>5. 严格遵守信达雅、NO GREEN EVER、<=500行红线与 i18n 契约。 | 任务统计 100% 呈现工序，中英双语平行无缺失，工序详情真实度量，单测 17/17 PASS | `v1.4.72` | [x] 已验收通过 ✅ |
 | **Card-Ingestion-01** | **异步托管入库流水线、底座围栏全面封堵与任务中心控制面/信息治理数据面深度闭环** | 落实前台极速交接 (<2ms)、底座单点围栏封死 (ContentWriteCoordinator 唯一收口)、100% 依托 TaskTracker 原生轮子（防冲垮、断电自愈、一键重试）、四阶裁决漏斗 (11432 EMB + 11433 Reranker + LLMLingua-2 熔断直通 + LLM 终审) 与四态分流沉淀治理日志。关联规范：[`docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md`](docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md) | 0 翻墙后门，<2ms 返回，任务中心原生驱动，单测 100% PASS | `v1.4.70` | [x] 已验收通过 ✅ |
 | **Card-LLMLingua-01** | **微软开源顶级轮子 LLMLingua-2 (xlm-roberta) 2080Ti GPU 实机部署与保真度无损调优评测专项** | 针对微软脱水轮子开展专项落地：装入 2080Ti GPU 富余 9GB 显存 (占 1.1G)，在实机中文语料、代码块与 YAML 头部下调优超参数 (rate=0.50, threshold=0.35)，实测验证 100% 毫无语义损失后正式无缝激活流水线脱水插件 | 2080Ti GPU 加速 <15ms，语义损失率 0%，测试全绿 | 🟡 P2 进阶 | `v1.4.71` |
 | **Card-Remediation-DLQ** | **自愈死信队列 (DLQ)、指数退避熔断器与快照可逆回滚防线** | 解决自愈死循环 (Remediation Storm) 与蒸馏误伤不可逆问题；设置最大重试预算 (max_retries=2)、死信队列 (DLQ)、VikingFS.commit 快照与影子索引双缓冲 | 严格阻断无限递归，快照可原子回滚 | 🔴 P1 极高 | `v1.4.62` |
@@ -78,6 +79,29 @@
 | **Card-Memory-Tiering** | **降维打击·三层记忆动态冷热分层体系 (Hot/Warm/Cold Tiering) 与时效动力学衰减** | 借鉴家庭基线与 Stanford 智能体公式；落地 Hot (1,000条高频) / Warm (5,000条温记忆) / Cold (冷存归档排除索引)；配合艾宾浩斯衰减与多因子公式，保证检索永远 O(1) 常数级 | 向量空间轻量常数级，时延不随时间劣化 | ⏸️ 择机迭代 | `v1.5.1` |
 | **Card-Remediation-Bypass** | **奥卡姆裁决·自愈流水线快慢双轨机制 (Fast-Path Bypass vs Deep ov_dream 蒸馏)** | 贯彻奥卡姆剃刀“如无必要勿增实体”；自愈工序引入轻量快轨（纯元数据/软墓碑失效，0 Token 毫秒自愈）与慢轨（夜间低峰调度 35B 执行同主题深度归纳提纯），禁止凡事调大模型 | 简单问题 0 Token，复杂问题深度蒸馏 | ⏸️ 择机迭代 | `v1.5.2` |
 | **Card-Retrieval-AdvancedCards** | **检索大屏第二排高阶运营看板扩展 (Advanced Operational Telemetry)** | 为检索中心拓展第二排运营级数据卡片：冷热层分布率 (Hot/Warm/Cold)、L0 语义缓存命中率、知识信噪比与冲突率 (SNR & Conflict Rate)、混合召回协同度 | 全面透传向量空间内部健康度与熵态 | ⏸️ 择机迭代 | `v1.5.3` |
+
+---
+
+### 📌 P0: [x] Card-Tasks-i18n-Pipeline (v1.4.72): 异步托管入库/托管摄取/空间注销全链路工序补齐、任务统计中英双语 i18n 统一治理与工序详情高密真实数据度量 ✅
+- **类型**：i18n SSOT / Task Pipeline Quantification / Valet Persistence / UI Polish ｜ **优先级**：🔥 P0（已交付闭环）
+- **交付版本**：`v1.4.72` ｜ **交付时间**：2026-09-09
+- **Git Tag**: `v1.4.72`
+- **核心治理成果与交付细节**：
+  1. **任务持久化与可见性修复**：
+     - 在 `valet_ingestion.py` 中将未实现的 `register_task` / `finish_task` 统一收口为官方标准 `task_tracker.create(...)` 与 `task_tracker.complete(...)`，使托管任务完整落盘入库并进入 `/api/v1/tasks` 统一管控。
+  2. **双语平行 i18n 统一治理**：
+     - 在 `zh-CN.ts` 与 `en.ts` 中无缺漏对齐 `valet_parking` (异步托管入库 / Valet Ingestion) 与 `managed_ingestion` (托管数据摄取 / Managed Ingestion)；
+     - 拔除表格类型列英文 raw key 裸露，完全受控于国际化语言包。
+  3. **工序定义与任务统计看板 100% 覆盖**：
+     - 在 `pipeline-definitions.ts`、`panorama-steps-core.ts` 与 `task-flow-helpers.ts` 中补齐 `valet_parking` (快速接管 > 向量探针 > 门禁裁决 > 车位泊入/存储落盘)、`managed_ingestion` (摄取校验 > 文档解析 > 向量建库 > 成果交付)、`user_delete` (空间软标 > 向量抹除 > 磁盘擦除) 的标准原子工序定义；
+     - 解决“任务统计”卡片中上述任务工序流空白缺陷。
+  4. **工序执行明细详情抽屉高密真实数据度量**：
+     - 在 `task-pipeline-specs-core.ts`、`task-pipeline-engine.ts` 与 `task-pipeline-diagram.tsx` 中全面打通真实业务指标与工序详情 Badge；
+     - `快速接管` (接管暂存 1/1 批次)、`向量探针` (真实余弦相似度数值 1/1 探针)、`门禁裁决` (同义合并/增量演进/独立新增 1/1 裁决)、`存储落盘` (落盘节点数 1/1 节点)，终点输出成果卡片真实透传门禁裁决与落盘统计；
+     - 彻底切除 generic 灰色“已完成”空洞占位符。
+  5. **工程规范 100% 恪守**：
+     - 严格遵守信达雅、NO GREEN EVER 规范，所有重构文件严格控制在 500 行物理红线内；
+     - Vitest 17 项测试 100% PASS，Vite 生产构建 100% PASS，系统服务热重载验证通过。
 
 ---
 
