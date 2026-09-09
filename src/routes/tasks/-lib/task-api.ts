@@ -32,6 +32,7 @@ export type TaskTypeFilter =
   | 'four_tier_governance'
   | 'managed_ingestion'
   | 'valet_parking'
+  | 'user_delete'
   | 'all'
 
 export const DEFAULT_PAGE_SIZE = 20
@@ -55,6 +56,7 @@ export const TASK_TYPE_OPTIONS: Exclude<TaskTypeFilter, 'all'>[] = [
   'entity_summarization',
   'four_tier_governance',
   'valet_parking',
+  'user_delete',
 ]
 export const TASK_STATUS_OPTIONS: Exclude<TaskStatusFilter, 'all'>[] = [
   'running',
@@ -316,6 +318,9 @@ export function computeTaskKpiData(
     'fact_mutation',
     'entity_summarization',
     'four_tier_governance',
+    'valet_parking',
+    'managed_ingestion',
+    'user_delete',
   ]
 
   const typeCounts: Record<string, number> = {}

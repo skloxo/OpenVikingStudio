@@ -669,6 +669,8 @@ const zhCN = {
       fact_mutation: '增量事实与四态流转',
       entity_summarization: '时态图谱与实体浓缩',
       four_tier_governance: '四层治理与同主题合并',
+      valet_parking: '异步托管入库',
+      managed_ingestion: '托管数据摄取',
     },
   },
   accountSwitcher: {

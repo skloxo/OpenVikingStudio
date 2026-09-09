@@ -1,8 +1,8 @@
 import {
   ALL_PANORAMA_STEPS,
   TASK_FLOWS,
-} from '#/routes/tasks/-components/pipeline-steps-panorama'
-import type { PanoramaStepDef } from '#/routes/tasks/-components/pipeline-steps-panorama'
+} from '#/routes/tasks/-lib/pipeline-definitions'
+import type { PanoramaStepDef } from '#/routes/tasks/-lib/pipeline-definitions'
 
 export type TaskFlowItem =
   | { kind: 'single'; step: PanoramaStepDef }
@@ -175,6 +175,46 @@ export function getTaskFlowItems(taskType: string): TaskFlowItem[] {
         },
       },
     ]
+  }
+
+  // 异步托管入库 (Valet Ingestion): 四工序时序流
+  if (taskType === 'valet_parking') {
+    const s1 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_valet_handover')
+    const s2 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_valet_probe')
+    const s3 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_valet_decision')
+    const s4 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_valet_parking')
+    const res: TaskFlowItem[] = []
+    if (s1) res.push({ kind: 'single', step: s1 })
+    if (s2) res.push({ kind: 'single', step: s2 })
+    if (s3) res.push({ kind: 'single', step: s3 })
+    if (s4) res.push({ kind: 'single', step: s4 })
+    return res
+  }
+
+  // 托管数据摄取 (Managed Ingestion): 四工序时序流
+  if (taskType === 'managed_ingestion') {
+    const s1 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_managed_validate')
+    const s2 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_parse')
+    const s3 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_embedding')
+    const s4 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_managed_deliver')
+    const res: TaskFlowItem[] = []
+    if (s1) res.push({ kind: 'single', step: s1 })
+    if (s2) res.push({ kind: 'single', step: s2 })
+    if (s3) res.push({ kind: 'single', step: s3 })
+    if (s4) res.push({ kind: 'single', step: s4 })
+    return res
+  }
+
+  // 用户空间注销 (User Deletion): 三工序时序流
+  if (taskType === 'user_delete' || taskType === 'user_deletion') {
+    const s1 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_soft_mark')
+    const s2 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_vector_purge')
+    const s3 = ALL_PANORAMA_STEPS.find((s) => s.id === 'step_disk_wipe')
+    const res: TaskFlowItem[] = []
+    if (s1) res.push({ kind: 'single', step: s1 })
+    if (s2) res.push({ kind: 'single', step: s2 })
+    if (s3) res.push({ kind: 'single', step: s3 })
+    return res
   }
 
   const flow = TASK_FLOWS.find((f) => f.typeKey === taskType)
