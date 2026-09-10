@@ -87,7 +87,7 @@
 ### 📌 P0: [x] Card-UI-UniversalMemoryImpactAtomization (v1.4.92): 消灭转圈圈 Spinner 竞态死锁、记忆影响开箱即用原子化 (UniversalMemoryImpact) 与全站 100% 结构一致闭环 ✅
 - **类型**：Spinner Race Condition Elimination / UniversalMemoryImpact Atomization / Cross-Module Structural Alignment ｜ **优先级**：🔥 P0（已交付闭环）
 - **交付版本**：`v1.4.92` ｜ **交付时间**：2026-09-10
-- **Git Commit**: `（待提交）` (OpenVikingStudio) ｜ **Git Tag**: `v1.4.92`
+- **Git Commit**: `bcba4f7dd` (OpenVikingStudio) ｜ **Git Tag**: `v1.4.92`
 - **核心治理成果与交付细节**：
   1. **彻底铲除转圈圈 (Permanent Spinner) 异步物理竞态死锁**：
      - **排查深层物理根因**：父组件（`gatekeeper-decision-drawer.tsx`）与子组件（`MemoryDiffItem`）并发向底层 VikingFS 发起相同 `targetUri` 的读取请求。父组件先完成并触发重渲染导致子组件 `useEffect` 触发 cleanup（`isMounted = false`）；此时子组件自身异步完成时的 `finally` 块中 `if (isMounted) setIsLoadingContent(false)` 保护失效，导致 `isLoadingContent` 状态被永久锁死为 `true`，触发右侧 `LoaderCircleIcon` 永不停歇旋转；
