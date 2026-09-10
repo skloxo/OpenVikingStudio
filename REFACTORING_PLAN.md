@@ -80,28 +80,106 @@
 | **Card-UI-UnifiedMemoryImpactWheel** | **通用记忆增量审计快照轮子 (UnifiedMemoryImpactDrawer) 全局解耦、高兼容双模态与四场景复用** | 1. 彻底解耦原本深埋在会话中心的 MemoryImpact 私有抽屉为系统级公共轮子 `src/components/memory-impact/`；<br>2. 剥离与 `SessionMeta` 强绑定，建立纯数据驱动物理契约 `UniversalMemoryDiff`；<br>3. 实现受控快照模式 (Controlled) 与异步懒查询模式 (Lazy Query) 双模态；<br>4. 在会话中心、任务中心抽屉、信息治理流水溯源、存量结晶器 4 大场景全量复用；<br>5. 拆分模块均严格落在 100~250 行黄金甜点区，修复 `< 11px` 微字与 NO GREEN 视觉缺陷；<br>6. 关联规范：[`OpenVikingStudio/docs/architecture/SESSION_EVOLUTION_AND_MEMORY_IMPACT_SPEC.md`](OpenVikingStudio/docs/architecture/SESSION_EVOLUTION_AND_MEMORY_IMPACT_SPEC.md)。 | 单文件全量 ≤250 行，会话中心平滑无感兼容，双模态切换流畅，Vitest 全绿，Vite 构建通过 | `v1.4.82` | [x] 已验收通过 ✅ |
 | **Card-Tasks-Stage2.4-PipelineTerminology** | **全链路信达雅与物理真相还原：原子入库、三大准入解耦与「熵增防御」工业级对齐** | 1. 任务名正式更名为 4 字信达雅「原子入库」(`Atomic Ingestion`)；<br>2. 前门准入按机制物理解耦为「轻量准入」、「会话准入」、「资源准入」，物理阻断 Agent 幻觉合并；<br>3. 后门审查全面升级为 4 字「熵增防御」(`Entropy Defense`)，切除 AI 生搬硬凑的“质量门禁”；<br>4. 固化铁律：Agent 自驱提议必须标注 `🤖 [Agent 自驱提议 · 实施前须人脑确认]`，未获人脑许可严禁擅自实施。 | 34 套测试 164 项 100% 全绿，Vite 构建 PASS，1933 端口重载，Git Tag `v1.4.84` | `v1.4.84` | [x] 已验收通过 ✅ |
 | **Card-CPA-MCP-And-Skill-Pair** | **CPA 弹性无限算力总线 MCP 工具与技能双轮驱动闭环机制** | 1. 物理层：实现 `openviking_cpa_consult` 与 `openviking_cpa_fanout` 两大 MCP 工具，单文件 ≤250 行黄金甜点区；<br>2. 认知层：发布 `cpa-squad` 技能，明确触发词、红队找茬提示词、5~15 温和并发与自驱立卡铁律；<br>3. 生命线：25s 硬超时、线程池非阻塞清理、梯度平滑降级 (mimo ➔ sonnet ➔ qwen)；<br>4. 经验沉淀：Master Memory Lesson #90 永久归档。 | 烟测通过，两阶段降级成功，Antigravity IDE 工具注册成功，Lesson #90 入脑 | `v1.4.85` | [x] 已验收通过 ✅ |
-| **Card-UI-UniversalMemoryImpactAtomization** | **消灭转圈圈 Spinner 竞态死锁、记忆影响开箱即用原子化 (UniversalMemoryImpact) 与全站 100% 结构一致闭环** | 1. 彻底铲除 MemoryDiffItem 异步竞态导致条目摘要行 Spinner 永久旋转 Bug；<br>2. 深度落实组件原子化哲学：封装 UniversalMemoryImpactCard，自包含统一图标、标题、增量胶囊 (+1 ~1)、折叠展开交互与分类 Diff 列表；<br>3. 彻底切除门禁抽屉与任务中心手搓外壳，单点迭代全局生效；<br>4. 资产档案与活态单测更新，34 套测试 165 项单测通过，Vite 生产构建成功，Git Tag v1.4.92。 | 摘要行零 Spinner 永久旋转，全站记忆影响 100% 结构一致原子化，单测全绿，构建 PASS | `v1.4.92` | [x] 已验收通过 ✅ |
-| **Card-UI-GatekeeperDesktopGridAndFullContent** | **门禁抽屉 768px 桌面仪表盘对齐、真实正文异步拉取与记忆内容展开全文闭环** | 1. 修复门禁抽屉被覆盖为 384px 狭长面条长蛇阵缺陷，升级为 768px (sm:max-w-3xl) 并落地 50/50 结构化 Grid；<br>2. 记忆影响视图舒展对齐会话与任务中心，恢复宽敞 3 态卡片与分类 Tab；<br>3. MemoryDiffItem 支持 VikingFS 真实正文异步加载与【展开全文/收起】切换，彻底解决“展开后内容未展示全”；<br>4. 修复 Header 溢出，Badge 100% 防截断；34 套测试 165 项单测通过，生产构建通过，浏览器实测通过，Git Tag v1.4.90。 | 门禁抽屉768px舒展对齐，内容展开全文无截断，单测构建PASS，Git Tag v1.4.90 | `v1.4.90` | [x] 已验收通过 ✅ |
-| **Card-UI-MemoryImpactMultiDocAndI18n** | **记忆影响多文档拓扑提取、三态统计大卡片恢复与任务/门禁全局 i18n 无死角覆盖** | 1. 修复 sessionProp 缺失 commit_count 导致会话增量记忆返回空的 Bug，支持多文档 (events/entities/cases/trajectories) 提取；<br>2. 任务中心与门禁抽屉恢复顶部 3 张大统计卡片 (新增/更新/删除) 与分类 Tab 过滤栏；<br>3. 补齐 tasks 与 retrieval 模块中英文双语 i18n 词条（含动态终端执行日志与门禁自解释理由），彻底铲除硬编码；<br>4. 34 套测试 165 项用例 100% PASS，Vite 构建通过，浏览器双实机截图留痕，Git Tag v1.4.89。 | 多文档拓扑呈现，三态卡片与分类Tab对齐会话中心，双语i18n零死角，构建与单测PASS | `v1.4.89` | [x] 已验收通过 ✅ |
+| **Card-Tasks-DualTrack-Humanized-Refactor** | **任务中心双轨自解释重构（消灭机器黑话·业务作业与底层工序双轨·成果物闭环直达）** | 1. 双轨视图架构：主看板展示有头有脸、有业务目标的宏观大任务（中文自解释标题、Agent/用户发起人、真实耗时、X/Y 物理进度），底层工序折叠收拢为二级面板；<br>2. 全链路纳管契约：后端新增 `POST /api/v1/tasks/business`，支持业务批量作业声明与进度上报；<br>3. 彻底消灭裸 UUID：第一列以业务标题与来源徽章呈现，UUID 弱化为短号；<br>4. 成果物闭环：卡片与表格均带「成果物直达」直连 `/resources?uri=...`。 | 双轨视图丝滑切换，消灭裸 UUID，成果物直达，pytest 与 35 套 vitest 全绿，Vite 构建通过 | `v1.4.93` | [x] 已验收通过 ✅ |
+| **Card-UI-ImpactTabsAndLocalization** | **记忆影响分类 Tab 对齐、无限转圈死循环根除、全分类双语 i18n 补齐与抽屉横向溢出清零** | 1. 查清并修复门禁抽屉因 `memoryTypes.length > 1` 漏展示分类 Tab 缺陷，统一改为 `> 0` 保证全场景一致性；<br>2. 查清并根除 404 引发的 `fetchFileContent` 无限调用死循环与 LoaderCircleIcon 永久转圈；<br>3. 补齐中英文双语字典（cases, entities, events, experiences, trajectories, lessons, staging 等 14 类），Tab 与 Badge 100% 中文化；<br>4. 修复 TaskDetailSheet 与 PipelineDiagram 嵌套容器缺失 `min-w-0` 与 `overflow-x-hidden` 导致的横向滚动条与 Badge 切角裁切缺陷；<br>5. 34 套测试 165 项单测全部 PASS，生产构建通过，实机多场景截图留痕，Git Tag v1.4.91。 | 分类Tab全场景对齐，死循环转圈彻底根除，双语i18n零死角，横向溢出彻底清零 | `v1.4.91` | [x] 已验收通过 ✅ |
+| **Card-Explore-TieredLazyFetch** | **代码搜索工具「分级懒加载 (depth=0/1/2/3)」契约改造** | 1. 吸收 FastContext 与 CPA 导师分级懒加载黄金律，改造 `grep_search` 与代码搜索；<br>2. 引入 `depth` 参数：`depth=0`（元数据行号）、`depth=1`（紧凑指纹前后1行，默认推荐）、`depth=2`（完整块）；<br>3. 根除无脑全文倾倒引发的上下文污染，同时避免行号盲人摸象导致的往返雪崩。 | 默认搜索单条文本压缩 70% 以上，往返轮次不增加，单测 PASS | `P1` | `v1.4.91` | ⏳ 待排期 |
+| **Card-Memory-DualTrackStorage** | **OpenViking 记忆中枢「双轨写入，单轨读取」解耦重构** | 1. 吸收字节《S³Gym》空间精度与 CPA 语义流形分离律，重构 `EntropyGatekeeper` 与 `memory_store`；<br>2. 双轨存储：`semantic_anchor`（因果归因与场景，专供向量索引）与 `delta`（3~5 行 Git Diff 与错误指纹，纯文本用于代码重放）；<br>3. 彻底根治裸 Diff 语义失明与感性废话反思引发的负迁移。 | 向量搜索精准召回具体代码 Diff，记忆库彻底切除空洞废话，单测 PASS | `P0` | `v1.4.94` | [x] 已验收通过 ✅ |
+| **Card-Harness-DefensiveAndPurge** | **全系统防御性代码显式标注 (`@defensive`) 与“死机制”大扫除** | 1. 吸收字节《HarnessDev》(18/108幽灵代码) 与 CPA 可达性契约，为 FRP 重连、SQLite 降级等防御性底牌添加显式 `@defensive` 注解；<br>2. 静态分析不可达且无 `@defensive` 标注的冗余 Wrapper/伪监听类坚决物理切除；<br>3. 消除“写了以为在用实际触发 0 次”的代码杂质，誓死捍卫系统防御性韧性。 | 核心防御代码 100% 显式标注，切除冗余死机制包装层，代码向黄金区收敛 | `P0` | `v1.4.95` | [x] 已验收通过 ✅ |
+| **Card-Verify-MultiMetricGate** | **交付物多维物理验真门禁（内容哈希 + 增量覆盖率，防 Exit 0 作弊）** | 1. 吸收字节《Aspire》虚假闭环教训与 Goodhart 定律防范，重构 Task Completion 判定；<br>2. 代码开发类任务强制双重物理验真：`Diff 变更行数 > 0` 且关键集成测试真实通过；<br>3. 阻断 Agent 通过 mock、swallow 异常或加空注释伪造 `Exit 0` 宣布交付。 | 任务中心物理验真断言生效，虚假 Exit 0 100% 拦截，任务流转真实可信 | `P2` | `v1.4.96` | ⏳ 待排期 |
+| **Card-Metrics-AgentSensors** | **智能体三维效能探针（Token SNR、P@5 召回精度、人工介入率）** | 1. 落地 CPA 导师核心建言“先立度量再动架构，给系统一把恒定的物理标尺”；<br>2. 在 OpenViking Studio 观测大盘埋设三大物理探针：Token 有效载荷率 SNR、记忆召回命中率 P@5、人类纠偏介入率；<br>3. 终结架构改造效果的定性口水战，全部以数字化客观曲线驱动演进。 | Studio 观测大盘透传三大物理指标，每日会话自动统计，指标真实可靠 | `P1` | `v1.4.97` | ⏳ 待排期 |
 
-### 📌 P0: [x] Card-UI-UniversalMemoryImpactAtomization (v1.4.92): 消灭转圈圈 Spinner 竞态死锁、记忆影响开箱即用原子化 (UniversalMemoryImpact) 与全站 100% 结构一致闭环 ✅
-- **类型**：Spinner Race Condition Elimination / UniversalMemoryImpact Atomization / Cross-Module Structural Alignment ｜ **优先级**：🔥 P0（已交付闭环）
-- **交付版本**：`v1.4.92` ｜ **交付时间**：2026-09-10
-- **Git Commit**: `bcba4f7dd` (OpenVikingStudio) ｜ **Git Tag**: `v1.4.92`
+### 📌 P0: [x] Card-Harness-DefensiveAndPurge (v1.4.95): 全系统防御性代码显式标注 (`@defensive`) 与“死机制”大扫除 ✅
+- **类型**：Defensive Engineering / Safety Harness / Telemetry Registry / Observability ｜ **优先级**：🔥 P0（已交付闭环）
+- **交付版本**：`v1.4.95` ｜ **交付时间**：2026-09-11
+- **Git Commit**: `f822ebea1` (OpenVikingStudio) ｜ **Git Tag**: `v1.4.95`
 - **核心治理成果与交付细节**：
-  1. **彻底铲除转圈圈 (Permanent Spinner) 异步物理竞态死锁**：
-     - **排查深层物理根因**：父组件（`gatekeeper-decision-drawer.tsx`）与子组件（`MemoryDiffItem`）并发向底层 VikingFS 发起相同 `targetUri` 的读取请求。父组件先完成并触发重渲染导致子组件 `useEffect` 触发 cleanup（`isMounted = false`）；此时子组件自身异步完成时的 `finally` 块中 `if (isMounted) setIsLoadingContent(false)` 保护失效，导致 `isLoadingContent` 状态被永久锁死为 `true`，触发右侧 `LoaderCircleIcon` 永不停歇旋转；
-     - **物理根除**：彻底切除条目摘要栏多余无价值的 `LoaderCircleIcon`，正文异步拉取完毕后直接平滑更新 Markdown，消灭假死死循环幻象，界面干净清爽。
-  2. **深度践行原子化通用组件 (UniversalMemoryImpact) 架构哲学**：
-     - **直击用户痛点**：“这里是一种样式，那里是一种样式；这里有 ABCD，那边有 ABCDEF，不一致。通用组件必须原子化，任何地方接了直接能用，单点迭代全局生效”；
-     - **提纯 `UniversalMemoryImpactCard` 轮子**：新建 `src/components/memory-impact/universal-memory-impact-card.tsx`（116 行，黄金甜点区），自包含统一图标（`BrainCircuitIcon`）、自适应标题、统一增量指示胶囊（`ImpactCounts`，如 `+1` / `+1 ~1`）、折叠展开交互以及完整 `UnifiedMemoryImpactView` 主体；
-     - **业务调用端彻底解耦**：门禁抽屉 (`gatekeeper-decision-drawer.tsx`) 和任务中心 (`task-pipeline-diagram.tsx`) 原本手搓的 30~50 行外壳、展开状态与胶水代码全部切除，调用端仅需 1 行代码 `<UniversalMemoryImpact diffs={...} />` 或 `<UniversalMemoryImpact session={...} operations={...} />` 开箱即用。
-  3. **四维活态资产沉淀与视网膜门禁守护**：
-     - `docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md` 档案库正式登记 `UniversalMemoryImpact` 资产；
-     - `src/components/component-inventory.test.ts` 活态视网膜更新断言门禁；
-     - 34 套测试文件 165 项单测 100% PASS；
-     - Vite 生产构建 `npm run build` 24.88s 零报错顺利通过；
-     - 浏览器实机截图走查：门禁抽屉 `decision_drawer_1789051804349.png` 零转圈，且卡片结构与任务中心 100% 结构化一致。
+  1. **防御性安全网装饰器与遥测注册表 (`@defensive` & `DefensiveRegistry`)**：
+     - 新建核心防御模块 `openviking/core/defensive.py`（226 行，位于黄金甜点区）；
+     - 支持同步 (sync) 与异步 (async) 函数，内建指数退避重试 (`retry_count` + `retry_backoff`) 与安全降级兜底 (`fallback` 值或无参可调用对象)；
+     - 线程安全全局单例 `DefensiveRegistry`，实时追踪全系统显式安全网的注册点位、执行次数、降级触发次数及最近 100 条故障告警事件。
+  2. **核心业务与遥测防御底牌显式标注**：
+     - **向量探针**：`gatekeeper_prober.probe_nearest_vector` 标注 `@defensive(domain="gatekeeper", fallback=(0.0, None, None))`，向量数据库异常时平滑降级；
+     - **记忆更新**：`memory_updater.refresh_file_embedding` 标注 `@defensive(domain="memory_updater", fallback=False)`；
+     - **主机探针**：`system.py` 中的 `_read_host_mem` 与 `_read_host_cpu` 显式标注 `@defensive(domain="system")`；
+     - **时序数据库**：`telemetry_store.py` 中的 `_get_connection` 与 `_flush_batch` 标注 `@defensive(domain="sqlite")`，抵御连接风暴与锁竞争。
+  3. **实时观测接口交付 (`GET /api/v1/system/defensive`)**：
+     - 在 `system.py` 新增端点，向前端与运维探针实时输出 registered safeguards、execution counts、fallback counts 与 recent triggers。
+  4. **严格单测与构建全绿验证**：
+     - 新建 `tests/server/test_defensive_harness.py`（167 行，覆盖同步/异步/重试/降级/遥测等 7 项用例，100% PASS）；
+     - 双轨记忆单测 `test_memory_dual_track_storage.py` 8 项全绿；
+     - 前端 35 套测试 167 项单测全部 PASS，Vite 生产打包 18.09s 成功，服务平滑重启验证 `{"status":"ok"}`。
+
+### 📌 P0: [x] Card-Memory-DualTrackStorage (v1.4.94): OpenViking 记忆中枢「双轨写入，单轨读取」解耦重构 ✅
+- **类型**：Memory Architecture / Manifold Separation / Dual-Track Storage / Code Replay ｜ **优先级**：🔥 P0（已交付闭环）
+- **交付版本**：`v1.4.94` ｜ **交付时间**：2026-09-11
+- **Git Commit**: `76148a5a1` (OpenVikingStudio) ｜ **Git Tag**: `v1.4.94`
+- **核心治理成果与交付细节**：
+  1. **语义流形与物理代码重放双轨解耦 (`DualTrackMemory`)**：
+     - 新增核心服务模块 `openviking/service/memory_dual_track.py` (203 行，黄金甜点区)；
+     - `semantic_anchor`（因果归因、触发场景、物理原则与错误症状）专供向量模型高信噪比嵌入与检索；
+     - `delta`（3~5 行精准 Git Diff、代码片段与错误指纹）纯文本结构化嵌入 Markdown 正文供 Agent 确定性代码重放；
+     - 彻底根除纯裸 Diff 造成的向量空间语义失明，以及空洞感性反思引发的负迁移。
+  2. **网关与向量探针双轨感知 (`EntropyGatekeeper` & `gatekeeper_prober`)**：
+     - `gatekeeper_prober.probe_nearest_vector` 自动提取 `semantic_anchor` 作为探测 Query，切除 Diff 代码噪声对余弦相似度的稀释；
+     - `EntropyGatekeeper.evaluate_and_intercept` 自动感知双轨知识命题，在落盘决策与审计日志中标记 `[双轨写入: 语义锚点 + 代码重放轨]`；
+     - 修复 `RequestContext` 默认用户初始化缺陷，保障内部探针链路 100% 毫秒级直通。
+  3. **记忆向量化与落盘更新链路深度对齐 (`MemoryUpdater`)**：
+     - `MemoryUpdater._vectorize_memories` 自动优先向量化 `semantic_anchor`，磁盘保留完整双轨 Markdown，实现「双轨写入，单轨读取」闭环。
+  4. **双模态 MCP 工具全链路支持 (`openviking_store` & `openviking_record_evolution_lesson`)**：
+     - `openviking_store` 新增 `semantic_anchor` 与 `delta` 入参，自动格式化为标准双轨 Markdown；
+     - `openviking_record_evolution_lesson` 新增 `delta` 入参，将踩坑教训与真实代码 Diff 一同刻入体外大脑；
+     - 卫星节点 MCP (`satellite_mcp_server.py`) 严格对齐且行数控制在 495 行 (严格 ≤ 500 行)。
+  5. **测试与验证全绿**：
+     - 编写全新单测套件 `tests/server/test_memory_dual_track_storage.py`（8 项测试用例 100% 通过）；
+     - `EntropyGatekeeper`、`ManagedIngestion`、`ValetIngestion` 24 项服务端单测全绿；
+     - 前端 35 套测试 167 项单测 100% 全绿，Vite 生产构建通过，`openviking.service` 平滑重启重载。
+
+### 📌 P0: [x] Card-Tasks-DualTrack-Humanized-Refactor (v1.4.93): 任务中心职能解耦与双轨自解释重构（消灭机器黑话·业务作业与底层工序双轨·成果物闭环直达） ✅
+- **类型**：Tasks UX Redesign / Dual-Track Architecture / Humanized Presentation / Deliverable Link ｜ **优先级**：🔥 P0（已交付闭环）
+- **交付版本**：`v1.4.93` ｜ **交付时间**：2026-09-11
+- **Git Commit**: `ef28256c5` (OpenVikingStudio) ｜ **Git Tag**: `v1.4.93`
+- **核心治理成果与交付细节**：
+  1. **双轨自解释视图全面落地 (Business Jobs + System Ops)**：
+     - **业务工作流主看板 (`BusinessJobsView`)**：默认优先呈现，以结构化紧凑卡片展示有头有脸的宏观任务（中文自解释标题、Agent 身份徽章、真实耗时、X/Y 物理流转进度与成果物链接）；
+     - **系统底层运维工序 (`SystemOpsView`)**：下方可折叠收拢，供深入排查底层增量重排、周期质检与空间压缩工序时一键展开；
+     - 顶部提供「双轨业务流」与「工序总表」视图切换开关。
+  2. **全链路业务作业纳管契约 (`POST /api/v1/tasks/business`)**：
+     - 后端新增轻量业务作业上报端点，任何 Agent 脚本或批量作业均可通过一句话声明注册带有 `human_title`、`initiator`、`progress` 与 `deliverable` 的业务卡片；
+     - 补齐完整 pytest 单元测试 `tests/test_task_business_api.py`，全绿通过。
+  3. **彻底消灭裸露机器 UUID (Humanized Task Presentation)**：
+     - 提纯 `TaskHumanCell` 组件：表格第一列优先呈现业务人类标题（如「托管入库：2026-09-10_fece3d5f」），机器流水号弱化为副标题 `#shortId`；
+     - 提纯 `TaskExecutionCell` 与 `TasksTableSection`：将 457 行巨石组件重构切分为 3 个黄金甜点区组件（均为 100~250 行），单文件行数严格达标；
+     - 页面入口容器 `route.tsx` 精简为 143 行（严格 ≤ 150 行）。
+  4. **成果物闭环直达 (Deliverable Link Closure)**：
+     - 任务落盘完成后，卡片底部与表格行均提供「成果物直达」按钮，点击直接路由至 `/resources?uri=...` 进行无缝大图预览与深读。
+  5. **测试与实机留痕**：
+     - 35 套前端测试 167 项用例 100% 全绿；后端 pytest 100% 全绿；Vite 生产构建通过；
+     - 浏览器实机截图留痕：`tasks_dual_track_view_1789063418793.png` 与 `tasks_table_view_1789063428867.png`。
+
+### 📌 P0: [x] Card-UI-ImpactTabsAndLocalization (v1.4.91): 记忆影响分类 Tab 对齐、无限转圈死循环根除、全分类双语 i18n 补齐与抽屉横向溢出清零 ✅
+- **类型**：UI Consistency / Infinite Loop Bugfix / Full i18n / Horizontal Overflow Elimination ｜ **优先级**：🔥 P0（已交付闭环）
+- **交付版本**：`v1.4.91` ｜ **交付时间**：2026-09-10
+- **Git Commit**: `ed690c500` (OpenVikingStudio) ｜ **Git Tag**: `v1.4.91`
+- **核心治理成果与交付细节**：
+  1. **查清并修复门禁抽屉缺失分类 Tab 缺陷（全场景一致性对齐）**：
+     - **根因追溯**：`UnifiedMemoryImpactView` 此前设置了 `{memoryTypes.length > 1 && ...}` 条件，原意是在仅有 1 个分类时隐藏过滤栏；但门禁决策往往只涉及单一分类（如 `lessons`），导致过滤栏被隐去，与会话中心产生视觉不一致；
+     - **治理落地**：将条件统一收口为 `{memoryTypes.length > 0 && ...}`，无论 1 类还是多类，均舒展呈现 `[ 全部 ]` + 对应分类 Tab，全场景交互 100% 对齐。
+  2. **查清并根除 404 引发的无限调用死循环与转圈圈（彻底消灭永久 Spinner）**：
+     - **根因追溯**：当落盘目标 URI 尚未写入磁盘或返回 404 时，`fetchFileContent` 抛出异常进入 `catch`，`asyncContent` 保持为 `null`；而原 `useEffect` 将 `isLoadingContent` 放入了依赖项数组中，当在 `finally` 中将 `isLoadingContent` 设为 `false` 时，依赖变化再次触发 `useEffect`，形成无休止的 404 异步请求死循环，导致 `LoaderCircleIcon` 永久旋转；
+     - **治理落地**：引入 `attemptedUrisRef = React.useRef<Set<string>>(new Set())` 进行单次物理阻断保护，从依赖数组中彻底剔除 `isLoadingContent`，保证每个 URI 在生命周期内至多尝试一次，404 优雅降级并立即销毁 Spinner。
+  3. **记忆分类双语 i18n 100% 全覆盖（彻底铲除裸英文单词）**：
+     - 在 `zh-CN/sessions.ts` 与 `en/sessions.ts` 中结构化补充 `impact.types` 字典，精准覆盖 `cases` (典型案例), `entities` (实体架构), `events` (大事记), `experiences` (实践经验), `trajectories` (推演轨迹), `lessons` (避坑教训), `staging` (暂存快照) 等 14 类核心记忆类型；
+     - `UnifiedMemoryImpactView` 的 Tab 按钮与 `MemoryDiffItem` 的 Badge 徽章统一通过 `t('impact.types.' + type)` 解析，彻底杜绝 raw English 直接外显。
+  4. **抽屉嵌套容器 `min-w-0` 与 `overflow-x-hidden` 全链路防线（彻底清除横向滚动与裁切）**：
+     - 修复 `task-detail-sheet.tsx` 滚动区缺少 `overflow-x-hidden` 缺陷；
+     - 为 `TaskPipelineDiagram` 的工序容器、`DetailSection`、记忆审计块及 `<details>`、`<summary>` 赋予 `min-w-0 w-full overflow-hidden`，为长 URI 赋予等宽截断，为 `<pre>` 注入 `break-all min-w-0 max-w-full`；
+     - 切换至 `推演轨迹` (trajectories) 等长分类时，右侧徽章与卡片边框 100% 紧凑内贴，底部横向滚动条彻底清零。
+  5. **工程质量与实机走查留痕**：
+     - 单元测试：34 套测试文件 165 项用例 100% PASS；
+     - 生产构建：`npm run build` 18.83s 成功构建；
+     - 浏览器实机截图走查留痕：
+       - 门禁抽屉已恢复分类 Tab、Spinner 彻底消除、Badge 全中文化：`retrieval_trace_drawer_1789049039087.png`；
+       - 任务中心切换「推演轨迹」无横向滚动条、无溢出裁切实测：`task_drawer_trajectories_tab_fixed_1789049192366.png`。
 
 ### 📌 P0: [x] Card-UI-GatekeeperDesktopGridAndFullContent (v1.4.90): 门禁抽屉 768px 桌面仪表盘对齐、真实正文异步拉取与记忆内容展开全文闭环 ✅
 - **类型**：Gatekeeper UI Modernization / 768px Width Alignment / Full Content Display / Anti-Clipping ｜ **优先级**：🔥 P0（已交付闭环）
