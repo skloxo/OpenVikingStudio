@@ -164,7 +164,7 @@ class ValetIngestionEngine:
                     },
                 )
             except Exception as e:
-                logger.debug("Task tracker early PENDING registration note: %s", e)
+                logger.warning("Task tracker early PENDING registration failed: %s", e)
 
         try:
             loop = asyncio.get_running_loop()
@@ -245,17 +245,32 @@ class ValetIngestionEngine:
                 )
                 await task_tracker.start(ticket_id, account_id="default", user_id="default")
             except Exception as e:
-                logger.debug("Task tracker create/start error: %s", e)
+                logger.warning("Task tracker create/start error for %s: %s", ticket_id, e)
 
         # Update status to parking
         with self._tickets_lock:
             if ticket_id in self._tickets:
                 self._tickets[ticket_id].status = "parking"
 
-        decision: GatekeeperDecision = await gatekeeper.evaluate_and_intercept(
-            uri=uri,
-            content=content,
-        )
+        try:
+            decision: GatekeeperDecision = await asyncio.wait_for(
+                gatekeeper.evaluate_and_intercept(
+                    uri=uri,
+                    content=content,
+                ),
+                timeout=15.0,
+            )
+        except asyncio.TimeoutError:
+            logger.warning(
+                "[ValetIngestion] Gatekeeper evaluation timed out after 15s for uri=%s, falling open to safe add.",
+                uri,
+            )
+            decision = GatekeeperDecision(
+                action="add",
+                similarity=0.0,
+                uri=uri,
+                reason="门禁裁决超时 (15s 看门狗熔断保护)，安全放行入库。",
+            )
 
         deliverable = None
         action_msg = ""
@@ -326,7 +341,7 @@ class ValetIngestionEngine:
                     user_id="default",
                 )
             except Exception as e:
-                logger.debug("Task tracker complete notification: %s", e)
+                logger.warning("Task tracker complete notification failed for %s: %s", ticket_id, e)
 
     def _write_local_file(self, uri: str, content: str) -> None:
         """Physical disk write helper for viking:// URIs."""

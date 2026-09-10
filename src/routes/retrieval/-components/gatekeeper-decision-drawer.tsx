@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
-import { CopyIcon, CheckIcon, ShieldCheckIcon, FileTextIcon, HardDriveIcon, ClockIcon } from 'lucide-react'
+import { CopyIcon, CheckIcon, ShieldCheckIcon, FileTextIcon, HardDriveIcon, ClockIcon, BrainCircuitIcon } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -9,8 +9,13 @@ import {
   SheetDescription,
 } from '#/components/ui/sheet'
 import { Badge } from '#/components/ui/badge'
+import { Button } from '#/components/ui/button'
 import { cn } from '#/lib/utils'
 import { formatBytes } from '#/lib/formatters'
+import {
+  UnifiedMemoryImpactDrawer,
+} from '#/components/memory-impact'
+import type { UniversalMemoryDiffOperation } from '#/components/memory-impact'
 
 export interface GatekeeperDecisionRecord {
   id?: string
@@ -38,6 +43,28 @@ export function GatekeeperDecisionDrawer({
   const { t } = useTranslation('tasksPage')
   const [copiedId, setCopiedId] = React.useState(false)
   const [copiedUri, setCopiedUri] = React.useState(false)
+  const [impactOpen, setImpactOpen] = React.useState(false)
+
+  const impactOperations = React.useMemo<UniversalMemoryDiffOperation[]>(() => {
+    if (!decision) return []
+    const isUpdate = decision.action === 'update'
+    const targetUri = decision.uri || decision.matched_uri || 'viking://unknown'
+    return [
+      {
+        kind: isUpdate ? 'update' : 'add',
+        uri: targetUri,
+        memoryType: 'knowledge',
+        before: isUpdate ? (decision.matched_text_snippet || undefined) : undefined,
+        after: decision.reason || undefined,
+        description: decision.reason,
+        meta: {
+          decisionId: decision.id,
+          similarity: decision.similarity,
+          action: decision.action,
+        },
+      },
+    ]
+  }, [decision])
 
   if (!decision) return null
 
@@ -217,6 +244,34 @@ export function GatekeeperDecisionDrawer({
             </div>
           )}
 
+          {/* 知识落盘影响与增量快照联动 */}
+          {decision.action !== 'noop' && decision.action !== 'delete' && (
+            <div className="flex items-center justify-between rounded-md border border-primary/25 bg-primary/5 p-2.5">
+              <div className="flex items-center gap-2">
+                <BrainCircuitIcon className="size-4 text-primary shrink-0" />
+                <div className="flex flex-col">
+                  <span className="text-[11px] font-medium text-foreground">
+                    {t('gatekeeper.viewMemoryImpact')}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {decision.action === 'update'
+                      ? t('gatekeeper.updateImpactHint')
+                      : t('gatekeeper.addImpactHint')}
+                  </span>
+                </div>
+              </div>
+              <Button
+                type="button"
+                size="xs"
+                variant="outline"
+                onClick={() => setImpactOpen(true)}
+                className="h-6.5 text-[11px] font-medium border-primary/30 hover:bg-primary/10 hover:text-primary gap-1 shrink-0"
+              >
+                <span>{t('gatekeeper.auditDiff')}</span>
+              </Button>
+            </div>
+          )}
+
           {/* 底部元数据栏 */}
           <div className="grid grid-cols-2 gap-2 rounded-md border border-border/40 bg-muted/10 p-2.5 text-[11px] text-muted-foreground">
             <div className="flex items-center gap-1.5">
@@ -233,6 +288,19 @@ export function GatekeeperDecisionDrawer({
           </div>
         </div>
       </SheetContent>
+
+      {/* 嵌套呼出公共通用记忆增量抽屉 */}
+      <UnifiedMemoryImpactDrawer
+        open={impactOpen}
+        onOpenChange={setImpactOpen}
+        operations={impactOperations}
+        title={
+          decision.action === 'update'
+            ? t('gatekeeper.impactTitleUpdate')
+            : t('gatekeeper.impactTitleAdd')
+        }
+        description={decision.reason}
+      />
     </Sheet>
   )
 }
