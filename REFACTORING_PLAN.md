@@ -80,7 +80,34 @@
 | **Card-UI-UnifiedMemoryImpactWheel** | **通用记忆增量审计快照轮子 (UnifiedMemoryImpactDrawer) 全局解耦、高兼容双模态与四场景复用** | 1. 彻底解耦原本深埋在会话中心的 MemoryImpact 私有抽屉为系统级公共轮子 `src/components/memory-impact/`；<br>2. 剥离与 `SessionMeta` 强绑定，建立纯数据驱动物理契约 `UniversalMemoryDiff`；<br>3. 实现受控快照模式 (Controlled) 与异步懒查询模式 (Lazy Query) 双模态；<br>4. 在会话中心、任务中心抽屉、信息治理流水溯源、存量结晶器 4 大场景全量复用；<br>5. 拆分模块均严格落在 100~250 行黄金甜点区，修复 `< 11px` 微字与 NO GREEN 视觉缺陷；<br>6. 关联规范：[`OpenVikingStudio/docs/architecture/SESSION_EVOLUTION_AND_MEMORY_IMPACT_SPEC.md`](OpenVikingStudio/docs/architecture/SESSION_EVOLUTION_AND_MEMORY_IMPACT_SPEC.md)。 | 单文件全量 ≤250 行，会话中心平滑无感兼容，双模态切换流畅，Vitest 全绿，Vite 构建通过 | `v1.4.82` | [x] 已验收通过 ✅ |
 | **Card-Tasks-Stage2.4-PipelineTerminology** | **全链路信达雅与物理真相还原：原子入库、三大准入解耦与「熵增防御」工业级对齐** | 1. 任务名正式更名为 4 字信达雅「原子入库」(`Atomic Ingestion`)；<br>2. 前门准入按机制物理解耦为「轻量准入」、「会话准入」、「资源准入」，物理阻断 Agent 幻觉合并；<br>3. 后门审查全面升级为 4 字「熵增防御」(`Entropy Defense`)，切除 AI 生搬硬凑的“质量门禁”；<br>4. 固化铁律：Agent 自驱提议必须标注 `🤖 [Agent 自驱提议 · 实施前须人脑确认]`，未获人脑许可严禁擅自实施。 | 34 套测试 164 项 100% 全绿，Vite 构建 PASS，1933 端口重载，Git Tag `v1.4.84` | `v1.4.84` | [x] 已验收通过 ✅ |
 | **Card-CPA-MCP-And-Skill-Pair** | **CPA 弹性无限算力总线 MCP 工具与技能双轮驱动闭环机制** | 1. 物理层：实现 `openviking_cpa_consult` 与 `openviking_cpa_fanout` 两大 MCP 工具，单文件 ≤250 行黄金甜点区；<br>2. 认知层：发布 `cpa-squad` 技能，明确触发词、红队找茬提示词、5~15 温和并发与自驱立卡铁律；<br>3. 生命线：25s 硬超时、线程池非阻塞清理、梯度平滑降级 (mimo ➔ sonnet ➔ qwen)；<br>4. 经验沉淀：Master Memory Lesson #90 永久归档。 | 烟测通过，两阶段降级成功，Antigravity IDE 工具注册成功，Lesson #90 入脑 | `v1.4.85` | [x] 已验收通过 ✅ |
+| **Card-UI-GatekeeperDesktopGridAndFullContent** | **门禁抽屉 768px 桌面仪表盘对齐、真实正文异步拉取与记忆内容展开全文闭环** | 1. 修复门禁抽屉被覆盖为 384px 狭长面条长蛇阵缺陷，升级为 768px (sm:max-w-3xl) 并落地 50/50 结构化 Grid；<br>2. 记忆影响视图舒展对齐会话与任务中心，恢复宽敞 3 态卡片与分类 Tab；<br>3. MemoryDiffItem 支持 VikingFS 真实正文异步加载与【展开全文/收起】切换，彻底解决“展开后内容未展示全”；<br>4. 修复 Header 溢出，Badge 100% 防截断；34 套测试 165 项单测通过，生产构建通过，浏览器实测通过，Git Tag v1.4.90。 | 门禁抽屉768px舒展对齐，内容展开全文无截断，单测构建PASS，Git Tag v1.4.90 | `v1.4.90` | [x] 已验收通过 ✅ |
 | **Card-UI-MemoryImpactMultiDocAndI18n** | **记忆影响多文档拓扑提取、三态统计大卡片恢复与任务/门禁全局 i18n 无死角覆盖** | 1. 修复 sessionProp 缺失 commit_count 导致会话增量记忆返回空的 Bug，支持多文档 (events/entities/cases/trajectories) 提取；<br>2. 任务中心与门禁抽屉恢复顶部 3 张大统计卡片 (新增/更新/删除) 与分类 Tab 过滤栏；<br>3. 补齐 tasks 与 retrieval 模块中英文双语 i18n 词条（含动态终端执行日志与门禁自解释理由），彻底铲除硬编码；<br>4. 34 套测试 165 项用例 100% PASS，Vite 构建通过，浏览器双实机截图留痕，Git Tag v1.4.89。 | 多文档拓扑呈现，三态卡片与分类Tab对齐会话中心，双语i18n零死角，构建与单测PASS | `v1.4.89` | [x] 已验收通过 ✅ |
+
+### 📌 P0: [x] Card-UI-GatekeeperDesktopGridAndFullContent (v1.4.90): 门禁抽屉 768px 桌面仪表盘对齐、真实正文异步拉取与记忆内容展开全文闭环 ✅
+- **类型**：Gatekeeper UI Modernization / 768px Width Alignment / Full Content Display / Anti-Clipping ｜ **优先级**：🔥 P0（已交付闭环）
+- **交付版本**：`v1.4.90` ｜ **交付时间**：2026-09-10
+- **Git Commit**: `3abcebaf2` (OpenVikingStudio) ｜ **Git Tag**: `v1.4.90`
+- **核心治理成果与交付细节**：
+  1. **彻底拔除 384px 狭长面条抽屉，升级为 768px 舒展桌面宽度**：
+     - 查清物理根因：`GatekeeperDecisionDrawer` 虽写了 `sm:max-w-xl`，但被底层 `sheet.tsx` 的属性选择器 `data-[side=right]:sm:max-w-sm` 暴力覆盖，导致抽屉被死锁在 384px 极端窄幅；
+     - 全量对齐系统标杆：升级为 `data-[side=right]:sm:max-w-3xl`（768px），与会话中心与任务中心 100% 像素级对齐，抽屉视野开阔、空间吞吐量提升 200%。
+  2. **落地 50/50 结构化高密仪表盘 Grid，切除无脑单列堆叠**：
+     - **SheetHeader 宽敞重构**：左侧展示盾牌图标、标题、判定徽章与流水号；右侧整合微胶囊元数据（节省容量与时间戳）；
+     - **顶层 50/50 对等双栏卡片**：
+       - **左栏**：确切余弦相似度（大字体等宽数字 + 百分比 + 相似度高/中/低区间 Badge）+ 判定依据自解释说明；
+       - **右栏**：写入目标 URI（带一键复制）+ 命中已有事实 URI（高亮 + 复制）+ 命中参考摘要（紧凑代码块）；
+     - **主体记忆影响区**：全宽展开 `UnifiedMemoryImpactView`，3 张统计大卡片舒展排布，分类 Tab 清晰对齐，与任务中心和会话中心风格 100% 连贯。
+  3. **记忆项真实正文异步加载与【展开全文】切换（根治“展开以后内容没展示全”）**：
+     - **真实正文自动拉取**：在 `MemoryDiffItem` 中注入异步感知引擎，当展开一个以 `viking://` 开头的知识项且当前文本为占位符时，自动调用 `fetchFileContent(operation.uri)` 从底层 VikingFS 拉取真实 Markdown 文件全文并渲染；
+     - **展开全文自适应切换**：在 `ContentBlock` 中为长文本配备【展开全文 / 收起】按钮，默认保持优雅高度，点击展开全文后解除高度限制，完整呈现文档所有行；
+     - **Header 防溢出保护**：为 URI、Badge、箭头赋予 `min-w-0` 与 `shrink-0`，彻底根除右侧徽章被切角截断的视觉瑕疵。
+  4. **工程质量与实机走查留痕**：
+     - 单文件全部 ≤460 行，严格坚守 ≤500 行物理硬红线；
+     - 单元测试：34 套测试文件 165 项用例 100% PASS；
+     - 生产构建：`npm run build` 19.93s PASS；
+     - 浏览器实机截图走查留痕：
+       - 门禁抽屉 768px 50/50 仪表盘：`gatekeeper_drawer_view_1789045936095.png`；
+       - 任务中心记忆影响与防溢出：`task_memory_impact_view_1789046025405.png`。
 | **Card-UI-MemoryImpactAtomAndDrawerSlim** | **消灭抽屉套抽屉交互、记忆影响原子纯视图解耦与任务底账默认折叠闭环** | 1. 彻底解耦提纯出原子纯展示视图 `UnifiedMemoryImpactView`，剥离 `<Sheet>` 外壳，可在页面、抽屉内、弹窗中任意自由嵌入；<br>2. 彻底消灭检索门禁抽屉与任务详情工序中的嵌套抽屉 (Nested Sheet)，改为就地平滑内嵌与折叠展开；<br>3. 任务详情抽屉大瘦身：大段技术底账（任务执行日志、执行结果 JSON Payload）改为默认收起，标题栏呈现精炼统计徽章与一键复制按钮，首屏视野紧凑清爽；<br>4. 34 套测试文件 165 项单测 100% 全绿，Vite 构建 PASS，资产档案库登记完备，Git Tag v1.4.88。 | 零嵌套抽屉，记忆影响跨场景任意嵌入，任务底账默认折叠，单测全绿，构建 PASS | `v1.4.88` | [x] 已验收通过 ✅ |
 
 ### 📌 P0: [x] Card-UI-MemoryImpactMultiDocAndI18n (v1.4.89): 记忆影响多文档拓扑提取、三态统计大卡片恢复与任务/门禁全局 i18n 无死角覆盖 ✅
