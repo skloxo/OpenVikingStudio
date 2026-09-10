@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChevronDownIcon, LoaderCircleIcon } from 'lucide-react'
+import { ChevronDownIcon } from 'lucide-react'
 import { Badge } from '#/components/ui/badge'
 import { CopyButton } from '#/components/common/copy-button'
 import { fetchFileContent } from '#/routes/resources/-lib/api'
@@ -30,7 +30,6 @@ export function MemoryDiffItem({
 
   const [isOpen, setIsOpen] = React.useState(defaultOpen)
   const [asyncContent, setAsyncContent] = React.useState<string | null>(null)
-  const [isLoadingContent, setIsLoadingContent] = React.useState(false)
   const attemptedUrisRef = React.useRef<Set<string>>(new Set())
 
   const isPlaceholder = (text?: string) => {
@@ -44,7 +43,7 @@ export function MemoryDiffItem({
     )
   }
 
-  // 当项展开且内容为简短占位符时，自动尝试从底层 VikingFS 异步拉取真实文件正文（单次防死循环守卫）
+  // 当项展开且内容为简短占位符时，自动尝试从底层 VikingFS 异步拉取真实文件正文
   React.useEffect(() => {
     if (!isOpen) return
     const uri = operation.uri
@@ -54,28 +53,17 @@ export function MemoryDiffItem({
     if (currentAfter && !isPlaceholder(currentAfter)) return
     if (asyncContent !== null || attemptedUrisRef.current.has(uri)) return
 
-    let isMounted = true
-    setIsLoadingContent(true)
     attemptedUrisRef.current.add(uri)
 
     fetchFileContent(uri)
       .then((res) => {
-        if (isMounted && res.content) {
+        if (res.content) {
           setAsyncContent(res.content)
         }
       })
       .catch(() => {
         // 优雅降级保持现有占位说明
       })
-      .finally(() => {
-        if (isMounted) {
-          setIsLoadingContent(false)
-        }
-      })
-
-    return () => {
-      isMounted = false
-    }
   }, [isOpen, operation.uri, operation.after, asyncContent])
 
   const beforeLabel = labels?.before || t('impact.before', '变更前')
@@ -108,9 +96,6 @@ export function MemoryDiffItem({
         >
           <span className="truncate">{typeLabel}</span>
         </Badge>
-        {isLoadingContent && (
-          <LoaderCircleIcon className="size-3 text-muted-foreground animate-spin shrink-0" />
-        )}
         <span className="shrink-0 text-[11px] text-muted-foreground transition-transform duration-200 group-open:rotate-90">
           ›
         </span>

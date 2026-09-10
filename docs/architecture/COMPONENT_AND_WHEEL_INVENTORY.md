@@ -114,6 +114,7 @@
 |:---|:---|:---|:---:|
 | **`CopyButton`** | `src/components/common/copy-button.tsx` | **带安全降级的一键复制按钮**：内部基于 `copyTextToClipboard`，自动维护 copied 状态、图标动态切换（CopyIcon ➔ CheckIcon 冰青色高亮）、支持自定义 label 与尺寸。彻底消灭全站散落手搓。 | ✅ 已交付 (v1.4.82) |
 | **`UnifiedMemoryImpactView`** | `src/components/memory-impact/` | **通用记忆影响原子纯视图 (跨场景任意嵌入)**：<br>• 剥离所有 `<Sheet>` 抽屉包装，可无缝嵌入**页面 (Page)、抽屉内 (Nested Drawer-free)、弹窗 (Dialog/Modal)**；<br>• 统一汇总卡片 (`ImpactSummaryCards`)、分类 Tab 与差异条目 (`MemoryDiffItem`)；<br>• 支持受控快照模式 (Controlled) 与懒查询模式 (Lazy Query)；<br>• 彻底消灭抽屉套抽屉 (Nested Drawer) 的劣质体验。 | ✅ 已交付 (v1.4.88) |
+| **`UniversalMemoryImpact`** | `src/components/memory-impact/` | **原子化开箱即用记忆影响卡片 (全站统一骨架与交互)**：<br>• 自包含标准卡片容器、标题、增量指示胶囊（+1 ~1）、折叠展开按钮与多分类 Diff 列表；<br>• 在门禁自解释抽屉、任务中心抽屉、会话中心中 1 行直接嵌入，彻底杜绝 ABCD vs ABCDEF 差异；<br>• 单点迭代，全站受益。 | ✅ 已交付 (v1.4.92) |
 | **`UnifiedMemoryImpactDrawer`** | `src/components/memory-impact/` | **通用记忆增量审计快照抽屉 (轻量外壳包装)**：<br>• 仅作为 `UnifiedMemoryImpactView` 的轻量 Drawer 容器适配层；<br>• 对外保持 100% 向后兼容；<br>• 仅在顶层单页调用时使用，抽屉内严禁嵌套调用。 | ✅ 已交付 (v1.4.82) |
 | **`UniversalPagination`** | `src/components/common/universal-pagination.tsx` | 统一分页控制器：条数切换 (`10/25/50/100`)、翻页按钮、等宽页码，严格 $\ge 11\text{px}$ 规范。 | ⏳ 规划中 |
 | **`MetricTile`** | `src/components/common/metric-tile.tsx` | 统一 `p-3` 紧凑卡片、等宽大数字 (`tabular-nums font-mono`)、四态语义支持（冰青/湛蓝/琥珀/玫瑰红）。 | ⏳ 规划中 |

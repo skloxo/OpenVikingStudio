@@ -7,8 +7,6 @@ import {
   FileTextIcon,
   HardDriveIcon,
   ClockIcon,
-  BrainCircuitIcon,
-  ChevronDownIcon,
 } from 'lucide-react'
 import {
   Sheet,
@@ -22,7 +20,7 @@ import { cn } from '#/lib/utils'
 import { formatBytes } from '#/lib/formatters'
 import {
   deriveMemoryType,
-  UnifiedMemoryImpactView,
+  UniversalMemoryImpact,
 } from '#/components/memory-impact'
 import type { UniversalMemoryDiff, UniversalMemoryDiffOperation } from '#/components/memory-impact'
 import { fetchFileContent } from '#/routes/resources/-lib/api'
@@ -53,7 +51,6 @@ export function GatekeeperDecisionDrawer({
   const { t } = useTranslation('tasksPage')
   const [copiedId, setCopiedId] = React.useState(false)
   const [copiedUri, setCopiedUri] = React.useState(false)
-  const [impactExpanded, setImpactExpanded] = React.useState(true)
   const [fileContent, setFileContent] = React.useState<string | null>(null)
   const [loadingContent, setLoadingContent] = React.useState(false)
 
@@ -375,57 +372,14 @@ export function GatekeeperDecisionDrawer({
             </div>
           </div>
 
-          {/* 知识落盘影响增量快照 (全宽舒展展示，与任务中心、会话中心 100% 视觉对齐) */}
+          {/* 知识落盘影响增量快照 (原子化通用组件，与任务中心、会话中心 100% 结构一致) */}
           {decision.action !== 'noop' && decision.action !== 'delete' && (
-            <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3 transition-all">
-              <div className="flex items-center justify-between pb-2 border-b border-border/40">
-                <div className="flex items-center gap-2">
-                  <BrainCircuitIcon className="size-4 text-primary shrink-0" />
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-foreground">
-                      {decision.action === 'update'
-                        ? t('gatekeeper.impactTitleUpdate', { defaultValue: '知识演进记忆影响' })
-                        : t('gatekeeper.impactTitleAdd', { defaultValue: '新增知识落盘影响快照' })}
-                    </span>
-                    <Badge
-                      variant="outline"
-                      className="text-[11px] font-mono px-1.5 py-0 h-4 border-primary/30 bg-primary/10 text-primary"
-                    >
-                      {t(decision.action === 'update' ? 'gatekeeper.badgeUpdate' : 'gatekeeper.badgeAdd', {
-                        defaultValue: decision.action === 'update' ? '+1 ~1' : '+1',
-                      })}
-                    </Badge>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setImpactExpanded((prev) => !prev)}
-                  className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground cursor-pointer select-none"
-                >
-                  <span>
-                    {impactExpanded
-                      ? t('common.collapse', { defaultValue: '收起' })
-                      : t('common.expand', { defaultValue: '展开' })}
-                  </span>
-                  <ChevronDownIcon
-                    className={cn(
-                      'size-3.5 transition-transform duration-200',
-                      impactExpanded && 'rotate-180',
-                    )}
-                  />
-                </button>
-              </div>
-
-              {impactExpanded && (
-                <div className="pt-1">
-                  <UnifiedMemoryImpactView
-                    diffs={impactDiffs}
-                    showSummaryCards={true}
-                    className="p-0 space-y-3"
-                  />
-                </div>
-              )}
-            </div>
+            <UniversalMemoryImpact
+              diffs={impactDiffs}
+              title={decision.action === 'update'
+                ? t('gatekeeper.impactTitleUpdate', { defaultValue: '知识演进记忆影响' })
+                : t('gatekeeper.impactTitleAdd', { defaultValue: '新增知识落盘影响快照' })}
+            />
           )}
 
           {/* 移动端兜底元数据栏 */}

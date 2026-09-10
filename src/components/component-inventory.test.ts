@@ -93,6 +93,7 @@ describe('Component & Wheel Inventory SSOT Living Mechanism', () => {
       'copy-button.tsx',
       'UnifiedMemoryImpactDrawer',
       'UnifiedMemoryImpactView',
+      'UniversalMemoryImpact',
       'formatters.ts',
     ]
 

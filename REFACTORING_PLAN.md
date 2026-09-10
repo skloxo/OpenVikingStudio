@@ -80,8 +80,28 @@
 | **Card-UI-UnifiedMemoryImpactWheel** | **通用记忆增量审计快照轮子 (UnifiedMemoryImpactDrawer) 全局解耦、高兼容双模态与四场景复用** | 1. 彻底解耦原本深埋在会话中心的 MemoryImpact 私有抽屉为系统级公共轮子 `src/components/memory-impact/`；<br>2. 剥离与 `SessionMeta` 强绑定，建立纯数据驱动物理契约 `UniversalMemoryDiff`；<br>3. 实现受控快照模式 (Controlled) 与异步懒查询模式 (Lazy Query) 双模态；<br>4. 在会话中心、任务中心抽屉、信息治理流水溯源、存量结晶器 4 大场景全量复用；<br>5. 拆分模块均严格落在 100~250 行黄金甜点区，修复 `< 11px` 微字与 NO GREEN 视觉缺陷；<br>6. 关联规范：[`OpenVikingStudio/docs/architecture/SESSION_EVOLUTION_AND_MEMORY_IMPACT_SPEC.md`](OpenVikingStudio/docs/architecture/SESSION_EVOLUTION_AND_MEMORY_IMPACT_SPEC.md)。 | 单文件全量 ≤250 行，会话中心平滑无感兼容，双模态切换流畅，Vitest 全绿，Vite 构建通过 | `v1.4.82` | [x] 已验收通过 ✅ |
 | **Card-Tasks-Stage2.4-PipelineTerminology** | **全链路信达雅与物理真相还原：原子入库、三大准入解耦与「熵增防御」工业级对齐** | 1. 任务名正式更名为 4 字信达雅「原子入库」(`Atomic Ingestion`)；<br>2. 前门准入按机制物理解耦为「轻量准入」、「会话准入」、「资源准入」，物理阻断 Agent 幻觉合并；<br>3. 后门审查全面升级为 4 字「熵增防御」(`Entropy Defense`)，切除 AI 生搬硬凑的“质量门禁”；<br>4. 固化铁律：Agent 自驱提议必须标注 `🤖 [Agent 自驱提议 · 实施前须人脑确认]`，未获人脑许可严禁擅自实施。 | 34 套测试 164 项 100% 全绿，Vite 构建 PASS，1933 端口重载，Git Tag `v1.4.84` | `v1.4.84` | [x] 已验收通过 ✅ |
 | **Card-CPA-MCP-And-Skill-Pair** | **CPA 弹性无限算力总线 MCP 工具与技能双轮驱动闭环机制** | 1. 物理层：实现 `openviking_cpa_consult` 与 `openviking_cpa_fanout` 两大 MCP 工具，单文件 ≤250 行黄金甜点区；<br>2. 认知层：发布 `cpa-squad` 技能，明确触发词、红队找茬提示词、5~15 温和并发与自驱立卡铁律；<br>3. 生命线：25s 硬超时、线程池非阻塞清理、梯度平滑降级 (mimo ➔ sonnet ➔ qwen)；<br>4. 经验沉淀：Master Memory Lesson #90 永久归档。 | 烟测通过，两阶段降级成功，Antigravity IDE 工具注册成功，Lesson #90 入脑 | `v1.4.85` | [x] 已验收通过 ✅ |
+| **Card-UI-UniversalMemoryImpactAtomization** | **消灭转圈圈 Spinner 竞态死锁、记忆影响开箱即用原子化 (UniversalMemoryImpact) 与全站 100% 结构一致闭环** | 1. 彻底铲除 MemoryDiffItem 异步竞态导致条目摘要行 Spinner 永久旋转 Bug；<br>2. 深度落实组件原子化哲学：封装 UniversalMemoryImpactCard，自包含统一图标、标题、增量胶囊 (+1 ~1)、折叠展开交互与分类 Diff 列表；<br>3. 彻底切除门禁抽屉与任务中心手搓外壳，单点迭代全局生效；<br>4. 资产档案与活态单测更新，34 套测试 165 项单测通过，Vite 生产构建成功，Git Tag v1.4.92。 | 摘要行零 Spinner 永久旋转，全站记忆影响 100% 结构一致原子化，单测全绿，构建 PASS | `v1.4.92` | [x] 已验收通过 ✅ |
 | **Card-UI-GatekeeperDesktopGridAndFullContent** | **门禁抽屉 768px 桌面仪表盘对齐、真实正文异步拉取与记忆内容展开全文闭环** | 1. 修复门禁抽屉被覆盖为 384px 狭长面条长蛇阵缺陷，升级为 768px (sm:max-w-3xl) 并落地 50/50 结构化 Grid；<br>2. 记忆影响视图舒展对齐会话与任务中心，恢复宽敞 3 态卡片与分类 Tab；<br>3. MemoryDiffItem 支持 VikingFS 真实正文异步加载与【展开全文/收起】切换，彻底解决“展开后内容未展示全”；<br>4. 修复 Header 溢出，Badge 100% 防截断；34 套测试 165 项单测通过，生产构建通过，浏览器实测通过，Git Tag v1.4.90。 | 门禁抽屉768px舒展对齐，内容展开全文无截断，单测构建PASS，Git Tag v1.4.90 | `v1.4.90` | [x] 已验收通过 ✅ |
 | **Card-UI-MemoryImpactMultiDocAndI18n** | **记忆影响多文档拓扑提取、三态统计大卡片恢复与任务/门禁全局 i18n 无死角覆盖** | 1. 修复 sessionProp 缺失 commit_count 导致会话增量记忆返回空的 Bug，支持多文档 (events/entities/cases/trajectories) 提取；<br>2. 任务中心与门禁抽屉恢复顶部 3 张大统计卡片 (新增/更新/删除) 与分类 Tab 过滤栏；<br>3. 补齐 tasks 与 retrieval 模块中英文双语 i18n 词条（含动态终端执行日志与门禁自解释理由），彻底铲除硬编码；<br>4. 34 套测试 165 项用例 100% PASS，Vite 构建通过，浏览器双实机截图留痕，Git Tag v1.4.89。 | 多文档拓扑呈现，三态卡片与分类Tab对齐会话中心，双语i18n零死角，构建与单测PASS | `v1.4.89` | [x] 已验收通过 ✅ |
+
+### 📌 P0: [x] Card-UI-UniversalMemoryImpactAtomization (v1.4.92): 消灭转圈圈 Spinner 竞态死锁、记忆影响开箱即用原子化 (UniversalMemoryImpact) 与全站 100% 结构一致闭环 ✅
+- **类型**：Spinner Race Condition Elimination / UniversalMemoryImpact Atomization / Cross-Module Structural Alignment ｜ **优先级**：🔥 P0（已交付闭环）
+- **交付版本**：`v1.4.92` ｜ **交付时间**：2026-09-10
+- **Git Commit**: `（待提交）` (OpenVikingStudio) ｜ **Git Tag**: `v1.4.92`
+- **核心治理成果与交付细节**：
+  1. **彻底铲除转圈圈 (Permanent Spinner) 异步物理竞态死锁**：
+     - **排查深层物理根因**：父组件（`gatekeeper-decision-drawer.tsx`）与子组件（`MemoryDiffItem`）并发向底层 VikingFS 发起相同 `targetUri` 的读取请求。父组件先完成并触发重渲染导致子组件 `useEffect` 触发 cleanup（`isMounted = false`）；此时子组件自身异步完成时的 `finally` 块中 `if (isMounted) setIsLoadingContent(false)` 保护失效，导致 `isLoadingContent` 状态被永久锁死为 `true`，触发右侧 `LoaderCircleIcon` 永不停歇旋转；
+     - **物理根除**：彻底切除条目摘要栏多余无价值的 `LoaderCircleIcon`，正文异步拉取完毕后直接平滑更新 Markdown，消灭假死死循环幻象，界面干净清爽。
+  2. **深度践行原子化通用组件 (UniversalMemoryImpact) 架构哲学**：
+     - **直击用户痛点**：“这里是一种样式，那里是一种样式；这里有 ABCD，那边有 ABCDEF，不一致。通用组件必须原子化，任何地方接了直接能用，单点迭代全局生效”；
+     - **提纯 `UniversalMemoryImpactCard` 轮子**：新建 `src/components/memory-impact/universal-memory-impact-card.tsx`（116 行，黄金甜点区），自包含统一图标（`BrainCircuitIcon`）、自适应标题、统一增量指示胶囊（`ImpactCounts`，如 `+1` / `+1 ~1`）、折叠展开交互以及完整 `UnifiedMemoryImpactView` 主体；
+     - **业务调用端彻底解耦**：门禁抽屉 (`gatekeeper-decision-drawer.tsx`) 和任务中心 (`task-pipeline-diagram.tsx`) 原本手搓的 30~50 行外壳、展开状态与胶水代码全部切除，调用端仅需 1 行代码 `<UniversalMemoryImpact diffs={...} />` 或 `<UniversalMemoryImpact session={...} operations={...} />` 开箱即用。
+  3. **四维活态资产沉淀与视网膜门禁守护**：
+     - `docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md` 档案库正式登记 `UniversalMemoryImpact` 资产；
+     - `src/components/component-inventory.test.ts` 活态视网膜更新断言门禁；
+     - 34 套测试文件 165 项单测 100% PASS；
+     - Vite 生产构建 `npm run build` 24.88s 零报错顺利通过；
+     - 浏览器实机截图走查：门禁抽屉 `decision_drawer_1789051804349.png` 零转圈，且卡片结构与任务中心 100% 结构化一致。
 
 ### 📌 P0: [x] Card-UI-GatekeeperDesktopGridAndFullContent (v1.4.90): 门禁抽屉 768px 桌面仪表盘对齐、真实正文异步拉取与记忆内容展开全文闭环 ✅
 - **类型**：Gatekeeper UI Modernization / 768px Width Alignment / Full Content Display / Anti-Clipping ｜ **优先级**：🔥 P0（已交付闭环）
