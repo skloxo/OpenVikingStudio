@@ -118,6 +118,9 @@ export const tasks = {
       aborted: 'Aborted',
       stepRunningText: 'Processing',
       stepCompletedText: 'Completed',
+      viewMemoryImpact: 'View Memory Impact',
+      memoryImpactTitle: 'Task Memory Impact Snapshot',
+      memoryImpactDescription: 'Physical modifications to the global knowledge and memory store caused by this task.',
     },
     pipeline: {
       queued: 'Queued',

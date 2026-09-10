@@ -116,6 +116,9 @@ export const tasks = {
       aborted: '交付中断',
       stepRunningText: '正在执行',
       stepCompletedText: '已完成',
+      viewMemoryImpact: '查看记忆影响',
+      memoryImpactTitle: '任务记忆增量审计快照',
+      memoryImpactDescription: '该任务执行落地后对全局知识与经验记忆库产生的物理影响。',
     },
     pipeline: {
       queued: '等待中',
