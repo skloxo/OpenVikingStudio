@@ -1,6 +1,15 @@
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
-import { CopyIcon, CheckIcon, ShieldCheckIcon, FileTextIcon, HardDriveIcon, ClockIcon, BrainCircuitIcon } from 'lucide-react'
+import {
+  CopyIcon,
+  CheckIcon,
+  ShieldCheckIcon,
+  FileTextIcon,
+  HardDriveIcon,
+  ClockIcon,
+  BrainCircuitIcon,
+  ChevronDownIcon,
+} from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -9,11 +18,10 @@ import {
   SheetDescription,
 } from '#/components/ui/sheet'
 import { Badge } from '#/components/ui/badge'
-import { Button } from '#/components/ui/button'
 import { cn } from '#/lib/utils'
 import { formatBytes } from '#/lib/formatters'
 import {
-  UnifiedMemoryImpactDrawer,
+  UnifiedMemoryImpactView,
 } from '#/components/memory-impact'
 import type { UniversalMemoryDiff, UniversalMemoryDiffOperation } from '#/components/memory-impact'
 import { fetchFileContent } from '#/routes/resources/-lib/api'
@@ -56,7 +64,7 @@ export function GatekeeperDecisionDrawer({
   const { t } = useTranslation('tasksPage')
   const [copiedId, setCopiedId] = React.useState(false)
   const [copiedUri, setCopiedUri] = React.useState(false)
-  const [impactOpen, setImpactOpen] = React.useState(false)
+  const [impactExpanded, setImpactExpanded] = React.useState(true)
   const [fileContent, setFileContent] = React.useState<string | null>(null)
   const [loadingContent, setLoadingContent] = React.useState(false)
 
@@ -196,7 +204,7 @@ export function GatekeeperDecisionDrawer({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex w-full flex-col gap-4 overflow-y-auto sm:max-w-lg">
+      <SheetContent className="flex w-full flex-col gap-4 overflow-y-auto sm:max-w-xl">
         {/* Header: 留出 pr-10 彻底杜绝与右上角关闭按钮重叠 */}
         <SheetHeader className="gap-2 border-b border-border/50 pb-3 pr-10 text-left">
           <div className="flex flex-wrap items-center gap-2">
@@ -317,31 +325,70 @@ export function GatekeeperDecisionDrawer({
             </div>
           )}
 
-          {/* 知识落盘影响与增量快照联动 */}
+          {/* 知识落盘影响与增量快照联动 (就地内嵌展示，彻底切除抽屉套抽屉) */}
           {decision.action !== 'noop' && decision.action !== 'delete' && (
-            <div className="flex items-center justify-between rounded-md border border-primary/25 bg-primary/5 p-2.5">
-              <div className="flex items-center gap-2">
-                <BrainCircuitIcon className="size-4 text-primary shrink-0" />
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-medium text-foreground">
-                    {t('gatekeeper.viewMemoryImpact')}
+            <div className="flex flex-col rounded-md border border-border/60 bg-muted/20 overflow-hidden transition-all">
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setImpactExpanded((prev) => !prev)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    setImpactExpanded((prev) => !prev)
+                  }
+                }}
+                className="flex items-center justify-between p-3 cursor-pointer select-none hover:bg-muted/30 transition-colors"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <BrainCircuitIcon className="size-4 text-primary shrink-0" />
+                  <div className="flex flex-col min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-semibold text-foreground">
+                        {decision.action === 'update'
+                          ? t('gatekeeper.impactTitleUpdate', { defaultValue: '知识演进记忆影响' })
+                          : t('gatekeeper.impactTitleAdd', { defaultValue: '新增知识落盘影响' })}
+                      </span>
+                      <Badge
+                        variant="outline"
+                        className="text-[11px] font-mono px-1.5 py-0 h-4 border-primary/30 bg-primary/10 text-primary"
+                      >
+                        {t(decision.action === 'update' ? 'gatekeeper.badgeUpdate' : 'gatekeeper.badgeAdd', {
+                          defaultValue: decision.action === 'update' ? '+1 ~1' : '+1',
+                        })}
+                      </Badge>
+                    </div>
+                    <span className="text-[11px] text-muted-foreground truncate mt-0.5">
+                      {decision.action === 'update'
+                        ? t('gatekeeper.updateImpactHint', { defaultValue: '查看命中文档特例演化前后对比' })
+                        : t('gatekeeper.addImpactHint', { defaultValue: '查看全新知识命题落盘增量快照' })}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 text-muted-foreground shrink-0 ml-2">
+                  <span className="text-[11px] font-medium font-sans">
+                    {impactExpanded
+                      ? t('common.collapse', { defaultValue: '收起' })
+                      : t('common.expand', { defaultValue: '展开' })}
                   </span>
-                  <span className="text-[10px] text-muted-foreground">
-                    {decision.action === 'update'
-                      ? t('gatekeeper.updateImpactHint')
-                      : t('gatekeeper.addImpactHint')}
-                  </span>
+                  <ChevronDownIcon
+                    className={cn(
+                      'size-3.5 transition-transform duration-200',
+                      impactExpanded && 'rotate-180',
+                    )}
+                  />
                 </div>
               </div>
-              <Button
-                type="button"
-                size="xs"
-                variant="outline"
-                onClick={() => setImpactOpen(true)}
-                className="h-6.5 text-[11px] font-medium border-primary/30 hover:bg-primary/10 hover:text-primary gap-1 shrink-0"
-              >
-                <span>{t('gatekeeper.auditDiff')}</span>
-              </Button>
+
+              {impactExpanded && (
+                <div className="border-t border-border/40 p-3 bg-background/80">
+                  <UnifiedMemoryImpactView
+                    diffs={impactDiffs}
+                    showSummaryCards={false}
+                    className="p-0 space-y-3"
+                  />
+                </div>
+              )}
             </div>
           )}
 
@@ -361,19 +408,6 @@ export function GatekeeperDecisionDrawer({
           </div>
         </div>
       </SheetContent>
-
-      {/* 嵌套呼出公共通用记忆增量抽屉 */}
-      <UnifiedMemoryImpactDrawer
-        open={impactOpen}
-        onOpenChange={setImpactOpen}
-        diffs={impactDiffs}
-        title={
-          decision.action === 'update'
-            ? t('gatekeeper.impactTitleUpdate', { defaultValue: '知识演进记忆影响' })
-            : t('gatekeeper.impactTitleAdd', { defaultValue: '新增知识落盘影响' })
-        }
-        description={decision.reason}
-      />
     </Sheet>
   )
 }

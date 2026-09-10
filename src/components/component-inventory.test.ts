@@ -92,6 +92,7 @@ describe('Component & Wheel Inventory SSOT Living Mechanism', () => {
     const sharedWheels = [
       'copy-button.tsx',
       'UnifiedMemoryImpactDrawer',
+      'UnifiedMemoryImpactView',
       'formatters.ts',
     ]
 

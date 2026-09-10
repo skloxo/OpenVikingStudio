@@ -1,7 +1,10 @@
+import { useState } from 'react'
 import {
   ActivityIcon,
   CalendarClockIcon,
+  ChevronRightIcon,
   CircleDashedIcon,
+  CopyIcon,
   FileJson2Icon,
   FolderSearch2Icon,
   Layers3Icon,
@@ -10,6 +13,9 @@ import {
   TimerResetIcon,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
+import { Button } from '#/components/ui/button'
+import { cn } from '#/lib/utils'
 import { formatTaskDuration } from '#/routes/tasks/-lib/task-time'
 import type { TaskRecord } from '../../-lib/task-record'
 import {
@@ -97,15 +103,61 @@ export function TaskOverviewGrid({ task }: TaskOverviewGridProps) {
 export function TaskResultOutcomeSummary({ task }: TaskOverviewGridProps) {
   const { t } = useTranslation('tasksPage')
   const status = normalizeTaskStatus(task.status)
+  const [expanded, setExpanded] = useState(false)
 
   if (status === 'completed') {
     if (hasTaskResult(task.result)) {
+      const formattedResult = formatTaskResult(task.result)
+      const isJson = typeof task.result === 'object' && task.result !== null
+
       return (
-        <DetailSection title={t('detail.result')}>
-          <pre className="min-h-50 max-h-100 overflow-auto rounded-xl border bg-muted/30 p-4 font-mono text-xs leading-5">
-            {formatTaskResult(task.result)}
-          </pre>
-        </DetailSection>
+        <div className="rounded-xl border border-border/60 bg-muted/20 overflow-hidden transition-colors">
+          <button
+            type="button"
+            onClick={() => setExpanded((prev) => !prev)}
+            className="w-full flex items-center justify-between p-3 text-left hover:bg-muted/40 transition-colors cursor-pointer group"
+          >
+            <div className="flex items-center gap-2">
+              <ChevronRightIcon
+                className={cn(
+                  'size-4 text-muted-foreground transition-transform duration-200',
+                  expanded && 'rotate-90',
+                )}
+              />
+              <span className="text-sm font-semibold text-foreground">
+                {t('detail.result')}
+              </span>
+              <span className="px-1.5 py-0.5 rounded-md bg-muted text-[11px] font-mono text-muted-foreground">
+                {isJson ? t('detail.payloadJson', 'JSON') : t('detail.payloadText', 'Text')}
+              </span>
+            </div>
+            <div
+              className="flex items-center gap-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Button
+                variant="ghost"
+                size="xs"
+                className="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted/60 cursor-pointer"
+                onClick={() => {
+                  navigator.clipboard.writeText(formattedResult)
+                  toast.success(t('detail.resultCopied'))
+                }}
+              >
+                <CopyIcon className="size-3 mr-1" />
+                {t('detail.copyResult')}
+              </Button>
+            </div>
+          </button>
+
+          {expanded ? (
+            <div className="border-t border-border/40 p-3 bg-muted/30">
+              <pre className="max-h-72 overflow-auto rounded-lg font-mono text-xs leading-5">
+                {formattedResult}
+              </pre>
+            </div>
+          ) : null}
+        </div>
       )
     }
     return (
