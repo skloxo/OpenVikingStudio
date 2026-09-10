@@ -14,6 +14,15 @@ import httpx
 logger = logging.getLogger("openviking.entropy_gatekeeper.prober")
 
 
+from openviking.core.defensive import defensive
+
+
+@defensive(
+    domain="gatekeeper",
+    name="probe_nearest_vector",
+    fallback=(0.0, None, None),
+    log_level="warning",
+)
 async def probe_nearest_vector(
     content: str,
     uri: str,

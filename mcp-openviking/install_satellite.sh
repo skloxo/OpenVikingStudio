@@ -63,9 +63,11 @@ cat << EOF
       "env": {
         "OPENVIKING_API": "${OPENVIKING_API:-http://127.0.0.1:1933}",
         "OPENVIKING_API_KEY": "${OPENVIKING_API_KEY:-your_api_key_here}"
-      }
+      },
+      "timeout": 30000
     }
   }
 }
+# 注意: MCP 宿主 timeout 必须 >= 桥接工具超时预算，冷检索与并发实测建议标定为 30000 (30s)，严禁拍脑袋设为 5000 (5s)！
 EOF
 echo "------------------------------------------------------------------"

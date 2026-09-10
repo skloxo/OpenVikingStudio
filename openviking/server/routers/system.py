@@ -16,6 +16,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from openviking.core.defensive import defensive, get_defensive_telemetry
 from openviking.core.path_variables import resolve_path_variables
 from openviking.core.uri_validation import validate_request_viking_uri
 from openviking.pyagfs.exceptions import AGFSInvalidOperationError, AGFSNotSupportedError
@@ -751,6 +752,12 @@ async def get_gpu_telemetry(
 _LAST_CPU_TIMES: Optional[tuple[float, float]] = None
 
 
+@defensive(
+    domain="system",
+    name="read_host_mem",
+    fallback={"total_gb": 0.0, "used_gb": 0.0, "memory_percent": 0.0},
+    log_level="debug",
+)
 def _read_host_mem() -> dict[str, float]:
     try:
         with open("/proc/meminfo") as f:
@@ -774,6 +781,12 @@ def _read_host_mem() -> dict[str, float]:
         return {"total_gb": 0.0, "used_gb": 0.0, "memory_percent": 0.0}
 
 
+@defensive(
+    domain="system",
+    name="read_host_cpu",
+    fallback=0.0,
+    log_level="debug",
+)
 def _read_host_cpu() -> float:
     global _LAST_CPU_TIMES
     try:
@@ -833,6 +846,18 @@ async def get_entropy_gatekeeper_stats(
         status="ok",
         result=stats,
     ).model_dump(exclude_none=True)
+
+
+@router.get("/api/v1/system/defensive", tags=["system"])
+async def get_defensive_telemetry_endpoint(
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """Retrieve defensive registry telemetry and recent fallback trigger events."""
+    return Response(
+        status="ok",
+        result=get_defensive_telemetry(),
+    ).model_dump(exclude_none=True)
+
 
 
 
