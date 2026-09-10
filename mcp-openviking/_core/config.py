@@ -59,6 +59,9 @@ SATELLITE_ALLOWED_TOOLS = {
     "openviking_get_relations",
     "openviking_ping",
     "openviking_health",
+    # 2 大 CPA 弹性算力协同
+    "openviking_cpa_consult",
+    "openviking_cpa_fanout",
 }
 
 # SECTION: Mode Resolution

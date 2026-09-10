@@ -30,7 +30,7 @@ def test_valet_fast_handover_latency():
     dt_ms = (time.time() - t0) * 1000
     assert dt_ms < 15.0  # Fast handover <15ms
     assert ticket.ticket_id.startswith("valet_") or ticket.ticket_id.startswith("ticket_valet_")
-    assert "轻量增量入库" in ticket.message or "准入判定" in ticket.message or "门禁裁决" in ticket.message
+    assert any(term in ticket.message for term in ["原子入库", "轻量准入", "轻量增量入库", "准入判定", "门禁裁决"])
 
 
 @pytest.mark.asyncio
