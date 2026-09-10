@@ -304,6 +304,12 @@ class EntropyGatekeeper:
                 reason=f"探针异常熔断兜底 (Fail-Open): {err_detail}",
             )
 
+        from openviking.service.memory_dual_track import extract_dual_track
+        dt = extract_dual_track(content)
+        if dt.is_dual_track and decision.action in ("add", "update"):
+            if "[双轨写入" not in decision.reason:
+                decision.reason = f"{decision.reason} [双轨写入: 语义锚点 + 代码重放轨]"
+
         if decision.action in ("add", "update"):
             self._content_fingerprints[content_hash] = (decision.uri or uri, time.time())
 

@@ -323,17 +323,24 @@ def openviking_store(
     session_id: str = Field(default="", description="会话 ID（留空使用当前会话）"),
     role: str = Field(default="user", description="消息角色：user/assistant/system"),
     content: str = Field(default="", description="消息内容（为空时仅提交会话）"),
+    semantic_anchor: str = Field(default="", description="因果归因与检索场景（专供向量检索轨）"),
+    delta: str = Field(default="", description="3~5行Git Diff或代码指纹（专供代码重放轨）"),
 ) -> str:
-    """存储消息到长期记忆。content 为空时提交并归档记忆。"""
-    sid = str(session_id).strip() if (isinstance(session_id, str) and not hasattr(session_id, "default")) else ""
-    sid = sid or "default"
+    """存储消息到长期记忆。支持双轨写入（semantic_anchor 检索 + delta 代码重放）。content 为空时提交。"""
+    sid = str(session_id).strip() if (isinstance(session_id, str) and not hasattr(session_id, "default")) else "default"
     role_str = str(role) if (isinstance(role, str) and not hasattr(role, "default")) else "user"
     content_str = str(content) if (isinstance(content, str) and not hasattr(content, "default")) else ""
-
+    anchor_str = str(semantic_anchor) if (isinstance(semantic_anchor, str) and not hasattr(semantic_anchor, "default")) else ""
+    delta_str = str(delta) if (isinstance(delta, str) and not hasattr(delta, "default")) else ""
+    if anchor_str or delta_str:
+        try:
+            from openviking.service.memory_dual_track import format_dual_track_markdown
+            content_str = format_dual_track_markdown(content_str or "Dual-Track Memory", anchor_str, delta_str)
+        except Exception:
+            pass
     if content_str:
-        body = {"role": role_str, "parts": [{"type": "text", "text": content_str}]}
-        return _format_result(http_client.post(f"/api/v1/sessions/{sid}/messages", body))
-    return _format_result(http_client.post(f"/api/v1/sessions/{sid}/commit"))
+        return _format_result(http_client.post(f"/api/v1/sessions/{sid or 'default'}/messages", {"role": role_str, "parts": [{"type": "text", "text": content_str}]}))
+    return _format_result(http_client.post(f"/api/v1/sessions/{sid or 'default'}/commit"))
 
 
 @_safe_tool()
@@ -458,17 +465,7 @@ def openviking_health() -> str:
 def openviking_ping() -> str:
     """检测远端连接状态、网络延迟与可用工具数握手自检"""
     cfg = _get_config()
-    status = {
-        "status": "ok",
-        "client_distribution": "standalone_satellite",
-        "server_version": "1.4.43",
-        "mode": "satellite",
-        "api_url": cfg["api"],
-        "authenticated": bool(cfg["api_key"]),
-        "tools_count": len(list(mcp._tool_manager.list_tools())),
-        "platform": sys.platform,
-        "latency_ms": -1.0,
-    }
+    status = {"status": "ok", "client_distribution": "standalone_satellite", "server_version": "1.4.43", "mode": "satellite", "api_url": cfg["api"], "authenticated": bool(cfg["api_key"]), "tools_count": len(list(mcp._tool_manager.list_tools())), "platform": sys.platform, "latency_ms": -1.0}
     try:
         t0 = time.time()
         res = http_client.get("/health", timeout=5)
@@ -484,7 +481,6 @@ def openviking_ping() -> str:
     except Exception as e:
         status["status"] = "degraded"
         status["http_error"] = str(e)
-
     return _format_result(status)
 
 

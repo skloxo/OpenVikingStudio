@@ -289,12 +289,27 @@ def register_memory_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Callabl
         session_id: str = Field(default="", description="会话 ID（留空使用当前会话）"),
         role: str = Field(default="user", description="消息角色：user/assistant/system"),
         content: str = Field(default="", description="消息内容（为空时仅提交会话）"),
+        semantic_anchor: str = Field(default="", description="因果归因与场景（专供向量检索轨）"),
+        delta: str = Field(default="", description="3~5行Git Diff或代码指纹（专供代码重放轨）"),
     ) -> str:
-        """存储消息到长期记忆。content 为空时等同于 commit。"""
+        """存储消息到长期记忆。支持双轨写入（semantic_anchor 专供检索 + delta 专供代码重放）。content 为空时等同于 commit。"""
         sid = str(session_id).strip() if (isinstance(session_id, str) and not hasattr(session_id, "default")) else ""
         sid = sid or "default"
         role_str = str(role) if (isinstance(role, str) and not hasattr(role, "default")) else "user"
         content_str = str(content) if (isinstance(content, str) and not hasattr(content, "default")) else ""
+        anchor_str = str(semantic_anchor) if (isinstance(semantic_anchor, str) and not hasattr(semantic_anchor, "default")) else ""
+        delta_str = str(delta) if (isinstance(delta, str) and not hasattr(delta, "default")) else ""
+
+        if anchor_str or delta_str:
+            try:
+                from openviking.service.memory_dual_track import format_dual_track_markdown
+                content_str = format_dual_track_markdown(
+                    title=content_str or "Dual-Track Memory Entry",
+                    semantic_anchor=anchor_str,
+                    delta=delta_str,
+                )
+            except Exception:
+                pass
 
         def _api():
             if content_str:
