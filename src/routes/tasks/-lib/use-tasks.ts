@@ -8,6 +8,7 @@ import { parseQueueStatus } from '#/routes/monitoring/-components/queue-status-c
 import {
   computeTaskKpiData,
   executeTaskRetry,
+  fetchDualTrackTasks,
   fetchTasks,
   getEffectiveTaskStatus,
 } from '#/routes/tasks/-lib/task-api'
@@ -93,20 +94,32 @@ export function useTasks({
     return list
   }, [rawTasks, dedupByResource, taskType, statusFilter])
 
+  const dualTrackQuery = useQuery({
+    queryKey: ['tasks-dual-track', identityScopeKey],
+    queryFn: () => fetchDualTrackTasks(50),
+    refetchInterval: (query) => {
+      const current = query.state.data
+      const hasActive = current?.business_jobs?.some(
+        (j) => j.status === 'running' || j.status === 'pending',
+      )
+      return hasActive ? 3000 : 10000
+    },
+  })
+
   const kpiData = React.useMemo(() => computeTaskKpiData(allTasks, t), [allTasks, t])
 
   const retryMutation = useMutation({
     mutationFn: (task: TaskRecord) => executeTaskRetry(task, i18n.language.startsWith('zh')),
     onError: (err) => toast.error(err instanceof Error ? err.message : String(err)),
     onSuccess: async (data) => {
-      if (data?.skipped) {
+      if (data.skipped) {
         toast.info(
           i18n.language.startsWith('zh')
             ? '该会话消息此前已完成阶段一归档，无新增未提交消息。'
             : 'Session messages already archived.',
         )
       } else {
-        const newTaskId = data?.newTaskId
+        const newTaskId = data.newTaskId
         toast.success(
           i18n.language.startsWith('zh')
             ? `重新入队成功！${newTaskId ? `已生成新任务 (${newTaskId.slice(0, 8)}...)` : '后端正在调度处理。'}`
@@ -114,6 +127,7 @@ export function useTasks({
         )
       }
       await queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      await queryClient.invalidateQueries({ queryKey: ['tasks-dual-track'] })
     },
   })
 
@@ -128,6 +142,7 @@ export function useTasks({
           : `Successfully cleared ${count} failed & cancelled tasks!`,
       )
       await queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      await queryClient.invalidateQueries({ queryKey: ['tasks-dual-track'] })
       await queryClient.invalidateQueries({ queryKey: ['taskStats'] })
     },
   })
@@ -138,12 +153,18 @@ export function useTasks({
     onSuccess: async () => {
       toast.success(i18n.language.startsWith('zh') ? '已删除该任务记录' : 'Task record deleted')
       await queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      await queryClient.invalidateQueries({ queryKey: ['tasks-dual-track'] })
       await queryClient.invalidateQueries({ queryKey: ['taskStats'] })
     },
   })
 
   return {
     tasksQuery,
+    dualTrackQuery,
+    businessJobs: dualTrackQuery.data?.business_jobs ?? [],
+    systemOps: dualTrackQuery.data?.system_ops ?? [],
+    dualTrackKpi: dualTrackQuery.data?.kpi,
+    isDualTrackLoading: dualTrackQuery.isLoading,
     queueObserverQuery,
     queueObserverRows,
     allTasks,

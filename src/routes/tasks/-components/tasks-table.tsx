@@ -1,16 +1,12 @@
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  CheckIcon,
-  ChevronRightIcon,
-  CircleDashedIcon,
-  CircleXIcon,
   ClipboardListIcon,
+  CircleXIcon,
   FileTextIcon,
   LoaderCircleIcon,
-  RotateCcwIcon,
-  Trash2Icon,
 } from 'lucide-react'
+
 import { Badge } from '#/components/ui/badge'
 import { Card } from '#/components/ui/card'
 import {
@@ -36,17 +32,15 @@ import {
   TableRow,
 } from '#/components/ui/table'
 import { cn } from '#/lib/utils'
-import { formatFileSize } from '#/routes/resources/-lib/upload'
 import type { ParsedQueueRow } from '#/routes/monitoring/-components/queue-status-card'
-import type { TaskRecord } from '#/routes/tasks/-lib/task-record'
-import { normalizeTaskStatus } from '#/routes/tasks/-lib/task-record'
-import { formatTaskDuration } from '#/routes/tasks/-lib/task-time'
+import { formatFileSize } from '#/routes/resources/-lib/upload'
+import { TaskExecutionCell } from '#/routes/tasks/-components/task-execution-cell'
+import { TaskHumanCell } from '#/routes/tasks/-components/task-human-cell'
 import {
   PAGE_SIZE_OPTIONS,
   formatTime,
-  getEffectiveTaskStatus,
 } from '#/routes/tasks/-lib/task-api'
-import { getTaskExecutionDynamic } from '#/routes/tasks/-lib/task-pipeline'
+import type { TaskRecord } from '#/routes/tasks/-lib/task-record'
 
 interface TasksTableProps {
   tasks: TaskRecord[]
@@ -69,6 +63,7 @@ interface TasksTableProps {
   isDeleting: boolean
   queueObserverRows: ParsedQueueRow[]
   maxTasks: number
+  onOpenDeliverable?: (uri: string) => void
 }
 
 export function TasksTable({
@@ -92,151 +87,11 @@ export function TasksTable({
   isDeleting,
   queueObserverRows,
   maxTasks,
+  onOpenDeliverable,
 }: TasksTableProps) {
-  const { i18n, t } = useTranslation('tasksPage')
+  const { t } = useTranslation('tasksPage')
   const pageOffset = (page - 1) * pageSize
   const hasNext = page < totalPages
-
-  const renderExecutionProgress = (task: TaskRecord) => {
-    const taskId = task.task_id
-    const dynamic = getTaskExecutionDynamic(
-      task,
-      queueObserverRows,
-      i18n.language,
-    )
-    const effStatus = getEffectiveTaskStatus(task, allTasks)
-    const status = normalizeTaskStatus(effStatus)
-    const durationText = formatTaskDuration(task, i18n.language.startsWith('zh'))
-    const isRetrying = isRetryingTask(taskId)
-
-    // 1. 已完成：极致素雅（仅状态徽章 + 耗时，详情全部移至抽屉）
-    if (status === 'completed') {
-      return (
-        <div className="flex items-center gap-2 py-0.5 select-none text-foreground/85">
-          <Badge
-            variant="outline"
-            className="text-[11px] px-1.5 py-0 h-5 border-border/60 text-muted-foreground bg-muted/30 font-sans font-medium shrink-0"
-          >
-            <CheckIcon className="size-2.5 stroke-[2.5] mr-1 text-primary" />
-            {t('status.completed')}
-          </Badge>
-          {durationText && (
-            <span className="font-mono text-[11px] text-muted-foreground/70 shrink-0 select-none tabular-nums">
-              · {durationText}
-            </span>
-          )}
-        </div>
-      )
-    }
-
-    // 2. 进行中：并发工序多胶囊并排呈现
-    if (status === 'running') {
-      const stepPairs = dynamic.activeStepPairs && dynamic.activeStepPairs.length > 0
-        ? dynamic.activeStepPairs
-        : [{ name: dynamic.activeStepName, metric: dynamic.workloadText }]
-
-      return (
-        <div className="flex items-center gap-2 py-0.5 select-none whitespace-nowrap text-xs">
-          <Badge
-            variant="outline"
-            className="text-[11px] px-1.5 py-0 h-5 border-primary/30 text-primary bg-primary/10 font-sans font-medium shrink-0"
-          >
-            <LoaderCircleIcon className="size-2.5 shrink-0 animate-spin mr-1 text-primary" />
-            {t('status.running')}
-          </Badge>
-          {durationText && (
-            <span className="font-mono text-[11px] text-muted-foreground/70 tabular-nums shrink-0">
-              · {durationText}
-            </span>
-          )}
-          <div className="flex items-center gap-1.5 shrink-0">
-            {stepPairs.map((pair, idx) => (
-              <div
-                key={pair.name || idx}
-                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs bg-muted/40 text-foreground/85 border border-border/50 font-sans shrink-0"
-              >
-                <span className="font-medium text-foreground/90">{pair.name}</span>
-                {pair.metric && (
-                  <>
-                    <span className="text-muted-foreground/40 font-mono text-[10px] select-none">·</span>
-                    <span className="font-mono text-[11px] text-muted-foreground tabular-nums">{pair.metric}</span>
-                  </>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )
-    }
-
-    // 3. 排队中：干净单行等待态
-    if (status === 'pending') {
-      return (
-        <div className="flex items-center gap-2 py-0.5 text-muted-foreground select-none whitespace-nowrap text-xs">
-          <Badge
-            variant="outline"
-            className="text-[11px] px-1.5 py-0 h-5 border-border/60 text-muted-foreground bg-muted/20 font-sans font-medium shrink-0"
-          >
-            <CircleDashedIcon className="size-2.5 mr-1 text-muted-foreground/60" />
-            {t('status.pending', { defaultValue: '等待中' })}
-          </Badge>
-          {durationText && (
-            <span className="font-mono text-[11px] text-muted-foreground/60 shrink-0 select-none tabular-nums">
-              · {durationText}
-            </span>
-          )}
-        </div>
-      )
-    }
-
-    // 4. 失败：带重试与删除操作
-    return (
-      <div className="flex items-center gap-2 py-0.5 text-destructive select-none whitespace-nowrap text-xs">
-        <Badge
-          variant="destructive"
-          className="text-[11px] px-1.5 py-0 h-5 font-sans font-medium shrink-0 gap-1"
-        >
-          <CircleXIcon className="size-2.5 mr-0.5" />
-          {t('status.failed')}
-          <button
-            type="button"
-            disabled={isRetrying}
-            className="ml-1 inline-flex items-center justify-center rounded p-0.5 hover:bg-white/25 active:scale-95 transition-all cursor-pointer text-destructive-foreground disabled:opacity-50"
-            title={t('pipeline.retrigger')}
-            onClick={(e) => {
-              e.stopPropagation()
-              onRetryTask(task)
-            }}
-          >
-            {isRetrying ? (
-              <LoaderCircleIcon className="size-2.5 shrink-0 animate-spin" />
-            ) : (
-              <RotateCcwIcon className="size-2.5 shrink-0" />
-            )}
-          </button>
-          <button
-            type="button"
-            disabled={isDeleting}
-            className="ml-0.5 inline-flex items-center justify-center rounded p-0.5 hover:bg-white/25 active:scale-95 transition-all cursor-pointer text-destructive-foreground disabled:opacity-50"
-            title={t('pipeline.deleteTask')}
-            onClick={(e) => {
-              e.stopPropagation()
-              if (task.task_id) {
-                onDeleteTask(task.task_id)
-              }
-            }}
-          >
-            <Trash2Icon className="size-2.5 shrink-0" />
-          </button>
-        </Badge>
-        {durationText && (
-          <span className="font-mono text-[11px] text-destructive/70 shrink-0 select-none tabular-nums">
-            · {durationText}
-          </span>
-        )}
-      </div>
-    )
-  }
 
   function renderTaskResourceCell(task: TaskRecord) {
     const meta = task.meta && typeof task.meta === 'object' ? task.meta : {}
@@ -309,9 +164,7 @@ export function TasksTable({
           <ClipboardListIcon className="size-5" />
         </div>
         <div className="grid max-w-md gap-1">
-          <p className="font-medium">
-            {t(hasActiveFilters ? 'emptyFiltered' : 'empty')}
-          </p>
+          <p className="font-medium">{t(hasActiveFilters ? 'emptyFiltered' : 'empty')}</p>
           <p className="text-sm text-muted-foreground">
             {t(hasActiveFilters ? 'emptyFilteredDescription' : 'emptyDescription')}
           </p>
@@ -357,14 +210,12 @@ export function TasksTable({
                   }}
                 >
                   <TableCell>
-                    <span className="flex items-center gap-2">
-                      <code className="min-w-0 truncate text-xs">
-                        {taskId || `#${pageOffset + index + 1}`}
-                      </code>
-                      {taskId ? (
-                        <ChevronRightIcon className="size-3.5 shrink-0 text-muted-foreground" />
-                      ) : null}
-                    </span>
+                    <TaskHumanCell
+                      task={task}
+                      index={index}
+                      pageOffset={pageOffset}
+                      onOpenDeliverable={onOpenDeliverable}
+                    />
                   </TableCell>
                   <TableCell className="text-xs font-medium text-foreground/90 whitespace-nowrap">
                     {task.task_type
@@ -376,7 +227,17 @@ export function TasksTable({
                   <TableCell className="max-w-72">
                     {renderTaskResourceCell(task)}
                   </TableCell>
-                  <TableCell>{renderExecutionProgress(task)}</TableCell>
+                  <TableCell>
+                    <TaskExecutionCell
+                      task={task}
+                      allTasks={allTasks}
+                      queueObserverRows={queueObserverRows}
+                      isRetryingTask={isRetryingTask}
+                      onRetryTask={onRetryTask}
+                      onDeleteTask={onDeleteTask}
+                      isDeleting={isDeleting}
+                    />
+                  </TableCell>
                   <TableCell className="whitespace-nowrap text-right text-muted-foreground">
                     {formatTime(task)}
                   </TableCell>

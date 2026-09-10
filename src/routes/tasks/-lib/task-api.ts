@@ -369,3 +369,98 @@ export function computeTaskKpiData(
     typeRows,
   }
 }
+
+export interface BusinessJobItem {
+  task_id: string
+  task_type: string
+  status: string
+  human_title: string
+  initiator?: string
+  created_at: number
+  updated_at: number
+  deliverable?: {
+    uri: string
+    label?: string
+    action_type?: string
+  }
+  progress?: {
+    completed: number
+    total: number
+    unit?: string
+  }
+  message?: string
+  result?: any
+}
+
+export interface SystemOpItem {
+  task_id: string
+  task_type: string
+  status: string
+  human_title: string
+  created_at: number
+  updated_at: number
+  stage?: string
+  error?: string
+}
+
+export interface DualTrackTasksResult {
+  business_jobs: BusinessJobItem[]
+  system_ops: SystemOpItem[]
+  kpi: {
+    active_business_jobs: number
+    completed_deliverables_today: number
+    saved_bytes: number
+    total_probes: number
+  }
+}
+
+/**
+ * 获取业务作业与系统运维工序双轨数据
+ */
+export async function fetchDualTrackTasks(limit: number = 50): Promise<DualTrackTasksResult> {
+  try {
+    const resp = await ovClient.instance.get('/api/v1/tasks/dual_track', {
+      params: { limit },
+    })
+    return resp.data?.result || {
+      business_jobs: [],
+      system_ops: [],
+      kpi: {
+        active_business_jobs: 0,
+        completed_deliverables_today: 0,
+        saved_bytes: 0,
+        total_probes: 0,
+      },
+    }
+  } catch (error) {
+    console.error('Failed to fetch dual track tasks:', error)
+    return {
+      business_jobs: [],
+      system_ops: [],
+      kpi: {
+        active_business_jobs: 0,
+        completed_deliverables_today: 0,
+        saved_bytes: 0,
+        total_probes: 0,
+      },
+    }
+  }
+}
+
+/**
+ * 声明或更新上报业务作业与进度
+ */
+export async function reportBusinessJob(payload: {
+  task_id?: string
+  human_title: string
+  task_type?: string
+  initiator?: string
+  status?: 'running' | 'completed' | 'failed'
+  progress?: { completed: number; total: number; unit?: string }
+  deliverable?: { uri: string; label?: string }
+  message?: string
+}): Promise<{ task_id: string; status: string; human_title: string }> {
+  const resp = await ovClient.instance.post('/api/v1/tasks/business', payload)
+  return resp.data?.result
+}
+

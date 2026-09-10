@@ -3,7 +3,8 @@
 > **物理真相源标识**：`OpenVikingStudio/docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md`  
 > **制定时间**：2026-09-10  
 > **核心工程铁律**：**【查库第一，禁止手搓 (Search First, Never Duplicate)】**  
-> 任何 Agent（主 Agent、子代理、外部协作智能体）在开发新功能、新页面、新抽屉或新指标前，**必须 100% 强制先查阅本档案库**。凡能直接复用或微调复用的，严禁重新手搓野蛮代码！
+> 任何 Agent（主 Agent、子代理、外部协作智能体）在开发新功能、新页面、新抽屉或新指标前，**必须 100% 强制先查阅本档案库**。凡能直接复用或微调复用的，严禁重新手搓野蛮代码！  
+> 💡 **视觉体系与座舱规范**：本档案库专注于组件资产清单与复用字典。全系统配色、字号、微圆角及人机工效规范已统一结晶收口至 [`cockpit-ui`](file:///home/skloxo/.gemini/config/skills/cockpit-ui/SKILL.md) 技能，进入 UI 开发前按需挂载即可。
 
 ---
 
@@ -115,7 +116,10 @@
 | **`CopyButton`** | `src/components/common/copy-button.tsx` | **带安全降级的一键复制按钮**：内部基于 `copyTextToClipboard`，自动维护 copied 状态、图标动态切换（CopyIcon ➔ CheckIcon 冰青色高亮）、支持自定义 label 与尺寸。彻底消灭全站散落手搓。 | ✅ 已交付 (v1.4.82) |
 | **`UnifiedMemoryImpactView`** | `src/components/memory-impact/` | **通用记忆影响原子纯视图 (跨场景任意嵌入)**：<br>• 剥离所有 `<Sheet>` 抽屉包装，可无缝嵌入**页面 (Page)、抽屉内 (Nested Drawer-free)、弹窗 (Dialog/Modal)**；<br>• 统一汇总卡片 (`ImpactSummaryCards`)、分类 Tab 与差异条目 (`MemoryDiffItem`)；<br>• 支持受控快照模式 (Controlled) 与懒查询模式 (Lazy Query)；<br>• 彻底消灭抽屉套抽屉 (Nested Drawer) 的劣质体验。 | ✅ 已交付 (v1.4.88) |
 | **`UniversalMemoryImpact`** | `src/components/memory-impact/` | **原子化开箱即用记忆影响卡片 (全站统一骨架与交互)**：<br>• 自包含标准卡片容器、标题、增量指示胶囊（+1 ~1）、折叠展开按钮与多分类 Diff 列表；<br>• 在门禁自解释抽屉、任务中心抽屉、会话中心中 1 行直接嵌入，彻底杜绝 ABCD vs ABCDEF 差异；<br>• 单点迭代，全站受益。 | ✅ 已交付 (v1.4.92) |
-| **`UnifiedMemoryImpactDrawer`** | `src/components/memory-impact/` | **通用记忆增量审计快照抽屉 (轻量外壳包装)**：<br>• 仅作为 `UnifiedMemoryImpactView` 的轻量 Drawer 容器适配层；<br>• 对外保持 100% 向后兼容；<br>• 仅在顶层单页调用时使用，抽屉内严禁嵌套调用。 | ✅ 已交付 (v1.4.82) |
+| **`UniversalMemoryImpactDrawer`** | `src/components/memory-impact/` | **通用记忆增量审计快照抽屉 (轻量外壳包装)**：<br>• 仅作为 `UnifiedMemoryImpactView` 的轻量 Drawer 容器适配层；<br>• 对外保持 100% 向后兼容；<br>• 仅在顶层单页调用时使用，抽屉内严禁嵌套调用。 | ✅ 已交付 (v1.4.82) |
+| **`BusinessJobsView`** | `src/routes/tasks/-components/business-jobs-view.tsx` | **业务与智能体工作流主看板卡片**：展示有头有脸、有业务目标的宏观大任务，带中文自解释标题、发起方身份标识（Agent / 用户）、真实耗时、严格物理进度 ($X/Y$ 度量) 与成果物一键直达链接。 | ✅ 已交付 (v1.4.92) |
+| **`TaskHumanCell`** | `src/routes/tasks/-components/task-human-cell.tsx` | **消灭裸 UUID 的人类自解释表格单元格**：优先呈现业务标题与来源，截断展示短 ID，内嵌成果物直达按钮，彻底消除机器黑话感。 | ✅ 已交付 (v1.4.92) |
+| **`TaskExecutionCell`** | `src/routes/tasks/-components/task-execution-cell.tsx` | **工序执行动态与多状态胶囊单元格**：支持完成态、并发进行态、等待态与失败重试态紧凑呈现，严格遵守 NO GREEN EVER 与最小字号下限。 | ✅ 已交付 (v1.4.92) |
 | **`UniversalPagination`** | `src/components/common/universal-pagination.tsx` | 统一分页控制器：条数切换 (`10/25/50/100`)、翻页按钮、等宽页码，严格 $\ge 11\text{px}$ 规范。 | ⏳ 规划中 |
 | **`MetricTile`** | `src/components/common/metric-tile.tsx` | 统一 `p-3` 紧凑卡片、等宽大数字 (`tabular-nums font-mono`)、四态语义支持（冰青/湛蓝/琥珀/玫瑰红）。 | ⏳ 规划中 |
 | **`EmptyState`** | `src/components/common/empty-state.tsx` | 极客风空状态展示，支持图标胶囊、主副标题、可选重置筛选按钮。 | ⏳ 规划中 |
