@@ -201,6 +201,33 @@ export function deriveUniversalPipelineSteps(
         const rawAction = String(resObj.action || metaObj.action || 'add').toLowerCase()
         detail = rawAction === 'noop' ? (isZh ? '零冗余合并' : 'Merged') : (isZh ? '存储落盘' : 'Persisted')
       }
+    } else if (type === 'add_skill' && (state === 'completed' || state === 'running')) {
+      const skillCount =
+        extractFirstNumber(resObj, ['valid_skills', 'scanned_skills', 'total_skills']) ??
+        extractFirstNumber(metaObj, ['valid_skills', 'scanned_skills', 'total_skills']) ??
+        1
+
+      if (spec.id === 'step_skill_scan') {
+        effectiveMetric = effectiveMetric ?? (state === 'completed' ? skillCount : 0)
+        effectiveTotal = effectiveTotal ?? skillCount
+        detail = isZh ? `${effectiveMetric}/${effectiveTotal} 项扫描` : `${effectiveMetric}/${effectiveTotal} scanned`
+      } else if (spec.id === 'step_spec_audit') {
+        effectiveMetric = effectiveMetric ?? (state === 'completed' ? skillCount : 0)
+        effectiveTotal = effectiveTotal ?? skillCount
+        detail = isZh ? `${effectiveMetric}/${effectiveTotal} 规范合规` : `${effectiveMetric}/${effectiveTotal} compliant`
+      } else if (spec.id === 'step_skill_embedding') {
+        const slices =
+          extractFirstNumber(resObj, ['slices_count', 'embedded_skills']) ??
+          extractFirstNumber(metaObj, ['slices_count', 'embedded_skills'])
+        if (slices !== undefined && slices > 0) {
+          effectiveMetric = effectiveMetric ?? (state === 'completed' ? slices : 0)
+          effectiveTotal = effectiveTotal ?? slices
+        } else {
+          effectiveMetric = effectiveMetric ?? (state === 'completed' ? skillCount : 0)
+          effectiveTotal = effectiveTotal ?? skillCount
+        }
+        detail = isZh ? '向量建库完成' : 'Vector built'
+      }
     } else if ((type === 'add_resource' || type === 'session_commit') && (state === 'completed' || state === 'running')) {
       if (
         spec.id === 'step_session_admission' ||

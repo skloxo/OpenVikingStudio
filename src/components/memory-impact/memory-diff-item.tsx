@@ -6,6 +6,7 @@ import type { UniversalMemoryDiffOperation } from './types'
 
 export interface MemoryDiffItemProps {
   operation: UniversalMemoryDiffOperation
+  defaultOpen?: boolean
   labels?: {
     before?: string
     after?: string
@@ -15,7 +16,11 @@ export interface MemoryDiffItemProps {
   }
 }
 
-export function MemoryDiffItem({ operation, labels }: MemoryDiffItemProps) {
+export function MemoryDiffItem({
+  operation,
+  defaultOpen = true,
+  labels,
+}: MemoryDiffItemProps) {
   const { t } = useTranslation('sessions')
   const conf = KIND_CONFIG[operation.kind]
   const Icon = conf.icon
@@ -27,7 +32,7 @@ export function MemoryDiffItem({ operation, labels }: MemoryDiffItemProps) {
   const emptyLabel = labels?.emptyContent || t('impact.emptyContent', '(空内容)')
 
   return (
-    <details className="group border-b last:border-b-0">
+    <details className="group border-b last:border-b-0" open={defaultOpen}>
       <summary className="flex cursor-pointer list-none items-center gap-2.5 px-3.5 py-2.5 transition-colors hover:bg-muted/40 select-none">
         <Icon className={`size-4 shrink-0 ${conf.textColor}`} />
         <code className="min-w-0 flex-1 truncate font-mono text-xs text-foreground">
