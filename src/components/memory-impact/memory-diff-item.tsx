@@ -31,6 +31,7 @@ export function MemoryDiffItem({
   const [isOpen, setIsOpen] = React.useState(defaultOpen)
   const [asyncContent, setAsyncContent] = React.useState<string | null>(null)
   const [isLoadingContent, setIsLoadingContent] = React.useState(false)
+  const attemptedUrisRef = React.useRef<Set<string>>(new Set())
 
   const isPlaceholder = (text?: string) => {
     if (!text) return true
@@ -43,7 +44,7 @@ export function MemoryDiffItem({
     )
   }
 
-  // 当项展开且内容为简短占位符时，自动尝试从底层 VikingFS 异步拉取真实文件正文
+  // 当项展开且内容为简短占位符时，自动尝试从底层 VikingFS 异步拉取真实文件正文（单次防死循环守卫）
   React.useEffect(() => {
     if (!isOpen) return
     const uri = operation.uri
@@ -51,10 +52,11 @@ export function MemoryDiffItem({
 
     const currentAfter = operation.after
     if (currentAfter && !isPlaceholder(currentAfter)) return
-    if (asyncContent !== null || isLoadingContent) return
+    if (asyncContent !== null || attemptedUrisRef.current.has(uri)) return
 
     let isMounted = true
     setIsLoadingContent(true)
+    attemptedUrisRef.current.add(uri)
 
     fetchFileContent(uri)
       .then((res) => {
@@ -74,7 +76,7 @@ export function MemoryDiffItem({
     return () => {
       isMounted = false
     }
-  }, [isOpen, operation.uri, operation.after, asyncContent, isLoadingContent])
+  }, [isOpen, operation.uri, operation.after, asyncContent])
 
   const beforeLabel = labels?.before || t('impact.before', '变更前')
   const afterLabel = labels?.after || t('impact.after', '变更后')
@@ -83,14 +85,17 @@ export function MemoryDiffItem({
   const emptyLabel = labels?.emptyContent || t('impact.emptyContent', '(空内容)')
 
   const resolvedAfter = asyncContent || operation.after
+  const typeLabel = t(`impact.types.${operation.memoryType}`, {
+    defaultValue: operation.memoryType,
+  })
 
   return (
     <details
-      className="group border-b last:border-b-0 min-w-0"
+      className="group border-b last:border-b-0 min-w-0 w-full overflow-hidden"
       open={defaultOpen}
       onToggle={(e) => setIsOpen((e.target as HTMLDetailsElement).open)}
     >
-      <summary className="flex cursor-pointer list-none items-center gap-2.5 px-3.5 py-2.5 transition-colors hover:bg-muted/40 select-none min-w-0">
+      <summary className="flex w-full cursor-pointer list-none items-center gap-2.5 px-3.5 py-2.5 transition-colors hover:bg-muted/40 select-none min-w-0 overflow-hidden">
         <Icon className={`size-4 shrink-0 ${conf.textColor}`} />
         <code className="min-w-0 flex-1 truncate font-mono text-xs text-foreground">
           {operation.uri}
@@ -99,8 +104,9 @@ export function MemoryDiffItem({
         <Badge
           className="shrink-0 text-[11px] font-normal max-w-36"
           variant="outline"
+          title={typeLabel}
         >
-          <span className="truncate">{operation.memoryType}</span>
+          <span className="truncate">{typeLabel}</span>
         </Badge>
         {isLoadingContent && (
           <LoaderCircleIcon className="size-3 text-muted-foreground animate-spin shrink-0" />
@@ -110,7 +116,7 @@ export function MemoryDiffItem({
         </span>
       </summary>
 
-      <div className="border-t bg-muted/15 px-3.5 py-3 min-w-0">
+      <div className="border-t bg-muted/15 px-3.5 py-3 min-w-0 w-full overflow-hidden">
         {operation.description ? (
           <p className="mb-2 text-xs text-muted-foreground leading-relaxed">
             {operation.description}
@@ -118,7 +124,7 @@ export function MemoryDiffItem({
         ) : null}
 
         {operation.kind === 'update' ? (
-          <div className="grid gap-3 sm:grid-cols-2 min-w-0">
+          <div className="grid gap-3 sm:grid-cols-2 min-w-0 w-full">
             <ContentBlock
               content={operation.before}
               label={beforeLabel}
@@ -192,7 +198,7 @@ function ContentBlock({
         </div>
       </div>
       <pre
-        className={`overflow-auto whitespace-pre-wrap rounded-md border bg-background/80 p-2.5 font-mono text-[11px] leading-relaxed text-muted-foreground transition-all ${
+        className={`overflow-auto whitespace-pre-wrap break-all min-w-0 max-w-full rounded-md border bg-background/80 p-2.5 font-mono text-[11px] leading-relaxed text-muted-foreground transition-all ${
           isExpanded ? 'max-h-none' : 'max-h-64'
         }`}
       >

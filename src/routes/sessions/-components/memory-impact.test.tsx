@@ -75,7 +75,7 @@ describe('MemoryImpact', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: 'impact.open' }))
-    fireEvent.click(screen.getByRole('tab', { name: 'profile' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'impact.types.profile' }))
 
     const visibleArchive = screen.getByText('archive-1').closest('section')
     expect(visibleArchive?.textContent).toContain('+1')

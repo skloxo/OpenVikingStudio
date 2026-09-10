@@ -23,8 +23,8 @@ import type { ParsedQueueRow } from '#/routes/monitoring/-components/queue-statu
 import {
   normalizeTaskRecord,
   normalizeTaskStatus,
-  type TaskRecord,
 } from '../-lib/task-record'
+import type { TaskRecord } from '../-lib/task-record'
 import {
   TaskOverviewGrid,
   TaskResultOutcomeSummary,
@@ -180,7 +180,7 @@ export function TaskDetailSheet({
           </div>
         </SheetHeader>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6 py-5">
           {detailQuery.isLoading ? (
             <div className="flex min-h-48 items-center justify-center gap-2 text-muted-foreground">
               <LoaderCircleIcon className="size-4 animate-spin" />
