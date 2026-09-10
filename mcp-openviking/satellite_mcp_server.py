@@ -4,17 +4,11 @@
 # ─── MODULE: satellite_mcp_server ──────────────────────────────────────────
 """
 OpenViking Satellite MCP Server (Standalone Zero-Dependency Distribution - v1.4.43)
-
-专为远程算力节点 (Mac Studio / 2080Ti / 远程工作站) 与外部 Agent (WorkBuddy / Cursor / Claude Code) 设计的独立单文件轻量分发包。
-特点：
-1. 零 Monorepo 依赖：拷贝单文件即可独立运行，仅需 pip install "mcp[cli]" pydantic
-2. 纯安全数据面：暴露 16 大全能实用数据与感知工具，物理隔离本地底层破坏性运维接口
-3. 优雅向后兼容垫片：调用被精简管理工具时友好拦截，杜绝 JSON-RPC 协议异常断流
-4. 抖动自愈重试：内置指数退避重试，抵抗 FRP / SSH 隧道远程网络抖动
-5. 跨平台原生加固：自动处理 Windows cmd/powershell UTF-8 编码重置
+专为远程算力节点与外部 Agent 设计的轻量单文件分发包（16 大纯安全数据与感知工具）。
 """
 
 # SECTION: Imports
+import asyncio
 import inspect
 import json
 import logging
@@ -28,6 +22,18 @@ from typing import Any, Dict, List, Optional
 from urllib.request import Request, urlopen
 from urllib.error import URLError, HTTPError
 from urllib.parse import urlencode
+
+# 重型检索工具池（限定进程内最多 2 个并发，避免后端争用）
+_HEAVY_TOOLS = {"openviking_find", "openviking_search", "openviking_smart_read"}
+_heavy_semaphore: Optional[asyncio.Semaphore] = None
+
+
+def _get_heavy_semaphore() -> asyncio.Semaphore:
+    global _heavy_semaphore
+    if _heavy_semaphore is None:
+        _heavy_semaphore = asyncio.Semaphore(2)
+    return _heavy_semaphore
+
 
 # SECTION: Platform Compatibility & Stdio
 if sys.platform == "win32":
@@ -95,11 +101,14 @@ class SatelliteHTTPClient:
         data = json.dumps(body).encode("utf-8") if body is not None else None
         req = Request(url, data=data, headers=headers, method=method)
 
+        start_time = time.time()
         max_retries = 3
         for attempt in range(max_retries):
             try:
                 with urlopen(req, timeout=timeout) as resp:
+                    elapsed_ms = int((time.time() - start_time) * 1000)
                     content = resp.read().decode("utf-8")
+                    logger.debug(f"[Satellite_HTTP] {method} {path} attempt={attempt+1} elapsed={elapsed_ms}ms status={resp.status}")
                     if not content:
                         return {"ok": True}
                     try:
@@ -107,6 +116,7 @@ class SatelliteHTTPClient:
                     except json.JSONDecodeError:
                         return {"raw": content}
             except HTTPError as e:
+                elapsed_ms = int((time.time() - start_time) * 1000)
                 if e.code in (502, 503, 504) and attempt < max_retries - 1:
                     time.sleep(0.5 * (2 ** attempt))
                     continue
@@ -115,18 +125,23 @@ class SatelliteHTTPClient:
                     body_text = e.read().decode("utf-8")
                 except Exception:
                     pass
-                return {"error": f"HTTP {e.code}: {body_text}", "is_http_error": True, "code": e.code}
-            except URLError as e:
+                return {"error": f"[BACKEND_ERROR] HTTP {e.code}: {body_text}", "is_http_error": True, "code": e.code, "elapsed_ms": elapsed_ms}
+            except (TimeoutError, URLError) as e:
+                elapsed_ms = int((time.time() - start_time) * 1000)
+                err_msg = str(getattr(e, "reason", e))
+                if "timed out" in err_msg.lower() or isinstance(e, TimeoutError):
+                    return {"error": f"[BRIDGE_TIMEOUT] 桥接层请求后端超时 ({timeout}s): {err_msg}", "code": "BRIDGE_TIMEOUT", "elapsed_ms": elapsed_ms}
                 if attempt < max_retries - 1:
                     time.sleep(0.5 * (2 ** attempt))
                     continue
-                return {"error": f"远程 OpenViking 连接失败: {e.reason}。请检查 OPENVIKING_API 地址与网络代理。"}
+                return {"error": f"[CONNECTION_ERROR] 远程 OpenViking 连接失败: {err_msg}", "code": "CONNECTION_ERROR", "elapsed_ms": elapsed_ms}
             except Exception as e:
+                elapsed_ms = int((time.time() - start_time) * 1000)
                 if attempt < max_retries - 1:
                     time.sleep(0.5 * (2 ** attempt))
                     continue
-                return {"error": str(e)}
-        return {"error": "请求超时或超过最大重试次数"}
+                return {"error": f"[CLIENT_ERROR] {str(e)}", "elapsed_ms": elapsed_ms}
+        return {"error": f"[BRIDGE_TIMEOUT] 请求后端超时 ({timeout}s)"}
 
     def get(self, path: str, params: Optional[dict] = None, timeout: int = 30) -> Any:
         return self._request("GET", path, params=params, timeout=timeout)
@@ -153,8 +168,7 @@ def _compact_search_result(data: Any) -> Any:
             for it in items:
                 if isinstance(it, dict) and isinstance(it.get("abstract"), str) and len(it["abstract"]) > 350:
                     u = it.get("uri", "")
-                    h = f"... [高密摘要截断，如需阅读全文请使用 openviking_read(uri='{u}')]" if u else "... [高密摘要截断]"
-                    it["abstract"] = it["abstract"][:350] + h
+                    it["abstract"] = it["abstract"][:350] + (f"... [高密摘要截断，请使用 openviking_read(uri='{u}')]" if u else "... [高密摘要截断]")
 
     target = data.get("result", data) if isinstance(data, dict) else data
     if isinstance(target, dict):
@@ -167,23 +181,16 @@ def _compact_search_result(data: Any) -> Any:
 
 
 def _format_result(result: Any) -> str:
-    if isinstance(result, str):
-        return result
-    return json.dumps(_compact_search_result(result), ensure_ascii=False, indent=2)
+    return result if isinstance(result, str) else json.dumps(_compact_search_result(result), ensure_ascii=False, indent=2)
 
 
 def _validate_uri(uri: Any, param_name: str = "uri") -> Optional[str]:
-    if isinstance(uri, str) and uri and not uri.startswith("viking://"):
-        return f"参数 {param_name} 格式错误: '{uri}' 必须以 'viking://' 开头"
-    return None
+    return f"参数 {param_name} 格式错误: '{uri}' 必须以 'viking://' 开头" if (isinstance(uri, str) and uri and not uri.startswith("viking://")) else None
 
 # SECTION: FastMCP Instance & Graceful Deprecation Shim
 mcp = FastMCP(
     name="openviking-satellite",
-    instructions=(
-        "OpenViking Satellite MCP Server — 远程卫星端知识中枢客户端。"
-        "提供体外大脑语义检索 (openviking_find)、记忆分层读取、代码结构大纲、知识存盘与自演进上报。"
-    ),
+    instructions="OpenViking Satellite MCP Server — 远程卫星端知识中枢客户端。提供体外大脑语义检索 (openviking_find)、分层读取、代码大纲、知识存盘与自演进上报。",
 )
 
 
@@ -211,10 +218,19 @@ def _safe_tool(*args, **kwargs):
                     elif name not in bound.arguments:
                         bound.arguments[name] = val
                 return fn(*bound.args, **bound.kwargs)
-            except Exception:
-                return fn(*f_args, **f_kwargs)
+            except Exception as e:
+                logger.error(f"[Tool Execution Error] {tool_name}: {e}")
+                return _format_result({"error": str(e)})
 
-        return mcp.tool(*args, **tool_kwargs)(cleaned_fn)
+        @wraps(fn)
+        async def mcp_async_fn(*f_args, **f_kwargs):
+            if tool_name in _HEAVY_TOOLS:
+                async with _get_heavy_semaphore():
+                    return await asyncio.to_thread(cleaned_fn, *f_args, **f_kwargs)
+            return await asyncio.to_thread(cleaned_fn, *f_args, **f_kwargs)
+
+        mcp.tool(*args, **tool_kwargs)(mcp_async_fn)
+        return cleaned_fn
     return decorator
 
 
@@ -227,9 +243,8 @@ async def _graceful_satellite_call(name: str, arguments: dict[str, Any], context
     if not tool and name.startswith("openviking_"):
         logger.info(f"[Shim Intercepted] Satellite client invoked trimmed tool: {name}")
         msg = json.dumps({
-            "status": "skipped",
-            "tool": name,
-            "message": f"[Satellite Mode] 工具 '{name}' 为本地核心运维特权接口，卫星客户端已安全解耦。当前卫星客户端专注于数据面语义检索与知识协作。",
+            "status": "skipped", "tool": name,
+            "message": f"[Satellite Mode] 工具 '{name}' 为本地核心运维特权接口，卫星客户端已安全解耦。",
             "suggestion": "请使用 openviking_find, openviking_smart_read 或在服务端节点执行运维指令。",
         }, ensure_ascii=False, indent=2)
         return [TextContent(type="text", text=msg)] if convert_result else msg
@@ -327,11 +342,10 @@ def openviking_store(
     delta: str = Field(default="", description="3~5行Git Diff或代码指纹（专供代码重放轨）"),
 ) -> str:
     """存储消息到长期记忆。支持双轨写入（semantic_anchor 检索 + delta 代码重放）。content 为空时提交。"""
-    sid = str(session_id).strip() if (isinstance(session_id, str) and not hasattr(session_id, "default")) else "default"
-    role_str = str(role) if (isinstance(role, str) and not hasattr(role, "default")) else "user"
-    content_str = str(content) if (isinstance(content, str) and not hasattr(content, "default")) else ""
-    anchor_str = str(semantic_anchor) if (isinstance(semantic_anchor, str) and not hasattr(semantic_anchor, "default")) else ""
-    delta_str = str(delta) if (isinstance(delta, str) and not hasattr(delta, "default")) else ""
+    def _s(v: Any, d: str = "") -> str:
+        return str(v).strip() if (v and not hasattr(v, "default")) else d
+    sid, role_str, content_str = _s(session_id, "default"), _s(role, "user"), _s(content)
+    anchor_str, delta_str = _s(semantic_anchor), _s(delta)
     if anchor_str or delta_str:
         try:
             from openviking.service.memory_dual_track import format_dual_track_markdown
@@ -407,25 +421,10 @@ def openviking_record_evolution_lesson(
     try:
         clean_slug = re.sub(r'[^a-zA-Z0-9_\u4e00-\u9fa5]+', '_', lesson_title).strip('_').lower() or "lesson"
         date_str = time.strftime('%Y%m%d_%H%M%S')
-        mirror_filename = f"{date_str}_{skill_name}_{clean_slug}.md"
-        master_uri = f"viking://resources/master_memory/evolution_lessons/{mirror_filename}"
-
-        mirror_content = f"""# Evolution Lesson: {lesson_title}
-- **Skill**: `{skill_name}`
-- **Recorded At**: {time.strftime('%Y-%m-%d %H:%M:%S')}
-- **Context**: {context}
-
-## 🔍 Reflection & Root Cause Analysis
-{reflection}
-
-## 📜 Permanent Guidelines & Lesson
-{lesson}
-"""
+        master_uri = f"viking://resources/master_memory/evolution_lessons/{date_str}_{skill_name}_{clean_slug}.md"
+        mirror_content = f"# Evolution Lesson: {lesson_title}\n- **Skill**: `{skill_name}`\n- **Recorded At**: {time.strftime('%Y-%m-%d %H:%M:%S')}\n- **Context**: {context}\n\n## 🔍 Reflection & Root Cause Analysis\n{reflection}\n\n## 📜 Permanent Guidelines & Lesson\n{lesson}\n"
         res = http_client.post("/api/v1/content/write", {"uri": master_uri, "content": mirror_content, "mode": "create"})
-        return _format_result({
-            "status": "ok", "message": f"成功将 Lesson '{lesson_title}' 存盘至 OpenViking Master Memory",
-            "skill_name": skill_name, "master_memory_uri": master_uri, "response": res,
-        })
+        return _format_result({"status": "ok", "message": f"成功将 Lesson '{lesson_title}' 存盘至 OpenViking Master Memory", "skill_name": skill_name, "master_memory_uri": master_uri, "response": res})
     except Exception as e:
         return _format_result({"status": "error", "error": str(e)})
 
@@ -436,7 +435,7 @@ def openviking_tree(
     depth: int = Field(default=3, description="树深度"),
 ) -> str:
     """递归树形展示目录结构"""
-    return _format_result(http_client.post("/api/v1/fs/tree", {"uri": target_uri, "depth": depth}))
+    return _format_result(http_client.get("/api/v1/fs/tree", {"uri": target_uri, "level_limit": depth}))
 
 
 @_safe_tool()
