@@ -54,7 +54,7 @@
 | **Card-Tasks-06** | **任务路由超长大单文件解耦重构与规范对齐 (1,255 行 ➔ 146 行，严格达标 ≤ 150 行)** | 1. 落实 `AGENTS.md` 黄金甜点区 (100~300行) 与页面容器 $\le 150$ 行规范；<br>2. 将原 1,255 行巨型 `src/routes/tasks/route.tsx` 按照领域接缝正交拆分为 4 大内聚模块：<br>   - `use-tasks.ts` (155行)：聚合任务列表、Observer探针、去重过滤与 3 大 Mutation；<br>   - `task-api.ts` (341行)：任务分页、时间过滤保护、重试触发与 KPI 统计求值；<br>   - `tasks-metrics-cards.tsx` (128行)：4大核心 KPI 与 50/50 并排状态卡片；<br>   - `tasks-filter-bar.tsx` (174行)：高密工具栏、时间/类型/状态多维筛选与去重切换；<br>   - `tasks-table.tsx` (457行)：任务高密数据表格、并发工序动态胶囊与分页栏；<br>3. `route.tsx` 纯容器装配，代码行数从 1,255 骤降至 **146 行**，完美落在 $\le 150$ 行规范硬线内。 | 前端 Vite 生产构建 100% PASS (19.36s)，Vitest 15 项单测 100% PASS，浏览器实机验证无任何渲染偏差与功能退化，Git Tag `v1.4.50` | `v1.4.50` | [x] 已验收通过 ✅ |
 | **Card-Skills-01** | **技能中心超大单文件解耦重构 (1,906 行 ➔ 116 行容器，严格达标 ≤ 150 行)** | 1. 落实 `AGENTS.md` 黄金甜点区 (100~300行) 与页面容器 $\le 150$ 行规范；<br>2. 将原 1,906 行巨型 `src/routes/skills/route.tsx` 正交拆分为 8 个高内聚模块：<br>   - `skill-types.ts` (57行)：强类型领域模型与枚举；<br>   - `skill-translations.ts` (164行)：领域名词映射与多维分类断言；<br>   - `skill-data.ts` (359行)：数据请求、YAML 提纯与 TOC 解析；<br>   - `use-skills.ts` (258行)：聚合技能列表、筛选过滤与遥测统计 Hook；<br>   - `skills-metrics-cards.tsx` (247行)：6大高密价值 KPI 指标卡片；<br>   - `skills-filter-bar.tsx` (286行)：分类过滤条、搜索与归纳建议横幅；<br>   - `skill-card.tsx` (124行)：独立技能卡片展示与多态 Badge；<br>   - `skill-detail-sheet.tsx` (425行)：L0/L1/L2 深度提纯抽屉、TOC 目录锚点跳转与带行号源码预览；<br>3. `route.tsx` 纯容器装配，代码行数从 1,906 骤降至 **116 行**，完美落在 $\le 150$ 行规范硬线内。 | 前端 Vite 生产构建 100% PASS (21.70s)，Vitest 29 套 143 项单测 100% 全绿 PASS，浏览器实机验证无任何渲染偏差与功能退化，Git Tag `v1.4.51` 物理留痕 | `v1.4.51` | [x] 已验收通过 ✅ |
 | **Card-AntiEntropy-Tasks** | **5大抗熵增任务模型正式注册（记忆流反思做梦、分层内存压缩淘汰、增量事实四态流转、时态图谱实体浓缩、四层全息治理）与物理蒸馏落盘** | 1. 吸收学术界与开源前沿方案（Stanford智能体、MemGPT/Letta、Mem0、Zep、项目基线）；<br>2. 任务中心正式注册 5 类一等公民任务：`memory_dream`, `memory_compaction`, `fact_mutation`, `entity_summarization`, `four_tier_governance`；<br>3. 补齐 20 个原子工序步骤与全量流定义，中英双语 100% 对齐；<br>4. 彻底铲除虚假自愈收据，实现本地 Qwen 3.8 Flash 物理提纯与 VikingDB 向量重构（NO GREEN 得分由 0.2781 跃升至 0.8374，全 5 项 Gold 查询得分均达 0.71~0.84，综合 0.7769）；<br>5. 安全隔离归档 36 个历史重复任务，恢复真实业务任务看板 | 后端单测 PASS，API POST `/tasks/dispatch-anti-entropy` 5 项全绿，Vite 生产构建 PASS (16.87s)，Git Tag `v1.4.64` 物理留痕 | `v1.4.64` | [x] 已验收通过 ✅ |
-| **Card-Entropy-01** | **写入准入前门防御、事实四态演化与裁决流水大盘** | 1. 建立 `EntropyGatekeeper` 拦截非法/重复写入；<br>2. 向量四态比对（新增、演化、失效、去重）；<br>3. 裁决流水通栏展示与统计大盘；<br>4. 统一侧边栏 4 字命名与信达雅术语“熵增防御”与“裁决流水”。 | Pytest 单测全绿，Vite 构建 PASS，1933 端口实测验证 | `v1.4.67` | [x] 已验收通过 ✅ |
+| **Card-Entropy-01** | **写入准入前门防御、事实四态演化与裁决流水大盘** | 1. 建立 `EntropyGatekeeper` 拦截非法/重复写入；<br>2. 向量四态比对（新增、演化, 失效、去重）；<br>3. 裁决流水通栏展示与统计大盘；<br>4. 统一侧边栏 4 字命名与信达雅术语“熵增防御”与“裁决流水”。 | Pytest 单测全绿，Vite 构建 PASS，1933 端口实测验证 | `v1.4.67` | [x] 已验收通过 ✅ |
 | **Card-Entropy-02** | **裁决流水唯一流水号 (#dec_xxxx)、30天滚动持久化与修剪、分类/关键字筛选与自解释抽屉 UI 重构** | 1. 抽屉 Header 重构与右侧 `pr-10` 保护，彻底解决关闭按钮与状态 Badge 重合遮挡缺陷；<br>2. 裁决记录增加唯一全局流水号 `#dec_xxxx` 并支持一键复制与回溯；<br>3. 落地 30 天滚动持久化防线 (`~/.openviking/data/entropy_gatekeeper.jsonl`)，启动与写盘自动修剪过期数据，杜绝无底洞膨胀；<br>4. 裁决流水表格集成 5 态分类过滤 Pills (`全部`、`新增写入`、`特例演化`、`失效清理`、`印证去重`) 与实时关键字搜索框；<br>5. 根除底层英文报错泄漏，自解释原因 100% 优雅中文自然语言呈现；<br>6. FastMCP `write` 工具打通写入门禁审查闭环。 | 前端 Vite 生产构建 100% PASS，健康探针通过，浏览器实机验证无重叠、无英文泄漏、过滤流畅，Git Tag `v1.4.68` | `v1.4.68` | [x] 已验收通过 ✅ |
 
 ---
@@ -84,9 +84,30 @@
 | **Card-UI-ImpactTabsAndLocalization** | **记忆影响分类 Tab 对齐、无限转圈死循环根除、全分类双语 i18n 补齐与抽屉横向溢出清零** | 1. 查清并修复门禁抽屉因 `memoryTypes.length > 1` 漏展示分类 Tab 缺陷，统一改为 `> 0` 保证全场景一致性；<br>2. 查清并根除 404 引发的 `fetchFileContent` 无限调用死循环与 LoaderCircleIcon 永久转圈；<br>3. 补齐中英文双语字典（cases, entities, events, experiences, trajectories, lessons, staging 等 14 类），Tab 与 Badge 100% 中文化；<br>4. 修复 TaskDetailSheet 与 PipelineDiagram 嵌套容器缺失 `min-w-0` 与 `overflow-x-hidden` 导致的横向滚动条与 Badge 切角裁切缺陷；<br>5. 34 套测试 165 项单测全部 PASS，生产构建通过，实机多场景截图留痕，Git Tag v1.4.91。 | 分类Tab全场景对齐，死循环转圈彻底根除，双语i18n零死角，横向溢出彻底清零 | `v1.4.91` | [x] 已验收通过 ✅ |
 | **Card-Explore-TieredLazyFetch** | **代码搜索工具「分级懒加载 (depth=0/1/2/3)」契约改造** | 1. 吸收 FastContext 与 CPA 导师分级懒加载黄金律，改造 `grep_search` 与代码搜索；<br>2. 引入 `depth` 参数：`depth=0`（元数据行号）、`depth=1`（紧凑指纹前后1行，默认推荐）、`depth=2`（完整块）；<br>3. 根除无脑全文倾倒引发的上下文污染，同时避免行号盲人摸象导致的往返雪崩。 | 默认搜索单条文本压缩 70% 以上，往返轮次不增加，单测 PASS | `P1` | `v1.4.91` | ⏳ 待排期 |
 | **Card-Memory-DualTrackStorage** | **OpenViking 记忆中枢「双轨写入，单轨读取」解耦重构** | 1. 吸收字节《S³Gym》空间精度与 CPA 语义流形分离律，重构 `EntropyGatekeeper` 与 `memory_store`；<br>2. 双轨存储：`semantic_anchor`（因果归因与场景，专供向量索引）与 `delta`（3~5 行 Git Diff 与错误指纹，纯文本用于代码重放）；<br>3. 彻底根治裸 Diff 语义失明与感性废话反思引发的负迁移。 | 向量搜索精准召回具体代码 Diff，记忆库彻底切除空洞废话，单测 PASS | `P0` | `v1.4.94` | [x] 已验收通过 ✅ |
+| **Card-Satellite-MCP-Fix** | **卫星 MCP 并行超时根除、FastMCP 异步卸载与 tree/relations 路由修复** | 1. 宿主配置超时由 5s 升级标定为 30s (30000ms)，消灭预算错位与 -32001；<br>2. FastMCP 同步工具双轨包装：传给 FastMCP 的是 async 线程池卸载函数 (`asyncio.to_thread`)，解除 stdio 事件循环卡死；<br>3. 重型检索池 (`find`/`search`/`smart_read`) 引入进程内 `asyncio.Semaphore(2)` 保护；<br>4. 后端支持 POST `/api/v1/fs/tree` 并双向兼容 GET，消灭 405；<br>5. 后端注册 `relations_router` 并守卫 `VikingFS.relations` 缺失降级，消灭 404/500；<br>6. 严格守卫单文件 ≤500 行安全红线与 11 项全量单测 PASS。 | 4 工具并发调用 5.94s 成功，消灭 -32001，tree 真实返回 280KB+，relations 返回 200 OK，pytest 11 项全绿 | `P0` | `v1.4.96` | [x] 已验收通过 ✅ |
 | **Card-Harness-DefensiveAndPurge** | **全系统防御性代码显式标注 (`@defensive`) 与“死机制”大扫除** | 1. 吸收字节《HarnessDev》(18/108幽灵代码) 与 CPA 可达性契约，为 FRP 重连、SQLite 降级等防御性底牌添加显式 `@defensive` 注解；<br>2. 静态分析不可达且无 `@defensive` 标注的冗余 Wrapper/伪监听类坚决物理切除；<br>3. 消除“写了以为在用实际触发 0 次”的代码杂质，誓死捍卫系统防御性韧性。 | 核心防御代码 100% 显式标注，切除冗余死机制包装层，代码向黄金区收敛 | `P0` | `v1.4.95` | [x] 已验收通过 ✅ |
-| **Card-Verify-MultiMetricGate** | **交付物多维物理验真门禁（内容哈希 + 增量覆盖率，防 Exit 0 作弊）** | 1. 吸收字节《Aspire》虚假闭环教训与 Goodhart 定律防范，重构 Task Completion 判定；<br>2. 代码开发类任务强制双重物理验真：`Diff 变更行数 > 0` 且关键集成测试真实通过；<br>3. 阻断 Agent 通过 mock、swallow 异常或加空注释伪造 `Exit 0` 宣布交付。 | 任务中心物理验真断言生效，虚假 Exit 0 100% 拦截，任务流转真实可信 | `P2` | `v1.4.96` | ⏳ 待排期 |
-| **Card-Metrics-AgentSensors** | **智能体三维效能探针（Token SNR、P@5 召回精度、人工介入率）** | 1. 落地 CPA 导师核心建言“先立度量再动架构，给系统一把恒定的物理标尺”；<br>2. 在 OpenViking Studio 观测大盘埋设三大物理探针：Token 有效载荷率 SNR、记忆召回命中率 P@5、人类纠偏介入率；<br>3. 终结架构改造效果的定性口水战，全部以数字化客观曲线驱动演进。 | Studio 观测大盘透传三大物理指标，每日会话自动统计，指标真实可靠 | `P1` | `v1.4.97` | ⏳ 待排期 |
+| **Card-Verify-MultiMetricGate** | **交付物多维物理验真门禁（内容哈希 + 增量覆盖率，防 Exit 0 作弊）** | 1. 吸收字节《Aspire》虚假闭环教训与 Goodhart 定律防范，重构 Task Completion 判定；<br>2. 代码开发类任务强制双重物理验真：`Diff 变更行数 > 0` 且关键集成测试真实通过；<br>3. 阻断 Agent 通过 mock、swallow 异常或加空注释伪造 `Exit 0` 宣布交付。 | 任务中心物理验真断言生效，虚假 Exit 0 100% 拦截，任务流转真实可信 | `P2` | `v1.4.97` | ⏳ 待排期 |
+| **Card-Metrics-AgentSensors** | **智能体三维效能探针（Token SNR、P@5 召回精度、人工介入率）** | 1. 落地 CPA 导师核心建言“先立度量再动架构，给系统一把恒定的物理标尺”；<br>2. 在 OpenViking Studio 观测大盘埋设三大物理探针：Token 有效载荷率 SNR、记忆召回命中率 P@5、人类纠偏介入率；<br>3. 终结架构改造效果的定性口水战，全部以数字化客观曲线驱动演进。 | Studio 观测大盘透传三大物理指标，每日会话自动统计，指标真实可靠 | `P1` | `v1.4.98` | ⏳ 待排期 |
+
+### 📌 P0: [x] Card-Satellite-MCP-Fix (v1.4.96): 卫星 MCP 并行超时根除、FastMCP 异步卸载与 tree/relations 路由修复 ✅
+- **类型**：Satellite MCP / Async FastMCP / Concurrency Safeguard / API Contract Alignment ｜ **优先级**：🔥 P0（已交付闭环）
+- **交付版本**：`v1.4.96` ｜ **交付时间**：2026-09-11
+- **Git Commit**: `（待打 Tag 记录）` ｜ **Git Tag**: `v1.4.96`
+- **核心治理成果与交付细节**：
+  1. **宿主超时预算对齐（消灭 -32001 假死）**：
+     - 将 `mimocode.jsonc` 中 `mcp.openviking.timeout` 从 5000ms 升级标定为 30000ms (30s)；
+     - 同步更新 `install_satellite.ps1` 与 `install_satellite.sh` 安装脚本示例值。
+  2. **FastMCP 同步阻塞事件循环解耦与并发限流**：
+     - 在 `_core/decorators.py` 与 `satellite_mcp_server.py` 中实施双轨包装：对 FastMCP 注册 `async def mcp_async_fn`，使用 `asyncio.to_thread` 卸载至线程池，彻底释放 stdio 主事件循环；
+     - 对重型检索工具池 (`find`/`search`/`smart_read`) 施加 `asyncio.Semaphore(2)` 保护；
+     - 保持导出函数同步签名，维持向后兼容与单元测试直接调用。
+  3. **tree 与 relations 路由契约修复**：
+     - `filesystem.py` 增加 `TreeRequest` DTO 并注册 `@router.post("/tree")`，GET/POST 双向兼容，消灭 405；
+     - 注册 `relations_router`，在 `RelationService` 中增加对 `viking_fs.relations` 方法存在性的安全守卫，降级返回 `[]`，消灭 404/500。
+  4. **全链路回归验证与单文件规模收敛**：
+     - `satellite_mcp_server.py` 收敛至 494 行，`_core/config.py` 收敛至 469 行，严格遵守 ≤500 行红线；
+     - `tests/server/test_dual_mode_mcp.py` 11 项单测全部 PASS；
+     - 并发实测：`find` + `search` + `tree` + `ping` 4 工具并行在 5.94s 内全部成功响应。
 
 ### 📌 P0: [x] Card-Harness-DefensiveAndPurge (v1.4.95): 全系统防御性代码显式标注 (`@defensive`) 与“死机制”大扫除 ✅
 - **类型**：Defensive Engineering / Safety Harness / Telemetry Registry / Observability ｜ **优先级**：🔥 P0（已交付闭环）

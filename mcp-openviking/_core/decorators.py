@@ -8,21 +8,36 @@
 """
 
 # SECTION: Imports
+import asyncio
 import inspect
 import logging
 from functools import wraps
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 from mcp.server.fastmcp import FastMCP
 from .config import SATELLITE_ALLOWED_TOOLS
 
 logger = logging.getLogger("openviking-mcp")
+
+# 重型检索工具池（限定进程内最多 2 个并发，避免后端 GPU/Embedding 争用打爆）
+_HEAVY_TOOLS = {"openviking_find", "openviking_search", "openviking_smart_read"}
+_heavy_semaphore: Optional[asyncio.Semaphore] = None
+
+
+def _get_heavy_semaphore() -> asyncio.Semaphore:
+    global _heavy_semaphore
+    if _heavy_semaphore is None:
+        _heavy_semaphore = asyncio.Semaphore(2)
+    return _heavy_semaphore
+
 
 # SECTION: Decorator Factory
 def create_mcp_tool_decorator(mcp: FastMCP, mcp_mode: str) -> Callable:
     """创建双模态感知的 MCP 工具注册装饰器。
     在 Satellite 模式下只注册 16 个安全实用数据工具，物理阻断 40+ 运维特权；
     自动解包 FastMCP/Pydantic FieldInfo 默认对象，防止序列化崩塌；
-    针对 openviking_find 自动注入【Mandatory First Step】强注意力触发头。
+    针对 openviking_find 自动注入【Mandatory First Step】强注意力触发头；
+    将所有工具通过 async def 包装并使用 asyncio.to_thread 卸载到 worker 线程池，
+    解除 stdio 事件循环阻塞，并在重型检索工具上加 Semaphore(2) 并发守护。
     """
     def mcp_tool(*args, **kwargs):
         def decorator(fn):
@@ -56,9 +71,20 @@ def create_mcp_tool_decorator(mcp: FastMCP, mcp_mode: str) -> Callable:
                                 d = getattr(val, "default")
                                 bound.arguments[name] = "" if d is None or "PydanticUndefined" in str(type(d)) else d
                     return fn(*bound.args, **bound.kwargs)
-                except Exception:
-                    return fn(*f_args, **f_kwargs)
+                except Exception as e:
+                    logger.error(f"[Tool Execution Error] {tool_name}: {e}")
+                    return str(e)
 
-            return mcp.tool(*args, **tool_kwargs)(cleaned_fn)
+            @wraps(fn)
+            async def mcp_async_fn(*f_args, **f_kwargs):
+                # 重型检索工具受 Semaphore(2) 保护，避免 GPU/Embedding 争用
+                if tool_name in _HEAVY_TOOLS:
+                    async with _get_heavy_semaphore():
+                        return await asyncio.to_thread(cleaned_fn, *f_args, **f_kwargs)
+                else:
+                    return await asyncio.to_thread(cleaned_fn, *f_args, **f_kwargs)
+
+            mcp.tool(*args, **tool_kwargs)(mcp_async_fn)
+            return cleaned_fn
         return decorator
     return mcp_tool

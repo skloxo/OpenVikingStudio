@@ -69,7 +69,7 @@ def register_filesystem_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Cal
             return _make_error(err)
 
         def _api():
-            return http_client.post("/api/v1/fs/tree", {"uri": target_uri, "depth": depth})
+            return http_client.get("/api/v1/fs/tree", {"uri": target_uri, "level_limit": depth})
 
         return _api_then_cli(_api, ["tree", target_uri, "--depth", str(depth)])
     registered["openviking_tree"] = openviking_tree

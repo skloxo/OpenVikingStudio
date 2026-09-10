@@ -66,35 +66,28 @@ SATELLITE_ALLOWED_TOOLS = {
 
 # SECTION: Mode Resolution
 def resolve_mcp_mode(argv: Optional[List[str]] = None, env: Optional[Dict[str, str]] = None) -> str:
-    """智能决议当前运行模式 (core 核心模式 vs satellite 卫星模式)
-    优先级: 1. CLI 参数 --mode=... -> 2. 环境变量 OPENVIKING_MCP_MODE / OPENVIKING_MODE -> 3. 智能推断
-    """
-    if argv is None:
-        argv = sys.argv[1:]
-    if env is None:
-        env = os.environ
+    """智能决议当前运行模式 (core 核心模式 vs satellite 卫星模式)"""
+    args = argv if argv is not None else sys.argv[1:]
+    env_map: Dict[str, str] = dict(env) if env is not None else dict(os.environ)
 
     cli_mode = None
-    for idx, arg in enumerate(argv):
+    for idx, arg in enumerate(args):
         if arg.startswith("--mode="):
             cli_mode = arg.split("=", 1)[1].strip().lower()
-        elif arg == "--mode" and idx < len(argv) - 1:
-            cli_mode = argv[idx + 1].strip().lower()
+        elif arg == "--mode" and idx < len(args) - 1:
+            cli_mode = args[idx + 1].strip().lower()
 
     if cli_mode in ("satellite", "core"):
         return cli_mode
 
-    env_mode = env.get("OPENVIKING_MCP_MODE") or env.get("OPENVIKING_MODE")
+    env_mode = env_map.get("OPENVIKING_MCP_MODE") or env_map.get("OPENVIKING_MODE")
     if env_mode and env_mode.strip().lower() in ("satellite", "core"):
         return env_mode.strip().lower()
 
-    # 自动推断：目标为远程 API 或未设置 Root Key 时，默认启动 satellite 卫星安全模式
-    target_api = env.get("OPENVIKING_API", DEFAULT_API).lower()
-    has_root = bool(env.get("OPENVIKING_ROOT_API_KEY"))
+    target_api = env_map.get("OPENVIKING_API", DEFAULT_API).lower()
+    has_root = bool(env_map.get("OPENVIKING_ROOT_API_KEY"))
     is_local = "127.0.0.1" in target_api or "localhost" in target_api
-    if is_local and has_root:
-        return "core"
-    return "satellite"
+    return "core" if (is_local and has_root) else "satellite"
 
 
 def _get_active_mode() -> str:
@@ -233,10 +226,13 @@ class OpenVikingHTTPClient:
         mcp_mod = sys.modules.get("mcp_openviking_server")
         active_urlopen = getattr(mcp_mod, "urlopen", urllib.request.urlopen)
 
+        start_time = time.time()
         for attempt in range(max_retries):
             try:
                 with active_urlopen(req, timeout=timeout) as resp:
+                    elapsed_ms = int((time.time() - start_time) * 1000)
                     resp_content = resp.read().decode("utf-8")
+                    logger.debug(f"[MCP_HTTP] {method} {path} attempt={attempt+1} elapsed={elapsed_ms}ms status={resp.status}")
                     if not resp_content:
                         return {"ok": True}
                     try:
@@ -244,6 +240,8 @@ class OpenVikingHTTPClient:
                     except json.JSONDecodeError:
                         return {"raw": resp_content}
             except HTTPError as e:
+                elapsed_ms = int((time.time() - start_time) * 1000)
+                logger.warning(f"[MCP_HTTP] {method} {path} attempt={attempt+1} elapsed={elapsed_ms}ms error=HTTP_{e.code}")
                 if e.code in (502, 503, 504) and attempt < max_retries - 1:
                     time.sleep(0.5 * (2 ** attempt))
                     continue
@@ -252,17 +250,46 @@ class OpenVikingHTTPClient:
                     body_text = e.read().decode("utf-8")
                 except Exception:
                     pass
-                return {"error": f"HTTP {e.code}: {body_text}", "is_http_error": True, "code": e.code}
+                return {
+                    "error": f"[BACKEND_ERROR] HTTP {e.code}: {body_text}",
+                    "is_http_error": True,
+                    "code": e.code,
+                    "elapsed_ms": elapsed_ms,
+                }
+            except TimeoutError:
+                elapsed_ms = int((time.time() - start_time) * 1000)
+                logger.error(f"[MCP_HTTP] {method} {path} attempt={attempt+1} elapsed={elapsed_ms}ms error=BRIDGE_TIMEOUT (limit={timeout}s)")
+                return {
+                    "error": f"[BRIDGE_TIMEOUT] 桥接层请求后端超时 ({timeout}s)。后端可能正在执行长程检索或排队中。",
+                    "code": "BRIDGE_TIMEOUT",
+                    "elapsed_ms": elapsed_ms,
+                }
             except URLError as e:
+                elapsed_ms = int((time.time() - start_time) * 1000)
+                if "timed out" in str(e.reason).lower():
+                    logger.error(f"[MCP_HTTP] {method} {path} attempt={attempt+1} elapsed={elapsed_ms}ms error=BRIDGE_TIMEOUT")
+                    return {
+                        "error": f"[BRIDGE_TIMEOUT] 桥接层请求后端超时 ({timeout}s): {e.reason}",
+                        "code": "BRIDGE_TIMEOUT",
+                        "elapsed_ms": elapsed_ms,
+                    }
+                logger.warning(f"[MCP_HTTP] {method} {path} attempt={attempt+1} elapsed={elapsed_ms}ms error=CONNECTION_ERROR: {e.reason}")
                 if attempt < max_retries - 1:
                     time.sleep(0.5 * (2 ** attempt))
                     continue
-                return {"error": f"连接失败: {e.reason}. 确认 OpenViking 服务器已启动。"}
+                return {
+                    "error": f"[CONNECTION_ERROR] 连接失败: {e.reason}. 确认 OpenViking 服务器已启动。",
+                    "code": "CONNECTION_ERROR",
+                    "elapsed_ms": elapsed_ms,
+                }
             except Exception as e:
+                elapsed_ms = int((time.time() - start_time) * 1000)
+                logger.warning(f"[MCP_HTTP] {method} {path} attempt={attempt+1} elapsed={elapsed_ms}ms error={type(e).__name__}: {e}")
                 if attempt < max_retries - 1:
                     time.sleep(0.5 * (2 ** attempt))
                     continue
-                return {"error": str(e)}
+                return {"error": f"[CLIENT_ERROR] {str(e)}", "elapsed_ms": elapsed_ms}
+        return {"error": f"[BRIDGE_TIMEOUT] 请求后端超时 ({timeout}s) 或超过最大重试次数"}
 
     def get(self, path: str, params: Optional[dict] = None, timeout: int = 30) -> Any:
         return self._request("GET", path, params=params, timeout=timeout)
@@ -294,8 +321,7 @@ def _compact_search_result(data: Any) -> Any:
             for it in items:
                 if isinstance(it, dict) and isinstance(it.get("abstract"), str) and len(it["abstract"]) > 350:
                     u = it.get("uri", "")
-                    h = f"... [高密摘要截断，如需阅读全文请使用 openviking_read(uri='{u}')]" if u else "... [高密摘要截断]"
-                    it["abstract"] = it["abstract"][:350] + h
+                    it["abstract"] = it["abstract"][:350] + (f"... [高密摘要截断，请使用 openviking_read(uri='{u}')]" if u else "... [高密摘要截断]")
 
     target = data.get("result", data) if isinstance(data, dict) else data
     if isinstance(target, dict):
@@ -309,34 +335,25 @@ def _compact_search_result(data: Any) -> Any:
 
 def _format_result(result: Any) -> str:
     """格式化输出结果为美化 JSON 字符串，并自动应用渐进式分级展开截断"""
-    if isinstance(result, str):
-        return result
-    return json.dumps(_compact_search_result(result), ensure_ascii=False, indent=2)
+    return result if isinstance(result, str) else json.dumps(_compact_search_result(result), ensure_ascii=False, indent=2)
 
 
 def _api_then_cli(api_call, cli_args: List[str], timeout: int = 30) -> str:
     """100% 优先使用 HTTP API，仅在 HTTP 完全无法连接且非业务响应时才做 CLI 兜底"""
     result = api_call()
-    if not isinstance(result, dict):
+    if not isinstance(result, dict) or "error" not in result or result.get("is_http_error"):
         return _format_result(result)
-
-    if "error" not in result or result.get("is_http_error"):
-        return _format_result(result)
-
     if "连接失败" not in str(result.get("error")):
         return _format_result(result)
-
     logger.warning(f"OpenViking HTTP API 不可达，尝试 CLI 回退: {result.get('error')}")
     return _format_result(_run_cli(cli_args, timeout=timeout))
 
 
 def _has_error(result: Any) -> bool:
-    """检查结果是否包含错误"""
     return isinstance(result, dict) and "error" in result
 
 
 def _make_error(error: str, suggestion: str = "") -> str:
-    """统一错误格式：{"error": "...", "suggestion": "..."}"""
     out = {"error": error}
     if suggestion:
         out["suggestion"] = suggestion
@@ -344,52 +361,28 @@ def _make_error(error: str, suggestion: str = "") -> str:
 
 
 def _handle_http_error(e: Exception) -> str:
-    """处理 HTTP 错误"""
     if isinstance(e, HTTPError):
         body_text = ""
         try:
             body_text = e.read().decode("utf-8")
         except Exception:
             pass
-        return _make_error(
-            f"HTTP {e.code}: {body_text}",
-            "检查 API 地址和认证信息是否正确" if e.code in (401, 403) else
-            "检查请求参数是否正确" if e.code == 400 else
-            "服务器内部错误，稍后重试" if e.code >= 500 else "",
-        )
+        sugg = "检查 API 地址和认证" if e.code in (401, 403) else ("检查请求参数" if e.code == 400 else ("服务器错误稍后重试" if e.code >= 500 else ""))
+        return _make_error(f"HTTP {e.code}: {body_text}", sugg)
     elif isinstance(e, URLError):
-        return _make_error(
-            f"连接失败: {e.reason}",
-            "确认 OpenViking 服务器已启动（openviking server start）",
-        )
+        return _make_error(f"连接失败: {e.reason}", "确认 OpenViking 服务已启动")
     return _make_error(str(e), "检查 OpenViking 服务状态")
 
 
 def _handle_cli_error(result: Dict[str, Any]) -> str:
-    """处理 CLI 错误，提取关键信息与修复建议"""
-    stderr = result.get("stderr", "")
-    stdout = result.get("stdout", "")
-    error_msg = result.get("error", stderr or stdout)
+    err_msg = str(result.get("error") or result.get("stderr") or result.get("stdout") or "")
     returncode = result.get("returncode", -1)
-
-    suggestion = ""
-    if returncode == 127:
-        suggestion = "CLI 命令未找到，请确认 OpenViking 已安装并在 PATH 中"
-    elif "timeout" in error_msg.lower():
-        suggestion = "操作超时，尝试缩小范围或增加 timeout"
-    elif "not found" in error_msg.lower() or "does not exist" in error_msg.lower():
-        suggestion = "资源不存在，请检查 URI 是否正确"
-    elif "permission" in error_msg.lower() or "access denied" in error_msg.lower():
-        suggestion = "权限不足，检查文件权限或 API Key"
-    return _make_error(error_msg, suggestion)
+    sugg = "CLI 未在 PATH 中" if returncode == 127 else ("操作超时" if "timeout" in err_msg.lower() else ("资源不存在" if "not found" in err_msg.lower() else ""))
+    return _make_error(err_msg, sugg)
 
 
 def _handle_timeout(operation: str, timeout: int) -> str:
-    """处理超时"""
-    return _make_error(
-        f"操作超时 ({timeout}s): {operation}",
-        "尝试缩小范围、增加超时时间或稍后重试",
-    )
+    return _make_error(f"操作超时 ({timeout}s): {operation}", "尝试缩小范围或增加超时")
 
 # SECTION: Parameter Validators
 def _validate_uri(uri: Any, param_name: str = "uri") -> Optional[str]:
