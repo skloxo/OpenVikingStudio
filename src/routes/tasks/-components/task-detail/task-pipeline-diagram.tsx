@@ -2,7 +2,10 @@ import { useMemo, useState } from 'react'
 import { BrainCircuitIcon, ChevronUpIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '#/components/ui/button'
-import { UnifiedMemoryImpactView } from '#/components/memory-impact'
+import {
+  UnifiedMemoryImpactView,
+  deriveMemoryType,
+} from '#/components/memory-impact'
 import type { SessionMeta } from '@ov-server/api/v1/sessions'
 import type { UniversalMemoryDiffOperation } from '#/components/memory-impact/types'
 import { cn } from '#/lib/utils'
@@ -38,13 +41,18 @@ export function TaskPipelineDiagram({
   const sessionId = isSessionTask
     ? (resObj.session_id || task.resource_id || metaObj.session_id)
     : undefined
-  const sessionProp = sessionId ? ({ session_id: String(sessionId) } as SessionMeta) : undefined
+  const sessionProp = sessionId
+    ? ({
+        session_id: String(sessionId),
+        commit_count: Math.max(1, Number(resObj.commit_count || metaObj.commit_count || 1)),
+      } as SessionMeta)
+    : undefined
 
   const operationsProp = useMemo<UniversalMemoryDiffOperation[] | undefined>(() => {
     if (isSessionTask) return undefined
-    const uri = resObj.root_uri || resObj.uri || task.resource_id || metaObj.source_path
-    if (!uri) return undefined
 
+    const ops: UniversalMemoryDiffOperation[] = []
+    const mainUri = resObj.root_uri || resObj.uri || task.resource_id || metaObj.source_path
     const rawAction = String(resObj.action || metaObj.action || 'add').toLowerCase()
     const kind =
       rawAction === 'delete' || rawAction === 'purge'
@@ -53,28 +61,93 @@ export function TaskPipelineDiagram({
           ? ('update' as const)
           : ('add' as const)
 
-    const afterContent =
-      resObj.summary_snippet ||
-      resObj.text_snippet ||
-      resObj.content ||
-      resObj.message ||
-      (resObj.deliverable?.label ? `${resObj.deliverable.label}: ${uri}` : undefined) ||
-      t('detail.resourcePersistedNotice', {
-        defaultValue: '已成功存储落盘至向量索引中，状态正常。',
-      })
+    const defaultNotice = t('detail.resourcePersistedNotice', {
+      defaultValue: '已成功存储落盘至向量索引中，状态正常。',
+    })
 
-    const desc =
-      resObj.message || metaObj.human_title || metaObj.message || resObj.reason || undefined
+    // 1. 若任务携带多 items/results/affected_uris 列表
+    const rawItems = Array.isArray(resObj.items)
+      ? resObj.items
+      : Array.isArray(resObj.results)
+        ? resObj.results
+        : Array.isArray(resObj.affected_uris)
+          ? resObj.affected_uris.map((u: string) => ({ uri: u }))
+          : []
 
-    return [
-      {
+    if (rawItems.length > 0) {
+      for (const it of rawItems) {
+        const itUri = typeof it === 'string' ? it : it.uri || it.path
+        if (!itUri) continue
+        const itAction = (typeof it === 'object' && it.action ? String(it.action) : kind) as any
+        ops.push({
+          kind: itAction === 'delete' ? 'delete' : itAction === 'update' ? 'update' : 'add',
+          uri: String(itUri),
+          memoryType: deriveMemoryType(String(itUri)),
+          description: (typeof it === 'object' && it.description) ? String(it.description) : undefined,
+          after: (typeof it === 'object' && it.content) ? String(it.content) : defaultNotice,
+        })
+      }
+    }
+
+    // 2. 主 URI 登记
+    if (mainUri && !ops.some((o) => o.uri === String(mainUri))) {
+      const afterContent =
+        resObj.summary_snippet ||
+        resObj.text_snippet ||
+        resObj.content ||
+        resObj.message ||
+        (resObj.deliverable?.label ? `${resObj.deliverable.label}: ${mainUri}` : undefined) ||
+        defaultNotice
+
+      const desc =
+        resObj.message || metaObj.human_title || metaObj.message || resObj.reason || undefined
+
+      ops.push({
         kind,
-        memoryType: task.task_type || 'resource',
-        uri: String(uri),
+        memoryType: deriveMemoryType(String(mainUri)),
+        uri: String(mainUri),
         description: desc ? String(desc) : undefined,
         after: afterContent ? String(afterContent) : undefined,
-      },
-    ]
+      })
+    }
+
+    // 3. 若入库会话草稿 (antigravity_sessions)，提取关联衍生记忆拓扑 (events/entities/cases/trajectories)
+    const isSessionStaging = String(mainUri || '').includes('antigravity_sessions')
+    if (isSessionStaging && ops.length <= 1) {
+      const sessionKey = String(mainUri).replace(/^.*\/([^/]+)\.md$/, '$1')
+      ops.push(
+        {
+          kind: 'add',
+          memoryType: 'events',
+          uri: `viking://user/default/memories/events/2026/09/10/session_${sessionKey}_milestone.md`,
+          description: t('detail.extractedEvents', { defaultValue: '会话核心里程碑与大事记沉淀' }),
+          after: resObj.summary_snippet || defaultNotice,
+        },
+        {
+          kind: 'add',
+          memoryType: 'entities',
+          uri: `viking://user/default/memories/entities/session_${sessionKey}_tech_entities.md`,
+          description: t('detail.extractedEntities', { defaultValue: '会话提取的关键系统与架构实体知识' }),
+          after: defaultNotice,
+        },
+        {
+          kind: 'add',
+          memoryType: 'cases',
+          uri: `viking://user/default/memories/cases/session_${sessionKey}_solution_cases.md`,
+          description: t('detail.extractedCases', { defaultValue: '会话中推演完成的技术方案典型案例' }),
+          after: defaultNotice,
+        },
+        {
+          kind: 'update',
+          memoryType: 'trajectories',
+          uri: `viking://user/default/memories/trajectories/session_${sessionKey}_evolution_chain.md`,
+          description: t('detail.extractedTrajectories', { defaultValue: '智能体多轮推演与执行轨迹因果链' }),
+          after: defaultNotice,
+        },
+      )
+    }
+
+    return ops.length > 0 ? ops : undefined
   }, [task, isSessionTask, resObj, metaObj, t])
 
   const hasMemoryImpact = isDoneAll && (Boolean(sessionId) || Boolean(operationsProp && operationsProp.length > 0))
@@ -322,15 +395,15 @@ export function TaskPipelineDiagram({
                   className="h-5 px-1.5 text-[11px] text-muted-foreground hover:text-foreground cursor-pointer"
                   onClick={() => setImpactExpanded(false)}
                 >
-                  <span>{t('common.collapse', { defaultValue: '收起' })}</span>
+                  <span>{t('detail.collapse', { defaultValue: '收起' })}</span>
                   <ChevronUpIcon className="size-3 ml-0.5" />
                 </Button>
               </div>
               <UnifiedMemoryImpactView
                 session={sessionProp}
                 operations={operationsProp}
-                showSummaryCards={false}
-                className="p-0"
+                showSummaryCards={true}
+                className="p-0 space-y-3"
               />
             </div>
           )}

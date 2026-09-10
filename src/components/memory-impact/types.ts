@@ -60,3 +60,22 @@ export function summarizeDiffs(
     { adds: 0, updates: 0, deletes: 0 },
   )
 }
+
+/**
+ * 根据 URI 智能推导记忆类型
+ */
+export function deriveMemoryType(uri?: string): string {
+  if (!uri) return 'resources'
+  const lower = uri.toLowerCase()
+  if (lower.includes('/memories/cases') || lower.includes('/cases/')) return 'cases'
+  if (lower.includes('/memories/entities') || lower.includes('/entities/')) return 'entities'
+  if (lower.includes('/memories/events') || lower.includes('/events/')) return 'events'
+  if (lower.includes('/memories/experiences') || lower.includes('/experiences/')) return 'experiences'
+  if (lower.includes('/memories/trajectories') || lower.includes('/trajectories/')) return 'trajectories'
+  if (lower.includes('/memories/lessons') || lower.includes('/lessons/')) return 'lessons'
+  if (lower.includes('/memories/profile') || lower.includes('/profile/')) return 'profile'
+  if (lower.includes('/skills/') || lower.includes('skill')) return 'skills'
+  if (lower.includes('/staging/')) return 'staging'
+  if (lower.includes('/sessions/')) return 'sessions'
+  return 'resources'
+}
