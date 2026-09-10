@@ -104,21 +104,21 @@ export interface TaskTypeFlowDef {
 export const TASK_FLOWS: TaskTypeFlowDef[] = [
   {
     typeKey: 'valet_parking',
-    nameZh: '轻量增量入库',
-    nameEn: 'Lightweight Ingestion',
-    stepIds: ['step_valet_handover', 'step_valet_probe', 'step_valet_decision', 'step_valet_parking'],
+    nameZh: '原子入库',
+    nameEn: 'Atomic Ingestion',
+    stepIds: ['step_valet_handover', 'step_valet_probe', 'step_quality_gate', 'step_valet_parking'],
   },
   {
     typeKey: 'add_resource',
     nameZh: '资源处理',
     nameEn: 'Resource Ingestion',
-    stepIds: ['step_valet_decision', 'step_ingestion', 'step_parse', 'step_semantic', 'step_embedding', 'step_quality_gate', 'step_memory_linking'],
+    stepIds: ['step_resource_admission', 'step_ingestion', 'step_parse', 'step_semantic', 'step_embedding', 'step_quality_gate', 'step_memory_linking'],
   },
   {
     typeKey: 'session_commit',
     nameZh: '会话提交',
     nameEn: 'Session Commit',
-    stepIds: ['step_valet_decision', 'step_serialization', 'step_distillation', 'step_quality_gate', 'step_persistence'],
+    stepIds: ['step_session_admission', 'step_serialization', 'step_distillation', 'step_quality_gate', 'step_persistence'],
   },
   {
     typeKey: 'add_skill',

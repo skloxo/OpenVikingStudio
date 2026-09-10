@@ -1,35 +1,61 @@
 import type { PanoramaStepDef } from './pipeline-definitions'
 
 export const GOVERNANCE_PANORAMA_STEPS: PanoramaStepDef[] = [
-  // 1: 质量门禁与抗熵增质检
+  // 1: 熵增防御与去重演化 (全车间通用后门)
   {
     id: 'step_quality_gate',
-    nameZh: '质量门禁',
-    nameEn: 'Quality Gate',
+    nameZh: '熵增防御',
+    nameEn: 'Entropy Defense',
     engineKey: 'Semantic',
     engineNameZh: '语义提取',
     engineNameEn: 'Semantic Extraction Engine',
     unitZh: '用例',
     unitEn: 'cases',
-    taskTypes: ['quality_gate', 'benchmark_eval', 'add_resource', 'session_commit'],
+    taskTypes: ['quality_gate', 'benchmark_eval', 'valet_parking', 'add_resource', 'session_commit'],
     operators: ['QuerySample', 'VectorRetrieve', 'RagasJudge', 'MetricAssert'],
-    descriptionZh: '执行 RAGAS 四维抗熵增质检（排布精度、覆盖率、忠实度、相关度），断言检索质量',
-    descriptionEn: 'Execute RAGAS 4D anti-entropy evaluation verifying retrieval precision and health',
+    descriptionZh: '执行向量查重、指纹比对与四态裁决 (NOOP去重 / UPDATE演进 / ADD新增 / DLQ隔离)，阻断语义熵增',
+    descriptionEn: 'Entropy defense evaluating vector duplicate checks and 4-way mutation against entropy increase',
   },
 
-  // 2-5: 异步托管入库 (Valet Parking) 四工序
+  // 2-5: 异步托管入库 (Valet Parking / 原子入库) 四工序
   {
     id: 'step_valet_handover',
-    nameZh: '快速接管',
-    nameEn: 'Fast Handover',
+    nameZh: '轻量准入',
+    nameEn: 'Lightweight Admission',
     engineKey: 'AddResource',
     engineNameZh: '资源入库',
     engineNameEn: 'Resource Ingestion Engine',
     unitZh: '次',
     unitEn: 'calls',
     taskTypes: ['valet_parking'],
-    descriptionZh: '毫秒级接收 Payload 并签发 Ticket，内存与 WAL 双写安全接管',
-    descriptionEn: 'Fast payload ingestion and ticket issuance with in-memory WAL durability',
+    descriptionZh: '毫秒级接收 Payload 并签发 Ticket，通用轻量快轨入库准入',
+    descriptionEn: 'Fast payload ingestion and ticket issuance with lightweight admission',
+  },
+  {
+    id: 'step_session_admission',
+    nameZh: '会话准入',
+    nameEn: 'Session Admission',
+    engineKey: 'SessionCommit',
+    engineNameZh: '会话归档',
+    engineNameEn: 'Session Archival Engine',
+    unitZh: '会话',
+    unitEn: 'sessions',
+    taskTypes: ['session_commit'],
+    descriptionZh: '会话边界切分、对话轮次计算与不可变原始归档快照准入',
+    descriptionEn: 'Session boundary slicing, turn budget calculation, and immutable archive admission',
+  },
+  {
+    id: 'step_resource_admission',
+    nameZh: '资源准入',
+    nameEn: 'Resource Admission',
+    engineKey: 'AddResource',
+    engineNameZh: '资源入库',
+    engineNameEn: 'Resource Ingestion Engine',
+    unitZh: '文件',
+    unitEn: 'files',
+    taskTypes: ['add_resource'],
+    descriptionZh: '校验源文件合法性、分配 Inode 与源端输入准入',
+    descriptionEn: 'Validate source payload schema, allocate inode, and ingress admission',
   },
   {
     id: 'step_valet_probe',
@@ -46,8 +72,8 @@ export const GOVERNANCE_PANORAMA_STEPS: PanoramaStepDef[] = [
   },
   {
     id: 'step_valet_decision',
-    nameZh: '准入判定',
-    nameEn: 'Admission Check',
+    nameZh: '轻量准入',
+    nameEn: 'Lightweight Admission',
     engineKey: 'Semantic',
     engineNameZh: '语义分析',
     engineNameEn: 'Semantic Extraction Engine',
