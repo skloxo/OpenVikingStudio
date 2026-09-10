@@ -146,8 +146,15 @@ export function UnifiedMemoryImpactView({
     )
   }
 
+  const getMemoryTypeLabel = (type: string) => {
+    if (type === ALL_MEMORY_TYPES) {
+      return t('impact.allTypes', '全部')
+    }
+    return t(`impact.types.${type}`, { defaultValue: type })
+  }
+
   return (
-    <div className={cn('flex flex-col gap-3', className)}>
+    <div className={cn('flex flex-col gap-3 min-w-0 w-full', className)}>
       {showSummaryCards && (
         <ImpactSummaryCards
           summary={totals}
@@ -159,10 +166,10 @@ export function UnifiedMemoryImpactView({
         />
       )}
 
-      {memoryTypes.length > 1 && (
+      {memoryTypes.length > 0 && (
         <div
-          aria-label={t('impact.filterByType', '按记忆类型筛选')}
-          className="flex gap-1 overflow-x-auto border-b border-border/40 pb-1.5"
+          aria-label={t('impact.filterByType', '按记忆分类筛选')}
+          className="flex gap-1 overflow-x-auto border-b border-border/40 pb-1.5 min-w-0"
           role="tablist"
         >
           {[ALL_MEMORY_TYPES, ...memoryTypes].map((type) => (
@@ -173,11 +180,9 @@ export function UnifiedMemoryImpactView({
               role="tab"
               size="xs"
               variant={activeMemoryType === type ? 'secondary' : 'ghost'}
-              className="text-[11px] h-6 px-2"
+              className="text-[11px] h-6 px-2 shrink-0"
             >
-              {type === ALL_MEMORY_TYPES
-                ? t('impact.allTypes', '全部类型')
-                : type}
+              {getMemoryTypeLabel(type)}
             </Button>
           ))}
         </div>
@@ -200,7 +205,7 @@ export function UnifiedMemoryImpactView({
               ) : null}
             </div>
 
-            <div className="overflow-hidden rounded-lg border border-border/60 bg-background/80 shadow-2xs">
+            <div className="overflow-hidden rounded-lg border border-border/60 bg-background/80 shadow-2xs min-w-0 w-full">
               {diff.operations.map((op, idx) => (
                 <MemoryDiffItem
                   key={`${op.kind}-${op.uri}-${idx}`}

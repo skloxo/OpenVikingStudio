@@ -229,8 +229,8 @@ export function TaskPipelineDiagram({
 
   return (
     <DetailSection title={t('detail.pipelineSteps')}>
-      <div className="rounded-xl border bg-muted/20 p-3 text-xs space-y-2.5">
-        <div className="grid gap-2">
+      <div className="rounded-xl border bg-muted/20 p-3 text-xs space-y-2.5 min-w-0 overflow-hidden">
+        <div className="grid gap-2 min-w-0">
           {groups.map((group, i) => {
             if (group.type === 'serial') {
               runningStepIndex += 1
@@ -380,7 +380,7 @@ export function TaskPipelineDiagram({
 
           {/* 任务记忆增量审计快照 (就地平滑展开，彻底消灭抽屉套抽屉) */}
           {hasMemoryImpact && impactExpanded && (
-            <div className="rounded-xl border border-primary/30 bg-primary/5 p-3.5 space-y-2.5 transition-all">
+            <div className="rounded-xl border border-primary/30 bg-primary/5 p-3.5 space-y-2.5 transition-all min-w-0 overflow-hidden">
               <div className="flex items-center justify-between pb-2 border-b border-border/40">
                 <div className="flex items-center gap-2">
                   <BrainCircuitIcon className="size-4 text-primary shrink-0" />
@@ -403,7 +403,7 @@ export function TaskPipelineDiagram({
                 session={sessionProp}
                 operations={operationsProp}
                 showSummaryCards={true}
-                className="p-0 space-y-3"
+                className="p-0 space-y-3 min-w-0"
               />
             </div>
           )}

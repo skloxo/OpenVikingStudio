@@ -21,6 +21,7 @@ import { Badge } from '#/components/ui/badge'
 import { cn } from '#/lib/utils'
 import { formatBytes } from '#/lib/formatters'
 import {
+  deriveMemoryType,
   UnifiedMemoryImpactView,
 } from '#/components/memory-impact'
 import type { UniversalMemoryDiff, UniversalMemoryDiffOperation } from '#/components/memory-impact'
@@ -42,18 +43,6 @@ interface GatekeeperDecisionDrawerProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   decision: GatekeeperDecisionRecord | null
-}
-
-function deriveMemoryType(uri?: string | null): string {
-  if (!uri) return 'knowledge'
-  if (uri.includes('/evolution_lessons/') || uri.includes('/lessons/')) return 'lessons'
-  if (uri.includes('/entities/')) return 'entities'
-  if (uri.includes('/profile')) return 'profile'
-  if (uri.includes('/skills/')) return 'skills'
-  if (uri.includes('/preferences/')) return 'preferences'
-  if (uri.includes('/resources/')) return 'resources'
-  const match = uri.match(/memories\/([^/]+)/)
-  return match ? match[1].replace(/\.md$/, '') : 'knowledge'
 }
 
 export function GatekeeperDecisionDrawer({
@@ -119,7 +108,7 @@ export function GatekeeperDecisionDrawer({
       uri: targetUri,
       memoryType: memType,
       before: isUpdate ? (decision.matched_text_snippet || undefined) : undefined,
-      after: fileContent ?? (loadingContent ? '正在从 VikingFS 读取完整知识正文...' : (decision.matched_text_snippet || decision.reason)),
+      after: fileContent || decision.matched_text_snippet || decision.reason,
       description: decision.reason,
       meta: {
         decisionId: decision.id,
