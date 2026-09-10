@@ -269,14 +269,14 @@ export const CORE_STEP_SPECS: Record<string, AtomicStepSpec> = {
     isActionOnly: true,
     engineKey: 'viking_fs',
   },
-  // 24. 质量门禁 (量化计数: 用例 / cases)
+  // 24. 熵增防御 (量化计数: 用例 / cases)
   step_quality_gate: {
     id: 'step_quality_gate',
-    nameZh: '质量门禁',
-    nameEn: 'Quality Gate',
+    nameZh: '熵增防御',
+    nameEn: 'Entropy Defense',
     unitZh: '用例',
     unitEn: 'cases',
-    stageKeywords: ['eval', 'benchmark', 'gate', 'quality'],
+    stageKeywords: ['eval', 'benchmark', 'gate', 'quality', 'entropy'],
     metricKeys: ['evaluated_cases', 'passed_cases', 'total_queries', 'completed_queries'],
     totalKeys: ['total_queries', 'total_cases'],
     engineKey: 'semantic',
@@ -325,17 +325,39 @@ export const CORE_STEP_SPECS: Record<string, AtomicStepSpec> = {
     metricKeys: ['reindexed_chunks', 'patched_vectors', 'updated_embeddings'],
     engineKey: 'embedding',
   },
-  // 29. 快速接管 (异步托管入库)
+  // 29. 轻量准入 (通用快轨入库准入)
   step_valet_handover: {
     id: 'step_valet_handover',
-    nameZh: '快速接管',
-    nameEn: 'Fast Handover',
+    nameZh: '轻量准入',
+    nameEn: 'Lightweight Admission',
     unitZh: '批次',
     unitEn: 'batches',
-    stageKeywords: ['valet', 'handover', 'enqueue', 'ticket'],
+    stageKeywords: ['valet', 'handover', 'enqueue', 'ticket', 'lightweight_admission'],
     metricKeys: ['handover_count', 'nodes_count', 'file_count'],
     totalKeys: ['handover_total', 'total_nodes', 'file_count'],
     engineKey: 'viking_fs',
+  },
+  // 29.1 会话准入
+  step_session_admission: {
+    id: 'step_session_admission',
+    nameZh: '会话准入',
+    nameEn: 'Session Admission',
+    unitZh: '会话',
+    unitEn: 'sessions',
+    stageKeywords: ['session_admission', 'archive_prep', 'boundary'],
+    metricKeys: ['sessions_count', 'archived_sessions', 'messages_count'],
+    engineKey: 'session_commit',
+  },
+  // 29.2 资源准入
+  step_resource_admission: {
+    id: 'step_resource_admission',
+    nameZh: '资源准入',
+    nameEn: 'Resource Admission',
+    unitZh: '文件',
+    unitEn: 'files',
+    stageKeywords: ['resource_admission', 'source_ingress', 'intake'],
+    metricKeys: ['resources_count', 'file_count'],
+    engineKey: 'add_resource',
   },
   // 30. 向量探针
   step_valet_probe: {

@@ -53,15 +53,29 @@ export function TaskPipelineDiagram({
           ? ('update' as const)
           : ('add' as const)
 
+    const afterContent =
+      resObj.summary_snippet ||
+      resObj.text_snippet ||
+      resObj.content ||
+      resObj.message ||
+      (resObj.deliverable?.label ? `${resObj.deliverable.label}: ${uri}` : undefined) ||
+      t('detail.resourcePersistedNotice', {
+        defaultValue: '已成功存储落盘至向量索引中，状态正常。',
+      })
+
+    const desc =
+      resObj.message || metaObj.human_title || metaObj.message || resObj.reason || undefined
+
     return [
       {
         kind,
         memoryType: task.task_type || 'resource',
         uri: String(uri),
-        after: resObj.summary_snippet ? String(resObj.summary_snippet) : undefined,
+        description: desc ? String(desc) : undefined,
+        after: afterContent ? String(afterContent) : undefined,
       },
     ]
-  }, [task, isSessionTask, resObj, metaObj])
+  }, [task, isSessionTask, resObj, metaObj, t])
 
   const hasMemoryImpact = isDoneAll && (Boolean(sessionId) || Boolean(operationsProp && operationsProp.length > 0))
   let runningStepIndex = 0

@@ -180,7 +180,7 @@ export function deriveUniversalPipelineSteps(
       if (spec.id === 'step_valet_handover') {
         effectiveMetric = effectiveMetric ?? (state === 'completed' ? 1 : 0)
         effectiveTotal = effectiveTotal ?? 1
-        detail = isZh ? '接管暂存' : 'Buffered'
+        detail = isZh ? '轻量准入' : 'Admitted'
       } else if (spec.id === 'step_valet_probe') {
         effectiveMetric = effectiveMetric ?? (state === 'completed' ? 1 : 0)
         effectiveTotal = effectiveTotal ?? 1
@@ -189,12 +189,12 @@ export function deriveUniversalPipelineSteps(
           const simStr = typeof simVal === 'number' ? simVal.toFixed(4) : Number(simVal).toFixed(4)
           detail = isZh ? `相似度 ${simStr}` : `Sim ${simStr}`
         }
-      } else if (spec.id === 'step_valet_decision') {
+      } else if (spec.id === 'step_quality_gate' || spec.id === 'step_valet_decision') {
         effectiveMetric = effectiveMetric ?? (state === 'completed' ? 1 : 0)
         effectiveTotal = effectiveTotal ?? 1
         const rawAction = String(resObj.action || metaObj.action || 'add').toLowerCase()
         const actionZh = rawAction === 'noop' ? '同义合并' : rawAction === 'update' ? '增量演进' : '独立新增'
-        detail = isZh ? `判定: ${actionZh}` : `Admission: ${rawAction.toUpperCase()}`
+        detail = isZh ? `裁决: ${actionZh}` : `Defense: ${rawAction.toUpperCase()}`
       } else if (spec.id === 'step_valet_parking') {
         effectiveMetric = effectiveMetric ?? resObj.progress?.completed ?? (state === 'completed' ? 1 : 0)
         effectiveTotal = effectiveTotal ?? resObj.progress?.total ?? 1
@@ -202,7 +202,11 @@ export function deriveUniversalPipelineSteps(
         detail = rawAction === 'noop' ? (isZh ? '零冗余合并' : 'Merged') : (isZh ? '存储落盘' : 'Persisted')
       }
     } else if ((type === 'add_resource' || type === 'session_commit') && (state === 'completed' || state === 'running')) {
-      if (spec.id === 'step_valet_decision') {
+      if (
+        spec.id === 'step_session_admission' ||
+        spec.id === 'step_resource_admission' ||
+        spec.id === 'step_valet_decision'
+      ) {
         effectiveMetric = effectiveMetric ?? (state === 'completed' ? 1 : 0)
         effectiveTotal = effectiveTotal ?? 1
         const rawAction = String(resObj.action || metaObj.action || '').toLowerCase()
@@ -210,7 +214,7 @@ export function deriveUniversalPipelineSteps(
           const actionZh = rawAction === 'noop' ? '同义合并' : rawAction === 'update' ? '增量演进' : '独立新增'
           detail = isZh ? `判定: ${actionZh}` : `Admission: ${rawAction.toUpperCase()}`
         } else {
-          detail = state === 'completed' ? (isZh ? '准入通过' : 'Accepted') : (isZh ? '准入判定' : 'Checking')
+          detail = state === 'completed' ? (isZh ? '准入通过' : 'Accepted') : (isZh ? '准入核验' : 'Checking')
         }
       } else if (spec.id === 'step_quality_gate') {
         effectiveMetric = effectiveMetric ?? (state === 'completed' ? 1 : 0)
@@ -220,7 +224,7 @@ export function deriveUniversalPipelineSteps(
           const scoreStr = typeof compScore === 'number' ? compScore.toFixed(3) : String(compScore)
           detail = isZh ? `指数 ${scoreStr}` : `Score ${scoreStr}`
         } else {
-          detail = state === 'completed' ? (isZh ? '门禁通过' : 'Gate Passed') : (isZh ? '质检中' : 'Evaluating')
+          detail = state === 'completed' ? (isZh ? '防御通过' : 'Defense OK') : (isZh ? '审查中' : 'Evaluating')
         }
       }
     } else if (type === 'managed_ingestion' && (state === 'completed' || state === 'running')) {
