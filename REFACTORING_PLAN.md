@@ -92,7 +92,7 @@
 ### 📌 P0: [x] Card-Satellite-MCP-Fix (v1.4.96): 卫星 MCP 并行超时根除、FastMCP 异步卸载与 tree/relations 路由修复 ✅
 - **类型**：Satellite MCP / Async FastMCP / Concurrency Safeguard / API Contract Alignment ｜ **优先级**：🔥 P0（已交付闭环）
 - **交付版本**：`v1.4.96` ｜ **交付时间**：2026-09-11
-- **Git Commit**: `（待打 Tag 记录）` ｜ **Git Tag**: `v1.4.96`
+- **Git Commit**: `27ca36468` (OpenVikingStudio) ｜ **Git Tag**: `v1.4.96`
 - **核心治理成果与交付细节**：
   1. **宿主超时预算对齐（消灭 -32001 假死）**：
      - 将 `mimocode.jsonc` 中 `mcp.openviking.timeout` 从 5000ms 升级标定为 30000ms (30s)；
