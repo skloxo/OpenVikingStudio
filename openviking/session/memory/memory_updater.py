@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from openviking.session.memory.memory_isolation_handler import MemoryIsolationHandler
 
 from openviking.core.context import ContextLevel
+from openviking.core.defensive import defensive
 from openviking.message import Message
 from openviking.message.part import TextPart
 from openviking.server.identity import RequestContext
@@ -806,6 +807,12 @@ class MemoryUpdater:
             return False
 
     @classmethod
+    @defensive(
+        domain="memory_updater",
+        name="refresh_file_embedding",
+        fallback=False,
+        log_level="warning",
+    )
     async def refresh_file_embedding(
         cls,
         *,

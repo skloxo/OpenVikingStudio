@@ -21,6 +21,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from openviking.core.defensive import defensive
+
 logger = logging.getLogger(__name__)
 
 
@@ -120,6 +122,13 @@ class TelemetryStore:
         except Exception as e:
             logger.warning("Failed to create telemetry DB dir: %s", e)
 
+    @defensive(
+        domain="sqlite",
+        name="telemetry_get_connection",
+        retry_count=2,
+        retry_backoff=0.05,
+        log_level="error",
+    )
     def _get_connection(self) -> sqlite3.Connection:
         """Open a SQLite connection with WAL mode enabled."""
         conn = sqlite3.connect(
@@ -273,6 +282,13 @@ class TelemetryStore:
             except Exception:
                 pass
 
+    @defensive(
+        domain="sqlite",
+        name="telemetry_flush_batch",
+        retry_count=1,
+        retry_backoff=0.05,
+        log_level="error",
+    )
     def _flush_batch(self, conn: sqlite3.Connection, batch: List[Tuple[str, tuple]]) -> None:
         """Execute a batch of insert queries."""
         try:
