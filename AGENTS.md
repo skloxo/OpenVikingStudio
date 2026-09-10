@@ -93,101 +93,16 @@
 
 ---
 
-## �� 四、 UI/UX 视觉规范 —— 性冷淡克制美学 SSOT
+## 🎨 四、 UI/UX 视觉规范 —— 唯一收口于 cockpit-ui 技能 (SSOT)
 
 > **核心世界观**：界面是数据的容器，不是画布。颜色是信号，不是装饰。  
-> 克制不是死气沉沉，而是把有限的视觉冲击力留给真正值得注意的事。
+> 全系统视觉系统、人机工效与高密排版规范已全面**结晶收口至 `cockpit-ui` 技能**，彻底切除分散多头说教。
 
-### 4.1 第一性原理：颜色的物理意义
-
-```
-颜色 = 信息 / 位置
-```
-
-- **颜色出现 = 用户需要注意** → 不需要注意的信息，绝不上色
-- **正常运行的数据默认中性** → `text-foreground` + `bg-muted/20`，素净如纸
-- **异常/告警才赋予颜色** → 颜色是例外，不是规则
-
-### 4.2 色彩四态语义（偏离基线才上色）
-
-核心判断：**颜色出现 ⟺ 指标偏离正常基线（无论正向还是负向）**
-
-| 状态 | 判断条件 | Dark Mode | Light Mode |
-|:---|:---|:---|:---|
-| 🔵 **正向异常** | 指标超预期好（成功率极高、延迟极低、命中率亮眼） | `text-primary` | `text-primary` |
-| ⚠️ **负向告警** | 指标劣化但可接受（延迟偏高、零结果率偏高） | `text-amber-400` | `text-amber-600` |
-| 🔴 **负向异常** | 指标严重异常（错误、失败、宕机） | `text-destructive` | `text-destructive` |
-| ⬜ **正常态（默认）** | 在预期范围内平稳运行 | `text-foreground`（无色） | `text-foreground`（无色） |
-
-**严禁**：用颜色区分不同数据维度（如调用次数用蓝、token 用紫）。这是分类标签，不是偏差信号。  
-**严禁**：给所有数字上色，不管是否偏离基线。颜色是偏差信号，不是装饰。
-
-### 4.3 数据瓦片默认规范
-
-```tsx
-// 正确：中性，数据本身说话
-<div className="flex flex-col rounded-lg border bg-muted/20 px-3 py-2">
-  <span className="text-[11px] text-muted-foreground font-medium">标签</span>
-  <span className="font-mono text-base font-bold text-foreground tabular-nums">值</span>
-</div>
-
-// 正确：有异常时才上色
-<span className={cn(
-  'font-mono text-base font-bold tabular-nums',
-  isAbnormal ? 'text-amber-600 dark:text-amber-400' : 'text-foreground'
-)}>
-
-// 错误：把所有重要数字都染色（装饰噪音）
-<span className="text-violet-700 dark:text-violet-400 font-bold">26,586</span>
-```
-
-### 4.4 明暗双主题容器规范
-
-| 层级 | Dark Mode | Light Mode |
-|:---|:---|:---|
-| 页面画布 | #0d1117 (bg-background) | #f6f8fa |
-| 一级卡片 | #161b22 | #ffffff |
-| 数据瓦片/行悬停 | bg-muted/20 -> bg-muted/40 | 同 |
-| 描边 | 1px solid #30363d (border) | 1px solid #d0d7de |
-| 主文本 | #e6edf3 (text-foreground) | #1f2328 |
-| 次级标签 | #8b949e (text-muted-foreground) | #656d76 |
-
-完全扁平，无脏阴影，小微圆角统一 4px~6px (rounded-md)。
-
-### 4.5 全局高密紧凑排版与字体规范 (High-Density Compact Layout & Typography Standard)
-
-> **最高信息密度原则 (Maximum Information Density)**：界面是高吞吐量的数据仪表盘。在尽可能少的屏幕垂直与水平空间内，呈现尽可能多、高结构化、高对比度的有效信息，绝对拒绝无意义的大留白与过度 Padding。
-
-| 内容类型 | 字体家族 | 字号规范 | 适用场景 |
-|:---|:---|:---|:---|
-| **微胶囊/紧凑徽章/辅助标注** | `font-sans` | **`11px` (`text-[11px]`)** (系统绝对硬下限，严禁 `<11px`) | 状态徽章、工序微胶囊、次级元数据 |
-| **高密正文/数据行/按钮** | `font-sans` | **`12px` (`text-xs`)** (高密开发基准字号) | 列表行文案、操作按钮、卡片正文 |
-| **数值/哈希/耗时/UUID** | `font-mono tabular-nums` | **`12px` (`text-xs`)** (等宽防抖动) | 计数、Token 数量、执行耗时、哈希指纹 |
-| **卡片与区块标题** | `font-sans font-semibold` | **`14px` (`text-sm`)** | 一级/二级卡片标题、表头主标题 |
-
-#### 高密紧凑落地量化指标 (High-Density Metrics SSOT)：
-1. **容器内边距收敛**：基础卡片/面板内边距统一收敛为 **`p-3` 到 `p-3.5`**（最大不超过 `p-4`），彻底封杀 `p-6` / `p-8` 松散留白；
-2. **列表行与表格行高压缩**：密集数据列表行纵向内边距统一收敛为 **`py-1` 到 `py-1.5`**，行与行间距统一使用 **`gap-1` 或 `gap-0.5`**；
-3. **微胶囊/徽章紧凑贴合**：徽章与工序胶囊强制使用 **`px-1.5 py-px text-[11px] leading-none`**，严禁用 `px-3 py-1.5` 导致行高膨胀一倍；
-4. **指示性图标与箭头轻量化**：流程箭头、状态圆点、辅助图标尺寸精准控制在 **`size-2.5` 到 `size-3.5`**，严禁 `size-5`/`size-6` 大图标撑破单行高度。
-
-### 4.6 允许使用颜色的例外清单
-
-以下场景且仅以下场景允许使用非中性颜色：
-
-1. **语义三态着色**（告警/异常，见 4.2）
-2. **交互焦点**：按钮 primary CTA，hover 状态，focus 环
-3. **状态 Badge**：系统健康/不健康，一个小圆点 + 文字，bg-primary
-4. **图表系列色**：多条折线/柱状图区分不同系列时，允许多色但需成套、有序
-5. **代码语法高亮**：编辑器内的 token 着色
-
-**任何不在此清单内的颜色使用，视为装饰噪音，必须删除。**
-
-### 4.7 布局原则与空间吞吐量
-
-- **50/50 独立卡片并排**：`grid grid-cols-1 md:grid-cols-2 gap-3` 或 `gap-4`，拒绝 Tab 遮盖关键数据；
-- **mt-auto 物理平齐**：并排卡片通过 `mt-auto` 实现底边汇总行 100% 物理绝对平齐，消除因单侧行高膨胀产生的长短脚高差；
-- **拒绝 Tab 折叠**：核心运行态数据严禁折叠隐藏，放不下则 50/50 并排一目了然。
+1. **唯一真相源 (SSOT)**：所有涉及前端 Web、UI 组件、座舱大盘与监控卡片的开发与重构，**必须挂载并严格遵循 [`cockpit-ui`](file:///home/skloxo/.gemini/config/skills/cockpit-ui/SKILL.md) 技能**；
+2. **三大物理公理常驻潜意识**：
+   - **NO GREEN EVER 🚫**：全系统绝对禁止使用绿色，正常运行数据默认中性哑光灰，仅偏离基线才上色（正向冰青 `cyan-500`、告警琥珀 `amber-400`、异常玫瑰红 `rose-500`）；
+   - **座舱级最高信息密度律**：最小字号硬下限 $\ge 11\text{px}$，高密基准字号 $12\text{px}$ (`text-xs`)，数值严格 `font-mono tabular-nums`，卡片内边距收敛为 `p-3`~`p-3.5`，图标尺寸锁定为 `size-2.5`~`size-3.5`，小微圆角统一 6px (`rounded-md`)；
+   - **$X/Y$ 物理进度契约**：$X$ 严格代表已完成数，$Y$ 严格代表总数，执行中严禁预支 $+1$，$X=Y$ 自动流转。
 
 ---
 

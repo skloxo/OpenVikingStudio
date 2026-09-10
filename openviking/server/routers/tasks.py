@@ -8,9 +8,11 @@ endpoints to check completion, results, or errors.
 """
 
 import logging
-from typing import Optional
+from typing import Any, Dict, Optional
+from uuid import uuid4
 
 from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel
 
 logger = logging.getLogger("openviking.server.routers.tasks")
 
@@ -18,7 +20,7 @@ from openviking.server.auth import get_request_context
 from openviking.server.identity import RequestContext, Role
 from openviking.server.models import Response
 from openviking.service.task_store import SYSTEM_TASK_ACCOUNT_ID, SYSTEM_TASK_USER_ID
-from openviking.service.task_tracker import get_task_tracker
+from openviking.service.task_tracker import TaskRecord, TaskStatus, get_task_tracker
 from openviking_cli.exceptions import (
     FailedPreconditionError,
     OpenVikingError,
@@ -26,6 +28,91 @@ from openviking_cli.exceptions import (
 )
 
 router = APIRouter(prefix="/api/v1", tags=["tasks"])
+
+
+class BusinessJobPayload(BaseModel):
+    task_id: Optional[str] = None
+    human_title: str
+    task_type: str = "business_job"
+    initiator: str = "Agent"
+    status: str = "running"
+    progress: Optional[Dict[str, Any]] = None
+    deliverable: Optional[Dict[str, Any]] = None
+    message: Optional[str] = None
+
+
+@router.post("/tasks/business")
+async def report_business_job(
+    payload: BusinessJobPayload,
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """Register or update an agent/business job with human-friendly title, progress, and deliverable."""
+    tracker = get_task_tracker()
+    account_id = "default" if _ctx.role == Role.ROOT else _ctx.account_id
+    user_id = None if _ctx.role == Role.ROOT else _ctx.user.user_id
+
+    tid = payload.task_id or f"biz_{uuid4().hex[:12]}"
+    meta = {
+        "is_business": True,
+        "human_title": payload.human_title,
+        "initiator": payload.initiator,
+        "deliverable": payload.deliverable,
+        "progress": payload.progress,
+        "message": payload.message,
+    }
+
+    existing = await tracker.get(tid, account_id=account_id, user_id=user_id)
+    if existing is None and _ctx.role == Role.ROOT:
+        existing = await tracker.get(
+            tid,
+            account_id=SYSTEM_TASK_ACCOUNT_ID,
+            user_id=SYSTEM_TASK_USER_ID,
+        )
+
+    if existing is None:
+        rec = TaskRecord(
+            task_id=tid,
+            task_type=payload.task_type,
+            status=TaskStatus.RUNNING if payload.status == "running" else (TaskStatus.COMPLETED if payload.status == "completed" else TaskStatus.FAILED),
+            account_id=account_id,
+            user_id=user_id,
+            meta=meta,
+            result={"deliverable": payload.deliverable, "progress": payload.progress, "message": payload.message} if payload.status == "completed" else None,
+        )
+        await tracker._create_on_owner(rec, check_existing=False)
+    else:
+        existing.meta.update(meta)
+        if payload.status == "completed":
+            await tracker.complete(
+                tid,
+                result={"deliverable": payload.deliverable, "progress": payload.progress, "message": payload.message},
+                account_id=existing.account_id,
+                user_id=existing.user_id,
+            )
+        elif payload.status == "failed":
+            await tracker.fail(
+                tid,
+                error=payload.message or "Task failed",
+                account_id=existing.account_id,
+                user_id=existing.user_id,
+            )
+        else:
+            await tracker.update_stage(
+                tid,
+                stage="running",
+                account_id=existing.account_id,
+                user_id=existing.user_id,
+            )
+
+    return Response(
+        status="ok",
+        result={
+            "task_id": tid,
+            "status": payload.status,
+            "human_title": payload.human_title,
+        },
+    )
+
 
 
 @router.get("/tasks/valet/ticket/{ticket_id}")
