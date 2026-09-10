@@ -1,4 +1,10 @@
+import { useMemo, useState } from 'react'
+import { BrainCircuitIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { Button } from '#/components/ui/button'
+import { UnifiedMemoryImpactDrawer } from '#/components/memory-impact'
+import type { SessionMeta } from '@ov-server/api/v1/sessions'
+import type { UniversalMemoryDiffOperation } from '#/components/memory-impact/types'
 import { cn } from '#/lib/utils'
 import type { ParsedQueueRow } from '#/routes/monitoring/-components/queue-status-card'
 import { normalizeTaskStatus } from '../../-lib/task-record'
@@ -20,9 +26,44 @@ export function TaskPipelineDiagram({
   effectiveQueueRows,
 }: TaskPipelineDiagramProps) {
   const { i18n, t } = useTranslation('tasksPage')
+  const [impactOpen, setImpactOpen] = useState(false)
   const groups = getTaskPipelineGroups(task, effectiveQueueRows, i18n.language)
   const outcome = getTaskFinalOutcome(task, i18n.language)
   const isDoneAll = normalizeTaskStatus(task.status) === 'completed'
+
+  const isSessionTask = task.task_type === 'session_commit'
+  const resObj = (task.result && typeof task.result === 'object' ? task.result : {}) as Record<string, any>
+  const metaObj = task.meta || {}
+
+  const sessionId = isSessionTask
+    ? (resObj.session_id || task.resource_id || metaObj.session_id)
+    : undefined
+  const sessionProp = sessionId ? ({ session_id: String(sessionId) } as SessionMeta) : undefined
+
+  const operationsProp = useMemo<UniversalMemoryDiffOperation[] | undefined>(() => {
+    if (isSessionTask) return undefined
+    const uri = resObj.root_uri || resObj.uri || task.resource_id || metaObj.source_path
+    if (!uri) return undefined
+
+    const rawAction = String(resObj.action || metaObj.action || 'add').toLowerCase()
+    const kind =
+      rawAction === 'delete' || rawAction === 'purge'
+        ? ('delete' as const)
+        : rawAction === 'update'
+          ? ('update' as const)
+          : ('add' as const)
+
+    return [
+      {
+        kind,
+        memoryType: task.task_type || 'resource',
+        uri: String(uri),
+        after: resObj.summary_snippet ? String(resObj.summary_snippet) : undefined,
+      },
+    ]
+  }, [task, isSessionTask, resObj, metaObj])
+
+  const hasMemoryImpact = isDoneAll && (Boolean(sessionId) || Boolean(operationsProp && operationsProp.length > 0))
   let runningStepIndex = 0
 
   const renderMetrics = (st: PipelineStep) => {
@@ -205,6 +246,18 @@ export function TaskPipelineDiagram({
                   </div>
                 </div>
                 <div className="flex items-center gap-2 text-[11px] shrink-0">
+                  {hasMemoryImpact && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-6 px-2 text-[11px] gap-1 text-cyan-600 dark:text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10 font-medium"
+                      onClick={() => setImpactOpen(true)}
+                    >
+                      <BrainCircuitIcon className="size-3" />
+                      {t('detail.viewMemoryImpact', { defaultValue: '查看记忆影响' })}
+                    </Button>
+                  )}
                   <span
                     className={cn(
                       'px-2 py-0.5 rounded text-[11px] font-medium select-none shrink-0 border',
@@ -229,6 +282,19 @@ export function TaskPipelineDiagram({
           })()}
         </div>
       </div>
+
+      {hasMemoryImpact && (
+        <UnifiedMemoryImpactDrawer
+          open={impactOpen}
+          onOpenChange={setImpactOpen}
+          session={sessionProp}
+          operations={operationsProp}
+          title={t('detail.memoryImpactTitle', { defaultValue: '任务记忆增量审计快照' })}
+          description={t('detail.memoryImpactDescription', {
+            defaultValue: '该任务执行落地后对全局知识与经验记忆库产生的物理影响。',
+          })}
+        />
+      )}
     </DetailSection>
   )
 }

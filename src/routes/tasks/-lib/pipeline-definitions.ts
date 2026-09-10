@@ -112,13 +112,13 @@ export const TASK_FLOWS: TaskTypeFlowDef[] = [
     typeKey: 'add_resource',
     nameZh: '资源处理',
     nameEn: 'Resource Ingestion',
-    stepIds: ['step_ingestion', 'step_parse', 'step_semantic', 'step_embedding', 'step_memory_linking'],
+    stepIds: ['step_valet_decision', 'step_ingestion', 'step_parse', 'step_semantic', 'step_embedding', 'step_quality_gate', 'step_memory_linking'],
   },
   {
     typeKey: 'session_commit',
     nameZh: '会话提交',
     nameEn: 'Session Commit',
-    stepIds: ['step_serialization', 'step_distillation', 'step_persistence'],
+    stepIds: ['step_valet_decision', 'step_serialization', 'step_distillation', 'step_quality_gate', 'step_persistence'],
   },
   {
     typeKey: 'add_skill',

@@ -14,10 +14,8 @@ import {
   ATOMIC_STEP_SPECS,
   TASK_FLOW_REGISTRY,
 } from './task-pipeline-schema'
-import {
-  deriveUniversalFinalOutcome,
-  type TaskFinalOutcomeDef,
-} from './task-outcome-resolver'
+import { deriveUniversalFinalOutcome } from './task-outcome-resolver'
+import type { TaskFinalOutcomeDef } from './task-outcome-resolver'
 
 export type StepState = 'completed' | 'running' | 'pending' | 'failed'
 
@@ -202,6 +200,28 @@ export function deriveUniversalPipelineSteps(
         effectiveTotal = effectiveTotal ?? resObj.progress?.total ?? 1
         const rawAction = String(resObj.action || metaObj.action || 'add').toLowerCase()
         detail = rawAction === 'noop' ? (isZh ? '零冗余合并' : 'Merged') : (isZh ? '存储落盘' : 'Persisted')
+      }
+    } else if ((type === 'add_resource' || type === 'session_commit') && (state === 'completed' || state === 'running')) {
+      if (spec.id === 'step_valet_decision') {
+        effectiveMetric = effectiveMetric ?? (state === 'completed' ? 1 : 0)
+        effectiveTotal = effectiveTotal ?? 1
+        const rawAction = String(resObj.action || metaObj.action || '').toLowerCase()
+        if (rawAction) {
+          const actionZh = rawAction === 'noop' ? '同义合并' : rawAction === 'update' ? '增量演进' : '独立新增'
+          detail = isZh ? `判定: ${actionZh}` : `Admission: ${rawAction.toUpperCase()}`
+        } else {
+          detail = state === 'completed' ? (isZh ? '准入通过' : 'Accepted') : (isZh ? '准入判定' : 'Checking')
+        }
+      } else if (spec.id === 'step_quality_gate') {
+        effectiveMetric = effectiveMetric ?? (state === 'completed' ? 1 : 0)
+        effectiveTotal = effectiveTotal ?? 1
+        const compScore = resObj.composite_score ?? metaObj.composite_score ?? resObj.quality_score ?? metaObj.quality_score
+        if (compScore !== undefined) {
+          const scoreStr = typeof compScore === 'number' ? compScore.toFixed(3) : String(compScore)
+          detail = isZh ? `指数 ${scoreStr}` : `Score ${scoreStr}`
+        } else {
+          detail = state === 'completed' ? (isZh ? '门禁通过' : 'Gate Passed') : (isZh ? '质检中' : 'Evaluating')
+        }
       }
     } else if (type === 'managed_ingestion' && (state === 'completed' || state === 'running')) {
       if (spec.id === 'step_managed_validate') {

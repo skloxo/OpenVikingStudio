@@ -42,9 +42,11 @@ export const ATOMIC_STEP_SPECS: Record<string, AtomicStepSpec> = {
  */
 export const TASK_FLOW_REGISTRY: Record<string, string[]> = {
   add_resource: [
+    'step_valet_decision',
     'step_parsing',
     'step_semantic',
     'step_embedding',
+    'step_quality_gate',
     'step_memory_linking',
   ],
   resource_build: [
@@ -63,8 +65,10 @@ export const TASK_FLOW_REGISTRY: Record<string, string[]> = {
     'step_skill_embedding',
   ],
   session_commit: [
+    'step_valet_decision',
     'step_session_archive',
     'step_lesson_extraction',
+    'step_quality_gate',
     'step_snapshot_commit',
   ],
   admin_reindex: [
