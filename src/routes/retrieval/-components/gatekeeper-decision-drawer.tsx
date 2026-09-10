@@ -15,7 +15,8 @@ import { formatBytes } from '#/lib/formatters'
 import {
   UnifiedMemoryImpactDrawer,
 } from '#/components/memory-impact'
-import type { UniversalMemoryDiffOperation } from '#/components/memory-impact'
+import type { UniversalMemoryDiff, UniversalMemoryDiffOperation } from '#/components/memory-impact'
+import { fetchFileContent } from '#/routes/resources/-lib/api'
 
 export interface GatekeeperDecisionRecord {
   id?: string
@@ -35,6 +36,18 @@ interface GatekeeperDecisionDrawerProps {
   decision: GatekeeperDecisionRecord | null
 }
 
+function deriveMemoryType(uri?: string | null): string {
+  if (!uri) return 'knowledge'
+  if (uri.includes('/evolution_lessons/') || uri.includes('/lessons/')) return 'lessons'
+  if (uri.includes('/entities/')) return 'entities'
+  if (uri.includes('/profile')) return 'profile'
+  if (uri.includes('/skills/')) return 'skills'
+  if (uri.includes('/preferences/')) return 'preferences'
+  if (uri.includes('/resources/')) return 'resources'
+  const match = uri.match(/memories\/([^/]+)/)
+  return match ? match[1].replace(/\.md$/, '') : 'knowledge'
+}
+
 export function GatekeeperDecisionDrawer({
   open,
   onOpenChange,
@@ -44,27 +57,87 @@ export function GatekeeperDecisionDrawer({
   const [copiedId, setCopiedId] = React.useState(false)
   const [copiedUri, setCopiedUri] = React.useState(false)
   const [impactOpen, setImpactOpen] = React.useState(false)
+  const [fileContent, setFileContent] = React.useState<string | null>(null)
+  const [loadingContent, setLoadingContent] = React.useState(false)
 
-  const impactOperations = React.useMemo<UniversalMemoryDiffOperation[]>(() => {
+  React.useEffect(() => {
+    if (!open || !decision) {
+      setFileContent(null)
+      return
+    }
+    const targetUri = decision.uri || decision.matched_uri
+    if (!targetUri || !targetUri.startsWith('viking://')) {
+      setFileContent(null)
+      return
+    }
+
+    let isMounted = true
+    setLoadingContent(true)
+
+    fetchFileContent(targetUri)
+      .then((res) => {
+        if (isMounted) {
+          setFileContent(res.content || '')
+        }
+      })
+      .catch((err) => {
+        console.warn('Failed to fetch file content for impact drawer:', err)
+        if (isMounted) {
+          setFileContent(null)
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setLoadingContent(false)
+        }
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [open, decision?.uri, decision?.matched_uri, decision?.id])
+
+  const impactDiffs = React.useMemo<UniversalMemoryDiff[]>(() => {
     if (!decision) return []
     const isUpdate = decision.action === 'update'
     const targetUri = decision.uri || decision.matched_uri || 'viking://unknown'
+    const memType = deriveMemoryType(targetUri)
+
+    const op: UniversalMemoryDiffOperation = {
+      kind: isUpdate ? 'update' : 'add',
+      uri: targetUri,
+      memoryType: memType,
+      before: isUpdate ? (decision.matched_text_snippet || undefined) : undefined,
+      after: fileContent ?? (loadingContent ? '正在从 VikingFS 读取完整知识正文...' : (decision.matched_text_snippet || decision.reason)),
+      description: decision.reason,
+      meta: {
+        decisionId: decision.id,
+        similarity: decision.similarity,
+        action: decision.action,
+      },
+    }
+
+    const archiveLabel = decision.id
+      ? `decision_${decision.id.slice(0, 8)}`
+      : 'gatekeeper_record'
+
+    const extractedAt = decision.timestamp
+      ? new Date(decision.timestamp > 1e11 ? decision.timestamp : decision.timestamp * 1000).toISOString()
+      : undefined
+
     return [
       {
-        kind: isUpdate ? 'update' : 'add',
-        uri: targetUri,
-        memoryType: 'knowledge',
-        before: isUpdate ? (decision.matched_text_snippet || undefined) : undefined,
-        after: decision.reason || undefined,
-        description: decision.reason,
-        meta: {
-          decisionId: decision.id,
-          similarity: decision.similarity,
-          action: decision.action,
+        archiveId: archiveLabel,
+        extractedAt,
+        summary: {
+          adds: isUpdate ? 0 : 1,
+          updates: isUpdate ? 1 : 0,
+          deletes: 0,
         },
+        operations: [op],
       },
     ]
-  }, [decision])
+  }, [decision, fileContent, loadingContent])
 
   if (!decision) return null
 
@@ -293,11 +366,11 @@ export function GatekeeperDecisionDrawer({
       <UnifiedMemoryImpactDrawer
         open={impactOpen}
         onOpenChange={setImpactOpen}
-        operations={impactOperations}
+        diffs={impactDiffs}
         title={
           decision.action === 'update'
-            ? t('gatekeeper.impactTitleUpdate')
-            : t('gatekeeper.impactTitleAdd')
+            ? t('gatekeeper.impactTitleUpdate', { defaultValue: '知识演进记忆影响' })
+            : t('gatekeeper.impactTitleAdd', { defaultValue: '新增知识落盘影响' })
         }
         description={decision.reason}
       />

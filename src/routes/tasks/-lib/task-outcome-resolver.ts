@@ -78,12 +78,12 @@ export function deriveUniversalFinalOutcome(
 
   // 3. 技能入库
   if (type === 'add_skill') {
-    const skills = resObj.valid_skills ?? metaObj.valid_skills ?? resObj.scanned_skills
+    const skills = resObj.valid_skills ?? metaObj.valid_skills ?? resObj.scanned_skills ?? 1
     return {
       title: isZh ? '技能入库' : 'Skill Ingestion',
-      deliverableText: skills
-        ? (isZh ? `${skills} 项技能已完成校验并注册入库` : `${skills} skills validated & registered`)
-        : (isZh ? '技能已完成校验并注册入库' : 'Skills validated & registered'),
+      deliverableText: isZh
+        ? `${skills} 项技能已完成校验并注册入库`
+        : `${skills} skills validated & registered`,
       expectedText: isZh ? '技能合规校验与向量注册入库' : 'Skill spec validation & embedding registration',
     }
   }

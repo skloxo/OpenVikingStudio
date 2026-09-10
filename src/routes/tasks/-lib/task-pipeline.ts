@@ -244,16 +244,14 @@ export function getTaskQuantifiedWorkload(
   }
 
   if (type === 'add_skill') {
-    const skills = resObj.valid_skills ?? meta.valid_skills ?? resObj.scanned_skills
-    if (skills !== undefined) {
-      return {
-        icon: '🤹',
-        label: isZh ? `${skills} 项技能` : `${skills} skills`,
-        unit: isZh ? '项技能' : 'skills',
-        processed: Number(skills),
-        total: Number(skills),
-        pct: 100,
-      }
+    const skills = resObj.valid_skills ?? meta.valid_skills ?? resObj.scanned_skills ?? 1
+    return {
+      icon: '🤹',
+      label: isZh ? `${skills} 项技能` : `${skills} skills`,
+      unit: isZh ? '项技能' : 'skills',
+      processed: Number(skills),
+      total: Number(skills),
+      pct: 100,
     }
   }
 

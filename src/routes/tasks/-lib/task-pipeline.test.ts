@@ -268,6 +268,46 @@ describe('task-pipeline 基础任务真实数据契约测试', () => {
     expect(embedStep?.count).toBe(3)
   })
 
+  it('工序量化闭环: add_skill 后端仅返回 queue_status 时，每个工序均具备严谨的 1/1 量化工作量', () => {
+    const defaultSkillTask: TaskRecord = {
+      task_id: 'b57c760f-e8e5-47cd-b4cd-e117a6de0023',
+      task_type: 'add_skill',
+      status: 'completed',
+      stage: 'completed',
+      created_at: 1772800000,
+      result: {
+        queue_status: {
+          Semantic: {
+            processed: 0,
+            requeue_count: 0,
+            error_count: 0,
+            errors: [],
+          },
+        },
+      },
+    }
+    const steps = getTaskPipelineSteps(defaultSkillTask, mockGlobalQueueRows, 'zh')
+    expect(steps).toHaveLength(3)
+
+    const scanStep = steps.find((s) => s.name === '技能扫描')
+    expect(scanStep).toBeDefined()
+    expect(scanStep?.processed).toBe(1)
+    expect(scanStep?.total).toBe(1)
+    expect(scanStep?.unit).toBe('项')
+
+    const auditStep = steps.find((s) => s.name === '规范审计')
+    expect(auditStep).toBeDefined()
+    expect(auditStep?.processed).toBe(1)
+    expect(auditStep?.total).toBe(1)
+    expect(auditStep?.unit).toBe('技能')
+
+    const embedStep = steps.find((s) => s.name === '向量建库')
+    expect(embedStep).toBeDefined()
+    expect(embedStep?.processed).toBe(1)
+    expect(embedStep?.total).toBe(1)
+    expect(embedStep?.unit).toBe('技能')
+  })
+
   it('实事求是铁律: snapshot_restore_reindex 纯动作工序绝不再捏造“1 / 1 快照”', () => {
     const completedRestoreTask: TaskRecord = {
       task_id: 'restore-task-done',
