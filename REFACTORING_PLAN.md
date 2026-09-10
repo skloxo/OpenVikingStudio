@@ -78,12 +78,54 @@
 | **Card-Knowledge-3070-Clean** | **3070 临时草稿脚本杂质深度清洗、现场责任人正式入库与 Gatekeeper 脚本拦截网** | 1. 物理清洗 391 个 `_scratch_` 历史临时 Base64 脚本污染，彻底消灭搜索乱码根因；<br>2. 规范提纯入库富士康干部公寓现场运维责任人通讯录 (`cadre_apartment_staff_directory.md`)，耿晓光语义检索得分达 0.791 并精准置顶；<br>3. 在 `EntropyGatekeeper` 部署 Stage 0.6 脚本与编码阻断网，杜绝草稿脚本入库；<br>4. 修复 `ValetIngestionEngine` 存储路径偏差 bug 并补齐单测。 | 搜索“耿晓光”等词 100% 呈现专业名片，零乱码，pytest 8 项全绿，Vitest 150/150 全绿，生产构建通过 | `v1.4.80` | [x] 已验收通过 ✅ |
 | **Card-i18n-Modularization** | **超长 i18n 字典单文件解耦切分专项：将 zh-CN.ts 与 en.ts（各 2300 行）按业务领域拆解为 100~300 行黄金甜点区模块** | 1. 彻底解决 `zh-CN.ts` (2286 行) 与 `en.ts` (2296 行) 严重违背单文件 ≤500 行物理硬红线与注意力衰减痛点；<br>2. 按业务领域切分为 9 大独立模块：`common.ts`, `tasks.ts`, `retrieval.ts`, `resources.ts`, `sessions.ts`, `monitoring.ts`, `settings.ts`, `home.ts`, `playground.ts`；<br>3. 在 `index.ts` 中结构化聚合导出，对外完全保持零破坏平滑兼容；<br>4. 严格双语平行对照维护，零硬编码，自动化深度键名契约测试 100% 覆盖。关联规范：[`agent-friendly-code-org`](file:///home/skloxo/.gemini/config/skills/agent-friendly-code-org/SKILL.md)。 | 单文件全量收敛至 100~300 行黄金甜点区，无 >500 行巨石，i18n 零丢失，Vitest 154/154 全绿，构建无缝通过 | `v1.4.81` | [x] 已验收通过 ✅ |
 | **Card-UI-UnifiedMemoryImpactWheel** | **通用记忆增量审计快照轮子 (UnifiedMemoryImpactDrawer) 全局解耦、高兼容双模态与四场景复用** | 1. 彻底解耦原本深埋在会话中心的 MemoryImpact 私有抽屉为系统级公共轮子 `src/components/memory-impact/`；<br>2. 剥离与 `SessionMeta` 强绑定，建立纯数据驱动物理契约 `UniversalMemoryDiff`；<br>3. 实现受控快照模式 (Controlled) 与异步懒查询模式 (Lazy Query) 双模态；<br>4. 在会话中心、任务中心抽屉、信息治理流水溯源、存量结晶器 4 大场景全量复用；<br>5. 拆分模块均严格落在 100~250 行黄金甜点区，修复 `< 11px` 微字与 NO GREEN 视觉缺陷；<br>6. 关联规范：[`OpenVikingStudio/docs/architecture/SESSION_EVOLUTION_AND_MEMORY_IMPACT_SPEC.md`](OpenVikingStudio/docs/architecture/SESSION_EVOLUTION_AND_MEMORY_IMPACT_SPEC.md)。 | 单文件全量 ≤250 行，会话中心平滑无感兼容，双模态切换流畅，Vitest 全绿，Vite 构建通过 | `v1.4.82` | [x] 已验收通过 ✅ |
-| **Card-Gatekeeper-ImpactLinkage** | **门禁治理流水与记忆影响轮子深度联动闭环**<br>`🤖 [Agent 自驱提议 · 实施前须人脑确认]` | 1. 在门禁裁决详情抽屉 (`GatekeeperDecisionDrawer`) 中为 `add` / `update` 判定注入【查看知识落盘影响】动作按钮；<br>2. 深度复用 `UnifiedMemoryImpactDrawer` 通用轮子；<br>3. 彻底打通“门禁裁决 ➔ 知识落盘 ➔ 影响审计”全链路闭环，消除信息割裂。 | 裁决抽屉直达记忆增量快照，复用统一公共轮子，单测与构建 100% PASS | 待人脑确认 | `v1.4.84` |
-| **Card-Sessions-StateTransparency** | **会话中心双态生命周期感知与记忆影响状态透传**<br>`🤖 [Agent 自驱提议 · 实施前须人脑确认]` | 1. 左侧会话卡片增加微胶囊：已沉淀会话展示 `已沉淀 N 次`，活跃缓冲会话展示 `缓冲中 · 待提纯 X Tokens`；<br>2. 详情页右上角对未沉淀会话展示中性引导小胶囊与 Tooltip（“该会话尚处于活跃缓冲中，未执行记忆提取，暂无记忆增量快照”），消除人类困惑；<br>3. 当 pending tokens 较高时提供一键提纯建议。 | 彻底消除人类用户对记忆影响按钮时有时无的困惑，双语 i18n 达标，单测与构建 PASS | 待人脑确认 | `v1.4.85` |
-| **Card-Docs-ArchAndBootstrapping** | **辅助开发文档工程化分级、开局线头引导 SSOT 与已交付卡片物理归档机制**<br>`🤖 [Agent 自驱提议 · 实施前须人脑确认]` | 1. 制定所有项目通用的「Agent 开局线头导引规范」：明确必读文档、必装技能、核心哲学、方法论与避坑小技巧；<br>2. 建立三层文档分级：L0 核心常驻 (<150行)、L1 条件激活专题、L2 历史归档；<br>3. `REFACTORING_PLAN.md` 将已验收通过的历史卡片无损迁移至 `DELIVERY_ARCHIVE.md`，主看板瘦身至 200~400 行；<br>4. 保持任务依赖拓扑无损可回溯。 | 辅助文档与看板全面回归 100~300 行黄金甜点区，Agent 注意力不稀释，历史完整可溯 | 待人脑确认 | `v1.4.86` |
-| **Card-Entropy-02-Crystallizer** | **存量历史散落碎片三门并联结晶归纳器与物理减熵落盘（5~10 碎片熔铸为 1 晶体）** | 1. 与增量前门守门员相辅相成，专注【存量物理减熵】；<br>2. 三门并联触发（数量门 $\ge 5\sim 10$ 篇、密度门余弦均值 $> 0.72$、稳定门沉淀 $\ge 24\text{h}$）；<br>3. 三层解耦模型 (`crystal_node`)：L0 权威核心共识 + L1 不可变证据链 + L2 特例反例哨兵；<br>4. 物理减熵落盘与无损归档（生成 `crystals/{topic}.md`，旧碎片追加 `.archive` 移出活跃库，活跃向量节点物理净减少）；<br>5. 全生命周期【记忆治理流水】线索闭环（结晶事件原子化生成 `#cry_xxxx` 入库，支持抽屉展开追溯 8 篇原始碎片拓扑，复用 `UnifiedMemoryImpactDrawer` 直观呈现净减熵成果）。 | 三门触发准确，三层晶体落地，旧碎片物理归档，活跃节点净减少，单测与构建 100% PASS | 🟡 P2 进阶 | `v1.4.87` |
+| **Card-Tasks-Stage2.4-PipelineTerminology** | **全链路信达雅与物理真相还原：原子入库、三大准入解耦与「熵增防御」工业级对齐** | 1. 任务名正式更名为 4 字信达雅「原子入库」(`Atomic Ingestion`)；<br>2. 前门准入按机制物理解耦为「轻量准入」、「会话准入」、「资源准入」，物理阻断 Agent 幻觉合并；<br>3. 后门审查全面升级为 4 字「熵增防御」(`Entropy Defense`)，切除 AI 生搬硬凑的“质量门禁”；<br>4. 固化铁律：Agent 自驱提议必须标注 `🤖 [Agent 自驱提议 · 实施前须人脑确认]`，未获人脑许可严禁擅自实施。 | 34 套测试 164 项 100% 全绿，Vite 构建 PASS，1933 端口重载，Git Tag `v1.4.84` | `v1.4.84` | [x] 已验收通过 ✅ |
+| **Card-Gatekeeper-ImpactLinkage** | **门禁治理流水与记忆影响轮子深度联动闭环**<br>`🤖 [Agent 自驱提议 · 实施前须人脑确认]` | 1. 在门禁裁决详情抽屉 (`GatekeeperDecisionDrawer`) 中为 `add` / `update` 判定注入【查看知识落盘影响】动作按钮；<br>2. 深度复用 `UnifiedMemoryImpactDrawer` 通用轮子；<br>3. 彻底打通“门禁裁决 ➔ 知识落盘 ➔ 影响审计”全链路闭环，消除信息割裂。 | 裁决抽屉直达记忆增量快照，复用统一公共轮子，单测与构建 100% PASS | 待人脑确认 | `v1.4.85` |
+| **Card-Sessions-StateTransparency** | **会话中心双态生命周期感知与记忆影响状态透传**<br>`🤖 [Agent 自驱提议 · 实施前须人脑确认]` | 1. 左侧会话卡片增加微胶囊：已沉淀会话展示 `已沉淀 N 次`，活跃缓冲会话展示 `缓冲中 · 待提纯 X Tokens`；<br>2. 详情页右上角对未沉淀会话展示中性引导小胶囊与 Tooltip（“该会话尚处于活跃缓冲中，未执行记忆提取，暂无记忆增量快照”），消除人类困惑；<br>3. 当 pending tokens 较高时提供一键提纯建议。 | 彻底消除人类用户对记忆影响按钮时有时无的困惑，双语 i18n 达标，单测与构建 PASS | 待人脑确认 | `v1.4.86` |
+| **Card-Docs-ArchAndBootstrapping** | **辅助开发文档工程化分级、开局线头引导 SSOT 与已交付卡片物理归档机制**<br>`🤖 [Agent 自驱提议 · 实施前须人脑确认]` | 1. 制定所有项目通用的「Agent 开局线头导引规范」：明确必读文档、必装技能、核心哲学、方法论与避坑小技巧；<br>2. 建立三层文档分级：L0 核心常驻 (<150行)、L1 条件激活专题、L2 历史归档；<br>3. `REFACTORING_PLAN.md` 将已验收通过的历史卡片无损迁移至 `DELIVERY_ARCHIVE.md`，主看板瘦身至 200~400 行；<br>4. 保持任务依赖拓扑无损可回溯。 | 辅助文档与看板全面回归 100~300 行黄金甜点区，Agent 注意力不稀释，历史完整可溯 | 待人脑确认 | `v1.4.87` |
+| **Card-Entropy-02-Crystallizer** | **存量历史散落碎片三门并联结晶归纳器与物理减熵落盘（5~10 碎片熔铸为 1 晶体）** | 1. 与增量前门守门员相辅相成，专注【存量物理减熵】；<br>2. 三门并联触发（数量门 $\ge 5\sim 10$ 篇、密度门余弦均值 $> 0.72$、稳定门沉淀 $\ge 24\text{h}$）；<br>3. 三层解耦模型 (`crystal_node`)：L0 权威核心共识 + L1 不可变证据链 + L2 特例反例哨兵；<br>4. 物理减熵落盘与无损归档（生成 `crystals/{topic}.md`，旧碎片追加 `.archive` 移出活跃库，活跃向量节点物理净减少）；<br>5. 全生命周期【记忆治理流水】线索闭环（结晶事件原子化生成 `#cry_xxxx` 入库，支持抽屉展开追溯 8 篇原始碎片拓扑，复用 `UnifiedMemoryImpactDrawer` 直观呈现净减熵成果）。 | 三门触发准确，三层晶体落地，旧碎片物理归档，活跃节点净减少，单测与构建 100% PASS | 🟡 P2 进阶 | `v1.4.88` |
 | **Card-Knowledge-Scaffolding-Loop** | **知识盲区频次漏斗、反思骨架铸造与工兵/人机双轨补全自进化闭环** | 1. 召回未命中 (Miss) 触发两阶段解耦任务 `knowledge_remediation`；<br>2. 频次漏斗分级 (P3 仅记数，P1/P0 高频启动攻坚)；<br>3. 外生知识分发工兵 (Researcher) 自动抓取，内生企业私密知识请求人类协助；<br>4. 关联架构规范：[`OpenVikingStudio/docs/architecture/KNOWLEDGE_DEFICIT_SCAFFOLDING_SPEC.md`](OpenVikingStudio/docs/architecture/KNOWLEDGE_DEFICIT_SCAFFOLDING_SPEC.md)。 | 杜绝发疯任务风暴，频次聚合准确，骨架卡片生成即闭环，单测与构建 PASS | ⏸️ 评估中 (择机迭代) | `v1.5.x` |
 | **Card-Ingestion-DualTrack** | **轻量增量入库任务建模、质量门禁统一工序插槽与快慢双轨算子引擎架构** | 1. 彻底消灭概念倒错，解耦 Task (轻量增量入库 `valet_parking`)、Step Slot (质量门禁 `step_quality_gate`)、Engine Driver (快慢双轨算子)；<br>2. ⚡快轨算子 (<10ms 本地 2080Ti 向量硬截断) 保障 Agent 写入零等待；<br>3. 🧠慢轨算子 (LLM 深度因果演进与版本熔铸) 驱动批量与疑难仲裁；<br>4. 任务全景、工序明细与中英双语 100% 规范对齐；<br>5. 肃清 AGFS TaskStore 中全部 9 个 demo 假任务文件。关联架构规范：[`OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md`](OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md) | 概念 100% 厘清，流水线规范一致，双轨无缝路由，单测全绿，demo 清理归零 | `v1.4.73` | [x] 已验收通过 ✅ |
+
+---
+
+### 📌 P0: [x] Card-Tasks-Stage2.4-PipelineTerminology (v1.4.84): 全链路信达雅与物理真相还原：原子入库、三大准入解耦与「熵增防御」工业级对齐 ✅
+- **类型**：Pipeline Industrial Standardization / Domain Terminology SSOT / Architectural Decoupling / UI Polish ｜ **优先级**：🔥 P0（已交付闭环）
+- **交付版本**：`v1.4.84` ｜ **交付时间**：2026-09-10
+- **Git Tag**: `v1.4.84` (Commit: `cc18c2373`)
+- **关联架构白皮书**：[`OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md`](OpenVikingStudio/docs/architecture/MANAGED_INGESTION_AND_TASK_PIPELINE.md) ｜ [`COMPONENT_AND_WHEEL_INVENTORY.md`](OpenVikingStudio/docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md)
+- **核心治理成果与交付细节**：
+  1. **任务名正式更名为 4 字信达雅「原子入库」(`Atomic Ingestion`)**：
+     - 彻底切除“轻量增量入库”冗长命名，前端工序流注册表、流水线全景图、任务大盘与后端开票消息 (`valet_ingestion.py`) 全面收拢为四字极客名称「原子入库」；
+  2. **前门准入按机制物理解耦为三大专属工序（物理阻断 Agent 幻觉合并）**：
+     - **「轻量准入」(`step_valet_handover`)**：2ms 极速 WAL 接管，通用快速入库通道；
+     - **「会话准入」(`step_session_admission`)**：长程会话状态切分、分布式 PathLock 串行化与事务性快照归档；
+     - **「资源准入」(`step_resource_admission`)**：外部多模态文档、目录树结构化解析与 inode 映射分配；
+     - 保持工序独立标识，从根本上防止后续 Agent 误将重型事务与轻型 fast-path 盲目合并；
+  3. **后门审查全面升级为 4 字「熵增防御」(`Entropy Defense`)**：
+     - 彻底切除生搬硬凑的中二词汇“质量门禁”，全系统统一收拢为符合物理学第一性原理的四字专有名词「熵增防御」；
+     - 全量打通原子入库 (`valet_parking`)、资源添加 (`add_resource`) 与会话提交 (`session_commit`) 的后门查重、语义演化与熵增防御机制；
+  4. **记忆影响快照抽屉降级容错优化**：
+     - 在 `TaskPipelineDiagram` 中对非会话任务增加结构化回退与引导，彻底消除点击“查看记忆影响”时弹出“没有可展示的内容”的冷漠无感知体验；
+  5. **铁律固化：Agent 自驱提议必须标注待人脑确认**：
+     - 确立核心原则：Agent 允许且应当主动识别系统缺陷增补任务卡片，但必须带有 `🤖 [Agent 自驱提议 · 实施前须人脑确认]` 标识，且实施前必须向人脑确认授权，严禁擅自提前修改代码；
+  6. **双全自动化测试、生产构建与实机重载 100% 达标**：
+     - Vitest 单元测试套件全量 34 个文件、164 项测试 100% PASS；
+     - Vite 生产打包通过 (19.13s)；
+     - 1933 端口实机重载，`openviking.service` 探针正常。
+- **修改文件清单**：
+  - `src/routes/tasks/-lib/pipeline-definitions.ts`
+  - `src/routes/tasks/-lib/panorama-steps-governance.ts`
+  - `src/routes/tasks/-lib/task-pipeline-specs-core.ts`
+  - `src/routes/tasks/-lib/task-pipeline-schema.ts`
+  - `src/routes/tasks/-lib/task-pipeline-engine.ts`
+  - `src/routes/tasks/-components/task-detail/task-pipeline-diagram.tsx`
+  - `src/routes/tasks/-lib/task-pipeline-governance.test.ts`
+  - `src/i18n/locales/zh-CN/tasks.ts`
+  - `src/i18n/locales/en/tasks.ts`
+  - `openviking/service/valet_ingestion.py`
+  - `package.json`
+  - `openviking/__init__.py`
+  - `openviking/_version.py`
 
 ### 📌 P1: [x] Card-Tasks-Stage2.3-QualityGateChain (v1.4.83): 工业级标准化：「准入判定」与「质量门禁」全链条串联挂载与任务记忆增量快照一键直达 ✅
 - **类型**：Pipeline Industrial Standardization / Quality Gate Chain / Memory Impact Reuse / UI Polish ｜ **优先级**：🔥 P1（已交付闭环）
