@@ -43,6 +43,12 @@ export const tasks = {
       copySuccessUri: 'Copied URI',
       showingCount: 'Showing {{count}} of {{total}}',
       noFilterMatch: 'No matching audit records',
+      viewMemoryImpact: 'View Memory Impact',
+      updateImpactHint: 'Compare atomic snapshots before and after node evolution',
+      addImpactHint: 'View atomic diff snapshot for newly persisted knowledge',
+      auditDiff: 'Audit Diff',
+      impactTitleUpdate: 'Evolution Impact Snapshot',
+      impactTitleAdd: 'New Ingestion Impact Snapshot',
     },
     dualTrack: {
       businessTrackTitle: 'Business & Agent Workflows',

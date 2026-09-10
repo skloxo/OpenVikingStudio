@@ -42,6 +42,12 @@ export const tasks = {
       copySuccessUri: '已复制 URI',
       showingCount: '显示 {{count}} / 共 {{total}} 条',
       noFilterMatch: '无匹配筛选条件的记录',
+      viewMemoryImpact: '查看知识落盘影响',
+      updateImpactHint: '查看该节点演进前后的原子快照对比',
+      addImpactHint: '查看全新知识命题落盘增量快照',
+      auditDiff: '增量审计',
+      impactTitleUpdate: '特例演化落盘影响快照',
+      impactTitleAdd: '新增知识落盘影响快照',
     },
     dualTrack: {
       businessTrackTitle: '业务与智能体工作流',

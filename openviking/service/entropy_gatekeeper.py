@@ -12,6 +12,7 @@ Implements the two-stage ingestion gatekeeper & Mem0 4-way mutation state machin
 - Fail-Open Resilience: Automatically bypasses and allows write on any probe error.
 """
 
+import asyncio
 import hashlib
 import json
 import logging
@@ -147,8 +148,15 @@ class EntropyGatekeeper:
     async def _probe_nearest_vector(
         self, content: str, uri: str, ctx: Any = None
     ) -> Tuple[float, Optional[str], Optional[str]]:
-        """Delegate vector nearest neighbor probe to gatekeeper_prober module."""
-        return await probe_nearest_vector(content, uri, ctx=ctx)
+        """Delegate vector nearest neighbor probe to gatekeeper_prober module with hard timeout."""
+        try:
+            return await asyncio.wait_for(
+                probe_nearest_vector(content, uri, ctx=ctx),
+                timeout=10.0,
+            )
+        except asyncio.TimeoutError:
+            logger.warning("[EntropyGatekeeper] Nearest vector probe timed out after 10s, falling open to 0.0")
+            return 0.0, None, None
 
     async def evaluate_and_intercept(
         self,
