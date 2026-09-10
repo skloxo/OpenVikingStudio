@@ -67,6 +67,8 @@ export const sessions = {
       addedContent: 'Added content',
       deletedContent: 'Deleted content',
       emptyContent: 'No content to display',
+      collapseShort: 'Collapse',
+      expandFull: 'Expand Full',
       loading: 'Loading memory changes...',
       loadFailed: 'Could not load memory changes',
       retry: 'Retry',
