@@ -67,6 +67,8 @@ export const sessions = {
       addedContent: '新增内容',
       deletedContent: '删除内容',
       emptyContent: '没有可展示的内容',
+      collapseShort: '收起',
+      expandFull: '展开全文',
       loading: '正在加载记忆变更...',
       loadFailed: '记忆变更加载失败',
       retry: '重试',

@@ -227,169 +227,193 @@ export function GatekeeperDecisionDrawer({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex w-full flex-col gap-4 overflow-y-auto sm:max-w-xl">
-        {/* Header: 留出 pr-10 彻底杜绝与右上角关闭按钮重叠 */}
-        <SheetHeader className="gap-2 border-b border-border/50 pb-3 pr-10 text-left">
-          <div className="flex flex-wrap items-center gap-2">
-            <SheetTitle className="text-base font-semibold text-foreground">
-              {t('gatekeeper.drawerTitle')}
-            </SheetTitle>
-            {getActionBadge(decision.action)}
-            {decision.id && (
-              <button
-                type="button"
-                onClick={() => handleCopy(decision.id!, 'id')}
-                className="flex items-center gap-1 font-mono text-[11px] text-muted-foreground bg-muted/40 hover:bg-muted/70 rounded px-1.5 py-0.5 border border-border/50 transition-colors cursor-pointer"
-                title={t('gatekeeper.copySuccess')}
-              >
-                <span>#{decision.id}</span>
-                {copiedId ? (
-                  <CheckIcon className="size-3 text-primary" />
-                ) : (
-                  <CopyIcon className="size-3 opacity-70" />
-                )}
-              </button>
-            )}
+      <SheetContent className="gap-0 data-[side=right]:sm:max-w-3xl flex flex-col">
+        {/* Header: 768px 宽度下宽敞的 Header，右侧提供元数据与关闭按钮 */}
+        <SheetHeader className="border-b px-6 py-4 shrink-0">
+          <div className="flex items-center justify-between gap-3 pr-8">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
+                <ShieldCheckIcon className="size-4.5" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <SheetTitle className="text-base font-semibold text-foreground">
+                    {t('gatekeeper.drawerTitle')}
+                  </SheetTitle>
+                  {getActionBadge(decision.action)}
+                  {decision.id && (
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(decision.id!, 'id')}
+                      className="flex items-center gap-1 font-mono text-[11px] text-muted-foreground bg-muted/40 hover:bg-muted/70 rounded px-1.5 py-0.5 border border-border/50 transition-colors cursor-pointer"
+                      title={t('gatekeeper.copySuccess')}
+                    >
+                      <span>#{decision.id}</span>
+                      {copiedId ? (
+                        <CheckIcon className="size-3 text-primary" />
+                      ) : (
+                        <CopyIcon className="size-3 opacity-70" />
+                      )}
+                    </button>
+                  )}
+                </div>
+                <SheetDescription className="text-xs text-muted-foreground mt-0.5">
+                  {t('gatekeeper.subtitle')}
+                </SheetDescription>
+              </div>
+            </div>
+
+            {/* 右侧微胶囊元数据 */}
+            <div className="hidden sm:flex items-center gap-2 shrink-0 text-[11px] text-muted-foreground font-mono">
+              <span className="flex items-center gap-1 bg-muted/40 px-2 py-0.5 rounded border border-border/40">
+                <HardDriveIcon className="size-3 text-primary/80" />
+                <span>{formatBytes(decision.saved_bytes)}</span>
+              </span>
+              <span className="flex items-center gap-1 bg-muted/40 px-2 py-0.5 rounded border border-border/40">
+                <ClockIcon className="size-3 opacity-70" />
+                <span>{formatTime(decision.timestamp)}</span>
+              </span>
+            </div>
           </div>
-          <SheetDescription className="text-xs text-muted-foreground">
-            {t('gatekeeper.subtitle')}
-          </SheetDescription>
         </SheetHeader>
 
-        <div className="flex flex-col gap-3 text-xs">
-          {/* 确切余弦相似度 */}
-          <div className="flex flex-col rounded-md border border-border/60 bg-muted/20 p-3">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-medium text-muted-foreground">
-                {t('gatekeeper.similarity')}
-              </span>
-              <span className="font-mono text-[11px] text-muted-foreground">
-                {decision.similarity >= 0.97
-                  ? t('gatekeeper.simBandHigh')
-                  : decision.similarity >= 0.92
-                    ? t('gatekeeper.simBandMed')
-                    : t('gatekeeper.simBandLow')}
-              </span>
-            </div>
-            <div className="mt-1 flex items-baseline gap-2">
-              <span
-                className={cn(
-                  'font-mono text-2xl font-bold tabular-nums',
-                  decision.similarity >= 0.95
-                    ? 'text-primary'
-                    : decision.similarity >= 0.9
-                      ? 'text-amber-600 dark:text-amber-400'
-                      : 'text-foreground'
-                )}
-              >
-                {decision.similarity.toFixed(4)}
-              </span>
-              <span className="text-[11px] text-muted-foreground font-mono">
-                ({(decision.similarity * 100).toFixed(1)}%)
-              </span>
-            </div>
-          </div>
-
-          {/* 裁决依据自解释 */}
-          <div className="flex flex-col rounded-md border border-border/60 bg-background p-3">
-            <div className="flex items-center gap-1.5 text-[11px] font-medium text-foreground">
-              <ShieldCheckIcon className="size-3.5 text-primary" />
-              <span>{t('gatekeeper.decisionReason')}</span>
-            </div>
-            <p className="mt-2 text-xs leading-relaxed text-foreground/90 whitespace-pre-wrap">
-              {decision.reason}
-            </p>
-          </div>
-
-          {/* 写入目标 URI */}
-          {decision.uri && (
-            <div className="flex flex-col rounded-md border border-border/60 bg-muted/20 p-3">
+        {/* 抽屉可滚动正文：两栏 50/50 仪表盘网格 + 全宽记忆影响审计 */}
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 space-y-4 text-xs">
+          {/* 顶层 50/50 对等双栏卡片 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            {/* 左栏：确切余弦相似度与判定依据 */}
+            <div className="flex flex-col gap-2.5 rounded-lg border border-border/60 bg-muted/20 p-3.5">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-medium text-muted-foreground">
-                  {t('gatekeeper.inputUri')}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-medium text-muted-foreground">
+                    {t('gatekeeper.similarity')}
+                  </span>
+                  <Badge variant="outline" className="font-mono text-[11px] px-1.5 py-0 border-border/60">
+                    {decision.similarity >= 0.97
+                      ? t('gatekeeper.simBandHigh')
+                      : decision.similarity >= 0.92
+                        ? t('gatekeeper.simBandMed')
+                        : t('gatekeeper.simBandLow')}
+                  </Badge>
+                </div>
+                <span className="font-mono text-xs text-muted-foreground">
+                  {(decision.similarity * 100).toFixed(1)}%
                 </span>
-                <button
-                  type="button"
-                  onClick={() => handleCopy(decision.uri!, 'uri')}
-                  className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground cursor-pointer"
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span
+                  className={cn(
+                    'font-mono text-2xl font-bold tabular-nums',
+                    decision.similarity >= 0.95
+                      ? 'text-primary'
+                      : decision.similarity >= 0.9
+                        ? 'text-amber-600 dark:text-amber-400'
+                        : 'text-foreground',
+                  )}
                 >
-                  {copiedUri ? <CheckIcon className="size-3 text-primary" /> : <CopyIcon className="size-3" />}
-                  <span>{copiedUri ? t('gatekeeper.copySuccessUri') : t('gatekeeper.copyUri')}</span>
-                </button>
+                  {decision.similarity.toFixed(4)}
+                </span>
               </div>
-              <span className="mt-1.5 break-all font-mono text-[11px] text-foreground">
-                {decision.uri}
-              </span>
-            </div>
-          )}
-
-          {/* 命中已有参考事实 */}
-          {decision.matched_uri && (
-            <div className="flex flex-col rounded-md border border-border/60 bg-muted/20 p-3">
-              <span className="text-[11px] font-medium text-muted-foreground">
-                {t('gatekeeper.matchedUri')}
-              </span>
-              <span className="mt-1.5 break-all font-mono text-[11px] text-primary/90">
-                {decision.matched_uri}
-              </span>
-            </div>
-          )}
-
-          {/* 命中参考摘要对比 */}
-          {decision.matched_text_snippet && (
-            <div className="flex flex-col rounded-md border border-border/60 bg-muted/20 p-3">
-              <div className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
-                <FileTextIcon className="size-3.5" />
-                <span>{t('gatekeeper.viewSnippet')}</span>
+              <div className="pt-2 border-t border-border/40">
+                <span className="text-[11px] font-medium text-muted-foreground block mb-1">
+                  {t('gatekeeper.decisionReason')}
+                </span>
+                <p className="text-xs leading-relaxed text-foreground/90 whitespace-pre-wrap">
+                  {decision.reason}
+                </p>
               </div>
-              <p className="mt-1.5 max-h-36 overflow-y-auto whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-muted-foreground rounded bg-background/60 p-2 border border-border/40">
-                {decision.matched_text_snippet}
-              </p>
             </div>
-          )}
 
-          {/* 知识落盘影响与增量快照联动 (就地内嵌展示，彻底切除抽屉套抽屉) */}
-          {decision.action !== 'noop' && decision.action !== 'delete' && (
-            <div className="flex flex-col rounded-md border border-border/60 bg-muted/20 overflow-hidden transition-all">
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => setImpactExpanded((prev) => !prev)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault()
-                    setImpactExpanded((prev) => !prev)
-                  }
-                }}
-                className="flex items-center justify-between p-3 cursor-pointer select-none hover:bg-muted/30 transition-colors"
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <BrainCircuitIcon className="size-4 text-primary shrink-0" />
-                  <div className="flex flex-col min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-semibold text-foreground">
-                        {decision.action === 'update'
-                          ? t('gatekeeper.impactTitleUpdate', { defaultValue: '知识演进记忆影响' })
-                          : t('gatekeeper.impactTitleAdd', { defaultValue: '新增知识落盘影响' })}
+            {/* 右栏：写入目标与命中已有事实 */}
+            <div className="flex flex-col gap-2.5 rounded-lg border border-border/60 bg-muted/20 p-3.5 justify-between">
+              <div className="space-y-2.5">
+                {decision.uri && (
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[11px] font-medium text-muted-foreground">
+                        {t('gatekeeper.inputUri')}
                       </span>
-                      <Badge
-                        variant="outline"
-                        className="text-[11px] font-mono px-1.5 py-0 h-4 border-primary/30 bg-primary/10 text-primary"
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(decision.uri!, 'uri')}
+                        className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground cursor-pointer"
                       >
-                        {t(decision.action === 'update' ? 'gatekeeper.badgeUpdate' : 'gatekeeper.badgeAdd', {
-                          defaultValue: decision.action === 'update' ? '+1 ~1' : '+1',
-                        })}
-                      </Badge>
+                        {copiedUri ? <CheckIcon className="size-3 text-primary" /> : <CopyIcon className="size-3" />}
+                        <span>{copiedUri ? t('gatekeeper.copySuccessUri') : t('gatekeeper.copyUri')}</span>
+                      </button>
                     </div>
-                    <span className="text-[11px] text-muted-foreground truncate mt-0.5">
-                      {decision.action === 'update'
-                        ? t('gatekeeper.updateImpactHint', { defaultValue: '查看命中文档特例演化前后对比' })
-                        : t('gatekeeper.addImpactHint', { defaultValue: '查看全新知识命题落盘增量快照' })}
+                    <code className="block break-all font-mono text-xs text-foreground bg-background/60 p-1.5 rounded border border-border/40">
+                      {decision.uri}
+                    </code>
+                  </div>
+                )}
+
+                {decision.matched_uri && (
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[11px] font-medium text-muted-foreground">
+                        {t('gatekeeper.matchedUri')}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(decision.matched_uri!, 'uri')}
+                        className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground cursor-pointer"
+                        title={t('gatekeeper.copyUri')}
+                      >
+                        <CopyIcon className="size-3" />
+                      </button>
+                    </div>
+                    <code className="block break-all font-mono text-xs text-primary/90 bg-background/60 p-1.5 rounded border border-border/40">
+                      {decision.matched_uri}
+                    </code>
+                  </div>
+                )}
+              </div>
+
+              {decision.matched_text_snippet && (
+                <div className="pt-2 border-t border-border/40">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <FileTextIcon className="size-3.5 text-muted-foreground" />
+                    <span className="text-[11px] font-medium text-muted-foreground">
+                      {t('gatekeeper.viewSnippet')}
                     </span>
                   </div>
+                  <p className="max-h-24 overflow-y-auto whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-muted-foreground rounded bg-background/80 p-2 border border-border/40">
+                    {decision.matched_text_snippet}
+                  </p>
                 </div>
-                <div className="flex items-center gap-1 text-muted-foreground shrink-0 ml-2">
-                  <span className="text-[11px] font-medium font-sans">
+              )}
+            </div>
+          </div>
+
+          {/* 知识落盘影响增量快照 (全宽舒展展示，与任务中心、会话中心 100% 视觉对齐) */}
+          {decision.action !== 'noop' && decision.action !== 'delete' && (
+            <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3 transition-all">
+              <div className="flex items-center justify-between pb-2 border-b border-border/40">
+                <div className="flex items-center gap-2">
+                  <BrainCircuitIcon className="size-4 text-primary shrink-0" />
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-foreground">
+                      {decision.action === 'update'
+                        ? t('gatekeeper.impactTitleUpdate', { defaultValue: '知识演进记忆影响' })
+                        : t('gatekeeper.impactTitleAdd', { defaultValue: '新增知识落盘影响快照' })}
+                    </span>
+                    <Badge
+                      variant="outline"
+                      className="text-[11px] font-mono px-1.5 py-0 h-4 border-primary/30 bg-primary/10 text-primary"
+                    >
+                      {t(decision.action === 'update' ? 'gatekeeper.badgeUpdate' : 'gatekeeper.badgeAdd', {
+                        defaultValue: decision.action === 'update' ? '+1 ~1' : '+1',
+                      })}
+                    </Badge>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setImpactExpanded((prev) => !prev)}
+                  className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground cursor-pointer select-none"
+                >
+                  <span>
                     {impactExpanded
                       ? t('common.collapse', { defaultValue: '收起' })
                       : t('common.expand', { defaultValue: '展开' })}
@@ -400,11 +424,11 @@ export function GatekeeperDecisionDrawer({
                       impactExpanded && 'rotate-180',
                     )}
                   />
-                </div>
+                </button>
               </div>
 
               {impactExpanded && (
-                <div className="border-t border-border/40 p-3 bg-background/80">
+                <div className="pt-1">
                   <UnifiedMemoryImpactView
                     diffs={impactDiffs}
                     showSummaryCards={true}
@@ -415,8 +439,8 @@ export function GatekeeperDecisionDrawer({
             </div>
           )}
 
-          {/* 底部元数据栏 */}
-          <div className="grid grid-cols-2 gap-2 rounded-md border border-border/40 bg-muted/10 p-2.5 text-[11px] text-muted-foreground">
+          {/* 移动端兜底元数据栏 */}
+          <div className="flex sm:hidden items-center justify-between rounded-md border border-border/40 bg-muted/10 p-2.5 text-[11px] text-muted-foreground">
             <div className="flex items-center gap-1.5">
               <HardDriveIcon className="size-3.5" />
               <span>{t('gatekeeper.savedBytes')}:</span>
@@ -424,7 +448,7 @@ export function GatekeeperDecisionDrawer({
                 {formatBytes(decision.saved_bytes)}
               </span>
             </div>
-            <div className="flex items-center justify-end gap-1.5">
+            <div className="flex items-center gap-1.5">
               <ClockIcon className="size-3.5" />
               <span className="font-mono">{formatTime(decision.timestamp)}</span>
             </div>
