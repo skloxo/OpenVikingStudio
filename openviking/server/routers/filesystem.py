@@ -162,6 +162,55 @@ async def tree(
     return Response(status="ok", result=result)
 
 
+class TreeRequest(BaseModel):
+    """Request model for directory tree via POST."""
+
+    uri: str
+    output: str = "agent"
+    abs_limit: int = 256
+    show_all_hidden: bool = False
+    node_limit: int = 1000
+    limit: Optional[int] = None
+    level_limit: Optional[int] = None
+    depth: Optional[int] = None
+    extra_fields: Optional[list[str]] = None
+    tags: list[str] | None = None
+    include_tags: bool = False
+
+
+@router.post("/tree")
+async def tree_post(
+    request: TreeRequest,
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """Get directory tree via POST."""
+    service = get_service()
+    actual_node_limit = request.limit if request.limit is not None else request.node_limit
+    actual_level = request.depth if request.depth is not None else (request.level_limit if request.level_limit is not None else 3)
+    uri = validate_request_viking_uri(resolve_path_variables(request.uri), _ctx)
+    try:
+        result = await service.fs.tree(
+            uri,
+            ctx=_ctx,
+            output=request.output,
+            abs_limit=request.abs_limit,
+            show_all_hidden=request.show_all_hidden,
+            node_limit=actual_node_limit,
+            level_limit=actual_level,
+            extra_fields=request.extra_fields,
+            tags=request.tags,
+            include_tags=request.include_tags,
+        )
+    except AGFSNotFoundError:
+        raise NotFoundError(uri, "file")
+    except AGFSClientError as e:
+        mapped = map_exception(e, resource=uri, resource_type="file")
+        if mapped is not None:
+            raise mapped from e
+        raise
+    return Response(status="ok", result=result)
+
+
 @router.get("/stat")
 async def stat(
     uri: str = Query(..., description="Viking URI or vector record id (32-char hex)"),
