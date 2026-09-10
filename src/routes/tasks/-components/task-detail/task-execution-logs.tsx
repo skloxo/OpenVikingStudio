@@ -1,10 +1,12 @@
-import { CopyIcon } from 'lucide-react'
+import { useState } from 'react'
+import { ChevronRightIcon, CopyIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Button } from '#/components/ui/button'
 import { cn } from '#/lib/utils'
-import { normalizeTaskStatus, type TaskRecord } from '../../-lib/task-record'
-import { DetailSection, formatTaskTime } from './task-detail-common'
+import { normalizeTaskStatus } from '../../-lib/task-record'
+import type { TaskRecord } from '../../-lib/task-record'
+import { formatTaskTime } from './task-detail-common'
 
 export function generateStepLogs(task: TaskRecord, lang?: string): string[] {
   const logs: string[] = []
@@ -65,26 +67,46 @@ export function generateStepLogs(task: TaskRecord, lang?: string): string[] {
 
 interface TaskExecutionLogsProps {
   task: TaskRecord
+  defaultExpanded?: boolean
 }
 
-export function TaskExecutionLogs({ task }: TaskExecutionLogsProps) {
+export function TaskExecutionLogs({
+  task,
+  defaultExpanded = false,
+}: TaskExecutionLogsProps) {
   const { i18n, t } = useTranslation('tasksPage')
+  const [expanded, setExpanded] = useState(defaultExpanded)
   const logLines = generateStepLogs(task, i18n.language)
 
   return (
-    <DetailSection title={t('detail.executionLogs')}>
-      <div className="relative rounded-xl border border-border/60 bg-muted/30 p-3 font-mono text-[11px] leading-relaxed">
-        <div className="flex items-center justify-between border-b border-border/40 pb-2 mb-2 text-[11px] text-muted-foreground font-mono">
-          <span>
-            {t('detail.logTraceHeader', {
-              id: task.task_id,
-              defaultValue: `LOG TRACE STREAM (ID: ${task.task_id})`,
-            })}
+    <div className="rounded-xl border border-border/60 bg-muted/20 overflow-hidden transition-colors">
+      <button
+        type="button"
+        onClick={() => setExpanded((prev) => !prev)}
+        className="w-full flex items-center justify-between p-3 text-left hover:bg-muted/40 transition-colors cursor-pointer group"
+      >
+        <div className="flex items-center gap-2">
+          <ChevronRightIcon
+            className={cn(
+              'size-4 text-muted-foreground transition-transform duration-200',
+              expanded && 'rotate-90',
+            )}
+          />
+          <span className="text-sm font-semibold text-foreground">
+            {t('detail.executionLogs')}
           </span>
+          <span className="px-1.5 py-0.5 rounded-md bg-muted text-[11px] font-mono text-muted-foreground">
+            {logLines.length} {t('detail.lines')}
+          </span>
+        </div>
+        <div
+          className="flex items-center gap-2"
+          onClick={(e) => e.stopPropagation()}
+        >
           <Button
             variant="ghost"
             size="xs"
-            className="h-5 px-1.5 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted/60 cursor-pointer"
+            className="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted/60 cursor-pointer"
             onClick={() => {
               navigator.clipboard.writeText(logLines.join('\n'))
               toast.success(t('detail.logsCopied'))
@@ -94,32 +116,43 @@ export function TaskExecutionLogs({ task }: TaskExecutionLogsProps) {
             {t('detail.copyLogs')}
           </Button>
         </div>
-        <div className="space-y-1 overflow-x-auto max-h-48">
-          {logLines.map((line, idx) => {
-            const isErr =
-              line.includes('[ERROR]') || line.includes('[FATAL]')
-            const isSucc = line.includes('[SUCCESS]')
-            const isWarn = line.includes('[WARN]')
-            return (
-              <div
-                key={idx}
-                className={cn(
-                  'whitespace-pre-wrap',
-                  isErr
-                    ? 'text-rose-600 dark:text-rose-400 font-medium'
-                    : isSucc
-                      ? 'text-cyan-600 dark:text-cyan-400 font-medium'
-                      : isWarn
-                        ? 'text-amber-600 dark:text-amber-400'
-                        : 'text-muted-foreground',
-                )}
-              >
-                {line}
-              </div>
-            )
-          })}
+      </button>
+
+      {expanded ? (
+        <div className="border-t border-border/40 p-3 bg-muted/30 font-mono text-[11px] leading-relaxed">
+          <div className="text-[11px] text-muted-foreground font-mono mb-2 pb-1.5 border-b border-border/30">
+            {t('detail.logTraceHeader', {
+              id: task.task_id,
+              defaultValue: `LOG TRACE STREAM (ID: ${task.task_id})`,
+            })}
+          </div>
+          <div className="space-y-1 overflow-x-auto max-h-56">
+            {logLines.map((line, idx) => {
+              const isErr =
+                line.includes('[ERROR]') || line.includes('[FATAL]')
+              const isSucc = line.includes('[SUCCESS]')
+              const isWarn = line.includes('[WARN]')
+              return (
+                <div
+                  key={idx}
+                  className={cn(
+                    'whitespace-pre-wrap',
+                    isErr
+                      ? 'text-rose-600 dark:text-rose-400 font-medium'
+                      : isSucc
+                        ? 'text-cyan-600 dark:text-cyan-400 font-medium'
+                        : isWarn
+                          ? 'text-amber-600 dark:text-amber-400'
+                          : 'text-muted-foreground',
+                  )}
+                >
+                  {line}
+                </div>
+              )
+            })}
+          </div>
         </div>
-      </div>
-    </DetailSection>
+      ) : null}
+    </div>
   )
 }

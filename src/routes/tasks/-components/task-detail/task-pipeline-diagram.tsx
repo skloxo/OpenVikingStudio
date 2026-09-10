@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
-import { BrainCircuitIcon } from 'lucide-react'
+import { BrainCircuitIcon, ChevronUpIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '#/components/ui/button'
-import { UnifiedMemoryImpactDrawer } from '#/components/memory-impact'
+import { UnifiedMemoryImpactView } from '#/components/memory-impact'
 import type { SessionMeta } from '@ov-server/api/v1/sessions'
 import type { UniversalMemoryDiffOperation } from '#/components/memory-impact/types'
 import { cn } from '#/lib/utils'
@@ -26,7 +26,7 @@ export function TaskPipelineDiagram({
   effectiveQueueRows,
 }: TaskPipelineDiagramProps) {
   const { i18n, t } = useTranslation('tasksPage')
-  const [impactOpen, setImpactOpen] = useState(false)
+  const [impactExpanded, setImpactExpanded] = useState(false)
   const groups = getTaskPipelineGroups(task, effectiveQueueRows, i18n.language)
   const outcome = getTaskFinalOutcome(task, i18n.language)
   const isDoneAll = normalizeTaskStatus(task.status) === 'completed'
@@ -265,11 +265,21 @@ export function TaskPipelineDiagram({
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="h-6 px-2 text-[11px] gap-1 text-cyan-600 dark:text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10 font-medium"
-                      onClick={() => setImpactOpen(true)}
+                      className="h-6 px-2 text-[11px] gap-1 text-cyan-600 dark:text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10 font-medium cursor-pointer"
+                      onClick={() => setImpactExpanded((prev) => !prev)}
                     >
                       <BrainCircuitIcon className="size-3" />
-                      {t('detail.viewMemoryImpact', { defaultValue: '查看记忆影响' })}
+                      <span>
+                        {impactExpanded
+                          ? t('detail.hideMemoryImpact', { defaultValue: '收起记忆影响' })
+                          : t('detail.viewMemoryImpact', { defaultValue: '查看记忆影响' })}
+                      </span>
+                      <ChevronUpIcon
+                        className={cn(
+                          'size-3 transition-transform duration-200',
+                          !impactExpanded && 'rotate-180',
+                        )}
+                      />
                     </Button>
                   )}
                   <span
@@ -294,21 +304,38 @@ export function TaskPipelineDiagram({
               </div>
             )
           })()}
+
+          {/* 任务记忆增量审计快照 (就地平滑展开，彻底消灭抽屉套抽屉) */}
+          {hasMemoryImpact && impactExpanded && (
+            <div className="rounded-xl border border-primary/30 bg-primary/5 p-3.5 space-y-2.5 transition-all">
+              <div className="flex items-center justify-between pb-2 border-b border-border/40">
+                <div className="flex items-center gap-2">
+                  <BrainCircuitIcon className="size-4 text-primary shrink-0" />
+                  <span className="text-xs font-semibold text-foreground">
+                    {t('detail.memoryImpactTitle', { defaultValue: '任务记忆增量审计快照' })}
+                  </span>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="xs"
+                  className="h-5 px-1.5 text-[11px] text-muted-foreground hover:text-foreground cursor-pointer"
+                  onClick={() => setImpactExpanded(false)}
+                >
+                  <span>{t('common.collapse', { defaultValue: '收起' })}</span>
+                  <ChevronUpIcon className="size-3 ml-0.5" />
+                </Button>
+              </div>
+              <UnifiedMemoryImpactView
+                session={sessionProp}
+                operations={operationsProp}
+                showSummaryCards={false}
+                className="p-0"
+              />
+            </div>
+          )}
         </div>
       </div>
-
-      {hasMemoryImpact && (
-        <UnifiedMemoryImpactDrawer
-          open={impactOpen}
-          onOpenChange={setImpactOpen}
-          session={sessionProp}
-          operations={operationsProp}
-          title={t('detail.memoryImpactTitle', { defaultValue: '任务记忆增量审计快照' })}
-          description={t('detail.memoryImpactDescription', {
-            defaultValue: '该任务执行落地后对全局知识与经验记忆库产生的物理影响。',
-          })}
-        />
-      )}
     </DetailSection>
   )
 }

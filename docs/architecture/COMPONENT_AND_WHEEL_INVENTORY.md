@@ -113,7 +113,8 @@
 | 通用轮子名称 | 物理路径 | 核心能力与适用场景 | 状态与版本 |
 |:---|:---|:---|:---:|
 | **`CopyButton`** | `src/components/common/copy-button.tsx` | **带安全降级的一键复制按钮**：内部基于 `copyTextToClipboard`，自动维护 copied 状态、图标动态切换（CopyIcon ➔ CheckIcon 冰青色高亮）、支持自定义 label 与尺寸。彻底消灭全站散落手搓。 | ✅ 已交付 (v1.4.82) |
-| **`UnifiedMemoryImpactDrawer`** | `src/components/memory-impact/` | **通用记忆增量审计快照抽屉 (一石四鸟)**：<br>• 纯数据模型 `UniversalMemoryDiff` 与操作枚举；<br>• 支持受控快照模式 (Controlled) 与异步懒查询模式 (Lazy Query)；<br>• 三态指标卡片 (`ImpactSummaryCards`：新增 cyan / 特例演化 amber / 失效清理 rose)；<br>• 单条 URI 展开前后比对 (`MemoryDiffItem`)，字号 $\ge 11\text{px}$；<br>• **四场景全量复用**：会话中心、任务中心抽屉、信息治理流水溯源、存量结晶器。 | ✅ 已交付 (v1.4.82) |
+| **`UnifiedMemoryImpactView`** | `src/components/memory-impact/` | **通用记忆影响原子纯视图 (跨场景任意嵌入)**：<br>• 剥离所有 `<Sheet>` 抽屉包装，可无缝嵌入**页面 (Page)、抽屉内 (Nested Drawer-free)、弹窗 (Dialog/Modal)**；<br>• 统一汇总卡片 (`ImpactSummaryCards`)、分类 Tab 与差异条目 (`MemoryDiffItem`)；<br>• 支持受控快照模式 (Controlled) 与懒查询模式 (Lazy Query)；<br>• 彻底消灭抽屉套抽屉 (Nested Drawer) 的劣质体验。 | ✅ 已交付 (v1.4.88) |
+| **`UnifiedMemoryImpactDrawer`** | `src/components/memory-impact/` | **通用记忆增量审计快照抽屉 (轻量外壳包装)**：<br>• 仅作为 `UnifiedMemoryImpactView` 的轻量 Drawer 容器适配层；<br>• 对外保持 100% 向后兼容；<br>• 仅在顶层单页调用时使用，抽屉内严禁嵌套调用。 | ✅ 已交付 (v1.4.82) |
 | **`UniversalPagination`** | `src/components/common/universal-pagination.tsx` | 统一分页控制器：条数切换 (`10/25/50/100`)、翻页按钮、等宽页码，严格 $\ge 11\text{px}$ 规范。 | ⏳ 规划中 |
 | **`MetricTile`** | `src/components/common/metric-tile.tsx` | 统一 `p-3` 紧凑卡片、等宽大数字 (`tabular-nums font-mono`)、四态语义支持（冰青/湛蓝/琥珀/玫瑰红）。 | ⏳ 规划中 |
 | **`EmptyState`** | `src/components/common/empty-state.tsx` | 极客风空状态展示，支持图标胶囊、主副标题、可选重置筛选按钮。 | ⏳ 规划中 |
