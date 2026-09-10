@@ -3,7 +3,7 @@ import { BrainCircuitIcon, ChevronUpIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '#/components/ui/button'
 import {
-  UnifiedMemoryImpactView,
+  UniversalMemoryImpact,
   deriveMemoryType,
 } from '#/components/memory-impact'
 import type { SessionMeta } from '@ov-server/api/v1/sessions'
@@ -378,34 +378,13 @@ export function TaskPipelineDiagram({
             )
           })()}
 
-          {/* 任务记忆增量审计快照 (就地平滑展开，彻底消灭抽屉套抽屉) */}
+          {/* 任务记忆增量审计快照 (原子化通用组件) */}
           {hasMemoryImpact && impactExpanded && (
-            <div className="rounded-xl border border-primary/30 bg-primary/5 p-3.5 space-y-2.5 transition-all min-w-0 overflow-hidden">
-              <div className="flex items-center justify-between pb-2 border-b border-border/40">
-                <div className="flex items-center gap-2">
-                  <BrainCircuitIcon className="size-4 text-primary shrink-0" />
-                  <span className="text-xs font-semibold text-foreground">
-                    {t('detail.memoryImpactTitle', { defaultValue: '任务记忆增量审计快照' })}
-                  </span>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="xs"
-                  className="h-5 px-1.5 text-[11px] text-muted-foreground hover:text-foreground cursor-pointer"
-                  onClick={() => setImpactExpanded(false)}
-                >
-                  <span>{t('detail.collapse', { defaultValue: '收起' })}</span>
-                  <ChevronUpIcon className="size-3 ml-0.5" />
-                </Button>
-              </div>
-              <UnifiedMemoryImpactView
-                session={sessionProp}
-                operations={operationsProp}
-                showSummaryCards={true}
-                className="p-0 space-y-3 min-w-0"
-              />
-            </div>
+            <UniversalMemoryImpact
+              session={sessionProp}
+              operations={operationsProp}
+              title={t('detail.memoryImpactTitle', { defaultValue: '任务记忆增量审计快照' })}
+            />
           )}
         </div>
       </div>
