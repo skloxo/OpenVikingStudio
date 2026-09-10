@@ -1433,8 +1433,13 @@ class MemoryUpdater:
 
                 mf = MemoryFileUtils.read(content, uri=uri)
                 from openviking.session.memory.utils.link_renderer import LinkRenderer
+                from openviking.service.memory_dual_track import extract_dual_track
 
-                abstract = LinkRenderer.strip_all_links(mf.content or "")
+                dt = extract_dual_track(content)
+                if dt.is_dual_track and dt.semantic_anchor:
+                    abstract = dt.semantic_anchor
+                else:
+                    abstract = LinkRenderer.strip_all_links(mf.content or "")
                 abstract = self._truncate_memory_abstract(abstract)
                 embedding_text = abstract
 

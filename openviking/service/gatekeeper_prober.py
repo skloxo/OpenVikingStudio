@@ -20,7 +20,10 @@ async def probe_nearest_vector(
     ctx: Any = None,
 ) -> Tuple[float, Optional[str], Optional[str]]:
     """Probe the vector database for the nearest active neighbor (Top-1)."""
-    probe_query = content[:200].replace("\n", " ").strip()
+    from openviking.service.memory_dual_track import get_embedding_text_for_content
+
+    probe_text = get_embedding_text_for_content(content)
+    probe_query = probe_text[:250].replace("\n", " ").strip()
     if not probe_query:
         return 0.0, None, None
 
@@ -29,8 +32,8 @@ async def probe_nearest_vector(
         from openviking.server.dependencies import get_service
         service = get_service()
         if service and hasattr(service, "search") and hasattr(service.search, "find"):
-            from openviking.server.identity import RequestContext
-            internal_ctx = ctx if isinstance(ctx, RequestContext) else RequestContext(user_id="default", account_id="default")
+            from openviking.server.identity import RequestContext, Role, UserIdentifier
+            internal_ctx = ctx if isinstance(ctx, RequestContext) else RequestContext(user=UserIdentifier.the_default_user(), role=Role.ROOT)
 
             search_res = await service.search.find(
                 query=probe_query,

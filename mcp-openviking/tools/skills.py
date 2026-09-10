@@ -130,6 +130,7 @@ def register_skills_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Callabl
         context: str = Field(default="", description="触发纠偏的上下文场景"),
         reflection: str = Field(default="", description="根因与物理逻辑分析"),
         lesson: str = Field(default="", description="提炼出的永久闭环规范"),
+        delta: str = Field(default="", description="可选的3~5行物理代码Diff或错误指纹（专供代码重放轨）"),
     ) -> str:
         """Harness Reflexion 隐式自演进钩子：自动写入本地 SKILL.md 归档 Lesson，并双写纯 Markdown 镜像至 OpenViking Master Memory 永久存盘"""
         try:
@@ -152,7 +153,8 @@ def register_skills_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Callabl
                 home / ".openclaw" / "skills" / skill_name / "SKILL.md",
             ])
             local_written_file = None
-            lesson_entry = f"\n\n#### 📌 Lesson {time.strftime('%Y-%m-%d')}：{lesson_title}\n- **CONTEXT**：{context}\n- **REFLECTION**：{reflection}\n- **LESSON**：{lesson}\n"
+            delta_part = f"\n- **DELTA**：\n```diff\n{delta.strip()}\n```" if delta and delta.strip() else ""
+            lesson_entry = f"\n\n#### 📌 Lesson {time.strftime('%Y-%m-%d')}：{lesson_title}\n- **CONTEXT**：{context}\n- **REFLECTION**：{reflection}\n- **LESSON**：{lesson}{delta_part}\n"
             for p in candidate_paths:
                 if p.exists() or active_os.path.exists(str(p)):
                     with open(p, "a", encoding="utf-8") as f:
@@ -167,16 +169,24 @@ def register_skills_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Callabl
             mirror_filename = f"{date_str}_{skill_name}_{clean_slug}.md"
             master_uri = f"viking://resources/master_memory/evolution_lessons/{mirror_filename}"
 
+            anchor_summary = f"{lesson_title}. {reflection} Rule: {lesson}"[:300]
+            delta_section = f"\n## ⚡ Delta Replay (代码重放轨)\n```diff\n{delta.strip()}\n```\n" if delta and delta.strip() else ""
+            mf_meta = json.dumps({"dual_track": True, "semantic_anchor": anchor_summary, "has_delta": bool(delta and delta.strip())}, ensure_ascii=False)
+
             mirror_content = f"""# Evolution Lesson: {lesson_title}
 - **Skill**: `{skill_name}`
 - **Recorded At**: {time.strftime('%Y-%m-%d %H:%M:%S')}
 - **Context**: {context}
 
-## 🔍 Reflection & Root Cause Analysis
+## 🎯 Semantic Anchor (因果归因与检索场景)
 {reflection}
 
 ## 📜 Permanent Guidelines & Lesson
 {lesson}
+{delta_section}
+<!-- MEMORY_FIELDS
+{mf_meta}
+-->
 """
             mirror_status = "skipped"
             try:
