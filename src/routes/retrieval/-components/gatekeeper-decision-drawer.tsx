@@ -10,6 +10,7 @@ import {
 } from '#/components/ui/sheet'
 import { Badge } from '#/components/ui/badge'
 import { cn } from '#/lib/utils'
+import { formatBytes } from '#/lib/formatters'
 
 export interface GatekeeperDecisionRecord {
   id?: string
@@ -78,13 +79,6 @@ export function GatekeeperDecisionDrawer({
           </Badge>
         )
     }
-  }
-
-  const formatBytes = (bytes?: number) => {
-    if (!bytes) return '0 B'
-    if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
-    if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KB`
-    return `${bytes} B`
   }
 
   const formatTime = (ts?: number) => {

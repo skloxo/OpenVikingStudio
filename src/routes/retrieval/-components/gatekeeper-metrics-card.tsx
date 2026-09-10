@@ -4,6 +4,7 @@ import { ShieldCheckIcon, HardDriveIcon } from 'lucide-react'
 
 import { Card } from '#/components/ui/card'
 import { ovClient } from '#/lib/ov-client'
+import { formatBytes } from '#/lib/formatters'
 
 interface GatekeeperStats {
   add: number
@@ -47,12 +48,6 @@ export function GatekeeperMetricsCard() {
   const dedupRate = stats.total_probes > 0
     ? ((stats.noop / stats.total_probes) * 100).toFixed(1)
     : '0.0'
-
-  const formatBytes = (bytes: number) => {
-    if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
-    if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KB`
-    return `${bytes} B`
-  }
 
   return (
     <Card className="flex flex-col gap-3 p-3.5 shadow-none border-border/70">
