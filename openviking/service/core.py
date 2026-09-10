@@ -24,6 +24,7 @@ from openviking.service.debug_service import DebugService
 from openviking.service.fs_service import FSService
 from openviking.service.mineru_preflight import wait_for_mineru_ready
 from openviking.service.pack_service import PackService
+from openviking.service.relation_service import RelationService
 from openviking.service.resource_memory_link_service import ResourceMemoryLinkService
 from openviking.service.resource_service import ResourceService
 from openviking.service.search_service import SearchService
@@ -113,6 +114,7 @@ class OpenVikingService:
         self._resource_memory_link_service = ResourceMemoryLinkService()
         self._resource_service = ResourceService()
         self._session_service = SessionService()
+        self._relation_service = RelationService()
         self._debug_service = DebugService()
         self._agent_evolution_service = AgentEvolutionService()
 
@@ -310,6 +312,11 @@ class OpenVikingService:
         """Get Agent Evolution query service."""
         return self._agent_evolution_service
 
+    @property
+    def relations(self) -> RelationService:
+        """Get RelationService instance."""
+        return self._relation_service
+
     async def initialize(self) -> None:
         """Initialize OpenViking storage and indexes."""
         if self._initialized:
@@ -424,6 +431,7 @@ class OpenVikingService:
             vector_store=self._vikingdb_manager,
         )
         self._search_service.set_viking_fs(self._viking_fs)
+        self._relation_service.set_viking_fs(self._viking_fs)
         self._resource_service.set_dependencies(
             vikingdb=self._vikingdb_manager,
             viking_fs=self._viking_fs,
