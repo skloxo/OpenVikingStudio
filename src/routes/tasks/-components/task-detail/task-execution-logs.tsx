@@ -8,58 +8,102 @@ import { normalizeTaskStatus } from '../../-lib/task-record'
 import type { TaskRecord } from '../../-lib/task-record'
 import { formatTaskTime } from './task-detail-common'
 
-export function generateStepLogs(task: TaskRecord, lang?: string): string[] {
+export function generateStepLogs(
+  task: TaskRecord,
+  t: (key: string, options?: any) => string,
+  lang?: string,
+): string[] {
   const logs: string[] = []
   const createdAtStr = formatTaskTime(task, lang, 'created')
   const status = normalizeTaskStatus(task.status)
 
   logs.push(
-    `[${createdAtStr}] [INFO] [TaskPool] 任务已登记入队: ID=${task.task_id} Type=${task.task_type || 'generic'}`,
+    t('detail.traceLogs.taskQueued', {
+      time: createdAtStr,
+      id: task.task_id,
+      type: task.task_type || 'generic',
+      defaultValue: `[${createdAtStr}] [INFO] [TaskPool] 任务已登记入队: ID=${task.task_id} Type=${task.task_type || 'generic'}`,
+    }),
   )
   if (task.resource_id) {
     logs.push(
-      `[${createdAtStr}] [INFO] [ResourcePipeline] 关联物理资源路径: ${task.resource_id}`,
+      t('detail.traceLogs.resourceAssociated', {
+        time: createdAtStr,
+        path: task.resource_id,
+        defaultValue: `[${createdAtStr}] [INFO] [ResourcePipeline] 关联物理资源路径: ${task.resource_id}`,
+      }),
     )
   }
 
   if (status === 'pending') {
     logs.push(
-      `[${createdAtStr}] [DEBUG] [WorkerThread] 任务就绪，正等待队列空闲分配 worker...`,
+      t('detail.traceLogs.workerWaiting', {
+        time: createdAtStr,
+        defaultValue: `[${createdAtStr}] [DEBUG] [WorkerThread] 任务就绪，正等待队列空闲分配 worker...`,
+      }),
     )
   } else if (status === 'running') {
     logs.push(
-      `[${createdAtStr}] [INFO] [WorkerThread-01] 已由可用 Worker 抢占分发，初始化解构环境`,
+      t('detail.traceLogs.workerDispatched', {
+        time: createdAtStr,
+        defaultValue: `[${createdAtStr}] [INFO] [WorkerThread-01] 已由可用 Worker 抢占分发，初始化解构环境`,
+      }),
     )
     logs.push(
-      `[${createdAtStr}] [INFO] [EmbeddingService] 物理向量索引计算落盘中...`,
+      t('detail.traceLogs.vectorIndexing', {
+        time: createdAtStr,
+        defaultValue: `[${createdAtStr}] [INFO] [EmbeddingService] 物理向量索引计算落盘中...`,
+      }),
     )
   } else if (status === 'completed') {
     logs.push(
-      `[${createdAtStr}] [INFO] [WorkerThread-01] 物理工序 100% 结算完毕，校验物理一致性契约通过`,
+      t('detail.traceLogs.pipelineSettled', {
+        time: createdAtStr,
+        defaultValue: `[${createdAtStr}] [INFO] [WorkerThread-01] 物理工序 100% 结算完毕，校验物理一致性契约通过`,
+      }),
     )
     if (task.result && typeof task.result === 'object') {
       const resObj = task.result as Record<string, any>
       if (resObj.reindexed_items) {
         logs.push(
-          `[${createdAtStr}] [SUCCESS] [ReindexWorker] 重置构建向量索引项: ${resObj.reindexed_items} 项`,
+          t('detail.traceLogs.reindexSuccess', {
+            time: createdAtStr,
+            count: resObj.reindexed_items,
+            defaultValue: `[${createdAtStr}] [SUCCESS] [ReindexWorker] 重置构建向量索引项: ${resObj.reindexed_items} 项`,
+          }),
         )
       }
       if (resObj.processed) {
         logs.push(
-          `[${createdAtStr}] [SUCCESS] [DataProcessor] 文本分片处理完成: ${resObj.processed} 块`,
+          t('detail.traceLogs.chunkSuccess', {
+            time: createdAtStr,
+            count: resObj.processed,
+            defaultValue: `[${createdAtStr}] [SUCCESS] [DataProcessor] 文本分片处理完成: ${resObj.processed} 块`,
+          }),
         )
       }
     }
     logs.push(
-      `[${createdAtStr}] [SUCCESS] 任务状态自愈闭环无缝更新为 [completed]`,
+      t('detail.traceLogs.taskCompleted', {
+        time: createdAtStr,
+        defaultValue: `[${createdAtStr}] [SUCCESS] 任务状态自愈闭环无缝更新为 [completed]`,
+      }),
     )
   } else if (status === 'failed') {
-    logs.push(`[${createdAtStr}] [ERROR] [WorkerThread-01] 工序处理触发异常中断`)
+    logs.push(
+      t('detail.traceLogs.workerError', {
+        time: createdAtStr,
+        defaultValue: `[${createdAtStr}] [ERROR] [WorkerThread-01] 工序处理触发异常中断`,
+      }),
+    )
     if (task.error) {
       logs.push(`[${createdAtStr}] [FATAL] Error Traceback: ${task.error}`)
     }
     logs.push(
-      `[${createdAtStr}] [WARN] 可随时点击 [重新入队/自愈] 触发自愈流水线二次重试`,
+      t('detail.traceLogs.retryHint', {
+        time: createdAtStr,
+        defaultValue: `[${createdAtStr}] [WARN] 可随时点击 [重新入队/自愈] 触发自愈流水线二次重试`,
+      }),
     )
   }
   return logs
@@ -76,7 +120,7 @@ export function TaskExecutionLogs({
 }: TaskExecutionLogsProps) {
   const { i18n, t } = useTranslation('tasksPage')
   const [expanded, setExpanded] = useState(defaultExpanded)
-  const logLines = generateStepLogs(task, i18n.language)
+  const logLines = generateStepLogs(task, t, i18n.language)
 
   return (
     <div className="rounded-xl border border-border/60 bg-muted/20 overflow-hidden transition-colors">

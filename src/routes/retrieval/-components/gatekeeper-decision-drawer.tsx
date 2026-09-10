@@ -111,7 +111,10 @@ export function GatekeeperDecisionDrawer({
     const targetUri = decision.uri || decision.matched_uri || 'viking://unknown'
     const memType = deriveMemoryType(targetUri)
 
-    const op: UniversalMemoryDiffOperation = {
+    const operations: UniversalMemoryDiffOperation[] = []
+
+    // 1. 主落盘目标知识操作
+    operations.push({
       kind: isUpdate ? 'update' : 'add',
       uri: targetUri,
       memoryType: memType,
@@ -123,6 +126,22 @@ export function GatekeeperDecisionDrawer({
         similarity: decision.similarity,
         action: decision.action,
       },
+    })
+
+    // 2. 若属于特例演化且存在不同的命中文档，一并登记命中文档原件
+    if (isUpdate && decision.matched_uri && decision.matched_uri !== targetUri) {
+      operations.push({
+        kind: 'update',
+        uri: decision.matched_uri,
+        memoryType: deriveMemoryType(decision.matched_uri),
+        before: decision.matched_text_snippet || undefined,
+        after: decision.matched_text_snippet || undefined,
+        description: `命中历史沉淀原件 (余弦相似度: ${(decision.similarity * 100).toFixed(1)}%)`,
+        meta: {
+          matched: true,
+          similarity: decision.similarity,
+        },
+      })
     }
 
     const archiveLabel = decision.id
@@ -133,16 +152,20 @@ export function GatekeeperDecisionDrawer({
       ? new Date(decision.timestamp > 1e11 ? decision.timestamp : decision.timestamp * 1000).toISOString()
       : undefined
 
+    const adds = operations.filter((o) => o.kind === 'add').length
+    const updates = operations.filter((o) => o.kind === 'update').length
+    const deletes = operations.filter((o) => o.kind === 'delete').length
+
     return [
       {
         archiveId: archiveLabel,
         extractedAt,
         summary: {
-          adds: isUpdate ? 0 : 1,
-          updates: isUpdate ? 1 : 0,
-          deletes: 0,
+          adds,
+          updates,
+          deletes,
         },
-        operations: [op],
+        operations,
       },
     ]
   }, [decision, fileContent, loadingContent])
@@ -384,7 +407,7 @@ export function GatekeeperDecisionDrawer({
                 <div className="border-t border-border/40 p-3 bg-background/80">
                   <UnifiedMemoryImpactView
                     diffs={impactDiffs}
-                    showSummaryCards={false}
+                    showSummaryCards={true}
                     className="p-0 space-y-3"
                   />
                 </div>
