@@ -94,8 +94,8 @@ def get_resolved_actor_peer(default_client: str = "workbuddy") -> str:
             client = "antigravity"
         elif any(x in full_ctx for x in ("workbuddy", "codebuddy")):
             client = "workbuddy"
-        elif "mimocode" in full_ctx:
-            client = "mimocode"
+        elif any(x in full_ctx for x in ("mimocode", "xiaomimo")):
+            client = "xiaomimo"
         elif "openclaw" in full_ctx:
             client = "openclaw"
         elif "hermes" in full_ctx:

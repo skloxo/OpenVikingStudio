@@ -59,7 +59,15 @@ def _check_local_2080ti() -> Dict[str, Any]:
     win_mimo_dir = Path("/mnt/c/Users/Skl/.config/mimocode")
     if win_mimo_dir.exists():
         res["checks"]["mimo_agents_md"] = (win_mimo_dir / "AGENTS.md").exists()
-        res["checks"]["mimo_config"] = (win_mimo_dir / "mimocode.jsonc").exists()
+        cfg_file = win_mimo_dir / "mimocode.jsonc"
+        res["checks"]["mimo_config"] = cfg_file.exists()
+        if cfg_file.exists():
+            try:
+                c_data = json.loads(cfg_file.read_text(encoding="utf-8"))
+                peer = c_data.get("mcp", {}).get("openviking", {}).get("environment", {}).get("OPENVIKING_ACTOR_PEER")
+                res["checks"]["xiaomimo_peer_configured"] = (peer == "xiaomimo@2080ti")
+            except Exception:
+                res["checks"]["xiaomimo_peer_configured"] = False
     else:
         res["checks"]["win_mimo"] = "not_found"
     return res
@@ -176,7 +184,7 @@ def _sync_to_3070() -> Dict[str, Any]:
     if tmp_agents.exists():
         tmp_agents.unlink()
 
-    # 自动保障 3070 反重力 IDE 拥有独立身份 antigravity@3070
+    # 自动保障 3070 反重力 IDE (antigravity@3070) 与 XiaomiMo (xiaomimo@3070) 独立身份
     update_py = (
         "import json, os\n"
         "p = r'C:\\Users\\Skl\\.gemini\\config\\mcp_config.json'\n"
@@ -187,7 +195,15 @@ def _sync_to_3070() -> Dict[str, Any]:
         "    env['OPENVIKING_CLIENT'] = 'antigravity'\n"
         "    env['OPENVIKING_NODE'] = '3070'\n"
         "    with open(p, 'w', encoding='utf-8') as f: json.dump(data, f, indent=2, ensure_ascii=False)\n"
-        "    print('CFG_OK')\n"
+        "pm = r'C:\\Users\\Skl\\.config\\mimocode\\mimocode.jsonc'\n"
+        "if os.path.exists(pm):\n"
+        "    with open(pm, 'r', encoding='utf-8-sig') as f: mdata = json.load(f)\n"
+        "    menv = mdata.setdefault('mcp', {}).setdefault('openviking', {}).setdefault('environment', {})\n"
+        "    menv['OPENVIKING_ACTOR_PEER'] = 'xiaomimo@3070'\n"
+        "    menv['OPENVIKING_CLIENT'] = 'xiaomimo'\n"
+        "    menv['OPENVIKING_NODE'] = '3070'\n"
+        "    with open(pm, 'w', encoding='utf-8') as f: json.dump(mdata, f, indent=2, ensure_ascii=False)\n"
+        "print('CFG_OK')\n"
     )
     import base64
     b64 = base64.b64encode(update_py.encode("utf-8")).decode("ascii")
@@ -198,11 +214,23 @@ def _sync_to_3070() -> Dict[str, Any]:
 
 def _sync_to_local_2080ti() -> Dict[str, Any]:
     win_mimo_dir = Path("/mnt/c/Users/Skl/.config/mimocode")
-    res = {"target": "2080Ti (Local)", "agents_md": False}
+    res = {"target": "2080Ti (Local)", "agents_md": False, "xiaomimo_config": False}
     if win_mimo_dir.exists():
         agents_md = win_mimo_dir / "AGENTS.md"
         agents_md.write_text(GLOBAL_SATELLITE_AGENTS_MD, encoding="utf-8")
         res["agents_md"] = True
+        cfg_file = win_mimo_dir / "mimocode.jsonc"
+        if cfg_file.exists():
+            try:
+                c_data = json.loads(cfg_file.read_text(encoding="utf-8"))
+                env = c_data.setdefault("mcp", {}).setdefault("openviking", {}).setdefault("environment", {})
+                env["OPENVIKING_ACTOR_PEER"] = "xiaomimo@2080ti"
+                env["OPENVIKING_CLIENT"] = "xiaomimo"
+                env["OPENVIKING_NODE"] = "2080ti"
+                cfg_file.write_text(json.dumps(c_data, indent=2, ensure_ascii=False), encoding="utf-8")
+                res["xiaomimo_config"] = True
+            except Exception:
+                pass
     return res
 
 
