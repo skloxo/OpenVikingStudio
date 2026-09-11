@@ -76,7 +76,7 @@ def _exec_3070_cmd(cmd: str, timeout: int = 10) -> subprocess.CompletedProcess:
         "AzureAD\\s@tide.red@8.129.0.26",
         cmd
     ]
-    return subprocess.run(ssh_cmd, capture_output=True, text=True, timeout=timeout + 3)
+    return subprocess.run(ssh_cmd, capture_output=True, text=True, errors="replace", timeout=timeout + 3)
 
 
 def _check_remote_3070() -> Dict[str, Any]:
@@ -118,6 +118,16 @@ def _check_remote_3070() -> Dict[str, Any]:
             res["status"] = "warning"
             res["mcp_test_error"] = cp_test.stdout.strip() or cp_test.stderr.strip()
 
+        peer_probe = (
+            "import sys, os; sys.path.append('C:/Users/Skl/.openviking'); "
+            "from satellite_mcp_server import get_resolved_actor_peer; "
+            "os.environ['OPENVIKING_CLIENT'] = 'antigravity'; p1 = get_resolved_actor_peer(); "
+            "os.environ['OPENVIKING_CLIENT'] = 'workbuddy'; p2 = get_resolved_actor_peer(); "
+            "print(f'PEERS:{p1}|{p2}')"
+        )
+        cp_peer = _exec_3070_cmd(f"& 'C:/Users/Skl/.venv-openviking/Scripts/python.exe' -c \"{peer_probe}\"", timeout=8)
+        res["checks"]["peers_isolated"] = "PEERS:antigravity@3070|workbuddy@3070" in cp_peer.stdout
+
     except Exception as e:
         res["status"] = "error"
         res["error"] = str(e)
@@ -147,38 +157,42 @@ def _check_mac_studio() -> Dict[str, Any]:
 
 
 def _sync_to_3070() -> Dict[str, Any]:
-    log_res = {"target": "RTX 3070", "satellite_mcp": False, "agents_md": False}
+    log_res = {"target": "RTX 3070", "satellite_mcp": False, "workbuddy_mcp": False, "agents_md": False, "antigravity_config": False}
     if not SATELLITE_SRC.exists():
         log_res["error"] = f"找不到源文件: {SATELLITE_SRC}"
         return log_res
 
-    scp_cmd = [
-        "sshpass", "-p", "Skl3289568",
-        "scp", "-P", "6022",
-        "-o", "StrictHostKeyChecking=no",
-        "-o", "PubkeyAuthentication=no",
-        "-o", "PreferredAuthentications=password",
-        str(SATELLITE_SRC),
-        "AzureAD\\s@tide.red@8.129.0.26:C:/Users/Skl/.openviking/satellite_mcp_server.py"
-    ]
-    cp = subprocess.run(scp_cmd, capture_output=True, text=True, timeout=15)
+    base_scp = ["sshpass", "-p", "Skl3289568", "scp", "-P", "6022", "-o", "StrictHostKeyChecking=no", "-o", "PubkeyAuthentication=no", "-o", "PreferredAuthentications=password"]
+    cp = subprocess.run(base_scp + [str(SATELLITE_SRC), "AzureAD\\s@tide.red@8.129.0.26:C:/Users/Skl/.openviking/satellite_mcp_server.py"], capture_output=True, text=True, timeout=15)
     log_res["satellite_mcp"] = cp.returncode == 0
+
+    cp_wb = subprocess.run(base_scp + [str(SATELLITE_SRC), "AzureAD\\s@tide.red@8.129.0.26:C:/Users/Skl/.workbuddy/openviking-mcp/satellite_mcp_server.py"], capture_output=True, text=True, timeout=15)
+    log_res["workbuddy_mcp"] = cp_wb.returncode == 0
 
     tmp_agents = Path("/tmp/temp_agents_3070.md")
     tmp_agents.write_text(GLOBAL_SATELLITE_AGENTS_MD, encoding="utf-8")
-    scp_agents = [
-        "sshpass", "-p", "Skl3289568",
-        "scp", "-P", "6022",
-        "-o", "StrictHostKeyChecking=no",
-        "-o", "PubkeyAuthentication=no",
-        "-o", "PreferredAuthentications=password",
-        str(tmp_agents),
-        "AzureAD\\s@tide.red@8.129.0.26:C:/Users/Skl/.config/mimocode/AGENTS.md"
-    ]
-    cp2 = subprocess.run(scp_agents, capture_output=True, text=True, timeout=15)
+    cp2 = subprocess.run(base_scp + [str(tmp_agents), "AzureAD\\s@tide.red@8.129.0.26:C:/Users/Skl/.config/mimocode/AGENTS.md"], capture_output=True, text=True, timeout=15)
     log_res["agents_md"] = cp2.returncode == 0
     if tmp_agents.exists():
         tmp_agents.unlink()
+
+    # 自动保障 3070 反重力 IDE 拥有独立身份 antigravity@3070
+    update_py = (
+        "import json, os\n"
+        "p = r'C:\\Users\\Skl\\.gemini\\config\\mcp_config.json'\n"
+        "if os.path.exists(p):\n"
+        "    with open(p, 'r', encoding='utf-8-sig') as f: data = json.load(f)\n"
+        "    env = data.setdefault('mcpServers', {}).setdefault('openviking', {}).setdefault('env', {})\n"
+        "    env['OPENVIKING_ACTOR_PEER'] = 'antigravity@3070'\n"
+        "    env['OPENVIKING_CLIENT'] = 'antigravity'\n"
+        "    env['OPENVIKING_NODE'] = '3070'\n"
+        "    with open(p, 'w', encoding='utf-8') as f: json.dump(data, f, indent=2, ensure_ascii=False)\n"
+        "    print('CFG_OK')\n"
+    )
+    import base64
+    b64 = base64.b64encode(update_py.encode("utf-8")).decode("ascii")
+    cp_cfg = _exec_3070_cmd(f"C:\\Users\\Skl\\.venv-openviking\\Scripts\\python.exe -c \"import base64; exec(base64.b64decode('{b64}').decode('utf-8'))\"")
+    log_res["antigravity_config"] = "CFG_OK" in cp_cfg.stdout
     return log_res
 
 

@@ -25,26 +25,18 @@ from urllib.request import Request, urlopen
 from urllib.error import URLError, HTTPError
 from urllib.parse import urlencode
 
-# 重型检索工具池（限定进程内最多 2 个并发，避免后端争用）
 _HEAVY_TOOLS = {"openviking_find", "openviking_search", "openviking_smart_read"}
 _heavy_semaphore: Optional[asyncio.Semaphore] = None
 
-
 def _get_heavy_semaphore() -> asyncio.Semaphore:
     global _heavy_semaphore
-    if _heavy_semaphore is None:
-        _heavy_semaphore = asyncio.Semaphore(2)
+    if _heavy_semaphore is None: _heavy_semaphore = asyncio.Semaphore(2)
     return _heavy_semaphore
 
-
-# SECTION: Platform Compatibility & Stdio
 if sys.platform == "win32":
-    try:
-        sys.stdin.reconfigure(encoding="utf-8")
-        sys.stdout.reconfigure(encoding="utf-8")
-        sys.stderr.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for _s in (sys.stdin, sys.stdout, sys.stderr):
+        try: _s.reconfigure(encoding="utf-8")
+        except Exception: pass
 
 from mcp.server.fastmcp import FastMCP
 from mcp.types import TextContent
@@ -79,7 +71,7 @@ def _get_config() -> Dict[str, str]:
 
 
 def get_resolved_actor_peer(default_client: str = "workbuddy") -> str:
-    """解析并返回合规 Agent 身份 (client@node，如 workbuddy@3070)，100% 遵循官方标识符规则。"""
+    """解析并返回合规 Agent 身份 (client@node，如 antigravity@3070 / workbuddy@3070)"""
     explicit = os.environ.get("OPENVIKING_ACTOR_PEER", "").strip()
     if explicit:
         return explicit
@@ -95,12 +87,21 @@ def get_resolved_actor_peer(default_client: str = "workbuddy") -> str:
             node = "3070" if "3070" in hname else ("2080ti" if ("2080" in hname or Path("/mnt/c").exists()) else (hname.split(".")[0] or "linux"))
     client = os.environ.get("OPENVIKING_CLIENT", "").strip().lower()
     if not client:
-        proc_str = (" ".join(sys.argv) + " " + os.getcwd()).lower()
-        for candidate in ("workbuddy", "mimocode", "antigravity", "openclaw", "hermes"):
-            if candidate in proc_str:
-                client = candidate
-                break
-        client = client or default_client
+        proc_str = (sys.executable + " " + " ".join(sys.argv) + " " + os.getcwd()).lower()
+        env_dump = (" ".join(os.environ.keys()) + " " + " ".join(os.environ.values())).lower()
+        full_ctx = proc_str + " " + env_dump
+        if any(x in full_ctx for x in ("antigravity", "gemini")):
+            client = "antigravity"
+        elif any(x in full_ctx for x in ("workbuddy", "codebuddy")):
+            client = "workbuddy"
+        elif "mimocode" in full_ctx:
+            client = "mimocode"
+        elif "openclaw" in full_ctx:
+            client = "openclaw"
+        elif "hermes" in full_ctx:
+            client = "hermes"
+        else:
+            client = default_client
     clean_client = re.sub(r"[^a-zA-Z0-9_.-]", "", client) or default_client
     clean_node = re.sub(r"[^a-zA-Z0-9_-]", "", node) or "remote"
     return f"{clean_client}@{clean_node}"
