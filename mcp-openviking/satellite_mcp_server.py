@@ -42,6 +42,18 @@ from mcp.server.fastmcp import FastMCP
 from mcp.types import TextContent
 from pydantic import Field
 
+# Pydantic 2.9+ / FastMCP 1.29+ compatibility shim
+try:
+    import mcp.server.fastmcp.utilities.func_metadata as _fm
+    from pydantic import create_model as _pydantic_create_model
+    _orig_create_wrapped = getattr(_fm, "_create_wrapped_model", None)
+    if _orig_create_wrapped:
+        def _safe_create_wrapped_model(func_name: str, annotation: Any):
+            try: return _orig_create_wrapped(func_name, annotation)
+            except Exception: return _pydantic_create_model(f"{func_name}Output", result=(annotation, ...))
+        _fm._create_wrapped_model = _safe_create_wrapped_model
+except Exception: pass
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("openviking-satellite-mcp")
 
@@ -73,35 +85,25 @@ def _get_config() -> Dict[str, str]:
 def get_resolved_actor_peer(default_client: str = "workbuddy") -> str:
     """解析并返回合规 Agent 身份 (client@node，如 antigravity@3070 / workbuddy@3070)"""
     explicit = os.environ.get("OPENVIKING_ACTOR_PEER", "").strip()
-    if explicit:
-        return explicit
+    if explicit: return explicit
     node = os.environ.get("OPENVIKING_NODE", "").strip().lower()
     if not node:
         if sys.platform == "win32":
             comp = os.environ.get("COMPUTERNAME", "").lower()
             node = "3070" if "3070" in comp else ("2080ti" if "2080" in comp else "win")
-        elif sys.platform == "darwin":
-            node = "mac"
+        elif sys.platform == "darwin": node = "mac"
         else:
             hname = socket.gethostname().lower()
             node = "3070" if "3070" in hname else ("2080ti" if ("2080" in hname or Path("/mnt/c").exists()) else (hname.split(".")[0] or "linux"))
     client = os.environ.get("OPENVIKING_CLIENT", "").strip().lower()
     if not client:
-        proc_str = (sys.executable + " " + " ".join(sys.argv) + " " + os.getcwd()).lower()
-        env_dump = (" ".join(os.environ.keys()) + " " + " ".join(os.environ.values())).lower()
-        full_ctx = proc_str + " " + env_dump
-        if any(x in full_ctx for x in ("antigravity", "gemini")):
-            client = "antigravity"
-        elif any(x in full_ctx for x in ("workbuddy", "codebuddy")):
-            client = "workbuddy"
-        elif any(x in full_ctx for x in ("mimocode", "xiaomimo")):
-            client = "xiaomimo"
-        elif "openclaw" in full_ctx:
-            client = "openclaw"
-        elif "hermes" in full_ctx:
-            client = "hermes"
-        else:
-            client = default_client
+        full_ctx = (sys.executable + " " + " ".join(sys.argv) + " " + os.getcwd()).lower() + " " + (" ".join(os.environ.keys()) + " " + " ".join(os.environ.values())).lower()
+        if any(x in full_ctx for x in ("antigravity", "gemini")): client = "antigravity"
+        elif any(x in full_ctx for x in ("workbuddy", "codebuddy")): client = "workbuddy"
+        elif any(x in full_ctx for x in ("mimocode", "xiaomimo")): client = "xiaomimo"
+        elif "openclaw" in full_ctx: client = "openclaw"
+        elif "hermes" in full_ctx: client = "hermes"
+        else: client = default_client
     clean_client = re.sub(r"[^a-zA-Z0-9_.-]", "", client) or default_client
     clean_node = re.sub(r"[^a-zA-Z0-9_-]", "", node) or "remote"
     return f"{clean_client}@{clean_node}"
@@ -146,12 +148,9 @@ class SatelliteHTTPClient:
                     elapsed_ms = int((time.time() - start_time) * 1000)
                     content = resp.read().decode("utf-8")
                     logger.debug(f"[Satellite_HTTP] {method} {path} attempt={attempt+1} elapsed={elapsed_ms}ms status={resp.status}")
-                    if not content:
-                        return {"ok": True}
-                    try:
-                        return json.loads(content)
-                    except json.JSONDecodeError:
-                        return {"raw": content}
+                    if not content: return {"ok": True}
+                    try: return json.loads(content)
+                    except json.JSONDecodeError: return {"raw": content}
             except HTTPError as e:
                 elapsed_ms = int((time.time() - start_time) * 1000)
                 if e.code in (502, 503, 504) and attempt < max_retries - 1:
