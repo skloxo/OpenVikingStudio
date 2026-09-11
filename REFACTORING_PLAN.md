@@ -88,6 +88,22 @@
 | **Card-Harness-DefensiveAndPurge** | **全系统防御性代码显式标注 (`@defensive`) 与“死机制”大扫除** | 1. 吸收字节《HarnessDev》(18/108幽灵代码) 与 CPA 可达性契约，为 FRP 重连、SQLite 降级等防御性底牌添加显式 `@defensive` 注解；<br>2. 静态分析不可达且无 `@defensive` 标注的冗余 Wrapper/伪监听类坚决物理切除；<br>3. 消除“写了以为在用实际触发 0 次”的代码杂质，誓死捍卫系统防御性韧性。 | 核心防御代码 100% 显式标注，切除冗余死机制包装层，代码向黄金区收敛 | `P0` | `v1.4.95` | [x] 已验收通过 ✅ |
 | **Card-Tasks-HighDensity-And-Terminology** | **任务中心回归高密度纯列表与「原子入库」统一命名** | 1. 顺应座舱最高信息密度原则，彻底切除低密卡片视图切换与底部多余折叠抽屉 (`system-ops-view`)；<br>2. 任务路由 (`route.tsx`) 收敛至 ~100 行纯高密度单列表；<br>3. 彻底肃清历史遗留的“轻量增量入库”、“清增量入库”、“托管入库”，全系统后端路由、前端单元格、交付物解析与多语言统一命名为标准 4 字「原子入库」(`Atomic Ingestion`)；<br>4. 35 套前端测试 167 项与后端 pytest 全绿，Vite 编译通过，实机截图验证通过。 | 任务中心纯高密度列表展示，彻底消除卡片模式和冗余底部面板，所有入库任务 100% 统一为「原子入库」 | `P0` | `v1.4.96` | [x] 已验收通过 ✅ |
 | **Card-Tasks-SingleRow-Standardization** | **任务中心严格单行高密度重构、标题去冗余与成果物直达抽屉收拢治理** | 1. 严格落实单行高密度原则 (Single Row)，消除上下折叠多层堆叠，各任务类型行高统一收敛为标准 40px；<br>2. 彻底剥离任务标题中的各类 Emoji (如 📥) 与冗余冒号前缀 (如 "资源处理:", "原子入库：")；<br>3. 表格重构为规范 7 列：任务名称、类型、任务编号 (#shortId)、提交方 (Bot/User 图标+名称)、关联资源 (单行等宽截断)、执行状态与进度、创建时间；<br>4. 成果物直达彻底从列表行移出，收拢至任务详情抽屉顶部专用高密卡片，支持一键复制与外部打开；<br>5. 36 套前端单测 173 项 100% PASS，Vite 构建 PASS，实机截图验证通过。 | 列表严格单行整齐划一，标题纯净无冗余，7列规范各司其职，抽屉成果物直达优雅呈现 | `P0` | `v1.4.97` | [x] 已验收通过 ✅ |
+| **Card-Tasks-AuthenticMemoryImpact-Purge** | **原子入库记忆增量硬编码假数据 (+4 ~1) 彻底切除与 100% 真实数据对齐** | 1. 深入物理根因：排查出 `task-pipeline-diagram.tsx` 中遇 `antigravity_sessions` 强行无脑 push 4 项伪造条目（milestones, entities, cases, trajectories）的致命硬编码缺陷；<br>2. 彻底切除所有虚构记忆项代码，100% 严格由后端真实入库决策 `decision.action`（新增 1 / 更新 1 / 淘汰 1）真实驱动；<br>3. 坚决捍卫绝对数据真实性底线，彻底消灭所有原子入库雷同“+4 ~1 -0”的虚假假象；<br>4. 36 套前端单测 173 项 100% PASS，Vite 生产构建通过。 | 记忆增量审计快照 100% 真实可信，实事求是，无任何虚构衍生条目 | `P0` | `v1.4.98` | [x] 已验收通过 ✅ |
+
+### 📌 P0: [x] Card-Tasks-AuthenticMemoryImpact-Purge (v1.4.98): 原子入库记忆增量硬编码假数据 (+4 ~1) 彻底切除与 100% 真实数据对齐 ✅
+- **类型**：Data Integrity / Hardcoded Mock Purge / Real-Data Alignment ｜ **优先级**：🔥 P0（已交付闭环）
+- **交付版本**：`v1.4.98` ｜ **交付时间**：2026-09-11
+- **核心治理成果与交付细节**：
+  1. **物理根因深度定位**：
+     - 用户敏锐发现：“看到很多原子入库都是新增4更新1删除0，是不是写死了？”；
+     - 经代码审查，根因锁定在 `src/routes/tasks/-components/task-detail/task-pipeline-diagram.tsx` 的 lines 114-148；
+     - 原代码判定如果 URI 包含 `antigravity_sessions`，就擅自推入 4 个虚构的衍生知识文件（`milestone.md`, `tech_entities.md`, `solution_cases.md`, `evolution_chain.md`），加上主文件自身正好凑成 **新增 4，更新 1，删除 0**！严重践踏了“绝对数据真实性”底线。
+  2. **彻底切除伪造代码**：
+     - 物理删除全部 35 行硬编码伪造条目代码；
+     - 增量影响 100% 由后端真实物理执行结果 `decision.action` 驱动：独立新增展示“新增 1，更新 0，删除 0”，升级演化展示“新增 0，更新 1，删除 0”；若后端携带真实 `affected_uris` 则如实展示，绝不虚构！
+  3. **双轨全量单测与构建验证**：
+     - 36 套测试套件 173 项单测全绿；
+     - `npm run build` 生产构建 17.67s 零错误通过。
 
 ### 📌 P0: [x] Card-Tasks-SingleRow-Standardization (v1.4.97): 任务中心严格单行高密度重构、标题去冗余与成果物直达抽屉收拢治理 ✅
 - **类型**：Task Center Standardization / Single-Row High Density / Drawer Deliverable Alignment ｜ **优先级**：🔥 P0（已交付闭环）
