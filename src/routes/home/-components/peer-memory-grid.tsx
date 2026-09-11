@@ -139,11 +139,20 @@ export function PeerMemoryGrid({
                     <div className="flex size-6 shrink-0 items-center justify-center rounded-xs bg-muted/60">
                       {renderIcon(peer.icon)}
                     </div>
-                    <div className="truncate">
-                      <h4 className="truncate text-xs font-semibold text-foreground group-hover:text-cyan-600 dark:group-hover:text-cyan-400">
-                        {t(`peerAgents.agents.${peer.nameKey}`, { defaultValue: peer.id })}
-                      </h4>
-                      <p className="truncate text-[11px] text-muted-foreground font-sans">
+                    <div className="truncate min-w-0">
+                      <div className="flex items-center gap-1.5 truncate">
+                        {peer.id.includes('@') && (
+                          <span className="rounded-xs border border-border/80 bg-muted/80 px-1 py-0.2 text-[10px] font-mono font-medium text-foreground shrink-0">
+                            {peer.id.split('@')[1].toUpperCase()}
+                          </span>
+                        )}
+                        <h4 className="truncate text-xs font-semibold text-foreground group-hover:text-cyan-600 dark:group-hover:text-cyan-400">
+                          {peer.id.includes('@')
+                            ? peer.id.split('@')[0]
+                            : t(`peerAgents.agents.${peer.nameKey}`, { defaultValue: peer.id })}
+                        </h4>
+                      </div>
+                      <p className="truncate text-[11px] text-muted-foreground font-sans mt-0.5">
                         {peer.role || t(`peerAgents.roles.${peer.nameKey}`, { defaultValue: peer.id })}
                       </p>
                     </div>
