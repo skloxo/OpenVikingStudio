@@ -201,9 +201,19 @@ export const tasks = {
     table: {
       task: '任务',
       type: '类型',
+      taskId: '任务编号',
+      initiator: '提交方',
       resource: '关联资源',
       createdAt: '创建时间',
       status: '状态',
+    },
+    deliverableCard: {
+      title: '成果物直达',
+      subtitle: '该任务执行完毕生成的物理文件 / 知识资产',
+      copyUri: '复制成果物地址',
+      copied: '已复制成果物地址',
+      openExternal: '在新窗口打开',
+      viewResource: '查看资源',
     },
     status: {
       completed: '已完成',

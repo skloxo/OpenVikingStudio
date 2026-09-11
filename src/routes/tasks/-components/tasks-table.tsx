@@ -3,11 +3,12 @@ import { useTranslation } from 'react-i18next'
 import {
   ClipboardListIcon,
   CircleXIcon,
-  FileTextIcon,
   LoaderCircleIcon,
+  BotIcon,
+  UserIcon,
 } from 'lucide-react'
+import { toast } from 'sonner'
 
-import { Badge } from '#/components/ui/badge'
 import { Card } from '#/components/ui/card'
 import {
   Pagination,
@@ -33,7 +34,6 @@ import {
 } from '#/components/ui/table'
 import { cn } from '#/lib/utils'
 import type { ParsedQueueRow } from '#/routes/monitoring/-components/queue-status-card'
-import { formatFileSize } from '#/routes/resources/-lib/upload'
 import { TaskExecutionCell } from '#/routes/tasks/-components/task-execution-cell'
 import { TaskHumanCell } from '#/routes/tasks/-components/task-human-cell'
 import {
@@ -66,6 +66,15 @@ interface TasksTableProps {
   onOpenDeliverable?: (uri: string) => void
 }
 
+function parseInitiator(raw?: string) {
+  if (!raw) return { isAgent: false, isUser: false, name: '-' }
+  const isAgent = /agent/i.test(raw)
+  const isUser = /user|admin/i.test(raw)
+  const match = raw.match(/\((.*?)\)/)
+  const cleanName = match ? match[1] : raw.replace(/^(agent|user)\s*/i, '').trim() || (isAgent ? 'Agent' : isUser ? 'User' : raw)
+  return { isAgent, isUser, name: cleanName }
+}
+
 export function TasksTable({
   tasks,
   allTasks,
@@ -87,7 +96,6 @@ export function TasksTable({
   isDeleting,
   queueObserverRows,
   maxTasks,
-  onOpenDeliverable,
 }: TasksTableProps) {
   const { t } = useTranslation('tasksPage')
   const pageOffset = (page - 1) * pageSize
@@ -95,39 +103,58 @@ export function TasksTable({
 
   function renderTaskResourceCell(task: TaskRecord) {
     const meta = task.meta && typeof task.meta === 'object' ? task.meta : {}
-    const sourceName = meta.source_name || (meta.source_path ? String(meta.source_path).split(/[\\/]/).pop() : null)
-    const fileSize = meta.file_size !== undefined ? Number(meta.file_size) : undefined
-    const resourceUri = task.resource_id || ''
-
-    if (sourceName || fileSize !== undefined) {
-      return (
-        <div className="flex flex-col gap-0.5 max-w-72">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <FileTextIcon className="size-3.5 shrink-0 text-muted-foreground" />
-            <span className="truncate text-xs font-medium text-foreground">
-              {sourceName || (resourceUri ? resourceUri.split('/').pop() : '-')}
-            </span>
-            {fileSize !== undefined && (
-              <Badge
-                variant="outline"
-                className="text-[11px] px-1 py-0 h-4 border-border/50 text-muted-foreground bg-muted/20 font-mono shrink-0 tabular-nums"
-              >
-                {formatFileSize(fileSize)}
-              </Badge>
-            )}
-          </div>
-          {resourceUri && (
-            <span className="font-mono text-[11px] text-muted-foreground/70 truncate" title={resourceUri}>
-              {resourceUri}
-            </span>
-          )}
-        </div>
-      )
-    }
+    const resourceUri =
+      task.resource_id ||
+      meta.source_name ||
+      (meta.source_path ? String(meta.source_path).split(/[\\/]/).pop() : null) ||
+      '-'
 
     return (
-      <div className="max-w-72 truncate text-xs text-muted-foreground" title={resourceUri || '-'}>
-        {resourceUri || '-'}
+      <div
+        className="max-w-48 truncate font-mono text-[11px] text-muted-foreground select-none"
+        title={resourceUri}
+      >
+        {resourceUri}
+      </div>
+    )
+  }
+
+  function renderTaskIdCell(task: TaskRecord) {
+    const taskId = task.task_id || ''
+    const shortId = taskId.length > 12 ? taskId.slice(-8) : taskId || '-'
+
+    return (
+      <button
+        type="button"
+        className="font-mono text-[11px] text-muted-foreground hover:text-primary transition-colors cursor-pointer select-all tabular-nums py-0.5"
+        title={`${taskId} (${t('table.copyId', '点击复制完整 ID')})`}
+        onClick={(e) => {
+          e.stopPropagation()
+          if (taskId) {
+            void navigator.clipboard.writeText(taskId)
+            toast.success(t('table.idCopied', '已复制任务 ID'))
+          }
+        }}
+      >
+        #{shortId}
+      </button>
+    )
+  }
+
+  function renderInitiatorCell(task: TaskRecord) {
+    const raw = task.meta?.initiator || (task.meta?.actor ? `User (${task.meta.actor})` : '')
+    const info = parseInitiator(raw)
+
+    return (
+      <div className="flex items-center gap-1.5 whitespace-nowrap text-xs text-muted-foreground">
+        {info.isAgent ? (
+          <BotIcon className="size-3.5 text-cyan-500/90 shrink-0" />
+        ) : (
+          <UserIcon className="size-3.5 text-muted-foreground/80 shrink-0" />
+        )}
+        <span className="truncate max-w-24" title={raw || info.name}>
+          {info.name}
+        </span>
       </div>
     )
   }
@@ -178,12 +205,14 @@ export function TasksTable({
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/20 hover:bg-muted/20">
-              <TableHead>{t('table.task')}</TableHead>
-              <TableHead>{t('table.type')}</TableHead>
-              <TableHead>{t('table.resource')}</TableHead>
-              <TableHead>{t('pipeline.pipelineHeader')}</TableHead>
-              <TableHead className="text-right">{t('table.createdAt')}</TableHead>
+            <TableRow className="bg-muted/20 hover:bg-muted/20 h-9">
+              <TableHead className="min-w-40">{t('table.task')}</TableHead>
+              <TableHead className="w-24 whitespace-nowrap">{t('table.type')}</TableHead>
+              <TableHead className="w-28 whitespace-nowrap">{t('table.taskId', '任务编号')}</TableHead>
+              <TableHead className="w-32 whitespace-nowrap">{t('table.initiator', '提交方')}</TableHead>
+              <TableHead className="min-w-36">{t('table.resource')}</TableHead>
+              <TableHead className="min-w-44">{t('pipeline.pipelineHeader')}</TableHead>
+              <TableHead className="w-36 text-right whitespace-nowrap">{t('table.createdAt')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -195,8 +224,7 @@ export function TasksTable({
                   tabIndex={taskId ? 0 : undefined}
                   aria-label={taskId ? t('detail.openLabel', { taskId }) : undefined}
                   className={cn(
-                    taskId &&
-                      'cursor-pointer outline-none hover:bg-muted/35 focus-visible:bg-muted/35 focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-inset transition-colors',
+                    'h-10 cursor-pointer outline-none hover:bg-muted/35 focus-visible:bg-muted/35 focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-inset transition-colors',
                     taskId && (taskId === selectedTaskId || taskId === urlTaskId) && 'ring-1 ring-cyan-500/80 bg-cyan-500/5 dark:bg-cyan-500/10',
                   )}
                   onClick={() => {
@@ -209,25 +237,30 @@ export function TasksTable({
                     }
                   }}
                 >
-                  <TableCell>
+                  <TableCell className="py-2">
                     <TaskHumanCell
                       task={task}
                       index={index}
                       pageOffset={pageOffset}
-                      onOpenDeliverable={onOpenDeliverable}
                     />
                   </TableCell>
-                  <TableCell className="text-xs font-medium text-foreground/90 whitespace-nowrap">
+                  <TableCell className="py-2 text-xs font-medium text-foreground/90 whitespace-nowrap">
                     {task.task_type
                       ? t(`types.${task.task_type}`, {
                           defaultValue: task.task_type,
                         })
                       : '-'}
                   </TableCell>
-                  <TableCell className="max-w-72">
+                  <TableCell className="py-2 whitespace-nowrap">
+                    {renderTaskIdCell(task)}
+                  </TableCell>
+                  <TableCell className="py-2 whitespace-nowrap">
+                    {renderInitiatorCell(task)}
+                  </TableCell>
+                  <TableCell className="py-2">
                     {renderTaskResourceCell(task)}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-2">
                     <TaskExecutionCell
                       task={task}
                       allTasks={allTasks}
@@ -238,7 +271,7 @@ export function TasksTable({
                       isDeleting={isDeleting}
                     />
                   </TableCell>
-                  <TableCell className="whitespace-nowrap text-right text-muted-foreground">
+                  <TableCell className="py-2 whitespace-nowrap text-right font-mono text-[11px] text-muted-foreground">
                     {formatTime(task)}
                   </TableCell>
                 </TableRow>

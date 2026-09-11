@@ -87,6 +87,30 @@
 | **Card-Satellite-MCP-Fix** | **卫星 MCP 并行超时根除、FastMCP 异步卸载与 tree/relations 路由修复** | 1. 宿主配置超时由 5s 升级标定为 30s (30000ms)，消灭预算错位与 -32001；<br>2. FastMCP 同步工具双轨包装：传给 FastMCP 的是 async 线程池卸载函数 (`asyncio.to_thread`)，解除 stdio 事件循环卡死；<br>3. 重型检索池 (`find`/`search`/`smart_read`) 引入进程内 `asyncio.Semaphore(2)` 保护；<br>4. 后端支持 POST `/api/v1/fs/tree` 并双向兼容 GET，消灭 405；<br>5. 后端注册 `relations_router` 并守卫 `VikingFS.relations` 缺失降级，消灭 404/500；<br>6. 严格守卫单文件 ≤500 行安全红线与 11 项全量单测 PASS。 | 4 工具并发调用 5.94s 成功，消灭 -32001，tree 真实返回 280KB+，relations 返回 200 OK，pytest 11 项全绿 | `P0` | `v1.4.96` | [x] 已验收通过 ✅ |
 | **Card-Harness-DefensiveAndPurge** | **全系统防御性代码显式标注 (`@defensive`) 与“死机制”大扫除** | 1. 吸收字节《HarnessDev》(18/108幽灵代码) 与 CPA 可达性契约，为 FRP 重连、SQLite 降级等防御性底牌添加显式 `@defensive` 注解；<br>2. 静态分析不可达且无 `@defensive` 标注的冗余 Wrapper/伪监听类坚决物理切除；<br>3. 消除“写了以为在用实际触发 0 次”的代码杂质，誓死捍卫系统防御性韧性。 | 核心防御代码 100% 显式标注，切除冗余死机制包装层，代码向黄金区收敛 | `P0` | `v1.4.95` | [x] 已验收通过 ✅ |
 | **Card-Tasks-HighDensity-And-Terminology** | **任务中心回归高密度纯列表与「原子入库」统一命名** | 1. 顺应座舱最高信息密度原则，彻底切除低密卡片视图切换与底部多余折叠抽屉 (`system-ops-view`)；<br>2. 任务路由 (`route.tsx`) 收敛至 ~100 行纯高密度单列表；<br>3. 彻底肃清历史遗留的“轻量增量入库”、“清增量入库”、“托管入库”，全系统后端路由、前端单元格、交付物解析与多语言统一命名为标准 4 字「原子入库」(`Atomic Ingestion`)；<br>4. 35 套前端测试 167 项与后端 pytest 全绿，Vite 编译通过，实机截图验证通过。 | 任务中心纯高密度列表展示，彻底消除卡片模式和冗余底部面板，所有入库任务 100% 统一为「原子入库」 | `P0` | `v1.4.96` | [x] 已验收通过 ✅ |
+| **Card-Tasks-SingleRow-Standardization** | **任务中心严格单行高密度重构、标题去冗余与成果物直达抽屉收拢治理** | 1. 严格落实单行高密度原则 (Single Row)，消除上下折叠多层堆叠，各任务类型行高统一收敛为标准 40px；<br>2. 彻底剥离任务标题中的各类 Emoji (如 📥) 与冗余冒号前缀 (如 "资源处理:", "原子入库：")；<br>3. 表格重构为规范 7 列：任务名称、类型、任务编号 (#shortId)、提交方 (Bot/User 图标+名称)、关联资源 (单行等宽截断)、执行状态与进度、创建时间；<br>4. 成果物直达彻底从列表行移出，收拢至任务详情抽屉顶部专用高密卡片，支持一键复制与外部打开；<br>5. 36 套前端单测 173 项 100% PASS，Vite 构建 PASS，实机截图验证通过。 | 列表严格单行整齐划一，标题纯净无冗余，7列规范各司其职，抽屉成果物直达优雅呈现 | `P0` | `v1.4.97` | [x] 已验收通过 ✅ |
+
+### 📌 P0: [x] Card-Tasks-SingleRow-Standardization (v1.4.97): 任务中心严格单行高密度重构、标题去冗余与成果物直达抽屉收拢治理 ✅
+- **类型**：Task Center Standardization / Single-Row High Density / Drawer Deliverable Alignment ｜ **优先级**：🔥 P0（已交付闭环）
+- **交付版本**：`v1.4.97` ｜ **交付时间**：2026-09-11
+- **核心治理成果与交付细节**：
+  1. **严格落实单行高密度布局 (Single-Row ~40px)**：
+     - 彻底切除第一列下方的 Initiator、ID 与成果物链接等上下多层堆叠，消灭行高参差不齐缺陷；
+     - 彻底切除关联资源列内部垂直堆叠的“文件名+大小+URI”结构，收敛为严格单行文本截断；
+     - 表格各行统一标定 `h-10` 高度与 `py-2` 内边距，呈现出如 Bloomberg 控制台般严谨的单行秩序感。
+  2. **任务标题去冗余与 Emoji 彻底肃清**：
+     - 前端 `cleanTaskTitle` 注入双重清洗过滤：切除全部开头 Emoji（如 📥, 📦 等）与全部类型动作冒号前缀（如 `资源处理：`, `原子入库：`, `技能注册：` 等）；
+     - 后端与场景数据生成脚本 `populate_realistic_scenario_tasks.py` 彻底切除前缀与 Emoji，标题回归纯粹业务与实体名称。
+  3. **规范 7 列结构解耦与一等公民列**：
+     - **任务编号 (#shortId)** 单独立列：等宽字体，支持一键复制与 hover 查看完整 ID；
+     - **提交方 (Initiator)** 单独立列：展示机器 `BotIcon` / 人类 `UserIcon` 与规范名称（`Gemini Flash`, `Admin`, `Antigravity` 等）；
+     - **关联资源**：单行等宽截断展示，hover 浮层展示完整路径，无则展示 `--`。
+  4. **成果物直达收拢至抽屉 (Drawer) 专区**：
+     - 列表表格行不再充斥杂乱的“成果物直达”按钮；
+     - 统一收拢至 `TaskOverviewGrid` 抽屉顶部，渲染冰青高密卡片，包含 Web URL / VikingFS 徽标、完整地址一键复制及新窗口打开外链。
+  5. **双轨全量单测与构建验证**：
+     - 36 套测试套件 173 项单元测试 100% PASS（含 `task-ten-types-compatibility.test.ts` 与 `component-inventory.test.ts`）；
+     - `npm run build` 生产编译通过；
+     - 1933 端口实机截图走查核验通过。
 | **Card-Verify-MultiMetricGate** | **交付物多维物理验真门禁（内容哈希 + 增量覆盖率，防 Exit 0 作弊）** | 1. 吸收字节《Aspire》虚假闭环教训与 Goodhart 定律防范，重构 Task Completion 判定；<br>2. 代码开发类任务强制双重物理验真：`Diff 变更行数 > 0` 且关键集成测试真实通过；<br>3. 阻断 Agent 通过 mock、swallow 异常或加空注释伪造 `Exit 0` 宣布交付。 | 任务中心物理验真断言生效，虚假 Exit 0 100% 拦截，任务流转真实可信 | `P2` | `v1.4.97` | ⏳ 待排期 |
 | **Card-Metrics-AgentSensors** | **智能体三维效能探针（Token SNR、P@5 召回精度、人工介入率）** | 1. 落地 CPA 导师核心建言“先立度量再动架构，给系统一把恒定的物理标尺”；<br>2. 在 OpenViking Studio 观测大盘埋设三大物理探针：Token 有效载荷率 SNR、记忆召回命中率 P@5、人类纠偏介入率；<br>3. 终结架构改造效果的定性口水战，全部以数字化客观曲线驱动演进。 | Studio 观测大盘透传三大物理指标，每日会话自动统计，指标真实可靠 | `P1` | `v1.4.98` | ⏳ 待排期 |
 
