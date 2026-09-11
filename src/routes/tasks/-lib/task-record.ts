@@ -84,7 +84,8 @@ function formatClientName(client: string): string {
   const map: Record<string, string> = {
     antigravity: 'Antigravity',
     workbuddy: 'WorkBuddy',
-    mimocode: 'MimoCode',
+    mimocode: 'XiaomiMo',
+    xiaomimo: 'XiaomiMo',
     openclaw: 'OpenClaw',
     hermes: 'Hermes',
   }

@@ -70,8 +70,15 @@ describe('task record helpers', () => {
     expect(parseInitiator('mimocode@3070')).toEqual({
       isAgent: true,
       isUser: false,
-      name: '[3070] MimoCode',
+      name: '[3070] XiaomiMo',
       raw: 'mimocode@3070',
+    })
+
+    expect(parseInitiator('xiaomimo@2080ti')).toEqual({
+      isAgent: true,
+      isUser: false,
+      name: '[2080TI] XiaomiMo',
+      raw: 'xiaomimo@2080ti',
     })
 
     expect(parseInitiator('openclaw.researcher@2080ti')).toEqual({
