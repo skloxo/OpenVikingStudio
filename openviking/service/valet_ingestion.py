@@ -93,7 +93,7 @@ class ValetIngestionEngine:
             title_summary = title_summary[:-3]
         if not title_summary:
             title_summary = content[:24].replace("\n", " ").strip()
-        human_title = f"📥 原子入库：{title_summary}"
+        human_title = title_summary
 
         ticket = ValetTicket(
             ticket_id=ticket_id,
@@ -223,7 +223,7 @@ class ValetIngestionEngine:
             title_summary = title_summary[:-3]
         if not title_summary:
             title_summary = content[:24].replace("\n", " ").strip()
-        human_title = f"📥 原子入库：{title_summary}"
+        human_title = title_summary
 
         if task_tracker is not None:
             try:

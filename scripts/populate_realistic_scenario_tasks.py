@@ -34,7 +34,7 @@ SCENARIOS = [
     {
         "task_id": "biz_valet_arch_rfc",
         "task_type": "valet_parking",
-        "human_title": "📥 原子入库：2026-09-11_BM25混合检索设计RFC.md",
+        "human_title": "2026-09-11_BM25混合检索设计RFC.md",
         "initiator": "Agent (Gemini Flash)",
         "status": "completed",
         "resource_id": "viking://resources/staging/BM25混合检索设计RFC.md",
@@ -61,7 +61,7 @@ SCENARIOS = [
     {
         "task_id": "biz_valet_running_probe",
         "task_type": "valet_parking",
-        "human_title": "📥 原子入库：system_telemetry_patch.py",
+        "human_title": "system_telemetry_patch.py",
         "initiator": "Agent (Claude 3.7)",
         "status": "running",
         "resource_id": "viking://resources/staging/system_telemetry_patch.py",
@@ -77,7 +77,7 @@ SCENARIOS = [
     {
         "task_id": "biz_res_fastapi_guide",
         "task_type": "add_resource",
-        "human_title": "资源处理：FastAPI_Production_Architect.pdf",
+        "human_title": "FastAPI_Production_Architect.pdf",
         "initiator": "User (Admin)",
         "status": "completed",
         "resource_id": "viking://resources/docs/FastAPI_Production_Architect.pdf",
@@ -101,7 +101,7 @@ SCENARIOS = [
     {
         "task_id": "biz_res_running_embed",
         "task_type": "add_resource",
-        "human_title": "资源处理：Kubernetes_Operator_DeepDive.epub",
+        "human_title": "Kubernetes_Operator_DeepDive.epub",
         "initiator": "Agent (Gemini Flash)",
         "status": "running",
         "resource_id": "viking://resources/books/Kubernetes_Operator_DeepDive.epub",
@@ -119,7 +119,7 @@ SCENARIOS = [
     {
         "task_id": "biz_sess_refactor_commit",
         "task_type": "session_commit",
-        "human_title": "会话归档：任务中心高密度重构与双轨闭环研讨",
+        "human_title": "任务中心高密度重构与双轨闭环研讨",
         "initiator": "Agent (Antigravity)",
         "status": "completed",
         "resource_id": "viking://sessions/89d09337-0a9c-4e17-b599-8011f587afa6",
@@ -142,7 +142,7 @@ SCENARIOS = [
     {
         "task_id": "biz_skill_bm25_import",
         "task_type": "add_skill",
-        "human_title": "技能注册：bm25-hybrid-retrieval",
+        "human_title": "bm25-hybrid-retrieval",
         "initiator": "User (Admin)",
         "status": "completed",
         "resource_id": "viking://skills/bm25-hybrid-retrieval/SKILL.md",
@@ -165,7 +165,7 @@ SCENARIOS = [
     {
         "task_id": "biz_conn_feishu_wiki",
         "task_type": "connector_import",
-        "human_title": "连接器导入：飞书知识库「量化风控投研规约」",
+        "human_title": "飞书知识库「量化风控投研规约」",
         "initiator": "Agent (Scheduler)",
         "status": "completed",
         "resource_id": "https://open.feishu.cn/wiki/wikcnAbCdEf123456",
@@ -187,7 +187,7 @@ SCENARIOS = [
     {
         "task_id": "biz_reindex_master_memory",
         "task_type": "admin_reindex",
-        "human_title": "全量索引与切片重构：master_memory",
+        "human_title": "master_memory",
         "initiator": "User (Admin)",
         "status": "completed",
         "resource_id": "viking://resources/master_memory",
@@ -207,7 +207,7 @@ SCENARIOS = [
     {
         "task_id": "biz_restore_v1495",
         "task_type": "snapshot_restore_reindex",
-        "human_title": "快照恢复索引：snap_v1.4.95_release",
+        "human_title": "snap_v1.4.95_release",
         "initiator": "User (Admin)",
         "status": "completed",
         "resource_id": "viking://snapshots/snap_v1.4.95_release",
@@ -224,7 +224,7 @@ SCENARIOS = [
     {
         "task_id": "biz_mig_clawhub_v1",
         "task_type": "legacy_migration",
-        "human_title": "旧数据迁移：clawhub_v1_legacy_store",
+        "human_title": "clawhub_v1_legacy_store",
         "initiator": "Agent (System Migrator)",
         "status": "completed",
         "resource_id": "viking://system/legacy/clawhub_v1",
@@ -240,7 +240,7 @@ SCENARIOS = [
     {
         "task_id": "biz_clean_temp_scratch",
         "task_type": "legacy_cleanup",
-        "human_title": "旧数据清理：staging_scratch_purging",
+        "human_title": "staging_scratch_purging",
         "initiator": "Agent (Cron Purger)",
         "status": "completed",
         "resource_id": "viking://staging/temp",
@@ -256,7 +256,7 @@ SCENARIOS = [
     {
         "task_id": "biz_del_sandbox_test_user",
         "task_type": "user_delete",
-        "human_title": "用户空间注销：sandbox_test_user",
+        "human_title": "sandbox_test_user",
         "initiator": "User (Admin)",
         "status": "completed",
         "resource_id": "viking://user/sandbox_test_user",

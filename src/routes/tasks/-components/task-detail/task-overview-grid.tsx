@@ -5,15 +5,18 @@ import {
   ChevronRightIcon,
   CircleDashedIcon,
   CopyIcon,
+  ExternalLinkIcon,
   FileJson2Icon,
   FolderSearch2Icon,
   Layers3Icon,
   LoaderCircleIcon,
   RefreshCwIcon,
+  SparklesIcon,
   TimerResetIcon,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { cn } from '#/lib/utils'
 import { formatTaskDuration } from '#/routes/tasks/-lib/task-time'
@@ -36,9 +39,63 @@ interface TaskOverviewGridProps {
 export function TaskOverviewGrid({ task }: TaskOverviewGridProps) {
   const { i18n, t } = useTranslation('tasksPage')
   const status = normalizeTaskStatus(task.status)
+  const meta = task.meta && typeof task.meta === 'object' ? task.meta : {}
+  const deliverableUri =
+    (typeof meta.deliverable_uri === 'string' && meta.deliverable_uri) ||
+    (typeof meta.deliverable_url === 'string' && meta.deliverable_url) ||
+    (meta.deliverable && typeof meta.deliverable === 'object' && typeof meta.deliverable.uri === 'string' && meta.deliverable.uri) ||
+    (task.result && typeof task.result === 'object' && typeof (task.result as Record<string, any>).deliverable_uri === 'string' && (task.result as Record<string, any>).deliverable_uri) ||
+    (status === 'completed' && task.resource_id ? task.resource_id : null)
 
   return (
     <>
+      {status === 'completed' && deliverableUri ? (
+        <div className="rounded-xl border border-cyan-500/30 bg-cyan-500/5 p-3.5 flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <SparklesIcon className="size-4 text-cyan-500 shrink-0" />
+              <span className="text-xs font-semibold text-foreground">
+                {t('deliverableCard.title', '成果物直达')}
+              </span>
+              <Badge
+                variant="outline"
+                className="text-[11px] px-1.5 py-0 h-4 border-cyan-500/40 text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 font-mono shrink-0"
+              >
+                {deliverableUri.startsWith('http') ? 'Web URL' : 'VikingFS'}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Button
+                variant="ghost"
+                size="xs"
+                className="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground cursor-pointer"
+                onClick={() => {
+                  void navigator.clipboard.writeText(deliverableUri)
+                  toast.success(t('deliverableCard.copied', '已复制成果物地址'))
+                }}
+              >
+                <CopyIcon className="size-3 mr-1" />
+                {t('deliverableCard.copyUri', '复制地址')}
+              </Button>
+              {deliverableUri.startsWith('http') ? (
+                <Button
+                  variant="outline"
+                  size="xs"
+                  className="h-6 px-2 text-[11px] border-cyan-500/40 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10 cursor-pointer"
+                  onClick={() => window.open(deliverableUri, '_blank', 'noopener,noreferrer')}
+                >
+                  <ExternalLinkIcon className="size-3 mr-1" />
+                  {t('deliverableCard.openExternal', '新窗口打开')}
+                </Button>
+              ) : null}
+            </div>
+          </div>
+          <div className="rounded-lg bg-background/60 border border-border/40 p-2 font-mono text-xs text-foreground/90 select-all break-all">
+            {deliverableUri}
+          </div>
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-2 gap-2">
         <DetailField
           icon={<ActivityIcon />}
