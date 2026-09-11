@@ -128,12 +128,21 @@ def get_resolved_actor_peer(default_client: str = "antigravity") -> str:
             node = "3070" if "3070" in hname else ("2080ti" if ("2080" in hname or Path("/mnt/c").exists()) else (hname.split(".")[0] or "linux"))
     client = os.environ.get("OPENVIKING_CLIENT", "").strip().lower()
     if not client:
-        proc_str = (" ".join(sys.argv) + " " + os.getcwd()).lower()
-        for candidate in ("antigravity", "workbuddy", "mimocode", "openclaw", "hermes"):
-            if candidate in proc_str:
-                client = candidate
-                break
-        client = client or default_client
+        proc_str = (sys.executable + " " + " ".join(sys.argv) + " " + os.getcwd()).lower()
+        env_dump = (" ".join(os.environ.keys()) + " " + " ".join(os.environ.values())).lower()
+        full_ctx = proc_str + " " + env_dump
+        if any(x in full_ctx for x in ("antigravity", "gemini")):
+            client = "antigravity"
+        elif any(x in full_ctx for x in ("workbuddy", "codebuddy")):
+            client = "workbuddy"
+        elif "mimocode" in full_ctx:
+            client = "mimocode"
+        elif "openclaw" in full_ctx:
+            client = "openclaw"
+        elif "hermes" in full_ctx:
+            client = "hermes"
+        else:
+            client = default_client
     clean_client = re.sub(r"[^a-zA-Z0-9_.-]", "", client) or default_client
     clean_node = re.sub(r"[^a-zA-Z0-9_-]", "", node) or "local"
     return f"{clean_client}@{clean_node}"
