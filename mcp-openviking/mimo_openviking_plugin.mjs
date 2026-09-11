@@ -74,34 +74,39 @@ function pruneCache() {
   }
 }
 
+function extractTextFromPart(p) {
+  if (!p) return "";
+  if (typeof p === "string") return p;
+  if (typeof p.text === "string" && p.text.trim()) return p.text.trim();
+  if (typeof p.content === "string" && p.content.trim()) return p.content.trim();
+  if (typeof p.value === "string" && p.value.trim()) return p.value.trim();
+  return "";
+}
+
 function extractCleanQuery(parts, rawContent) {
-  let text = "";
+  const candidates = [];
   if (Array.isArray(parts)) {
-    const validParts = [];
     for (const p of parts) {
-      if (p?.type !== "text" || typeof p?.text !== "string") continue;
-      const s = p.text.trim();
-      if (!s) continue;
-      if (s.includes("【OpenViking 核心记忆预取")) continue;
-      // Strip any embedded system reminders
+      const s = extractTextFromPart(p);
+      if (!s || s.includes("【OpenViking 核心记忆预取")) continue;
       const cleaned = s
         .replace(/<system-reminder>[\s\S]*?<\/system-reminder>/gi, "")
         .replace(/【OpenViking 核心记忆预取[\s\S]*?💡 协同契约[^\n]*/g, "")
         .trim();
-      if (cleaned) validParts.push(cleaned);
+      if (cleaned) candidates.push(cleaned);
     }
-    text = validParts.join("\n").trim();
   }
 
-  if (!text) {
-    const raw = typeof rawContent === "string" ? rawContent : "";
-    text = raw
+  if (candidates.length === 0 && rawContent) {
+    const raw = typeof rawContent === "string" ? rawContent : (typeof rawContent === "object" ? JSON.stringify(rawContent) : "");
+    const cleaned = raw
       .replace(/<system-reminder>[\s\S]*?<\/system-reminder>/gi, "")
       .replace(/【OpenViking 核心记忆预取[\s\S]*?💡 协同契约[^\n]*/g, "")
       .trim();
+    if (cleaned) candidates.push(cleaned);
   }
 
-  return text;
+  return candidates.join("\n").trim();
 }
 
 async function fetchMemory(api, key, peer, query) {
@@ -261,21 +266,26 @@ export default {
           return;
         }
 
+        const info = lastUserMsg.info ?? lastUserMsg;
+        const parts = Array.isArray(lastUserMsg.parts) ? lastUserMsg.parts : (Array.isArray(info.parts) ? info.parts : null);
+        const rawContent = lastUserMsg.content || info.content || lastUserMsg.text || info.text || "";
+
         // Check if memory has already been injected into this message
-        const alreadyInjected = Array.isArray(lastUserMsg.parts)
-          ? lastUserMsg.parts.some((p) => typeof p?.text === "string" && p.text.includes("【OpenViking 核心记忆预取"))
-          : typeof lastUserMsg.content === "string" && lastUserMsg.content.includes("【OpenViking 核心记忆预取");
+        const alreadyInjected = parts
+          ? parts.some((p) => typeof p?.text === "string" && p.text.includes("【OpenViking 核心记忆预取"))
+          : typeof rawContent === "string" && rawContent.includes("【OpenViking 核心记忆预取");
 
         if (alreadyInjected) {
           log("[HOOK:messages.transform] memory already injected");
           return;
         }
 
-        const query = extractCleanQuery(lastUserMsg.parts, lastUserMsg.content || lastUserMsg.text);
+        const query = extractCleanQuery(parts, rawContent);
         log(`[HOOK:messages.transform] extracted query="${query.slice(0, 60)}"`);
         if (!query || isStepWord(query)) return;
 
-        const cached = memoryCache.get(`query::${query.slice(0, 256)}`);
+        const cacheKey = `query::${query.slice(0, 256)}`;
+        const cached = memoryCache.get(cacheKey);
         let mem = "";
         if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
           mem = cached.text;
@@ -283,24 +293,28 @@ export default {
         } else {
           mem = await fetchMemory(cfg.api, cfg.key, cfg.peer, query);
           if (mem && mem.includes("OpenViking")) {
-            memoryCache.set(`query::${query.slice(0, 256)}`, { text: mem, ts: Date.now() });
+            memoryCache.set(cacheKey, { text: mem, ts: Date.now() });
             pruneCache();
           }
         }
 
         if (mem && mem.includes("OpenViking")) {
-          if (Array.isArray(lastUserMsg.parts)) {
-            lastUserMsg.parts.unshift({
+          // Inject into the correct container (parts preferred, else content)
+          if (Array.isArray(parts)) {
+            parts.unshift({
               type: "text",
               text: `${mem}\n\n`
             });
-            log("[HOOK:messages.transform] injected into lastUserMsg.parts");
+            log("[HOOK:messages.transform] injected into parts unshift");
           } else if (typeof lastUserMsg.content === "string") {
             lastUserMsg.content = `${mem}\n\n${lastUserMsg.content}`;
             log("[HOOK:messages.transform] injected into lastUserMsg.content");
+          } else if (typeof info.content === "string") {
+            info.content = `${mem}\n\n${info.content}`;
+            log("[HOOK:messages.transform] injected into info.content");
           } else {
             lastUserMsg.parts = [{ type: "text", text: `${mem}\n\n` }];
-            log("[HOOK:messages.transform] initialized parts and injected");
+            log("[HOOK:messages.transform] created lastUserMsg.parts and injected");
           }
         }
       },
@@ -308,20 +322,11 @@ export default {
       "experimental.chat.system.transform": async (input, output) => {
         log("[HOOK:system.transform] called");
         const sessionID = input?.sessionID || "default";
-        let mem = sessionMemory.get(sessionID) || "";
-        if (!mem && memoryCache.size > 0) {
-          for (const entry of memoryCache.values()) {
-            if (Date.now() - entry.ts < CACHE_TTL_MS) {
-              mem = entry.text;
-              break;
-            }
-          }
-        }
-        if (mem && mem.includes("OpenViking")) {
-          if (Array.isArray(output.system)) {
-            output.system.push(mem);
-            log("[HOOK:system.transform] injected memory to output.system");
-          }
+        const mem = sessionMemory.get(sessionID) || "";
+        // Only inject if sessionMemory matches current session; never cross-contaminate from generic cache
+        if (mem && mem.includes("OpenViking") && Array.isArray(output.system)) {
+          output.system.push(mem);
+          log("[HOOK:system.transform] injected memory to output.system");
         }
       },
 
