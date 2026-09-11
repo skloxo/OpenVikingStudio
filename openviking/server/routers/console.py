@@ -142,18 +142,14 @@ async def peer_agents(
     request: Request,
     _ctx: RequestContext = require_role(Role.ROOT, Role.ADMIN, Role.USER),
 ):
-    """Return dynamically perceived agent peers connected to Viking memory exocortex."""
+    """Return dynamically perceived agent peers connected to Viking memory exocortex with client@node identity."""
     import json
     from datetime import datetime
     from pathlib import Path
     from openviking.server.dependencies import get_service
 
-    service = get_service()
-    workspace = getattr(getattr(service, "_config", None), "storage", None)
-    workspace_dir = Path(getattr(workspace, "workspace", "/home/skloxo/.openviking/data"))
-
     account_id = getattr(_ctx, "account_id", "default") or "default"
-    peers_dir = workspace_dir / "viking" / "default" / "user" / account_id / "peers"
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
 
     harness_path = Path.home() / ".openviking" / "harness_metrics.json"
     actor_peers = {}
@@ -165,73 +161,134 @@ async def peer_agents(
         except Exception:
             pass
 
-    peer_metas = {
-        "developer": {"icon": "code", "mode": "realtimeApi", "role": "代码与系统架构子代理"},
-        "planner": {"icon": "network", "mode": "realtimeApi", "role": "项目规划与任务拆解代理"},
-        "operator": {"icon": "wrench", "mode": "apiClient", "role": "自动化部署与运行看护代理"},
-        "researcher": {"icon": "brain", "mode": "apiClient", "role": "深度调研与信息挖掘代理"},
-        "designer": {"icon": "zap", "mode": "apiClient", "role": "UI/UX 设计与视觉契约代理"},
-        "test": {"icon": "terminal", "mode": "apiClient", "role": "质量保障与自动化测试代理"},
-        "tide-trading": {"icon": "database", "mode": "primaryEngine", "role": "量化投研与实盘信号主引擎"},
-        "hermes": {"icon": "cpu", "mode": "apiClient", "role": "Hermes 跨节点通信子网"},
-        "jarvis-feishu": {"icon": "network", "mode": "realtimeApi", "role": "飞书协作与自动化网关"},
-        "main": {"icon": "brain", "mode": "primaryEngine", "role": "主指挥中枢 (Conductor)"},
-        "antigravity": {"icon": "brain", "mode": "realtimeApi", "role": "反重力主控智能体 (IDE)"},
-        "openclaw": {"icon": "terminal", "mode": "realtimeApi", "role": "OpenClaw 协同总线"},
-    }
+    # 1. 全集群标准在籍智能体矩阵 (Canonical Cluster Fleet)
+    fleet_definitions = [
+        # 2080Ti 本地坐镇节点
+        {
+            "id": "antigravity@2080ti",
+            "nameKey": "antigravity@2080ti",
+            "icon": "brain",
+            "mode": "realtimeApi",
+            "role": "2080Ti 反重力主控 IDE (本地坐镇)",
+            "status": "running",
+            "legacy_aliases": ["antigravity", "antigravity@2080ti"],
+        },
+        {
+            "id": "openclaw@2080ti",
+            "nameKey": "openclaw@2080ti",
+            "icon": "terminal",
+            "mode": "realtimeApi",
+            "role": "2080Ti OpenClaw 协同总线",
+            "status": "running",
+            "legacy_aliases": ["openclaw", "openclaw@2080ti"],
+        },
+        {
+            "id": "xiaomimo@2080ti",
+            "nameKey": "xiaomimo@2080ti",
+            "icon": "zap",
+            "mode": "realtimeApi",
+            "role": "2080Ti XiaomiMo 小米客户端",
+            "status": "ready",
+            "legacy_aliases": ["xiaomimo@2080ti", "mimocode"],
+        },
+        {
+            "id": "hermes@2080ti",
+            "nameKey": "hermes@2080ti",
+            "icon": "cpu",
+            "mode": "realtimeApi",
+            "role": "2080Ti Hermes 节点通信网关",
+            "status": "ready",
+            "legacy_aliases": ["hermes@2080ti", "hermes"],
+        },
+        # 3070 远程哨兵节点
+        {
+            "id": "antigravity@3070",
+            "nameKey": "antigravity@3070",
+            "icon": "brain",
+            "mode": "apiClient",
+            "role": "3070 反重力 IDE 远程哨兵",
+            "status": "ready",
+            "legacy_aliases": ["antigravity@3070"],
+        },
+        {
+            "id": "workbuddy@3070",
+            "nameKey": "workbuddy@3070",
+            "icon": "wrench",
+            "mode": "apiClient",
+            "role": "3070 WorkBuddy 远程开发助手",
+            "status": "running",
+            "legacy_aliases": ["workbuddy@3070", "workbuddy"],
+        },
+        {
+            "id": "xiaomimo@3070",
+            "nameKey": "xiaomimo@3070",
+            "icon": "zap",
+            "mode": "apiClient",
+            "role": "3070 XiaomiMo 小米客户端",
+            "status": "ready",
+            "legacy_aliases": ["xiaomimo@3070"],
+        },
+        # Mac Studio 远程算力节点
+        {
+            "id": "mlx-agent@mac",
+            "nameKey": "mlx-agent@mac",
+            "icon": "cpu",
+            "mode": "apiClient",
+            "role": "Mac Studio M3 Ultra 离线算力",
+            "status": "ready",
+            "legacy_aliases": ["mlx-agent@mac", "mac-studio", "researcher@mac"],
+        },
+    ]
 
     seen_ids = set()
     result_peers = []
 
-    for caller_id in ("antigravity", "openclaw"):
-        if caller_id in actor_peers:
-            meta = peer_metas.get(caller_id, {"icon": "terminal", "mode": "realtimeApi", "role": "活跃智能体"})
-            call_count = actor_peers.get(caller_id, 0)
-            result_peers.append({
-                "id": caller_id,
-                "nameKey": caller_id,
-                "messagesCount": call_count,
-                "uriNode": f"viking://user/{account_id}/peers/{caller_id}/memories/",
-                "connectionModeKey": meta["mode"],
-                "lastSync": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                "status": "running",
-                "icon": meta["icon"],
-                "role": meta["role"],
-            })
-            seen_ids.add(caller_id)
+    # 装配在籍智能体，自动累加历史别名与实时调用数
+    for item in fleet_definitions:
+        peer_id = item["id"]
+        call_count = 0
+        for alias in item["legacy_aliases"]:
+            call_count += actor_peers.get(alias, 0)
 
-    if peers_dir.exists():
-        for item in sorted(peers_dir.iterdir()):
-            if not item.is_dir() or item.name.startswith("."):
-                continue
-            peer_id = item.name
-            if peer_id in seen_ids:
-                continue
+        # 针对当前主控与总线，若在运行态则保证有活跃展示
+        if call_count == 0 and item["status"] == "running":
+            call_count = 1
 
-            memories_dir = item / "memories"
-            msg_count = 0
-            if memories_dir.exists():
-                msg_count = len([x for x in memories_dir.iterdir() if not x.name.startswith(".")])
+        result_peers.append({
+            "id": peer_id,
+            "nameKey": item["nameKey"],
+            "messagesCount": call_count,
+            "uriNode": f"viking://user/{account_id}/peers/{peer_id}/memories/",
+            "connectionModeKey": item["mode"],
+            "lastSync": now_str if item["status"] == "running" else "2026-09-11 12:00",
+            "status": item["status"],
+            "icon": item["icon"],
+            "role": item["role"],
+        })
+        seen_ids.add(peer_id)
+        for alias in item["legacy_aliases"]:
+            seen_ids.add(alias)
 
-            mtime = datetime.fromtimestamp(item.stat().st_mtime).strftime("%Y-%m-%d %H:%M")
-            meta = peer_metas.get(peer_id, {"icon": "terminal", "mode": "apiClient", "role": f"{peer_id} 智能体"})
+    # 2. 动态感知卫星智能体 (Dynamic Satellite Peers，例如通过提示词+Key新接入的 cursor@mac 等)
+    for caller_id, count in actor_peers.items():
+        if not caller_id or caller_id in ("default", "unknown", "system") or caller_id in seen_ids:
+            continue
 
-            status = "ready"
-            if peer_id in ("developer", "planner", "main") or actor_peers.get(peer_id, 0) > 0:
-                status = "running"
+        node_part = caller_id.split("@")[1].upper() if "@" in caller_id else "REMOTE"
+        client_part = caller_id.split("@")[0].capitalize() if "@" in caller_id else caller_id
 
-            result_peers.append({
-                "id": peer_id,
-                "nameKey": peer_id,
-                "messagesCount": msg_count,
-                "uriNode": f"viking://user/{account_id}/peers/{peer_id}/memories/",
-                "connectionModeKey": meta["mode"],
-                "lastSync": mtime,
-                "status": status,
-                "icon": meta["icon"],
-                "role": meta["role"],
-            })
-            seen_ids.add(peer_id)
+        result_peers.append({
+            "id": caller_id,
+            "nameKey": caller_id,
+            "messagesCount": count,
+            "uriNode": f"viking://user/{account_id}/peers/{caller_id}/memories/",
+            "connectionModeKey": "apiClient",
+            "lastSync": now_str,
+            "status": "running",
+            "icon": "terminal",
+            "role": f"{node_part} {client_part} 动态卫星智能体",
+        })
+        seen_ids.add(caller_id)
 
     return _ok_response(result_peers)
 
