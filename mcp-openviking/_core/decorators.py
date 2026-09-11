@@ -16,6 +16,23 @@ from typing import Any, Callable, Optional
 from mcp.server.fastmcp import FastMCP
 from .config import SATELLITE_ALLOWED_TOOLS
 
+# Pydantic 2.9+ / FastMCP 1.29+ compatibility shim
+try:
+    import mcp.server.fastmcp.utilities.func_metadata as _fm
+    from pydantic import create_model as _pydantic_create_model
+
+    _orig_create_wrapped = getattr(_fm, "_create_wrapped_model", None)
+    if _orig_create_wrapped:
+        def _safe_create_wrapped_model(func_name: str, annotation: Any):
+            try:
+                return _orig_create_wrapped(func_name, annotation)
+            except Exception:
+                return _pydantic_create_model(f"{func_name}Output", result=(annotation, ...))
+
+        _fm._create_wrapped_model = _safe_create_wrapped_model
+except Exception:
+    pass
+
 logger = logging.getLogger("openviking-mcp")
 
 # 重型检索工具池（限定进程内最多 2 个并发，避免后端 GPU/Embedding 争用打爆）
