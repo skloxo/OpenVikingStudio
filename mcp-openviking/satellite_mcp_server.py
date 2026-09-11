@@ -13,7 +13,9 @@ import inspect
 import json
 import logging
 import os
+import platform
 import re
+import socket
 import sys
 import time
 from functools import wraps
@@ -58,19 +60,50 @@ DEFAULT_API_KEY = os.environ.get("OPENVIKING_API_KEY", "")
 
 def _get_config() -> Dict[str, str]:
     api_key = os.environ.get("OPENVIKING_API_KEY") or os.environ.get("OPENVIKING_ROOT_API_KEY") or ""
-    if not api_key:
+    api_url = os.environ.get("OPENVIKING_API", "").rstrip("/")
+    if not api_key or not api_url:
         for conf_file in ("ov.conf", "ovcli.conf"):
             p = Path.home() / ".openviking" / conf_file
             if p.exists():
                 try:
                     with open(p, "r", encoding="utf-8") as f:
                         data = json.load(f)
-                        api_key = data.get("server", {}).get("root_api_key") or data.get("root_api_key", "")
-                        if api_key:
-                            break
+                    sd = data.get("server", data) if isinstance(data, dict) else {}
+                    api_key = api_key or sd.get("root_api_key") or sd.get("api_key", "")
+                    api_url = api_url or (sd.get("url") or data.get("url") or "").rstrip("/")
+                    if api_key and api_url:
+                        break
                 except Exception:
                     pass
-    return {"api": os.environ.get("OPENVIKING_API", DEFAULT_API).rstrip("/"), "api_key": api_key or DEFAULT_API_KEY}
+    return {"api": api_url or DEFAULT_API, "api_key": api_key or DEFAULT_API_KEY}
+
+
+def get_resolved_actor_peer(default_client: str = "workbuddy") -> str:
+    """解析并返回合规 Agent 身份 (client@node，如 workbuddy@3070)，100% 遵循官方标识符规则。"""
+    explicit = os.environ.get("OPENVIKING_ACTOR_PEER", "").strip()
+    if explicit:
+        return explicit
+    node = os.environ.get("OPENVIKING_NODE", "").strip().lower()
+    if not node:
+        if sys.platform == "win32":
+            comp = os.environ.get("COMPUTERNAME", "").lower()
+            node = "3070" if "3070" in comp else ("2080ti" if "2080" in comp else "win")
+        elif sys.platform == "darwin":
+            node = "mac"
+        else:
+            hname = socket.gethostname().lower()
+            node = "3070" if "3070" in hname else ("2080ti" if ("2080" in hname or Path("/mnt/c").exists()) else (hname.split(".")[0] or "linux"))
+    client = os.environ.get("OPENVIKING_CLIENT", "").strip().lower()
+    if not client:
+        proc_str = (" ".join(sys.argv) + " " + os.getcwd()).lower()
+        for candidate in ("workbuddy", "mimocode", "antigravity", "openclaw", "hermes"):
+            if candidate in proc_str:
+                client = candidate
+                break
+        client = client or default_client
+    clean_client = re.sub(r"[^a-zA-Z0-9_.-]", "", client) or default_client
+    clean_node = re.sub(r"[^a-zA-Z0-9_-]", "", node) or "remote"
+    return f"{clean_client}@{clean_node}"
 
 
 class SatelliteHTTPClient:
@@ -88,11 +121,14 @@ class SatelliteHTTPClient:
 
         cfg = _get_config()
         api_key = cfg["api_key"] or self.api_key
+        peer_id = get_resolved_actor_peer("workbuddy")
 
         headers = {
             "Content-Type": "application/json",
             "X-OpenViking-Account": "default",
-            "X-OpenViking-User": "satellite",
+            "X-OpenViking-User": os.environ.get("OPENVIKING_USER", "default"),
+            "X-OpenViking-Actor-Peer": peer_id,
+            "X-Caller": peer_id,
         }
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
@@ -256,13 +292,10 @@ mcp._tool_manager.call_tool = _graceful_satellite_call
 # SECTION: 16 Safe Satellite Tools
 @_safe_tool()
 def openviking_find(
-    query: str = Field(description="搜索查询文本"),
-    target_uri: str = Field(default="", description="限定搜索范围的 URI"),
-    limit: int = Field(default=5, description="返回结果数量"),
-    score_threshold: float = Field(default=0.0, description="最低相关性分数（0-1）"),
-    level: str = Field(default="", description="限定层级：0(L0摘要), 1(L1概览), 2(L2全文), 0,1,2(全部)"),
-    filter_tags: str = Field(default="", description="过滤标签（逗号分隔）"),
-    mode: str = Field(default="fast", description="检索模式：fast(极速两阶段单次重排, 默认), thinking(深层递归树探索), quick(纯向量检索)"),
+    query: str = Field(description="搜索查询文本"), target_uri: str = Field(default="", description="限定搜索范围 URI"),
+    limit: int = Field(default=5, description="返回结果数量"), score_threshold: float = Field(default=0.0, description="最低相关性分数（0-1）"),
+    level: str = Field(default="", description="限定层级：0(L0), 1(L1), 2(L2)"), filter_tags: str = Field(default="", description="过滤标签"),
+    mode: str = Field(default="fast", description="检索模式：fast(默认), thinking, quick"),
 ) -> str:
     """两阶段混合语义召回 + Cross-Encoder 深度重排。返回综合评分最高的相关上下文。"""
     body: Dict[str, Any] = {"query": query, "limit": limit}
@@ -276,10 +309,8 @@ def openviking_find(
 
 @_safe_tool()
 def openviking_search(
-    query: str = Field(description="搜索查询文本"),
-    target_uri: str = Field(default="", description="限定搜索范围的 URI"),
-    limit: int = Field(default=5, description="返回结果数量"),
-    score_threshold: float = Field(default=0.0, description="最低相关性分数"),
+    query: str = Field(description="搜索查询文本"), target_uri: str = Field(default="", description="限定搜索范围 URI"),
+    limit: int = Field(default=5, description="返回数量"), score_threshold: float = Field(default=0.0, description="最低分数"),
 ) -> str:
     """标准语义向量检索"""
     body: Dict[str, Any] = {"query": query, "limit": limit}
@@ -290,16 +321,15 @@ def openviking_search(
 
 @_safe_tool()
 def openviking_smart_read(
-    query: str = Field(description="搜索查询文本"),
-    level: int = Field(default=1, description="读取层级：0(L0摘要), 1(L1概览), 2(L2全文)"),
-    limit: int = Field(default=3, description="搜索结果数量"),
-    score_threshold: float = Field(default=0.0, description="最低相关性分数（0-1）"),
+    query: str = Field(description="搜索查询文本"), level: int = Field(default=1, description="层级：0(L0), 1(L1), 2(L2)"),
+    limit: int = Field(default=3, description="结果数量"), score_threshold: float = Field(default=0.0, description="最低分数"),
 ) -> str:
     """智能读取：搜索 + 批量读取组合操作。一次调用完成搜索并返回每个结果的详细内容。"""
     search_body: Dict[str, Any] = {"query": query, "limit": limit}
     if score_threshold > 0:
         search_body["score_threshold"] = score_threshold
     search_result = http_client.post("/api/v1/search/find", search_body)
+    results = []
     if isinstance(search_result, dict):
         res_obj = search_result.get("result", {})
         if isinstance(res_obj, dict):
@@ -308,8 +338,6 @@ def openviking_smart_read(
             results = res_obj
         else:
             results = search_result.get("results", [])
-    else:
-        results = []
 
     detailed = []
     for item in results:
@@ -333,17 +361,15 @@ def openviking_read(
     endpoint = "/api/v1/content/abstract" if lvl in ("0", "l0", "abstract") else ("/api/v1/content/overview" if lvl in ("1", "l1", "overview") else "/api/v1/content/read")
     return _format_result(http_client.get(endpoint, {"uri": target_uri}))
 
+
 @_safe_tool()
 def openviking_store(
-    session_id: str = Field(default="", description="会话 ID（留空使用当前会话）"),
-    role: str = Field(default="user", description="消息角色：user/assistant/system"),
-    content: str = Field(default="", description="消息内容（为空时仅提交会话）"),
-    semantic_anchor: str = Field(default="", description="因果归因与检索场景（专供向量检索轨）"),
-    delta: str = Field(default="", description="3~5行Git Diff或代码指纹（专供代码重放轨）"),
+    session_id: str = Field(default="", description="会话 ID"), role: str = Field(default="user", description="角色"),
+    content: str = Field(default="", description="内容"), semantic_anchor: str = Field(default="", description="检索锚点"),
+    delta: str = Field(default="", description="Git Diff/代码指纹"),
 ) -> str:
     """存储消息到长期记忆。支持双轨写入（semantic_anchor 检索 + delta 代码重放）。content 为空时提交。"""
-    def _s(v: Any, d: str = "") -> str:
-        return str(v).strip() if (v and not hasattr(v, "default")) else d
+    def _s(v: Any, d: str = "") -> str: return str(v).strip() if (v and not hasattr(v, "default")) else d
     sid, role_str, content_str = _s(session_id, "default"), _s(role, "user"), _s(content)
     anchor_str, delta_str = _s(semantic_anchor), _s(delta)
     if anchor_str or delta_str:
@@ -359,9 +385,8 @@ def openviking_store(
 
 @_safe_tool()
 def openviking_write(
-    target_uri: str = Field(description="目标 Viking URI"),
-    content: str = Field(description="写入内容"),
-    mode: str = Field(default="replace", description="写入模式：replace(覆盖), append(追加), create(新建/创建目录)"),
+    target_uri: str = Field(description="目标 Viking URI"), content: str = Field(description="写入内容"),
+    mode: str = Field(default="replace", description="写入模式：replace, append, create"),
 ) -> str:
     """写入/修改资源。支持覆盖、追加与新建。"""
     res = http_client.post("/api/v1/content/write", {"uri": target_uri, "content": content, "mode": mode})
@@ -371,51 +396,36 @@ def openviking_write(
 
 
 @_safe_tool()
-def openviking_code_search(
-    query: str = Field(description="符号名搜索"),
-    target_uri: str = Field(default="viking://", description="搜索范围"),
-) -> str:
+def openviking_code_search(query: str = Field(description="符号名搜索"), target_uri: str = Field(default="viking://", description="搜索范围")) -> str:
     """搜索代码符号名（函数、类、变量等）"""
     body: Dict[str, Any] = {"query": query}
-    if target_uri and target_uri != "viking://":
-        body["target_uri"] = target_uri
+    if target_uri and target_uri != "viking://": body["target_uri"] = target_uri
     return _format_result(http_client.post("/api/v1/search/find", body))
 
 
 @_safe_tool()
-def openviking_code_outline(
-    target_uri: str = Field(description="代码文件 Viking URI"),
-) -> str:
+def openviking_code_outline(target_uri: str = Field(description="代码文件 Viking URI")) -> str:
     """提取文件符号结构大纲（函数、类等）"""
     return _format_result(http_client.get("/api/v1/content/overview", {"uri": target_uri}))
 
 
 @_safe_tool()
-def openviking_code_expand(
-    target_uri: str = Field(description="符号所在文件 Viking URI"),
-    symbol: str = Field(default="", description="符号名"),
-) -> str:
+def openviking_code_expand(target_uri: str = Field(description="符号所在文件 Viking URI"), symbol: str = Field(default="", description="符号名")) -> str:
     """返回符号所在文件完整源码切片"""
     return _format_result(http_client.get("/api/v1/content/read", {"uri": target_uri}))
 
 
 @_safe_tool()
-def openviking_grep(
-    pattern: str = Field(description="正则表达式"),
-    target_uri: str = Field(default="viking://", description="搜索范围 URI"),
-    limit: int = Field(default=50, description="最大返回数"),
-) -> str:
+def openviking_grep(pattern: str = Field(description="正则表达式"), target_uri: str = Field(default="viking://", description="搜索范围 URI"), limit: int = Field(default=50, description="最大返回数")) -> str:
     """正则表达式匹配文件行内容"""
     return _format_result(http_client.post("/api/v1/search/grep", {"pattern": pattern, "uri": target_uri, "limit": limit}))
 
 
 @_safe_tool()
 def openviking_record_evolution_lesson(
-    skill_name: str = Field(description="目标演进技能名称（例如 diagnosing-bugs, tdd 等）"),
-    lesson_title: str = Field(description="Lesson 简短标题（概括踩坑教训与物理原则）"),
-    context: str = Field(default="", description="触发纠偏的上下文场景"),
-    reflection: str = Field(default="", description="根因与物理逻辑分析"),
-    lesson: str = Field(default="", description="提炼出的永久闭环规范"),
+    skill_name: str = Field(description="目标演进技能名称"), lesson_title: str = Field(description="Lesson 简短标题"),
+    context: str = Field(default="", description="触发场景"), reflection: str = Field(default="", description="根因分析"),
+    lesson: str = Field(default="", description="闭环规范"),
 ) -> str:
     """Harness Reflexion 隐式自演进钩子：双写纯 Markdown 镜像至 OpenViking Master Memory 永久存盘"""
     try:
@@ -430,26 +440,19 @@ def openviking_record_evolution_lesson(
 
 
 @_safe_tool()
-def openviking_tree(
-    target_uri: str = Field(default="viking://", description="要展示的 Viking URI"),
-    depth: int = Field(default=3, description="树深度"),
-) -> str:
+def openviking_tree(target_uri: str = Field(default="viking://", description="要展示的 Viking URI"), depth: int = Field(default=3, description="树深度")) -> str:
     """递归树形展示目录结构"""
     return _format_result(http_client.get("/api/v1/fs/tree", {"uri": target_uri, "level_limit": depth}))
 
 
 @_safe_tool()
-def openviking_skills(
-    action: str = Field(default="list", description="操作：list（列出）"),
-) -> str:
+def openviking_skills(action: str = Field(default="list", description="操作：list（列出）")) -> str:
     """查看当前知识中枢托管的技能规范列表"""
     return _format_result(http_client.get("/api/v1/skills"))
 
 
 @_safe_tool()
-def openviking_get_relations(
-    target_uri: str = Field(description="Viking URI"),
-) -> str:
+def openviking_get_relations(target_uri: str = Field(description="Viking URI")) -> str:
     """获取资源关联列表与知识图谱拓扑"""
     return _format_result(http_client.get("/api/v1/relations", {"uri": target_uri}))
 

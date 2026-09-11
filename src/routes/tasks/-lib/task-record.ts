@@ -80,10 +80,23 @@ export interface InitiatorInfo {
   raw?: string
 }
 
+function formatClientName(client: string): string {
+  const map: Record<string, string> = {
+    antigravity: 'Antigravity',
+    workbuddy: 'WorkBuddy',
+    mimocode: 'MimoCode',
+    openclaw: 'OpenClaw',
+    hermes: 'Hermes',
+  }
+  const lower = client.toLowerCase()
+  if (map[lower]) return map[lower]
+  return client.charAt(0).toUpperCase() + client.slice(1)
+}
+
 export function parseInitiator(raw?: string, taskType?: string): InitiatorInfo {
   if (!raw) {
     if (taskType === 'valet_parking') {
-      return { isAgent: true, isUser: false, name: 'Antigravity', raw: '' }
+      return { isAgent: true, isUser: false, name: '[2080TI] Antigravity', raw: '' }
     }
     return { isAgent: false, isUser: false, name: '-', raw: '' }
   }
@@ -92,10 +105,36 @@ export function parseInitiator(raw?: string, taskType?: string): InitiatorInfo {
     // In OpenViking, atomic ingestion / valet_parking is strictly initiated by Agents via Hook or MCP.
     // 'default' is the storage tenant namespace, not a human user.
     if (taskType === 'valet_parking') {
-      return { isAgent: true, isUser: false, name: 'Antigravity', raw }
+      return { isAgent: true, isUser: false, name: '[2080TI] Antigravity', raw }
     }
     return { isAgent: false, isUser: true, name: 'default', raw }
   }
+
+  // Check structured client@node format (e.g. antigravity@2080ti, workbuddy@3070, openclaw.researcher@2080ti)
+  if (raw.includes('@') && !raw.startsWith('@') && !raw.endsWith('@')) {
+    const [clientPart, nodePart] = raw.split('@')
+    const nodeTag = `[${nodePart.toUpperCase()}]`
+    const isUser = /user|admin/i.test(clientPart)
+    if (clientPart.includes('.')) {
+      const [baseClient, role] = clientPart.split('.')
+      const formattedClient = formatClientName(baseClient)
+      const formattedRole = role.charAt(0).toUpperCase() + role.slice(1)
+      return {
+        isAgent: !isUser,
+        isUser,
+        name: `${nodeTag} ${formattedClient} (${formattedRole})`,
+        raw,
+      }
+    }
+    const formattedClient = formatClientName(clientPart)
+    return {
+      isAgent: !isUser,
+      isUser,
+      name: `${nodeTag} ${formattedClient}`,
+      raw,
+    }
+  }
+
   const isAgent = /agent|antigravity|bot|hook|mcp/i.test(raw)
   const isUser = !isAgent && /user|admin/i.test(raw)
   const match = raw.match(/\((.*?)\)/)

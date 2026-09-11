@@ -358,8 +358,10 @@ async def write(
         from openviking.service.valet_ingestion import ValetIngestionEngine
         caller_name = request.caller or ""
         if not caller_name:
-            if "antigravity_sessions" in str(uri):
-                caller_name = "Agent (Antigravity)"
+            if hasattr(_ctx, "actor_peer_id") and _ctx.actor_peer_id:
+                caller_name = _ctx.actor_peer_id
+            elif "antigravity_sessions" in str(uri):
+                caller_name = "antigravity@2080ti"
             elif hasattr(_ctx, "client_name") and _ctx.client_name:
                 caller_name = f"Agent ({_ctx.client_name})"
             else:

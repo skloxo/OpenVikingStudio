@@ -21,6 +21,7 @@ from .sessions import register_sessions_tools
 from .system import register_system_tools
 from .observability import register_observability_tools
 from .cpa import register_cpa_tools
+from .fleet import register_fleet_tools
 from .shims import register_shims
 
 __all__ = [
@@ -32,5 +33,6 @@ __all__ = [
     "register_system_tools",
     "register_observability_tools",
     "register_cpa_tools",
+    "register_fleet_tools",
     "register_shims",
 ]
