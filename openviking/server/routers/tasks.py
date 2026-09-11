@@ -36,9 +36,13 @@ class BusinessJobPayload(BaseModel):
     task_type: str = "business_job"
     initiator: str = "Agent"
     status: str = "running"
+    resource_id: Optional[str] = None
+    stage: Optional[str] = None
     progress: Optional[Dict[str, Any]] = None
     deliverable: Optional[Dict[str, Any]] = None
     message: Optional[str] = None
+    result: Optional[Dict[str, Any]] = None
+    meta_extra: Optional[Dict[str, Any]] = None
 
 
 @router.post("/tasks/business")
@@ -60,6 +64,10 @@ async def report_business_job(
         "progress": payload.progress,
         "message": payload.message,
     }
+    if payload.resource_id:
+        meta["resource_id"] = payload.resource_id
+    if payload.meta_extra:
+        meta.update(payload.meta_extra)
 
     existing = await tracker.get(tid, account_id=account_id, user_id=user_id)
     if existing is None and _ctx.role == Role.ROOT:
@@ -69,6 +77,12 @@ async def report_business_job(
             user_id=SYSTEM_TASK_USER_ID,
         )
 
+    res_data = payload.result or (
+        {"deliverable": payload.deliverable, "progress": payload.progress, "message": payload.message}
+        if payload.status == "completed"
+        else None
+    )
+
     if existing is None:
         rec = TaskRecord(
             task_id=tid,
@@ -76,16 +90,22 @@ async def report_business_job(
             status=TaskStatus.RUNNING if payload.status == "running" else (TaskStatus.COMPLETED if payload.status == "completed" else TaskStatus.FAILED),
             account_id=account_id,
             user_id=user_id,
+            resource_id=payload.resource_id,
+            stage=payload.stage or ("completed" if payload.status == "completed" else "running"),
             meta=meta,
-            result={"deliverable": payload.deliverable, "progress": payload.progress, "message": payload.message} if payload.status == "completed" else None,
+            result=res_data,
         )
         await tracker._create_on_owner(rec, check_existing=False)
     else:
         existing.meta.update(meta)
+        if payload.resource_id:
+            existing.resource_id = payload.resource_id
+        if payload.stage:
+            existing.stage = payload.stage
         if payload.status == "completed":
             await tracker.complete(
                 tid,
-                result={"deliverable": payload.deliverable, "progress": payload.progress, "message": payload.message},
+                result=res_data,
                 account_id=existing.account_id,
                 user_id=existing.user_id,
             )
