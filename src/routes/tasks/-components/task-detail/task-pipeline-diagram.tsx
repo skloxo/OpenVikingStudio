@@ -111,42 +111,6 @@ export function TaskPipelineDiagram({
       })
     }
 
-    // 3. 若入库会话草稿 (antigravity_sessions)，提取关联衍生记忆拓扑 (events/entities/cases/trajectories)
-    const isSessionStaging = String(mainUri || '').includes('antigravity_sessions')
-    if (isSessionStaging && ops.length <= 1) {
-      const sessionKey = String(mainUri).replace(/^.*\/([^/]+)\.md$/, '$1')
-      ops.push(
-        {
-          kind: 'add',
-          memoryType: 'events',
-          uri: `viking://user/default/memories/events/2026/09/10/session_${sessionKey}_milestone.md`,
-          description: t('detail.extractedEvents', { defaultValue: '会话核心里程碑与大事记沉淀' }),
-          after: resObj.summary_snippet || defaultNotice,
-        },
-        {
-          kind: 'add',
-          memoryType: 'entities',
-          uri: `viking://user/default/memories/entities/session_${sessionKey}_tech_entities.md`,
-          description: t('detail.extractedEntities', { defaultValue: '会话提取的关键系统与架构实体知识' }),
-          after: defaultNotice,
-        },
-        {
-          kind: 'add',
-          memoryType: 'cases',
-          uri: `viking://user/default/memories/cases/session_${sessionKey}_solution_cases.md`,
-          description: t('detail.extractedCases', { defaultValue: '会话中推演完成的技术方案典型案例' }),
-          after: defaultNotice,
-        },
-        {
-          kind: 'update',
-          memoryType: 'trajectories',
-          uri: `viking://user/default/memories/trajectories/session_${sessionKey}_evolution_chain.md`,
-          description: t('detail.extractedTrajectories', { defaultValue: '智能体多轮推演与执行轨迹因果链' }),
-          after: defaultNotice,
-        },
-      )
-    }
-
     return ops.length > 0 ? ops : undefined
   }, [task, isSessionTask, resObj, metaObj, t])
 
