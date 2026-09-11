@@ -41,6 +41,7 @@ import {
   formatTime,
 } from '#/routes/tasks/-lib/task-api'
 import type { TaskRecord } from '#/routes/tasks/-lib/task-record'
+import { parseInitiator } from '#/routes/tasks/-lib/task-record'
 
 interface TasksTableProps {
   tasks: TaskRecord[]
@@ -64,15 +65,6 @@ interface TasksTableProps {
   queueObserverRows: ParsedQueueRow[]
   maxTasks: number
   onOpenDeliverable?: (uri: string) => void
-}
-
-function parseInitiator(raw?: string) {
-  if (!raw) return { isAgent: false, isUser: false, name: '-' }
-  const isAgent = /agent/i.test(raw)
-  const isUser = /user|admin/i.test(raw)
-  const match = raw.match(/\((.*?)\)/)
-  const cleanName = match ? match[1] : raw.replace(/^(agent|user)\s*/i, '').trim() || (isAgent ? 'Agent' : isUser ? 'User' : raw)
-  return { isAgent, isUser, name: cleanName }
 }
 
 export function TasksTable({
@@ -143,7 +135,7 @@ export function TasksTable({
 
   function renderInitiatorCell(task: TaskRecord) {
     const raw = task.meta?.initiator || (task.meta?.actor ? `User (${task.meta.actor})` : '')
-    const info = parseInitiator(raw)
+    const info = parseInitiator(raw, task.task_type)
 
     return (
       <div className="flex items-center gap-1.5 whitespace-nowrap text-xs text-muted-foreground">

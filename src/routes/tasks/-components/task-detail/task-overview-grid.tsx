@@ -13,6 +13,8 @@ import {
   RefreshCwIcon,
   SparklesIcon,
   TimerResetIcon,
+  BotIcon,
+  UserIcon,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -24,6 +26,7 @@ import type { TaskRecord } from '../../-lib/task-record'
 import {
   hasTaskResult,
   normalizeTaskStatus,
+  parseInitiator,
 } from '../../-lib/task-record'
 import {
   DetailField,
@@ -46,6 +49,9 @@ export function TaskOverviewGrid({ task }: TaskOverviewGridProps) {
     (meta.deliverable && typeof meta.deliverable === 'object' && typeof meta.deliverable.uri === 'string' && meta.deliverable.uri) ||
     (task.result && typeof task.result === 'object' && typeof (task.result as Record<string, any>).deliverable_uri === 'string' && (task.result as Record<string, any>).deliverable_uri) ||
     (status === 'completed' && task.resource_id ? task.resource_id : null)
+
+  const rawInitiator = meta.initiator || (meta.actor ? `User (${meta.actor})` : '')
+  const initiatorInfo = parseInitiator(rawInitiator, task.task_type)
 
   return (
     <>
@@ -103,12 +109,16 @@ export function TaskOverviewGrid({ task }: TaskOverviewGridProps) {
           value={t(`status.${status}`)}
         />
         <DetailField
+          icon={initiatorInfo.isAgent ? <BotIcon className="text-cyan-500" /> : <UserIcon />}
+          label={t('table.initiator', '提交方')}
+          value={initiatorInfo.name}
+        />
+        <DetailField
           icon={<Layers3Icon />}
           label={t('detail.fields.type')}
           value={t(`types.${task.task_type}`) || task.task_type || '-'}
         />
         <DetailField
-          className="col-span-2"
           icon={<TimerResetIcon />}
           label={t('detail.fields.stage')}
           value={(() => {
