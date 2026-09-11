@@ -154,14 +154,33 @@ async function fetchMemory(api, key, peer, query) {
     }
 
     const lines = [`【OpenViking 核心记忆预取 (${api})】`];
-    for (const item of items.slice(0, 3)) {
-      const uri = item.uri || "";
-      const text = (item.abstract || item.content || "").trim().slice(0, 300);
-      if (uri) {
-        lines.push(`- [${uri}]: ${text}`);
-      }
+    const topItems = items.slice(0, 2);
+
+    // 并发快速读取 L2 完整正文（本地 15ms），保证考卷指标、网络端口等数值 100% 完整展示
+    const readPromises = topItems.map(async (item) => {
+      const uri = item?.uri || "";
+      if (!uri) return "";
+      try {
+        const readUrl = `${api.replace(/\/+$/, "")}/api/v1/content/read?uri=${encodeURIComponent(uri)}`;
+        const r = await fetch(readUrl, { headers, signal: AbortSignal.timeout(2500) });
+        if (r.ok) {
+          const j = await r.json();
+          const raw = typeof j.result === "string" ? j.result : (j.result?.content || j.result?.text || "");
+          if (raw && raw.trim()) {
+            return `- [${uri}]:\n${raw.trim().slice(0, 1800)}`;
+          }
+        }
+      } catch (_) {}
+      const fallback = (item.abstract || item.content || "").trim().slice(0, 800);
+      return `- [${uri}]: ${fallback}`;
+    });
+
+    const readResults = await Promise.all(readPromises);
+    for (const res of readResults) {
+      if (res) lines.push(res);
     }
-    lines.push("💡 协同契约：核心事实已在上下文中，优先直接基于此推理；若需全文请直接使用 openviking_read 传入对应 URI，严禁重复发起相同的 find 盲搜。");
+
+    lines.push("💡 协同契约：核心事实与全量参数已在上下文中，优先直接基于此推理；严禁重复发起相同的 find 盲搜。");
     const out = lines.join("\n");
     log(`[FETCH_SUCCESS] got ${items.length} items (${out.length} chars)`);
     return out;
