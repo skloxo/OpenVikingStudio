@@ -178,7 +178,7 @@ export function deriveUniversalFinalOutcome(
     }
   }
 
-  // 11. 轻量增量入库 (Lightweight Ingestion)
+  // 11. 原子入库 (Atomic Ingestion)
   if (type === 'valet_parking') {
     const rawAction = String(resObj.action || metaObj.action || 'add').toLowerCase()
     const simVal = resObj.similarity ?? metaObj.similarity
@@ -194,7 +194,7 @@ export function deriveUniversalFinalOutcome(
       deliverableText = isZh ? `准入判定: 增量演进 (UPDATE) · 向量相似度 ${sim} · 既有知识节点已版本升级` : `Admission: UPDATE · Similarity ${sim} · Node version updated`
     }
     return {
-      title: isZh ? '轻量增量入库' : 'Lightweight Ingestion',
+      title: isZh ? '原子入库' : 'Atomic Ingestion',
       deliverableText,
       expectedText: isZh ? '快速接管暂存、向量相似度探针与准入判定' : 'Fast handover, vector probe & admission check',
     }

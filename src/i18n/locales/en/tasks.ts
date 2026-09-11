@@ -64,7 +64,7 @@ export const tasks = {
       activeJobs: 'Active Business Jobs',
       completedDeliverables: 'Delivered Today',
       emptyBusiness: 'No Active Business Jobs',
-      emptyBusinessSub: 'All lightweight ingestion tasks have been committed safely into knowledge storage.',
+      emptyBusinessSub: 'All atomic ingestion tasks have been committed safely into knowledge storage.',
       colOpName: 'Operation Name & Summary',
       colStatus: 'Status',
       colStage: 'Stage',

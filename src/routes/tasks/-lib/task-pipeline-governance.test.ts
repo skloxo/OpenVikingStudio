@@ -93,7 +93,7 @@ describe('task-pipeline 10大真实车间流水线与交付物契约测试', () 
     expect(delSteps.length).toBeGreaterThan(0)
   })
 
-  it('轻量增量入库任务流水线与量化交付物测试 (ADD / NOOP / UPDATE)', () => {
+  it('原子入库任务流水线与量化交付物测试 (ADD / NOOP / UPDATE)', () => {
     // 1. ADD 新增
     const valetAdd: TaskRecord = {
       task_id: 'ticket_valet_test_01',
@@ -101,7 +101,7 @@ describe('task-pipeline 10大真实车间流水线与交付物契约测试', () 
       status: 'completed',
       stage: 'completed',
       created_at: 1772800000,
-      meta: { human_title: '轻量增量入库：测试节点' },
+      meta: { human_title: '原子入库：测试节点' },
       result: {
         status: 'ok',
         action: 'add',
