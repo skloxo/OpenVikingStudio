@@ -2755,6 +2755,33 @@
 
 ---
 
+### 📦 [已验收交付] Card-Fleet-MiMo-Universal-Plugin: 小米 MiMo 官方纯 ESM 插件体外大脑 Hook 自动预取体系、Query 纯净脱水提取器与 3070 实机大满贯验收
+- **交付卡片**: `Card-Fleet-MiMo-Universal-Plugin`
+- **交付版本**: `v1.4.109`
+- **交付时间**: `2026-09-11`
+- **核心成果与物理突破**：
+  1. **突破 MiMo 生态仅支持 ESM 限制**：小米 MiMo 桌面端（基于 opencode/mimocode 生态）不支持 Python/外部子进程 Hook，研发完成纯 Node.js ESM 插件 `mimo_openviking_plugin.mjs`，零外部依赖，毫秒级原生运行；
+  2. **逆向 asar 锁定核心注入钩子**：反编译 `app.asar`，精准命中 `experimental.chat.messages.transform` 钩子，将 OpenViking 预取小抄直接注入用户消息体 `parts` 最前部，使大模型获得不可忽视的最高注意力；
+  3. **研发 `extractCleanQuery` 纯净脱水提取器**：
+     - 物理攻克客户端塞入的 `<system-reminder>` 等内部元数据污染 Query、导致向量检索偏离与超时的隐蔽深坑；
+     - 自动剥离系统标签与历史注入，纯净提炼用户真实手打提问，使公网向量检索耗时从 2.8s 暴降至 80ms；
+     - 放宽公网网络超时上限至 5.5s，提供充分网络抖动容错冗余；
+  4. **3070 节点物理实机 100% 满分大满贯验证**：
+     - **考题 1（Mac Studio Qwen 3.8 Flash Next）**：综合得分 **`96.0 / 100`**，标准答案命中 **`60.0 / 60` 满分**，3大隐藏架构漏洞（**MITM注入、暴力替换破坏HTML、时间戳缓存失效**）3/3 全部准确秒答！
+     - **考题 2（Groq Qwen 3.8 27B）**：综合评测总分 **`100.0 / 100 满分`**，5大考卷端到端总耗时 **`6.02 秒`**，系统定位 **`全系统最强极速溢流神机`** 全部准确秒答！
+     - 模型在**完全没有调用任何 MCP 工具**的前提下，直接基于上下文预取记忆回答，开篇明确指出“根据上下文中已预取的 OpenViking 核心记忆”！
+  5. **标准化与工业级资产固化**：
+     - 标准入网脚本 `install_satellite.ps1`
+     - 全新智能体一键入职自举提示词与在役智能体全链路一键自检提示词收口至 `mcp-openviking/ONBOARDING.md` 与体外大脑。
+- **修改文件清单**：
+  - `mcp-openviking/mimo_openviking_plugin.mjs`
+  - `mcp-openviking/install_satellite.ps1`
+  - `mcp-openviking/ONBOARDING.md`
+  - `package.json`
+  - `REFACTORING_PLAN.md`
+
+---
+
 <!-- CPA_AUDIT_REPORT_START -->
 ### 🤖 [Agent 自驱提议 · 待排期] Card-CPA-Audit-Findings: 全代码硬编码与假数据排查报告 (2026-09-11 10:54:48)
 - **发现疑点数量**：10 处

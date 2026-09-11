@@ -74,11 +74,41 @@ function pruneCache() {
   }
 }
 
+function extractCleanQuery(parts, rawContent) {
+  let text = "";
+  if (Array.isArray(parts)) {
+    const validParts = [];
+    for (const p of parts) {
+      if (p?.type !== "text" || typeof p?.text !== "string") continue;
+      const s = p.text.trim();
+      if (!s) continue;
+      if (s.includes("【OpenViking 核心记忆预取")) continue;
+      // Strip any embedded system reminders
+      const cleaned = s
+        .replace(/<system-reminder>[\s\S]*?<\/system-reminder>/gi, "")
+        .replace(/【OpenViking 核心记忆预取[\s\S]*?💡 协同契约[^\n]*/g, "")
+        .trim();
+      if (cleaned) validParts.push(cleaned);
+    }
+    text = validParts.join("\n").trim();
+  }
+
+  if (!text) {
+    const raw = typeof rawContent === "string" ? rawContent : "";
+    text = raw
+      .replace(/<system-reminder>[\s\S]*?<\/system-reminder>/gi, "")
+      .replace(/【OpenViking 核心记忆预取[\s\S]*?💡 协同契约[^\n]*/g, "")
+      .trim();
+  }
+
+  return text;
+}
+
 async function fetchMemory(api, key, peer, query) {
   try {
     const url = `${api.replace(/\/+$/, "")}/api/v1/search/find`;
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 3500);
+    const timer = setTimeout(() => controller.abort(), 5500);
 
     const headers = {
       "Content-Type": "application/json",
@@ -197,9 +227,11 @@ export default {
 
     return {
       "session.userQuery.pre": async (input, _output) => {
-        const query = String(input?.query ?? "").trim();
+        let query = String(input?.query ?? "").trim();
+        query = query.replace(/<system-reminder>[\s\S]*?<\/system-reminder>/gi, "").trim();
         log(`[HOOK:userQuery.pre] query="${query.slice(0, 50)}"`);
-        if (!query || isStepWord(query)) return;
+        if (!query || isStepWord(query) || query.includes("【OpenViking 核心记忆预取")) return;
+
         const sessionID = input?.sessionID || "default";
         const key = `${sessionID}::${query.slice(0, 256)}`;
         const cached = memoryCache.get(key);
@@ -220,45 +252,27 @@ export default {
         log(`[HOOK:messages.transform] msgs=${Array.isArray(msgs) ? msgs.length : "none"}`);
         if (!Array.isArray(msgs) || msgs.length === 0) return;
 
-        // Support both m.info.role and m.role
         const lastUserMsg = msgs.findLast((m) => {
           const role = m?.info?.role || m?.role;
           return role === "user";
         });
         if (!lastUserMsg) {
-          log("[HOOK:messages.transform] no user message found in msgs");
+          log("[HOOK:messages.transform] no user message found");
           return;
         }
 
-        // Extract query from parts or content
-        let query = "";
-        let alreadyInjected = false;
-
-        if (Array.isArray(lastUserMsg.parts)) {
-          alreadyInjected = lastUserMsg.parts.some(
-            (p) => typeof p?.text === "string" && p.text.includes("【OpenViking 核心记忆预取")
-          );
-          query = lastUserMsg.parts
-            .filter((p) => p?.type === "text" && typeof p?.text === "string")
-            .map((p) => p.text)
-            .join("\n")
-            .trim();
-        }
-
-        if (!query) {
-          const rawContent = lastUserMsg.content || lastUserMsg.text || lastUserMsg.info?.content || "";
-          if (typeof rawContent === "string") {
-            query = rawContent.trim();
-            alreadyInjected = rawContent.includes("【OpenViking 核心记忆预取");
-          }
-        }
+        // Check if memory has already been injected into this message
+        const alreadyInjected = Array.isArray(lastUserMsg.parts)
+          ? lastUserMsg.parts.some((p) => typeof p?.text === "string" && p.text.includes("【OpenViking 核心记忆预取"))
+          : typeof lastUserMsg.content === "string" && lastUserMsg.content.includes("【OpenViking 核心记忆预取");
 
         if (alreadyInjected) {
           log("[HOOK:messages.transform] memory already injected");
           return;
         }
 
-        log(`[HOOK:messages.transform] extracted query="${query.slice(0, 50)}"`);
+        const query = extractCleanQuery(lastUserMsg.parts, lastUserMsg.content || lastUserMsg.text);
+        log(`[HOOK:messages.transform] extracted query="${query.slice(0, 60)}"`);
         if (!query || isStepWord(query)) return;
 
         const cached = memoryCache.get(`query::${query.slice(0, 256)}`);
@@ -275,16 +289,15 @@ export default {
         }
 
         if (mem && mem.includes("OpenViking")) {
-          // Inject into parts if available
           if (Array.isArray(lastUserMsg.parts)) {
             lastUserMsg.parts.unshift({
               type: "text",
               text: `${mem}\n\n`
             });
-            log("[HOOK:messages.transform] successfully injected into lastUserMsg.parts");
+            log("[HOOK:messages.transform] injected into lastUserMsg.parts");
           } else if (typeof lastUserMsg.content === "string") {
             lastUserMsg.content = `${mem}\n\n${lastUserMsg.content}`;
-            log("[HOOK:messages.transform] successfully injected into lastUserMsg.content");
+            log("[HOOK:messages.transform] injected into lastUserMsg.content");
           } else {
             lastUserMsg.parts = [{ type: "text", text: `${mem}\n\n` }];
             log("[HOOK:messages.transform] initialized parts and injected");
