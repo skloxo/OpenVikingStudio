@@ -1,6 +1,8 @@
-# ==============================================================================
-# OpenViking Satellite MCP Client — Windows PowerShell 安装与分发脚本
-# ==============================================================================
+param(
+    [string]$Peer = "",
+    [string]$Key = "",
+    [string]$Api = "https://vk.tide.red"
+)
 
 $ErrorActionPreference = "Stop"
 
@@ -30,12 +32,30 @@ try {
     python -m pip install "mcp[cli]" pydantic
 }
 
-# 3. 输出配置示例
+# 3. 输出配置与握手验证
 Write-Host "------------------------------------------------------------------" -ForegroundColor DarkGray
 Write-Host "🎉 OpenViking Satellite MCP 客户端就绪！" -ForegroundColor Green
 Write-Host "   目标脚本: $TargetPy" -ForegroundColor White
+
+if ($Peer) {
+    Write-Host "   绑定身份: $Peer" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "📡 正在向 OpenViking 中枢发起入网握手探测..." -ForegroundColor DarkGray
+    try {
+        $headers = @{ "X-OpenViking-Actor-Peer" = $Peer; "X-Caller" = $Peer }
+        if ($Key) { $headers["Authorization"] = "Bearer $Key" }
+        $resp = Invoke-RestMethod -Uri "$Api/health" -Headers $headers -TimeoutSec 5 -ErrorAction Stop
+        Write-Host "✅ 握手成功！智能体唯一身份证已接入中枢: $Peer" -ForegroundColor Green
+    } catch {
+        Write-Host "⚠️ 握手提示 (请确认中枢网络或密钥): $_" -ForegroundColor Yellow
+    }
+}
+
+$safeKey = if ($Key) { $Key } else { "your_api_key_here" }
+$safePeer = if ($Peer) { $Peer } else { "your_client@your_node" }
+
 Write-Host ""
-Write-Host "💡 Windows 客户端配置样例 (Cursor / Claude Code / Antigravity):" -ForegroundColor Yellow
+Write-Host "💡 客户端配置代码块 (可直接贴入 Cursor / Claude Code / Antigravity / Windsurf):" -ForegroundColor Yellow
 $jsonSample = @"
 {
   "mcpServers": {
@@ -43,14 +63,14 @@ $jsonSample = @"
       "command": "python",
       "args": ["$($TargetPy.Replace('\', '/'))"],
       "env": {
-        "OPENVIKING_API": "http://127.0.0.1:1933",
-        "OPENVIKING_API_KEY": "your_api_key_here"
+        "OPENVIKING_API": "$Api",
+        "OPENVIKING_API_KEY": "$safeKey",
+        "OPENVIKING_ACTOR_PEER": "$safePeer"
       },
       "timeout": 30000
     }
   }
 }
-# 注意: MCP 宿主 timeout 必须 >= 桥接工具超时预算，冷检索与并发实测建议标定为 30000 (30s)，严禁拍脑袋设为 5000 (5s)！
 "@
 Write-Host $jsonSample -ForegroundColor White
 Write-Host "------------------------------------------------------------------" -ForegroundColor DarkGray
