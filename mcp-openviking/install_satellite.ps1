@@ -73,4 +73,30 @@ $jsonSample = @"
 }
 "@
 Write-Host $jsonSample -ForegroundColor White
+
+if ($safePeer -like "xiaomimo*") {
+    Write-Host ""
+    Write-Host "💡 Xiaomi MiMo Desktop 配置代码块 (贴入 ~/.config/mimocode/mimocode.jsonc):" -ForegroundColor Yellow
+    $mimoSample = @"
+{
+  "mcp": {
+    "openviking": {
+      "type": "local",
+      "command": ["python", "$($TargetPy.Replace('\', '/'))"],
+      "environment": {
+        "OPENVIKING_API": "$Api",
+        "OPENVIKING_API_KEY": "$safeKey",
+        "OPENVIKING_ACTOR_PEER": "$safePeer"
+      },
+      "timeout": 30000,
+      "enabled": true
+    }
+  },
+  "plugin": [
+    "C:/Users/Skl/.openviking/mimo-openviking-plugin.mjs"
+  ]
+}
+"@
+    Write-Host $mimoSample -ForegroundColor Cyan
+}
 Write-Host "------------------------------------------------------------------" -ForegroundColor DarkGray
