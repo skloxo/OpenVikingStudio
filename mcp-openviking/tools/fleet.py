@@ -73,7 +73,7 @@ def _check_local_2080ti() -> Dict[str, Any]:
     return res
 
 
-def _exec_3070_cmd(cmd: str, timeout: int = 10) -> subprocess.CompletedProcess:
+def _exec_3070_cmd(cmd: str, timeout: int = 20) -> subprocess.CompletedProcess:
     ssh_cmd = [
         "sshpass", "-p", "[REDACTED_SSH_PASSWORD]",
         "ssh", "-p", "6022",
