@@ -11,6 +11,9 @@
 import json
 import logging
 import os
+import platform
+import re
+import socket
 import subprocess
 import sys
 import time
@@ -38,30 +41,13 @@ DEFAULT_CLI = os.environ.get("OPENVIKING_CLI", "openviking")
 DEFAULT_ROOT_API_KEY = os.environ.get("OPENVIKING_ROOT_API_KEY", "")
 CLI_ONLY_MODE = False
 
-# 卫星模式精选 16 个全能安全数据与环境感知工具
+# 卫星模式精选 18 个全能安全数据与环境感知工具
 SATELLITE_ALLOWED_TOOLS = {
-    # 4 大日常检索基石
-    "openviking_find",
-    "openviking_search",
-    "openviking_smart_read",
-    "openviking_read",
-    "openviking_store",
-    # 5 大代码与排障攻坚
-    "openviking_write",
-    "openviking_code_search",
-    "openviking_code_outline",
-    "openviking_code_expand",
-    "openviking_grep",
-    "openviking_record_evolution_lesson",
-    # 5 大结构与环境感知
-    "openviking_tree",
-    "openviking_skills",
-    "openviking_get_relations",
-    "openviking_ping",
-    "openviking_health",
-    # 2 大 CPA 弹性算力协同
-    "openviking_cpa_consult",
-    "openviking_cpa_fanout",
+    "openviking_find", "openviking_search", "openviking_smart_read", "openviking_read", "openviking_store",
+    "openviking_write", "openviking_code_search", "openviking_code_outline", "openviking_code_expand",
+    "openviking_grep", "openviking_record_evolution_lesson", "openviking_tree", "openviking_skills",
+    "openviking_get_relations", "openviking_ping", "openviking_health",
+    "openviking_cpa_consult", "openviking_cpa_fanout", "openviking_fleet_check", "openviking_fleet_sync",
 }
 
 # SECTION: Mode Resolution
@@ -122,8 +108,36 @@ def _get_config() -> Dict[str, str]:
     return {
         "api": os.environ.get("OPENVIKING_API", DEFAULT_API).rstrip("/"),
         "api_key": api_key,
-        "cli": os.environ.get("OPENVIKING_CLI", DEFAULT_CLI),
     }
+
+
+def get_resolved_actor_peer(default_client: str = "antigravity") -> str:
+    """解析并返回合规 Agent 身份 (client@node，如 antigravity@2080ti)，100% 遵循官方标识符规则。"""
+    explicit = os.environ.get("OPENVIKING_ACTOR_PEER", "").strip()
+    if explicit:
+        return explicit
+    node = os.environ.get("OPENVIKING_NODE", "").strip().lower()
+    if not node:
+        if sys.platform == "win32":
+            comp = os.environ.get("COMPUTERNAME", "").lower()
+            node = "3070" if "3070" in comp else ("2080ti" if "2080" in comp else "win")
+        elif sys.platform == "darwin":
+            node = "mac"
+        else:
+            hname = socket.gethostname().lower()
+            node = "3070" if "3070" in hname else ("2080ti" if ("2080" in hname or Path("/mnt/c").exists()) else (hname.split(".")[0] or "linux"))
+    client = os.environ.get("OPENVIKING_CLIENT", "").strip().lower()
+    if not client:
+        proc_str = (" ".join(sys.argv) + " " + os.getcwd()).lower()
+        for candidate in ("antigravity", "workbuddy", "mimocode", "openclaw", "hermes"):
+            if candidate in proc_str:
+                client = candidate
+                break
+        client = client or default_client
+    clean_client = re.sub(r"[^a-zA-Z0-9_.-]", "", client) or default_client
+    clean_node = re.sub(r"[^a-zA-Z0-9_-]", "", node) or "local"
+    return f"{clean_client}@{clean_node}"
+
 
 # SECTION: CLI Runner
 def _run_cli(args: List[str], timeout: int = 30) -> Dict[str, Any]:
@@ -205,10 +219,13 @@ class OpenVikingHTTPClient:
         cfg = _get_config()
         api_key = cfg["api_key"] or self.api_key
 
+        peer_id = get_resolved_actor_peer("antigravity")
         headers = {
             "Content-Type": "application/json",
             "X-OpenViking-Account": "default",
             "X-OpenViking-User": "default",
+            "X-OpenViking-Actor-Peer": peer_id,
+            "X-Caller": peer_id,
         }
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
@@ -369,15 +386,15 @@ def _handle_http_error(e: Exception) -> str:
             pass
         sugg = "检查 API 地址和认证" if e.code in (401, 403) else ("检查请求参数" if e.code == 400 else ("服务器错误稍后重试" if e.code >= 500 else ""))
         return _make_error(f"HTTP {e.code}: {body_text}", sugg)
-    elif isinstance(e, URLError):
+    if isinstance(e, URLError):
         return _make_error(f"连接失败: {e.reason}", "确认 OpenViking 服务已启动")
     return _make_error(str(e), "检查 OpenViking 服务状态")
 
 
 def _handle_cli_error(result: Dict[str, Any]) -> str:
     err_msg = str(result.get("error") or result.get("stderr") or result.get("stdout") or "")
-    returncode = result.get("returncode", -1)
-    sugg = "CLI 未在 PATH 中" if returncode == 127 else ("操作超时" if "timeout" in err_msg.lower() else ("资源不存在" if "not found" in err_msg.lower() else ""))
+    rc = result.get("returncode", -1)
+    sugg = "CLI 未在 PATH 中" if rc == 127 else ("操作超时" if "timeout" in err_msg.lower() else ("资源不存在" if "not found" in err_msg.lower() else ""))
     return _make_error(err_msg, sugg)
 
 

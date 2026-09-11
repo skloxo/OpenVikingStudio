@@ -55,6 +55,7 @@ from tools import (
     register_system_tools,
     register_observability_tools,
     register_cpa_tools,
+    register_fleet_tools,
     register_shims,
 )
 from tools.observability import (
@@ -92,6 +93,7 @@ _all_tools.update(register_sessions_tools(mcp, mcp_tool))
 _all_tools.update(register_system_tools(mcp, mcp_tool))
 _all_tools.update(register_observability_tools(mcp, mcp_tool))
 _all_tools.update(register_cpa_tools(mcp, mcp_tool))
+_all_tools.update(register_fleet_tools(mcp, mcp_tool))
 register_shims(mcp, MCP_MODE)
 
 # 将所有工具函数暴露在模块顶层，保证单测与动态调用 100% 兼容
@@ -108,6 +110,7 @@ if __name__ == "__main__":
     logger.info(f"🚀 OpenViking MCP Server starting in [{MCP_MODE.upper()}] mode...")
     if any(arg.isdigit() for arg in sys.argv[1:]):
         port = next(int(arg) for arg in sys.argv[1:] if arg.isdigit())
-        mcp.run(transport="sse", port=port)
+        mcp.settings.port = port
+        mcp.run(transport="sse")
     else:
         mcp.run(transport="stdio")

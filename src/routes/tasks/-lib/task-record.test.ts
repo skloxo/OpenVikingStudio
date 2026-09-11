@@ -36,20 +36,49 @@ describe('task record helpers', () => {
   })
 
   it('correctly parses initiator and handles valet_parking tenant fallback', () => {
-    // Valet parking with default namespace should map to Antigravity Agent
+    // Valet parking with default namespace should map to [2080TI] Antigravity Agent
     expect(parseInitiator('default', 'valet_parking')).toEqual({
       isAgent: true,
       isUser: false,
-      name: 'Antigravity',
+      name: '[2080TI] Antigravity',
       raw: 'default',
     })
 
-    // Valet parking without initiator should also map to Antigravity Agent
+    // Valet parking without initiator should also map to [2080TI] Antigravity Agent
     expect(parseInitiator(undefined, 'valet_parking')).toEqual({
       isAgent: true,
       isUser: false,
-      name: 'Antigravity',
+      name: '[2080TI] Antigravity',
       raw: '',
+    })
+
+    // Structured client@node attribution
+    expect(parseInitiator('antigravity@2080ti')).toEqual({
+      isAgent: true,
+      isUser: false,
+      name: '[2080TI] Antigravity',
+      raw: 'antigravity@2080ti',
+    })
+
+    expect(parseInitiator('workbuddy@3070')).toEqual({
+      isAgent: true,
+      isUser: false,
+      name: '[3070] WorkBuddy',
+      raw: 'workbuddy@3070',
+    })
+
+    expect(parseInitiator('mimocode@3070')).toEqual({
+      isAgent: true,
+      isUser: false,
+      name: '[3070] MimoCode',
+      raw: 'mimocode@3070',
+    })
+
+    expect(parseInitiator('openclaw.researcher@2080ti')).toEqual({
+      isAgent: true,
+      isUser: false,
+      name: '[2080TI] OpenClaw (Researcher)',
+      raw: 'openclaw.researcher@2080ti',
     })
 
     // Explicit agent with model name
