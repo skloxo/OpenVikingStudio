@@ -2773,11 +2773,16 @@
   5. **标准化与工业级资产固化**：
      - 标准入网脚本 `install_satellite.ps1`
      - 全新智能体一键入职自举提示词与在役智能体全链路一键自检提示词收口至 `mcp-openviking/ONBOARDING.md` 与体外大脑。
+  6. **3070 Antigravity IDE 预取截断缺陷深度根治 (200 ➔ 600 字符)**：
+     - 物理定位 `ov_pre_invocation.py` 硬编码 `ABSTRACT_MAX = 200` 导致第 201 字符开外的 `13100` 与 `8.129.0.26` 被硬生生切除的缺陷；
+     - 扩容至 600 字符并保护换行列表结构，3070 Antigravity IDE 实机提问同样实现 **零工具调用** 100% 精确秒出端口与公网 IP 及标准连接命令！
 - **修改文件清单**：
   - `mcp-openviking/mimo_openviking_plugin.mjs`
   - `mcp-openviking/install_satellite.ps1`
   - `mcp-openviking/ONBOARDING.md`
+  - `.agents/hooks/ov_pre_invocation.py`
   - `package.json`
+  - `REFACTORING_PLAN.md`
   - `REFACTORING_PLAN.md`
 
 ---
