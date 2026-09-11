@@ -228,16 +228,6 @@ async def peer_agents(
             "status": "ready",
             "legacy_aliases": ["xiaomimo@3070"],
         },
-        # Mac Studio 远程算力节点
-        {
-            "id": "mlx-agent@mac",
-            "nameKey": "mlx-agent@mac",
-            "icon": "cpu",
-            "mode": "apiClient",
-            "role": "Mac Studio M3 Ultra 离线算力",
-            "status": "ready",
-            "legacy_aliases": ["mlx-agent@mac", "mac-studio", "researcher@mac"],
-        },
     ]
 
     seen_ids = set()
