@@ -56,6 +56,7 @@
 | **Card-AntiEntropy-Tasks** | **5大抗熵增任务模型正式注册（记忆流反思做梦、分层内存压缩淘汰、增量事实四态流转、时态图谱实体浓缩、四层全息治理）与物理蒸馏落盘** | 1. 吸收学术界与开源前沿方案（Stanford智能体、MemGPT/Letta、Mem0、Zep、项目基线）；<br>2. 任务中心正式注册 5 类一等公民任务：`memory_dream`, `memory_compaction`, `fact_mutation`, `entity_summarization`, `four_tier_governance`；<br>3. 补齐 20 个原子工序步骤与全量流定义，中英双语 100% 对齐；<br>4. 彻底铲除虚假自愈收据，实现本地 Qwen 3.8 Flash 物理提纯与 VikingDB 向量重构（NO GREEN 得分由 0.2781 跃升至 0.8374，全 5 项 Gold 查询得分均达 0.71~0.84，综合 0.7769）；<br>5. 安全隔离归档 36 个历史重复任务，恢复真实业务任务看板 | 后端单测 PASS，API POST `/tasks/dispatch-anti-entropy` 5 项全绿，Vite 生产构建 PASS (16.87s)，Git Tag `v1.4.64` 物理留痕 | `v1.4.64` | [x] 已验收通过 ✅ |
 | **Card-Entropy-01** | **写入准入前门防御、事实四态演化与裁决流水大盘** | 1. 建立 `EntropyGatekeeper` 拦截非法/重复写入；<br>2. 向量四态比对（新增、演化, 失效、去重）；<br>3. 裁决流水通栏展示与统计大盘；<br>4. 统一侧边栏 4 字命名与信达雅术语“熵增防御”与“裁决流水”。 | Pytest 单测全绿，Vite 构建 PASS，1933 端口实测验证 | `v1.4.67` | [x] 已验收通过 ✅ |
 | **Card-Entropy-02** | **裁决流水唯一流水号 (#dec_xxxx)、30天滚动持久化与修剪、分类/关键字筛选与自解释抽屉 UI 重构** | 1. 抽屉 Header 重构与右侧 `pr-10` 保护，彻底解决关闭按钮与状态 Badge 重合遮挡缺陷；<br>2. 裁决记录增加唯一全局流水号 `#dec_xxxx` 并支持一键复制与回溯；<br>3. 落地 30 天滚动持久化防线 (`~/.openviking/data/entropy_gatekeeper.jsonl`)，启动与写盘自动修剪过期数据，杜绝无底洞膨胀；<br>4. 裁决流水表格集成 5 态分类过滤 Pills (`全部`、`新增写入`、`特例演化`、`失效清理`、`印证去重`) 与实时关键字搜索框；<br>5. 根除底层英文报错泄漏，自解释原因 100% 优雅中文自然语言呈现；<br>6. FastMCP `write` 工具打通写入门禁审查闭环。 | 前端 Vite 生产构建 100% PASS，健康探针通过，浏览器实机验证无重叠、无英文泄漏、过滤流畅，Git Tag `v1.4.68` | `v1.4.68` | [x] 已验收通过 ✅ |
+| **Card-Tasks-Initiator-Authenticity** | **任务中心提交方真实性治理与智能体身份穿透契约** | 1. 拔除后端 `write` 在未指定 caller 时盲目退化为 `default` 租户名缺陷；<br>2. Hook 后台归档携带显式 `caller="Agent (Antigravity)"` 与 `X-Caller` 请求头；<br>3. 前端提纯通用 `parseInitiator(raw, taskType)`，原子入库历史 `default` 自动按契约矫正为 `🤖 Antigravity`；<br>4. 任务详情抽屉补齐【提交方】字段与图标展示；<br>5. 后台 CPA 工兵完成全代码库密钥与假数据审计，0 阻碍落盘任务看板。 | Vitest 单测 36 套 174 项 100% PASS，Vite 生产构建 PASS (18.10s)，服务重启正常 | `v1.4.99` | [x] 已验收通过 ✅ |
 
 ---
 
@@ -2719,3 +2720,83 @@
   2. 修复任务中心“重新入队”的 `reindex` 模式为 `semantic_and_vectors`，打破重试死循环；
   3. 创建 Agent 开局统一 SSOT 文档体系（`AGENTS.md` / `PHILOSOPHY.md` / `UI_DESIGN_SPEC.md` / `ARCHITECTURE_BLUEPRINT.md`）；
   4. 物理更新 `package.json` 版本号为 `1.2.42`。
+
+---
+
+### [x] 已验收通过 ✅ | Card-Tasks-Initiator-Authenticity: 任务中心提交方真实性治理（消除 default 用户误标，打通 Hook/MCP 智能体身份与三层穿透契约）
+- **交付版本**: `v1.4.99`
+- **交付时间**: `2026-09-11`
+- **物理根因排查**：
+  1. 用户明确指出：原子入库 (`valet_parking`) 100% 由 Agent 通过 Hook 或 MCP 工具提交，绝对没有普通人类用户手动操作；
+  2. 此前之所以偶发 `👤 default`，是因为后端 `/api/v1/content/write` 在客户端未显式提供 `caller` 时，fallback 逻辑直接读取了 `_ctx.user.user_id`，而单租户系统默认的用户/租户 ID 恰好是 `"default"`；
+  3. 前端读取到 `"default"` 时正则 `/agent/i` 判定为人类用户，因而渲染了 `UserIcon` 与 `default` 文本；而此前模拟数据显式填充了 `"initiator": "Agent (Gemini Flash)"`，两者并存造成了极大的认知割裂与真假疑虑。
+- **三层治理措施**：
+  1. **后端 API 层 (`openviking/server/routers/content.py`)**：
+     - `WriteContentRequest` 扩展可选 `caller: str | None = None`；
+     - 写入时优先使用 `request.caller`，其次提取 `X-Caller` 请求头；若 URI 属于 `antigravity_sessions` 自动收口为 `"Agent (Antigravity)"`；彻底禁止盲目退化为 `default` 租户名；
+  2. **Hook 投递端 (`.agents/hooks/ov_session_archiver.py`)**：
+     - 会话归档后台任务在向 `/api/v1/content/write` 发送请求时，Payload 与 Header 显式携带 `"caller": "Agent (Antigravity)"` 与 `"X-Caller": "Agent (Antigravity)"`；
+  3. **前端渲染与兜底层 (`task-record.ts`, `tasks-table.tsx`, `task-overview-grid.tsx`)**：
+     - 提纯 `parseInitiator(raw?: string, taskType?: string)` 成为通用轮子，收口至 `task-record.ts`；
+     - 对 `valet_parking` 任务若遇到未定义或历史残留 `"default"`，统一物理矫正为 `🤖 Antigravity`，杜绝任何人类用户图标误导；
+     - 在任务详情抽屉（Task Detail Sheet）中补齐【提交方 (Initiator)】字段，保证列表与抽屉 100% 像素级对齐。
+- **质量门禁与验证**：
+  - Vitest 单元测试 36 套全部 PASS (174/174)；
+  - Vite 生产构建 100% PASS (18.10s)；
+  - OpenViking 服务平滑重启完毕。
+
+---
+
+<!-- CPA_AUDIT_REPORT_START -->
+### 🤖 [Agent 自驱提议 · 待排期] Card-CPA-Audit-Findings: 全代码硬编码与假数据排查报告 (2026-09-11 10:54:48)
+- **发现疑点数量**：10 处
+- **审核主题**：全代码库硬编码假数据、伪随机与用户密钥隔离
+- **明细清单**：
+1. **[mock_data]** `src/routes/resources/-components/add-resource-page.tsx:58` - 前端伪随机 Math.random() 曲线/数字
+   ```
+   return `local-file-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+   ```
+2. **[mock_data]** `src/routes/resources/-hooks/use-resource-upload.tsx:122` - 前端伪随机 Math.random() 曲线/数字
+   ```
+   return `upload-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+   ```
+3. **[mock_data]** `src/components/ui/sidebar.tsx:631` - 前端伪随机 Math.random() 曲线/数字
+   ```
+   return `${Math.floor(Math.random() * 40) + 50}%`
+   ```
+4. **[mock_data]** `src/components/ui/pixel-blast.tsx:509` - 前端伪随机 Math.random() 曲线/数字
+   ```
+   return Math.random();
+   ```
+5. **[mock_data]** `src/lib/browser-crypto.ts:4` - 前端伪随机 Math.random() 曲线/数字
+   ```
+   return Math.floor(Math.random() * 256)
+   ```
+6. **[mock_data]** `public/all_skills.json:7095` - 前端伪随机 Math.random() 曲线/数字
+   ```
+   "content": "---
+name: p5js
+description: \"p5.js sketches: gen art, shaders, interactive, 3D.\"
+version: 1.0.0
+author
+   ```
+7. **[mock_data]** `public/all_skills.json:7108` - 前端伪随机 Math.random() 曲线/数字
+   ```
+   "content": "---
+name: page-agent
+description: Embed an in-page natural-language GUI copilot in web apps.
+version: 1.0
+   ```
+8. **[mock_data]** `examples/openclaw-plugin/auto-recall.ts:225` - 前端伪随机 Math.random() 曲线/数字
+   ```
+   return `recall_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+   ```
+9. **[mock_data]** `examples/openclaw-plugin/plugin/openviking-runtime-utils.ts:21` - 前端伪随机 Math.random() 曲线/数字
+   ```
+   return `${source}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+   ```
+10. **[mock_data]** `examples/openclaw-plugin/plugin/openviking-runtime-utils.ts:25` - 前端伪随机 Math.random() 曲线/数字
+   ```
+   return `memory-store-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+   ```
+<!-- CPA_AUDIT_REPORT_END -->

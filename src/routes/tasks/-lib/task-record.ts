@@ -28,7 +28,7 @@ export function normalizeTaskRecord(value: unknown): TaskRecord | undefined {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return undefined
   }
-  return value as unknown as TaskRecord
+  return value as TaskRecord
 }
 
 export function normalizeTasks(value: unknown): TaskRecord[] {
@@ -72,3 +72,34 @@ export function hasTaskResult(result: unknown): boolean {
   }
   return true
 }
+
+export interface InitiatorInfo {
+  isAgent: boolean
+  isUser: boolean
+  name: string
+  raw?: string
+}
+
+export function parseInitiator(raw?: string, taskType?: string): InitiatorInfo {
+  if (!raw) {
+    if (taskType === 'valet_parking') {
+      return { isAgent: true, isUser: false, name: 'Antigravity', raw: '' }
+    }
+    return { isAgent: false, isUser: false, name: '-', raw: '' }
+  }
+  const isDefault = raw.toLowerCase() === 'default'
+  if (isDefault) {
+    // In OpenViking, atomic ingestion / valet_parking is strictly initiated by Agents via Hook or MCP.
+    // 'default' is the storage tenant namespace, not a human user.
+    if (taskType === 'valet_parking') {
+      return { isAgent: true, isUser: false, name: 'Antigravity', raw }
+    }
+    return { isAgent: false, isUser: true, name: 'default', raw }
+  }
+  const isAgent = /agent|antigravity|bot|hook|mcp/i.test(raw)
+  const isUser = !isAgent && /user|admin/i.test(raw)
+  const match = raw.match(/\((.*?)\)/)
+  const cleanName = match ? match[1] : raw.replace(/^(agent|user)\s*/i, '').trim() || (isAgent ? 'Agent' : isUser ? 'User' : raw)
+  return { isAgent, isUser, name: cleanName, raw }
+}
+

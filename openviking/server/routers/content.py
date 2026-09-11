@@ -158,6 +158,7 @@ class WriteContentRequest(BaseModel):
     processing_mode: ProcessingMode = DEFAULT_PROCESSING_MODE
     tags: list[str] | None = None
     tag_mode: Literal["replace", "append"] = "replace"
+    caller: str | None = None
 
 
 class BatchWriteOperation(BaseModel):
@@ -355,7 +356,15 @@ async def write(
     # Valet Parking Ingestion: driver drops keys, returns ticket immediately (<2ms)
     if valet or not request.wait:
         from openviking.service.valet_ingestion import ValetIngestionEngine
-        caller_name = _ctx.user.user_id if hasattr(_ctx, "user") and _ctx.user else "Agent"
+        caller_name = request.caller or ""
+        if not caller_name:
+            if "antigravity_sessions" in str(uri):
+                caller_name = "Agent (Antigravity)"
+            elif hasattr(_ctx, "client_name") and _ctx.client_name:
+                caller_name = f"Agent ({_ctx.client_name})"
+            else:
+                caller_name = "Agent"
+
         ticket = ValetIngestionEngine.get_instance().handover(
             uri=uri,
             content=request.content,
