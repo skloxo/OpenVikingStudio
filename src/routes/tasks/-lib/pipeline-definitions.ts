@@ -99,7 +99,7 @@ export interface TaskTypeFlowDef {
 }
 
 /**
- * 10 大真实车间工序流定义 (9 个经典基建车间 + 1 个轻量增量入库)
+ * 10 大真实车间工序流定义 (9 个经典基建车间 + 1 个原子入库)
  */
 export const TASK_FLOWS: TaskTypeFlowDef[] = [
   {

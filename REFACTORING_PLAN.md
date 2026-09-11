@@ -86,8 +86,28 @@
 | **Card-Memory-DualTrackStorage** | **OpenViking 记忆中枢「双轨写入，单轨读取」解耦重构** | 1. 吸收字节《S³Gym》空间精度与 CPA 语义流形分离律，重构 `EntropyGatekeeper` 与 `memory_store`；<br>2. 双轨存储：`semantic_anchor`（因果归因与场景，专供向量索引）与 `delta`（3~5 行 Git Diff 与错误指纹，纯文本用于代码重放）；<br>3. 彻底根治裸 Diff 语义失明与感性废话反思引发的负迁移。 | 向量搜索精准召回具体代码 Diff，记忆库彻底切除空洞废话，单测 PASS | `P0` | `v1.4.94` | [x] 已验收通过 ✅ |
 | **Card-Satellite-MCP-Fix** | **卫星 MCP 并行超时根除、FastMCP 异步卸载与 tree/relations 路由修复** | 1. 宿主配置超时由 5s 升级标定为 30s (30000ms)，消灭预算错位与 -32001；<br>2. FastMCP 同步工具双轨包装：传给 FastMCP 的是 async 线程池卸载函数 (`asyncio.to_thread`)，解除 stdio 事件循环卡死；<br>3. 重型检索池 (`find`/`search`/`smart_read`) 引入进程内 `asyncio.Semaphore(2)` 保护；<br>4. 后端支持 POST `/api/v1/fs/tree` 并双向兼容 GET，消灭 405；<br>5. 后端注册 `relations_router` 并守卫 `VikingFS.relations` 缺失降级，消灭 404/500；<br>6. 严格守卫单文件 ≤500 行安全红线与 11 项全量单测 PASS。 | 4 工具并发调用 5.94s 成功，消灭 -32001，tree 真实返回 280KB+，relations 返回 200 OK，pytest 11 项全绿 | `P0` | `v1.4.96` | [x] 已验收通过 ✅ |
 | **Card-Harness-DefensiveAndPurge** | **全系统防御性代码显式标注 (`@defensive`) 与“死机制”大扫除** | 1. 吸收字节《HarnessDev》(18/108幽灵代码) 与 CPA 可达性契约，为 FRP 重连、SQLite 降级等防御性底牌添加显式 `@defensive` 注解；<br>2. 静态分析不可达且无 `@defensive` 标注的冗余 Wrapper/伪监听类坚决物理切除；<br>3. 消除“写了以为在用实际触发 0 次”的代码杂质，誓死捍卫系统防御性韧性。 | 核心防御代码 100% 显式标注，切除冗余死机制包装层，代码向黄金区收敛 | `P0` | `v1.4.95` | [x] 已验收通过 ✅ |
+| **Card-Tasks-HighDensity-And-Terminology** | **任务中心回归高密度纯列表与「原子入库」统一命名** | 1. 顺应座舱最高信息密度原则，彻底切除低密卡片视图切换与底部多余折叠抽屉 (`system-ops-view`)；<br>2. 任务路由 (`route.tsx`) 收敛至 ~100 行纯高密度单列表；<br>3. 彻底肃清历史遗留的“轻量增量入库”、“清增量入库”、“托管入库”，全系统后端路由、前端单元格、交付物解析与多语言统一命名为标准 4 字「原子入库」(`Atomic Ingestion`)；<br>4. 35 套前端测试 167 项与后端 pytest 全绿，Vite 编译通过，实机截图验证通过。 | 任务中心纯高密度列表展示，彻底消除卡片模式和冗余底部面板，所有入库任务 100% 统一为「原子入库」 | `P0` | `v1.4.96` | [x] 已验收通过 ✅ |
 | **Card-Verify-MultiMetricGate** | **交付物多维物理验真门禁（内容哈希 + 增量覆盖率，防 Exit 0 作弊）** | 1. 吸收字节《Aspire》虚假闭环教训与 Goodhart 定律防范，重构 Task Completion 判定；<br>2. 代码开发类任务强制双重物理验真：`Diff 变更行数 > 0` 且关键集成测试真实通过；<br>3. 阻断 Agent 通过 mock、swallow 异常或加空注释伪造 `Exit 0` 宣布交付。 | 任务中心物理验真断言生效，虚假 Exit 0 100% 拦截，任务流转真实可信 | `P2` | `v1.4.97` | ⏳ 待排期 |
 | **Card-Metrics-AgentSensors** | **智能体三维效能探针（Token SNR、P@5 召回精度、人工介入率）** | 1. 落地 CPA 导师核心建言“先立度量再动架构，给系统一把恒定的物理标尺”；<br>2. 在 OpenViking Studio 观测大盘埋设三大物理探针：Token 有效载荷率 SNR、记忆召回命中率 P@5、人类纠偏介入率；<br>3. 终结架构改造效果的定性口水战，全部以数字化客观曲线驱动演进。 | Studio 观测大盘透传三大物理指标，每日会话自动统计，指标真实可靠 | `P1` | `v1.4.98` | ⏳ 待排期 |
+
+### 📌 P0: [x] Card-Tasks-HighDensity-And-Terminology (v1.4.96): 任务中心回归高密度纯列表与「原子入库」统一命名 ✅
+- **类型**：Task Center Optimization / Cockpit High Density / Terminology Normalization ｜ **优先级**：🔥 P0（已交付闭环）
+- **交付版本**：`v1.4.96` ｜ **交付时间**：2026-09-11
+- **核心治理成果与交付细节**：
+  1. **任务中心回归纯粹座舱级高信息密度列表**：
+     - 彻底切除低信息密度的卡片视图切换与双轨卡片网格，物理删除 `src/routes/tasks/-components/business-jobs-view.tsx`；
+     - 彻底切除底部多余的折叠操作抽屉，物理删除 `src/routes/tasks/-components/system-ops-view.tsx`，消除数据重复展示与认知负担；
+     - `src/routes/tasks/route.tsx` 精简收敛至 ~100 行（严格 $\le 150$ 行规范），开局即为纯粹、紧凑的高密度主表格。
+  2. **全面肃清残余旧称，全生命周期统一收口「原子入库」**：
+     - 后端路由 `openviking/server/routers/tasks.py`：将历史残存的 `📥 轻量增量入库：{name}` 彻底修正为 `📥 原子入库：{name}`；
+     - 前端单元格 `task-human-cell.tsx`：将 fallback 与衍生标题从“托管入库/轻量增量入库”统一收敛为标准「原子入库」；
+     - 交付物解析器 `task-outcome-resolver.ts`：将展示 title 规范为「原子入库」(`Atomic Ingestion`)；
+     - i18n 语言包与双轨测试套件全量对齐更新。
+  3. **双轨全量单测与构建全绿验证**：
+     - 前端 35 套测试套件 167 项单元测试 100% PASS（含活态视网膜门禁 `component-inventory.test.ts`）；
+     - 后端 `test_valet_ingestion.py` 6 项单测 100% PASS；
+     - `npm run build` 生产编译 20.14s 零错误通过；
+     - 1933 端口实机截图与走查核验通过，大盘统计与任务列表 100% 纯净展示「原子入库」。
 
 ### 📌 P0: [x] Card-Satellite-MCP-Fix (v1.4.96): 卫星 MCP 并行超时根除、FastMCP 异步卸载与 tree/relations 路由修复 ✅
 - **类型**：Satellite MCP / Async FastMCP / Concurrency Safeguard / API Contract Alignment ｜ **优先级**：🔥 P0（已交付闭环）

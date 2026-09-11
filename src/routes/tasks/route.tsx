@@ -1,12 +1,10 @@
 import * as React from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { LayoutGridIcon, ListIcon, RefreshCwIcon } from 'lucide-react'
+import { RefreshCwIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '#/components/ui/button'
 import { useAppConnection } from '#/hooks/use-app-connection'
-import { BusinessJobsView } from '#/routes/tasks/-components/business-jobs-view'
-import { SystemOpsView } from '#/routes/tasks/-components/system-ops-view'
 import { TaskDetailSheet } from '#/routes/tasks/-components/task-detail-sheet'
 import { TasksMetricsCards } from '#/routes/tasks/-components/tasks-metrics-cards'
 import { TasksTableSection } from '#/routes/tasks/-components/tasks-table-section'
@@ -34,7 +32,6 @@ function TasksRoute() {
   const navigate = useNavigate()
   const urlTaskId = searchParams.taskId
 
-  const [viewMode, setViewMode] = React.useState<'dual' | 'table'>('dual')
   const [page, setPage] = React.useState(1)
   const [pageSize, setPageSize] = React.useState(DEFAULT_PAGE_SIZE)
   const [taskType, setTaskType] = React.useState<TaskTypeFilter>('all')
@@ -45,9 +42,6 @@ function TasksRoute() {
 
   const {
     tasksQuery,
-    dualTrackQuery,
-    businessJobs,
-    systemOps,
     queueObserverQuery,
     queueObserverRows,
     allTasks,
@@ -77,59 +71,28 @@ function TasksRoute() {
           <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
           <p className="max-w-3xl text-sm leading-6 text-muted-foreground">{t('description')}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex rounded-lg border bg-muted/40 p-0.5 text-xs">
-            <Button
-              type="button"
-              variant={viewMode === 'dual' ? 'secondary' : 'ghost'}
-              size="sm"
-              className="h-7 px-2.5 text-xs gap-1.5"
-              onClick={() => setViewMode('dual')}
-            >
-              <LayoutGridIcon className="size-3.5" />
-              {t('dualTrack.businessTrackTitle', '双轨业务流')}
-            </Button>
-            <Button
-              type="button"
-              variant={viewMode === 'table' ? 'secondary' : 'ghost'}
-              size="sm"
-              className="h-7 px-2.5 text-xs gap-1.5"
-              onClick={() => setViewMode('table')}
-            >
-              <ListIcon className="size-3.5" />
-              {t('table.task', '工序总表')}
-            </Button>
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={tasksQuery.isFetching || dualTrackQuery.isFetching}
-            onClick={() => { void tasksQuery.refetch(); void dualTrackQuery.refetch() }}
-          >
-            <RefreshCwIcon className={tasksQuery.isFetching || dualTrackQuery.isFetching ? 'animate-spin' : undefined} />
-            {t('refresh')}
-          </Button>
-        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={tasksQuery.isFetching}
+          onClick={() => { void tasksQuery.refetch() }}
+        >
+          <RefreshCwIcon className={tasksQuery.isFetching ? 'animate-spin' : undefined} />
+          {t('refresh')}
+        </Button>
       </header>
 
       <TasksMetricsCards kpiData={kpiData} queueObserverRows={queueObserverRows} isQueueLoading={queueObserverQuery.isLoading} />
 
-      {viewMode === 'dual' ? (
-        <div className="flex flex-col gap-4">
-          <BusinessJobsView jobs={businessJobs} onSelectTask={setSelectedTaskId} onOpenDeliverable={openDeliverable} />
-          <SystemOpsView ops={systemOps} onSelectTask={setSelectedTaskId} onRetryTask={(t) => retryMutation.mutate(t)} onDeleteTask={(id) => deleteTaskMutation.mutate(id)} />
-        </div>
-      ) : (
-        <TasksTableSection
-          filters={{ dataScope, setDataScope, taskType, setTaskType, statusFilter, setStatusFilter, dedupByResource, setDedupByResource }}
-          tasks={{ all: allTasks, paginated: paginatedTasks, query: tasksQuery, queueRows: queueObserverRows }}
-          pagination={{ page, setPage, pageSize, setPageSize, totalPages }}
-          selection={{ selectedTaskId, urlTaskId, onSelectTask: setSelectedTaskId }}
-          mutations={{ retryMutation, clearFailedMutation, deleteTaskMutation }}
-          onOpenDeliverable={openDeliverable}
-        />
-      )}
+      <TasksTableSection
+        filters={{ dataScope, setDataScope, taskType, setTaskType, statusFilter, setStatusFilter, dedupByResource, setDedupByResource }}
+        tasks={{ all: allTasks, paginated: paginatedTasks, query: tasksQuery, queueRows: queueObserverRows }}
+        pagination={{ page, setPage, pageSize, setPageSize, totalPages }}
+        selection={{ selectedTaskId, urlTaskId, onSelectTask: setSelectedTaskId }}
+        mutations={{ retryMutation, clearFailedMutation, deleteTaskMutation }}
+        onOpenDeliverable={openDeliverable}
+      />
 
       <TaskDetailSheet
         identityScopeKey={identityScopeKey}
@@ -141,3 +104,4 @@ function TasksRoute() {
     </div>
   )
 }
+

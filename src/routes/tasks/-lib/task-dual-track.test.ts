@@ -13,7 +13,7 @@ describe('Dual-Track Task Models & Humanized Presentation', () => {
       resource_id: 'viking://resources/staging/antigravity_sessions/test_doc.md',
       meta: {
         is_business: true,
-        human_title: '📥 轻量增量入库：test_doc',
+        human_title: '📥 原子入库：test_doc',
         initiator: 'Agent (Gemini Flash)',
         deliverable: {
           uri: 'viking://resources/staging/antigravity_sessions/test_doc.md',
@@ -34,7 +34,7 @@ describe('Dual-Track Task Models & Humanized Presentation', () => {
     }
 
     expect(record.task_id).toBe('biz_01928374abcd')
-    expect(record.meta?.human_title).toBe('📥 轻量增量入库：test_doc')
+    expect(record.meta?.human_title).toBe('📥 原子入库：test_doc')
     expect(record.meta?.initiator).toBe('Agent (Gemini Flash)')
     expect(record.meta?.deliverable?.uri).toBe(
       'viking://resources/staging/antigravity_sessions/test_doc.md',

@@ -25,9 +25,8 @@ export function TaskHumanCell({
   onOpenDeliverable,
 }: TaskHumanCellProps) {
   const { t } = useTranslation('tasksPage')
-  const meta = task.meta && typeof task.meta === 'object' ? task.meta : {}
-  const result = task.result && typeof task.result === 'object' ? task.result : {}
-  const taskId = task.task_id || `#${pageOffset + index + 1}`
+  const meta = task.meta ?? {}
+  const result = (task.result ?? {}) as Record<string, any>
   const shortId = task.task_id
     ? task.task_id.length > 12
       ? task.task_id.slice(-8)
@@ -42,7 +41,7 @@ export function TaskHumanCell({
   let humanTitle = meta.human_title
   if (!humanTitle) {
     if (rawType === 'valet_parking') {
-      humanTitle = resourceName ? `托管入库：${resourceName}` : '轻量增量入库'
+      humanTitle = resourceName ? `原子入库：${resourceName}` : '原子入库'
     } else if (rawType === 'session_commit') {
       humanTitle = resourceName ? `会话归档：${resourceName}` : '会话上下文与经验归档'
     } else if (rawType === 'admin_reindex') {

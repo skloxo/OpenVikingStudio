@@ -63,7 +63,7 @@ export const tasks = {
       activeJobs: '活动业务作业',
       completedDeliverables: '今日交付成果物',
       emptyBusiness: '暂无活动业务作业',
-      emptyBusinessSub: '所有提交任务均已完成轻量增量入库，知识库秩序井然。',
+      emptyBusinessSub: '所有提交任务均已完成原子入库，知识库秩序井然。',
       colOpName: '工序名称与摘要',
       colStatus: '状态',
       colStage: '阶段',
