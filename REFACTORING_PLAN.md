@@ -9,7 +9,8 @@
 
 > **生产物理事实声明**：
 > - **线上正式部署版本**：**`v1.4.106`**（物理访问地址：`vk.tide.red/studio/home`，已实机验证）；
-> - **本地代码库封板版本**：**`v1.4.110`**（Git Tags 与 package.json 同频）；
+> - **本地代码库封板版本**：**`v1.5.0`**（🎉 正式 Major/Minor 里程碑封板发布，package.json 与 Git Tag 对齐）；
+> - **正式发布公告 (Release Notes)**：查阅 [`docs/releases/RELEASE_v1.5.0.md`](docs/releases/RELEASE_v1.5.0.md) 获取从 v1.4.0 到 v1.5.0 全景演进亮点；
 > - **全量历史归档**：v1.4.4 ~ v1.4.95 及 Milestone 1 全量 70+ 个已交付卡片与 Git Commits 请查阅 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/DELIVERY_ARCHIVE.md)。
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |

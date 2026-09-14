@@ -1,17 +1,17 @@
-# ⚔️ OpenViking (v1.4.0)
+# ⚔️ OpenViking (v1.5.0)
 
 <div align="center">
 
 **面向多 Agent 系统的下一代上下文数据库、体外大脑 (Exocortex) 与全景智能工作台**
 
-[![Version](https://img.shields.io/badge/version-1.4.0-00E5FF.svg?style=flat-square)](https://github.com/skloxo/OpenVikingStudio)
+[![Version](https://img.shields.io/badge/version-1.5.0-00E5FF.svg?style=flat-square)](https://github.com/skloxo/OpenVikingStudio)
 [![Tests](https://img.shields.io/badge/tests-2173%20passed%20%7C%20100%25-00E5FF.svg?style=flat-square)](https://github.com/skloxo/OpenVikingStudio)
 [![Frontend](https://img.shields.io/badge/web--studio-React%2019%20%2B%20Vite-00E5FF.svg?style=flat-square)](https://github.com/skloxo/OpenVikingStudio)
 [![Backend](https://img.shields.io/badge/backend-FastAPI%20%2B%20FastMCP-00E5FF.svg?style=flat-square)](https://github.com/skloxo/OpenVikingStudio)
 [![Native](https://img.shields.io/badge/native-Rust%20AGFS%20%2B%20VikingDB-00E5FF.svg?style=flat-square)](https://github.com/skloxo/OpenVikingStudio)
 [![License](https://img.shields.io/badge/license-Apache--2.0-muted.svg?style=flat-square)](LICENSE)
 
-[English](./README.md) | [中文说明](./README_CN.md) | [架构大蓝图](./.agents/BLUEPRINT.md) | [研发规范 SSOT](./.agents/AGENTS.md) | [任务总看板](./REFACTORING_PLAN.md)
+[English](./README.md) | [中文说明](./README_CN.md) | [正式发布公告 (Release Notes)](./docs/releases/RELEASE_v1.5.0.md) | [架构大蓝图](./.agents/BLUEPRINT.md) | [研发规范 SSOT](./.agents/AGENTS.md) | [任务总看板](./REFACTORING_PLAN.md)
 
 </div>
 
@@ -27,6 +27,44 @@
 - 🧩 **全域工程技能资产管理**：配置驱动自动发现与索引 748+ 实体技能；
 - 🖥️ **全景可视化 Web Studio**：提供沉浸式实验场、切片级任务调度中心、全系统深层遥测大屏；
 - 🚀 **分布式私有化双脑算力 (Dual-Brain Gateway)**：深度整合 Mac Studio (M3 Ultra 256GB MLX) 与本地 GPU 算力集群。
+
+---
+
+## 🌟 v1.5.0 重大里程碑核心演进 (Major Highlights in v1.5.0)
+
+> **正式发布公告详见**：[`docs/releases/RELEASE_v1.5.0.md`](./docs/releases/RELEASE_v1.5.0.md)  
+> 历经 23 天攻坚与 110 个小版本演进（v1.4.1 ~ v1.4.110），`v1.5.0` 标志着 **Milestone 2 全量验收封板** 并全面开启 **Milestone 3 第三代自主进化与零幻觉新篇章**：
+
+### 1. 📏 单文件工程重构与代码库健康度突破 (Single-File Architecture SSOT)
+- **黄金甜点区合规**：全面落实 `AGENTS.md` 黄金甜点区（100~300 行）与物理硬红线（≤ 500 行）。
+- **巨石正交解耦**：原 1,255 行任务路由收敛为 **146 行** 容器；原 1,906 行技能路由收敛为 **116 行** 容器；原 2,300 行双语字典正交拆分为 9 大业务领域模块。全系统 100% 消除 LLM 注意力衰减与工具行号漂移。
+
+### 2. 🛰️ 全集群 Agent 统一身份穿透与对等感知网络 (Full Cluster Agent Mesh: `client@node`)
+- **统一身份身份证**：落地 `{client}@{node}` 身份契约，彻底消除请求盲目退化为 `default` 租户名的历史缺陷。
+- **环境指纹双重嗅探**：核心与卫星 MCP 自动根据进程特征与环境指纹识别客户端，完美隔离 3070 远端与 2080Ti 本地双 Agent（Antigravity 与 WorkBuddy）。
+- **基础设施边界厘清**：彻底肃清 Mac Studio 离线算力幻觉实体 (`mlx-agent`)，首页看板动态呈现全集群 7 大真实干活智能体。
+
+### 3. 📱 XiaomiMiMo 客户端跨节点 ESM 原生插件大一统与直接记忆流注入
+- **Node 原生 fetch ESM**：彻底拔除外部 Python/WSL 子进程依赖，毫秒级预取时延（< 10ms），彻底消除 Electron 桌面环境下 `Bun.build is not a function` 崩溃。
+- **直接流注入 (`messages.transform`)**：核心记忆前置拼接入用户消息流，彻底保障大模型 100% 收到真实记忆上下文；实机测试 4/4 题目 100% 准确命中。
+
+### 4. ⚖️ 双轨任务中心自解释看板与绝对数据真实性治理 (Dual-Track Task Engine)
+- **业务/工序双轨看板**：宏观主看板展示自解释中文业务大任务，底层工序折叠收拢；消灭裸 UUID。
+- **绝对真实数据驱动**：彻底拔除前端 `+4 ~1 -0` 伪造衍生条目，100% 严格由后端真实决策 `decision.action` 驱动。
+- **单行高密座舱排版**：严格单行 40px 行高，成果物直达抽屉收拢，支持一键复制与直达。
+
+### 5. 🛡️ 卫星 MCP 并行超时自愈与安全分层防线 (Satellite MCP Hardening)
+- **超时预算重标定**：宿主配置超时标定为 30s，消灭 -32001 错位崩溃。
+- **线程池异步卸载**：同步工具通过 `asyncio.to_thread` 线程池卸载执行，解除 stdio 阻塞。
+- **纯普通 User Key 隔离**：卫星模式精简暴露 16 大非特权工具，彻底切除危险特权运维接口。
+
+### 6. 🧬 抗熵增记忆前门防御与裁决流水总账 (Entropy Gatekeeper)
+- **准入判定与流水号**：轻量入库执行向量四态比对（ADD/NOOP/UPDATE/DLQ），生成全局唯一流水号 `#dec_xxxx`。
+- **30 天滚动持久化**：底层日志 `entropy_gatekeeper.jsonl` 自动滚动修剪，大盘支持真实翻页与多维分类过滤。
+
+### 7. 🌊 第三代自主进化与零幻觉 5-Wave DAG 战略确立
+- **去伪存真吸收**：经受芒格逆向审问（倒推死因）与红蓝对抗审裁，确立 24 张卡片的 5-Wave DAG 严密因果依赖。
+- **实战轮子替代**：彻底剔除黑盒不可解密的学术玩具 `500xCompressor`，替换为**阿里 SkillZip**（六元组契约 + 0-Rollout 写入即压缩防膨胀 30%+）与 **Codex 级 Notes-History 双轨分仓**（切除有损全局压缩）。
 
 ---
 

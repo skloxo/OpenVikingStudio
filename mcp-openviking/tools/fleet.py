@@ -165,7 +165,7 @@ def _check_mac_studio() -> Dict[str, Any]:
 
 
 def _sync_to_3070() -> Dict[str, Any]:
-    log_res = {"target": "RTX 3070", "satellite_mcp": False, "workbuddy_mcp": False, "agents_md": False, "antigravity_config": False}
+    log_res = {"target": "RTX 3070", "satellite_mcp": False, "workbuddy_mcp": False, "mimo_plugin": False, "agents_md": False, "antigravity_config": False}
     if not SATELLITE_SRC.exists():
         log_res["error"] = f"找不到源文件: {SATELLITE_SRC}"
         return log_res
@@ -176,6 +176,11 @@ def _sync_to_3070() -> Dict[str, Any]:
 
     cp_wb = subprocess.run(base_scp + [str(SATELLITE_SRC), "AzureAD\\s@tide.red@8.129.0.26:C:/Users/Skl/.workbuddy/openviking-mcp/satellite_mcp_server.py"], capture_output=True, text=True, timeout=15)
     log_res["workbuddy_mcp"] = cp_wb.returncode == 0
+
+    plugin_src = Path("/home/skloxo/aho/openclaw/project/OpenVikingStudio/mcp-openviking/mimo_openviking_plugin.mjs")
+    if plugin_src.exists():
+        cp_plg = subprocess.run(base_scp + [str(plugin_src), "AzureAD\\s@tide.red@8.129.0.26:C:/Users/Skl/.openviking/mimo-openviking-plugin.mjs"], capture_output=True, text=True, timeout=15)
+        log_res["mimo_plugin"] = cp_plg.returncode == 0
 
     tmp_agents = Path("/tmp/temp_agents_3070.md")
     tmp_agents.write_text(GLOBAL_SATELLITE_AGENTS_MD, encoding="utf-8")
@@ -214,7 +219,13 @@ def _sync_to_3070() -> Dict[str, Any]:
 
 def _sync_to_local_2080ti() -> Dict[str, Any]:
     win_mimo_dir = Path("/mnt/c/Users/Skl/.config/mimocode")
-    res = {"target": "2080Ti (Local)", "agents_md": False, "xiaomimo_config": False}
+    res = {"target": "2080Ti (Local)", "agents_md": False, "xiaomimo_config": False, "mimo_plugin": False}
+    plugin_src = Path("/home/skloxo/aho/openclaw/project/OpenVikingStudio/mcp-openviking/mimo_openviking_plugin.mjs")
+    local_target = Path("/mnt/c/Users/Skl/.openviking/mimo-openviking-plugin.mjs")
+    if plugin_src.exists() and local_target.parent.exists():
+        import shutil
+        shutil.copy2(plugin_src, local_target)
+        res["mimo_plugin"] = True
     if win_mimo_dir.exists():
         agents_md = win_mimo_dir / "AGENTS.md"
         agents_md.write_text(GLOBAL_SATELLITE_AGENTS_MD, encoding="utf-8")
