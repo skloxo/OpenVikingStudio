@@ -24,6 +24,19 @@ _EXPORTS = {
     "DirectoryDefinition": ("openviking.core.directories", "DirectoryDefinition"),
     "PRESET_DIRECTORIES": ("openviking.core.directories", "PRESET_DIRECTORIES"),
     "DirectoryInitializer": ("openviking.core.directories", "DirectoryInitializer"),
+    "TreeEntry": ("openviking.core.pi_dual_loop", "TreeEntry"),
+    "TreeHashSnapshot": ("openviking.core.pi_dual_loop", "TreeHashSnapshot"),
+    "TreeDelta": ("openviking.core.pi_dual_loop", "TreeDelta"),
+    "PiDualLoopSensor": ("openviking.core.pi_dual_loop", "PiDualLoopSensor"),
+    "compute_tree_hash": ("openviking.core.pi_dual_loop", "compute_tree_hash"),
+    "detect_delta": ("openviking.core.pi_dual_loop", "detect_delta"),
+    # Two-Tier Agent Loop & Four-Layer Onion Guard (v1.5.01)
+    "TwoTierAgentLoop": ("openviking.core.agent_loop", "TwoTierAgentLoop"),
+    "OnionGuardConfig": ("openviking.core.agent_loop", "OnionGuardConfig"),
+    "AgentMessage": ("openviking.core.agent_loop", "AgentMessage"),
+    "ToolCallResult": ("openviking.core.agent_loop", "ToolCallResult"),
+    "TurnResult": ("openviking.core.agent_loop", "TurnResult"),
+    "AgentLoopStatus": ("openviking.core.agent_loop", "AgentLoopStatus"),
 }
 
 
@@ -55,4 +68,19 @@ __all__ = [
     "DirectoryDefinition",
     "PRESET_DIRECTORIES",
     "DirectoryInitializer",
+    # Pi Dual Loop (Change Perception Sensor)
+    "TreeEntry",
+    "TreeHashSnapshot",
+    "TreeDelta",
+    "PiDualLoopSensor",
+    "compute_tree_hash",
+    "detect_delta",
+    # Two-Tier Agent Loop & Four-Layer Onion Guard (v1.5.01)
+    "TwoTierAgentLoop",
+    "OnionGuardConfig",
+    "AgentMessage",
+    "ToolCallResult",
+    "TurnResult",
+    "AgentLoopStatus",
 ]
+
