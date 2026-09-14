@@ -1,0 +1,19 @@
+#!/bin/bash
+# ==============================================================================
+# 🛡️ OpenViking Pre-Commit Security Guard
+# ==============================================================================
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+SCANNER="$REPO_ROOT/scripts/security_check.py"
+
+if [ -f "$SCANNER" ]; then
+    python3 "$SCANNER"
+    RESULT=$?
+    if [ $RESULT -ne 0 ]; then
+        echo ""
+        echo "🚨 [GIT COMMIT 物理阻断] 检测到敏感凭据、API Key 或私有 IP！"
+        echo "代码提交已终止。请移除违规敏感信息后再尝试 git commit。"
+        echo ""
+        exit 1
+    fi
+fi
+exit 0
