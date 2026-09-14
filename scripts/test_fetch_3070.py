@@ -75,13 +75,13 @@ print('WRITTEN_TO_FILE, STDOUT_LEN:', len(res.stdout), 'STDERR_LEN:', len(res.st
 
 py_b64 = base64.b64encode(py_runner.encode("utf-8")).decode("ascii")
 cmd = [
-    "sshpass", "-p", "Skl3289568",
+    "sshpass", "-p", "os.environ.get("OV_FLEET_3070_PASS", "")",
     "ssh", "-p", "6022",
     "-o", "StrictHostKeyChecking=no",
     "-o", "PubkeyAuthentication=no",
     "-o", "PreferredAuthentications=password",
     "-o", "ConnectTimeout=10",
-    "AzureAD\\s@tide.red@8.129.0.26",
+    os.environ.get("OV_FLEET_3070_SSH", ""),
     f"C:\\Users\\Skl\\.venv-openviking\\Scripts\\python.exe -c \"import base64; exec(base64.b64decode('{py_b64}'))\""
 ]
 res = subprocess.run(cmd, capture_output=True, text=True, errors="replace")
@@ -90,13 +90,13 @@ if res.stderr:
     print("STDERR:", res.stderr)
 
 read_cmd = [
-    "sshpass", "-p", "Skl3289568",
+    "sshpass", "-p", "os.environ.get("OV_FLEET_3070_PASS", "")",
     "ssh", "-p", "6022",
     "-o", "StrictHostKeyChecking=no",
     "-o", "PubkeyAuthentication=no",
     "-o", "PreferredAuthentications=password",
     "-o", "ConnectTimeout=10",
-    "AzureAD\\s@tide.red@8.129.0.26",
+    os.environ.get("OV_FLEET_3070_SSH", ""),
     "type C:\\Users\\Skl\\.openviking\\fetch_debug.txt"
 ]
 res2 = subprocess.run(read_cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")

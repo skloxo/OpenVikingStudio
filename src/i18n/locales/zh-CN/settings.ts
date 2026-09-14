@@ -47,7 +47,7 @@ export const settings = {
         playgroundTitle: '实时脱敏沙盒演练 (Playground)',
         playgroundDesc: '输入含敏感字符的样本，实时检验脱敏引擎过滤后的效果',
         inputLabel: '测试样本输入',
-        inputPlaceholder: '输入测试文本，如: Authorization: Bearer sk-99887766aabbccdd, 联络: fsk@8.129.0.26',
+        inputPlaceholder: '输入测试文本，如: Authorization: Bearer sk-mock-token-sample-12345, 联络: security@example.com',
         previewBtn: '执行脱敏预览',
         previewOutput: '脱敏过滤结果',
         rulesTableTitle: '敏感词匹配策略',

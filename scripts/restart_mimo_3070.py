@@ -23,13 +23,13 @@ if (Test-Path $exe) {
 
 b64 = base64.b64encode(ps_code.encode("utf-16le")).decode("ascii")
 cmd = [
-    "sshpass", "-p", "Skl3289568",
+    "sshpass", "-p", "os.environ.get("OV_FLEET_3070_PASS", "")",
     "ssh", "-p", "6022",
     "-o", "StrictHostKeyChecking=no",
     "-o", "PubkeyAuthentication=no",
     "-o", "PreferredAuthentications=password",
     "-o", "ConnectTimeout=10",
-    "AzureAD\\s@tide.red@8.129.0.26",
+    os.environ.get("OV_FLEET_3070_SSH", ""),
     f"powershell -EncodedCommand {b64}"
 ]
 res = subprocess.run(cmd, capture_output=True, text=True, errors="replace")

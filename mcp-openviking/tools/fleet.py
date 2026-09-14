@@ -25,6 +25,29 @@ from _core.config import _make_error
 
 logger = logging.getLogger("openviking-mcp")
 
+def _load_env():
+    """从 .env 动态加载本地凭据，保障 Git 代码库零密钥硬编码"""
+    for p in [
+        Path(__file__).resolve().parent.parent.parent / ".env",
+        Path.home() / ".openviking" / ".env",
+        Path.home() / ".config" / "openviking" / ".env",
+    ]:
+        if p.exists():
+            try:
+                for line in p.read_text(encoding="utf-8").splitlines():
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        k = k.strip()
+                        v = v.strip().strip("'\"")
+                        if k and k not in os.environ:
+                            os.environ[k] = v
+            except Exception:
+                pass
+
+_load_env()
+
+
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 SATELLITE_SRC = REPO_ROOT / "project" / "OpenVikingStudio" / "mcp-openviking" / "satellite_mcp_server.py"
 if not SATELLITE_SRC.exists():
@@ -74,14 +97,19 @@ def _check_local_2080ti() -> Dict[str, Any]:
 
 
 def _exec_3070_cmd(cmd: str, timeout: int = 20) -> subprocess.CompletedProcess:
+    ssh_pass = os.environ.get("OV_FLEET_3070_PASS")
+    ssh_target = os.environ.get("OV_FLEET_3070_SSH")
+    ssh_port = os.environ.get("OV_FLEET_3070_PORT", "6022")
+    if not ssh_pass or not ssh_target:
+        return subprocess.CompletedProcess(args=[], returncode=1, stdout="", stderr="OV_FLEET_3070_SSH or OV_FLEET_3070_PASS not configured in environment")
     ssh_cmd = [
-        "sshpass", "-p", "Skl3289568",
-        "ssh", "-p", "6022",
+        "sshpass", "-p", ssh_pass,
+        "ssh", "-p", str(ssh_port),
         "-o", "StrictHostKeyChecking=no",
         "-o", "PubkeyAuthentication=no",
         "-o", "PreferredAuthentications=password",
         "-o", f"ConnectTimeout={timeout}",
-        "AzureAD\\s@tide.red@8.129.0.26",
+        ssh_target,
         cmd
     ]
     return subprocess.run(ssh_cmd, capture_output=True, text=True, errors="replace", timeout=timeout + 3)
@@ -117,7 +145,7 @@ def _check_remote_3070() -> Dict[str, Any]:
         )
         test_mcp_cmd = (
             "$env:OPENVIKING_API='https://vk.tide.red'; "
-            "$env:OPENVIKING_API_KEY='ZGVmYXVsdA.ZGVmYXVsdA.NmRjZTAxYTRiYWZlNDFlNTkwODRlYzQyZWJiYWQ3YTI4Y2E1NjRkZjc4Y2Q5YzAzOTFhYWQyZWU5NjkyMjgxNQ'; "
+            "$env:OPENVIKING_API_KEY='" + os.environ.get("OPENVIKING_SATELLITE_KEY", "") + "'; "
             f"& 'C:/Users/Skl/.venv-openviking/Scripts/python.exe' -c \"{probe_py}\""
         )
         cp_test = _exec_3070_cmd(test_mcp_cmd, timeout=12)
@@ -144,11 +172,17 @@ def _check_remote_3070() -> Dict[str, Any]:
 
 def _check_mac_studio() -> Dict[str, Any]:
     res = {"node": "Mac Studio (M3 Ultra)", "status": "ok", "checks": {}}
+    ssh_target = os.environ.get("OV_MAC_STUDIO_SSH")
+    ssh_port = os.environ.get("OV_MAC_STUDIO_PORT", "13100")
+    if not ssh_target:
+        res["status"] = "unconfigured"
+        res["error"] = "OV_MAC_STUDIO_SSH not configured"
+        return res
     cmd = [
-        "ssh", "-p", "13100",
+        "ssh", "-p", str(ssh_port),
         "-o", "StrictHostKeyChecking=no",
         "-o", "ConnectTimeout=4",
-        "fsk@8.129.0.26",
+        ssh_target,
         "echo mac-studio-ok"
     ]
     try:
@@ -170,21 +204,28 @@ def _sync_to_3070() -> Dict[str, Any]:
         log_res["error"] = f"找不到源文件: {SATELLITE_SRC}"
         return log_res
 
-    base_scp = ["sshpass", "-p", "Skl3289568", "scp", "-P", "6022", "-o", "StrictHostKeyChecking=no", "-o", "PubkeyAuthentication=no", "-o", "PreferredAuthentications=password"]
-    cp = subprocess.run(base_scp + [str(SATELLITE_SRC), "AzureAD\\s@tide.red@8.129.0.26:C:/Users/Skl/.openviking/satellite_mcp_server.py"], capture_output=True, text=True, timeout=15)
+    ssh_pass = os.environ.get("OV_FLEET_3070_PASS")
+    ssh_target = os.environ.get("OV_FLEET_3070_SSH")
+    ssh_port = os.environ.get("OV_FLEET_3070_PORT", "6022")
+    if not ssh_pass or not ssh_target:
+        log_res["error"] = "OV_FLEET_3070_SSH or OV_FLEET_3070_PASS not configured in environment"
+        return log_res
+
+    base_scp = ["sshpass", "-p", ssh_pass, "scp", "-P", str(ssh_port), "-o", "StrictHostKeyChecking=no", "-o", "PubkeyAuthentication=no", "-o", "PreferredAuthentications=password"]
+    cp = subprocess.run(base_scp + [str(SATELLITE_SRC), f"{ssh_target}:C:/Users/Skl/.openviking/satellite_mcp_server.py"], capture_output=True, text=True, timeout=15)
     log_res["satellite_mcp"] = cp.returncode == 0
 
-    cp_wb = subprocess.run(base_scp + [str(SATELLITE_SRC), "AzureAD\\s@tide.red@8.129.0.26:C:/Users/Skl/.workbuddy/openviking-mcp/satellite_mcp_server.py"], capture_output=True, text=True, timeout=15)
+    cp_wb = subprocess.run(base_scp + [str(SATELLITE_SRC), f"{ssh_target}:C:/Users/Skl/.workbuddy/openviking-mcp/satellite_mcp_server.py"], capture_output=True, text=True, timeout=15)
     log_res["workbuddy_mcp"] = cp_wb.returncode == 0
 
     plugin_src = Path("/home/skloxo/aho/openclaw/project/OpenVikingStudio/mcp-openviking/mimo_openviking_plugin.mjs")
     if plugin_src.exists():
-        cp_plg = subprocess.run(base_scp + [str(plugin_src), "AzureAD\\s@tide.red@8.129.0.26:C:/Users/Skl/.openviking/mimo-openviking-plugin.mjs"], capture_output=True, text=True, timeout=15)
+        cp_plg = subprocess.run(base_scp + [str(plugin_src), f"{ssh_target}:C:/Users/Skl/.openviking/mimo-openviking-plugin.mjs"], capture_output=True, text=True, timeout=15)
         log_res["mimo_plugin"] = cp_plg.returncode == 0
 
     tmp_agents = Path("/tmp/temp_agents_3070.md")
     tmp_agents.write_text(GLOBAL_SATELLITE_AGENTS_MD, encoding="utf-8")
-    cp2 = subprocess.run(base_scp + [str(tmp_agents), "AzureAD\\s@tide.red@8.129.0.26:C:/Users/Skl/.config/mimocode/AGENTS.md"], capture_output=True, text=True, timeout=15)
+    cp2 = subprocess.run(base_scp + [str(tmp_agents), f"{ssh_target}:C:/Users/Skl/.config/mimocode/AGENTS.md"], capture_output=True, text=True, timeout=15)
     log_res["agents_md"] = cp2.returncode == 0
     if tmp_agents.exists():
         tmp_agents.unlink()

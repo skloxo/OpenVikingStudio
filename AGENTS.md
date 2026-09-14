@@ -121,7 +121,7 @@
 |:---|:---|:---|:---|
 | **`1933`** | OpenViking 生产核心 (FastMCP / REST / `/studio`) | `systemd --user openviking.service` | `systemctl --user restart openviking` |
 | **`1936`** | OpenVikingStudio Vite 热更开发测试环境 | `systemd --user openviking-studio-dev.service` | **`vk1936 restart`** / `vk1936 status` |
-| **`13100`** | Mac Studio (M3 Ultra 256G) 远程算力节点 | FRP 穿透 (`8.129.0.26`) | `ssh -p 13100 fsk@8.129.0.26` |
+| **`13100`** | Mac Studio (M3 Ultra 256G) 远程算力节点 | FRP 穿透 (`tunnel.internal`) | `ssh -p 13100 user@tunnel.internal` |
 
 ---
 

@@ -28,8 +28,26 @@ build/
 target/
 .venv/
 
-# Environment & Logs
+# Environment, Credentials & Secrets (Permanent Non-Negotiable Safeguards)
 .env
+.env.*
+*.local
+ov.conf
+openviking.conf
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+*.p12
+*.id_rsa
+*id_ed25519*
+secrets/
+private/
+*.secret
+credentials.json
+token.json
+auth.json
 *.log
 .DS_Store
 test_data/

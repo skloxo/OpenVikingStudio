@@ -11,7 +11,7 @@ import { Textarea } from '#/components/ui/textarea'
 import { applyClientRedaction } from '../-lib/settings-types'
 
 const DEFAULT_SAMPLE_TEXT =
-  'Authorization: Bearer sk-99887766aabbccddeeff001122, contact: fsk@8.129.0.26, phone: +86-13800138000, client_ip: 192.168.1.100'
+  'Authorization: Bearer sk-mock-token-sample-12345, contact: security@example.com, phone: +86-13800138000, client_ip: 192.168.1.100'
 
 export function PrivacyTab() {
   const { i18n, t } = useTranslation('settings')

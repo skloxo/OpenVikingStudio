@@ -140,7 +140,7 @@ graph TD
 | :--- | :--- | :--- | :--- |
 | **`1933`** | OpenViking 核心引擎 (FastAPI / FastMCP / `/studio`) | `http://127.0.0.1:1933` | `systemctl --user restart openviking.service` |
 | **`1936`** | OpenVikingStudio Vite 热更开发测试环境 | `http://127.0.0.1:1936` | `systemctl --user restart openviking-studio-dev.service` |
-| **`13100`** | Mac Studio M3 Ultra 256G 远程算力节点 | FRP 隧道 (`8.129.0.26`) | `ssh -p 13100 fsk@8.129.0.26` |
+| **`13100`** | Mac Studio M3 Ultra 256G 远程算力节点 | FRP 隧道 (`tunnel.internal`) | `ssh -p 13100 user@tunnel.internal` |
 | **`8317`** | CPA 集中智能网关 (auto-router) | `http://127.0.0.1:8317/v1` | `cpa status` |
 
 ---

@@ -47,7 +47,7 @@ export const settings = {
         playgroundTitle: 'Live Redaction Playground',
         playgroundDesc: 'Input sample text with sensitive tokens to preview real-time sanitization output',
         inputLabel: 'Sample Input Text',
-        inputPlaceholder: 'Enter test text, e.g., Authorization: Bearer sk-99887766aabbccdd, contact: fsk@8.129.0.26',
+        inputPlaceholder: 'Enter test text, e.g., Authorization: Bearer sk-mock-token-sample-12345, contact: security@example.com',
         previewBtn: 'Preview Redaction',
         previewOutput: 'Sanitized Output',
         rulesTableTitle: 'Pattern Matching Rules',

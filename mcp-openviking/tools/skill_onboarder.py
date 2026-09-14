@@ -53,7 +53,7 @@ def generate_ai_skill_md(dir_path: str) -> str:
 
 请输出完整的 SKILL.md 内容，仅输出 Markdown 代码，不要输出额外沟通文字。"""
 
-    vlm_key = "sk-fbb21afbe35d09986ac6f66ca91f66f4dee6b2536319be7347759f02de8f6227"
+    vlm_key = os.environ.get("OPENVIKING_VLM_KEY") or os.environ.get("CPA_API_KEY") or os.environ.get("OPENAI_API_KEY", "")
     try:
         req_data = json.dumps({
             "model": "gpt-oss-120b",
