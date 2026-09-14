@@ -230,3 +230,7 @@ def get_skill_by_name(skill_name: str) -> Optional[Dict[str, Any]]:
         if s.get("name") == skill_name:
             return s
     return None
+
+
+if __name__ == "__main__":
+    scan_configured_skills()
