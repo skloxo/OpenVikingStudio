@@ -1,0 +1,55 @@
+#!/bin/bash
+# ==============================================================================
+# 🛡️ OpenViking Pre-Push Security Guard (Git 上传代码前强制安全审计)
+# ==============================================================================
+remote="$1"
+url="$2"
+
+echo "🔒 [Git Pre-Push Hook] 正在对即将推流上传至 $remote 的代码进行安全审计..."
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+SCANNER="$REPO_ROOT/scripts/security_check.py"
+
+# 1. 扫描全量跟踪文件
+if [ -f "$SCANNER" ]; then
+    python3 "$SCANNER"
+    if [ $? -ne 0 ]; then
+        echo ""
+        echo "🛑 [GIT PUSH 物理阻断] 全量文件扫描检出敏感凭据！"
+        echo "上传已强行终止。请移除违规敏感信息后再尝试 git push。"
+        echo ""
+        exit 1
+    fi
+fi
+
+# 2. 对本次推流范围的增量 Diff 进行实时指纹拦截
+z40="0000000000000000000000000000000000000000"
+
+while read local_ref local_sha remote_ref remote_sha
+do
+    if [ "$local_sha" = "$z40" ]; then
+        continue
+    fi
+
+    if [ "$remote_sha" = "$z40" ]; then
+        range="$local_sha"
+    else
+        range="$remote_sha..$local_sha"
+    fi
+
+    # 扫描新增行是否包含敏感模式
+    leaks=$(git diff "$range" | grep '^[+][^+]' | grep -iE '(s[k]-[a-zA-Z0-9_-]{24,}|g[h]p_[a-zA-Z0-9_-]{24,}|8\.129\.0\.26|100\.78\.64\.128|Skl[0-9]{7}|s@8[x]{2}5\.com)' | head -n 10)
+
+    if [ -n "$leaks" ]; then
+        echo ""
+        echo "🛑 [GIT PUSH 物理阻断] 在即将推流的增量代码 ($range) 中检出私有凭据："
+        echo "$leaks"
+        echo ""
+        echo "上传已被物理熔断！严禁将私有密钥或内网配置推向远端！"
+        echo ""
+        exit 1
+    fi
+done
+
+echo "✅ [Git Pre-Push Hook] 安全审计通过，代码纯净，允许上传。"
+exit 0
