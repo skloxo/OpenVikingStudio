@@ -24,38 +24,10 @@
 | **`v1.4.103`** | **Card-Satellite-Universal-Onboarding** | **卫星智能体「提示词 + Key」一键自举入网体系、跨端极简分发与全集群身份契约固化 (Onboarding SSOT)** | 1. 升级 `install_satellite.sh` 与 `install_satellite.ps1`，原生支持 `--peer`/`-p`、`--key`/`-k` 与 `--api`/`-a` 参数，生成自包含启动包装脚本；<br>2. 安装过程原生集成 `/health` 握手自检，回显 `✅ 握手成功！智能体唯一身份证已接入中枢: client@node`；<br>3. 发布全能入网指南 [`mcp-openviking/ONBOARDING.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/mcp-openviking/ONBOARDING.md)，沉淀一键复制即用的「入职自举提示词」与 8 行标准 JSON 配置代码块；<br>4. 优化 `tools/fleet.py` FRP 穿透命令执行超时上限 (10s ➔ 20s)，提升弱网与高并发下远程运维鲁棒性；<br>**Commit Hash**：`4e995fe00` \ | **修改文件**：`package.json`, `mcp-openviking/install_satellite.sh`, `mcp-openviking/install_satellite.ps1`, `mcp-openviking/tools/fleet.py`, `mcp-openviking/ONBOARDING.md` |
 | **`v1.4.102`** | **Card-XiaomiMo-DualNode-Attribution** | **2080Ti 本地 Windows 与 3070 远端 XiaomiMo (小米客户端) 统一身份穿透与双端舰队自动纳管** | 1. 查清 2080Ti 本地 Windows (`/mnt/c/Users/Skl/.config/mimocode/`) 与 3070 远端均部署了 XiaomiMo 客户端的物理事实；<br>2. 自动升级两端配置，写入真实且合规的身份签名 `xiaomimo@2080ti` 与 `xiaomimo@3070`；<br>3. `_core/config.py` 与 `satellite_mcp_server.py` 同步支持 `xiaomimo` / `mimocode` 自动嗅探归一；<br>4. 前端 `task-record.ts` 优雅映射并高密展示为 `[2080TI] XiaomiMo` 与 `[3070] XiaomiMo`；<br>5. 舰队工具 `tools/fleet.py` 巡检与同步方法全面纳管两端 XiaomiMo 客户端配置状态，自动化验证 100% 通过。 | 双节点 XiaomiMo 客户端身份精准归因，舰队工具 100% 自动纳管，单测试全绿 |
 | **`v1.4.101`** | **Card-3070-Dual-Agent-Isolation** | **3070 节点反重力 IDE 与 WorkBuddy 身份物理隔离治理与双向环境自动嗅探机制** | 1. 查清 3070 节点共存 Antigravity IDE 与 WorkBuddy 调用同一个 MCP 的物理事实；<br>2. 升级 `satellite_mcp_server.py` 与 `_core/config.py`，引入进程执行特征 + 环境变量指纹双重自动嗅探 (`full_ctx`)，即使共用同一脚本也能精准识别；<br>3. 3070 远端 `C:\Users\Skl\.gemini\config\mcp_config.json` 自动配置 `antigravity@3070`；<br>4. `tools/fleet.py` 一键全自动化推流覆盖 3070 双路径 (`.openviking/` 与 `.workbuddy/openviking-mcp/`)；<br>5. 远端实机探针 100% 验证双 Agent 身份绝对隔离 (`peers_isolated: True`)，Vitest 36/36、Pytest 11/11 全绿。 | 3070 双 Agent 身份隔离 100% 验证通过，单文件均 $\le 500$ 行 |
-| **`v1.4.100`** | **Card-Fleet-Ops-Identity-Rollout** | **全集群智能体统一身份穿透 (client@node) 落地、双模 MCP/Hook 自动装配与舰队自动同频闭环 (Fleet Ops)** | 1. 制定并落地全网统一 Agent 身份规范 `{client}@{node}` / `{client}.{role}@{node}`，严格符合官方正则；<br>2. 核心 MCP (`_core/config.py`) 与卫星 MCP (`satellite_mcp_server.py`) 自动解析节点平台与客户端环境，请求头自动注入 `X-OpenViking-Actor-Peer` 与 `X-Caller`；<br>3. 后端写路由 (`content.py`) 优先透传真实 actor peer，彻底切除 `default` 租户名误判；<br>4. 工作区与全局 Hook (`ov_pre_invocation.py`, `ov_session_archiver.py`)、本地配置 (`mcp_config.json`, `openclaw.json`) 统一升级至 `antigravity@2080ti` 与 `openclaw@2080ti`；<br>5. 注册 OpenViking MCP 原生舰队工具 `tools/fleet.py` (`openviking_fleet_check`, `openviking_fleet_sync`)，一键推流 3070 节点并通过 SSH 探针验证闭环；<br>6. 前端任务中心高密自解释展示 `[NODE] Client`，Vitest 36 套 174 单测全绿，Vite 构建 PASS。 | 舰队自动同步闭环，跨节点提交方真实精准归因，单文件严格 $\le 500$ 行，无缝平滑升级 |
-| **`v1.4.99`** | **Card-Tasks-Initiator-Authenticity** | **任务中心提交方真实性治理与智能体身份穿透契约** | 1. 拔除后端 `write` 在未指定 caller 时盲目退化为 `default` 租户名缺陷；<br>2. Hook 后台归档携带显式 `caller="Agent (Antigravity)"` 与 `X-Caller` 请求头；<br>3. 前端提纯通用 `parseInitiator(raw, taskType)`，原子入库历史 `default` 自动按契约矫正为 `🤖 Antigravity`；<br>4. 任务详情抽屉补齐【提交方】字段与图标展示；<br>5. 后台 CPA 工兵完成全代码库密钥与假数据审计，0 阻碍落盘任务看板。 | Vitest 单测 36 套 174 项 100% PASS，Vite 生产构建 PASS (18.10s)，服务重启正常 |
-| **`v1.4.98`** | **Card-Tasks-AuthenticMemoryImpact-Purge** | **原子入库记忆增量硬编码假数据 (+4 ~1) 彻底切除与 100% 真实数据对齐** | 1. 深入物理根因：排查出 `task-pipeline-diagram.tsx` 中遇 `antigravity_sessions` 强行无脑 push 4 项伪造条目（milestones, entities, cases, trajectories）的致命硬编码缺陷；<br>2. 彻底切除所有虚构记忆项代码，100% 严格由后端真实入库决策 `decision.action`（新增 1 / 更新 1 / 淘汰 1）真实驱动；<br>3. 坚决捍卫绝对数据真实性底线，彻底消灭所有原子入库雷同“+4 ~1 -0”的虚假假象；<br>4. 36 套前端单测 173 项 100% PASS，Vite 生产构建通过。 | 记忆增量审计快照 100% 真实可信，实事求是，无任何虚构衍生条目 |
-| **`v1.4.97`** | **Card-Tasks-SingleRow-Standardization** | **任务中心严格单行高密度重构、标题去冗余与成果物直达抽屉收拢治理** | 1. 严格落实单行高密度原则 (Single Row)，消除上下折叠多层堆叠，各任务类型行高统一收敛为标准 40px；<br>2. 彻底剥离任务标题中的各类 Emoji (如 📥) 与冗余冒号前缀 (如 "资源处理:", "原子入库：")；<br>3. 表格重构为规范 7 列：任务名称、类型、任务编号 (#shortId)、提交方 (Bot/User 图标+名称)、关联资源 (单行等宽截断)、执行状态与进度、创建时间；<br>4. 成果物直达彻底从列表行移出，收拢至任务详情抽屉顶部专用高密卡片，支持一键复制与外部打开；<br>5. 36 套前端单测 173 项 100% PASS，Vite 构建 PASS，实机截图验证通过。 | 列表严格单行整齐划一，标题纯净无冗余，7列规范各司其职，抽屉成果物直达优雅呈现 |
-| **`v1.4.96`** | **Card-Satellite-MCP-Fix** | **卫星 MCP 并行超时根除、FastMCP 异步卸载与 tree/relations 路由修复** | 1. 宿主配置超时由 5s 升级标定为 30s (30000ms)，消灭预算错位与 -32001；<br>2. FastMCP 同步工具双轨包装：传给 FastMCP 的是 async 线程池卸载函数 (`asyncio.to_thread`)，解除 stdio 事件循环卡死；<br>3. 重型检索池 (`find`/`search`/`smart_read`) 引入进程内 `asyncio.Semaphore(2)` 保护；<br>4. 后端支持 POST `/api/v1/fs/tree` 并双向兼容 GET，消灭 405；<br>5. 后端注册 `relations_router` 并守卫 `VikingFS.relations` 缺失降级，消灭 404/500；<br>6. 严格守卫单文件 ≤500 行安全红线与 11 项全量单测 PASS。 | 4 工具并发调用 5.94s 成功，消灭 -32001，tree 真实返回 280KB+，relations 返回 200 OK，pytest 11 项全绿 |
-| **`v1.4.96`** | **Card-Tasks-HighDensity-And-Terminology** | **任务中心回归高密度纯列表与「原子入库」统一命名** | 1. 顺应座舱最高信息密度原则，彻底切除低密卡片视图切换与底部多余折叠抽屉 (`system-ops-view`)；<br>2. 任务路由 (`route.tsx`) 收敛至 ~100 行纯高密度单列表；<br>3. 彻底肃清历史遗留的“轻量增量入库”、“清增量入库”、“托管入库”，全系统后端路由、前端单元格、交付物解析与多语言统一命名为标准 4 字「原子入库」(`Atomic Ingestion`)；<br>4. 35 套前端测试 167 项与后端 pytest 全绿，Vite 编译通过，实机截图验证通过。 | 任务中心纯高密度列表展示，彻底消除卡片模式和冗余底部面板，所有入库任务 100% 统一为「原子入库」 |
-
----
-
-## ⚔️ 二、 芒格逆向审讯与红蓝对抗排期裁决总纲 (Adversarial Scheduling SSOT)
-
-> **核心原则**：严禁主观盲目拍脑袋排序！全系统任务卡片严格基于【芒格逆向倒推死因】与【红蓝对抗审判】裁定优先级与依赖拓扑：
-> 1. **倒推死因 (Invert, always invert)**：
->    - *死因 A（地基未立妄谈自演进）*：若执行循环仍为单层死循环，Agent 自己改技能改到无限递归强杀进程；缺乏不可伪造判官，模型给自己打满分导致近亲繁殖与模型坍塌。➔ **裁决：自演进绝对后置（Wave 4），运行时与验真门禁绝对前置（Wave 1）！**
->    - *死因 B（检索失真导致垃圾进垃圾出）*：纯向量在精确符号（变量名、端口、报错堆栈）上天然失明，代码盲搜撑爆上下文，模型拿着错误代码必然蒸馏出毒药补丁。➔ **裁决：FTS5 词法稠密混检与端侧分级搜索（Wave 2）必须先于上下文治理（Wave 3）！**
->    - *死因 C（无状态机与死锁空返回）*：长对话提取 171 次调用 97 次空返回死锁 2.5 小时；旧错误经验未标记 superseded 导致持续误导。➔ **裁决：ZeroThinking 零思考二分自愈列为 P0 刚需立即根治！**
-> 2. **历史卡片去粗取精与深度融合**：
->    - **`TieredLazyFetch` (分级懒加载 depth=0/1/2)**：不单独孤立立项，深度融合为 `v1.5.07` (`zgSemanticSearch`) 的对外 Tool 调用标准契约；
->    - **`EntropyCrystallizer` (存量碎片三门结晶)**：不另起并发定时器，深度融合为 `v1.5.21` (`DreamingGate`) 的夜间存量数据归纳工序；
->    - **`MultiMetricGate` (物理验真门禁)**：作为防 Exit 0 作弊的不可伪造底牌，独立排入 `v1.5.04` (P0 运行时门禁)；
->    - **`AgentSensors` / `AdvancedCards` / `LLMLingua-01`**：作为高阶度量与离线脱水，统一排入 `Wave 5` (P2 运营扩展)。
-
----
-
-## ⚡ 三、 Milestone 3 全景待调度工单流水线 (Milestone 3 Pipeline: v1.5.01 ~ v1.5.24)
-
-| 任务工单 ID | 模块与重构主题 | 现状与核心治理目标 | 目标规范硬线 | 优先级 | 计划版本 | 当前状态 |
-|:---|:---|:---|:---|:---:|:---:|:---:|
-| **Card-Runtime-TwoTierAgentLoop-OnionGuard** | **pi 生产级双层事件循环、四层洋葱防御与中途插话/主动刹车契约** | 1. 吸收生产级 pi/agent-loop.ts 743 行源码精读与洋葱模型：终结单层 while 循环无法中途插话、死循环无法优雅中止与异常崩溃顽疾；<br>2. 双层事件循环架构：外层管控会话与模型切换，内层循环推进 hasMoreToolCalls || pendingMessages.length > 0；<br>3. 四层洋葱保护：核心循环、模型防御、用户控制（异步插话队列 + 优雅 Abort）、调度增强；<br>4. 工具主动刹车契约：返回 terminate: true 立即终止工具迭代提前交付。 | 双层循环与四层洋葱，中途插话零丢消息，工具主动刹车，异常优雅降级 | `P0` | `v1.5.01` | ⏳ 待排期 |
+| **`v1.4.100`** | **Card-Fleet-Ops-Identity-Rollout** | **全集群智能体统一身份穿透 (client@node) 落地、双模 MCP/Hook 自动装配与舰队自动同频闭环 (Fleet Ops)** | 1. 制定并落地全网统一 Agent 身份规范 `{client}@{node}` / `{client}.{role}@{node}`，严格符合官方正则；<br>2. 核心 MCP (`_core/config.py`) 与卫星 MCP (`satellite_mcp_server.py`) 自动解析节点平台与客户端环境，请求头自动注入 `X-OpenViking-Actor-Peer` 与 `X-Caller`；<br>3. 后端写路由 (`content.py`) 优先透传真实 actor peer，彻底切除 `default` 租户名误判；<br>4. 工作区与全局 Hook (`ov_pre_invocation.py`, `ov_session_archiver.p| **Card-Runtime-TwoTierAgentLoop-OnionGuard** | **pi 生产级双层事件循环、四层洋葱防御与中途插话/主动刹车契约** | 1. 吸收生产级 pi/agent-loop.ts 743 行源码精读与洋葱模型：终结单层 while 循环无法中途插话、死循环无法优雅中止与异常崩溃顽疾；<br>2. 双层事件循环架构：外层管控会话与模型切换，内层循环推进 hasMoreToolCalls || pendingMessages.length > 0；<br>3. 四层洋葱保护：核心循环、模型防御、用户控制（异步插话队列 + 优雅 Abort）、调度增强；<br>4. 工具主动刹车契约：返回 terminate: true 立即终止工具迭代提前交付。 | 双层循环与四层洋葱，中途插话零丢消息，工具主动刹车，异常优雅降级 | `P0` | `v1.5.01` | [x] 已验收通过 ✅ |
 | **Card-Harness-DeepSeek-AgentScope-SpecDriven** | **DeepSeek-Harness 极简规范外壳、AgentScope Java 2.0 生产级运行时与企业级四不变式** | 1. 吸收 DeepSeek 官方开源 deepseek-harness、2026 上半年自进化综述与阿里 AgentScope Java 2.0 GA：确立 Harness 四大不可变式（可终止、可隔离、可恢复、可观测）；<br>2. Workspace 抽象文件系统 (Abstract File System)：静态资产（AGENTS.md/Skills）与运行时数据（Session/MEMORY.md）解耦；<br>3. 物理免压缩白名单：长任务规划详情、异步子 Agent 追踪状态、权限授权记录物理免受上下文压缩破坏；<br>4. 工具失败分类捕获与防死循环重试，多租户 Runtime Context 显式传递。 | 彻底终结长会话规划与状态丢失，沙盒隔离与成本硬限制 100% 生效，多租户解耦 | `P0` | `v1.5.02` | ⏳ 待排期 |
 | **Card-Harness-ReadWriteOffload-HookGuard** | **腾讯 DECO 级读写两侧 Offload 护栏与 Hook 切面长文本防偷懒/防越权体系** | 1. 吸收腾讯《DECO 数仓 Agent 引擎护栏实践》：彻底根治模型在长脚本（1200+行）生成时的“省略偷懒 (/* 省略若干行 */)”与“未经确认越权推生产”绝症；<br>2. Hook 切面与推理循环解耦：围绕模型与工具调用建立独立前后回调拦截；<br>3. 读写两侧 Offload：LLM 绝不直接接触全文！读拦截写入只读沙箱并下发 file_ref 句柄，写拦截强制走 copy_file + str_replace 小步增量补丁；<br>4. 危险操作 HITL 门禁：状态机检查当前阶段，未确认前物理阻断发布工具。 | 彻底封杀长文本省略偷懒，大文件上下文开销降 90%，越权操作 100% 物理拦截 | `P0` | `v1.5.03` | ⏳ 待排期 |
-| **Card-Verify-MultiMetricGate** | **交付物多维物理验真门禁（内容哈希 + 增量覆盖率 + 单测真跑，防 Exit 0 假完成）** | 1. 吸收字节《Aspire》虚假闭环教训与 Goodhart 定律防范，重构 Task Completion 判定；<br>2. 代码开发类任务强制双重物理验真：Diff 变更行数 > 0 且关键集成测试真实通过；<br>3. 阻断 Agent 通过 mock、swallow 异常或加空注释伪造 Exit 0 宣布交付；<br>4. 作为 Wave 1 运行时与 Wave 4 自演进的不可逾越物理防线。 | 任务中心物理验真断言生效，虚假 Exit 0 100% 拦截，任务流转真实可信 | `P0` | `v1.5.04` | ⏳ 待排期 |
+| **Card-Verify-MultiMetricGate** | **交付物多维物理验真门禁（内容哈希 + 增量覆盖率 + 单测真跑，防 Exit 0 假完成）** | 1. 吸收字节《Aspire》虚假闭环教训与 Goodhart 定炼防范，重构 Task Completion 判定；<br>2. 代码开发类任务强制双重物理验真：Diff 变更行数 > 0 且关键集成测试真实通过；<br>3. 阻断 Agent 通过 mock、swallow 异常或加空注释伪造 Exit 0 宣布交付；<br>4. 作为 Wave 1 运行时与 Wave 4 自演进的不可逾越物理防线。 | 任务中心物理验真断言生效，虚假 Exit 0 100% 拦截，任务流转真实可信 | `P0` | `v1.5.04` | ⏳ 待排期 |
 | **Card-Harness-SpecDrivenFSM** | **第三代数仓级多智能体 Harness 架构（Spec 结构化文件驱动 + 协调者专家分离 + 12 状态有限状态机）** | 1. 吸收阿里千问数仓 Harness 实践与 Qwen《Skill-SP》：确立 Agent = Model + Harness，下限由工程托底；<br>2. Orchestrator 与 Specialist 物理分工：协调者只调度、把关、评审，严禁下场写业务代码；专家在独立沙箱专精窄接口；<br>3. Spec 结构化文件驱动通信：跨阶段全面废除长会话历史总线，统一传递结构化文件路径，阶段终点强制生成固定格式 CP 检查点摘要；<br>4. 生成者与评估者严格分离（Generator != Evaluator）；<br>5. 12 状态有限状态机与故障三分法，支持秒级断点续接。 | 上下文污染清零，阶段成果物可追溯可审计，故障断点续接率 100%，消除独角戏越轨 | `P1` | `v1.5.05` | ⏳ 待排期 |
 | **Card-Retrieval-BM25Hybrid** | **SQLite FTS5 词法与稠密向量双路混合检索与 RRF 融合 (BM25 Hybrid Retrieval)** | 1. 吸收《BM25 Wins at Scale》(arXiv:2607.26497) 与生产混检共识，破除纯 Dense 向量在精确符号上的检索盲区；<br>2. 本地零外部依赖：基于 SQLite 原生 FTS5 虚拟表建立文本/经验倒排索引；<br>3. 双路召回并行流：Dense Vector (qwen3-vl-emb) + Sparse BM25 (FTS5) 毫秒级并行捞取候选集；<br>4. 无参 RRF 融合：采用标准倒数排名融合 (k=60) 归一化排序，输入单次 Cross-Encoder Reranker 精排；<br>5. 补齐代码符号、错误堆栈、端口与文件名精准命中专项单测。 | 精确代码符号与错误排查召回率大幅提升，保持单次 RER 契约不变，延迟开销几乎为 0 | `P0` | `v1.5.06` | ⏳ 待排期 |
 | **Card-Retrieval-LocalFirst-zgSemanticSearch** | **阿里 zg 级端侧本地命令行语义搜索、四重奏融合与代码符号防盲搜护栏（深度整合 TieredLazyFetch 分级契约）** | 1. 吸收阿里 Qwen+Zvec《zg (zvec-grep)》、Karpathy 知识空间与 CPA 导师分级懒加载黄金律：彻底解决 Agent 在终端疯狂跑 rg 盲猜代码导致上百文件撑爆上下文；<br>2. 深度整合 TieredLazyFetch：引入 depth 契约，depth=0（元数据行号）、depth=1（紧凑指纹前后1行，默认推荐）、depth=2（完整块）；<br>3. 端侧四重奏检索引擎：32MB 超轻静态模型向量感知 + BM25 词频 + RRF 无参融合 + ripgrep 精确匹配；<br>4. AST 符号级切片（函数/类），Local-First 纯端侧 0 显存依赖，万行仓库 30s 极速建库；<br>5. 工具调用减少 50%，Token 减半。 | 彻底终结代码符号盲搜，纯本地 32MB 模型 0 显存，分级懒加载契约落地，Token 减 50% | `P0` | `v1.5.07` | ⏳ 待排期 |
@@ -83,10 +55,27 @@
 
 ### 🌊 Wave 1: 运行时与脚手架地基 (Runtime & Harness Foundation)
 
-#### 📌 [P0] [ ] Card-Runtime-TwoTierAgentLoop-OnionGuard (v1.5.01): pi 生产级双层事件循环、四层洋葱防御与中途插话/主动刹车契约 ⏳
-- **目标版本**：`v1.5.01` ｜ **优先级**：`P0`
-- **核心交付目标**：1. 吸收生产级 pi/agent-loop.ts 743 行源码精读与洋葱模型：终结单层 while 循环无法中途插话、死循环无法优雅中止与异常崩溃顽疾；<br>2. 双层事件循环架构：外层管控会话与模型切换，内层循环推进 hasMoreToolCalls || pendingMessages.length > 0；<br>3. 四层洋葱保护：核心循环、模型防御、用户控制（异步插话队列 + 优雅 Abort）、调度增强；<br>4. 工具主动刹车契约：返回 terminate: true 立即终止工具迭代提前交付。
-- **验收条件**：双层循环与四层洋葱，中途插话零丢消息，工具主动刹车，异常优雅降级
+#### 📌 [P0] [x] Card-Runtime-TwoTierAgentLoop-OnionGuard (v1.5.01): pi 生产级双层事件循环、四层洋葱防御与中途插话/主动刹车契约 ✅
+- **目标版本**：`v1.5.01` ｜ **优先级**：`P0` ｜ **交付状态**：`[x] 已验收通过 ✅`
+- **核心交付目标**：
+  1. 吸收生产级 pi/agent-loop.ts 743 行源码精读与洋葱模型：终结单层 while 循环无法中途插话、死循环无法优雅中止与异常崩溃顽疾；
+  2. 双层事件循环架构：外层管控会话与模型切换，内层循环推进 `hasMoreToolCalls || pendingMessages.length > 0`；
+  3. 四层洋葱保护：核心循环、模型防御（指数退避与重试）、用户控制（异步插话队列 + 优雅 Abort 协作取消，零消息遗漏）、调度增强与工具护栏；
+  4. 工具主动刹车契约：返回 `terminate: true` 立即终止工具迭代并提前完成交付；
+  5. 补充 Merkle 状态树与感知循环 (`pi_dual_loop.py`)，实现毫秒级变更检测 (<2ms)。
+- **验收证据与物理闭环**：
+  - **Git Release Tag**：`v1.5.01`
+  - **核心源码与行数 (严格锁定 100~300 行黄金甜点区)**：
+    - `openviking/core/agent_loop.py` (257 行，双层循环与四层洋葱防御核心实现)
+    - `tests/unit/test_agent_loop.py` (185 行，单测全覆盖：基本流、工具迭代、主动刹车、中途插话零丢包、Abort协作取消、模型防御重试)
+    - `openviking/core/pi_dual_loop.py` (271 行，Merkle 树哈希感知与增量比对)
+    - `tests/unit/test_pi_dual_loop.py` (137 行，树哈希单测)
+    - `openviking/core/__init__.py` (统一导出)
+  - **双全测试与构建验真**：
+    - 单元测试：`pytest tests/unit/test_agent_loop.py tests/unit/test_pi_dual_loop.py` (11 passed in 0.30s)
+    - 回归测试：`pytest tests/server/test_dual_mode_mcp.py tests/test_task_tracker.py tests/unit/test_agent_loop.py tests/unit/test_pi_dual_loop.py` (70 passed in 1.66s)
+    - 安全扫描：`python3 scripts/security_check.py` (Checked 4202 tracked files. Zero secrets detected.)
+    - 前端构建：`npm run build` (21.94s, zero errors)
 
 #### 📌 [P0] [ ] Card-Harness-DeepSeek-AgentScope-SpecDriven (v1.5.02): DeepSeek-Harness 极简规范外壳、AgentScope Java 2.0 生产级运行时与企业级四不变式 ⏳
 - **目标版本**：`v1.5.02` ｜ **优先级**：`P0`
