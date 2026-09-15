@@ -114,7 +114,9 @@ export function parseInitiator(raw?: string, taskType?: string): InitiatorInfo {
   // Check structured client@node format (e.g. antigravity@2080ti, workbuddy@3070, openclaw.researcher@2080ti)
   if (raw.includes('@') && !raw.startsWith('@') && !raw.endsWith('@')) {
     const [clientPart, nodePart] = raw.split('@')
-    const nodeTag = `[${nodePart.toUpperCase()}]`
+    const upperNode = nodePart.toUpperCase()
+    const normalizedNode = upperNode === '3070' || upperNode === 'RTX3070' ? 'RTX3070' : upperNode
+    const nodeTag = `[${normalizedNode}]`
     const isUser = /user|admin/i.test(clientPart)
     if (clientPart.includes('.')) {
       const [baseClient, role] = clientPart.split('.')

@@ -63,15 +63,22 @@ describe('task record helpers', () => {
     expect(parseInitiator('workbuddy@3070')).toEqual({
       isAgent: true,
       isUser: false,
-      name: '[3070] WorkBuddy',
+      name: '[RTX3070] WorkBuddy',
       raw: 'workbuddy@3070',
     })
 
     expect(parseInitiator('mimocode@3070')).toEqual({
       isAgent: true,
       isUser: false,
-      name: '[3070] XiaomiMo',
+      name: '[RTX3070] XiaomiMo',
       raw: 'mimocode@3070',
+    })
+
+    expect(parseInitiator('workbuddy@rtx3070')).toEqual({
+      isAgent: true,
+      isUser: false,
+      name: '[RTX3070] WorkBuddy',
+      raw: 'workbuddy@rtx3070',
     })
 
     expect(parseInitiator('xiaomimo@2080ti')).toEqual({

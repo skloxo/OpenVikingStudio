@@ -142,8 +142,8 @@ export function PeerMemoryGrid({
                     <div className="truncate min-w-0">
                       <div className="flex items-center gap-1.5 truncate">
                         {peer.id.includes('@') && (
-                          <span className="rounded-xs border border-border/80 bg-muted/80 px-1 py-0.2 text-[10px] font-mono font-medium text-foreground shrink-0">
-                            {peer.id.split('@')[1].toUpperCase()}
+                          <span className="rounded-xs border border-border/80 bg-muted/80 px-1 py-0.2 text-[11px] font-mono font-medium text-foreground shrink-0">
+                            {peer.id.split('@')[1].toUpperCase() === '3070' ? 'RTX3070' : peer.id.split('@')[1].toUpperCase()}
                           </span>
                         )}
                         <h4 className="truncate text-xs font-semibold text-foreground group-hover:text-cyan-600 dark:group-hover:text-cyan-400">
