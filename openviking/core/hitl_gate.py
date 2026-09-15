@@ -61,6 +61,11 @@ class HITLGate(HookAspect):
 
     def __init__(self, policy: Optional[DangerousActionPolicy] = None) -> None:
         self.policy = policy or DangerousActionPolicy()
+        try:
+            from openviking.core.hitl_offload_telemetry import HITLOffloadTelemetry
+            HITLOffloadTelemetry().set_hitl_gate(self)
+        except Exception:
+            pass
 
     def grant_approval_token(self, token: str) -> None:
         """Register a valid human approval token."""
@@ -119,6 +124,17 @@ class HITLGate(HookAspect):
                 f"根据腾讯 DECO 生产护栏规则，必须提供有效的 approval_token 方可执行。"
             )
             logger.warning(f"[HITLGate] Unauthorized high-risk tool blocked: {reason}")
+            try:
+                from openviking.core.hitl_offload_telemetry import HITLOffloadTelemetry
+                args_summary = str({k: v for k, v in args.items() if k != "approval_token"})[:120]
+                HITLOffloadTelemetry().record_dangerous_intercept(
+                    tool_name=tool_name,
+                    args_summary=args_summary,
+                    danger_reason=danger_reason,
+                    phase=ctx.phase,
+                )
+            except Exception:
+                pass
             return AspectDecision.block(
                 reason=reason,
                 override_output=(
