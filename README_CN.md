@@ -11,7 +11,7 @@
 [![Native](https://img.shields.io/badge/native-Rust%20AGFS%20%2B%20VikingDB-00E5FF.svg?style=flat-square)](https://github.com/skloxo/OpenVikingStudio)
 [![License](https://img.shields.io/badge/license-Apache--2.0-muted.svg?style=flat-square)](LICENSE)
 
-[项目特性](#-核心特性) | [系统架构](#-系统架构拓扑) | [演进蓝图](#-未来演进蓝图-roadmap) | [快速上手](#-快速上手-quick-start) | [开源说明](#-开源开源与致敬)
+[演进蓝图](#-架构演进大蓝图-strategic-roadmap) | [系统架构](#-系统架构拓扑-architecture-topology) | [核心特性](#-核心特性矩阵) | [极速上手](#-极速上手-quick-start) | [开源说明](#-开源致敬与说明)
 
 </div>
 
@@ -31,7 +31,57 @@ OpenViking 原项目是由**火山引擎 / 字节跳动团队**开源的下一�
 
 ---
 
-## ✨ 核心特性
+## 🗺️ 架构演进大蓝图 (Strategic Roadmap)
+
+> OpenViking 坚持第一性原理，持续推进面向多 Agent 复杂长程交互的自我进化与确定性执行生态：
+
+| 阶段里程碑 | 演进方向与核心课题 | 交付状态 |
+| :--- | :--- | :--- |
+| **Phase 1: 核心基座与座舱全景**<br>*(Foundation & Observability)* | <ul><li>**原生内核对齐**：完整支持 AGFS 虚拟文件系统、VikingDB 与标准 FastMCP 协议</li><li>**沉浸式 Web Studio**：提供 Focus 画布、多轮会话回溯与工程技能索引</li><li>**座舱级遥测大盘**：Token 分类精准审计（Embedding / Rerank / VLM）与上下文热力图</li><li>**全单仓物理收口**：前后端工程与多语言 SDK 物理收口，一键构建运行</li></ul> | `✅ 已落地交付` |
+| **Phase 2: 确定性运行时与智能压缩**<br>*(Deterministic Loop & Compression)* | <ul><li>**两层事件循环 (Two-Tier Loop)**：外层生命周期重试保护 + 内层工具链快速收敛与协同打断</li><li>**$\Pi$ 状态快速感知器**：基于 Merkle Tree 结构实现亚毫秒级（$< 2\text{ms}$）上下文哈希差异检测</li><li>**自适应长上下文脱水**：语义无损提纯与渐进压缩矩阵，彻底杜绝长程会话 Token 膨胀</li><li>**客户端弹性防护**：失效 Session 轮询智能熔断与网络抖动退避机制</li></ul> | `⚡ 活跃演进中` |
+| **Phase 3: 自主进化飞轮与协作网格**<br>*(Self-Evolving Flywheel & Mesh)* | <ul><li>**踩坑经验自提纯入脑**：Agent 解决复杂难题后自动提纯结晶 SOP 并持久化回填体外大脑</li><li>**多智能体对等协作网格**：跨节点、跨工作区无缝记忆流交换与分布式联合检索</li><li>**企业级零信任上下文网关**：敏感凭据自动化阻断防御与细粒度租户权限隔离</li></ul> | `🔮 战略规划中` |
+
+---
+
+## 🏛️ 系统架构拓扑 (Architecture Topology)
+
+```mermaid
+flowchart TD
+    subgraph Client ["客户端与 Agent 接入层"]
+        Web["🖥️ Web Studio 控制台"]
+        CLI["⌨️ OpenViking CLI"]
+        SDK["📦 Multi-Lang SDKs (Python / TS / Go)"]
+        IDE["🤖 IDE Agents (Claude Code / OpenClaw / Cursor)"]
+    end
+
+    subgraph Server ["OpenViking 核心服务 (Port 1933)"]
+        API["FastAPI 统一 REST 网关"]
+        MCP["FastMCP 标准跨会话端点"]
+        Auth["轻量安全鉴权与多租户隔离"]
+        TaskEngine["TaskTracker 异步任务追踪器"]
+        Studio["内嵌 Web Studio 控制台 (/studio)"]
+    end
+
+    subgraph Engine ["存储与检索内核"]
+        VikingFS["AGFS & VikingFS 虚拟分级文件系统"]
+        VectorDB["VikingDB 语义向量检索引擎"]
+        Queue["QueueFS 异步任务调度队列"]
+        Observability["Telemetry & Audit 实时遥测审计引擎"]
+    end
+
+    subgraph Models ["大模型与推理生态 (正交解耦)"]
+        CloudLLM["云端主流大模型 (OpenAI / Claude / DeepSeek 等)"]
+        LocalLLM["本地私有化模型 (Ollama / vLLM / 兼容推理服务)"]
+    end
+
+    Client -->|"HTTP / SSE / FastMCP"| Server
+    Server --> Engine
+    Engine -.->|"标准 OpenAI 兼容协议"| Models
+```
+
+---
+
+## ✨ 核心特性矩阵
 
 ### 1. 🖥️ 全景 Web Studio 沉浸式座舱
 - **智能实验场 (`/playground`)**：整合资源库与沙箱，提供上下文目录树、L0/L1/L2 分级实时预览与时间线回溯；
@@ -45,81 +95,21 @@ OpenViking 原项目是由**火山引擎 / 字节跳动团队**开源的下一�
 
 ### 3. 🛡️ 稳固解耦的模型与运行时架构
 - **计算与存储完全正交**：系统关注上下文数据库、向量检索与记忆持久化，与外部大模型完全解耦；
-- **全协议兼容**：无论使用云端主流商业模型，还是本地私有化推理引擎（如 Ollama、vLLM），均可通过标准接口无缝接入，零硬件绑定门槛。
+- **全协议兼容**：无论使用云端主流商业模型，还是本地私有化推理引擎，均可通过标准接口无缝接入，零硬件绑定门槛。
 
 ---
 
-## 🏛️ 系统架构拓扑 (Architecture Topology)
+## 🌐 统一服务端口矩阵 (SSOT Service Matrix)
 
-```mermaid
-flowchart TD
-    subgraph Client ["客户端与 Agent 接入层"]
-        Web["🖥️ Web Studio 控制台"]
-        CLI["⌨️ OpenViking CLI"]
-        SDK["📦 Multi-Lang SDK (Python / TS / Go)"]
-        IDE["🤖 IDE Agents (Claude Code / OpenClaw / Cursor)"]
-    end
+系统全面推行奥卡姆剃刀原则，所有能力收口于单一统一服务端口，杜绝多端口维护混乱：
 
-    subgraph Server ["OpenViking 核心服务 (Port 1933)"]
-        API["FastAPI 统一 REST 网关"]
-        MCP["FastMCP 标准跨会话端点"]
-        Auth["轻量安全鉴权与多租户隔离"]
-        TaskEngine["TaskTracker 异步任务追踪器"]
-    end
-
-    subgraph Engine ["存储与检索内核"]
-        VikingFS["AGFS & VikingFS 虚拟分级文件系统"]
-        VectorDB["VikingDB 语义向量检索引擎"]
-        Queue["QueueFS 异步任务调度队列"]
-        Observability["Telemetry & Audit 实时遥测审计引擎"]
-    end
-
-    subgraph Models ["大模型与推理生态 (正交解耦)"]
-        CloudLLM["云端主流大模型 (OpenAI / Claude / DeepSeek 等)"]
-        LocalLLM["本地私有化模型 (Ollama / vLLM / vLLM-compatible)"]
-    end
-
-    Client -->|"HTTP / SSE / FastMCP"| Server
-    Server --> Engine
-    Engine -.->|"标准 API / 协议交互"| Models
-```
+| 端口 | 角色与功能 | 协议与入口 | 常驻推荐管理指令 |
+| :--- | :--- | :--- | :--- |
+| **`1933`** | **OpenViking 核心服务** (REST API、FastMCP 端点与内嵌 Web Studio 控制台一体化) | `http://127.0.0.1:1933`<br>控制台入口: `http://127.0.0.1:1933/studio` | `systemctl --user restart openviking.service` |
 
 ---
 
-## 🗺️ 未来演进蓝图 (Roadmap)
-
-我们秉持第一性原理，持续推进面向多 Agent 复杂长程任务的自愈与进化生态：
-
-```text
-阶段一：核心基座与座舱观测 (Foundation & Observability)   [已完成]
-├─ 深度兼容 OpenViking 原生内核、AGFS 虚拟文件系统与 FastMCP 协议
-├─ 现代化 Web Studio 座舱：实验场全屏画布、技能管理、会话历史回溯
-└─ 实时系统遥测大盘：精准 Token 分类审计 (Embedding / Rerank / VLM)、上下文热力图
-
-阶段二：自适应语义压缩与双层运行时 (Adaptive Loop & Compression) [进行中]
-├─ 两层事件循环架构 (Two-Tier Agent Loop)：外层生命周期重试护卫 + 内层工具链快速收敛
-├─ 状态快速感知器：基于 Merkle Tree 结构实现亚毫秒级上下文哈希变更检测
-├─ 智能上下文脱水矩阵：自适应长文本切片与语义无损提纯，杜绝长程会话 Token 膨胀
-└─ 客户端弹性防护：完善 404 失效轮询熔断与网络抖动退避机制
-
-阶段三：自主进化飞轮与智能体网格 (Evolution Flywheel & Agent Mesh) [规划中]
-├─ 踩坑经验自动结晶 (Self-Evolving Flywheel)：Agent 解决复杂工程难题后自动提取 SOP 存入体外大脑
-├─ 多 Agent 对等协作网格：支持跨节点、跨工作区的无缝记忆流交换与分布式联合检索
-└─ 企业级零信任安全隔离：敏感凭据自动化阻断防御与细粒度租户权限体系
-```
-
----
-
-## 🌐 标准服务端口矩阵 (SSOT Service Matrix)
-
-| 服务名称 | 端口 | 角色与功能 | 协议与入口 | 常驻推荐管理方式 |
-| :--- | :--- | :--- | :--- | :--- |
-| **OpenViking 核心服务** | **`1933`** | 统一 REST API、FastMCP 端点与内嵌 Web Studio | `http://127.0.0.1:1933` | `systemctl --user restart openviking.service` |
-| **Web Studio 开发服务** | **`1936`** | 前端 Vite 热更开发与测试工作台（可选） | `http://127.0.0.1:1936` | `pnpm run dev` |
-
----
-
-## ⚡ 快速上手 (Quick Start)
+## ⚡ 极速上手 (Quick Start)
 
 ### 1. 克隆仓库与安装依赖
 
@@ -130,21 +120,18 @@ cd OpenVikingStudio
 # 安装 Python 后端核心引擎 (建议在虚拟环境中执行)
 pip install -e .
 
-# 安装前端 Web Studio 依赖
+# 安装前端依赖 (可选，仅在需要二次开发前端时使用)
 pnpm install
 ```
 
-### 2. 启动服务
+### 2. 启动核心服务
 
 ```bash
-# 1. 启动后端核心引擎 (默认监听 1933 端口)
+# 启动 OpenViking 核心引擎 (统一监听 1933 端口)
 openviking-server --config ~/.openviking/ov.conf --host 0.0.0.0 --port 1933
-
-# 2. 启动前端开发调试工作台 (Port 1936，生产环境可直接访问 1933/studio)
-pnpm run dev
 ```
 
-浏览器打开 `http://127.0.0.1:1936`，即刻进入 OpenViking Studio 全景控制台。
+启动完成后，直接在浏览器中打开 **`http://127.0.0.1:1933/studio`**，即刻进入 OpenViking Studio 全景控制台。
 
 ### 3. 运行质量保障测试
 

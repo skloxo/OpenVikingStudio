@@ -11,7 +11,7 @@
 [![Native](https://img.shields.io/badge/native-Rust%20AGFS%20%2B%20VikingDB-00E5FF.svg?style=flat-square)](https://github.com/skloxo/OpenVikingStudio)
 [![License](https://img.shields.io/badge/license-Apache--2.0-muted.svg?style=flat-square)](LICENSE)
 
-[English](./README_EN.md) | [中文说明](./README.md)
+[Roadmap](#-strategic-roadmap) | [Architecture](#-architecture-topology) | [Core Features](#-core-features) | [Quick Start](#-quick-start) | [Upstream](#-upstream-acknowledgment)
 
 </div>
 
@@ -31,6 +31,16 @@ The original OpenViking project was open-sourced by **ByteDance / Volcano Engine
 
 ---
 
+## 🗺️ Strategic Roadmap
+
+| Milestone Phase | Strategic Focus & Key Initiatives | Delivery Status |
+| :--- | :--- | :--- |
+| **Phase 1: Foundation & Observability** | <ul><li>**Core Engine Alignment**: Full support for AGFS virtual filesystem, VikingDB, and standard FastMCP</li><li>**Immersive Web Studio**: Focus Canvas, multi-turn session history diffs, and skill catalog</li><li>**Telemetry Dashboard**: Precision token classification (Embedding / Rerank / VLM) and context heatmaps</li><li>**Monorepo Consolidation**: Unified repo for backend, Web Studio, and multi-language SDKs</li></ul> | `✅ Delivered` |
+| **Phase 2: Deterministic Loop & Compression** | <ul><li>**Two-Tier Agent Loop**: Outer lifecycle/retry protection + inner tool convergence loop & cooperative abort</li><li>**$\Pi$ State Change Sensor**: Sub-millisecond ($< 2\text{ms}$) context Merkle Tree delta detection</li><li>**Adaptive Context Dehydration**: Semantic distillation matrix preventing token bloat in long sessions</li><li>**Client Resiliency Guard**: Automated circuit-breaking for orphan session 404 polling & backoff</li></ul> | `⚡ Active` |
+| **Phase 3: Self-Evolving Flywheel & Mesh** | <ul><li>**Self-Evolving Lesson Extraction**: Automatically crystallize lessons into reusable SOP memories</li><li>**Multi-Agent Federation Mesh**: Cross-node memory exchange and distributed federated search</li><li>**Zero-Trust Context Isolation**: Automated credential leak defense and fine-grained tenant RBAC</li></ul> | `🔮 Planned` |
+
+---
+
 ## 🏛️ Architecture Topology
 
 ```mermaid
@@ -47,6 +57,7 @@ flowchart TD
         MCP["FastMCP Standard Endpoints"]
         Auth["Lightweight Auth & Tenant Isolation"]
         TaskEngine["TaskTracker Async Engine"]
+        Studio["Embedded Web Studio (/studio)"]
     end
 
     subgraph Engine ["Storage & Retrieval Core"]
@@ -68,25 +79,31 @@ flowchart TD
 
 ---
 
-## 🗺️ Roadmap
+## ✨ Core Features
 
-```text
-Phase 1: Foundation & Cockpit Observability [Completed]
-├─ Deep alignment with OpenViking core, AGFS virtual filesystem & FastMCP
-├─ Modern Web Studio cockpit: interactive playground, session history, skill index
-└─ Real-time telemetry: granular token audit (Embedding / Rerank / VLM), context heatmaps
+### 1. 🖥️ Interactive Web Studio Cockpit
+- **Intelligent Playground (`/playground`)**: Focus Canvas view, context directory tree, L0/L1/L2 real-time preview, and timeline diffs.
+- **Task Center Real Throughput (`/tasks`)**: Dual-track presentation for micro-procedures and macro-tasks with strict completion contracts.
+- **Multi-Turn Session Tracker (`/sessions`)**: Retrospective history inspection, message flow rendering, and extracted memory cards.
+- **Skill Control Center (`/skills`)**: Configuration-driven skill discovery, TOC structured navigation, and live code inspection.
 
-Phase 2: Adaptive Compression & Two-Tier Runtime [In Progress]
-├─ Two-Tier Agent Loop: outer lifecycle/retry guard + inner tool convergence loop
-├─ Sub-millisecond state sensing: Merkle Tree hash change sensor (< 2ms)
-├─ Intelligent context dehydration: adaptive slicing & loss-free semantic distillation
-└─ Client-side resiliency: session 404 polling circuit-breakers & backoff guards
+### 2. 📊 High-Density Cockpit Design & Ground Truth
+- **Restrained Industrial Design**: Strict signal color semantics, monospace tabular numbers, zero decorative noise.
+- **100% Real Data Driven**: Front-to-back integrity with no mock numbers, graceful fallback on empty data.
 
-Phase 3: Autonomous Evolution & Agent Mesh [Planned]
-├─ Self-Evolving Flywheel: automated lesson extraction & SOP memory crystallization
-├─ Multi-Agent Federation Mesh: cross-node memory sync & distributed retrieval
-└─ Enterprise Zero-Trust Isolation: credential guardrails & RBAC context scoping
-```
+### 3. 🛡️ Decoupled Model & Runtime Architecture
+- **Storage-Compute Decoupling**: Pure focus on context storage, retrieval, and persistence, decoupled from specific LLMs.
+- **Protocol Compatibility**: Seamless plug-in for commercial cloud APIs or private local inference engines.
+
+---
+
+## 🌐 Unified Port Matrix (SSOT)
+
+Single port architecture adhering to Occam's Razor:
+
+| Port | Role & Purpose | Protocol & Access | Recommended Service Management |
+| :--- | :--- | :--- | :--- |
+| **`1933`** | **OpenViking Core Server** (Unified REST API, FastMCP, and embedded Web Studio) | `http://127.0.0.1:1933`<br>Console: `http://127.0.0.1:1933/studio` | `systemctl --user restart openviking.service` |
 
 ---
 
@@ -101,21 +118,18 @@ cd OpenVikingStudio
 # Install backend core
 pip install -e .
 
-# Install frontend dependencies
+# Install frontend dependencies (optional, only needed for UI development)
 pnpm install
 ```
 
-### 2. Launch Services
+### 2. Launch Server
 
 ```bash
-# Start backend engine (default: 1933)
+# Start backend engine (unified on port 1933)
 openviking-server --config ~/.openviking/ov.conf --host 0.0.0.0 --port 1933
-
-# Start Web Studio dev server (1936; production bundled at 1933/studio)
-pnpm run dev
 ```
 
-Visit `http://127.0.0.1:1936` to enter the OpenViking Studio Cockpit.
+Access **`http://127.0.0.1:1933/studio`** directly in your browser to use the OpenViking Studio Cockpit.
 
 ### 3. Verification & Tests
 
