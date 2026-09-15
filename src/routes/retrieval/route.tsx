@@ -8,6 +8,7 @@ import { GatekeeperAuditStream } from './-components/gatekeeper-audit-stream'
 import { RetrievalControls } from './-components/retrieval-controls'
 import { RetrievalMetricsCards } from './-components/retrieval-metrics-cards'
 import { BM25HybridCockpit } from './-components/bm25-hybrid-cockpit'
+import { ZGSearchCockpit } from './-components/zg-search-cockpit'
 import { RetrievalResults } from './-components/retrieval-results'
 import { RetrievalSearchBar } from './-components/search-bar'
 import {
@@ -131,6 +132,9 @@ function RetrievalPage() {
 
       {/* BM25 + 向量双流融合座舱与精确符号试验台 (Card-Retrieval-BM25Hybrid) */}
       <BM25HybridCockpit />
+
+      {/* zg 端侧代码语义检索与分级懒加载座舱 (Card-Retrieval-LocalFirst-zgSemanticSearch) */}
+      <ZGSearchCockpit />
 
       <div className="flex items-center gap-2">
         <div className="flex-1 min-w-0">
