@@ -60,6 +60,10 @@ export function isHeartbeatSession(
       lowerTitle.includes('巡检') ||
       lowerTitle.includes('心跳') ||
       lowerTitle.includes('探针') ||
+      lowerTitle.includes('commitment extractor') ||
+      lowerTitle.includes('memory search') ||
+      lowerTitle.includes('dream diary') ||
+      lowerTitle.includes('[openclaw') ||
       lowerTitle.includes('[openclaw heartbeat')
     ) {
       return true

@@ -533,6 +533,8 @@ class SessionMeta:
     # session. Maps to config.memory_extraction_config.events.tags in the API.
     # None means no session default; a commit may still override per-call.
     event_search_tags: Optional[List[str]] = None
+    category: str = "interactive"
+    is_heartbeat: bool = False
 
     def to_dict(self) -> Dict[str, Any]:
         data = {
@@ -559,6 +561,8 @@ class SessionMeta:
             ),
             "last_message_at": self.last_message_at,
             "last_auto_commit_at": self.last_auto_commit_at,
+            "category": self.category,
+            "is_heartbeat": self.is_heartbeat,
         }
         if self.total_message_count is not None:
             data["total_message_count"] = self.total_message_count
@@ -614,6 +618,8 @@ class SessionMeta:
             last_message_at=data.get("last_message_at", ""),
             last_auto_commit_at=data.get("last_auto_commit_at", ""),
             event_search_tags=data.get("event_search_tags"),
+            category=data.get("category", "interactive"),
+            is_heartbeat=bool(data.get("is_heartbeat", False)),
         )
 
 
