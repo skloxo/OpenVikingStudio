@@ -100,34 +100,34 @@
 ## 🏛️ 系统全景架构拓扑 (Architecture Topology)
 
 ```mermaid
-graph TD
-    subgraph Client [客户端与接入层]
+flowchart TD
+    subgraph Client ["客户端与接入层"]
         Web["🖥️ Web Studio (1936/1933)"]
         CLI["⌨️ Rust CLI (ov)"]
         SDK["📦 Multi-Lang SDKs (Go / TS / Python)"]
         IDE["🤖 IDE Agent (Claude Code / OpenClaw / Hermes)"]
     end
 
-    subgraph Server [OpenViking 核心服务 (Port 1933)]
+    subgraph Server ["OpenViking 核心服务 (Port 1933)"]
         API["FastAPI 统一 REST 网关"]
         MCP["FastMCP 跨会话协议端点"]
         Auth["企业级认证 (Trusted / Root Key / OIDC)"]
         TT["TaskTracker 分片并发任务追踪器"]
     end
 
-    subgraph Engine [计算与存储引擎]
+    subgraph Engine ["计算与存储引擎"]
         Queue["QueueFS 异步语义调度队列"]
         RagFS["AGFS & Rust Native Core (VikingFS / Pathlock)"]
         VikingDB["VikingDB 向量检索引擎 (HNSW/Flat)"]
         Parser["多模态解析矩阵 (MinerU / Scrapy / VLM)"]
     end
 
-    subgraph Compute [分布式私有化算力节点]
+    subgraph Compute ["分布式私有化算力节点"]
         Mac["🍏 Mac Studio M3 Ultra 256G (MLX Dual-Brain 13100)"]
         LocalGPU["⚡ 本地 RTX 2080Ti (Embedding & Rerank)"]
     end
 
-    Client -->|HTTP / SSE / FastMCP| Server
+    Client -->|"HTTP / SSE / FastMCP"| Server
     Server --> Engine
     Engine --> Compute
 ```

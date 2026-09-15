@@ -122,13 +122,14 @@ export const home = {
     todayTokens: {
       description: '展示今日实时 token 消耗，每天零点刷新。',
       embeddingInput: 'Embedding 输入 Tokens',
+      rerankInput: 'Rerank 重排 Tokens',
       title: '今日 Tokens 消耗',
       vlmInput: 'VLM 输入 Tokens',
       vlmOutput: 'VLM 输出 Tokens',
     },
     tokenTrend: {
       description:
-        '展示最近 14 天每日 token 消耗，包含 VLM 输入、VLM 输出和 Embedding 输入。',
+        '展示最近 14 天每日 token 消耗，包含 VLM 输入、VLM 输出、Embedding 输入和 Rerank 重排。',
       empty: '最近 14 天暂无 token 消耗',
       title: 'tokens 总消耗统计',
     },

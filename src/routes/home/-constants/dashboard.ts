@@ -5,6 +5,7 @@ export const TOKEN_COLORS = {
   embedding: 'oklch(0.5 0.11 252)',
   input: 'oklch(0.57 0.13 232)',
   output: 'oklch(0.62 0.12 188)',
+  rerank: 'oklch(0.65 0.14 275)',
 }
 
 export const HOME_ACCENT_COLORS = {

@@ -98,6 +98,7 @@ export function useSessionMessages(sessionId: string | undefined) {
       }
     },
     enabled: Boolean(sessionId),
+    refetchOnWindowFocus: false,
     retry: false,
     staleTime: 30_000,
   })

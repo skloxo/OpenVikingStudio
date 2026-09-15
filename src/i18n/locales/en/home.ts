@@ -124,13 +124,14 @@ export const home = {
       description:
         'Shows real-time token consumption today. Resets at midnight.',
       embeddingInput: 'Embedding input tokens',
+      rerankInput: 'Rerank input tokens',
       title: 'Tokens Today',
       vlmInput: 'VLM input tokens',
       vlmOutput: 'VLM output tokens',
     },
     tokenTrend: {
       description:
-        'Shows daily token usage over the last 14 days, including VLM input, VLM output, and embedding input.',
+        'Shows daily token usage over the last 14 days, including VLM input, VLM output, embedding input, and rerank input.',
       empty: 'No token usage in the last 14 days',
       title: 'Total Token Consumption',
     },
