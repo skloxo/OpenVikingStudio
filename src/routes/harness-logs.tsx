@@ -10,6 +10,7 @@ import {
   ArrowLeftIcon,
   LayersIcon,
   RefreshCwIcon,
+  ShieldAlertIcon,
   ShieldCheckIcon,
   TerminalIcon,
   WorkflowIcon,
@@ -21,6 +22,7 @@ import { HarnessLivePlayground } from './harness-logs/-components/harness-live-p
 import { HarnessLessonsTable } from './harness-logs/-components/harness-lessons-table'
 import type { LessonItem } from './harness-logs/-components/harness-lessons-table'
 import { HarnessAgentLoopCockpit } from './harness-logs/-components/harness-agent-loop-cockpit'
+import { HarnessFailureWhitelistRadar } from './harness-logs/-components/harness-failure-whitelist-radar'
 
 export const Route = createFileRoute('/harness-logs')({
   component: HarnessLogsPage,
@@ -28,7 +30,7 @@ export const Route = createFileRoute('/harness-logs')({
 
 export function HarnessLogsPage() {
   const { t } = useTranslation('skillsPage')
-  const [activeTab, setActiveTab] = React.useState<'fsm' | 'gates' | 'agent-loop' | 'playground' | 'lessons'>('fsm')
+  const [activeTab, setActiveTab] = React.useState<'fsm' | 'gates' | 'agent-loop' | 'failure-radar' | 'playground' | 'lessons'>('fsm')
   const [searchQuery, setSearchQuery] = React.useState('')
 
   const { connection, connectionRole, isConnectionRoleLoading } = useAppConnection()
@@ -147,6 +149,7 @@ export function HarnessLogsPage() {
           { id: 'fsm', label: '12-态状态机流水线', icon: <WorkflowIcon className="size-3.5 mr-1 text-cyan-400" /> },
           { id: 'gates', label: '四大贯彻门禁看板', icon: <ShieldCheckIcon className="size-3.5 mr-1 text-cyan-400" /> },
           { id: 'agent-loop', label: '双层循环与主动刹车', icon: <ActivityIcon className="size-3.5 mr-1 text-cyan-400" /> },
+          { id: 'failure-radar', label: '失败画像与白名单雷达', icon: <ShieldAlertIcon className="size-3.5 mr-1 text-cyan-400" /> },
           { id: 'playground', label: '实时交互实验场', icon: <TerminalIcon className="size-3.5 mr-1 text-cyan-400" /> },
           { id: 'lessons', label: '演进教训档案', icon: <LayersIcon className="size-3.5 mr-1 text-cyan-400" /> },
         ].map((tab) => (
@@ -171,6 +174,7 @@ export function HarnessLogsPage() {
         {activeTab === 'fsm' && <HarnessFsmVisualizer fsm={metrics?.fsm} />}
         {activeTab === 'gates' && <HarnessGateDashboard gates={metrics?.gates} />}
         {activeTab === 'agent-loop' && <HarnessAgentLoopCockpit />}
+        {activeTab === 'failure-radar' && <HarnessFailureWhitelistRadar />}
         {activeTab === 'playground' && <HarnessLivePlayground />}
         {activeTab === 'lessons' && <HarnessLessonsTable lessons={lessons} searchQuery={searchQuery} />}
       </div>

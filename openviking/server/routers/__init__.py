@@ -9,6 +9,7 @@ from openviking.server.routers.bot import router as bot_router
 from openviking.server.routers.console import router as console_router
 from openviking.server.routers.content import router as content_router
 from openviking.server.routers.debug import router as debug_router
+from openviking.server.routers.failure_taxonomy import router as failure_taxonomy_router
 from openviking.server.routers.filesystem import router as filesystem_router
 from openviking.server.routers.metrics import router as metrics_router
 from openviking.server.routers.observer import router as observer_router
@@ -48,6 +49,7 @@ __all__ = [
     "pack_router",
     "privacy_configs_router",
     "quarantine_router",
+    "failure_taxonomy_router",
     "debug_router",
     "metrics_router",
     "observer_router",
