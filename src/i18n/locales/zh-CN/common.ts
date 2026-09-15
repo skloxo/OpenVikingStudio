@@ -69,7 +69,7 @@ export const common = {
         title: '技能中心',
       },
       harnessLogs: {
-        title: '哈尼斯技能演进审计',
+        title: 'Harness 贯彻执行座舱',
       },
       resources: {
         title: '资源库',

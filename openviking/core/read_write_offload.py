@@ -28,11 +28,14 @@ logger = logging.getLogger(__name__)
 # Precompiled regex patterns for lazy omission detection across languages
 LAZY_CODE_PATTERNS = [
     re.compile(r"/\*[\s\S]*?(?:省略|unchanged|existing|remain|rest of|同上)[\s\S]*?\*/", re.IGNORECASE),
-    re.compile(r"//[^\n]*(?:省略|unchanged|existing|remain|rest of|同上|keep as is)", re.IGNORECASE),
-    re.compile(r"#[^\n]*(?:省略|unchanged|existing|remain|rest of|同上|keep as is)", re.IGNORECASE),
+    re.compile(r"//[^\n]*(?:省略|unchanged|existing|remain|rest of|同上|keep as is|TODO|FIXME)", re.IGNORECASE),
+    re.compile(r"#[^\n]*(?:省略|unchanged|existing|remain|rest of|同上|keep as is|TODO|FIXME)", re.IGNORECASE),
     re.compile(r"<!--[\s\S]*?(?:省略|unchanged|existing|remain)[\s\S]*?-->", re.IGNORECASE),
     re.compile(r"\.\.\.\s*(?:rest of code|existing code|keep unchanged|省略若干行|同上)", re.IGNORECASE),
     re.compile(r"/\*\s*\.\.\.\s*\*/"),
+    re.compile(r"^\s*pass\s*(?:#.*)?$", re.MULTILINE),
+    re.compile(r"^\s*\.\.\.\s*$", re.MULTILINE),
+    re.compile(r"raise\s+NotImplementedError", re.IGNORECASE),
 ]
 
 

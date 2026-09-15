@@ -225,6 +225,15 @@ class WriteDisambiguationRequest(BaseModel):
     rule: str
 
 
+class VerifyProbeRequest(BaseModel):
+    test_command: Optional[str] = None
+    diff_text: Optional[str] = None
+
+
+class TestGuardRequest(BaseModel):
+    code: str
+
+
 def _load_all_evolution_lessons() -> list[dict]:
     lessons = []
     next_id = 1
@@ -385,6 +394,62 @@ async def get_harness_metrics(
             "ast_gate_rate": 100.0,
             "status": "healthy",
         }
+        from openviking.core.harness_fsm import HarnessFSM, HarnessState
+
+        fsm_meta = {
+            "states": [s.value for s in HarnessState],
+            "current_state": "IDLE",
+            "active_state": "IDLE",
+            "transition_rules_count": sum(len(v) for v in HarnessFSM.TRANSITION_GRAPH.values()),
+            "pipeline": [
+                {"id": "SPEC_INGEST", "label": "规格摄取", "desc": "任务规格冻结与输入三元组校验 (Spec P Ingestion)", "role": "Orchestrator"},
+                {"id": "DECOMPOSE", "label": "工单拆解", "desc": "Tracer-Bullet 工单拆解与 DAG 依赖编排", "role": "Orchestrator"},
+                {"id": "DISPATCH", "label": "专业分发", "desc": "角色隔离沙箱分配 (Orchestrator != Specialist)", "role": "Orchestrator"},
+                {"id": "RUNNING", "label": "执行生成", "desc": "沙箱代码生成与工具调用拦截", "role": "Specialist"},
+                {"id": "VERIFY", "label": "物理验真", "desc": "真实物理 Diff + 测试视网膜执行门禁", "role": "MultiMetricGate"},
+                {"id": "EVALUATE", "label": "独立评审", "desc": "生成者与评估者物理防串通 (Generator != Evaluator)", "role": "Independent Evaluator"},
+                {"id": "CHECKPOINT", "label": "状态快照", "desc": "不可变 SHA-256 检查点落盘", "role": "Harness Trace"},
+                {"id": "COMPLETED", "label": "交付归档", "desc": "版本回溯与 Git Tag 物理留痕", "role": "Release SOP"},
+            ],
+            "exceptions": [
+                {"id": "BLOCKED", "label": "护栏拦截", "desc": "防偷懒省略 / 超大读取物理阻断", "type": "guard"},
+                {"id": "RECOVERING", "label": "自愈重试", "desc": "三元故障恢复与预算自愈", "type": "retry"},
+                {"id": "FAILED", "label": "熔断终止", "desc": "不可逆错误熔断阻断", "type": "terminal"},
+            ],
+        }
+        gates_meta = {
+            "physical_diff": {
+                "name": "物理增量代码门禁 (Physical Diff Gate)",
+                "status": "active",
+                "badge": "Active Invariant",
+                "description": "严格剔除纯空格与纯注释伪变更，断言物理有效改动行 > 0",
+                "rules": ["min_effective_lines >= 1", "comment_only_filtered", "whitespace_filtered", "git_tree_asserted"],
+            },
+            "test_retina": {
+                "name": "测试视网膜反欺诈门禁 (Anti-Cheat Retina)",
+                "status": "active",
+                "badge": "Active Invariant",
+                "description": "拦截 false exit 0 假绿灯，真实校验 passed > 0 且 failed == 0",
+                "rules": ["real_process_execution", "test_report_parsed", "false_exit_zero_blocked", "duration_tracked"],
+            },
+            "anti_lazy": {
+                "name": "防偷懒代码省略占位符护栏 (Anti-Lazy Code Guard)",
+                "status": "active",
+                "badge": "Active Invariant",
+                "description": "AST 与正则实时扫描，物理封杀 pass、# TODO、...、NotImplementedError",
+                "rules": ["prohibit_pass_stub", "prohibit_todo_stub", "prohibit_ellipsis", "zero_omission_tolerance"],
+            },
+            "role_separation": {
+                "name": "生成与评估角色隔离 (Role Separation)",
+                "status": "active",
+                "badge": "Active Invariant",
+                "description": "物理隔离生成者与评估者，防止智能体自问自答自批改作弊",
+                "rules": ["generator_not_evaluator", "checkpoint_sha256_verified", "dual_axis_standards_spec"],
+            },
+        }
+
+        metrics["fsm"] = fsm_meta
+        metrics["gates"] = gates_meta
         return JSONResponse(status_code=200, content=metrics)
     except Exception as e:
         logger.warning(f"Error fetching harness metrics: {e}")
@@ -399,6 +464,12 @@ async def get_harness_metrics(
                 "lessons_count": len(lessons),
                 "lessons_detail": lessons,
                 "tokens_saved_total": 0,
+                "fsm": {
+                    "states": ["IDLE", "SPEC_INGEST", "DECOMPOSE", "DISPATCH", "RUNNING", "VERIFY", "EVALUATE", "CHECKPOINT", "RECOVERING", "COMPLETED", "ABORTED", "FAILED"],
+                    "current_state": "IDLE",
+                    "active_state": "IDLE",
+                },
+                "gates": {},
                 "llmlingua": {
                     "token_retention_rate": 48.5,
                     "target_range": "45%-55%",
@@ -859,5 +930,89 @@ async def get_defensive_telemetry_endpoint(
     ).model_dump(exclude_none=True)
 
 
+@router.post("/api/v1/harness/verify_probe", tags=["system"])
+async def verify_harness_probe(
+    req: VerifyProbeRequest,
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """Execute real physical verification probe (Diff + Test Retina) on demand."""
+    from openviking.core.multi_metric_gate import MultiMetricGate
+
+    gate = MultiMetricGate()
+    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../.."))
+    diff_text = req.diff_text.strip() if req.diff_text else None
+    test_command = req.test_command.strip() if req.test_command else None
+
+    report = gate.verify_delivery(
+        repo_path=None if diff_text else repo_root,
+        diff_text=diff_text,
+        test_command=test_command,
+        cwd=repo_root,
+    )
+    return JSONResponse(
+        status_code=200,
+        content={
+            "passed": report.passed,
+            "summary": report.summary,
+            "rejection_reasons": report.rejection_reasons,
+            "diff_result": {
+                "is_valid": report.diff_result.is_valid,
+                "effective_diff_lines": report.diff_result.effective_diff_lines,
+                "added_lines": report.diff_result.added_lines,
+                "deleted_lines": report.diff_result.deleted_lines,
+                "comment_lines_filtered": report.diff_result.comment_lines_filtered,
+                "whitespace_lines_filtered": report.diff_result.whitespace_lines_filtered,
+                "files_changed": report.diff_result.changed_files,
+                "comments_only": (
+                    report.diff_result.comment_lines_filtered > 0
+                    and report.diff_result.effective_diff_lines == 0
+                ),
+                "is_empty": (
+                    report.diff_result.added_lines == 0
+                    and report.diff_result.deleted_lines == 0
+                ),
+            },
+            "test_result": {
+                "passed": report.test_result.passed if report.test_result else None,
+                "passed_count": report.test_result.passed_count if report.test_result else 0,
+                "failed_count": report.test_result.failed_count if report.test_result else 0,
+                "exit_code": report.test_result.exit_code if report.test_result else 0,
+                "is_false_exit_zero": report.test_result.is_false_exit_zero if report.test_result else False,
+                "duration_sec": round(report.test_result.duration_sec, 3) if report.test_result else 0.0,
+            } if report.test_result else None,
+            "verified_at": report.verified_at,
+        },
+    )
 
 
+@router.post("/api/v1/harness/test_guard", tags=["system"])
+async def test_anti_lazy_guard(
+    req: TestGuardRequest,
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """Real-time test of AntiLazyCodeGuard against user-supplied code snippet."""
+    from openviking.core.read_write_offload import AntiLazyCodeGuard
+
+    guard = AntiLazyCodeGuard()
+    matched = guard.scan_for_lazy_omissions(req.code)
+    if matched:
+        return JSONResponse(
+            status_code=200,
+            content={
+                "passed": False,
+                "blocked": True,
+                "matched_pattern": matched,
+                "reason": f"检测到偷懒代码省略占位符 '{matched}'！已触发物理阻断。",
+                "rule": "AntiLazyCodeGuard (腾讯 DECO 生产护栏规则)",
+            },
+        )
+    return JSONResponse(
+        status_code=200,
+        content={
+            "passed": True,
+            "blocked": False,
+            "matched_pattern": None,
+            "reason": "代码清洁度校验通过，未发现 pass / TODO / 省略号等占位符。",
+            "rule": "AntiLazyCodeGuard (腾讯 DECO 生产护栏规则)",
+        },
+    )
