@@ -167,12 +167,20 @@
 
 ---
 
-## 🔄 五、 干活必留痕流转 SOP
+## 🔄 五、 标准迭代交付机制与全景回显 SOP (Standard Delivery & Verification Manifest SOP) ⭐⭐⭐⭐⭐
 
-每完成一个迭代版本，必须完成以下三步，缺一不可：
-1. **物理更新 package.json 版本号**；
-2. **立即打 Git Tag 并推送**：`git tag -a v1.x.y -m "..." && git push origin v1.x.y`；
-3. **物理更新 REFACTORING_PLAN.md**：标记 `[x] 已验收通过 ✅`，记录 Commit Hash 和交付清单。
+> **核心第一性原理**：没有测试用例与执行回显的交付是不可信的“黑盒交付”。代码变更、测试用例明细、物理执行数据与 Git 留痕必须四位一体，作为标准交付契约自动呈现。
+
+每完成一个迭代版本，必须完成以下**四步**，并在每次向用户汇报交付时**100% 自动完整呈现**：
+
+1. **📌 物理更新版本号**：`package.json` 与 `openviking/_version.py` 版本号同步自增（如 `1.5.02` ➔ `1.5.03`）；
+2. **📌 立即打 Git Tag 并推送**：`git tag -a v1.x.y -m "release: v1.x.y <概括>" && git push origin v1.x.y`；
+3. **📝 物理更新 REFACTORING_PLAN.md**：将对应卡片标记为 `[x] 已验收通过 ✅`，记录 Commit Hash、修改文件清单与交付内容摘要，并双轨同步到主看板；
+4. **🧪 交付必附「测试用例清单与物理执行回显」(Mandatory Test Case Manifest & Execution Output)**：
+   - **自动化复现命令**：提供一键可复制运行的精准测试命令（如 `pytest -o addopts="" tests/unit/test_xxx.py`）；
+   - **测试用例明细表**：明确列出所有新增与关键回归测试文件的测试函数名称、核心测试意图与关键断言；
+   - **物理执行结果**：真实呈现通过数、失败数、跳过数及执行耗时（严禁只写一句“测试通过”而隐匿细节）；
+   - **门禁验证双全**：安全审计扫描结果（`scripts/security_check.py` 零密钥泄露）、前端构建结果（`npm run build` 耗时与状态）。
 
 ---
 
