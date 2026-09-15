@@ -76,8 +76,22 @@ class SessionService:
         # tasks. Cross-worker correctness relies on has_running(), not this set.
         self._auto_commit_inflight: set[tuple[str, str, str]] = set()
         self._auto_commit_inflight_lock = asyncio.Lock()
-        # Strong refs so spawned tasks aren't GC'd mid-await.
         self._auto_commit_tasks: set[asyncio.Task] = set()
+        self._heartbeat_session_ids: set[str] = set()
+
+    def register_heartbeat_session(self, session_id: str) -> None:
+        """Register a session as a routine heartbeat / cron probe."""
+        self._heartbeat_session_ids.add(session_id)
+
+    def _is_heartbeat_session(self, session_id: str) -> bool:
+        """Fast check whether a session belongs to routine cron / heartbeat telemetry."""
+        if (
+            session_id.startswith(("cron_", "heartbeat_", "probe_", "ping_", "memory-store-"))
+            or session_id == "heartbeat-baseline"
+            or session_id in self._heartbeat_session_ids
+        ):
+            return True
+        return False
 
     def set_dependencies(
         self,
@@ -329,11 +343,14 @@ class SessionService:
                 name = entry.get("name", "")
                 if name in [".", ".."]:
                     continue
+                is_hb = self._is_heartbeat_session(name)
                 sessions_by_id[name] = {
                     "session_id": name,
                     "uri": f"{session_base_uri}/{name}",
                     "is_dir": entry.get("isDir", False),
                     "mod_time": entry.get("modTime", ""),
+                    "category": "heartbeat" if is_hb else "interactive",
+                    "is_heartbeat": is_hb,
                 }
         except Exception:
             logger.debug("Failed to list sessions", exc_info=True)

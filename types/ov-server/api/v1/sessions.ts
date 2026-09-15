@@ -15,6 +15,8 @@ export type SessionListItem = {
   mod_time: string
   session_id: string
   uri: string
+  category?: 'interactive' | 'heartbeat' | 'system'
+  is_heartbeat?: boolean
 }
 
 export type SessionDetail = {
