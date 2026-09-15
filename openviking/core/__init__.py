@@ -60,6 +60,19 @@ _EXPORTS = {
     "ClassificationDecision": ("openviking.core.failure_classifier", "ClassificationDecision"),
     "FailureClassifier": ("openviking.core.failure_classifier", "FailureClassifier"),
     "MultiTenantRuntimeContext": ("openviking.core.failure_classifier", "MultiTenantRuntimeContext"),
+    # Hook Aspects & Dual-Sided Offload (v1.5.05)
+    "HookAspect": ("openviking.core.hook_aspects", "HookAspect"),
+    "AspectDecision": ("openviking.core.hook_aspects", "AspectDecision"),
+    "AspectDecisionType": ("openviking.core.hook_aspects", "AspectDecisionType"),
+    "AspectContext": ("openviking.core.hook_aspects", "AspectContext"),
+    "HookAspectRegistry": ("openviking.core.hook_aspects", "HookAspectRegistry"),
+    "AntiLazyCodeGuard": ("openviking.core.read_write_offload", "AntiLazyCodeGuard"),
+    "LazyCodeOmissionError": ("openviking.core.read_write_offload", "LazyCodeOmissionError"),
+    "ReadOffloadManager": ("openviking.core.read_write_offload", "ReadOffloadManager"),
+    "FileRefHandle": ("openviking.core.read_write_offload", "FileRefHandle"),
+    "HITLGate": ("openviking.core.hitl_gate", "HITLGate"),
+    "DangerousActionPolicy": ("openviking.core.hitl_gate", "DangerousActionPolicy"),
+    "HITLPermissionError": ("openviking.core.hitl_gate", "HITLPermissionError"),
 }
 
 
@@ -128,5 +141,18 @@ __all__ = [
     "ClassificationDecision",
     "FailureClassifier",
     "MultiTenantRuntimeContext",
+    # Hook Aspects & Dual-Sided Offload (v1.5.05)
+    "HookAspect",
+    "AspectDecision",
+    "AspectDecisionType",
+    "AspectContext",
+    "HookAspectRegistry",
+    "AntiLazyCodeGuard",
+    "LazyCodeOmissionError",
+    "ReadOffloadManager",
+    "FileRefHandle",
+    "HITLGate",
+    "DangerousActionPolicy",
+    "HITLPermissionError",
 ]
 
