@@ -19,9 +19,11 @@ import {
 import type { RetrievalMode, RetrievalScope } from '../-types/retrieval'
 
 export function RetrievalControls({
+  activeOnly,
   customPathInput,
   ignoreCase,
   mode,
+  onActiveOnlyChange,
   onCustomPathInputChange,
   onIgnoreCaseChange,
   onModeChange,
@@ -34,9 +36,11 @@ export function RetrievalControls({
   t,
   targetUri,
 }: {
+  activeOnly: boolean
   customPathInput: string
   ignoreCase: boolean
   mode: RetrievalMode
+  onActiveOnlyChange: (value: boolean) => void
   onCustomPathInputChange: (value: string) => void
   onIgnoreCaseChange: (value: boolean) => void
   onModeChange: (value: RetrievalMode) => void
@@ -135,6 +139,13 @@ export function RetrievalControls({
           {t('controls.ignoreCase')}
         </label>
       )}
+
+      <label className="inline-flex h-8 cursor-pointer items-center gap-2 rounded-sm border border-border/60 bg-muted/20 px-2.5 text-xs text-foreground select-none hover:bg-muted/40 transition-colors">
+        <Checkbox checked={activeOnly} onCheckedChange={(checked) => onActiveOnlyChange(Boolean(checked))} />
+        <span className="font-medium text-xs text-foreground">
+          {t('controls.activeOnly')}
+        </span>
+      </label>
     </div>
   )
 }

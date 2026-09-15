@@ -28,6 +28,7 @@ export const retrieval = {
         glob: 'File Path (glob)',
       },
       ignoreCase: 'Ignore case',
+      activeOnly: 'Active Baseline Only',
       resultCount: 'Results',
       path: 'Path',
       pathPlaceholder: '/',
@@ -49,6 +50,11 @@ export const retrieval = {
       },
       sessionId: 'Session ID',
       sessionPlaceholder: 'session_id (optional)',
+    },
+    lifecycle: {
+      active: 'Active',
+      archived: 'Archived',
+      deprecated: 'Deprecated',
     },
     results: {
       title: 'Search Results',

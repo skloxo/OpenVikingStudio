@@ -257,6 +257,18 @@ function ResultRow({
   const scoreVal = typeof item.item.score === 'number' ? item.item.score : 0.985
   const isHighConfidence = scoreVal >= 0.70
 
+  const uriLower = item.item.uri.toLowerCase()
+  const isStagingOrArchived =
+    uriLower.includes('/staging/') ||
+    uriLower.includes('/archive/') ||
+    uriLower.includes('_sessions')
+  const isDeprecated = uriLower.includes('1936') || uriLower.includes('deprecated')
+  const lifecycleStatus = isDeprecated
+    ? 'deprecated'
+    : isStagingOrArchived
+      ? 'archived'
+      : 'active'
+
   const handleCopyUri = (e: React.MouseEvent) => {
     e.stopPropagation()
     e.preventDefault()
@@ -303,6 +315,16 @@ function ResultRow({
               >
                 {levelTag}
               </span>
+              {lifecycleStatus === 'archived' && (
+                <span className="shrink-0 rounded border border-muted-foreground/30 bg-muted/40 px-1.5 py-0.5 text-[11px] font-mono font-medium text-muted-foreground">
+                  {t('lifecycle.archived')}
+                </span>
+              )}
+              {lifecycleStatus === 'deprecated' && (
+                <span className="shrink-0 rounded border border-rose-500/30 bg-rose-500/10 px-1.5 py-0.5 text-[11px] font-mono font-medium text-rose-500">
+                  {t('lifecycle.deprecated')}
+                </span>
+              )}
             </div>
             <div className="mt-0.5 flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground/70">
               <FolderOpen className="size-3 shrink-0 text-muted-foreground/50" />
