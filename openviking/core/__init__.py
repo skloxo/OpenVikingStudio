@@ -37,6 +37,29 @@ _EXPORTS = {
     "ToolCallResult": ("openviking.core.agent_loop", "ToolCallResult"),
     "TurnResult": ("openviking.core.agent_loop", "TurnResult"),
     "AgentLoopStatus": ("openviking.core.agent_loop", "AgentLoopStatus"),
+    # Harness Four Invariants & Telemetry (v1.5.03)
+    "ExecutionBudget": ("openviking.core.harness_invariants", "ExecutionBudget"),
+    "BudgetSnapshot": ("openviking.core.harness_invariants", "BudgetSnapshot"),
+    "BudgetEnforcer": ("openviking.core.harness_invariants", "BudgetEnforcer"),
+    "BudgetExceededError": ("openviking.core.harness_invariants", "BudgetExceededError"),
+    "Checkpoint": ("openviking.core.harness_invariants", "Checkpoint"),
+    "CheckpointRegistry": ("openviking.core.harness_invariants", "CheckpointRegistry"),
+    "TraceEvent": ("openviking.core.harness_invariants", "TraceEvent"),
+    "HarnessTrace": ("openviking.core.harness_invariants", "HarnessTrace"),
+    "InvariantTelemetry": ("openviking.core.harness_invariants", "InvariantTelemetry"),
+    # Spec-Driven Workspace & Compression Whitelist (v1.5.03)
+    "WorkspaceMode": ("openviking.core.spec_driven_fs", "WorkspaceMode"),
+    "AbstractWorkspace": ("openviking.core.spec_driven_fs", "AbstractWorkspace"),
+    "SpecWorkspace": ("openviking.core.spec_driven_fs", "SpecWorkspace"),
+    "WhitelistType": ("openviking.core.spec_driven_fs", "WhitelistType"),
+    "ProtectedPayload": ("openviking.core.spec_driven_fs", "ProtectedPayload"),
+    "CompressionWhitelist": ("openviking.core.spec_driven_fs", "CompressionWhitelist"),
+    # Failure Classifier & Multi-Tenant Runtime Context (v1.5.03)
+    "FailureCategory": ("openviking.core.failure_classifier", "FailureCategory"),
+    "FailureFingerprint": ("openviking.core.failure_classifier", "FailureFingerprint"),
+    "ClassificationDecision": ("openviking.core.failure_classifier", "ClassificationDecision"),
+    "FailureClassifier": ("openviking.core.failure_classifier", "FailureClassifier"),
+    "MultiTenantRuntimeContext": ("openviking.core.failure_classifier", "MultiTenantRuntimeContext"),
 }
 
 
@@ -82,5 +105,28 @@ __all__ = [
     "ToolCallResult",
     "TurnResult",
     "AgentLoopStatus",
+    # Harness Four Invariants & Telemetry (v1.5.03)
+    "ExecutionBudget",
+    "BudgetSnapshot",
+    "BudgetEnforcer",
+    "BudgetExceededError",
+    "Checkpoint",
+    "CheckpointRegistry",
+    "TraceEvent",
+    "HarnessTrace",
+    "InvariantTelemetry",
+    # Spec-Driven Workspace & Compression Whitelist (v1.5.03)
+    "WorkspaceMode",
+    "AbstractWorkspace",
+    "SpecWorkspace",
+    "WhitelistType",
+    "ProtectedPayload",
+    "CompressionWhitelist",
+    # Failure Classifier & Multi-Tenant Runtime Context (v1.5.03)
+    "FailureCategory",
+    "FailureFingerprint",
+    "ClassificationDecision",
+    "FailureClassifier",
+    "MultiTenantRuntimeContext",
 ]
 

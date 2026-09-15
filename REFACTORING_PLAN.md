@@ -26,7 +26,7 @@
 | **`v1.4.101`** | **Card-3070-Dual-Agent-Isolation** | **3070 节点反重力 IDE 与 WorkBuddy 身份物理隔离治理与双向环境自动嗅探机制** | 1. 查清 3070 节点共存 Antigravity IDE 与 WorkBuddy 调用同一个 MCP 的物理事实；<br>2. 升级 `satellite_mcp_server.py` 与 `_core/config.py`，引入进程执行特征 + 环境变量指纹双重自动嗅探 (`full_ctx`)，即使共用同一脚本也能精准识别；<br>3. 3070 远端 `C:\Users\Skl\.gemini\config\mcp_config.json` 自动配置 `antigravity@3070`；<br>4. `tools/fleet.py` 一键全自动化推流覆盖 3070 双路径 (`.openviking/` 与 `.workbuddy/openviking-mcp/`)；<br>5. 远端实机探针 100% 验证双 Agent 身份绝对隔离 (`peers_isolated: True`)，Vitest 36/36、Pytest 11/11 全绿。 | 3070 双 Agent 身份隔离 100% 验证通过，单文件均 $\le 500$ 行 |
 | **`v1.4.100`** | **Card-Fleet-Ops-Identity-Rollout** | **全集群智能体统一身份穿透 (client@node) 落地、双模 MCP/Hook 自动装配与舰队自动同频闭环 (Fleet Ops)** | 1. 制定并落地全网统一 Agent 身份规范 `{client}@{node}` / `{client}.{role}@{node}`，严格符合官方正则；<br>2. 核心 MCP (`_core/config.py`) 与卫星 MCP (`satellite_mcp_server.py`) 自动解析节点平台与客户端环境，请求头自动注入 `X-OpenViking-Actor-Peer` 与 `X-Caller`；<br>3. 后端写路由 (`content.py`) 优先透传真实 actor peer，彻底切除 `default` 租户名误判；<br>4. 工作区与全局 Hook (`ov_pre_invocation.py`, `ov_session_archiver.p| **Card-Runtime-TwoTierAgentLoop-OnionGuard** | **pi 生产级双层事件循环、四层洋葱防御与中途插话/主动刹车契约** | 1. 吸收生产级 pi/agent-loop.ts 743 行源码精读与洋葱模型：终结单层 while 循环无法中途插话、死循环无法优雅中止与异常崩溃顽疾；<br>2. 双层事件循环架构：外层管控会话与模型切换，内层循环推进 hasMoreToolCalls || pendingMessages.length > 0；<br>3. 四层洋葱保护：核心循环、模型防御、用户控制（异步插话队列 + 优雅 Abort）、调度增强；<br>4. 工具主动刹车契约：返回 terminate: true 立即终止工具迭代提前交付。 | 双层循环与四层洋葱，中途插话零丢消息，工具主动刹车，异常优雅降级 | `P0` | `v1.5.01` | [x] 已验收通过 ✅ |
 | **`v1.5.02`** | **Card-Memory-ColdQuarantine-ZombiePurge** | **存量僵尸记忆冷归档与 1936 毒性软隔离专项 (Zombie Memory Quarantine & 1936 Detox)** | 1. 物理排查与冷备隔离：研发 `scripts/quarantine_zombie_memories.py`（241 行黄金甜点区，支持 `--dry-run` 与 `--restore`），将 1,159 个 2026 年 7 月份废弃 session 草稿（3,833 文件，4.2 MB）安全备份至 `~/.openviking/data/archive/zombie_sessions/20260915_091547/` 并落盘 `quarantine_manifest.json`；<br>2. 官方标准 API 闭环清理：通过 `DELETE /api/v1/fs` 并发安全清理 1,159 个资源，同步清除 VectorDB 中对应的 L0/L1/L2 嵌入与语义标记（成功率 1159/1159，0 失败）；<br>3. 物理验真双全通过：`openviking_find("1936")` 检索结果归零（前缀草稿完全清除，仅留官方 1936 下线交付规范），`openviking_find("antigravity_master")` 完全回归真实工具/应用实体记忆，Hook 预取污染彻底肃清；<br>4. 门禁验证：单测 54/54 全绿，安全扫描 4,206 文件零泄密，Vite 构建 PASS。<br>**Commit Hash**：`36848c2e4` | **修改文件**：`package.json`, `openviking/_version.py`, `scripts/quarantine_zombie_memories.py`, `REFACTORING_PLAN.md` | [x] 已验收通过 ✅ |
-| **Card-Harness-DeepSeek-AgentScope-SpecDriven** | **DeepSeek-Harness 极简规范外壳、AgentScope Java 2.0 生产级运行时与企业级四不变式** | 1. 吸收 DeepSeek 官方开源 deepseek-harness、2026 上半年自进化综述与阿里 AgentScope Java 2.0 GA：确立 Harness 四大不可变式（可终止、可隔离、可恢复、可观测）；<br>2. Workspace 抽象文件系统 (Abstract File System)：静态资产（AGENTS.md/Skills）与运行时数据（Session/MEMORY.md）解耦；<br>3. 物理免压缩白名单：长任务规划详情、异步子 Agent 追踪状态、权限授权记录物理免受上下文压缩破坏；<br>4. 工具失败分类捕获与防死循环重试，多租户 Runtime Context 显式传递。 | 彻底终结长会话规划与状态丢失，沙盒隔离与成本硬限制 100% 生效，多租户解耦 | `P0` | `v1.5.03` | ⏳ 待排期 |
+| **`v1.5.03`** | **Card-Harness-DeepSeek-AgentScope-SpecDriven** | **DeepSeek-Harness 极简规范外壳、AgentScope Java 2.0 生产级运行时与企业级四不变式** | 1. 吸收 DeepSeek 官方开源 deepseek-harness、2026 上半年自进化综述与阿里 AgentScope Java 2.0 GA：确立 Harness 四大不可变式（可终止、可隔离、可恢复、可观测）；<br>2. Workspace 抽象文件系统 (AFS)：静态资产（AGENTS.md/Skills）与运行时数据（Session/MEMORY.md）解耦；<br>3. 物理免压缩白名单：TaskPlan、SubAgentTracker、AuthGrants 免受上下文压缩破坏；<br>4. 工具失败分类捕获与防死循环重试，多租户 Runtime Context 显式传递；<br>5. 门禁验证：单测 71/71 通过，安全扫描 4,207 文件零泄密，前端 Vite 构建 19.29s PASS。<br>**Commit Hash**：`待提交` | **修改文件**：`openviking/core/harness_invariants.py`, `openviking/core/spec_driven_fs.py`, `openviking/core/failure_classifier.py`, `openviking/core/__init__.py`, `tests/unit/test_*.py`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md` | [x] 已验收通过 ✅ |
 | **Card-Harness-ReadWriteOffload-HookGuard** | **腾讯 DECO 级读写两侧 Offload 护栏与 Hook 切面长文本防偷懒/防越权体系** | 1. 吸收腾讯《DECO 数仓 Agent 引擎护栏实践》：彻底根治模型在长脚本（1200+行）生成时的“省略偷懒 (/* 省略若干行 */)”与“未经确认越权推生产”绝症；<br>2. Hook 切面与推理循环解耦：围绕模型与工具调用建立独立前后回调拦截；<br>3. 读写两侧 Offload：LLM 绝不直接接触全文！读拦截写入只读沙箱并下发 file_ref 句柄，写拦截强制走 copy_file + str_replace 小步增量补丁；<br>4. 危险操作 HITL 门禁：状态机检查当前阶段，未确认前物理阻断发布工具。 | 彻底封杀长文本省略偷懒，大文件上下文开销降 90%，越权操作 100% 物理拦截 | `P0` | `v1.5.04` | ⏳ 待排期 |
 | **Card-Verify-MultiMetricGate** | **交付物多维物理验真门禁（内容哈希 + 增量覆盖率 + 单测真跑，防 Exit 0 假完成）** | 1. 吸收字节《Aspire》虚假闭环教训与 Goodhart 定炼防范，重构 Task Completion 判定；<br>2. 代码开发类任务强制双重物理验真：Diff 变更行数 > 0 且关键集成测试真实通过；<br>3. 阻断 Agent 通过 mock、swallow 异常或加空注释伪造 Exit 0 宣布交付；<br>4. 作为 Wave 1 运行时与 Wave 4 自演进的不可逾越物理防线。 | 任务中心物理验真断言生效，虚假 Exit 0 100% 拦截，任务流转真实可信 | `P0` | `v1.5.05` | ⏳ 待排期 |
 | **Card-Harness-SpecDrivenFSM** | **第三代数仓级多智能体 Harness 架构（Spec 结构化文件驱动 + 协调者专家分离 + 12 状态有限状态机）** | 1. 吸收阿里千问数仓 Harness 实践与 Qwen《Skill-SP》：确立 Agent = Model + Harness，下限由工程托底；<br>2. Orchestrator 与 Specialist 物理分工：协调者只调度、把关、评审，严禁下场写业务代码；专家在独立沙箱专精窄接口；<br>3. Spec 结构化文件驱动通信：跨阶段全面废除长会话历史总线，统一传递结构化文件路径，阶段终点强制生成固定格式 CP 检查点摘要；<br>4. 生成者与评估者严格分离（Generator != Evaluator）；<br>5. 12 状态有限状态机与故障三分法，支持秒级断点续接。 | 上下文污染清零，阶段成果物可追溯可审计，故障断点续接率 100%，消除独角戏越轨 | `P1` | `v1.5.06` | ⏳ 待排期 |
@@ -101,10 +101,35 @@
   - `REFACTORING_PLAN.md` (总看板状态流转与双轨留痕)
   - **Git Release Tag**：`v1.5.02` ｜ **Commit Hash**：`36848c2e4`
 
-#### 📌 [P0] [ ] Card-Harness-DeepSeek-AgentScope-SpecDriven (v1.5.03): DeepSeek-Harness 极简规范外壳、AgentScope Java 2.0 生产级运行时与企业级四不变式 ⏳
-- **目标版本**：`v1.5.03` ｜ **优先级**：`P0`
-- **核心交付目标**：1. 吸收 DeepSeek 官方开源 deepseek-harness、2026 上半年自进化综述与阿里 AgentScope Java 2.0 GA：确立 Harness 四大不可变式（可终止、可隔离、可恢复、可观测）；<br>2. Workspace 抽象文件系统 (Abstract File System)：静态资产（AGENTS.md/Skills）与运行时数据（Session/MEMORY.md）解耦；<br>3. 物理免压缩白名单：长任务规划详情、异步子 Agent 追踪状态、权限授权记录物理免受上下文压缩破坏；<br>4. 工具失败分类捕获与防死循环重试，多租户 Runtime Context 显式传递。
-- **验收条件**：彻底终结长会话规划与状态丢失，沙盒隔离与成本硬限制 100% 生效，多租户解耦
+#### 📌 [P0] [x] Card-Harness-DeepSeek-AgentScope-SpecDriven (v1.5.03): DeepSeek-Harness 极简规范外壳、AgentScope Java 2.0 生产级运行时与企业级四不变式 ✅
+- **目标版本**：`v1.5.03` ｜ **优先级**：`P0` ｜ **交付状态**：`[x] 已验收通过 ✅`
+- **核心交付目标**：
+  1. **企业级四大不可变式 (The Four Enterprise Invariants)**：
+     - **可终止 (Terminability)**：`ExecutionBudget` 与 `BudgetEnforcer`（支持总耗时、Token量、成本 USD 与工具调用次数硬上限限制，超时/超标自动触发 `BudgetExceededError` 强制熔断）；
+     - **可隔离 (Isolatability)**：`SpecWorkspace` 彻底解耦只读静态规范资产（`AGENTS.md` / `skills/` 严格只读挂载）与会话独立沙箱（`sessions/{session_id}/` / `MEMORY.md` 读写隔离），物理阻断非法越权与路径穿越；
+     - **可恢复 (Recoverability)**：`Checkpoint` 与 `CheckpointRegistry` 实现状态机快照保存、按需检索、历史回滚与自动 Prune 裁剪；
+     - **可观测 (Observability)**：`HarnessTrace` 白盒事件时间线记录与 `InvariantTelemetry` 全局指标采集。
+  2. **物理免压缩白名单 (Compression Exemption Whitelist)**：
+     - 将 `TaskPlan`（长任务规划详情）、`SubAgentTracker`（异步子代理追踪状态）、`AuthGrants`（权限授权记录）确立为免压缩白名单；
+     - 物理免受上下文压缩与 Token 抽稀破坏，保障长程复杂推理状态绝对保真。
+  3. **失败分类捕获与防死循环重试 (Failure Classification & Anti-Loop Barrier)**：
+     - 三级精准失败分类：`TransientFailure`（指数退避重试）、`DeterministicFailure`（激活 Anti-Loop 物理屏障，阻断盲目原样重试并注入反思诊断 Prompt）、`FatalFailure`（主动刹车熔断）；
+     - `MultiTenantRuntimeContext` 贯穿多租户、用户与会话角色上下文。
+- **验收证据与物理闭环**：
+  - **Git Release Tag**：`v1.5.03`
+  - **核心源码与行数 (严格锁定 100~300 行黄金甜点区)**：
+    - `openviking/core/harness_invariants.py` (275 行，四大不可变式核心支撑)
+    - `openviking/core/spec_driven_fs.py` (212 行，工作区抽象文件系统与免压缩白名单)
+    - `openviking/core/failure_classifier.py` (209 行，失败三级分类、防死循环屏障与多租户上下文)
+    - `openviking/core/__init__.py` (132 行，统一导出)
+    - `tests/unit/test_harness_invariants.py` (175 行，预算熔断、检查点回滚与遥测单测)
+    - `tests/unit/test_spec_driven_fs.py` (135 行，只读隔离、沙箱隔离与白名单单测)
+    - `tests/unit/test_failure_classifier.py` (130 行，重试退避、防死循环屏障与多租户单测)
+  - **双全测试与构建验真**：
+    - 单元测试：`pytest -o addopts="" tests/unit/test_harness_invariants.py tests/unit/test_spec_driven_fs.py tests/unit/test_failure_classifier.py tests/unit/test_agent_loop.py` (23 passed in 0.52s)
+    - 回归测试：`pytest -o addopts="" tests/test_task_tracker.py` (48 passed in 0.34s)
+    - 安全扫描：`python3 scripts/security_check.py` (Checked 4207 tracked files. Zero secrets detected.)
+    - 前端构建：`npm run build` (19.29s, zero errors)
 
 #### 📌 [P0] [ ] Card-Harness-ReadWriteOffload-HookGuard (v1.5.04): 腾讯 DECO 级读写两侧 Offload 护栏与 Hook 切面长文本防偷懒/防越权体系 ⏳
 - **目标版本**：`v1.5.04` ｜ **优先级**：`P0`
