@@ -753,6 +753,19 @@ async def add_message(
             await add_many_async(specs)
         else:
             session.add_messages(specs)
+        # Anti-Entropy Ingestion Gate: Auto-register routine cron / heartbeat probes
+        is_hb = False
+        if request.content and any(k in request.content.lower() for k in ["[openclaw heartbeat poll]", "heartbeat poll", "cron probe"]):
+            is_hb = True
+        elif request.parts:
+            for p in request.parts:
+                txt = getattr(p, "text", "") or ""
+                if any(k in txt.lower() for k in ["[openclaw heartbeat poll]", "heartbeat poll", "cron probe"]):
+                    is_hb = True
+                    break
+        if is_hb:
+            service.sessions.register_heartbeat_session(session_id)
+
         await service.sessions.maybe_schedule_auto_commit(
             session_id,
             _ctx,
