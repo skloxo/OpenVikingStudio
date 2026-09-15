@@ -20,7 +20,7 @@ def _split_multi(values: Optional[list[str]]) -> list[str]:
         return []
     result: list[str] = []
     for value in values:
-        result.extend(part.strip() for part in str(value).split(",") if part.strip())
+        result.extend(part.strip() for part in value.split(",") if part.strip())
     return result
 
 
@@ -200,33 +200,33 @@ async def peer_agents(
             "status": "ready",
             "legacy_aliases": ["hermes@2080ti", "hermes"],
         },
-        # 3070 远程哨兵节点
+        # RTX3070 远程哨兵节点
         {
-            "id": "antigravity@3070",
-            "nameKey": "antigravity@3070",
+            "id": "antigravity@rtx3070",
+            "nameKey": "antigravity@rtx3070",
             "icon": "brain",
             "mode": "apiClient",
-            "role": "3070 反重力 IDE 远程哨兵",
+            "role": "RTX3070 反重力 IDE 远程哨兵",
             "status": "ready",
-            "legacy_aliases": ["antigravity@3070"],
+            "legacy_aliases": ["antigravity@rtx3070", "antigravity@3070"],
         },
         {
-            "id": "workbuddy@3070",
-            "nameKey": "workbuddy@3070",
+            "id": "workbuddy@rtx3070",
+            "nameKey": "workbuddy@rtx3070",
             "icon": "wrench",
             "mode": "apiClient",
-            "role": "3070 WorkBuddy 远程开发助手",
+            "role": "RTX3070 WorkBuddy 远程开发助手",
             "status": "running",
-            "legacy_aliases": ["workbuddy@3070", "workbuddy"],
+            "legacy_aliases": ["workbuddy@rtx3070", "workbuddy@3070", "workbuddy"],
         },
         {
-            "id": "xiaomimo@3070",
-            "nameKey": "xiaomimo@3070",
+            "id": "xiaomimo@rtx3070",
+            "nameKey": "xiaomimo@rtx3070",
             "icon": "zap",
             "mode": "apiClient",
-            "role": "3070 XiaomiMo 小米客户端",
+            "role": "RTX3070 XiaomiMo 小米客户端",
             "status": "ready",
-            "legacy_aliases": ["xiaomimo@3070"],
+            "legacy_aliases": ["xiaomimo@rtx3070", "xiaomimo@3070"],
         },
     ]
 
