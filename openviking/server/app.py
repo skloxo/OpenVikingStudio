@@ -45,6 +45,7 @@ from openviking.server.routers import (
     hybrid_search_router,
     zg_search_router,
     rag_abstention_router,
+    hg_compass_router,
     metrics_router,
     observer_router,
     openviking_assets_router,
@@ -648,6 +649,7 @@ def create_app(
     app.include_router(hybrid_search_router)
     app.include_router(zg_search_router)
     app.include_router(rag_abstention_router)
+    app.include_router(hg_compass_router)
     app.include_router(relations_router)
     app.include_router(skills_router)
     app.include_router(sessions_router)
