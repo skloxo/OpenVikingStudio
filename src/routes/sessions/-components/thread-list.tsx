@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import {
+  ArchiveIcon,
   LoaderCircleIcon,
   MessageSquareIcon,
   PlusIcon,
@@ -31,9 +32,10 @@ import { cn } from '#/lib/utils'
 
 interface ThreadListProps {
   activeSessionId?: string
+  isQuarantineActive?: boolean
 }
 
-export function ThreadList({ activeSessionId }: ThreadListProps) {
+export function ThreadList({ activeSessionId, isQuarantineActive }: ThreadListProps) {
   const { i18n, t } = useTranslation('sessions')
   const { identityScopeKey } = useAppConnection()
   const navigate = useNavigate()
@@ -119,6 +121,25 @@ export function ThreadList({ activeSessionId }: ThreadListProps) {
             <PlusIcon />
           )}
         </Button>
+      </div>
+
+      <div className="border-b border-border/40 px-3 py-2">
+        <Link
+          to="/sessions"
+          search={{ view: 'quarantine' }}
+          className={cn(
+            'flex items-center justify-between rounded-md border px-2.5 py-1.5 transition-colors font-mono text-[11px]',
+            isQuarantineActive
+              ? 'border-amber-500/40 bg-amber-500/10 text-amber-400 font-medium shadow-2xs'
+              : 'border-border/40 bg-card/40 text-muted-foreground hover:bg-muted/60 hover:text-foreground',
+          )}
+        >
+          <div className="flex items-center gap-1.5">
+            <ArchiveIcon className="size-3 text-amber-400" />
+            <span>{t('quarantine.navButton')}</span>
+          </div>
+          <span className="rounded bg-muted/60 px-1 py-0.5 text-[10px] text-amber-400 font-bold">1,164</span>
+        </Link>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-2">
