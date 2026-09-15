@@ -80,6 +80,7 @@ def compute_next_version(current: str, part: str) -> str:
     if len(parts) != 3:
         raise ValueError(f"版本格式不符合 semver (x.y.z): {current}")
     major, minor, patch = int(parts[0]), int(parts[1]), int(parts[2])
+    has_leading_zero = len(parts[2]) == 2 and parts[2].startswith("0")
     if part == "major":
         major += 1
         minor = 0
@@ -91,7 +92,12 @@ def compute_next_version(current: str, part: str) -> str:
         patch += 1
     else:
         raise ValueError(f"未知 bump 类型: {part}")
-    return f"{major}.{minor}.{patch}"
+
+    if has_leading_zero and patch < 10:
+        patch_str = f"{patch:02d}"
+    else:
+        patch_str = str(patch)
+    return f"{major}.{minor}.{patch_str}"
 
 
 def run_cmd(cmd: list[str], desc: str) -> None:

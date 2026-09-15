@@ -22,6 +22,8 @@ import threading
 import time
 from typing import Any, Callable, Dict, List, Optional
 
+from openviking.core.hook_aspects import AspectContext, AspectDecisionType, HookAspectRegistry
+
 logger = logging.getLogger(__name__)
 
 
@@ -87,10 +89,12 @@ class TwoTierAgentLoop:
         model_invoker: Callable[[List[AgentMessage]], AgentMessage],
         tool_dispatcher: Callable[[str, Dict[str, Any]], ToolCallResult],
         config: Optional[OnionGuardConfig] = None,
+        hook_registry: Optional[HookAspectRegistry] = None,
     ) -> None:
         self._model_invoker = model_invoker
         self._tool_dispatcher = tool_dispatcher
         self._config = config or OnionGuardConfig()
+        self._hook_registry = hook_registry
         self._pending_messages: collections.deque[AgentMessage] = collections.deque()
         self._lock = threading.Lock()
         self._abort_signal = threading.Event()
@@ -190,16 +194,44 @@ class TwoTierAgentLoop:
 
                     tool_name = call.get("name", "")
                     call_id = call.get("id", "")
-                    args = call.get("args", {})
+                    args = dict(call.get("args", {}))
 
-                    try:
-                        tool_result = self._tool_dispatcher(tool_name, args)
-                    except Exception as err:
-                        tool_result = ToolCallResult(
-                            call_id=call_id,
-                            tool_name=tool_name,
-                            output=f"Error executing tool {tool_name}: {err}",
-                            is_error=True,
+                    aspect_ctx = AspectContext(turn_id=inner_turn)
+
+                    # Layer 4 (Pre-Tool Hook Aspects):
+                    if self._hook_registry:
+                        decision = self._hook_registry.execute_before_tool_call(tool_name, args, aspect_ctx)
+                        if decision.decision == AspectDecisionType.BLOCK:
+                            tool_result = ToolCallResult(
+                                call_id=call_id,
+                                tool_name=tool_name,
+                                output=decision.override_output or f"Blocked: {decision.block_reason}",
+                                is_error=True,
+                                terminate=decision.terminate_turn,
+                            )
+                        elif decision.decision == AspectDecisionType.REWRITE and decision.modified_args:
+                            args = decision.modified_args
+                            tool_result = None
+                        else:
+                            tool_result = None
+                    else:
+                        tool_result = None
+
+                    if tool_result is None:
+                        try:
+                            tool_result = self._tool_dispatcher(tool_name, args)
+                        except Exception as err:
+                            tool_result = ToolCallResult(
+                                call_id=call_id,
+                                tool_name=tool_name,
+                                output=f"Error executing tool {tool_name}: {err}",
+                                is_error=True,
+                            )
+
+                    # Layer 4 (Post-Tool Hook Aspects):
+                    if self._hook_registry and not tool_result.is_error:
+                        tool_result.output = self._hook_registry.execute_after_tool_call(
+                            tool_name, args, tool_result.output, aspect_ctx
                         )
 
                     history.append(

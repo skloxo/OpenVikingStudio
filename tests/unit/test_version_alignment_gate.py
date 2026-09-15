@@ -29,7 +29,7 @@ def test_package_json_and_python_version_parity():
 
 def test_compute_next_version_semver():
     """验证 semver 递增算法正确性"""
-    assert compute_next_version("1.5.04", "patch") == "1.5.5"
+    assert compute_next_version("1.5.04", "patch") == "1.5.05"
     assert compute_next_version("1.5.9", "patch") == "1.5.10"
     assert compute_next_version("1.5.4", "minor") == "1.6.0"
     assert compute_next_version("1.5.4", "major") == "2.0.0"
