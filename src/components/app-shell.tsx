@@ -558,6 +558,8 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           <div className="flex w-full flex-col gap-6 px-4 py-6 md:px-6">
             {!settingsActive &&
             !crossDeviceVerifyActive &&
+            serverMode !== 'trusted' &&
+            serverMode !== 'dev' &&
             !connection.adminApiKey.trim() &&
             !connection.apiKey.trim() ? (
               <AccessRequiredGate />

@@ -3,9 +3,11 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { CompassIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
+import { Button } from '#/components/ui/button'
 import { useAppConnection } from '#/hooks/use-app-connection'
 import { useCreateSession } from '#/lib/sessions/use-sessions'
 import { useSessionTitles } from '#/lib/sessions/use-session-titles'
+import { QuarantineDashboard } from './-components/quarantine-dashboard'
 import { Thread } from './-components/thread'
 import { ThreadList } from './-components/thread-list'
 
@@ -14,15 +16,16 @@ const NEW_SESSION_KEY_LABEL = 'N'
 
 export const Route = createFileRoute('/sessions/')({
   component: SessionsPage,
-  validateSearch: (search: Record<string, unknown>) =>
-    ({
-      s: (search.s as string) || (search.search as string) || (search.id as string) || undefined,
-    }) as { s?: string; search?: string; id?: string },
+  validateSearch: (search: Record<string, unknown>): { s?: string; search?: string; id?: string; view?: string } => ({
+    s: (search.s as string) || (search.search as string) || (search.id as string) || undefined,
+    view: (search.view as string) || undefined,
+  }),
 })
 
 function SessionsPage() {
   const { t } = useTranslation('sessions')
-  const { s: activeSessionId } = Route.useSearch()
+  const { s: activeSessionId, view } = Route.useSearch()
+  const isQuarantineView = view === 'quarantine'
   const { identityScopeKey } = useAppConnection()
   const navigate = useNavigate()
   const createSession = useCreateSession()
@@ -49,19 +52,32 @@ function SessionsPage() {
 
   return (
     <div className="-mx-4 -my-6 flex h-[calc(100svh-3rem)] min-w-0 overflow-hidden md:-mx-6">
-      <ThreadList activeSessionId={activeSessionId} />
+      <ThreadList
+        activeSessionId={activeSessionId}
+        isQuarantineActive={isQuarantineView}
+      />
       <section className="min-w-0 flex-1 bg-background">
-        {activeSessionId ? (
+        {isQuarantineView ? (
+          <QuarantineDashboard
+            onBackToActive={() =>
+              void navigate({ to: '/sessions', search: { s: activeSessionId } })
+            }
+          />
+        ) : activeSessionId ? (
           <Thread sessionId={activeSessionId} />
         ) : (
-          <SessionsEmpty />
+          <SessionsEmpty
+            onOpenQuarantine={() =>
+              void navigate({ to: '/sessions', search: { view: 'quarantine' } })
+            }
+          />
         )}
       </section>
     </div>
   )
 }
 
-function SessionsEmpty() {
+function SessionsEmpty({ onOpenQuarantine }: { onOpenQuarantine?: () => void }) {
   const { t } = useTranslation('sessions')
 
   return (
@@ -86,6 +102,16 @@ function SessionsEmpty() {
         </kbd>
         <span>{t('threadList.newSession')}</span>
       </div>
+      {onOpenQuarantine && (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onOpenQuarantine}
+          className="mt-2 h-7 border-amber-500/30 text-[11px] font-mono text-amber-400 hover:bg-amber-500/10"
+        >
+          {t('quarantine.emptyViewBtn')}
+        </Button>
+      )}
     </div>
   )
 }

@@ -94,6 +94,12 @@ _EXPORTS = {
     "SpecFileArtifact": ("openviking.core.spec_orchestrator", "SpecFileArtifact"),
     "CheckpointManifest": ("openviking.core.spec_orchestrator", "CheckpointManifest"),
     "SpecDrivenOrchestrator": ("openviking.core.spec_orchestrator", "SpecDrivenOrchestrator"),
+    # Memory Quarantine & Anti-Entropy Dashboard (v1.5.10)
+    "QuarantineItem": ("openviking.core.quarantine_manager", "QuarantineItem"),
+    "QuarantineBatch": ("openviking.core.quarantine_manager", "QuarantineBatch"),
+    "QuarantineManifestSnapshot": ("openviking.core.quarantine_manager", "QuarantineManifestSnapshot"),
+    "RestoreDryRunResult": ("openviking.core.quarantine_manager", "RestoreDryRunResult"),
+    "QuarantineManager": ("openviking.core.quarantine_manager", "QuarantineManager"),
 }
 
 
@@ -193,5 +199,11 @@ __all__ = [
     "SpecFileArtifact",
     "CheckpointManifest",
     "SpecDrivenOrchestrator",
+    # Memory Quarantine & Anti-Entropy Dashboard (v1.5.10)
+    "QuarantineItem",
+    "QuarantineBatch",
+    "QuarantineManifestSnapshot",
+    "RestoreDryRunResult",
+    "QuarantineManager",
 ]
 
