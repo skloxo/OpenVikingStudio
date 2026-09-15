@@ -28,6 +28,7 @@ export const retrieval = {
         glob: '路径匹配 (glob)',
       },
       ignoreCase: '忽略大小写',
+      activeOnly: '仅看活跃基线',
       resultCount: '返回数量',
       path: '路径',
       pathPlaceholder: '/',
@@ -49,6 +50,11 @@ export const retrieval = {
       },
       sessionId: 'Session ID',
       sessionPlaceholder: 'session_id（可选）',
+    },
+    lifecycle: {
+      active: '活跃',
+      archived: '归档',
+      deprecated: '已废弃',
     },
     results: {
       title: '检索结果',

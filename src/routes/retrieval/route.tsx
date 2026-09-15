@@ -48,6 +48,7 @@ function RetrievalPage() {
   const [customPathInput, setCustomPathInput] = useState(initialCustomPath)
   const [sessionIdInput, setSessionIdInput] = useState(initialSessionId)
   const [ignoreCase, setIgnoreCase] = useState(initialIgnoreCase)
+  const [activeOnly, setActiveOnly] = useState<boolean>(true)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const targetUri = useMemo(() => {
@@ -71,6 +72,17 @@ function RetrievalPage() {
   const hasResults = Boolean(data && data.total > 0)
   const hasRetrievableContext = resourceProbeQuery.data?.hasContext ?? false
   const flatItems = useMemo(() => (data ? flattenResults(data) : []), [data])
+  const displayFlatItems = useMemo(() => {
+    if (!activeOnly) return flatItems
+    return flatItems.filter((fi) => {
+      const uri = fi.item.uri.toLowerCase()
+      const isStagingOrArchived =
+        uri.includes('/staging/') ||
+        uri.includes('/archive/') ||
+        uri.includes('_sessions')
+      return !isStagingOrArchived
+    })
+  }, [flatItems, activeOnly])
   const queryPlanItems = data?.query_plan?.queries ?? []
 
   const handleSubmit = useCallback(() => {
@@ -131,9 +143,11 @@ function RetrievalPage() {
       </div>
 
       <RetrievalControls
+        activeOnly={activeOnly}
         customPathInput={customPathInput}
         ignoreCase={ignoreCase}
         mode={retrievalMode}
+        onActiveOnlyChange={setActiveOnly}
         onCustomPathInputChange={setCustomPathInput}
         onIgnoreCaseChange={setIgnoreCase}
         onModeChange={setRetrievalMode}
@@ -148,7 +162,7 @@ function RetrievalPage() {
       />
 
       <RetrievalResults
-        flatItems={flatItems}
+        flatItems={displayFlatItems}
         hasRetrievableContext={hasRetrievableContext}
         hasResults={hasResults}
         hasSubmitted={hasSubmitted}
