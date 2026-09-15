@@ -27,10 +27,11 @@
 | **`v1.4.100`** | **Card-Fleet-Ops-Identity-Rollout** | **全集群智能体统一身份穿透 (client@node) 落地、双模 MCP/Hook 自动装配与舰队自动同频闭环 (Fleet Ops)** | 1. 制定并落地全网统一 Agent 身份规范 `{client}@{node}` / `{client}.{role}@{node}`，严格符合官方正则；<br>2. 核心 MCP (`_core/config.py`) 与卫星 MCP (`satellite_mcp_server.py`) 自动解析节点平台与客户端环境，请求头自动注入 `X-OpenViking-Actor-Peer` 与 `X-Caller`；<br>3. 后端写路由 (`content.py`) 优先透传真实 actor peer，彻底切除 `default` 租户名误判；<br>4. 工作区与全局 Hook (`ov_pre_invocation.py`, `ov_session_archiver.p| **Card-Runtime-TwoTierAgentLoop-OnionGuard** | **pi 生产级双层事件循环、四层洋葱防御与中途插话/主动刹车契约** | 1. 吸收生产级 pi/agent-loop.ts 743 行源码精读与洋葱模型：终结单层 while 循环无法中途插话、死循环无法优雅中止与异常崩溃顽疾；<br>2. 双层事件循环架构：外层管控会话与模型切换，内层循环推进 hasMoreToolCalls || pendingMessages.length > 0；<br>3. 四层洋葱保护：核心循环、模型防御、用户控制（异步插话队列 + 优雅 Abort）、调度增强；<br>4. 工具主动刹车契约：返回 terminate: true 立即终止工具迭代提前交付。 | 双层循环与四层洋葱，中途插话零丢消息，工具主动刹车，异常优雅降级 | `P0` | `v1.5.01` | [x] 已验收通过 ✅ |
 | **`v1.5.02`** | **Card-Memory-ColdQuarantine-ZombiePurge** | **存量僵尸记忆冷归档与 1936 毒性软隔离专项 (Zombie Memory Quarantine & 1936 Detox)** | 1. 物理排查与冷备隔离：研发 `scripts/quarantine_zombie_memories.py`（241 行黄金甜点区，支持 `--dry-run` 与 `--restore`），将 1,159 个 2026 年 7 月份废弃 session 草稿（3,833 文件，4.2 MB）安全备份至 `~/.openviking/data/archive/zombie_sessions/20260915_091547/` 并落盘 `quarantine_manifest.json`；<br>2. 官方标准 API 闭环清理：通过 `DELETE /api/v1/fs` 并发安全清理 1,159 个资源，同步清除 VectorDB 中对应的 L0/L1/L2 嵌入与语义标记（成功率 1159/1159，0 失败）；<br>3. 物理验真双全通过：`openviking_find("1936")` 检索结果归零（前缀草稿完全清除，仅留官方 1936 下线交付规范），`openviking_find("antigravity_master")` 完全回归真实工具/应用实体记忆，Hook 预取污染彻底肃清；<br>4. 门禁验证：单测 54/54 全绿，安全扫描 4,206 文件零泄密，Vite 构建 PASS。<br>**Commit Hash**：`36848c2e4` | **修改文件**：`package.json`, `openviking/_version.py`, `scripts/quarantine_zombie_memories.py`, `REFACTORING_PLAN.md` | [x] 已验收通过 ✅ |
 | **`v1.5.03`** | **Card-Harness-DeepSeek-AgentScope-SpecDriven** | **DeepSeek-Harness 极简规范外壳、AgentScope Java 2.0 生产级运行时与企业级四不变式** | 1. 吸收 DeepSeek 官方开源 deepseek-harness、2026 上半年自进化综述与阿里 AgentScope Java 2.0 GA：确立 Harness 四大不可变式（可终止、可隔离、可恢复、可观测）；<br>2. Workspace 抽象文件系统 (AFS)：静态资产（AGENTS.md/Skills）与运行时数据（Session/MEMORY.md）解耦；<br>3. 物理免压缩白名单：TaskPlan、SubAgentTracker、AuthGrants 免受上下文压缩破坏；<br>4. 工具失败分类捕获与防死循环重试，多租户 Runtime Context 显式传递；<br>5. 门禁验证：单测 71/71 通过，安全扫描 4,207 文件零泄密，前端 Vite 构建 19.29s PASS。<br>**Commit Hash**：`e8f092f21` | **修改文件**：`openviking/core/harness_invariants.py`, `openviking/core/spec_driven_fs.py`, `openviking/core/failure_classifier.py`, `openviking/core/__init__.py`, `tests/unit/test_*.py`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md` | [x] 已验收通过 ✅ |
-| **Card-Harness-ReadWriteOffload-HookGuard** | **腾讯 DECO 级读写两侧 Offload 护栏与 Hook 切面长文本防偷懒/防越权体系** | 1. 吸收腾讯《DECO 数仓 Agent 引擎护栏实践》：彻底根治模型在长脚本（1200+行）生成时的“省略偷懒 (/* 省略若干行 */)”与“未经确认越权推生产”绝症；<br>2. Hook 切面与推理循环解耦：围绕模型与工具调用建立独立前后回调拦截；<br>3. 读写两侧 Offload：LLM 绝不直接接触全文！读拦截写入只读沙箱并下发 file_ref 句柄，写拦截强制走 copy_file + str_replace 小步增量补丁；<br>4. 危险操作 HITL 门禁：状态机检查当前阶段，未确认前物理阻断发布工具。 | 彻底封杀长文本省略偷懒，大文件上下文开销降 90%，越权操作 100% 物理拦截 | `P0` | `v1.5.04` | ⏳ 待排期 |
-| **Card-Verify-MultiMetricGate** | **交付物多维物理验真门禁（内容哈希 + 增量覆盖率 + 单测真跑，防 Exit 0 假完成）** | 1. 吸收字节《Aspire》虚假闭环教训与 Goodhart 定炼防范，重构 Task Completion 判定；<br>2. 代码开发类任务强制双重物理验真：Diff 变更行数 > 0 且关键集成测试真实通过；<br>3. 阻断 Agent 通过 mock、swallow 异常或加空注释伪造 Exit 0 宣布交付；<br>4. 作为 Wave 1 运行时与 Wave 4 自演进的不可逾越物理防线。 | 任务中心物理验真断言生效，虚假 Exit 0 100% 拦截，任务流转真实可信 | `P0` | `v1.5.05` | ⏳ 待排期 |
-| **Card-Harness-SpecDrivenFSM** | **第三代数仓级多智能体 Harness 架构（Spec 结构化文件驱动 + 协调者专家分离 + 12 状态有限状态机）** | 1. 吸收阿里千问数仓 Harness 实践与 Qwen《Skill-SP》：确立 Agent = Model + Harness，下限由工程托底；<br>2. Orchestrator 与 Specialist 物理分工：协调者只调度、把关、评审，严禁下场写业务代码；专家在独立沙箱专精窄接口；<br>3. Spec 结构化文件驱动通信：跨阶段全面废除长会话历史总线，统一传递结构化文件路径，阶段终点强制生成固定格式 CP 检查点摘要；<br>4. 生成者与评估者严格分离（Generator != Evaluator）；<br>5. 12 状态有限状态机与故障三分法，支持秒级断点续接。 | 上下文污染清零，阶段成果物可追溯可审计，故障断点续接率 100%，消除独角戏越轨 | `P1` | `v1.5.06` | ⏳ 待排期 |
-| **Card-Retrieval-BM25Hybrid** | **SQLite FTS5 词法与稠密向量双路混合检索与 RRF 融合 (BM25 Hybrid Retrieval)** | 1. 吸收《BM25 Wins at Scale》(arXiv:2607.26497) 与生产混检共识，破除纯 Dense 向量在精确符号上的检索盲区；<br>2. 本地零外部依赖：基于 SQLite 原生 FTS5 虚拟表建立文本/经验倒排索引；<br>3. 双路召回并行流：Dense Vector (qwen3-vl-emb) + Sparse BM25 (FTS5) 毫秒级并行捞取候选集；<br>4. 无参 RRF 融合：采用标准倒数排名融合 (k=60) 归一化排序，输入单次 Cross-Encoder Reranker 精排；<br>5. 补齐代码符号、错误堆栈、端口与文件名精准命中专项单测。 | 精确代码符号与错误排查召回率大幅提升，保持单次 RER 契约不变，延迟开销几乎为 0 | `P0` | `v1.5.07` | ⏳ 待排期 |
+| **`v1.5.04`** | **Card-Memory-StagingQuarantine-LifecycleGate** | **存量会话文档冷隔离、四态生命周期标记与检索抗熵增护栏 (Staging Session Quarantine, Lifecycle FSM & Anti-Entropy Gate)** | 1. 深度治理 9月8日~10日遗留在 `viking://resources/staging/` 下的 3070、antigravity、2080ti 会话过程转储文档，安全冷备至 `~/.openviking/data/archive/cold_staging_sessions/` 并落盘 `quarantine_manifest.json`；<br>2. 官方标准 API 闭环解绑：调用 `DELETE /api/v1/fs` 彻底清除 VectorDB 中对应的 L0/L1/L2 向量切片与语义标记，热索引节点物理净减；<br>3. Hook 预取与检索入口抗熵增护栏：`ov_pre_invocation.py` 增加路径黑名单过滤（物理阻断 `staging/` 与 `archive/` 污染 Agent 开局上下文）；<br>4. 检索四态生命周期打标与默认过滤：`/studio/retrieval` 增加「仅看活跃基线 (Active Only)」开关（默认选中），对归档/已废弃条目渲染中性/警告徽章，彻底消灭历史流水账与 1936 过渡期毒性。 | 彻底清空 staging 向量污染，Hook 预取纯净度 100%，UI 检索支持活跃基线过滤，单测与门禁全绿 | `P0` | `v1.5.04` | ⏳ 待排期 |
+| **Card-Harness-ReadWriteOffload-HookGuard** | **腾讯 DECO 级读写两侧 Offload 护栏与 Hook 切面长文本防偷懒/防越权体系** | 1. 吸收腾讯《DECO 数仓 Agent 引擎护栏实践》：彻底根治模型在长脚本（1200+行）生成时的“省略偷懒 (/* 省略若干行 */)”与“未经确认越权推生产”绝症；<br>2. Hook 切面与推理循环解耦：围绕模型与工具调用建立独立前后回调拦截；<br>3. 读写两侧 Offload：LLM 绝不直接接触全文！读拦截写入只读沙箱并下发 file_ref 句柄，写拦截强制走 copy_file + str_replace 小步增量补丁；<br>4. 危险操作 HITL 门禁：状态机检查当前阶段，未确认前物理阻断发布工具。 | 彻底封杀长文本省略偷懒，大文件上下文开销降 90%，越权操作 100% 物理拦截 | `P0` | `v1.5.05` | ⏳ 待排期 |
+| **Card-Verify-MultiMetricGate** | **交付物多维物理验真门禁（内容哈希 + 增量覆盖率 + 单测真跑，防 Exit 0 假完成）** | 1. 吸收字节《Aspire》虚假闭环教训与 Goodhart 定炼防范，重构 Task Completion 判定；<br>2. 代码开发类任务强制双重物理验真：Diff 变更行数 > 0 且关键集成测试真实通过；<br>3. 阻断 Agent 通过 mock、swallow 异常或加空注释伪造 Exit 0 宣布交付；<br>4. 作为 Wave 1 运行时与 Wave 4 自演进的不可逾越物理防线。 | 任务中心物理验真断言生效，虚假 Exit 0 100% 拦截，任务流转真实可信 | `P0` | `v1.5.06` | ⏳ 待排期 |
+| **Card-Harness-SpecDrivenFSM** | **第三代数仓级多智能体 Harness 架构（Spec 结构化文件驱动 + 协调者专家分离 + 12 状态有限状态机）** | 1. 吸收阿里千问数仓 Harness 实践与 Qwen《Skill-SP》：确立 Agent = Model + Harness，下限由工程托底；<br>2. Orchestrator 与 Specialist 物理分工：协调者只调度、把关、评审，严禁下场写业务代码；专家在独立沙箱专精窄接口；<br>3. Spec 结构化文件驱动通信：跨阶段全面废除长会话历史总线，统一传递结构化文件路径，阶段终点强制生成固定格式 CP 检查点摘要；<br>4. 生成者与评估者严格分离（Generator != Evaluator）；<br>5. 12 状态有限状态机与故障三分法，支持秒级断点续接。 | 上下文污染清零，阶段成果物可追溯可审计，故障断点续接率 100%，消除独角戏越轨 | `P1` | `v1.5.07` | ⏳ 待排期 |
+| **Card-Retrieval-BM25Hybrid** | **SQLite FTS5 词法与稠密向量双路混合检索与 RRF 融合 (BM25 Hybrid Retrieval)** | 1. 吸收《BM25 Wins at Scale》(arXiv:2607.26497) 与生产混检共识，破除纯 Dense 向量在精确符号上的检索盲区；<br>2. 本地零外部依赖：基于 SQLite 原生 FTS5 虚拟表建立文本/经验倒排索引；<br>3. 双路召回并行流：Dense Vector (qwen3-vl-emb) + Sparse BM25 (FTS5) 毫秒级并行捞取候选集；<br>4. 无参 RRF 融合：采用标准倒数排名融合 (k=60) 归一化排序，输入单次 Cross-Encoder Reranker 精排；<br>5. 补齐代码符号、错误堆栈、端口与文件名精准命中专项单测。 | 精确代码符号与错误排查召回率大幅提升，保持单次 RER 契约不变，延迟开销几乎为 0 | `P0` | `v1.5.08` | ⏳ 待排期 |
 | **Card-Retrieval-LocalFirst-zgSemanticSearch** | **阿里 zg 级端侧本地命令行语义搜索、四重奏融合与代码符号防盲搜护栏（深度整合 TieredLazyFetch 分级契约）** | 1. 吸收阿里 Qwen+Zvec《zg (zvec-grep)》、Karpathy 知识空间与 CPA 导师分级懒加载黄金律：彻底解决 Agent 在终端疯狂跑 rg 盲猜代码导致上百文件撑爆上下文；<br>2. 深度整合 TieredLazyFetch：引入 depth 契约，depth=0（元数据行号）、depth=1（紧凑指纹前后1行，默认推荐）、depth=2（完整块）；<br>3. 端侧四重奏检索引擎：32MB 超轻静态模型向量感知 + BM25 词频 + RRF 无参融合 + ripgrep 精确匹配；<br>4. AST 符号级切片（函数/类），Local-First 纯端侧 0 显存依赖，万行仓库 30s 极速建库；<br>5. 工具调用减少 50%，Token 减半。 | 彻底终结代码符号盲搜，纯本地 32MB 模型 0 显存，分级懒加载契约落地，Token 减 50% | `P0` | `v1.5.08` | ⏳ 待排期 |
 | **Card-RAG-Abstention-ZeroHallucination-Pipeline** | **千万级语料 RAG 约束验证与弃答门禁流水线、RARG 语义引导相关性搜索与 MinHash 去重** | 1. 吸收千万级工业 RAG 深度记事、腾讯/中科院信工所开源 RARG、七牛开发者与 6 曦轩：彻底攻克海量文档下模型默认“盲猜”导致的严重幻觉；<br>2. 前置 MinHash LSH 近重复去重与 NFKC 分词标准化，阻断冗余拷贝霸榜；<br>3. RARG 语义引导搜索：embed_recall 排序候选路径，单线程 rg -j1 顺序扫描，结合起点 10 段线索与局部重排；<br>4. 独立 Verifier 判官与主动弃答门禁 (Abstention Gate)：证据不足或置信度低于阈值强制拒答，幻觉率压制到接近 0。 | 10M+ 文档毫秒级检索，局部重排工具调用降低 70%，主动弃答将幻觉率压制至接近 0 | `P1` | `v1.5.09` | ⏳ 待排期 |
 | **Card-Knowledge-HG-RAG-HierarchicalCompass** | **HG-RAG 分层指南针拓扑检索、Karpathy LLM Wiki 与 WeKnora 读写分离知识工程** | 1. 吸收 PaperAGI《HG-RAG》、Karpathy LLM Wiki、翻斗花园二蛋 Graph Engineering 与 WeKnora 企业实践：解决多跳实体推导断层与合并单元格大类丢失；<br>2. HG-RAG 分层指南针拓扑：构建可漫游父子关联索引，结构化主数据表叶子 chunk 自洽回填全路径大类；<br>3. 编辑台与服务台物理分离（Read/Write Decoupling）：重型解析与图计算隔离在编辑台，生产服务台保持只读极速响应；<br>4. 零分叉 Overlay 覆盖层升级：同名替换 > 新增组件 > 变量覆盖 > 幂等锚点补丁。 | 跨层级多跳检索准确率提升 25%，结构化表路径零丢失，读写分离彻底消除生产磁盘撑爆 | `P1` | `v1.5.10` | ⏳ 待排期 |
@@ -131,13 +132,45 @@
     - 安全扫描：`python3 scripts/security_check.py` (Checked 4207 tracked files. Zero secrets detected.)
     - 前端构建：`npm run build` (19.29s, zero errors)
 
-#### 📌 [P0] [ ] Card-Harness-ReadWriteOffload-HookGuard (v1.5.04): 腾讯 DECO 级读写两侧 Offload 护栏与 Hook 切面长文本防偷懒/防越权体系 ⏳
-- **目标版本**：`v1.5.04` ｜ **优先级**：`P0`
+#### 📌 [P0] [ ] Card-Memory-StagingQuarantine-LifecycleGate (v1.5.04): 存量会话文档冷隔离、四态生命周期标记与检索抗熵增护栏 ⏳
+- **目标版本**：`v1.5.04` ｜ **优先级**：🔥 P0（核心抗熵增与开局注意力急救）
+- **交付时间预估**：即刻启动实施 ｜ **当前状态**：⏳ 方案已终审·待排期实施
+- **来源依据与核心思考推演过程 (Reasoning & Inversion Context)**：
+  - **理论源头追溯**：
+    - 2026-09-15 生产实机走查现场抓包：在「信息治理」(`/studio/retrieval`) 检索 `1936` 时，9月8日转储的 3070 会话流水账 (`2026-09-08_1dc41a99.md`) 高分占据第 2 位；同时 Antigravity 底层 Hook (`ov_pre_invocation.py`) 每次开局预取均将 `staging/antigravity_sessions/*.md` 作为核心记忆注入，造成严重注意力稀释；
+    - 深度关联已有规划：`v1.5.02`（僵尸会话草稿物理冷备完成，但漏掉了 `resources/staging/` 下已向量化的 `.md` 文档）与 `v1.5.14` (`Card-Memory-EntropyCrystallizer-TriGate` 存量碎片三门并联结晶归纳器）；
+  - **芒格逆向审讯（Invert, Always Invert —— 倒推知识库死亡全过程）**：
+    - *死因 1 (信息热力学熵增死锁)*：多节点自动化任务每天产出海量过程转储与测试记录，若无门禁全部向量化，向量空间迅速被低信噪比文本淹没，真正重要的架构规则和故障教训被高频词余弦碰撞彻底掩埋，知识中枢沦为“垃圾场”；
+    - *死因 2 (Agent 注意力中毒)*：Agent 开局 Hook 预取到两周前的废弃草稿，误将过程转储当作不可变事实，引发后续执行方向漂移与历史缺陷反复重现；
+    - *死因 3 (盲目粗暴硬删破坏审计)*：若遇到杂乱就直接物理永久销毁，会导致事故复盘链断裂，无法溯源当初为何改动。
+  - **第一性原理穿透 (First Principles)**：
+    - *物理真相 1 (信噪比与余弦碰撞)*：检索有效信噪比与池中文档的信息密度成正比。3000 字会话流水账是高维空间的“模糊云团”，10 行晶体事实是“精准激光点”。必须物理减少过程性云团进入热向量库；
+    - *物理真相 2 (存与查的解耦)*：磁盘冷存储极其廉价，向量索引与 LLM 上下文极度昂贵。存量流水账可以 100% 留存在冷备区用于事后审计，但绝不应 100% 霸占热向量索引；
+  - **奥卡姆剃刀极简工程裁决 (Occam's Razor)**：
+    - 切除常驻后台定时轮询进程与复杂审批流，采用“极简三件套”：冷备解绑脚本 + Hook 路径阻断 + UI 活跃基线切换。
+- **核心治理成果与四大原子工序拆解 (Tracer-Bullet Tickets)**：
+  1. **⚙️ Tracer 1: Staging 存量会话过程文档物理冷备与 VectorDB 解绑 (`quarantine_staging_sessions.py`)**：
+     - 将 `~/.openviking/data/viking/default/resources/staging/` 下的 `3070_sessions`、`antigravity_sessions`、`2080ti_sessions` 历史转储安全冷备至 `~/.openviking/data/archive/cold_staging_sessions/` 并落盘 `quarantine_manifest.json`；
+     - 调用标准 VikingFS 资源解绑接口彻底清除 VectorDB 对应的 L0/L1/L2 嵌入向量，热索引节点物理净减；
+  2. **⚙️ Tracer 2: Hook 预取路径黑名单与纯净度守卫 (`ov_pre_invocation.py`)**：
+     - 在 Hook 记忆预取逻辑中加入路径守卫，物理过滤 `staging/` 与 `archive/`，确保 Agent 开局上下文 100% 纯净（仅注入 `evolution_lessons` 与核心规则）；
+  3. **⚙️ Tracer 3: 检索四态生命周期标记与「仅看活跃基线」UI 过滤 (`/studio/retrieval`)**：
+     - 在信息治理检索页面增加 `仅看活跃基线 (Active Only)` 快速切换（默认开启），自动过滤 staging 与归档数据；
+     - 对归档条目渲染高密中性 `[归档]` 徽章，对已废弃内容渲染 `[已废弃]` 徽章（严禁绿色，字号 $\ge 11\text{px}$）；
+  4. **⚙️ Tracer 4: 自动化单测与抗熵增门禁闭环**：
+     - 补齐 staging 隔离回归单测、Hook 预取纯净度断言与前端检索过滤单元测试。
+- **不可逾越物理验收门禁**：
+  - 门禁 1：在 `/studio/retrieval` 检索 `1936`，绝不可再出现任何 `staging/*_sessions` 转储条目；
+  - 门禁 2：运行 `python3 .agents/hooks/ov_pre_invocation.py`，预取结果中 100% 零 `staging/` 污染；
+  - 门禁 3：所有冷隔离文件在 `archive/cold_staging_sessions/` 具备完整 manifest 备份，数据零丢失。
+
+#### 📌 [P0] [ ] Card-Harness-ReadWriteOffload-HookGuard (v1.5.05): 腾讯 DECO 级读写两侧 Offload 护栏与 Hook 切面长文本防偷懒/防越权体系 ⏳
+- **目标版本**：`v1.5.05` ｜ **优先级**：`P0`
 - **核心交付目标**：1. 吸收腾讯《DECO 数仓 Agent 引擎护栏实践》：彻底根治模型在长脚本（1200+行）生成时的“省略偷懒 (/* 省略若干行 */)”与“未经确认越权推生产”绝症；<br>2. Hook 切面与推理循环解耦：围绕模型与工具调用建立独立前后回调拦截；<br>3. 读写两侧 Offload：LLM 绝不直接接触全文！读拦截写入只读沙箱并下发 file_ref 句柄，写拦截强制走 copy_file + str_replace 小步增量补丁；<br>4. 危险操作 HITL 门禁：状态机检查当前阶段，未确认前物理阻断发布工具。
 - **验收条件**：彻底封杀长文本省略偷懒，大文件上下文开销降 90%，越权操作 100% 物理拦截
 
-#### 📌 [P0] [ ] Card-Verify-MultiMetricGate (v1.5.05): 交付物多维物理验真门禁（内容哈希 + 增量覆盖率 + 单测真跑，防 Exit 0 假完成） ⏳
-- **目标版本**：`v1.5.05` ｜ **优先级**：`P0`
+#### 📌 [P0] [ ] Card-Verify-MultiMetricGate (v1.5.06): 交付物多维物理验真门禁（内容哈希 + 增量覆盖率 + 单测真跑，防 Exit 0 假完成） ⏳
+- **目标版本**：`v1.5.06` ｜ **优先级**：`P0`
 - **类型**：Task Quality Gate / Physical Verification / Anti-Cheat / Goodhart Protection ｜ **优先级**：🔥 P0（运行时验收刚需）
 - **目标版本**：`v1.5.04` ｜ **交付时间预估**：Wave 1 周期 ｜ **当前状态**：⏳ 方案已终审·待排期实施
 - **来源依据与核心思考推演过程 (Reasoning & Inversion Context)**：
