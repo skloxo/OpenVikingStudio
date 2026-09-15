@@ -95,18 +95,18 @@ export function HarnessAgentLoopCockpit() {
           <span className="text-xs font-semibold text-foreground">
             TwoTierAgentLoop 双层事件循环与主动刹车感知
           </span>
-          <Badge variant="outline" className="text-[11px] border-cyan-500/40 text-cyan-400 font-mono">
+          <Badge variant="outline" className="text-xs border-cyan-500/40 text-cyan-400 font-mono">
             v1.5.09 Observability SSOT
           </Badge>
         </div>
-        <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-mono">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
           <span>采样状态:</span>
           <span className="text-cyan-400">活跃监听 (Active)</span>
           <div className="h-3 w-px bg-border/60" />
           <Button
             size="sm"
             variant="ghost"
-            className="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+            className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
             onClick={() => void telemetryQuery.refetch()}
           >
             <RefreshCwIcon className="mr-1 size-3" />
@@ -124,7 +124,7 @@ export function HarnessAgentLoopCockpit() {
               <ZapIcon className="size-3.5 text-cyan-400" />
               异步插话队列
             </span>
-            <Badge variant="outline" className="text-[11px] border-border/60 text-muted-foreground font-mono">
+            <Badge variant="outline" className="text-xs border-border/60 text-muted-foreground font-mono">
               Layer 3 Control
             </Badge>
           </div>
@@ -132,9 +132,9 @@ export function HarnessAgentLoopCockpit() {
             <span className="text-xl font-bold font-mono tabular-nums text-foreground">
               {data.interjection_queue_depth}
             </span>
-            <span className="text-[11px] text-muted-foreground font-mono">待消费排队中</span>
+            <span className="text-xs text-muted-foreground font-mono">待消费排队中</span>
           </div>
-          <div className="space-y-1 border-t border-border/50 pt-2 text-[11px] text-muted-foreground font-mono">
+          <div className="space-y-1 border-t border-border/50 pt-2 text-xs text-muted-foreground font-mono">
             <div className="flex justify-between">
               <span>累计排队入队:</span>
               <span className="text-foreground tabular-nums">{data.interjection_total_queued} 条</span>
@@ -157,7 +157,7 @@ export function HarnessAgentLoopCockpit() {
               <PauseOctagonIcon className="size-3.5 text-amber-400" />
               主动刹车契约
             </span>
-            <Badge variant="outline" className="text-[11px] border-amber-500/30 text-amber-400 font-mono">
+            <Badge variant="outline" className="text-xs border-amber-500/30 text-amber-400 font-mono">
               terminate: true
             </Badge>
           </div>
@@ -165,9 +165,9 @@ export function HarnessAgentLoopCockpit() {
             <span className="text-xl font-bold font-mono tabular-nums text-foreground">
               {data.active_brake_count}
             </span>
-            <span className="text-[11px] text-muted-foreground font-mono">次提前完工交付</span>
+            <span className="text-xs text-muted-foreground font-mono">次提前完工交付</span>
           </div>
-          <div className="space-y-1 border-t border-border/50 pt-2 text-[11px] text-muted-foreground font-mono">
+          <div className="space-y-1 border-t border-border/50 pt-2 text-xs text-muted-foreground font-mono">
             <div className="flex justify-between">
               <span>正常完工 Turns:</span>
               <span className="text-cyan-400 tabular-nums">{data.turns_completed}</span>
@@ -192,7 +192,7 @@ export function HarnessAgentLoopCockpit() {
               <RotateCwIcon className="size-3.5 text-cyan-400" />
               模型防御洋葱层
             </span>
-            <Badge variant="outline" className="text-[11px] border-border/60 text-muted-foreground font-mono">
+            <Badge variant="outline" className="text-xs border-border/60 text-muted-foreground font-mono">
               Layer 2 Defense
             </Badge>
           </div>
@@ -200,9 +200,9 @@ export function HarnessAgentLoopCockpit() {
             <span className="text-xl font-bold font-mono tabular-nums text-foreground">
               {data.model_defense_retries_total}
             </span>
-            <span className="text-[11px] text-muted-foreground font-mono">次退避重试</span>
+            <span className="text-xs text-muted-foreground font-mono">次退避重试</span>
           </div>
-          <div className="space-y-1 border-t border-border/50 pt-2 text-[11px] text-muted-foreground font-mono">
+          <div className="space-y-1 border-t border-border/50 pt-2 text-xs text-muted-foreground font-mono">
             <div className="flex justify-between">
               <span>重试耗尽熔断:</span>
               <span className={data.model_defense_exhausted_total > 0 ? 'text-rose-400' : 'text-foreground'}>
@@ -227,7 +227,7 @@ export function HarnessAgentLoopCockpit() {
               <GitCommitIcon className="size-3.5 text-cyan-400" />
               Merkle 树增量比对
             </span>
-            <Badge variant="outline" className="text-[11px] border-cyan-500/30 text-cyan-400 font-mono">
+            <Badge variant="outline" className="text-xs border-cyan-500/30 text-cyan-400 font-mono">
               &lt; 2.0ms 标尺
             </Badge>
           </div>
@@ -235,9 +235,9 @@ export function HarnessAgentLoopCockpit() {
             <span className="text-xl font-bold font-mono tabular-nums text-foreground">
               {data.merkle_last_diff_ms}
             </span>
-            <span className="text-[11px] text-cyan-400 font-mono">ms 极速巡检</span>
+            <span className="text-xs text-cyan-400 font-mono">ms 极速巡检</span>
           </div>
-          <div className="space-y-1 border-t border-border/50 pt-2 text-[11px] text-muted-foreground font-mono">
+          <div className="space-y-1 border-t border-border/50 pt-2 text-xs text-muted-foreground font-mono">
             <div className="flex justify-between">
               <span>监视文件总数:</span>
               <span className="text-foreground tabular-nums">{data.merkle_tree_file_count} 个</span>
@@ -263,7 +263,7 @@ export function HarnessAgentLoopCockpit() {
               双层循环物理探针试验台 (Live Telemetry Probe)
             </span>
           </div>
-          <span className="text-[11px] text-muted-foreground font-mono">
+          <span className="text-xs text-muted-foreground font-mono">
             零需后台真实长跑，一键验证指标上屏联动
           </span>
         </div>
@@ -317,11 +317,11 @@ export function HarnessAgentLoopCockpit() {
         {/* 探针回显卡片 */}
         {probeResult && (
           <div className="mt-3 rounded border border-border/60 bg-background/80 p-2.5 text-xs font-mono text-foreground">
-            <div className="flex items-center gap-1.5 text-[11px] text-cyan-400 font-semibold mb-1">
+            <div className="flex items-center gap-1.5 text-xs text-cyan-400 font-semibold mb-1">
               <CheckCircle2Icon className="size-3.5" />
               探针响应成功 · 物理指标已即时更新
             </div>
-            <pre className="text-[11px] text-muted-foreground overflow-x-auto whitespace-pre-wrap">
+            <pre className="text-xs text-muted-foreground overflow-x-auto whitespace-pre-wrap">
               {JSON.stringify(probeResult, null, 2)}
             </pre>
           </div>

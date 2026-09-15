@@ -89,7 +89,7 @@ export function SlaTrendChart({
                   </TooltipContent>
                 </Tooltip>
               </div>
-              <p className="text-[11px] text-muted-foreground/70 font-mono">
+              <p className="text-xs text-muted-foreground/70 font-mono">
                 {window.toUpperCase()} 周期 Viking L0 避坑架构下 Token 降本与 SLA 响应时延
               </p>
             </div>
@@ -143,10 +143,10 @@ export function SlaTrendChart({
                         <div className="font-bold text-cyan-600 dark:text-cyan-400">
                           Token 节省率: -{Number(d.tokenSavingRate || 82.4).toFixed(1)}%
                         </div>
-                        <div className="text-cyan-500 text-[11px]">
+                        <div className="text-cyan-500 text-xs">
                           响应时延: {d.latencyMs} ms
                         </div>
-                        <div className="text-muted-foreground text-[11px]">
+                        <div className="text-muted-foreground text-xs">
                           SLA 成功率: {Number(d.successRate || 99.9).toFixed(2)}% ({d.totalRequests.toLocaleString()} 次)
                         </div>
                       </div>

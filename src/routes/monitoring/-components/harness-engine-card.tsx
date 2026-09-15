@@ -55,7 +55,7 @@ export function HarnessEngineCard({ isHealthy = true }: HarnessEngineCardProps) 
         </div>
         <Badge
           variant="outline"
-          className="gap-1 font-mono text-[11px] border-cyan-500/40 bg-cyan-500/10 text-cyan-500"
+          className="gap-1 font-mono text-xs border-cyan-500/40 bg-cyan-500/10 text-cyan-500"
         >
           <span className="size-1.5 rounded-full bg-cyan-500 animate-pulse" />
           {isHealthy ? '组件熔融就位' : '组件降级'}
@@ -83,7 +83,7 @@ export function HarnessEngineCard({ isHealthy = true }: HarnessEngineCardProps) 
               <CpuIcon className="size-3.5 text-cyan-500 shrink-0" />
               LLMLingua-2 (xlm-roberta)
             </span>
-            <span className="text-[11px] text-muted-foreground truncate">
+            <span className="text-xs text-muted-foreground truncate">
               微软 Token 抽稀探针 · 目标区间 45%-55%
             </span>
           </div>
@@ -91,23 +91,23 @@ export function HarnessEngineCard({ isHealthy = true }: HarnessEngineCardProps) 
             <span className="font-semibold text-cyan-600 dark:text-cyan-400 tabular-nums">
               {llmRetention !== undefined ? `${llmRetention}%` : '--'}
             </span>
-            <span className="text-[11px] text-muted-foreground font-sans">(安全 45-55%)</span>
+            <span className="text-xs text-muted-foreground font-sans">(安全 45-55%)</span>
           </div>
           <div className="text-right flex flex-col items-end">
             <span className="font-semibold text-cyan-600 dark:text-cyan-400 tabular-nums">
               {llmAst !== undefined ? `${llmAst}%` : '--'}
             </span>
-            <span className="text-[11px] text-cyan-600 dark:text-cyan-400 font-sans font-semibold">
+            <span className="text-xs text-cyan-600 dark:text-cyan-400 font-sans font-semibold">
               {llmAst !== undefined ? '(100% 锁定)' : '--'}
             </span>
           </div>
           <div className="text-right flex flex-col items-end">
             <span className="text-muted-foreground tabular-nums">N/A</span>
-            <span className="text-[11px] text-muted-foreground font-sans">(N/A N-Gram)</span>
+            <span className="text-xs text-muted-foreground font-sans">(N/A N-Gram)</span>
           </div>
           <div className="text-right flex flex-col items-end">
             <span className="font-semibold text-muted-foreground tabular-nums">--</span>
-            <span className="text-[11px] text-muted-foreground font-sans">(&lt;500MB / &lt;10ms)</span>
+            <span className="text-xs text-muted-foreground font-sans">(&lt;500MB / &lt;10ms)</span>
           </div>
         </div>
 
@@ -118,19 +118,19 @@ export function HarnessEngineCard({ isHealthy = true }: HarnessEngineCardProps) 
               <SparklesIcon className="size-3.5 text-cyan-500 shrink-0" />
               Stanford DSPy (MIPO Compiler)
             </span>
-            <span className="text-[11px] text-muted-foreground truncate">
+            <span className="text-xs text-muted-foreground truncate">
               斯坦福 SOP 编译探针 · 零假 API 规约
             </span>
           </div>
           <div className="text-right flex flex-col items-end">
             <span className="text-muted-foreground tabular-nums">N/A</span>
-            <span className="text-[11px] text-muted-foreground font-sans">(N/A RawToken)</span>
+            <span className="text-xs text-muted-foreground font-sans">(N/A RawToken)</span>
           </div>
           <div className="text-right flex flex-col items-end">
             <span className="font-semibold text-cyan-600 dark:text-cyan-400 tabular-nums">
               {dspyAst !== undefined ? `${dspyAst}%` : '--'}
             </span>
-            <span className="text-[11px] text-cyan-600 dark:text-cyan-400 font-sans font-semibold">
+            <span className="text-xs text-cyan-600 dark:text-cyan-400 font-sans font-semibold">
               {dspyAst !== undefined ? '(100% 锁定)' : '--'}
             </span>
           </div>
@@ -138,13 +138,13 @@ export function HarnessEngineCard({ isHealthy = true }: HarnessEngineCardProps) 
             <span className="font-semibold text-cyan-600 dark:text-cyan-400 tabular-nums">
               {dspyAccuracy !== undefined ? `${dspyAccuracy}%` : '--'}
             </span>
-            <span className="text-[11px] text-cyan-600 dark:text-cyan-400 font-sans font-semibold">
+            <span className="text-xs text-cyan-600 dark:text-cyan-400 font-sans font-semibold">
               {dspyAccuracy !== undefined ? '(安全 >95%)' : '--'}
             </span>
           </div>
           <div className="text-right flex flex-col items-end">
             <span className="font-semibold text-muted-foreground tabular-nums">--</span>
-            <span className="text-[11px] text-muted-foreground font-sans">(&lt;500MB / &lt;10ms)</span>
+            <span className="text-xs text-muted-foreground font-sans">(&lt;500MB / &lt;10ms)</span>
           </div>
         </div>
       </div>

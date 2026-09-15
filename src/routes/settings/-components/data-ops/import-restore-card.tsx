@@ -114,7 +114,7 @@ export function ImportRestoreCard() {
             <CardTitle className="text-sm font-semibold">
               {t('hub.dataOps.importTitle')}
             </CardTitle>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               {t('hub.dataOps.importDesc')}
             </p>
           </div>
@@ -139,7 +139,7 @@ export function ImportRestoreCard() {
             {selectedPackFile && (
               <Badge
                 variant="outline"
-                className="text-[11px] font-mono shrink-0 border-cyan-500/30 bg-cyan-500/10 text-cyan-500"
+                className="text-xs font-mono shrink-0 border-cyan-500/30 bg-cyan-500/10 text-cyan-500"
               >
                 {(selectedPackFile.size / 1024).toFixed(1)} KB
               </Badge>

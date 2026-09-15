@@ -94,7 +94,7 @@ export function CurrentUserMenu() {
           <span className="block truncate text-xs font-semibold leading-4 text-foreground">
             {userLabel}
           </span>
-          <span className="block truncate text-[11px] leading-3 text-muted-foreground">
+          <span className="block truncate text-xs leading-3 text-muted-foreground">
             {t('header.currentUser.accountSummary', {
               account: accountLabel,
             })}
@@ -144,7 +144,7 @@ export function CurrentUserMenu() {
 
         {canSwitchUser ? (
           <div className="border-t p-1.5">
-            <p className="px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+            <p className="px-2.5 py-1.5 text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
               {t('header.currentUser.switchUser')}
             </p>
             <div className="max-h-56 overflow-y-auto">

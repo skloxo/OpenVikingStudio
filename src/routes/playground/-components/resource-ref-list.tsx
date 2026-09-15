@@ -32,11 +32,11 @@ export function ResourceRefList({
           ) : (
             <FileTextIcon className="size-3.5 shrink-0 text-muted-foreground" />
           )}
-          <span className="min-w-0 flex-1 truncate font-mono text-[11px]">
+          <span className="min-w-0 flex-1 truncate font-mono text-xs">
             {ref.label || fileNameFromUri(ref.uri) || ref.uri}
           </span>
           {ref.meta ? (
-            <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+            <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
               {ref.meta}
             </span>
           ) : null}

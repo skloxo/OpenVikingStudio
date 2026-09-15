@@ -36,22 +36,22 @@ export function BenchmarkMetricsTiles({ metrics, mode }: BenchmarkMetricsTilesPr
               <span className="text-xs font-semibold text-cyan-500 tracking-tight">
                 {t('benchmark.metrics.compositeScore', 'RAGAS 综合指数 (Harmonic Mean)')}
               </span>
-              <span className="text-[11px] text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 {t('benchmark.metrics.compositeDesc', '调和平均四维综合评分 (0.00 ~ 1.00)')}
               </span>
             </div>
           </div>
           <div className="flex items-center gap-4 text-xs font-mono text-muted-foreground">
             <div>
-              <span className="text-[11px] block">{t('benchmark.metrics.total', '已测用例')}</span>
+              <span className="text-xs block">{t('benchmark.metrics.total', '已测用例')}</span>
               <span className="text-foreground font-bold">{completed}/{total}</span>
             </div>
             <div>
-              <span className="text-[11px] block">{t('benchmark.metrics.avgLatency', '平均时延')}</span>
+              <span className="text-xs block">{t('benchmark.metrics.avgLatency', '平均时延')}</span>
               <span className="text-foreground font-bold">{avgLatency}ms</span>
             </div>
             <div>
-              <span className="text-[11px] block">{t('benchmark.metrics.hitRate', '命中率')}</span>
+              <span className="text-xs block">{t('benchmark.metrics.hitRate', '命中率')}</span>
               <span className={cn(
                 'font-bold',
                 hitRate >= 80 ? 'text-cyan-500' : hitRate >= 50 ? 'text-foreground' : 'text-rose-500'
@@ -66,7 +66,7 @@ export function BenchmarkMetricsTiles({ metrics, mode }: BenchmarkMetricsTilesPr
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {/* Precision */}
           <div className="flex flex-col rounded-md border bg-muted/20 px-3 py-2 min-w-0" title={t('benchmark.metrics.precision')}>
-            <span className="text-[11px] text-muted-foreground font-medium truncate">
+            <span className="text-xs text-muted-foreground font-medium truncate">
               {t('benchmark.metrics.precision')}
             </span>
             <span className={cn(
@@ -79,7 +79,7 @@ export function BenchmarkMetricsTiles({ metrics, mode }: BenchmarkMetricsTilesPr
 
           {/* Recall */}
           <div className="flex flex-col rounded-md border bg-muted/20 px-3 py-2 min-w-0" title={t('benchmark.metrics.recall')}>
-            <span className="text-[11px] text-muted-foreground font-medium truncate">
+            <span className="text-xs text-muted-foreground font-medium truncate">
               {t('benchmark.metrics.recall')}
             </span>
             <span className={cn(
@@ -92,7 +92,7 @@ export function BenchmarkMetricsTiles({ metrics, mode }: BenchmarkMetricsTilesPr
 
           {/* Faithfulness */}
           <div className="flex flex-col rounded-md border bg-muted/20 px-3 py-2 min-w-0" title={t('benchmark.metrics.faithfulness')}>
-            <span className="text-[11px] text-muted-foreground font-medium truncate">
+            <span className="text-xs text-muted-foreground font-medium truncate">
               {t('benchmark.metrics.faithfulness')}
             </span>
             <span className={cn(
@@ -105,7 +105,7 @@ export function BenchmarkMetricsTiles({ metrics, mode }: BenchmarkMetricsTilesPr
 
           {/* Answer Relevance */}
           <div className="flex flex-col rounded-md border bg-muted/20 px-3 py-2 min-w-0" title={t('benchmark.metrics.relevance')}>
-            <span className="text-[11px] text-muted-foreground font-medium truncate">
+            <span className="text-xs text-muted-foreground font-medium truncate">
               {t('benchmark.metrics.relevance')}
             </span>
             <span className={cn(
@@ -124,13 +124,13 @@ export function BenchmarkMetricsTiles({ metrics, mode }: BenchmarkMetricsTilesPr
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
       <div className="flex flex-col rounded-md border bg-muted/20 px-3 py-2">
-        <span className="text-[11px] text-muted-foreground font-medium">{t('benchmark.metrics.total')}</span>
+        <span className="text-xs text-muted-foreground font-medium">{t('benchmark.metrics.total')}</span>
         <span className="font-mono text-base font-bold text-foreground tabular-nums">
           {completed} / {total}
         </span>
       </div>
       <div className="flex flex-col rounded-md border bg-muted/20 px-3 py-2">
-        <span className="text-[11px] text-muted-foreground font-medium">{t('benchmark.metrics.hitRate')}</span>
+        <span className="text-xs text-muted-foreground font-medium">{t('benchmark.metrics.hitRate')}</span>
         <span className={cn(
           'font-mono text-base font-bold tabular-nums',
           hitRate >= 80 ? 'text-cyan-500' : hitRate >= 50 ? 'text-foreground' : 'text-rose-500',
@@ -139,13 +139,13 @@ export function BenchmarkMetricsTiles({ metrics, mode }: BenchmarkMetricsTilesPr
         </span>
       </div>
       <div className="flex flex-col rounded-md border bg-muted/20 px-3 py-2">
-        <span className="text-[11px] text-muted-foreground font-medium">{t('benchmark.metrics.avgLatency')}</span>
+        <span className="text-xs text-muted-foreground font-medium">{t('benchmark.metrics.avgLatency')}</span>
         <span className="font-mono text-base font-bold text-foreground tabular-nums">
-          {avgLatency} <span className="text-[11px] font-normal text-muted-foreground">ms</span>
+          {avgLatency} <span className="text-xs font-normal text-muted-foreground">ms</span>
         </span>
       </div>
       <div className="flex flex-col rounded-md border bg-muted/20 px-3 py-2">
-        <span className="text-[11px] text-muted-foreground font-medium">{t('benchmark.metrics.avgScore')}</span>
+        <span className="text-xs text-muted-foreground font-medium">{t('benchmark.metrics.avgScore')}</span>
         <span className="font-mono text-base font-bold text-cyan-500 tabular-nums">
           {avgScore}
         </span>

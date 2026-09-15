@@ -49,13 +49,13 @@ export function TaskExecutionCell({
       <div className="flex items-center gap-2 py-0.5 select-none text-foreground/85">
         <Badge
           variant="outline"
-          className="text-[11px] px-1.5 py-0 h-5 border-border/60 text-muted-foreground bg-muted/30 font-sans font-medium shrink-0"
+          className="text-xs px-1.5 py-0 h-5 border-border/60 text-muted-foreground bg-muted/30 font-sans font-medium shrink-0"
         >
           <CheckIcon className="size-2.5 stroke-[2.5] mr-1 text-primary" />
           {t('status.completed')}
         </Badge>
         {durationText && (
-          <span className="font-mono text-[11px] text-muted-foreground/70 shrink-0 select-none tabular-nums">
+          <span className="font-mono text-xs text-muted-foreground/70 shrink-0 select-none tabular-nums">
             · {durationText}
           </span>
         )}
@@ -74,13 +74,13 @@ export function TaskExecutionCell({
       <div className="flex items-center gap-2 py-0.5 select-none whitespace-nowrap text-xs">
         <Badge
           variant="outline"
-          className="text-[11px] px-1.5 py-0 h-5 border-primary/30 text-primary bg-primary/10 font-sans font-medium shrink-0"
+          className="text-xs px-1.5 py-0 h-5 border-primary/30 text-primary bg-primary/10 font-sans font-medium shrink-0"
         >
           <LoaderCircleIcon className="size-2.5 shrink-0 animate-spin mr-1 text-primary" />
           {t('status.running')}
         </Badge>
         {durationText && (
-          <span className="font-mono text-[11px] text-muted-foreground/70 tabular-nums shrink-0">
+          <span className="font-mono text-xs text-muted-foreground/70 tabular-nums shrink-0">
             · {durationText}
           </span>
         )}
@@ -93,8 +93,8 @@ export function TaskExecutionCell({
               <span className="font-medium text-foreground/90">{pair.name}</span>
               {pair.metric && (
                 <>
-                  <span className="text-muted-foreground/40 font-mono text-[10px] select-none">·</span>
-                  <span className="font-mono text-[11px] text-muted-foreground tabular-nums">{pair.metric}</span>
+                  <span className="text-muted-foreground/40 font-mono text-xs select-none">·</span>
+                  <span className="font-mono text-xs text-muted-foreground tabular-nums">{pair.metric}</span>
                 </>
               )}
             </div>
@@ -110,13 +110,13 @@ export function TaskExecutionCell({
       <div className="flex items-center gap-2 py-0.5 text-muted-foreground select-none whitespace-nowrap text-xs">
         <Badge
           variant="outline"
-          className="text-[11px] px-1.5 py-0 h-5 border-border/60 text-muted-foreground bg-muted/20 font-sans font-medium shrink-0"
+          className="text-xs px-1.5 py-0 h-5 border-border/60 text-muted-foreground bg-muted/20 font-sans font-medium shrink-0"
         >
           <CircleDashedIcon className="size-2.5 mr-1 text-muted-foreground/60" />
           {t('status.pending', { defaultValue: '等待中' })}
         </Badge>
         {durationText && (
-          <span className="font-mono text-[11px] text-muted-foreground/60 shrink-0 select-none tabular-nums">
+          <span className="font-mono text-xs text-muted-foreground/60 shrink-0 select-none tabular-nums">
             · {durationText}
           </span>
         )}
@@ -129,7 +129,7 @@ export function TaskExecutionCell({
     <div className="flex items-center gap-2 py-0.5 text-destructive select-none whitespace-nowrap text-xs">
       <Badge
         variant="destructive"
-        className="text-[11px] px-1.5 py-0 h-5 font-sans font-medium shrink-0 gap-1"
+        className="text-xs px-1.5 py-0 h-5 font-sans font-medium shrink-0 gap-1"
       >
         <CircleXIcon className="size-2.5 mr-0.5" />
         {t('status.failed')}
@@ -165,7 +165,7 @@ export function TaskExecutionCell({
         </button>
       </Badge>
       {durationText && (
-        <span className="font-mono text-[11px] text-destructive/70 shrink-0 select-none tabular-nums">
+        <span className="font-mono text-xs text-destructive/70 shrink-0 select-none tabular-nums">
           · {durationText}
         </span>
       )}

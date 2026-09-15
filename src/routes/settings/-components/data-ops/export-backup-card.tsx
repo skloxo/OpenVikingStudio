@@ -103,7 +103,7 @@ export function ExportBackupCard() {
               <CardTitle className="text-sm font-semibold">
                 {t('hub.dataOps.exportTitle')}
               </CardTitle>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {t('hub.dataOps.exportDesc')}
               </p>
             </div>
@@ -115,7 +115,7 @@ export function ExportBackupCard() {
               <FieldLabel htmlFor="export-target-uri" className="text-xs">
                 {t('hub.dataOps.targetUriLabel')}
               </FieldLabel>
-              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <span>{t('hub.dataOps.quickScopes')}</span>
                 <button
                   type="button"
@@ -159,7 +159,7 @@ export function ExportBackupCard() {
             >
               {t('hub.dataOps.includeVectors')}
             </label>
-            <span className="text-[11px] text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               ({t('hub.dataOps.includeVectorsHint')})
             </span>
           </div>
@@ -198,7 +198,7 @@ export function ExportBackupCard() {
               <CardTitle className="text-sm font-semibold">
                 {t('hub.dataOps.backupTitle')}
               </CardTitle>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {t('hub.dataOps.backupDesc')}
               </p>
             </div>

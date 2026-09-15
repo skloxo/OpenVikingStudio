@@ -31,7 +31,7 @@ function UnifiedSettingsRoute() {
           </div>
           <Badge
             variant="outline"
-            className="text-[11px] font-normal border-border/80"
+            className="text-xs font-normal border-border/80"
           >
             {t(`serverMode.${serverMode}`)}
           </Badge>

@@ -106,7 +106,7 @@ export function SkillsFilterBar({
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="搜索技能 (名称 / 中文自解释)..."
-            className="h-6 w-48 rounded-xs border border-border/60 bg-background pl-6 pr-2 font-mono text-[11px] text-foreground placeholder:text-muted-foreground focus:border-cyan-500 focus:outline-hidden transition-colors"
+            className="h-6 w-48 rounded-xs border border-border/60 bg-background pl-6 pr-2 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:border-cyan-500 focus:outline-hidden transition-colors"
           />
         </div>
       </div>
@@ -134,7 +134,7 @@ export function SkillsFilterBar({
               <Badge
                 variant="outline"
                 className={cn(
-                  'text-[11px]',
+                  'text-xs',
                   refinedSkills['excel-chart'] === 'done' &&
                     refinedSkills['log-trace'] === 'done'
                     ? 'border-cyan-500/40 text-cyan-500 bg-cyan-500/10'
@@ -148,13 +148,13 @@ export function SkillsFilterBar({
               </Badge>
               <Badge
                 variant="outline"
-                className="border-cyan-500/40 text-cyan-500 text-[11px] bg-cyan-500/10"
+                className="border-cyan-500/40 text-cyan-500 text-xs bg-cyan-500/10"
               >
                 🤖 全无人值守自动门禁
               </Badge>
             </div>
           </div>
-          <p className="text-muted-foreground leading-relaxed text-[11px]">
+          <p className="text-muted-foreground leading-relaxed text-xs">
             {refinedSkills['excel-chart'] === 'done' &&
             refinedSkills['log-trace'] === 'done'
               ? '🎉 下述高重叠离散技能已成功打包提炼为统一多功能 SOP，已在全局 Agent 意图库中消除了双重召唤与冗余 Token 浪费。'
@@ -164,7 +164,7 @@ export function SkillsFilterBar({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-0.5">
             <div
               className={cn(
-                'rounded p-2.5 text-[11px] flex flex-col gap-2 border transition-colors',
+                'rounded p-2.5 text-xs flex flex-col gap-2 border transition-colors',
                 refinedSkills['excel-chart'] === 'done'
                   ? 'border-cyan-500/30 bg-background/80'
                   : 'border-rose-500/20 bg-background/60',
@@ -198,7 +198,7 @@ export function SkillsFilterBar({
                     refinedSkills['excel-chart'] === 'p2'
                   }
                   className={cn(
-                    'h-7 text-[11px] shrink-0 font-mono transition-all',
+                    'h-7 text-xs shrink-0 font-mono transition-all',
                     refinedSkills['excel-chart'] === 'done'
                       ? 'border-cyan-500/60 bg-cyan-500/20 text-cyan-500'
                       : 'border-cyan-500/40 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10',
@@ -222,7 +222,7 @@ export function SkillsFilterBar({
             </div>
             <div
               className={cn(
-                'rounded p-2.5 text-[11px] flex flex-col gap-2 border transition-colors',
+                'rounded p-2.5 text-xs flex flex-col gap-2 border transition-colors',
                 refinedSkills['log-trace'] === 'done'
                   ? 'border-cyan-500/30 bg-background/80'
                   : 'border-rose-500/20 bg-background/60',
@@ -256,7 +256,7 @@ export function SkillsFilterBar({
                     refinedSkills['log-trace'] === 'p2'
                   }
                   className={cn(
-                    'h-7 text-[11px] shrink-0 font-mono transition-all',
+                    'h-7 text-xs shrink-0 font-mono transition-all',
                     refinedSkills['log-trace'] === 'done'
                       ? 'border-cyan-500/60 bg-cyan-500/20 text-cyan-500'
                       : 'border-cyan-500/40 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10',

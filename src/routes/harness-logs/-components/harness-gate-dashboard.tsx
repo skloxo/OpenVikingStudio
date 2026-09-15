@@ -69,7 +69,7 @@ export function HarnessGateDashboard({ gates }: GateDashboardProps) {
           <h3 className="text-sm font-semibold tracking-wide">
             四大物理贯彻执行门禁 (Four Invariant Enforcement Gates)
           </h3>
-          <Badge variant="outline" className="border-cyan-500/30 bg-cyan-500/10 text-[11px] text-cyan-300">
+          <Badge variant="outline" className="border-cyan-500/30 bg-cyan-500/10 text-xs text-cyan-300">
             100% 物理拦截闭环
           </Badge>
         </div>
@@ -95,7 +95,7 @@ export function HarnessGateDashboard({ gates }: GateDashboardProps) {
                   </div>
                   <Badge
                     variant="outline"
-                    className="border-cyan-500/30 bg-cyan-500/10 text-[11px] text-cyan-300 font-mono"
+                    className="border-cyan-500/30 bg-cyan-500/10 text-xs text-cyan-300 font-mono"
                   >
                     {gate.badge ?? 'Active Invariant'}
                   </Badge>
@@ -106,14 +106,14 @@ export function HarnessGateDashboard({ gates }: GateDashboardProps) {
               </div>
 
               <div className="mt-3 border-t border-border/40 pt-2.5">
-                <div className="mb-1.5 text-[11px] font-medium text-muted-foreground">
+                <div className="mb-1.5 text-xs font-medium text-muted-foreground">
                   物理契约与生效规则 (Enforced Invariant Rules):
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {gate.rules.map((rule, idx) => (
                     <span
                       key={idx}
-                      className="inline-flex items-center rounded border border-border/60 bg-muted/40 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground"
+                      className="inline-flex items-center rounded border border-border/60 bg-muted/40 px-1.5 py-0.5 font-mono text-xs text-muted-foreground"
                     >
                       {rule}
                     </span>

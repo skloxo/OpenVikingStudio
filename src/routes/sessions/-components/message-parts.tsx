@@ -104,7 +104,7 @@ export function IterationDivider({ iteration }: { iteration: number }) {
   const { t } = useTranslation('sessions')
 
   return (
-    <div className="my-3 flex items-center gap-2 text-[11px] text-muted-foreground/70">
+    <div className="my-3 flex items-center gap-2 text-xs text-muted-foreground/70">
       <span className="h-px flex-1 bg-border/40" />
       <span className="rounded-full bg-muted/50 px-2 py-0.5 font-medium">
         {t('chat.iteration', { count: iteration })}
@@ -154,7 +154,7 @@ export function ToolCallBlock({
         <span className="font-mono font-medium text-foreground/80">
           {toolName}
         </span>
-        <span className="ml-auto text-muted-foreground/60 text-[11px]">
+        <span className="ml-auto text-muted-foreground/60 text-xs">
           {isRunning
             ? t('chat.toolStatus.running')
             : isError
@@ -165,7 +165,7 @@ export function ToolCallBlock({
       <div className="ml-[7px] mt-1 space-y-3 border-l border-border/50 py-1 pl-4">
         {args && Object.keys(args).length > 0 && (
           <div>
-            <div className="mb-1.5 text-[11px] font-medium text-muted-foreground/60">
+            <div className="mb-1.5 text-xs font-medium text-muted-foreground/60">
               {t('chat.toolInput')}
             </div>
             <pre className="overflow-x-auto rounded-md bg-muted/40 p-2.5 text-xs leading-relaxed">
@@ -175,7 +175,7 @@ export function ToolCallBlock({
         )}
         {result !== undefined && (
           <div>
-            <div className="mb-1.5 text-[11px] font-medium text-muted-foreground/60">
+            <div className="mb-1.5 text-xs font-medium text-muted-foreground/60">
               {t('chat.toolResult')}
             </div>
             <pre
@@ -196,7 +196,7 @@ export function ToolCallBlock({
                     onClick={() => onResourceClick(uri)}
                   >
                     <FileTextIcon className="size-3.5 shrink-0 text-muted-foreground" />
-                    <span className="min-w-0 flex-1 truncate font-mono text-[11px] text-primary">
+                    <span className="min-w-0 flex-1 truncate font-mono text-xs text-primary">
                       {uri}
                     </span>
                   </button>
@@ -204,7 +204,7 @@ export function ToolCallBlock({
                 {hiddenRefCount > 0 ? (
                   <button
                     type="button"
-                    className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-dashed bg-background px-2 text-[11px] font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
+                    className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-dashed bg-background px-2 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
                     onClick={() =>
                       setVisibleRefCount((count) => count + TOOL_REF_PAGE_SIZE)
                     }

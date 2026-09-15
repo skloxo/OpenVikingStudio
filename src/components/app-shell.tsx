@@ -299,7 +299,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           <div className="flex h-full items-center justify-between gap-2 group-data-[collapsible=icon]:justify-center">
             <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
               <AccountSwitcher />
-              <span className="text-[11px] font-mono text-slate-400 dark:text-slate-500 font-normal leading-none select-none block px-2 -mt-1">
+              <span className="text-xs font-mono text-slate-400 dark:text-slate-500 font-normal leading-none select-none block px-2 -mt-1">
                 v{appVersion}
               </span>
             </div>
@@ -310,7 +310,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         <SidebarContent className="gap-0 py-1">
           {NAV_SECTIONS.map((section) => (
             <SidebarGroup key={section.id} className="pb-1">
-              <SidebarGroupLabel className="h-7 px-2 pt-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/45">
+              <SidebarGroupLabel className="h-7 px-2 pt-2 text-xs font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/45">
                 {t(section.titleKey, { ns: 'appShell' })}
               </SidebarGroupLabel>
               <SidebarGroupContent>
@@ -361,7 +361,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           ))}
 
           <SidebarGroup className="pb-1">
-            <SidebarGroupLabel className="h-7 px-2 pt-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/45">
+            <SidebarGroupLabel className="h-7 px-2 pt-2 text-xs font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/45">
               {t('sidebar.groups.settings', { ns: 'appShell' })}
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -470,7 +470,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                         defaultValue: '1933 核心健康',
                       })}
                     </span>
-                    <span className="text-[11px] font-mono font-medium px-1.5 py-0.2 rounded border border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 group-data-[collapsible=icon]:hidden">
+                    <span className="text-xs font-mono font-medium px-1.5 py-0.2 rounded border border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 group-data-[collapsible=icon]:hidden">
                       Doctor
                     </span>
                   </SidebarMenuButton>
@@ -480,7 +480,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           </SidebarGroup>
 
           <SidebarGroup className="pb-1">
-            <SidebarGroupLabel className="h-7 px-2 pt-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/45">
+            <SidebarGroupLabel className="h-7 px-2 pt-2 text-xs font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/45">
               {t('sidebar.groups.resources', { ns: 'appShell' })}
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -549,7 +549,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               <span>OpenViking Studio</span>
             </span>
           </div>
-          <span className="text-[11px] font-mono text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded border border-border/40">
+          <span className="text-xs font-mono text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded border border-border/40">
             v{appVersion}
           </span>
         </header>

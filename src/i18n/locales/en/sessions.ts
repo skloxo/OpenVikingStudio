@@ -86,9 +86,13 @@ export const sessions = {
       collapseShort: 'Collapse',
       expandFull: 'Expand Full',
       loading: 'Loading memory changes...',
-      loadFailed: 'Could not load memory changes',
-      retry: 'Retry',
       empty: 'This session commit did not produce any memory changes.',
+      emptyTitle: 'No Memory Changes in This Session',
+      emptyDesc:
+        'This session completed normally, but no new propositions, preferences, or lessons were extracted.',
+      cronEmptyTitle: 'Periodic Inspection & Heartbeat Session',
+      cronEmptyDesc:
+        'This automated background task ran for cluster synchronization and heartbeat health checks, without generating knowledge mutations.',
     },
     empty: {
       description: 'Select a session from the list or create a new one.',
@@ -136,8 +140,10 @@ export const sessions = {
       colAction: 'Dry-Run Probe',
       loading: 'Loading quarantine manifest...',
       emptyList: 'No matching quarantined items found',
-      dryRunBtn: 'Dry-Run Probe',
+      dryRunBtn: 'Read-Only Probe',
       dryRunTesting: 'Probing...',
+      dryRunSafeTooltip:
+        'Read-only dry-run: strictly verifies archive hash and structural integrity without modifying data.',
       navButton: 'Cold Quarantine',
       emptyViewBtn: 'View Cold Quarantine (1,164 drafts)',
     },

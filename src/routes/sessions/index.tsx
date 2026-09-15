@@ -94,10 +94,10 @@ function SessionsEmpty({ onOpenQuarantine }: { onOpenQuarantine?: () => void }) 
         </p>
       </div>
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[11px]">
+        <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-xs">
           {COMMAND_KEY_LABEL}
         </kbd>
-        <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[11px]">
+        <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-xs">
           {NEW_SESSION_KEY_LABEL}
         </kbd>
         <span>{t('threadList.newSession')}</span>
@@ -107,7 +107,7 @@ function SessionsEmpty({ onOpenQuarantine }: { onOpenQuarantine?: () => void }) 
           size="sm"
           variant="outline"
           onClick={onOpenQuarantine}
-          className="mt-2 h-7 border-amber-500/30 text-[11px] font-mono text-amber-400 hover:bg-amber-500/10"
+          className="mt-2 h-7 border-amber-500/30 text-xs font-mono text-amber-400 hover:bg-amber-500/10"
         >
           {t('quarantine.emptyViewBtn')}
         </Button>

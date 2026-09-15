@@ -36,7 +36,7 @@ function SkillsRoute() {
           <h1 className="text-xl font-semibold tracking-tight flex items-center gap-2">🧠 技能中心</h1>
           <p className="max-w-3xl text-xs text-muted-foreground font-mono">{t('description')}</p>
         </div>
-        <Badge variant="outline" className="text-[10px] font-mono border-border bg-muted/30 text-foreground px-1.5 py-0.5">
+        <Badge variant="outline" className="text-xs font-mono border-border bg-muted/30 text-foreground px-1.5 py-0.5">
           🕒 统计范围: 最近 24 小时 (24H Rolling)
         </Badge>
       </header>

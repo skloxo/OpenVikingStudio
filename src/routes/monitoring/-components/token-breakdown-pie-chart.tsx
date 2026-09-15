@@ -130,7 +130,7 @@ export function TokenBreakdownPieChart({
                   </TooltipContent>
                 </Tooltip>
               </div>
-              <p className="text-[11px] text-muted-foreground/70 font-mono">
+              <p className="text-xs text-muted-foreground/70 font-mono">
                 {t('analyticsCharts.tokenPieSubtitle', {
                   defaultValue: '全量 VLM 输入/输出与 Embedding 向量 Token 比例划分',
                 })}
@@ -187,7 +187,7 @@ export function TokenBreakdownPieChart({
             </div>
 
             {/* Legend Details: Explicitly render all 4 physical categories */}
-            <div className="flex w-1/2 flex-col justify-center gap-2 text-[11px] font-mono tabular-nums">
+            <div className="flex w-1/2 flex-col justify-center gap-2 text-xs font-mono tabular-nums">
               {allCategories.map((item) => (
                 <div
                   key={item.key}
@@ -221,7 +221,7 @@ export function TokenBreakdownPieChart({
                     >
                       {item.percent}%
                     </span>
-                    <span className="text-[10px] text-muted-foreground/60">
+                    <span className="text-xs text-muted-foreground/60">
                       ({item.tokens > 0 ? item.tokens.toLocaleString() : '0'})
                     </span>
                   </div>

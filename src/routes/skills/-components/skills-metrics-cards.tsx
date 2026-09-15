@@ -50,7 +50,7 @@ export function SkillsMetricsCards({
           </span>
           <Badge
             variant="outline"
-            className="text-[11px] font-mono border-border bg-muted/40 text-foreground px-1 py-0"
+            className="text-xs font-mono border-border bg-muted/40 text-foreground px-1 py-0"
           >
             意图感应
           </Badge>
@@ -61,7 +61,7 @@ export function SkillsMetricsCards({
             {autoWakeupRate !== null ? '唤醒成功' : '暂无采样'}
           </span>
         </div>
-        <p className="text-[11px] text-muted-foreground truncate">
+        <p className="text-xs text-muted-foreground truncate">
           {autoWakeupRate !== null
             ? '零命令感应 · 意图静默触发'
             : '等待 Agent 意图唤醒采样...'}
@@ -80,7 +80,7 @@ export function SkillsMetricsCards({
           </span>
           <Badge
             variant="outline"
-            className="text-[11px] font-mono border-border bg-muted/40 text-foreground px-1 py-0"
+            className="text-xs font-mono border-border bg-muted/40 text-foreground px-1 py-0"
           >
             闭环质量
           </Badge>
@@ -93,7 +93,7 @@ export function SkillsMetricsCards({
             {calculatedSuccessRate !== null ? '(物理闭环)' : '(暂无数据)'}
           </span>
         </div>
-        <p className="text-[11px] text-muted-foreground truncate">
+        <p className="text-xs text-muted-foreground truncate">
           {totalCalls > 0
             ? `近 24H ${totalCalls} 次执行${blockedCalls > 0 ? ` (${blockedCalls} 次阻断)` : '零挂起'}`
             : '近 24H 暂无物理执行采样'}
@@ -112,7 +112,7 @@ export function SkillsMetricsCards({
           </span>
           <Badge
             variant="outline"
-            className="text-[11px] font-mono border-border bg-muted/40 text-foreground px-1 py-0"
+            className="text-xs font-mono border-border bg-muted/40 text-foreground px-1 py-0"
           >
             踩坑演进飞轮
           </Badge>
@@ -127,7 +127,7 @@ export function SkillsMetricsCards({
               : '(暂无数据)'}
           </span>
         </div>
-        <p className="text-[11px] text-muted-foreground truncate">
+        <p className="text-xs text-muted-foreground truncate">
           {vkCentralizedCalls > 0
             ? `近 24H ${vkCentralizedCalls} 次 VK 集中调用`
             : '近 24H 暂无集中通道采样'}
@@ -146,7 +146,7 @@ export function SkillsMetricsCards({
           </span>
           <Badge
             variant="outline"
-            className="text-[11px] font-mono border-border bg-muted/40 text-foreground px-1 py-0"
+            className="text-xs font-mono border-border bg-muted/40 text-foreground px-1 py-0"
           >
             资产健康度
           </Badge>
@@ -159,7 +159,7 @@ export function SkillsMetricsCards({
             ({activeSkillsCount}/{totalSkills} 项活跃)
           </span>
         </div>
-        <p className="text-[11px] text-muted-foreground truncate">
+        <p className="text-xs text-muted-foreground truncate">
           {totalSkills > 0
             ? `已装载 ${totalSkills} 项技能 · 防范僵尸技能`
             : '已接入标准化技能资产库'}
@@ -178,7 +178,7 @@ export function SkillsMetricsCards({
           </span>
           <Badge
             variant="outline"
-            className="text-[11px] font-mono border-border bg-muted/40 text-foreground px-1 py-0"
+            className="text-xs font-mono border-border bg-muted/40 text-foreground px-1 py-0"
           >
             Token 降本
           </Badge>
@@ -193,7 +193,7 @@ export function SkillsMetricsCards({
               : '(暂无采样)'}
           </span>
         </div>
-        <p className="text-[11px] text-muted-foreground truncate">
+        <p className="text-xs text-muted-foreground truncate">
           {contextCompressionRatio !== null
             ? '按需结构化注入 · 大幅降低 Token 冗余'
             : '等待按需 SOP 注入采样...'}
@@ -213,7 +213,7 @@ export function SkillsMetricsCards({
           </span>
           <Badge
             variant="outline"
-            className="text-[11px] font-mono border-border bg-muted/40 text-foreground px-1 py-0"
+            className="text-xs font-mono border-border bg-muted/40 text-foreground px-1 py-0"
           >
             白盒审计 ➔
           </Badge>

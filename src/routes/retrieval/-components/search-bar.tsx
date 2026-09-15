@@ -37,7 +37,7 @@ export function RetrievalSearchBar({
         className="flex-1 bg-transparent px-2 text-sm font-mono outline-none placeholder:text-muted-foreground/60"
       />
       <div className="flex items-center gap-1.5 shrink-0">
-        <kbd className="hidden sm:inline-flex h-5 select-none items-center gap-1 rounded-xs border border-border/60 bg-muted/40 px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+        <kbd className="hidden sm:inline-flex h-5 select-none items-center gap-1 rounded-xs border border-border/60 bg-muted/40 px-1.5 font-mono text-xs font-medium text-muted-foreground">
           Enter ⏎
         </kbd>
         <Button

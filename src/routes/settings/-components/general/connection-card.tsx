@@ -64,12 +64,12 @@ function CapabilityStatus({
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <span className="font-medium text-xs">{label}</span>
-          <span className="text-[11px] text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             {t(`health.state.${state}`)}
           </span>
         </div>
         {result?.detail ? (
-          <p className="mt-1 truncate text-[11px] text-muted-foreground">
+          <p className="mt-1 truncate text-xs text-muted-foreground">
             {result.detail}
           </p>
         ) : null}
@@ -98,7 +98,7 @@ function UserApiKeyInput({
 
   return (
     <div className="flex h-9 w-full min-w-0 items-center gap-2 rounded-md border border-input bg-transparent bg-clip-padding px-2.5 shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30">
-      <span className="shrink-0 rounded-sm bg-muted px-2 py-0.5 font-mono text-[11px] text-muted-foreground">
+      <span className="shrink-0 rounded-sm bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
         [{identity}]
       </span>
       <input
@@ -248,7 +248,7 @@ export function ConnectionCard({
               <CardTitle className="text-sm font-semibold">
                 {t('connection.title')}
               </CardTitle>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {t('connectionPage.description')}
               </p>
             </div>
@@ -336,7 +336,7 @@ export function ConnectionCard({
                     className="h-8 text-xs font-mono"
                     {...PLAIN_INPUT_PROPS}
                   />
-                  <FieldDescription className="text-[11px]">
+                  <FieldDescription className="text-xs">
                     {t('connection.rootHint')}
                   </FieldDescription>
                 </FieldContent>
@@ -354,7 +354,7 @@ export function ConnectionCard({
                     onChange={(apiKey) => updateDraft({ apiKey })}
                     placeholder={t('placeholders.userApiKey')}
                   />
-                  <FieldDescription className="text-[11px]">
+                  <FieldDescription className="text-xs">
                     {t('connection.userHint')}
                   </FieldDescription>
                 </FieldContent>

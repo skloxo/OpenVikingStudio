@@ -64,13 +64,13 @@ export function GatekeeperMetricsCard() {
         <div className="flex items-center gap-3 text-xs">
           <div className="flex items-center gap-1 text-muted-foreground">
             <HardDriveIcon className="size-3.5" />
-            <span className="text-[11px]">{t('gatekeeper.savedDiskIo')}:</span>
+            <span className="text-xs">{t('gatekeeper.savedDiskIo')}:</span>
             <span className="font-mono font-semibold text-foreground">
               {formatBytes(stats.saved_bytes)}
             </span>
           </div>
           <div className="flex items-center gap-1 text-muted-foreground">
-            <span className="text-[11px]">{t('gatekeeper.dedupRate')}:</span>
+            <span className="text-xs">{t('gatekeeper.dedupRate')}:</span>
             <span className="font-mono font-semibold text-primary">
               {dedupRate}%
             </span>
@@ -81,7 +81,7 @@ export function GatekeeperMetricsCard() {
       {/* 4 维变异状态统计胶囊 */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <div className="flex flex-col rounded-md border border-border/50 bg-muted/20 px-2.5 py-2">
-          <span className="text-[11px] font-medium text-muted-foreground">
+          <span className="text-xs font-medium text-muted-foreground">
             {t('gatekeeper.add')}
           </span>
           <span className="mt-0.5 font-mono text-base font-bold tabular-nums text-foreground">
@@ -90,7 +90,7 @@ export function GatekeeperMetricsCard() {
         </div>
 
         <div className="flex flex-col rounded-md border border-amber-500/20 bg-amber-500/5 px-2.5 py-2">
-          <span className="text-[11px] font-medium text-amber-700 dark:text-amber-400">
+          <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
             {t('gatekeeper.update')}
           </span>
           <span className="mt-0.5 font-mono text-base font-bold tabular-nums text-amber-600 dark:text-amber-400">
@@ -99,7 +99,7 @@ export function GatekeeperMetricsCard() {
         </div>
 
         <div className="flex flex-col rounded-md border border-rose-500/20 bg-rose-500/5 px-2.5 py-2">
-          <span className="text-[11px] font-medium text-rose-700 dark:text-rose-400">
+          <span className="text-xs font-medium text-rose-700 dark:text-rose-400">
             {t('gatekeeper.delete')}
           </span>
           <span className="mt-0.5 font-mono text-base font-bold tabular-nums text-rose-600 dark:text-rose-400">
@@ -108,7 +108,7 @@ export function GatekeeperMetricsCard() {
         </div>
 
         <div className="flex flex-col rounded-md border border-border/50 bg-muted/20 px-2.5 py-2">
-          <span className="text-[11px] font-medium text-muted-foreground">
+          <span className="text-xs font-medium text-muted-foreground">
             {t('gatekeeper.noop')}
           </span>
           <span className="mt-0.5 font-mono text-base font-bold tabular-nums text-foreground">

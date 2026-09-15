@@ -174,7 +174,7 @@ export function DirectoryPreviewView({
                   })
                 }
               >
-                <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-primary">
+                <span className="font-mono text-xs font-semibold uppercase tracking-wide text-primary">
                   {level.name}
                 </span>
                 <span className="font-medium">{level.label}</span>

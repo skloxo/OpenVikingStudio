@@ -92,7 +92,7 @@ export function RetrievalAccuracyTrendChart({
                   </TooltipContent>
                 </Tooltip>
               </div>
-              <p className="text-[11px] text-muted-foreground/70 font-mono">
+              <p className="text-xs text-muted-foreground/70 font-mono">
                 {window.toUpperCase()} 周期语义检索命中率与平均余弦相似度时序记录
               </p>
             </div>

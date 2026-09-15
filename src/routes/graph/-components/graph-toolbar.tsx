@@ -81,7 +81,7 @@ export function GraphToolbar({
             type="button"
             onClick={() => onModeChange('2d')}
             className={cn(
-              'rounded px-2.5 py-1 text-[11px] font-bold transition-all focus:outline-none',
+              'rounded px-2.5 py-1 text-xs font-bold transition-all focus:outline-none',
               mode === '2d'
                 ? 'bg-cyan-500 text-white shadow-xs'
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
@@ -93,7 +93,7 @@ export function GraphToolbar({
             type="button"
             onClick={() => onModeChange('3d')}
             className={cn(
-              'rounded px-2.5 py-1 text-[11px] font-bold transition-all focus:outline-none',
+              'rounded px-2.5 py-1 text-xs font-bold transition-all focus:outline-none',
               mode === '3d'
                 ? 'bg-amber-500 text-white shadow-xs'
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',
@@ -113,7 +113,7 @@ export function GraphToolbar({
                 type="button"
                 onClick={() => onFilterChange(opt.id)}
                 className={cn(
-                  'rounded px-2 py-1 text-[11px] font-medium transition-colors focus:outline-none',
+                  'rounded px-2 py-1 text-xs font-medium transition-colors focus:outline-none',
                   isActive
                     ? `${opt.colorClass} shadow-none border`
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/50',

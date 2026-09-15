@@ -1427,7 +1427,7 @@ export function TerminalPanel({
               <button
                 key={item.command}
                 type="button"
-                className="rounded-md border bg-muted/40 px-2 py-1 font-mono text-[11px] text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+                className="rounded-md border bg-muted/40 px-2 py-1 font-mono text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
                 onClick={() => acceptSuggestion(item)}
               >
                 {item.command}
@@ -1442,7 +1442,7 @@ export function TerminalPanel({
             }}
           >
             <span
-              className="max-w-[45%] shrink-0 truncate font-mono text-[11px] text-muted-foreground"
+              className="max-w-[45%] shrink-0 truncate font-mono text-xs text-muted-foreground"
               title={t('terminal.scopeLabel', { uri: currentUri })}
             >
               {currentUri}
@@ -1519,14 +1519,14 @@ export function TerminalPanel({
                           {helpDescription}
                         </div>
                       </div>
-                      <div className="shrink-0 rounded-md bg-muted px-2 py-1 font-mono text-[11px] text-muted-foreground">
+                      <div className="shrink-0 rounded-md bg-muted px-2 py-1 font-mono text-xs text-muted-foreground">
                         {helpUsage}
                       </div>
                     </div>
                     <div className="mt-3 space-y-3">
                       {showSessionSubcommandList ? (
                         <div className="min-w-0">
-                          <div className="mb-1.5 text-[11px] font-medium text-muted-foreground">
+                          <div className="mb-1.5 text-xs font-medium text-muted-foreground">
                             {t('terminal.helpSubcommands')}
                           </div>
                           <div className="overflow-hidden rounded-md border">
@@ -1563,7 +1563,7 @@ export function TerminalPanel({
                       ) : (
                         <>
                           <div className="min-w-0">
-                            <div className="mb-1.5 text-[11px] font-medium text-muted-foreground">
+                            <div className="mb-1.5 text-xs font-medium text-muted-foreground">
                               {t('terminal.helpParameters')}
                             </div>
                             {commandParameters.length > 0 ? (
@@ -1613,7 +1613,7 @@ export function TerminalPanel({
                             )}
                           </div>
                           <div className="min-w-0">
-                            <div className="mb-1.5 text-[11px] font-medium text-muted-foreground">
+                            <div className="mb-1.5 text-xs font-medium text-muted-foreground">
                               {t('terminal.helpExamples')}
                             </div>
                             <div className="overflow-hidden rounded-md border">

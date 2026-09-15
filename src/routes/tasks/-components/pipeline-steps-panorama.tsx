@@ -54,17 +54,17 @@ export function PipelineStepsPanoramaCard() {
               <span className="font-sans text-sm font-semibold text-foreground">
                 {isZh ? '流水线全工序全景大盘' : 'Pipeline Steps Panorama'}
               </span>
-              <Badge variant="outline" className="text-[11px] font-mono px-1.5 py-0 h-4.5 bg-muted/30">
+              <Badge variant="outline" className="text-xs font-mono px-1.5 py-0 h-4.5 bg-muted/30">
                 {isZh ? `${TASK_FLOWS.length} 业务任务` : `${TASK_FLOWS.length} Tasks`}
               </Badge>
-              <Badge variant="outline" className="text-[11px] font-mono px-1.5 py-0 h-4.5 bg-primary/10 text-primary border-primary/20">
+              <Badge variant="outline" className="text-xs font-mono px-1.5 py-0 h-4.5 bg-primary/10 text-primary border-primary/20">
                 {isZh ? `${ALL_PANORAMA_STEPS.length} 原子工序` : `${ALL_PANORAMA_STEPS.length} Steps`}
               </Badge>
-              <Badge variant="outline" className="text-[11px] font-mono px-1.5 py-0 h-4.5 bg-muted/30">
+              <Badge variant="outline" className="text-xs font-mono px-1.5 py-0 h-4.5 bg-muted/30">
                 {isZh ? `${ENGINE_DEFINITIONS.length} 执行引擎` : `${ENGINE_DEFINITIONS.length} Engines`}
               </Badge>
             </div>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
+            <p className="text-xs text-muted-foreground mt-0.5">
               {isZh
                 ? `任务（业务目标）➔ 编排拆解出 ${ALL_PANORAMA_STEPS.length} 道流水线工序 ➔ 调度驱动底层 ${ENGINE_DEFINITIONS.length} 大执行引擎物理计算`
                 : `Business Tasks ➔ Decomposed into ${ALL_PANORAMA_STEPS.length} Pipeline Steps ➔ Dispatched to ${ENGINE_DEFINITIONS.length} Execution Engines`}
@@ -73,7 +73,7 @@ export function PipelineStepsPanoramaCard() {
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-medium text-muted-foreground">
+          <span className="text-xs font-medium text-muted-foreground">
             {isOpen ? (isZh ? '收起全景' : 'Collapse') : (isZh ? '展开全景' : 'Expand')}
           </span>
           <ChevronDownIcon
@@ -127,7 +127,7 @@ export function PipelineStepsPanoramaCard() {
             </div>
 
             {activeTab === 'flows' && (
-              <div className="flex items-center gap-1.5 overflow-x-auto text-[11px]">
+              <div className="flex items-center gap-1.5 overflow-x-auto text-xs">
                 <button
                   type="button"
                   onClick={() => setSelectedTaskType('all')}
@@ -181,11 +181,11 @@ export function PipelineStepsPanoramaCard() {
                         <span className="font-sans font-bold text-xs text-foreground">
                           {isZh ? flow.nameZh : flow.nameEn}
                         </span>
-                        <span className="font-mono text-[11px] text-muted-foreground bg-muted/40 px-1 rounded border border-border/50">
+                        <span className="font-mono text-xs text-muted-foreground bg-muted/40 px-1 rounded border border-border/50">
                           {flow.typeKey}
                         </span>
                       </div>
-                      <Badge variant="outline" className="text-[11px] font-mono px-1.5 py-0">
+                      <Badge variant="outline" className="text-xs font-mono px-1.5 py-0">
                         {steps.length} {isZh ? '道工序' : 'steps'}
                       </Badge>
                     </div>
@@ -198,13 +198,13 @@ export function PipelineStepsPanoramaCard() {
                           className="flex items-center justify-between rounded-md border bg-muted/15 px-2.5 py-1.5 text-xs"
                         >
                           <div className="flex items-center gap-2 min-w-0">
-                            <span className="font-mono text-muted-foreground text-[11px] font-medium shrink-0">
+                            <span className="font-mono text-muted-foreground text-xs font-medium shrink-0">
                               {sIdx + 1}.
                             </span>
                             <span className="font-medium text-foreground text-xs truncate">
                               {isZh ? st.nameZh : st.nameEn}
                             </span>
-                            <span className="font-mono text-[11px] text-muted-foreground bg-muted/50 px-1.5 py-0.2 rounded border border-border/40 shrink-0">
+                            <span className="font-mono text-xs text-muted-foreground bg-muted/50 px-1.5 py-0.2 rounded border border-border/40 shrink-0">
                               {isZh ? st.unitZh : st.unitEn}
                             </span>
                           </div>
@@ -213,7 +213,7 @@ export function PipelineStepsPanoramaCard() {
                             <ArrowRightIcon className="size-2.5 text-muted-foreground/40" />
                             <Badge
                               variant="outline"
-                              className="text-[11px] font-sans font-normal px-1.5 py-0 bg-background text-foreground/85 border-border/70"
+                              className="text-xs font-sans font-normal px-1.5 py-0 bg-background text-foreground/85 border-border/70"
                             >
                               <CpuIcon className="size-2.5 mr-1 text-primary/70" />
                               {isZh ? st.engineNameZh : st.engineNameEn}
@@ -233,7 +233,7 @@ export function PipelineStepsPanoramaCard() {
             <div className="overflow-x-auto rounded-lg border bg-background/80">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="border-b bg-muted/40 text-muted-foreground text-[11px]">
+                  <tr className="border-b bg-muted/40 text-muted-foreground text-xs">
                     <th className="px-3 py-2 font-medium w-12 text-center">#</th>
                     <th className="px-3 py-2 font-medium w-36">{isZh ? '工序名称' : 'Step Name'}</th>
                     <th className="px-3 py-2 font-medium w-36">{isZh ? '承接执行引擎' : 'Assigned Engine'}</th>
@@ -242,7 +242,7 @@ export function PipelineStepsPanoramaCard() {
                     <th className="px-3 py-2 font-medium">{isZh ? '物理职责说明' : 'Physical Responsibility'}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border/60 font-mono text-[11px]">
+                <tbody className="divide-y divide-border/60 font-mono text-xs">
                   {ALL_PANORAMA_STEPS.map((st, i) => (
                     <tr key={st.id} className="hover:bg-muted/20 transition-colors">
                       <td className="px-3 py-2 text-center text-muted-foreground font-semibold">{i + 1}</td>
@@ -265,7 +265,7 @@ export function PipelineStepsPanoramaCard() {
                             return (
                               <span
                                 key={tKey}
-                                className="font-sans text-[11px] bg-secondary/80 text-foreground px-1.5 py-0.2 rounded border border-border/40"
+                                className="font-sans text-xs bg-secondary/80 text-foreground px-1.5 py-0.2 rounded border border-border/40"
                               >
                                 {isZh ? matchFlow?.nameZh ?? tKey : matchFlow?.nameEn ?? tKey}
                               </span>
@@ -273,14 +273,14 @@ export function PipelineStepsPanoramaCard() {
                           })}
                         </div>
                       </td>
-                      <td className="px-3 py-2 font-sans text-muted-foreground text-[11px]">
+                      <td className="px-3 py-2 font-sans text-muted-foreground text-xs">
                         <div>{isZh ? st.descriptionZh : st.descriptionEn}</div>
                         {st.operators && st.operators.length > 0 && (
-                          <div className="mt-1 flex items-center gap-1 font-mono text-[11px] text-foreground/80">
+                          <div className="mt-1 flex items-center gap-1 font-mono text-xs text-foreground/80">
                             <span className="text-muted-foreground">{isZh ? '执行算子：' : 'Operators:'}</span>
                             {st.operators.map((op, opIdx) => (
                               <React.Fragment key={op}>
-                                <span className="bg-muted/70 px-1 py-0.2 rounded border border-border/50 text-[11px]">{op}</span>
+                                <span className="bg-muted/70 px-1 py-0.2 rounded border border-border/50 text-xs">{op}</span>
                                 {opIdx < st.operators!.length - 1 && <span className="text-muted-foreground/60">➔</span>}
                               </React.Fragment>
                             ))}
@@ -314,29 +314,29 @@ export function PipelineStepsPanoramaCard() {
                           <span className="font-sans font-bold text-xs text-foreground block">
                             {isZh ? eng.nameZh : eng.nameEn}
                           </span>
-                          <span className="font-mono text-[11px] text-muted-foreground">
+                          <span className="font-mono text-xs text-muted-foreground">
                             {eng.key}
                           </span>
                         </div>
                       </div>
-                      <Badge variant="outline" className="text-[11px] font-mono px-1.5 py-0">
+                      <Badge variant="outline" className="text-xs font-mono px-1.5 py-0">
                         {assignedSteps.length} {isZh ? '道工序' : 'steps'}
                       </Badge>
                     </div>
 
-                    <p className="text-[11px] text-muted-foreground font-sans">
+                    <p className="text-xs text-muted-foreground font-sans">
                       {isZh ? eng.descZh : eng.descEn}
                     </p>
 
                     <div className="space-y-1 pt-1 border-t border-border/60 mt-auto">
-                      <span className="text-[11px] font-medium text-muted-foreground font-sans block">
+                      <span className="text-xs font-medium text-muted-foreground font-sans block">
                         {isZh ? '承接工序清单：' : 'Assigned Steps:'}
                       </span>
                       <div className="flex flex-wrap gap-1">
                         {assignedSteps.map((st) => (
                           <span
                             key={st.id}
-                            className="font-sans text-[11px] bg-muted/50 text-foreground px-1.5 py-0.5 rounded border border-border/50"
+                            className="font-sans text-xs bg-muted/50 text-foreground px-1.5 py-0.5 rounded border border-border/50"
                           >
                             {isZh ? st.nameZh : st.nameEn}
                             <span className="font-mono text-muted-foreground ml-1">({isZh ? st.unitZh : st.unitEn})</span>

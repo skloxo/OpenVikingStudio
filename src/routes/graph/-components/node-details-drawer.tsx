@@ -104,19 +104,19 @@ export function NodeDetailsDrawer({ node, onClose }: NodeDetailsDrawerProps) {
 
       <CardContent className="space-y-4 font-mono text-xs pt-2">
         {/* Description Section */}
-        <div className="rounded bg-muted/30 p-2.5 border border-border/40 text-muted-foreground leading-relaxed text-[11px]">
+        <div className="rounded bg-muted/30 p-2.5 border border-border/40 text-muted-foreground leading-relaxed text-xs">
           {getNodeDescription()}
         </div>
 
         {/* Metadata Details Grid */}
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div className="rounded border border-border/40 bg-background/50 p-2 space-y-0.5">
-            <span className="text-[10px] text-muted-foreground block">物理权重 / 关联边</span>
+            <span className="text-xs text-muted-foreground block">物理权重 / 关联边</span>
             <span className="font-bold text-foreground tabular-nums">{node.degree} 条拓扑连线</span>
           </div>
 
           <div className="rounded border border-border/40 bg-background/50 p-2 space-y-0.5">
-            <span className="text-[10px] text-muted-foreground block">VikingDB 向量索引</span>
+            <span className="text-xs text-muted-foreground block">VikingDB 向量索引</span>
             <span className="font-bold text-cyan-600 dark:text-cyan-400">已建索引 ✅</span>
           </div>
         </div>

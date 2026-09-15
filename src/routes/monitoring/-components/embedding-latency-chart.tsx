@@ -116,7 +116,7 @@ export function EmbeddingLatencyChart({
                   </TooltipContent>
                 </Tooltip>
               </div>
-              <p className="text-[11px] text-muted-foreground/70 font-mono">
+              <p className="text-xs text-muted-foreground/70 font-mono">
                 {t('hardwareCharts.embeddingLatencySubtitle', {
                   defaultValue: 'P50 / P90 / P99 向量检索与索引耗时分位数',
                 })}
@@ -166,7 +166,7 @@ export function EmbeddingLatencyChart({
                         <div className="text-cyan-600 dark:text-cyan-400 font-bold">
                           延时耗时: {formatMs(d.latencyMs)}
                         </div>
-                        <div className="text-muted-foreground text-[11px]">
+                        <div className="text-muted-foreground text-xs">
                           覆盖样本: <span className="text-foreground font-semibold">{d.sampleCount.toLocaleString()} 次</span> ({d.samplePercent})
                         </div>
                       </div>
@@ -185,7 +185,7 @@ export function EmbeddingLatencyChart({
         </div>
 
         {/* Sample Breakdown Legend */}
-        <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border/40 pt-2 text-[11px] font-mono tabular-nums">
+        <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border/40 pt-2 text-xs font-mono tabular-nums">
           <div className="flex flex-col items-center justify-center rounded bg-cyan-500/5 p-1.5 text-center">
             <span className="text-muted-foreground/70">P50 样本 (50%)</span>
             <span className="font-bold text-cyan-600 dark:text-cyan-400">{data[0]?.sampleCount.toLocaleString()} 次 · {formatMs(data[0]?.latencyMs || 0)}</span>

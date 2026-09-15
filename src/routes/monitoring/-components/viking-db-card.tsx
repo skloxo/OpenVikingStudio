@@ -106,7 +106,7 @@ export function VikingDbCard({ status, isHealthy }: VikingDbCardProps) {
           {!isHealthy && (
             <Badge
               variant="outline"
-              className="gap-1 font-normal border-destructive/30 text-destructive text-[11px]"
+              className="gap-1 font-normal border-destructive/30 text-destructive text-xs"
             >
               <span className="size-1.5 rounded-full bg-destructive" />
               {t('vikingdb.unhealthy')}
@@ -118,25 +118,25 @@ export function VikingDbCard({ status, isHealthy }: VikingDbCardProps) {
       {/* 顶部 4 个关键汇总指标瓷片 */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="flex flex-col justify-center rounded-lg border bg-muted/20 px-3 py-2">
-          <span className="text-[11px] text-muted-foreground font-medium">{t('vikingdb.activeCollections')}</span>
+          <span className="text-xs text-muted-foreground font-medium">{t('vikingdb.activeCollections')}</span>
           <span className="font-mono text-base font-bold text-foreground tabular-nums mt-0.5">
             {collectionCount}
           </span>
         </div>
         <div className="flex flex-col justify-center rounded-lg border bg-muted/20 px-3 py-2">
-          <span className="text-[11px] font-medium text-muted-foreground">{t('vikingdb.totalVectors')}</span>
+          <span className="text-xs font-medium text-muted-foreground">{t('vikingdb.totalVectors')}</span>
           <span className="font-mono text-base font-bold text-foreground/90 tabular-nums mt-0.5">
             {totalVectors.toLocaleString()}
           </span>
         </div>
         <div className="flex flex-col justify-center rounded-lg border bg-muted/20 px-3 py-2">
-          <span className="text-[11px] text-muted-foreground font-medium">{t('vikingdb.searchIndexes')}</span>
+          <span className="text-xs text-muted-foreground font-medium">{t('vikingdb.searchIndexes')}</span>
           <span className="font-mono text-base font-bold text-foreground tabular-nums mt-0.5">
             {totalIndexes}
           </span>
         </div>
         <div className="flex flex-col justify-center rounded-lg border bg-muted/20 px-3 py-2">
-          <span className="text-[11px] text-muted-foreground font-medium">
+          <span className="text-xs text-muted-foreground font-medium">
             {t('vikingdb.unreadyDirectories')}
           </span>
           <span className="font-mono text-base font-bold text-foreground tabular-nums mt-0.5">
@@ -208,7 +208,7 @@ export function VikingDbCard({ status, isHealthy }: VikingDbCardProps) {
                 <span className="text-right">
                   <span
                     className={cn(
-                      'inline-block px-1.5 py-0.5 rounded text-[11px] font-semibold',
+                      'inline-block px-1.5 py-0.5 rounded text-xs font-semibold',
                       /ok|normal|healthy/i.test(row.status)
                         ? 'bg-muted/20 text-foreground/90'
                         : 'bg-destructive/10 text-destructive',

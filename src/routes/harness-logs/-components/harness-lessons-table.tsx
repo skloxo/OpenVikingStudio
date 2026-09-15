@@ -68,7 +68,7 @@ export function HarnessLessonsTable({ lessons, searchQuery }: HarnessLessonsTabl
               key={cat.id}
               type="button"
               onClick={() => setCategoryFilter(cat.id)}
-              className={`rounded px-2 py-1 text-[11px] transition-colors ${
+              className={`rounded px-2 py-1 text-xs transition-colors ${
                 categoryFilter === cat.id
                   ? 'bg-cyan-500/10 text-cyan-300 border border-cyan-500/30'
                   : 'text-muted-foreground hover:text-foreground'
@@ -78,7 +78,7 @@ export function HarnessLessonsTable({ lessons, searchQuery }: HarnessLessonsTabl
             </button>
           ))}
         </div>
-        <span className="font-mono text-[11px] text-muted-foreground">
+        <span className="font-mono text-xs text-muted-foreground">
           显示 {filteredLessons.length} / {lessons.length} 条记录
         </span>
       </div>
@@ -108,13 +108,13 @@ export function HarnessLessonsTable({ lessons, searchQuery }: HarnessLessonsTabl
                   </div>
                   <Badge
                     variant="outline"
-                    className="border-border/60 bg-muted/40 font-mono text-[11px] text-muted-foreground"
+                    className="border-border/60 bg-muted/40 font-mono text-xs text-muted-foreground"
                   >
                     {item.source ?? 'evolution'}
                   </Badge>
                 </div>
 
-                <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 text-[11px] text-muted-foreground">
+                <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 text-xs text-muted-foreground">
                   <div>
                     <span className="font-medium text-foreground">背景上下文: </span>
                     {item.context}
@@ -127,7 +127,7 @@ export function HarnessLessonsTable({ lessons, searchQuery }: HarnessLessonsTabl
                   )}
                 </div>
 
-                <div className="border-t border-border/40 pt-1.5 font-mono text-[11px] text-cyan-400/90">
+                <div className="border-t border-border/40 pt-1.5 font-mono text-xs text-cyan-400/90">
                   <span className="font-sans font-medium text-muted-foreground">沉淀 Lesson: </span>
                   {item.lesson}
                 </div>

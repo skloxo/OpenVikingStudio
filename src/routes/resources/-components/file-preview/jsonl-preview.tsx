@@ -41,7 +41,7 @@ export function JsonlRawRow({ record }: { record: JsonlRecord }) {
     >
       <button
         type="button"
-        className="flex items-center justify-end gap-1 border-r px-2 py-2 font-mono text-[11px] text-muted-foreground hover:text-foreground"
+        className="flex items-center justify-end gap-1 border-r px-2 py-2 font-mono text-xs text-muted-foreground hover:text-foreground"
         onClick={() => setOpen((current) => !current)}
       >
         <span>{record.index + 1}</span>
@@ -58,7 +58,7 @@ export function JsonlRawRow({ record }: { record: JsonlRecord }) {
           <div className="truncate text-xs text-destructive">{record.line}</div>
         ) : titleKey && isRecord(parsed) ? (
           <div className="flex min-w-0 items-center gap-2 text-xs">
-            <span className="rounded bg-primary/10 px-1.5 py-0.5 font-mono text-[11px] font-semibold uppercase text-primary">
+            <span className="rounded bg-primary/10 px-1.5 py-0.5 font-mono text-xs font-semibold uppercase text-primary">
               {titleKey}
             </span>
             <span className="truncate font-medium">
@@ -130,7 +130,7 @@ export function JsonlPartBody({
   if (part.kind === 'tool-result') {
     return (
       <div className="rounded border border-dashed bg-muted/20 p-2">
-        <div className="mb-1 text-[11px] font-medium text-muted-foreground">
+        <div className="mb-1 text-xs font-medium text-muted-foreground">
           {t('filePreview.jsonl.resultLabel')}
         </div>
         <pre className="max-h-96 overflow-auto whitespace-pre-wrap break-words text-xs leading-5">
@@ -207,12 +207,12 @@ export function JsonlMessageCard({ message }: { message: JsonlMessage }) {
         {toolNames.map((toolName) => (
           <span
             key={toolName}
-            className="truncate rounded border bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground"
+            className="truncate rounded border bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground"
           >
             {toolName}
           </span>
         ))}
-        <span className="ml-auto shrink-0 font-mono text-[11px] text-muted-foreground">
+        <span className="ml-auto shrink-0 font-mono text-xs text-muted-foreground">
           #{message.lineNo}
         </span>
       </div>
@@ -233,7 +233,7 @@ export function JsonlMessageCard({ message }: { message: JsonlMessage }) {
         </pre>
       )}
 
-      <div className="mt-2 flex items-center gap-2 border-t pt-2 text-[11px] text-muted-foreground">
+      <div className="mt-2 flex items-center gap-2 border-t pt-2 text-xs text-muted-foreground">
         {message.time ? (
           <time dateTime={message.time}>{formatJsonlTime(message.time)}</time>
         ) : null}

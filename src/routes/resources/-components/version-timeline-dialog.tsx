@@ -299,7 +299,7 @@ export function VersionTimelineDialog({
               <div className="flex items-center gap-1.5 font-medium text-foreground">
                 <GitCommit className="size-3.5 text-cyan-400" />
                 <span>{t('versionTimeline.commitHistory')}</span>
-                <span className="font-mono text-[11px] text-muted-foreground ml-1">
+                <span className="font-mono text-xs text-muted-foreground ml-1">
                   ({commits.length} {t('versionTimeline.commitsCount')})
                 </span>
               </div>
@@ -308,7 +308,7 @@ export function VersionTimelineDialog({
                 <button
                   type="button"
                   onClick={() => setFilterScope('file')}
-                  className={`px-2 py-0.5 text-[11px] rounded transition-all ${
+                  className={`px-2 py-0.5 text-xs rounded transition-all ${
                     filterScope === 'file'
                       ? 'bg-muted font-semibold text-foreground'
                       : 'text-muted-foreground hover:text-foreground'
@@ -319,7 +319,7 @@ export function VersionTimelineDialog({
                 <button
                   type="button"
                   onClick={() => setFilterScope('all')}
-                  className={`px-2 py-0.5 text-[11px] rounded transition-all ${
+                  className={`px-2 py-0.5 text-xs rounded transition-all ${
                     filterScope === 'all'
                       ? 'bg-muted font-semibold text-foreground'
                       : 'text-muted-foreground hover:text-foreground'
@@ -332,7 +332,7 @@ export function VersionTimelineDialog({
 
             {/* Hint if fallen back to all */}
             {isFallbackToAll && (
-              <div className="px-3 py-1.5 bg-cyan-500/10 border-b border-cyan-500/20 text-[11px] text-cyan-400 flex items-center gap-1.5">
+              <div className="px-3 py-1.5 bg-cyan-500/10 border-b border-cyan-500/20 text-xs text-cyan-400 flex items-center gap-1.5">
                 <Sparkles className="size-3 shrink-0" />
                 <span>该文件在快照历史中为全局导入，已为您展示全库历史快照</span>
               </div>
@@ -380,12 +380,12 @@ export function VersionTimelineDialog({
                               {commit.oid.slice(0, 8)}
                             </span>
                             {isLatest && (
-                              <Badge className="text-[11px] px-1.5 py-0 bg-cyan-500/20 text-cyan-400 border-cyan-500/30 font-medium">
+                              <Badge className="text-xs px-1.5 py-0 bg-cyan-500/20 text-cyan-400 border-cyan-500/30 font-medium">
                                 HEAD (最新)
                               </Badge>
                             )}
                           </div>
-                          <span className="text-[11px] font-medium text-muted-foreground">
+                          <span className="text-xs font-medium text-muted-foreground">
                             {formatRelativeTime(commit.author?.time_seconds)}
                           </span>
                         </div>
@@ -394,12 +394,12 @@ export function VersionTimelineDialog({
                           {commit.message || t('versionTimeline.noMessage')}
                         </p>
 
-                        <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1.5 border-t border-border/40">
+                        <div className="flex items-center justify-between text-xs text-muted-foreground pt-1.5 border-t border-border/40">
                           <span className="flex items-center gap-1 truncate max-w-35">
                             <User className="size-3 shrink-0" />
                             {commit.author?.name || 'viking-bot'}
                           </span>
-                          <span className="flex items-center gap-1 font-mono text-[11px]">
+                          <span className="flex items-center gap-1 font-mono text-xs">
                             <Clock className="size-3 shrink-0" />
                             {formatCommitTime(commit.author?.time_seconds)}
                           </span>

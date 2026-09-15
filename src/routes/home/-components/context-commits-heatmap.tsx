@@ -143,7 +143,7 @@ export function ContextCommitsHeatmap({
 function ContextCommitStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="border-b border-border/60 py-1.5 last:border-b-0 sm:border-b-0 sm:border-r sm:px-3 sm:last:border-r-0 xl:border-b xl:border-r-0 xl:px-0 xl:last:border-b-0">
-      <div className="text-[11px] leading-none text-muted-foreground">
+      <div className="text-xs leading-none text-muted-foreground">
         {label}
       </div>
       <div className="mt-1 text-xl font-mono font-semibold leading-none tabular-nums">
@@ -217,7 +217,7 @@ function CommitTooltipView({
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="font-mono font-semibold tabular-nums">{details.date}</div>
-          <div className="mt-0.5 text-[11px] text-muted-foreground">
+          <div className="mt-0.5 text-xs text-muted-foreground">
             {t('contextCommits.tooltip.total')}
           </div>
         </div>

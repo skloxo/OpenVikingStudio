@@ -80,7 +80,7 @@ export function HarnessLivePlayground() {
               <Code2Icon className="size-4 text-cyan-400" />
               <h4 className="text-xs font-semibold">防偷懒护栏实验台 (Anti-Lazy Guard)</h4>
             </div>
-            <Badge variant="outline" className="border-cyan-500/30 bg-cyan-500/10 text-[11px] text-cyan-300">
+            <Badge variant="outline" className="border-cyan-500/30 bg-cyan-500/10 text-xs text-cyan-300">
               毫秒级 AST/正则扫描
             </Badge>
           </div>
@@ -97,7 +97,7 @@ export function HarnessLivePlayground() {
                 type="button"
                 variant="outline"
                 size="sm"
-                className={`h-6 text-[11px] px-2 ${btn.clean ? 'border-cyan-500/40 text-cyan-300 hover:bg-cyan-950/20' : ''}`}
+                className={`h-6 text-xs px-2 ${btn.clean ? 'border-cyan-500/40 text-cyan-300 hover:bg-cyan-950/20' : ''}`}
                 onClick={() => setSampleCode(btn.code)}
               >
                 {btn.label}
@@ -127,7 +127,7 @@ export function HarnessLivePlayground() {
               {isTestingGuard ? '扫描中...' : '实时检测代码门禁'}
             </Button>
             {guardResult && (
-              <span className="font-mono text-[11px] text-muted-foreground">
+              <span className="font-mono text-xs text-muted-foreground">
                 {guardResult.rule}
               </span>
             )}
@@ -152,9 +152,9 @@ export function HarnessLivePlayground() {
                   {guardResult.blocked ? '🚨 物理阻断 (Prohibited Write Blocked)' : '✅ 校验通过 (Clean Code Approved)'}
                 </span>
               </div>
-              <p className="mt-1 text-[11px] text-foreground/90">{guardResult.reason}</p>
+              <p className="mt-1 text-xs text-foreground/90">{guardResult.reason}</p>
               {guardResult.matched_pattern && (
-                <div className="mt-1.5 rounded bg-background/80 px-2 py-1 font-mono text-[11px] text-rose-400">
+                <div className="mt-1.5 rounded bg-background/80 px-2 py-1 font-mono text-xs text-rose-400">
                   捕获违规特征: {guardResult.matched_pattern}
                 </div>
               )}
@@ -171,7 +171,7 @@ export function HarnessLivePlayground() {
               <TerminalIcon className="size-4 text-cyan-400" />
               <h4 className="text-xs font-semibold">物理验真探针 (Physical Diff & Test Retina)</h4>
             </div>
-            <Badge variant="outline" className="border-cyan-500/30 bg-cyan-500/10 text-[11px] text-cyan-300">
+            <Badge variant="outline" className="border-cyan-500/30 bg-cyan-500/10 text-xs text-cyan-300">
               真实工作区执行
             </Badge>
           </div>
@@ -181,7 +181,7 @@ export function HarnessLivePlayground() {
               type="button"
               variant="outline"
               size="sm"
-              className="h-6 text-[11px] px-2"
+              className="h-6 text-xs px-2"
               onClick={() => {
                 setDiffText('')
                 setTestCmd('pytest -o addopts="" tests/unit/test_harness_invariants.py')
@@ -193,7 +193,7 @@ export function HarnessLivePlayground() {
               type="button"
               variant="outline"
               size="sm"
-              className="h-6 text-[11px] px-2"
+              className="h-6 text-xs px-2"
               onClick={() => {
                 setDiffText('--- a/doc.py\n+++ b/doc.py\n@@ -1,1 +1,2 @@\n # header\n+# comment only\n')
                 setTestCmd('')
@@ -205,7 +205,7 @@ export function HarnessLivePlayground() {
               type="button"
               variant="outline"
               size="sm"
-              className="h-6 text-[11px] px-2"
+              className="h-6 text-xs px-2"
               onClick={() => {
                 setDiffText('--- a/lib.py\n+++ b/lib.py\n@@ -1,1 +1,3 @@\n-old\n+new_code = True\n')
                 setTestCmd('')
@@ -240,14 +240,14 @@ export function HarnessLivePlayground() {
 
           {/* Probe Report Feedback */}
           {probeResult && (
-            <div className="mt-3 rounded-md border border-border/80 bg-background/90 p-2.5 font-mono text-[11px]">
+            <div className="mt-3 rounded-md border border-border/80 bg-background/90 p-2.5 font-mono text-xs">
               <div className="flex items-center justify-between border-b border-border/40 pb-1.5">
                 <span className="font-semibold text-foreground">
                   验真报告: {probeResult.passed ? '✅ 门禁全部通过' : '🚨 门禁拦截拒收'}
                 </span>
                 <Badge
                   variant="outline"
-                  className={`text-[11px] ${
+                  className={`text-xs ${
                     probeResult.passed
                       ? 'border-cyan-500/40 text-cyan-300'
                       : 'border-rose-500/40 text-rose-300'

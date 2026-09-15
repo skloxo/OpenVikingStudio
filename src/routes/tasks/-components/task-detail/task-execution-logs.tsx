@@ -139,7 +139,7 @@ export function TaskExecutionLogs({
           <span className="text-sm font-semibold text-foreground">
             {t('detail.executionLogs')}
           </span>
-          <span className="px-1.5 py-0.5 rounded-md bg-muted text-[11px] font-mono text-muted-foreground">
+          <span className="px-1.5 py-0.5 rounded-md bg-muted text-xs font-mono text-muted-foreground">
             {logLines.length} {t('detail.lines')}
           </span>
         </div>
@@ -150,7 +150,7 @@ export function TaskExecutionLogs({
           <Button
             variant="ghost"
             size="xs"
-            className="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted/60 cursor-pointer"
+            className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/60 cursor-pointer"
             onClick={() => {
               navigator.clipboard.writeText(logLines.join('\n'))
               toast.success(t('detail.logsCopied'))
@@ -163,8 +163,8 @@ export function TaskExecutionLogs({
       </button>
 
       {expanded ? (
-        <div className="border-t border-border/40 p-3 bg-muted/30 font-mono text-[11px] leading-relaxed">
-          <div className="text-[11px] text-muted-foreground font-mono mb-2 pb-1.5 border-b border-border/30">
+        <div className="border-t border-border/40 p-3 bg-muted/30 font-mono text-xs leading-relaxed">
+          <div className="text-xs text-muted-foreground font-mono mb-2 pb-1.5 border-b border-border/30">
             {t('detail.logTraceHeader', {
               id: task.task_id,
               defaultValue: `LOG TRACE STREAM (ID: ${task.task_id})`,

@@ -83,7 +83,7 @@ export function ContextExplorerHeader({
               )}
             />
             {activeTaskCount > 0 ? (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-semibold leading-none text-primary-foreground">
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-xs font-semibold leading-none text-primary-foreground">
                 {activeTaskCount}
               </span>
             ) : null}
@@ -419,11 +419,11 @@ export function ContextTreeNode({
             </span>
           ) : null}
           {entry.name === '_abstract.md' ? (
-            <span className="shrink-0 rounded bg-muted px-1 font-sans text-[11px] text-muted-foreground">
+            <span className="shrink-0 rounded bg-muted px-1 font-sans text-xs text-muted-foreground">
               {t('explorer.abstractLevel')}
             </span>
           ) : entry.name === '_overview.md' ? (
-            <span className="shrink-0 rounded bg-muted px-1 font-sans text-[11px] text-muted-foreground">
+            <span className="shrink-0 rounded bg-muted px-1 font-sans text-xs text-muted-foreground">
               {t('explorer.overviewLevel')}
             </span>
           ) : null}

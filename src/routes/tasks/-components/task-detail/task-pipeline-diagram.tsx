@@ -121,7 +121,7 @@ export function TaskPipelineDiagram({
     // 1. 若工序尚未开始（等待前置工序交付），统一展示标准中性胶囊与连贯文案 (SSOT)
     if (st.state === 'pending') {
       return (
-        <span className="px-2 py-0.5 rounded text-[11px] font-medium select-none shrink-0 bg-muted/50 text-muted-foreground border border-border/40">
+        <span className="px-2 py-0.5 rounded text-xs font-medium select-none shrink-0 bg-muted/50 text-muted-foreground border border-border/40">
           {t('detail.pendingPreceding', { defaultValue: '待前置交付' })}
         </span>
       )
@@ -152,7 +152,7 @@ export function TaskPipelineDiagram({
       }
 
       return (
-        <span className="px-2 py-0.5 rounded text-[11px] font-medium select-none shrink-0 bg-primary/10 text-primary border border-primary/20 flex items-center gap-1.5">
+        <span className="px-2 py-0.5 rounded text-xs font-medium select-none shrink-0 bg-primary/10 text-primary border border-primary/20 flex items-center gap-1.5">
           <span className="size-1.5 rounded-full bg-primary animate-ping" />
           {t('detail.stepRunningText', { defaultValue: '正在执行' })}
         </span>
@@ -178,14 +178,14 @@ export function TaskPipelineDiagram({
         )
       }
       return (
-        <span className="px-2 py-0.5 rounded text-[11px] font-medium select-none shrink-0 bg-muted/40 text-muted-foreground border border-border/30">
+        <span className="px-2 py-0.5 rounded text-xs font-medium select-none shrink-0 bg-muted/40 text-muted-foreground border border-border/30">
           {t('detail.stepCompletedText', { defaultValue: '已完成' })}
         </span>
       )
     }
 
     return (
-      <span className="px-2 py-0.5 rounded text-[11px] font-medium select-none shrink-0 bg-muted/30 text-muted-foreground/60 border border-border/30">
+      <span className="px-2 py-0.5 rounded text-xs font-medium select-none shrink-0 bg-muted/30 text-muted-foreground/60 border border-border/30">
         --
       </span>
     )
@@ -206,16 +206,16 @@ export function TaskPipelineDiagram({
                   className="flex items-center justify-between rounded-lg border bg-background/80 px-3.5 py-2.5 shadow-2xs"
                 >
                   <div className="flex items-center gap-2 min-w-0 pr-2">
-                    <span className="font-mono text-muted-foreground text-[11px] font-semibold">
+                    <span className="font-mono text-muted-foreground text-xs font-semibold">
                       {currentNum}.
                     </span>
                     <span className="font-medium text-foreground text-xs">
                       {group.step.name}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 text-[11px] shrink-0">
+                  <div className="flex items-center gap-2 text-xs shrink-0">
                     {group.step.detail && (
-                      <span className="font-mono text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded border border-border/40 text-[11px]">
+                      <span className="font-mono text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded border border-border/40 text-xs">
                         {group.step.detail}
                       </span>
                     )}
@@ -238,16 +238,16 @@ export function TaskPipelineDiagram({
                       className="flex items-center justify-between rounded-lg border bg-background/80 px-3.5 py-2.5 shadow-2xs"
                     >
                       <div className="flex items-center gap-2 min-w-0 pr-1.5">
-                        <span className="font-mono text-muted-foreground text-[11px] font-semibold">
+                        <span className="font-mono text-muted-foreground text-xs font-semibold">
                           {currentNum}.
                         </span>
                         <span className="font-medium text-foreground text-xs truncate">
                           {st.name}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 text-[11px] shrink-0">
+                      <div className="flex items-center gap-2 text-xs shrink-0">
                         {st.detail && (
-                          <span className="font-mono text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded border border-border/40 text-[11px]">
+                          <span className="font-mono text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded border border-border/40 text-xs">
                             {st.detail}
                           </span>
                         )}
@@ -275,7 +275,7 @@ export function TaskPipelineDiagram({
                 )}
               >
                 <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                  <span className="font-mono text-primary text-[11px] font-semibold">
+                  <span className="font-mono text-primary text-xs font-semibold">
                     {finalNum}.
                   </span>
                   <div className="flex flex-col min-w-0">
@@ -283,26 +283,26 @@ export function TaskPipelineDiagram({
                       <span className="font-semibold text-foreground text-xs">
                         {outcome.title}
                       </span>
-                      <span className="text-[11px] font-mono text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded border border-border/60">
+                      <span className="text-xs font-mono text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded border border-border/60">
                         {t('detail.finalDeliverable', {
                           defaultValue: '最终输出结果',
                         })}
                       </span>
                     </div>
-                    <span className="text-[11px] text-muted-foreground truncate mt-0.5">
+                    <span className="text-xs text-muted-foreground truncate mt-0.5">
                       {isDoneAll
                         ? outcome.deliverableText
                         : `${t('detail.expectedOutputPrefix', { defaultValue: '预期产出：' })}${outcome.expectedText}`}
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 text-[11px] shrink-0">
+                <div className="flex items-center gap-2 text-xs shrink-0">
                   {hasMemoryImpact && (
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="h-6 px-2 text-[11px] gap-1 text-cyan-600 dark:text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10 font-medium cursor-pointer"
+                      className="h-6 px-2 text-xs gap-1 text-cyan-600 dark:text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10 font-medium cursor-pointer"
                       onClick={() => setImpactExpanded((prev) => !prev)}
                     >
                       <BrainCircuitIcon className="size-3" />
@@ -321,7 +321,7 @@ export function TaskPipelineDiagram({
                   )}
                   <span
                     className={cn(
-                      'px-2 py-0.5 rounded text-[11px] font-medium select-none shrink-0 border',
+                      'px-2 py-0.5 rounded text-xs font-medium select-none shrink-0 border',
                       isDoneAll
                         ? 'bg-secondary text-foreground font-semibold border-border/60'
                         : task.status === 'failed'
