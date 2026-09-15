@@ -1,10 +1,14 @@
 #!/bin/bash
 # ==============================================================================
-# 🛡️ OpenViking Pre-Commit Security Guard
+# 🛡️ OpenViking Pre-Commit Security & Version Alignment Guard
 # ==============================================================================
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 SCANNER="$REPO_ROOT/scripts/security_check.py"
+PKG_JSON="$REPO_ROOT/package.json"
+VERSION_PY="$REPO_ROOT/openviking/_version.py"
+DIST_ASSETS="$REPO_ROOT/dist/assets"
 
+# 1. 安全凭据扫描门禁
 if [ -f "$SCANNER" ]; then
     python3 "$SCANNER"
     RESULT=$?
@@ -16,4 +20,45 @@ if [ -f "$SCANNER" ]; then
         exit 1
     fi
 fi
+
+# 2. 版本号物理一致性门禁 (package.json ⟷ openviking/_version.py)
+if [ -f "$PKG_JSON" ] && [ -f "$VERSION_PY" ]; then
+    PKG_VER=$(python3 -c "import json; print(json.load(open('$PKG_JSON'))['version'])" 2>/dev/null)
+    PY_VER=$(python3 -c "import re; m=re.search(r'__version__\s*=\s*[\"\']([^\"\']+)[\"\']', open('$VERSION_PY').read()); print(m.group(1) if m else '')" 2>/dev/null)
+    
+    if [ -n "$PKG_VER" ] && [ -n "$PY_VER" ] && [ "$PKG_VER" != "$PY_VER" ]; then
+        echo ""
+        echo "🚨 [GIT COMMIT 物理阻断] 双端版本号脱节不一致！"
+        echo "   • package.json 版本:        $PKG_VER"
+        echo "   • openviking/_version.py 版本: $PY_VER"
+        echo "请运行: npm run release:sync 进行一键自动同步修复后再提交。"
+        echo ""
+        exit 1
+    fi
+
+    # 3. 前端编译产物与版本号对齐门禁
+    # 仅当 staged 改动包含 src/ 或 package.json 时检查 dist
+    STAGED_FE=$(git diff --cached --name-only | grep -E '^(src/|package\.json)' || true)
+    if [ -n "$STAGED_FE" ]; then
+        if [ ! -d "$DIST_ASSETS" ]; then
+            echo ""
+            echo "🚨 [GIT COMMIT 物理阻断] 前端源码有变更，但 dist/assets 构建目录不存在！"
+            echo "请运行: npm run release:sync 或 npm run build 进行自动构建。"
+            echo ""
+            exit 1
+        fi
+        
+        # 验证 dist/assets/*.js 中是否包含当前 PKG_VER
+        MATCH=$(grep -rn "$PKG_VER" "$DIST_ASSETS"/*.js 2>/dev/null | head -n 1 || true)
+        if [ -z "$MATCH" ]; then
+            echo ""
+            echo "🚨 [GIT COMMIT 物理阻断] 前端 dist/assets 构建产物未烘焙当前版本 $PKG_VER！"
+            echo "导致此问题的原因是：改动了版本号或前端源码后未执行生产构建，或在构建后才修改版本号。"
+            echo "请运行: npm run release:sync 进行自动化编译构建对齐后再提交。"
+            echo ""
+            exit 1
+        fi
+    fi
+fi
+
 exit 0
