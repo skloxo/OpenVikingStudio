@@ -73,6 +73,13 @@ _EXPORTS = {
     "HITLGate": ("openviking.core.hitl_gate", "HITLGate"),
     "DangerousActionPolicy": ("openviking.core.hitl_gate", "DangerousActionPolicy"),
     "HITLPermissionError": ("openviking.core.hitl_gate", "HITLPermissionError"),
+    # Multi-Metric Delivery Gate & Anti-False-Exit-0 Guard (v1.5.06)
+    "PhysicalDiffVerifier": ("openviking.core.physical_diff_verifier", "PhysicalDiffVerifier"),
+    "DiffVerificationResult": ("openviking.core.physical_diff_verifier", "DiffVerificationResult"),
+    "TestRetinaRunner": ("openviking.core.test_retina_runner", "TestRetinaRunner"),
+    "TestRetinaResult": ("openviking.core.test_retina_runner", "TestRetinaResult"),
+    "MultiMetricGate": ("openviking.core.multi_metric_gate", "MultiMetricGate"),
+    "GateVerificationReport": ("openviking.core.multi_metric_gate", "GateVerificationReport"),
 }
 
 
