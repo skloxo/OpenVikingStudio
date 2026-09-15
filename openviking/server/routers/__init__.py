@@ -14,6 +14,7 @@ from openviking.server.routers.filesystem import router as filesystem_router
 from openviking.server.routers.hitl_offload import router as hitl_offload_router
 from openviking.server.routers.hybrid_search import router as hybrid_search_router
 from openviking.server.routers.zg_search import router as zg_search_router
+from openviking.server.routers.rag_abstention import router as rag_abstention_router
 from openviking.server.routers.metrics import router as metrics_router
 from openviking.server.routers.observer import router as observer_router
 from openviking.server.routers.openviking_assets import router as openviking_assets_router
@@ -56,6 +57,7 @@ __all__ = [
     "hitl_offload_router",
     "hybrid_search_router",
     "zg_search_router",
+    "rag_abstention_router",
     "debug_router",
     "metrics_router",
     "observer_router",

@@ -9,6 +9,7 @@ import { RetrievalControls } from './-components/retrieval-controls'
 import { RetrievalMetricsCards } from './-components/retrieval-metrics-cards'
 import { BM25HybridCockpit } from './-components/bm25-hybrid-cockpit'
 import { ZGSearchCockpit } from './-components/zg-search-cockpit'
+import { RAGAbstentionCockpit } from './-components/rag-abstention-cockpit'
 import { RetrievalResults } from './-components/retrieval-results'
 import { RetrievalSearchBar } from './-components/search-bar'
 import {
@@ -135,6 +136,9 @@ function RetrievalPage() {
 
       {/* zg 端侧代码语义检索与分级懒加载座舱 (Card-Retrieval-LocalFirst-zgSemanticSearch) */}
       <ZGSearchCockpit />
+
+      {/* RAG 约束验证与主动弃答门禁座舱 (Card-RAG-Abstention-ZeroHallucination-Pipeline) */}
+      <RAGAbstentionCockpit />
 
       <div className="flex items-center gap-2">
         <div className="flex-1 min-w-0">
