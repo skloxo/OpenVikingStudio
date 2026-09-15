@@ -1,8 +1,8 @@
-# ⚔️ OpenViking (v1.5.0)
+# ⚔️ OpenViking Studio
 
 <div align="center">
 
-**面向多 Agent 系统的下一代上下文数据库、体外大脑 (Exocortex) 与全景智能工作台**
+**面向多 Agent 系统的专业级全景座舱、层次化上下文数据库与实时遥测工作台**
 
 [![Version](https://img.shields.io/badge/version-1.5.0-00E5FF.svg?style=flat-square)](https://github.com/skloxo/OpenVikingStudio)
 [![Tests](https://img.shields.io/badge/tests-2173%20passed%20%7C%20100%25-00E5FF.svg?style=flat-square)](https://github.com/skloxo/OpenVikingStudio)
@@ -11,189 +11,160 @@
 [![Native](https://img.shields.io/badge/native-Rust%20AGFS%20%2B%20VikingDB-00E5FF.svg?style=flat-square)](https://github.com/skloxo/OpenVikingStudio)
 [![License](https://img.shields.io/badge/license-Apache--2.0-muted.svg?style=flat-square)](LICENSE)
 
-[English](./README.md) | [中文说明](./README_CN.md) | [正式发布公告 (Release Notes)](./docs/releases/RELEASE_v1.5.0.md) | [架构大蓝图](./.agents/BLUEPRINT.md) | [研发规范 SSOT](./.agents/AGENTS.md) | [任务总看板](./REFACTORING_PLAN.md)
+[项目特性](#-核心特性) | [系统架构](#-系统架构拓扑) | [演进蓝图](#-未来演进蓝图-roadmap) | [快速上手](#-快速上手-quick-start) | [开源说明](#-开源开源与致敬)
 
 </div>
 
 ---
 
-## 🌟 什么是 OpenViking？
+## 🌟 什么是 OpenViking Studio？
 
-**OpenViking (VK)** 是专为大模型与多 Agent 协作系统打造的 **Agent-Native 层次化上下文数据库与全天候体外大脑 (Exocortex Context Database)**。
+**OpenViking Studio** 是基于开源 [OpenViking (volcengine/OpenViking)](https://github.com/volcengine/OpenViking) 深度演进打造的**专业级多智能体全景座舱与上下文控制台 (Multi-Agent Context Cockpit & Observability Console)**。
 
-它打破传统单会话与无状态模型的局限，为 Agent 提供：
-- 🧠 **跨会话持久化体外大脑 (`viking://`)**：统一归集长期记忆、偏好、经验与踩坑教训；
-- ⚡ **L0 / L1 / L2 层次化语义检索**：从毫秒级 Abstract 拦截、Overview SOP 引导到精准 Detail 切片分级召回；
-- 🧩 **全域工程技能资产管理**：配置驱动自动发现与索引 748+ 实体技能；
-- 🖥️ **全景可视化 Web Studio**：提供沉浸式实验场、切片级任务调度中心、全系统深层遥测大屏；
-- 🚀 **分布式私有化双脑算力 (Dual-Brain Gateway)**：深度整合 Mac Studio (M3 Ultra 256GB MLX) 与本地 GPU 算力集群。
+OpenViking 原项目是由**火山引擎 / 字节跳动团队**开源的下一代 Agent-Native 层次化上下文数据库。在此坚实基座之上，**OpenViking Studio** 专注于解决多 Agent 长程交互中的**“状态不可见、上下文易遗忘膨胀、交互黑盒难以追踪、调试排障成本高”**等工程痛点，为开发者和各类智能体提供开箱即用、高密清晰的可视化观测与治理体验：
 
----
-
-## 🌟 v1.5.0 重大里程碑核心演进 (Major Highlights in v1.5.0)
-
-> **正式发布公告详见**：[`docs/releases/RELEASE_v1.5.0.md`](./docs/releases/RELEASE_v1.5.0.md)  
-> 历经 23 天攻坚与 110 个小版本演进（v1.4.1 ~ v1.4.110），`v1.5.0` 标志着 **Milestone 2 全量验收封板** 并全面开启 **Milestone 3 第三代自主进化与零幻觉新篇章**：
-
-### 1. 📏 单文件工程重构与代码库健康度突破 (Single-File Architecture SSOT)
-- **黄金甜点区合规**：全面落实 `AGENTS.md` 黄金甜点区（100~300 行）与物理硬红线（≤ 500 行）。
-- **巨石正交解耦**：原 1,255 行任务路由收敛为 **146 行** 容器；原 1,906 行技能路由收敛为 **116 行** 容器；原 2,300 行双语字典正交拆分为 9 大业务领域模块。全系统 100% 消除 LLM 注意力衰减与工具行号漂移。
-
-### 2. 🛰️ 全集群 Agent 统一身份穿透与对等感知网络 (Full Cluster Agent Mesh: `client@node`)
-- **统一身份身份证**：落地 `{client}@{node}` 身份契约，彻底消除请求盲目退化为 `default` 租户名的历史缺陷。
-- **环境指纹双重嗅探**：核心与卫星 MCP 自动根据进程特征与环境指纹识别客户端，完美隔离 3070 远端与 2080Ti 本地双 Agent（Antigravity 与 WorkBuddy）。
-- **基础设施边界厘清**：彻底肃清 Mac Studio 离线算力幻觉实体 (`mlx-agent`)，首页看板动态呈现全集群 7 大真实干活智能体。
-
-### 3. 📱 XiaomiMiMo 客户端跨节点 ESM 原生插件大一统与直接记忆流注入
-- **Node 原生 fetch ESM**：彻底拔除外部 Python/WSL 子进程依赖，毫秒级预取时延（< 10ms），彻底消除 Electron 桌面环境下 `Bun.build is not a function` 崩溃。
-- **直接流注入 (`messages.transform`)**：核心记忆前置拼接入用户消息流，彻底保障大模型 100% 收到真实记忆上下文；实机测试 4/4 题目 100% 准确命中。
-
-### 4. ⚖️ 双轨任务中心自解释看板与绝对数据真实性治理 (Dual-Track Task Engine)
-- **业务/工序双轨看板**：宏观主看板展示自解释中文业务大任务，底层工序折叠收拢；消灭裸 UUID。
-- **绝对真实数据驱动**：彻底拔除前端 `+4 ~1 -0` 伪造衍生条目，100% 严格由后端真实决策 `decision.action` 驱动。
-- **单行高密座舱排版**：严格单行 40px 行高，成果物直达抽屉收拢，支持一键复制与直达。
-
-### 5. 🛡️ 卫星 MCP 并行超时自愈与安全分层防线 (Satellite MCP Hardening)
-- **超时预算重标定**：宿主配置超时标定为 30s，消灭 -32001 错位崩溃。
-- **线程池异步卸载**：同步工具通过 `asyncio.to_thread` 线程池卸载执行，解除 stdio 阻塞。
-- **纯普通 User Key 隔离**：卫星模式精简暴露 16 大非特权工具，彻底切除危险特权运维接口。
-
-### 6. 🧬 抗熵增记忆前门防御与裁决流水总账 (Entropy Gatekeeper)
-- **准入判定与流水号**：轻量入库执行向量四态比对（ADD/NOOP/UPDATE/DLQ），生成全局唯一流水号 `#dec_xxxx`。
-- **30 天滚动持久化**：底层日志 `entropy_gatekeeper.jsonl` 自动滚动修剪，大盘支持真实翻页与多维分类过滤。
-
-### 7. 🌊 第三代自主进化与零幻觉 5-Wave DAG 战略确立
-- **去伪存真吸收**：经受芒格逆向审问（倒推死因）与红蓝对抗审裁，确立 24 张卡片的 5-Wave DAG 严密因果依赖。
-- **实战轮子替代**：彻底剔除黑盒不可解密的学术玩具 `500xCompressor`，替换为**阿里 SkillZip**（六元组契约 + 0-Rollout 写入即压缩防膨胀 30%+）与 **Codex 级 Notes-History 双轨分仓**（切除有损全局压缩）。
+- 🧠 **跨会话持久化体外大脑 (`viking://`)**：统一收口长程记忆、开发者偏好、工程决策与踩坑教训；
+- ⚡ **L0 / L1 / L2 层次化分级检索**：支持毫秒级摘要拦截 (Abstract)、SOP 流程概览 (Overview) 到精准切片 (Detail) 的分层召回；
+- 📊 **座舱级实时遥测大盘 (Telemetry Console)**：多维度精确审计 Token 消耗分布（VLM / Embedding / Rerank）、检索成功率以及会话上下文写入热力图；
+- 🖥️ **沉浸式实验场与工作台 (`/playground`)**：提供全景资源文件树、分级预览画布、多轮会话回溯与工程技能索引；
+- 🔌 **标准 FastMCP 智能体桥梁**：原生无缝对接 Claude Code、Cursor、OpenClaw 等主流 Agent 客户端，实现零成本插拔接入。
 
 ---
 
-## 🚀 v1.4.0 重大里程碑核心演进 (Major Highlights in v1.4.0)
+## ✨ 核心特性
 
-`v1.4.0` 是 OpenViking 演进史上的里程碑版本，完成了**全栈单仓库物理归一**、**上游 14 大核心特性深度同步**、**2,173 项测试 100% 全绿** 以及 **全景 Web Studio 沉浸工作台** 的全面交付：
+### 1. 🖥️ 全景 Web Studio 沉浸式座舱
+- **智能实验场 (`/playground`)**：整合资源库与沙箱，提供上下文目录树、L0/L1/L2 分级实时预览与时间线回溯；
+- **任务中心真实吞吐看板 (`/tasks`)**：微观工序与宏观业务双轨展示，以严密的物理完成契约追踪分片并发进度，杜绝静态假死；
+- **长程会话追踪器 (`/sessions`)**：支持跨会话历史上下文回溯，结构化呈现消息流、工具调用与提取的记忆切片；
+- **技能控制中心 (`/skills`)**：配置化驱动发现与索引全域技能，支持 TOC 结构化索引与源码快速调阅。
 
-### 1. 🏗️ 全栈工程 Monorepo 物理收口归一
-- 彻底终结前后端双仓库切换的摩擦，将 Python 后端引擎 (`openviking`, `openviking_cli`)、Rust Native 内核 (`ragfs`, `vikingdb`)、React 19 Vite Web Studio (`src/`)、多语言 SDK (`sdk/python`, `sdk/typescript`, `sdk/go`) 与 Agent 插件矩阵 (`examples/`, `agent-plugins/`) 完整融合收口在统一单仓库中，协同开发一键编译。
+### 2. 📊 高密座舱视觉与零虚假数据治理
+- **克制性冷淡工业设计**：严格遵循信号语义色彩规范，关键数值采用等宽字体高密对齐，杜绝无意义装饰噪音；
+- **100% 物理真实数据驱动**：前后端数据严丝合缝，彻底消除前端伪造数字或硬编码 Mock，接口无数据时优雅降级。
 
-### 2. ⚡ 14 大上游核心特性全量同步与 100% 测试全绿
-- **多模态与 VLM 网关**：PDF MinerU 官方解析、CJK 中文字符 Token 预算硬核保护、OpenAI/Gemini/VLM 向量维度自适应；
-- **QueueFS 流式调度与并发 Reindex**：语义流式任务队列、延迟内容实体化、过期任务有界自动清扫；
-- **Session 自动提交 V2 与 Memory V3 提取**：非阻塞异步记忆归档、JSONL 纯物理换行切分、多块补丁无损合并；
-- **2,173 项测试 100% 绿灯回归**：`tests/unit`, `tests/parse`, `tests/agfs` 全量 2,173 项用例 0 失败通过。
-
-### 3. 🖥️ 全景 Web Studio 沉浸式工作台 (1933/1936 双轨架构)
-- **智能实验场 (`/playground`)**：整合资源库与实验场，提供 Context Explorer 目录树、L0/L1/L2 分级预览、全屏聚焦画布模式 (Focus Canvas Mode) 与 Git 版本时间线对比；
-- **任务中心真实吞吐度量 (`/tasks`)**：50/50 独立双卡设计，实时呈现 QueueFS 切片级真实吞吐量（$X/Y$ 防虚标物理流转），彻底根除静态假死；
-- **多轮会话管理器 (`/sessions`)**：回溯 1,000+ 跨会话历史上下文，结构化呈现对话流气泡与记忆卡片；
-- **技能控制中心 (`/skills`)**：配置化驱动扫描 748+ 实体技能，支持 TOC 结构化目录索引与源码高亮抽屉。
-
-### 4. 🧠 Mac Studio (M3 Ultra 256G) 本地原生算力挂载与 Dual-Brain 网关
-- **双模型全精度物理常驻**：奥尼 35B (Ornith-1.5-35B-A3B) 50+ Tok/s 承载代码与数学推理 + 千问 27B-VL 承载视觉 OCR；
-- **四重无损智能网关 (`gateway.py` 端口 13389)**：Metal 预编译预热、思维链 `<think>` 与 Tool Calling 格式解耦、多模态自动分流。
-
-### 5. 🎨 极客性冷淡视觉规范 (NO GREEN EVER SSOT)
-- 全系统 100% 封杀绿色（正向冰青 `cyan-500`、负向玫瑰红 `rose-500`、基线中性灰 `muted`）；
-- 字号严格遵守 $\ge 11\text{px}$ 物理硬下限，并排卡片通过 `mt-auto` 达成像素级物理平齐。
+### 3. 🛡️ 稳固解耦的模型与运行时架构
+- **计算与存储完全正交**：系统关注上下文数据库、向量检索与记忆持久化，与外部大模型完全解耦；
+- **全协议兼容**：无论使用云端主流商业模型，还是本地私有化推理引擎（如 Ollama、vLLM），均可通过标准接口无缝接入，零硬件绑定门槛。
 
 ---
 
-## 🏛️ 系统全景架构拓扑 (Architecture Topology)
+## 🏛️ 系统架构拓扑 (Architecture Topology)
 
 ```mermaid
 flowchart TD
-    subgraph Client ["客户端与接入层"]
-        Web["🖥️ Web Studio (1936/1933)"]
-        CLI["⌨️ Rust CLI (ov)"]
-        SDK["📦 Multi-Lang SDKs (Go / TS / Python)"]
-        IDE["🤖 IDE Agent (Claude Code / OpenClaw / Hermes)"]
+    subgraph Client ["客户端与 Agent 接入层"]
+        Web["🖥️ Web Studio 控制台"]
+        CLI["⌨️ OpenViking CLI"]
+        SDK["📦 Multi-Lang SDK (Python / TS / Go)"]
+        IDE["🤖 IDE Agents (Claude Code / OpenClaw / Cursor)"]
     end
 
     subgraph Server ["OpenViking 核心服务 (Port 1933)"]
         API["FastAPI 统一 REST 网关"]
-        MCP["FastMCP 跨会话协议端点"]
-        Auth["企业级认证 (Trusted / Root Key / OIDC)"]
-        TT["TaskTracker 分片并发任务追踪器"]
+        MCP["FastMCP 标准跨会话端点"]
+        Auth["轻量安全鉴权与多租户隔离"]
+        TaskEngine["TaskTracker 异步任务追踪器"]
     end
 
-    subgraph Engine ["计算与存储引擎"]
-        Queue["QueueFS 异步语义调度队列"]
-        RagFS["AGFS & Rust Native Core (VikingFS / Pathlock)"]
-        VikingDB["VikingDB 向量检索引擎 (HNSW/Flat)"]
-        Parser["多模态解析矩阵 (MinerU / Scrapy / VLM)"]
+    subgraph Engine ["存储与检索内核"]
+        VikingFS["AGFS & VikingFS 虚拟分级文件系统"]
+        VectorDB["VikingDB 语义向量检索引擎"]
+        Queue["QueueFS 异步任务调度队列"]
+        Observability["Telemetry & Audit 实时遥测审计引擎"]
     end
 
-    subgraph Compute ["分布式私有化算力节点"]
-        Mac["🍏 Mac Studio M3 Ultra 256G (MLX Dual-Brain 13100)"]
-        LocalGPU["⚡ 本地 RTX 2080Ti (Embedding & Rerank)"]
+    subgraph Models ["大模型与推理生态 (正交解耦)"]
+        CloudLLM["云端主流大模型 (OpenAI / Claude / DeepSeek 等)"]
+        LocalLLM["本地私有化模型 (Ollama / vLLM / vLLM-compatible)"]
     end
 
     Client -->|"HTTP / SSE / FastMCP"| Server
     Server --> Engine
-    Engine --> Compute
+    Engine -.->|"标准 API / 协议交互"| Models
+```
+
+---
+
+## 🗺️ 未来演进蓝图 (Roadmap)
+
+我们秉持第一性原理，持续推进面向多 Agent 复杂长程任务的自愈与进化生态：
+
+```text
+阶段一：核心基座与座舱观测 (Foundation & Observability)   [已完成]
+├─ 深度兼容 OpenViking 原生内核、AGFS 虚拟文件系统与 FastMCP 协议
+├─ 现代化 Web Studio 座舱：实验场全屏画布、技能管理、会话历史回溯
+└─ 实时系统遥测大盘：精准 Token 分类审计 (Embedding / Rerank / VLM)、上下文热力图
+
+阶段二：自适应语义压缩与双层运行时 (Adaptive Loop & Compression) [进行中]
+├─ 两层事件循环架构 (Two-Tier Agent Loop)：外层生命周期重试护卫 + 内层工具链快速收敛
+├─ 状态快速感知器：基于 Merkle Tree 结构实现亚毫秒级上下文哈希变更检测
+├─ 智能上下文脱水矩阵：自适应长文本切片与语义无损提纯，杜绝长程会话 Token 膨胀
+└─ 客户端弹性防护：完善 404 失效轮询熔断与网络抖动退避机制
+
+阶段三：自主进化飞轮与智能体网格 (Evolution Flywheel & Agent Mesh) [规划中]
+├─ 踩坑经验自动结晶 (Self-Evolving Flywheel)：Agent 解决复杂工程难题后自动提取 SOP 存入体外大脑
+├─ 多 Agent 对等协作网格：支持跨节点、跨工作区的无缝记忆流交换与分布式联合检索
+└─ 企业级零信任安全隔离：敏感凭据自动化阻断防御与细粒度租户权限体系
 ```
 
 ---
 
 ## 🌐 标准服务端口矩阵 (SSOT Service Matrix)
 
-| 端口/节点 | 角色与功能 | 协议与入口 | 常驻管理指令 |
-| :--- | :--- | :--- | :--- |
-| **`1933`** | OpenViking 核心引擎 (FastAPI / FastMCP / `/studio`) | `http://127.0.0.1:1933` | `systemctl --user restart openviking.service` |
-| **`1936`** | OpenVikingStudio Vite 热更开发测试环境 | `http://127.0.0.1:1936` | `systemctl --user restart openviking-studio-dev.service` |
-| **`13100`** | Mac Studio M3 Ultra 256G 远程算力节点 | FRP 隧道 (`tunnel.internal`) | `ssh -p 13100 user@tunnel.internal` |
-| **`8317`** | CPA 集中智能网关 (auto-router) | `http://127.0.0.1:8317/v1` | `cpa status` |
+| 服务名称 | 端口 | 角色与功能 | 协议与入口 | 常驻推荐管理方式 |
+| :--- | :--- | :--- | :--- | :--- |
+| **OpenViking 核心服务** | **`1933`** | 统一 REST API、FastMCP 端点与内嵌 Web Studio | `http://127.0.0.1:1933` | `systemctl --user restart openviking.service` |
+| **Web Studio 开发服务** | **`1936`** | 前端 Vite 热更开发与测试工作台（可选） | `http://127.0.0.1:1936` | `pnpm run dev` |
 
 ---
 
 ## ⚡ 快速上手 (Quick Start)
 
-### 1. 克隆与安装依赖
+### 1. 克隆仓库与安装依赖
 
 ```bash
 git clone https://github.com/skloxo/OpenVikingStudio.git
 cd OpenVikingStudio
 
-# 安装 Python 后端可编辑依赖
+# 安装 Python 后端核心引擎 (建议在虚拟环境中执行)
 pip install -e .
 
-# 安装前端依赖
+# 安装前端 Web Studio 依赖
 pnpm install
 ```
 
 ### 2. 启动服务
 
 ```bash
-# 启动后端核心引擎 (Port 1933)
+# 1. 启动后端核心引擎 (默认监听 1933 端口)
 openviking-server --config ~/.openviking/ov.conf --host 0.0.0.0 --port 1933
 
-# 启动前端 Web Studio (Port 1936)
+# 2. 启动前端开发调试工作台 (Port 1936，生产环境可直接访问 1933/studio)
 pnpm run dev
 ```
 
 浏览器打开 `http://127.0.0.1:1936`，即刻进入 OpenViking Studio 全景控制台。
 
-### 3. 运行全套自动化测试
+### 3. 运行质量保障测试
 
 ```bash
-# 运行后端全量测试套件 (2,173 项用例)
-pytest -o addopts="" tests/unit tests/parse tests/agfs
+# 运行后端全量单元与检索测试 (2,170+ 项用例)
+pytest tests/unit tests/parse tests/agfs
 
-# 执行前端生产打包验证
+# 前端生产打包校验
 npm run build
 ```
 
 ---
 
-## 📚 研发规范与工程法则 (SSOT Documents)
+## 🤝 开源致敬与说明
 
-| 物理主文档 | 核心内容 | 关联路径 |
-| :--- | :--- | :--- |
-| 🤖 **`AGENTS.md`** | **唯一研发法则**：开发哲学、性冷淡视觉规范、四大绝对红线 | [`.agents/AGENTS.md`](.agents/AGENTS.md) |
-| 🗺️ **`BLUEPRINT.md`** | **唯一研发大蓝图**：信息熵治理、分布式算力、多引擎压缩与基准测试 SOP | [`.agents/BLUEPRINT.md`](.agents/BLUEPRINT.md) |
-| 📋 **`REFACTORING_PLAN.md`** | **唯一任务卡片总看板**：所有活跃工单、11 大可视化专项矩阵、版本交付履历 | [`REFACTORING_PLAN.md`](REFACTORING_PLAN.md) |
+- **内核致敬**：感谢火山引擎开源的 [OpenViking](https://github.com/volcengine/OpenViking) 核心体系，为大模型 Agent 上下文管理树立了优秀的规范与基础。
+- **定位原则**：本项目作为社区深度演进的控制台与工作台版本，坚持与上游协议 100% 兼容，代码高内聚、依赖极简、向光演进。
 
 ---
 
 ## 📄 许可证 (License)
 
-Apache-2.0 License © 2026 OpenViking Team & Contributors.
+本项目基于 [Apache-2.0 License](LICENSE) 协议开源。
