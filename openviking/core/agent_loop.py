@@ -23,6 +23,7 @@ import time
 from typing import Any, Callable, Dict, List, Optional
 
 from openviking.core.hook_aspects import AspectContext, AspectDecisionType, HookAspectRegistry
+from openviking.core.agent_loop_telemetry import get_agent_loop_telemetry_collector
 
 logger = logging.getLogger(__name__)
 
@@ -105,6 +106,7 @@ class TwoTierAgentLoop:
         with self._lock:
             self._pending_messages.append(message)
             logger.debug(f"[TwoTierAgentLoop] User interrupt queued: {message.content[:50]}...")
+            get_agent_loop_telemetry_collector().record_interjection_queued(1)
 
     def abort(self, reason: str = "User aborted") -> None:
         """Layer 3: Cooperative cancellation signal."""
@@ -123,6 +125,8 @@ class TwoTierAgentLoop:
         with self._lock:
             drained = list(self._pending_messages)
             self._pending_messages.clear()
+            if drained:
+                get_agent_loop_telemetry_collector().record_interjection_drained(len(drained))
             return drained
 
     def _invoke_model_with_defense(self, messages: List[AgentMessage]) -> AgentMessage:
@@ -135,11 +139,13 @@ class TwoTierAgentLoop:
             except Exception as e:
                 retries += 1
                 last_exception = e
+                get_agent_loop_telemetry_collector().record_model_retry(exhausted=False)
                 logger.warning(
                     f"[TwoTierAgentLoop:ModelDefense] Invocation attempt {retries} failed: {e}. Retrying..."
                 )
                 if retries < self._config.max_retries:
                     time.sleep(self._config.retry_delay_sec * retries)
+        get_agent_loop_telemetry_collector().record_model_retry(exhausted=True)
         raise RuntimeError(f"Model defense exhausted all {self._config.max_retries} retries: {last_exception}") from last_exception
 
     def run_turn(
@@ -152,11 +158,14 @@ class TwoTierAgentLoop:
         """
         self._abort_signal.clear()
         self._abort_reason = None
-        with self._lock:
-            self._pending_messages.clear()
 
         history: List[AgentMessage] = list(context_messages or [])
         history.append(AgentMessage(role="user", content=initial_prompt))
+
+        # Drain any interrupts queued prior to turn start (Zero Message Loss)
+        pre_queued = self._drain_pending_messages()
+        for p_msg in pre_queued:
+            history.append(p_msg)
 
         inner_turn = 0
         has_more_tool_calls = True
@@ -254,12 +263,14 @@ class TwoTierAgentLoop:
                         )
                         history.append(final_message)
                         logger.info(f"[TwoTierAgentLoop] Early brake triggered by tool {tool_name}. Halting turn.")
+                        get_agent_loop_telemetry_collector().record_active_brake(tool_name)
                         break
 
                 if terminated_early:
                     break
 
             if self._abort_signal.is_set():
+                get_agent_loop_telemetry_collector().record_turn_finished("aborted", inner_turn, terminated_early)
                 return TurnResult(
                     status=AgentLoopStatus.ABORTED,
                     final_message=final_message,
@@ -269,6 +280,7 @@ class TwoTierAgentLoop:
                     aborted_reason=self._abort_reason,
                 )
 
+            get_agent_loop_telemetry_collector().record_turn_finished("completed", inner_turn, terminated_early)
             return TurnResult(
                 status=AgentLoopStatus.COMPLETED,
                 final_message=final_message,
@@ -279,6 +291,7 @@ class TwoTierAgentLoop:
 
         except Exception as e:
             logger.exception(f"[TwoTierAgentLoop] Turn failed: {e}")
+            get_agent_loop_telemetry_collector().record_turn_finished("failed", inner_turn, terminated_early)
             return TurnResult(
                 status=AgentLoopStatus.FAILED,
                 final_message=final_message,
