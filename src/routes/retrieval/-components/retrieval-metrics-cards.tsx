@@ -36,9 +36,9 @@ export function RetrievalMetricsCards({
           <span className="font-mono text-xl font-bold tabular-nums text-foreground">
             {compositeScore.toFixed(3)}
           </span>
-          <span className="font-mono text-[11px] text-muted-foreground ml-1">/ 1.000</span>
+          <span className="font-mono text-xs text-muted-foreground ml-1">/ 1.000</span>
         </div>
-        <p className="text-[11px] text-muted-foreground truncate">
+        <p className="text-xs text-muted-foreground truncate">
           {t('metrics.compositeNote', '门禁基准 ≥ 0.700 · 状态健康')}
         </p>
       </Card>
@@ -56,7 +56,7 @@ export function RetrievalMetricsCards({
             {avgLatencyMs.toFixed(1)}ms
           </span>
         </div>
-        <p className="text-[11px] text-muted-foreground truncate">
+        <p className="text-xs text-muted-foreground truncate">
           {t('metrics.avgLatencyNote', '向量搜索 12ms · 语义重排 6ms')}
         </p>
       </Card>
@@ -74,7 +74,7 @@ export function RetrievalMetricsCards({
             {(hitRate * 100).toFixed(1)}%
           </span>
         </div>
-        <p className="text-[11px] text-muted-foreground truncate">
+        <p className="text-xs text-muted-foreground truncate">
           {t('metrics.hitRateNote', '10/10 金标用例全部精准召回')}
         </p>
       </Card>
@@ -92,7 +92,7 @@ export function RetrievalMetricsCards({
             {(contextPrecision * 100).toFixed(1)}%
           </span>
         </div>
-        <p className="text-[11px] text-muted-foreground truncate">
+        <p className="text-xs text-muted-foreground truncate">
           {t('metrics.purityRateNote', '0 孤儿切片泄露 · 噪音已隔离')}
         </p>
       </Card>

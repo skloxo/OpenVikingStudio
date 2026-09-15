@@ -302,7 +302,7 @@ export function AgentPanel({
                         <span className="block truncate text-sm font-medium text-foreground">
                           {title}
                         </span>
-                        <span className="block truncate font-mono text-[11px] text-muted-foreground">
+                        <span className="block truncate font-mono text-xs text-muted-foreground">
                           {session.session_id}
                         </span>
                       </span>

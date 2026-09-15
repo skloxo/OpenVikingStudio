@@ -45,7 +45,7 @@ export function TasksMetricsCards({
               {kpiData.successRate.toFixed(1)}%
             </span>
           </div>
-          <p className="text-[11px] text-muted-foreground truncate">
+          <p className="text-xs text-muted-foreground truncate">
             {t('pipeline.kpi.scopeNote', { total: kpiData.total, failed: kpiData.failed })}
           </p>
         </Card>
@@ -63,7 +63,7 @@ export function TasksMetricsCards({
                 : `${kpiData.avgDurationSec.toFixed(1)}s`}
             </span>
           </div>
-          <p className="text-[11px] text-muted-foreground truncate">
+          <p className="text-xs text-muted-foreground truncate">
             {t('pipeline.kpi.avgNote')}
           </p>
         </Card>
@@ -79,7 +79,7 @@ export function TasksMetricsCards({
               {t('pipeline.kpi.tasksCount', { count: kpiData.total })}
             </span>
           </div>
-          <p className="text-[11px] text-muted-foreground truncate">
+          <p className="text-xs text-muted-foreground truncate">
             {t('pipeline.kpi.completedNote', { completed: kpiData.completed })}
           </p>
         </Card>
@@ -95,7 +95,7 @@ export function TasksMetricsCards({
               {kpiData.running} / {kpiData.pending}
             </span>
           </div>
-          <p className="text-[11px] text-muted-foreground truncate">
+          <p className="text-xs text-muted-foreground truncate">
             {t('pipeline.kpi.activeNote')}
           </p>
         </Card>

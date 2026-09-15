@@ -187,7 +187,7 @@ export function RetrievalBenchmarkDrawer() {
           >
             <FlaskConicalIcon className="size-3.5 text-cyan-500" />
             <span>{t('benchmark.button')}</span>
-            <Badge variant="outline" className="text-[11px] px-1 py-0 h-4 border-cyan-500/40 text-cyan-500 font-mono">
+            <Badge variant="outline" className="text-xs px-1 py-0 h-4 border-cyan-500/40 text-cyan-500 font-mono">
               RAGAS
             </Badge>
           </Button>
@@ -212,7 +212,7 @@ export function RetrievalBenchmarkDrawer() {
                 {mode === 'ragas' ? t('benchmark.ragasDrawerTitle', 'RAGAS 自动化评测实验室 (04A~04B)') : t('benchmark.drawerTitle')}
               </SheetTitle>
             </div>
-            <Badge variant="outline" className="text-[11px] font-mono px-2 py-0.5 border-border shrink-0">
+            <Badge variant="outline" className="text-xs font-mono px-2 py-0.5 border-border shrink-0">
               {mode === 'ragas' ? 'Ragas v0.2+' : 'Fast / 1933'}
             </Badge>
           </div>

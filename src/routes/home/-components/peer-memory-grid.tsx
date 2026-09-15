@@ -64,14 +64,14 @@ export function PeerMemoryGrid({
     switch (status) {
       case 'running':
         return (
-          <span className="inline-flex items-center gap-1 rounded-xs border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 text-[11px] font-mono font-medium text-cyan-600 dark:bg-cyan-500/20 dark:text-cyan-400">
+          <span className="inline-flex items-center gap-1 rounded-xs border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 text-xs font-mono font-medium text-cyan-600 dark:bg-cyan-500/20 dark:text-cyan-400">
             <span className="size-1.5 rounded-full bg-cyan-500 animate-pulse" />
             {t('peerAgents.statusRunning')}
           </span>
         )
       case 'ready':
         return (
-          <span className="inline-flex items-center gap-1 rounded-xs border border-sky-500/30 bg-sky-500/10 px-1.5 py-0.5 text-[11px] font-mono font-medium text-sky-600 dark:bg-sky-500/20 dark:text-sky-400">
+          <span className="inline-flex items-center gap-1 rounded-xs border border-sky-500/30 bg-sky-500/10 px-1.5 py-0.5 text-xs font-mono font-medium text-sky-600 dark:bg-sky-500/20 dark:text-sky-400">
             <span className="size-1.5 rounded-full bg-sky-500" />
             {t('peerAgents.statusReady')}
           </span>
@@ -79,7 +79,7 @@ export function PeerMemoryGrid({
       case 'standby':
       default:
         return (
-          <span className="inline-flex items-center gap-1 rounded-xs border border-slate-500/30 bg-slate-500/10 px-1.5 py-0.5 text-[11px] font-mono font-medium text-slate-500 dark:bg-slate-500/20 dark:text-slate-400">
+          <span className="inline-flex items-center gap-1 rounded-xs border border-slate-500/30 bg-slate-500/10 px-1.5 py-0.5 text-xs font-mono font-medium text-slate-500 dark:bg-slate-500/20 dark:text-slate-400">
             <span className="size-1.5 rounded-full bg-slate-400" />
             {t('peerAgents.statusStandby')}
           </span>
@@ -99,13 +99,13 @@ export function PeerMemoryGrid({
             <h3 className="text-sm font-semibold text-foreground tracking-tight">
               🧠 {t('peerAgents.title')}
             </h3>
-            <p className="text-[11px] text-muted-foreground font-mono">
+            <p className="text-xs text-muted-foreground font-mono">
               {t('peerAgents.subtitle')}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1 rounded-xs border border-border/60 bg-muted/40 px-2 py-0.5 text-[11px] font-mono tabular-nums text-muted-foreground">
+          <span className="inline-flex items-center gap-1 rounded-xs border border-border/60 bg-muted/40 px-2 py-0.5 text-xs font-mono tabular-nums text-muted-foreground">
             <ShieldCheck className="size-3 text-cyan-500" />
             {t('peerAgents.agfsMesh')}
           </span>
@@ -142,7 +142,7 @@ export function PeerMemoryGrid({
                     <div className="truncate min-w-0">
                       <div className="flex items-center gap-1.5 truncate">
                         {peer.id.includes('@') && (
-                          <span className="rounded-xs border border-border/80 bg-muted/80 px-1 py-0.2 text-[11px] font-mono font-medium text-foreground shrink-0">
+                          <span className="rounded-xs border border-border/80 bg-muted/80 px-1 py-0.2 text-xs font-mono font-medium text-foreground shrink-0">
                             {peer.id.split('@')[1].toUpperCase() === '3070' ? 'RTX3070' : peer.id.split('@')[1].toUpperCase()}
                           </span>
                         )}
@@ -152,7 +152,7 @@ export function PeerMemoryGrid({
                             : t(`peerAgents.agents.${peer.nameKey}`, { defaultValue: peer.id })}
                         </h4>
                       </div>
-                      <p className="truncate text-[11px] text-muted-foreground font-sans mt-0.5">
+                      <p className="truncate text-xs text-muted-foreground font-sans mt-0.5">
                         {peer.role || t(`peerAgents.roles.${peer.nameKey}`, { defaultValue: peer.id })}
                       </p>
                     </div>
@@ -161,7 +161,7 @@ export function PeerMemoryGrid({
                 </div>
 
                 {/* 消息/调用沉淀数量 */}
-                <div className="mt-2 flex items-center justify-between text-[11px] border-t border-border/40 pt-1.5">
+                <div className="mt-2 flex items-center justify-between text-xs border-t border-border/40 pt-1.5">
                   <span className="text-muted-foreground font-sans">
                     {t('peerAgents.messagesCount')}:
                   </span>
@@ -171,7 +171,7 @@ export function PeerMemoryGrid({
                 </div>
 
                 {/* 对接通道 */}
-                <div className="mt-1 flex items-center justify-between text-[11px]">
+                <div className="mt-1 flex items-center justify-between text-xs">
                   <span className="text-muted-foreground font-sans">
                     {t('peerAgents.connectionType')}:
                   </span>
@@ -182,7 +182,7 @@ export function PeerMemoryGrid({
               </div>
 
               {/* 节点 URI 路径与时间 */}
-              <div className="mt-2.5 flex items-center justify-between text-[11px] font-mono text-muted-foreground/80 bg-muted/30 px-1.5 py-0.5 rounded-xs">
+              <div className="mt-2.5 flex items-center justify-between text-xs font-mono text-muted-foreground/80 bg-muted/30 px-1.5 py-0.5 rounded-xs">
                 <span className="truncate max-w-42.5" title={peer.uriNode}>
                   {peer.uriNode}
                 </span>

@@ -210,7 +210,7 @@ export function HttpStatusChart({
                     <span className="font-sans font-medium text-foreground">{item.label}</span>
                   </div>
                   <span className="font-bold text-foreground tabular-nums">
-                    {item.count.toLocaleString()} <span className="text-[10px] text-muted-foreground font-normal">({percent}%)</span>
+                    {item.count.toLocaleString()} <span className="text-xs text-muted-foreground font-normal">({percent}%)</span>
                   </span>
                 </div>
               )

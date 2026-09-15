@@ -114,7 +114,7 @@ export function RerankLatencyChart({
                   </TooltipContent>
                 </Tooltip>
               </div>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {t('hardwareCharts.rerankLatencySubtitle', {
                   defaultValue: 'P50 / P90 / P99 重排精选与打分耗时分位数',
                 })}
@@ -122,10 +122,10 @@ export function RerankLatencyChart({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 font-mono text-[11px]">
+          <div className="flex items-center gap-2 font-mono text-xs">
             <Badge
               variant="outline"
-              className="gap-1 border-border/60 bg-muted/20 text-muted-foreground font-normal text-[11px]"
+              className="gap-1 border-border/60 bg-muted/20 text-muted-foreground font-normal text-xs"
             >
               <LayersIcon className="size-3 text-cyan-500" />
               {t('hardwareCharts.totalSamples', {
@@ -135,7 +135,7 @@ export function RerankLatencyChart({
             </Badge>
             <Badge
               variant="outline"
-              className="gap-1 border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-normal text-[11px]"
+              className="gap-1 border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-normal text-xs"
             >
               <TimerIcon className="size-3" />
               {t('hardwareCharts.avgLatency', {
@@ -180,7 +180,7 @@ export function RerankLatencyChart({
                         <div className="mt-1 font-mono text-cyan-500">
                           {t('hardwareCharts.latencyLabel', { defaultValue: '耗时' })}: {formatMs(item.latencyMs)}
                         </div>
-                        <div className="text-muted-foreground font-mono text-[11px]">
+                        <div className="text-muted-foreground font-mono text-xs">
                           {t('hardwareCharts.samplesLabel', { defaultValue: '覆盖样本' })}: {item.sampleCount.toLocaleString()} ({item.samplePercent})
                         </div>
                       </div>
@@ -202,13 +202,13 @@ export function RerankLatencyChart({
         <div className="mt-4 grid grid-cols-3 gap-2 border-t border-border/40 pt-3 text-center">
           {data.map((item) => (
             <div key={item.percentile} className="flex flex-col gap-0.5">
-              <span className="text-[11px] text-muted-foreground font-medium">
+              <span className="text-xs text-muted-foreground font-medium">
                 {item.percentile}
               </span>
               <span className="font-mono text-xs font-semibold text-foreground">
                 {formatMs(item.latencyMs)}
               </span>
-              <span className="text-[11px] text-muted-foreground font-mono">
+              <span className="text-xs text-muted-foreground font-mono">
                 {item.sampleCount.toLocaleString()} 次 ({item.samplePercent})
               </span>
             </div>

@@ -118,5 +118,45 @@ describe('task record helpers', () => {
       name: 'default',
       raw: 'default',
     })
+
+    // Infer node attribution from resourceId when initiator is generic 'Agent'
+    expect(
+      parseInitiator(
+        'Agent',
+        'valet_parking',
+        'viking://resources/staging/3070_sessions/2026-09-15_53f0ab61.md',
+      ),
+    ).toEqual({
+      isAgent: true,
+      isUser: false,
+      name: '[RTX3070] Antigravity',
+      raw: 'Agent',
+    })
+
+    expect(
+      parseInitiator(
+        'Agent',
+        'valet_parking',
+        'viking://resources/staging/2080ti_sessions/test.md',
+      ),
+    ).toEqual({
+      isAgent: true,
+      isUser: false,
+      name: '[2080TI] Antigravity',
+      raw: 'Agent',
+    })
+
+    expect(
+      parseInitiator(
+        'Agent',
+        'valet_parking',
+        'viking://resources/staging/mac_studio_sessions/test.md',
+      ),
+    ).toEqual({
+      isAgent: true,
+      isUser: false,
+      name: '[MacStudio] Antigravity',
+      raw: 'Agent',
+    })
   })
 })

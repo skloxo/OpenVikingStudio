@@ -28,7 +28,7 @@ class GraphErrorBoundary extends React.Component<
         <div className="flex size-full flex-col items-center justify-center gap-3 bg-card/50 p-6 text-center">
           <div className="rounded-md border border-rose-500/30 bg-rose-500/10 p-4 text-rose-600 dark:text-rose-400 max-w-md font-mono text-xs">
             <h3 className="font-bold text-sm mb-1">WebGL / 3D 渲染器初始化异常</h3>
-            <p className="text-[11px] opacity-90 leading-relaxed">
+            <p className="text-xs opacity-90 leading-relaxed">
               {this.state.error?.message || '画布初始化失败，可能是由于 WebGL 上下文丢失或 GPU 硬件加速受限。'}
             </p>
             <button
@@ -103,7 +103,7 @@ function GraphRouteComponent() {
           <h1 className="text-xs font-bold tracking-tight text-foreground flex items-center gap-2">
             <span>{t('graphPage.title', { defaultValue: 'OpenViking 全量知识关系图谱' })}</span>
           </h1>
-          <p className="text-[11px] text-muted-foreground font-mono">
+          <p className="text-xs text-muted-foreground font-mono">
             {nodeCount} 个全量 URI 知识节点与 3,890 条拓扑关联边
           </p>
         </div>

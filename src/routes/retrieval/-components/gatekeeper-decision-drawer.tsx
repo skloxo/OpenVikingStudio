@@ -173,25 +173,25 @@ export function GatekeeperDecisionDrawer({
     switch (action) {
       case 'noop':
         return (
-          <Badge variant="outline" className="border-border/60 bg-muted/40 text-muted-foreground text-[11px] font-mono font-medium px-2 py-0.5">
+          <Badge variant="outline" className="border-border/60 bg-muted/40 text-muted-foreground text-xs font-mono font-medium px-2 py-0.5">
             {t('gatekeeper.noop')}
           </Badge>
         )
       case 'update':
         return (
-          <Badge variant="outline" className="border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[11px] font-mono font-medium px-2 py-0.5">
+          <Badge variant="outline" className="border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs font-mono font-medium px-2 py-0.5">
             {t('gatekeeper.update')}
           </Badge>
         )
       case 'delete':
         return (
-          <Badge variant="outline" className="border-rose-500/40 bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[11px] font-mono font-medium px-2 py-0.5">
+          <Badge variant="outline" className="border-rose-500/40 bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-mono font-medium px-2 py-0.5">
             {t('gatekeeper.delete')}
           </Badge>
         )
       default:
         return (
-          <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary text-[11px] font-mono font-medium px-2 py-0.5">
+          <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary text-xs font-mono font-medium px-2 py-0.5">
             {t('gatekeeper.add')}
           </Badge>
         )
@@ -231,7 +231,7 @@ export function GatekeeperDecisionDrawer({
                     <button
                       type="button"
                       onClick={() => handleCopy(decision.id!, 'id')}
-                      className="flex items-center gap-1 font-mono text-[11px] text-muted-foreground bg-muted/40 hover:bg-muted/70 rounded px-1.5 py-0.5 border border-border/50 transition-colors cursor-pointer"
+                      className="flex items-center gap-1 font-mono text-xs text-muted-foreground bg-muted/40 hover:bg-muted/70 rounded px-1.5 py-0.5 border border-border/50 transition-colors cursor-pointer"
                       title={t('gatekeeper.copySuccess')}
                     >
                       <span>#{decision.id}</span>
@@ -250,7 +250,7 @@ export function GatekeeperDecisionDrawer({
             </div>
 
             {/* 右侧微胶囊元数据 */}
-            <div className="hidden sm:flex items-center gap-2 shrink-0 text-[11px] text-muted-foreground font-mono">
+            <div className="hidden sm:flex items-center gap-2 shrink-0 text-xs text-muted-foreground font-mono">
               <span className="flex items-center gap-1 bg-muted/40 px-2 py-0.5 rounded border border-border/40">
                 <HardDriveIcon className="size-3 text-primary/80" />
                 <span>{formatBytes(decision.saved_bytes)}</span>
@@ -271,10 +271,10 @@ export function GatekeeperDecisionDrawer({
             <div className="flex flex-col gap-2.5 rounded-lg border border-border/60 bg-muted/20 p-3.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] font-medium text-muted-foreground">
+                  <span className="text-xs font-medium text-muted-foreground">
                     {t('gatekeeper.similarity')}
                   </span>
-                  <Badge variant="outline" className="font-mono text-[11px] px-1.5 py-0 border-border/60">
+                  <Badge variant="outline" className="font-mono text-xs px-1.5 py-0 border-border/60">
                     {decision.similarity >= 0.97
                       ? t('gatekeeper.simBandHigh')
                       : decision.similarity >= 0.92
@@ -301,7 +301,7 @@ export function GatekeeperDecisionDrawer({
                 </span>
               </div>
               <div className="pt-2 border-t border-border/40">
-                <span className="text-[11px] font-medium text-muted-foreground block mb-1">
+                <span className="text-xs font-medium text-muted-foreground block mb-1">
                   {t('gatekeeper.decisionReason')}
                 </span>
                 <p className="text-xs leading-relaxed text-foreground/90 whitespace-pre-wrap">
@@ -316,13 +316,13 @@ export function GatekeeperDecisionDrawer({
                 {decision.uri && (
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-[11px] font-medium text-muted-foreground">
+                      <span className="text-xs font-medium text-muted-foreground">
                         {t('gatekeeper.inputUri')}
                       </span>
                       <button
                         type="button"
                         onClick={() => handleCopy(decision.uri!, 'uri')}
-                        className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground cursor-pointer"
+                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
                       >
                         {copiedUri ? <CheckIcon className="size-3 text-primary" /> : <CopyIcon className="size-3" />}
                         <span>{copiedUri ? t('gatekeeper.copySuccessUri') : t('gatekeeper.copyUri')}</span>
@@ -337,13 +337,13 @@ export function GatekeeperDecisionDrawer({
                 {decision.matched_uri && (
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-[11px] font-medium text-muted-foreground">
+                      <span className="text-xs font-medium text-muted-foreground">
                         {t('gatekeeper.matchedUri')}
                       </span>
                       <button
                         type="button"
                         onClick={() => handleCopy(decision.matched_uri!, 'uri')}
-                        className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground cursor-pointer"
+                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
                         title={t('gatekeeper.copyUri')}
                       >
                         <CopyIcon className="size-3" />
@@ -360,11 +360,11 @@ export function GatekeeperDecisionDrawer({
                 <div className="pt-2 border-t border-border/40">
                   <div className="flex items-center gap-1.5 mb-1">
                     <FileTextIcon className="size-3.5 text-muted-foreground" />
-                    <span className="text-[11px] font-medium text-muted-foreground">
+                    <span className="text-xs font-medium text-muted-foreground">
                       {t('gatekeeper.viewSnippet')}
                     </span>
                   </div>
-                  <p className="max-h-24 overflow-y-auto whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-muted-foreground rounded bg-background/80 p-2 border border-border/40">
+                  <p className="max-h-24 overflow-y-auto whitespace-pre-wrap font-mono text-xs leading-relaxed text-muted-foreground rounded bg-background/80 p-2 border border-border/40">
                     {decision.matched_text_snippet}
                   </p>
                 </div>
@@ -383,7 +383,7 @@ export function GatekeeperDecisionDrawer({
           )}
 
           {/* 移动端兜底元数据栏 */}
-          <div className="flex sm:hidden items-center justify-between rounded-md border border-border/40 bg-muted/10 p-2.5 text-[11px] text-muted-foreground">
+          <div className="flex sm:hidden items-center justify-between rounded-md border border-border/40 bg-muted/10 p-2.5 text-xs text-muted-foreground">
             <div className="flex items-center gap-1.5">
               <HardDriveIcon className="size-3.5" />
               <span>{t('gatekeeper.savedBytes')}:</span>

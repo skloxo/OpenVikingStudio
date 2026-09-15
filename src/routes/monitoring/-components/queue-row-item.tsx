@@ -68,7 +68,7 @@ export function QueueRowItem({ row, isRowTotal, isTaskCard = false }: QueueRowIt
   return (
     <div
       className={cn(
-        'grid grid-cols-12 gap-1 items-center px-2.5 py-1 text-[11px] rounded font-mono transition-colors leading-tight',
+        'grid grid-cols-12 gap-1 items-center px-2.5 py-1 text-xs rounded font-mono transition-colors leading-tight',
         isTotalRow
           ? 'mt-auto bg-muted/60 font-bold border border-border/80 text-foreground shadow-2xs py-1.5'
           : 'bg-muted/20 hover:bg-muted/40 text-foreground/90',
@@ -98,29 +98,29 @@ export function QueueRowItem({ row, isRowTotal, isTaskCard = false }: QueueRowIt
                     <span className="font-sans font-bold text-xs text-foreground">
                       {isZh ? engineDef.nameZh : engineDef.nameEn}
                     </span>
-                    <span className="font-mono text-[10px] text-muted-foreground">{engineDef.key}</span>
+                    <span className="font-mono text-xs text-muted-foreground">{engineDef.key}</span>
                   </div>
                 </div>
-                <span className="font-mono text-[10px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+                <span className="font-mono text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
                   {assignedSteps.length} {isZh ? '道工序' : 'Steps'}
                 </span>
               </div>
-              <p className="font-sans text-[11px] text-muted-foreground leading-relaxed">
+              <p className="font-sans text-xs text-muted-foreground leading-relaxed">
                 {isZh ? engineDef.descZh : engineDef.descEn}
               </p>
               {assignedSteps.length > 0 && (
                 <div className="space-y-1.5 pt-1.5 border-t border-border/40">
-                  <span className="font-sans text-[11px] text-muted-foreground font-medium">
+                  <span className="font-sans text-xs text-muted-foreground font-medium">
                     {isZh ? '承接工序清单：' : 'Assigned Steps:'}
                   </span>
                   <div className="flex flex-wrap gap-1.5 pt-0.5">
                     {assignedSteps.map((s) => (
                       <span
                         key={s.id}
-                        className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-sans font-medium bg-muted/60 text-foreground/90 border border-border/50 shadow-2xs"
+                        className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-sans font-medium bg-muted/60 text-foreground/90 border border-border/50 shadow-2xs"
                       >
                         {isZh ? s.nameZh : s.nameEn}{' '}
-                        <span className="font-mono text-[10px] text-muted-foreground ml-1">
+                        <span className="font-mono text-xs text-muted-foreground ml-1">
                           ({isZh ? s.unitZh : s.unitEn})
                         </span>
                       </span>
@@ -153,7 +153,7 @@ export function QueueRowItem({ row, isRowTotal, isTaskCard = false }: QueueRowIt
                 {item.kind === 'single' ? (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="inline-flex items-center px-1 py-px rounded text-[11px] font-sans font-medium bg-muted/60 text-foreground/90 hover:text-foreground hover:bg-muted hover:border-primary/40 cursor-help border border-border/50 whitespace-nowrap shrink-0 transition-all shadow-2xs leading-none">
+                      <span className="inline-flex items-center px-1 py-px rounded text-xs font-sans font-medium bg-muted/60 text-foreground/90 hover:text-foreground hover:bg-muted hover:border-primary/40 cursor-help border border-border/50 whitespace-nowrap shrink-0 transition-all shadow-2xs leading-none">
                         {isZh ? item.step.nameZh : item.step.nameEn}
                       </span>
                     </TooltipTrigger>
@@ -167,15 +167,15 @@ export function QueueRowItem({ row, isRowTotal, isTaskCard = false }: QueueRowIt
                         <span className="font-sans font-bold text-xs text-foreground">
                           {isZh ? item.step.nameZh : item.step.nameEn}
                         </span>
-                        <span className="font-mono text-[10px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
+                        <span className="font-mono text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
                           {isZh ? `单位: ${item.step.unitZh}` : `Unit: ${item.step.unitEn}`}
                         </span>
                       </div>
-                      <p className="font-sans text-[11px] text-muted-foreground leading-relaxed">
+                      <p className="font-sans text-xs text-muted-foreground leading-relaxed">
                         {isZh ? item.step.descriptionZh : item.step.descriptionEn}
                       </p>
-                      <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-border/40 font-mono text-[11px] text-foreground/80">
-                        <span className="font-sans text-[11px] text-muted-foreground">
+                      <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-border/40 font-mono text-xs text-foreground/80">
+                        <span className="font-sans text-xs text-muted-foreground">
                           {isZh ? '承接算子：' : 'Assigned Operator:'}
                         </span>
                         <span className="inline-flex items-center gap-1 font-semibold text-foreground bg-muted/60 px-1.5 py-0.5 rounded border border-border/40">
@@ -186,11 +186,11 @@ export function QueueRowItem({ row, isRowTotal, isTaskCard = false }: QueueRowIt
                     </TooltipContent>
                   </Tooltip>
                 ) : (
-                  <div className="inline-flex items-center gap-1 px-1 py-px rounded text-[11px] font-sans font-medium bg-muted/60 text-foreground/90 border border-border/50 whitespace-nowrap shrink-0 transition-all shadow-2xs leading-none">
+                  <div className="inline-flex items-center gap-1 px-1 py-px rounded text-xs font-sans font-medium bg-muted/60 text-foreground/90 border border-border/50 whitespace-nowrap shrink-0 transition-all shadow-2xs leading-none">
                     {item.steps.map((st, sIdx) => (
                       <React.Fragment key={st.id}>
                         {sIdx > 0 && (
-                          <span className="text-muted-foreground/60 font-mono text-[10px] font-bold select-none px-0.5">
+                          <span className="text-muted-foreground/60 font-mono text-xs font-bold select-none px-0.5">
                             &
                           </span>
                         )}
@@ -210,15 +210,15 @@ export function QueueRowItem({ row, isRowTotal, isTaskCard = false }: QueueRowIt
                               <span className="font-sans font-bold text-xs text-foreground">
                                 {isZh ? st.nameZh : st.nameEn}
                               </span>
-                              <span className="font-mono text-[10px] font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
+                              <span className="font-mono text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
                                 {isZh ? `单位: ${st.unitZh}` : `Unit: ${st.unitEn}`}
                               </span>
                             </div>
-                            <p className="font-sans text-[11px] text-muted-foreground leading-relaxed">
+                            <p className="font-sans text-xs text-muted-foreground leading-relaxed">
                               {isZh ? st.descriptionZh : st.descriptionEn}
                             </p>
-                            <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-border/40 font-mono text-[11px] text-foreground/80">
-                              <span className="font-sans text-[11px] text-muted-foreground">
+                            <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-border/40 font-mono text-xs text-foreground/80">
+                              <span className="font-sans text-xs text-muted-foreground">
                                 {isZh ? '承接算子：' : 'Assigned Operator:'}
                               </span>
                               <span className="inline-flex items-center gap-1 font-semibold text-foreground bg-muted/60 px-1.5 py-0.5 rounded border border-border/40">

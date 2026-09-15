@@ -36,7 +36,7 @@ export function BenchmarkResultsTable({
     <div className="w-full overflow-x-auto min-w-0 rounded-md border border-border/80 bg-background shadow-xs">
       <table className="w-full min-w-[700px] text-left text-xs border-collapse">
         <thead>
-          <tr className="border-b bg-muted/30 text-[11px] text-muted-foreground font-medium">
+          <tr className="border-b bg-muted/30 text-xs text-muted-foreground font-medium">
             <th className="py-2.5 px-3 min-w-[180px]">{t('benchmark.table.query')}</th>
             <th className="py-2.5 px-3 min-w-[160px]">{t('benchmark.table.top1')}</th>
             {mode === 'ragas' ? (
@@ -93,25 +93,25 @@ export function BenchmarkResultsTable({
                         <span className="font-medium text-foreground truncate block" title={result.top1Title}>
                           {result.top1Title}
                         </span>
-                        <span className="block font-mono text-[11px] text-muted-foreground truncate" title={result.top1Uri}>
+                        <span className="block font-mono text-xs text-muted-foreground truncate" title={result.top1Uri}>
                           {result.top1Uri}
                         </span>
                       </div>
                     ) : (
-                      <span className="text-[11px] text-muted-foreground italic">--</span>
+                      <span className="text-xs text-muted-foreground italic">--</span>
                     )}
                   </td>
 
                   {mode === 'ragas' ? (
                     <>
-                      <td className="py-2 px-2 text-right font-mono text-[11px] tabular-nums">
+                      <td className="py-2 px-2 text-right font-mono text-xs tabular-nums">
                         {result?.ragas ? (
                           <span className={result.ragas.contextPrecision >= 0.7 ? 'text-cyan-500 font-semibold' : 'text-foreground'}>
                             {result.ragas.contextPrecision.toFixed(2)}
                           </span>
                         ) : '--'}
                       </td>
-                      <td className="py-2 px-2 text-right font-mono text-[11px] tabular-nums">
+                      <td className="py-2 px-2 text-right font-mono text-xs tabular-nums">
                         {result?.ragas ? (
                           <span className={result.ragas.faithfulness >= 0.7 ? 'text-cyan-500 font-semibold' : 'text-foreground'}>
                             {result.ragas.faithfulness.toFixed(2)}
@@ -138,32 +138,32 @@ export function BenchmarkResultsTable({
                     </td>
                   )}
 
-                  <td className="py-2 px-3 text-right font-mono text-[11px] text-muted-foreground tabular-nums">
+                  <td className="py-2 px-3 text-right font-mono text-xs text-muted-foreground tabular-nums">
                     {typeof result?.latencyMs === 'number' ? `${result.latencyMs}ms` : '--'}
                   </td>
 
                   <td className="py-2 px-3 text-center">
                     {status === 'running' ? (
-                      <Badge variant="outline" className="px-1.5 py-0 text-[11px] border-cyan-500/40 text-cyan-500 gap-1 animate-pulse">
+                      <Badge variant="outline" className="px-1.5 py-0 text-xs border-cyan-500/40 text-cyan-500 gap-1 animate-pulse">
                         <Loader2Icon className="size-2.5 animate-spin" />
                         <span>{t('benchmark.statusRun', '运行中')}</span>
                       </Badge>
                     ) : status === 'hit' ? (
-                      <Badge variant="outline" className="px-1.5 py-0 text-[11px] border-cyan-500/40 bg-cyan-500/10 text-cyan-500 gap-1">
+                      <Badge variant="outline" className="px-1.5 py-0 text-xs border-cyan-500/40 bg-cyan-500/10 text-cyan-500 gap-1">
                         <CheckCircle2Icon className="size-2.5" />
                         <span>{t('benchmark.statusHit')}</span>
                       </Badge>
                     ) : status === 'miss' ? (
-                      <Badge variant="outline" className="px-1.5 py-0 text-[11px] border-border text-muted-foreground gap-1">
+                      <Badge variant="outline" className="px-1.5 py-0 text-xs border-border text-muted-foreground gap-1">
                         <XCircleIcon className="size-2.5" />
                         <span>{t('benchmark.statusMiss')}</span>
                       </Badge>
                     ) : status === 'error' ? (
-                      <Badge variant="outline" className="px-1.5 py-0 text-[11px] border-rose-500/40 bg-rose-500/10 text-rose-500 gap-1">
+                      <Badge variant="outline" className="px-1.5 py-0 text-xs border-rose-500/40 bg-rose-500/10 text-rose-500 gap-1">
                         <span>{t('benchmark.statusError', '异常')}</span>
                       </Badge>
                     ) : (
-                      <span className="text-[11px] text-muted-foreground">--</span>
+                      <span className="text-xs text-muted-foreground">--</span>
                     )}
                   </td>
 
@@ -185,7 +185,7 @@ export function BenchmarkResultsTable({
                 {isExpanded && result?.ragas && (
                   <tr className="bg-muted/10">
                     <td colSpan={mode === 'ragas' ? 8 : 6} className="px-4 py-2.5 text-xs border-y border-cyan-500/20">
-                      <div className="flex flex-wrap items-center gap-5 text-[11px] font-mono text-muted-foreground">
+                      <div className="flex flex-wrap items-center gap-5 text-xs font-mono text-muted-foreground">
                         <div className="flex items-center gap-1.5">
                           <span>{t('benchmark.table.detailPrecision')}:</span>
                           <span className="text-foreground font-bold">{result.ragas.contextPrecision.toFixed(2)}</span>

@@ -50,14 +50,14 @@ export function PrivacyTab() {
                 <CardTitle className="text-sm font-semibold">
                   {t('hub.privacy.title')}
                 </CardTitle>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {t('hub.privacy.description')}
                 </p>
               </div>
             </div>
             <Badge
               variant="outline"
-              className="text-[11px] font-mono border-amber-500/30 bg-amber-500/10 text-amber-500"
+              className="text-xs font-mono border-amber-500/30 bg-amber-500/10 text-amber-500"
             >
               {t('hub.privacy.activeRules')}: 5
             </Badge>
@@ -70,7 +70,7 @@ export function PrivacyTab() {
                 <div className="text-xs font-semibold text-foreground">
                   {t('hub.privacy.toggleMask')}
                 </div>
-                <div className="text-[11px] text-muted-foreground">
+                <div className="text-xs text-muted-foreground">
                   {t('hub.privacy.toggleMaskDesc')}
                 </div>
               </div>
@@ -84,7 +84,7 @@ export function PrivacyTab() {
                 <div className="text-xs font-semibold text-foreground">
                   {t('hub.privacy.piiMask')}
                 </div>
-                <div className="text-[11px] text-muted-foreground">
+                <div className="text-xs text-muted-foreground">
                   {t('hub.privacy.piiMaskDesc')}
                 </div>
               </div>
@@ -96,14 +96,14 @@ export function PrivacyTab() {
           <div className="rounded-md border border-border/80 overflow-hidden mt-2">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="border-b bg-muted/30 text-[11px] text-muted-foreground font-medium">
+                <tr className="border-b bg-muted/30 text-xs text-muted-foreground font-medium">
                   <th className="py-2 px-3">{t('hub.privacy.ruleName')}</th>
                   <th className="py-2 px-3">{t('hub.privacy.rulePattern')}</th>
                   <th className="py-2 px-3">{t('hub.privacy.ruleAction')}</th>
                   <th className="py-2 px-3 text-center">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border/50 font-mono text-[11px]">
+              <tbody className="divide-y divide-border/50 font-mono text-xs">
                 <tr>
                   <td className="py-2 px-3 font-sans font-medium text-foreground">
                     API Key / Token
@@ -117,7 +117,7 @@ export function PrivacyTab() {
                   <td className="py-2 px-3 text-center">
                     <Badge
                       variant="outline"
-                      className="px-1.5 py-0 text-[11px] border-cyan-500/30 text-cyan-500"
+                      className="px-1.5 py-0 text-xs border-cyan-500/30 text-cyan-500"
                     >
                       Active
                     </Badge>
@@ -136,7 +136,7 @@ export function PrivacyTab() {
                   <td className="py-2 px-3 text-center">
                     <Badge
                       variant="outline"
-                      className="px-1.5 py-0 text-[11px] border-cyan-500/30 text-cyan-500"
+                      className="px-1.5 py-0 text-xs border-cyan-500/30 text-cyan-500"
                     >
                       Active
                     </Badge>
@@ -155,7 +155,7 @@ export function PrivacyTab() {
                   <td className="py-2 px-3 text-center">
                     <Badge
                       variant="outline"
-                      className="px-1.5 py-0 text-[11px] border-cyan-500/30 text-cyan-500"
+                      className="px-1.5 py-0 text-xs border-cyan-500/30 text-cyan-500"
                     >
                       Active
                     </Badge>
@@ -174,7 +174,7 @@ export function PrivacyTab() {
                   <td className="py-2 px-3 text-center">
                     <Badge
                       variant="outline"
-                      className="px-1.5 py-0 text-[11px] border-cyan-500/30 text-cyan-500"
+                      className="px-1.5 py-0 text-xs border-cyan-500/30 text-cyan-500"
                     >
                       Active
                     </Badge>
@@ -193,7 +193,7 @@ export function PrivacyTab() {
                   <td className="py-2 px-3 text-center">
                     <Badge
                       variant="outline"
-                      className="px-1.5 py-0 text-[11px] border-cyan-500/30 text-cyan-500"
+                      className="px-1.5 py-0 text-xs border-cyan-500/30 text-cyan-500"
                     >
                       Active
                     </Badge>
@@ -216,7 +216,7 @@ export function PrivacyTab() {
               <CardTitle className="text-sm font-semibold">
                 {t('hub.privacy.playgroundTitle')}
               </CardTitle>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {t('hub.privacy.playgroundDesc')}
               </p>
             </div>

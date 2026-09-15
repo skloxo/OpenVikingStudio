@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { InfoIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '#/components/ui/button'
 import { useSessionMemoryDiffs } from '#/lib/sessions/use-sessions'
@@ -130,7 +131,7 @@ export function UnifiedMemoryImpactView({
           onClick={() => void diffsQuery.refetch()}
           size="xs"
           variant="outline"
-          className="h-6 text-[11px]"
+          className="h-6 text-xs"
         >
           {t('impact.retry', '重试')}
         </Button>
@@ -139,9 +140,30 @@ export function UnifiedMemoryImpactView({
   }
 
   if (totalChanges === 0) {
+    const isCron = session?.session_id.startsWith('cron_')
     return (
-      <div className="flex min-h-24 items-center justify-center p-4 text-center text-xs text-muted-foreground">
-        {emptyText || t('impact.empty', '本次未产生记忆增量变更')}
+      <div className="flex min-h-32 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border/60 bg-muted/20 p-6 text-center">
+        <div className="flex size-8 items-center justify-center rounded-full bg-muted/60 text-muted-foreground">
+          <InfoIcon className="size-4 text-cyan-600 dark:text-cyan-400" />
+        </div>
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-foreground">
+            {isCron
+              ? t('impact.cronEmptyTitle', '定时巡检与心跳会话')
+              : emptyText || t('impact.emptyTitle', '本次未产生记忆增量变更')}
+          </p>
+          <p className="max-w-md text-xs text-muted-foreground leading-relaxed">
+            {isCron
+              ? t(
+                  'impact.cronEmptyDesc',
+                  '此类后台定时自动化会话仅用于集群状态同步与心跳健康检查，未产生需持久化的知识、技能或用户偏好变更（知识库保持原状）。',
+                )
+              : t(
+                  'impact.emptyDesc',
+                  '本次会话交互已安全落盘，但未触发新的知识命题、偏好演进或避坑教训提取。',
+                )}
+          </p>
+        </div>
       </div>
     )
   }
@@ -180,7 +202,7 @@ export function UnifiedMemoryImpactView({
               role="tab"
               size="xs"
               variant={activeMemoryType === type ? 'secondary' : 'ghost'}
-              className="text-[11px] h-6 px-2 shrink-0"
+              className="text-xs h-6 px-2 shrink-0"
             >
               {getMemoryTypeLabel(type)}
             </Button>
@@ -199,7 +221,7 @@ export function UnifiedMemoryImpactView({
                 <ImpactCounts totals={diff.summary} />
               </div>
               {diff.extractedAt ? (
-                <time className="shrink-0 text-[11px] text-muted-foreground font-mono">
+                <time className="shrink-0 text-xs text-muted-foreground font-mono">
                   {formatDate(diff.extractedAt, i18n.resolvedLanguage)}
                 </time>
               ) : null}

@@ -194,7 +194,7 @@ const UserMessage = memo(function UserMessage({
       className={`${expanded ? 'w-full' : 'w-full max-w-[clamp(48rem,68vw,72rem)]'} group/msg flex gap-2 justify-end ${compact ? 'mb-1.5' : 'mb-5'}`}
     >
       <div className="flex items-end gap-1.5 self-end opacity-0 transition-opacity group-hover/msg:opacity-100">
-        <span className="text-[10px] text-muted-foreground/40 opacity-0 transition-opacity group-hover/msg:opacity-100 select-none">
+        <span className="text-xs text-muted-foreground/40 opacity-0 transition-opacity group-hover/msg:opacity-100 select-none">
           {formatRelativeTime(message.created_at, t)}
         </span>
         <CopyButton text={text} />
@@ -285,7 +285,7 @@ const AssistantMessage = memo(function AssistantMessage({
         })}
         <div className="absolute right-2 top-2 flex items-center gap-1.5 rounded-lg bg-background/85 px-1.5 py-1 opacity-0 shadow-sm ring-1 ring-border/40 backdrop-blur transition-opacity group-hover/msg:opacity-100">
           <CopyButton text={textContent} />
-          <span className="text-[10px] text-muted-foreground/60 select-none">
+          <span className="text-xs text-muted-foreground/60 select-none">
             {formatRelativeTime(message.created_at, t)}
           </span>
         </div>

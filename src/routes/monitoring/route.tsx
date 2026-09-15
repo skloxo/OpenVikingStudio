@@ -388,7 +388,7 @@ function MonitoringRoute() {
                 type="button"
                 onClick={() => setTimeWindow(w)}
                 className={cn(
-                  'rounded px-2.5 py-1 text-[11px] font-medium transition-colors',
+                  'rounded px-2.5 py-1 text-xs font-medium transition-colors',
                   timeWindow === w
                     ? 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 font-bold shadow-none'
                     : 'text-muted-foreground hover:text-foreground',

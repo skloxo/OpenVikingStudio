@@ -69,7 +69,7 @@ function DetailTagList({
             <Badge
               key={val}
               variant="outline"
-              className="text-[11px] px-1.5 py-0 border-border/60 bg-muted/20 text-muted-foreground font-mono"
+              className="text-xs px-1.5 py-0 border-border/60 bg-muted/20 text-muted-foreground font-mono"
             >
               {val}
             </Badge>
@@ -92,7 +92,7 @@ function DetailMetric({
   return (
     <div className="flex items-center gap-2 rounded border border-border/50 bg-muted/20 px-2.5 py-1.5 font-sans">
       <span className="text-muted-foreground">{icon}</span>
-      <span className="text-muted-foreground text-[11px]">{label}:</span>
+      <span className="text-muted-foreground text-xs">{label}:</span>
       <span className="font-semibold text-foreground text-xs ml-auto font-mono">
         {value}
       </span>
@@ -127,7 +127,7 @@ function SkillSourceViewer({ content }: { content: string }) {
 
   return (
     <div className="flex flex-col gap-2 flex-1 min-h-0">
-      <div className="flex items-center justify-between gap-2 rounded border border-border/60 bg-muted/20 px-3 py-1.5 font-mono text-[11px]">
+      <div className="flex items-center justify-between gap-2 rounded border border-border/60 bg-muted/20 px-3 py-1.5 font-mono text-xs">
         <div className="flex items-center gap-2">
           <span className="flex items-center gap-1 font-semibold text-foreground">
             <FileCode2Icon className="size-3.5 text-cyan-500" />
@@ -160,7 +160,7 @@ function SkillSourceViewer({ content }: { content: string }) {
           size="sm"
           variant="outline"
           onClick={handleCopy}
-          className="h-6 rounded px-2 text-[11px] font-mono gap-1 text-muted-foreground hover:text-foreground cursor-pointer"
+          className="h-6 rounded px-2 text-xs font-mono gap-1 text-muted-foreground hover:text-foreground cursor-pointer"
         >
           {copied ? (
             <>
@@ -177,13 +177,13 @@ function SkillSourceViewer({ content }: { content: string }) {
       </div>
 
       {showToc && toc.length > 0 && (
-        <div className="rounded border border-cyan-500/30 bg-cyan-500/5 p-2.5 space-y-1 font-mono text-[11px]">
+        <div className="rounded border border-cyan-500/30 bg-cyan-500/5 p-2.5 space-y-1 font-mono text-xs">
           <div className="flex items-center justify-between text-cyan-600 dark:text-cyan-400 font-semibold border-b border-cyan-500/20 pb-1 mb-1.5 font-sans">
             <span className="flex items-center gap-1">
               <AlignLeftIcon className="size-3.5" />
               TOC 结构化章节索引
             </span>
-            <span className="text-[11px] text-muted-foreground">{toc.length} 节</span>
+            <span className="text-xs text-muted-foreground">{toc.length} 节</span>
           </div>
           <div className="max-h-36 overflow-y-auto space-y-0.5 pr-1">
             {toc.map((item, idx) => (
@@ -204,7 +204,7 @@ function SkillSourceViewer({ content }: { content: string }) {
               >
                 <HashIcon className="size-2.5 shrink-0 opacity-50" />
                 <span className="truncate">{item.title}</span>
-                <span className="ml-auto text-[11px] opacity-40 font-mono">L{item.lineIndex + 1}</span>
+                <span className="ml-auto text-xs opacity-40 font-mono">L{item.lineIndex + 1}</span>
               </button>
             ))}
           </div>
@@ -212,7 +212,7 @@ function SkillSourceViewer({ content }: { content: string }) {
       )}
 
       <div className="rounded border border-border/60 bg-muted/20 overflow-hidden flex flex-col">
-        <div className="overflow-x-auto flex-1 font-mono text-[11px] leading-5 p-2 divide-y divide-border/10 max-h-[500px]">
+        <div className="overflow-x-auto flex-1 font-mono text-xs leading-5 p-2 divide-y divide-border/10 max-h-[500px]">
           {lines.map((line, idx) => {
             const isHeading = line.startsWith('#')
             const isYaml = line.startsWith('---') || line.startsWith('name:') || line.startsWith('description:')
@@ -232,7 +232,7 @@ function SkillSourceViewer({ content }: { content: string }) {
                   isCodeFence && 'text-sky-600 dark:text-sky-400 bg-muted/40',
                 )}
               >
-                <span className="w-8 shrink-0 text-right text-muted-foreground/40 select-none text-[11px] group-hover:text-muted-foreground/70">
+                <span className="w-8 shrink-0 text-right text-muted-foreground/40 select-none text-xs group-hover:text-muted-foreground/70">
                   {idx + 1}
                 </span>
                 <span className="flex-1 whitespace-pre-wrap break-all text-foreground/90 font-mono">
@@ -266,7 +266,7 @@ export function SkillDetailSheet({
             <SheetTitle className="text-base font-semibold">
               {detail.cnName ? `${detail.cnName} (${detail.name})` : detail.name}
             </SheetTitle>
-            <Badge variant="outline" className="text-[11px] font-mono">
+            <Badge variant="outline" className="text-xs font-mono">
               {detail.scope}
             </Badge>
           </div>
@@ -373,7 +373,7 @@ export function SkillDetailSheet({
           <div className="flex flex-col flex-1 min-h-0 gap-3 text-xs">
             <DetailSection title="📁 关联源文件结构 (Associated Files)">
               {detail.files.length > 0 ? (
-                <div className="overflow-hidden rounded border border-border/60 bg-card font-mono text-[11px]">
+                <div className="overflow-hidden rounded border border-border/60 bg-card font-mono text-xs">
                   {detail.files.map((file) => (
                     <div
                       key={file.path}
@@ -385,7 +385,7 @@ export function SkillDetailSheet({
                       </span>
                       <Badge
                         variant="outline"
-                        className="rounded-xs text-[11px] px-1 py-0 border-border bg-muted/40 text-foreground"
+                        className="rounded-xs text-xs px-1 py-0 border-border bg-muted/40 text-foreground"
                       >
                         {file.isDir
                           ? '扩展子目录'
@@ -397,14 +397,14 @@ export function SkillDetailSheet({
                   ))}
                 </div>
               ) : (
-                <div className="overflow-hidden rounded border border-border/60 bg-card p-2 font-mono text-[11px] text-foreground flex items-center justify-between">
+                <div className="overflow-hidden rounded border border-border/60 bg-card p-2 font-mono text-xs text-foreground flex items-center justify-between">
                   <span className="flex items-center gap-1.5 font-bold">
                     <FileCode2Icon className="size-3.5 text-muted-foreground" />
                     SKILL.md
                   </span>
                   <Badge
                     variant="outline"
-                    className="rounded-xs text-[11px] px-1.5 py-0 border-border bg-muted/40 text-foreground"
+                    className="rounded-xs text-xs px-1.5 py-0 border-border bg-muted/40 text-foreground"
                   >
                     单文件精简规范
                   </Badge>

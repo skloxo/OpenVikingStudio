@@ -113,7 +113,7 @@ export function HarnessLogsPage() {
       {/* 4 Telemetry Metrics Ribbon */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <div className="rounded-md border border-border/60 bg-card/60 p-3">
-          <div className="text-[11px] text-muted-foreground">物理拦截次数</div>
+          <div className="text-xs text-muted-foreground">物理拦截次数</div>
           <div className="mt-1 font-mono text-xl font-bold text-foreground">
             {metrics?.blocked_calls ?? 0}
             <span className="ml-1 text-xs font-normal text-muted-foreground">次阻断</span>
@@ -121,7 +121,7 @@ export function HarnessLogsPage() {
         </div>
 
         <div className="rounded-md border border-border/60 bg-card/60 p-3">
-          <div className="text-[11px] text-muted-foreground">FSM 转移规则</div>
+          <div className="text-xs text-muted-foreground">FSM 转移规则</div>
           <div className="mt-1 font-mono text-xl font-bold text-foreground">
             {metrics?.fsm?.transition_rules_count ?? 26}
             <span className="ml-1 text-xs font-normal text-muted-foreground">条有向边</span>
@@ -129,7 +129,7 @@ export function HarnessLogsPage() {
         </div>
 
         <div className="rounded-md border border-border/60 bg-card/60 p-3">
-          <div className="text-[11px] text-muted-foreground">物理贯彻门禁</div>
+          <div className="text-xs text-muted-foreground">物理贯彻门禁</div>
           <div className="mt-1 font-mono text-xl font-bold text-cyan-400">
             4 / 4
             <span className="ml-1 text-xs font-normal text-muted-foreground">项已激活</span>
@@ -137,7 +137,7 @@ export function HarnessLogsPage() {
         </div>
 
         <div className="rounded-md border border-border/60 bg-card/60 p-3">
-          <div className="text-[11px] text-muted-foreground">沉淀演进教训</div>
+          <div className="text-xs text-muted-foreground">沉淀演进教训</div>
           <div className="mt-1 font-mono text-xl font-bold text-foreground">
             {metrics?.lessons_count ?? lessons.length}
             <span className="ml-1 text-xs font-normal text-muted-foreground">项 Lessons</span>

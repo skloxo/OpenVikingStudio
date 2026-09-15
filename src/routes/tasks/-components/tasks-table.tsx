@@ -103,7 +103,7 @@ export function TasksTable({
 
     return (
       <div
-        className="max-w-48 truncate font-mono text-[11px] text-muted-foreground select-none"
+        className="max-w-48 truncate font-mono text-xs text-muted-foreground select-none"
         title={resourceUri}
       >
         {resourceUri}
@@ -118,7 +118,7 @@ export function TasksTable({
     return (
       <button
         type="button"
-        className="font-mono text-[11px] text-muted-foreground hover:text-primary transition-colors cursor-pointer select-all tabular-nums py-0.5"
+        className="font-mono text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer select-all tabular-nums py-0.5"
         title={`${taskId} (${t('table.copyId', '点击复制完整 ID')})`}
         onClick={(e) => {
           e.stopPropagation()
@@ -134,8 +134,11 @@ export function TasksTable({
   }
 
   function renderInitiatorCell(task: TaskRecord) {
-    const raw = task.meta?.initiator || (task.meta?.actor ? `User (${task.meta.actor})` : '')
-    const info = parseInitiator(raw, task.task_type)
+    const raw =
+      task.meta?.initiator ||
+      (task.meta?.actor ? `User (${task.meta.actor})` : '')
+    const resourceId = task.resource_id || task.meta?.uri
+    const info = parseInitiator(raw, task.task_type, resourceId)
 
     return (
       <div className="flex items-center gap-1.5 whitespace-nowrap text-xs text-muted-foreground">
@@ -263,7 +266,7 @@ export function TasksTable({
                       isDeleting={isDeleting}
                     />
                   </TableCell>
-                  <TableCell className="py-2 whitespace-nowrap text-right font-mono text-[11px] text-muted-foreground">
+                  <TableCell className="py-2 whitespace-nowrap text-right font-mono text-xs text-muted-foreground">
                     {formatTime(task)}
                   </TableCell>
                 </TableRow>

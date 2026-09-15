@@ -122,7 +122,7 @@ export function HarnessHITLOffloadCenter() {
             variant="ghost"
             size="sm"
             onClick={() => setProbeNotice(null)}
-            className="h-5 px-1.5 text-[11px] text-cyan-400 hover:bg-cyan-500/20"
+            className="h-5 px-1.5 text-xs text-cyan-400 hover:bg-cyan-500/20"
           >
             关闭
           </Button>
@@ -133,9 +133,9 @@ export function HarnessHITLOffloadCenter() {
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {/* Metric 1: Tokens Saved */}
         <div className="flex flex-col justify-between rounded-md border border-border/60 bg-muted/20 p-3">
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>读 Offload 累计节约</span>
-            <Badge variant="outline" className="h-4 border-cyan-500/30 bg-cyan-500/10 px-1 text-[11px] text-cyan-400">
+            <Badge variant="outline" className="h-4 border-cyan-500/30 bg-cyan-500/10 px-1 text-xs text-cyan-400">
               减负 {data?.summary?.reduction_ratio_pct ?? '--'}%
             </Badge>
           </div>
@@ -143,7 +143,7 @@ export function HarnessHITLOffloadCenter() {
             {data?.summary?.total_tokens_saved?.toLocaleString() ?? '--'}{' '}
             <span className="text-xs font-normal text-muted-foreground">Tok</span>
           </div>
-          <div className="text-[11px] text-muted-foreground">
+          <div className="text-xs text-muted-foreground">
             原文 {data?.read_offload?.total_raw_tokens?.toLocaleString() ?? '--'} ➔ Offload{' '}
             {data?.read_offload?.total_offloaded_tokens?.toLocaleString() ?? '--'}
           </div>
@@ -151,7 +151,7 @@ export function HarnessHITLOffloadCenter() {
 
         {/* Metric 2: Active FileRef Handles */}
         <div className="flex flex-col justify-between rounded-md border border-border/60 bg-muted/20 p-3">
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>活跃 FileRef 句柄</span>
             <FileCodeIcon className="size-3.5 text-muted-foreground" />
           </div>
@@ -159,21 +159,21 @@ export function HarnessHITLOffloadCenter() {
             {data?.summary?.active_refs_count ?? '--'}{' '}
             <span className="text-xs font-normal text-muted-foreground">个句柄</span>
           </div>
-          <div className="text-[11px] text-muted-foreground">
+          <div className="text-xs text-muted-foreground">
             累计 Offload {data?.read_offload?.total_files_offloaded ?? '--'} 个超大文件
           </div>
         </div>
 
         {/* Metric 3: HITL Pending Actions */}
         <div className="flex flex-col justify-between rounded-md border border-border/60 bg-muted/20 p-3">
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>HITL 待审高危操作</span>
             {(data?.summary?.pending_hitl_count ?? 0) > 0 ? (
-              <Badge variant="outline" className="h-4 border-amber-500/30 bg-amber-500/10 px-1 text-[11px] text-amber-400 animate-pulse">
+              <Badge variant="outline" className="h-4 border-amber-500/30 bg-amber-500/10 px-1 text-xs text-amber-400 animate-pulse">
                 需确认
               </Badge>
             ) : (
-              <Badge variant="outline" className="h-4 border-muted-foreground/30 bg-muted px-1 text-[11px] text-muted-foreground">
+              <Badge variant="outline" className="h-4 border-muted-foreground/30 bg-muted px-1 text-xs text-muted-foreground">
                 全就绪
               </Badge>
             )}
@@ -182,21 +182,21 @@ export function HarnessHITLOffloadCenter() {
             {data?.summary?.pending_hitl_count ?? '--'}{' '}
             <span className="text-xs font-normal text-muted-foreground">项待审</span>
           </div>
-          <div className="text-[11px] text-muted-foreground">
+          <div className="text-xs text-muted-foreground">
             已批准 {data?.summary?.approved_count ?? 0} ｜ 已驳回 {data?.summary?.rejected_count ?? 0}
           </div>
         </div>
 
         {/* Metric 4: Interception Rate */}
         <div className="flex flex-col justify-between rounded-md border border-border/60 bg-muted/20 p-3">
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>高危操作拦截率</span>
             <ShieldCheckIcon className="size-3.5 text-cyan-400" />
           </div>
           <div className="my-1 font-mono text-lg font-semibold tabular-nums text-cyan-400">
             {data?.summary?.danger_interception_rate_pct ?? '--'}%
           </div>
-          <div className="text-[11px] text-muted-foreground">
+          <div className="text-xs text-muted-foreground">
             拦截 {data?.summary?.total_interceptions ?? 0} 次，0 越权通过
           </div>
         </div>
@@ -221,14 +221,14 @@ export function HarnessHITLOffloadCenter() {
                   target_path: `openviking/service/large_dataset_${Date.now().toString().slice(-4)}.py`,
                 })
               }
-              className="h-6 gap-1 px-2 text-[11px] text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-300"
+              className="h-6 gap-1 px-2 text-xs text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-300"
             >
               <ZapIcon className="size-3" />
               模拟超大文件 Offload
             </Button>
           </div>
 
-          <div className="text-[11px] text-muted-foreground mb-2">
+          <div className="text-xs text-muted-foreground mb-2">
             腾讯 DECO 读护栏：针对 &gt;300行 或 &gt;12KB 文件，自动离线缓存并返回轻量 FileRefHandle，防止全文撑爆模型工作记忆。
           </div>
 
@@ -240,22 +240,22 @@ export function HarnessHITLOffloadCenter() {
                   className="rounded border border-border/50 bg-background/50 p-2.5 text-xs transition-colors hover:border-cyan-500/30"
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 font-mono text-cyan-400 text-[11px]">
+                    <div className="flex items-center gap-1.5 font-mono text-cyan-400 text-xs">
                       <span>{item.ref_id}</span>
                       <span className="text-muted-foreground">·</span>
                       <span className="text-muted-foreground font-sans truncate max-w-50" title={item.target_path}>
                         {item.target_path}
                       </span>
                     </div>
-                    <Badge variant="outline" className="h-4 border-cyan-500/30 bg-cyan-500/10 px-1 text-[11px] text-cyan-400 font-mono">
+                    <Badge variant="outline" className="h-4 border-cyan-500/30 bg-cyan-500/10 px-1 text-xs text-cyan-400 font-mono">
                       +省 {item.tokens_saved.toLocaleString()} Tok
                     </Badge>
                   </div>
-                  <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
+                  <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
                     <span>
                       {item.total_lines} 行 ｜ {(item.total_bytes / 1024).toFixed(1)} KB
                     </span>
-                    <span className="font-mono text-[11px]">
+                    <span className="font-mono text-xs">
                       SHA: {item.content_hash.slice(0, 10)}...
                     </span>
                   </div>
@@ -285,20 +285,20 @@ export function HarnessHITLOffloadCenter() {
                   command: 'rm -rf /tmp/production_dump/*',
                 })
               }
-              className="h-6 gap-1 px-2 text-[11px] text-amber-400 hover:bg-amber-500/10 hover:text-amber-300"
+              className="h-6 gap-1 px-2 text-xs text-amber-400 hover:bg-amber-500/10 hover:text-amber-300"
             >
               <ZapIcon className="size-3" />
               模拟高危操作拦截
             </Button>
           </div>
 
-          <div className="text-[11px] text-muted-foreground mb-2">
+          <div className="text-xs text-muted-foreground mb-2">
             腾讯 DECO 生产护栏：物理拦截 destructive/deploy 危险操作，必须由人工在座舱授予有效 approval_token 方可放行。
           </div>
 
           {/* Pending Action Items */}
           <div className="flex-1 space-y-2 overflow-y-auto max-h-40 pr-1 mb-3">
-            <div className="text-[11px] font-semibold text-muted-foreground">待审任务队列 ({data?.hitl_queue?.pending?.length ?? 0})</div>
+            <div className="text-xs font-semibold text-muted-foreground">待审任务队列 ({data?.hitl_queue?.pending?.length ?? 0})</div>
             {data?.hitl_queue?.pending?.length ? (
               data.hitl_queue.pending.map((action: HITLActionItem) => (
                 <div
@@ -306,17 +306,17 @@ export function HarnessHITLOffloadCenter() {
                   className="rounded border border-amber-500/30 bg-amber-500/5 p-2.5 text-xs transition-colors"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-[11px] font-bold text-amber-400">
+                    <span className="font-mono text-xs font-bold text-amber-400">
                       {action.tool_name} <span className="font-normal text-muted-foreground">({action.action_id})</span>
                     </span>
-                    <Badge variant="outline" className="h-4 border-amber-500/30 bg-amber-500/20 px-1 text-[11px] text-amber-400">
+                    <Badge variant="outline" className="h-4 border-amber-500/30 bg-amber-500/20 px-1 text-xs text-amber-400">
                       阶段: {action.phase}
                     </Badge>
                   </div>
-                  <div className="mt-1 text-[11px] text-muted-foreground line-clamp-1" title={action.args_summary}>
+                  <div className="mt-1 text-xs text-muted-foreground line-clamp-1" title={action.args_summary}>
                     参数: {action.args_summary}
                   </div>
-                  <div className="mt-0.5 text-[11px] text-rose-400/90 line-clamp-1">
+                  <div className="mt-0.5 text-xs text-rose-400/90 line-clamp-1">
                     {action.danger_reason}
                   </div>
                   <div className="mt-2 flex items-center justify-end gap-2">
@@ -325,7 +325,7 @@ export function HarnessHITLOffloadCenter() {
                       size="sm"
                       disabled={resolveMutation.isPending}
                       onClick={() => resolveMutation.mutate({ actionId: action.action_id, decision: 'reject' })}
-                      className="h-5 px-2 text-[11px] text-rose-400 hover:bg-rose-500/10 border-rose-500/30"
+                      className="h-5 px-2 text-xs text-rose-400 hover:bg-rose-500/10 border-rose-500/30"
                     >
                       <XCircleIcon className="mr-1 size-3" />
                       驳回
@@ -335,7 +335,7 @@ export function HarnessHITLOffloadCenter() {
                       size="sm"
                       disabled={resolveMutation.isPending}
                       onClick={() => resolveMutation.mutate({ actionId: action.action_id, decision: 'approve' })}
-                      className="h-5 px-2 text-[11px] text-cyan-400 hover:bg-cyan-500/10 border-cyan-500/30"
+                      className="h-5 px-2 text-xs text-cyan-400 hover:bg-cyan-500/10 border-cyan-500/30"
                     >
                       <CheckCircle2Icon className="mr-1 size-3" />
                       批准执行
@@ -350,7 +350,7 @@ export function HarnessHITLOffloadCenter() {
 
           {/* Audit History */}
           <div className="border-t border-border/40 pt-2">
-            <div className="flex items-center justify-between text-[11px] font-semibold text-muted-foreground mb-1.5">
+            <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground mb-1.5">
               <span>已审/拦截审计流水</span>
               <HistoryIcon className="size-3 text-muted-foreground" />
             </div>
@@ -359,7 +359,7 @@ export function HarnessHITLOffloadCenter() {
                 data.hitl_queue.history.slice(0, 5).map((item: HITLActionItem) => (
                   <div
                     key={item.action_id}
-                    className="flex items-center justify-between rounded border border-border/40 bg-background/40 px-2 py-1 text-[11px]"
+                    className="flex items-center justify-between rounded border border-border/40 bg-background/40 px-2 py-1 text-xs"
                   >
                     <div className="flex items-center gap-1.5 font-mono">
                       {item.status === 'approved' ? (
@@ -380,7 +380,7 @@ export function HarnessHITLOffloadCenter() {
                   </div>
                 ))
               ) : (
-                <div className="py-2 text-center text-[11px] text-muted-foreground">暂无历史审计记录</div>
+                <div className="py-2 text-center text-xs text-muted-foreground">暂无历史审计记录</div>
               )}
             </div>
           </div>

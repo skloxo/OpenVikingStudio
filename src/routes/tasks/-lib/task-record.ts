@@ -94,21 +94,58 @@ function formatClientName(client: string): string {
   return client.charAt(0).toUpperCase() + client.slice(1)
 }
 
-export function parseInitiator(raw?: string, taskType?: string): InitiatorInfo {
-  if (!raw) {
-    if (taskType === 'valet_parking') {
-      return { isAgent: true, isUser: false, name: '[2080TI] Antigravity', raw: '' }
+export function parseInitiator(
+  raw?: string,
+  taskType?: string,
+  resourceId?: string | null,
+): InitiatorInfo {
+  // Extract node hint from resourceId if available
+  let inferredNode = ''
+  let inferredAgent = ''
+  if (resourceId) {
+    const lowerRes = resourceId.toLowerCase()
+    if (
+      lowerRes.includes('3070_sessions') ||
+      lowerRes.includes('staging/3070') ||
+      lowerRes.includes('@3070')
+    ) {
+      inferredNode = '[RTX3070]'
+    } else if (
+      lowerRes.includes('2080ti_sessions') ||
+      lowerRes.includes('staging/2080ti') ||
+      lowerRes.includes('@2080ti')
+    ) {
+      inferredNode = '[2080TI]'
+    } else if (
+      lowerRes.includes('antigravity_sessions') ||
+      lowerRes.includes('staging/antigravity')
+    ) {
+      inferredNode = '[2080TI]'
+      inferredAgent = 'Antigravity'
+    } else if (
+      lowerRes.includes('mac_studio_sessions') ||
+      lowerRes.includes('staging/mac_studio') ||
+      lowerRes.includes('@mac_studio')
+    ) {
+      inferredNode = '[MacStudio]'
+    }
+  }
+
+  if (!raw || raw.toLowerCase() === 'default' || raw.toLowerCase() === 'agent') {
+    if (taskType === 'valet_parking' || raw?.toLowerCase() === 'agent') {
+      const node = inferredNode || '[2080TI]'
+      const agentName = inferredAgent || 'Antigravity'
+      return {
+        isAgent: true,
+        isUser: false,
+        name: `${node} ${agentName}`,
+        raw: raw || '',
+      }
+    }
+    if (raw?.toLowerCase() === 'default') {
+      return { isAgent: false, isUser: true, name: 'default', raw }
     }
     return { isAgent: false, isUser: false, name: '-', raw: '' }
-  }
-  const isDefault = raw.toLowerCase() === 'default'
-  if (isDefault) {
-    // In OpenViking, atomic ingestion / valet_parking is strictly initiated by Agents via Hook or MCP.
-    // 'default' is the storage tenant namespace, not a human user.
-    if (taskType === 'valet_parking') {
-      return { isAgent: true, isUser: false, name: '[2080TI] Antigravity', raw }
-    }
-    return { isAgent: false, isUser: true, name: 'default', raw }
   }
 
   // Check structured client@node format (e.g. antigravity@2080ti, workbuddy@3070, openclaw.researcher@2080ti)
@@ -142,6 +179,7 @@ export function parseInitiator(raw?: string, taskType?: string): InitiatorInfo {
   const isUser = !isAgent && /user|admin/i.test(raw)
   const match = raw.match(/\((.*?)\)/)
   const cleanName = match ? match[1] : raw.replace(/^(agent|user)\s*/i, '').trim() || (isAgent ? 'Agent' : isUser ? 'User' : raw)
-  return { isAgent, isUser, name: cleanName, raw }
+  const finalName = inferredNode && !cleanName.includes('[') ? `${inferredNode} ${cleanName}` : cleanName
+  return { isAgent, isUser, name: finalName, raw }
 }
 

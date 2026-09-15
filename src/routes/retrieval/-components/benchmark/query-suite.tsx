@@ -109,7 +109,7 @@ export function BenchmarkQuerySuite({
             title={t('benchmark.resetSuite')}
           >
             <RotateCcwIcon className="size-3" />
-            <span className="text-[11px]">{t('benchmark.resetSuite')}</span>
+            <span className="text-xs">{t('benchmark.resetSuite')}</span>
           </Button>
 
           {hasCompletedResults && (
@@ -120,7 +120,7 @@ export function BenchmarkQuerySuite({
               className="h-7.5 gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer px-2.5 shrink-0"
             >
               <DownloadIcon className="size-3" />
-              <span className="text-[11px]">{t('benchmark.exportReport')}</span>
+              <span className="text-xs">{t('benchmark.exportReport')}</span>
             </Button>
           )}
         </div>

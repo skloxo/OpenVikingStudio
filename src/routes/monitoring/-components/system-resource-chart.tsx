@@ -124,14 +124,14 @@ export function SystemResourceChart({
             <h3 className="text-sm font-semibold text-foreground tracking-tight">
               ⚡ {t('systemResource.title', { defaultValue: '系统物理资源与 VikingDB 索引走势' })}
             </h3>
-            <p className="text-[11px] text-muted-foreground font-mono">
+            <p className="text-xs text-muted-foreground font-mono">
               {t('systemResource.subtitle', { defaultValue: 'CPU / 内存占用率 & 向量节点增长曲线 (Real-time Metric Stream)' })}
             </p>
           </div>
         </div>
 
         {/* 资源快照 Badge */}
-        <div className="flex items-center gap-2 font-mono text-[11px]">
+        <div className="flex items-center gap-2 font-mono text-xs">
           <span className="inline-flex items-center gap-1 rounded-xs border border-cyan-500/30 bg-cyan-500/10 px-2 py-0.5 text-cyan-600 dark:text-cyan-400">
             <Cpu className="size-3" />
             {t('systemResource.cpuLabel', { defaultValue: 'CPU' })}: {latestCpu}

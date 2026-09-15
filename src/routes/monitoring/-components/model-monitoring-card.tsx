@@ -110,21 +110,21 @@ export function ModelMonitoringCard({ status, isHealthy }: ModelMonitoringCardPr
       {/* 顶部 3 个关键统计汇总瓷片 */}
       <div className="grid grid-cols-3 gap-3">
         <div className="flex flex-col justify-center rounded-lg border bg-muted/20 px-3 py-2">
-          <span className="text-[11px] text-muted-foreground font-medium">{t('modelsCard.activeModels')}</span>
+          <span className="text-xs text-muted-foreground font-medium">{t('modelsCard.activeModels')}</span>
           <span className="font-mono text-base font-bold text-foreground tabular-nums mt-0.5">
             {activeModelsCount}
           </span>
         </div>
 
         <div className="flex flex-col justify-center rounded-lg border bg-muted/20 px-3 py-2">
-          <span className="text-[11px] font-medium text-muted-foreground">{t('modelsCard.totalCalls')}</span>
+          <span className="text-xs font-medium text-muted-foreground">{t('modelsCard.totalCalls')}</span>
           <span className="font-mono text-base font-bold text-foreground tabular-nums mt-0.5">
             {totalCalls.toLocaleString()}
           </span>
         </div>
 
         <div className="flex flex-col justify-center rounded-lg border bg-muted/20 px-3 py-2">
-          <span className="text-[11px] font-medium text-muted-foreground">{t('modelsCard.totalTokensTile')}</span>
+          <span className="text-xs font-medium text-muted-foreground">{t('modelsCard.totalTokensTile')}</span>
           <span className="font-mono text-base font-bold text-foreground/90 tabular-nums mt-0.5">
             {totalTokens.toLocaleString()}
           </span>
@@ -165,7 +165,7 @@ export function ModelMonitoringCard({ status, isHealthy }: ModelMonitoringCardPr
                   <span className="col-span-2 font-sans font-medium text-foreground truncate">
                     {row.model}
                   </span>
-                  <span className="text-muted-foreground capitalize text-[11px] font-sans">
+                  <span className="text-muted-foreground capitalize text-xs font-sans">
                     {row.provider}
                   </span>
                   <span className="text-right font-bold text-foreground tabular-nums">

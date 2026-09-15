@@ -112,7 +112,7 @@ export function KnowledgeBaseOverview({
             <Cpu className="size-4 text-primary" />
             <span>{t('knowledgeBaseOverview.vectorEngineTitle')}</span>
           </div>
-          <span className="text-[11px] font-mono text-muted-foreground">
+          <span className="text-xs font-mono text-muted-foreground">
             {t('knowledgeBaseOverview.totalAssetsLabel')}{' '}
             <strong className="text-foreground">{totalAssets.toLocaleString()}</strong>{' '}
             {t('knowledgeBaseOverview.nodeUnit')}
@@ -121,7 +121,7 @@ export function KnowledgeBaseOverview({
 
         <div className="grid grid-cols-2 gap-4 border-t border-border/50 pt-3">
           <div className="flex flex-col">
-            <span className="text-[11px] text-muted-foreground font-medium">
+            <span className="text-xs text-muted-foreground font-medium">
               {t('knowledgeBaseOverview.totalVectors')}
             </span>
             <span className="font-mono text-base font-bold text-cyan-600 dark:text-cyan-400 tabular-nums mt-0.5">
@@ -130,7 +130,7 @@ export function KnowledgeBaseOverview({
           </div>
 
           <div className="flex flex-col">
-            <span className="text-[11px] text-muted-foreground font-medium">
+            <span className="text-xs text-muted-foreground font-medium">
               {t('knowledgeBaseOverview.activeCollections')}
             </span>
             <span className="font-mono text-base font-bold text-blue-600 dark:text-blue-400 tabular-nums mt-0.5 flex items-center gap-1.5">

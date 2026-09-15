@@ -485,7 +485,7 @@ export function FindPalette({
                 key={item}
                 type="button"
                 className={cn(
-                  'rounded px-1.5 py-0.5 font-mono text-[11px] transition-colors',
+                  'rounded px-1.5 py-0.5 font-mono text-xs transition-colors',
                   searchMode === item
                     ? 'bg-muted text-foreground'
                     : 'text-muted-foreground/60 hover:text-foreground',
@@ -497,8 +497,8 @@ export function FindPalette({
                   : t(`controls.modes.${item}`, { ns: 'retrieval' })}
               </button>
             ))}
-            <span className="ml-auto text-[11px] text-muted-foreground/50">
-              <kbd className="rounded border border-border bg-muted/50 px-1.5 py-0.5 font-mono text-[11px] text-foreground/70">
+            <span className="ml-auto text-xs text-muted-foreground/50">
+              <kbd className="rounded border border-border bg-muted/50 px-1.5 py-0.5 font-mono text-xs text-foreground/70">
                 {KEY_TAB_LABEL}
               </kbd>{' '}
               {t('searchPalette.modes.switchHint')}
@@ -568,14 +568,14 @@ export function FindPalette({
                         </p>
                         <p className="mt-1 text-xs text-muted-foreground/50">
                           {t('searchPalette.browseDirHint.before')}{' '}
-                          <kbd className="rounded border border-border bg-muted/50 px-1 py-0.5 font-mono text-[11px] text-foreground/70">
+                          <kbd className="rounded border border-border bg-muted/50 px-1 py-0.5 font-mono text-xs text-foreground/70">
                             /
                           </kbd>{' '}
                           {t('searchPalette.browseDirHint.after')}
                         </p>
                         <p className="mt-1 text-xs text-muted-foreground/50">
                           {t('searchPalette.globalScopeHint.before')}{' '}
-                          <kbd className="rounded border border-border bg-muted/50 px-1 py-0.5 font-mono text-[11px] text-foreground/70">
+                          <kbd className="rounded border border-border bg-muted/50 px-1 py-0.5 font-mono text-xs text-foreground/70">
                             //
                           </kbd>{' '}
                           {t('searchPalette.globalScopeHint.after')}
@@ -645,25 +645,25 @@ export function FindPalette({
         {mode.kind === 'dirBrowse' ? (
           <div className="flex items-center gap-3 border-t px-4 py-2 text-xs text-muted-foreground/70">
             <span>
-              <kbd className="rounded border border-border bg-muted/50 px-1.5 py-0.5 font-mono text-[11px] text-foreground/70">
+              <kbd className="rounded border border-border bg-muted/50 px-1.5 py-0.5 font-mono text-xs text-foreground/70">
                 ↑↓
               </kbd>{' '}
               {t('searchPalette.footer.dirMode.select')}
             </span>
             <span>
-              <kbd className="rounded border border-border bg-muted/50 px-1.5 py-0.5 font-mono text-[11px] text-foreground/70">
+              <kbd className="rounded border border-border bg-muted/50 px-1.5 py-0.5 font-mono text-xs text-foreground/70">
                 ←→
               </kbd>{' '}
               {t('searchPalette.footer.dirMode.level')}
             </span>
             <span>
-              <kbd className="rounded border border-border bg-muted/50 px-1.5 py-0.5 font-mono text-[11px] text-foreground/70">
+              <kbd className="rounded border border-border bg-muted/50 px-1.5 py-0.5 font-mono text-xs text-foreground/70">
                 ↵
               </kbd>{' '}
               {t('searchPalette.footer.dirMode.confirm')}
             </span>
             <span>
-              <kbd className="rounded border border-border bg-muted/50 px-1.5 py-0.5 font-mono text-[11px] text-foreground/70">
+              <kbd className="rounded border border-border bg-muted/50 px-1.5 py-0.5 font-mono text-xs text-foreground/70">
                 {KEY_ESCAPE_LABEL}
               </kbd>{' '}
               {t('searchPalette.footer.dirMode.cancel')}
@@ -673,19 +673,19 @@ export function FindPalette({
           hasResults && (
             <div className="flex items-center gap-3 border-t px-4 py-2 text-xs text-muted-foreground/70">
               <span>
-                <kbd className="rounded border border-border bg-muted/50 px-1.5 py-0.5 font-mono text-[11px] text-foreground/70">
+                <kbd className="rounded border border-border bg-muted/50 px-1.5 py-0.5 font-mono text-xs text-foreground/70">
                   ↑↓
                 </kbd>{' '}
                 {t('searchPalette.footer.resultMode.navigate')}
               </span>
               <span>
-                <kbd className="rounded border border-border bg-muted/50 px-1.5 py-0.5 font-mono text-[11px] text-foreground/70">
+                <kbd className="rounded border border-border bg-muted/50 px-1.5 py-0.5 font-mono text-xs text-foreground/70">
                   ↵
                 </kbd>{' '}
                 {t('searchPalette.footer.resultMode.open')}
               </span>
               <span>
-                <kbd className="rounded border border-border bg-muted/50 px-1.5 py-0.5 font-mono text-[11px] text-foreground/70">
+                <kbd className="rounded border border-border bg-muted/50 px-1.5 py-0.5 font-mono text-xs text-foreground/70">
                   {KEY_ESCAPE_LABEL}
                 </kbd>{' '}
                 {t('searchPalette.footer.resultMode.close')}

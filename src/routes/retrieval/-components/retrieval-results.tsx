@@ -198,7 +198,7 @@ function ResultList({
                 {plan.context_type && (
                   <span
                     className={cn(
-                      'font-mono font-semibold text-[11px]',
+                      'font-mono font-semibold text-xs',
                       TYPE_META[plan.context_type].color,
                     )}
                   >
@@ -290,7 +290,7 @@ function ResultRow({
         >
           <div
             className={cn(
-              'mt-0.5 inline-flex shrink-0 items-center gap-1 rounded border px-1.5 py-0.5 text-[11px] font-mono font-semibold uppercase tracking-wider',
+              'mt-0.5 inline-flex shrink-0 items-center gap-1 rounded border px-1.5 py-0.5 text-xs font-mono font-semibold uppercase tracking-wider',
               meta.bgColor,
               meta.color,
             )}
@@ -304,7 +304,7 @@ function ResultRow({
               <span className="truncate text-xs font-mono font-semibold text-foreground">{name}</span>
               <span
                 className={cn(
-                  'shrink-0 rounded border px-1.5 py-0.5 text-[11px] font-mono font-medium',
+                  'shrink-0 rounded border px-1.5 py-0.5 text-xs font-mono font-medium',
                   levelNum === 0
                     ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400'
                     : levelNum === 1
@@ -316,17 +316,17 @@ function ResultRow({
                 {levelTag}
               </span>
               {lifecycleStatus === 'archived' && (
-                <span className="shrink-0 rounded border border-muted-foreground/30 bg-muted/40 px-1.5 py-0.5 text-[11px] font-mono font-medium text-muted-foreground">
+                <span className="shrink-0 rounded border border-muted-foreground/30 bg-muted/40 px-1.5 py-0.5 text-xs font-mono font-medium text-muted-foreground">
                   {t('lifecycle.archived')}
                 </span>
               )}
               {lifecycleStatus === 'deprecated' && (
-                <span className="shrink-0 rounded border border-rose-500/30 bg-rose-500/10 px-1.5 py-0.5 text-[11px] font-mono font-medium text-rose-500">
+                <span className="shrink-0 rounded border border-rose-500/30 bg-rose-500/10 px-1.5 py-0.5 text-xs font-mono font-medium text-rose-500">
                   {t('lifecycle.deprecated')}
                 </span>
               )}
             </div>
-            <div className="mt-0.5 flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground/70">
+            <div className="mt-0.5 flex items-center gap-1.5 text-xs font-mono text-muted-foreground/70">
               <FolderOpen className="size-3 shrink-0 text-muted-foreground/50" />
               <span className="truncate">{parent}</span>
             </div>
@@ -340,7 +340,7 @@ function ResultRow({
 
         <div className="flex items-center gap-2 shrink-0 pt-0.5">
           {item.item.result_kind === 'grep' && item.item.line !== undefined ? (
-            <span className="rounded bg-muted/60 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground border border-border/40">
+            <span className="rounded bg-muted/60 px-1.5 py-0.5 font-mono text-xs text-muted-foreground border border-border/40">
               {t('results.line', { line: item.item.line })}
             </span>
           ) : (
@@ -360,7 +360,7 @@ function ResultRow({
             type="button"
             onClick={() => setShowTrajectory((prev) => !prev)}
             className={cn(
-              'inline-flex items-center gap-1 rounded border px-2 py-0.5 text-[11px] font-mono transition-colors cursor-pointer',
+              'inline-flex items-center gap-1 rounded border px-2 py-0.5 text-xs font-mono transition-colors cursor-pointer',
               showTrajectory
                 ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400'
                 : 'border-border/60 bg-background/60 text-muted-foreground hover:text-cyan-600 hover:border-cyan-500/40 dark:hover:text-cyan-400',
@@ -376,17 +376,17 @@ function ResultRow({
       {/* 折叠式 L0/L1/L2 白盒检索轨迹树 */}
       {showTrajectory && (
         <div className="mx-3 mb-2.5 rounded-md border border-cyan-500/30 bg-cyan-500/5 p-3 font-mono text-xs text-foreground space-y-2.5">
-          <div className="flex items-center justify-between text-[11px] text-cyan-600 dark:text-cyan-400 font-semibold border-b border-cyan-500/20 pb-1.5">
+          <div className="flex items-center justify-between text-xs text-cyan-600 dark:text-cyan-400 font-semibold border-b border-cyan-500/20 pb-1.5">
             <span className="flex items-center gap-1.5 font-sans">
               <Layers className="size-3.5 text-cyan-500 shrink-0" />
               {t('trajectory.title')}
             </span>
-            <span className="text-[11px] tabular-nums font-mono">
+            <span className="text-xs tabular-nums font-mono">
               {t('trajectory.score', { score: scoreVal.toFixed(4) })}
             </span>
           </div>
 
-          <div className="space-y-2 text-[11px] pl-1">
+          <div className="space-y-2 text-xs pl-1">
             {/* Step 1: Root Entry */}
             <div className="flex items-center gap-2 text-muted-foreground">
               <span className="text-cyan-600 dark:text-cyan-400 font-bold shrink-0">{t('trajectory.rootEngine')}</span>
@@ -424,7 +424,7 @@ function ResultRow({
               <span className="font-bold text-cyan-600 dark:text-cyan-400 tabular-nums">
                 {t('trajectory.scoreBadge', { score: scoreVal.toFixed(4) })}
               </span>
-              <span className="text-muted-foreground/80 font-sans text-[11px]">
+              <span className="text-muted-foreground/80 font-sans text-xs">
                 ({isHighConfidence ? t('trajectory.highConfidence') : t('trajectory.scoreGateLow')})
               </span>
             </div>

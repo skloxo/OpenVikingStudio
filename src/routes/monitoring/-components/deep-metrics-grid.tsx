@@ -225,7 +225,7 @@ export function DeepMetricsGrid({ metrics, isLoading }: DeepMetricsGridProps) {
             <h2 className="text-sm font-semibold tracking-tight text-foreground/90">
               {t('metricsTiles.sectionTitle', { defaultValue: '内核深层观测指标' })}
             </h2>
-            <Badge variant="outline" className="font-mono text-[11px] font-normal border-border/60">
+            <Badge variant="outline" className="font-mono text-xs font-normal border-border/60">
               {t('metricsTiles.liveBadge', { defaultValue: `${tileConfigs.length} 项指标实时监测` })}
             </Badge>
           </div>
@@ -255,7 +255,7 @@ export function DeepMetricsGrid({ metrics, isLoading }: DeepMetricsGridProps) {
                       <Badge
                         variant="outline"
                         className={cn(
-                          'px-1.5 py-0 text-[11px] font-normal border-0',
+                          'px-1.5 py-0 text-xs font-normal border-0',
                           tile.badgeVariant === 'positive' && 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400',
                           tile.badgeVariant === 'negative' && 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
                           tile.badgeVariant === 'neutral' && 'bg-muted/40 text-muted-foreground',
@@ -291,7 +291,7 @@ export function DeepMetricsGrid({ metrics, isLoading }: DeepMetricsGridProps) {
                 </div>
 
                 {tile.subText ? (
-                  <p className="mt-1 line-clamp-1 text-[11px] text-muted-foreground/80 font-mono tabular-nums">
+                  <p className="mt-1 line-clamp-1 text-xs text-muted-foreground/80 font-mono tabular-nums">
                     {tile.subText}
                   </p>
                 ) : null}

@@ -128,17 +128,17 @@ export function ThreadList({ activeSessionId, isQuarantineActive }: ThreadListPr
           to="/sessions"
           search={{ view: 'quarantine' }}
           className={cn(
-            'flex items-center justify-between rounded-md border px-2.5 py-1.5 transition-colors font-mono text-[11px]',
+            'flex items-center justify-between rounded-md border px-2.5 py-1.5 transition-colors font-mono text-xs',
             isQuarantineActive
-              ? 'border-amber-500/40 bg-amber-500/10 text-amber-400 font-medium shadow-2xs'
-              : 'border-border/40 bg-card/40 text-muted-foreground hover:bg-muted/60 hover:text-foreground',
+              ? 'border-cyan-500/40 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 font-medium shadow-2xs'
+              : 'border-border/60 bg-muted/20 text-muted-foreground hover:bg-muted/60 hover:text-foreground',
           )}
         >
           <div className="flex items-center gap-1.5">
-            <ArchiveIcon className="size-3 text-amber-400" />
+            <ArchiveIcon className={cn('size-3.5', isQuarantineActive ? 'text-cyan-600 dark:text-cyan-400' : 'text-muted-foreground')} />
             <span>{t('quarantine.navButton')}</span>
           </div>
-          <span className="rounded bg-muted/60 px-1 py-0.5 text-[10px] text-amber-400 font-bold">1,164</span>
+          <span className="rounded bg-muted/60 px-1.5 py-0.5 text-xs text-muted-foreground font-semibold">1,164</span>
         </Link>
       </div>
 
@@ -198,7 +198,7 @@ export function ThreadList({ activeSessionId, isQuarantineActive }: ThreadListPr
                       <span className="block truncate text-xs font-mono font-medium">
                         {title}
                       </span>
-                      <span className="mt-0.5 block truncate font-mono text-[10px] text-muted-foreground/70">
+                      <span className="mt-0.5 block truncate font-mono text-xs text-muted-foreground/70">
                         {formatSessionTime(
                           session.mod_time,
                           i18n.resolvedLanguage,
@@ -283,7 +283,7 @@ export function ThreadList({ activeSessionId, isQuarantineActive }: ThreadListPr
         </AlertDialogContent>
       </AlertDialog>
 
-      <div className="shrink-0 border-t border-border/70 px-4 py-3 text-[11px] text-muted-foreground">
+      <div className="shrink-0 border-t border-border/70 px-4 py-3 text-xs text-muted-foreground">
         {t('threadList.shortcut')}
       </div>
     </aside>

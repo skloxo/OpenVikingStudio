@@ -63,13 +63,13 @@ export function OkfMetadataPanel({
               {t('filePreview.yamlMetadata.generatedBy')}
             </dt>
             <dd className="flex min-w-0 flex-wrap items-center gap-1.5">
-              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-foreground">
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
                 {generatedBy.component}
               </code>
               <span className="text-muted-foreground">
                 {t('filePreview.yamlMetadata.trigger')}
               </span>
-              <code className="font-mono text-[11px] text-foreground/80">
+              <code className="font-mono text-xs text-foreground/80">
                 {generatedBy.trigger}
               </code>
             </dd>
@@ -83,11 +83,11 @@ export function OkfMetadataPanel({
               {t('filePreview.yamlMetadata.source')}
             </dt>
             <dd className="flex min-w-0 items-center gap-1.5">
-              <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] font-medium uppercase text-muted-foreground">
+              <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs font-medium uppercase text-muted-foreground">
                 {source.kind}
               </span>
               <code
-                className="min-w-0 truncate font-mono text-[11px] text-foreground/80"
+                className="min-w-0 truncate font-mono text-xs text-foreground/80"
                 title={source.uri}
               >
                 {source.uri}
@@ -98,7 +98,7 @@ export function OkfMetadataPanel({
       </dl>
 
       {freshness ? (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t bg-muted/10 px-3 py-2 text-[11px]">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t bg-muted/10 px-3 py-2 text-xs">
           <div className="flex items-center gap-1.5 font-medium text-muted-foreground">
             <RefreshCw className="size-3" />
             {t('filePreview.yamlMetadata.freshness')}
@@ -137,7 +137,7 @@ export function OkfMetadataPanel({
       ) : null}
 
       <details className="group border-t bg-background/40">
-        <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-2 text-[11px] font-medium text-muted-foreground transition-colors marker:hidden hover:bg-muted/40 hover:text-foreground">
+        <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-2 text-xs font-medium text-muted-foreground transition-colors marker:hidden hover:bg-muted/40 hover:text-foreground">
           <ChevronRight className="size-3.5 shrink-0 transition-transform group-open:rotate-90" />
           {t('filePreview.yamlMetadata.rawYaml')}
         </summary>

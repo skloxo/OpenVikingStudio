@@ -90,13 +90,13 @@ export function MemoryDiffItem({
         </code>
         <CopyButton value={operation.uri} size="xs" className="size-6 p-0 shrink-0" />
         <Badge
-          className="shrink-0 text-[11px] font-normal max-w-36"
+          className="shrink-0 text-xs font-normal max-w-36"
           variant="outline"
           title={typeLabel}
         >
           <span className="truncate">{typeLabel}</span>
         </Badge>
-        <span className="shrink-0 text-[11px] text-muted-foreground transition-transform duration-200 group-open:rotate-90">
+        <span className="shrink-0 text-xs text-muted-foreground transition-transform duration-200 group-open:rotate-90">
           ›
         </span>
       </summary>
@@ -163,13 +163,13 @@ function ContentBlock({
   return (
     <div className="min-w-0 flex flex-col">
       <div className="mb-1.5 flex items-center justify-between gap-2">
-        <span className={`text-[11px] font-medium ${textColor}`}>{label}</span>
+        <span className={`text-xs font-medium ${textColor}`}>{label}</span>
         <div className="flex items-center gap-1.5 shrink-0">
           {hasLongContent && (
             <button
               type="button"
               onClick={() => setIsExpanded((prev) => !prev)}
-              className="inline-flex items-center gap-0.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              className="inline-flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
             >
               <span>{isExpanded ? t('impact.collapseShort', '收起') : t('impact.expandFull', '展开全文')}</span>
               <ChevronDownIcon
@@ -178,12 +178,12 @@ function ContentBlock({
             </button>
           )}
           {content ? (
-            <CopyButton value={content} size="xs" className="h-5 px-1.5 text-[11px]" />
+            <CopyButton value={content} size="xs" className="h-5 px-1.5 text-xs" />
           ) : null}
         </div>
       </div>
       <pre
-        className={`overflow-auto whitespace-pre-wrap break-all min-w-0 max-w-full rounded-md border bg-background/80 p-2.5 font-mono text-[11px] leading-relaxed text-muted-foreground transition-all ${
+        className={`overflow-auto whitespace-pre-wrap break-all min-w-0 max-w-full rounded-md border bg-background/80 p-2.5 font-mono text-xs leading-relaxed text-muted-foreground transition-all ${
           isExpanded ? 'max-h-none' : 'max-h-64'
         }`}
       >

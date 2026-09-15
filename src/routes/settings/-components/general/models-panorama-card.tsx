@@ -19,13 +19,13 @@ function ModelTile({
   return (
     <div className="flex flex-col rounded-md border bg-muted/20 p-3 space-y-1.5">
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           {title}
         </span>
         <Badge
           variant="outline"
           className={cn(
-            'px-1.5 py-0 text-[11px]',
+            'px-1.5 py-0 text-xs',
             item
               ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-500'
               : 'border-border text-muted-foreground',
@@ -40,13 +40,13 @@ function ModelTile({
       >
         {item?.model || '--'}
       </div>
-      <div className="text-[11px] text-muted-foreground">
+      <div className="text-xs text-muted-foreground">
         {t('hub.models.provider')}:{' '}
         <span className="font-mono text-foreground">
           {item?.provider || '--'}
         </span>
       </div>
-      <div className="text-[11px] text-muted-foreground/80 font-mono tabular-nums truncate">
+      <div className="text-xs text-muted-foreground/80 font-mono tabular-nums truncate">
         {item
           ? showTokens
             ? `${t('hub.models.calls')}: ${Number(item.calls).toLocaleString()} · ${t('hub.models.tokens')}: ${Number(item.totalTokens).toLocaleString()}`
@@ -83,7 +83,7 @@ export function ModelsPanoramaCard({
             <CardTitle className="text-sm font-semibold">
               {t('hub.models.title')}
             </CardTitle>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               {t('hub.models.description')}
             </p>
           </div>

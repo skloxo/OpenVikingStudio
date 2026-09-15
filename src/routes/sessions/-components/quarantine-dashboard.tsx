@@ -119,7 +119,7 @@ export function QuarantineDashboard({ onBackToActive }: { onBackToActive?: () =>
       {/* Top Header */}
       <div className="flex items-center justify-between border-b border-border/40 px-4 py-3">
         <div className="flex items-center gap-2.5">
-          <div className="flex size-7 items-center justify-center rounded-md border border-amber-500/30 bg-amber-500/10 text-amber-400">
+          <div className="flex size-7 items-center justify-center rounded-md border border-border/60 bg-muted/40 text-muted-foreground">
             <ArchiveIcon className="size-3.5" />
           </div>
           <div>
@@ -127,11 +127,11 @@ export function QuarantineDashboard({ onBackToActive }: { onBackToActive?: () =>
               <h2 className="text-xs font-semibold uppercase tracking-wider text-foreground">
                 {t('quarantine.title')}
               </h2>
-              <Badge variant="outline" className="h-4 border-amber-500/30 bg-amber-500/10 px-1 font-mono text-[11px] text-amber-400">
+              <Badge variant="outline" className="h-5 border-border/60 bg-muted/30 px-1.5 font-mono text-xs text-muted-foreground">
                 {t('quarantine.badge')}
               </Badge>
             </div>
-            <p className="font-mono text-[11px] text-muted-foreground">
+            <p className="font-mono text-xs text-muted-foreground">
               {t('quarantine.desc')}
             </p>
           </div>
@@ -142,7 +142,7 @@ export function QuarantineDashboard({ onBackToActive }: { onBackToActive?: () =>
             size="sm"
             variant="outline"
             onClick={onBackToActive}
-            className="h-7 gap-1.5 border-border/60 text-[11px]"
+            className="h-7 gap-1.5 border-border/60 text-xs"
           >
             {t('quarantine.backToActive')}
           </Button>
@@ -155,64 +155,64 @@ export function QuarantineDashboard({ onBackToActive }: { onBackToActive?: () =>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <div className="flex flex-col justify-between rounded-md border border-border/40 bg-card/60 p-3.5 shadow-2xs">
             <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-medium uppercase tracking-wider">{t('quarantine.metricTargets')}</span>
-              <FileBoxIcon className="size-3.5 text-cyan-400" />
+              <span className="text-xs font-medium uppercase tracking-wider">{t('quarantine.metricTargets')}</span>
+              <FileBoxIcon className="size-3.5 text-cyan-600 dark:text-cyan-400" />
             </div>
             <div className="mt-2 flex items-baseline justify-between">
-              <span className="font-mono text-xl font-bold tabular-nums text-cyan-400">
+              <span className="font-mono text-xl font-bold tabular-nums text-cyan-600 dark:text-cyan-400">
                 {snapshot ? snapshot.total_quarantined_targets.toLocaleString() : '--'}
               </span>
-              <span className="font-mono text-[11px] text-muted-foreground">{t('quarantine.targetsUnit')}</span>
+              <span className="font-mono text-xs text-muted-foreground">{t('quarantine.targetsUnit')}</span>
             </div>
-            <div className="mt-1 font-mono text-[11px] text-muted-foreground/80">
+            <div className="mt-1 font-mono text-xs text-muted-foreground/80">
               {t('quarantine.metricTargetsSub')}
             </div>
           </div>
 
           <div className="flex flex-col justify-between rounded-md border border-border/40 bg-card/60 p-3.5 shadow-2xs">
             <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-medium uppercase tracking-wider">{t('quarantine.metricFiles')}</span>
-              <FolderArchiveIcon className="size-3.5 text-cyan-400" />
+              <span className="text-xs font-medium uppercase tracking-wider">{t('quarantine.metricFiles')}</span>
+              <FolderArchiveIcon className="size-3.5 text-cyan-600 dark:text-cyan-400" />
             </div>
             <div className="mt-2 flex items-baseline justify-between">
-              <span className="font-mono text-xl font-bold tabular-nums text-cyan-400">
+              <span className="font-mono text-xl font-bold tabular-nums text-cyan-600 dark:text-cyan-400">
                 {snapshot ? snapshot.total_quarantined_files.toLocaleString() : '--'}
               </span>
-              <span className="font-mono text-[11px] text-muted-foreground">{t('quarantine.filesUnit')}</span>
+              <span className="font-mono text-xs text-muted-foreground">{t('quarantine.filesUnit')}</span>
             </div>
-            <div className="mt-1 font-mono text-[11px] text-muted-foreground/80">
+            <div className="mt-1 font-mono text-xs text-muted-foreground/80">
               {t('quarantine.metricFilesSub')}
             </div>
           </div>
 
           <div className="flex flex-col justify-between rounded-md border border-border/40 bg-card/60 p-3.5 shadow-2xs">
             <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-medium uppercase tracking-wider">{t('quarantine.metricBytes')}</span>
-              <HardDriveIcon className="size-3.5 text-cyan-400" />
+              <span className="text-xs font-medium uppercase tracking-wider">{t('quarantine.metricBytes')}</span>
+              <HardDriveIcon className="size-3.5 text-cyan-600 dark:text-cyan-400" />
             </div>
             <div className="mt-2 flex items-baseline justify-between">
-              <span className="font-mono text-xl font-bold tabular-nums text-cyan-400">
+              <span className="font-mono text-xl font-bold tabular-nums text-cyan-600 dark:text-cyan-400">
                 {snapshot ? snapshot.total_quarantined_mb.toFixed(2) : '--'}
               </span>
-              <span className="font-mono text-[11px] text-muted-foreground">{t('quarantine.bytesUnit')}</span>
+              <span className="font-mono text-xs text-muted-foreground">{t('quarantine.bytesUnit')}</span>
             </div>
-            <div className="mt-1 font-mono text-[11px] text-muted-foreground/80">
+            <div className="mt-1 font-mono text-xs text-muted-foreground/80">
               {t('quarantine.metricBytesSub')}
             </div>
           </div>
 
           <div className="flex flex-col justify-between rounded-md border border-border/40 bg-card/60 p-3.5 shadow-2xs">
             <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-[11px] font-medium uppercase tracking-wider">{t('quarantine.metricBatches')}</span>
-              <ShieldCheckIcon className="size-3.5 text-amber-400" />
+              <span className="text-xs font-medium uppercase tracking-wider">{t('quarantine.metricBatches')}</span>
+              <ShieldCheckIcon className="size-3.5 text-cyan-600 dark:text-cyan-400" />
             </div>
             <div className="mt-2 flex items-baseline justify-between">
-              <span className="font-mono text-xl font-bold tabular-nums text-amber-400">
+              <span className="font-mono text-xl font-bold tabular-nums text-cyan-600 dark:text-cyan-400">
                 {snapshot ? `${snapshot.total_batches} ${t('quarantine.batchUnit')}` : '--'}
               </span>
-              <span className="font-mono text-[11px] text-amber-400">{t('quarantine.integrityOk')}</span>
+              <span className="font-mono text-xs text-muted-foreground">{t('quarantine.integrityOk')}</span>
             </div>
-            <div className="mt-1 font-mono text-[11px] text-muted-foreground/80">
+            <div className="mt-1 font-mono text-xs text-muted-foreground/80">
               {t('quarantine.metricBatchesSub')}
             </div>
           </div>
@@ -236,7 +236,7 @@ export function QuarantineDashboard({ onBackToActive }: { onBackToActive?: () =>
                 size="sm"
                 variant={selectedCategory === 'all' ? 'secondary' : 'ghost'}
                 onClick={() => setSelectedCategory('all')}
-                className="h-6 px-2 text-[11px]"
+                className="h-6 px-2 text-xs"
               >
                 {t('quarantine.filterAll')} ({snapshot ? snapshot.total_quarantined_targets : 0})
               </Button>
@@ -244,7 +244,7 @@ export function QuarantineDashboard({ onBackToActive }: { onBackToActive?: () =>
                 size="sm"
                 variant={selectedCategory === 'zombie_sessions' ? 'secondary' : 'ghost'}
                 onClick={() => setSelectedCategory('zombie_sessions')}
-                className="h-6 px-2 text-[11px]"
+                className="h-6 px-2 text-xs"
               >
                 {t('quarantine.filterZombies')}
               </Button>
@@ -252,7 +252,7 @@ export function QuarantineDashboard({ onBackToActive }: { onBackToActive?: () =>
                 size="sm"
                 variant={selectedCategory === 'cold_staging_sessions' ? 'secondary' : 'ghost'}
                 onClick={() => setSelectedCategory('cold_staging_sessions')}
-                className="h-6 px-2 text-[11px]"
+                className="h-6 px-2 text-xs"
               >
                 {t('quarantine.filterStaging')}
               </Button>
@@ -260,7 +260,7 @@ export function QuarantineDashboard({ onBackToActive }: { onBackToActive?: () =>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[11px] text-muted-foreground">
+            <span className="font-mono text-xs text-muted-foreground">
               {t('quarantine.matchedCount', { count: snapshot ? snapshot.filtered_count : 0 })}
             </span>
             <Button
@@ -277,23 +277,23 @@ export function QuarantineDashboard({ onBackToActive }: { onBackToActive?: () =>
 
         {/* Dry-Run Result Banner if active */}
         {dryRunResult && activeItem && (
-          <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3">
+          <div className="rounded-md border border-border/60 bg-card/90 p-3.5 shadow-2xs">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {dryRunResult.safe_to_restore ? (
-                  <CheckCircle2Icon className="size-4 text-cyan-400" />
+                  <CheckCircle2Icon className="size-4 text-cyan-600 dark:text-cyan-400" />
                 ) : (
-                  <XCircleIcon className="size-4 text-rose-400" />
+                  <XCircleIcon className="size-4 text-rose-500" />
                 )}
                 <span className="font-mono text-xs font-bold text-foreground">
                   {t('quarantine.dryRunReportTitle')}: {dryRunResult.item_name}
                 </span>
                 <Badge
                   variant="outline"
-                  className={`h-4 text-[11px] ${
+                  className={`h-5 text-xs px-1.5 ${
                     dryRunResult.safe_to_restore
-                      ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-400'
-                      : 'border-rose-500/30 bg-rose-500/10 text-rose-400'
+                      ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 font-medium'
+                      : 'border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400 font-medium'
                   }`}
                 >
                   {dryRunResult.safe_to_restore ? t('quarantine.verifiedPass') : t('quarantine.verifiedFail')}
@@ -303,18 +303,18 @@ export function QuarantineDashboard({ onBackToActive }: { onBackToActive?: () =>
                 size="sm"
                 variant="ghost"
                 onClick={() => setDryRunResult(null)}
-                className="h-5 px-1.5 text-[11px] text-muted-foreground"
+                className="h-5 px-1.5 text-xs text-muted-foreground"
               >
                 {t('quarantine.closeReport')}
               </Button>
             </div>
-            <div className="mt-2 grid grid-cols-2 gap-2 font-mono text-[11px] text-muted-foreground md:grid-cols-4">
+            <div className="mt-2 grid grid-cols-2 gap-2 font-mono text-xs text-muted-foreground md:grid-cols-4">
               <div>{t('quarantine.archivedFiles')}: <span className="text-foreground">{dryRunResult.destination_files_count}</span></div>
               <div>{t('quarantine.archivedSize')}: <span className="text-foreground">{formatBytes(dryRunResult.destination_size_bytes)}</span></div>
-              <div>{t('quarantine.targetExists')}: <span className={dryRunResult.target_already_exists ? 'text-amber-400' : 'text-cyan-400'}>{dryRunResult.target_already_exists ? t('quarantine.targetExistsYes') : t('quarantine.targetExistsNo')}</span></div>
+              <div>{t('quarantine.targetExists')}: <span className={dryRunResult.target_already_exists ? 'text-rose-500' : 'text-cyan-600 dark:text-cyan-400'}>{dryRunResult.target_already_exists ? t('quarantine.targetExistsYes') : t('quarantine.targetExistsNo')}</span></div>
               <div>{t('quarantine.batchIdLabel')}: <span className="text-foreground">{dryRunResult.batch_id}</span></div>
             </div>
-            <div className="mt-1 font-mono text-[11px] text-foreground/90">
+            <div className="mt-1 font-mono text-xs text-foreground/90">
               {dryRunResult.message}
             </div>
           </div>
@@ -324,7 +324,7 @@ export function QuarantineDashboard({ onBackToActive }: { onBackToActive?: () =>
         <div className="rounded-md border border-border/40 bg-card/60">
           <div className="overflow-x-auto">
             <table className="w-full text-left font-mono text-xs">
-              <thead className="border-b border-border/40 bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
+              <thead className="border-b border-border/40 bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
                 <tr>
                   <th className="px-3 py-2 font-medium">{t('quarantine.colTarget')}</th>
                   <th className="px-3 py-2 font-medium">{t('quarantine.colCategory')}</th>
@@ -355,14 +355,14 @@ export function QuarantineDashboard({ onBackToActive }: { onBackToActive?: () =>
                     >
                       <td className="px-3 py-2">
                         <div className="font-semibold text-foreground">{item.name}</div>
-                        <div className="text-[11px] text-muted-foreground truncate max-w-md">
+                        <div className="text-xs text-muted-foreground truncate max-w-md">
                           {item.source}
                         </div>
                       </td>
                       <td className="px-3 py-2">
                         <Badge
                           variant="outline"
-                          className="border-border/60 bg-muted/30 text-[11px] text-muted-foreground"
+                          className="border-border/60 bg-muted/30 text-xs text-muted-foreground"
                         >
                           {item.category}
                         </Badge>
@@ -373,7 +373,7 @@ export function QuarantineDashboard({ onBackToActive }: { onBackToActive?: () =>
                       <td className="px-3 py-2 text-right tabular-nums text-foreground">
                         {formatBytes(item.size_bytes)}
                       </td>
-                      <td className="px-3 py-2 text-muted-foreground text-[11px]">
+                      <td className="px-3 py-2 text-muted-foreground text-xs">
                         {item.batch_id}
                       </td>
                       <td className="px-3 py-2 text-right">
@@ -382,7 +382,11 @@ export function QuarantineDashboard({ onBackToActive }: { onBackToActive?: () =>
                           variant="outline"
                           disabled={dryRunMutation.isPending && activeItem?.name === item.name}
                           onClick={() => handleTestDryRun(item)}
-                          className="h-6 border-amber-500/30 px-2 text-[11px] text-amber-400 hover:bg-amber-500/10"
+                          className="h-6 border-border/60 bg-background px-2 text-xs text-foreground hover:bg-muted"
+                          title={t('quarantine.dryRunSafeTooltip', {
+                            defaultValue:
+                              '只读验真：仅校验归档包哈希与结构完整性，100% 安全无副作用',
+                          })}
                         >
                           {dryRunMutation.isPending && activeItem?.name === item.name ? (
                             t('quarantine.dryRunTesting')

@@ -103,9 +103,9 @@ describe('UniversalMemoryImpact Wheel Unit Tests', () => {
     expect(screen.getByText('old content line')).toBeTruthy()
     expect(screen.getByText('new content line')).toBeTruthy()
 
-    // 严禁存在 text-[8px], text-[9px], text-[10px]
-    expect(container.innerHTML).not.toContain('text-[8px]')
-    expect(container.innerHTML).not.toContain('text-[9px]')
-    expect(container.innerHTML).not.toContain('text-[10px]')
+    // 严禁存在 text-xs, text-xs, text-xs
+    expect(container.innerHTML).not.toContain('text-xs')
+    expect(container.innerHTML).not.toContain('text-xs')
+    expect(container.innerHTML).not.toContain('text-xs')
   })
 })

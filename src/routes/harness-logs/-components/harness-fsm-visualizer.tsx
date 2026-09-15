@@ -70,7 +70,7 @@ export function HarnessFsmVisualizer({ fsm }: HarnessFsmVisualizerProps) {
           <h3 className="text-sm font-semibold tracking-wide">
             12-态确定性有限状态机流水线 (Deterministic Harness FSM)
           </h3>
-          <Badge variant="outline" className="border-cyan-500/30 bg-cyan-500/10 text-[11px] text-cyan-300 font-mono">
+          <Badge variant="outline" className="border-cyan-500/30 bg-cyan-500/10 text-xs text-cyan-300 font-mono">
             {fsm?.transition_rules_count ?? 26} 条有向转移规则
           </Badge>
         </div>
@@ -102,7 +102,7 @@ export function HarnessFsmVisualizer({ fsm }: HarnessFsmVisualizerProps) {
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="font-mono text-[11px] text-muted-foreground">
+                <span className="font-mono text-xs text-muted-foreground">
                   0{idx + 1}
                 </span>
                 {isSelected ? (
@@ -113,9 +113,9 @@ export function HarnessFsmVisualizer({ fsm }: HarnessFsmVisualizerProps) {
               </div>
               <div className="my-2">
                 <div className="text-xs font-medium text-foreground truncate">{stage.label}</div>
-                <div className="font-mono text-[11px] text-cyan-400/90 truncate">{stage.id}</div>
+                <div className="font-mono text-xs text-cyan-400/90 truncate">{stage.id}</div>
               </div>
-              <div className="border-t border-border/40 pt-1 text-[11px] text-muted-foreground truncate">
+              <div className="border-t border-border/40 pt-1 text-xs text-muted-foreground truncate">
                 {stage.role ?? 'Harness'}
               </div>
             </button>
@@ -155,9 +155,9 @@ export function HarnessFsmVisualizer({ fsm }: HarnessFsmVisualizerProps) {
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs font-semibold">{ex.label}</span>
-                    <span className="font-mono text-[11px] text-muted-foreground">[{ex.id}]</span>
+                    <span className="font-mono text-xs text-muted-foreground">[{ex.id}]</span>
                   </div>
-                  <p className="mt-0.5 text-[11px] text-muted-foreground line-clamp-1">{ex.desc}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">{ex.desc}</p>
                 </div>
               </button>
             )
@@ -172,10 +172,10 @@ export function HarnessFsmVisualizer({ fsm }: HarnessFsmVisualizerProps) {
             <div className="flex items-center gap-2">
               <ActivityIcon className="size-3.5 text-cyan-400" />
               <span className="font-semibold text-cyan-200">当前聚焦状态: {activeStage.label}</span>
-              <span className="font-mono text-[11px] text-cyan-400">({activeStage.id})</span>
+              <span className="font-mono text-xs text-cyan-400">({activeStage.id})</span>
             </div>
             {'role' in activeStage && activeStage.role && (
-              <Badge variant="outline" className="border-cyan-500/40 text-[11px] text-cyan-300">
+              <Badge variant="outline" className="border-cyan-500/40 text-xs text-cyan-300">
                 主控职责: {activeStage.role}
               </Badge>
             )}

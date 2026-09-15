@@ -51,7 +51,8 @@ export function TaskOverviewGrid({ task }: TaskOverviewGridProps) {
     (status === 'completed' && task.resource_id ? task.resource_id : null)
 
   const rawInitiator = meta.initiator || (meta.actor ? `User (${meta.actor})` : '')
-  const initiatorInfo = parseInitiator(rawInitiator, task.task_type)
+  const resourceId = deliverableUri || task.resource_id || meta.uri
+  const initiatorInfo = parseInitiator(rawInitiator, task.task_type, resourceId)
 
   return (
     <>
@@ -65,7 +66,7 @@ export function TaskOverviewGrid({ task }: TaskOverviewGridProps) {
               </span>
               <Badge
                 variant="outline"
-                className="text-[11px] px-1.5 py-0 h-4 border-cyan-500/40 text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 font-mono shrink-0"
+                className="text-xs px-1.5 py-0 h-4 border-cyan-500/40 text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 font-mono shrink-0"
               >
                 {deliverableUri.startsWith('http') ? 'Web URL' : 'VikingFS'}
               </Badge>
@@ -74,7 +75,7 @@ export function TaskOverviewGrid({ task }: TaskOverviewGridProps) {
               <Button
                 variant="ghost"
                 size="xs"
-                className="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground cursor-pointer"
+                className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
                 onClick={() => {
                   void navigator.clipboard.writeText(deliverableUri)
                   toast.success(t('deliverableCard.copied', '已复制成果物地址'))
@@ -87,7 +88,7 @@ export function TaskOverviewGrid({ task }: TaskOverviewGridProps) {
                 <Button
                   variant="outline"
                   size="xs"
-                  className="h-6 px-2 text-[11px] border-cyan-500/40 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10 cursor-pointer"
+                  className="h-6 px-2 text-xs border-cyan-500/40 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10 cursor-pointer"
                   onClick={() => window.open(deliverableUri, '_blank', 'noopener,noreferrer')}
                 >
                   <ExternalLinkIcon className="size-3 mr-1" />
@@ -194,7 +195,7 @@ export function TaskResultOutcomeSummary({ task }: TaskOverviewGridProps) {
               <span className="text-sm font-semibold text-foreground">
                 {t('detail.result')}
               </span>
-              <span className="px-1.5 py-0.5 rounded-md bg-muted text-[11px] font-mono text-muted-foreground">
+              <span className="px-1.5 py-0.5 rounded-md bg-muted text-xs font-mono text-muted-foreground">
                 {isJson ? t('detail.payloadJson', 'JSON') : t('detail.payloadText', 'Text')}
               </span>
             </div>
@@ -205,7 +206,7 @@ export function TaskResultOutcomeSummary({ task }: TaskOverviewGridProps) {
               <Button
                 variant="ghost"
                 size="xs"
-                className="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted/60 cursor-pointer"
+                className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/60 cursor-pointer"
                 onClick={() => {
                   navigator.clipboard.writeText(formattedResult)
                   toast.success(t('detail.resultCopied'))

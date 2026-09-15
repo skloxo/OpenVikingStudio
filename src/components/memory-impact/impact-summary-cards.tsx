@@ -44,7 +44,7 @@ export interface ImpactCountsProps {
 
 export function ImpactCounts({ totals, className = '' }: ImpactCountsProps) {
   return (
-    <span className={`inline-flex items-center gap-1 font-mono text-[11px] tabular-nums ${className}`}>
+    <span className={`inline-flex items-center gap-1 font-mono text-xs tabular-nums ${className}`}>
       {totals.adds > 0 ? (
         <span className="text-cyan-600 dark:text-cyan-400 font-medium">
           +{totals.adds}
@@ -91,7 +91,7 @@ export function ImpactSummaryCards({ summary, labels }: ImpactSummaryCardsProps)
             key={kind}
             className="flex flex-col rounded-lg border bg-background/80 px-3 py-2 transition-colors"
           >
-            <div className={`flex items-center gap-1.5 text-[11px] font-medium ${conf.textColor}`}>
+            <div className={`flex items-center gap-1.5 text-xs font-medium ${conf.textColor}`}>
               <Icon className="size-3.5 shrink-0" />
               <span className="truncate">{label}</span>
             </div>

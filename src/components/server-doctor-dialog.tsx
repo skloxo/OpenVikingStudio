@@ -131,7 +131,7 @@ export function ServerDoctorDialog({
             <Badge
               variant="outline"
               className={cn(
-                'font-mono text-[11px] px-2 py-0.5',
+                'font-mono text-xs px-2 py-0.5',
                 isHealthy
                   ? 'border-cyan-500/40 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400'
                   : 'border-rose-500/40 bg-rose-500/10 text-rose-500',
@@ -161,12 +161,12 @@ export function ServerDoctorDialog({
               </span>
               <Badge
                 variant="outline"
-                className="font-mono text-[11px] px-1.5 py-0 border-border/60 bg-background text-foreground"
+                className="font-mono text-xs px-1.5 py-0 border-border/60 bg-background text-foreground"
               >
                 {rttMs > 0 ? `${rttMs}ms` : '--'}
               </Badge>
             </div>
-            <div className="font-mono text-[11px] space-y-1 text-muted-foreground">
+            <div className="font-mono text-xs space-y-1 text-muted-foreground">
               <div className="flex items-center justify-between">
                 <span>BaseURL:</span>
                 <span className="text-foreground truncate max-w-40 font-medium">
@@ -191,12 +191,12 @@ export function ServerDoctorDialog({
               </span>
               <Badge
                 variant="outline"
-                className="font-mono text-[11px] px-1.5 py-0 border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400"
+                className="font-mono text-xs px-1.5 py-0 border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400"
               >
                 已挂载 (Mounted)
               </Badge>
             </div>
-            <div className="font-mono text-[11px] space-y-1 text-muted-foreground">
+            <div className="font-mono text-xs space-y-1 text-muted-foreground">
               <div className="flex items-center justify-between">
                 <span>FS 快照版本:</span>
                 <span className="text-foreground font-medium">VikingFS v1.3</span>
@@ -217,12 +217,12 @@ export function ServerDoctorDialog({
               </span>
               <Badge
                 variant="outline"
-                className="font-mono text-[11px] px-1.5 py-0 border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400"
+                className="font-mono text-xs px-1.5 py-0 border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400"
               >
                 正常 (Healthy)
               </Badge>
             </div>
-            <div className="font-mono text-[11px] space-y-1 text-muted-foreground">
+            <div className="font-mono text-xs space-y-1 text-muted-foreground">
               <div className="flex items-center justify-between">
                 <span>索引引擎:</span>
                 <span className="text-foreground font-medium">HNSW / Cosine</span>
@@ -243,12 +243,12 @@ export function ServerDoctorDialog({
               </span>
               <Badge
                 variant="outline"
-                className="font-mono text-[11px] px-1.5 py-0 border-border/60 bg-background text-foreground"
+                className="font-mono text-xs px-1.5 py-0 border-border/60 bg-background text-foreground"
               >
                 {connectionRole || 'admin'}
               </Badge>
             </div>
-            <div className="font-mono text-[11px] space-y-1 text-muted-foreground">
+            <div className="font-mono text-xs space-y-1 text-muted-foreground">
               <div className="flex items-center justify-between">
                 <span>当前账号:</span>
                 <span className="text-foreground font-medium">
@@ -267,7 +267,7 @@ export function ServerDoctorDialog({
 
         {/* 自愈终端输出面板 */}
         {healingLogs.length > 0 && (
-          <div className="rounded border border-border/60 bg-card p-3 space-y-1.5 font-mono text-[11px]">
+          <div className="rounded border border-border/60 bg-card p-3 space-y-1.5 font-mono text-xs">
             <div className="flex items-center gap-1.5 text-foreground font-semibold border-b border-border/40 pb-1.5 mb-1.5 font-sans text-xs">
               <TerminalIcon className="size-3.5 text-cyan-500" />
               <span>{t('appShell.doctor.terminalLogs', '自愈诊断流水线 (Doctor Pipeline)')}</span>
@@ -287,7 +287,7 @@ export function ServerDoctorDialog({
 
         {/* 底部操作区 */}
         <div className="flex items-center justify-between gap-3 pt-1 border-t border-border/60">
-          <div className="text-[11px] font-mono text-muted-foreground">
+          <div className="text-xs font-mono text-muted-foreground">
             {isHealthLoading
               ? t('appShell.doctor.probing', '正在探测服务端心跳...')
               : `${t('appShell.doctor.lastCheck', '最近探测')}: ${new Date().toLocaleTimeString()}`}

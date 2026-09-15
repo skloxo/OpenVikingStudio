@@ -68,7 +68,7 @@ export function QueueStatusCard({
       ) : (
         <div className="flex flex-1 flex-col justify-between gap-0.5">
           {/* 统一顶置表头 (12 列格栅 100% 对齐) */}
-          <div className="grid grid-cols-12 gap-1 items-center px-2.5 py-1 text-[11px] text-muted-foreground font-medium border-b border-border/60">
+          <div className="grid grid-cols-12 gap-1 items-center px-2.5 py-1 text-xs text-muted-foreground font-medium border-b border-border/60">
             <div className="col-span-8 flex items-center min-w-0 pr-2 overflow-hidden select-none">
               <span className={cn('shrink-0', isTaskCard && 'w-22 text-left')}>
                 {isTaskCard ? t('queue.taskType') : t('queue.queueName')}
