@@ -269,16 +269,16 @@ export const CORE_STEP_SPECS: Record<string, AtomicStepSpec> = {
     isActionOnly: true,
     engineKey: 'viking_fs',
   },
-  // 24. 熵增防御 (量化计数: 用例 / cases)
+  // 24. 熵增防御与物理验真 (量化计数: 用例 / cases)
   step_quality_gate: {
     id: 'step_quality_gate',
-    nameZh: '熵增防御',
-    nameEn: 'Entropy Defense',
+    nameZh: '物理验真门禁',
+    nameEn: 'Multi-Metric Gate',
     unitZh: '用例',
     unitEn: 'cases',
-    stageKeywords: ['eval', 'benchmark', 'gate', 'quality', 'entropy'],
-    metricKeys: ['evaluated_cases', 'passed_cases', 'total_queries', 'completed_queries'],
-    totalKeys: ['total_queries', 'total_cases'],
+    stageKeywords: ['eval', 'benchmark', 'gate', 'quality', 'entropy', 'verify'],
+    metricKeys: ['passed', 'evaluated_cases', 'passed_cases', 'passed_tests', 'effective_diff_lines', 'total_queries', 'completed_queries'],
+    totalKeys: ['total_queries', 'total_cases', 'total_tests'],
     engineKey: 'semantic',
   },
   // 25. 病灶定位 (量化计数: 处)
