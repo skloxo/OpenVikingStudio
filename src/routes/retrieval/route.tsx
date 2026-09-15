@@ -7,6 +7,7 @@ import { GatekeeperMetricsCard } from './-components/gatekeeper-metrics-card'
 import { GatekeeperAuditStream } from './-components/gatekeeper-audit-stream'
 import { RetrievalControls } from './-components/retrieval-controls'
 import { RetrievalMetricsCards } from './-components/retrieval-metrics-cards'
+import { BM25HybridCockpit } from './-components/bm25-hybrid-cockpit'
 import { RetrievalResults } from './-components/retrieval-results'
 import { RetrievalSearchBar } from './-components/search-bar'
 import {
@@ -127,6 +128,9 @@ function RetrievalPage() {
 
       {/* 4 大核心检索运行与质量基准 KPI 指标卡片 */}
       <RetrievalMetricsCards />
+
+      {/* BM25 + 向量双流融合座舱与精确符号试验台 (Card-Retrieval-BM25Hybrid) */}
+      <BM25HybridCockpit />
 
       <div className="flex items-center gap-2">
         <div className="flex-1 min-w-0">
