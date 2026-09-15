@@ -10,6 +10,7 @@ import { RetrievalMetricsCards } from './-components/retrieval-metrics-cards'
 import { BM25HybridCockpit } from './-components/bm25-hybrid-cockpit'
 import { ZGSearchCockpit } from './-components/zg-search-cockpit'
 import { RAGAbstentionCockpit } from './-components/rag-abstention-cockpit'
+import { HGRAGCompassCockpit } from './-components/hg-rag-compass-cockpit'
 import { RetrievalResults } from './-components/retrieval-results'
 import { RetrievalSearchBar } from './-components/search-bar'
 import {
@@ -139,6 +140,9 @@ function RetrievalPage() {
 
       {/* RAG 约束验证与主动弃答门禁座舱 (Card-RAG-Abstention-ZeroHallucination-Pipeline) */}
       <RAGAbstentionCockpit />
+
+      {/* HG-RAG 分层指南针拓扑与读写分离知识工程座舱 (Card-Knowledge-HG-RAG-HierarchicalCompass) */}
+      <HGRAGCompassCockpit />
 
       <div className="flex items-center gap-2">
         <div className="flex-1 min-w-0">

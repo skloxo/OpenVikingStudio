@@ -29,15 +29,17 @@ logger = logging.getLogger("openviking-mcp")
 DEFAULT_CPA_URL = os.environ.get("CPA_API_URL", "http://127.0.0.1:8317/v1/chat/completions")
 
 MODEL_FALLBACK_CHAINS = {
+    # 👷 工兵模型池（海量 Token，随便用，严禁混入昂贵教师模型）
     "worker": [
-        {"model": "mimo-v2.5-pro", "timeout": 25, "slice": 25000},
-        {"model": "claude-sonnet-5", "timeout": 30, "slice": 20000},
-        {"model": "qwen3.8-flash-next", "timeout": 20, "slice": 15000},
+        {"model": "qwen3.8-flash-next", "timeout": 20, "slice": 25000},
+        {"model": "glm-5.3-flash", "timeout": 20, "slice": 25000},
+        {"model": "mimo-v2.5-pro", "timeout": 25, "slice": 30000},
+        {"model": "deepseek-v4-flash", "timeout": 20, "slice": 20000},
     ],
+    # 🧠 教师模型池（极昂贵，仅限重大死锁或终极架构仲裁，严禁滥用）
     "mentor": [
         {"model": "claude-opus-5", "timeout": 25},
-        {"model": "deepseek-v4-pro", "timeout": 25},
-        {"model": "claude-sonnet-5", "timeout": 25},
+        {"model": "gpt-5.6", "timeout": 25},
     ],
 }
 
@@ -156,7 +158,8 @@ def register_cpa_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Any]:
             return "\n".join(lines)
 
         sys_prompt = SYSTEM_PROMPTS.get(mode, SYSTEM_PROMPTS["consult"])
-        chain = MODEL_FALLBACK_CHAINS["mentor"]
+        # 红队对抗优先使用工兵模型群（速度快、Token海量，不耗贵模型）；架构咨询使用导师链
+        chain = MODEL_FALLBACK_CHAINS["worker"] if mode == "adversarial" else MODEL_FALLBACK_CHAINS["mentor"]
         if model:
             chain = [{"model": model, "timeout": 25}] + chain
 
