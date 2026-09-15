@@ -58,6 +58,7 @@ import {
   AppConnectionProvider,
   useAppConnection,
 } from '#/hooks/use-app-connection'
+import { useServerVersion } from '#/hooks/use-server-version'
 import { resolveStudioManagementCapabilities } from '#/lib/studio-permissions'
 
 type NavItem = {
@@ -241,6 +242,7 @@ function IdentityScopedAppShell({ children }: { children: React.ReactNode }) {
 
 function AppShellInner({ children }: { children: React.ReactNode }) {
   const { i18n, t } = useTranslation(['appShell', 'common'])
+  const appVersion = useServerVersion()
   const navigate = useNavigate()
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
@@ -298,7 +300,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
               <AccountSwitcher />
               <span className="text-[11px] font-mono text-slate-400 dark:text-slate-500 font-normal leading-none select-none block px-2 -mt-1">
-                v{__APP_VERSION__}
+                v{appVersion}
               </span>
             </div>
             <SidebarTrigger className="shrink-0" />
@@ -548,7 +550,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             </span>
           </div>
           <span className="text-[11px] font-mono text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded border border-border/40">
-            v{__APP_VERSION__}
+            v{appVersion}
           </span>
         </header>
 
