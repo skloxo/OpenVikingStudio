@@ -17,10 +17,14 @@ export function normalizeTokenSeries(
     const vlmInput = asNumber(record.vlm_input)
     const vlmOutput = asNumber(record.vlm_output)
     const embeddingInput = asNumber(record.embedding_input)
+    const rerankInput = asNumber(record.rerank_input)
     return {
       date: asString(record.date),
       embedding_input: embeddingInput,
-      total: asNumber(record.total) || vlmInput + vlmOutput + embeddingInput,
+      rerank_input: rerankInput,
+      total:
+        asNumber(record.total) ||
+        vlmInput + vlmOutput + embeddingInput + rerankInput,
       vlm_input: vlmInput,
       vlm_output: vlmOutput,
     }

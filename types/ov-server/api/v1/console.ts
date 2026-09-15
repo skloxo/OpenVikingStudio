@@ -13,6 +13,7 @@ export type ConsoleContextCounts = {
 
 export type ConsoleTokenCounts = {
   embedding_input?: number
+  rerank_input?: number
   total?: number
   vlm_input?: number
   vlm_output?: number
@@ -53,6 +54,7 @@ export type ConsoleSeriesResult<TItem> = OvMaybeDisabled & {
 export type ConsoleTokenSeriesItem = {
   date?: string
   embedding_input?: number
+  rerank_input?: number
   total?: number
   vlm_input?: number
   vlm_output?: number

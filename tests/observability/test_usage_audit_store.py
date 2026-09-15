@@ -234,6 +234,21 @@ async def test_sqlite_usage_audit_store_aggregates_dashboard_data(tmp_path):
                     user_id="user-2",
                 ),
                 _event(
+                    "retrieval.query",
+                    {
+                        "operation": "find",
+                        "status": "success",
+                    },
+                ),
+                _event(
+                    "retrieval.query",
+                    {
+                        "operation": "search",
+                        "status": "success",
+                    },
+                    user_id="user-2",
+                ),
+                _event(
                     "http.request",
                     {
                         "request_id": "req-find",
@@ -314,6 +329,7 @@ async def test_sqlite_usage_audit_store_aggregates_dashboard_data(tmp_path):
             "vlm_input": 3,
             "vlm_output": 2,
             "embedding_input": 105,
+            "rerank_input": 0,
             "total": 110,
         }
         assert await store.get_today_tokens(
@@ -322,6 +338,7 @@ async def test_sqlite_usage_audit_store_aggregates_dashboard_data(tmp_path):
             "vlm_input": 3,
             "vlm_output": 2,
             "embedding_input": 5,
+            "rerank_input": 0,
             "total": 10,
         }
         assert await store.get_today_retrievals(
@@ -412,6 +429,7 @@ async def test_sqlite_usage_audit_store_resets_incompatible_legacy_schema(tmp_pa
             "vlm_input": 8,
             "vlm_output": 2,
             "embedding_input": 0,
+            "rerank_input": 0,
             "total": 10,
         }
         commits = await store.get_context_commit_heatmap(

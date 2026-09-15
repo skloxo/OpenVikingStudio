@@ -14,6 +14,7 @@ export interface TodayTokens {
   vlm_input?: number;
   vlm_output?: number;
   embedding_input?: number;
+  rerank_input?: number;
 }
 
 export interface TodayRetrievals {
