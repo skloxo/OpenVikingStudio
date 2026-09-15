@@ -69,7 +69,7 @@ export const common = {
         title: 'Skills',
       },
       harnessLogs: {
-        title: 'Harness Audit',
+        title: 'Harness Cockpit',
       },
       resources: {
         title: 'Resources',
