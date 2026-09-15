@@ -223,6 +223,17 @@ class ReadOffloadManager(HookAspect):
             tail_preview=tail_preview,
         )
 
+        try:
+            from openviking.core.hitl_offload_telemetry import HITLOffloadTelemetry
+            HITLOffloadTelemetry().record_read_offload(
+                target_path=target_path,
+                total_lines=total_lines,
+                total_bytes=total_bytes,
+                content_hash=content_hash,
+            )
+        except Exception:
+            pass
+
         logger.info(
             f"[ReadOffloadManager] Offloaded {target_path} ({total_lines} lines, {total_bytes}B) -> {ref_id}"
         )

@@ -41,6 +41,7 @@ from openviking.server.routers import (
     debug_router,
     failure_taxonomy_router,
     filesystem_router,
+    hitl_offload_router,
     metrics_router,
     observer_router,
     openviking_assets_router,
@@ -640,6 +641,7 @@ def create_app(
     app.include_router(privacy_configs_router)
     app.include_router(quarantine_router)
     app.include_router(failure_taxonomy_router)
+    app.include_router(hitl_offload_router)
     app.include_router(relations_router)
     app.include_router(skills_router)
     app.include_router(sessions_router)

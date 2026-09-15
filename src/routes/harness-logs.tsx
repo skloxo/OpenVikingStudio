@@ -8,6 +8,7 @@ import { ovClient } from '#/lib/ov-client'
 import {
   ActivityIcon,
   ArrowLeftIcon,
+  FileCodeIcon,
   LayersIcon,
   RefreshCwIcon,
   ShieldAlertIcon,
@@ -23,6 +24,7 @@ import { HarnessLessonsTable } from './harness-logs/-components/harness-lessons-
 import type { LessonItem } from './harness-logs/-components/harness-lessons-table'
 import { HarnessAgentLoopCockpit } from './harness-logs/-components/harness-agent-loop-cockpit'
 import { HarnessFailureWhitelistRadar } from './harness-logs/-components/harness-failure-whitelist-radar'
+import { HarnessHITLOffloadCenter } from './harness-logs/-components/harness-hitl-offload-center'
 
 export const Route = createFileRoute('/harness-logs')({
   component: HarnessLogsPage,
@@ -30,7 +32,7 @@ export const Route = createFileRoute('/harness-logs')({
 
 export function HarnessLogsPage() {
   const { t } = useTranslation('skillsPage')
-  const [activeTab, setActiveTab] = React.useState<'fsm' | 'gates' | 'agent-loop' | 'failure-radar' | 'playground' | 'lessons'>('fsm')
+  const [activeTab, setActiveTab] = React.useState<'fsm' | 'gates' | 'agent-loop' | 'failure-radar' | 'hitl-offload' | 'playground' | 'lessons'>('fsm')
   const [searchQuery, setSearchQuery] = React.useState('')
 
   const { connection, connectionRole, isConnectionRoleLoading } = useAppConnection()
@@ -150,6 +152,7 @@ export function HarnessLogsPage() {
           { id: 'gates', label: '四大贯彻门禁看板', icon: <ShieldCheckIcon className="size-3.5 mr-1 text-cyan-400" /> },
           { id: 'agent-loop', label: '双层循环与主动刹车', icon: <ActivityIcon className="size-3.5 mr-1 text-cyan-400" /> },
           { id: 'failure-radar', label: '失败画像与白名单雷达', icon: <ShieldAlertIcon className="size-3.5 mr-1 text-cyan-400" /> },
+          { id: 'hitl-offload', label: '读Offload与HITL', icon: <FileCodeIcon className="size-3.5 mr-1 text-cyan-400" /> },
           { id: 'playground', label: '实时交互实验场', icon: <TerminalIcon className="size-3.5 mr-1 text-cyan-400" /> },
           { id: 'lessons', label: '演进教训档案', icon: <LayersIcon className="size-3.5 mr-1 text-cyan-400" /> },
         ].map((tab) => (
@@ -175,6 +178,7 @@ export function HarnessLogsPage() {
         {activeTab === 'gates' && <HarnessGateDashboard gates={metrics?.gates} />}
         {activeTab === 'agent-loop' && <HarnessAgentLoopCockpit />}
         {activeTab === 'failure-radar' && <HarnessFailureWhitelistRadar />}
+        {activeTab === 'hitl-offload' && <HarnessHITLOffloadCenter />}
         {activeTab === 'playground' && <HarnessLivePlayground />}
         {activeTab === 'lessons' && <HarnessLessonsTable lessons={lessons} searchQuery={searchQuery} />}
       </div>
