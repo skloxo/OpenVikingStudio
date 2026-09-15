@@ -30,7 +30,7 @@
 | **`v1.5.04`** | **Card-Memory-StagingQuarantine-LifecycleGate** | **存量会话文档冷隔离、四态生命周期标记与检索抗熵增护栏 (Staging Session Quarantine, Lifecycle FSM & Anti-Entropy Gate)** | 1. 深度治理 9月8日~10日遗留在 `viking://resources/staging/` 下的 3070、antigravity、2080ti 会话过程转储文档，安全冷备至 `~/.openviking/data/archive/cold_staging_sessions/` 并落盘 `quarantine_manifest.json`（490 个文件，2.3 MB 完整备份）；<br>2. 官方标准 API 闭环解绑：调用 `DELETE /api/v1/fs` 彻底清除 VectorDB 中对应的 L0/L1/L2 向量切片与语义标记，热索引节点物理净减；<br>3. Hook 预取与检索入口抗熵增护栏：`ov_pre_invocation.py` 增加路径黑名单过滤（物理阻断 `staging/` 与 `archive/` 污染 Agent 开局上下文）；<br>4. 检索四态生命周期打标与默认过滤：`/studio/retrieval` 增加「仅看活跃基线 (Active Only)」开关（默认选中），对归档/已废弃条目渲染中性/警告徽章，彻底消灭历史流水账与 1936 过渡期毒性；<br>5. 门禁验证：单测 2/2 全绿，安全扫描 4,213 文件零泄密，Vite 构建 18.80s PASS。<br>**Commit Hash**：`e9e464da4` | **修改文件**：`package.json`, `openviking/_version.py`, `scripts/quarantine_staging_sessions.py`, `src/routes/retrieval/-components/retrieval-controls.tsx`, `src/routes/retrieval/-components/retrieval-results.tsx`, `src/routes/retrieval/route.tsx`, `src/i18n/locales/zh-CN/retrieval.ts`, `src/i18n/locales/en/retrieval.ts`, `tests/unit/test_staging_quarantine_and_lifecycle_gate.py`, `.agents/hooks/ov_pre_invocation.py` | [x] 已验收通过 ✅ |
 | **`v1.5.05`** | **Card-Harness-ReadWriteOffload-HookGuard** | **腾讯 DECO 级读写两侧 Offload 护栏与 Hook 切面长文本防偷懒/防越权体系** | 1. 吸收腾讯《DECO 数仓 Agent 引擎护栏实践》：彻底根治模型在长脚本（1200+行）生成时的“省略偷懒 (/* 省略若干行 */)”与“未经确认越权推生产”绝症；<br>2. Hook 切面与推理循环解耦：围绕模型与工具调用建立独立前后回调拦截（`HookAspectRegistry`）；<br>3. 读写两侧 Offload：大文件读拦截自动缓存并下发 `FileRefHandle` 句柄，写拦截全量正则扫描封杀偷懒占位符（`AntiLazyCodeGuard`）；<br>4. 危险操作 HITL 门禁：状态机检查阶段与高危指令，未获审批 Token 物理阻断（`HITLGate`）；<br>5. 门禁验证：单测 23/23 全绿，安全扫描 4,218 文件零泄密，全自动发布流水线通过。<br>**Commit Hash**：（本次提交） | **修改文件**：`openviking/core/hook_aspects.py`, `openviking/core/read_write_offload.py`, `openviking/core/hitl_gate.py`, `openviking/core/agent_loop.py`, `openviking/core/__init__.py`, `tests/unit/test_read_write_offload_hook_guard.py`, `package.json`, `openviking/_version.py` | [x] 已验收通过 ✅ |
 | **`v1.5.06`** | **Card-Verify-MultiMetricGate** | **交付物多维物理验真门禁（内容哈希 + 增量覆盖率 + 单测真跑，防 Exit 0 假完成）** | 1. 吸收字节《Aspire》虚假闭环教训与 Goodhart 定律防范，重构 Task Completion 判定；<br>2. 物理差异验真 (`PhysicalDiffVerifier`)：过滤纯空白、缩进变动与单行/多行纯注释，断言 `effective_diff_lines > 0`；<br>3. 测试视网膜运行器 (`TestRetinaRunner`)：在受控沙盒中真跑单测，物理封杀 `passed == 0` 的伪 Exit 0 骗局（全部跳过或空测试集）；<br>4. 统一交付门禁 (`MultiMetricGate`)：组合物理差异、SHA-256 资产指纹与单测全绿验真，前端流水线 Schema 同步升级；<br>5. 门禁验证：单测 11/11 全绿，回归 17/17 全绿，安全扫描 4,222 文件零泄密，发布流水线通过。<br>**Commit Hash**：（本次提交） | **修改文件**：`openviking/core/physical_diff_verifier.py`, `openviking/core/test_retina_runner.py`, `openviking/core/multi_metric_gate.py`, `openviking/core/__init__.py`, `src/routes/tasks/-lib/task-pipeline-specs-core.ts`, `tests/unit/test_multi_metric_gate.py`, `package.json`, `openviking/_version.py` | [x] 已验收通过 ✅ |
-| **Card-Harness-SpecDrivenFSM** | **第三代数仓级多智能体 Harness 架构（Spec 结构化文件驱动 + 协调者专家分离 + 12 状态有限状态机）** | 1. 吸收阿里千问数仓 Harness 实践与 Qwen《Skill-SP》：确立 Agent = Model + Harness，下限由工程托底；<br>2. Orchestrator 与 Specialist 物理分工：协调者只调度、把关、评审，严禁下场写业务代码；专家在独立沙箱专精窄接口；<br>3. Spec 结构化文件驱动通信：跨阶段全面废除长会话历史总线，统一传递结构化文件路径，阶段终点强制生成固定格式 CP 检查点摘要；<br>4. 生成者与评估者严格分离（Generator != Evaluator）；<br>5. 12 状态有限状态机与故障三分法，支持秒级断点续接。 | 上下文污染清零，阶段成果物可追溯可审计，故障断点续接率 100%，消除独角戏越轨 | `P1` | `v1.5.07` | ⏳ 待排期 |
+| **`v1.5.07`** | **Card-Harness-SpecDrivenFSM** | **第三代数仓级多智能体 Harness 架构（Spec 结构化文件驱动 + 协调者专家分离 + 12 状态有限状态机）** | 1. 吸收阿里千问数仓 Harness 实践与 Qwen《Skill-SP》：确立 Agent = Model + Harness，下限由工程托底；<br>2. 12 状态确定性有限状态机 (`HarnessFSM`)：规范从 IDLE、SPEC_INGEST、DECOMPOSE、DISPATCH 到 CHECKPOINT、COMPLETED 的合法跃迁有向图，严格阻断非法状态跳跃；<br>3. Orchestrator 与 Specialist 物理分工：协调者专职调度与审计，严禁下场编写业务代码；<br>4. 生成者与评估者物理防作弊 (`Generator != Evaluator`)：独立 Evaluator 审查，杜绝自产自评作弊 (`EvaluatorCollusionError`)；<br>5. Spec 结构化文件总线与检查点 (`CheckpointManifest`)：废除长会话历史堆叠，支持秒级断点续接；<br>6. 门禁验证：单测 8/8 全绿，回归 25/25 全绿，安全扫描 4,226 文件零泄密，发布流水线通过。<br>**Commit Hash**：（本次提交） | **修改文件**：`openviking/core/harness_fsm.py`, `openviking/core/spec_orchestrator.py`, `openviking/core/__init__.py`, `tests/unit/test_harness_spec_driven_fsm.py`, `package.json`, `openviking/_version.py` | [x] 已验收通过 ✅ |
 | **Card-Retrieval-BM25Hybrid** | **SQLite FTS5 词法与稠密向量双路混合检索与 RRF 融合 (BM25 Hybrid Retrieval)** | 1. 吸收《BM25 Wins at Scale》(arXiv:2607.26497) 与生产混检共识，破除纯 Dense 向量在精确符号上的检索盲区；<br>2. 本地零外部依赖：基于 SQLite 原生 FTS5 虚拟表建立文本/经验倒排索引；<br>3. 双路召回并行流：Dense Vector (qwen3-vl-emb) + Sparse BM25 (FTS5) 毫秒级并行捞取候选集；<br>4. 无参 RRF 融合：采用标准倒数排名融合 (k=60) 归一化排序，输入单次 Cross-Encoder Reranker 精排；<br>5. 补齐代码符号、错误堆栈、端口与文件名精准命中专项单测。 | 精确代码符号与错误排查召回率大幅提升，保持单次 RER 契约不变，延迟开销几乎为 0 | `P0` | `v1.5.08` | ⏳ 待排期 |
 | **Card-Retrieval-LocalFirst-zgSemanticSearch** | **阿里 zg 级端侧本地命令行语义搜索、四重奏融合与代码符号防盲搜护栏（深度整合 TieredLazyFetch 分级契约）** | 1. 吸收阿里 Qwen+Zvec《zg (zvec-grep)》、Karpathy 知识空间与 CPA 导师分级懒加载黄金律：彻底解决 Agent 在终端疯狂跑 rg 盲猜代码导致上百文件撑爆上下文；<br>2. 深度整合 TieredLazyFetch：引入 depth 契约，depth=0（元数据行号）、depth=1（紧凑指纹前后1行，默认推荐）、depth=2（完整块）；<br>3. 端侧四重奏检索引擎：32MB 超轻静态模型向量感知 + BM25 词频 + RRF 无参融合 + ripgrep 精确匹配；<br>4. AST 符号级切片（函数/类），Local-First 纯端侧 0 显存依赖，万行仓库 30s 极速建库；<br>5. 工具调用减少 50%，Token 减半。 | 彻底终结代码符号盲搜，纯本地 32MB 模型 0 显存，分级懒加载契约落地，Token 减 50% | `P0` | `v1.5.08` | ⏳ 待排期 |
 | **Card-RAG-Abstention-ZeroHallucination-Pipeline** | **千万级语料 RAG 约束验证与弃答门禁流水线、RARG 语义引导相关性搜索与 MinHash 去重** | 1. 吸收千万级工业 RAG 深度记事、腾讯/中科院信工所开源 RARG、七牛开发者与 6 曦轩：彻底攻克海量文档下模型默认“盲猜”导致的严重幻觉；<br>2. 前置 MinHash LSH 近重复去重与 NFKC 分词标准化，阻断冗余拷贝霸榜；<br>3. RARG 语义引导搜索：embed_recall 排序候选路径，单线程 rg -j1 顺序扫描，结合起点 10 段线索与局部重排；<br>4. 独立 Verifier 判官与主动弃答门禁 (Abstention Gate)：证据不足或置信度低于阈值强制拒答，幻觉率压制到接近 0。 | 10M+ 文档毫秒级检索，局部重排工具调用降低 70%，主动弃答将幻觉率压制至接近 0 | `P1` | `v1.5.09` | ⏳ 待排期 |
@@ -223,10 +223,29 @@
     - `openviking/_version.py` (版本号升级至 1.5.06)
     - `REFACTORING_PLAN.md` (标记验收完成)
 
-#### 📌 [P1] [ ] Card-Harness-SpecDrivenFSM (v1.5.05): 第三代数仓级多智能体 Harness 架构（Spec 结构化文件驱动 + 协调者专家分离 + 12 状态有限状态机） ⏳
-- **目标版本**：`v1.5.05` ｜ **优先级**：`P1`
-- **核心交付目标**：1. 吸收阿里千问数仓 Harness 实践与 Qwen《Skill-SP》：确立 Agent = Model + Harness，下限由工程托底；<br>2. Orchestrator 与 Specialist 物理分工：协调者只调度、把关、评审，严禁下场写业务代码；专家在独立沙箱专精窄接口；<br>3. Spec 结构化文件驱动通信：跨阶段全面废除长会话历史总线，统一传递结构化文件路径，阶段终点强制生成固定格式 CP 检查点摘要；<br>4. 生成者与评估者严格分离（Generator != Evaluator）；<br>5. 12 状态有限状态机与故障三分法，支持秒级断点续接。
-- **验收条件**：上下文污染清零，阶段成果物可追溯可审计，故障断点续接率 100%，消除独角戏越轨
+#### 📌 [P1] [x] Card-Harness-SpecDrivenFSM (v1.5.07): 第三代数仓级多智能体 Harness 架构（Spec 结构化文件驱动 + 协调者专家分离 + 12 状态有限状态机） ✅
+- **目标版本**：`v1.5.07` ｜ **优先级**：`P1`
+- **交付版本**：`v1.5.07` ｜ **交付时间**：2026-09-15 ｜ **当前状态**：[x] 已验收通过 ✅
+- **核心交付目标与架构实现**：
+  1. **12 状态确定性有限状态机 (`HarnessFSM`, 150行)**：吸收阿里千问数仓 Harness 实践与 Qwen《Skill-SP》，严格规范 `IDLE` -> `SPEC_INGEST` -> `DECOMPOSE` -> `DISPATCH` -> `RUNNING` -> `VERIFY` -> `EVALUATE` -> `CHECKPOINT` -> `COMPLETED` 完整跃迁有向图，阻断任意越轨乱跳；
+  2. **Orchestrator 与 Specialist 物理分工 (`SpecDrivenOrchestrator`, 176行)**：协调者只调度、管理 DAG 与审计，严禁下场编写业务代码；专精工单由独立沙箱 Specialist 执行；
+  3. **独立评估者防作弊契约 (`Generator != Evaluator`)**：评估者与生成者物理隔离，自产自评强制抛出 `EvaluatorCollusionError` 物理阻断作弊；
+  4. **Spec 结构化文件总线与检查点 (`CheckpointManifest`)**：彻底切除长会话上下文堆叠，阶段之间通过带 SHA-256 指纹的物理文件路径传递，支持秒级断点快照与恢复。
+- **不可逾越物理门禁验证成果**：
+  - 单测覆盖：`tests/unit/test_harness_spec_driven_fsm.py` 8/8 单测 0.08s 全绿；
+  - 核心回归：自举 TestRetinaRunner 真跑 25/25 单元测试 0.29s 全绿通过；
+  - 安全门禁：`python3 scripts/security_check.py` 扫描 4,226 个追踪文件，零凭据泄露；
+  - 产物构建：`dist/assets/index-D5ni6dGr.js` 已物理烘焙 `1.5.07`，服务探针通过！
+- **交付内容记录**：
+  - **Git Tag**: `v1.5.07`
+  - **修改文件清单**：
+    - `openviking/core/harness_fsm.py` (新建, 150行)
+    - `openviking/core/spec_orchestrator.py` (新建, 176行)
+    - `openviking/core/__init__.py` (导出新组件)
+    - `tests/unit/test_harness_spec_driven_fsm.py` (新建, 184行)
+    - `package.json` (版本号升级至 1.5.07)
+    - `openviking/_version.py` (版本号升级至 1.5.07)
+    - `REFACTORING_PLAN.md` (标记验收完成)
 
 ### 🌊 Wave 2: 零幻觉混合检索与端侧导航 (Zero-Hallucination Retrieval & Navigation)
 

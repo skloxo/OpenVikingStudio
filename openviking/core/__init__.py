@@ -80,6 +80,17 @@ _EXPORTS = {
     "TestRetinaResult": ("openviking.core.test_retina_runner", "TestRetinaResult"),
     "MultiMetricGate": ("openviking.core.multi_metric_gate", "MultiMetricGate"),
     "GateVerificationReport": ("openviking.core.multi_metric_gate", "GateVerificationReport"),
+    # Spec-Driven FSM & Multi-Agent Orchestrator (v1.5.07)
+    "HarnessState": ("openviking.core.harness_fsm", "HarnessState"),
+    "HarnessFSM": ("openviking.core.harness_fsm", "HarnessFSM"),
+    "InvalidTransitionError": ("openviking.core.harness_fsm", "InvalidTransitionError"),
+    "StateTransitionRecord": ("openviking.core.harness_fsm", "StateTransitionRecord"),
+    "AgentRoleType": ("openviking.core.spec_orchestrator", "AgentRoleType"),
+    "RoleViolationError": ("openviking.core.spec_orchestrator", "RoleViolationError"),
+    "EvaluatorCollusionError": ("openviking.core.spec_orchestrator", "EvaluatorCollusionError"),
+    "SpecFileArtifact": ("openviking.core.spec_orchestrator", "SpecFileArtifact"),
+    "CheckpointManifest": ("openviking.core.spec_orchestrator", "CheckpointManifest"),
+    "SpecDrivenOrchestrator": ("openviking.core.spec_orchestrator", "SpecDrivenOrchestrator"),
 }
 
 
@@ -161,5 +172,23 @@ __all__ = [
     "HITLGate",
     "DangerousActionPolicy",
     "HITLPermissionError",
+    # Multi-Metric Delivery Gate & Anti-False-Exit-0 Guard (v1.5.06)
+    "PhysicalDiffVerifier",
+    "DiffVerificationResult",
+    "TestRetinaRunner",
+    "TestRetinaResult",
+    "MultiMetricGate",
+    "GateVerificationReport",
+    # Spec-Driven FSM & Multi-Agent Orchestrator (v1.5.07)
+    "HarnessState",
+    "HarnessFSM",
+    "InvalidTransitionError",
+    "StateTransitionRecord",
+    "AgentRoleType",
+    "RoleViolationError",
+    "EvaluatorCollusionError",
+    "SpecFileArtifact",
+    "CheckpointManifest",
+    "SpecDrivenOrchestrator",
 ]
 
