@@ -37,6 +37,9 @@ _EXPORTS = {
     "ToolCallResult": ("openviking.core.agent_loop", "ToolCallResult"),
     "TurnResult": ("openviking.core.agent_loop", "TurnResult"),
     "AgentLoopStatus": ("openviking.core.agent_loop", "AgentLoopStatus"),
+    "AgentLoopTelemetrySnapshot": ("openviking.core.agent_loop_telemetry", "AgentLoopTelemetrySnapshot"),
+    "AgentLoopTelemetryCollector": ("openviking.core.agent_loop_telemetry", "AgentLoopTelemetryCollector"),
+    "get_agent_loop_telemetry_collector": ("openviking.core.agent_loop_telemetry", "get_agent_loop_telemetry_collector"),
     # Harness Four Invariants & Telemetry (v1.5.03)
     "ExecutionBudget": ("openviking.core.harness_invariants", "ExecutionBudget"),
     "BudgetSnapshot": ("openviking.core.harness_invariants", "BudgetSnapshot"),

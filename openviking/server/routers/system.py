@@ -234,6 +234,14 @@ class TestGuardRequest(BaseModel):
     code: str
 
 
+class AgentLoopProbeRequest(BaseModel):
+    action: str = "inject_interjection"
+    count: Optional[int] = 1
+    tool_name: Optional[str] = "multi_metric_gate"
+    steps: Optional[int] = 3
+    exhausted: Optional[bool] = False
+
+
 def _load_all_evolution_lessons() -> list[dict]:
     lessons = []
     next_id = 1
@@ -1016,3 +1024,38 @@ async def test_anti_lazy_guard(
             "rule": "AntiLazyCodeGuard (腾讯 DECO 生产护栏规则)",
         },
     )
+
+
+@router.get("/api/v1/system/agent_loop_telemetry", tags=["system"])
+async def get_agent_loop_telemetry(
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """Get real-time TwoTierAgentLoop runtime telemetry snapshot (Card-Observability-AgentLoop-Telemetry)."""
+    from dataclasses import asdict
+    from openviking.core.agent_loop_telemetry import get_agent_loop_telemetry_collector
+
+    collector = get_agent_loop_telemetry_collector()
+    snapshot = collector.get_snapshot()
+    return JSONResponse(status_code=200, content=asdict(snapshot))
+
+
+@router.post("/api/v1/system/agent_loop_probe", tags=["system"])
+async def agent_loop_simulation_probe(
+    req: AgentLoopProbeRequest,
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """Execute live TwoTierAgentLoop simulation probe (interjection, brake, merkle)."""
+    from dataclasses import asdict
+    from openviking.core.agent_loop_telemetry import get_agent_loop_telemetry_collector
+
+    collector = get_agent_loop_telemetry_collector()
+    res = collector.simulate_probe(
+        action=req.action,
+        count=req.count or 1,
+        tool_name=req.tool_name or "multi_metric_gate",
+        steps=req.steps or 3,
+        exhausted=req.exhausted or False,
+    )
+    res["snapshot"] = asdict(collector.get_snapshot())
+    return JSONResponse(status_code=200, content=res)
+
