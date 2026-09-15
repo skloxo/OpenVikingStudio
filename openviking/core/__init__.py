@@ -100,6 +100,10 @@ _EXPORTS = {
     "QuarantineManifestSnapshot": ("openviking.core.quarantine_manager", "QuarantineManifestSnapshot"),
     "RestoreDryRunResult": ("openviking.core.quarantine_manager", "RestoreDryRunResult"),
     "QuarantineManager": ("openviking.core.quarantine_manager", "QuarantineManager"),
+    # Failure Taxonomy & Whitelist Sensor (v1.5.11)
+    "FailureTaxonomySnapshot": ("openviking.core.failure_taxonomy_telemetry", "FailureTaxonomySnapshot"),
+    "FailureTaxonomyTelemetry": ("openviking.core.failure_taxonomy_telemetry", "FailureTaxonomyTelemetry"),
+    "get_failure_taxonomy_telemetry": ("openviking.core.failure_taxonomy_telemetry", "get_failure_taxonomy_telemetry"),
 }
 
 
@@ -205,5 +209,9 @@ __all__ = [
     "QuarantineManifestSnapshot",
     "RestoreDryRunResult",
     "QuarantineManager",
+    # Failure Taxonomy & Whitelist Sensor (v1.5.11)
+    "FailureTaxonomySnapshot",
+    "FailureTaxonomyTelemetry",
+    "get_failure_taxonomy_telemetry",
 ]
 
