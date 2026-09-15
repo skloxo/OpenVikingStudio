@@ -322,8 +322,17 @@ class SessionService:
             self._record_lifecycle_metric("get", "error")
             raise
 
-    async def sessions(self, ctx: RequestContext) -> List[Dict[str, Any]]:
+    async def sessions(
+        self,
+        ctx: RequestContext,
+        *,
+        category: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
         """Get all sessions for the current user.
+
+        Args:
+            ctx: Request context
+            category: Optional filter ('interactive', 'heartbeat', or 'all')
 
         Returns:
             List of session info dicts
@@ -344,6 +353,13 @@ class SessionService:
                 if name in [".", ".."]:
                     continue
                 is_hb = self._is_heartbeat_session(name)
+
+                # Filter by category if requested
+                if category == "interactive" and is_hb:
+                    continue
+                if category == "heartbeat" and not is_hb:
+                    continue
+
                 sessions_by_id[name] = {
                     "session_id": name,
                     "uri": f"{session_base_uri}/{name}",

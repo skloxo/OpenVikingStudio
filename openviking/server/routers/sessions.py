@@ -345,11 +345,12 @@ async def create_session(
 
 @router.get("")
 async def list_sessions(
+    category: Optional[str] = Query(None, description="Filter sessions: interactive, heartbeat, or all"),
     _ctx: RequestContext = Depends(get_session_request_context),
 ):
     """List all sessions."""
     service = get_service()
-    result = await service.sessions.sessions(_ctx)
+    result = await service.sessions.sessions(_ctx, category=category)
     return Response(status="ok", result=result)
 
 
@@ -753,18 +754,35 @@ async def add_message(
             await add_many_async(specs)
         else:
             session.add_messages(specs)
-        # Anti-Entropy Ingestion Gate: Auto-register routine cron / heartbeat probes
+        # Anti-Entropy Ingestion Gate: Auto-register routine cron / heartbeat probes / internal extractors
         is_hb = False
-        if request.content and any(k in request.content.lower() for k in ["[openclaw heartbeat poll]", "heartbeat poll", "cron probe"]):
+        hb_keywords = (
+            "[openclaw heartbeat poll]",
+            "heartbeat poll",
+            "cron probe",
+            "internal commitment extractor",
+            "memory search agent",
+            "dream diary entry",
+            "dream diary from these memory fragments",
+        )
+        if request.content and any(k in request.content.lower() for k in hb_keywords):
             is_hb = True
         elif request.parts:
             for p in request.parts:
                 txt = getattr(p, "text", "") or ""
-                if any(k in txt.lower() for k in ["[openclaw heartbeat poll]", "heartbeat poll", "cron probe"]):
+                if any(k in txt.lower() for k in hb_keywords):
                     is_hb = True
                     break
         if is_hb:
             service.sessions.register_heartbeat_session(session_id)
+            if hasattr(session, "_meta"):
+                session._meta.is_heartbeat = True
+                session._meta.category = "heartbeat"
+                if hasattr(session, "_save_meta"):
+                    try:
+                        await session._save_meta()
+                    except Exception:
+                        pass
 
         await service.sessions.maybe_schedule_auto_commit(
             session_id,
