@@ -129,7 +129,11 @@ class OpenAIVLM(VLMBase):
         if self.provider != "openai":
             return False
 
-        if isinstance(self.model, str) and self.model.lower().startswith("dashscope/"):
+        if isinstance(self.model, str) and (
+            self.model.lower().startswith("dashscope/")
+            or "qwen" in self.model.lower()
+            or "deepseek" in self.model.lower()
+        ):
             return True
 
         if not self.api_base:
@@ -140,7 +144,13 @@ class OpenAIVLM(VLMBase):
         except ValueError:
             return False
 
-        return host.lower() in _DASHSCOPE_HOSTS
+        host_lower = host.lower()
+        if host_lower in _DASHSCOPE_HOSTS:
+            return True
+        return any(
+            h in host_lower
+            for h in ("aliyun", "dashscope", "deepseek", "siliconflow", "vllm", "cpa", "localhost", "127.0.0.1")
+        )
 
     def _apply_provider_specific_extra_body(self, kwargs: Dict[str, Any], thinking: bool) -> None:
         """Attach provider-specific raw body parameters understood by compatible APIs."""

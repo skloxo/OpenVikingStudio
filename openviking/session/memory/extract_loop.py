@@ -14,6 +14,13 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from openviking.models.vlm.base import ToolCall, VLMBase
 from openviking.server.identity import RequestContext
+from openviking.session.memory.bisection_heal import (
+    bisect_messages,
+    is_truncation_failure,
+    merge_resolved_operations,
+    record_heal_event,
+    safe_chunk_memory_content,
+)
 from openviking.session.memory.dataclass import (
     DeleteId,
     MemoryFile,
@@ -141,7 +148,13 @@ class ExtractLoop:
         self.max_iterations = max_iterations
         self.ctx = ctx
         self.context_provider = context_provider
-        self.thinking = bool(thinking)
+        # Enforce Zero-Thinking by default in extraction loops (cuts off reasoning token budget hogging)
+        self.thinking = False if thinking is False else bool(thinking)
+        record_heal_event("total_extractions", 1)
+        if not self.thinking:
+            record_heal_event("zero_thinking_enforced_count", 1)
+        self._last_vlm_response = None
+        self._last_llm_error = None
         # Use provided isolation_handler or create one in run()
         self._isolation_handler = isolation_handler
         # Track format error retry (max 1 retry)
@@ -380,6 +393,27 @@ The final output of the model must strictly follow the JSON Schema format shown 
                 f"(iteration {iteration}/{max_iterations}) "
                 f"failure_kind={failure_kind} response_preview={failure_preview!r}"
             )
+
+            # Check if this is a Token Truncation failure (bisection self-healing)
+            if is_truncation_failure(
+                self._last_vlm_response,
+                self._last_llm_failure_content,
+                self._last_llm_error,
+            ):
+                logger.warning(
+                    "[BisectionHeal] Detected Token Truncation! Blocking naive retry loop to prevent deadlock."
+                )
+                record_heal_event("truncations_detected", 1)
+                msgs = getattr(self.context_provider, "messages", None)
+                if isinstance(msgs, list) and len(msgs) >= 2:
+                    record_heal_event("bisection_heals_triggered", 1)
+                    healed_ops = await self._run_bisection_heal(msgs)
+                    if healed_ops is not None:
+                        record_heal_event("bisection_heals_success", 1)
+                        final_operations = healed_ops
+                        raw_links = []
+                        break
+
             # Add format error message if parse failed (max 1 retry)
             if self._format_retry_count == 0:
                 self._format_retry_count += 1
@@ -432,7 +466,89 @@ The final output of the model must strictly follow the JSON Schema format shown 
         # Resolve links after the loop completes using the URIs already bound in resolve_operations().
         await self.finalize_operations(final_operations, raw_links)
 
+        # Ingestion anti-explosion safe chunking
+        final_operations = safe_chunk_memory_content(final_operations)
+
         return final_operations, tools_used
+
+    async def _run_bisection_heal(self, messages: List[Any]) -> Optional[ResolvedOperations]:
+        """Perform recursive bisection healing when a prompt triggers token truncation."""
+        try:
+            left_msgs, right_msgs = bisect_messages(messages)
+            if not left_msgs or not right_msgs:
+                return None
+
+            tracer.info(
+                f"[BisectionHeal] Splitting {len(messages)} messages into "
+                f"left ({len(left_msgs)}) and right ({len(right_msgs)}) for concurrent heal"
+            )
+
+            from openviking.session.memory.session_extract_context_provider import (
+                SessionExtractContextProvider,
+            )
+
+            left_provider = SessionExtractContextProvider(
+                messages=left_msgs,
+                latest_archive_overview=getattr(self.context_provider, "latest_archive_overview", ""),
+                isolation_handler=self._isolation_handler,
+                ctx=self.ctx,
+                viking_fs=self.viking_fs,
+            )
+            right_provider = SessionExtractContextProvider(
+                messages=right_msgs,
+                latest_archive_overview=getattr(self.context_provider, "latest_archive_overview", ""),
+                isolation_handler=self._isolation_handler,
+                ctx=self.ctx,
+                viking_fs=self.viking_fs,
+            )
+
+            await left_provider.prepare_extraction_messages()
+            await right_provider.prepare_extraction_messages()
+
+            left_loop = ExtractLoop(
+                vlm=self.vlm,
+                viking_fs=self.viking_fs,
+                model=self.model,
+                max_iterations=self.max_iterations,
+                ctx=self.ctx,
+                context_provider=left_provider,
+                isolation_handler=self._isolation_handler,
+                thinking=False,
+            )
+            right_loop = ExtractLoop(
+                vlm=self.vlm,
+                viking_fs=self.viking_fs,
+                model=self.model,
+                max_iterations=self.max_iterations,
+                ctx=self.ctx,
+                context_provider=right_provider,
+                isolation_handler=self._isolation_handler,
+                thinking=False,
+            )
+
+            results = await asyncio.gather(
+                left_loop.run(),
+                right_loop.run(),
+                return_exceptions=True,
+            )
+
+            ops_to_merge = []
+            for res in results:
+                if isinstance(res, tuple) and len(res) >= 1 and isinstance(res[0], ResolvedOperations):
+                    ops_to_merge.append(res[0])
+                elif not isinstance(res, Exception):
+                    logger.warning(f"[BisectionHeal] Sub-task returned unexpected: {type(res)}")
+
+            if ops_to_merge:
+                merged = merge_resolved_operations(ops_to_merge)
+                tracer.info(
+                    f"[BisectionHeal] Successfully healed and merged operations: "
+                    f"{len(merged.upsert_operations)} upserts, {len(merged.delete_file_contents)} deletes"
+                )
+                return merged
+        except Exception as e:
+            tracer.error(f"[BisectionHeal] Bisection healing encountered error: {e}")
+        return None
 
     def _retryable_resolution_issues(self, operations: ResolvedOperations) -> List[Dict[str, Any]]:
         issues: List[Dict[str, Any]] = []
@@ -1084,8 +1200,10 @@ The final output of the model must strictly follow the JSON Schema format shown 
                 thinking=self.thinking,
             )
         tracer.info(f"llm_response={response}")
+        self._last_vlm_response = response
         self._last_llm_failure_kind = None
         self._last_llm_failure_content = ""
+        self._last_llm_error = None
         # print(f'response={response}')
         # Log cache hit info
         if hasattr(response, "usage") and response.usage:
@@ -1151,6 +1269,7 @@ The final output of the model must strictly follow the JSON Schema format shown 
                     )
                     self._last_llm_failure_kind = failure_kind
                     self._last_llm_failure_content = content
+                    self._last_llm_error = str(error)
                     tracer.error(
                         "Failed to parse memory operations "
                         f"failure_kind={failure_kind} error={error} "

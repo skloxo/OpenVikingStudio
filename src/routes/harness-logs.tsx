@@ -13,6 +13,7 @@ import {
   RefreshCwIcon,
   ShieldAlertIcon,
   ShieldCheckIcon,
+  SplitIcon,
   TerminalIcon,
   WorkflowIcon,
 } from 'lucide-react'
@@ -25,6 +26,7 @@ import type { LessonItem } from './harness-logs/-components/harness-lessons-tabl
 import { HarnessAgentLoopCockpit } from './harness-logs/-components/harness-agent-loop-cockpit'
 import { HarnessFailureWhitelistRadar } from './harness-logs/-components/harness-failure-whitelist-radar'
 import { HarnessHITLOffloadCenter } from './harness-logs/-components/harness-hitl-offload-center'
+import { HarnessBisectionHealCockpit } from './harness-logs/-components/harness-bisection-heal-cockpit'
 
 export const Route = createFileRoute('/harness-logs')({
   component: HarnessLogsPage,
@@ -32,7 +34,8 @@ export const Route = createFileRoute('/harness-logs')({
 
 export function HarnessLogsPage() {
   const { t } = useTranslation('skillsPage')
-  const [activeTab, setActiveTab] = React.useState<'fsm' | 'gates' | 'agent-loop' | 'failure-radar' | 'hitl-offload' | 'playground' | 'lessons'>('fsm')
+  const [activeTab, setActiveTab] = React.useState<'fsm' | 'gates' | 'agent-loop' | 'bisection-heal' | 'failure-radar' | 'hitl-offload' | 'playground' | 'lessons'>('fsm')
+
   const [searchQuery, setSearchQuery] = React.useState('')
 
   const { connection, connectionRole, isConnectionRoleLoading } = useAppConnection()
@@ -155,6 +158,7 @@ export function HarnessLogsPage() {
           { id: 'fsm', label: '12-态状态机流水线', icon: <WorkflowIcon className="size-3.5 mr-1 text-cyan-400" /> },
           { id: 'gates', label: '五大贯彻门禁看板', icon: <ShieldCheckIcon className="size-3.5 mr-1 text-cyan-400" /> },
           { id: 'agent-loop', label: '双层循环与主动刹车', icon: <ActivityIcon className="size-3.5 mr-1 text-cyan-400" /> },
+          { id: 'bisection-heal', label: '零思考与二分自愈', icon: <SplitIcon className="size-3.5 mr-1 text-cyan-400" /> },
           { id: 'failure-radar', label: '失败画像与白名单雷达', icon: <ShieldAlertIcon className="size-3.5 mr-1 text-cyan-400" /> },
           { id: 'hitl-offload', label: '读Offload与HITL', icon: <FileCodeIcon className="size-3.5 mr-1 text-cyan-400" /> },
           { id: 'playground', label: '实时交互实验场', icon: <TerminalIcon className="size-3.5 mr-1 text-cyan-400" /> },
@@ -181,6 +185,7 @@ export function HarnessLogsPage() {
         {activeTab === 'fsm' && <HarnessFsmVisualizer fsm={metrics?.fsm} />}
         {activeTab === 'gates' && <HarnessGateDashboard gates={metrics?.gates} />}
         {activeTab === 'agent-loop' && <HarnessAgentLoopCockpit />}
+        {activeTab === 'bisection-heal' && <HarnessBisectionHealCockpit />}
         {activeTab === 'failure-radar' && <HarnessFailureWhitelistRadar />}
         {activeTab === 'hitl-offload' && <HarnessHITLOffloadCenter />}
         {activeTab === 'playground' && <HarnessLivePlayground />}
