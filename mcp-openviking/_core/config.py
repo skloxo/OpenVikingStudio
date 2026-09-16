@@ -108,6 +108,7 @@ def _get_config() -> Dict[str, str]:
     return {
         "api": os.environ.get("OPENVIKING_API", DEFAULT_API).rstrip("/"),
         "api_key": api_key,
+        "cli": os.environ.get("OPENVIKING_CLI", DEFAULT_CLI),
     }
 
 
