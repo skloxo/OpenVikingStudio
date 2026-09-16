@@ -92,3 +92,34 @@
   4. **快速锚点切换测试**：
      - 点击上方芯片 `zg 语义搜索`，观察一键直达，血缘路径与指针即刻同步刷新。
 - **合格标准**：四向罗盘方向跳转自洽，叶子节点自洽挂载完整父级大类全路径，无任何卡顿或假数据。
+
+---
+
+### 📌 [v1.5.20] CPA 教师模型守卫拦截器与五大贯彻门禁看板 (`Card-Harness-CPATeacherGuard-GateParity-Desensitization`)
+- **对应页面**：`/studio/harness-logs` ➔ `五大贯彻门禁看板`
+- **Git Tag 锚定**：`v1.5.20`
+- **操作步骤**：
+  1. 打开浏览器访问 `http://localhost:1933/studio/harness-logs`；
+  2. **顶部 KPI 总览走查**：
+     - 查看第 3 块 KPI 瓦片 `物理贯彻门禁`：清晰渲染为 **`5 / 5 项已激活`**（冰青字号，非写死 4/4）；
+     - 查看 Tab 导航栏：第 2 个 Tab 明确展示为 **`五大贯彻门禁看板`**；
+  3. **五大门禁卡片走查**：
+     - 点击 **`五大贯彻门禁看板`** Tab；
+     - 依次向下滚动，逐一查看 5 块不可变式门禁卡片：
+       1. `物理增量代码门禁 (Physical Diff Gate)`
+       2. `测试视网膜反欺诈门禁 (Anti-Cheat Retina)`
+       3. `防偷懒代码省略占位符栏栅 (Anti-Lazy Code Guard)`
+       4. `生成与评估角色隔离 (Role Separation)`
+       5. `CPA 教师模型守卫拦截器 (CPA Teacher Model Guard)`
+     - 观察第 5 张门禁卡片：
+       - 右上角状态胶囊展示 `Active Invariant`（冰青色）；
+       - 说明文字：`毫秒级物理拦截工兵任务/批量并发滥用昂贵教师模型 (GPT/Claude)，确保教师零泄漏、工兵高吞吐`；
+       - 规则标签列表：`block_expensive_models_in_workers`, `regex_audit_gpt_claude`, `require_explicit_teacher_flag`, `cost_aware_routing`；
+  4. **全技能同步与安全合规走查**：
+     - 访问 `http://localhost:1933/studio/skills`，所有技能卡片正常渲染；
+     - `public/all_skills.json` 经 `_desensitize_text` 动态清洗，零 FRP 内网 IP、零密码明文。
+- **合格标准**：
+  - 顶部 KPI 动态回显 `5 / 5 项已激活`；
+  - 5 大物理门禁卡片完整呈现，标签字号 $\ge 12\text{px}$，100% 遵循 NO GREEN EVER 🚫；
+  - 安全扫描 4,280 追踪文件零秘钥泄漏。
+

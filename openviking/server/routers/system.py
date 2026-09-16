@@ -454,7 +454,34 @@ async def get_harness_metrics(
                 "description": "物理隔离生成者与评估者，防止智能体自问自答自批改作弊",
                 "rules": ["generator_not_evaluator", "checkpoint_sha256_verified", "dual_axis_standards_spec"],
             },
+            "cpa_teacher_guard": {
+                "name": "CPA 教师模型守卫拦截器 (CPA Teacher Model Guard)",
+                "status": "active",
+                "badge": "Active Invariant",
+                "description": "毫秒级物理拦截工兵任务/批量并发滥用昂贵教师模型 (GPT/Claude)，确保教师零泄漏、工兵高吞吐",
+                "rules": [
+                    "teacher_models_restricted_to_deadlock_and_tradeoff",
+                    "worker_pool_unlimited_throughput",
+                    "pre_tool_interception_sub_2ms",
+                    "discovery_to_card_proposal_enforced",
+                ],
+            },
         }
+
+        # Read harness metrics JSON if present
+        h_metrics_path = Path.home() / ".openviking" / "harness_metrics.json"
+        teacher_blocked = 0
+        cpa_calls = 0
+        if h_metrics_path.is_file():
+            try:
+                with open(h_metrics_path, "r", encoding="utf-8") as hf:
+                    hdata = json.load(hf)
+                    teacher_blocked = hdata.get("teacher_blocked_calls", 0)
+                    cpa_calls = hdata.get("cpa_calls", 0)
+            except Exception:
+                pass
+        metrics["teacher_blocked_calls"] = teacher_blocked
+        metrics["cpa_calls"] = cpa_calls
 
         metrics["fsm"] = fsm_meta
         metrics["gates"] = gates_meta

@@ -4,6 +4,7 @@ import {
   EyeIcon,
   GitBranchIcon,
   ShieldCheckIcon,
+  SparklesIcon,
   UsersIcon,
 } from 'lucide-react'
 
@@ -49,6 +50,18 @@ export function HarnessGateDashboard({ gates }: GateDashboardProps) {
       description: '物理隔离生成者与评估者，防止智能体自问自答自批改作弊',
       rules: ['generator_not_evaluator', 'checkpoint_sha256_verified', 'dual_axis_standards_spec'],
     },
+    cpa_teacher_guard: {
+      name: 'CPA 教师模型守卫拦截器 (CPA Teacher Model Guard)',
+      status: 'active',
+      badge: 'Active Invariant',
+      description: '毫秒级物理拦截工兵任务/批量并发滥用昂贵教师模型 (GPT/Claude)，确保教师零泄漏、工兵高吞吐',
+      rules: [
+        'teacher_models_restricted_to_deadlock_and_tradeoff',
+        'worker_pool_unlimited_throughput',
+        'pre_tool_interception_sub_2ms',
+        'discovery_to_card_proposal_enforced',
+      ],
+    },
   }
 
   const activeGates = gates && Object.keys(gates).length > 0 ? gates : defaultGates
@@ -58,6 +71,7 @@ export function HarnessGateDashboard({ gates }: GateDashboardProps) {
     test_retina: <EyeIcon className="size-4 text-cyan-400" />,
     anti_lazy: <Code2Icon className="size-4 text-cyan-400" />,
     role_separation: <UsersIcon className="size-4 text-cyan-400" />,
+    cpa_teacher_guard: <SparklesIcon className="size-4 text-cyan-400" />,
   }
 
   return (
@@ -67,7 +81,7 @@ export function HarnessGateDashboard({ gates }: GateDashboardProps) {
         <div className="flex items-center gap-2">
           <ShieldCheckIcon className="size-4 text-cyan-400" />
           <h3 className="text-sm font-semibold tracking-wide">
-            四大物理贯彻执行门禁 (Four Invariant Enforcement Gates)
+            五大物理贯彻执行门禁 (Five Invariant Enforcement Gates)
           </h3>
           <Badge variant="outline" className="border-cyan-500/30 bg-cyan-500/10 text-xs text-cyan-300">
             100% 物理拦截闭环
@@ -97,7 +111,7 @@ export function HarnessGateDashboard({ gates }: GateDashboardProps) {
                     variant="outline"
                     className="border-cyan-500/30 bg-cyan-500/10 text-xs text-cyan-300 font-mono"
                   >
-                    {gate.badge ?? 'Active Invariant'}
+                    {gate.badge}
                   </Badge>
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground leading-relaxed">

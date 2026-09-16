@@ -54,4 +54,6 @@ export interface SkillHarnessMetrics {
   calculatedSuccessRate: string | null
   calculatedCentralizedRatio: string | null
   contextCompressionRatio: string | null
+  teacherBlockedCalls?: number | null
+  cpaCalls?: number | null
 }
