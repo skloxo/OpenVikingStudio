@@ -728,8 +728,12 @@ class TelemetryStore:
         except Exception as e:
             logger.warning("Error calculating windowed harness metrics: %s", e)
 
-        # Baseline safeguards
-        active_skills_count = max(active_skills_count, 48)
+        heal_metrics = {}
+        try:
+            from openviking.session.memory.bisection_heal import get_bisection_heal_metrics
+            heal_metrics = get_bisection_heal_metrics()
+        except Exception:
+            pass
 
         return {
             "status": "ok",
@@ -745,6 +749,7 @@ class TelemetryStore:
             "context_compression_ratio": 51.5,
             "compression_retention_rate": 48.5,
             "tokens_saved_total": tokens_saved_total,
+            "bisection_heal": heal_metrics,
         }
 
     def get_trends(

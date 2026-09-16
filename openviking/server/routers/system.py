@@ -242,6 +242,11 @@ class AgentLoopProbeRequest(BaseModel):
     exhausted: Optional[bool] = False
 
 
+class BisectionHealProbeRequest(BaseModel):
+    scenario: str = "long_dialogue_truncation"
+
+
+
 def _load_all_evolution_lessons() -> list[dict]:
     lessons = []
     next_id = 1
@@ -483,9 +488,16 @@ async def get_harness_metrics(
         metrics["teacher_blocked_calls"] = teacher_blocked
         metrics["cpa_calls"] = cpa_calls
 
+        try:
+            from openviking.session.memory.bisection_heal import get_extraction_heal_metrics
+            metrics["bisection_heal"] = get_extraction_heal_metrics()
+        except Exception:
+            metrics["bisection_heal"] = None
+
         metrics["fsm"] = fsm_meta
         metrics["gates"] = gates_meta
         return JSONResponse(status_code=200, content=metrics)
+
     except Exception as e:
         logger.warning(f"Error fetching harness metrics: {e}")
         return JSONResponse(
@@ -1085,4 +1097,45 @@ async def agent_loop_simulation_probe(
     )
     res["snapshot"] = asdict(collector.get_snapshot())
     return JSONResponse(status_code=200, content=res)
+
+
+@router.get("/api/v1/system/bisection_heal_metrics", tags=["system"])
+async def get_bisection_heal_telemetry(
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """Get Zero-Thinking & Bisection Heal telemetry metrics (Card-Extraction-ZeroThinking-BisectionHeal)."""
+    from openviking.session.memory.bisection_heal import (
+        get_extraction_heal_metrics,
+        MAX_PRE_SLICE_CHARS,
+        MAX_PRE_SLICE_MESSAGES,
+        MAX_SAFE_MEMORY_ITEM_CHARS,
+    )
+
+    metrics = get_extraction_heal_metrics()
+    metrics["thresholds"] = {
+        "char_threshold": MAX_PRE_SLICE_CHARS,
+        "msg_threshold": MAX_PRE_SLICE_MESSAGES,
+        "safe_chunk_limit": MAX_SAFE_MEMORY_ITEM_CHARS,
+    }
+    return JSONResponse(status_code=200, content=metrics)
+
+
+
+@router.post("/api/v1/system/bisection_heal_probe", tags=["system"])
+async def bisection_heal_simulation_probe(
+    req: BisectionHealProbeRequest,
+    _ctx: RequestContext = Depends(get_request_context),
+):
+
+
+    """Execute live Zero-Thinking Bisection Heal simulation drill."""
+    from openviking.session.memory.bisection_heal import (
+        simulate_bisection_heal_run,
+        get_extraction_heal_metrics,
+    )
+
+    res = simulate_bisection_heal_run(scenario=req.scenario or "long_dialogue_truncation")
+    res["metrics"] = get_extraction_heal_metrics()
+    return JSONResponse(status_code=200, content=res)
+
 
