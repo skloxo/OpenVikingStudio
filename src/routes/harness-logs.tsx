@@ -64,6 +64,10 @@ export function HarnessLogsPage() {
 
   const metrics = harnessStatusQuery.data
   const lessons = metrics?.lessons_detail ?? []
+  const activeGatesCount = metrics?.gates
+    ? Object.values(metrics.gates).filter((g: any) => g.status === 'active').length
+    : 5
+  const totalGatesCount = metrics?.gates ? Object.keys(metrics.gates).length : 5
 
   return (
     <div className="flex flex-col gap-5 p-4 sm:p-6 max-w-7xl mx-auto w-full">
@@ -110,13 +114,13 @@ export function HarnessLogsPage() {
         </div>
       </div>
 
-      {/* 4 Telemetry Metrics Ribbon */}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      {/* KPI Overview Tiles */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="rounded-md border border-border/60 bg-card/60 p-3">
-          <div className="text-xs text-muted-foreground">物理拦截次数</div>
-          <div className="mt-1 font-mono text-xl font-bold text-foreground">
-            {metrics?.blocked_calls ?? 0}
-            <span className="ml-1 text-xs font-normal text-muted-foreground">次阻断</span>
+          <div className="text-xs text-muted-foreground">确定性状态机</div>
+          <div className="mt-1 font-mono text-xl font-bold text-cyan-400">
+            {metrics?.fsm?.states?.length ?? 12}
+            <span className="ml-1 text-xs font-normal text-muted-foreground">态 Deterministic</span>
           </div>
         </div>
 
@@ -131,7 +135,7 @@ export function HarnessLogsPage() {
         <div className="rounded-md border border-border/60 bg-card/60 p-3">
           <div className="text-xs text-muted-foreground">物理贯彻门禁</div>
           <div className="mt-1 font-mono text-xl font-bold text-cyan-400">
-            4 / 4
+            {activeGatesCount} / {totalGatesCount}
             <span className="ml-1 text-xs font-normal text-muted-foreground">项已激活</span>
           </div>
         </div>
@@ -149,7 +153,7 @@ export function HarnessLogsPage() {
       <div className="flex items-center gap-1.5 border-b border-border/60 pb-1">
         {[
           { id: 'fsm', label: '12-态状态机流水线', icon: <WorkflowIcon className="size-3.5 mr-1 text-cyan-400" /> },
-          { id: 'gates', label: '四大贯彻门禁看板', icon: <ShieldCheckIcon className="size-3.5 mr-1 text-cyan-400" /> },
+          { id: 'gates', label: '五大贯彻门禁看板', icon: <ShieldCheckIcon className="size-3.5 mr-1 text-cyan-400" /> },
           { id: 'agent-loop', label: '双层循环与主动刹车', icon: <ActivityIcon className="size-3.5 mr-1 text-cyan-400" /> },
           { id: 'failure-radar', label: '失败画像与白名单雷达', icon: <ShieldAlertIcon className="size-3.5 mr-1 text-cyan-400" /> },
           { id: 'hitl-offload', label: '读Offload与HITL', icon: <FileCodeIcon className="size-3.5 mr-1 text-cyan-400" /> },

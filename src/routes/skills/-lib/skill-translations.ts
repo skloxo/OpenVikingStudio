@@ -39,6 +39,7 @@ export const CHINESE_SKILL_NAME_MAP: Record<string, string> = {
   'skill-governance': '技能资产治理规范与定期审查',
   'hermes-config-audit': 'Hermes 运行时配置自检与优化',
   'repo-tracker': 'Git 仓库代码变动与演进跟踪',
+  'cpa-squad': 'CPA 弹性无限算力总线与多智能体协同参谋团',
 }
 
 export const ENGINEERING_SKILLS = [
@@ -68,6 +69,7 @@ export const ENGINEERING_SKILLS = [
   'tide-trading-dev',
   'antigravity-guide',
   'agy-customizations',
+  'cpa-squad',
   'skill-creator',
   'skill-governance',
   'hermes-config-audit',

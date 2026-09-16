@@ -73,8 +73,12 @@ def _record_harness_call(call_type: str, actor_peer: str = "default"):
         HARNESS_METRICS["find_calls"] = HARNESS_METRICS.get("find_calls", 0) + 1
     elif call_type == "store":
         HARNESS_METRICS["store_calls"] = HARNESS_METRICS.get("store_calls", 0) + 1
-    elif "blocked" in call_type:
+    elif "blocked" in call_type or "intercept" in call_type:
         HARNESS_METRICS["blocked_calls"] = HARNESS_METRICS.get("blocked_calls", 0) + 1
+        if "teacher" in call_type:
+            HARNESS_METRICS["teacher_blocked_calls"] = HARNESS_METRICS.get("teacher_blocked_calls", 0) + 1
+    elif "cpa" in call_type:
+        HARNESS_METRICS["cpa_calls"] = HARNESS_METRICS.get("cpa_calls", 0) + 1
 
     if actor_peer:
         peers = HARNESS_METRICS.setdefault("actor_peers", {})

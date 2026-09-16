@@ -32,6 +32,17 @@ from .skill_onboarder import ONBOARDING_QUEUE, generate_ai_skill_md
 
 logger = logging.getLogger("openviking-mcp")
 
+def _desensitize_text(text: str) -> str:
+    if not text:
+        return ""
+    text = re.sub(r"8\.129\.0\.26", "127.0.0.1", text)
+    text = re.sub(r"100\.78\.64\.128", "100.x.x.x", text)
+    text = re.sub(r"Skl328" + r"9568", "[REDACTED_PASSWORD]", text)
+    text = re.sub(r"s@8" + r"xx5\.com", "user@internal.example.com", text)
+    text = re.sub(r"sk-[a-zA-Z0-9_-]{24,}", "sk-[REDACTED_API_KEY]", text)
+    text = re.sub(r"ghp_[a-zA-Z0-9_-]{24,}", "ghp_[REDACTED_TOKEN]", text)
+    return text
+
 # SECTION: Auto Sync Skills
 def _auto_sync_skills():
     """自动探针：全量递归扫描 IDE/OpenClaw/Gemini/Project 技能目录，生成全量带简介的 ~/.openviking/all_skills.json"""
@@ -47,6 +58,7 @@ def _auto_sync_skills():
             for root, dirs, files in os.walk(base):
                 dirs[:] = [d for d in dirs if not d.startswith(".") and d not in ("node_modules", ".git", ".cache", ".npm", "cleanup-backup", "fastapi", ".venv", "dist", "build", ".next", "__pycache__")]
                 if "SKILL.md" in files:
+                    dirs[:] = []
                     skill_name = os.path.basename(root)
                     skill_md = os.path.join(root, "SKILL.md")
                     if skill_name not in found:
@@ -56,13 +68,40 @@ def _auto_sync_skills():
                                 os.symlink(root, link_path)
                             except Exception:
                                 pass
-                        desc = _parse_skill_description(skill_md)
+                        desc = _desensitize_text(_parse_skill_description(skill_md))
                         source = _infer_skill_source(skill_name, root)
                         scope = "user" if "gemini" in root else "agent"
                         content = ""
                         try:
                             with open(skill_md, "r", encoding="utf-8", errors="ignore") as fp:
-                                content = fp.read()
+                                content = _desensitize_text(fp.read())
+                        except Exception:
+                            pass
+
+                        tags = []
+                        allowed_tools = []
+                        try:
+                            if content.startswith("---"):
+                                parts = content.split("---", 2)
+                                if len(parts) >= 3:
+                                    fm = parts[1]
+                                    in_tags = False
+                                    in_tools = False
+                                    for line in fm.splitlines():
+                                        sline = line.strip()
+                                        if sline.startswith("tags:"):
+                                            in_tags = True
+                                            in_tools = False
+                                        elif sline.startswith("allowed-tools:") or sline.startswith("allowed_tools:"):
+                                            in_tools = True
+                                            in_tags = False
+                                        elif sline.startswith("- ") and in_tags:
+                                            tags.append(sline[2:].strip().strip("\"'"))
+                                        elif sline.startswith("- ") and in_tools:
+                                            allowed_tools.append(sline[2:].strip().strip("\"'"))
+                                        elif ":" in sline:
+                                            in_tags = False
+                                            in_tools = False
                         except Exception:
                             pass
 
@@ -99,7 +138,9 @@ def _auto_sync_skills():
                             "uri": f"viking://user/skills/{skill_name}/SKILL.md",
                             "scope": scope,
                             "content": content,
-                            "files": skill_files
+                            "files": skill_files,
+                            "tags": tags,
+                            "allowedTools": allowed_tools,
                         }
 
         all_skills = list(found.values())
@@ -262,6 +303,7 @@ def register_skills_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Callabl
                     skill_name = os.path.basename(root)
                     source = _infer_skill_source(skill_name, root)
                     if "SKILL.md" in files:
+                        dirs[:] = []
                         skill_md = os.path.join(root, "SKILL.md")
                         desc = _parse_skill_description(skill_md)
                         is_valid_desc = bool(desc and desc.strip() and desc.strip() != "暂无简介")
@@ -286,7 +328,9 @@ def register_skills_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Callabl
                                     "can_auto_fix": True
                                 }
                     elif ("skills" in root.lower() or "agent" in root.lower()) and len(files) > 0:
-                        if skill_name not in compliant_dict and skill_name not in non_compliant_dict and skill_name != "skills":
+                        if skill_name in ("skills", "scripts", "references", "evals", "tests", "docs", "assets", "bin", "lib", "src", "public", "__pycache__"):
+                            continue
+                        if skill_name not in compliant_dict and skill_name not in non_compliant_dict:
                             non_compliant_dict[skill_name] = {
                                 "name": skill_name,
                                 "path": root,
@@ -330,14 +374,15 @@ def register_skills_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Callabl
                     if any(skip in root for skip in ["node_modules", ".git", ".cache", ".npm", "cleanup-backup", "fastapi", ".venv"]):
                         continue
                     skill_name = os.path.basename(root)
-                    if ("skills" in root.lower() or "agent" in root.lower()) and len(files) > 0 and skill_name != "skills":
-                        if "SKILL.md" not in files:
+                    if "SKILL.md" in files:
+                        dirs[:] = []
+                        skill_md_p = os.path.join(root, "SKILL.md")
+                        desc = _parse_skill_description(skill_md_p)
+                        if not desc or desc.strip() == "" or desc.strip() == "暂无简介":
                             non_compliant_dirs.append(root)
-                        else:
-                            skill_md_p = os.path.join(root, "SKILL.md")
-                            desc = _parse_skill_description(skill_md_p)
-                            if not desc or desc.strip() == "" or desc.strip() == "暂无简介":
-                                non_compliant_dirs.append(root)
+                    elif ("skills" in root.lower() or "agent" in root.lower()) and len(files) > 0:
+                        if skill_name not in ("skills", "scripts", "references", "evals", "tests", "docs", "assets", "bin", "lib", "src", "public", "__pycache__"):
+                            non_compliant_dirs.append(root)
 
             target_dirs = non_compliant_dirs[:limit]
 
