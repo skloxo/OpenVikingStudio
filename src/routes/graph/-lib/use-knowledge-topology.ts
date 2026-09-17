@@ -23,38 +23,33 @@ export interface TopologyData {
 }
 
 const PEERS_NODES: RawTopologyNode[] = [
-  { id: 'viking://peers/master_agent', label: 'Peer: master_agent', category: 'peers' },
-  { id: 'viking://peers/researcher_agent', label: 'Peer: researcher_agent', category: 'peers' },
-  { id: 'viking://peers/developer_agent', label: 'Peer: developer_agent', category: 'peers' },
-  { id: 'viking://peers/designer_agent', label: 'Peer: designer_agent', category: 'peers' },
-  { id: 'viking://peers/product_manager', label: 'Peer: product_manager', category: 'peers' },
-  { id: 'viking://peers/operator_agent', label: 'Peer: operator_agent', category: 'peers' },
-  { id: 'viking://peers/planner_agent', label: 'Peer: planner_agent', category: 'peers' },
-  { id: 'viking://peers/evaluator_agent', label: 'Peer: evaluator_agent', category: 'peers' },
-  { id: 'viking://peers/test_agent', label: 'Peer: test_agent', category: 'peers' },
+  { id: 'viking://peers/antigravity@2080ti', label: 'Peer: 2080Ti Antigravity', category: 'peers' },
+  { id: 'viking://peers/antigravity@rtx3070', label: 'Peer: RTX3070 Antigravity', category: 'peers' },
+  { id: 'viking://peers/openclaw@2080ti', label: 'Peer: 2080Ti OpenClaw', category: 'peers' },
+  { id: 'viking://peers/workbuddy@rtx3070', label: 'Peer: RTX3070 WorkBuddy', category: 'peers' },
+  { id: 'viking://peers/macstudio', label: 'Peer: Mac Studio M3', category: 'peers' },
+  { id: 'viking://peers/xiaomimo@2080ti', label: 'Peer: 2080Ti XiaomiMo', category: 'peers' },
+  { id: 'viking://peers/hermes@2080ti', label: 'Peer: 2080Ti Hermes', category: 'peers' },
 ]
 
 function getPeerForSkill(skillName: string): string {
   const low = skillName.toLowerCase()
-  if (low.includes('test') || low.includes('tdd') || low.includes('debug') || low.includes('code') || low.includes('dev')) {
-    return 'viking://peers/developer_agent'
+  if (low.includes('mac') || low.includes('studio') || low.includes('mlx') || low.includes('metal') || low.includes('llm')) {
+    return 'viking://peers/macstudio'
   }
-  if (low.includes('research') || low.includes('search') || low.includes('retrieval') || low.includes('scrapling')) {
-    return 'viking://peers/researcher_agent'
+  if (low.includes('remote') || low.includes('3070') || low.includes('workbuddy')) {
+    return 'viking://peers/antigravity@rtx3070'
   }
-  if (low.includes('ops') || low.includes('satellite') || low.includes('docker') || low.includes('fleet')) {
-    return 'viking://peers/operator_agent'
+  if (low.includes('claw') || low.includes('bus') || low.includes('cluster') || low.includes('fleet')) {
+    return 'viking://peers/openclaw@2080ti'
   }
-  if (low.includes('ui') || low.includes('cockpit') || low.includes('design') || low.includes('style')) {
-    return 'viking://peers/designer_agent'
+  if (low.includes('gateway') || low.includes('hermes')) {
+    return 'viking://peers/hermes@2080ti'
   }
-  if (low.includes('eval') || low.includes('radar') || low.includes('benchmark') || low.includes('audit')) {
-    return 'viking://peers/evaluator_agent'
+  if (low.includes('mimo') || low.includes('xiaomi')) {
+    return 'viking://peers/xiaomimo@2080ti'
   }
-  if (low.includes('ticket') || low.includes('spec') || low.includes('plan')) {
-    return 'viking://peers/planner_agent'
-  }
-  return 'viking://peers/master_agent'
+  return 'viking://peers/antigravity@2080ti'
 }
 
 export function useKnowledgeTopology() {
@@ -81,7 +76,7 @@ export function useKnowledgeTopology() {
 
       for (const peer of PEERS_NODES.slice(1)) {
         edges.push({
-          source: 'viking://peers/master_agent',
+          source: 'viking://peers/antigravity@2080ti',
           target: peer.id,
           link_type: 'orchestrates',
         })

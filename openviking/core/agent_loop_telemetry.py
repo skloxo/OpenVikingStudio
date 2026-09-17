@@ -82,6 +82,9 @@ class AgentLoopTelemetryCollector:
         self._model_retries_total = 0
         self._model_exhausted_total = 0
 
+        self._total_inner_steps = 0
+        self._last_turn_inner_steps = 0
+
         self._merkle_last_diff_ms: Optional[float] = None
         self._merkle_file_count = 0
         self._merkle_version = 0

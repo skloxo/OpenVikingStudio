@@ -66,6 +66,35 @@ def _save_harness_metrics():
         logger.warning(f"无法保存 harness metrics 到磁盘: {e}")
 
 
+def _resolve_actor_peer(explicit_peer: str = "") -> str:
+    if explicit_peer and explicit_peer != "default":
+        return explicit_peer
+    env_peer = os.environ.get("OPENVIKING_ACTOR_PEER", "").strip()
+    if env_peer:
+        return env_peer
+    import socket
+    node = os.environ.get("OPENVIKING_NODE", "").strip().lower()
+    if not node:
+        if sys.platform == "win32":
+            comp = os.environ.get("COMPUTERNAME", "").lower()
+            node = "3070" if "3070" in comp else ("2080ti" if "2080" in comp else "win")
+        elif sys.platform == "darwin":
+            node = "macstudio"
+        else:
+            hname = socket.gethostname().lower()
+            node = "3070" if "3070" in hname else ("2080ti" if ("2080" in hname or os.path.exists("/mnt/c")) else (hname.split(".")[0] or "2080ti"))
+    client = os.environ.get("OPENVIKING_CLIENT", "").strip().lower()
+    if not client:
+        full_ctx = (sys.executable + " " + " ".join(sys.argv) + " " + os.getcwd()).lower() + " " + (" ".join(os.environ.keys()) + " " + " ".join(os.environ.values())).lower()
+        if any(x in full_ctx for x in ("antigravity", "gemini")): client = "antigravity"
+        elif any(x in full_ctx for x in ("workbuddy", "codebuddy")): client = "workbuddy"
+        elif any(x in full_ctx for x in ("mimocode", "xiaomimo")): client = "xiaomimo"
+        elif "openclaw" in full_ctx: client = "openclaw"
+        elif "hermes" in full_ctx: client = "hermes"
+        else: client = "antigravity"
+    return f"{client}@{node}"
+
+
 def _record_harness_call(call_type: str, actor_peer: str = "default"):
     HARNESS_METRICS["total_calls"] = HARNESS_METRICS.get("total_calls", 0) + 1
     HARNESS_METRICS["last_active_timestamp"] = time.time()
@@ -80,9 +109,9 @@ def _record_harness_call(call_type: str, actor_peer: str = "default"):
     elif "cpa" in call_type:
         HARNESS_METRICS["cpa_calls"] = HARNESS_METRICS.get("cpa_calls", 0) + 1
 
-    if actor_peer:
-        peers = HARNESS_METRICS.setdefault("actor_peers", {})
-        peers[actor_peer] = peers.get(actor_peer, 0) + 1
+    resolved_peer = _resolve_actor_peer(actor_peer)
+    peers = HARNESS_METRICS.setdefault("actor_peers", {})
+    peers[resolved_peer] = peers.get(resolved_peer, 0) + 1
 
     _save_harness_metrics()
 
