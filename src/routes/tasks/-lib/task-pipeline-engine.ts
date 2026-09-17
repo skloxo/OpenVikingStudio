@@ -178,55 +178,48 @@ export function deriveUniversalPipelineSteps(
     // 针对异步托管入库任务进行高保真业务详情与度量注记 (Valet Ingestion Enrichment)
     if (type === 'valet_parking' && (state === 'completed' || state === 'running')) {
       if (spec.id === 'step_valet_handover') {
-        effectiveMetric = effectiveMetric ?? (state === 'completed' ? 1 : 0)
-        effectiveTotal = effectiveTotal ?? 1
         detail = isZh ? '轻量准入' : 'Admitted'
       } else if (spec.id === 'step_valet_probe') {
-        effectiveMetric = effectiveMetric ?? (state === 'completed' ? 1 : 0)
-        effectiveTotal = effectiveTotal ?? 1
         const simVal = resObj.similarity ?? metaObj.similarity
         if (simVal !== undefined) {
           const simStr = typeof simVal === 'number' ? simVal.toFixed(4) : Number(simVal).toFixed(4)
           detail = isZh ? `相似度 ${simStr}` : `Sim ${simStr}`
         }
       } else if (spec.id === 'step_quality_gate' || spec.id === 'step_valet_decision') {
-        effectiveMetric = effectiveMetric ?? (state === 'completed' ? 1 : 0)
-        effectiveTotal = effectiveTotal ?? 1
         const rawAction = String(resObj.action || metaObj.action || 'add').toLowerCase()
         const actionZh = rawAction === 'noop' ? '同义合并' : rawAction === 'update' ? '增量演进' : '独立新增'
         detail = isZh ? `裁决: ${actionZh}` : `Defense: ${rawAction.toUpperCase()}`
       } else if (spec.id === 'step_valet_parking') {
-        effectiveMetric = effectiveMetric ?? resObj.progress?.completed ?? (state === 'completed' ? 1 : 0)
-        effectiveTotal = effectiveTotal ?? resObj.progress?.total ?? 1
         const rawAction = String(resObj.action || metaObj.action || 'add').toLowerCase()
         detail = rawAction === 'noop' ? (isZh ? '零冗余合并' : 'Merged') : (isZh ? '存储落盘' : 'Persisted')
       }
     } else if (type === 'add_skill' && (state === 'completed' || state === 'running')) {
       const skillCount =
         extractFirstNumber(resObj, ['valid_skills', 'scanned_skills', 'total_skills']) ??
-        extractFirstNumber(metaObj, ['valid_skills', 'scanned_skills', 'total_skills']) ??
-        1
+        extractFirstNumber(metaObj, ['valid_skills', 'scanned_skills', 'total_skills'])
 
-      if (spec.id === 'step_skill_scan') {
-        effectiveMetric = effectiveMetric ?? (state === 'completed' ? skillCount : 0)
-        effectiveTotal = effectiveTotal ?? skillCount
-        detail = isZh ? `${effectiveMetric}/${effectiveTotal} 项扫描` : `${effectiveMetric}/${effectiveTotal} scanned`
-      } else if (spec.id === 'step_spec_audit') {
-        effectiveMetric = effectiveMetric ?? (state === 'completed' ? skillCount : 0)
-        effectiveTotal = effectiveTotal ?? skillCount
-        detail = isZh ? `${effectiveMetric}/${effectiveTotal} 规范合规` : `${effectiveMetric}/${effectiveTotal} compliant`
-      } else if (spec.id === 'step_skill_embedding') {
-        const slices =
-          extractFirstNumber(resObj, ['slices_count', 'embedded_skills']) ??
-          extractFirstNumber(metaObj, ['slices_count', 'embedded_skills'])
-        if (slices !== undefined && slices > 0) {
-          effectiveMetric = effectiveMetric ?? (state === 'completed' ? slices : 0)
-          effectiveTotal = effectiveTotal ?? slices
-        } else {
+      if (skillCount !== undefined) {
+        if (spec.id === 'step_skill_scan') {
           effectiveMetric = effectiveMetric ?? (state === 'completed' ? skillCount : 0)
           effectiveTotal = effectiveTotal ?? skillCount
+          detail = isZh ? `${effectiveMetric}/${effectiveTotal} 项扫描` : `${effectiveMetric}/${effectiveTotal} scanned`
+        } else if (spec.id === 'step_spec_audit') {
+          effectiveMetric = effectiveMetric ?? (state === 'completed' ? skillCount : 0)
+          effectiveTotal = effectiveTotal ?? skillCount
+          detail = isZh ? `${effectiveMetric}/${effectiveTotal} 规范合规` : `${effectiveMetric}/${effectiveTotal} compliant`
+        } else if (spec.id === 'step_skill_embedding') {
+          const slices =
+            extractFirstNumber(resObj, ['slices_count', 'embedded_skills']) ??
+            extractFirstNumber(metaObj, ['slices_count', 'embedded_skills'])
+          if (slices !== undefined && slices > 0) {
+            effectiveMetric = effectiveMetric ?? (state === 'completed' ? slices : 0)
+            effectiveTotal = effectiveTotal ?? slices
+          } else {
+            effectiveMetric = effectiveMetric ?? (state === 'completed' ? skillCount : 0)
+            effectiveTotal = effectiveTotal ?? skillCount
+          }
+          detail = isZh ? '向量建库完成' : 'Vector built'
         }
-        detail = isZh ? '向量建库完成' : 'Vector built'
       }
     } else if ((type === 'add_resource' || type === 'session_commit') && (state === 'completed' || state === 'running')) {
       if (
@@ -234,8 +227,6 @@ export function deriveUniversalPipelineSteps(
         spec.id === 'step_resource_admission' ||
         spec.id === 'step_valet_decision'
       ) {
-        effectiveMetric = effectiveMetric ?? (state === 'completed' ? 1 : 0)
-        effectiveTotal = effectiveTotal ?? 1
         const rawAction = String(resObj.action || metaObj.action || '').toLowerCase()
         if (rawAction) {
           const actionZh = rawAction === 'noop' ? '同义合并' : rawAction === 'update' ? '增量演进' : '独立新增'
@@ -244,11 +235,9 @@ export function deriveUniversalPipelineSteps(
           detail = state === 'completed' ? (isZh ? '准入通过' : 'Accepted') : (isZh ? '准入核验' : 'Checking')
         }
       } else if (spec.id === 'step_quality_gate') {
-        effectiveMetric = effectiveMetric ?? (state === 'completed' ? 1 : 0)
-        effectiveTotal = effectiveTotal ?? 1
         const compScore = resObj.composite_score ?? metaObj.composite_score ?? resObj.quality_score ?? metaObj.quality_score
         if (compScore !== undefined) {
-          const scoreStr = typeof compScore === 'number' ? compScore.toFixed(3) : String(compScore)
+          const scoreStr = typeof compScore === 'number' ? compScore.toFixed(3) : Number(compScore).toFixed(3)
           detail = isZh ? `指数 ${scoreStr}` : `Score ${scoreStr}`
         } else {
           detail = state === 'completed' ? (isZh ? '防御通过' : 'Defense OK') : (isZh ? '审查中' : 'Evaluating')
@@ -256,18 +245,12 @@ export function deriveUniversalPipelineSteps(
       }
     } else if (type === 'managed_ingestion' && (state === 'completed' || state === 'running')) {
       if (spec.id === 'step_managed_validate') {
-        effectiveMetric = effectiveMetric ?? (state === 'completed' ? 1 : 0)
-        effectiveTotal = effectiveTotal ?? 1
         detail = isZh ? '模式合规' : 'Schema OK'
       } else if (spec.id === 'step_managed_deliver') {
-        effectiveMetric = effectiveMetric ?? (state === 'completed' ? 1 : 0)
-        effectiveTotal = effectiveTotal ?? 1
         detail = isZh ? '成果就绪' : 'Delivered'
       }
     } else if ((type === 'user_delete' || type === 'user_deletion') && (state === 'completed' || state === 'running')) {
       if (spec.id === 'step_soft_mark') {
-        effectiveMetric = effectiveMetric ?? (state === 'completed' ? 1 : 0)
-        effectiveTotal = effectiveTotal ?? 1
         detail = isZh ? '软标锁定' : 'Marked'
       }
     }

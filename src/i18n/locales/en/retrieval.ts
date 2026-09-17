@@ -4,12 +4,14 @@ export const retrieval = {
     metrics: {
       compositeIndex: 'RAGAS Composite',
       compositeNote: 'Gate Baseline ≥ 0.700 · Healthy',
+      compositeEmpty: 'No benchmark data · Run Benchmark',
       avgLatency: 'Avg Search Latency',
-      avgLatencyNote: 'Vector 12ms · Rerank 6ms',
+      avgLatencyNote: 'End-to-end verified latency',
       hitRate: 'Benchmark Hit Rate',
-      hitRateNote: '10/10 golden cases matched',
+      hitRateNote: 'Golden cases true recall rate',
       purityRate: 'Context Purity',
-      purityRateNote: '0 orphan leaks · isolated noise',
+      purityRateNote: 'Context evidence purity rate',
+      noData: 'No samples',
     },
     searchPlaceholder: 'Search context',
     placeholders: {

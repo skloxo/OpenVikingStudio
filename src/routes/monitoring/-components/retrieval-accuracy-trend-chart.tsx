@@ -27,8 +27,8 @@ interface RetrievalAccuracyTrendChartProps {
 }
 
 export function RetrievalAccuracyTrendChart({
-  currentAccuracy = 100.0,
-  currentCosine = 0.2053,
+  currentAccuracy,
+  currentCosine,
   window = '7d',
 }: RetrievalAccuracyTrendChartProps) {
   const { t } = useTranslation('monitoringPage')
@@ -45,21 +45,15 @@ export function RetrievalAccuracyTrendChart({
   const rawData = trendsQuery.data ?? []
 
   const data: RetrievalAccuracyDataPoint[] = React.useMemo(() => {
-    if (rawData.length > 0) {
-      return rawData
-    }
-    return [
-      {
-        date: '实时采样',
-        hitRate: currentAccuracy ?? 100.0,
-        avgScore: currentCosine ?? 0.2053,
-        queries: 1,
-      },
-    ]
-  }, [rawData, currentAccuracy, currentCosine])
+    return rawData
+  }, [rawData])
 
-  const latestAcc = (data[data.length - 1]?.hitRate ?? 100.0).toFixed(1)
-  const latestCosine = (data[data.length - 1]?.avgScore ?? 0.2053).toFixed(4)
+  const latestAcc = data.length > 0
+    ? (data[data.length - 1]?.hitRate ?? 0).toFixed(1)
+    : (typeof currentAccuracy === 'number' ? currentAccuracy.toFixed(1) : '--')
+  const latestCosine = data.length > 0
+    ? (data[data.length - 1]?.avgScore ?? 0).toFixed(4)
+    : (typeof currentCosine === 'number' ? currentCosine.toFixed(4) : '--')
 
   return (
     <TooltipProvider>
@@ -101,7 +95,7 @@ export function RetrievalAccuracyTrendChart({
           <div className="flex items-center gap-2 font-mono tabular-nums">
             <Badge variant="outline" className="gap-1 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20 text-xs px-2 py-0.5">
               <TargetIcon className="size-3" />
-              <span>命中率 {latestAcc}%</span>
+              <span>命中率 {latestAcc !== '--' ? `${latestAcc}%` : '--'}</span>
             </Badge>
             <Badge variant="outline" className="gap-1 bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20 text-xs px-2 py-0.5">
               <ZapIcon className="size-3" />
@@ -111,81 +105,88 @@ export function RetrievalAccuracyTrendChart({
         </div>
 
         {/* Chart Body */}
-        <div className="mt-4 h-44 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <defs>
-                <linearGradient id="cosineGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#0284c7" stopOpacity={0.25} />
-                  <stop offset="95%" stopColor="#0284c7" stopOpacity={0.0} />
-                </linearGradient>
-              </defs>
-              <XAxis
-                dataKey="date"
-                stroke="#64748b"
-                fontSize={10}
-                tickLine={false}
-                axisLine={false}
-                className="font-mono"
-              />
-              <YAxis
-                yAxisId="left"
-                domain={[0, 100]}
-                stroke="#06b6d4"
-                fontSize={10}
-                tickLine={false}
-                axisLine={false}
-                className="font-mono"
-                unit="%"
-              />
-              <YAxis
-                yAxisId="right"
-                orientation="right"
-                domain={[0, 1.0]}
-                stroke="#0284c7"
-                fontSize={10}
-                tickLine={false}
-                axisLine={false}
-                className="font-mono"
-              />
-              <RechartsTooltip
-                content={({ active, payload }) => {
-                  if (active && payload.length > 0) {
-                    const d = payload[0].payload as RetrievalAccuracyDataPoint
-                    return (
-                      <div className="rounded-md border border-border/80 bg-card p-2 shadow-none font-mono text-xs space-y-1">
-                        <div className="text-muted-foreground">{d.date}</div>
-                        <div className="font-bold text-cyan-600 dark:text-cyan-400">
-                          召回命中率: {Number(d.hitRate || 100).toFixed(1)}% ({d.queries} 次请求)
+        {data.length === 0 ? (
+          <div className="mt-4 flex h-44 w-full flex-col items-center justify-center rounded border border-dashed border-border/50 text-xs text-muted-foreground font-mono">
+            <span>暂无历史时序数据</span>
+            <span className="text-xs text-muted-foreground/60 mt-1">系统产生检索后将自动沉淀时序趋势</span>
+          </div>
+        ) : (
+          <div className="mt-4 h-44 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="cosineGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#0284c7" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="#0284c7" stopOpacity={0.0} />
+                  </linearGradient>
+                </defs>
+                <XAxis
+                  dataKey="date"
+                  stroke="#64748b"
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={false}
+                  className="font-mono"
+                />
+                <YAxis
+                  yAxisId="left"
+                  domain={[0, 100]}
+                  stroke="#06b6d4"
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={false}
+                  className="font-mono"
+                  unit="%"
+                />
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  domain={[0, 1.0]}
+                  stroke="#0284c7"
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={false}
+                  className="font-mono"
+                />
+                <RechartsTooltip
+                  content={({ active, payload }) => {
+                    if (active && payload.length > 0) {
+                      const d = payload[0].payload as RetrievalAccuracyDataPoint
+                      return (
+                        <div className="rounded-md border border-border/80 bg-card p-2 shadow-none font-mono text-xs space-y-1">
+                          <div className="text-muted-foreground">{d.date}</div>
+                          <div className="font-bold text-cyan-600 dark:text-cyan-400">
+                            召回命中率: {Number(d.hitRate || 100).toFixed(1)}% ({d.queries} 次请求)
+                          </div>
+                          <div className="font-bold text-sky-600 dark:text-sky-400">
+                            余弦相似度: {Number(d.avgScore || 0).toFixed(4)}
+                          </div>
                         </div>
-                        <div className="font-bold text-sky-600 dark:text-sky-400">
-                          余弦相似度: {Number(d.avgScore || 0).toFixed(4)}
-                        </div>
-                      </div>
-                    )
-                  }
-                  return null
-                }}
-              />
-              <Area
-                yAxisId="right"
-                type="monotone"
-                dataKey="avgScore"
-                fill="url(#cosineGradient)"
-                stroke="#0284c7"
-                strokeWidth={1.5}
-              />
-              <Line
-                yAxisId="left"
-                type="monotone"
-                dataKey="hitRate"
-                stroke="#06b6d4"
-                strokeWidth={2}
-                dot={{ r: 3, fill: '#06b6d4' }}
-              />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
+                      )
+                    }
+                    return null
+                  }}
+                />
+                <Area
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="avgScore"
+                  fill="url(#cosineGradient)"
+                  stroke="#0284c7"
+                  strokeWidth={1.5}
+                />
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="hitRate"
+                  stroke="#06b6d4"
+                  strokeWidth={2}
+                  dot={{ r: 3, fill: '#06b6d4' }}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
     </TooltipProvider>
   )

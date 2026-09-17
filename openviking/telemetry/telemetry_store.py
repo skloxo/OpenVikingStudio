@@ -735,6 +735,18 @@ class TelemetryStore:
         except Exception:
             pass
 
+        lessons_count = 0
+        try:
+            from openviking.server.routers.system import _load_all_evolution_lessons
+            lessons_count = len(_load_all_evolution_lessons())
+        except Exception:
+            pass
+
+        auto_wakeup_rate = round(100.0 * (find_calls / max(1, total_calls)), 1) if total_calls > 0 else 0.0
+        compression_retention_rate = None
+        if tokens_saved_total > 0 and total_calls > 0:
+            compression_retention_rate = round(max(0.0, min(100.0, 100.0 - (tokens_saved_total / max(1, tokens_saved_total + total_calls * 1000)) * 100.0)), 1)
+
         return {
             "status": "ok",
             "window": window,
@@ -743,11 +755,11 @@ class TelemetryStore:
             "find_calls": find_calls,
             "store_calls": store_calls,
             "active_skills_count": active_skills_count,
-            "lessons_count": 18,
-            "builtin_lessons_count": 18,
-            "auto_wakeup_rate": 99.2,
-            "context_compression_ratio": 51.5,
-            "compression_retention_rate": 48.5,
+            "lessons_count": lessons_count,
+            "builtin_lessons_count": lessons_count,
+            "auto_wakeup_rate": auto_wakeup_rate,
+            "context_compression_ratio": round(100.0 - compression_retention_rate, 1) if compression_retention_rate is not None else 0.0,
+            "compression_retention_rate": compression_retention_rate,
             "tokens_saved_total": tokens_saved_total,
             "bisection_heal": heal_metrics,
         }
@@ -815,10 +827,10 @@ class TelemetryStore:
                             for r in urows:
                                 total_req = int(r["total"] or 0)
                                 succ_req = int(r["succ"] or 0)
-                                succ_rate = round(succ_req * 100.0 / total_req, 2) if total_req > 0 else 99.9
-                                lat = round(float(r["avg_lat"] or 12.5), 1)
-                                l0_ratio = float(r["l0_ratio"] if "l0_ratio" in r.keys() else 0.82)
-                                token_saving = round(l0_ratio * 88.0 + (1.0 - l0_ratio) * 42.0, 1)
+                                succ_rate = round(succ_req * 100.0 / total_req, 2) if total_req > 0 else 0.0
+                                lat = round(float(r["avg_lat"] or 0.0), 1)
+                                l0_ratio = float(r["l0_ratio"] if "l0_ratio" in r.keys() else 0.0)
+                                token_saving = round(l0_ratio * 100.0, 1)
                                 points.append(
                                     {
                                         "date": r["dt"],
@@ -875,17 +887,16 @@ class TelemetryStore:
                                     """
                                 )
                                 for lr in lcur.fetchall():
-                                    lat_map[lr["dt"]] = round(float(lr["lat"] or 15.0), 1)
+                                    lat_map[lr["dt"]] = round(float(lr["lat"] or 0.0), 1)
                             except Exception:
                                 pass
 
                             for r in urows:
                                 q_cnt = int(r["total_q"] or 0)
                                 succ_cnt = int(r["succ_q"] or 0)
-                                res_cnt = int(r["total_res"] or 0)
                                 hit_rate = round((succ_cnt / q_cnt * 100) if q_cnt > 0 else 0.0, 1)
-                                avg_score = round(max(0.1850, min(0.8920, 0.2150 + (succ_cnt / q_cnt) * 0.5500 + min(0.12, res_cnt / q_cnt * 0.02))), 4) if q_cnt > 0 else 0.2053
-                                lat = lat_map.get(r["dt"], 24.5)
+                                avg_score = round(float(r["avg_score"] or 0.0), 4) if "avg_score" in r.keys() else 0.0
+                                lat = lat_map.get(r["dt"], 0.0)
                                 points.append(
                                     {
                                         "date": r["dt"],
@@ -932,18 +943,15 @@ class TelemetryStore:
 
                     q_cnt = int(r["q_count"] or 0)
                     hit_cnt = int(r["hit_count"] or 0)
-                    hit_rate = round((hit_cnt / q_cnt * 100) if q_cnt > 0 else 99.6, 2)
-                    lat = round(float(r["avg_lat"] or 78.0), 1)
-
-                    l0_ratio = (hit_cnt / q_cnt) if q_cnt > 0 else 0.82
-                    token_saving = round(l0_ratio * 88.0 + (1.0 - l0_ratio) * 42.0, 1)
+                    hit_rate = round((hit_cnt / q_cnt * 100) if q_cnt > 0 else 0.0, 2)
+                    lat = round(float(r["avg_lat"] or 0.0), 1)
 
                     points.append(
                         {
                             "date": dt_label,
-                            "successRate": 99.9,
+                            "successRate": hit_rate,
                             "totalRequests": q_cnt,
-                            "tokenSavingRate": token_saving,
+                            "tokenSavingRate": round(hit_rate * 0.8, 1) if hit_rate > 0 else 0.0,
                             "latencyMs": lat,
                             "hitRate": hit_rate,
                         }

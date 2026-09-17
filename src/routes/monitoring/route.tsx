@@ -498,9 +498,9 @@ function MonitoringRoute() {
           {/* Card-VK-17: 50/50 对称双分位数图表 — RER 重排延迟分位 + EMB 向量生成延迟分位 */}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <RerankLatencyChart
-              totalSamples={56606}
-              avgLatencyMs={85.4}
-              maxLatencyMs={450.0}
+              totalSamples={deepMetrics.rerankTotalSamples}
+              avgLatencyMs={deepMetrics.rerankLatencyMs}
+              maxLatencyMs={deepMetrics.rerankMaxLatencyMs}
             />
             <EmbeddingLatencyChart
               avgLatencyMs={deepMetrics.embeddingLatencyMs}

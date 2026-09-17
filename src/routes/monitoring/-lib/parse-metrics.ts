@@ -36,17 +36,21 @@ export function parseObserverMetrics(
     memorySlimmingRate: null,
     vectorizationRate: null,
     activeModels: {},
+    rerankLatencyMs: null,
+    rerankMaxLatencyMs: null,
+    rerankTotalSamples: null,
   }
 
   if (!overviewObj || typeof overviewObj !== 'object') return metrics
 
   const rawObj = overviewObj as Record<string, unknown>
-  const components = rawObj.components as Record<string, { status?: string }> | undefined
+  const components = rawObj.components as Record<string, { status?: string } | undefined> | undefined
   if (!components) return metrics
 
   // Parse VikingDB component
-  if (components.vikingdb && components.vikingdb.status) {
-    const statusStr = components.vikingdb.status
+  const vikingdbComp = components['vikingdb']
+  if (vikingdbComp && typeof vikingdbComp.status === 'string') {
+    const statusStr = vikingdbComp.status
     const vectorMatch = statusStr.match(/\|\s*context\s*\|\s*\d+\s*\|\s*(\d+)\s*\|/i) || statusStr.match(/TOTAL\s*\|\s*\d+\s*\|\s*(\d+)\s*\|/i)
     if (vectorMatch) {
       metrics.vectorCount = parseInt(vectorMatch[1], 10)
@@ -54,8 +58,9 @@ export function parseObserverMetrics(
   }
 
   // Parse Retrieval component
-  if (components.retrieval && components.retrieval.status) {
-    const statusStr = components.retrieval.status
+  const retrievalComp = components['retrieval']
+  if (retrievalComp && typeof retrievalComp.status === 'string') {
+    const statusStr = retrievalComp.status
     
     // Zero-Result Rate
     const zeroRateMatch = statusStr.match(/Zero-Result Rate\s*\|\s*([\d.]+)%/i)
@@ -69,8 +74,18 @@ export function parseObserverMetrics(
     if (rerankMatch) {
       const used = parseInt(rerankMatch[1], 10)
       const fallback = fallbackMatch ? parseInt(fallbackMatch[1], 10) : 0
+      metrics.rerankTotalSamples = used
       if (used > 0) {
         metrics.top1Accuracy = Math.round(((used - fallback) / used) * 1000) / 10
+        // If reranking is active, latency in retrieval observer reflects rerank latency
+        const rerankLatMatch = statusStr.match(/Avg Latency \(ms\)\s*\|\s*([\d.]+)/i)
+        if (rerankLatMatch) {
+          metrics.rerankLatencyMs = parseFloat(rerankLatMatch[1])
+        }
+        const rerankMaxLatMatch = statusStr.match(/Max Latency \(ms\)\s*\|\s*([\d.]+)/i)
+        if (rerankMaxLatMatch) {
+          metrics.rerankMaxLatencyMs = parseFloat(rerankMaxLatMatch[1])
+        }
       }
     }
 
@@ -94,8 +109,9 @@ export function parseObserverMetrics(
   }
 
   // Parse Queue component
-  if (components.queue && components.queue.status) {
-    const statusStr = components.queue.status
+  const queueComp = components['queue']
+  if (queueComp && typeof queueComp.status === 'string') {
+    const statusStr = queueComp.status
     const totalMatch = statusStr.match(/TOTAL\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|\s*(\d+)\s*\|/i)
     if (totalMatch) {
       metrics.queueStats = {
@@ -110,8 +126,9 @@ export function parseObserverMetrics(
   }
 
   // Parse FileSystem component
-  if (components.filesystem && components.filesystem.status) {
-    const statusStr = components.filesystem.status
+  const fsComp = components['filesystem']
+  if (fsComp && typeof fsComp.status === 'string') {
+    const statusStr = fsComp.status
     const opsMatch = statusStr.match(/Total Operations\s*\|\s*(\d+)/i)
     const avgMatch = statusStr.match(/Overall Avg \(ms\)\s*\|\s*([\d.]+)/i)
     if (opsMatch) {
@@ -123,7 +140,8 @@ export function parseObserverMetrics(
   }
 
   // Parse Models component
-  const modelsRaw = components.models ? components.models.status : modelsStatus
+  const modelsComp = components['models']
+  const modelsRaw = modelsComp?.status ?? modelsStatus
   if (modelsRaw) {
     const parseModelName = (sectionHeader: string): string | undefined => {
       const sectionPos = modelsRaw.indexOf(sectionHeader)
@@ -146,9 +164,9 @@ export function parseObserverMetrics(
     const rerank = parseModelName('Rerank Models:')
 
     metrics.activeModels = {
-      vlm: vlm || 'mimo-v2.5',
-      embedding: embedding || 'Qwen3-Embedding-8B',
-      rerank: rerank || 'qwen3-reranker-0.6b',
+      vlm: vlm || undefined,
+      embedding: embedding || undefined,
+      rerank: rerank || undefined,
     }
   }
 
@@ -166,9 +184,6 @@ export function parseObserverMetrics(
   // Vectorization rate: OpenViking EMB vector throughput (Vec/s)
   if (metrics.embeddingLatencyMs && metrics.embeddingLatencyMs > 0 && metrics.embeddingLatencyMs < 1000) {
     metrics.vectorizationRate = Math.round((1000 / metrics.embeddingLatencyMs) * 10) / 10
-  } else if (metrics.activeModels.embedding) {
-    // 2080Ti local acceleration calibrated baseline (425 Vec/s)
-    metrics.vectorizationRate = 425
   }
 
   return metrics

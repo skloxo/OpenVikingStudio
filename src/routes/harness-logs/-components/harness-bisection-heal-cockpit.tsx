@@ -19,17 +19,17 @@ export interface BisectionHealMetrics {
   status: string
   total_extractions: number
   zero_thinking_enforced_count: number
-  zero_thinking_enforced_rate: number
+  zero_thinking_enforced_rate: number | null
   pre_slice_gate_hits: number
   truncations_detected: number
   bisection_heals_triggered: number
   bisection_heals_success: number
-  heal_success_rate: number
+  heal_success_rate: number | null
   empty_returns_prevented: number
   tokens_saved_estimate: number
   safe_chunks_split: number
   safe_item_max_chars: number
-  avg_speedup_factor: number
+  avg_speedup_factor: number | null
   thresholds?: {
     char_threshold: number
     msg_threshold: number
@@ -66,27 +66,7 @@ export function HarnessBisectionHealCockpit() {
     },
   })
 
-  const data: BisectionHealMetrics = metricsQuery.data ?? {
-    status: 'healthy',
-    total_extractions: 42,
-    zero_thinking_enforced_count: 42,
-    zero_thinking_enforced_rate: 100.0,
-    pre_slice_gate_hits: 14,
-    truncations_detected: 8,
-    bisection_heals_triggered: 8,
-    bisection_heals_success: 8,
-    heal_success_rate: 100.0,
-    empty_returns_prevented: 8,
-    tokens_saved_estimate: 33600,
-    safe_chunks_split: 5,
-    safe_item_max_chars: 3000,
-    avg_speedup_factor: 15.2,
-    thresholds: {
-      char_threshold: 4000,
-      msg_threshold: 25,
-      safe_chunk_limit: 3000,
-    },
-  }
+  const data = metricsQuery.data
 
   return (
     <div className="space-y-4">
@@ -123,10 +103,10 @@ export function HarnessBisectionHealCockpit() {
             <CpuIcon className="size-3.5 text-cyan-400" />
           </div>
           <div className="mt-1 font-mono text-xl font-bold text-cyan-400">
-            {data.zero_thinking_enforced_rate.toFixed(1)}%
+            {data?.zero_thinking_enforced_rate != null ? `${data.zero_thinking_enforced_rate.toFixed(1)}%` : '--'}
           </div>
           <div className="mt-0.5 text-xs text-muted-foreground font-mono">
-            提速 {data.avg_speedup_factor}x · Token -70%
+            提速 {data?.avg_speedup_factor != null ? `${data.avg_speedup_factor}x` : '--'} · Token {data?.tokens_saved_estimate ? `已节约 ${data.tokens_saved_estimate}` : '--'}
           </div>
         </div>
 
@@ -136,10 +116,10 @@ export function HarnessBisectionHealCockpit() {
             <ZapIcon className="size-3.5 text-cyan-400" />
           </div>
           <div className="mt-1 font-mono text-xl font-bold text-cyan-400">
-            {data.heal_success_rate.toFixed(1)}%
+            {data?.heal_success_rate != null ? `${data.heal_success_rate.toFixed(1)}%` : '--'}
           </div>
           <div className="mt-0.5 text-xs text-muted-foreground font-mono">
-            成功自愈: {data.bisection_heals_success} / {data.bisection_heals_triggered || 1}
+            成功自愈: {data?.bisection_heals_success ?? 0} / {data?.bisection_heals_triggered ?? 0}
           </div>
         </div>
 
@@ -149,11 +129,11 @@ export function HarnessBisectionHealCockpit() {
             <ShieldCheckIcon className="size-3.5 text-cyan-400" />
           </div>
           <div className="mt-1 font-mono text-xl font-bold text-foreground">
-            {data.pre_slice_gate_hits}
+            {data?.pre_slice_gate_hits ?? 0}
             <span className="ml-1 text-xs font-normal text-muted-foreground">次拦截</span>
           </div>
           <div className="mt-0.5 text-xs text-muted-foreground font-mono">
-            阈值: &gt;{data.thresholds?.char_threshold ?? 4000}字 / &gt;{data.thresholds?.msg_threshold ?? 25}条
+            阈值: &gt;{data?.thresholds?.char_threshold ?? 4000}字 / &gt;{data?.thresholds?.msg_threshold ?? 25}条
           </div>
         </div>
 
@@ -163,11 +143,11 @@ export function HarnessBisectionHealCockpit() {
             <ScissorsIcon className="size-3.5 text-cyan-400" />
           </div>
           <div className="mt-1 font-mono text-xl font-bold text-foreground">
-            {data.empty_returns_prevented}
+            {data?.empty_returns_prevented ?? 0}
             <span className="ml-1 text-xs font-normal text-muted-foreground">空返回清零</span>
           </div>
           <div className="mt-0.5 text-xs text-muted-foreground font-mono">
-            防爆分片: {data.safe_chunks_split} (上限 {data.safe_item_max_chars} 字)
+            防爆分片: {data?.safe_chunks_split ?? 0} (上限 {data?.safe_item_max_chars ?? 3000} 字)
           </div>
         </div>
       </div>
@@ -308,14 +288,14 @@ export function HarnessBisectionHealCockpit() {
                   <span className="text-muted-foreground text-xs">scenario: {selectedScenario}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-x-2 gap-y-1 pt-1 text-muted-foreground">
-                  <div>输入消息总数: <span className="text-foreground">{String(drillResult.input_message_count ?? 30)} 条</span></div>
-                  <div>输入字符总数: <span className="text-foreground">{String(drillResult.input_char_count ?? 8400)} 字符</span></div>
-                  <div>双门禁拦截: <span className="text-cyan-400">已触发 (PRE_SLICED)</span></div>
-                  <div>二分子任务: <span className="text-foreground">左 {String(drillResult.bisection_left_msgs ?? 16)} 条 / 右 {String(drillResult.bisection_right_msgs ?? 16)} 条</span></div>
-                  <div>零思考强制: <span className="text-cyan-400">100% (Thinking=False)</span></div>
-                  <div>Token 节约率: <span className="text-cyan-400">{String(drillResult.tokens_saved_ratio ?? '72.4%')}</span></div>
-                  <div>端到端提速: <span className="text-cyan-400 font-bold">{String(drillResult.speedup_factor ?? '15.2x')}</span></div>
-                  <div>空返回清零: <span className="text-foreground">{String(drillResult.empty_returns_prevented ?? 1)} 次</span></div>
+                  <div>输入消息总数: <span className="text-foreground">{drillResult.input_message_count != null ? `${drillResult.input_message_count} 条` : '--'}</span></div>
+                  <div>输入字符总数: <span className="text-foreground">{drillResult.input_char_count != null ? `${drillResult.input_char_count} 字符` : '--'}</span></div>
+                  <div>双门禁拦截: <span className="text-cyan-400">{drillResult.dual_threshold_triggered ? '已触发 (PRE_SLICED)' : '未触发'}</span></div>
+                  <div>二分子任务: <span className="text-foreground">左 {drillResult.bisection_left_msgs != null ? `${drillResult.bisection_left_msgs} 条` : '--'} / 右 {drillResult.bisection_right_msgs != null ? `${drillResult.bisection_right_msgs} 条` : '--'}</span></div>
+                  <div>零思考强制: <span className="text-cyan-400">{drillResult.zero_thinking_enforced ? '100% (Thinking=False)' : '未开启'}</span></div>
+                  <div>Token 节约率: <span className="text-cyan-400">{String(drillResult.tokens_saved_ratio ?? '--')}</span></div>
+                  <div>端到端提速: <span className="text-cyan-400 font-bold">{String(drillResult.speedup_factor ?? '--')}</span></div>
+                  <div>空返回清零: <span className="text-foreground">{drillResult.empty_returns_prevented != null ? `${drillResult.empty_returns_prevented} 次` : '--'}</span></div>
                 </div>
               </>
             ) : (

@@ -38,27 +38,16 @@ export function SlaTrendChart({
   const rawData = trendsQuery.data ?? []
 
   const data: SlaDataPoint[] = React.useMemo(() => {
-    if (rawData.length > 0) {
-      return rawData
-    }
-    // Baseline single point if no historical series exists yet
-    return [
-      {
-        date: '实时',
-        successRate: currentSuccessRate ?? 99.9,
-        totalRequests: 1,
-        tokenSavingRate: 82.4,
-        latencyMs: 78.0,
-      },
-    ]
-  }, [rawData, currentSuccessRate])
+    return rawData
+  }, [rawData])
 
-  const avgSla = (
-    data.reduce((acc, curr) => acc + (curr.successRate || 99.9), 0) / data.length
-  ).toFixed(2)
-  const avgSaving = (
-    data.reduce((acc, curr) => acc + (curr.tokenSavingRate || 82.4), 0) / data.length
-  ).toFixed(1)
+  const avgSla = data.length > 0
+    ? (data.reduce((acc, curr) => acc + (curr.successRate || 0), 0) / data.length).toFixed(2)
+    : (typeof currentSuccessRate === 'number' ? currentSuccessRate.toFixed(2) : '--')
+
+  const avgSaving = data.length > 0
+    ? (data.reduce((acc, curr) => acc + (curr.tokenSavingRate || 0), 0) / data.length).toFixed(1)
+    : '--'
 
   return (
     <TooltipProvider>
@@ -84,7 +73,7 @@ export function SlaTrendChart({
                   <TooltipContent side="top" className="max-w-xs text-xs">
                     {t('analyticsCharts.slaTooltip', {
                       defaultValue:
-                        '展示系统全局在 L0 意图避坑拦截机制下的 Token 节省率 (-82.4%) 与 P95 时延对比。真实时序 SQLite 驱动。',
+                        '展示系统全局在 L0 意图避坑拦截机制下的 Token 节省率与 P95 时延对比。真实时序 SQLite 驱动。',
                     })}
                   </TooltipContent>
                 </Tooltip>
@@ -98,74 +87,81 @@ export function SlaTrendChart({
           <div className="flex items-center gap-2 font-mono tabular-nums">
             <Badge variant="outline" className="gap-1 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20 text-xs px-2 py-0.5">
               <TrendingUpIcon className="size-3" />
-              <span>Token 均省 -{avgSaving}%</span>
+              <span>Token 均省 {avgSaving !== '--' ? `-${avgSaving}%` : '--'}</span>
             </Badge>
             <Badge variant="outline" className="gap-1 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20 text-xs px-2 py-0.5">
-              <span>SLA {avgSla}%</span>
+              <span>SLA {avgSla !== '--' ? `${avgSla}%` : '--'}</span>
             </Badge>
           </div>
         </div>
 
         {/* Chart Body */}
-        <div className="mt-4 h-44 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <defs>
-                <linearGradient id="slaGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.0} />
-                </linearGradient>
-              </defs>
-              <XAxis
-                dataKey="date"
-                stroke="#64748b"
-                fontSize={10}
-                tickLine={false}
-                axisLine={false}
-                className="font-mono"
-              />
-              <YAxis
-                domain={[70, 100]}
-                stroke="#64748b"
-                fontSize={10}
-                tickLine={false}
-                axisLine={false}
-                className="font-mono"
-                unit="%"
-              />
-              <RechartsTooltip
-                content={({ active, payload }) => {
-                  if (active && payload.length > 0) {
-                    const d = payload[0].payload as SlaDataPoint
-                    return (
-                      <div className="rounded-md border border-border/80 bg-card p-2 shadow-none font-mono text-xs space-y-1">
-                        <div className="text-muted-foreground">{d.date}</div>
-                        <div className="font-bold text-cyan-600 dark:text-cyan-400">
-                          Token 节省率: -{Number(d.tokenSavingRate || 82.4).toFixed(1)}%
+        {data.length === 0 ? (
+          <div className="mt-4 flex h-44 w-full flex-col items-center justify-center rounded border border-dashed border-border/50 text-xs text-muted-foreground font-mono">
+            <span>暂无历史时序数据</span>
+            <span className="text-xs text-muted-foreground/60 mt-1">系统产生请求后将自动沉淀时序趋势</span>
+          </div>
+        ) : (
+          <div className="mt-4 h-44 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="slaGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.0} />
+                  </linearGradient>
+                </defs>
+                <XAxis
+                  dataKey="date"
+                  stroke="#64748b"
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={false}
+                  className="font-mono"
+                />
+                <YAxis
+                  domain={[70, 100]}
+                  stroke="#64748b"
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={false}
+                  className="font-mono"
+                  unit="%"
+                />
+                <RechartsTooltip
+                  content={({ active, payload }) => {
+                    if (active && payload.length > 0) {
+                      const d = payload[0].payload as SlaDataPoint
+                      return (
+                        <div className="rounded-md border border-border/80 bg-card p-2 shadow-none font-mono text-xs space-y-1">
+                          <div className="text-muted-foreground">{d.date}</div>
+                          <div className="font-bold text-cyan-600 dark:text-cyan-400">
+                            Token 节省率: -{Number(d.tokenSavingRate).toFixed(1)}%
+                          </div>
+                          <div className="text-cyan-500 text-xs">
+                            响应时延: {d.latencyMs} ms
+                          </div>
+                          <div className="text-muted-foreground text-xs">
+                            SLA 成功率: {Number(d.successRate).toFixed(2)}% ({d.totalRequests.toLocaleString()} 次)
+                          </div>
                         </div>
-                        <div className="text-cyan-500 text-xs">
-                          响应时延: {d.latencyMs} ms
-                        </div>
-                        <div className="text-muted-foreground text-xs">
-                          SLA 成功率: {Number(d.successRate || 99.9).toFixed(2)}% ({d.totalRequests.toLocaleString()} 次)
-                        </div>
-                      </div>
-                    )
-                  }
-                  return null
-                }}
-              />
-              <Area
-                type="monotone"
-                dataKey="tokenSavingRate"
-                stroke="#06b6d4"
-                strokeWidth={2}
-                fillOpacity={1}
-                fill="url(#slaGradient)"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+                      )
+                    }
+                    return null
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="tokenSavingRate"
+                  stroke="#06b6d4"
+                  strokeWidth={2}
+                  fillOpacity={1}
+                  fill="url(#slaGradient)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
     </TooltipProvider>
   )

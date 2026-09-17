@@ -4,12 +4,14 @@ export const retrieval = {
     metrics: {
       compositeIndex: 'RAGAS 综合指数',
       compositeNote: '门禁基准 ≥ 0.700 · 状态健康',
+      compositeEmpty: '暂无评测数据 · 可启动 Benchmark',
       avgLatency: '平均检索耗时',
-      avgLatencyNote: '向量搜索 12ms · 语义重排 6ms',
+      avgLatencyNote: '端到端实测验证耗时',
       hitRate: '金标命中召回率',
-      hitRateNote: '10/10 金标用例全部精准召回',
+      hitRateNote: '金标用例真实精准召回率',
       purityRate: '上下文纯净度',
-      purityRateNote: '0 孤儿切片泄露 · 噪音已隔离',
+      purityRateNote: '上下文证据切片真实纯净度',
+      noData: '暂无采样',
     },
     searchPlaceholder: '输入检索内容',
     placeholders: {

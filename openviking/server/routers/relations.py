@@ -2,14 +2,14 @@
 # SPDX-License-Identifier: AGPL-3.0
 """Relations endpoints for OpenViking HTTP Server."""
 
-from typing import List, Union
+from typing import Any, List, Optional, Union
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 
 from openviking.core.path_variables import resolve_path_variables
 from openviking.server.auth import get_request_context
-from openviking.server.dependencies import get_service
+from openviking.server.dependencies import get_service, get_service_or_none
 from openviking.server.identity import RequestContext
 from openviking.server.models import Response
 
@@ -98,3 +98,105 @@ async def build_graph(
     graph = MemoryGraph(viking_fs=service.viking_fs)
     graph_path = await graph.build_graph(space_uris, output_uri, ctx=_ctx)
     return Response(status="ok", result={"graph_uri": graph_path})
+
+
+@router.get("/topology")
+async def get_topology(
+    limit: int = Query(300, description="Max node limit", le=1000),
+    service: Optional[Any] = Depends(get_service_or_none),
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """Get live topology nodes and relations across peers, skills, sessions, and memory resources."""
+    if service is None:
+        service = get_service_or_none()
+
+    peers = [
+        {"id": "viking://peers/master_agent", "label": "Peer: master_agent", "category": "peers"},
+        {"id": "viking://peers/researcher_agent", "label": "Peer: researcher_agent", "category": "peers"},
+        {"id": "viking://peers/developer_agent", "label": "Peer: developer_agent", "category": "peers"},
+        {"id": "viking://peers/designer_agent", "label": "Peer: designer_agent", "category": "peers"},
+        {"id": "viking://peers/product_manager", "label": "Peer: product_manager", "category": "peers"},
+        {"id": "viking://peers/operator_agent", "label": "Peer: operator_agent", "category": "peers"},
+        {"id": "viking://peers/planner_agent", "label": "Peer: planner_agent", "category": "peers"},
+        {"id": "viking://peers/evaluator_agent", "label": "Peer: evaluator_agent", "category": "peers"},
+        {"id": "viking://peers/test_agent", "label": "Peer: test_agent", "category": "peers"},
+    ]
+    edges = []
+    for peer in peers[1:]:
+        edges.append({"source": peers[0]["id"], "target": peer["id"], "link_type": "orchestrates"})
+
+    skills = []
+    try:
+        if service and hasattr(service, "skills") and service.skills:
+            from openviking.server.routers.skills import _list_skills_from_root, canonical_user_root
+            user_root = f"{canonical_user_root(_ctx)}/skills"
+            user_skills = await _list_skills_from_root(service, _ctx, user_root)
+            for s in user_skills[:min(limit // 3, 100)]:
+                name = s.get("name") if isinstance(s, dict) else getattr(s, "name", "")
+                if name and not name.startswith("."):
+                    skill_id = f"viking://skills/{name}"
+                    skills.append({
+                        "id": skill_id,
+                        "label": f"Skill: {name}",
+                        "category": "skills",
+                    })
+                    # Link skill to relevant peer
+                    low = name.lower()
+                    if any(k in low for k in ["test", "tdd", "debug", "dev", "code"]):
+                        target_peer = "viking://peers/developer_agent"
+                    elif any(k in low for k in ["research", "retrieval", "search"]):
+                        target_peer = "viking://peers/researcher_agent"
+                    elif any(k in low for k in ["ops", "satellite", "docker", "fleet"]):
+                        target_peer = "viking://peers/operator_agent"
+                    elif any(k in low for k in ["ui", "cockpit", "design"]):
+                        target_peer = "viking://peers/designer_agent"
+                    elif any(k in low for k in ["eval", "radar", "audit"]):
+                        target_peer = "viking://peers/evaluator_agent"
+                    else:
+                        target_peer = "viking://peers/master_agent"
+                    edges.append({"source": target_peer, "target": skill_id, "link_type": "applies"})
+    except Exception:
+        pass
+
+    sessions = []
+    try:
+        if service and hasattr(service, "sessions") and service.sessions:
+            sess_list = await service.sessions.sessions(_ctx)
+            for s in sess_list[:min(limit // 3, 100)]:
+                sid = s.get("session_id") if isinstance(s, dict) else getattr(s, "session_id", "")
+                if sid:
+                    sess_id = f"viking://sessions/{sid}"
+                    sessions.append({
+                        "id": sess_id,
+                        "label": f"Session: {sid[:8]}",
+                        "category": "sessions",
+                    })
+                    edges.append({"source": "viking://peers/master_agent", "target": sess_id, "link_type": "interacts"})
+    except Exception:
+        pass
+
+    resources = []
+    try:
+        if service and hasattr(service, "viking_fs") and service.viking_fs:
+            max_res = min(limit // 3, 50)
+            res_entries = await service.viking_fs.ls("viking://resources", limit=max_res, ctx=_ctx)
+            for entry in res_entries[:max_res]:
+                uri = entry.get("uri") if isinstance(entry, dict) else getattr(entry, "uri", "")
+                if uri:
+                    label = uri.split("/")[-1]
+                    resources.append({
+                        "id": uri,
+                        "label": f"Resource: {label}",
+                        "category": "resources",
+                    })
+                    edges.append({
+                        "source": "viking://peers/master_agent",
+                        "target": uri,
+                        "link_type": "indexes",
+                    })
+    except Exception:
+        pass
+
+    nodes = peers + skills + sessions + resources
+    return Response(status="ok", result={"nodes": nodes, "edges": edges})
+

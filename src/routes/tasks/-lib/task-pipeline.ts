@@ -61,7 +61,7 @@ export interface TaskDynamicDef {
 export function extractSessionCommitMetrics(
   meta: Record<string, any>,
   result: Record<string, any>,
-  status?: string,
+  _status?: string,
 ): { turns: number; lessons: number } {
   let lessons = 0
   if (
@@ -79,16 +79,13 @@ export function extractSessionCommitMetrics(
     lessons = meta.lessons_count
   }
 
-  let turns =
+  const turns =
     meta.turns_count ??
     result.turns_processed ??
     meta.messages_count ??
     result.messages_count
-  if (turns === undefined && status?.toLowerCase() === 'completed') {
-    turns = 1
-  }
 
-  return { turns: turns ?? 1, lessons }
+  return { turns: turns ?? 0, lessons }
 }
 
 /**

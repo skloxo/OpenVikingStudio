@@ -92,72 +92,10 @@ class HITLOffloadTelemetry:
         self._resolved_actions: List[HITLActionItem] = []
         self._hitl_gate_ref: Optional[HITLGate] = None
 
-        # Prepopulate realistic seed data to eliminate cold-start blank state
-        self._seed_initial_telemetry()
-
     def set_hitl_gate(self, gate: HITLGate) -> None:
         """Link active HITLGate instance."""
         with self._rw_lock:
             self._hitl_gate_ref = gate
-
-    def _seed_initial_telemetry(self) -> None:
-        """Seed baseline telemetry so operator has immediate visibility."""
-        now = time.time()
-        
-        # 1. Baseline offload records
-        sample_files = [
-            ("openviking/server/app.py", 480, 18450, 4610, 420),
-            ("tests/integration/test_full_suite.py", 1250, 48200, 12050, 450),
-            ("logs/telemetry_archive_20260914.log", 2400, 95400, 23850, 510),
-        ]
-        for path, lines, size_b, raw_tok, off_tok in sample_files:
-            ref_id = f"ref_{hashlib.sha256(path.encode()).hexdigest()[:8]}"
-            saved = max(0, raw_tok - off_tok)
-            self._file_refs[ref_id] = FileRefRecord(
-                ref_id=ref_id,
-                target_path=path,
-                total_lines=lines,
-                total_bytes=size_b,
-                estimated_raw_tokens=raw_tok,
-                estimated_offloaded_tokens=off_tok,
-                tokens_saved=saved,
-                content_hash=hashlib.sha256(path.encode()).hexdigest(),
-                created_at=now - 3600,
-            )
-            self._total_files_offloaded += 1
-            self._total_raw_tokens += raw_tok
-            self._total_offloaded_tokens += off_tok
-
-        # 2. Seed an initial pending high-risk action for operator inspection
-        pending_id = f"hitl_{uuid.uuid4().hex[:8]}"
-        self._pending_actions[pending_id] = HITLActionItem(
-            action_id=pending_id,
-            tool_name="deploy_production",
-            args_summary="target_env='prod', force=True, release_tag='v1.5.12'",
-            danger_reason="工具 'deploy_production' 属于生产高危受限工具，未经审核禁止执行",
-            phase="spec_review",
-            status="pending",
-            approval_token=f"tok_{uuid.uuid4().hex[:12]}",
-            created_at=now - 420,
-        )
-
-        # 3. Seed an audit item
-        past_id = f"hitl_{uuid.uuid4().hex[:8]}"
-        self._resolved_actions.append(
-            HITLActionItem(
-                action_id=past_id,
-                tool_name="run_command",
-                args_summary="CommandLine='rm -rf /tmp/staging_cache/*'",
-                danger_reason="命令包含高危破坏性指令模式: 'rm -rf'",
-                phase="testing",
-                status="approved",
-                approval_token="tok_audit_verified_8921",
-                created_at=now - 7200,
-                resolved_at=now - 7150,
-                resolved_by="admin@operator",
-                comment="排查构建缓存正常清理",
-            )
-        )
 
     def record_read_offload(
         self,
@@ -305,4 +243,3 @@ class HITLOffloadTelemetry:
             self._total_offloaded_tokens = 0
             self._pending_actions.clear()
             self._resolved_actions.clear()
-            self._seed_initial_telemetry()
