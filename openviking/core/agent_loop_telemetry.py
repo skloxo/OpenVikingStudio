@@ -43,10 +43,10 @@ class AgentLoopTelemetrySnapshot:
     last_turn_inner_steps: int = 0
 
     # 5. Merkle 增量状态树巡检 (Merkle State Diff Latency)
-    merkle_last_diff_ms: float = 0.85
+    merkle_last_diff_ms: Optional[float] = None
     merkle_tree_file_count: int = 0
-    merkle_version: int = 1
-    merkle_last_scan_ts: float = field(default_factory=time.time)
+    merkle_version: int = 0
+    merkle_last_scan_ts: Optional[float] = None
 
     # 6. 元数据
     timestamp: float = field(default_factory=time.time)
@@ -82,13 +82,10 @@ class AgentLoopTelemetryCollector:
         self._model_retries_total = 0
         self._model_exhausted_total = 0
 
-        self._total_inner_steps = 0
-        self._last_turn_inner_steps = 0
-
-        self._merkle_last_diff_ms = 0.85
-        self._merkle_file_count = 42
-        self._merkle_version = 1
-        self._merkle_last_scan_ts = time.time()
+        self._merkle_last_diff_ms: Optional[float] = None
+        self._merkle_file_count = 0
+        self._merkle_version = 0
+        self._merkle_last_scan_ts: Optional[float] = None
 
         self._initialized = True
 
@@ -222,10 +219,10 @@ class AgentLoopTelemetryCollector:
             self._model_exhausted_total = 0
             self._total_inner_steps = 0
             self._last_turn_inner_steps = 0
-            self._merkle_last_diff_ms = 0.85
-            self._merkle_file_count = 42
-            self._merkle_version = 1
-            self._merkle_last_scan_ts = time.time()
+            self._merkle_last_diff_ms = None
+            self._merkle_file_count = 0
+            self._merkle_version = 0
+            self._merkle_last_scan_ts = None
 
 
 def get_agent_loop_telemetry_collector() -> AgentLoopTelemetryCollector:

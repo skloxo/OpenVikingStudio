@@ -57,11 +57,14 @@ export function deriveUniversalFinalOutcome(
 
   // 2. 资源入库 / 知识包
   if (type === 'add_resource' || type === 'resource_build' || type === 'knowledge_pack') {
-    const files = metaObj.file_count ?? resObj.file_count ?? 1
+    const files = metaObj.file_count ?? resObj.file_count
     const chunks = resObj.processed_chunks ?? metaObj.processed_chunks
     const links = resObj.total_links ?? metaObj.total_links
 
-    const parts: string[] = [isZh ? `${files} 个文件已落盘索引` : `${files} files indexed`]
+    const parts: string[] = []
+    if (files !== undefined && Number(files) > 0) {
+      parts.push(isZh ? `${files} 个文件已落盘索引` : `${files} files indexed`)
+    }
     if (chunks && Number(chunks) > 0) {
       parts.push(isZh ? `生成 ${Number(chunks).toLocaleString()} 个向量切片` : `${Number(chunks).toLocaleString()} chunks`)
     }
@@ -69,34 +72,45 @@ export function deriveUniversalFinalOutcome(
       parts.push(isZh ? `建立 ${Number(links).toLocaleString()} 条记忆关联` : `${Number(links).toLocaleString()} links`)
     }
 
+    const deliverableText =
+      parts.length > 0
+        ? parts.join(' · ')
+        : (isZh ? '资源已完成处理并向量入库' : 'Resource processed and indexed')
+
     return {
       title: isZh ? '资源入库' : 'Resource Ingestion',
-      deliverableText: parts.join(' · '),
+      deliverableText,
       expectedText: isZh ? '物理文件落盘与语义向量建库' : 'File persistence and vector indexing',
     }
   }
 
   // 3. 技能入库
   if (type === 'add_skill') {
-    const skills = resObj.valid_skills ?? metaObj.valid_skills ?? resObj.scanned_skills ?? 1
+    const skills = resObj.valid_skills ?? metaObj.valid_skills ?? resObj.scanned_skills
     return {
       title: isZh ? '技能入库' : 'Skill Ingestion',
-      deliverableText: isZh
-        ? `${skills} 项技能已完成校验并注册入库`
-        : `${skills} skills validated & registered`,
+      deliverableText: skills !== undefined
+        ? (isZh ? `${skills} 项技能已完成校验并注册入库` : `${skills} skills validated & registered`)
+        : (isZh ? '技能已完成校验并注册入库' : 'Skills validated & registered'),
       expectedText: isZh ? '技能合规校验与向量注册入库' : 'Skill spec validation & embedding registration',
     }
   }
 
   // 4. 会话归档
   if (type === 'session_commit') {
-    const turns = metaObj.turns_count ?? resObj.turns_processed ?? 1
+    const turns = metaObj.turns_count ?? resObj.turns_processed
     const lessons = Number(resObj.lessons_extracted ?? metaObj.lessons_count ?? 0)
+    let deliverableText = isZh ? '会话已归档' : 'Session archived'
+    if (turns !== undefined) {
+      deliverableText = isZh
+        ? `${turns} 轮对话已归档` + (lessons > 0 ? ` · ${lessons} 条经验已沉淀` : '')
+        : `${turns} turns archived` + (lessons > 0 ? ` · ${lessons} lessons extracted` : '')
+    } else if (lessons > 0) {
+      deliverableText = isZh ? `${lessons} 条经验已沉淀` : `${lessons} lessons extracted`
+    }
     return {
       title: isZh ? '会话归档' : 'Session Commit',
-      deliverableText: isZh
-        ? `${turns} 轮对话已归档` + (lessons > 0 ? ` · ${lessons} 条经验已沉淀` : '')
-        : `${turns} turns archived` + (lessons > 0 ? ` · ${lessons} lessons extracted` : ''),
+      deliverableText,
       expectedText: isZh ? '对话上下文序列化与经验记忆萃取' : 'Context serialization & lesson extraction',
     }
   }
@@ -104,16 +118,20 @@ export function deriveUniversalFinalOutcome(
   // 5. 质量门禁 (Quality Gate)
   if (type === 'quality_gate' || type === 'benchmark_eval') {
     const composite = resObj.composite_score ?? metaObj.composite_score
-    const totalCases = resObj.total_queries ?? resObj.total_cases ?? metaObj.total_queries ?? 10
+    const totalCases = resObj.total_queries ?? resObj.total_cases ?? metaObj.total_queries
     const hitRate = resObj.hit_rate ?? metaObj.hit_rate
 
     let deliverableText = isZh ? '抗熵增质量门禁已执行' : 'Anti-entropy quality gate completed'
     if (composite !== undefined) {
       const compStr = typeof composite === 'number' ? composite.toFixed(3) : String(composite)
       const hitStr = hitRate !== undefined ? (typeof hitRate === 'number' ? `${(hitRate * 100).toFixed(0)}%` : String(hitRate)) : undefined
-      deliverableText = isZh
-        ? `评测 ${totalCases} 组金标用例 · RAGAS 综合指数 ${compStr}` + (hitStr ? ` · 命中率 ${hitStr}` : '')
-        : `Evaluated ${totalCases} test cases · RAGAS Composite ${compStr}` + (hitStr ? ` · Hit Rate ${hitStr}` : '')
+      deliverableText = totalCases !== undefined
+        ? (isZh
+            ? `评测 ${totalCases} 组金标用例 · RAGAS 综合指数 ${compStr}` + (hitStr ? ` · 命中率 ${hitStr}` : '')
+            : `Evaluated ${totalCases} test cases · RAGAS Composite ${compStr}` + (hitStr ? ` · Hit Rate ${hitStr}` : ''))
+        : (isZh
+            ? `RAGAS 综合指数 ${compStr}` + (hitStr ? ` · 命中率 ${hitStr}` : '')
+            : `RAGAS Composite ${compStr}` + (hitStr ? ` · Hit Rate ${hitStr}` : ''))
     }
 
     return {
@@ -140,10 +158,12 @@ export function deriveUniversalFinalOutcome(
 
   // 7. 连接器导入 (Connector Import)
   if (type === 'connector_import') {
-    const count = metaObj.item_count ?? resObj.item_count ?? 1
+    const count = metaObj.item_count ?? resObj.item_count
     return {
       title: isZh ? '连接器导入' : 'Connector Import',
-      deliverableText: isZh ? `连接器握手成功 · 抓取 ${count} 条资源 · 语义分析并向量入库` : `Connector authenticated · Fetched ${count} items · Embedded into vector index`,
+      deliverableText: count !== undefined
+        ? (isZh ? `连接器握手成功 · 抓取 ${count} 条资源 · 语义分析并向量入库` : `Connector authenticated · Fetched ${count} items · Embedded into vector index`)
+        : (isZh ? '连接器握手成功 · 语义分析并向量入库' : 'Connector authenticated · Embedded into vector index'),
       expectedText: isZh ? '外部源鉴权握手、数据拉取与向量入库' : 'Connector auth, fetch, and vector indexing',
     }
   }
@@ -184,8 +204,9 @@ export function deriveUniversalFinalOutcome(
     const simVal = resObj.similarity ?? metaObj.similarity
     const sim = typeof simVal === 'number' ? simVal.toFixed(4) : (simVal !== undefined ? Number(simVal).toFixed(4) : '0.0000')
     const saved = Number(resObj.saved_bytes || metaObj.saved_bytes || 0)
-    const nodes = resObj.progress?.completed ?? resObj.parked_nodes ?? 1
-    let deliverableText = isZh ? `准入判定: 独立新增 (ADD) · 向量探针相似度 ${sim} · ${nodes} 个知识节点已存储落盘` : `Admission: ADD · Similarity ${sim} · ${nodes} node(s) persisted`
+    const nodes = resObj.progress?.completed ?? resObj.parked_nodes
+    const nodeText = nodes !== undefined ? (isZh ? ` · ${nodes} 个知识节点已存储落盘` : ` · ${nodes} node(s) persisted`) : ''
+    let deliverableText = isZh ? `准入判定: 独立新增 (ADD) · 向量探针相似度 ${sim}${nodeText}` : `Admission: ADD · Similarity ${sim}${nodeText}`
     if (rawAction === 'noop') {
       deliverableText = isZh
         ? `准入判定: 同义合并 (NOOP) · 向量相似度 ${sim}` + (saved > 0 ? ` · 节约物理存储 ${(saved / 1024).toFixed(1)} KB` : ' · 零冗余新增')

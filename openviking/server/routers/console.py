@@ -240,17 +240,13 @@ async def peer_agents(
         for alias in item["legacy_aliases"]:
             call_count += actor_peers.get(alias, 0)
 
-        # 针对当前主控与总线，若在运行态则保证有活跃展示
-        if call_count == 0 and item["status"] == "running":
-            call_count = 1
-
         result_peers.append({
             "id": peer_id,
             "nameKey": item["nameKey"],
             "messagesCount": call_count,
             "uriNode": f"viking://user/{account_id}/peers/{peer_id}/memories/",
             "connectionModeKey": item["mode"],
-            "lastSync": now_str if item["status"] == "running" else "2026-09-11 12:00",
+            "lastSync": now_str if call_count > 0 or item["status"] == "running" else "--",
             "status": item["status"],
             "icon": item["icon"],
             "role": item["role"],

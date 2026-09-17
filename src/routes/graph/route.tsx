@@ -57,7 +57,7 @@ function GraphRouteComponent() {
   const [searchQuery, setSearchQuery] = React.useState('')
   const [activeFilter, setActiveFilter] = React.useState<GraphFilterCategory>('all')
   const [mode, setMode] = React.useState<GraphMode>('2d')
-  const [nodeCount, setNodeCount] = React.useState(1458)
+  const [counts, setCounts] = React.useState<{ nodes: number; edges: number } | null>(null)
   const [selectedNode, setSelectedNode] = React.useState<NodeData | null>(null)
 
   const handleResetZoom = () => {
@@ -75,7 +75,7 @@ function GraphRouteComponent() {
           mode={mode}
           selectedNode={selectedNode}
           onNodeSelect={setSelectedNode}
-          onCountChange={setNodeCount}
+          onCountChange={(nodeCount, edgeCount) => setCounts({ nodes: nodeCount, edges: edgeCount })}
         />
       </GraphErrorBoundary>
 
@@ -104,7 +104,9 @@ function GraphRouteComponent() {
             <span>{t('graphPage.title', { defaultValue: 'OpenViking 全量知识关系图谱' })}</span>
           </h1>
           <p className="text-xs text-muted-foreground font-mono">
-            {nodeCount} 个全量 URI 知识节点与 3,890 条拓扑关联边
+            {counts
+              ? `${counts.nodes.toLocaleString()} 个全量 URI 知识节点与 ${counts.edges.toLocaleString()} 条拓扑关联边`
+              : '正在同步全量知识拓扑...'}
           </p>
         </div>
       </div>

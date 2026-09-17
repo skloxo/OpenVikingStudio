@@ -7,6 +7,7 @@ from typing import Any, Dict
 from openviking.session.memory.bisection_heal import (
     bisect_messages,
     check_dual_threshold_gate,
+    estimate_message_tokens,
     pre_slice_messages,
     record_heal_event,
 )
@@ -30,7 +31,15 @@ def simulate_bisection_heal_run(scenario: str = "long_dialogue_truncation") -> D
     record_heal_event("truncations_detected", 1)
     record_heal_event("bisection_heals_triggered", 1)
     left, right = bisect_messages(slices[0])
-    record_heal_event("bisection_heals_success", 1)
+
+    input_tokens = estimate_message_tokens(fake_messages)
+    left_tokens = estimate_message_tokens(left)
+    right_tokens = estimate_message_tokens(right)
+    saved_tokens = max(0, input_tokens - (left_tokens + right_tokens))
+    saved_ratio = f"{round((saved_tokens / max(input_tokens, 1)) * 100.0, 1)}%"
+    speedup = round(max(1.0, float(len(fake_messages)) / max(len(left), 1)), 1)
+
+    record_heal_event("bisection_heals_success", 1, metadata={"tokens_saved": saved_tokens, "speedup_factor": speedup})
 
     return {
         "status": "success",
@@ -43,6 +52,6 @@ def simulate_bisection_heal_run(scenario: str = "long_dialogue_truncation") -> D
         "bisection_right_msgs": len(right),
         "empty_returns_prevented": 1,
         "zero_thinking_enforced": True,
-        "tokens_saved_ratio": "72.4%",
-        "speedup_factor": "15.2x",
+        "tokens_saved_ratio": saved_ratio,
+        "speedup_factor": f"{speedup}x",
     }

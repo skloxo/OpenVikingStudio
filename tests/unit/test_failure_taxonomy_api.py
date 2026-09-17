@@ -33,16 +33,14 @@ def client():
 
 
 def test_failure_taxonomy_telemetry_initialization():
-    """Verify singleton initialization, baseline whitelist seeding, and healthy status."""
+    """Verify singleton initialization, clean baseline state, and healthy status."""
     telemetry = get_failure_taxonomy_telemetry()
     telemetry.execute_probe("reset")
     snapshot = telemetry.get_snapshot()
 
     assert snapshot.status == "healthy"
-    assert snapshot.whitelist_items_count >= 3
-    assert "TaskPlan" in snapshot.whitelist_by_type
-    assert "SubAgentTracker" in snapshot.whitelist_by_type
-    assert "AuthGrants" in snapshot.whitelist_by_type
+    assert snapshot.whitelist_items_count == 0
+    assert snapshot.estimated_tokens_saved == 0
     assert snapshot.whitelist_preservation_rate == 100.0
     assert snapshot.max_transient_retries == 3
 
@@ -99,7 +97,7 @@ def test_failure_taxonomy_probe_whitelist_registration():
     assert res["tokens_preserved"] == 520
 
     snapshot = telemetry.get_snapshot()
-    assert snapshot.whitelist_by_type["TaskPlan"] >= 2
+    assert snapshot.whitelist_by_type["TaskPlan"] >= 1
     assert snapshot.estimated_tokens_saved >= prev_tokens + 520
 
 

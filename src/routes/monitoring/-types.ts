@@ -72,4 +72,8 @@ export interface DeepObserverMetrics {
     embedding?: string
     rerank?: string
   }
+  // Rerank Quantile Metrics
+  rerankLatencyMs?: number | null
+  rerankMaxLatencyMs?: number | null
+  rerankTotalSamples?: number | null
 }

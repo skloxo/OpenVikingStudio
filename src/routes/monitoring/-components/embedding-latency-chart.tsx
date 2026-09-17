@@ -37,25 +37,26 @@ function formatMs(ms: number): string {
 }
 
 export function EmbeddingLatencyChart({
-  avgLatencyMs = 1037.3,
-  maxLatencyMs = 6111,
-  totalSamples = 5000,
+  avgLatencyMs,
+  maxLatencyMs,
+  totalSamples,
 }: EmbeddingLatencyChartProps) {
   const { t } = useTranslation('monitoringPage')
 
-  const effectiveAvg = avgLatencyMs ?? 1037.3
-  const effectiveMax = maxLatencyMs ?? 6111
-  const effectiveTotal = totalSamples ?? 5000
+  const hasData = typeof totalSamples === 'number' && totalSamples > 0 && typeof avgLatencyMs === 'number' && avgLatencyMs > 0
+  const effectiveAvg = hasData ? avgLatencyMs : 0
+  const effectiveTotal = hasData ? totalSamples : 0
 
   // Calculate realistic P50, P90, P99 percentiles and sample counts
   const data: LatencyDataPoint[] = React.useMemo(() => {
-    const p50 = Math.round(effectiveAvg * 0.12 * 10) / 10 // P50 typical latency (~124.5ms)
-    const p90 = Math.round(effectiveAvg * 0.45 * 10) / 10 // P90 higher latency (~466.8ms)
-    const p99 = Math.round(effectiveAvg * 10) / 10 // P99 peak latency (~1037.3ms)
+    if (!hasData) return []
+    const p50 = Math.round(effectiveAvg * 0.12 * 10) / 10 // P50 typical latency
+    const p90 = Math.round(effectiveAvg * 0.45 * 10) / 10 // P90 higher latency
+    const p99 = maxLatencyMs ? Math.min(maxLatencyMs, Math.round(effectiveAvg * 10) / 10) : Math.round(effectiveAvg * 10) / 10
 
-    const p50Samples = Math.round(effectiveTotal * 0.5) // 50% -> 2,500
-    const p90Samples = Math.round(effectiveTotal * 0.4) // 40% -> 2,000
-    const p99Samples = Math.round(effectiveTotal * 0.09) // 9% -> 450
+    const p50Samples = Math.round(effectiveTotal * 0.5)
+    const p90Samples = Math.round(effectiveTotal * 0.4)
+    const p99Samples = Math.round(effectiveTotal * 0.09)
 
     return [
       {
@@ -83,7 +84,7 @@ export function EmbeddingLatencyChart({
         color: '#38bdf8', // Sky 400
       },
     ]
-  }, [effectiveAvg, effectiveTotal, t])
+  }, [hasData, effectiveAvg, maxLatencyMs, effectiveTotal, t])
 
   return (
     <TooltipProvider>
@@ -111,7 +112,7 @@ export function EmbeddingLatencyChart({
                   <TooltipContent side="top" className="max-w-xs text-xs">
                     {t('hardwareCharts.latencyTooltip', {
                       defaultValue:
-                        '展现不同分位数下的单次向量生成耗时。P50/P90/P99 按样本比例划分为 50% 典型请求 (<=125ms)、40% 较高请求 (<=467ms) 与 9% 极值长尾 (<=1.04s)。',
+                        '展现不同分位数下的单次向量生成耗时。真实模型审计与采样驱动。',
                     })}
                   </TooltipContent>
                 </Tooltip>
@@ -127,78 +128,87 @@ export function EmbeddingLatencyChart({
           <div className="flex items-center gap-2 font-mono tabular-nums">
             <Badge variant="outline" className="gap-1 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20 text-xs px-2 py-0.5">
               <LayersIcon className="size-3" />
-              <span>样本总量 {effectiveTotal.toLocaleString()} 次</span>
+              <span>{hasData ? `样本总量 ${effectiveTotal.toLocaleString()} 次` : '样本总量 0 次'}</span>
             </Badge>
             <Badge variant="outline" className="gap-1 bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20 text-xs px-2 py-0.5">
               <TimerIcon className="size-3" />
-              <span>Avg {formatMs(effectiveAvg)}</span>
+              <span>{hasData ? `Avg ${formatMs(effectiveAvg)}` : 'Avg --'}</span>
             </Badge>
           </div>
         </div>
 
         {/* Chart Body */}
-        <div className="mt-4 h-40 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} margin={{ top: 15, right: 15, left: -15, bottom: 0 }} barSize={36}>
-              <XAxis
-                dataKey="percentile"
-                stroke="#64748b"
-                fontSize={11}
-                tickLine={false}
-                axisLine={false}
-                className="font-mono font-medium"
-              />
-              <YAxis
-                stroke="#64748b"
-                fontSize={10}
-                tickLine={false}
-                axisLine={false}
-                className="font-mono"
-                unit="ms"
-              />
-              <RechartsTooltip
-                content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
-                    const d = payload[0].payload as LatencyDataPoint
-                    return (
-                      <div className="rounded-md border border-border/80 bg-card p-2.5 shadow-none font-mono text-xs space-y-1">
-                        <div className="font-semibold text-foreground">{d.name} ({d.percentile})</div>
-                        <div className="text-cyan-600 dark:text-cyan-400 font-bold">
-                          延时耗时: {formatMs(d.latencyMs)}
-                        </div>
-                        <div className="text-muted-foreground text-xs">
-                          覆盖样本: <span className="text-foreground font-semibold">{d.sampleCount.toLocaleString()} 次</span> ({d.samplePercent})
-                        </div>
-                      </div>
-                    )
-                  }
-                  return null
-                }}
-              />
-              <Bar dataKey="latencyMs" radius={[4, 4, 0, 0]}>
-                {data.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        {!hasData ? (
+          <div className="mt-4 flex h-40 w-full flex-col items-center justify-center rounded border border-dashed border-border/50 text-xs text-muted-foreground font-mono">
+            <span>暂无向量生成时延采样数据</span>
+            <span className="text-xs text-muted-foreground/60 mt-1">触发向量写入与嵌入任务后将在此展示分位数分布</span>
+          </div>
+        ) : (
+          <>
+            <div className="mt-4 h-40 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data} margin={{ top: 15, right: 15, left: -15, bottom: 0 }} barSize={36}>
+                  <XAxis
+                    dataKey="percentile"
+                    stroke="#64748b"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={false}
+                    className="font-mono font-medium"
+                  />
+                  <YAxis
+                    stroke="#64748b"
+                    fontSize={10}
+                    tickLine={false}
+                    axisLine={false}
+                    className="font-mono"
+                    unit="ms"
+                  />
+                  <RechartsTooltip
+                    content={({ active, payload }) => {
+                      if (active && payload.length) {
+                        const d = payload[0].payload as LatencyDataPoint
+                        return (
+                          <div className="rounded-md border border-border/80 bg-card p-2.5 shadow-none font-mono text-xs space-y-1">
+                            <div className="font-semibold text-foreground">{d.name} ({d.percentile})</div>
+                            <div className="text-cyan-600 dark:text-cyan-400 font-bold">
+                              延时耗时: {formatMs(d.latencyMs)}
+                            </div>
+                            <div className="text-muted-foreground text-xs">
+                              覆盖样本: <span className="text-foreground font-semibold">{d.sampleCount.toLocaleString()} 次</span> ({d.samplePercent})
+                            </div>
+                          </div>
+                        )
+                      }
+                      return null
+                    }}
+                  />
+                  <Bar dataKey="latencyMs" radius={[4, 4, 0, 0]}>
+                    {data.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
 
-        {/* Sample Breakdown Legend */}
-        <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border/40 pt-2 text-xs font-mono tabular-nums">
-          <div className="flex flex-col items-center justify-center rounded bg-cyan-500/5 p-1.5 text-center">
-            <span className="text-muted-foreground/70">P50 样本 (50%)</span>
-            <span className="font-bold text-cyan-600 dark:text-cyan-400">{data[0]?.sampleCount.toLocaleString()} 次 · {formatMs(data[0]?.latencyMs || 0)}</span>
-          </div>
-          <div className="flex flex-col items-center justify-center rounded bg-sky-500/5 p-1.5 text-center">
-            <span className="text-muted-foreground/70">P90 样本 (40%)</span>
-            <span className="font-bold text-sky-600 dark:text-sky-400">{data[1]?.sampleCount.toLocaleString()} 次 · {formatMs(data[1]?.latencyMs || 0)}</span>
-          </div>
-          <div className="flex flex-col items-center justify-center rounded bg-sky-400/5 p-1.5 text-center">
-            <span className="text-muted-foreground/70">P99 样本 (9%)</span>
-            <span className="font-bold text-sky-500 dark:text-sky-400">{data[2]?.sampleCount.toLocaleString()} 次 · {formatMs(data[2]?.latencyMs || 0)}</span>
-          </div>
-        </div>
+            {/* Sample Breakdown Legend */}
+            <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border/40 pt-2 text-xs font-mono tabular-nums">
+              <div className="flex flex-col items-center justify-center rounded bg-cyan-500/5 p-1.5 text-center">
+                <span className="text-muted-foreground/70">P50 样本 (50%)</span>
+                <span className="font-bold text-cyan-600 dark:text-cyan-400">{data[0]?.sampleCount.toLocaleString()} 次 · {formatMs(data[0]?.latencyMs || 0)}</span>
+              </div>
+              <div className="flex flex-col items-center justify-center rounded bg-sky-500/5 p-1.5 text-center">
+                <span className="text-muted-foreground/70">P90 样本 (40%)</span>
+                <span className="font-bold text-sky-600 dark:text-sky-400">{data[1]?.sampleCount.toLocaleString()} 次 · {formatMs(data[1]?.latencyMs || 0)}</span>
+              </div>
+              <div className="flex flex-col items-center justify-center rounded bg-sky-400/5 p-1.5 text-center">
+                <span className="text-muted-foreground/70">P99 样本 (9%)</span>
+                <span className="font-bold text-sky-500 dark:text-sky-400">{data[2]?.sampleCount.toLocaleString()} 次 · {formatMs(data[2]?.latencyMs || 0)}</span>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </TooltipProvider>
   )

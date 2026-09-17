@@ -48,7 +48,7 @@ _extraction_heal_stats: Dict[str, Any] = {
     "empty_returns_prevented": 0,
     "tokens_saved_estimate": 0,
     "safe_chunks_split": 0,
-    "avg_speedup_factor": 15.2,
+    "avg_speedup_factor": 0.0,
     "last_updated": time.time(),
 }
 
@@ -60,7 +60,11 @@ def record_heal_event(event_type: str, count: int = 1, metadata: Optional[Dict[s
             _extraction_heal_stats[event_type] += count
         if event_type == "bisection_heals_success":
             _extraction_heal_stats["empty_returns_prevented"] += count
-            _extraction_heal_stats["tokens_saved_estimate"] += count * 4200
+            tokens_saved = (metadata or {}).get("tokens_saved", count * 1500 if metadata else 0)
+            _extraction_heal_stats["tokens_saved_estimate"] += tokens_saved
+            speedup = (metadata or {}).get("speedup_factor")
+            if speedup is not None:
+                _extraction_heal_stats["avg_speedup_factor"] = float(speedup)
         _extraction_heal_stats["last_updated"] = time.time()
 
 
@@ -68,27 +72,28 @@ def get_extraction_heal_metrics() -> Dict[str, Any]:
     """Retrieve telemetry metrics for the zero-thinking bisection heal engine."""
     with _telemetry_lock:
         stats = dict(_extraction_heal_stats)
-    total = max(stats["total_extractions"], 1)
-    zero_thinking_rate = min(100.0, (stats["zero_thinking_enforced_count"] / total) * 100.0)
+    total = stats["total_extractions"]
+    zero_thinking_rate = (stats["zero_thinking_enforced_count"] / total * 100.0) if total > 0 else 0.0
     heal_success_rate = (
-        100.0
-        if stats["bisection_heals_triggered"] == 0
-        else (stats["bisection_heals_success"] / stats["bisection_heals_triggered"]) * 100.0
+        (stats["bisection_heals_success"] / stats["bisection_heals_triggered"] * 100.0)
+        if stats["bisection_heals_triggered"] > 0
+        else None
     )
+    speedup = stats["avg_speedup_factor"] if stats["bisection_heals_triggered"] > 0 else None
     return {
         "status": "healthy",
         "total_extractions": stats["total_extractions"],
         "zero_thinking_enforced_count": stats["zero_thinking_enforced_count"],
-        "zero_thinking_enforced_rate": round(zero_thinking_rate, 1) if stats["total_extractions"] > 0 else 100.0,
+        "zero_thinking_enforced_rate": round(zero_thinking_rate, 1) if total > 0 else 0.0,
         "pre_slice_gate_hits": stats["pre_slice_gate_hits"],
         "truncations_detected": stats["truncations_detected"],
         "bisection_heals_triggered": stats["bisection_heals_triggered"],
         "bisection_heals_success": stats["bisection_heals_success"],
-        "heal_success_rate": round(heal_success_rate, 1),
+        "heal_success_rate": round(heal_success_rate, 1) if heal_success_rate is not None else None,
         "empty_returns_prevented": stats["empty_returns_prevented"],
         "tokens_saved_estimate": stats["tokens_saved_estimate"],
         "safe_chunks_split": stats["safe_chunks_split"],
-        "avg_speedup_factor": stats["avg_speedup_factor"],
+        "avg_speedup_factor": speedup,
         "threshold_max_messages": MAX_PRE_SLICE_MESSAGES,
         "threshold_max_chars": MAX_PRE_SLICE_CHARS,
         "safe_item_max_chars": MAX_SAFE_MEMORY_ITEM_CHARS,

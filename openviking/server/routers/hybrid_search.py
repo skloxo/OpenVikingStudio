@@ -5,6 +5,7 @@ REST Endpoints for Hybrid BM25-Dense Retrieval & Real-Time Diagnostics.
 (Card-Retrieval-BM25Hybrid / v1.5.16)
 """
 
+import logging
 import time
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, Query
@@ -16,6 +17,8 @@ from openviking.server.identity import RequestContext
 from openviking.storage.bm25_fts_index import BM25FTSIndex, BM25Match
 from openviking.retrieve.rrf_fusion import FusedCandidate, rrf_fuse
 from openviking.retrieve.hybrid_retriever import HybridRetrievalTelemetry
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["hybrid_search"])
 
@@ -74,23 +77,38 @@ async def run_hybrid_probe(
     bm25 = BM25FTSIndex.get_instance()
     sparse_matches: List[BM25Match] = bm25.search(req.query, limit=req.limit)
 
-    # Simulated/sample dense candidates representing vector generalization
-    dense_sample: List[Dict[str, Any]] = [
-        {
-            "uri": "viking://resources/master_memory/core_rules.md",
-            "title": "OpenViking Core Rules & Architecture",
-            "score": 0.88,
-            "snippet": "Global system architecture and protocol rules...",
-            "level": 1,
-        },
-        {
-            "uri": "viking://resources/skills/cockpit-ui/SKILL.md",
-            "title": "Cockpit UI Guidelines",
-            "score": 0.82,
-            "snippet": "High-density cockpit visual rules and NO GREEN EVER policy...",
-            "level": 2,
-        },
-    ]
+    # Query real dense vector candidates via service search.find, or empty list
+    dense_results: List[Dict[str, Any]] = []
+    try:
+        from openviking.server.dependencies import get_service
+
+        service = get_service()
+        if service and hasattr(service, "search"):
+            find_res = await service.search.find(
+                query=req.query,
+                ctx=_ctx,
+                limit=req.limit,
+            )
+            find_dict = (
+                find_res.to_dict()
+                if hasattr(find_res, "to_dict")
+                else (find_res if isinstance(find_res, dict) else {})
+            )
+            all_hits = (
+                find_dict.get("resources", [])
+                + find_dict.get("memories", [])
+                + find_dict.get("skills", [])
+            )
+            for hit in all_hits:
+                dense_results.append({
+                    "uri": hit.get("uri", ""),
+                    "title": hit.get("title") or (hit.get("uri", "").split("/")[-1] if hit.get("uri") else ""),
+                    "score": float(hit.get("score", 0.0)),
+                    "snippet": hit.get("abstract") or (hit.get("content", "")[:120] if hit.get("content") else ""),
+                    "level": int(hit.get("level", 1) or 1),
+                })
+    except Exception as e:
+        logger.debug(f"Dense vector probe search bypassed: {e}")
 
     sparse_dicts = [
         {
@@ -104,7 +122,7 @@ async def run_hybrid_probe(
         for m in sparse_matches
     ]
 
-    fused = rrf_fuse(dense_results=dense_sample, sparse_results=sparse_dicts, top_k=req.limit)
+    fused = rrf_fuse(dense_results=dense_results, sparse_results=sparse_dicts, top_k=req.limit)
     latency_ms = (time.monotonic() - t0) * 1000.0
 
     return JSONResponse(
@@ -112,11 +130,11 @@ async def run_hybrid_probe(
         content={
             "query": req.query,
             "sparse_bm25_count": len(sparse_matches),
-            "dense_count": len(dense_sample),
+            "dense_count": len(dense_results),
             "fused_count": len(fused),
             "latency_ms": round(latency_ms, 2),
             "sparse_results": [m.model_dump() for m in sparse_matches],
-            "dense_results": dense_sample,
+            "dense_results": dense_results,
             "fused_results": [f.model_dump() for f in fused],
         },
     )

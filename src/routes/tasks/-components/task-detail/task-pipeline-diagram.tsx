@@ -44,7 +44,7 @@ export function TaskPipelineDiagram({
   const sessionProp = sessionId
     ? ({
         session_id: String(sessionId),
-        commit_count: Math.max(1, Number(resObj.commit_count || metaObj.commit_count || 1)),
+        commit_count: Number(resObj.commit_count ?? metaObj.commit_count ?? 0),
       } as SessionMeta)
     : undefined
 

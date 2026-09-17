@@ -50,13 +50,9 @@ class FailureTaxonomySnapshot:
 
     # 3. 免压缩白名单保真度 (Whitelist Preservation Sensor)
     whitelist_items_count: int = 0
-    whitelist_by_type: Dict[str, int] = field(default_factory=lambda: {
-        "TaskPlan": 1,
-        "SubAgentTracker": 1,
-        "AuthGrants": 1,
-    })
+    whitelist_by_type: Dict[str, int] = field(default_factory=dict)
     whitelist_preservation_rate: float = 100.0
-    estimated_tokens_saved: int = 4280
+    estimated_tokens_saved: int = 0
 
     # 4. 实时事件流与审计 (Audit Events)
     recent_events: List[Dict[str, Any]] = field(default_factory=list)
@@ -89,38 +85,14 @@ class FailureTaxonomyTelemetry:
         self._fatal_count = 0
         self._anti_loop_interceptions = 0
         self._transient_retries_used = 0
-        self._estimated_tokens_saved = 4280
+        self._estimated_tokens_saved = 0
 
         self._recent_events: List[Dict[str, Any]] = []
-
-        # Seed initial standard whitelisted payloads for baseline protection
-        self._seed_default_whitelist()
         self._initialized = True
 
     @classmethod
     def get_instance(cls) -> "FailureTaxonomyTelemetry":
         return cls()
-
-    def _seed_default_whitelist(self) -> None:
-        """Seed default baseline protected payloads to reflect real system invariants."""
-        self._whitelist.register(
-            payload_id="seed_task_plan",
-            whitelist_type=WhitelistType.TASK_PLAN,
-            content={"task": "harness_evolution_sprint", "milestones": ["v1.5.10", "v1.5.11"]},
-            metadata={"source": "system_bootstrap", "preserved_tokens": 1560},
-        )
-        self._whitelist.register(
-            payload_id="seed_subagent_tracker",
-            whitelist_type=WhitelistType.SUBAGENT_TRACKER,
-            content={"active_peers": ["client@2080ti", "xiaomimo@3070"], "roles": ["developer", "operator"]},
-            metadata={"source": "fleet_ops", "preserved_tokens": 1820},
-        )
-        self._whitelist.register(
-            payload_id="seed_auth_grants",
-            whitelist_type=WhitelistType.AUTH_GRANTS,
-            content={"tenant": "default", "scope": "full_admin", "token_hash": "e3b0c442"},
-            metadata={"source": "identity_core", "preserved_tokens": 900},
-        )
 
     def record_evaluation(
         self,
@@ -335,9 +307,8 @@ class FailureTaxonomyTelemetry:
                 self._fatal_count = 0
                 self._anti_loop_interceptions = 0
                 self._transient_retries_used = 0
-                self._estimated_tokens_saved = 4280
+                self._estimated_tokens_saved = 0
                 self._recent_events.clear()
-                self._seed_default_whitelist()
                 return {"action": "reset", "status": "reset_completed"}
 
             else:

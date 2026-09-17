@@ -29,10 +29,10 @@ export interface AgentLoopTelemetryData {
   model_recovery_rate: number
   total_inner_steps: number
   last_turn_inner_steps: number
-  merkle_last_diff_ms: number
+  merkle_last_diff_ms: number | null
   merkle_tree_file_count: number
   merkle_version: number
-  merkle_last_scan_ts: number
+  merkle_last_scan_ts: number | null
   timestamp: number
   status: string
 }
@@ -80,10 +80,10 @@ export function HarnessAgentLoopCockpit() {
     model_recovery_rate: 100.0,
     total_inner_steps: 0,
     last_turn_inner_steps: 0,
-    merkle_last_diff_ms: 0.85,
-    merkle_tree_file_count: 42,
-    merkle_version: 1,
-    merkle_last_scan_ts: Date.now() / 1000,
+    merkle_last_diff_ms: null,
+    merkle_tree_file_count: 0,
+    merkle_version: 0,
+    merkle_last_scan_ts: null,
     timestamp: Date.now() / 1000,
     status: 'healthy',
   }
@@ -235,18 +235,18 @@ export function HarnessAgentLoopCockpit() {
           </div>
           <div className="my-2.5 flex items-baseline gap-2">
             <span className="text-xl font-bold font-mono tabular-nums text-foreground">
-              {data.merkle_last_diff_ms}
+              {data.merkle_last_diff_ms != null ? data.merkle_last_diff_ms : '--'}
             </span>
             <span className="text-xs text-cyan-400 font-mono">ms 极速巡检</span>
           </div>
           <div className="space-y-1 border-t border-border/50 pt-2 text-xs text-muted-foreground font-mono">
             <div className="flex justify-between">
               <span>监视文件总数:</span>
-              <span className="text-foreground tabular-nums">{data.merkle_tree_file_count} 个</span>
+              <span className="text-foreground tabular-nums">{data.merkle_tree_file_count ? `${data.merkle_tree_file_count} 个` : '--'}</span>
             </div>
             <div className="flex justify-between">
               <span>状态快照版本:</span>
-              <span className="text-foreground tabular-nums">v{data.merkle_version}</span>
+              <span className="text-foreground tabular-nums">{data.merkle_version ? `v${data.merkle_version}` : '--'}</span>
             </div>
             <div className="flex justify-between">
               <span>I/O 削峰优化:</span>

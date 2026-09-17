@@ -395,17 +395,19 @@ async def get_harness_metrics(
         metrics = store.get_harness_metrics_by_window(window=window)
         metrics["lessons_detail"] = lessons
         metrics["lessons_count"] = len(lessons)
+        retention = metrics.get("compression_retention_rate")
         metrics["llmlingua"] = {
-            "token_retention_rate": metrics.get("compression_retention_rate", 48.5),
+            "token_retention_rate": retention if retention is not None else "--",
             "target_range": "45%-55%",
-            "ast_gate_rate": 100.0,
-            "status": "healthy",
+            "ast_gate_rate": 100.0 if metrics.get("blocked_calls", 0) == 0 else round(100.0 * (1.0 - metrics.get("blocked_calls", 0) / max(1, metrics.get("total_calls", 1))), 1),
+            "status": "healthy" if retention is not None and retention != "--" else "idle",
         }
+        dspy_acc = metrics.get("dspy_compilation_accuracy")
         metrics["dspy"] = {
-            "compilation_accuracy": 98.2,
+            "compilation_accuracy": dspy_acc if dspy_acc is not None else "--",
             "target_threshold": ">95%",
-            "ast_gate_rate": 100.0,
-            "status": "healthy",
+            "ast_gate_rate": 100.0 if metrics.get("blocked_calls", 0) == 0 else round(100.0 * (1.0 - metrics.get("blocked_calls", 0) / max(1, metrics.get("total_calls", 1))), 1),
+            "status": "healthy" if dspy_acc is not None else "idle",
         }
         from openviking.core.harness_fsm import HarnessFSM, HarnessState
 

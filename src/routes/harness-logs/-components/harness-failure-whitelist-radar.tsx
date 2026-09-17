@@ -113,13 +113,15 @@ export function HarnessFailureWhitelistRadar() {
             <FileCheckIcon className="size-3.5 text-cyan-400" />
           </div>
           <div className="mt-1 font-mono text-xl font-bold tabular-nums text-cyan-400">
-            {data?.whitelist_preservation_rate ?? 100}%
+            {data?.whitelist_preservation_rate != null ? `${data.whitelist_preservation_rate}%` : '--'}
             <span className="text-xs font-normal text-muted-foreground ml-1">
-              ({data?.whitelist_items_count ?? 3} 项)
+              ({data?.whitelist_items_count != null ? `${data.whitelist_items_count} 项` : '--'})
             </span>
           </div>
           <div className="mt-1 text-xs text-muted-foreground font-mono">
-            估算累计免损保护 {data?.estimated_tokens_saved ?? 4280} Tokens
+            {data?.estimated_tokens_saved != null
+              ? `估算累计免损保护 ${data.estimated_tokens_saved} Tokens`
+              : '估算累计免损保护 --'}
           </div>
         </div>
       </div>
@@ -220,7 +222,7 @@ export function HarnessFailureWhitelistRadar() {
                   TaskPlan (任务蓝图与长程工单)
                 </span>
                 <Badge variant="outline" className="text-xs font-mono border-cyan-500/30 text-cyan-400">
-                  {data?.whitelist_by_type.TaskPlan ?? 1} 项受保
+                  {data?.whitelist_by_type.TaskPlan ?? 0} 项受保
                 </Badge>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
@@ -236,7 +238,7 @@ export function HarnessFailureWhitelistRadar() {
                   SubAgentTracker (子代理血缘追踪)
                 </span>
                 <Badge variant="outline" className="text-xs font-mono border-cyan-500/30 text-cyan-400">
-                  {data?.whitelist_by_type.SubAgentTracker ?? 1} 项受保
+                  {data?.whitelist_by_type.SubAgentTracker ?? 0} 项受保
                 </Badge>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
@@ -252,7 +254,7 @@ export function HarnessFailureWhitelistRadar() {
                   AuthGrants (多租户企业授权与权限)
                 </span>
                 <Badge variant="outline" className="text-xs font-mono border-cyan-500/30 text-cyan-400">
-                  {data?.whitelist_by_type.AuthGrants ?? 1} 项受保
+                  {data?.whitelist_by_type.AuthGrants ?? 0} 项受保
                 </Badge>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">

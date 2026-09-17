@@ -37,23 +37,25 @@ function formatMs(ms: number): string {
 }
 
 export function RerankLatencyChart({
-  avgLatencyMs = 85.4,
-  totalSamples = 56606,
+  avgLatencyMs,
+  totalSamples,
 }: RerankLatencyChartProps) {
   const { t } = useTranslation('monitoringPage')
 
-  const effectiveAvg = avgLatencyMs ?? 85.4
-  const effectiveTotal = totalSamples ?? 56606
+  const hasData = typeof totalSamples === 'number' && totalSamples > 0 && typeof avgLatencyMs === 'number' && avgLatencyMs > 0
+  const effectiveAvg = hasData ? avgLatencyMs : 0
+  const effectiveTotal = hasData ? totalSamples : 0
 
   // Calculate realistic P50, P90, P99 percentiles and sample counts for Reranker
   const data: LatencyDataPoint[] = React.useMemo(() => {
-    const p50 = Math.round(effectiveAvg * 0.38 * 10) / 10 // P50 typical latency (~32.5ms)
-    const p90 = Math.round(effectiveAvg * 1.15 * 10) / 10 // P90 higher latency (~98.2ms)
-    const p99 = Math.round(effectiveAvg * 2.87 * 10) / 10 // P99 peak latency (~245.0ms)
+    if (!hasData) return []
+    const p50 = Math.round(effectiveAvg * 0.38 * 10) / 10 // P50 typical latency
+    const p90 = Math.round(effectiveAvg * 1.15 * 10) / 10 // P90 higher latency
+    const p99 = Math.round(effectiveAvg * 2.87 * 10) / 10 // P99 peak latency
 
-    const p50Samples = Math.round(effectiveTotal * 0.5) // 50% -> ~28,303
-    const p90Samples = Math.round(effectiveTotal * 0.4) // 40% -> ~22,642
-    const p99Samples = Math.round(effectiveTotal * 0.09) // 9% -> ~5,095
+    const p50Samples = Math.round(effectiveTotal * 0.5)
+    const p90Samples = Math.round(effectiveTotal * 0.4)
+    const p99Samples = Math.round(effectiveTotal * 0.09)
 
     return [
       {
@@ -81,7 +83,7 @@ export function RerankLatencyChart({
         color: '#38bdf8', // Sky 400
       },
     ]
-  }, [effectiveAvg, effectiveTotal, t])
+  }, [hasData, effectiveAvg, effectiveTotal, t])
 
   return (
     <TooltipProvider>
@@ -128,92 +130,100 @@ export function RerankLatencyChart({
               className="gap-1 border-border/60 bg-muted/20 text-muted-foreground font-normal text-xs"
             >
               <LayersIcon className="size-3 text-cyan-500" />
-              {t('hardwareCharts.totalSamples', {
-                count: effectiveTotal.toLocaleString(),
-                defaultValue: `样本总量 ${effectiveTotal.toLocaleString()} 次`,
-              })}
+              {hasData
+                ? t('hardwareCharts.totalSamples', {
+                    count: effectiveTotal.toLocaleString(),
+                    defaultValue: `样本总量 ${effectiveTotal.toLocaleString()} 次`,
+                  })
+                : '样本总量 0 次'}
             </Badge>
             <Badge
               variant="outline"
               className="gap-1 border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-normal text-xs"
             >
               <TimerIcon className="size-3" />
-              {t('hardwareCharts.avgLatency', {
-                latency: formatMs(effectiveAvg),
-                defaultValue: `Avg ${formatMs(effectiveAvg)}`,
-              })}
+              {hasData ? `Avg ${formatMs(effectiveAvg)}` : 'Avg --'}
             </Badge>
           </div>
         </div>
 
-        {/* Chart */}
-        <div className="mt-4 h-45 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={data}
-              margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-            >
-              <XAxis
-                dataKey="percentile"
-                stroke="#888888"
-                fontSize={11}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis
-                stroke="#888888"
-                fontSize={11}
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={(val) => `${val}ms`}
-              />
-              <RechartsTooltip
-                cursor={{ fill: 'currentColor', opacity: 0.05 }}
-                content={({ active, payload }) => {
-                  if (active && payload.length) {
-                    const item = payload[0].payload as LatencyDataPoint
-                    return (
-                      <div className="rounded border border-border bg-popover p-2 text-xs shadow-md">
-                        <div className="font-semibold text-foreground">
-                          {item.percentile} ({item.name})
-                        </div>
-                        <div className="mt-1 font-mono text-cyan-500">
-                          {t('hardwareCharts.latencyLabel', { defaultValue: '耗时' })}: {formatMs(item.latencyMs)}
-                        </div>
-                        <div className="text-muted-foreground font-mono text-xs">
-                          {t('hardwareCharts.samplesLabel', { defaultValue: '覆盖样本' })}: {item.sampleCount.toLocaleString()} ({item.samplePercent})
-                        </div>
-                      </div>
-                    )
-                  }
-                  return null
-                }}
-              />
-              <Bar dataKey="latencyMs" radius={[4, 4, 0, 0]}>
-                {data.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Bottom Percentile Indicator Row */}
-        <div className="mt-4 grid grid-cols-3 gap-2 border-t border-border/40 pt-3 text-center">
-          {data.map((item) => (
-            <div key={item.percentile} className="flex flex-col gap-0.5">
-              <span className="text-xs text-muted-foreground font-medium">
-                {item.percentile}
-              </span>
-              <span className="font-mono text-xs font-semibold text-foreground">
-                {formatMs(item.latencyMs)}
-              </span>
-              <span className="text-xs text-muted-foreground font-mono">
-                {item.sampleCount.toLocaleString()} 次 ({item.samplePercent})
-              </span>
+        {/* Chart Body */}
+        {!hasData ? (
+          <div className="mt-4 flex h-45 w-full flex-col items-center justify-center rounded border border-dashed border-border/50 text-xs text-muted-foreground font-mono">
+            <span>暂无重排模型时延采样数据</span>
+            <span className="text-xs text-muted-foreground/60 mt-1">触发检索与重排序任务后将在此展示分位数分布</span>
+          </div>
+        ) : (
+          <>
+            <div className="mt-4 h-45 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={data}
+                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                >
+                  <XAxis
+                    dataKey="percentile"
+                    stroke="#888888"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    stroke="#888888"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(val) => `${val}ms`}
+                  />
+                  <RechartsTooltip
+                    cursor={{ fill: 'currentColor', opacity: 0.05 }}
+                    content={({ active, payload }) => {
+                      if (active && payload.length) {
+                        const item = payload[0].payload as LatencyDataPoint
+                        return (
+                          <div className="rounded border border-border bg-popover p-2 text-xs shadow-md">
+                            <div className="font-semibold text-foreground">
+                              {item.percentile} ({item.name})
+                            </div>
+                            <div className="mt-1 font-mono text-cyan-500">
+                              {t('hardwareCharts.latencyLabel', { defaultValue: '耗时' })}: {formatMs(item.latencyMs)}
+                            </div>
+                            <div className="text-muted-foreground font-mono text-xs">
+                              {t('hardwareCharts.samplesLabel', { defaultValue: '覆盖样本' })}: {item.sampleCount.toLocaleString()} ({item.samplePercent})
+                            </div>
+                          </div>
+                        )
+                      }
+                      return null
+                    }}
+                  />
+                  <Bar dataKey="latencyMs" radius={[4, 4, 0, 0]}>
+                    {data.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
-          ))}
-        </div>
+
+            {/* Bottom Percentile Indicator Row */}
+            <div className="mt-4 grid grid-cols-3 gap-2 border-t border-border/40 pt-3 text-center">
+              {data.map((item) => (
+                <div key={item.percentile} className="flex flex-col gap-0.5">
+                  <span className="text-xs text-muted-foreground font-medium">
+                    {item.percentile}
+                  </span>
+                  <span className="font-mono text-xs font-semibold text-foreground">
+                    {formatMs(item.latencyMs)}
+                  </span>
+                  <span className="text-xs text-muted-foreground font-mono">
+                    {item.sampleCount.toLocaleString()} 次 ({item.samplePercent})
+                  </span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </TooltipProvider>
   )

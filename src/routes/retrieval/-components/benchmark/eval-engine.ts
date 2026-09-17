@@ -56,7 +56,7 @@ export function evaluateRagasSample(
     }
   }
 
-  const scores = hits.map((h) => (typeof h.score === 'number' ? h.score : 0.75))
+  const scores = hits.map((h) => (typeof h.score === 'number' ? h.score : 0))
   const top1Score = scores[0] ?? 0
 
   // 1. Context Precision: 前置相关度倒数加权
@@ -75,14 +75,14 @@ export function evaluateRagasSample(
 
   // 2. Context Recall: 考虑候选池命中深度与期望覆盖
   const expectedPool = Math.min(hits.length, 3)
-  const contextRecall = Number((Math.min(relevantCount, expectedPool) / expectedPool).toFixed(3))
+  const contextRecall = expectedPool > 0 ? Number((Math.min(relevantCount, expectedPool) / expectedPool).toFixed(3)) : 0
 
-  // 3. Faithfulness: 语义纯净度，如果得分方差过大或有全0异常则衰减
-  const avgSc = scores.reduce((a, b) => a + b, 0) / scores.length
-  const faithfulness = Number((Math.min(1.0, Math.max(0.2, avgSc * 1.15))).toFixed(3))
+  // 3. Faithfulness: 语义纯净度真实平均分
+  const avgSc = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0
+  const faithfulness = Number(Math.min(1.0, Math.max(0, avgSc)).toFixed(3))
 
-  // 4. Answer Relevance: Top-1 得分对齐
-  const answerRelevance = Number(Math.min(1.0, Math.max(0.1, top1Score)).toFixed(3))
+  // 4. Answer Relevance: Top-1 真实得分
+  const answerRelevance = Number(Math.min(1.0, Math.max(0, top1Score)).toFixed(3))
 
   // 5. Composite Score: 4 指标调和平均 (Harmonic Mean)，严防单项死角伪造高分
   const eps = 0.001
