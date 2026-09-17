@@ -75,3 +75,41 @@ def test_compressor_token_usage_is_visible():
     assert "42" in status
     assert "12800" in status
     assert "19000" in status
+
+
+def test_historical_models_are_consolidated_per_domain():
+    class _VLM:
+        model = "mux-flash"
+        provider = "openai"
+
+    class _Emb:
+        model_name = "qwen3-vl-emb"
+        provider = "openai"
+
+    class _Rer:
+        model_name = "qwen3-vl-rer"
+        provider = "openai"
+
+    observer = ModelsObserver(
+        vlm_instance=_VLM(),
+        embedding_instance=_Emb(),
+        rerank_instance=_Rer(),
+        compressor_instance=_ConfiguredCompressor(),
+    )
+    status = observer.get_status_table()
+
+    # Verify each category exists
+    assert "VLM Models:" in status
+    assert "Embedding Models:" in status
+    assert "Rerank Models:" in status
+    assert "Compressor Models:" in status
+
+    # Verify active models exist
+    assert "mux-flash" in status
+    assert "qwen3-vl-emb" in status
+    assert "qwen3-vl-rer" in status
+
+    # Verify historical consolidation rows exist inside tables
+    assert "历史已下线模型汇总" in status
+    # Verify no separate standalone archived table
+    assert "Archived Models:" not in status

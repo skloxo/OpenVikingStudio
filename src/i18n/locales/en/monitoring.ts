@@ -263,6 +263,8 @@ export const monitoring = {
       archivedGroup: 'Historical Archived Models Summary',
       archivedCalls: 'Historical Calls',
       archivedTokens: 'Historical Tokens',
+      archivedBadge: 'Archived',
+      archivedSummary: 'Historical Models Summary',
       showArchived: 'Show Archived Models',
       hideArchived: 'Hide Archived Models',
     },
