@@ -49,7 +49,9 @@ export function HarnessAgentLoopCockpit() {
       )
       return res.data
     },
-    refetchInterval: 5000,
+    refetchInterval: 10_000,
+    refetchIntervalInBackground: false,
+    staleTime: 10_000,
   })
 
   const probeMutation = useMutation({

@@ -50,7 +50,9 @@ export function HarnessBisectionHealCockpit() {
       )
       return res.data
     },
-    refetchInterval: 10000,
+    refetchInterval: 10_000,
+    refetchIntervalInBackground: false,
+    staleTime: 10_000,
   })
 
   const drillMutation = useMutation({

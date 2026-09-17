@@ -1,19 +1,15 @@
-import * as React from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { Badge } from '#/components/ui/badge'
-import { Button } from '#/components/ui/button'
 import { ovClient } from '#/lib/ov-client'
 import {
-  CheckCircle2Icon,
   FileCheckIcon,
   FlameIcon,
-  RefreshCwIcon,
   RepeatIcon,
   ShieldAlertIcon,
   ShieldCheckIcon,
-  TerminalIcon,
   ZapIcon,
 } from 'lucide-react'
+import { HarnessFailureSandboxProbe } from './harness-failure-sandbox-probe'
 
 export interface FailureTaxonomyData {
   transient_count: number
@@ -44,9 +40,6 @@ export interface FailureTaxonomyData {
 }
 
 export function HarnessFailureWhitelistRadar() {
-  const queryClient = useQueryClient()
-  const [probeResult, setProbeResult] = React.useState<Record<string, unknown> | null>(null)
-
   const telemetryQuery = useQuery({
     queryKey: ['failure-taxonomy-telemetry'],
     queryFn: async () => {
@@ -55,22 +48,9 @@ export function HarnessFailureWhitelistRadar() {
       )
       return res.data
     },
-    refetchInterval: 10_000,
-    staleTime: 5_000,
-  })
-
-  const probeMutation = useMutation({
-    mutationFn: async (payload: { action: string; tool_name?: string; whitelist_type?: string }) => {
-      const res = await ovClient.instance.post<Record<string, unknown>>(
-        '/api/v1/system/failure_taxonomy_probe',
-        payload
-      )
-      return res.data
-    },
-    onSuccess: (data) => {
-      setProbeResult(data)
-      void queryClient.invalidateQueries({ queryKey: ['failure-taxonomy-telemetry'] })
-    },
+    refetchInterval: 15_000,
+    refetchIntervalInBackground: false,
+    staleTime: 10_000,
   })
 
   const data = telemetryQuery.data
@@ -240,7 +220,7 @@ export function HarnessFailureWhitelistRadar() {
                   TaskPlan (任务蓝图与长程工单)
                 </span>
                 <Badge variant="outline" className="text-xs font-mono border-cyan-500/30 text-cyan-400">
-                  {data?.whitelist_by_type?.TaskPlan ?? 1} 项受保
+                  {data?.whitelist_by_type.TaskPlan ?? 1} 项受保
                 </Badge>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
@@ -256,7 +236,7 @@ export function HarnessFailureWhitelistRadar() {
                   SubAgentTracker (子代理血缘追踪)
                 </span>
                 <Badge variant="outline" className="text-xs font-mono border-cyan-500/30 text-cyan-400">
-                  {data?.whitelist_by_type?.SubAgentTracker ?? 1} 项受保
+                  {data?.whitelist_by_type.SubAgentTracker ?? 1} 项受保
                 </Badge>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
@@ -272,7 +252,7 @@ export function HarnessFailureWhitelistRadar() {
                   AuthGrants (多租户企业授权与权限)
                 </span>
                 <Badge variant="outline" className="text-xs font-mono border-cyan-500/30 text-cyan-400">
-                  {data?.whitelist_by_type?.AuthGrants ?? 1} 项受保
+                  {data?.whitelist_by_type.AuthGrants ?? 1} 项受保
                 </Badge>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
@@ -284,134 +264,7 @@ export function HarnessFailureWhitelistRadar() {
       </div>
 
       {/* Interactive Sandbox Probe & Audit Log */}
-      <div className="flex flex-col gap-3 rounded-md border border-border/60 bg-card p-4">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-2.5">
-          <div>
-            <h2 className="text-xs font-bold text-foreground flex items-center gap-1.5">
-              <TerminalIcon className="size-3.5 text-cyan-400" />
-              交互式物理验真探针 (Interactive Sandbox Probe)
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              实时注入瞬态抖动、确定性死循环、致命越权或白名单注册，检验底层拦截器物理反应
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={probeMutation.isPending}
-              onClick={() => probeMutation.mutate({ action: 'simulate_transient', tool_name: 'fetch_api_data' })}
-              className="h-7 text-xs text-foreground"
-            >
-              模拟 429 瞬态重试
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={probeMutation.isPending}
-              onClick={() => probeMutation.mutate({ action: 'simulate_deterministic', tool_name: 'exec_database_query' })}
-              className="h-7 text-xs text-foreground"
-            >
-              模拟死循环参数 (Anti-Loop)
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={probeMutation.isPending}
-              onClick={() => probeMutation.mutate({ action: 'simulate_fatal', tool_name: 'system_process_spawn' })}
-              className="h-7 text-xs text-foreground"
-            >
-              模拟越权 (Fatal Halt)
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={probeMutation.isPending}
-              onClick={() => probeMutation.mutate({ action: 'register_whitelist', whitelist_type: 'TaskPlan' })}
-              className="h-7 text-xs text-foreground"
-            >
-              + 注册 TaskPlan 白名单
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              disabled={probeMutation.isPending}
-              onClick={() => probeMutation.mutate({ action: 'reset' })}
-              className="h-7 text-xs text-muted-foreground hover:text-foreground"
-              title="重置探针状态"
-            >
-              <RefreshCwIcon className="size-3" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Live Probe Feedback Banner */}
-        {probeResult && (
-          <div className="rounded-md border border-cyan-500/30 bg-cyan-500/10 p-3 text-xs">
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-cyan-400 flex items-center gap-1.5">
-                <CheckCircle2Icon className="size-3.5" />
-                探针执行回显 ({String(probeResult.action)})
-              </span>
-              <button
-                type="button"
-                onClick={() => setProbeResult(null)}
-                className="text-xs text-muted-foreground hover:text-foreground"
-              >
-                关闭
-              </button>
-            </div>
-            <pre className="mt-2 overflow-x-auto rounded bg-background/80 p-2 font-mono text-xs text-foreground">
-              {JSON.stringify(probeResult, null, 2)}
-            </pre>
-          </div>
-        )}
-
-        {/* Recent Audit Events Stream */}
-        <div className="mt-1">
-          <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
-            最近门禁拦截与保真事件流 (Audit Stream)
-          </div>
-          <div className="space-y-1.5">
-            {data?.recent_events && data.recent_events.length > 0 ? (
-              data.recent_events.slice(0, 6).map((evt, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center justify-between rounded border border-border/40 bg-muted/10 px-3 py-2 text-xs"
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Badge
-                      variant="outline"
-                      className={`text-xs font-mono ${
-                        evt.category === 'transient'
-                          ? 'border-cyan-500/40 text-cyan-400'
-                          : evt.category === 'fatal'
-                          ? 'border-rose-500/40 text-rose-400'
-                          : 'border-amber-500/40 text-amber-400'
-                      }`}
-                    >
-                      {evt.category || evt.whitelist_type || evt.type}
-                    </Badge>
-                    <span className="font-mono text-foreground text-xs truncate">
-                      {evt.tool_name || evt.payload_id || 'system'}
-                    </span>
-                    <span className="text-muted-foreground truncate max-w-md">
-                      {evt.reason}
-                    </span>
-                  </div>
-                  <div className="shrink-0 font-mono text-xs text-muted-foreground">
-                    {new Date(evt.timestamp * 1000).toLocaleTimeString()}
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-4 text-xs text-muted-foreground">
-                暂无拦截事件记录，点击上方按钮注入探针
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      <HarnessFailureSandboxProbe recentEvents={data?.recent_events} />
     </div>
   )
 }

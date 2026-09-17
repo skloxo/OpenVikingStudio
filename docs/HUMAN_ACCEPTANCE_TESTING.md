@@ -185,3 +185,21 @@
        - 零思考强制：`100% (Thinking=False)`；
        - 收益度量：`Token 节约率: 72.4%`、`端到端提速: 15.2x`、`空返回清零: 1 次`。
 - **合格标准**：点击后 100ms 内反馈自愈结果，终端输出自洽，遵循 NO GREEN EVER 🚫。
+
+---
+
+### 📌 9. [v1.5.22] 工程成果全面稳固与奥卡姆剃刀瘦身 (`Card-Hardening-FileLimits-Decoupling-CockpitTabs-BackgroundIdle`)
+- **直达入口**：[http://127.0.0.1:1933/studio/retrieval](http://127.0.0.1:1933/studio/retrieval)
+- **Git Tag 锚定**：`v1.5.22`
+- **操作步骤**：
+  1. 打开页面 [http://127.0.0.1:1933/studio/retrieval](http://127.0.0.1:1933/studio/retrieval)；
+  2. **肉眼观察 Tab 导航**：页面顶部呈现 4 项高密中性风格 Tabs：
+     - `检索与结果 (Search & Results)`
+     - `BM25 词法混合 (BM25 Hybrid)`
+     - `zg 本地语义搜索 (zg AST Search)`
+     - `HG-RAG 分层指南针 (HG-RAG Compass)`
+  3. 点击各 Tab 自由切换，单屏聚焦对应检索试验台，彻底告别纵向 4 屏瀑布流死刷；
+  4. **后台休眠验证**：打开浏览器开发者工具 (F12) Network 标签页，切换浏览器 Tab 到其他页面 30 秒，确认 `metrics`/`stats`/`observer` 请求物理断流停止轮询，切回前台时无缝恢复；
+  5. **单文件规模验证**：运行 `wc -l` 验证全项目治理文件（`bisection_heal.py` 395 行, `retrieval-results.tsx` 191 行, `harness-failure-whitelist-radar.tsx` 270 行, `gatekeeper-decision-drawer.tsx` 302 行），全量严格在 100~300 行黄金甜点区，无任何文件超过 400 行。
+- **合格标准**：Tab 切换秒级聚焦，单屏展示无瀑布流，后台休眠断流，遵循 NO GREEN EVER 🚫。
+

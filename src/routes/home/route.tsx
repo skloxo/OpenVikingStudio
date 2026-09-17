@@ -71,6 +71,7 @@ function HomePage() {
     queryFn: fetchConsoleDashboardSummary,
     queryKey: ['console-dashboard-summary', metricsScopeKey],
     refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
     staleTime: 30_000,
   })
@@ -79,6 +80,7 @@ function HomePage() {
     queryFn: () => getOvResult<Record<string, unknown>>(getObserverSystem()),
     queryKey: ['home-observer-system', identityScopeKey],
     refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
     staleTime: 30_000,
   })
@@ -88,6 +90,8 @@ function HomePage() {
     queryFn: fetchConsoleTokenSeries,
     queryKey: ['console-token-series', 'last-14-days', metricsScopeKey],
     refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
+    staleTime: 30_000,
   })
 
   const contextCommits = useQuery({
@@ -95,6 +99,8 @@ function HomePage() {
     queryFn: fetchConsoleContextCommits,
     queryKey: ['console-context-commits', 'last-365-days', metricsScopeKey],
     refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
+    staleTime: 30_000,
   })
 
   const summary = dashboard.data
@@ -155,6 +161,7 @@ function HomePage() {
     queryFn: fetchConsolePeers,
     queryKey: ['console-peers', metricsScopeKey],
     refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
     staleTime: 15_000,
   })
 

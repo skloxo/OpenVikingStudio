@@ -81,6 +81,8 @@ export function RAGAbstentionCockpit() {
       return res.data
     },
     refetchInterval: 15_000,
+    refetchIntervalInBackground: false,
+    staleTime: 15_000,
   })
 
   // 2. Run verification probe mutation
