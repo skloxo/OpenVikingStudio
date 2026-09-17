@@ -262,7 +262,7 @@ def resolve_request_uri(uri: str, ctx: RequestContext) -> str:
     it fails closed with a hint pointing at ``viking://~/...``.
     """
     parts = uri_parts(uri)
-    if parts and parts[0] == "~":
+    if parts and parts[0] == "~" and (ctx.role in {Role.USER, Role.ADMIN} or (ctx.user and ctx.user.user_id == "root")):
         return resolve_current_user_uri(uri, ctx)
     if ctx.role in {Role.USER, Role.ADMIN}:
         return resolve_current_user_uri(uri, ctx)

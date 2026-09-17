@@ -72,7 +72,9 @@ export function HGRAGCompassCockpit() {
       const res = await ovClient.instance.get<CompassStats>('/api/v1/rag/compass/stats')
       return res.data
     },
-    refetchInterval: 10000,
+    refetchInterval: 15_000,
+    refetchIntervalInBackground: false,
+    staleTime: 15_000,
   })
 
   // 2. Current node query

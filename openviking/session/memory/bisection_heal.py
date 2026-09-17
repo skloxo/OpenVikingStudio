@@ -372,32 +372,24 @@ def safe_chunk_memory_content(
     return operations
 
 
-def simulate_bisection_heal_run(scenario: str = "long_dialogue_truncation") -> Dict[str, Any]:
-    """Simulate a long dialogue truncation scenario and validate the healing flow for tests & UI."""
-    fake_messages = [
-        {"role": "user" if i % 2 == 0 else "assistant", "content": f"Message turn {i}: Context details " + ("data " * 50)}
-        for i in range(30)
-    ]
-    should_slice, msg_count, total_chars = check_dual_threshold_gate(fake_messages, return_details=True)
-    slices = pre_slice_messages(fake_messages, max_msgs=15, max_chars=2000)
+# Decoupled simulation runner imported for backward compatibility
+from openviking.session.memory.bisection_sim import simulate_bisection_heal_run
 
-    # Simulate truncation on a slice and bisection healing
-    record_heal_event("truncations_detected", 1)
-    record_heal_event("bisection_heals_triggered", 1)
-    left, right = bisect_messages(slices[0])
-    record_heal_event("bisection_heals_success", 1)
-
-    return {
-        "status": "success",
-        "scenario": scenario,
-        "input_message_count": msg_count,
-        "input_char_count": total_chars,
-        "dual_threshold_triggered": should_slice,
-        "pre_slices_generated": len(slices),
-        "bisection_left_msgs": len(left),
-        "bisection_right_msgs": len(right),
-        "empty_returns_prevented": 1,
-        "zero_thinking_enforced": True,
-        "tokens_saved_ratio": "72.4%",
-        "speedup_factor": "15.2x",
-    }
+__all__ = [
+    "MAX_PRE_SLICE_MESSAGES",
+    "MAX_PRE_SLICE_CHARS",
+    "TRUNCATION_CHAR_THRESHOLD",
+    "TRUNCATION_TOKEN_THRESHOLD",
+    "BISECTION_OVERLAP_MESSAGES",
+    "MAX_SAFE_MEMORY_ITEM_CHARS",
+    "record_heal_event",
+    "get_extraction_heal_metrics",
+    "get_bisection_heal_metrics",
+    "check_dual_threshold_gate",
+    "pre_slice_messages",
+    "is_truncation_failure",
+    "bisect_messages",
+    "merge_resolved_operations",
+    "safe_chunk_memory_content",
+    "simulate_bisection_heal_run",
+]

@@ -19,9 +19,10 @@ def test_start_vikingbot_gateway_forces_localhost_host(monkeypatch):
     monkeypatch.setattr(bootstrap.shutil, "which", lambda name: "/usr/bin/vikingbot")
     monkeypatch.delenv(OPENVIKING_CLI_CONFIG_ENV, raising=False)
 
-    def _fake_popen(cmd, stdout=None, stderr=None, text=None, env=None):
+    def _fake_popen(cmd, stdout=None, stderr=None, text=None, env=None, **kwargs):
         captured["cmd"] = cmd
         captured["env"] = env
+        captured["kwargs"] = kwargs
         return _FakeProcess()
 
     monkeypatch.setattr(bootstrap.subprocess, "Popen", _fake_popen)
@@ -45,9 +46,10 @@ def test_start_vikingbot_gateway_uses_custom_port(monkeypatch):
     monkeypatch.setattr(bootstrap.shutil, "which", lambda name: "/usr/bin/vikingbot")
     monkeypatch.delenv(OPENVIKING_CLI_CONFIG_ENV, raising=False)
 
-    def _fake_popen(cmd, stdout=None, stderr=None, text=None, env=None):
+    def _fake_popen(cmd, stdout=None, stderr=None, text=None, env=None, **kwargs):
         captured["cmd"] = cmd
         captured["env"] = env
+        captured["kwargs"] = kwargs
         return _FakeProcess()
 
     monkeypatch.setattr(bootstrap.subprocess, "Popen", _fake_popen)
@@ -73,9 +75,10 @@ def test_start_vikingbot_gateway_prefers_colocated_ovcli_conf(monkeypatch, tmp_p
 
     monkeypatch.setattr(bootstrap.shutil, "which", lambda name: "/usr/bin/vikingbot")
 
-    def _fake_popen(cmd, stdout=None, stderr=None, text=None, env=None):
+    def _fake_popen(cmd, stdout=None, stderr=None, text=None, env=None, **kwargs):
         captured["cmd"] = cmd
         captured["env"] = env
+        captured["kwargs"] = kwargs
         return _FakeProcess()
 
     monkeypatch.setattr(bootstrap.subprocess, "Popen", _fake_popen)
@@ -103,9 +106,10 @@ def test_start_vikingbot_gateway_preserves_explicit_cli_config_env(monkeypatch, 
 
     monkeypatch.setattr(bootstrap.shutil, "which", lambda name: "/usr/bin/vikingbot")
 
-    def _fake_popen(cmd, stdout=None, stderr=None, text=None, env=None):
+    def _fake_popen(cmd, stdout=None, stderr=None, text=None, env=None, **kwargs):
         captured["cmd"] = cmd
         captured["env"] = env
+        captured["kwargs"] = kwargs
         return _FakeProcess()
 
     monkeypatch.setattr(bootstrap.subprocess, "Popen", _fake_popen)
@@ -127,8 +131,9 @@ def test_start_vikingbot_gateway_passes_managed_server_runtime(monkeypatch):
 
     monkeypatch.setattr(bootstrap.shutil, "which", lambda name: "/usr/bin/vikingbot")
 
-    def _fake_popen(cmd, stdout=None, stderr=None, text=None, env=None):
+    def _fake_popen(cmd, stdout=None, stderr=None, text=None, env=None, **kwargs):
         captured["env"] = env
+        captured["kwargs"] = kwargs
         return _FakeProcess()
 
     monkeypatch.setattr(bootstrap.subprocess, "Popen", _fake_popen)
@@ -155,8 +160,9 @@ def test_start_vikingbot_gateway_allows_slow_module_probe(monkeypatch):
         captured["probe_timeout"] = timeout
         return type("Result", (), {"returncode": 0})()
 
-    def _fake_popen(cmd, stdout=None, stderr=None, text=None, env=None):
+    def _fake_popen(cmd, stdout=None, stderr=None, text=None, env=None, **kwargs):
         captured["cmd"] = cmd
+        captured["kwargs"] = kwargs
         return _FakeProcess()
 
     monkeypatch.setattr(bootstrap.subprocess, "run", _fake_run)

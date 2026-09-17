@@ -73,7 +73,8 @@ export function HarnessHITLOffloadCenter() {
       return res.data
     },
     refetchInterval: 10_000,
-    staleTime: 5_000,
+    refetchIntervalInBackground: false,
+    staleTime: 10_000,
   })
 
   const resolveMutation = useMutation({

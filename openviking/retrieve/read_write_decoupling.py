@@ -3,7 +3,15 @@
 """
 Read/Write Decoupling Knowledge Engineering Desk (WeKnora & Karpathy Architecture).
 Separates heavy graph compilation (Editorial Desk) from ultra-low latency reads (Serving Desk).
-(Card-Knowledge-HG-RAG-HierarchicalCompass / v1.5.19)
+(Card-Knowledge-HG-RAG-HierarchicalCompass / v1.5.19 / OPT-02)
+
+Architectural Boundary & SSOT Delegation:
+- In-Memory Serving Layer: Serves as an immutable read-only memory snapshot with atomic
+  pointer swaps for zero-contention reads during graph recompilation.
+- Persistence & Concurrency SSOT: Persistent storage, ACID transactions, and multi-process
+  concurrency remain strictly delegated to SQLite in WAL mode (Single Source of Truth via
+  VikingFS). This desk does NOT replace database-level concurrency, strictly following
+  Occam's Razor to avoid overengineering.
 """
 
 import threading
@@ -33,7 +41,8 @@ class KnowledgeDeskManager:
     """
     Read/Write Decoupled Knowledge Desk Manager.
     - Editorial Desk: Draft/Staging environment for tree assembly & batch updates.
-    - Serving Desk: Immutable snapshot for lock-free, zero-contention reads.
+    - Serving Desk: Immutable read-only snapshot for lock-free, zero-contention reads.
+    - SSOT Delegation: Durability & persistence are strictly anchored in SQLite WAL mode.
     """
 
     _instance: Optional["KnowledgeDeskManager"] = None

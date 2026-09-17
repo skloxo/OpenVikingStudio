@@ -2,6 +2,13 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import {
+  CompassIcon,
+  LayersIcon,
+  SearchIcon,
+  TerminalIcon,
+} from 'lucide-react'
+
 import { RetrievalBenchmarkDrawer } from './-components/benchmark-drawer'
 import { GatekeeperMetricsCard } from './-components/gatekeeper-metrics-card'
 import { GatekeeperAuditStream } from './-components/gatekeeper-audit-stream'
@@ -26,6 +33,8 @@ import { resolveScopeTargetUri } from './-lib/scope'
 import { validateRetrievalSearch } from './-lib/search-state'
 import type { RetrievalMode, RetrievalScope } from './-types/retrieval'
 
+export type RetrievalTab = 'search' | 'bm25' | 'zg' | 'compass'
+
 export const Route = createFileRoute('/retrieval')({
   validateSearch: validateRetrievalSearch,
   component: RetrievalPage,
@@ -35,6 +44,8 @@ function RetrievalPage() {
   const { t } = useTranslation('retrieval')
   const navigate = useNavigate({ from: Route.fullPath })
   const search = Route.useSearch()
+
+  const [activeTab, setActiveTab] = useState<RetrievalTab>('search')
 
   const initialMode = search.mode ?? DEFAULT_RETRIEVAL_MODE
   const initialResultCount = search.count ?? DEFAULT_RESULT_COUNT
@@ -123,73 +134,102 @@ function RetrievalPage() {
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-4">
-      {/* 熵增防御：写入准入与四态变异宏观 KPI */}
-      <GatekeeperMetricsCard />
-
-      {/* 记忆治理流水：实时写入判定轨迹与向量审查大盘 */}
-      <GatekeeperAuditStream />
-
-      {/* 4 大核心检索运行与质量基准 KPI 指标卡片 */}
-      <RetrievalMetricsCards />
-
-      {/* BM25 + 向量双流融合座舱与精确符号试验台 (Card-Retrieval-BM25Hybrid) */}
-      <BM25HybridCockpit />
-
-      {/* zg 端侧代码语义检索与分级懒加载座舱 (Card-Retrieval-LocalFirst-zgSemanticSearch) */}
-      <ZGSearchCockpit />
-
-      {/* RAG 约束验证与主动弃答门禁座舱 (Card-RAG-Abstention-ZeroHallucination-Pipeline) */}
-      <RAGAbstentionCockpit />
-
-      {/* HG-RAG 分层指南针拓扑与读写分离知识工程座舱 (Card-Knowledge-HG-RAG-HierarchicalCompass) */}
-      <HGRAGCompassCockpit />
-
-      <div className="flex items-center gap-2">
-        <div className="flex-1 min-w-0">
-          <RetrievalSearchBar
-            inputRef={inputRef}
-            onChange={setQuery}
-            onSubmit={handleSubmit}
-            placeholder={t(`placeholders.${retrievalMode}`)}
-            query={query}
-            sendLabel={t('send')}
-          />
-        </div>
-        <RetrievalBenchmarkDrawer />
+      {/* 高密座舱顶层 Tab 导航 (消除 4 屏瀑布式纵向滚动) */}
+      <div className="flex items-center gap-1.5 border-b border-border/60 pb-1">
+        {[
+          { id: 'search', label: '主控检索与综合结果', icon: <SearchIcon className="size-3.5 mr-1 text-cyan-400" /> },
+          { id: 'bm25', label: 'BM25 双流混合融合', icon: <LayersIcon className="size-3.5 mr-1 text-cyan-400" /> },
+          { id: 'zg', label: 'zg 端侧代码语义', icon: <TerminalIcon className="size-3.5 mr-1 text-cyan-400" /> },
+          { id: 'compass', label: 'HG-RAG 拓扑与主动弃答', icon: <CompassIcon className="size-3.5 mr-1 text-cyan-400" /> },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActiveTab(tab.id as RetrievalTab)}
+            className={`flex items-center rounded-t-md px-3 py-1.5 text-xs font-medium transition-all cursor-pointer ${
+              activeTab === tab.id
+                ? 'border-b-2 border-cyan-400 bg-card text-foreground font-semibold'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+            }`}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
       </div>
 
-      <RetrievalControls
-        activeOnly={activeOnly}
-        customPathInput={customPathInput}
-        ignoreCase={ignoreCase}
-        mode={retrievalMode}
-        onActiveOnlyChange={setActiveOnly}
-        onCustomPathInputChange={setCustomPathInput}
-        onIgnoreCaseChange={setIgnoreCase}
-        onModeChange={setRetrievalMode}
-        onResultCountChange={setResultCount}
-        onScopeChange={setRetrievalScope}
-        onSessionIdInputChange={setSessionIdInput}
-        resultCount={resultCount}
-        scope={retrievalScope}
-        sessionIdInput={sessionIdInput}
-        t={t}
-        targetUri={targetUri}
-      />
+      {/* Tab 1: 主控检索与综合结果 */}
+      {activeTab === 'search' && (
+        <div className="flex flex-col gap-4">
+          {/* 熵增防御：写入准入与四态变异宏观 KPI */}
+          <GatekeeperMetricsCard />
 
-      <RetrievalResults
-        flatItems={displayFlatItems}
-        hasRetrievableContext={hasRetrievableContext}
-        hasResults={hasResults}
-        hasSubmitted={hasSubmitted}
-        isCheckingContext={resourceProbeQuery.isLoading}
-        isError={retrievalQuery.isError}
-        isLoading={retrievalQuery.isLoading}
-        onUploadClick={handleUploadClick}
-        queryPlanItems={queryPlanItems}
-        resultCount={resultCount}
-        t={t}
-      />
+          {/* 4 大核心检索运行与质量基准 KPI 指标卡片 */}
+          <RetrievalMetricsCards />
+
+          <div className="flex items-center gap-2">
+            <div className="flex-1 min-w-0">
+              <RetrievalSearchBar
+                inputRef={inputRef}
+                onChange={setQuery}
+                onSubmit={handleSubmit}
+                placeholder={t(`placeholders.${retrievalMode}`)}
+                query={query}
+                sendLabel={t('send')}
+              />
+            </div>
+            <RetrievalBenchmarkDrawer />
+          </div>
+
+          <RetrievalControls
+            activeOnly={activeOnly}
+            customPathInput={customPathInput}
+            ignoreCase={ignoreCase}
+            mode={retrievalMode}
+            onActiveOnlyChange={setActiveOnly}
+            onCustomPathInputChange={setCustomPathInput}
+            onIgnoreCaseChange={setIgnoreCase}
+            onModeChange={setRetrievalMode}
+            onResultCountChange={setResultCount}
+            onScopeChange={setRetrievalScope}
+            onSessionIdInputChange={setSessionIdInput}
+            resultCount={resultCount}
+            scope={retrievalScope}
+            sessionIdInput={sessionIdInput}
+            t={t}
+            targetUri={targetUri}
+          />
+
+          <RetrievalResults
+            flatItems={displayFlatItems}
+            hasRetrievableContext={hasRetrievableContext}
+            hasResults={hasResults}
+            hasSubmitted={hasSubmitted}
+            isCheckingContext={resourceProbeQuery.isLoading}
+            isError={retrievalQuery.isError}
+            isLoading={retrievalQuery.isLoading}
+            onUploadClick={handleUploadClick}
+            queryPlanItems={queryPlanItems}
+            resultCount={resultCount}
+            t={t}
+          />
+        </div>
+      )}
+
+      {/* Tab 2: BM25 双流混合融合 */}
+      {activeTab === 'bm25' && <BM25HybridCockpit />}
+
+      {/* Tab 3: zg 端侧代码语义 */}
+      {activeTab === 'zg' && <ZGSearchCockpit />}
+
+      {/* Tab 4: HG-RAG 分层指南针拓扑与读写分离知识工程座舱 */}
+      {activeTab === 'compass' && (
+        <div className="flex flex-col gap-4">
+          <HGRAGCompassCockpit />
+          <RAGAbstentionCockpit />
+          <GatekeeperAuditStream />
+        </div>
+      )}
     </div>
   )
 }

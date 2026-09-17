@@ -50,6 +50,8 @@ function RequestLogsRoute() {
     queryFn: () => fetchAuditLogs(filters, page, pageSize),
     queryKey: ['console-audit-logs', auditScopeKey, filters, page, pageSize],
     refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
+    staleTime: 15_000,
   })
 
   const logs = zeroResult ? [] : (audit.data?.items ?? [])
