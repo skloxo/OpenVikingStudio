@@ -123,7 +123,7 @@ export function RAGAbstentionCockpit() {
       {/* Cockpit Header */}
       <div className="flex items-center justify-between border-b border-border/50 pb-2.5">
         <div className="flex items-center gap-2">
-          <div className="p-1 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+          <div className="p-1 rounded bg-cyan-50 text-cyan-700 border border-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-400 dark:border-cyan-500/20">
             <ShieldAlertIcon className="size-3.5" />
           </div>
           <div>
@@ -131,7 +131,7 @@ export function RAGAbstentionCockpit() {
               <span className="text-xs font-semibold text-foreground tracking-wide">
                 RAG 约束验证与主动弃答门禁 (Zero-Hallucination Abstention Gate)
               </span>
-              <Badge variant="outline" className="text-xs px-1.5 py-0 h-4 border-cyan-500/30 text-cyan-400 bg-cyan-950/20 font-mono">
+              <Badge variant="outline" className="text-xs px-1.5 py-0 h-4 border-cyan-200 bg-cyan-50 text-cyan-800 dark:border-cyan-500/30 dark:text-cyan-400 dark:bg-cyan-950/20 font-mono">
                 Card-RAG-Abstention-ZeroHallucination
               </Badge>
             </div>
@@ -159,10 +159,10 @@ export function RAGAbstentionCockpit() {
 
         <div className="p-2.5 rounded-md border border-border/70 bg-background/50 space-y-1">
           <span className="text-xs text-muted-foreground flex items-center gap-1">
-            <CheckCircle2Icon className="size-3 text-cyan-400" />
+            <CheckCircle2Icon className="size-3 text-cyan-600 dark:text-cyan-400" />
             平均置信度 (Avg Confidence)
           </span>
-          <div className="text-xs font-mono font-semibold text-cyan-400">
+          <div className="text-xs font-mono font-semibold text-cyan-700 dark:text-cyan-400">
             {metrics ? metrics.avg_confidence.toFixed(3) : '--'}
             <span className="text-xs text-muted-foreground font-normal ml-1">/ 1.000</span>
           </div>
@@ -170,7 +170,7 @@ export function RAGAbstentionCockpit() {
 
         <div className="p-2.5 rounded-md border border-border/70 bg-background/50 space-y-1">
           <span className="text-xs text-muted-foreground flex items-center gap-1">
-            <LayersIcon className="size-3 text-cyan-400" />
+            <LayersIcon className="size-3 text-cyan-600 dark:text-cyan-400" />
             MinHash 去重引擎 (LSH)
           </span>
           <div className="text-xs font-mono font-semibold text-foreground">
@@ -180,7 +180,7 @@ export function RAGAbstentionCockpit() {
 
         <div className="p-2.5 rounded-md border border-border/70 bg-background/50 space-y-1">
           <span className="text-xs text-muted-foreground flex items-center gap-1">
-            <ActivityIcon className="size-3 text-cyan-400" />
+            <ActivityIcon className="size-3 text-cyan-600 dark:text-cyan-400" />
             门禁验证延迟 (Latency)
           </span>
           <div className="text-xs font-mono font-semibold text-foreground">
@@ -192,7 +192,7 @@ export function RAGAbstentionCockpit() {
       {/* Preset Chips */}
       <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
         <span className="text-xs text-muted-foreground flex items-center gap-1 mr-1">
-          <SparklesIcon className="size-3 text-cyan-400" />
+          <SparklesIcon className="size-3 text-cyan-600 dark:text-cyan-400" />
           预设探针场景:
         </span>
         {PRESET_QUERIES.map((p, idx) => (
@@ -235,12 +235,12 @@ export function RAGAbstentionCockpit() {
             <div className="flex items-center justify-between border-b border-border/40 pb-1.5">
               <div className="flex items-center gap-2">
                 {activeProbe.decision.should_abstain ? (
-                  <Badge variant="outline" className="text-xs px-1.5 py-0.5 border-rose-500/40 text-rose-400 bg-rose-950/20 font-semibold flex items-center gap-1">
+                  <Badge variant="outline" className="text-xs px-1.5 py-0.5 border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/40 dark:text-rose-400 dark:bg-rose-950/20 font-semibold flex items-center gap-1">
                     <ShieldAlertIcon className="size-3" />
                     主动弃答 (ABSTAINED)
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="text-xs px-1.5 py-0.5 border-cyan-500/40 text-cyan-400 bg-cyan-950/20 font-semibold flex items-center gap-1">
+                  <Badge variant="outline" className="text-xs px-1.5 py-0.5 border-cyan-200 bg-cyan-50 text-cyan-800 dark:border-cyan-500/40 dark:text-cyan-400 dark:bg-cyan-950/20 font-semibold flex items-center gap-1">
                     <ShieldCheckIcon className="size-3" />
                     准许回答 (GROUNDED)
                   </Badge>
@@ -258,7 +258,7 @@ export function RAGAbstentionCockpit() {
             </div>
 
             {activeProbe.decision.abstain_reason && (
-              <div className="text-xs font-mono text-rose-300/90 bg-rose-950/10 p-1.5 rounded border border-rose-500/20">
+              <div className="text-xs font-mono text-rose-800 bg-rose-50 p-1.5 rounded border border-rose-200 dark:text-rose-300/90 dark:bg-rose-950/10 dark:border-rose-500/20">
                 弃答原因: {activeProbe.decision.abstain_reason}
               </div>
             )}
@@ -267,7 +267,7 @@ export function RAGAbstentionCockpit() {
               <div className="flex items-center gap-1 flex-wrap">
                 <span className="text-xs text-muted-foreground">锚定关键词:</span>
                 {activeProbe.decision.grounded_tokens.map((token, i) => (
-                  <span key={i} className="text-xs font-mono bg-cyan-950/30 text-cyan-400 border border-cyan-500/20 px-1 py-0.5 rounded">
+                  <span key={i} className="text-xs font-mono bg-cyan-50 text-cyan-800 border border-cyan-200 dark:bg-cyan-950/30 dark:text-cyan-400 dark:border-cyan-500/20 px-1 py-0.5 rounded">
                     {token}
                   </span>
                 ))}
@@ -282,7 +282,7 @@ export function RAGAbstentionCockpit() {
                   <div key={i} className="flex items-center justify-between text-xs p-1 rounded bg-muted/20 border border-border/40 font-mono">
                     <span className="truncate flex-1 mr-2 text-foreground/80">{r.content}</span>
                     {r.is_duplicate ? (
-                      <Badge variant="outline" className="text-xs px-1 py-0 border-amber-500/30 text-amber-400 bg-amber-950/20">
+                      <Badge variant="outline" className="text-xs px-1 py-0 border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:text-amber-400 dark:bg-amber-950/20">
                         近重复 (相似 {r.similarity_score})
                       </Badge>
                     ) : (

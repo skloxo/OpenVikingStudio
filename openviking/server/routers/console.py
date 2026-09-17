@@ -172,6 +172,7 @@ async def peer_agents(
             "role": "2080Ti 反重力主控 IDE (本地坐镇)",
             "status": "running",
             "legacy_aliases": ["antigravity", "antigravity@2080ti"],
+            "staging_dir": "antigravity_sessions",
         },
         {
             "id": "openclaw@2080ti",
@@ -209,6 +210,7 @@ async def peer_agents(
             "role": "RTX3070 反重力 IDE 远程哨兵",
             "status": "ready",
             "legacy_aliases": ["antigravity@rtx3070", "antigravity@3070"],
+            "staging_dir": "3070_sessions",
         },
         {
             "id": "workbuddy@rtx3070",
@@ -228,26 +230,64 @@ async def peer_agents(
             "status": "ready",
             "legacy_aliases": ["xiaomimo@rtx3070", "xiaomimo@3070"],
         },
+        # Mac Studio 远程算力节点 (M3 Ultra 256GB)
+        {
+            "id": "antigravity@macstudio",
+            "nameKey": "antigravity@macstudio",
+            "icon": "cpu",
+            "mode": "apiClient",
+            "role": "Mac Studio (M3 Ultra 256G) 远程算力节点",
+            "status": "ready",
+            "legacy_aliases": ["antigravity@macstudio", "macstudio", "mac_studio"],
+            "staging_dir": "mac_studio_sessions",
+        },
     ]
 
     seen_ids = set()
     result_peers = []
+    staging_base = Path.home() / ".openviking" / "data" / "viking" / "default" / "resources" / "staging"
 
-    # 装配在籍智能体，自动累加历史别名与实时调用数
+    # 装配在籍智能体，自动累加历史别名、物理会话落盘与实时调用数
     for item in fleet_definitions:
         peer_id = item["id"]
         call_count = 0
         for alias in item["legacy_aliases"]:
             call_count += actor_peers.get(alias, 0)
 
+        # 动态探测物理会话落盘 (staging sessions)
+        staging_dir_name = str(item.get("staging_dir") or "").strip()
+        staging_count = 0
+        latest_staging_mtime = 0.0
+        if staging_dir_name and staging_base.is_dir():
+            target_dir = staging_base / staging_dir_name
+            if target_dir.is_dir():
+                md_files = list(target_dir.glob("*.md"))
+                staging_count = len(md_files)
+                if md_files:
+                    latest_staging_mtime = max(f.stat().st_mtime for f in md_files)
+
+        total_messages = call_count + staging_count
+
+        # 动态感知活跃状态与最新同步时间戳
+        peer_status = item["status"]
+        last_sync_str = "--"
+        if latest_staging_mtime > 0:
+            last_sync_str = datetime.fromtimestamp(latest_staging_mtime).strftime("%Y-%m-%d %H:%M")
+            # 2小时内有物理会话落盘入库，动态感知为活跃 running
+            if (datetime.now().timestamp() - latest_staging_mtime) < 7200:
+                peer_status = "running"
+        elif call_count > 0 or item["status"] == "running":
+            last_sync_str = now_str
+            peer_status = "running"
+
         result_peers.append({
             "id": peer_id,
             "nameKey": item["nameKey"],
-            "messagesCount": call_count,
+            "messagesCount": total_messages,
             "uriNode": f"viking://user/{account_id}/peers/{peer_id}/memories/",
             "connectionModeKey": item["mode"],
-            "lastSync": now_str if call_count > 0 or item["status"] == "running" else "--",
-            "status": item["status"],
+            "lastSync": last_sync_str,
+            "status": peer_status,
             "icon": item["icon"],
             "role": item["role"],
         })

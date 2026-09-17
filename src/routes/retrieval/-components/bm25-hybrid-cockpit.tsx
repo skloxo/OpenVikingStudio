@@ -109,7 +109,7 @@ export function BM25HybridCockpit() {
       {/* 1. 标题与状态指示 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="flex size-6 items-center justify-center rounded-md bg-cyan-500/10 text-cyan-400">
+          <div className="flex size-6 items-center justify-center rounded-md bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-400 border border-cyan-200 dark:border-transparent">
             <BinaryIcon className="size-3.5" />
           </div>
           <div>
@@ -126,12 +126,12 @@ export function BM25HybridCockpit() {
             variant="outline"
             className="h-5 px-2 text-xs font-mono tabular-nums border-border/60 bg-muted/30"
           >
-            <CpuIcon className="mr-1 size-3 text-cyan-400" />
+            <CpuIcon className="mr-1 size-3 text-cyan-600 dark:text-cyan-400" />
             {indexStats?.is_ready ? 'FTS5: READY' : 'FTS5: INIT'}
           </Badge>
           <Badge
             variant="outline"
-            className="h-5 px-2 text-xs font-mono tabular-nums border-cyan-500/30 text-cyan-400 bg-cyan-500/5"
+            className="h-5 px-2 text-xs font-mono tabular-nums border-cyan-200 bg-cyan-50 text-cyan-800 dark:border-cyan-500/30 dark:text-cyan-400 dark:bg-cyan-500/5"
           >
             RRF k=60
           </Badge>
@@ -161,10 +161,10 @@ export function BM25HybridCockpit() {
         <div className="flex flex-col gap-0.5 rounded-md border border-border/50 bg-muted/10 p-2.5">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>{t('hybrid.symbolBoosts', '精确符号召回提权')}</span>
-            <ArrowUpRightIcon className="size-3 text-cyan-400" />
+            <ArrowUpRightIcon className="size-3 text-cyan-600 dark:text-cyan-400" />
           </div>
           <div className="flex items-baseline gap-1">
-            <span className="font-mono text-base font-bold tabular-nums text-cyan-400">
+            <span className="font-mono text-base font-bold tabular-nums text-cyan-700 dark:text-cyan-400">
               {telemetry?.exact_symbol_boost_count ?? 0}
             </span>
             <span className="text-xs text-muted-foreground">次</span>
@@ -272,7 +272,7 @@ export function BM25HybridCockpit() {
                 · 向量命中:{' '}
                 <span className="font-mono text-foreground">{probeResult.dense_count}</span>{' '}
                 · RRF 融合总数:{' '}
-                <span className="font-mono text-cyan-400 font-semibold">{probeResult.fused_count}</span>
+                <span className="font-mono text-cyan-700 dark:text-cyan-400 font-semibold">{probeResult.fused_count}</span>
               </span>
               <span className="text-xs text-muted-foreground">Top-5 融合排名</span>
             </div>
@@ -299,7 +299,7 @@ export function BM25HybridCockpit() {
                         {item.origin === 'hybrid' && (
                           <Badge
                             variant="outline"
-                            className="h-4 px-1.5 text-xs font-mono border-cyan-500/30 text-cyan-400 bg-cyan-500/5"
+                            className="h-4 px-1.5 text-xs font-mono border-cyan-200 bg-cyan-50 text-cyan-800 dark:border-cyan-500/30 dark:text-cyan-400 dark:bg-cyan-500/5"
                           >
                             <CheckCircle2Icon className="mr-1 size-2.5" />
                             双流重合增强

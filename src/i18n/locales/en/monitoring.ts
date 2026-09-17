@@ -260,6 +260,11 @@ export const monitoring = {
       embeddingGroup: 'Embedding Models',
       rerankGroup: 'Rerank Models',
       compressorGroup: 'LLMLingua-2 Prompt Compressor',
+      archivedGroup: 'Historical Archived Models Summary',
+      archivedCalls: 'Historical Calls',
+      archivedTokens: 'Historical Tokens',
+      showArchived: 'Show Archived Models',
+      hideArchived: 'Hide Archived Models',
     },
     httpStatusCard: {
       title: 'HTTP Status Code Distribution',

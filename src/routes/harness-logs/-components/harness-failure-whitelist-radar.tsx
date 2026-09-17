@@ -63,7 +63,7 @@ export function HarnessFailureWhitelistRadar() {
         <div className="rounded-md border border-border/60 bg-card p-3.5">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>瞬态重试预算 (Retry Budget)</span>
-            <RepeatIcon className="size-3.5 text-cyan-400" />
+            <RepeatIcon className="size-3.5 text-cyan-600 dark:text-cyan-400" />
           </div>
           <div className="mt-1 font-mono text-xl font-bold tabular-nums text-foreground">
             {data?.transient_retries_used ?? 0}
@@ -80,7 +80,7 @@ export function HarnessFailureWhitelistRadar() {
         <div className="rounded-md border border-border/60 bg-card p-3.5">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>Anti-Loop 物理阻断指纹</span>
-            <ShieldAlertIcon className="size-3.5 text-amber-400" />
+            <ShieldAlertIcon className="size-3.5 text-amber-600 dark:text-amber-400" />
           </div>
           <div className="mt-1 font-mono text-xl font-bold tabular-nums text-foreground">
             {data?.anti_loop_interceptions ?? 0}
@@ -95,7 +95,7 @@ export function HarnessFailureWhitelistRadar() {
         <div className="rounded-md border border-border/60 bg-card p-3.5">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>致命异常即刻刹车 (Fatal Halts)</span>
-            <FlameIcon className="size-3.5 text-rose-400" />
+            <FlameIcon className="size-3.5 text-rose-600 dark:text-rose-400" />
           </div>
           <div className="mt-1 font-mono text-xl font-bold tabular-nums text-foreground">
             {data?.fatal_count ?? 0}
@@ -110,9 +110,9 @@ export function HarnessFailureWhitelistRadar() {
         <div className="rounded-md border border-border/60 bg-card p-3.5">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>免压缩白名单保真度</span>
-            <FileCheckIcon className="size-3.5 text-cyan-400" />
+            <FileCheckIcon className="size-3.5 text-cyan-600 dark:text-cyan-400" />
           </div>
-          <div className="mt-1 font-mono text-xl font-bold tabular-nums text-cyan-400">
+          <div className="mt-1 font-mono text-xl font-bold tabular-nums text-cyan-700 dark:text-cyan-400">
             {data?.whitelist_preservation_rate != null ? `${data.whitelist_preservation_rate}%` : '--'}
             <span className="text-xs font-normal text-muted-foreground ml-1">
               ({data?.whitelist_items_count != null ? `${data.whitelist_items_count} 项` : '--'})
@@ -133,14 +133,14 @@ export function HarnessFailureWhitelistRadar() {
           <div className="flex items-center justify-between border-b border-border/60 pb-2.5">
             <div>
               <h2 className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                <ShieldCheckIcon className="size-3.5 text-cyan-400" />
+                <ShieldCheckIcon className="size-3.5 text-cyan-600 dark:text-cyan-400" />
                 工具失败分类画像 (Failure Taxonomy Profile)
               </h2>
               <p className="text-xs text-muted-foreground">
                 瞬态、确定性与致命三层故障分类及物理抗死循环防线
               </p>
             </div>
-            <Badge variant="outline" className="text-xs font-mono border-cyan-500/30 text-cyan-400">
+            <Badge variant="outline" className="text-xs font-mono border-cyan-200 bg-cyan-50 text-cyan-800 dark:border-cyan-500/30 dark:bg-cyan-950/20 dark:text-cyan-400">
               AgentScope 2.0 Invariant
             </Badge>
           </div>
@@ -150,10 +150,10 @@ export function HarnessFailureWhitelistRadar() {
             <div className="rounded-md border border-border/60 bg-muted/20 p-3">
               <div className="flex items-center justify-between text-xs font-medium text-foreground">
                 <span className="flex items-center gap-1.5">
-                  <span className="size-2 rounded-full bg-cyan-400" />
+                  <span className="size-2 rounded-full bg-cyan-500 dark:bg-cyan-400" />
                   瞬态错误 (Transient)
                 </span>
-                <span className="font-mono text-cyan-400 tabular-nums">
+                <span className="font-mono text-cyan-700 dark:text-cyan-400 tabular-nums">
                   {data?.transient_count ?? 0} 次 / 允许退避重试
                 </span>
               </div>
@@ -166,10 +166,10 @@ export function HarnessFailureWhitelistRadar() {
             <div className="rounded-md border border-border/60 bg-muted/20 p-3">
               <div className="flex items-center justify-between text-xs font-medium text-foreground">
                 <span className="flex items-center gap-1.5">
-                  <span className="size-2 rounded-full bg-amber-400" />
+                  <span className="size-2 rounded-full bg-amber-500 dark:bg-amber-400" />
                   确定性错误 (Deterministic)
                 </span>
-                <span className="font-mono text-amber-400 tabular-nums">
+                <span className="font-mono text-amber-700 dark:text-amber-400 tabular-nums">
                   {data?.deterministic_count ?? 0} 次 / Anti-Loop 物理门锁
                 </span>
               </div>
@@ -182,10 +182,10 @@ export function HarnessFailureWhitelistRadar() {
             <div className="rounded-md border border-border/60 bg-muted/20 p-3">
               <div className="flex items-center justify-between text-xs font-medium text-foreground">
                 <span className="flex items-center gap-1.5">
-                  <span className="size-2 rounded-full bg-rose-400" />
+                  <span className="size-2 rounded-full bg-rose-500 dark:bg-rose-400" />
                   致命错误 (Fatal)
                 </span>
-                <span className="font-mono text-rose-400 tabular-nums">
+                <span className="font-mono text-rose-700 dark:text-rose-400 tabular-nums">
                   {data?.fatal_count ?? 0} 次 / 物理即刻刹车
                 </span>
               </div>
@@ -201,14 +201,14 @@ export function HarnessFailureWhitelistRadar() {
           <div className="flex items-center justify-between border-b border-border/60 pb-2.5">
             <div>
               <h2 className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                <FileCheckIcon className="size-3.5 text-cyan-400" />
+                <FileCheckIcon className="size-3.5 text-cyan-600 dark:text-cyan-400" />
                 AFS 免压缩白名单保真雷达 (Compression Whitelist)
               </h2>
               <p className="text-xs text-muted-foreground">
                 核心规划与租户授权状态物理豁免有损 Compaction 压缩
               </p>
             </div>
-            <Badge variant="outline" className="text-xs font-mono border-cyan-500/30 text-cyan-400">
+            <Badge variant="outline" className="text-xs font-mono border-cyan-200 bg-cyan-50 text-cyan-800 dark:border-cyan-500/30 dark:bg-cyan-950/20 dark:text-cyan-400">
               DeepSeek-Harness SSOT
             </Badge>
           </div>
@@ -218,10 +218,10 @@ export function HarnessFailureWhitelistRadar() {
             <div className="rounded-md border border-border/60 bg-muted/20 p-3">
               <div className="flex items-center justify-between text-xs font-medium text-foreground">
                 <span className="font-mono text-foreground flex items-center gap-1.5">
-                  <ZapIcon className="size-3.5 text-cyan-400" />
+                  <ZapIcon className="size-3.5 text-cyan-600 dark:text-cyan-400" />
                   TaskPlan (任务蓝图与长程工单)
                 </span>
-                <Badge variant="outline" className="text-xs font-mono border-cyan-500/30 text-cyan-400">
+                <Badge variant="outline" className="text-xs font-mono border-cyan-200 bg-cyan-50 text-cyan-800 dark:border-cyan-500/30 dark:bg-cyan-950/20 dark:text-cyan-400">
                   {data?.whitelist_by_type.TaskPlan ?? 0} 项受保
                 </Badge>
               </div>
@@ -234,10 +234,10 @@ export function HarnessFailureWhitelistRadar() {
             <div className="rounded-md border border-border/60 bg-muted/20 p-3">
               <div className="flex items-center justify-between text-xs font-medium text-foreground">
                 <span className="font-mono text-foreground flex items-center gap-1.5">
-                  <RepeatIcon className="size-3.5 text-cyan-400" />
+                  <RepeatIcon className="size-3.5 text-cyan-600 dark:text-cyan-400" />
                   SubAgentTracker (子代理血缘追踪)
                 </span>
-                <Badge variant="outline" className="text-xs font-mono border-cyan-500/30 text-cyan-400">
+                <Badge variant="outline" className="text-xs font-mono border-cyan-200 bg-cyan-50 text-cyan-800 dark:border-cyan-500/30 dark:bg-cyan-950/20 dark:text-cyan-400">
                   {data?.whitelist_by_type.SubAgentTracker ?? 0} 项受保
                 </Badge>
               </div>
@@ -250,10 +250,10 @@ export function HarnessFailureWhitelistRadar() {
             <div className="rounded-md border border-border/60 bg-muted/20 p-3">
               <div className="flex items-center justify-between text-xs font-medium text-foreground">
                 <span className="font-mono text-foreground flex items-center gap-1.5">
-                  <ShieldCheckIcon className="size-3.5 text-cyan-400" />
+                  <ShieldCheckIcon className="size-3.5 text-cyan-600 dark:text-cyan-400" />
                   AuthGrants (多租户企业授权与权限)
                 </span>
-                <Badge variant="outline" className="text-xs font-mono border-cyan-500/30 text-cyan-400">
+                <Badge variant="outline" className="text-xs font-mono border-cyan-200 bg-cyan-50 text-cyan-800 dark:border-cyan-500/30 dark:bg-cyan-950/20 dark:text-cyan-400">
                   {data?.whitelist_by_type.AuthGrants ?? 0} 项受保
                 </Badge>
               </div>

@@ -137,10 +137,10 @@ function RetrievalPage() {
       {/* 高密座舱顶层 Tab 导航 (消除 4 屏瀑布式纵向滚动) */}
       <div className="flex items-center gap-1.5 border-b border-border/60 pb-1">
         {[
-          { id: 'search', label: '主控检索与综合结果', icon: <SearchIcon className="size-3.5 mr-1 text-cyan-400" /> },
-          { id: 'bm25', label: 'BM25 双流混合融合', icon: <LayersIcon className="size-3.5 mr-1 text-cyan-400" /> },
-          { id: 'zg', label: 'zg 端侧代码语义', icon: <TerminalIcon className="size-3.5 mr-1 text-cyan-400" /> },
-          { id: 'compass', label: 'HG-RAG 拓扑与主动弃答', icon: <CompassIcon className="size-3.5 mr-1 text-cyan-400" /> },
+          { id: 'search', label: '主控检索与综合结果', icon: <SearchIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
+          { id: 'bm25', label: 'BM25 双流混合融合', icon: <LayersIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
+          { id: 'zg', label: 'zg 端侧代码语义', icon: <TerminalIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
+          { id: 'compass', label: 'HG-RAG 拓扑与主动弃答', icon: <CompassIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -148,7 +148,7 @@ function RetrievalPage() {
             onClick={() => setActiveTab(tab.id as RetrievalTab)}
             className={`flex items-center rounded-t-md px-3 py-1.5 text-xs font-medium transition-all cursor-pointer ${
               activeTab === tab.id
-                ? 'border-b-2 border-cyan-400 bg-card text-foreground font-semibold'
+                ? 'border-b-2 border-cyan-600 dark:border-cyan-400 bg-card text-foreground font-semibold'
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
             }`}
           >

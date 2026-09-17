@@ -260,6 +260,11 @@ export const monitoring = {
       embeddingGroup: 'Embedding 向量模型',
       rerankGroup: 'Rerank 重排模型',
       compressorGroup: 'LLMLingua-2 提示词压缩模型',
+      archivedGroup: '历史已下线模型概括合计',
+      archivedCalls: '历史总调用数',
+      archivedTokens: '历史 Token 消耗',
+      showArchived: '展开历史模型明细',
+      hideArchived: '收起历史模型明细',
     },
     httpStatusCard: {
       title: 'HTTP 请求状态码分布',

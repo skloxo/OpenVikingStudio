@@ -111,15 +111,13 @@ async def get_topology(
         service = get_service_or_none()
 
     peers = [
-        {"id": "viking://peers/master_agent", "label": "Peer: master_agent", "category": "peers"},
-        {"id": "viking://peers/researcher_agent", "label": "Peer: researcher_agent", "category": "peers"},
-        {"id": "viking://peers/developer_agent", "label": "Peer: developer_agent", "category": "peers"},
-        {"id": "viking://peers/designer_agent", "label": "Peer: designer_agent", "category": "peers"},
-        {"id": "viking://peers/product_manager", "label": "Peer: product_manager", "category": "peers"},
-        {"id": "viking://peers/operator_agent", "label": "Peer: operator_agent", "category": "peers"},
-        {"id": "viking://peers/planner_agent", "label": "Peer: planner_agent", "category": "peers"},
-        {"id": "viking://peers/evaluator_agent", "label": "Peer: evaluator_agent", "category": "peers"},
-        {"id": "viking://peers/test_agent", "label": "Peer: test_agent", "category": "peers"},
+        {"id": "viking://peers/antigravity@2080ti", "label": "Peer: 2080Ti Antigravity", "category": "peers", "role": "本地坐镇主控"},
+        {"id": "viking://peers/antigravity@rtx3070", "label": "Peer: RTX3070 Antigravity", "category": "peers", "role": "远程哨兵代理"},
+        {"id": "viking://peers/openclaw@2080ti", "label": "Peer: 2080Ti OpenClaw", "category": "peers", "role": "集群协同总线"},
+        {"id": "viking://peers/workbuddy@rtx3070", "label": "Peer: RTX3070 WorkBuddy", "category": "peers", "role": "远程协同助手"},
+        {"id": "viking://peers/macstudio", "label": "Peer: Mac Studio M3", "category": "peers", "role": "集群算力中心"},
+        {"id": "viking://peers/xiaomimo@2080ti", "label": "Peer: 2080Ti XiaomiMo", "category": "peers", "role": "终端接入客户端"},
+        {"id": "viking://peers/hermes@2080ti", "label": "Peer: 2080Ti Hermes", "category": "peers", "role": "通信网关服务"},
     ]
     edges = []
     for peer in peers[1:]:
@@ -142,18 +140,18 @@ async def get_topology(
                     })
                     # Link skill to relevant peer
                     low = name.lower()
-                    if any(k in low for k in ["test", "tdd", "debug", "dev", "code"]):
-                        target_peer = "viking://peers/developer_agent"
-                    elif any(k in low for k in ["research", "retrieval", "search"]):
-                        target_peer = "viking://peers/researcher_agent"
-                    elif any(k in low for k in ["ops", "satellite", "docker", "fleet"]):
-                        target_peer = "viking://peers/operator_agent"
-                    elif any(k in low for k in ["ui", "cockpit", "design"]):
-                        target_peer = "viking://peers/designer_agent"
-                    elif any(k in low for k in ["eval", "radar", "audit"]):
-                        target_peer = "viking://peers/evaluator_agent"
+                    if any(k in low for k in ["mac", "studio", "mlx", "metal", "llm"]):
+                        target_peer = "viking://peers/macstudio"
+                    elif any(k in low for k in ["remote", "3070", "workbuddy"]):
+                        target_peer = "viking://peers/antigravity@rtx3070"
+                    elif any(k in low for k in ["claw", "bus", "cluster", "fleet"]):
+                        target_peer = "viking://peers/openclaw@2080ti"
+                    elif any(k in low for k in ["gateway", "hermes"]):
+                        target_peer = "viking://peers/hermes@2080ti"
+                    elif any(k in low for k in ["mimo", "xiaomi"]):
+                        target_peer = "viking://peers/xiaomimo@2080ti"
                     else:
-                        target_peer = "viking://peers/master_agent"
+                        target_peer = "viking://peers/antigravity@2080ti"
                     edges.append({"source": target_peer, "target": skill_id, "link_type": "applies"})
     except Exception:
         pass
@@ -171,7 +169,7 @@ async def get_topology(
                         "label": f"Session: {sid[:8]}",
                         "category": "sessions",
                     })
-                    edges.append({"source": "viking://peers/master_agent", "target": sess_id, "link_type": "interacts"})
+                    edges.append({"source": "viking://peers/antigravity@2080ti", "target": sess_id, "link_type": "interacts"})
     except Exception:
         pass
 
@@ -190,7 +188,7 @@ async def get_topology(
                         "category": "resources",
                     })
                     edges.append({
-                        "source": "viking://peers/master_agent",
+                        "source": "viking://peers/antigravity@2080ti",
                         "target": uri,
                         "link_type": "indexes",
                     })

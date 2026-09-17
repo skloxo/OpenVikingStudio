@@ -48,18 +48,19 @@ def test_topology_returns_truthful_structure(client):
     assert "edges" in result
 
     node_ids = [n["id"] for n in result["nodes"]]
-    assert "viking://peers/master_agent" in node_ids
-    assert "viking://peers/developer_agent" in node_ids
-    assert "viking://peers/researcher_agent" in node_ids
+    assert "viking://peers/antigravity@2080ti" in node_ids
+    assert "viking://peers/antigravity@rtx3070" in node_ids
+    assert "viking://peers/openclaw@2080ti" in node_ids
+    assert "viking://peers/macstudio" in node_ids
 
     # There should NOT be any artificial skill_1 or doc_1458 mock strings
     assert not any("skill_1" in nid for nid in node_ids)
     assert not any("doc_1" in nid for nid in node_ids)
 
-    # Check edges connect master to peers
+    # Check edges connect 2080ti master to peers
     edge_pairs = [(e["source"], e["target"]) for e in result["edges"]]
-    assert ("viking://peers/master_agent", "viking://peers/developer_agent") in edge_pairs
-    assert ("viking://peers/master_agent", "viking://peers/researcher_agent") in edge_pairs
+    assert ("viking://peers/antigravity@2080ti", "viking://peers/antigravity@rtx3070") in edge_pairs
+    assert ("viking://peers/antigravity@2080ti", "viking://peers/macstudio") in edge_pairs
 
 
 def test_topology_with_mocked_services():

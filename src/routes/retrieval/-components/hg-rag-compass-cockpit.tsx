@@ -112,7 +112,7 @@ export function HGRAGCompassCockpit() {
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border/60 pb-2.5">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-md bg-cyan-950/40 border border-cyan-800/50 text-cyan-400">
+          <div className="p-1.5 rounded-md bg-cyan-50 border border-cyan-200 text-cyan-700 dark:bg-cyan-950/40 dark:border-cyan-800/50 dark:text-cyan-400">
             <CompassIcon className="size-4" />
           </div>
           <div>
@@ -120,7 +120,7 @@ export function HGRAGCompassCockpit() {
               <h3 className="text-xs font-semibold tracking-wide text-foreground">
                 HG-RAG 分层指南针拓扑与读写分离知识工程
               </h3>
-              <Badge variant="outline" className="border-cyan-800/60 bg-cyan-950/30 text-cyan-400 font-mono text-[12px]">
+              <Badge variant="outline" className="border-cyan-200 bg-cyan-50 text-cyan-800 dark:border-cyan-800/60 dark:bg-cyan-950/30 dark:text-cyan-400 font-mono text-[12px]">
                 v1.5.19
               </Badge>
             </div>
@@ -134,8 +134,8 @@ export function HGRAGCompassCockpit() {
           <Badge variant="outline" className="border-border/60 bg-muted/40 text-muted-foreground font-mono text-[12px]">
             Serving Desk: 只读零锁
           </Badge>
-          <Badge variant="outline" className="border-cyan-800/50 bg-cyan-950/20 text-cyan-400 font-mono text-[12px]">
-            <CheckCircle2Icon className="size-3 mr-1 inline text-cyan-400" />
+          <Badge variant="outline" className="border-cyan-200 bg-cyan-50 text-cyan-800 dark:border-cyan-800/50 dark:bg-cyan-950/20 dark:text-cyan-400 font-mono text-[12px]">
+            <CheckCircle2Icon className="size-3 mr-1 inline text-cyan-600 dark:text-cyan-400" />
             Active V{stats?.active_version ?? 1}
           </Badge>
         </div>
@@ -146,7 +146,7 @@ export function HGRAGCompassCockpit() {
         <div className="p-2.5 rounded-md bg-muted/30 border border-border/50">
           <div className="flex items-center justify-between text-muted-foreground mb-1">
             <span className="text-[12px]">拓扑节点总数</span>
-            <LayersIcon className="size-3.5 text-cyan-400" />
+            <LayersIcon className="size-3.5 text-cyan-600 dark:text-cyan-400" />
           </div>
           <div className="text-sm font-semibold font-mono tabular-nums text-foreground">
             {stats?.total_nodes ?? '--'}
@@ -156,7 +156,7 @@ export function HGRAGCompassCockpit() {
         <div className="p-2.5 rounded-md bg-muted/30 border border-border/50">
           <div className="flex items-center justify-between text-muted-foreground mb-1">
             <span className="text-[12px]">根大类体系数</span>
-            <FolderTreeIcon className="size-3.5 text-cyan-400" />
+            <FolderTreeIcon className="size-3.5 text-cyan-600 dark:text-cyan-400" />
           </div>
           <div className="text-sm font-semibold font-mono tabular-nums text-foreground">
             {stats?.total_roots ?? '--'}
@@ -166,7 +166,7 @@ export function HGRAGCompassCockpit() {
         <div className="p-2.5 rounded-md bg-muted/30 border border-border/50">
           <div className="flex items-center justify-between text-muted-foreground mb-1">
             <span className="text-[12px]">最大拓扑深度</span>
-            <Share2Icon className="size-3.5 text-cyan-400" />
+            <Share2Icon className="size-3.5 text-cyan-600 dark:text-cyan-400" />
           </div>
           <div className="text-sm font-semibold font-mono tabular-nums text-foreground">
             Level {stats?.max_depth ?? '--'}
@@ -176,9 +176,9 @@ export function HGRAGCompassCockpit() {
         <div className="p-2.5 rounded-md bg-muted/30 border border-border/50">
           <div className="flex items-center justify-between text-muted-foreground mb-1">
             <span className="text-[12px]">读写分离状态</span>
-            <SparklesIcon className="size-3.5 text-cyan-400" />
+            <SparklesIcon className="size-3.5 text-cyan-600 dark:text-cyan-400" />
           </div>
-          <div className="text-sm font-semibold font-mono tabular-nums text-cyan-400">
+          <div className="text-sm font-semibold font-mono tabular-nums text-cyan-700 dark:text-cyan-400">
             {stats?.serving_desk_ready ? 'Immutable Ready' : 'Syncing'}
           </div>
         </div>
@@ -213,7 +213,7 @@ export function HGRAGCompassCockpit() {
             disabled={!availableDirs.has('north') || navMutation.isPending}
             onClick={() => navMutation.mutate({ direction: 'north' })}
             className={`w-28 h-7 text-[12px] flex items-center justify-center gap-1 ${
-              availableDirs.has('north') ? 'border-cyan-800/60 text-cyan-300 hover:bg-cyan-950/30' : 'opacity-40'
+              availableDirs.has('north') ? 'border-cyan-200 text-cyan-800 hover:bg-cyan-50 dark:border-cyan-800/60 dark:text-cyan-300 dark:hover:bg-cyan-950/30' : 'opacity-40'
             }`}
           >
             <ChevronUpIcon className="size-3.5" />
@@ -228,15 +228,15 @@ export function HGRAGCompassCockpit() {
               disabled={!availableDirs.has('west') || navMutation.isPending}
               onClick={() => navMutation.mutate({ direction: 'west' })}
               className={`w-24 h-7 text-[12px] flex items-center justify-center gap-1 ${
-                availableDirs.has('west') ? 'border-cyan-800/60 text-cyan-300 hover:bg-cyan-950/30' : 'opacity-40'
+                availableDirs.has('west') ? 'border-cyan-200 text-cyan-800 hover:bg-cyan-50 dark:border-cyan-800/60 dark:text-cyan-300 dark:hover:bg-cyan-950/30' : 'opacity-40'
               }`}
             >
               <ChevronLeftIcon className="size-3.5" />
               <span>West (前驱)</span>
             </Button>
 
-            <div className="size-8 rounded-full border border-cyan-800/50 bg-cyan-950/40 flex items-center justify-center">
-              <CompassIcon className="size-4 text-cyan-400 animate-spin-slow" />
+            <div className="size-8 rounded-full border border-cyan-200 bg-cyan-50 dark:border-cyan-800/50 dark:bg-cyan-950/40 flex items-center justify-center">
+              <CompassIcon className="size-4 text-cyan-600 dark:text-cyan-400 animate-spin-slow" />
             </div>
 
             <Button
@@ -245,7 +245,7 @@ export function HGRAGCompassCockpit() {
               disabled={!availableDirs.has('east') || navMutation.isPending}
               onClick={() => navMutation.mutate({ direction: 'east' })}
               className={`w-24 h-7 text-[12px] flex items-center justify-center gap-1 ${
-                availableDirs.has('east') ? 'border-cyan-800/60 text-cyan-300 hover:bg-cyan-950/30' : 'opacity-40'
+                availableDirs.has('east') ? 'border-cyan-200 text-cyan-800 hover:bg-cyan-50 dark:border-cyan-800/60 dark:text-cyan-300 dark:hover:bg-cyan-950/30' : 'opacity-40'
               }`}
             >
               <span>East (后继)</span>
@@ -260,7 +260,7 @@ export function HGRAGCompassCockpit() {
             disabled={!availableDirs.has('south') || navMutation.isPending}
             onClick={() => navMutation.mutate({ direction: 'south', childIndex: 0 })}
             className={`w-28 h-7 text-[12px] flex items-center justify-center gap-1 ${
-              availableDirs.has('south') ? 'border-cyan-800/60 text-cyan-300 hover:bg-cyan-950/30' : 'opacity-40'
+              availableDirs.has('south') ? 'border-cyan-200 text-cyan-800 hover:bg-cyan-50 dark:border-cyan-800/60 dark:text-cyan-300 dark:hover:bg-cyan-950/30' : 'opacity-40'
             }`}
           >
             <ChevronDownIcon className="size-3.5" />

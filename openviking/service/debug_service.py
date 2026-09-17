@@ -175,7 +175,7 @@ class ObserverService:
             except Exception as e:
                 logger.debug(f"Failed to load RerankClient: {e}")
             if rerank_instance is None:
-                rerank_model = getattr(self._config.rerank, "model", "qwen3-reranker-0.6b")
+                rerank_model = getattr(self._config.rerank, "model", "qwen3-vl-reranker")
                 rerank_provider = getattr(self._config.rerank, "provider", "openai")
 
                 class _ConfiguredRerank:

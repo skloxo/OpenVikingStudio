@@ -1,7 +1,9 @@
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
+import { ChevronDownIcon } from 'lucide-react'
 import { Badge } from '#/components/ui/badge'
 import { Card, CardTitle } from '#/components/ui/card'
+import { cn } from '#/lib/utils'
 import { parseObserverStatus } from '../-lib/parse-status'
 
 export interface ModelUsageRow {
@@ -73,13 +75,24 @@ export interface ModelMonitoringCardProps {
 
 export function ModelMonitoringCard({ status, isHealthy }: ModelMonitoringCardProps) {
   const { t } = useTranslation('monitoringPage')
+  const [showArchived, setShowArchived] = React.useState(false)
+
   const groups = React.useMemo(() => {
     return parseModelsStatus(status)
   }, [status])
 
-  // 统计汇总瓷片数据
+  const activeGroups = React.useMemo(() => {
+    return groups.filter((g) => !g.groupName.toLowerCase().includes('archive'))
+  }, [groups])
+
+  const archivedGroup = React.useMemo(() => {
+    return groups.find((g) => g.groupName.toLowerCase().includes('archive'))
+  }, [groups])
+
+  // 统计汇总瓷片数据：活跃模型数严格统计 activeGroups 中的行数 (4)
+  const activeRows = activeGroups.flatMap((g) => g.rows)
+  const activeModelsCount = activeRows.length
   const allRows = groups.flatMap((g) => g.rows)
-  const activeModelsCount = allRows.length
   const totalCalls = allRows.reduce((sum, r) => sum + r.calls, 0)
   const totalTokens = allRows.reduce((sum, r) => sum + r.totalTokens, 0)
 
@@ -89,6 +102,7 @@ export function ModelMonitoringCard({ status, isHealthy }: ModelMonitoringCardPr
     if (lower.includes('embedding')) return t('modelsCard.embeddingGroup')
     if (lower.includes('rerank')) return t('modelsCard.rerankGroup')
     if (lower.includes('encoder') || lower.includes('compress') || lower.includes('lingua')) return t('modelsCard.compressorGroup')
+    if (lower.includes('archive')) return t('modelsCard.archivedGroup')
     return name
   }
 
@@ -131,7 +145,7 @@ export function ModelMonitoringCard({ status, isHealthy }: ModelMonitoringCardPr
         </div>
       </div>
 
-      {groups.length === 0 ? (
+      {activeGroups.length === 0 && !archivedGroup ? (
         <div className="rounded-lg border bg-muted/20 p-3 text-center text-xs text-muted-foreground">
           {status ? (
             <span className="font-mono text-xs text-foreground/80">{status}</span>
@@ -150,7 +164,8 @@ export function ModelMonitoringCard({ status, isHealthy }: ModelMonitoringCardPr
             <span className="text-right">{t('modelsCard.totalTokens')}</span>
           </div>
 
-          {groups.map((group, idx) => (
+          {/* 活跃模型列表（VLM, Embedding, Rerank, Compressor） */}
+          {activeGroups.map((group, idx) => (
             <div key={group.groupName + idx} className="flex flex-col gap-1.5">
               <span className="text-xs font-semibold text-foreground/80 flex items-center gap-1.5 pt-1">
                 <span className="size-1.5 rounded-full bg-primary/60" />
@@ -181,6 +196,71 @@ export function ModelMonitoringCard({ status, isHealthy }: ModelMonitoringCardPr
               ))}
             </div>
           ))}
+
+          {/* 历史已下线模型概括合计卡片 (折叠展开) */}
+          {archivedGroup && archivedGroup.rows.length > 0 && (
+            <div className="flex flex-col gap-2 pt-3 border-t border-border/50">
+              <button
+                type="button"
+                onClick={() => setShowArchived((prev) => !prev)}
+                className="flex items-center justify-between px-3 py-2 text-xs rounded-md bg-muted/15 hover:bg-muted/30 transition-colors text-muted-foreground hover:text-foreground text-left"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="size-1.5 rounded-full bg-muted-foreground/40" />
+                  <span className="font-sans font-medium text-xs text-foreground/80">
+                    {t('modelsCard.archivedGroup')} ({archivedGroup.rows.length})
+                  </span>
+                </div>
+                <div className="flex items-center gap-4 font-mono text-xs">
+                  <span>
+                    {t('modelsCard.archivedCalls')}:{' '}
+                    <strong className="text-foreground">
+                      {archivedGroup.rows.reduce((s, r) => s + r.calls, 0).toLocaleString()}
+                    </strong>
+                  </span>
+                  <span>
+                    {t('modelsCard.archivedTokens')}:{' '}
+                    <strong className="text-foreground">
+                      {archivedGroup.rows.reduce((s, r) => s + r.totalTokens, 0).toLocaleString()}
+                    </strong>
+                  </span>
+                  <ChevronDownIcon
+                    className={cn(
+                      'size-3.5 transition-transform duration-200 text-muted-foreground',
+                      showArchived && 'rotate-180 text-foreground'
+                    )}
+                  />
+                </div>
+              </button>
+
+              {showArchived && (
+                <div className="flex flex-col gap-1 pl-1">
+                  {archivedGroup.rows.map((row, rIdx) => (
+                    <div
+                      key={row.model + rIdx}
+                      className="grid grid-cols-6 items-center px-3 py-1.5 text-xs rounded-md bg-muted/10 hover:bg-muted/20 font-mono text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <span className="col-span-2 font-sans truncate">
+                        {row.model}
+                      </span>
+                      <span className="capitalize text-xs font-sans text-muted-foreground/80">
+                        {row.provider}
+                      </span>
+                      <span className="text-right tabular-nums">
+                        {row.calls.toLocaleString()}
+                      </span>
+                      <span className="text-right tabular-nums">
+                        {row.promptTokens.toLocaleString()}
+                      </span>
+                      <span className="text-right font-medium text-foreground/80 tabular-nums">
+                        {row.totalTokens.toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </Card>

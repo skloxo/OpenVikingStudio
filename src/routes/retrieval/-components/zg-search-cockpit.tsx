@@ -113,7 +113,7 @@ export function ZGSearchCockpit() {
       {/* 1. Header & Status */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="flex size-6 items-center justify-center rounded-md bg-cyan-500/10 text-cyan-400">
+          <div className="flex size-6 items-center justify-center rounded-md bg-cyan-50 text-cyan-700 border border-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-400 dark:border-transparent">
             <CodeIcon className="size-3.5" />
           </div>
           <div>
@@ -130,12 +130,12 @@ export function ZGSearchCockpit() {
             variant="outline"
             className="h-5 px-2 text-xs font-mono tabular-nums border-border/60 bg-muted/30"
           >
-            <ShieldCheckIcon className="mr-1 size-3 text-cyan-400" />
+            <ShieldCheckIcon className="mr-1 size-3 text-cyan-600 dark:text-cyan-400" />
             0-VRAM LOCAL
           </Badge>
           <Badge
             variant="outline"
-            className="h-5 px-2 text-xs font-mono tabular-nums border-cyan-500/30 text-cyan-400 bg-cyan-500/5"
+            className="h-5 px-2 text-xs font-mono tabular-nums border-cyan-200 bg-cyan-50 text-cyan-800 dark:border-cyan-500/30 dark:text-cyan-400 dark:bg-cyan-500/5"
           >
             AST READY
           </Badge>
@@ -182,10 +182,10 @@ export function ZGSearchCockpit() {
         <div className="flex flex-col gap-0.5 rounded-md border border-border/50 bg-muted/10 p-2.5">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>{t('zg.savingsRate', '分级懒加载省 Token')}</span>
-            <PercentIcon className="size-3 text-cyan-400" />
+            <PercentIcon className="size-3 text-cyan-600 dark:text-cyan-400" />
           </div>
           <div className="flex items-baseline gap-1">
-            <span className="font-mono text-base font-bold tabular-nums text-cyan-400">
+            <span className="font-mono text-base font-bold tabular-nums text-cyan-700 dark:text-cyan-400">
               {searchSummary ? `${searchSummary.savings_percentage}%` : '~85.0%'}
             </span>
           </div>
@@ -224,7 +224,7 @@ export function ZGSearchCockpit() {
                   setQuery(item.query)
                   handleRunSearch(item.query)
                 }}
-                className="rounded border border-border/60 bg-muted/20 px-1.5 py-0.5 text-xs text-muted-foreground hover:border-cyan-500/40 hover:text-cyan-400 transition-colors"
+                className="rounded border border-border/60 bg-muted/20 px-1.5 py-0.5 text-xs text-muted-foreground hover:border-cyan-300 dark:hover:border-cyan-500/40 hover:text-cyan-700 dark:hover:text-cyan-400 transition-colors"
               >
                 {item.label}
               </button>
@@ -240,7 +240,7 @@ export function ZGSearchCockpit() {
                 handleRunSearch(undefined, 0)
               }}
               className={`rounded px-2 py-0.5 text-xs font-mono transition-colors ${
-                depth === 0 ? 'bg-cyan-500/20 text-cyan-400 font-semibold' : 'text-muted-foreground hover:text-foreground'
+                depth === 0 ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-500/20 dark:text-cyan-400 font-semibold' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               Depth 0 (Meta)
@@ -252,7 +252,7 @@ export function ZGSearchCockpit() {
                 handleRunSearch(undefined, 1)
               }}
               className={`rounded px-2 py-0.5 text-xs font-mono transition-colors ${
-                depth === 1 ? 'bg-cyan-500/20 text-cyan-400 font-semibold' : 'text-muted-foreground hover:text-foreground'
+                depth === 1 ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-500/20 dark:text-cyan-400 font-semibold' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               Depth 1 (指纹 · 推荐)
@@ -264,7 +264,7 @@ export function ZGSearchCockpit() {
                 handleRunSearch(undefined, 2)
               }}
               className={`rounded px-2 py-0.5 text-xs font-mono transition-colors ${
-                depth === 2 ? 'bg-cyan-500/20 text-cyan-400 font-semibold' : 'text-muted-foreground hover:text-foreground'
+                depth === 2 ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-500/20 dark:text-cyan-400 font-semibold' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               Depth 2 (完整块)
@@ -299,7 +299,7 @@ export function ZGSearchCockpit() {
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>
                 命中符号:{' '}
-                <span className="font-mono text-cyan-400 font-bold">
+                <span className="font-mono text-cyan-700 dark:text-cyan-400 font-bold">
                   {searchSummary.total_results}
                 </span>{' '}
                 · 实际消耗:{' '}
@@ -307,7 +307,7 @@ export function ZGSearchCockpit() {
                 · 基线消耗:{' '}
                 <span className="font-mono text-foreground">{searchSummary.baseline_tokens_total} Tokens</span>{' '}
                 · 节省率:{' '}
-                <span className="font-mono text-cyan-400 font-bold">
+                <span className="font-mono text-cyan-700 dark:text-cyan-400 font-bold">
                   {searchSummary.savings_percentage}%
                 </span>
               </span>
@@ -344,7 +344,7 @@ export function ZGSearchCockpit() {
                         <span className="font-mono text-xs text-muted-foreground">
                           fp:{item.fingerprint}
                         </span>
-                        <span className="font-mono tabular-nums text-xs text-cyan-400">
+                        <span className="font-mono tabular-nums text-xs text-cyan-700 dark:text-cyan-400 font-medium">
                           {item.estimated_tokens} tok
                         </span>
                         <button
@@ -354,7 +354,7 @@ export function ZGSearchCockpit() {
                           title="复制符号内容"
                         >
                           {copiedIndex === idx ? (
-                            <CheckIcon className="size-3 text-cyan-400" />
+                            <CheckIcon className="size-3 text-cyan-600 dark:text-cyan-400" />
                           ) : (
                             <CopyIcon className="size-3" />
                           )}

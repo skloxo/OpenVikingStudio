@@ -211,14 +211,6 @@ function HomePage() {
           isLoading={isMetricsLoading}
           t={t}
         />
-        <TodayTokensPanel
-          data={summary?.today_tokens}
-          disabled={metricsUnavailable}
-          disabledMessage={unavailableMessage}
-          isError={dashboard.isError}
-          isLoading={isMetricsLoading}
-          t={t}
-        />
         <TodayRetrievalsPanel
           data={summary?.today_retrievals}
           disabled={metricsUnavailable}
