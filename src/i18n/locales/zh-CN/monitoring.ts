@@ -263,6 +263,8 @@ export const monitoring = {
       archivedGroup: '历史已下线模型概括合计',
       archivedCalls: '历史总调用数',
       archivedTokens: '历史 Token 消耗',
+      archivedBadge: '已下线归档',
+      archivedSummary: '历史模型汇总',
       showArchived: '展开历史模型明细',
       hideArchived: '收起历史模型明细',
     },

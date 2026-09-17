@@ -192,56 +192,86 @@ class ModelsObserver(BaseObserver):
 
         return merged
 
-    def _classify_model(self, model_name: str, active_map: Dict[str, Tuple[str, str]]) -> str:
-        """Classify a model name into VLM, Embedding, Rerank, Compressor, or Archived.
-        
-        Strict active matching: only models configured in ov.conf belong to active categories.
-        """
+    @staticmethod
+    def _get_model_domain(model_name: str) -> str:
+        """Classify any model into its functional domain: Rerank, Embedding, Compressor, or VLM."""
         nl = model_name.strip().lower()
+        if "rerank" in nl or "rer" in nl:
+            return "Rerank"
+        if "embed" in nl or "emb" in nl:
+            return "Embedding"
+        if "lingua" in nl or "compress" in nl:
+            return "Compressor"
+        return "VLM"
 
-        # Strict active matching
-        for cat, (act_model, _) in active_map.items():
-            act_lower = act_model.strip().lower()
-            if nl == act_lower:
-                return cat
-            # Handle canonical alias for reranker
-            if cat == "Rerank" and act_lower in ("qwen3-vl-rer", "qwen3-vl-reranker") and nl in ("qwen3-vl-rer", "qwen3-vl-reranker"):
-                return cat
-            if cat == "Compressor" and ("llmlingua-2" in act_lower and "llmlingua-2" in nl):
-                return cat
-
-        # All other models belong to Archived
-        return "Archived"
+    def _is_active_model(self, model_name: str, domain: str, active_map: Dict[str, Tuple[str, str]]) -> bool:
+        """Check if model matches the active model configured for this domain."""
+        if domain not in active_map:
+            return False
+        act_model, _ = active_map[domain]
+        act_lower = act_model.strip().lower()
+        nl = model_name.strip().lower()
+        if nl == act_lower:
+            return True
+        if domain == "Rerank" and act_lower in ("qwen3-vl-rer", "qwen3-vl-reranker") and nl in ("qwen3-vl-rer", "qwen3-vl-reranker"):
+            return True
+        if domain == "Compressor" and ("llmlingua-2" in act_lower and "llmlingua-2" in nl):
+            return True
+        return False
 
     def _get_grouped_rows(self) -> Dict[str, List[Dict[str, Any]]]:
-        """Group all usage into active categories and Archived section."""
+        """Group usage by domain (VLM, Embedding, Rerank, Compressor).
+
+        For each domain:
+        - Row 0: Active configured model (always present, even with 0 calls).
+        - Row 1 (if historical models exist): Consolidated historical summary row.
+        """
         active_identities = self._get_active_identities()
         all_records = self._collect_all_records()
+
+        # Bucket all records by functional domain
+        domain_records: Dict[str, List[Dict[str, Any]]] = {
+            "VLM": [],
+            "Embedding": [],
+            "Rerank": [],
+            "Compressor": [],
+        }
+
+        for row in all_records.values():
+            domain = self._get_model_domain(row["Model"])
+            domain_records[domain].append(row)
 
         groups: Dict[str, List[Dict[str, Any]]] = {
             "VLM": [],
             "Embedding": [],
             "Rerank": [],
             "Compressor": [],
-            "Archived": [],
         }
 
-        matched_keys = set()
-        for key, row in all_records.items():
-            cat = self._classify_model(row["Model"], active_identities)
-            groups[cat].append(row)
-            matched_keys.add(key)
+        for cat in ("VLM", "Embedding", "Rerank", "Compressor"):
+            cat_records = domain_records[cat]
+            active_row: Optional[Dict[str, Any]] = None
+            historical_rows: List[Dict[str, Any]] = []
 
-        # Guarantee that configured active models always appear even with 0 calls
-        for cat, (act_model, act_prov) in active_identities.items():
-            has_active_row = any(
-                r["Model"].lower() == act_model.lower() or act_model.lower() in r["Model"].lower()
-                for r in groups[cat]
-            )
-            if not has_active_row:
-                groups[cat].insert(
-                    0,
-                    {
+            for r in cat_records:
+                if self._is_active_model(r["Model"], cat, active_identities):
+                    if active_row is None:
+                        active_row = dict(r)
+                    else:
+                        active_row["Calls"] += r["Calls"]
+                        active_row["Prompt"] += r["Prompt"]
+                        active_row["Completion"] += r["Completion"]
+                        active_row["Total"] += r["Total"]
+                        if r["Last Updated"] != "--":
+                            active_row["Last Updated"] = r["Last Updated"]
+                else:
+                    historical_rows.append(r)
+
+            # Guarantee active model is present
+            if cat in active_identities:
+                act_model, act_prov = active_identities[cat]
+                if active_row is None:
+                    active_row = {
                         "Model": act_model,
                         "Provider": act_prov,
                         "Calls": 0,
@@ -249,16 +279,34 @@ class ModelsObserver(BaseObserver):
                         "Completion": 0,
                         "Total": 0,
                         "Last Updated": "--",
-                    },
-                )
+                    }
+                groups[cat].append(active_row)
+            elif active_row is not None:
+                groups[cat].append(active_row)
 
-        # Sort archived models by total tokens descending
-        groups["Archived"].sort(key=lambda r: r["Total"], reverse=True)
+            # Consolidate all historical models in this category into a single summary row
+            if historical_rows:
+                h_calls = sum(r["Calls"] for r in historical_rows)
+                h_prompt = sum(r["Prompt"] for r in historical_rows)
+                h_completion = sum(r["Completion"] for r in historical_rows)
+                h_total = sum(r["Total"] for r in historical_rows)
+                valid_ts = [r["Last Updated"] for r in historical_rows if r.get("Last Updated") and r["Last Updated"] != "--"]
+                latest_ts = max(valid_ts) if valid_ts else "--"
+
+                groups[cat].append({
+                    "Model": f"历史已下线模型汇总 ({len(historical_rows)}个模型)",
+                    "Provider": "historical",
+                    "Calls": h_calls,
+                    "Prompt": h_prompt,
+                    "Completion": h_completion,
+                    "Total": h_total,
+                    "Last Updated": latest_ts,
+                })
 
         return groups
 
     def get_status_table(self) -> str:
-        """Format usage tables for active models and archived models."""
+        """Format usage tables for active models and their historical summaries."""
         from tabulate import tabulate
 
         grouped = self._get_grouped_rows()
@@ -270,10 +318,6 @@ class ModelsObserver(BaseObserver):
             if cat in active_identities and grouped[cat]:
                 lines.append(f"\n{cat} Models:")
                 lines.append(tabulate(grouped[cat], headers="keys", tablefmt="pretty"))
-
-        if grouped["Archived"]:
-            lines.append("\nArchived Models:")
-            lines.append(tabulate(grouped["Archived"], headers="keys", tablefmt="pretty"))
 
         return "\n".join(lines).strip() if lines else "No model usage data available."
 
@@ -303,8 +347,7 @@ class ModelsObserver(BaseObserver):
         return rows if rows else None
 
     def _get_archived_usage(self) -> Optional[List[Dict[str, Any]]]:
-        rows = self._get_grouped_rows().get("Archived", [])
-        return rows if rows else None
+        return None
 
     def __str__(self) -> str:
         return self.get_status_table()
