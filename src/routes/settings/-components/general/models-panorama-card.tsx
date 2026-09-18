@@ -31,7 +31,7 @@ function ModelTile({
               : 'border-border text-muted-foreground',
           )}
         >
-          {item ? 'Ready' : '--'}
+          {item ? t('hub.models.healthy') : '--'}
         </Badge>
       </div>
       <div

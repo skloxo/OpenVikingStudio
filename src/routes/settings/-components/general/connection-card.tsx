@@ -38,6 +38,27 @@ function getCapabilityIcon(result: CapabilityProbeResult | undefined) {
   return <CircleDashedIcon className="size-4" />
 }
 
+function localizeCapabilityDetail(
+  detail: string | undefined,
+  t: (key: string, options?: { defaultValue?: string }) => string,
+): string {
+  if (!detail) return ''
+  switch (detail) {
+    case 'Root admin control available':
+      return t('health.detail.rootAdminOk', { defaultValue: '具备根管理员控制权限' })
+    case 'Account admin control available':
+      return t('health.detail.accountAdminOk', { defaultValue: '具备租户管理员控制权限' })
+    case 'Tenant data access available':
+      return t('health.detail.dataAccessOk', { defaultValue: '具备租户数据读写访问权限' })
+    case 'Tenant data access denied':
+      return t('health.detail.dataAccessDenied', { defaultValue: '租户数据访问权限被拒绝' })
+    case 'A root or account-admin API key is required':
+      return t('health.detail.adminKeyRequired', { defaultValue: '需要根凭证或租户管理凭证' })
+    default:
+      return detail
+  }
+}
+
 function CapabilityStatus({
   isLoading,
   label,
@@ -70,7 +91,7 @@ function CapabilityStatus({
         </div>
         {result?.detail ? (
           <p className="mt-1 truncate text-xs text-muted-foreground">
-            {result.detail}
+            {localizeCapabilityDetail(result.detail, t)}
           </p>
         ) : null}
       </div>
@@ -93,8 +114,11 @@ function UserApiKeyInput({
   userId: string
   value: string
 }) {
+  const { t } = useTranslation('settings')
   const hasIdentity = Boolean(accountId.trim() && userId.trim())
-  const identity = hasIdentity ? `${accountId}/${userId}` : '未选择身份'
+  const identity = hasIdentity
+    ? `${accountId}/${userId}`
+    : t('fields.noIdentity', { defaultValue: '未选择身份' })
 
   return (
     <div className="flex h-9 w-full min-w-0 items-center gap-2 rounded-md border border-input bg-transparent bg-clip-padding px-2.5 shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30">

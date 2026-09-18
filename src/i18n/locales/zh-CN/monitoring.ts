@@ -39,7 +39,7 @@ export const monitoring = {
     },
     metricsTiles: {
       sectionTitle: '内核深层观测指标',
-      liveBadge: '16 项指标实时监测',
+      liveBadge: '{{count}} 项指标实时监测',
       httpSuccessRate: {
         title: 'HTTP 请求成功率',
         subText: '99.9% 目标 SLA',
@@ -253,6 +253,7 @@ export const monitoring = {
       promptTokens: '输入 Token (Prompt)',
       completionTokens: '输出 Token (Completion)',
       totalTokens: 'Token 总数',
+      lastUpdated: '最后更新时间',
       totalCalls: '总调用数',
       totalTokensTile: '总 Token 消耗量',
       activeModels: '活跃模型数',

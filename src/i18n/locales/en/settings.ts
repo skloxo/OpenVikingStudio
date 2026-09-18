@@ -34,6 +34,9 @@ export const settings = {
         defaultSkillTarget: 'Default Skill Ingest Target',
         storageEngine: 'Storage Engine',
         vikingfsDesc: 'AGFS tiered storage and atomic snapshot protection enabled',
+        rootMountDesc: 'AGFS Root Mount',
+        resourceTargetDesc: 'Auto Ingest Namespace',
+        skillTargetDesc: 'Skill Protocol Storage',
       },
       privacy: {
         title: 'Privacy & Data Redaction Hub',
@@ -226,6 +229,13 @@ export const settings = {
         error: 'Error',
         ok: 'OK',
         skipped: 'Not checked',
+      },
+      detail: {
+        rootAdminOk: 'Root admin control available',
+        accountAdminOk: 'Account admin control available',
+        dataAccessOk: 'Tenant data access available',
+        dataAccessDenied: 'Tenant data access denied',
+        adminKeyRequired: 'A root or account-admin API key is required',
       },
     },
     keyResult: {

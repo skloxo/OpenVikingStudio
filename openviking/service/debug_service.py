@@ -149,10 +149,10 @@ class ObserverService:
                 logger.debug(f"Failed to get_embedder: {e}")
             if embedding_instance is None:
                 dense_model = (
-                    getattr(self._config.embedding.dense, "model", "Qwen3-Embedding-8B")
+                    getattr(self._config.embedding.dense, "model", None)
                     if hasattr(self._config.embedding, "dense")
-                    else "Qwen3-Embedding-8B"
-                )
+                    else None
+                ) or getattr(self._config.embedding, "model", "wemm-embedding-9b")
                 dense_provider = (
                     getattr(self._config.embedding.dense, "provider", "openai")
                     if hasattr(self._config.embedding, "dense")

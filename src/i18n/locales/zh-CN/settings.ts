@@ -34,6 +34,9 @@ export const settings = {
         defaultSkillTarget: '默认技能写入目标',
         storageEngine: '底层存储引擎',
         vikingfsDesc: 'AGFS 分层存储与原子快照防护机制已开启',
+        rootMountDesc: 'AGFS 根挂载点',
+        resourceTargetDesc: '自动化导入命名空间',
+        skillTargetDesc: '技能协议持久化存储',
       },
       privacy: {
         title: '隐私与安全脱敏中枢',
@@ -223,6 +226,13 @@ export const settings = {
         error: '异常',
         ok: '正常',
         skipped: '未检查',
+      },
+      detail: {
+        rootAdminOk: '具备根管理员控制权限',
+        accountAdminOk: '具备租户管理员控制权限',
+        dataAccessOk: '具备租户数据读写访问权限',
+        dataAccessDenied: '租户数据访问权限被拒绝',
+        adminKeyRequired: '需要根凭证或租户管理凭证',
       },
     },
     keyResult: {

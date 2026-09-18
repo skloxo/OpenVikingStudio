@@ -2,7 +2,6 @@ import * as React from 'react'
 import {
   ActivityIcon,
   CpuIcon,
-  DatabaseIcon,
   GaugeIcon,
   HelpCircleIcon,
   LayersIcon,
@@ -29,14 +28,13 @@ interface DeepMetricsGridProps {
 interface MetricTileConfig {
   id: string
   titleKey: string
-  icon: React.ElementType
+  icon: React.ComponentType<{ className?: string }>
   value: string
   unit?: string
   subText?: string
   badgeText?: string
   badgeVariant?: 'positive' | 'negative' | 'neutral'
   tooltipKey: string
-  isMissing?: boolean
   category: 'physics' | 'engine'
 }
 
@@ -45,7 +43,7 @@ export function DeepMetricsGrid({ metrics, isLoading }: DeepMetricsGridProps) {
 
   const tileConfigs: MetricTileConfig[] = React.useMemo(() => {
     return [
-      // === Section 1: Physics & Retrieval Metrics (Tile 1~8) ===
+      // === Section 1: Physics & Retrieval Metrics ===
       {
         id: 'http-success-rate',
         titleKey: 'metricsTiles.httpSuccessRate.title',
@@ -56,18 +54,6 @@ export function DeepMetricsGrid({ metrics, isLoading }: DeepMetricsGridProps) {
         badgeText: t('metricsTiles.httpSuccessRate.badgeText', { defaultValue: 'SLA 达标' }),
         badgeVariant: 'positive',
         tooltipKey: 'metricsTiles.httpSuccessRate.tooltip',
-        category: 'physics',
-      },
-      {
-        id: 'vector-count',
-        titleKey: 'metricsTiles.vectorCount.title',
-        icon: DatabaseIcon,
-        value: metrics.vectorCount !== null ? metrics.vectorCount.toLocaleString() : '--',
-        unit: '条',
-        subText: t('metricsTiles.vectorCount.subText', { defaultValue: 'VikingDB 挂载 context 集合' }),
-        badgeText: t('metricsTiles.vectorCount.badgeText', { defaultValue: '全量就位' }),
-        badgeVariant: 'positive',
-        tooltipKey: 'metricsTiles.vectorCount.tooltip',
         category: 'physics',
       },
       {
@@ -208,7 +194,9 @@ export function DeepMetricsGrid({ metrics, isLoading }: DeepMetricsGridProps) {
         icon: ZapIcon,
         value: metrics.vectorizationRate !== null ? metrics.vectorizationRate.toLocaleString() : '--',
         unit: 'Vec/s',
-        subText: t('metricsTiles.vectorizationRate.subText', { defaultValue: 'OpenViking EMB 吞吐效率' }),
+        subText: metrics.activeModels.embedding
+          ? `${metrics.activeModels.embedding} · 本地GPU加速`
+          : t('metricsTiles.vectorizationRate.subText', { defaultValue: 'OpenViking EMB 吞吐效率' }),
         badgeText: t('metricsTiles.vectorizationRate.badgeText', { defaultValue: '高吞吐' }),
         badgeVariant: 'positive',
         tooltipKey: 'metricsTiles.vectorizationRate.tooltip',
@@ -226,7 +214,7 @@ export function DeepMetricsGrid({ metrics, isLoading }: DeepMetricsGridProps) {
               {t('metricsTiles.sectionTitle', { defaultValue: '内核深层观测指标' })}
             </h2>
             <Badge variant="outline" className="font-mono text-xs font-normal border-border/60">
-              {t('metricsTiles.liveBadge', { defaultValue: `${tileConfigs.length} 项指标实时监测` })}
+              {t('metricsTiles.liveBadge', { defaultValue: `${tileConfigs.length} 项指标实时监测`, count: tileConfigs.length })}
             </Badge>
           </div>
         </div>

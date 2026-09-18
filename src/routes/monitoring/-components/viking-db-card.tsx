@@ -214,7 +214,9 @@ export function VikingDbCard({ status, isHealthy }: VikingDbCardProps) {
                         : 'bg-destructive/10 text-destructive',
                     )}
                   >
-                    {row.status}
+                    {/ok|normal|healthy/i.test(row.status)
+                      ? t('vikingdb.healthy')
+                      : row.status || t('vikingdb.unhealthy')}
                   </span>
                 </span>
               </div>

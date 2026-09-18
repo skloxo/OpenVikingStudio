@@ -39,6 +39,12 @@ TEACHER_MODEL_PATTERNS = [
     re.compile(r"claude-opus", re.IGNORECASE),
 ]
 
+# 受限/避免在工兵任务中调用的模型 (小米 MiMO 系列：商业付费 Token 且极易 429 限速)
+RESTRICTED_MODEL_PATTERNS = [
+    re.compile(r"mimo", re.IGNORECASE),
+    re.compile(r"xiaomimimo", re.IGNORECASE),
+]
+
 
 def is_teacher_model(model_name: str) -> bool:
     """判定是否为昂贵受限的‘教师模型’ (Teacher Model)"""
@@ -47,18 +53,31 @@ def is_teacher_model(model_name: str) -> bool:
     name = model_name.strip()
     return any(p.search(name) for p in TEACHER_MODEL_PATTERNS)
 
+
+def is_restricted_model(model_name: str) -> bool:
+    """判定是否为工兵任务受限模型 (如商业付费且易限速的小米 MiMO)"""
+    if not model_name:
+        return False
+    name = model_name.strip()
+    return any(p.search(name) for p in RESTRICTED_MODEL_PATTERNS)
+
+
 MODEL_FALLBACK_CHAINS = {
-    # 👷 工兵模型池（海量 Token，随便用，严禁混入昂贵教师模型）
+    # 👷 工兵模型池（海量 Token，免费高吞吐抗造，由 CPA 自动负载均衡与多通道容灾）
+    # 真实模型名备选：dots3-note-prev, agnes-3.0-flash, DeepSeek-V4-Flash-Vision-Exp, Qwen3.8-Flash-Next, DeepSeek-V4-Flash, sensenova-6.8-flash-lite
     "worker": [
-        {"model": "qwen3.8-flash-next", "timeout": 20, "slice": 25000},
-        {"model": "glm-5.3-flash", "timeout": 20, "slice": 25000},
-        {"model": "mimo-v2.5-pro", "timeout": 25, "slice": 30000},
-        {"model": "deepseek-v4-flash", "timeout": 20, "slice": 20000},
+        {"model": "mux-flash", "timeout": 20, "slice": 25000},
+        {"model": "dots3-note-prev", "timeout": 20, "slice": 25000},
+        {"model": "agnes-3.0-flash", "timeout": 20, "slice": 25000},
+        {"model": "Qwen3.8-Flash-Next", "timeout": 20, "slice": 25000},
+        {"model": "DeepSeek-V4-Flash", "timeout": 20, "slice": 20000},
+        {"model": "sensenova-6.8-flash-lite", "timeout": 20, "slice": 20000},
     ],
-    # 🧠 教师模型池（极昂贵，仅限重大死锁或终极架构仲裁，严禁滥用）
+    # 🧠 教师模型池（极昂贵，仅限重大死锁、终极架构仲裁或多脑终审会诊，严禁滥用）
     "mentor": [
         {"model": "claude-opus-5", "timeout": 25},
         {"model": "gpt-5.6", "timeout": 25},
+        {"model": "deepseek-v4-pro", "timeout": 25},
     ],
 }
 
@@ -72,6 +91,14 @@ SYSTEM_PROMPTS = {
     "tradeoff": "你作为决策仲裁专家。请客观输出核心维度对比表（复杂度、运行时开销、破坏性、可维护性），指出各自最大隐患与终审建议。",
     "worker": "你是一个极速、高密度的信息脱水与审查工兵。请按指令处理输入，直接输出高度结构化、无客套废话的脱水成果物。",
 }
+
+
+WORKER_MODEL_HINT = (
+    "💡 正确工兵模型：\n"
+    "  • 平时统一调用工兵别名：'mux-flash'\n"
+    "  • 需区分物理真实模型时：'dots3-note-prev', 'agnes-3.0-flash', 'DeepSeek-V4-Flash-Vision-Exp', "
+    "'Qwen3.8-Flash-Next', 'DeepSeek-V4-Flash', 'sensenova-6.8-flash-lite'"
+)
 
 
 def _load_cpa_key() -> str:
@@ -161,7 +188,17 @@ def register_cpa_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Any]:
                     f"🚫 【CPA 教师模型守卫拦截 (Teacher Model Guard)】\n"
                     f"检测到试图在 '{mode}' 模式下调用昂贵教师模型 '{model}'！\n"
                     "物理契约：红蓝对抗与信息脱水属于工兵任务，Token 消耗巨大，严禁使用 GPT/Claude 教师模型！\n"
-                    "💡 纠偏建议：请改用工兵模型池 (如 qwen3.8-flash-next, glm-5.3-flash, mimo-v2.5-pro, deepseek-v4-flash, xhs 工兵模型) 或留空 model 参数。"
+                    f"{WORKER_MODEL_HINT}"
+                )
+
+        if model and is_restricted_model(model):
+            if mode in ("adversarial", "worker", "scan", "extract"):
+                _record_harness_call("restricted_guard_intercept", actor_peer="cpa")
+                return _make_error(
+                    f"🚫 【CPA 受限模型守卫拦截 (Restricted Model Guard)】\n"
+                    f"检测到试图在 '{mode}' 工兵模式下调用受限模型 '{model}'！\n"
+                    "物理契约：小米 MiMO 属于商业付费 API 且极易 429 限速，严禁用于工兵杂活！\n"
+                    f"{WORKER_MODEL_HINT}"
                 )
 
         full_prompt = f"【主题/方案】：\n{topic}\n"
@@ -245,7 +282,16 @@ def register_cpa_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Any]:
                 f"🚫 【CPA 教师模型守卫拦截 (Teacher Model Guard)】\n"
                 f"检测到试图在工兵多路并发 (fanout) 中调用昂贵教师模型 '{worker_model}'！\n"
                 "物理契约：工兵多路并发严禁混入任何昂贵教师模型 (GPT / Claude)！\n"
-                "💡 纠偏建议：工兵并发请使用工兵模型池 (如 qwen3.8-flash-next, glm-5.3-flash, mimo-v2.5-pro, deepseek-v4-flash, xhs 等)。"
+                f"{WORKER_MODEL_HINT}"
+            )
+
+        if worker_model and is_restricted_model(worker_model):
+            _record_harness_call("restricted_guard_intercept", actor_peer="cpa")
+            return _make_error(
+                f"🚫 【CPA 受限模型守卫拦截 (Restricted Model Guard)】\n"
+                f"检测到试图在工兵多路并发 (fanout) 中调用受限模型 '{worker_model}'！\n"
+                "物理契约：小米 MiMO 属于商业付费 API 且极易 429 限速，严禁用于工兵批量任务！\n"
+                f"{WORKER_MODEL_HINT}"
             )
 
         actual_concurrency = max(1, min(concurrency, 15))

@@ -24,21 +24,30 @@ export function parseObserverStatus(status: string): ObserverStatusBlock[] {
   const blocks: ObserverStatusBlock[] = []
 
   for (let index = 0; index < lines.length; ) {
-    if (lines[index].startsWith('+') && lines[index + 1]?.startsWith('|')) {
+    const line = lines[index]
+
+    // Filter out ASCII divider lines like "==========" or "----------"
+    if (/^[=\-_*#]{4,}$/.test(line)) {
+      index += 1
+      continue
+    }
+
+    if (line.startsWith('+') && lines[index + 1]?.startsWith('|')) {
       const rows: string[][] = []
       index += 1
 
       while (index < lines.length) {
-        const line = lines[index]
-        if (line.startsWith('|')) {
-          rows.push(parseRow(line))
-        }
-        index += 1
-        if (
-          line.startsWith('+') &&
-          !lines[index]?.startsWith('|') &&
-          !lines[index]?.startsWith('+')
-        ) {
+        const curLine = lines[index]
+        if (curLine.startsWith('|')) {
+          rows.push(parseRow(curLine))
+          index += 1
+        } else if (curLine.startsWith('+')) {
+          index += 1
+          // If the next line does not start with '|', this table has ended.
+          if (!lines[index]?.startsWith('|')) {
+            break
+          }
+        } else {
           break
         }
       }
@@ -55,7 +64,7 @@ export function parseObserverStatus(status: string): ObserverStatusBlock[] {
 
     blocks.push({
       kind: 'text',
-      value: lines[index],
+      value: line,
     })
     index += 1
   }
