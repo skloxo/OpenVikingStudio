@@ -51,8 +51,14 @@ export function DeepMetricsGrid({ metrics, isLoading }: DeepMetricsGridProps) {
         value: metrics.httpSuccessRate !== null ? `${metrics.httpSuccessRate.toFixed(2)}` : '--',
         unit: '%',
         subText: t('metricsTiles.httpSuccessRate.subText', { defaultValue: '99.9% 目标 SLA' }),
-        badgeText: t('metricsTiles.httpSuccessRate.badgeText', { defaultValue: 'SLA 达标' }),
-        badgeVariant: 'positive',
+        badgeText: metrics.httpSuccessRate !== null
+          ? (metrics.httpSuccessRate >= 99.0
+              ? t('metricsTiles.httpSuccessRate.badgeText', { defaultValue: 'SLA 达标' })
+              : t('metricsTiles.httpSuccessRate.subSlaBadge', { defaultValue: 'SLA 预警' }))
+          : t('common.pending', { defaultValue: '等待请求' }),
+        badgeVariant: metrics.httpSuccessRate !== null
+          ? (metrics.httpSuccessRate >= 99.0 ? 'positive' : 'negative')
+          : 'neutral',
         tooltipKey: 'metricsTiles.httpSuccessRate.tooltip',
         category: 'physics',
       },
