@@ -267,7 +267,7 @@ export function HGRAGCompassCockpit() {
             <span>South (下钻)</span>
           </Button>
 
-          <p className="text-[11px] text-muted-foreground/80 text-center mt-1">
+          <p className="text-xs text-muted-foreground/80 text-center mt-1">
             点击罗盘方向漫游，实体全路径大类 100% 自洽挂载
           </p>
         </div>
@@ -281,7 +281,7 @@ export function HGRAGCompassCockpit() {
               </Badge>
               <h4 className="text-xs font-semibold text-foreground">{nodeData?.title ?? '加载中...'}</h4>
             </div>
-            <span className="font-mono text-[11px] text-muted-foreground">{nodeData?.node_id}</span>
+            <span className="font-mono text-xs text-muted-foreground">{nodeData?.node_id}</span>
           </div>
 
           {/* Self-contained Breadcrumb Lineage */}
@@ -298,7 +298,7 @@ export function HGRAGCompassCockpit() {
           </div>
 
           {/* Directional Pointers Summary */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-1 text-[11px] font-mono text-muted-foreground">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-1 text-xs font-mono text-muted-foreground">
             <div>Parent: {nodeData?.parent_id ? <span className="text-foreground">{nodeData.parent_id}</span> : 'Root'}</div>
             <div>Children: <span className="text-foreground">{nodeData ? `${nodeData.children_ids.length} 项` : '0 项'}</span></div>
             <div>Prev: {nodeData?.sibling_prev_id ? <span className="text-foreground">{nodeData.sibling_prev_id}</span> : 'None'}</div>

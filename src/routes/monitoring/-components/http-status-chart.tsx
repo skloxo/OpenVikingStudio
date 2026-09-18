@@ -19,14 +19,14 @@ export interface HttpStatusChartProps {
   isHealthy?: boolean
 }
 
-function getStatusCodeInfo(code: number): { color: string; label: string } {
+export function getStatusCodeInfo(code: number): { color: string; label: string } {
   switch (code) {
     case 200:
-      return { color: '#22c55e', label: 'HTTP 200 (成功)' }
+      return { color: '#06b6d4', label: 'HTTP 200 (成功)' }
     case 201:
-      return { color: '#4ade80', label: 'HTTP 201 (已创建)' }
+      return { color: '#22d3ee', label: 'HTTP 201 (已创建)' }
     case 204:
-      return { color: '#86efac', label: 'HTTP 204 (无内容)' }
+      return { color: '#67e8f9', label: 'HTTP 204 (无内容)' }
     case 304:
       return { color: '#3b82f6', label: 'HTTP 304 (缓存未修改)' }
     case 400:
@@ -44,7 +44,7 @@ function getStatusCodeInfo(code: number): { color: string; label: string } {
     case 503:
       return { color: '#be123c', label: 'HTTP 503 (服务不可用)' }
     default:
-      if (code >= 200 && code < 300) return { color: '#22c55e', label: `HTTP ${code} (成功)` }
+      if (code >= 200 && code < 300) return { color: '#06b6d4', label: `HTTP ${code} (成功)` }
       if (code >= 300 && code < 400) return { color: '#3b82f6', label: `HTTP ${code} (重定向)` }
       if (code >= 400 && code < 500) return { color: '#f59e0b', label: `HTTP ${code} (客户端错误)` }
       return { color: '#f43f5e', label: `HTTP ${code} (服务端错误)` }
@@ -58,6 +58,9 @@ export function HttpStatusChart({
   isHealthy = true,
 }: HttpStatusChartProps) {
   const { t } = useTranslation('monitoringPage')
+
+  // HTTP 服务健康度判定：优先基于实际成功率（基准 >= 90% 为达标健康），消除全系统级无关锁存引起的假报错
+  const isActuallyHealthy = isHealthy && (total === 0 || successRate >= 0.90)
 
   // 精准匹配 successRate 与 total 全量数据的比例推算逻辑
   const chartData: ExactStatusCodeItem[] = React.useMemo(() => {
@@ -108,25 +111,25 @@ export function HttpStatusChart({
   const formattedSuccessRate = (successRate * 100).toFixed(1)
 
   return (
-    <Card className="flex flex-col gap-4 p-4 shadow-none transition-colors hover:border-primary/30">
+    <Card className="flex flex-col gap-4 p-4 shadow-none transition-colors hover:border-cyan-500/30">
       <div className="flex items-center justify-between">
         <CardTitle className="text-base font-semibold">{t('httpStatusCard.title')}</CardTitle>
         <Badge
           variant="outline"
           className={cn(
-            'gap-1 font-normal',
-            isHealthy
-              ? 'border-primary/20 bg-primary/5 text-primary'
-              : 'border-destructive/30 text-destructive',
+            'gap-1.5 font-mono text-xs font-normal',
+            isActuallyHealthy
+              ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400'
+              : 'border-destructive/30 bg-destructive/10 text-destructive',
           )}
         >
           <span
             className={cn(
               'size-1.5 rounded-full',
-              isHealthy ? 'bg-primary' : 'bg-destructive',
+              isActuallyHealthy ? 'bg-cyan-500' : 'bg-destructive',
             )}
           />
-          {isHealthy ? t('httpStatusCard.healthy') : t('httpStatusCard.unhealthy')}
+          {isActuallyHealthy ? t('httpStatusCard.healthy') : t('httpStatusCard.unhealthy')}
         </Badge>
       </div>
 
@@ -177,7 +180,7 @@ export function HttpStatusChart({
                 </Pie>
                 <Tooltip
                   content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
+                    if (active && payload.length > 0) {
                       const data = payload[0].payload as ExactStatusCodeItem
                       const percent = sampleTotal > 0 ? ((data.count / sampleTotal) * 100).toFixed(1) : '100'
                       return (
