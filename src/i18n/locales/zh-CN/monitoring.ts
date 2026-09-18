@@ -339,6 +339,46 @@ export const monitoring = {
       currentIdentity: '当前范围：当前 API key 身份',
       currentIdentityWithName: '当前范围：当前 API key 身份（{{identity}}）',
     },
+    viewMode: {
+      frequency: '接口调用热度 & 沉睡审计',
+      stream: '实时请求审计流水',
+    },
+    frequency: {
+      title: '接口热度温度计 & 沉睡功能审计',
+      subtitle: '全量监控服务端接口调用频次、时延分布与占比，精准揪出零调用沉睡接口，为性能调优与产品下线提供数据依据。',
+      window: {
+        all: '全量历史',
+        '24h': '近 24 小时',
+        '7d': '近 7 天',
+        '30d': '近 30 天',
+      },
+      kpi: {
+        activeEndpoints: '活跃端点数',
+        dormantEndpoints: '沉睡功能数',
+        activeRate: '端点活跃率',
+        totalEndpoints: '注册端点总量',
+      },
+      tabs: {
+        hot: '🔥 高频热点接口排行榜',
+        dormant: '💤 沉睡/零调用功能审计',
+        category: '📊 功能域调用分布',
+      },
+      table: {
+        route: '端点路径',
+        method: '方法',
+        category: '功能域',
+        calls: '调用量',
+        share: '调用占比',
+        avgDuration: '平均耗时',
+        errorRate: '错误率',
+        lastCalled: '最后调用',
+        recommendation: '审计建议',
+        methods: '支持方法',
+      },
+      dormantZeroAlert: '所有业务端点均在活跃运转，暂无完全沉睡接口。',
+      dormantTips: '提示：沉睡端点表示在当前选定时间窗口内调用量为 0 的业务接口，可供评估是否有被 Agent 实际调用或属于可下线特性。',
+    },
+
     status: {
       error: 'ERR',
       pending: 'PENDING',

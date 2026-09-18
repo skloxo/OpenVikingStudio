@@ -1,10 +1,15 @@
-import { getConsoleAudit, getOvResult } from '#/lib/ov-client'
+import { getConsoleAudit, getOvResult, ovClient } from '#/lib/ov-client'
 import type {
   ConsoleAuditQuery,
   ConsoleAuditResult,
 } from '@ov-server/api/v1/console'
 
-import type { AuditFilters } from '../-types/audit'
+import type {
+  AuditFilters,
+  EndpointFrequencyResult,
+  EndpointFrequencyWindow,
+} from '../-types/audit'
+
 
 export function buildAuditQuery(
   filters: AuditFilters,
@@ -56,3 +61,15 @@ export function fetchAuditLogs(
     }),
   )
 }
+
+export async function fetchEndpointFrequency(
+  window: EndpointFrequencyWindow = 'all',
+): Promise<EndpointFrequencyResult> {
+  return getOvResult<EndpointFrequencyResult>(
+    ovClient.client.get({
+      url: '/api/v1/console/audit/frequency',
+      query: { window },
+    }),
+  )
+}
+

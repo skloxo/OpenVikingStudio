@@ -4,7 +4,8 @@
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
+
 
 from fastapi import APIRouter, Query, Request
 
@@ -137,7 +138,42 @@ async def audit_logs(
     return _ok_response(result)
 
 
+def _extract_registered_routes(app: Any) -> list[dict[str, Any]]:
+    routes: list[dict[str, Any]] = []
+    for r in getattr(app, "routes", []):
+        path = getattr(r, "path", None)
+        methods = getattr(r, "methods", None)
+        if path:
+            routes.append(
+                {
+                    "path": path,
+                    "methods": sorted(list(methods)) if methods else ["GET"],
+                }
+            )
+    return routes
+
+
+@router.get("/audit/frequency")
+async def endpoint_frequency(
+    request: Request,
+    window: str = Query("all", pattern="^(24h|7d|30d|all)$"),
+    _ctx: RequestContext = require_role(Role.ROOT, Role.ADMIN, Role.USER),
+):
+    """Return endpoint invocation frequency stats, hot rankings, and dormant diagnostics."""
+    service = _runtime_service(request)
+    if service is None:
+        return _disabled_response()
+    registered_routes = _extract_registered_routes(request.app)
+    result = await service.endpoint_frequency(
+        ctx=_ctx,
+        window=window,
+        registered_routes=registered_routes,
+    )
+    return _ok_response(result)
+
+
 @router.get("/peers")
+
 async def peer_agents(
     request: Request,
     _ctx: RequestContext = require_role(Role.ROOT, Role.ADMIN, Role.USER),
