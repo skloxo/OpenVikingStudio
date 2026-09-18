@@ -51,6 +51,7 @@ from openviking.server.routers import (
     openviking_assets_router,
     pack_router,
     privacy_configs_router,
+    queue_router,
     quarantine_router,
     relations_router,
     resources_router,
@@ -658,6 +659,7 @@ def create_app(
     app.include_router(pack_router)
     app.include_router(debug_router)
     app.include_router(observer_router)
+    app.include_router(queue_router)
     app.include_router(openviking_assets_router)
     app.include_router(metrics_router)
     app.include_router(tasks_router)

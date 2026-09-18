@@ -10,7 +10,7 @@ import atexit
 import threading
 import time
 import traceback
-from typing import Any, Dict, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Set, Union
 
 from openviking.service.task_work_index import TaskWorkIndex
 from openviking_cli.utils.logger import get_logger
@@ -37,18 +37,7 @@ def init_queue_manager(
     max_concurrent_add_resource: int = 4,
     max_concurrent_session_commit: int = DEFAULT_MAX_CONCURRENT_SESSION_COMMIT,
 ) -> "QueueManager":
-    """Initialize QueueManager singleton.
-
-    Args:
-        agfs: Pre-initialized AGFS client (HTTP or Binding).
-        timeout: Request timeout in seconds.
-        mount_point: Path where QueueFS is mounted.
-        max_concurrent_embedding: Max concurrent embedding tasks.
-        max_concurrent_semantic: Max concurrent semantic node work.
-        max_concurrent_external_parse: Max concurrent ExternalParse tasks.
-        max_concurrent_add_resource: Max concurrent AddResource tasks.
-        max_concurrent_session_commit: Max concurrent SessionCommit tasks.
-    """
+    """Initialize QueueManager singleton."""
     global _instance
     _instance = QueueManager(
         agfs=agfs,
@@ -98,10 +87,7 @@ class QueueManager:
         max_concurrent_add_resource: int = 4,
         max_concurrent_session_commit: int = DEFAULT_MAX_CONCURRENT_SESSION_COMMIT,
     ):
-        """Initialize QueueManager."""
-        self._agfs = agfs
-        self.timeout = timeout
-        self.mount_point = mount_point
+        self._agfs, self.timeout, self.mount_point = agfs, timeout, mount_point
         self._max_concurrent_embedding = max_concurrent_embedding
         self._max_concurrent_semantic = max_concurrent_semantic
         self._max_concurrent_external_parse = max_concurrent_external_parse
@@ -427,12 +413,68 @@ class QueueManager:
         return {name: await q.get_status() for name, q in self._queues.items()}
 
     def has_errors(self, queue_name: Optional[str] = None) -> bool:
-        """Check if there are errors."""
+        """Check if there are active, unhealthy error conditions."""
         if queue_name:
-            if queue_name not in self._queues:
-                return False
-            return self._queues[queue_name]._error_count > 0
-        return any(q._error_count > 0 for q in self._queues.values())
+            q = self._queues.get(queue_name)
+            return q.has_errors() if q else False
+        return any(q.has_errors() for q in self._queues.values())
+
+    def is_healthy(self, queue_name: Optional[str] = None) -> bool:
+        """Check if the queue system is healthy (no active error condition)."""
+        if queue_name:
+            q = self._queues.get(queue_name)
+            return q.is_healthy() if q else True
+        return all(q.is_healthy() for q in self._queues.values())
+
+    async def get_dlq(
+        self, queue_name: Optional[str] = None, include_retried: bool = False, limit: int = 100
+    ) -> List[Dict[str, Any]]:
+        """Audit dead-letter queue entries across queues."""
+        if queue_name:
+            q = self._queues.get(queue_name)
+            return q.get_dlq(include_retried=include_retried, limit=limit) if q else []
+        all_entries: List[Dict[str, Any]] = []
+        for q in self._queues.values():
+            all_entries.extend(q.get_dlq(include_retried=include_retried, limit=limit))
+        all_entries.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+        return all_entries[:limit]
+
+    async def retry_failed(
+        self,
+        queue_name: Optional[str] = None,
+        entry_ids: Optional[List[str]] = None,
+        max_items: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """Re-enqueue failed DLQ items for self-healing."""
+        retried: List[Dict[str, Any]] = []
+        target_queues = (
+            [self._queues[queue_name]]
+            if queue_name and queue_name in self._queues
+            else list(self._queues.values())
+        )
+        remaining = max_items
+        for q in target_queues:
+            batch = await q.retry_failed(entry_ids=entry_ids, max_items=remaining)
+            retried.extend(batch)
+            if remaining is not None:
+                remaining = max(0, remaining - len(batch))
+                if remaining <= 0:
+                    break
+
+        dlq_remaining = await self.get_dlq(queue_name=queue_name, include_retried=False)
+        return {
+            "success": True,
+            "retried_count": len(retried),
+            "remaining_dlq_count": len(dlq_remaining),
+            "retried_entries": retried,
+        }
+
+    def clear_dlq(self, queue_name: Optional[str] = None) -> int:
+        """Clear DLQ entries and reset error counts."""
+        if queue_name:
+            q = self._queues.get(queue_name)
+            return q.clear_dlq() if q else 0
+        return sum(q.clear_dlq() for q in self._queues.values())
 
     async def is_all_complete(self, queue_name: Optional[str] = None) -> bool:
         """Check if all processing is complete."""

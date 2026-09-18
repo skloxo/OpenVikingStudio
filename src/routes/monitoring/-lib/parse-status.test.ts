@@ -29,4 +29,37 @@ describe('parseObserverStatus', () => {
       },
     ])
   })
+
+  it('separates consecutive tables and ignores ASCII divider lines', () => {
+    const raw = `
+Mount: /local (plugin: localfs)
+============================================================
++-----------+-------+
+| Operation | Count |
++-----------+-------+
+| mkdir     | 4     |
++-----------+-------+
++------------------+-------+
+| Metric           | Value |
++------------------+-------+
+| Total Operations | 4603  |
++------------------+-------+
+`
+    expect(parseObserverStatus(raw)).toEqual([
+      {
+        kind: 'text',
+        value: 'Mount: /local (plugin: localfs)',
+      },
+      {
+        kind: 'table',
+        headers: ['Operation', 'Count'],
+        rows: [['mkdir', '4']],
+      },
+      {
+        kind: 'table',
+        headers: ['Metric', 'Value'],
+        rows: [['Total Operations', '4603']],
+      },
+    ])
+  })
 })

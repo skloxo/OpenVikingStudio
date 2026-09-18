@@ -23,7 +23,7 @@ export function GeneralTab() {
             status: string
           }
         }>('/api/v1/observer/models')
-        return res.data?.result ?? null
+        return res.data.result ?? null
       } catch {
         return null
       }
@@ -50,7 +50,7 @@ export function GeneralTab() {
             }
           }
         }>('/api/v1/user-settings/add-locations')
-        return res.data?.result ?? null
+        return res.data.result ?? null
       } catch {
         return null
       }
@@ -69,20 +69,33 @@ export function GeneralTab() {
     [modelsQuery.data?.status],
   )
 
+  const isLive = (m?: { model: string; provider: string }) =>
+    Boolean(
+      m &&
+        m.provider !== 'historical' &&
+        !m.model.includes('历史') &&
+        !m.model.includes('Historical') &&
+        !m.model.includes('已下线'),
+    )
+
   const activeVlm =
-    parsedModels.vlm.find((m) => m.model === 'qwen3.8-flash-next') ||
-    parsedModels.vlm.find((m) => Number(m.calls) > 0) ||
+    parsedModels.vlm.find((m) => isLive(m) && m.model === 'qwen3.8-flash-next') ||
+    parsedModels.vlm.find((m) => isLive(m) && Number(m.calls) > 0) ||
+    parsedModels.vlm.find(isLive) ||
     parsedModels.vlm[0]
 
   const activeEmbedding =
-    parsedModels.embedding.find((m) => Number(m.calls) > 0) ||
+    parsedModels.embedding.find((m) => isLive(m) && Number(m.calls) > 0) ||
+    parsedModels.embedding.find(isLive) ||
     parsedModels.embedding[0]
 
   const activeRerank =
-    parsedModels.rerank.find((m) => Number(m.calls) > 0) ||
+    parsedModels.rerank.find((m) => isLive(m) && Number(m.calls) > 0) ||
+    parsedModels.rerank.find(isLive) ||
     parsedModels.rerank[0]
 
-  const activeCompressor = parsedModels.compressor[0]
+  const activeCompressor =
+    parsedModels.compressor.find(isLive) || parsedModels.compressor[0]
 
   const handleRecheckAll = () => {
     void modelsQuery.refetch()

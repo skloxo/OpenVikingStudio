@@ -6,7 +6,7 @@ QueueObserver: Queue system observability tool.
 Provides methods to observe and report queue status in various formats.
 """
 
-from typing import Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from openviking.storage.observers.base_observer import BaseObserver
 from openviking.storage.queuefs.named_queue import QueueStatus
@@ -55,7 +55,7 @@ class QueueObserver(BaseObserver):
         if not statuses:
             return "No queue status data available."
 
-        data = []
+        data: List[Dict[str, Any]] = []
         total_pending = 0
         total_in_progress = 0
         total_processed = 0
@@ -119,7 +119,7 @@ class QueueObserver(BaseObserver):
         return None
 
     def is_healthy(self) -> bool:
-        return not self.has_errors()
+        return self._queue_manager.is_healthy()
 
     def has_errors(self) -> bool:
         return self._queue_manager.has_errors()

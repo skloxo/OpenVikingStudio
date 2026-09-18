@@ -1,12 +1,12 @@
 # Copyright (c) 2026 Beijing Volcano Engine Technology Co., Ltd.
 # SPDX-License-Identifier: AGPL-3.0
-import abc
 import asyncio
+import collections
 import json
 import threading
-from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Union
+from uuid import uuid4
 
 from openviking.pyagfs import AGFSSyncClientProtocol, AsyncAGFSClient
 from openviking.pyagfs.exceptions import (
@@ -23,95 +23,27 @@ from openviking.service.task_work_index import (
 )
 from openviking_cli.utils.logger import get_logger
 
+from .queue_types import (
+    DequeueHandlerBase,
+    DLQEntry,
+    DLQStore,
+    EnqueueHookBase,
+    QueueError,
+    QueueStatus,
+    evaluate_queue_health,
+)
+
 logger = get_logger(__name__)
 
-
-@dataclass
-class QueueError:
-    """Error record."""
-
-    timestamp: datetime
-    message: str
-    data: Optional[Dict[str, Any]] = None
-
-
-@dataclass
-class QueueStatus:
-    """Queue status."""
-
-    pending: int = 0
-    in_progress: int = 0
-    processed: int = 0
-    requeue_count: int = 0
-    error_count: int = 0
-    errors: List[QueueError] = field(default_factory=list)
-
-    @property
-    def has_errors(self) -> bool:
-        return self.error_count > 0
-
-    @property
-    def is_complete(self) -> bool:
-        return self.pending == 0 and self.in_progress == 0
-
-
-class EnqueueHookBase(abc.ABC):
-    """Enqueue hook base class.
-
-    All custom enqueue logic should inherit from this base class.
-    Provides on_enqueue method for custom processing before message enqueue.
-    """
-
-    @abc.abstractmethod
-    async def on_enqueue(self, data: Union[str, Dict[str, Any]]) -> Union[str, Dict[str, Any]]:
-        """Called before message enqueue. Can modify data or perform validation."""
-        return data
-
-
-class DequeueHandlerBase(abc.ABC):
-    """Dequeue handler base class, supports callback mechanism to report processing results."""
-
-    _success_callback: Optional[Callable[[], None]] = None
-    _requeue_callback: Optional[Callable[[], None]] = None
-    _error_callback: Optional[Callable[[str, Optional[Dict[str, Any]]], None]] = None
-
-    def set_callbacks(
-        self,
-        on_success: Callable[[], None],
-        on_requeue: Callable[[], None],
-        on_error: Callable[[str, Optional[Dict[str, Any]]], None],
-    ) -> None:
-        """Set callback functions."""
-        self._success_callback = on_success
-        self._requeue_callback = on_requeue
-        self._error_callback = on_error
-
-    def report_success(self) -> None:
-        """Report processing success."""
-        if self._success_callback:
-            self._success_callback()
-
-    def report_requeue(self) -> None:
-        """Report that the current message was re-enqueued for later retry."""
-        if self._requeue_callback:
-            self._requeue_callback()
-
-    def report_error(self, error_msg: str, data: Optional[Dict[str, Any]] = None) -> None:
-        """Report processing error."""
-        if self._error_callback:
-            self._error_callback(error_msg, data)
-
-    async def on_cancelled(self, data: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
-        """Discard task work cancelled before its handler starts."""
-        self.report_success()
-        return None
-
-    @abc.abstractmethod
-    async def on_dequeue(self, data: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
-        """Called after message dequeue. Returns None to discard message."""
-        if not data:
-            return None
-        return data
+__all__ = [
+    "NamedQueue",
+    "QueueError",
+    "QueueStatus",
+    "DLQEntry",
+    "DLQStore",
+    "EnqueueHookBase",
+    "DequeueHandlerBase",
+]
 
 
 class NamedQueue:
@@ -137,13 +69,15 @@ class NamedQueue:
         self._task_work_index = task_work_index
         self._initialized = False
 
-        # Status tracking
+        # Status tracking & health evaluation
         self._lock = threading.Lock()
         self._in_progress = 0
         self._processed = 0
         self._requeue_count = 0
         self._error_count = 0
         self._errors: List[QueueError] = []
+        self._recent_outcomes: collections.deque[bool] = collections.deque(maxlen=100)
+        self._dlq_store = DLQStore(queue_name=self.name, max_items=1000)
 
         # Inject callbacks to handler
         if self._dequeue_handler:
@@ -166,8 +100,9 @@ class NamedQueue:
     def _on_process_success(self) -> None:
         """Called on processing success."""
         with self._lock:
-            self._in_progress -= 1
+            self._in_progress = max(0, self._in_progress - 1)
             self._processed += 1
+            self._recent_outcomes.append(True)
 
     def _on_process_requeue(self) -> None:
         """Called when a dequeued message is re-enqueued for later retry."""
@@ -181,8 +116,9 @@ class NamedQueue:
             if metadata is not None:
                 self._task_work_index.record_failure(metadata.task_id, error_msg)
         with self._lock:
-            self._in_progress -= 1
+            self._in_progress = max(0, self._in_progress - 1)
             self._error_count += 1
+            self._recent_outcomes.append(False)
             self._errors.append(
                 QueueError(
                     timestamp=datetime.now(),
@@ -192,11 +128,35 @@ class NamedQueue:
             )
             if len(self._errors) > self.MAX_ERRORS:
                 self._errors = self._errors[-self.MAX_ERRORS :]
+            self._dlq_store.record(error_msg, data)
+
+    def has_errors(self) -> bool:
+        """Check if queue currently has an active, unhealthy error condition."""
+        with self._lock:
+            _, active_errors, _ = evaluate_queue_health(
+                in_progress=self._in_progress,
+                processed=self._processed,
+                error_count=self._error_count,
+                recent_outcomes=self._recent_outcomes,
+                pending=0,
+            )
+            return active_errors
+
+    def is_healthy(self) -> bool:
+        """Queue is healthy if it does not suffer from active or critical error condition."""
+        return not self.has_errors()
 
     async def get_status(self) -> QueueStatus:
-        """Get queue status."""
+        """Get queue status with active health determination."""
         pending = await self.size()
         with self._lock:
+            is_healthy, active_errors, recent_rate = evaluate_queue_health(
+                in_progress=self._in_progress,
+                processed=self._processed,
+                error_count=self._error_count,
+                recent_outcomes=self._recent_outcomes,
+                pending=pending,
+            )
             return QueueStatus(
                 pending=pending,
                 in_progress=self._in_progress,
@@ -204,6 +164,9 @@ class NamedQueue:
                 requeue_count=self._requeue_count,
                 error_count=self._error_count,
                 errors=list(self._errors),
+                recent_error_rate=recent_rate,
+                is_healthy=is_healthy,
+                has_active_errors=active_errors,
             )
 
     def reset_status(self) -> None:
@@ -214,6 +177,57 @@ class NamedQueue:
             self._requeue_count = 0
             self._error_count = 0
             self._errors = []
+            self._recent_outcomes.clear()
+
+    def get_dlq(
+        self,
+        include_retried: bool = False,
+        limit: int = 100,
+    ) -> List[Dict[str, Any]]:
+        """Get DLQ entries for this queue."""
+        with self._lock:
+            return self._dlq_store.get_entries(include_retried=include_retried, limit=limit)
+
+    async def retry_failed(
+        self,
+        entry_ids: Optional[List[str]] = None,
+        max_items: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """Re-enqueue failed items from Dead Letter Queue (DLQ) for self-healing."""
+        with self._lock:
+            candidates = self._dlq_store.get_retry_candidates(
+                entry_ids=entry_ids, max_items=max_items
+            )
+
+        retried_entries = []
+        for entry in candidates:
+            payload = entry.get("data")
+            if payload is None:
+                continue
+            try:
+                new_msg_id = await self.enqueue(payload)
+                with self._lock:
+                    self._dlq_store.mark_retried(entry["id"], new_msg_id)
+                    # Self-heal: decrements error count so that retrying resolves the failure
+                    self._error_count = max(0, self._error_count - 1)
+                retried_entries.append({
+                    "id": entry["id"],
+                    "queue": self.name,
+                    "new_msg_id": new_msg_id,
+                })
+            except Exception as e:
+                logger.error(f"[NamedQueue] Failed to retry DLQ entry {entry.get('id')}: {e}")
+
+        return retried_entries
+
+    def clear_dlq(self) -> int:
+        """Clear DLQ entries and reset error count."""
+        with self._lock:
+            count = self._dlq_store.clear()
+            self._errors.clear()
+            self._error_count = 0
+            self._recent_outcomes.clear()
+            return count
 
     def has_dequeue_handler(self) -> bool:
         """Check if dequeue handler exists."""
@@ -245,13 +259,14 @@ class NamedQueue:
         if self._task_work_index is not None and not self._task_work_index.register(
             self.name, task_metadata
         ):
+            task_id = task_metadata.task_id if task_metadata is not None else "unknown"
             logger.info(
                 "[NamedQueue] Skip enqueue for cancelling task %s on %s",
-                task_metadata.task_id,
+                task_id,
                 self.name,
             )
             raise TaskWorkRejected(
-                f"Task {task_metadata.task_id} is cancelling; rejected work for {self.name}"
+                f"Task {task_id} is cancelling; rejected work for {self.name}"
             )
 
         try:

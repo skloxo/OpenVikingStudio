@@ -50,6 +50,14 @@ export function parseSectionTable(sectionText: string): ParsedModelItem[] {
     ) {
       continue
     }
+    // 跳过历史下线汇总行 — provider 为 historical 或模型名包含"历史/Historical/已下线"
+    const isHistorical =
+      parts[1]?.toLowerCase() === 'historical' ||
+      parts[0].includes('历史') ||
+      parts[0].includes('Historical') ||
+      parts[0].includes('已下线')
+    if (isHistorical) continue
+
     results.push({
       model: parts[0],
       provider: parts[1] || '--',

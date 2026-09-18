@@ -21,6 +21,7 @@ from openviking.server.routers.observer import router as observer_router
 from openviking.server.routers.openviking_assets import router as openviking_assets_router
 from openviking.server.routers.pack import router as pack_router
 from openviking.server.routers.privacy_configs import router as privacy_configs_router
+from openviking.server.routers.queue import router as queue_router
 from openviking.server.routers.quarantine import router as quarantine_router
 from openviking.server.routers.relations import router as relations_router
 from openviking.server.routers.resources import router as resources_router
@@ -53,6 +54,7 @@ __all__ = [
     "stats_router",
     "pack_router",
     "privacy_configs_router",
+    "queue_router",
     "quarantine_router",
     "failure_taxonomy_router",
     "hitl_offload_router",

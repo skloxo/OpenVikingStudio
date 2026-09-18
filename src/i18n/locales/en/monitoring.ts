@@ -39,7 +39,7 @@ export const monitoring = {
     },
     metricsTiles: {
       sectionTitle: 'Deep System Metrics',
-      liveBadge: '16 Metrics Live',
+      liveBadge: '{{count}} Metrics Live',
       httpSuccessRate: {
         title: 'HTTP Success Rate',
         subText: '99.9% Target SLA',
@@ -253,6 +253,7 @@ export const monitoring = {
       promptTokens: 'Prompt Tokens',
       completionTokens: 'Completion Tokens',
       totalTokens: 'Total Tokens',
+      lastUpdated: 'Last Updated',
       totalCalls: 'Total Calls',
       totalTokensTile: 'Total Tokens Consumed',
       activeModels: 'Active Models',

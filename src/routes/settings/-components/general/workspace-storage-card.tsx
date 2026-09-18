@@ -40,7 +40,7 @@ export function WorkspaceStorageCard({
             viking://
           </span>
           <span className="text-xs text-muted-foreground">
-            AGFS Root Mount
+            {t('hub.workspace.rootMountDesc')}
           </span>
         </div>
         <div className="flex flex-col rounded-md border bg-muted/20 p-3 space-y-1">
@@ -51,7 +51,7 @@ export function WorkspaceStorageCard({
             {resourceUri || 'viking://resources/'}
           </span>
           <span className="text-xs text-muted-foreground">
-            Auto Ingest Namespace
+            {t('hub.workspace.resourceTargetDesc')}
           </span>
         </div>
         <div className="flex flex-col rounded-md border bg-muted/20 p-3 space-y-1">
@@ -62,7 +62,7 @@ export function WorkspaceStorageCard({
             {skillUri || 'viking://skills/'}
           </span>
           <span className="text-xs text-muted-foreground">
-            Skill Protocol Storage
+            {t('hub.workspace.skillTargetDesc')}
           </span>
         </div>
       </CardContent>
