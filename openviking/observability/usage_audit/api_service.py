@@ -143,6 +143,24 @@ class UsageAuditQueryService:
             page_size=min(max(int(page_size), 1), 100),
         )
 
+    async def endpoint_frequency(
+        self,
+        *,
+        ctx: RequestContext,
+        window: str = "all",
+        registered_routes: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        """Return endpoint invocation frequency stats and dormant diagnostics."""
+        allowed_windows = {"24h", "7d", "30d", "all"}
+        selected_window = window if window in allowed_windows else "all"
+        return await self._store.query_endpoint_frequency(
+            account_id=ctx.account_id,
+            user_id=self._audit_user_id(ctx),
+            window=selected_window,
+            registered_routes=registered_routes,
+        )
+
+
     @staticmethod
     def _validate_date_range(start_date: str, end_date: str) -> None:
         try:

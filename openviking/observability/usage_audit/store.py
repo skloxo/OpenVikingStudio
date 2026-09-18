@@ -85,3 +85,14 @@ class UsageAuditStore(Protocol):
         page_size: int = 10,
     ) -> dict[str, Any]:
         """Query request audit rows with summary stats."""
+
+    async def query_endpoint_frequency(
+        self,
+        *,
+        account_id: str,
+        user_id: str | None = None,
+        window: str = "all",
+        registered_routes: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        """Query endpoint invocation frequency and dormant route diagnostics."""
+

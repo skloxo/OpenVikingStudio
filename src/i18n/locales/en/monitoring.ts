@@ -343,6 +343,46 @@ export const monitoring = {
       currentIdentityWithName:
         'Current scope: Current API key identity ({{identity}})',
     },
+    viewMode: {
+      frequency: 'Endpoint Frequency & Dormant Audit',
+      stream: 'Request Audit Log Stream',
+    },
+    frequency: {
+      title: 'Endpoint Invocation Thermometer & Dormant Feature Audit',
+      subtitle: 'Monitor server endpoint invocation frequency, latency distribution and traffic share, identifying zero-call dormant endpoints for optimization and pruning.',
+      window: {
+        all: 'All History',
+        '24h': 'Last 24 Hours',
+        '7d': 'Last 7 Days',
+        '30d': 'Last 30 Days',
+      },
+      kpi: {
+        activeEndpoints: 'Active Endpoints',
+        dormantEndpoints: 'Dormant Endpoints',
+        activeRate: 'Active Rate',
+        totalEndpoints: 'Total Endpoints',
+      },
+      tabs: {
+        hot: '🔥 Hot Endpoints Leaderboard',
+        dormant: '💤 Dormant / Zero-Call Features',
+        category: '📊 Domain Breakdown',
+      },
+      table: {
+        route: 'Endpoint Path',
+        method: 'Method',
+        category: 'Domain',
+        calls: 'Calls',
+        share: 'Share',
+        avgDuration: 'Avg Latency',
+        errorRate: 'Error Rate',
+        lastCalled: 'Last Called',
+        recommendation: 'Audit Recommendation',
+        methods: 'Supported Methods',
+      },
+      dormantZeroAlert: 'All registered business endpoints are active. No completely dormant features detected.',
+      dormantTips: 'Notice: Dormant endpoints represent registered business routes with 0 calls in the selected window, useful for evaluating actual Agent usage or safe deprecation.',
+    },
+
     status: {
       error: 'ERR',
       pending: 'PENDING',

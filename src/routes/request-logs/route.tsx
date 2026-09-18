@@ -5,13 +5,15 @@ import { ActivityIcon, BarChart3Icon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { EmptyLogsState } from './-components/empty-logs-state'
+import { EndpointFrequencyCockpit } from './-components/endpoint-frequency-cockpit'
 import { MetricCard } from './-components/metric-card'
 import { RequestLogPanel } from './-components/panel'
 import { DEFAULT_FILTERS, DEFAULT_PAGE_SIZE } from './-constants/audit'
-import { fetchAuditLogs, isZeroResultCombination } from './-lib/api'
+import { fetchAuditLogs, fetchEndpointFrequency, isZeroResultCombination } from './-lib/api'
 import { formatPercent } from './-lib/format'
-import type { AuditFilters, LogTypeFilter } from './-types/audit'
+import type { AuditFilters, EndpointFrequencyWindow, LogTypeFilter } from './-types/audit'
 import { useAppConnection } from '#/hooks/use-app-connection'
+
 
 export const Route = createFileRoute('/request-logs')({
   component: RequestLogsRoute,
@@ -35,6 +37,11 @@ function RequestLogsRoute() {
   const [filters, setFilters] = React.useState<AuditFilters>(DEFAULT_FILTERS)
   const [page, setPage] = React.useState(1)
   const [pageSize, setPageSize] = React.useState(DEFAULT_PAGE_SIZE)
+  const [viewMode, setViewMode] =
+    React.useState<'frequency' | 'stream'>('frequency')
+  const [freqWindow, setFreqWindow] =
+    React.useState<EndpointFrequencyWindow>('all')
+
   const zeroResult = isZeroResultCombination(filters)
   const canQueryAudit = !isConnectionRoleLoading && connectionRole !== 'unknown'
   const auditScopeKey = {
@@ -45,6 +52,15 @@ function RequestLogsRoute() {
     userId: connection.userId,
   }
 
+  const frequency = useQuery({
+    enabled: canQueryAudit,
+    queryFn: () => fetchEndpointFrequency(freqWindow),
+    queryKey: ['console-endpoint-frequency', auditScopeKey, freqWindow],
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
+    staleTime: 15_000,
+  })
+
   const audit = useQuery({
     enabled: canQueryAudit && !zeroResult,
     queryFn: () => fetchAuditLogs(filters, page, pageSize),
@@ -53,6 +69,7 @@ function RequestLogsRoute() {
     refetchIntervalInBackground: false,
     staleTime: 15_000,
   })
+
 
   const logs = zeroResult ? [] : (audit.data?.items ?? [])
   const disabled = audit.data?.enabled === false
@@ -102,10 +119,44 @@ function RequestLogsRoute() {
         {scopeLabel}
       </div>
 
+      <div className="flex border-b border-border/60">
+        <button
+          type="button"
+          onClick={() => setViewMode('frequency')}
+          className={`border-b-2 px-4 py-2 text-xs font-medium transition-colors ${
+            viewMode === 'frequency'
+              ? 'border-cyan-500 text-cyan-500'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          {t('viewMode.frequency')}
+        </button>
+        <button
+          type="button"
+          onClick={() => setViewMode('stream')}
+          className={`border-b-2 px-4 py-2 text-xs font-medium transition-colors ${
+            viewMode === 'stream'
+              ? 'border-cyan-500 text-cyan-500'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          {t('viewMode.stream')}
+        </button>
+      </div>
+
       {!isConnectionRoleLoading && !canQueryAudit ? (
         <EmptyLogsState
           title={t('accessRequired.title')}
           description={t('accessRequired.description')}
+        />
+      ) : viewMode === 'frequency' ? (
+        <EndpointFrequencyCockpit
+          data={frequency.data}
+          isLoading={isConnectionRoleLoading || frequency.isLoading}
+          isFetching={frequency.isFetching}
+          window={freqWindow}
+          onWindowChange={setFreqWindow}
+          onRefresh={() => void frequency.refetch()}
         />
       ) : (
         <>
@@ -146,6 +197,7 @@ function RequestLogsRoute() {
           />
         </>
       )}
+
     </div>
   )
 }

@@ -18,10 +18,12 @@ from typing import Any, Iterable, Sequence
 
 from openviking.observability.events import ObservabilityEvent
 
+from .frequency_analyzer import analyze_endpoint_frequency
 from .projection import UsageAuditProjection, project_events, safe_int
 from .schema import RESET_ON_SCHEMA_UPGRADE_TABLES, SCHEMA_VERSION, SQLITE_SCHEMA
 
 UTC = timezone.utc
+
 
 
 def _date_range(start_date: str, end_date: str) -> Iterable[str]:
@@ -712,6 +714,39 @@ class SQLiteUsageAuditStore:
                 int(page),
                 int(page_size),
             )
+
+    async def query_endpoint_frequency(
+        self,
+        *,
+        account_id: str,
+        user_id: str | None = None,
+        window: str = "all",
+        registered_routes: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        async with self._lock:
+            return await asyncio.to_thread(
+                self._query_endpoint_frequency_sync,
+                account_id,
+                user_id,
+                window,
+                registered_routes,
+            )
+
+    def _query_endpoint_frequency_sync(
+        self,
+        account_id: str,
+        user_id: str | None,
+        window: str,
+        registered_routes: list[dict[str, Any]] | None,
+    ) -> dict[str, Any]:
+        assert self._conn is not None
+        return analyze_endpoint_frequency(
+            self._conn,
+            account_id=account_id,
+            user_id=user_id,
+            window=window,
+            registered_routes=registered_routes,
+        )
 
     def _query_audit_logs_sync(
         self,
