@@ -1,0 +1,18 @@
+# evals/cases/living-asset-system/case-001-search-first.yaml
+#
+# 断言: living-asset-system 技能正文必须包含「开工查库」或「Search First」约束
+# 物理意义: 开工前强制查阅资产档案库是四维活态防线的核心第一律
+
+skill_name: living-asset-system
+case_id: case-001-search-first
+description: >
+  living-asset-system 技能 SKILL.md 必须包含「开工查库第一律」或
+  「Search First」 约束，防止盲目手搓已有轮子。
+judge_type: regex
+input_from_fixture: living-asset-system.md
+expect: "(查库|Search.First|COMPONENT_AND_WHEEL|开工.*查|inventory)"
+tags:
+  - p0
+  - reuse
+  - living-asset
+enabled: true

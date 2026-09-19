@@ -1,0 +1,18 @@
+# evals/cases/cockpit-ui/case-001-no-green.yaml
+#
+# 断言: cockpit-ui 技能正文必须包含「NO GREEN EVER」约束声明
+# 物理意义: 全系统禁止绿色是视觉设计的绝对公理，任何技能修订不得删除此规则
+
+skill_name: cockpit-ui
+case_id: case-001-no-green
+description: >
+  cockpit-ui 技能 SKILL.md 必须包含 "NO GREEN EVER" 视觉铁律声明。
+  全系统封杀绿色是核心设计公理，不可被删除或弱化。
+judge_type: regex
+input_from_fixture: cockpit-ui.md
+expect: "NO\\s+GREEN\\s+EVER"
+tags:
+  - p0
+  - visual
+  - axiom
+enabled: true
