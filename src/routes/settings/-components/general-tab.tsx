@@ -79,7 +79,7 @@ export function GeneralTab() {
     )
 
   const activeVlm =
-    parsedModels.vlm.find((m) => isLive(m) && m.model === 'qwen3.8-flash-next') ||
+    parsedModels.vlm.find((m) => isLive(m) && (m.model === 'mux-flash' || m.model === 'qwen3.8-flash-next')) ||
     parsedModels.vlm.find((m) => isLive(m) && Number(m.calls) > 0) ||
     parsedModels.vlm.find(isLive) ||
     parsedModels.vlm[0]
