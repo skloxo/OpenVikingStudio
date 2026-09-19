@@ -70,6 +70,7 @@ from openviking.server.routers import (
     user_settings_router,
     valet_router,
     skill_eval_router,
+    ahe_router,
     watches_router,
     webdav_router,
 )
@@ -663,6 +664,7 @@ def create_app(
     app.include_router(skill_zip_router)
     app.include_router(valet_router)
     app.include_router(skill_eval_router)
+    app.include_router(ahe_router)
     app.include_router(rag_abstention_router)
     app.include_router(hg_compass_router)
     app.include_router(relations_router)

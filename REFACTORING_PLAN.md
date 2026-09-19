@@ -485,15 +485,24 @@
 
 ### 🌊 Wave 4: 契约化自演进与离线梦境闭环 (Contractual Self-Evolution & Dreaming)
 
-#### 📌 [P0] [ ] Card-Skill-EvaluationRetina (v1.5.19): Skill 质量视网膜与自动化评测门禁体系 (Skill-as-Code & Testing CI / skill-up 规范落地) ⏳
+#### 📌 [P0] [x] Card-Skill-EvaluationRetina (v1.5.37) — [已验收 ✅]: Skill 质量视网膜与自动化评测门禁体系 (Skill-as-Code & Testing CI / skill-up 规范落地) ⏳
 - **目标版本**：`v1.5.19` ｜ **优先级**：`P0`
 - **核心交付目标**：1. 吸收阿里开源 skill-up 与 AI 软件测试方法论，彻底终结“改动一行提示词行为漂移、跑一遍 Demo 没报错就裸奔上线”；<br>2. 规范化测试工程结构：建立 evals/cases/（声明式 YAML 用例）、evals/fixtures/（数据脚手架）、evals/eval.yaml（引擎与断言配置）；<br>3. 落地三级判定器引擎（Exact/Regex 匹配断言、Command 脚本退出码、agent_judge LLM 语义判官）；<br>4. 首批为核心技能（cockpit-ui、diagnosing-bugs、living-asset-system）建立回归金标用例；<br>5. 接入 Git 预提交钩子与 CI 自动化回归门禁，构建 Eval-to-Evolution 自闭环。
 - **验收条件**：核心技能 100% 具备声明式用例，三级 Judge 断言生效，改动自动跑回归阻断行为漂移
 
-#### 📌 [P0] [ ] Card-Harness-AHE-ContractualSelfEvolution (v1.5.20): AHE 契约三元组自演进、Self-Harness 根因聚类与 Polar 不可伪造环境判官体系 ⏳
-- **目标版本**：`v1.5.20` ｜ **优先级**：`P0`
+#### 📌 [P0] [x] Card-Harness-AHE-ContractualSelfEvolution (v1.5.38): AHE 契约三元组自演进、Self-Harness 根因聚类与 Polar 不可伪造环境判官体系 ✅
+- **目标版本**：`v1.5.38` ｜ **优先级**：`P0` ｜ **实际交付版本**：`v1.5.38`
 - **核心交付目标**：1. 吸收 7 大 Harness 自演进论文（Meta-Harness/AHE/Self-Harness）、Karpathy 自动研究与 NVIDIA Polar：终结 Reward Hacking 假繁荣与表面症状打补丁冲突；<br>2. AHE 契约三元组：可证伪（Manifest 显式假设）、可归因（根因机制聚类 + 冻结面排除）、可回滚（文件级版本秒级还原）；<br>3. Self-Harness 目标模型自提议 + 双 Split 零回归门禁；<br>4. Polar 不可伪造环境判官：以真实沙箱执行退出码为唯一真理。
 - **验收条件**：脚手架自演进契约化，根因聚类防补丁冲突，不可伪造环境判官，秒级可回滚
+- **交付内容**：
+  - `openviking/core/ahe_manifest.py` (AHE 契约三元组 DTO、可证伪假设与 ManifestStore)
+  - `openviking/core/ahe_cluster_catalog.py` (根因机制聚类与冻结面排他拦截)
+  - `openviking/core/polar_judge.py` (Polar 真实沙箱判官，以真实 exit code 为真理)
+  - `openviking/core/ahe_engine.py` (AHE 统一调度引擎)
+  - `openviking/server/routers/ahe.py` (8 个 REST API 端点)
+  - `src/routes/retrieval/-components/ahe-cockpit.tsx` (Tab 9 AHE 座舱组件，4 块 KPI 瓦片)
+  - `tests/unit/test_ahe_engine.py` & `tests/unit/test_ahe_api.py` (单元测试与端到端 API 测试 100% 通过)
+- **交付状态**：已交付 ✅ ｜ **Git Commit**：待打 tag `v1.5.38`
 
 #### 📌 [P1] [ ] Card-Skill-TrainablePolicy-RSI (v1.5.21): 可训练外部技能文档与昼夜双轮递归自演进架构 (Trainable Skill Document & Daytime-Nighttime RSI Engine) ⏳
 - **目标版本**：`v1.5.21` ｜ **优先级**：`P1`
