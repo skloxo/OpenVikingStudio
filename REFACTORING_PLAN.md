@@ -416,8 +416,8 @@
   4. **座舱级性冷淡 UI 呈现**：遵循 NO GREEN EVER，`active` 显示沉静中性灰，`disputed` 告警琥珀色，`superseded` 沉静灰背景配中划线降噪与后继经验血缘提示；
   5. **门禁双全**：pytest 5/5 全绿，零密钥泄露安全扫描 PASS (4,313 文件)，Vite 构建 19.57s 烘焙通过，运行时服务探针 100% 对齐。
 
-#### 📌 [P1] [ ] Card-Memory-EntropyCrystallizer-TriGate (v1.5.13): 存量历史碎片三门并联结晶归纳器与不可变事实 SSOT 熔炼 (Entropy Crystallizer & SSOT Distillation) ⏳
-- **目标版本**：`v1.5.13` ｜ **优先级**：`P1` ｜ **当前状态**：⏳ 方案已终审·待排期实施
+#### 📌 [P1] [x] Card-Memory-EntropyCrystallizer-TriGate (v1.5.33): 存量历史碎片三门并联结晶归纳器与不可变事实 SSOT 熔炼 (Entropy Crystallizer & SSOT Distillation) ✅
+- **目标版本**：`v1.5.33` ｜ **优先级**：`P1` ｜ **交付状态**：`[x] 已验收通过 ✅`
 - **来源依据与架构思考 (Reasoning & Inversion Context)**：
   - 吸收 2026-09-08 架构共识（Card-Entropy-02）与芒格逆向审讯：解决存量碎片越积越多引发的向量库熵增与严重检索混淆；
   - 芒格倒推死因：杜绝 LLM 概括时的“中庸抹平”与虚假因果，必须采用强结构化契约；
@@ -425,9 +425,14 @@
   1. **三门并联硬门禁 (Tri-Gate Barrier)**：聚类条数 $\ge 5$ 条、语义余弦相似度均值 $> 0.75$、沉淀时间 $\ge 24\text{h}$ 冷却期（防范热会话中早熟结晶）；
   2. **三层不可变事实晶体结构 (Three-Tier Crystal Schema)**：
      - **L0 核心公理 (Axiom)**：单句不可变事实（无歧义确定性断言，如“对外唯一服务端口物理收口为 1933”）；
-     - **L1 版本与证据链 (Context & Bounds)**：明确生效版本范围（如 `>= v1.5.00`）与来源引用（Commit Hash / PR / 会话事实）；
+     - **L1 版本与证据链 (Context & Bounds)**：明确生效版本范围（如 `>= v1.5.00`）与来源引用（Commit Hash / PR / 会话事实，源碎片 URI 列表与证据哈希）；
      - **L2 负向排斥哨兵 (Negative Boundary)**：显式列出已废弃模式与排斥词（如“彻底废弃 1936 端口与独立 M3 算子硬件绑定”），触发检索时提供强排斥信号；
-  3. **存量物理净减熵**：熔炼产生 1 个高纯晶体节点后，原 5 条散落碎片在 SQLite 中挂载 `superseded` 演进指针并移出活跃库进入冷归档，达成活跃向量节点的【物理净减少】。
+  3. **存量物理净减熵**：熔炼产生 1 个高纯晶体节点后，原 N 条散落碎片在 MemoryLifecycleFSM 中原子挂载 `superseded` 演进指针并移出活跃库进入冷归档，达成活跃向量节点的【物理净减少】($\Delta = N - 1$)；
+  4. **前端座舱试验台**：在 `/studio/retrieval` 挂载「三门结晶与不可变事实」专属 Tab，透出 4 大核心度量瓦片与交互演练试验台，遵循 NO GREEN EVER 🚫 铁律；
+  5. **门禁验证全通**：单测 11/11 全绿、安全扫描 4313 文件零密钥泄露、Vite 构建 20.62s PASS。
+- **交付验收证据与物理闭环**：
+  - **Git Release Tag**：`v1.5.33`
+  - **修改文件**：`openviking/service/entropy_crystallizer.py`, `openviking/service/memory_lifecycle_fsm.py`, `openviking/server/routers/entropy_crystallizer.py`, `openviking/server/routers/memory_lifecycle.py`, `openviking/server/app.py`, `src/routes/retrieval/-components/entropy-crystallizer-cockpit.tsx`, `src/routes/retrieval/-constants/crystallizer-presets.ts`, `src/routes/retrieval/route.tsx`, `src/i18n/locales/*/retrieval.ts`, `tests/unit/test_entropy_crystallizer.py`, `docs/HUMAN_ACCEPTANCE_TESTING.md`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md`
 - **验收条件**：散落碎片熔铸为不可变事实库，活跃向量节点物理净减，三门并联杜绝假结晶，单测全绿。
 
 #### 📌 [P1] [x] Card-Context-ActiveNotesAndHistory (v1.5.34): Codex 级主动上下文治理（Notes 高密活跃状态 + History 独立检索分仓，切除有损 Compaction） ✅
