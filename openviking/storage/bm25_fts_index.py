@@ -128,14 +128,17 @@ class BM25FTSIndex:
     def index_document(
         self,
         uri: str,
-        title: str,
-        content: str,
+        title: Optional[str] = None,
+        content: str = "",
         level: int = 2,
         context_type: str = "resource",
     ) -> bool:
         """Upsert a single document into FTS5 index with payload guard."""
         if not uri or not content:
             return False
+
+        if not title:
+            title = Path(uri).name or uri
 
         # Guard against write amplification: truncate oversized text and skip raw base64
         if content.startswith("data:image/") or ";base64," in content[:100]:
@@ -259,7 +262,10 @@ class BM25FTSIndex:
 
                     # Filter by target_directories if provided
                     if target_directories:
-                        if not any(uri.startswith(d.rstrip("/")) for d in target_directories):
+                        is_resource_search = any(d.rstrip("/") in ("viking://", "viking://resources", "viking://agent") for d in target_directories)
+                        matches_target = any(uri.startswith(d.rstrip("/")) for d in target_directories)
+                        matches_code_or_skill = is_resource_search and (uri.startswith("code://") or uri.startswith("skill://") or "code/" in uri)
+                        if not (matches_target or matches_code_or_skill):
                             continue
 
                     # SQLite FTS5 bm25 produces negative numbers; more negative == better match

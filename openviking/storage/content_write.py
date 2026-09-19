@@ -866,6 +866,20 @@ class ContentWriteCoordinator:
                 existing_raw=previous_content,
             )
             content_written = True
+
+            # Card-Retrieval-BM25Hybrid (v1.5.29): Real-time BM25 inverted index update on write
+            try:
+                from openviking.storage.bm25_fts_index import BM25FTSIndex
+                BM25FTSIndex.get_instance().index_document(
+                    uri=uri,
+                    title=uri.split("/")[-1],
+                    content=content,
+                    level=2,
+                    context_type=context_type or "resource",
+                )
+            except Exception as e:
+                logger.debug(f"[ContentWriteCoordinator] Dynamic BM25 indexing bypassed: {e}")
+
             if is_abstract_overview_uri(uri):
                 vector_enqueued = await self._vectorize_abstract_overview(
                     uri=uri, ctx=ctx, ingest_options=ingest_options
@@ -1306,6 +1320,19 @@ class ContentWriteCoordinator:
             await self._write_in_place(uri, content, mode=mode, ctx=ctx, lease_ref=lease)
             await self._viking_fs._async_agfs.pathlock_release(lease)
             released = True
+
+            # Card-Retrieval-BM25Hybrid (v1.5.29): Real-time BM25 inverted index update on memory write
+            try:
+                from openviking.storage.bm25_fts_index import BM25FTSIndex
+                BM25FTSIndex.get_instance().index_document(
+                    uri=uri,
+                    title=uri.split("/")[-1],
+                    content=content,
+                    level=2,
+                    context_type="memory",
+                )
+            except Exception as e:
+                logger.debug(f"[ContentWriteCoordinator] Dynamic memory BM25 indexing bypassed: {e}")
             if wait and telemetry_id and self._vikingdb_has_queue():
                 get_request_wait_tracker().register_request(telemetry_id)
                 request_registered = True

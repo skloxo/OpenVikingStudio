@@ -36,7 +36,7 @@ def sync_bm25():
                         pass
 
                 docs.append({
-                    "uri": f"skill://{name}",
+                    "uri": f"viking://agent/skills/{name}",
                     "title": name,
                     "content": content,
                     "level": 2,
@@ -51,11 +51,11 @@ def sync_bm25():
         try:
             txt = py_file.read_text(errors="ignore")
             docs.append({
-                "uri": f"code://{rel}",
+                "uri": f"viking://resources/code/{rel}",
                 "title": py_file.stem,
                 "content": txt[:65536],
                 "level": 2,
-                "context_type": "code",
+                "context_type": "resource",
             })
         except Exception:
             pass

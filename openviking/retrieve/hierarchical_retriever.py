@@ -286,75 +286,14 @@ class HierarchicalRetriever:
             telemetry.count("vector.scanned", len(quick_results))
 
             # BM25 Sparse Lexical Retrieval & RRF Fusion (Card-Retrieval-BM25Hybrid v1.5.29)
-            if not image_query and query.query:
-                try:
-                    from openviking.storage.bm25_fts_index import BM25FTSIndex
-                    from openviking.retrieve.rrf_fusion import rrf_fuse
-                    from openviking.retrieve.hybrid_retriever import HybridRetrievalTelemetry
-
-                    bm25_index = BM25FTSIndex.get_instance()
-                    sparse_matches = await asyncio.to_thread(
-                        bm25_index.search,
-                        query=query.query,
-                        limit=max(20, limit * 2),
-                        context_type=context_type,
-                        target_directories=target_dirs,
-                    )
-                    if sparse_matches:
-                        sparse_dicts = [
-                            {
-                                "uri": m.uri,
-                                "title": m.title,
-                                "level": m.level,
-                                "context_type": m.context_type,
-                                "bm25_score": m.bm25_score,
-                                "snippet": m.snippet,
-                            }
-                            for m in sparse_matches
-                        ]
-                        fused_candidates = rrf_fuse(
-                            dense_results=quick_results,
-                            sparse_results=sparse_dicts,
-                            k=60,
-                            top_k=max(25, limit * 3),
-                        )
-                        fused_pool = []
-                        for f in fused_candidates:
-                            # Use normalized_score ([0.0, 1.0]) to respect threshold checks
-                            score_val = f.normalized_score if f.normalized_score > 0 else f.rrf_score
-                            fused_pool.append({
-                                "uri": f.uri,
-                                "title": f.title,
-                                "level": f.level,
-                                "context_type": f.context_type,
-                                "abstract": f.snippet,
-                                "_score": score_val,
-                                "_final_score": score_val,
-                                "rrf_raw_score": f.rrf_score,
-                                "origin": f.origin,
-                                "dense_rank": f.dense_rank,
-                                "sparse_rank": f.sparse_rank,
-                                "bm25_score": f.bm25_score,
-                                **f.extra_metadata,
-                            })
-                        quick_results = fused_pool
-
-                        overlap_cnt = sum(1 for f in fused_candidates if f.origin == "hybrid")
-                        dense_only_cnt = sum(1 for f in fused_candidates if f.origin == "dense_only")
-                        sparse_only_cnt = sum(1 for f in fused_candidates if f.origin == "sparse_only")
-                        symbol_boost = any(f.origin == "sparse_only" and f.fused_rank <= 3 for f in fused_candidates)
-                        HybridRetrievalTelemetry.get_instance().record(
-                            dense_count=len(quick_results),
-                            sparse_count=len(sparse_matches),
-                            fused_count=len(fused_candidates),
-                            overlap_count=overlap_cnt,
-                            symbol_boost=symbol_boost,
-                            latency_ms=0.0,
-                            dense_only=dense_only_cnt,
-                            sparse_only=sparse_only_cnt,
-                        )
-                except Exception as e:
-                    logger.debug(f"[HierarchicalRetriever] Hybrid BM25 fusion bypassed: {e}")
+            quick_results = await self._fuse_with_bm25(
+                dense_results=quick_results,
+                query=query.query,
+                limit=limit,
+                context_type=context_type,
+                target_dirs=target_dirs,
+                image_query=image_query,
+            )
 
             # FAST mode: Single-pass Cross-Encoder rerank on top-ranked vector candidates
             if resolved_mode == RetrieverMode.FAST and self._rerank_client and quick_results:
@@ -531,6 +470,39 @@ class HierarchicalRetriever:
             apply_hotness = True
             rerank_used = self._rerank_client is not None and resolved_mode == RetrieverMode.THINKING
 
+            # BM25 Sparse Lexical Retrieval & RRF Fusion for deep THINKING mode (Card-Retrieval-BM25Hybrid v1.5.29)
+            candidates = await self._fuse_with_bm25(
+                dense_results=candidates,
+                query=query.query,
+                limit=limit,
+                context_type=context_type,
+                target_dirs=target_dirs,
+                image_query=image_query,
+            )
+            if self._rerank_client and candidates:
+                rerank_budget = min(len(candidates), max(limit * 2, 6))
+                sorted_candidates = sorted(
+                    candidates,
+                    key=lambda x: self._finite_score(x.get("_final_score", x.get("_score", 0.0))),
+                    reverse=True,
+                )
+                rerank_pool = sorted_candidates[:rerank_budget]
+                docs = [
+                    str(r.get("abstract", "") or r.get("overview", "") or r.get("content", ""))
+                    for r in rerank_pool
+                ]
+                fallback_scores = [self._finite_score(r.get("_score", 0.0)) for r in rerank_pool]
+                rerank_scores = await self._rerank_scores(query.query, docs, fallback_scores)
+                for r, score in zip(rerank_pool, rerank_scores, strict=True):
+                    r["_score"] = score
+                    r["_final_score"] = score
+                candidates = sorted(
+                    candidates,
+                    key=lambda x: self._finite_score(x.get("_final_score", x.get("_score", 0.0))),
+                    reverse=True,
+                )
+                rerank_used = True
+
         # Step 6: Convert results
         matched = await self._convert_to_matched_contexts(
             candidates,
@@ -553,6 +525,89 @@ class HierarchicalRetriever:
             matched_contexts=final,
             searched_directories=root_uris,
         )
+
+    async def _fuse_with_bm25(
+        self,
+        dense_results: List[Dict[str, Any]],
+        query: str,
+        limit: int,
+        context_type: Optional[str] = None,
+        target_dirs: Optional[List[str]] = None,
+        image_query: bool = False,
+    ) -> List[Dict[str, Any]]:
+        """Fuse dense vector candidates with SQLite FTS5 BM25 lexical candidates using RRF k=60."""
+        if image_query or not query:
+            return dense_results
+        try:
+            from openviking.storage.bm25_fts_index import BM25FTSIndex
+            from openviking.retrieve.rrf_fusion import rrf_fuse
+            from openviking.retrieve.hybrid_retriever import HybridRetrievalTelemetry
+
+            bm25_index = BM25FTSIndex.get_instance()
+            sparse_matches = await asyncio.to_thread(
+                bm25_index.search,
+                query=query,
+                limit=max(20, limit * 2),
+                context_type=context_type,
+                target_directories=target_dirs,
+            )
+            if not sparse_matches:
+                return dense_results
+
+            sparse_dicts = [
+                {
+                    "uri": m.uri,
+                    "title": m.title,
+                    "level": m.level,
+                    "context_type": m.context_type,
+                    "bm25_score": m.bm25_score,
+                    "snippet": m.snippet,
+                }
+                for m in sparse_matches
+            ]
+            fused_candidates = rrf_fuse(
+                dense_results=dense_results,
+                sparse_results=sparse_dicts,
+                k=60,
+                top_k=max(25, limit * 3),
+            )
+            fused_pool = []
+            for f in fused_candidates:
+                score_val = f.normalized_score if f.normalized_score > 0 else f.rrf_score
+                fused_pool.append({
+                    "uri": f.uri,
+                    "title": f.title,
+                    "level": f.level,
+                    "context_type": f.context_type,
+                    "abstract": f.snippet,
+                    "_score": score_val,
+                    "_final_score": score_val,
+                    "rrf_raw_score": f.rrf_score,
+                    "origin": f.origin,
+                    "dense_rank": f.dense_rank,
+                    "sparse_rank": f.sparse_rank,
+                    "bm25_score": f.bm25_score,
+                    **f.extra_metadata,
+                })
+
+            overlap_cnt = sum(1 for f in fused_candidates if f.origin == "hybrid")
+            dense_only_cnt = sum(1 for f in fused_candidates if f.origin == "dense_only")
+            sparse_only_cnt = sum(1 for f in fused_candidates if f.origin == "sparse_only")
+            symbol_boost = any(f.origin == "sparse_only" and f.fused_rank <= 3 for f in fused_candidates)
+            HybridRetrievalTelemetry.get_instance().record(
+                dense_count=len(dense_results),
+                sparse_count=len(sparse_matches),
+                fused_count=len(fused_candidates),
+                overlap_count=overlap_cnt,
+                symbol_boost=symbol_boost,
+                latency_ms=0.0,
+                dense_only=dense_only_cnt,
+                sparse_only=sparse_only_cnt,
+            )
+            return fused_pool
+        except Exception as e:
+            logger.debug(f"[HierarchicalRetriever] Hybrid BM25 fusion bypassed: {e}")
+            return dense_results
 
     def _resolve_threshold(self, threshold: Optional[float]) -> float:
         resolved = threshold if threshold is not None else self.threshold
@@ -848,9 +903,11 @@ class HierarchicalRetriever:
             results.append(
                 MatchedContext(
                     uri=display_uri,
-                    context_type=ContextType(c["context_type"])
-                    if c.get("context_type")
-                    else ContextType.RESOURCE,
+                    context_type=(
+                        ContextType(c["context_type"])
+                        if c.get("context_type") in ContextType._value2member_map_
+                        else ContextType.RESOURCE
+                    ),
                     level=level,
                     abstract=abstract,
                     category=c.get("category", ""),
