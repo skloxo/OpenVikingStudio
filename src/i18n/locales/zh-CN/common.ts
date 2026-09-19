@@ -83,6 +83,9 @@ export const common = {
       retrieval: {
         title: '信息治理',
       },
+      evolution: {
+        title: '技能自演进',
+      },
       sessions: {
         title: '会话中心',
       },

@@ -21,6 +21,7 @@ export const retrieval = {
       glob: '输入文件模式，例如 **/*.md',
     },
     send: '检索',
+    evolutionCenterLink: '技能自演进中心 ➔',
     controls: {
       function: '检索函数',
       modes: {

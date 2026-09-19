@@ -21,6 +21,7 @@ export const retrieval = {
       glob: 'Enter a file pattern, for example **/*.md',
     },
     send: 'Search',
+    evolutionCenterLink: 'Skill Evolution Center ➔',
     controls: {
       function: 'Retrieval Function',
       modes: {

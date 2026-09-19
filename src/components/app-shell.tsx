@@ -21,6 +21,7 @@ import {
   SparklesIcon,
   SunIcon,
   UsersRoundIcon,
+  DnaIcon,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from 'next-themes'
@@ -112,6 +113,13 @@ const NAV_ITEMS: readonly NavItem[] = [
     section: 'workspace',
     titleKey: 'navigation.retrieval.title',
     to: '/retrieval',
+  },
+  {
+    icon: DnaIcon,
+    id: 'evolution',
+    section: 'workspace',
+    titleKey: 'navigation.evolution.title',
+    to: '/evolution',
   },
   {
     icon: SparklesIcon,
