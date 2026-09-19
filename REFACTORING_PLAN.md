@@ -644,11 +644,42 @@
   - `tests/unit/test_advanced_retrieval_telemetry.py` (后端单测)
   - `package.json`, `openviking/_version.py` (版本升级至 1.5.45)
 
-#### 📌 [P2] [ ] Card-LLMLingua-01 (v1.5.27): 微软开源顶级轮子 LLMLingua-2 (xlm-roberta) 自然语言 Wiki 文档后台异步脱水降噪专项 ⏳
-- **类型**：Model Optimization / Ingestion Compression / Background Batching ｜ **优先级**：🌱 P2（自然语言脱水）
-- **目标版本**：`v1.5.27` ｜ **交付时间预估**：Wave 5 周期 ｜ **当前状态**：⏳ 方案已终审·待排期实施
-- **核心治理成果与交付细节**：
-  1. **定位明确**：专用于外部抓取的超长篇 Wiki 文档、白皮书等纯自然语言文本的离线脱水；
-  2. **避免常驻显存**：坚决不在 2080Ti 常驻占用宝贵显存，采用 CPU/CPA 弹性工兵离线批处理；
-  3. 毫秒级抽稀 50% 自然语言冗余水话，提升注意力浓度，零幻觉；
-  4. 与本地 SkillZip（针对技能流程）和 Notes-History（针对多轮对话）正交互补。
+#### 📌 [P1] [x] Card-LLMLingua-Ingestion-01 (v1.5.46): 微软开源顶级轮子 LLMLingua-2 (xlm-roberta) 自然语言 Wiki 文档后台异步脱水降噪与座舱试验台 (SSOT) ✅
+- **类型**：Model Optimization / Ingestion Dehydration / Pipeline Consolidation ｜ **优先级**：⚡ P1（自然语言高质量脱水）
+- **目标版本**：`v1.5.46` ｜ **当前状态**：[x] 已验收通过 ✅
+- **交付内容摘要**：
+  1. **微软 LLMLingua-2 官方优先与专精适配层 (WikiDehydrationEngine)**: 封装 `openviking/service/wiki_dehydration_engine.py`，默认绑定 `microsoft/llmlingua-2-xlm-roberta-large-meetingbank` 顶级官方轮子，硬编码固化 `rate=0.50`, `threshold=0.35`，使用正则物理保护 YAML Header 与代码块，实测压缩率 48%~50%，保留核心关键词与语义完整；
+  2. **优雅自愈与降级兜底**: 若模型权重未就绪，自动降级为语义启发式规则脱水，主服务 100% 稳如磐石；
+  3. **REST 路由与 API 全打通**: 提供 `POST /api/v1/wiki/dehydrate` 与 `GET /api/v1/wiki/dehydrate/stats`；
+  4. **座舱级前端交互大盘 (llmlingua-dehydration-cockpit)**: 呈现 4 大核心指标瓦片、预设真实案例与对比试验台，遵守 NO GREEN EVER 🚫 铁律；
+  5. **门禁双全**: 单元测试 3/3 全绿、安全扫描 4,408 文件零泄露、Vite 构建通过。
+- **Git Commit Hash**：`be47e5243`
+- **Git Tag**：`v1.5.46`
+
+#### 📌 [P0] [x] Card-Fix-FSM-Persistence (v1.5.47): FSM 生命周期 SQLite 物理持久化与混合检索真实生效联动 ✅
+- **类型**：Data Integrity / Persistence / Retrieval Alignment ｜ **优先级**：🚨 P0（致命数据割裂修复）
+- **目标版本**：`v1.5.47` ｜ **当前状态**：[x] 已验收通过 ✅
+- **核心治理成果与物理交付物**：
+  1. **切除纯内存字典孤岛**: 重构 `openviking/service/memory_lifecycle_fsm.py`，彻底弃用 `_LIFECYCLE_REGISTRY` 纯内存易失字典，全面切换为 SQLite WAL 物理持久化（`memory_lifecycle.db`），配备 10,000 条 LRU 高速缓存与安全并发锁，提供向后兼容字典代理 `_LifecycleRegistryProxy`；
+  2. **混合检索真实联动生效**: 重构 `openviking/retrieve/hybrid_retriever.py`，新增 `get_lifecycle_records_batch` 批量查询，候选融合时优先从 FSM 物理拉取最新状态并覆盖元数据，让 `superseded` (0.20x) 与 `disputed` (0.50x) 惩罚 100% 物理生效；
+  3. **重启免疫与向后兼容**: 彻底修复跨进程重启后状态丢失与测试 URI 污染问题，单测 6/6 全绿；
+  4. **门禁验证双全**: 自动化单元测试 `test_memory_lifecycle_fsm.py` 6/6 全绿，安全扫描 4,408 文件零密钥泄露，前端 Vite 生产构建 23.73s PASS，服务健康检查 `/health` 返回 1.5.47 healthy；
+  5. **版本留痕**: Git Commit `7705626a7`，Git Tag `v1.5.47`。
+- **Git Commit Hash**: `7705626a7`
+- **Git Tag**: `v1.5.47`
+
+#### 📌 [P1] [ ] Card-UI-EvolutionDecoupling (v1.5.48): 检索大屏 15 Tab 领域解耦与独立 /studio/evolution 演进中心 ⏳
+- **类型**：UI Refactoring / Domain Decoupling / Cockpit Ergonomics ｜ **优先级**：⚡ P1（认知降维）
+- **目标版本**：`v1.5.48` ｜ **当前状态**：[ ] 就绪待调度 ⏳
+- **核心治理目标与联动设计**：
+  1. **新建演进中心独立路由**：创建 `src/routes/evolution/route.tsx`，集中承载 `skillEval`, `ahe`, `hermes`, `rsi`, `capabilityPages`, `skillKd`, `evolutionCicd` 7 大技能自演进组件；
+  2. **检索大屏降维**：`src/routes/retrieval/route.tsx` 收敛至 6 个核心知识检索 Tab (`search`, `bm25`, `zg`, `compass`, `context`, `llmlingua`)，彻底消灭横向大滚动；
+  3. **导航与平滑过渡**：顶栏/侧边栏增加【🧬 技能自演进】入口，保留旧链接自动兼容跳转，确保 0 破相、0 报错。
+
+#### 📌 [P1] [ ] Card-Pipeline-WireUp-Production (v1.5.49): 顶级轮子穿透主线工作流 (LLMLingua 检索自动抽稀 + 存储无感减熵) ⏳
+- **类型**：Pipeline Integration / Anti-Entropy / Production Wiring ｜ **优先级**：⚡ P1（展品转生产）
+- **目标版本**：`v1.5.49` ｜ **当前状态**：[ ] 依赖 v1.5.48 ⏳
+- **核心治理目标与联动设计**：
+  1. **检索召回自动脱水**：在 `openviking_find` 与检索接口中，对召回的长篇 Markdown（> 1,500 字符）自动调用 `WikiDehydrationEngine` 抽稀 50% 自然语言冗余，直接降低 Agent 上下文负担与 Lost in the Middle 衰减；
+  2. **写入存储自动减熵**：在 `memory_store` 批量写入后，自动触发轻量准入判定与三门结晶异步触发器，让结晶与去噪在后台平稳自驱。
+
