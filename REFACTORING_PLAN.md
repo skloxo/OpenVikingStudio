@@ -15,6 +15,7 @@
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.5.30`** | **Card-Retrieval-LocalFirst-zgSemanticSearch** | **阿里 zg 级端侧本地代码语义搜索、全库 7,951 符号离线倒排、TieredLazyFetch 强契约与 FastMCP 原生工具闭环 (SSOT)** | 1. **全库 7,951 AST 符号专用 FTS5 倒排索引**: 彻底根除 BM25 单例污染，构建专用 `zg_code_fts.db`，离线扫描全库 546 个 Python 文件，精准抽取 7,951 个函数/类/方法 AST 离散符号，覆盖 249,692 行源码；<br>2. **TieredLazyFetch 分级懒加载契约与 95.8% Token 物理节省**: 落地 depth=0 (Meta 元数据)、depth=1 (Fingerprint 紧凑指纹/签名/文档，实测 Token 节约率达 **95.8%**)、depth=2 (Full Block 完整代码块)；<br>3. **REST 端点与 FastMCP 原生工具全域打通**: 暴露 `POST /api/v1/search/zg` 与 `GET /api/v1/search/zg/stats`，并注册第 16 个原生 MCP 工具 `zg_search`；<br>4. **座舱级前端交互大盘 (zg-search-cockpit)**: 真实后端数据驱动，呈现 4 大核心指标瓦片与实时深度拉取试验台，严格遵守 NO GREEN EVER 🚫 与字号 $\ge 12\text{px}$ 物理铁律；<br>5. **门禁验证全通**: 单元测试 8/8 全绿 (包含 FastAPI 路由端到端测试)、安全扫描 4,303 文件零密钥泄漏、前端 Vite 构建 22.32s 零报错通过。<br>**Commit Hash**：（本次提交） | **修改文件**：`openviking/search/*.py`, `openviking/server/routers/zg_search.py`, `openviking/server/mcp_endpoint.py`, `scripts/sync_zg_index.py`, `src/routes/retrieval/-components/zg-search-cockpit.tsx`, `tests/unit/test_zg_semantic_search.py`, `package.json`, `openviking/_version.py` | [x] 已验收通过 ✅ |
 | **`v1.5.25`** | **Card-Models-DomainCategorizedHistoricalConsolidation** | **模型监控历史已下线模型按领域归类汇总、分类内单行概括合并与座舱紧凑呈现 (SSOT)** | 1. **彻底终结底部独立历史模型卡片堆叠**: 切除旧版将 11 个已下线模型集中堆叠在卡片底部的繁杂折叠设计；<br>2. **四大功能领域 (VLM/Embedding/Rerank/Compressor) 精准归类与一行汇总**: 各分类统一呈现为「第1行当前活跃配置模型 + 第2行历史已下线模型数据汇总」：<br> - **VLM 视觉模型**: `mux-flash` (Active, 0 calls) + 历史已下线模型汇总 (5个模型, 19,349 次调用, 39,736,791 Token)；<br> - **Embedding 向量模型**: `qwen3-vl-emb` (Active, 20,363 次) + 历史已下线模型汇总 (5个模型, 64,919 次调用, 31,701,732 Token)；<br> - **Rerank 重排模型**: `qwen3-vl-rer` (Active, 23,888 次) + 历史已下线模型汇总 (1个模型, 56,606 次调用, 129,462,246 Token)；<br> - **Compressor 压缩模型**: `microsoft/llmlingua-2-...` (Active, 0 calls)；<br>3. **数据真实性与审计 100% 物理保真**: 活跃模型数瓷片严格锁定 **4**，总调用数 (185,125) 与总 Token (311,641,875) 保持 100% 真实全量审计闭环；<br>4. **单文件规模与视觉规范双全达标**: `models_observer.py` 359 行 ($\le 500$ 行安全红线)，`model-monitoring-card.tsx` 233 行 (100~300 行黄金甜点区)；历史汇总行使用虚线微圆角边框、muted 字体与「已下线归档」轻量徽章，全系统绝对零绿色 (NO GREEN EVER 🚫)，最小字号严格 $\ge 12\text{px}$；<br>5. **自动化门禁双全**: Pytest 5/5 全绿、回归测试 13/13 全绿、安全审计扫描 4,291 文件零密钥泄露、Vite 构建 26.91s 通过。<br>**Commit Hash**：（本次提交） | **修改文件**：`openviking/storage/observers/models_observer.py`, `src/routes/monitoring/-components/model-monitoring-card.tsx`, `src/i18n/locales/*/monitoring.ts`, `tests/misc/test_models_observer.py`, `package.json`, `REFACTORING_PLAN.md` | [x] 已验收通过 ✅ |
 | **`v1.4.110`** | **Card-2080Ti-XiaomiMo-Parity-And-Restart** | **2080Ti 本地 Windows 宿主机 XiaomiMiMo 插件同频对齐、ELECTRON_RUN_AS_NODE 环境变量隔离与 4096 引擎重启闭环** | 1. **物理根因定位**: 3070 升级 messages.transform 插件后，2080Ti Windows 宿主机未同步，运行旧版 7KB 插件缺乏 messages.transform 钩子；<br>2. **环境隔离自愈**: 彻底查清在 WSL2/PowerShell 下直接重启 `Xiaomi MiMo.exe` 继承 `ELECTRON_RUN_AS_NODE=1` 导致应用以 headless Node 模式立即退出的隐蔽缺陷，通过 `Remove-Item env:ELECTRON_RUN_AS_NODE` 恢复桌面 GUI 交互与 4096 引擎拉起；<br>3. **实机模拟双题全绿**: Agnes 2.5 Flash (得分88.5, 千问14B/32B, 100%免费) 与 Mac Studio (FRP 13100, FRP 隧道) 检索注入 100% 命中；<br>4. **4096 引擎正常监听**: `plugin.log` 记录 `server init called`，MiMo 正常运行于 Session 1。<br>**Commit Hash**：（本次提交）\ | **修改文件**：`package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md` |
 | **`v1.4.109`** | **Card-Fleet-MiMo-Universal-Plugin** | **全集群 XiaomiMiMo 消息流直接注入插件 (messages.transform) 升级、本地落盘日志与 3070 引擎重启闭环** | 1. 查明 `experimental.chat.system.transform` 不生效原因：MiMo 桌面端后端模型服务忽略了 system 数组注入；<br>2. 升级落地 `experimental.chat.messages.transform` 直接将核心记忆前置拼接入 `lastUserMsg.parts`，彻底保证后端大模型 100% 收到 OpenViking 核心记忆；<br>3. 实现独立排障日志 `plugin.log` 自动追加至本地磁盘；<br>4. 3070 远端实机 4/4 题目 100% 正确回答（涵盖 Groq 27B、Mac Studio Qwen 3.8 Flash、Agnes 2.5 Flash、Mac Studio FRP 13100 端口与 IP）；<br>**Commit Hash**：`30a404373` \ | **修改文件**：`mcp-openviking/mimo_openviking_plugin.mjs`, `REFACTORING_PLAN.md` |
@@ -274,31 +275,34 @@
   - 融合计算延迟：单调时钟归并开销仅 **0.74ms ~ 2.75ms**
   - 视觉规范：100% 遵循 NO GREEN EVER 🚫，最小字号 $\ge 12\text{px}$。
 
-#### 📌 [P0] [x] Card-Retrieval-LocalFirst-zgSemanticSearch (v1.5.17): 阿里 zg 级端侧本地命令行语义搜索、四重奏融合与代码符号防盲搜护栏（深度整合 TieredLazyFetch 分级契约） ✅
-- **目标版本**：`v1.5.17` ｜ **优先级**：`P0` ｜ **交付状态**：`[x] 已验收通过 ✅`
+#### 📌 [P0] [x] Card-Retrieval-LocalFirst-zgSemanticSearch (v1.5.30): 阿里 zg 级端侧本地代码语义搜索、全库 7,951 符号离线倒排、TieredLazyFetch 强契约与 FastMCP 原生工具闭环 (SSOT) ✅
+- **目标版本**：`v1.5.30` ｜ **优先级**：`P0` ｜ **交付状态**：`[x] 已验收通过 ✅`
 - **核心交付目标**：
-  1. 吸收阿里 Qwen+Zvec《zg (zvec-grep)》、Karpathy 知识空间与 CPA 导师分级懒加载黄金律：彻底解决 Agent 在终端疯狂跑 rg 盲猜代码导致上百文件撑爆上下文；
-  2. 深度整合 TieredLazyFetch：引入 depth 契约，depth=0（元数据行号）、depth=1（紧凑指纹前后1行，默认推荐，节约 78% Token）、depth=2（完整代码块）；
+  1. 吸收阿里 Qwen+Zvec《zg (zvec-grep)》、Karpathy 知识空间与 CPA 导师分级懒加载黄金律：彻底解决 Agent 在终端疯狂跑 rg 盲搜导致上百文件撑爆有限上下文；
+  2. 深度整合 TieredLazyFetch 强契约：depth=0（元数据行号）、depth=1（紧凑指纹/签名/文档，默认推荐，实测节约 95.8% Token）、depth=2（完整代码块）；
   3. AST 符号级切片器 (`ASTChunker`)：精细提取函数、类、方法签名、文档说明与 SHA-256 紧凑指纹；
-  4. 端侧四重奏检索引擎 (`ZGSearchEngine`)：纯端侧 0 显存依赖，万行仓库毫秒级建库，结合 FTS5 倒排索引实现高精度符号匹配；
-  5. 命令行 CLI (`scripts/zg.py`) 与座舱试验台 (`ZGSearchCockpit`)：支持 depth 动态切档与实时拉取；
-  6. 门禁验证：单测 4/4 全绿，安全扫描 4,259 文件零泄密，Vite 构建 19.22s PASS。
+  4. 端侧四重奏检索引擎 (`ZGSearchEngine`)：专用 `zg_code_fts.db` 独立解耦，消除 BM25 单例污染，全库离线索引 7,951 个 AST 符号；
+  5. 全链路贯通：REST 端点 `POST /api/v1/search/zg` 与 `GET /api/v1/search/zg/stats`、FastMCP 工具 `zg_search`、离线同步脚本 `scripts/sync_zg_index.py`；
+  6. 命令行 CLI (`scripts/zg.py`) 与座舱试验台 (`ZGSearchCockpit`)：支持 depth 动态切档与实时拉取；
+  7. 门禁验证：单测 8/8 全绿，安全扫描 4,303 文件零泄密，Vite 构建 22.32s PASS。
 - **验收证据与物理交付资产清单**：
-  - `openviking/search/ast_chunker.py` (148 行，Python AST 符号解析与行号范围跨度提取)
-  - `openviking/search/tiered_fetch.py` (112 行，TieredLazyFetch 强契约与 Token 压缩统计)
-  - `openviking/search/zg_engine.py` (220 行，ZGSearchEngine 单例、FTS5 符号索引与分级拉取)
+  - `openviking/search/ast_chunker.py` (212 行，Python AST 符号解析与行号范围跨度提取)
+  - `openviking/search/tiered_fetch.py` (152 行，TieredLazyFetch 强契约与 Token 压缩统计)
+  - `openviking/search/zg_engine.py` (245 行，ZGSearchEngine 单例、专用 FTS5 符号索引与分级拉取)
   - `openviking/search/__init__.py` (统一导出)
-  - `openviking/server/routers/zg_search.py` (91 行，REST API 端点 `/api/v1/search/zg/stats`, `/search`, `/fetch`, `/reindex`)
+  - `openviking/server/routers/zg_search.py` (146 行，REST API 端点 `/api/v1/search/zg` 与 `/stats`)
+  - `openviking/server/mcp_endpoint.py` (注册第 16 个原生 MCP 工具 `zg_search`)
+  - `scripts/sync_zg_index.py` (108 行，全库 AST 离线秒级倒排建库脚本)
   - `scripts/zg.py` (135 行，本地终端极速代码语义检索 CLI)
-  - `src/routes/retrieval/-components/zg-search-cockpit.tsx` (310 行，座舱级高密前端观测与分级拉取交互试验台)
+  - `src/routes/retrieval/-components/zg-search-cockpit.tsx` (378 行，座舱级高密前端观测与分级拉取交互试验台)
   - `src/routes/retrieval/route.tsx` (挂载 ZGSearchCockpit)
-  - `tests/unit/test_zg_semantic_search.py` (165 行，4/4 自动化单元测试全部通过)
-  - `openviking/_version.py` & `package.json` (版本推进至 1.5.17)
+  - `tests/unit/test_zg_semantic_search.py` (213 行，8/8 自动化单元测试全部通过)
+  - `openviking/_version.py` & `package.json` (版本推进至 1.5.30)
 - **前端客观数据指标与正向改进核验**：
-  - 前端路由：`http://127.0.0.1:1933/studio/retrieval`
-  - 符号索引覆盖：真实全库扫描已达 **961 个代码符号**、**80 个核心模块**、**26,666 行代码**
-  - Token 压缩收益：depth=1 紧凑指纹模式相比 depth=2 全量代码块节约 **78.4% Token 开销**
-  - 检索开销：纯端侧 0 显存消耗，检索耗时仅 **0.8ms ~ 2.1ms**
+  - 前端路由：`http://127.0.0.1:1933/studio/retrieval` (Tab: zg 端侧代码语义)
+  - 符号索引覆盖：真实全库扫描已达 **7,951 个 AST 代码符号**、**546 个源文件**、**249,692 行源码**、平均符号代码行 **31.4 行**
+  - Token 压缩收益：depth=1 紧凑指纹模式相比 depth=2 全量代码块节约 **95.8% Token 开销**（查询 `ASTChunker` 实际消耗 145 vs 基线消耗 3425 Tokens）
+  - 检索开销：纯端侧 0 显存消耗，CPU 倒排耗时 **< 2.0ms**
   - 视觉规范：100% 遵循 NO GREEN EVER 🚫，最小字号 $\ge 12\text{px}$。
 
 #### 📌 [P1] [x] Card-RAG-Abstention-ZeroHallucination-Pipeline (v1.5.18): 千万级语料 RAG 约束验证与弃答门禁流水线、RARG 语义引导相关性搜索与 MinHash 去重 ✅
