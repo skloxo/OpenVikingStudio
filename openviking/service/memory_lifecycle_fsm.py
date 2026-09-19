@@ -303,6 +303,7 @@ class MemoryLifecycleFSM:
         (MemoryStatus.DISPUTED, LifecycleTransitionEvent.RESOLVE): MemoryStatus.ACTIVE,
         (MemoryStatus.DISPUTED, LifecycleTransitionEvent.SUPERSEDE): MemoryStatus.SUPERSEDED,
         (MemoryStatus.SUPERSEDED, LifecycleTransitionEvent.REVERT): MemoryStatus.ACTIVE,
+        (MemoryStatus.SUPERSEDED, LifecycleTransitionEvent.SUPERSEDE): MemoryStatus.SUPERSEDED,
     }
 
     @classmethod

@@ -668,18 +668,39 @@
 - **Git Commit Hash**: `7705626a7`
 - **Git Tag**: `v1.5.47`
 
-#### 📌 [P1] [ ] Card-UI-EvolutionDecoupling (v1.5.48): 检索大屏 15 Tab 领域解耦与独立 /studio/evolution 演进中心 ⏳
+#### 📌 [P1] [x] Card-UI-EvolutionDecoupling (v1.5.48): 检索大屏 15 Tab 领域解耦与独立 /studio/evolution 演进中心 ✅
 - **类型**：UI Refactoring / Domain Decoupling / Cockpit Ergonomics ｜ **优先级**：⚡ P1（认知降维）
-- **目标版本**：`v1.5.48` ｜ **当前状态**：[ ] 就绪待调度 ⏳
-- **核心治理目标与联动设计**：
-  1. **新建演进中心独立路由**：创建 `src/routes/evolution/route.tsx`，集中承载 `skillEval`, `ahe`, `hermes`, `rsi`, `capabilityPages`, `skillKd`, `evolutionCicd` 7 大技能自演进组件；
-  2. **检索大屏降维**：`src/routes/retrieval/route.tsx` 收敛至 6 个核心知识检索 Tab (`search`, `bm25`, `zg`, `compass`, `context`, `llmlingua`)，彻底消灭横向大滚动；
-  3. **导航与平滑过渡**：顶栏/侧边栏增加【🧬 技能自演进】入口，保留旧链接自动兼容跳转，确保 0 破相、0 报错。
+- **目标版本**：`v1.5.48` ｜ **当前状态**：[x] 已验收通过 ✅
+- **核心治理成果与物理交付物**：
+  1. **新建演进中心独立路由 (`src/routes/evolution/route.tsx`)**: 创设 `/studio/evolution` 一级页面，集中收口 7 大技能自演进座舱 (`evolutionCicd`, `skillEval`, `ahe`, `hermes`, `rsi`, `capabilityPages`, `skillKd`)，单文件 157 行处于黄金甜点区；
+  2. **检索大屏清爽降维 (`src/routes/retrieval/route.tsx`)**: 收敛至 8 个知识检索与治理核心 Tab (`search`, `bm25`, `zg`, `compass`, `crystallizer`, `context`, `valet`, `llmlingua`)，彻底消除 15 个 Tab 堆叠与横向大滚动；
+  3. **双向跨领域平滑导流**: 检索大屏右上角配置 `技能自演进中心 ➔` 紧凑徽章，支持 `?tab=...` 动态识别与参数穿透；
+  4. **全局导航对齐 (`src/components/app-shell.tsx`)**: 侧边栏工作区原生挂载 `🧬 技能自演进 (/evolution)`，中英双语 (`common.ts`) 平行维护；
+  5. **门禁与视觉双全**: 编写 `src/routes/evolution/-route.test.ts` (Vitest 3/3 PASS)、安全扫描 4,410 文件零泄漏、Vite 生产构建 22.93s PASS，实机浏览器走查 100% 正常，恪守 NO GREEN EVER 🚫 铁律；
+  6. **版本留痕**: Git Commit `56a3dc23a`，Git Tag `v1.5.48`。
+- **Git Commit Hash**: `56a3dc23a`
+- **Git Tag**: `v1.5.48`
 
-#### 📌 [P1] [ ] Card-Pipeline-WireUp-Production (v1.5.49): 顶级轮子穿透主线工作流 (LLMLingua 检索自动抽稀 + 存储无感减熵) ⏳
+#### 📌 [P1] [x] Card-Pipeline-WireUp-Production (v1.5.49): 顶级轮子穿透主线工作流 (LLMLingua 内容读取自动脱水 + 结晶自动减熵 FSM 物理级联) ✅
 - **类型**：Pipeline Integration / Anti-Entropy / Production Wiring ｜ **优先级**：⚡ P1（展品转生产）
-- **目标版本**：`v1.5.49` ｜ **当前状态**：[ ] 依赖 v1.5.48 ⏳
-- **核心治理目标与联动设计**：
-  1. **检索召回自动脱水**：在 `openviking_find` 与检索接口中，对召回的长篇 Markdown（> 1,500 字符）自动调用 `WikiDehydrationEngine` 抽稀 50% 自然语言冗余，直接降低 Agent 上下文负担与 Lost in the Middle 衰减；
-  2. **写入存储自动减熵**：在 `memory_store` 批量写入后，自动触发轻量准入判定与三门结晶异步触发器，让结晶与去噪在后台平稳自驱。
+- **目标版本**：`v1.5.49` ｜ **当前状态**：[x] 已验收通过 ✅
+- **核心治理成果与物理交付物**：
+  1. **LLMLingua-2 顶级脱水穿透生产内容读取主干**:
+     - 在 `GET /api/v1/content/read` 与 MCP 核心读取工具 `read` 中打通 `dehydrate: bool = False` 参数；
+     - 接入 `WikiDehydrationEngine`，在保留 100% 结构（YAML Frontmatter、代码块、表格）的前提下，实现长文本 50% 自然语言冗余压缩与 Token 节约；
+     - 第一性原理根治官方 XLM-RoBERTa Token Classification 调用签名（`use_llmlingua2=True` 与 `compress_prompt_llmlingua2`），消除 `past_key_values` 异常；
+     - 创新设计 `VKFROZEN{idx}BLOCK` 占位符与双重正则还原机制，模型压缩后 100% 精确还原代码块与元数据；
+  2. **三门结晶自动扫描与 FSM 物理生命周期级联闭环**:
+     - `EntropyCrystallizer.scan_and_auto_crystallize` 深入联动 `MemoryLifecycleStore`；
+     - 聚类熔炼产生高阶 FactCrystal 结晶体后，自动将来源低维冷碎片原子化流转为 `SUPERSEDED` 状态，并物理持久化写入 SQLite WAL `memory_lifecycle.db`；
+     - 增强 `MemoryLifecycleFSM._TRANSITIONS` 允许已过期碎片的幂等更新转移，彻底消除状态死锁；
+  3. **自动化测试与视网膜门禁全绿**:
+     - 编写新增测试 `tests/unit/test_pipeline_wireup_production.py`（103 行，2/2 PASS）；
+     - 核心单测套件联动运行（`test_entropy_crystallizer.py`, `test_wiki_dehydration.py`, `test_memory_lifecycle_fsm.py`, `test_pipeline_wireup_production.py`）21/21 全绿 PASS；
+     - 生产构建 `npm run build` 21.19s PASS；
+     - 凭据安全扫描 `python3 scripts/security_check.py` 4,410 文件 0 密钥泄露；
+     - 服务端探活 `/health` 稳健返回 `1.5.49`；
+  4. **版本留痕**: Git Commit 即刻提交，Git Tag `v1.5.49`。
+- **Git Commit Hash**: 见 v1.5.49 Release Commit
+- **Git Tag**: `v1.5.49`
 

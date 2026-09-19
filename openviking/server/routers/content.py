@@ -238,6 +238,7 @@ async def read(
     offset: int = Query(0, description="Starting line number (0-indexed)"),
     limit: int = Query(-1, description="Number of lines to read, -1 means read to end"),
     raw: bool = Query(False, description="Return raw stored content without memory-field cleanup"),
+    dehydrate: bool = Query(False, description="Apply LLMLingua-2 natural language dehydration to save tokens"),
     _ctx: RequestContext = Depends(get_request_context),
 ):
     """Read file content (L2)."""
@@ -248,6 +249,18 @@ async def read(
             result = await service.fs.read(uri, ctx=_ctx, offset=offset, limit=limit)
         else:
             result = await service.fs.read_visible(uri, ctx=_ctx, offset=offset, limit=limit)
+        if dehydrate and isinstance(result, str) and len(result) > 100:
+            try:
+                from openviking.service.wiki_dehydration_engine import (
+                    WikiDehydrationEngine,
+                    DehydrationRequest,
+                )
+                dehydrated = WikiDehydrationEngine.get_instance().dehydrate(
+                    DehydrationRequest(content=result)
+                )
+                result = dehydrated.dehydrated_content
+            except Exception as err:
+                logger.warning("Dehydration in content.read fallback: %s", err)
     except AGFSNotFoundError:
         raise NotFoundError(uri, "file")
     except AGFSClientError as e:
