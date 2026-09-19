@@ -72,8 +72,8 @@ export function ZGSearchCockpit() {
   const statsQuery = useQuery({
     queryKey: ['zg-search-stats'],
     queryFn: async () => {
-      const res = await ovClient.instance.get<ZGStats>('/api/v1/search/zg/stats')
-      return res.data
+      const res = await ovClient.instance.get<any>('/api/v1/search/zg/stats')
+      return (res.data?.result ?? res.data) as ZGStats
     },
     refetchInterval: 20000,
     refetchIntervalInBackground: false,
@@ -82,11 +82,11 @@ export function ZGSearchCockpit() {
   // Search Mutation
   const searchMutation = useMutation({
     mutationFn: async (payload: { query: string; depth: number }) => {
-      const res = await ovClient.instance.post<TieredFetchSummary>(
-        '/api/v1/search/zg/search',
+      const res = await ovClient.instance.post<any>(
+        '/api/v1/search/zg',
         { query: payload.query, depth: payload.depth, limit: 5 },
       )
-      return res.data
+      return (res.data?.result ?? res.data) as TieredFetchSummary
     },
     onSuccess: (data) => {
       setSearchSummary(data)

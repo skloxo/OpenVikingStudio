@@ -45,13 +45,13 @@ class ZGSearchEngine:
         self.total_lines_indexed: int = 0
         self.last_indexed_ts: float = 0.0
 
-        # Dedicated or shared BM25 FTS5 index for code symbols
+        # Dedicated BM25 FTS5 index for code symbols
         if db_path is not None:
             self.bm25 = BM25FTSIndex(db_path=Path(db_path))
         else:
             base_dir = Path(os.path.expanduser("~/.openviking/data/viking/default"))
             base_dir.mkdir(parents=True, exist_ok=True)
-            self.bm25 = BM25FTSIndex.get_instance(base_dir / "zg_code_fts.db")
+            self.bm25 = BM25FTSIndex(db_path=base_dir / "zg_code_fts.db")
 
         self._init_symbol_db()
         self._load_persisted_symbols()

@@ -1392,6 +1392,43 @@ async def health() -> str:
         return f"OpenViking is unhealthy: {e}"
 
 
+# -- zg_search -------------------------------------------------------------
+
+
+@mcp.tool()
+async def zg_search(
+    query: str,
+    depth: int = 1,
+    limit: int = 10,
+    path_filter: Optional[str] = None,
+) -> str:
+    """Local-first AST code semantic search (Alibaba zg-grep & TieredLazyFetch).
+    Eliminates blind full-repo grep floods. Returns structured code symbols at requested depth:
+    - depth=0 (Meta): file:line, symbol name, type, anchor (~15 tokens)
+    - depth=1 (Fingerprint, RECOMMENDED): signature + docstring + 1st body line + 8-char anchor (~50 tokens, ~80% token savings)
+    - depth=2 (Full Block): complete function or class body (~250 tokens)
+    Use this instead of blind rg/grep when searching for code functions, classes, and methods.
+    """
+    import asyncio
+    from openviking.search.zg_engine import ZGSearchEngine
+
+    engine = ZGSearchEngine.get_instance()
+    summary = await asyncio.to_thread(
+        engine.search,
+        query=query,
+        depth=depth,
+        limit=limit,
+        path_filter=path_filter,
+    )
+    lines = [
+        f"=== zg Code Search (depth={summary.depth} | {summary.total_results} results | saved {summary.total_tokens_saved} tokens, ~{summary.savings_percentage:.1f}% savings) ==="
+    ]
+    for r in summary.results:
+        lines.append(f"\n[{r.symbol_type}] {r.symbol_name} (score: {r.score:.2f})")
+        lines.append(r.rendered_content)
+    return "\n".join(lines)
+
+
 # ---------------------------------------------------------------------------
 # Portable tool schemas
 # ---------------------------------------------------------------------------
