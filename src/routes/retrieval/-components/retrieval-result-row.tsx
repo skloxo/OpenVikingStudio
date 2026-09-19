@@ -17,6 +17,7 @@ import { retrievalResultNameFromUri } from '#/lib/viking-uri'
 import { displayName, resourceSearchForResult } from '../-lib/results'
 import type { FlatRetrievalItem } from '../-types/retrieval'
 import { TYPE_META } from './retrieval-constants'
+import { MemoryStatusBadge } from './memory-status-badge'
 
 export function ResultRow({
   item,
@@ -79,6 +80,12 @@ export function ResultRow({
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const itemMeta = ((item.item as any).extra_metadata || {}) as Record<string, any>
+  const rawStatus = ((item.item as any).status || itemMeta.status || lifecycleStatus) as string
+  const supersededBy = itemMeta.superseded_by as string | undefined
+  const disputedReason = itemMeta.disputed_reason as string | undefined
+  const isSuperseded = rawStatus.toLowerCase() === 'superseded'
+
   return (
     <div className="flex flex-col border-b border-border/40 last:border-b-0">
       <div className="flex w-full items-start justify-between gap-2.5 px-3 py-2.5 transition-colors hover:bg-muted/40 font-sans">
@@ -101,8 +108,15 @@ export function ResultRow({
           </div>
 
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <span className="truncate text-xs font-mono font-semibold text-foreground">{name}</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span
+                className={cn(
+                  'truncate text-xs font-mono font-semibold text-foreground',
+                  isSuperseded && 'line-through opacity-60 text-muted-foreground',
+                )}
+              >
+                {name}
+              </span>
               <span
                 className={cn(
                   'shrink-0 rounded border px-1.5 py-0.5 text-xs font-mono font-medium',
@@ -116,16 +130,11 @@ export function ResultRow({
               >
                 {levelTag}
               </span>
-              {lifecycleStatus === 'archived' && (
-                <span className="shrink-0 rounded border border-muted-foreground/30 bg-muted/40 px-1.5 py-0.5 text-xs font-mono font-medium text-muted-foreground">
-                  {t('lifecycle.archived')}
-                </span>
-              )}
-              {lifecycleStatus === 'deprecated' && (
-                <span className="shrink-0 rounded border border-rose-500/30 bg-rose-500/10 px-1.5 py-0.5 text-xs font-mono font-medium text-rose-500">
-                  {t('lifecycle.deprecated')}
-                </span>
-              )}
+              <MemoryStatusBadge
+                status={rawStatus}
+                supersededBy={supersededBy}
+                disputedReason={disputedReason}
+              />
             </div>
             <div className="mt-0.5 flex items-center gap-1.5 text-xs font-mono text-muted-foreground/70">
               <FolderOpen className="size-3 shrink-0 text-muted-foreground/50" />
