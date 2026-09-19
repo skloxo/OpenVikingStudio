@@ -25,6 +25,7 @@ HARDCODED_DEFAULT_THRESHOLD: float = 0.35
 HARDCODED_PROTECTED_TOKENS: List[str] = [
     "not", "no", "never", "must", "cannot", "fail", "error", "warning",
     "严禁", "必须", "禁止", "红线", "不能", "不可", "切勿", "不得", "错误", "失败", "异常",
+    "VKFROZEN", "BLOCK",
 ]
 
 DEFAULT_TARGET_RATE: float = HARDCODED_DEFAULT_RATE
@@ -124,6 +125,7 @@ class WikiDehydrationEngine:
             logger.info("Initializing Microsoft LLMLingua-2 PromptCompressor (CPU)...")
             self._compressor = PromptCompressor(
                 model_name="microsoft/llmlingua-2-xlm-roberta-large-meetingbank",
+                use_llmlingua2=True,
                 device_map="cpu",
             )
             self._model_available = True
@@ -142,7 +144,7 @@ class WikiDehydrationEngine:
         def _replace_block(match: re.Match) -> str:
             idx = len(frozen_blocks)
             frozen_blocks.append(match.group(0))
-            return f"\n\n__VK_FROZEN_BLOCK_{idx}__\n\n"
+            return f"\n\nVKFROZEN{idx}BLOCK\n\n"
 
         processed = RE_YAML_HEADER.sub(_replace_block, text)
         processed = RE_FENCED_CODE.sub(_replace_block, processed)
@@ -152,11 +154,15 @@ class WikiDehydrationEngine:
     def _restore_structure(self, text: str, frozen_blocks: List[str]) -> str:
         """Restore frozen blocks back to original positions without token loss."""
         for idx, block in enumerate(frozen_blocks):
-            placeholder = f"__VK_FROZEN_BLOCK_{idx}__"
-            text = text.replace(placeholder, block.strip())
-            alt_placeholder = f"__vk_frozen_block_{idx}__"
-            if alt_placeholder in text:
-                text = text.replace(alt_placeholder, block.strip())
+            exact_marker = f"VKFROZEN{idx}BLOCK"
+            if exact_marker in text:
+                text = text.replace(exact_marker, f"\n\n{block.strip()}\n\n")
+            else:
+                pat = re.compile(
+                    rf"[_\w]*VK[\s_]*FROZEN[\s_]*{idx}[\s_]*BLOCK[_\w]*|[_\w]*FROZEN[\s_]*BLOCK[\s_]*{idx}[_\w]*",
+                    re.IGNORECASE,
+                )
+                text = pat.sub(lambda _: f"\n\n{block.strip()}\n\n", text)
         return re.sub(r"\n{3,}", "\n\n", text).strip()
 
     def _syntactic_pruner(self, text: str, target_rate: float) -> str:
@@ -164,6 +170,7 @@ class WikiDehydrationEngine:
         filler_patterns = [
             r"\b(as we all know|it is worth noting that|in order to|as mentioned above)\b",
             r"\b(to be precise|strictly speaking|in general terms|needless to say)\b",
+            r"\b(it is absolutely and unequivocally critical that|under no circumstances should|pay close attention to|first and foremost|it goes without saying that|it is important to note that)\b",
             r"(众所周知[，,的]*|显而易见[，,的是]*|不难发现[，,的是]*|值得注意的是[，,]*|总而言之[，,]*|综上所述[，,]*|也就是说[，,]*|换句话说[，,]*|归根结底[，,]*|总的来说[，,]*|在日常工程开发过程中[，,]*|从某种角度来看[，,]*|具体来说[，,]*|毋庸置疑[，,的是]*|由此可见[，,]*|正如前文所述[，,]*|在某种程度上[，,]*|众所周知的是[，,]*|需要特别指出的是[，,]*|众所周知测试[，。.]*)",
         ]
         pruned = text
@@ -204,10 +211,10 @@ class WikiDehydrationEngine:
 
         if self._model_available and self._compressor is not None:
             try:
-                res = self._compressor.compress_prompt(
-                    prompt=text_to_compress,
+                # LLMLingua-2 uses Token Classification via compress_prompt_llmlingua2
+                res = self._compressor.compress_prompt_llmlingua2(
+                    context=[text_to_compress],
                     rate=req.effective_rate,
-                    threshold=req.threshold,
                     force_tokens=HARDCODED_PROTECTED_TOKENS,
                     force_reserve_digit=True,
                     drop_consecutive=True,

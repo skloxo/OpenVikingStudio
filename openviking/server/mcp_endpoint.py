@@ -515,8 +515,8 @@ def _mcp_media_download_hint(uri: str) -> str:
 
 
 @mcp.tool(structured_output=False)
-async def read(uris: str | list[str]) -> str | list[ContentBlock]:
-    """Read one or more viking:// file URIs. Raster images and supported audio return native MCP content blocks. For directory listing, use the list tool instead."""
+async def read(uris: str | list[str], dehydrate: bool = False) -> str | list[ContentBlock]:
+    """Read one or more viking:// file URIs. Raster images and supported audio return native MCP content blocks. For directory listing, use the list tool instead. Set dehydrate=True to apply LLMLingua-2 natural language compression on text content."""
     import asyncio
 
     service = get_service()
@@ -614,6 +614,18 @@ async def read(uris: str | list[str]) -> str | list[ContentBlock]:
                         return _mcp_image_content(data, mime_type)
                     return _mcp_audio_content(data, mime_type)
                 content = await service.fs.read_visible(resolved_uri, ctx=ctx)
+                if dehydrate and isinstance(content, str) and len(content) > 100:
+                    try:
+                        from openviking.service.wiki_dehydration_engine import (
+                            WikiDehydrationEngine,
+                            DehydrationRequest,
+                        )
+                        dehydrated = WikiDehydrationEngine.get_instance().dehydrate(
+                            DehydrationRequest(content=content)
+                        )
+                        content = dehydrated.dehydrated_content
+                    except Exception as err:
+                        logger.warning("MCP read dehydration fallback: %s", err)
                 return content
             except OpenVikingError as exc:
                 return str(exc)

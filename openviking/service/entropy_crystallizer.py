@@ -30,9 +30,9 @@ from pydantic import BaseModel, Field
 from openviking.service.memory_lifecycle_fsm import (
     MemoryLifecycleFSM,
     MemoryLifecycleRecord,
+    MemoryLifecycleStore,
     MemoryStatus,
     LifecycleTransitionEvent,
-    _LIFECYCLE_REGISTRY,
 )
 from openviking_cli.utils.logger import get_logger
 
@@ -242,8 +242,9 @@ class EntropyCrystallizer:
 
         # Net Entropy Reduction: Atomically supersede source fragments in lifecycle FSM
         superseded_list: List[str] = []
+        lifecycle_store = MemoryLifecycleStore.get_instance()
         for frag in fragments:
-            rec = _LIFECYCLE_REGISTRY.get(frag.uri)
+            rec = lifecycle_store.get_record(frag.uri)
             if rec is None:
                 rec = MemoryLifecycleRecord(uri=frag.uri, status=MemoryStatus.ACTIVE)
             try:
@@ -253,8 +254,8 @@ class EntropyCrystallizer:
                     target_uri=crystal_uri,
                     reason=f"Crystallized into immutable SSOT axiom '{crystal.axiom}'",
                     now_ts=now,
+                    store=lifecycle_store,
                 )
-                _LIFECYCLE_REGISTRY[frag.uri] = updated_rec
                 superseded_list.append(frag.uri)
             except Exception as e:
                 logger.warning(f"Failed to mark fragment {frag.uri} superseded: {e}")
@@ -289,3 +290,36 @@ class EntropyCrystallizer:
     def list_crystals(self) -> List[FactCrystal]:
         """List all crystallized immutable facts."""
         return list(self._crystals.values())
+
+    def scan_and_auto_crystallize(
+        self,
+        candidate_fragments: Optional[List[MemoryFragment]] = None,
+        default_version_range: str = "v1.5.x",
+    ) -> List[CrystallizationResult]:
+        """Scan fragment clusters and automatically crystallize qualified batches (Net Entropy Reduction)."""
+        if not candidate_fragments:
+            return []
+
+        results: List[CrystallizationResult] = []
+        buckets: Dict[str, List[MemoryFragment]] = {}
+        for frag in candidate_fragments:
+            topic = frag.metadata.get("topic") or (frag.uri.split("/")[-2] if "/" in frag.uri else "general")
+            buckets.setdefault(topic, []).append(frag)
+
+        for topic, frags in buckets.items():
+            if len(frags) >= self.rule.min_cluster_size:
+                eval_res = self.evaluate_tri_gate(frags)
+                if eval_res.passed:
+                    axiom = f"Immutable consensus across {len(frags)} verified records under topic '{topic}'."
+                    try:
+                        res = self.distill_crystal(
+                            fragments=frags,
+                            axiom=axiom,
+                            version_range=default_version_range,
+                            distiller_id="auto-entropy-worker",
+                        )
+                        results.append(res)
+                    except Exception as exc:
+                        logger.warning(f"Auto crystallization failed for topic {topic}: {exc}")
+        return results
+
