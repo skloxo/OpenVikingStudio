@@ -46,6 +46,7 @@ from openviking.server.routers.rsi import router as rsi_router
 from openviking.server.routers.capability_page import router as capability_page_router
 from openviking.server.routers.skill_kd import router as skill_kd_router
 from openviking.server.routers.evolution_cicd import router as evolution_cicd_router
+from openviking.server.routers.agent_sensors import router as agent_sensors_router
 from openviking.server.routers.watches import router as watches_router
 from openviking.server.routers.webdav import router as webdav_router
 
@@ -94,6 +95,7 @@ __all__ = [
     "capability_page_router",
     "skill_kd_router",
     "evolution_cicd_router",
+    "agent_sensors_router",
     "watches_router",
     "webdav_router",
 ]

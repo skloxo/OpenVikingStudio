@@ -53,7 +53,7 @@
 | **Card-Skill-TrainablePolicy-RSI** | **可训练外部技能文档与昼夜双轮递归自演进架构 (Trainable Skill Document & Daytime-Nighttime RSI Engine)** | 1. 吸收翁荔 (Lilian Weng)《Harness Engineering for Self-Improvement》、AliExpress 速卖通与《AgentOPSD》：落实“如果被反复适配的对象是做事流程，流程文档本身就应该是可训练的外部策略状态 (Skill-MDP)”；<br>2. 引入 # EVOLVE-BLOCK-START/END 有界可编辑 Surface 机制，核心框架与强类型接口完全冻结，彻底杜绝“为了提分搞乱全局架构”；<br>3. 落地 AgentOPSD 长轨迹局部信用分配：Student 在无技能下完成真实 rollout，当前模型携带 Skill 作为 Self-Teacher 沿着相同轨迹计算每个 turn 的 token log-prob gap，精准识别关键 turn；<br>4. 昼夜双轮闭环：白天在确定性 Harness 下处理真实任务产生轨迹，夜间离线进行弱点聚类、局部信用分配与双 Split 无退化回归门禁验证，更新持久化技能。 | 技能文档外部可训练，长轨迹信用精准分配，昼夜双轮闭环，双 Split 零退化验证 | `P1` | `v1.5.21` | ⏳ 待排期 |
 | **Card-Skill-CapabilityPages-NegativeBoundaryRouter** | **腾讯 Capability Pages 三段式技能档案、簇级邻居对比与 T^- 负向边界隔离路由体系** | 1. 吸收腾讯混元《Skill-Use 基准》与腾讯优图《Capability Pages》：解决装了 10+ 技能后表现断崖下跌与 SU<0.5 时用技能比不用更糟的绝症；<br>2. 提纯三段式档案结构：T^+（正向触发）、T^-（负向边界）、B（判别主体）；<br>3. 簇级邻居对比生成 T^-；<br>4. 部署隔离铁律：向量索引只存 T^+ + B + 原文，T^- 严禁入库（防语义漂移），仅专供第二阶段 Cross-Encoder / Router 裁判；<br>5. 相似技能 Top-1 区分率提升超 15%。 | 彻底终结多技能检索失明，负向边界物理隔离防向量污染，相似技能精准区分 | `P1` | `v1.5.41` | [x] 已验收通过 ✅ |
 | **Card-Skill-ContrastiveDistillation** | **SKILL-KD 师生分叉决策对比蒸馏与学生重跑变绿准入门禁 (Contrastive Skill Distillation & Re-execution Gate)** | 1. 吸收浙大&北大&阿里《SKILL-KD》与北大《VeriSkill》，切除“自我反思导致的规则堆叠通胀与近亲繁殖”（38条验证规则 66.8分 击败 96条未验证反思规则 60.1分）；<br>2. 师生决策分叉提取器：从学生（本地弱模型/子代理）与老师（Claude Opus 5 / GPT-5.6 / 专家轨迹）在同题目的分叉节点提取有效差异信号；<br>3. 物理准入硬门禁（Re-execution Gate）：提炼出的候选规则 Patch 必须让学生带着在沙箱重跑原题变绿（Turn Green），断言成功才准入库；<br>4. 漂移感知规则合并（Consolidation）：自动聚类压缩重合规则，保持技能库在黄金甜点区（≤ 300 行）。 | 杜绝未经验证的反思入库，重跑变绿准入率 100%，规则库压缩保持精炼高内聚 | `P1` | `v1.5.42` | [x] 已验收通过 ✅ |
-| **Card-Evolution-CICD-DreamingGate** | **Agent 七阶段 CI/CD 变更流水线、离线异步 Dreaming 模式挖掘与四级自治升降级（深度整合 EntropyCrystallizer 存量碎片结晶）** | 1. 吸收 DeepEvolution《Agent CI/CD 流水线》与《Evolve Loop 控制层》：建立信号汇聚➔候选生成➔隔离评测➔安全门控➔灰度发布➔监控回滚➔经验沉淀七阶段管线；<br>2. 深度整合 EntropyCrystallizer：离线异步 Dreaming 模式挖掘器在夜间低峰期扫描长程轨迹聚类系统性缺陷，同时将存量散落碎片三门并联熔铸为高精纯晶体并沉淀 #cry_xxxx，消除两套定时器冲突；<br>3. 四级自治阶梯 (Level 0-3) 与异常自动降级机制；<br>4. 人类五大不可剥夺决策权与三层防审核疲劳通道；<br>5. 监控输出长度、拒答率、重试率二阶指标防范方向漂移。 | 七阶段变更管线，离线 Dreaming 与存量结晶深度融合，四级自治动态升降级，二阶防方向漂移 | `P1` | `v1.5.24` | ⏳ 待排期 |
+| **Card-Evolution-CICD-DreamingGate** | **Agent 七阶段 CI/CD 变更流水线、离线异步 Dreaming 模式挖掘与四级自治升降级（深度整合 EntropyCrystallizer 存量碎片结晶）** | 1. 吸收 DeepEvolution《Agent CI/CD 流水线》与《Evolve Loop 控制层》：建立信号汇聚➔候选生成➔隔离评测➔安全门控➔灰度发布➔监控回滚➔经验沉淀七阶段管线；<br>2. 深度整合 EntropyCrystallizer：离线异步 Dreaming 模式挖掘器在夜间低峰期扫描长程轨迹聚类系统性缺陷，同时将存量散落碎片三门并联熔铸为高精纯晶体并沉淀 #cry_xxxx，消除两套定时器冲突；<br>3. 四级自治阶梯 (Level 0-3) 与异常自动降级机制；<br>4. 人类五大不可剥夺决策权与三层防审核疲劳通道；<br>5. 监控输出长度、拒答率、重试率二阶指标防范方向漂移。 | 七阶段变更管线，离线 Dreaming 与存量结晶深度融合，四级自治动态升降级，二阶防方向漂移 | `P1` | `v1.5.43` | [x] 已验收通过 ✅ |
 | **Card-Metrics-AgentSensors** | **智能体三维效能探针（Token SNR、P@5 召回精度、人工介入率）** | 1. 落地 CPA 导师核心建言“先立度量再动架构，给系统一把恒定的物理标尺”；<br>2. 在 OpenViking Studio 观测大盘埋设三大物理探针：Token 有效载荷率 SNR、记忆召回命中率 P@5、人类纠偏介入率；<br>3. 终结架构改造效果的定性口水战，全部以数字化客观曲线驱动演进。 | Studio 观测大盘透传三大物理指标，每日会话自动统计，指标真实可靠 | `P2` | `v1.5.25` | ⏳ 待排期 |
 | **Card-Retrieval-AdvancedCards** | **检索大屏第二排高阶运营看板扩展 (Advanced Operational Telemetry)** | 1. 在检索大屏第二排扩展高阶运营指标（BM25 词法与稠密向量命中比、RARG 弃答率曲线、知识库健康度三维雷达）；<br>2. 前端组件完全遵守性冷淡视觉规范、NO GREEN EVER 与 >=11px 字号契约；<br>3. 真实后端数据驱动，在无数据时优雅展示 -- 占位符。 | 大屏第二排高密指标瓦片对齐，纯真实后端数据驱动，NO GREEN 规范，构建 PASS | `P2` | `v1.5.26` | ⏳ 待排期 |
 | **Card-LLMLingua-01** | **微软开源顶级轮子 LLMLingua-2 (xlm-roberta) 自然语言 Wiki 文档后台异步脱水降噪专项** | 1. 定位澄清：针对外部长篇 Wiki 与 Markdown 静态文档的后台离线脱水（不常驻占用 2080Ti 显存，改用按需加载或 CPA工兵处理）；<br>2. 毫秒级抽稀 50% 自然语言冗余水话，提升注意力浓度，零幻觉；<br>3. 与本地 SkillZip（针对技能流程）和 Notes-History（针对多轮对话）正交分工，补齐课题五最后一块拼图。 | Wiki 文档脱水 50%，Token 显著压缩，零显存泄漏，后台批处理离线完成 | `P2` | `v1.5.27` | ⏳ 待排期 |
@@ -593,10 +593,17 @@
   - `tests/unit/test_skill_kd_bifurcation.py`, `tests/unit/test_reexecution_gate.py`, `tests/unit/test_skill_kd_api.py` (8 个测试全部通过)
 - **交付状态**：已验收通过 ✅ ｜ **Git Commit**：待打 tag `v1.5.42`
 
-#### 📌 [P1] [ ] Card-Evolution-CICD-DreamingGate (v1.5.24): Agent 七阶段 CI/CD 变更流水线、离线异步 Dreaming 模式挖掘与四级自治升降级（深度整合 EntropyCrystallizer 存量碎片结晶） ⏳
-- **目标版本**：`v1.5.24` ｜ **优先级**：`P1`
+#### 📌 [P1] [x] Card-Evolution-CICD-DreamingGate (v1.5.43): Agent 七阶段 CI/CD 变更流水线、离线异步 Dreaming 模式挖掘与四级自治升降级（深度整合 EntropyCrystallizer 存量碎片结晶） ✅
+- **目标版本**：`v1.5.43` ｜ **优先级**：`P1` ｜ **交付状态**：已验收通过 ✅ ｜ **Git Release Tag**：`v1.5.43` (Commit: `185f5a04a`)
 - **核心交付目标**：1. 吸收 DeepEvolution《Agent CI/CD 流水线》与《Evolve Loop 控制层》：建立信号汇聚➔候选生成➔隔离评测➔安全门控➔灰度发布➔监控回滚➔经验沉淀七阶段管线；<br>2. 深度整合 EntropyCrystallizer：离线异步 Dreaming 模式挖掘器在夜间低峰期扫描长程轨迹聚类系统性缺陷，同时将存量散落碎片三门并联熔铸为高精纯晶体并沉淀 #cry_xxxx，消除两套定时器冲突；<br>3. 四级自治阶梯 (Level 0-3) 与异常自动降级机制；<br>4. 人类五大不可剥夺决策权与三层防审核疲劳通道；<br>5. 监控输出长度、拒答率、重试率二阶指标防范方向漂移。
-- **验收条件**：七阶段变更管线，离线 Dreaming 与存量结晶深度融合，四级自治动态升降级，二阶防方向漂移
+- **验收条件**：七阶段变更管线，离线 Dreaming 与存量结晶深度融合，四级自治动态升降级，二阶防方向漂移。
+- **交付内容**：
+  - `openviking/core/evolution_cicd.py`: 七阶段管线枚举、四级自治阶梯、二阶监控指标、`EvolutionCICDPipeline` 调度器；
+  - `openviking/core/dreaming_gate.py`: `DreamingDefectMiner` 轨迹聚类与与 `EntropyCrystallizer` 深度统一夜间周期熔铸；
+  - `openviking/server/routers/evolution_cicd.py`: 8 个 REST 端点（变更包生命周期、推进、Dreaming 触发/查询、自治等级调节、一键熔断回滚）；
+  - `src/routes/retrieval/-components/evolution-cicd-cockpit.tsx`: Tab 14「🔄 七阶流水线 & Dreaming」座舱组件，4 块 KPI 瓦片、泳道可视化、五大决策权控制台；
+  - `tests/unit/test_evolution_cicd.py`, `tests/unit/test_dreaming_gate.py`, `tests/unit/test_evolution_cicd_api.py` (9/9 测试通过)；
+  - 版本号物理双写自增为 `v1.5.43`，前端生产编译对齐，服务健康探针 200 OK。
 
 ### 🌊 Wave 5: 效能度量与前瞻运营 (Metrics Telemetry & Advanced Ops)
 
