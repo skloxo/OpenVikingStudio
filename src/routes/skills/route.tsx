@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { LoaderCircleIcon, SparklesIcon } from 'lucide-react'
+import { LayersIcon, LoaderCircleIcon, SparklesIcon, ZapIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Badge } from '#/components/ui/badge'
@@ -11,6 +11,7 @@ import { SkillCard } from './-components/skill-card'
 import { SkillsFilterBar } from './-components/skills-filter-bar'
 import { SkillsMetricsCards } from './-components/skills-metrics-cards'
 import { SkillDetailSheet } from './-components/skill-detail-sheet'
+import { SkillZipCockpit } from './-components/skill-zip-cockpit'
 import { getErrorMessage } from './-lib/skill-data'
 import { useSkillsData } from './-lib/use-skills'
 
@@ -20,6 +21,7 @@ export const Route = createFileRoute('/skills')({
 
 function SkillsRoute() {
   const { t } = useTranslation('skillsPage')
+  const [activeTab, setActiveTab] = React.useState<'catalog' | 'zip'>('catalog')
   const data = useSkillsData()
   const {
     skills, filteredSkills, paginatedSkills, skillsQuery, detailQuery,
@@ -41,17 +43,43 @@ function SkillsRoute() {
         </Badge>
       </header>
 
-      <SkillsMetricsCards metrics={harnessMetrics} totalSkills={skills.length} />
+      {/* View Switcher Tabs */}
+      <div className="flex items-center gap-2 border-b border-border/60 pb-2">
+        <Button
+          variant={activeTab === 'catalog' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setActiveTab('catalog')}
+          className="text-xs h-7 font-mono"
+        >
+          <LayersIcon className="size-3.5 mr-1.5" />
+          全量技能库 ({skills.length})
+        </Button>
+        <Button
+          variant={activeTab === 'zip' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setActiveTab('zip')}
+          className={`text-xs h-7 font-mono ${activeTab === 'zip' ? 'bg-cyan-600 text-white' : 'text-cyan-400'}`}
+        >
+          <ZapIcon className="size-3.5 mr-1.5" />
+          ⚡ SkillZip 写入即压缩与门禁
+        </Button>
+      </div>
 
-      <SkillsFilterBar
-        skills={skills}
-        activeScopeFilter={activeScopeFilter}
-        onSelectScopeFilter={setActiveScopeFilter}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        refinedSkills={refinedSkills}
-        onRefineSkill={handleRefineSkill}
-      />
+      {activeTab === 'zip' ? (
+        <SkillZipCockpit />
+      ) : (
+        <>
+          <SkillsMetricsCards metrics={harnessMetrics} totalSkills={skills.length} />
+
+          <SkillsFilterBar
+            skills={skills}
+            activeScopeFilter={activeScopeFilter}
+            onSelectScopeFilter={setActiveScopeFilter}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            refinedSkills={refinedSkills}
+            onRefineSkill={handleRefineSkill}
+          />
 
       {skillsQuery.isLoading ? (
         <Card className="min-h-56 items-center justify-center">
@@ -104,8 +132,10 @@ function SkillsRoute() {
           />
         </div>
       )}
+    </>
+  )}
 
-      <SkillDetailSheet
+  <SkillDetailSheet
         open={Boolean(selectedSkill)}
         onOpenChange={(open) => { if (!open) setSelectedSkill(null) }}
         detail={detailQuery.data ?? null}

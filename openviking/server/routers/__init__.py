@@ -18,6 +18,7 @@ from openviking.server.routers.retrieval_benchmark import router as retrieval_be
 from openviking.server.routers.memory_lifecycle import router as memory_lifecycle_router
 from openviking.server.routers.entropy_crystallizer import router as entropy_crystallizer_router
 from openviking.server.routers.active_notes_history import router as active_notes_history_router
+from openviking.server.routers.skill_zip import router as skill_zip_router
 from openviking.server.routers.rag_abstention import router as rag_abstention_router
 from openviking.server.routers.hg_compass import router as hg_compass_router
 from openviking.server.routers.metrics import router as metrics_router
@@ -68,6 +69,7 @@ __all__ = [
     "memory_lifecycle_router",
     "entropy_crystallizer_router",
     "active_notes_history_router",
+    "skill_zip_router",
     "rag_abstention_router",
     "hg_compass_router",
     "debug_router",
