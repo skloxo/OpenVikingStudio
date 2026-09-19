@@ -74,6 +74,7 @@ from openviking.server.routers import (
     hermes_router,
     rsi_router,
     capability_page_router,
+    skill_kd_router,
     watches_router,
     webdav_router,
 )
@@ -671,6 +672,7 @@ def create_app(
     app.include_router(hermes_router)
     app.include_router(rsi_router)
     app.include_router(capability_page_router)
+    app.include_router(skill_kd_router)
     app.include_router(rag_abstention_router)
     app.include_router(hg_compass_router)
     app.include_router(relations_router)
