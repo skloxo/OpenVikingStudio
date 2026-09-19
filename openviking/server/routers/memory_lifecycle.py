@@ -23,6 +23,8 @@ from openviking.service.memory_lifecycle_fsm import (
     MemoryStatus,
     LifecycleTransitionEvent,
     InvalidLifecycleTransitionError,
+    _LIFECYCLE_REGISTRY,
+    get_or_create_lifecycle_record,
 )
 from openviking_cli.utils.logger import get_logger
 
@@ -30,8 +32,8 @@ logger = get_logger(__name__)
 
 router = APIRouter(prefix="/api/v1/memory", tags=["memory-lifecycle"])
 
-# Global thread-safe in-memory registry for lifecycle records
-_LIFECYCLE_REGISTRY: Dict[str, MemoryLifecycleRecord] = {}
+# Backward-compatible alias
+_get_or_create_record = get_or_create_lifecycle_record
 
 
 class TransitionStatusRequest(BaseModel):
@@ -45,18 +47,6 @@ class LinkPairRequest(BaseModel):
     old_uri: str = Field(..., description="Existing superseded memory URI")
     new_uri: str = Field(..., description="New authoritative successor memory URI")
     reason: Optional[str] = Field("Superseded by verified newer revision", description="Reason for superseding")
-
-
-def _get_or_create_record(uri: str) -> MemoryLifecycleRecord:
-    """Retrieve existing lifecycle record or initialize as active."""
-    clean_uri = uri.strip()
-    if clean_uri not in _LIFECYCLE_REGISTRY:
-        _LIFECYCLE_REGISTRY[clean_uri] = MemoryLifecycleRecord(
-            uri=clean_uri,
-            status=MemoryStatus.ACTIVE,
-            updated_at=time.time(),
-        )
-    return _LIFECYCLE_REGISTRY[clean_uri]
 
 
 @router.post("/status")

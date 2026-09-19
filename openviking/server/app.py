@@ -46,6 +46,7 @@ from openviking.server.routers import (
     zg_search_router,
     retrieval_benchmark_router,
     memory_lifecycle_router,
+    entropy_crystallizer_router,
     rag_abstention_router,
     hg_compass_router,
     metrics_router,
@@ -653,6 +654,7 @@ def create_app(
     app.include_router(zg_search_router)
     app.include_router(retrieval_benchmark_router)
     app.include_router(memory_lifecycle_router)
+    app.include_router(entropy_crystallizer_router)
     app.include_router(rag_abstention_router)
     app.include_router(hg_compass_router)
     app.include_router(relations_router)
