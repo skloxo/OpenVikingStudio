@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import {
   CompassIcon,
   DatabaseIcon,
+  FlaskConicalIcon,
   LayersIcon,
   SearchIcon,
   SparklesIcon,
@@ -24,6 +25,7 @@ import { HGRAGCompassCockpit } from './-components/hg-rag-compass-cockpit'
 import { EntropyCrystallizerCockpit } from './-components/entropy-crystallizer-cockpit'
 import { ActiveNotesHistoryCockpit } from './-components/active-notes-history-cockpit'
 import { ValetIngestionCockpit } from './-components/valet-ingestion-cockpit'
+import { SkillEvalCockpit } from './-components/skill-eval-cockpit'
 import { RetrievalResults } from './-components/retrieval-results'
 import { RetrievalSearchBar } from './-components/search-bar'
 import {
@@ -39,7 +41,7 @@ import { resolveScopeTargetUri } from './-lib/scope'
 import { validateRetrievalSearch } from './-lib/search-state'
 import type { RetrievalMode, RetrievalScope } from './-types/retrieval'
 
-export type RetrievalTab = 'search' | 'bm25' | 'zg' | 'compass' | 'crystallizer' | 'context' | 'valet'
+export type RetrievalTab = 'search' | 'bm25' | 'zg' | 'compass' | 'crystallizer' | 'context' | 'valet' | 'skillEval'
 
 export const Route = createFileRoute('/retrieval')({
   validateSearch: validateRetrievalSearch,
@@ -150,6 +152,7 @@ function RetrievalPage() {
           { id: 'crystallizer', label: '三门结晶与不可变事实', icon: <SparklesIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
           { id: 'context', label: '主动上下文与历史分仓', icon: <DatabaseIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
           { id: 'valet', label: '前门泊车与反熵准入', icon: <ZapIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
+          { id: 'skillEval', label: '🧪 技能视网膜', icon: <FlaskConicalIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -248,6 +251,7 @@ function RetrievalPage() {
 
       {/* Tab 7: 前门泊车与反熵准入座舱 */}
       {activeTab === 'valet' && <ValetIngestionCockpit />}
+      {activeTab === 'skillEval' && <SkillEvalCockpit />}
     </div>
   )
 }

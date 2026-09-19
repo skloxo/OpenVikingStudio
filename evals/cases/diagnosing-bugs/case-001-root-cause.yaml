@@ -1,0 +1,18 @@
+# evals/cases/diagnosing-bugs/case-001-root-cause.yaml
+#
+# 断言: diagnosing-bugs 技能正文必须包含「根因」或「root cause」导向词汇
+# 物理意义: 诊断技能必须以物理根因为终点，禁止只修症状
+
+skill_name: diagnosing-bugs
+case_id: case-001-root-cause
+description: >
+  diagnosing-bugs 技能 SKILL.md 必须强调「根因 / root cause / 物理故障点」
+  导向，确保诊断不停留在症状层面。
+judge_type: regex
+input_from_fixture: diagnosing-bugs.md
+expect: "(根因|root.cause|物理故障|fault|diagnosis)"
+tags:
+  - p0
+  - behavior
+  - bug-diagnosis
+enabled: true

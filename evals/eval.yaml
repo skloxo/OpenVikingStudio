@@ -1,0 +1,25 @@
+# Skill Evaluation Retina — 评测引擎全局配置
+# evals/eval.yaml
+
+version: "1.0"
+engine:
+  judge_timeout_seconds: 10
+  max_parallel_cases: 4
+
+# 评测用例根目录 (相对于项目根)
+cases_root: evals/cases
+
+# 技能夹具目录
+fixtures_root: evals/fixtures
+
+# 评测结果持久化路径 (可选，留空则仅内存)
+results_store: ""
+
+# 默认标签过滤 (空 = 全部运行)
+default_tags: []
+
+# 已注册的技能名称列表
+skills:
+  - cockpit-ui
+  - diagnosing-bugs
+  - living-asset-system

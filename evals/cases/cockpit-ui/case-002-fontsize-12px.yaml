@@ -1,0 +1,18 @@
+# evals/cases/cockpit-ui/case-002-fontsize-12px.yaml
+#
+# 断言: cockpit-ui 技能正文必须包含「≥12px」或「12px」最小字号约束
+# 物理意义: 字号物理硬下限 12px 是人机工效第一性原理，任何修订不得删除此规则
+
+skill_name: cockpit-ui
+case_id: case-002-fontsize-12px
+description: >
+  cockpit-ui 技能 SKILL.md 必须包含最小字号 12px 或 text-xs 的约束声明。
+  字号物理下限是座舱可读性的基础，不可弱化。
+judge_type: regex
+input_from_fixture: cockpit-ui.md
+expect: "(12px|text-xs|≥\\s*12|>=\\s*12)"
+tags:
+  - p0
+  - typography
+  - axiom
+enabled: true

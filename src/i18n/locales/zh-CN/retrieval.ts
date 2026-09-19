@@ -224,7 +224,31 @@ export const retrieval = {
       dedupRatio: '反熵去重准入率',
       queueDepth: '待入库异步队列水深',
     },
+    skillEval: {
+      tabLabel: '技能视网膜',
+      title: '技能质量视网膜与自动化评测',
+      runAll: '▶ 运行全量评测',
+      runSkill: '▶ 评测此技能',
+      passRate: '全局通过率',
+      totalCases: '已注册用例数',
+      totalRuns: '历史评测次数',
+      lastRun: '最后评测时间',
+      statusPass: '通过',
+      statusFail: '失败',
+      statusSkip: '跳过',
+      verdictPass: 'PASS',
+      verdictFail: 'FAIL',
+      verdictSkip: 'SKIP',
+      judgeLevel: '判定级别',
+      caseId: '用例 ID',
+      skill: '技能',
+      duration: '耗时 ms',
+      noData: '--',
+      running: '评测执行中…',
+      never: '从未运行',
+    },
   },
 } as const
 
 export default retrieval
+

@@ -224,7 +224,31 @@ export const retrieval = {
       dedupRatio: 'Anti-Entropy Dedup Ratio',
       queueDepth: 'Pending Valet Queue Depth',
     },
+    skillEval: {
+      tabLabel: 'Skill Retina',
+      title: 'Skill Quality Retina & Automated Eval Gate',
+      runAll: '▶ Run All Evals',
+      runSkill: '▶ Eval This Skill',
+      passRate: 'Global Pass Rate',
+      totalCases: 'Registered Cases',
+      totalRuns: 'Total Runs',
+      lastRun: 'Last Run',
+      statusPass: 'Pass',
+      statusFail: 'Fail',
+      statusSkip: 'Skip',
+      verdictPass: 'PASS',
+      verdictFail: 'FAIL',
+      verdictSkip: 'SKIP',
+      judgeLevel: 'Judge Level',
+      caseId: 'Case ID',
+      skill: 'Skill',
+      duration: 'Duration ms',
+      noData: '--',
+      running: 'Running evals…',
+      never: 'Never run',
+    },
   },
 } as const
 
 export default retrieval
+
