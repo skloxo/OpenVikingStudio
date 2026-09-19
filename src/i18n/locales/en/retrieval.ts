@@ -55,6 +55,8 @@ export const retrieval = {
     },
     lifecycle: {
       active: 'Active',
+      disputed: 'Disputed',
+      superseded: 'Superseded',
       archived: 'Archived',
       deprecated: 'Deprecated',
     },

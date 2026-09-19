@@ -38,13 +38,16 @@ MEMORY_FIELDS_RE = re.compile(
 
 @dataclass(frozen=True)
 class DualTrackMemory:
-    """Immutable Typed DTO representing a dual-track memory unit."""
+    """Immutable Typed DTO representing a dual-track memory unit with lifecycle status."""
 
     semantic_anchor: str
     delta: str
     raw_content: str
     is_dual_track: bool = False
     title: str = ""
+    status: str = "active"
+    superseded_by: Optional[str] = None
+    disputed_reason: Optional[str] = None
     extra_fields: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -65,6 +68,7 @@ def format_dual_track_markdown(
     metadata = dict(extra_metadata or {})
     metadata["dual_track"] = True
     metadata["has_delta"] = bool(clean_delta)
+    metadata["status"] = metadata.get("status", "active")
     if clean_anchor:
         metadata["semantic_anchor"] = clean_anchor[:300]
 
@@ -138,6 +142,10 @@ def extract_dual_track(content: str) -> DualTrackMemory:
         except Exception:
             pass
 
+    status = str(extra_fields.get("status", "active"))
+    superseded_by = extra_fields.get("superseded_by")
+    disputed_reason = extra_fields.get("disputed_reason")
+
     # 2. Check for explicit section headers
     anchor_match = SEMANTIC_ANCHOR_HEADER.search(raw)
     delta_match = DELTA_HEADER.search(raw)
@@ -170,6 +178,9 @@ def extract_dual_track(content: str) -> DualTrackMemory:
             raw_content=raw,
             is_dual_track=True,
             title=title,
+            status=status,
+            superseded_by=superseded_by,
+            disputed_reason=disputed_reason,
             extra_fields=extra_fields,
         )
 

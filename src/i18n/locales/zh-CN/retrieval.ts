@@ -54,7 +54,9 @@ export const retrieval = {
       sessionPlaceholder: 'session_id（可选）',
     },
     lifecycle: {
-      active: '活跃',
+      active: '生效中',
+      disputed: '存疑/争议',
+      superseded: '已取代/废弃',
       archived: '归档',
       deprecated: '已废弃',
     },

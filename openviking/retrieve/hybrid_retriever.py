@@ -153,8 +153,35 @@ class HybridRetriever:
             dense_results=dense_candidates,
             sparse_results=sparse_candidates,
             k=k,
-            top_k=limit,
+            top_k=limit * 2,
         )
+
+        # Apply asymmetric lifecycle decay & demotion (superseded 0.20x, disputed 0.50x)
+        from openviking.retrieve.asymmetric_decay import AsymmetricDecayEngine
+        decay_engine = AsymmetricDecayEngine()
+        for item in fused:
+            meta = item.extra_metadata
+            nested_meta = meta.get("extra_metadata") if isinstance(meta.get("extra_metadata"), dict) else {}
+            status = str(meta.get("status") or nested_meta.get("status") or "active")
+            updated_ts = meta.get("updated_ts") or nested_meta.get("updated_ts")
+            assessment = decay_engine.evaluate_candidate(
+                uri=item.uri,
+                raw_score=item.dense_score or item.normalized_score,
+                updated_ts=updated_ts,
+                status=status,
+            )
+            item.extra_metadata["status"] = status
+            item.extra_metadata["decay_factor"] = assessment.decay_factor
+            item.extra_metadata["adjusted_score"] = assessment.adjusted_score
+            item.extra_metadata["is_immune"] = assessment.is_immune
+            item.normalized_score = assessment.adjusted_score
+            item.rrf_score = round(item.rrf_score * assessment.decay_factor, 6)
+
+        # Re-sort after decay demotion
+        fused.sort(key=lambda x: x.rrf_score, reverse=True)
+        fused = fused[:limit]
+        for idx, item in enumerate(fused, start=1):
+            item.fused_rank = idx
 
         latency_ms = (time.monotonic() - t0) * 1000.0
 
