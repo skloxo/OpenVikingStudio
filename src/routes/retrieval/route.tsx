@@ -15,6 +15,7 @@ import {
   MoonIcon,
   GitForkIcon,
   RefreshCwIcon,
+  ScissorsIcon,
 } from 'lucide-react'
 
 import { RetrievalBenchmarkDrawer } from './-components/benchmark-drawer'
@@ -37,6 +38,7 @@ import { RSIDayNightCockpit } from './-components/rsi-daynight-cockpit'
 import { CapabilityPagesCockpit } from './-components/capability-pages-cockpit'
 import { SkillKDCockpit } from './-components/skill-kd-cockpit'
 import { EvolutionCICDCockpit } from './-components/evolution-cicd-cockpit'
+import { LLMLinguaDehydrationCockpit } from './-components/llmlingua-dehydration-cockpit'
 import { RetrievalResults } from './-components/retrieval-results'
 import { RetrievalSearchBar } from './-components/search-bar'
 import {
@@ -52,7 +54,22 @@ import { resolveScopeTargetUri } from './-lib/scope'
 import { validateRetrievalSearch } from './-lib/search-state'
 import type { RetrievalMode, RetrievalScope } from './-types/retrieval'
 
-export type RetrievalTab = 'search' | 'bm25' | 'zg' | 'compass' | 'crystallizer' | 'context' | 'valet' | 'skillEval' | 'ahe' | 'hermes' | 'rsi' | 'capabilityPages' | 'skillKd' | 'evolutionCicd'
+export type RetrievalTab =
+  | 'search'
+  | 'bm25'
+  | 'zg'
+  | 'compass'
+  | 'crystallizer'
+  | 'context'
+  | 'valet'
+  | 'skillEval'
+  | 'ahe'
+  | 'hermes'
+  | 'rsi'
+  | 'capabilityPages'
+  | 'skillKd'
+  | 'evolutionCicd'
+  | 'llmlingua'
 
 export const Route = createFileRoute('/retrieval')({
   validateSearch: validateRetrievalSearch,
@@ -170,6 +187,7 @@ function RetrievalPage() {
           { id: 'capabilityPages', label: '📑 腾讯能力档案', icon: <LayersIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
           { id: 'skillKd', label: '🎯 SKILL-KD 蒸馏', icon: <GitForkIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
           { id: 'evolutionCicd', label: '🔄 七阶流水线 & Dreaming', icon: <RefreshCwIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
+          { id: 'llmlingua', label: t('llmlingua.tabLabel'), icon: <ScissorsIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -278,6 +296,7 @@ function RetrievalPage() {
       {activeTab === 'capabilityPages' && <CapabilityPagesCockpit />}
       {activeTab === 'skillKd' && <SkillKDCockpit />}
       {activeTab === 'evolutionCicd' && <EvolutionCICDCockpit />}
+      {activeTab === 'llmlingua' && <LLMLinguaDehydrationCockpit />}
     </div>
   )
 }
