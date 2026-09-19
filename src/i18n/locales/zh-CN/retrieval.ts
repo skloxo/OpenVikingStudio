@@ -60,6 +60,14 @@ export const retrieval = {
       archived: '归档',
       deprecated: '已废弃',
     },
+    crystallizer: {
+      title: '三门结晶与不可变事实',
+      tabLabel: '三门结晶与不可变事实',
+      crystalsCount: '已熔炼不可变事实',
+      netReduced: '存量物理净减熵',
+      triGateBlockRate: '三门硬门禁拦截率',
+      triGateRule: '三门并联硬准则',
+    },
     results: {
       title: '检索结果',
       topN: '检索结果（Top{{count}}）',

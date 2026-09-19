@@ -6,6 +6,7 @@ import {
   CompassIcon,
   LayersIcon,
   SearchIcon,
+  SparklesIcon,
   TerminalIcon,
 } from 'lucide-react'
 
@@ -18,6 +19,7 @@ import { BM25HybridCockpit } from './-components/bm25-hybrid-cockpit'
 import { ZGSearchCockpit } from './-components/zg-search-cockpit'
 import { RAGAbstentionCockpit } from './-components/rag-abstention-cockpit'
 import { HGRAGCompassCockpit } from './-components/hg-rag-compass-cockpit'
+import { EntropyCrystallizerCockpit } from './-components/entropy-crystallizer-cockpit'
 import { RetrievalResults } from './-components/retrieval-results'
 import { RetrievalSearchBar } from './-components/search-bar'
 import {
@@ -33,7 +35,7 @@ import { resolveScopeTargetUri } from './-lib/scope'
 import { validateRetrievalSearch } from './-lib/search-state'
 import type { RetrievalMode, RetrievalScope } from './-types/retrieval'
 
-export type RetrievalTab = 'search' | 'bm25' | 'zg' | 'compass'
+export type RetrievalTab = 'search' | 'bm25' | 'zg' | 'compass' | 'crystallizer'
 
 export const Route = createFileRoute('/retrieval')({
   validateSearch: validateRetrievalSearch,
@@ -141,6 +143,7 @@ function RetrievalPage() {
           { id: 'bm25', label: 'BM25 双流混合融合', icon: <LayersIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
           { id: 'zg', label: 'zg 端侧代码语义', icon: <TerminalIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
           { id: 'compass', label: 'HG-RAG 拓扑与主动弃答', icon: <CompassIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
+          { id: 'crystallizer', label: '三门结晶与不可变事实', icon: <SparklesIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -230,6 +233,9 @@ function RetrievalPage() {
           <GatekeeperAuditStream />
         </div>
       )}
+
+      {/* Tab 5: 三门结晶减熵与不可变事实座舱 */}
+      {activeTab === 'crystallizer' && <EntropyCrystallizerCockpit />}
     </div>
   )
 }

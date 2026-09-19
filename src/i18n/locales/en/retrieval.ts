@@ -60,6 +60,14 @@ export const retrieval = {
       archived: 'Archived',
       deprecated: 'Deprecated',
     },
+    crystallizer: {
+      title: 'Tri-Gate Crystallizer & Immutable SSOT',
+      tabLabel: 'Tri-Gate Crystallizer',
+      crystalsCount: 'Distilled SSOT Crystals',
+      netReduced: 'Net Entropy Reduced',
+      triGateBlockRate: 'Tri-Gate Block Rate',
+      triGateRule: 'Tri-Gate Standard',
+    },
     results: {
       title: 'Search Results',
       topN: 'Search Results (Top{{count}})',

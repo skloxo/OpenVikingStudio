@@ -67,6 +67,22 @@ class MemoryLifecycleRecord(BaseModel):
         }
 
 
+# Global thread-safe in-memory registry for memory lifecycle records
+_LIFECYCLE_REGISTRY: Dict[str, MemoryLifecycleRecord] = {}
+
+
+def get_or_create_lifecycle_record(uri: str) -> MemoryLifecycleRecord:
+    """Retrieve existing lifecycle record or initialize as active."""
+    clean_uri = uri.strip()
+    if clean_uri not in _LIFECYCLE_REGISTRY:
+        _LIFECYCLE_REGISTRY[clean_uri] = MemoryLifecycleRecord(
+            uri=clean_uri,
+            status=MemoryStatus.ACTIVE,
+            updated_at=time.time(),
+        )
+    return _LIFECYCLE_REGISTRY[clean_uri]
+
+
 class MemoryLifecycleFSM:
     """Deterministic finite state machine governing memory status transitions."""
 
