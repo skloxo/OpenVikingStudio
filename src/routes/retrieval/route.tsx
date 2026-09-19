@@ -11,6 +11,7 @@ import {
   SparklesIcon,
   TerminalIcon,
   ZapIcon,
+  ShieldCheckIcon,
 } from 'lucide-react'
 
 import { RetrievalBenchmarkDrawer } from './-components/benchmark-drawer'
@@ -26,6 +27,7 @@ import { EntropyCrystallizerCockpit } from './-components/entropy-crystallizer-c
 import { ActiveNotesHistoryCockpit } from './-components/active-notes-history-cockpit'
 import { ValetIngestionCockpit } from './-components/valet-ingestion-cockpit'
 import { SkillEvalCockpit } from './-components/skill-eval-cockpit'
+import { AHECockpit } from './-components/ahe-cockpit'
 import { RetrievalResults } from './-components/retrieval-results'
 import { RetrievalSearchBar } from './-components/search-bar'
 import {
@@ -41,7 +43,7 @@ import { resolveScopeTargetUri } from './-lib/scope'
 import { validateRetrievalSearch } from './-lib/search-state'
 import type { RetrievalMode, RetrievalScope } from './-types/retrieval'
 
-export type RetrievalTab = 'search' | 'bm25' | 'zg' | 'compass' | 'crystallizer' | 'context' | 'valet' | 'skillEval'
+export type RetrievalTab = 'search' | 'bm25' | 'zg' | 'compass' | 'crystallizer' | 'context' | 'valet' | 'skillEval' | 'ahe'
 
 export const Route = createFileRoute('/retrieval')({
   validateSearch: validateRetrievalSearch,
@@ -153,6 +155,7 @@ function RetrievalPage() {
           { id: 'context', label: '主动上下文与历史分仓', icon: <DatabaseIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
           { id: 'valet', label: '前门泊车与反熵准入', icon: <ZapIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
           { id: 'skillEval', label: '🧪 技能视网膜', icon: <FlaskConicalIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
+          { id: 'ahe', label: '🛡️ AHE 自演进', icon: <ShieldCheckIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -252,6 +255,7 @@ function RetrievalPage() {
       {/* Tab 7: 前门泊车与反熵准入座舱 */}
       {activeTab === 'valet' && <ValetIngestionCockpit />}
       {activeTab === 'skillEval' && <SkillEvalCockpit />}
+      {activeTab === 'ahe' && <AHECockpit />}
     </div>
   )
 }
