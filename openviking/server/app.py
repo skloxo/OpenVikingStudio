@@ -75,6 +75,7 @@ from openviking.server.routers import (
     rsi_router,
     capability_page_router,
     skill_kd_router,
+    evolution_cicd_router,
     watches_router,
     webdav_router,
 )
@@ -673,6 +674,7 @@ def create_app(
     app.include_router(rsi_router)
     app.include_router(capability_page_router)
     app.include_router(skill_kd_router)
+    app.include_router(evolution_cicd_router)
     app.include_router(rag_abstention_router)
     app.include_router(hg_compass_router)
     app.include_router(relations_router)
