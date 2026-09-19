@@ -3,7 +3,7 @@
 
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
-import { DownloadIcon, Loader2Icon, PlayIcon, PlusIcon, RotateCcwIcon, ZapIcon, SparklesIcon } from 'lucide-react'
+import { DownloadIcon, Loader2Icon, PlayIcon, PlusIcon, RotateCcwIcon, ZapIcon, SparklesIcon, ShieldCheckIcon } from 'lucide-react'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { cn } from '#/lib/utils'
@@ -76,6 +76,20 @@ export function BenchmarkQuerySuite({
           >
             <SparklesIcon className="size-3 text-cyan-500" />
             <span>{t('benchmark.ragasMode', 'RAGAS 评测实验室 (04A~04B)')}</span>
+          </button>
+          <button
+            type="button"
+            disabled={isRunning}
+            onClick={() => onModeChange('gold')}
+            className={cn(
+              'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer',
+              mode === 'gold'
+                ? 'bg-background text-cyan-500 shadow-sm border border-cyan-500/40'
+                : 'text-muted-foreground hover:text-cyan-500'
+            )}
+          >
+            <ShieldCheckIcon className="size-3 text-cyan-500" />
+            <span>{t('benchmark.goldMode', 'Gold 金标回归集 (32标尺)')}</span>
           </button>
         </div>
 

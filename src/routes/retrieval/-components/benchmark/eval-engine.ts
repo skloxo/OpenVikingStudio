@@ -29,6 +29,21 @@ export const EXACT_SYMBOL_BENCHMARK_QUERIES: string[] = [
   'sqlite3.OperationalError',
 ]
 
+export const GOLD_BENCHMARK_QUERIES: string[] = [
+  '_query_endpoint_frequency_sync',
+  'HierarchicalRetriever',
+  'ASTChunker',
+  'BM25FTSIndex',
+  'sqlite3.OperationalError',
+  'PydanticUserError',
+  'Missing API Key in trusted mode',
+  'NO GREEN EVER 视觉公理',
+  '单文件行数安全红线 100~300 行',
+  '双模态 MCP 架构',
+  'Karpathy LLM Wiki 读写分离',
+  'RARG 证据覆盖率主动弃答',
+]
+
 export function getDefaultBenchmarkQueries(lang?: string): string[] {
   const isEn = lang ? lang.toLowerCase().startsWith('en') : false
   return isEn ? DEFAULT_BENCHMARK_QUERIES_EN : DEFAULT_BENCHMARK_QUERIES_ZH
@@ -37,6 +52,9 @@ export function getDefaultBenchmarkQueries(lang?: string): string[] {
 export function getBenchmarkQueriesByMode(mode: BenchmarkMode, lang?: string): string[] {
   if (mode === 'symbols') {
     return EXACT_SYMBOL_BENCHMARK_QUERIES
+  }
+  if (mode === 'gold') {
+    return GOLD_BENCHMARK_QUERIES
   }
   return getDefaultBenchmarkQueries(lang)
 }
@@ -151,6 +169,21 @@ export function computeSummaryMetrics(
       avgLatency,
       avgScore,
       symbolRecallRate: hitRate,
+    }
+  }
+
+  if (mode === 'gold') {
+    const validRR = results.map((r) => r.reciprocalRank).filter((rr): rr is number => typeof rr === 'number')
+    const mrr = total > 0 && validRR.length > 0
+      ? Number((validRR.reduce((a, b) => a + b, 0) / total).toFixed(3))
+      : 0
+    return {
+      total,
+      completed,
+      hitRate,
+      avgLatency,
+      avgScore,
+      mrr,
     }
   }
 

@@ -46,7 +46,7 @@
 | **Card-Context-ActiveNotesAndHistory** | **Codex 级主动上下文治理（Notes 高密活跃状态 + History 独立检索分仓，切除有损 Compaction）** | 1. 吸收 DeepEvolution 对 Codex 最新架构解密 (PR #39827)：废除有损全局 Compaction 摘要（多次压缩导致路径、错误码、中间未完成状态严重失真）；<br>2. 状态与历史双轨分仓：Notes 存高密度结构化核心事实常驻上下文，History 存原始对话流移出上下文独立分仓；<br>3. 主动调阅工具：模型按需调用 list_history_windows / search_history 检索历史；<br>4. 阻断长会话上下文失忆与信息衰减。 | 切除有损压缩，关键路径/报错信息零失真，长程多轮会话状态持久保真 | `P1` | `v1.5.14` | ⏳ 待排期 |
 | **Card-Skill-ZipOnWrite-ContractualCompression** | **阿里 SkillZip 写入即压缩引擎、六元组强类型契约与 0-Rollout 确定性重构防膨胀** | 1. 吸收阿里/浙大/杜克《SkillZip》：终结自进化技能膨胀 5.2 倍的“复读机死因”（重复代码与琐碎特例堆叠）；<br>2. 六元组强类型契约化解析（接口、工作流、协议、规则、契约、证据）；<br>3. Explain Once, Reference Everywhere：公共动作抽取为共享过程函数，公共规则提升至最小公共作用域；<br>4. 0-Rollout 确定性优化（动态规划规则放置 + 加权装箱）；<br>5. Zip-on-Write 门禁：写入即压缩，长度全程锁定种子 1.6~1.9 倍，压缩率超 30% 且基准表现持平反超。 | 技能契约化解析，0-Rollout 确定性重构，写入即压缩防膨胀复利，压缩率 30%+ | `P1` | `v1.5.15` | ⏳ 待排期 |
 | **Card-Memory-ValetIngestion-AntiEntropyGate** | **前门自动泊车异步分流与反熵增去噪去重准入门禁 (Valet Ingestion Engine & Anti-Entropy Gate)** | 1. 彻底根治写入阻塞：前门践行自动泊车异步分流模型，秒级交钥匙返回 202 Accepted，调用方零写延迟；<br>2. 后台 Worker 异步执行 MinHash LSH 近重复检测与语义去噪，阻断同义碎片反复堆叠；<br>3. 存储底座封顶消灭侧门：统一拦截 WebDAV、REST 与 MCP 写入路径，建立统一准入流；<br>4. 配合非对称时效动力学：长期未命中条目自动降权，防范近亲繁殖与规则通胀。 | 写入 10ms 极速交钥匙，后台异步深减熵，消灭存储侧门，全链路反熵增闭环 | `P1` | `v1.5.16` | ⏳ 待排期 |
-| **Card-Hygiene-AsymmetricDecayAndBench** | **知识卫生异步巡检 (Knowledge Hygiene)、非对称衰减与真实查询回归金标集** | 1. 吸收非对称淘汰律：“错误记忆的伤害远大于正确记忆的收益”；<br>2. 挂载轻量后台巡检 Worker：识别死重条目（零召回）、冲突簇与孤立引用，坚守奥卡姆剃刀：只输出报告与建议，绝不自动化盲目删数据；<br>3. 时效动力学与非对称衰减：对长期未命中或被标记存疑的条目降低基础检索权重；<br>4. 真实查询金标回归集 (Gold Benchmark)：从真实 find 提取 50~100 条覆盖符号、报错、规则的测试集，固定上下文 Token 预算，作为检索算法/模型升级的不可逾越门禁。 | 知识库死重与冲突可视可控，模型/检索演进具备固定物理标尺，告别盲飞调参 | `P1` | `v1.5.17` | ⏳ 待排期 |
+| **Card-Hygiene-AsymmetricDecayAndBench** | **知识卫生异步巡检 (Knowledge Hygiene)、非对称衰减与真实查询回归金标集** | 1. 吸收非对称淘汰律：“错误记忆的伤害远大于正确记忆的收益”；<br>2. 挂载轻量后台巡检 Worker：识别死重条目（零召回）、冲突簇与孤立引用，坚守奥卡姆剃刀：只输出报告与建议，绝不自动化盲目删数据；<br>3. 时效动力学与非对称衰减：对长期未命中或被标记存疑的条目降低基础检索权重；<br>4. 真实查询金标回归集 (Gold Benchmark)：从真实 find 提取 50~100 条覆盖符号、报错、规则的测试集，固定上下文 Token 预算，作为检索算法/模型升级的不可逾越门禁。 | 知识库死重与冲突可视可控，模型/检索演进具备固定物理标尺，告别盲飞调参 | `P1` | `v1.5.31` | [x] 已验收通过 ✅ |
 | **Card-Evolve-HermesEvolveLoop-Patch** | **Hermes 级经历与能力解耦存储、Periodic Nudges 异步副进程复盘与 Patch 级技能微补丁自进化机制** | 1. 吸收 DeepEvolution《Hermes Agent Evolve Loop》与全景导论：实现经历（SessionDB）与能力（Skill/Memory）严格物理分层；<br>2. 跨会话 FTS5 真实消息检索（拒绝虚假 LLM 摘要）；<br>3. Periodic Nudges 异步副进程复盘：主任务完成后异步派发轻量工兵模型复盘轨迹并提取经验，零阻塞用户交互；<br>4. Patch 优先技能微手术：skill_manage 强制局部增量替换（≤30行），保留 90% 经过验证的边界逻辑，防范 Edit 模式全量重写的严重幻觉覆盖。 | 经历与能力物理分层，真实轨迹 FTS5 检索，异步副进程复盘，Patch 局部微手术防遗忘 | `P1` | `v1.5.18` | ⏳ 待排期 |
 | **Card-Skill-EvaluationRetina** | **Skill 质量视网膜与自动化评测门禁体系 (Skill-as-Code & Testing CI / skill-up 规范落地)** | 1. 吸收阿里开源 skill-up 与 AI 软件测试方法论，彻底终结“改动一行提示词行为漂移、跑一遍 Demo 没报错就裸奔上线”；<br>2. 规范化测试工程结构：建立 evals/cases/（声明式 YAML 用例）、evals/fixtures/（数据脚手架）、evals/eval.yaml（引擎与断言配置）；<br>3. 落地三级判定器引擎（Exact/Regex 匹配断言、Command 脚本退出码、agent_judge LLM 语义判官）；<br>4. 首批为核心技能（cockpit-ui、diagnosing-bugs、living-asset-system）建立回归金标用例；<br>5. 接入 Git 预提交钩子与 CI 自动化回归门禁，构建 Eval-to-Evolution 自闭环。 | 核心技能 100% 具备声明式用例，三级 Judge 断言生效，改动自动跑回归阻断行为漂移 | `P0` | `v1.5.19` | ⏳ 待排期 |
 | **Card-Harness-AHE-ContractualSelfEvolution** | **AHE 契约三元组自演进、Self-Harness 根因聚类与 Polar 不可伪造环境判官体系** | 1. 吸收 7 大 Harness 自演进论文（Meta-Harness/AHE/Self-Harness）、Karpathy 自动研究与 NVIDIA Polar：终结 Reward Hacking 假繁荣与表面症状打补丁冲突；<br>2. AHE 契约三元组：可证伪（Manifest 显式假设）、可归因（根因机制聚类 + 冻结面排除）、可回滚（文件级版本秒级还原）；<br>3. Self-Harness 目标模型自提议 + 双 Split 零回归门禁；<br>4. Polar 不可伪造环境判官：以真实沙箱执行退出码为唯一真理。 | 脚手架自演进契约化，根因聚类防补丁冲突，不可伪造环境判官，秒级可回滚 | `P0` | `v1.5.20` | ⏳ 待排期 |
@@ -434,10 +434,17 @@
   4. **非对称时效动力学与防通胀机制**：长期未命中或存疑条目自动降权，防范近亲繁殖与规则膨胀。
 - **验收条件**：写入 10ms 极速交钥匙，后台异步深减熵，消灭存储侧门，全链路反熵增闭环。
 
-#### 📌 [P1] [ ] Card-Hygiene-AsymmetricDecayAndBench (v1.5.17): 知识卫生异步巡检 (Knowledge Hygiene)、非对称衰减与真实查询回归金标集 ⏳
-- **目标版本**：`v1.5.17` ｜ **优先级**：`P1`
-- **核心交付目标**：1. 吸收非对称淘汰律：“错误记忆的伤害远大于正确记忆的收益”；<br>2. 挂载轻量后台巡检 Worker：识别死重条目（零召回）、冲突簇与孤立引用，坚守奥卡姆剃刀：只输出报告与建议，绝不自动化盲目删数据；<br>3. 时效动力学与非对称衰减：对长期未命中或被标记存疑的条目降低基础检索权重；<br>4. 真实查询金标回归集 (Gold Benchmark)：从真实 find 提取 50~100 条覆盖符号、报错、规则的测试集，固定上下文 Token 预算，作为检索算法/模型升级的不可逾越门禁。
-- **验收条件**：知识库死重与冲突可视可控，模型/检索演进具备固定物理标尺，告别盲飞调参
+#### 📌 [P1] [x] Card-Hygiene-AsymmetricDecayAndBench (v1.5.31): 知识卫生异步巡检 (Knowledge Hygiene)、非对称衰减与真实查询回归金标集 ✅
+- **目标版本**：`v1.5.31` ｜ **优先级**：`P1` ｜ **状态**：`[x] 已验收通过 ✅`
+- **核心交付目标**：1. 吸收非对称淘汰律：“错误记忆的伤害远大于正确记忆的收益”；<br>2. 挂载轻量后台巡检 Worker：识别死重条目（零召回）、冲突簇与孤立引用，坚守奥卡姆剃刀：只输出报告与建议，绝不自动化盲目删数据；<br>3. 时效动力学与非对称衰减：对长期未命中或被标记存疑的条目降低基础检索权重；<br>4. 真实查询金标回归集 (Gold Benchmark)：从真实 find 提取 32 条覆盖符号、报错、规则的测试集，固定上下文 Token 预算，作为检索算法/模型升级的不可逾越门禁。
+- **验收条件**：知识库死重与冲突可视可控，模型/检索演进具备固定物理标尺，告别盲飞调参。
+- **交付内容摘要**：
+  - **金标测试集**：`openviking/retrieve/gold_benchmarks.json`（32 条涵盖 symbols, errors, architecture, domain 四维真实用例）；
+  - **非对称时效衰减引擎**：`openviking/retrieve/asymmetric_decay.py`（公理 100% 豁免、半衰期指数衰减、disputed 0.5 与 superseded 0.2 惩罚）；
+  - **知识卫生巡检引擎**：`openviking/retrieve/knowledge_hygiene.py`（零盲删审计、休眠死重识别、0~100 健康指数）；
+  - **REST API 端点**：`openviking/server/routers/retrieval_benchmark.py`（`/benchmark/suites`, `/benchmark/run`, `/hygiene/report`）；
+  - **前端座舱联动**：`benchmark-drawer.tsx`、`query-suite.tsx`、`eval-engine.ts`、`types.ts` 支持一键切换 Gold-32 物理门禁并回显 MRR 与命中率；
+  - **单测与门禁**：`tests/unit/test_retrieval_benchmark_and_hygiene.py` 100% 通过（5 passed），前端构建 100% 成功，安全审计零泄密。
 
 #### 📌 [P1] [ ] Card-Evolve-HermesEvolveLoop-Patch (v1.5.18): Hermes 级经历与能力解耦存储、Periodic Nudges 异步副进程复盘与 Patch 级技能微补丁自进化机制 ⏳
 - **目标版本**：`v1.5.18` ｜ **优先级**：`P1`

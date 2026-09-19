@@ -1,0 +1,266 @@
+{
+  "version": "1.0",
+  "metadata": {
+    "total_queries": 32,
+    "description": "OpenViking 生产级真实回归金标集 (Gold Benchmark Dataset)，用于双流检索质量、MRR 与召回率门禁物理检验",
+    "categories": ["symbols", "errors", "architecture", "domain"]
+  },
+  "benchmarks": [
+    {
+      "id": "sym-01",
+      "category": "symbols",
+      "query": "_query_endpoint_frequency_sync",
+      "expected_keywords": ["_query_endpoint_frequency_sync", "frequency", "audit"],
+      "expected_uri_pattern": "frequency|audit|route",
+      "min_acceptable_rank": 1
+    },
+    {
+      "id": "sym-02",
+      "category": "symbols",
+      "query": "HierarchicalRetriever",
+      "expected_keywords": ["HierarchicalRetriever", "retrieve", "hybrid"],
+      "expected_uri_pattern": "hierarchical_retriever|retrieve",
+      "min_acceptable_rank": 1
+    },
+    {
+      "id": "sym-03",
+      "category": "symbols",
+      "query": "ASTChunker",
+      "expected_keywords": ["ASTChunker", "chunk", "ast", "python"],
+      "expected_uri_pattern": "ast_chunker|search",
+      "min_acceptable_rank": 1
+    },
+    {
+      "id": "sym-04",
+      "category": "symbols",
+      "query": "BM25FTSIndex",
+      "expected_keywords": ["BM25FTSIndex", "fts5", "bm25", "sqlite"],
+      "expected_uri_pattern": "bm25_fts_index|storage",
+      "min_acceptable_rank": 1
+    },
+    {
+      "id": "sym-05",
+      "category": "symbols",
+      "query": "VikingFS.commit",
+      "expected_keywords": ["commit", "snapshot", "viking_fs"],
+      "expected_uri_pattern": "viking_fs|commit",
+      "min_acceptable_rank": 2
+    },
+    {
+      "id": "sym-06",
+      "category": "symbols",
+      "query": "TieredLazyFetch",
+      "expected_keywords": ["TieredLazyFetch", "depth", "token", "shield"],
+      "expected_uri_pattern": "tiered_fetch|search",
+      "min_acceptable_rank": 1
+    },
+    {
+      "id": "sym-07",
+      "category": "symbols",
+      "query": "zg_search",
+      "expected_keywords": ["zg_search", "mcp", "tool", "semantic"],
+      "expected_uri_pattern": "mcp_endpoint|zg_search",
+      "min_acceptable_rank": 1
+    },
+    {
+      "id": "sym-08",
+      "category": "symbols",
+      "query": "rrf_fuse",
+      "expected_keywords": ["rrf_fuse", "rrf", "rank", "fusion"],
+      "expected_uri_pattern": "rrf_fusion|retrieve",
+      "min_acceptable_rank": 1
+    },
+    {
+      "id": "err-01",
+      "category": "errors",
+      "query": "sqlite3.OperationalError",
+      "expected_keywords": ["OperationalError", "sqlite3", "lock", "database"],
+      "expected_uri_pattern": "sqlite|fts|database",
+      "min_acceptable_rank": 3
+    },
+    {
+      "id": "err-02",
+      "category": "errors",
+      "query": "PydanticUserError",
+      "expected_keywords": ["PydanticUserError", "pydantic", "fastmcp"],
+      "expected_uri_pattern": "mcp|satellite|decorators",
+      "min_acceptable_rank": 2
+    },
+    {
+      "id": "err-03",
+      "category": "errors",
+      "query": "Missing API Key in trusted mode",
+      "expected_keywords": ["API Key", "trusted", "auth", "unauthenticated"],
+      "expected_uri_pattern": "auth|identity|server",
+      "min_acceptable_rank": 2
+    },
+    {
+      "id": "err-04",
+      "category": "errors",
+      "query": "AttributeError: type object",
+      "expected_keywords": ["AttributeError", "diagnose", "bug"],
+      "expected_uri_pattern": "diagnose|debug|error",
+      "min_acceptable_rank": 3
+    },
+    {
+      "id": "err-05",
+      "category": "errors",
+      "query": "ContextDeadlineExceeded",
+      "expected_keywords": ["timeout", "deadline", "asyncio", "failsafe"],
+      "expected_uri_pattern": "timeout|harness|failsafe",
+      "min_acceptable_rank": 3
+    },
+    {
+      "id": "err-06",
+      "category": "errors",
+      "query": "401 Unauthorized",
+      "expected_keywords": ["401", "unauthorized", "api_key", "token"],
+      "expected_uri_pattern": "auth|api_keys|server",
+      "min_acceptable_rank": 2
+    },
+    {
+      "id": "err-07",
+      "category": "errors",
+      "query": "Port 1933 in use",
+      "expected_keywords": ["1933", "port", "bind", "systemd"],
+      "expected_uri_pattern": "server|service|config",
+      "min_acceptable_rank": 2
+    },
+    {
+      "id": "err-08",
+      "category": "errors",
+      "query": "Worker thread leak",
+      "expected_keywords": ["thread", "leak", "singleton", "telemetry"],
+      "expected_uri_pattern": "telemetry|worker|thread",
+      "min_acceptable_rank": 2
+    },
+    {
+      "id": "arch-01",
+      "category": "architecture",
+      "query": "NO GREEN EVER 视觉公理",
+      "expected_keywords": ["green", "cyan", "neutral", "cockpit"],
+      "expected_uri_pattern": "cockpit|rules|AGENTS.md",
+      "min_acceptable_rank": 1
+    },
+    {
+      "id": "arch-02",
+      "category": "architecture",
+      "query": "单文件行数安全红线 100~300 行",
+      "expected_keywords": ["sweet spot", "500", "lines", "agent-friendly"],
+      "expected_uri_pattern": "agent-friendly|rules|AGENTS.md",
+      "min_acceptable_rank": 1
+    },
+    {
+      "id": "arch-03",
+      "category": "architecture",
+      "query": "双模态 MCP 架构",
+      "expected_keywords": ["monorepo", "satellite", "core", "mcp"],
+      "expected_uri_pattern": "mcp|satellite|AGENTS.md",
+      "min_acceptable_rank": 2
+    },
+    {
+      "id": "arch-04",
+      "category": "architecture",
+      "query": "绝对数据真实性禁止 Mock",
+      "expected_keywords": ["mock", "fake", "integrity", "real"],
+      "expected_uri_pattern": "rules|AGENTS.md|audit",
+      "min_acceptable_rank": 1
+    },
+    {
+      "id": "arch-05",
+      "category": "architecture",
+      "query": "原子化小步快跑与 Git Tag 留痕",
+      "expected_keywords": ["tag", "commit", "tracer", "sop"],
+      "expected_uri_pattern": "rules|AGENTS.md|git",
+      "min_acceptable_rank": 1
+    },
+    {
+      "id": "arch-06",
+      "category": "architecture",
+      "query": "第一性原理主干服务绝对优先",
+      "expected_keywords": ["core service", "decoupling", "observability"],
+      "expected_uri_pattern": "rules|AGENTS.md|core",
+      "min_acceptable_rank": 2
+    },
+    {
+      "id": "arch-07",
+      "category": "architecture",
+      "query": "高密座舱信息密度与微圆角",
+      "expected_keywords": ["cockpit", "density", "rounded", "12px"],
+      "expected_uri_pattern": "cockpit|ui|AGENTS.md",
+      "min_acceptable_rank": 1
+    },
+    {
+      "id": "arch-08",
+      "category": "architecture",
+      "query": "非对称淘汰律",
+      "expected_keywords": ["asymmetric", "hygiene", "decay", "memory"],
+      "expected_uri_pattern": "hygiene|decay|memory",
+      "min_acceptable_rank": 2
+    },
+    {
+      "id": "dom-01",
+      "category": "domain",
+      "query": "Karpathy LLM Wiki 读写分离",
+      "expected_keywords": ["karpathy", "wiki", "read", "write", "desk"],
+      "expected_uri_pattern": "compass|wiki|decoupling",
+      "min_acceptable_rank": 2
+    },
+    {
+      "id": "dom-02",
+      "category": "domain",
+      "query": "HG-RAG 分层指南针拓扑",
+      "expected_keywords": ["compass", "hg-rag", "hierarchy", "topology"],
+      "expected_uri_pattern": "compass|hg_compass|rag",
+      "min_acceptable_rank": 1
+    },
+    {
+      "id": "dom-03",
+      "category": "domain",
+      "query": "MinHash LSH 近重复去重",
+      "expected_keywords": ["minhash", "lsh", "dedup", "jaccard"],
+      "expected_uri_pattern": "minhash|dedup|rag",
+      "min_acceptable_rank": 1
+    },
+    {
+      "id": "dom-04",
+      "category": "domain",
+      "query": "RARG 证据覆盖率主动弃答",
+      "expected_keywords": ["rarg", "abstention", "claim", "evidence"],
+      "expected_uri_pattern": "abstention|rarg|rag",
+      "min_acceptable_rank": 1
+    },
+    {
+      "id": "dom-05",
+      "category": "domain",
+      "query": "五阶全息吸收闭环",
+      "expected_keywords": ["adversarial", "learning", "distillation", "first principles"],
+      "expected_uri_pattern": "adversarial|skills|rules",
+      "min_acceptable_rank": 2
+    },
+    {
+      "id": "dom-06",
+      "category": "domain",
+      "query": "座舱级高密性冷淡设计",
+      "expected_keywords": ["cockpit", "ui", "tabular", "font-mono"],
+      "expected_uri_pattern": "cockpit|ui|rules",
+      "min_acceptable_rank": 1
+    },
+    {
+      "id": "dom-07",
+      "category": "domain",
+      "query": "全集群统一客户端身份穿透",
+      "expected_keywords": ["actor", "peer", "client@node", "header"],
+      "expected_uri_pattern": "satellite|identity|peer",
+      "min_acceptable_rank": 2
+    },
+    {
+      "id": "dom-08",
+      "category": "domain",
+      "query": "CPA 体外智囊导师自动触发",
+      "expected_keywords": ["cpa", "teacher", "consult", "worker"],
+      "expected_uri_pattern": "cpa|teacher|guard",
+      "min_acceptable_rank": 2
+    }
+  ]
+}
