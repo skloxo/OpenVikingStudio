@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as EvolutionRouteRouteImport } from './routes/evolution/route'
 import { Route as GraphRouteRouteImport } from './routes/graph/route'
 import { Route as HarnessLogsRouteImport } from './routes/harness-logs'
 import { Route as HomeRouteRouteImport } from './routes/home/route'
@@ -31,6 +32,11 @@ import { Route as SkillsHarnessLogsRouteImport } from './routes/skills/harness-l
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EvolutionRouteRoute = EvolutionRouteRouteImport.update({
+  id: '/evolution',
+  path: '/evolution',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GraphRouteRoute = GraphRouteRouteImport.update({
@@ -121,6 +127,7 @@ const SkillsHarnessLogsRoute = SkillsHarnessLogsRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/evolution': typeof EvolutionRouteRoute
   '/graph': typeof GraphRouteRoute
   '/home': typeof HomeRouteRoute
   '/monitoring': typeof MonitoringRouteRoute
@@ -141,6 +148,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/evolution': typeof EvolutionRouteRoute
   '/graph': typeof GraphRouteRoute
   '/home': typeof HomeRouteRoute
   '/monitoring': typeof MonitoringRouteRoute
@@ -161,6 +169,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/evolution': typeof EvolutionRouteRoute
   '/graph': typeof GraphRouteRoute
   '/home': typeof HomeRouteRoute
   '/monitoring': typeof MonitoringRouteRoute
@@ -183,6 +192,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/evolution'
     | '/graph'
     | '/home'
     | '/monitoring'
@@ -203,6 +213,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/evolution'
     | '/graph'
     | '/home'
     | '/monitoring'
@@ -222,6 +233,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/evolution'
     | '/graph'
     | '/home'
     | '/monitoring'
@@ -243,6 +255,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  EvolutionRouteRoute: typeof EvolutionRouteRoute
   GraphRouteRoute: typeof GraphRouteRoute
   HomeRouteRoute: typeof HomeRouteRoute
   MonitoringRouteRoute: typeof MonitoringRouteRoute
@@ -267,6 +280,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/evolution': {
+      id: '/evolution'
+      path: '/evolution'
+      fullPath: '/evolution'
+      preLoaderRoute: typeof EvolutionRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/graph': {
@@ -417,6 +437,7 @@ const SkillsRouteRouteWithChildren = SkillsRouteRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  EvolutionRouteRoute: EvolutionRouteRoute,
   GraphRouteRoute: GraphRouteRoute,
   HomeRouteRoute: HomeRouteRoute,
   MonitoringRouteRoute: MonitoringRouteRoute,

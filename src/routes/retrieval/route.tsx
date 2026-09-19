@@ -1,21 +1,17 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate, Link } from '@tanstack/react-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import {
   CompassIcon,
   DatabaseIcon,
-  FlaskConicalIcon,
   LayersIcon,
   SearchIcon,
   SparklesIcon,
   TerminalIcon,
   ZapIcon,
-  ShieldCheckIcon,
-  MoonIcon,
-  GitForkIcon,
-  RefreshCwIcon,
   ScissorsIcon,
+  DnaIcon,
 } from 'lucide-react'
 
 import { RetrievalBenchmarkDrawer } from './-components/benchmark-drawer'
@@ -31,13 +27,6 @@ import { HGRAGCompassCockpit } from './-components/hg-rag-compass-cockpit'
 import { EntropyCrystallizerCockpit } from './-components/entropy-crystallizer-cockpit'
 import { ActiveNotesHistoryCockpit } from './-components/active-notes-history-cockpit'
 import { ValetIngestionCockpit } from './-components/valet-ingestion-cockpit'
-import { SkillEvalCockpit } from './-components/skill-eval-cockpit'
-import { AHECockpit } from './-components/ahe-cockpit'
-import { HermesEvolveCockpit } from './-components/hermes-evolve-cockpit'
-import { RSIDayNightCockpit } from './-components/rsi-daynight-cockpit'
-import { CapabilityPagesCockpit } from './-components/capability-pages-cockpit'
-import { SkillKDCockpit } from './-components/skill-kd-cockpit'
-import { EvolutionCICDCockpit } from './-components/evolution-cicd-cockpit'
 import { LLMLinguaDehydrationCockpit } from './-components/llmlingua-dehydration-cockpit'
 import { RetrievalResults } from './-components/retrieval-results'
 import { RetrievalSearchBar } from './-components/search-bar'
@@ -62,14 +51,22 @@ export type RetrievalTab =
   | 'crystallizer'
   | 'context'
   | 'valet'
-  | 'skillEval'
-  | 'ahe'
-  | 'hermes'
-  | 'rsi'
-  | 'capabilityPages'
-  | 'skillKd'
-  | 'evolutionCicd'
   | 'llmlingua'
+
+const RETRIEVAL_TABS: Array<{
+  id: RetrievalTab
+  label: string
+  icon: React.ReactNode
+}> = [
+  { id: 'search', label: '主控检索与综合结果', icon: <SearchIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
+  { id: 'bm25', label: 'BM25 双流混合融合', icon: <LayersIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
+  { id: 'zg', label: 'zg 端侧代码语义', icon: <TerminalIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
+  { id: 'compass', label: 'HG-RAG 拓扑与主动弃答', icon: <CompassIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
+  { id: 'crystallizer', label: '三门结晶与不可变事实', icon: <SparklesIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
+  { id: 'context', label: '主动上下文与历史分仓', icon: <DatabaseIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
+  { id: 'valet', label: '前门泊车与反熵准入', icon: <ZapIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
+  { id: 'llmlingua', label: 'LLMLingua 自然语言脱水', icon: <ScissorsIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
+]
 
 export const Route = createFileRoute('/retrieval')({
   validateSearch: validateRetrievalSearch,
@@ -170,30 +167,14 @@ function RetrievalPage() {
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-4">
-      {/* 高密座舱顶层 Tab 导航 (消除 4 屏瀑布式纵向滚动) */}
-      <div className="flex items-center gap-1.5 border-b border-border/60 pb-1">
-        {[
-          { id: 'search', label: '主控检索与综合结果', icon: <SearchIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
-          { id: 'bm25', label: 'BM25 双流混合融合', icon: <LayersIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
-          { id: 'zg', label: 'zg 端侧代码语义', icon: <TerminalIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
-          { id: 'compass', label: 'HG-RAG 拓扑与主动弃答', icon: <CompassIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
-          { id: 'crystallizer', label: '三门结晶与不可变事实', icon: <SparklesIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
-          { id: 'context', label: '主动上下文与历史分仓', icon: <DatabaseIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
-          { id: 'valet', label: '前门泊车与反熵准入', icon: <ZapIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
-          { id: 'skillEval', label: '🧪 技能视网膜', icon: <FlaskConicalIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
-          { id: 'ahe', label: '🛡️ AHE 自演进', icon: <ShieldCheckIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
-          { id: 'hermes', label: '🧬 Hermes 经历与微补丁', icon: <DatabaseIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
-          { id: 'rsi', label: '🌓 RSI 昼夜策略', icon: <MoonIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
-          { id: 'capabilityPages', label: '📑 腾讯能力档案', icon: <LayersIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
-          { id: 'skillKd', label: '🎯 SKILL-KD 蒸馏', icon: <GitForkIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
-          { id: 'evolutionCicd', label: '🔄 七阶流水线 & Dreaming', icon: <RefreshCwIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
-          { id: 'llmlingua', label: t('llmlingua.tabLabel'), icon: <ScissorsIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
-        ].map((tab) => (
+      {/* 高密座舱顶层 Tab 导航 (消除 4 屏瀑布式纵向滚动与冗余堆叠) */}
+      <div className="flex items-center gap-1.5 border-b border-border/60 pb-1 overflow-x-auto">
+        {RETRIEVAL_TABS.map((tab) => (
           <button
             key={tab.id}
             type="button"
-            onClick={() => setActiveTab(tab.id as RetrievalTab)}
-            className={`flex items-center rounded-t-md px-3 py-1.5 text-xs font-medium transition-all cursor-pointer ${
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center rounded-t-md px-3 py-1.5 text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
               activeTab === tab.id
                 ? 'border-b-2 border-cyan-600 dark:border-cyan-400 bg-card text-foreground font-semibold'
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
@@ -203,6 +184,15 @@ function RetrievalPage() {
             {tab.label}
           </button>
         ))}
+
+        {/* 跨领域联动平滑导流：直接跳转至独立的技能自演进中心 */}
+        <Link
+          to="/evolution"
+          className="ml-auto flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-cyan-600 dark:text-cyan-400 hover:text-cyan-500 rounded border border-cyan-800/30 bg-cyan-950/20 whitespace-nowrap transition-colors"
+        >
+          <DnaIcon className="size-3" />
+          <span>{t('evolutionCenterLink', '技能自演进中心 ➔')}</span>
+        </Link>
       </div>
 
       {/* Tab 1: 主控检索与综合结果 */}
@@ -289,13 +279,8 @@ function RetrievalPage() {
 
       {/* Tab 7: 前门泊车与反熵准入座舱 */}
       {activeTab === 'valet' && <ValetIngestionCockpit />}
-      {activeTab === 'skillEval' && <SkillEvalCockpit />}
-      {activeTab === 'ahe' && <AHECockpit />}
-      {activeTab === 'hermes' && <HermesEvolveCockpit />}
-      {activeTab === 'rsi' && <RSIDayNightCockpit />}
-      {activeTab === 'capabilityPages' && <CapabilityPagesCockpit />}
-      {activeTab === 'skillKd' && <SkillKDCockpit />}
-      {activeTab === 'evolutionCicd' && <EvolutionCICDCockpit />}
+
+      {/* Tab 8: LLMLingua 自然语言脱水座舱 */}
       {activeTab === 'llmlingua' && <LLMLinguaDehydrationCockpit />}
     </div>
   )

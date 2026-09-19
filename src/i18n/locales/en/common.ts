@@ -83,6 +83,9 @@ export const common = {
       retrieval: {
         title: 'Information Governance',
       },
+      evolution: {
+        title: 'Skill Evolution',
+      },
       sessions: {
         title: 'Session Center',
       },
