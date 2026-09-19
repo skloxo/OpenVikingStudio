@@ -351,6 +351,18 @@ class ValetIngestionEngine:
                 target_path.parent.mkdir(parents=True, exist_ok=True)
                 target_path.write_text(content, encoding="utf-8")
                 logger.info("Valet worker physically parked file at: %s", target_path)
+                try:
+                    from openviking.storage.bm25_fts_index import BM25FTSIndex
+
+                    BM25FTSIndex.get_instance().index_document(
+                        uri=uri,
+                        title=Path(uri).name,
+                        content=content,
+                        level=2,
+                        context_type="resource",
+                    )
+                except Exception as b_err:
+                    logger.warning("Valet BM25 index sync failed for %s: %s", uri, b_err)
         except Exception as e:
             logger.error("Failed to physically write valet file: %s", e)
 
