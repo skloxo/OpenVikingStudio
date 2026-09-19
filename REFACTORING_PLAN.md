@@ -512,10 +512,18 @@
   - `tests/unit/test_ahe_engine.py` & `tests/unit/test_ahe_api.py` (单元测试与端到端 API 测试 100% 通过)
 - **交付状态**：已交付 ✅ ｜ **Git Commit**：待打 tag `v1.5.38`
 
-#### 📌 [P1] [ ] Card-Skill-TrainablePolicy-RSI (v1.5.21): 可训练外部技能文档与昼夜双轮递归自演进架构 (Trainable Skill Document & Daytime-Nighttime RSI Engine) ⏳
-- **目标版本**：`v1.5.21` ｜ **优先级**：`P1`
+#### 📌 [P1] [x] Card-Skill-TrainablePolicy-RSI (v1.5.40): 可训练外部技能文档与昼夜双轮递归自演进架构 (Trainable Skill Document & Daytime-Nighttime RSI Engine) ✅
+- **目标版本**：`v1.5.40` ｜ **优先级**：`P1` ｜ **实际交付版本**：`v1.5.40`
 - **核心交付目标**：1. 吸收翁荔 (Lilian Weng)《Harness Engineering for Self-Improvement》、AliExpress 速卖通与《AgentOPSD》：落实“如果被反复适配的对象是做事流程，流程文档本身就应该是可训练的外部策略状态 (Skill-MDP)”；<br>2. 引入 # EVOLVE-BLOCK-START/END 有界可编辑 Surface 机制，核心框架与强类型接口完全冻结，彻底杜绝“为了提分搞乱全局架构”；<br>3. 落地 AgentOPSD 长轨迹局部信用分配：Student 在无技能下完成真实 rollout，当前模型携带 Skill 作为 Self-Teacher 沿着相同轨迹计算每个 turn 的 token log-prob gap，精准识别关键 turn；<br>4. 昼夜双轮闭环：白天在确定性 Harness 下处理真实任务产生轨迹，夜间离线进行弱点聚类、局部信用分配与双 Split 无退化回归门禁验证，更新持久化技能。
 - **验收条件**：技能文档外部可训练，长轨迹信用精准分配，昼夜双轮闭环，双 Split 零退化验证
+- **交付内容**：
+  - `openviking/core/trainable_skill_policy.py` (有界 `# EVOLVE-BLOCK-START/END` 与冻结面保护)
+  - `openviking/core/rsi_credit_allocator.py` (AgentOPSD 局部信用分配与关键回合标定)
+  - `openviking/core/rsi_day_night_engine.py` (昼夜双轮调度引擎与双 Split 零退化门禁)
+  - `openviking/server/routers/rsi.py` (7 个 REST API 端点)
+  - `src/routes/retrieval/-components/rsi-daynight-cockpit.tsx` (Tab 11 RSI 昼夜座舱，4 块 KPI 瓦片)
+  - `tests/unit/test_trainable_skill_policy.py`, `tests/unit/test_rsi_credit_allocator.py`, `tests/unit/test_rsi_day_night_engine.py`, `tests/unit/test_rsi_api.py` (9 个测试全部通过)
+- **交付状态**：已交付 ✅ ｜ **Git Commit**：待打 tag `v1.5.40`
 
 #### 📌 [P1] [ ] Card-Skill-CapabilityPages-NegativeBoundaryRouter (v1.5.22): 腾讯 Capability Pages 三段式技能档案、簇级邻居对比与 T^- 负向边界隔离路由体系 ⏳
 - **目标版本**：`v1.5.22` ｜ **优先级**：`P1`

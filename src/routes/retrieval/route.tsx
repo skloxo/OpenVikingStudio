@@ -12,6 +12,7 @@ import {
   TerminalIcon,
   ZapIcon,
   ShieldCheckIcon,
+  MoonIcon,
 } from 'lucide-react'
 
 import { RetrievalBenchmarkDrawer } from './-components/benchmark-drawer'
@@ -29,6 +30,7 @@ import { ValetIngestionCockpit } from './-components/valet-ingestion-cockpit'
 import { SkillEvalCockpit } from './-components/skill-eval-cockpit'
 import { AHECockpit } from './-components/ahe-cockpit'
 import { HermesEvolveCockpit } from './-components/hermes-evolve-cockpit'
+import { RSIDayNightCockpit } from './-components/rsi-daynight-cockpit'
 import { RetrievalResults } from './-components/retrieval-results'
 import { RetrievalSearchBar } from './-components/search-bar'
 import {
@@ -44,7 +46,7 @@ import { resolveScopeTargetUri } from './-lib/scope'
 import { validateRetrievalSearch } from './-lib/search-state'
 import type { RetrievalMode, RetrievalScope } from './-types/retrieval'
 
-export type RetrievalTab = 'search' | 'bm25' | 'zg' | 'compass' | 'crystallizer' | 'context' | 'valet' | 'skillEval' | 'ahe' | 'hermes'
+export type RetrievalTab = 'search' | 'bm25' | 'zg' | 'compass' | 'crystallizer' | 'context' | 'valet' | 'skillEval' | 'ahe' | 'hermes' | 'rsi'
 
 export const Route = createFileRoute('/retrieval')({
   validateSearch: validateRetrievalSearch,
@@ -158,6 +160,7 @@ function RetrievalPage() {
           { id: 'skillEval', label: '🧪 技能视网膜', icon: <FlaskConicalIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
           { id: 'ahe', label: '🛡️ AHE 自演进', icon: <ShieldCheckIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
           { id: 'hermes', label: '🧬 Hermes 经历与微补丁', icon: <DatabaseIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
+          { id: 'rsi', label: '🌓 RSI 昼夜策略', icon: <MoonIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -259,6 +262,7 @@ function RetrievalPage() {
       {activeTab === 'skillEval' && <SkillEvalCockpit />}
       {activeTab === 'ahe' && <AHECockpit />}
       {activeTab === 'hermes' && <HermesEvolveCockpit />}
+      {activeTab === 'rsi' && <RSIDayNightCockpit />}
     </div>
   )
 }
