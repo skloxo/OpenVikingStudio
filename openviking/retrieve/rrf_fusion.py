@@ -27,6 +27,7 @@ class FusedCandidate(BaseModel):
     dense_score: float = 0.0
     bm25_score: float = 0.0
     rrf_score: float = 0.0
+    normalized_score: float = 0.0
     fused_rank: int = 0
     extra_metadata: Dict[str, Any] = Field(default_factory=dict)
 
@@ -123,9 +124,12 @@ def rrf_fuse(
         reverse=True,
     )
 
-    # 4. Assign fused ranks
-    for final_rank, cand in enumerate(sorted_candidates[:top_k], start=1):
+    # 4. Assign fused ranks and normalized scores
+    top_candidates = sorted_candidates[:top_k]
+    max_rrf = top_candidates[0].rrf_score if top_candidates and top_candidates[0].rrf_score > 0 else 1.0
+    for final_rank, cand in enumerate(top_candidates, start=1):
         cand.fused_rank = final_rank
+        cand.normalized_score = round(cand.rrf_score / max_rrf, 4)
         cand.rrf_score = round(cand.rrf_score, 6)
 
-    return sorted_candidates[:top_k]
+    return top_candidates

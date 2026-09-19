@@ -30,6 +30,7 @@ class HybridTelemetrySnapshot(BaseModel):
     exact_symbol_boost_count: int
     avg_latency_ms: float
     is_bm25_ready: bool
+    rank_distribution: Dict[str, int] = Field(default_factory=dict)
 
 
 class HybridRetrievalTelemetry:
@@ -47,6 +48,9 @@ class HybridRetrievalTelemetry:
         self.overlapping_candidates: int = 0
         self.exact_symbol_boosts: int = 0
         self.total_latency_ms: float = 0.0
+        self.dense_only_count: int = 0
+        self.sparse_only_count: int = 0
+        self.hybrid_both_count: int = 0
 
     @classmethod
     def get_instance(cls) -> "HybridRetrievalTelemetry":
@@ -63,6 +67,8 @@ class HybridRetrievalTelemetry:
         overlap_count: int,
         symbol_boost: bool,
         latency_ms: float,
+        dense_only: int = 0,
+        sparse_only: int = 0,
     ):
         with self._lock:
             self.total_queries += 1
@@ -70,6 +76,9 @@ class HybridRetrievalTelemetry:
             self.sparse_candidates += sparse_count
             self.hybrid_fused += fused_count
             self.overlapping_candidates += overlap_count
+            self.hybrid_both_count += overlap_count
+            self.dense_only_count += dense_only
+            self.sparse_only_count += sparse_only
             if symbol_boost:
                 self.exact_symbol_boosts += 1
             self.total_latency_ms += latency_ms
@@ -79,6 +88,11 @@ class HybridRetrievalTelemetry:
             q = max(1, self.total_queries)
             total_fused = max(1, self.hybrid_fused)
             overlap_rate = (self.overlapping_candidates / total_fused) if self.total_queries > 0 else 0.0
+            distribution = {
+                "hybrid_overlap": self.hybrid_both_count,
+                "dense_only": self.dense_only_count,
+                "sparse_only": self.sparse_only_count,
+            }
             return HybridTelemetrySnapshot(
                 total_hybrid_queries=self.total_queries,
                 dense_candidates_total=self.dense_candidates,
@@ -88,6 +102,7 @@ class HybridRetrievalTelemetry:
                 exact_symbol_boost_count=self.exact_symbol_boosts,
                 avg_latency_ms=round(self.total_latency_ms / q, 2),
                 is_bm25_ready=is_bm25_ready,
+                rank_distribution=distribution,
             )
 
 
@@ -145,6 +160,8 @@ class HybridRetriever:
 
         # Telemetry accounting
         overlap_count = sum(1 for f in fused if f.origin == "hybrid")
+        dense_only = sum(1 for f in fused if f.origin == "dense_only")
+        sparse_only = sum(1 for f in fused if f.origin == "sparse_only")
         symbol_boost = any(f.origin == "sparse_only" and f.fused_rank <= 3 for f in fused)
 
         self.telemetry.record(
@@ -154,6 +171,8 @@ class HybridRetriever:
             overlap_count=overlap_count,
             symbol_boost=symbol_boost,
             latency_ms=latency_ms,
+            dense_only=dense_only,
+            sparse_only=sparse_only,
         )
 
         return fused

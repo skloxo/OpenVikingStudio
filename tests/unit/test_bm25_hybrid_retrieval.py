@@ -184,3 +184,37 @@ def test_hybrid_search_rest_api():
     assert "dense_results" in probe_data
     assert "fused_results" in probe_data
     assert "latency_ms" in probe_data
+
+
+def test_exact_code_symbol_and_payload_guard(temp_bm25_index):
+    """Verify exact underscore symbols, ports, and payload guard against write amplification."""
+    # 1. Payload guard: base64 image data should be rejected
+    ok_base64 = temp_bm25_index.index_document(
+        uri="viking://test/img.png",
+        title="Image",
+        content="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+    )
+    assert ok_base64 is False
+
+    # 2. Large content should be clamped and indexed safely
+    huge_content = "def _query_endpoint_frequency_sync(): return True\n" + ("padding " * 10000)
+    ok_huge = temp_bm25_index.index_document(
+        uri="viking://test/huge.py",
+        title="Huge File",
+        content=huge_content,
+    )
+    assert ok_huge is True
+
+    # 3. Exact symbol search for _query_endpoint_frequency_sync
+    matches = temp_bm25_index.search("_query_endpoint_frequency_sync")
+    assert len(matches) >= 1
+    assert matches[0].uri == "viking://test/huge.py"
+    assert matches[0].bm25_score > 0.0
+
+    # 4. RRF normalized score check
+    dense = [{"uri": "viking://test/other", "score": 0.9}]
+    sparse = [{"uri": "viking://test/huge.py", "bm25_score": 0.95}]
+    fused = rrf_fuse(dense, sparse, k=60, top_k=2)
+    assert len(fused) == 2
+    assert fused[0].normalized_score == 1.0
+    assert 0.0 <= fused[1].normalized_score <= 1.0

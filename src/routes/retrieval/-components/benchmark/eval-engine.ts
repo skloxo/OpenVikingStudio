@@ -1,7 +1,9 @@
-// Copyright (c) 2026 Beijing Volcano Engine Technology Co., Ltd.
-// SPDX-License-Identifier: AGPL-3.0
-
-import type { BenchmarkResultItem, BenchmarkSummaryMetrics, RagasScoreBreakdown } from './types'
+import type {
+  BenchmarkMode,
+  BenchmarkResultItem,
+  BenchmarkSummaryMetrics,
+  RagasScoreBreakdown,
+} from './types'
 
 export const DEFAULT_BENCHMARK_QUERIES_ZH: string[] = [
   'OpenViking 核心架构与设计哲学',
@@ -19,9 +21,24 @@ export const DEFAULT_BENCHMARK_QUERIES_EN: string[] = [
   'Task Pipeline 23-Step Panorama Specification',
 ]
 
+export const EXACT_SYMBOL_BENCHMARK_QUERIES: string[] = [
+  '_query_endpoint_frequency_sync',
+  'HierarchicalRetriever',
+  '1933',
+  'VikingFS.commit',
+  'sqlite3.OperationalError',
+]
+
 export function getDefaultBenchmarkQueries(lang?: string): string[] {
   const isEn = lang ? lang.toLowerCase().startsWith('en') : false
   return isEn ? DEFAULT_BENCHMARK_QUERIES_EN : DEFAULT_BENCHMARK_QUERIES_ZH
+}
+
+export function getBenchmarkQueriesByMode(mode: BenchmarkMode, lang?: string): string[] {
+  if (mode === 'symbols') {
+    return EXACT_SYMBOL_BENCHMARK_QUERIES
+  }
+  return getDefaultBenchmarkQueries(lang)
 }
 
 export const DEFAULT_BENCHMARK_QUERIES: string[] = DEFAULT_BENCHMARK_QUERIES_ZH
@@ -108,7 +125,7 @@ export function evaluateRagasSample(
  */
 export function computeSummaryMetrics(
   results: BenchmarkResultItem[],
-  mode: 'fast' | 'ragas',
+  mode: BenchmarkMode,
 ): BenchmarkSummaryMetrics {
   const total = results.length
   const completedList = results.filter((r) => r.status !== 'pending' && r.status !== 'running')
@@ -125,6 +142,17 @@ export function computeSummaryMetrics(
   const avgScore = validScores.length > 0
     ? (validScores.reduce((a, b) => a + b, 0) / validScores.length).toFixed(3)
     : '0.000'
+
+  if (mode === 'symbols') {
+    return {
+      total,
+      completed,
+      hitRate,
+      avgLatency,
+      avgScore,
+      symbolRecallRate: hitRate,
+    }
+  }
 
   if (mode !== 'ragas') {
     return { total, completed, hitRate, avgLatency, avgScore }

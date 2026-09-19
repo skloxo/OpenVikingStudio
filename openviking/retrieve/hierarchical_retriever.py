@@ -285,6 +285,77 @@ class HierarchicalRetriever:
             telemetry.count("vector.scored", len(quick_results))
             telemetry.count("vector.scanned", len(quick_results))
 
+            # BM25 Sparse Lexical Retrieval & RRF Fusion (Card-Retrieval-BM25Hybrid v1.5.29)
+            if not image_query and query.query:
+                try:
+                    from openviking.storage.bm25_fts_index import BM25FTSIndex
+                    from openviking.retrieve.rrf_fusion import rrf_fuse
+                    from openviking.retrieve.hybrid_retriever import HybridRetrievalTelemetry
+
+                    bm25_index = BM25FTSIndex.get_instance()
+                    sparse_matches = await asyncio.to_thread(
+                        bm25_index.search,
+                        query=query.query,
+                        limit=max(20, limit * 2),
+                        context_type=context_type,
+                        target_directories=target_dirs,
+                    )
+                    if sparse_matches:
+                        sparse_dicts = [
+                            {
+                                "uri": m.uri,
+                                "title": m.title,
+                                "level": m.level,
+                                "context_type": m.context_type,
+                                "bm25_score": m.bm25_score,
+                                "snippet": m.snippet,
+                            }
+                            for m in sparse_matches
+                        ]
+                        fused_candidates = rrf_fuse(
+                            dense_results=quick_results,
+                            sparse_results=sparse_dicts,
+                            k=60,
+                            top_k=max(25, limit * 3),
+                        )
+                        fused_pool = []
+                        for f in fused_candidates:
+                            # Use normalized_score ([0.0, 1.0]) to respect threshold checks
+                            score_val = f.normalized_score if f.normalized_score > 0 else f.rrf_score
+                            fused_pool.append({
+                                "uri": f.uri,
+                                "title": f.title,
+                                "level": f.level,
+                                "context_type": f.context_type,
+                                "abstract": f.snippet,
+                                "_score": score_val,
+                                "_final_score": score_val,
+                                "rrf_raw_score": f.rrf_score,
+                                "origin": f.origin,
+                                "dense_rank": f.dense_rank,
+                                "sparse_rank": f.sparse_rank,
+                                "bm25_score": f.bm25_score,
+                                **f.extra_metadata,
+                            })
+                        quick_results = fused_pool
+
+                        overlap_cnt = sum(1 for f in fused_candidates if f.origin == "hybrid")
+                        dense_only_cnt = sum(1 for f in fused_candidates if f.origin == "dense_only")
+                        sparse_only_cnt = sum(1 for f in fused_candidates if f.origin == "sparse_only")
+                        symbol_boost = any(f.origin == "sparse_only" and f.fused_rank <= 3 for f in fused_candidates)
+                        HybridRetrievalTelemetry.get_instance().record(
+                            dense_count=len(quick_results),
+                            sparse_count=len(sparse_matches),
+                            fused_count=len(fused_candidates),
+                            overlap_count=overlap_cnt,
+                            symbol_boost=symbol_boost,
+                            latency_ms=0.0,
+                            dense_only=dense_only_cnt,
+                            sparse_only=sparse_only_cnt,
+                        )
+                except Exception as e:
+                    logger.debug(f"[HierarchicalRetriever] Hybrid BM25 fusion bypassed: {e}")
+
             # FAST mode: Single-pass Cross-Encoder rerank on top-ranked vector candidates
             if resolved_mode == RetrieverMode.FAST and self._rerank_client and quick_results:
                 # Default all candidates to their coarse vector score
