@@ -22,6 +22,7 @@ import { GatekeeperMetricsCard } from './-components/gatekeeper-metrics-card'
 import { GatekeeperAuditStream } from './-components/gatekeeper-audit-stream'
 import { RetrievalControls } from './-components/retrieval-controls'
 import { RetrievalMetricsCards } from './-components/retrieval-metrics-cards'
+import { AdvancedOperationalTelemetry } from './-components/advanced-operational-telemetry'
 import { BM25HybridCockpit } from './-components/bm25-hybrid-cockpit'
 import { ZGSearchCockpit } from './-components/zg-search-cockpit'
 import { RAGAbstentionCockpit } from './-components/rag-abstention-cockpit'
@@ -194,6 +195,9 @@ function RetrievalPage() {
 
           {/* 4 大核心检索运行与质量基准 KPI 指标卡片 */}
           <RetrievalMetricsCards />
+
+          {/* 检索大屏第二排高阶运营看板扩展 (Card-Retrieval-AdvancedCards) */}
+          <AdvancedOperationalTelemetry />
 
           <div className="flex items-center gap-2">
             <div className="flex-1 min-w-0">

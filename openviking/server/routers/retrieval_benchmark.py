@@ -223,7 +223,7 @@ async def get_hygiene_report(
     conn = bm25._get_connection()
     items = []
     try:
-        cursor = conn.execute("SELECT uri, title, level, context_type FROM fts_index_content LIMIT 200")
+        cursor = conn.execute("SELECT uri, title, level, context_type FROM fts_documents LIMIT 200")
         rows = cursor.fetchall()
         now_ts = time.time()
         for r in rows:

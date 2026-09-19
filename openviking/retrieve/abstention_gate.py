@@ -5,9 +5,10 @@ RARG Evidence Grounding Verifier & Zero-Hallucination Abstention Gate.
 (Card-RAG-Abstention-ZeroHallucination-Pipeline / v1.5.18)
 """
 
+import collections
 import re
 import time
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 
@@ -28,6 +29,8 @@ class AbstentionTelemetrySnapshot(BaseModel):
     abstention_rate: float = 0.0
     avg_confidence: float = 0.0
     avg_latency_ms: float = 0.0
+    confidence_distribution: Dict[str, int] = Field(default_factory=dict)
+    recent_verifications: List[Dict[str, Any]] = Field(default_factory=list)
 
 
 class AbstentionGate:
@@ -47,6 +50,8 @@ class AbstentionGate:
         self._total_abstained = 0
         self._sum_confidence = 0.0
         self._sum_latency_ms = 0.0
+        self._confidence_brackets: Dict[str, int] = {"low": 0, "medium": 0, "high": 0}
+        self._recent_events: collections.deque = collections.deque(maxlen=20)
 
     @classmethod
     def get_instance(cls, threshold: float = 0.40) -> "AbstentionGate":
@@ -88,7 +93,7 @@ class AbstentionGate:
                 matched_evidence_count=0,
                 latency_ms=round((time.perf_counter() - start_t) * 1000, 2),
             )
-            self._record_telemetry(decision)
+            self._record_telemetry(decision, query)
             return decision
 
         if not evidence_chunks:
@@ -100,7 +105,7 @@ class AbstentionGate:
                 matched_evidence_count=0,
                 latency_ms=round((time.perf_counter() - start_t) * 1000, 2),
             )
-            self._record_telemetry(decision)
+            self._record_telemetry(decision, query)
             return decision
 
         combined_evidence = " ".join(evidence_chunks)
@@ -141,10 +146,10 @@ class AbstentionGate:
             latency_ms=elapsed_ms,
         )
 
-        self._record_telemetry(decision)
+        self._record_telemetry(decision, query)
         return decision
 
-    def _record_telemetry(self, decision: AbstentionDecision) -> None:
+    def _record_telemetry(self, decision: AbstentionDecision, query: str = "") -> None:
         """Record decision into cumulative telemetry metrics."""
         self._total_verifications += 1
         if decision.should_abstain:
@@ -152,11 +157,29 @@ class AbstentionGate:
         self._sum_confidence += decision.confidence
         self._sum_latency_ms += decision.latency_ms
 
+        if decision.confidence < 0.30:
+            self._confidence_brackets["low"] += 1
+        elif decision.confidence < 0.70:
+            self._confidence_brackets["medium"] += 1
+        else:
+            self._confidence_brackets["high"] += 1
+
+        self._recent_events.append({
+            "query": query[:60] if query else "synthetic_query",
+            "confidence": decision.confidence,
+            "should_abstain": decision.should_abstain,
+            "latency_ms": decision.latency_ms,
+            "timestamp": time.time(),
+        })
+
     def get_telemetry(self) -> AbstentionTelemetrySnapshot:
         """Get snapshot of cumulative telemetry."""
         total = self._total_verifications
         if total == 0:
-            return AbstentionTelemetrySnapshot()
+            return AbstentionTelemetrySnapshot(
+                confidence_distribution={"low": 0, "medium": 0, "high": 0},
+                recent_verifications=[],
+            )
 
         return AbstentionTelemetrySnapshot(
             total_verifications=total,
@@ -164,4 +187,6 @@ class AbstentionGate:
             abstention_rate=round(self._total_abstained / total, 3),
             avg_confidence=round(self._sum_confidence / total, 3),
             avg_latency_ms=round(self._sum_latency_ms / total, 2),
+            confidence_distribution=dict(self._confidence_brackets),
+            recent_verifications=list(self._recent_events),
         )

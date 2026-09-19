@@ -210,7 +210,7 @@ export function AgentSensorsCard() {
                 className="p-1.5 rounded border border-border/30 bg-background/60 flex items-center justify-between"
                 title={`Session: ${pt.session_id} | Interventions: ${pt.interventions}`}
               >
-                <span className="truncate max-w-[70px] text-muted-foreground">{pt.session_id}</span>
+                <span className="truncate max-w-17.5 text-muted-foreground">{pt.session_id}</span>
                 <span className="text-cyan-500 font-semibold">{Math.round(pt.token_snr * 100)}%</span>
               </div>
             ))}
