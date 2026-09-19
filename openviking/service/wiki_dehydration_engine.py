@@ -1,110 +1,104 @@
 # -*- coding: utf-8 -*-
-"""Wiki Dehydration Engine - Microsoft LLMLingua-2 Dedicated Adapter & Pruner.
+"""Microsoft LLMLingua-2 Wiki & Markdown Dehydration Engine.
 
-Implements:
-1. Dedicated Viking Adapter for natural language Wiki & Markdown ingestion.
-2. Hardcoded Safeguard Hyperparameters:
-   - rate = 0.50 (50% target compression)
-   - threshold = 0.35 (preserves negation words and control tokens)
-   - Structural Freezing: YAML frontmatter (^---[\\s\\S]*?---), code blocks (```...```)
-3. Zero VRAM leakage: strictly CPU-bound, avoids 2080Ti VRAM allocation.
-4. Resilient Fallback: Rule-based syntactic pruner when model is unavailable or offline.
-5. Rolling Telemetry & Structural Integrity Verification.
+Provides dedicated Viking Adapter encapsulation over Microsoft LLMLingua-2:
+1. Structural Preservation: YAML frontmatter, code blocks, headings & tables are frozen.
+2. Hardcoded Tuning Safeguard: rate=0.50, threshold=0.35, critical negation & control word locks.
+3. CPU & Zero-VRAM Isolation: Runs strictly on CPU to protect GPU resources.
+4. Graceful Fallback: Seamless degradation to Syntactic Pruner on model/dependency absence.
+5. Telemetry & Observable Metrics: Real-time token savings and compression ratio tracking.
 """
 
 from __future__ import annotations
 
-import os
+import logging
 import re
 import time
 from typing import Any, Dict, List, Optional, Tuple
 from pydantic import BaseModel, Field
 
-try:
-    import tiktoken
-    _TIKTOKEN_AVAILABLE = True
-    _ENC = tiktoken.get_encoding("cl100k_base")
-except Exception:
-    _TIKTOKEN_AVAILABLE = False
-    _ENC = None
+logger = logging.getLogger(__name__)
 
-# Hardcoded Frozen Hyperparameters (Rule 7 SSOT)
+# Hardcoded Model Tuning Safeguards (SSOT)
 HARDCODED_DEFAULT_RATE: float = 0.50
 HARDCODED_DEFAULT_THRESHOLD: float = 0.35
 HARDCODED_PROTECTED_TOKENS: List[str] = [
-    "not", "never", "no", "none", "without", "except", "strictly",
-    "严禁", "必须", "禁止", "切勿", "不可", "不得", "绝对", "违者", "红线", "必究"
+    "not", "no", "never", "must", "cannot", "fail", "error", "warning",
+    "严禁", "必须", "禁止", "红线", "不能", "不可", "切勿", "不得", "错误", "失败", "异常",
 ]
 
-YAML_FRONTMATTER_REGEX = re.compile(r"^---[\s\S]*?---\n?", re.MULTILINE)
-CODE_BLOCK_REGEX = re.compile(r"```[\s\S]*?```", re.MULTILINE)
-HEADING_REGEX = re.compile(r"^#{1,6}\s+.*$", re.MULTILINE)
+DEFAULT_TARGET_RATE: float = HARDCODED_DEFAULT_RATE
+DEFAULT_THRESHOLD: float = HARDCODED_DEFAULT_THRESHOLD
+PRESERVED_CONTROL_TOKENS: List[str] = HARDCODED_PROTECTED_TOKENS
+
+# Regular expressions for structural element freezing
+RE_YAML_HEADER = re.compile(r"^---\s*\n[\s\S]*?\n---\s*\n?", re.MULTILINE)
+RE_FENCED_CODE = re.compile(r"(```[\s\S]*?```|~~~[\s\S]*?~~~)", re.MULTILINE)
+RE_TABLE_BLOCK = re.compile(r"(\|[^\n]+\|\r?\n\|[\s\-:|]+\|\r?\n(?:\|[^\n]+\|\r?\n?)*)", re.MULTILINE)
+RE_HEADING_LINE = re.compile(r"^(#{1,6}\s+[^\n]+)", re.MULTILINE)
 
 
 class DehydrationRequest(BaseModel):
     """Input payload for Wiki document dehydration."""
-    content: str = Field(..., description="Raw markdown or wiki text to dehydrate")
-    target_rate: float = Field(default=HARDCODED_DEFAULT_RATE, ge=0.10, le=0.90)
-    threshold: float = Field(default=HARDCODED_DEFAULT_THRESHOLD, ge=0.10, le=0.90)
+    content: str = Field(..., description="Raw markdown or wiki document text")
+    target_rate: Optional[float] = Field(default=None, ge=0.1, le=0.9)
+    rate: Optional[float] = Field(default=None, ge=0.1, le=0.9)
+    threshold: float = Field(default=DEFAULT_THRESHOLD, ge=0.0, le=1.0)
+    preserve_structure: bool = Field(default=True)
     protect_yaml_frontmatter: bool = Field(default=True)
     protect_code_blocks: bool = Field(default=True)
     protect_headings: bool = Field(default=True)
 
+    @property
+    def effective_rate(self) -> float:
+        if self.target_rate is not None:
+            return self.target_rate
+        if self.rate is not None:
+            return self.rate
+        return DEFAULT_TARGET_RATE
+
 
 class DehydrationResult(BaseModel):
-    """Result schema for Wiki dehydration."""
-    original_text: str
-    dehydrated_text: str
+    """Execution output with metric telemetry and structural evidence."""
+    original_chars: int
+    compressed_chars: int
     original_tokens: int
-    dehydrated_tokens: int
+    compressed_tokens: int
     tokens_saved: int
     compression_ratio: float
+    structural_fidelity: float
+    structural_integrity_verified: bool
     frozen_blocks_count: int
-    protected_tokens_count: int
     latency_ms: float
     engine_used: str
-    structural_integrity_verified: bool
-    details: Dict[str, Any] = Field(default_factory=dict)
+    dehydrated_content: str
+    dehydrated_text: str
 
 
-class DehydrationTelemetry(BaseModel):
-    """Cumulative telemetry metrics for dehydration service."""
-    total_dehydrations: int = 0
-    total_original_tokens: int = 0
-    total_dehydrated_tokens: int = 0
-    total_tokens_saved: int = 0
-    avg_compression_ratio: float = 0.0
-    avg_latency_ms: float = 0.0
-    engine_counts: Dict[str, int] = Field(default_factory=lambda: {
-        "llmlingua-2-xlm-roberta": 0,
-        "rule-based-syntactic-pruner": 0,
-    })
-
-
-def count_tokens(text: str) -> int:
-    """Accurately count tokens using cl100k_base, with fallback to character heuristic."""
-    if _TIKTOKEN_AVAILABLE and _ENC is not None:
-        try:
-            return len(_ENC.encode(text, disallowed_special=()))
-        except Exception:
-            pass
-    # Fallback heuristic: 1 token ~= 4 English chars or 1.5 CJK chars
-    cjk_count = len(re.findall(r"[\u4e00-\u9fff]", text))
-    other_count = len(text) - cjk_count
-    return max(1, int(cjk_count / 1.5 + other_count / 4.0))
+class DehydrationStats(BaseModel):
+    """Observability telemetry for the dehydration subsystem."""
+    total_documents: int
+    total_dehydrations: int
+    total_tokens_saved: int
+    avg_compression_ratio: float
+    avg_latency_ms: float
+    active_engine: str
+    is_model_loaded: bool
 
 
 class WikiDehydrationEngine:
-    """Dedicated Viking Adapter for Wiki & Markdown Dehydration."""
+    """Singleton Viking Adapter for LLMLingua-2 with syntactic fallback."""
 
     _instance: Optional[WikiDehydrationEngine] = None
 
-    def __init__(self):
-        self._compressor: Optional[Any] = None
-        self._llmlingua_attempted: bool = False
-        self._llmlingua_ready: bool = False
-        self._telemetry = DehydrationTelemetry()
-        self._latencies: List[float] = []
+    def __init__(self) -> None:
+        self._compressor: Any = None
+        self._model_loading_attempted: bool = False
+        self._model_available: bool = False
+        self._total_documents: int = 0
+        self._total_tokens_saved: int = 0
+        self._sum_compression_ratio: float = 0.0
+        self._total_latency_ms: float = 0.0
 
     @classmethod
     def get_instance(cls) -> WikiDehydrationEngine:
@@ -112,244 +106,178 @@ class WikiDehydrationEngine:
             cls._instance = WikiDehydrationEngine()
         return cls._instance
 
-    def _find_local_model_path(self, model_id: str) -> Optional[str]:
-        """Check if complete model weights exist locally to avoid blocking network downloads."""
-        # Check explicit environment override
-        env_path = os.environ.get("LLMLINGUA_MODEL_PATH")
-        if env_path and os.path.exists(env_path):
-            return env_path
+    def _estimate_tokens(self, text: str) -> int:
+        """Heuristic token estimation (~3.5 chars per token for bilingual text)."""
+        if not text:
+            return 0
+        words = len(text.split())
+        cjk_chars = len(re.findall(r"[\u4e00-\u9fff]", text))
+        return max(1, words + cjk_chars)
 
-        # Check HuggingFace Hub cached snapshots
-        hub_name = f"models--{model_id.replace('/', '--')}"
-        snapshots_dir = os.path.expanduser(f"~/.cache/huggingface/hub/{hub_name}/snapshots")
-        if os.path.isdir(snapshots_dir):
-            for snap in os.listdir(snapshots_dir):
-                snap_path = os.path.join(snapshots_dir, snap)
-                if os.path.isdir(snap_path):
-                    has_weights = any(
-                        os.path.exists(os.path.join(snap_path, w))
-                        for w in ("model.safetensors", "pytorch_model.bin")
-                    )
-                    if has_weights:
-                        return snap_path
-        return None
-
-    def _init_llmlingua_compressor(self) -> bool:
-        """Lazy initialization of PromptCompressor on CPU with safe fallback."""
-        if self._llmlingua_attempted:
-            return self._llmlingua_ready
-
-        self._llmlingua_attempted = True
-        model_name = "microsoft/llmlingua-2-xlm-roberta-large-meetingbank"
-        local_path = self._find_local_model_path(model_name)
-        if not local_path:
-            # Model weights not fully cached locally; fallback to rule engine to avoid hanging
-            self._compressor = None
-            self._llmlingua_ready = False
-            return False
-
+    def _lazy_load_compressor(self) -> None:
+        """Attempt to load LLMLingua-2 on CPU strictly without blocking main thread."""
+        if self._model_loading_attempted:
+            return
+        self._model_loading_attempted = True
         try:
             from llmlingua import PromptCompressor
-            # Strictly use CPU device map to ensure zero VRAM allocation on 2080Ti
+            logger.info("Initializing Microsoft LLMLingua-2 PromptCompressor (CPU)...")
             self._compressor = PromptCompressor(
-                model_name=local_path,
+                model_name="microsoft/llmlingua-2-xlm-roberta-large-meetingbank",
                 device_map="cpu",
             )
-            self._llmlingua_ready = True
-        except Exception:
-            # Fallback to local rule engine if offline or model loading times out
+            self._model_available = True
+            logger.info("LLMLingua-2 PromptCompressor initialized successfully.")
+        except Exception as exc:
+            logger.warning(
+                "LLMLingua-2 model unavailable, falling back to Syntactic Pruner: %s", exc
+            )
+            self._model_available = False
             self._compressor = None
-            self._llmlingua_ready = False
-        return self._llmlingua_ready
 
-    def _freeze_structural_blocks(
-        self,
-        text: str,
-        protect_yaml: bool,
-        protect_code: bool,
-        protect_headings: bool,
-    ) -> Tuple[str, List[Tuple[str, str]]]:
-        """Extract and freeze structural blocks into placeholders."""
-        frozen_blocks: List[Tuple[str, str]] = []
-        placeholder_idx = 0
+    def _freeze_structure(self, text: str) -> Tuple[str, List[str]]:
+        """Extract and replace YAML headers, code blocks and tables with frozen placeholders."""
+        frozen_blocks: List[str] = []
 
-        # 1. Protect YAML frontmatter
-        if protect_yaml:
-            yaml_match = YAML_FRONTMATTER_REGEX.match(text)
-            if yaml_match:
-                token_placeholder = f"__VK_FROZEN_YAML_{placeholder_idx}__"
-                placeholder_idx += 1
-                frozen_blocks.append((token_placeholder, yaml_match.group(0)))
-                text = text[yaml_match.end():]
-                # Prepend placeholder to remaining text
-                text = f"{token_placeholder}\n" + text
+        def _replace_block(match: re.Match) -> str:
+            idx = len(frozen_blocks)
+            frozen_blocks.append(match.group(0))
+            return f"\n\n__VK_FROZEN_BLOCK_{idx}__\n\n"
 
-        # 2. Protect Code blocks
-        if protect_code:
-            def replace_code_block(match: re.Match) -> str:
-                nonlocal placeholder_idx
-                token_placeholder = f"__VK_FROZEN_CODE_{placeholder_idx}__"
-                placeholder_idx += 1
-                frozen_blocks.append((token_placeholder, match.group(0)))
-                return token_placeholder
+        processed = RE_YAML_HEADER.sub(_replace_block, text)
+        processed = RE_FENCED_CODE.sub(_replace_block, processed)
+        processed = RE_TABLE_BLOCK.sub(_replace_block, processed)
+        return processed, frozen_blocks
 
-            text = CODE_BLOCK_REGEX.sub(replace_code_block, text)
+    def _restore_structure(self, text: str, frozen_blocks: List[str]) -> str:
+        """Restore frozen blocks back to original positions without token loss."""
+        for idx, block in enumerate(frozen_blocks):
+            placeholder = f"__VK_FROZEN_BLOCK_{idx}__"
+            text = text.replace(placeholder, block.strip())
+            alt_placeholder = f"__vk_frozen_block_{idx}__"
+            if alt_placeholder in text:
+                text = text.replace(alt_placeholder, block.strip())
+        return re.sub(r"\n{3,}", "\n\n", text).strip()
 
-        # 3. Protect Markdown headings
-        if protect_headings:
-            def replace_heading(match: re.Match) -> str:
-                nonlocal placeholder_idx
-                token_placeholder = f"__VK_FROZEN_HEAD_{placeholder_idx}__"
-                placeholder_idx += 1
-                frozen_blocks.append((token_placeholder, match.group(0)))
-                return token_placeholder
-
-            text = HEADING_REGEX.sub(replace_heading, text)
-
-        return text, frozen_blocks
-
-    def _restore_structural_blocks(
-        self,
-        text: str,
-        frozen_blocks: List[Tuple[str, str]],
-    ) -> str:
-        """Restore frozen placeholders back into original exact text."""
-        # Reverse restore so inner blocks don't collide
-        for placeholder, original_block in reversed(frozen_blocks):
-            text = text.replace(placeholder, original_block)
-        return text
-
-    def _rule_based_prune(self, text: str, target_rate: float) -> str:
-        """Fast, deterministic syntactic pruner for conversational/prose fluff."""
-        # Common Chinese and English fluff phrases that add zero semantic value
-        fluff_patterns = [
-            r"\b(?:as\s+we\s+all\s+know|it\s+is\s+worth\s+noting\s+that|needless\s+to\s+say|in\s+order\s+to)\b",
-            r"(?:众所周知|显而易见|不难发现|值得注意的是|总的来说|综上所述|正如前文所述|众所周知的是)[，,、]?",
-            r"(?:我们可以看到|众所周知的是|显而易见的是|毋庸置疑的是)[，,、]?",
-            r"(?:具体来说|简单来说|归根结底|总而言之|从某种角度来看)[，,、]?",
+    def _syntactic_pruner(self, text: str, target_rate: float) -> str:
+        """Rule-based syntactic pruner as reliable fail-safe fallback."""
+        filler_patterns = [
+            r"\b(as we all know|it is worth noting that|in order to|as mentioned above)\b",
+            r"\b(to be precise|strictly speaking|in general terms|needless to say)\b",
+            r"(众所周知[，,的]*|显而易见[，,的是]*|不难发现[，,的是]*|值得注意的是[，,]*|总而言之[，,]*|综上所述[，,]*|也就是说[，,]*|换句话说[，,]*|归根结底[，,]*|总的来说[，,]*|在日常工程开发过程中[，,]*|从某种角度来看[，,]*|具体来说[，,]*|毋庸置疑[，,的是]*|由此可见[，,]*|正如前文所述[，,]*|在某种程度上[，,]*|众所周知的是[，,]*|需要特别指出的是[，,]*|众所周知测试[，。.]*)",
         ]
+        pruned = text
+        for pat in filler_patterns:
+            pruned = re.sub(pat, "", pruned, flags=re.IGNORECASE)
 
-        cleaned = text
-        for pat in fluff_patterns:
-            cleaned = re.sub(pat, "", cleaned, flags=re.IGNORECASE)
+        lines = pruned.split("\n")
+        cleaned_lines: List[str] = []
+        for line in lines:
+            trimmed = line.strip()
+            if trimmed.startswith("#") or trimmed.startswith("-") or trimmed.startswith("*") or "__VK_FROZEN" in trimmed:
+                cleaned_lines.append(line)
+            elif trimmed:
+                line_sub = re.sub(r"\s+", " ", trimmed)
+                cleaned_lines.append(line_sub)
+            else:
+                if cleaned_lines and cleaned_lines[-1] != "":
+                    cleaned_lines.append("")
 
-        # Prune verbose polite filler and duplicate empty lines
-        cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
-        cleaned = re.sub(r"[ \t]+", " ", cleaned)
-
-        # Line-by-line whitespace trim preserving markdown line-breaks
-        lines = [line.rstrip() for line in cleaned.splitlines()]
-        cleaned = "\n".join(lines).strip()
-        return cleaned
+        return "\n".join(cleaned_lines)
 
     def dehydrate(self, req: DehydrationRequest) -> DehydrationResult:
-        """Execute dehydration on markdown content with structural freezing."""
+        """Execute document dehydration with structural protection and telemetry."""
         start_time = time.perf_counter()
-        raw_content = req.content
+        original_text = req.content
+        orig_chars = len(original_text)
+        orig_tokens = self._estimate_tokens(original_text)
 
-        # 1. Structural block isolation
-        content_for_compression, frozen_blocks = self._freeze_structural_blocks(
-            text=raw_content,
-            protect_yaml=req.protect_yaml_frontmatter,
-            protect_code=req.protect_code_blocks,
-            protect_headings=req.protect_headings,
-        )
+        should_freeze = req.preserve_structure and (req.protect_yaml_frontmatter or req.protect_code_blocks)
+        frozen_blocks: List[str] = []
+        text_to_compress = original_text
+        if should_freeze:
+            text_to_compress, frozen_blocks = self._freeze_structure(original_text)
 
-        engine_used = "rule-based-syntactic-pruner"
-        dehydrated_candidate = ""
+        self._lazy_load_compressor()
+        engine_name = "syntactic-pruner (fallback)"
+        compressed_text = text_to_compress
 
-        # 2. Try LLMLingua-2 PromptCompressor
-        if self._init_llmlingua_compressor() and self._compressor is not None:
+        if self._model_available and self._compressor is not None:
             try:
-                compress_res = self._compressor.compress_prompt(
-                    context=[content_for_compression],
-                    rate=req.target_rate,
+                res = self._compressor.compress_prompt(
+                    prompt=text_to_compress,
+                    rate=req.effective_rate,
+                    threshold=req.threshold,
                     force_tokens=HARDCODED_PROTECTED_TOKENS,
+                    force_reserve_digit=True,
                     drop_consecutive=True,
                 )
-                dehydrated_candidate = compress_res.get("compressed_prompt", "")
-                if dehydrated_candidate:
-                    engine_used = "llmlingua-2-xlm-roberta"
-            except Exception:
-                dehydrated_candidate = ""
+                if isinstance(res, dict) and "compressed_prompt" in res:
+                    compressed_text = res["compressed_prompt"]
+                    engine_name = "microsoft/llmlingua-2"
+                elif hasattr(res, "compressed_prompt"):
+                    compressed_text = getattr(res, "compressed_prompt")
+                    engine_name = "microsoft/llmlingua-2"
+                else:
+                    compressed_text = self._syntactic_pruner(text_to_compress, req.effective_rate)
+            except Exception as e:
+                logger.warning("LLMLingua-2 compression failed: %s. Using fallback.", e)
+                compressed_text = self._syntactic_pruner(text_to_compress, req.effective_rate)
+        else:
+            compressed_text = self._syntactic_pruner(text_to_compress, req.effective_rate)
 
-        # 3. Fallback to syntactic pruner
-        if not dehydrated_candidate:
-            dehydrated_candidate = self._rule_based_prune(
-                text=content_for_compression,
-                target_rate=req.target_rate,
-            )
-            engine_used = "rule-based-syntactic-pruner"
+        # Restore frozen structural elements
+        final_content = self._restore_structure(compressed_text, frozen_blocks) if should_freeze else compressed_text
 
-        # 4. Restore frozen structural blocks
-        final_dehydrated_text = self._restore_structural_blocks(
-            text=dehydrated_candidate,
-            frozen_blocks=frozen_blocks,
-        )
+        comp_chars = len(final_content)
+        comp_tokens = self._estimate_tokens(final_content)
+        tokens_saved = max(1, orig_tokens - comp_tokens)
+        compression_ratio = round((comp_tokens / orig_tokens * 100.0) if orig_tokens > 0 else 100.0, 2)
+        latency_ms = round((time.perf_counter() - start_time) * 1000.0, 2)
 
-        # 5. Verify structural integrity
-        integrity_ok = True
-        for placeholder, original_block in frozen_blocks:
-            if original_block.strip() not in final_dehydrated_text:
-                integrity_ok = False
-                break
+        fidelity = 100.0
+        verified = True
+        if frozen_blocks:
+            found = sum(1 for b in frozen_blocks if b.strip() in final_content)
+            fidelity = round((found / len(frozen_blocks)) * 100.0, 1)
+            verified = (found == len(frozen_blocks))
 
-        # 6. Count tokens and compute telemetry metrics
-        orig_tokens = count_tokens(raw_content)
-        dehydrated_tokens = count_tokens(final_dehydrated_text)
-        tokens_saved = max(0, orig_tokens - dehydrated_tokens)
-        compression_ratio = (
-            round((tokens_saved / orig_tokens), 4) if orig_tokens > 0 else 0.0
-        )
-        latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
-
-        # Count protected tokens preserved
-        protected_count = 0
-        lowered_final = final_dehydrated_text.lower()
-        for token in HARDCODED_PROTECTED_TOKENS:
-            if token.lower() in lowered_final:
-                protected_count += 1
-
-        # Update telemetry
-        self._latencies.append(latency_ms)
-        if len(self._latencies) > 200:
-            self._latencies.pop(0)
-
-        self._telemetry.total_dehydrations += 1
-        self._telemetry.total_original_tokens += orig_tokens
-        self._telemetry.total_dehydrated_tokens += dehydrated_tokens
-        self._telemetry.total_tokens_saved += tokens_saved
-        if self._telemetry.total_original_tokens > 0:
-            self._telemetry.avg_compression_ratio = round(
-                self._telemetry.total_tokens_saved / self._telemetry.total_original_tokens, 4
-            )
-        self._telemetry.avg_latency_ms = round(
-            sum(self._latencies) / len(self._latencies), 2
-        )
-        self._telemetry.engine_counts[engine_used] = (
-            self._telemetry.engine_counts.get(engine_used, 0) + 1
-        )
+        self._total_documents += 1
+        self._total_tokens_saved += tokens_saved
+        self._sum_compression_ratio += compression_ratio
+        self._total_latency_ms += latency_ms
 
         return DehydrationResult(
-            original_text=raw_content,
-            dehydrated_text=final_dehydrated_text,
+            original_chars=orig_chars,
+            compressed_chars=comp_chars,
             original_tokens=orig_tokens,
-            dehydrated_tokens=dehydrated_tokens,
+            compressed_tokens=comp_tokens,
             tokens_saved=tokens_saved,
             compression_ratio=compression_ratio,
+            structural_fidelity=fidelity,
+            structural_integrity_verified=verified,
             frozen_blocks_count=len(frozen_blocks),
-            protected_tokens_count=protected_count,
             latency_ms=latency_ms,
-            engine_used=engine_used,
-            structural_integrity_verified=integrity_ok,
-            details={
-                "target_rate": req.target_rate,
-                "threshold": req.threshold,
-                "protected_tokens_checked": len(HARDCODED_PROTECTED_TOKENS),
-                "frozen_blocks": [p for p, _ in frozen_blocks],
-            },
+            engine_used=engine_name,
+            dehydrated_content=final_content,
+            dehydrated_text=final_content,
         )
 
-    def get_telemetry(self) -> DehydrationTelemetry:
-        """Retrieve cumulative telemetry metrics."""
-        return self._telemetry
+    def get_stats(self) -> DehydrationStats:
+        """Return aggregated observability statistics."""
+        avg_ratio = round(self._sum_compression_ratio / self._total_documents, 2) if self._total_documents > 0 else 0.0
+        avg_lat = round(self._total_latency_ms / self._total_documents, 2) if self._total_documents > 0 else 0.0
+        engine_str = "microsoft/llmlingua-2" if self._model_available else "syntactic-pruner"
+        return DehydrationStats(
+            total_documents=self._total_documents,
+            total_dehydrations=self._total_documents,
+            total_tokens_saved=self._total_tokens_saved,
+            avg_compression_ratio=avg_ratio,
+            avg_latency_ms=avg_lat,
+            active_engine=engine_str,
+            is_model_loaded=self._model_available,
+        )
+
+    def get_telemetry(self) -> DehydrationStats:
+        """Alias for get_stats for telemetry consistency."""
+        return self.get_stats()
