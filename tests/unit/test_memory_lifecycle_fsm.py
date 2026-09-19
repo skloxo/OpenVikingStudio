@@ -150,6 +150,12 @@ def test_dual_track_markdown_lifecycle_persistence():
 
 def test_memory_lifecycle_rest_api():
     """Verify FastAPI routes for status transitions, linking, and lineage inspection."""
+    import uuid
+
+    uid = uuid.uuid4().hex[:8]
+    old_uri = f"viking://session/legacy_bug_{uid}.md"
+    new_uri = f"viking://session/fixed_root_cause_{uid}.md"
+
     app = create_app()
     app.dependency_overrides[get_request_context] = lambda: RequestContext(
         user=UserIdentifier(account_id="test-account", user_id="test-user"),
@@ -161,8 +167,8 @@ def test_memory_lifecycle_rest_api():
     link_res = client.post(
         "/api/v1/memory/link",
         json={
-            "old_uri": "viking://session/legacy_bug.md",
-            "new_uri": "viking://session/fixed_root_cause.md",
+            "old_uri": old_uri,
+            "new_uri": new_uri,
             "reason": "Root cause identified in v1.5.32",
         },
     )
@@ -172,7 +178,7 @@ def test_memory_lifecycle_rest_api():
     assert link_data["new_record"]["status"] == "active"
 
     # 2. GET /api/v1/memory/lineage
-    lineage_res = client.get("/api/v1/memory/lineage?uri=viking://session/legacy_bug.md")
+    lineage_res = client.get(f"/api/v1/memory/lineage?uri={old_uri}")
     assert lineage_res.status_code == 200
     lineage_data = lineage_res.json()["result"]
     assert lineage_data["status"] == "superseded"
@@ -182,7 +188,7 @@ def test_memory_lifecycle_rest_api():
     trans_res = client.post(
         "/api/v1/memory/status",
         json={
-            "uri": "viking://session/fixed_root_cause.md",
+            "uri": new_uri,
             "event": "dispute",
             "reason": "Regression detected on Edge browser",
         },
@@ -196,7 +202,7 @@ def test_memory_lifecycle_rest_api():
     assert rec_res.status_code == 200
     rec_data = rec_res.json()["result"]
     assert rec_data["total"] >= 1
-    assert any(r["uri"] == "viking://session/fixed_root_cause.md" for r in rec_data["records"])
+    assert any(r["uri"] == new_uri for r in rec_data["records"])
 
 
 @pytest.mark.asyncio
@@ -239,4 +245,44 @@ async def test_hybrid_retriever_demotes_superseded_memory(tmp_path):
     assert results[1].uri == "viking://resources/memory/superseded_approach.md"
     assert results[1].extra_metadata["status"] == "superseded"
     assert results[1].extra_metadata["decay_factor"] == 0.20
+
+
+def test_memory_lifecycle_sqlite_persistence_across_instances(tmp_path):
+    """Verify memory lifecycle state survives instance re-creation (Zero Memory-Silo Bug)."""
+    from openviking.service.memory_lifecycle_fsm import (
+        MemoryLifecycleStore,
+        MemoryLifecycleRecord,
+        MemoryStatus,
+        LifecycleTransitionEvent,
+        MemoryLifecycleFSM,
+    )
+
+    db_path = str(tmp_path / "test_lifecycle_persist.db")
+    store1 = MemoryLifecycleStore(db_path=db_path)
+
+    rec1 = MemoryLifecycleRecord(uri="viking://test/rule_persist.md", status=MemoryStatus.ACTIVE)
+    store1.save_record(rec1)
+
+    # Transition to superseded
+    MemoryLifecycleFSM.transition(
+        record=rec1,
+        event=LifecycleTransitionEvent.SUPERSEDE,
+        target_uri="viking://test/new_rule.md",
+        reason="Overruled in test",
+        store=store1,
+    )
+    # Ensure saved in store1
+    rec_updated = store1.get_record("viking://test/rule_persist.md")
+    assert rec_updated.status == MemoryStatus.SUPERSEDED
+    assert rec_updated.superseded_by == "viking://test/new_rule.md"
+
+    # Simulate service restart: create fresh store2 pointing to same db_path
+    store2 = MemoryLifecycleStore(db_path=db_path)
+    rec_loaded = store2.get_record("viking://test/rule_persist.md")
+
+    assert rec_loaded is not None
+    assert rec_loaded.status == MemoryStatus.SUPERSEDED
+    assert rec_loaded.superseded_by == "viking://test/new_rule.md"
+    assert rec_loaded.disputed_reason == "Overruled in test"
+
 

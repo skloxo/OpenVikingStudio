@@ -158,11 +158,25 @@ class HybridRetriever:
 
         # Apply asymmetric lifecycle decay & demotion (superseded 0.20x, disputed 0.50x)
         from openviking.retrieve.asymmetric_decay import AsymmetricDecayEngine
+        from openviking.service.memory_lifecycle_fsm import get_lifecycle_records_batch
         decay_engine = AsymmetricDecayEngine()
+
+        # Batch query physical FSM store to eliminate data schism
+        uris_to_check = [item.uri for item in fused]
+        fsm_records = get_lifecycle_records_batch(uris_to_check)
+
         for item in fused:
+            # Prefer physical FSM persistent status over stale vector metadata
+            fsm_rec = fsm_records.get(item.uri)
+            if fsm_rec:
+                status = fsm_rec.status.value
+            else:
+                meta = item.extra_metadata
+                nested_meta = meta.get("extra_metadata") if isinstance(meta.get("extra_metadata"), dict) else {}
+                status = str(meta.get("status") or nested_meta.get("status") or "active")
+
             meta = item.extra_metadata
             nested_meta = meta.get("extra_metadata") if isinstance(meta.get("extra_metadata"), dict) else {}
-            status = str(meta.get("status") or nested_meta.get("status") or "active")
             updated_ts = meta.get("updated_ts") or nested_meta.get("updated_ts")
             assessment = decay_engine.evaluate_candidate(
                 uri=item.uri,
