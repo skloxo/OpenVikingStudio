@@ -68,6 +68,14 @@ export const retrieval = {
       triGateBlockRate: 'Tri-Gate Block Rate',
       triGateRule: 'Tri-Gate Standard',
     },
+    contextGovernance: {
+      title: 'Active Notes & History Dual-Repository',
+      tabLabel: 'Active Notes & History',
+      savingRatio: 'In-Context Token Savings',
+      historyCount: 'History Repository Stored',
+      fidelityRate: 'Lossless Fidelity Rate',
+      recallLatency: 'Recall Latency',
+    },
     results: {
       title: 'Search Results',
       topN: 'Search Results (Top{{count}})',

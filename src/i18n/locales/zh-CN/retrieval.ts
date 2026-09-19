@@ -68,6 +68,14 @@ export const retrieval = {
       triGateBlockRate: '三门硬门禁拦截率',
       triGateRule: '三门并联硬准则',
     },
+    contextGovernance: {
+      title: '主动上下文与历史分仓',
+      tabLabel: '主动上下文与历史分仓',
+      savingRatio: '常驻上下文节省率',
+      historyCount: '历史分仓留存条数',
+      fidelityRate: '无损保真率',
+      recallLatency: '调阅响应延迟',
+    },
     results: {
       title: '检索结果',
       topN: '检索结果（Top{{count}}）',
