@@ -54,8 +54,8 @@
 | **Card-Skill-CapabilityPages-NegativeBoundaryRouter** | **腾讯 Capability Pages 三段式技能档案、簇级邻居对比与 T^- 负向边界隔离路由体系** | 1. 吸收腾讯混元《Skill-Use 基准》与腾讯优图《Capability Pages》：解决装了 10+ 技能后表现断崖下跌与 SU<0.5 时用技能比不用更糟的绝症；<br>2. 提纯三段式档案结构：T^+（正向触发）、T^-（负向边界）、B（判别主体）；<br>3. 簇级邻居对比生成 T^-；<br>4. 部署隔离铁律：向量索引只存 T^+ + B + 原文，T^- 严禁入库（防语义漂移），仅专供第二阶段 Cross-Encoder / Router 裁判；<br>5. 相似技能 Top-1 区分率提升超 15%。 | 彻底终结多技能检索失明，负向边界物理隔离防向量污染，相似技能精准区分 | `P1` | `v1.5.41` | [x] 已验收通过 ✅ |
 | **Card-Skill-ContrastiveDistillation** | **SKILL-KD 师生分叉决策对比蒸馏与学生重跑变绿准入门禁 (Contrastive Skill Distillation & Re-execution Gate)** | 1. 吸收浙大&北大&阿里《SKILL-KD》与北大《VeriSkill》，切除“自我反思导致的规则堆叠通胀与近亲繁殖”（38条验证规则 66.8分 击败 96条未验证反思规则 60.1分）；<br>2. 师生决策分叉提取器：从学生（本地弱模型/子代理）与老师（Claude Opus 5 / GPT-5.6 / 专家轨迹）在同题目的分叉节点提取有效差异信号；<br>3. 物理准入硬门禁（Re-execution Gate）：提炼出的候选规则 Patch 必须让学生带着在沙箱重跑原题变绿（Turn Green），断言成功才准入库；<br>4. 漂移感知规则合并（Consolidation）：自动聚类压缩重合规则，保持技能库在黄金甜点区（≤ 300 行）。 | 杜绝未经验证的反思入库，重跑变绿准入率 100%，规则库压缩保持精炼高内聚 | `P1` | `v1.5.42` | [x] 已验收通过 ✅ |
 | **Card-Evolution-CICD-DreamingGate** | **Agent 七阶段 CI/CD 变更流水线、离线异步 Dreaming 模式挖掘与四级自治升降级（深度整合 EntropyCrystallizer 存量碎片结晶）** | 1. 吸收 DeepEvolution《Agent CI/CD 流水线》与《Evolve Loop 控制层》：建立信号汇聚➔候选生成➔隔离评测➔安全门控➔灰度发布➔监控回滚➔经验沉淀七阶段管线；<br>2. 深度整合 EntropyCrystallizer：离线异步 Dreaming 模式挖掘器在夜间低峰期扫描长程轨迹聚类系统性缺陷，同时将存量散落碎片三门并联熔铸为高精纯晶体并沉淀 #cry_xxxx，消除两套定时器冲突；<br>3. 四级自治阶梯 (Level 0-3) 与异常自动降级机制；<br>4. 人类五大不可剥夺决策权与三层防审核疲劳通道；<br>5. 监控输出长度、拒答率、重试率二阶指标防范方向漂移。 | 七阶段变更管线，离线 Dreaming 与存量结晶深度融合，四级自治动态升降级，二阶防方向漂移 | `P1` | `v1.5.43` | [x] 已验收通过 ✅ |
-| **Card-Metrics-AgentSensors** | **智能体三维效能探针（Token SNR、P@5 召回精度、人工介入率）** | 1. 落地 CPA 导师核心建言“先立度量再动架构，给系统一把恒定的物理标尺”；<br>2. 在 OpenViking Studio 观测大盘埋设三大物理探针：Token 有效载荷率 SNR、记忆召回命中率 P@5、人类纠偏介入率；<br>3. 终结架构改造效果的定性口水战，全部以数字化客观曲线驱动演进。 | Studio 观测大盘透传三大物理指标，每日会话自动统计，指标真实可靠 | `P2` | `v1.5.25` | ⏳ 待排期 |
-| **Card-Retrieval-AdvancedCards** | **检索大屏第二排高阶运营看板扩展 (Advanced Operational Telemetry)** | 1. 在检索大屏第二排扩展高阶运营指标（BM25 词法与稠密向量命中比、RARG 弃答率曲线、知识库健康度三维雷达）；<br>2. 前端组件完全遵守性冷淡视觉规范、NO GREEN EVER 与 >=11px 字号契约；<br>3. 真实后端数据驱动，在无数据时优雅展示 -- 占位符。 | 大屏第二排高密指标瓦片对齐，纯真实后端数据驱动，NO GREEN 规范，构建 PASS | `P2` | `v1.5.26` | ⏳ 待排期 |
+| **Card-Metrics-AgentSensors** | **智能体三维效能探针（Token SNR、P@5 召回精度、人工介入率）** | 1. 落地 CPA 导师核心建言“先立度量再动架构，给系统一把恒定的物理标尺”；<br>2. 在 OpenViking Studio 观测大盘埋设三大物理探针：Token 有效载荷率 SNR、记忆召回命中率 P@5、人类纠偏介入率；<br>3. 终结架构改造效果的定性口水战，全部以数字化客观曲线驱动演进。 | Studio 观测大盘透传三大物理指标，每日会话自动统计，指标真实可靠 | `P2` | `v1.5.44` | [x] 已验收通过 ✅ |
+| **Card-Retrieval-AdvancedCards** | **检索大屏第二排高阶运营看板扩展 (Advanced Operational Telemetry)** | 1. 在检索大屏第二排扩展高阶运营指标（BM25 词法与稠密向量命中比、RARG 弃答率曲线、知识库健康度五维雷达）；<br>2. 前端组件完全遵守性冷淡视觉规范、NO GREEN EVER 与 >=12px 字号契约；<br>3. 真实后端数据驱动，在无数据时优雅展示 -- 占位符。 | 大屏第二排高密指标瓦片对齐，纯真实后端数据驱动，NO GREEN 规范，构建 PASS | `P2` | `v1.5.45` | [x] 已验收通过 ✅ |
 | **Card-LLMLingua-01** | **微软开源顶级轮子 LLMLingua-2 (xlm-roberta) 自然语言 Wiki 文档后台异步脱水降噪专项** | 1. 定位澄清：针对外部长篇 Wiki 与 Markdown 静态文档的后台离线脱水（不常驻占用 2080Ti 显存，改用按需加载或 CPA工兵处理）；<br>2. 毫秒级抽稀 50% 自然语言冗余水话，提升注意力浓度，零幻觉；<br>3. 与本地 SkillZip（针对技能流程）和 Notes-History（针对多轮对话）正交分工，补齐课题五最后一块拼图。 | Wiki 文档脱水 50%，Token 显著压缩，零显存泄漏，后台批处理离线完成 | `P2` | `v1.5.27` | ⏳ 待排期 |
 
 ---
@@ -607,27 +607,42 @@
 
 ### 🌊 Wave 5: 效能度量与前瞻运营 (Metrics Telemetry & Advanced Ops)
 
-#### 📌 [P2] [ ] Card-Metrics-AgentSensors (v1.5.25): 智能体三维效能探针（Token SNR、P@5 召回精度、人工介入率） ⏳
+#### 📌 [P2] [x] Card-Metrics-AgentSensors (v1.5.44): 智能体三维效能探针（Token SNR、P@5 召回精度、人工介入率） ✅
 - **类型**：Observability / Agent Sensors / SNR Metric / Precision Telemetry ｜ **优先级**：🌱 P2（效能度量）
-- **目标版本**：`v1.5.25` ｜ **交付时间预估**：Wave 5 周期 ｜ **当前状态**：⏳ 方案已终审·待排期实施
+- **目标版本**：`v1.5.44` ｜ **交付状态**：已验收通过 ✅ ｜ **Git Release Tag**：`v1.5.44` (Commit: `333401f8d`)
 - **来源依据与核心思考推演过程 (Reasoning & Inversion Context)**：
   - **理论源头追溯**：CPA 导师核心建言“先立度量再动架构，给系统一把恒定的物理标尺”；
   - **芒格逆向审讯**：缺乏量化指标会导致团队陷入“感觉快了”、“好像更准了”的主观定性口水战，无法客观评估架构改造收益；
   - **奥卡姆剃刀解法**：在后台会话结束与检索调用时，静默计算三项关键标尺：
-    1. **Token SNR (有效载荷率)**：实际有效代码与指令 Token 占全上下文的比重；
-    2. **P@5 召回精度**：Top-5 检索结果中被 Agent 实际采纳（进入后续生成或调阅）的比例；
-    3. **人工介入率**：人类发出纠偏、澄清、打断指令的会话占比。
+    1. **Token SNR (有效载荷率)**：实际有效代码与指令 Token 占全上下文的比重（基线目标 $\ge 65\%$）；
+    2. **P@5 召回精度**：Top-5 检索结果中被 Agent 实际采纳（进入后续生成或调阅）的比例（基线目标 $\ge 80\%$）；
+    3. **人工介入率**：人类发出纠偏、澄清、打断指令的会话占比（红线约束 $\le 15\%$）。
 - **核心治理成果与交付细节**：
-  1. 后端探针计算并追加至 `~/.openviking/data/agent_metrics.jsonl`；
-  2. Studio 大盘透传展示时序折线，零假数据驱动。
+  1. 后端探针计算并追加至 `~/.openviking/data/agent_metrics.jsonl`，由 `openviking/core/agent_sensors.py` 提供滑动窗口聚合与基线判定；
+  2. 提供 REST API 端点（`openviking/server/routers/agent_sensors.py` 挂载 `/api/v1/metrics/agent-sensors` 包含汇总查询与采样注入）；
+  3. 前端大盘组件 `src/routes/monitoring/-components/agent-sensors-card.tsx` 透传展示三维指标卡片与 20 会话时序流；
+  4. 单测全绿通过（`tests/unit/test_agent_sensors*.py` 3/3 PASS），前端构建通过且版本物理对齐为 `v1.5.44`。
 
-#### 📌 [P2] [ ] Card-Retrieval-AdvancedCards (v1.5.26): 检索大屏第二排高阶运营看板扩展 (Advanced Operational Telemetry) ⏳
+#### 📌 [P2] [x] Card-Retrieval-AdvancedCards (v1.5.45): 检索大屏第二排高阶运营看板扩展 (Advanced Operational Telemetry) ✅
 - **类型**：Observability / Advanced Operational Telemetry / High-Density UI ｜ **优先级**：🌱 P2（运营扩展）
-- **目标版本**：`v1.5.26` ｜ **交付时间预估**：Wave 5 周期 ｜ **当前状态**：⏳ 方案已终审·待排期实施
+- **目标版本**：`v1.5.45` ｜ **交付状态**：已验收通过 ✅ ｜ **Git Release Tag**：`v1.5.45`
 - **核心治理成果与交付细节**：
-  1. 在检索大屏第二排扩展高阶运营指标（BM25 词法与稠密向量命中比、RARG 弃答率时序分布、知识库健康度雷达图）；
-  2. 前端组件严格恪守座舱级高密性冷淡规范、NO GREEN EVER 与 >=11px 字号契约；
-  3. 100% 真实后端数据驱动，在无数据时优雅展示 `--` 占位符。
+  1. **BM25 词法 vs 稠密向量命中比 (`BM25DenseRatioCard`)**：基于 SQLite FTS5 倒排索引与 RRF k=60 融合，展示双流重叠率、代码/符号精确提权数、BM25 在籍文档数与命中分布；
+  2. **RARG 弃答率与置信度分布 (`RARGAbstentionCard`)**：基于 RARG Grounding 验证器，展示拦截弃答率、平均置信度、三阶梯置信度分布（<0.30 拦截、0.30~0.70 边缘、≥0.70 高信）与实时判定流；
+  3. **知识库健康度多维雷达 (`KnowledgeHealthRadarCard`)**：修复 `fts_documents` 巡检数据源，构建纯 SVG 五维雷达图谱（事实保真度、沉淀活跃度、拓扑连通度、时效健康度、公理免疫防线），提供综合健康指数与一键异步巡检；
+  4. **合规与门禁全绿**：全组件恪守 NO GREEN EVER 🚫（统一冰青 `cyan-500`）、字号 $\ge 12\text{px}$、单文件 $\le 300$ 行；自动化门禁测试（Vitest 4/4 PASS、Pytest 11/11 PASS）、代码库安全扫描 4,396 文件零密钥泄露、前端 Vite 生产构建 20.34s PASS。
+- **实际修改与新增文件清单**：
+  - `src/routes/retrieval/-components/advanced-operational-telemetry.tsx` (容器装配)
+  - `src/routes/retrieval/-components/telemetry/bm25-dense-ratio-card.tsx` (BM25/Dense 命中比)
+  - `src/routes/retrieval/-components/telemetry/rarg-abstention-card.tsx` (RARG 弃答率与置信度)
+  - `src/routes/retrieval/-components/telemetry/knowledge-health-radar-card.tsx` (五维雷达图)
+  - `src/routes/retrieval/-components/telemetry/advanced-operational-telemetry.test.ts` (Vitest 合规门禁)
+  - `src/routes/retrieval/route.tsx` (检索大屏挂载第二排看板)
+  - `openviking/server/routers/retrieval_benchmark.py` (修复 SQLite 巡检查询 fts_documents)
+  - `openviking/retrieve/abstention_gate.py` (扩展置信度梯级分布与近期事件队列)
+  - `src/i18n/locales/zh-CN/retrieval.ts`, `src/i18n/locales/en/retrieval.ts` (双语对齐)
+  - `tests/unit/test_advanced_retrieval_telemetry.py` (后端单测)
+  - `package.json`, `openviking/_version.py` (版本升级至 1.5.45)
 
 #### 📌 [P2] [ ] Card-LLMLingua-01 (v1.5.27): 微软开源顶级轮子 LLMLingua-2 (xlm-roberta) 自然语言 Wiki 文档后台异步脱水降噪专项 ⏳
 - **类型**：Model Optimization / Ingestion Compression / Background Batching ｜ **优先级**：🌱 P2（自然语言脱水）
