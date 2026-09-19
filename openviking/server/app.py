@@ -68,6 +68,7 @@ from openviking.server.routers import (
     system_router,
     tasks_router,
     user_settings_router,
+    valet_router,
     watches_router,
     webdav_router,
 )
@@ -659,6 +660,7 @@ def create_app(
     app.include_router(entropy_crystallizer_router)
     app.include_router(active_notes_history_router)
     app.include_router(skill_zip_router)
+    app.include_router(valet_router)
     app.include_router(rag_abstention_router)
     app.include_router(hg_compass_router)
     app.include_router(relations_router)

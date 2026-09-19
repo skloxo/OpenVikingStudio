@@ -217,6 +217,13 @@ export const retrieval = {
       savedBytes: '本次节约写入',
       noSummary: '知识点增量入库',
     },
+    valet: {
+      title: '前门泊车与反熵准入',
+      handoverLatency: '前门交接平均时延',
+      totalHandovers: '累计泊车请求',
+      dedupRatio: '反熵去重准入率',
+      queueDepth: '待入库异步队列水深',
+    },
   },
 } as const
 

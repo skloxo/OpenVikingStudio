@@ -38,6 +38,7 @@ from openviking.server.routers.stats import router as stats_router
 from openviking.server.routers.system import router as system_router
 from openviking.server.routers.tasks import router as tasks_router
 from openviking.server.routers.user_settings import router as user_settings_router
+from openviking.server.routers.valet import router as valet_router
 from openviking.server.routers.watches import router as watches_router
 from openviking.server.routers.webdav import router as webdav_router
 
@@ -78,6 +79,7 @@ __all__ = [
     "openviking_assets_router",
     "tasks_router",
     "user_settings_router",
+    "valet_router",
     "watches_router",
     "webdav_router",
 ]

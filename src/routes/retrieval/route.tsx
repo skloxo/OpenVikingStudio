@@ -9,6 +9,7 @@ import {
   SearchIcon,
   SparklesIcon,
   TerminalIcon,
+  ZapIcon,
 } from 'lucide-react'
 
 import { RetrievalBenchmarkDrawer } from './-components/benchmark-drawer'
@@ -22,6 +23,7 @@ import { RAGAbstentionCockpit } from './-components/rag-abstention-cockpit'
 import { HGRAGCompassCockpit } from './-components/hg-rag-compass-cockpit'
 import { EntropyCrystallizerCockpit } from './-components/entropy-crystallizer-cockpit'
 import { ActiveNotesHistoryCockpit } from './-components/active-notes-history-cockpit'
+import { ValetIngestionCockpit } from './-components/valet-ingestion-cockpit'
 import { RetrievalResults } from './-components/retrieval-results'
 import { RetrievalSearchBar } from './-components/search-bar'
 import {
@@ -37,7 +39,7 @@ import { resolveScopeTargetUri } from './-lib/scope'
 import { validateRetrievalSearch } from './-lib/search-state'
 import type { RetrievalMode, RetrievalScope } from './-types/retrieval'
 
-export type RetrievalTab = 'search' | 'bm25' | 'zg' | 'compass' | 'crystallizer' | 'context'
+export type RetrievalTab = 'search' | 'bm25' | 'zg' | 'compass' | 'crystallizer' | 'context' | 'valet'
 
 export const Route = createFileRoute('/retrieval')({
   validateSearch: validateRetrievalSearch,
@@ -147,6 +149,7 @@ function RetrievalPage() {
           { id: 'compass', label: 'HG-RAG 拓扑与主动弃答', icon: <CompassIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
           { id: 'crystallizer', label: '三门结晶与不可变事实', icon: <SparklesIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
           { id: 'context', label: '主动上下文与历史分仓', icon: <DatabaseIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
+          { id: 'valet', label: '前门泊车与反熵准入', icon: <ZapIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -242,6 +245,9 @@ function RetrievalPage() {
 
       {/* Tab 6: 主动上下文与历史分仓座舱 */}
       {activeTab === 'context' && <ActiveNotesHistoryCockpit />}
+
+      {/* Tab 7: 前门泊车与反熵准入座舱 */}
+      {activeTab === 'valet' && <ValetIngestionCockpit />}
     </div>
   )
 }

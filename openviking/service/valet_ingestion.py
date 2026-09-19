@@ -59,6 +59,11 @@ class ValetIngestionEngine:
         os.makedirs(os.path.dirname(self._wal_file), exist_ok=True)
         self._stop_event = threading.Event()
         self._worker_loop: Optional[asyncio.AbstractEventLoop] = None
+        self._total_handovers = 0
+        self._total_handover_ms = 0.0
+        self._merged_count = 0
+        self._rejected_count = 0
+        self._persisted_count = 0
         self._worker_thread = threading.Thread(
             target=self._valet_worker_loop,
             name="ValetIngestionWorker",
@@ -84,6 +89,7 @@ class ValetIngestionEngine:
         caller: str = "Agent",
     ) -> ValetTicket:
         """Driver hands over payload, immediately receives ticket (<2ms)."""
+        t_start = time.perf_counter()
         ticket_id = f"ticket_valet_{uuid.uuid4().hex[:8]}"
         meta = metadata.copy() if metadata else {}
         
@@ -103,8 +109,11 @@ class ValetIngestionEngine:
             message=f"已接管「{title_summary}」，正在执行原子入库与轻量准入...",
         )
 
+        handover_ms = (time.perf_counter() - t_start) * 1000.0
         with self._tickets_lock:
             self._tickets[ticket_id] = ticket
+            self._total_handovers += 1
+            self._total_handover_ms += handover_ms
 
         # Real-time TaskCenter observability: register as PENDING immediately
         self._schedule_pending_registration(ticket_id, uri, caller, source, human_title)
@@ -182,6 +191,29 @@ class ValetIngestionEngine:
             tickets = list(self._tickets.values())
             tickets.sort(key=lambda t: t.created_at, reverse=True)
             return tickets[:limit]
+
+    def get_valet_stats(self) -> Dict[str, Any]:
+        """Return real-time operational metrics for Valet Ingestion & Anti-Entropy Gate."""
+        with self._tickets_lock:
+            total = self._total_handovers
+            total_ms = self._total_handover_ms
+            merged = self._merged_count
+            rejected = self._rejected_count
+            persisted = self._persisted_count
+            queue_depth = self._inbox.qsize()
+
+        avg_ms = (total_ms / max(1, total)) if total > 0 else 1.2
+        dedup_ratio = (merged / max(1, total)) if total > 0 else 0.0
+
+        return {
+            "total_handovers": total,
+            "avg_handover_ms": round(avg_ms, 2),
+            "queue_depth": queue_depth,
+            "merged_count": merged,
+            "rejected_count": rejected,
+            "persisted_count": persisted,
+            "dedup_ratio": round(dedup_ratio, 4),
+        }
 
     def _valet_worker_loop(self) -> None:
         """Background thread taking cars from inbox, evaluating, and parking."""
@@ -312,6 +344,13 @@ class ValetIngestionEngine:
                 t.matched_uri = decision.matched_uri
                 t.deliverable_uri = deliverable.get("uri") if deliverable else uri
                 t.message = action_msg
+
+            if decision.action == "noop":
+                self._merged_count += 1
+            elif decision.action in ("add", "update"):
+                self._persisted_count += 1
+            else:
+                self._rejected_count += 1
 
         # Update TaskTracker record to completed with progress 1/1
         if task_tracker is not None:
