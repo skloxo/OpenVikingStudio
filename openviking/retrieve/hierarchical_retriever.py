@@ -449,28 +449,38 @@ class HierarchicalRetriever:
                     candidate["_score"] = score
                     initial_candidates.append(candidate)
 
-            # Step 4: Recursive search
+            # Step 4: Parallel Vector + BM25 (Plan A: asyncio.gather, Card-Retrieval-ParallelStream-PlanA v1.5.29-PatchA)
+            # Both streams are fired simultaneously; BM25 (~0.6ms) is fully masked by vector retrieval (~30ms).
             with telemetry.measure("search.vector_retrieval"):
-                candidates = await self._recursive_search(
-                    vector_proxy=vector_proxy,
-                    query=query.query,
-                    query_vector=query_vector,
-                    sparse_query_vector=sparse_query_vector,
-                    starting_points=starting_points,
-                    limit=limit,
-                    mode=resolved_mode,
-                    threshold=effective_threshold,
-                    score_gte=score_gte,
-                    context_type=context_type,
-                    target_dirs=target_dirs,
-                    scope_dsl=scope_dsl,
-                    initial_candidates=initial_candidates,
-                    level=level,
+                candidates, bm25_prefetch = await asyncio.gather(
+                    self._recursive_search(
+                        vector_proxy=vector_proxy,
+                        query=query.query,
+                        query_vector=query_vector,
+                        sparse_query_vector=sparse_query_vector,
+                        starting_points=starting_points,
+                        limit=limit,
+                        mode=resolved_mode,
+                        threshold=effective_threshold,
+                        score_gte=score_gte,
+                        context_type=context_type,
+                        target_dirs=target_dirs,
+                        scope_dsl=scope_dsl,
+                        initial_candidates=initial_candidates,
+                        level=level,
+                    ),
+                    self._run_bm25_search(
+                        query=query.query,
+                        limit=limit,
+                        context_type=context_type,
+                        target_dirs=target_dirs,
+                        image_query=image_query,
+                    ),
                 )
             apply_hotness = True
             rerank_used = self._rerank_client is not None and resolved_mode == RetrieverMode.THINKING
 
-            # BM25 Sparse Lexical Retrieval & RRF Fusion for deep THINKING mode (Card-Retrieval-BM25Hybrid v1.5.29)
+            # BM25 RRF Fusion — merge pre-fetched BM25 results with vector candidates (Plan A PatchA)
             candidates = await self._fuse_with_bm25(
                 dense_results=candidates,
                 query=query.query,
@@ -478,6 +488,7 @@ class HierarchicalRetriever:
                 context_type=context_type,
                 target_dirs=target_dirs,
                 image_query=image_query,
+                prefetched_sparse=bm25_prefetch,
             )
             if self._rerank_client and candidates:
                 rerank_budget = min(len(candidates), max(limit * 2, 6))
@@ -526,6 +537,39 @@ class HierarchicalRetriever:
             searched_directories=root_uris,
         )
 
+    async def _run_bm25_search(
+        self,
+        query: str,
+        limit: int,
+        context_type: Optional[str] = None,
+        target_dirs: Optional[List[str]] = None,
+        image_query: bool = False,
+    ) -> List[Any]:
+        """Pure BM25 query coroutine — no RRF, no side-effects.
+
+        Runs in parallel with _recursive_search via asyncio.gather (Plan A PatchA).
+        Returns raw BM25Match list, or empty list on skip/error.
+        """
+        if image_query or not query:
+            return []
+        try:
+            from openviking.storage.bm25_fts_index import BM25FTSIndex
+
+            bm25_index = BM25FTSIndex.get_instance()
+            logger.debug("[HierarchicalRetriever] BM25 parallel stream started")
+            matches = await asyncio.to_thread(
+                bm25_index.search,
+                query=query,
+                limit=max(20, limit * 2),
+                context_type=context_type,
+                target_directories=target_dirs,
+            )
+            logger.debug("[HierarchicalRetriever] BM25 parallel stream completed: %d matches", len(matches))
+            return matches
+        except Exception as e:
+            logger.debug("[HierarchicalRetriever] BM25 parallel stream error (graceful degradation): %s", e)
+            return []
+
     async def _fuse_with_bm25(
         self,
         dense_results: List[Dict[str, Any]],
@@ -534,23 +578,34 @@ class HierarchicalRetriever:
         context_type: Optional[str] = None,
         target_dirs: Optional[List[str]] = None,
         image_query: bool = False,
+        prefetched_sparse: Optional[List[Any]] = None,
     ) -> List[Dict[str, Any]]:
-        """Fuse dense vector candidates with SQLite FTS5 BM25 lexical candidates using RRF k=60."""
+        """Fuse pre-fetched BM25 candidates with dense vector results via RRF k=60.
+
+        When `prefetched_sparse` is provided (Plan A parallel path), skips BM25 query
+        and uses pre-fetched results directly. Falls back to serial BM25 query only when
+        called without pre-fetch (e.g., future standalone callers).
+        """
         if image_query or not query:
             return dense_results
         try:
-            from openviking.storage.bm25_fts_index import BM25FTSIndex
             from openviking.retrieve.rrf_fusion import rrf_fuse
             from openviking.retrieve.hybrid_retriever import HybridRetrievalTelemetry
 
-            bm25_index = BM25FTSIndex.get_instance()
-            sparse_matches = await asyncio.to_thread(
-                bm25_index.search,
-                query=query,
-                limit=max(20, limit * 2),
-                context_type=context_type,
-                target_directories=target_dirs,
-            )
+            # Use pre-fetched results (parallel path) or fall back to serial BM25 query
+            if prefetched_sparse is not None:
+                sparse_matches = prefetched_sparse
+            else:
+                from openviking.storage.bm25_fts_index import BM25FTSIndex
+                bm25_index = BM25FTSIndex.get_instance()
+                sparse_matches = await asyncio.to_thread(
+                    bm25_index.search,
+                    query=query,
+                    limit=max(20, limit * 2),
+                    context_type=context_type,
+                    target_directories=target_dirs,
+                )
+
             if not sparse_matches:
                 return dense_results
 
@@ -606,7 +661,7 @@ class HierarchicalRetriever:
             )
             return fused_pool
         except Exception as e:
-            logger.debug(f"[HierarchicalRetriever] Hybrid BM25 fusion bypassed: {e}")
+            logger.debug("[HierarchicalRetriever] Hybrid BM25 fusion bypassed: %s", e)
             return dense_results
 
     def _resolve_threshold(self, threshold: Optional[float]) -> float:
