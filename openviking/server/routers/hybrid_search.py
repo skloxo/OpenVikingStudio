@@ -125,6 +125,23 @@ async def run_hybrid_probe(
     fused = rrf_fuse(dense_results=dense_results, sparse_results=sparse_dicts, top_k=req.limit)
     latency_ms = (time.monotonic() - t0) * 1000.0
 
+    # Record probe in telemetry
+    overlap_cnt = sum(1 for f in fused if f.origin == "hybrid")
+    dense_only_cnt = sum(1 for f in fused if f.origin == "dense_only")
+    sparse_only_cnt = sum(1 for f in fused if f.origin == "sparse_only")
+    symbol_boost = any(f.origin == "sparse_only" and f.fused_rank <= 3 for f in fused)
+    telemetry = HybridRetrievalTelemetry.get_instance()
+    telemetry.record(
+        dense_count=len(dense_results),
+        sparse_count=len(sparse_matches),
+        fused_count=len(fused),
+        overlap_count=overlap_cnt,
+        symbol_boost=symbol_boost,
+        latency_ms=latency_ms,
+        dense_only=dense_only_cnt,
+        sparse_only=sparse_only_cnt,
+    )
+
     return JSONResponse(
         status_code=200,
         content={

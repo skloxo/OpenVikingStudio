@@ -101,7 +101,7 @@ class BM25FTSIndex:
                 conn.close()
 
     def _sanitize_query(self, query: str) -> str:
-        """Sanitize query string to safe FTS5 query syntax."""
+        """Sanitize query string to safe FTS5 query syntax while preserving code symbols."""
         cleaned = re.sub(r'["\*\^:\(\)\.\/\-,;\{\}\[\]@#\$%\&!=+\?<>]', " ", query).strip()
         tokens = [t.strip() for t in re.split(r"\s+", cleaned) if t.strip()]
         if not tokens:
@@ -111,12 +111,16 @@ class BM25FTSIndex:
             safe_token = re.sub(r"[^\w_]", "", token)
             if not safe_token:
                 continue
+            # Exact symbol token prefix match
             safe_terms.append(f"{safe_token}*")
             if "_" in safe_token:
                 subparts = [p for p in safe_token.split("_") if p]
                 if len(subparts) > 1:
                     joined_parts = " ".join(f"{p}*" for p in subparts)
                     safe_terms.append(f"({joined_parts})")
+            # If purely alphanumeric or port number, also match exact
+            if safe_token.isdigit():
+                safe_terms.append(f'"{safe_token}"')
         if not safe_terms:
             return ""
         return " OR ".join(safe_terms)
@@ -129,9 +133,14 @@ class BM25FTSIndex:
         level: int = 2,
         context_type: str = "resource",
     ) -> bool:
-        """Upsert a single document into FTS5 index."""
+        """Upsert a single document into FTS5 index with payload guard."""
         if not uri or not content:
             return False
+
+        # Guard against write amplification: truncate oversized text and skip raw base64
+        if content.startswith("data:image/") or ";base64," in content[:100]:
+            return False
+        clean_content = content[:65536]  # 64KB ceiling for FTS inverted indexing
 
         with self._db_lock:
             conn = self._get_connection()
@@ -143,7 +152,7 @@ class BM25FTSIndex:
                     INSERT INTO fts_documents(uri, title, content, level, context_type)
                     VALUES (?, ?, ?, ?, ?)
                     """,
-                    (uri, title or "", content, level, context_type),
+                    (uri, (title or "")[:512], clean_content, level, context_type),
                 )
                 conn.execute(
                     "INSERT OR REPLACE INTO fts_meta(uri) VALUES (?)",
@@ -171,6 +180,10 @@ class BM25FTSIndex:
                     content = item.get("content")
                     if not uri or not content:
                         continue
+                    # Skip base64 payload and truncate oversized text
+                    if content.startswith("data:image/") or ";base64," in content[:100]:
+                        continue
+                    clean_content = content[:65536]
                     title = item.get("title", "")
                     level = item.get("level", 2)
                     context_type = item.get("context_type", "resource")
@@ -181,7 +194,7 @@ class BM25FTSIndex:
                         INSERT INTO fts_documents(uri, title, content, level, context_type)
                         VALUES (?, ?, ?, ?, ?)
                         """,
-                        (uri, title, content, level, context_type),
+                        (uri, (title or "")[:512], clean_content, level, context_type),
                     )
                     conn.execute("INSERT OR REPLACE INTO fts_meta(uri) VALUES (?)", (uri,))
                     indexed += 1

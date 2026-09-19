@@ -15,6 +15,7 @@ import {
   ArrowUpRightIcon,
   CheckCircle2Icon,
 } from 'lucide-react'
+import { BM25RankHistogram } from './bm25-rank-histogram'
 
 export interface HybridTelemetrySnapshot {
   total_hybrid_queries: number
@@ -25,6 +26,7 @@ export interface HybridTelemetrySnapshot {
   exact_symbol_boost_count: number
   avg_latency_ms: number
   is_bm25_ready: boolean
+  rank_distribution?: Record<string, number>
 }
 
 export interface BM25IndexStats {
@@ -63,7 +65,8 @@ export interface HybridProbeResponse {
 }
 
 const PRESET_SYMBOLS = [
-  'is_heartbeat_session',
+  '_query_endpoint_frequency_sync',
+  'HierarchicalRetriever',
   'VikingFS.commit',
   '1933',
   'sqlite3.OperationalError',
@@ -71,7 +74,7 @@ const PRESET_SYMBOLS = [
 
 export function BM25HybridCockpit() {
   const { t } = useTranslation('retrieval')
-  const [probeQuery, setProbeQuery] = React.useState('is_heartbeat_session')
+  const [probeQuery, setProbeQuery] = React.useState('_query_endpoint_frequency_sync')
   const [probeResult, setProbeResult] = React.useState<HybridProbeResponse | null>(null)
 
   // Fetch telemetry & index stats
@@ -206,6 +209,12 @@ export function BM25HybridCockpit() {
           </p>
         </div>
       </div>
+
+      {/* 2.5 Dense vs Sparse 召回名次分布直方图 */}
+      <BM25RankHistogram
+        fusedResults={probeResult?.fused_results}
+        distribution={telemetry?.rank_distribution}
+      />
 
       {/* 3. 交互式双流 RRF 试验台 */}
       <div className="flex flex-col gap-2 rounded-md border border-border/50 bg-muted/5 p-3">

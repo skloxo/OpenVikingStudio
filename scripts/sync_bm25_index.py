@@ -26,12 +26,12 @@ def sync_bm25():
                 p = Path(path)
                 if p.is_file():
                     try:
-                        content += " " + p.read_text(errors="ignore")[:4000]
+                        content += " " + p.read_text(errors="ignore")[:32768]
                     except Exception:
                         pass
                 elif (p / "SKILL.md").is_file():
                     try:
-                        content += " " + (p / "SKILL.md").read_text(errors="ignore")[:4000]
+                        content += " " + (p / "SKILL.md").read_text(errors="ignore")[:32768]
                     except Exception:
                         pass
 
@@ -53,7 +53,7 @@ def sync_bm25():
             docs.append({
                 "uri": f"code://{rel}",
                 "title": py_file.stem,
-                "content": txt[:8000],
+                "content": txt[:65536],
                 "level": 2,
                 "context_type": "code",
             })
