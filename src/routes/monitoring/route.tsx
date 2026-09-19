@@ -41,6 +41,7 @@ import { EmbeddingLatencyChart } from './-components/embedding-latency-chart'
 import { SlaTrendChart } from './-components/sla-trend-chart'
 import { RetrievalAccuracyTrendChart } from './-components/retrieval-accuracy-trend-chart'
 import { TokenBreakdownPieChart } from './-components/token-breakdown-pie-chart'
+import { AgentSensorsCard } from './-components/agent-sensors-card'
 
 export const Route = createFileRoute('/monitoring')({
   component: MonitoringRoute,
@@ -675,6 +676,9 @@ function MonitoringRoute() {
               />
             </CardContent>
           </Card>
+
+          {/* Card-Metrics-AgentSensors: 智能体三维效能物理探针 (Token SNR, P@5, 人工介入率) */}
+          <AgentSensorsCard />
 
           {/* Task Card v1.1.15: 1934 官方 16 张深层监控指标卡片 (Deep Metrics Grid) */}
           <DeepMetricsGrid metrics={deepMetrics} isLoading={monitoringQuery.isLoading} />
