@@ -49,6 +49,7 @@ from openviking.server.routers.evolution_cicd import router as evolution_cicd_ro
 from openviking.server.routers.agent_sensors import router as agent_sensors_router
 from openviking.server.routers.watches import router as watches_router
 from openviking.server.routers.webdav import router as webdav_router
+from openviking.server.routers.wiki_dehydration import router as wiki_dehydration_router
 
 __all__ = [
     "acl_router",
@@ -98,4 +99,5 @@ __all__ = [
     "agent_sensors_router",
     "watches_router",
     "webdav_router",
+    "wiki_dehydration_router",
 ]
