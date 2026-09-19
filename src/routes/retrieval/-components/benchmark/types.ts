@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Beijing Volcano Engine Technology Co., Ltd.
 // SPDX-License-Identifier: AGPL-3.0
 
-export type BenchmarkMode = 'fast' | 'ragas' | 'symbols'
+export type BenchmarkMode = 'fast' | 'ragas' | 'symbols' | 'gold'
 
 export interface RagasScoreBreakdown {
   contextPrecision: number // 上下文排布精度 [0, 1]
@@ -21,6 +21,9 @@ export interface BenchmarkResultItem {
   status: 'pending' | 'running' | 'hit' | 'miss' | 'error'
   errorMsg?: string
   ragas?: RagasScoreBreakdown
+  category?: string
+  rank?: number | null
+  reciprocalRank?: number
 }
 
 export interface BenchmarkSummaryMetrics {
@@ -30,6 +33,7 @@ export interface BenchmarkSummaryMetrics {
   avgLatency: number
   avgScore: string
   symbolRecallRate?: number
+  mrr?: number
   ragas?: {
     avgPrecision: string
     avgRecall: string

@@ -19,6 +19,7 @@ import {
   computeSummaryMetrics,
   evaluateRagasSample,
   getDefaultBenchmarkQueries,
+  getBenchmarkQueriesByMode,
 } from './benchmark/eval-engine'
 import { BenchmarkMetricsTiles } from './benchmark/metrics-tiles'
 import { BenchmarkQuerySuite } from './benchmark/query-suite'
@@ -45,6 +46,14 @@ export function RetrievalBenchmarkDrawer() {
   const [currentIndex, setCurrentIndex] = React.useState(-1)
   const [results, setResults] = React.useState<BenchmarkResultItem[]>([])
 
+  const handleModeChange = (newMode: BenchmarkMode) => {
+    if (isRunning) return
+    setMode(newMode)
+    setQueries(getBenchmarkQueriesByMode(newMode, i18n.language))
+    setResults([])
+    setCurrentIndex(-1)
+  }
+
   // 当系统语言切换且未产生评测数据时，自动对齐语言专属默认用例集
   const prevLangRef = React.useRef(i18n.language)
   React.useEffect(() => {
@@ -67,7 +76,7 @@ export function RetrievalBenchmarkDrawer() {
 
   const handleResetDefaults = () => {
     if (isRunning) return
-    setQueries(defaultQueries)
+    setQueries(getBenchmarkQueriesByMode(mode, i18n.language))
     setResults([])
     setCurrentIndex(-1)
   }
@@ -209,16 +218,22 @@ export function RetrievalBenchmarkDrawer() {
                 )}
               </div>
               <SheetTitle className="text-sm font-semibold tracking-tight">
-                {mode === 'ragas' ? t('benchmark.ragasDrawerTitle', 'RAGAS 自动化评测实验室 (04A~04B)') : t('benchmark.drawerTitle')}
+                {mode === 'ragas'
+                  ? t('benchmark.ragasDrawerTitle', 'RAGAS 自动化评测实验室 (04A~04B)')
+                  : mode === 'gold'
+                  ? t('benchmark.goldDrawerTitle', 'Gold 真实回归金标集评测 (32 题物理门禁)')
+                  : t('benchmark.drawerTitle')}
               </SheetTitle>
             </div>
             <Badge variant="outline" className="text-xs font-mono px-2 py-0.5 border-border shrink-0">
-              {mode === 'ragas' ? 'Ragas v0.2+' : 'Fast / 1933'}
+              {mode === 'ragas' ? 'Ragas v0.2+' : mode === 'gold' ? 'Gold-32' : 'Fast / 1933'}
             </Badge>
           </div>
           <SheetDescription className="text-xs text-muted-foreground mt-1">
             {mode === 'ragas'
               ? t('benchmark.ragasDrawerDesc', '实测 Precision / Recall / Faithfulness / Relevance 综合调和四维指数')
+              : mode === 'gold'
+              ? t('benchmark.goldDrawerDesc', '覆盖精确符号、异常排障、核心架构与领域知识四大维度，MRR 门禁物理验真')
               : t('benchmark.drawerDesc')}
           </SheetDescription>
         </SheetHeader>
@@ -231,7 +246,7 @@ export function RetrievalBenchmarkDrawer() {
             mode={mode}
             onAddQuery={handleAddQuery}
             onExport={exportReport}
-            onModeChange={setMode}
+            onModeChange={handleModeChange}
             onResetSuite={handleResetDefaults}
             onRun={runBenchmark}
             queries={queries}
