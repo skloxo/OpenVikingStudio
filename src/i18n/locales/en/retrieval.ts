@@ -217,6 +217,13 @@ export const retrieval = {
       savedBytes: 'Saved write bytes',
       noSummary: 'Incremental Knowledge Ingestion',
     },
+    valet: {
+      title: 'Valet Ingestion & Anti-Entropy Gate',
+      handoverLatency: 'Average Handover Latency',
+      totalHandovers: 'Total Valet Requests',
+      dedupRatio: 'Anti-Entropy Dedup Ratio',
+      queueDepth: 'Pending Valet Queue Depth',
+    },
   },
 } as const
 
