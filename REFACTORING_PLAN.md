@@ -478,10 +478,18 @@
   - **前端座舱联动**：`benchmark-drawer.tsx`、`query-suite.tsx`、`eval-engine.ts`、`types.ts` 支持一键切换 Gold-32 物理门禁并回显 MRR 与命中率；
   - **单测与门禁**：`tests/unit/test_retrieval_benchmark_and_hygiene.py` 100% 通过（5 passed），前端构建 100% 成功，安全审计零泄密。
 
-#### 📌 [P1] [ ] Card-Evolve-HermesEvolveLoop-Patch (v1.5.18): Hermes 级经历与能力解耦存储、Periodic Nudges 异步副进程复盘与 Patch 级技能微补丁自进化机制 ⏳
-- **目标版本**：`v1.5.18` ｜ **优先级**：`P1`
+#### 📌 [P1] [x] Card-Evolve-HermesEvolveLoop-Patch (v1.5.39): Hermes 级经历与能力解耦存储、Periodic Nudges 异步副进程复盘与 Patch 级技能微补丁自进化机制 ✅
+- **目标版本**：`v1.5.39` ｜ **优先级**：`P1` ｜ **实际交付版本**：`v1.5.39`
 - **核心交付目标**：1. 吸收 DeepEvolution《Hermes Agent Evolve Loop》与全景导论：实现经历（SessionDB）与能力（Skill/Memory）严格物理分层；<br>2. 跨会话 FTS5 真实消息检索（拒绝虚假 LLM 摘要）；<br>3. Periodic Nudges 异步副进程复盘：主任务完成后异步派发轻量工兵模型复盘轨迹并提取经验，零阻塞用户交互；<br>4. Patch 优先技能微手术：skill_manage 强制局部增量替换（≤30行），保留 90% 经过验证的边界逻辑，防范 Edit 模式全量重写的严重幻觉覆盖。
 - **验收条件**：经历与能力物理分层，真实轨迹 FTS5 检索，异步副进程复盘，Patch 局部微手术防遗忘
+- **交付内容**：
+  - `openviking/core/hermes_experience_store.py` (经历只增不删与 SQLite FTS5 倒排索引)
+  - `openviking/core/hermes_nudge_engine.py` (异步副进程复盘 Worker，零阻塞用户交互)
+  - `openviking/core/hermes_patch_engine.py` (微手术补丁引擎，≤30行硬门禁与一键回滚)
+  - `openviking/server/routers/hermes.py` (10 个 REST API 端点)
+  - `src/routes/retrieval/-components/hermes-evolve-cockpit.tsx` (Tab 10 Hermes 座舱组件，4 块 KPI 瓦片)
+  - `tests/unit/test_hermes_experience_store.py`, `tests/unit/test_hermes_nudge_patch.py`, `tests/unit/test_hermes_api.py` (7 个测试全部通过)
+- **交付状态**：已交付 ✅ ｜ **Git Commit**：待打 tag `v1.5.39`
 
 ### 🌊 Wave 4: 契约化自演进与离线梦境闭环 (Contractual Self-Evolution & Dreaming)
 
