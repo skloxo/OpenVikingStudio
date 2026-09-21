@@ -31,9 +31,42 @@ export interface AtomicStepSpec {
   engineKey?: string
 }
 
+export const HYGIENE_STEP_SPECS: Record<string, AtomicStepSpec> = {
+  step_fts_scan: {
+    id: 'step_fts_scan',
+    nameZh: '全库记忆扫描',
+    nameEn: 'Full Memory Scan',
+    unitZh: '篇',
+    unitEn: 'docs',
+    stageKeywords: ['scan', 'fts', 'traverse', '遍历'],
+    metricKeys: ['total_inspected', 'total_documents'],
+    totalKeys: ['total_documents', 'total_in_store'],
+    engineKey: 'bm25_fts',
+  },
+  step_hygiene_audit: {
+    id: 'step_hygiene_audit',
+    nameZh: '多维卫生诊断',
+    nameEn: 'Hygiene Diagnostics',
+    unitZh: '项',
+    unitEn: 'items',
+    stageKeywords: ['hygiene', 'audit', 'inspect', '诊断'],
+    metricKeys: ['health_score', 'total_inspected'],
+    engineKey: 'hygiene_engine',
+  },
+  step_hygiene_report: {
+    id: 'step_hygiene_report',
+    nameZh: '巡检报告发布',
+    nameEn: 'Report Publish',
+    stageKeywords: ['report', 'publish', 'complete', 'finalizing'],
+    isActionOnly: true,
+    engineKey: 'hygiene_engine',
+  },
+}
+
 export const ATOMIC_STEP_SPECS: Record<string, AtomicStepSpec> = {
   ...CORE_STEP_SPECS,
   ...ENTROPY_STEP_SPECS,
+  ...HYGIENE_STEP_SPECS,
 }
 
 /**
@@ -113,5 +146,10 @@ export const TASK_FLOW_REGISTRY: Record<string, string[]> = {
     'step_valet_probe',
     'step_quality_gate',
     'step_valet_parking',
+  ],
+  knowledge_hygiene_audit: [
+    'step_fts_scan',
+    'step_hygiene_audit',
+    'step_hygiene_report',
   ],
 }

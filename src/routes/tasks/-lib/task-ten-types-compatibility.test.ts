@@ -12,8 +12,8 @@ import {
 } from './task-pipeline'
 import type { TaskRecord } from './task-record'
 
-describe('10 大任务类型全景兼容性与适配性矩阵测试', () => {
-  const TEN_TASK_TYPES = [
+describe('11 大任务类型全景兼容性与适配性矩阵测试', () => {
+  const CORE_TASK_TYPES = [
     'valet_parking',
     'add_resource',
     'session_commit',
@@ -24,19 +24,20 @@ describe('10 大任务类型全景兼容性与适配性矩阵测试', () => {
     'legacy_migration',
     'legacy_cleanup',
     'user_delete',
+    'knowledge_hygiene_audit',
   ] as const
 
-  it('契约 1: TASK_TYPE_OPTIONS 必须精确涵盖全部 10 大核心任务类型', () => {
-    expect(TASK_TYPE_OPTIONS).toHaveLength(10)
-    for (const typeKey of TEN_TASK_TYPES) {
+  it('契约 1: TASK_TYPE_OPTIONS 必须精确涵盖全部 11 大核心任务类型', () => {
+    expect(TASK_TYPE_OPTIONS).toHaveLength(11)
+    for (const typeKey of CORE_TASK_TYPES) {
       expect(TASK_TYPE_OPTIONS).toContain(typeKey)
     }
   })
 
-  it('契约 2: TASK_FLOWS 必须注册全部 10 大车间工序流，且各工序流至少包含 2 道工序', () => {
-    expect(TASK_FLOWS).toHaveLength(10)
+  it('契约 2: TASK_FLOWS 必须注册全部 11 大车间工序流，且各工序流至少包含 2 道工序', () => {
+    expect(TASK_FLOWS).toHaveLength(11)
     const registeredKeys = TASK_FLOWS.map((f) => f.typeKey)
-    for (const typeKey of TEN_TASK_TYPES) {
+    for (const typeKey of CORE_TASK_TYPES) {
       expect(registeredKeys).toContain(typeKey)
       const flow = TASK_FLOWS.find((f) => f.typeKey === typeKey)
       expect(flow?.stepIds.length).toBeGreaterThanOrEqual(2)
@@ -49,20 +50,22 @@ describe('10 大任务类型全景兼容性与适配性矩阵测试', () => {
     expect(valetFlow?.nameEn).toBe('Atomic Ingestion')
   })
 
-  it('契约 3: 中英文双语 i18n 语言包中 10 大任务类型 100% 对等注册', () => {
+  it('契约 3: 中英文双语 i18n 语言包中 11 大任务类型 100% 对等注册', () => {
     const zhTypes = zhTasks.tasksPage.types as Record<string, string>
     const enTypes = enTasks.tasksPage.types as Record<string, string>
 
-    for (const typeKey of TEN_TASK_TYPES) {
+    for (const typeKey of CORE_TASK_TYPES) {
       expect(zhTypes[typeKey], `Missing zh translation for ${typeKey}`).toBeTruthy()
       expect(enTypes[typeKey], `Missing en translation for ${typeKey}`).toBeTruthy()
     }
 
     expect(zhTypes.valet_parking).toBe('原子入库')
     expect(enTypes.valet_parking).toBe('Atomic Ingestion')
+    expect(zhTypes.knowledge_hygiene_audit).toBe('知识卫生全量巡检')
+    expect(enTypes.knowledge_hygiene_audit).toBe('Knowledge Hygiene Audit')
   })
 
-  it('契约 4: 全部 10 大任务类型在完成态下均能正常推导出流水线工序 (Zero Crash)', () => {
+  it('契约 4: 全部 11 大任务类型在完成态下均能正常推导出流水线工序 (Zero Crash)', () => {
     const mockTasks: Record<string, TaskRecord> = {
       valet_parking: {
         task_id: 't-valet',
@@ -127,9 +130,15 @@ describe('10 大任务类型全景兼容性与适配性矩阵测试', () => {
         status: 'completed',
         result: { vectors_dropped: 60, files_unlinked: 5 },
       },
+      knowledge_hygiene_audit: {
+        task_id: 't-hygiene',
+        task_type: 'knowledge_hygiene_audit',
+        status: 'completed',
+        result: { total_inspected: 2028, health_score: 100, disputed_count: 0, dormant_count: 0 },
+      },
     }
 
-    for (const typeKey of TEN_TASK_TYPES) {
+    for (const typeKey of CORE_TASK_TYPES) {
       const task = mockTasks[typeKey]
       expect(task).toBeDefined()
       const steps = getTaskPipelineSteps(task, [], 'zh')
@@ -141,7 +150,7 @@ describe('10 大任务类型全景兼容性与适配性矩阵测试', () => {
     }
   })
 
-  it('契约 5: 全部 10 大任务类型均有确定的最终成果物摘要输出 (getTaskFinalOutcome)', () => {
+  it('契约 5: 全部 11 大任务类型均有确定的最终成果物摘要输出 (getTaskFinalOutcome)', () => {
     const mockTasks: TaskRecord[] = [
       { task_id: '1', task_type: 'valet_parking', status: 'completed', result: { action: 'noop', similarity: 0.99 } },
       { task_id: '2', task_type: 'add_resource', status: 'completed', result: { file_count: 2, processed_chunks: 10 } },
@@ -153,6 +162,7 @@ describe('10 大任务类型全景兼容性与适配性矩阵测试', () => {
       { task_id: '8', task_type: 'legacy_migration', status: 'completed', result: { migrated_records: 12 } },
       { task_id: '9', task_type: 'legacy_cleanup', status: 'completed', result: { cleaned_items: 30 } },
       { task_id: '10', task_type: 'user_delete', status: 'completed', result: { vectors_dropped: 15, files_unlinked: 3 } },
+      { task_id: '11', task_type: 'knowledge_hygiene_audit', status: 'completed', result: { total_inspected: 2028, health_score: 100 } },
     ]
 
     for (const task of mockTasks) {
@@ -166,8 +176,8 @@ describe('10 大任务类型全景兼容性与适配性矩阵测试', () => {
     }
   })
 
-  it('契约 6: computeTaskKpiData 大盘聚合能够正确统计 10 大任务类型，typeRows 零丢失', () => {
-    const mockAllTasks: TaskRecord[] = TEN_TASK_TYPES.map((typeKey, idx) => ({
+  it('契约 6: computeTaskKpiData 大盘聚合能够正确统计 11 大任务类型，typeRows 零丢失', () => {
+    const mockAllTasks: TaskRecord[] = CORE_TASK_TYPES.map((typeKey, idx) => ({
       task_id: `mock-t-${idx}`,
       task_type: typeKey,
       status: 'completed',
@@ -181,22 +191,22 @@ describe('10 大任务类型全景兼容性与适配性矩阵测试', () => {
     }
 
     const kpi = computeTaskKpiData(mockAllTasks, t)
-    expect(kpi.total).toBe(10)
-    expect(kpi.completed).toBe(10)
+    expect(kpi.total).toBe(11)
+    expect(kpi.completed).toBe(11)
     expect(kpi.successRate).toBe(100)
 
-    // typeRows 包含 10 个基本类型 + 1 个 TOTAL 汇总行
-    expect(kpi.typeRows).toHaveLength(11)
+    // typeRows 包含 11 个基本类型 + 1 个 TOTAL 汇总行
+    expect(kpi.typeRows).toHaveLength(12)
     const typeKeysInRows = kpi.typeRows
       .filter((r) => r.typeKey)
       .map((r) => r.typeKey)
 
-    for (const typeKey of TEN_TASK_TYPES) {
+    for (const typeKey of CORE_TASK_TYPES) {
       expect(typeKeysInRows).toContain(typeKey)
     }
 
     // 验证每种类型的计数都精确为 1
-    for (const typeKey of TEN_TASK_TYPES) {
+    for (const typeKey of CORE_TASK_TYPES) {
       const row = kpi.typeRows.find((r) => r.typeKey === typeKey)
       expect(row?.total).toBe(1)
       expect(row?.completed).toBe(1)

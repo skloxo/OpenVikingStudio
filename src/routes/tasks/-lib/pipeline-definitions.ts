@@ -162,4 +162,10 @@ export const TASK_FLOWS: TaskTypeFlowDef[] = [
     nameEn: 'User Space Purge',
     stepIds: ['step_soft_mark', 'step_vector_purge', 'step_disk_wipe'],
   },
+  {
+    typeKey: 'knowledge_hygiene_audit',
+    nameZh: '知识卫生全量巡检',
+    nameEn: 'Knowledge Hygiene Audit',
+    stepIds: ['step_fts_scan', 'step_hygiene_audit', 'step_hygiene_report'],
+  },
 ]

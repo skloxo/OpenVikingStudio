@@ -260,6 +260,7 @@ async def get_dual_track_tasks(
                 "fact_mutation": "知识状态机变异校验",
                 "entity_summarization": "实体全局拓扑归纳",
                 "four_tier_governance": "四层信息退火巡检",
+                "knowledge_hygiene_audit": "知识卫生全量巡检",
             }.get(task_type, f"系统运维工序 ({task_type})")
             td["human_title"] = f"{type_label} #{short_id}"
             system_ops.append(td)

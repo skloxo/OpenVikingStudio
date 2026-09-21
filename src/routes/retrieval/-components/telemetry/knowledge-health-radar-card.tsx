@@ -1,9 +1,10 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Link } from '@tanstack/react-router'
 import { Card } from '#/components/ui/card'
 import { Badge } from '#/components/ui/badge'
-import { RefreshCwIcon, ShieldCheckIcon, AlertTriangleIcon } from 'lucide-react'
+import { RefreshCwIcon, ShieldCheckIcon, AlertTriangleIcon, ExternalLinkIcon } from 'lucide-react'
 import { ovClient } from '#/lib/ov-client'
 
 interface HygieneResponse {
@@ -17,6 +18,8 @@ interface HygieneResponse {
     stale_percentage: number
     inspection_ts: number
     latency_ms: number
+    task_id?: string
+    total_in_store?: number
     issues: Array<{
       uri: string
       issue_type: string
@@ -30,6 +33,7 @@ interface HygieneResponse {
 
 export function KnowledgeHealthRadarCard() {
   const { t } = useTranslation('retrieval')
+  const queryClient = useQueryClient()
 
   const { data, isLoading, refetch, isFetching } = useQuery<HygieneResponse>({
     queryKey: ['knowledge-hygiene-health-report'],
@@ -42,11 +46,38 @@ export function KnowledgeHealthRadarCard() {
     staleTime: 15_000,
   })
 
+  const dispatchMutation = useMutation({
+    mutationFn: async () => {
+      const res = await ovClient.instance.post<{ status: string; task_id: string }>(
+        '/api/v1/retrieval/hygiene/dispatch',
+      )
+      return res.data
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['knowledge-hygiene-health-report'] })
+      void queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      setTimeout(() => {
+        void refetch()
+      }, 800)
+    },
+  })
+
   const report = data?.result
   const score = report?.health_score ?? 100
   const inspected = report?.total_inspected ?? 0
   const dormant = report?.dormant_count ?? 0
   const disputed = report?.disputed_count ?? 0
+
+  const timeAgo = useMemo(() => {
+    if (!report?.inspection_ts) return null
+    const diffSec = Math.max(0, Math.floor(Date.now() / 1000 - report.inspection_ts))
+    if (diffSec < 5) return '刚刚'
+    if (diffSec < 60) return `${diffSec}秒前`
+    const diffMin = Math.floor(diffSec / 60)
+    if (diffMin < 60) return `${diffMin}分钟前`
+    const d = new Date(report.inspection_ts * 1000)
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  }, [report?.inspection_ts])
 
   // 5 Radar Dimensions (Normalized 0.0 to 1.0)
   const radarMetrics = useMemo(() => {
@@ -112,16 +143,16 @@ export function KnowledgeHealthRadarCard() {
                 : 'border-amber-500/30 text-amber-600 dark:text-amber-400'
             }`}
           >
-            Score {isLoading ? '--' : score}
+            {t('operationalTelemetry.healthScore', 'Score')} {isLoading ? '--' : score}
           </Badge>
           <button
             type="button"
-            onClick={() => void refetch()}
-            disabled={isFetching}
-            title={t('retrieval.operationalTelemetry.runInspection', '立即巡检')}
+            onClick={() => void dispatchMutation.mutate()}
+            disabled={isFetching || dispatchMutation.isPending}
+            title={t('retrieval.operationalTelemetry.runInspection', '立即全量巡检')}
             className="p-1 rounded hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors cursor-pointer disabled:opacity-50"
           >
-            <RefreshCwIcon className={`size-3 text-cyan-500 ${isFetching ? 'animate-spin' : ''}`} />
+            <RefreshCwIcon className={`size-3 text-cyan-500 ${isFetching || dispatchMutation.isPending ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
@@ -204,19 +235,25 @@ export function KnowledgeHealthRadarCard() {
         {/* Right: Dimension Metrics */}
         <div className="flex flex-col gap-2">
           <div className="p-2 rounded bg-muted/20 border border-border/40 flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">在籍巡检样本</span>
+            <span className="text-xs text-muted-foreground">
+              {t('operationalTelemetry.fullScaleInspected', '在籍全量巡检')}
+            </span>
             <span className="font-mono text-xs font-bold tabular-nums text-foreground">
-              {isLoading ? '--' : `${inspected} 篇`}
+              {isLoading ? '--' : `${inspected.toLocaleString()} 篇`}
             </span>
           </div>
           <div className="p-2 rounded bg-muted/20 border border-border/40 flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">休眠/死重条目</span>
+            <span className="text-xs text-muted-foreground">
+              {t('operationalTelemetry.dormantItems', '休眠/死重条目')}
+            </span>
             <span className="font-mono text-xs font-bold tabular-nums text-amber-600 dark:text-amber-400">
               {isLoading ? '--' : `${dormant} 项`}
             </span>
           </div>
           <div className="p-2 rounded bg-muted/20 border border-border/40 flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">存疑冲突条目</span>
+            <span className="text-xs text-muted-foreground">
+              {t('operationalTelemetry.disputedItems', '存疑冲突条目')}
+            </span>
             <span className="font-mono text-xs font-bold tabular-nums text-foreground">
               {isLoading ? '--' : `${disputed} 项`}
             </span>
@@ -224,11 +261,38 @@ export function KnowledgeHealthRadarCard() {
         </div>
       </div>
 
-      <div className="mt-auto pt-1 text-xs text-muted-foreground border-t border-border/30 flex items-center justify-between">
-        <span className="flex items-center gap-1 truncate">
-          <AlertTriangleIcon className="size-3 text-cyan-500" />
-          {report?.recommendations[0] ?? '知识卫生状态健康，无严重漂移'}
+      <div className="mt-auto pt-2 text-xs text-muted-foreground border-t border-border/30 flex items-center justify-between gap-2">
+        <span className="flex items-center gap-1.5 truncate">
+          {score >= 80 ? (
+            <ShieldCheckIcon className="size-3.5 text-cyan-600 dark:text-cyan-400 shrink-0" />
+          ) : (
+            <AlertTriangleIcon className="size-3.5 text-amber-500 shrink-0" />
+          )}
+          <span className="truncate">
+            {score >= 80
+              ? t('operationalTelemetry.allHealthy', '所有巡检记忆均处于新鲜、已验证且良好互联状态')
+              : (report?.recommendations[0] ?? t('operationalTelemetry.partialIssues', '检测到部分记忆需要巡检修复'))}
+          </span>
         </span>
+        <div className="flex items-center gap-2 shrink-0 font-mono text-xs text-muted-foreground">
+          {timeAgo ? (
+            <span>
+              {timeAgo}
+              {report?.latency_ms ? ` (${report.latency_ms}ms)` : ''}
+            </span>
+          ) : null}
+          {report?.task_id ? (
+            <Link
+              to="/tasks"
+              search={{ taskId: report.task_id }}
+              className="inline-flex items-center gap-0.5 text-cyan-600 hover:text-cyan-500 dark:text-cyan-400 hover:underline transition-colors"
+              title={t('operationalTelemetry.viewTaskInCenter', '在任务中心查看此期全量巡检工单')}
+            >
+              <span>{t('operationalTelemetry.taskTicket', '#工单')}</span>
+              <ExternalLinkIcon className="size-3" />
+            </Link>
+          ) : null}
+        </div>
       </div>
     </Card>
   )

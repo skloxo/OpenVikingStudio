@@ -25,6 +25,7 @@ export type TaskTypeFilter =
   | 'legacy_migration'
   | 'legacy_cleanup'
   | 'user_delete'
+  | 'knowledge_hygiene_audit'
   | 'all'
 
 export const DEFAULT_PAGE_SIZE = 20
@@ -41,6 +42,7 @@ export const TASK_TYPE_OPTIONS: Exclude<TaskTypeFilter, 'all'>[] = [
   'legacy_migration',
   'legacy_cleanup',
   'user_delete',
+  'knowledge_hygiene_audit',
 ]
 export const TASK_STATUS_OPTIONS: Exclude<TaskStatusFilter, 'all'>[] = [
   'running',
@@ -297,6 +299,7 @@ export function computeTaskKpiData(
     'legacy_migration',
     'legacy_cleanup',
     'user_delete',
+    'knowledge_hygiene_audit',
   ]
 
   const typeCounts: Record<string, number> = {}

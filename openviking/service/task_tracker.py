@@ -70,6 +70,7 @@ _CANCELLABLE_TASK_TYPES = {
     "four_tier_governance",
     "managed_ingestion",
     "valet_parking",
+    "knowledge_hygiene_audit",
 }
 
 

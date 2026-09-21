@@ -39,6 +39,8 @@ class HygieneReport(BaseModel):
     latency_ms: float
     issues: List[HygieneIssueItem] = Field(default_factory=list)
     recommendations: List[str] = Field(default_factory=list)
+    task_id: Optional[str] = None
+    total_in_store: Optional[int] = None
 
 
 class KnowledgeHygieneEngine:
