@@ -10,7 +10,6 @@ import {
   ShieldCheckIcon,
   TimerIcon,
   FileTextIcon,
-  RefreshCwIcon,
   HardDriveIcon,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -145,17 +144,6 @@ export function DeepMetricsGrid({ metrics, isLoading }: DeepMetricsGridProps) {
         badgeText: t('metricsTiles.totalAuditLogs.badgeText', { defaultValue: '全量追溯' }),
         badgeVariant: 'positive',
         tooltipKey: 'metricsTiles.totalAuditLogs.tooltip',
-        category: 'engine',
-      },
-      {
-        id: 'auto-refresh-status',
-        titleKey: 'metricsTiles.autoRefreshStatus.title',
-        icon: RefreshCwIcon,
-        value: metrics.autoRefreshEnabled ? '开启' : '关闭',
-        subText: t('metricsTiles.autoRefreshStatus.subText', { defaultValue: '60s 视口感知懒拉取' }),
-        badgeText: t('metricsTiles.autoRefreshStatus.badgeText', { defaultValue: '惰性感应' }),
-        badgeVariant: 'positive',
-        tooltipKey: 'metricsTiles.autoRefreshStatus.tooltip',
         category: 'engine',
       },
       {

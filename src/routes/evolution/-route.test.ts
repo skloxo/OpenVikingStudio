@@ -7,11 +7,11 @@ import { retrieval as enRetrieval } from '#/i18n/locales/en/retrieval'
 describe('Card-UI-EvolutionDecoupling Specification & Retina Tests', () => {
   it('should verify evolution navigation key parity in both zh and en locales', () => {
     // Navigation parity
-    expect(zhCommon.appShell.navigation.evolution.title).toBe('技能自演进')
+    expect(zhCommon.appShell.navigation.evolution.title).toBe('技能演进')
     expect(enCommon.appShell.navigation.evolution.title).toBe('Skill Evolution')
 
     // Link key parity in retrieval
-    expect(zhRetrieval.retrieval.evolutionCenterLink).toBe('技能自演进中心 ➔')
+    expect(zhRetrieval.retrieval.evolutionCenterLink).toBe('技能演进中心 ➔')
     expect(enRetrieval.retrieval.evolutionCenterLink).toBe('Skill Evolution Center ➔')
   })
 
