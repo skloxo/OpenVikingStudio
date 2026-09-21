@@ -421,6 +421,14 @@ class TaskTracker:
             task.task_type,
             task.resource_id,
         )
+        if isinstance(task.meta, dict) and ("feishu_task_id" in task.meta or "feishu_task_guid" in task.meta):
+            try:
+                from openviking.service.feishu_task_sync import FeishuTaskSyncBridge
+                fid = task.meta.get("feishu_task_id") or task.meta.get("feishu_task_guid")
+                if fid:
+                    FeishuTaskSyncBridge.get_instance().bind_task_mapping(task.task_id, str(fid))
+            except Exception:
+                pass
         return self._copy(task)
 
     async def create_if_no_running(
@@ -780,6 +788,33 @@ class TaskTracker:
                         )
                     except Exception as e:
                         logger.debug("[TaskTracker] Error notifying EntropyWatchdog: %s", e)
+                try:
+                    from openviking.service.feishu_task_sync import FeishuTaskSyncBridge
+                    bridge = FeishuTaskSyncBridge.get_instance()
+                    try:
+                        loop = asyncio.get_running_loop()
+                        loop.create_task(bridge.on_task_status_change(updated))
+                    except RuntimeError:
+                        pass
+                except Exception as e:
+                    logger.debug("[TaskTracker] Error notifying FeishuTaskSyncBridge: %s", e)
+
+    async def retry_task(
+        self,
+        task_id: str,
+        reason: str = "manual_retry",
+        account_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+    ) -> TaskRecord:
+        """Retry a failed or cancelled task with state reset and Feishu sync."""
+        from openviking.service.feishu_task_sync import FeishuTaskSyncBridge
+        bridge = FeishuTaskSyncBridge.get_instance()
+        return await bridge.trigger_retry(
+            task_id=task_id,
+            reason=reason,
+            account_id=account_id,
+            user_id=user_id,
+        )
 
     async def wait(
         self,
