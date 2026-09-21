@@ -637,8 +637,9 @@ class OpenVikingService:
         *,
         uri: str,
         ctx: RequestContext | None = None,
+        prune: bool = False,
     ) -> dict[str, Any]:
-        """Check filesystem/vector-index consistency for a URI subtree."""
+        """Check filesystem/vector-index consistency for a URI subtree, with optional orphan pruning."""
         if not self._initialized:
             await self.initialize()
         if not self._viking_fs:
@@ -661,6 +662,7 @@ class OpenVikingService:
             uri,
             entries,
             effective_ctx,
+            prune=prune,
         )
         return report.to_dict()
 

@@ -716,9 +716,10 @@ class WaitRequest(BaseModel):
 
 
 class ConsistencyRequest(BaseModel):
-    """Request model for filesystem/vector-index consistency checks."""
+    """Request model for filesystem/vector-index consistency checks and optional pruning."""
 
     uri: str
+    prune: bool = False
 
 
 class BackendSyncRequest(BaseModel):
@@ -743,12 +744,13 @@ async def check_consistency(
     request: ConsistencyRequest,
     ctx: RequestContext = Depends(get_request_context),
 ):
-    """Check filesystem/vector-index consistency for a URI subtree."""
+    """Check filesystem/vector-index consistency for a URI subtree with optional orphan pruning."""
     service = get_service()
     uri = validate_request_viking_uri(resolve_path_variables(request.uri), ctx)
     result = await service.check_consistency(
         uri=uri,
         ctx=ctx,
+        prune=request.prune,
     )
     return Response(status="ok", result=result)
 

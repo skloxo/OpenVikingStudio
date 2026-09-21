@@ -648,9 +648,9 @@ class SyncOpenViking:
             )
         )
 
-    def check_consistency(self, uri: str) -> Dict[str, Any]:
-        """Check filesystem/vector-index consistency for a URI subtree."""
-        return run_async(self._async_client.check_consistency(uri))
+    def check_consistency(self, uri: str, prune: bool = False) -> Dict[str, Any]:
+        """Check filesystem/vector-index consistency for a URI subtree with optional orphan pruning."""
+        return run_async(self._async_client.check_consistency(uri, prune=prune))
 
     def close(self) -> None:
         """Close OpenViking and release resources."""

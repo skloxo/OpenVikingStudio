@@ -46,32 +46,52 @@ class IndexExpectation:
 
 @dataclass(frozen=True)
 class IndexConsistencyReport:
-    """Result of checking filesystem/index consistency for a subtree."""
+    """Result of checking filesystem/index consistency and orphan hygiene for a subtree."""
 
     expected: tuple[IndexExpectation, ...]
     missing_records: tuple[IndexExpectation, ...]
+    orphan_records: tuple[str, ...] = ()
+    bm25_orphan_uris: tuple[str, ...] = ()
+    pruned_vector_count: int = 0
+    pruned_bm25_count: int = 0
+    consistency_score: float = 100.0
 
     @property
     def ok(self) -> bool:
-        return not self.missing_records
+        return not self.missing_records and not self.orphan_records and not self.bm25_orphan_uris
 
     def details(self, limit: int = ERROR_DETAILS_MISSING_RECORD_LIMIT) -> dict[str, Any]:
         limited = self.missing_records[:limit]
         return {
+            "ok": self.ok,
+            "consistency_score": self.consistency_score,
             "expected_count": len(self.expected),
             "missing_record_count": len(self.missing_records),
+            "orphan_record_count": len(self.orphan_records),
+            "bm25_orphan_count": len(self.bm25_orphan_uris),
+            "pruned_vector_count": self.pruned_vector_count,
+            "pruned_bm25_count": self.pruned_bm25_count,
             "missing_records": [item.key for item in limited],
             "missing_records_truncated": len(self.missing_records) > len(limited),
         }
 
     def to_dict(self, limit: int = PUBLIC_MISSING_RECORD_LIMIT) -> dict[str, Any]:
-        limited = self.missing_records[:limit]
+        limited_missing = self.missing_records[:limit]
+        limited_orphans = self.orphan_records[:limit]
+        limited_bm25 = self.bm25_orphan_uris[:limit]
         return {
             "ok": self.ok,
+            "consistency_score": self.consistency_score,
             "expected_count": len(self.expected),
             "missing_record_count": len(self.missing_records),
-            "missing_records": [item.to_dict() for item in limited],
-            "missing_records_truncated": len(self.missing_records) > len(limited),
+            "orphan_record_count": len(self.orphan_records),
+            "bm25_orphan_count": len(self.bm25_orphan_uris),
+            "pruned_vector_count": self.pruned_vector_count,
+            "pruned_bm25_count": self.pruned_bm25_count,
+            "missing_records": [item.to_dict() for item in limited_missing],
+            "orphan_records": list(limited_orphans),
+            "bm25_orphan_records": list(limited_bm25),
+            "missing_records_truncated": len(self.missing_records) > len(limited_missing),
         }
 
 
@@ -201,14 +221,49 @@ async def _fetch_index_records(vector_store, uri: str, ctx: RequestContext) -> l
     return []
 
 
+async def _fetch_all_indexed_uris(vector_store, root_uri: str, ctx: RequestContext) -> set[str]:
+    """Scan or filter indexed URIs from the vector store under root_uri."""
+    indexed_uris: set[str] = set()
+    if not vector_store:
+        return indexed_uris
+
+    try:
+        if hasattr(vector_store, "scroll"):
+            records = await vector_store.scroll(limit=2000, output_fields=["uri"], ctx=ctx)
+            for r in records or []:
+                u = r.get("uri") if isinstance(r, dict) else getattr(r, "uri", None)
+                if u and _is_subpath_or_equal(u, root_uri):
+                    indexed_uris.add(u)
+        elif hasattr(vector_store, "filter"):
+            records = await vector_store.filter(limit=2000, output_fields=["uri"], ctx=ctx)
+            for r in records or []:
+                u = r.get("uri") if isinstance(r, dict) else getattr(r, "uri", None)
+                if u and _is_subpath_or_equal(u, root_uri):
+                    indexed_uris.add(u)
+    except Exception as exc:
+        logger.debug(f"Scan indexed URIs skipped: {exc}")
+
+    return indexed_uris
+
+
+def _is_subpath_or_equal(uri: str, root_uri: str) -> bool:
+    if root_uri in ("viking://", "viking:"):
+        return True
+    norm_root = root_uri.rstrip("/")
+    return uri == norm_root or uri.startswith(norm_root + "/")
+
+
 async def check_index_consistency(
     viking_fs,
     vector_store,
     root_uri: str,
     entries: list[dict[str, Any]],
     ctx: RequestContext,
+    prune: bool = False,
+    bm25_index: Any = None,
 ) -> IndexConsistencyReport:
-    """Check that filesystem content has the expected vector index records."""
+    """Check that filesystem content has the expected vector and BM25 index records,
+    and optionally prune orphan records that no longer exist in the filesystem."""
     expectations = await build_index_expectations(viking_fs, root_uri, entries, ctx)
     missing_records: list[IndexExpectation] = []
 
@@ -223,7 +278,62 @@ async def check_index_consistency(
         if record is None:
             missing_records.append(expectation)
 
+    valid_expected_uris = {exp.uri for exp in expectations}
+
+    # 1. Reverse Check: Detect orphan vector records
+    indexed_vector_uris = await _fetch_all_indexed_uris(vector_store, root_uri, ctx)
+    orphan_vector_records: list[str] = sorted(
+        [u for u in indexed_vector_uris if u not in valid_expected_uris]
+    )
+
+    pruned_vector_count = 0
+    if prune and orphan_vector_records:
+        for u in orphan_vector_records:
+            if hasattr(vector_store, "remove_by_uri"):
+                try:
+                    await vector_store.remove_by_uri(u)
+                    pruned_vector_count += 1
+                except Exception as exc:
+                    logger.warning(f"Failed to prune orphan vector {u}: {exc}")
+
+    # 2. Reverse Check: Detect orphan BM25 FTS5 records
+    if bm25_index is None:
+        try:
+            from openviking.storage.bm25_fts_index import BM25FTSIndex
+            bm25_index = BM25FTSIndex.get_instance()
+        except Exception:
+            bm25_index = None
+
+    bm25_orphan_uris: list[str] = []
+    pruned_bm25_count = 0
+    if bm25_index and hasattr(bm25_index, "list_all_uris"):
+        try:
+            filter_prefix = None if root_uri in ("viking://", "viking:") else root_uri
+            indexed_bm25 = bm25_index.list_all_uris(prefix=filter_prefix)
+            bm25_orphan_uris = sorted([u for u in indexed_bm25 if u not in valid_expected_uris])
+            if prune and hasattr(bm25_index, "prune_orphans"):
+                pruned_bm25_count = bm25_index.prune_orphans(valid_expected_uris, prefix=filter_prefix)
+        except Exception as exc:
+            logger.warning(f"Failed to check/prune BM25 orphans: {exc}")
+
+    # 3. Calculate Consistency Health Score
+    total_expected = len(expectations)
+    active_missing = len(missing_records)
+    active_orphans = (len(orphan_vector_records) - pruned_vector_count) + (len(bm25_orphan_uris) - pruned_bm25_count)
+    total_anomalies = active_missing + max(0, active_orphans)
+
+    if total_expected == 0:
+        score = 100.0 if total_anomalies == 0 else 0.0
+    else:
+        penalty = (total_anomalies / total_expected) * 100.0
+        score = max(0.0, round(100.0 - penalty, 1))
+
     return IndexConsistencyReport(
         expected=expectations,
         missing_records=tuple(missing_records),
+        orphan_records=tuple(orphan_vector_records),
+        bm25_orphan_uris=tuple(bm25_orphan_uris),
+        pruned_vector_count=pruned_vector_count,
+        pruned_bm25_count=pruned_bm25_count,
+        consistency_score=score,
     )
