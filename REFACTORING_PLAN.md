@@ -854,8 +854,29 @@
      - 数据库与只读 FUSE 回归测试 15/15 全绿 PASS (0.54s)；
      - 安全凭据审计 `scripts/security_check.py` 4,426 文件零密钥泄露；
   5. **版本留痕**: 版本号自增至 `1.5.60`，Git Tag `v1.5.60`。
-- **Git Commit Hash**: 见 v1.5.60 Release Commit
+- **Git Commit Hash**: `b31aa1b4e`
 - **Git Tag**: `v1.5.60`
+
+#### 📌 [P2] [x] Card 4: Card-Config-Endpoints-And-Logs (v1.5.61): 统一端点动态解析器与静默吞异常结构化日志治理 ✅
+- **类型**：Configuration & Resilience / Defensive Logging / Observability ｜ **优先级**：⚡ P2
+- **目标版本**：`v1.5.61` ｜ **当前状态**：[x] 已验收通过 ✅
+- **交付内容摘要**：
+  1. **新建高内聚端点解析器 (`openviking/service/endpoint_resolver.py`)**:
+     - 确立统一解析层级：`OPENVIKING_ENDPOINT` -> `OPENVIKING_URL` -> `OPENVIKING_API` -> `OPENVIKING_PORT` -> `ov.conf` -> 默认 `http://127.0.0.1:1933`；
+     - 自动规整末尾斜杠，支持自定义 fallback；
+  2. **消除核心服务硬编码端口 (`gatekeeper_prober.py` & `entropy_watchdog.py`)**:
+     - `probe_nearest_vector` HTTP 降级探针切换为 `get_openviking_endpoint()` 动态获取；
+     - `_run_real_evaluation` 金标测试请求切换为 `get_openviking_endpoint()` 动态获取；
+  3. **治理静默吞异常与日志增强**:
+     - 治理 `_resolve_api_key` 中两处静默 `except Exception: pass`，替换为上下文明确的 `logger.debug`；
+  4. **全套自动化门禁验证**:
+     - 单元测试 `tests/unit/test_config_endpoints_and_logs.py` 11/11 全绿 PASS (0.19s)；
+     - 四大模块全回归测试 34/34 全绿 PASS (0.71s)；
+     - 安全凭据扫描 `scripts/security_check.py` 4,427 文件零泄密；
+  5. **版本留痕**: 版本号自增至 `1.5.61`，Git Tag `v1.5.61`。
+- **Git Commit Hash**: 见 v1.5.61 Release Commit
+- **Git Tag**: `v1.5.61`
+
 
 
 

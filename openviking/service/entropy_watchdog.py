@@ -48,8 +48,8 @@ def _resolve_api_key() -> str:
             found = env_vars.get("OPENVIKING_API_KEY") or env_vars.get("OPENVIKING_ROOT_API_KEY")
             if found:
                 return found
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("[EntropyWatchdog] Failed reading API key from mcp_config.json: %s", e)
     ov_conf = Path.home() / ".openviking" / "ov.conf"
     if ov_conf.exists():
         try:
@@ -57,8 +57,8 @@ def _resolve_api_key() -> str:
                 for line in f:
                     if line.strip().startswith("api_key"):
                         return line.split("=", 1)[1].strip().strip('"').strip("'")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("[EntropyWatchdog] Failed reading API key from ov.conf: %s", e)
     return ""
 
 
@@ -132,7 +132,10 @@ class EntropyWatchdog:
             logger.debug("[EntropyWatchdog] Loop exit: %s", e)
 
     async def _run_real_evaluation(self) -> List[Dict[str, Any]]:
-        """Run real physical vector search against local port 1933 for gold queries."""
+        """Run real physical vector search against resolved OpenViking endpoint for gold queries."""
+        from openviking.service.endpoint_resolver import get_openviking_endpoint
+
+        endpoint = get_openviking_endpoint()
         api_key = _resolve_api_key()
         results: List[Dict[str, Any]] = []
 
@@ -149,7 +152,7 @@ class EntropyWatchdog:
                 t0 = time.time()
                 try:
                     resp = await client.post(
-                        "http://127.0.0.1:1933/api/v1/search/find",
+                        f"{endpoint}/api/v1/search/find",
                         json={"query": q, "limit": 3, "mode": "fast"},
                         headers=headers,
                     )
