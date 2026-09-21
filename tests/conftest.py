@@ -12,6 +12,14 @@ from typing import AsyncGenerator, Generator
 os.environ.setdefault("OPENVIKING_DISABLE_PATH_LOCKS", "0")
 os.environ.setdefault("OPENVIKING_ALLOW_PRIVATE_NETWORKS", "true")
 
+# Clear socks proxy in test environment if socksio is not installed to prevent httpx crashes in embedder tests
+if "socks" in os.environ.get("all_proxy", "").lower() or "socks" in os.environ.get("ALL_PROXY", "").lower():
+    try:
+        import socksio
+    except ImportError:
+        os.environ.pop("all_proxy", None)
+        os.environ.pop("ALL_PROXY", None)
+
 import pytest
 import pytest_asyncio
 

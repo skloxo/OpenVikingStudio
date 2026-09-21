@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from typing import Any, Iterable
@@ -49,14 +50,40 @@ def canonical_experience_uri(uri: str, ctx: RequestContext) -> str | None:
     return canonical_uri
 
 
+def experience_uri_to_tag_key(experience_uri: str) -> str:
+    """
+    将 Experience URI 稳定映射为合规的 search tag key。
+
+    物理约束 (来自 normalize_search_tag):
+    - key 只能包含 [a-z0-9_.-] 且必须以字母或数字开头
+    - key 长度 <= 64 字符
+
+    实现方案: ``xp.<sha256_16hex>``
+    - 前缀 ``xp.`` 标识 experience 来源，语义自解释
+    - SHA-256 截前 8 字节 (16 hex 字符) 作为稳定唯一 ID
+    - 总长 = 3 + 1 + 16 = 20 字符，远低于 64 上限
+    - 碰撞概率 < 1e-14 (对体外大脑 URI 数量完全安全)
+
+    Args:
+        experience_uri: 任意长度的 Experience URI 字符串
+
+    Returns:
+        合规的 search tag key，格式 ``xp.<16hex>``
+    """
+    canonical = str(experience_uri or "").strip()
+    digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:16]
+    return f"xp.{digest}"
+
+
 def experience_source_tag(experience_uri: str) -> str:
     """Build the exact retrieval tag used for Experience lineage filtering."""
-    uri_key = _escape_search_tag_key(str(experience_uri or "").strip())
-    return normalize_search_tag(f"{uri_key}=1")
+    key = experience_uri_to_tag_key(str(experience_uri or "").strip())
+    return normalize_search_tag(f"{key}=1")
 
 
 def _escape_search_tag_key(value: str) -> str:
-    """Preserve URI identity through lowercase-only strict k=v tag normalization."""
+    """DEPRECATED: 百分号编码方案会超出 key 长度限制，请使用 experience_uri_to_tag_key()。"""
+    # 保留以防极少数外部调用方引用，但不再被 experience_source_tag 使用
     escaped: list[str] = []
     for character in value:
         if character in {"%", "="} or character.lower() != character:

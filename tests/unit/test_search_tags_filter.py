@@ -79,29 +79,41 @@ def test_search_tag_accepts_boundary_lengths():
 
 
 def test_discard_invalid_search_tags_logs_one_warning_for_batch(caplog):
-    with caplog.at_level(logging.WARNING, logger="openviking.utils.tags"):
-        result = normalize_search_tags(
-            ["bad-one", "also-bad", "team=search"],
-            discard_invalid=True,
-        )
+    ov_logger = logging.getLogger("openviking")
+    prev_propagate = ov_logger.propagate
+    ov_logger.propagate = True
+    try:
+        with caplog.at_level(logging.WARNING, logger="openviking.utils.tags"):
+            result = normalize_search_tags(
+                ["bad-one", "also-bad", "team=search"],
+                discard_invalid=True,
+            )
 
-    assert result == ["team=search"]
-    warnings = [record for record in caplog.records if record.levelno == logging.WARNING]
-    assert len(warnings) == 1
-    assert warnings[0].invalid_tags == ["bad-one", "also-bad"]
-    assert "Discarded invalid search tags" in warnings[0].message
-    assert "bad-one" in warnings[0].message
-    assert "also-bad" in warnings[0].message
+        assert result == ["team=search"]
+        warnings = [record for record in caplog.records if record.levelno == logging.WARNING]
+        assert len(warnings) == 1
+        assert warnings[0].invalid_tags == ["bad-one", "also-bad"]
+        assert "Discarded invalid search tags" in warnings[0].message
+        assert "bad-one" in warnings[0].message
+        assert "also-bad" in warnings[0].message
+    finally:
+        ov_logger.propagate = prev_propagate
 
 
 def test_merge_search_tags_discards_invalid_existing_tags(caplog):
-    with caplog.at_level(logging.WARNING, logger="openviking.utils.tags"):
-        result = merge_search_tags(["bad-existing", "team=old"], ["owner=alice"])
+    ov_logger = logging.getLogger("openviking")
+    prev_propagate = ov_logger.propagate
+    ov_logger.propagate = True
+    try:
+        with caplog.at_level(logging.WARNING, logger="openviking.utils.tags"):
+            result = merge_search_tags(["bad-existing", "team=old"], ["owner=alice"])
 
-    assert result == ["team=old", "owner=alice"]
-    warnings = [record for record in caplog.records if record.levelno == logging.WARNING]
-    assert len(warnings) == 1
-    assert warnings[0].invalid_tags == ["bad-existing"]
+        assert result == ["team=old", "owner=alice"]
+        warnings = [record for record in caplog.records if record.levelno == logging.WARNING]
+        assert len(warnings) == 1
+        assert warnings[0].invalid_tags == ["bad-existing"]
+    finally:
+        ov_logger.propagate = prev_propagate
 
 
 def test_find_tags_filter_requires_all_tags():
