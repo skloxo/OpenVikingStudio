@@ -14,6 +14,8 @@ from openviking.parse.accessors.registry import AccessorRegistry, get_accessor_r
 class TestAccessor(DataAccessor):
     """Test accessor implementation."""
 
+    __test__ = False
+
     def __init__(self, name: str, prefix: str, priority: int = 50):
         self.name = name
         self.prefix = prefix

@@ -50,34 +50,37 @@ def test_dreaming_cycle_unified_crystallizer():
     miner = DreamingDefectMiner.get_instance()
     from openviking.service.entropy_crystallizer import EntropyCrystallizer
     crystallizer = EntropyCrystallizer.get_instance()
-    crystallizer.rule.min_cluster_size = 3
-    crystallizer.rule.cooling_period_hours = 0.01  # relaxed for unit test
+    try:
+        crystallizer.rule.min_cluster_size = 3
+        crystallizer.rule.cooling_period_hours = 0.01  # relaxed for unit test
 
-    now = time.time()
-    frag1 = MemoryFragment(
-        uri="viking://resources/f1.md",
-        content="Antigravity IDE adheres strictly to NO GREEN EVER color standard.",
-        created_at=now - 200,
-        embedding=[0.8, 0.8, 0.8],
-    )
-    frag2 = MemoryFragment(
-        uri="viking://resources/f2.md",
-        content="Cockpit UI enforces NO GREEN EVER visual design covenant.",
-        created_at=now - 150,
-        embedding=[0.8, 0.81, 0.8],
-    )
-    frag3 = MemoryFragment(
-        uri="viking://resources/f3.md",
-        content="Visual system strictly prohibits green throughout all pages.",
-        created_at=now - 100,
-        embedding=[0.8, 0.79, 0.8],
-    )
+        now = time.time()
+        frag1 = MemoryFragment(
+            uri="viking://resources/f1.md",
+            content="Antigravity IDE adheres strictly to NO GREEN EVER color standard.",
+            created_at=now - 200,
+            embedding=[0.8, 0.8, 0.8],
+        )
+        frag2 = MemoryFragment(
+            uri="viking://resources/f2.md",
+            content="Cockpit UI enforces NO GREEN EVER visual design covenant.",
+            created_at=now - 150,
+            embedding=[0.8, 0.81, 0.8],
+        )
+        frag3 = MemoryFragment(
+            uri="viking://resources/f3.md",
+            content="Visual system strictly prohibits green throughout all pages.",
+            created_at=now - 100,
+            embedding=[0.8, 0.79, 0.8],
+        )
 
-    result = miner.run_dreaming_cycle(
-        sample_traces=[{"success": False, "category": "AssertionError"}],
-        pending_fragments=[frag1, frag2, frag3],
-    )
-    assert result["status"] == "completed"
-    assert result["crystals_fused"] == 1
-    assert len(result["crystal_ids"]) == 1
-    assert miner.status.crystals_fused == 1
+        result = miner.run_dreaming_cycle(
+            sample_traces=[{"success": False, "category": "AssertionError"}],
+            pending_fragments=[frag1, frag2, frag3],
+        )
+        assert result["status"] == "completed"
+        assert result["crystals_fused"] == 1
+        assert len(result["crystal_ids"]) == 1
+        assert miner.status.crystals_fused == 1
+    finally:
+        crystallizer.reset_rule()

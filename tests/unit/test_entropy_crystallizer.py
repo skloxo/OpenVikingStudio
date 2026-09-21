@@ -29,6 +29,14 @@ from openviking.server.identity import RequestContext, Role
 from openviking_cli.session.user_id import UserIdentifier
 
 
+@pytest.fixture(autouse=True)
+def _isolate_crystallizer_rule():
+    crystallizer = EntropyCrystallizer.get_instance()
+    crystallizer.reset_rule()
+    yield
+    crystallizer.reset_rule()
+
+
 def _build_mock_fragments(
     count: int = 5,
     similarity: float = 0.88,
