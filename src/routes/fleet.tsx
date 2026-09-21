@@ -1,8 +1,5 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute, Navigate } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/fleet')({
-  beforeLoad: () => {
-    throw redirect({ to: '/monitoring' })
-  },
-  component: () => null,
+  component: () => <Navigate to="/monitoring" replace />,
 })

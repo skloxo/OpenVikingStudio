@@ -701,3 +701,37 @@
 - **Git Commit Hash**: 见 v1.5.49 Release Commit
 - **Git Tag**: `v1.5.49`
 
+
+
+#### 📌 [P1] [x] Card-Consolidation-Harness-Evolution (v1.5.50): Harness 资产重构与深度整合至 /evolution 及 /request-logs ✅
+- **类型**：Domain Consolidation / Anti-Redundancy / UX Streamlining ｜ **优先级**：⚡ P1
+- **目标版本**：`v1.5.50` ｜ **当前状态**：[x] 已验收通过 ✅
+- **交付内容摘要**：
+  1. **演进与自愈资产收口**: 将 Harness 中真实具备演进价值的自愈与回滚实验场完整迁入 `/evolution`（包括“演进教训档案”、“Hermes 经历与微补丁”、“故障二分自愈”、“交互实验场”）；
+  2. **日志审计资产收口**: 将防护栏拦截、门禁阻断与审计流水整合至 `/request-logs`；
+  3. **废弃旧路径优雅导流**: `/harness-logs` 自动跳转至 `/request-logs`，消除孤立页面；
+  4. **门禁验证**: 编译构建通过，Git Tag `v1.5.50`。
+- **Git Commit Hash**: `14057385b`
+- **Git Tag**: `v1.5.50`
+
+#### 📌 [P1] [x] Card-UI-DualTheme-Parity (v1.5.51): 演进大盘与全座舱浅色明亮模式对齐治理 (Purge Hardcoded Dark Colors) ✅
+- **类型**：Design System / Dual-Theme Support / Cockpit UI ｜ **优先级**：⚡ P1
+- **目标版本**：`v1.5.51` ｜ **当前状态**：[x] 已验收通过 ✅
+- **交付内容摘要**：
+  1. **彻底清退硬编码深色类名**: 深度重构 9 大演进与座舱组件，切除所有写死 `bg-slate-800`、`bg-slate-900`、`border-slate-700`、`text-slate-200` 等类名；
+  2. **全面切换语义设计 Token**: 统一采用 `bg-card`、`border-border/70`、`text-foreground`、`text-muted-foreground`、`text-cyan-600 dark:text-cyan-400`；
+  3. **恪守 NO GREEN EVER 🚫**: 浅色模式呈现 GitHub Light / Linear 性冷淡极简风格，暗色自适应暗夜座舱；
+  4. **浏览器真机视网膜验收**: 7 大 Tab 在浅色模式下全部通过浏览器截图核验，构建通过，Git Tag `v1.5.51`。
+- **Git Commit Hash**: `66aea6d58`
+- **Git Tag**: `v1.5.51`
+
+#### 📌 [P1] [x] Card-Route-Navigation-Fix (v1.5.52): 客户端重定向组件化升级与能力档案 404 优雅容错 ✅
+- **类型**：Bug Fix / Routing / API Resilience ｜ **优先级**：⚡ P1
+- **目标版本**：`v1.5.52` ｜ **当前状态**：[x] 已验收通过 ✅
+- **交付内容摘要**：
+  1. **根治空白重定向**: 将 `fleet.tsx`、`task-tracker.tsx`、`usage-audit.tsx` 从 `beforeLoad` 升级为声明式 `<Navigate to="..." replace />`，直达 `/monitoring`、`/tasks`、`/request-logs`，彻底消除页面空白；
+  2. **API 404 优雅降级**: `capability-pages-cockpit.tsx` 增加异常捕获与 `retry: false`，避免后端接口缺失时持续刷屏 404；
+  3. **门禁与服务验真**: Vite 生产构建 21.76s PASS，安全扫描 4,416 文件 0 泄露，服务健康探针返回 `1.5.52`；
+  4. **版本留痕**: Git Tag `v1.5.52`。
+- **Git Commit Hash**: `待提交`
+- **Git Tag**: `v1.5.52`
