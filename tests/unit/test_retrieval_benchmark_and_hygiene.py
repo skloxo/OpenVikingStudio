@@ -126,21 +126,29 @@ def test_knowledge_hygiene_engine_metrics():
             "call_count": 0,
             "status": "active",
         },
-        # Conflicted / superseded entry
+        # Superseded entry
         {
             "uri": "viking://resources/old_session/superseded_decision.md",
             "updated_ts": stale_ts,
             "call_count": 1,
             "status": "superseded",
         },
+        # Disputed entry
+        {
+            "uri": "viking://resources/old_session/disputed_decision.md",
+            "updated_ts": stale_ts,
+            "call_count": 1,
+            "status": "disputed",
+        },
     ]
 
     engine = KnowledgeHygieneEngine()
     report: HygieneReport = engine.inspect_items(mock_items, dormant_threshold_days=30.0)
 
-    assert report.total_inspected == 3
+    assert report.total_inspected == 4
     assert report.dormant_count >= 1
     assert report.disputed_count >= 1
+    assert report.superseded_count >= 1
     assert 0 <= report.health_score <= 100
     assert len(report.recommendations) > 0
 

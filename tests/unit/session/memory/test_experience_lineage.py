@@ -1,5 +1,4 @@
-# Copyright (c) 2026 Beijing Volcano Engine Technology Co., Ltd.
-# SPDX-License-Identifier: AGPL-3.0
+import hashlib
 
 import pytest
 
@@ -9,6 +8,7 @@ from openviking.session.memory.dataclass import ResolvedOperation, ResolvedOpera
 from openviking.session.memory.experience_lineage import (
     collect_read_experience_uris,
     experience_source_tag,
+    experience_uri_to_tag_key,
     normalize_trajectory_outcome,
     trajectory_outcome_tag,
 )
@@ -127,26 +127,46 @@ def test_collect_read_experience_uris_ignores_removed_dedicated_tool():
 
 
 def test_experience_source_tag_uses_experience_uri_as_key():
+    """experience_source_tag 必须产生合规的 xp.<sha256_16hex>=1 格式。"""
     uri = "viking://user/alice/memories/experiences/无订单号换货处理.md"
 
     tag = experience_source_tag(uri)
+    key = experience_uri_to_tag_key(uri)
 
-    assert tag == f"{uri}=1"
+    # 格式: xp.<16hex>=1
+    assert tag == f"{key}=1"
+    assert tag.startswith("xp.")
     assert tag.count("=") == 1
+    # key 长度必须 <= 64 (实际约 20 字符)
+    actual_key = tag.split("=", 1)[0]
+    assert len(actual_key) <= 64
+    # 字符集合规：只含 [a-z0-9_.\-]
+    import re
+    assert re.match(r"^[a-z0-9][a-z0-9_.-]*$", actual_key)
 
 
 def test_experience_source_tag_preserves_case_and_escapes_equals_without_collisions():
+    """不同 URI（大小写/特殊字符不同）必须生成不同的 tag，且同 URI 必须稳定生成相同 tag。"""
     uppercase_uri = "viking://user/Alice/memories/experiences/Exchange=Flow.md"
     lowercase_uri = "viking://user/alice/memories/experiences/exchange=flow.md"
 
     uppercase_tag = experience_source_tag(uppercase_uri)
     lowercase_tag = experience_source_tag(lowercase_uri)
 
-    assert uppercase_tag == ("viking://user/%41lice/memories/experiences/%45xchange%3d%46low.md=1")
-    assert lowercase_tag == "viking://user/alice/memories/experiences/exchange%3dflow.md=1"
+    # 两个不同 URI 生成的 tag 必须不同（哈希无碰撞）
     assert uppercase_tag != lowercase_tag
+    # 每个 tag 都只含一个 = 号
     assert uppercase_tag.count("=") == 1
     assert lowercase_tag.count("=") == 1
+    # 格式必须是 xp.<16hex>=1
+    assert uppercase_tag.startswith("xp.")
+    assert lowercase_tag.startswith("xp.")
+    # 稳定性：多次调用同 URI 产生相同结果
+    assert experience_source_tag(uppercase_uri) == uppercase_tag
+    assert experience_source_tag(lowercase_uri) == lowercase_tag
+    # 哈希值正确性验证（对齐实现的 SHA-256[:16]）
+    expected_upper_hash = hashlib.sha256(uppercase_uri.encode("utf-8")).hexdigest()[:16]
+    assert uppercase_tag == f"xp.{expected_upper_hash}=1"
 
 
 def test_source_experiences_create_transient_tags_for_every_generated_trajectory():
