@@ -954,7 +954,46 @@
      - 运行时服务重启并探针握手通过 (`1.5.64`)；
   5. **版本留痕**: 版本号自增至 `1.5.64`，Git Tag `v1.5.64`。
 - **Git Commit Hash**: `501e55572`
-- **Git Tag**: `v1.5.64`
+#### 📌 [P2] [x] Card 8: Card-Doc-Dehydration-Pipeline-Tuning (v1.5.65): 文档脱水与压缩流水线智能熔断器、自愈探针与降级保护引擎 (SSOT) ✅
+- **类型**：Robustness & Pipeline Tuning / Circuit Breaker / Resilient Fallback ｜ **优先级**：⚡ P2
+- **目标版本**：`v1.5.65` ｜ **当前状态**：[x] 已验收通过 ✅
+- **交付内容摘要**：
+  1. **状态机驱动的双态熔断器 (`openviking/service/wiki_dehydration_engine.py`)**:
+     - 引入连续失败阈值 `_circuit_breaker_max_failures = 2` 与冷却重试窗口 `_circuit_breaker_cooldown = 30.0s`；
+     - 远程超时时间从 3.0s 优化为 1.5s，彻底根除长文档因多个未冻结段累加超时导致的长达数十秒阻塞；
+     - 连续超时/网络失败达到 2 次后自动跳闸打开熔断器 (`is_circuit_open = True`)，断路期间完全阻断任何外部网络/GPU HTTP 请求；
+  2. **半开探测自愈与透明降级保护**:
+     - 熔断冷却期过后自动进入半开探测阶段；远程端点一旦成功响应立即自愈闭合熔断器并重置失败计数；
+     - 在熔断打开状态下，脱水管线秒级优雅降级至本地 `syntactic-pruner (circuit-open fallback)`，保障长文档依然具备有效压缩比（约 65%~75%），零异常抛出；
+  3. **遥测观测与诊断运维契约**:
+     - `DehydrationStats` 与 `get_stats()` 实时暴露出 `circuit_open`、`consecutive_failures`、`circuit_tripped_count` 与 `remote_success_count` 观测指标；
+     - 提供 `reset_circuit_breaker()` 接口支持运维手动自愈重置；
+  4. **全套自动化门禁验证**:
+     - 新增 Card 8 专属单测 `tests/unit/test_dehydration_circuit_breaker.py` 4/4 全绿 (覆盖连续失败跳闸、冷却半开自愈、熔断下规则降级及指标统计/重置)；
+     - 既有 `tests/unit/test_wiki_dehydration_engine.py` 6/6 全绿通过；
+     - 全回归测试 152/152 项全绿 PASS (5.89s)；
+     - 安全凭据审计 `scripts/security_check.py` 4,435 文件零密钥泄露；
+     - 前端生产构建 (Vite Build) 21.59s 零报错，产物烘焙并验证版本 `1.5.65`；
+     - 运行时服务重启并探针握手通过 (`1.5.65`)；
+  5. **版本留痕**: 版本号自增至 `1.5.65`，Git Tag `v1.5.65`。
+- **Git Commit Hash**: `cd43e9229`
+- **Git Tag**: `v1.5.65`
+
+#### 📌 [P1] [ ] Card 9: Card-Tasks-Feishu-Task-Sync-Bidirectional (v1.5.66): 任务中心与飞书待办双向状态同步、重试事件驱动与执行闭环 (SSOT) ⏳
+- **类型**：Task Automation / Feishu Bi-Directional Sync / Event-Driven ｜ **优先级**：🔥 P1
+- **目标版本**：`v1.5.66` ｜ **当前状态**：[ ] 即将执行 ⏳
+- **核心治理规划**：
+  1. 联动任务中心执行状态（Pending / Running / Completed / Failed）与飞书待办（Todo / In Progress / Done / Cancelled）双向映射；
+  2. 任务异常或人工重试时，自动向飞书任务追加审计记录并重置进度；
+  3. 完善状态机防死锁与幂等上报。
+
+#### 📌 [P1] [ ] Card 10: Card-FUSE-Overlay-Virtual-Trash-Shield (v1.5.67): FUSE 只读挂载内存 Overlay 临时文件屏蔽层与热点 LRU 块缓存 (SSOT) ⏳
+- **类型**：VikingFS / FUSE Protection / Memory Overlay Shield ｜ **优先级**：🔥 P1
+- **目标版本**：`v1.5.67` ｜ **当前状态**：[ ] 待执行 ⏳
+- **核心治理规划**：
+  1. 屏蔽 VS Code / JetBrains / Vim / OS 在只读挂载点生成的 `.swp`、`~`、`.DS_Store`、`.Trash` 虚拟文件；
+  2. 内存 Overlay 动态吸收写尝试并返回 EROFS 或内存模拟虚拟写，杜绝只读文件系统抛错卡死编辑器；
+  3. 集成热点 Inode / Dentry LRU 缓存，提升文件遍历性能。
 
 
 
