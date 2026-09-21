@@ -11,6 +11,7 @@
 > - **线上正式部署版本**：**`v1.4.106`**（物理访问地址：`vk.tide.red/studio/home`，已实机验证）；
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.5.73`** | **Card-TokenShift-ASTAware-CodeCompressor-And-ProtectionProbe** | **PointFive TokenShift 代码语法树保护探针、多语言 AST 结构化压缩与无损代码视网膜门禁 (SSOT)** | 1. **TokenShift 核心压缩与保护引擎 (`openviking/service/tokenshift_*`)**: 落实 `BLUEPRINT.md` 课题五轮子 #3 (PointFive AST-Aware Code Compression)，实现 Python、TypeScript、JavaScript、JSON、SQL、Shell 多语言语法树感知与三级渐进压缩（L0 Outline 签名大纲 ~70%、L1 Skeleton 控制流骨架 ~50%、L2 Compact 无损紧凑 ~25%）；<br>2. **AST 语法校验硬门禁 (`ast.parse`)**: 输出代码 100% 具备语法可执行性，破坏率严格为 0，遇到异常安全降级回滚；<br>3. **RESTful API 全链路路由 (`openviking/server/routers/tokenshift.py`, 69行)**: 暴露 `/api/v1/tokenshift/compress`, `/protect`, `/stats`, `/reset-stats` 并在 `app.py` 中规范挂载；<br>4. **座舱级前端交互套件 (`src/routes/retrieval/-components/tokenshift-cockpit.tsx`, 327行)**: 严格遵循 NO GREEN EVER 🚫、字号 $\ge 12\text{px}$、代码规范切分，呈现 4 大核心指标瓦片（原始 Token、压缩后 Token、节省率、AST 校验状态）、预设示例与双栏实时对比试验台；<br>5. **全套自动化门禁验证**: Card 16 专属单测 7/7 全绿 (2.62s)，版本门禁单测 3/3 全绿，安全扫描 4,465 文件零泄密，Vite 构建 19.58s 零报错，产物烘焙并验证版本 `1.5.73`；运行时服务重启对齐 `1.5.73`；浏览器实机验证默认模式 (31.7% 压缩) 与 L0 大纲模式 (51.0% 压缩) PASS 100% 合法。<br>**Commit Hash**：`ad3ae132c` | **修改文件**：`openviking/service/tokenshift_engine.py`, `openviking/service/tokenshift_transformers.py`, `openviking/service/tokenshift_types.py`, `openviking/server/routers/tokenshift.py`, `openviking/server/routers/__init__.py`, `openviking/server/app.py`, `src/routes/retrieval/-components/tokenshift-cockpit.tsx`, `src/routes/retrieval/-constants/tokenshift-presets.ts`, `src/routes/retrieval/-types/tokenshift.ts`, `src/routes/retrieval/route.tsx`, `tests/unit/test_tokenshift_engine.py`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md` | [x] 已验收通过 ✅ |
 | **`v1.5.72`** | **Card-SkillOpt-QualityGate-And-AutoOpt-Engine** | **SkillOpt Attempt / Judge 质量门禁引擎、四维标尺 (0~100分)、自动优化建议与 Patch 补丁闭环 (SSOT)** | 1. **SkillOpt 核心评测与自动优化服务 (`openviking/service/skill_opt_service.py`, 347行 & `skill_opt_types.py`, 82行)**: 落实 `BLUEPRINT.md` Epic-SKILL-OPT (Milestone 3)，实现规范完整度 (25分)、能力与工具精准度 (25分)、注意力信噪比 (25分，100~300行黄金甜点区/超500物理红线)、触发区分度 (25分，包含负向边界约束) 四维标尺评测；实现 Attempt 场景测试与 Judge Gate 判据输出；实现扣分项诊断与自动修复补丁 (Draft Patch) 生成；支持本地已安装技能批量体检概览；<br>2. **RESTful API 全链路端点 (`openviking/server/routers/skill_opt.py`, 75行)**: 暴露 `/api/v1/skill-opt/audit`, `/attempt`, `/optimize`, `/batch-audit` 并规范挂载；<br>3. **座舱级前端交互套件 (`src/routes/skills/-components/`)**: 严格遵循 NO GREEN EVER 🚫、字号 $\ge 12\text{px}$、代码规范切分（`scorecard.tsx` 135行, `workbench.tsx` 151行, `cockpit.tsx` 182行, `types.ts` 41行），在 Skills 视图中无缝挂载「🎯 SkillOpt 评测与体检」一级 Tab；<br>4. **全套自动化门禁验证**: Card 15 专属单测 7/7 全绿 (3.61s)，版本门禁单测 3/3 全绿，安全扫描 4,457 文件零泄密，Vite 构建 19.41s 零报错，产物烘焙并验证版本 `1.5.72`；运行时服务重启对齐 `1.5.72`；浏览器实机验证四维体检 (Grade A 85分)、Attempt 意图匹配 (PASS 56%)、自动修复补丁生成全流程 100% 成功。<br>**Commit Hash**：`23063fa5f` | **修改文件**：`openviking/service/skill_opt_service.py`, `openviking/service/skill_opt_types.py`, `openviking/server/routers/skill_opt.py`, `openviking/server/routers/__init__.py`, `openviking/server/app.py`, `src/routes/skills/-components/skill-opt-*`, `src/routes/skills/route.tsx`, `tests/unit/test_skill_opt.py`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md` | [x] 已验收通过 ✅ |
 | **`v1.5.71`** | **Card-Skill-LiveGen-Editor-And-Sandbox-Validation** | **LiveGen 在线技能创生脚手架、YAML/Frontmatter 规范校验、自然语言触发沙箱与全流程闭环治理 (SSOT)** | 1. **LiveGen 核心创生与校验服务 (`openviking/service/skill_livegen_service.py`, 331行)**: 落实 `BLUEPRINT.md` Epic-LIVE-GEN (Milestone 3)，支持标准工程、诊断排障、前端座舱三大脚手架模板生成；实现 YAML Frontmatter 解析、必须字段强校验与单文件规模阶梯评估 (`sweet_spot` 100~300行, `warning` 301~400行, `critical` 401~500行, `exceeded` >500行)；集成中文滑窗 n-gram 自然语言意图推演匹配引擎；提供本地安全持久化发布与 SHA-256 指纹追踪；<br>2. **RESTful API 全链路贯通 (`openviking/server/routers/skill_livegen.py`, 106行)**: 暴露 `/api/v1/skills/livegen/scaffold`, `/validate`, `/simulate`, `/publish`, `/stats` 5 大核心端点并在 `app.py` 中规范挂载；<br>3. **座舱级前端交互套件 (`src/routes/skills/-components/`)**: 严格遵循 NO GREEN EVER 🚫、字号 $\ge 12\text{px}$、代码规范切分至 100~300 行甜点区（`editor.tsx` 120行, `sandbox.tsx` 154行, `cockpit.tsx` 238行），在 Skills 视图中无缝挂载「✨ LiveGen 在线技能创生」一级 Tab；<br>4. **全套自动化门禁验证**: Card 14 专属单测 7/7 全绿 (2.81s)，版本门禁单测 3/3 全绿，安全扫描 4,449 文件零泄密，Vite 构建 20.68s 零报错，产物烘焙并验证版本 `1.5.71`；运行时服务重启对齐 `1.5.71`；真实浏览器推演验证 100% 成功。<br>**Commit Hash**：`cb9e5441c` | **修改文件**：`openviking/service/skill_livegen_service.py`, `openviking/server/routers/skill_livegen.py`, `openviking/server/routers/__init__.py`, `openviking/server/app.py`, `src/routes/skills/-components/*`, `src/routes/skills/-constants/*`, `src/routes/skills/route.tsx`, `tests/unit/test_skill_livegen.py`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md` | [x] 已验收通过 ✅ |
 | **`v1.5.70`** | **Card-Privacy-Masker-And-PydanticV2-Schema-Hardening** | **统一动态隐私脱敏引擎 (PrivacyMasker)、Pydantic V2 ConfigDict 告警全清退与客户端核心导出加固 (SSOT)** | 1. **统一端到端隐私脱敏引擎 (`openviking/privacy/privacy_masker.py`, 123行)**: 落实 `BLUEPRINT.md` Epic-PRIVACY-GOV 与零凭据泄露铁律，实现高性能预编译正则脱敏管道（覆盖 API Key、GitHub Token、AWS Key、Bearer Token、RSA/SSH 私钥块、敏感赋值模式与已知节点 IP），支持 `mask_text`、`mask_dict` 递归结构脱敏与 `contains_sensitive` 毫秒级快检；<br>2. **统一技能脱敏收口 (`mcp-openviking/tools/skills.py`)**: 消除局部硬编码脱敏正则，统一委托 `PrivacyMasker` 处理；<br>3. **Pydantic V2 契约升级与测试告警归零**: 将 `openviking/resource/watch_manager.py` 与 `openviking/storage/vectordb/service/app_models.py` 的废弃 `class Config:` 彻底升级为现代 `model_config = ConfigDict(...)`，消除全部 `PydanticDeprecatedSince20` 警告，全库测试达到 **0 失败、0 警告 (2040 passed, 0 warnings)**；<br>4. **客户端核心导出加固 (`openviking/client/__init__.py`)**: 补齐 `LocalClient` 与 `Session` 在 `__getattr__` 与 `__all__` 的导出声明，根除 `openviking.async_client` 与 `openviking.sync_client` 导入时的 AttributeError 缺陷；<br>5. **全套自动化门禁验证**: Card 13 专属单测 12/12 全绿 (20.78s)，全量单元测试 2,040 项通过 (42.88s, 0 failed, 0 warnings)；安全扫描 4,441 文件零泄密，Vite 构建 19.69s 零报错，静态产物烘焙并验证版本 `1.5.70`；运行时服务重启对齐 `1.5.70`。<br>**Commit Hash**：`ca8d37ef5` | **修改文件**：`openviking/privacy/privacy_masker.py`, `openviking/privacy/__init__.py`, `openviking/server/routers/privacy_configs.py`, `openviking/resource/watch_manager.py`, `openviking/storage/vectordb/service/app_models.py`, `openviking/client/__init__.py`, `mcp-openviking/tools/skills.py`, `tests/unit/test_privacy_masker.py`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md` | [x] 已验收通过 ✅ |
@@ -1171,5 +1172,41 @@
 - **修改文件清单**：`openviking/service/skill_opt_service.py`, `openviking/service/skill_opt_types.py`, `openviking/server/routers/skill_opt.py`, `openviking/server/routers/__init__.py`, `openviking/server/app.py`, `src/routes/skills/-components/skill-opt-*`, `src/routes/skills/route.tsx`, `tests/unit/test_skill_opt.py`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md`
 - **Git Commit Hash**: `23063fa5f`
 - **Git Tag**: `v1.5.72`
+
+#### 📌 [P1] [x] Card 16: Card-TokenShift-ASTAware-CodeCompressor-And-ProtectionProbe (v1.5.73): PointFive TokenShift 代码语法树保护探针、多语言 AST 结构化压缩与无损代码视网膜门禁 (SSOT) ✅
+- **类型**：Context Compression / AST-Aware / PointFive TokenShift / Multi-Language Syntax Gate / UI Cockpit ｜ **优先级**：🔥 P1
+- **目标版本**：`v1.5.73` ｜ **当前状态**：[x] 已验收通过 ✅
+- **交付内容摘要**：
+  1. **TokenShift 核心压缩与保护引擎 (`openviking/service/tokenshift_*`)**：
+     - 落实 `BLUEPRINT.md` 课题五轮子 #3 (PointFive AST-Aware Code Compression)，补齐五轮多引擎压缩矩阵最后关键拼图；
+     - 针对源代码占用 60%~80% 窗口预算且易被通用 NLP 压缩破坏的物理痛点，构建基于 AST 语法树级别的分级渐进压缩管道；
+     - 实现三级渐进压缩：
+       - `L0 Outline (签名大纲契约)`: 仅保留类/函数声明、装饰器、类型注解与核心 Docstring，函数体折叠为 `...`，Token 节省率 ~50%~70%；
+       - `L1 Skeleton (控制流骨架保留)`: 保留签名与核心控制流分支 (`if/for/try/return`)，折叠内部局部变量与计算细节，Token 节省率 ~30%~50%；
+       - `L2 Compact (无损紧凑格式化)`: 剔除冗余注释与空白行，100% 保留执行逻辑与表达式；
+     - 原生支持 Python (`ast.NodeTransformer` 与 `ast.unparse`)，以及 TypeScript/JavaScript（接口/类型闭合保护与函数体跳跃）、JSON（结构契约折叠）、SQL与Shell；
+     - 实现 `ast.parse` 语法硬门禁与自动降级保护，语法破坏率严格为 0；
+     - 提取并冻结类名、函数名与接口签名，通过 `TokenShiftProtectResult` 结构化输出；
+     - 严格遵守单文件架构解耦原则，将 DTO 抽取至 `tokenshift_types.py` (72行)，转换器抽离至 `tokenshift_transformers.py` (288行)，核心服务收敛至 `tokenshift_engine.py` (162行)，100% 处于 100~300 行黄金甜点区；
+  2. **RESTful API 全链路路由端点 (`openviking/server/routers/tokenshift.py`, 69行)**：
+     - 暴露 `POST /api/v1/tokenshift/compress`、`POST /protect`、`GET /stats`、`POST /reset-stats` 并在 `app.py` 中规范挂载；
+  3. **座舱级前端高密交互套件 (`src/routes/retrieval/-components/tokenshift-cockpit.tsx`, 327行)**：
+     - 严格遵循 NO GREEN EVER 🚫、字号 $\ge 12\text{px}$、代码规范切分；
+     - 挂载在 `/studio/retrieval` 的专属一级 Tab「🛠️ TokenShift 代码语法保护」；
+     - 呈现 4 大核心指标瓦片（原始 Token、压缩后 Token、节省率、AST 语法树校验状态 PASS 冰青 `cyan-500`）；
+     - 提供预设代码示例（Python 异步量化核心服务、TypeScript 状态管理与 API 客户端、JSON 集群配置）；
+     - 双栏实时代码对比编辑器与受保护符号高密抽屉；
+  4. **全套自动化门禁验证**：
+     - Card 16 专属单测 `tests/unit/test_tokenshift_engine.py` (243行, 7项测试) **7/7 全绿** (2.62s)；
+     - 版本门禁单测 `tests/unit/test_version_alignment_gate.py` (3项测试) **3/3 全绿** (0.12s)；
+     - 安全凭据扫描 `scripts/security_check.py` **4,465 跟踪文件零敏感信息泄露**；
+     - 前端生产构建 (Vite Build) **19.58s 零报错**，产物烘焙并验证版本 `1.5.73`；
+     - 运行时服务平滑重启并 probe 验证：`{"status":"ok","healthy":true,"version":"1.5.73","auth_mode":"trusted"}`；
+     - 真实浏览器实机验证 100% 成功（默认骨架模式 31.7% 压缩、L0 大纲模式 51.0% 压缩、PASS 100% 合法语法树校验）；
+  5. **版本留痕**: 版本号自增至 `1.5.73`，Git Commit `ad3ae132c`，Git Tag `v1.5.73`。
+- **修改文件清单**：`openviking/service/tokenshift_engine.py`, `openviking/service/tokenshift_transformers.py`, `openviking/service/tokenshift_types.py`, `openviking/server/routers/tokenshift.py`, `openviking/server/routers/__init__.py`, `openviking/server/app.py`, `src/routes/retrieval/-components/tokenshift-cockpit.tsx`, `src/routes/retrieval/-constants/tokenshift-presets.ts`, `src/routes/retrieval/-types/tokenshift.ts`, `src/routes/retrieval/route.tsx`, `tests/unit/test_tokenshift_engine.py`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md`
+- **Git Commit Hash**: `ad3ae132c`
+- **Git Tag**: `v1.5.73`
+
 
 
