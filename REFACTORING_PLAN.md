@@ -11,6 +11,7 @@
 > - **线上正式部署版本**：**`v1.4.106`**（物理访问地址：`vk.tide.red/studio/home`，已实机验证）；
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.5.70`** | **Card-Privacy-Masker-And-PydanticV2-Schema-Hardening** | **统一动态隐私脱敏引擎 (PrivacyMasker)、Pydantic V2 ConfigDict 告警全清退与客户端核心导出加固 (SSOT)** | 1. **统一端到端隐私脱敏引擎 (`openviking/privacy/privacy_masker.py`, 123行)**: 落实 `BLUEPRINT.md` Epic-PRIVACY-GOV 与零凭据泄露铁律，实现高性能预编译正则脱敏管道（覆盖 API Key、GitHub Token、AWS Key、Bearer Token、RSA/SSH 私钥块、敏感赋值模式与已知节点 IP），支持 `mask_text`、`mask_dict` 递归结构脱敏与 `contains_sensitive` 毫秒级快检；<br>2. **统一技能脱敏收口 (`mcp-openviking/tools/skills.py`)**: 消除局部硬编码脱敏正则，统一委托 `PrivacyMasker` 处理；<br>3. **Pydantic V2 契约升级与测试告警归零**: 将 `openviking/resource/watch_manager.py` 与 `openviking/storage/vectordb/service/app_models.py` 的废弃 `class Config:` 彻底升级为现代 `model_config = ConfigDict(...)`，消除全部 `PydanticDeprecatedSince20` 警告，全库测试达到 **0 失败、0 警告 (2040 passed, 0 warnings)**；<br>4. **客户端核心导出加固 (`openviking/client/__init__.py`)**: 补齐 `LocalClient` 与 `Session` 在 `__getattr__` 与 `__all__` 的导出声明，根除 `openviking.async_client` 与 `openviking.sync_client` 导入时的 AttributeError 缺陷；<br>5. **全套自动化门禁验证**: Card 13 专属单测 12/12 全绿 (20.78s)，全量单元测试 2,040 项通过 (42.88s, 0 failed, 0 warnings)；安全扫描 4,441 文件零泄密，Vite 构建 19.69s 零报错，静态产物烘焙并验证版本 `1.5.70`；运行时服务重启对齐 `1.5.70`。<br>**Commit Hash**：`ca8d37ef5` | **修改文件**：`openviking/privacy/privacy_masker.py`, `openviking/privacy/__init__.py`, `openviking/server/routers/privacy_configs.py`, `openviking/resource/watch_manager.py`, `openviking/storage/vectordb/service/app_models.py`, `openviking/client/__init__.py`, `mcp-openviking/tools/skills.py`, `tests/unit/test_privacy_masker.py`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md` | [x] 已验收通过 ✅ |
 | **`v1.5.69`** | **Card-Test-Isolation-Singleton-Guard-And-Zero-Failure-Suite** | **全库测试单例隔离保护 (EntropyCrystallizer/HermesNudge)、收集警告治理与全量测试 100% 全绿基线达成 (SSOT)** | 1. **EntropyCrystallizer 单例状态隔离与复位护栏 (`openviking/service/entropy_crystallizer.py`)**: 增加 `reset_rule()` 与 `reset_instance()`，解决跨测试修改全局规则 (`min_cluster_size=3`, `cooling_period_hours=0.01`) 导致的测试污染问题；<br>2. **测试用例清理契约加固 (`test_dreaming_gate.py` & `test_entropy_crystallizer.py`)**: `test_dreaming_gate.py` 增加 `try...finally: crystallizer.reset_rule()`，`test_entropy_crystallizer.py` 增加 autouse fixture `_isolate_crystallizer_rule` 自动隔离测试执行；<br>3. **Hermes Nudge 异步复盘目标精准轮询 (`test_hermes_nudge_patch.py`)**: 解决单测前序已发生全局 `completed_reviews > 0` 导致第 0 轮虚假 break 的竞态问题，升级为基于具体 `session_id` 的精准匹配轮询 (`list_recent_reviews`)；<br>4. **测试收集告警治理 (`tests/unit/test_accessors_registry.py`)**: 在 `TestAccessor(DataAccessor)` 基类中标记 `__test__ = False`，消灭 pytest 尝试收集带 `__init__` 测试类的 `PytestCollectionWarning`；<br>5. **全库测试套件 100% 全绿门禁达成**: 全库 190 个测试文件、2,029 项单元测试 **100% 全部通过 (0 failed, 19 skipped)**；安全扫描 4,439 文件零泄密，Vite 构建 21.50s 零报错，静态产物烘焙并验证版本 `1.5.69`；运行时服务重启对齐 `1.5.69`。<br>**Commit Hash**：`a83b5cd46` | **修改文件**：`openviking/service/entropy_crystallizer.py`, `tests/unit/test_dreaming_gate.py`, `tests/unit/test_entropy_crystallizer.py`, `tests/unit/test_hermes_nudge_patch.py`, `tests/unit/test_accessors_registry.py`, `.gitignore`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md` | [x] 已验收通过 ✅ |
 | **`v1.5.68`** | **Card-Session-Experience-Lineage-Tag-Key-Hash-And-Test-Hygiene** | **Experience 溯源标签稳定指纹映射 (xp.<sha256_16hex>)、健康度评测分轨校准与测试隔离/代理护栏加固 (SSOT)** | 1. **Experience 溯源标签哈希化 (`experience_lineage.py`)**: 提纯 `experience_uri_to_tag_key(uri)` 函数，统一采用 `xp.<sha256_16hex>` 紧凑稳定指纹格式，总长度 20 字符（远低于 64 限制），字母开头、严格合规、碰撞概率 $< 10^{-14}$，根治原始超长 URI 引发 `InvalidArgumentError` 导致 `test_experience_lineage.py` 失败的缺陷；消除 docstring 转义警告；<br>2. **健康度多维评测分轨校验 (`test_retrieval_benchmark_and_hygiene.py`)**: 补齐 `disputed` 与 `superseded` 双向测试样本与契约断言，5/5 全绿；<br>3. **检索标签过滤器测试隔离与传播加固 (`test_search_tags_filter.py`)**: 解决 pytest caplog 在子模块 propagate=False 下的捕获隔离问题，17/17 全绿；<br>4. **测试环境代理防猝死护栏 (`tests/conftest.py`)**: 自动检测环境中的 `all_proxy` socks 代理，在未安装 `socksio` 时自动规避，杜绝 60+ 项 embedder 测试因缺少依赖而误报错；<br>5. **全套门禁与自动化发版闭环**: 95 项回归测试 100% 通过 (3.68s)，安全扫描 4,439 文件零泄密，Vite 构建 19.85s 零报错，静态产物烘焙并验证版本 `1.5.68`；运行时服务重启对齐 `1.5.68`。<br>**Commit Hash**：`47e7fc696` | **修改文件**：`openviking/session/memory/experience_lineage.py`, `tests/unit/session/memory/test_experience_lineage.py`, `tests/unit/test_retrieval_benchmark_and_hygiene.py`, `tests/unit/test_search_tags_filter.py`, `tests/conftest.py`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md` | [x] 已验收通过 ✅ |
 | **`v1.5.64`** | **Card-Observer-Models-Telemetry-Cache-Hotfix** | **模型观测器单调时钟轻量快照缓存、动态实例标记与亚毫秒并发性能加固 (SSOT)** | 1. **单调时钟轻量快照缓存 (`models_observer.py`)**: 引入 `_CACHE_TTL=5.0s` 单调时钟缓存与线程安全锁，消灭前端高频轮询时单次请求中对磁盘 JSON 与 SQLite `TelemetryStore` 的连续 4 次重复访问；<br>2. **动态实例标记签名 (`_get_cache_signature`)**: 创新性融合静态模型配置与动态实例标记，既保障生产环境跨请求 100% 命中 5 秒内存快照，又杜绝单元测试下不同动态追踪实例的缓存交叉污染；<br>3. **缓存生命周期与诊断接口**: 暴露 `invalidate_cache()` 与 `get_cache_stats()`，并在 `get_status_table` 中支持 `force_refresh=True`；<br>4. **全套自动化门禁双全**: Card 7 专属单测 4/4 全绿 (1.19s)，全回归测试 142/142 项全绿 (2.26s)；安全扫描 4,433 文件零泄密；Vite 构建通过并烘焙版本 `1.5.64`；运行时服务重启对齐 `1.5.64`。<br>**Commit Hash**：`501e55572` | **修改文件**：`openviking/storage/observers/models_observer.py`, `tests/unit/test_models_observer_cache.py`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md` | [x] 已验收通过 ✅ |
@@ -1076,10 +1077,31 @@
 - **Git Commit Hash**: `a83b5cd46`
 - **Git Tag**: `v1.5.69`
 
-
-
-
-
-
-
-
+#### 📌 [P1] [x] Card 13: Card-Privacy-Masker-And-PydanticV2-Schema-Hardening (v1.5.70): 统一动态隐私脱敏引擎 (PrivacyMasker)、Pydantic V2 ConfigDict 告警全清退与客户端核心导出加固 (SSOT) ✅
+- **类型**：Privacy Governance / Pydantic V2 ConfigDict / Client Exports Hardening / Zero Warnings ｜ **优先级**：🔥 P1
+- **目标版本**：`v1.5.70` ｜ **当前状态**：[x] 已验收通过 ✅
+- **交付内容摘要**：
+  1. **统一动态隐私脱敏引擎 (`openviking/privacy/privacy_masker.py`, 123行)**：
+     - 落实 `BLUEPRINT.md` Epic-PRIVACY-GOV 与零凭据泄露铁律，实现高性能预编译正则脱敏管道；
+     - 覆盖 API Key、GitHub Token、AWS Key、Bearer Token、RSA/SSH 私钥块、敏感赋值模式（password/secret/token 等）与已知内部节点 IP；
+     - 支持 `mask_text` 纯文本脱敏、`mask_dict` 递归结构（dict/list/tuple 深度过滤与复合键名识别）以及 `contains_sensitive` 毫秒级极速探针；
+  2. **统一技能脱敏委托收口 (`mcp-openviking/tools/skills.py`)**：
+     - 消除局部散落的临时正则，统一委托 `PrivacyMasker.mask_text()` 进行标准化脱敏；
+  3. **Pydantic V2 ConfigDict 规范升级与全库告警清零**：
+     - 升级 `openviking/resource/watch_manager.py` 与 `openviking/storage/vectordb/service/app_models.py`，将已废弃的 `class Config:` 彻底迁移至现代 `model_config = ConfigDict(...)`；
+     - 彻底消除全库 `PydanticDeprecatedSince20` 警告，达成全库测试 **0 失败、0 告警 (2,040 passed, 0 warnings)** 的清洁基线；
+  4. **客户端核心导出声明加固 (`openviking/client/__init__.py`)**：
+     - 补齐 `LocalClient` 与 `Session` 在 `__all__` 与 `__getattr__` 中的动态解析声明，根除导入 `openviking.async_client` 或 `openviking.sync_client` 时的 `AttributeError` 缺陷；
+  5. **隐私治理 REST API 接口暴露 (`openviking/server/routers/privacy_configs.py`)**：
+     - 新增 `POST /api/v1/privacy-configs/mask` 与 `POST /api/v1/privacy-configs/detect` 接口，为前端座舱及下游代理提供安全脱敏服务；
+  6. **全套自动化门禁验证**：
+     - Card 13 专属单测 `tests/unit/test_privacy_masker.py` (147行, 12项测试) **12/12 全绿** (20.78s)；
+     - 全库单元测试 **2,040 passed, 19 skipped, 0 failed, 0 warnings** (42.88s)；
+     - 版本门禁测试 `test_version_alignment_gate.py` 3/3 全绿；
+     - 安全凭据审计 `scripts/security_check.py` **4,441 跟踪文件零敏感信息泄露**；
+     - 前端生产构建 (Vite Build) **19.69s 零报错**，产物烘焙并验证版本 `1.5.70`；
+     - 运行时服务平滑重启并 probe 验证：`{"status":"ok","healthy":true,"version":"1.5.70","auth_mode":"trusted"}`；
+  7. **版本留痕**: 版本号自增至 `1.5.70`，Git Commit `ca8d37ef5`，Git Tag `v1.5.70`。
+- **修改文件清单**：`openviking/privacy/privacy_masker.py`, `openviking/privacy/__init__.py`, `openviking/server/routers/privacy_configs.py`, `openviking/resource/watch_manager.py`, `openviking/storage/vectordb/service/app_models.py`, `openviking/client/__init__.py`, `mcp-openviking/tools/skills.py`, `tests/unit/test_privacy_masker.py`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md`
+- **Git Commit Hash**: `ca8d37ef5`
+- **Git Tag**: `v1.5.70`
