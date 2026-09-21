@@ -874,7 +874,7 @@
      - 四大模块全回归测试 34/34 全绿 PASS (0.71s)；
      - 安全凭据扫描 `scripts/security_check.py` 4,427 文件零泄密；
   5. **版本留痕**: 版本号自增至 `1.5.61`，Git Tag `v1.5.61`。
-- **Git Commit Hash**: 见 v1.5.61 Release Commit
+- **Git Commit Hash**: `b41661d3d`
 - **Git Tag**: `v1.5.61`
 
 
