@@ -499,4 +499,82 @@ async def dispatch_anti_entropy_task(
     return Response(status="ok", result={"task_id": tid, "task_type": task_type})
 
 
+class TaskRetryPayload(BaseModel):
+    reason: str = "manual_retry"
+
+
+@router.post("/tasks/{task_id}/retry")
+async def retry_task_endpoint(
+    task_id: str,
+    payload: Optional[TaskRetryPayload] = None,
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """Retry a failed or cancelled background task."""
+    tracker = get_task_tracker()
+    account_id = None if _ctx.role == Role.ROOT else _ctx.account_id
+    user_id = None if _ctx.role == Role.ROOT else _ctx.user.user_id
+    reason = payload.reason if payload else "manual_retry"
+    try:
+        updated = await tracker.retry_task(
+            task_id=task_id,
+            reason=reason,
+            account_id=account_id,
+            user_id=user_id,
+        )
+        return Response(status="ok", result=updated.to_dict())
+    except ValueError as exc:
+        raise FailedPreconditionError(str(exc)) from exc
+
+
+class FeishuReverseSyncPayload(BaseModel):
+    feishu_task_id: str
+    status: str  # todo | in_progress | done | failed | cancelled
+    details: Optional[Dict[str, Any]] = None
+
+
+@router.post("/tasks/feishu/reverse_sync")
+async def feishu_reverse_sync_endpoint(
+    payload: FeishuReverseSyncPayload,
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """Reflect external Feishu task status back into OpenViking task center."""
+    from openviking.service.feishu_task_sync import FeishuTaskStatus, FeishuTaskSyncBridge
+
+    bridge = FeishuTaskSyncBridge.get_instance()
+    try:
+        feishu_status = FeishuTaskStatus(payload.status)
+    except ValueError:
+        raise OpenVikingError(f"Invalid Feishu task status: {payload.status}", code="INVALID_ARGUMENT")
+
+    updated = await bridge.trigger_reverse_sync_from_feishu(
+        feishu_task_id=payload.feishu_task_id,
+        new_status=feishu_status,
+        details=payload.details,
+    )
+    if not updated:
+        raise OpenVikingError(
+            f"No linked internal task found for Feishu task: {payload.feishu_task_id}",
+            code="NOT_FOUND",
+        )
+    return Response(status="ok", result=updated.to_dict())
+
+
+@router.get("/tasks/feishu/sync_stats")
+async def get_feishu_sync_stats(
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """Get telemetry statistics and audit history for Feishu task synchronization."""
+    from openviking.service.feishu_task_sync import FeishuTaskSyncBridge
+
+    bridge = FeishuTaskSyncBridge.get_instance()
+    return Response(
+        status="ok",
+        result={
+            "stats": bridge.get_stats(),
+            "history": bridge.get_history(limit=50),
+            "is_configured": bridge.is_feishu_configured(),
+        },
+    )
+
+
 
