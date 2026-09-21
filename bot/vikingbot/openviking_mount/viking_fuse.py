@@ -1,9 +1,14 @@
 """
-OpenViking FUSE 文件系统 - 只读挂载 MVP 与 POSIX 兼容实现
+OpenViking FUSE 文件系统 - 只读挂载 MVP + Overlay 防护层 (v1.5.67)
 
 提供将 OpenViking 知识库 (viking://) 挂载到本地目录的 FUSE 文件系统实现。
 支持 standard POSIX 只读契约：getattr, readdir, open, read, statfs。
 写操作严格返回 POSIX 标准 errno.EROFS (Read-only file system)。
+
+Card 10 新增三层 Overlay 防护机制：
+1. TempFileShield: 拦截 .swp / ~ / .DS_Store / .Trash 等临时文件
+2. OverlayWriteBuffer: 内存虚拟写缓冲，吸收编辑器写请求不卡死
+3. InodeDentryLRU: 热点 LRU 缓存，提升 getattr 遍历性能
 """
 
 from __future__ import annotations
@@ -18,6 +23,7 @@ from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
+from .fuse_overlay import InodeDentryLRU, OverlayWriteBuffer, TempFileShield
 from .mount import MountConfig, OpenVikingMount
 
 # 尝试导入 fusepy；如未安装则启用轻量纯 Python 抽象基类以保障在无 libfuse 环境下依然安全测试与调用
@@ -62,6 +68,11 @@ class OpenVikingFUSE(Operations):
         self._file_handles: Dict[int, str] = {}
         self._file_contents: Dict[str, str] = {}
 
+        # Card 10: 三层 Overlay 防护层实例
+        self._shield = TempFileShield()
+        self._overlay = OverlayWriteBuffer()
+        self._lru = InodeDentryLRU()
+
         if not mount._initialized and mount.config.auto_init:
             mount.initialize()
 
@@ -84,7 +95,7 @@ class OpenVikingFUSE(Operations):
 
     def getattr(self, path: str, fh: Optional[int] = None) -> Dict[str, Any]:
         """
-        获取文件/目录属性
+        获取文件/目录属性 (Card 10: 加入 TempFileShield 拦截 + InodeDentryLRU 缓存)
 
         Args:
             path: 文件路径
@@ -112,9 +123,34 @@ class OpenVikingFUSE(Operations):
                 "st_ctime": now,
             }
 
+        target_name = Path(path).name
+
+        # Card 10 - Layer 1: TempFileShield 拦截 — 临时文件直接返回 ENOENT
+        if self._shield.should_block(target_name):
+            logger.debug(f"getattr: blocked temp file '{target_name}' at {path}")
+            # 检查是否是 Overlay 内存虚拟文件
+            vattr = self._overlay.get_virtual_attr(path)
+            if vattr is not None:
+                return {
+                    "st_mode": vattr["st_mode"],
+                    "st_nlink": 1,
+                    "st_uid": uid,
+                    "st_gid": gid,
+                    "st_size": vattr["st_size"],
+                    "st_atime": vattr["st_atime"],
+                    "st_mtime": vattr["st_mtime"],
+                    "st_ctime": vattr["st_ctime"],
+                }
+            raise FuseOSError(errno.ENOENT)
+
+        # Card 10 - Layer 3: InodeDentryLRU 热点缓存查询
+        cached = self._lru.get(path)
+        if cached is not None:
+            logger.debug(f"getattr: LRU hit for {path}")
+            return cached
+
         parent_path = str(Path(path).parent) if Path(path).parent != Path(".") else "/"
         parent_uri = self._path_to_uri(parent_path)
-        target_name = Path(path).name
 
         items = []
         try:
@@ -146,7 +182,7 @@ class OpenVikingFUSE(Operations):
                     nlink = 1
                     file_size = size
 
-                return {
+                result = {
                     "st_mode": mode,
                     "st_nlink": nlink,
                     "st_uid": uid,
@@ -156,20 +192,23 @@ class OpenVikingFUSE(Operations):
                     "st_mtime": mtime,
                     "st_ctime": mtime,
                 }
+                # Card 10 - Layer 3: 写回 LRU 缓存
+                self._lru.put(path, result)
+                return result
 
         # 路径在父目录下不存在，抛出标准 POSIX 文件未找到错误
         raise FuseOSError(errno.ENOENT)
 
     def readdir(self, path: str, fh: Optional[int] = None) -> List[str]:
         """
-        读取目录内容
+        读取目录内容 (Card 10: TempFileShield 过滤垃圾文件)
 
         Args:
             path: 目录路径
             fh: 文件描述符
 
         Returns:
-            目录项列表
+            目录项列表（已过滤临时/垃圾文件）
         """
         logger.debug(f"readdir: {path}")
         uri = self._path_to_uri(path)
@@ -189,23 +228,33 @@ class OpenVikingFUSE(Operations):
             if name and name not in entries:
                 entries.append(name)
 
-        return entries
+        # Card 10 - Layer 1: 过滤临时/垃圾文件，保持目录干净
+        return self._shield.filter_entries(entries)
 
     def open(self, path: str, flags: int) -> int:
         """
-        打开文件
+        打开文件 (Card 10: 对屏蔽路径路由到 Overlay 虚拟写)
 
         Args:
             path: 文件路径
             flags: 打开标志
 
         Returns:
-            文件描述符
+            文件描述符（真实 fd 或 Overlay 虚拟 fd）
         """
         logger.debug(f"open: {path} (flags={flags})")
 
-        # 检查只读文件系统写入拒绝
         is_write = bool(flags & (os.O_WRONLY | os.O_RDWR | os.O_APPEND))
+        target_name = Path(path).name
+
+        # Card 10 - Layer 2: 对被屏蔽路径的写请求，路由到内存 Overlay（不卡死编辑器）
+        if self.mount.config.read_only and is_write and self._shield.should_block(target_name):
+            logger.debug(f"open: overlay virtual write for blocked path {path}")
+            if self._overlay.has_virtual_path(path):
+                return self._overlay.open_virtual(path)
+            return self._overlay.create_virtual_file(path, 0o100644)
+
+        # 对真实知识库文件，只读契约不变
         if self.mount.config.read_only and is_write:
             raise FuseOSError(errno.EROFS)
 
@@ -221,7 +270,7 @@ class OpenVikingFUSE(Operations):
 
     def read(self, path: str, size: int, offset: int, fh: int) -> bytes:
         """
-        读取文件内容
+        读取文件内容 (Card 10: Overlay 虚拟 fd 优先走内存缓冲)
 
         Args:
             path: 文件路径
@@ -233,6 +282,10 @@ class OpenVikingFUSE(Operations):
             读取的字节
         """
         logger.debug(f"read: {path} (size={size}, offset={offset})")
+
+        # Card 10 - Layer 2: Overlay 虚拟文件 fd 直接从内存缓冲读取
+        if self._overlay.is_virtual_fd(fh):
+            return self._overlay.read_virtual(fh, size, offset)
 
         uri = self._file_handles.get(fh) or self._path_to_uri(path)
 
@@ -277,13 +330,21 @@ class OpenVikingFUSE(Operations):
             "f_namemax": 255,
         }
 
-    # POSIX 修改类接口在只读模式下统一拦截为 EROFS
+    # POSIX 修改类接口：对屏蔽路径路由 Overlay，对真实 VikingFS 路径拦截 EROFS
     def create(self, path: str, mode: int, fi: Any = None) -> int:
+        target_name = Path(path).name
+        # Card 10 - Layer 2: 屏蔽路径的 create 路由到内存 Overlay
+        if self.mount.config.read_only and self._shield.should_block(target_name):
+            logger.debug(f"create: overlay virtual file for {path}")
+            return self._overlay.create_virtual_file(path, mode)
         if self.mount.config.read_only:
             raise FuseOSError(errno.EROFS)
         raise FuseOSError(errno.EPERM)
 
     def write(self, path: str, data: bytes, offset: int, fh: int) -> int:
+        # Card 10 - Layer 2: Overlay 虚拟 fd 的写请求路由到内存缓冲
+        if self._overlay.is_virtual_fd(fh):
+            return self._overlay.write_virtual(fh, data, offset)
         if self.mount.config.read_only:
             raise FuseOSError(errno.EROFS)
         raise FuseOSError(errno.EROFS)
@@ -299,6 +360,11 @@ class OpenVikingFUSE(Operations):
         raise FuseOSError(errno.EPERM)
 
     def unlink(self, path: str) -> None:
+        target_name = Path(path).name
+        # Card 10 - Layer 2: 屏蔽文件的 unlink 虚拟成功（让编辑器清理 swp）
+        if self.mount.config.read_only and self._shield.should_block(target_name):
+            self._overlay._vattrs.pop(path, None)
+            return
         if self.mount.config.read_only:
             raise FuseOSError(errno.EROFS)
         raise FuseOSError(errno.EPERM)
@@ -309,6 +375,11 @@ class OpenVikingFUSE(Operations):
         raise FuseOSError(errno.EPERM)
 
     def truncate(self, path: str, length: int, fh: Optional[int] = None) -> None:
+        target_name = Path(path).name
+        # Card 10 - Layer 2: 屏蔽文件的 truncate 路由到 Overlay
+        if self.mount.config.read_only and self._shield.should_block(target_name):
+            self._overlay.truncate_virtual(path, length)
+            return
         if self.mount.config.read_only:
             raise FuseOSError(errno.EROFS)
         raise FuseOSError(errno.EROFS)
@@ -324,12 +395,20 @@ class OpenVikingFUSE(Operations):
         raise FuseOSError(errno.EPERM)
 
     def utimens(self, path: str, times: Optional[tuple] = None) -> None:
+        target_name = Path(path).name
+        # Card 10 - Layer 2: 屏蔽文件的 utimens 虚拟成功
+        if self.mount.config.read_only and self._shield.should_block(target_name):
+            return
         if self.mount.config.read_only:
             raise FuseOSError(errno.EROFS)
         raise FuseOSError(errno.EPERM)
 
     def release(self, path: str, fh: int) -> None:
         logger.debug(f"release: {path} (fh={fh})")
+        # Card 10 - Layer 2: 释放 Overlay 虚拟 fd
+        if self._overlay.is_virtual_fd(fh):
+            self._overlay.release_virtual(fh)
+            return
         self._file_handles.pop(fh, None)
 
 
