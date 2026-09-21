@@ -1384,11 +1384,12 @@ class LocalClient(BaseClient):
 
     # ============= Debug =============
 
-    async def check_consistency(self, uri: str) -> Dict[str, Any]:
-        """Check filesystem/vector-index consistency for a URI subtree."""
+    async def check_consistency(self, uri: str, prune: bool = False) -> Dict[str, Any]:
+        """Check filesystem/vector-index consistency for a URI subtree with optional orphan pruning."""
         return await self._service.check_consistency(
             uri=uri,
             ctx=self._ctx,
+            prune=prune,
         )
 
     async def health(self) -> bool:

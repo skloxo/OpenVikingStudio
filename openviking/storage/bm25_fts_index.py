@@ -220,6 +220,40 @@ class BM25FTSIndex:
             finally:
                 conn.close()
 
+    def list_all_uris(self, prefix: Optional[str] = None) -> List[str]:
+        """List all indexed document URIs from metadata index, optionally filtered by prefix."""
+        with self._db_lock:
+            conn = self._get_connection()
+            try:
+                if prefix:
+                    cur = conn.execute("SELECT uri FROM fts_meta WHERE uri LIKE ?;", (f"{prefix}%",))
+                else:
+                    cur = conn.execute("SELECT uri FROM fts_meta;")
+                return [row[0] for row in cur.fetchall()]
+            finally:
+                conn.close()
+
+    def prune_orphans(self, valid_uris: set, prefix: Optional[str] = None) -> int:
+        """Prune documents from FTS5 whose URIs are not in valid_uris."""
+        all_uris = self.list_all_uris(prefix=prefix)
+        orphan_uris = [u for u in all_uris if u not in valid_uris]
+        if not orphan_uris:
+            return 0
+        pruned = 0
+        with self._db_lock:
+            conn = self._get_connection()
+            try:
+                for u in orphan_uris:
+                    conn.execute("DELETE FROM fts_documents WHERE uri = ?", (u,))
+                    conn.execute("DELETE FROM fts_meta WHERE uri = ?", (u,))
+                    pruned += 1
+                conn.commit()
+            except Exception:
+                conn.rollback()
+            finally:
+                conn.close()
+        return pruned
+
     def search(
         self,
         query: str,

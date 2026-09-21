@@ -963,10 +963,10 @@ class AsyncOpenViking:
 
     # ============= Debug methods =============
 
-    async def check_consistency(self, uri: str) -> Dict[str, Any]:
-        """Check filesystem/vector-index consistency for a URI subtree."""
+    async def check_consistency(self, uri: str, prune: bool = False) -> Dict[str, Any]:
+        """Check filesystem/vector-index consistency for a URI subtree with optional orphan pruning."""
         await self._ensure_initialized()
-        return await self._client.check_consistency(uri)
+        return await self._client.check_consistency(uri, prune=prune)
 
     def get_status(self) -> Union[SystemStatus, Dict[str, Any]]:
         """Get system status.

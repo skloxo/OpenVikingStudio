@@ -11,6 +11,7 @@
 > - **线上正式部署版本**：**`v1.4.106`**（物理访问地址：`vk.tide.red/studio/home`，已实机验证）；
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.5.63`** | **Card-Storage-Index-Consistency-And-Pruning** | **双向索引一致性检查、孤儿向量/BM25倒排修剪与自愈引擎 (SSOT)** | 1. **BM25 倒排索引接口增强 (`bm25_fts_index.py`)**: 新增 `list_all_uris` 与 `prune_orphans`，支持毫秒级提取当前倒排库全量 URI 集合并精准反向修剪幽灵倒排条目；<br>2. **双向索引一致性与自愈修剪引擎 (`index_consistency.py`)**: 升级 `IndexConsistencyReport` 模型，整合正向缺失排查 (`missing_records`) + 反向向量孤儿检测与修剪 (`vector_store.remove_by_uri`) + 反向 BM25 倒排孤儿检测与修剪 (`bm25_index.prune_orphans`)，支持 `prune=True` 自愈修剪模式并恢复评分至 100.0 分；<br>3. **全链路 API 与客户端贯通**: 在 `service/core.py`、`server/routers/system.py`、`client/local.py`、`async_client.py`、`sync_client.py` 中全量支持 `prune: bool = False` 参数；<br>4. **全套自动化门禁验证**: Card 6 专属单测 4/4 全绿 (0.08s)，全回归测试 133/133 项全绿 (0.81s)；安全扫描 4,432 文件零泄密；Vite 构建 21.39s 零报错，产物烘焙并验证版本 `1.5.63`；运行时服务重启对齐 `1.5.63`。<br>**Commit Hash**：[待生成] | **修改文件**：`openviking/storage/bm25_fts_index.py`, `openviking/storage/index_consistency.py`, `openviking/service/core.py`, `openviking/server/routers/system.py`, `openviking/client/local.py`, `openviking/async_client.py`, `openviking/sync_client.py`, `tests/unit/test_storage_index_consistency_and_pruning.py`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md` | [x] 已验收通过 ✅ |
 | **`v1.5.62`** | **Card-Architecture-Session-Split** | **Session 巨石模块化解耦、数据模型与工作记忆纯算法引擎提纯 (SSOT)** | 1. **数据模型提纯 (`models.py`, 422行)**: 独立封装 `SessionMeta`, `SessionStats`, `SessionCompression`, `ArchiveState`, `Usage`, `WM_SEVEN_SECTIONS` 等全部 DTO 与上下文常量；<br>2. **工作记忆纯算法引擎提纯 (`wm_synthesizer.py`, 556行)**: 提纯 `WorkingMemorySynthesizer` 包含 12 项静态解析、格式合并、防截断、防丢文件路径、标题漂移遏制与事实保留校验守卫；<br>3. **Session 巨石大幅瘦身 (`session.py`)**: 建立透明向后兼容代理与静态方法转发，净减 1,148 行臃肿代码；<br>4. **全套自动化门禁验证**: 88 项既有 WM 守卫测试全绿 (0.15s)，Card 5 专属单测 7/7 全绿 (0.07s)，129 项全回归测试全绿 (0.79s)；安全扫描 4,429 文件零泄密；Vite 构建 22.09s 零报错，产物烘焙并验证版本 `1.5.62`；运行时服务重启对齐 `1.5.62`。<br>**Commit Hash**：`4c94c03f8` | **修改文件**：`openviking/session/models.py`, `openviking/session/wm_synthesizer.py`, `openviking/session/session.py`, `tests/unit/test_session_split_models_and_wm.py`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md` | [x] 已验收通过 ✅ |
 | **`v1.5.61`** | **Card-Config-Endpoints-And-Logs** | **统一端点动态解析器与静默吞异常结构化日志治理 (SSOT)** | 1. **新建高内聚端点解析器 (`endpoint_resolver.py`, 60行)**: 统一解析层级 `OPENVIKING_ENDPOINT` -> `OPENVIKING_URL` -> `OPENVIKING_API` -> `OPENVIKING_PORT` -> `ov.conf` -> 默认 `http://127.0.0.1:1933`；<br>2. **消除核心服务硬编码端口 (`gatekeeper_prober.py` & `entropy_watchdog.py`)**: 统一接入动态端点解析器；<br>3. **治理静默吞异常**: 肃清 `_resolve_api_key` 中两处静默 `except Exception: pass` 为携带上下文信息的 `logger.debug`；<br>4. **全套门禁双全**: 11 项专属单测 (0.19s) 与 34 项全回归测试 (0.71s) 全绿，安全扫描 4,427 文件零泄密，Vite 编译 21.05s PASS，版本号自增至 `1.5.61`。<br>**Commit Hash**：`b41661d3d` | **修改文件**：`openviking/service/endpoint_resolver.py`, `openviking/service/gatekeeper_prober.py`, `openviking/service/entropy_watchdog.py`, `openviking/session/session.py`, `tests/unit/test_config_endpoints_and_logs.py`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md` | [x] 已验收通过 ✅ |
 | **`v1.5.60`** | **Card-Parser-Feishu-Status-And-Code-Download** | **飞书任务块状态复选框解析、富文本属性安全提取与远程源码 Zip 下载支持 (SSOT)** | 1. **解析飞书任务状态**: 提取 `todo` 状态映射为 `- [x]` / `- [ ]` markdown 复选框；<br>2. **富文本属性容错保护**: `_extract_text_from_elements` 针对 `text_run`, `mention_user` 等字段引入 `getattr` 安全获取；<br>3. **远程代码 Zip 下载支持**: 支持通过 HTTP/HTTPS 流式下载远程源码 zip 包并解压至临时目录；<br>4. **全套门禁双全**: 8 项专属单测 (0.11s) 与 15 项全回归测试 (0.54s) 全绿，安全扫描 4,426 文件零泄密，Vite 构建 21.36s PASS，版本号自增至 `1.5.60`。<br>**Commit Hash**：`b31aa1b4e` | **修改文件**：`openviking/parse/accessors/feishu_accessor.py`, `openviking/parse/parsers/code/code.py`, `bot/vikingbot/openviking_mount/git_accessor.py`, `tests/unit/test_feishu_and_code_parser.py`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md` | [x] 已验收通过 ✅ |
@@ -905,6 +906,30 @@
   5. **版本留痕**: 版本号自增至 `1.5.62`，Git Tag `v1.5.62`。
 - **Git Commit Hash**: `4c94c03f8`
 - **Git Tag**: `v1.5.62`
+
+#### 📌 [P2] [x] Card 6: Card-Storage-Index-Consistency-And-Pruning (v1.5.63): 双向索引一致性检查、孤儿向量/BM25倒排修剪与自愈引擎 (SSOT) ✅
+- **类型**：Storage Integrity / Self-Healing / Vector & BM25 Index Consistency ｜ **优先级**：⚡ P2
+- **目标版本**：`v1.5.63` ｜ **当前状态**：[x] 已验收通过 ✅
+- **交付内容摘要**：
+  1. **BM25 倒排索引接口增强 (`openviking/storage/bm25_fts_index.py`)**:
+     - 新增 `list_all_uris(prefix=None)` 接口，支持毫秒级提取当前倒排库全量 URI 集合；
+     - 新增 `prune_orphans(valid_uris, prefix=None)` 接口，支持精确反向修剪幽灵倒排条目并同步持久化倒排文件；
+  2. **双向索引一致性与自愈修剪引擎 (`openviking/storage/index_consistency.py`)**:
+     - 升级 `IndexConsistencyReport` 模型：新增 `orphan_records`、`bm25_orphan_uris`、`pruned_vector_count`、`pruned_bm25_count` 及健康度评分 `consistency_score`；
+     - 在 `check_index_consistency` 中整合正向缺失排查 (`missing_records`) + 反向向量孤儿检测与修剪 (`vector_store.remove_by_uri`) + 反向 BM25 倒排孤儿检测与修剪 (`bm25_index.prune_orphans`)；
+     - 增加 `prune=True` 自愈修剪模式，修剪后自动清理孤儿并恢复一致性评分至 100.0 分；
+  3. **全链路 API 与客户端贯通**:
+     - 在 `service/core.py`、`server/routers/system.py` (`ConsistencyRequest`)、`client/local.py`、`async_client.py`、`sync_client.py` 中全量支持 `prune: bool = False` 参数；
+  4. **全套自动化门禁验证**:
+     - 新增 Card 6 专属单测 `tests/unit/test_storage_index_consistency_and_pruning.py` 4/4 全绿 (0.08s)；
+     - 全回归测试 133/133 项全绿 PASS (0.81s)；
+     - 安全凭据审计 `scripts/security_check.py` 4,432 文件零密钥泄露；
+     - 前端生产构建 (Vite Build) 21.39s 零报错，产物烘焙并验证版本 `1.5.63`；
+     - 运行时服务重启并探针握手通过 (`1.5.63`)；
+  5. **版本留痕**: 版本号自增至 `1.5.63`，Git Tag `v1.5.63`。
+- **Git Commit Hash**: [待生成]
+- **Git Tag**: `v1.5.63`
+
 
 
 
