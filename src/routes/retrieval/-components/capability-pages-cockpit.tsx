@@ -85,19 +85,19 @@ function KpiTile({
   accent?: boolean
 }) {
   return (
-    <div className="flex flex-col gap-1 rounded-md border border-slate-700/60 bg-slate-800/50 p-3">
-      <div className="flex items-center gap-1.5 text-slate-400">
+    <div className="flex flex-col gap-1 rounded-md border border-border/70 bg-card p-3 shadow-xs">
+      <div className="flex items-center gap-1.5 text-muted-foreground">
         <Icon className="size-3.5 shrink-0" />
         <span className="text-xs truncate">{label}</span>
       </div>
       <div
-        className={`text-lg font-bold font-mono tabular-nums ${
-          accent ? 'text-cyan-400' : 'text-slate-100'
+        className={`text-base font-mono font-semibold tabular-nums ${
+          accent ? 'text-cyan-600 dark:text-cyan-400' : 'text-foreground'
         }`}
       >
         {value}
       </div>
-      {sub && <span className="text-xs text-slate-400">{sub}</span>}
+      {sub && <span className="text-xs text-muted-foreground truncate">{sub}</span>}
     </div>
   )
 }
@@ -159,7 +159,7 @@ export function CapabilityPagesCockpit() {
   })
 
   return (
-    <div className="flex flex-col gap-3 text-slate-200">
+    <div className="flex flex-col gap-3">
       {/* 4 KPI Tiles */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <KpiTile
@@ -193,21 +193,21 @@ export function CapabilityPagesCockpit() {
       {/* Main Dual Panels */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         {/* Panel 1: Capability Profiles & Neighbor Contrast */}
-        <div className="flex flex-col gap-2 rounded-md border border-slate-700/60 bg-slate-800/40 p-3">
-          <div className="flex items-center justify-between border-b border-slate-700/40 pb-2">
+        <div className="flex flex-col gap-2 rounded-md border border-border/70 bg-card p-3 shadow-xs">
+          <div className="flex items-center justify-between border-b border-border/60 pb-2">
             <div className="flex items-center gap-2">
-              <LayersIcon className="size-3.5 text-cyan-400" />
-              <span className="text-xs font-semibold text-slate-100">
+              <LayersIcon className="size-3.5 text-cyan-500" />
+              <span className="text-xs font-semibold text-foreground">
                 腾讯 Capability Pages 三段式档案
               </span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-slate-400">领域簇:</span>
+              <span className="text-xs text-muted-foreground">领域簇:</span>
               <select
                 value={selectedCluster}
                 onChange={(e) => setSelectedCluster(e.target.value)}
                 aria-label="筛选领域簇"
-                className="rounded border border-slate-700 bg-slate-900 px-2 py-0.5 text-xs text-slate-200 focus:outline-none"
+                className="rounded border border-input bg-background px-2 py-0.5 text-xs text-foreground focus:outline-none"
               >
                 <option value="all">全部簇 (All)</option>
                 <option value="container_ops">容器运维 (container_ops)</option>
@@ -218,26 +218,26 @@ export function CapabilityPagesCockpit() {
 
           <div className="flex flex-col gap-2 max-h-115 overflow-y-auto pr-1">
             {isPagesLoading ? (
-              <div className="py-8 text-center text-xs text-slate-400">正在加载三段式档案...</div>
+              <div className="py-8 text-center text-xs text-muted-foreground">正在加载三段式档案...</div>
             ) : pages.length === 0 ? (
-              <div className="py-8 text-center text-xs text-slate-400">暂无能力档案</div>
+              <div className="py-8 text-center text-xs text-muted-foreground">暂无能力档案</div>
             ) : (
               pages.map((p) => (
                 <div
                   key={p.skill_id}
-                  className="flex flex-col gap-1.5 rounded border border-slate-700/50 bg-slate-900/60 p-2.5"
+                  className="flex flex-col gap-1.5 rounded border border-border/60 bg-muted/20 p-2.5"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-semibold text-slate-100">{p.skill_name}</span>
-                      <span className="rounded bg-slate-800 px-1.5 py-0.5 text-xs text-cyan-400 font-mono">
+                      <span className="text-xs font-semibold text-foreground">{p.skill_name}</span>
+                      <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-cyan-600 dark:text-cyan-400 font-mono">
                         {p.cluster_id}
                       </span>
                     </div>
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-6 px-2 text-xs text-slate-300 hover:text-cyan-300"
+                      className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
                       onClick={() => contrastMutation.mutate(p.skill_id)}
                       disabled={contrastMutation.isPending}
                     >
@@ -246,18 +246,18 @@ export function CapabilityPagesCockpit() {
                     </Button>
                   </div>
 
-                  <p className="text-xs text-slate-400">{p.discriminative_body.summary}</p>
+                  <p className="text-xs text-muted-foreground">{p.discriminative_body.summary}</p>
 
                   {/* T+ Positive Triggers */}
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-xs font-medium text-cyan-400">
+                    <span className="text-xs font-medium text-cyan-600 dark:text-cyan-400">
                       T+ 正向触发 ({p.positive_triggers.length}):
                     </span>
                     <div className="flex flex-wrap gap-1">
                       {p.positive_triggers.map((trig, idx) => (
                         <span
                           key={idx}
-                          className="rounded bg-cyan-950/40 border border-cyan-800/40 px-1.5 py-0.5 text-xs text-cyan-300"
+                          className="rounded bg-cyan-50 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-800/40 px-1.5 py-0.5 text-xs text-cyan-800 dark:text-cyan-300"
                         >
                           {trig}
                         </span>
@@ -267,14 +267,14 @@ export function CapabilityPagesCockpit() {
 
                   {/* T- Negative Boundaries */}
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-xs font-medium text-rose-400">
+                    <span className="text-xs font-medium text-rose-600 dark:text-rose-400">
                       T- 负向边界 ({p.negative_boundaries.length}) [仅裁判阶段使用]:
                     </span>
                     <div className="flex flex-col gap-1">
                       {p.negative_boundaries.map((neg, idx) => (
                         <span
                           key={idx}
-                          className="rounded bg-rose-950/30 border border-rose-800/30 px-1.5 py-0.5 text-xs text-rose-300"
+                          className="rounded bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/40 px-1.5 py-0.5 text-xs text-rose-800 dark:text-rose-300"
                         >
                           {neg}
                         </span>
@@ -288,26 +288,26 @@ export function CapabilityPagesCockpit() {
         </div>
 
         {/* Panel 2: Two-Stage Router Playground */}
-        <div className="flex flex-col gap-2 rounded-md border border-slate-700/60 bg-slate-800/40 p-3">
-          <div className="flex items-center justify-between border-b border-slate-700/40 pb-2">
+        <div className="flex flex-col gap-2 rounded-md border border-border/70 bg-card p-3 shadow-xs">
+          <div className="flex items-center justify-between border-b border-border/60 pb-2">
             <div className="flex items-center gap-2">
-              <ShieldCheckIcon className="size-3.5 text-cyan-400" />
-              <span className="text-xs font-semibold text-slate-100">
+              <ShieldCheckIcon className="size-3.5 text-cyan-500" />
+              <span className="text-xs font-semibold text-foreground">
                 双阶段负向边界路由试验台
               </span>
             </div>
-            <span className="text-xs text-slate-400">防装 10+ 技能误选</span>
+            <span className="text-xs text-muted-foreground">防装 10+ 技能误选</span>
           </div>
 
           {/* Quick Presets */}
           <div className="flex items-center gap-1.5 text-xs">
-            <span className="text-slate-400">快捷意图:</span>
+            <span className="text-muted-foreground">快捷意图:</span>
             {['重启容器', '查看 Docker 容器运行日志', '分析 Python 代码性能瓶颈'].map((txt) => (
               <button
                 key={txt}
                 type="button"
                 onClick={() => setRouteQueryText(txt)}
-                className="rounded border border-slate-700 bg-slate-900/80 px-2 py-0.5 text-xs text-slate-300 hover:border-cyan-500 hover:text-cyan-300"
+                className="rounded border border-border/70 bg-muted/40 hover:bg-muted px-2 py-0.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
               >
                 {txt}
               </button>
@@ -321,11 +321,11 @@ export function CapabilityPagesCockpit() {
               value={routeQueryText}
               onChange={(e) => setRouteQueryText(e.target.value)}
               placeholder="输入待测试的用户指令，如：重启某个 Docker 容器..."
-              className="flex-1 rounded border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
+              className="flex-1 rounded border border-input bg-background px-2.5 py-1 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
             />
             <Button
               size="sm"
-              className="h-7 px-3 text-xs bg-cyan-600 hover:bg-cyan-500 text-white"
+              className="h-7 px-3 text-xs bg-cyan-600 hover:bg-cyan-700 text-white cursor-pointer"
               onClick={() => routeMutation.mutate(routeQueryText)}
               disabled={routeMutation.isPending || !routeQueryText.trim()}
             >
@@ -335,58 +335,58 @@ export function CapabilityPagesCockpit() {
           </div>
 
           {/* Routing Decision Output */}
-          <div className="flex flex-col gap-2 rounded border border-slate-700/50 bg-slate-900/60 p-2.5 min-h-75 overflow-y-auto">
+          <div className="flex flex-col gap-2 rounded border border-border/60 bg-muted/20 p-2.5 min-h-75 overflow-y-auto">
             {routeMutation.data ? (
               <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                <div className="flex items-center justify-between border-b border-border/60 pb-1.5">
                   <div className="flex items-center gap-1.5">
-                    <CheckCircleIcon className="size-3.5 text-cyan-400" />
-                    <span className="text-xs font-semibold text-slate-200">
+                    <CheckCircleIcon className="size-3.5 text-cyan-500" />
+                    <span className="text-xs font-semibold text-foreground">
                       最终命中:{' '}
-                      <span className="text-cyan-300">
+                      <span className="text-cyan-600 dark:text-cyan-400">
                         {routeMutation.data.selected_skill_name ?? '无匹配技能 (安全拒绝)'}
                       </span>
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
+                  <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
                     <span>耗时: {routeMutation.data.latency_ms}ms</span>
                     <span>置信度: {(routeMutation.data.confidence * 100).toFixed(1)}%</span>
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-xs text-slate-400 font-medium">候选技能双阶段裁决:</span>
+                  <span className="text-xs text-muted-foreground font-medium">候选技能双阶段裁决:</span>
                   {routeMutation.data.candidates.map((c) => (
                     <div
                       key={c.skill_id}
                       className={`flex flex-col gap-1 rounded border p-2 text-xs ${
                         c.is_blocked
-                          ? 'border-rose-800/40 bg-rose-950/20 text-rose-300'
-                          : 'border-slate-700/40 bg-slate-800/30 text-slate-200'
+                          ? 'border-rose-300 dark:border-rose-800/40 bg-rose-50 dark:bg-rose-950/20 text-rose-800 dark:text-rose-300'
+                          : 'border-border/60 bg-card text-foreground'
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold text-slate-100">{c.skill_name}</span>
+                        <span className="font-semibold text-foreground">{c.skill_name}</span>
                         <div className="flex items-center gap-2 font-mono">
                           <span>Stage 1: {c.stage1_score.toFixed(2)}</span>
                           {c.is_blocked ? (
-                            <span className="text-rose-400 font-bold">
+                            <span className="text-rose-600 dark:text-rose-400 font-bold">
                               T- 拦截 (-{c.negative_penalty.toFixed(2)})
                             </span>
                           ) : (
-                            <span className="text-cyan-400 font-bold">通过</span>
+                            <span className="text-cyan-600 dark:text-cyan-400 font-bold">通过</span>
                           )}
-                          <span className="text-slate-300">最终: {c.final_score.toFixed(2)}</span>
+                          <span className="text-foreground">最终: {c.final_score.toFixed(2)}</span>
                         </div>
                       </div>
-                      <p className="text-xs text-slate-400">{c.verdict_reason}</p>
+                      <p className="text-xs text-muted-foreground">{c.verdict_reason}</p>
                     </div>
                   ))}
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center h-48 text-center text-xs text-slate-500">
-                <FilterIcon className="size-6 mb-2 text-slate-600" />
+              <div className="flex flex-col items-center justify-center h-48 text-center text-xs text-muted-foreground">
+                <FilterIcon className="size-6 mb-2 text-muted-foreground/60" />
                 <span>点击「执行隔离路由」测试双阶段负向边界如何识别并拦截相似技能误选</span>
               </div>
             )}

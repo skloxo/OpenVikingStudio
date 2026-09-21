@@ -60,23 +60,23 @@ export function HarnessGuardrailsCockpit() {
     <div className="flex flex-col gap-4">
       {/* KPI Overview Tiles */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="rounded-md border border-border/60 bg-card/60 p-3">
+        <div className="rounded-md border border-border/70 bg-card p-3 shadow-xs">
           <div className="text-xs text-muted-foreground">物理贯彻门禁</div>
-          <div className="mt-1 font-mono text-xl font-bold text-cyan-400">
+          <div className="mt-1 font-mono text-xl font-bold text-cyan-700 dark:text-cyan-400">
             {activeGatesCount} / {totalGatesCount}
             <span className="ml-1 text-xs font-normal text-muted-foreground">项已激活</span>
           </div>
         </div>
 
-        <div className="rounded-md border border-border/60 bg-card/60 p-3">
+        <div className="rounded-md border border-border/70 bg-card p-3 shadow-xs">
           <div className="text-xs text-muted-foreground">确定性状态机</div>
-          <div className="mt-1 font-mono text-xl font-bold text-cyan-400">
+          <div className="mt-1 font-mono text-xl font-bold text-cyan-700 dark:text-cyan-400">
             {metrics?.fsm?.states?.length ?? 12}
             <span className="ml-1 text-xs font-normal text-muted-foreground">态 Deterministic</span>
           </div>
         </div>
 
-        <div className="rounded-md border border-border/60 bg-card/60 p-3">
+        <div className="rounded-md border border-border/70 bg-card p-3 shadow-xs">
           <div className="text-xs text-muted-foreground">FSM 转移规则</div>
           <div className="mt-1 font-mono text-xl font-bold text-foreground">
             {metrics?.fsm?.transition_rules_count ?? 26}
@@ -84,11 +84,11 @@ export function HarnessGuardrailsCockpit() {
           </div>
         </div>
 
-        <div className="rounded-md border border-border/60 bg-card/60 p-3 flex flex-col justify-between">
+        <div className="rounded-md border border-border/70 bg-card p-3 shadow-xs flex flex-col justify-between">
           <div className="text-xs text-muted-foreground">演进与自愈中心联动</div>
           <div className="mt-1">
             <Link to="/evolution" search={{ tab: 'lessons' }}>
-              <Button size="sm" variant="outline" className="h-7 w-full text-xs font-mono text-cyan-400 border-cyan-800/40 bg-cyan-950/20 hover:bg-cyan-950/40">
+              <Button size="sm" variant="outline" className="h-7 w-full text-xs font-mono text-cyan-800 dark:text-cyan-400 border-cyan-300 dark:border-cyan-800/40 bg-cyan-50 dark:bg-cyan-950/20 hover:bg-cyan-100 dark:hover:bg-cyan-950/40 cursor-pointer">
                 <DnaIcon className="mr-1 size-3" />
                 查看演进教训与自愈 ➔
               </Button>
@@ -101,19 +101,19 @@ export function HarnessGuardrailsCockpit() {
       <div className="flex items-center justify-between border-b border-border/60 pb-1">
         <div className="flex items-center gap-1.5 overflow-x-auto">
           {[
-            { id: 'gates', label: '五大物理门禁看板', icon: <ShieldCheckIcon className="size-3.5 mr-1 text-cyan-400" /> },
-            { id: 'fsm', label: '12-态状态机执行流', icon: <WorkflowIcon className="size-3.5 mr-1 text-cyan-400" /> },
-            { id: 'agent-loop', label: '双层循环与主动刹车', icon: <ActivityIcon className="size-3.5 mr-1 text-cyan-400" /> },
-            { id: 'failure-radar', label: '失败画像与白名单雷达', icon: <ShieldAlertIcon className="size-3.5 mr-1 text-cyan-400" /> },
-            { id: 'hitl-offload', label: '读Offload与HITL', icon: <FileCodeIcon className="size-3.5 mr-1 text-cyan-400" /> },
+            { id: 'gates', label: '五大物理门禁看板', icon: <ShieldCheckIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
+            { id: 'fsm', label: '12-态状态机执行流', icon: <WorkflowIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
+            { id: 'agent-loop', label: '双层循环与主动刹车', icon: <ActivityIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
+            { id: 'failure-radar', label: '失败画像与白名单雷达', icon: <ShieldAlertIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
+            { id: 'hitl-offload', label: '读Offload与HITL', icon: <FileCodeIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
           ].map((tab) => (
             <button
               key={tab.id}
               type="button"
               onClick={() => setActiveSubTab(tab.id as any)}
-              className={`flex items-center rounded-t-md px-3 py-1.5 text-xs font-medium transition-all ${
+              className={`flex items-center rounded-t-md px-3 py-1.5 text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
                 activeSubTab === tab.id
-                  ? 'border-b-2 border-cyan-400 bg-card text-foreground font-semibold'
+                  ? 'border-b-2 border-cyan-600 dark:border-cyan-400 bg-card text-foreground font-semibold'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
               }`}
             >

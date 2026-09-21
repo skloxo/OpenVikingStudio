@@ -81,15 +81,15 @@ function KpiTile({
   accent?: boolean
 }) {
   return (
-    <div className="flex flex-col gap-1 rounded-md border border-slate-700/60 bg-slate-800/50 p-3">
-      <div className="flex items-center gap-1.5 text-slate-400">
+    <div className="flex flex-col gap-1 rounded-md border border-border/70 bg-card p-3 shadow-xs">
+      <div className="flex items-center gap-1.5 text-muted-foreground">
         <Icon className="size-3.5 shrink-0" />
         <span className="text-xs truncate">{label}</span>
       </div>
-      <p className={`text-base font-mono font-semibold tabular-nums ${accent ? 'text-cyan-400' : 'text-slate-200'}`}>
+      <p className={`text-base font-mono font-semibold tabular-nums ${accent ? 'text-cyan-600 dark:text-cyan-400' : 'text-foreground'}`}>
         {value}
       </p>
-      {sub && <p className="text-xs text-slate-500 truncate">{sub}</p>}
+      {sub && <p className="text-xs text-muted-foreground truncate">{sub}</p>}
     </div>
   )
 }
@@ -167,11 +167,11 @@ export function HermesEvolveCockpit() {
       {/* 顶栏 */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-slate-100 flex items-center gap-2">
-            <DatabaseIcon className="size-4 text-cyan-400" />
+          <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <DatabaseIcon className="size-4 text-cyan-500" />
             Hermes 经历能力解耦与微手术补丁座舱
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             经历只增不删 · FTS5 真实倒排索引 · 异步副进程复盘 · 补丁 ≤30 行硬门禁
           </p>
         </div>
@@ -179,7 +179,7 @@ export function HermesEvolveCockpit() {
           size="sm"
           variant="outline"
           onClick={() => queryClient.invalidateQueries({ queryKey: ['hermes'] })}
-          className="text-xs h-7 gap-1 border-slate-700 bg-slate-800/80 hover:bg-slate-700/80 text-slate-200"
+          className="text-xs h-7 gap-1"
         >
           <RefreshCwIcon className="size-3" />
           刷新数据
@@ -220,10 +220,10 @@ export function HermesEvolveCockpit() {
       {/* 主体两栏布局 */}
       <div className="grid grid-cols-2 gap-3">
         {/* 左栏: FTS5 真实消息检索 */}
-        <div className="rounded-md border border-slate-700/60 bg-slate-800/40 p-3 flex flex-col gap-2">
-          <div className="flex items-center justify-between pb-1 border-b border-slate-700/60">
-            <span className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-              <SearchIcon className="size-3.5 text-cyan-400" />
+        <div className="rounded-md border border-border/70 bg-card p-3 flex flex-col gap-2 shadow-xs">
+          <div className="flex items-center justify-between pb-1 border-b border-border/60">
+            <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+              <SearchIcon className="size-3.5 text-cyan-500" />
               跨会话 FTS5 真实倒排检索
             </span>
           </div>
@@ -236,13 +236,13 @@ export function HermesEvolveCockpit() {
                 if (e.key === 'Enter') setAppliedQuery(searchQuery)
               }}
               placeholder="输入关键词进行全文倒排检索..."
-              className="h-7 text-xs bg-slate-900/60 border-slate-700 text-slate-200 placeholder:text-slate-500"
+              className="h-7 text-xs"
             />
             <Button
               size="sm"
               variant="outline"
               onClick={() => setAppliedQuery(searchQuery)}
-              className="h-7 px-2.5 text-xs border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200"
+              className="h-7 px-2.5 text-xs shrink-0"
             >
               检索
             </Button>
@@ -250,24 +250,24 @@ export function HermesEvolveCockpit() {
 
           <div className="flex flex-col gap-2 max-h-72 overflow-y-auto pr-1">
             {searchResults.length === 0 ? (
-              <div className="p-4 text-center text-xs text-slate-500">
+              <div className="p-4 text-center text-xs text-muted-foreground">
                 {appliedQuery ? '未检索到匹配的经历消息' : '请输入关键词开始检索'}
               </div>
             ) : (
               searchResults.map((m) => (
                 <div
                   key={m.msg_id}
-                  className="rounded border border-slate-700/50 bg-slate-800/70 p-2.5 flex flex-col gap-1"
+                  className="rounded border border-border/60 bg-muted/20 p-2.5 flex flex-col gap-1"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs text-cyan-300 font-semibold">{m.session_id}</span>
-                    <span className="text-xs font-mono text-slate-400">[{m.role}]</span>
+                    <span className="font-mono text-xs text-cyan-600 dark:text-cyan-400 font-semibold">{m.session_id}</span>
+                    <span className="text-xs font-mono text-muted-foreground">[{m.role}]</span>
                   </div>
                   <div
-                    className="text-xs text-slate-300 bg-slate-900/50 p-1.5 rounded font-mono break-all"
+                    className="text-xs text-foreground bg-muted/40 p-1.5 rounded font-mono break-all"
                     dangerouslySetInnerHTML={{ __html: m.snippet }}
                   />
-                  <div className="text-xs text-slate-500 font-mono">
+                  <div className="text-xs text-muted-foreground font-mono">
                     Rank: {m.rank.toFixed(2)} · ID: {m.msg_id}
                   </div>
                 </div>
@@ -277,54 +277,54 @@ export function HermesEvolveCockpit() {
         </div>
 
         {/* 右栏: 微手术补丁中心 */}
-        <div className="rounded-md border border-slate-700/60 bg-slate-800/40 p-3 flex flex-col gap-2">
-          <div className="flex items-center justify-between pb-1 border-b border-slate-700/60">
-            <span className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-              <CodeIcon className="size-3.5 text-cyan-400" />
+        <div className="rounded-md border border-border/70 bg-card p-3 flex flex-col gap-2 shadow-xs">
+          <div className="flex items-center justify-between pb-1 border-b border-border/60">
+            <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+              <CodeIcon className="size-3.5 text-cyan-500" />
               技能微手术补丁中心 ({patches.length})
             </span>
           </div>
 
           <div className="flex flex-col gap-2 max-h-72 overflow-y-auto pr-1">
             {patches.length === 0 ? (
-              <div className="p-4 text-center text-xs text-slate-500">暂无待应用的微手术补丁</div>
+              <div className="p-4 text-center text-xs text-muted-foreground">暂无待应用的微手术补丁</div>
             ) : (
               patches.map((p) => (
                 <div
                   key={p.patch_id}
-                  className="rounded border border-slate-700/50 bg-slate-800/70 p-2.5 flex flex-col gap-1.5"
+                  className="rounded border border-border/60 bg-muted/20 p-2.5 flex flex-col gap-1.5"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs text-slate-200 font-semibold">{p.patch_id}</span>
+                    <span className="font-mono text-xs text-foreground font-semibold">{p.patch_id}</span>
                     <span
                       className={`text-xs px-1.5 py-0.5 rounded font-mono ${
                         p.status === 'applied'
-                          ? 'bg-cyan-950/60 text-cyan-300 border border-cyan-700/40'
+                          ? 'bg-cyan-50 dark:bg-cyan-950/40 text-cyan-800 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800/40'
                           : p.status === 'reverted'
-                            ? 'bg-slate-800 text-slate-400 border border-slate-700'
-                            : 'bg-amber-950/60 text-amber-300 border border-amber-700/40'
+                            ? 'bg-muted text-muted-foreground border border-border'
+                            : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40'
                       }`}
                     >
                       {p.status.toUpperCase()}
                     </span>
                   </div>
 
-                  <div className="text-xs text-slate-300">
-                    技能: <span className="font-mono text-cyan-400">{p.skill_name}</span> · 变更行数:{' '}
-                    <span className="font-mono text-slate-200">
+                  <div className="text-xs text-muted-foreground">
+                    技能: <span className="font-mono text-cyan-600 dark:text-cyan-400">{p.skill_name}</span> · 变更行数:{' '}
+                    <span className="font-mono text-foreground">
                       -{p.target_line_count} / +{p.replacement_line_count}
                     </span>
                   </div>
-                  <div className="text-xs text-slate-400 truncate">{p.reason}</div>
+                  <div className="text-xs text-muted-foreground truncate">{p.reason}</div>
 
-                  <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-700/40">
+                  <div className="flex items-center justify-end gap-2 pt-1 border-t border-border/40">
                     {p.status === 'proposed' && (
                       <Button
                         size="sm"
                         variant="ghost"
                         disabled={applyMutation.isPending}
                         onClick={() => applyMutation.mutate(p.patch_id)}
-                        className="h-6 px-2 text-xs text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/40"
+                        className="h-6 px-2 text-xs text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 hover:bg-cyan-50 dark:hover:bg-cyan-950/40"
                       >
                         <PlayIcon className="size-2.5 mr-1" />
                         应用微补丁
@@ -336,7 +336,7 @@ export function HermesEvolveCockpit() {
                         variant="ghost"
                         disabled={revertMutation.isPending}
                         onClick={() => revertMutation.mutate(p.patch_id)}
-                        className="h-6 px-2 text-xs text-amber-400 hover:text-amber-300 hover:bg-amber-950/40"
+                        className="h-6 px-2 text-xs text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40"
                       >
                         <RotateCcwIcon className="size-2.5 mr-1" />
                         一键回滚

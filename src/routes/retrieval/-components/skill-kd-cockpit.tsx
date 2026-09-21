@@ -80,19 +80,19 @@ function KpiTile({
   accent?: boolean
 }) {
   return (
-    <div className="flex flex-col gap-1 rounded-md border border-slate-700/60 bg-slate-800/50 p-3">
-      <div className="flex items-center gap-1.5 text-slate-400">
+    <div className="flex flex-col gap-1 rounded-md border border-border/70 bg-card p-3 shadow-xs">
+      <div className="flex items-center gap-1.5 text-muted-foreground">
         <Icon className="size-3.5 shrink-0" />
         <span className="text-xs truncate">{label}</span>
       </div>
       <div
-        className={`text-lg font-bold font-mono tabular-nums ${
-          accent ? 'text-cyan-400' : 'text-slate-100'
+        className={`text-base font-mono font-semibold tabular-nums ${
+          accent ? 'text-cyan-600 dark:text-cyan-400' : 'text-foreground'
         }`}
       >
         {value}
       </div>
-      {sub && <span className="text-xs text-slate-400">{sub}</span>}
+      {sub && <span className="text-xs text-muted-foreground truncate">{sub}</span>}
     </div>
   )
 }
@@ -155,7 +155,7 @@ export function SkillKDCockpit() {
   })
 
   return (
-    <div className="flex flex-col gap-3 text-slate-200">
+    <div className="flex flex-col gap-3">
       {/* 4 KPI Tiles */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <KpiTile
@@ -189,46 +189,46 @@ export function SkillKDCockpit() {
       {/* Main Dual Panels */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         {/* Panel 1: Teacher-Student Bifurcations & Candidate Rules */}
-        <div className="flex flex-col gap-2 rounded-md border border-slate-700/60 bg-slate-800/40 p-3">
-          <div className="flex items-center justify-between border-b border-slate-700/40 pb-2">
+        <div className="flex flex-col gap-2 rounded-md border border-border/70 bg-card p-3 shadow-xs">
+          <div className="flex items-center justify-between border-b border-border/60 pb-2">
             <div className="flex items-center gap-2">
-              <GitForkIcon className="size-3.5 text-cyan-400" />
-              <span className="text-xs font-semibold text-slate-100">
+              <GitForkIcon className="size-3.5 text-cyan-500" />
+              <span className="text-xs font-semibold text-foreground">
                 师生决策分叉点与候选规则 (SKILL-KD)
               </span>
             </div>
-            <span className="text-xs text-slate-400">
-              场景: <span className="text-cyan-400 font-mono">{activeTaskScenario}</span>
+            <span className="text-xs text-muted-foreground">
+              场景: <span className="text-cyan-600 dark:text-cyan-400 font-mono">{activeTaskScenario}</span>
             </span>
           </div>
 
           <div className="flex flex-col gap-2 max-h-115 overflow-y-auto pr-1">
             {isRulesLoading ? (
-              <div className="py-8 text-center text-xs text-slate-400">正在加载分叉规则...</div>
+              <div className="py-8 text-center text-xs text-muted-foreground">正在加载分叉规则...</div>
             ) : rules.length === 0 ? (
-              <div className="py-8 text-center text-xs text-slate-400">暂无候选规则</div>
+              <div className="py-8 text-center text-xs text-muted-foreground">暂无候选规则</div>
             ) : (
               rules.map((rule) => (
                 <div
                   key={rule.patch_id}
-                  className="flex flex-col gap-1.5 rounded border border-slate-700/50 bg-slate-900/60 p-2.5"
+                  className="flex flex-col gap-1.5 rounded border border-border/60 bg-muted/20 p-2.5"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <span className="font-mono text-xs text-slate-400">{rule.patch_id}</span>
-                      <span className="rounded bg-slate-800 px-1.5 py-0.5 text-xs text-cyan-400 font-mono">
+                      <span className="font-mono text-xs text-muted-foreground">{rule.patch_id}</span>
+                      <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-cyan-600 dark:text-cyan-400 font-mono">
                         Turn #{rule.derived_from_turn}
                       </span>
                     </div>
                     {rule.verified_green ? (
-                      <span className="rounded bg-cyan-950/40 border border-cyan-800/40 px-1.5 py-0.5 text-xs text-cyan-300 font-semibold">
+                      <span className="rounded bg-cyan-50 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-800/40 px-1.5 py-0.5 text-xs text-cyan-800 dark:text-cyan-300 font-semibold">
                         已变绿准入
                       </span>
                     ) : (
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-6 px-2 text-xs text-slate-300 hover:text-cyan-300"
+                        className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
                         onClick={() => reexecuteMutation.mutate(rule.patch_id)}
                         disabled={reexecuteMutation.isPending}
                       >
@@ -238,11 +238,11 @@ export function SkillKDCockpit() {
                     )}
                   </div>
 
-                  <p className="text-xs text-slate-200 font-mono bg-slate-950/40 p-2 rounded border border-slate-800">
+                  <p className="text-xs text-foreground font-mono bg-muted/40 p-2 rounded border border-border/60">
                     {rule.rule_content}
                   </p>
 
-                  <div className="flex items-center justify-between text-xs text-slate-400">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>适用场景: {rule.applicable_scenario}</span>
                     <span>{rule.verification_notes || '待沙箱物理验证'}</span>
                   </div>
@@ -253,18 +253,18 @@ export function SkillKDCockpit() {
         </div>
 
         {/* Panel 2: Re-execution Sandbox Gate & Consolidation */}
-        <div className="flex flex-col gap-2 rounded-md border border-slate-700/60 bg-slate-800/40 p-3">
-          <div className="flex items-center justify-between border-b border-slate-700/40 pb-2">
+        <div className="flex flex-col gap-2 rounded-md border border-border/70 bg-card p-3 shadow-xs">
+          <div className="flex items-center justify-between border-b border-border/60 pb-2">
             <div className="flex items-center gap-2">
-              <ShieldAlertIcon className="size-3.5 text-cyan-400" />
-              <span className="text-xs font-semibold text-slate-100">
+              <ShieldAlertIcon className="size-3.5 text-cyan-500" />
+              <span className="text-xs font-semibold text-foreground">
                 沙箱重跑变绿门禁与规则合并 (VeriSkill)
               </span>
             </div>
             <Button
               size="sm"
               variant="outline"
-              className="h-6 px-2 text-xs border-slate-700 text-slate-300 hover:text-cyan-300"
+              className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
               onClick={() => consolidateMutation.mutate()}
               disabled={consolidateMutation.isPending}
             >
@@ -274,48 +274,50 @@ export function SkillKDCockpit() {
           </div>
 
           {/* Verification / Consolidation Display */}
-          <div className="flex flex-col gap-2 rounded border border-slate-700/50 bg-slate-900/60 p-2.5 min-h-75 overflow-y-auto">
+          <div className="flex flex-col gap-2 rounded border border-border/60 bg-muted/20 p-2.5 min-h-75 overflow-y-auto">
             {reexecuteMutation.data ? (
               <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                <div className="flex items-center justify-between border-b border-border/60 pb-1.5">
                   <div className="flex items-center gap-1.5">
                     {reexecuteMutation.data.turned_green ? (
-                      <CheckCircleIcon className="size-3.5 text-cyan-400" />
+                      <CheckCircleIcon className="size-3.5 text-cyan-500" />
                     ) : (
-                      <ShieldAlertIcon className="size-3.5 text-rose-400" />
+                      <ShieldAlertIcon className="size-3.5 text-rose-500" />
                     )}
-                    <span className="text-xs font-semibold text-slate-200">
+                    <span className="text-xs font-semibold text-foreground">
                       沙箱门禁裁决:{' '}
                       <span
                         className={
-                          reexecuteMutation.data.turned_green ? 'text-cyan-300' : 'text-rose-400'
+                          reexecuteMutation.data.turned_green
+                            ? 'text-cyan-600 dark:text-cyan-400'
+                            : 'text-rose-600 dark:text-rose-400'
                         }
                       >
                         {reexecuteMutation.data.gate_verdict}
                       </span>
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
+                  <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
                     <span>耗时: {reexecuteMutation.data.execution_time_sec}s</span>
                     <span>Exit Code: {reexecuteMutation.data.exit_code}</span>
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-1 text-xs text-slate-300">
+                <div className="flex flex-col gap-1 text-xs text-foreground">
                   <p>
                     测试用例状态:{' '}
                     {reexecuteMutation.data.turned_green ? (
-                      <span className="text-cyan-300 font-bold">
+                      <span className="text-cyan-600 dark:text-cyan-400 font-bold">
                         原题红变绿 (Turned Green) ✅ 准入入库
                       </span>
                     ) : (
-                      <span className="text-rose-400 font-bold">
+                      <span className="text-rose-600 dark:text-rose-400 font-bold">
                         仍未变绿 (Turn Red) 🚫 物理阻断入库
                       </span>
                     )}
                   </p>
                   {reexecuteMutation.data.rejection_reason && (
-                    <p className="text-rose-400">
+                    <p className="text-rose-600 dark:text-rose-400">
                       拒绝理由: {reexecuteMutation.data.rejection_reason}
                     </p>
                   )}
@@ -323,15 +325,15 @@ export function SkillKDCockpit() {
               </div>
             ) : consolidateMutation.data ? (
               <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
-                  <span className="text-xs font-semibold text-slate-200">
+                <div className="flex items-center justify-between border-b border-border/60 pb-1.5">
+                  <span className="text-xs font-semibold text-foreground">
                     规则合并完成 (Drift-Aware Consolidation)
                   </span>
-                  <span className="text-xs font-mono text-cyan-400">
+                  <span className="text-xs font-mono text-cyan-600 dark:text-cyan-400">
                     压缩率: {consolidateMutation.data.compression_ratio_pct}%
                   </span>
                 </div>
-                <div className="flex flex-col gap-1 text-xs text-slate-300">
+                <div className="flex flex-col gap-1 text-xs text-foreground">
                   <p>
                     规则条数: {consolidateMutation.data.initial_rule_count} 条 ➔{' '}
                     {consolidateMutation.data.consolidated_rule_count} 条
@@ -344,8 +346,8 @@ export function SkillKDCockpit() {
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center h-48 text-center text-xs text-slate-500">
-                <SparklesIcon className="size-6 mb-2 text-slate-600" />
+              <div className="flex flex-col items-center justify-center h-48 text-center text-xs text-muted-foreground">
+                <SparklesIcon className="size-6 mb-2 text-muted-foreground/60" />
                 <span>
                   点击左侧候选规则的「沙箱重跑验证」，体验弱学生携带规则原题红变绿的准入过程
                 </span>
