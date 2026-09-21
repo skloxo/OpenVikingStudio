@@ -821,4 +821,41 @@
 - **Git Commit Hash**: `2ad733986`
 - **Git Tag**: `v1.5.56`
 
+#### 📌 [P0] [x] Card 1: Concurrency-Hotfix (v1.5.58): SQLite 裸连接全链路并发锁加固与超时熔断 ✅
+- **类型**：Database Concurrency & Resilience / Bug Fix ｜ **优先级**：⚡ P0
+- **目标版本**：`v1.5.58` ｜ **当前状态**：[x] 已验收通过 ✅
+- **交付内容摘要**：
+  1. **SQLite 裸连接加固**: 对 `telemetry_store.py`、`active_notes_history.py`、`sqlite_store.py`、`cursor_store.py`、`storage.py` 中 5 处未配置超时的 `sqlite3.connect`，全链路注入 `timeout=30.0` + `PRAGMA journal_mode=WAL` + `PRAGMA busy_timeout=30000`；
+  2. **高并发压测验证**: `tests/unit/test_sqlite_concurrency_lock.py` 20 线程并发写 200 次，0 锁超时错误 (0.41s)；
+  3. **门禁验证**: 生产构建通过，安全扫描零泄密，Git Tag `v1.5.58`。
+- **Git Commit Hash**: `1937e0962`
+- **Git Tag**: `v1.5.58`
+
+#### 📌 [P1] [x] Card 2: Card-Mount-FUSE-ReadOnly-MVP (v1.5.59): 虚拟知识库本地只读磁盘挂载与异常规范化 ✅
+- **类型**：Virtual Filesystem / FUSE / Resilience ｜ **优先级**：⚡ P1
+- **目标版本**：`v1.5.59` ｜ **当前状态**：[x] 已验收通过 ✅
+- **交付内容摘要**：
+  1. **POSIX 只读五大系统调用打通**: `getattr`, `readdir`, `open`, `read`, `statfs` 完整支持，写操作受控返回 POSIX `errno.EROFS`；
+  2. **幽灵目录缺陷根除**: 不存在路径严格抛出 `FuseOSError(errno.ENOENT)`，杜绝虚假目录假象；
+  3. **肃清伪异常**: 消除 5 个模块中 9 处裸抛 `NotImplementedError`，统一收口；
+  4. **门禁验证**: `test_viking_fuse_readonly.py` 14/14 全绿，安全扫描通过，Git Tag `v1.5.59`。
+- **Git Commit Hash**: `d936b689c`
+- **Git Tag**: `v1.5.59`
+
+#### 📌 [P1] [x] Card 3: Card-Parser-Feishu-Status-And-Code-Download (v1.5.60): 飞书内嵌任务状态解析与远程代码仓库自动拉取 ✅
+- **类型**：Parser & Ingest / Feature Completion / Resilience ｜ **优先级**：⚡ P1
+- **目标版本**：`v1.5.60` ｜ **当前状态**：[x] 已验收通过 ✅
+- **交付内容摘要**：
+  1. **飞书内嵌任务挂件状态解析**: 完善 `feishu_accessor.py` 解析 `task` 块，根据 `style.done` / `task.completed` / `task.done` 精确解析为 `- [x]` 或 `- [ ]` markdown 复选框；
+  2. **元素提取属性容错保护**: `_extract_text_from_elements` 针对 `text_run`, `mention_user`, `mention_doc`, `equation` 引入 `getattr` 安全获取，彻底杜绝缺少字段抛出 `AttributeError`；
+  3. **远程代码 Zip 自动下载支持**: 完善 `CodeRepositoryParser` 与 `GitAccessor` 的 `_extract_zip` 方法，支持通过 HTTP/HTTPS 流式下载远程源码 zip 包并解压至临时目录，智能保留原始仓库名；
+  4. **全套自动化门禁验证**:
+     - 单元测试 `tests/unit/test_feishu_and_code_parser.py` 8/8 全绿 PASS (0.11s)；
+     - 数据库与只读 FUSE 回归测试 15/15 全绿 PASS (0.54s)；
+     - 安全凭据审计 `scripts/security_check.py` 4,426 文件零密钥泄露；
+  5. **版本留痕**: 版本号自增至 `1.5.60`，Git Tag `v1.5.60`。
+- **Git Commit Hash**: 见 v1.5.60 Release Commit
+- **Git Tag**: `v1.5.60`
+
+
 
