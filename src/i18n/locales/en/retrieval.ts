@@ -269,6 +269,7 @@ export const retrieval = {
       fullScaleInspected: 'Full-Scale Audited',
       dormantItems: 'Dormant Items',
       disputedItems: 'Disputed Items',
+      supersededItems: 'Superseded Items',
       runInspection: 'Run Full Audit',
       inspecting: 'Auditing…',
       refresh: 'Refresh',

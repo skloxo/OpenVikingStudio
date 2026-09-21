@@ -14,6 +14,7 @@ interface HygieneResponse {
     total_inspected: number
     dormant_count: number
     disputed_count: number
+    superseded_count: number
     orphaned_count: number
     stale_percentage: number
     inspection_ts: number
@@ -67,6 +68,7 @@ export function KnowledgeHealthRadarCard() {
   const inspected = report?.total_inspected ?? 0
   const dormant = report?.dormant_count ?? 0
   const disputed = report?.disputed_count ?? 0
+  const superseded = report?.superseded_count ?? 0
 
   const timeAgo = useMemo(() => {
     if (!report?.inspection_ts) return null
@@ -90,10 +92,10 @@ export function KnowledgeHealthRadarCard() {
         { label: '防线', val: 0.98 },
       ]
     }
-    const fidelity = Math.max(0.2, 1.0 - (disputed / Math.max(1, inspected)))
-    const activity = Math.max(0.2, 1.0 - (dormant / Math.max(1, inspected)))
-    const connectivity = Math.max(0.2, 1.0 - (report.orphaned_count / Math.max(1, inspected)))
-    const freshness = Math.max(0.2, 1.0 - (report.stale_percentage / 100.0))
+    const fidelity = Math.max(0.4, 1.0 - ((disputed * 5 + superseded * 0.4) / 100))
+    const activity = Math.max(0.4, 1.0 - (dormant / Math.max(1, inspected)))
+    const connectivity = Math.max(0.4, 1.0 - (report.orphaned_count / Math.max(1, inspected)))
+    const freshness = Math.max(0.4, 1.0 - (report.stale_percentage / 100.0))
     const defense = 0.95
 
     return [
@@ -103,7 +105,7 @@ export function KnowledgeHealthRadarCard() {
       { label: '新鲜度', val: freshness },
       { label: '防线', val: defense },
     ]
-  }, [report, inspected, dormant, disputed])
+  }, [report, inspected, dormant, disputed, superseded])
 
   // SVG Radar Geometry: Center (100, 70), R=45
   const cx = 100
@@ -256,6 +258,14 @@ export function KnowledgeHealthRadarCard() {
             </span>
             <span className="font-mono text-xs font-bold tabular-nums text-foreground">
               {isLoading ? '--' : `${disputed} 项`}
+            </span>
+          </div>
+          <div className="p-2 rounded bg-muted/20 border border-border/40 flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">
+              {t('operationalTelemetry.supersededItems', '历史替代条目')}
+            </span>
+            <span className="font-mono text-xs font-bold tabular-nums text-foreground">
+              {isLoading ? '--' : `${superseded} 项`}
             </span>
           </div>
         </div>

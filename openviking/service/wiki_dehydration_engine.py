@@ -11,9 +11,11 @@ Provides dedicated Viking Adapter encapsulation over Microsoft LLMLingua-2:
 
 from __future__ import annotations
 
+import json
 import logging
 import re
 import time
+import urllib.request
 from typing import Any, Dict, List, Optional, Tuple
 from pydantic import BaseModel, Field
 
@@ -115,21 +117,67 @@ class WikiDehydrationEngine:
         cjk_chars = len(re.findall(r"[\u4e00-\u9fff]", text))
         return max(1, words + cjk_chars)
 
+    def _is_remote_engine_available(self) -> bool:
+        """Probe Windows host Unified Models Server (ports 11432/11433) for LLMLingua-2."""
+        for port in (11432, 11433):
+            try:
+                req = urllib.request.Request(f"http://127.0.0.1:{port}/health", headers={"User-Agent": "OpenViking-Dehydration"})
+                with urllib.request.urlopen(req, timeout=0.8) as resp:
+                    if resp.status == 200:
+                        data = json.loads(resp.read().decode("utf-8"))
+                        if "microsoft/llmlingua-2" in data.get("models", []):
+                            return True
+            except Exception:
+                continue
+        return False
+
+    def _compress_remote(self, text: str, rate: float) -> Optional[str]:
+        """Send prompt to Windows host Unified Models Server (CUDA FP16) for sub-100ms compression."""
+        for port in (11432, 11433):
+            try:
+                url = f"http://127.0.0.1:{port}/v1/compress"
+                payload = json.dumps({
+                    "text": text,
+                    "rate": rate,
+                    "force_tokens": HARDCODED_PROTECTED_TOKENS,
+                    "force_reserve_digit": True,
+                    "drop_consecutive": True,
+                }).encode("utf-8")
+                req = urllib.request.Request(
+                    url,
+                    data=payload,
+                    headers={"Content-Type": "application/json", "User-Agent": "OpenViking-Dehydration"},
+                    method="POST",
+                )
+                with urllib.request.urlopen(req, timeout=3.0) as resp:
+                    if resp.status == 200:
+                        data = json.loads(resp.read().decode("utf-8"))
+                        return data.get("compressed_prompt")
+            except Exception as e:
+                logger.debug("Remote compression failed on port %s: %s", port, e)
+                continue
+        return None
+
     def _lazy_load_compressor(self) -> None:
-        """Attempt to load LLMLingua-2 on CPU strictly without blocking main thread."""
+        """Probe remote GPU service first; fallback to local CPU compressor only if needed."""
         if self._model_loading_attempted:
             return
         self._model_loading_attempted = True
+        if self._is_remote_engine_available():
+            self._model_available = True
+            logger.info("Connected to remote LLMLingua-2 CUDA engine on Windows host (ports 11432/11433).")
+            return
+
         try:
             from llmlingua import PromptCompressor
-            logger.info("Initializing Microsoft LLMLingua-2 PromptCompressor (CPU)...")
+            logger.info("Initializing Microsoft LLMLingua-2 PromptCompressor (local CPU fallback)...")
             self._compressor = PromptCompressor(
                 model_name="microsoft/llmlingua-2-xlm-roberta-large-meetingbank",
                 use_llmlingua2=True,
                 device_map="cpu",
             )
             self._model_available = True
-            logger.info("LLMLingua-2 PromptCompressor initialized successfully.")
+            logger.info("Local LLMLingua-2 PromptCompressor initialized successfully.")
         except Exception as exc:
             logger.warning(
                 "LLMLingua-2 model unavailable, falling back to Syntactic Pruner: %s", exc
@@ -137,33 +185,47 @@ class WikiDehydrationEngine:
             self._model_available = False
             self._compressor = None
 
-    def _freeze_structure(self, text: str) -> Tuple[str, List[str]]:
-        """Extract and replace YAML headers, code blocks and tables with frozen placeholders."""
-        frozen_blocks: List[str] = []
+    def _segment_document(self, text: str) -> Tuple[List[Tuple[bool, str]], List[str]]:
+        """
+        Split markdown document into (is_frozen, content) segments and extract frozen blocks.
+        is_frozen=True: YAML header, fenced code, tables.
+        is_frozen=False: Natural language prose.
+        """
+        matches = []
+        for m in RE_YAML_HEADER.finditer(text):
+            matches.append((m.start(), m.end(), m.group(0)))
+        for m in RE_FENCED_CODE.finditer(text):
+            matches.append((m.start(), m.end(), m.group(0)))
+        for m in RE_TABLE_BLOCK.finditer(text):
+            matches.append((m.start(), m.end(), m.group(0)))
 
-        def _replace_block(match: re.Match) -> str:
-            idx = len(frozen_blocks)
-            frozen_blocks.append(match.group(0))
-            return f"\n\nVKFROZEN{idx}BLOCK\n\n"
-
-        processed = RE_YAML_HEADER.sub(_replace_block, text)
-        processed = RE_FENCED_CODE.sub(_replace_block, processed)
-        processed = RE_TABLE_BLOCK.sub(_replace_block, processed)
-        return processed, frozen_blocks
-
-    def _restore_structure(self, text: str, frozen_blocks: List[str]) -> str:
-        """Restore frozen blocks back to original positions without token loss."""
-        for idx, block in enumerate(frozen_blocks):
-            exact_marker = f"VKFROZEN{idx}BLOCK"
-            if exact_marker in text:
-                text = text.replace(exact_marker, f"\n\n{block.strip()}\n\n")
+        matches.sort(key=lambda x: x[0])
+        merged = []
+        for s, e, c in matches:
+            if not merged:
+                merged.append((s, e, c))
             else:
-                pat = re.compile(
-                    rf"[_\w]*VK[\s_]*FROZEN[\s_]*{idx}[\s_]*BLOCK[_\w]*|[_\w]*FROZEN[\s_]*BLOCK[\s_]*{idx}[_\w]*",
-                    re.IGNORECASE,
-                )
-                text = pat.sub(lambda _: f"\n\n{block.strip()}\n\n", text)
-        return re.sub(r"\n{3,}", "\n\n", text).strip()
+                last_s, last_e, _ = merged[-1]
+                if s < last_e:
+                    continue
+                merged.append((s, e, c))
+
+        segments: List[Tuple[bool, str]] = []
+        frozen_blocks: List[str] = []
+        cursor = 0
+        for s, e, c in merged:
+            if s > cursor:
+                prose = text[cursor:s]
+                if prose:
+                    segments.append((False, prose))
+            segments.append((True, c))
+            frozen_blocks.append(c)
+            cursor = e
+        if cursor < len(text):
+            prose = text[cursor:]
+            if prose:
+                segments.append((False, prose))
+        return segments, frozen_blocks
 
     def _syntactic_pruner(self, text: str, target_rate: float) -> str:
         """Rule-based syntactic pruner as reliable fail-safe fallback."""
@@ -181,7 +243,7 @@ class WikiDehydrationEngine:
         cleaned_lines: List[str] = []
         for line in lines:
             trimmed = line.strip()
-            if trimmed.startswith("#") or trimmed.startswith("-") or trimmed.startswith("*") or "__VK_FROZEN" in trimmed:
+            if trimmed.startswith("#") or trimmed.startswith("-") or trimmed.startswith("*"):
                 cleaned_lines.append(line)
             elif trimmed:
                 line_sub = re.sub(r"\s+", " ", trimmed)
@@ -200,41 +262,51 @@ class WikiDehydrationEngine:
         orig_tokens = self._estimate_tokens(original_text)
 
         should_freeze = req.preserve_structure and (req.protect_yaml_frontmatter or req.protect_code_blocks)
-        frozen_blocks: List[str] = []
-        text_to_compress = original_text
         if should_freeze:
-            text_to_compress, frozen_blocks = self._freeze_structure(original_text)
+            segments, frozen_blocks = self._segment_document(original_text)
+        else:
+            segments, frozen_blocks = [(False, original_text)], []
 
         self._lazy_load_compressor()
         engine_name = "syntactic-pruner (fallback)"
-        compressed_text = text_to_compress
+        processed_parts: List[str] = []
 
-        if self._model_available and self._compressor is not None:
-            try:
-                # LLMLingua-2 uses Token Classification via compress_prompt_llmlingua2
-                res = self._compressor.compress_prompt_llmlingua2(
-                    context=[text_to_compress],
-                    rate=req.effective_rate,
-                    force_tokens=HARDCODED_PROTECTED_TOKENS,
-                    force_reserve_digit=True,
-                    drop_consecutive=True,
-                )
-                if isinstance(res, dict) and "compressed_prompt" in res:
-                    compressed_text = res["compressed_prompt"]
-                    engine_name = "microsoft/llmlingua-2"
-                elif hasattr(res, "compressed_prompt"):
-                    compressed_text = getattr(res, "compressed_prompt")
-                    engine_name = "microsoft/llmlingua-2"
+        for is_frozen, content in segments:
+            if is_frozen:
+                processed_parts.append(content.strip())
+            else:
+                # 1. First strip conversational filler words (e.g. 众所周知)
+                pruned_prose = self._syntactic_pruner(content, req.effective_rate)
+                if not pruned_prose.strip():
+                    continue
+
+                # 2. Neural compression via Windows host CUDA LLMLingua-2
+                remote_res = self._compress_remote(pruned_prose, req.effective_rate)
+                if remote_res:
+                    processed_parts.append(remote_res.strip())
+                    engine_name = "microsoft/llmlingua-2 (CUDA FP16)"
+                    self._model_available = True
+                elif self._model_available and self._compressor is not None:
+                    try:
+                        res = self._compressor.compress_prompt_llmlingua2(
+                            context=[pruned_prose],
+                            rate=req.effective_rate,
+                            force_tokens=HARDCODED_PROTECTED_TOKENS,
+                            force_reserve_digit=True,
+                            drop_consecutive=True,
+                        )
+                        if isinstance(res, dict) and "compressed_prompt" in res:
+                            processed_parts.append(res["compressed_prompt"].strip())
+                            engine_name = "microsoft/llmlingua-2"
+                        else:
+                            processed_parts.append(pruned_prose.strip())
+                    except Exception as e:
+                        logger.warning("Local compression failed: %s", e)
+                        processed_parts.append(pruned_prose.strip())
                 else:
-                    compressed_text = self._syntactic_pruner(text_to_compress, req.effective_rate)
-            except Exception as e:
-                logger.warning("LLMLingua-2 compression failed: %s. Using fallback.", e)
-                compressed_text = self._syntactic_pruner(text_to_compress, req.effective_rate)
-        else:
-            compressed_text = self._syntactic_pruner(text_to_compress, req.effective_rate)
+                    processed_parts.append(pruned_prose.strip())
 
-        # Restore frozen structural elements
-        final_content = self._restore_structure(compressed_text, frozen_blocks) if should_freeze else compressed_text
+        final_content = "\n\n".join(p for p in processed_parts if p)
 
         comp_chars = len(final_content)
         comp_tokens = self._estimate_tokens(final_content)
@@ -274,7 +346,8 @@ class WikiDehydrationEngine:
         """Return aggregated observability statistics."""
         avg_ratio = round(self._sum_compression_ratio / self._total_documents, 2) if self._total_documents > 0 else 0.0
         avg_lat = round(self._total_latency_ms / self._total_documents, 2) if self._total_documents > 0 else 0.0
-        engine_str = "microsoft/llmlingua-2" if self._model_available else "syntactic-pruner"
+        is_avail = self._model_available or self._is_remote_engine_available()
+        engine_str = "microsoft/llmlingua-2 (CUDA FP16)" if is_avail else "syntactic-pruner"
         return DehydrationStats(
             total_documents=self._total_documents,
             total_dehydrations=self._total_documents,
@@ -282,7 +355,7 @@ class WikiDehydrationEngine:
             avg_compression_ratio=avg_ratio,
             avg_latency_ms=avg_lat,
             active_engine=engine_str,
-            is_model_loaded=self._model_available,
+            is_model_loaded=is_avail,
         )
 
     def get_telemetry(self) -> DehydrationStats:

@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
+import sqlite3
 import time
 from typing import Any, Dict, List, Optional
 
@@ -43,25 +45,92 @@ class KnowledgeHygieneService:
         return cls._instance
 
     def _collect_all_fts_items(self) -> List[Dict[str, Any]]:
-        """Fetch all documents from BM25 FTS index without arbitrary LIMIT."""
+        """Fetch all documents from BM25 FTS index joined with real lifecycle states and timestamps."""
+        # 1. Fetch lifecycle status map from memory_lifecycle.db
+        lifecycle_status_map = {}
+        try:
+            lc_path = os.path.expanduser("~/.openviking/data/memory_lifecycle.db")
+            if os.path.exists(lc_path):
+                lc_conn = sqlite3.connect(lc_path, timeout=5.0)
+                try:
+                    cur = lc_conn.execute("SELECT uri, status, disputed_reason, updated_at FROM memory_lifecycle")
+                    for u, s, reason, upd in cur.fetchall():
+                        lifecycle_status_map[u.strip()] = {
+                            "status": s,
+                            "reason": reason,
+                            "updated_at": upd,
+                        }
+                finally:
+                    lc_conn.close()
+        except Exception as e:
+            logger.warning("[KnowledgeHygieneService] Error querying memory_lifecycle: %s", e)
+
+        # 2. Query FTS documents joined with fts_meta timestamps
         bm25 = BM25FTSIndex.get_instance()
         conn = bm25._get_connection()
         items: List[Dict[str, Any]] = []
+        fts_uris = set()
+        base_disk_path = os.path.expanduser("~/.openviking/data/viking/default/resources")
+
         try:
-            cursor = conn.execute("SELECT uri, title, level, context_type FROM fts_documents")
+            cursor = conn.execute("""
+                SELECT d.uri, d.title, d.level, d.context_type, 
+                       COALESCE(strftime('%s', m.updated_at), 0)
+                FROM fts_documents d
+                LEFT JOIN fts_meta m ON d.uri = m.uri
+            """)
             rows = cursor.fetchall()
             now_ts = time.time()
             for r in rows:
                 uri = r[0]
+                fts_uris.add(uri)
+                meta_ts = float(r[4]) if r[4] else 0.0
+
+                # Check physical disk mtime
+                disk_path = uri.replace("viking://resources", base_disk_path)
+                if os.path.exists(disk_path):
+                    file_mtime = os.path.getmtime(disk_path)
+                else:
+                    file_mtime = meta_ts if meta_ts > 0 else (now_ts - 86400 * 20)
+
+                lc_info = lifecycle_status_map.get(uri.strip())
+                if lc_info:
+                    status = lc_info["status"]
+                    updated_ts = lc_info.get("updated_at") or file_mtime
+                else:
+                    status = "active"
+                    updated_ts = file_mtime
+
+                is_staging = "staging" in uri or "session" in uri
+                # Axioms and rules have frequent active usage; staging/tmp buffers have lower initial calls
+                call_count = 10 if "rules" in uri or "master_memory" in uri else (2 if not is_staging else 0)
+
                 items.append({
                     "uri": uri,
                     "title": r[1],
                     "level": r[2],
                     "context_type": r[3],
-                    "updated_ts": now_ts - (15 * 86400),
-                    "call_count": 5 if "rules" in uri else 1,
-                    "status": "active",
+                    "updated_ts": updated_ts,
+                    "call_count": call_count,
+                    "status": status,
+                    "is_staging": is_staging,
+                    "has_relations": not is_staging or "master_memory" in uri,
                 })
+
+            # 3. Ensure all items in memory_lifecycle are represented in the audit
+            for u, lc in lifecycle_status_map.items():
+                if u not in fts_uris:
+                    items.append({
+                        "uri": u,
+                        "title": u.split("/")[-1].replace(".md", ""),
+                        "level": 2,
+                        "context_type": "resource",
+                        "updated_ts": lc.get("updated_at") or (now_ts - 86400 * 20),
+                        "call_count": 0 if lc["status"] == "superseded" else 1,
+                        "status": lc["status"],
+                        "is_staging": "staging" in u,
+                        "has_relations": True,
+                    })
         except Exception as e:
             logger.warning("[KnowledgeHygieneService] Error querying fts_documents: %s", e)
         finally:
@@ -162,6 +231,7 @@ class KnowledgeHygieneService:
             deliverable_text = (
                 f"已全量巡检 {report.total_inspected:,} 篇记忆 · "
                 f"综合健康评分 {report.health_score} · "
+                f"历史替代 {report.superseded_count} · "
                 f"冲突条目 {report.disputed_count} · 休眠条目 {report.dormant_count}"
             )
 
