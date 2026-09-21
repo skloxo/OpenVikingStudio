@@ -115,23 +115,40 @@ export function CapabilityPagesCockpit() {
   const { data: metrics } = useQuery<RouterMetrics>({
     queryKey: ['capability-router-metrics'],
     queryFn: async () => {
-      const res = await ovClient.instance.get('/api/v1/capability-pages/metrics/summary')
-      return (res as { data: RouterMetrics }).data
+      try {
+        const res = await ovClient.instance.get('/api/v1/capability-pages/metrics/summary')
+        return (res as { data: RouterMetrics }).data
+      } catch {
+        return {
+          total_routes: 0,
+          boundary_interceptions: 0,
+          interception_rate_pct: 0,
+          top1_discrimination_gain_pct: 0,
+          total_capability_pages: 0,
+          total_clusters: 0,
+        }
+      }
     },
-    refetchInterval: 10000,
+    retry: false,
+    refetchInterval: 60000,
   })
 
   // 2. Fetch Capability Pages
   const { data: pages = [], isLoading: isPagesLoading } = useQuery<CapabilityPage[]>({
     queryKey: ['capability-pages', selectedCluster],
     queryFn: async () => {
-      const url =
-        selectedCluster === 'all'
-          ? '/api/v1/capability-pages'
-          : `/api/v1/capability-pages?cluster_id=${selectedCluster}`
-      const res = await ovClient.instance.get(url)
-      return (res as { data: CapabilityPage[] }).data
+      try {
+        const url =
+          selectedCluster === 'all'
+            ? '/api/v1/capability-pages'
+            : `/api/v1/capability-pages?cluster_id=${selectedCluster}`
+        const res = await ovClient.instance.get(url)
+        return (res as { data: CapabilityPage[] }).data
+      } catch {
+        return []
+      }
     },
+    retry: false,
   })
 
   // 3. Route Mutation
