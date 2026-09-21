@@ -17,7 +17,6 @@ import {
   ScrollTextIcon,
   SettingsIcon,
   Share2Icon,
-  ShieldAlertIcon,
   SparklesIcon,
   SunIcon,
   UsersRoundIcon,
@@ -148,13 +147,6 @@ const NAV_ITEMS: readonly NavItem[] = [
     section: 'operations',
     titleKey: 'navigation.requestLogs.title',
     to: '/request-logs',
-  },
-  {
-    icon: ShieldAlertIcon,
-    id: 'harnessLogs',
-    section: 'operations',
-    titleKey: 'navigation.harnessLogs.title',
-    to: '/harness-logs',
   },
   {
     icon: ClipboardListIcon,

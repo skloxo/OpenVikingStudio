@@ -1,6 +1,13 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { HarnessLogsPage } from '#/routes/harness-logs'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/skills/harness-logs')({
-  component: HarnessLogsPage,
+  beforeLoad: () => {
+    throw redirect({
+      to: '/request-logs',
+      search: {
+        tab: 'harness',
+      },
+    })
+  },
+  component: () => null,
 })
