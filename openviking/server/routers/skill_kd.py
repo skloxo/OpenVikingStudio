@@ -23,7 +23,7 @@ from openviking.core.reexecution_gate import (
     skill_kd_store,
 )
 
-router = APIRouter(prefix="/skill-kd", tags=["SkillKD"])
+router = APIRouter(prefix="/api/v1/skill-kd", tags=["SkillKD"])
 
 
 class ExtractBifurcationRequest(BaseModel):

@@ -29,6 +29,8 @@ AUDIT_EXCLUDED_ROUTES = frozenset(
         "/favicon.ico",
         "/favicon.png",
         "/apple-touch-icon.png",
+        "/service-worker.js",
+        "/studio/service-worker.js",
     }
 )
 

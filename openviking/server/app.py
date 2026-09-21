@@ -14,7 +14,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response as RawResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.exceptions import ExceptionMiddleware
 
@@ -885,6 +885,26 @@ def create_app(
         logger.info("Web Studio mounted at /studio from %s", _studio_root)
     else:
         logger.info("Web Studio bundle not found at %s; skipping /studio mount", _studio_dir)
+
+    @app.api_route("/service-worker.js", methods=["GET", "HEAD"], include_in_schema=False)
+    @app.api_route("/studio/service-worker.js", methods=["GET", "HEAD"], include_in_schema=False)
+    async def _service_worker_handler():
+        sw_candidates = [
+            _studio_dir / "service-worker.js" if _studio_dir else None,
+            _studio_dir / "sw.js" if _studio_dir else None,
+        ]
+        for cand in sw_candidates:
+            if cand and cand.is_file():
+                return FileResponse(cand, media_type="application/javascript", headers={"Cache-Control": "no-cache"})
+        return RawResponse(
+            content=(
+                "// OpenViking Studio no-op service worker\n"
+                "self.addEventListener('install', () => self.skipWaiting());\n"
+                "self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));\n"
+            ),
+            media_type="application/javascript",
+            headers={"Cache-Control": "no-cache"},
+        )
 
     # MCP endpoint — serves 15 tools (find, search, read, write, edit,
     # list, tree, remember, add_resource, list_watches, cancel_watch, grep,

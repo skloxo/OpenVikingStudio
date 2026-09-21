@@ -167,13 +167,15 @@ function HomePage() {
 
   return (
     <div className="flex flex-col gap-5 pb-8">
-      {/* Task v1.1.7: KnowledgeBaseOverview 知识库全景与向量引擎卡片 */}
+      {/* VikingDB Vector 向量引擎空间卡片 */}
       <KnowledgeBaseOverview
-        memoryCount={summary?.context_counts?.memories ?? 0}
-        resourceCount={summary?.context_counts?.files ?? 0}
-        skillCount={skillsCountQuery.data ?? summary?.context_counts?.skills ?? 0}
         vectorCount={vectorCount}
         collectionCount={collectionCount}
+        totalAssets={
+          (summary?.context_counts?.files ?? 0) +
+          (skillsCountQuery.data ?? summary?.context_counts?.skills ?? 0) +
+          (summary?.context_counts?.memories ?? 0)
+        }
         isLoading={isMetricsLoading || observerQuery.isLoading}
       />
 

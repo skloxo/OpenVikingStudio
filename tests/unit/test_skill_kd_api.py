@@ -23,7 +23,7 @@ from openviking_cli.session.user_id import UserIdentifier
 @pytest.fixture
 def client() -> TestClient:
     app = FastAPI()
-    app.include_router(skill_kd_router, prefix="/api/v1")
+    app.include_router(skill_kd_router)
 
     async def _mock_ctx() -> RequestContext:
         return RequestContext(

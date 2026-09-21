@@ -20,7 +20,7 @@ from openviking.core.negative_boundary_router import (
     boundary_router,
 )
 
-router = APIRouter(prefix="/capability-pages", tags=["CapabilityPages"])
+router = APIRouter(prefix="/api/v1/capability-pages", tags=["CapabilityPages"])
 
 
 class CreateCapabilityPageRequest(BaseModel):

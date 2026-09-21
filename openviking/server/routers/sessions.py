@@ -523,10 +523,30 @@ async def get_session_context(
             details={"field": "token_budget", "value": token_budget},
         )
 
+    from openviking_cli.exceptions import NotFoundError
+
     service = get_service()
-    session = await service.sessions.get(session_id, _ctx, auto_create=False)
-    result = await session.get_session_context(token_budget=token_budget)
-    return Response(status="ok", result=_to_jsonable(result))
+    try:
+        session = await service.sessions.get(session_id, _ctx, auto_create=False)
+        result = await session.get_session_context(token_budget=token_budget)
+        return Response(status="ok", result=_to_jsonable(result))
+    except NotFoundError:
+        # Postel's Law: Non-existent or uninitialized session context gracefully resolves to empty working memory
+        empty_context = {
+            "latest_archive_overview": "",
+            "pre_archive_abstracts": [],
+            "messages": [],
+            "estimatedTokens": 0,
+            "stats": {
+                "totalArchives": 0,
+                "includedArchives": 0,
+                "droppedArchives": 0,
+                "failedArchives": 0,
+                "activeTokens": 0,
+                "archiveTokens": 0,
+            },
+        }
+        return Response(status="ok", result=empty_context)
 
 
 @router.get("/{session_id}/archives/{archive_id}")
