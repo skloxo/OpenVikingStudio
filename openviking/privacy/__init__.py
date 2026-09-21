@@ -14,6 +14,11 @@ from openviking.privacy.skill_placeholder import (
     placeholderize_skill_content,
     placeholderize_skill_content_with_blocks,
 )
+from openviking.privacy.privacy_masker import (
+    PrivacyMasker,
+    get_privacy_masker,
+    mask_text,
+)
 from openviking.privacy.skill_restore import get_skill_name_from_uri, restore_skill_content
 
 __all__ = [
@@ -28,4 +33,7 @@ __all__ = [
     "placeholderize_skill_content",
     "get_skill_name_from_uri",
     "restore_skill_content",
+    "PrivacyMasker",
+    "get_privacy_masker",
+    "mask_text",
 ]

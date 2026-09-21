@@ -35,12 +35,17 @@ logger = logging.getLogger("openviking-mcp")
 def _desensitize_text(text: str) -> str:
     if not text:
         return ""
-    text = re.sub(r"8\.129\.0\.26", "127.0.0.1", text)
-    text = re.sub(r"100\.78\.64\.128", "100.x.x.x", text)
+    try:
+        from openviking.privacy.privacy_masker import mask_text
+
+        text = mask_text(text)
+    except Exception:
+        text = re.sub(r"8\.129\.0\.26", "127.0.0.1", text)
+        text = re.sub(r"100\.78\.64\.128", "100.x.x.x", text)
+        text = re.sub(r"sk-[a-zA-Z0-9_-]{24,}", "sk-[REDACTED_API_KEY]", text)
+        text = re.sub(r"ghp_[a-zA-Z0-9_-]{24,}", "ghp_[REDACTED_TOKEN]", text)
     text = re.sub(r"Skl328" + r"9568", "[REDACTED_PASSWORD]", text)
     text = re.sub(r"s@8" + r"xx5\.com", "user@internal.example.com", text)
-    text = re.sub(r"sk-[a-zA-Z0-9_-]{24,}", "sk-[REDACTED_API_KEY]", text)
-    text = re.sub(r"ghp_[a-zA-Z0-9_-]{24,}", "ghp_[REDACTED_TOKEN]", text)
     return text
 
 # SECTION: Auto Sync Skills
