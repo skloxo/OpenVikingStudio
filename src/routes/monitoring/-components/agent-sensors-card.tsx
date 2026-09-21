@@ -49,7 +49,10 @@ export function AgentSensorsCard() {
   const handleInjectSample = async () => {
     setLoading(true)
     try {
-      const randomId = `sess_${Math.random().toString(36).substring(2, 8)}`
+      const randomSuffix = typeof window !== 'undefined' && window.crypto?.randomUUID
+        ? window.crypto.randomUUID().slice(0, 8)
+        : Date.now().toString(36)
+      const randomId = `sess_${randomSuffix}`
       await fetch('/api/v1/metrics/agent-sensors/sample', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

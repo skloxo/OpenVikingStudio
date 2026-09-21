@@ -1,245 +1,158 @@
 import { useTranslation } from 'react-i18next'
-import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 
-import { ContextCommitsPanel } from './-components/context-commits-panel'
+import { SystemHealthBanner } from '../monitoring/-components/system-health-banner'
+import { KnowledgeBaseOverview } from './-components/knowledge-base-overview'
+import { PeerMemoryGrid } from './-components/peer-memory-grid'
 import {
   ContextDataPanel,
   TodayRetrievalsPanel,
   TodayTokensPanel,
 } from './-components/metric-panels'
 import { TokenTrendPanel } from './-components/token-trend-panel'
-import { KnowledgeBaseOverview } from './-components/knowledge-base-overview'
-import { PeerMemoryGrid } from './-components/peer-memory-grid'
-import {
-  fetchConsoleContextCommits,
-  fetchConsoleDashboardSummary,
-  fetchConsoleTokenSeries,
-  fetchConsolePeers,
-} from './-lib/api'
+import { ContextCommitsPanel } from './-components/context-commits-panel'
+import { MonitoringAnalyticsSection } from '../monitoring/-components/monitoring-analytics-section'
+import { ObserverComponentsSection } from '../monitoring/-components/observer-components-section'
 import { isDisabledPayload } from './-lib/format'
-import { useAppConnection } from '#/hooks/use-app-connection'
-import type {
-  ConnectionDraft,
-  ConnectionRole,
-} from '#/hooks/use-app-connection'
-import { getObserverSystem, getOvResult, ovClient } from '#/lib/ov-client'
-import { parseObserverStatus } from '../monitoring/-lib/parse-status'
+import { useCockpitQueries } from './-hooks/use-cockpit-queries'
 
 export const Route = createFileRoute('/home')({
   component: HomePage,
 })
 
-function hashSecret(value: string): string {
-  let hash = 0x811c9dc5
-  for (let index = 0; index < value.length; index += 1) {
-    hash ^= value.charCodeAt(index)
-    hash = Math.imul(hash, 0x01000193)
-  }
-  return (hash >>> 0).toString(36)
-}
-
-function getMetricsScopeKey(
-  connection: ConnectionDraft,
-  connectionRole: ConnectionRole,
-) {
-  const metricsKey = connection.apiKey || connection.adminApiKey
-  return {
-    accountId: connection.accountId,
-    baseUrl: connection.baseUrl,
-    keyHash: metricsKey ? hashSecret(metricsKey) : 'none',
-    keySource: connection.apiKey
-      ? 'api'
-      : connection.adminApiKey
-        ? 'admin'
-        : 'none',
-    role: connectionRole,
-    userId: connection.userId,
-  }
-}
-
 function HomePage() {
-  const { t } = useTranslation('home')
-  const { connection, connectionRole, isConnectionRoleLoading, identityScopeKey } =
-    useAppConnection()
-  const canQueryMetrics =
-    !isConnectionRoleLoading && connectionRole !== 'unknown'
-  const metricsScopeKey = getMetricsScopeKey(connection, connectionRole)
+  const { i18n, t } = useTranslation('home')
+  const q = useCockpitQueries()
 
-  const dashboard = useQuery({
-    enabled: canQueryMetrics,
-    queryFn: fetchConsoleDashboardSummary,
-    queryKey: ['console-dashboard-summary', metricsScopeKey],
-    refetchInterval: 60_000,
-    refetchIntervalInBackground: false,
-    refetchOnWindowFocus: true,
-    staleTime: 30_000,
-  })
+  const missingPrivilegedRole = !q.isConnectionRoleLoading && q.connectionRole === 'unknown'
+  const metricsUnavailable = missingPrivilegedRole || isDisabledPayload(q.summary)
+  const unavailableMessage = missingPrivilegedRole ? t('usageAccessRequired') : t('usageDisabled')
 
-  const observerQuery = useQuery({
-    queryFn: () => getOvResult<Record<string, unknown>>(getObserverSystem()),
-    queryKey: ['home-observer-system', identityScopeKey],
-    refetchInterval: 60_000,
-    refetchIntervalInBackground: false,
-    refetchOnWindowFocus: true,
-    staleTime: 30_000,
-  })
+  const isMetricsLoading = q.isConnectionRoleLoading || q.dashboard.isLoading
+  const isSeriesLoading = q.isConnectionRoleLoading || q.tokenSeries.isLoading
+  const isCommitsLoading = q.isConnectionRoleLoading || q.contextCommits.isLoading
 
-  const tokenSeries = useQuery({
-    enabled: canQueryMetrics,
-    queryFn: fetchConsoleTokenSeries,
-    queryKey: ['console-token-series', 'last-14-days', metricsScopeKey],
-    refetchInterval: 60_000,
-    refetchIntervalInBackground: false,
-    staleTime: 30_000,
-  })
+  const updatedAt = q.monitoringQuery.dataUpdatedAt
+    ? new Intl.DateTimeFormat(i18n.resolvedLanguage, {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      }).format(q.monitoringQuery.dataUpdatedAt)
+    : undefined
 
-  const contextCommits = useQuery({
-    enabled: canQueryMetrics,
-    queryFn: fetchConsoleContextCommits,
-    queryKey: ['console-context-commits', 'last-365-days', metricsScopeKey],
-    refetchInterval: 60_000,
-    refetchIntervalInBackground: false,
-    staleTime: 30_000,
-  })
-
-  const summary = dashboard.data
-  const observerData = observerQuery.data
-
-  // 解析真实 VikingDB 向量总数（双重保障：优先探针实时数据，降级为 context_counts.total）
-  let vectorCount = summary?.context_counts?.total ?? 0
-  let collectionCount = 1
-  if (observerData && typeof observerData === 'object') {
-    const rawComponents = (observerData as { components?: Record<string, { status?: string }> }).components
-    const vikingStatus = rawComponents?.vikingdb.status ?? ''
-    const blocks = parseObserverStatus(vikingStatus)
-    for (const block of blocks) {
-      if (block.kind === 'table') {
-        const colIdx = block.headers.findIndex((h) => /vector/i.test(h) || /数量/i.test(h))
-        if (colIdx >= 0) {
-          const nonTotalRows = block.rows.filter(
-            (r) => !/total/i.test(r[0] ?? ''),
-          )
-          collectionCount = Math.max(1, nonTotalRows.length)
-          const parsed = nonTotalRows.reduce((sum, row) => {
-            const val = parseInt(row[colIdx]?.replace(/,/g, '') ?? '0', 10) || 0
-            return sum + val
-          }, 0)
-          if (parsed > 0) {
-            vectorCount = parsed
-          }
-        }
-      }
-    }
-  }
-
-  const missingPrivilegedRole =
-    !isConnectionRoleLoading && connectionRole === 'unknown'
-  const metricsUnavailable = missingPrivilegedRole || isDisabledPayload(summary)
-  const unavailableMessage = missingPrivilegedRole
-    ? t('usageAccessRequired')
-    : t('usageDisabled')
-  const isMetricsLoading = isConnectionRoleLoading || dashboard.isLoading
-  const isSeriesLoading = isConnectionRoleLoading || tokenSeries.isLoading
-  const isCommitsLoading = isConnectionRoleLoading || contextCommits.isLoading
-
-  const skillsCountQuery = useQuery({
-    queryFn: async () => {
-      const result = await getOvResult<{ skills?: unknown[]; total?: number }>(
-        ovClient.client.get({
-          query: { node_limit: 2000 },
-          url: '/api/v1/skills',
-        }),
-      )
-      return result.total ?? (Array.isArray(result.skills) ? result.skills.length : (summary?.context_counts?.skills ?? 0))
-    },
-    queryKey: ['skills-count-summary'],
-    staleTime: 60_000,
-  })
-
-  const peersQuery = useQuery({
-    queryFn: fetchConsolePeers,
-    queryKey: ['console-peers', metricsScopeKey],
-    refetchInterval: 30_000,
-    refetchIntervalInBackground: false,
-    staleTime: 15_000,
-  })
+  const totalAssets =
+    (q.summary?.context_counts?.files ?? 0) +
+    (q.skillsCountQuery.data ?? q.summary?.context_counts?.skills ?? 0) +
+    (q.summary?.context_counts?.memories ?? 0)
 
   return (
-    <div className="flex flex-col gap-5 pb-8">
-      {/* VikingDB Vector 向量引擎空间卡片 */}
+    <div className="flex flex-col gap-5 pb-10">
+      {/* 1. 顶层全局健康度与态势控制 Bar */}
+      <SystemHealthBanner
+        healthy={q.overview?.healthy}
+        healthyCount={q.healthyCount}
+        totalCount={q.totalCount}
+        version={q.overview?.version}
+        timeWindow={q.timeWindow}
+        onTimeWindowChange={q.setTimeWindow}
+        isFetching={q.monitoringQuery.isFetching}
+        onRefresh={() => {
+          void q.monitoringQuery.refetch()
+          void q.dashboard.refetch()
+          void q.auditQuery.refetch()
+        }}
+        updatedAt={updatedAt}
+      />
+
+      {/* 2. VikingDB 向量引擎与核心资产全景 */}
       <KnowledgeBaseOverview
-        vectorCount={vectorCount}
-        collectionCount={collectionCount}
-        totalAssets={
-          (summary?.context_counts?.files ?? 0) +
-          (skillsCountQuery.data ?? summary?.context_counts?.skills ?? 0) +
-          (summary?.context_counts?.memories ?? 0)
-        }
-        isLoading={isMetricsLoading || observerQuery.isLoading}
+        vectorCount={q.vectorCount}
+        collectionCount={q.collectionCount}
+        totalAssets={totalAssets}
+        isLoading={isMetricsLoading || q.monitoringQuery.isLoading}
       />
 
-      {/* Task v1.1.8: PeerMemoryGrid 真实 Agent 体外大脑协同网络 */}
+      {/* 3. 多节点协同智能体网络 (PeerMemoryGrid) */}
       <PeerMemoryGrid
-        isLoading={isMetricsLoading || observerQuery.isLoading || peersQuery.isLoading}
-        peerList={peersQuery.data}
+        isLoading={isMetricsLoading || q.monitoringQuery.isLoading || q.peersQuery.isLoading}
+        peerList={q.peersQuery.data}
       />
 
+      {/* 4. 业务效能三维关键面板 */}
       <div className="grid gap-4 md:grid-cols-3">
         <ContextDataPanel
           data={
-            summary?.context_counts
+            q.summary?.context_counts
               ? {
-                  ...summary.context_counts,
-                  skills: skillsCountQuery.data ?? summary.context_counts.skills,
-                  total:
-                    (summary.context_counts.files ?? 0) +
-                    (skillsCountQuery.data ?? summary.context_counts.skills ?? 0) +
-                    (summary.context_counts.memories ?? 0),
+                  ...q.summary.context_counts,
+                  skills: q.skillsCountQuery.data ?? q.summary.context_counts.skills,
+                  total: totalAssets,
                 }
-              : summary?.context_counts
+              : q.summary?.context_counts
           }
           disabled={metricsUnavailable}
           disabledMessage={unavailableMessage}
-          isError={dashboard.isError}
+          isError={q.dashboard.isError}
           isLoading={isMetricsLoading}
           t={t}
         />
         <TodayTokensPanel
-          data={summary?.today_tokens}
+          data={q.summary?.today_tokens}
           disabled={metricsUnavailable}
           disabledMessage={unavailableMessage}
-          isError={dashboard.isError}
+          isError={q.dashboard.isError}
           isLoading={isMetricsLoading}
           t={t}
         />
         <TodayRetrievalsPanel
-          data={summary?.today_retrievals}
+          data={q.summary?.today_retrievals}
           disabled={metricsUnavailable}
           disabledMessage={unavailableMessage}
-          isError={dashboard.isError}
+          isError={q.dashboard.isError}
           isLoading={isMetricsLoading}
           t={t}
         />
       </div>
 
+      {/* 5. 14 天 Token 消耗走势 */}
       <TokenTrendPanel
-        data={tokenSeries.data}
+        data={q.tokenSeries.data}
         disabled={metricsUnavailable}
         disabledMessage={unavailableMessage}
-        isError={tokenSeries.isError}
+        isError={q.tokenSeries.isError}
         isLoading={isSeriesLoading}
         t={t}
       />
 
+      {/* 6. 365 天记忆提交热力图 */}
       <ContextCommitsPanel
-        data={contextCommits.data}
+        data={q.contextCommits.data}
         disabled={metricsUnavailable}
         disabledMessage={unavailableMessage}
-        isError={contextCommits.isError}
+        isError={q.contextCommits.isError}
         isLoading={isCommitsLoading}
         t={t}
       />
+
+      {/* 7. 深入观测分析大盘（探针、16张深层指标、延迟双分位、SLA趋势、模型消耗与硬件资源） */}
+      <MonitoringAnalyticsSection
+        deepMetrics={q.deepMetrics}
+        isLoading={q.monitoringQuery.isLoading}
+        timeWindow={q.timeWindow}
+        modelsStatus={q.overview?.components.models?.status}
+        isModelsHealthy={q.overview?.components.models?.is_healthy}
+        harnessStatus={q.overview?.components.harness?.status}
+        isHarnessHealthy={q.overview?.healthy}
+        hostResources={q.hostResourcesQuery.data}
+        totalAuditRequests={q.totalAuditRequests}
+        successRate={q.successRate}
+        codeMap={q.codeMap}
+        isHealthy={q.overview?.healthy ?? true}
+        todayTokens={q.summary?.today_tokens}
+      />
+
+      {/* 8. 底层 4 大组件运行详情（VikingDB / 文件系统 / 锁 / 检索） */}
+      <ObserverComponentsSection components={q.overview?.components} />
     </div>
   )
 }

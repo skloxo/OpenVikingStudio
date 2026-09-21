@@ -52,7 +52,7 @@ def check_file(file_path: Path) -> list[str]:
             continue
         for pat, desc in SECRET_PATTERNS:
             if pat.search(line):
-                violations.append(f"{file_path}:{line_idx} - [{desc}] {line.strip()[:80]}")
+                violations.append(f"{file_path}:{line_idx} - [{desc}] (sensitive match masked)")
     return violations
 
 

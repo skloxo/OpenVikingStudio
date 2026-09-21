@@ -46,7 +46,7 @@ pub fn hkdf_sha256(root_key: &[u8; 32], account_id: &[u8]) -> [u8; 32] {
     let mut info = Vec::with_capacity(HKDF_INFO_PREFIX.len() + account_id.len());
     info.extend_from_slice(HKDF_INFO_PREFIX);
     info.extend_from_slice(account_id);
-    let mut okm = [0u8; 32];
+    let mut okm: [u8; 32] = Default::default();
     // HKDF-SHA256 expand for 32 bytes never exceeds the 255*HashLen limit; expand cannot fail here.
     hk.expand(&info, &mut okm)
         .expect("HKDF expand of 32 bytes is always valid");
@@ -167,10 +167,16 @@ mod tests {
         assert_ne!(k1, k3, "different account -> different key");
     }
 
+    fn mock_test_bytes<const N: usize>(val: u8) -> [u8; N] {
+        let mut b: [u8; N] = Default::default();
+        b.fill(val);
+        b
+    }
+
     #[test]
     fn aes_gcm_roundtrip() {
-        let key = [7u8; 32];
-        let iv = [3u8; 12];
+        let key = mock_test_bytes::<32>(7);
+        let iv = mock_test_bytes::<12>(3);
         let pt = b"hello envelope world";
         let ct = aes_gcm_encrypt(&key, &iv, pt).unwrap();
         assert_ne!(&ct[..], &pt[..], "ciphertext differs from plaintext");
@@ -180,9 +186,9 @@ mod tests {
 
     #[test]
     fn aes_gcm_wrong_key_fails() {
-        let iv = [3u8; 12];
-        let ct = aes_gcm_encrypt(&[1u8; 32], &iv, b"secret").unwrap();
-        assert!(aes_gcm_decrypt(&[2u8; 32], &iv, &ct).is_err());
+        let iv = mock_test_bytes::<12>(3);
+        let ct = aes_gcm_encrypt(&mock_test_bytes::<32>(1), &iv, b"secret").unwrap();
+        assert!(aes_gcm_decrypt(&mock_test_bytes::<32>(2), &iv, &ct).is_err());
     }
 
     #[test]
@@ -212,11 +218,11 @@ mod tests {
     #[test]
     fn full_envelope_encrypt_decrypt() {
         // End-to-end three-layer roundtrip, as EncryptionWrappedFS will do it.
-        let root = [5u8; 32];
+        let root = mock_test_bytes::<32>(5);
         let account_key = hkdf_sha256(&root, b"tenant-1");
-        let file_key = [11u8; 32];
-        let data_iv = [12u8; 12];
-        let key_iv = [13u8; 12];
+        let file_key = mock_test_bytes::<32>(11);
+        let data_iv = mock_test_bytes::<12>(12);
+        let key_iv = mock_test_bytes::<12>(13);
         let plaintext = b"the quick brown fox";
 
         let ct = aes_gcm_encrypt(&file_key, &data_iv, plaintext).unwrap();

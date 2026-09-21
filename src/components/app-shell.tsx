@@ -12,7 +12,6 @@ import {
   HomeIcon,
   KeyRoundIcon,
   MoonIcon,
-  MonitorUpIcon,
   PlugZapIcon,
   ScrollTextIcon,
   SettingsIcon,
@@ -91,13 +90,6 @@ const NAV_ITEMS: readonly NavItem[] = [
     section: 'workspace',
     titleKey: 'navigation.home.title',
     to: '/home',
-  },
-  {
-    icon: MonitorUpIcon,
-    id: 'monitoring',
-    section: 'workspace',
-    titleKey: 'navigation.monitoring.title',
-    to: '/monitoring',
   },
   {
     icon: PlugZapIcon,
