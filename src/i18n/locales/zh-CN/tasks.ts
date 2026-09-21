@@ -247,6 +247,7 @@ export const tasks = {
       four_tier_governance: '四层治理与同主题合并',
       valet_parking: '原子入库',
       managed_ingestion: '托管数据摄取',
+      knowledge_hygiene_audit: '知识卫生全量巡检',
     },
   },
   operations: {

@@ -15,7 +15,8 @@ from pydantic import BaseModel, Field
 from openviking.retrieve.asymmetric_decay import AsymmetricDecayEngine
 from openviking.retrieve.knowledge_hygiene import KnowledgeHygieneEngine, HygieneReport
 from openviking.server.auth import get_request_context
-from openviking.server.identity import RequestContext
+from openviking.server.identity import RequestContext, Role
+from openviking.service.knowledge_hygiene_service import KnowledgeHygieneService
 from openviking.storage.bm25_fts_index import BM25FTSIndex
 from openviking_cli.utils.logger import get_logger
 
@@ -211,38 +212,31 @@ async def run_gold_benchmark(
     }
 
 
+@router.post("/hygiene/dispatch", response_model=Dict[str, Any])
+async def dispatch_hygiene_audit(
+    trigger: str = Query("manual", description="Audit trigger source: manual or scheduled"),
+    _ctx: RequestContext = Depends(get_request_context),
+) -> Dict[str, Any]:
+    """Dispatch an asynchronous full-scale knowledge hygiene audit task registered in TaskCenter."""
+    account_id = "default" if _ctx.role == Role.ROOT else _ctx.account_id
+    user_id = "root" if _ctx.role == Role.ROOT else (_ctx.user.user_id if _ctx.user else "root")
+
+    service = KnowledgeHygieneService.get_instance()
+    task = await service.dispatch_audit(account_id=account_id, user_id=user_id, trigger=trigger)
+    return {
+        "status": "ok",
+        "task_id": task.task_id,
+        "message": "Asynchronous full-scale knowledge hygiene audit task dispatched successfully.",
+    }
+
+
 @router.get("/hygiene/report", response_model=Dict[str, Any])
 async def get_hygiene_report(
     _ctx: RequestContext = Depends(get_request_context),
 ) -> Dict[str, Any]:
-    """Execute asynchronous knowledge hygiene audit and return health index."""
-    bm25 = BM25FTSIndex.get_instance()
-    stats = bm25.get_stats()
-
-    # Generate synthetic audit items from BM25 doc index for health check
-    conn = bm25._get_connection()
-    items = []
-    try:
-        cursor = conn.execute("SELECT uri, title, level, context_type FROM fts_documents LIMIT 200")
-        rows = cursor.fetchall()
-        now_ts = time.time()
-        for r in rows:
-            uri = r[0]
-            items.append({
-                "uri": uri,
-                "title": r[1],
-                "level": r[2],
-                "context_type": r[3],
-                "updated_ts": now_ts - (15 * 86400),  # ~15 days
-                "call_count": 5 if "rules" in uri else 1,
-                "status": "active",
-            })
-    except Exception:
-        pass
-    finally:
-        conn.close()
-
-    report = _HYGIENE_ENGINE.inspect_items(items)
+    """Return full-scale knowledge hygiene health index and audit snapshot."""
+    service = KnowledgeHygieneService.get_instance()
+    report = service.get_latest_report()
     return {
         "status": "ok",
         "result": report.model_dump(),

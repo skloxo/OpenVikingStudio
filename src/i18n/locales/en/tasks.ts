@@ -250,6 +250,7 @@ export const tasks = {
       four_tier_governance: 'Four-Tier Governance',
       valet_parking: 'Atomic Ingestion',
       managed_ingestion: 'Managed Ingestion',
+      knowledge_hygiene_audit: 'Knowledge Hygiene Audit',
     },
   },
   operations: {

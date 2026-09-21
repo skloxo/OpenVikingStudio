@@ -232,6 +232,24 @@ export function deriveUniversalFinalOutcome(
     }
   }
 
+  // 15. 知识卫生全量巡检 (Knowledge Hygiene Audit)
+  if (type === 'knowledge_hygiene_audit') {
+    const total = resObj.total_inspected ?? metaObj.total_documents ?? 0
+    const score = resObj.health_score ?? 100
+    const disputed = resObj.disputed_count ?? 0
+    const dormant = resObj.dormant_count ?? 0
+    const orphaned = resObj.orphaned_count ?? 0
+    return {
+      title: isZh ? '知识卫生全量巡检' : 'Knowledge Hygiene Audit',
+      deliverableText: isZh
+        ? `全库已巡检 ${Number(total).toLocaleString()} 篇记忆 · 综合健康度 ${score} 分 · 冲突 ${disputed} 项 · 休眠 ${dormant} 项 · 孤立 ${orphaned} 项`
+        : `Audited ${Number(total).toLocaleString()} memories · Health Score ${score} · Disputed ${disputed} · Dormant ${dormant} · Orphaned ${orphaned}`,
+      expectedText: isZh
+        ? '全库记忆冲突、休眠死重与孤儿碎片多维全量健康诊断'
+        : 'Full-scale memory conflict, dormant dead-weight & orphaned fragment hygiene audit',
+    }
+  }
+
   // 默认通用兜底
   return {
     title: isZh ? '任务交付成果' : 'Task Deliverable',
