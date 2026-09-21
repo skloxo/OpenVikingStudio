@@ -320,12 +320,5 @@ def mount_fuse(config: MountConfig, foreground: bool = True) -> None:
         raise
 
 
-class FUSEMountManager:
-    def __init__(self):
-        self._mounts: Dict[str, Any] = {}
-
-    def mount(self, config: MountConfig) -> str:
-        raise NotImplementedError("FUSEMountManager is for future use")
-
-    def unmount(self, mount_point: Path) -> None:
-        raise NotImplementedError("FUSEMountManager is for future use")
+# 复用 unified FUSEMountManager 单一真相源
+from .viking_fuse import FUSEMountManager

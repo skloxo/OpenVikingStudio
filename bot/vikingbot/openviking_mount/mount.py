@@ -50,6 +50,7 @@ class FileInfo:
     modified_at: float = 0.0  # 修改时间
     abstract: Optional[str] = None  # L0摘要（如果有）
     overview: Optional[str] = None  # L1概览（如果有）
+    score: Optional[float] = None  # 搜索匹配得分
 
 
 class OpenVikingMount:
@@ -97,13 +98,16 @@ class OpenVikingMount:
         self._initialized = True
         logger.info("OpenViking initialized successfully")
 
-    def _ensure_client(self) -> None:
-        """确保客户端已初始化"""
-        if not self._initialized:
+    def _ensure_client(self) -> ov.SyncHTTPClient:
+        """确保客户端已初始化并返回客户端实例"""
+        if not self._initialized or self._client is None:
             if self.config.auto_init:
                 self.initialize()
             else:
                 raise RuntimeError("OpenViking client not initialized. Call initialize() first.")
+        if self._client is None:
+            raise RuntimeError("Failed to initialize OpenViking client")
+        return self._client
 
     @property
     def client(self) -> Optional[ov.SyncHTTPClient]:
@@ -178,13 +182,13 @@ class OpenVikingMount:
         Returns:
             文件信息列表
         """
-        self._ensure_client()
+        client = self._ensure_client()
 
         uri = self._path_to_uri(path)
         logger.debug(f"Listing directory: {uri}")
 
         try:
-            items = self._client.ls(uri)
+            items = client.ls(uri)
         except Exception as e:
             logger.warning(f"Failed to list {uri}: {e}")
             return []
@@ -218,13 +222,13 @@ class OpenVikingMount:
         Returns:
             文件内容
         """
-        self._ensure_client()
+        client = self._ensure_client()
 
         uri = self._path_to_uri(path)
         logger.debug(f"Reading file: {uri}")
 
         try:
-            return self._client.read(uri)
+            return client.read(uri)
         except Exception as e:
             logger.error(f"Failed to read {uri}: {e}")
             raise
@@ -242,17 +246,12 @@ class OpenVikingMount:
 
         self._ensure_client()
 
-        # 注意：OpenViking的add_resource主要用于添加外部资源
-        # 对于直接写入，可能需要不同的方法
-        # 这里我们先实现一个简化版本
-        logger.warning("Direct file write is limited in OpenViking. Using add_resource approach.")
-
         uri = self._path_to_uri(path)
         logger.debug(f"Writing file: {uri}")
-
-        # 这种情况下，我们可能需要先写入临时文件，然后add_resource
-        # 或者使用其他方法
-        raise NotImplementedError("Direct file write requires special handling in OpenViking")
+        logger.warning("Direct raw file writing without staging is restricted in OpenViking.")
+        raise PermissionError(
+            "Direct file write is restricted in current mount mode; use add_resource or client API"
+        )
 
     def mkdir(self, path: Union[str, Path]) -> None:
         """
@@ -264,13 +263,13 @@ class OpenVikingMount:
         if self.config.read_only:
             raise PermissionError("Mount is read-only")
 
-        self._ensure_client()
+        client = self._ensure_client()
 
         uri = self._path_to_uri(path)
         logger.debug(f"Creating directory: {uri}")
 
         try:
-            self._client.mkdir(uri)
+            client.mkdir(uri)
         except Exception as e:
             logger.error(f"Failed to create directory {uri}: {e}")
             raise
@@ -286,13 +285,13 @@ class OpenVikingMount:
         if self.config.read_only:
             raise PermissionError("Mount is read-only")
 
-        self._ensure_client()
+        client = self._ensure_client()
 
         uri = self._path_to_uri(path)
         logger.debug(f"Deleting: {uri} (recursive={recursive})")
 
         try:
-            self._client.rm(uri, recursive=recursive)
+            client.rm(uri, recursive=recursive)
         except Exception as e:
             logger.error(f"Failed to delete {uri}: {e}")
             raise
@@ -308,7 +307,7 @@ class OpenVikingMount:
         Returns:
             搜索结果文件信息列表
         """
-        self._ensure_client()
+        client = self._ensure_client()
 
         target_uri = self._get_scope_root_uri()
         if target_path:
@@ -317,7 +316,7 @@ class OpenVikingMount:
         logger.debug(f"Searching: '{query}' in {target_uri}")
 
         try:
-            results = self._client.find(query, target_uri=target_uri)
+            results = client.find(query, target_uri=target_uri)
 
             file_infos = []
             for r in results.get("resources", []):

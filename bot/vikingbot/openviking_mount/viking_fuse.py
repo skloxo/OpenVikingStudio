@@ -1,496 +1,442 @@
 """
-OpenViking FUSE 文件系统
+OpenViking FUSE 文件系统 - 只读挂载 MVP 与 POSIX 兼容实现
 
-实现真正的 FUSE 文件系统挂载，允许使用标准文件系统 API（os、pathlib 等）
-直接操作 OpenViking 数据。
+提供将 OpenViking 知识库 (viking://) 挂载到本地目录的 FUSE 文件系统实现。
+支持 standard POSIX 只读契约：getattr, readdir, open, read, statfs。
+写操作严格返回 POSIX 标准 errno.EROFS (Read-only file system)。
 """
 
 from __future__ import annotations
 
+import errno
+import os
+import stat
 import sys
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict
-
-# 添加OpenViking项目到路径
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
+from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
 from .mount import MountConfig, OpenVikingMount
 
-# 尝试导入fusepy
+# 尝试导入 fusepy；如未安装则启用轻量纯 Python 抽象基类以保障在无 libfuse 环境下依然安全测试与调用
 try:
     from fuse import FUSE, FuseOSError, Operations
 
     FUSE_AVAILABLE = True
 except (ImportError, OSError):
     FUSE_AVAILABLE = False
-    # 创建占位符
-    Operations = object
+
+    class Operations:
+        """Fallback base class when fusepy is not installed."""
+
+        pass
+
+    class FuseOSError(OSError):
+        """Fallback FuseOSError preserving errno when fusepy is not installed."""
+
+        def __init__(self, err: int):
+            super().__init__(err, os.strerror(err) if hasattr(os, "strerror") else str(err))
+            self.errno = err
+
     FUSE = None
-    FuseOSError = Exception
 
 
-# 只有当 FUSE 可用时才定义完整的实现
-if FUSE_AVAILABLE:
-    import errno
-    import os
-    import stat
-    from datetime import datetime
+class OpenVikingFUSE(Operations):
+    """
+    OpenViking FUSE 操作类
 
-    class OpenVikingFUSE(Operations):
+    实现 FUSE 文件系统操作，将 OpenViking 的虚拟文件系统暴露为标准的 POSIX 文件系统。
+    """
+
+    def __init__(self, mount: OpenVikingMount):
         """
-        OpenViking FUSE 操作类
+        初始化 FUSE 操作
 
-        实现 FUSE 文件系统操作，将 OpenViking 的虚拟文件系统
-        暴露为标准的 POSIX 文件系统。
+        Args:
+            mount: OpenVikingMount 实例
         """
+        self.mount = mount
+        self._fd = 0
+        self._file_handles: Dict[int, str] = {}
+        self._file_contents: Dict[str, str] = {}
 
-        def __init__(self, mount: OpenVikingMount):
-            """
-            初始化 FUSE 操作
+        if not mount._initialized and mount.config.auto_init:
+            mount.initialize()
 
-            Args:
-                mount: OpenVikingMount 实例
-            """
-            self.mount = mount
-            self._fd = 0
-            self._file_handles: Dict[int, str] = {}  # fd -> uri
-            self._file_contents: Dict[str, str] = {}  # uri -> content (for write cache)
+    def _path_to_uri(self, path: str) -> str:
+        """
+        将 FUSE 路径转换为 OpenViking URI
 
-            if not mount._initialized and mount.config.auto_init:
-                mount.initialize()
+        Args:
+            path: FUSE 路径 (如 /resources/foo.md)
 
-        def _path_to_uri(self, path: str) -> str:
-            """
-            将 FUSE 路径转换为 OpenViking URI
+        Returns:
+            OpenViking URI
+        """
+        clean_path = path.strip("/")
+        if not clean_path:
+            return self.mount._get_scope_root_uri()
 
-            Args:
-                path: FUSE 路径 (如 /resources/foo)
+        scope_root = self.mount._get_scope_root_uri().rstrip("/")
+        return f"{scope_root}/{clean_path}"
 
-            Returns:
-                OpenViking URI
-            """
-            if path == "/":
-                path = ""
+    def getattr(self, path: str, fh: Optional[int] = None) -> Dict[str, Any]:
+        """
+        获取文件/目录属性
 
-            path = path.lstrip("/")
+        Args:
+            path: 文件路径
+            fh: 文件描述符
 
-            if not path:
-                return self.mount._get_scope_root_uri()
+        Returns:
+            属性字典
+        """
+        logger.debug(f"getattr: {path}")
+        now = datetime.now().timestamp()
+        uid = os.getuid() if hasattr(os, "getuid") else 1000
+        gid = os.getgid() if hasattr(os, "getgid") else 1000
 
-            return f"viking://{path}"
-
-        def getattr(self, path: str, fh: int = None) -> Dict[str, Any]:
-            """
-            获取文件/目录属性
-
-            Args:
-                path: 文件路径
-                fh: 文件描述符
-
-            Returns:
-                属性字典
-            """
-            logger.debug(f"getattr: {path}")
-
-            now = datetime.now().timestamp()
-
-            if path == "/":
-                return {
-                    "st_mode": stat.S_IFDIR | 0o755,
-                    "st_nlink": 2,
-                    "st_uid": os.getuid(),
-                    "st_gid": os.getgid(),
-                    "st_size": 4096,
-                    "st_atime": now,
-                    "st_mtime": now,
-                    "st_ctime": now,
-                }
-
-            try:
-                parent_path = str(Path(path).parent) if Path(path).parent != Path(".") else "/"
-                parent_uri = self._path_to_uri(parent_path)
-                name = Path(path).name
-
-                items = self.mount._client.ls(parent_uri)
-
-                for item in items:
-                    if isinstance(item, dict):
-                        item_name = item.get("name", "")
-                        is_dir = item.get("isDir", False)
-                        size = item.get("size", 0)
-                    else:
-                        item_name = str(item)
-                        is_dir = False
-                        size = 0
-
-                    if item_name == name:
-                        mode = stat.S_IFDIR | 0o755 if is_dir else stat.S_IFREG | 0o644
-                        return {
-                            "st_mode": mode,
-                            "st_nlink": 1,
-                            "st_uid": os.getuid(),
-                            "st_gid": os.getgid(),
-                            "st_size": size,
-                            "st_atime": now,
-                            "st_mtime": now,
-                            "st_ctime": now,
-                        }
-            except Exception:
-                pass
-
+        # 根目录直接返回
+        if path in ("", "/"):
+            dir_mode = stat.S_IFDIR | (0o555 if self.mount.config.read_only else 0o755)
             return {
-                "st_mode": stat.S_IFDIR | 0o755,
+                "st_mode": dir_mode,
                 "st_nlink": 2,
-                "st_uid": os.getuid(),
-                "st_gid": os.getgid(),
+                "st_uid": uid,
+                "st_gid": gid,
                 "st_size": 4096,
                 "st_atime": now,
                 "st_mtime": now,
                 "st_ctime": now,
             }
 
-        def readdir(self, path: str, fh: int) -> list:
-            """
-            读取目录内容
+        parent_path = str(Path(path).parent) if Path(path).parent != Path(".") else "/"
+        parent_uri = self._path_to_uri(parent_path)
+        target_name = Path(path).name
 
-            Args:
-                path: 目录路径
-                fh: 文件描述符
+        items = []
+        try:
+            if self.mount._client:
+                items = self.mount._client.ls(parent_uri)
+        except Exception as e:
+            logger.debug(f"getattr failed listing parent {parent_uri}: {e}")
+            items = []
 
-            Returns:
-                目录项列表
-            """
-            logger.debug(f"readdir: {path}")
-
-            try:
-                uri = self._path_to_uri(path)
-                logger.debug(f"Listing directory URI: {uri}")
-
-                items = self.mount._client.ls(uri)
-                entries = [".", ".."]
-
-                for item in items:
-                    if isinstance(item, dict):
-                        name = item.get("name", "")
-                    else:
-                        name = str(item)
-
-                    if name:
-                        entries.append(name)
-
-                return entries
-            except Exception as e:
-                logger.warning(f"readdir error: {e}")
-                return [".", ".."]
-
-        def open(self, path: str, flags: int) -> int:
-            """
-            打开文件
-
-            Args:
-                path: 文件路径
-                flags: 打开标志
-
-            Returns:
-                文件描述符
-            """
-            logger.debug(f"open: {path} (flags={flags})")
-
-            if (flags & os.O_WRONLY or flags & os.O_RDWR) and self.mount.config.read_only:
-                raise FuseOSError(errno.EROFS)
-
-            uri = self._path_to_uri(path)
-
-            self._fd += 1
-            fd = self._fd
-            self._file_handles[fd] = uri
-
-            if not (flags & os.O_WRONLY):
-                try:
-                    logger.debug(f"Reading file URI: {uri}")
-                    content = self.mount._client.read(uri)
-                    self._file_contents[uri] = content
-                except Exception as e:
-                    logger.warning(f"Failed to pre-read {path}: {e}")
-
-            return fd
-
-        def read(self, path: str, size: int, offset: int, fh: int) -> bytes:
-            """
-            读取文件内容
-
-            Args:
-                path: 文件路径
-                size: 读取大小
-                offset: 偏移量
-                fh: 文件描述符
-
-            Returns:
-                读取的字节
-            """
-            logger.debug(f"read: {path} (size={size}, offset={offset})")
-
-            uri = self._file_handles.get(fh)
-            if not uri:
-                raise FuseOSError(errno.EBADF)
-
-            if uri in self._file_contents:
-                content = self._file_contents[uri]
+        for item in items:
+            if isinstance(item, dict):
+                item_name = item.get("name", "")
+                is_dir = bool(item.get("isDir", item.get("is_dir", False)))
+                size = int(item.get("size", 0))
+                mtime = float(item.get("modified_at", item.get("updated_at", now)))
             else:
-                try:
-                    logger.debug(f"Reading file URI: {uri}")
-                    content = self.mount._client.read(uri)
-                    self._file_contents[uri] = content
-                except Exception as e:
-                    logger.error(f"read error: {e}")
-                    raise FuseOSError(errno.EIO)
+                item_name = str(item)
+                is_dir = False
+                size = 0
+                mtime = now
 
-            content_bytes = content.encode("utf-8")
-            return content_bytes[offset : offset + size]
+            if item_name == target_name:
+                if is_dir:
+                    mode = stat.S_IFDIR | (0o555 if self.mount.config.read_only else 0o755)
+                    nlink = 2
+                    file_size = 4096
+                else:
+                    mode = stat.S_IFREG | (0o444 if self.mount.config.read_only else 0o644)
+                    nlink = 1
+                    file_size = size
 
-        def write(self, path: str, data: bytes, offset: int, fh: int) -> int:
-            """
-            写入文件内容
+                return {
+                    "st_mode": mode,
+                    "st_nlink": nlink,
+                    "st_uid": uid,
+                    "st_gid": gid,
+                    "st_size": file_size,
+                    "st_atime": mtime,
+                    "st_mtime": mtime,
+                    "st_ctime": mtime,
+                }
 
-            Args:
-                path: 文件路径
-                data: 要写入的数据
-                offset: 偏移量
-                fh: 文件描述符
+        # 路径在父目录下不存在，抛出标准 POSIX 文件未找到错误
+        raise FuseOSError(errno.ENOENT)
 
-            Returns:
-                写入的字节数
-            """
-            logger.debug(f"write: {path} (size={len(data)}, offset={offset})")
-
-            if self.mount.config.read_only:
-                raise FuseOSError(errno.EROFS)
-
-            uri = self._file_handles.get(fh)
-            if not uri:
-                raise FuseOSError(errno.EBADF)
-
-            if uri not in self._file_contents:
-                self._file_contents[uri] = ""
-
-            current_content = self._file_contents[uri]
-            current_bytes = current_content.encode("utf-8")
-
-            new_bytes = current_bytes[:offset] + data + current_bytes[offset + len(data) :]
-            self._file_contents[uri] = new_bytes.decode("utf-8")
-
-            return len(data)
-
-        def release(self, path: str, fh: int) -> None:
-            """
-            关闭文件
-
-            Args:
-                path: 文件路径
-                fh: 文件描述符
-            """
-            logger.debug(f"release: {path}")
-
-            uri = self._file_handles.pop(fh, None)
-
-            if uri and uri in self._file_contents:
-                logger.warning(f"File {path} was modified but OpenViking direct write is limited")
-
-        def mkdir(self, path: str, mode: int) -> None:
-            """
-            创建目录
-
-            Args:
-                path: 目录路径
-                mode: 权限模式
-            """
-            logger.debug(f"mkdir: {path}")
-
-            if self.mount.config.read_only:
-                raise FuseOSError(errno.EROFS)
-
-            try:
-                self.mount.mkdir(path)
-            except Exception as e:
-                logger.error(f"mkdir error: {e}")
-                raise FuseOSError(errno.EIO)
-
-        def rmdir(self, path: str) -> None:
-            """
-            删除目录
-
-            Args:
-                path: 目录路径
-            """
-            logger.debug(f"rmdir: {path}")
-
-            if self.mount.config.read_only:
-                raise FuseOSError(errno.EROFS)
-
-            try:
-                self.mount.delete(path, recursive=False)
-            except Exception as e:
-                logger.error(f"rmdir error: {e}")
-                raise FuseOSError(errno.EIO)
-
-        def unlink(self, path: str) -> None:
-            """
-            删除文件
-
-            Args:
-                path: 文件路径
-            """
-            logger.debug(f"unlink: {path}")
-
-            if self.mount.config.read_only:
-                raise FuseOSError(errno.EROFS)
-
-            try:
-                self.mount.delete(path, recursive=False)
-            except Exception as e:
-                logger.error(f"unlink error: {e}")
-                raise FuseOSError(errno.EIO)
-
-        def truncate(self, path: str, length: int, fh: int = None) -> None:
-            """
-            截断文件
-
-            Args:
-                path: 文件路径
-                length: 截断长度
-                fh: 文件描述符
-            """
-            logger.debug(f"truncate: {path} (length={length})")
-
-            if self.mount.config.read_only:
-                raise FuseOSError(errno.EROFS)
-
-            uri = self._path_to_uri(path)
-
-            if uri in self._file_contents:
-                content = self._file_contents[uri]
-                content_bytes = content.encode("utf-8")[:length]
-                self._file_contents[uri] = content_bytes.decode("utf-8")
-
-        def utimens(self, path: str, times: tuple = None) -> None:
-            """
-            更新文件时间戳
-
-            Args:
-                path: 文件路径
-                times: (atime, mtime) 元组
-            """
-            logger.debug(f"utimens: {path}")
-
-    def mount_fuse(
-        config: MountConfig, foreground: bool = False, allow_other: bool = False
-    ) -> None:
+    def readdir(self, path: str, fh: Optional[int] = None) -> List[str]:
         """
-        挂载 OpenViking FUSE 文件系统
+        读取目录内容
 
         Args:
-            config: 挂载配置
-            foreground: 是否在前台运行
-            allow_other: 是否允许其他用户访问
+            path: 目录路径
+            fh: 文件描述符
+
+        Returns:
+            目录项列表
         """
-        mount = OpenVikingMount(config)
-        operations = OpenVikingFUSE(mount)
-
-        fuse_opts = {}
-        if allow_other:
-            fuse_opts["allow_other"] = True
-
-        logger.info(f"Mounting OpenViking FUSE at: {config.mount_point}")
-        logger.info(f"  Scope: {config.scope.value}")
-        logger.info(f"  Read-only: {config.read_only}")
-        logger.info("  Press Ctrl+C to unmount")
+        logger.debug(f"readdir: {path}")
+        uri = self._path_to_uri(path)
 
         try:
-            FUSE(
-                operations,
-                str(config.mount_point),
-                foreground=foreground,
-                nothreads=True,
-                **fuse_opts,
-            )
-        except KeyboardInterrupt:
-            logger.info("Unmounting...")
-        finally:
-            mount.close()
-            logger.info("Unmounted")
+            items = self.mount._client.ls(uri) if self.mount._client else []
+        except Exception as e:
+            logger.warning(f"readdir error for {uri}: {e}")
+            raise FuseOSError(errno.ENOENT)
 
-    class FUSEMountManager:
-        """
-        FUSE 挂载管理器
-
-        管理 FUSE 挂载进程的生命周期
-        """
-
-        def __init__(self):
-            self._mounts: Dict[str, Any] = {}
-
-        def mount(self, mount_id: str, config: MountConfig, background: bool = True) -> None:
-            """
-            挂载 FUSE 文件系统
-
-            Args:
-                mount_id: 挂载 ID
-                config: 挂载配置
-                background: 是否在后台运行
-            """
-            if background:
-                import multiprocessing
-
-                def _mount_worker():
-                    mount_fuse(config, foreground=True)
-
-                process = multiprocessing.Process(target=_mount_worker, daemon=True)
-                process.start()
-                self._mounts[mount_id] = process
-                logger.info(f"Started FUSE mount {mount_id} in background (PID: {process.pid})")
+        entries = [".", ".."]
+        for item in items:
+            if isinstance(item, dict):
+                name = item.get("name", "")
             else:
-                mount_fuse(config, foreground=True)
+                name = str(item)
+            if name and name not in entries:
+                entries.append(name)
 
-        def unmount(self, mount_id: str) -> None:
-            """
-            卸载 FUSE 文件系统
+        return entries
 
-            Args:
-                mount_id: 挂载 ID
-            """
-            if mount_id in self._mounts:
-                process = self._mounts.pop(mount_id)
-                process.terminate()
-                process.join(timeout=5)
-                logger.info(f"Unmounted {mount_id}")
+    def open(self, path: str, flags: int) -> int:
+        """
+        打开文件
 
-        def unmount_all(self) -> None:
-            """卸载所有 FUSE 文件系统"""
-            for mount_id in list(self._mounts.keys()):
-                self.unmount(mount_id)
+        Args:
+            path: 文件路径
+            flags: 打开标志
 
-else:
-    # FUSE 不可用时的占位符
-    OpenVikingFUSE = None
+        Returns:
+            文件描述符
+        """
+        logger.debug(f"open: {path} (flags={flags})")
 
-    def mount_fuse(*args, **kwargs):
+        # 检查只读文件系统写入拒绝
+        is_write = bool(flags & (os.O_WRONLY | os.O_RDWR | os.O_APPEND))
+        if self.mount.config.read_only and is_write:
+            raise FuseOSError(errno.EROFS)
+
+        # 验证文件是否存在
+        self.getattr(path)
+
+        uri = self._path_to_uri(path)
+        self._fd += 1
+        fd = self._fd
+        self._file_handles[fd] = uri
+
+        return fd
+
+    def read(self, path: str, size: int, offset: int, fh: int) -> bytes:
+        """
+        读取文件内容
+
+        Args:
+            path: 文件路径
+            size: 读取大小
+            offset: 偏移量
+            fh: 文件描述符
+
+        Returns:
+            读取的字节
+        """
+        logger.debug(f"read: {path} (size={size}, offset={offset})")
+
+        uri = self._file_handles.get(fh) or self._path_to_uri(path)
+
+        if uri in self._file_contents:
+            content = self._file_contents[uri]
+        else:
+            try:
+                content = self.mount._client.read(uri) if self.mount._client else ""
+                self._file_contents[uri] = content
+            except Exception as e:
+                logger.error(f"read error for {uri}: {e}")
+                raise FuseOSError(errno.EIO)
+
+        if isinstance(content, str):
+            content_bytes = content.encode("utf-8")
+        else:
+            content_bytes = bytes(content)
+
+        return content_bytes[offset : offset + size]
+
+    def statfs(self, path: str) -> Dict[str, Any]:
+        """
+        获取虚拟文件系统统计信息
+
+        Args:
+            path: 路径
+
+        Returns:
+            statfs 字典
+        """
+        logger.debug(f"statfs: {path}")
+        return {
+            "f_bsize": 4096,
+            "f_frsize": 4096,
+            "f_blocks": 1024 * 1024 * 100,  # 400 GB 虚拟总量
+            "f_bfree": 1024 * 1024 * 50,  # 200 GB 虚拟可用
+            "f_bavail": 1024 * 1024 * 50,
+            "f_files": 1000000,
+            "f_ffree": 500000,
+            "f_favail": 500000,
+            "f_flag": os.ST_RDONLY if self.mount.config.read_only else 0,
+            "f_namemax": 255,
+        }
+
+    # POSIX 修改类接口在只读模式下统一拦截为 EROFS
+    def create(self, path: str, mode: int, fi: Any = None) -> int:
+        if self.mount.config.read_only:
+            raise FuseOSError(errno.EROFS)
+        raise FuseOSError(errno.EPERM)
+
+    def write(self, path: str, data: bytes, offset: int, fh: int) -> int:
+        if self.mount.config.read_only:
+            raise FuseOSError(errno.EROFS)
+        raise FuseOSError(errno.EROFS)
+
+    def mkdir(self, path: str, mode: int) -> None:
+        if self.mount.config.read_only:
+            raise FuseOSError(errno.EROFS)
+        raise FuseOSError(errno.EPERM)
+
+    def rmdir(self, path: str) -> None:
+        if self.mount.config.read_only:
+            raise FuseOSError(errno.EROFS)
+        raise FuseOSError(errno.EPERM)
+
+    def unlink(self, path: str) -> None:
+        if self.mount.config.read_only:
+            raise FuseOSError(errno.EROFS)
+        raise FuseOSError(errno.EPERM)
+
+    def rename(self, old: str, new: str) -> None:
+        if self.mount.config.read_only:
+            raise FuseOSError(errno.EROFS)
+        raise FuseOSError(errno.EPERM)
+
+    def truncate(self, path: str, length: int, fh: Optional[int] = None) -> None:
+        if self.mount.config.read_only:
+            raise FuseOSError(errno.EROFS)
+        raise FuseOSError(errno.EROFS)
+
+    def chmod(self, path: str, mode: int) -> None:
+        if self.mount.config.read_only:
+            raise FuseOSError(errno.EROFS)
+        raise FuseOSError(errno.EPERM)
+
+    def chown(self, path: str, uid: int, gid: int) -> None:
+        if self.mount.config.read_only:
+            raise FuseOSError(errno.EROFS)
+        raise FuseOSError(errno.EPERM)
+
+    def utimens(self, path: str, times: Optional[tuple] = None) -> None:
+        if self.mount.config.read_only:
+            raise FuseOSError(errno.EROFS)
+        raise FuseOSError(errno.EPERM)
+
+    def release(self, path: str, fh: int) -> None:
+        logger.debug(f"release: {path} (fh={fh})")
+        self._file_handles.pop(fh, None)
+
+
+def mount_fuse(config: MountConfig, foreground: bool = False, allow_other: bool = False) -> None:
+    """
+    挂载 OpenViking FUSE 文件系统
+
+    Args:
+        config: 挂载配置
+        foreground: 是否在前台运行
+        allow_other: 是否允许其他用户访问
+    """
+    if not FUSE_AVAILABLE or FUSE is None:
         raise ImportError(
-            "fusepy and libfuse are required. Install with: uv pip install fusepy>=3.0.1 and install libfuse system package"
+            "fusepy and libfuse are required for system FUSE mounting. "
+            "Install with: pip install fusepy and install system libfuse."
         )
 
-    class FUSEMountManager:
-        """FUSE 挂载管理器（占位符）"""
+    mount = OpenVikingMount(config)
+    operations = OpenVikingFUSE(mount)
 
-        def __init__(self):
-            self._mounts: Dict[str, Any] = {}
+    fuse_opts = {}
+    if allow_other:
+        fuse_opts["allow_other"] = True
 
-        def mount(self, *args, **kwargs):
-            raise ImportError("fusepy and libfuse are required")
+    logger.info(f"Mounting OpenViking FUSE at: {config.mount_point}")
+    logger.info(f"  Scope: {config.scope.value}")
+    logger.info(f"  Read-only: {config.read_only}")
 
-        def unmount(self, *args, **kwargs):
-            pass
+    try:
+        FUSE(
+            operations,
+            str(config.mount_point),
+            foreground=foreground,
+            nothreads=True,
+            **fuse_opts,
+        )
+    except KeyboardInterrupt:
+        logger.info("Unmounting FUSE on KeyboardInterrupt...")
+    finally:
+        mount.close()
+        logger.info("FUSE mount closed.")
 
-        def unmount_all(self):
-            pass
+
+class FUSEMountManager:
+    """
+    FUSE 挂载管理器
+
+    管理 FUSE 挂载进程的生命周期与状态查询
+    """
+
+    def __init__(self):
+        self._mounts: Dict[str, Any] = {}
+
+    def mount(self, mount_id: str, config: MountConfig, background: bool = True) -> None:
+        """
+        挂载 FUSE 文件系统
+
+        Args:
+            mount_id: 挂载 ID
+            config: 挂载配置
+            background: 是否在后台进程运行
+        """
+        if not FUSE_AVAILABLE:
+            raise ImportError("fusepy and libfuse are required for FUSE mounting")
+
+        if background:
+            import multiprocessing
+
+            def _mount_worker():
+                mount_fuse(config, foreground=True)
+
+            process = multiprocessing.Process(target=_mount_worker, daemon=True)
+            process.start()
+            self._mounts[mount_id] = process
+            logger.info(f"Started FUSE mount '{mount_id}' in background (PID: {process.pid})")
+        else:
+            mount_fuse(config, foreground=True)
+
+    def unmount(self, mount_id: str) -> None:
+        """
+        卸载 FUSE 文件系统
+
+        Args:
+            mount_id: 挂载 ID
+        """
+        if mount_id in self._mounts:
+            process = self._mounts.pop(mount_id)
+            if hasattr(process, "terminate"):
+                process.terminate()
+                process.join(timeout=5)
+            logger.info(f"Unmounted FUSE mount '{mount_id}'")
+
+    def unmount_all(self) -> None:
+        """卸载所有 FUSE 文件系统"""
+        for mount_id in list(self._mounts.keys()):
+            self.unmount(mount_id)
+
+    def is_mounted(self, mount_id: str) -> bool:
+        """检查挂载点是否存活"""
+        process = self._mounts.get(mount_id)
+        if process is None:
+            return False
+        if hasattr(process, "is_alive"):
+            return process.is_alive()
+        return True
+
+    def list_active_mounts(self) -> List[str]:
+        """列出所有活跃的挂载 ID"""
+        return [mid for mid in self._mounts if self.is_mounted(mid)]
