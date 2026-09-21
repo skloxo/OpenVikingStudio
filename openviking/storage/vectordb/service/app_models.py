@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 from typing import Any, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 # ==================== Collection Models ====================
 
@@ -179,5 +179,4 @@ class ApiResponse(BaseModel):
         None, description="Time cost in seconds", alias="time_cost(second)"
     )
 
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)

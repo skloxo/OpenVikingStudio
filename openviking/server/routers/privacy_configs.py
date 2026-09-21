@@ -151,3 +151,48 @@ async def activate_privacy_version(
         updated_by=_ctx.user.user_id,
     )
     return Response(status="ok", result=result.to_dict())
+
+
+class MaskTextRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    text: str = ""
+
+
+class DetectSensitiveRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    text: str = ""
+
+
+@router.post("/mask")
+async def mask_sensitive_text(
+    request: MaskTextRequest,
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    from openviking.privacy.privacy_masker import get_privacy_masker
+
+    masker = get_privacy_masker()
+    sanitized = masker.mask_text(request.text)
+    has_sensitive = masker.contains_sensitive(request.text)
+    return Response(
+        status="ok",
+        result={
+            "sanitized_text": sanitized,
+            "contained_sensitive": has_sensitive,
+            "length_diff": len(request.text) - len(sanitized),
+        },
+    )
+
+
+@router.post("/detect")
+async def detect_sensitive_text(
+    request: DetectSensitiveRequest,
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    from openviking.privacy.privacy_masker import get_privacy_masker
+
+    masker = get_privacy_masker()
+    return Response(
+        status="ok",
+        result={"contains_sensitive": masker.contains_sensitive(request.text)},
+    )
+
