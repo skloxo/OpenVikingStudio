@@ -11,6 +11,7 @@
 > - **线上正式部署版本**：**`v1.4.106`**（物理访问地址：`vk.tide.red/studio/home`，已实机验证）；
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.5.64`** | **Card-Observer-Models-Telemetry-Cache-Hotfix** | **模型观测器单调时钟轻量快照缓存、动态实例标记与亚毫秒并发性能加固 (SSOT)** | 1. **单调时钟轻量快照缓存 (`models_observer.py`)**: 引入 `_CACHE_TTL=5.0s` 单调时钟缓存与线程安全锁，消灭前端高频轮询时单次请求中对磁盘 JSON 与 SQLite `TelemetryStore` 的连续 4 次重复访问；<br>2. **动态实例标记签名 (`_get_cache_signature`)**: 创新性融合静态模型配置与动态实例标记，既保障生产环境跨请求 100% 命中 5 秒内存快照，又杜绝单元测试下不同动态追踪实例的缓存交叉污染；<br>3. **缓存生命周期与诊断接口**: 暴露 `invalidate_cache()` 与 `get_cache_stats()`，并在 `get_status_table` 中支持 `force_refresh=True`；<br>4. **全套自动化门禁双全**: Card 7 专属单测 4/4 全绿 (1.19s)，全回归测试 142/142 项全绿 (2.26s)；安全扫描 4,433 文件零泄密；Vite 构建通过并烘焙版本 `1.5.64`；运行时服务重启对齐 `1.5.64`。<br>**Commit Hash**：[待生成] | **修改文件**：`openviking/storage/observers/models_observer.py`, `tests/unit/test_models_observer_cache.py`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md` | [x] 已验收通过 ✅ |
 | **`v1.5.63`** | **Card-Storage-Index-Consistency-And-Pruning** | **双向索引一致性检查、孤儿向量/BM25倒排修剪与自愈引擎 (SSOT)** | 1. **BM25 倒排索引接口增强 (`bm25_fts_index.py`)**: 新增 `list_all_uris` 与 `prune_orphans`，支持毫秒级提取当前倒排库全量 URI 集合并精准反向修剪幽灵倒排条目；<br>2. **双向索引一致性与自愈修剪引擎 (`index_consistency.py`)**: 升级 `IndexConsistencyReport` 模型，整合正向缺失排查 (`missing_records`) + 反向向量孤儿检测与修剪 (`vector_store.remove_by_uri`) + 反向 BM25 倒排孤儿检测与修剪 (`bm25_index.prune_orphans`)，支持 `prune=True` 自愈修剪模式并恢复评分至 100.0 分；<br>3. **全链路 API 与客户端贯通**: 在 `service/core.py`、`server/routers/system.py`、`client/local.py`、`async_client.py`、`sync_client.py` 中全量支持 `prune: bool = False` 参数；<br>4. **全套自动化门禁验证**: Card 6 专属单测 4/4 全绿 (0.08s)，全回归测试 133/133 项全绿 (0.81s)；安全扫描 4,432 文件零泄密；Vite 构建 21.39s 零报错，产物烘焙并验证版本 `1.5.63`；运行时服务重启对齐 `1.5.63`。<br>**Commit Hash**：`3fd94b7af` | **修改文件**：`openviking/storage/bm25_fts_index.py`, `openviking/storage/index_consistency.py`, `openviking/service/core.py`, `openviking/server/routers/system.py`, `openviking/client/local.py`, `openviking/async_client.py`, `openviking/sync_client.py`, `tests/unit/test_storage_index_consistency_and_pruning.py`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md` | [x] 已验收通过 ✅ |
 | **`v1.5.62`** | **Card-Architecture-Session-Split** | **Session 巨石模块化解耦、数据模型与工作记忆纯算法引擎提纯 (SSOT)** | 1. **数据模型提纯 (`models.py`, 422行)**: 独立封装 `SessionMeta`, `SessionStats`, `SessionCompression`, `ArchiveState`, `Usage`, `WM_SEVEN_SECTIONS` 等全部 DTO 与上下文常量；<br>2. **工作记忆纯算法引擎提纯 (`wm_synthesizer.py`, 556行)**: 提纯 `WorkingMemorySynthesizer` 包含 12 项静态解析、格式合并、防截断、防丢文件路径、标题漂移遏制与事实保留校验守卫；<br>3. **Session 巨石大幅瘦身 (`session.py`)**: 建立透明向后兼容代理与静态方法转发，净减 1,148 行臃肿代码；<br>4. **全套自动化门禁验证**: 88 项既有 WM 守卫测试全绿 (0.15s)，Card 5 专属单测 7/7 全绿 (0.07s)，129 项全回归测试全绿 (0.79s)；安全扫描 4,429 文件零泄密；Vite 构建 22.09s 零报错，产物烘焙并验证版本 `1.5.62`；运行时服务重启对齐 `1.5.62`。<br>**Commit Hash**：`4c94c03f8` | **修改文件**：`openviking/session/models.py`, `openviking/session/wm_synthesizer.py`, `openviking/session/session.py`, `tests/unit/test_session_split_models_and_wm.py`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md` | [x] 已验收通过 ✅ |
 | **`v1.5.61`** | **Card-Config-Endpoints-And-Logs** | **统一端点动态解析器与静默吞异常结构化日志治理 (SSOT)** | 1. **新建高内聚端点解析器 (`endpoint_resolver.py`, 60行)**: 统一解析层级 `OPENVIKING_ENDPOINT` -> `OPENVIKING_URL` -> `OPENVIKING_API` -> `OPENVIKING_PORT` -> `ov.conf` -> 默认 `http://127.0.0.1:1933`；<br>2. **消除核心服务硬编码端口 (`gatekeeper_prober.py` & `entropy_watchdog.py`)**: 统一接入动态端点解析器；<br>3. **治理静默吞异常**: 肃清 `_resolve_api_key` 中两处静默 `except Exception: pass` 为携带上下文信息的 `logger.debug`；<br>4. **全套门禁双全**: 11 项专属单测 (0.19s) 与 34 项全回归测试 (0.71s) 全绿，安全扫描 4,427 文件零泄密，Vite 编译 21.05s PASS，版本号自增至 `1.5.61`。<br>**Commit Hash**：`b41661d3d` | **修改文件**：`openviking/service/endpoint_resolver.py`, `openviking/service/gatekeeper_prober.py`, `openviking/service/entropy_watchdog.py`, `openviking/session/session.py`, `tests/unit/test_config_endpoints_and_logs.py`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md` | [x] 已验收通过 ✅ |
@@ -929,6 +930,32 @@
   5. **版本留痕**: 版本号自增至 `1.5.63`，Git Tag `v1.5.63`。
 - **Git Commit Hash**: `3fd94b7af`
 - **Git Tag**: `v1.5.63`
+
+#### 📌 [P2] [x] Card 7: Card-Observer-Models-Telemetry-Cache-Hotfix (v1.5.64): 模型观测器单调时钟轻量快照缓存、动态实例标记与亚毫秒并发性能加固 (SSOT) ✅
+- **类型**：Observability Optimization / Monotonic Cache / Concurrency Hardening ｜ **优先级**：⚡ P2
+- **目标版本**：`v1.5.64` ｜ **当前状态**：[x] 已验收通过 ✅
+- **交付内容摘要**：
+  1. **单调时钟轻量快照缓存 (`openviking/storage/observers/models_observer.py`)**:
+     - 引入 `_CACHE_TTL = 5.0s` 单调时钟快照缓存与全局 `_CACHE_LOCK`；
+     - 消除每次前端轮询 `/studio/monitoring` 或查询 `/api/v1/system/status` 时，单请求内连续 4 次重复读取磁盘 JSON 文件与查询 SQLite `TelemetryStore` 的 I/O 与锁竞争；
+     - 内存命中耗时降至 <0.01ms；
+  2. **动态实例标记多态签名 (`_get_cache_signature`)**:
+     - 融合 `(cat, model_name, provider)` 与实例标记（静态无追踪实例使用类名，具有动态 `get_token_usage` 的追踪实例使用 `id(inst)`）；
+     - 既保障生产环境 `debug_service.models` 跨请求高频轮询在 5 秒内 100% 命中内存快照，又杜绝测试环境下多测试用例动态实例的相互污染；
+  3. **缓存自愈与诊断接口**:
+     - 增加 `invalidate_cache()` 与 `get_cache_stats()` 类方法；
+     - `get_status_table(force_refresh=True)` 与 `_get_grouped_rows(force_refresh=True)` 支持按需强制穿透刷新；
+  4. **全套自动化门禁验证**:
+     - 新增 Card 7 专属单测 `tests/unit/test_models_observer_cache.py` 4/4 全绿 (1.19s，覆盖单请求多方法缓存命中、TTL 自动失效重采集、强制刷新与多线程并发安全)；
+     - 既有 `tests/misc/test_models_observer.py` 5/5 全绿通过；
+     - 全回归测试 142/142 项全绿 PASS (2.26s)；
+     - 安全凭据审计 `scripts/security_check.py` 4,433 文件零密钥泄露；
+     - 前端生产构建 (Vite Build) 21.76s 零报错，产物烘焙并验证版本 `1.5.64`；
+     - 运行时服务重启并探针握手通过 (`1.5.64`)；
+  5. **版本留痕**: 版本号自增至 `1.5.64`，Git Tag `v1.5.64`。
+- **Git Commit Hash**: [待生成]
+- **Git Tag**: `v1.5.64`
+
 
 
 

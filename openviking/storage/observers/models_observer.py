@@ -11,6 +11,8 @@ from datetime import datetime
 import json
 import os
 from pathlib import Path
+import threading
+import time
 from typing import Any, Dict, List, Optional, Tuple
 
 from openviking.storage.observers.base_observer import BaseObserver
@@ -19,6 +21,11 @@ from openviking_cli.utils.logger import get_logger
 logger = get_logger(__name__)
 
 _DEFAULT_USAGE_FILE = Path(os.path.expanduser("~/.openviking/models_token_usage.json"))
+
+# Monotonic clock snapshot cache (SSOT) to eliminate repeated disk and SQLite queries
+_CACHE_TTL = float(os.getenv("OPENVIKING_OBSERVER_CACHE_TTL", "5.0"))
+_CACHED_SNAPSHOTS: Dict[Tuple[Tuple[str, Tuple[str, str]], ...], Tuple[float, Dict[str, List[Dict[str, Any]]]]] = {}
+_CACHE_LOCK = threading.Lock()
 
 
 def _read_persistent_usage() -> Dict[str, Any]:
@@ -219,13 +226,61 @@ class ModelsObserver(BaseObserver):
             return True
         return False
 
-    def _get_grouped_rows(self) -> Dict[str, List[Dict[str, Any]]]:
-        """Group usage by domain (VLM, Embedding, Rerank, Compressor).
+    @classmethod
+    def invalidate_cache(cls, signature: Optional[Tuple[Tuple[str, Tuple[str, str]], ...]] = None) -> None:
+        """Invalidate monotonic snapshot cache for a specific signature or all signatures."""
+        with _CACHE_LOCK:
+            if signature is not None:
+                _CACHED_SNAPSHOTS.pop(signature, None)
+            else:
+                _CACHED_SNAPSHOTS.clear()
+
+    @classmethod
+    def get_cache_stats(cls) -> Dict[str, Any]:
+        """Return diagnostic metrics about the observer snapshot cache."""
+        with _CACHE_LOCK:
+            return {
+                "active_entries": len(_CACHED_SNAPSHOTS),
+                "ttl_seconds": _CACHE_TTL,
+            }
+
+    def _get_cache_signature(self) -> Tuple[Any, ...]:
+        """Generate an immutable signature tuple from active model identities and instance markers."""
+        active_identities = self._get_active_identities()
+        sig_items = []
+        inst_map = {
+            "VLM": self._vlm_instance,
+            "Embedding": self._embedding_instance,
+            "Rerank": self._rerank_instance,
+            "Compressor": self._compressor_instance,
+        }
+        for cat in sorted(active_identities.keys()):
+            model_name, provider = active_identities[cat]
+            inst = inst_map.get(cat)
+            if inst is not None and (hasattr(inst, "get_token_usage") or hasattr(inst, "_token_tracker")):
+                inst_marker: Any = id(inst)
+            elif inst is not None:
+                inst_marker = type(inst).__name__
+            else:
+                inst_marker = "none"
+            sig_items.append((cat, model_name, provider, inst_marker))
+        return tuple(sig_items)
+
+    def _get_grouped_rows(self, force_refresh: bool = False) -> Dict[str, List[Dict[str, Any]]]:
+        """Group usage by domain (VLM, Embedding, Rerank, Compressor) with monotonic snapshot cache.
 
         For each domain:
         - Row 0: Active configured model (always present, even with 0 calls).
         - Row 1 (if historical models exist): Consolidated historical summary row.
         """
+        sig = self._get_cache_signature()
+        now = time.monotonic()
+        if not force_refresh:
+            with _CACHE_LOCK:
+                cached = _CACHED_SNAPSHOTS.get(sig)
+                if cached is not None and (now - cached[0]) < _CACHE_TTL:
+                    return {k: [dict(r) for r in v] for k, v in cached[1].items()}
+
         active_identities = self._get_active_identities()
         all_records = self._collect_all_records()
 
@@ -303,13 +358,16 @@ class ModelsObserver(BaseObserver):
                     "Last Updated": latest_ts,
                 })
 
-        return groups
+        with _CACHE_LOCK:
+            _CACHED_SNAPSHOTS[sig] = (now, groups)
 
-    def get_status_table(self) -> str:
+        return {k: [dict(r) for r in v] for k, v in groups.items()}
+
+    def get_status_table(self, force_refresh: bool = False) -> str:
         """Format usage tables for active models and their historical summaries."""
         from tabulate import tabulate
 
-        grouped = self._get_grouped_rows()
+        grouped = self._get_grouped_rows(force_refresh=force_refresh)
         active_identities = self._get_active_identities()
 
         lines: List[str] = []
