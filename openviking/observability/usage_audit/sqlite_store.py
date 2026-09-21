@@ -67,12 +67,14 @@ class SQLiteUsageAuditStore:
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
         conn = sqlite3.connect(
             self._db_path,
+            timeout=30.0,
             isolation_level=None,
             check_same_thread=False,
         )
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA synchronous=NORMAL")
+        conn.execute("PRAGMA busy_timeout=30000")
         conn.execute("PRAGMA foreign_keys=ON")
         # Preserve the compatible v4 layout through its additive migration.
         # Unknown newer transitions fail closed; older daily/local layouts

@@ -151,11 +151,13 @@ class OAuthStore:
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
         conn = sqlite3.connect(
             self._db_path,
+            timeout=30.0,
             isolation_level=None,  # autocommit; we manage transactions explicitly
             check_same_thread=False,
         )
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA synchronous=NORMAL")
+        conn.execute("PRAGMA busy_timeout=30000")
         conn.execute("PRAGMA foreign_keys=ON")
         conn.executescript(_SCHEMA)
         self._migrate(conn)
