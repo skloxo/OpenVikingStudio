@@ -979,17 +979,33 @@
 - **Git Commit Hash**: `cd43e9229`
 - **Git Tag**: `v1.5.65`
 
-#### 📌 [P1] [ ] Card 9: Card-Tasks-Feishu-Task-Sync-Bidirectional (v1.5.66): 任务中心与飞书待办双向状态同步、重试事件驱动与执行闭环 (SSOT) ⏳
+#### 📌 [P1] [x] Card 9: Card-Tasks-Feishu-Task-Sync-Bidirectional (v1.5.66): 任务中心与飞书待办双向状态同步、重试事件驱动与执行闭环 (SSOT) ✅
 - **类型**：Task Automation / Feishu Bi-Directional Sync / Event-Driven ｜ **优先级**：🔥 P1
-- **目标版本**：`v1.5.66` ｜ **当前状态**：[ ] 即将执行 ⏳
-- **核心治理规划**：
-  1. 联动任务中心执行状态（Pending / Running / Completed / Failed）与飞书待办（Todo / In Progress / Done / Cancelled）双向映射；
-  2. 任务异常或人工重试时，自动向飞书任务追加审计记录并重置进度；
-  3. 完善状态机防死锁与幂等上报。
+- **目标版本**：`v1.5.66` ｜ **当前状态**：[x] 已验收通过 ✅
+- **交付内容摘要**：
+  1. **飞书双向任务同步网桥 (`openviking/service/feishu_task_sync.py`)**:
+     - 践行 Issue Ownership ➔ Active Execution 语义契约，将内部任务与外部飞书待办通过 `execution_run_id` 与 `checkout_run_id` 精确锚定；
+     - 状态全双工双向映射：`PENDING ➔ todo`，`RUNNING ➔ in_progress`，`COMPLETED ➔ done` (回写交付物 `deliverable` 链接)，`FAILED ➔ failed/todo` (挂载脱敏错误原因)，`CANCELLED ➔ cancelled`；
+     - 逆向状态同步支持：飞书端勾选完成或取消反向驱动内部任务推进；
+  2. **任务中心终态重试与事件驱动 (`/tasks/{task_id}/retry`)**:
+     - `TaskTracker.retry_task()` 支持对失败或取消的终态任务原子重置回 `PENDING`，累加 `retry_count`，留存 `last_failed_error`；
+     - 自动向关联飞书任务推送重试事件并重新挂载活跃执行流，彻底消灭人工频繁查日志重敲指令；
+  3. **非阻塞审计与优雅降级契约**:
+     - 未配置飞书 Token 或网络离线时无感切入 `AUDIT_MODE`，维护最近 500 条同步审计历史，主流程零卡顿；
+     - 提供 `/api/v1/tasks/feishu/sync_stats` 与 `/api/v1/tasks/feishu/reverse_sync` 观测与诊断接口；
+  4. **全套自动化门禁验证**:
+     - 新增 Card 9 专属单测 `tests/unit/test_feishu_task_sync_bidirectional.py` 5/5 全绿 (0.12s，覆盖正向状态流转、失败回写、飞书逆向同步、重试状态机与未配置审计模式降级)；
+     - 全回归测试 157/157 项全绿 PASS (5.77s)；
+     - 安全凭据审计 `scripts/security_check.py` 4,437 文件零密钥泄露；
+     - 前端生产构建 (Vite Build) 21.46s 零报错，产物烘焙并验证版本 `1.5.66`；
+     - 运行时服务重启并探针握手通过 (`1.5.66`)；
+  5. **版本留痕**: 版本号自增至 `1.5.66`，Git Tag `v1.5.66`。
+- **Git Commit Hash**: `2460fc5db`
+- **Git Tag**: `v1.5.66`
 
 #### 📌 [P1] [ ] Card 10: Card-FUSE-Overlay-Virtual-Trash-Shield (v1.5.67): FUSE 只读挂载内存 Overlay 临时文件屏蔽层与热点 LRU 块缓存 (SSOT) ⏳
 - **类型**：VikingFS / FUSE Protection / Memory Overlay Shield ｜ **优先级**：🔥 P1
-- **目标版本**：`v1.5.67` ｜ **当前状态**：[ ] 待执行 ⏳
+- **目标版本**：`v1.5.67` ｜ **当前状态**：[ ] 即将执行 ⏳
 - **核心治理规划**：
   1. 屏蔽 VS Code / JetBrains / Vim / OS 在只读挂载点生成的 `.swp`、`~`、`.DS_Store`、`.Trash` 虚拟文件；
   2. 内存 Overlay 动态吸收写尝试并返回 EROFS 或内存模拟虚拟写，杜绝只读文件系统抛错卡死编辑器；
