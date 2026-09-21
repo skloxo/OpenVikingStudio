@@ -130,17 +130,17 @@ class TelemetryStore:
         log_level="error",
     )
     def _get_connection(self) -> sqlite3.Connection:
-        """Open a SQLite connection with WAL mode enabled."""
+        """Open a SQLite connection with WAL mode enabled and 30s busy timeout."""
         conn = sqlite3.connect(
             str(self._db_path),
-            timeout=10.0,
+            timeout=30.0,
             check_same_thread=False,
         )
         conn.row_factory = sqlite3.Row
         with conn:
             conn.execute("PRAGMA journal_mode=WAL;")
             conn.execute("PRAGMA synchronous=NORMAL;")
-            conn.execute("PRAGMA busy_timeout=5000;")
+            conn.execute("PRAGMA busy_timeout=30000;")
         return conn
 
     def _init_db_schema(self) -> None:
@@ -670,8 +670,10 @@ class TelemetryStore:
             # 1. From request audit (if available)
             usage_db_path = self._db_path.parent.parent / "usage_audit" / "usage_audit.sqlite3"
             if usage_db_path.is_file():
+                uconn = None
                 try:
-                    uconn = sqlite3.connect(str(usage_db_path))
+                    uconn = sqlite3.connect(str(usage_db_path), timeout=30.0)
+                    uconn.execute("PRAGMA busy_timeout=30000;")
                     ucur = uconn.cursor()
                     ucur.execute(
                         "SELECT count(*), sum(case when status_code >= 400 then 1 else 0 end) FROM request_audit WHERE created_at >= ?",
@@ -693,9 +695,14 @@ class TelemetryStore:
                         (start_ts,),
                     )
                     store_calls = ucur.fetchone()[0] or 0
-                    uconn.close()
                 except Exception as e:
                     logger.debug("Error querying usage_audit in harness_metrics: %s", e)
+                finally:
+                    if uconn:
+                        try:
+                            uconn.close()
+                        except Exception:
+                            pass
 
             # 2. From telemetry_store
             conn = self._get_connection()
