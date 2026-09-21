@@ -1208,5 +1208,39 @@
 - **Git Commit Hash**: `ad3ae132c`
 - **Git Tag**: `v1.5.73`
 
-
-
+#### 📌 [P1] [x] Card 17: Card-Context-Router-Pipeline (v1.5.74): 异构多引擎上下文路由网关、自适应语义分段与统一重组管线 (SSOT) ✅
+- **类型**：Context Compression / Multi-Engine Router / Semantic Segmentation / Pipeline Reassembly / UI Cockpit ｜ **优先级**：🔥 P1
+- **目标版本**：`v1.5.74` ｜ **当前状态**：[x] 已验收通过 ✅
+- **交付内容摘要**：
+  1. **异构多引擎自适应上下文路由网关 (`openviking/service/context_router_*`)**：
+     - 落实 `BLUEPRINT.md` Topic 5 Section 4.2 (Context Router Pipeline)，将五轮多引擎压缩矩阵（Native Caching, LLMLingua-2, TokenShift, SkillZip, Active Notes）全面整合为统一调度中枢；
+     - 构建 `PromptSegmenter` 自适应语义分段器，精准识别 5 类异构提示词片段：`STATIC_HEADER` (系统身份与不可变指令)、`NATURAL_LANGUAGE` (背景说明与对话自然语言)、`CODE_BLOCK` (多语言代码块)、`SKILL_CONTRACT` (YAML Frontmatter 技能规约)、`DIALOGUE_HISTORY` (历史多轮对话)；
+     - 构建 `ContextRouterEngine` 统一调度流水线：
+       - 静态头直通 `Native Caching`（100% 零损直通绕行，保留 KV 命中）；
+       - 自然语言智能分流至 `LLMLingua-2` 78ms 实体/控制词保全脱水；
+       - 代码块智能分流至 `PointFive TokenShift` AST 语法树保护引擎（支持 Python 与 TypeScript/JavaScript/JSON/SQL/Shell）；
+       - 技能规约智能分流至 `SkillZip` 六元组确定性契约压缩；
+       - 保留原始提示词严格先后顺序，完成无损重组 (`reconstructed prompt`)；
+       - 引入全管线 AST 语法门禁与各分段独立 Fail-Safe 容错机制（语法破损自动降级回退原始片段，全链路平滑健壮）；
+     - 严格遵守单文件架构解耦原则：`context_router_types.py` (81行)、`context_router_segmenter.py` (205行)、`context_router_engine.py` (316行)，单文件均在 100~350 行黄金甜点区；
+  2. **RESTful API 全链路路由端点 (`openviking/server/routers/context_router.py`, 67行)**：
+     - 暴露 `POST /api/v1/context-router/route`、`POST /segment`、`GET /stats`、`POST /reset-stats` 并在 `app.py` 中规范挂载；
+  3. **座舱级前端高密交互套件 (`src/routes/retrieval/-components/context-router-cockpit.tsx`, 373行)**：
+     - 严格遵循 NO GREEN EVER 🚫、字号 $\ge 12\text{px}$、代码规范切分；
+     - 挂载在 `/studio/retrieval` 的专属一级 Tab 10「Context Router 统一路由网关」；
+     - 呈现 4 大核心指标瓦片（原始复合 Prompt Token、多引擎压缩后 Token 与净节省、综合压缩率、管线耗时与 AST 语法门禁 `AST PASS`）；
+     - 提供三大异构典型预设（量化交易多智能体决策、全栈工程脚手架与 API 客户端、多轮排障与系统诊断）；
+     - 支持交互式微调（代码压缩模式、脱水保留率、静态头保护开关、SkillZip 契约开关）；
+     - 原始输入 vs 重组输出双栏实时对比；
+     - 自适应分段流水分流总表（流水号、语义类别、路由目标引擎、Token 变化、节省率、耗时、状态）；
+  4. **全套自动化门禁验证**：
+     - Card 17 专属单测 `tests/unit/test_context_router_pipeline.py` (217行, 7项测试) **7/7 全绿** (3.41s)；
+     - 版本门禁单测 `tests/unit/test_version_alignment_gate.py` (3项测试) **3/3 全绿** (0.13s)；
+     - 安全凭据扫描 `scripts/security_check.py` **4,473 跟踪文件零敏感信息泄露**；
+     - 前端生产构建 (Vite Build) **21.69s 零报错**，产物烘焙并验证版本 `1.5.74`；
+     - 运行时服务平滑重启并 probe 验证：`{"status":"ok","healthy":true,"version":"1.5.74","auth_mode":"trusted"}`；
+     - 真实浏览器实机验证 100% 成功（原始 458 Token -> 压缩后 353 Token，节省 105 Token，综合压缩率 22.9%，AST 门禁 PASS，分段直通/正常）；
+  5. **版本留痕**: 版本号自增至 `1.5.74`，Git Commit `db0a6f256`，Git Tag `v1.5.74`。
+- **修改文件清单**：`openviking/service/context_router_engine.py`, `openviking/service/context_router_segmenter.py`, `openviking/service/context_router_types.py`, `openviking/server/routers/context_router.py`, `openviking/server/routers/__init__.py`, `openviking/server/app.py`, `openviking/service/tokenshift_transformers.py`, `src/routes/retrieval/-components/context-router-cockpit.tsx`, `src/routes/retrieval/-constants/context-router-presets.ts`, `src/routes/retrieval/-types/context-router.ts`, `src/routes/retrieval/route.tsx`, `tests/unit/test_context_router_pipeline.py`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md`
+- **Git Commit Hash**: `db0a6f256`
+- **Git Tag**: `v1.5.74`
