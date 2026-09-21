@@ -629,9 +629,29 @@ class GitAccessor(DataAccessor):
         return content_dir, repo_name
 
     async def _extract_zip(self, zip_path: str, target_dir: str) -> str:
-        """Extract a local zip file into target_dir."""
+        """Extract a local or remote zip file into target_dir."""
         if zip_path.startswith(("http://", "https://")):
-            raise NotImplementedError("Zip URL download not yet implemented in GitAccessor")
+            import tempfile
+            import httpx
+            from urllib.parse import urlparse
+
+            repo_name = Path(urlparse(zip_path).path).stem or "archive"
+            logger.info(f"[GitAccessor] Downloading remote zip archive: {zip_path}")
+            async with httpx.AsyncClient(follow_redirects=True, timeout=60.0) as client:
+                resp = await client.get(zip_path)
+                resp.raise_for_status()
+                with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as tmp_f:
+                    tmp_f.write(resp.content)
+                    local_zip = tmp_f.name
+            try:
+                await self._extract_zip(local_zip, target_dir)
+                return repo_name
+            finally:
+                if os.path.exists(local_zip):
+                    try:
+                        os.unlink(local_zip)
+                    except OSError:
+                        pass
 
         path = Path(zip_path)
         name = path.stem

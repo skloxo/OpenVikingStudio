@@ -1638,6 +1638,20 @@ class FeishuAccessor(DataAccessor):
             checkbox = "[x]" if done else "[ ]"
             return f"- {checkbox} {text}"
 
+        # Task (embedded Feishu task widget with completion state)
+        if attr == "task":
+            done = False
+            if hasattr(content_obj, "style") and content_obj.style:
+                done = getattr(content_obj.style, "done", False)
+            elif hasattr(content_obj, "task") and content_obj.task:
+                done = getattr(content_obj.task, "completed", getattr(content_obj.task, "done", False))
+            elif hasattr(content_obj, "completed"):
+                done = getattr(content_obj, "completed", False)
+            elif hasattr(content_obj, "done"):
+                done = getattr(content_obj, "done", False)
+            checkbox = "[x]" if done else "[ ]"
+            return f"- {checkbox} {text}"
+
         # Simple template formatting (bullet, quote, etc.)
         fmt = self._TEXT_FORMAT.get(attr)
         if fmt:
@@ -1851,23 +1865,23 @@ class FeishuAccessor(DataAccessor):
         parts = []
         for element in elements:
             # TextRun
-            text_run = element.text_run
+            text_run = getattr(element, "text_run", None)
             if text_run:
-                content = text_run.content or ""
-                style = text_run.text_element_style
+                content = getattr(text_run, "content", "") or ""
+                style = getattr(text_run, "text_element_style", None)
                 content = self._apply_text_style(content, style)
                 parts.append(content)
                 continue
 
             # MentionUser
-            mention_user = element.mention_user
+            mention_user = getattr(element, "mention_user", None)
             if mention_user:
                 user_id = _getattr_safe(mention_user, "user_id", "user")
                 parts.append(f"@{user_id}")
                 continue
 
             # MentionDoc
-            mention_doc = element.mention_doc
+            mention_doc = getattr(element, "mention_doc", None)
             if mention_doc:
                 title = _getattr_safe(mention_doc, "title", "document")
                 url = _getattr_safe(mention_doc, "url", "")
@@ -1875,7 +1889,7 @@ class FeishuAccessor(DataAccessor):
                 continue
 
             # Equation
-            equation = element.equation
+            equation = getattr(element, "equation", None)
             if equation:
                 parts.append(f"${_getattr_safe(equation, 'content', '')}$")
                 continue
