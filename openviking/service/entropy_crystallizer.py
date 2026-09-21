@@ -126,6 +126,16 @@ class EntropyCrystallizer:
                     cls._instance = cls()
         return cls._instance
 
+    def reset_rule(self) -> None:
+        """Reset the tri-gate rule to default thresholds."""
+        self.rule = TriGateRule()
+
+    @classmethod
+    def reset_instance(cls) -> None:
+        """Reset the singleton instance (primarily for test isolation)."""
+        with cls._lock:
+            cls._instance = None
+
     @staticmethod
     def _cosine_similarity(vec_a: List[float], vec_b: List[float]) -> float:
         """Compute cosine similarity between two numeric vectors."""

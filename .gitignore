@@ -56,4 +56,6 @@ test_data/
 .openviking/media/
 .openviking/downloads/
 .openviking/config.local.json
+.coverage
+.coverage.*
 

@@ -38,18 +38,20 @@ def test_nudge_async_review():
     res = nudge.trigger_nudge(session_id)
     assert res["status"] == "queued"
 
-    # 等待后台 worker 消费
-    for _ in range(20):
-        status = nudge.get_status()
-        if status["completed_reviews"] > 0:
+    # 等待后台 worker 消费当前 session
+    target_rec = None
+    for _ in range(30):
+        recent = nudge.list_recent_reviews(limit=50)
+        matching = [r for r in recent if r.session_id == session_id]
+        if matching:
+            target_rec = matching[0]
             break
         time.sleep(0.1)
 
     status = nudge.get_status()
     assert status["completed_reviews"] >= 1
-    recent = nudge.list_recent_reviews(limit=5)
-    assert any(r.session_id == session_id for r in recent)
-    target_rec = next(r for r in recent if r.session_id == session_id)
+    assert target_rec is not None
+    assert target_rec.session_id == session_id
     assert target_rec.proposed_patch_needed is True
 
 
