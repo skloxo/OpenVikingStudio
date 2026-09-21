@@ -11,6 +11,7 @@
 > - **线上正式部署版本**：**`v1.4.106`**（物理访问地址：`vk.tide.red/studio/home`，已实机验证）；
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.5.69`** | **Card-Test-Isolation-Singleton-Guard-And-Zero-Failure-Suite** | **全库测试单例隔离保护 (EntropyCrystallizer/HermesNudge)、收集警告治理与全量测试 100% 全绿基线达成 (SSOT)** | 1. **EntropyCrystallizer 单例状态隔离与复位护栏 (`openviking/service/entropy_crystallizer.py`)**: 增加 `reset_rule()` 与 `reset_instance()`，解决跨测试修改全局规则 (`min_cluster_size=3`, `cooling_period_hours=0.01`) 导致的测试污染问题；<br>2. **测试用例清理契约加固 (`test_dreaming_gate.py` & `test_entropy_crystallizer.py`)**: `test_dreaming_gate.py` 增加 `try...finally: crystallizer.reset_rule()`，`test_entropy_crystallizer.py` 增加 autouse fixture `_isolate_crystallizer_rule` 自动隔离测试执行；<br>3. **Hermes Nudge 异步复盘目标精准轮询 (`test_hermes_nudge_patch.py`)**: 解决单测前序已发生全局 `completed_reviews > 0` 导致第 0 轮虚假 break 的竞态问题，升级为基于具体 `session_id` 的精准匹配轮询 (`list_recent_reviews`)；<br>4. **测试收集告警治理 (`tests/unit/test_accessors_registry.py`)**: 在 `TestAccessor(DataAccessor)` 基类中标记 `__test__ = False`，消灭 pytest 尝试收集带 `__init__` 测试类的 `PytestCollectionWarning`；<br>5. **全库测试套件 100% 全绿门禁达成**: 全库 190 个测试文件、2,029 项单元测试 **100% 全部通过 (0 failed, 19 skipped)**；安全扫描 4,439 文件零泄密，Vite 构建 21.50s 零报错，静态产物烘焙并验证版本 `1.5.69`；运行时服务重启对齐 `1.5.69`。<br>**Commit Hash**：`a83b5cd46` | **修改文件**：`openviking/service/entropy_crystallizer.py`, `tests/unit/test_dreaming_gate.py`, `tests/unit/test_entropy_crystallizer.py`, `tests/unit/test_hermes_nudge_patch.py`, `tests/unit/test_accessors_registry.py`, `.gitignore`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md` | [x] 已验收通过 ✅ |
 | **`v1.5.68`** | **Card-Session-Experience-Lineage-Tag-Key-Hash-And-Test-Hygiene** | **Experience 溯源标签稳定指纹映射 (xp.<sha256_16hex>)、健康度评测分轨校准与测试隔离/代理护栏加固 (SSOT)** | 1. **Experience 溯源标签哈希化 (`experience_lineage.py`)**: 提纯 `experience_uri_to_tag_key(uri)` 函数，统一采用 `xp.<sha256_16hex>` 紧凑稳定指纹格式，总长度 20 字符（远低于 64 限制），字母开头、严格合规、碰撞概率 $< 10^{-14}$，根治原始超长 URI 引发 `InvalidArgumentError` 导致 `test_experience_lineage.py` 失败的缺陷；消除 docstring 转义警告；<br>2. **健康度多维评测分轨校验 (`test_retrieval_benchmark_and_hygiene.py`)**: 补齐 `disputed` 与 `superseded` 双向测试样本与契约断言，5/5 全绿；<br>3. **检索标签过滤器测试隔离与传播加固 (`test_search_tags_filter.py`)**: 解决 pytest caplog 在子模块 propagate=False 下的捕获隔离问题，17/17 全绿；<br>4. **测试环境代理防猝死护栏 (`tests/conftest.py`)**: 自动检测环境中的 `all_proxy` socks 代理，在未安装 `socksio` 时自动规避，杜绝 60+ 项 embedder 测试因缺少依赖而误报错；<br>5. **全套门禁与自动化发版闭环**: 95 项回归测试 100% 通过 (3.68s)，安全扫描 4,439 文件零泄密，Vite 构建 19.85s 零报错，静态产物烘焙并验证版本 `1.5.68`；运行时服务重启对齐 `1.5.68`。<br>**Commit Hash**：`47e7fc696` | **修改文件**：`openviking/session/memory/experience_lineage.py`, `tests/unit/session/memory/test_experience_lineage.py`, `tests/unit/test_retrieval_benchmark_and_hygiene.py`, `tests/unit/test_search_tags_filter.py`, `tests/conftest.py`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md` | [x] 已验收通过 ✅ |
 | **`v1.5.64`** | **Card-Observer-Models-Telemetry-Cache-Hotfix** | **模型观测器单调时钟轻量快照缓存、动态实例标记与亚毫秒并发性能加固 (SSOT)** | 1. **单调时钟轻量快照缓存 (`models_observer.py`)**: 引入 `_CACHE_TTL=5.0s` 单调时钟缓存与线程安全锁，消灭前端高频轮询时单次请求中对磁盘 JSON 与 SQLite `TelemetryStore` 的连续 4 次重复访问；<br>2. **动态实例标记签名 (`_get_cache_signature`)**: 创新性融合静态模型配置与动态实例标记，既保障生产环境跨请求 100% 命中 5 秒内存快照，又杜绝单元测试下不同动态追踪实例的缓存交叉污染；<br>3. **缓存生命周期与诊断接口**: 暴露 `invalidate_cache()` 与 `get_cache_stats()`，并在 `get_status_table` 中支持 `force_refresh=True`；<br>4. **全套自动化门禁双全**: Card 7 专属单测 4/4 全绿 (1.19s)，全回归测试 142/142 项全绿 (2.26s)；安全扫描 4,433 文件零泄密；Vite 构建通过并烘焙版本 `1.5.64`；运行时服务重启对齐 `1.5.64`。<br>**Commit Hash**：`501e55572` | **修改文件**：`openviking/storage/observers/models_observer.py`, `tests/unit/test_models_observer_cache.py`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md` | [x] 已验收通过 ✅ |
 | **`v1.5.63`** | **Card-Storage-Index-Consistency-And-Pruning** | **双向索引一致性检查、孤儿向量/BM25倒排修剪与自愈引擎 (SSOT)** | 1. **BM25 倒排索引接口增强 (`bm25_fts_index.py`)**: 新增 `list_all_uris` 与 `prune_orphans`，支持毫秒级提取当前倒排库全量 URI 集合并精准反向修剪幽灵倒排条目；<br>2. **双向索引一致性与自愈修剪引擎 (`index_consistency.py`)**: 升级 `IndexConsistencyReport` 模型，整合正向缺失排查 (`missing_records`) + 反向向量孤儿检测与修剪 (`vector_store.remove_by_uri`) + 反向 BM25 倒排孤儿检测与修剪 (`bm25_index.prune_orphans`)，支持 `prune=True` 自愈修剪模式并恢复评分至 100.0 分；<br>3. **全链路 API 与客户端贯通**: 在 `service/core.py`、`server/routers/system.py`、`client/local.py`、`async_client.py`、`sync_client.py` 中全量支持 `prune: bool = False` 参数；<br>4. **全套自动化门禁验证**: Card 6 专属单测 4/4 全绿 (0.08s)，全回归测试 133/133 项全绿 (0.81s)；安全扫描 4,432 文件零泄密；Vite 构建 21.39s 零报错，产物烘焙并验证版本 `1.5.63`；运行时服务重启对齐 `1.5.63`。<br>**Commit Hash**：`3fd94b7af` | **修改文件**：`openviking/storage/bm25_fts_index.py`, `openviking/storage/index_consistency.py`, `openviking/service/core.py`, `openviking/server/routers/system.py`, `openviking/client/local.py`, `openviking/async_client.py`, `openviking/sync_client.py`, `tests/unit/test_storage_index_consistency_and_pruning.py`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md` | [x] 已验收通过 ✅ |
@@ -1029,6 +1030,52 @@
 - **修改文件清单**：`bot/vikingbot/openviking_mount/fuse_overlay.py` (新建, 293行), `bot/vikingbot/openviking_mount/viking_fuse.py` (集成三层防护, 行数保持≤500), `tests/unit/test_fuse_overlay_shield.py` (新建, 21测试), `openviking/_version.py`, `package.json`
 - **Git Commit Hash**: `60a066fed`
 - **Git Tag**: `v1.5.67`
+
+#### 📌 [P1] [x] Card 11: Card-Session-Experience-Lineage-Tag-Key-Hash-And-Test-Hygiene (v1.5.68): Experience 溯源标签稳定指纹映射 (xp.<sha256_16hex>)、健康度评测分轨校准与测试隔离/代理护栏加固 (SSOT) ✅
+- **类型**：Session Experience / Tag Key Hash / Hygiene Benchmark / Conftest Shield ｜ **优先级**：🔥 P1
+- **目标版本**：`v1.5.68` ｜ **当前状态**：[x] 已验收通过 ✅
+- **交付内容摘要**：
+  1. **Experience 溯源标签哈希化 (`openviking/session/memory/experience_lineage.py`)**：
+     - 提纯 `experience_uri_to_tag_key(uri)` 纯函数，统一采用 `xp.<sha256_16hex>` 紧凑稳定指纹格式，总长度 20 字符（远低于 64 限制），字母开头、严格合规、碰撞概率 $< 10^{-14}$，根治原始超长 URI 引发 `InvalidArgumentError` 导致 `test_experience_lineage.py` 失败的缺陷；
+     - 消除 docstring `\-` 逃逸警告；
+  2. **健康度多维评测分轨校验 (`tests/unit/test_retrieval_benchmark_and_hygiene.py`)**：
+     - 补齐 `disputed` 与 `superseded` 双向测试样本与契约断言，5/5 全绿；
+  3. **检索标签过滤器测试隔离与传播加固 (`tests/unit/test_search_tags_filter.py`)**：
+     - 解决 pytest caplog 在子模块 `propagate=False` 下的捕获隔离问题，17/17 全绿；
+  4. **测试环境代理防猝死护栏 (`tests/conftest.py`)**：
+     - 自动检测环境中的 `all_proxy` socks 代理，在未安装 `socksio` 时自动规避，杜绝 60+ 项 embedder 测试因缺少依赖而误报错；
+  5. **全套自动化门禁验证**：
+     - 95 项回归测试 100% 通过 (3.68s)，安全扫描 4,439 文件零泄密，Vite 构建 19.85s 零报错，静态产物烘焙并验证版本 `1.5.68`；运行时服务重启对齐 `1.5.68`。
+- **修改文件清单**：`openviking/session/memory/experience_lineage.py`, `tests/unit/session/memory/test_experience_lineage.py`, `tests/unit/test_retrieval_benchmark_and_hygiene.py`, `tests/unit/test_search_tags_filter.py`, `tests/conftest.py`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md`
+- **Git Commit Hash**: `47e7fc696`
+- **Git Tag**: `v1.5.68`
+
+#### 📌 [P1] [x] Card 12: Card-Test-Isolation-Singleton-Guard-And-Zero-Failure-Suite (v1.5.69): 全库测试单例隔离保护 (EntropyCrystallizer/HermesNudge)、收集警告治理与全量测试 100% 全绿基线达成 (SSOT) ✅
+- **类型**：Test Infrastructure / Singleton Guard / Clean Baseline / Zero Flake ｜ **优先级**：🔥 P1
+- **目标版本**：`v1.5.69` ｜ **当前状态**：[x] 已验收通过 ✅
+- **交付内容摘要**：
+  1. **EntropyCrystallizer 单例状态隔离与复位护栏 (`openviking/service/entropy_crystallizer.py`)**：
+     - 增加 `reset_rule()` 与 `reset_instance()` 方法，支持将单例规则重置为系统默认配置；
+     - 根除 `test_dreaming_gate.py` 修改全局规则 (`min_cluster_size=3`, `cooling_period_hours=0.01`) 后未还原污染 `test_entropy_crystallizer.py` 的深层根因；
+  2. **测试用例生命周期隔离与清理契约加固**：
+     - 在 `tests/unit/test_dreaming_gate.py` 中注入 `try...finally: crystallizer.reset_rule()` 确保任何情况必定复原；
+     - 在 `tests/unit/test_entropy_crystallizer.py` 中增加 autouse fixture `_isolate_crystallizer_rule`，在测试前与测试后执行双重状态重置；
+  3. **Hermes Nudge 异步复盘目标精准轮询 (`tests/unit/test_hermes_nudge_patch.py`)**：
+     - 消除以全局 `completed_reviews > 0` 计数为退出条件的非幂等断言（前序测试执行已使得计数 > 0 导致虚假立即 break）；
+     - 升级为基于精准目标 `session_id` 在 `list_recent_reviews` 中的存在性轮询，彻底消灭跨测试竞态；
+  4. **测试收集告警治理 (`tests/unit/test_accessors_registry.py`)**：
+     - 在 `TestAccessor(DataAccessor)` 实现类中显式标记 `__test__ = False`，消灭 pytest 尝试收集带 `__init__` 构造函数测试类所产生的 `PytestCollectionWarning`；
+  5. **全套自动化门禁验证与全库 100% 全绿基线**：
+     - 全库 190 个测试文件、2,029 项单元测试 **100% 全部通过 (0 failed, 19 skipped)**；
+     - 版本门禁对齐测试 `test_version_alignment_gate.py` 3/3 全绿通过；
+     - 安全凭据审计 `scripts/security_check.py` **4,439 跟踪文件零敏感信息泄露**；
+     - 前端生产构建 (Vite Build) **21.50s 零报错**，产物烘焙并验证版本 `1.5.69`；
+     - 运行时服务平滑重启并 probe 验证：`{"status":"ok","healthy":true,"version":"1.5.69","auth_mode":"trusted"}`；
+  6. **版本留痕**: 版本号自增至 `1.5.69`，Git Commit `a83b5cd46`，Git Tag `v1.5.69`。
+- **修改文件清单**：`openviking/service/entropy_crystallizer.py`, `tests/unit/test_dreaming_gate.py`, `tests/unit/test_entropy_crystallizer.py`, `tests/unit/test_hermes_nudge_patch.py`, `tests/unit/test_accessors_registry.py`, `.gitignore`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md`
+- **Git Commit Hash**: `a83b5cd46`
+- **Git Tag**: `v1.5.69`
+
 
 
 
