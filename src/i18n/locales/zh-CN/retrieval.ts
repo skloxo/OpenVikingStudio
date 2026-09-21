@@ -269,6 +269,7 @@ export const retrieval = {
       fullScaleInspected: '在籍全量巡检',
       dormantItems: '休眠/死重条目',
       disputedItems: '存疑冲突条目',
+      supersededItems: '历史替代条目',
       runInspection: '立即全量巡检',
       inspecting: '巡检中…',
       refresh: '刷新数据',

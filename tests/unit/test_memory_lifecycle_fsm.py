@@ -148,61 +148,69 @@ def test_dual_track_markdown_lifecycle_persistence():
     assert dt.is_dual_track is True
 
 
-def test_memory_lifecycle_rest_api():
+def test_memory_lifecycle_rest_api(tmp_path):
     """Verify FastAPI routes for status transitions, linking, and lineage inspection."""
     import uuid
+    from openviking.service.memory_lifecycle_fsm import MemoryLifecycleStore
+
+    orig_instance = MemoryLifecycleStore._instance
+    test_store = MemoryLifecycleStore(db_path=str(tmp_path / "test_lifecycle.db"))
+    MemoryLifecycleStore._instance = test_store
 
     uid = uuid.uuid4().hex[:8]
     old_uri = f"viking://session/legacy_bug_{uid}.md"
     new_uri = f"viking://session/fixed_root_cause_{uid}.md"
 
-    app = create_app()
-    app.dependency_overrides[get_request_context] = lambda: RequestContext(
-        user=UserIdentifier(account_id="test-account", user_id="test-user"),
-        role=Role.ADMIN,
-    )
-    client = TestClient(app)
+    try:
+        app = create_app()
+        app.dependency_overrides[get_request_context] = lambda: RequestContext(
+            user=UserIdentifier(account_id="test-account", user_id="test-user"),
+            role=Role.ADMIN,
+        )
+        client = TestClient(app)
 
-    # 1. Link old to new via POST /api/v1/memory/link
-    link_res = client.post(
-        "/api/v1/memory/link",
-        json={
-            "old_uri": old_uri,
-            "new_uri": new_uri,
-            "reason": "Root cause identified in v1.5.32",
-        },
-    )
-    assert link_res.status_code == 200
-    link_data = link_res.json()["result"]
-    assert link_data["old_record"]["status"] == "superseded"
-    assert link_data["new_record"]["status"] == "active"
+        # 1. Link old to new via POST /api/v1/memory/link
+        link_res = client.post(
+            "/api/v1/memory/link",
+            json={
+                "old_uri": old_uri,
+                "new_uri": new_uri,
+                "reason": "Root cause identified in v1.5.32",
+            },
+        )
+        assert link_res.status_code == 200
+        link_data = link_res.json()["result"]
+        assert link_data["old_record"]["status"] == "superseded"
+        assert link_data["new_record"]["status"] == "active"
 
-    # 2. GET /api/v1/memory/lineage
-    lineage_res = client.get(f"/api/v1/memory/lineage?uri={old_uri}")
-    assert lineage_res.status_code == 200
-    lineage_data = lineage_res.json()["result"]
-    assert lineage_data["status"] == "superseded"
-    assert len(lineage_data["successors"]) >= 1
+        # 2. GET /api/v1/memory/lineage
+        lineage_res = client.get(f"/api/v1/memory/lineage?uri={old_uri}")
+        assert lineage_res.status_code == 200
+        lineage_data = lineage_res.json()["result"]
+        assert lineage_data["status"] == "superseded"
+        assert len(lineage_data["successors"]) >= 1
 
-    # 3. Transition status via POST /api/v1/memory/status (Dispute new)
-    trans_res = client.post(
-        "/api/v1/memory/status",
-        json={
-            "uri": new_uri,
-            "event": "dispute",
-            "reason": "Regression detected on Edge browser",
-        },
-    )
-    assert trans_res.status_code == 200
-    trans_data = trans_res.json()["result"]
-    assert trans_data["status"] == "disputed"
+        # 3. Transition status via POST /api/v1/memory/status (Dispute new)
+        trans_res = client.post(
+            "/api/v1/memory/status",
+            json={
+                "uri": new_uri,
+                "event": "dispute",
+                "reason": "Regression detected on Edge browser",
+            },
+        )
+        assert trans_res.status_code == 200
+        trans_data = trans_res.json()["result"]
+        assert trans_data["status"] == "disputed"
 
-    # 4. GET /api/v1/memory/records
-    rec_res = client.get("/api/v1/memory/records?status=disputed")
-    assert rec_res.status_code == 200
-    rec_data = rec_res.json()["result"]
-    assert rec_data["total"] >= 1
-    assert any(r["uri"] == new_uri for r in rec_data["records"])
+        # 4. GET /api/v1/memory/records
+        rec_res = client.get("/api/v1/memory/records?status=disputed")
+        assert rec_res.status_code == 200
+        rec_data = rec_res.json()["result"]
+        assert rec_data["total"] >= 1
+        assert any(r["uri"] == new_uri for r in rec_data["records"])
+    finally:
+        MemoryLifecycleStore._instance = orig_instance
 
 
 @pytest.mark.asyncio
