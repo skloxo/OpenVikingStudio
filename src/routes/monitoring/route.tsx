@@ -17,6 +17,7 @@ import { Alert, AlertDescription, AlertTitle } from '#/components/ui/alert'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '#/components/ui/tooltip'
 import {
   Table,
   TableBody,
@@ -589,21 +590,50 @@ function MonitoringRoute() {
               {t('updatedAt', { time: updatedAt })}
             </span>
           ) : null}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={monitoringQuery.isFetching}
-            onClick={() => void monitoringQuery.refetch()}
-          >
-            <RefreshCwIcon
-              className={cn(
-                'size-4',
-                monitoringQuery.isFetching && 'animate-spin',
-              )}
-            />
-            {t('refresh')}
-          </Button>
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={monitoringQuery.isFetching}
+                    onClick={() => void monitoringQuery.refetch()}
+                    className="h-8 gap-2 px-2.5 text-xs font-normal transition-colors hover:border-cyan-500/40"
+                  />
+                }
+              >
+                <RefreshCwIcon
+                  className={cn(
+                    'size-3.5 text-cyan-600 dark:text-cyan-400',
+                    monitoringQuery.isFetching && 'animate-spin',
+                  )}
+                />
+                <span>{t('refresh', { defaultValue: '刷新' })}</span>
+                <span className="flex items-center gap-1.5 border-l border-border/60 pl-2 font-mono text-xs text-muted-foreground">
+                  <span className="size-1.5 rounded-full bg-cyan-500 animate-pulse" />
+                  60s 自动
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" align="end" className="max-w-xs space-y-1.5 p-3 text-xs shadow-lg">
+                <div className="flex items-center gap-1.5 font-medium text-foreground">
+                  <span className="size-2 rounded-full bg-cyan-500" />
+                  <span>自动刷新：已开启 (60s 惰性感应)</span>
+                </div>
+                <p className="text-muted-foreground leading-relaxed text-xs">
+                  {t('metricsTiles.autoRefreshStatus.tooltip', {
+                    defaultValue: '前端 60s 惰性视口焦点感知自动刷新状态。离开页面即 100% 挂起停止拉取，返回页面自动恢复，零无用网络开销。',
+                  })}
+                </p>
+                <div className="flex items-center gap-1 pt-1 text-xs text-cyan-600 dark:text-cyan-400 border-t border-border/40 font-mono">
+                  <span>⚡</span>
+                  <span>随时点击按钮即刻手动刷新</span>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </header>
 

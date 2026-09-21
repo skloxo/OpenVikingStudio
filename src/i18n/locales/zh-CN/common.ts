@@ -84,7 +84,7 @@ export const common = {
         title: '信息治理',
       },
       evolution: {
-        title: '技能自演进',
+        title: '技能演进',
       },
       sessions: {
         title: '会话中心',

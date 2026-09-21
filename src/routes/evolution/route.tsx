@@ -131,7 +131,7 @@ function EvolutionPage() {
           </div>
           <div>
             <div className="text-xs font-semibold text-foreground tracking-tight flex items-center gap-1.5">
-              <span>智能体技能自演进与生命周期中心</span>
+              <span>智能体技能演进与生命周期中心</span>
               <span className="text-[12px] font-mono px-1.5 py-0.2 rounded border border-cyan-300 dark:border-cyan-800/40 bg-cyan-100/70 dark:bg-cyan-950/30 text-cyan-800 dark:text-cyan-300">
                 7-Tier Cycle Ready
               </span>
