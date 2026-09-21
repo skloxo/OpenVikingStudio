@@ -124,15 +124,15 @@ function EvolutionPage() {
   return (
     <div className="flex w-full min-w-0 flex-col gap-4">
       {/* 顶部座舱微横幅：定位与态势 */}
-      <div className="flex items-center justify-between px-3 py-2 rounded-md border border-border/60 bg-muted/20">
+      <div className="flex items-center justify-between px-3 py-2 rounded-md border border-border/60 bg-muted/40">
         <div className="flex items-center gap-2">
-          <div className="flex items-center justify-center size-6 rounded bg-cyan-950/40 text-cyan-400 border border-cyan-800/40">
+          <div className="flex items-center justify-center size-6 rounded bg-cyan-100/80 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-400 border border-cyan-300 dark:border-cyan-800/40">
             <DnaIcon className="size-3.5" />
           </div>
           <div>
             <div className="text-xs font-semibold text-foreground tracking-tight flex items-center gap-1.5">
               <span>智能体技能自演进与生命周期中心</span>
-              <span className="text-[12px] font-mono px-1.5 py-0.2 rounded border border-cyan-800/40 bg-cyan-950/30 text-cyan-300">
+              <span className="text-[12px] font-mono px-1.5 py-0.2 rounded border border-cyan-300 dark:border-cyan-800/40 bg-cyan-100/70 dark:bg-cyan-950/30 text-cyan-800 dark:text-cyan-300">
                 7-Tier Cycle Ready
               </span>
             </div>
@@ -142,7 +142,7 @@ function EvolutionPage() {
           </div>
         </div>
         <div className="flex items-center gap-3 text-[12px] font-mono text-muted-foreground tabular-nums">
-          <span>门禁状态: <strong className="text-cyan-400 font-semibold">Active</strong></span>
+          <span>门禁状态: <strong className="text-cyan-600 dark:text-cyan-400 font-semibold">Active</strong></span>
           <span>昼夜节律: <strong className="text-foreground">自驱动</strong></span>
         </div>
       </div>

@@ -58,15 +58,15 @@ function KpiTile({
   accent?: boolean
 }) {
   return (
-    <div className="flex flex-col gap-1 rounded-md border border-slate-700/60 bg-slate-800/50 p-3">
-      <div className="flex items-center gap-1.5 text-slate-400">
+    <div className="flex flex-col gap-1 rounded-md border border-border/70 bg-card p-3 shadow-xs">
+      <div className="flex items-center gap-1.5 text-muted-foreground">
         <Icon className="size-3.5 shrink-0" />
         <span className="text-xs truncate">{label}</span>
       </div>
-      <p className={`text-base font-mono font-semibold tabular-nums ${accent ? 'text-cyan-400' : 'text-slate-200'}`}>
+      <p className={`text-base font-mono font-semibold tabular-nums ${accent ? 'text-cyan-600 dark:text-cyan-400' : 'text-foreground'}`}>
         {value}
       </p>
-      {sub && <p className="text-xs text-slate-500 truncate">{sub}</p>}
+      {sub && <p className="text-xs text-muted-foreground truncate">{sub}</p>}
     </div>
   )
 }
@@ -123,18 +123,18 @@ export function RSIDayNightCockpit() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* 顶栏 */}
+      {/* 头部标题与模式切换按钮 */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-slate-100 flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
             {isDaytime ? (
-              <SunIcon className="size-4 text-cyan-400" />
+              <SunIcon className="size-4 text-cyan-600 dark:text-cyan-400" />
             ) : (
-              <MoonIcon className="size-4 text-cyan-400" />
+              <MoonIcon className="size-4 text-cyan-600 dark:text-cyan-400" />
             )}
             RSI 昼夜双轮与可训练技能策略座舱
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             Skill-MDP 外部策略 · # EVOLVE-BLOCK 有界可编辑 · AgentOPSD 局部信用 · 双 Split 零退化
           </p>
         </div>
@@ -144,7 +144,7 @@ export function RSIDayNightCockpit() {
             variant="outline"
             disabled={switchPhaseMutation.isPending}
             onClick={() => switchPhaseMutation.mutate()}
-            className="text-xs h-7 gap-1 border-cyan-800/60 bg-cyan-950/40 hover:bg-cyan-900/50 text-cyan-300"
+            className="text-xs h-7 gap-1 border-cyan-300 dark:border-cyan-800/60 bg-cyan-50 dark:bg-cyan-950/40 hover:bg-cyan-100 dark:hover:bg-cyan-900/50 text-cyan-800 dark:text-cyan-300 cursor-pointer"
           >
             {isDaytime ? <MoonIcon className="size-3" /> : <SunIcon className="size-3" />}
             切换至 {isDaytime ? '夜间离线自演进' : '白昼轨迹收集'}
@@ -153,7 +153,7 @@ export function RSIDayNightCockpit() {
             size="sm"
             variant="outline"
             onClick={() => queryClient.invalidateQueries({ queryKey: ['rsi'] })}
-            className="text-xs h-7 gap-1 border-slate-700 bg-slate-800/80 hover:bg-slate-700/80 text-slate-200"
+            className="text-xs h-7 gap-1"
           >
             <RefreshCwIcon className="size-3" />
             刷新
@@ -195,48 +195,48 @@ export function RSIDayNightCockpit() {
       {/* 主体并排卡片 */}
       <div className="grid grid-cols-2 gap-3">
         {/* 左栏: 局部信用分配与关键回合标定 */}
-        <div className="rounded-md border border-slate-700/60 bg-slate-800/40 p-3 flex flex-col gap-2">
-          <div className="flex items-center justify-between pb-1 border-b border-slate-700/60">
-            <span className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-              <ZapIcon className="size-3.5 text-cyan-400" />
+        <div className="rounded-md border border-border/70 bg-card p-3 flex flex-col gap-2 shadow-xs">
+          <div className="flex items-center justify-between pb-1 border-b border-border/50">
+            <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+              <ZapIcon className="size-3.5 text-cyan-600 dark:text-cyan-400" />
               AgentOPSD 局部信用分配机制 (Local Credit Assignment)
             </span>
           </div>
 
-          <div className="text-xs text-slate-300 leading-relaxed">
+          <div className="text-xs text-muted-foreground leading-relaxed">
             通过计算 Student 在无技能下的 Rollout 轨迹与携带技能的 Self-Teacher 之间的期望对数概率差值 (
-            <span className="font-mono text-cyan-400">gap = teacher - student</span>
+            <span className="font-mono text-cyan-700 dark:text-cyan-400">gap = teacher - student</span>
             )，仅将演进微补丁精确限制在诱发失误的关键 Seam，防止全局过度拟合。
           </div>
 
-          <div className="rounded border border-slate-700/50 bg-slate-800/70 p-2 flex flex-col gap-1.5">
-            <div className="text-xs font-mono text-cyan-300 font-semibold flex items-center justify-between">
+          <div className="rounded border border-border/60 bg-muted/30 p-2 flex flex-col gap-1.5">
+            <div className="text-xs font-mono text-cyan-700 dark:text-cyan-300 font-semibold flex items-center justify-between">
               <span>Turn 1 [关键回合 · Critical Turn]</span>
-              <span className="text-rose-400">Gap: +2.50</span>
+              <span className="text-rose-600 dark:text-rose-400">Gap: +2.50</span>
             </div>
-            <div className="text-xs text-slate-400 font-mono bg-slate-900/60 p-1.5 rounded">
+            <div className="text-xs text-muted-foreground font-mono bg-muted/60 p-1.5 rounded">
               Student: 手搓冒泡排序 (缺少流程指南)
               <br />
               Teacher: 调用原生高效排序接口
             </div>
           </div>
 
-          <div className="rounded border border-slate-700/50 bg-slate-800/70 p-2 flex flex-col gap-1.5">
-            <div className="text-xs font-mono text-slate-400 flex items-center justify-between">
+          <div className="rounded border border-border/60 bg-muted/30 p-2 flex flex-col gap-1.5">
+            <div className="text-xs font-mono text-muted-foreground flex items-center justify-between">
               <span>Turn 2 [普通回合]</span>
-              <span className="text-slate-500">Gap: +0.02</span>
+              <span className="text-muted-foreground">Gap: +0.02</span>
             </div>
-            <div className="text-xs text-slate-400 font-mono bg-slate-900/60 p-1.5 rounded">
+            <div className="text-xs text-muted-foreground font-mono bg-muted/60 p-1.5 rounded">
               执行结果提取与常规返回 (无需打补丁)
             </div>
           </div>
         </div>
 
         {/* 右栏: # EVOLVE-BLOCK 有界 Surface 与双 Split 门禁 */}
-        <div className="rounded-md border border-slate-700/60 bg-slate-800/40 p-3 flex flex-col gap-2">
-          <div className="flex items-center justify-between pb-1 border-b border-slate-700/60">
-            <span className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-              <CodeIcon className="size-3.5 text-cyan-400" />
+        <div className="rounded-md border border-border/70 bg-card p-3 flex flex-col gap-2 shadow-xs">
+          <div className="flex items-center justify-between pb-1 border-b border-border/50">
+            <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+              <CodeIcon className="size-3.5 text-cyan-600 dark:text-cyan-400" />
               # EVOLVE-BLOCK 有界 Surface & 双 Split 门禁
             </span>
             <Button
@@ -244,19 +244,19 @@ export function RSIDayNightCockpit() {
               variant="outline"
               disabled={verifyGateMutation.isPending}
               onClick={() => verifyGateMutation.mutate()}
-              className="h-6 px-2 text-xs border-cyan-800/60 bg-cyan-950/40 text-cyan-300 hover:bg-cyan-900/50"
+              className="h-6 px-2 text-xs border-cyan-300 dark:border-cyan-800/60 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-800 dark:text-cyan-300 hover:bg-cyan-100 dark:hover:bg-cyan-900/50"
             >
               <PlayIcon className="size-2.5 mr-1" />
               测试门禁
             </Button>
           </div>
 
-          <div className="text-xs font-mono bg-slate-900/70 border border-slate-700/50 p-2 rounded text-slate-300">
-            <span className="text-slate-500"># 冻结区: 系统架构与强类型接口</span>
+          <div className="text-xs font-mono bg-muted/50 border border-border/60 p-2 rounded text-foreground">
+            <span className="text-muted-foreground"># 冻结区: 系统架构与强类型接口</span>
             <br />
-            <span className="text-cyan-400 font-semibold"># EVOLVE-BLOCK-START</span>
+            <span className="text-cyan-600 dark:text-cyan-400 font-semibold"># EVOLVE-BLOCK-START</span>
             <br />
-            <span className="text-slate-200">
+            <span className="text-foreground">
               def execute_policy(ctx):
               <br />
               &nbsp;&nbsp;&nbsp;&nbsp;# 仅此区域允许夜间递归自演进
@@ -264,24 +264,24 @@ export function RSIDayNightCockpit() {
               &nbsp;&nbsp;&nbsp;&nbsp;return optimize_step(ctx)
             </span>
             <br />
-            <span className="text-cyan-400 font-semibold"># EVOLVE-BLOCK-END</span>
+            <span className="text-cyan-600 dark:text-cyan-400 font-semibold"># EVOLVE-BLOCK-END</span>
             <br />
-            <span className="text-slate-500"># 冻结区: YAML Frontmatter 与门禁契约</span>
+            <span className="text-muted-foreground"># 冻结区: YAML Frontmatter 与门禁契约</span>
           </div>
 
           {gateResult && (
             <div
               className={`rounded border p-2 text-xs flex flex-col gap-1 ${
                 gateResult.passed
-                  ? 'border-cyan-800/50 bg-cyan-950/30 text-cyan-300'
-                  : 'border-rose-800/50 bg-rose-950/30 text-rose-300'
+                  ? 'border-cyan-300 dark:border-cyan-800/50 bg-cyan-50 dark:bg-cyan-950/30 text-cyan-800 dark:text-cyan-300'
+                  : 'border-rose-300 dark:border-rose-800/50 bg-rose-50 dark:bg-rose-950/30 text-rose-800 dark:text-rose-300'
               }`}
             >
               <div className="font-semibold flex items-center gap-1">
                 <CheckCircleIcon className="size-3" />
                 {gateResult.details}
               </div>
-              <div className="font-mono text-slate-400">
+              <div className="font-mono text-muted-foreground">
                 Train: {(gateResult.train_pass_rate * 100).toFixed(1)}% · Holdout:{' '}
                 {(gateResult.holdout_pass_rate * 100).toFixed(1)}% · 零退化检测:{' '}
                 {gateResult.regression_detected ? 'FAIL' : 'PASS'}

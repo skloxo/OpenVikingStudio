@@ -89,19 +89,19 @@ function KpiTile({
   warn?: boolean
 }) {
   const valueColor = warn
-    ? 'text-rose-400'
+    ? 'text-rose-600 dark:text-rose-400'
     : accent
-      ? 'text-cyan-400'
-      : 'text-slate-200'
+      ? 'text-cyan-600 dark:text-cyan-400'
+      : 'text-foreground'
 
   return (
-    <div className="flex flex-col gap-1 rounded-md border border-slate-700/60 bg-slate-800/50 p-3">
-      <div className="flex items-center gap-1.5 text-slate-400">
+    <div className="flex flex-col gap-1 rounded-md border border-border/70 bg-card p-3 shadow-xs">
+      <div className="flex items-center gap-1.5 text-muted-foreground">
         <Icon className="size-3.5 shrink-0" />
         <span className="text-xs truncate">{label}</span>
       </div>
       <p className={`text-base font-mono font-semibold tabular-nums ${valueColor}`}>{value}</p>
-      {sub && <p className="text-xs text-slate-500 truncate">{sub}</p>}
+      {sub && <p className="text-xs text-muted-foreground truncate">{sub}</p>}
     </div>
   )
 }
@@ -113,7 +113,7 @@ function KpiTile({
 function StatusBadge({ status }: { status: string }) {
   if (status === 'verified') {
     return (
-      <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-mono bg-cyan-950/60 text-cyan-300 border border-cyan-700/40">
+      <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-mono bg-cyan-50 dark:bg-cyan-950/60 text-cyan-800 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-700/40">
         <CheckCircleIcon className="size-3" />
         VERIFIED
       </span>
@@ -121,14 +121,14 @@ function StatusBadge({ status }: { status: string }) {
   }
   if (status === 'violated') {
     return (
-      <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-mono bg-rose-950/60 text-rose-300 border border-rose-700/40">
+      <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-mono bg-rose-50 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-700/40">
         <XCircleIcon className="size-3" />
         VIOLATED
       </span>
     )
   }
   return (
-    <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-mono bg-slate-800 text-slate-300 border border-slate-700">
+    <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-mono bg-muted text-muted-foreground border border-border">
       <ActivityIcon className="size-3" />
       {status.toUpperCase()}
     </span>
@@ -195,11 +195,11 @@ export function AHECockpit() {
       {/* 顶栏操作区 */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-slate-100 flex items-center gap-2">
-            <ShieldCheckIcon className="size-4 text-cyan-400" />
+          <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <ShieldCheckIcon className="size-4 text-cyan-500" />
             AHE 契约自演进与 Polar 环境判官座舱
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             可证伪假设 · 根因机制聚类 · 冻结面排他 · 真实沙箱 Exit Code 真理判定
           </p>
         </div>
@@ -207,7 +207,7 @@ export function AHECockpit() {
           size="sm"
           variant="outline"
           onClick={() => queryClient.invalidateQueries({ queryKey: ['ahe'] })}
-          className="text-xs h-7 gap-1 border-slate-700 bg-slate-800/80 hover:bg-slate-700/80 text-slate-200"
+          className="text-xs h-7 gap-1"
         >
           <RefreshCwIcon className="size-3" />
           刷新数据
@@ -252,25 +252,25 @@ export function AHECockpit() {
       {/* 主体并排卡片: 左侧 Manifest 契约列表, 右侧 根因聚类目录 */}
       <div className="grid grid-cols-2 gap-3">
         {/* 左卡片: Manifest 契约中心 */}
-        <div className="rounded-md border border-slate-700/60 bg-slate-800/40 p-3 flex flex-col gap-2">
-          <div className="flex items-center justify-between pb-1 border-b border-slate-700/60">
-            <span className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-              <ShieldCheckIcon className="size-3.5 text-cyan-400" />
+        <div className="rounded-md border border-border/70 bg-card p-3 flex flex-col gap-2 shadow-xs">
+          <div className="flex items-center justify-between pb-1 border-b border-border/60">
+            <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+              <ShieldCheckIcon className="size-3.5 text-cyan-500" />
               契约 Manifest 列表 ({manifests.length})
             </span>
           </div>
 
           <div className="flex flex-col gap-2 max-h-72 overflow-y-auto pr-1">
             {manifests.length === 0 ? (
-              <div className="p-4 text-center text-xs text-slate-500">暂无活跃 Manifest 契约</div>
+              <div className="p-4 text-center text-xs text-muted-foreground">暂无活跃 Manifest 契约</div>
             ) : (
               manifests.map((m) => (
                 <div
                   key={m.manifest_id}
-                  className="rounded border border-slate-700/50 bg-slate-800/70 p-2.5 flex flex-col gap-1.5"
+                  className="rounded border border-border/60 bg-muted/20 p-2.5 flex flex-col gap-1.5"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs text-cyan-300 font-semibold">{m.manifest_id}</span>
+                    <span className="font-mono text-xs text-cyan-600 dark:text-cyan-400 font-semibold">{m.manifest_id}</span>
                     <div className="flex items-center gap-2">
                       <StatusBadge status={m.status} />
                       <Button
@@ -280,20 +280,20 @@ export function AHECockpit() {
                         onClick={() => {
                           verifyMutation.mutate(m.manifest_id)
                         }}
-                        className="h-6 px-2 text-xs text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/40"
+                        className="h-6 px-2 text-xs text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 hover:bg-cyan-50 dark:hover:bg-cyan-950/40"
                       >
                         <PlayIcon className="size-2.5 mr-1" />
                         验证
                       </Button>
                     </div>
                   </div>
-                  <div className="text-xs text-slate-400">
-                    技能: <span className="text-slate-200">{m.skill_name}</span> · 假设条数:{' '}
-                    <span className="font-mono text-slate-200">{m.assumptions?.length || 0}</span> · 快照数:{' '}
-                    <span className="font-mono text-slate-200">{m.snapshots?.length || 0}</span>
+                  <div className="text-xs text-muted-foreground">
+                    技能: <span className="text-foreground">{m.skill_name}</span> · 假设条数:{' '}
+                    <span className="font-mono text-foreground">{m.assumptions.length}</span> · 快照数:{' '}
+                    <span className="font-mono text-foreground">{m.snapshots.length}</span>
                   </div>
-                  {m.assumptions?.[0] && (
-                    <div className="text-xs font-mono text-slate-500 truncate bg-slate-900/60 px-2 py-1 rounded">
+                  {m.assumptions[0] && (
+                    <div className="text-xs font-mono text-muted-foreground truncate bg-muted/40 px-2 py-1 rounded">
                       CMD: {m.assumptions[0].validation_command || '--'}
                     </div>
                   )}
@@ -304,40 +304,40 @@ export function AHECockpit() {
         </div>
 
         {/* 右卡片: 根因聚类目录与冻结面 */}
-        <div className="rounded-md border border-slate-700/60 bg-slate-800/40 p-3 flex flex-col gap-2">
-          <div className="flex items-center justify-between pb-1 border-b border-slate-700/60">
-            <span className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-              <LayersIcon className="size-3.5 text-cyan-400" />
+        <div className="rounded-md border border-border/70 bg-card p-3 flex flex-col gap-2 shadow-xs">
+          <div className="flex items-center justify-between pb-1 border-b border-border/60">
+            <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+              <LayersIcon className="size-3.5 text-cyan-500" />
               根因机制聚类目录 ({clusters.length})
             </span>
           </div>
 
           <div className="flex flex-col gap-2 max-h-72 overflow-y-auto pr-1">
             {clusters.length === 0 ? (
-              <div className="p-4 text-center text-xs text-slate-500">暂无聚合根因事件</div>
+              <div className="p-4 text-center text-xs text-muted-foreground">暂无聚合根因事件</div>
             ) : (
               clusters.map((c) => (
                 <div
                   key={c.cluster_id}
-                  className="rounded border border-slate-700/50 bg-slate-800/70 p-2.5 flex flex-col gap-1.5"
+                  className="rounded border border-border/60 bg-muted/20 p-2.5 flex flex-col gap-1.5"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs text-slate-300 font-semibold">{c.cluster_id}</span>
+                    <span className="font-mono text-xs text-foreground font-semibold">{c.cluster_id}</span>
                     <span
                       className={`text-xs px-1.5 py-0.5 rounded font-mono ${
                         c.patched
-                          ? 'bg-slate-800 text-slate-400 border border-slate-700'
-                          : 'bg-rose-950/60 text-rose-300 border border-rose-700/40'
+                          ? 'bg-muted text-muted-foreground border border-border'
+                          : 'bg-rose-50 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-700/40'
                       }`}
                     >
                       {c.patched ? '已冻结补丁' : '待自愈'}
                     </span>
                   </div>
-                  <div className="text-xs text-slate-300">
-                    机制: <span className="font-mono text-cyan-400">{c.mechanism}</span> · 出现频次:{' '}
-                    <span className="font-mono font-semibold text-slate-200">{c.occurrence_count}</span>
+                  <div className="text-xs text-muted-foreground">
+                    机制: <span className="font-mono text-cyan-600 dark:text-cyan-400">{c.mechanism}</span> · 出现频次:{' '}
+                    <span className="font-mono font-semibold text-foreground">{c.occurrence_count}</span>
                   </div>
-                  <div className="text-xs text-slate-400 truncate">{c.description}</div>
+                  <div className="text-xs text-muted-foreground truncate">{c.description}</div>
                 </div>
               ))
             )}

@@ -97,19 +97,19 @@ function KpiTile({
   accent?: boolean
 }) {
   return (
-    <div className="flex flex-col gap-1 rounded-md border border-slate-700/60 bg-slate-800/50 p-3">
-      <div className="flex items-center gap-1.5 text-slate-400">
-        <Icon className="size-3.5 shrink-0 text-cyan-400" />
+    <div className="flex flex-col gap-1 rounded-md border border-border/70 bg-card p-3 shadow-xs">
+      <div className="flex items-center gap-1.5 text-muted-foreground">
+        <Icon className="size-3.5 shrink-0 text-cyan-500" />
         <span className="text-xs truncate">{label}</span>
       </div>
       <div
-        className={`text-lg font-bold font-mono tabular-nums ${
-          accent ? 'text-cyan-400' : 'text-slate-100'
+        className={`text-base font-mono font-semibold tabular-nums ${
+          accent ? 'text-cyan-600 dark:text-cyan-400' : 'text-foreground'
         }`}
       >
         {value}
       </div>
-      {sub && <span className="text-xs text-slate-400">{sub}</span>}
+      {sub && <span className="text-xs text-muted-foreground truncate">{sub}</span>}
     </div>
   )
 }
@@ -191,9 +191,9 @@ export function LLMLinguaDehydrationCockpit() {
       </div>
 
       {/* 预置样本选择与控制栏 */}
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-slate-700/60 bg-slate-900/60 px-3 py-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/70 bg-card px-3 py-2 shadow-xs">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-slate-300">
+          <span className="text-xs font-semibold text-foreground">
             {t('llmlingua.presetSamples', '预置样本')}
           </span>
           <Button
@@ -214,12 +214,12 @@ export function LLMLinguaDehydrationCockpit() {
           </Button>
         </div>
         <div className="flex items-center gap-3">
-          <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+          <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
             <input
               type="checkbox"
               checked={preserveStructure}
               onChange={(e) => setPreserveStructure(e.target.checked)}
-              className="rounded border-slate-700 text-cyan-500 focus:ring-cyan-500"
+              className="rounded border-input text-cyan-600 focus:ring-cyan-500"
             />
             {t('llmlingua.freezeStructure', '物理冻结 YAML 头部 & 代码块')}
           </label>
@@ -229,12 +229,12 @@ export function LLMLinguaDehydrationCockpit() {
       {/* 交互实验台双栏 (原始 vs 脱水成果) */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* 左栏：原始文档输入 */}
-        <div className="flex flex-col gap-2 rounded-md border border-slate-700/60 bg-slate-900/40 p-3">
+        <div className="flex flex-col gap-2 rounded-md border border-border/70 bg-card p-3 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-300">
+            <span className="text-xs font-semibold text-foreground">
               {t('llmlingua.originalDoc', '原始 Markdown / Wiki 文档')}
             </span>
-            <span className="text-xs font-mono text-slate-400">
+            <span className="text-xs font-mono text-muted-foreground">
               {inputText.length} {t('llmlingua.charCount', '字符')}
             </span>
           </div>
@@ -242,21 +242,21 @@ export function LLMLinguaDehydrationCockpit() {
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             rows={14}
-            className="w-full rounded-md border border-slate-700/60 bg-slate-950 p-2.5 font-mono text-xs text-slate-200 focus:border-cyan-500 focus:outline-none resize-none"
+            className="w-full rounded-md border border-input bg-background p-2.5 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:border-cyan-500 focus:outline-none resize-none"
             placeholder={t('llmlingua.placeholderInput', '请输入或粘贴待脱水长篇自然语言文档...')}
           />
           <div className="flex items-center justify-between pt-1">
-            <div className="flex items-center gap-1.5 text-xs text-slate-400">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <span>{t('llmlingua.targetDehydrationRate', '目标压缩率')}</span>
               {[0.30, 0.50, 0.70].map((rate) => (
                 <button
                   key={rate}
                   type="button"
                   onClick={() => setTargetRate(rate)}
-                  className={`rounded px-1.5 py-0.5 font-mono text-xs cursor-pointer ${
+                  className={`rounded px-1.5 py-0.5 font-mono text-xs cursor-pointer transition-colors ${
                     targetRate === rate
-                      ? 'bg-cyan-950 text-cyan-400 border border-cyan-700 font-semibold'
-                      : 'bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700'
+                      ? 'bg-cyan-50 dark:bg-cyan-950/60 text-cyan-800 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-700 font-semibold'
+                      : 'bg-muted/60 text-muted-foreground hover:text-foreground border border-border'
                   }`}
                 >
                   {(rate * 100).toFixed(0)}%
@@ -265,7 +265,7 @@ export function LLMLinguaDehydrationCockpit() {
             </div>
             <Button
               size="sm"
-              className="h-8 px-3 text-xs bg-cyan-600 hover:bg-cyan-500 text-white font-medium"
+              className="h-8 px-3 text-xs bg-cyan-600 hover:bg-cyan-700 text-white font-medium cursor-pointer"
               disabled={dehydrateMutation.isPending || !inputText.trim()}
               onClick={() => dehydrateMutation.mutate()}
             >
@@ -280,14 +280,14 @@ export function LLMLinguaDehydrationCockpit() {
         </div>
 
         {/* 右栏：脱水成果展示 */}
-        <div className="flex flex-col gap-2 rounded-md border border-slate-700/60 bg-slate-900/40 p-3">
+        <div className="flex flex-col gap-2 rounded-md border border-border/70 bg-card p-3 shadow-xs">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-slate-300">
+              <span className="text-xs font-semibold text-foreground">
                 {t('llmlingua.dehydratedResult', '脱水后纯净文本')}
               </span>
               {result && (
-                <span className="rounded bg-cyan-950/80 px-1.5 py-0.5 text-xs font-mono font-medium text-cyan-400 border border-cyan-800/60">
+                <span className="rounded bg-cyan-50 dark:bg-cyan-950/80 px-1.5 py-0.5 text-xs font-mono font-medium text-cyan-800 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800/60">
                   节省 {result.tokens_saved} tok ({result.compression_ratio.toFixed(1)}%)
                 </span>
               )}
@@ -296,7 +296,7 @@ export function LLMLinguaDehydrationCockpit() {
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-6 px-2 text-xs text-slate-300 hover:text-white"
+                className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
                 onClick={handleCopy}
               >
                 <CopyIcon className="size-3 mr-1" />
@@ -304,26 +304,26 @@ export function LLMLinguaDehydrationCockpit() {
               </Button>
             )}
           </div>
-          <div className="relative h-64 w-full overflow-y-auto rounded-md border border-slate-700/60 bg-slate-950 p-2.5 font-mono text-xs text-slate-200">
+          <div className="relative h-64 w-full overflow-y-auto rounded-md border border-border/60 bg-muted/20 p-2.5 font-mono text-xs text-foreground">
             {result ? (
               <pre className="whitespace-pre-wrap font-mono leading-relaxed">
                 {result.dehydrated_content}
               </pre>
             ) : (
-              <div className="flex h-full items-center justify-center text-xs text-slate-500">
+              <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
                 {t('llmlingua.placeholderHint', '点击左下方“执行智能脱水”查看抽稀降噪成果')}
               </div>
             )}
           </div>
           {result && (
-            <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-slate-400">
-              <span className="rounded bg-slate-800/80 px-1.5 py-0.5 font-mono border border-slate-700">
+            <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-muted-foreground">
+              <span className="rounded bg-muted px-1.5 py-0.5 font-mono border border-border">
                 冻结结构块: {result.frozen_blocks_count} 处
               </span>
-              <span className="rounded bg-slate-800/80 px-1.5 py-0.5 font-mono border border-slate-700">
+              <span className="rounded bg-muted px-1.5 py-0.5 font-mono border border-border">
                 结构保真: {result.structural_fidelity.toFixed(1)}%
               </span>
-              <span className="rounded bg-slate-800/80 px-1.5 py-0.5 font-mono border border-slate-700 text-cyan-400">
+              <span className="rounded bg-muted px-1.5 py-0.5 font-mono border border-border text-cyan-600 dark:text-cyan-400">
                 耗时: {result.latency_ms.toFixed(1)}ms
               </span>
             </div>

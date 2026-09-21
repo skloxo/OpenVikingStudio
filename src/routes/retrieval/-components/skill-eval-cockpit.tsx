@@ -54,7 +54,7 @@ interface EvalSummary {
 }
 
 // ---------------------------------------------------------------------------
-// KPI Tile
+// KPI Tile (Dual-Theme Semantic Design)
 // ---------------------------------------------------------------------------
 
 interface KpiTileProps {
@@ -68,19 +68,19 @@ interface KpiTileProps {
 
 function KpiTile({ icon: Icon, label, value, sub, accent, warn }: KpiTileProps) {
   const valueColor = warn
-    ? 'text-rose-400'
+    ? 'text-rose-600 dark:text-rose-400'
     : accent
-      ? 'text-cyan-400'
-      : 'text-slate-200'
+      ? 'text-cyan-600 dark:text-cyan-400'
+      : 'text-foreground'
 
   return (
-    <div className="flex flex-col gap-1 rounded-md border border-slate-700/60 bg-slate-800/50 p-3">
-      <div className="flex items-center gap-1.5 text-slate-400">
+    <div className="flex flex-col gap-1 rounded-md border border-border/70 bg-card p-3 shadow-xs">
+      <div className="flex items-center gap-1.5 text-muted-foreground">
         <Icon className="size-3 shrink-0" />
         <span className="text-xs truncate">{label}</span>
       </div>
       <p className={`text-base font-mono font-semibold tabular-nums ${valueColor}`}>{value}</p>
-      {sub && <p className="text-xs text-slate-500 truncate">{sub}</p>}
+      {sub && <p className="text-xs text-muted-foreground truncate">{sub}</p>}
     </div>
   )
 }
@@ -92,7 +92,7 @@ function KpiTile({ icon: Icon, label, value, sub, accent, warn }: KpiTileProps) 
 function VerdictBadge({ verdict }: { verdict: string }) {
   if (verdict === 'pass') {
     return (
-      <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-mono bg-cyan-900/40 text-cyan-300 border border-cyan-700/40">
+      <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-mono bg-cyan-100/70 dark:bg-cyan-950/40 text-cyan-800 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-800/40">
         <CheckCircleIcon className="size-2.5" />
         PASS
       </span>
@@ -100,14 +100,14 @@ function VerdictBadge({ verdict }: { verdict: string }) {
   }
   if (verdict === 'fail') {
     return (
-      <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-mono bg-rose-900/40 text-rose-300 border border-rose-700/40">
+      <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-mono bg-rose-100/70 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-800/40">
         <XCircleIcon className="size-2.5" />
         FAIL
       </span>
     )
   }
   return (
-    <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-mono bg-slate-700/40 text-slate-400 border border-slate-600/40">
+    <span className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-mono bg-muted text-muted-foreground border border-border/60">
       SKIP
     </span>
   )
@@ -121,25 +121,25 @@ function ResultRow({ r }: { r: JudgeResult }) {
   const [expanded, setExpanded] = React.useState(false)
 
   return (
-    <div className="border-b border-slate-700/40 last:border-0">
+    <div className="border-b border-border/40 last:border-0">
       <button
         type="button"
-        className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-slate-700/20 transition-colors"
+        className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-muted/40 transition-colors cursor-pointer"
         onClick={() => setExpanded((v) => !v)}
       >
         <VerdictBadge verdict={r.verdict} />
-        <span className="text-xs font-mono text-slate-400 shrink-0 w-20 truncate">{r.skill_name}</span>
-        <span className="flex-1 text-xs text-slate-300 truncate">{r.case_id}</span>
-        <span className="text-xs font-mono text-slate-500 shrink-0">{r.duration_ms.toFixed(1)}ms</span>
-        <span className="text-xs text-slate-500 shrink-0 capitalize">{r.judge_type}</span>
+        <span className="text-xs font-mono text-muted-foreground shrink-0 w-24 truncate">{r.skill_name}</span>
+        <span className="flex-1 text-xs text-foreground truncate">{r.case_id}</span>
+        <span className="text-xs font-mono text-muted-foreground shrink-0">{r.duration_ms.toFixed(1)}ms</span>
+        <span className="text-xs text-muted-foreground shrink-0 capitalize">{r.judge_type}</span>
       </button>
       {expanded && (r.error || r.actual) && (
         <div className="px-3 pb-2 text-xs font-mono space-y-1">
           {r.error && (
-            <p className="text-rose-400 break-all">{r.error}</p>
+            <p className="text-rose-600 dark:text-rose-400 break-all">{r.error}</p>
           )}
           {r.actual && (
-            <p className="text-slate-500 break-all line-clamp-3">{r.actual}</p>
+            <p className="text-muted-foreground break-all line-clamp-3">{r.actual}</p>
           )}
         </div>
       )}
@@ -183,12 +183,12 @@ export function SkillEvalCockpit() {
     : '--'
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <FlaskConicalIcon className="size-4 text-cyan-400" />
-          <h2 className="text-sm font-semibold text-slate-200">
+          <FlaskConicalIcon className="size-4 text-cyan-600 dark:text-cyan-400" />
+          <h2 className="text-sm font-semibold text-foreground">
             {'技能质量视网膜与自动化评测'}
           </h2>
         </div>
@@ -196,7 +196,7 @@ export function SkillEvalCockpit() {
           <Button
             size="sm"
             variant="outline"
-            className="h-7 text-xs border-slate-600 hover:bg-slate-700"
+            className="h-7 text-xs"
             disabled={runMut.isPending}
             onClick={() => runMut.mutate('*')}
           >
@@ -238,17 +238,17 @@ export function SkillEvalCockpit() {
 
       {/* Latest Run Results */}
       {latestRun && (
-        <div className="rounded-md border border-slate-700/60 bg-slate-800/30">
-          <div className="flex items-center gap-2 border-b border-slate-700/40 px-3 py-2">
-            <FlaskConicalIcon className="size-3 text-slate-400" />
-            <span className="text-xs text-slate-400">
+        <div className="rounded-md border border-border/70 bg-card">
+          <div className="flex items-center gap-2 border-b border-border/50 px-3 py-2">
+            <FlaskConicalIcon className="size-3 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">
               {`本次评测 #${latestRun.run_id} · ${latestRun.passed}/${latestRun.total} 通过`}
             </span>
-            <span className={`ml-auto text-xs font-mono ${latestRun.failed > 0 ? 'text-rose-400' : 'text-cyan-400'}`}>
+            <span className={`ml-auto text-xs font-mono font-semibold ${latestRun.failed > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-cyan-600 dark:text-cyan-400'}`}>
               {(latestRun.pass_rate * 100).toFixed(1)}%
             </span>
           </div>
-          <div className="divide-y divide-slate-700/30">
+          <div className="divide-y divide-border/30">
             {latestRun.results.map((r) => (
               <ResultRow key={`${r.skill_name}-${r.case_id}`} r={r} />
             ))}
@@ -258,24 +258,24 @@ export function SkillEvalCockpit() {
 
       {/* Recent Runs History */}
       {!latestRun && summary?.recent_runs && summary.recent_runs.length > 0 && (
-        <div className="rounded-md border border-slate-700/60 bg-slate-800/30">
-          <div className="flex items-center gap-2 border-b border-slate-700/40 px-3 py-2">
-            <ClockIcon className="size-3 text-slate-400" />
-            <span className="text-xs text-slate-400">{'最近历史评测'}</span>
+        <div className="rounded-md border border-border/70 bg-card">
+          <div className="flex items-center gap-2 border-b border-border/50 px-3 py-2">
+            <ClockIcon className="size-3 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">{'最近历史评测'}</span>
           </div>
-          <div className="divide-y divide-slate-700/30">
+          <div className="divide-y divide-border/30">
             {summary.recent_runs.slice(-5).reverse().map((run) => (
               <div key={run.run_id} className="flex items-center gap-2 px-3 py-2">
-                <span className={`text-xs font-mono ${run.failed > 0 ? 'text-rose-400' : 'text-cyan-400'}`}>
+                <span className={`text-xs font-mono font-semibold ${run.failed > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-cyan-600 dark:text-cyan-400'}`}>
                   {(run.pass_rate * 100).toFixed(1)}%
                 </span>
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-muted-foreground">
                   {`${run.passed}/${run.total}`}
                 </span>
-                <span className="flex-1 text-xs text-slate-500 font-mono truncate">
+                <span className="flex-1 text-xs text-muted-foreground font-mono truncate">
                   {run.skill_name === '*' ? '全部技能' : run.skill_name}
                 </span>
-                <span className="text-xs text-slate-600">
+                <span className="text-xs text-muted-foreground">
                   {run.finished_at ? new Date(run.finished_at).toLocaleTimeString() : '--'}
                 </span>
               </div>
@@ -286,8 +286,8 @@ export function SkillEvalCockpit() {
 
       {/* Empty state */}
       {!latestRun && (!summary || summary.total_runs === 0) && (
-        <div className="flex flex-col items-center justify-center gap-3 py-10 text-slate-500">
-          <FlaskConicalIcon className="size-8 text-slate-600" />
+        <div className="flex flex-col items-center justify-center gap-3 py-10 text-muted-foreground border border-dashed border-border/70 rounded-md bg-muted/10">
+          <FlaskConicalIcon className="size-8 text-muted-foreground/60" />
           <p className="text-xs">{'尚无评测历史，点击「运行全量评测」开始'}</p>
         </div>
       )}
