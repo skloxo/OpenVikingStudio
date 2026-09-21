@@ -34,6 +34,11 @@ DEFAULT_TARGET_RATE: float = HARDCODED_DEFAULT_RATE
 DEFAULT_THRESHOLD: float = HARDCODED_DEFAULT_THRESHOLD
 PRESERVED_CONTROL_TOKENS: List[str] = HARDCODED_PROTECTED_TOKENS
 
+# Circuit breaker safeguards for remote GPU compression pipeline
+DEFAULT_CIRCUIT_BREAKER_MAX_FAILURES: int = 2
+DEFAULT_CIRCUIT_BREAKER_COOLDOWN: float = 30.0  # seconds
+DEFAULT_REMOTE_TIMEOUT: float = 1.5  # seconds
+
 # Regular expressions for structural element freezing
 RE_YAML_HEADER = re.compile(r"^---\s*\n[\s\S]*?\n---\s*\n?", re.MULTILINE)
 RE_FENCED_CODE = re.compile(r"(```[\s\S]*?```|~~~[\s\S]*?~~~)", re.MULTILINE)
@@ -87,6 +92,10 @@ class DehydrationStats(BaseModel):
     avg_latency_ms: float
     active_engine: str
     is_model_loaded: bool
+    circuit_breaker_open: bool = False
+    circuit_tripped_count: int = 0
+    consecutive_failures: int = 0
+    remote_success_count: int = 0
 
 
 class WikiDehydrationEngine:
@@ -102,12 +111,49 @@ class WikiDehydrationEngine:
         self._total_tokens_saved: int = 0
         self._sum_compression_ratio: float = 0.0
         self._total_latency_ms: float = 0.0
+        self._consecutive_remote_failures: int = 0
+        self._circuit_open_until: float = 0.0
+        self._circuit_tripped_count: int = 0
+        self._remote_success_count: int = 0
 
     @classmethod
     def get_instance(cls) -> WikiDehydrationEngine:
         if cls._instance is None:
             cls._instance = WikiDehydrationEngine()
         return cls._instance
+
+    def is_circuit_open(self) -> bool:
+        """Check whether the circuit breaker to remote GPU compression is open."""
+        if self._circuit_open_until <= 0.0:
+            return False
+        now = time.monotonic()
+        if now < self._circuit_open_until:
+            return True
+        return False
+
+    def _record_remote_success(self) -> None:
+        """Record successful remote call and reset failure counters."""
+        self._consecutive_remote_failures = 0
+        self._circuit_open_until = 0.0
+        self._remote_success_count += 1
+
+    def _record_remote_failure(self) -> None:
+        """Record remote failure and trip circuit breaker if threshold exceeded."""
+        self._consecutive_remote_failures += 1
+        if self._consecutive_remote_failures >= DEFAULT_CIRCUIT_BREAKER_MAX_FAILURES:
+            now = time.monotonic()
+            self._circuit_open_until = now + DEFAULT_CIRCUIT_BREAKER_COOLDOWN
+            self._circuit_tripped_count += 1
+            logger.warning(
+                "Remote GPU compression circuit breaker TRIPPED (cooldown %.1fs, trips=%d)",
+                DEFAULT_CIRCUIT_BREAKER_COOLDOWN,
+                self._circuit_tripped_count,
+            )
+
+    def reset_circuit_breaker(self) -> None:
+        """Manually reset circuit breaker to closed state."""
+        self._consecutive_remote_failures = 0
+        self._circuit_open_until = 0.0
 
     def _estimate_tokens(self, text: str) -> int:
         """Heuristic token estimation (~3.5 chars per token for bilingual text)."""
@@ -132,7 +178,11 @@ class WikiDehydrationEngine:
         return False
 
     def _compress_remote(self, text: str, rate: float) -> Optional[str]:
-        """Send prompt to Windows host Unified Models Server (CUDA FP16) for sub-100ms compression."""
+        """Send prompt to Windows host Unified Models Server (CUDA FP16) with circuit breaker protection."""
+        if self.is_circuit_open():
+            logger.debug("Remote compression skipped: circuit breaker is OPEN (cooldown active)")
+            return None
+
         for port in (11432, 11433):
             try:
                 url = f"http://127.0.0.1:{port}/v1/compress"
@@ -149,13 +199,18 @@ class WikiDehydrationEngine:
                     headers={"Content-Type": "application/json", "User-Agent": "OpenViking-Dehydration"},
                     method="POST",
                 )
-                with urllib.request.urlopen(req, timeout=3.0) as resp:
+                with urllib.request.urlopen(req, timeout=DEFAULT_REMOTE_TIMEOUT) as resp:
                     if resp.status == 200:
                         data = json.loads(resp.read().decode("utf-8"))
-                        return data.get("compressed_prompt")
+                        res = data.get("compressed_prompt")
+                        if res:
+                            self._record_remote_success()
+                            return res
             except Exception as e:
                 logger.debug("Remote compression failed on port %s: %s", port, e)
                 continue
+
+        self._record_remote_failure()
         return None
 
     def _lazy_load_compressor(self) -> None:
@@ -337,7 +392,11 @@ class WikiDehydrationEngine:
             structural_integrity_verified=verified,
             frozen_blocks_count=len(frozen_blocks),
             latency_ms=latency_ms,
-            engine_used=engine_name,
+            engine_used=(
+                "syntactic-pruner (circuit-open fallback)"
+                if engine_name == "syntactic-pruner (fallback)" and self.is_circuit_open()
+                else engine_name
+            ),
             dehydrated_content=final_content,
             dehydrated_text=final_content,
         )
@@ -346,7 +405,7 @@ class WikiDehydrationEngine:
         """Return aggregated observability statistics."""
         avg_ratio = round(self._sum_compression_ratio / self._total_documents, 2) if self._total_documents > 0 else 0.0
         avg_lat = round(self._total_latency_ms / self._total_documents, 2) if self._total_documents > 0 else 0.0
-        is_avail = self._model_available or self._is_remote_engine_available()
+        is_avail = (self._model_available or self._is_remote_engine_available()) and not self.is_circuit_open()
         engine_str = "microsoft/llmlingua-2 (CUDA FP16)" if is_avail else "syntactic-pruner"
         return DehydrationStats(
             total_documents=self._total_documents,
@@ -356,6 +415,10 @@ class WikiDehydrationEngine:
             avg_latency_ms=avg_lat,
             active_engine=engine_str,
             is_model_loaded=is_avail,
+            circuit_breaker_open=self.is_circuit_open(),
+            circuit_tripped_count=self._circuit_tripped_count,
+            consecutive_failures=self._consecutive_remote_failures,
+            remote_success_count=self._remote_success_count,
         )
 
     def get_telemetry(self) -> DehydrationStats:
