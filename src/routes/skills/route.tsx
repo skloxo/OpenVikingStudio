@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { LayersIcon, LoaderCircleIcon, SparklesIcon, ZapIcon } from 'lucide-react'
+import { LayersIcon, LoaderCircleIcon, SparklesIcon, TargetIcon, ZapIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Badge } from '#/components/ui/badge'
@@ -13,6 +13,7 @@ import { SkillsMetricsCards } from './-components/skills-metrics-cards'
 import { SkillDetailSheet } from './-components/skill-detail-sheet'
 import { SkillZipCockpit } from './-components/skill-zip-cockpit'
 import { SkillLiveGenCockpit } from './-components/skill-livegen-cockpit'
+import { SkillOptCockpit } from './-components/skill-opt-cockpit'
 import { getErrorMessage } from './-lib/skill-data'
 import { useSkillsData } from './-lib/use-skills'
 
@@ -22,7 +23,7 @@ export const Route = createFileRoute('/skills')({
 
 function SkillsRoute() {
   const { t } = useTranslation('skillsPage')
-  const [activeTab, setActiveTab] = React.useState<'catalog' | 'zip' | 'livegen'>('catalog')
+  const [activeTab, setActiveTab] = React.useState<'catalog' | 'zip' | 'livegen' | 'opt'>('catalog')
   const data = useSkillsData()
   const {
     skills, filteredSkills, paginatedSkills, skillsQuery, detailQuery,
@@ -73,9 +74,20 @@ function SkillsRoute() {
           <SparklesIcon className="size-3.5 mr-1.5" />
           ✨ LiveGen 在线技能创生
         </Button>
+        <Button
+          variant={activeTab === 'opt' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setActiveTab('opt')}
+          className={`text-xs h-7 font-mono ${activeTab === 'opt' ? 'bg-cyan-600 text-white' : 'text-cyan-400'}`}
+        >
+          <TargetIcon className="size-3.5 mr-1.5" />
+          🎯 SkillOpt 评测与体检
+        </Button>
       </div>
 
-      {activeTab === 'livegen' ? (
+      {activeTab === 'opt' ? (
+        <SkillOptCockpit />
+      ) : activeTab === 'livegen' ? (
         <SkillLiveGenCockpit />
       ) : activeTab === 'zip' ? (
         <SkillZipCockpit />

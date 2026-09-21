@@ -51,6 +51,7 @@ from openviking.server.routers.watches import router as watches_router
 from openviking.server.routers.webdav import router as webdav_router
 from openviking.server.routers.wiki_dehydration import router as wiki_dehydration_router
 from openviking.server.routers.skill_livegen import router as skill_livegen_router
+from openviking.server.routers.skill_opt import router as skill_opt_router
 
 __all__ = [
     "acl_router",
@@ -102,4 +103,5 @@ __all__ = [
     "webdav_router",
     "wiki_dehydration_router",
     "skill_livegen_router",
+    "skill_opt_router",
 ]
