@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as EvolutionRouteRouteImport } from './routes/evolution/route'
+import { Route as FleetRouteImport } from './routes/fleet'
 import { Route as GraphRouteRouteImport } from './routes/graph/route'
 import { Route as HarnessLogsRouteImport } from './routes/harness-logs'
 import { Route as HomeRouteRouteImport } from './routes/home/route'
@@ -22,7 +23,9 @@ import { Route as RetrievalRouteRouteImport } from './routes/retrieval/route'
 import { Route as SessionsRouteRouteImport } from './routes/sessions/route'
 import { Route as SettingsRouteRouteImport } from './routes/settings/route'
 import { Route as SkillsRouteRouteImport } from './routes/skills/route'
+import { Route as TaskTrackerRouteImport } from './routes/task-tracker'
 import { Route as TasksRouteRouteImport } from './routes/tasks/route'
+import { Route as UsageAuditRouteImport } from './routes/usage-audit'
 import { Route as UsersRouteRouteImport } from './routes/users/route'
 import { Route as OauthConsentRouteImport } from './routes/oauth/consent'
 import { Route as OauthVerifyRouteImport } from './routes/oauth/verify'
@@ -37,6 +40,11 @@ const IndexRoute = IndexRouteImport.update({
 const EvolutionRouteRoute = EvolutionRouteRouteImport.update({
   id: '/evolution',
   path: '/evolution',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FleetRoute = FleetRouteImport.update({
+  id: '/fleet',
+  path: '/fleet',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GraphRouteRoute = GraphRouteRouteImport.update({
@@ -94,9 +102,19 @@ const SkillsRouteRoute = SkillsRouteRouteImport.update({
   path: '/skills',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TaskTrackerRoute = TaskTrackerRouteImport.update({
+  id: '/task-tracker',
+  path: '/task-tracker',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TasksRouteRoute = TasksRouteRouteImport.update({
   id: '/tasks',
   path: '/tasks',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsageAuditRoute = UsageAuditRouteImport.update({
+  id: '/usage-audit',
+  path: '/usage-audit',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UsersRouteRoute = UsersRouteRouteImport.update({
@@ -140,7 +158,10 @@ export interface FileRoutesByFullPath {
   '/skills': typeof SkillsRouteRouteWithChildren
   '/tasks': typeof TasksRouteRoute
   '/users': typeof UsersRouteRoute
+  '/fleet': typeof FleetRoute
   '/harness-logs': typeof HarnessLogsRoute
+  '/task-tracker': typeof TaskTrackerRoute
+  '/usage-audit': typeof UsageAuditRoute
   '/oauth/consent': typeof OauthConsentRoute
   '/oauth/verify': typeof OauthVerifyRoute
   '/skills/harness-logs': typeof SkillsHarnessLogsRoute
@@ -160,7 +181,10 @@ export interface FileRoutesByTo {
   '/skills': typeof SkillsRouteRouteWithChildren
   '/tasks': typeof TasksRouteRoute
   '/users': typeof UsersRouteRoute
+  '/fleet': typeof FleetRoute
   '/harness-logs': typeof HarnessLogsRoute
+  '/task-tracker': typeof TaskTrackerRoute
+  '/usage-audit': typeof UsageAuditRoute
   '/oauth/consent': typeof OauthConsentRoute
   '/oauth/verify': typeof OauthVerifyRoute
   '/skills/harness-logs': typeof SkillsHarnessLogsRoute
@@ -182,7 +206,10 @@ export interface FileRoutesById {
   '/skills': typeof SkillsRouteRouteWithChildren
   '/tasks': typeof TasksRouteRoute
   '/users': typeof UsersRouteRoute
+  '/fleet': typeof FleetRoute
   '/harness-logs': typeof HarnessLogsRoute
+  '/task-tracker': typeof TaskTrackerRoute
+  '/usage-audit': typeof UsageAuditRoute
   '/oauth/consent': typeof OauthConsentRoute
   '/oauth/verify': typeof OauthVerifyRoute
   '/skills/harness-logs': typeof SkillsHarnessLogsRoute
@@ -205,7 +232,10 @@ export interface FileRouteTypes {
     | '/skills'
     | '/tasks'
     | '/users'
+    | '/fleet'
     | '/harness-logs'
+    | '/task-tracker'
+    | '/usage-audit'
     | '/oauth/consent'
     | '/oauth/verify'
     | '/skills/harness-logs'
@@ -225,7 +255,10 @@ export interface FileRouteTypes {
     | '/skills'
     | '/tasks'
     | '/users'
+    | '/fleet'
     | '/harness-logs'
+    | '/task-tracker'
+    | '/usage-audit'
     | '/oauth/consent'
     | '/oauth/verify'
     | '/skills/harness-logs'
@@ -246,7 +279,10 @@ export interface FileRouteTypes {
     | '/skills'
     | '/tasks'
     | '/users'
+    | '/fleet'
     | '/harness-logs'
+    | '/task-tracker'
+    | '/usage-audit'
     | '/oauth/consent'
     | '/oauth/verify'
     | '/skills/harness-logs'
@@ -268,7 +304,10 @@ export interface RootRouteChildren {
   SkillsRouteRoute: typeof SkillsRouteRouteWithChildren
   TasksRouteRoute: typeof TasksRouteRoute
   UsersRouteRoute: typeof UsersRouteRoute
+  FleetRoute: typeof FleetRoute
   HarnessLogsRoute: typeof HarnessLogsRoute
+  TaskTrackerRoute: typeof TaskTrackerRoute
+  UsageAuditRoute: typeof UsageAuditRoute
   OauthConsentRoute: typeof OauthConsentRoute
   OauthVerifyRoute: typeof OauthVerifyRoute
 }
@@ -287,6 +326,13 @@ declare module '@tanstack/react-router' {
       path: '/evolution'
       fullPath: '/evolution'
       preLoaderRoute: typeof EvolutionRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/fleet': {
+      id: '/fleet'
+      path: '/fleet'
+      fullPath: '/fleet'
+      preLoaderRoute: typeof FleetRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/graph': {
@@ -366,11 +412,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SkillsRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/task-tracker': {
+      id: '/task-tracker'
+      path: '/task-tracker'
+      fullPath: '/task-tracker'
+      preLoaderRoute: typeof TaskTrackerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tasks': {
       id: '/tasks'
       path: '/tasks'
       fullPath: '/tasks'
       preLoaderRoute: typeof TasksRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/usage-audit': {
+      id: '/usage-audit'
+      path: '/usage-audit'
+      fullPath: '/usage-audit'
+      preLoaderRoute: typeof UsageAuditRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/users': {
@@ -450,7 +510,10 @@ const rootRouteChildren: RootRouteChildren = {
   SkillsRouteRoute: SkillsRouteRouteWithChildren,
   TasksRouteRoute: TasksRouteRoute,
   UsersRouteRoute: UsersRouteRoute,
+  FleetRoute: FleetRoute,
   HarnessLogsRoute: HarnessLogsRoute,
+  TaskTrackerRoute: TaskTrackerRoute,
+  UsageAuditRoute: UsageAuditRoute,
   OauthConsentRoute: OauthConsentRoute,
   OauthVerifyRoute: OauthVerifyRoute,
 }

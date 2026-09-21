@@ -10,6 +10,8 @@ import {
   GitForkIcon,
   RefreshCwIcon,
   DnaIcon,
+  SplitIcon,
+  TerminalIcon,
 } from 'lucide-react'
 
 import { SkillEvalCockpit } from '../retrieval/-components/skill-eval-cockpit'
@@ -19,12 +21,18 @@ import { RSIDayNightCockpit } from '../retrieval/-components/rsi-daynight-cockpi
 import { CapabilityPagesCockpit } from '../retrieval/-components/capability-pages-cockpit'
 import { SkillKDCockpit } from '../retrieval/-components/skill-kd-cockpit'
 import { EvolutionCICDCockpit } from '../retrieval/-components/evolution-cicd-cockpit'
+import { EvolutionLessonsCockpit } from './-components/evolution-lessons-cockpit'
+import { HarnessBisectionHealCockpit } from '../harness-logs/-components/harness-bisection-heal-cockpit'
+import { HarnessLivePlayground } from '../harness-logs/-components/harness-live-playground'
 
 export type EvolutionTab =
   | 'evolutionCicd'
+  | 'lessons'
+  | 'hermes'
+  | 'bisectionHeal'
+  | 'playground'
   | 'skillEval'
   | 'ahe'
-  | 'hermes'
   | 'rsi'
   | 'capabilityPages'
   | 'skillKd'
@@ -53,6 +61,26 @@ const TABS: Array<{
     icon: <RefreshCwIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" />,
   },
   {
+    id: 'lessons',
+    label: '📋 演进教训档案',
+    icon: <LayersIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" />,
+  },
+  {
+    id: 'hermes',
+    label: '🧬 Hermes 经历与微补丁',
+    icon: <DatabaseIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" />,
+  },
+  {
+    id: 'bisectionHeal',
+    label: '⚡ 故障二分自愈',
+    icon: <SplitIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" />,
+  },
+  {
+    id: 'playground',
+    label: '🧪 交互实验场',
+    icon: <TerminalIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" />,
+  },
+  {
     id: 'skillEval',
     label: '🧪 技能视网膜',
     icon: <FlaskConicalIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" />,
@@ -61,11 +89,6 @@ const TABS: Array<{
     id: 'ahe',
     label: '🛡️ AHE 自演进',
     icon: <ShieldCheckIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" />,
-  },
-  {
-    id: 'hermes',
-    label: '🧬 Hermes 经历与微补丁',
-    icon: <DatabaseIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" />,
   },
   {
     id: 'rsi',
@@ -145,9 +168,12 @@ function EvolutionPage() {
 
       {/* 各 Tab 内容渲染 */}
       {activeTab === 'evolutionCicd' && <EvolutionCICDCockpit />}
+      {activeTab === 'lessons' && <EvolutionLessonsCockpit />}
+      {activeTab === 'hermes' && <HermesEvolveCockpit />}
+      {activeTab === 'bisectionHeal' && <HarnessBisectionHealCockpit />}
+      {activeTab === 'playground' && <HarnessLivePlayground />}
       {activeTab === 'skillEval' && <SkillEvalCockpit />}
       {activeTab === 'ahe' && <AHECockpit />}
-      {activeTab === 'hermes' && <HermesEvolveCockpit />}
       {activeTab === 'rsi' && <RSIDayNightCockpit />}
       {activeTab === 'capabilityPages' && <CapabilityPagesCockpit />}
       {activeTab === 'skillKd' && <SkillKDCockpit />}

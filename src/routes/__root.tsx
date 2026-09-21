@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { RotateCcwIcon, TriangleAlertIcon } from 'lucide-react'
-import { Outlet, createRootRoute, Navigate } from '@tanstack/react-router'
+import { Outlet, createRootRoute } from '@tanstack/react-router'
 import type { ErrorComponentProps } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 
@@ -28,6 +28,7 @@ const AppDevtools = import.meta.env.DEV
 export const Route = createRootRoute({
   component: RootComponent,
   errorComponent: RootErrorComponent,
+  notFoundComponent: RootNotFoundComponent,
 })
 
 function RootComponent() {
@@ -85,5 +86,27 @@ function RootErrorComponent({ error, reset }: ErrorComponentProps) {
       </div>
       <DevtoolsSlot />
     </>
+  )
+}
+
+function RootNotFoundComponent() {
+  return (
+    <div className="flex min-h-[60vh] flex-col items-center justify-center p-6 text-center">
+      <div className="rounded-full border border-border/80 bg-muted/40 p-3 text-muted-foreground">
+        <TriangleAlertIcon className="size-6 text-amber-500" />
+      </div>
+      <h2 className="mt-3 text-sm font-semibold text-foreground">页面不存在 (404 Not Found)</h2>
+      <p className="mt-1 text-xs text-muted-foreground font-mono">
+        您访问的路径未注册或已整合至全局中枢。
+      </p>
+      <div className="mt-4 flex gap-2">
+        <Button variant="outline" size="sm" onClick={() => window.history.back()} className="text-xs">
+          返回上一页
+        </Button>
+        <Button size="sm" onClick={() => { window.location.href = '/home' }} className="text-xs">
+          返回首页
+        </Button>
+      </div>
+    </div>
   )
 }
