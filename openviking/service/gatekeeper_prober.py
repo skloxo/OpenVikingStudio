@@ -86,13 +86,15 @@ async def probe_nearest_vector(
     except Exception as e:
         logger.debug("[EntropyGatekeeperProber] Internal memory probe failed, falling back to HTTP: %s", e)
 
-    # 2. Fallback: HTTP find probe against local port 1933
+    # 2. Fallback: HTTP find probe against resolved OpenViking endpoint
+    from openviking.service.endpoint_resolver import get_openviking_endpoint
     from openviking.service.entropy_watchdog import _resolve_api_key
 
+    endpoint = get_openviking_endpoint()
     api_key = _resolve_api_key()
     async with httpx.AsyncClient(trust_env=False, timeout=5.0) as client:
         resp = await client.post(
-            "http://127.0.0.1:1933/api/v1/search/find",
+            f"{endpoint}/api/v1/search/find",
             json={"query": probe_query, "limit": 2, "mode": "fast"},
             headers={
                 "Authorization": f"Bearer {api_key}",
