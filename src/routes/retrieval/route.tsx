@@ -13,6 +13,7 @@ import {
   ScissorsIcon,
   DnaIcon,
   CodeIcon,
+  NetworkIcon,
 } from 'lucide-react'
 
 import { RetrievalBenchmarkDrawer } from './-components/benchmark-drawer'
@@ -30,6 +31,7 @@ import { ActiveNotesHistoryCockpit } from './-components/active-notes-history-co
 import { ValetIngestionCockpit } from './-components/valet-ingestion-cockpit'
 import { LLMLinguaDehydrationCockpit } from './-components/llmlingua-dehydration-cockpit'
 import { TokenShiftCockpit } from './-components/tokenshift-cockpit'
+import { ContextRouterCockpit } from './-components/context-router-cockpit'
 import { RetrievalResults } from './-components/retrieval-results'
 import { RetrievalSearchBar } from './-components/search-bar'
 import {
@@ -55,6 +57,7 @@ export type RetrievalTab =
   | 'valet'
   | 'llmlingua'
   | 'tokenshift'
+  | 'context-router'
 
 const RETRIEVAL_TABS: Array<{
   id: RetrievalTab
@@ -70,6 +73,7 @@ const RETRIEVAL_TABS: Array<{
   { id: 'valet', label: '前门泊车与反熵准入', icon: <ZapIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
   { id: 'llmlingua', label: 'LLMLingua 自然语言脱水', icon: <ScissorsIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
   { id: 'tokenshift', label: 'TokenShift 代码语法保护', icon: <CodeIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
+  { id: 'context-router', label: 'Context Router 统一路由网关', icon: <NetworkIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
 ]
 
 export const Route = createFileRoute('/retrieval')({
@@ -289,6 +293,9 @@ function RetrievalPage() {
 
       {/* Tab 9: TokenShift 代码语法保护与压缩座舱 */}
       {activeTab === 'tokenshift' && <TokenShiftCockpit />}
+
+      {/* Tab 10: Context Router 统一路由网关座舱 */}
+      {activeTab === 'context-router' && <ContextRouterCockpit />}
     </div>
   )
 }

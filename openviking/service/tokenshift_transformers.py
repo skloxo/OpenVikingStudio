@@ -253,7 +253,7 @@ def compress_typescript(code: str, mode: TokenShiftMode) -> Tuple[str, int, Synt
         if mode == TokenShiftMode.OUTLINE:
             continue
         elif mode == TokenShiftMode.SKELETON:
-            if re.match(r"^\s*(if|else|for|while|try|catch|finally|return|throw|switch|case)\b", trimmed):
+            if re.match(r"^\s*(if|else|for|while|try|catch|finally|return|throw|switch|case)\b", trimmed) or trimmed.startswith("}") or trimmed.startswith(")"):
                 compressed_lines.append(line)
                 protected_count += 1
         else:  # COMPACT
@@ -264,6 +264,9 @@ def compress_typescript(code: str, mode: TokenShiftMode) -> Tuple[str, int, Synt
     res = "\n".join(compressed_lines)
     # Check brace/bracket balance
     valid = res.count("{") == res.count("}") and res.count("(") == res.count(")")
+    if not valid and mode == TokenShiftMode.SKELETON:
+        # Fallback to outline mode for guaranteed brace balance
+        return compress_typescript(code, TokenShiftMode.OUTLINE)
     val = SyntaxValidationResult(valid=valid, parser="ts_balance_gate", error=None if valid else "Brace count mismatch")
     return res, protected_count, val
 

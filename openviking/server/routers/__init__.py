@@ -53,6 +53,7 @@ from openviking.server.routers.wiki_dehydration import router as wiki_dehydratio
 from openviking.server.routers.skill_livegen import router as skill_livegen_router
 from openviking.server.routers.skill_opt import router as skill_opt_router
 from openviking.server.routers.tokenshift import router as tokenshift_router
+from openviking.server.routers.context_router import router as context_router
 
 __all__ = [
     "acl_router",
@@ -106,4 +107,5 @@ __all__ = [
     "skill_livegen_router",
     "skill_opt_router",
     "tokenshift_router",
+    "context_router",
 ]
