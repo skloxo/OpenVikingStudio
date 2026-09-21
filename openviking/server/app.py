@@ -80,6 +80,7 @@ from openviking.server.routers import (
     agent_sensors_router,
     watches_router,
     webdav_router,
+    skill_livegen_router,
 )
 from openviking.service.core import OpenVikingService
 from openviking.service.task_tracker import get_task_tracker
@@ -696,6 +697,7 @@ def create_app(
     app.include_router(user_settings_router)
     app.include_router(watches_router)
     app.include_router(webdav_router)
+    app.include_router(skill_livegen_router)
     app.include_router(bot_router, prefix="/bot/v1")
 
     # OAuth 2.1: when enabled, mount the official MCP SDK auth routes

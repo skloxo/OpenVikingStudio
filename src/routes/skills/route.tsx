@@ -12,6 +12,7 @@ import { SkillsFilterBar } from './-components/skills-filter-bar'
 import { SkillsMetricsCards } from './-components/skills-metrics-cards'
 import { SkillDetailSheet } from './-components/skill-detail-sheet'
 import { SkillZipCockpit } from './-components/skill-zip-cockpit'
+import { SkillLiveGenCockpit } from './-components/skill-livegen-cockpit'
 import { getErrorMessage } from './-lib/skill-data'
 import { useSkillsData } from './-lib/use-skills'
 
@@ -21,7 +22,7 @@ export const Route = createFileRoute('/skills')({
 
 function SkillsRoute() {
   const { t } = useTranslation('skillsPage')
-  const [activeTab, setActiveTab] = React.useState<'catalog' | 'zip'>('catalog')
+  const [activeTab, setActiveTab] = React.useState<'catalog' | 'zip' | 'livegen'>('catalog')
   const data = useSkillsData()
   const {
     skills, filteredSkills, paginatedSkills, skillsQuery, detailQuery,
@@ -63,9 +64,20 @@ function SkillsRoute() {
           <ZapIcon className="size-3.5 mr-1.5" />
           ⚡ SkillZip 写入即压缩与门禁
         </Button>
+        <Button
+          variant={activeTab === 'livegen' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setActiveTab('livegen')}
+          className={`text-xs h-7 font-mono ${activeTab === 'livegen' ? 'bg-cyan-600 text-white' : 'text-cyan-400'}`}
+        >
+          <SparklesIcon className="size-3.5 mr-1.5" />
+          ✨ LiveGen 在线技能创生
+        </Button>
       </div>
 
-      {activeTab === 'zip' ? (
+      {activeTab === 'livegen' ? (
+        <SkillLiveGenCockpit />
+      ) : activeTab === 'zip' ? (
         <SkillZipCockpit />
       ) : (
         <>
