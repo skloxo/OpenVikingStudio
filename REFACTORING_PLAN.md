@@ -1308,7 +1308,7 @@
      - 前端生产构建 (Vite Build) **20.61s 零报错**，产物烘焙并验证版本 `1.5.76`；
      - 运行时服务平滑重启并 probe 验证：`{"total_queries":0,"hits":0,"misses":0,"hit_ratio":0.0}`；
      - 真实浏览器实机验证 100% 成功（10,000 请求实测 100.0% 命中率，平均延迟 0.0007ms，零绿色，结构完美）；
-  5. **版本留痕**: 版本号自增至 `1.5.76`，Git Commit `待提交`，Git Tag `v1.5.76`。
+  5. **版本留痕**: 版本号自增至 `1.5.76`，Git Commit `a1982548b`，Git Tag `v1.5.76`。
 - **修改文件清单**：`openviking/service/cache_tier2_types.py`, `openviking/service/cache_tier2_engine.py`, `openviking/server/routers/cache_tier2.py`, `openviking/server/routers/__init__.py`, `openviking/server/app.py`, `src/routes/monitoring/-components/tier2-cache-card.tsx`, `src/routes/home/route.tsx`, `tests/unit/test_cache_tier2_engine.py`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md`
 - **Git Commit Hash**: `a1982548b`
 - **Git Tag**: `v1.5.76`
