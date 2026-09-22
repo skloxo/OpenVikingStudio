@@ -302,6 +302,15 @@ export function createOvClient(options: OvClientOptions = {}): OvClientAdapter {
   persistApiKey()
   syncClientConfig()
 
+  const get = <T = any>(url: string, config?: any): Promise<T> =>
+    instance.get<T>(url, config).then((r) => r.data)
+  const post = <T = any>(url: string, data?: any, config?: any): Promise<T> =>
+    instance.post<T>(url, data, config).then((r) => r.data)
+  const put = <T = any>(url: string, data?: any, config?: any): Promise<T> =>
+    instance.put<T>(url, data, config).then((r) => r.data)
+  const del = <T = any>(url: string, config?: any): Promise<T> =>
+    instance.delete<T>(url, config).then((r) => r.data)
+
   return {
     clearConnection,
     client,
@@ -310,6 +319,10 @@ export function createOvClient(options: OvClientOptions = {}): OvClientAdapter {
     instance,
     setConnection,
     setOptions,
+    get,
+    post,
+    put,
+    delete: del,
   }
 }
 

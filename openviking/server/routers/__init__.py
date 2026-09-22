@@ -54,6 +54,7 @@ from openviking.server.routers.skill_livegen import router as skill_livegen_rout
 from openviking.server.routers.skill_opt import router as skill_opt_router
 from openviking.server.routers.tokenshift import router as tokenshift_router
 from openviking.server.routers.context_router import router as context_router
+from openviking.server.routers.dspy_compiler import router as dspy_compiler_router
 
 __all__ = [
     "acl_router",
@@ -108,4 +109,6 @@ __all__ = [
     "skill_opt_router",
     "tokenshift_router",
     "context_router",
+    "dspy_compiler_router",
 ]
+
