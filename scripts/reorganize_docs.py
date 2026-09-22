@@ -1,4 +1,95 @@
-# 🗺️ OpenViking 项目主线重构与原子化任务卡片总看板 (Master Task Cards Kanban - SSOT)
+#!/usr/bin/env python3
+# Copyright (c) 2026 Beijing Volcano Engine Technology Co., Ltd.
+# SPDX-License-Identifier: AGPL-3.0
+"""
+Auxiliary Documentation Governance & Dehydration Script.
+Reorganizes completed task cards from REFACTORING_PLAN.md into DELIVERY_ARCHIVE.md,
+ensuring 100% zero-loss archiving, bidirectional cross-linking, and attention compaction.
+"""
+
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+
+
+def main():
+    plan_path = REPO_ROOT / "REFACTORING_PLAN.md"
+    archive_path = REPO_ROOT / "DELIVERY_ARCHIVE.md"
+
+    plan_text = plan_path.read_text(encoding="utf-8")
+    archive_text = archive_path.read_text(encoding="utf-8")
+
+    # Locate sections in REFACTORING_PLAN.md
+    wave1_idx = plan_text.find("### 🌊 Wave 1:")
+    card1_idx = plan_text.find("#### 📌 [P0] [x] Card 1:")
+    card18_idx = plan_text.find("#### 📌 [P1] [x] Card 18:")
+
+    assert wave1_idx != -1, "Wave 1 not found"
+    assert card1_idx != -1, "Card 1 not found"
+    assert card18_idx != -1, "Card 18 not found"
+
+    # Slice Milestone 4 content (Card 18 & Card 19)
+    milestone4_content = plan_text[card18_idx:].strip()
+
+    # Slice Milestone 3 Cards 1-17 content
+    milestone3_cards_content = plan_text[card1_idx:card18_idx].strip()
+
+    # Slice Milestone 3 Waves 1-5 content
+    milestone3_waves_content = plan_text[wave1_idx:card1_idx].strip()
+
+    # Build new Milestone 4 section in DELIVERY_ARCHIVE.md
+    ms4_section = f"""## 🏆 Milestone 4 (v1.5.75 ~ v1.5.76) 全量交付总览 (已 100% 验收交付)
+
+> **阶段成果总结**：
+> 1. **Stanford DSPy (MIPO) 强类型提示词编译管线 (`v1.5.75`)**：落实 `BLUEPRINT.md` 课题五轮子 #5，实现启发式输入输出强类型 Schema 规约提取、Few-Shot 黄金样本动态自优化排序、Strict JSON 强类型输出格式固化与不可变边界注入，编译耗时 0.87ms，契约状态 PASS 零幻觉；
+> 2. **亚毫秒级 LRU 本地二级缓存引擎 (`v1.5.76`)**：落实 `BLUEPRINT.md` 课题四与高并发性能加速规范，基于 `collections.OrderedDict` 与 `threading.RLock` 构建线程安全 LRU 缓存，支持 TTL 淘汰与 `wait=False` 非阻塞防击穿/雪崩协议，10,000 并发压测实测平均延迟 0.0007ms，零绿色座舱监控总盘就绪。
+
+### 📋 Milestone 4 核心任务规格卡片详单
+
+{milestone4_content}
+"""
+
+    # Build new Milestone 3 section in DELIVERY_ARCHIVE.md
+    ms3_section = f"""## 🏆 Milestone 3 (v1.5.01 ~ v1.5.74) 全量交付总览 (已 100% 验收交付)
+
+> **阶段成果总结**：
+> 1. **全套自进化与质量门禁闭环**：落实 LiveGen 在线技能创生脚手架 (`v1.5.71`)、PrivacyMasker 统一端到端隐私脱敏引擎 (`v1.5.70`) 与 SkillOpt 四维质量标尺 (0~100分) 及 Attempt/Judge 门禁 (`v1.5.72`)；
+> 2. **五驱多引擎上下文压缩矩阵**：落实 PointFive TokenShift AST 语法树保护与分级代码压缩 (`v1.5.73`)、Context Router 异构提示词自适应语义分段与统一保序重组网关 (`v1.5.74`)、微软 LLMLingua-2 离线 Wiki 脱水 (`v1.5.46`)、阿里 SkillZip 写入即压缩 (`v1.5.35`) 与 Active Notes/History 双轨分仓 (`v1.5.34`)；
+> 3. **工程健壮性与抗熵增治理**：SQLite 全链路 30s 锁超时加固 (`v1.5.58`)、FUSE 虚拟只读文件系统与内存 Overlay 屏蔽层 (`v1.5.59`, `v1.5.67`)、Session 巨石解耦 (`v1.5.62`)、双向索引一致性修剪 (`v1.5.63`)、Experience 标签稳定哈希 (`v1.5.68`) 与全库 2,029 项单测 100% 全绿基线 (`v1.5.69`)。
+
+### 📋 一、 近期活跃原子化任务卡片详单 (Cards 1 ~ 17: v1.5.58 ~ v1.5.74)
+
+{milestone3_cards_content}
+
+### 📋 二、 历史演进波次交付详单 (Waves 1 ~ 5: v1.5.01 ~ v1.5.57)
+
+{milestone3_waves_content}
+"""
+
+    # Find the insertion point in DELIVERY_ARCHIVE.md (right before Milestone 2)
+    ms2_marker = "## 🏆 Milestone 2 (v1.4.4 ~ v1.4.110)"
+    ms2_idx = archive_text.find(ms2_marker)
+    assert ms2_idx != -1, "Milestone 2 marker not found in DELIVERY_ARCHIVE.md"
+
+    archive_header = archive_text[:ms2_idx].strip()
+    archive_ms2_and_below = archive_text[ms2_idx:].strip()
+
+    # Update archive header with complete bidirectional links
+    new_archive_header = """# 📚 OpenViking Studio — 历史交付全量归档台账 (DELIVERY_ARCHIVE.md SSOT)
+
+> **唯一归档真相源 (Archive SSOT)**：本文档为 OpenViking Studio 已验收通过的历史版本、Task Cards、波次演进与 Git Tag 履历全量归档。
+> **关联研发大蓝图**：[`BLUEPRINT.md`](file:///home/skloxo/aho/openclaw/project/.agents/BLUEPRINT.md) ｜ **唯一任务总看板**：[`REFACTORING_PLAN.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/REFACTORING_PLAN.md) ｜ **通用资产档案库**：[`COMPONENT_AND_WHEEL_INVENTORY.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md) ｜ **👁️ 人工验收测试指南**：[`docs/HUMAN_ACCEPTANCE_TESTING.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/HUMAN_ACCEPTANCE_TESTING.md)
+> **归档原则**：历史所有已验收交付的版本履历（Milestone 1~4 全量 19 张 Task Cards 及前序波次）完整归纳于此，保持 100% 物理真实性与细节零丢失，为后续会话提供纯净轻量的活跃任务看板。
+
+---
+"""
+
+    new_archive_text = f"{new_archive_header}\n\n{ms4_section}\n\n---\n\n{ms3_section}\n\n---\n\n{archive_ms2_and_below}\n"
+    archive_path.write_text(new_archive_text, encoding="utf-8")
+    print(f"✅ Updated DELIVERY_ARCHIVE.md: {len(new_archive_text.splitlines())} lines")
+
+    # Now generate condensed REFACTORING_PLAN.md
+    new_plan_content = """# 🗺️ OpenViking 项目主线重构与原子化任务卡片总看板 (Master Task Cards Kanban - SSOT)
 
 > **关联研发大蓝图**：[`BLUEPRINT.md`](file:///home/skloxo/aho/openclaw/project/.agents/BLUEPRINT.md) ｜ **交付全量归档台账**：[`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md) ｜ **通用资产档案库**：[`COMPONENT_AND_WHEEL_INVENTORY.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md) ｜ **👁️ 人工验收测试指南**：[`docs/HUMAN_ACCEPTANCE_TESTING.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/HUMAN_ACCEPTANCE_TESTING.md)
 > **唯一真相源 (SSOT)**：本文档为 OpenViking 当前活跃的重构规划与就绪待调度的任务矩阵看板。历史所有已验收交付的版本履历（Milestone 1~4 全量 19 张 Task Cards 及前序波次）已完整归档至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)，严禁多头维护。所有版本的 30 秒人工肉眼走查清单集中在 `docs/HUMAN_ACCEPTANCE_TESTING.md`。
@@ -48,3 +139,11 @@
   3. <目标三：座舱大屏交互套件，严格遵守 NO GREEN EVER 🚫 与字号 >= 12px>
 - **验收条件**：单测 100% 通过、安全扫描 0 泄露、前端构建通过、实机浏览器验证。
 ```
+"""
+
+    plan_path.write_text(new_plan_content, encoding="utf-8")
+    print(f"✅ Updated REFACTORING_PLAN.md: {len(new_plan_content.splitlines())} lines")
+
+
+if __name__ == "__main__":
+    main()
