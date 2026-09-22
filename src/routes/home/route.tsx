@@ -13,6 +13,7 @@ import { TokenTrendPanel } from './-components/token-trend-panel'
 import { ContextCommitsPanel } from './-components/context-commits-panel'
 import { MonitoringAnalyticsSection } from '../monitoring/-components/monitoring-analytics-section'
 import { ObserverComponentsSection } from '../monitoring/-components/observer-components-section'
+import { Tier2CacheCard } from '../monitoring/-components/tier2-cache-card'
 import { isDisabledPayload } from './-lib/format'
 import { useCockpitQueries } from './-hooks/use-cockpit-queries'
 
@@ -151,7 +152,10 @@ function HomePage() {
         todayTokens={q.summary?.today_tokens}
       />
 
-      {/* 8. 底层 4 大组件运行详情（VikingDB / 文件系统 / 锁 / 检索） */}
+      {/* 8. 高并发 LRU 本地二级缓存 (Tier-2 FastHit) 观测与压测 */}
+      <Tier2CacheCard />
+
+      {/* 9. 底层 4 大组件运行详情（VikingDB / 文件系统 / 锁 / 检索） */}
       <ObserverComponentsSection components={q.overview?.components} />
     </div>
   )
