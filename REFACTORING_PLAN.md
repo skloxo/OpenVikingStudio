@@ -510,7 +510,7 @@
 
 ### 🌊 Wave 4: 契约化自演进与离线梦境闭环 (Contractual Self-Evolution & Dreaming)
 
-#### 📌 [P0] [x] Card-Skill-EvaluationRetina (v1.5.37) — [已验收 ✅]: Skill 质量视网膜与自动化评测门禁体系 (Skill-as-Code & Testing CI / skill-up 规范落地) ⏳
+#### 📌 [P0] [x] Card-Skill-EvaluationRetina (v1.5.37) — [已验收 ✅]: Skill 质量视网膜与自动化评测门禁体系 (Skill-as-Code & Testing CI / skill-up 规范落地) ✅
 - **目标版本**：`v1.5.19` ｜ **优先级**：`P0`
 - **核心交付目标**：1. 吸收阿里开源 skill-up 与 AI 软件测试方法论，彻底终结“改动一行提示词行为漂移、跑一遍 Demo 没报错就裸奔上线”；<br>2. 规范化测试工程结构：建立 evals/cases/（声明式 YAML 用例）、evals/fixtures/（数据脚手架）、evals/eval.yaml（引擎与断言配置）；<br>3. 落地三级判定器引擎（Exact/Regex 匹配断言、Command 脚本退出码、agent_judge LLM 语义判官）；<br>4. 首批为核心技能（cockpit-ui、diagnosing-bugs、living-asset-system）建立回归金标用例；<br>5. 接入 Git 预提交钩子与 CI 自动化回归门禁，构建 Eval-to-Evolution 自闭环。
 - **验收条件**：核心技能 100% 具备声明式用例，三级 Judge 断言生效，改动自动跑回归阻断行为漂移
