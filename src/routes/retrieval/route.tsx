@@ -14,6 +14,7 @@ import {
   DnaIcon,
   CodeIcon,
   NetworkIcon,
+  FileCodeIcon,
 } from 'lucide-react'
 
 import { RetrievalBenchmarkDrawer } from './-components/benchmark-drawer'
@@ -32,6 +33,7 @@ import { ValetIngestionCockpit } from './-components/valet-ingestion-cockpit'
 import { LLMLinguaDehydrationCockpit } from './-components/llmlingua-dehydration-cockpit'
 import { TokenShiftCockpit } from './-components/tokenshift-cockpit'
 import { ContextRouterCockpit } from './-components/context-router-cockpit'
+import { DSPyCompilerCockpit } from './-components/dspy-compiler-cockpit'
 import { RetrievalResults } from './-components/retrieval-results'
 import { RetrievalSearchBar } from './-components/search-bar'
 import {
@@ -58,6 +60,7 @@ export type RetrievalTab =
   | 'llmlingua'
   | 'tokenshift'
   | 'context-router'
+  | 'dspy'
 
 const RETRIEVAL_TABS: Array<{
   id: RetrievalTab
@@ -74,6 +77,7 @@ const RETRIEVAL_TABS: Array<{
   { id: 'llmlingua', label: 'LLMLingua 自然语言脱水', icon: <ScissorsIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
   { id: 'tokenshift', label: 'TokenShift 代码语法保护', icon: <CodeIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
   { id: 'context-router', label: 'Context Router 统一路由网关', icon: <NetworkIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
+  { id: 'dspy', label: 'DSPy 强类型提示词编译', icon: <FileCodeIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
 ]
 
 export const Route = createFileRoute('/retrieval')({
@@ -296,6 +300,9 @@ function RetrievalPage() {
 
       {/* Tab 10: Context Router 统一路由网关座舱 */}
       {activeTab === 'context-router' && <ContextRouterCockpit />}
+
+      {/* Tab 11: DSPy 强类型提示词编译座舱 */}
+      {activeTab === 'dspy' && <DSPyCompilerCockpit />}
     </div>
   )
 }
