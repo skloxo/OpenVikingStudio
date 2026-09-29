@@ -74,6 +74,7 @@ def create_mcp_tool_decorator(mcp: FastMCP, mcp_mode: str) -> Callable:
 
             @wraps(fn)
             def cleaned_fn(*f_args, **f_kwargs):
+                call_args = {}
                 try:
                     bound = sig.bind_partial(*f_args, **f_kwargs)
                     for name, param in sig.parameters.items():
@@ -87,9 +88,75 @@ def create_mcp_tool_decorator(mcp: FastMCP, mcp_mode: str) -> Callable:
                             if hasattr(val, "default"):
                                 d = getattr(val, "default")
                                 bound.arguments[name] = "" if d is None or "PydanticUndefined" in str(type(d)) else d
+                    call_args = dict(bound.arguments)
+                except Exception as bind_err:
+                    call_args = {"args": f_args, "kwargs": f_kwargs}
+                    logger.warning(f"[Parameter Binding Warning] {tool_name}: {bind_err}")
+
+                # ─── Production Failure Taxonomy & Anti-Loop Interception ───
+                telemetry = None
+                classifier = None
+                try:
+                    from openviking.core.failure_taxonomy_telemetry import FailureTaxonomyTelemetry
+                    from openviking.core.failure_classifier import FailureCategory
+                    telemetry = FailureTaxonomyTelemetry.get_instance()
+                    classifier = telemetry._classifier
+                except Exception:
+                    pass
+
+                # 1. Anti-Loop Barrier Gatekeeper: block identical failing calls before execution
+                if classifier is not None and telemetry is not None:
+                    if classifier.is_blocked(tool_name, call_args):
+                        telemetry.record_anti_loop_interception(tool_name)
+                        logger.warning(
+                            f"[Anti-Loop Barrier Blocked] Tool '{tool_name}' blocked from duplicate execution with args: {call_args}"
+                        )
+                        return (
+                            f"[Anti-Loop Barrier Blocked] Execution of tool '{tool_name}' blocked: "
+                            f"this identical call previously failed deterministically and reached the anti-loop threshold. "
+                            f"Repeating identical arguments is blocked. Please inspect the schema requirements, "
+                            f"modify your parameters, or switch to an alternative tool."
+                        )
+
+                # 2. Execution & Exception Taxonomy Interception
+                try:
                     return fn(*bound.args, **bound.kwargs)
                 except Exception as e:
                     logger.error(f"[Tool Execution Error] {tool_name}: {e}")
+                    if telemetry is not None and classifier is not None:
+                        decision = classifier.evaluate(tool_name, call_args, e)
+                        telemetry.record_evaluation(
+                            category=decision.category,
+                            tool_name=tool_name,
+                            reason=decision.reason,
+                            blocked=(decision.category == FailureCategory.FATAL or classifier.is_blocked(tool_name, call_args)),
+                        )
+
+                        # Transient Failure: automatic backoff and retry
+                        if decision.category == FailureCategory.TRANSIENT and decision.can_retry:
+                            logger.info(
+                                f"[Transient Retry] Retrying tool '{tool_name}' after {decision.backoff_sec:.2f}s backoff..."
+                            )
+                            import time
+                            time.sleep(decision.backoff_sec)
+                            try:
+                                return fn(*bound.args, **bound.kwargs)
+                            except Exception as retry_e:
+                                retry_decision = classifier.evaluate(tool_name, call_args, retry_e)
+                                telemetry.record_evaluation(
+                                    category=retry_decision.category,
+                                    tool_name=tool_name,
+                                    reason=retry_decision.reason,
+                                    blocked=classifier.is_blocked(tool_name, call_args),
+                                )
+                                reflection = retry_decision.reflection_prompt or ""
+                                if reflection:
+                                    return f"Error: {retry_e}\n\n{reflection}"
+                                return f"Error: {retry_e}"
+
+                        reflection = decision.reflection_prompt or ""
+                        if reflection:
+                            return f"Error: {e}\n\n{reflection}"
                     return str(e)
 
             @wraps(fn)
