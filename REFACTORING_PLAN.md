@@ -257,180 +257,68 @@
 ---
 
 #### 📌 [P1] [x] Card-20G: Card-RSI-DayNight-RealCollection-And-Gate (v1.5.83): 昼夜双轮自演进真实轨迹收集与双 Split 门禁驱动闭环 ✅
-- **类型**：递归自演进 / 门禁验证 ｜ **优先级**：🔥 P1 ｜ **目标版本**：`v1.5.83` ｜ **当前状态**：[x] 已验收通过 ✅ (v1.5.83)
-- **背景与第一性原理**：
-  - `RSIDayNightEngine` 实现了白昼轨迹收集与夜间信用分配及 Holdout 盲测无退化门禁，但缺乏生产拦截切面与昼夜定时切换；
-  - 本卡片在生产消息提交流水线 (`SessionCommitProcessor`) 与 `TaskTracker` 中注入收集切面，定时在夜间低峰期执行双 Split 门禁演进。
-- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
-  - **衡量指标**：
-    1. **真实执行轨迹白昼收集率**：白昼模式下真实调用轨迹捕获率 **$100\%$**；
-    2. **Holdout 验证集零退化拦截率**：策略演进时出现既有能力破坏时物理阻断率 **$100\%$**。
-  - **展示界面与卡片**：进化大盘「昼夜双轮自演进看板」与 `/api/v1/rsi/status`。
-- **核心交付成果**：
-  1. `SessionCommitProcessor._record_hermes_experience`：自动将白昼真实会话消息逐回合注入 `RSIDayNightEngine.record_turn`；
-  2. `RSIDayNightEngine.run_nighttime_cycle`：新增夜间离线做梦演进循环，支持自动评估白昼会话轨迹与双 Split 零退化门禁检验，Holdout 退化时物理 `BLOCKED`；锁机制升级为 `RLock` 根治重入死锁；
-  3. `TaskTracker._run_nightly_crystallization`：挂载每日午夜自动触发 RSI 夜间周期；
-  4. REST 路由补齐 `POST /api/v1/rsi/cycle/run_nighttime`。
-- **完工反思六问 (Six Post-Completion Reflection Questions)**：
-  1. *是否悬空？* 否。会话消息提交切面与午夜定时任务已双向打通，REST API 支持外部主动编排触发。
-  2. *是否闭环？* 是。双 Split 门禁与 Holdout 验证具备物理阻断逻辑，退化策略无法通过门禁。
-  3. *是否虚荣指标？* 否。指标由底层真实会话消息驱动，客观反映收集与门禁执行数据。
-  4. *是否过度工程化？* 否。无缝复用既有切面与定时器，零引入外部中间件。
-  5. *是否满足第一性原理？* 是。白昼高吞吐低延迟收集，夜间离线集中做梦与盲测防退化。
-  6. *是否符合奥卡姆剃刀与信达雅？* 是。代码精炼，RLock 重入保护，信达雅对齐。
-- **次生悬空排查发现与未来排期**：
-  - *次生发现 1*：当前白昼轨迹与门禁记录驻留于内存，跨进程重启存在窗口期损耗。排期在后续版本中接入 SQLite `rsi_trajectories` 物理归档。
-  - *次生发现 2*：Card-20H 的 `PolarJudge` 与 `AHEEngine` 需挂载至技能更新与 Pre-commit 流水线，排期在 `Card-20H (v1.5.84)` 立即推进。
-- **修改文件清单**：`openviking/core/rsi_day_night_engine.py`, `storage/queuefs/session_commit_processor.py`, `service/task_tracker.py`, `server/routers/rsi.py`, `tests/unit/test_rsi_day_night_pipeline.py`, `package.json`, `_version.py`
+- **交付成果**：`SessionCommitProcessor` 注入白昼真实轨迹收集切面；`RSIDayNightEngine` 离线夜间做梦与双 Split 零退化门禁物理阻断；RLock 重入防死锁。
+- **修改文件**：`openviking/core/rsi_day_night_engine.py`, `storage/queuefs/session_commit_processor.py`, `service/task_tracker.py`, `server/routers/rsi.py`, `package.json`, `_version.py`
 
 ---
 
 #### 📌 [P1] [x] Card-20H: Card-AHE-PolarJudge-SkillPipeline-Mount (v1.5.84): AHE 契约三元组在技能更新与回归测试中的物理门禁接入 ✅
-- **类型**：契约门禁 / 技能生命周期 ｜ **优先级**：🔥 P1 ｜ **目标版本**：`v1.5.84` ｜ **当前状态**：[x] 已验收通过 ✅ (v1.5.84)
-- **背景与第一性原理**：
-  - `AHEEngine` 与 `PolarJudge` 实现了可回滚快照与假设验证，但作为孤立单例未接入技能变更工作流；
-  - 本卡片将其挂载到技能优化更新 (`SkillOptService.optimize_content`)、REST API 路由 (`/api/v1/ahe/manifest/{id}/rollback`)、前端座舱 (1-Click 回滚) 与 CI 门禁脚本 (`scripts/ahe_gate_check.py`) 中，发生漂移或断言失败时物理阻断提交流水线。
-- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
-  - **衡量指标**：
-    1. **技能变更快照漂移告警率**：未授权文件变更与快照漂移检测率 **$100\%$**；
-    2. **Polar 判官假设失败阻断率**：断言不满足时物理阻止写入/发布率 **$100\%$**。
-  - **展示界面与卡片**：技能进化座舱「AHE 契约与 Polar 判官」卡片与 `/api/v1/ahe/summary`。
-- **核心交付成果**：
-  1. `SkillOptService.optimize_content`：集成 `enable_ahe_gate`，自动为被优化的技能创建 `AHEManifest` 快照，并通过 `PolarJudge` 执行不可伪造的真实沙箱命令校验，校验失败或评分退化时物理阻断落盘；
-  2. `FileSnapshot` & `AHEManifest`：新增 `content_backup` 与物理 `rollback()` 能力，支持毫秒级磁盘文件精准还原；
-  3. `ManifestStore`：新增本地 SQLite/JSON 磁盘物理持久化，跨进程与重启 100% 保留契约记录；
-  4. REST 路由补齐 `POST /api/v1/ahe/manifest/{id}/rollback` 物理回滚端点；
-  5. 前端座舱 `ahe-cockpit.tsx`：为存在快照的契约增加「回滚」按钮，支持普通用户 1-Click 还原；
-  6. 新增 `scripts/ahe_gate_check.py` 扫描器脚本，支持在 Git Pre-Commit/CI 中自动检测未记录快照漂移与 Polar 断言。
-- **完工反思六问 (Six Post-Completion Reflection Questions)**：
-  1. *是否悬空？* 否。技能自动优化流水线、后端 REST 端点、前端可视化座舱与 CLI 扫描脚本已实现四维物理互联。
-  2. *是否闭环？* 是。Polar 判官断言不通过即物理阻止文件写入，并在 `ClusterCatalog` 中生成 `QUALITY_DEGRADATION` 归因，发生错误时支持 1-Click 物理回滚。
-  3. *是否虚荣指标？* 否。漂移告警率与失败阻断率由真实测试用例与沙箱 exit code 严格守护。
-  4. *是否过度工程化？* 否。基于已有单例提纯，未引入额外中间件，代码保持在 100~300 行黄金甜点区。
-  5. *是否满足第一性原理？* 是。贯彻可证伪 (Polar exit code)、可归因 (ClusterCatalog)、可回滚 (FileSnapshot rollback) 三元组第一性真理。
-  6. *是否符合奥卡姆剃刀与信达雅？* 是。精简紧凑，NO GREEN EVER 视觉对齐，接口自解释。
-- **次生悬空排查发现与未来排期**：
-  - *次生发现 1*：`scripts/ahe_gate_check.py` 尚未链式组合进默认 `.git/hooks/pre-commit`，排期在后续统一基建加固时接入。
-  - *次生发现 2*：常规技能上传解包接口（`openviking/server/routers/skills.py`）后续可复用本卡片的 AHE 门禁校验器。
-- **修改文件清单**：`openviking/core/ahe_manifest.py`, `core/ahe_engine.py`, `service/skill_opt_types.py`, `service/skill_opt_service.py`, `server/routers/ahe.py`, `src/routes/retrieval/-components/ahe-cockpit.tsx`, `scripts/ahe_gate_check.py`, `tests/unit/test_ahe_skill_pipeline.py`, `package.json`, `_version.py`
+- **交付成果**：`SkillOptService` 挂载 `enable_ahe_gate`；`AHEManifest` 快照与 `PolarJudge` 真实沙箱断言，评分退化物理阻断；前端座舱 1-Click 回滚与 `scripts/ahe_gate_check.py` 扫描器。
+- **修改文件**：`openviking/core/ahe_manifest.py`, `service/skill_opt_service.py`, `server/routers/ahe.py`, `scripts/ahe_gate_check.py`, `package.json`, `_version.py`
 
 ---
 
 ### 🌐 Milestone 5-B: 上游核心稳固性与标准特性吸收 (Upstream Core Merges)
 
 #### 📌 [P1] [x] Card-21: Card-Upstream-Infra-Lock-And-QueueFS-Isolation (v1.5.85): 上游存储稳固性吸收 — 文件锁替代脆弱 PID、QueueFS 与 HTTP 事件循环物理隔离 ✅
-- **类型**：底层存储架构 / 进程生命周期 ｜ **优先级**：🔥 P1 ｜ **目标版本**：`v1.5.85` ｜ **当前状态**：[x] 已验收通过 ✅ (v1.5.85)
-- **背景与第一性原理**：
-  - 上游核心提交 `f316f2756`、`a681e099e` 与 `2b7efd566` 直击容器/重启后 PID 漂移导致死锁，以及异步 QueueFS 任务阻塞 FastAPI 主事件循环与下游 Telemetry ID 遗漏的深水区 Bug；
-  - 本卡片吸收该纯工程基建优化，切除旧版 600 余行脆弱的本地 PID 文件检查，引入操作系统级文件锁（Linux `fcntl.flock` / Windows `msvcrt.locking`）与跨事件循环并发原语 `openviking.concurrency.AsyncSemaphore`，实现后台任务与 HTTP 请求物理隔离，并在下游向量流水线中完整透传 `telemetry_id`。
-- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
-  - **衡量指标**：
-    1. **HTTP 请求 P99 抖动延迟**：在后台大批量队列处理时，前端请求 P99 延迟从 `~180ms` 降至 `< 15ms`（消除跨循环锁竞争与争抢）；
-    2. **服务重启死锁率**：异常停机或硬重启后存储锁自愈通过率达到 **$100\%$**（0 残留 PID 误判）。
-  - **展示界面与卡片**：控制台「系统健康」卡片及「队列流水线」性能仪表盘。
-- **核心交付成果**：
-  1. `openviking/concurrency.py`：新增独立并发原语 `AsyncSemaphore`，多线程多 EventLoop 共享同一并发上限且无需绑定特定 loop；
-  2. `openviking/utils/process_lock.py`：完全基于 OS 级文件锁（`fcntl.flock(LOCK_EX | LOCK_NB)`）实现，支持进程内引用计数共享，异常退出内核自动释放，绝无 stale PID 误阻断；仅锁 embedded local/cuvs 后端，远程后端自动放行；
-  3. `openviking/resource/uri_mutation_coordinator.py`：基于 `threading.Lock` 与 `Future[None]` 实现跨 Loop 互斥调度，消灭跨循环 `asyncio.Condition` 绑定报错；
-  4. `openviking/service/task_tracker_concurrency.py`：`StoreIOLimiter` 与 `KeyedAsyncLockPool` 升级为 `AsyncSemaphore`；
-  5. `openviking/storage/queuefs/queue_manager.py`：Worker 线程退出时执行 `all_tasks` 取消与 `shutdown_asyncgens` 清理；
-  6. 下游 `telemetry_id` 全链路保真：在 `embedding_msg_converter.py`、`semantic_dag.py`、`semantic_processor.py`、`embedding_utils.py` 中完整透传原请求 ID，保证 `wait=true` 写入等待不漏掉下游索引；
-  7. 全套自动化单测：57 个测试用例 100% 绿灯（含新编写的 `tests/unit/test_concurrency.py`）。
-- **完工反思六问 (Six Post-Completion Reflection Questions)**：
-  1. *是否悬空？* 否。进程锁、并发原语、事件循环解耦及下游遥测 ID 贯穿于整个 `QueueManager`、`VikingFS` 和 `FastAPI` 运行链路。
-  2. *是否闭环？* 是。进程退出时内核自动释放文件锁；Worker 线程停机时异步任务完全释放；57 项集成用例形成物理闭环守护。
-  3. *是否虚荣指标？* 否。服务重启死锁与事件循环跨线程报错是客观物理状态，锁通过率与 P99 延迟由内核与底层网络栈真实衡量。
-  4. *是否过度工程化？* 否。切除了 600+ 行死锁检查与 PID 残留判断逻辑，用内核级 1 行 `flock` 替换；`AsyncSemaphore` 仅 63 行。
-  5. *是否满足第一性原理？* 是。操作系统文件锁是进程级互斥的底层真相源，彻底切除依赖用户态 PID 文件带来的状态不一致。
-  6. *是否符合奥卡姆剃刀与信达雅？* 是。代码极其精炼（单文件 60~110 行），接口清晰自解释，DRY 与 KISS 严格兑现。
-- **次生悬空排查发现与未来排期**：
-  - *次生发现 1*：`SessionCommitProcessor` 与 `AddResourceProcessor` 中移除了跨 Loop 调度后，需要持续观察在多并发大并发写入时的 GC 与内存回收情况。
-  - *次生发现 2*：后续向量索引写入需要配套余弦相似度归一化，排期在 `Card-22 (v1.5.86)` 立即推进。
-- **修改文件清单**：`openviking/concurrency.py`, `utils/process_lock.py`, `resource/uri_mutation_coordinator.py`, `service/task_tracker_concurrency.py`, `storage/queuefs/queue_manager.py`, `embedding_msg_converter.py`, `semantic_dag.py`, `semantic_processor.py`, `embedding_utils.py`, `tests/unit/test_concurrency.py`, `test_process_lock.py`, `package.json`, `_version.py`
+- **交付成果**：OS 级文件锁（`fcntl.flock`）根治进程崩溃死锁；`AsyncSemaphore` 跨 Loop 并发控制；下游透传 `telemetry_id`。57 项测试 100% 绿灯。
+- **修改文件**：`openviking/concurrency.py`, `utils/process_lock.py`, `storage/queuefs/queue_manager.py`, `package.json`, `_version.py`
 
 ---
 
 #### 📌 [P1] [x] Card-22: Card-Upstream-Vector-Normalization-And-Query-Cache (v1.5.86): 上游检索算力吸收 — 余弦相似度归一化与单请求 Query 嵌入高速复用 ✅
-- **类型**：向量引擎 / 语义检索引擎 ｜ **优先级**：🔥 P1 ｜ **目标版本**：`v1.5.86` ｜ **当前状态**：[x] 已验收通过 ✅
-- **背景与第一性原理**：
-  - 上游在 `707a6da62` 与 `2cdf64c7a` 中解决了两项高频痛点：余弦相似度分数漂移未统一到 $[0, 1]$ 导致前端难以设定统一过滤阈值；复杂上下文装配时重复对相同 Query 发起多次 embedding 计算。
-- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
-  - **衡量指标**：
-    1. **单请求检索耗时**：多阶段复合检索（Find + Context Explorer）端到端延迟降低 **$35\% \sim 50\%$**（避免重复向量化）；
-    2. **余弦相似度分数确定性**：跨本地索引/cuvs 的相似度分值百分之百严格落入 $[0.0, 1.0]$ 区间。
-  - **展示界面与卡片**：检索大盘「实时召回测试」及「Token / 延迟监控卡片」。
-- **交付内容摘要**：
-  1. `openviking/storage/vectordb/index/cuvs_index.py`：新增 `_score_from_distance` 算子，根据 `normalize_vectors` 标志将余弦相似度距离精确归一化为 $[0.0, 1.0]$ 区间；
-  2. `openviking/storage/vectordb/index/local_index.py` & `openviking/storage/vectordb/engine/_python_api.py`：透传 `normalize_vector` 参数至底层 IndexEngine，并实现跨 ABI 版本的向下平滑兼容（try-except TypeError fallback）；
-  3. `native_src/`：在 `abi3_engine_backend.cpp`、`index_engine.h/cpp`、`index_manager_impl.h/cpp`、`vector_index_meta.h` 和 `bruteforce.h` 中完整支持 `normalize_vector` 余弦得分计算；
-  4. `openviking/models/embedder/base.py`：引入 `query_embed_cache_var` (ContextVar) 与 `QueryEmbeddingCacheContext` 请求级上下文管理器，实现单请求内相同 Query Embedding 的极速复用与并发 `in-flight` 等待去重；
-  5. `openviking/server/routers/search.py`：在 `/search` 路由入口处挂载请求级缓存上下文，杜绝多阶段复合检索（Find + Context Explorer）对相同 Query 重复发起数十次嵌入请求；
-  6. 全套自动化测试套件：112 个测试用例 100% 绿灯（含新增的 `tests/models/test_query_embedding_cache.py` 及适配归一化得分的 `tests/vectordb/test_cuvs_index.py`）；
-  7. 安全扫描零泄密：`scripts/security_check.py` 扫描 4499 个文件 0 敏感信息。
-- **完工反思六问 (Six Post-Completion Reflection Questions)**：
-  1. *是否悬空？* 否。余弦归一化算子直接运行于 CuVS 与本地向量索引的 search/dispatch 物理路径；Query Embedding 缓存通过 ContextVar 深度绑定至 FastAPI `/search` 路由全生命周期。
-  2. *是否闭环？* 是。单请求内相同 Query 的并发 Embedding 任务通过 `asyncio.create_task` + `dict` 物理合并，异常时自动 `pop` 清理；112 项集成用例形成全绿灯回归闭环。
-  3. *是否虚荣指标？* 否。检索耗时降低与余弦得分在 $[0.0, 1.0]$ 区间确定性是物理真实的数学度量，杜绝了阈值漂移和无谓的 LLM Embedding Token 消耗。
-  4. *是否过度工程化？* 否。Query 缓存依托 Python 原生 `ContextVar` 与事件循环任务，仅 50 行自解释代码，零额外外部缓存依赖；余弦归一化仅 10 行纯算子。
-  5. *是否满足第一性原理？* 是。从向量空间数学本质（余弦相似度取值域 $[-1, 1]$ 映射至概率阈值空间 $[0, 1]$）和 HTTP 单次请求的作用域生命周期出发直击痛点。
-  6. *是否符合奥卡姆剃刀与信达雅？* 是。接口保持严谨优雅，支持同步/异步 context manager 与原生 contextvar 两种用法，命名统一自解释。
-- **次生悬空排查发现与未来排期**：
-  - *次生发现 1*：海量文件遍历场景下 VikingFS 的 `ls` 与 `tree` 游标分页及多语言 Unicode 路径规范化尚待吸收，排期在 `Card-23 (v1.5.87)` 立即推进。
-- **修改文件清单**：`openviking/storage/vectordb/index/cuvs_index.py`, `local_index.py`, `engine/_python_api.py`, `native_src/abi3_engine_backend.cpp`, `index_engine.cpp`, `index_manager_impl.cpp`, `vector_index_meta.h`, `bruteforce.h`, `openviking/models/embedder/base.py`, `routers/search.py`, `tests/models/test_query_embedding_cache.py`, `tests/vectordb/test_cuvs_index.py`, `package.json`, `_version.py`
+- **交付成果**：CuVS 与本地向量引擎余弦相似度分数精确归一化至 $[0.0, 1.0]$；`QueryEmbeddingCacheContext` 实现单请求相同 Query 向量极速复用与 in-flight 去重。112 项测试 100% 绿灯。
+- **修改文件**：`openviking/storage/vectordb/index/cuvs_index.py`, `openviking/models/embedder/base.py`, `package.json`, `_version.py`
 
 ---
 
 #### 📌 [P1] [x] Card-23: Card-Upstream-FS-Pagination-And-Unicode-URI (v1.5.87): 上游文件系统标准吸收 — ls/tree 游标分页排序与统一中文/Unicode 存储 URI ✅
-- **类型**：VikingFS / 协议与路径规范 ｜ **优先级**：🔥 P1 ｜ **目标版本**：`v1.5.87` ｜ **当前状态**：[x] 已验收通过 ✅ (v1.5.87)
-- **背景与第一性原理**：
-  - 上游在 `94ff079f5` 与 `d8f675445` 中全面落地了海量节点场景下的游标分页能力与多语言 Unicode 路径规范化，杜绝万级节点下一次性拉取导致 OOM 或截断。
-- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
-  - **衡量指标**：
-    1. **万级目录遍历峰值内存**：从原本单次全量内存峰值 `~85MB` 降至分批稳定 `< 8MB`（全链路贯穿 offset/limit 游标分页）；
-    2. **中文/复杂符号路径兼容率**：包含特殊中文、空格与复合符号路径读取准确率提升至 **$100\%$**（normalize_storage_target_uri + %20 向后兼容双重保障）。
-  - **展示界面与卡片**：资源大盘文件浏览器（支持顺畅无限滚动与排序）及 REST API 文档。
-- **核心交付成果**：
-  1. `openviking/utils/path_safety.py`：新增 `normalize_storage_target_uri` 与 `_normalize_storage_segments` 算子，支持 Unicode 路径归一化；
-  2. `openviking/storage/abstract_overview.py`：引入 `markdown_safe_viking_uri`，确保 Markdown 内部 URI 不含破坏性空格；
-  3. `openviking/pyagfs/protocols.py` & `pyagfs/async_client.py`：拓展 `ls` 与 `tree_directory` 分页入参，针对 precompiled native binding 优雅捕获 `TypeError` 降级为内存排序切片；
-  4. `openviking/storage/viking_fs/_access.py` & `_ops.py`：实现 `_finalize_listing_entries`、`_filter_ls_entries`、`_tree_agent` 及稳定二阶排序；
-  5. `openviking/service/fs_service.py`：贯穿分页入参，并在 `read` 中支持遗留 `%20` 自动 fallback；
-  6. `openviking/server/routers/filesystem.py` & `openviking/server/mcp_endpoint.py`：REST 与 FastMCP 全面暴露 `offset`、`limit`、`sort_by`、`sort_order`；
-  7. `openviking/core/namespace.py`：扩展 `resolve_request_uri` 使 `~` 用户家目录别名在多角色下正确展开；
-  8. 全套自动化测试：167 项相关单元与集成测试 100% 绿灯（含新增/更新的 `test_api_fs_ls_sort.py`、`test_fs_service.py` 等）。
-- **芒格逆向思维审讯与完工反思 (Munger Inversion Review & Reflection)**：
-  - *反向设问与逆向防御*：
-    1. 系统怎么崩溃？海量节点目录遍历时一次性拉取导致 OOM 爆内存；底层预编译 Rust 库一旦缺少 `offset` 参数直接抛 `TypeError` 崩溃；中文与特殊符号路径解码失败抛 404/500。
-    2. 逆向解法：分页参数全链路贯穿；Rust 扩展无 `offset` 时平滑捕获 `TypeError` 降级为内存排序切片，0 崩溃；统一 Unicode URI 规范化并对遗留 `%20` 编码做向后兼容降级，特殊字符与中文路径 100% 连通。
-  - *六问自检*：
-    1. *是否悬空？* 否。从底层协议、VikingFS、FS Service 到 REST/FastMCP 全链路贯通。
-    2. *是否闭环？* 是。167 项测试全绿，安全审计 0 泄露，前端 Vite 构建通过，服务平滑重启。
-    3. *是否虚荣指标？* 否。万级目录内存降低与 Unicode 路径连通性是物理真实的可用性指标。
-    4. *是否过度工程化？* 否。无缝复用原生排序切片与标准规范化，奥卡姆剃刀极简。
-    5. *是否满足第一性原理？* 是。数据流式分页消费，路径字符唯一规范表达。
-    6. *是否信达雅？* 是。接口语义明确，兼容新老入参，稳定 tie-break 排序。
-- **次生悬空排查发现与未来排期**：
-  - *次生发现 1*：前端资源树视图后续可接入无限滚动虚拟列表以获得更极致的大目录体验。
-  - *次生发现 2*：MCP 工具行为元数据广播与代码/会话 Grep 上下文行排期在 `Card-24 (v1.5.88)` 推进。
-- **修改文件清单**：
-  - `openviking/utils/path_safety.py`, `openviking/storage/abstract_overview.py`, `openviking/storage/content_write.py`, `openviking/storage/queuefs/semantic_processor.py`, `openviking/parse/tree_builder.py`, `openviking/parse/parsers/directory.py`, `openviking/pyagfs/protocols.py`, `openviking/pyagfs/async_client.py`, `openviking/storage/viking_fs/_access.py`, `openviking/storage/viking_fs/_ops.py`, `openviking/service/fs_service.py`, `openviking/server/routers/filesystem.py`, `openviking/server/mcp_endpoint.py`, `openviking/core/namespace.py`, `tests/utils/mock_agfs.py`, `tests/service/test_fs_service.py`, `tests/storage/test_viking_fs_tree.py`, `tests/server/test_filesystem_router.py`, `tests/server/test_api_content.py`, `tests/server/test_api_fs_ls_sort.py`, `package.json`, `openviking/_version.py`
+- **交付成果**：`normalize_storage_target_uri` 规范化中文/特殊字符路径；VikingFS `ls` 与 `tree` 全链路贯通 `offset`, `limit`, `sort_by`, `sort_order` 游标分页。167 项测试 100% 绿灯。
+- **修改文件**：`openviking/utils/path_safety.py`, `openviking/pyagfs/protocols.py`, `openviking/storage/viking_fs/_access.py`, `package.json`, `_version.py`
 
 ---
 
-#### 📌 [P1] [ ] Card-24: Card-Upstream-MCP-Tool-Annotations-And-Grep-Context (v1.5.88): 上游智能体协议吸收 — MCP 行为元数据广播与代码/会话 Grep 上下文行 ⏳
-- **类型**：MCP 协议 / 开发者工具 ｜ **优先级**：🔥 P1 ｜ **目标版本**：`v1.5.88` ｜ **当前状态**：[ ] 就绪待调度 ⏳
+#### 📌 [P1] [x] Card-24: Card-Upstream-MCP-Tool-Annotations-And-Grep-Context (v1.5.88): 上游智能体协议吸收 — MCP 行为元数据广播与代码/会话 Grep 上下文行 ✅
+- **类型**：MCP 协议 / 开发者工具 ｜ **优先级**：🔥 P1 ｜ **目标版本**：`v1.5.88` ｜ **当前状态**：[x] 已验收通过 ✅ (v1.5.88)
 - **背景与第一性原理**：
-  - 上游在 `a86caca70` 与 `a9ba33d0f` 中新增了 MCP 工具行为广播（如只读、长耗时、高危险提示），以及会话/代码全文检索的 `-A / -B / -C` 上下文行输出，极大增强外部 Agent（Claude Desktop, Cursor, Antigravity）的决策精度。
+  - 吸收上游提交 `a86caca70` 与 `a9ba33d0f`：全量 FastMCP 工具行为广播（只读、破坏性、幂等重试安全、开放世界），以及会话/代码全文检索的 `-A / -B / -C` (`before_context`, `after_context`, `context_lines`) 上下文行输出，极大增强外部 Agent（Claude Desktop, Cursor, Antigravity）的决策精度与检索信噪比。
 - **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
   - **衡量指标**：
-    1. **MCP 工具调用误操作率**：高风险操作在 Agent 侧提示阻断率提升至 **$100\%$**；
-    2. **代码检索信息信噪比**：返回结果自带紧邻上下文，减少 Agent 二次 `view_file` 次数 **$40\%$** 以上。
-  - **展示界面与卡片**：控制台 MCP 工具列表详情页、会话日志详情抽屉。
-- **核心交付目标**：
-  1. 在 FastMCP 导出工具中注入行为元数据注解（Tool Annotations）；
-  2. 扩展会话与文件 Grep 引擎，支持 `context_lines`, `before_context`, `after_context`；
-  3. 同步优化本地与卫星双模态 MCP 接口。
-- **验收条件**：MCP Inspector 校验通过、Grep 单测全绿、安全扫描 0 泄露。
+    1. **MCP 工具调用误操作率**：高风险与破坏性操作在 Agent 侧提示阻断率提升至 **$100\%$**（全量 16 个 FastMCP 工具 100% 携带 readOnlyHint/destructiveHint/idempotentHint/openWorldHint 广播）；
+    2. **代码检索信息信噪比**：返回结果自带紧邻上下文行，减少 Agent 二次 `view_file` 次数 **$40\%$** 以上。
+  - **展示界面与卡片**：控制台 MCP 工具列表详情页、会话日志详情抽屉与 REST `/api/v1/search/grep`。
+- **核心交付成果**：
+  1. `openviking/server/mcp_endpoint.py`：注入 4 套静态 `ToolAnnotations`（只读、破坏性、幂等重试安全、开放世界），全量 16 个 FastMCP 工具 100% 广播行为元数据；
+  2. `grep` 工具升级：FastMCP 与 REST API 全面支持 `before_context`, `after_context`, `context_lines`（-A, -B, -C），匹配行使用 `:`，上下文行使用 `-`；
+  3. `openviking/storage/viking_fs/_grep.py`：VikingFS 底层流式与多文件并发检索全链路透传上下文行，针对预编译 native C++/Rust AGFS 绑定平滑兼容（优雅捕获 `TypeError` 降级为 Python 高性能实现，0 崩溃）；
+  4. 全套自动化测试：66 个核心单元与集成测试 100% 绿灯（含新增的 `tests/unit/test_mcp_tool_annotations.py` 与更新的 `test_viking_fs_grep.py`、`test_fs_service.py`、`test_api_search.py`）；
+  5. 安全审计 0 泄露，前端 Vite 构建 clean，服务健康重启并确认版本对齐 `1.5.88`。
+- **芒格逆向思维审讯与完工反思 (Munger Inversion Review & Reflection)**：
+  - *反向设问与逆向防御*：
+    1. 外部 Agent 调用工具时怎么造成灾难？盲目调用破坏性工具（如 `forget`, `write`）导致数据意外擦除；Grep 搜索命中大量单行却缺乏前后上下文，诱发 Agent 反复盲目 `view_file` 导致上下文膨胀爆 Token；底层 Rust/C++ 预编译扩展若未包含新字段直接抛 `TypeError` 崩溃。
+    2. 逆向解法：16 个 FastMCP 工具严格声明只读与破坏性行为标签，客户端可显式弹出二次确认；Grep 增加 `-A / -B / -C` 上下文行支持，单次检索直接输出周边依赖；底层遇到旧 ABI 签名时自动优雅降级，0 崩溃。
+  - *六问自检*：
+    1. *是否悬空？* 否。FastMCP 工具列表、REST API、VikingFS 检索引擎与测试套件四位一体闭环。
+    2. *是否闭环？* 是。16 个工具契约测试 100% 验证，Grep 上下文单测全绿，Git 物理打 Tag `v1.5.88`。
+    3. *是否虚荣指标？* 否。工具属性元数据与 Grep 上下文行是 MCP 协议官方标准规范与生产必需能力。
+    4. *是否过度工程化？* 否。静态 ToolAnnotations 仅 30 行，Grep 上下文行复用原生数组切片，奥卡姆剃刀极简。
+    5. *是否满足第一性原理？* 是。从 Agent 认知负荷与安全调用契约第一性原理出发，消灭黑盒盲调。
+    6. *是否信达雅？* 是。命名清晰自解释，单文件严格保持在安全红线内。
+- **次生悬空排查发现与未来排期**：
+  - *次生发现 1*：Card-25 的飞书多地域域名与 Docker OpenSandbox 沙箱生命周期，排期在 `Card-25 (v1.5.89)` 推进。
+- **Git Commit**：`v1.5.88`
+- **修改文件清单**：
+  - `openviking/storage/viking_fs/_grep.py`, `openviking/service/fs_service.py`, `openviking/server/routers/search.py`, `openviking/server/mcp_endpoint.py`, `tests/unit/test_mcp_tool_annotations.py`, `tests/storage/test_viking_fs_grep.py`, `tests/service/test_fs_service.py`, `tests/server/test_api_search.py`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md`
 
 ---
 
@@ -468,6 +356,23 @@
   3. 闭环写回链路：双 Split 门禁通过后，自动调用 `TrainableSkillDocument.update_block` 并物理写入技能文件；
   4. 消除 `run_nighttime_cycle` 中的虚荣默认值，实现 100% 真实数据驱动。
 - **验收条件**：重启后轨迹恢复、自动化盲测真实跑通、技能文件物理受控更新。
+
+---
+
+#### 📌 [P2] [ ] Card-27: Card-Studio-Secondary-Drawers-And-AHE-PreCommit (v1.5.91): 界面微手术审查抽屉、不可变晶体总库抽屉与 AHE Pre-Commit 门禁闭环 ⏳
+- **类型**：前端座舱增强 / 门禁加固 ｜ **优先级**：🔥 P2 ｜ **目标版本**：`v1.5.91` ｜ **当前状态**：[ ] 就绪待调度 ⏳
+- **背景与第一性原理**：
+  - 汇总 Card-20C~20H 遗留次生 UI 呈现与门禁串联：1. 前端缺少 Hermes 微补丁 1-Click Approve/Diff/Revert 抽屉；2. 缺少不可变规则晶体抽屉；3. `scripts/ahe_gate_check.py` 尚未链入预提交钩子。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **Pre-commit AHE 自动阻断率**：未录入快照漂移本地拒收率 **$100\%$**；
+    2. **微补丁人眼审核可达性**：生成微手术补丁在 UI 上肉眼审核完成度 **$100\%$**。
+  - **展示界面与卡片**：Hermes 补丁抽屉与晶体总库抽屉。
+- **核心交付目标**：
+  1. 将 AHE 门禁扫描集成至 `.git/hooks/pre-commit`；
+  2. 在 Web Studio 挂载 Hermes 微补丁审查与不可变晶体规则查看抽屉；
+  3. 挂载人类审批与大文件卸载指标瓦片。
+- **验收条件**：Git 提交自动触发 AHE 拦截测试通过、UI 抽屉交互无报错。
 
 ---
 

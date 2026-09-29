@@ -321,6 +321,23 @@ async def test_grep_projects_tags_for_each_match(request_context):
 
 
 @pytest.mark.asyncio
+async def test_grep_forwards_context_to_viking_fs(request_context):
+    viking_fs = SimpleNamespace(grep=AsyncMock(return_value={"matches": []}))
+    service = FSService(viking_fs=viking_fs)
+
+    await service.grep(
+        "viking://resources",
+        "needle",
+        ctx=request_context,
+        before_context=2,
+        after_context=3,
+    )
+
+    assert viking_fs.grep.await_args.kwargs["before_context"] == 2
+    assert viking_fs.grep.await_args.kwargs["after_context"] == 3
+
+
+@pytest.mark.asyncio
 async def test_grep_skips_tag_projection_without_tags_or_include_tags(request_context):
     matches = [{"uri": "viking://resources/a.md", "line": 1, "content": "needle"}]
     viking_fs = SimpleNamespace(grep=AsyncMock(return_value={"matches": matches, "count": 1}))

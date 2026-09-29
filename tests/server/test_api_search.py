@@ -1025,6 +1025,34 @@ async def test_grep_forwards_tags_to_filesystem_service(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_grep_forwards_context_lines_to_filesystem_service(monkeypatch):
+    seen = {}
+
+    async def fake_grep(uri, pattern, **kwargs):
+        seen.update(uri=uri, pattern=pattern, **kwargs)
+        return {"matches": [], "count": 0, "match_count": 0, "files_scanned": 0}
+
+    monkeypatch.setattr(
+        search_router,
+        "get_service",
+        lambda: SimpleNamespace(fs=SimpleNamespace(grep=fake_grep)),
+    )
+
+    await search_router.grep(
+        search_router.GrepRequest(
+            uri="viking://resources",
+            pattern="OpenViking",
+            before_context=2,
+            after_context=3,
+        ),
+        _ctx=RequestContext(user=UserIdentifier("acct", "alice"), role=Role.USER),
+    )
+
+    assert seen["before_context"] == 2
+    assert seen["after_context"] == 3
+
+
+@pytest.mark.asyncio
 async def test_grep_forwards_include_tags_to_filesystem_service(monkeypatch):
     seen = {}
 
