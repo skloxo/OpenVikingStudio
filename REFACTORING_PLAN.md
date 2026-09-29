@@ -398,8 +398,8 @@
 
 ---
 
-#### 📌 [P2] [ ] Card-28: Card-Relations-Interactive-Linking-And-Grep-Cockpit (v1.5.92): 图谱实体双向显式关联交互抽屉与 VikingFS 正则 Grep 检索座舱 ⏳
-- **类型**：前端座舱增强 / 图谱拓扑 ｜ **优先级**：🔥 P2 ｜ **目标版本**：`v1.5.92` ｜ **当前状态**：[ ] 就绪待调度 ⏳
+#### 📌 [P2] [x] Card-28: Card-Relations-Interactive-Linking-And-Grep-Cockpit (v1.5.92): 图谱实体双向显式关联交互抽屉与 VikingFS 正则 Grep 检索座舱 ✅
+- **类型**：前端座舱增强 / 图谱拓扑 ｜ **优先级**：🔥 P2 ｜ **目标版本**：`v1.5.92` ｜ **当前状态**：[x] 已验收通过 ✅ (v1.5.92)
 - **背景与第一性原理**：
   - Card-20F 遗留次生 UI 交互点：知识图谱详情抽屉目前仅展示静态血缘与属性，缺少在 UI 上直接勾选实体一键创建/解绑显式关联（`POST /api/v1/relations/link` 与 `unlink`）的交互通道；
   - Card-24 吸收了 VikingFS 底层 Grep 算子与 MCP 工具，但在 Web Studio 前端检索中心缺少直观的“正则 Grep 代码/文档检索座舱卡片”。
@@ -408,11 +408,17 @@
     1. **实体关联界面操作闭环率**：图谱画布右侧抽屉一键 link/unlink 成功率 **$100\%$**；
     2. **Grep 检索端到端响应时延**：毫秒级多文件正则搜索反馈 `< 150ms`。
   - **展示界面与卡片**：`/studio/graph` 节点详情抽屉交互操作栏、`/studio/retrieval`「🔍 VikingFS 正则 Grep 引擎」。
-- **核心交付目标**：
-  1. 在知识图谱节点详情抽屉增加一键建立/解除实体关联的交互按钮与对话框；
-  2. 在检索座舱挂载 `VikingFSGrepCockpit` 交互卡片，支持路径过滤、正则表达式与上下文行数配置；
-  3. 配套单测与构建验证闭环。
-
+- **核心交付目标与完成情况**：
+  1. [x] 知识图谱节点详情抽屉新增 `NodeRelationsManager` 组件（254 行），支持查询出站关联、建立新关联与一键解绑，变更后自动 invalidate `['relations', nodeId]` 与 `['knowledge-topology']`；
+  2. [x] `NodeDetailsDrawer` 集成 `NodeRelationsManager`（165 行），含 `max-h-[85vh] overflow-y-auto` 滚动容器与 `md:w-104` 抽屉加宽；
+  3. [x] 检索座舱新增 `VikingFSGrepCockpit` 组件（355 行），支持 URI 路径前缀过滤、正则输入、大小写开关、前置/后置上下文行数、预设正则 Chips 与命中行高亮代码块；
+  4. [x] `route.tsx` 新增 grep Tab 并挂载 `VikingFSGrepCockpit`；
+  5. [x] `relations.py` 补齐 `POST /unlink` 路由，link 响应新增 `count` 字段，unlink 响应新增 `removed: bool`；
+  6. [x] 单元测试 16/16 全绿（`test_relations_interactive_api.py` 2/2 + 全量回归 16/16，耗时 4.05s）；
+  7. [x] 安全扫描 0 泄露（4515 文件），Vite build PASS（15.53s），版本号 1.5.92 物理烘焙。
+- **Git Commit**：`46b3fa62f (v1.5.92)`
+- **修改文件清单**：
+  - `openviking/_version.py`, `package.json`, `openviking/server/routers/relations.py`, `openviking/service/relation_service.py`, `src/routes/graph/-components/node-details-drawer.tsx`, `src/routes/graph/-components/node-relations-manager.tsx`, `src/routes/retrieval/-components/viking-fs-grep-cockpit.tsx`, `src/routes/retrieval/route.tsx`, `tests/unit/test_relations_interactive_api.py`
 ---
 
 ### 📋 下一阶段就绪任务卡片模板 (Next Milestone Cards Template)
