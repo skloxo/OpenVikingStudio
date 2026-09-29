@@ -7,6 +7,7 @@ import {
   ClockIcon,
   CodeIcon,
   DatabaseIcon,
+  FileCodeIcon,
   PlayIcon,
   RefreshCwIcon,
   RotateCcwIcon,
@@ -15,6 +16,7 @@ import {
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { ovClient } from '#/lib/ov-client'
+import { HermesPatchDrawer } from './hermes-patch-drawer'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -102,6 +104,8 @@ export function HermesEvolveCockpit() {
   const queryClient = useQueryClient()
   const [searchQuery, setSearchQuery] = React.useState('FastAPI')
   const [appliedQuery, setAppliedQuery] = React.useState('FastAPI')
+  const [selectedPatch, setSelectedPatch] = React.useState<SkillPatch | null>(null)
+  const [drawerOpen, setDrawerOpen] = React.useState(false)
 
   // 1. 全局统计
   const summaryQuery = useQuery<HermesSummary>({
@@ -292,7 +296,11 @@ export function HermesEvolveCockpit() {
               patches.map((p) => (
                 <div
                   key={p.patch_id}
-                  className="rounded border border-border/60 bg-muted/20 p-2.5 flex flex-col gap-1.5"
+                  onClick={() => {
+                    setSelectedPatch(p)
+                    setDrawerOpen(true)
+                  }}
+                  className="rounded border border-border/60 bg-muted/20 p-2.5 flex flex-col gap-1.5 cursor-pointer hover:border-cyan-500/50 transition-colors"
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-xs text-foreground font-semibold">{p.patch_id}</span>
@@ -318,12 +326,28 @@ export function HermesEvolveCockpit() {
                   <div className="text-xs text-muted-foreground truncate">{p.reason}</div>
 
                   <div className="flex items-center justify-end gap-2 pt-1 border-t border-border/40">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSelectedPatch(p)
+                        setDrawerOpen(true)
+                      }}
+                      className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted"
+                    >
+                      <FileCodeIcon className="size-2.5 mr-1 text-cyan-500" />
+                      审查 Diff
+                    </Button>
                     {p.status === 'proposed' && (
                       <Button
                         size="sm"
                         variant="ghost"
                         disabled={applyMutation.isPending}
-                        onClick={() => applyMutation.mutate(p.patch_id)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          applyMutation.mutate(p.patch_id)
+                        }}
                         className="h-6 px-2 text-xs text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 hover:bg-cyan-50 dark:hover:bg-cyan-950/40"
                       >
                         <PlayIcon className="size-2.5 mr-1" />
@@ -335,7 +359,10 @@ export function HermesEvolveCockpit() {
                         size="sm"
                         variant="ghost"
                         disabled={revertMutation.isPending}
-                        onClick={() => revertMutation.mutate(p.patch_id)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          revertMutation.mutate(p.patch_id)
+                        }}
                         className="h-6 px-2 text-xs text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40"
                       >
                         <RotateCcwIcon className="size-2.5 mr-1" />
@@ -349,6 +376,23 @@ export function HermesEvolveCockpit() {
           </div>
         </div>
       </div>
+
+      {/* 微手术补丁审查抽屉 */}
+      <HermesPatchDrawer
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        patch={selectedPatch}
+        onApply={async (patchId) => {
+          await applyMutation.mutateAsync(patchId)
+          setSelectedPatch((prev) => (prev ? { ...prev, status: 'applied' } : null))
+        }}
+        onRevert={async (patchId) => {
+          await revertMutation.mutateAsync(patchId)
+          setSelectedPatch((prev) => (prev ? { ...prev, status: 'reverted' } : null))
+        }}
+        isApplying={applyMutation.isPending}
+        isReverting={revertMutation.isPending}
+      />
     </div>
   )
 }

@@ -10,6 +10,7 @@ import {
   BanIcon,
 } from 'lucide-react'
 import { PRESET_SCENARIOS } from '../-constants/crystallizer-presets'
+import { FactCrystalDrawer } from './fact-crystal-drawer'
 
 interface TriGateEvaluation {
   passed: boolean
@@ -60,6 +61,8 @@ export function EntropyCrystallizerCockpit() {
   const [selectedScenarioId, setSelectedScenarioId] = React.useState('port_lessons_passed')
   const [evalResult, setEvalResult] = React.useState<TriGateEvaluation | null>(null)
   const [distillResult, setDistillResult] = React.useState<DistillResponse | null>(null)
+  const [selectedCrystal, setSelectedCrystal] = React.useState<FactCrystal | null>(null)
+  const [drawerOpen, setDrawerOpen] = React.useState(false)
 
   const activeScenario = React.useMemo(
     () => PRESET_SCENARIOS.find((s) => s.id === selectedScenarioId) ?? PRESET_SCENARIOS[0],
@@ -351,15 +354,35 @@ export function EntropyCrystallizerCockpit() {
         <div className="flex flex-col gap-2">
           {crystalsData && crystalsData.length > 0 ? (
             crystalsData.map((c) => (
-              <div key={c.uri} className="rounded border border-border/40 bg-muted/10 p-3 flex flex-col gap-1.5">
+              <div
+                key={c.uri}
+                onClick={() => {
+                  setSelectedCrystal(c)
+                  setDrawerOpen(true)
+                }}
+                className="rounded border border-border/40 bg-muted/10 p-3 flex flex-col gap-1.5 cursor-pointer hover:border-cyan-500/50 transition-colors"
+              >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                     <SparklesIcon className="size-3 text-cyan-600 dark:text-cyan-400" />
                     {c.axiom}
                   </span>
-                  <span className="rounded bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 px-1.5 py-0.5 text-xs font-mono">
-                    {c.context_bounds.version_range}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 px-1.5 py-0.5 text-xs font-mono">
+                      {c.context_bounds.version_range}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSelectedCrystal(c)
+                        setDrawerOpen(true)
+                      }}
+                      className="text-xs text-muted-foreground hover:text-cyan-600 dark:hover:text-cyan-400 px-1.5 py-0.5 rounded hover:bg-muted cursor-pointer font-medium"
+                    >
+                      详情
+                    </button>
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground font-mono">
@@ -383,6 +406,13 @@ export function EntropyCrystallizerCockpit() {
           )}
         </div>
       </div>
+
+      {/* 不可变事实晶体总库抽屉 */}
+      <FactCrystalDrawer
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        crystal={selectedCrystal}
+      />
     </div>
   )
 }
