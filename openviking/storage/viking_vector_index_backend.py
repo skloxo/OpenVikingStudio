@@ -164,9 +164,12 @@ class _AsyncVectorAdapter:
             collection.update(fields=fields)
             if self._adapter.mode in {"local", "cuvs"}:
                 index_meta = collection.get_index_meta_data(index_name)
-                index_meta["ScalarIndex"] = scalar_index
-                collection.drop_index(index_name)
-                collection.create_index(index_name, index_meta)
+                if index_meta is not None:
+                    index_meta["ScalarIndex"] = scalar_index
+                    collection.drop_index(index_name)
+                    collection.create_index(index_name, index_meta)
+                else:
+                    collection.update_index(index_name, scalar_index=scalar_index)
             else:
                 collection.update_index(index_name, scalar_index=scalar_index)
 

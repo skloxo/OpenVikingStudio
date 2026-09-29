@@ -85,6 +85,8 @@ class SessionCommitProcessor(DequeueHandlerBase):
             await session.load()
             with bind_task_context(msg.task_id, ctx.account_id, ctx.user.user_id):
                 processed = await session.resume_queued_commit(msg)
+            if processed:
+                await self._record_commit_telemetry(session, msg)
             if not processed:
                 from openviking.storage.queuefs import QueueManager, get_queue_manager
 
@@ -96,6 +98,37 @@ class SessionCommitProcessor(DequeueHandlerBase):
             return processed
         finally:
             reset_root_observability_context(root_context_token)
+
+    async def _record_commit_telemetry(self, session: Any, msg: SessionCommitMsg) -> None:
+        """Decoupled telemetry extraction hook for Agent 3D Performance Sensors (Card-20A)."""
+        try:
+            from openviking.core.agent_sensors import (
+                AgentSensorsAggregator,
+                extract_session_telemetry_metrics,
+            )
+            messages = []
+            if hasattr(session, "_read_archive_messages") and msg.archive_uri:
+                try:
+                    messages = await session._read_archive_messages(msg.archive_uri)
+                except Exception:
+                    messages = []
+            if not messages and hasattr(session, "_messages"):
+                messages = getattr(session, "_messages", []) or []
+
+            metrics = extract_session_telemetry_metrics(
+                messages=messages,
+                usage_uris=getattr(msg, "usage_uris", []) or [],
+                session_id=session.session_id,
+            )
+            AgentSensorsAggregator.get_instance().record_telemetry(
+                session_id=metrics["session_id"],
+                effective_tokens=metrics["effective_tokens"],
+                total_tokens=metrics["total_tokens"],
+                top5_hits=metrics["top5_hits"],
+                interventions_count=metrics["interventions_count"],
+            )
+        except Exception:
+            pass
 
     async def _finalize_cancelled(self, msg: SessionCommitMsg, ctx: RequestContext) -> None:
         session = self._session_service.session(

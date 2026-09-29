@@ -99,6 +99,8 @@ def _check_local_2080ti() -> Dict[str, Any]:
 def _exec_3070_cmd(cmd: str, timeout: int = 20) -> subprocess.CompletedProcess:
     ssh_pass = os.environ.get("OV_FLEET_3070_PASS")
     ssh_target = os.environ.get("OV_FLEET_3070_SSH")
+    if ssh_target:
+        ssh_target = ssh_target.replace("\\\\", "\\")
     ssh_port = os.environ.get("OV_FLEET_3070_PORT", "6022")
     if not ssh_pass or not ssh_target:
         return subprocess.CompletedProcess(args=[], returncode=1, stdout="", stderr="OV_FLEET_3070_SSH or OV_FLEET_3070_PASS not configured in environment")
@@ -206,6 +208,8 @@ def _sync_to_3070() -> Dict[str, Any]:
 
     ssh_pass = os.environ.get("OV_FLEET_3070_PASS")
     ssh_target = os.environ.get("OV_FLEET_3070_SSH")
+    if ssh_target:
+        ssh_target = ssh_target.replace("\\\\", "\\")
     ssh_port = os.environ.get("OV_FLEET_3070_PORT", "6022")
     if not ssh_pass or not ssh_target:
         log_res["error"] = "OV_FLEET_3070_SSH or OV_FLEET_3070_PASS not configured in environment"

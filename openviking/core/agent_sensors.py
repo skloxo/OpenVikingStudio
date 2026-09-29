@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import threading
 import time
 from dataclasses import asdict, dataclass, field
@@ -153,3 +154,91 @@ class AgentSensorsAggregator:
                 for p in points[-20:]
             ],
         }
+
+
+_INTERVENTION_KEYWORDS_RE = re.compile(
+    r"(不对|错误|报错|重写|重做|重试|改成|修改|不是这样|有问题|停一下|弄错|fix|retry|error|wrong|incorrect|undo|redo|bug)",
+    re.IGNORECASE,
+)
+_CODE_BLOCK_RE = re.compile(r"```[a-zA-Z0-9_-]*\n([\s\S]*?)```")
+
+
+def extract_session_telemetry_metrics(
+    messages: List[Any],
+    usage_uris: Optional[List[str]] = None,
+    session_id: str = "",
+) -> Dict[str, Any]:
+    """Calculate 3D performance sensor metrics from a session message sequence.
+
+    1. Token SNR: Effective payload (code blocks + valid instructions + tool outputs) / total tokens
+    2. P@5 Precision: Hits on context (usage_uris & ContextParts) capped at 5
+    3. Human Intervention: User corrective steering steps detected
+    """
+    from openviking.utils.token_estimation import estimate_text_tokens
+
+    total_tokens = 0
+    effective_tokens = 0
+    context_hits = len(usage_uris or [])
+    interventions_count = 0
+
+    user_turn_index = 0
+    for msg in messages:
+        role = getattr(msg, "role", None) or (msg.get("role") if isinstance(msg, dict) else "")
+        parts = getattr(msg, "parts", None) or (msg.get("parts") if isinstance(msg, dict) else [])
+        content = getattr(msg, "content", "") or ""
+
+        msg_tokens = getattr(msg, "estimated_tokens", 0)
+        if not msg_tokens:
+            if parts:
+                msg_tokens = sum(
+                    estimate_text_tokens(getattr(p, "text", "") or getattr(p, "abstract", "") or str(getattr(p, "tool_output", "")))
+                    for p in parts
+                )
+            else:
+                msg_tokens = estimate_text_tokens(content)
+
+        total_tokens += max(1, msg_tokens) if content or parts else 0
+
+        if parts:
+            for p in parts:
+                p_cls = p.__class__.__name__ if p is not None else ""
+                if p_cls == "ContextPart" or (isinstance(p, dict) and p.get("type") == "context"):
+                    context_hits += 1
+                elif p_cls == "ToolPart" or (isinstance(p, dict) and p.get("type") == "tool"):
+                    tool_out = getattr(p, "tool_output", "") or (p.get("output") if isinstance(p, dict) else "")
+                    effective_tokens += estimate_text_tokens(str(tool_out))
+
+        if role == "user":
+            user_text = content
+            if not user_text and parts:
+                user_text = "".join(str(getattr(p, "text", "")) for p in parts)
+            if user_turn_index > 0 and user_text:
+                if _INTERVENTION_KEYWORDS_RE.search(user_text):
+                    interventions_count += 1
+            user_turn_index += 1
+            effective_tokens += estimate_text_tokens(user_text)
+        elif role == "assistant":
+            asst_text = content
+            if not asst_text and parts:
+                asst_text = "".join(str(getattr(p, "text", "")) for p in parts)
+            code_blocks = _CODE_BLOCK_RE.findall(asst_text)
+            for code in code_blocks:
+                effective_tokens += estimate_text_tokens(code)
+            if not code_blocks and asst_text:
+                effective_tokens += int(estimate_text_tokens(asst_text) * 0.7)
+
+    if total_tokens > 0:
+        effective_tokens = min(total_tokens, effective_tokens)
+    else:
+        effective_tokens = 0
+
+    top5_hits = min(5, max(0, context_hits))
+
+    return {
+        "session_id": session_id or f"sess_{int(time.time()*1000)}",
+        "effective_tokens": effective_tokens,
+        "total_tokens": total_tokens,
+        "top5_hits": top5_hits,
+        "interventions_count": interventions_count,
+    }
+

@@ -12,10 +12,11 @@ from openviking.server.routers.agent_sensors import router
 
 
 @pytest.fixture
-def client():
+def client(tmp_path):
     app = FastAPI()
     app.include_router(router)
     aggregator = AgentSensorsAggregator.get_instance()
+    aggregator.metrics_file = str(tmp_path / "agent_metrics.jsonl")
     aggregator._history.clear()
     return TestClient(app)
 
