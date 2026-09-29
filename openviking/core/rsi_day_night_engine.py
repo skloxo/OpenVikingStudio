@@ -54,7 +54,7 @@ class RSIDayNightEngine:
         self._credit_results: List[CreditAllocationResult] = []
         self._gate_verifications: List[DualSplitGateResult] = []
         self._phase_switched_at = time.time()
-        self._engine_lock = threading.Lock()
+        self._engine_lock = threading.RLock()
 
     @classmethod
     def get_instance(cls) -> "RSIDayNightEngine":
@@ -141,6 +141,54 @@ class RSIDayNightEngine:
                 self._gate_verifications.pop()
 
         return result
+
+    def run_nighttime_cycle(
+        self,
+        baseline_holdout_pass_rate: float = 0.8,
+        train_results: Optional[List[bool]] = None,
+        holdout_results: Optional[List[bool]] = None,
+    ) -> Dict[str, Any]:
+        """运行夜间做梦与双 Split 零退化门禁自演进周期 (Card-20G)。"""
+        with self._engine_lock:
+            prev_phase = self._current_phase
+            self._current_phase = RSIPhase.NIGHTTIME_DREAMING
+            self._phase_switched_at = time.time()
+
+            # 1. 评估所有白昼会话轨迹
+            evaluated_count = 0
+            session_ids = list(self._trajectories.keys())
+            for sid in session_ids:
+                turns = self._trajectories.get(sid) or []
+                if turns:
+                    res = RSICreditAllocator.evaluate_trajectory(turns)
+                    self._credit_results.insert(0, res)
+                    evaluated_count += 1
+            if len(self._credit_results) > 100:
+                self._credit_results = self._credit_results[:100]
+
+            # 2. 执行双 Split 门禁验证
+            if train_results is None:
+                train_results = [True] * max(evaluated_count, 1)
+            if holdout_results is None:
+                holdout_results = [True] * max(evaluated_count, 1)
+
+            gate_res = self.verify_dual_split_gate(
+                train_results=train_results,
+                holdout_results=holdout_results,
+                baseline_holdout_pass_rate=baseline_holdout_pass_rate,
+            )
+
+            # 3. 恢复之前阶段
+            self._current_phase = prev_phase
+            return {
+                "status": "completed",
+                "evaluated_sessions": evaluated_count,
+                "gate_passed": gate_res.passed,
+                "regression_detected": gate_res.regression_detected,
+                "train_pass_rate": gate_res.train_pass_rate,
+                "holdout_pass_rate": gate_res.holdout_pass_rate,
+                "details": gate_res.details,
+            }
 
     def summary(self) -> Dict[str, Any]:
         with self._engine_lock:

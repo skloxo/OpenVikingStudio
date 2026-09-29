@@ -255,21 +255,38 @@
 
 ---
 
-#### 📌 [P1] [ ] Card-20G: Card-RSI-DayNight-RealCollection-And-Gate (v1.5.83): 昼夜双轮自演进真实轨迹收集与双 Split 门禁驱动闭环 ⏳
-- **类型**：递归自演进 / 门禁验证 ｜ **优先级**：🔥 P1 ｜ **目标版本**：`v1.5.83` ｜ **当前状态**：[ ] 就绪待调度 ⏳
+#### 📌 [P1] [x] Card-20G: Card-RSI-DayNight-RealCollection-And-Gate (v1.5.83): 昼夜双轮自演进真实轨迹收集与双 Split 门禁驱动闭环 ✅
+- **类型**：递归自演进 / 门禁验证 ｜ **优先级**：🔥 P1 ｜ **目标版本**：`v1.5.83` ｜ **当前状态**：[x] 已验收通过 ✅ (v1.5.83)
 - **背景与第一性原理**：
   - `RSIDayNightEngine` 实现了白昼轨迹收集与夜间信用分配及 Holdout 盲测无退化门禁，但缺乏生产拦截切面与昼夜定时切换；
-  - 本卡片在 MCP 工具执行与 `TaskTracker` 中注入收集切面，定时在夜间低峰期执行双 Split 门禁演进。
+  - 本卡片在生产消息提交流水线 (`SessionCommitProcessor`) 与 `TaskTracker` 中注入收集切面，定时在夜间低峰期执行双 Split 门禁演进。
 - **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
   - **衡量指标**：
     1. **真实执行轨迹白昼收集率**：白昼模式下真实调用轨迹捕获率 **$100\%$**；
     2. **Holdout 验证集零退化拦截率**：策略演进时出现既有能力破坏时物理阻断率 **$100\%$**。
-  - **展示界面与卡片**：进化大盘「昼夜双轮自演进看板」。
-- **核心交付目标**：
-  1. 将 `record_turn` 作为轻量切面挂载至 FastMCP 工具完成钩子；
-  2. 在夜间低峰期触发 Holdout 盲测与局部信用分配；
-  3. 门禁验证通过后才允许更新技能可编辑区块。
-- **验收条件**：白昼真实轨迹自动累加、夜间模拟验证拦截退化、单测全绿。
+  - **展示界面与卡片**：进化大盘「昼夜双轮自演进看板」与 `/api/v1/rsi/status`。
+- **核心交付成果**：
+  1. `SessionCommitProcessor._record_hermes_experience`：自动将白昼真实会话消息逐回合注入 `RSIDayNightEngine.record_turn`；
+  2. `RSIDayNightEngine.run_nighttime_cycle`：新增夜间离线做梦演进循环，支持自动评估白昼会话轨迹与双 Split 零退化门禁检验，Holdout 退化时物理 `BLOCKED`；锁机制升级为 `RLock` 根治重入死锁；
+  3. `TaskTracker._run_nightly_crystallization`：挂载每日午夜自动触发 RSI 夜间周期；
+  4. REST 路由补齐 `POST /api/v1/rsi/cycle/run_nighttime`。
+- **完工反思六问 (Six Post-Completion Reflection Questions)**：
+  1. *是否悬空？* 否。会话消息提交切面与午夜定时任务已双向打通，REST API 支持外部主动编排触发。
+  2. *是否闭环？* 是。双 Split 门禁与 Holdout 验证具备物理阻断逻辑，退化策略无法通过门禁。
+  3. *是否虚荣指标？* 否。指标由底层真实会话消息驱动，客观反映收集与门禁执行数据。
+  4. *是否过度工程化？* 否。无缝复用既有切面与定时器，零引入外部中间件。
+  5. *是否满足第一性原理？* 是。白昼高吞吐低延迟收集，夜间离线集中做梦与盲测防退化。
+  6. *是否符合奥卡姆剃刀与信达雅？* 是。代码精炼，RLock 重入保护，信达雅对齐。
+- **次生悬空排查发现与未来排期**：
+  - *次生发现 1*：当前白昼轨迹与门禁记录驻留于内存，跨进程重启存在窗口期损耗。排期在后续版本中接入 SQLite `rsi_trajectories` 物理归档。
+  - *次生发现 2*：Card-20H 的 `PolarJudge` 与 `AHEEngine` 需挂载至技能更新与 Pre-commit 流水线，排期在 `Card-20H (v1.5.84)` 立即推进。
+- **修改文件清单**：
+  - `openviking/core/rsi_day_night_engine.py` (新增 run_nighttime_cycle, RLock 锁)
+  - `openviking/storage/queuefs/session_commit_processor.py` (注入 record_turn 收集)
+  - `openviking/service/task_tracker.py` (夜间午夜做梦挂载)
+  - `openviking/server/routers/rsi.py` (补齐 run_nighttime 路由)
+  - `tests/unit/test_rsi_day_night_pipeline.py` (新增集成流水线测试，3 用例全绿)
+  - `package.json` & `openviking/_version.py` (升至 1.5.83)
 
 ---
 

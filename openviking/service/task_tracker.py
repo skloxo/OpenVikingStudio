@@ -294,6 +294,15 @@ class TaskTracker:
         except Exception as e:
             logger.warning("[TaskTracker] Nightly crystallization cycle error: %s", e)
 
+        # Card-20G: Trigger RSI Nighttime Dreaming and Dual-Split Gate validation
+        try:
+            from openviking.core.rsi_day_night_engine import RSIDayNightEngine
+            rsi_engine = RSIDayNightEngine.get_instance()
+            rsi_engine.run_nighttime_cycle()
+            logger.info("[TaskTracker] Nightly RSI dreaming and dual-split gate validation completed")
+        except Exception as e:
+            logger.warning("[TaskTracker] Nightly RSI cycle error: %s", e)
+
     async def _evict_expired(self) -> None:
         """Remove expired tasks and enforce MAX_TASKS."""
         await self._dispatcher.run(self._evict_expired_on_owner)

@@ -178,6 +178,14 @@ class SessionCommitProcessor(DequeueHandlerBase):
             if batch:
                 HermesExperienceStore.get_instance().record_messages_batch(batch)
                 HermesNudgeEngine.get_instance().trigger_nudge(session_id)
+                # Card-20G: Feed session turns into RSI Daytime trajectory collection
+                try:
+                    from openviking.core.rsi_day_night_engine import RSIDayNightEngine, RSIPhase
+                    rsi_engine = RSIDayNightEngine.get_instance()
+                    for item in batch:
+                        rsi_engine.record_turn(session_id, item)
+                except Exception:
+                    pass
         except Exception:
             pass
 
