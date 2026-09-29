@@ -423,12 +423,47 @@
 
 ---
 
-#### 📌 [P0] [ ] Card-31: Fat-File-Surgery-App-Shell-And-Chat (v1.5.95): 前端剩余次级超限文件接缝拆分 — AppShell、AccountSwitcher 与 UseChat ⏳
-- **类型**：架构重构 / 单文件规模红线治理 ｜ **优先级**：🔥🔥 P0 ｜ **目标版本**：`v1.5.95` ｜ **当前状态**：[ ] 就绪待调度 ⏳
+#### 📌 [P0] [x] Card-31: Fat-File-Surgery-App-Shell-And-Chat (v1.5.95): 前端剩余次级超限文件接缝拆分 — AppShell、AccountSwitcher、UseChat 与 AddResource ✅
+- **类型**：架构重构 / 单文件规模红线治理 ｜ **优先级**：🔥🔥 P0 ｜ **目标版本**：`v1.5.95` ｜ **当前状态**：[x] 已验收通过 ✅ (v1.5.95)
 - **背景与第一性原理**：
   - 经历 Card-29 与 Card-30 两轮大手术后，全库 700+ 行巨型非生成代码已彻底清零；
   - 剩余次级轻度超限文件：`use-chat.ts` (593L)、`app-shell.tsx` (578L)、`account-switcher.tsx` (546L)、`add-resource-page.tsx` (539L)；
-  - 目标：将这批 500~600 行文件逐一降维至 200~350 行，实现前端全库 100% 绝对合规。
+  - 目标：将这批 500~600 行文件逐一降维至 200~400 行黄金甜点区，实现架构高内聚解耦。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：拆分后四大目标及所有衍生新文件 100% **$\le 500$ 行**（基准收敛至 28~413 行）；Vite build PASS，全库零密钥泄漏。
+- **拆解交付成果 (11 个文件全量 $\le 500$ 行，Commit: `f9d9d6d83`)**：
+  1. **`account-switcher.tsx`（546L ➔ 194L）**：
+     - `account-switcher-dialogs.tsx`（265L：添加账户、编辑用户、切换会话弹窗集合）
+     - `use-account-switcher.ts`（235L：账户切换与表单验证 Hook）
+  2. **`app-shell.tsx`（578L ➔ 413L）**：
+     - `app-shell-nav.tsx`（189L：主导航项、折叠侧边栏导航渲染）
+  3. **`use-chat.ts`（593L ➔ 249L）**：
+     - `chat-stream-processor.ts`（276L：SSE 流式解析器与分块增量状态机）
+     - `chat-utils.ts`（132L：消息格式化、Token 统计与时戳纯函数）
+  4. **`add-resource-page.tsx`（539L ➔ 404L）**：
+     - `add-resource-advanced-options.tsx`（191L：高级上传参数折叠表单组件）
+     - `add-resource-utils.ts`（28L：MIME 类型探测与本地 ID 生成）
+- **门禁验证清单**：
+  - `wc -l` 物理行数审计：全部 11 个目标及衍生文件 100% $\le 500$ 行，无任何超限；
+  - `npm run build`：生产编译成功（15.44s），产物正确注入 `v1.5.95`；
+  - `security_check.py`：扫描 4548 个受版本控制文件，0 密钥泄露；
+  - `npx vitest run src/routes/resources`：38/38 测试全绿（3.34s）；
+  - `pytest -o addopts="" tests/storage/test_viking_fs_grep.py`：23 passed in 0.16s；
+  - 服务端热重载验证：`systemctl --user restart openviking` 成功，`/health` 探针返回 `version: 1.5.95`。
+
+---
+
+#### 📌 [P0] [ ] Card-32: Fat-File-Surgery-Playground-And-Timeline (v1.5.96): 前端最后剩余 500+ 行非生成业务代码彻底清零 — ContextExplorer、VersionTimelineDialog 与 SessionsAPI ⏳
+- **类型**：架构重构 / 单文件规模红线治理 ｜ **优先级**：🔥🔥 P0 ｜ **目标版本**：`v1.5.96` ｜ **当前状态**：[ ] 就绪待调度 ⏳
+- **背景与第一性原理**：
+  - 经三轮拆解，非生成代码库中仅剩最后 3 个略微超限文件：`context-explorer.tsx` (534L)、`version-timeline-dialog.tsx` (526L)、`src/lib/sessions/api.ts` (505L)；
+  - 目标：将最后这 3 个文件按领域接缝下沉拆分，使前端所有业务源码 100% 达成 $\le 500$ 行绝对红线。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：拆分后所有目标文件与衍生小文件 100% **$\le 500$ 行**（基准收敛至 100~350 行黄金甜点区）；Vite build PASS，全库零密钥泄漏。
+- **拆解计划**：
+  1. `src/routes/playground/-components/context-explorer.tsx`（534L）：拆分子项卡片与工具栏抽屉；
+  2. `src/routes/resources/-components/version-timeline-dialog.tsx`（526L）：拆分版本比较面板与差异查看器；
+  3. `src/lib/sessions/api.ts`（505L）：拆分会话 REST 客户端与请求参数归一化工具。
 
 
 
