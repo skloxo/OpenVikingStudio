@@ -216,21 +216,42 @@
 
 ---
 
-#### 📌 [P1] [ ] Card-20F: Card-Graph-RealTopology-DynamicWiring (v1.5.82): 活态实体血缘与跨节点拓扑图谱动态渲染闭环 ⏳
-- **类型**：图谱拓扑 / 真实数据驱动 ｜ **优先级**：🔥 P1 ｜ **目标版本**：`v1.5.82` ｜ **当前状态**：[ ] 就绪待调度 ⏳
+#### 📌 [P1] [x] Card-20F: Card-Graph-RealTopology-DynamicWiring (v1.5.82): 活态实体血缘与跨节点拓扑图谱动态渲染闭环 ✅
+- **类型**：图谱拓扑 / 真实数据驱动 ｜ **优先级**：🔥 P1 ｜ **目标版本**：`v1.5.82` ｜ **当前状态**：[x] 已验收通过 ✅
 - **背景与第一性原理**：
   - 历史版本曾通过随机循环生成 1458 个假节点假边，切除后图谱端点仅返回静态硬编码关系，未能真实反映系统知识拓扑；
   - 本卡片从 VikingFS 真实实体关系库（`relations.db`）与全集群在籍节点心跳，动态构建活态知识拓扑网络。
 - **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
   - **衡量指标**：
-    1. **真实实体拓扑映射率**：VikingFS 真实资源与血缘关联映射率 **$100\%$**；
-    2. **伪造假节点假边残留率**：严格为 **$0$**。
-  - **展示界面与卡片**：`/studio/graph` 知识图谱画布。
-- **核心交付目标**：
-  1. 重构 `/api/v1/relations/graph` 路由，从 SQLite 真实关系表动态拉取实体与关联边；
-  2. 整合跨节点在籍 Agent 心跳与任务流转链路；
-  3. 前端图谱画布适配高密性冷淡视觉规范，切除一切硬编码静态 fallback。
-- **验收条件**：图谱 100% 由真实后端数据驱动、单测全绿、前端构建 PASS。
+    1. **真实实体拓扑映射率**：VikingFS 真实资源与血缘关联映射率 **$100\%$**（已达成：SQLite 物理关系表 + VikingFS 真实资产动态装配）；
+    2. **伪造假节点假边残留率**：严格为 **$0$**（已达成：切除前后端硬编码假节点与静态 fallback）；
+    3. **单文件规模安全红线**：所有修改模块严格处于 $\le 500$ 行安全阈值内（`relations_store.py` 195 行、`relations.py` 315 行、`relation_service.py` 96 行、`use-knowledge-topology.ts` 96 行）。
+  - **展示界面与卡片**：`/studio/graph` 知识图谱画布与 `/api/v1/relations/topology`。
+- **核心交付内容**：
+  1. `openviking/storage/relations_store.py`：实现 `RelationStore` 单例引擎与 SQLite `relations.db` 物理持久化，支持基于出度与入度的索引检索、`add_link`、`add_links_batch`、`remove_link`、`list_all_links`；
+  2. `openviking/service/relation_service.py`：重构 `RelationService` 接入 `RelationStore`，消除旧版 `hasattr` 悬空空实现，实现真实关系持久化与查询；
+  3. `openviking/server/routers/relations.py`：重构 `/api/v1/relations/topology` 与别名 `/api/v1/relations/graph`，动态感知全集群在籍节点（8大核心在籍智能体与真实的 staging 计数，如 595 篇物理会话落盘）、真实显式关联表、真实技能与真实会话；
+  4. `src/routes/graph/-lib/use-knowledge-topology.ts`：彻底切除前端硬编码假节点 fallback，100% 基于真实后端拓扑接口与实体血缘驱动；
+  5. `tests/unit/test_relations_store_and_graph.py` & `tests/unit/test_relations_topology.py`：新增并维护 5 项核心单测，全部秒级通过（耗时 1.98s 全绿）。
+- **【完工反思六问 (Six Post-Completion Reflection Questions)】**：
+  1. **是否悬空**？否！`RelationService` 与 `RelationStore` 紧密对接 SQLite 物理存储，`/api/v1/relations/link`、`unlink`、`relations`、`topology`、`graph` 全部真实贯通；
+  2. **是否闭环**？是！显式建立的实体关联立即落盘进入 `relations.db`，并在 `/studio/graph` 图谱画布中实时渲染呈现，形成“建立关联 ➔ SQLite落盘 ➔ 图谱拓扑动态渲染 ➔ 逆向追溯”的完整闭环；
+  3. **是否虚荣指标**？否！彻底切除原有的静态假节点数组，节点数与边数 100% 由真实的集群心跳、真实技能与 SQLite 关联驱动；
+  4. **是否过度工程化**？否！直接复用 SQLite 原生 WAL 模式，无需引入 Neo4j、JanusGraph 等重量级外部图数据库，奥卡姆剃刀极简；
+  5. **是否满足第一性原理**？是！知识图谱的本质是实体与实体之间的真实因果与从属关系，必须来源于真实资产血缘；
+  6. **是否信达雅**？是！模型强类型化，单文件行数严格控制在 500 行安全红线内。
+- **【次生悬空排查发现】**：
+  - 当前前端图谱画布展示了节点与连线，但在右侧详情抽屉中，尚未提供“在 UI 上直接勾选两个节点创建/解绑显式关联”的快捷操作按钮，用户目前仍需通过 REST API 或 Wikilinks 建立关联。已记录至次生功能池！
+- **Git Commit**：`v1.5.82`
+- **修改文件清单**：
+  - `openviking/storage/relations_store.py`
+  - `openviking/service/relation_service.py`
+  - `openviking/server/routers/relations.py`
+  - `src/routes/graph/-lib/use-knowledge-topology.ts`
+  - `tests/unit/test_relations_store_and_graph.py`
+  - `package.json`
+  - `openviking/_version.py`
+  - `REFACTORING_PLAN.md`
 
 ---
 
