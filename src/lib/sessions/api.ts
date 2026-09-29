@@ -5,25 +5,17 @@ import {
   getSessions,
   getSessionBySessionId,
   getSessionIdContext,
-  postBotV1Chat,
   postSessions,
   postSessionIdCommit,
   postSessionIdExtract,
   postSessionIdMessages,
   postSessionIdUsed,
 } from '#/gen/ov-client/sdk.gen'
-import {
-  getOvResult,
-  normalizeOvClientError,
-  OvClientError,
-  ovClient,
-} from '#/lib/ov-client'
-import { fetchSse } from '#/lib/sse'
+import { getOvResult, ovClient } from '#/lib/ov-client'
 
 import { parseSessionMemoryDiff } from './memory-diff'
-import type { BotChatRequest, BotChatResponse } from '@ov-server/bot/v1/chat'
 import type { SessionMemoryDiff } from './memory-diff'
-import type { Message, MessagePart } from './types/message'
+import type { Message } from './types/message'
 import type {
   AddMessageResult,
   CommitSessionResult,
@@ -35,6 +27,18 @@ import type {
   SessionMeta,
 } from '@ov-server/api/v1/sessions'
 import type { UsedRequest } from '#/gen/ov-client/types.gen'
+
+import {
+  deduplicateMessages,
+  getMessages,
+  isMissingArchive,
+  mapWithConcurrency,
+  SESSION_ARCHIVE_CONCURRENCY,
+} from './session-api-utils'
+
+export * from './bot-chat-api'
+export * from './serialize-parts'
+export * from './session-api-utils'
 
 // ---------------------------------------------------------------------------
 // Session CRUD
@@ -100,58 +104,6 @@ export async function deleteSession(
 // ---------------------------------------------------------------------------
 // Session Messages
 // ---------------------------------------------------------------------------
-
-function isMessage(value: unknown): value is Message {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'id' in value &&
-    'role' in value &&
-    'parts' in value
-  )
-}
-
-function getMessages(value: unknown): Message[] {
-  return Array.isArray(value) ? value.filter(isMessage) : []
-}
-
-function deduplicateMessages(messages: Message[]): Message[] {
-  const seen = new Set<string>()
-  return messages.filter((message) => {
-    if (seen.has(message.id)) return false
-    seen.add(message.id)
-    return true
-  })
-}
-
-const SESSION_ARCHIVE_CONCURRENCY = 4
-
-async function mapWithConcurrency<T, TResult>(
-  items: T[],
-  concurrency: number,
-  mapper: (item: T, index: number) => Promise<TResult>,
-): Promise<TResult[]> {
-  const results = new Array<TResult>(items.length)
-  let nextIndex = 0
-
-  async function worker() {
-    while (nextIndex < items.length) {
-      const index = nextIndex
-      nextIndex += 1
-      results[index] = await mapper(items[index], index)
-    }
-  }
-
-  await Promise.all(
-    Array.from({ length: Math.min(concurrency, items.length) }, () => worker()),
-  )
-  return results
-}
-
-function isMissingArchive(error: unknown): boolean {
-  const normalized = normalizeOvClientError(error)
-  return normalized.statusCode === 404 || normalized.code === 'NOT_FOUND'
-}
 
 /**
  * Fetch the complete message history.
@@ -355,151 +307,4 @@ export async function searchSessionToolResult(
     },
   )
   return getOvResult<unknown>(Promise.resolve(response))
-}
-
-// ---------------------------------------------------------------------------
-// Bot Chat
-// ---------------------------------------------------------------------------
-
-function extractErrorMessage(text: string, fallback: string): string {
-  if (!text.trim()) return fallback
-
-  try {
-    const parsed = JSON.parse(text) as unknown
-    if (parsed && typeof parsed === 'object') {
-      const record = parsed as Record<string, unknown>
-      if (typeof record.detail === 'string') return record.detail
-      const error = record.error
-      if (error && typeof error === 'object') {
-        const message = (error as Record<string, unknown>).message
-        if (typeof message === 'string') return message
-      }
-    }
-  } catch {
-    // Fall through to raw text.
-  }
-
-  return text
-}
-
-function buildFetchHeaders(): Record<string, string> {
-  const conn = ovClient.getConnection()
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-  const apiKey = conn.adminApiKey || conn.apiKey
-  if (apiKey) headers['X-API-Key'] = apiKey
-  if (conn.identityHeaders) {
-    if (conn.accountId) headers['X-OpenViking-Account'] = conn.accountId
-    if (conn.userId) headers['X-OpenViking-User'] = conn.userId
-  }
-  return headers
-}
-
-export async function fetchBotHealth(): Promise<unknown> {
-  const baseUrl = ovClient.getOptions().baseUrl
-  const response = await fetch(`${baseUrl}/bot/v1/health`, {
-    method: 'GET',
-    headers: buildFetchHeaders(),
-  })
-
-  if (!response.ok) {
-    const text = await response.text().catch(() => '')
-    throw new OvClientError({
-      code: response.status === 503 ? 'BOT_MODE_DISABLED' : 'BOT_HEALTH_FAILED',
-      message: extractErrorMessage(
-        text,
-        `Bot health check failed (${response.status})`,
-      ),
-      responseBody: text,
-      statusCode: response.status,
-    })
-  }
-
-  return response.json().catch(() => ({ status: 'ok' }))
-}
-
-/**
- * Send a streaming chat request and return standards-compliant SSE messages.
- */
-export async function sendChatStream(
-  request: BotChatRequest,
-  signal?: AbortSignal,
-): Promise<ReturnType<typeof fetchSse>> {
-  const baseUrl = ovClient.getOptions().baseUrl
-  const conn = ovClient.getConnection()
-  return fetchSse(`${baseUrl}/bot/v1/chat/stream`, {
-    method: 'POST',
-    headers: {
-      ...buildFetchHeaders(),
-      Accept: 'text/event-stream',
-    },
-    body: JSON.stringify({
-      ...request,
-      user_id: request.user_id || conn.userId || undefined,
-      stream: true,
-    }),
-    signal,
-  })
-}
-
-/** Send a non-streaming chat request. */
-export async function sendChat(
-  request: BotChatRequest,
-): Promise<BotChatResponse> {
-  const conn = ovClient.getConnection()
-  const response = await postBotV1Chat({
-    body: {
-      ...request,
-      user_id: request.user_id || conn.userId || undefined,
-    },
-    throwOnError: true,
-  } as unknown as NonNullable<Parameters<typeof postBotV1Chat<true>>[0]>)
-
-  return response.data as BotChatResponse
-}
-
-// ---------------------------------------------------------------------------
-// Part serialization helpers (Message → API request format)
-// ---------------------------------------------------------------------------
-
-export function serializeParts(
-  parts: MessagePart[],
-): Array<Record<string, unknown>> {
-  return parts.flatMap((part) => {
-    if (part.type === 'text') {
-      return [{ type: 'text', text: part.text }]
-    }
-    if (part.type === 'context') {
-      return [
-        {
-          type: 'context',
-          uri: part.uri,
-          context_type: part.context_type,
-          abstract: part.abstract,
-        },
-      ]
-    }
-    if (
-      part.type === 'reasoning' ||
-      part.type === 'iteration' ||
-      part.type === 'tool_result'
-    )
-      return []
-
-    // tool
-    const d: Record<string, unknown> = {
-      type: 'tool',
-      tool_id: part.tool_id,
-      tool_name: part.tool_name,
-      tool_uri: part.tool_uri,
-      skill_uri: part.skill_uri,
-      tool_status: part.tool_status,
-    }
-    if (part.tool_input) d.tool_input = part.tool_input
-    if (part.tool_output) d.tool_output = part.tool_output
-    if (part.duration_ms != null) d.duration_ms = part.duration_ms
-    if (part.prompt_tokens != null) d.prompt_tokens = part.prompt_tokens
-    if (part.completion_tokens != null)
-      d.completion_tokens = part.completion_tokens
-    return [d]
-  })
 }
