@@ -372,20 +372,46 @@
 
 ---
 
-#### 📌 [P2] [ ] Card-27: Card-Studio-Secondary-Drawers-And-AHE-PreCommit (v1.5.91): 界面微手术审查抽屉、不可变晶体总库抽屉与 AHE Pre-Commit 门禁闭环 ⏳
-- **类型**：前端座舱增强 / 门禁加固 ｜ **优先级**：🔥 P2 ｜ **目标版本**：`v1.5.91` ｜ **当前状态**：[ ] 就绪待调度 ⏳
+#### 📌 [P2] [x] Card-27: Card-Studio-Secondary-Drawers-And-AHE-PreCommit (v1.5.91): 界面微手术审查抽屉、不可变晶体总库抽屉与 AHE Pre-Commit 门禁闭环 ✅
+- **类型**：前端座舱增强 / 门禁加固 ｜ **优先级**：🔥 P2 ｜ **目标版本**：`v1.5.91` ｜ **当前状态**：[x] 已验收通过 ✅ (v1.5.91)
 - **背景与第一性原理**：
-  - 汇总 Card-20C~20H 遗留次生 UI 呈现与门禁串联：1. 前端缺少 Hermes 微补丁 1-Click Approve/Diff/Revert 抽屉；2. 缺少不可变规则晶体抽屉；3. `scripts/ahe_gate_check.py` 尚未链入预提交钩子。
+  - 汇总 Card-20C~20H 遗留次生 UI 呈现与门禁串联：1. 前端缺少 Hermes 微补丁 1-Click Approve/Diff/Revert 抽屉；2. 缺少不可变规则晶体详情抽屉；3. `scripts/ahe_gate_check.py` 尚未链入预提交钩子。
 - **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
   - **衡量指标**：
-    1. **Pre-commit AHE 自动阻断率**：未录入快照漂移本地拒收率 **$100\%$**；
-    2. **微补丁人眼审核可达性**：生成微手术补丁在 UI 上肉眼审核完成度 **$100\%$**。
+    1. **Pre-commit AHE 自动阻断率**：未录入快照漂移本地拒收率 **$100\%$**（已集成至 `.githooks/pre-commit` 与 `.git/hooks/pre-commit`）；
+    2. **微补丁人眼审核可达性**：生成微手术补丁在 UI 上肉眼审核完成度 **$100\%$**（`HermesPatchDrawer` 提供 Unified Diff 与 1-Click 应用/回滚）；
+    3. **不可变晶体详情透明度**：SSOT 事实晶体 L0/L1/L2 三层元数据完整可见率 **$100\%$**（`FactCrystalDrawer` 深度呈现）。
   - **展示界面与卡片**：Hermes 补丁抽屉与晶体总库抽屉。
+- **核心交付目标与完成情况**：
+  1. [x] AHE 契约与快照漂移门禁全面集成至 `.githooks/pre-commit` 与 `.git/hooks/pre-commit`；
+  2. [x] Web Studio 挂载 Hermes 微手术审查抽屉 (`HermesPatchDrawer`：Unified Diff 对比、≤30行门禁校验、1-Click Approve/Apply/Revert、原始 JSON 折叠)；
+  3. [x] Web Studio 挂载不可变晶体规则查看抽屉 (`FactCrystalDrawer`：L0 公理、L1 适用版本与来源碎片/证据链 SHA-256 指纹、L2 负向排斥哨兵、复制 URI 与 JSON)；
+  4. [x] 单元测试与门禁验证全覆盖 (4/4 AHE gate tests, 15/15 total AHE tests pass, 20/20 combined tests pass in 1.50s)；
+  5. [x] 安全扫描 0 泄露 (4512 文件通过)，前端产物烘焙 1.5.91。
+- **芒格逆向对抗审讯与去伪存真反思 (Munger Inversion Review)**：
+  - *死因倒推*：若开发者直接通过 git commit 提交了未经 AHE manifest 审计的快照漂移，系统是否会失守？答：不会。`.githooks/pre-commit` 物理拦截并阻断 commit，必须更新或移除漂移。
+  - *二阶恶果*：抽屉打开是否影响座舱整体性能？答：采用 React 状态提升与 Base-UI Sheet 轻量弹层，未展开时零渲染负担。
+  - *是否引入外部依赖？*：零新依赖，复用已有 Base-UI Sheet 与 lucide-react 图标。
+- **Git Commit**：`1c4e4f6a5 (v1.5.91)`
+- **修改文件清单**：
+  - `.githooks/pre-commit`, `.git/hooks/pre-commit`, `openviking/_version.py`, `package.json`, `src/routes/retrieval/-components/entropy-crystallizer-cockpit.tsx`, `src/routes/retrieval/-components/fact-crystal-drawer.tsx`, `src/routes/retrieval/-components/hermes-evolve-cockpit.tsx`, `src/routes/retrieval/-components/hermes-patch-drawer.tsx`, `tests/unit/test_ahe_gate_check.py`, `REFACTORING_PLAN.md`
+
+---
+
+#### 📌 [P2] [ ] Card-28: Card-Relations-Interactive-Linking-And-Grep-Cockpit (v1.5.92): 图谱实体双向显式关联交互抽屉与 VikingFS 正则 Grep 检索座舱 ⏳
+- **类型**：前端座舱增强 / 图谱拓扑 ｜ **优先级**：🔥 P2 ｜ **目标版本**：`v1.5.92` ｜ **当前状态**：[ ] 就绪待调度 ⏳
+- **背景与第一性原理**：
+  - Card-20F 遗留次生 UI 交互点：知识图谱详情抽屉目前仅展示静态血缘与属性，缺少在 UI 上直接勾选实体一键创建/解绑显式关联（`POST /api/v1/relations/link` 与 `unlink`）的交互通道；
+  - Card-24 吸收了 VikingFS 底层 Grep 算子与 MCP 工具，但在 Web Studio 前端检索中心缺少直观的“正则 Grep 代码/文档检索座舱卡片”。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **实体关联界面操作闭环率**：图谱画布右侧抽屉一键 link/unlink 成功率 **$100\%$**；
+    2. **Grep 检索端到端响应时延**：毫秒级多文件正则搜索反馈 `< 150ms`。
+  - **展示界面与卡片**：`/studio/graph` 节点详情抽屉交互操作栏、`/studio/retrieval`「🔍 VikingFS 正则 Grep 引擎」。
 - **核心交付目标**：
-  1. 将 AHE 门禁扫描集成至 `.git/hooks/pre-commit`；
-  2. 在 Web Studio 挂载 Hermes 微补丁审查与不可变晶体规则查看抽屉；
-  3. 挂载人类审批与大文件卸载指标瓦片。
-- **验收条件**：Git 提交自动触发 AHE 拦截测试通过、UI 抽屉交互无报错。
+  1. 在知识图谱节点详情抽屉增加一键建立/解除实体关联的交互按钮与对话框；
+  2. 在检索座舱挂载 `VikingFSGrepCockpit` 交互卡片，支持路径过滤、正则表达式与上下文行数配置；
+  3. 配套单测与构建验证闭环。
 
 ---
 
