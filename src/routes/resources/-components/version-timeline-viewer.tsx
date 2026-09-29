@@ -12,7 +12,7 @@ import { toast } from 'sonner'
 
 import { ScrollArea } from '#/components/ui/scroll-area'
 import type { SnapshotCommit } from '../-lib/api'
-import { type ParsedDiffLine } from './version-timeline-utils'
+import type { ParsedDiffLine } from './version-timeline-utils'
 
 export interface VersionTimelineViewerProps {
   activeCommit: SnapshotCommit | null
@@ -51,7 +51,7 @@ export function VersionTimelineViewer({
     <div className="md:col-span-7 flex flex-col min-h-0 bg-background">
       {/* View Switcher & Details Bar */}
       {activeCommit ? (
-        <div className="p-3 border-b border-border flex items-center justify-between flex-shrink-0 bg-muted/15">
+        <div className="p-3 border-b border-border flex items-center justify-between shrink-0 bg-muted/15">
           <div className="flex items-center gap-2">
             <div className="inline-flex rounded-md border border-border p-0.5 bg-muted/50">
               <button
