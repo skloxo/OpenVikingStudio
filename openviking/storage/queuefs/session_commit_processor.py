@@ -87,6 +87,7 @@ class SessionCommitProcessor(DequeueHandlerBase):
                 processed = await session.resume_queued_commit(msg)
             if processed:
                 await self._record_commit_telemetry(session, msg)
+                await self._record_hermes_experience(session, msg)
             if not processed:
                 from openviking.storage.queuefs import QueueManager, get_queue_manager
 
@@ -127,6 +128,56 @@ class SessionCommitProcessor(DequeueHandlerBase):
                 top5_hits=metrics["top5_hits"],
                 interventions_count=metrics["interventions_count"],
             )
+        except Exception:
+            pass
+
+    async def _record_hermes_experience(self, session: Any, msg: SessionCommitMsg) -> None:
+        """Autonomously record session messages into HermesExperienceStore and trigger Nudge (Card-20E)."""
+        try:
+            from openviking.core.hermes_experience_store import HermesExperienceStore
+            from openviking.core.hermes_nudge_engine import HermesNudgeEngine
+
+            messages = []
+            if hasattr(session, "_read_archive_messages") and msg.archive_uri:
+                try:
+                    messages = await session._read_archive_messages(msg.archive_uri)
+                except Exception:
+                    messages = []
+            if not messages and hasattr(session, "_messages"):
+                messages = getattr(session, "_messages", []) or []
+
+            session_id = getattr(session, "session_id", None) or msg.session_id
+            batch: list[Dict[str, Any]] = []
+
+            for i, m in enumerate(messages):
+                role = getattr(m, "role", None) or (m.get("role") if isinstance(m, dict) else "user")
+                content = getattr(m, "content", "") or ""
+                parts = getattr(m, "parts", None) or (m.get("parts") if isinstance(m, dict) else [])
+                if not content and parts:
+                    content = "".join(str(getattr(p, "text", "")) for p in parts if hasattr(p, "text"))
+
+                tool_calls = getattr(m, "tool_calls", None) or (m.get("tool_calls") if isinstance(m, dict) else None)
+                if not tool_calls and parts:
+                    tc_list = [
+                        {"name": getattr(p, "tool_name", ""), "output": str(getattr(p, "tool_output", ""))}
+                        for p in parts
+                        if getattr(p, "__class__", None) and p.__class__.__name__ == "ToolPart"
+                    ]
+                    if tc_list:
+                        tool_calls = tc_list
+
+                if content or tool_calls:
+                    batch.append({
+                        "session_id": session_id,
+                        "role": str(role),
+                        "content": str(content),
+                        "tool_calls": tool_calls,
+                        "meta": {"turn": i, "archive_uri": msg.archive_uri},
+                    })
+
+            if batch:
+                HermesExperienceStore.get_instance().record_messages_batch(batch)
+                HermesNudgeEngine.get_instance().trigger_nudge(session_id)
         except Exception:
             pass
 

@@ -45,6 +45,11 @@ class RecordExperienceRequest(BaseModel):
     meta: Optional[Dict[str, Any]] = None
 
 
+class RecordExperienceBatchRequest(BaseModel):
+    messages: List[RecordExperienceRequest]
+    trigger_nudge: bool = True
+
+
 class TriggerNudgeRequest(BaseModel):
     session_id: str
 
@@ -72,6 +77,21 @@ async def record_experience(req: RecordExperienceRequest) -> Dict[str, Any]:
         meta=req.meta,
     )
     return {"status": "recorded", "msg_id": msg.msg_id}
+
+
+@router.post("/experience/batch")
+async def record_experience_batch(req: RecordExperienceBatchRequest) -> Dict[str, Any]:
+    """批量记录真实会话交互经历，并可选异步触发 Nudge 复盘。"""
+    raw_dicts = [m.model_dump() for m in req.messages]
+    recorded = _exp_store.record_messages_batch(raw_dicts)
+    if req.trigger_nudge and req.messages:
+        session_id = req.messages[0].session_id
+        _nudge_engine.trigger_nudge(session_id)
+    return {
+        "status": "recorded",
+        "recorded_count": len(recorded),
+        "msg_ids": [m.msg_id for m in recorded],
+    }
 
 
 @router.get("/experience/search")
