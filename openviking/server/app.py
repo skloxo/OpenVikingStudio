@@ -537,6 +537,17 @@ def create_app(
     async def openviking_error_handler(request: Request, exc: OpenVikingError):
         http_status = ERROR_CODE_TO_HTTP_STATUS.get(exc.code, 500)
         capture_public_http_error(code=exc.code, message=exc.message, details=exc.details)
+        try:
+            from openviking.core.failure_taxonomy_telemetry import FailureTaxonomyTelemetry
+            from openviking.core.failure_classifier import FailureCategory
+            cat = FailureCategory.TRANSIENT if http_status in (429, 502, 503, 504) else FailureCategory.DETERMINISTIC
+            FailureTaxonomyTelemetry.get_instance().record_evaluation(
+                category=cat,
+                tool_name=f"HTTP_{request.method}_{request.url.path}",
+                reason=f"[{exc.code}] {exc.message}",
+            )
+        except Exception:
+            pass
         return JSONResponse(
             status_code=http_status,
             content=Response(
@@ -560,6 +571,16 @@ def create_app(
             message=message,
             details=details,
         )
+        try:
+            from openviking.core.failure_taxonomy_telemetry import FailureTaxonomyTelemetry
+            from openviking.core.failure_classifier import FailureCategory
+            FailureTaxonomyTelemetry.get_instance().record_evaluation(
+                category=FailureCategory.DETERMINISTIC,
+                tool_name=f"HTTP_{request.method}_{request.url.path}",
+                reason=f"[VALIDATION_ERROR] {message}",
+            )
+        except Exception:
+            pass
         return JSONResponse(
             status_code=ERROR_CODE_TO_HTTP_STATUS[code],
             content=Response(
@@ -583,6 +604,17 @@ def create_app(
             details = {"original_http_status_code": exc.status_code}
         message = _message_from_http_detail(exc.detail)
         capture_public_http_error(code=code, message=message, details=details)
+        try:
+            from openviking.core.failure_taxonomy_telemetry import FailureTaxonomyTelemetry
+            from openviking.core.failure_classifier import FailureCategory
+            cat = FailureCategory.TRANSIENT if response_status in (429, 502, 503, 504) else FailureCategory.DETERMINISTIC
+            FailureTaxonomyTelemetry.get_instance().record_evaluation(
+                category=cat,
+                tool_name=f"HTTP_{request.method}_{request.url.path}",
+                reason=f"[HTTP_{response_status}] {message}",
+            )
+        except Exception:
+            pass
         return JSONResponse(
             status_code=response_status,
             headers=exc.headers,
@@ -598,6 +630,18 @@ def create_app(
 
     # Catch-all for unhandled exceptions so clients always get JSON
     async def general_error_handler(_request: Request, exc: Exception):
+        try:
+            from openviking.core.failure_taxonomy_telemetry import FailureTaxonomyTelemetry
+            telemetry = FailureTaxonomyTelemetry.get_instance()
+            cat = telemetry._classifier.classify_error(exc)
+            telemetry.record_evaluation(
+                category=cat,
+                tool_name=f"HTTP_{_request.method}_{_request.url.path}",
+                reason=f"[UNHANDLED_{type(exc).__name__}] {exc}",
+            )
+        except Exception:
+            pass
+
         mapped = map_exception(exc)
         if mapped is not None:
             http_status = ERROR_CODE_TO_HTTP_STATUS.get(mapped.code, 500)

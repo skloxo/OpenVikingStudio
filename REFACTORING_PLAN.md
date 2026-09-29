@@ -77,21 +77,26 @@
 
 ---
 
-#### 📌 [P1] [ ] Card-20B: Card-Observability-FailureTaxonomy-Production-Interception (v1.5.77): 三级错误分类学与防死循环屏障全局生产拦截贯通 ⏳
-- **类型**：系统异常感知 / 故障自愈 ｜ **优先级**：🔥 P1 ｜ **目标版本**：`v1.5.77` ｜ **当前状态**：[ ] 就绪待调度 ⏳
+#### 📌 [P1] [x] Card-20B: Card-Observability-FailureTaxonomy-Production-Interception (v1.5.78): 三级错误分类学与防死循环屏障全局生产拦截贯通 ✅
+- **类型**：系统异常感知 / 故障自愈 ｜ **优先级**：🔥 P1 ｜ **目标版本**：`v1.5.78` ｜ **当前状态**：[x] 已验收通过 ✅
 - **背景与第一性原理**：
   - 核心定义了三级故障分类（ToolCrash, SchemaMismatch, InfiniteLoop）与白名单传感器，但仅存在手动测试 Probe，系统真实的工具崩溃、超时和死循环从未被自动分类捕获；
-  - 本卡片将分类雷达真正织入 FastMCP 执行层与 HTTP 全局异常处理器。
+  - 杜绝“虚荣指标”，建立闭环执行器：本卡片将分类雷达真正织入 FastMCP 执行层与 HTTP 全局异常处理器，并在第 3 次重复失败调用前进行物理阻断（Anti-Loop Barrier），注入反思提示词。
 - **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
   - **衡量指标**：
-    1. **生产异常分类捕获率**：真实工具调用报错与超时捕获率 **$100\%$**；
-    2. **死循环死锁阻断率**：重复死循环调用在第 3 轮触发阻断率 **$100\%$**。
-  - **展示界面与卡片**：监控大盘「三级故障雷达与防死循环屏障」卡片。
+    1. **生产异常分类捕获率**：真实工具调用报错、超时与 HTTP 异常捕获率 **$100\%$**；
+    2. **死循环死锁阻断率**：重复死循环调用在第 3 轮触发阻断率 **$100\%$**（调用前物理拦截，不消耗函数计算算力与 Token）。
+  - **展示界面与卡片**：监控大盘「三级故障雷达与防死循环屏障」卡片（真实时序流 `recent_events` 与 `anti_loop_interceptions`）。
 - **核心交付目标**：
   1. 在 FastMCP 执行层拦截工具异常，自动调用 `record_failure` 归类并更新时序度量；
-  2. 将死循环防御屏障（Anti-Loop Barrier）作为真实中间件挂载到 MCP 工具调度链；
-  3. 彻底激活白名单传感器对核心 Payload 的保护。
-- **验收条件**：单测 100% 通过、模拟死循环秒级熔断、前端大盘真实联动。
+  2. 将死循环防御屏障（Anti-Loop Barrier）作为真实中间件挂载到 MCP 工具调度链，阻断重复错误并返回反思导引；
+  3. 全局 HTTP 异常捕获（OpenVikingError, RequestValidationError, 500）实时接入分类雷达；
+  4. 彻底激活白名单传感器对核心 Payload 的保护。
+- **验收结果**：
+  - **Git 变更范围**：`mcp-openviking/_core/decorators.py`, `openviking/core/failure_classifier.py`, `openviking/server/app.py`, `tests/unit/test_fastmcp_antiloop_interception.py`, `package.json`, `openviking/_version.py`；
+  - **单测验证**：14 套分类与拦截单测全绿（`test_failure_classifier.py`, `test_failure_taxonomy_api.py`, `test_fastmcp_antiloop_interception.py` 全部 PASS，耗时 2.22s）；
+  - **真实生产环境物理验证**：真实请求 `http://127.0.0.1:1933/api/v1/system/failure_taxonomy_metrics` 现场捕获真实认证异常，`deterministic_count` 自动自增，`recent_events` 实时滚动展示；
+  - **安全与构建门禁**：`security_check.py` 4488 文件 0 泄露，Vite 编译构建 PASS（15.50s），生成版本注入 `1.5.78`。
 
 ---
 

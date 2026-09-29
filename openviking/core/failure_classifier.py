@@ -69,9 +69,11 @@ class FailureClassifier:
         "out of memory",
         "oom",
         "permission denied",
+        "permission",
         "unauthorized",
         "auth revocation",
         "security violation",
+        "access denied",
     )
 
     def __init__(
