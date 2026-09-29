@@ -96,6 +96,12 @@ async def check_drift(manifest_id: str) -> Dict[str, Any]:
     return _engine.check_snapshot_drift(manifest_id)
 
 
+@router.post("/manifest/{manifest_id}/rollback")
+async def rollback_manifest(manifest_id: str) -> Dict[str, Any]:
+    """执行物理回滚：将 Manifest 捕获的文件快照恢复到磁盘。"""
+    return _engine.rollback_manifest(manifest_id)
+
+
 @router.get("/clusters")
 async def list_clusters() -> Dict[str, Any]:
     """返回根因机制聚类目录（按发生频率降序）。"""

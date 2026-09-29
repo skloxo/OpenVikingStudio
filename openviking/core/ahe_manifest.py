@@ -34,13 +34,14 @@ class AHEStatus(str, Enum):
 
 class MechanismKind(str, Enum):
     """根因机制分类 (防止旁路补丁冲突)。"""
-    PROMPT_DRIFT     = "prompt_drift"     # 提示词文本漂移
-    TOOL_INTERFACE   = "tool_interface"   # 工具接口签名变更
-    STATE_RACE       = "state_race"       # 状态竞态
-    BUDGET_EXCEEDED  = "budget_exceeded"  # 预算超限
-    OUTPUT_CONTRACT  = "output_contract"  # 输出格式违约
-    ENV_SIDE_EFFECT  = "env_side_effect"  # 环境副作用
-    UNKNOWN          = "unknown"          # 待归因
+    PROMPT_DRIFT        = "prompt_drift"        # 提示词文本漂移
+    TOOL_INTERFACE      = "tool_interface"      # 工具接口签名变更
+    STATE_RACE          = "state_race"          # 状态竞态
+    BUDGET_EXCEEDED     = "budget_exceeded"     # 预算超限
+    OUTPUT_CONTRACT     = "output_contract"     # 输出格式违约
+    ENV_SIDE_EFFECT     = "env_side_effect"     # 环境副作用
+    QUALITY_DEGRADATION = "quality_degradation" # 质量降级/断言退化
+    UNKNOWN             = "unknown"             # 待归因
 
 
 # ---------------------------------------------------------------------------
@@ -57,21 +58,40 @@ class AHEAssumption(BaseModel):
 
 
 class FileSnapshot(BaseModel):
-    """文件快照哈希 — 用于秒级回滚判定。"""
+    """文件快照哈希与物理内容备份 — 用于秒级回滚判定与还原。"""
     path: str
     sha256: str
     captured_at: float = Field(default_factory=time.time)
+    content_backup: Optional[str] = None
 
     @classmethod
-    def capture(cls, file_path: str | Path) -> "FileSnapshot":
+    def capture(cls, file_path: str | Path, backup_content: bool = True) -> "FileSnapshot":
         p = Path(file_path)
         content = p.read_bytes() if p.exists() else b""
         sha = hashlib.sha256(content).hexdigest()
-        return cls(path=str(p), sha256=sha)
+        txt = None
+        if backup_content and p.exists():
+            try:
+                txt = p.read_text(encoding="utf-8")
+            except Exception:
+                txt = None
+        return cls(path=str(p), sha256=sha, content_backup=txt)
 
     def still_matches(self) -> bool:
         """判断文件内容是否与快照一致。"""
-        return self.capture(self.path).sha256 == self.sha256
+        return self.capture(self.path, backup_content=False).sha256 == self.sha256
+
+    def rollback(self) -> bool:
+        """物理还原快照备份内容至目标路径。"""
+        if self.content_backup is None:
+            return False
+        try:
+            p = Path(self.path)
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text(self.content_backup, encoding="utf-8")
+            return True
+        except Exception:
+            return False
 
 
 class AHEManifest(BaseModel):
@@ -101,6 +121,20 @@ class AHEManifest(BaseModel):
         self.status = AHEStatus.VERIFIED
         self.updated_at = time.time()
 
+    def rollback(self) -> bool:
+        """物理回滚该 Manifest 所记录的所有文件快照。"""
+        if not self.snapshots:
+            return False
+        success = True
+        for s in self.snapshots:
+            if not s.rollback():
+                success = False
+        if success:
+            self.status = AHEStatus.RETIRED
+            self.updated_at = time.time()
+            self.meta["rolled_back_at"] = time.time()
+        return success
+
 
 # ---------------------------------------------------------------------------
 # Manifest 仓库 (内存 + 可选 JSON 持久化)
@@ -110,19 +144,43 @@ class ManifestStore:
     """线程安全的 AHE Manifest 仓库。单例模式，与服务同生命周期。"""
 
     _instance: Optional["ManifestStore"] = None
+    _store: Dict[str, AHEManifest] = {}
+    _persistence_file: Path = Path.home() / ".openviking" / "data" / "ahe" / "manifests.json"
 
     def __new__(cls) -> "ManifestStore":
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._instance._store: Dict[str, AHEManifest] = {}
+            cls._instance._store = {}
+            cls._instance._persistence_file = (
+                Path.home() / ".openviking" / "data" / "ahe" / "manifests.json"
+            )
+            cls._instance._load_from_disk()
         return cls._instance
 
     @classmethod
     def get_instance(cls) -> "ManifestStore":
         return cls()
 
+    def _load_from_disk(self) -> None:
+        try:
+            if self._persistence_file.exists():
+                raw = self._persistence_file.read_text(encoding="utf-8")
+                data = json.loads(raw)
+                for mid, item in data.items():
+                    self._store[mid] = AHEManifest(**item)
+        except Exception:
+            pass
+
+    def _save_to_disk(self) -> None:
+        try:
+            self._persistence_file.parent.mkdir(parents=True, exist_ok=True)
+            self._persistence_file.write_text(self.export_json(), encoding="utf-8")
+        except Exception:
+            pass
+
     def upsert(self, manifest: AHEManifest) -> None:
         self._store[manifest.manifest_id] = manifest
+        self._save_to_disk()
 
     def get(self, manifest_id: str) -> Optional[AHEManifest]:
         return self._store.get(manifest_id)
@@ -149,3 +207,6 @@ class ManifestStore:
     def export_json(self) -> str:
         data = {mid: m.model_dump() for mid, m in self._store.items()}
         return json.dumps(data, default=str, ensure_ascii=False)
+
+    def reset_for_test(self) -> None:
+        self._store.clear()

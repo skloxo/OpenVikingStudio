@@ -153,12 +153,85 @@ class SkillOptService:
         opt_audit = self.audit_content(optimized_content)
         diff_summary = f"优化前得分 {orig_audit.total_score}分 ({orig_audit.grade}) ➔ 优化后达成 {opt_audit.total_score}分 ({opt_audit.grade})"
 
+        manifest_id = None
+        ahe_gate_passed = True
+        ahe_blocked_reason = None
+        rollback_snapshot_available = False
+        polar_verdict = None
+
+        if req.enable_ahe_gate:
+            from openviking.core.ahe_engine import AHEEngine
+            from openviking.core.ahe_manifest import MechanismKind
+
+            ahe_engine = AHEEngine.get_instance()
+            s_name = req.skill_name or new_fm.get("name") or "unnamed-skill"
+            snapshot_paths = [req.skill_file_path] if (req.skill_file_path and Path(req.skill_file_path).exists()) else []
+
+            asm_list = list(req.assumptions or [])
+            if req.validation_command:
+                asm_list.append({
+                    "description": f"Polar validation for {s_name}",
+                    "validation_command": req.validation_command,
+                })
+
+            manifest = ahe_engine.create_manifest(
+                skill_name=s_name,
+                assumptions=asm_list,
+                snapshot_paths=snapshot_paths,
+            )
+            manifest_id = manifest.manifest_id
+            rollback_snapshot_available = len(manifest.snapshots) > 0
+
+            # 运行 Polar 判官物理检验
+            verify_res = ahe_engine.verify_manifest(manifest_id)
+            results = verify_res.get("results", [])
+            for r in results:
+                v = r.get("verdict")
+                polar_verdict = v
+                if v != "pass" and v != "skip":
+                    ahe_gate_passed = False
+                    ahe_blocked_reason = (
+                        f"PolarJudge gate BLOCKED: command '{r.get('command')}' failed "
+                        f"(verdict={v}, exit={r.get('exit_code')})"
+                    )
+                    ahe_engine.ingest_violation(
+                        manifest_id=manifest_id,
+                        mechanism=MechanismKind.QUALITY_DEGRADATION,
+                        description=ahe_blocked_reason,
+                    )
+                    break
+
+            # 验证是否存在总分降级
+            if ahe_gate_passed and opt_audit.total_score < orig_audit.total_score:
+                ahe_gate_passed = False
+                ahe_blocked_reason = f"Quality degraded from {orig_audit.total_score} to {opt_audit.total_score}"
+                ahe_engine.ingest_violation(
+                    manifest_id=manifest_id,
+                    mechanism=MechanismKind.QUALITY_DEGRADATION,
+                    description=ahe_blocked_reason,
+                )
+
+            # 若通过门禁且要求自动落盘，执行安全物理写入
+            if ahe_gate_passed and req.auto_apply and req.skill_file_path:
+                try:
+                    p = Path(req.skill_file_path)
+                    p.parent.mkdir(parents=True, exist_ok=True)
+                    p.write_text(optimized_content, encoding="utf-8")
+                except Exception as exc:
+                    ahe_gate_passed = False
+                    ahe_blocked_reason = f"Failed to apply optimized content: {exc}"
+
         return SkillOptOptimizeResult(
             original_score=orig_audit.total_score,
             optimized_score=opt_audit.total_score,
             applied_fixes=applied_fixes,
             optimized_content=optimized_content,
             diff_summary=diff_summary,
+            manifest_id=manifest_id,
+            ahe_gate_passed=ahe_gate_passed,
+            ahe_blocked_reason=ahe_blocked_reason,
+            rollback_snapshot_available=rollback_snapshot_available,
+            polar_verdict=polar_verdict,
         )
 
     def batch_audit_skills(self, skills_dir: Optional[str] = None) -> BatchAuditSummary:

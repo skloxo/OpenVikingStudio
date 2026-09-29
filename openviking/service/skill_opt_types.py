@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -59,6 +59,12 @@ class SkillOptOptimizeRequest(BaseModel):
 
     skill_content: str
     target_improvements: Optional[List[str]] = None
+    skill_name: Optional[str] = None
+    skill_file_path: Optional[str] = None
+    enable_ahe_gate: bool = False
+    validation_command: Optional[str] = None
+    assumptions: Optional[List[Dict[str, Any]]] = None
+    auto_apply: bool = False
 
 
 class SkillOptOptimizeResult(BaseModel):
@@ -70,6 +76,11 @@ class SkillOptOptimizeResult(BaseModel):
     applied_fixes: List[str] = Field(default_factory=list)
     optimized_content: str
     diff_summary: str = ""
+    manifest_id: Optional[str] = None
+    ahe_gate_passed: bool = True
+    ahe_blocked_reason: Optional[str] = None
+    rollback_snapshot_available: bool = False
+    polar_verdict: Optional[str] = None
 
 
 class BatchAuditSummary(BaseModel):

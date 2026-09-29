@@ -10,6 +10,7 @@ import {
   LayersIcon,
   PlayIcon,
   RefreshCwIcon,
+  RotateCcwIcon,
   ShieldCheckIcon,
   XCircleIcon,
 } from 'lucide-react'
@@ -186,6 +187,17 @@ export function AHECockpit() {
     },
   })
 
+  // 5. 快照物理回滚 Mutation
+  const rollbackMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await ovClient.instance.post(`/api/v1/ahe/manifest/${id}/rollback`)
+      return (res as { data: unknown }).data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ahe'] })
+    },
+  })
+
   const summary = summaryQuery.data
   const manifests = manifestsQuery.data ?? []
   const clusters = clustersQuery.data?.clusters ?? []
@@ -285,6 +297,21 @@ export function AHECockpit() {
                         <PlayIcon className="size-2.5 mr-1" />
                         验证
                       </Button>
+                      {m.snapshots.length > 0 && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          disabled={rollbackMutation.isPending}
+                          onClick={() => {
+                            rollbackMutation.mutate(m.manifest_id)
+                          }}
+                          className="h-6 px-2 text-xs text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40"
+                          title="物理还原至捕获时快照"
+                        >
+                          <RotateCcwIcon className="size-2.5 mr-1" />
+                          回滚
+                        </Button>
+                      )}
                     </div>
                   </div>
                   <div className="text-xs text-muted-foreground">
