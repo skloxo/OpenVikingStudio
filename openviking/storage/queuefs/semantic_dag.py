@@ -179,6 +179,7 @@ class SemanticDagExecutor:
         generation_trigger: str = "semantic_refresh",
         aggregate_directory: bool = True,
         copy_source_uri: str = "",
+        telemetry_id: Optional[str] = None,
     ):
         self._processor = processor
         self._context_type = context_type
@@ -200,6 +201,9 @@ class SemanticDagExecutor:
         self._copy_source_uri = copy_source_uri
         self._task_context = get_task_context()
         self._telemetry = get_current_telemetry()
+        self._telemetry_id = (
+            telemetry_id if telemetry_id is not None else (self._telemetry.telemetry_id if self._telemetry else None)
+        )
         self._stale = False
         self._changed_paths = {
             path for key in ("added", "modified", "deleted") for path in self._changes.get(key, [])
@@ -823,6 +827,7 @@ class SemanticDagExecutor:
                     use_summary=use_summary,
                     ingest_options=self._ingest_options_for_file(file_path),
                     creator_acl_grant=self._creator_acl_grant(file_path),
+                    telemetry_id=self._telemetry_id,
                 )
             except Exception as e:
                 logger.error(
@@ -1101,6 +1106,7 @@ class SemanticDagExecutor:
                         ctx=self._ctx,
                         ingest_options=self._ingest_options_for_directory(),
                         creator_acl_grant=self._creator_acl_grant(dir_uri),
+                        telemetry_id=self._telemetry_id,
                     )
                 except Exception as e:
                     logger.error(
