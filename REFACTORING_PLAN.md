@@ -316,7 +316,7 @@
     6. *是否信达雅？* 是。命名清晰自解释，单文件严格保持在安全红线内。
 - **次生悬空排查发现与未来排期**：
   - *次生发现 1*：Card-25 的飞书多地域域名与 Docker OpenSandbox 沙箱生命周期，排期在 `Card-25 (v1.5.89)` 推进。
-- **Git Commit**：`v1.5.88`
+- **Git Commit**：`977e5c21a (v1.5.88)`
 - **修改文件清单**：
   - `openviking/storage/viking_fs/_grep.py`, `openviking/service/fs_service.py`, `openviking/server/routers/search.py`, `openviking/server/mcp_endpoint.py`, `tests/unit/test_mcp_tool_annotations.py`, `tests/storage/test_viking_fs_grep.py`, `tests/service/test_fs_service.py`, `tests/server/test_api_search.py`, `package.json`, `openviking/_version.py`, `REFACTORING_PLAN.md`
 
