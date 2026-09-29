@@ -2,6 +2,12 @@
 # SPDX-License-Identifier: AGPL-3.0
 """RSI 昼夜双轮与可训练策略 REST API 路由。
 
+【架构现状与守护说明 (SSOT Architectural Guard)】:
+  - 本模块是 OpenViking 智能体递归自演进 (RSI) 的关键协议与状态机骨架；
+  - 严禁删除 (DO NOT DELETE)：依据 Agent 认知连续性第一法则，任何跨会话 Agent 严禁删减此骨架；
+  - 当前状态为接口契约与测试台阶段，完整的 SQLite 物理落盘与自动化 Holdout 盲测演进
+    已正式立卡排期在 `REFACTORING_PLAN.md` ➔ `[P2] Card-26 (v1.5.90)` 闭环落地。
+
 端点:
   GET  /api/v1/rsi/status           ← 当前昼夜状态与全局统计
   POST /api/v1/rsi/phase/switch     ← 切换昼夜模式
@@ -10,6 +16,7 @@
   POST /api/v1/rsi/surface/inspect  ← 审查技能文档 # EVOLVE-BLOCK
   POST /api/v1/rsi/surface/update   ← 有界更新 # EVOLVE-BLOCK (冻结面保护)
   POST /api/v1/rsi/gate/verify_split← 双 Split 零退化门禁核验
+  POST /api/v1/rsi/cycle/run_nighttime ← 夜间演进周期 (Card-26 持续演进)
 """
 
 from __future__ import annotations

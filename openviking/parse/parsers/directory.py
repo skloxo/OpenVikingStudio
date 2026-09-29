@@ -30,7 +30,9 @@ from openviking.parse.image_rewrite import IMAGE_MAPPINGS_FILENAME
 from openviking.parse.parsers.base_parser import BaseParser
 from openviking.parse.parsers.media.constants import MEDIA_EXTENSIONS
 from openviking.storage.viking_fs import LS_ALL_NODES
+from openviking.utils.path_safety import normalize_storage_target_uri
 from openviking_cli.utils.logger import get_logger
+
 
 if TYPE_CHECKING:
     from openviking.parse.directory_scan import ClassifiedFile
@@ -578,15 +580,16 @@ class DirectoryParser(BaseParser):
                         for entry in destination_entries
                         if entry.get("name") not in ("", ".", "..")
                     }
-                    if payload.get("name") not in destination_names:
+                    destination_uri = normalize_storage_target_uri(
+                        f"{dest_uri.rstrip('/')}/{payload['name']}"
+                    )
+                    destination_name = destination_uri.rsplit("/", 1)[-1]
+                    if destination_name not in destination_names:
                         src = payload.get(
                             "uri",
                             f"{wrapper_uri.rstrip('/')}/{payload['name']}",
                         )
-                        await viking_fs.move_file(
-                            src,
-                            f"{dest_uri.rstrip('/')}/{payload['name']}",
-                        )
+                        await viking_fs.move_file(src, destination_uri)
                         try:
                             await viking_fs.delete_temp(src_temp_uri)
                         except Exception:
@@ -603,11 +606,12 @@ class DirectoryParser(BaseParser):
             ):
                 continue
             src = entry.get("uri", f"{src_temp_uri.rstrip('/')}/{name}")
-            dst = f"{dest_uri.rstrip('/')}/{name}"
+            dst = normalize_storage_target_uri(f"{dest_uri.rstrip('/')}/{name}")
             if DirectoryParser._is_dir_entry(entry):
                 await DirectoryParser._recursive_move(viking_fs, src, dst)
             else:
                 await viking_fs.move_file(src, dst)
+
         try:
             await viking_fs.delete_temp(src_temp_uri)
         except Exception:
@@ -679,8 +683,9 @@ class DirectoryParser(BaseParser):
             ):
                 continue
             s = f"{src_uri.rstrip('/')}/{name}"
-            d = f"{dst_uri.rstrip('/')}/{name}"
+            d = normalize_storage_target_uri(f"{dst_uri.rstrip('/')}/{name}")
             if DirectoryParser._is_dir_entry(entry):
                 await DirectoryParser._recursive_move(viking_fs, s, d)
             else:
                 await viking_fs.move_file(s, d)
+
