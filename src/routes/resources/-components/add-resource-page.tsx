@@ -1,4 +1,3 @@
-import { fileTypeFromBlob } from 'file-type'
 import {
   AlertTriangle,
   CheckCircle2,
@@ -6,7 +5,6 @@ import {
   FileIcon,
   FolderOpen,
   Globe,
-  Info,
   Loader2Icon,
   Upload,
 } from 'lucide-react'
@@ -16,7 +14,6 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
 import { Button } from '#/components/ui/button'
-import { Checkbox } from '#/components/ui/checkbox'
 import {
   Collapsible,
   CollapsibleContent,
@@ -24,12 +21,6 @@ import {
 } from '#/components/ui/collapsible'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
-import { Textarea } from '#/components/ui/textarea'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '#/components/ui/tooltip'
 import { cn } from '#/lib/utils'
 import { useResourceUpload } from '../-hooks/use-resource-upload'
 import {
@@ -38,34 +29,14 @@ import {
   formatFileSize,
   isBlockedFile,
 } from '../-lib/upload'
+import { AddResourceAdvancedOptions } from './add-resource-advanced-options'
+import {
+  type Mode,
+  type SelectedUploadFile,
+  createLocalFileId,
+  detectFileType,
+} from './add-resource-utils'
 import { DirectoryPickerDialog } from './directory-picker-dialog'
-
-type Mode = 'upload' | 'remote'
-
-type SelectedUploadFile = {
-  id: string
-  file: File
-  fileType: string | null
-}
-
-function createLocalFileId(): string {
-  if (
-    typeof crypto !== 'undefined' &&
-    typeof crypto.randomUUID === 'function'
-  ) {
-    return crypto.randomUUID()
-  }
-  return `local-file-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
-}
-
-async function detectFileType(file: File): Promise<string | null> {
-  try {
-    const result = await fileTypeFromBlob(file)
-    return result?.mime ?? null
-  } catch {
-    return null
-  }
-}
 
 export function AddResourceForm({
   onSubmitted,
@@ -387,133 +358,27 @@ export function AddResourceForm({
           <p className="text-xs text-muted-foreground">{t('targetUri.hint')}</p>
         </div>
 
-        <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
-          <CollapsibleTrigger className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground">
-            <ChevronRight
-              className={`size-4 transition-transform ${advancedOpen ? 'rotate-90' : ''}`}
-            />
-            {t('advancedOptions')}
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <div className="mt-3 space-y-4 rounded-lg border border-border/50 bg-muted/10 p-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-                <Label className="flex items-center gap-2">
-                  <Checkbox
-                    checked={strict}
-                    onCheckedChange={(checked) => setStrict(Boolean(checked))}
-                  />
-                  <span>{t('strict')}</span>
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <Info className="size-3.5 text-muted-foreground" />
-                      }
-                    />
-                    <TooltipContent>{t('strict.hint')}</TooltipContent>
-                  </Tooltip>
-                </Label>
-                <Label className="flex items-center gap-2">
-                  <Checkbox
-                    checked={createParent}
-                    onCheckedChange={(checked) =>
-                      setCreateParent(Boolean(checked))
-                    }
-                  />
-                  <span>{t('createParent')}</span>
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <Info className="size-3.5 text-muted-foreground" />
-                      }
-                    />
-                    <TooltipContent>
-                      {t('createParent.hint')}
-                    </TooltipContent>
-                  </Tooltip>
-                </Label>
-                <Label className="flex items-center gap-2">
-                  <Checkbox
-                    checked={directlyUploadMedia}
-                    onCheckedChange={(checked) =>
-                      setDirectlyUploadMedia(Boolean(checked))
-                    }
-                  />
-                  <span>{t('directlyUploadMedia')}</span>
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <Info className="size-3.5 text-muted-foreground" />
-                      }
-                    />
-                    <TooltipContent>
-                      {t('directlyUploadMedia.hint')}
-                    </TooltipContent>
-                  </Tooltip>
-                </Label>
-              </div>
-
-              {activeMode === 'remote' ? (
-                <div className="space-y-4 border-t border-border/50 pt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="add-resource-ignore-dirs">
-                      {t('directoryScan.ignoreDirs')}
-                    </Label>
-                    <Input
-                      id="add-resource-ignore-dirs"
-                      placeholder={t('directoryScan.ignoreDirs.placeholder')}
-                      value={ignoreDirs}
-                      onChange={(e) => setIgnoreDirs(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="add-resource-include">
-                      {t('directoryScan.include')}
-                    </Label>
-                    <Input
-                      id="add-resource-include"
-                      placeholder={t('directoryScan.include.placeholder')}
-                      value={include}
-                      onChange={(e) => setInclude(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="add-resource-exclude">
-                      {t('directoryScan.exclude')}
-                    </Label>
-                    <Input
-                      id="add-resource-exclude"
-                      placeholder={t('directoryScan.exclude.placeholder')}
-                      value={exclude}
-                      onChange={(e) => setExclude(e.target.value)}
-                    />
-                  </div>
-                </div>
-              ) : null}
-
-              <div className="space-y-2">
-                <Label htmlFor="add-resource-reason">{t('reason')}</Label>
-                <Textarea
-                  id="add-resource-reason"
-                  placeholder={t('reason.placeholder')}
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="add-resource-instruction">
-                  {t('instruction')}
-                </Label>
-                <Textarea
-                  id="add-resource-instruction"
-                  placeholder={t('instruction.placeholder')}
-                  value={instruction}
-                  onChange={(e) => setInstruction(e.target.value)}
-                />
-              </div>
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
+        <AddResourceAdvancedOptions
+          open={advancedOpen}
+          onOpenChange={setAdvancedOpen}
+          strict={strict}
+          onStrictChange={setStrict}
+          createParent={createParent}
+          onCreateParentChange={setCreateParent}
+          directlyUploadMedia={directlyUploadMedia}
+          onDirectlyUploadMediaChange={setDirectlyUploadMedia}
+          isRemote={activeMode === 'remote'}
+          ignoreDirs={ignoreDirs}
+          onIgnoreDirsChange={setIgnoreDirs}
+          include={include}
+          onIncludeChange={setInclude}
+          exclude={exclude}
+          onExcludeChange={setExclude}
+          reason={reason}
+          onReasonChange={setReason}
+          instruction={instruction}
+          onInstructionChange={setInstruction}
+        />
 
         <Button
           onClick={handleSubmit}

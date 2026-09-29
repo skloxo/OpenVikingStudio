@@ -1,5 +1,3 @@
-import * as React from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Building2Icon,
   CheckIcon,
@@ -9,231 +7,51 @@ import {
   SearchIcon,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { toast } from 'sonner'
 
 import { Button } from '#/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '#/components/ui/dialog'
 import { Input } from '#/components/ui/input'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '#/components/ui/popover'
-import { useAppConnection } from '#/hooks/use-app-connection'
-import {
-  createAdminAccount,
-  fetchAdminAccounts,
-  fetchAdminUsers,
-} from '#/lib/admin'
-import type {
-  AdminConnection,
-  AdminUser,
-  CreateAccountInput,
-} from '#/lib/admin'
-import { DEFAULT_USER_ID } from '#/lib/admin-options'
-import { PLAIN_INPUT_PROPS } from '#/lib/form-input'
-import { resolveStudioManagementCapabilities } from '#/lib/studio-permissions'
 import { cn } from '#/lib/utils'
+import {
+  selectAccountUser,
+  useAccountSwitcher,
+} from './use-account-switcher'
+import {
+  CreateAccountDialog,
+  ManualSwitchDialog,
+} from './account-switcher-dialogs'
 
-export function selectAccountUser(
-  users: readonly AdminUser[],
-  _currentUserId: string,
-  requireApiKey: boolean,
-): AdminUser | undefined {
-  const candidates = requireApiKey
-    ? users.filter((user) => Boolean(user.apiKey))
-    : [...users]
-  return candidates[0]
-}
+export { selectAccountUser }
 
 export function AccountSwitcher() {
   const { t } = useTranslation('accountSwitcher')
-  const queryClient = useQueryClient()
   const {
     connection,
-    connectionRole,
-    isConnectionRoleLoading,
-    setGeneratedCredential,
-    serverMode,
+    canManageAccounts,
+    accountLabel,
+    open,
+    setOpen,
+    createOpen,
+    setCreateOpen,
+    search,
+    setSearch,
+    switchingAccountId,
+    setSwitchingAccountId,
+    manualSwitch,
+    setManualSwitch,
+    createDraft,
+    setCreateDraft,
+    accountsQuery,
+    filteredAccounts,
+    selectAccount,
+    createAccount,
     switchIdentity,
     switchManagementAccount,
-  } = useAppConnection()
-  const [open, setOpen] = React.useState(false)
-  const [createOpen, setCreateOpen] = React.useState(false)
-  const [search, setSearch] = React.useState('')
-  const [switchingAccountId, setSwitchingAccountId] = React.useState('')
-  const [manualSwitch, setManualSwitch] = React.useState<{
-    accountId: string
-    apiKey: string
-    userId: string
-  } | null>(null)
-  const [createDraft, setCreateDraft] = React.useState<CreateAccountInput>({
-    accountId: '',
-    adminUserId: DEFAULT_USER_ID,
-  })
-
-  const { canManageAccounts } = resolveStudioManagementCapabilities({
-    hasControlCredential: Boolean(connection.adminApiKey.trim()),
-    isRoleLoading: isConnectionRoleLoading,
-    role: connectionRole,
-    serverMode,
-  })
-
-  const adminConnection = React.useMemo<AdminConnection>(
-    () => ({
-      accountId: connection.accountId,
-      apiKey: connection.adminApiKey,
-      baseUrl: connection.baseUrl,
-      userId: connection.userId,
-    }),
-    [
-      connection.accountId,
-      connection.adminApiKey,
-      connection.baseUrl,
-      connection.userId,
-    ],
-  )
-
-  const accountsQuery = useQuery({
-    enabled: canManageAccounts && open && serverMode !== 'dev',
-    queryFn: () => fetchAdminAccounts(adminConnection),
-    queryKey: [
-      'account-switcher',
-      adminConnection.baseUrl,
-      adminConnection.apiKey,
-    ],
-    retry: false,
-  })
-
-  const filteredAccounts = React.useMemo(() => {
-    if (serverMode === 'dev') {
-      return [{ accountId: connection.accountId || 'default', userCount: 1 }]
-    }
-    const normalizedSearch = search.trim().toLowerCase()
-    const accounts = accountsQuery.data ?? []
-    if (!normalizedSearch) {
-      return accounts
-    }
-    return accounts.filter((account) =>
-      account.accountId.toLowerCase().includes(normalizedSearch),
-    )
-  }, [accountsQuery.data, connection.accountId, search, serverMode])
-
-  async function selectAccount(accountId: string): Promise<void> {
-    if (accountId === connection.accountId) {
-      setOpen(false)
-      return
-    }
-
-    setSwitchingAccountId(accountId)
-    try {
-      const users = await fetchAdminUsers(adminConnection, accountId)
-      const firstUser = selectAccountUser(users, connection.userId, false)
-      if (!firstUser) {
-        throw new Error(t('errors.noUsers'))
-      }
-
-      const candidates =
-        serverMode === 'api_key'
-          ? users.filter((user) => Boolean(user.apiKey))
-          : [firstUser]
-      let switchError: unknown
-      for (const user of candidates) {
-        try {
-          await switchIdentity({
-            accountId,
-            allowLegacyIdentityFallback: true,
-            apiKey: user.apiKey || '',
-            userId: user.userId,
-          })
-          setOpen(false)
-          toast.success(
-            t('toast.switched', {
-              account: accountId,
-            }),
-          )
-          return
-        } catch (error) {
-          switchError = error
-        }
-      }
-
-      if (serverMode === 'api_key') {
-        setOpen(false)
-        setManualSwitch({
-          accountId,
-          apiKey: '',
-          userId: firstUser.userId,
-        })
-        return
-      }
-      throw switchError
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : String(error))
-    } finally {
-      setSwitchingAccountId('')
-    }
-  }
-
-  const createAccount = useMutation({
-    mutationFn: (input: CreateAccountInput) =>
-      createAdminAccount(adminConnection, input),
-    onError: (error) =>
-      toast.error(error instanceof Error ? error.message : String(error)),
-    onSuccess: async (result, input) => {
-      const accountId = result.accountId || input.accountId
-      const userId = result.userId || input.adminUserId
-      if (result.apiKey) {
-        setGeneratedCredential({
-          accountId,
-          apiKey: result.apiKey,
-          userId,
-        })
-      }
-      setCreateOpen(false)
-      setOpen(false)
-      setCreateDraft({ accountId: '', adminUserId: DEFAULT_USER_ID })
-      void queryClient.invalidateQueries({ queryKey: ['account-switcher'] })
-
-      if (!result.apiKey && serverMode === 'api_key') {
-        await switchManagementAccount(accountId)
-        toast.warning(t('errors.noCreatedKey'))
-        return
-      }
-
-      try {
-        await switchIdentity({
-          accountId,
-          allowLegacyIdentityFallback: true,
-          apiKey: result.apiKey,
-          userId,
-        })
-        toast.success(t('toast.created', { account: input.accountId }))
-      } catch (error) {
-        await switchManagementAccount(accountId)
-        toast.error(
-          t('toast.createdSwitchFailed', {
-            account: input.accountId,
-            error: error instanceof Error ? error.message : String(error),
-          }),
-        )
-      }
-    },
-  })
-
-  const hasAuthKeys = Boolean(
-    connection.adminApiKey.trim() || connection.apiKey.trim(),
-  )
-  const accountLabel = hasAuthKeys
-    ? connection.accountId || 'default'
-    : t('unset', { defaultValue: '未验证身份 (Unauthenticated)' })
+  } = useAccountSwitcher()
 
   if (!canManageAccounts) {
     return (
@@ -355,192 +173,22 @@ export function AccountSwitcher() {
         </PopoverContent>
       </Popover>
 
-      <Dialog
-        open={Boolean(manualSwitch)}
-        onOpenChange={(nextOpen) => {
-          if (!nextOpen && !switchingAccountId) {
-            setManualSwitch(null)
-          }
-        }}
-      >
-        <DialogContent>
-          <form
-            onSubmit={(event) => {
-              event.preventDefault()
-              if (!manualSwitch?.apiKey.trim()) {
-                return
-              }
-              const target = manualSwitch
-              setSwitchingAccountId(target.accountId)
-              void switchIdentity({
-                accountId: target.accountId,
-                apiKey: target.apiKey,
-                userId: target.userId,
-              })
-                .then(() => {
-                  toast.success(
-                    t('toast.switched', { account: target.accountId }),
-                  )
-                  setManualSwitch(null)
-                })
-                .catch((error: unknown) => {
-                  toast.error(
-                    error instanceof Error ? error.message : String(error),
-                  )
-                })
-                .finally(() => setSwitchingAccountId(''))
-            }}
-          >
-            <DialogHeader>
-              <DialogTitle>{t('manualSwitch.title')}</DialogTitle>
-              <DialogDescription>
-                {t('manualSwitch.description', {
-                  account: manualSwitch?.accountId,
-                })}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-2 py-5">
-              <label className="grid gap-2 text-sm font-medium">
-                {t('manualSwitch.keyLabel')}
-                <Input
-                  required
-                  type="password"
-                  value={manualSwitch?.apiKey ?? ''}
-                  onChange={(event) =>
-                    setManualSwitch((current) =>
-                      current
-                        ? { ...current, apiKey: event.target.value }
-                        : current,
-                    )
-                  }
-                  placeholder={t('manualSwitch.keyPlaceholder')}
-                  {...PLAIN_INPUT_PROPS}
-                />
-              </label>
-              <p className="text-xs leading-5 text-muted-foreground">
-                {t('manualSwitch.hint')}
-              </p>
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={Boolean(switchingAccountId)}
-                onClick={() => {
-                  const targetAccountId = manualSwitch?.accountId
-                  if (!targetAccountId) {
-                    return
-                  }
-                  setSwitchingAccountId(targetAccountId)
-                  void switchManagementAccount(targetAccountId)
-                    .then(() => {
-                      setManualSwitch(null)
-                      toast.success(
-                        t('toast.managementSwitched', {
-                          account: targetAccountId,
-                        }),
-                      )
-                    })
-                    .catch((error: unknown) => {
-                      toast.error(
-                        error instanceof Error ? error.message : String(error),
-                      )
-                    })
-                    .finally(() => setSwitchingAccountId(''))
-                }}
-              >
-                {t('manualSwitch.manageOnly')}
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                disabled={Boolean(switchingAccountId)}
-                onClick={() => setManualSwitch(null)}
-              >
-                {t('dialog.cancel')}
-              </Button>
-              <Button
-                type="submit"
-                disabled={
-                  Boolean(switchingAccountId) || !manualSwitch?.apiKey.trim()
-                }
-              >
-                {switchingAccountId ? (
-                  <LoaderCircleIcon className="animate-spin" />
-                ) : (
-                  <CheckIcon />
-                )}
-                {t('manualSwitch.submit')}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <ManualSwitchDialog
+        manualSwitch={manualSwitch}
+        onManualSwitchChange={setManualSwitch}
+        switchingAccountId={switchingAccountId}
+        onSwitchingAccountIdChange={setSwitchingAccountId}
+        switchIdentity={switchIdentity}
+        switchManagementAccount={switchManagementAccount}
+      />
 
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent>
-          <form
-            onSubmit={(event) => {
-              event.preventDefault()
-              createAccount.mutate(createDraft)
-            }}
-          >
-            <DialogHeader>
-              <DialogTitle>{t('dialog.title')}</DialogTitle>
-              <DialogDescription>{t('dialog.description')}</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-5">
-              <label className="grid gap-2 text-sm font-medium">
-                {t('dialog.accountLabel')}
-                <Input
-                  required
-                  value={createDraft.accountId}
-                  onChange={(event) =>
-                    setCreateDraft((current) => ({
-                      ...current,
-                      accountId: event.target.value,
-                    }))
-                  }
-                  placeholder={t('dialog.accountPlaceholder')}
-                  {...PLAIN_INPUT_PROPS}
-                />
-              </label>
-              <label className="grid gap-2 text-sm font-medium">
-                {t('dialog.adminLabel')}
-                <Input
-                  required
-                  value={createDraft.adminUserId}
-                  onChange={(event) =>
-                    setCreateDraft((current) => ({
-                      ...current,
-                      adminUserId: event.target.value,
-                    }))
-                  }
-                  placeholder={DEFAULT_USER_ID}
-                  {...PLAIN_INPUT_PROPS}
-                />
-              </label>
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setCreateOpen(false)}
-              >
-                {t('dialog.cancel')}
-              </Button>
-              <Button type="submit" disabled={createAccount.isPending}>
-                {createAccount.isPending ? (
-                  <LoaderCircleIcon className="animate-spin" />
-                ) : (
-                  <PlusIcon />
-                )}
-                {t('dialog.submit')}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <CreateAccountDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        createDraft={createDraft}
+        onCreateDraftChange={setCreateDraft}
+        createAccountMutation={createAccount}
+      />
     </>
   )
 }
