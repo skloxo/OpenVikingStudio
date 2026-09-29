@@ -76,11 +76,11 @@ class RelationService:
             except Exception:
                 pass
 
-    async def unlink(self, from_uri: str, uri: str, ctx: RequestContext) -> None:
+    async def unlink(self, from_uri: str, uri: str, ctx: RequestContext) -> bool:
         """Remove link (remove specified URI from relations.db)."""
         from_uri = validate_viking_uri(from_uri, field_name="from_uri")
         target_uri = validate_viking_uri(uri, field_name="to_uri")
-        self._store.remove_link(from_uri, target_uri)
+        removed = self._store.remove_link(from_uri, target_uri)
 
         # 兼容通知 VikingFS 底层
         if self._viking_fs and hasattr(self._viking_fs, "unlink"):
@@ -88,6 +88,7 @@ class RelationService:
                 await self._viking_fs.unlink(from_uri, uri, ctx=ctx)
             except Exception:
                 pass
+        return removed
 
     def list_all_relations(self, limit: int = 500) -> List[RelationItem]:
         """全量查询系统内的显式关联关系。"""

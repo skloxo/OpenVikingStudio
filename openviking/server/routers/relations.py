@@ -98,10 +98,12 @@ async def link(
             store.add_links_batch(from_uri, to_uris, reason=request.reason, link_type=request.link_type, weight=request.weight)
         else:
             store.add_link(from_uri, to_uris, reason=request.reason, link_type=request.link_type, weight=request.weight)
-    return Response(status="ok", result={"from": from_uri, "to": to_uris})
+    count = len(to_uris) if isinstance(to_uris, list) else (1 if to_uris else 0)
+    return Response(status="ok", result={"from": from_uri, "to": to_uris, "count": count})
 
 
 @router.delete("/link")
+@router.post("/unlink")
 async def unlink(
     request: UnlinkRequest,
     service: Optional[Any] = Depends(get_service_or_none),
@@ -111,11 +113,11 @@ async def unlink(
     from_uri = resolve_path_variables(request.from_uri)
     to_uri = resolve_path_variables(request.to_uri)
     if service and hasattr(service, "relations") and service.relations:
-        await service.relations.unlink(from_uri, to_uri, ctx=_ctx)
+        removed = await service.relations.unlink(from_uri, to_uri, ctx=_ctx)
     else:
         store = RelationStore.get_instance()
-        store.remove_link(from_uri, to_uri)
-    return Response(status="ok", result={"from": from_uri, "to": to_uri})
+        removed = store.remove_link(from_uri, to_uri)
+    return Response(status="ok", result={"from": from_uri, "to": to_uri, "removed": bool(removed)})
 
 
 class BuildGraphRequest(BaseModel):

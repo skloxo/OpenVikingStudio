@@ -6,13 +6,15 @@ import { Button } from '#/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import { getRouterBasePath } from '#/lib/public-path'
 import type { NodeData } from './knowledge-graph-canvas'
+import { NodeRelationsManager } from './node-relations-manager'
 
 interface NodeDetailsDrawerProps {
   node: NodeData | null
   onClose: () => void
+  onRelationChange?: () => void
 }
 
-export function NodeDetailsDrawer({ node, onClose }: NodeDetailsDrawerProps) {
+export function NodeDetailsDrawer({ node, onClose, onRelationChange }: NodeDetailsDrawerProps) {
   const [copied, setCopied] = React.useState(false)
 
   if (!node) return null
@@ -84,7 +86,7 @@ export function NodeDetailsDrawer({ node, onClose }: NodeDetailsDrawerProps) {
   }
 
   return (
-    <Card className="absolute right-4 top-4 z-40 w-80 md:w-96 rounded-md border border-border/80 bg-card/95 backdrop-blur-md shadow-lg transition-all duration-200">
+    <Card className="absolute right-4 top-4 z-40 w-80 md:w-104 max-h-[85vh] overflow-y-auto rounded-md border border-border/80 bg-card/95 backdrop-blur-md shadow-lg transition-all duration-200">
       <CardHeader className="flex flex-row items-start justify-between pb-2 space-y-0">
         <div className="space-y-1 pr-2">
           {getCategoryBadge()}
@@ -102,7 +104,7 @@ export function NodeDetailsDrawer({ node, onClose }: NodeDetailsDrawerProps) {
         </Button>
       </CardHeader>
 
-      <CardContent className="space-y-4 font-mono text-xs pt-2">
+      <CardContent className="space-y-3 font-mono text-xs pt-1">
         {/* Description Section */}
         <div className="rounded bg-muted/30 p-2.5 border border-border/40 text-muted-foreground leading-relaxed text-xs">
           {getNodeDescription()}
@@ -120,6 +122,9 @@ export function NodeDetailsDrawer({ node, onClose }: NodeDetailsDrawerProps) {
             <span className="font-bold text-cyan-600 dark:text-cyan-400">已建索引 ✅</span>
           </div>
         </div>
+
+        {/* Relations Interactive Manager */}
+        <NodeRelationsManager nodeId={node.id} onRelationChange={onRelationChange} />
 
         {/* Actions */}
         <div className="flex flex-col gap-2 pt-1 border-t border-border/40">
