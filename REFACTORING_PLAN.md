@@ -426,3 +426,42 @@
 当接收到新的重大需求或重构指令时，严格遵循以下四步规范与标准模板立卡：
 1. **第一阶·梳理方案** ➔ 2. **第二阶·CPA/业界模型补齐** ➔ 3. **第三阶·哲学审讯 (第一性原理/奥卡姆/信达雅/单文件≤500行)** ➔ 4. **第四阶·红蓝对抗与客观指标锚定**。
 
+---
+
+#### 📌 [P0] [x] Card-29: Fat-File-Surgery-Playground-Terminal-And-Route (v1.5.93): 巨型超限文件拆解手术 — Playground Terminal-Panel/Route 与 Users Route 精确接缝拆分 ✅
+- **类型**：架构重构 / 单文件规模红线治理 ｜ **优先级**：🔥🔥 P0 ｜ **目标版本**：`v1.5.93` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与第一性原理**：
+  - 全局单文件规模审计（`wc -l`）发现至少 7 个文件严重突破 500 行物理红线，其中 `terminal-panel.tsx` **1870 行**（3.7× 红线），`playground/route.tsx` **979 行**（2× 红线），`users/route.tsx` **878 行**（1.75× 红线）；
+  - 这些文件造成 Agent 注意力 Lost-in-the-Middle 严重衰减、行号漂移幻觉、工具替换风险；
+  - 奥卡姆剃刀：将现有大函数按领域接缝（Seam）分拆为高内聚小文件，不引入任何新外部依赖，不改变任何业务行为。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：拆分后全部目标文件行数 **$\le 500$ 行**，Vite build PASS，单测全绿；
+  - **展示界面**：`npm run build` 构建报告无报错、`wc -l` 文件行数审计。
+- **拆解交付成果**：
+  1. **`terminal-panel.tsx`（1870 行 ➔ 476 行，$\le 500$ 达成）**：
+     - `terminal-panel-types.ts`（190 行：本地常量、类型定义）
+     - `terminal-panel-utils.ts`（220 行：持久化加载、纯函数工具）
+     - `terminal-command-executor.ts`（485 行：终端指令执行器）
+     - `terminal-command-assist.tsx`（247 行：帮助信息与命令补全浮层）
+     - `terminal-suggestions-hook.ts`（320 行：智能补全与参数提取 Hook）
+     - `terminal-history-dialog.tsx`（83 行：历史会话弹窗）
+     - `terminal-history-item.tsx`（68 行：历史单项渲染器）
+     - `terminal-quick-start.tsx`（66 行：快速入门指引卡片）
+  2. **`playground/route.tsx`（979 行 ➔ 474 行，$\le 500$ 达成）**：
+     - `use-playground-layout.ts`（204 行：拖拽调整与布局状态 Hook）
+     - `playground-action-panel.tsx`（260 行：右侧抽屉面板）
+     - `playground-main-toolbar.tsx`（104 行：顶部路径与操作工具栏）
+     - `playground-dialogs.tsx`（133 行：弹窗与浮层管理组件）
+  3. **`users/route.tsx`（878 行 ➔ 388 行，$\le 500$ 达成）**：
+     - `user-table.tsx`（343 行：成员列表与 API Key 表格）
+     - `user-management-dialogs.tsx`（176 行：密钥重置/角色变更/删除确认弹窗）
+     - `add-user-dialog.tsx`（127 行：新建用户对话框）
+     - `user-utils.ts`（29 行：权限与脱敏纯函数）
+- **门禁验证清单**：
+  - `wc -l` 物理行数审计：全部目标及衍生文件 100% $\le 500$ 行，无任何超限文件；
+  - `npm run build`：生产编译成功（14.83s），产物正确注入 `v1.5.93`；
+  - `security_check.py`：扫描 4515 个受版本控制文件，0 密钥泄露；
+  - `pytest -o addopts="" tests/storage/test_viking_fs_grep.py`：23 passed in 0.15s；
+  - 服务端热重载验证：`systemctl --user restart openviking` 成功，`/health` 探针返回 `version: 1.5.93`。
+
+
