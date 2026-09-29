@@ -35,6 +35,9 @@ class AHEEngine:
     """AHE 契约三元组调度引擎。全服务单例。"""
 
     _instance: Optional["AHEEngine"] = None
+    _store: ManifestStore
+    _catalog: ClusterCatalog
+    _polar: PolarJudge
 
     def __new__(cls) -> "AHEEngine":
         if cls._instance is None:
@@ -207,6 +210,78 @@ class AHEEngine:
             "snapshot_clean": clean,
             "drifted_files": drifted,
             "total_snapshots": len(manifest.snapshots),
+        }
+
+    def rollback_manifest(self, manifest_id: str) -> Dict[str, Any]:
+        """执行 Manifest 关联快照物理回滚。"""
+        manifest = self._store.get(manifest_id)
+        if manifest is None:
+            return {"error": f"Manifest {manifest_id!r} not found", "success": False}
+        success = manifest.rollback()
+        self._store.upsert(manifest)
+        return {
+            "manifest_id": manifest_id,
+            "skill_name": manifest.skill_name,
+            "rolled_back": success,
+            "snapshots_count": len(manifest.snapshots),
+            "status": manifest.status.value,
+        }
+
+    def verify_and_guard(
+        self,
+        skill_name: str,
+        skill_path: Optional[str] = None,
+        validation_command: Optional[str] = None,
+        assumptions: Optional[List[Dict[str, Any]]] = None,
+        cwd: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """端到端 AHE 契约门禁：创建 Manifest、备份快照、执行 Polar 判官物理检验。"""
+        asm_list = list(assumptions or [])
+        if validation_command:
+            asm_list.append({
+                "description": f"Polar verification for {skill_name}",
+                "validation_command": validation_command,
+            })
+
+        snapshot_paths = [skill_path] if skill_path else []
+        manifest = self.create_manifest(
+            skill_name=skill_name,
+            assumptions=asm_list,
+            snapshot_paths=snapshot_paths,
+        )
+
+        verify_res = self.verify_manifest(manifest.manifest_id, cwd=cwd)
+        is_verified = verify_res.get("status") == AHEStatus.VERIFIED.value
+
+        if not is_verified:
+            failed_reasons = [
+                r.get("stderr_tail") or r.get("verdict")
+                for r in verify_res.get("results", [])
+                if r.get("verdict") != "pass"
+            ]
+            reason_str = "; ".join(str(f) for f in failed_reasons if f) or "Polar validation failure"
+            violation = self.ingest_violation(
+                manifest_id=manifest.manifest_id,
+                mechanism=MechanismKind.QUALITY_DEGRADATION,
+                description=f"Skill {skill_name} failed Polar validation: {reason_str[:256]}",
+            )
+            return {
+                "gate_passed": False,
+                "manifest_id": manifest.manifest_id,
+                "status": "violated",
+                "blocked_reason": f"AHE Polar gate BLOCKED: {reason_str}",
+                "cluster_id": violation.get("cluster_id"),
+                "verification_results": verify_res.get("results", []),
+                "rollback_available": len(manifest.snapshots) > 0,
+            }
+
+        return {
+            "gate_passed": True,
+            "manifest_id": manifest.manifest_id,
+            "status": "verified",
+            "blocked_reason": None,
+            "verification_results": verify_res.get("results", []),
+            "rollback_available": len(manifest.snapshots) > 0,
         }
 
     # -----------------------------------------------------------------------
