@@ -42,6 +42,15 @@ def sanitize_relative_viking_path(rel_path: str) -> str:
     return rel_path.replace("\\", "/")
 
 
+def _normalize_storage_segments(path: str) -> str:
+    return "/".join(
+        VikingURI.sanitize_segment(segment)
+        if any(character.isspace() for character in segment)
+        else segment
+        for segment in path.split("/")
+    )
+
+
 def validate_safe_viking_uri_path(uri: str) -> str:
     """Reject ambiguous or traversal-bearing path syntax in a Viking URI."""
     normalized = VikingURI(uri.strip()).uri.rstrip("/")
@@ -56,7 +65,16 @@ def validate_safe_viking_uri_path(uri: str) -> str:
     return normalized
 
 
+def normalize_storage_target_uri(uri: str) -> str:
+    """Return a safe Viking URI with whitespace-bearing path segments sanitized."""
+    normalized = validate_safe_viking_uri_path(uri)
+    prefix = f"{VikingURI.SCHEME}://"
+    path = normalized[len(prefix) :]
+    return f"{prefix}{_normalize_storage_segments(path)}"
+
+
 def safe_join_viking_uri(base_uri: str, rel_path: str) -> str:
     """Join a Viking URI base with a sanitized relative child path."""
     safe_rel_path = sanitize_relative_viking_path(rel_path)
     return VikingURI(base_uri).join(safe_rel_path).uri
+

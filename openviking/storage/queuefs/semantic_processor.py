@@ -40,9 +40,11 @@ from openviking.storage.abstract_overview import (
     body_for_preview,
     deterministic_sample,
     freshness_metadata,
+    markdown_safe_viking_uri,
     plan_abstract_overview_refresh,
     write_abstract_overview,
 )
+
 from openviking.storage.acl import CreatorAclGrant
 from openviking.storage.errors import LockAcquisitionError
 from openviking.storage.queuefs.named_queue import DequeueHandlerBase
@@ -1091,7 +1093,8 @@ class SemanticProcessor(DequeueHandlerBase):
     def _markdown_link_target(dir_uri: str, entry_name: str) -> str:
         """Build a Markdown-safe target without changing the stored Viking URI."""
         entry_uri = VikingURI(dir_uri).join(entry_name).uri
-        return quote(entry_uri, safe=":/")
+        return markdown_safe_viking_uri(entry_uri)
+
 
     def _replace_link_references(self, generated_content: str, link_map: Dict[str, str]) -> str:
         """Resolve link placeholders (viking://input_sample_fN / cN) to real URIs.

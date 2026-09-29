@@ -1233,6 +1233,80 @@ class _OpsMixin:
                 abstract = abstract[: abs_limit - 3] + "..."
             entries[index]["abstract"] = abstract
 
+    async def _finalize_listing_entries(
+        self,
+        entries: List[Dict[str, Any]],
+        output: str,
+        abs_limit: int,
+        extra_fields: Optional[List[str]],
+        recursive: bool,
+        ctx: Optional[RequestContext] = None,
+    ) -> List[Dict[str, Any]]:
+        """Format and enrich entries after visible-page selection.
+
+        Args:
+            entries: Selected entries in original format.
+            output: Requested output format.
+            abs_limit: Maximum abstract length.
+            extra_fields: Optional original-output fields.
+            recursive: Whether entries came from a tree traversal.
+            ctx: Request identity used for enrichment.
+
+        Returns:
+            Entries in the requested output format.
+        """
+        if output == "original":
+            if extra_fields:
+                await self._augment_entries_extra_fields(entries, extra_fields, ctx=ctx)
+            return entries
+        if output != "agent":
+            raise ValueError(f"Invalid output format: {output}")
+
+        fallback_time = datetime.now(timezone.utc)
+        result: List[Dict[str, Any]] = []
+        for entry in entries:
+            is_dir = bool(entry.get("isDir", False))
+            if entry.get("access") == "denied":
+                item = {
+                    "uri": entry.get("uri", ""),
+                    "isDir": is_dir,
+                    "access": "denied",
+                }
+                if recursive:
+                    item["rel_path"] = entry.get("rel_path", "")
+                else:
+                    item["name"] = entry.get("name", "")
+            else:
+                raw_time = entry.get("modTime", "")
+                parsed_time = fallback_time
+                if isinstance(raw_time, (int, float)):
+                    parsed_time = datetime.fromtimestamp(raw_time, tz=timezone.utc)
+                elif raw_time:
+                    if len(raw_time) > 26 and "+" in raw_time:
+                        parts = raw_time.split("+")
+                        raw_time = parts[0][:26] + "+" + parts[1]
+                    parsed_time = parse_iso_datetime(raw_time)
+                elif isinstance(entry.get("mtime"), (int, float)):
+                    parsed_time = datetime.fromtimestamp(entry["mtime"], tz=timezone.utc)
+                item = {
+                    "uri": entry.get("uri", ""),
+                    "size": 0 if is_dir else entry.get("size", 0),
+                    "isDir": is_dir,
+                    "modTime": format_iso8601(parsed_time),
+                }
+                if recursive:
+                    item["rel_path"] = entry.get("rel_path", "")
+            if "tags" in entry:
+                item["tags"] = entry["tags"]
+            result.append(item)
+
+        await self._batch_fetch_abstracts(
+            [entry for entry in result if entry.get("access") != "denied"],
+            abs_limit,
+            ctx=ctx,
+        )
+        return result
+
     async def tree(
         self,
         uri: str = "viking://",
@@ -1241,35 +1315,32 @@ class _OpsMixin:
         show_all_hidden: bool = False,
         node_limit: Optional[int] = 1000,
         level_limit: Optional[int] = 3,
+        extra_fields: Optional[List[str]] = None,
+        offset: int = 0,
+        sort_by: Optional[str] = None,
+        sort_order: str = "asc",
         ctx: Optional[RequestContext] = None,
     ) -> List[Dict[str, Any]]:
-        """
-        Recursively list all contents (includes rel_path).
-
-        Args:
-            uri: Viking URI
-            output: str = "original" or "agent"
-            abs_limit: int = 256 (for agent output abstract truncation)
-            show_all_hidden: bool = False (list all hidden files, like -a)
-            node_limit: int | None = 1000 (maximum number of nodes to list, None means unlimited)
-            level_limit: int | None = 3 (maximum depth level to traverse, None means unlimited)
-
-        output="original"
-        [{'name': '.abstract.md', 'size': 100, 'mode': 420, 'modTime': '2026-02-11T16:52:16.256334192+08:00', 'isDir': False, 'rel_path': '.abstract.md', 'uri': 'viking://resources...'}]
-
-        output="agent"
-        [{'uri': 'viking://resources...', 'size': 100, 'isDir': False, 'modTime': '2026-02-11T08:52:16.256Z', 'rel_path': '.abstract.md', 'abstract': "..."}]
-        """
+        """Recursively list all contents (includes rel_path)."""
         await self._ensure_access(uri, ctx)
-        if output == "original":
-            return await self._tree_original(uri, show_all_hidden, node_limit, level_limit, ctx=ctx)
-
-        elif output == "agent":
-            return await self._tree_agent(
-                uri, abs_limit, show_all_hidden, node_limit, level_limit, ctx=ctx
-            )
-        else:
-            raise ValueError(f"Invalid output format: {output}")
+        entries = await self._tree_original(
+            uri,
+            show_all_hidden=show_all_hidden,
+            node_limit=node_limit,
+            level_limit=level_limit,
+            offset=offset,
+            sort_by=sort_by,
+            sort_order=sort_order,
+            ctx=ctx,
+        )
+        return await self._finalize_listing_entries(
+            entries,
+            output,
+            abs_limit,
+            extra_fields,
+            True,
+            ctx=ctx,
+        )
 
     async def _tree_original(
         self,
@@ -1277,6 +1348,9 @@ class _OpsMixin:
         show_all_hidden: bool = False,
         node_limit: Optional[int] = 1000,
         level_limit: Optional[int] = 3,
+        offset: int = 0,
+        sort_by: Optional[str] = None,
+        sort_order: str = "asc",
         ctx: Optional[RequestContext] = None,
     ) -> List[Dict[str, Any]]:
         """Recursively list all contents (original format)."""
@@ -1286,6 +1360,9 @@ class _OpsMixin:
             show_all_hidden=show_all_hidden,
             node_limit=node_limit,
             level_limit=level_limit,
+            offset=offset,
+            sort_by=sort_by,
+            sort_order=sort_order,
             ctx=ctx,
         ):
             info = entry["info"]
@@ -1301,15 +1378,17 @@ class _OpsMixin:
                 )
                 continue
             new_entry = dict(entry.get("extra", {}))
-            new_entry.update({
-                "name": info["name"],
-                "size": info["size"],
-                "mode": info.get("mode", "0755" if info.get("isDir") else "0644"),
-                "modTime": info["modTime"],
-                "isDir": info["isDir"],
-                "rel_path": entry["rel_path"],
-                "uri": entry_uri,
-            })
+            new_entry.update(
+                {
+                    "name": info["name"],
+                    "size": info["size"],
+                    "mode": info.get("mode", "0755" if info.get("isDir") else "0644"),
+                    "modTime": info["modTime"],
+                    "isDir": info["isDir"],
+                    "rel_path": entry["rel_path"],
+                    "uri": entry_uri,
+                }
+            )
 
             result.append(new_entry)
         return result
@@ -1321,47 +1400,32 @@ class _OpsMixin:
         show_all_hidden: bool = False,
         node_limit: Optional[int] = 1000,
         level_limit: Optional[int] = 3,
+        offset: int = 0,
+        sort_by: Optional[str] = None,
+        sort_order: str = "asc",
         ctx: Optional[RequestContext] = None,
     ) -> List[Dict[str, Any]]:
         """Recursively list all contents (agent format with abstracts)."""
-        result = []
-
-        async for entry, entry_uri in self._iter_visible_tree_entries(
+        entries = await self._tree_original(
             uri,
-            show_all_hidden=show_all_hidden,
-            node_limit=node_limit,
-            level_limit=level_limit,
+            show_all_hidden,
+            node_limit,
+            level_limit,
+            offset=offset,
+            sort_by=sort_by,
+            sort_order=sort_order,
             ctx=ctx,
-        ):
-            info = entry["info"]
-            is_dir = info["isDir"]
-            if entry.get("access") == "denied":
-                result.append(
-                    {
-                        "uri": entry_uri,
-                        "isDir": is_dir,
-                        "rel_path": entry["rel_path"],
-                        "access": "denied",
-                    }
-                )
-                continue
-            result.append(
-                {
-                    "uri": entry_uri,
-                    "size": 0 if is_dir else info["size"],
-                    "isDir": is_dir,
-                    "modTime": format_iso8601(parse_iso_datetime(info["modTime"])),
-                    "rel_path": entry["rel_path"],
-                }
-            )
-
-        await self._batch_fetch_abstracts(
-            [entry for entry in result if entry.get("access") != "denied"],
+        )
+        return await self._finalize_listing_entries(
+            entries,
+            "agent",
             abs_limit,
+            None,
+            True,
             ctx=ctx,
         )
 
-        return result
+
 
     # ========== Vector Sync Helper Methods ==========
 
@@ -1671,52 +1735,43 @@ class _OpsMixin:
         node_limit: int = 1000,
         sort_by: Optional[str] = None,
         sort_order: str = "asc",
+        extra_fields: Optional[List[str]] = None,
+        offset: int = 0,
         ctx: Optional[RequestContext] = None,
     ) -> List[Dict[str, Any]]:
-        """
-        List directory contents (URI version).
-
-        Args:
-            uri: Viking URI
-            output: str = "original"
-            abs_limit: int = 256
-            show_all_hidden: bool = False (list all hidden files, like -a)
-            node_limit: int = 1000 (maximum number of nodes to list)
-            sort_by: Optional sort field, "name" or "mtime"
-            sort_order: Sort direction, "asc" or "desc"
-
-        output="original"
-        [{'name': '.abstract.md', 'size': 100, 'mode': 420, 'modTime': '2026-02-11T16:52:16.256334192+08:00', 'isDir': False, 'meta': {'Name': 'localfs', 'Type': 'local', 'Content': None}, 'uri': 'viking://resources/.abstract.md'}]
-
-        output="agent"
-        [{'name': '.abstract.md', 'size': 100, 'modTime': '2026-02-11T08:52:16.256Z', 'isDir': False, 'uri': 'viking://resources/.abstract.md', 'abstract': "..."}]
-        """
+        """List directory contents (URI version)."""
         await self._ensure_access(uri, ctx)
         if sort_by not in {None, "name", "mtime"}:
             raise ValueError("sort_by must be 'name' or 'mtime'")
         if sort_order not in {"asc", "desc"}:
             raise ValueError("sort_order must be 'asc' or 'desc'")
         if output == "original":
-            return await self._ls_original(
+            entries = await self._ls_original(
                 uri,
                 show_all_hidden,
                 node_limit,
+                offset=offset,
                 sort_by=sort_by,
                 sort_order=sort_order,
                 ctx=ctx,
             )
+            if extra_fields:
+                await self._augment_entries_extra_fields(entries, extra_fields, ctx=ctx)
+            return entries
         elif output == "agent":
             return await self._ls_agent(
                 uri,
                 abs_limit,
                 show_all_hidden,
                 node_limit,
+                offset=offset,
                 sort_by=sort_by,
                 sort_order=sort_order,
                 ctx=ctx,
             )
         else:
             raise ValueError(f"Invalid output format: {output}")
+
 
     @staticmethod
     def _ls_entry_mtime(entry: Dict[str, Any]) -> Optional[float]:
@@ -1748,12 +1803,12 @@ class _OpsMixin:
         directories = [item for item in entry_items if item[0].get("isDir", False)]
         files = [item for item in entry_items if not item[0].get("isDir", False)]
 
+        def name_key(item: tuple[Dict[str, Any], str]) -> tuple[str, str]:
+            """Return the case-insensitive and original entry name."""
+            name = str(item[0].get("name", ""))
+            return name.lower(), name
+
         if sort_by == "name":
-
-            def name_key(item: tuple[Dict[str, Any], str]) -> tuple[str, str]:
-                name = str(item[0].get("name", ""))
-                return name.lower(), name
-
             directories.sort(key=name_key, reverse=descending)
             files.sort(key=name_key, reverse=descending)
             return directories + files
@@ -1769,13 +1824,16 @@ class _OpsMixin:
                     missing.append(item)
                 else:
                     timestamped.append((timestamp, item))
+            timestamped.sort(key=lambda pair: name_key(pair[1]))
             timestamped.sort(
                 key=lambda pair: pair[0],
                 reverse=descending,
             )
+            missing.sort(key=name_key)
             return [item for _, item in timestamped] + missing
 
         return sort_by_mtime(directories) + sort_by_mtime(files)
+
 
     async def _ls_agent(
         self,
@@ -1783,73 +1841,50 @@ class _OpsMixin:
         abs_limit: int,
         show_all_hidden: bool,
         node_limit: int = 1000,
+        offset: int = 0,
         sort_by: Optional[str] = None,
         sort_order: str = "asc",
         ctx: Optional[RequestContext] = None,
     ) -> List[Dict[str, Any]]:
         """List directory contents (URI version)."""
-        entry_items = await self._ls_browsable_items(uri, ctx=ctx)
-        entry_items = self._sort_ls_entry_items(entry_items, sort_by, sort_order)
-        # basic info
-        fallback_time = datetime.now(timezone.utc)
-        all_entries = []
-        for entry, entry_uri in entry_items:
-            name = entry.get("name", "")
-            if entry.get("access") == "denied":
-                if entry.get("isDir") or not name.startswith(".") or show_all_hidden:
-                    all_entries.append(
-                        {
-                            "name": name,
-                            "uri": entry_uri,
-                            "isDir": bool(entry.get("isDir", False)),
-                            "access": "denied",
-                        }
-                    )
-                continue
-            raw_time = entry.get("modTime", "")
-            parsed_time = fallback_time
-            if isinstance(raw_time, (int, float)):
-                parsed_time = datetime.fromtimestamp(raw_time, tz=timezone.utc)
-            elif raw_time:
-                if len(raw_time) > 26 and "+" in raw_time:
-                    parts = raw_time.split("+")
-                    raw_time = parts[0][:26] + "+" + parts[1]
-                parsed_time = parse_iso_datetime(raw_time)
-            elif isinstance(entry.get("mtime"), (int, float)):
-                parsed_time = datetime.fromtimestamp(entry["mtime"], tz=timezone.utc)
-            is_dir = entry.get("isDir", False)
-            new_entry = {
-                "uri": entry_uri,
-                "size": 0 if is_dir else entry.get("size", 0),
-                "isDir": is_dir,
-                "modTime": format_iso8601(parsed_time),
-            }
-            if is_dir:
-                all_entries.append(new_entry)
-            elif not name.startswith("."):
-                all_entries.append(new_entry)
-            elif show_all_hidden:
-                all_entries.append(new_entry)
-        all_entries = all_entries[:node_limit]
-        await self._batch_fetch_abstracts(
-            [entry for entry in all_entries if entry.get("access") != "denied"],
-            abs_limit,
+        entries = await self._ls_original(
+            uri,
+            show_all_hidden=show_all_hidden,
+            offset=offset,
+            node_limit=node_limit,
+            sort_by=sort_by,
+            sort_order=sort_order,
             ctx=ctx,
         )
-        return all_entries
+        return await self._finalize_listing_entries(
+            entries,
+            "agent",
+            abs_limit,
+            None,
+            False,
+            ctx=ctx,
+        )
 
     async def _ls_original(
         self,
         uri: str,
         show_all_hidden: bool = False,
         node_limit: int = 1000,
+        offset: int = 0,
         sort_by: Optional[str] = None,
         sort_order: str = "asc",
         ctx: Optional[RequestContext] = None,
     ) -> List[Dict[str, Any]]:
         """List directory contents (URI version)."""
-        entry_items = await self._ls_browsable_items(uri, ctx=ctx)
-        entry_items = self._sort_ls_entry_items(entry_items, sort_by, sort_order)
+        entry_items = await self._ls_browsable_items(
+            uri,
+            show_all_hidden=show_all_hidden,
+            offset=offset,
+            node_limit=node_limit,
+            sort_by=sort_by,
+            sort_order=sort_order,
+            ctx=ctx,
+        )
         # AGFS returns read-only structure, need to create new dict
         all_entries = []
         for entry, entry_uri in entry_items:
@@ -1870,25 +1905,55 @@ class _OpsMixin:
                 all_entries.append(new_entry)
             elif show_all_hidden:
                 all_entries.append(new_entry)
-        return all_entries[:node_limit]
+        return all_entries
 
     async def _ls_browsable_items(
         self,
         uri: str,
+        show_all_hidden: bool = False,
+        offset: int = 0,
+        node_limit: Optional[int] = None,
+        sort_by: Optional[str] = None,
+        sort_order: str = "asc",
         ctx: Optional[RequestContext] = None,
     ) -> List[tuple[Dict[str, Any], str]]:
-        """Return list entries according to namespace-enumeration semantics."""
-        entry_items = await self._list_read_path_items(uri, ctx=ctx)
-        access = await self._can_access_many([entry_uri for _, entry_uri in entry_items], ctx)
+        """Return one visible page while preserving RagFS ordering."""
+        if offset < 0:
+            raise ValueError("offset must be non-negative")
+        if node_limit == 0:
+            return []
+
+        raw_offset = 0
+        raw_limit = None if node_limit is None else max(node_limit, 256)
+        remaining_offset = offset
+        merge_paths = self._legacy_session_alias(uri) is not None
+        browsable: List[tuple[Dict[str, Any], str]] = []
         expose_resource_names = self._acl_enabled(ctx) and is_acl_uri(uri)
 
-        browsable = []
-        for entry, entry_uri in entry_items:
-            if access.get(entry_uri, False):
-                browsable.append((entry, entry_uri))
-            elif expose_resource_names:
-                browsable.append(
-                    (
+        while True:
+            entry_items, consumed, exhausted = await self._list_read_path_items(
+                uri,
+                raw_offset=raw_offset,
+                raw_limit=raw_limit,
+                sort_by=sort_by,
+                sort_order=sort_order,
+                ctx=ctx,
+            )
+            if merge_paths:
+                entry_items = self._sort_ls_entry_items(entry_items, sort_by, sort_order)
+            entry_items = [
+                item
+                for item in entry_items
+                if item[0].get("isDir")
+                or not str(item[0].get("name", "")).startswith(".")
+                or show_all_hidden
+            ]
+            access = await self._can_access_many([entry_uri for _, entry_uri in entry_items], ctx)
+            for entry, entry_uri in entry_items:
+                if access.get(entry_uri, False):
+                    item = (entry, entry_uri)
+                elif expose_resource_names:
+                    item = (
                         {
                             "name": entry.get("name", ""),
                             "isDir": bool(entry.get("isDir", False)),
@@ -1896,8 +1961,21 @@ class _OpsMixin:
                         },
                         entry_uri,
                     )
-                )
+                else:
+                    continue
+
+                if remaining_offset:
+                    remaining_offset -= 1
+                    continue
+                browsable.append(item)
+                if node_limit is not None and len(browsable) >= node_limit:
+                    return browsable
+            if exhausted:
+                break
+            raw_offset += consumed
+
         return browsable
+
 
     async def _augment_entries_extra_fields(
         self,
@@ -2015,16 +2093,35 @@ class _OpsMixin:
         except Exception as e:
             logger.warning(f"[VikingFS] Failed to delete temp {temp_uri}: {e}")
 
+    @staticmethod
+    def _filter_ls_entries(path: str, entries: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Return entries visible at the given storage path."""
+        parts = [p for p in path.strip("/").split("/") if p]
+        if len(parts) == 2 and parts[0] == "local":
+            return [e for e in entries if e.get("name") in VikingURI.LISTABLE_SCOPES]
+        return [e for e in entries if e.get("name") not in STORAGE_INTERNAL_ENTRY_NAMES]
+
     async def _ls_entries(
-        self, path: str, ctx: Optional[RequestContext] = None
+        self,
+        path: str,
+        offset: int = 0,
+        limit: Optional[int] = None,
+        sort_by: Optional[str] = None,
+        sort_order: str = "asc",
+        filter_internal: bool = True,
+        ctx: Optional[RequestContext] = None,
     ) -> List[Dict[str, Any]]:
         """List directory entries, filtering out internal directories.
 
         At account root (/local/{account}), uses LISTABLE_SCOPES whitelist.
         At other levels, uses the shared storage internal-name blacklist.
         """
-        entries = await self._async_agfs.ls(path)
-        parts = [p for p in path.strip("/").split("/") if p]
-        if len(parts) == 2 and parts[0] == "local":
-            return [e for e in entries if e.get("name") in VikingURI.LISTABLE_SCOPES]
-        return [e for e in entries if e.get("name") not in STORAGE_INTERNAL_ENTRY_NAMES]
+        entries = await self._async_agfs.ls(
+            path,
+            offset=offset,
+            limit=limit,
+            sort_by=sort_by,
+            sort_order=sort_order,
+        )
+        return self._filter_ls_entries(path, entries) if filter_internal else entries
+

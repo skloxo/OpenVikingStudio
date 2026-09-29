@@ -131,10 +131,79 @@ class AsyncAGFSClient:
                 getattr(self._client, method_name), *args, **legacy_kwargs
             )
 
-    async def ls(
-        self, path: str = "/", *, fs_ctx: Dict[str, str] | None = None
+    @staticmethod
+    def _sort_raw_entries(
+        entries: List[Dict[str, Any]],
+        sort_by: str | None,
+        sort_order: str = "asc",
     ) -> List[Dict[str, Any]]:
-        return await self.run("ls", path, ctx=_fs_ctx_or_default(path, fs_ctx))
+        if not sort_by:
+            return entries
+        descending = sort_order == "desc"
+        directories = [
+            e for e in entries if e.get("isDir", False) or e.get("info", {}).get("isDir", False)
+        ]
+        files = [
+            e
+            for e in entries
+            if not (e.get("isDir", False) or e.get("info", {}).get("isDir", False))
+        ]
+        if sort_by == "name":
+
+            def name_key(e: Dict[str, Any]) -> tuple[str, str]:
+                name = str(e.get("name") or e.get("info", {}).get("name") or "")
+                return name.lower(), name
+
+            directories.sort(key=name_key, reverse=descending)
+            files.sort(key=name_key, reverse=descending)
+            return directories + files
+        if sort_by == "mtime":
+
+            def mtime_key(e: Dict[str, Any]) -> float:
+                mtime = e.get("mtime") or e.get("modTime") or e.get("info", {}).get("mtime") or 0
+                if isinstance(mtime, (int, float)):
+                    return float(mtime)
+                return 0.0
+
+            directories.sort(key=mtime_key, reverse=descending)
+            files.sort(key=mtime_key, reverse=descending)
+            return directories + files
+        return entries
+
+    async def ls(
+        self,
+        path: str = "/",
+        *,
+        offset: int = 0,
+        limit: int | None = None,
+        sort_by: str | None = None,
+        sort_order: str = "asc",
+        fs_ctx: Dict[str, str] | None = None,
+    ) -> List[Dict[str, Any]]:
+        """Return a sorted directory range."""
+        kwargs: Dict[str, Any] = {}
+        if offset:
+            kwargs["offset"] = offset
+        if limit is not None:
+            kwargs["limit"] = limit
+        if sort_by is not None:
+            kwargs["sort_by"] = sort_by
+            kwargs["sort_order"] = sort_order
+        try:
+            return await self.run("ls", path, **kwargs, ctx=_fs_ctx_or_default(path, fs_ctx))
+        except TypeError as exc:
+            if "unexpected keyword argument" not in str(exc):
+                raise
+            # Fallback for precompiled binding without native pagination/sort kwargs
+            entries = await self.run("ls", path, ctx=_fs_ctx_or_default(path, fs_ctx))
+            if sort_by:
+                entries = self._sort_raw_entries(entries, sort_by=sort_by, sort_order=sort_order)
+            if offset or limit is not None:
+                start = offset
+                end = None if limit is None else offset + limit
+                entries = entries[start:end]
+            return entries
+
 
     async def read(
         self,
@@ -306,16 +375,52 @@ class AsyncAGFSClient:
         node_limit: int | None = None,
         level_limit: int | None = None,
         *,
+        offset: int = 0,
+        sort_by: str | None = None,
+        sort_order: str = "asc",
         fs_ctx: Dict[str, str] | None = None,
     ) -> list[Dict[str, Any]]:
-        return await self.run(
-            "tree_directory",
-            path,
-            show_hidden=show_hidden,
-            node_limit=node_limit,
-            level_limit=level_limit,
-            ctx=_fs_ctx_or_default(path, fs_ctx),
-        )
+        """Return a sorted range from a recursive directory traversal."""
+        kwargs: Dict[str, Any] = {
+            "show_hidden": show_hidden,
+            "node_limit": node_limit,
+            "level_limit": level_limit,
+        }
+        if offset:
+            kwargs["offset"] = offset
+        if sort_by is not None:
+            kwargs["sort_by"] = sort_by
+            kwargs["sort_order"] = sort_order
+        try:
+            return await self.run(
+                "tree_directory",
+                path,
+                **kwargs,
+                ctx=_fs_ctx_or_default(path, fs_ctx),
+            )
+        except TypeError as exc:
+            if "unexpected keyword argument" not in str(exc):
+                raise
+            # Fallback for precompiled binding without native pagination/sort kwargs
+            legacy_kwargs = {
+                "show_hidden": show_hidden,
+                "node_limit": None if (offset or node_limit is not None or sort_by) else node_limit,
+                "level_limit": level_limit,
+            }
+            entries = await self.run(
+                "tree_directory",
+                path,
+                **legacy_kwargs,
+                ctx=_fs_ctx_or_default(path, fs_ctx),
+            )
+            if sort_by:
+                entries = self._sort_raw_entries(entries, sort_by=sort_by, sort_order=sort_order)
+            if offset or node_limit is not None:
+                start = offset
+                end = None if node_limit is None else offset + node_limit
+                entries = entries[start:end]
+            return entries
+
 
     async def glob_directory(
         self,

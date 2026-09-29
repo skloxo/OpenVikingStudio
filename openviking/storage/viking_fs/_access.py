@@ -513,25 +513,12 @@ class _AccessMixin:
         show_all_hidden: bool = False,
         node_limit: Optional[int] = None,
         level_limit: Optional[int] = None,
+        offset: int = 0,
+        sort_by: Optional[str] = None,
+        sort_order: str = "asc",
         ctx: Optional[RequestContext] = None,
     ):
-        """Shared generator: fetch raw TreeEntry list from Rust, yield (entry, uri) tuples.
-
-        node_limit counts ACL-visible entries, so the user's node_limit cannot
-        be pushed directly to Rust — doing so would truncate before filtering
-        and drop entries that should be visible.
-
-        To keep memory bounded without changing that semantic, we push down an
-        *amplified* raw-node limit (node_limit * _TREE_OVERFETCH_FACTOR). If ACL
-        filtering leaves fewer than node_limit visible entries while Rust still
-        returned a full page (i.e. more raw nodes may exist), we double the raw
-        limit and re-fetch. Because Rust truncates a deterministic sorted prefix,
-        this yields exactly the same result as an unbounded fetch, while avoiding
-        materializing the entire prefix in the common case.
-
-        When node_limit is None (full-tree callers), no limit is pushed down.
-        level_limit IS always passed to Rust.
-        """
+        """Shared generator: fetch raw TreeEntry list from Rust, yield (entry, uri) tuples."""
         real_ctx = self._ctx_or_default(ctx)
         primary_path = self._uri_to_path(uri, ctx=ctx)
         path: Optional[str] = None
@@ -546,11 +533,17 @@ class _AccessMixin:
                 return
             raise NotFoundError(uri, "directory")
 
-        if node_limit is None:
-            raw_limit: Optional[int] = None
-        else:
-            raw_limit = max(node_limit * self._TREE_OVERFETCH_FACTOR, node_limit)
+        if offset < 0:
+            raise ValueError("offset must be non-negative")
+        if node_limit == 0:
+            return
+        raw_offset = 0
+        raw_limit = None if node_limit is None else max(node_limit, 256)
+        remaining_offset = offset
+        yielded = 0
         acl_enabled = self._acl_enabled(real_ctx)
+        expose_resource_names = acl_enabled and is_acl_uri(uri)
+        denied_directories: set[str] = set()
 
         while True:
             raw_entries = await self._async_agfs.tree_directory(
@@ -558,7 +551,12 @@ class _AccessMixin:
                 show_hidden=show_all_hidden,
                 node_limit=raw_limit,
                 level_limit=level_limit,
+                offset=raw_offset,
+                sort_by=sort_by,
+                sort_order=sort_order,
             )
+            if not raw_entries:
+                return
 
             candidates: List[tuple] = []
             for entry in raw_entries:
@@ -573,14 +571,14 @@ class _AccessMixin:
                     ctx=ctx,
                 )
                 candidates.append((entry, entry_uri))
+                remaining_limit = None if node_limit is None else node_limit - yielded
                 if (
                     not acl_enabled
-                    and node_limit is not None
-                    and len(candidates) >= node_limit
+                    and remaining_limit is not None
+                    and len(candidates) >= (remaining_offset + remaining_limit)
                 ):
                     break
 
-            expose_resource_names = acl_enabled and is_acl_uri(uri)
             if not acl_enabled:
                 visible = candidates
             else:
@@ -588,12 +586,14 @@ class _AccessMixin:
                     [entry_uri for _, entry_uri in candidates], real_ctx
                 )
                 if expose_resource_names:
-                    denied_directories = {
-                        entry["path"].rstrip("/")
-                        for entry, entry_uri in candidates
-                        if entry.get("info", {}).get("isDir", False)
-                        and not access.get(entry_uri, False)
-                    }
+                    denied_directories.update(
+                        {
+                            entry["path"].rstrip("/")
+                            for entry, entry_uri in candidates
+                            if entry.get("info", {}).get("isDir", False)
+                            and not access.get(entry_uri, False)
+                        }
+                    )
                     visible = []
                     base = path.rstrip("/")
                     for entry, entry_uri in candidates:
@@ -614,25 +614,20 @@ class _AccessMixin:
                             visible.append((denied_entry, entry_uri))
                 else:
                     visible = [item for item in candidates if access.get(item[1], False)]
-            if node_limit is not None:
-                visible = visible[:node_limit]
-
-            # If we still lack enough visible entries but Rust returned a full
-            # page (raw_limit reached), more raw nodes may exist — re-fetch with
-            # a doubled limit. Otherwise Rust is exhausted and we yield as-is.
-            need_more = (
-                node_limit is not None
-                and len(visible) < node_limit
-                and raw_limit is not None
-                and len(raw_entries) >= raw_limit
-            )
-            if need_more:
-                raw_limit *= 2
-                continue
 
             for item in visible:
+                if remaining_offset:
+                    remaining_offset -= 1
+                    continue
                 yield item
-            return
+                yielded += 1
+                if node_limit is not None and yielded >= node_limit:
+                    return
+
+            if raw_limit is None or len(raw_entries) < raw_limit:
+                return
+            raw_offset += len(raw_entries)
+
 
     # ========== URI Conversion ==========
 
@@ -932,23 +927,38 @@ class _AccessMixin:
     async def _list_read_path_items(
         self,
         uri: str,
+        raw_offset: int = 0,
+        raw_limit: Optional[int] = None,
+        sort_by: Optional[str] = None,
+        sort_order: str = "asc",
         ctx: Optional[RequestContext] = None,
-    ) -> List[tuple[Dict[str, Any], str]]:
+    ) -> tuple[List[tuple[Dict[str, Any], str]], int, bool]:
+        """Return one mapped RagFS page, consumed count, and exhaustion state."""
         real_ctx = self._ctx_or_default(ctx)
         if self._is_session_root_uri(uri):
-            return await self._session_root_items(uri, real_ctx)
+            items = await self._session_root_items(uri, real_ctx)
+            return items, len(items), True
 
         primary_path = self._uri_to_path(uri, ctx=ctx)
         merge_paths = self._legacy_session_alias(uri) is not None
         found_path = False
         last_not_found: Optional[Exception] = None
         by_uri: Dict[str, tuple[Dict[str, Any], str]] = {}
+        raw_count = 0
 
         for path in self._read_paths(uri, ctx=ctx):
             if not await self._read_path_visible(uri, path, primary_path, real_ctx):
                 continue
             try:
-                entries = await self._ls_entries(path, ctx=ctx)
+                entries = await self._ls_entries(
+                    path,
+                    offset=0 if merge_paths else raw_offset,
+                    limit=None if merge_paths else raw_limit,
+                    sort_by=sort_by,
+                    sort_order=sort_order,
+                    filter_internal=False,
+                    ctx=ctx,
+                )
             except Exception as exc:
                 if is_not_found_error(exc):
                     last_not_found = exc
@@ -956,20 +966,24 @@ class _AccessMixin:
                 raise
 
             found_path = True
+            raw_count += len(entries)
+            entries = self._filter_ls_entries(path, entries)
             for entry in entries:
                 entry_uri = self._alias_uri_for_path(
                     request_uri=uri,
                     base_path=path,
-                    entry_path=f"{path.rstrip('/')}/{entry.get('name', '')}",
+                    entry_path=entry.get("path") or f"{path.rstrip('/')}/{entry.get('name', '')}",
                     ctx=ctx,
                 )
-                by_uri.setdefault(entry_uri, (entry, entry_uri))
+                by_uri[entry_uri] = (entry, entry_uri)
             if not merge_paths:
                 break
 
         if found_path:
-            return list(by_uri.values())
+            exhausted = raw_limit is None or merge_paths or raw_count < raw_limit
+            return list(by_uri.values()), raw_count, exhausted
         raise NotFoundError(uri, "directory") from last_not_found
+
 
     def _path_to_uri(self, path: str, ctx: Optional[RequestContext] = None) -> str:
         """/local/{account}/... -> viking://...

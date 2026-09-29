@@ -4,12 +4,14 @@
 """Tests for content endpoints: read, abstract, overview, reindex."""
 
 from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
 import pytest
 
 from openviking.server.identity import RequestContext, Role
 from openviking.server.routers import content as content_router
 from openviking.server.routers.content import ReindexRequest, WriteContentRequest, reindex
+from openviking_cli.exceptions import PermissionDeniedError
 from openviking_cli.session.user_id import UserIdentifier
 
 
@@ -57,8 +59,10 @@ async def test_write_forwards_processing_mode_to_service(monkeypatch):
             uri="viking://resources/demo.md",
             content="updated",
             processing_mode="vectors_only",
+            wait=True,
         ),
-        ctx,
+        valet=False,
+        _ctx=ctx,
     )
 
     assert response["status"] == "ok"
@@ -82,9 +86,13 @@ async def test_write_forwards_tags_and_tag_mode_to_service(monkeypatch):
             content="updated",
             tags=["env=prod"],
             tag_mode="append",
+            wait=True,
         ),
-        ctx,
+        valet=False,
+        _ctx=ctx,
     )
+
+
 
     assert seen["tags"] == ["env=prod"]
     assert seen["tag_mode"] == "append"
@@ -101,15 +109,39 @@ async def _first_child_uri(client, uri: str) -> str:
     return uri
 
 
-async def test_read_content(client_with_resource):
-    client, uri = client_with_resource
-    file_uri = await _first_child_uri(client, uri)
+async def test_read_content(client, service, monkeypatch):
+    ctx = RequestContext(user=UserIdentifier.the_default_user(), role=Role.ROOT)
+    legacy_uri = "viking://resources/业务 域/章节 一.md"
+    encoded_uri = "viking://resources/业务%20域/章节%20一.md"
+    await service.viking_fs.write_file(legacy_uri, "legacy content", ctx=ctx)
 
-    resp = await client.get("/api/v1/content/read", params={"uri": file_uri})
+    resp = await client.get("/api/v1/content/read", params={"uri": encoded_uri})
     assert resp.status_code == 200
     body = resp.json()
     assert body["status"] == "ok"
-    assert body["result"] is not None
+    assert body["result"] == "legacy content"
+
+    await service.viking_fs.write_file(encoded_uri, "literal percent20 content", ctx=ctx)
+    resp = await client.get("/api/v1/content/read", params={"uri": encoded_uri})
+    assert resp.status_code == 200
+    assert resp.json()["result"] == "literal percent20 content"
+
+    resp = await client.get(
+        "/api/v1/content/read",
+        params={"uri": "viking://resources/业务%2520域/章节%2520一.md"},
+    )
+    assert resp.status_code == 404
+    assert resp.json()["error"]["code"] == "NOT_FOUND"
+
+    monkeypatch.setattr(
+        service.viking_fs,
+        "read_file",
+        AsyncMock(side_effect=[PermissionDeniedError("denied"), "legacy content"]),
+    )
+    resp = await client.get("/api/v1/content/read", params={"uri": encoded_uri})
+    assert resp.status_code == 403
+    assert resp.json()["error"]["code"] == "PERMISSION_DENIED"
+
 
 
 async def test_read_memory_uses_visible_projection_and_raw_bypasses_it(monkeypatch):
@@ -187,15 +219,14 @@ async def test_overview_content(client_with_resource):
     assert body["status"] == "ok"
 
 
-async def test_abstract_file_uri_returns_failed_precondition(client_with_resource):
+async def test_abstract_file_uri_falls_back_to_parent(client_with_resource):
     client, uri = client_with_resource
     file_uri = await _first_child_uri(client, uri)
     resp = await client.get("/api/v1/content/abstract", params={"uri": file_uri})
-    assert resp.status_code == 412
+    assert resp.status_code == 200
     body = resp.json()
-    assert body["status"] == "error"
-    assert body["error"]["code"] == "FAILED_PRECONDITION"
-    assert "not a directory" in body["error"]["message"]
+    assert body["status"] == "ok"
+
 
 
 async def test_overview_missing_uri_returns_not_found(client):
