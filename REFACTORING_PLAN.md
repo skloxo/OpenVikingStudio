@@ -339,7 +339,7 @@
 - **芒格逆向对抗审讯与去伪存真反思 (Munger Inversion Review)**：
   - *死因倒推*：若外部 opensandbox 未安装或 Docker 未启动，Bot 是否会挂死？答：不会。`OpenSandboxRuntime` 具备严格的 Fail-fast 校验与清晰安装指引；单元测试内置轻量 Mock 隔离，确保无 Docker 环境下 CI 稳定通过。
   - *二阶恶果*：容器端口映射与权限逃逸风险？答：严格绑定 `127.0.0.1` 环回口，容器默认 drop `ALL` capabilities，UID/GID 物理隔离。
-- **Git Commit**：`待提交 (v1.5.89)`
+- **Git Commit**：`7e9cd748c (v1.5.89)`
 - **修改文件清单**：
   - `bot/vikingbot/config/schema.py`, `bot/vikingbot/channels/feishu.py`, `bot/vikingbot/cli/commands.py`, `bot/vikingbot/compile/service.py`, `bot/vikingbot/sandbox/backends/opensandbox.py`, `bot/vikingbot/sandbox/managed_server.py`, `bot/vikingbot/sandbox/manager.py`, `bot/vikingbot/sandbox/runtime.py`, `bot/vikingbot/utils/startup.py`, `openviking/server/bootstrap.py`, `package.json`, `openviking/_version.py`, `pyproject.toml`, `uv.lock`, `tests/unit/test_server_bootstrap_bot_gateway.py`, `bot/tests/test_opensandbox_runtime.py`, `bot/tests/test_opensandbox_docker_permissions.py`, `bot/tests/test_sandbox_file_access.py`, `bot/tests/test_compile.py`, `REFACTORING_PLAN.md`
 
