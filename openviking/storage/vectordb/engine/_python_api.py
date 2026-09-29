@@ -456,9 +456,12 @@ def build_abi3_exports(backend: Any) -> dict[str, Any]:
         SchemaExport, BytesRowExport = Schema, BytesRow
 
     class IndexEngine:
-        def __init__(self, path_or_json: str):
+        def __init__(self, path_or_json: str, normalize_vector: bool = False):
             self._backend = backend
-            self._handle = backend._new_index_engine(path_or_json)
+            try:
+                self._handle = backend._new_index_engine(path_or_json, normalize_vector)
+            except TypeError:
+                self._handle = backend._new_index_engine(path_or_json)
 
         def add_data(self, data_list: list[AddDataRequest]) -> int:
             return int(
