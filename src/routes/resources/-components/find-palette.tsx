@@ -1,85 +1,33 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import {
-  FileIcon,
-  FolderIcon,
-  FolderOpen,
-  Loader2,
-  Search,
-  X,
-} from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Loader2, Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { cn } from '#/lib/utils'
-import { useTransientScrollbar } from '#/hooks/use-transient-scrollbar'
-import { useRetrievalQuery } from '#/routes/retrieval/-hooks/use-retrieval-query'
-import type { RetrievalMode } from '#/routes/retrieval/-types/retrieval'
-
-import {
-  fileNameFromUri,
-  normalizeDirUri,
-  parentUri as getParentUri,
-} from '../-lib/normalize'
-import {
-  filterResourceSearchEntries,
-  getResourceSearchSpec,
-  normalizeGlobPattern,
-  retrievalItemsToEntries,
-} from '../-lib/find-search'
+import { normalizeDirUri, parentUri as getParentUri } from '../-lib/normalize'
 import {
   PALETTE_ROOT_URI,
-  PALETTE_SEARCH_MODES,
   buildDirBrowseQuery,
   cycleSearchMode,
   isResetGlobalCommand,
-  parsePaletteMode,
 } from '../-lib/palette-mode'
 import type { PaletteSearchMode } from '../-lib/palette-mode'
-import {
-  useVikingFsList,
-  useVikingFsStat,
-  useVikingFsTree,
-  useDebouncedValue,
-} from '../-hooks/viking-fm'
-import { useListNavigation } from '../-hooks/use-list-navigation'
-import type { VikingFsEntry } from '../-types/viking-fm'
+import { usePaletteSearch } from '../-hooks/use-palette-search'
 import { DirBrowser } from './dir-browser'
 import { LazyFilePreview } from './lazy-file-preview'
+import { DirResultList } from './dir-result-list'
+import { FindPaletteHeader } from './find-palette-header'
+import { FindPaletteFooter } from './find-palette-footer'
+import { displayName, errorDescription } from './find-palette-utils'
 
-interface FindPaletteProps {
+export { DirResultList }
+export { displayName, errorDescription }
+
+export interface FindPaletteProps {
   open: boolean
   onClose: () => void
   onNavigate: (uri: string) => void
   onNavigateDir: (uri: string) => void
   scopeUri?: string
-}
-const KEY_ESCAPE_LABEL = 'esc'
-const KEY_TAB_LABEL = 'Tab'
-
-function displayName(uri: string): { name: string; parent: string } {
-  const name = fileNameFromUri(uri)
-  const dir = getParentUri(uri)
-  const segments = dir.replace(/\/$/, '').split('/').filter(Boolean)
-  const parent = segments.length > 1 ? segments.slice(-1)[0] : dir
-  return { name, parent }
-}
-
-function errorDescription(error: unknown): string {
-  if (!error) return ''
-  if (error instanceof Error) return error.message
-  if (typeof error === 'object') {
-    const data = error as {
-      code?: unknown
-      message?: unknown
-      statusCode?: unknown
-    }
-    const code = typeof data.code === 'string' ? data.code : ''
-    const message = typeof data.message === 'string' ? data.message : ''
-    const status =
-      typeof data.statusCode === 'number' ? `HTTP ${data.statusCode}` : ''
-    const readable = [status, code, message].filter(Boolean).join(' · ')
-    if (readable) return readable
-  }
-  return String(error)
 }
 
 export function FindPalette({
@@ -100,138 +48,29 @@ export function FindPalette({
   const composingRef = useRef(false)
   const wasOpenRef = useRef(false)
 
-  // Single parse entry point. No component code reads `query` structurally.
-  const mode = useMemo(
-    () => parsePaletteMode(query, findTargetUri),
-    [query, findTargetUri],
-  )
-  const isRoot = findTargetUri === PALETTE_ROOT_URI
-  const showIdleBrowse = mode.kind === 'idle' && !isRoot
-
-  const searchSpec = useMemo(
-    () =>
-      mode.kind === 'search'
-        ? getResourceSearchSpec(mode.query, findTargetUri)
-        : null,
-    [mode, findTargetUri],
-  )
-
-  const idleBrowseQuery = useVikingFsList(
-    findTargetUri,
-    { output: 'agent', showAllHidden: true },
-    showIdleBrowse,
-  )
-  const idleEntries = useMemo(
-    () => (showIdleBrowse ? idleBrowseQuery.data?.entries || [] : []),
-    [showIdleBrowse, idleBrowseQuery.data?.entries],
-  )
-
-  const isNameMode = searchMode === 'name'
-  const treeQuery = useVikingFsTree(
-    searchSpec?.rootUri || PALETTE_ROOT_URI,
-    { output: 'agent', showAllHidden: true, nodeLimit: 2000, levelLimit: 100 },
-    isNameMode && mode.kind === 'search' && Boolean(searchSpec),
-  )
-
-  // ponytail: 400ms debounce auto-fires find/search semantic retrieval; switch
-  // to Enter-to-run if it turns out too expensive.
-  const debouncedQuery = useDebouncedValue(
-    mode.kind === 'search' ? mode.query : '',
-    400,
-  )
-  const retrievalOptions = useMemo(
-    () => ({
-      contextTypes: [],
-      customPathInput: '',
-      ignoreCase: true,
-      includeProvenance: false,
-      levels: [],
-      resultCount: 20,
-      scope: 'custom' as const,
-      tags: [],
-      targetUri: isRoot ? undefined : findTargetUri,
-      timeField: 'updated_at' as const,
-    }),
-    [isRoot, findTargetUri],
-  )
-  const retrievalQuery = useRetrievalQuery({
-    enabled: mode.kind === 'search' && !isNameMode && debouncedQuery.length > 0,
-    mode: searchMode as RetrievalMode,
-    options: retrievalOptions,
-    query:
-      searchMode === 'glob'
-        ? normalizeGlobPattern(debouncedQuery)
-        : debouncedQuery,
-  })
-
-  const filteredEntries = useMemo(() => {
-    if (mode.kind !== 'search') return []
-    if (!isNameMode) return retrievalItemsToEntries(retrievalQuery.data)
-    if (!treeQuery.data?.nodes) return []
-    return filterResourceSearchEntries(treeQuery.data.nodes, searchSpec)
-  }, [
-    mode.kind,
-    isNameMode,
-    retrievalQuery.data,
-    treeQuery.data?.nodes,
-    searchSpec,
-  ])
-  const searchQuery = isNameMode ? treeQuery : retrievalQuery
-
-  // Directory listing lifted up from DirBrowser so the cursor (activeIndex) and
-  // keyboard handling can live in one place. DirBrowser is now a pure view.
-  const dirListQuery = useVikingFsList(
-    mode.kind === 'dirBrowse' ? mode.uri : PALETTE_ROOT_URI,
-    { output: 'agent', showAllHidden: true, nodeLimit: 200 },
-    mode.kind === 'dirBrowse',
-  )
-  const dirItems = useMemo(() => {
-    if (mode.kind !== 'dirBrowse') return []
-    const entries = dirListQuery.data?.entries ?? []
-    const dirs = entries.filter((e) => e.isDir)
-    const files = entries.filter((e) => !e.isDir)
-    const all = [...dirs, ...files]
-    if (!mode.filter) return all
-    const lower = mode.filter.toLowerCase()
-    return all.filter((e) => e.name.toLowerCase().includes(lower))
-  }, [mode, dirListQuery.data])
-  const hasResults = filteredEntries.length > 0
-  const visibleEntries = useMemo(() => {
-    if (mode.kind === 'dirBrowse') return dirItems
-    if (hasResults) return filteredEntries
-    return idleEntries
-  }, [mode.kind, dirItems, hasResults, filteredEntries, idleEntries])
-
   const {
-    index: activeIndex,
+    mode,
+    showIdleBrowse,
+    idleBrowseQuery,
+    idleEntries,
+    searchQuery,
+    filteredEntries,
+    hasResults,
+    dirListQuery,
+    dirItems,
+    visibleEntries,
+    activeIndex,
     setIndex,
     moveUp,
     moveDown,
     reset,
-  } = useListNavigation(visibleEntries.length)
-  const activeEntry =
-    activeIndex >= 0 ? (visibleEntries[activeIndex] ?? null) : null
-
-  // Preview stat only for search / idle file cursor. dirBrowse renders its own
-  // preview inside DirBrowser. Debounced so arrow-scanning doesn't storm stat.
-  const statTargetUri =
-    mode.kind !== 'dirBrowse' && activeEntry && !activeEntry.isDir
-      ? activeEntry.uri
-      : undefined
-  const debouncedStatUri = useDebouncedValue(statTargetUri, 150)
-  const statQuery = useVikingFsStat(debouncedStatUri)
-  const previewEntry = useMemo(() => {
-    if (!activeEntry) return null
-    if (statQuery.data && debouncedStatUri === activeEntry.uri) {
-      return {
-        ...activeEntry,
-        size: statQuery.data.size,
-        sizeBytes: statQuery.data.sizeBytes,
-        modTime: statQuery.data.modTime,
-      }
-    }
-    return activeEntry
-  }, [activeEntry, statQuery.data, debouncedStatUri])
+    activeEntry,
+    previewEntry,
+  } = usePaletteSearch({
+    query,
+    searchMode,
+    findTargetUri,
+  })
 
   const focusInput = useCallback(() => {
     requestAnimationFrame(() => {
@@ -263,20 +102,12 @@ export function FindPalette({
     }
   }, [open, focusInput])
 
-  // Cursor resets on query change (navigation / filter typing) and whenever the
-  // visible list identity changes (new data arrives). Arrow moves don't touch
-  // query or the list, so they don't trigger a reset.
-  useEffect(() => {
-    reset()
-  }, [query, visibleEntries, reset])
-
   useEffect(() => {
     if (!resultsRef.current) return
     const el = resultsRef.current.querySelector('[data-active="true"]')
     el?.scrollIntoView({ block: 'nearest' })
   }, [activeIndex])
-  // Navigation writes go through buildDirBrowseQuery — the only place that
-  // turns a uri back into a query string. setQuery is the single owner.
+
   const enterDir = useCallback((uri: string) => {
     setQuery(buildDirBrowseQuery(uri))
   }, [])
@@ -397,16 +228,12 @@ export function FindPalette({
 
   if (!open) return null
 
-  // Directories preview too: FilePreview renders their L0/L1 pages.
   const showPreview = mode.kind !== 'dirBrowse' && activeEntry !== null
-  // Width tracks the palette mode, not the cursor: searching and directory
-  // browsing are both wide, so an empty result set or a `/` command never
-  // resizes the dialog out from under the user. Only the empty idle prompt,
-  // which has nothing to show yet, stays narrow.
   const paletteWidth =
     mode.kind === 'idle' && !showPreview
       ? 'w-[min(90vw,45rem)]'
       : 'w-[min(92vw,67rem)]'
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center px-4 sm:items-start sm:px-6 sm:pt-[12vh]"
@@ -422,89 +249,22 @@ export function FindPalette({
 
       <div
         className={cn(
-          'animate-palette-in relative flex h-[46rem] max-h-[calc(100svh-2rem)] max-w-full flex-col overflow-hidden rounded-xl border bg-background shadow-2xl shadow-black/20 transition-[width] duration-300 sm:max-h-[84vh]',
+          'animate-palette-in relative flex h-184 max-h-[calc(100svh-2rem)] max-w-full flex-col overflow-hidden rounded-xl border bg-background shadow-2xl shadow-black/20 transition-[width] duration-300 sm:max-h-[84vh]',
           paletteWidth,
         )}
         onKeyDown={handleKeyDown}
       >
-        {/* Search input */}
-        <div className="flex items-center gap-3 border-b px-4">
-          <Search className="size-4 shrink-0 text-muted-foreground" />
-          <input
-            ref={inputRef}
-            type="text"
-            placeholder={
-              searchMode === 'name'
-                ? t('searchPalette.placeholder')
-                : t(`placeholders.${searchMode}`, { ns: 'retrieval' })
-            }
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onCompositionStart={() => {
-              composingRef.current = true
-            }}
-            onCompositionEnd={() => {
-              composingRef.current = false
-            }}
-            className="h-12 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground/70 md:text-sm"
-          />
-          {query && (
-            <button
-              type="button"
-              className="rounded-md p-1 text-muted-foreground/70 transition-colors hover:text-foreground"
-              onClick={() => setQuery('')}
-            >
-              <X className="size-3.5" />
-            </button>
-          )}
-          <span className="flex items-center gap-1 text-xs text-muted-foreground/70">
-            {isRoot ? (
-              t('searchPalette.scope.global')
-            ) : (
-              <button
-                type="button"
-                className="flex items-center gap-1 rounded px-1 py-0.5 transition-colors hover:bg-muted hover:text-foreground"
-                title={t('searchPalette.scope.resetToGlobal')}
-                onClick={() => setFindTargetUri(PALETTE_ROOT_URI)}
-              >
-                <FolderOpen className="size-3" />
-                {t('searchPalette.scope.current', {
-                  name: findTargetUri.split('/').filter(Boolean).pop(),
-                })}
-                <X className="size-3" />
-              </button>
-            )}
-          </span>
-        </div>
-
-        {/* Search mode switcher */}
-        {mode.kind !== 'dirBrowse' && (
-          <div className="flex items-center gap-1 border-b px-4 py-1.5">
-            {PALETTE_SEARCH_MODES.map((item) => (
-              <button
-                key={item}
-                type="button"
-                className={cn(
-                  'rounded px-1.5 py-0.5 font-mono text-xs transition-colors',
-                  searchMode === item
-                    ? 'bg-muted text-foreground'
-                    : 'text-muted-foreground/60 hover:text-foreground',
-                )}
-                onClick={() => setSearchMode(item)}
-              >
-                {item === 'name'
-                  ? t('searchPalette.modes.name')
-                  : t(`controls.modes.${item}`, { ns: 'retrieval' })}
-              </button>
-            ))}
-            <span className="ml-auto text-xs text-muted-foreground/50">
-              <kbd className="rounded border border-border bg-muted/50 px-1.5 py-0.5 font-mono text-xs text-foreground/70">
-                {KEY_TAB_LABEL}
-              </kbd>{' '}
-              {t('searchPalette.modes.switchHint')}
-            </span>
-          </div>
-        )}
+        <FindPaletteHeader
+          query={query}
+          onQueryChange={setQuery}
+          searchMode={searchMode}
+          onSearchModeChange={setSearchMode}
+          findTargetUri={findTargetUri}
+          onResetScope={() => setFindTargetUri(PALETTE_ROOT_URI)}
+          isDirBrowse={mode.kind === 'dirBrowse'}
+          inputRef={inputRef}
+          composingRef={composingRef}
+        />
 
         {/* Body */}
         <div className="flex min-h-0 flex-1" ref={resultsRef}>
@@ -596,7 +356,7 @@ export function FindPalette({
                     className="flex flex-col items-center gap-1 px-4 py-6 text-center text-xs text-destructive"
                   >
                     <span>{t('searchPalette.error')}</span>
-                    <span className="max-w-[32rem] text-muted-foreground">
+                    <span className="max-w-lg text-muted-foreground">
                       {errorDescription(searchQuery.error)}
                     </span>
                   </div>
@@ -630,7 +390,7 @@ export function FindPalette({
 
               {/* Preview pane */}
               {showPreview && (
-                <div className="animate-palette-preview flex h-full w-[32rem] flex-col overflow-hidden">
+                <div className="animate-palette-preview flex h-full w-lg flex-col overflow-hidden">
                   <LazyFilePreview
                     file={previewEntry}
                     onClose={() => setIndex(-1)}
@@ -642,153 +402,12 @@ export function FindPalette({
           )}
         </div>
 
-        {mode.kind === 'dirBrowse' ? (
-          <div className="flex items-center gap-3 border-t px-4 py-2 text-xs text-muted-foreground/70">
-            <span>
-              <kbd className="rounded border border-border bg-muted/50 px-1.5 py-0.5 font-mono text-xs text-foreground/70">
-                ↑↓
-              </kbd>{' '}
-              {t('searchPalette.footer.dirMode.select')}
-            </span>
-            <span>
-              <kbd className="rounded border border-border bg-muted/50 px-1.5 py-0.5 font-mono text-xs text-foreground/70">
-                ←→
-              </kbd>{' '}
-              {t('searchPalette.footer.dirMode.level')}
-            </span>
-            <span>
-              <kbd className="rounded border border-border bg-muted/50 px-1.5 py-0.5 font-mono text-xs text-foreground/70">
-                ↵
-              </kbd>{' '}
-              {t('searchPalette.footer.dirMode.confirm')}
-            </span>
-            <span>
-              <kbd className="rounded border border-border bg-muted/50 px-1.5 py-0.5 font-mono text-xs text-foreground/70">
-                {KEY_ESCAPE_LABEL}
-              </kbd>{' '}
-              {t('searchPalette.footer.dirMode.cancel')}
-            </span>
-          </div>
-        ) : (
-          hasResults && (
-            <div className="flex items-center gap-3 border-t px-4 py-2 text-xs text-muted-foreground/70">
-              <span>
-                <kbd className="rounded border border-border bg-muted/50 px-1.5 py-0.5 font-mono text-xs text-foreground/70">
-                  ↑↓
-                </kbd>{' '}
-                {t('searchPalette.footer.resultMode.navigate')}
-              </span>
-              <span>
-                <kbd className="rounded border border-border bg-muted/50 px-1.5 py-0.5 font-mono text-xs text-foreground/70">
-                  ↵
-                </kbd>{' '}
-                {t('searchPalette.footer.resultMode.open')}
-              </span>
-              <span>
-                <kbd className="rounded border border-border bg-muted/50 px-1.5 py-0.5 font-mono text-xs text-foreground/70">
-                  {KEY_ESCAPE_LABEL}
-                </kbd>{' '}
-                {t('searchPalette.footer.resultMode.close')}
-              </span>
-              <span className="ml-auto tabular-nums">
-                {t('searchPalette.footer.resultMode.count', {
-                  count: visibleEntries.length,
-                })}
-              </span>
-            </div>
-          )
-        )}
+        <FindPaletteFooter
+          isDirBrowse={mode.kind === 'dirBrowse'}
+          hasResults={hasResults}
+          visibleCount={visibleEntries.length}
+        />
       </div>
-    </div>
-  )
-}
-function DirResultList({
-  className,
-  items,
-  activeIndex,
-  onActiveChange,
-  onSelect,
-  onOpenDir,
-}: {
-  className?: string
-  items: VikingFsEntry[]
-  activeIndex: number
-  onActiveChange: (index: number) => void
-  onSelect: (entry: VikingFsEntry) => void
-  onOpenDir: (entry: VikingFsEntry) => void
-}) {
-  const { t } = useTranslation('resources')
-  const { isScrolling, onScroll } = useTransientScrollbar()
-
-  return (
-    <div
-      className={cn(
-        'scrollbar-fade min-h-0 flex-1 overflow-y-auto overscroll-contain',
-        className,
-      )}
-      data-scrolling={isScrolling || undefined}
-      onScroll={onScroll}
-    >
-      {items.map((entry, i) => {
-        const { name, parent } = displayName(entry.uri)
-        const isActive = i === activeIndex
-        const EntryIcon = entry.isDir ? FolderIcon : FileIcon
-
-        return (
-          <div
-            key={`${entry.uri}#${i}`}
-            data-active={isActive}
-            className={cn(
-              'animate-palette-row group relative flex w-full items-start gap-3 border-b border-border/50 px-4 py-3 text-left transition-colors last:border-b-0',
-              isActive
-                ? 'bg-primary/8 text-foreground'
-                : 'text-foreground/80 hover:bg-muted/40',
-            )}
-            style={{ animationDelay: `${i * 24}ms` }}
-            onMouseEnter={() => onActiveChange(i)}
-          >
-            {isActive && (
-              <span className="absolute inset-y-0 left-0 w-0.5 rounded-r bg-primary" />
-            )}
-            <button
-              type="button"
-              className="flex min-w-0 flex-1 items-start gap-3 text-left outline-none"
-              onFocus={() => onActiveChange(i)}
-              onClick={() => onSelect(entry)}
-            >
-              <EntryIcon
-                className={cn(
-                  'mt-0.5 size-4 shrink-0',
-                  entry.isDir ? 'text-blue-500/70' : 'text-muted-foreground/70',
-                )}
-              />
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium">{name}</div>
-                <div className="mt-0.5 truncate text-xs text-muted-foreground/80">
-                  {entry.abstract.trim() ? entry.abstract : parent}
-                </div>
-              </div>
-            </button>
-            {entry.size && (
-              <span className="shrink-0 text-xs tabular-nums text-muted-foreground/60">
-                {entry.size}
-              </span>
-            )}
-            <button
-              type="button"
-              title={t('searchPalette.openContainingDirectory')}
-              className="shrink-0 rounded p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-hover:opacity-100 data-[active=true]:opacity-100"
-              data-active={isActive}
-              onClick={(e) => {
-                e.stopPropagation()
-                onOpenDir(entry)
-              }}
-            >
-              <FolderOpen className="size-3.5" />
-            </button>
-          </div>
-        )
-      })}
     </div>
   )
 }
