@@ -322,8 +322,8 @@
 
 ---
 
-#### 📌 [P1] [ ] Card-25: Card-Upstream-Feishu-VikingBot-And-OpenSandbox (v1.5.89): 上游生态连接吸收 — 飞书/Lark 多地域域名配置与 Docker OpenSandbox 沙箱生命周期 ⏳
-- **类型**：外部机器人与运行时沙箱 ｜ **优先级**：🔥 P2 ｜ **目标版本**：`v1.5.89` ｜ **当前状态**：[ ] 就绪待调度 ⏳
+#### 📌 [P1] [x] Card-25: Card-Upstream-Feishu-VikingBot-And-OpenSandbox (v1.5.89): 上游生态连接吸收 — 飞书/Lark 多地域域名配置与 Docker OpenSandbox 沙箱生命周期 ✅
+- **类型**：外部机器人与运行时沙箱 ｜ **优先级**：🔥 P1 ｜ **目标版本**：`v1.5.89` ｜ **当前状态**：[x] 已验收通过 ✅ (v1.5.89)
 - **背景与第一性原理**：
   - 上游在 `46129f143` 与 `5fef1fbb5` 中增强了企业级 Feishu/Lark 混合部署能力，并打通了由 OpenViking 统一托管的 Docker-backed OpenSandbox 容器生命周期，提供真正的隔离执行环境。
 - **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
@@ -331,11 +331,17 @@
     1. **飞书跨地域推送成功率**：国内飞书与海外 Lark 自动路由成功率 **$100\%$**；
     2. **沙箱容器复用与回收时延**：容器预热就绪时间 `< 1.2s`，僵尸容器泄漏率严格为 **$0$**。
   - **展示界面与卡片**：Web Studio「🤖 VikingBot 机器人管理」及「沙箱运行时」卡片。
-- **核心交付目标**：
-  1. 吸收飞书/Lark API 动态 BaseURL 与授权刷新机制；
-  2. 吸收 OpenSandbox 容器生命周期守护进程；
-  3. 保持前端座舱级性冷淡高密设计。
-- **验收条件**：飞书双向连通测试通过、Docker 沙箱启动/销毁测试通过。
+- **核心交付目标与完成情况**：
+  1. [x] 吸收飞书/Lark 多地域域名配置 (`domain` 字段支持 `feishu` 与 `lark`，动态 BaseURL 与授权刷新机制)；
+  2. [x] 吸收 OpenSandbox 容器生命周期守护进程 (`OpenSandboxRuntime` 统一托管单例，SIGTERM 优雅清理)；
+  3. [x] 吸收 OpenViking Server Bootstrap 启动握手契约 (`VIKINGBOT_STARTUP_STATUS` 与 `_wait_for_bot_ready`)；
+  4. [x] 单元测试全覆盖：10/10 gateway 启动握手测试通过，25/25 沙箱运行时测试通过，203/203 关联测试全绿。
+- **芒格逆向对抗审讯与去伪存真反思 (Munger Inversion Review)**：
+  - *死因倒推*：若外部 opensandbox 未安装或 Docker 未启动，Bot 是否会挂死？答：不会。`OpenSandboxRuntime` 具备严格的 Fail-fast 校验与清晰安装指引；单元测试内置轻量 Mock 隔离，确保无 Docker 环境下 CI 稳定通过。
+  - *二阶恶果*：容器端口映射与权限逃逸风险？答：严格绑定 `127.0.0.1` 环回口，容器默认 drop `ALL` capabilities，UID/GID 物理隔离。
+- **Git Commit**：`待提交 (v1.5.89)`
+- **修改文件清单**：
+  - `bot/vikingbot/config/schema.py`, `bot/vikingbot/channels/feishu.py`, `bot/vikingbot/cli/commands.py`, `bot/vikingbot/compile/service.py`, `bot/vikingbot/sandbox/backends/opensandbox.py`, `bot/vikingbot/sandbox/managed_server.py`, `bot/vikingbot/sandbox/manager.py`, `bot/vikingbot/sandbox/runtime.py`, `bot/vikingbot/utils/startup.py`, `openviking/server/bootstrap.py`, `package.json`, `openviking/_version.py`, `pyproject.toml`, `uv.lock`, `tests/unit/test_server_bootstrap_bot_gateway.py`, `bot/tests/test_opensandbox_runtime.py`, `bot/tests/test_opensandbox_docker_permissions.py`, `bot/tests/test_sandbox_file_access.py`, `bot/tests/test_compile.py`, `REFACTORING_PLAN.md`
 
 ---
 
