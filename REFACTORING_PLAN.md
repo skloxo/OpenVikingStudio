@@ -57,84 +57,10 @@
 
 ---
 
-#### 📌 [P1] [x] Card-20A: Card-Metrics-AgentSensors-RealHook-Closure (v1.5.77): 智能体三维效能物理探针真实生产挂载与数据真实性闭环 ✅
-- **类型**：生产数据挂载 / 真实遥测闭环 ｜ **优先级**：🔥 P1 ｜ **目标版本**：`v1.5.77` ｜ **当前状态**：[x] 已验收通过 ✅
-- **背景与第一性原理**：
-  - 过去开发了数据模型、REST API 和大盘卡片，但**数据源头挂载（Source Hook）悬空**，生产会话从未上报，唯一的数据竟是单元测试写入的 10 条 `sess-test-01 80%` 测试垃圾；
-  - 本卡片拒绝假数据，将遥测探针真正挂载到 OpenViking / OpenClaw 的真实会话生命周期中。
-- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
-  - **衡量指标**：
-    1. **生产真实会话采样覆盖率**：真实会话在结算提交时 100% 自动上报三维指标，杜绝 0 采样；
-    2. **数据真实性与信噪比可信度**：Token SNR 严格基于真实有效 Token/总 Token 计算，无任何硬编码 Mock。
-  - **展示界面与卡片**：首页「智能体三维效能物理探针」卡片（真实反映实时信噪比与会话时序流）。
-- **核心交付目标**：
-  1. 在 `SessionCommitProcessor` 与会话提交结算链中注入 `record_telemetry`，自动统计 effective_tokens 与 total_tokens；
-  2. 在检索响应与上下文装配中注入 Top-5 知识采纳度探针（`top5_hits`）；
-  3. 在 A2A 对话交互中检测人类负向输入（指正/打断/重试），真实计算人工介入率。
-- **验收结果**：
-  - **Git 变更范围**：`openviking/core/agent_sensors.py`, `openviking/storage/queuefs/session_commit_processor.py`, `.agents/hooks/ov_session_archiver.py`, `tests/unit/test_session_commit_sensor_hook.py`, `tests/unit/test_ov_session_archiver_telemetry.py`；
-  - **单测验证**：6 套单测全绿（`test_agent_sensors.py`, `test_agent_sensors_api.py`, `test_session_commit_sensor_hook.py`, `test_ov_session_archiver_telemetry.py` 全部 PASS，耗时 1.17s）；
-  - **安全与构建门禁**：`security_check.py` 4486 文件 0 泄露，Vite 编译构建 PASS（15.63s）。
+> ℹ️ **Milestone 5-A 已交付版本 (Card-20A ~ Card-20C, v1.5.77 ~ v1.5.79)**：
+> 包含三维效能物理探针真实挂载、三级故障分类雷达与防死循环拦截、HITL 分级门禁与只读卸载已 100% 验收通过，详细履历与反思已归档至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。
 
 ---
-
-#### 📌 [P1] [x] Card-20B: Card-Observability-FailureTaxonomy-Production-Interception (v1.5.78): 三级错误分类学与防死循环屏障全局生产拦截贯通 ✅
-- **类型**：系统异常感知 / 故障自愈 ｜ **优先级**：🔥 P1 ｜ **目标版本**：`v1.5.78` ｜ **当前状态**：[x] 已验收通过 ✅
-- **背景与第一性原理**：
-  - 核心定义了三级故障分类（ToolCrash, SchemaMismatch, InfiniteLoop）与白名单传感器，但仅存在手动测试 Probe，系统真实的工具崩溃、超时和死循环从未被自动分类捕获；
-  - 杜绝“虚荣指标”，建立闭环执行器：本卡片将分类雷达真正织入 FastMCP 执行层与 HTTP 全局异常处理器，并在第 3 次重复失败调用前进行物理阻断（Anti-Loop Barrier），注入反思提示词。
-- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
-  - **衡量指标**：
-    1. **生产异常分类捕获率**：真实工具调用报错、超时与 HTTP 异常捕获率 **$100\%$**；
-    2. **死循环死锁阻断率**：重复死循环调用在第 3 轮触发阻断率 **$100\%$**（调用前物理拦截，不消耗函数计算算力与 Token）。
-  - **展示界面与卡片**：监控大盘「三级故障雷达与防死循环屏障」卡片（真实时序流 `recent_events` 与 `anti_loop_interceptions`）。
-- **核心交付目标**：
-  1. 在 FastMCP 执行层拦截工具异常，自动调用 `record_failure` 归类并更新时序度量；
-  2. 将死循环防御屏障（Anti-Loop Barrier）作为真实中间件挂载到 MCP 工具调度链，阻断重复错误并返回反思导引；
-  3. 全局 HTTP 异常捕获（OpenVikingError, RequestValidationError, 500）实时接入分类雷达；
-  4. 彻底激活白名单传感器对核心 Payload 的保护。
-- **验收结果**：
-  - **Git 变更范围**：`mcp-openviking/_core/decorators.py`, `openviking/core/failure_classifier.py`, `openviking/server/app.py`, `tests/unit/test_fastmcp_antiloop_interception.py`, `package.json`, `openviking/_version.py`；
-  - **单测验证**：14 套分类与拦截单测全绿（`test_failure_classifier.py`, `test_failure_taxonomy_api.py`, `test_fastmcp_antiloop_interception.py` 全部 PASS，耗时 2.22s）；
-  - **真实生产环境物理验证**：真实请求 `http://127.0.0.1:1933/api/v1/system/failure_taxonomy_metrics` 现场捕获真实认证异常，`deterministic_count` 自动自增，`recent_events` 实时滚动展示；
-  - **安全与构建门禁**：`security_check.py` 4488 文件 0 泄露，Vite 编译构建 PASS（15.50s），生成版本注入 `1.5.78`。
-
----
-
-#### 📌 [P1] [x] Card-20C: Card-Security-HITLGate-And-ReadOffload-Production-Mount (v1.5.79): 安全自愈分级门禁 (HITLGate) 与大文件只读卸载生产常驻挂载 ✅
-- **类型**：安全审批 / 智能体控制 / 性能卸载 ｜ **优先级**：🔥 P1 ｜ **目标版本**：`v1.5.79` ｜ **当前状态**：[x] 已验收通过 ✅
-- **背景与第一性原理**：
-  - `HITLGate` 与 `ReadOffloadManager` 此前仅在单元测试中被手动实例化，生产执行管线中从未常驻；
-  - 传统死等人类审批的模式会导致 Agent 频繁权限中断暴毙。本卡片重构为四级安全防护：
-    1. **Level 1 (工作区沙箱)**：项目内常规读写与局部构建清理 100% 自动自治放行，零打扰人类；
-    2. **Level 2 (会话预授权)**：开局声明的重构/清理意图携带 `session_grant` 令牌无感放行；
-    3. **Level 3 (防御性变轨自愈)**：越界风险命令拦截并返回安全替代建议（Reroute guidance），Agent 自主纠偏不中断；
-    4. **Level 4 (真·核弹级灾难)**：仅对不可逆毁灭动作（rm -rf / 等）异步工单挂起；
-  - 读侧 `ReadOffloadManager` 正式织入 MCP 工具输出切面，大文件（>300 行/12KB）自动句柄化切片，节省 70%+ Token。
-- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
-  - **衡量指标**：
-    1. **越界破坏与核弹命令拦截率**：越界高危操作防御性变轨与阻断率 **$100\%$**；
-    2. **工作区常规操作自治通行率**：工作区内部正常读写与调试执行阻断率 **$0\%$**（零误杀）；
-    3. **超大只读文件 Token 卸载率**：超过 300 行文件通过 `FileRefHandle` 节省上下文 Token **$\ge 70\%$**。
-  - **展示界面与卡片**：Web Studio「人类审批待办中心」与「上下文卸载仪表盘」。
-- **核心交付目标**：
-  1. 在 FastMCP 调度链挂载 `HITLGate` 与 `ReadOffloadManager` 生产拦截切面；
-  2. 实现 Level 1 工作区沙箱路径放行与 Level 3 防御性变轨导引，消除 Agent 无故中断；
-  3. 拦截读取工具超大输出，生成带有精确切片支持的 `FileRefHandle`；
-  4. 交付时完成【完工反思六问】，排查并记录次生悬空点。
-- **验收结果**：
-  - **Git 变更范围**：`mcp-openviking/_core/decorators.py`, `openviking/core/hitl_gate.py`, `openviking/core/read_write_offload.py`, `tests/unit/test_hitl_read_offload_production_mount.py`, `package.json`, `openviking/_version.py`；
-  - **单测验证**：19 套单测全绿（`test_hitl_read_offload_production_mount.py`, `test_read_write_offload_hook_guard.py`, `test_hitl_offload_api.py`, `test_fastmcp_antiloop_interception.py` 全部 PASS，耗时 2.26s）；
-  - **实机运行验证**：`https://vk.tide.red/health` 返回 `{"version": "1.5.79", "status": "ok"}`，大文件成功句柄化切片，高危命令安全自愈拦截；
-  - **安全与构建门禁**：`security_check.py` 4489 文件 0 泄露，Vite 编译构建 PASS（15.54s），生成版本注入 `1.5.79`；
-  - **【完工反思六问】自检通过**：
-    1. 是否悬空？已挂载至 `cleaned_fn` 全量工具执行链，彻底消除悬空；
-    2. 是否闭环？越界命令拦截并注入安全替代自愈导引，Agent 自主纠偏变轨，形成感知-拦截-自愈闭环；
-    3. 是否虚荣指标？大盘 `HITLOffloadTelemetry` 实时由真实调用驱动，大文件真实截断省 Token，彻底消灭虚荣指标；
-    4. 是否过度工程化？没有引入冗余分布式中间件，基于轻量单例策略池完成，KISS 极简；
-    5. 是否满足第一性原理？物理隔离高危风险，保护沙箱外系统，同时确保大模型注意力不被大文件撑爆；
-    6. 是否信达雅？代码内聚，错误文案通顺并自解释安全替代路径；
-  - **【次生悬空排查发现】**：前端 Web Studio 虽然具备 `/api/v1/system/hitl_offload_metrics` API，但在 UI 页面上尚未挂载专用的「人类审批与卸载座舱卡片」，这属于次生 UI 呈现悬空，已记录至后续任务！
 
 ---
 
@@ -463,5 +389,46 @@
   - `security_check.py`：扫描 4515 个受版本控制文件，0 密钥泄露；
   - `pytest -o addopts="" tests/storage/test_viking_fs_grep.py`：23 passed in 0.15s；
   - 服务端热重载验证：`systemctl --user restart openviking` 成功，`/health` 探针返回 `version: 1.5.93`。
+
+---
+
+#### 📌 [P0] [x] Card-30: Fat-File-Surgery-Resources-And-Connection (v1.5.94): 前端三大巨型文件接缝拆分 — FindPalette、ResourceUpload 与 AppConnection ✅
+- **类型**：架构重构 / 单文件规模红线治理 ｜ **优先级**：🔥🔥 P0 ｜ **目标版本**：`v1.5.94` ｜ **当前状态**：[x] 已验收通过 ✅ (v1.5.94)
+- **背景与第一性原理**：
+  - 前端核心模块经过长期迭代积累，存在 3 个 700+ 行巨型非生成文件（`find-palette.tsx` 794 行、`use-resource-upload.tsx` 774 行、`use-app-connection.tsx` 759 行）；
+  - 奥卡姆剃刀：将类型与纯函数下沉，子组件正交解耦，业务零变更。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：拆分后三大文件及所有衍生新文件 100% **$\le 500$ 行**（基准收敛至 30~470 行黄金甜点区）；Vite build PASS，全库零密钥泄漏。
+- **拆解交付成果 (13 个文件全量 $\le 500$ 行)**：
+  1. **`use-resource-upload.tsx`（774L ➔ 467L）**：
+     - `resource-upload-types.ts`（82L：任务记录、状态枚举）
+     - `resource-upload-utils.ts`（206L：时间戳转换、状态映射）
+     - `upload-processors.ts`（107L：文件与目录上传处理器）
+  2. **`use-app-connection.tsx`（759L ➔ 370L）**：
+     - `app-connection-types.ts`（54L：连接凭据、角色与上下文定义）
+     - `app-connection-utils.ts`（384L：持久化读写、Hash 计算、请求头纯函数）
+  3. **`find-palette.tsx`（794L ➔ 413L）**：
+     - `find-palette-utils.ts`（34L：URI 显示名解析与错误描述）
+     - `dir-result-list.tsx`（100L：搜索结果与目录浏览列表渲染组件）
+     - `use-palette-search.ts`（190L：检索模式、延迟防抖、文件树与向量索引查询 Hook）
+     - `find-palette-header.tsx`（121L：搜索输入、范围重置与模式切换 Tab）
+     - `find-palette-footer.tsx`（78L：快捷键与计数指示栏）
+- **门禁验证清单**：
+  - `wc -l` 物理行数审计：全部 13 个目标及衍生文件 100% $\le 500$ 行，无任何超限；
+  - `npm run build`：生产编译成功（15.50s），产物正确注入 `v1.5.94`；
+  - `security_check.py`：扫描 4531 个受版本控制文件，0 密钥泄露；
+  - `npx vitest run src/routes/resources`：38/38 测试全绿（3.04s）；
+  - `pytest -o addopts="" tests/storage/test_viking_fs_grep.py`：23 passed in 0.15s；
+  - 服务端热重载验证：`systemctl --user restart openviking` 成功，`/health` 探针返回 `version: 1.5.94`。
+
+---
+
+#### 📌 [P0] [ ] Card-31: Fat-File-Surgery-App-Shell-And-Chat (v1.5.95): 前端剩余次级超限文件接缝拆分 — AppShell、AccountSwitcher 与 UseChat ⏳
+- **类型**：架构重构 / 单文件规模红线治理 ｜ **优先级**：🔥🔥 P0 ｜ **目标版本**：`v1.5.95` ｜ **当前状态**：[ ] 就绪待调度 ⏳
+- **背景与第一性原理**：
+  - 经历 Card-29 与 Card-30 两轮大手术后，全库 700+ 行巨型非生成代码已彻底清零；
+  - 剩余次级轻度超限文件：`use-chat.ts` (593L)、`app-shell.tsx` (578L)、`account-switcher.tsx` (546L)、`add-resource-page.tsx` (539L)；
+  - 目标：将这批 500~600 行文件逐一降维至 200~350 行，实现前端全库 100% 绝对合规。
+
 
 

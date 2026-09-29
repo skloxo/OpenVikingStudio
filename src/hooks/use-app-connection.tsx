@@ -1,445 +1,64 @@
+/**
+ * use-app-connection.tsx
+ * OpenViking 控制台服务端连接、多租户身份切换与运行时鉴权 Provider 及 Hook。
+ * 遵循 Agent 编码规范与黄金甜点区（<= 500 行，目标 300 行）。
+ */
 import * as React from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 
-import { fetchAdminAccounts } from '#/lib/admin'
-import { isOvClientError, ovClient } from '#/lib/ov-client'
+import { ovClient } from '#/lib/ov-client'
 
 import {
-  detectServerMode,
-  fetchServerHealth,
-  normalizeBaseUrl,
-} from './use-server-mode'
+  AUTH_PROMPT_SUPPRESSION_MS,
+  applyConnection,
+  createConnectionHealthHeaders,
+  createConnectionRoleProbeKey,
+  createIdentityScopeKey,
+  createManagementAccountConnection,
+  detectConnectionIdentity,
+  normalizeConnectionDraft,
+  persistConnection,
+  readInitialConnection,
+  resolveConnectionRoleProbeState,
+  resolveInitialApiKey,
+  resolveSwitchedIdentity,
+  shouldRedirectToLoginOnApiError,
+  synchronizeConnectionRuntime,
+  synchronizeResolvedDataIdentity,
+} from './app-connection-utils'
+import type {
+  AppConnectionContextValue,
+  ConnectionDraft,
+  ConnectionIdentitySummary,
+  ConnectionRole,
+  GeneratedCredential,
+} from './app-connection-types'
+import { detectServerMode } from './use-server-mode'
 import type { ServerMode } from './use-server-mode'
 
-export type ConnectionRole = 'admin' | 'root' | 'unknown' | 'user'
-
-export type ConnectionDraft = {
-  accountId: string
-  adminApiKey: string
-  apiKey: string
-  baseUrl: string
-  userId: string
+// Re-export types and utilities for backward compatibility
+export type {
+  AppConnectionContextValue,
+  ConnectionDraft,
+  ConnectionIdentitySummary,
+  ConnectionRole,
+  GeneratedCredential,
 }
-
-export type ConnectionIdentitySummary = {
-  labelKey: string
-  values?: {
-    identity?: string
-  }
+export {
+  createConnectionRoleProbeKey,
+  createIdentityScopeKey,
+  createManagementAccountConnection,
+  resolveConnectionRoleProbeState,
+  resolveInitialApiKey,
+  resolveSwitchedIdentity,
+  shouldRedirectToLoginOnApiError,
+  synchronizeConnectionRuntime,
+  synchronizeResolvedDataIdentity,
 }
-
-export type GeneratedCredential = {
-  accountId?: string
-  apiKey: string
-  userId?: string
-}
-
-type AppConnectionContextValue = {
-  clearGeneratedCredential: () => void
-  connection: ConnectionDraft
-  connectionRole: ConnectionRole
-  generatedCredential: GeneratedCredential | null
-  identityScopeKey: string
-  isConnectionRoleLoading: boolean
-  openConnectionSettings: () => void
-  saveConnection: (next: ConnectionDraft) => void
-  setGeneratedCredential: (credential: GeneratedCredential) => void
-  serverMode: ServerMode
-  switchIdentity: (identity: {
-    accountId: string
-    allowLegacyIdentityFallback?: boolean
-    apiKey: string
-    userId: string
-  }) => Promise<void>
-  switchManagementAccount: (accountId: string) => Promise<void>
-}
-
-const CONNECTION_STORAGE_KEY = 'ov_console_connection'
-const AUTH_PROMPT_SUPPRESSION_MS = 10000
-
-const ENV_BASE_URL =
-  typeof import.meta.env.VITE_OV_BASE_URL === 'string'
-    ? import.meta.env.VITE_OV_BASE_URL.trim()
-    : ''
-const ENV_API_KEY =
-  typeof import.meta.env.VITE_OV_API_KEY === 'string'
-    ? import.meta.env.VITE_OV_API_KEY.trim()
-    : ''
-const ENV_ADMIN_API_KEY =
-  typeof import.meta.env.VITE_OV_ADMIN_API_KEY === 'string'
-    ? import.meta.env.VITE_OV_ADMIN_API_KEY.trim()
-    : ''
-const ENV_ACCOUNT =
-  typeof import.meta.env.VITE_OV_ACCOUNT === 'string'
-    ? import.meta.env.VITE_OV_ACCOUNT.trim()
-    : ''
-const ENV_USER =
-  typeof import.meta.env.VITE_OV_USER === 'string'
-    ? import.meta.env.VITE_OV_USER.trim()
-    : ''
-
-const DEFAULT_CONNECTION: ConnectionDraft = {
-  accountId: ENV_ACCOUNT || 'default',
-  adminApiKey: ENV_ADMIN_API_KEY || '',
-  apiKey: ENV_API_KEY || '',
-  baseUrl: ovClient.getOptions().baseUrl,
-  userId: ENV_USER || 'default',
-}
-
 
 const AppConnectionContext =
   React.createContext<AppConnectionContextValue | null>(null)
-
-function isBrowser(): boolean {
-  return typeof window !== 'undefined'
-}
-
-function isConnectionRole(value: unknown): value is ConnectionRole {
-  return (
-    value === 'root' ||
-    value === 'admin' ||
-    value === 'user' ||
-    value === 'unknown'
-  )
-}
-
-function readStoredConnection(): Partial<ConnectionDraft> {
-  if (!isBrowser()) {
-    return {}
-  }
-
-  try {
-    const raw = window.localStorage.getItem(CONNECTION_STORAGE_KEY)
-    if (!raw) {
-      return {}
-    }
-    const parsed: unknown = JSON.parse(raw)
-    return typeof parsed === 'object' && parsed !== null
-      ? (parsed as Partial<ConnectionDraft>)
-      : {}
-  } catch {
-    return {}
-  }
-}
-
-function persistConnection(connection: ConnectionDraft): void {
-  if (!isBrowser()) {
-    return
-  }
-
-  try {
-    window.localStorage.setItem(
-      CONNECTION_STORAGE_KEY,
-      JSON.stringify(connection),
-    )
-  } catch {
-    // Ignore localStorage failures in restricted environments.
-  }
-}
-
-function normalizeConnectionDraft(
-  connection: ConnectionDraft,
-): ConnectionDraft {
-  return {
-    accountId: connection.accountId.trim(),
-    adminApiKey: connection.adminApiKey.trim(),
-    apiKey: connection.apiKey.trim(),
-    baseUrl: connection.baseUrl.trim(),
-    userId: connection.userId.trim(),
-  }
-}
-
-function hashSecret(value: string): string {
-  let hash = 0x811c9dc5
-  for (let index = 0; index < value.length; index += 1) {
-    hash ^= value.charCodeAt(index)
-    hash = Math.imul(hash, 0x01000193)
-  }
-  return (hash >>> 0).toString(36)
-}
-
-export function createIdentityScopeKey(
-  connection: ConnectionDraft,
-  serverMode: ServerMode,
-): string {
-  const dataKey = connection.apiKey || connection.adminApiKey
-  return [
-    normalizeBaseUrl(connection.baseUrl),
-    serverMode,
-    connection.accountId,
-    connection.userId,
-    dataKey ? hashSecret(dataKey) : 'none',
-  ].join('\u0000')
-}
-
-export function createConnectionRoleProbeKey(
-  connection: ConnectionDraft,
-  serverMode: ServerMode,
-): string {
-  return [
-    normalizeBaseUrl(connection.baseUrl),
-    serverMode,
-    connection.accountId,
-    connection.userId,
-    connection.adminApiKey ? hashSecret(connection.adminApiKey) : 'none',
-    connection.apiKey ? hashSecret(connection.apiKey) : 'none',
-  ].join('\u0000')
-}
-
-function resolveIdentityField(
-  envValue: string,
-  storedValue: string | undefined,
-  defaultValue: string,
-): string {
-  if (envValue) {
-    return envValue
-  }
-  return storedValue || defaultValue
-}
-
-export function resolveInitialApiKey({
-  defaultApiKey,
-  envApiKey,
-  storedApiKey,
-}: {
-  defaultApiKey: string
-  envApiKey: string
-  storedApiKey: string | undefined
-}): string {
-  return envApiKey || storedApiKey || defaultApiKey
-}
-
-export function resolveConnectionRoleProbeState({
-  apiKey,
-  baseUrl,
-  serverMode,
-}: {
-  apiKey: string
-  baseUrl: string
-  serverMode: ServerMode
-}): {
-  isLoading: boolean
-  role: ConnectionRole
-  shouldProbe: boolean
-} {
-  if (!baseUrl) {
-    return { isLoading: false, role: 'unknown', shouldProbe: false }
-  }
-  if (serverMode === 'dev') {
-    return { isLoading: false, role: 'root', shouldProbe: false }
-  }
-  if (!apiKey) {
-    return { isLoading: false, role: 'unknown', shouldProbe: false }
-  }
-  return { isLoading: true, role: 'unknown', shouldProbe: true }
-}
-
-export function shouldRedirectToLoginOnApiError(
-  error: unknown,
-  isClientError: (value: unknown) => boolean = isOvClientError,
-): boolean {
-  if (!isClientError(error)) {
-    return false
-  }
-
-  const clientError = error as { code?: string; statusCode?: number }
-  return (
-    clientError.statusCode === 401 || clientError.code === 'UNAUTHENTICATED'
-  )
-}
-
-function applyConnection(
-  connection: ConnectionDraft,
-  serverMode: ServerMode,
-): void {
-  ovClient.setOptions({
-    baseUrl: connection.baseUrl,
-  })
-  ovClient.setConnection({
-    accountId: connection.accountId || 'default',
-    adminApiKey: connection.adminApiKey,
-    apiKey: connection.apiKey,
-    identityHeaders: serverMode === 'trusted' || serverMode === 'checking',
-    userId: connection.userId || 'default',
-  })
-}
-
-export function synchronizeConnectionRuntime(
-  connection: ConnectionDraft,
-  serverMode: ServerMode,
-): ConnectionDraft {
-  const normalized = normalizeConnectionDraft(connection)
-  // Keep the imperative request client ahead of the React tree. Identity
-  // changes remount route content, whose child effects may start requests
-  // before this provider's passive effects run.
-  applyConnection(normalized, serverMode)
-  persistConnection(normalized)
-  return normalized
-}
-
-type ConnectionIdentity = {
-  accountId: string
-  role: ConnectionRole
-  userId: string
-}
-
-function createConnectionHealthHeaders(
-  connection: ConnectionDraft,
-  credential: 'control' | 'data' = 'control',
-): Record<string, string> {
-  const headers: Record<string, string> = {}
-  const apiKey =
-    credential === 'data'
-      ? connection.apiKey || connection.adminApiKey
-      : connection.adminApiKey || connection.apiKey
-  if (apiKey) {
-    headers['X-API-Key'] = apiKey
-  }
-  return headers
-}
-
-async function canListAccounts(connection: ConnectionDraft): Promise<boolean> {
-  if (!connection.adminApiKey) {
-    return false
-  }
-
-  try {
-    await fetchAdminAccounts({
-      accountId: connection.accountId,
-      apiKey: connection.adminApiKey,
-      baseUrl: connection.baseUrl,
-      userId: connection.userId,
-    })
-    return true
-  } catch {
-    return false
-  }
-}
-
-async function detectConnectionIdentity(
-  connection: ConnectionDraft,
-  credential: 'control' | 'data' = 'control',
-  serverMode?: ServerMode,
-): Promise<ConnectionIdentity> {
-  const data = await fetchServerHealth(
-    connection.baseUrl,
-    createConnectionHealthHeaders(connection, credential),
-  )
-
-  // /health resolves the presented key and echoes back its identity:
-  // { role, account_id, user_id }. We use role to gate the admin UI and
-  // account_id to pin the assumed account for an account-admin key.
-  const healthRole = isConnectionRole(data.role) ? data.role : 'unknown'
-  const isDev = serverMode === 'dev' || data.auth_mode === 'dev'
-  // In trusted mode /health resolves the asserted tenant user, even when the
-  // configured Root key is the credential authorizing Admin API calls. Probe
-  // the actual control-plane endpoint so Root capabilities reflect what the
-  // browser can really do.
-  const isTrusted = serverMode === 'trusted' || data.auth_mode === 'trusted'
-  const role = isDev
-    ? 'root'
-    : credential === 'control' &&
-        connection.adminApiKey &&
-        (await canListAccounts(connection))
-      ? 'root'
-      : healthRole !== 'unknown'
-        ? healthRole
-        : isTrusted
-          ? 'user'
-          : 'unknown'
-
-  return {
-    accountId: typeof data.account_id === 'string' ? data.account_id : '',
-    role,
-    userId: typeof data.user_id === 'string' ? data.user_id : '',
-  }
-}
-
-export function synchronizeResolvedDataIdentity(
-  connection: ConnectionDraft,
-  identity: ConnectionIdentity,
-): ConnectionDraft | null {
-  if (
-    (identity.role !== 'admin' && identity.role !== 'user') ||
-    !identity.accountId ||
-    !identity.userId ||
-    (connection.accountId === identity.accountId &&
-      connection.userId === identity.userId)
-  ) {
-    return null
-  }
-
-  return {
-    ...connection,
-    accountId: identity.accountId,
-    userId: identity.userId,
-  }
-}
-
-export function resolveSwitchedIdentity(
-  requested: Pick<ConnectionDraft, 'accountId' | 'userId'>,
-  identity: ConnectionIdentity,
-  allowLegacyIdentityFallback = false,
-): Pick<ConnectionDraft, 'accountId' | 'userId'> | null {
-  if (
-    (identity.role === 'unknown' && !allowLegacyIdentityFallback) ||
-    (identity.accountId && identity.accountId !== requested.accountId) ||
-    (identity.userId &&
-      requested.userId &&
-      identity.userId !== requested.userId)
-  ) {
-    return null
-  }
-
-  return {
-    accountId: identity.accountId || requested.accountId,
-    userId: identity.userId || requested.userId,
-  }
-}
-
-export function createManagementAccountConnection(
-  connection: ConnectionDraft,
-  accountId: string,
-): ConnectionDraft {
-  return {
-    ...connection,
-    accountId: accountId.trim(),
-    apiKey: '',
-    userId: '',
-  }
-}
-
-function readInitialConnection(): ConnectionDraft {
-  const storedConnection = readStoredConnection()
-  const adminApiKey =
-    ENV_ADMIN_API_KEY ||
-    storedConnection.adminApiKey ||
-    DEFAULT_CONNECTION.adminApiKey
-  const apiKey = resolveInitialApiKey({
-    defaultApiKey: DEFAULT_CONNECTION.apiKey,
-    envApiKey: ENV_API_KEY,
-    storedApiKey: storedConnection.apiKey,
-  })
-  return normalizeConnectionDraft({
-    ...DEFAULT_CONNECTION,
-    ...storedConnection,
-    accountId: resolveIdentityField(
-      ENV_ACCOUNT,
-      storedConnection.accountId,
-      DEFAULT_CONNECTION.accountId,
-    ),
-    adminApiKey,
-    apiKey,
-    baseUrl:
-      ENV_BASE_URL || storedConnection.baseUrl || DEFAULT_CONNECTION.baseUrl,
-    userId: resolveIdentityField(
-      ENV_USER,
-      storedConnection.userId,
-      DEFAULT_CONNECTION.userId,
-    ),
-  })
-}
 
 export function summarizeConnectionIdentity(
   connection: ConnectionDraft,
@@ -469,7 +88,6 @@ export function useAppConnection(): AppConnectionContextValue {
       'useAppConnection must be used within AppConnectionProvider.',
     )
   }
-
   return context
 }
 
@@ -489,6 +107,7 @@ export function AppConnectionProvider({
     key: string
     role: ConnectionRole
   } | null>(null)
+
   if (initialConnectionRef.current === null) {
     initialConnectionRef.current = readInitialConnection()
     applyConnection(initialConnectionRef.current, 'checking')
@@ -577,9 +196,8 @@ export function AppConnectionProvider({
 
     void detectConnectionIdentity(connection)
       .then(async (controlIdentity) => {
-        if (isCancelled()) {
-          return
-        }
+        if (isCancelled()) return
+
         const dataIdentity =
           connection.apiKey &&
           (controlIdentity.role === 'root' ||
@@ -589,9 +207,7 @@ export function AppConnectionProvider({
             : !connection.adminApiKey
               ? controlIdentity
               : null
-        if (isCancelled()) {
-          return
-        }
+        if (isCancelled()) return
 
         const { accountId, role } = controlIdentity
         const dataConnection = dataIdentity
@@ -607,11 +223,7 @@ export function AppConnectionProvider({
           setConnection(next)
           return
         }
-        // An account-admin Root key is scoped to its own account. Pin that
-        // account as the assumed identity so admin and data calls target the
-        // right tenant instead of failing with a mismatch (the server rejects
-        // a foreign account with "ADMIN can only manage account: <x>"). A root
-        // key is not account-scoped, so its account selection is left intact.
+
         if (
           role === 'admin' &&
           accountId &&
@@ -656,7 +268,6 @@ export function AppConnectionProvider({
     const interceptorId = ovClient.instance.interceptors.response.use(
       (response) => response,
       (error) => {
-        // Disable auto-navigating to /settings on background API errors
         return Promise.reject(error)
       },
     )
