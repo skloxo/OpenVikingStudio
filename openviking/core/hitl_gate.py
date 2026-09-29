@@ -59,8 +59,15 @@ class HITLGate(HookAspect):
     name: str = "hitl_gate"
     priority: int = 10  # Highest priority, gates before any other action
 
+    _shared_policy: Optional[DangerousActionPolicy] = None
+
     def __init__(self, policy: Optional[DangerousActionPolicy] = None) -> None:
-        self.policy = policy or DangerousActionPolicy()
+        if policy is not None:
+            self.policy = policy
+        else:
+            if HITLGate._shared_policy is None:
+                HITLGate._shared_policy = DangerousActionPolicy()
+            self.policy = HITLGate._shared_policy
         try:
             from openviking.core.hitl_offload_telemetry import HITLOffloadTelemetry
             HITLOffloadTelemetry().set_hitl_gate(self)
@@ -89,6 +96,30 @@ class HITLGate(HookAspect):
 
         return None
 
+    def get_safe_alternative_guidance(self, tool_name: str, args: Dict[str, Any], danger_reason: str) -> str:
+        """Provide non-blocking defensive rerouting guidance for agents to self-heal."""
+        reason_lower = danger_reason.lower()
+        if "rm" in reason_lower or tool_name == "rm_rf":
+            return (
+                "【安全自愈导引】系统已物理拦截破坏性全局删除。请勿对根目录或全盘执行通配删除。"
+                "如需清理项目构建缓存，请显式指定相对工作区子目录（例如 rm -rf ./dist 或 rm -rf ./build），"
+                "或使用 VikingFS 软删除与版本快照管理。"
+            )
+        elif "git" in reason_lower:
+            return (
+                "【安全自愈导引】禁止使用 --force 强推主分支。请使用标准 'git push origin <branch>'，"
+                "或通过创建 Pull Request 进行协同合并。"
+            )
+        elif "drop" in reason_lower or "truncate" in reason_lower:
+            return (
+                "【安全自愈导引】生产环境禁止全量 DROP/TRUNCATE 数据表。如需更新数据结构，"
+                "请编写幂等的迁移脚本或向表中添加软删除标记。"
+            )
+        return (
+            "【安全自愈导引】当前操作属于高危受限指令。如果非必须，请调整为安全的只读或相对路径操作；"
+            "如果确需执行，请在工作区或会话预授权配置中开启该权限。"
+        )
+
     def before_tool_call(
         self,
         tool_name: str,
@@ -110,7 +141,7 @@ class HITLGate(HookAspect):
             return AspectDecision.allow()
 
         # 3. Check for approval token
-        presented_token = str(args.get("approval_token", "")).strip()
+        presented_token = str(args.get("approval_token") or args.get("ApprovalToken") or "").strip()
         has_token = False
 
         if presented_token and presented_token in self.policy.valid_approval_tokens:
@@ -119,14 +150,15 @@ class HITLGate(HookAspect):
             has_token = True
 
         if not has_token:
+            guidance = self.get_safe_alternative_guidance(tool_name, args, danger_reason)
             reason = (
-                f"高危操作未获人类审批 ({danger_reason})！"
-                f"根据腾讯 DECO 生产护栏规则，必须提供有效的 approval_token 方可执行。"
+                f"高危操作拦截 ({danger_reason})！"
+                f"为保障系统物理安全，未授权的高危操作已被拦截。"
             )
             logger.warning(f"[HITLGate] Unauthorized high-risk tool blocked: {reason}")
             try:
                 from openviking.core.hitl_offload_telemetry import HITLOffloadTelemetry
-                args_summary = str({k: v for k, v in args.items() if k != "approval_token"})[:120]
+                args_summary = str({k: v for k, v in args.items() if k not in ("approval_token", "ApprovalToken")})[:120]
                 HITLOffloadTelemetry().record_dangerous_intercept(
                     tool_name=tool_name,
                     args_summary=args_summary,
@@ -138,8 +170,9 @@ class HITLGate(HookAspect):
             return AspectDecision.block(
                 reason=reason,
                 override_output=(
-                    f"🚨 [HITL 权限阻断: 需人工确认] {reason}\n"
-                    f"请提示人类用户确认授权，并在确认后携带审批令牌重试。"
+                    f"🚨 [HITL 权限阻断: 安全护栏拦截] {reason}\n"
+                    f"{guidance}\n"
+                    f"当前任务未发生崩溃。智能体请依据安全自愈导引自主调整命令继续推进，或携带有效的 approval_token 重试。"
                 ),
             )
 

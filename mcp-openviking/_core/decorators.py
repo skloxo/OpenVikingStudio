@@ -118,9 +118,32 @@ def create_mcp_tool_decorator(mcp: FastMCP, mcp_mode: str) -> Callable:
                             f"modify your parameters, or switch to an alternative tool."
                         )
 
-                # 2. Execution & Exception Taxonomy Interception
+                # 2. HITL Gatekeeper: Level 1 (Sandbox allow), Level 2 (Session token allow), Level 3 (Defensive reroute)
                 try:
-                    return fn(*bound.args, **bound.kwargs)
+                    from openviking.core.hitl_gate import HITLGate
+                    from openviking.core.hook_aspects import AspectContext, AspectDecisionType
+                    hitl_gate = HITLGate()
+                    hitl_decision = hitl_gate.before_tool_call(tool_name, call_args, AspectContext())
+                    if hitl_decision.decision == AspectDecisionType.BLOCK:
+                        logger.warning(f"[HITL Intercepted] Tool '{tool_name}' blocked: {hitl_decision.block_reason}")
+                        return hitl_decision.override_output or f"Blocked: {hitl_decision.block_reason}"
+                except Exception as hitl_err:
+                    logger.debug(f"[HITLGate] Check skipped or unavailable: {hitl_err}")
+
+                # 3. Execution & Exception Taxonomy Interception
+                try:
+                    res = fn(*bound.args, **bound.kwargs)
+
+                    # 4. Read-Side Offload: intercept oversized outputs (>300 lines or >12KB) into FileRefHandle
+                    try:
+                        from openviking.core.read_write_offload import ReadOffloadManager
+                        from openviking.core.hook_aspects import AspectContext
+                        offload_mgr = ReadOffloadManager()
+                        res = offload_mgr.after_tool_call(tool_name, call_args, res, AspectContext())
+                    except Exception as offload_err:
+                        logger.debug(f"[ReadOffload] Check skipped or unavailable: {offload_err}")
+
+                    return res
                 except Exception as e:
                     logger.error(f"[Tool Execution Error] {tool_name}: {e}")
                     if telemetry is not None and classifier is not None:
