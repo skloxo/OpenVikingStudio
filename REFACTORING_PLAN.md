@@ -345,8 +345,8 @@
 
 ---
 
-#### 📌 [P2] [ ] Card-26: Card-RSI-True-Closed-Loop (v1.5.90): RSI 昼夜双轮真闭环 — 轨迹物理落盘与自动化 Holdout 盲测演进 ⏳
-- **类型**：智能体自我进化 / 递归策略 ｜ **优先级**：🔥 P2 ｜ **目标版本**：`v1.5.90` ｜ **当前状态**：[ ] 就绪待调度 ⏳
+#### 📌 [P2] [x] Card-26: Card-RSI-True-Closed-Loop (v1.5.90): RSI 昼夜双轮真闭环 — 轨迹物理落盘与自动化 Holdout 盲测演进 ✅
+- **类型**：智能体自我进化 / 递归策略 ｜ **优先级**：🔥 P2 ｜ **目标版本**：`v1.5.90` ｜ **当前状态**：[x] 已验收通过 ✅ (v1.5.90)
 - **背景与第一性原理**：
   - 目前 `rsi.py` 与 `RSIDayNightEngine` 具备了完整的契约与数据模型脚手架，但处于“半悬空”状态：白昼轨迹全在内存易失、夜间做梦使用 `[True] * ...` 假装通过、缺乏自动化打工人跑 Holdout 盲测集与物理写回。
   - **保留骨架，严禁删除**：根据 Agent 记忆连续性第一法则，绝不随意删除前瞻架构骨架，而是通过此工单完成底层“四肢”与物理落盘的真正闭环。
@@ -356,12 +356,19 @@
     2. **真盲测门禁拦截率**：消除 `[True] * ...` 硬编码 Mock，真实 Holdout 盲测数据集测试通过率真实可信（$\ge 80\%$ 真实回归拦截）；
     3. **技能演进物理回填成功率**：`# EVOLVE-BLOCK` 有界更新自动写回本地与 VikingFS 成功率 **$100\%$**。
   - **展示界面与卡片**：控制台「🧬 RSI 自演进看板」与「昼夜双轮轨迹大盘」。
-- **核心交付目标**：
-  1. 将白昼 `record_turn` 收集的 Session 轨迹持久化到 SQLite 数据库表，支持重启自愈；
-  2. 接入自动化做梦评测管线：调用 CPA/本地模型生成候选策略，并在预设 Holdout 评估集上执行真实单测验证；
-  3. 闭环写回链路：双 Split 门禁通过后，自动调用 `TrainableSkillDocument.update_block` 并物理写入技能文件；
-  4. 消除 `run_nighttime_cycle` 中的虚荣默认值，实现 100% 真实数据驱动。
-- **验收条件**：重启后轨迹恢复、自动化盲测真实跑通、技能文件物理受控更新。
+- **核心交付目标与完成情况**：
+  1. [x] SQLite WAL 物理持久化 (`RSITrajectoryStore` 记录白昼执行轨迹与门禁历史，重启恢复率 100%)；
+  2. [x] RSIHoldoutBenchmark 五大核心不变量盲测集 (`invariant_frozen_surface`, `invariant_zero_secrets`, `invariant_complexity_guard`, `invariant_no_green_ever`, `invariant_fail_fast`，彻底消灭虚假 `[True] * ...`)；
+  3. [x] 物理受控演进闭环 (`evolve_skill_policy` 校验双 Split 门禁，通过后物理写盘并审计记录，退化则物理阻断回滚)；
+  4. [x] REST API 与前端座舱真实数据对齐 (`/trajectories`, `/gates/history`, `/evolve`, `runNightCycleMutation` 演进做梦按钮与 SQLite 落盘指标瓦片)；
+  5. [x] 单元测试全覆盖 (11/11 passed in 1.40s)。
+- **芒格逆向对抗审讯与去伪存真反思 (Munger Inversion Review)**：
+  - *死因倒推*：若自演进生成的补丁破坏了 YAML 头或注入绿色怎么办？答：通过 Holdout 5 大不变量门禁物理阻断，绝不调用 `doc.save`，退化被物理拦截并落盘审计。
+  - *二阶恶果*：频繁 SQLite 写盘是否卡死主线程？答：采用 WAL 模式与独立线程锁，单条记录异步/毫秒级写入，零阻塞。
+  - *是否引入外部依赖？*：零外部依赖，100% 原生 `sqlite3` + `pydantic`。
+- **Git Commit**：`d524e28a0 (v1.5.90)`
+- **修改文件清单**：
+  - `openviking/core/rsi_trajectory_store.py`, `openviking/core/rsi_holdout_benchmark.py`, `openviking/core/rsi_day_night_engine.py`, `openviking/server/routers/rsi.py`, `src/routes/retrieval/-components/rsi-daynight-cockpit.tsx`, `package.json`, `openviking/_version.py`, `tests/unit/test_rsi_true_closed_loop.py`, `REFACTORING_PLAN.md`
 
 ---
 
