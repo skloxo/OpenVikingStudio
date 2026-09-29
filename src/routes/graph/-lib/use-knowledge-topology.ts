@@ -9,12 +9,15 @@ export interface RawTopologyNode {
   label: string
   category: 'peers' | 'sessions' | 'skills' | 'resources'
   content_preview?: string
+  role?: string
 }
 
 export interface RawTopologyEdge {
   source: string
   target: string
   link_type?: string
+  description?: string
+  weight?: number
 }
 
 export interface TopologyData {
@@ -22,41 +25,11 @@ export interface TopologyData {
   edges: RawTopologyEdge[]
 }
 
-const PEERS_NODES: RawTopologyNode[] = [
-  { id: 'viking://peers/antigravity@2080ti', label: 'Peer: 2080Ti Antigravity', category: 'peers' },
-  { id: 'viking://peers/antigravity@rtx3070', label: 'Peer: RTX3070 Antigravity', category: 'peers' },
-  { id: 'viking://peers/openclaw@2080ti', label: 'Peer: 2080Ti OpenClaw', category: 'peers' },
-  { id: 'viking://peers/workbuddy@rtx3070', label: 'Peer: RTX3070 WorkBuddy', category: 'peers' },
-  { id: 'viking://peers/macstudio', label: 'Peer: Mac Studio M3', category: 'peers' },
-  { id: 'viking://peers/xiaomimo@2080ti', label: 'Peer: 2080Ti XiaomiMo', category: 'peers' },
-  { id: 'viking://peers/hermes@2080ti', label: 'Peer: 2080Ti Hermes', category: 'peers' },
-]
-
-function getPeerForSkill(skillName: string): string {
-  const low = skillName.toLowerCase()
-  if (low.includes('mac') || low.includes('studio') || low.includes('mlx') || low.includes('metal') || low.includes('llm')) {
-    return 'viking://peers/macstudio'
-  }
-  if (low.includes('remote') || low.includes('3070') || low.includes('workbuddy')) {
-    return 'viking://peers/antigravity@rtx3070'
-  }
-  if (low.includes('claw') || low.includes('bus') || low.includes('cluster') || low.includes('fleet')) {
-    return 'viking://peers/openclaw@2080ti'
-  }
-  if (low.includes('gateway') || low.includes('hermes')) {
-    return 'viking://peers/hermes@2080ti'
-  }
-  if (low.includes('mimo') || low.includes('xiaomi')) {
-    return 'viking://peers/xiaomimo@2080ti'
-  }
-  return 'viking://peers/antigravity@2080ti'
-}
-
 export function useKnowledgeTopology() {
   return useQuery<TopologyData>({
     queryKey: ['knowledge-graph-topology'],
     queryFn: async () => {
-      // 1. Try unified backend topology endpoint first
+      // 1. 优先调用后端单一真实真相源 (Card-20F SSOT)
       try {
         const resp = await ovClient.instance.get('/api/v1/relations/topology')
         const result = resp.data?.result
@@ -67,20 +40,12 @@ export function useKnowledgeTopology() {
           }
         }
       } catch {
-        // Fall back to parallel resource collection
+        // 降级使用并行领域真实接口兜底
       }
 
-      // 2. Parallel truthful retrieval from primary domain endpoints
-      const nodes: RawTopologyNode[] = [...PEERS_NODES]
+      // 2. 兜底策略：从真实领域接口拉取（绝不使用硬编码假数据与随机生成）
+      const nodes: RawTopologyNode[] = []
       const edges: RawTopologyEdge[] = []
-
-      for (const peer of PEERS_NODES.slice(1)) {
-        edges.push({
-          source: 'viking://peers/antigravity@2080ti',
-          target: peer.id,
-          link_type: 'orchestrates',
-        })
-      }
 
       const [skillsResult, sessionsResult, resourcesResult] = await Promise.allSettled([
         fetchSkills(),
@@ -98,11 +63,6 @@ export function useKnowledgeTopology() {
             category: 'skills',
             content_preview: skill.description,
           })
-          edges.push({
-            source: getPeerForSkill(skill.name),
-            target: skillId,
-            link_type: 'applies',
-          })
         }
       }
 
@@ -114,11 +74,6 @@ export function useKnowledgeTopology() {
             id: sessId,
             label: `Session: ${session.session_id.slice(0, 8)}`,
             category: 'sessions',
-          })
-          edges.push({
-            source: 'viking://peers/master_agent',
-            target: sessId,
-            link_type: 'interacts',
           })
         }
       }
@@ -133,16 +88,11 @@ export function useKnowledgeTopology() {
             category: 'resources',
             content_preview: res.abstract,
           })
-          edges.push({
-            source: 'viking://peers/master_agent',
-            target: res.uri,
-            link_type: 'indexes',
-          })
         }
       }
 
       return { nodes, edges }
     },
-    staleTime: 60_000,
+    staleTime: 30_000,
   })
 }

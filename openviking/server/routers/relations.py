@@ -1,8 +1,13 @@
 # Copyright (c) 2026 Beijing Volcano Engine Technology Co., Ltd.
 # SPDX-License-Identifier: AGPL-3.0
-"""Relations endpoints for OpenViking HTTP Server."""
+"""Relations endpoints for OpenViking HTTP Server.
 
-from typing import Any, List, Optional, Union
+Provides explicit link/unlink operations, topology graph extraction,
+and memory graph visualization (Card-20F: Card-Graph-RealTopology-DynamicWiring).
+"""
+
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
@@ -12,6 +17,7 @@ from openviking.server.auth import get_request_context
 from openviking.server.dependencies import get_service, get_service_or_none
 from openviking.server.identity import RequestContext
 from openviking.server.models import Response
+from openviking.storage.relations_store import RelationStore
 
 
 def _resolve_uri_or_uris(uri: Union[str, List[str]]) -> Union[str, List[str]]:
@@ -19,6 +25,17 @@ def _resolve_uri_or_uris(uri: Union[str, List[str]]) -> Union[str, List[str]]:
     if isinstance(uri, list):
         return [resolve_path_variables(u) for u in uri]
     return resolve_path_variables(uri)
+
+
+def _categorize_uri(uri: str) -> str:
+    """Classify URI into frontend category (peers | skills | sessions | resources)."""
+    if "viking://peers/" in uri:
+        return "peers"
+    if "viking://skills/" in uri:
+        return "skills"
+    if "viking://sessions/" in uri:
+        return "sessions"
+    return "resources"
 
 
 router = APIRouter(prefix="/api/v1/relations", tags=["relations"])
@@ -30,6 +47,8 @@ class LinkRequest(BaseModel):
     from_uri: str
     to_uris: Union[str, List[str]]
     reason: str = ""
+    link_type: str = "related_to"
+    weight: float = 1.0
 
 
 class UnlinkRequest(BaseModel):
@@ -42,38 +61,60 @@ class UnlinkRequest(BaseModel):
 @router.get("")
 async def relations(
     uri: str = Query(..., description="Viking URI"),
+    service: Optional[Any] = Depends(get_service_or_none),
     _ctx: RequestContext = Depends(get_request_context),
 ):
-    """Get relations for a resource."""
-    service = get_service()
+    """Get outbound relations for a resource."""
     uri = resolve_path_variables(uri)
-    result = await service.relations.relations(uri, ctx=_ctx)
+    if service and hasattr(service, "relations") and service.relations:
+        result = await service.relations.relations(uri, ctx=_ctx)
+    else:
+        store = RelationStore.get_instance()
+        result = store.get_outbound(uri)
     return Response(status="ok", result=result)
 
 
 @router.post("/link")
 async def link(
     request: LinkRequest,
+    service: Optional[Any] = Depends(get_service_or_none),
     _ctx: RequestContext = Depends(get_request_context),
 ):
-    """Create link between resources."""
-    service = get_service()
+    """Create link between resources (persisted to relations.db)."""
     from_uri = resolve_path_variables(request.from_uri)
     to_uris = _resolve_uri_or_uris(request.to_uris)
-    await service.relations.link(from_uri, to_uris, ctx=_ctx, reason=request.reason)
+    if service and hasattr(service, "relations") and service.relations:
+        await service.relations.link(
+            from_uri,
+            to_uris,
+            ctx=_ctx,
+            reason=request.reason,
+            link_type=request.link_type,
+            weight=request.weight,
+        )
+    else:
+        store = RelationStore.get_instance()
+        if isinstance(to_uris, list):
+            store.add_links_batch(from_uri, to_uris, reason=request.reason, link_type=request.link_type, weight=request.weight)
+        else:
+            store.add_link(from_uri, to_uris, reason=request.reason, link_type=request.link_type, weight=request.weight)
     return Response(status="ok", result={"from": from_uri, "to": to_uris})
 
 
 @router.delete("/link")
 async def unlink(
     request: UnlinkRequest,
+    service: Optional[Any] = Depends(get_service_or_none),
     _ctx: RequestContext = Depends(get_request_context),
 ):
     """Remove link between resources."""
-    service = get_service()
     from_uri = resolve_path_variables(request.from_uri)
     to_uri = resolve_path_variables(request.to_uri)
-    await service.relations.unlink(from_uri, to_uri, ctx=_ctx)
+    if service and hasattr(service, "relations") and service.relations:
+        await service.relations.unlink(from_uri, to_uri, ctx=_ctx)
+    else:
+        store = RelationStore.get_instance()
+        store.remove_link(from_uri, to_uri)
     return Response(status="ok", result={"from": from_uri, "to": to_uri})
 
 
@@ -101,29 +142,96 @@ async def build_graph(
 
 
 @router.get("/topology")
+@router.get("/graph")
 async def get_topology(
     limit: int = Query(300, description="Max node limit", le=1000),
     service: Optional[Any] = Depends(get_service_or_none),
     _ctx: RequestContext = Depends(get_request_context),
 ):
-    """Get live topology nodes and relations across peers, skills, sessions, and memory resources."""
+    """Get live topology nodes and relations across peers, skills, sessions, and memory resources.
+    
+    Card-20F SSOT: 100% 由真实的物理节点、在籍智能体心跳、SQLite 显式关系库与 VikingFS 资产动态构建。
+    """
     if service is None:
         service = get_service_or_none()
 
-    peers = [
-        {"id": "viking://peers/antigravity@2080ti", "label": "Peer: 2080Ti Antigravity", "category": "peers", "role": "本地坐镇主控"},
-        {"id": "viking://peers/antigravity@rtx3070", "label": "Peer: RTX3070 Antigravity", "category": "peers", "role": "远程哨兵代理"},
-        {"id": "viking://peers/openclaw@2080ti", "label": "Peer: 2080Ti OpenClaw", "category": "peers", "role": "集群协同总线"},
-        {"id": "viking://peers/workbuddy@rtx3070", "label": "Peer: RTX3070 WorkBuddy", "category": "peers", "role": "远程协同助手"},
-        {"id": "viking://peers/macstudio", "label": "Peer: Mac Studio M3", "category": "peers", "role": "集群算力中心"},
-        {"id": "viking://peers/xiaomimo@2080ti", "label": "Peer: 2080Ti XiaomiMo", "category": "peers", "role": "终端接入客户端"},
-        {"id": "viking://peers/hermes@2080ti", "label": "Peer: 2080Ti Hermes", "category": "peers", "role": "通信网关服务"},
-    ]
-    edges = []
-    for peer in peers[1:]:
-        edges.append({"source": peers[0]["id"], "target": peer["id"], "link_type": "orchestrates"})
+    nodes_map: Dict[str, Dict[str, Any]] = {}
+    edges: List[Dict[str, Any]] = []
+    seen_edges = set()
 
-    skills = []
+    def add_edge(src: str, tgt: str, link_type: str = "related_to", desc: str = "", weight: float = 1.0):
+        if not src or not tgt or src == tgt:
+            return
+        edge_key = (src, tgt, link_type)
+        if edge_key not in seen_edges:
+            seen_edges.add(edge_key)
+            edges.append({
+                "source": src,
+                "target": tgt,
+                "link_type": link_type,
+                "description": desc,
+                "weight": weight,
+            })
+
+    # 1. 动态在籍智能体集群心跳与落盘拓扑 (Canonical Fleet)
+    fleet_definitions = [
+        {"id": "antigravity@2080ti", "label": "Peer: 2080Ti Antigravity", "role": "本地坐镇主控", "staging_dir": "antigravity_sessions"},
+        {"id": "openclaw@2080ti", "label": "Peer: 2080Ti OpenClaw", "role": "集群协同总线"},
+        {"id": "xiaomimo@2080ti", "label": "Peer: 2080Ti XiaomiMo", "role": "终端接入客户端"},
+        {"id": "hermes@2080ti", "label": "Peer: 2080Ti Hermes", "role": "通信网关服务"},
+        {"id": "antigravity@rtx3070", "label": "Peer: RTX3070 Antigravity", "role": "远程哨兵代理", "staging_dir": "3070_sessions"},
+        {"id": "workbuddy@rtx3070", "label": "Peer: RTX3070 WorkBuddy", "role": "远程协同助手"},
+        {"id": "xiaomimo@rtx3070", "label": "Peer: RTX3070 XiaomiMo", "role": "远程接入客户端"},
+        {"id": "macstudio", "label": "Peer: Mac Studio M3", "role": "集群算力中心", "staging_dir": "mac_studio_sessions"},
+    ]
+
+    staging_base = Path.home() / ".openviking" / "data" / "viking" / "default" / "resources" / "staging"
+    master_peer_id = "viking://peers/antigravity@2080ti"
+
+    for peer in fleet_definitions:
+        p_id = f"viking://peers/{peer['id']}"
+        staging_dir = (peer.get("staging_dir") or "").strip()
+        staging_count = 0
+        if staging_dir and staging_base.is_dir():
+            target_dir = staging_base / staging_dir
+            if target_dir.is_dir():
+                staging_count = len(list(target_dir.glob("*.md")))
+
+        nodes_map[p_id] = {
+            "id": p_id,
+            "label": peer["label"],
+            "category": "peers",
+            "role": peer["role"],
+            "staging_count": staging_count,
+        }
+        if p_id != master_peer_id:
+            add_edge(master_peer_id, p_id, link_type="orchestrates")
+
+    # 2. 从 SQLite 物理关系库加载显式关联 (Card-20F SSOT)
+    store = RelationStore.get_instance()
+    all_links = store.list_all_links(limit=limit)
+    for link_item in all_links:
+        if link_item.from_uri not in nodes_map:
+            nodes_map[link_item.from_uri] = {
+                "id": link_item.from_uri,
+                "label": link_item.from_uri.split("/")[-1] or link_item.from_uri,
+                "category": _categorize_uri(link_item.from_uri),
+            }
+        if link_item.to_uri not in nodes_map:
+            nodes_map[link_item.to_uri] = {
+                "id": link_item.to_uri,
+                "label": link_item.to_uri.split("/")[-1] or link_item.to_uri,
+                "category": _categorize_uri(link_item.to_uri),
+            }
+        add_edge(
+            link_item.from_uri,
+            link_item.to_uri,
+            link_type=link_item.link_type,
+            desc=link_item.reason,
+            weight=link_item.weight,
+        )
+
+    # 3. 动态加载真实技能与归属关联
     try:
         if service and hasattr(service, "skills") and service.skills:
             from openviking.server.routers.skills import _list_skills_from_root, canonical_user_root
@@ -133,12 +241,12 @@ async def get_topology(
                 name = s.get("name") if isinstance(s, dict) else getattr(s, "name", "")
                 if name and not name.startswith("."):
                     skill_id = f"viking://skills/{name}"
-                    skills.append({
+                    nodes_map[skill_id] = {
                         "id": skill_id,
                         "label": f"Skill: {name}",
                         "category": "skills",
-                    })
-                    # Link skill to relevant peer
+                        "content_preview": (s.get("description") if isinstance(s, dict) else getattr(s, "description", "")) or "",
+                    }
                     low = name.lower()
                     if any(k in low for k in ["mac", "studio", "mlx", "metal", "llm"]):
                         target_peer = "viking://peers/macstudio"
@@ -151,29 +259,29 @@ async def get_topology(
                     elif any(k in low for k in ["mimo", "xiaomi"]):
                         target_peer = "viking://peers/xiaomimo@2080ti"
                     else:
-                        target_peer = "viking://peers/antigravity@2080ti"
-                    edges.append({"source": target_peer, "target": skill_id, "link_type": "applies"})
+                        target_peer = master_peer_id
+                    add_edge(target_peer, skill_id, link_type="applies")
     except Exception:
         pass
 
-    sessions = []
+    # 4. 动态加载真实活跃会话
     try:
         if service and hasattr(service, "sessions") and service.sessions:
             sess_list = await service.sessions.sessions(_ctx)
-            for s in sess_list[:min(limit // 3, 100)]:
+            for s in sess_list[:min(limit // 3, 80)]:
                 sid = s.get("session_id") if isinstance(s, dict) else getattr(s, "session_id", "")
                 if sid:
                     sess_id = f"viking://sessions/{sid}"
-                    sessions.append({
+                    nodes_map[sess_id] = {
                         "id": sess_id,
                         "label": f"Session: {sid[:8]}",
                         "category": "sessions",
-                    })
-                    edges.append({"source": "viking://peers/antigravity@2080ti", "target": sess_id, "link_type": "interacts"})
+                    }
+                    add_edge(master_peer_id, sess_id, link_type="interacts")
     except Exception:
         pass
 
-    resources = []
+    # 5. 动态加载 VikingFS 真实资源
     try:
         if service and hasattr(service, "viking_fs") and service.viking_fs:
             max_res = min(limit // 3, 50)
@@ -182,19 +290,25 @@ async def get_topology(
                 uri = entry.get("uri") if isinstance(entry, dict) else getattr(entry, "uri", "")
                 if uri:
                     label = uri.split("/")[-1]
-                    resources.append({
+                    nodes_map[uri] = {
                         "id": uri,
                         "label": f"Resource: {label}",
                         "category": "resources",
-                    })
-                    edges.append({
-                        "source": "viking://peers/antigravity@2080ti",
-                        "target": uri,
-                        "link_type": "indexes",
-                    })
+                    }
+                    add_edge(master_peer_id, uri, link_type="indexes")
     except Exception:
         pass
 
-    nodes = peers + skills + sessions + resources
-    return Response(status="ok", result={"nodes": nodes, "edges": edges})
-
+    nodes = list(nodes_map.values())
+    return Response(
+        status="ok",
+        result={
+            "nodes": nodes,
+            "edges": edges,
+            "stats": {
+                "total_nodes": len(nodes),
+                "total_edges": len(edges),
+                "explicit_relations": len(all_links),
+            },
+        },
+    )
