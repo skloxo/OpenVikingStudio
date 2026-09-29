@@ -28,11 +28,14 @@ from pydantic import BaseModel
 
 from openviking.core.rsi_credit_allocator import RSICreditAllocator
 from openviking.core.rsi_day_night_engine import DualSplitGateResult, RSIDayNightEngine, RSIPhase
+from openviking.core.rsi_trajectory_store import RSITrajectoryStore
 from openviking.core.trainable_skill_policy import SurfaceInspectionResult, TrainableSkillDocument
 
 router = APIRouter(prefix="/api/v1/rsi", tags=["rsi"])
 
-_engine = RSIDayNightEngine.get_instance()
+
+def _get_engine() -> RSIDayNightEngine:
+    return RSIDayNightEngine.get_instance()
 
 
 # ---------------------------------------------------------------------------
@@ -79,20 +82,20 @@ class VerifySplitRequest(BaseModel):
 @router.get("/status")
 async def get_rsi_status() -> Dict[str, Any]:
     """获取 RSI 昼夜引擎当前运行状态与统计。"""
-    return _engine.summary()
+    return _get_engine().summary()
 
 
 @router.post("/phase/switch")
 async def switch_rsi_phase(req: SwitchPhaseRequest) -> Dict[str, Any]:
     """手动或定时切换昼夜状态。"""
-    new_phase = _engine.switch_phase(req.target_phase)
+    new_phase = _get_engine().switch_phase(req.target_phase)
     return {"status": "switched", "current_phase": new_phase.value}
 
 
 @router.post("/trajectory/record")
 async def record_trajectory_turn(req: RecordTurnRequest) -> Dict[str, Any]:
     """白昼阶段收集执行轨迹回合。"""
-    _engine.record_turn(req.session_id, req.turn_data)
+    _get_engine().record_turn(req.session_id, req.turn_data)
     return {"status": "recorded", "session_id": req.session_id}
 
 
@@ -100,7 +103,7 @@ async def record_trajectory_turn(req: RecordTurnRequest) -> Dict[str, Any]:
 async def evaluate_credit(req: EvaluateCreditRequest) -> Dict[str, Any]:
     """执行 AgentOPSD 局部信用分配与关键回合标定。"""
     if req.session_id:
-        res = _engine.evaluate_session_credits(req.session_id)
+        res = _get_engine().evaluate_session_credits(req.session_id)
         if res is None:
             raise HTTPException(status_code=404, detail=f"No trajectory found for session: {req.session_id}")
         return res.model_dump()
@@ -137,7 +140,7 @@ async def update_surface(req: UpdateSurfaceRequest) -> Dict[str, Any]:
 @router.post("/gate/verify_split", response_model=DualSplitGateResult)
 async def verify_dual_split(req: VerifySplitRequest) -> DualSplitGateResult:
     """双 Split 零退化回归门禁检验。"""
-    return _engine.verify_dual_split_gate(
+    return _get_engine().verify_dual_split_gate(
         train_results=req.train_results,
         holdout_results=req.holdout_results,
         baseline_holdout_pass_rate=req.baseline_holdout_pass_rate or 0.8,
@@ -152,12 +155,57 @@ class RunNighttimeCycleRequest(BaseModel):
 
 @router.post("/cycle/run_nighttime")
 async def run_nighttime_cycle_endpoint(req: Optional[RunNighttimeCycleRequest] = None) -> Dict[str, Any]:
-    """运行夜间做梦与双 Split 零退化门禁自演进周期 (Card-20G)。"""
+    """运行夜间做梦与双 Split 零退化门禁自演进周期 (Card-20G / Card-26)。"""
     baseline = (req.baseline_holdout_pass_rate or 0.8) if req else 0.8
     train_res = req.train_results if req else None
     holdout_res = req.holdout_results if req else None
-    return _engine.run_nighttime_cycle(
+    return _get_engine().run_nighttime_cycle(
         baseline_holdout_pass_rate=baseline,
         train_results=train_res,
         holdout_results=holdout_res,
     )
+
+
+@router.get("/trajectories")
+async def list_persisted_trajectories(limit: int = Query(50, ge=1, le=200)) -> Dict[str, Any]:
+    """获取 SQLite 持久化的白昼轨迹会话明细。"""
+    engine = _get_engine()
+    store = engine._store or RSITrajectoryStore.get_instance()
+    trajs = store.load_trajectories(limit_sessions=limit)
+    return {
+        "total_sessions": len(trajs),
+        "sessions": [
+            {"session_id": sid, "turn_count": len(turns)}
+            for sid, turns in trajs.items()
+        ],
+    }
+
+
+@router.get("/gates/history")
+async def list_gate_history(limit: int = Query(50, ge=1, le=200)) -> List[Dict[str, Any]]:
+    """获取 SQLite 持久化的双 Split 门禁历史记录。"""
+    engine = _get_engine()
+    store = engine._store or RSITrajectoryStore.get_instance()
+    return store.get_gate_history(limit=limit)
+
+
+class EvolveSkillRequest(BaseModel):
+    target_skill_path: str
+    block_index: int
+    new_content: str
+    baseline_holdout_pass_rate: Optional[float] = 0.8
+
+
+@router.post("/evolve")
+async def evolve_skill_endpoint(req: EvolveSkillRequest) -> Dict[str, Any]:
+    """物理受控演进闭环：更新 # EVOLVE-BLOCK 并经双 Split 门禁验证后决定是否保存落盘。"""
+    try:
+        return _get_engine().evolve_skill_policy(
+            target_skill_path=req.target_skill_path,
+            block_index=req.block_index,
+            new_content=req.new_content,
+            baseline_holdout_pass_rate=req.baseline_holdout_pass_rate or 0.8,
+        )
+    except (FileNotFoundError, IndexError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+

@@ -29,6 +29,12 @@ interface RSISummary {
   total_credit_evaluations: number
   dual_split_verifications: number
   gate_pass_rate: number
+  persistence?: {
+    persisted_sessions: number
+    persisted_turns: number
+    total_gate_checks: number
+    passed_gate_checks: number
+  }
 }
 
 interface DualSplitResult {
@@ -118,6 +124,27 @@ export function RSIDayNightCockpit() {
     },
   })
 
+  // 4. 夜间真演进做梦闭环 (Card-26)
+  const runNightCycleMutation = useMutation({
+    mutationFn: async () => {
+      const res = await ovClient.instance.post('/api/v1/rsi/cycle/run_nighttime', {
+        baseline_holdout_pass_rate: 0.8,
+      })
+      return (res as { data: { gate_passed: boolean; details: string; train_pass_rate: number; holdout_pass_rate: number; regression_detected: boolean } }).data
+    },
+    onSuccess: (data) => {
+      setGateResult({
+        passed: data.gate_passed,
+        train_pass_rate: data.train_pass_rate,
+        holdout_pass_rate: data.holdout_pass_rate,
+        baseline_holdout_pass_rate: 0.8,
+        regression_detected: data.regression_detected,
+        details: data.details,
+      })
+      queryClient.invalidateQueries({ queryKey: ['rsi'] })
+    },
+  })
+
   const summary = summaryQuery.data
   const isDaytime = summary?.current_phase === 'daytime_collection'
 
@@ -135,16 +162,26 @@ export function RSIDayNightCockpit() {
             RSI 昼夜双轮与可训练技能策略座舱
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Skill-MDP 外部策略 · # EVOLVE-BLOCK 有界可编辑 · AgentOPSD 局部信用 · 双 Split 零退化
+            Skill-MDP 外部策略 · # EVOLVE-BLOCK 有界可编辑 · SQLite WAL 物理落盘 · 双 Split 零退化
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Button
             size="sm"
             variant="outline"
+            disabled={runNightCycleMutation.isPending}
+            onClick={() => runNightCycleMutation.mutate()}
+            className="text-xs h-7 gap-1 border-cyan-400/60 dark:border-cyan-700/60 bg-cyan-50/60 dark:bg-cyan-950/40 text-cyan-800 dark:text-cyan-300 hover:bg-cyan-100 dark:hover:bg-cyan-900/50 cursor-pointer"
+          >
+            <ZapIcon className="size-3" />
+            {runNightCycleMutation.isPending ? '做梦演进中...' : '运行夜间做梦 (RSI Cycle)'}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
             disabled={switchPhaseMutation.isPending}
             onClick={() => switchPhaseMutation.mutate()}
-            className="text-xs h-7 gap-1 border-cyan-300 dark:border-cyan-800/60 bg-cyan-50 dark:bg-cyan-950/40 hover:bg-cyan-100 dark:hover:bg-cyan-900/50 text-cyan-800 dark:text-cyan-300 cursor-pointer"
+            className="text-xs h-7 gap-1 border-border/80 bg-muted/30 hover:bg-muted/60 text-foreground cursor-pointer"
           >
             {isDaytime ? <MoonIcon className="size-3" /> : <SunIcon className="size-3" />}
             切换至 {isDaytime ? '夜间离线自演进' : '白昼轨迹收集'}
@@ -174,7 +211,11 @@ export function RSIDayNightCockpit() {
           icon={ActivityIcon}
           label="收集轨迹回合数"
           value={summary?.total_turns_collected ?? '--'}
-          sub={`累计会话: ${summary?.total_trajectories_collected ?? '--'}`}
+          sub={
+            summary?.persistence?.persisted_turns !== undefined
+              ? `SQLite落盘: ${summary.persistence.persisted_turns} turns`
+              : `累计会话: ${summary?.total_trajectories_collected ?? '--'}`
+          }
         />
         <KpiTile
           icon={ZapIcon}
