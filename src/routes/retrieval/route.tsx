@@ -15,6 +15,7 @@ import {
   CodeIcon,
   NetworkIcon,
   FileCodeIcon,
+  SearchCodeIcon,
 } from 'lucide-react'
 
 import { RetrievalBenchmarkDrawer } from './-components/benchmark-drawer'
@@ -24,6 +25,7 @@ import { RetrievalControls } from './-components/retrieval-controls'
 import { RetrievalMetricsCards } from './-components/retrieval-metrics-cards'
 import { AdvancedOperationalTelemetry } from './-components/advanced-operational-telemetry'
 import { BM25HybridCockpit } from './-components/bm25-hybrid-cockpit'
+import { VikingFSGrepCockpit } from './-components/viking-fs-grep-cockpit'
 import { ZGSearchCockpit } from './-components/zg-search-cockpit'
 import { RAGAbstentionCockpit } from './-components/rag-abstention-cockpit'
 import { HGRAGCompassCockpit } from './-components/hg-rag-compass-cockpit'
@@ -51,6 +53,7 @@ import type { RetrievalMode, RetrievalScope } from './-types/retrieval'
 
 export type RetrievalTab =
   | 'search'
+  | 'grep'
   | 'bm25'
   | 'zg'
   | 'compass'
@@ -68,6 +71,7 @@ const RETRIEVAL_TABS: Array<{
   icon: React.ReactNode
 }> = [
   { id: 'search', label: '主控检索与综合结果', icon: <SearchIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
+  { id: 'grep', label: 'VikingFS 正则 Grep 检索', icon: <SearchCodeIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
   { id: 'bm25', label: 'BM25 双流混合融合', icon: <LayersIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
   { id: 'zg', label: 'zg 端侧代码语义', icon: <TerminalIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
   { id: 'compass', label: 'HG-RAG 拓扑与主动弃答', icon: <CompassIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
@@ -268,7 +272,10 @@ function RetrievalPage() {
         </div>
       )}
 
-      {/* Tab 2: BM25 双流混合融合 */}
+      {/* Tab 2: VikingFS 正则 Grep 检索 */}
+      {activeTab === 'grep' && <VikingFSGrepCockpit />}
+
+      {/* Tab 3: BM25 双流混合融合 */}
       {activeTab === 'bm25' && <BM25HybridCockpit />}
 
       {/* Tab 3: zg 端侧代码语义 */}
