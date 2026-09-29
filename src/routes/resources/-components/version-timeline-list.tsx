@@ -41,7 +41,7 @@ export function VersionTimelineList({
   return (
     <div className="md:col-span-5 flex flex-col min-h-0 bg-muted/10">
       {/* Timeline Filter Toolbar */}
-      <div className="p-3 border-b border-border flex items-center justify-between text-xs bg-muted/30 flex-shrink-0">
+      <div className="p-3 border-b border-border flex items-center justify-between text-xs bg-muted/30 shrink-0">
         <div className="flex items-center gap-1.5 font-medium text-foreground">
           <GitCommit className="size-3.5 text-cyan-400" />
           <span>{t('versionTimeline.commitHistory')}</span>

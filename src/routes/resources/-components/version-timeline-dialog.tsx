@@ -24,8 +24,8 @@ import {
   fetchSnapshotLog,
   fetchSnapshotShow,
   restoreSnapshotCommit,
-  type SnapshotCommit,
 } from '../-lib/api'
+import type { SnapshotCommit } from '../-lib/api'
 import type { VikingFsEntry } from '../-types/viking-fm'
 import { VersionTimelineList } from './version-timeline-list'
 import { parseUnifiedDiff } from './version-timeline-utils'
@@ -170,9 +170,9 @@ export function VersionTimelineDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="!w-[94vw] sm:!w-[94vw] !max-w-6xl sm:!max-w-6xl p-0 gap-0 overflow-hidden h-[86vh] max-h-[86vh] flex flex-col bg-background border border-border shadow-2xl rounded-xl">
+      <DialogContent className="w-[94vw]! sm:w-[94vw]! max-w-6xl! sm:max-w-6xl! p-0 gap-0 overflow-hidden h-[86vh] max-h-[86vh] flex flex-col bg-background border border-border shadow-2xl rounded-xl">
         {/* Header */}
-        <DialogHeader className="p-4 border-b border-border flex-shrink-0 bg-muted/20">
+        <DialogHeader className="p-4 border-b border-border shrink-0 bg-muted/20">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="size-9 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">

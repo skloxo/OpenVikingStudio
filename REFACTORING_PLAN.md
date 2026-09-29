@@ -453,17 +453,34 @@
 
 ---
 
-#### 📌 [P0] [ ] Card-32: Fat-File-Surgery-Playground-And-Timeline (v1.5.96): 前端最后剩余 500+ 行非生成业务代码彻底清零 — ContextExplorer、VersionTimelineDialog 与 SessionsAPI ⏳
-- **类型**：架构重构 / 单文件规模红线治理 ｜ **优先级**：🔥🔥 P0 ｜ **目标版本**：`v1.5.96` ｜ **当前状态**：[ ] 就绪待调度 ⏳
+#### 📌 [P0] [x] Card-32: Fat-File-Surgery-Playground-And-Timeline (v1.5.96): 前端最后剩余 500+ 行非生成业务代码彻底清零 — ContextExplorer、VersionTimelineDialog 与 SessionsAPI ✅
+- **类型**：架构重构 / 单文件规模红线治理 ｜ **优先级**：🔥🔥 P0 ｜ **目标版本**：`v1.5.96` ｜ **当前状态**：[x] 已验收通过 ✅ (v1.5.96)
 - **背景与第一性原理**：
-  - 经三轮拆解，非生成代码库中仅剩最后 3 个略微超限文件：`context-explorer.tsx` (534L)、`version-timeline-dialog.tsx` (526L)、`src/lib/sessions/api.ts` (505L)；
-  - 目标：将最后这 3 个文件按领域接缝下沉拆分，使前端所有业务源码 100% 达成 $\le 500$ 行绝对红线。
+  - 经三轮拆解，非生成业务代码库中仅剩最后 3 个超限文件：`context-explorer.tsx` (534L)、`version-timeline-dialog.tsx` (526L)、`src/lib/sessions/api.ts` (505L)；
+  - 目标：将最后这 3 个文件按领域接缝下沉拆分，实现全代码库业务源码 **100% 绝对达成 $\le 500$ 行红线**，超限清零！
 - **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
-  - **衡量指标**：拆分后所有目标文件与衍生小文件 100% **$\le 500$ 行**（基准收敛至 100~350 行黄金甜点区）；Vite build PASS，全库零密钥泄漏。
-- **拆解计划**：
-  1. `src/routes/playground/-components/context-explorer.tsx`（534L）：拆分子项卡片与工具栏抽屉；
-  2. `src/routes/resources/-components/version-timeline-dialog.tsx`（526L）：拆分版本比较面板与差异查看器；
-  3. `src/lib/sessions/api.ts`（505L）：拆分会话 REST 客户端与请求参数归一化工具。
+  - **衡量指标**：拆分后所有目标文件与衍生小文件 100% **$\le 500$ 行**（基准收敛至 45~310 行黄金甜点区）；Vite build PASS，全库零密钥泄漏。
+- **拆解交付成果 (12 个文件全量 $\le 500$ 行，Commit: `e538166d5`)**：
+  1. **`context-explorer.tsx`（534L ➔ 135L）**：
+     - `context-explorer-header.tsx`（128L：头部操作栏、任务角标与画布折叠按钮）
+     - `context-tree-node.tsx`（255L：树节点渲染、折叠逻辑与缩进指引线）
+     - `playground-resize-handle.tsx`（55L：列宽拖拽手柄与选项卡组件）
+  2. **`version-timeline-dialog.tsx`（526L ➔ 287L）**：
+     - `version-timeline-list.tsx`（162L：快照历史提交列表、时间戳卡片与过滤栏）
+     - `version-timeline-viewer.tsx`（165L：Diff 差异与历史源码视图面板）
+     - `version-timeline-utils.ts`（45L：时间格式化与统一 Diff 解析器）
+  3. **`src/lib/sessions/api.ts`（505L ➔ 310L）**：
+     - `bot-chat-api.ts`（100L：Bot 健康检测与 SSE 流式请求客户端）
+     - `serialize-parts.ts`（47L：消息 Part 序列化纯函数）
+     - `session-api-utils.ts`（54L：并发映射、消息去重与 404 判定工具）
+- **门禁验证清单**：
+  - `wc -l` 物理行数审计：全部 12 个目标及衍生文件 100% $\le 500$ 行；**全库非生成业务代码彻底清零超限（最大文件 498L）**；
+  - `npm run build`：生产编译成功（15.24s），产物正确注入 `v1.5.96`；
+  - `security_check.py`：扫描 4557 个受版本控制文件，0 密钥泄露；
+  - `npx vitest run src/lib/sessions`：13/13 测试全绿（1.62s）；
+  - `npx vitest run src/routes/resources`：38/38 测试全绿（2.70s）；
+  - `pytest -o addopts="" tests/storage/test_viking_fs_grep.py`：23 passed in 0.15s；
+  - 服务端热重载验证：`systemctl --user restart openviking` 成功，`/health` 探针返回 `version: 1.5.96`。
 
 
 
