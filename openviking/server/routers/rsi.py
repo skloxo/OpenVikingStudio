@@ -135,3 +135,22 @@ async def verify_dual_split(req: VerifySplitRequest) -> DualSplitGateResult:
         holdout_results=req.holdout_results,
         baseline_holdout_pass_rate=req.baseline_holdout_pass_rate or 0.8,
     )
+
+
+class RunNighttimeCycleRequest(BaseModel):
+    baseline_holdout_pass_rate: Optional[float] = 0.8
+    train_results: Optional[List[bool]] = None
+    holdout_results: Optional[List[bool]] = None
+
+
+@router.post("/cycle/run_nighttime")
+async def run_nighttime_cycle_endpoint(req: Optional[RunNighttimeCycleRequest] = None) -> Dict[str, Any]:
+    """运行夜间做梦与双 Split 零退化门禁自演进周期 (Card-20G)。"""
+    baseline = (req.baseline_holdout_pass_rate or 0.8) if req else 0.8
+    train_res = req.train_results if req else None
+    holdout_res = req.holdout_results if req else None
+    return _engine.run_nighttime_cycle(
+        baseline_holdout_pass_rate=baseline,
+        train_results=train_res,
+        holdout_results=holdout_res,
+    )
