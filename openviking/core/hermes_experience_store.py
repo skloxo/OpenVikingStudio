@@ -174,6 +174,61 @@ class HermesExperienceStore:
                 conn.close()
         return msg
 
+    def record_messages_batch(
+        self,
+        messages_data: List[Dict[str, Any]],
+    ) -> List[HermesExperienceMessage]:
+        """批量写入真实经历消息（单一事务，只增不删）。"""
+        if not messages_data:
+            return []
+
+        prepared: List[HermesExperienceMessage] = []
+        for item in messages_data:
+            tc = item.get("tool_calls")
+            msg = HermesExperienceMessage(
+                session_id=item["session_id"],
+                role=item.get("role", "user"),
+                content=item.get("content", ""),
+                tool_calls=json.dumps(tc, ensure_ascii=False) if tc and not isinstance(tc, str) else tc,
+                meta=item.get("meta") or {},
+                created_at=item.get("created_at") or time.time(),
+            )
+            prepared.append(msg)
+
+        with self._db_lock:
+            conn = self._get_connection()
+            try:
+                cur = conn.cursor()
+                cur.executemany(
+                    """
+                    INSERT INTO hermes_messages (msg_id, session_id, role, content, tool_calls, created_at, meta_json)
+                    VALUES (?, ?, ?, ?, ?, ?, ?);
+                    """,
+                    [
+                        (
+                            m.msg_id,
+                            m.session_id,
+                            m.role,
+                            m.content,
+                            m.tool_calls,
+                            m.created_at,
+                            json.dumps(m.meta, ensure_ascii=False),
+                        )
+                        for m in prepared
+                    ],
+                )
+                cur.executemany(
+                    """
+                    INSERT INTO fts_hermes_messages (msg_id, session_id, role, content)
+                    VALUES (?, ?, ?, ?);
+                    """,
+                    [(m.msg_id, m.session_id, m.role, m.content) for m in prepared],
+                )
+                conn.commit()
+            finally:
+                conn.close()
+        return prepared
+
     def search_messages(self, query: str, limit: int = 20) -> List[FTS5SearchResult]:
         """跨会话 FTS5 真实消息检索。"""
         clean_query = query.strip().replace("'", "''").replace('"', '""')
@@ -206,9 +261,36 @@ class HermesExperienceStore:
                             rank=float(r[5]),
                         )
                     )
+                if not results:
+                    cur.execute(
+                        """
+                        SELECT msg_id, session_id, role, content, created_at
+                        FROM hermes_messages
+                        WHERE content LIKE ?
+                        ORDER BY created_at DESC
+                        LIMIT ?;
+                        """,
+                        (f"%{clean_query}%", limit),
+                    )
+                    for r in cur.fetchall():
+                        raw_c = r[3]
+                        idx = raw_c.find(clean_query)
+                        start_idx = max(0, idx - 15)
+                        end_idx = min(len(raw_c), idx + len(clean_query) + 15)
+                        snip = ("..." if start_idx > 0 else "") + raw_c[start_idx:end_idx] + ("..." if end_idx < len(raw_c) else "")
+                        results.append(
+                            FTS5SearchResult(
+                                msg_id=r[0],
+                                session_id=r[1],
+                                role=r[2],
+                                snippet=snip,
+                                created_at=r[4],
+                                rank=0.0,
+                            )
+                        )
                 return results
             except sqlite3.OperationalError:
-                # 若查询包含非法 FTS 语法，回退为精确短语查询
+                # 若查询包含非法 FTS 语法，回退为精确短语或 LIKE 查询
                 cur = conn.cursor()
                 sql_fallback = """
                     SELECT f.msg_id, f.session_id, f.role, snippet(fts_hermes_messages, 3, '<b>', '</b>', '...', 16), m.created_at, rank
@@ -221,7 +303,7 @@ class HermesExperienceStore:
                 escaped = f'"{clean_query}"'
                 cur.execute(sql_fallback, (escaped, limit))
                 rows = cur.fetchall()
-                return [
+                fallback_results = [
                     FTS5SearchResult(
                         msg_id=r[0],
                         session_id=r[1],
@@ -232,6 +314,29 @@ class HermesExperienceStore:
                     )
                     for r in rows
                 ]
+                if not fallback_results:
+                    cur.execute(
+                        """
+                        SELECT msg_id, session_id, role, content, created_at
+                        FROM hermes_messages
+                        WHERE content LIKE ?
+                        ORDER BY created_at DESC
+                        LIMIT ?;
+                        """,
+                        (f"%{clean_query}%", limit),
+                    )
+                    for r in cur.fetchall():
+                        fallback_results.append(
+                            FTS5SearchResult(
+                                msg_id=r[0],
+                                session_id=r[1],
+                                role=r[2],
+                                snippet=r[3][:60],
+                                created_at=r[4],
+                                rank=0.0,
+                            )
+                        )
+                return fallback_results
             finally:
                 conn.close()
 

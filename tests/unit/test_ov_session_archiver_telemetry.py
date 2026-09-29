@@ -56,3 +56,39 @@ def test_extract_telemetry_from_transcript(tmp_path):
     assert telemetry["top5_hits"] >= 1
     # step 2 had "不对" and "报错"
     assert telemetry["interventions_count"] >= 1
+
+
+def test_extract_hermes_messages_from_transcript(tmp_path):
+    """Verify that extract_hermes_messages_from_transcript parses conversation turns for Hermes (Card-20E)."""
+    transcript_file = tmp_path / "sample_hermes_transcript.jsonl"
+    lines = [
+        {
+            "step_index": 0,
+            "source": "USER_EXPLICIT",
+            "type": "USER_INPUT",
+            "content": "请分析系统的内存泄漏",
+        },
+        {
+            "step_index": 1,
+            "source": "MODEL",
+            "type": "PLANNER_RESPONSE",
+            "content": "好的，正在检查常驻线程。",
+            "tool_calls": [{"name": "exec", "arguments": {"command": "ps aux"}}],
+        },
+    ]
+
+    with open(transcript_file, "w", encoding="utf-8") as f:
+        for item in lines:
+            f.write(json.dumps(item, ensure_ascii=False) + "\n")
+
+    msgs = ov_session_archiver.extract_hermes_messages_from_transcript(
+        str(transcript_file), session_id="test_sess_hermes"
+    )
+    assert len(msgs) == 2
+    assert msgs[0]["session_id"] == "test_sess_hermes"
+    assert msgs[0]["role"] == "user"
+    assert msgs[0]["content"] == "请分析系统的内存泄漏"
+    assert msgs[1]["role"] == "assistant"
+    assert msgs[1]["tool_calls"] is not None
+    assert msgs[1]["tool_calls"][0]["name"] == "exec"
+
