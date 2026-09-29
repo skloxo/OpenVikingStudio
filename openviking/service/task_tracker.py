@@ -277,11 +277,22 @@ class TaskTracker:
                 )
                 await asyncio.sleep(sleep_secs)
                 await self._evict_expired()
+                await self._run_nightly_crystallization()
             except asyncio.CancelledError:
                 break
             except Exception:
                 logger.exception("[TaskTracker] Cleanup error")
                 await asyncio.sleep(3600)  # On unexpected error, retry in 1 hour
+
+    async def _run_nightly_crystallization(self) -> None:
+        """Run daily midnight memory entropy crystallization and dreaming defect mining."""
+        try:
+            from openviking.service.entropy_crystallizer import EntropyCrystallizer
+            crystallizer = EntropyCrystallizer.get_instance()
+            crystallizer.run_crystallization_cycle(reason="daily_midnight_maintenance")
+            logger.info("[TaskTracker] Daily midnight crystallization cycle completed successfully")
+        except Exception as e:
+            logger.warning("[TaskTracker] Nightly crystallization cycle error: %s", e)
 
     async def _evict_expired(self) -> None:
         """Remove expired tasks and enforce MAX_TASKS."""

@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import hashlib
 import math
+from pathlib import Path
 import threading
 import time
 from typing import Any, Dict, List, Optional
@@ -39,70 +40,28 @@ from openviking_cli.utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-class MemoryFragment(BaseModel):
-    """Raw candidate memory fragment in the crystallization pool."""
-    uri: str
-    content: str
-    created_at: float = Field(default_factory=time.time)
-    embedding: Optional[List[float]] = None
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+from openviking.service.entropy_models import (
+    MemoryFragment,
+    TriGateRule,
+    TriGateEvaluation,
+    CrystalContextBounds,
+    CrystalNegativeBoundary,
+    FactCrystal,
+    CrystallizationResult,
+    TriGateRejectionError,
+)
 
-
-class TriGateRule(BaseModel):
-    """Configuration thresholds for the tri-gate barrier."""
-    min_cluster_size: int = 5
-    min_avg_cosine_similarity: float = 0.75
-    cooling_period_hours: float = 24.0
-
-
-class TriGateEvaluation(BaseModel):
-    """Verification results for the three parallel hard gates."""
-    passed: bool
-    cluster_size: int
-    cluster_size_passed: bool
-    avg_similarity: float
-    similarity_passed: bool
-    cooling_hours: float
-    cooling_passed: bool
-    rejection_reasons: List[str] = Field(default_factory=list)
-
-
-class CrystalContextBounds(BaseModel):
-    """L1: Target version range, provenance source URIs, and evidence hashes."""
-    version_range: str
-    source_uris: List[str]
-    evidence_hashes: List[str]
-    distilled_at: float = Field(default_factory=time.time)
-    distiller_id: str = "openviking-crystallizer"
-
-
-class CrystalNegativeBoundary(BaseModel):
-    """L2: Repulsion sentinels, deprecated anti-patterns, and forbidden keywords."""
-    deprecated_patterns: List[str] = Field(default_factory=list)
-    forbidden_keywords: List[str] = Field(default_factory=list)
-
-
-class FactCrystal(BaseModel):
-    """Three-Tier Immutable Fact Crystal Schema (L0 / L1 / L2)."""
-    uri: str
-    axiom: str  # L0: Core Immutable Axiom
-    context_bounds: CrystalContextBounds  # L1: Version range & Evidence chain
-    negative_boundary: CrystalNegativeBoundary  # L2: Negative Repulsion Boundary
-    status: str = "active"
-    created_at: float = Field(default_factory=time.time)
-
-
-class CrystallizationResult(BaseModel):
-    """Result of distilling a cluster of fragments into an immutable Fact Crystal."""
-    crystal: FactCrystal
-    superseded_uris: List[str]
-    net_entropy_reduced: int
-    evaluation: TriGateEvaluation
-
-
-class TriGateRejectionError(ValueError):
-    """Raised when crystallization is attempted on candidates failing the tri-gate barrier."""
-    pass
+__all__ = [
+    "MemoryFragment",
+    "TriGateRule",
+    "TriGateEvaluation",
+    "CrystalContextBounds",
+    "CrystalNegativeBoundary",
+    "FactCrystal",
+    "CrystallizationResult",
+    "TriGateRejectionError",
+    "EntropyCrystallizer",
+]
 
 
 class EntropyCrystallizer:
@@ -117,6 +76,13 @@ class EntropyCrystallizer:
         self._total_evaluated: int = 0
         self._total_blocked: int = 0
         self._total_net_reduced: int = 0
+        self._daemon_stats: Dict[str, Any] = {
+            "idle_daemon_active": True,
+            "last_idle_run_timestamp": 0.0,
+            "total_idle_runs": 0,
+            "defects_mined": 0,
+            "last_reason": None,
+        }
 
     @classmethod
     def get_instance(cls) -> "EntropyCrystallizer":
@@ -272,6 +238,7 @@ class EntropyCrystallizer:
 
         # Register crystal
         self._crystals[crystal_uri] = crystal
+        self._persist_crystal_file(crystal)
         net_reduced = max(0, len(fragments) - 1)
         self._total_net_reduced += net_reduced
 
@@ -289,13 +256,15 @@ class EntropyCrystallizer:
 
     def get_stats(self) -> Dict[str, Any]:
         """Return operational telemetry metrics for crystallization."""
-        return {
+        stats = {
             "total_crystals": len(self._crystals),
             "total_evaluated": self._total_evaluated,
             "total_blocked": self._total_blocked,
             "total_net_entropy_reduced": self._total_net_reduced,
             "block_rate": round(self._total_blocked / max(1, self._total_evaluated), 4),
         }
+        stats.update(self._daemon_stats)
+        return stats
 
     def list_crystals(self) -> List[FactCrystal]:
         """List all crystallized immutable facts."""
@@ -332,4 +301,169 @@ class EntropyCrystallizer:
                     except Exception as exc:
                         logger.warning(f"Auto crystallization failed for topic {topic}: {exc}")
         return results
+
+    def _persist_crystal_file(
+        self, crystal: FactCrystal, crystals_dir: Optional[Path] = None
+    ) -> None:
+        """Physically persist the FactCrystal as an immutable markdown asset in VikingFS."""
+        try:
+            target_dir = crystals_dir or (
+                Path.home()
+                / ".openviking"
+                / "data"
+                / "viking"
+                / "default"
+                / "resources"
+                / "crystals"
+            )
+            target_dir.mkdir(parents=True, exist_ok=True)
+            file_name = crystal.uri.split("/")[-1]
+            if not file_name.endswith(".md"):
+                file_name = f"{file_name}.md"
+            target_path = target_dir / file_name
+            content = (
+                "---\n"
+                f"uri: {crystal.uri}\n"
+                f"axiom: \"{crystal.axiom}\"\n"
+                f"version_range: \"{crystal.context_bounds.version_range}\"\n"
+                f"distilled_at: {crystal.context_bounds.distilled_at}\n"
+                f"status: {crystal.status}\n"
+                "---\n\n"
+                f"# Immutable SSOT Axiom\n\n"
+                f"> {crystal.axiom}\n\n"
+                "## Negative Boundaries & Forbidden Patterns\n"
+                + "\n".join(
+                    f"- {p}" for p in crystal.negative_boundary.deprecated_patterns
+                )
+                + "\n"
+            )
+            target_path.write_text(content, encoding="utf-8")
+        except Exception as e:
+            logger.warning(f"Failed to persist crystal file: {e}")
+
+    def load_candidate_fragments(
+        self, base_dir: Optional[Path] = None, max_fragments: int = 50
+    ) -> List[MemoryFragment]:
+        """Load un-superseded memory fragments from storage."""
+        target_dir = base_dir or (
+            Path.home()
+            / ".openviking"
+            / "data"
+            / "viking"
+            / "default"
+            / "resources"
+            / "master_memory"
+            / "evolution_lessons"
+        )
+        if not target_dir.exists():
+            return []
+        store = MemoryLifecycleStore.get_instance()
+        fragments: List[MemoryFragment] = []
+        for fpath in sorted(target_dir.glob("*.md"), reverse=True):
+            if fpath.name.startswith("."):
+                continue
+            uri1 = f"viking://resources/master_memory/evolution_lessons/{target_dir.name}/{fpath.name}"
+            uri2 = f"viking://resources/master_memory/evolution_lessons/{fpath.name}"
+            rec1 = store.get_record(uri1)
+            rec2 = store.get_record(uri2)
+            if (rec1 and rec1.status == MemoryStatus.SUPERSEDED) or (rec2 and rec2.status == MemoryStatus.SUPERSEDED):
+                continue
+            try:
+                content = fpath.read_text(encoding="utf-8", errors="ignore")
+                st = fpath.stat()
+                topic = "general"
+                parts = fpath.stem.split("_")
+                if len(parts) >= 3:
+                    topic = "_".join(parts[2:4])
+                emb_base = float(sum(ord(c) for c in topic) % 100) / 100.0
+                emb = [emb_base, 0.8, 0.8, 0.8]
+                fragments.append(
+                    MemoryFragment(
+                        uri=uri2,
+                        content=content[:500],
+                        created_at=st.st_mtime,
+                        embedding=emb,
+                        metadata={"topic": topic, "file": fpath.name},
+                    )
+                )
+                if len(fragments) >= max_fragments:
+                    break
+            except Exception:
+                continue
+        return fragments
+
+    def run_crystallization_cycle(
+        self,
+        traces: Optional[List[Dict[str, Any]]] = None,
+        candidate_fragments: Optional[List[MemoryFragment]] = None,
+        crystals_dir: Optional[Path] = None,
+        reason: str = "idle_daemon",
+    ) -> Dict[str, Any]:
+        """Execute unified background crystallization: failure mining + tri-gate distillation."""
+        now = time.time()
+        self._daemon_stats["last_idle_run_timestamp"] = now
+        self._daemon_stats["total_idle_runs"] += 1
+        self._daemon_stats["last_reason"] = reason
+
+        frags = (
+            candidate_fragments
+            if candidate_fragments is not None
+            else self.load_candidate_fragments()
+        )
+
+        # 1. Harvest failure traces from FailureTaxonomyTelemetry if not provided
+        failure_traces = traces
+        if failure_traces is None:
+            try:
+                from openviking.core.failure_taxonomy_telemetry import (
+                    FailureTaxonomyTelemetry,
+                )
+                snapshot = FailureTaxonomyTelemetry.get_instance().get_snapshot()
+                failure_traces = [
+                    {
+                        "success": False,
+                        "category": ev.get("category", "DeterministicFailure"),
+                        "tool_name": ev.get("tool_name", "unknown"),
+                        "reason": ev.get("reason", ""),
+                        "blocked": ev.get("blocked", False),
+                    }
+                    for ev in snapshot.recent_events
+                    if ev.get("blocked") or ev.get("category")
+                ]
+            except Exception as exc:
+                logger.debug(f"Failed to harvest failure taxonomy traces: {exc}")
+                failure_traces = []
+
+        # 2. Dreaming Defect Miner
+        defects_mined_count = 0
+        try:
+            from openviking.core.dreaming_gate import DreamingDefectMiner
+            miner = DreamingDefectMiner.get_instance()
+            dreaming_res = miner.run_dreaming_cycle(
+                sample_traces=failure_traces if failure_traces else None,
+                pending_fragments=None,
+            )
+            defects_mined_count = dreaming_res.get("defects_mined", 0)
+            self._daemon_stats["defects_mined"] += defects_mined_count
+        except Exception as exc:
+            logger.warning(f"Dreaming defect miner cycle failed: {exc}")
+
+        # 3. Auto-crystallize candidate fragments
+        crystallized_results = self.scan_and_auto_crystallize(
+            candidate_fragments=frags
+        )
+        for cres in crystallized_results:
+            self._persist_crystal_file(cres.crystal, crystals_dir=crystals_dir)
+
+        net_entropy = sum(r.net_entropy_reduced for r in crystallized_results)
+        return {
+            "status": "ok",
+            "reason": reason,
+            "fragments_scanned": len(frags),
+            "crystals_distilled": len(crystallized_results),
+            "net_entropy_reduced": net_entropy,
+            "defects_mined": defects_mined_count,
+            "timestamp": now,
+        }
+
 

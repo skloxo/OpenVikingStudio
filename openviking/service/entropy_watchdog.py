@@ -81,6 +81,9 @@ class EntropyWatchdog:
         self._loop_task: Optional[asyncio.Task[None]] = None
         self._cycle_lock: Optional[asyncio.Lock] = None
         self._tracker: Any = None
+        self._last_activity_time: float = time.time()
+        self._idle_threshold_seconds: float = 1800.0  # 30 minutes
+        self._check_interval_seconds: float = 60.0
 
     @classmethod
     def get_instance(cls) -> "EntropyWatchdog":
@@ -99,8 +102,9 @@ class EntropyWatchdog:
             return
         self._running = True
         self._tracker = task_tracker
+        self._last_activity_time = time.time()
         self._loop_task = asyncio.create_task(self._run_loop())
-        logger.info("[EntropyWatchdog] Watchdog daemon started in passive mode (auto-qg storm retired)")
+        logger.info("[EntropyWatchdog] Watchdog daemon started with autonomous idle cycle")
 
     def stop(self) -> None:
         """Stop the background watchdog gracefully."""
@@ -111,6 +115,7 @@ class EntropyWatchdog:
 
     def notify_mutation(self, task_type: str = "mutation", resource_id: Optional[str] = None) -> None:
         """Passive mutation hook. Automated 5-query task storm is retired (Stage 2.1)."""
+        self._last_activity_time = time.time()
         logger.debug(
             "[EntropyWatchdog] Mutation noted (%s, resource=%s). Automated evaluation is retired.",
             task_type,
@@ -121,11 +126,42 @@ class EntropyWatchdog:
         """Passive zero-hit hook. Automated task generation is retired."""
         logger.debug("[EntropyWatchdog] Zero-hit query observed: %s", query)
 
+    def is_system_idle(self) -> bool:
+        """Check if system has been idle for >= idle_threshold_seconds without active tasks."""
+        now = time.time()
+        if (now - self._last_activity_time) < self._idle_threshold_seconds:
+            return False
+        if self._tracker and hasattr(self._tracker, "get_active_task_count"):
+            try:
+                if self._tracker.get_active_task_count() > 0:
+                    self._last_activity_time = now
+                    return False
+            except Exception:
+                pass
+        return True
+
+    def trigger_crystallization_cycle(self, reason: str = "manual") -> Dict[str, Any]:
+        """Trigger autonomous or manual crystallization and dreaming defect miner cycle."""
+        try:
+            from openviking.service.entropy_crystallizer import EntropyCrystallizer
+            crystallizer = EntropyCrystallizer.get_instance()
+            return crystallizer.run_crystallization_cycle(reason=reason)
+        except Exception as exc:
+            logger.warning("[EntropyWatchdog] Crystallization cycle error: %s", exc)
+            return {"status": "error", "error": str(exc), "reason": reason}
+
     async def _run_loop(self) -> None:
-        """Idle daemon loop. Automated scheduled sweeps are retired to protect background stability."""
+        """Idle daemon loop: scans for system idle condition and triggers background crystallization."""
         try:
             while self._running:
-                await asyncio.sleep(3600)
+                await asyncio.sleep(self._check_interval_seconds)
+                if self.is_system_idle():
+                    logger.info(
+                        "[EntropyWatchdog] System idle detected (>= %.0fs). Triggering background crystallization.",
+                        self._idle_threshold_seconds,
+                    )
+                    self.trigger_crystallization_cycle(reason="idle_auto_cycle")
+                    self._last_activity_time = time.time()
         except asyncio.CancelledError:
             pass
         except Exception as e:
