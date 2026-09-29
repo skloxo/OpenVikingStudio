@@ -312,6 +312,8 @@ class GrepRequest(BaseModel):
     level_limit: int = 10
     tags: Optional[List[str]] = None
     include_tags: bool = False
+    before_context: int = 0
+    after_context: int = 0
 
 
 class GlobRequest(BaseModel):
@@ -556,6 +558,8 @@ async def grep(
             level_limit=request.level_limit,
             tags=request.tags,
             include_tags=request.include_tags,
+            before_context=request.before_context,
+            after_context=request.after_context,
         )
     except AGFSNotFoundError:
         raise NotFoundError(resolved_uri, "file")

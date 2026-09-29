@@ -32,6 +32,7 @@ from mcp.types import (
     ContentBlock,
     ImageContent,
     TextContent,
+    ToolAnnotations,
 )
 from pydantic import BaseModel, Field
 from starlette.requests import Request
@@ -247,6 +248,32 @@ mcp = FastMCP(
     stateless_http=True,
 )
 
+# Each static profile describes the tool's most consequential supported mode.
+_READ_ONLY_TOOL_ANNOTATIONS = ToolAnnotations(
+    readOnlyHint=True,
+    destructiveHint=False,
+    idempotentHint=True,
+    openWorldHint=False,
+)
+_DESTRUCTIVE_TOOL_ANNOTATIONS = ToolAnnotations(
+    readOnlyHint=False,
+    destructiveHint=True,
+    idempotentHint=False,
+    openWorldHint=False,
+)
+_RETRY_SAFE_DESTRUCTIVE_TOOL_ANNOTATIONS = ToolAnnotations(
+    readOnlyHint=False,
+    destructiveHint=True,
+    idempotentHint=True,
+    openWorldHint=False,
+)
+_OPEN_WORLD_DESTRUCTIVE_TOOL_ANNOTATIONS = ToolAnnotations(
+    readOnlyHint=False,
+    destructiveHint=True,
+    idempotentHint=False,
+    openWorldHint=True,
+)
+
 
 # -- find / search ---------------------------------------------------------
 
@@ -260,7 +287,7 @@ def _resolve_context_type_filter(
         raise InvalidArgumentError(str(exc)) from exc
 
 
-@mcp.tool()
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
 async def find(
     query: str,
     target_uri: str = "",
@@ -287,7 +314,7 @@ async def find(
     return await _format_search_result(result, service=service, ctx=ctx, read_content=read_content)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_DESTRUCTIVE_TOOL_ANNOTATIONS)
 async def search(
     query: str,
     target_uri: str = "",
@@ -514,7 +541,7 @@ def _mcp_media_download_hint(uri: str) -> str:
     )
 
 
-@mcp.tool(structured_output=False)
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS, structured_output=False)
 async def read(uris: str | list[str], dehydrate: bool = False) -> str | list[ContentBlock]:
     """Read one or more viking:// file URIs. Raster images and supported audio return native MCP content blocks. For directory listing, use the list tool instead. Set dehydrate=True to apply LLMLingua-2 natural language compression on text content."""
     import asyncio
@@ -658,7 +685,7 @@ async def read(uris: str | list[str], dehydrate: bool = False) -> str | list[Con
 # -- list ------------------------------------------------------------------
 
 
-@mcp.tool(name="list")
+@mcp.tool(name="list", annotations=_READ_ONLY_TOOL_ANNOTATIONS)
 async def ls(
     uri: str,
     recursive: bool = False,
@@ -720,7 +747,7 @@ async def ls(
 # -- tree ------------------------------------------------------------------
 
 
-@mcp.tool()
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
 async def tree(
     uri: str = "viking://",
     level_limit: int = 3,
@@ -796,7 +823,7 @@ class StoreMessage(BaseModel):
     content: str = Field(description="Message text content")
 
 
-@mcp.tool()
+@mcp.tool(annotations=_DESTRUCTIVE_TOOL_ANNOTATIONS)
 async def remember(messages: list[StoreMessage]) -> str:
     """Store information into OpenViking long-term memory. Use when the user says 'remember this', shares preferences, important facts, or decisions worth persisting."""
     import uuid
@@ -821,7 +848,7 @@ async def remember(messages: list[StoreMessage]) -> str:
 # -- write -----------------------------------------------------------------
 
 
-@mcp.tool()
+@mcp.tool(annotations=_DESTRUCTIVE_TOOL_ANNOTATIONS)
 async def write(
     uri: str,
     content: str,
@@ -881,7 +908,7 @@ async def write(
     return message + _indexing_hint(result)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_DESTRUCTIVE_TOOL_ANNOTATIONS)
 async def edit(
     uri: str,
     old_string: str,
@@ -1035,7 +1062,7 @@ async def _maybe_sitemap_hint(path: str) -> str:
         return ""
 
 
-@mcp.tool()
+@mcp.tool(annotations=_OPEN_WORLD_DESTRUCTIVE_TOOL_ANNOTATIONS)
 async def add_resource(
     path: str = "",
     temp_file_id: str = "",
@@ -1285,7 +1312,7 @@ async def add_resource(
 # `resume`, `trigger`, `update --interval`, etc.) for those operations.
 
 
-@mcp.tool()
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
 async def list_watches() -> str:
     """List watch tasks (auto-refresh subscriptions) visible to the current user."""
     service = get_service()
@@ -1317,7 +1344,7 @@ async def list_watches() -> str:
     return "\n".join(lines)
 
 
-@mcp.tool()
+@mcp.tool(annotations=_RETRY_SAFE_DESTRUCTIVE_TOOL_ANNOTATIONS)
 async def cancel_watch(to_uri: str) -> str:
     """Cancel a watch task by its target URI (e.g. "viking://resources/volcengine/OpenViking")."""
     from openviking.resource import watch_manager as _wm_mod
@@ -1360,9 +1387,15 @@ async def cancel_watch(to_uri: str) -> str:
 # -- grep ------------------------------------------------------------------
 
 
-@mcp.tool()
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
 async def grep(
-    uri: str, pattern: str | list[str], case_insensitive: bool = False, node_limit: int = 10
+    uri: str,
+    pattern: str | list[str],
+    case_insensitive: bool = False,
+    node_limit: int = 10,
+    before_context: int = 0,
+    after_context: int = 0,
+    context_lines: int = 0,
 ) -> str:
     """Search content in viking:// files using regex patterns (like grep). Supports multiple patterns searched concurrently. Use this for exact text matching; use the search tool for semantic retrieval."""
     import asyncio
@@ -1373,6 +1406,9 @@ async def grep(
     patterns = [pattern] if isinstance(pattern, str) else pattern
     semaphore = asyncio.Semaphore(10)
 
+    eff_before = max(0, before_context if before_context > 0 else context_lines)
+    eff_after = max(0, after_context if after_context > 0 else context_lines)
+
     async def _grep_one(p: str) -> tuple[str, list[dict]]:
         async with semaphore:
             try:
@@ -1382,6 +1418,8 @@ async def grep(
                     ctx=ctx,
                     case_insensitive=case_insensitive,
                     node_limit=node_limit,
+                    before_context=eff_before,
+                    after_context=eff_after,
                 )
                 return (p, result.get("matches", []))
             except Exception:
@@ -1389,30 +1427,41 @@ async def grep(
 
     results = await asyncio.gather(*[_grep_one(p) for p in patterns])
 
-    merged: dict[str, list[tuple]] = {}
+    merged: dict[str, list[dict]] = {}
     total = 0
     for p, matches in results:
         total += len(matches)
         for m in matches:
             m_uri = m.get("uri", "?")
-            merged.setdefault(m_uri, []).append((m.get("line", "?"), m.get("content", ""), p))
+            merged.setdefault(m_uri, []).append({**m, "_pattern": p})
 
     if not merged:
         return f"No matches found for pattern(s): {', '.join(patterns)}"
 
     lines = [f"Found {total} match(es) across {len(patterns)} pattern(s):"]
+    has_context = eff_before > 0 or eff_after > 0
     for m_uri, hits in merged.items():
-        hits.sort(key=lambda x: int(x[0]) if str(x[0]).isdigit() else 0)
+        hits.sort(key=lambda x: int(x.get("line", 0)) if str(x.get("line", "")).isdigit() else 0)
         lines.append(f"\n{m_uri}")
-        for line_no, content, p in hits:
-            lines.append(f"  L{line_no} [{p}]: {content}")
+        for match in hits:
+            line_no = match.get("line", "?")
+            content = match.get("content", "")
+            p = match.get("_pattern", "")
+            if has_context:
+                for ctx_line in match.get("before_context", []):
+                    lines.append(f"  L{ctx_line.get('line', '?')}- {ctx_line.get('content', '')}")
+                lines.append(f"  L{line_no}: [{p}] {content}")
+                for ctx_line in match.get("after_context", []):
+                    lines.append(f"  L{ctx_line.get('line', '?')}- {ctx_line.get('content', '')}")
+            else:
+                lines.append(f"  L{line_no} [{p}]: {content}")
     return "\n".join(lines)
 
 
 # -- glob ------------------------------------------------------------------
 
 
-@mcp.tool()
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
 async def glob(pattern: str, uri: str = "viking://", node_limit: int = 100) -> str:
     """Find viking:// files matching a glob pattern (e.g. **/*.md, *.py). Use this for filename matching; use the search tool for content-based retrieval."""
     service = get_service()
@@ -1438,7 +1487,7 @@ async def glob(pattern: str, uri: str = "viking://", node_limit: int = 100) -> s
 # -- forget ----------------------------------------------------------------
 
 
-@mcp.tool()
+@mcp.tool(annotations=_RETRY_SAFE_DESTRUCTIVE_TOOL_ANNOTATIONS)
 async def forget(uri: str, recursive: bool = False) -> str:
     """Permanently delete a viking:// URI from OpenViking. Irreversible — confirm with user before calling."""
     service = get_service()
@@ -1451,7 +1500,7 @@ async def forget(uri: str, recursive: bool = False) -> str:
 # -- health ----------------------------------------------------------------
 
 
-@mcp.tool()
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
 async def health() -> str:
     """Check whether the OpenViking server is healthy."""
     try:
@@ -1464,7 +1513,7 @@ async def health() -> str:
 # -- zg_search -------------------------------------------------------------
 
 
-@mcp.tool()
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
 async def zg_search(
     query: str,
     depth: int = 1,
