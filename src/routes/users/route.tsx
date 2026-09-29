@@ -1,16 +1,16 @@
+/**
+ * route.tsx
+ * 用户管理路由入口与控制台容器。
+ * 遵循 Agent 编码规范与黄金甜点区（<= 300 行）。
+ */
 import * as React from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import {
-  CheckIcon,
-  CopyIcon,
   KeyRoundIcon,
   LoaderCircleIcon,
   PlusIcon,
   RefreshCwIcon,
-  RotateCwIcon,
-  ShieldAlertIcon,
-  Trash2Icon,
   UsersRoundIcon,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -25,45 +25,6 @@ import {
   CardHeader,
   CardTitle,
 } from '#/components/ui/card'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '#/components/ui/dialog'
-import { Input } from '#/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '#/components/ui/select'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '#/components/ui/table'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '#/components/ui/tooltip'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '#/components/ui/alert-dialog'
 import { useAppConnection } from '#/hooks/use-app-connection'
 import {
   createAdminUser,
@@ -75,42 +36,21 @@ import {
 import type {
   AdminConnection,
   AdminUser,
-  AdminUserRole,
   CreateUserInput,
   KeyResult,
   UpdateUserRoleInput,
 } from '#/lib/admin'
 import { copyTextToClipboard } from '#/lib/clipboard'
-import { PLAIN_INPUT_PROPS } from '#/lib/form-input'
 import { resolveStudioManagementCapabilities } from '#/lib/studio-permissions'
+
+import { AddUserDialog } from './-components/add-user-dialog'
+import { UserManagementDialogs } from './-components/user-management-dialogs'
+import { UserTable } from './-components/user-table'
+import { getErrorMessage } from './-lib/user-utils'
 
 export const Route = createFileRoute('/users')({
   component: UserManagementRoute,
 })
-
-const USER_ROLE_OPTIONS: AdminUserRole[] = ['user', 'admin', 'root']
-
-function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
-}
-
-function isAdminUserRole(role: string): role is AdminUserRole {
-  return USER_ROLE_OPTIONS.includes(role as AdminUserRole)
-}
-
-function maskApiKey(value: string | undefined): string {
-  if (!value) {
-    return '-'
-  }
-  if (value.length <= 16) {
-    return value
-  }
-  return `${value.slice(0, 10)}...${value.slice(-6)}`
-}
-
-function resolveKeyLabel(user: AdminUser): string {
-  return user.apiKey ? maskApiKey(user.apiKey) : user.keyPrefix || '-'
-}
 
 function UserManagementRoute() {
   const { t } = useTranslation('settings')
@@ -119,10 +59,11 @@ function UserManagementRoute() {
     connection,
     connectionRole,
     isConnectionRoleLoading,
-    setGeneratedCredential,
     serverMode,
+    setGeneratedCredential,
     switchIdentity,
   } = useAppConnection()
+
   const [addUserOpen, setAddUserOpen] = React.useState(false)
   const [pendingRegenerateUser, setPendingRegenerateUser] =
     React.useState<AdminUser | null>(null)
@@ -155,7 +96,7 @@ function UserManagementRoute() {
     ],
   )
 
-  const usersQuery = useQuery({
+  const usersQuery = useQuery<AdminUser[], Error>({
     enabled: canManageUsers && Boolean(connection.accountId),
     queryFn: () => fetchAdminUsers(adminConnection, connection.accountId),
     queryKey: [
@@ -245,9 +186,7 @@ function UserManagementRoute() {
   })
 
   async function copyKey(value: string | undefined): Promise<void> {
-    if (!value) {
-      return
-    }
+    if (!value) return
     try {
       await copyTextToClipboard(value)
       toast.success(t('toast.copied'))
@@ -297,16 +236,25 @@ function UserManagementRoute() {
             <KeyRoundIcon className="size-5" />
           </div>
           <CardTitle className="text-base font-semibold">
-            {t('management.devModeNoticeTitle', { defaultValue: '当前运行于单用户开发模式 (Dev Mode)' })}
+            {t('management.devModeNoticeTitle', {
+              defaultValue: '当前运行于单用户开发模式 (Dev Mode)',
+            })}
           </CardTitle>
           <CardDescription className="mt-2 text-xs leading-relaxed text-muted-foreground">
             {t('management.devModeNoticeDesc', {
-              defaultValue: 'OpenViking 服务端目前处于开发模式 (auth_mode = "dev")，开发模式下所有 API 开箱即用无需凭证校验，但不提供多租户 API Key 与用户增删改查。如需体验多用户与密钥管理，请在 ov.conf 中配置 server.auth_mode = "api_key" 并重启后端。',
+              defaultValue:
+                'OpenViking 服务端目前处于开发模式 (auth_mode = "dev")，开发模式下所有 API 开箱即用无需凭证校验，但不提供多租户 API Key 与用户增删改查。如需体验多用户与密钥管理，请在 ov.conf 中配置 server.auth_mode = "api_key" 并重启后端。',
             })}
           </CardDescription>
         </CardHeader>
         <CardContent className="mt-4 flex justify-center p-0">
-          <Button size="sm" variant="outline" className="rounded-xs text-xs" nativeButton={false} render={<Link to="/settings" />}>
+          <Button
+            size="sm"
+            variant="outline"
+            className="rounded-xs text-xs"
+            nativeButton={false}
+            render={<Link to="/settings" />}
+          >
             <KeyRoundIcon className="size-3.5" />
             {t('management.openConnection')}
           </Button>
@@ -322,6 +270,7 @@ function UserManagementRoute() {
   const visibleKeys = users.filter(
     (user) => user.apiKey || user.keyPrefix,
   ).length
+
   return (
     <div className="flex w-full min-w-0 flex-col gap-5">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -392,257 +341,25 @@ function UserManagementRoute() {
         </Card>
       </div>
 
-      <Card className="overflow-hidden">
-        <CardHeader className="border-b bg-muted/20">
-          <CardTitle>{t('management.memberListTitle')}</CardTitle>
-          <CardDescription>
-            {t(
-              canManageAccounts
-                ? 'management.memberListDescriptionRoot'
-                : 'management.memberListDescription',
-            )}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          {usersQuery.isLoading ? (
-            <div className="flex min-h-56 items-center justify-center gap-2 text-sm text-muted-foreground">
-              <LoaderCircleIcon className="size-4 animate-spin" />
-              {t('loading')}
-            </div>
-          ) : usersQuery.isError ? (
-            <div className="flex min-h-56 flex-col items-center justify-center gap-2 px-6 text-center">
-              <p className="font-medium">{t('empty.adminTitle')}</p>
-              <p className="max-w-lg text-sm text-muted-foreground">
-                {getErrorMessage(usersQuery.error)}
-              </p>
-            </div>
-          ) : users.length === 0 ? (
-            <div className="flex min-h-56 flex-col items-center justify-center gap-2 px-6 text-center">
-              <p className="font-medium">{t('empty.usersTitle')}</p>
-              <p className="text-sm text-muted-foreground">
-                {t('empty.usersDescription')}
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/20 hover:bg-muted/20">
-                    <TableHead>{t('table.user')}</TableHead>
-                    <TableHead>{t('table.role')}</TableHead>
-                    <TableHead>{t('table.apiKey')}</TableHead>
-                    <TableHead className="text-right">
-                      {t('table.actions')}
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map((user) => {
-                    const identityKey = `${user.accountId}:${user.userId}`
-                    const isCurrentIdentity =
-                      user.accountId === connection.accountId &&
-                      user.userId === connection.userId
-                    const canSwitchIdentity =
-                      !isCurrentIdentity &&
-                      (serverMode === 'trusted' || Boolean(user.apiKey))
-                    const isSwitching = switchingIdentityKey === identityKey
-                    const isLastManager =
-                      (user.role === 'admin' || user.role === 'root') &&
-                      managerCount <= 1
-                    const removeDisabled =
-                      isCurrentIdentity || isLastManager || removeUser.isPending
-                    const removeDisabledReason = isCurrentIdentity
-                      ? t('management.cannotRemoveCurrentIdentity')
-                      : isLastManager
-                        ? t('management.cannotRemoveLastManager')
-                        : t('actions.removeUser', { user: user.userId })
-
-                    return (
-                      <TableRow
-                        key={identityKey}
-                        className={
-                          isCurrentIdentity ? 'bg-primary/[0.025]' : ''
-                        }
-                      >
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            {user.userId}
-                            {isCurrentIdentity ? (
-                              <Badge
-                                variant="secondary"
-                                className="gap-1 font-normal"
-                              >
-                                <CheckIcon />
-                                {t('actions.currentIdentity')}
-                              </Badge>
-                            ) : null}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {canManageAccounts && isAdminUserRole(user.role) ? (
-                            <Select
-                              value={user.role}
-                              disabled={updateRole.isPending}
-                              onValueChange={(role) => {
-                                if (
-                                  role &&
-                                  isAdminUserRole(role) &&
-                                  role !== user.role
-                                ) {
-                                  setPendingRoleChange({
-                                    accountId: user.accountId,
-                                    role,
-                                    userId: user.userId,
-                                  })
-                                }
-                              }}
-                            >
-                              <SelectTrigger
-                                className="h-8 w-28"
-                                aria-label={t('actions.changeRole', {
-                                  user: user.userId,
-                                })}
-                              >
-                                <SelectValue>
-                                  {t(`roles.${user.role}`)}
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                {USER_ROLE_OPTIONS.map((role) => (
-                                  <SelectItem key={role} value={role}>
-                                    {t(`roles.${role}`)}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          ) : (
-                            <Badge
-                              variant={
-                                user.role === 'admin' ? 'secondary' : 'outline'
-                              }
-                            >
-                              {t(`roles.${user.role}`, {
-                                defaultValue: user.role,
-                              })}
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex min-w-0 items-center gap-1">
-                            <code className="max-w-[20rem] truncate rounded-md border bg-muted/40 px-2 py-1 font-mono text-xs">
-                              {resolveKeyLabel(user)}
-                            </code>
-                            {user.apiKey ? (
-                              <Tooltip>
-                                <TooltipTrigger
-                                  render={
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="icon-xs"
-                                      aria-label={t('actions.copy')}
-                                      onClick={() => void copyKey(user.apiKey)}
-                                    />
-                                  }
-                                >
-                                  <CopyIcon />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  {t('actions.copy')}
-                                </TooltipContent>
-                              </Tooltip>
-                            ) : null}
-                            <div className="ml-1 flex items-center border-l border-border/70 pl-1.5">
-                              <Tooltip>
-                                <TooltipTrigger
-                                  render={
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="icon-xs"
-                                      aria-label={t('actions.regenerate')}
-                                      onClick={() =>
-                                        setPendingRegenerateUser(user)
-                                      }
-                                      disabled={
-                                        regenerateKey.isPending ||
-                                        Boolean(switchingIdentityKey)
-                                      }
-                                    />
-                                  }
-                                >
-                                  <RotateCwIcon />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  {t('actions.regenerate')}
-                                </TooltipContent>
-                              </Tooltip>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center justify-end gap-1">
-                            {canSwitchIdentity ? (
-                              <Button
-                                type="button"
-                                variant="secondary"
-                                size="sm"
-                                disabled={Boolean(switchingIdentityKey)}
-                                onClick={() => void useUserIdentity(user)}
-                              >
-                                {isSwitching ? (
-                                  <LoaderCircleIcon className="animate-spin" />
-                                ) : (
-                                  <KeyRoundIcon />
-                                )}
-                                {t('actions.switchIdentity')}
-                              </Button>
-                            ) : isCurrentIdentity ? (
-                              <span
-                                aria-hidden="true"
-                                className="px-3 text-muted-foreground/45"
-                              >
-                                —
-                              </span>
-                            ) : null}
-                            <Tooltip>
-                              <TooltipTrigger
-                                render={
-                                  <span
-                                    className="inline-flex"
-                                    title={removeDisabledReason}
-                                  />
-                                }
-                              >
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon-sm"
-                                  disabled={removeDisabled}
-                                  className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                                  aria-label={t('actions.removeUser', {
-                                    user: user.userId,
-                                  })}
-                                  onClick={() => setPendingRemoveUser(user)}
-                                >
-                                  <Trash2Icon />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                {removeDisabledReason}
-                              </TooltipContent>
-                            </Tooltip>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <UserTable
+        canManageAccounts={canManageAccounts}
+        connection={connection}
+        error={usersQuery.error}
+        isError={usersQuery.isError}
+        isLoading={usersQuery.isLoading}
+        isRegeneratePending={regenerateKey.isPending}
+        isRemovePending={removeUser.isPending}
+        isRoleUpdating={updateRole.isPending}
+        managerCount={managerCount}
+        onCopyKey={(key) => void copyKey(key)}
+        onInitiateRegenerate={(user) => setPendingRegenerateUser(user)}
+        onInitiateRemove={(user) => setPendingRemoveUser(user)}
+        onInitiateRoleChange={(input) => setPendingRoleChange(input)}
+        onUseUserIdentity={(user) => void useUserIdentity(user)}
+        serverMode={serverMode}
+        switchingIdentityKey={switchingIdentityKey}
+        users={users}
+      />
 
       <AddUserDialog
         open={addUserOpen}
@@ -652,227 +369,20 @@ function UserManagementRoute() {
         onCreate={(input) => createUser.mutate(input)}
       />
 
-      <AlertDialog
-        open={Boolean(pendingRegenerateUser)}
-        onOpenChange={(open) => {
-          if (!open) {
-            setPendingRegenerateUser(null)
-          }
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('dialogs.regenerate.title')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('dialogs.regenerate.description', {
-                account: pendingRegenerateUser?.accountId,
-                user: pendingRegenerateUser?.userId,
-              })}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('actions.cancel')}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (pendingRegenerateUser) {
-                  regenerateKey.mutate(pendingRegenerateUser)
-                }
-              }}
-              disabled={regenerateKey.isPending}
-            >
-              <RotateCwIcon />
-              {t('actions.regenerate')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog
-        open={Boolean(pendingRoleChange)}
-        onOpenChange={(open) => {
-          if (!open && !updateRole.isPending) {
-            setPendingRoleChange(null)
-          }
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('dialogs.changeRole.title')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('dialogs.changeRole.description', {
-                account: pendingRoleChange?.accountId,
-                role: pendingRoleChange
-                  ? t(`roles.${pendingRoleChange.role}`)
-                  : '',
-                user: pendingRoleChange?.userId,
-              })}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={updateRole.isPending}>
-              {t('actions.cancel')}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              disabled={updateRole.isPending}
-              onClick={(event) => {
-                event.preventDefault()
-                if (pendingRoleChange) {
-                  updateRole.mutate(pendingRoleChange)
-                }
-              }}
-            >
-              {updateRole.isPending ? (
-                <LoaderCircleIcon className="animate-spin" />
-              ) : null}
-              {t('actions.confirmRoleChange')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog
-        open={Boolean(pendingRemoveUser)}
-        onOpenChange={(open) => {
-          if (!open && !removeUser.isPending) {
-            setPendingRemoveUser(null)
-          }
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('dialogs.removeUser.title')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('dialogs.removeUser.description', {
-                account: pendingRemoveUser?.accountId,
-                user: pendingRemoveUser?.userId,
-              })}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={removeUser.isPending}>
-              {t('actions.cancel')}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              disabled={removeUser.isPending}
-              onClick={(event) => {
-                event.preventDefault()
-                if (pendingRemoveUser) {
-                  removeUser.mutate(pendingRemoveUser)
-                }
-              }}
-            >
-              {removeUser.isPending ? (
-                <LoaderCircleIcon className="animate-spin" />
-              ) : (
-                <Trash2Icon />
-              )}
-              {t('actions.confirmRemoveUser')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <UserManagementDialogs
+        isRegenerating={regenerateKey.isPending}
+        isRemoving={removeUser.isPending}
+        isUpdatingRole={updateRole.isPending}
+        onConfirmRegenerate={(user) => regenerateKey.mutate(user)}
+        onConfirmRemove={(user) => removeUser.mutate(user)}
+        onConfirmRoleChange={(input) => updateRole.mutate(input)}
+        onPendingRegenerateChange={setPendingRegenerateUser}
+        onPendingRemoveChange={setPendingRemoveUser}
+        onPendingRoleChange={setPendingRoleChange}
+        pendingRegenerateUser={pendingRegenerateUser}
+        pendingRemoveUser={pendingRemoveUser}
+        pendingRoleChange={pendingRoleChange}
+      />
     </div>
-  )
-}
-
-function AddUserDialog({
-  accountId,
-  isPending,
-  onCreate,
-  onOpenChange,
-  open,
-}: {
-  accountId: string
-  isPending: boolean
-  onCreate: (draft: CreateUserInput) => void
-  onOpenChange: (open: boolean) => void
-  open: boolean
-}) {
-  const { t } = useTranslation('settings')
-  const [draft, setDraft] = React.useState<CreateUserInput>({
-    accountId,
-    role: 'user',
-    userId: '',
-  })
-
-  React.useEffect(() => {
-    if (open) {
-      setDraft({ accountId, role: 'user', userId: '' })
-    }
-  }, [accountId, open])
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <form
-          onSubmit={(event) => {
-            event.preventDefault()
-            onCreate(draft)
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle>{t('dialogs.addUser.title')}</DialogTitle>
-            <DialogDescription>
-              {t('dialogs.addUser.currentAccountDescription', { accountId })}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-5">
-            <label className="grid gap-2 text-sm font-medium">
-              {t('fields.user')}
-              <Input
-                required
-                value={draft.userId}
-                onChange={(event) =>
-                  setDraft((current) => ({
-                    ...current,
-                    userId: event.target.value,
-                  }))
-                }
-                placeholder={t('placeholders.user')}
-                {...PLAIN_INPUT_PROPS}
-              />
-            </label>
-            <label className="grid gap-2 text-sm font-medium">
-              {t('fields.role')}
-              <Select
-                value={draft.role}
-                onValueChange={(role) =>
-                  setDraft((current) => ({
-                    ...current,
-                    role: role || 'user',
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="user">{t('roles.user')}</SelectItem>
-                  <SelectItem value="admin">{t('roles.admin')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </label>
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              {t('actions.cancel')}
-            </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? (
-                <LoaderCircleIcon className="animate-spin" />
-              ) : (
-                <PlusIcon />
-              )}
-              {t('actions.addUser')}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
   )
 }

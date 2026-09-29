@@ -1,35 +1,19 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react'
+/**
+ * route.tsx
+ * Playground 路由入口与工作台主容器。
+ * 遵循 Agent 编码规范与黄金甜点区（<= 500 行，目标 300 行）。
+ */
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import {
-  ArrowLeftIcon,
-  BotIcon,
-  ClipboardIcon,
-  PanelRightCloseIcon,
-  PanelRightOpenIcon,
-  TerminalIcon,
-} from 'lucide-react'
 import { toast } from 'sonner'
 
-import { Button } from '#/components/ui/button'
 import { useAppConnection } from '#/hooks/use-app-connection'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '#/components/ui/dialog'
-import { AddResourceForm } from '#/routes/resources/-components/add-resource-page'
-import { UploadTaskDialog } from '#/routes/resources/-components/upload-task-dialog'
 import { LazyFilePreview } from '#/routes/resources/-components/lazy-file-preview'
 import {
   ResourceUploadProvider,
   useResourceUpload,
 } from '#/routes/resources/-hooks/use-resource-upload'
-import { FindPalette } from '#/routes/resources/-components/find-palette'
-import { copyTextToClipboard } from '#/lib/clipboard'
 import {
   useInvalidateVikingFs,
   useVikingFsList,
@@ -43,42 +27,36 @@ import {
 } from '#/routes/resources/-lib/normalize'
 import type { VikingFsEntry } from '#/routes/resources/-types/viking-fm'
 
-import { AgentPanel } from './-components/agent-panel'
 import {
   ContextExplorerHeader,
   ContextTree,
-  PanelTab,
   PlaygroundResizeHandle,
 } from './-components/context-explorer'
-import { TerminalPanel } from './-components/terminal-panel'
-import {
-  ROOT_URI,
-  PLAYGROUND_LEFT_WIDTH,
-  PLAYGROUND_LEFT_WIDTH_STORAGE_KEY,
-  PLAYGROUND_MAIN_MIN_WIDTH,
-  PLAYGROUND_RIGHT_COLLAPSED_STORAGE_KEY,
-  PLAYGROUND_RIGHT_WIDTH,
-  PLAYGROUND_RIGHT_WIDTH_STORAGE_KEY,
-} from './-lib/constants'
+import { ROOT_URI } from './-lib/constants'
 import type {
   PlaygroundPanel,
   PlaygroundSearch,
   ResourceOpenHandler,
 } from './-lib/types'
 import {
-  clampNumber,
   cleanVikingUri,
   createEntryFromUri,
-  getErrorMessage,
   getAncestorUris,
+  getErrorMessage,
   isDirectoryLevelFile,
   mergeExpanded,
   normalizePlaygroundResourceUri,
   readPlaygroundExpandedUris,
-  readStoredNumber,
   visibleContextEntries,
   writePlaygroundExpandedUris,
 } from './-lib/utils'
+import {
+  PlaygroundActionPanel,
+  useIsCompactPlaygroundLayout,
+} from './-components/playground-action-panel'
+import { PlaygroundDialogs } from './-components/playground-dialogs'
+import { PlaygroundMainToolbar } from './-components/playground-main-toolbar'
+import { usePlaygroundLayout } from './-hooks/use-playground-layout'
 
 export const Route = createFileRoute('/playground')({
   validateSearch: (search: Record<string, unknown>): PlaygroundSearch => ({
@@ -138,82 +116,33 @@ function PlaygroundWorkbench() {
   const [findPaletteOpen, setFindPaletteOpen] = useState(false)
   const [taskDialogOpen, setTaskDialogOpen] = useState(false)
   const [openingUri, setOpeningUri] = useState<string | null>(null)
-  const layoutRef = useRef<HTMLDivElement>(null)
-  const [leftWidth, setLeftWidth] = useState(() =>
-    readStoredNumber(
-      PLAYGROUND_LEFT_WIDTH_STORAGE_KEY,
-      PLAYGROUND_LEFT_WIDTH.default,
-      PLAYGROUND_LEFT_WIDTH.min,
-      PLAYGROUND_LEFT_WIDTH.max,
-    ),
-  )
-  const [rightWidth, setRightWidth] = useState(() =>
-    readStoredNumber(
-      PLAYGROUND_RIGHT_WIDTH_STORAGE_KEY,
-      PLAYGROUND_RIGHT_WIDTH.default,
-      PLAYGROUND_RIGHT_WIDTH.min,
-      PLAYGROUND_RIGHT_WIDTH.max,
-    ),
-  )
-  const [resizingPane, setResizingPane] = useState<'context' | 'action' | null>(
-    null,
-  )
-  const [rightCollapsed, setRightCollapsed] = useState(
-    () =>
-      typeof window !== 'undefined' &&
-      window.localStorage.getItem(PLAYGROUND_RIGHT_COLLAPSED_STORAGE_KEY) ===
-        '1',
-  )
-  const toggleRightCollapsed = useCallback(
-    () =>
-      setRightCollapsed((collapsed) => {
-        window.localStorage.setItem(
-          PLAYGROUND_RIGHT_COLLAPSED_STORAGE_KEY,
-          collapsed ? '0' : '1',
-        )
-        return !collapsed
-      }),
-    [],
-  )
-  const [isFocusCanvas, setIsFocusCanvas] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false
-    return (
-      window.localStorage.getItem('openviking:playground:focus_mode') === 'true'
-    )
-  })
 
-  const handleToggleFocusCanvas = useCallback(() => {
-    setIsFocusCanvas((prev) => {
-      const next = !prev
-      try {
-        window.localStorage.setItem(
-          'openviking:playground:focus_mode',
-          String(next),
-        )
-      } catch {}
-      return next
-    })
-  }, [])
-  const isDraggingPaneRef = useRef(false)
-  const activeResizeTeardownRef = useRef<(() => void) | null>(null)
-  const leftWidthRef = useRef(leftWidth)
-  const rightWidthRef = useRef(rightWidth)
-  leftWidthRef.current = leftWidth
-  rightWidthRef.current = rightWidth
+  const {
+    handleResizeStart,
+    handleToggleFocusCanvas,
+    isFocusCanvas,
+    layoutRef,
+    layoutStyle,
+    resizingPane,
+    rightCollapsed,
+    toggleRightCollapsed,
+  } = usePlaygroundLayout()
 
   const listQuery = useVikingFsList(currentUri, {
     output: 'agent',
     showAllHidden: true,
     nodeLimit: 500,
   })
+
   const {
     activeTaskCount,
+    clearTasks,
     hasActiveTasks,
     isRefreshingTasks,
     refreshTasks,
-    clearTasks,
     tasks,
   } = useResourceUpload()
+
   const { invalidateList } = useInvalidateVikingFs()
 
   const syncSearch = useCallback(
@@ -246,50 +175,42 @@ function PlaygroundWorkbench() {
     )
   }, [identityScopeKey, initialCurrentUri])
 
-  useEffect(() => {
-    const normalized = search.file
-      ? normalizeDirUri(parentUri(search.file))
-      : normalizeDirUri(search.uri || ROOT_URI)
-    setCurrentUri(normalized)
-    setSelectedFile(
-      search.file && !isDirectoryLevelFile(search.file)
-        ? createEntryFromUri(search.file, false)
-        : createEntryFromUri(normalized, true),
-    )
-    setExpandedKeys((prev) => mergeExpanded(prev, getAncestorUris(normalized)))
-  }, [search.file, search.uri])
-
   const handleExpandedKeysChange = useCallback(
-    (next: Set<string>) => {
-      setExpandedKeys(next)
-      writePlaygroundExpandedUris(identityScopeKey, next)
+    (updater: Set<string> | ((prev: Set<string>) => Set<string>)) => {
+      setExpandedKeys((prev) => {
+        const next = typeof updater === 'function' ? updater(prev) : updater
+        writePlaygroundExpandedUris(identityScopeKey, Array.from(next))
+        return next
+      })
     },
     [identityScopeKey],
   )
 
-  useEffect(() => {
-    if (search.panel === 'agent' || search.panel === 'terminal') {
-      setActivePanel(search.panel)
-    }
-  }, [search.panel])
-
-  useEffect(() => {
-    if (search.upload) {
-      setUploadDialogOpen(true)
-    }
-  }, [search.upload])
-
   const handleUploadDialogOpenChange = useCallback(
     (open: boolean) => {
       setUploadDialogOpen(open)
-      if (!open && search.upload) {
-        syncSearch({ upload: undefined })
-      }
+      syncSearch({ upload: open ? true : undefined })
     },
-    [search.upload, syncSearch],
+    [syncSearch],
   )
 
-  const revealResource = useCallback(
+  const handlePanelChange = useCallback(
+    (panel: PlaygroundPanel) => {
+      setActivePanel(panel)
+      syncSearch({ panel })
+    },
+    [syncSearch],
+  )
+
+  const handleOpenActionPanel = useCallback(
+    (panel: PlaygroundPanel) => {
+      handlePanelChange(panel)
+      setActionPanelOpen(true)
+    },
+    [handlePanelChange],
+  )
+
+  const revealResource: ResourceOpenHandler = useCallback(
     async (rawUri: string) => {
       const cleaned = cleanVikingUri(rawUri)
       if (!cleaned) return
@@ -382,22 +303,6 @@ function PlaygroundWorkbench() {
     [syncSearch],
   )
 
-  const handlePanelChange = useCallback(
-    (panel: PlaygroundPanel) => {
-      setActivePanel(panel)
-      syncSearch({ panel })
-    },
-    [syncSearch],
-  )
-
-  const handleOpenActionPanel = useCallback(
-    (panel: PlaygroundPanel) => {
-      handlePanelChange(panel)
-      setActionPanelOpen(true)
-    },
-    [handlePanelChange],
-  )
-
   const handleOpenProcessingTasks = useCallback(() => {
     setTaskDialogOpen(true)
     void refreshTasks()
@@ -444,107 +349,6 @@ function PlaygroundWorkbench() {
   const displayUri =
     selectedUri === ROOT_URI ? selectedUri : selectedUri.replace(/\/$/, '')
   const entries = visibleContextEntries(listQuery.data?.entries ?? [])
-  const layoutStyle = useMemo(
-    () =>
-      ({
-        '--playground-left-width': `${leftWidth}px`,
-        '--playground-right-width': `${rightWidth}px`,
-      }) as CSSProperties,
-    [leftWidth, rightWidth],
-  )
-
-  const handleResizeStart = useCallback(
-    (pane: 'context' | 'action', event: ReactPointerEvent<HTMLDivElement>) => {
-      event.preventDefault()
-      event.currentTarget.setPointerCapture(event.pointerId)
-      isDraggingPaneRef.current = true
-      setResizingPane(pane)
-
-      const startX = event.clientX
-      const startLeftWidth = leftWidthRef.current
-      const startRightWidth = rightWidthRef.current
-      const layoutRect = layoutRef.current?.getBoundingClientRect()
-
-      const getMaxWidth = (
-        side: 'left' | 'right',
-        currentOppositeWidth: number,
-      ) => {
-        if (!layoutRect) {
-          return side === 'left'
-            ? PLAYGROUND_LEFT_WIDTH.max
-            : PLAYGROUND_RIGHT_WIDTH.max
-        }
-
-        const hardMax =
-          side === 'left'
-            ? PLAYGROUND_LEFT_WIDTH.max
-            : PLAYGROUND_RIGHT_WIDTH.max
-        const availableMax =
-          layoutRect.width - currentOppositeWidth - PLAYGROUND_MAIN_MIN_WIDTH
-        return Math.max(
-          side === 'left'
-            ? PLAYGROUND_LEFT_WIDTH.min
-            : PLAYGROUND_RIGHT_WIDTH.min,
-          Math.min(hardMax, availableMax),
-        )
-      }
-
-      const onMove = (moveEvent: PointerEvent) => {
-        const deltaX = moveEvent.clientX - startX
-        if (pane === 'context') {
-          const nextWidth = clampNumber(
-            startLeftWidth + deltaX,
-            PLAYGROUND_LEFT_WIDTH.min,
-            getMaxWidth('left', rightWidthRef.current),
-          )
-          setLeftWidth(nextWidth)
-          window.localStorage.setItem(
-            PLAYGROUND_LEFT_WIDTH_STORAGE_KEY,
-            String(nextWidth),
-          )
-          return
-        }
-
-        const nextWidth = clampNumber(
-          startRightWidth - deltaX,
-          PLAYGROUND_RIGHT_WIDTH.min,
-          getMaxWidth('right', leftWidthRef.current),
-        )
-        setRightWidth(nextWidth)
-        window.localStorage.setItem(
-          PLAYGROUND_RIGHT_WIDTH_STORAGE_KEY,
-          String(nextWidth),
-        )
-      }
-
-      const onUp = () => {
-        isDraggingPaneRef.current = false
-        activeResizeTeardownRef.current = null
-        setResizingPane(null)
-        document.removeEventListener('pointermove', onMove)
-        document.removeEventListener('pointerup', onUp)
-        document.removeEventListener('pointercancel', onUp)
-        document.body.style.cursor = ''
-        document.body.style.userSelect = ''
-      }
-
-      document.body.style.cursor = 'col-resize'
-      document.body.style.userSelect = 'none'
-      document.addEventListener('pointermove', onMove)
-      document.addEventListener('pointerup', onUp)
-      document.addEventListener('pointercancel', onUp)
-      activeResizeTeardownRef.current = onUp
-    },
-    [],
-  )
-
-  useEffect(() => {
-    return () => {
-      // Tear down any in-flight drag so the document listeners don't outlive
-      // the component when it unmounts mid-resize.
-      activeResizeTeardownRef.current?.()
-    }
-  }, [])
 
   return (
     <div className="-mx-4 -my-6 flex h-[calc(100svh-3rem)] min-h-0 flex-col bg-background md:-mx-6">
@@ -553,7 +357,7 @@ function PlaygroundWorkbench() {
         className="flex min-h-0 flex-1 flex-col bg-background lg:flex-row"
         style={layoutStyle}
       >
-        <aside className="flex min-h-[180px] min-w-0 shrink-0 basis-[36%] flex-col border-b bg-muted/20 lg:min-h-0 lg:w-[var(--playground-left-width)] lg:min-w-[var(--playground-left-width)] lg:basis-auto lg:border-b-0">
+        <aside className="flex min-h-45 min-w-0 shrink-0 basis-[36%] flex-col border-b bg-muted/20 lg:min-h-0 lg:w-(--playground-left-width) lg:min-w-(--playground-left-width) lg:basis-auto lg:border-b-0">
           <ContextExplorerHeader
             activeTaskCount={activeTaskCount}
             hasActiveTasks={hasActiveTasks}
@@ -583,6 +387,7 @@ function PlaygroundWorkbench() {
             />
           </div>
         </aside>
+
         <PlaygroundResizeHandle
           active={resizingPane === 'context'}
           label={t('resizeContext')}
@@ -590,68 +395,17 @@ function PlaygroundWorkbench() {
         />
 
         <main className="flex min-h-0 min-w-0 flex-1 flex-col lg:border-b-0">
-          <div className="flex min-h-14 items-center gap-3 border-b px-4">
-            <button
-              type="button"
-              className="min-w-0 flex-1 truncate rounded px-1.5 py-1 text-left font-mono text-xs font-semibold text-foreground transition-colors hover:bg-muted"
-              title={selectedUri}
-              onClick={() => void revealResource(selectedUri)}
-            >
-              {displayUri}
-            </button>
-            <Button
-              type="button"
-              size="icon-sm"
-              variant="ghost"
-              title={t('copyUri')}
-              onClick={() => {
-                void copyTextToClipboard(selectedUri)
-                  .then(() => {
-                    toast.success(t('copied'))
-                  })
-                  .catch(() => {
-                    toast.error(t('copyFailed'))
-                  })
-              }}
-            >
-              <ClipboardIcon className="size-4" />
-            </Button>
-            <div className="flex shrink-0 items-center gap-1 lg:hidden">
-              <Button
-                type="button"
-                size="icon-sm"
-                variant={activePanel === 'terminal' ? 'secondary' : 'ghost'}
-                title={t('tabs.terminal')}
-                aria-label={t('tabs.terminal')}
-                onClick={() => handleOpenActionPanel('terminal')}
-              >
-                <TerminalIcon className="size-4" />
-              </Button>
-              <Button
-                type="button"
-                size="icon-sm"
-                variant={activePanel === 'agent' ? 'secondary' : 'ghost'}
-                title={t('tabs.agent')}
-                aria-label={t('tabs.agent')}
-                onClick={() => handleOpenActionPanel('agent')}
-              >
-                <BotIcon className="size-4" />
-              </Button>
-            </div>
-            {rightCollapsed && !isFocusCanvas ? (
-              <Button
-                type="button"
-                size="icon-sm"
-                variant="ghost"
-                className="hidden shrink-0 lg:inline-flex"
-                title={t('actionPanel.expand')}
-                aria-label={t('actionPanel.expand')}
-                onClick={toggleRightCollapsed}
-              >
-                <PanelRightOpenIcon className="size-4" />
-              </Button>
-            ) : null}
-          </div>
+          <PlaygroundMainToolbar
+            activePanel={activePanel}
+            displayUri={displayUri}
+            isFocusCanvas={isFocusCanvas}
+            onOpenActionPanel={handleOpenActionPanel}
+            onRevealResource={revealResource}
+            onToggleRightCollapsed={toggleRightCollapsed}
+            rightCollapsed={rightCollapsed}
+            selectedUri={selectedUri}
+            t={t}
+          />
           <div className="min-h-0 flex-1">
             <LazyFilePreview
               file={selectedFile}
@@ -661,6 +415,7 @@ function PlaygroundWorkbench() {
             />
           </div>
         </main>
+
         {!isFocusCanvas && !rightCollapsed && (
           <PlaygroundResizeHandle
             active={resizingPane === 'action'}
@@ -670,7 +425,7 @@ function PlaygroundWorkbench() {
         )}
 
         {!isFocusCanvas && !isCompactLayout && !rightCollapsed ? (
-          <aside className="hidden min-h-0 min-w-0 flex-col bg-muted/15 lg:flex lg:w-[var(--playground-right-width)] lg:min-w-[var(--playground-right-width)]">
+          <aside className="hidden min-h-0 min-w-0 flex-col bg-muted/15 lg:flex lg:w-(--playground-right-width) lg:min-w-(--playground-right-width)">
             <PlaygroundActionPanel
               activePanel={activePanel}
               currentUri={currentUri}
@@ -689,291 +444,31 @@ function PlaygroundWorkbench() {
         ) : null}
       </div>
 
-      {isCompactLayout ? (
-        <PlaygroundMobileActionScreen
-          activePanel={activePanel}
-          currentUri={currentUri}
-          entries={entries}
-          onClose={() => setActionPanelOpen(false)}
-          onOpenAddResource={() => setUploadDialogOpen(true)}
-          onOpenResource={revealResource}
-          onPanelChange={handlePanelChange}
-          onSessionChange={(sessionId) => syncSearch({ session: sessionId })}
-          open={actionPanelOpen}
-          openingUri={openingUri}
-          sessionId={search.session}
-        />
-      ) : null}
-
-      <Dialog
-        open={uploadDialogOpen}
-        onOpenChange={handleUploadDialogOpenChange}
-      >
-        <DialogContent className="max-h-[min(86vh,760px)] gap-0 overflow-hidden p-0 sm:max-w-4xl">
-          <DialogHeader className="border-b px-6 py-5">
-            <DialogTitle className="text-xl">
-              {t('addResource.title')}
-            </DialogTitle>
-            <DialogDescription>
-              {t('addResource.description')}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="max-h-[calc(min(86vh,760px)-6rem)] overflow-y-auto px-6 py-5">
-            <AddResourceForm
-              onSubmitted={() => {
-                handleUploadDialogOpenChange(false)
-                void invalidateList()
-                toast.success(t('addResource.submitted'))
-              }}
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
-      <UploadTaskDialog
-        open={taskDialogOpen}
-        onOpenChange={setTaskDialogOpen}
-        tasks={tasks}
-        onClearTasks={clearTasks}
-      />
-      <FindPalette
-        open={findPaletteOpen}
-        onClose={() => setFindPaletteOpen(false)}
-        onNavigate={(uri) => void revealResource(uri)}
-        onNavigateDir={handleNavigateDirectory}
-        scopeUri={currentUri}
-      />
-    </div>
-  )
-}
-
-function useIsCompactPlaygroundLayout() {
-  const [isCompact, setIsCompact] = useState(() =>
-    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
-      ? window.matchMedia('(max-width: 1023px)').matches
-      : false,
-  )
-
-  useEffect(() => {
-    if (typeof window.matchMedia !== 'function') {
-      return
-    }
-    const mql = window.matchMedia('(max-width: 1023px)')
-    const onChange = () => setIsCompact(mql.matches)
-    onChange()
-    mql.addEventListener('change', onChange)
-    return () => mql.removeEventListener('change', onChange)
-  }, [])
-
-  return isCompact
-}
-
-function PlaygroundActionPanel({
-  activePanel,
-  currentUri,
-  entries,
-  onCollapse,
-  onOpenAddResource,
-  onOpenResource,
-  onPanelChange,
-  onSessionChange,
-  openingUri,
-  sessionId,
-}: {
-  activePanel: PlaygroundPanel
-  currentUri: string
-  entries: VikingFsEntry[]
-  onCollapse: () => void
-  onOpenAddResource: () => void
-  onOpenResource: ResourceOpenHandler
-  onPanelChange: (panel: PlaygroundPanel) => void
-  onSessionChange: (sessionId: string) => void
-  openingUri: string | null
-  sessionId?: string
-}) {
-  const { t } = useTranslation('playground')
-  const [toolbarContainer, setToolbarContainer] =
-    useState<HTMLDivElement | null>(null)
-
-  return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="flex h-14 shrink-0 items-center gap-2 border-b px-3">
-        <PlaygroundActionTabs
-          activePanel={activePanel}
-          onPanelChange={onPanelChange}
-        />
-        <div
-          ref={setToolbarContainer}
-          className="ml-auto flex min-w-0 items-center gap-1"
-        />
-        <Button
-          type="button"
-          size="icon-sm"
-          variant="ghost"
-          className="shrink-0"
-          title={t('actionPanel.collapse')}
-          aria-label={t('actionPanel.collapse')}
-          onClick={onCollapse}
-        >
-          <PanelRightCloseIcon className="size-4" />
-        </Button>
-      </div>
-
-      <PlaygroundActionContent
+      <PlaygroundDialogs
+        actionPanelOpen={actionPanelOpen}
         activePanel={activePanel}
         currentUri={currentUri}
         entries={entries}
-        onOpenAddResource={onOpenAddResource}
-        onOpenResource={onOpenResource}
-        onSessionChange={onSessionChange}
+        findPaletteOpen={findPaletteOpen}
+        isCompactLayout={isCompactLayout}
+        onClearTasks={clearTasks}
+        onCloseActionPanel={() => setActionPanelOpen(false)}
+        onCloseFindPalette={() => setFindPaletteOpen(false)}
+        onInvalidateList={() => void invalidateList()}
+        onNavigateDirectory={handleNavigateDirectory}
+        onOpenAddResource={() => setUploadDialogOpen(true)}
+        onOpenResource={revealResource}
+        onPanelChange={handlePanelChange}
+        onSessionChange={(sessionId) => syncSearch({ session: sessionId })}
+        onSetTaskDialogOpen={setTaskDialogOpen}
+        onUploadDialogOpenChange={handleUploadDialogOpenChange}
         openingUri={openingUri}
-        sessionId={sessionId}
-        toolbarContainer={toolbarContainer}
+        sessionId={search.session}
+        t={t}
+        taskDialogOpen={taskDialogOpen}
+        tasks={tasks}
+        uploadDialogOpen={uploadDialogOpen}
       />
-    </div>
-  )
-}
-
-function PlaygroundMobileActionScreen({
-  activePanel,
-  currentUri,
-  entries,
-  onClose,
-  onOpenAddResource,
-  onOpenResource,
-  onPanelChange,
-  onSessionChange,
-  open,
-  openingUri,
-  sessionId,
-}: {
-  activePanel: PlaygroundPanel
-  currentUri: string
-  entries: VikingFsEntry[]
-  onClose: () => void
-  onOpenAddResource: () => void
-  onOpenResource: ResourceOpenHandler
-  onPanelChange: (panel: PlaygroundPanel) => void
-  onSessionChange: (sessionId: string) => void
-  open: boolean
-  openingUri: string | null
-  sessionId?: string
-}) {
-  const { t } = useTranslation(['playground', 'resources'])
-  const [toolbarContainer, setToolbarContainer] =
-    useState<HTMLDivElement | null>(null)
-
-  if (!open) {
-    return null
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex min-h-0 flex-col bg-background lg:hidden">
-      <div className="flex h-14 shrink-0 items-center gap-2 border-b bg-background px-3">
-        <Button
-          type="button"
-          size="icon-sm"
-          variant="ghost"
-          title={t('dirBrowser.back', { ns: 'resources' })}
-          aria-label={t('dirBrowser.back', { ns: 'resources' })}
-          onClick={onClose}
-        >
-          <ArrowLeftIcon className="size-4" />
-        </Button>
-        <PlaygroundActionTabs
-          activePanel={activePanel}
-          onPanelChange={onPanelChange}
-        />
-        <div
-          ref={setToolbarContainer}
-          className="ml-auto flex min-w-0 items-center gap-1"
-        />
-      </div>
-      <div className="min-h-0 flex-1">
-        <PlaygroundActionContent
-          activePanel={activePanel}
-          currentUri={currentUri}
-          entries={entries}
-          onOpenAddResource={onOpenAddResource}
-          onOpenResource={onOpenResource}
-          onSessionChange={onSessionChange}
-          openingUri={openingUri}
-          sessionId={sessionId}
-          toolbarContainer={toolbarContainer}
-        />
-      </div>
-    </div>
-  )
-}
-
-function PlaygroundActionTabs({
-  activePanel,
-  onPanelChange,
-}: {
-  activePanel: PlaygroundPanel
-  onPanelChange: (panel: PlaygroundPanel) => void
-}) {
-  const { t } = useTranslation('playground')
-
-  return (
-    <div className="inline-flex rounded-lg border bg-background p-1">
-      <PanelTab
-        active={activePanel === 'terminal'}
-        icon={TerminalIcon}
-        label={t('tabs.terminal')}
-        onClick={() => onPanelChange('terminal')}
-      />
-      <PanelTab
-        active={activePanel === 'agent'}
-        icon={BotIcon}
-        label={t('tabs.agent')}
-        onClick={() => onPanelChange('agent')}
-      />
-    </div>
-  )
-}
-
-function PlaygroundActionContent({
-  activePanel,
-  currentUri,
-  entries,
-  onOpenAddResource,
-  onOpenResource,
-  onSessionChange,
-  openingUri,
-  sessionId,
-  toolbarContainer,
-}: {
-  activePanel: PlaygroundPanel
-  currentUri: string
-  entries: VikingFsEntry[]
-  onOpenAddResource: () => void
-  onOpenResource: ResourceOpenHandler
-  onSessionChange: (sessionId: string) => void
-  openingUri: string | null
-  sessionId?: string
-  toolbarContainer: HTMLDivElement | null
-}) {
-  return (
-    <div className="flex h-full min-h-0 flex-col">
-      {activePanel === 'terminal' ? (
-        <TerminalPanel
-          currentUri={currentUri}
-          entries={entries}
-          onOpenAddResource={onOpenAddResource}
-          onOpenResource={onOpenResource}
-          onSessionChange={onSessionChange}
-          openingUri={openingUri}
-          sessionId={sessionId}
-          toolbarContainer={toolbarContainer}
-        />
-      ) : (
-        <AgentPanel
-          initialSessionId={sessionId}
-          onOpenResource={onOpenResource}
-          onSessionChange={onSessionChange}
-          toolbarContainer={toolbarContainer}
-        />
-      )}
     </div>
   )
 }
