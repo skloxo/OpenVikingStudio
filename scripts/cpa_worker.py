@@ -17,12 +17,13 @@ from pathlib import Path
 from typing import List, Dict, Any
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# 纯工兵模型池（海量 Token，随便用）
+# 纯工兵模型池（海量 Token，随便用，根据 SSOT 规范统一优先调用 mux-flash 负载均衡别名）
 AUTHORIZED_WORKER_MODELS = [
+    {"model": "mux-flash", "timeout": 25, "slice": 25000},
+    {"model": "dots3-note-prev", "timeout": 25, "slice": 25000},
+    {"model": "agnes-3.0-flash", "timeout": 25, "slice": 25000},
     {"model": "qwen3.8-flash-next", "timeout": 25, "slice": 25000},
-    {"model": "glm-5.3-flash", "timeout": 25, "slice": 25000},
-    {"model": "mimo-v2.5-pro", "timeout": 30, "slice": 30000},
-    {"model": "deepseek-v4-flash", "timeout": 20, "slice": 20000},
+    {"model": "sensenova-6.8-flash-lite", "timeout": 25, "slice": 20000},
 ]
 
 # 昂贵教师模型黑名单（工兵调度器物理封杀）
@@ -39,10 +40,15 @@ def _load_cpa_key() -> str:
     if conf_path.is_file():
         try:
             cfg = json.loads(conf_path.read_text(encoding="utf-8"))
-            return cfg.get("server", {}).get("root_api_key", "")
+            return (
+                cfg.get("cpa", {}).get("api_key")
+                or cfg.get("llm", {}).get("api_key")
+                or cfg.get("vlm", {}).get("api_key")
+                or cfg.get("server", {}).get("root_api_key", "")
+            )
         except Exception:
             pass
-    return "vk-local-worker-key"
+    return ""
 
 
 def call_cpa_worker_single(prompt: str, content: str, task_name: str = "") -> Dict[str, Any]:
@@ -53,9 +59,9 @@ def call_cpa_worker_single(prompt: str, content: str, task_name: str = "") -> Di
     full_content = f"【工兵任务指令】：{prompt}\n\n【待处理上下文 ({task_name})】：\n{content}"
 
     for idx, worker_info in enumerate(AUTHORIZED_WORKER_MODELS):
-        model_name = worker_info["model"]
-        timeout_sec = worker_info["timeout"]
-        max_slice = worker_info["slice"]
+        model_name = str(worker_info["model"])
+        timeout_sec = float(worker_info["timeout"])
+        max_slice = int(worker_info["slice"])
 
         payload = {
             "model": model_name,

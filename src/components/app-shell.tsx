@@ -2,33 +2,19 @@ import * as React from 'react'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import {
   ActivityIcon,
-  BlocksIcon,
   BookOpenIcon,
   BracesIcon,
-  BrainCircuitIcon,
-  ChevronRightIcon,
-  ClipboardListIcon,
   GlobeIcon,
-  HomeIcon,
   KeyRoundIcon,
   MoonIcon,
   PlugZapIcon,
-  ScrollTextIcon,
   SettingsIcon,
-  Share2Icon,
-  SparklesIcon,
   SunIcon,
   UsersRoundIcon,
-  DnaIcon,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from 'next-themes'
 
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '#/components/ui/collapsible'
 import { AccessRequiredGate } from '#/components/access-required-gate'
 import { AccountSwitcher } from '#/components/account-switcher'
 import { CrossDeviceVerifyDialog } from '#/components/cross-device-verify-dialog'
@@ -47,9 +33,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
   SidebarProvider,
   SidebarTrigger,
 } from '#/components/ui/sidebar'
@@ -59,165 +42,17 @@ import {
 } from '#/hooks/use-app-connection'
 import { useServerVersion } from '#/hooks/use-server-version'
 import { resolveStudioManagementCapabilities } from '#/lib/studio-permissions'
+import {
+  NAV_ITEMS,
+  NAV_SECTIONS,
+  NavGroupItem,
+  resolveLanguage,
+  type NavItem,
+  type NavSubItem,
+} from './app-shell-nav'
 
-type NavItem = {
-  icon: React.ComponentType
-  id: string
-  section: 'workspace' | 'operations' | 'settings'
-  titleKey: string
-  to: string
-  children?: readonly NavSubItem[]
-}
-
-type NavSubItem = {
-  icon: React.ComponentType
-  id: string
-  titleKey: string
-  to: string
-}
-
-type NavGroupItemProps = {
-  item: NavItem & { children: readonly NavSubItem[] }
-  pathname: string
-  title: string
-  t: ReturnType<typeof useTranslation>['t']
-}
-
-const NAV_ITEMS: readonly NavItem[] = [
-  {
-    icon: HomeIcon,
-    id: 'home',
-    section: 'workspace',
-    titleKey: 'navigation.home.title',
-    to: '/home',
-  },
-  {
-    icon: PlugZapIcon,
-    id: 'playground',
-    section: 'workspace',
-    titleKey: 'navigation.playground.title',
-    to: '/playground',
-  },
-  {
-    icon: BrainCircuitIcon,
-    id: 'retrieval',
-    section: 'workspace',
-    titleKey: 'navigation.retrieval.title',
-    to: '/retrieval',
-  },
-  {
-    icon: DnaIcon,
-    id: 'evolution',
-    section: 'workspace',
-    titleKey: 'navigation.evolution.title',
-    to: '/evolution',
-  },
-  {
-    icon: SparklesIcon,
-    id: 'skills',
-    section: 'workspace',
-    titleKey: 'navigation.skills.title',
-    to: '/skills',
-  },
-  {
-    icon: Share2Icon,
-    id: 'graph',
-    section: 'workspace',
-    titleKey: 'navigation.graph.title',
-    to: '/graph',
-  },
-  {
-    icon: BlocksIcon,
-    id: 'sessions',
-    section: 'workspace',
-    titleKey: 'navigation.sessions.title',
-    to: '/sessions',
-  },
-  {
-    icon: ScrollTextIcon,
-    id: 'requestLogs',
-    section: 'operations',
-    titleKey: 'navigation.requestLogs.title',
-    to: '/request-logs',
-  },
-  {
-    icon: ClipboardListIcon,
-    id: 'tasks',
-    section: 'operations',
-    titleKey: 'navigation.tasks.title',
-    to: '/tasks',
-  },
-]
-
-const NAV_SECTIONS = [
-  { id: 'workspace', titleKey: 'sidebar.groups.workspace' },
-  { id: 'operations', titleKey: 'sidebar.groups.operations' },
-] as const
-
-function resolveLanguage(rawLanguage: string | undefined): 'zh-CN' | 'en' {
-  if (!rawLanguage) {
-    return 'zh-CN'
-  }
-  return rawLanguage.toLowerCase().startsWith('zh') ? 'zh-CN' : 'en'
-}
-
-function NavGroupItem({ item, pathname, title, t }: NavGroupItemProps) {
-  const isGroupActive =
-    pathname === item.to ||
-    pathname.startsWith(`${item.to}/`) ||
-    item.children.some(
-      (child) =>
-        pathname === child.to || pathname.startsWith(`${child.to}/`),
-    )
-  const Icon = item.icon
-
-  return (
-    <Collapsible
-      key={item.id}
-      defaultOpen={isGroupActive}
-      className="group/collapsible"
-    >
-      <SidebarMenuItem>
-        <CollapsibleTrigger
-          render={
-            <SidebarMenuButton
-              isActive={isGroupActive}
-              tooltip={title}
-              className="h-9"
-            >
-              <Icon />
-              <span>{title}</span>
-              <ChevronRightIcon className="ml-auto transition-transform duration-200 group-data-open/collapsible:rotate-90" />
-            </SidebarMenuButton>
-          }
-        />
-        <CollapsibleContent>
-          <SidebarMenuSub>
-            {item.children.map((child) => {
-              const ChildIcon = child.icon
-              const childActive =
-                pathname === child.to ||
-                (child.to !== item.to && pathname.startsWith(`${child.to}/`))
-              const childTitle = t(child.titleKey, { ns: 'appShell' })
-
-              return (
-                <SidebarMenuSubItem key={child.id}>
-                  <SidebarMenuSubButton
-                    render={<Link to={child.to} />}
-                    isActive={childActive}
-                  >
-                    <ChildIcon />
-                    <span>{childTitle}</span>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-              )
-            })}
-          </SidebarMenuSub>
-        </CollapsibleContent>
-      </SidebarMenuItem>
-    </Collapsible>
-  )
-}
+export { NAV_ITEMS, NAV_SECTIONS, resolveLanguage }
+export type { NavItem, NavSubItem }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
@@ -400,7 +235,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
 
-                {/* 语言切换 原生 侧边栏菜单项 (任务 3 V1.0.3 / V1.0.4) */}
+                {/* 语言切换 原生 侧边栏菜单项 */}
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     onClick={() =>
@@ -423,7 +258,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
 
-                {/* 主题色切换 原生 侧边栏菜单项 (任务 4 V1.0.4) */}
+                {/* 主题色切换 原生 侧边栏菜单项 */}
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     onClick={() =>
@@ -445,7 +280,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
 
-                {/* 🩺 系统健康探针与一键自愈 (TASK-SERVER-DOCTOR-01) */}
+                {/* 🩺 系统健康探针与一键自愈 */}
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     onClick={() => setDoctorOpen(true)}
@@ -532,7 +367,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       </Sidebar>
 
       <SidebarInset className="min-h-0 flex-1 overflow-hidden rounded-none border-0 bg-background shadow-none ring-0 md:m-0 md:ml-0">
-        {/* 移动端专用顶栏：展示汉堡包/Sidebar 呼出触发图标与 App 标识 */}
+        {/* 移动端专用顶栏 */}
         <header className="flex md:hidden items-center justify-between border-b border-border/60 bg-background/95 backdrop-blur-md px-3 py-2 sticky top-0 z-40">
           <div className="flex items-center gap-2">
             <SidebarTrigger className="h-8 w-8 rounded text-foreground hover:bg-muted font-mono" />
