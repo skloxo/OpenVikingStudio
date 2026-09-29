@@ -151,25 +151,25 @@ async def _entry_looks_like_skill(service, ctx: RequestContext, entry: Dict[str,
     dir_name = entry.get("name") or _skill_name_from_uri(entry_uri)
     if not dir_name or dir_name.startswith(".") or dir_name.startswith("__"):
         return False
-    if _DATE_ARCHIVE_REGEX.match(dir_name) or "backup" in dir_name.lower() or "curator" in dir_name.lower():
+    if (
+        _DATE_ARCHIVE_REGEX.match(dir_name)
+        or dir_name.startswith("curator-")
+        or dir_name.startswith("backup-")
+        or dir_name.endswith(".bak")
+    ):
         return False
 
     meta = _parse_abstract_meta(entry.get("abstract", ""))
-    if meta:
-        meta_name = meta.get("name")
-        if not meta_name or not isinstance(meta_name, str):
-            return False
-        meta_name = meta_name.strip()
-        if meta_name.startswith(".") or _DATE_ARCHIVE_REGEX.match(meta_name):
-            return False
-        try:
-            validate_skill_name(meta_name)
-        except Exception:
-            return False
-        description = meta.get("description")
-        if not isinstance(description, str) or not description.strip():
-            return False
-        return True
+    if meta and isinstance(meta, dict) and isinstance(meta.get("name"), str):
+        meta_name = meta["name"].strip()
+        if not meta_name.startswith(".") and not _DATE_ARCHIVE_REGEX.match(meta_name):
+            try:
+                validate_skill_name(meta_name)
+                description = meta.get("description")
+                if isinstance(description, str) and description.strip():
+                    return True
+            except Exception:
+                pass
 
     # Abstract is missing or unparsable — fall back to checking that the
     # directory actually contains a SKILL.md file before listing it.
