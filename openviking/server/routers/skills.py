@@ -33,6 +33,8 @@ from openviking.server.skill_source_metadata import (
 )
 from openviking.server.telemetry import run_operation
 from openviking.server.temp_upload_store import TempUploadStore
+from openviking.service.skill_retina_cron import SkillRetinaAuditor
+from openviking.service.skill_sanitizer import SkillSanitizer
 from openviking.telemetry import TelemetryRequest
 from openviking.utils.skill_processor import validate_skill_name
 from openviking_cli.exceptions import InvalidArgumentError, NotFoundError, ResourceExhaustedError
@@ -139,9 +141,6 @@ async def _list_skills_from_root(
     return results
 
 
-_DATE_ARCHIVE_REGEX = re.compile(r"^\d{4}-\d{2}-\d{2}", re.IGNORECASE)
-
-
 async def _entry_looks_like_skill(service, ctx: RequestContext, entry: Dict[str, Any]) -> bool:
     """Decide whether a directory entry from ``ls`` represents a real skill."""
     entry_uri = entry.get("uri", "")
@@ -149,20 +148,13 @@ async def _entry_looks_like_skill(service, ctx: RequestContext, entry: Dict[str,
         return False
 
     dir_name = entry.get("name") or _skill_name_from_uri(entry_uri)
-    if not dir_name or dir_name.startswith(".") or dir_name.startswith("__"):
-        return False
-    if (
-        _DATE_ARCHIVE_REGEX.match(dir_name)
-        or dir_name.startswith("curator-")
-        or dir_name.startswith("backup-")
-        or dir_name.endswith(".bak")
-    ):
+    if not dir_name or SkillSanitizer.is_anomalous_dir_name(dir_name):
         return False
 
     meta = _parse_abstract_meta(entry.get("abstract", ""))
     if meta and isinstance(meta, dict) and isinstance(meta.get("name"), str):
         meta_name = meta["name"].strip()
-        if not meta_name.startswith(".") and not _DATE_ARCHIVE_REGEX.match(meta_name):
+        if not SkillSanitizer.is_anomalous_dir_name(meta_name):
             try:
                 validate_skill_name(meta_name)
                 description = meta.get("description")
@@ -688,6 +680,67 @@ async def validate_skill(
         source_path=request.source_path,
     )
     return Response(status="ok", result=result)
+
+
+@router.get("/retina/status")
+async def get_skill_retina_status(
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """Get audit and physical identity status for skills roots."""
+    service = get_service()
+    user_root = f"{canonical_user_root(_ctx)}/skills"
+    agent_root = "viking://agent/skills"
+    user_report = await SkillRetinaAuditor.audit_skills(service, _ctx, user_root)
+    agent_report = await SkillRetinaAuditor.audit_skills(service, _ctx, agent_root)
+    return Response(
+        status="ok",
+        result={
+            "user": user_report.to_dict(),
+            "agent": agent_report.to_dict(),
+            "is_identical": user_report.is_identical and agent_report.is_identical,
+        },
+    )
+
+
+@router.post("/retina/audit")
+async def audit_skills_retina(
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """Trigger physical retina audit on skills roots."""
+    service = get_service()
+    user_root = f"{canonical_user_root(_ctx)}/skills"
+    agent_root = "viking://agent/skills"
+    user_report = await SkillRetinaAuditor.audit_skills(service, _ctx, user_root)
+    agent_report = await SkillRetinaAuditor.audit_skills(service, _ctx, agent_root)
+    return Response(
+        status="ok",
+        result={
+            "user": user_report.to_dict(),
+            "agent": agent_report.to_dict(),
+            "is_identical": user_report.is_identical and agent_report.is_identical,
+        },
+    )
+
+
+@router.post("/retina/heal")
+async def heal_skills_retina(
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """Trigger physical retina self-healing on skills roots."""
+    service = get_service()
+    user_root = f"{canonical_user_root(_ctx)}/skills"
+    agent_root = "viking://agent/skills"
+    user_report = await SkillRetinaAuditor.heal_skills(service, _ctx, user_root)
+    agent_report = await SkillRetinaAuditor.heal_skills(service, _ctx, agent_root)
+    return Response(
+        status="ok",
+        result={
+            "user": user_report.to_dict(),
+            "agent": agent_report.to_dict(),
+            "is_identical": user_report.is_identical and agent_report.is_identical,
+            "total_healed": user_report.healed_count + agent_report.healed_count,
+        },
+    )
 
 
 @router.get("/{skill_name}")

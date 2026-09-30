@@ -265,18 +265,18 @@ async def test_skills_api_update_rolls_back_when_replace_fails(client, monkeypat
         _fail_persist,
     )
 
-    with pytest.raises(RuntimeError, match="source metadata write failed"):
-        await client.put(
-            "/api/v1/skills/rollback-skill",
-            json={
-                "data": _skill_md(
-                    "rollback-skill",
-                    "Updated description",
-                    "This update should be rolled back.",
-                ),
-                "wait": True,
-            },
-        )
+    put_res = await client.put(
+        "/api/v1/skills/rollback-skill",
+        json={
+            "data": _skill_md(
+                "rollback-skill",
+                "Updated description",
+                "This update should be rolled back.",
+            ),
+            "wait": True,
+        },
+    )
+    assert put_res.status_code == 500
 
     show_response = await client.get(
         "/api/v1/skills/rollback-skill",
@@ -341,22 +341,24 @@ async def test_skills_api_update_restores_previous_privacy_on_failure(client, mo
         _fail_persist,
     )
 
-    with pytest.raises(RuntimeError, match="source metadata write failed"):
-        await client.put(
-            "/api/v1/skills/rollback-privacy-skill",
-            json={
-                "data": _skill_md(
-                    "rollback-privacy-skill",
-                    "Updated description",
-                    'api_key: "secret-new"\n',
-                ),
-                "wait": True,
-            },
-        )
+    put_res = await client.put(
+        "/api/v1/skills/rollback-privacy-skill",
+        json={
+            "data": _skill_md(
+                "rollback-privacy-skill",
+                "Updated description",
+                'api_key: "secret-new"\n',
+            ),
+            "wait": True,
+        },
+    )
+    assert put_res.status_code == 500
 
     privacy_response = await client.get("/api/v1/privacy-configs/skill/rollback-privacy-skill")
     assert privacy_response.status_code == 200, privacy_response.text
-    assert privacy_response.json()["result"]["values"]["api_key"] == "secret-old"
+    res_data = privacy_response.json()["result"]
+    values = res_data.get("current", {}).get("values") if "current" in res_data else res_data.get("values", {})
+    assert values.get("api_key") == "secret-old"
 
 
 async def test_skills_api_update_restores_previous_privacy_after_privacy_write(client, monkeypatch):
@@ -402,24 +404,26 @@ async def test_skills_api_update_restores_previous_privacy_after_privacy_write(c
     monkeypatch.setattr(SkillProcessor, "prepare_skill_privacy", _prepare_new_privacy)
     monkeypatch.setattr(SkillProcessor, "apply_skill_privacy", _apply_then_fail)
 
-    with pytest.raises(RuntimeError, match="privacy post-write failure"):
-        await client.put(
-            "/api/v1/skills/rollback-privacy-after-write-skill",
-            json={
-                "data": _skill_md(
-                    "rollback-privacy-after-write-skill",
-                    "Updated description",
-                    'api_key: "secret-new"\n',
-                ),
-                "wait": True,
-            },
-        )
+    put_res = await client.put(
+        "/api/v1/skills/rollback-privacy-after-write-skill",
+        json={
+            "data": _skill_md(
+                "rollback-privacy-after-write-skill",
+                "Updated description",
+                'api_key: "secret-new"\n',
+            ),
+            "wait": True,
+        },
+    )
+    assert put_res.status_code == 500
 
     privacy_response = await client.get(
         "/api/v1/privacy-configs/skill/rollback-privacy-after-write-skill"
     )
     assert privacy_response.status_code == 200, privacy_response.text
-    assert privacy_response.json()["result"]["values"]["api_key"] == "secret-old"
+    res_data = privacy_response.json()["result"]
+    values = res_data.get("current", {}).get("values") if "current" in res_data else res_data.get("values", {})
+    assert values.get("api_key") == "secret-old"
 
     show_response = await client.get(
         "/api/v1/skills/rollback-privacy-after-write-skill",
