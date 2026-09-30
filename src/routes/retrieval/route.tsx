@@ -30,6 +30,7 @@ import { ZGSearchCockpit } from './-components/zg-search-cockpit'
 import { RAGAbstentionCockpit } from './-components/rag-abstention-cockpit'
 import { HGRAGCompassCockpit } from './-components/hg-rag-compass-cockpit'
 import { EntropyCrystallizerCockpit } from './-components/entropy-crystallizer-cockpit'
+import { MemoryLineageDAGCard } from './-components/memory-lineage-dag-card'
 import { ActiveNotesHistoryCockpit } from './-components/active-notes-history-cockpit'
 import { ValetIngestionCockpit } from './-components/valet-ingestion-cockpit'
 import { LLMLinguaDehydrationCockpit } from './-components/llmlingua-dehydration-cockpit'
@@ -291,13 +292,23 @@ function RetrievalPage() {
       )}
 
       {/* Tab 5: 三门结晶减熵与不可变事实座舱 */}
-      {activeTab === 'crystallizer' && <EntropyCrystallizerCockpit />}
+      {activeTab === 'crystallizer' && (
+        <div className="flex flex-col gap-4">
+          <EntropyCrystallizerCockpit />
+          <MemoryLineageDAGCard />
+        </div>
+      )}
 
       {/* Tab 6: 主动上下文与历史分仓座舱 */}
       {activeTab === 'context' && <ActiveNotesHistoryCockpit />}
 
       {/* Tab 7: 前门泊车与反熵准入座舱 */}
-      {activeTab === 'valet' && <ValetIngestionCockpit />}
+      {activeTab === 'valet' && (
+        <div className="flex flex-col gap-4">
+          <ValetIngestionCockpit />
+          <MemoryLineageDAGCard />
+        </div>
+      )}
 
       {/* Tab 8: LLMLingua 自然语言脱水座舱 */}
       {activeTab === 'llmlingua' && <LLMLinguaDehydrationCockpit />}

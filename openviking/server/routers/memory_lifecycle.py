@@ -154,3 +154,58 @@ async def list_lifecycle_records(
             },
         },
     }
+
+
+class ResolveConflictRequest(BaseModel):
+    old_uri: str = Field(..., description="Superseded older knowledge URI")
+    new_uri: str = Field(..., description="Successor authoritative knowledge URI")
+    reason: str = Field("Superseded by verified newer revision", description="Audit reason")
+
+
+@router.get("/conflicts/stats")
+async def get_conflict_stats(
+    ctx: RequestContext = Depends(get_request_context),
+) -> Dict[str, Any]:
+    """Retrieve aggregate conflict and lifecycle purity statistics."""
+    from openviking.service.memory_conflict_resolver import MemoryConflictResolver
+    stats = MemoryConflictResolver.get_instance().get_conflict_stats()
+    return {"status": "ok", "result": stats}
+
+
+@router.get("/conflicts/history")
+async def get_conflict_history(
+    limit: int = Query(50, ge=1, le=200),
+    ctx: RequestContext = Depends(get_request_context),
+) -> Dict[str, Any]:
+    """Retrieve recent conflict resolution and superseding events."""
+    from openviking.service.memory_conflict_resolver import MemoryConflictResolver
+    history = MemoryConflictResolver.get_instance().get_resolution_history(limit=limit)
+    return {"status": "ok", "result": history}
+
+
+@router.post("/conflicts/resolve")
+async def resolve_memory_conflict(
+    req: ResolveConflictRequest,
+    ctx: RequestContext = Depends(get_request_context),
+) -> Dict[str, Any]:
+    """Atomically resolve memory conflict and link superseding DAG."""
+    from openviking.service.memory_conflict_resolver import MemoryConflictResolver
+    res = MemoryConflictResolver.get_instance().resolve_and_link(
+        old_uri=req.old_uri,
+        new_uri=req.new_uri,
+        reason=req.reason,
+        ctx=ctx,
+    )
+    return {"status": "ok", "result": res.model_dump()}
+
+
+@router.get("/lineage/dag")
+async def get_memory_lineage_dag(
+    uri: str = Query(..., description="Target memory URI to trace full DAG"),
+    ctx: RequestContext = Depends(get_request_context),
+) -> Dict[str, Any]:
+    """Traverse full superseding DAG chain for a memory URI."""
+    from openviking.service.memory_conflict_resolver import MemoryConflictResolver
+    chain = MemoryConflictResolver.get_instance().get_lineage_chain(uri)
+    return {"status": "ok", "result": chain}
+

@@ -121,6 +121,7 @@ class HybridRetriever:
         context_type: Optional[str] = None,
         target_directories: Optional[List[str]] = None,
         k: int = 60,
+        exclude_superseded: bool = False,
     ) -> List[FusedCandidate]:
         """
         Blend pre-fetched dense vector candidates with fast FTS5 BM25 matches via RRF.
@@ -170,6 +171,8 @@ class HybridRetriever:
             fsm_rec = fsm_records.get(item.uri)
             if fsm_rec:
                 status = fsm_rec.status.value
+                if fsm_rec.superseded_by:
+                    item.extra_metadata["superseded_by"] = fsm_rec.superseded_by
             else:
                 meta = item.extra_metadata
                 nested_meta = meta.get("extra_metadata") if isinstance(meta.get("extra_metadata"), dict) else {}
@@ -190,6 +193,9 @@ class HybridRetriever:
             item.extra_metadata["is_immune"] = assessment.is_immune
             item.normalized_score = assessment.adjusted_score
             item.rrf_score = round(item.rrf_score * assessment.decay_factor, 6)
+
+        if exclude_superseded:
+            fused = [item for item in fused if item.extra_metadata.get("status") != "superseded"]
 
         # Re-sort after decay demotion
         fused.sort(key=lambda x: x.rrf_score, reverse=True)
@@ -217,3 +223,6 @@ class HybridRetriever:
         )
 
         return fused
+
+    # Backwards-compatible alias
+    retrieve = retrieve_hybrid
