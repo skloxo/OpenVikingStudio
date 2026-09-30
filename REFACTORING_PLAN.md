@@ -14,6 +14,9 @@
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.6.0`** | **Card-36** | **体外大脑记忆抗熵增中枢与认知冲突消解流水线 (Lineage & Superseding DAG)** | 1. 冲突消解与 Superseding DAG 自动建链；2. 检索端物理阻断废弃节点 (`exclude_superseded`)；3. 座舱可视化卡片；4. 26 项测试全绿。 | [x] 已验收通过 ✅ |
+| **`v1.5.99`** | **Card-35** | **RSI 昼夜演进盲测基准增强与 Bootstrap 启动深度自检闭环** | 1. 8 大物理安全门禁盲测雷达；2. SQLite PRAGMA quick_check 自检自愈；3. 34 项单测全绿。 | [x] 已验收通过 ✅ |
+| **`v1.5.98`** | **Card-34** | **后端高危超限路由解耦切除 — skills.py 与 system.py 接缝拆解** | 1. 拆解至黄金甜点区；2. 硬件探针快照；3. 45 项单测全绿。 | [x] 已验收通过 ✅ |
 | **`v1.5.87`** | **Card-23** | **上游文件系统标准吸收 — ls/tree 游标分页排序与统一中文/Unicode 存储 URI** | 1. Unicode URI 规范化与 `%20` 兼容降级；2. `ls`/`tree` 游标分页与稳定排序；3. Precompiled Rust native ABI 降级切片；4. 167 项单测全绿。 | [x] 已验收通过 ✅ |
 | **`v1.5.86`** | **Card-22** | **上游检索算力吸收 — 余弦相似度归一化与单请求 Query 嵌入高速复用** | 1. CuVS/本地索引余弦得分归一化至 $[0.0, 1.0]$；2. 请求级 ContextVar 嵌入缓存；3. 112 项单测全绿。 | [x] 已验收通过 ✅ |
 | **`v1.5.85`** | **Card-21** | **上游存储稳固性吸收 — OS 文件锁替代 PID、QueueFS 与 HTTP 事件循环隔离** | 1. Linux `flock` 替换 PID 文件；2. 跨 Loop `AsyncSemaphore`；3. Telemetry ID 全链路保真；4. 57 项单测全绿。 | [x] 已验收通过 ✅ |
@@ -615,6 +618,53 @@
   - `package.json`
   - `openviking/_version.py`
   - `REFACTORING_PLAN.md`
+
+---
+
+### 🚀 Milestone 7: 课题一专项白皮书落地 — 体外大脑记忆抗熵增中枢与认知冲突消解流水线 (Anti-Entropy Memory Governance & Lineage DAG)
+
+#### 📌 [P0] [x] Card-36: Memory-Anti-Entropy-Lineage-DAG-And-Conflict-Resolution (v1.6.0): 体外大脑记忆抗熵增中枢与认知冲突消解流水线 ✅ (v1.6.0)
+- **类型**：架构治理 / 记忆抗熵增中枢 ｜ **优先级**：🔥🔥 P0 ｜ **目标版本**：`v1.6.0` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与第一性原理**：
+  - 课题一专项白皮书（体外大脑记忆与内容治理体系）核心落地：解决认知冲突与历史陈旧过时知识静默共存的顽疾；
+  - 过去前门 `EntropyGatekeeper` 虽可计算语义相似度，但未在物理存储 (`memory_lifecycle.db`) 与拓扑图谱 (`relations.db`) 中建立新旧知识替换指针，导致 Agent 检索时把已废弃的旧方法召回，诱发严重幻觉；
+  - 本卡片从第一性原理直击根因：构建 `MemoryConflictResolver`，前门写入 $Sim \ge 0.88$ 冲突或显式废弃更新时自动执行 `link_superseded_pair`，检索层支持 `exclude_superseded` 物理阻断，座舱挂载 `MemoryLineageDAGCard` 全景观测。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **认知冲突消解与血缘建链自动化率**：$Sim \ge 0.88$ 冲突或显式废弃更新时，旧节点自动标记 `status: superseded` 并写入 `replaced_by: <new_uri>`，血缘绑定成功率达到 **$100\%$**；
+    2. **Agent 推理活跃视图旧知识零污染**：检索调用时物理过滤/强降权 `superseded` 旧节点，活跃 SSOT 召回准确率提升至 **$100\%$**；
+    3. **单文件规模安全红线**：所有修改和新增模块严格控制在 **$100 \sim 350$ 行** 黄金甜点区（无一超过 400 行预警线）；
+    4. **前端座舱客观可视化**：在 `/studio/retrieval` 挂载记忆版本演进与认知冲突消解流水线卡片 (Superseding Lineage DAG)，实时呈现权威 SSOT 演变链与纯度指数。
+  - **展示界面与卡片**：`/studio/retrieval` 前门泊车与反熵准入座舱、三门结晶座舱、`MemoryLineageDAGCard`。
+- **核心交付细目**：
+  1. `openviking/service/memory_conflict_resolver.py`：实现认知冲突仲裁、Superseding DAG 建链、SQLite 与 relations.db 双轨持久化与多跳血缘回溯（298 行，黄金甜点区）；
+  2. `openviking/storage/content_write.py`：在写入前门卡口接入冲突自动建链与显式 `supersedes_uri` 覆写（228 行）；
+  3. `openviking/retrieve/hybrid_retriever.py`：扩展 `exclude_superseded: bool = False` 过滤开关与 `superseded_by` 指针透传，提供 `retrieve` 兼容别名（228 行）；
+  4. `openviking/server/routers/memory_lifecycle.py`：暴露 `/conflicts/stats`、`/conflicts/history`、`/conflicts/resolve`、`/lineage/dag` 端点（211 行）；
+  5. `openviking/server/bot_gateway_manager.py`：进程生命周期治理补充 `hasattr` 容错安全守卫（247 行）；
+  6. 前端组件 `src/routes/retrieval/-components/memory-lineage-dag-card.tsx`：NO GREEN EVER 座舱高密卡片，支持实时冲突统计、演进流水与 DAG 在线追踪（239 行）；
+  7. 前端路由 `src/routes/retrieval/route.tsx`：在 valet 与 crystallizer 标签页中挂载 DAG 卡片（326 行）；
+  8. 测试套件：新增 `tests/unit/test_memory_conflict_resolver.py`、`tests/unit/test_retrieval_superseded_filter.py`、`tests/server/test_api_memory_lifecycle_dag.py`，全套 26 个用例全绿通过。
+- **Git Commit 留痕**：`v1.6.0`
+- **Git Tag 留痕**：`v1.6.0`
+- **实际修改文件清单**：
+  - `openviking/service/memory_conflict_resolver.py` (新增，298 行)
+  - `openviking/server/routers/memory_lifecycle.py` (更新扩展端点，211 行)
+  - `openviking/storage/content_write.py` (更新接入冲突消解与 DAG 建链)
+  - `openviking/retrieve/hybrid_retriever.py` (更新支持 exclude_superseded 过滤，228 行)
+  - `openviking/server/bot_gateway_manager.py` (更新 hasattr 守卫，247 行)
+  - `src/routes/retrieval/-components/memory-lineage-dag-card.tsx` (新增，239 行)
+  - `src/routes/retrieval/route.tsx` (更新挂载组件，326 行)
+  - `tests/unit/test_memory_conflict_resolver.py` (新增单测，138 行)
+  - `tests/unit/test_retrieval_superseded_filter.py` (新增单测，113 行)
+  - `tests/server/test_api_memory_lifecycle_dag.py` (新增端点测试，72 行)
+  - `package.json` & `openviking/_version.py` (版本升迁至 `1.6.0`)
+  - `REFACTORING_PLAN.md`
+- **门禁验证清单**：
+  - 自动化测试 100% 通过（26 个单元与端点测试全通过）；
+  - 安全凭据审计 0 密钥泄露（4576 个跟踪文件扫描通过）；
+  - 前端生产构建成功（`npm run build` 耗时 14.57s）；
+  - 运行时服务无缝自愈重启成功，`/health` 探针真实返回 `version: 1.6.0`。
 
 
 

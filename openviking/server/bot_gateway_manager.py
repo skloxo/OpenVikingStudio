@@ -193,13 +193,17 @@ def start_vikingbot_gateway(
         return BotProcess(process=process, log_file=log_file)
 
     except BaseException as e:
-        if process is not None and process.poll() is None:
-            process.terminate()
+        if process is not None and getattr(process, "poll", lambda: None)() is None:
+            if hasattr(process, "terminate"):
+                process.terminate()
             try:
-                process.wait(timeout=30)
+                if hasattr(process, "wait"):
+                    process.wait(timeout=30)
             except subprocess.TimeoutExpired:
-                process.kill()
-                process.wait()
+                if hasattr(process, "kill"):
+                    process.kill()
+                if hasattr(process, "wait"):
+                    process.wait()
         if log_file:
             log_file.close()
         print(f"Failed to start vikingbot gateway: {e}")
@@ -217,15 +221,21 @@ def stop_vikingbot_gateway(bot_process: BotProcess) -> None:
     if bot_process is None:
         return
 
-    print(f"\nStopping vikingbot gateway (PID: {bot_process.process.pid})...")
+    pid = getattr(bot_process.process, "pid", "unknown")
+    print(f"\nStopping vikingbot gateway (PID: {pid})...")
     try:
-        bot_process.process.terminate()
+        proc = bot_process.process
+        if hasattr(proc, "terminate"):
+            proc.terminate()
         try:
-            bot_process.process.wait(timeout=30)
+            if hasattr(proc, "wait"):
+                proc.wait(timeout=30)
             print("Vikingbot gateway stopped gracefully.")
         except subprocess.TimeoutExpired:
-            bot_process.process.kill()
-            bot_process.process.wait()
+            if hasattr(proc, "kill"):
+                proc.kill()
+            if hasattr(proc, "wait"):
+                proc.wait()
             print("Vikingbot gateway force killed.")
     except Exception as e:
         print(f"Error stopping vikingbot gateway: {e}")

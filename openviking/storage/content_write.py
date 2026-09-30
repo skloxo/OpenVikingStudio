@@ -193,6 +193,45 @@ class ContentWriteCoordinator:
                         "action": "dlq",
                         "message": f"DLQ (死信拦截): 探测到安全威胁，已拦截并隔离至 {dlq_file.name}。",
                     }
+                elif decision.action == "update" and decision.matched_uri:
+                    try:
+                        from openviking.service.memory_conflict_resolver import MemoryConflictResolver
+                        resolver = MemoryConflictResolver.get_instance()
+                        resolver.resolve_and_link(
+                            old_uri=decision.matched_uri,
+                            new_uri=normalized_uri,
+                            reason=decision.reason,
+                            ctx=ctx,
+                        )
+                        logger.info(
+                            "[MemoryConflictResolver][ChokePoint] Auto-linked superseding DAG: %s (superseded) -> %s (active)",
+                            decision.matched_uri,
+                            normalized_uri,
+                        )
+                    except Exception as e:
+                        logger.warning("[MemoryConflictResolver][ChokePoint] Failed to link superseding DAG: %s", e)
+
+        # Explicit superseding override via context
+        explicit_supersedes = None
+        if isinstance(ctx, dict):
+            explicit_supersedes = ctx.get("supersedes_uri") or ctx.get("replaces_uri")
+        elif hasattr(ctx, "supersedes_uri"):
+            explicit_supersedes = getattr(ctx, "supersedes_uri")
+        elif hasattr(ctx, "replaces_uri"):
+            explicit_supersedes = getattr(ctx, "replaces_uri")
+
+        if explicit_supersedes and isinstance(explicit_supersedes, str):
+            try:
+                from openviking.service.memory_conflict_resolver import MemoryConflictResolver
+                resolver = MemoryConflictResolver.get_instance()
+                resolver.resolve_and_link(
+                    old_uri=explicit_supersedes,
+                    new_uri=normalized_uri,
+                    reason=f"Explicitly superseded by caller: {explicit_supersedes} -> {normalized_uri}",
+                    ctx=ctx,
+                )
+            except Exception as e:
+                logger.warning("[MemoryConflictResolver] Failed to link explicit supersedes: %s", e)
 
         ingest_options = IngestOptions.from_search_tags(tags, mode=tag_mode)
 
