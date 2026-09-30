@@ -3,76 +3,99 @@
 """System endpoints for OpenViking HTTP Server."""
 
 import asyncio
-import json
-import os
-import re
-import time
-import urllib.error
-import urllib.request
-from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
 
-from openviking.core.defensive import defensive, get_defensive_telemetry
+from openviking.core.defensive import get_defensive_telemetry
 from openviking.core.path_variables import resolve_path_variables
 from openviking.core.uri_validation import validate_request_viking_uri
-from openviking.pyagfs.exceptions import AGFSInvalidOperationError, AGFSNotSupportedError
 from openviking.server.auth import get_request_context, require_role
 from openviking.server.dependencies import get_service
 from openviking.server.identity import AuthMode, RequestContext, Role
 from openviking.server.models import Response
+from openviking.server.routers.system_harness import (
+    agent_loop_simulation_probe,
+    bisection_heal_simulation_probe,
+    get_agent_loop_telemetry,
+    get_bisection_heal_telemetry,
+    get_harness_metrics,
+    harness_router,
+    test_anti_lazy_guard,
+    verify_harness_probe,
+)
+from openviking.server.routers.system_intent import (
+    intent_router,
+    match_intent,
+    write_disambiguation,
+)
+from openviking.service.harness_catalog import (
+    CORE_SKILLS_CATALOG,
+    _get_active_skills_catalog,
+    _load_all_evolution_lessons,
+)
+from openviking.server.routers.system_models import (
+    AgentLoopProbeRequest,
+    BackendSyncRequest,
+    BisectionHealProbeRequest,
+    ConsistencyRequest,
+    MatchIntentRequest,
+    TestGuardRequest,
+    VerifyProbeRequest,
+    WaitRequest,
+    WriteDisambiguationRequest,
+)
+from openviking.server.routers.system_probes import (
+    _embedding_probe,
+    _is_ready_check_ok,
+    _probe_agfs_readiness,
+    _read_host_cpu,
+    _read_host_mem,
+    probe_gpu_telemetry,
+    probe_system_host_resources,
+)
 from openviking.storage.viking_fs import get_viking_fs
 from openviking_cli.utils import get_logger
 
 logger = get_logger(__name__)
 
 router = APIRouter()
+router.include_router(harness_router)
+router.include_router(intent_router)
 
-
-def _is_ready_check_ok(value) -> bool:
-    """Return whether one readiness check value represents a healthy state."""
-    if isinstance(value, dict):
-        status = value.get("status")
-        if status not in ("ok", "not_configured", "not_supported"):
-            return False
-        nested = value.get("checks")
-        if nested is None:
-            return True
-        return all(_is_ready_check_ok(item) for item in nested.values())
-    return value in ("ok", "not_configured", "not_supported")
-
-
-async def _probe_agfs_readiness() -> dict[str, object]:
-    """Return structured AGFS readiness, including multi-write sync health when available."""
-    viking_fs = get_viking_fs()
-    checks: dict[str, object] = {}
-
-    await viking_fs.ls("viking://", ctx=None)
-    checks["filesystem"] = "ok"
-
-    try:
-        await viking_fs.system_sync_status("viking://", ctx=None)
-        checks["multiwrite_sync"] = "ok"
-    except (AGFSInvalidOperationError, AGFSNotSupportedError):
-        checks["multiwrite_sync"] = "not_supported"
-
-    return {"status": "ok", "checks": checks}
-
-
-async def _embedding_probe(embedder) -> str:
-    """Quick embedding probe: embed a single token and check for errors."""
-    from openviking.models.embedder.base import embed_compat
-
-    try:
-        await embed_compat(embedder, "ok", is_query=True)
-        return "ok"
-    except Exception as e:
-        provider = getattr(embedder, "provider", "unknown")
-        model = getattr(embedder, "model_name", "unknown")
-        return f"error: provider={provider} model={model}: {e}"
+__all__ = [
+    "router",
+    "get_viking_fs",
+    "_read_host_mem",
+    "_read_host_cpu",
+    "_is_ready_check_ok",
+    "_probe_agfs_readiness",
+    "_embedding_probe",
+    "probe_gpu_telemetry",
+    "probe_system_host_resources",
+    "_load_all_evolution_lessons",
+    "_get_active_skills_catalog",
+    "CORE_SKILLS_CATALOG",
+    "MatchIntentRequest",
+    "WriteDisambiguationRequest",
+    "VerifyProbeRequest",
+    "TestGuardRequest",
+    "AgentLoopProbeRequest",
+    "BisectionHealProbeRequest",
+    "WaitRequest",
+    "ConsistencyRequest",
+    "BackendSyncRequest",
+    "match_intent",
+    "write_disambiguation",
+    "get_bisection_heal_telemetry",
+    "bisection_heal_simulation_probe",
+    "get_harness_metrics",
+    "verify_harness_probe",
+    "test_anti_lazy_guard",
+    "get_agent_loop_telemetry",
+    "agent_loop_simulation_probe",
+]
 
 
 @router.get("/health", tags=["system"])
@@ -96,7 +119,6 @@ async def health_check(request: Request):
             effective_auth_mode = config.get_effective_auth_mode()
         result["auth_mode"] = effective_auth_mode
 
-        # Resolve identity when API key is provided
         x_api_key = request.headers.get("X-API-Key")
         authorization = request.headers.get("Authorization")
 
@@ -124,12 +146,7 @@ async def health_check(request: Request):
 
 @router.get("/ready", tags=["system"])
 async def readiness_check(request: Request):
-    """Readiness probe — checks AGFS, VectorDB, and APIKeyManager.
-
-    Returns 200 when all subsystems are operational, 503 otherwise.
-    No authentication required (designed for K8s probes).
-    """
-    # If service is still initializing, return 503 immediately
+    """Readiness probe — checks AGFS, VectorDB, and APIKeyManager."""
     try:
         service = get_service()
         if not service._initialized:
@@ -138,7 +155,6 @@ async def readiness_check(request: Request):
                 content={"status": "not_ready", "reason": "initializing"},
             )
     except RuntimeError:
-        # get_service() raises RuntimeError when service not yet set
         return JSONResponse(
             status_code=503,
             content={"status": "not_ready", "reason": "initializing"},
@@ -146,13 +162,11 @@ async def readiness_check(request: Request):
 
     checks: dict[str, Any] = {}
 
-    # 1. AGFS: probe filesystem access and multi-write sync health
     try:
         checks["agfs"] = await _probe_agfs_readiness()
     except Exception as e:
         checks["agfs"] = {"status": "error", "checks": {"filesystem": f"error: {e}"}}
 
-    # 2. VectorDB: health_check()
     try:
         viking_fs = get_viking_fs()
         storage = viking_fs._get_vector_store()
@@ -164,7 +178,6 @@ async def readiness_check(request: Request):
     except Exception as e:
         checks["vectordb"] = f"error: {e}"
 
-    # 3. APIKeyManager: check if loaded
     try:
         manager = getattr(request.app.state, "api_key_manager", None)
         if manager is not None:
@@ -174,7 +187,6 @@ async def readiness_check(request: Request):
     except Exception as e:
         checks["api_key_manager"] = f"error: {e}"
 
-    # 4. Embedding: quick probe to verify the provider is reachable
     try:
         from openviking_cli.utils.config.open_viking_config import OpenVikingConfigSingleton
 
@@ -190,7 +202,6 @@ async def readiness_check(request: Request):
     except Exception as e:
         checks["embedding"] = f"error: {e}"
 
-    # 5. Ollama: connectivity check if configured
     try:
         from openviking_cli.utils.config.open_viking_config import OpenVikingConfigSingleton
         from openviking_cli.utils.ollama import check_ollama_running, detect_ollama_in_config
@@ -215,490 +226,11 @@ async def readiness_check(request: Request):
     )
 
 
-class MatchIntentRequest(BaseModel):
-    query: str
-    top_k: int = 5
-
-
-class WriteDisambiguationRequest(BaseModel):
-    skill_name: str
-    rule: str
-
-
-class VerifyProbeRequest(BaseModel):
-    test_command: Optional[str] = None
-    diff_text: Optional[str] = None
-
-
-class TestGuardRequest(BaseModel):
-    code: str
-
-
-class AgentLoopProbeRequest(BaseModel):
-    action: str = "inject_interjection"
-    count: Optional[int] = 1
-    tool_name: Optional[str] = "multi_metric_gate"
-    steps: Optional[int] = 3
-    exhausted: Optional[bool] = False
-
-
-class BisectionHealProbeRequest(BaseModel):
-    scenario: str = "long_dialogue_truncation"
-
-
-
-def _load_all_evolution_lessons() -> list[dict]:
-    lessons = []
-    next_id = 1
-
-    # 1. Parse from master_memory evolution_lessons
-    mem_dir = Path.home() / ".openviking" / "data" / "viking" / "default" / "resources" / "master_memory" / "evolution_lessons"
-    if mem_dir.is_dir():
-        for f in sorted(mem_dir.glob("**/*.md")):
-            if f.name.startswith("."):
-                continue
-            try:
-                content = f.read_text(encoding="utf-8")
-                title = f.stem
-                context = ""
-                reflection = ""
-                lesson = ""
-
-                m_title = re.search(r"^#\s*(?:Evolution Lesson:\s*)?(.+)$", content, re.MULTILINE)
-                if m_title:
-                    title = m_title.group(1).strip()
-
-                m_ctx = re.search(r"-\s*\*\*Context\*\*:\s*(.+)", content, re.IGNORECASE)
-                if m_ctx:
-                    context = m_ctx.group(1).strip()
-
-                m_ref = re.search(r"##\s*🔍\s*Reflection.*?\n([\s\S]*?)(?=##|$)", content)
-                if m_ref:
-                    reflection = m_ref.group(1).strip()
-
-                m_les = re.search(r"##\s*📜\s*Permanent Guidelines.*?\n([\s\S]*?)(?=##|$)", content)
-                if m_les:
-                    lesson = m_les.group(1).strip()
-
-                lessons.append({
-                    "id": next_id,
-                    "title": title,
-                    "context": context or f"Recorded from master memory: {f.name}",
-                    "reflection": reflection or "Master Memory snapshot evolution.",
-                    "lesson": lesson or content[:200],
-                    "source": f"master_memory/{f.name}",
-                })
-                next_id += 1
-            except Exception as e:
-                logger.debug(f"Failed to parse lesson file {f}: {e}")
-
-    # 2. Parse from SKILL.md
-    skill_files = [
-        Path.home() / ".gemini" / "config" / "skills" / "openviking-studio-dev" / "SKILL.md",
-        Path("/home/skloxo/aho/openclaw/project/OpenVikingStudio/.agents/skills/openviking-studio-dev/SKILL.md"),
-        Path("/home/skloxo/aho/openclaw/project/.agents/skills/openviking-studio-dev/SKILL.md"),
-    ]
-    for sf in skill_files:
-        if sf.is_file():
-            try:
-                text = sf.read_text(encoding="utf-8")
-                pattern = r"####\s*📌\s*Lesson\s+([^\n]+)\n([\s\S]*?)(?=####\s*📌\s*Lesson|$)"
-                for m in re.finditer(pattern, text):
-                    raw_title = m.group(1).strip()
-                    block = m.group(2)
-
-                    ctx = ""
-                    ref = ""
-                    les = ""
-                    m_c = re.search(r"-\s*\*\*CONTEXT\*\*[:：]\s*(.+)", block)
-                    if m_c:
-                        ctx = m_c.group(1).strip()
-                    m_r = re.search(r"-\s*\*\*REFLECTION\*\*[:：]\s*(.+)", block)
-                    if m_r:
-                        ref = m_r.group(1).strip()
-                    m_l = re.search(r"-\s*\*\*LESSON\*\*[:：]\s*(.+)", block)
-                    if m_l:
-                        les = m_l.group(1).strip()
-
-                    t_clean = re.sub(r"^\d{4}-\d{2}-\d{2}\s*(?:#\d+)?[:：]?\s*", "", raw_title)
-
-                    lessons.append({
-                        "id": next_id,
-                        "title": t_clean or raw_title,
-                        "context": ctx or f"From {sf.parent.name}",
-                        "reflection": ref or "Reflexion continuous evolution.",
-                        "lesson": les or "Clean and faithful execution.",
-                        "source": str(sf),
-                    })
-                    next_id += 1
-                break
-            except Exception as e:
-                logger.debug(f"Failed to parse skill lessons {sf}: {e}")
-
-    return lessons
-
-
-CORE_SKILLS_CATALOG = [
-    ("diagnosing-bugs", "Diagnosis loop for hard bugs, performance regressions, crashes, exceptions, errors, memory leaks, slow performance, deadlocks"),
-    ("tdd", "Test-driven development, red-green-refactor, write unit tests, integration tests, failing test first"),
-    ("to-spec", "Turn conversation and requirements into spec and publish to tracker, PRD, specification, roadmap, requirements"),
-    ("to-tickets", "Break a plan or spec into tracer-bullet tickets, task cards, workboard tickets"),
-    ("codebase-design", "Shared vocabulary for designing deep modules, seam placement, architecture decisions, domain modeling"),
-    ("code-review", "Review changes along standards and spec, pull request review, inspect diff, code review"),
-    ("resolving-merge-conflicts", "Resolve in-progress git merge or rebase conflicts, git branch conflicts"),
-    ("research", "Investigate questions against high-trust primary sources, documentation, technical research"),
-    ("prototype", "Build throwaway prototype or demo to answer design question, test UI logic"),
-    ("openviking-studio-dev", "OpenViking Studio frontend and backend development, SSOT, NO GREEN EVER, fastmcp, monitoring"),
-    ("master-dev", "General code development, refactoring, architecture design, and standards enforcement"),
-    ("auto-pr", "Automated PR creation, testing, conflict resolution, git tags, and release SOP"),
-    ("triage", "Move issues and external PRs through a state machine of triage roles, categorize, verify"),
-    ("improve-codebase-architecture", "Scan a codebase for deepening opportunities, architectural report"),
-    ("openviking-memory-benchmark", "Benchmark telemetry and recall rate evaluation for OpenViking memory"),
-    ("openviking-model-evaluator", "Model evaluation and admission benchmarking in thinking separation mode"),
-    ("skill-state-fsm", "Deterministic finite state machine protocol for agent long-horizon execution"),
-    ("wikiskill-evolution", "Knowledge distillation and lessons learned persistence protocol into master memory"),
-]
-
-
-def _get_active_skills_catalog() -> list[tuple[str, str, str]]:
-    skills = []
-    all_skills_file = Path.home() / ".openviking" / "all_skills.json"
-    if all_skills_file.is_file():
-        try:
-            with open(all_skills_file, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                for item in data:
-                    name = item.get("name", "")
-                    desc = item.get("description", "")
-                    path = item.get("path", "")
-                    if name and desc:
-                        skills.append((name, desc, path))
-        except Exception:
-            pass
-    if not skills:
-        for name, desc in CORE_SKILLS_CATALOG:
-            skills.append((name, desc, f"/home/skloxo/.gemini/config/skills/{name}/SKILL.md"))
-    return skills
-
-
-@router.get("/api/v1/system/harness_metrics", tags=["system"])
-async def get_harness_metrics(
-    window: str = "24h",
-    _ctx: RequestContext = Depends(get_request_context),
-):
-    """Get Harness and Skill Center telemetry metrics within the specified time window."""
-    lessons = _load_all_evolution_lessons()
-    try:
-        from openviking.telemetry.telemetry_store import get_telemetry_store
-
-        store = get_telemetry_store()
-        metrics = store.get_harness_metrics_by_window(window=window)
-        metrics["lessons_detail"] = lessons
-        metrics["lessons_count"] = len(lessons)
-        retention = metrics.get("compression_retention_rate")
-        metrics["llmlingua"] = {
-            "token_retention_rate": retention if retention is not None else "--",
-            "target_range": "45%-55%",
-            "ast_gate_rate": 100.0 if metrics.get("blocked_calls", 0) == 0 else round(100.0 * (1.0 - metrics.get("blocked_calls", 0) / max(1, metrics.get("total_calls", 1))), 1),
-            "status": "healthy" if retention is not None and retention != "--" else "idle",
-        }
-        dspy_acc = metrics.get("dspy_compilation_accuracy")
-        metrics["dspy"] = {
-            "compilation_accuracy": dspy_acc if dspy_acc is not None else "--",
-            "target_threshold": ">95%",
-            "ast_gate_rate": 100.0 if metrics.get("blocked_calls", 0) == 0 else round(100.0 * (1.0 - metrics.get("blocked_calls", 0) / max(1, metrics.get("total_calls", 1))), 1),
-            "status": "healthy" if dspy_acc is not None else "idle",
-        }
-        from openviking.core.harness_fsm import HarnessFSM, HarnessState
-
-        fsm_meta = {
-            "states": [s.value for s in HarnessState],
-            "current_state": "IDLE",
-            "active_state": "IDLE",
-            "transition_rules_count": sum(len(v) for v in HarnessFSM.TRANSITION_GRAPH.values()),
-            "pipeline": [
-                {"id": "SPEC_INGEST", "label": "规格摄取", "desc": "任务规格冻结与输入三元组校验 (Spec P Ingestion)", "role": "Orchestrator"},
-                {"id": "DECOMPOSE", "label": "工单拆解", "desc": "Tracer-Bullet 工单拆解与 DAG 依赖编排", "role": "Orchestrator"},
-                {"id": "DISPATCH", "label": "专业分发", "desc": "角色隔离沙箱分配 (Orchestrator != Specialist)", "role": "Orchestrator"},
-                {"id": "RUNNING", "label": "执行生成", "desc": "沙箱代码生成与工具调用拦截", "role": "Specialist"},
-                {"id": "VERIFY", "label": "物理验真", "desc": "真实物理 Diff + 测试视网膜执行门禁", "role": "MultiMetricGate"},
-                {"id": "EVALUATE", "label": "独立评审", "desc": "生成者与评估者物理防串通 (Generator != Evaluator)", "role": "Independent Evaluator"},
-                {"id": "CHECKPOINT", "label": "状态快照", "desc": "不可变 SHA-256 检查点落盘", "role": "Harness Trace"},
-                {"id": "COMPLETED", "label": "交付归档", "desc": "版本回溯与 Git Tag 物理留痕", "role": "Release SOP"},
-            ],
-            "exceptions": [
-                {"id": "BLOCKED", "label": "护栏拦截", "desc": "防偷懒省略 / 超大读取物理阻断", "type": "guard"},
-                {"id": "RECOVERING", "label": "自愈重试", "desc": "三元故障恢复与预算自愈", "type": "retry"},
-                {"id": "FAILED", "label": "熔断终止", "desc": "不可逆错误熔断阻断", "type": "terminal"},
-            ],
-        }
-        gates_meta = {
-            "physical_diff": {
-                "name": "物理增量代码门禁 (Physical Diff Gate)",
-                "status": "active",
-                "badge": "Active Invariant",
-                "description": "严格剔除纯空格与纯注释伪变更，断言物理有效改动行 > 0",
-                "rules": ["min_effective_lines >= 1", "comment_only_filtered", "whitespace_filtered", "git_tree_asserted"],
-            },
-            "test_retina": {
-                "name": "测试视网膜反欺诈门禁 (Anti-Cheat Retina)",
-                "status": "active",
-                "badge": "Active Invariant",
-                "description": "拦截 false exit 0 假绿灯，真实校验 passed > 0 且 failed == 0",
-                "rules": ["real_process_execution", "test_report_parsed", "false_exit_zero_blocked", "duration_tracked"],
-            },
-            "anti_lazy": {
-                "name": "防偷懒代码省略占位符护栏 (Anti-Lazy Code Guard)",
-                "status": "active",
-                "badge": "Active Invariant",
-                "description": "AST 与正则实时扫描，物理封杀 pass、# TODO、...、NotImplementedError",
-                "rules": ["prohibit_pass_stub", "prohibit_todo_stub", "prohibit_ellipsis", "zero_omission_tolerance"],
-            },
-            "role_separation": {
-                "name": "生成与评估角色隔离 (Role Separation)",
-                "status": "active",
-                "badge": "Active Invariant",
-                "description": "物理隔离生成者与评估者，防止智能体自问自答自批改作弊",
-                "rules": ["generator_not_evaluator", "checkpoint_sha256_verified", "dual_axis_standards_spec"],
-            },
-            "cpa_teacher_guard": {
-                "name": "CPA 教师模型守卫拦截器 (CPA Teacher Model Guard)",
-                "status": "active",
-                "badge": "Active Invariant",
-                "description": "毫秒级物理拦截工兵任务/批量并发滥用昂贵教师模型 (GPT/Claude)，确保教师零泄漏、工兵高吞吐",
-                "rules": [
-                    "teacher_models_restricted_to_deadlock_and_tradeoff",
-                    "worker_pool_unlimited_throughput",
-                    "pre_tool_interception_sub_2ms",
-                    "discovery_to_card_proposal_enforced",
-                ],
-            },
-        }
-
-        # Read harness metrics JSON if present
-        h_metrics_path = Path.home() / ".openviking" / "harness_metrics.json"
-        teacher_blocked = 0
-        cpa_calls = 0
-        if h_metrics_path.is_file():
-            try:
-                with open(h_metrics_path, "r", encoding="utf-8") as hf:
-                    hdata = json.load(hf)
-                    teacher_blocked = hdata.get("teacher_blocked_calls", 0)
-                    cpa_calls = hdata.get("cpa_calls", 0)
-            except Exception:
-                pass
-        metrics["teacher_blocked_calls"] = teacher_blocked
-        metrics["cpa_calls"] = cpa_calls
-
-        try:
-            from openviking.session.memory.bisection_heal import get_extraction_heal_metrics
-            metrics["bisection_heal"] = get_extraction_heal_metrics()
-        except Exception:
-            metrics["bisection_heal"] = None
-
-        metrics["fsm"] = fsm_meta
-        metrics["gates"] = gates_meta
-        return JSONResponse(status_code=200, content=metrics)
-
-    except Exception as e:
-        logger.warning(f"Error fetching harness metrics: {e}")
-        return JSONResponse(
-            status_code=200,
-            content={
-                "total_calls": 0,
-                "blocked_calls": 0,
-                "find_calls": 0,
-                "store_calls": 0,
-                "active_skills_count": 0,
-                "lessons_count": len(lessons),
-                "lessons_detail": lessons,
-                "tokens_saved_total": 0,
-                "fsm": {
-                    "states": ["IDLE", "SPEC_INGEST", "DECOMPOSE", "DISPATCH", "RUNNING", "VERIFY", "EVALUATE", "CHECKPOINT", "RECOVERING", "COMPLETED", "ABORTED", "FAILED"],
-                    "current_state": "IDLE",
-                    "active_state": "IDLE",
-                },
-                "gates": {},
-                "llmlingua": {
-                    "token_retention_rate": 48.5,
-                    "target_range": "45%-55%",
-                    "ast_gate_rate": 100.0,
-                    "status": "healthy",
-                },
-                "dspy": {
-                    "compilation_accuracy": 98.2,
-                    "target_threshold": ">95%",
-                    "ast_gate_rate": 100.0,
-                    "status": "healthy",
-                },
-            },
-        )
-
-
-@router.post("/api/v1/harness/match_intent", tags=["system"])
-async def match_intent(
-    req: MatchIntentRequest,
-    _ctx: RequestContext = Depends(get_request_context),
-):
-    """Real neural semantic intent matching and collision detector using local 2080Ti Reranker."""
-    query = req.query.strip()
-    if not query:
-        return JSONResponse(
-            status_code=400,
-            content={"error": "query cannot be empty"},
-        )
-
-    skills_catalog = _get_active_skills_catalog()
-    candidate_skills = []
-    seen = set()
-    for name, desc in CORE_SKILLS_CATALOG:
-        path = f"/home/skloxo/.gemini/config/skills/{name}/SKILL.md"
-        candidate_skills.append((name, desc, path))
-        seen.add(name)
-    for name, desc, path in skills_catalog:
-        if name not in seen:
-            candidate_skills.append((name, desc, path))
-            seen.add(name)
-    q_tokens = set(re.findall(r"[\w\u4e00-\u9fa5]+", query.lower()))
-
-    def pre_rank_score(item: tuple[str, str, str]) -> float:
-        name, desc, _ = item
-        d_tokens = set(re.findall(r"[\w\u4e00-\u9fa5]+", f"{name} {desc}".lower()))
-        common = len(q_tokens & d_tokens)
-        name_bonus = 3.0 if any(t in name.lower() for t in q_tokens) else 0.0
-        return common + name_bonus
-
-    # Stage 1: Fast pre-ranking to select top 6 candidates
-    top_candidates = sorted(candidate_skills, key=pre_rank_score, reverse=True)[:6]
-
-    docs = [f"{name}: {desc}" for name, desc, _ in top_candidates]
-    results = None
-    try:
-        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-        rerank_req = urllib.request.Request(
-            "http://127.0.0.1:11433/v1/rerank",
-            data=json.dumps({
-                "model": "qwen3-vl-reranker",
-                "query": query,
-                "documents": docs,
-            }).encode("utf-8"),
-            headers={"Content-Type": "application/json"},
-        )
-        with opener.open(rerank_req, timeout=5) as r:
-            resp_data = json.loads(r.read())
-            results = sorted(resp_data.get("results", []), key=lambda x: x.get("relevance_score", 0), reverse=True)
-            logger.info(f"Reranker returned {len(results)} results, top: {results[:2]}")
-    except Exception as e:
-        logger.warning(f"Local reranker call failed, falling back to lexical similarity: {e}")
-
-    if not results:
-        scored = []
-        for i, (name, desc, _) in enumerate(top_candidates):
-            d_tokens = set(re.findall(r"[\w\u4e00-\u9fa5]+", f"{name} {desc}".lower()))
-            common = len(q_tokens & d_tokens)
-            score = common / max(len(q_tokens), 1) * 0.4 + 0.2
-            scored.append({"index": i, "relevance_score": score})
-        results = sorted(scored, key=lambda x: x["relevance_score"], reverse=True)
-
-    top1 = results[0]
-    top2 = results[1] if len(results) > 1 else None
-
-    idx1 = int(top1["index"])
-    p_name, p_desc, p_path = top_candidates[idx1]
-
-    def to_pct(score: float) -> float:
-        pct = (score - 0.20) / (0.55 - 0.20) * 36.0 + 60.0
-        return round(min(99.5, max(45.0, pct)), 1)
-
-    p_conf = to_pct(float(top1.get("relevance_score", 0.5)))
-    s_name = None
-    s_conf = None
-    s_path = None
-    has_collision = False
-    suggestion = f"意图清晰，高置信度 ({p_conf}%) 命中 {p_name} 技能，零歧义碰撞。"
-
-    if top2:
-        idx2 = int(top2["index"])
-        s_name, s_desc, s_path = top_candidates[idx2]
-        s_conf = to_pct(float(top2.get("relevance_score", 0.3)))
-        diff = p_conf - s_conf
-        if s_conf >= 70.0 and diff < 15.0:
-            has_collision = True
-            suggestion = (
-                f"检测到意图在 \"{p_name}\" 与 \"{s_name}\" 之间重叠度较高 ({s_conf}%)！"
-                f"建议在 SKILL.md 中追加消歧规则: \"{p_name} 负责主体主控，{s_name} 负责特定分支场景\"。"
-            )
-
-    return JSONResponse(
-        status_code=200,
-        content={
-            "status": "ok",
-            "primarySkill": p_name,
-            "primaryConfidence": p_conf,
-            "secondarySkill": s_name,
-            "secondaryConfidence": s_conf,
-            "hasCollision": has_collision,
-            "suggestion": suggestion,
-            "targetPath": p_path,
-        },
-    )
-
-
-@router.post("/api/v1/harness/write_disambiguation", tags=["system"])
-async def write_disambiguation(
-    req: WriteDisambiguationRequest,
-    _ctx: RequestContext = Depends(get_request_context),
-):
-    """Physically append intent disambiguation rule to target SKILL.md on disk."""
-    skill_name = req.skill_name.strip()
-    rule = req.rule.strip()
-    if not skill_name or not rule:
-        return JSONResponse(status_code=400, content={"error": "skill_name and rule are required"})
-
-    candidate_paths = [
-        Path.home() / ".gemini" / "config" / "skills" / skill_name / "SKILL.md",
-        Path(f"/home/skloxo/aho/openclaw/project/OpenVikingStudio/.agents/skills/{skill_name}/SKILL.md"),
-        Path(f"/home/skloxo/aho/openclaw/project/.agents/skills/{skill_name}/SKILL.md"),
-        Path.home() / "aho" / "openclaw" / "skills" / skill_name / "SKILL.md",
-        Path.home() / ".openclaw" / "skills" / skill_name / "SKILL.md",
-    ]
-
-    target_file = None
-    for p in candidate_paths:
-        if p.is_file():
-            target_file = p
-            break
-
-    if not target_file:
-        target_file = candidate_paths[0]
-        target_file.parent.mkdir(parents=True, exist_ok=True)
-        if not target_file.exists():
-            target_file.write_text(f"---\nname: {skill_name}\ndescription: Auto-managed skill\n---\n\n# {skill_name}\n", encoding="utf-8")
-
-    disambiguation_block = f"\n\n<!-- INTENT_DISAMBIGUATION_RULE_AUTO_WRITTEN -->\n> [!IMPORTANT]\n> **意图消歧规约**: {rule}\n"
-    with open(target_file, "a", encoding="utf-8") as f:
-        f.write(disambiguation_block)
-
-    return JSONResponse(
-        status_code=200,
-        content={
-            "status": "ok",
-            "file_path": str(target_file),
-            "message": f"Successfully written disambiguation rule to {target_file}",
-        },
-    )
-
-
 @router.get("/api/v1/system/status", tags=["system"])
 async def system_status(
     ctx: RequestContext = Depends(get_request_context),
 ):
-    """Get system status.
-
-    ``result.user`` is the authenticated request's ``user_id`` (from API key or
-    headers), not the process-wide service default — clients use this to resolve
-    multi-tenant paths (e.g. OpenClaw plugin).
-    """
+    """Get system status."""
     service = get_service()
     return Response(
         status="ok",
@@ -707,25 +239,6 @@ async def system_status(
             "user": ctx.user.user_id,
         },
     )
-
-
-class WaitRequest(BaseModel):
-    """Request model for wait."""
-
-    timeout: Optional[float] = None
-
-
-class ConsistencyRequest(BaseModel):
-    """Request model for filesystem/vector-index consistency checks and optional pruning."""
-
-    uri: str
-    prune: bool = False
-
-
-class BackendSyncRequest(BaseModel):
-    """Request model for backend sync status and retry operations."""
-
-    uri: str
 
 
 @router.post("/api/v1/system/wait", tags=["system"])
@@ -810,6 +323,7 @@ async def get_telemetry_trends(
     ctx: RequestContext = Depends(get_request_context),
 ):
     """Return timeseries trend data points from SQLite TelemetryStore."""
+    del ctx
     try:
         from openviking.telemetry.telemetry_store import TelemetryStore
 
@@ -821,116 +335,13 @@ async def get_telemetry_trends(
         return {"status": "ok", "metric": metric, "window": window, "points": []}
 
 
-_GPU_CACHE: Optional[tuple[float, dict]] = None
-_SYS_RES_CACHE: Optional[tuple[float, dict]] = None
-_SYSTEM_TELEMETRY_CACHE_TTL = 5.0  # 5秒内存快照缓存，阻断高频重复的 nvidia-smi 进程分叉与 /proc 读取
-
-
 @router.get("/api/v1/system/gpu", tags=["system"])
 async def get_gpu_telemetry(
     ctx: RequestContext = Depends(get_request_context),
 ):
     """Return real GPU VRAM usage and compute utilization via nvidia-smi probe."""
-    global _GPU_CACHE
-    now = time.monotonic()
-    if _GPU_CACHE is not None and (now - _GPU_CACHE[0]) < _SYSTEM_TELEMETRY_CACHE_TTL:
-        return _GPU_CACHE[1]
-
-    try:
-        proc = await asyncio.create_subprocess_exec(
-            "nvidia-smi",
-            "--query-gpu=memory.used,memory.total,utilization.gpu",
-            "--format=csv,noheader,nounits",
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.DEVNULL,
-        )
-        stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=2.0)
-        if proc.returncode == 0 and stdout:
-            line = stdout.decode().strip().split("\n")[0]
-            parts = [p.strip() for p in line.split(",")]
-            if len(parts) >= 3:
-                used_mb = float(parts[0])
-                total_mb = float(parts[1])
-                gpu_util = float(parts[2])
-                res = {
-                    "used_gb": round(used_mb / 1024.0, 2),
-                    "total_gb": round(total_mb / 1024.0, 2),
-                    "gpu_percent": round(gpu_util, 1),
-                }
-                _GPU_CACHE = (now, res)
-                return res
-    except Exception as e:
-        logger.debug(f"GPU telemetry probe unavailable: {e}")
-
-    fallback = {
-        "used_gb": 0.0,
-        "total_gb": 0.0,
-        "gpu_percent": 0.0,
-    }
-    _GPU_CACHE = (now, fallback)
-    return fallback
-
-
-_LAST_CPU_TIMES: Optional[tuple[float, float]] = None
-
-
-@defensive(
-    domain="system",
-    name="read_host_mem",
-    fallback={"total_gb": 0.0, "used_gb": 0.0, "memory_percent": 0.0},
-    log_level="debug",
-)
-def _read_host_mem() -> dict[str, float]:
-    try:
-        with open("/proc/meminfo") as f:
-            lines = f.readlines()
-        mem = {}
-        for line in lines:
-            parts = line.split(":")
-            if len(parts) == 2:
-                mem[parts[0].strip()] = int(parts[1].strip().split()[0])
-        total_kb = mem.get("MemTotal", 0)
-        avail_kb = mem.get("MemAvailable", 0)
-        used_kb = max(0, total_kb - avail_kb)
-        mem_percent = round((used_kb / total_kb) * 100, 1) if total_kb > 0 else 0.0
-        return {
-            "total_gb": round(total_kb / (1024 * 1024), 2),
-            "used_gb": round(used_kb / (1024 * 1024), 2),
-            "memory_percent": mem_percent,
-        }
-    except Exception as e:
-        logger.debug(f"Host meminfo probe unavailable: {e}")
-        return {"total_gb": 0.0, "used_gb": 0.0, "memory_percent": 0.0}
-
-
-@defensive(
-    domain="system",
-    name="read_host_cpu",
-    fallback=0.0,
-    log_level="debug",
-)
-def _read_host_cpu() -> float:
-    global _LAST_CPU_TIMES
-    try:
-        with open("/proc/stat") as f:
-            cpu_line = f.readline()
-        fields = [float(x) for x in cpu_line.split()[1:8]]
-        if len(fields) >= 4:
-            idle = fields[3]
-            total = sum(fields)
-            if _LAST_CPU_TIMES:
-                prev_idle, prev_total = _LAST_CPU_TIMES
-                diff_idle = idle - prev_idle
-                diff_total = total - prev_total
-                _LAST_CPU_TIMES = (idle, total)
-                if diff_total > 0:
-                    cpu_percent = round((1.0 - (diff_idle / diff_total)) * 100, 1)
-                    return max(0.0, min(100.0, cpu_percent))
-            _LAST_CPU_TIMES = (idle, total)
-            return round((1.0 - (idle / total)) * 100, 1) if total > 0 else 0.0
-    except Exception as e:
-        logger.debug(f"Host cpu stat probe unavailable: {e}")
-    return 0.0
+    del ctx
+    return await probe_gpu_telemetry()
 
 
 @router.get("/api/v1/system/resources", tags=["system"])
@@ -938,22 +349,7 @@ async def get_system_host_resources(
     _ctx: RequestContext = Depends(get_request_context),
 ):
     """Return real host CPU, memory, and system resource metrics."""
-    global _SYS_RES_CACHE
-    now = time.monotonic()
-    if _SYS_RES_CACHE is not None and (now - _SYS_RES_CACHE[0]) < _SYSTEM_TELEMETRY_CACHE_TTL:
-        return _SYS_RES_CACHE[1]
-
-    mem_info = _read_host_mem()
-    cpu_percent = _read_host_cpu()
-    res = {
-        "status": "ok",
-        "cpu_percent": cpu_percent,
-        "memory_percent": mem_info["memory_percent"],
-        "memory_used_gb": mem_info["used_gb"],
-        "memory_total_gb": mem_info["total_gb"],
-    }
-    _SYS_RES_CACHE = (now, res)
-    return res
+    return probe_system_host_resources()
 
 
 @router.get("/api/v1/system/entropy/gatekeeper", tags=["system"])
@@ -979,167 +375,3 @@ async def get_defensive_telemetry_endpoint(
         status="ok",
         result=get_defensive_telemetry(),
     ).model_dump(exclude_none=True)
-
-
-@router.post("/api/v1/harness/verify_probe", tags=["system"])
-async def verify_harness_probe(
-    req: VerifyProbeRequest,
-    _ctx: RequestContext = Depends(get_request_context),
-):
-    """Execute real physical verification probe (Diff + Test Retina) on demand."""
-    from openviking.core.multi_metric_gate import MultiMetricGate
-
-    gate = MultiMetricGate()
-    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../.."))
-    diff_text = req.diff_text.strip() if req.diff_text else None
-    test_command = req.test_command.strip() if req.test_command else None
-
-    report = gate.verify_delivery(
-        repo_path=None if diff_text else repo_root,
-        diff_text=diff_text,
-        test_command=test_command,
-        cwd=repo_root,
-    )
-    return JSONResponse(
-        status_code=200,
-        content={
-            "passed": report.passed,
-            "summary": report.summary,
-            "rejection_reasons": report.rejection_reasons,
-            "diff_result": {
-                "is_valid": report.diff_result.is_valid,
-                "effective_diff_lines": report.diff_result.effective_diff_lines,
-                "added_lines": report.diff_result.added_lines,
-                "deleted_lines": report.diff_result.deleted_lines,
-                "comment_lines_filtered": report.diff_result.comment_lines_filtered,
-                "whitespace_lines_filtered": report.diff_result.whitespace_lines_filtered,
-                "files_changed": report.diff_result.changed_files,
-                "comments_only": (
-                    report.diff_result.comment_lines_filtered > 0
-                    and report.diff_result.effective_diff_lines == 0
-                ),
-                "is_empty": (
-                    report.diff_result.added_lines == 0
-                    and report.diff_result.deleted_lines == 0
-                ),
-            },
-            "test_result": {
-                "passed": report.test_result.passed if report.test_result else None,
-                "passed_count": report.test_result.passed_count if report.test_result else 0,
-                "failed_count": report.test_result.failed_count if report.test_result else 0,
-                "exit_code": report.test_result.exit_code if report.test_result else 0,
-                "is_false_exit_zero": report.test_result.is_false_exit_zero if report.test_result else False,
-                "duration_sec": round(report.test_result.duration_sec, 3) if report.test_result else 0.0,
-            } if report.test_result else None,
-            "verified_at": report.verified_at,
-        },
-    )
-
-
-@router.post("/api/v1/harness/test_guard", tags=["system"])
-async def test_anti_lazy_guard(
-    req: TestGuardRequest,
-    _ctx: RequestContext = Depends(get_request_context),
-):
-    """Real-time test of AntiLazyCodeGuard against user-supplied code snippet."""
-    from openviking.core.read_write_offload import AntiLazyCodeGuard
-
-    guard = AntiLazyCodeGuard()
-    matched = guard.scan_for_lazy_omissions(req.code)
-    if matched:
-        return JSONResponse(
-            status_code=200,
-            content={
-                "passed": False,
-                "blocked": True,
-                "matched_pattern": matched,
-                "reason": f"检测到偷懒代码省略占位符 '{matched}'！已触发物理阻断。",
-                "rule": "AntiLazyCodeGuard (腾讯 DECO 生产护栏规则)",
-            },
-        )
-    return JSONResponse(
-        status_code=200,
-        content={
-            "passed": True,
-            "blocked": False,
-            "matched_pattern": None,
-            "reason": "代码清洁度校验通过，未发现 pass / TODO / 省略号等占位符。",
-            "rule": "AntiLazyCodeGuard (腾讯 DECO 生产护栏规则)",
-        },
-    )
-
-
-@router.get("/api/v1/system/agent_loop_telemetry", tags=["system"])
-async def get_agent_loop_telemetry(
-    _ctx: RequestContext = Depends(get_request_context),
-):
-    """Get real-time TwoTierAgentLoop runtime telemetry snapshot (Card-Observability-AgentLoop-Telemetry)."""
-    from dataclasses import asdict
-    from openviking.core.agent_loop_telemetry import get_agent_loop_telemetry_collector
-
-    collector = get_agent_loop_telemetry_collector()
-    snapshot = collector.get_snapshot()
-    return JSONResponse(status_code=200, content=asdict(snapshot))
-
-
-@router.post("/api/v1/system/agent_loop_probe", tags=["system"])
-async def agent_loop_simulation_probe(
-    req: AgentLoopProbeRequest,
-    _ctx: RequestContext = Depends(get_request_context),
-):
-    """Execute live TwoTierAgentLoop simulation probe (interjection, brake, merkle)."""
-    from dataclasses import asdict
-    from openviking.core.agent_loop_telemetry import get_agent_loop_telemetry_collector
-
-    collector = get_agent_loop_telemetry_collector()
-    res = collector.simulate_probe(
-        action=req.action,
-        count=req.count or 1,
-        tool_name=req.tool_name or "multi_metric_gate",
-        steps=req.steps or 3,
-        exhausted=req.exhausted or False,
-    )
-    res["snapshot"] = asdict(collector.get_snapshot())
-    return JSONResponse(status_code=200, content=res)
-
-
-@router.get("/api/v1/system/bisection_heal_metrics", tags=["system"])
-async def get_bisection_heal_telemetry(
-    _ctx: RequestContext = Depends(get_request_context),
-):
-    """Get Zero-Thinking & Bisection Heal telemetry metrics (Card-Extraction-ZeroThinking-BisectionHeal)."""
-    from openviking.session.memory.bisection_heal import (
-        get_extraction_heal_metrics,
-        MAX_PRE_SLICE_CHARS,
-        MAX_PRE_SLICE_MESSAGES,
-        MAX_SAFE_MEMORY_ITEM_CHARS,
-    )
-
-    metrics = get_extraction_heal_metrics()
-    metrics["thresholds"] = {
-        "char_threshold": MAX_PRE_SLICE_CHARS,
-        "msg_threshold": MAX_PRE_SLICE_MESSAGES,
-        "safe_chunk_limit": MAX_SAFE_MEMORY_ITEM_CHARS,
-    }
-    return JSONResponse(status_code=200, content=metrics)
-
-
-
-@router.post("/api/v1/system/bisection_heal_probe", tags=["system"])
-async def bisection_heal_simulation_probe(
-    req: BisectionHealProbeRequest,
-    _ctx: RequestContext = Depends(get_request_context),
-):
-
-
-    """Execute live Zero-Thinking Bisection Heal simulation drill."""
-    from openviking.session.memory.bisection_heal import (
-        simulate_bisection_heal_run,
-        get_extraction_heal_metrics,
-    )
-
-    res = simulate_bisection_heal_run(scenario=req.scenario or "long_dialogue_truncation")
-    res["metrics"] = get_extraction_heal_metrics()
-    return JSONResponse(status_code=200, content=res)
-
-
