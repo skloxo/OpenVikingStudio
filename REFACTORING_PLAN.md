@@ -489,7 +489,7 @@
 > **三阶原子化演进规划**：
 > 1. **Card-33 (P0, v1.5.97)**：技能准入物理洗练、全流程自愈与文件系统恒等式巡检视网膜（直击脏技能与误杀根因） [x] 已验收通过 ✅ (v1.5.97)
 > 2. **Card-34 (P1, v1.5.98)**：后端高危超限路由文件解耦切除 — `skills.py` 与 `system.py` 精确接缝拆解 [x] 已验收通过 ✅ (v1.5.98)
-> 3. **Card-35 (P1, v1.5.99)**：RSI 昼夜演进盲测基准增强与 Bootstrap 启动深度自检闭环（打通不变量物理阻断与启动握手） ⏳
+> 3. **Card-35 (P1, v1.5.99)**：RSI 昼夜演进盲测基准增强与 Bootstrap 启动深度自检闭环（打通不变量物理阻断与启动握手） [x] 已验收通过 ✅ (v1.5.99)
 
 ---
 
@@ -578,21 +578,43 @@
 
 ---
 
-#### 📌 [P1] [ ] Card-35: RSI-Holdout-Benchmark-And-Bootstrap-SelfCheck-Closure (v1.5.99): RSI 昼夜演进盲测基准增强与 Bootstrap 启动深度自检闭环 ⏳
-- **类型**：智能体自进化 / 系统稳固性 ｜ **优先级**：🔥 P1 ｜ **目标版本**：`v1.5.99` ｜ **当前状态**：[ ] 就绪待调度 ⏳
+#### 📌 [P1] [x] Card-35: RSI-Holdout-Benchmark-And-Bootstrap-SelfCheck-Closure (v1.5.99): RSI 昼夜演进盲测基准增强与 Bootstrap 启动深度自检闭环 ✅ (v1.5.99)
+- **类型**：智能体自进化 / 系统稳固性 ｜ **优先级**：🔥 P1 ｜ **目标版本**：`v1.5.99` ｜ **当前状态**：[x] 已验收通过 ✅
 - **背景与第一性原理**：
   - 智能体自我进化（RSI）的核心底线在于“真盲测门禁绝对阻断退化”，而系统生命周期第一步在于“Bootstrap 启动握手自检自愈”；
-  - 结合当前已有的 `rsi_holdout_benchmark.py` 与 `bootstrap.py`，打通服务启动时 SQLite WAL 完整性自检、FTS5 表完备性探测、五大不变量盲测扩展（类型安全断言、单文件规模红线卫兵、反幻觉导轨），并在前端 `/studio/retrieval` RSI 昼夜座舱中直观呈现。
+  - 结合已有的 `rsi_holdout_benchmark.py` 与 `bootstrap.py`，打通服务启动时 SQLite WAL 完整性自检、FTS5 表完备性探测、五大不变量盲测扩展（扩展至 8 大物理安全门禁：冻结面零篡改、凭据安全免疫、单文件规模 ≤500 行、NO GREEN EVER 规范、Fail-Fast 鲁棒性、防偷懒代码占位符封杀、强类型导轨与 TS any 拦截、零 Mock 真实性），并在前端 `/studio/retrieval` RSI 昼夜座舱中直观呈现。
 - **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
   - **衡量指标**：
-    1. **Bootstrap 启动健康自检通过率**：核心依赖与数据库完整性检查 **$100\%$**；
-    2. **RSI Holdout 盲测物理规则拦截覆盖度**：从 5 大核心不变量扩展至 8 大物理安全门禁；
-    3. **自进化安全阻断透明度**：前端座舱实时呈现盲测雷达图与门禁审计记录。
-  - **展示界面与卡片**：`/studio/retrieval` RSI 昼夜演进座舱与启动探针。
+    1. **Bootstrap 启动健康自检通过率**：核心依赖与数据库完整性检查 **$100\%$**（已达成：PRAGMA quick_check 验证与 FTS5 自动 rebuild 自愈）；
+    2. **RSI Holdout 盲测物理规则拦截覆盖度**：从 5 大核心不变量扩展至 **8 大物理安全门禁**（已达成：8/8 门禁全覆盖，支持策略雷达回显）；
+    3. **单文件规模安全红线**：所有修改与新增模块严格落在黄金甜点区（90 ~ 344 行，0 超标）；
+    4. **自进化安全阻断透明度**：前端座舱实时呈现「8 大物理不变量 Holdout 雷达」与「SQLite & FTS5 自检健康瓦片」。
+  - **展示界面与卡片**：`/studio/retrieval` RSI 昼夜演进座舱、8 大不变量雷达卡片与数据库健康瓦片。
 - **核心交付细目**：
-  1. `rsi_holdout_benchmark.py` 扩展 8 大物理不变量（含代码规模 $\le 500$ 行守卫、零伪造 Mock 哨兵）；
-  2. `bootstrap.py` 接入数据库完整性 PRAGMA quick_check 与 FTS5 索引自动修复；
-  3. 前端座舱 `rsi-daynight-cockpit.tsx` 联动呈现启动健康体检与演进雷达。
+  1. `openviking/core/rsi_holdout_benchmark.py`：扩展至 8 大物理不变量门禁（275 行，黄金甜点区）；
+  2. `openviking/server/bot_gateway_manager.py`：抽离 VikingBot 进程管理与生命周期（237 行）；
+  3. `openviking/server/db_integrity_check.py`：实现 SQLite PRAGMA quick_check 与 FTS5 rebuild 自愈（122 行）；
+  4. `openviking/server/bootstrap.py`：瘦身降解完成（从 552 行缩减至 302 行），挂载数据库完整性自检；
+  5. `openviking/server/routers/rsi.py`：暴露 `/api/v1/rsi/holdout/report`、`/api/v1/rsi/holdout/run`、`/api/v1/rsi/bootstrap/health` 端点（249 行）；
+  6. 前端组件 `rsi-holdout-radar-card.tsx` (154 行) 与 `db-integrity-health-card.tsx` (161 行)；
+  7. 前端座舱 `rsi-daynight-cockpit.tsx`：挂载两大高内聚卡片，行数稳健维持在 344 行；
+  8. 测试套件：新增 `tests/unit/test_rsi_holdout_8_invariants.py` 与 `tests/unit/test_db_integrity_bootstrap.py`，全套 34 个用例全部秒级秒过。
+- **Git Commit**：`v1.5.99`
+- **修改与新增文件清单**：
+  - `openviking/core/rsi_holdout_benchmark.py`
+  - `openviking/server/bot_gateway_manager.py`
+  - `openviking/server/db_integrity_check.py`
+  - `openviking/server/bootstrap.py`
+  - `openviking/server/routers/rsi.py`
+  - `src/routes/retrieval/-components/db-integrity-health-card.tsx`
+  - `src/routes/retrieval/-components/rsi-holdout-radar-card.tsx`
+  - `src/routes/retrieval/-components/rsi-daynight-cockpit.tsx`
+  - `tests/unit/test_rsi_holdout_8_invariants.py`
+  - `tests/unit/test_db_integrity_bootstrap.py`
+  - `tests/unit/test_rsi_true_closed_loop.py`
+  - `package.json`
+  - `openviking/_version.py`
+  - `REFACTORING_PLAN.md`
 
 
 

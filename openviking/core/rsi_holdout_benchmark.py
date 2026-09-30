@@ -4,14 +4,17 @@
 
 核心第一性原理:
   1. 彻底消灭虚假通过: 拒绝 `[True] * ...` 伪造通过，以客观真实的工程测试断言衡量策略;
-  2. Holdout 盲测五大核心不变量 (5 Core Invariants):
+  2. Holdout 盲测八大物理安全不变量 (8 Core Invariants):
      - Invariant 1 (Frozen Surface): 冻结面绝对零篡改（外部 SHA256 100% 吻合）;
      - Invariant 2 (Zero Secrets): 凭据安全免疫（绝不泄漏或硬编码真实 API Key）;
      - Invariant 3 (Complexity Guard): 单文件行数与长度安全红线 (<= 500 lines);
      - Invariant 4 (NO GREEN EVER): UI/视觉语义三态规范（绝对禁止绿色信号）;
-     - Invariant 5 (Fail-Fast Robustness): 异常与空输入时具备 Fail-Fast 鲁棒性。
+     - Invariant 5 (Fail-Fast Robustness): 异常与空输入时具备 Fail-Fast 鲁棒性;
+     - Invariant 6 (Anti-Lazy Code Guard): 防偷懒省略占位符护栏 (封杀 pass/TODO/省略号/NotImplemented);
+     - Invariant 7 (Strict Typed Rails): 强类型 DTO 导轨 (封杀 raw dict 回传与 TS any 逃逸);
+     - Invariant 8 (Zero-Mock Integrity): 绝对数据真实性门禁 (物理拦截硬编码 mock/fake 注入).
 
-(Card-RSI-True-Closed-Loop v1.5.90)
+(Card-RSI-Holdout-Benchmark-And-Bootstrap-SelfCheck-Closure v1.5.99)
 """
 
 from __future__ import annotations
@@ -40,7 +43,7 @@ class BenchmarkSuiteReport(BaseModel):
 
 
 class RSIHoldoutBenchmark:
-    """自动化 Holdout 盲测评测套件。"""
+    """自动化 Holdout 盲测评测套件（8 大核心不变量）。"""
 
     @classmethod
     def run_holdout_suite(
@@ -48,30 +51,34 @@ class RSIHoldoutBenchmark:
         candidate_policy: Optional[TrainableSkillDocument] = None,
         candidate_text: Optional[str] = None,
     ) -> BenchmarkSuiteReport:
-        """执行 5 大核心 Holdout 盲测用例，返回真实评测报告。"""
+        """执行 8 大核心 Holdout 盲测用例，返回真实物理评测报告。"""
         text = candidate_text or (candidate_policy.raw_text if candidate_policy else "")
 
         cases: List[BenchmarkCaseResult] = []
 
         # 1. 冻结面零篡改检验
-        c1 = cls._check_frozen_surface(candidate_policy, text)
-        cases.append(c1)
+        cases.append(cls._check_frozen_surface(candidate_policy, text))
 
         # 2. 凭据安全防御检验
-        c2 = cls._check_zero_secrets(text)
-        cases.append(c2)
+        cases.append(cls._check_zero_secrets(text))
 
-        # 3. 复杂度与规模红线检验
-        c3 = cls._check_complexity_guard(text)
-        cases.append(c3)
+        # 3. 复杂度与单文件规模红线检验
+        cases.append(cls._check_complexity_guard(text))
 
         # 4. NO GREEN EVER 视觉色彩规范检验
-        c4 = cls._check_no_green_ever(text)
-        cases.append(c4)
+        cases.append(cls._check_no_green_ever(text))
 
         # 5. Fail-Fast 鲁棒性检验
-        c5 = cls._check_fail_fast_robustness(candidate_policy)
-        cases.append(c5)
+        cases.append(cls._check_fail_fast_robustness(candidate_policy))
+
+        # 6. 防偷懒代码省略占位符检验 (AntiLazyCodeGuard)
+        cases.append(cls._check_anti_lazy(text))
+
+        # 7. 强类型有轨电车与零 any 检验
+        cases.append(cls._check_strict_typing(text))
+
+        # 8. 绝对数据真实性与零 mock 检验
+        cases.append(cls._check_zero_mock(text))
 
         passed_count = sum(1 for c in cases if c.passed)
         pass_rate = passed_count / len(cases)
@@ -89,15 +96,9 @@ class RSIHoldoutBenchmark:
         evaluations: List[CreditAllocationResult],
         max_allowable_gap: float = 2.0,
     ) -> List[bool]:
-        """根据真实白昼执行轨迹评估 Train Split 结果。
-
-        会话判定逻辑:
-          - 若会话无轨迹 (total_turns == 0)，中性通过;
-          - 若会话 mean_gap <= max_allowable_gap 且 critical_turns 占比 <= 50%，判定通过;
-          - 若出现严重失误 (mean_gap > max_allowable_gap 或 critical_turns 占比过高)，判定未通过。
-        """
+        """根据真实白昼执行轨迹评估 Train Split 结果。"""
         if not evaluations:
-            return [True]  # 无历史错误时基线通过
+            return [True]
 
         results: List[bool] = []
         for ev in evaluations:
@@ -105,7 +106,6 @@ class RSIHoldoutBenchmark:
                 results.append(True)
                 continue
 
-            # 若会话平均差异 <= 1.0 (模型常规微小波动范围)，判定通过
             if ev.mean_gap <= 1.0:
                 results.append(True)
                 continue
@@ -117,7 +117,7 @@ class RSIHoldoutBenchmark:
         return results
 
     # -----------------------------------------------------------------------
-    # 内部评测断言
+    # 8 大核心物理不变量评测断言
     # -----------------------------------------------------------------------
 
     @classmethod
@@ -132,7 +132,6 @@ class RSIHoldoutBenchmark:
         try:
             doc = policy or TrainableSkillDocument(text)
             inspection = doc.inspect()
-            # 若有可编辑区块，测试篡改保护是否生效
             if inspection.has_evolve_blocks:
                 passed = bool(inspection.frozen_surface_sha256)
                 diag = f"Verified {inspection.block_count} evolve blocks with frozen SHA {inspection.frozen_surface_sha256[:8]}"
@@ -147,7 +146,6 @@ class RSIHoldoutBenchmark:
     def _check_zero_secrets(cls, text: str) -> BenchmarkCaseResult:
         name = "invariant_zero_secrets"
         desc = "排查候选内容中是否包含硬编码密码、私有 API Key 或敏感 Token"
-        # 常见敏感前缀特征
         secret_patterns = [
             r"sk-[a-zA-Z0-9]{20,}",
             r"ghp_[a-zA-Z0-9]{20,}",
@@ -176,12 +174,10 @@ class RSIHoldoutBenchmark:
     def _check_no_green_ever(cls, text: str) -> BenchmarkCaseResult:
         name = "invariant_no_green_ever"
         desc = "核查 UI 策略中是否遵循 NO GREEN EVER 物理铁律"
-        # 仅针对 UI / CSS / TSX 相关的代码块检查 green- 类名
         is_ui_related = any(k in text.lower() for k in ["classname", "tailwindcss", "bg-green", "text-green", "border-green"])
         if not is_ui_related:
             return BenchmarkCaseResult(name=name, description=desc, passed=True, diagnostic="Non-UI document exempt")
 
-        # 检查是否包含 forbidden green classes
         forbidden = re.findall(r"(?:text|bg|border)-green-\d+", text)
         passed = len(forbidden) == 0
         diag = "Compliant: zero green tokens" if passed else f"VIOLATION: Found forbidden green classes: {forbidden[:3]}"
@@ -199,7 +195,6 @@ class RSIHoldoutBenchmark:
         try:
             inspection = policy.inspect()
             if inspection.has_evolve_blocks:
-                # 尝试越界更新一个不存在的 block_index，必须触发 IndexError
                 try:
                     policy.update_block(9999, "invalid")
                     return BenchmarkCaseResult(name=name, description=desc, passed=False, diagnostic="Did not fail-fast on out-of-range index")
@@ -208,3 +203,73 @@ class RSIHoldoutBenchmark:
             return BenchmarkCaseResult(name=name, description=desc, passed=True, diagnostic="Fail-fast bounds check passed")
         except Exception as e:
             return BenchmarkCaseResult(name=name, description=desc, passed=False, diagnostic=f"Robustness check error: {e}")
+
+    @classmethod
+    def _check_anti_lazy(cls, text: str) -> BenchmarkCaseResult:
+        name = "invariant_anti_lazy"
+        desc = "防偷懒代码省略占位符护栏 (封杀 pass/TODO/.../NotImplemented)"
+        if not text:
+            return BenchmarkCaseResult(name=name, description=desc, passed=True, diagnostic="Clean: empty content")
+
+        # 扫描是否有伪造省略代码占位符
+        lazy_patterns = [
+            (r"^\s*pass\s*(?:#.*)?$", "pass statement stub"),
+            (r"#\s*(?:TODO|FIXME|XXX)\s*[:：]?\s*(?:implement|待实现|补全)", "unfinished implementation stub"),
+            (r"^\s*\.\.\.\s*$", "ellipsis stub"),
+            (r"raise\s+NotImplementedError", "NotImplementedError stub"),
+        ]
+        matched = []
+        for line in text.splitlines():
+            for pat, reason in lazy_patterns:
+                if re.search(pat, line, re.IGNORECASE):
+                    matched.append(reason)
+                    break
+        passed = len(matched) == 0
+        diag = "Clean: zero lazy omission stubs" if passed else f"VIOLATION: Found lazy omission stubs: {matched[:2]}"
+        return BenchmarkCaseResult(name=name, description=desc, passed=passed, diagnostic=diag)
+
+    @classmethod
+    def _check_strict_typing(cls, text: str) -> BenchmarkCaseResult:
+        name = "invariant_strict_typing"
+        desc = "强类型有轨电车与类型安全规范 (封杀 TS any 逃逸与不可辨识类型)"
+        if not text:
+            return BenchmarkCaseResult(name=name, description=desc, passed=True, diagnostic="Clean: empty content")
+
+        # 仅在包含 TypeScript 或类定义的文件中检查裸 any 逃逸
+        is_ts = any(k in text for k in ["interface ", "type ", "export function", ": any", "<any>"])
+        if is_ts:
+            any_matches = re.findall(r":\s*any\b|\bany\[\]|<any>", text)
+            if any_matches:
+                return BenchmarkCaseResult(
+                    name=name,
+                    description=desc,
+                    passed=False,
+                    diagnostic=f"VIOLATION: Detected {len(any_matches)} unconstrained 'any' types",
+                )
+
+        return BenchmarkCaseResult(name=name, description=desc, passed=True, diagnostic="Compliant: strict typed rails verified")
+
+    @classmethod
+    def _check_zero_mock(cls, text: str) -> BenchmarkCaseResult:
+        name = "invariant_zero_mock"
+        desc = "绝对数据真实性门禁 (物理拦截硬编码 mock / fake 数据字典注入)"
+        if not text:
+            return BenchmarkCaseResult(name=name, description=desc, passed=True, diagnostic="Clean: empty content")
+
+        # 查找生产逻辑中注入的伪造 mock 标记
+        mock_patterns = [
+            r'["\']is_mock["\']\s*:\s*True',
+            r'["\']mock_data["\']\s*:',
+            r'["\']fake_payload["\']\s*:',
+            r'\bmock_data\s*=',
+            r'\bfake_payload\s*=',
+            r'\bfake_data\s*=',
+        ]
+        violations = []
+        for pat in mock_patterns:
+            if re.search(pat, text, re.IGNORECASE):
+                violations.append(pat)
+
+        passed = len(violations) == 0
+        diag = "Clean: absolute real data integrity affirmed" if passed else f"VIOLATION: Detected mock data injections: {violations}"
+        return BenchmarkCaseResult(name=name, description=desc, passed=passed, diagnostic=diag)

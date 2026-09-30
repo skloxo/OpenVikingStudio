@@ -28,8 +28,13 @@ from pydantic import BaseModel
 
 from openviking.core.rsi_credit_allocator import RSICreditAllocator
 from openviking.core.rsi_day_night_engine import DualSplitGateResult, RSIDayNightEngine, RSIPhase
+from openviking.core.rsi_holdout_benchmark import BenchmarkSuiteReport, RSIHoldoutBenchmark
 from openviking.core.rsi_trajectory_store import RSITrajectoryStore
 from openviking.core.trainable_skill_policy import SurfaceInspectionResult, TrainableSkillDocument
+from openviking.server.db_integrity_check import (
+    get_last_database_check_report,
+    run_database_integrity_self_check,
+)
 
 router = APIRouter(prefix="/api/v1/rsi", tags=["rsi"])
 
@@ -208,4 +213,37 @@ async def evolve_skill_endpoint(req: EvolveSkillRequest) -> Dict[str, Any]:
         )
     except (FileNotFoundError, IndexError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc))
+
+
+class RunHoldoutRequest(BaseModel):
+    candidate_text: Optional[str] = None
+    skill_name: Optional[str] = None
+
+
+@router.get("/holdout/report")
+async def get_holdout_report() -> Dict[str, Any]:
+    """获取默认基准策略的 8 大物理安全不变量 Holdout 盲测真实报告。"""
+    report = RSIHoldoutBenchmark.run_holdout_suite()
+    return report.model_dump()
+
+
+@router.post("/holdout/run")
+async def run_candidate_holdout(req: Optional[RunHoldoutRequest] = None) -> Dict[str, Any]:
+    """对传入的候选策略文本执行 8 大物理安全不变量 Holdout 盲测。"""
+    text = req.candidate_text if req else None
+    report = RSIHoldoutBenchmark.run_holdout_suite(candidate_text=text)
+    return report.model_dump()
+
+
+@router.get("/bootstrap/health")
+async def get_bootstrap_health_report() -> Dict[str, Any]:
+    """获取启动期 SQLite PRAGMA quick_check 及 FTS5 完整性自检体检报告。"""
+    return get_last_database_check_report()
+
+
+@router.post("/bootstrap/health/run")
+async def trigger_bootstrap_health_check() -> Dict[str, Any]:
+    """手动触发一次全局 SQLite PRAGMA quick_check 及 FTS5 完整性体检。"""
+    return run_database_integrity_self_check()
+
 

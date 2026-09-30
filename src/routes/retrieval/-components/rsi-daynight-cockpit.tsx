@@ -16,6 +16,8 @@ import {
 } from 'lucide-react'
 import { Button } from '#/components/ui/button'
 import { ovClient } from '#/lib/ov-client'
+import { DbIntegrityHealthCard } from './db-integrity-health-card'
+import { RSIHoldoutRadarCard } from './rsi-holdout-radar-card'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -330,6 +332,12 @@ export function RSIDayNightCockpit() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* 第二排并排卡片: 8 大物理安全不变量 Holdout 雷达与数据库健康自愈 */}
+      <div className="grid grid-cols-2 gap-3">
+        <RSIHoldoutRadarCard />
+        <DbIntegrityHealthCard />
       </div>
     </div>
   )
