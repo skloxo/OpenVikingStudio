@@ -80,8 +80,8 @@ def execute(ctx):
 """
     doc = TrainableSkillDocument(valid_skill, skill_name="sample-skill")
     rep = RSIHoldoutBenchmark.run_holdout_suite(doc)
-    assert rep.total_cases == 5
-    assert rep.passed_cases == 5
+    assert rep.total_cases == 8
+    assert rep.passed_cases == 8
     assert rep.pass_rate == 1.0
 
     # 1. 凭据泄漏拦截测试 (Invariant 2)
