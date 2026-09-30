@@ -38,8 +38,8 @@
 
 ### 🧬 Milestone 5-A: 半成品与悬空功能全链路真实化贯通 (Suspended Features Truthful Closure)
 
-#### 📌 [P1] [ ] Card-20: Card-Skill-Ingestion-Sanitizer-And-SelfHealing-Retina (v1.5.77): 技能准入物理洗练、全流程自愈与文件系统恒等式巡检视网膜 ⏳
-- **类型**：架构治理 / 技能中枢核心强化 ｜ **优先级**：🔥 P1 ｜ **目标版本**：`v1.5.77` ｜ **当前状态**：[ ] 就绪待调度 ⏳
+#### 📌 [P0] [x] Card-20 ➔ 顺延升级至 Milestone 6 主力工单 Card-33 (v1.5.97) 聚焦推进 🚀
+- **类型**：架构治理 / 技能中枢核心强化 ｜ **优先级**：🔥🔥 P0 ｜ **目标版本**：`v1.5.97` ｜ **当前状态**：[x] 已平移至 Card-33 推进 🚀
 - **背景与第一性原理**：
   - 过去技能中心存在“宽进严出”与“高阶演进重度工程、底层卫生无人看守”的倒置死穴：底层无脑允许不规范目录（中文、点号、空目录）落盘，导致表现层被迫堆砌粗暴的猜测试补丁（如子串误杀 `openclaw-backup` 与 `nemo-curator`），造成大盘数字与文件系统脱节（753 vs 760）；
   - 本卡片从第一性原理直击根因：建立**“严进宽出”与物理恒等式自愈闭环**，彻底根除脏技能入库与接口误杀。
@@ -481,6 +481,85 @@
   - `npx vitest run src/routes/resources`：38/38 测试全绿（2.70s）；
   - `pytest -o addopts="" tests/storage/test_viking_fs_grep.py`：23 passed in 0.15s；
   - 服务端热重载验证：`systemctl --user restart openviking` 成功，`/health` 探针返回 `version: 1.5.96`。
+
+---
+
+### 🚀 Milestone 6: 系统准入洗练、后端深水区瘦身与自进化基准打通 (Core Governance & Evolution Triad)
+
+> **三阶原子化演进规划**：
+> 1. **Card-33 (P0, v1.5.97)**：技能准入物理洗练、全流程自愈与文件系统恒等式巡检视网膜（直击脏技能与误杀根因） [x] 已验收通过 ✅ (v1.5.97)
+> 2. **Card-34 (P1, v1.5.98)**：后端高危超限路由文件解耦切除 — `skills.py` (869L) 与 `system.py` (1145L) 精确接缝拆解 ⏳
+> 3. **Card-35 (P1, v1.5.99)**：RSI 昼夜演进盲测基准增强与 Bootstrap 启动深度自检闭环（打通不变量物理阻断与启动握手） ⏳
+
+---
+
+#### 📌 [P0] [x] Card-33: Skill-Ingestion-Sanitizer-And-SelfHealing-Retina (v1.5.97): 技能准入物理洗练、全流程自愈与文件系统恒等式巡检视网膜 ✅ (v1.5.97)
+- **类型**：架构治理 / 技能中枢核心强化 ｜ **优先级**：🔥🔥 P0 ｜ **目标版本**：`v1.5.97` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与第一性原理**：
+  - 过去技能中心存在“宽进严出”与“高阶演进重度工程、底层卫生无人看守”的倒置死穴：底层无脑允许不规范目录（中文、点号、空目录）落盘，导致表现层被迫堆砌粗暴的猜测试补丁（如子串误杀 `openclaw-backup` 与 `nemo-curator`），造成大盘数字与文件系统脱节；
+  - 本卡片从第一性原理直击根因：建立**“严进宽出”与物理恒等式自愈闭环**，彻底根除脏技能入库与接口误杀。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **技能物理恒等式一致率**：$\text{Count}_{\text{FS}} \equiv \text{Count}_{\text{API}}$，达成目标：**$100\%$ 绝对恒等**，差异集 $\text{Difference} \equiv \varnothing$；
+    2. **准入洗练自动化率**：非规范输入（中文名、点号/空格、空目录、缺 `SKILL.md`）自动修正与脚手架补齐率达到 **$100\%$**；
+    3. **读取层误杀率**：彻底切除 ad-hoc 子串猜测，正规技能误杀率**降为 $0\%$**。
+  - **展示界面与卡片**：控制台大盘主页与技能中心大盘。
+- **核心交付细目**：
+  1. 底层强纠偏与准入洗练器 (`openviking/service/skill_sanitizer.py`, 220 行)：实现非规范名称全量转写合法 kebab-case、异常备份目录精准鉴别、以及缺失损坏 `SKILL.md` 的 YAML 元数据脚手架自动修复与补齐；
+  2. 切除读取层盲目猜测并实现规范准入闭环 (`openviking/server/routers/skills.py`)：彻底切除 `_DATE_ARCHIVE_REGEX` 及 `curator-` 误杀，引入统一的 `SkillSanitizer.is_anomalous_dir_name` 校验，并暴露 `/api/v1/skills/retina/status`, `/audit`, `/heal` 物理视网膜三大端点；
+  3. 恒等式自动化巡检视网膜与自愈引擎 (`openviking/service/skill_retina_cron.py`, 221 行)：自动比对物理目录与 API 暴露条目，实现破损技能全自动自愈与恒等式双端核对；
+  4. 完善单元测试与端点集成测试（`tests/unit/test_skill_sanitizer.py` 6 用例全绿、`tests/server/test_api_skill_retina.py` 2 用例全绿、`tests/server/test_api_skills.py` 14 用例全绿）。
+- **Git Commit 留痕**：`5ab4f0579`
+- **Git Tag 留痕**：`v1.5.97`
+- **实际修改文件清单**：
+  - `openviking/service/skill_sanitizer.py` (新增，220 行)
+  - `openviking/service/skill_retina_cron.py` (新增，221 行)
+  - `openviking/server/routers/skills.py` (更新接入洗练器与视网膜端点)
+  - `tests/unit/test_skill_sanitizer.py` (新增单测，144 行)
+  - `tests/server/test_api_skill_retina.py` (新增端点测试，52 行)
+  - `tests/server/test_api_skills.py` (更新对齐服务器标准错误信封)
+  - `package.json` & `openviking/_version.py` (版本升迁至 `1.5.97`)
+- **门禁验证清单**：
+  - 自动化测试 100% 通过（23 个单元与端点测试全通过）；
+  - 安全凭据审计 0 密钥泄露；
+  - 前端 Vite 构建成功（耗时 15.26s）；
+  - 服务端热重载成功，`/health` 返回版本 `1.5.97`。
+
+---
+
+#### 📌 [P1] [ ] Card-34: Backend-Fat-File-Surgery-Skills-And-System-Routers (v1.5.98): 后端高危超限路由文件解耦切除 — skills.py 与 system.py 精确接缝拆解 ⏳
+- **类型**：后端架构治理 / 单文件规模红线 ｜ **优先级**：🔥 P1 ｜ **目标版本**：`v1.5.98` ｜ **当前状态**：[ ] 就绪待调度 ⏳
+- **背景与第一性原理**：
+  - 前端全库已达成 100% $\le 500$ 行安全红线，后端核心路由依然存在超限大文件：`skills.py` (869L) 与 `system.py` (1145L)；
+  - 路由层严重违反单一职责原则，杂糅了大量 Pydantic DTO 定义、物理文件哈希校验、系统硬件探针扫描与日志解析；
+  - 目标：按领域接缝（Seam）将 DTO 模型、探针采集器、校验逻辑正交拆离，实现路由层纯容器化装配（目标文件 $\le 400$ 行）。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. 目标路由文件及所有衍生模块 100% **$\le 500$ 行**（基准收敛至 100~350 行黄金甜点区）；
+    2. API 契约向后兼容率 **$100\%$**（接口路径、参数与响应结构 0 破坏）。
+  - **展示界面与卡片**：系统监控大盘 `/studio/system` 与 技能管理大盘。
+- **核心交付细目**：
+  1. `skills.py` 接缝拆解（`skill_models.py`、`skill_integrity_checker.py`、`skill_export_service.py`）；
+  2. `system.py` 接缝拆解（`system_models.py`、`system_probes.py`、`system_log_reader.py`）；
+  3. 全量路由与系统监控测试回归验证。
+
+---
+
+#### 📌 [P1] [ ] Card-35: RSI-Holdout-Benchmark-And-Bootstrap-SelfCheck-Closure (v1.5.99): RSI 昼夜演进盲测基准增强与 Bootstrap 启动深度自检闭环 ⏳
+- **类型**：智能体自进化 / 系统稳固性 ｜ **优先级**：🔥 P1 ｜ **目标版本**：`v1.5.99` ｜ **当前状态**：[ ] 就绪待调度 ⏳
+- **背景与第一性原理**：
+  - 智能体自我进化（RSI）的核心底线在于“真盲测门禁绝对阻断退化”，而系统生命周期第一步在于“Bootstrap 启动握手自检自愈”；
+  - 结合当前已有的 `rsi_holdout_benchmark.py` 与 `bootstrap.py`，打通服务启动时 SQLite WAL 完整性自检、FTS5 表完备性探测、五大不变量盲测扩展（类型安全断言、单文件规模红线卫兵、反幻觉导轨），并在前端 `/studio/retrieval` RSI 昼夜座舱中直观呈现。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **Bootstrap 启动健康自检通过率**：核心依赖与数据库完整性检查 **$100\%$**；
+    2. **RSI Holdout 盲测物理规则拦截覆盖度**：从 5 大核心不变量扩展至 8 大物理安全门禁；
+    3. **自进化安全阻断透明度**：前端座舱实时呈现盲测雷达图与门禁审计记录。
+  - **展示界面与卡片**：`/studio/retrieval` RSI 昼夜演进座舱与启动探针。
+- **核心交付细目**：
+  1. `rsi_holdout_benchmark.py` 扩展 8 大物理不变量（含代码规模 $\le 500$ 行守卫、零伪造 Mock 哨兵）；
+  2. `bootstrap.py` 接入数据库完整性 PRAGMA quick_check 与 FTS5 索引自动修复；
+  3. 前端座舱 `rsi-daynight-cockpit.tsx` 联动呈现启动健康体检与演进雷达。
 
 
 
