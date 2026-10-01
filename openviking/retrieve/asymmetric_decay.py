@@ -2,14 +2,23 @@
 # SPDX-License-Identifier: AGPL-3.0
 """
 Asymmetric Temporal Decay Engine (非对称时效动力学与防通胀降权机制).
-(Card-Hygiene-AsymmetricDecayAndBench / v1.5.31)
+(Card-Hygiene-AsymmetricDecayAndBench / v1.5.31; Card-37 / v1.6.1)
 
-Principles:
+First Principles & Physical Dynamics:
 1. "Wrong memories cause more damage than correct memories provide benefit" (Asymmetric Rule).
-2. Axiom Immunity: Fundamental system rules and master memories are 100% immune to decay (decay = 1.0).
-3. Exponential Half-Life: Outdated or dormant items naturally decay.
-4. Status Penalties: 'disputed' items are penalized by 0.5; 'superseded' items by 0.2.
+2. Axiom Immunity: Fundamental system rules and master memories are 100% immune to decay (decay >= 1.0).
+3. Type-Differentiated Decay:
+   - Canonical: lambda = 0.0 (no decay)
+   - Experience: lambda = 0.007 (slow decay, half-life ~99 days)
+   - Event / Task / Session: lambda = 0.05 (fast decay, half-life ~14 days)
+   - General: lambda = 0.01 (medium decay, half-life ~70 days)
+4. Hit-Frequency Reinforcement Boost:
+   Score_effective = Score_semantic * exp(-lambda * delta_t) * (1 + beta * log(1 + N_hits))
+   High-value memories validated and retrieved frequently actively resist and overcome aging.
+5. Status Penalties: 'disputed' items are penalized by 0.50x; 'superseded' items by 0.20x.
 """
+
+from __future__ import annotations
 
 import math
 import time
@@ -18,7 +27,7 @@ from pydantic import BaseModel, Field
 
 
 class DecayConfig(BaseModel):
-    """Configuration for asymmetric temporal decay."""
+    """Configuration for asymmetric temporal decay and hit frequency boost."""
     axiom_immune_prefixes: tuple[str, ...] = (
         "viking://resources/master_memory/rules/",
         "viking://resources/master_memory/core/",
@@ -27,9 +36,21 @@ class DecayConfig(BaseModel):
     )
     default_half_life_days: float = 90.0  # 3 months default half life for normal memories
     session_half_life_days: float = 14.0  # 2 weeks for transient session logs
+    lambda_by_type: Dict[str, float] = Field(
+        default_factory=lambda: {
+            "canonical": 0.0,
+            "experience": 0.007,
+            "event": 0.05,
+            "task": 0.05,
+            "session": 0.05,
+            "general": 0.01,
+        }
+    )
+    beta_hit_boost: float = 0.20  # Logarithmic hit reinforcement coefficient
     disputed_penalty: float = 0.50
     superseded_penalty: float = 0.20
     min_decay_floor: float = 0.05
+    max_decay_ceiling: float = 2.0
 
 
 class DecayAssessment(BaseModel):
@@ -42,16 +63,23 @@ class DecayAssessment(BaseModel):
     decay_factor: float
     adjusted_score: float
     penalty_reason: Optional[str] = None
+    active_count: int = 0
+    memory_type: str = "general"
+    hit_boost: float = 1.0
+    decay_multiplier: float = 1.0
+    lambda_val: float = 0.01
 
 
 class AsymmetricDecayEngine:
-    """Computes asymmetric decay factors and score adjustments."""
+    """Computes asymmetric temporal decay factors, hit boosts, and score adjustments."""
 
     def __init__(self, config: Optional[DecayConfig] = None):
         self.config = config or DecayConfig()
 
-    def is_axiom_immune(self, uri: str) -> bool:
+    def is_axiom_immune(self, uri: str, memory_type: Optional[str] = None) -> bool:
         """Check if an item is a fundamental immutable axiom exempt from decay."""
+        if memory_type == "canonical":
+            return True
         if not uri:
             return False
         for prefix in self.config.axiom_immune_prefixes:
@@ -59,45 +87,44 @@ class AsymmetricDecayEngine:
                 return True
         return False
 
+    def resolve_lambda(self, uri: str, memory_type: Optional[str] = None) -> float:
+        """Resolve the decay coefficient lambda based on type and URI patterns."""
+        if self.is_axiom_immune(uri, memory_type):
+            return 0.0
+        if memory_type is not None:
+            type_clean = memory_type.strip().lower()
+            if type_clean in self.config.lambda_by_type:
+                return self.config.lambda_by_type[type_clean]
+
+        # Fallback to transient vs general half-life mapping
+        is_transient = "staging" in uri or "session" in uri or "tmp" in uri
+        if is_transient:
+            return math.log(2.0) / max(1.0, self.config.session_half_life_days)
+        return math.log(2.0) / max(1.0, self.config.default_half_life_days)
+
     def compute_decay_factor(
         self,
         uri: str,
         updated_ts: Optional[float] = None,
         status: str = "active",
         now_ts: Optional[float] = None,
+        active_count: int = 0,
+        memory_type: Optional[str] = None,
     ) -> tuple[float, Optional[str]]:
         """
-        Calculate decay factor in range [min_floor, 1.0].
+        Calculate effective decay factor in range [min_floor, max_ceiling].
         Returns (decay_factor, penalty_reason).
         """
-        # 1. Axioms are unconditionally immune
-        if self.is_axiom_immune(uri):
-            return 1.0, None
-
-        current_time = now_ts or time.time()
-        # Default to 30 days if timestamp not available
-        delta_seconds = max(0.0, current_time - (updated_ts or (current_time - 30 * 86400)))
-        delta_days = delta_seconds / 86400.0
-
-        # Choose appropriate half life
-        is_transient = "staging" in uri or "session" in uri or "tmp" in uri
-        half_life = self.config.session_half_life_days if is_transient else self.config.default_half_life_days
-
-        # Exponential decay: 2^(-delta / half_life)
-        decay = math.pow(0.5, delta_days / max(1.0, half_life))
-
-        # Status penalty
-        penalty_reason = None
-        status_lower = (status or "active").lower()
-        if status_lower == "superseded":
-            decay *= self.config.superseded_penalty
-            penalty_reason = "superseded_by_newer_memory"
-        elif status_lower == "disputed":
-            decay *= self.config.disputed_penalty
-            penalty_reason = "marked_disputed_or_unverified"
-
-        final_factor = round(max(self.config.min_decay_floor, min(1.0, decay)), 4)
-        return final_factor, penalty_reason
+        assessment = self.evaluate_candidate(
+            uri=uri,
+            raw_score=1.0,
+            updated_ts=updated_ts,
+            status=status,
+            now_ts=now_ts,
+            active_count=active_count,
+            memory_type=memory_type,
+        )
+        return assessment.decay_factor, assessment.penalty_reason
 
     def evaluate_candidate(
         self,
@@ -106,18 +133,38 @@ class AsymmetricDecayEngine:
         updated_ts: Optional[float] = None,
         status: str = "active",
         now_ts: Optional[float] = None,
+        active_count: int = 0,
+        memory_type: Optional[str] = None,
     ) -> DecayAssessment:
-        """Produce a complete decay assessment for a search candidate."""
-        immune = self.is_axiom_immune(uri)
+        """Produce a complete physical decay assessment for a search candidate."""
+        resolved_type = (memory_type or "general").lower()
+        immune = self.is_axiom_immune(uri, resolved_type)
         current_time = now_ts or time.time()
-        delta_days = max(0.0, (current_time - (updated_ts or current_time)) / 86400.0)
+        delta_seconds = max(0.0, current_time - (updated_ts or current_time))
+        delta_days = delta_seconds / 86400.0
 
-        factor, reason = self.compute_decay_factor(
-            uri=uri,
-            updated_ts=updated_ts,
-            status=status,
-            now_ts=now_ts,
-        )
+        if immune:
+            lambda_val = 0.0
+            decay_mult = 1.0
+            hit_boost = 1.0
+            factor = 1.0
+            penalty_reason = None
+        else:
+            lambda_val = self.resolve_lambda(uri, memory_type)
+            decay_mult = math.exp(-lambda_val * delta_days)
+            hit_boost = 1.0 + self.config.beta_hit_boost * math.log1p(max(0, active_count))
+            factor = decay_mult * hit_boost
+
+            penalty_reason = None
+            status_lower = (status or "active").lower()
+            if status_lower == "superseded":
+                factor *= self.config.superseded_penalty
+                penalty_reason = "superseded_by_newer_memory"
+            elif status_lower == "disputed":
+                factor *= self.config.disputed_penalty
+                penalty_reason = "marked_disputed_or_unverified"
+
+            factor = round(max(self.config.min_decay_floor, min(self.config.max_decay_ceiling, factor)), 4)
 
         adjusted = round(raw_score * factor, 4)
         return DecayAssessment(
@@ -128,5 +175,10 @@ class AsymmetricDecayEngine:
             raw_score=raw_score,
             decay_factor=factor,
             adjusted_score=adjusted,
-            penalty_reason=reason,
+            penalty_reason=penalty_reason,
+            active_count=active_count,
+            memory_type=resolved_type,
+            hit_boost=round(hit_boost, 4),
+            decay_multiplier=round(decay_mult, 4),
+            lambda_val=round(lambda_val, 6),
         )

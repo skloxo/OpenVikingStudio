@@ -14,6 +14,7 @@
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.6.1`** | **Card-37** | **体外大脑时效动力学衰减、频次强化与离线做梦蒸馏流水线 (Temporal Decay & Offline Dream)** | 1. 时效衰减与频次强化公式落地；2. 离线做梦与主知识卡片自动建链；3. 时效动力学仿真与做梦座舱卡片；4. 24 项测试全绿。 | [x] 已验收通过 ✅ |
 | **`v1.6.0`** | **Card-36** | **体外大脑记忆抗熵增中枢与认知冲突消解流水线 (Lineage & Superseding DAG)** | 1. 冲突消解与 Superseding DAG 自动建链；2. 检索端物理阻断废弃节点 (`exclude_superseded`)；3. 座舱可视化卡片；4. 26 项测试全绿。 | [x] 已验收通过 ✅ |
 | **`v1.5.99`** | **Card-35** | **RSI 昼夜演进盲测基准增强与 Bootstrap 启动深度自检闭环** | 1. 8 大物理安全门禁盲测雷达；2. SQLite PRAGMA quick_check 自检自愈；3. 34 项单测全绿。 | [x] 已验收通过 ✅ |
 | **`v1.5.98`** | **Card-34** | **后端高危超限路由解耦切除 — skills.py 与 system.py 接缝拆解** | 1. 拆解至黄金甜点区；2. 硬件探针快照；3. 45 项单测全绿。 | [x] 已验收通过 ✅ |
@@ -665,6 +666,59 @@
   - 安全凭据审计 0 密钥泄露（4576 个跟踪文件扫描通过）；
   - 前端生产构建成功（`npm run build` 耗时 14.57s）；
   - 运行时服务无缝自愈重启成功，`/health` 探针真实返回 `version: 1.6.0`。
-
-
+#### 📌 [P0] [x] Card-37: Temporal-Decay-Dynamics-And-Offline-Dreaming-Consolidation (v1.6.1): 体外大脑时效动力学衰减、频次强化与离线做梦蒸馏流水线 ✅ (v1.6.1)
+- **类型**：架构治理 / 记忆抗熵增中枢（课题一 Layer 3 & Layer 4）｜ **优先级**：🔥🔥 P0 ｜ **目标版本**：`v1.6.1` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与第一性原理**：
+  - 课题一专项白皮书（体外大脑记忆与内容治理体系）核心落地：
+    - Layer 3: 传统时效衰减仅考虑时间跨度，缺少“高价值知识越用越强，抵抗衰减”的正向反馈机制；且未对 canonical/experience/event 分级设置物理半衰期；
+    - Layer 4: 离线“做梦”重构（`ov_dream` Consolidation）从灾备第一原则出发，通过聚类碎片熔铸主知识卡片（Master Knowledge Card），联动 `MemoryConflictResolver` 构建 superseding 演进 DAG，剥离原始散落碎片。
+- **核心算法物理公式 (Layer 3 & 4 SSOT)**：
+  $$Score_{effective} = Score_{semantic} \times e^{-\lambda \cdot \Delta t} \times (1 + \beta \log(1 + N_{hits}))$$
+  - $\Delta t$：距离最后更新/验证的天数；
+  - $\lambda$：根据记忆类型配置的物理衰减系数（`canonical: 0.0` 绝对免疫, `experience: 0.007` 慢衰减, `event/task: 0.05` 快衰减, `general: 0.01` 默认）；
+  - $N_{hits}$：历史被实际采纳并验证的频次（`active_count`），$\beta = 0.20$ 频次对数强化乘子；
+  - 状态惩罚：`superseded: 0.20x`, `disputed: 0.50x`，下限 `min_decay_floor: 0.05`，上限 `max_decay_ceiling: 2.0`。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **时效衰减与频次强化公式准确度**：经验型知识随时间平滑衰减，高频采纳记忆 ($N_{hits} \ge 5$) 有效对抗衰减，公式覆盖率达到 **$100\%$**；
+    2. **离线做梦碎片蒸馏压缩率**：散落碎片聚类提纯后熔铸为单一 Master Knowledge Card，碎片原子标记 `superseded` 并建链，净熵减少率达到 **$\ge 50\%$**；
+    3. **灾备优先与 DAG 演进一致性**：做梦前快照物理留痕，原始碎片自动指向主卡片，检索端 `exclude_superseded` 保持零污染；
+    4. **单文件规模安全红线**：所有修改和新增模块严格控制在 **$100 \sim 350$ 行** 黄金甜点区；
+    5. **前端座舱客观可视化**：在 `/studio/retrieval` 挂载时效动力学仿真与离线做梦座舱卡片 (`TemporalDecayDreamCard` & `TemporalDecaySimulator`)，提供实时公式计算、雷达曲线与做梦触发。
+  - **展示界面与卡片**：`/studio/retrieval` 结晶座舱、泊车座舱、`TemporalDecayDreamCard`、`TemporalDecaySimulator`。
+- **核心交付细目**：
+  1. `openviking/retrieve/asymmetric_decay.py`：实现分层 $\lambda$、频次对数强化乘子与有效得分计算，完善 `DecayAssessment` 结构（184 行，黄金甜点区）；
+  2. `openviking/retrieve/hybrid_retriever.py`：透传 `active_count` 与 `memory_type`，记录 `decay_factor`、`hit_boost` 与 `adjusted_score`（235 行，黄金甜点区）；
+  3. `openviking/service/offline_dreamer.py`：独立单例实现离线做梦蒸馏、灾备封存、主知识卡片熔铸与 `MemoryConflictResolver` 自动建链（341 行）；
+  4. `openviking/service/entropy_watchdog.py`：在空闲调度与策略分发中接入 `offline_dreamer`（311 行）；
+  5. `openviking/server/routers/memory_lifecycle.py`：暴露 `/dream/run`、`/dream/stats`、`/decay/simulate` 端点（277 行）；
+  6. 前端组件 `src/routes/retrieval/-components/temporal-decay-dream-card.tsx`：NO GREEN EVER 座舱高密卡片，支持做梦蒸馏遥测与流水看板（225 行）；
+  7. 前端组件 `src/routes/retrieval/-components/temporal-decay-simulator.tsx`：接缝拆解出的高密交互式实时仿真台组件（188 行）；
+  8. 前端路由 `src/routes/retrieval/route.tsx`：在 crystallizer 与 valet 标签页中挂载座舱卡片（329 行）；
+  9. 资产档案库 `docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md`：登记新增组件资产；
+  10. 测试套件：新增 `tests/unit/test_temporal_decay_boost.py`、`tests/unit/test_offline_dreamer.py`、`tests/server/test_api_memory_dream_decay.py`，全套 24 个用例全绿通过。
+- **Git Commit 留痕**：`v1.6.1`
+- **Git Tag 留痕**：`v1.6.1`
+- **实际修改文件清单**：
+  - `openviking/retrieve/asymmetric_decay.py` (更新，184 行)
+  - `openviking/retrieve/hybrid_retriever.py` (更新，235 行)
+  - `openviking/service/offline_dreamer.py` (新增，341 行)
+  - `openviking/service/entropy_watchdog.py` (更新，311 行)
+  - `openviking/server/routers/memory_lifecycle.py` (更新，277 行)
+  - `src/routes/retrieval/-components/temporal-decay-dream-card.tsx` (新增，225 行)
+  - `src/routes/retrieval/-components/temporal-decay-simulator.tsx` (新增，188 行)
+  - `src/routes/retrieval/route.tsx` (更新，329 行)
+  - `docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md` (更新组件档案)
+  - `tests/unit/test_temporal_decay_boost.py` (新增单测，154 行)
+  - `tests/unit/test_offline_dreamer.py` (新增单测，128 行)
+  - `tests/server/test_api_memory_dream_decay.py` (新增端点单测，78 行)
+  - `package.json` & `openviking/_version.py` (版本升迁至 `1.6.1`)
+  - `REFACTORING_PLAN.md`
+- **门禁验证清单**：
+  - 自动化测试 100% 通过（24 个单元与端点测试全通过）；
+  - 活态资产视网膜单测 100% 通过（`component-inventory.test.ts` 5 项全通过）；
+  - 安全凭据审计 0 密钥泄露（4581 个跟踪文件扫描通过）；
+  - 前端生产构建成功（`npm run build` 耗时 13.90s）；
+  - 运行时服务无缝自愈重启成功，`/health` 探针真实返回 `version: 1.6.1`；
+  - 实机端点测试验证通过（`/decay/simulate`、`/dream/stats`、`/dream/run` 物理数据真实回显）。
 

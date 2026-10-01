@@ -181,16 +181,23 @@ class HybridRetriever:
             meta = item.extra_metadata
             nested_meta = meta.get("extra_metadata") if isinstance(meta.get("extra_metadata"), dict) else {}
             updated_ts = meta.get("updated_ts") or nested_meta.get("updated_ts")
+            active_count = int(meta.get("active_count") or nested_meta.get("active_count") or 0)
+            memory_type = meta.get("memory_type") or nested_meta.get("memory_type")
             assessment = decay_engine.evaluate_candidate(
                 uri=item.uri,
                 raw_score=item.dense_score or item.normalized_score,
                 updated_ts=updated_ts,
                 status=status,
+                active_count=active_count,
+                memory_type=memory_type,
             )
             item.extra_metadata["status"] = status
             item.extra_metadata["decay_factor"] = assessment.decay_factor
             item.extra_metadata["adjusted_score"] = assessment.adjusted_score
             item.extra_metadata["is_immune"] = assessment.is_immune
+            item.extra_metadata["hit_boost"] = assessment.hit_boost
+            item.extra_metadata["active_count"] = assessment.active_count
+            item.extra_metadata["lambda_val"] = assessment.lambda_val
             item.normalized_score = assessment.adjusted_score
             item.rrf_score = round(item.rrf_score * assessment.decay_factor, 6)
 
