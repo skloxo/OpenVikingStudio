@@ -120,6 +120,8 @@
 | **`BusinessJobsView`** | `src/routes/tasks/-components/business-jobs-view.tsx` | **业务与智能体工作流主看板卡片**：展示有头有脸、有业务目标的宏观大任务，带中文自解释标题、发起方身份标识（Agent / 用户）、真实耗时、严格物理进度 ($X/Y$ 度量) 与成果物一键直达链接。 | ✅ 已交付 (v1.4.92) |
 | **`TaskHumanCell`** | `src/routes/tasks/-components/task-human-cell.tsx` | **消灭裸 UUID 的人类自解释表格单元格**：优先呈现业务标题与来源，截断展示短 ID，内嵌成果物直达按钮，彻底消除机器黑话感。 | ✅ 已交付 (v1.4.92) |
 | **`TaskExecutionCell`** | `src/routes/tasks/-components/task-execution-cell.tsx` | **工序执行动态与多状态胶囊单元格**：支持完成态、并发进行态、等待态与失败重试态紧凑呈现，严格遵守 NO GREEN EVER 与最小字号下限。 | ✅ 已交付 (v1.4.92) |
+| **`TemporalDecayDreamCard`** | `src/routes/retrieval/-components/temporal-decay-dream-card.tsx` | **时效动力学衰减与离线做梦蒸馏座舱卡片**：展示做梦固化遥测、净熵削减统计，集成离线蒸馏触发流水线，纯度比率实时监控。 | ✅ 已交付 (v1.6.1) |
+| **`TemporalDecaySimulator`** | `src/routes/retrieval/-components/temporal-decay-simulator.tsx` | **时效衰减与频次强化实时仿真台**：交互式仿真 $Score_{eff} = Score_{sem} \cdot e^{-\lambda \Delta t} \cdot (1 + \beta \ln(1 + N))$，四态记忆类型、时间滑块与频次对抗实时反馈。 | ✅ 已交付 (v1.6.1) |
 | **`UniversalPagination`** | `src/components/common/universal-pagination.tsx` | 统一分页控制器：条数切换 (`10/25/50/100`)、翻页按钮、等宽页码，严格 $\ge 11\text{px}$ 规范。 | ⏳ 规划中 |
 | **`MetricTile`** | `src/components/common/metric-tile.tsx` | 统一 `p-3` 紧凑卡片、等宽大数字 (`tabular-nums font-mono`)、四态语义支持（冰青/湛蓝/琥珀/玫瑰红）。 | ⏳ 规划中 |
 | **`EmptyState`** | `src/components/common/empty-state.tsx` | 极客风空状态展示，支持图标胶囊、主副标题、可选重置筛选按钮。 | ⏳ 规划中 |

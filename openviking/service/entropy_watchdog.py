@@ -145,7 +145,14 @@ class EntropyWatchdog:
         try:
             from openviking.service.entropy_crystallizer import EntropyCrystallizer
             crystallizer = EntropyCrystallizer.get_instance()
-            return crystallizer.run_crystallization_cycle(reason=reason)
+            c_res = crystallizer.run_crystallization_cycle(reason=reason)
+            try:
+                from openviking.service.offline_dreamer import OfflineDreamer
+                dream_res = OfflineDreamer.get_instance().run_dream_cycle(theme=reason)
+                c_res["dream_consolidation"] = dream_res.model_dump()
+            except Exception as d_exc:
+                logger.debug("[EntropyWatchdog] Offline dreamer hook skipped: %s", d_exc)
+            return c_res
         except Exception as exc:
             logger.warning("[EntropyWatchdog] Crystallization cycle error: %s", exc)
             return {"status": "error", "error": str(exc), "reason": reason}
@@ -263,6 +270,11 @@ class EntropyWatchdog:
         )
 
     async def dispatch_memory_dream(self, theme: str = "general_reflection", account_id: str = "default") -> str:
+        try:
+            from openviking.service.offline_dreamer import OfflineDreamer
+            OfflineDreamer.get_instance().run_dream_cycle(theme=theme, account_id=account_id)
+        except Exception as e:
+            logger.debug("[EntropyWatchdog] OfflineDreamer dispatch skipped: %s", e)
         return await self.dispatch_entropy_strategy("memory_dream", target=theme, account_id=account_id)
 
     async def dispatch_memory_compaction(self, account_id: str = "default") -> str:

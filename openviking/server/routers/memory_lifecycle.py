@@ -209,3 +209,69 @@ async def get_memory_lineage_dag(
     chain = MemoryConflictResolver.get_instance().get_lineage_chain(uri)
     return {"status": "ok", "result": chain}
 
+
+class SimulateDecayRequest(BaseModel):
+    uri: str = Field("viking://resources/experience/sample.md", description="Candidate memory URI")
+    raw_score: float = Field(0.80, ge=0.0, le=1.0, description="Semantic base score")
+    delta_days: float = Field(30.0, ge=0.0, description="Days elapsed since last update/verification")
+    active_count: int = Field(0, ge=0, description="Number of historical retrieval hits")
+    memory_type: str = Field("experience", description="canonical, experience, event, task, session, general")
+    status: str = Field("active", description="active, disputed, superseded")
+
+
+@router.post("/decay/simulate")
+async def simulate_temporal_decay(
+    req: SimulateDecayRequest,
+    ctx: RequestContext = Depends(get_request_context),
+) -> Dict[str, Any]:
+    """Simulate temporal decay dynamics and hit boost for candidate parameters."""
+    import time
+    from openviking.retrieve.asymmetric_decay import AsymmetricDecayEngine
+    engine = AsymmetricDecayEngine()
+    now_ts = time.time()
+    updated_ts = now_ts - (req.delta_days * 86400.0)
+    assessment = engine.evaluate_candidate(
+        uri=req.uri,
+        raw_score=req.raw_score,
+        updated_ts=updated_ts,
+        status=req.status,
+        now_ts=now_ts,
+        active_count=req.active_count,
+        memory_type=req.memory_type,
+    )
+    return {"status": "ok", "result": assessment.model_dump()}
+
+
+class RunDreamRequest(BaseModel):
+    theme: Optional[str] = Field(None, description="Topic or theme to cluster and distill")
+    min_cluster_size: int = Field(2, ge=2, le=20, description="Minimum fragments required for cluster")
+    dry_run: bool = Field(False, description="Preview without mutating physical files")
+
+
+@router.post("/dream/run")
+async def run_offline_dream(
+    req: RunDreamRequest,
+    ctx: RequestContext = Depends(get_request_context),
+) -> Dict[str, Any]:
+    """Trigger offline dreaming knowledge consolidation cycle."""
+    from openviking.service.offline_dreamer import OfflineDreamer
+    dreamer = OfflineDreamer.get_instance()
+    res = dreamer.run_dream_cycle(
+        theme=req.theme,
+        min_cluster_size=req.min_cluster_size,
+        dry_run=req.dry_run,
+        account_id=ctx.user.account_id,
+    )
+    return {"status": "ok", "result": res.model_dump()}
+
+
+@router.get("/dream/stats")
+async def get_offline_dream_stats(
+    ctx: RequestContext = Depends(get_request_context),
+) -> Dict[str, Any]:
+    """Get operational telemetry for offline dreaming knowledge consolidation."""
+    from openviking.service.offline_dreamer import OfflineDreamer
+    dreamer = OfflineDreamer.get_instance()
+    return {"status": "ok", "result": dreamer.get_stats()}
+
+
