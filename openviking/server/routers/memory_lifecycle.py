@@ -275,3 +275,44 @@ async def get_offline_dream_stats(
     return {"status": "ok", "result": dreamer.get_stats()}
 
 
+@router.get("/purity/report")
+async def get_memory_purity_report(
+    ctx: RequestContext = Depends(get_request_context),
+) -> Dict[str, Any]:
+    """Retrieve holistic memory purity benchmark report, SNR ratio, and health score."""
+    from openviking.service.memory_purity import MemoryPurityBenchmark
+    bench = MemoryPurityBenchmark.get_instance()
+    report = bench.compute_purity_report()
+    return {"status": "ok", "result": report.model_dump()}
+
+
+@router.get("/governance/stream")
+async def get_memory_governance_stream(
+    limit: int = Query(50, ge=1, le=200),
+    event_type: Optional[str] = Query(None, description="Filter: INGRESS_ADMISSION or DREAM_CONSOLIDATION"),
+    ctx: RequestContext = Depends(get_request_context),
+) -> Dict[str, Any]:
+    """Retrieve unified chronological audit stream of ingress decisions and dream consolidations."""
+    from openviking.service.memory_purity import MemoryPurityBenchmark
+    bench = MemoryPurityBenchmark.get_instance()
+    events = bench.get_governance_stream(limit=limit, event_type=event_type)
+    return {"status": "ok", "result": [e.model_dump() for e in events]}
+
+
+class WatchdogEnforceRequest(BaseModel):
+    dry_run: bool = Field(False, description="Preview without mutating physical files")
+    force: bool = Field(False, description="Force trigger dream cycle regardless of watermark/window")
+
+
+@router.post("/watchdog/enforce")
+async def enforce_dream_watchdog(
+    req: WatchdogEnforceRequest,
+    ctx: RequestContext = Depends(get_request_context),
+) -> Dict[str, Any]:
+    """Manually or autonomously evaluate and enforce dream watchdog rules."""
+    from openviking.service.entropy_watchdog import EntropyWatchdog
+    watchdog = EntropyWatchdog.get_instance()
+    res = watchdog.check_and_enforce_dream_watchdog(dry_run=req.dry_run, force=req.force)
+    return {"status": "ok", "result": res}
+
+

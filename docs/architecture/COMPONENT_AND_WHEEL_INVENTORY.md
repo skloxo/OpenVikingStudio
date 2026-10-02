@@ -122,6 +122,8 @@
 | **`TaskExecutionCell`** | `src/routes/tasks/-components/task-execution-cell.tsx` | **工序执行动态与多状态胶囊单元格**：支持完成态、并发进行态、等待态与失败重试态紧凑呈现，严格遵守 NO GREEN EVER 与最小字号下限。 | ✅ 已交付 (v1.4.92) |
 | **`TemporalDecayDreamCard`** | `src/routes/retrieval/-components/temporal-decay-dream-card.tsx` | **时效动力学衰减与离线做梦蒸馏座舱卡片**：展示做梦固化遥测、净熵削减统计，集成离线蒸馏触发流水线，纯度比率实时监控。 | ✅ 已交付 (v1.6.1) |
 | **`TemporalDecaySimulator`** | `src/routes/retrieval/-components/temporal-decay-simulator.tsx` | **时效衰减与频次强化实时仿真台**：交互式仿真 $Score_{eff} = Score_{sem} \cdot e^{-\lambda \Delta t} \cdot (1 + \beta \ln(1 + N))$，四态记忆类型、时间滑块与频次对抗实时反馈。 | ✅ 已交付 (v1.6.1) |
+| **`MemoryPurityGaugeCard`** | `src/routes/retrieval/-components/memory-purity-gauge-card.tsx` | **记忆纯度度量衡与夜间做梦守护座舱卡片**：展示纯度健康分 (0~100)、信噪比 (SNR)、认知冲突率、新鲜留存率三维瓦片与 Watchdog 自动做梦守护控制台。 | ✅ 已交付 (v1.6.2) |
+| **`MemoryGovernanceStreamCard`** | `src/routes/retrieval/-components/memory-governance-stream-card.tsx` | **全生命周期记忆治理总账流水卡片**：聚合前门准入判定 (`#dec_xxxx`) 与后院做梦提纯 (`#cry_xxxx`)，提供分类过滤与减熵实时审计。 | ✅ 已交付 (v1.6.2) |
 | **`UniversalPagination`** | `src/components/common/universal-pagination.tsx` | 统一分页控制器：条数切换 (`10/25/50/100`)、翻页按钮、等宽页码，严格 $\ge 11\text{px}$ 规范。 | ⏳ 规划中 |
 | **`MetricTile`** | `src/components/common/metric-tile.tsx` | 统一 `p-3` 紧凑卡片、等宽大数字 (`tabular-nums font-mono`)、四态语义支持（冰青/湛蓝/琥珀/玫瑰红）。 | ⏳ 规划中 |
 | **`EmptyState`** | `src/components/common/empty-state.tsx` | 极客风空状态展示，支持图标胶囊、主副标题、可选重置筛选按钮。 | ⏳ 规划中 |

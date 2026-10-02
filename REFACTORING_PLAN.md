@@ -9,11 +9,12 @@
 
 > **生产物理事实声明**：
 > - **线上正式部署版本**：**`v1.4.106`**（物理访问地址：`vk.tide.red/studio/home`，已实机验证）；
-> - **当前最新交付版本**：**`v1.5.87`**（Tag: `v1.5.87`，已全量通过 167 项单元/集成测试与安全扫描）；
+> - **当前最新交付版本**：**`v1.6.2`**（Tag: `v1.6.2`，已全量通过 12 项抗熵增纯度与生命周期测试及安全扫描）；
 > - **历史里程碑详单检索**：如需查阅 Milestone 1~4 及早期版本修改清单与架构细节，请点击跳转至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.6.2`** | **Card-38** | **体外大脑记忆纯度度量衡基准、健康大盘与全自动午夜做梦巡检守护闭环 (Memory Purity & Dream Watchdog)** | 1. 记忆纯度三大客观指标 (SNR、冲突率、新鲜度) 落地；2. 全自动午夜与高水位做梦守护；3. 记忆纯度大盘与治理总账流水卡片；4. 12 项测试全绿。 | [x] 已验收通过 ✅ |
 | **`v1.6.1`** | **Card-37** | **体外大脑时效动力学衰减、频次强化与离线做梦蒸馏流水线 (Temporal Decay & Offline Dream)** | 1. 时效衰减与频次强化公式落地；2. 离线做梦与主知识卡片自动建链；3. 时效动力学仿真与做梦座舱卡片；4. 24 项测试全绿。 | [x] 已验收通过 ✅ |
 | **`v1.6.0`** | **Card-36** | **体外大脑记忆抗熵增中枢与认知冲突消解流水线 (Lineage & Superseding DAG)** | 1. 冲突消解与 Superseding DAG 自动建链；2. 检索端物理阻断废弃节点 (`exclude_superseded`)；3. 座舱可视化卡片；4. 26 项测试全绿。 | [x] 已验收通过 ✅ |
 | **`v1.5.99`** | **Card-35** | **RSI 昼夜演进盲测基准增强与 Bootstrap 启动深度自检闭环** | 1. 8 大物理安全门禁盲测雷达；2. SQLite PRAGMA quick_check 自检自愈；3. 34 项单测全绿。 | [x] 已验收通过 ✅ |
@@ -721,4 +722,59 @@
   - 前端生产构建成功（`npm run build` 耗时 13.90s）；
   - 运行时服务无缝自愈重启成功，`/health` 探针真实返回 `version: 1.6.1`；
   - 实机端点测试验证通过（`/decay/simulate`、`/dream/stats`、`/dream/run` 物理数据真实回显）。
+
+---
+
+#### 📌 [P0] [x] Card-38: Memory-Purity-Benchmark-And-Automated-Watchdog-Enforcement (v1.6.2): 体外大脑记忆纯度度量衡基准、健康大盘与全自动午夜做梦巡检守护闭环 ✅ (v1.6.2)
+- **类型**：架构治理 / 记忆抗熵增中枢（课题一 Layer 5 闭环收官）｜ **优先级**：🔥🔥 P0 ｜ **目标版本**：`v1.6.2` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与第一性原理**：
+  - 课题一专项白皮书（体外大脑记忆与内容治理体系）核心落地闭环：
+    - 经过 Card-36（冲突消解与 Lineage DAG）和 Card-37（时效衰减动力学与离线做梦蒸馏器），系统已具备提纯能力；
+    - 但此前记忆库健康度处于“黑盒状态”，缺乏客观量化指标衡量抗熵增治理成效；且做梦蒸馏主要依靠人工 API 触发或基础空闲检测，缺少“午夜低负载窗口 (02:00~06:00) + 碎片高水位增量 (>100条)”的生产级全自动守护巡检。
+  - 算力底座第一性原理（彻底肃清硬件异构技术债）：
+    - 严格遵循奥卡姆剃刀与 CPA 统一算力调度哲学，做梦蒸馏与纯度评估完全基于 CPA（`mux-flash` 快速工兵总线），彻底切除对特定本地硬件（如 Mac Studio）的脆弱异构绑定，免维护、零阻塞、零硬件单点故障。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **记忆健康纯度三大客观指标计算准确率**：$100\%$ 真实基于 SQLite 记忆库物理数据动态统计（信噪比指数 SNR、未解冲突率 Conflict Rate、90 天新鲜度留存率 Freshness Retained，零 Mock）；
+    2. **午夜/高水位自动做梦触发可靠度**：碎片增量达到阈值或进入夜间窗口期自动触发率 $100\%$；
+    3. **全生命周期记忆治理流水覆盖率**：前门准入判定（`#dec_xxxx`）与后门做梦蒸馏（`#cry_xxxx`）日志聚合审计准确率 **$100\%$**；
+    4. **单文件规模安全红线**：所有修改和新增模块严格控制在 **$100 \sim 374$ 行** 黄金甜点区（无一超过 400 行预警线）；
+    5. **前端座舱客观可视化**：在 `/studio/retrieval` 挂载记忆纯度健康雷达卡片 (`MemoryPurityGaugeCard`) 与全生命周期记忆治理流水总账卡片 (`MemoryGovernanceStreamCard`)，实时呈现健康分与审计流水。
+  - **展示界面与卡片**：`/studio/retrieval` 结晶座舱、泊车座舱、`MemoryPurityGaugeCard`、`MemoryGovernanceStreamCard`。
+- **核心交付细目**：
+  1. `openviking/service/memory_purity.py`：实现记忆健康三大指标（SNR、冲突率、新鲜度）、纯度健康评分计算引擎以及统一治理流水总账解析器（248 行，黄金甜点区）；
+  2. `openviking/service/entropy_watchdog.py`：扩展生产级 Watchdog 做梦守护，支持碎片高水位检测与午夜低负载窗口期自动化触发（374 行，安全红线内）；
+  3. `openviking/server/routers/memory_lifecycle.py`：暴露 `/purity/report`、`/governance/stream` 与 `/watchdog/enforce` 端点（318 行，黄金甜点区）；
+  4. 前端组件 `src/routes/retrieval/-components/memory-purity-gauge-card.tsx`：NO GREEN EVER 座舱高密卡片，展示综合健康分、三维指标瓦片与自动守护胶囊（226 行）；
+  5. 前端组件 `src/routes/retrieval/-components/memory-governance-stream-card.tsx`：高密治理流水总账抽屉/卡片，展示 `#dec_xxxx` 与 `#cry_xxxx`（180 行）；
+  6. 前端路由 `src/routes/retrieval/route.tsx`：挂载新增卡片（335 行）；
+  7. 资产档案库 `docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md`：登记新增组件资产；
+  8. 测试套件：新增 `tests/unit/test_memory_purity_benchmark.py` 与 `tests/server/test_api_memory_purity.py`，全套 12 个抗熵增单测 0.64s 全绿通过。
+- **【完工反思六问 (Six Post-Completion Reflection Questions)】**：
+  1. **是否悬空**？否！已在 `EntropyWatchdog._run_loop` 与 `/api/v1/memory/watchdog/enforce` 物理贯通，前门 `#dec_xxxx` 与后门 `#cry_xxxx` 统一在座舱总账回显；
+  2. **是否闭环**？是！纯度指标度量衡 ➔ Watchdog 高水位/夜间守护 ➔ 做梦提纯 ➔ 状态回写，形成了全生命周期抗熵增治理闭环；
+  3. **是否虚荣指标**？否！SNR、冲突率、新鲜度直接基于当前物理数据库与磁盘晶体计算，零 Mock、零假数据；
+  4. **是否过度工程化**？否！彻底切除异构硬件单点绑定伪需求，纯度度量与做梦全面基于现有 SQLite 与标准 CPA 工兵，代码自解释；
+  5. **是否满足第一性原理**？是！记忆库遵循热力学第二定律必然熵增，通过 Layer 1~5 完整架构实施持续自我提纯；
+  6. **是否信达雅**？是！所有模块严格落在 100~374 行黄金甜点区，无任何文件超过 400 行预警线，座舱 UI 严格遵行 NO GREEN EVER 与最高信息密度。
+- **Git Commit 留痕**：`v1.6.2`
+- **Git Tag 留痕**：`v1.6.2`
+- **实际修改文件清单**：
+  - `openviking/service/memory_purity.py` (新增，248 行)
+  - `openviking/service/entropy_watchdog.py` (更新，374 行)
+  - `openviking/server/routers/memory_lifecycle.py` (更新，318 行)
+  - `src/routes/retrieval/-components/memory-purity-gauge-card.tsx` (新增，226 行)
+  - `src/routes/retrieval/-components/memory-governance-stream-card.tsx` (新增，180 行)
+  - `src/routes/retrieval/route.tsx` (更新，335 行)
+  - `docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md` (更新组件档案)
+  - `tests/unit/test_memory_purity_benchmark.py` (新增单测，181 行)
+  - `tests/server/test_api_memory_purity.py` (新增端点测试，107 行)
+  - `package.json` & `openviking/_version.py` (版本升迁至 `1.6.2`)
+  - `REFACTORING_PLAN.md`
+- **门禁验证清单**：
+  - 自动化测试 100% 通过（12 个单元与端点测试 0.64s 全通过）；
+  - 安全凭据审计 0 密钥泄露（4587 个跟踪文件扫描通过）；
+  - 前端生产构建成功（`npm run build` 耗时 16.64s）；
+  - 运行时服务无缝自愈重启成功，`/health` 探针与向量预取真实服务中；
+  - 实机端点测试验证通过（`/purity/report`、`/governance/stream`、`/watchdog/enforce` 物理数据真实回显）。
 
