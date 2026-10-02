@@ -70,15 +70,12 @@ def _get_config() -> Dict[str, str]:
             p = Path.home() / ".openviking" / conf_file
             if p.exists():
                 try:
-                    with open(p, "r", encoding="utf-8") as f:
-                        data = json.load(f)
+                    with open(p, "r", encoding="utf-8") as f: data = json.load(f)
                     sd = data.get("server", data) if isinstance(data, dict) else {}
                     api_key = api_key or sd.get("root_api_key") or sd.get("api_key", "")
                     api_url = api_url or (sd.get("url") or data.get("url") or "").rstrip("/")
-                    if api_key and api_url:
-                        break
-                except Exception:
-                    pass
+                    if api_key and api_url: break
+                except Exception: pass
     return {"api": api_url or DEFAULT_API, "api_key": api_key or DEFAULT_API_KEY}
 
 
@@ -156,11 +153,8 @@ class SatelliteHTTPClient:
                 if e.code in (502, 503, 504) and attempt < max_retries - 1:
                     time.sleep(0.5 * (2 ** attempt))
                     continue
-                body_text = ""
-                try:
-                    body_text = e.read().decode("utf-8")
-                except Exception:
-                    pass
+                try: body_text = e.read().decode("utf-8")
+                except Exception: body_text = ""
                 return {"error": f"[BACKEND_ERROR] HTTP {e.code}: {body_text}", "is_http_error": True, "code": e.code, "elapsed_ms": elapsed_ms}
             except (TimeoutError, URLError) as e:
                 elapsed_ms = int((time.time() - start_time) * 1000)
@@ -326,19 +320,12 @@ def openviking_smart_read(
 ) -> str:
     """智能读取：搜索 + 批量读取组合操作。一次调用完成搜索并返回每个结果的详细内容。"""
     search_body: Dict[str, Any] = {"query": query, "limit": limit}
-    if score_threshold > 0:
-        search_body["score_threshold"] = score_threshold
+    if score_threshold > 0: search_body["score_threshold"] = score_threshold
     search_result = http_client.post("/api/v1/search/find", search_body)
     results = []
     if isinstance(search_result, dict):
-        res_obj = search_result.get("result", {})
-        if isinstance(res_obj, dict):
-            results = search_result.get("results") or (res_obj.get("resources", []) + res_obj.get("memories", []))
-        elif isinstance(res_obj, list):
-            results = res_obj
-        else:
-            results = search_result.get("results", [])
-
+        ro = search_result.get("result", {})
+        results = search_result.get("results") or (ro if isinstance(ro, list) else (ro.get("resources", []) + ro.get("memories", [])) if isinstance(ro, dict) else [])
     detailed = []
     for item in results:
         uri = item.get("uri", item.get("id", ""))
@@ -347,7 +334,6 @@ def openviking_smart_read(
             continue
         ep = "/api/v1/content/abstract" if level == 0 else ("/api/v1/content/overview" if level == 1 else "/api/v1/content/read")
         detailed.append({"search_result": item, "content": http_client.get(ep, {"uri": uri})})
-
     return _format_result({"query": query, "level": level, "total_results": len(detailed), "results": detailed})
 
 
@@ -464,6 +450,26 @@ def openviking_health() -> str:
 
 
 @_safe_tool()
+def openviking_file_task_card(
+    title: str = Field(description="卡片简短标题"),
+    module: str = Field(description="故障或受影响模块"),
+    symptom: str = Field(description="现象与报错内容"),
+    hypothesis: str = Field(default="", description="初步归因推测"),
+    reproduce_steps: str = Field(default="", description="复现上下文或步骤"),
+    agent_id: str = Field(default="", description="汇报智能体标识"),
+    priority: str = Field(default="P1", description="优先级: P0/P1/P2/P3"),
+) -> str:
+    """智能体自主上报异常/缺陷工单任务卡片至中枢收件箱 (sha256指纹去重，防爆卡合并)"""
+    actor = agent_id or get_resolved_actor_peer()
+    payload = {
+        "title": title, "module": module, "symptom": symptom,
+        "hypothesis": hypothesis, "reproduce_steps": reproduce_steps,
+        "agent_id": actor, "priority": priority,
+    }
+    return _format_result(http_client.post("/api/v1/task-cards/file", payload))
+
+
+@_safe_tool()
 def openviking_ping() -> str:
     """检测远端连接状态、网络延迟与可用工具数握手自检"""
     cfg = _get_config()
@@ -473,16 +479,10 @@ def openviking_ping() -> str:
         res = http_client.get("/health", timeout=5)
         status["latency_ms"] = round((time.time() - t0) * 1000.0, 2)
         if "error" not in res:
-            status["http_available"] = True
-            status["http_health"] = res
-            if isinstance(res, dict) and "version" in res:
-                status["server_version"] = str(res["version"])
-        else:
-            status["status"] = "degraded"
-            status["http_error"] = res.get("error")
-    except Exception as e:
-        status["status"] = "degraded"
-        status["http_error"] = str(e)
+            status.update({"http_available": True, "http_health": res})
+            if isinstance(res, dict) and "version" in res: status["server_version"] = str(res["version"])
+        else: status.update({"status": "degraded", "http_error": res.get("error")})
+    except Exception as e: status.update({"status": "degraded", "http_error": str(e)})
     return _format_result(status)
 
 
