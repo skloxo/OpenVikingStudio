@@ -32,6 +32,8 @@ import { HGRAGCompassCockpit } from './-components/hg-rag-compass-cockpit'
 import { EntropyCrystallizerCockpit } from './-components/entropy-crystallizer-cockpit'
 import { MemoryLineageDAGCard } from './-components/memory-lineage-dag-card'
 import { TemporalDecayDreamCard } from './-components/temporal-decay-dream-card'
+import { MemoryPurityGaugeCard } from './-components/memory-purity-gauge-card'
+import { MemoryGovernanceStreamCard } from './-components/memory-governance-stream-card'
 import { ActiveNotesHistoryCockpit } from './-components/active-notes-history-cockpit'
 import { ValetIngestionCockpit } from './-components/valet-ingestion-cockpit'
 import { LLMLinguaDehydrationCockpit } from './-components/llmlingua-dehydration-cockpit'
@@ -295,9 +297,11 @@ function RetrievalPage() {
       {/* Tab 5: 三门结晶减熵与不可变事实座舱 */}
       {activeTab === 'crystallizer' && (
         <div className="flex flex-col gap-4">
+          <MemoryPurityGaugeCard />
           <TemporalDecayDreamCard />
           <EntropyCrystallizerCockpit />
           <MemoryLineageDAGCard />
+          <MemoryGovernanceStreamCard />
         </div>
       )}
 
@@ -307,9 +311,11 @@ function RetrievalPage() {
       {/* Tab 7: 前门泊车与反熵准入座舱 */}
       {activeTab === 'valet' && (
         <div className="flex flex-col gap-4">
+          <MemoryPurityGaugeCard />
           <ValetIngestionCockpit />
           <TemporalDecayDreamCard />
           <MemoryLineageDAGCard />
+          <MemoryGovernanceStreamCard />
         </div>
       )}
 

@@ -157,11 +157,74 @@ class EntropyWatchdog:
             logger.warning("[EntropyWatchdog] Crystallization cycle error: %s", exc)
             return {"status": "error", "error": str(exc), "reason": reason}
 
+    def check_and_enforce_dream_watchdog(self, dry_run: bool = False, force: bool = False) -> Dict[str, Any]:
+        """Check high-watermark fragments and nightly REM low-load window, enforcing dream consolidation."""
+        now = time.time()
+        now_dt = datetime.now(timezone.utc)
+        current_hour = now_dt.hour
+        is_rem_window = 2 <= current_hour <= 6
+
+        try:
+            from openviking.service.memory_purity import MemoryPurityBenchmark
+            from openviking.service.offline_dreamer import OfflineDreamer
+
+            purity_bench = MemoryPurityBenchmark.get_instance()
+            purity_report = purity_bench.compute_purity_report()
+            dreamer = OfflineDreamer.get_instance()
+
+            unconsolidated = purity_report.unconsolidated_fragments
+            last_dream_ts = dreamer._last_dream_timestamp
+            hours_since_last_dream = (now - last_dream_ts) / 3600.0 if last_dream_ts > 0 else 999.0
+
+            should_trigger = False
+            trigger_reason = "none"
+
+            if force:
+                should_trigger = True
+                trigger_reason = "force_enforce"
+            elif unconsolidated >= 100 and (now - self._last_activity_time) >= 900.0:
+                should_trigger = True
+                trigger_reason = "high_watermark_fragments"
+            elif is_rem_window and hours_since_last_dream >= 6.0:
+                should_trigger = True
+                trigger_reason = "nightly_rem_window"
+
+            result: Dict[str, Any] = {
+                "triggered": should_trigger,
+                "reason": trigger_reason,
+                "current_hour_utc": current_hour,
+                "is_rem_window": is_rem_window,
+                "unconsolidated_fragments": unconsolidated,
+                "hours_since_last_dream": round(hours_since_last_dream, 2),
+                "purity_score": purity_report.purity_score,
+                "snr_ratio": purity_report.snr_ratio,
+            }
+
+            if should_trigger:
+                logger.info(
+                    "[EntropyWatchdog] Automated dream watchdog triggered (reason=%s, unconsolidated=%d, rem=%s)",
+                    trigger_reason, unconsolidated, is_rem_window,
+                )
+                cycle_res = dreamer.run_dream_cycle(theme=f"watchdog_{trigger_reason}", dry_run=dry_run)
+                result["dream_cycle"] = cycle_res.model_dump()
+
+            return result
+        except Exception as e:
+            logger.warning("[EntropyWatchdog] Dream watchdog enforcement check failed: %s", e)
+            return {"triggered": False, "error": str(e), "timestamp": now}
+
     async def _run_loop(self) -> None:
-        """Idle daemon loop: scans for system idle condition and triggers background crystallization."""
+        """Idle daemon loop: scans for system idle condition and triggers background crystallization & dreaming."""
         try:
             while self._running:
                 await asyncio.sleep(self._check_interval_seconds)
+                # 1. Periodic watchdog dream enforcement check
+                try:
+                    self.check_and_enforce_dream_watchdog(dry_run=False, force=False)
+                except Exception as w_e:
+                    logger.debug("[EntropyWatchdog] Background watchdog enforcement skipped: %s", w_e)
+
+                # 2. System idle check
                 if self.is_system_idle():
                     logger.info(
                         "[EntropyWatchdog] System idle detected (>= %.0fs). Triggering background crystallization.",
