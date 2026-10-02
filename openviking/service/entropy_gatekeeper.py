@@ -194,16 +194,18 @@ class EntropyGatekeeper:
             self._record_decision(decision)
             return decision
 
-        # Stage 0.8: Fast-Path Exact Fingerprint Deduplication (0 Token / <0.1ms NOOP)
+        # Stage 0.8: Fast-Path Exact Bitwise Deduplication on SAME URI (0 Token / <0.1ms NOOP)
+        # Munger Inversion SSOT: Only trigger NOOP if the exact same content is written to the SAME URI.
+        # Cross-URI identical content must NEVER be dropped (strict URI namespace isolation).
         content_hash = hashlib.sha256(stripped.encode("utf-8")).hexdigest()
-        if content_hash in self._content_fingerprints:
-            cached_uri, _ = self._content_fingerprints[content_hash]
+        fp_key = f"{uri}::{content_hash}"
+        if fp_key in self._content_fingerprints:
             decision = GatekeeperDecision(
                 action="noop",
                 similarity=1.0000,
-                matched_uri=cached_uri,
+                matched_uri=uri,
                 matched_text_snippet=stripped[:200],
-                reason=f"[NOOP 指纹秒级去重 | 相似度: 1.0000] 探测到完全一致的内容指纹 (0 Token 快轨)，拦截物理重复落盘，原子累加命中印证。",
+                reason=f"[NOOP 指纹秒级去重 | 相似度: 1.0000] 同一 URI ({uri}) 探测到完全一致的内容指纹 (0 Token 快轨)，拦截物理重复落盘，原子累加命中印证。",
                 saved_bytes=content_bytes,
                 uri=uri,
             )
@@ -230,8 +232,23 @@ class EntropyGatekeeper:
                 for k in ["自检", "self_check", "heartbeat", "health_check", "巡检", "闭环自检", "全链路自检"]
             )
 
+            # Overwrite Immunity Check:
+            # If the candidate matches the target URI itself, this is an explicit UPDATE (Progressive Evolution).
+            # Because Stage 0.8 already passed, content has mutated. NOOP is strictly forbidden!
+            is_self_update = bool(matched_uri and matched_uri == uri)
+
             if is_audit_or_health:
-                if score >= 0.85:
+                if is_self_update:
+                    decision = GatekeeperDecision(
+                        action="update",
+                        similarity=round(score, 4),
+                        matched_uri=uri,
+                        matched_text_snippet=snippet,
+                        reason=f"[自检更新 | 相似度: {score:.4f}] 既有自检/巡检报告指标更新，放行物理覆盖落盘。",
+                        saved_bytes=0,
+                        uri=uri,
+                    )
+                elif score >= 0.85:
                     decision = GatekeeperDecision(
                         action="noop",
                         similarity=round(score, 4),
@@ -253,13 +270,23 @@ class EntropyGatekeeper:
                     )
             else:
                 # Standard Core Knowledge
-                if score >= 0.95:
+                if is_self_update:
+                    decision = GatekeeperDecision(
+                        action="update",
+                        similarity=round(score, 4),
+                        matched_uri=uri,
+                        matched_text_snippet=snippet,
+                        reason=f"[渐进知识演进 | 相似度: {score:.4f}] 探测到既有文档 ({uri}) 的显式迭代演进，豁免相似度拦截，强制执行磁盘物理覆盖更新。",
+                        saved_bytes=0,
+                        uri=uri,
+                    )
+                elif score >= 0.95:
                     decision = GatekeeperDecision(
                         action="noop",
                         similarity=round(score, 4),
                         matched_uri=matched_uri,
                         matched_text_snippet=snippet,
-                        reason=f"[NOOP 印证去重 | 相似度: {score:.4f} >= 0.95] 与已有知识高度吻合，拦截磁盘物理写入以对抗碎片熵增；已累加命中印证权重。",
+                        reason=f"[NOOP 跨文档印证去重 | 相似度: {score:.4f} >= 0.95] 独立新提议与已有知识 ({matched_uri}) 高度吻合，拦截磁盘物理重复新建以对抗碎片熵增；已累加命中印证权重。",
                         saved_bytes=content_bytes,
                         uri=uri,
                     )
@@ -270,16 +297,6 @@ class EntropyGatekeeper:
                         matched_uri=matched_uri,
                         matched_text_snippet=snippet,
                         reason=f"[特例演化 | 相似度: {score:.4f} in [0.88, 0.95)] 探测到反例分支或条件细化金带 (Gold Band Refinement)，保留为知识特例分支演进。",
-                        saved_bytes=0,
-                        uri=uri,
-                    )
-                elif any(term in stripped.lower() for term in ["deprecated", "已废弃", "已失效", "bug fixed", "已修正"]):
-                    decision = GatekeeperDecision(
-                        action="delete",
-                        similarity=round(score, 4),
-                        matched_uri=matched_uri,
-                        matched_text_snippet=snippet,
-                        reason="探测到知识失效或更正声明，已对历史被淘汰陈述进行清理标记。",
                         saved_bytes=0,
                         uri=uri,
                     )
@@ -311,7 +328,7 @@ class EntropyGatekeeper:
                 decision.reason = f"{decision.reason} [双轨写入: 语义锚点 + 代码重放轨]"
 
         if decision.action in ("add", "update"):
-            self._content_fingerprints[content_hash] = (decision.uri or uri, time.time())
+            self._content_fingerprints[fp_key] = (decision.uri or uri, time.time())
 
         self._record_decision(decision)
         return decision

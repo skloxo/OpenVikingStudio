@@ -14,6 +14,7 @@
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.6.3`** | **Card-39** | **体外大脑数据安全与覆盖更新豁免闭环、跨URI哈希隔离与比特级诚实落盘 (Overwrite Immunity & Honest NOOP)** | 1. 显式覆盖更新绝对豁免律 (Overwrite Immunity) 彻底根治高相似度 (Sim >= 0.95) 更新被当作 noop 静默扣押并伪成功的致命缺陷；<br>2. 跨 URI 哈希隔离，彻底杜绝相同模板/内容的文档被跨空间吞噬；<br>3. 彻底清除包含 'bug fixed'/'已修正' 等词被误判为 delete 的隐性陷阱；<br>4. Valet Ingestion 与 content 路由物理落盘双检兜底，只要磁盘内容不一致强制原子写盘；<br>5. 5 项专项单元测试全绿 (涵盖 20000 字符更新、修词豁免、跨 URI 隔离、纯比特 NOOP、Valet 强制落盘)。<br>**Commit Hash**：（本次提交） | [x] 已验收通过 ✅ |
 | **`v1.6.2`** | **Card-38** | **体外大脑记忆纯度度量衡基准、健康大盘与全自动午夜做梦巡检守护闭环 (Memory Purity & Dream Watchdog)** | 1. 记忆纯度三大客观指标 (SNR、冲突率、新鲜度) 落地；2. 全自动午夜与高水位做梦守护；3. 记忆纯度大盘与治理总账流水卡片；4. 12 项测试全绿。 | [x] 已验收通过 ✅ |
 | **`v1.6.1`** | **Card-37** | **体外大脑时效动力学衰减、频次强化与离线做梦蒸馏流水线 (Temporal Decay & Offline Dream)** | 1. 时效衰减与频次强化公式落地；2. 离线做梦与主知识卡片自动建链；3. 时效动力学仿真与做梦座舱卡片；4. 24 项测试全绿。 | [x] 已验收通过 ✅ |
 | **`v1.6.0`** | **Card-36** | **体外大脑记忆抗熵增中枢与认知冲突消解流水线 (Lineage & Superseding DAG)** | 1. 冲突消解与 Superseding DAG 自动建链；2. 检索端物理阻断废弃节点 (`exclude_superseded`)；3. 座舱可视化卡片；4. 26 项测试全绿。 | [x] 已验收通过 ✅ |
@@ -42,6 +43,29 @@
 ---
 
 ### 🧬 Milestone 5-A: 半成品与悬空功能全链路真实化贯通 (Suspended Features Truthful Closure)
+
+#### 📌 [P0] [x] Card-39 (v1.6.3): 体外大脑数据安全与覆盖更新豁免闭环、跨URI哈希隔离与比特级诚实落盘 (Overwrite Immunity & Honest NOOP)
+- **类型**：体外大脑存储安全 / 数据单义性根治 ｜ **优先级**：🔥🔥🔥 P0 (最高紧急度) ｜ **目标版本**：`v1.6.3` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - 外部 Agent (如 workbuddy) 在日常同步知识库文档 (如 20662 字符 cheatsheet) 时，由于在原文档基础上修改数百字，导致余弦相似度高达 0.985。旧门禁机械将 $Sim \ge 0.95$ 裁决为 `noop`，导致 `valet_ingestion` 跳过物理写盘，却向调用方返回 `status: parked` 伪成功，造成磁盘保留旧版本的严重“静默扣押”事故；
+  - 此外代码中存在把包含 'bug fixed'/'已修正' 等词判定为 `delete` 的误杀代码，以及全局哈希跨 URI 串扰吞噬同构文件；
+  - 本卡片基于芒格逆向思维与数据单义性第一性原理彻底根除：确立**覆盖更新绝对豁免律 (Overwrite Immunity)**，严格限制 NOOP 仅在同一 URI 比特级完全一致 (0 字节变动) 时触发，并在 Valet 与 REST 路由层构筑物理磁盘双检兜底，只要磁盘内容与新输入不一致强制原子落盘！
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **显式更新落盘保证度**：对既有 URI 的更新变动，物理落盘率达到 **$100\%$**，静默丢弃率降为 **$0\%$**；
+    2. **纯比特级 NOOP 准确率**：$100\%$ 仅在 $\text{SHA256}(New) \equiv \text{SHA256}(Current)$ 且同一 URI 下触发；
+    3. **关键词误杀率**：包含技术修复词的经验复盘文档误删率降为 **$0\%$**。
+  - **展示界面与卡片**：控制台任务流大盘、Valet Ingestion 泊车流水。
+- **核心交付目标与修改清单**：
+  1. `openviking/service/entropy_gatekeeper.py`：指纹键使用 `(uri, sha256)` 严格隔离；增加显式自更新豁免 (`is_self_update`) 强制 `action="update"`；彻底切除把包含 "bug fixed" 判定为 `delete` 的荒谬代码；
+  2. `openviking/service/valet_ingestion.py`：引入物理磁盘双检兜底，即使 Gatekeeper 判定 NOOP，若目标文件不存在或哈希不一致，强制调用 `self._write_local_file` 原子落盘；
+  3. `openviking/server/routers/content.py` & `openviking/server/mcp_endpoint.py`：双检落盘保障，返回清晰的 `written` 与 `reason` 诚实状态契约；
+  4. `tests/unit/test_valet_overwrite_sanity.py`：新增 5 项专项单元测试，全绿通过。
+- **物理验收与门禁**：
+  - 单元测试：`tests/unit/test_valet_overwrite_sanity.py` 5/5 PASSED (1.22s)；
+  - 回归测试：`tests/unit/test_valet_ingestion_engine.py` 4/4 PASSED、`test_memory_purity_benchmark.py` 4/4 PASSED；
+  - 安全门禁：`python3 scripts/security_check.py` 4,592 文件 0 密钥泄露；
+  - 构建门禁：Vite 生产构建 17.30s PASS。
 
 #### 📌 [P0] [x] Card-20 ➔ 顺延升级至 Milestone 6 主力工单 Card-33 (v1.5.97) 聚焦推进 🚀
 - **类型**：架构治理 / 技能中枢核心强化 ｜ **优先级**：🔥🔥 P0 ｜ **目标版本**：`v1.5.97` ｜ **当前状态**：[x] 已平移至 Card-33 推进 🚀

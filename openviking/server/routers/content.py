@@ -3,6 +3,7 @@
 """Content endpoints for OpenViking HTTP Server."""
 
 import asyncio
+import hashlib
 import io
 import zipfile
 from pathlib import PurePosixPath
@@ -408,22 +409,39 @@ async def write(
         ctx=_ctx,
     )
     if gatekeeper_decision.action == "noop":
-        # Pure synonym (Sim >= 0.97): Zero file I/O interception
-        logger.info(
-            "[EntropyGatekeeper] Intercepted redundant write for %s (matched: %s, sim: %.4f)",
-            uri,
-            gatekeeper_decision.matched_uri,
-            gatekeeper_decision.similarity,
-        )
-        return Response(
-            status="ok",
-            result={
-                "uri": uri,
-                "action": "noop",
-                "gatekeeper": gatekeeper_decision.to_dict(),
-            },
-            telemetry=None,
-        ).model_dump(exclude_none=True)
+        # Double check (Munger Inversion SSOT): verify if target file actually exists and is bitwise identical
+        disk_identical = False
+        try:
+            existing_doc = await service.fs.read(uri, ctx=_ctx)
+            existing_content = existing_doc.get("content", "") if isinstance(existing_doc, dict) else str(existing_doc)
+            in_hash = hashlib.sha256(request.content.strip().encode("utf-8")).hexdigest()
+            disk_hash = hashlib.sha256(existing_content.strip().encode("utf-8")).hexdigest()
+            if in_hash == disk_hash:
+                disk_identical = True
+        except Exception:
+            disk_identical = False
+
+        if disk_identical:
+            logger.info(
+                "[EntropyGatekeeper] Intercepted exact bitwise redundant write for %s",
+                uri,
+            )
+            return Response(
+                status="ok",
+                result={
+                    "uri": uri,
+                    "action": "noop",
+                    "written": False,
+                    "reason": "BITWISE_IDENTICAL",
+                    "gatekeeper": gatekeeper_decision.to_dict(),
+                },
+                telemetry=None,
+            ).model_dump(exclude_none=True)
+        else:
+            logger.warning(
+                "[EntropyGatekeeper] Overriding NOOP with physical write for %s: Target file missing or content changed.",
+                uri,
+            )
 
     execution = await run_operation(
         operation="content.write",

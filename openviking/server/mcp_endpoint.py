@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import base64
 import contextvars
+import hashlib
 import os
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -877,16 +878,31 @@ async def write(
         ctx=ctx,
     )
     if gatekeeper_decision.action == "noop":
-        logger.info(
-            "[EntropyGatekeeper][MCP] Intercepted redundant write for %s (matched: %s, sim: %.4f)",
-            uri,
-            gatekeeper_decision.matched_uri,
-            gatekeeper_decision.similarity,
-        )
-        return (
-            f"[Entropy Defense] NOOP (印证去重): 事实已高度存在于 {gatekeeper_decision.matched_uri} "
-            f"(余弦相似度: {gatekeeper_decision.similarity:.4f} \u2265 0.97)。已拦截物理磁盘写入以阻断碎片冗余，节约 {gatekeeper_decision.saved_bytes} B。"
-        )
+        disk_identical = False
+        try:
+            existing_doc = await service.fs.read(uri, ctx=ctx)
+            existing_content = existing_doc.get("content", "") if isinstance(existing_doc, dict) else str(existing_doc)
+            in_hash = hashlib.sha256(content.strip().encode("utf-8")).hexdigest()
+            disk_hash = hashlib.sha256(existing_content.strip().encode("utf-8")).hexdigest()
+            if in_hash == disk_hash:
+                disk_identical = True
+        except Exception:
+            disk_identical = False
+
+        if disk_identical:
+            logger.info(
+                "[EntropyGatekeeper][MCP] Intercepted exact bitwise redundant write for %s",
+                uri,
+            )
+            return (
+                f"[Entropy Defense] NOOP (指纹秒级印证): 目标节点 {uri} 内容完全一致 (0 字节变动)。"
+                f"已拦截物理重复落盘，节约 {gatekeeper_decision.saved_bytes} B。"
+            )
+        else:
+            logger.warning(
+                "[EntropyGatekeeper][MCP] Overriding NOOP with physical write for %s: Target file missing or content changed.",
+                uri,
+            )
 
     try:
         result = await service.fs.write(
