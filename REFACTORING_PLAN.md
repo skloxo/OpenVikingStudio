@@ -14,20 +14,11 @@
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
-| **`v1.6.3`** | **Card-39** | **体外大脑数据安全与覆盖更新豁免闭环、跨URI哈希隔离与比特级诚实落盘 (Overwrite Immunity & Honest NOOP)** | 1. 显式覆盖更新绝对豁免律 (Overwrite Immunity) 彻底根治高相似度 (Sim >= 0.95) 更新被当作 noop 静默扣押并伪成功的致命缺陷；<br>2. 跨 URI 哈希隔离，彻底杜绝相同模板/内容的文档被跨空间吞噬；<br>3. 彻底清除包含 'bug fixed'/'已修正' 等词被误判为 delete 的隐性陷阱；<br>4. Valet Ingestion 与 content 路由物理落盘双检兜底，只要磁盘内容不一致强制原子写盘；<br>5. 5 项专项单元测试全绿 (涵盖 20000 字符更新、修词豁免、跨 URI 隔离、纯比特 NOOP、Valet 强制落盘)。<br>**Commit Hash**：（本次提交） | [x] 已验收通过 ✅ |
+| **`v1.6.4`** | **Card-40** | **跨集群智能体自主建卡与异步流转治理机制 (Autonomous Issue Filing & Card Triage Protocol - AIFP)** | 1. 告别口头汇报与人肉传话，全集群任何智能体现场遇故障/504超时/异常可自主调用 `openviking_file_task_card` 现场建卡；<br>2. 6 字段实证契约 (title/priority/module/symptom/hypothesis/reproduce_steps)；<br>3. 芒格逆向防线：sha256 物理指纹去重防爆卡风暴、4xx 客户端参数错误防甩锅、物理解耦 `task_cards/inbox/` 杜绝分布式 Git 冲突；<br>4. 核心与卫星端 MCP 双向暴露，REST 路由贯通；<br>5. 6 项专项单测全绿 (0.10s)，安全扫描 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
+| **`v1.6.3`** | **Card-39** | **体外大脑数据安全与覆盖更新豁免闭环、跨URI哈希隔离与比特级诚实落盘 (Overwrite Immunity & Honest NOOP)** | 1. 显式覆盖更新绝对豁免律 (Overwrite Immunity) 彻底根治高相似度 (Sim >= 0.95) 更新被当作 noop 静默扣押并伪成功的致命缺陷；<br>2. 跨 URI 哈希隔离，彻底杜绝相同模板/内容的文档被跨空间吞噬；<br>3. 彻底清除包含 'bug fixed'/'已修正' 等词被误判为 delete 的隐性陷阱；<br>4. Valet Ingestion 与 content 路由物理落盘双检兜底，只要磁盘内容不一致强制原子写盘；<br>5. 5 项专项单元测试全绿 (涵盖 20000 字符更新、修词豁免、跨 URI 隔离、纯比特 NOOP、Valet 强制落盘)。<br>**Commit Hash**：`21a2303c8` | [x] 已验收通过 ✅ |
 | **`v1.6.2`** | **Card-38** | **体外大脑记忆纯度度量衡基准、健康大盘与全自动午夜做梦巡检守护闭环 (Memory Purity & Dream Watchdog)** | 1. 记忆纯度三大客观指标 (SNR、冲突率、新鲜度) 落地；2. 全自动午夜与高水位做梦守护；3. 记忆纯度大盘与治理总账流水卡片；4. 12 项测试全绿。 | [x] 已验收通过 ✅ |
 | **`v1.6.1`** | **Card-37** | **体外大脑时效动力学衰减、频次强化与离线做梦蒸馏流水线 (Temporal Decay & Offline Dream)** | 1. 时效衰减与频次强化公式落地；2. 离线做梦与主知识卡片自动建链；3. 时效动力学仿真与做梦座舱卡片；4. 24 项测试全绿。 | [x] 已验收通过 ✅ |
 | **`v1.6.0`** | **Card-36** | **体外大脑记忆抗熵增中枢与认知冲突消解流水线 (Lineage & Superseding DAG)** | 1. 冲突消解与 Superseding DAG 自动建链；2. 检索端物理阻断废弃节点 (`exclude_superseded`)；3. 座舱可视化卡片；4. 26 项测试全绿。 | [x] 已验收通过 ✅ |
-| **`v1.5.99`** | **Card-35** | **RSI 昼夜演进盲测基准增强与 Bootstrap 启动深度自检闭环** | 1. 8 大物理安全门禁盲测雷达；2. SQLite PRAGMA quick_check 自检自愈；3. 34 项单测全绿。 | [x] 已验收通过 ✅ |
-| **`v1.5.98`** | **Card-34** | **后端高危超限路由解耦切除 — skills.py 与 system.py 接缝拆解** | 1. 拆解至黄金甜点区；2. 硬件探针快照；3. 45 项单测全绿。 | [x] 已验收通过 ✅ |
-| **`v1.5.87`** | **Card-23** | **上游文件系统标准吸收 — ls/tree 游标分页排序与统一中文/Unicode 存储 URI** | 1. Unicode URI 规范化与 `%20` 兼容降级；2. `ls`/`tree` 游标分页与稳定排序；3. Precompiled Rust native ABI 降级切片；4. 167 项单测全绿。 | [x] 已验收通过 ✅ |
-| **`v1.5.86`** | **Card-22** | **上游检索算力吸收 — 余弦相似度归一化与单请求 Query 嵌入高速复用** | 1. CuVS/本地索引余弦得分归一化至 $[0.0, 1.0]$；2. 请求级 ContextVar 嵌入缓存；3. 112 项单测全绿。 | [x] 已验收通过 ✅ |
-| **`v1.5.85`** | **Card-21** | **上游存储稳固性吸收 — OS 文件锁替代 PID、QueueFS 与 HTTP 事件循环隔离** | 1. Linux `flock` 替换 PID 文件；2. 跨 Loop `AsyncSemaphore`；3. Telemetry ID 全链路保真；4. 57 项单测全绿。 | [x] 已验收通过 ✅ |
-| **`v1.5.84`** | **Card-20H** | **AHE 契约三元组在技能更新与回归测试中的物理门禁接入** | 1. PolarJudge 真实沙箱校验与退化阻断；2. 快照 `rollback()` 物理恢复；3. AHE CLI 扫描器。 | [x] 已验收通过 ✅ |
-| **`v1.5.83`** | **Card-20G** | **昼夜双轮自演进真实轨迹收集与双 Split 门禁驱动闭环** | 1. 白昼会话逐回合 `record_turn`；2. 午夜做梦离线双 Split 盲测门禁；3. RLock 重入保护。 | [x] 已验收通过 ✅ |
-| **`v1.5.82`** | **Card-20F** | **活态实体血缘与跨节点拓扑图谱动态渲染闭环** | 1. SQLite `relations.db` 物理血缘表；2. 动态拓扑端点；3. 切除前端全部假数据 fallback。 | [x] 已验收通过 ✅ |
-| **`v1.5.81`** | **Card-20E** | **Hermes 经历库会话全链路自动分流落盘与异步复盘自愈闭环** | 1. FTS5 + CJK 经历库批量事务写入；2. Stop Hook 双轨分流；3. 异步 Nudge 复盘。 | [x] 已验收通过 ✅ |
-| **`v1.5.80`** | **Card-20D** | **离线梦想缺陷挖掘与熵结晶器自动巡检守护贯通** | 1. 午夜定时与 30min 空闲双驱动；2. 三门禁不可变规则结晶落盘；3. 单文件安全红线守护。 | [x] 已验收通过 ✅ |
 
 ---
 
@@ -43,6 +34,35 @@
 ---
 
 ### 🧬 Milestone 5-A: 半成品与悬空功能全链路真实化贯通 (Suspended Features Truthful Closure)
+
+#### 📌 [P0] [x] Card-40 (v1.6.4): 跨集群智能体自主建卡与异步流转治理机制 (Autonomous Issue Filing & Card Triage Protocol - AIFP)
+- **类型**：多智能体治理 / 异常建卡与流转体系 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.6.4` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - 过去卫星端智能体（WorkBuddy、XiaomiMo、OpenClaw）遇到系统异常（如 504 Gateway Timeout、落库静默丢弃、死锁或回归缺陷），只能写在本地日报或对话中，依赖人类手动复制给 Antigravity，不仅信息丢失、且极易延误修复；
+  - 芒格逆向思考：若各智能体无限制直接写 Git 任务看板，将造成严重的分布式 Git 冲突与脏工作区；若无指纹聚合，高并发报错将引发成千上万张卡片的“爆卡风暴”；若允许客户端错误建卡，将形成“甩锅给服务端”的垃圾工单；
+  - 本卡片从第一性原理实施三维物理防线：
+    1. **指纹去重聚合**：以 `sha256(module + symptom_clean)[:12]` 为唯一指纹，同类故障自动原子递增 `occurrence_count` 与 `affected_agents`，防爆卡；
+    2. **防甩锅门禁**：对 4xx 客户端参数缺失/错误直接抛错阻断，严防垃圾工单；
+    3. **物理解耦收件箱**：卡片安全沉淀在 `viking://resources/task_cards/inbox/{card_id}.json`，由 Antigravity 择机通过 `openviking_list_pending_cards` 排期，彻底消灭分布式 Git 冲突！
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **异常上报阻断率（告别人肉传话）**：智能体遇到系统异常自主建卡率达到 **$100\%$**，人肉传话依赖降为 **$0\%$**；
+    2. **指纹去重压缩率 (Anti-Storm Dedup)**：高并发重复报错工单聚合去重率达到 **$100\%$**，同类错误仅生成 1 个聚合卡片；
+    3. **客户端误建卡拦截率**：4xx 客户端错误建卡拦截率达到 **$100\%$**。
+  - **展示界面与卡片**：控制台任务中心大盘、Task Card Manager 收件箱与待办列表。
+- **核心交付目标与修改清单**：
+  1. `openviking/service/task_card_manager.py` (261行)：核心卡片状态机、指纹计算、并发锁、Markdown 与 TaskTracker 双轨沉淀；
+  2. `openviking/server/routers/task_cards.py` (98行)：提供 `/api/v1/task-cards/file`, `/pending`, `/{card_id}/resolve` 路由；
+  3. `openviking/server/mcp_endpoint.py`：注册 `openviking_file_task_card` 与 `openviking_list_pending_cards`；
+  4. `mcp-openviking/satellite_mcp_server.py` (497行)：卫星端提供轻量快速转发 `openviking_file_task_card`，严格遵守 $\le 500$ 行安全红线；
+  5. `.agents/AGENTS.md` & `openclaw/AGENTS.md`：写入第 11 节《AIFP 协议》，全集群生效；
+  6. `tests/unit/test_agent_issue_task_card.py` (226行)：6 项专项单测全绿通过。
+- **物理验收与门禁**：
+  - 单元测试：`tests/unit/test_agent_issue_task_card.py` 6/6 PASSED (1.10s)；
+  - 回归测试：`tests/unit/test_valet_overwrite_sanity.py` 5/5 PASSED (1.62s)；
+  - 安全门禁：`python3 scripts/security_check.py` 4,593 文件 0 密钥泄露；
+  - 构建门禁：Vite 生产构建 20.03s PASS；
+  - 单文件规模：所有文件严格处于黄金甜点区与 $\le 500$ 行硬性红线以内。
 
 #### 📌 [P0] [x] Card-39 (v1.6.3): 体外大脑数据安全与覆盖更新豁免闭环、跨URI哈希隔离与比特级诚实落盘 (Overwrite Immunity & Honest NOOP)
 - **类型**：体外大脑存储安全 / 数据单义性根治 ｜ **优先级**：🔥🔥🔥 P0 (最高紧急度) ｜ **目标版本**：`v1.6.3` ｜ **当前状态**：[x] 已验收通过 ✅

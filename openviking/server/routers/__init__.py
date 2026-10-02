@@ -56,6 +56,7 @@ from openviking.server.routers.tokenshift import router as tokenshift_router
 from openviking.server.routers.context_router import router as context_router
 from openviking.server.routers.dspy_compiler import router as dspy_compiler_router
 from openviking.server.routers.cache_tier2 import router as cache_tier2_router
+from openviking.server.routers.task_cards import router as task_cards_router
 
 __all__ = [
     "acl_router",
@@ -112,5 +113,6 @@ __all__ = [
     "context_router",
     "dspy_compiler_router",
     "cache_tier2_router",
+    "task_cards_router",
 ]
 

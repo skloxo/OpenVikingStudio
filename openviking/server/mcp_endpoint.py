@@ -1563,6 +1563,60 @@ async def zg_search(
     return "\n".join(lines)
 
 
+@mcp.tool(annotations=_RETRY_SAFE_DESTRUCTIVE_TOOL_ANNOTATIONS)
+async def openviking_file_task_card(
+    title: str,
+    module: str,
+    symptom: str,
+    hypothesis: str = "",
+    reproduce_steps: str = "",
+    agent_id: str = "agent",
+    priority: str = "P1",
+) -> str:
+    """File a task card for an issue, anomaly, or regression discovered by an agent.
+    Computes a deterministic fingerprint sha256(module + symptom) to deduplicate and prevent card flooding.
+    If the same issue has already been reported, increments occurrence count and merges context.
+    """
+    import asyncio
+    from openviking.service.task_card_manager import TaskCardManager, IssueTaskCard
+
+    manager = TaskCardManager.get_instance()
+    card = IssueTaskCard(
+        title=title,
+        module=module,
+        symptom=symptom,
+        hypothesis=hypothesis,
+        reproduce_steps=reproduce_steps,
+        reporting_agent=agent_id,
+        priority=priority,
+    )
+    res = await asyncio.to_thread(manager.file_task_card, card)
+    return (
+        f"Task card processed: status={res['status']}, card_id={res['card_id']}, "
+        f"fingerprint={res['fingerprint']}, occurrences={res['occurrence_count']}, path={res['path']}"
+    )
+
+
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_list_pending_cards(limit: int = 20) -> str:
+    """List pending/inbox issue task cards waiting for triage and iteration planning."""
+    import asyncio
+    from openviking.service.task_card_manager import TaskCardManager
+
+    manager = TaskCardManager.get_instance()
+    cards = await asyncio.to_thread(manager.list_pending_cards)
+    if not cards:
+        return "No pending task cards in inbox."
+    cards = cards[:limit]
+    lines = [f"=== Pending Task Cards ({len(cards)}) ==="]
+    for c in cards:
+        lines.append(
+            f"- [{c.get('priority', 'P2')}] {c.get('card_id')}: {c.get('title')} "
+            f"(module: {c.get('module')}, hits: {c.get('occurrence_count', 1)}, agents: {','.join(c.get('affected_agents', []))})"
+        )
+    return "\n".join(lines)
+
+
 # ---------------------------------------------------------------------------
 # Portable tool schemas
 # ---------------------------------------------------------------------------
