@@ -10,6 +10,7 @@ Implements the valet parking ingestion pattern:
 """
 
 import asyncio
+import hashlib
 import json
 import logging
 import os
@@ -304,15 +305,45 @@ class ValetIngestionEngine:
                 reason="门禁裁决超时 (15s 看门狗熔断保护)，安全放行入库。",
             )
 
+        # Physical Integrity Double-Check (Munger Inversion SSOT):
+        # Even if gatekeeper suggested NOOP, verify if the physical file on disk exists and is bitwise identical.
+        # If target file does NOT exist on disk or its content differs, we MUST physically write it!
+        target_path = self._resolve_uri_to_path(uri)
+        disk_identical = False
+        if target_path and target_path.exists():
+            try:
+                disk_content = target_path.read_text(encoding="utf-8")
+                in_hash = hashlib.sha256(content.strip().encode("utf-8")).hexdigest()
+                disk_hash = hashlib.sha256(disk_content.strip().encode("utf-8")).hexdigest()
+                if in_hash == disk_hash:
+                    disk_identical = True
+            except Exception as read_err:
+                logger.debug("Failed to read existing disk file for bitwise verification: %s", read_err)
+
         deliverable = None
         action_msg = ""
         if decision.action == "noop":
-            action_msg = f"同义知识已合并至既有节点 (相似度 {decision.similarity:.4f})，零冗余新增"
-            deliverable = {
-                "uri": decision.matched_uri or uri,
-                "label": "查看既有节点知识",
-                "action_type": "view_memory",
-            }
+            if not disk_identical:
+                # Force physical write: target file was missing or mutated!
+                logger.warning(
+                    "[ValetIngestion] Overriding NOOP with physical write for %s: Target file missing or mutated on disk!",
+                    uri,
+                )
+                self._write_local_file(uri, content)
+                decision.action = "update"
+                action_msg = f"物理检测到变动，已强制落盘更新 (相似度 {decision.similarity:.4f})"
+                deliverable = {
+                    "uri": uri,
+                    "label": "查看强制落盘知识",
+                    "action_type": "view_memory",
+                }
+            else:
+                action_msg = f"同义知识已合并至既有节点 (相似度 {decision.similarity:.4f})，零冗余新增"
+                deliverable = {
+                    "uri": decision.matched_uri or uri,
+                    "label": "查看既有节点知识",
+                    "action_type": "view_memory",
+                }
         elif decision.action == "update":
             # Physically write updated content
             self._write_local_file(uri, content)
@@ -332,7 +363,12 @@ class ValetIngestionEngine:
                 "action_type": "view_memory",
             }
         else:
-            action_msg = f"异常或更正记录已标记"
+            # Fallback for unexpected actions: ensure physical write occurs if file is missing/changed
+            if not disk_identical:
+                self._write_local_file(uri, content)
+                action_msg = f"已安全落盘 (异常分支兜底)"
+            else:
+                action_msg = f"异常或更正记录已标记"
 
         # Update ticket final state
         with self._tickets_lock:
