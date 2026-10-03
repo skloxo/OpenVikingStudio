@@ -38,6 +38,10 @@ INPUT_TOO_LARGE_PATTERNS = (
     "exceeds the max input length",
     "is too large to process",
     "expected maxlength",
+    "input text too long",
+    "input too large",
+    "tokens exceed",
+    "exceeds max limit",
 )
 
 PERMANENT_API_ERROR_PATTERNS = ("400",)
