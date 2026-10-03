@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Card } from '#/components/ui/card'
 import { QueueStatusCard } from '#/routes/monitoring/-components/queue-status-card'
 import type { ParsedQueueRow } from '#/routes/monitoring/-components/queue-status-card'
+import { VectorSyncDlqCard } from '#/routes/monitoring/-components/vector-sync-dlq-card'
 
 export interface TaskKpiData {
   total: number
@@ -100,6 +101,9 @@ export function TasksMetricsCards({
           </p>
         </Card>
       </div>
+
+      {/* 向量索引同步与死信队列健康监测瓦片 */}
+      <VectorSyncDlqCard />
 
       {/* 业务任务状态 (8 种任务) 与 执行引擎状态 (7 大引擎) 50/50 并排观测行 */}
       <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-2">

@@ -494,6 +494,62 @@ class TextEmbeddingHandler(DequeueHandlerBase):
         self._max_batch_size = max(1, min(int(config.embedding.max_concurrent), 16))
         self._linger_s = 0.005
 
+    def _record_terminal_failure(
+        self,
+        embedding_msg: Optional[Any],
+        raw_data: Dict[str, Any],
+        error_type: str,
+        error_msg: str,
+        stack_trace: Optional[str] = None,
+    ) -> None:
+        try:
+            from openviking.storage.queuefs.dlq_manager import DLQManager
+            from openviking.service.vector_sync_tracker import VectorSyncTracker
+
+            uri = getattr(embedding_msg, "uri", None) if embedding_msg else raw_data.get("uri")
+            context_data = getattr(embedding_msg, "context_data", {}) if embedding_msg else {}
+            account_id = (context_data.get("account_id") if isinstance(context_data, dict) else None) or raw_data.get("account_id") or "default"
+            msg_id = getattr(embedding_msg, "telemetry_id", None) if embedding_msg else raw_data.get("id")
+
+            DLQManager.get_instance().record_dead_letter(
+                queue_name=self._collection_name,
+                msg_id=msg_id,
+                payload=raw_data,
+                error_type=error_type,
+                error_message=error_msg,
+                stack_trace=stack_trace,
+                uri=uri,
+                account_id=account_id,
+            )
+            if uri:
+                VectorSyncTracker.get_instance().mark_failed(
+                    uri=uri,
+                    account_id=account_id,
+                    error=f"[{error_type}] {error_msg}",
+                )
+        except Exception as dlq_err:
+            logger.error(f"[TextEmbeddingHandler] Failed to record dead letter: {dlq_err}")
+
+    def _record_terminal_success(
+        self,
+        embedding_msg: Optional[Any],
+        raw_data: Dict[str, Any],
+        record_id: Any,
+    ) -> None:
+        try:
+            from openviking.service.vector_sync_tracker import VectorSyncTracker
+
+            uri = getattr(embedding_msg, "uri", None) if embedding_msg else raw_data.get("uri")
+            context_data = getattr(embedding_msg, "context_data", {}) if embedding_msg else {}
+            account_id = (context_data.get("account_id") if isinstance(context_data, dict) else None) or raw_data.get("account_id") or "default"
+            if uri and record_id:
+                VectorSyncTracker.get_instance().mark_indexed(
+                    uri=uri,
+                    account_id=account_id,
+                )
+        except Exception as tracker_err:
+            logger.debug(f"[TextEmbeddingHandler] Failed to update sync tracker: {tracker_err}")
+
     def _initialize_embedder(self, config: "OpenVikingConfig"):
         """Initialize the embedder instance from config."""
         self._embedder = config.embedding.get_embedder()
@@ -787,6 +843,7 @@ class TextEmbeddingHandler(DequeueHandlerBase):
 
                         if error_class == ERROR_CLASS_INPUT_TOO_LARGE:
                             logger.error(error_msg)
+                            self._record_terminal_failure(embedding_msg, data, "INPUT_TOO_LARGE", error_msg)
                             self._merge_request_stats(embedding_msg.telemetry_id, error_count=1)
                             request_failed_message = error_msg
                             report_error_args = (error_msg, data)
@@ -794,6 +851,7 @@ class TextEmbeddingHandler(DequeueHandlerBase):
 
                         if error_class == ERROR_CLASS_PERMANENT:
                             logger.critical(error_msg)
+                            self._record_terminal_failure(embedding_msg, data, "PERMANENT", error_msg)
                             self._circuit_breaker.record_failure(embed_err)
                             self._merge_request_stats(embedding_msg.telemetry_id, error_count=1)
                             request_failed_message = error_msg
@@ -808,6 +866,7 @@ class TextEmbeddingHandler(DequeueHandlerBase):
                             # breaker re-enqueues later messages and reintroduces the
                             # same leak. See #2916.
                             logger.error(error_msg)
+                            self._record_terminal_failure(embedding_msg, data, "AUTH", error_msg)
                             self._merge_request_stats(embedding_msg.telemetry_id, error_count=1)
                             request_failed_message = error_msg
                             report_error_args = (error_msg, data)
@@ -857,6 +916,7 @@ class TextEmbeddingHandler(DequeueHandlerBase):
                                 f"expected {self._vector_dim}, got {len(result.dense_vector)}",
                             )
                             logger.error(error_msg)
+                            self._record_terminal_failure(embedding_msg, data, "DIMENSION_MISMATCH", error_msg)
                             self._merge_request_stats(embedding_msg.telemetry_id, error_count=1)
                             request_failed_message = error_msg
                             report_error_args = (error_msg, data)
@@ -926,6 +986,7 @@ class TextEmbeddingHandler(DequeueHandlerBase):
                     logger.error(error_msg)
                     import traceback
 
+                    self._record_terminal_failure(embedding_msg, data, "COLLECTION_NOT_FOUND", error_msg, traceback.format_exc())
                     traceback.print_exc()
                     self._merge_request_stats(embedding_msg.telemetry_id, error_count=1)
                     request_failed_message = error_msg
@@ -943,6 +1004,9 @@ class TextEmbeddingHandler(DequeueHandlerBase):
                         f"Failed to write to vector database: {db_err}",
                     )
                     logger.error(error_msg)
+                    import traceback
+
+                    self._record_terminal_failure(embedding_msg, data, "DB_ERROR", error_msg, traceback.format_exc())
                     self._merge_request_stats(embedding_msg.telemetry_id, error_count=1)
                     request_failed_message = error_msg
                     report_error_args = (error_msg, data)
@@ -953,6 +1017,7 @@ class TextEmbeddingHandler(DequeueHandlerBase):
                     embedding_msg,
                     vector_written=bool(record_id),
                 )
+                self._record_terminal_success(embedding_msg, data, record_id)
                 report_success = True
                 self._circuit_breaker.record_success()
                 return inserted_data
@@ -965,6 +1030,7 @@ class TextEmbeddingHandler(DequeueHandlerBase):
             logger.error(error_msg)
             import traceback
 
+            self._record_terminal_failure(embedding_msg, data, "UNHANDLED", error_msg, traceback.format_exc())
             traceback.print_exc()
             if embedding_msg is not None:
                 self._merge_request_stats(embedding_msg.telemetry_id, error_count=1)

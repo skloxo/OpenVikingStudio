@@ -473,6 +473,18 @@ class ContentWriteCoordinator:
             semantic_status, vector_status = refresh_outcome.statuses(wait=wait)
             result["semantic_status"] = semantic_status
             result["vector_status"] = vector_status
+
+        if (created or updated) and normalized_root:
+            try:
+                from openviking.service.vector_sync_tracker import VectorSyncTracker
+                account_id = getattr(ctx, "account_id", None) or (ctx.get("account_id") if isinstance(ctx, dict) else "default")
+                VectorSyncTracker.get_instance().mark_pending(
+                    uri=normalized_root,
+                    account_id=str(account_id or "default"),
+                )
+            except Exception as _tracker_err:
+                logger.debug(f"[ContentWriteCoordinator] Failed to mark sync pending: {_tracker_err}")
+
         return result
 
     def _validate_uri_path(self, uri: str, *, field_name: str) -> str:

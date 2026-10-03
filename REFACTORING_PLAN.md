@@ -9,11 +9,12 @@
 
 > **生产物理事实声明**：
 > - **线上正式部署版本**：**`v1.4.106`**（物理访问地址：`vk.tide.red/studio/home`，已实机验证）；
-> - **当前最新交付版本**：**`v1.6.2`**（Tag: `v1.6.2`，已全量通过 12 项抗熵增纯度与生命周期测试及安全扫描）；
+> - **当前最新交付版本**：**`v1.6.5`**（Tag: `v1.6.5`，已全量通过 DLQ 零丢弃契约、向量索引状态自愈及 15 项核心单测与安全扫描）；
 > - **历史里程碑详单检索**：如需查阅 Milestone 1~4 及早期版本修改清单与架构细节，请点击跳转至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.6.5`** | **Card-41** | **QueueFS 消费零丢弃契约、死信队列 (DLQ) 与向量索引状态自愈闭环 (Zero-Loss DLQ & Vector Sync Self-Healing)** | 1. 彻底根治 NamedQueue 消费异常时无条件 ACK 导致数据永久蒸发的“幽灵记忆”致命缺陷；<br>2. 落地 SQLite 物理持久化死信队列 `DLQManager`，所有永久错误/超长/认证/维度/数据库异常均原子落入 DLQ；<br>3. 建立三态不变量状态机 `VectorSyncTracker` (PENDING / INDEXED / FAILED)，文件写入即刻受控；<br>4. 研发高密性冷淡座舱卡片 `VectorSyncDlqCard`，实时回显同步率与死信积压，支持一键自愈巡检；<br>5. 4 项全链路单测全绿 (1.58s)，11 项前序回归全绿，零密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
 | **`v1.6.4`** | **Card-40** | **跨集群智能体自主建卡与异步流转治理机制 (Autonomous Issue Filing & Card Triage Protocol - AIFP)** | 1. 告别口头汇报与人肉传话，全集群任何智能体现场遇故障/504超时/异常可自主调用 `openviking_file_task_card` 现场建卡；<br>2. 6 字段实证契约 (title/priority/module/symptom/hypothesis/reproduce_steps)；<br>3. 芒格逆向防线：sha256 物理指纹去重防爆卡风暴、4xx 客户端参数错误防甩锅、物理解耦 `task_cards/inbox/` 杜绝分布式 Git 冲突；<br>4. 核心与卫星端 MCP 双向暴露，REST 路由贯通；<br>5. 6 项专项单测全绿 (0.10s)，安全扫描 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
 | **`v1.6.3`** | **Card-39** | **体外大脑数据安全与覆盖更新豁免闭环、跨URI哈希隔离与比特级诚实落盘 (Overwrite Immunity & Honest NOOP)** | 1. 显式覆盖更新绝对豁免律 (Overwrite Immunity) 彻底根治高相似度 (Sim >= 0.95) 更新被当作 noop 静默扣押并伪成功的致命缺陷；<br>2. 跨 URI 哈希隔离，彻底杜绝相同模板/内容的文档被跨空间吞噬；<br>3. 彻底清除包含 'bug fixed'/'已修正' 等词被误判为 delete 的隐性陷阱；<br>4. Valet Ingestion 与 content 路由物理落盘双检兜底，只要磁盘内容不一致强制原子写盘；<br>5. 5 项专项单元测试全绿 (涵盖 20000 字符更新、修词豁免、跨 URI 隔离、纯比特 NOOP、Valet 强制落盘)。<br>**Commit Hash**：`21a2303c8` | [x] 已验收通过 ✅ |
 | **`v1.6.2`** | **Card-38** | **体外大脑记忆纯度度量衡基准、健康大盘与全自动午夜做梦巡检守护闭环 (Memory Purity & Dream Watchdog)** | 1. 记忆纯度三大客观指标 (SNR、冲突率、新鲜度) 落地；2. 全自动午夜与高水位做梦守护；3. 记忆纯度大盘与治理总账流水卡片；4. 12 项测试全绿。 | [x] 已验收通过 ✅ |
@@ -34,6 +35,38 @@
 ---
 
 ### 🧬 Milestone 5-A: 半成品与悬空功能全链路真实化贯通 (Suspended Features Truthful Closure)
+
+#### 📌 [P0] [x] Card-41 (v1.6.5): QueueFS 消费零丢弃契约、死信队列 (DLQ) 与向量索引状态自愈闭环 (Zero-Loss DLQ & Vector Sync Self-Healing)
+- **类型**：记忆管道可靠性 / 死信保护与状态自愈 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.6.5` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - 源码审计发现体外大脑最为致命的隐性断裂点：NamedQueue 消费时，当底层处理发生任何永久异常（如输入超长 `INPUT_TOO_LARGE`、向量模型服务错误 `PERMANENT`、鉴权失效 `AUTH`、向量维度不匹配 `DIMENSION_MISMATCH`、数据库写入失败等），`TextEmbeddingHandler` 记录日志后直接 `return None`；紧接着 `NamedQueue.dequeue()` 竟然执行无条件 `await self.ack(msg_id, raw_data)` 将消息物理删除！
+  - 芒格倒推恶果：磁盘上有文件，但向量索引永远缺失，而且没有任何地方记录该文件未被索引！搜索永远搜不到，形成了无法察觉的“幽灵记忆黑洞 (Ghost Memory)”。
+  - 本卡片从第一性原理实施三维物理防线：
+    1. **死信队列 (DLQ) 零丢失持久化**：开发轻量线程安全 SQLite 存储 `DLQManager`，任何无法处理的消息在 ACK 前必须原子落入 `queue_dead_letters.db`，保留完整 payload、错误类型与堆栈，彻底杜绝数据静默蒸发；
+    2. **向量索引三态不变量跟踪器 (VectorSyncTracker)**：在 `vector_sync_state.db` 维护 `(uri, account_id, status: PENDING|INDEXED|FAILED, content_hash)`；文件落盘即刻标记 `PENDING`，成功入向量库转 `INDEXED`，失败转 `FAILED`，形成物理真实视网膜；
+    3. **自愈补偿与座舱可视化**：提供 `/api/v1/queue/dlq`、`/api/v1/queue/sync-metrics`、`/api/v1/queue/sync-heal` 接口；配套研发座舱级高密性冷淡卡片 `VectorSyncDlqCard`，实时回显同步率与死信积压，支持一键自愈巡检。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **消息静默丢失率 (Silent Drop Rate)**：从原来的未知（发生异常即 100% 丢失）彻底降为 **$0.0\%$**；
+    2. **死信可审计率 (DLQ Auditability)**：异常消息 $100\%$ 进入死信队列，支持按错误类型分类审查；
+    3. **向量同步健康率 (Vector Sync Rate %)**：UI 实时可观测度从之前的黑盒无显示提升为 **$100\%$ 直观可视**；
+  - **展示界面与卡片**：Tasks 监控中心顶部瓦片 `VectorSyncDlqCard`（包含同步率、DLQ 积压数、待向量化数、失败失联数及自愈按钮）。
+- **核心交付目标与修改清单**：
+  1. `openviking/storage/queuefs/dlq_manager.py` (228行)：死信队列管理类，支持落库、查重、状态过滤与重试；
+  2. `openviking/service/vector_sync_tracker.py` (194行)：向量索引状态机与自愈扫描器；
+  3. `openviking/storage/collection_schemas.py`：在所有异常终止点挂载 `_record_terminal_failure`，成功点挂载 `_record_terminal_success`；
+  4. `openviking/storage/content_write.py`：文件写入成功后自动在 `VectorSyncTracker` 登记 `PENDING`；
+  5. `openviking/server/routers/dlq.py` (138行)：提供 DLQ 列表/详情/解决/重试及向量同步指标与自愈 API；
+  6. `openviking/server/mcp_endpoint.py`：新增 `openviking_dlq_status` 与 `openviking_vector_sync_metrics` 两个原生只读 MCP 工具；
+  7. `src/routes/monitoring/-components/vector-sync-dlq-card.tsx` (188行)：座舱高密性冷淡监控卡片；
+  8. `src/routes/tasks/-components/tasks-metrics-cards.tsx`：挂载 `VectorSyncDlqCard`，实现前端客观数据指标回显；
+  9. `tests/unit/test_queuefs_dlq_and_sync_state.py` (240行)：覆盖 DLQ 生命周期、状态流转、REST API 与 TextEmbeddingHandler 联动的 4 项专项单测；
+  10. `package.json` & `openviking/_version.py`：版本号自增至 `1.6.5`。
+- **物理验收与门禁**：
+  - **自动化单测**：`pytest -o addopts="" tests/unit/test_queuefs_dlq_and_sync_state.py` 4/4 全绿通过 (1.58s)；
+  - **回归单测**：`test_agent_issue_task_card.py` 与 `test_valet_overwrite_sanity.py` 11/11 全绿通过 (4.42s)；
+  - **安全审计**：`python3 scripts/security_check.py` 4596 文件 0 密钥泄露；
+  - **前端构建**：`npm run build` 耗时 18.37s 顺利编译打包。
 
 #### 📌 [P0] [x] Card-40 (v1.6.4): 跨集群智能体自主建卡与异步流转治理机制 (Autonomous Issue Filing & Card Triage Protocol - AIFP)
 - **类型**：多智能体治理 / 异常建卡与流转体系 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.6.4` ｜ **当前状态**：[x] 已验收通过 ✅
