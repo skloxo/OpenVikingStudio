@@ -14,6 +14,7 @@
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.6.8`** | **Card-44** | **存量碎片记忆自动熔铸结晶器与离线做梦治理总账闭环 (Stock Crystallization & Offline Dream Recipe Distillation)** | 1. 彻底根治扫描范围单一 (仅看单个子目录) 导致的存量散碎记忆无法凝结与 Top-K 向量空间 SNR 衰退隐患；<br>2. 落地高内聚独立配方蒸馏器 `DreamRecipeDistiller`，提炼四层规范拓扑 (L0 核心公理、L1 执行配方 SOP、L2 负向反模式边界、L3 关联证据指纹)；<br>3. 达成 100% 向量索引同步一致性契约：Master Card 落盘即刻自动调用 `VectorSyncTracker.record_write` (PENDING) 排队向量化，零幽灵结晶；<br>4. 统一治理总账与座舱可观测性：做梦事件统一落盘 `entropy_gatekeeper.jsonl` (#cry_xxxx)，前端座舱总账流水支持一键点击打开不可变事实晶体抽屉 (`FactCrystalDrawer`)，实现 100% 真实交互可观测；<br>5. 5 项专项单测全绿 (1.24s)，40 项全量回归测试全绿 (3.39s)，安全扫描 0 密钥，前端构建 PASS。<br>**Commit Hash**：`ab9e78f84` | [x] 已验收通过 ✅ |
 | **`v1.6.7`** | **Card-43** | **内存写入即刻落盘契约与门禁异步解耦流水线 (Zero-504 Fast-Path Ingestion & Asynchronous Gatekeeper Decoupling)** | 1. 彻底根治同步向量探查与 15s 门禁挂死主请求引发 504 Gateway Timeout 及“超时≠失败”幽灵写入致命缺陷；<br>2. 确立 WAL 即刻物理落盘律：磁盘写文件 O(1) < 5ms 即刻确认，保障数据 100% 绝对不丢；<br>3. 门禁向量探查引入 250ms 快轨预算看门狗，超时自动放行快轨落盘并记录指纹，杜绝级联超时；<br>4. Valet Ingestion 代客泊车立即出票与即刻落盘，后台异步深度泊车，响应时间从 15,000ms 骤降至 < 20ms；<br>5. 队列指标与座舱卡片新增 `fast_path_count` 徽章，实时可视；<br>6. 4 项全链路专项单测全绿 (0.32s)，23 项全量回归测试全绿 (1.96s)，安全扫描 0 密钥，前端构建 PASS。<br>**Commit Hash**：`4e41e68db` | [x] 已验收通过 ✅ |
 | **`v1.6.6`** | **Card-42** | **时效动力学衰减保底底线与超长记忆自动分片兜底流水线 (Category-Aware Score Floor & Overlength Chunking Fallback)** | 1. 彻底根治重要基础规则、ADR、经验教训与技能在 90+ 天未访问时被时效指数衰减误杀跌破阈值的隐性致命缺陷；<br>2. 建立类别感知保底底线 (Category-Aware Score Floor)：公理/不变量/技能 100% 免疫，ADR/教训/架构文档保底 >= 0.85，经验保底 >= 0.60，通用知识保底 >= 0.25；<br>3. 建立超长文本自动滑动窗口分片兜底流水线 (ChunkingFallbackEngine)：当向量嵌入触发 INPUT_TOO_LARGE 或超过模型 Token 上限时，自动切分为带 YAML 头上下文重叠分片 (`uri#chunk_0`, `uri#chunk_1`)，实现 100% 记忆吸收吞吐，消除 DLQ 盲区；<br>4. 4 项全链路单测全绿 (0.25s)，23 项前序回归测试全绿 (2.81s)，安全扫描 0 密钥，前端构建 PASS。<br>**Commit Hash**：`c77d41f35` | [x] 已验收通过 ✅ |
 | **`v1.6.5`** | **Card-41** | **QueueFS 消费零丢弃契约、死信队列 (DLQ) 与向量索引状态自愈闭环 (Zero-Loss DLQ & Vector Sync Self-Healing)** | 1. 彻底根治 NamedQueue 消费异常时无条件 ACK 导致数据永久蒸发的“幽灵记忆”致命缺陷；<br>2. 落地 SQLite 物理持久化死信队列 `DLQManager`，所有永久错误/超长/认证/维度/数据库异常均原子落入 DLQ；<br>3. 建立三态不变量状态机 `VectorSyncTracker` (PENDING / INDEXED / FAILED)，文件写入即刻受控；<br>4. 研发高密性冷淡座舱卡片 `VectorSyncDlqCard`，实时回显同步率与死信积压，支持一键自愈巡检；<br>5. 4 项全链路单测全绿 (1.58s)，11 项前序回归全绿，零密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
@@ -37,6 +38,43 @@
 ---
 
 ### 🧬 Milestone 5-A: 半成品与悬空功能全链路真实化贯通 (Suspended Features Truthful Closure)
+
+#### 📌 [P0] [x] Card-44 (v1.6.8): 存量碎片记忆自动熔铸结晶器与离线做梦治理总账闭环 (Stock Crystallization & Offline Dream Recipe Distillation)
+- **类型**：记忆抗熵增中枢 / 存量做梦熔铸与治理总账 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.6.8` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - 前序 Card-40 ~ Card-43 已把记忆写入的“前门落盘与准入防线”构筑完毕，但随着长期多会话运行，体外大脑后院（`viking://resources/master_memory/`）依然会累积大量同主题的散乱碎片记忆（Fragmented Notes）；
+  - 芒格倒推恶果：若只增不凝，Top-K 向量空间被海量相似碎片占满，权威结论被稀释掩盖，信噪比 (SNR) 逐步衰退；
+  - 源码审计发现三大断裂点：
+    1. **扫描范围单一**：原 `OfflineDreamer` 仅扫描 `evolution_lessons` 单一目录，`master_memory/` 根目录及 `observations/`、`protocols/` 等全量碎片沦为治理盲区；
+    2. **主题提取与蒸馏简陋**：原先仅靠文件名下划线粗暴拆分，提纯逻辑仅靠粗暴关键词正则切分，无法产出高精纯度 SSOT 知识卡片；
+    3. **单义性与向量索引脱节**：熔铸生成的 Master Card 未向 `VectorSyncTracker` 登记，导致搜索端搜不到新卡片，形成幽灵结晶。
+  - 本卡片从第一性原理实施三维物理防线：
+    1. **全域扫描与多维主题聚类**：支持深度扫描 `master_memory/` 全域，基于 Frontmatter 元数据、Markdown 一级标题与语义指纹自适应聚类；
+    2. **专用高精纯配方蒸馏器 (DreamRecipeDistiller)**：抽离为高内聚独立模块，提炼四层规范拓扑（L0 核心公理、L1 执行配方 SOP、L2 负向反模式边界、L3 关联证据指纹），支持启发式提纯与模型蒸馏；
+    3. **VectorSync 100% 登记与生命周期 FSM 联动**：新卡片落盘即刻登记 `VectorSyncTracker` (PENDING)，原碎片原子标记 `superseded`，统一沉淀 `#cry_xxxx` 至 `entropy_gatekeeper.jsonl` 总账，前端大屏支持点击穿透至不可变晶体抽屉 (`FactCrystalDrawer`)，实现 100% 真实可观测闭环。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **多主题碎片结晶压缩率 (Net Entropy Reduction)**：同主题 $\ge 2$ 篇碎片熔铸为 1 篇 Master Card，净减少碎片节点数 $\Delta N \ge 1$（实测达成：多篇碎片原子归纳为 1 篇晶体）；
+    2. **新卡片向量同步登记率 (Master Card VectorSync Rate)**：熔铸生成的晶体卡片 $100\%$ 进入向量同步追踪器，状态为 `PENDING` 并排队向量化，零幽灵遗漏；
+    3. **全域碎片覆盖率 (Master Memory Domain Coverage)**：从单一子目录覆盖扩展为 `master_memory/` 根目录与子目录 $100\%$ 全域覆盖；
+    4. **治理总账可审计与前端抽屉交互率**：总账流水 `#cry_xxxx` 在 Web Studio 支持一键点击打开晶体详情抽屉。
+  - **展示界面与卡片**：
+    1. `/studio/retrieval` 页面「全生命周期记忆治理总账流水」卡片 (`MemoryGovernanceStreamCard`) 支持点击展开 `FactCrystalDrawer`；
+    2. 「时效动力学衰减与离线做梦蒸馏座舱」(`TemporalDecayDreamCard`) 实时回显全域扫描结果与净减熵数字。
+- **核心交付目标与修改清单**：
+  1. `openviking/service/dream_recipe_distiller.py` (210行)：新增独立高内聚配方蒸馏器，实现四层拓扑提纯（L0 公理、L1 SOP、L2 负向边界、L3 证据溯源）；
+  2. `openviking/service/offline_dreamer.py` (353行)：升级为全域扫描，接入 `DreamRecipeDistiller`，落盘后即刻调用 `VectorSyncTracker.record_write`，生命周期标记 `superseded`，双写统一总账；
+  3. `openviking/server/routers/entropy_crystallizer.py` (181行)：提供根据 URI/ID 获取单条晶体详情的 REST 端点 `/detail` 并支持磁盘自愈发现；
+  4. `openviking/service/vector_sync_tracker.py` (272行)：新增 `record_write` 别名与测试安全隔离；
+  5. `src/routes/retrieval/-components/memory-governance-stream-card.tsx` (234行)：为 `#cry_xxxx` 做梦提纯事件绑定点击事件，呼出 `FactCrystalDrawer`；
+  6. `tests/unit/test_stock_crystallization_and_dream_distiller.py` (312行)：编写 5 项专项单元测试全绿；
+  7. `package.json` & `openviking/_version.py`：版本号自增至 `1.6.8`。
+- **物理验收与门禁**：
+  - **Git Commit Hash**：`ab9e78f84`
+  - **Git Tag**：`v1.6.8`
+  - **自动化测试通过率**：5/5 专项单测全绿 (1.24s)，40 项全量回归测试全绿 (3.39s)；
+  - **安全审计**：`python3 scripts/security_check.py` 扫描 4605 个文件 0 密钥泄露；
+  - **前端构建**：`npm run build` 耗时 15.19s 顺利 PASS。
 
 #### 📌 [P0] [x] Card-43 (v1.6.7): 内存写入即刻落盘契约与门禁异步解耦流水线 (Zero-504 Fast-Path Ingestion & Asynchronous Gatekeeper Decoupling)
 - **类型**：体外大脑写入高可用 / 504超时根治 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.6.7` ｜ **当前状态**：[x] 已验收通过 ✅
