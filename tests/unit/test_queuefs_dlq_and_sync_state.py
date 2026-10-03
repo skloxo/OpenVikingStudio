@@ -121,7 +121,7 @@ def test_queue_dlq_and_sync_endpoints(temp_data_dir):
     """Test REST API routes for DLQ listing, resolving, metrics, and healing."""
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
-    from openviking.server.routers.dlq import router as dlq_router
+    from openviking.server.routers.queue import router as queue_router
 
     dlq_db = os.path.join(temp_data_dir, "api_dlq.db")
     sync_db = os.path.join(temp_data_dir, "api_sync.db")
@@ -147,7 +147,7 @@ def test_queue_dlq_and_sync_endpoints(temp_data_dir):
         tracker.mark_indexed("viking://resources/ok.md")
 
         app = FastAPI()
-        app.include_router(dlq_router)
+        app.include_router(queue_router)
         client = TestClient(app)
 
         # 1. Test GET /api/v1/queue/dlq
