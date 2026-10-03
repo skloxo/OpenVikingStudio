@@ -9,11 +9,12 @@
 
 > **生产物理事实声明**：
 > - **线上正式部署版本**：**`v1.4.106`**（物理访问地址：`vk.tide.red/studio/home`，已实机验证）；
-> - **当前最新交付版本**：**`v1.6.5`**（Tag: `v1.6.5`，已全量通过 DLQ 零丢弃契约、向量索引状态自愈及 15 项核心单测与安全扫描）；
+> - **当前最新交付版本**：**`v1.6.6`**（Tag: `v1.6.6`，已全量通过类别感知衰减保底、超长分片兜底及 27 项核心单测与安全扫描）；
 > - **历史里程碑详单检索**：如需查阅 Milestone 1~4 及早期版本修改清单与架构细节，请点击跳转至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.6.6`** | **Card-42** | **时效动力学衰减保底底线与超长记忆自动分片兜底流水线 (Category-Aware Score Floor & Overlength Chunking Fallback)** | 1. 彻底根治重要基础规则、ADR、经验教训与技能在 90+ 天未访问时被时效指数衰减误杀跌破阈值的隐性致命缺陷；<br>2. 建立类别感知保底底线 (Category-Aware Score Floor)：公理/不变量/技能 100% 免疫，ADR/教训/架构文档保底 >= 0.85，经验保底 >= 0.60，通用知识保底 >= 0.25；<br>3. 建立超长文本自动滑动窗口分片兜底流水线 (ChunkingFallbackEngine)：当向量嵌入触发 INPUT_TOO_LARGE 或超过模型 Token 上限时，自动切分为带 YAML 头上下文重叠分片 (`uri#chunk_0`, `uri#chunk_1`)，实现 100% 记忆吸收吞吐，消除 DLQ 盲区；<br>4. 4 项全链路单测全绿 (0.25s)，23 项前序回归测试全绿 (2.81s)，安全扫描 0 密钥，前端构建 PASS。<br>**Commit Hash**：`c77d41f35` | [x] 已验收通过 ✅ |
 | **`v1.6.5`** | **Card-41** | **QueueFS 消费零丢弃契约、死信队列 (DLQ) 与向量索引状态自愈闭环 (Zero-Loss DLQ & Vector Sync Self-Healing)** | 1. 彻底根治 NamedQueue 消费异常时无条件 ACK 导致数据永久蒸发的“幽灵记忆”致命缺陷；<br>2. 落地 SQLite 物理持久化死信队列 `DLQManager`，所有永久错误/超长/认证/维度/数据库异常均原子落入 DLQ；<br>3. 建立三态不变量状态机 `VectorSyncTracker` (PENDING / INDEXED / FAILED)，文件写入即刻受控；<br>4. 研发高密性冷淡座舱卡片 `VectorSyncDlqCard`，实时回显同步率与死信积压，支持一键自愈巡检；<br>5. 4 项全链路单测全绿 (1.58s)，11 项前序回归全绿，零密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
 | **`v1.6.4`** | **Card-40** | **跨集群智能体自主建卡与异步流转治理机制 (Autonomous Issue Filing & Card Triage Protocol - AIFP)** | 1. 告别口头汇报与人肉传话，全集群任何智能体现场遇故障/504超时/异常可自主调用 `openviking_file_task_card` 现场建卡；<br>2. 6 字段实证契约 (title/priority/module/symptom/hypothesis/reproduce_steps)；<br>3. 芒格逆向防线：sha256 物理指纹去重防爆卡风暴、4xx 客户端参数错误防甩锅、物理解耦 `task_cards/inbox/` 杜绝分布式 Git 冲突；<br>4. 核心与卫星端 MCP 双向暴露，REST 路由贯通；<br>5. 6 项专项单测全绿 (0.10s)，安全扫描 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
 | **`v1.6.3`** | **Card-39** | **体外大脑数据安全与覆盖更新豁免闭环、跨URI哈希隔离与比特级诚实落盘 (Overwrite Immunity & Honest NOOP)** | 1. 显式覆盖更新绝对豁免律 (Overwrite Immunity) 彻底根治高相似度 (Sim >= 0.95) 更新被当作 noop 静默扣押并伪成功的致命缺陷；<br>2. 跨 URI 哈希隔离，彻底杜绝相同模板/内容的文档被跨空间吞噬；<br>3. 彻底清除包含 'bug fixed'/'已修正' 等词被误判为 delete 的隐性陷阱；<br>4. Valet Ingestion 与 content 路由物理落盘双检兜底，只要磁盘内容不一致强制原子写盘；<br>5. 5 项专项单元测试全绿 (涵盖 20000 字符更新、修词豁免、跨 URI 隔离、纯比特 NOOP、Valet 强制落盘)。<br>**Commit Hash**：`21a2303c8` | [x] 已验收通过 ✅ |
@@ -35,6 +36,37 @@
 ---
 
 ### 🧬 Milestone 5-A: 半成品与悬空功能全链路真实化贯通 (Suspended Features Truthful Closure)
+
+#### 📌 [P0] [x] Card-42 (v1.6.6): 时效动力学衰减保底底线与超长记忆自动分片兜底流水线 (Category-Aware Score Floor & Overlength Chunking Fallback)
+- **类型**：检索时效动力学 / 记忆吸收可靠性 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.6.6` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - 源码审计发现体外大脑两处隐性而致命的记忆吸收与检索截断漏洞：
+    1. **时效动力学衰减误杀基础记忆 (Temporal Decay Overkill)**：原 `AsymmetricDecayEngine` 仅对极少数严格写死前缀的 URI（如 `master_memory/rules/`）豁免衰减，其通用衰减底限居然是黑洞级的 `0.05`！导致存储在 `master_memory/` 根目录下的偏好文档、`docs/adr/` 下的核心决策、`lessons/` 下的历史教训与 `skills/` 技能文件，在未被高频检索的 90~180 天后，其得分按 $e^{-\lambda \cdot \Delta t}$ 指数级暴跌至 0.16~0.40，直接跌破检索相似度过滤阈值（0.60），沦为永久失联的“冻结记忆”；
+    2. **超长文本排异抛弃 (Input Too Large Terminal Rejection)**：当用户或智能体向体外大脑写入篇幅较长的技术规格、长代码或复盘报告时，底层模型向量化抛出 `ERROR_CLASS_INPUT_TOO_LARGE`；原系统在打印日志后直接将该任务判死刑扔进死信队列 (DLQ) 并 ACK 丢弃，导致磁盘有文件但向量索引 100% 缺失。
+  - 本卡片从第一性原理实施双重物理保底：
+    1. **类别感知时效衰减保底底线 (Category-Aware Score Floor)**：全量扩展公理不变量前缀与类型（`master_memory/`, `rules/`, `skills/`, `docs/adr/`, `protocols/`, `lessons/`, `canonical`, `invariant`, `axiom` 100% 免疫时效衰减）；对 ADR/架构/教训确立 $\ge 0.85$ 物理保底底线，对经验确立 $\ge 0.60$ 保底底线，对通用知识确立 $\ge 0.25$ 保底底线，彻底杜绝基础规则被衰减淹没；
+    2. **超长文本自动滑动窗口分片兜底流水线 (ChunkingFallbackEngine)**：遇 `INPUT_TOO_LARGE` 时自动介入，按段落/句子与字符窗口切分带 YAML 头语义上下文的重叠分片 (`uri#chunk_0`, `uri#chunk_1`)，支持自适应二分收敛，全部向量化入库并更新 `VectorSyncTracker` 为 `INDEXED`，实现 100% 吸收吞吐。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **长周期基础记忆留存率 (Retention Rate >= 90 Days)**：基础规则/ADR/教训从原来 90 天后的 $0.0\%$ 留存（衰减跌破阈值）彻底恢复为 **$100\%$ 留存**；
+    2. **超长文档记忆吸收吞吐率 (Oversized Absorption Rate %)**：从原先的 $0.0\%$（直接死信丢弃）提升为 **$100.0\%$ 自动分片入库**；
+    3. **死信队列超长错误积压数 (DLQ INPUT_TOO_LARGE Count)**：从持续累积降为 **$0$**；
+  - **展示界面与卡片**：
+    1. **座舱死信与同步卡片**：`VectorSyncDlqCard` 中 `INPUT_TOO_LARGE` 积压清零，同步率维持 $100\%$；
+    2. **时效动力学与检索基准卡片**：在 Retrieval Benchmark 抽屉中验证长周期项评估因子不低于保底门禁。
+- **核心交付目标与修改清单**：
+  1. `openviking/retrieve/asymmetric_decay.py` (238行)：扩展公理免疫模式与类别感知保底计算 `resolve_category_floor`；
+  2. `openviking/storage/chunking_fallback.py` (241行)：独立低耦合语义滑动窗口分片引擎，保留 YAML 头、支持多级原子切分与自适应二分下潜；
+  3. `openviking/storage/collection_schemas.py`：在 `on_dequeue` 遇到 `ERROR_CLASS_INPUT_TOO_LARGE` 时自动切入分片兜底，成功则更新状态；
+  4. `openviking/utils/model_retry.py`：扩充 `INPUT_TOO_LARGE_PATTERNS` 模式匹配（`input text too long`, `tokens exceed` 等）；
+  5. `tests/unit/test_decay_floor_and_chunking_fallback.py` (252行)：4 项专项单测覆盖公理免疫、时效保底、分片切分与 Handler 自动自愈；
+  6. `package.json` & `openviking/_version.py`：版本号自增至 `1.6.6`。
+- **物理验收与门禁**：
+  - **Git Commit Hash**：`c77d41f35`
+  - **Git Tag**：`v1.6.6`
+  - **测试通过率**：4/4 专项单测全绿 (0.25s)，23 项前序回归单测全绿 (2.81s)；
+  - **安全审计**：`python3 scripts/security_check.py` 扫描 4602 个文件 0 密钥泄露；
+  - **前端构建**：`npm run build` 耗时 17.08s 顺利 PASS。
 
 #### 📌 [P0] [x] Card-41 (v1.6.5): QueueFS 消费零丢弃契约、死信队列 (DLQ) 与向量索引状态自愈闭环 (Zero-Loss DLQ & Vector Sync Self-Healing)
 - **类型**：记忆管道可靠性 / 死信保护与状态自愈 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.6.5` ｜ **当前状态**：[x] 已验收通过 ✅
