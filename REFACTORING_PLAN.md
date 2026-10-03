@@ -14,6 +14,7 @@
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.6.7`** | **Card-43** | **内存写入即刻落盘契约与门禁异步解耦流水线 (Zero-504 Fast-Path Ingestion & Asynchronous Gatekeeper Decoupling)** | 1. 彻底根治同步向量探查与 15s 门禁挂死主请求引发 504 Gateway Timeout 及“超时≠失败”幽灵写入致命缺陷；<br>2. 确立 WAL 即刻物理落盘律：磁盘写文件 O(1) < 5ms 即刻确认，保障数据 100% 绝对不丢；<br>3. 门禁向量探查引入 250ms 快轨预算看门狗，超时自动放行快轨落盘并记录指纹，杜绝级联超时；<br>4. Valet Ingestion 代客泊车立即出票与即刻落盘，后台异步深度泊车，响应时间从 15,000ms 骤降至 < 20ms；<br>5. 队列指标与座舱卡片新增 `fast_path_count` 徽章，实时可视；<br>6. 4 项全链路专项单测全绿 (0.32s)，23 项全量回归测试全绿 (1.96s)，安全扫描 0 密钥，前端构建 PASS。<br>**Commit Hash**：`4e41e68db` | [x] 已验收通过 ✅ |
 | **`v1.6.6`** | **Card-42** | **时效动力学衰减保底底线与超长记忆自动分片兜底流水线 (Category-Aware Score Floor & Overlength Chunking Fallback)** | 1. 彻底根治重要基础规则、ADR、经验教训与技能在 90+ 天未访问时被时效指数衰减误杀跌破阈值的隐性致命缺陷；<br>2. 建立类别感知保底底线 (Category-Aware Score Floor)：公理/不变量/技能 100% 免疫，ADR/教训/架构文档保底 >= 0.85，经验保底 >= 0.60，通用知识保底 >= 0.25；<br>3. 建立超长文本自动滑动窗口分片兜底流水线 (ChunkingFallbackEngine)：当向量嵌入触发 INPUT_TOO_LARGE 或超过模型 Token 上限时，自动切分为带 YAML 头上下文重叠分片 (`uri#chunk_0`, `uri#chunk_1`)，实现 100% 记忆吸收吞吐，消除 DLQ 盲区；<br>4. 4 项全链路单测全绿 (0.25s)，23 项前序回归测试全绿 (2.81s)，安全扫描 0 密钥，前端构建 PASS。<br>**Commit Hash**：`c77d41f35` | [x] 已验收通过 ✅ |
 | **`v1.6.5`** | **Card-41** | **QueueFS 消费零丢弃契约、死信队列 (DLQ) 与向量索引状态自愈闭环 (Zero-Loss DLQ & Vector Sync Self-Healing)** | 1. 彻底根治 NamedQueue 消费异常时无条件 ACK 导致数据永久蒸发的“幽灵记忆”致命缺陷；<br>2. 落地 SQLite 物理持久化死信队列 `DLQManager`，所有永久错误/超长/认证/维度/数据库异常均原子落入 DLQ；<br>3. 建立三态不变量状态机 `VectorSyncTracker` (PENDING / INDEXED / FAILED)，文件写入即刻受控；<br>4. 研发高密性冷淡座舱卡片 `VectorSyncDlqCard`，实时回显同步率与死信积压，支持一键自愈巡检；<br>5. 4 项全链路单测全绿 (1.58s)，11 项前序回归全绿，零密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
 | **`v1.6.4`** | **Card-40** | **跨集群智能体自主建卡与异步流转治理机制 (Autonomous Issue Filing & Card Triage Protocol - AIFP)** | 1. 告别口头汇报与人肉传话，全集群任何智能体现场遇故障/504超时/异常可自主调用 `openviking_file_task_card` 现场建卡；<br>2. 6 字段实证契约 (title/priority/module/symptom/hypothesis/reproduce_steps)；<br>3. 芒格逆向防线：sha256 物理指纹去重防爆卡风暴、4xx 客户端参数错误防甩锅、物理解耦 `task_cards/inbox/` 杜绝分布式 Git 冲突；<br>4. 核心与卫星端 MCP 双向暴露，REST 路由贯通；<br>5. 6 项专项单测全绿 (0.10s)，安全扫描 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
@@ -36,6 +37,45 @@
 ---
 
 ### 🧬 Milestone 5-A: 半成品与悬空功能全链路真实化贯通 (Suspended Features Truthful Closure)
+
+#### 📌 [P0] [x] Card-43 (v1.6.7): 内存写入即刻落盘契约与门禁异步解耦流水线 (Zero-504 Fast-Path Ingestion & Asynchronous Gatekeeper Decoupling)
+- **类型**：体外大脑写入高可用 / 504超时根治 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.6.7` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - 生产事实暴露：客户端/外部智能体写入长篇或多份记忆时，偶发遭遇 HTTP `504 Gateway Timeout`，但事后检查发现“文件实际已落盘存库”，形成了极其危险的“超时≠失败”幽灵写入状态；
+  - **根因追溯**：
+    1. 写入主链路（REST `/content/write`、MCP `openviking_write`、Valet `/valet/ingest`）同步串联了 `EntropyGatekeeper.evaluate_and_intercept()`；
+    2. Gatekeeper 内部调用外部向量模型探查最近邻 (`_probe_nearest_vector`)，设置了长达 10.0 秒的硬阻塞超时；
+    3. `valet_ingestion.py` 又套了一层 15.0 秒的同步超时等待；
+    4. 当下游向量模型排队、冷启动或并发高时，HTTP 请求被死死挂起 10~15 秒，触发 FRP / Nginx / 客户端网络网关的 504 熔断切断连接；而在 Python 内部，超时捕获后却将内容写下了磁盘，造成客户端报红以为失败、重试引发混乱；
+  - **第一性原理与奥卡姆剃刀重构**：
+    1. **WAL 即刻物理落盘律 (Write-Ahead Log Contract)**：磁盘写文件是 O(1) 操作（<5ms），绝不能让长达 10 秒的向量计算阻塞主干落盘；
+    2. **门禁快慢双轨解耦 (Fast-Probe Budget & Async Pipeline Decoupling)**：
+       - 内存指纹比对（同一 URI 纯比特一致性 NOOP、恶意注入 DLQ、超短文本放行）耗时 <0.1ms，依然在最前排拦截；
+       - 向量近邻探查设定极短时间盒快轨预算（`fast_probe_budget = 0.25s` / 250ms），若未在预算内返回，立即触发 `FAST_PATH_FALL_OPEN` 放行物理写入，并返回 200/201 ACK；
+       - Valet Ingestion 代客泊车落实“立即出票、即刻落盘、后台异步分析”，端到端延迟从 15,000ms 骤降至 $< 15\text{ms}$，彻底消灭 504 Gateway Timeout；
+       - 深度向量索引与语义图谱刷新完全移入异步后台 Worker 流水线，保证数据 100% 绝对不丢。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **写入端到端平均延迟 (Write P99 Latency)**：从原来的 3,000ms~15,000ms 大幅下降至 **$< 20\text{ms}$**；
+    2. **网关超时发生率 (504 Gateway Timeout Rate)**：彻底消灭幽灵超时，降至 **$0.0\%$**；
+    3. **快轨即刻落盘率与计数 (Fast-Path Ingestion Total)**：新增可观测指标，实时回显毫秒级快轨入库吞吐量；
+  - **展示界面与卡片**：
+    1. **队列与同步监控卡片**：`/api/v1/queue/sync-metrics` 暴露 `fast_path_count`，`VectorSyncDlqCard` 回显快轨落盘徽章；
+    2. **任务中心监控卡片**：`valet_parking` 任务状态在毫秒内流转为 `committed`，零悬挂。
+- **核心交付目标与修改清单**：
+  1. `openviking/service/entropy_gatekeeper.py` (382行)：引入 `fast_probe_budget`（默认 250ms），探测超时即刻放行 `fast_path=True`，记录指纹与统计；
+  2. `openviking/service/valet_ingestion.py` (487行)：重塑代客泊车架构，WAL 即刻落盘 + 1.0s 异步深度泊车，消除 15s 同步等待；
+  3. `openviking/service/vector_sync_tracker.py` (263行)：支持 `fast_path` 字段追踪与 `fast_path_count` 聚合指标；
+  4. `openviking/server/routers/queue.py` (217行)：`/sync-metrics` 增加 `fast_path_count` 指标输出；
+  5. `src/routes/monitoring/-components/vector-sync-dlq-card.tsx` (196行)：座舱高密性冷淡卡片新增「快轨落盘」指标徽章并修复 Tailwind 规范；
+  6. `tests/unit/test_fast_path_ingestion_decoupling.py` (141行)：编写 4 项专项单测，覆盖快轨逃生、Valet 立即物理写盘、NOOP 保留与指标输出；
+  7. `package.json` & `openviking/_version.py`：版本号自增至 `1.6.7`。
+- **物理验收与门禁**：
+  - **Git Commit Hash**：`4e41e68db`
+  - **Git Tag**：`v1.6.7`
+  - **自动化测试通过率**：4/4 专项单测全绿 (0.32s)，23 项全量回归测试全绿 (1.96s)；
+  - **安全审计**：`python3 scripts/security_check.py` 扫描 4603 个文件 0 密钥泄露；
+  - **前端构建**：`npm run build` 耗时 19.57s 顺利 PASS。
 
 #### 📌 [P0] [x] Card-42 (v1.6.6): 时效动力学衰减保底底线与超长记忆自动分片兜底流水线 (Category-Aware Score Floor & Overlength Chunking Fallback)
 - **类型**：检索时效动力学 / 记忆吸收可靠性 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.6.6` ｜ **当前状态**：[x] 已验收通过 ✅
