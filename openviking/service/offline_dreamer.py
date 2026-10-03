@@ -2,15 +2,16 @@
 # SPDX-License-Identifier: AGPL-3.0
 """
 Offline Dream Knowledge Consolidation Pipeline (ov_dream).
-(Card-37 / v1.6.1)
+(Card-44 / v1.6.8)
 
 First Principles:
 1. "As time expands, memory must not simply accumulate; it must evolve, distill, and self-purify."
-2. Layer 4 Anti-Entropy: Clusters fragmented, raw observations into immutable Master Knowledge Cards.
-3. Disaster Recovery First: Creates pre-commit snapshot references before mutating knowledge states.
+2. Layer 4 Anti-Entropy: Distills raw observations into 4-tier immutable Master Knowledge Cards.
+3. Disaster Recovery & Zero-Loss: Registers new Master Cards into VectorSyncTracker (PENDING)
+   ensuring 100% vector indexing parity and zero ghost crystals.
 4. Lineage Integrity: Atomically supersedes raw fragments via MemoryConflictResolver and links them
-   to the master card in the physical SQLite lineage DAG, ensuring zero pollution of the active vector index.
-5. Unified Audit: Records every distillation step to the shared entropy governance stream.
+   in SQLite lineage DAG, ensuring zero pollution of the active vector index.
+5. Unified Audit: Records every distillation step (#cry_xxxx) to the shared entropy governance stream.
 """
 
 from __future__ import annotations
@@ -18,7 +19,6 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-import os
 import re
 import threading
 import time
@@ -29,6 +29,8 @@ from pydantic import BaseModel, Field
 
 from openviking.service.memory_conflict_resolver import MemoryConflictResolver
 from openviking.service.memory_lifecycle_fsm import MemoryLifecycleStore, MemoryStatus
+from openviking.service.dream_recipe_distiller import DreamRecipeDistiller, DistilledRecipe
+from openviking.service.vector_sync_tracker import VectorSyncTracker
 
 logger = logging.getLogger("openviking.service.offline_dreamer")
 
@@ -39,11 +41,12 @@ class MasterKnowledgeCard(BaseModel):
     title: str
     theme: str
     axioms: List[str] = Field(default_factory=list)
+    recipe_steps: List[str] = Field(default_factory=list)
     negative_boundaries: List[str] = Field(default_factory=list)
     source_fragment_uris: List[str] = Field(default_factory=list)
     purity_snr: float = 1.0
     distilled_at: float = Field(default_factory=time.time)
-    distiller_id: str = "ov_dream_consolidator"
+    distiller_id: str = "dream_recipe_distiller"
 
 
 class DreamCycleResult(BaseModel):
@@ -72,6 +75,7 @@ class OfflineDreamer:
         self,
         crystals_dir: Optional[Path] = None,
         ledger_path: Optional[Path] = None,
+        source_dir: Optional[Path] = None,
     ) -> None:
         self.crystals_dir = crystals_dir or (
             Path.home() / ".openviking" / "data" / "viking" / "default" / "resources" / "master_memory" / "crystals"
@@ -79,6 +83,10 @@ class OfflineDreamer:
         self.ledger_path = ledger_path or (
             Path.home() / ".openviking" / "data" / "entropy_gatekeeper.jsonl"
         )
+        self.source_dir = source_dir or (
+            Path.home() / ".openviking" / "data" / "viking" / "default" / "resources" / "master_memory"
+        )
+        self.distiller = DreamRecipeDistiller()
         self._total_dreams: int = 0
         self._fragments_consolidated: int = 0
         self._master_cards_created: int = 0
@@ -91,11 +99,12 @@ class OfflineDreamer:
         cls,
         crystals_dir: Optional[Path] = None,
         ledger_path: Optional[Path] = None,
+        source_dir: Optional[Path] = None,
     ) -> "OfflineDreamer":
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
-                    cls._instance = cls(crystals_dir=crystals_dir, ledger_path=ledger_path)
+                    cls._instance = cls(crystals_dir=crystals_dir, ledger_path=ledger_path, source_dir=source_dir)
         return cls._instance
 
     @classmethod
@@ -111,22 +120,33 @@ class OfflineDreamer:
     def load_unconsolidated_fragments(
         self,
         source_dir: Optional[Path] = None,
-        max_fragments: int = 50,
+        max_fragments: int = 100,
     ) -> List[Dict[str, Any]]:
-        """Scan physical storage for active, un-superseded raw lessons/observations."""
-        target_dir = source_dir or (
-            Path.home() / ".openviking" / "data" / "viking" / "default" / "resources" / "master_memory" / "evolution_lessons"
-        )
+        """Deeply scan master_memory domain for active, un-superseded raw fragments."""
+        target_dir = source_dir or self.source_dir
         if not target_dir.exists():
             return []
 
         store = MemoryLifecycleStore.get_instance()
         fragments: List[Dict[str, Any]] = []
 
-        for fpath in sorted(target_dir.glob("*.md"), reverse=True):
-            if fpath.name.startswith("."):
+        # Recursively scan all markdown files, ignoring crystals directory and hidden files
+        for fpath in sorted(target_dir.rglob("*.md"), reverse=True):
+            if fpath.name.startswith(".") or "crystals" in fpath.parts:
                 continue
-            uri = f"viking://resources/master_memory/evolution_lessons/{fpath.name}"
+
+            # Compute virtual URI safely
+            if "master_memory" in fpath.parts:
+                idx = fpath.parts.index("master_memory")
+                rel_parts = fpath.parts[idx:]
+                uri = f"viking://resources/{'/'.join(rel_parts)}"
+            else:
+                try:
+                    rel_p = fpath.relative_to(target_dir)
+                    uri = f"viking://resources/master_memory/{rel_p}"
+                except Exception:
+                    uri = f"viking://resources/master_memory/{fpath.name}"
+
             rec = store.get_record(uri)
             if rec and rec.status == MemoryStatus.SUPERSEDED:
                 continue
@@ -134,10 +154,25 @@ class OfflineDreamer:
             try:
                 content = fpath.read_text(encoding="utf-8", errors="ignore")
                 st = fpath.stat()
+
+                # Robust topic extraction
                 topic = "general"
-                parts = fpath.stem.split("_")
-                if len(parts) >= 3:
-                    topic = "_".join(parts[2:4])
+                # 1. Frontmatter topic
+                m_fm = re.search(r"^---[\s\S]*?(?:topic|theme):\s*[\"']?([^\"'\n\r]+)[\"']?[\s\S]*?---", content)
+                if m_fm:
+                    topic = m_fm.group(1).strip()
+                else:
+                    # 2. Markdown top-level heading
+                    m_title = re.search(r"^#\s+([^\n\r]+)", content, re.MULTILINE)
+                    if m_title:
+                        title_clean = re.sub(r"[^a-zA-Z0-9_\u4e00-\u9fa5]+", "_", m_title.group(1)).strip("_").lower()
+                        if title_clean:
+                            topic = title_clean
+                    elif len(fpath.stem.split("_")) >= 3:
+                        topic = "_".join(fpath.stem.split("_")[2:4])
+                    elif fpath.parent != target_dir:
+                        topic = fpath.parent.name
+
                 fragments.append({
                     "uri": uri,
                     "topic": topic,
@@ -151,38 +186,15 @@ class OfflineDreamer:
 
         return fragments
 
-    def _persist_card(self, card: MasterKnowledgeCard) -> None:
-        """Physically write the Master Knowledge Card markdown document."""
+    def _persist_card(self, card: MasterKnowledgeCard, rendered_content: str) -> None:
+        """Physically write Master Knowledge Card markdown and ensure directory existence."""
         try:
             self.crystals_dir.mkdir(parents=True, exist_ok=True)
             fname = card.uri.split("/")[-1]
             if not fname.endswith(".md"):
                 fname = f"{fname}.md"
             target_path = self.crystals_dir / fname
-
-            axioms_str = "\n".join(f"- {a}" for a in card.axioms)
-            bounds_str = "\n".join(f"- {b}" for b in card.negative_boundaries)
-            sources_str = "\n".join(f"- `{u}`" for u in card.source_fragment_uris)
-
-            content = (
-                "---\n"
-                f"uri: {card.uri}\n"
-                f"title: \"{card.title}\"\n"
-                f"theme: \"{card.theme}\"\n"
-                f"distilled_at: {card.distilled_at}\n"
-                f"purity_snr: {card.purity_snr}\n"
-                f"distiller_id: \"{card.distiller_id}\"\n"
-                "---\n\n"
-                f"# {card.title}\n\n"
-                f"> **Distilled SSOT Master Card for topic `{card.theme}`.**\n\n"
-                "## 💎 Core Invariant Axioms\n\n"
-                f"{axioms_str}\n\n"
-                "## 🚫 Negative Boundaries & Anti-Patterns\n\n"
-                f"{bounds_str if bounds_str else '- None recorded.'}\n\n"
-                "## 🔗 Consolidated Source Fragments\n\n"
-                f"{sources_str}\n"
-            )
-            target_path.write_text(content, encoding="utf-8")
+            target_path.write_text(rendered_content, encoding="utf-8")
         except Exception as e:
             logger.warning(f"Failed to persist master card {card.uri}: {e}")
 
@@ -203,7 +215,7 @@ class OfflineDreamer:
         dry_run: bool = False,
         account_id: str = "default",
     ) -> DreamCycleResult:
-        """Execute unified offline dreaming: cluster fragments, synthesize master cards, and link DAG."""
+        """Execute unified offline dreaming: cluster fragments, synthesize recipes, link DAG, and sync index."""
         t0 = time.time()
         dream_id = f"dream_{int(t0)}_{uuid.uuid4().hex[:6]}"
         snapshot_commit = f"snap_dream_{int(t0)}_{uuid.uuid4().hex[:6]}"
@@ -218,6 +230,9 @@ class OfflineDreamer:
             clusters.setdefault(f_theme, []).append(f)
 
         qualifying_clusters = {k: v for k, v in clusters.items() if len(v) >= min_cluster_size}
+        if theme and theme != "all":
+            clean_tgt = self._clean_topic(theme)
+            qualifying_clusters = {k: v for k, v in qualifying_clusters.items() if k == clean_tgt}
 
         if not qualifying_clusters:
             return DreamCycleResult(
@@ -233,48 +248,42 @@ class OfflineDreamer:
             )
 
         conflict_resolver = MemoryConflictResolver.get_instance()
+        vector_tracker = VectorSyncTracker.get_instance()
         created_cards: List[MasterKnowledgeCard] = []
         all_superseded_uris: List[str] = []
         net_reduced = 0
 
         for c_theme, frags in qualifying_clusters.items():
-            combined_text = "\n".join(f.get("content", "") for f in frags)
             frag_uris = [f.get("uri", "") for f in frags if f.get("uri")]
+            recipe: DistilledRecipe = self.distiller.distill(fragments=frags, theme=c_theme)
 
-            # Synthesize axioms and anti-patterns
-            axioms: List[str] = []
-            neg_bounds: List[str] = []
-            for line in combined_text.splitlines():
-                line_str = line.strip()
-                if not line_str or line_str.startswith("#"):
-                    continue
-                if any(w in line_str.lower() for w in ("avoid", "never", "do not", "严禁", "禁止", "不要")):
-                    if len(neg_bounds) < 5 and line_str not in neg_bounds:
-                        neg_bounds.append(line_str)
-                else:
-                    if len(axioms) < 5 and line_str not in axioms:
-                        axioms.append(line_str)
-
-            if not axioms:
-                axioms.append(f"Consolidated knowledge synthesis for topic '{c_theme}'.")
-
-            card_hash = hashlib.sha256(combined_text.encode("utf-8")).hexdigest()[:8]
-            card_uri = f"viking://resources/master_memory/crystals/master_{c_theme}_{card_hash}.md"
-            snr = round(float(len(frags)) / 1.0, 2)
+            combined_hash = hashlib.sha256("".join(recipe.evidence_hashes).encode("utf-8")).hexdigest()[:8]
+            card_uri = f"viking://resources/master_memory/crystals/master_{c_theme}_{combined_hash}.md"
 
             master_card = MasterKnowledgeCard(
                 uri=card_uri,
-                title=f"Master Knowledge Card: {c_theme.replace('_', ' ').title()}",
+                title=recipe.title,
                 theme=c_theme,
-                axioms=axioms,
-                negative_boundaries=neg_bounds,
+                axioms=recipe.axioms,
+                recipe_steps=recipe.recipe_steps,
+                negative_boundaries=recipe.negative_boundaries,
                 source_fragment_uris=frag_uris,
-                purity_snr=snr,
+                purity_snr=recipe.purity_snr,
                 distilled_at=t0,
+                distiller_id=recipe.distiller_id,
             )
 
+            rendered_content = self.distiller.render_markdown(recipe, card_uri)
+
             if not dry_run:
-                self._persist_card(master_card)
+                # 1. Physical file persistence
+                self._persist_card(master_card, rendered_content)
+
+                # 2. Register into VectorSyncTracker (Zero Ghost Crystals)
+                content_hash = hashlib.sha256(rendered_content.encode("utf-8")).hexdigest()
+                vector_tracker.record_write(uri=card_uri, content_hash=content_hash, account_id=account_id)
+
+                # 3. Supersede source fragments in lineage DAG
                 for f_uri in frag_uris:
                     conflict_resolver.resolve_and_link(
                         old_uri=f_uri,
@@ -283,20 +292,22 @@ class OfflineDreamer:
                     )
                     all_superseded_uris.append(f_uri)
 
+                # 4. Append to unified entropy governance stream
                 self._append_ledger_entry({
-                    "event_id": f"#{dream_id}",
+                    "event_id": f"#cry_{len(created_cards) + 1:04d}",
                     "type": "DREAM_CONSOLIDATION",
                     "timestamp": t0,
                     "theme": c_theme,
                     "fragments_consolidated": len(frag_uris),
                     "master_card_uri": card_uri,
                     "net_entropy_reduced": max(0, len(frag_uris) - 1),
+                    "axioms_count": len(recipe.axioms),
+                    "purity_snr": recipe.purity_snr,
                 })
 
             created_cards.append(master_card)
             net_reduced += max(0, len(frag_uris) - 1)
 
-        # Update telemetry stats
         if not dry_run:
             self._total_dreams += 1
             self._fragments_consolidated += len(all_superseded_uris)
@@ -339,3 +350,4 @@ class OfflineDreamer:
                 1,
             ) if self._fragments_consolidated > 0 else 100.0,
         }
+
