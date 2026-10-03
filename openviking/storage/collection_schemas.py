@@ -842,6 +842,31 @@ class TextEmbeddingHandler(DequeueHandlerBase):
                             pass
 
                         if error_class == ERROR_CLASS_INPUT_TOO_LARGE:
+                            logger.warning(
+                                f"[TextEmbeddingHandler] Input text exceeds embedding token limit, "
+                                f"activating ChunkingFallbackEngine ({self._embedding_msg_log_context(embedding_msg)})"
+                            )
+                            try:
+                                from openviking.storage.chunking_fallback import ChunkingFallbackEngine
+
+                                fallback_engine = ChunkingFallbackEngine()
+                                fallback_result = await fallback_engine.execute_fallback(
+                                    handler=self,
+                                    embedding_msg=embedding_msg,
+                                    raw_data=data,
+                                    ctx=ctx,
+                                )
+                                if fallback_result is not None:
+                                    self._merge_request_stats(embedding_msg.telemetry_id, processed=1)
+                                    self._record_request_success(embedding_msg, vector_written=True)
+                                    report_success = True
+                                    self._circuit_breaker.record_success()
+                                    return fallback_result
+                            except Exception as fallback_err:
+                                logger.error(
+                                    f"[TextEmbeddingHandler] Chunking fallback error: {fallback_err}"
+                                )
+
                             logger.error(error_msg)
                             self._record_terminal_failure(embedding_msg, data, "INPUT_TOO_LARGE", error_msg)
                             self._merge_request_stats(embedding_msg.telemetry_id, error_count=1)

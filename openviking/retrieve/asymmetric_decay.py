@@ -27,23 +27,52 @@ from pydantic import BaseModel, Field
 
 
 class DecayConfig(BaseModel):
-    """Configuration for asymmetric temporal decay and hit frequency boost."""
+    """Configuration for asymmetric temporal decay, hit frequency boost, and category floors."""
     axiom_immune_prefixes: tuple[str, ...] = (
-        "viking://resources/master_memory/rules/",
-        "viking://resources/master_memory/core/",
+        "viking://resources/master_memory/",
+        "master_memory/",
         "viking://rules/",
+        "rules/",
+        "skills/",
+        "docs/adr/",
+        "protocols/",
+        "lessons/",
         "AGENTS.md",
+        "BLUEPRINT.md",
+        "REFACTORING_PLAN.md",
     )
     default_half_life_days: float = 90.0  # 3 months default half life for normal memories
     session_half_life_days: float = 14.0  # 2 weeks for transient session logs
     lambda_by_type: Dict[str, float] = Field(
         default_factory=lambda: {
             "canonical": 0.0,
+            "axiom": 0.0,
+            "invariant": 0.0,
+            "rule": 0.0,
             "experience": 0.007,
             "event": 0.05,
             "task": 0.05,
             "session": 0.05,
             "general": 0.01,
+        }
+    )
+    category_floors: Dict[str, float] = Field(
+        default_factory=lambda: {
+            "invariant": 1.0,
+            "canonical": 1.0,
+            "rule": 1.0,
+            "axiom": 1.0,
+            "lesson": 0.85,
+            "adr": 0.85,
+            "architecture": 0.85,
+            "protocol": 0.85,
+            "spec": 0.80,
+            "experience": 0.60,
+            "design": 0.60,
+            "general": 0.25,
+            "event": 0.05,
+            "task": 0.05,
+            "session": 0.05,
         }
     )
     beta_hit_boost: float = 0.20  # Logarithmic hit reinforcement coefficient
@@ -78,7 +107,7 @@ class AsymmetricDecayEngine:
 
     def is_axiom_immune(self, uri: str, memory_type: Optional[str] = None) -> bool:
         """Check if an item is a fundamental immutable axiom exempt from decay."""
-        if memory_type == "canonical":
+        if memory_type and memory_type.strip().lower() in ("canonical", "axiom", "invariant", "rule"):
             return True
         if not uri:
             return False
@@ -86,6 +115,29 @@ class AsymmetricDecayEngine:
             if prefix in uri:
                 return True
         return False
+
+    def resolve_category_floor(self, uri: str, memory_type: Optional[str] = None) -> float:
+        """Resolve the minimum retention floor for a category/URI to prevent memory loss."""
+        if self.is_axiom_immune(uri, memory_type):
+            return 1.0
+
+        type_clean = (memory_type or "").strip().lower()
+        if type_clean in self.config.category_floors:
+            return self.config.category_floors[type_clean]
+
+        # URI heuristic pattern detection
+        if uri:
+            uri_lower = uri.lower()
+            if "adr" in uri_lower or "architecture" in uri_lower or "protocol" in uri_lower:
+                return self.config.category_floors.get("adr", 0.85)
+            if "lesson" in uri_lower:
+                return self.config.category_floors.get("lesson", 0.85)
+            if "experience" in uri_lower:
+                return self.config.category_floors.get("experience", 0.60)
+            if "session" in uri_lower or "staging" in uri_lower or "tmp" in uri_lower:
+                return self.config.category_floors.get("session", 0.05)
+
+        return self.config.category_floors.get("general", 0.25)
 
     def resolve_lambda(self, uri: str, memory_type: Optional[str] = None) -> float:
         """Resolve the decay coefficient lambda based on type and URI patterns."""
@@ -151,7 +203,9 @@ class AsymmetricDecayEngine:
             penalty_reason = None
         else:
             lambda_val = self.resolve_lambda(uri, memory_type)
-            decay_mult = math.exp(-lambda_val * delta_days)
+            cat_floor = self.resolve_category_floor(uri, resolved_type)
+            raw_decay = math.exp(-lambda_val * delta_days)
+            decay_mult = max(cat_floor, raw_decay)
             hit_boost = 1.0 + self.config.beta_hit_boost * math.log1p(max(0, active_count))
             factor = decay_mult * hit_boost
 
