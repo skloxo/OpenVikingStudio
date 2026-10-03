@@ -10,6 +10,7 @@ interface SyncMetricsData {
   indexed_count: number
   pending_count: number
   failed_count: number
+  fast_path_count?: number
   dlq_pending_count: number
   dlq_total_count: number
 }
@@ -73,6 +74,7 @@ export function VectorSyncDlqCard() {
   const syncRate = metrics?.sync_rate_pct ?? 100.0
   const dlqCount = metrics?.dlq_pending_count ?? 0
   const failedCount = metrics?.failed_count ?? 0
+  const fastPathCount = metrics?.fast_path_count ?? 0
 
   return (
     <Card className="flex flex-col gap-2.5 p-3 shadow-none border transition-colors hover:border-primary/40">
@@ -87,6 +89,14 @@ export function VectorSyncDlqCard() {
           >
             {dlqCount === 0 ? 'DLQ 清空' : `死信待审: ${dlqCount}`}
           </Badge>
+          {fastPathCount > 0 && (
+            <Badge
+              variant="outline"
+              className="h-5 px-1.5 text-xs font-mono tabular-nums rounded-md border-cyan-500/40 text-cyan-500 bg-cyan-500/5"
+            >
+              快轨落盘: {fastPathCount}
+            </Badge>
+          )}
         </div>
         <div className="flex items-center gap-1.5">
           <Button
@@ -170,11 +180,11 @@ export function VectorSyncDlqCard() {
                 key={item.id}
                 className="flex items-center justify-between text-xs font-mono bg-muted/30 px-2 py-1 rounded"
               >
-                <span className="truncate max-w-[200px] text-foreground">
+                <span className="truncate max-w-50 text-foreground">
                   {item.uri || `msg-${item.id}`}
                 </span>
                 <span className="text-amber-400">{item.error_type}</span>
-                <span className="text-muted-foreground truncate max-w-[150px]">
+                <span className="text-muted-foreground truncate max-w-37.5">
                   {item.error_message}
                 </span>
               </div>

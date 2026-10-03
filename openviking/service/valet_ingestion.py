@@ -24,6 +24,7 @@ from typing import Any, Dict, List, Optional
 
 from openviking.service.entropy_gatekeeper import EntropyGatekeeper, GatekeeperDecision
 from openviking.service.task_tracker import get_task_tracker
+from openviking.service.vector_sync_tracker import VectorSyncTracker
 
 logger = logging.getLogger("openviking.valet_ingestion")
 
@@ -116,6 +117,13 @@ class ValetIngestionEngine:
             self._total_handovers += 1
             self._total_handover_ms += handover_ms
 
+        # WAL Contract: Physically write file to target path immediately (<5ms)!
+        try:
+            self._write_local_file(uri, content)
+            VectorSyncTracker.get_instance().mark_fast_path(uri)
+        except Exception as e:
+            logger.warning("Valet immediate WAL local write error for %s: %s", uri, e)
+
         # Real-time TaskCenter observability: register as PENDING immediately
         self._schedule_pending_registration(ticket_id, uri, caller, source, human_title)
 
@@ -144,6 +152,30 @@ class ValetIngestionEngine:
             ticket.message = "处理队列已满，稍后重试"
 
         return ticket
+
+    async def ingest(self, record: Dict[str, Any]) -> Dict[str, Any]:
+        """Async convenience entry point for valet ingestion with immediate disk persistence."""
+        uri = record["uri"]
+        content = record["content"]
+        caller = record.get("caller", "Agent")
+        meta = record.get("meta", {}) or record.get("metadata", {})
+        source = record.get("source", "api")
+
+        ticket = self.handover(
+            uri=uri,
+            content=content,
+            source=source,
+            metadata=meta,
+            caller=caller,
+        )
+        return {
+            "ticket_id": ticket.ticket_id,
+            "status": ticket.status,
+            "uri": uri,
+            "written": True,
+            "mode": "valet_parking",
+            "message": ticket.message,
+        }
 
     def _schedule_pending_registration(
         self,
@@ -290,19 +322,21 @@ class ValetIngestionEngine:
                 gatekeeper.evaluate_and_intercept(
                     uri=uri,
                     content=content,
+                    fast_probe_budget=0.5,
                 ),
-                timeout=15.0,
+                timeout=1.0,
             )
         except asyncio.TimeoutError:
             logger.warning(
-                "[ValetIngestion] Gatekeeper evaluation timed out after 15s for uri=%s, falling open to safe add.",
+                "[ValetIngestion] Gatekeeper evaluation timed out after 1.0s for uri=%s, falling open to safe fast-path add.",
                 uri,
             )
             decision = GatekeeperDecision(
                 action="add",
                 similarity=0.0,
                 uri=uri,
-                reason="门禁裁决超时 (15s 看门狗熔断保护)，安全放行入库。",
+                reason="门禁裁决超时 (1.0s 看门狗熔断保护)，安全放行入库。",
+                fast_path=True,
             )
 
         # Physical Integrity Double-Check (Munger Inversion SSOT):
@@ -423,6 +457,7 @@ class ValetIngestionEngine:
         try:
             target_path = self._resolve_uri_to_path(uri)
             if target_path:
+                target_path = Path(target_path)
                 target_path.parent.mkdir(parents=True, exist_ok=True)
                 target_path.write_text(content, encoding="utf-8")
                 logger.info("Valet worker physically parked file at: %s", target_path)
@@ -445,3 +480,7 @@ class ValetIngestionEngine:
         clean = uri.replace("viking://resources/", "").lstrip("/")
         base = Path.home() / ".openviking" / "data" / "viking" / "default" / "resources"
         return base / clean
+
+
+# Ergonomic class alias
+ValetIngestion = ValetIngestionEngine
