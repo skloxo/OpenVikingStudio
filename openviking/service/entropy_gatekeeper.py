@@ -43,6 +43,8 @@ class GatekeeperDecision:
     timestamp: float = field(default_factory=time.time)
     uri: str = ""
     id: str = field(default_factory=lambda: f"dec_{uuid.uuid4().hex[:8]}")
+    fast_path: bool = False
+    probe_duration_ms: float = 0.0
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -63,6 +65,7 @@ class EntropyGatekeeper:
             "delete": 0,
             "noop": 0,
             "dlq": 0,
+            "fast_path": 0,
             "total_probes": 0,
             "saved_bytes": 0,
         }
@@ -141,6 +144,7 @@ class EntropyGatekeeper:
                 "delete": 0,
                 "noop": 0,
                 "dlq": 0,
+                "fast_path": 0,
                 "total_probes": 0,
                 "saved_bytes": 0,
             }
@@ -148,21 +152,15 @@ class EntropyGatekeeper:
     async def _probe_nearest_vector(
         self, content: str, uri: str, ctx: Any = None
     ) -> Tuple[float, Optional[str], Optional[str]]:
-        """Delegate vector nearest neighbor probe to gatekeeper_prober module with hard timeout."""
-        try:
-            return await asyncio.wait_for(
-                probe_nearest_vector(content, uri, ctx=ctx),
-                timeout=10.0,
-            )
-        except asyncio.TimeoutError:
-            logger.warning("[EntropyGatekeeper] Nearest vector probe timed out after 10s, falling open to 0.0")
-            return 0.0, None, None
+        """Delegate vector nearest neighbor probe to gatekeeper_prober module."""
+        return await probe_nearest_vector(content, uri, ctx=ctx)
 
     async def evaluate_and_intercept(
         self,
         uri: str,
         content: str,
         ctx: Any = None,
+        fast_probe_budget: float = 0.25,
     ) -> GatekeeperDecision:
         """Evaluate incoming write candidate and determine 4-way mutation action."""
         stripped = (content or "").strip()
@@ -223,8 +221,32 @@ class EntropyGatekeeper:
             self._record_decision(decision)
             return decision
 
+        t_probe_start = time.perf_counter()
         try:
-            score, matched_uri, snippet = await self._probe_nearest_vector(content, uri, ctx=ctx)
+            try:
+                score, matched_uri, snippet = await asyncio.wait_for(
+                    self._probe_nearest_vector(content, uri, ctx=ctx),
+                    timeout=fast_probe_budget,
+                )
+                probe_ms = (time.perf_counter() - t_probe_start) * 1000.0
+            except asyncio.TimeoutError:
+                probe_ms = (time.perf_counter() - t_probe_start) * 1000.0
+                logger.info(
+                    "[EntropyGatekeeper] Nearest vector probe exceeded fast budget (%.3fs) for uri=%s, falling open to fast-path",
+                    fast_probe_budget,
+                    uri,
+                )
+                decision = GatekeeperDecision(
+                    action="add",
+                    similarity=0.0,
+                    uri=uri,
+                    reason=f"[快轨即刻落盘] 向量探查超过快轨预算 ({fast_probe_budget * 1000:.0f}ms 看门狗)，立即放行物理落盘，避免 504 挂起。",
+                    fast_path=True,
+                    probe_duration_ms=round(probe_ms, 2),
+                )
+                self._content_fingerprints[fp_key] = (uri, time.time())
+                self._record_decision(decision)
+                return decision
 
             # Stage 2: Categorization State Machine (Type-Aware Tiered Threshold)
             is_audit_or_health = any(
@@ -339,6 +361,8 @@ class EntropyGatekeeper:
             self._history.append(decision)
             self._stats["total_probes"] += 1
             self._stats[decision.action] = self._stats.get(decision.action, 0) + 1
+            if decision.fast_path:
+                self._stats["fast_path"] = self._stats.get("fast_path", 0) + 1
             if decision.saved_bytes > 0:
                 self._stats["saved_bytes"] += decision.saved_bytes
 
@@ -352,7 +376,7 @@ class EntropyGatekeeper:
     def get_stats(self) -> Dict[str, Any]:
         """Return real telemetry stats and recent 100 decisions for Studio UI."""
         with self._stats_lock:
-            return {
-                "stats": dict(self._stats),
-                "history": [d.to_dict() for d in list(self._history)[-100:]],
-            }
+            res: Dict[str, Any] = {k: v for k, v in self._stats.items()}
+            res["stats"] = dict(self._stats)
+            res["history"] = [d.to_dict() for d in list(self._history)[-100:]]
+            return res

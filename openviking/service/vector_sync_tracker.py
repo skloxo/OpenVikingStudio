@@ -68,6 +68,7 @@ class VectorSyncTracker:
             db_path = os.path.join(data_dir, "vector_sync_state.db")
         self.db_path = db_path
         self._rw_lock = threading.Lock()
+        self._fast_path_count: int = 0
         self._init_db()
 
     @classmethod
@@ -95,12 +96,37 @@ class VectorSyncTracker:
                     content_hash TEXT,
                     retry_count INTEGER DEFAULT 0,
                     last_error TEXT,
+                    fast_path INTEGER DEFAULT 0,
                     created_at REAL NOT NULL,
                     updated_at REAL NOT NULL
                 );
             """)
+            try:
+                conn.execute("ALTER TABLE vector_sync_state ADD COLUMN fast_path INTEGER DEFAULT 0;")
+            except sqlite3.OperationalError:
+                pass
             conn.execute("CREATE INDEX IF NOT EXISTS idx_sync_status ON vector_sync_state(status);")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_sync_account ON vector_sync_state(account_id);")
+
+    def mark_fast_path(self, uri: str, account_id: str = "default") -> None:
+        """Record a fast-path ingestion event (WAL committed immediately before vector indexing)."""
+        with self._rw_lock:
+            self._fast_path_count += 1
+        now = time.time()
+        with self._rw_lock, self._get_connection() as conn:
+            try:
+                conn.execute(
+                    """
+                    INSERT INTO vector_sync_state (uri, account_id, status, content_hash, retry_count, last_error, fast_path, created_at, updated_at)
+                    VALUES (?, ?, 'PENDING', NULL, 0, NULL, 1, ?, ?)
+                    ON CONFLICT(uri) DO UPDATE SET
+                        fast_path = 1,
+                        updated_at = excluded.updated_at
+                    """,
+                    (uri, account_id, now, now),
+                )
+            except Exception as e:
+                logger.debug("Failed to record fast_path DB row for %s: %s", uri, e)
 
     def mark_pending(self, uri: str, account_id: str = "default", content_hash: Optional[str] = None) -> None:
         """Record or update a file's state to PENDING when queued for embedding."""
@@ -216,10 +242,21 @@ class VectorSyncTracker:
             total = indexed + pending + failed
 
             sync_rate = round((indexed / total * 100.0), 2) if total > 0 else 100.0
+            
+            fast_path_cnt = 0
+            try:
+                fp_row = conn.execute("SELECT COUNT(*) as cnt FROM vector_sync_state WHERE fast_path = 1").fetchone()
+                if fp_row:
+                    fast_path_cnt = int(fp_row["cnt"])
+            except Exception:
+                fast_path_cnt = self._fast_path_count
+            fast_path_cnt = max(fast_path_cnt, self._fast_path_count)
+
             return {
                 "total_files": total,
                 "indexed_count": indexed,
                 "pending_count": pending,
                 "failed_count": failed,
+                "fast_path_count": fast_path_cnt,
                 "sync_rate_pct": sync_rate,
             }

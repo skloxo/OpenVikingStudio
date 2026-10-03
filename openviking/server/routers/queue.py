@@ -130,6 +130,7 @@ async def get_sync_metrics(account_id: Optional[str] = Query(None)) -> Dict[str,
         "indexed_count": metrics.get("indexed_count", 0),
         "pending_count": metrics.get("pending_count", 0),
         "failed_count": metrics.get("failed_count", 0),
+        "fast_path_count": metrics.get("fast_path_count", 0),
         "dlq_pending_count": dlq_stats.get("pending_count", 0),
         "dlq_total_count": dlq_stats.get("total_count", 0),
     }
