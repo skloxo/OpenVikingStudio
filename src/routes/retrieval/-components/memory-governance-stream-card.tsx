@@ -9,7 +9,9 @@ import {
   ShieldCheckIcon,
   LayersIcon,
   ArrowRightIcon,
+  ExternalLinkIcon,
 } from 'lucide-react'
+import { FactCrystalDrawer, type FactCrystal } from './fact-crystal-drawer'
 
 interface GovernanceStreamEvent {
   event_id: string
@@ -25,6 +27,8 @@ interface GovernanceStreamEvent {
 
 export function MemoryGovernanceStreamCard() {
   const [filterType, setFilterType] = React.useState<string>('all')
+  const [selectedCrystal, setSelectedCrystal] = React.useState<FactCrystal | null>(null)
+  const [drawerOpen, setDrawerOpen] = React.useState(false)
 
   const { data: events, isLoading, refetch } = useQuery<GovernanceStreamEvent[]>({
     queryKey: ['memory-governance-stream', filterType],
@@ -38,6 +42,43 @@ export function MemoryGovernanceStreamCard() {
     staleTime: 15_000,
     refetchIntervalInBackground: false,
   })
+
+  const handleRowClick = async (evt: GovernanceStreamEvent) => {
+    if (evt.type === 'DREAM_CONSOLIDATION' || evt.event_id.startsWith('#cry')) {
+      try {
+        const res = await ovClient.instance.get<{ status: string; result: FactCrystal }>(
+          `/api/v1/memory/crystallize/detail?uri=${encodeURIComponent(evt.uri)}`
+        )
+        if (res.data?.result) {
+          setSelectedCrystal(res.data.result)
+          setDrawerOpen(true)
+          return
+        }
+      } catch {
+        // Fallback to synthetic crystal if detail endpoint hasn't indexed it yet
+      }
+
+      // Synthetic crystal representation fallback
+      setSelectedCrystal({
+        uri: evt.uri,
+        axiom: evt.reason,
+        context_bounds: {
+          version_range: '>= v1.6.0',
+          source_uris: evt.matched_uri ? [evt.matched_uri] : [],
+          evidence_hashes: [],
+          distilled_at: evt.timestamp,
+          distiller_id: 'dream_recipe_distiller',
+        },
+        negative_boundary: {
+          deprecated_patterns: [],
+          forbidden_keywords: [],
+        },
+        status: 'active',
+        created_at: evt.timestamp,
+      })
+      setDrawerOpen(true)
+    }
+  }
 
   return (
     <div className="rounded-md border border-neutral-800 bg-neutral-900/80 p-3.5 text-xs text-neutral-200">
@@ -136,13 +177,18 @@ export function MemoryGovernanceStreamCard() {
             return (
               <div
                 key={`${evt.event_id}-${idx}`}
-                className="flex flex-col gap-1.5 p-2.5 transition-colors hover:bg-neutral-900/40 sm:flex-row sm:items-center sm:justify-between"
+                onClick={() => void handleRowClick(evt)}
+                className={`flex flex-col gap-1.5 p-2.5 transition-colors sm:flex-row sm:items-center sm:justify-between ${
+                  isDream ? 'cursor-pointer hover:bg-neutral-800/50' : 'hover:bg-neutral-900/40'
+                }`}
+                title={isDream ? '点击查看不可变晶体详情 (Fact Crystal Drawer)' : undefined}
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-mono text-xs text-neutral-400">{evt.event_id}</span>
                   {actionBadge}
-                  <span className="font-mono text-xs text-neutral-300" title={evt.uri}>
+                  <span className="font-mono text-xs text-neutral-300 flex items-center gap-1" title={evt.uri}>
                     {evt.uri.replace('viking://resources/', '')}
+                    {isDream && <ExternalLinkIcon className="size-3 text-cyan-400/70" />}
                   </span>
                   {evt.matched_uri && (
                     <div className="flex items-center gap-1 text-xs text-neutral-400">
@@ -175,6 +221,14 @@ export function MemoryGovernanceStreamCard() {
           })
         )}
       </div>
+
+      {/* Fact Crystal Drawer */}
+      <FactCrystalDrawer
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        crystal={selectedCrystal}
+      />
     </div>
   )
 }
+

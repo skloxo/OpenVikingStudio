@@ -102,8 +102,80 @@ async def list_fact_crystals(
     ctx: RequestContext = Depends(get_request_context),
 ) -> Dict[str, Any]:
     """
-    List all distilled immutable fact crystals currently active.
+    List all distilled immutable fact crystals currently active (memory + disk).
     """
+    from pathlib import Path
+    import re
     crystallizer = EntropyCrystallizer.get_instance()
-    crystals = [c.model_dump() for c in crystallizer.list_crystals()]
-    return {"status": "ok", "result": crystals}
+    crystals_map: Dict[str, Dict[str, Any]] = {c.uri: c.model_dump() for c in crystallizer.list_crystals()}
+
+    # Scan disk directories to ensure complete persistence parity across server restarts
+    crystals_dirs = [
+        Path.home() / ".openviking" / "data" / "viking" / "default" / "resources" / "master_memory" / "crystals",
+        Path.home() / ".openviking" / "data" / "viking" / "default" / "resources" / "crystals",
+    ]
+    for c_dir in crystals_dirs:
+        if not c_dir.exists():
+            continue
+        for fpath in c_dir.glob("*.md"):
+            try:
+                content = fpath.read_text(encoding="utf-8", errors="ignore")
+                m_uri = re.search(r"^---[\s\S]*?uri:\s*[\"']?([^\"'\n\r]+)[\"']?[\s\S]*?---", content)
+                uri = m_uri.group(1).strip() if m_uri else f"viking://resources/master_memory/crystals/{fpath.name}"
+                if uri not in crystals_map:
+                    m_title = re.search(r"^#\s+([^\n\r]+)", content, re.MULTILINE)
+                    title = m_title.group(1).strip() if m_title else fpath.stem
+                    m_distilled = re.search(r"distilled_at:\s*([0-9\.]+)", content)
+                    distilled_at = float(m_distilled.group(1)) if m_distilled else fpath.stat().st_mtime
+                    
+                    # Extract axioms and boundaries
+                    axioms = re.findall(r"## 💎[^\n]+\n\n((?:- [^\n]+\n?)+)", content)
+                    parsed_axioms = [line.strip("- ").strip() for line in axioms[0].strip().splitlines()] if axioms else [title]
+                    
+                    bounds = re.findall(r"## 🚫[^\n]+\n\n((?:- [^\n]+\n?)+)", content)
+                    parsed_bounds = [line.strip("- 🚫 ").strip() for line in bounds[0].strip().splitlines()] if bounds else []
+
+                    sources = re.findall(r"## 🔗[^\n]+\n\n((?:- [^\n]+\n?)+)", content)
+                    parsed_sources = [line.strip("- `").strip("`").strip() for line in sources[0].strip().splitlines()] if sources else []
+
+                    crystals_map[uri] = {
+                        "uri": uri,
+                        "axiom": parsed_axioms[0] if parsed_axioms else title,
+                        "context_bounds": {
+                            "version_range": ">= v1.6.0",
+                            "source_uris": parsed_sources,
+                            "evidence_hashes": [],
+                            "distilled_at": distilled_at,
+                            "distiller_id": "dream_recipe_distiller",
+                        },
+                        "negative_boundary": {
+                            "deprecated_patterns": parsed_bounds,
+                            "forbidden_keywords": [],
+                        },
+                        "status": "active",
+                        "created_at": distilled_at,
+                    }
+            except Exception as e:
+                logger.debug(f"Failed to parse disk crystal {fpath}: {e}")
+
+    return {"status": "ok", "result": list(crystals_map.values())}
+
+
+@router.get("/detail")
+async def get_fact_crystal_detail(
+    uri: str,
+    ctx: RequestContext = Depends(get_request_context),
+) -> Dict[str, Any]:
+    """
+    Retrieve full structured details of a single Fact Crystal or Master Knowledge Card.
+    """
+    res = await list_fact_crystals(ctx=ctx)
+    all_crystals = res.get("result", [])
+    
+    target_clean = uri.strip()
+    for c in all_crystals:
+        if c.get("uri") == target_clean or c.get("uri", "").endswith(target_clean.split("/")[-1]):
+            return {"status": "ok", "result": c}
+            
+    raise HTTPException(status_code=404, detail=f"Fact crystal not found for URI: {uri}")
+

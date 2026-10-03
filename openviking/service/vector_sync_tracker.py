@@ -79,6 +79,12 @@ class VectorSyncTracker:
                     cls._instance = cls(db_path=db_path)
         return cls._instance
 
+    @classmethod
+    def reset_for_testing(cls) -> None:
+        """Reset singleton instance for test isolation."""
+        with cls._lock:
+            cls._instance = None
+
     def _get_connection(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self.db_path, timeout=15.0)
         conn.row_factory = sqlite3.Row
@@ -143,6 +149,10 @@ class VectorSyncTracker:
                 """,
                 (uri, account_id, content_hash, now, now),
             )
+
+    def record_write(self, uri: str, content_hash: Optional[str] = None, account_id: str = "default") -> None:
+        """Convenience alias for mark_pending upon physical file write."""
+        self.mark_pending(uri=uri, account_id=account_id, content_hash=content_hash)
 
     def mark_indexed(self, uri: str, account_id: str = "default", content_hash: Optional[str] = None) -> None:
         """Mark a file as successfully INDEXED in VikingDB."""
