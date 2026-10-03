@@ -1617,6 +1617,47 @@ async def openviking_list_pending_cards(limit: int = 20) -> str:
     return "\n".join(lines)
 
 
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_dlq_status() -> str:
+    """Inspect QueueFS Dead Letter Queue (DLQ) health, total failures, and unprocessable messages."""
+    import asyncio
+    from openviking.storage.queuefs.dlq_manager import DLQManager
+
+    dlq = DLQManager.get_instance()
+    stats = await asyncio.to_thread(dlq.get_stats)
+    pending = stats.get("pending_count", 0)
+    total = stats.get("total_count", 0)
+    resolved = stats.get("resolved_count", 0)
+    by_type = stats.get("by_error_type", {})
+    type_str = ", ".join([f"{k}: {v}" for k, v in by_type.items()]) if by_type else "None"
+    return (
+        f"=== QueueFS Dead Letter Queue (DLQ) Status ===\n"
+        f"Pending Dead Letters: {pending}\n"
+        f"Resolved/Retried: {resolved}\n"
+        f"Total Recorded: {total}\n"
+        f"Active Failure Breakdown: {type_str}"
+    )
+
+
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_vector_sync_metrics(account_id: str = "default") -> str:
+    """Inspect vector index synchronization completeness rate and unindexed file stragglers."""
+    import asyncio
+    from openviking.service.vector_sync_tracker import VectorSyncTracker
+
+    tracker = VectorSyncTracker.get_instance()
+    metrics = await asyncio.to_thread(tracker.get_metrics, account_id)
+    return (
+        f"=== Vector Index Synchronization Health ===\n"
+        f"Sync Completion Rate: {metrics.get('sync_rate_pct', 100.0)}%\n"
+        f"Total Tracked Files: {metrics.get('total_files', 0)}\n"
+        f"Fully Indexed: {metrics.get('indexed_count', 0)}\n"
+        f"Pending Indexing: {metrics.get('pending_count', 0)}\n"
+        f"Failed Indexing: {metrics.get('failed_count', 0)}"
+    )
+
+
+
 # ---------------------------------------------------------------------------
 # Portable tool schemas
 # ---------------------------------------------------------------------------
