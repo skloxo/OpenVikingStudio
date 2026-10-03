@@ -128,6 +128,23 @@ class DLQStore:
         self._entries.append(entry)
         if len(self._entries) > self.max_items:
             self._entries = self._entries[-self.max_items :]
+
+        try:
+            from openviking.storage.queuefs.dlq_manager import DLQManager
+            uri = data.get("uri") if isinstance(data, dict) else None
+            account_id = data.get("account_id") if isinstance(data, dict) else None
+            DLQManager.get_instance().record_dead_letter(
+                queue_name=self.queue_name,
+                msg_id=entry["id"],
+                payload=data or {},
+                error_type="QUEUE_PROCESSING_ERROR",
+                error_message=error_msg,
+                uri=uri,
+                account_id=account_id,
+            )
+        except Exception:
+            pass
+
         return entry
 
     def get_entries(self, include_retried: bool = False, limit: int = 100) -> List[Dict[str, Any]]:
