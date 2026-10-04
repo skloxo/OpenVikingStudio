@@ -14,6 +14,7 @@
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.7.5`** | **Card-51** | **静态事实目录去硬编码、SQL 拓扑解析强化与 mtime 增量感知 (Path Decoupling, Robust SQL Blast Radius & mtime Incremental Cache)** | 1. 动态路径解析：切除 `code_catalog.py` 中个人目录硬编码，自适应 `SKILLS_ROOT` 环境变量与项目上下文；<br>2. SQL 表拓扑强化：重构 `impact_topology.py`，支持多表逗号读解析、JOIN 别名清理与 CREATE TABLE 捕获；<br>3. mtime 增量指纹快照缓存：通过文件系统修改时间戳极速验证，无变更时 0ms 秒级命中，避免反复全盘 AST 遍历；<br>4. 门禁全绿：专项单测全绿、安全扫描 0 密钥、前端构建 PASS。<br>**Commit Hash**：`61da4f7f4` | [x] 已验收通过 ✅ |
 | **`v1.7.4`** | **Card-50** | **物理真实性、常数级去重与并发防死锁专项治理 (Physical Authenticity, O(1) Fingerprint Deduplication & Concurrency Lock Hygiene)** | 1. 探针物理真实性：切除 `system_probes.py` 硬件全零伪数据，显式返回 `available: False` 与真实占位符；<br>2. 建卡去重复杂度治理：`TaskCardManager` 引入内存哈希索引，去重从 $O(N)$ 磁盘全盘遍历降至 $O(1)$ 瞬时命中；<br>3. 二级缓存防死锁：`cache_tier2_engine.py` 引入 `in_flight_guard` RAII 上下文释放守卫，消灭回源异常永久死锁；<br>4. 测试视网膜真实化：重构 `test_retina_generator.py`，切除 MCP 假断言，注入可调用性与参数契约沙箱验证；<br>5. 门禁全绿：专项单测全绿、安全扫描 0 密钥、前端生产构建 PASS。<br>**Commit Hash**：`50e3c2b0e` | [x] 已验收通过 ✅ |
 | **`v1.7.3`** | **Card-49** | **跨集群智能体自主建卡与异常上报协议全链路座舱与闭环治理 (AIFP Full-Loop Cockpit, MCP Master Triage & Archive History)** | 1. 补齐 FastMCP 工具闭环：暴露 `openviking_list_pending_cards`、`openviking_resolve_task_card`、`openviking_task_cards_summary` 原生工具；<br>2. 修复 `TaskCardManager` 异步契约与兼容适配，补充 `list_resolved_cards`、`get_card_summary_stats` 与 `get_card_detail` 方法；<br>3. 扩展 REST 路由：新增 `/api/v1/task-cards/summary`、`/resolved`、`/{card_id}` 端点；<br>4. 前端座舱闭环：在任务中心上线 `IssueTaskCardsCockpit` 与 `TaskCardDetailDrawer`，提供 4 大高密指标瓦片、Pending/Resolved 双态切换与前端一键解决归档；<br>5. 门禁全绿：20 项回归单测 PASS、前端构建 PASS、安全审计 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.2`** | **Card-48** | **悬空功能全链路闭环治理与快照缓存加速 (Dangling Features Closure & FastMCP / UI Full Loop)** | 1. 补齐 FastMCP 工具闭环：暴露 `openviking_code_impact` 与 `openviking_generate_contract_test` 原生工具；<br>2. 性能快照加速：加入 30s 单调时钟轻量内存缓存，响应从 400ms 降至 3ms (提速 130 倍)；<br>3. 补齐前端座舱闭环：上线 `CodeCatalogCockpitCard` 并在技能中心挂载“🧬 源码事实与测试视网膜”Tab，支持多视角切换与用例一键复制；<br>4. 门禁全绿：14 项回归单测 PASS、前端构建 PASS、安全审计 0 密钥。 | [x] 已验收通过 ✅ |
@@ -96,6 +97,32 @@
   - **自动化测试通过率**：4/4 专项单测全绿 (1.40s)，10 项全量回归测试全绿 (2.55s)；
   - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4609 个跟踪文件 0 密钥泄露；
   - **前端生产构建**：`npm run build` 耗时 15.02s 顺利 PASS。
+
+#### 📌 [P0] [x] Card-51 (v1.7.5): 静态事实目录去硬编码、SQL 拓扑解析强化与 mtime 增量感知 (Path Decoupling, Robust SQL Blast Radius & mtime Incremental Cache)
+- **类型**：工程鲁棒性治理 / 动态路径解耦 / 增量文件指纹缓存 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.5` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - 绝对路径硬编码恶果：`code_catalog.py` 内部硬编码了 `/home/skloxo/...` 个人路径。一旦项目部署到 Docker 容器、不同用户名目录或分发至卫星节点（如 3070/Mac Studio），接口直接失明或读空，违背可移植性与零环境假设公理；必须改为动态解析，优先读取 `SKILLS_ROOT` 环境变量与自动嗅探当前环境有效技能路径；
+  - 存储反向影响面（Blast Radius）假阴性：`impact_topology.py` 当前仅用正则简单匹配单个 `FROM` / `JOIN` 表名，遇到多表逗号读（如 `SELECT * FROM tbl_a, tbl_b`）、`CREATE TABLE` 语句或存在别名时出现遗漏或误判；必须重构为多语句细化提取器，精确提纯表名并过滤子查询与 SQL 关键字；
+  - 缺乏 mtime 增量指纹：快照缓存过期后无脑反复全盘进行 AST 静态解析，白白浪费 CPU 与 IO；必须引入目录最大 `mtime` 指纹校验，若文件物理未修改则 0ms 秒级延展复用缓存。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **硬编码个人路径残存率**：从多个绝对路径硬编码清零至 **$0\%$**；
+    2. **多表 SQL 拓扑依赖捕获率**：多表查询与 CREATE TABLE 捕获率提升至 **$100\%$**；
+    3. **无变更静态目录二次请求时延**：从反复 AST 全盘解析的 300~500ms 降为 mtime 指纹比对 **$< 2\text{ms}$** (提速 150+ 倍)；
+    4. **单文件规模安全红线**：修改后所有涉及文件严格维持在 **$100 \sim 300$ 行** 黄金甜点区（严禁超过 500 行）。
+  - **展示界面与卡片**：`/studio/skills` 事实与测试视网膜面板、`/api/v1/catalog/views/storage` 存储反向拓扑大盘。
+- **核心交付目标与完成清单**：
+  1. `openviking/server/routers/code_catalog.py` (283行)：动态解析 `SKILLS_ROOT`、用户家目录与多级向上嗅探，切除所有写死个人绝对路径，引入 `_compute_dir_mtime` 与 `_SnapshotEntry` 增量指纹快照缓存；
+  2. `openviking/service/impact_topology.py` (237行)：增强 SQL 读写模式库，支持逗号分割多表、`CREATE TABLE`、`ALTER TABLE` 与别名清洗；
+  3. `package.json` 与 `openviking/_version.py`：自增版本至 `1.7.5`；
+  4. 专项单测 `tests/unit/test_card51_catalog_and_impact.py` (140行)：5 项专项单测全绿 (2.33s)。
+- **物理验收与门禁**：
+  - **Git Commit Hash**：`61da4f7f4`
+  - **Git Tag**：`v1.7.5`
+  - **自动化测试通过率**：5/5 专项单测全绿 (2.33s)，27 项全量回归测试全绿 (3.96s)；
+  - **活态资产盘点测试**：`src/components/component-inventory.test.ts` 5/5 全绿 (716ms)；
+  - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4619 个跟踪文件 0 密钥泄露；
+  - **前端生产构建**：`npm run build` 耗时 16.98s 顺利 PASS。
 
 #### 📌 [P0] [x] Card-50 (v1.7.4): 探针物理真实性、常数级去重与并发防死锁专项治理 (Physical Authenticity, O(1) Fingerprint Deduplication & Concurrency Lock Hygiene)
 - **类型**：第一性原理真实性改造 / 算法复杂度优化 / 并发死锁治理 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.4` ｜ **当前状态**：[x] 已验收通过 ✅
