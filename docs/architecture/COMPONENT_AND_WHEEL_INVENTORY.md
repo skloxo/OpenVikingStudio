@@ -147,6 +147,7 @@
 | **`UniversalPagination`** | `src/components/common/universal-pagination.tsx` | **统一高密分页控制器**：支持条数切换 (`10/20/50/100`)、首尾与翻页按钮、等宽页码、智能省略折叠与紧凑/标准双模态，严格 $\ge 12\text{px}$ 规范与 NO GREEN EVER。 | ✅ 已交付 (v1.7.15) |
 | **`MetricTile`** | `src/components/common/metric-tile.tsx` | **统一座舱高密指标瓦片**：规范 `p-3.5` 紧凑卡片、等宽大数字 (`tabular-nums font-mono`)、四态语义支持（中性/冰青/琥珀/玫瑰红，绝对无绿）、内建骨架屏加载过渡与自解释趋势指示。 | ✅ 已交付 (v1.7.15) |
 | **`PrivacyQuarantineEngine`** | `openviking/service/privacy_quarantine.py` | **敏感凭据物理隔离与合规审计引擎**：支持泄密风险内容物理隔离入仓 (`~/.openviking/data/quarantine/vault/`)、安全解冻恢复 (`restore`)、物理覆盖清零销毁 (`purge`) 与不可篡改合规审计日记账 (`compliance_audit.jsonl`)。 | ✅ 已交付 (v1.7.23) |
+| **`SensorDetailDrawer`** | `src/routes/monitoring/-components/sensor-detail-drawer.tsx` | **智能体会话探针白盒穿透抽屉**：呈现完整会话 ID、Token SNR 有效载荷信噪比与进度条、P@5 5块采纳指示、人工纠偏介入度量与物理原始 JSON，彻底切除黑盒感。 | ✅ 已交付 (v1.7.25) |
 | **`EmptyState`** | `src/components/common/empty-state.tsx` | 极客风空状态展示，支持图标胶囊、主副标题、可选重置筛选按钮。 | ⏳ 规划中 |
 
 ---

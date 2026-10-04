@@ -149,11 +149,40 @@ class AgentSensorsAggregator:
                     "token_snr": p.token_snr,
                     "p5_precision": p.p5_precision,
                     "interventions": p.interventions_count,
+                    "human_intervention_flag": p.human_intervention_flag,
+                    "effective_tokens": p.effective_tokens,
+                    "total_tokens": p.total_tokens,
+                    "top5_hits": p.top5_hits,
                     "timestamp": p.timestamp,
                 }
                 for p in points[-20:]
             ],
         }
+
+    def get_session_detail(self, session_id: str) -> Optional[Dict[str, Any]]:
+        """Look up full telemetry detail and whitebox formulas for a specific session."""
+        with self._lock:
+            for p in reversed(self._history):
+                if p.session_id == session_id:
+                    overhead = max(0, p.total_tokens - p.effective_tokens)
+                    return {
+                        "session_id": p.session_id,
+                        "token_snr": p.token_snr,
+                        "p5_precision": p.p5_precision,
+                        "human_intervention_flag": p.human_intervention_flag,
+                        "effective_tokens": p.effective_tokens,
+                        "total_tokens": p.total_tokens,
+                        "overhead_tokens": overhead,
+                        "top5_hits": p.top5_hits,
+                        "interventions_count": p.interventions_count,
+                        "timestamp": p.timestamp,
+                        "snr_formula": f"{p.effective_tokens:,} / {p.total_tokens:,} = {round(p.token_snr * 100, 1)}%",
+                        "p5_formula": f"{p.top5_hits} / 5 = {round(p.p5_precision * 100, 1)}%",
+                        "snr_status": "optimal" if p.token_snr >= 0.65 else "degraded",
+                        "p5_status": "optimal" if p.p5_precision >= 0.80 else "suboptimal",
+                        "intervention_status": "elevated" if p.human_intervention_flag else "optimal",
+                    }
+        return None
 
 
 _INTERVENTION_KEYWORDS_RE = re.compile(
