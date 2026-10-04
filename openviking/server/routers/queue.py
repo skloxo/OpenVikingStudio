@@ -101,7 +101,7 @@ async def retry_dead_letter(dlq_id: int) -> Dict[str, Any]:
         raise HTTPException(status_code=404, detail=f"Dead letter #{dlq_id} not found")
 
     try:
-        from openviking.server.app import get_app_viking_service
+        from openviking.server.dependencies import get_app_viking_service
         service = get_app_viking_service()
         if hasattr(service, "_vikingdb") and service._vikingdb and service._vikingdb.has_queue_manager:
             queue_name = record.get("queue_name") or "text_embedding"

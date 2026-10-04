@@ -32,6 +32,11 @@ def get_service_or_none() -> Optional[OpenVikingService]:
     return _service
 
 
+def get_app_viking_service() -> Optional[OpenVikingService]:
+    """Return the registered OpenVikingService instance (alias for get_service_or_none)."""
+    return _service
+
+
 def set_service(service: Optional[OpenVikingService]) -> None:
     """Set (or clear) the OpenVikingService instance.
 
