@@ -75,6 +75,40 @@ async def list_pending_task_cards(
     return Response(status="ok", result={"total": len(cards), "cards": cards}).model_dump(exclude_none=True)
 
 
+@router.get("/task-cards/resolved")
+async def list_resolved_task_cards(
+    limit: int = Query(default=50, ge=1, le=500),
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """List archived resolved task cards sorted by resolved_at descending."""
+    mgr = TaskCardManager.get_instance()
+    cards = await mgr.list_resolved_cards(limit=limit)
+    return Response(status="ok", result={"total": len(cards), "cards": cards}).model_dump(exclude_none=True)
+
+
+@router.get("/task-cards/summary")
+async def get_task_cards_summary(
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """Get high-density operational metrics across pending and resolved cards."""
+    mgr = TaskCardManager.get_instance()
+    stats = await mgr.get_card_summary_stats()
+    return Response(status="ok", result=stats).model_dump(exclude_none=True)
+
+
+@router.get("/task-cards/{card_id}")
+async def get_task_card_detail(
+    card_id: str,
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """Fetch full details of a task card by ID from pending or resolved archives."""
+    mgr = TaskCardManager.get_instance()
+    detail = await mgr.get_card_detail(card_id)
+    if not detail:
+        raise HTTPException(status_code=404, detail=f"Task card {card_id} not found")
+    return Response(status="ok", result=detail).model_dump(exclude_none=True)
+
+
 @router.post("/task-cards/{card_id}/resolve")
 async def resolve_task_card(
     card_id: str,
@@ -96,3 +130,4 @@ async def resolve_task_card(
     except Exception as e:
         logger.error("Failed to resolve task card: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+

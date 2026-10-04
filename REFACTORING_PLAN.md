@@ -14,6 +14,7 @@
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.7.3`** | **Card-49** | **跨集群智能体自主建卡与异常上报协议全链路座舱与闭环治理 (AIFP Full-Loop Cockpit, MCP Master Triage & Archive History)** | 1. 补齐 FastMCP 工具闭环：暴露 `openviking_list_pending_cards`、`openviking_resolve_task_card`、`openviking_task_cards_summary` 原生工具；<br>2. 修复 `TaskCardManager` 异步契约与兼容适配，补充 `list_resolved_cards`、`get_card_summary_stats` 与 `get_card_detail` 方法；<br>3. 扩展 REST 路由：新增 `/api/v1/task-cards/summary`、`/resolved`、`/{card_id}` 端点；<br>4. 前端座舱闭环：在任务中心上线 `IssueTaskCardsCockpit` 与 `TaskCardDetailDrawer`，提供 4 大高密指标瓦片、Pending/Resolved 双态切换与前端一键解决归档；<br>5. 门禁全绿：20 项回归单测 PASS、前端构建 PASS、安全审计 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.2`** | **Card-48** | **悬空功能全链路闭环治理与快照缓存加速 (Dangling Features Closure & FastMCP / UI Full Loop)** | 1. 补齐 FastMCP 工具闭环：暴露 `openviking_code_impact` 与 `openviking_generate_contract_test` 原生工具；<br>2. 性能快照加速：加入 30s 单调时钟轻量内存缓存，响应从 400ms 降至 3ms (提速 130 倍)；<br>3. 补齐前端座舱闭环：上线 `CodeCatalogCockpitCard` 并在技能中心挂载“🧬 源码事实与测试视网膜”Tab，支持多视角切换与用例一键复制；<br>4. 门禁全绿：14 项回归单测 PASS、前端构建 PASS、安全审计 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.1`** | **Card-47** | **多角色视图派生与测试用例智能生成流水线 (Role Projections & Automated Test Retina Gen)** | 1. 汲取京东多视角派生第一性原理，同一套事实派生 Dev (接缝/DTO)、Test (契约/边界)、Ops (端口/探针) 三重视图；<br>2. 落地测试用例智能生成器，由契约直接生成 pytest 用例 (采纳率 $\ge 90\%$)；<br>3. 新增 `/api/v1/catalog/projections/{role}` 与 `/generate-tests` 端点；<br>4. 4 项专项单测全绿 (2.64s)，14 项全量回归全绿，安全审计 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
 | **`v1.7.0`** | **Card-46** | **反向影响面拓扑网络与排雷视图 (Reverse Impact Topology & Dependency Views)** | 1. 落地 `views/` 反向拓扑：SQLite 表/Redis 读写方映射 (`views/storage_tables.md`)、FastMCP 路由底层映射 (`views/mcp_routes.md`)；<br>2. 落地技能反向映射：工具-技能倒排 (`views/skills_tools.md`) 与触发词冲突排查；<br>3. 新增 `/api/v1/catalog/views/storage` 与 `/views/skills` 端点；<br>4. 4 项专项单测全绿 (1.40s)，10 项全量回归全绿，安全审计 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
@@ -94,6 +95,37 @@
   - **自动化测试通过率**：4/4 专项单测全绿 (1.40s)，10 项全量回归测试全绿 (2.55s)；
   - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4609 个跟踪文件 0 密钥泄露；
   - **前端生产构建**：`npm run build` 耗时 15.02s 顺利 PASS。
+
+#### 📌 [P0] [x] Card-49 (v1.7.3): 跨集群智能体自主建卡与异常上报协议全链路座舱与闭环治理 (AIFP Full-Loop Cockpit, MCP Master Triage & Archive History)
+- **类型**：智能体协议闭环 / FastMCP Master 治理工具 / 前端座舱收件箱 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.3` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - 核心痛点：全网集群纳管了 2080Ti、3070、Mac Studio 等多节点数十个子代理。子代理在长程执行中经常遭遇 504 网关超时、写入被静默丢弃、状态死锁等隐蔽服务端异常；
+  - 芒格倒推恶果：若子代理没有自主建卡与异常上报通道，异常只能口头人肉汇报或直接报错中止，导致问题无法复现、无法追踪、无法跨会话治理；若没有防爆卡机制，高并发异常会瞬间在收件箱刷出成百上千张重复卡片形成“风暴”；
+  - 闭环解决方案：
+    1. **FastMCP 工具闭环**：不仅支持子代理建卡（`openviking_file_task_card`），更补齐主控总控 Agent (Antigravity) 核心治理工具：`openviking_list_pending_cards`（自主按优先级巡检工单）、`openviking_resolve_task_card`（打标 Tag 与 Commit 解决归档）、`openviking_task_cards_summary`（座舱指标统计）；
+    2. **服务端架构稳固与扩展**：修复 `TaskCardManager` 异步契约与兼容适配，补充 `list_resolved_cards`、`get_card_summary_stats` 与 `get_card_detail`，新增 REST 端点 `/api/v1/task-cards/summary`、`/resolved`、`/{card_id}`；
+    3. **前端高密座舱与详情抽屉**：上线 `IssueTaskCardsCockpit` 与 `TaskCardDetailDrawer`，提供 4 大高密指标瓦片（待办数、P0/P1 分级、防爆卡聚合压缩率、受波及 Agent 列表）、Pending/Resolved 双态切换、报错堆栈查看与前端一键解决归档；
+    4. **严格遵守三公理**：NO GREEN EVER、字号下限 $\ge 12\text{px}$、单文件黄金甜点区（`task_cards.py` 135 行，`issue-task-cards-cockpit.tsx` 280 行，`task-card-detail-drawer.tsx` 235 行）。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **防爆卡去重聚合率 (Storm Suppression Rate)**：同特征异常聚合压缩率达到 **$\ge 80\%$**；
+    2. **FastMCP 治理端点可用率**：全集群 Master Agent 可通过 `openviking_list_pending_cards` 与 `openviking_resolve_task_card` 秒级流转工单；
+    3. **前端工单收件箱可见性与流转率**：Web Studio `/studio/tasks` 100% 直观回显待办工单、受影响 Agent 与归档历史，支持前端一键解决。
+- **核心交付目标与完成清单**：
+  1. `openviking/service/task_card_manager.py`：新增 `list_resolved_cards`、`get_card_summary_stats`、`get_card_detail` 与 `IssueTaskCard` 强类型 DTO；
+  2. `openviking/server/routers/task_cards.py`：新增 `/task-cards/summary`、`/resolved`、`/{card_id}` 端点；
+  3. `openviking/server/mcp_endpoint.py`：暴露 `openviking_list_pending_cards`、`openviking_resolve_task_card`、`openviking_task_cards_summary` 原生 FastMCP 工具；
+  4. `src/routes/tasks/-components/issue-task-cards-cockpit.tsx`：构建高密座舱卡片；
+  5. `src/routes/tasks/-components/task-card-detail-drawer.tsx`：构建工单详情与快速闭环归档抽屉；
+  6. `src/routes/tasks/route.tsx`：挂载座舱组件；
+  7. 资产登记：已向 `docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md` 登记新组件，`vitest` 5/5 全绿通过；
+  8. 门禁验证：安全审计 0 密钥、单测 20/20 全绿、前端生产构建 PASS、版本自增至 `1.7.3`。
+- **物理验收与门禁**：
+  - **Git Commit Hash**：（本次提交）
+  - **Git Tag**：`v1.7.3`
+  - **自动化测试**：`pytest` 20/20 全绿通过 (3.59s)；`vitest` 5/5 全绿通过 (742ms)；
+  - **安全凭据审计**：`python3 scripts/security_check.py` PASS (Checked 4615 tracked files. Zero secrets detected)；
+  - **前端生产构建**：`npm run build` PASS (built in 16.69s)。
 
 #### 📌 [P0] [x] Card-48 (v1.7.2): 悬空功能全链路闭环治理与快照缓存加速 (Dangling Features Closure & FastMCP / UI Full Loop)
 - **类型**：悬空治理 / FastMCP 原生工具闭环 / 前端座舱大屏 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.2` ｜ **当前状态**：[x] 已验收通过 ✅

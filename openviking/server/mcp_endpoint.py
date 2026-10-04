@@ -1577,34 +1577,31 @@ async def openviking_file_task_card(
     Computes a deterministic fingerprint sha256(module + symptom) to deduplicate and prevent card flooding.
     If the same issue has already been reported, increments occurrence count and merges context.
     """
-    import asyncio
-    from openviking.service.task_card_manager import TaskCardManager, IssueTaskCard
+    from openviking.service.task_card_manager import TaskCardManager
 
     manager = TaskCardManager.get_instance()
-    card = IssueTaskCard(
+    res = await manager.file_issue_card(
         title=title,
+        priority=priority,
         module=module,
         symptom=symptom,
-        hypothesis=hypothesis,
+        initiator=agent_id,
+        root_cause_hypothesis=hypothesis,
         reproduce_steps=reproduce_steps,
-        reporting_agent=agent_id,
-        priority=priority,
     )
-    res = await asyncio.to_thread(manager.file_task_card, card)
     return (
         f"Task card processed: status={res['status']}, card_id={res['card_id']}, "
-        f"fingerprint={res['fingerprint']}, occurrences={res['occurrence_count']}, path={res['path']}"
+        f"occurrences={res['occurrence_count']}, priority={res['priority']}, affected={res['affected_agents']}"
     )
 
 
 @mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
 async def openviking_list_pending_cards(limit: int = 20) -> str:
     """List pending/inbox issue task cards waiting for triage and iteration planning."""
-    import asyncio
     from openviking.service.task_card_manager import TaskCardManager
 
     manager = TaskCardManager.get_instance()
-    cards = await asyncio.to_thread(manager.list_pending_cards)
+    cards = await manager.list_pending_cards()
     if not cards:
         return "No pending task cards in inbox."
     cards = cards[:limit]
@@ -1615,6 +1612,46 @@ async def openviking_list_pending_cards(limit: int = 20) -> str:
             f"(module: {c.get('module')}, hits: {c.get('occurrence_count', 1)}, agents: {','.join(c.get('affected_agents', []))})"
         )
     return "\n".join(lines)
+
+
+@mcp.tool(annotations=_RETRY_SAFE_DESTRUCTIVE_TOOL_ANNOTATIONS)
+async def openviking_resolve_task_card(
+    card_id: str,
+    resolution_tag: str,
+    commit_hash: str = "",
+    summary: str = "",
+) -> str:
+    """Resolve and archive an issue task card with delivery version tag and commit traceability."""
+    from openviking.service.task_card_manager import TaskCardManager
+
+    manager = TaskCardManager.get_instance()
+    try:
+        res = await manager.resolve_card(
+            card_id=card_id,
+            resolution_tag=resolution_tag,
+            commit_hash=commit_hash,
+            summary=summary,
+        )
+        return f"Task card {card_id} successfully resolved under tag {res['resolution_tag']} (commit: {res['commit_hash'] or 'N/A'})."
+    except Exception as e:
+        return f"Failed to resolve task card {card_id}: {e}"
+
+
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_task_cards_summary() -> str:
+    """Inspect operational metrics across autonomous issue task cards (pending count, storm suppression, etc.)."""
+    from openviking.service.task_card_manager import TaskCardManager
+
+    manager = TaskCardManager.get_instance()
+    stats = await manager.get_card_summary_stats()
+    return (
+        f"=== Autonomous Issue Task Cards Cockpit Summary ===\n"
+        f"Pending Cards: {stats['pending_count']} (P0: {stats['p0_count']}, P1: {stats['p1_count']}, P2: {stats['p2_count']})\n"
+        f"Resolved Cards: {stats['resolved_count']}\n"
+        f"Total Occurrences: {stats['total_occurrences']} (Storm Suppression: {stats['storm_suppression_pct']}%)\n"
+        f"Affected Agents ({stats['affected_agents_count']}): {', '.join(stats['affected_agents']) or 'None'}"
+    )
+
 
 
 @mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)

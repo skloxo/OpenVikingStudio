@@ -19,10 +19,24 @@ import os
 import re
 import threading
 import time
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger("openviking.service.task_card_manager")
+
+
+@dataclass
+class IssueTaskCard:
+    """Strongly-typed DTO for issue task card filing."""
+    title: str
+    module: str
+    symptom: str
+    hypothesis: str = ""
+    reproduce_steps: str = ""
+    suggested_action: str = ""
+    reporting_agent: str = "agent"
+    priority: str = "P1"
 
 
 class TaskCardManager:
@@ -259,3 +273,74 @@ class TaskCardManager:
                 "resolution_tag": resolution_tag,
                 "commit_hash": commit_hash,
             }
+
+    async def list_resolved_cards(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """Retrieve resolved task cards sorted by resolved_at descending."""
+        cards = []
+        with self._rw_lock:
+            for json_path in self._resolved_dir.glob("*.json"):
+                try:
+                    data = json.loads(json_path.read_text(encoding="utf-8"))
+                    if data.get("status") == "resolved":
+                        cards.append(data)
+                except Exception:
+                    continue
+
+        cards.sort(key=lambda c: -c.get("resolved_at", 0))
+        return cards[:limit]
+
+    async def get_card_detail(self, card_id: str) -> Optional[Dict[str, Any]]:
+        """Fetch full details for a task card from either inbox or resolved archives."""
+        with self._rw_lock:
+            inbox_file = self._inbox_dir / f"{card_id}.json"
+            if inbox_file.exists():
+                try:
+                    return json.loads(inbox_file.read_text(encoding="utf-8"))
+                except Exception:
+                    pass
+
+            resolved_file = self._resolved_dir / f"{card_id}.json"
+            if resolved_file.exists():
+                try:
+                    return json.loads(resolved_file.read_text(encoding="utf-8"))
+                except Exception:
+                    pass
+        return None
+
+    async def get_card_summary_stats(self) -> Dict[str, Any]:
+        """Aggregate high-density operational metrics across pending and resolved cards."""
+        pending_cards = await self.list_pending_cards()
+        resolved_cards = await self.list_resolved_cards(limit=500)
+
+        p0_count = sum(1 for c in pending_cards if c.get("priority") == "P0")
+        p1_count = sum(1 for c in pending_cards if c.get("priority") == "P1")
+        p2_count = sum(1 for c in pending_cards if c.get("priority") == "P2")
+        p3_count = sum(1 for c in pending_cards if c.get("priority") == "P3")
+
+        affected_agents = set()
+        total_occurrences = 0
+        for c in pending_cards:
+            total_occurrences += c.get("occurrence_count", 1)
+            for a in c.get("affected_agents", []):
+                affected_agents.add(a)
+
+        # Anti-card-storm compression ratio
+        raw_events = total_occurrences
+        deduped_cards = len(pending_cards)
+        storm_suppression_pct = 0.0
+        if raw_events > 0:
+            storm_suppression_pct = round((1.0 - (deduped_cards / raw_events)) * 100.0, 1)
+
+        return {
+            "pending_count": len(pending_cards),
+            "resolved_count": len(resolved_cards),
+            "p0_count": p0_count,
+            "p1_count": p1_count,
+            "p2_count": p2_count,
+            "p3_count": p3_count,
+            "total_occurrences": total_occurrences,
+            "storm_suppression_pct": storm_suppression_pct,
+            "affected_agents_count": len(affected_agents),
+            "affected_agents": sorted(list(affected_agents)),
+        }
+
