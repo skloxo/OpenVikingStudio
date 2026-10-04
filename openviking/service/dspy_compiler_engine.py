@@ -76,8 +76,8 @@ class DSPyCompilerEngine:
         constraints: List[str] = []
 
         field_patterns = [
-            (r"(?:输入|参数|Input|Query|Context|Schema)[:：\s]+`?([a-zA-Z0-9_]+)`?", "input"),
-            (r"(?:输出|结果|Output|JSON|Result)[:：\s]+`?([a-zA-Z0-9_]+)`?", "output"),
+            (r"(?:输入(?:参数|字段)?|参数|Input|Query|Context|Schema)[:：\s]+`?([a-zA-Z0-9_]+)`?", "input"),
+            (r"(?:输出(?:参数|字段)?|结果|Output|JSON|Result)[:：\s]+`?([a-zA-Z0-9_]+)`?", "output"),
         ]
         for pattern, direction in field_patterns:
             matches = re.findall(pattern, raw_prompt, flags=re.IGNORECASE)
@@ -88,14 +88,17 @@ class DSPyCompilerEngine:
                 elif direction == "output" and not any(f.name == m for f in output_fields):
                     output_fields.append(contract)
 
+        is_inferred = False
         if not input_fields:
+            is_inferred = True
             input_fields = [
-                DSPyFieldContract(name="query", field_type="str", description="User natural language instruction or query", required=True),
+                DSPyFieldContract(name="query", field_type="str", description="Inferred input query parameter", required=True),
                 DSPyFieldContract(name="context", field_type="Optional[str]", description="Supplementary background context", required=False),
             ]
         if not output_fields:
+            is_inferred = True
             output_fields = [
-                DSPyFieldContract(name="response", field_type="str", description="Structured verified execution result", required=True),
+                DSPyFieldContract(name="response", field_type="str", description="Inferred execution result field", required=True),
                 DSPyFieldContract(name="confidence", field_type="float", description="Reliability score between 0.0 and 1.0", required=True),
             ]
 
@@ -118,6 +121,7 @@ class DSPyCompilerEngine:
             input_fields=input_fields,
             output_fields=output_fields,
             constraints=constraints,
+            is_inferred=is_inferred,
         )
 
     def select_bootstrap_few_shots(
@@ -199,10 +203,8 @@ class DSPyCompilerEngine:
 
         elapsed_ms = round((time.perf_counter() - start_time) * 1000.0, 2)
 
-        # 校验状态
-        contract_status = "PASS"
-        if not signature.input_fields or not signature.output_fields:
-            contract_status = "PARTIAL"
+        # 校验状态: 若字段为兜底推断生成的，诚实标记为 PARTIAL，杜绝伪 PASS
+        contract_status = "PARTIAL" if signature.is_inferred else "PASS"
 
         # 更新运行态指标
         with self._stats_lock:

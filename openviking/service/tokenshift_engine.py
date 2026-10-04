@@ -99,7 +99,11 @@ class TokenShiftEngine:
             lines = [l for l in req.code.splitlines() if l.strip() and not l.strip().startswith("#")]
             compressed = "\n".join(lines)
             protected_count = len(lines)
-            val = SyntaxValidationResult(valid=True, parser="text_strip")
+            val = SyntaxValidationResult(
+                valid=False,
+                parser="text_strip_unverified",
+                error_message=f"No dedicated AST parser registered for language '{lang.value}'; syntax validation unverified",
+            )
 
         comp_tokens = _estimate_code_tokens(compressed)
         comp_lines = len(compressed.splitlines())
