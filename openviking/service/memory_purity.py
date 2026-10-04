@@ -28,7 +28,6 @@ from openviking.service.memory_conflict_resolver import MemoryConflictResolver
 from openviking.service.memory_lifecycle_fsm import (
     MemoryLifecycleStore,
     MemoryStatus,
-    _LIFECYCLE_REGISTRY,
 )
 
 logger = logging.getLogger("openviking.service.memory_purity")
@@ -108,9 +107,26 @@ class MemoryPurityBenchmark:
         now_ts = time.time()
         freshness_cutoff = now_ts - (90.0 * 86400.0)
 
-        # 1. Fetch lifecycle records
-        records = list(_LIFECYCLE_REGISTRY.values())
-        total_records = len(records)
+        # 1. Fetch lifecycle records directly from physical SQLite store (SSOT)
+        store = MemoryLifecycleStore.get_instance()
+        records, total_records, status_counts = store.list_records(limit=100000)
+
+        with store._cache_lock:
+            cached_records = list(store._cache.values())
+
+        if cached_records:
+            cached_map = {r.uri: r for r in cached_records}
+            merged_records = []
+            seen_uris = set()
+            for r in records:
+                final_r = cached_map.get(r.uri, r)
+                merged_records.append(final_r)
+                seen_uris.add(r.uri)
+            for uri, r in cached_map.items():
+                if uri not in seen_uris:
+                    merged_records.append(r)
+            records = merged_records
+            total_records = len(records)
 
         active_recs = [r for r in records if r.status == MemoryStatus.ACTIVE]
         disputed_recs = [r for r in records if r.status == MemoryStatus.DISPUTED]
