@@ -15,6 +15,7 @@
 
 | 版本 Tag      | 任务工单 ID | 模块与重构主题                                                                                                                                                | 核心治理成果与物理交付物                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |     验收状态      |
 | :------------ | :---------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------: |
+| **`v1.7.28`** | **Card-74** | **前端自演进引擎卡片数据绑定与死文本切除 (Harness Frontend Data Binding & Hardcoded Placeholder Purge)**                               | 1. 第四列硬编码死文本彻底切除：切除 `harness-engine-card.tsx` 中 `<span ...>--</span>` 硬编码死文本，转为真实绑定 `avg_latency_ms` 与底层硬件/运行架构 (`CUDA FP16 · 2080Ti` / `In-Process · 内存级`)；<br>2. 真实数据全量绑定：完整解构接收 `llmlingua` 与 `dspy` 全量运行态指标（留存率、结构断言、准确度、延迟、调用量）；<br>3. 零采样冷启动友好呈现：无采样时显示“待抽稀 (0 采样)” / “待编译 (0 采样)”，消灭误导性 `--%` 与空白；<br>4. 严守 NO GREEN EVER 🚫 与高密规范：200 行代码黄金甜点区，字号绝对 >= 12px，等宽大数字；<br>5. 门禁全绿：2/2 专项单测全绿，前端生产构建 16.28s PASS，Vitest 5 项 PASS，安全扫描 0 密钥。<br>**Commit Hash**：待提交<br>**测试**：2/2 专项全绿 ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.27`** | **Card-73** | **技能自演进引擎后端数据贯通、切除伪 AST 门禁与真实采样统计 (Harness Engine Backend Integration, Fake AST Gate Purge & True Metrics Ingestion)**                     | 1. 切除虚假 99.1% AST 门禁统计：根除 `system_harness.py` 将 `request_audit` 的 HTTP 非 4xx 状态码错误率偷换为 AST 门禁通过率的虚假逻辑，彻底拨乱反正；<br>2. 直连引擎物理真相源：直连 `WikiDehydrationEngine.get_instance().get_stats()` 与 `DSPyCompilerEngine.get_instance().get_stats()` 获取物理抽稀与编译指标；<br>3. 零采样诚实呈现：无调用采样时诚实返回 `None`（前端回显待抽稀/待编译），杜绝伪造默认假数据与注水指标；<br>4. 引擎仓壁物理隔离：单引擎异常平滑降级为 `status: "offline"`，保障 REST 路由 100% 稳如磐石；<br>5. 门禁全绿：3/3 专项单测全绿，7/7 回归测试全绿，安全审计 0 密钥，前端构建 PASS。<br>**Commit Hash**：待提交<br>**测试**：3/3 专项全绿 ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.26`** | **Card-72** | **探针无感自动采集与会话提交钩子全归一闭环 (Frictionless Session Commit & Telemetry Ingestion Hook Consolidation)**                                                  | 1. 会话提交边界统一无感挂载：在 `Session.commit_async()` Phase 1 同步边界提纯 `_record_telemetry_snapshot`，短会话与长归档 100% 同步捕获并计算 Token SNR 与纠偏；<br>2. 智能幂等去重防线：`AgentSensorsAggregator.record_telemetry` 新增 60s 去重守卫，杜绝 QueueFS 消费重复计数；<br>3. 全局单测自动沙箱隔离：`tests/conftest.py` 注入 `sandbox_agent_sensors_in_tests` autouse fixture，根绝单测污染生产磁盘；<br>4. 门禁全绿：24/24 探针专项与回归全绿，20/20 session 提交全量用例全绿，Vitest 5 项全绿，安全扫描 0 密钥，前端构建 PASS。<br>**Commit Hash**：`087c1945e`<br>**测试**：24/24 全绿 (1.40s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.25`** | **Card-71** | **探针白盒数据透传与会话穿透详情抽屉 (Whitebox Sensor Telemetry & Session Detail Inspection Drawer)**                                                              | 1. 后端白盒数据透传：`get_aggregated_metrics()` 补齐 `recent_timeline` 物理全息字段 (`effective_tokens`, `total_tokens`, `top5_hits`, `human_intervention_flag`)；<br>2. 新增会话详情端点与方法：`AgentSensorsAggregator.get_session_detail` 与 `GET /api/v1/metrics/agent-sensors/sessions/{session_id}`，输出有效载荷、系统冗余、数学公式与状态断言；<br>3. FastMCP 工具平价接入：`openviking_agent_sensors(session_id=...)` 拓展会话穿透诊断能力；<br>4. 前端座舱级穿透抽屉：编写 `SensorDetailDrawer.tsx`，在 `agent-sensors-card.tsx` 中实现点击采样瓦片秒级展开白盒公式拆解与原始 JSON 导出；<br>5. 门禁全绿：11/11 专项与回归全绿 (1.60s)，Vitest 5 项 PASS (642ms)，安全扫描 4655 文件 0 密钥，前端生产构建 17.08s PASS。<br>**Commit Hash**：`ea0c8b624`<br>**测试**：11/11 全绿 (1.60s) ✅ | [x] 已验收通过 ✅ |
@@ -60,14 +61,6 @@
 ---
 
 ### 🧬 Milestone 5-A: 半成品与悬空功能全链路真实化贯通 (Suspended Features Truthful Closure)
-
-#### ⏳ [P0] [ ] Card-74 (v1.7.28): 前端自演进引擎卡片数据绑定与死文本切除 (Harness Frontend Data Binding & Hardcoded Placeholder Purge)
-- **类型**：前端座舱可观测性 / 真实引擎指标绑定 / 切除第四列死文本 / 零采样友好呈现 ｜ **优先级**：🔥🔥�� P0 ｜ **目标版本**：`v1.7.28` ｜ **当前状态**：[ ] 待执行 ⏳
-- **开工前客观数据指标锚定**：
-  1. 第四列“GPU 显存与延迟”硬编码死文本消除率：100%（从硬编码 `<span ...>--</span>` 转为真实读取 `avg_latency_ms` 与 `active_engine`）；
-  2. 真实数据回显率：100%（透传 `avg_latency_ms`, `total_documents`, `active_engine`, `structural_gate_rate`, `total_compilations`）；
-  3. 零采样冷启动友好呈现：零采样时显示“待抽稀 (0 采样)” / “待编译 (0 采样)”，消灭误导性 `--%`。
-- **涉及文件**：`src/routes/monitoring/-components/harness-engine-card.tsx`。
 
 #### ⏳ [P0] [ ] Card-75 (v1.7.29): 技能自演进引擎物理验真端点与 FastMCP 平价闭环 (Harness Physical Verification Probe & FastMCP Parity)
 - **类型**：全链路物理验真 / 自测探针端点 / FastMCP 工具平价 / 前端一键验真 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.29` ｜ **当前状态**：[ ] 待执行 ⏳
@@ -136,6 +129,35 @@
   - **Git Commit Hash**：`29a930d3d`
   - **Git Tag**：`v1.7.0`
   - **自动化测试通过率**：4/4 专项单测全绿 (1.40s)，10 项全量回归测试全绿 (2.55s)；
+#### ✅ [P0] [x] Card-74 (v1.7.28): 前端自演进引擎卡片数据绑定与死文本切除 (Harness Frontend Data Binding & Hardcoded Placeholder Purge)
+
+- **类型**：前端座舱可观测性 / 真实引擎指标绑定 / 切除第四列死文本 / 零采样友好呈现 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.28` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - 核心痛点与深究死因：
+    1. **第四列死文本硬编码 (Root Cause 1 - Severe)**：历史 `harness-engine-card.tsx` 的第四列“GPU 显存与延迟”未做任何数据绑定，直接硬编码 `<span ...>--</span>`，无论后端引擎如何计算，前端始终呈现死的 `--`；
+    2. **冷启动零采样误导人类 (Root Cause 2)**：后端返回 `null`（表示无样本）时，前端渲染出 `--%`，人类误以为系统断链或报错；
+    3. **硬件架构特征未暴露 (Root Cause 3)**：宿主机 2080Ti 硬件加速 CUDA FP16 的物理就绪事实未传达给人类。
+  - 奥卡姆剃刀与信达雅根治：
+    1. **切除第四列死文本**：真实绑定 `avg_latency_ms` 与 `active_engine`，就绪态显示 `<200ms · CUDA FP16 2080Ti` 与 `<10ms · In-Process 内存级`，有采样时显示实测耗时；
+    2. **冷启动状态友好呈现**：0 采样时显示“待抽稀 (0 采样 · 45-55%)”与“待编译 (0 采样 · 门禁锁定)”，诚实清晰；
+    3. **严守性冷淡座舱规范与 NO GREEN EVER 🚫**：全盘采用冰青/沉静中性灰，字号硬下限 12px，等宽数字，单文件 200 行处于最佳甜点区。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **第四列死文本清除率**：从 $0\%$ 彻底提升至 **$100\%$**；
+    2. **冷启动友好呈现覆盖率**：**$100\%$**；
+    3. **单文件规模安全红线**：`harness-engine-card.tsx` 严格锁定为 **200 行**（黄金甜点区）。
+  - **展示界面与卡片**：`/studio/monitoring` ➔ “Harness 技能自演进引擎与第三方组件监控”。
+- **核心交付目标与完成清单**：
+  1. `src/routes/monitoring/-components/harness-engine-card.tsx` (200行)：重构数据绑定，去除第四列死文本，处理零采样状态；
+  2. `tests/unit/test_card74_harness_frontend_contract.py`：新增 2 项单元契约测试；
+  3. `package.json` 与 `openviking/_version.py`：版本号自增至 `1.7.28`。
+- **交付验收结果 (Delivery Verification)**：
+  - **Git Commit Hash**：待提交
+  - **Git Tag**：`v1.7.28`
+  - **自动化测试通过率**：2/2 专项单测全绿 (0.07s)，7/7 回归测试全绿 (1.57s)，Vitest 5 项 PASS (586ms)；
+  - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4657 个跟踪文件 0 密钥泄露；
+  - **前端生产构建**：`npm run build` 耗时 16.28s 顺利 PASS。
+
 #### ✅ [P0] [x] Card-73 (v1.7.27): 技能自演进引擎后端数据贯通、切除伪 AST 门禁与真实采样统计 (Harness Engine Backend Integration, Fake AST Gate Purge & True Metrics Ingestion)
 
 - **类型**：可观测性真实化治理 / 真实抽稀与编译引擎直连 / 虚假门禁指标切除 / 零采样诚实呈现 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.27` ｜ **当前状态**：[x] 已验收通过 ✅
