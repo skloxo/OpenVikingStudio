@@ -23,12 +23,14 @@ from openviking.server.mcp_endpoint import openviking_agent_sensors
 
 
 def test_card71_version_alignment():
-    """Verify SemVer version 1.7.25 across Python and package.json."""
-    assert __version__ == "1.7.25"
+    """Verify SemVer version alignment across Python and package.json and >= 1.7.25."""
     pkg_path = os.path.join(os.path.dirname(__file__), "..", "..", "package.json")
     with open(pkg_path, "r", encoding="utf-8") as f:
         pkg_data = json.load(f)
-    assert pkg_data["version"] == "1.7.25"
+    assert pkg_data["version"] == __version__
+    parts = [int(p) for p in __version__.split(".")]
+    assert (parts[0], parts[1]) == (1, 7)
+    assert parts[2] >= 25
 
 
 def test_enriched_recent_timeline_and_session_detail(tmp_path, monkeypatch):
