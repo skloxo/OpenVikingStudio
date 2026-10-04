@@ -45,8 +45,9 @@ class TaskCardManager:
     _instance: Optional["TaskCardManager"] = None
     _lock = threading.Lock()
 
-    def __init__(self):
-        base_dir = Path.home() / ".openviking" / "data" / "viking" / "default" / "resources" / "task_cards"
+    def __init__(self, base_dir: Optional[Path] = None):
+        if base_dir is None:
+            base_dir = Path.home() / ".openviking" / "data" / "viking" / "default" / "resources" / "task_cards"
         self._inbox_dir = base_dir / "inbox"
         self._resolved_dir = base_dir / "resolved"
         self._inbox_dir.mkdir(parents=True, exist_ok=True)
@@ -212,7 +213,7 @@ class TaskCardManager:
             # Best-effort task tracker registration
             try:
                 from openviking.service.task_tracker import get_task_tracker
-                tracker = get_task_tracker()
+                tracker = get_task_tracker(optional=True)
                 if tracker:
                     asyncio.create_task(
                         tracker.create(
@@ -316,6 +317,24 @@ class TaskCardManager:
             fp = data.get("fingerprint")
             if fp and fp in self._pending_fingerprint_index:
                 self._pending_fingerprint_index.pop(fp, None)
+
+            # Best-effort task tracker completion
+            try:
+                from openviking.service.task_tracker import get_task_tracker
+                tracker = get_task_tracker(optional=True)
+                if tracker:
+                    asyncio.create_task(
+                        tracker.complete(
+                            task_id=card_id,
+                            result={
+                                "resolution_tag": resolution_tag,
+                                "commit_hash": commit_hash,
+                                "summary": summary,
+                            },
+                        )
+                    )
+            except Exception:
+                pass
 
             logger.info("[TaskCardManager] Resolved card %s under tag %s", card_id, resolution_tag)
             return {

@@ -112,10 +112,22 @@ _instance: Optional["TaskTracker"] = None
 _init_lock = threading.Lock()
 
 
-def get_task_tracker() -> "TaskTracker":
-    """Get the global TaskTracker singleton installed by service storage initialization."""
+def has_task_tracker() -> bool:
+    """Check whether the global TaskTracker singleton is initialized."""
+    with _init_lock:
+        return _instance is not None
+
+
+def get_task_tracker(optional: bool = False) -> Optional["TaskTracker"]:
+    """Get the global TaskTracker singleton installed by service storage initialization.
+    
+    If optional=True and tracker is not yet initialized, returns None silently
+    without logging stack trace errors or raising exceptions.
+    """
     with _init_lock:
         if _instance is None:
+            if optional:
+                return None
             logger.error(
                 "TaskTracker accessed before service storage initialization; refusing to create "
                 "a separate AGFS client. Ensure OpenVikingService installs the shared tracker "
