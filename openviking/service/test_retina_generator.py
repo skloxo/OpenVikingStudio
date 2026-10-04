@@ -64,18 +64,23 @@ class TestRetinaGenerator:
                 if not clean_p:
                     continue
                 p_name = clean_p.split("=")[0].split(":")[0].strip()
-                dummy_args.append(f'"{p_name}": "test_{p_name}"')
+                if p_name and p_name != "self":
+                    dummy_args.append(f'"{p_name}": "test_{p_name}"')
 
         args_str = ", ".join(dummy_args)
 
         code_lines = [
             f"def {func_name}():",
             f'    """Contract test for FastMCP tool {tool.name}."""',
-            f"    # Tool: {tool.name} ({tool.handler_name})",
-            f"    # Signature: {tool.parameters_signature}",
-            f"    # Returns: {tool.return_type}",
+            f"    import inspect",
+            f"    from openviking.server import mcp_endpoint",
+            f"    handler = getattr(mcp_endpoint, '{tool.handler_name}', None)",
+            f"    assert handler is not None, f'FastMCP tool handler {tool.handler_name} not found in mcp_endpoint'",
+            f"    assert callable(handler), f'FastMCP tool handler {tool.handler_name} is not callable'",
+            f"    sig = inspect.signature(handler)",
             f"    kwargs = {{{args_str}}}",
-            f"    assert isinstance(kwargs, dict)",
+            f"    for param_name in kwargs.keys():",
+            f"        assert param_name in sig.parameters, f'Parameter {{param_name}} not accepted by handler'",
         ]
         return "\n".join(code_lines)
 

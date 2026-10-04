@@ -9,7 +9,8 @@
 import threading
 import time
 from collections import OrderedDict
-from typing import Any, Dict, List, Optional, Set, Tuple
+from contextlib import contextmanager
+from typing import Any, Dict, Generator, List, Optional, Set, Tuple
 
 from openviking.service.cache_tier2_types import (
     CacheBenchmarkResult,
@@ -141,6 +142,21 @@ class Tier2LRUCacheEngine:
         """解除回源中标记"""
         with self._lock:
             self._in_flight.discard(key)
+
+    def is_in_flight(self, key: str) -> bool:
+        """检查某 key 是否正在被并发回源计算"""
+        with self._lock:
+            return key in self._in_flight
+
+    @contextmanager
+    def in_flight_guard(self, key: str) -> Generator[bool, None, None]:
+        """RAII 上下文释放守卫，确保在并发计算异常或退出时 100% 自动 unmark，消除长期死锁。"""
+        acquired = self.mark_in_flight(key)
+        try:
+            yield acquired
+        finally:
+            if acquired:
+                self.unmark_in_flight(key)
 
     def invalidate(self, key: str) -> bool:
         """精准失效某条目"""

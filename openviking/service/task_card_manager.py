@@ -52,6 +52,19 @@ class TaskCardManager:
         self._inbox_dir.mkdir(parents=True, exist_ok=True)
         self._resolved_dir.mkdir(parents=True, exist_ok=True)
         self._rw_lock = threading.RLock()
+        self._pending_fingerprint_index: Dict[str, str] = {}
+        self._build_inbox_index()
+
+    def _build_inbox_index(self) -> None:
+        """Scan inbox on startup to build constant-time O(1) fingerprint index."""
+        self._pending_fingerprint_index.clear()
+        for json_path in self._inbox_dir.glob("*.json"):
+            try:
+                data = json.loads(json_path.read_text(encoding="utf-8"))
+                if data.get("status") == "pending" and "fingerprint" in data and "card_id" in data:
+                    self._pending_fingerprint_index[data["fingerprint"]] = data["card_id"]
+            except Exception:
+                continue
 
     @classmethod
     def get_instance(cls) -> "TaskCardManager":
@@ -92,7 +105,7 @@ class TaskCardManager:
         reproduce_steps: str = "",
         suggested_action: str = "",
     ) -> Dict[str, Any]:
-        """Ingest bug report, deduplicate via fingerprint, and persist to inbox."""
+        """Ingest bug report, deduplicate via O(1) fingerprint index, and persist to inbox."""
         self._validate_blame_shift(symptom)
 
         valid_priorities = ("P0", "P1", "P2", "P3")
@@ -100,19 +113,51 @@ class TaskCardManager:
         fingerprint = self._compute_fingerprint(module, symptom)
 
         with self._rw_lock:
-            # Check existing pending cards for deduplication
+            # 1. O(1) Fast-Path: check in-memory fingerprint index first
+            existing_card_id = self._pending_fingerprint_index.get(fingerprint)
+            if existing_card_id:
+                json_path = self._inbox_dir / f"{existing_card_id}.json"
+                if json_path.exists():
+                    try:
+                        data = json.loads(json_path.read_text(encoding="utf-8"))
+                        if data.get("status") == "pending":
+                            data["occurrence_count"] = data.get("occurrence_count", 1) + 1
+                            data["last_seen_at"] = time.time()
+                            agents = set(data.get("affected_agents", []))
+                            agents.add(initiator)
+                            data["affected_agents"] = sorted(list(agents))
+
+                            if valid_priorities.index(norm_prio) < valid_priorities.index(data.get("priority", "P1")):
+                                data["priority"] = norm_prio
+
+                            json_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+                            self._write_markdown_card(data, json_path.with_suffix(".md"))
+                            logger.info("[TaskCardManager] O(1) Collapsed recurring bug into %s (count: %d)", data["card_id"], data["occurrence_count"])
+                            return {
+                                "status": "aggregated",
+                                "action": "count_incremented",
+                                "card_id": data["card_id"],
+                                "occurrence_count": data["occurrence_count"],
+                                "affected_agents": data["affected_agents"],
+                                "priority": data["priority"],
+                            }
+                    except Exception as e:
+                        logger.debug("Failed reading indexed card %s: %s", json_path, e)
+                # Stale index entry cleanup
+                self._pending_fingerprint_index.pop(fingerprint, None)
+
+            # 2. Slow-Path Fallback: in case an unindexed file exists on disk
             for json_path in self._inbox_dir.glob("*.json"):
                 try:
                     data = json.loads(json_path.read_text(encoding="utf-8"))
                     if data.get("fingerprint") == fingerprint and data.get("status") == "pending":
-                        # Existing issue found: Atomic Increment to prevent card flooding!
+                        self._pending_fingerprint_index[fingerprint] = data["card_id"]
                         data["occurrence_count"] = data.get("occurrence_count", 1) + 1
                         data["last_seen_at"] = time.time()
                         agents = set(data.get("affected_agents", []))
                         agents.add(initiator)
                         data["affected_agents"] = sorted(list(agents))
 
-                        # Bump priority if new report has higher severity
                         if valid_priorities.index(norm_prio) < valid_priorities.index(data.get("priority", "P1")):
                             data["priority"] = norm_prio
 
@@ -130,7 +175,7 @@ class TaskCardManager:
                 except Exception as e:
                     logger.debug("Failed to read card %s: %s", json_path, e)
 
-            # New Issue Card creation
+            # 3. New Issue Card creation
             date_prefix = time.strftime("%Y%m%d")
             clean_title = re.sub(r"[^a-zA-Z0-9_\u4e00-\u9fa5]+", "-", title).strip("-")[:40] or "Issue"
             card_id = f"Card-Issue-{date_prefix}-{fingerprint}"
@@ -162,6 +207,7 @@ class TaskCardManager:
 
             json_file.write_text(json.dumps(card_record, ensure_ascii=False, indent=2), encoding="utf-8")
             self._write_markdown_card(card_record, md_file)
+            self._pending_fingerprint_index[fingerprint] = card_id
 
             # Best-effort task tracker registration
             try:
@@ -266,6 +312,11 @@ class TaskCardManager:
             src_json.unlink(missing_ok=True)
             src_md.unlink(missing_ok=True)
 
+            # Evict from in-memory pending index
+            fp = data.get("fingerprint")
+            if fp and fp in self._pending_fingerprint_index:
+                self._pending_fingerprint_index.pop(fp, None)
+
             logger.info("[TaskCardManager] Resolved card %s under tag %s", card_id, resolution_tag)
             return {
                 "status": "resolved",
@@ -273,6 +324,12 @@ class TaskCardManager:
                 "resolution_tag": resolution_tag,
                 "commit_hash": commit_hash,
             }
+
+    @property
+    def indexed_fingerprint_count(self) -> int:
+        """Return the number of in-memory cached fingerprints for fast-path dedup."""
+        with self._rw_lock:
+            return len(self._pending_fingerprint_index)
 
     async def list_resolved_cards(self, limit: int = 50) -> List[Dict[str, Any]]:
         """Retrieve resolved task cards sorted by resolved_at descending."""

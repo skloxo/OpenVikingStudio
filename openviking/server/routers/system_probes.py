@@ -69,6 +69,7 @@ async def probe_gpu_telemetry() -> dict[str, Any]:
     if _GPU_CACHE is not None and (now - _GPU_CACHE[0]) < _SYSTEM_TELEMETRY_CACHE_TTL:
         return _GPU_CACHE[1]
 
+    err_reason: Optional[str] = None
     try:
         proc = await asyncio.create_subprocess_exec(
             "nvidia-smi",
@@ -86,31 +87,38 @@ async def probe_gpu_telemetry() -> dict[str, Any]:
                 total_mb = float(parts[1])
                 gpu_util = float(parts[2])
                 res = {
+                    "available": True,
                     "used_gb": round(used_mb / 1024.0, 2),
                     "total_gb": round(total_mb / 1024.0, 2),
                     "gpu_percent": round(gpu_util, 1),
+                    "error": None,
                 }
                 _GPU_CACHE = (now, res)
                 return res
+        else:
+            err_reason = f"nvidia-smi exit code {proc.returncode}"
     except Exception as e:
+        err_reason = str(e)
         logger.debug(f"GPU telemetry probe unavailable: {e}")
 
-    fallback = {
-        "used_gb": 0.0,
-        "total_gb": 0.0,
-        "gpu_percent": 0.0,
+    unavailable = {
+        "available": False,
+        "used_gb": None,
+        "total_gb": None,
+        "gpu_percent": None,
+        "error": err_reason or "nvidia-smi unavailable",
     }
-    _GPU_CACHE = (now, fallback)
-    return fallback
+    _GPU_CACHE = (now, unavailable)
+    return unavailable
 
 
 @defensive(
     domain="system",
     name="read_host_mem",
-    fallback={"total_gb": 0.0, "used_gb": 0.0, "memory_percent": 0.0},
+    fallback={"available": False, "total_gb": None, "used_gb": None, "memory_percent": None},
     log_level="debug",
 )
-def _read_host_mem() -> dict[str, float]:
+def _read_host_mem() -> dict[str, Any]:
     try:
         with open("/proc/meminfo") as f:
             lines = f.readlines()
@@ -124,13 +132,14 @@ def _read_host_mem() -> dict[str, float]:
         used_kb = max(0, total_kb - avail_kb)
         mem_percent = round((used_kb / total_kb) * 100, 1) if total_kb > 0 else 0.0
         return {
+            "available": True,
             "total_gb": round(total_kb / (1024 * 1024), 2),
             "used_gb": round(used_kb / (1024 * 1024), 2),
             "memory_percent": mem_percent,
         }
     except Exception as e:
         logger.debug(f"Host meminfo probe unavailable: {e}")
-        return {"total_gb": 0.0, "used_gb": 0.0, "memory_percent": 0.0}
+        return {"available": False, "total_gb": None, "used_gb": None, "memory_percent": None}
 
 
 @defensive(
@@ -172,12 +181,14 @@ def probe_system_host_resources() -> dict[str, Any]:
 
     mem_info = _read_host_mem()
     cpu_percent = _read_host_cpu()
+    mem_ok = mem_info.get("available", True)
     res = {
-        "status": "ok",
+        "status": "ok" if mem_ok else "degraded",
         "cpu_percent": cpu_percent,
-        "memory_percent": mem_info["memory_percent"],
-        "memory_used_gb": mem_info["used_gb"],
-        "memory_total_gb": mem_info["total_gb"],
+        "memory_available": mem_ok,
+        "memory_percent": mem_info.get("memory_percent"),
+        "memory_used_gb": mem_info.get("used_gb"),
+        "memory_total_gb": mem_info.get("total_gb"),
     }
     _SYS_RES_CACHE = (now, res)
     return res
