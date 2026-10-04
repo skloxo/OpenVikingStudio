@@ -1426,6 +1426,44 @@ class Session:
             )
         )
 
+    def _record_telemetry_snapshot(
+        self,
+        messages: List[Any],
+        usage_uris: Optional[List[str]] = None,
+    ) -> None:
+        """Record real-time 3D performance sensor telemetry for committed session turn."""
+        try:
+            if not messages:
+                return
+            from openviking.core.agent_sensors import (
+                AgentSensorsAggregator,
+                extract_session_telemetry_metrics,
+            )
+
+            uris = usage_uris
+            if uris is None:
+                uris = [
+                    u.uri
+                    for u in getattr(self, "_usage_records", []) or []
+                    if getattr(u, "uri", None)
+                ]
+
+            metrics = extract_session_telemetry_metrics(
+                messages=messages,
+                usage_uris=uris,
+                session_id=self.session_id,
+            )
+            if metrics.get("total_tokens", 0) > 0:
+                AgentSensorsAggregator.get_instance().record_telemetry(
+                    session_id=metrics["session_id"],
+                    effective_tokens=metrics["effective_tokens"],
+                    total_tokens=metrics["total_tokens"],
+                    top5_hits=metrics["top5_hits"],
+                    interventions_count=metrics["interventions_count"],
+                )
+        except Exception as e:
+            logger.debug(f"[agent_sensors] Telemetry extraction skipped: {e}")
+
     @tracer("session.commit.phase1")
     async def commit_async(
         self,
@@ -1665,6 +1703,8 @@ class Session:
                 )
                 await self._save_meta(lease_ref=lease)
                 get_current_telemetry().set("memory.extracted", 0)
+                if self._messages:
+                    self._record_telemetry_snapshot(self._messages)
                 return {
                     "session_id": self.session_id,
                     "status": "skipped",
@@ -1816,6 +1856,11 @@ class Session:
             f"Archived: {len(messages_to_archive)} messages → "
             f"history/archive_{self._compression.compression_index:03d}/"
         )
+        if original_messages:
+            self._record_telemetry_snapshot(
+                original_messages,
+                usage_uris=[u.uri for u in usage_snapshot if getattr(u, "uri", None)],
+            )
 
         return {
             "session_id": self.session_id,

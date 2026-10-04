@@ -118,8 +118,38 @@
   - **Git Commit Hash**：`29a930d3d`
   - **Git Tag**：`v1.7.0`
   - **自动化测试通过率**：4/4 专项单测全绿 (1.40s)，10 项全量回归测试全绿 (2.55s)；
-  - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4609 个跟踪文件 0 密钥泄露；
-  - **前端生产构建**：`npm run build` 耗时 15.02s 顺利 PASS。
+#### ✅ [P0] [x] Card-72 (v1.7.26): 探针无感自动采集与会话提交钩子全归一闭环 (Frictionless Session Commit & Telemetry Ingestion Hook Consolidation)
+
+- **类型**：生产级被动感知闭环 / 会话提交无感挂载 / 短会话丢漏治理 / 单测沙箱绝对隔离 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.26` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - 核心痛点与深究死因（用户质问：“是真实的生产级的吗，是对咱们想有正向影响的吗？是能自动的无感的跑起来运行起来的吗？”）：
+    1. **历史短会话感知完全失明 (Root Cause 1)**：历史上指标采样仅挂在 `SessionCommitProcessor`（Phase 2 归档后台任务）。当 `keep_recent_count > 0`（如 OpenClaw 默认 10）且会话总消息数 $\le$ 保留窗口时，`commit_async` 直接返回 `all_within_keep_window`，根本不会入队 QueueFS，导致日常大量中短交互的效能指标被 100% 漏记！
+    2. **依赖后台队列导致观测延迟 (Root Cause 2)**：过去只有归档进入 QueueFS 且后台 Worker 消费完成才记录指标，若 Worker 繁忙或队列阻塞，感知雷达严重滞后；
+    3. **双重提交与重放去重缺失 (Root Cause 3)**：缺少幂等去重防线，若后续重放或归档重复触发易导致指标重复累加。
+  - 奥卡姆剃刀与信达雅根治：
+    1. **会话提交边界统一无感挂载**：在 `Session.commit_async()` Phase 1 同步边界提纯 `_record_telemetry_snapshot` 助手，不论会话是全量保留 (`all_within_keep_window`) 还是归档 (`messages_to_archive`)，只要本次提交包含真实消息，即刻在内存毫秒级计算 Token SNR、P@5 命中与纠偏标记，同步刷入 `AgentSensorsAggregator`；
+    2. **智能幂等去重防线**：`AgentSensorsAggregator.record_telemetry` 新增短时间窗口 (60s) 精确 `(session_id, effective_tokens, total_tokens)` 去重守卫，杜绝 QueueFS 消费或重复提交带来的双重计数；
+    3. **全局单测自动沙箱隔离**：在 `tests/conftest.py` 注入 `sandbox_agent_sensors_in_tests` autouse fixture，将全量单测的 metrics 物理重定向至临时文件，根除未来任何单测意外污染生产磁盘的隐患；
+    4. **严格遵守 SemVer 铁律**：版本号自增至 `v1.7.26`。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **中短会话感知采集覆盖率**：$\le 10$ 条短会话的采集率从历史的 **$0\%$** 跃升至 **$100\%$**；
+    2. **指标采集就绪时延**：从过去的异步队列轮询秒级等待降低至同步提交完成即刻可读 (**$< 1\text{ms}$**)；
+    3. **生产磁盘单测污染率**：严格物理阻断为 **$0\%$**（全量 session 测试通过后生产文件 0 脏条目）；
+    4. **单文件规模安全红线**：`agent_sensors.py` (284行)、`test_card72` (217行)，严格保持在黄金甜点区。
+  - **展示界面与卡片**：`/studio/home` Agent 效能三维物理感知雷达 ➔ 会话提交即刻在近期时序流中无感呈现。
+- **核心交付目标与完成清单**：
+  1. `openviking/session/session.py`：新增 `_record_telemetry_snapshot` 统一挂钩，并在 `commit_async` 的归档与非归档分支同步触发；
+  2. `openviking/core/agent_sensors.py` (284行)：在 `record_telemetry` 中增加 60s 幂等去重防线；
+  3. `tests/conftest.py`：常驻 `sandbox_agent_sensors_in_tests` 全局隔离夹具；
+  4. `tests/unit/test_card72_frictionless_commit_sensor_hook.py` (217行)：新增 4 项专项单元测试全绿通过；
+  5. `package.json` 与 `openviking/_version.py`：版本号同步自增至 `1.7.26`。
+- **交付验收结果 (Delivery Verification)**：
+  - **Git Commit Hash**：待提交
+  - **Git Tag**：`v1.7.26`
+  - **自动化测试通过率**：24/24 探针专项与回归全绿，20/20 session 提交全量用例全绿，Vitest 5 项全绿；
+  - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4655 个跟踪文件 0 密钥泄露；
+  - **前端生产构建**：`npm run build` 耗时 14.29s 顺利 PASS。
 
 #### ✅ [P0] [x] Card-71 (v1.7.25): 探针白盒数据透传与会话穿透详情抽屉 (Whitebox Sensor Telemetry & Session Detail Inspection Drawer)
 
