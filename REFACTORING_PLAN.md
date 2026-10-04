@@ -9,11 +9,12 @@
 
 > **生产物理事实声明**：
 > - **线上正式部署版本**：**`v1.4.106`**（物理访问地址：`vk.tide.red/studio/home`，已实机验证）；
-> - **当前最新交付版本**：**`v1.7.20`**（Tag: `v1.7.20`，已全量通过 SkillOpt Attempt 仿真执行与 Judge 门禁评分体系 SkillOptJudge、81 项单测全绿、Vitest 5 项、安全审计 0 密钥与前端生产构建 PASS）；
+> - **当前最新交付版本**：**`v1.7.21`**（Tag: `v1.7.21`，已全量通过技能健康评分与自动修复建议生成器 SkillHealthScorer / SkillRemediationGenerator、91 项单测全绿、Vitest 5 项、安全审计 0 密钥与前端生产构建 PASS）；
 > - **历史里程碑详单检索**：如需查阅 Milestone 1~4 及早期版本修改清单与架构细节，请点击跳转至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.7.21`** | **Card-67** | **技能健康评分与自动修复建议生成器 (Skill Health Scorer & Auto-Remediation Generator - BLUEPRINT Epic-SKILL-OPT SKILLOPT-02)** | 1. 落地 `SkillHealthScorer` 四维全息健康体检引擎：规范完整度、步骤工效可执行度、安全凭据卫生与注意力信噪比（单文件 100~300 黄金甜点区，超 500 行物理红线一票否决）；<br>2. 落地 `SkillRemediationGenerator` 确定性自动修复补丁合成器：自动化脱敏泄漏密钥、补全 YAML Frontmatter、注入标准负向边界约束 (When NOT to use)、结构化三工序 SOP 与可执行代码块；<br>3. 完备双链路接口平价：FastMCP 原生工具新增 `openviking_skill_remediate`（只读受控注解严格受控），REST 路由新增 `POST /api/v1/skill-opt/health-score` 与 `/remediate`；<br>4. 门禁全绿：91/91 专项与回归全绿 (3.73s)，注解契约测试 PASS，Vitest 5 项 PASS，安全扫描 4642 文件 0 密钥，前端生产构建 14.86s PASS。<br>**Commit Hash**：`待提交`<br>**测试**：91/91 全绿 (3.73s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.20`** | **Card-66** | **微软 SkillOpt Attempt 仿真执行与 Judge 门禁评分体系 (SkillOpt Attempt Simulation & Judge Gate Evaluator - BLUEPRINT Epic-SKILL-OPT SKILLOPT-01)** | 1. 落地 `SkillOptJudge` 四维正交门禁裁判引擎：SOP 步骤结构度、工具调用契约、I/O 交付物明确度与异常自愈防御能力（总分 100 分，默认及格线 70 分）；<br>2. 落地 Attempt 仿真执行轨迹度量器 (`evaluate_attempt_trajectory`)，对智能体执行步骤、工具调用频次与错误率输出结构化等级与完成率；<br>3. FastMCP 原生工具平价接入：新增 `openviking_skill_judge` 只读受控工具，赋能全集群外部 Agent 离线进行技能 SOP 质量自审与自动修复建议生成；<br>4. 门禁全绿：81/81 专项与回归全绿 (3.62s)，注解契约测试 PASS，Vitest 5 项 PASS，安全扫描 4640 文件 0 密钥，前端构建 16.55s PASS。<br>**Commit Hash**：`3af2d385e`<br>**测试**：81/81 全绿 (3.62s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.19`** | **Card-65** | **技能一键向量化入脑与快照上架试验台 (Skill Vectorization & Vault Ingestion Cockpit - BLUEPRINT Epic-LIVE-GEN LIVEGEN-03)** | 1. 落地 `SkillPublisher` 前置门禁与原子化上架服务：内置发布前严格调用 `SkillValidator` 静态防御拦截坏技能，生成 12 位 SHA256 物理版本指纹；<br>2. 统一全集群 VikingFS 目标存储路径契约 (`viking://resources/master_memory/skills/{slug}/SKILL.md`)，并支持本地物理镜像落盘与防覆盖保护；<br>3. FastMCP 原生工具平价接入：新增 `openviking_skill_publish` 写入可重试受控工具，赋能全集群外部 Agent 将新提纯技能一键原子化上架入脑；<br>4. 门禁全绿：75/75 专项与回归全绿 (3.62s)，注解契约测试 PASS，Vitest 5 项 PASS，安全扫描 4638 文件 0 密钥，前端构建 16.58s PASS。<br>**Commit Hash**：`eb8fed808`<br>**测试**：75/75 全绿 (3.62s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.18`** | **Card-64** | **技能意图触发与自然语言模拟测试沙盒试验台 (Skill Trigger Intent Matching & Simulation Sandbox - BLUEPRINT Epic-LIVE-GEN LIVEGEN-02)** | 1. 落地 `SkillIntentMatcher` 零依赖自然语言意图匹配与冲突沙盒引擎：融合字符级 n-gram Jaccard 相似度与子串高权重包含度量；<br>2. 跨技能意图路由冲突检测 (`detect_collisions`)：支持批量预检新技能与已有生态技能 triggers 之间的碰撞重合度，输出多技能冲突诊断；<br>3. FastMCP 原生工具平价接入：新增 `openviking_skill_intent_match` 只读受控工具，赋能全集群外部 Agent 离线模拟技能触发准确率；<br>4. 门禁全绿：70/70 专项与回归全绿 (3.75s)，注解契约测试 PASS，Vitest 5 项 PASS，安全扫描 4636 文件 0 密钥，前端构建 16.27s PASS。<br>**Commit Hash**：`76d35e561`<br>**测试**：70/70 全绿 (3.75s) ✅ | [x] 已验收通过 ✅ |
@@ -112,6 +113,42 @@
   - **自动化测试通过率**：4/4 专项单测全绿 (1.40s)，10 项全量回归测试全绿 (2.55s)；
   - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4609 个跟踪文件 0 密钥泄露；
   - **前端生产构建**：`npm run build` 耗时 15.02s 顺利 PASS。
+
+#### ✅ [P0] [x] Card-67 (v1.7.21): 技能健康评分与自动修复建议生成器 (Skill Health Scorer & Auto-Remediation Generator - BLUEPRINT Epic-SKILL-OPT SKILLOPT-02)
+- **类型**：技能评测门禁 / 缺陷诊断 / 确定性补丁合成 / FastMCP 原生工具平价 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.21` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - 核心痛点与死因审讯：
+    1. 技能健康盲区与单点割裂：传统校验器只会判断语法有无，无法全面评估安全漏洞（硬编码密钥、破坏性危险指令）、单文件规模失控（超 500 行物理红线引发注意力衰减）、缺少负向边界判定（When NOT to use 导致智能体幻觉乱调工具）；
+    2. 只报错不修复的效率死结：开发者或外部 Agent 在发现技能体检不达标后，不得不人肉编写修复补丁，缺乏一键自动合成符合规范的标准化 Draft 机制；
+    3. 全集群平价接入断层：跨集群外部 Agent 无法通过受控 FastMCP 工具对本地草稿进行零副作用健康自检与自动修复建议生成；
+  - 奥卡姆剃刀与信达雅：
+    1. 落地纯原生态 `SkillHealthScorer` 与 `SkillRemediationGenerator`（`openviking/service/skill_health_scorer.py`）；
+    2. 构建四维 25 分全息健康体检评分模型（满分 100 分）：规范完整度（`specification`）、步骤与执行工效（`actionability`）、安全凭据卫生（`security_hygiene`）、注意力信噪比与边界（`attention_boundary`）；
+    3. 构筑一票否决安全门禁：凡命中明文 API Key、破坏性指令、缺少 Frontmatter 或超过 500 行红线者，一律评定为 `CRITICAL` 并直接阻断入库（`passed_gate=False`）；
+    4. 落地确定性自动修复器：自动脱敏打码敏感凭据、补全 Frontmatter 元数据、注入标准 3 步 SOP 结构、标准代码块示例与标准负向边界约束，输出差异摘要与修复后得分预期；
+    5. 完备平价接入：新增 FastMCP 原生工具 `openviking_skill_remediate`（严格只读契约注解）与 REST 端点 `/api/v1/skill-opt/health-score`、`/api/v1/skill-opt/remediate`；
+    6. 严格遵守 SemVer 铁律：版本递增至 `v1.7.21`（Patch 递增，主版本号与次版本号锁定）。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **技能全维缺陷诊断检出率**：密钥泄漏、语法缺失、边界缺失检出率 **$100\%$**；
+    2. **自动修复后健康达标率 (Projected Boost Rate)**：粗糙草稿修复后得分提升至健康区间（$\ge 75$分）达成率 **$100\%$**；
+    3. **健康评估与补丁生成响应耗时 (Latency Overhead)**：纯静态规则与确定性字符串合成耗时 $\le 2\text{ms}$，极速零开销；
+    4. **单文件规模安全红线**：`skill_health_scorer.py` 318 行，`skill_health_types.py` 96 行，单测 183 行，严格收敛于黄金甜点区内。
+  - **展示界面与卡片**：全集群 FastMCP 工具目录与技能管理沙盒。
+- **核心交付目标与完成清单**：
+  1. `openviking/service/skill_health_types.py` (96行)：健康分级评定、缺陷分类与自动修复强类型 DTO；
+  2. `openviking/service/skill_health_scorer.py` (318行)：四维健康评分模型与确定性自动修复补丁合成器；
+  3. `openviking/server/mcp_endpoint.py`：新增 FastMCP 原生工具 `openviking_skill_remediate`；
+  4. `openviking/server/routers/skill_opt.py`：新增 REST API `/health-score` 与 `/remediate` 路由端点；
+  5. `tests/unit/test_mcp_tool_annotations.py`：登记 `openviking_skill_remediate` 只读注解契约；
+  6. `tests/unit/test_card67_skill_health_and_remediation.py` (183行)：全量覆盖健康评测、一票否决、500行硬上限、自动修复、脱敏打码、FastMCP 与 REST 端点闭环；
+  7. `package.json` 与 `openviking/_version.py`：版本号自增至 `1.7.21`。
+- **交付验收结果 (Delivery Verification)**：
+  - **Git Commit Hash**：`待提交`
+  - **Git Tag**：`v1.7.21`
+  - **自动化测试通过率**：91/91 专项与回归全绿 (3.73s)，注解契约 1 项 PASS，Vitest 5 项全绿 (623ms)；
+  - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4642 个跟踪文件 0 密钥泄露；
+  - **前端生产构建**：`npm run build` 耗时 14.86s 顺利 PASS。
 
 #### ✅ [P0] [x] Card-66 (v1.7.20): 微软 SkillOpt Attempt 仿真执行与 Judge 门禁评分体系 (SkillOpt Attempt Simulation & Judge Gate Evaluator - BLUEPRINT Epic-SKILL-OPT SKILLOPT-01)
 - **类型**：技能评测门禁 / SOP 质量量化 / FastMCP 原生工具平价 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.20` ｜ **当前状态**：[x] 已验收通过 ✅

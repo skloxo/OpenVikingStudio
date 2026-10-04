@@ -2158,6 +2158,21 @@ async def openviking_skill_judge(
     return json.dumps(result.to_dict(), ensure_ascii=False, indent=2)
 
 
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_skill_remediate(
+    raw_content: str,
+    skill_slug: str = "",
+) -> str:
+    """Audit skill health across 4 dimensions and synthesize deterministic auto-remediation patches."""
+    import json
+    from openviking.service.skill_health_scorer import SkillRemediationGenerator
+
+    result = SkillRemediationGenerator.remediate(
+        raw_content=raw_content, skill_slug=skill_slug or None
+    )
+    return json.dumps(result.to_dict(), ensure_ascii=False, indent=2)
+
+
 
 # ---------------------------------------------------------------------------
 # Portable tool schemas
