@@ -348,3 +348,15 @@ def request_context() -> RequestContext:
         user=UserIdentifier.the_default_user(),
         role=Role.USER,
     )
+
+
+@pytest.fixture(autouse=True)
+def sandbox_agent_sensors_in_tests(tmp_path, monkeypatch):
+    """Ensure tests never write to canonical ~/.openviking/data/agent_metrics.jsonl."""
+    from openviking.core.agent_sensors import AgentSensorsAggregator
+
+    test_metrics_file = str(tmp_path / "test_agent_metrics.jsonl")
+    agg = AgentSensorsAggregator.get_instance()
+    monkeypatch.setattr(agg, "metrics_file", test_metrics_file)
+    monkeypatch.setattr(agg, "_history", [])
+

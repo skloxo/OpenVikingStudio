@@ -78,6 +78,17 @@ class AgentSensorsAggregator:
         interventions_count: int,
     ) -> AgentSensorTelemetry:
         """Calculate and persist a single telemetry event."""
+        # Deduplication guard: ignore exact duplicate within recent window (e.g. queue replay or dual-hook)
+        with self._lock:
+            for p in reversed(self._history[-10:]):
+                if (
+                    p.session_id == session_id
+                    and p.effective_tokens == effective_tokens
+                    and p.total_tokens == total_tokens
+                    and abs(time.time() - p.timestamp) < 60.0
+                ):
+                    return p
+
         snr = min(1.0, max(0.0, effective_tokens / total_tokens)) if total_tokens > 0 else 0.0
         p5 = min(1.0, max(0.0, top5_hits / 5.0))
         intervention_flag = interventions_count > 0
