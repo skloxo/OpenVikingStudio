@@ -29,6 +29,7 @@ class CompiledSignature(BaseModel):
     input_fields: List[DSPyFieldContract] = Field(default_factory=list, description="输入契约字段列表")
     output_fields: List[DSPyFieldContract] = Field(default_factory=list, description="输出契约字段列表")
     constraints: List[str] = Field(default_factory=list, description="不可变边界与零幻觉排斥规则")
+    is_inferred: bool = Field(False, description="是否由编译器兜底推断（非 Prompt 显式声明）")
 
 
 class BootstrapExample(BaseModel):

@@ -68,7 +68,6 @@ class VectorSyncTracker:
             db_path = os.path.join(data_dir, "vector_sync_state.db")
         self.db_path = db_path
         self._rw_lock = threading.Lock()
-        self._fast_path_count: int = 0
         self._init_db()
 
     @classmethod
@@ -116,8 +115,6 @@ class VectorSyncTracker:
 
     def mark_fast_path(self, uri: str, account_id: str = "default") -> None:
         """Record a fast-path ingestion event (WAL committed immediately before vector indexing)."""
-        with self._rw_lock:
-            self._fast_path_count += 1
         now = time.time()
         with self._rw_lock, self._get_connection() as conn:
             try:
@@ -253,14 +250,14 @@ class VectorSyncTracker:
 
             sync_rate = round((indexed / total * 100.0), 2) if total > 0 else 100.0
             
-            fast_path_cnt = 0
-            try:
-                fp_row = conn.execute("SELECT COUNT(*) as cnt FROM vector_sync_state WHERE fast_path = 1").fetchone()
-                if fp_row:
-                    fast_path_cnt = int(fp_row["cnt"])
-            except Exception:
-                fast_path_cnt = self._fast_path_count
-            fast_path_cnt = max(fast_path_cnt, self._fast_path_count)
+            fp_query = "SELECT COUNT(*) as cnt FROM vector_sync_state WHERE fast_path = 1"
+            fp_params: List[Any] = []
+            if account_id:
+                fp_query += " AND account_id = ?"
+                fp_params.append(account_id)
+            
+            fp_row = conn.execute(fp_query, fp_params).fetchone()
+            fast_path_cnt = int(fp_row["cnt"]) if fp_row else 0
 
             return {
                 "total_files": total,
