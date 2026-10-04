@@ -19,6 +19,17 @@ export const common = {
     theme: {
       toggle: 'Toggle theme',
     },
+    pagination: {
+      total: 'Total {{total}}',
+      range: '{{start}}-{{end}}',
+      pageSize: 'Per page',
+      pageSizeUnit: '{{count}} / page',
+      firstPage: 'First page',
+      previousPage: 'Previous page',
+      nextPage: 'Next page',
+      lastPage: 'Last page',
+      pageSizeAria: 'Items per page',
+    },
   },
   appShell: {
     footer: {

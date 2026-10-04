@@ -96,6 +96,8 @@ describe('Component & Wheel Inventory SSOT Living Mechanism', () => {
       'UniversalMemoryImpact',
       'formatters.ts',
       'ValetIngestionCockpit',
+      'MetricTile',
+      'UniversalPagination',
     ]
 
     for (const wheel of sharedWheels) {

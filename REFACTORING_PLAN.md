@@ -9,11 +9,12 @@
 
 > **生产物理事实声明**：
 > - **线上正式部署版本**：**`v1.4.106`**（物理访问地址：`vk.tide.red/studio/home`，已实机验证）；
-> - **当前最新交付版本**：**`v1.7.14`**（Tag: `v1.7.14`，已全量通过检索大盘 Tab 5 / Tab 7 冗余卡片手术解耦与 Valet 专属高密观测纯化、47 项单测、Vitest 5 项、安全审计 0 密钥与前端生产构建 PASS）；
+> - **当前最新交付版本**：**`v1.7.15`**（Tag: `v1.7.15`，已全量通过活态高阶公共轮子提纯结晶 MetricTile 与 UniversalPagination、51 项单测、Vitest 5 项、安全审计 0 密钥与前端生产构建 PASS）；
 > - **历史里程碑详单检索**：如需查阅 Milestone 1~4 及早期版本修改清单与架构细节，请点击跳转至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.7.15`** | **Card-61** | **活态高阶公共轮子提纯结晶：`MetricTile` 与 `UniversalPagination` (Shared MetricTile & UniversalPagination Wheel Harvesting)** | 1. 提纯两大通用座舱高阶轮子：`MetricTile.tsx`（内建骨架屏、四态语义支持、NO GREEN EVER 🚫、等宽大数字 `font-mono tabular-nums`、趋势指示）与 `UniversalPagination.tsx`（条数切换、双向翻页、页码序列折叠、等宽页码、多语言 i18n 完整平行维护）；<br>2. 统一公共导出与资产结晶：创建 `src/components/common/index.ts`，在 `COMPONENT_AND_WHEEL_INVENTORY.md` 登记交付状态，并在 `component-inventory.test.ts` 中纳入自动化视网膜保护；<br>3. 修复 `test_card54` 异步并发干扰脆弱性与历史 Card 版本前向兼容性；<br>4. 门禁全绿：51/51 专项与回归全绿 (3.42s)，Vitest 5 项全绿 (641ms)，安全扫描 4628 文件 0 密钥，前端构建 13.63s PASS。<br>**Commit Hash**：`PENDING_COMMIT`<br>**测试**：51/51 全绿 (3.42s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.14`** | **Card-60** | **检索大盘 Tab 5 / Tab 7 冗余卡片手术解耦与 Valet 专属高密观测纯化 (Valet Tab Decoupling & Dedicated Ingestion Observability)** | 1. 手术级解耦：彻底切除 `src/routes/retrieval/route.tsx` 中 Tab 7 (`valet`) 历史复制硬塞的 4 张结晶器重型治理卡片（纯度、动力学、DAG、总账），仅挂载纯净独立的 `ValetIngestionCockpit`；<br>2. 彻底消灭后台双倍并发轮询探针，Tab 7 激活时背景探针开销直降 80%，释放前端渲染及后端 SQLite 压力；<br>3. 活态资产登记与视网膜门禁：在 `COMPONENT_AND_WHEEL_INVENTORY.md` 登记 `ValetIngestionCockpit`，并在 `component-inventory.test.ts` 中纳入自动化断言保护；<br>4. 门禁全绿：47/47 专项与回归全绿 (3.29s)，注解契约测试 PASS，Vitest 5 项 PASS，安全扫描 4627 文件 0 密钥，前端构建 14.90s PASS。<br>**Commit Hash**：`e4226d969`<br>**测试**：47/47 全绿 (3.29s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.13`** | **Card-59** | **Active Notes & History 记忆分仓治理 FastMCP 原生桥接闭环 (Active Notes & History Context FastMCP Parity)** | 1. 补齐 3 大核心 FastMCP 原生工具：`openviking_active_notes_get`（活跃目标/约束/事实与 Token 节约率度量）、`openviking_active_notes_update`（原子增量维护目标与提纯事实）、`openviking_history_search`（基于 FTS5 unicode61 全文检索引擎与精准子串降级搜索未压缩对话流）；<br>2. 彻底打破 Web 前端自娱自乐孤岛，跨集群外部 Agent（3070、2080Ti、Mac 节点）可通过标准 MCP 动态维持会话目标与无损历史追溯；<br>3. MCP 注解四维契约全量登记：`test_mcp_tool_annotations.py` 覆盖更新；<br>4. 门禁全绿：51/51 单测全绿 (3.54s)，安全扫描 4626 文件 0 密钥，前端构建 14.22s PASS。<br>**Commit Hash**：`448669a7c`<br>**测试**：51/51 全绿 (3.54s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.12`** | **Card-58** | **统一通信层收口、3D 智能体传感器与全域上下文智能路由闭环 (Unified Communications SSOT, Agent 3D Sensors & Context Router Parity)** | 1. 统一通信层收口：`agent-sensors-card.tsx` 与 `evolution-cicd-cockpit.tsx` 彻底消除裸 fetch，100% 收敛至 `ovClient.instance` 与 TanStack Query，解决鉴权头丢失隐疾；<br>2. 补齐 2 大核心 FastMCP 原生工具：`openviking_context_route`（全域混合多模态上下文路由与 AST/语义/契约压缩）与 `openviking_agent_sensors`（3D 效能物理探针查询）；<br>3. MCP 注解四维契约全量登记：`test_mcp_tool_annotations.py` 覆盖更新；<br>4. 门禁全绿：19/19 单测全绿 (1.72s)，安全扫描 4625 文件 0 密钥，前端构建 16.20s PASS。<br>**Commit Hash**：`91e95e620`<br>**测试**：19/19 全绿 (1.72s) ✅ | [x] 已验收通过 ✅ |
@@ -106,6 +107,44 @@
   - **自动化测试通过率**：4/4 专项单测全绿 (1.40s)，10 项全量回归测试全绿 (2.55s)；
   - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4609 个跟踪文件 0 密钥泄露；
   - **前端生产构建**：`npm run build` 耗时 15.02s 顺利 PASS。
+
+#### ✅ [P0] [x] Card-61 (v1.7.15): 活态高阶公共轮子提纯结晶：`MetricTile` 与 `UniversalPagination` (Shared MetricTile & UniversalPagination Wheel Harvesting)
+- **类型**：前端公共轮子提纯 / 视觉与人机工效统一 / 活态资产登记 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.15` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - 核心痛点与样式漂移：在 `COMPONENT_AND_WHEEL_INVENTORY.md` 第四节末尾，已规划了 `MetricTile` 与 `UniversalPagination` 两大通用轮子，但历史版本未予结晶，导致各业务大盘（任务中心、检索大盘、监控中心）散落私有手搓的指标数字与简易分页；
+  - 倒推死因审讯（芒格排雷）：
+    1. 私有手搓极易诱发字号违规（如手搓出 `text-[10px]` 或 `text-[11px]`，违背全局硬下限 $\ge 12\text{px}$ 铁律）；
+    2. 私有手搓极易诱发色彩违规（手搓绿色 `text-emerald-500` / `bg-green-500`，严重违背 NO GREEN EVER 🚫 铁律）；
+    3. 缺乏等宽数字渲染导致数据高频刷新时界面产生横向抖动与视觉疲劳；
+    4. 分页组件缺乏统一的条数切换、页码省略与多语言国际化，导致各端交互割裂；
+  - 奥卡姆剃刀与信达雅：
+    1. 提纯 `MetricTile.tsx`：规范 `p-3.5` 紧凑卡片、四态语义支持（中性哑光灰、冰青 `cyan-500`、琥珀 `amber-400`、玫瑰红 `rose-500`，绝对无绿）、内建骨架屏加载过渡与自解释趋势指示；
+    2. 提纯 `UniversalPagination.tsx`：条数切换 (`10/20/50/100`)、首尾与翻页按钮、等宽页码、智能省略折叠与紧凑/标准双模态，严格遵行 `useTranslation` 零裸字符串；
+    3. 在 `src/i18n/locales/zh-CN/common.ts` 与 `en/common.ts` 同步支持双语对等维护；
+    4. 统一在 `src/components/common/index.ts` 集中导出；
+    5. 在 `COMPONENT_AND_WHEEL_INVENTORY.md` 登记为“✅ 已交付 (v1.7.15)”并在 `component-inventory.test.ts` 中纳入自动化视网膜保护；
+    6. 修复 `test_card54` 异步并发干扰脆弱性与历史 Card 版本前向兼容性；
+    7. 严格遵守 SemVer 铁律：版本递增为 `v1.7.15`（Patch 递增，主版本号与次版本号锁定）。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **全局指标卡片与分页手搓收敛率**：从 $0\%$ 提纯至 **$100\%$** 标准化公共轮子覆盖；
+    2. **字号与色彩合规率**：`MetricTile` 与 `UniversalPagination` **$100\%$ 杜绝 `< 12px` 微字与任何绿色类名**；
+    3. **双语 i18n 平行维护覆盖率**：分页标签 `zh-CN` / `en` 双端 **$100\%$ 物理对齐**；
+    4. **单文件规模安全红线**：`metric-tile.tsx` 155 行，`universal-pagination.tsx` 232 行，均在 100~300 行黄金甜点区内。
+  - **展示界面与卡片**：全站通用公共组件库 (`src/components/common/`) 与各大业务大盘。
+- **核心交付目标与完成清单**：
+  1. `src/components/common/metric-tile.tsx` (155行)：高密四态指标瓦片轮子；
+  2. `src/components/common/universal-pagination.tsx` (232行)：高密国际化分页控制器轮子；
+  3. `src/components/common/index.ts` (11行)：统一导出索引；
+  4. `src/i18n/locales/zh-CN/common.ts` & `en/common.ts`：增加 pagination 双语字典；
+  5. `docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md`：登记已交付状态；
+  6. `src/components/component-inventory.test.ts`：将两轮子纳入 Vitest 自动化守护；
+  7. `tests/unit/test_card61_metric_tile_and_pagination.py` (88行)：契约自动化单测；
+  8. `package.json` 与 `openviking/_version.py`：版本号自增至 `1.7.15`。
+- **交付验收结果 (Delivery Verification)**：
+  - **自动化测试通过率**：51/51 单测全绿 (3.42s)，注解契约 1 项 PASS，Vitest 5 项全绿 (641ms)；
+  - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4628 个跟踪文件 0 密钥泄露；
+  - **前端生产构建**：`npm run build` 耗时 13.63s 顺利 PASS。
 
 #### ✅ [P0] [x] Card-60 (v1.7.14): 检索大盘 Tab 5 / Tab 7 冗余卡片手术解耦与 Valet 专属高密观测纯化 (Valet Tab Decoupling & Dedicated Ingestion Observability)
 - **类型**：前端架构解耦 / 性能开销消减 / 活态组件资产登记 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.14` ｜ **当前状态**：[x] 已验收通过 ✅

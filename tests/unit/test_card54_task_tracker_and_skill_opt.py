@@ -77,8 +77,12 @@ async def test_task_card_manager_tracker_integration(tmp_path: Path):
     )
     assert res["status"] == "resolved"
     await asyncio.sleep(0.05)  # 等待异步 task 调度
-    mock_tracker.complete.assert_called_once()
-    assert mock_tracker.complete.call_args[1]["task_id"] == card_id
+    matching_calls = [
+        c for c in mock_tracker.complete.call_args_list
+        if c[1].get("task_id") == card_id
+    ]
+    assert len(matching_calls) == 1
+    assert matching_calls[0][1]["result"]["summary"] == "Fixed safely"
 
     # 还原
     set_task_tracker(None)

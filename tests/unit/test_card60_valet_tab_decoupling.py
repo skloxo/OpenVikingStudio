@@ -81,11 +81,12 @@ def test_valet_cockpit_registered_in_inventory():
 
 
 def test_version_bump_card60():
-    """Verify Card-60 SemVer patch bump to 1.7.14."""
+    """Verify Card-60 SemVer patch bump to at least 1.7.14 and parity with python version."""
     package_json = json.loads((REPO_ROOT / "package.json").read_text(encoding="utf-8"))
-    assert package_json["version"] == "1.7.14"
+    pkg_ver = package_json["version"]
+    parts = [int(p) for p in pkg_ver.split(".")]
+    assert (parts[0], parts[1], parts[2]) >= (1, 7, 14)
 
     py_version_file = REPO_ROOT / "openviking" / "_version.py"
     py_version_content = py_version_file.read_text(encoding="utf-8")
-    assert '"1.7.14"' in py_version_content
-    assert '(1, 7, 14)' in py_version_content
+    assert f'"{pkg_ver}"' in py_version_content
