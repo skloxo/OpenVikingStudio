@@ -1913,7 +1913,7 @@ async def openviking_retry_dead_letter(dlq_id: int) -> str:
     if not record:
         return f"Dead letter #{dlq_id} not found."
     try:
-        from openviking.server.app import get_app_viking_service
+        from openviking.server.dependencies import get_app_viking_service
 
         service = get_app_viking_service()
         if hasattr(service, "_vikingdb") and service._vikingdb and service._vikingdb.has_queue_manager:

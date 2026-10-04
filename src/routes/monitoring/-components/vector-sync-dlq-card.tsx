@@ -3,6 +3,8 @@ import { Card, CardTitle } from '#/components/ui/card'
 import { Button } from '#/components/ui/button'
 import { Badge } from '#/components/ui/badge'
 import { ovClient } from '#/lib/ov-client'
+import { DeadLetterDrawer } from './dead-letter-drawer'
+import type { DeadLetterRecord } from './dead-letter-drawer'
 
 interface SyncMetricsData {
   sync_rate_pct: number
@@ -30,6 +32,8 @@ export function VectorSyncDlqCard() {
   const [deadLetters, setDeadLetters] = React.useState<DeadLetterItem[]>([])
   const [isLoading, setIsLoading] = React.useState(false)
   const [isHealing, setIsHealing] = React.useState(false)
+  const [selectedDeadLetter, setSelectedDeadLetter] = React.useState<DeadLetterRecord | null>(null)
+  const [isDrawerOpen, setIsDrawerOpen] = React.useState(false)
 
   const fetchData = React.useCallback(async () => {
     try {
@@ -37,14 +41,14 @@ export function VectorSyncDlqCard() {
       const res = await ovClient.instance.get<{ status: string } & SyncMetricsData>(
         '/api/v1/queue/sync-metrics'
       )
-      if (res.data?.status === 'success') {
+      if (res.data.status === 'success') {
         setMetrics(res.data)
       }
       const dlqRes = await ovClient.instance.get<{ status: string; items: DeadLetterItem[] }>(
         '/api/v1/queue/dlq?limit=5&resolved=0'
       )
-      if (dlqRes.data?.status === 'success') {
-        setDeadLetters(dlqRes.data.items || [])
+      if (dlqRes.data.status === 'success') {
+        setDeadLetters(dlqRes.data.items)
       }
     } catch (err) {
       console.error('[VectorSyncDlqCard] Failed to fetch sync metrics:', err)
@@ -170,28 +174,55 @@ export function VectorSyncDlqCard() {
       </div>
 
       {deadLetters.length > 0 && (
-        <div className="flex flex-col gap-1 border-t pt-2 border-border/40">
-          <span className="text-xs font-medium text-rose-500">
-            最近未决死信 (Top {deadLetters.length}):
-          </span>
-          <div className="flex flex-col gap-1 max-h-24 overflow-y-auto">
+        <div className="flex flex-col gap-1.5 border-t pt-2 border-border/40">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-rose-500">
+              最近未决死信 (Top {deadLetters.length}):
+            </span>
+            <span className="text-xs text-muted-foreground font-mono">
+              点击条目查看诊断与单条自愈
+            </span>
+          </div>
+          <div className="flex flex-col gap-1 max-h-36 overflow-y-auto pr-0.5">
             {deadLetters.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between text-xs font-mono bg-muted/30 px-2 py-1 rounded"
+                onClick={() => {
+                  setSelectedDeadLetter(item as unknown as DeadLetterRecord)
+                  setIsDrawerOpen(true)
+                }}
+                className="group flex items-center justify-between text-xs font-mono bg-muted/20 hover:bg-muted/60 px-2 py-1.5 rounded cursor-pointer transition-colors border border-transparent hover:border-border/60"
+                title="点击打开死信详情与单条自愈抽屉"
               >
-                <span className="truncate max-w-50 text-foreground">
-                  {item.uri || `msg-${item.id}`}
-                </span>
-                <span className="text-amber-400">{item.error_type}</span>
-                <span className="text-muted-foreground truncate max-w-37.5">
-                  {item.error_message}
-                </span>
+                <div className="flex items-center gap-1.5 truncate max-w-50">
+                  <span className="text-muted-foreground text-xs">#{item.id}</span>
+                  <span className="truncate text-foreground font-medium group-hover:text-primary">
+                    {item.uri || `msg-${item.id}`}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-amber-400 text-xs px-1 rounded bg-amber-400/5 border border-amber-400/20">
+                    {item.error_type}
+                  </span>
+                  <span className="text-muted-foreground truncate max-w-30 text-xs">
+                    {item.error_message}
+                  </span>
+                  <span className="text-xs text-muted-foreground group-hover:text-foreground">
+                    →
+                  </span>
+                </div>
               </div>
             ))}
           </div>
         </div>
       )}
+
+      <DeadLetterDrawer
+        item={selectedDeadLetter}
+        open={isDrawerOpen}
+        onOpenChange={setIsDrawerOpen}
+        onActionSuccess={fetchData}
+      />
     </Card>
   )
 }

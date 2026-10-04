@@ -25,7 +25,13 @@ from openviking.server.config import (
     load_server_config,
     validate_server_config,
 )
-from openviking.server.dependencies import set_server_config, set_service
+from openviking.server.dependencies import (
+    get_app_viking_service,
+    get_service,
+    get_service_or_none,
+    set_server_config,
+    set_service,
+)
 from openviking.server.error_mapping import map_exception
 from openviking.server.identity import Role
 from openviking.server.models import ERROR_CODE_TO_HTTP_STATUS, ErrorInfo, Response
