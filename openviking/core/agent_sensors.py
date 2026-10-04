@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import sys
 import threading
 import time
 from dataclasses import asdict, dataclass, field
@@ -40,7 +41,7 @@ class AgentSensorsAggregator:
     _lock = threading.Lock()
 
     def __init__(self, log_dir: Optional[str] = None) -> None:
-        base_dir = log_dir or os.path.expanduser("~/.openviking/data")
+        base_dir = log_dir or os.environ.get("OPENVIKING_DATA_DIR") or os.path.expanduser("~/.openviking/data")
         self.metrics_file = os.path.join(base_dir, "agent_metrics.jsonl")
         self._history: List[AgentSensorTelemetry] = []
         self._max_history = 200
@@ -53,6 +54,17 @@ class AgentSensorsAggregator:
                 if cls._instance is None:
                     cls._instance = cls()
         return cls._instance
+
+    @classmethod
+    def reset_instance_for_testing(cls, custom_instance: Optional[AgentSensorsAggregator] = None) -> None:
+        """Reset singleton for clean isolated testing."""
+        with cls._lock:
+            cls._instance = custom_instance
+
+    def _is_production_file(self) -> bool:
+        """Check if metrics_file resolves to canonical production file."""
+        prod_path = os.path.abspath(os.path.expanduser("~/.openviking/data/agent_metrics.jsonl"))
+        return os.path.abspath(self.metrics_file) == prod_path
 
     def _ensure_storage(self) -> None:
         """Safely ensure storage directory exists and preload existing telemetry."""
@@ -99,7 +111,10 @@ class AgentSensorsAggregator:
             if len(self._history) > self._max_history:
                 self._history.pop(0)
 
-        # Append to JSONL file
+        # Append to JSONL file (Strict isolation: block test suite pollution in pytest)
+        if "pytest" in sys.modules and self._is_production_file():
+            return point
+
         try:
             with open(self.metrics_file, "a", encoding="utf-8") as f:
                 f.write(json.dumps(asdict(point), ensure_ascii=False) + "\n")
