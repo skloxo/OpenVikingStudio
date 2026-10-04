@@ -2173,6 +2173,27 @@ async def openviking_skill_remediate(
     return json.dumps(result.to_dict(), ensure_ascii=False, indent=2)
 
 
+@mcp.tool(annotations=_RETRY_SAFE_DESTRUCTIVE_TOOL_ANNOTATIONS)
+async def openviking_skill_weight_tune(
+    skill_slug: str,
+    verdict: str = "PASS",
+    confidence: float = 1.0,
+    notes: str = "",
+) -> str:
+    """Dynamically tune and ingest skill utility weight based on Attempt feedback (SkillOpt)."""
+    import json
+    from openviking.service.skill_weight_tuner import SkillWeightTuner
+
+    tuner = SkillWeightTuner.get_instance()
+    result = tuner.tune_weight(
+        skill_slug=skill_slug,
+        verdict=verdict,
+        confidence=confidence,
+        notes=notes,
+    )
+    return json.dumps(result.to_dict(), ensure_ascii=False, indent=2)
+
+
 
 # ---------------------------------------------------------------------------
 # Portable tool schemas
