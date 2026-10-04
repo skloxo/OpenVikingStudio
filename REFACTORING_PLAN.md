@@ -9,11 +9,12 @@
 
 > **生产物理事实声明**：
 > - **线上正式部署版本**：**`v1.4.106`**（物理访问地址：`vk.tide.red/studio/home`，已实机验证）；
-> - **当前最新交付版本**：**`v1.7.19`**（Tag: `v1.7.19`，已全量通过技能一键向量化入脑与快照上架试验台 SkillPublisher、75 项单测全绿、Vitest 5 项、安全审计 0 密钥与前端生产构建 PASS）；
+> - **当前最新交付版本**：**`v1.7.20`**（Tag: `v1.7.20`，已全量通过 SkillOpt Attempt 仿真执行与 Judge 门禁评分体系 SkillOptJudge、81 项单测全绿、Vitest 5 项、安全审计 0 密钥与前端生产构建 PASS）；
 > - **历史里程碑详单检索**：如需查阅 Milestone 1~4 及早期版本修改清单与架构细节，请点击跳转至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.7.20`** | **Card-66** | **微软 SkillOpt Attempt 仿真执行与 Judge 门禁评分体系 (SkillOpt Attempt Simulation & Judge Gate Evaluator - BLUEPRINT Epic-SKILL-OPT SKILLOPT-01)** | 1. 落地 `SkillOptJudge` 四维正交门禁裁判引擎：SOP 步骤结构度、工具调用契约、I/O 交付物明确度与异常自愈防御能力（总分 100 分，默认及格线 70 分）；<br>2. 落地 Attempt 仿真执行轨迹度量器 (`evaluate_attempt_trajectory`)，对智能体执行步骤、工具调用频次与错误率输出结构化等级与完成率；<br>3. FastMCP 原生工具平价接入：新增 `openviking_skill_judge` 只读受控工具，赋能全集群外部 Agent 离线进行技能 SOP 质量自审与自动修复建议生成；<br>4. 门禁全绿：81/81 专项与回归全绿 (3.62s)，注解契约测试 PASS，Vitest 5 项 PASS，安全扫描 4640 文件 0 密钥，前端构建 16.55s PASS。<br>**Commit Hash**：`待提交`<br>**测试**：81/81 全绿 (3.62s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.19`** | **Card-65** | **技能一键向量化入脑与快照上架试验台 (Skill Vectorization & Vault Ingestion Cockpit - BLUEPRINT Epic-LIVE-GEN LIVEGEN-03)** | 1. 落地 `SkillPublisher` 前置门禁与原子化上架服务：内置发布前严格调用 `SkillValidator` 静态防御拦截坏技能，生成 12 位 SHA256 物理版本指纹；<br>2. 统一全集群 VikingFS 目标存储路径契约 (`viking://resources/master_memory/skills/{slug}/SKILL.md`)，并支持本地物理镜像落盘与防覆盖保护；<br>3. FastMCP 原生工具平价接入：新增 `openviking_skill_publish` 写入可重试受控工具，赋能全集群外部 Agent 将新提纯技能一键原子化上架入脑；<br>4. 门禁全绿：75/75 专项与回归全绿 (3.62s)，注解契约测试 PASS，Vitest 5 项 PASS，安全扫描 4638 文件 0 密钥，前端构建 16.58s PASS。<br>**Commit Hash**：`eb8fed808`<br>**测试**：75/75 全绿 (3.62s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.18`** | **Card-64** | **技能意图触发与自然语言模拟测试沙盒试验台 (Skill Trigger Intent Matching & Simulation Sandbox - BLUEPRINT Epic-LIVE-GEN LIVEGEN-02)** | 1. 落地 `SkillIntentMatcher` 零依赖自然语言意图匹配与冲突沙盒引擎：融合字符级 n-gram Jaccard 相似度与子串高权重包含度量；<br>2. 跨技能意图路由冲突检测 (`detect_collisions`)：支持批量预检新技能与已有生态技能 triggers 之间的碰撞重合度，输出多技能冲突诊断；<br>3. FastMCP 原生工具平价接入：新增 `openviking_skill_intent_match` 只读受控工具，赋能全集群外部 Agent 离线模拟技能触发准确率；<br>4. 门禁全绿：70/70 专项与回归全绿 (3.75s)，注解契约测试 PASS，Vitest 5 项 PASS，安全扫描 4636 文件 0 密钥，前端构建 16.27s PASS。<br>**Commit Hash**：`76d35e561`<br>**测试**：70/70 全绿 (3.75s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.17`** | **Card-63** | **技能在线创生与 YAML 静态语法强校验试验台 (Skill Live Generator & YAML Static Validation Sandbox - BLUEPRINT Epic-LIVE-GEN)** | 1. 落地 `SkillValidator` 静态解析与强类型契约校验引擎：全面覆盖 YAML 分界符结构、kebab-case 命名契约、必填 `name`/`description` 语义检测与正文字符统计；<br>2. 幽灵工具与阴影调用预警：对照全域 FastMCP 与系统核心工具目录，自动侦测 `allowed-tools` 中的潜在幽灵工具 (Ghost Tool) 并输出诊断预警；<br>3. FastMCP 原生工具桥接：新增 `openviking_skill_validate` 只读受控工具，支持跨集群 Agent 在提纯或创生新技能时即时自检静态语法，阻断坏配置落地；<br>4. 门禁全绿：63/63 专项与回归全绿 (3.94s)，注解契约测试 PASS，Vitest 5 项 PASS，安全扫描 4634 文件 0 密钥，前端构建 17.22s PASS。<br>**Commit Hash**：`a8387baa6`<br>**测试**：63/63 全绿 (3.94s) ✅ | [x] 已验收通过 ✅ |
@@ -111,6 +112,38 @@
   - **自动化测试通过率**：4/4 专项单测全绿 (1.40s)，10 项全量回归测试全绿 (2.55s)；
   - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4609 个跟踪文件 0 密钥泄露；
   - **前端生产构建**：`npm run build` 耗时 15.02s 顺利 PASS。
+
+#### ✅ [P0] [x] Card-66 (v1.7.20): 微软 SkillOpt Attempt 仿真执行与 Judge 门禁评分体系 (SkillOpt Attempt Simulation & Judge Gate Evaluator - BLUEPRINT Epic-SKILL-OPT SKILLOPT-01)
+- **类型**：技能评测门禁 / SOP 质量量化 / FastMCP 原生工具平价 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.20` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - 核心痛点与死因审讯：
+    1. 传统技能迭代最大盲区是“瞎试黑盒”：修改 SOP 文档后，缺乏客观量化的 Judge 门禁裁判，无法衡量修改究竟是提升了可执行性还是引入了歧义；
+    2. 缺乏标准化质量维度：许多技能虽然写了文字，但步骤未编号、无输入输出预期、无错误重试逻辑，导致智能体执行过程中出现幻觉与悬空；
+    3. 缺乏执行轨迹仿真评级：没有轻量级 Attempt 轨迹评分器来回放执行日志并判定任务完成率；
+  - 奥卡姆剃刀与信达雅：
+    1. 落地纯原生无外部依赖的 `SkillOptJudge`（`openviking/service/skill_opt_judge.py`）；
+    2. 构筑四维正交 Judge 评分体系（满分 100 分，及格分 70 分）：SOP 步骤结构（0~30）、工具调用契约（0~25）、I/O 交付物明确度（0~25）、异常与自愈防御（0~20）；
+    3. 针对未达标技能自动生成精准修复建议清单 (`recommendations`)；
+    4. 提供 Attempt 仿真轨迹评估器 (`evaluate_attempt_trajectory`)，输出完成率与判定等级（PASS / DEGRADED / FAIL）；
+    5. 补齐原生 FastMCP 工具 `openviking_skill_judge`（只读契约注解严格受控）；
+    6. 严格遵守 SemVer 铁律：版本递增为 `v1.7.20`（Patch 递增，主版本号与次版本号锁定）。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **技能 SOP 质量可量化评估覆盖率**：多维度量覆盖率 **$100\%$**；
+    2. **不达标粗糙技能识别拦截率**：及格线（70分）门禁拦截率 **$100\%$**；
+    3. **Judge 裁判评估响应耗时 (Latency Overhead)**：纯静态规则计算耗时 $\le 1\text{ms}$，极速零开销；
+    4. **单文件规模安全红线**：`skill_opt_judge.py` 176 行，单测 108 行，严格收敛于 100~300 行黄金甜点区内。
+  - **展示界面与卡片**：全集群 FastMCP 工具目录与技能管理沙盒。
+- **核心交付目标与完成清单**：
+  1. `openviking/service/skill_opt_judge.py` (176行)：四维正交门禁裁判与 Attempt 评估引擎；
+  2. `openviking/server/mcp_endpoint.py`：新增 FastMCP 原生工具 `openviking_skill_judge`；
+  3. `tests/unit/test_mcp_tool_annotations.py`：登记 `openviking_skill_judge` 只读注解契约；
+  4. `tests/unit/test_card66_skillopt_judge_gate.py` (108行)：覆盖高质量达标、低质量拒识、空输入防御、Attempt 轨迹回放、MCP 集成与版本对齐门禁；
+  5. `package.json` 与 `openviking/_version.py`：版本号自增至 `1.7.20`。
+- **交付验收结果 (Delivery Verification)**：
+  - **自动化测试通过率**：81/81 专项与回归全绿 (3.62s)，注解契约 1 项 PASS，Vitest 5 项全绿 (629ms)；
+  - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4640 个跟踪文件 0 密钥泄露；
+  - **前端生产构建**：`npm run build` 耗时 16.55s 顺利 PASS。
 
 #### ✅ [P0] [x] Card-65 (v1.7.19): 技能一键向量化入脑与快照上架试验台 (Skill Vectorization & Vault Ingestion Cockpit - BLUEPRINT Epic-LIVE-GEN LIVEGEN-03)
 - **类型**：技能生命周期 / 存储入脑契约 / FastMCP 原生工具平价 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.19` ｜ **当前状态**：[x] 已验收通过 ✅

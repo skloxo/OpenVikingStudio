@@ -2143,6 +2143,21 @@ async def openviking_skill_publish(
     return json.dumps(result.to_dict(), ensure_ascii=False, indent=2)
 
 
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_skill_judge(
+    raw_content: str,
+    passing_score: float = 70.0,
+) -> str:
+    """Evaluate skill SOP quality and passing gate scores across 4 orthogonal dimensions (SkillOpt Judge)."""
+    import json
+    from openviking.service.skill_opt_judge import SkillOptJudge
+
+    result = SkillOptJudge.evaluate_skill(
+        raw_content=raw_content, passing_score=passing_score
+    )
+    return json.dumps(result.to_dict(), ensure_ascii=False, indent=2)
+
+
 
 # ---------------------------------------------------------------------------
 # Portable tool schemas
