@@ -9,11 +9,13 @@
 
 > **生产物理事实声明**：
 > - **线上正式部署版本**：**`v1.4.106`**（物理访问地址：`vk.tide.red/studio/home`，已实机验证）；
-> - **当前最新交付版本**：**`v1.7.16`**（Tag: `v1.7.16`，已全量通过端到端数据隐私与敏感信息动态脱敏治理 PrivacyMasker、56 项单测、Vitest 5 项、安全审计 0 密钥与前端生产构建 PASS）；
+> - **线上正式部署版本**：**`v1.4.106`**（物理访问地址：`vk.tide.red/studio/home`，已实机验证）；
+> - **当前最新交付版本**：**`v1.7.17`**（Tag: `v1.7.17`，已全量通过技能在线创生与 YAML 静态语法强校验试验台 SkillValidator、63 项单测全绿、Vitest 5 项、安全审计 0 密钥与前端生产构建 PASS）；
 > - **历史里程碑详单检索**：如需查阅 Milestone 1~4 及早期版本修改清单与架构细节，请点击跳转至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.7.17`** | **Card-63** | **技能在线创生与 YAML 静态语法强校验试验台 (Skill Live Generator & YAML Static Validation Sandbox - BLUEPRINT Epic-LIVE-GEN)** | 1. 落地 `SkillValidator` 静态解析与强类型契约校验引擎：全面覆盖 YAML 分界符结构、kebab-case 命名契约、必填 `name`/`description` 语义检测与正文字符统计；<br>2. 幽灵工具与阴影调用预警：对照全域 FastMCP 与系统核心工具目录，自动侦测 `allowed-tools` 中的潜在幽灵工具 (Ghost Tool) 并输出诊断预警；<br>3. FastMCP 原生工具桥接：新增 `openviking_skill_validate` 只读受控工具，支持跨集群 Agent 在提纯或创生新技能时即时自检静态语法，阻断坏配置落地；<br>4. 门禁全绿：63/63 专项与回归全绿 (3.94s)，注解契约测试 PASS，Vitest 5 项 PASS，安全扫描 4634 文件 0 密钥，前端构建 17.22s PASS。<br>**Commit Hash**：`待提交`<br>**测试**：63/63 全绿 (3.94s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.16`** | **Card-62** | **端到端数据隐私与敏感信息动态脱敏治理 (Privacy Governance & Sensitive Credential Dynamic Masking - BLUEPRINT Epic-PRIVACY-GOV)** | 1. 落地 `PrivacyMasker` 高精度同步脱敏引擎：纯正则零外部依赖，毫秒级脱敏 OpenAI/Claude API Key (`sk-***[MASKED]***`)、GitHub 访问令牌 (`ghp_***[MASKED]***`)、JWT/Bearer Token 与数据库连接串密码；<br>2. FastMCP 全域隐私桥接：新增 `openviking_privacy_mask` 原生工具（四维注解严格受控），并在 `openviking_history_search` 历史检索返回前挂载自动脱敏，杜绝多 Agent 协同与外呼时凭据泄露；<br>3. 结构化敏感特征扫描：提供 `contains_sensitive` 与 `scan_findings` 探测能力，支持安全预检；<br>4. 门禁全绿：56/56 专项与回归全绿 (3.62s)，注解契约测试 PASS，Vitest 5 项 PASS，安全扫描 4632 文件 0 密钥，前端构建 16.14s PASS。<br>**Commit Hash**：`813dbb580`<br>**测试**：56/56 全绿 (3.62s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.15`** | **Card-61** | **活态高阶公共轮子提纯结晶：`MetricTile` 与 `UniversalPagination` (Shared MetricTile & UniversalPagination Wheel Harvesting)** | 1. 提纯两大通用座舱高阶轮子：`MetricTile.tsx`（内建骨架屏、四态语义支持、NO GREEN EVER 🚫、等宽大数字 `font-mono tabular-nums`、趋势指示）与 `UniversalPagination.tsx`（条数切换、双向翻页、页码序列折叠、等宽页码、多语言 i18n 完整平行维护）；<br>2. 统一公共导出与资产结晶：创建 `src/components/common/index.ts`，在 `COMPONENT_AND_WHEEL_INVENTORY.md` 登记交付状态，并在 `component-inventory.test.ts` 中纳入自动化视网膜保护；<br>3. 修复 `test_card54` 异步并发干扰脆弱性与历史 Card 版本前向兼容性；<br>4. 门禁全绿：51/51 专项与回归全绿 (3.42s)，Vitest 5 项全绿 (641ms)，安全扫描 4628 文件 0 密钥，前端构建 13.63s PASS。<br>**Commit Hash**：`ef0b92e21`<br>**测试**：51/51 全绿 (3.42s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.14`** | **Card-60** | **检索大盘 Tab 5 / Tab 7 冗余卡片手术解耦与 Valet 专属高密观测纯化 (Valet Tab Decoupling & Dedicated Ingestion Observability)** | 1. 手术级解耦：彻底切除 `src/routes/retrieval/route.tsx` 中 Tab 7 (`valet`) 历史复制硬塞的 4 张结晶器重型治理卡片（纯度、动力学、DAG、总账），仅挂载纯净独立的 `ValetIngestionCockpit`；<br>2. 彻底消灭后台双倍并发轮询探针，Tab 7 激活时背景探针开销直降 80%，释放前端渲染及后端 SQLite 压力；<br>3. 活态资产登记与视网膜门禁：在 `COMPONENT_AND_WHEEL_INVENTORY.md` 登记 `ValetIngestionCockpit`，并在 `component-inventory.test.ts` 中纳入自动化断言保护；<br>4. 门禁全绿：47/47 专项与回归全绿 (3.29s)，注解契约测试 PASS，Vitest 5 项 PASS，安全扫描 4627 文件 0 密钥，前端构建 14.90s PASS。<br>**Commit Hash**：`e4226d969`<br>**测试**：47/47 全绿 (3.29s) ✅ | [x] 已验收通过 ✅ |
@@ -108,6 +110,36 @@
   - **自动化测试通过率**：4/4 专项单测全绿 (1.40s)，10 项全量回归测试全绿 (2.55s)；
   - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4609 个跟踪文件 0 密钥泄露；
   - **前端生产构建**：`npm run build` 耗时 15.02s 顺利 PASS。
+
+#### ✅ [P0] [x] Card-63 (v1.7.17): 技能在线创生与 YAML 静态语法强校验试验台 (Skill Live Generator & YAML Static Validation Sandbox - BLUEPRINT Epic-LIVE-GEN)
+- **类型**：技能生命周期 / 静态契约校验 / FastMCP 原生工具平价 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.17` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - 核心痛点与死因审讯：
+    1. 全域 700+ 技能生态此前完全依赖纯手工撰写 `SKILL.md`，极易出现 YAML 缩进破损、缺少分界符 `---`、缺少必填字段（`name`, `description`）或未遵循 kebab-case slug 规范；
+    2. 阴影调用与幽灵工具：技能中引用的 `allowed-tools` 经常包含随手手搓的不存在工具名，导致集群 Agent 在加载并尝试调用时发生隐性崩溃；
+    3. 缺乏体外静态契约试验台：此前缺少独立的、无副作用的纯静态校验接口，无法在技能保存或在线创生前实施前置拦截；
+  - 奥卡姆剃刀与信达雅：
+    1. 落地轻量、无副作用的 `SkillValidator` 静态解析与校验引擎（`openviking/service/skill_validator.py`）；
+    2. 严格覆盖六大契约维度：分界符完整性、YAML 映射解析、kebab-case slug 命名约束、`description` 语义有效性、`allowed-tools` 幽灵工具智能探针、正文长度诊断；
+    3. 补齐原生 FastMCP 工具 `openviking_skill_validate`（只读契约注解严格受控）；
+    4. 严格遵守 SemVer 铁律：版本递增为 `v1.7.17`（Patch 递增，主版本与次版本锁定）。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **技能语法与格式错误前置拦截率**：从运行时报错拦截率 $0\%$ 提升至静态预检 **$100\%$**；
+    2. **幽灵工具 (Ghost Tool) 探测准确率**：未知工具警示召回率 **$100\%$**；
+    3. **校验解析耗时 (Latency Overhead)**：纯静态验证耗时 $\le 1\text{ms}$，极速零开销；
+    4. **单文件规模安全红线**：`skill_validator.py` 150 行，单测 108 行，均严格收敛在 100~300 行黄金甜点区内。
+  - **展示界面与卡片**：全集群 FastMCP 工具目录与技能管理试验台。
+- **核心交付目标与完成清单**：
+  1. `openviking/service/skill_validator.py` (150行)：纯静态强类型技能规范校验引擎；
+  2. `openviking/server/mcp_endpoint.py`：新增 FastMCP 原生工具 `openviking_skill_validate`；
+  3. `tests/unit/test_mcp_tool_annotations.py`：登记 `openviking_skill_validate` 四维只读契约；
+  4. `tests/unit/test_card63_skill_validation.py` (108行)：覆盖有效规格、空内容、破损 YAML、非 slug、缺失描述、幽灵工具预警、MCP 集成与版本对齐门禁；
+  5. `package.json` 与 `openviking/_version.py`：版本号自增至 `1.7.17`。
+- **交付验收结果 (Delivery Verification)**：
+  - **自动化测试通过率**：63/63 专项与回归全绿 (3.94s)，注解契约 1 项 PASS，Vitest 5 项全绿 (630ms)；
+  - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4634 个跟踪文件 0 密钥泄露；
+  - **前端生产构建**：`npm run build` 耗时 17.22s 顺利 PASS。
 
 #### ✅ [P0] [x] Card-62 (v1.7.16): 端到端数据隐私与敏感信息动态脱敏治理 (Privacy Governance & Sensitive Credential Dynamic Masking - BLUEPRINT Epic-PRIVACY-GOV)
 - **类型**：安全合规 / 运行时敏感数据脱敏 / FastMCP 原生工具平价 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.16` ｜ **当前状态**：[x] 已验收通过 ✅

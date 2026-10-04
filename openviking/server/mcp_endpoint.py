@@ -2100,6 +2100,18 @@ async def openviking_privacy_mask(
     )
 
 
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_skill_validate(
+    raw_content: str,
+) -> str:
+    """Validate a SKILL.md draft against YAML frontmatter specifications, slug conventions, and tool contracts."""
+    import json
+    from openviking.service.skill_validator import SkillValidator
+
+    result = SkillValidator.validate_content(raw_content)
+    return json.dumps(result.to_dict(), ensure_ascii=False, indent=2)
+
+
 
 # ---------------------------------------------------------------------------
 # Portable tool schemas
