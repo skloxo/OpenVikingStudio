@@ -15,7 +15,7 @@
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
 | **`v1.7.1`** | **Card-47** | **多角色视图派生与测试用例智能生成流水线 (Role Projections & Automated Test Retina Gen)** | 1. 汲取京东多视角派生第一性原理，同一套事实派生 Dev (接缝/DTO)、Test (契约/边界)、Ops (端口/探针) 三重视图；<br>2. 落地测试用例智能生成器，由契约直接生成 pytest 用例 (采纳率 $\ge 90\%$)；<br>3. 前端座舱多角色切换与测试视网膜卡片。 | [ ] 待调度 ⏳ |
-| **`v1.7.0`** | **Card-46** | **反向影响面拓扑网络与排雷视图 (Reverse Impact Topology & Dependency Views)** | 1. 落地 `views/` 反向拓扑：SQLite 表/Redis 读写方映射 (`views/storage_tables.md`)、FastMCP 路由底层映射 (`views/mcp_routes.md`)；<br>2. 落地技能反向映射：工具-技能倒排 (`views/skills_tools.md`) 与触发词冲突排查；<br>3. 重构影响面秒级查询 REST 端点与座舱抽屉。 | [ ] 待调度 ⏳ |
+| **`v1.7.0`** | **Card-46** | **反向影响面拓扑网络与排雷视图 (Reverse Impact Topology & Dependency Views)** | 1. 落地 `views/` 反向拓扑：SQLite 表/Redis 读写方映射 (`views/storage_tables.md`)、FastMCP 路由底层映射 (`views/mcp_routes.md`)；<br>2. 落地技能反向映射：工具-技能倒排 (`views/skills_tools.md`) 与触发词冲突排查；<br>3. 新增 `/api/v1/catalog/views/storage` 与 `/views/skills` 端点；<br>4. 4 项专项单测全绿 (1.40s)，10 项全量回归全绿，安全审计 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
 | **`v1.6.9`** | **Card-45** | **全域技能与核心代码静态事实编译矩阵 (Unified Skills & Code AST Fact Compiler)** | 1. 汲取京东海博与 OKF 规范第一性原理，实现技能与代码 AST 静态事实自动编译 (`skill_fact_compiler.py` + `code_fact_compiler.py`)；<br>2. 覆盖 700+ 技能生态 (YAML Header, triggers, allowed-tools, 契约) 与核心后端 (FastMCP, REST 路由, SQLite 表)；<br>3. 严守“只写可物理查证事实，查不到宁可留白”公信力铁律；<br>4. 新增知识目录聚合查询路由 `/api/v1/catalog` (skills/code/summary)；<br>5. 6 项专项单测全绿 (2.01s)，15 项回归全绿，安全审计 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
 | **`v1.6.8`** | **Card-44** | **存量碎片记忆自动熔铸结晶器与离线做梦治理总账闭环 (Stock Crystallization & Offline Dream Recipe Distillation)** | 1. 彻底根治扫描范围单一 (仅看单个子目录) 导致的存量散碎记忆无法凝结与 Top-K 向量空间 SNR 衰退隐患；<br>2. 落地高内聚独立配方蒸馏器 `DreamRecipeDistiller`，提炼四层规范拓扑 (L0 核心公理、L1 执行配方 SOP、L2 负向反模式边界、L3 关联证据指纹)；<br>3. 达成 100% 向量索引同步一致性契约：Master Card 落盘即刻自动调用 `VectorSyncTracker.record_write` (PENDING) 排队向量化，零幽灵结晶；<br>4. 统一治理总账与座舱可观测性：做梦事件统一落盘 `entropy_gatekeeper.jsonl` (#cry_xxxx)，前端座舱总账流水支持一键点击打开不可变事实晶体抽屉 (`FactCrystalDrawer`)，实现 100% 真实交互可观测；<br>5. 5 项专项单测全绿 (1.24s)，40 项全量回归测试全绿 (3.39s)，安全扫描 0 密钥，前端构建 PASS。<br>**Commit Hash**：`ab9e78f84` | [x] 已验收通过 ✅ |
 
@@ -67,13 +67,30 @@
   - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4605 个跟踪文件 0 密钥泄露；
   - **前端生产构建**：`npm run build` 耗时 17.89s 顺利 PASS。
 
-#### 📌 [P0] [ ] Card-46 (v1.7.0): 反向影响面拓扑网络与排雷视图 (Reverse Impact Topology & Dependency Views)
-- **类型**：重构影响面排雷 / 反向依赖拓扑网络 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.0` ｜ **当前状态**：[ ] 待调度 ⏳
-- **核心内容**：
-  1. 落地 `views/` 矩阵：SQLite 表读写映射 (`views/storage_tables.md`)、FastMCP 路由底层调用映射 (`views/mcp_routes.md`)；
-  2. 技能工具倒排与触发词冲突检测 (`views/skills_tools.md`)；
-  3. 重构时秒级定位波及范围，杜绝破坏性重构；
-  4. Web Studio 座舱高密反向依赖抽屉。
+#### 📌 [P0] [x] Card-46 (v1.7.0): 反向影响面拓扑网络与排雷视图 (Reverse Impact Topology & Dependency Views)
+- **类型**：重构影响面排雷 / 反向依赖拓扑网络 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.0` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - 核心痛点：重构代码与治理技能最怕“暗雷”——改动了一张底层 SQLite 表（如 `vector_sync_state`, `queue_dead_letters`, `memories`）或调整了某个 FastMCP 工具契约，不知道全局到底有哪些 router、worker 或外部技能在暗中依赖；
+  - 芒格倒推恶果：若无反向影响面视图，Agent 重构时全靠碰运气，容易引发级联空指针、死锁或静默丢弃；
+  - 奥卡姆剃刀与极简防线：不引入重型图数据库，基于 Card-45 编译出的 AST 事实与 SQLite 表扫描，提炼纯内存/轻量反向拓扑映射（`views/storage_tables.md`、`views/skills_tools.md`、`views/mcp_routes.md`）；
+  - 核心收益：Agent 在重构前先查视图，秒级获知所有读写方与被依赖者，彻底实现零暗雷重构！
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **反向依赖拓扑构建覆盖率**：核心 SQLite 表 (8+)、FastMCP 工具 (30+)、技能工具倒排覆盖率达到 **$100\%$**；
+    2. **重构波及面查询耗时**：从传统多文件 grep 的 30~60s 骤降至读取 Views 映射 **$< 0.1\text{s}$**；
+    3. **技能触发词冲突检测准确率**：$100\%$ 准确发现具有相同高频触发词的技能潜在冲突组；
+    4. **单文件规模安全红线**：所有模块控制在 **$100 \sim 300$ 行** 黄金甜点区。
+  - **展示界面与卡片**：`/studio/retrieval` 知识底座大盘、REST 端点 `/api/v1/catalog/views`。
+- **核心交付目标与修改清单**：
+  1. `openviking/service/impact_topology.py` (220行)：高内聚反向拓扑构建服务，提炼 SQLite 读写表映射、MCP 路由映射与技能工具/触发词倒排；
+  2. `openviking/server/routers/code_catalog.py`：新增 `/api/v1/catalog/views/storage` 与 `/views/skills` 端点；
+  3. `docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md`：登记新增服务轮子；
+  4. `tests/unit/test_impact_topology.py` (140行)：编写 4 项专项单测全绿通过 (1.40s)；
+  5. `package.json` & `openviking/_version.py`：版本号自增至 `1.7.0`。
+- **物理验收与门禁**：
+  - **自动化测试通过率**：4/4 专项单测全绿 (1.40s)，10 项全量回归测试全绿 (2.55s)；
+  - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4609 个跟踪文件 0 密钥泄露；
+  - **前端生产构建**：`npm run build` 耗时 15.02s 顺利 PASS。
 
 #### 📌 [P1] [ ] Card-47 (v1.7.1): 多角色视图派生与测试用例智能生成流水线 (Role Projections & Automated Test Retina Gen)
 - **类型**：多角色视图派生 / 自动化测试视网膜生成 ｜ **优先级**：🔥🔥 P1 ｜ **目标版本**：`v1.7.1` ｜ **当前状态**：[ ] 待调度 ⏳

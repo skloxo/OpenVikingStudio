@@ -88,3 +88,46 @@ async def get_catalog_summary() -> Dict[str, Any]:
             "hallucination_rate": 0.0,
         },
     }
+
+
+@router.get("/views/storage", summary="Get SQLite database table reader/writer impact topology")
+async def get_storage_impact_views() -> Dict[str, Any]:
+    """Scan backend code and return database tables blast radius topology."""
+    from openviking.service.impact_topology import ImpactTopologyBuilder
+
+    pkg_root = Path(__file__).resolve().parent.parent
+    builder = ImpactTopologyBuilder()
+    builder.scan_directory_sql(pkg_root)
+    table_map = builder.get_table_impact_map()
+
+    return {
+        "status": "ok",
+        "total_tables": len(table_map),
+        "tables": {k: v.to_dict() for k, v in sorted(table_map.items())},
+        "markdown_view": ImpactTopologyBuilder.render_storage_views_markdown(table_map),
+    }
+
+
+@router.get("/views/skills", summary="Get skills-to-tools inverted index and collision matrix")
+async def get_skills_impact_views(
+    root: Optional[str] = Query(default=None, description="Optional skills root directory"),
+) -> Dict[str, Any]:
+    """Scan skills and return tool-to-skills inverted index and trigger collisions."""
+    from openviking.service.impact_topology import ImpactTopologyBuilder
+
+    compiler = SkillFactCompiler()
+    target_dir = Path(root) if root else Path("/home/skloxo/.gemini/config/skills")
+    skills = compiler.compile_directory(target_dir) if target_dir.is_dir() else []
+
+    topology = ImpactTopologyBuilder.build_skills_topology(skills)
+    conflicts_dict = [c.to_dict() for c in topology["trigger_conflicts"]]
+
+    return {
+        "status": "ok",
+        "total_skills": len(skills),
+        "total_tools": topology["total_tools"],
+        "tools_to_skills": topology["tools_to_skills"],
+        "trigger_conflicts": conflicts_dict,
+        "markdown_view": ImpactTopologyBuilder.render_skills_views_markdown(topology),
+    }
+
