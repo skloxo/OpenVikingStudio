@@ -87,6 +87,7 @@ from openviking.server.routers import (
     dspy_compiler_router,
     cache_tier2_router,
     task_cards_router,
+    code_catalog_router,
 )
 from openviking.service.core import OpenVikingService
 from openviking.service.task_tracker import get_task_tracker
@@ -754,6 +755,7 @@ def create_app(
     app.include_router(dspy_compiler_router)
     app.include_router(cache_tier2_router)
     app.include_router(task_cards_router)
+    app.include_router(code_catalog_router)
     app.include_router(bot_router, prefix="/bot/v1")
 
     # OAuth 2.1: when enabled, mount the official MCP SDK auth routes

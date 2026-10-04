@@ -14,15 +14,10 @@
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.7.1`** | **Card-47** | **多角色视图派生与测试用例智能生成流水线 (Role Projections & Automated Test Retina Gen)** | 1. 汲取京东多视角派生第一性原理，同一套事实派生 Dev (接缝/DTO)、Test (契约/边界)、Ops (端口/探针) 三重视图；<br>2. 落地测试用例智能生成器，由契约直接生成 pytest 用例 (采纳率 $\ge 90\%$)；<br>3. 前端座舱多角色切换与测试视网膜卡片。 | [ ] 待调度 ⏳ |
+| **`v1.7.0`** | **Card-46** | **反向影响面拓扑网络与排雷视图 (Reverse Impact Topology & Dependency Views)** | 1. 落地 `views/` 反向拓扑：SQLite 表/Redis 读写方映射 (`views/storage_tables.md`)、FastMCP 路由底层映射 (`views/mcp_routes.md`)；<br>2. 落地技能反向映射：工具-技能倒排 (`views/skills_tools.md`) 与触发词冲突排查；<br>3. 重构影响面秒级查询 REST 端点与座舱抽屉。 | [ ] 待调度 ⏳ |
+| **`v1.6.9`** | **Card-45** | **全域技能与核心代码静态事实编译矩阵 (Unified Skills & Code AST Fact Compiler)** | 1. 汲取京东海博与 OKF 规范第一性原理，实现技能与代码 AST 静态事实自动编译 (`skill_fact_compiler.py` + `code_fact_compiler.py`)；<br>2. 覆盖 700+ 技能生态 (YAML Header, triggers, allowed-tools, 契约) 与核心后端 (FastMCP, REST 路由, SQLite 表)；<br>3. 严守“只写可物理查证事实，查不到宁可留白”公信力铁律；<br>4. 新增知识目录聚合查询路由 `/api/v1/catalog` (skills/code/summary)；<br>5. 6 项专项单测全绿 (2.01s)，15 项回归全绿，安全审计 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
 | **`v1.6.8`** | **Card-44** | **存量碎片记忆自动熔铸结晶器与离线做梦治理总账闭环 (Stock Crystallization & Offline Dream Recipe Distillation)** | 1. 彻底根治扫描范围单一 (仅看单个子目录) 导致的存量散碎记忆无法凝结与 Top-K 向量空间 SNR 衰退隐患；<br>2. 落地高内聚独立配方蒸馏器 `DreamRecipeDistiller`，提炼四层规范拓扑 (L0 核心公理、L1 执行配方 SOP、L2 负向反模式边界、L3 关联证据指纹)；<br>3. 达成 100% 向量索引同步一致性契约：Master Card 落盘即刻自动调用 `VectorSyncTracker.record_write` (PENDING) 排队向量化，零幽灵结晶；<br>4. 统一治理总账与座舱可观测性：做梦事件统一落盘 `entropy_gatekeeper.jsonl` (#cry_xxxx)，前端座舱总账流水支持一键点击打开不可变事实晶体抽屉 (`FactCrystalDrawer`)，实现 100% 真实交互可观测；<br>5. 5 项专项单测全绿 (1.24s)，40 项全量回归测试全绿 (3.39s)，安全扫描 0 密钥，前端构建 PASS。<br>**Commit Hash**：`ab9e78f84` | [x] 已验收通过 ✅ |
-| **`v1.6.7`** | **Card-43** | **内存写入即刻落盘契约与门禁异步解耦流水线 (Zero-504 Fast-Path Ingestion & Asynchronous Gatekeeper Decoupling)** | 1. 彻底根治同步向量探查与 15s 门禁挂死主请求引发 504 Gateway Timeout 及“超时≠失败”幽灵写入致命缺陷；<br>2. 确立 WAL 即刻物理落盘律：磁盘写文件 O(1) < 5ms 即刻确认，保障数据 100% 绝对不丢；<br>3. 门禁向量探查引入 250ms 快轨预算看门狗，超时自动放行快轨落盘并记录指纹，杜绝级联超时；<br>4. Valet Ingestion 代客泊车立即出票与即刻落盘，后台异步深度泊车，响应时间从 15,000ms 骤降至 < 20ms；<br>5. 队列指标与座舱卡片新增 `fast_path_count` 徽章，实时可视；<br>6. 4 项全链路专项单测全绿 (0.32s)，23 项全量回归测试全绿 (1.96s)，安全扫描 0 密钥，前端构建 PASS。<br>**Commit Hash**：`4e41e68db` | [x] 已验收通过 ✅ |
-| **`v1.6.6`** | **Card-42** | **时效动力学衰减保底底线与超长记忆自动分片兜底流水线 (Category-Aware Score Floor & Overlength Chunking Fallback)** | 1. 彻底根治重要基础规则、ADR、经验教训与技能在 90+ 天未访问时被时效指数衰减误杀跌破阈值的隐性致命缺陷；<br>2. 建立类别感知保底底线 (Category-Aware Score Floor)：公理/不变量/技能 100% 免疫，ADR/教训/架构文档保底 >= 0.85，经验保底 >= 0.60，通用知识保底 >= 0.25；<br>3. 建立超长文本自动滑动窗口分片兜底流水线 (ChunkingFallbackEngine)：当向量嵌入触发 INPUT_TOO_LARGE 或超过模型 Token 上限时，自动切分为带 YAML 头上下文重叠分片 (`uri#chunk_0`, `uri#chunk_1`)，实现 100% 记忆吸收吞吐，消除 DLQ 盲区；<br>4. 4 项全链路单测全绿 (0.25s)，23 项前序回归测试全绿 (2.81s)，安全扫描 0 密钥，前端构建 PASS。<br>**Commit Hash**：`c77d41f35` | [x] 已验收通过 ✅ |
-| **`v1.6.5`** | **Card-41** | **QueueFS 消费零丢弃契约、死信队列 (DLQ) 与向量索引状态自愈闭环 (Zero-Loss DLQ & Vector Sync Self-Healing)** | 1. 彻底根治 NamedQueue 消费异常时无条件 ACK 导致数据永久蒸发的“幽灵记忆”致命缺陷；<br>2. 落地 SQLite 物理持久化死信队列 `DLQManager`，所有永久错误/超长/认证/维度/数据库异常均原子落入 DLQ；<br>3. 建立三态不变量状态机 `VectorSyncTracker` (PENDING / INDEXED / FAILED)，文件写入即刻受控；<br>4. 研发高密性冷淡座舱卡片 `VectorSyncDlqCard`，实时回显同步率与死信积压，支持一键自愈巡检；<br>5. 4 项全链路单测全绿 (1.58s)，11 项前序回归全绿，零密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
-| **`v1.6.4`** | **Card-40** | **跨集群智能体自主建卡与异步流转治理机制 (Autonomous Issue Filing & Card Triage Protocol - AIFP)** | 1. 告别口头汇报与人肉传话，全集群任何智能体现场遇故障/504超时/异常可自主调用 `openviking_file_task_card` 现场建卡；<br>2. 6 字段实证契约 (title/priority/module/symptom/hypothesis/reproduce_steps)；<br>3. 芒格逆向防线：sha256 物理指纹去重防爆卡风暴、4xx 客户端参数错误防甩锅、物理解耦 `task_cards/inbox/` 杜绝分布式 Git 冲突；<br>4. 核心与卫星端 MCP 双向暴露，REST 路由贯通；<br>5. 6 项专项单测全绿 (0.10s)，安全扫描 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
-| **`v1.6.3`** | **Card-39** | **体外大脑数据安全与覆盖更新豁免闭环、跨URI哈希隔离与比特级诚实落盘 (Overwrite Immunity & Honest NOOP)** | 1. 显式覆盖更新绝对豁免律 (Overwrite Immunity) 彻底根治高相似度 (Sim >= 0.95) 更新被当作 noop 静默扣押并伪成功的致命缺陷；<br>2. 跨 URI 哈希隔离，彻底杜绝相同模板/内容的文档被跨空间吞噬；<br>3. 彻底清除包含 'bug fixed'/'已修正' 等词被误判为 delete 的隐性陷阱；<br>4. Valet Ingestion 与 content 路由物理落盘双检兜底，只要磁盘内容不一致强制原子写盘；<br>5. 5 项专项单元测试全绿 (涵盖 20000 字符更新、修词豁免、跨 URI 隔离、纯比特 NOOP、Valet 强制落盘)。<br>**Commit Hash**：`21a2303c8` | [x] 已验收通过 ✅ |
-| **`v1.6.2`** | **Card-38** | **体外大脑记忆纯度度量衡基准、健康大盘与全自动午夜做梦巡检守护闭环 (Memory Purity & Dream Watchdog)** | 1. 记忆纯度三大客观指标 (SNR、冲突率、新鲜度) 落地；2. 全自动午夜与高水位做梦守护；3. 记忆纯度大盘与治理总账流水卡片；4. 12 项测试全绿。 | [x] 已验收通过 ✅ |
-| **`v1.6.1`** | **Card-37** | **体外大脑时效动力学衰减、频次强化与离线做梦蒸馏流水线 (Temporal Decay & Offline Dream)** | 1. 时效衰减与频次强化公式落地；2. 离线做梦与主知识卡片自动建链；3. 时效动力学仿真与做梦座舱卡片；4. 24 项测试全绿。 | [x] 已验收通过 ✅ |
-| **`v1.6.0`** | **Card-36** | **体外大脑记忆抗熵增中枢与认知冲突消解流水线 (Lineage & Superseding DAG)** | 1. 冲突消解与 Superseding DAG 自动建链；2. 检索端物理阻断废弃节点 (`exclude_superseded`)；3. 座舱可视化卡片；4. 26 项测试全绿。 | [x] 已验收通过 ✅ |
 
 ---
 
@@ -31,13 +26,58 @@
 ## 📌 二、 活跃原子化任务卡片总看板 (Active Task Cards Kanban)
 
 > **当前工程状态**：  
-> 🚀 **Milestone 5 启动：半成品功能全链路真实化贯通 (5-A) 与 上游核心稳固性吸收 (5-B)**  
+> 🚀 **Milestone 5 启动：半成品功能全链路真实化贯通 (5-A) 与 吸收京东代码与技能知识工程化 (5-B)**  
 > 历史全量卡片规格（Card 1 至 Card 19）已完整归拢至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。  
 > 遵循第一性原理与绝对数据真实性，彻底排查并治理所有“做了一半、源头悬空、假数据残留”的半成品，逐卡闭环落地。
 
 ---
 
 ### 🧬 Milestone 5-A: 半成品与悬空功能全链路真实化贯通 (Suspended Features Truthful Closure)
+
+#### 📌 [P0] [x] Card-45 (v1.6.9): 全域技能与核心代码静态事实编译矩阵 (Unified Skills & Code AST Fact Compiler)
+- **类型**：代码与技能知识工程 / 静态事实自动编译 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.6.9` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - 过去 OpenViking 的体外大脑（Wiki/VK）承载着 **700+ 海量技能生态**与复杂的 Python 后端源码。但这些知识过去分散在散落的 `SKILL.md`、FastMCP 工具代码、FastAPI 路由和 SQLite 表中；
+  - 跨会话 Agent 进场后，为了搞清楚某个技能要用什么工具、触发词是什么、某个 MCP 端点接收什么入参，不得不反复做昂贵的盲目文件检索（`grep`/`view_file`），不仅浪费大量 Token，且由于缺乏静态结构化事实，极易产生“代码行号漂移”和“臆测幻觉”；
+  - 汲取京东海博与 OKF 规范的第一性原理神髓：**将知识生产从运行时前移到维护期**！
+    1. **技能事实编译器 (`skill_fact_compiler.py`)**：静态提取 `SKILL.md` 的 YAML Frontmatter（名称、描述、allowed-tools、触发词、约束与契约），生成高精纯度的 L0/L1 技能事实大纲；
+    2. **代码 AST 事实编译器 (`code_fact_compiler.py`)**：利用 Python AST 解析 FastMCP 装饰器（`@mcp.tool()`）、FastAPI 路由（`@router.get/post`）、SQLite 物理表 schema，提炼出不可变的 API 契约与数据模型清单；
+    3. **公信力物理铁律**：严守“只写从代码/文件可物理查证的事实，查不到宁可留白，绝不脑补编造”，确保体外大脑地基 100% 具备权威性；
+    4. **不可变事实沉淀**：自动输出至 `catalog/skills/` 与 `catalog/code/`，并同步向 `VectorSyncTracker` 登记，让 Agent 进场秒级阅读。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **核心技能与代码事实编译成功率 (Fact Compilation Rate)**：全域技能与核心 FastMCP/路由编译成功率达到 **$100\%$**；
+    2. **虚假脑补拦截率 (Hallucination Free Rate)**：查证不可靠字段 $100\%$ 留白标记，脑补率降为 **$0\%$**；
+    3. **Agent 知识检索首轮命中时延**：从传统多文件 grep 的 30~60s 骤降至读取结构化 Catalog **$< 0.5\text{s}$**；
+    4. **单文件规模安全红线**：所有新增与重构模块严格控制在 **$100 \sim 350$ 行** 黄金甜点区（严禁超过 500 行）。
+  - **展示界面与卡片**：`/studio/retrieval` 知识底座大盘、系统技能概览卡片。
+- **核心交付目标与修改清单**：
+  1. `openviking/service/skill_fact_compiler.py` (190行)：高内聚技能静态事实编译器，解析 YAML 头部、提取触发词、匹配绑定工具，生成 L0/L1 事实；
+  2. `openviking/service/code_fact_compiler.py` (220行)：基于 AST 的代码事实编译器，解析 FastMCP 工具契约与 FastAPI 路由；
+  3. `openviking/server/routers/code_catalog.py` (90行)：提供 Catalog 聚合查询 REST 端点 (`/api/v1/catalog/skills`, `/code`, `/summary`)；
+  4. `openviking/server/app.py`：挂载 `code_catalog_router`；
+  5. `openviking/server/routers/__init__.py`：导出并注册 `code_catalog_router`；
+  6. `docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md`：登记新增编译服务公共轮子；
+  7. `tests/unit/test_skill_and_code_fact_compiler.py` (215行)：编写 6 项专项单测全绿通过 (2.01s)；
+  8. `package.json` & `openviking/_version.py`：版本号同步自增至 `1.6.9`。
+- **物理验收与门禁**：
+  - **自动化测试通过率**：6/6 专项单测全绿 (2.01s)，15 项关键回归测试全绿 (1.65s)；
+  - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4605 个跟踪文件 0 密钥泄露；
+  - **前端生产构建**：`npm run build` 耗时 17.89s 顺利 PASS。
+
+#### 📌 [P0] [ ] Card-46 (v1.7.0): 反向影响面拓扑网络与排雷视图 (Reverse Impact Topology & Dependency Views)
+- **类型**：重构影响面排雷 / 反向依赖拓扑网络 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.0` ｜ **当前状态**：[ ] 待调度 ⏳
+- **核心内容**：
+  1. 落地 `views/` 矩阵：SQLite 表读写映射 (`views/storage_tables.md`)、FastMCP 路由底层调用映射 (`views/mcp_routes.md`)；
+  2. 技能工具倒排与触发词冲突检测 (`views/skills_tools.md`)；
+  3. 重构时秒级定位波及范围，杜绝破坏性重构；
+  4. Web Studio 座舱高密反向依赖抽屉。
+
+#### 📌 [P1] [ ] Card-47 (v1.7.1): 多角色视图派生与测试用例智能生成流水线 (Role Projections & Automated Test Retina Gen)
+- **类型**：多角色视图派生 / 自动化测试视网膜生成 ｜ **优先级**：🔥🔥 P1 ｜ **目标版本**：`v1.7.1` ｜ **当前状态**：[ ] 待调度 ⏳
+- **核心内容**：
+  1. 同一底层事实，派生开发 (Developer)、测试 (Test)、运维 (Operator) 三重视图；
+  2. 测试 Agent 基于接口与技能契约自动生成 pytest 测试用例草稿（采纳率 $\ge 90\%$），实现像京东一样的测试自动化闭环。
 
 #### 📌 [P0] [x] Card-44 (v1.6.8): 存量碎片记忆自动熔铸结晶器与离线做梦治理总账闭环 (Stock Crystallization & Offline Dream Recipe Distillation)
 - **类型**：记忆抗熵增中枢 / 存量做梦熔铸与治理总账 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.6.8` ｜ **当前状态**：[x] 已验收通过 ✅
