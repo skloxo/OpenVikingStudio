@@ -14,6 +14,7 @@
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.7.4`** | **Card-50** | **物理真实性、常数级去重与并发防死锁专项治理 (Physical Authenticity, O(1) Fingerprint Deduplication & Concurrency Lock Hygiene)** | 1. 探针物理真实性：切除 `system_probes.py` 硬件全零伪数据，显式返回 `available: False` 与真实占位符；<br>2. 建卡去重复杂度治理：`TaskCardManager` 引入内存哈希索引，去重从 $O(N)$ 磁盘全盘遍历降至 $O(1)$ 瞬时命中；<br>3. 二级缓存防死锁：`cache_tier2_engine.py` 引入 `in_flight_guard` RAII 上下文释放守卫，消灭回源异常永久死锁；<br>4. 测试视网膜真实化：重构 `test_retina_generator.py`，切除 MCP 假断言，注入可调用性与参数契约沙箱验证；<br>5. 门禁全绿：专项单测全绿、安全扫描 0 密钥、前端生产构建 PASS。<br>**Commit Hash**：`50e3c2b0e` | [x] 已验收通过 ✅ |
 | **`v1.7.3`** | **Card-49** | **跨集群智能体自主建卡与异常上报协议全链路座舱与闭环治理 (AIFP Full-Loop Cockpit, MCP Master Triage & Archive History)** | 1. 补齐 FastMCP 工具闭环：暴露 `openviking_list_pending_cards`、`openviking_resolve_task_card`、`openviking_task_cards_summary` 原生工具；<br>2. 修复 `TaskCardManager` 异步契约与兼容适配，补充 `list_resolved_cards`、`get_card_summary_stats` 与 `get_card_detail` 方法；<br>3. 扩展 REST 路由：新增 `/api/v1/task-cards/summary`、`/resolved`、`/{card_id}` 端点；<br>4. 前端座舱闭环：在任务中心上线 `IssueTaskCardsCockpit` 与 `TaskCardDetailDrawer`，提供 4 大高密指标瓦片、Pending/Resolved 双态切换与前端一键解决归档；<br>5. 门禁全绿：20 项回归单测 PASS、前端构建 PASS、安全审计 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.2`** | **Card-48** | **悬空功能全链路闭环治理与快照缓存加速 (Dangling Features Closure & FastMCP / UI Full Loop)** | 1. 补齐 FastMCP 工具闭环：暴露 `openviking_code_impact` 与 `openviking_generate_contract_test` 原生工具；<br>2. 性能快照加速：加入 30s 单调时钟轻量内存缓存，响应从 400ms 降至 3ms (提速 130 倍)；<br>3. 补齐前端座舱闭环：上线 `CodeCatalogCockpitCard` 并在技能中心挂载“🧬 源码事实与测试视网膜”Tab，支持多视角切换与用例一键复制；<br>4. 门禁全绿：14 项回归单测 PASS、前端构建 PASS、安全审计 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.1`** | **Card-47** | **多角色视图派生与测试用例智能生成流水线 (Role Projections & Automated Test Retina Gen)** | 1. 汲取京东多视角派生第一性原理，同一套事实派生 Dev (接缝/DTO)、Test (契约/边界)、Ops (端口/探针) 三重视图；<br>2. 落地测试用例智能生成器，由契约直接生成 pytest 用例 (采纳率 $\ge 90\%$)；<br>3. 新增 `/api/v1/catalog/projections/{role}` 与 `/generate-tests` 端点；<br>4. 4 项专项单测全绿 (2.64s)，14 项全量回归全绿，安全审计 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
@@ -95,6 +96,35 @@
   - **自动化测试通过率**：4/4 专项单测全绿 (1.40s)，10 项全量回归测试全绿 (2.55s)；
   - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4609 个跟踪文件 0 密钥泄露；
   - **前端生产构建**：`npm run build` 耗时 15.02s 顺利 PASS。
+
+#### 📌 [P0] [x] Card-50 (v1.7.4): 探针物理真实性、常数级去重与并发防死锁专项治理 (Physical Authenticity, O(1) Fingerprint Deduplication & Concurrency Lock Hygiene)
+- **类型**：第一性原理真实性改造 / 算法复杂度优化 / 并发死锁治理 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.4` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - 硬件探针伪数据陷阱：`system_probes.py` 在 GPU 不可用或命令失败时，掩饰错误并返回 `{"used_gb": 0.0, "total_gb": 0.0, "gpu_percent": 0.0}`，造成“显卡空闲且显存为 0”的严重虚假假象，违背绝对数据真实性铁律；必须显式返回 `available: False`，硬件不可用时数值为 `None`，错误真实返回，前端展示优雅 `--`；
+  - 建卡去重复杂度陷阱：`task_card_manager.py` 在每次执行 `file_issue_card` 时无条件同步执行 `glob("*.json")` 并逐个读取磁盘解析 JSON，随着工单数增长产生 $O(N)$ 磁盘 IO 阻塞甚至并发写竞态；必须引入单例内存哈希映射 `_fingerprint_to_card_id`，实现 $O(1)$ 常数时间瞬时命中与防死锁更新；
+  - 二级缓存死锁隐患：`cache_tier2_engine.py` 的 `mark_in_flight` 与 `unmark_in_flight` 缺乏 RAII 上下文释放保护，在回源计算抛出未捕获异常或超时时，Key 永久滞留在 `_in_flight` 集合中，导致后续 `wait=False` 客户端永久返回 fallback；必须引入 `@contextmanager def in_flight_guard(self, key: str)` 强制 `finally` 释放；
+  - 测试生成器伪断言：`test_retina_generator.py` 对 FastMCP 工具生成的测试仅包含 `isinstance(kwargs, dict)` 形式主义断言，缺乏契约级可调用性检查；重构生成逻辑，注入实际 callable 与参数契约沙箱验证。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **数据诚实性与虚假伪数据率 (False Zero Data Rate)**：探针异常场景下伪全零数据率从 $100\%$ 降为 **$0\%$**；
+    2. **建卡去重时间复杂度**：同特征重复建卡时间从 $O(N)$ 磁盘读盘降低为 **$O(1)$** 内存哈希秒级命中；
+    3. **并发回源死锁恢复率 (Deadlock Resilience)**：计算异常场景下 `in-flight` 锁释放成功率提升至 **$100\%$**；
+    4. **单文件规模安全红线**：所有修改或新增文件严格控制在 **$100 \sim 390$ 行** 黄金甜点区（绝对严禁超过 500 行）。
+  - **展示界面与卡片**：`/studio/tasks` 异常工单座舱指标卡片、`/studio/system` 硬件探针遥测面板。
+- **核心交付目标与完成清单**：
+  1. `openviking/server/routers/system_probes.py` (194行)：探针物理真实性改造，切除伪全零，失败时返回 `available: False` 与 `None`；
+  2. `openviking/service/task_card_manager.py` (392行)：构建 `_pending_fingerprint_index` 内存哈希索引，实现 $O(1)$ 去重与防死锁同步；
+  3. `openviking/service/cache_tier2_engine.py` (228行)：引入 `in_flight_guard` RAII 上下文管理器，杜绝长期死锁；
+  4. `openviking/service/test_retina_generator.py` (110行)：重构 MCP 测试生成器，注入真实 callable 与契约检查；
+  5. `package.json` 与 `openviking/_version.py`：自增版本至 `1.7.4`；
+  6. 专项测试 `tests/unit/test_card50_authenticity_and_scale.py` (160行)：6 项专项测试全绿 (1.47s)。
+- **物理验收与门禁**：
+  - **Git Commit Hash**：`50e3c2b0e`
+  - **Git Tag**：`v1.7.4`
+  - **自动化测试通过率**：6/6 专项单测全绿 (1.47s)，22 项全量回归测试全绿 (3.76s)；
+  - **活态资产盘点测试**：`src/components/component-inventory.test.ts` 5/5 全绿 (671ms)；
+  - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4618 个跟踪文件 0 密钥泄露；
+  - **前端生产构建**：`npm run build` 耗时 16.98s 顺利 PASS。
 
 #### 📌 [P0] [x] Card-49 (v1.7.3): 跨集群智能体自主建卡与异常上报协议全链路座舱与闭环治理 (AIFP Full-Loop Cockpit, MCP Master Triage & Archive History)
 - **类型**：智能体协议闭环 / FastMCP Master 治理工具 / 前端座舱收件箱 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.3` ｜ **当前状态**：[x] 已验收通过 ✅
