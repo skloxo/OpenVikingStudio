@@ -29,6 +29,15 @@ async def test_mcp_tools_advertise_behavior_annotations():
         "forget": (False, True, True, False),
         "health": (True, False, True, False),
         "zg_search": (True, False, True, False),
+        # Task card & analytics tools added in v1.7.x
+        "openviking_task_cards_summary": (True, False, True, False),
+        "openviking_dlq_status": (True, False, True, False),
+        "openviking_resolve_task_card": (False, True, True, False),
+        "openviking_code_impact": (True, False, True, False),
+        "openviking_vector_sync_metrics": (True, False, True, False),
+        "openviking_file_task_card": (False, True, True, False),
+        "openviking_generate_contract_test": (True, False, True, False),
+        "openviking_list_pending_cards": (True, False, True, False),
     }
     fields = ("readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint")
 

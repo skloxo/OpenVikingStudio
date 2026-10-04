@@ -51,8 +51,8 @@ async def test_superseded_filtering_and_demotion(test_setup):
     retriever = test_setup["retriever"]
     fsm_store = test_setup["fsm_store"]
 
-    uri_old = "viking://resources/master_memory/config_v1.md"
-    uri_new = "viking://resources/master_memory/config_v2.md"
+    uri_old = "viking://resources/user_notes/config_v1.md"
+    uri_new = "viking://resources/user_notes/config_v2.md"
 
     # Register in FSM: old is superseded by new
     from openviking.service.memory_conflict_resolver import MemoryConflictResolver
