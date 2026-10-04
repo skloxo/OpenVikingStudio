@@ -14,6 +14,7 @@
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.7.7`** | **Card-53** | **记忆生命周期事务原子化、伪字典代理切除与代客泊车路径解耦 (Atomic Lifecycle Transactions, Proxy De-layering & Valet URI Decoupling)** | 1. 事务原子化：`memory_lifecycle_fsm.py` 引入单事务双写，消除 link_superseded_pair 悬空断链风险；<br>2. 伪代理切除：彻底切除 `_LifecycleRegistryProxy` 200条硬截断与 $N+1$ 循环查询，直收 SQLite SSOT；<br>3. 代客泊车去冗余写：`valet_ingestion.py` 消除双重物理写盘与重复 BM25 索引构建；<br>4. 动态路径映射：解耦写死个人/default路径，支持任意有效 URI 物理映射与 Ticket 字典防膨胀；<br>5. 门禁全绿：专项单测全绿、安全扫描 0 密钥、前端构建 PASS。<br>**Commit Hash**：`3630139ce` | [x] 已验收通过 ✅ |
 | **`v1.7.6`** | **Card-52** | **实验性编译器契约真实化、语法校验诚实性与双轨计数收口 (Contract Authenticity, Honest Syntax Validation & Single SSOT Tracking)** | 1. 契约真实化：`dspy_compiler_engine.py` 切除默认伪契约掩盖，非显式声明结构时诚实输出 `PARTIAL` 状态；<br>2. 语法校验诚实性：`tokenshift_engine.py` 未实现 AST 解析的语言明确拒绝假报 `valid=True`，诚实标记未验证；<br>3. 双轨计数彻底收拢：`vector_sync_tracker.py` 废除易失内存双轨计数器，100% 收口至 SQLite 物理索引 `COUNT(*) WHERE fast_path=1`；<br>4. 门禁全绿：专项单测全绿、安全扫描 0 密钥、前端构建 PASS。<br>**Commit Hash**：`ecc973977` | [x] 已验收通过 ✅ |
 | **`v1.7.5`** | **Card-51** | **静态事实目录去硬编码、SQL 拓扑解析强化与 mtime 增量感知 (Path Decoupling, Robust SQL Blast Radius & mtime Incremental Cache)** | 1. 动态路径解析：切除 `code_catalog.py` 中个人目录硬编码，自适应 `SKILLS_ROOT` 环境变量与项目上下文；<br>2. SQL 表拓扑强化：重构 `impact_topology.py`，支持多表逗号读解析、JOIN 别名清理与 CREATE TABLE 捕获；<br>3. mtime 增量指纹快照缓存：通过文件系统修改时间戳极速验证，无变更时 0ms 秒级命中，避免反复全盘 AST 遍历；<br>4. 门禁全绿：专项单测全绿、安全扫描 0 密钥、前端构建 PASS。<br>**Commit Hash**：`61da4f7f4` | [x] 已验收通过 ✅ |
 | **`v1.7.4`** | **Card-50** | **物理真实性、常数级去重与并发防死锁专项治理 (Physical Authenticity, O(1) Fingerprint Deduplication & Concurrency Lock Hygiene)** | 1. 探针物理真实性：切除 `system_probes.py` 硬件全零伪数据，显式返回 `available: False` 与真实占位符；<br>2. 建卡去重复杂度治理：`TaskCardManager` 引入内存哈希索引，去重从 $O(N)$ 磁盘全盘遍历降至 $O(1)$ 瞬时命中；<br>3. 二级缓存防死锁：`cache_tier2_engine.py` 引入 `in_flight_guard` RAII 上下文释放守卫，消灭回源异常永久死锁；<br>4. 测试视网膜真实化：重构 `test_retina_generator.py`，切除 MCP 假断言，注入可调用性与参数契约沙箱验证；<br>5. 门禁全绿：专项单测全绿、安全扫描 0 密钥、前端生产构建 PASS。<br>**Commit Hash**：`50e3c2b0e` | [x] 已验收通过 ✅ |
@@ -98,6 +99,35 @@
   - **自动化测试通过率**：4/4 专项单测全绿 (1.40s)，10 项全量回归测试全绿 (2.55s)；
   - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4609 个跟踪文件 0 密钥泄露；
   - **前端生产构建**：`npm run build` 耗时 15.02s 顺利 PASS。
+
+#### 📌 [P0] [x] Card-53 (v1.7.7): 记忆生命周期事务原子化、伪字典代理切除与代客泊车路径解耦 (Atomic Lifecycle Transactions, Proxy De-layering & Valet URI Decoupling)
+- **类型**：第一性原理事务完整性 / 去伪存真代理切除 / 存储路径解耦 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.7` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - 伪字典代理与截断地雷：`_LifecycleRegistryProxy` 包装成 dict，其 `__iter__` 硬编码 `limit=200`，导致下游统计和遍历只能看到前 200 条记录，且每次迭代产生 $N+1$ 次单次查询；切除该包装层，统一直接使用 `MemoryLifecycleStore` 原生的 `list_records`、SQL 聚合与强类型接口；
+  - 记忆链 linking 非原子双写风险：`link_superseded_pair` 分别两次单写 SQLite，若后半截失败将造成旧记录指向不存在的 target，造成永久断链悬空；在 `MemoryLifecycleStore` 引入 `save_records_batch_atomic`，单一 SQLite 事务原子落地；
+  - 代客泊车重复写盘与 BM25 冗余分词：`ValetIngestion` 在 `handover()` 已经写入物理文件并触发 BM25 索引，后台 worker 又无条件重复写盘建索引；重构为变动感知写入，杜绝重复 IO 开销；
+  - 代客泊车 URI 路径硬编码与内存防泄露：切除 `_resolve_uri_to_path` 写死的个人与 default 资源路径，支持动态解析任意合法 viking URI，同时对 Ticket 内存字典增加 2000 上限防泄漏淘汰机制。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **记忆全生命周期遍历截断率**：从 $100\%$ (200条硬截断) 降为 **$0\%$**（SQLite 原生分页与无上限聚合）；
+    2. **Superseded 双向记忆链事务原子性**：从两阶段孤立写入提升为 **$100\%$ 事务级原子性**；
+    3. **代客泊车重复物理写盘率**：从 200%（双重写）降至 **$100\%$（单次原子写）**；
+    4. **单文件规模安全红线**：修改后所有涉及文件严格维持在 **$\le 492$ 行**（`valet_ingestion.py` 492 行，严禁超过 500 行）。
+  - **展示界面与卡片**：`/studio/retrieval` 记忆生命周期治理大盘与冲突排查面板、`/studio/tasks` 代客泊车任务流。
+- **核心交付目标与完成清单**：
+  1. `openviking/service/memory_lifecycle_fsm.py` (485行)：新增 `save_records_batch_atomic` 与 `get_status_counts`，重构 `link_superseded_pair` 为单事务原子双写，支持 `build_lineage_chain` 依赖注入，解除 200 条硬编码截断；
+  2. `openviking/server/routers/memory_lifecycle.py` (305行)：重构 `/records` 端点，直接调用 Store 原生分页与聚合统计；
+  3. `openviking/service/memory_purity.py` (265行)：直接调用 `MemoryLifecycleStore` 聚合统计，切除伪字典迭代；
+  4. `openviking/service/valet_ingestion.py` (492行)：动态解析任意集合 URI 路径，切除 Worker 重复写盘和重复 BM25 建立，增加 Ticket 字典 2000 上限防泄漏淘汰机制；
+  5. `package.json` 与 `openviking/_version.py`：版本号自增至 `1.7.7`；
+  6. 专项单测 `tests/unit/test_card53_lifecycle_atomic_and_valet.py` (128行)：3 项专项单测全绿 (0.23s)。
+- **物理验收与门禁**：
+  - **Git Commit Hash**：`3630139ce`
+  - **Git Tag**：`v1.7.7`
+  - **自动化测试通过率**：3/3 专项单测全绿 (0.23s)，31 项全量回归测试全绿 (3.83s)；
+  - **活态资产盘点测试**：`src/components/component-inventory.test.ts` 5/5 全绿 (739ms)；
+  - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4621 个跟踪文件 0 密钥泄露；
+  - **前端生产构建**：`npm run build` 耗时 16.90s 顺利 PASS。
 
 #### 📌 [P0] [x] Card-52 (v1.7.6): 实验性编译器契约真实化、语法校验诚实性与双轨计数收口 (Contract Authenticity, Honest Syntax Validation & Single SSOT Tracking)
 - **类型**：第一性原理真实性改造 / 语法校验收敛 / 数据库单一真相源 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.6` ｜ **当前状态**：[x] 已验收通过 ✅
