@@ -56,9 +56,10 @@ async def test_mcp_openviking_context_route_execution():
 
 
 @pytest.mark.asyncio
-async def test_mcp_openviking_agent_sensors_execution():
+async def test_mcp_openviking_agent_sensors_execution(tmp_path, monkeypatch):
     """Verify openviking_agent_sensors FastMCP tool returns 3D physical sensor metrics."""
     agg = AgentSensorsAggregator.get_instance()
+    monkeypatch.setattr(agg, "metrics_file", str(tmp_path / "test_agent_metrics.jsonl"))
     # Inject a known sample
     agg.record_telemetry(
         session_id="test_mcp_sess_01",
@@ -76,8 +77,10 @@ async def test_mcp_openviking_agent_sensors_execution():
     assert "Sample Count:" in output
 
 
-def test_agent_sensors_rest_endpoints(test_client):
+def test_agent_sensors_rest_endpoints(test_client, tmp_path, monkeypatch):
     """Verify REST endpoints for Agent 3D Performance Sensors."""
+    agg = AgentSensorsAggregator.get_instance()
+    monkeypatch.setattr(agg, "metrics_file", str(tmp_path / "test_rest_metrics.jsonl"))
     # 1. Post a sample
     post_res = test_client.post(
         "/api/v1/metrics/agent-sensors/sample",

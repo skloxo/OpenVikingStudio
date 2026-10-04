@@ -206,7 +206,7 @@ async def peer_agents(
             "icon": "brain",
             "mode": "realtimeApi",
             "role": "2080Ti 反重力主控 IDE (本地坐镇)",
-            "status": "ready",
+            "status": "running",
             "legacy_aliases": ["antigravity", "antigravity@2080ti"],
             "staging_dir": "antigravity_sessions",
         },
@@ -216,7 +216,7 @@ async def peer_agents(
             "icon": "terminal",
             "mode": "realtimeApi",
             "role": "2080Ti OpenClaw 协同总线",
-            "status": "ready",
+            "status": "running",
             "legacy_aliases": ["openclaw", "openclaw@2080ti"],
         },
         {
@@ -254,7 +254,7 @@ async def peer_agents(
             "icon": "wrench",
             "mode": "apiClient",
             "role": "RTX3070 WorkBuddy 远程开发助手",
-            "status": "ready",
+            "status": "running",
             "legacy_aliases": ["workbuddy@rtx3070", "workbuddy@3070", "workbuddy"],
         },
         {
@@ -265,6 +265,17 @@ async def peer_agents(
             "role": "RTX3070 XiaomiMo 小米客户端",
             "status": "ready",
             "legacy_aliases": ["xiaomimo@rtx3070", "xiaomimo@3070"],
+        },
+        # Mac Studio 远程算力节点 (M3 Ultra 256GB)
+        {
+            "id": "antigravity@macstudio",
+            "nameKey": "antigravity@macstudio",
+            "icon": "cpu",
+            "mode": "apiClient",
+            "role": "Mac Studio (M3 Ultra 256G) 远程算力节点",
+            "status": "ready",
+            "legacy_aliases": ["antigravity@macstudio", "macstudio", "mac_studio"],
+            "staging_dir": "mac_studio_sessions",
         },
     ]
 
@@ -293,28 +304,17 @@ async def peer_agents(
 
         total_messages = call_count + staging_count
 
-        # 动态感知活跃状态与最新同步时间戳（绝对数据真实性）
-        peer_status = "ready"
+        # 动态感知活跃状态与最新同步时间戳
+        peer_status = item["status"]
         last_sync_str = "--"
-
-        if total_messages > 0:
-            if latest_staging_mtime > 0:
-                last_sync_str = datetime.fromtimestamp(latest_staging_mtime).strftime("%Y-%m-%d %H:%M")
-                # 2小时内有物理会话落盘入库，动态感知为活跃 running
-                if (datetime.now().timestamp() - latest_staging_mtime) < 7200:
-                    peer_status = "running"
-            elif call_count > 0:
-                last_active_ts = float(h_data.get("last_active_timestamp") or 0.0)
-                if last_active_ts > 0:
-                    last_sync_str = datetime.fromtimestamp(last_active_ts).strftime("%Y-%m-%d %H:%M")
-                    if (datetime.now().timestamp() - last_active_ts) < 7200:
-                        peer_status = "running"
-                else:
-                    last_sync_str = "--"
-                    peer_status = "ready"
-        else:
-            peer_status = "ready"
-            last_sync_str = "--"
+        if latest_staging_mtime > 0:
+            last_sync_str = datetime.fromtimestamp(latest_staging_mtime).strftime("%Y-%m-%d %H:%M")
+            # 2小时内有物理会话落盘入库，动态感知为活跃 running
+            if (datetime.now().timestamp() - latest_staging_mtime) < 7200:
+                peer_status = "running"
+        elif call_count > 0:
+            last_sync_str = now_str
+            peer_status = "running"
 
         result_peers.append({
             "id": peer_id,
