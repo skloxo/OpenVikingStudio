@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -160,66 +161,70 @@ class SkillOptService:
         polar_verdict = None
 
         if req.enable_ahe_gate:
-            from openviking.core.ahe_engine import AHEEngine
-            from openviking.core.ahe_manifest import MechanismKind
+            try:
+                from openviking.core.ahe_engine import AHEEngine
+                from openviking.core.ahe_manifest import MechanismKind
 
-            ahe_engine = AHEEngine.get_instance()
-            s_name = req.skill_name or new_fm.get("name") or "unnamed-skill"
-            snapshot_paths = [req.skill_file_path] if (req.skill_file_path and Path(req.skill_file_path).exists()) else []
+                ahe_engine = AHEEngine.get_instance()
+                s_name = req.skill_name or new_fm.get("name") or "unnamed-skill"
+                snapshot_paths = [req.skill_file_path] if (req.skill_file_path and Path(req.skill_file_path).exists()) else []
 
-            asm_list = list(req.assumptions or [])
-            if req.validation_command:
-                asm_list.append({
-                    "description": f"Polar validation for {s_name}",
-                    "validation_command": req.validation_command,
-                })
+                asm_list = list(req.assumptions or [])
+                if req.validation_command:
+                    asm_list.append({
+                        "description": f"Polar validation for {s_name}",
+                        "validation_command": req.validation_command,
+                    })
 
-            manifest = ahe_engine.create_manifest(
-                skill_name=s_name,
-                assumptions=asm_list,
-                snapshot_paths=snapshot_paths,
-            )
-            manifest_id = manifest.manifest_id
-            rollback_snapshot_available = len(manifest.snapshots) > 0
+                manifest = ahe_engine.create_manifest(
+                    skill_name=s_name,
+                    assumptions=asm_list,
+                    snapshot_paths=snapshot_paths,
+                )
+                manifest_id = manifest.manifest_id
+                rollback_snapshot_available = len(manifest.snapshots) > 0
 
-            # 运行 Polar 判官物理检验
-            verify_res = ahe_engine.verify_manifest(manifest_id)
-            results = verify_res.get("results", [])
-            for r in results:
-                v = r.get("verdict")
-                polar_verdict = v
-                if v != "pass" and v != "skip":
+                # 运行 Polar 判官物理检验
+                verify_res = ahe_engine.verify_manifest(manifest_id)
+                results = verify_res.get("results", [])
+                for r in results:
+                    v = r.get("verdict")
+                    polar_verdict = v
+                    if v != "pass" and v != "skip":
+                        ahe_gate_passed = False
+                        ahe_blocked_reason = (
+                            f"PolarJudge gate BLOCKED: command '{r.get('command')}' failed "
+                            f"(verdict={v}, exit={r.get('exit_code')})"
+                        )
+                        ahe_engine.ingest_violation(
+                            manifest_id=manifest_id,
+                            mechanism=MechanismKind.QUALITY_DEGRADATION,
+                            description=ahe_blocked_reason,
+                        )
+                        break
+
+                # 验证是否存在总分降级
+                if ahe_gate_passed and opt_audit.total_score < orig_audit.total_score:
                     ahe_gate_passed = False
-                    ahe_blocked_reason = (
-                        f"PolarJudge gate BLOCKED: command '{r.get('command')}' failed "
-                        f"(verdict={v}, exit={r.get('exit_code')})"
-                    )
+                    ahe_blocked_reason = f"Quality degraded from {orig_audit.total_score} to {opt_audit.total_score}"
                     ahe_engine.ingest_violation(
                         manifest_id=manifest_id,
                         mechanism=MechanismKind.QUALITY_DEGRADATION,
                         description=ahe_blocked_reason,
                     )
-                    break
 
-            # 验证是否存在总分降级
-            if ahe_gate_passed and opt_audit.total_score < orig_audit.total_score:
+                # 若通过门禁且要求自动落盘，执行安全物理写入
+                if ahe_gate_passed and req.auto_apply and req.skill_file_path:
+                    try:
+                        p = Path(req.skill_file_path)
+                        p.parent.mkdir(parents=True, exist_ok=True)
+                        p.write_text(optimized_content, encoding="utf-8")
+                    except Exception as exc:
+                        ahe_gate_passed = False
+                        ahe_blocked_reason = f"Failed to apply optimized content: {exc}"
+            except Exception as exc:
                 ahe_gate_passed = False
-                ahe_blocked_reason = f"Quality degraded from {orig_audit.total_score} to {opt_audit.total_score}"
-                ahe_engine.ingest_violation(
-                    manifest_id=manifest_id,
-                    mechanism=MechanismKind.QUALITY_DEGRADATION,
-                    description=ahe_blocked_reason,
-                )
-
-            # 若通过门禁且要求自动落盘，执行安全物理写入
-            if ahe_gate_passed and req.auto_apply and req.skill_file_path:
-                try:
-                    p = Path(req.skill_file_path)
-                    p.parent.mkdir(parents=True, exist_ok=True)
-                    p.write_text(optimized_content, encoding="utf-8")
-                except Exception as exc:
-                    ahe_gate_passed = False
-                    ahe_blocked_reason = f"Failed to apply optimized content: {exc}"
+                ahe_blocked_reason = f"AHE gate execution failed: {exc}"
 
         return SkillOptOptimizeResult(
             original_score=orig_audit.total_score,
@@ -235,32 +240,54 @@ class SkillOptService:
         )
 
     def batch_audit_skills(self, skills_dir: Optional[str] = None) -> BatchAuditSummary:
-        """扫描本地已安装技能并汇总体检概览。"""
-        target_dir = Path(skills_dir) if skills_dir else Path.home() / ".openviking" / "skills"
+        """扫描本地已安装技能并汇总体检概览，支持全域动态探测与按名称去重。"""
+        candidate_dirs: List[Path] = []
+        if skills_dir:
+            candidate_dirs.append(Path(skills_dir))
+        else:
+            # 优先级多级动态探测链
+            env_paths = [
+                os.environ.get("OPENVIKING_SKILLS_PATH"),
+                os.environ.get("SKILLS_ROOT"),
+            ]
+            for ep in env_paths:
+                if ep:
+                    p = Path(ep)
+                    if p.exists() and p.is_dir() and p not in candidate_dirs:
+                        candidate_dirs.append(p)
+
+            # 约定规范目录探测
+            home = Path.home()
+            standard_candidates = [
+                home / ".openviking" / "skills",
+                home / ".openclaw" / "skills",
+                home / ".gemini" / "config" / "skills",
+                Path.cwd() / ".agents" / "skills",
+                Path.cwd() / "skills",
+            ]
+            for sc in standard_candidates:
+                if sc.exists() and sc.is_dir() and sc not in candidate_dirs:
+                    candidate_dirs.append(sc)
+
         results: List[SkillOptAuditResult] = []
+        seen_names: set[str] = set()
         grade_counts = {"S": 0, "A": 0, "B": 0, "C": 0, "D": 0}
 
-        if target_dir.exists() and target_dir.is_dir():
-            for skill_path in target_dir.glob("*/SKILL.md"):
+        for c_dir in candidate_dirs:
+            if not (c_dir.exists() and c_dir.is_dir()):
+                continue
+            for skill_path in c_dir.glob("*/SKILL.md"):
+                s_name = skill_path.parent.name
+                if s_name in seen_names:
+                    continue
                 try:
                     content = skill_path.read_text(encoding="utf-8")
-                    res = self.audit_content(content, skill_name=skill_path.parent.name)
+                    res = self.audit_content(content, skill_name=s_name)
                     results.append(res)
+                    seen_names.add(s_name)
                     grade_counts[res.grade] = grade_counts.get(res.grade, 0) + 1
                 except Exception:
                     continue
-
-        if not results:
-            ws_skills = Path.cwd() / ".agents" / "skills"
-            if ws_skills.exists():
-                for skill_path in ws_skills.glob("*/SKILL.md"):
-                    try:
-                        content = skill_path.read_text(encoding="utf-8")
-                        res = self.audit_content(content, skill_name=skill_path.parent.name)
-                        results.append(res)
-                        grade_counts[res.grade] = grade_counts.get(res.grade, 0) + 1
-                    except Exception:
-                        continue
 
         total = len(results)
         avg_score = round(sum(r.total_score for r in results) / total, 1) if total > 0 else 0.0

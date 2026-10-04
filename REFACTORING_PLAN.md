@@ -14,6 +14,7 @@
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.7.8`** | **Card-54** | **TaskTracker 探针静音与安全判空、SkillOpt 全域动态路径解耦与 AHE 异常平滑防御 (TaskTracker Safe Probing, Dynamic SkillOpt Discovery & AHE Fault Tolerance)** | 1. 探针静音与判空：`task_tracker.py` 引入 `has_task_tracker()` 与 `get_task_tracker(optional=True)`，彻底切除长调用栈日志污染；<br>2. 任务流转闭环：`task_card_manager.py` 在建卡与解决工单时安全调用 tracker 登记与状态自动流转为 complete；<br>3. 动态路径解耦：`skill_opt_service.py` 实现全域动态优先级探测链（`SKILLS_ROOT`、家目录多规范、工作区），按技能名称去重消除写死失明；<br>4. 门禁平滑降级：`optimize_content` 对 AHE 异常全面保护，平滑反馈拦截原因避免 500 崩溃；<br>5. 门禁全绿：专项单测、回归单测、安全审计 0 密钥、前端构建全绿。<br>**Commit Hash**：⏳ 进行中 | ⏳ 进行中 |
 | **`v1.7.7`** | **Card-53** | **记忆生命周期事务原子化、伪字典代理切除与代客泊车路径解耦 (Atomic Lifecycle Transactions, Proxy De-layering & Valet URI Decoupling)** | 1. 事务原子化：`memory_lifecycle_fsm.py` 引入单事务双写，消除 link_superseded_pair 悬空断链风险；<br>2. 伪代理切除：彻底切除 `_LifecycleRegistryProxy` 200条硬截断与 $N+1$ 循环查询，直收 SQLite SSOT；<br>3. 代客泊车去冗余写：`valet_ingestion.py` 消除双重物理写盘与重复 BM25 索引构建；<br>4. 动态路径映射：解耦写死个人/default路径，支持任意有效 URI 物理映射与 Ticket 字典防膨胀；<br>5. 门禁全绿：专项单测全绿、安全扫描 0 密钥、前端构建 PASS。<br>**Commit Hash**：`3630139ce` | [x] 已验收通过 ✅ |
 | **`v1.7.6`** | **Card-52** | **实验性编译器契约真实化、语法校验诚实性与双轨计数收口 (Contract Authenticity, Honest Syntax Validation & Single SSOT Tracking)** | 1. 契约真实化：`dspy_compiler_engine.py` 切除默认伪契约掩盖，非显式声明结构时诚实输出 `PARTIAL` 状态；<br>2. 语法校验诚实性：`tokenshift_engine.py` 未实现 AST 解析的语言明确拒绝假报 `valid=True`，诚实标记未验证；<br>3. 双轨计数彻底收拢：`vector_sync_tracker.py` 废除易失内存双轨计数器，100% 收口至 SQLite 物理索引 `COUNT(*) WHERE fast_path=1`；<br>4. 门禁全绿：专项单测全绿、安全扫描 0 密钥、前端构建 PASS。<br>**Commit Hash**：`ecc973977` | [x] 已验收通过 ✅ |
 | **`v1.7.5`** | **Card-51** | **静态事实目录去硬编码、SQL 拓扑解析强化与 mtime 增量感知 (Path Decoupling, Robust SQL Blast Radius & mtime Incremental Cache)** | 1. 动态路径解析：切除 `code_catalog.py` 中个人目录硬编码，自适应 `SKILLS_ROOT` 环境变量与项目上下文；<br>2. SQL 表拓扑强化：重构 `impact_topology.py`，支持多表逗号读解析、JOIN 别名清理与 CREATE TABLE 捕获；<br>3. mtime 增量指纹快照缓存：通过文件系统修改时间戳极速验证，无变更时 0ms 秒级命中，避免反复全盘 AST 遍历；<br>4. 门禁全绿：专项单测全绿、安全扫描 0 密钥、前端构建 PASS。<br>**Commit Hash**：`61da4f7f4` | [x] 已验收通过 ✅ |
@@ -99,6 +100,35 @@
   - **自动化测试通过率**：4/4 专项单测全绿 (1.40s)，10 项全量回归测试全绿 (2.55s)；
   - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4609 个跟踪文件 0 密钥泄露；
   - **前端生产构建**：`npm run build` 耗时 15.02s 顺利 PASS。
+
+#### 📌 [P0] [ ] Card-54 (v1.7.8): TaskTracker 探针静音与安全判空、SkillOpt 全域动态路径解耦与 AHE 异常平滑防御 (TaskTracker Safe Probing, Dynamic SkillOpt Discovery & AHE Fault Tolerance)
+- **类型**：日志脱水静音治理 / 技能动态路径解耦 / AHE 门禁异常防御 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.8` ｜ **当前状态**：⏳ 进行中
+- **背景与芒格逆向思维第一性原理**：
+  - 探针调用栈污染与日志失水：`task_tracker.py` 中 `get_task_tracker()` 在未初始化时无条件抛出 `RuntimeError` 并打印带有 `stack_info=True` 的长调用栈日志。很多轻量工具、CLI、单测和自治组件（如 `TaskCardManager`）需要在 tracker 不可用时优雅 fallback，原逻辑直接造成巨量调用栈冲刷屏幕，严重违背“上下文脱水与静音律”；
+  - 任务流转断裂：`TaskCardManager.file_issue_card` 尝试在 tracker 登记任务，但在工单被 `resolve_card` 解决时，并未通知 `TaskTracker` 完成闭环，造成 tracker 中任务永久悬挂；
+  - 技能扫描写死硬编码：`skill_opt_service.py` 中的 `batch_audit_skills` 写死仅扫描 `~/.openviking/skills`，导致容器环境、不同用户或存放在 `~/.openclaw/skills`、`~/.gemini/config/skills`、`.agents/skills` 中的海量工程技能在座舱中全部被误报为 0；
+  - AHE 门禁脆弱性与 500 风险：`SkillOptService.optimize_content` 在调用 AHE 引擎或执行外部验证命令时缺乏 try-except 保护，一旦引擎或命令执行发生未预期系统异常直接导致整张接口崩溃；必须平滑降级并以结构化 `ahe_gate_passed=False, ahe_blocked_reason=...` 诚实回显。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **TaskTracker 探针静音与异常消除率**：未初始化场景下调用栈污染日志消除率达到 **$100\%$**；
+    2. **工单任务全生命周期流转闭环率**：解决工单时对应 TaskTracker 状态完成率达成 **$100\%$**；
+    3. **技能全域自适应发现覆盖率**：动态探测链覆盖率达到 **$100\%$**，座舱展示真实已安装技能数而非 0；
+    4. **单文件规模安全红线**：修改后所有涉及文件严格维持在黄金甜点区（严禁超过 500 行）。
+  - **展示界面与卡片**：`/studio/skills` 技能质量与门禁座舱卡片 (`SkillOptCockpit`)、`/studio/tasks` 异常工单与任务生命周期面板。
+- **核心交付目标与完成清单**：
+  1. `openviking/service/task_tracker.py`：新增 `has_task_tracker() -> bool`，重构 `get_task_tracker(optional: bool = False)`，`optional=True` 时静默返回 `None`；
+  2. `openviking/service/task_card_manager.py`：使用 `get_task_tracker(optional=True)` 并在 `resolve_card` 中安全联动 `tracker.complete`；
+  3. `openviking/service/skill_opt_service.py`：`batch_audit_skills` 引入多级探测链与名称去重，`optimize_content` 增加 AHE 异常安全捕获与降级；
+  4. `package.json` 与 `openviking/_version.py`：版本号自增至 `1.7.8`；
+  5. 专项单测 `tests/unit/test_card54_task_tracker_and_skill_opt.py`；
+  6. 门禁验证：安全审计 0 密钥、单测全绿、前端构建全绿。
+- **物理验收与门禁**：
+  - **Git Commit Hash**：⏳ 进行中
+  - **Git Tag**：`v1.7.8`
+  - **自动化测试通过率**：⏳
+  - **活态资产盘点测试**：⏳
+  - **安全凭据审计**：⏳
+  - **前端生产构建**：⏳
 
 #### 📌 [P0] [x] Card-53 (v1.7.7): 记忆生命周期事务原子化、伪字典代理切除与代客泊车路径解耦 (Atomic Lifecycle Transactions, Proxy De-layering & Valet URI Decoupling)
 - **类型**：第一性原理事务完整性 / 去伪存真代理切除 / 存储路径解耦 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.7` ｜ **当前状态**：[x] 已验收通过 ✅
