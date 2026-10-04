@@ -134,6 +134,11 @@
 | **`TemporalDecaySimulator`** | `src/routes/retrieval/-components/temporal-decay-simulator.tsx` | **时效衰减与频次强化实时仿真台**：交互式仿真 $Score_{eff} = Score_{sem} \cdot e^{-\lambda \Delta t} \cdot (1 + \beta \ln(1 + N))$，四态记忆类型、时间滑块与频次对抗实时反馈。 | ✅ 已交付 (v1.6.1) |
 | **`MemoryPurityGaugeCard`** | `src/routes/retrieval/-components/memory-purity-gauge-card.tsx` | **记忆纯度度量衡与夜间做梦守护座舱卡片**：展示纯度健康分 (0~100)、信噪比 (SNR)、认知冲突率、新鲜留存率三维瓦片与 Watchdog 自动做梦守护控制台。 | ✅ 已交付 (v1.6.2) |
 | **`MemoryGovernanceStreamCard`** | `src/routes/retrieval/-components/memory-governance-stream-card.tsx` | **全生命周期记忆治理总账流水卡片**：聚合前门准入判定 (`#dec_xxxx`) 与后院做梦提纯 (`#cry_xxxx`)，提供分类过滤与减熵实时审计。 | ✅ 已交付 (v1.6.2) |
+| **`SkillFactCompiler`** | `openviking/service/skill_fact_compiler.py` | **技能事实脱水编译引擎**：极速解析提取 700+ 技能的 Frontmatter YAML、触发意图、白名单工具契约与未验证字段，纯静态零执行。 | ✅ 已交付 (v1.6.9) |
+| **`CodeFactCompiler`** | `openviking/service/code_fact_compiler.py` | **源码事实纯静态 AST 抽取引擎**：基于 Python 原生 AST 提取 FastMCP 工具与 FastAPI 路由参数/返回类型/Docstring，彻底消灭运行时导入副作用。 | ✅ 已交付 (v1.6.9) |
+| **`ImpactTopologyService`** | `openviking/service/impact_topology.py` | **逆向爆炸半径拓扑引擎**：提供 SQLite 数据表读写者正反向映射、MCP 工具被调技能反查与跨技能触发词冲突碰撞检测。 | ✅ 已交付 (v1.7.0) |
+| **`RoleProjector`** | `openviking/service/role_projector.py` | **多角色专属切片投影引擎**：按角色 (Developer/Operator/Reviewer) 即时合成脱水上下文切片，避免上下文毒化与 Token 浪费。 | ✅ 已交付 (v1.7.1) |
+| **`TestRetinaGenerator`** | `openviking/service/test_retina_generator.py` | **机器测试视网膜自动合成引擎**：从 AST 事实即时生成包含状态码、入参校验与契约断言的完整 pytest 测试用例脚手架。 | ✅ 已交付 (v1.7.1) |
 | **`UniversalPagination`** | `src/components/common/universal-pagination.tsx` | 统一分页控制器：条数切换 (`10/25/50/100`)、翻页按钮、等宽页码，严格 $\ge 11\text{px}$ 规范。 | ⏳ 规划中 |
 | **`MetricTile`** | `src/components/common/metric-tile.tsx` | 统一 `p-3` 紧凑卡片、等宽大数字 (`tabular-nums font-mono`)、四态语义支持（冰青/湛蓝/琥珀/玫瑰红）。 | ⏳ 规划中 |
 | **`EmptyState`** | `src/components/common/empty-state.tsx` | 极客风空状态展示，支持图标胶囊、主副标题、可选重置筛选按钮。 | ⏳ 规划中 |
