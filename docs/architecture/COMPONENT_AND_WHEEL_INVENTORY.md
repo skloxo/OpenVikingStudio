@@ -107,6 +107,15 @@
 
 ---
 
+## ⚙️ 三点五、 后端代码与知识编译核心服务轮子 (`openviking/service/` & routers)
+
+| 通用服务名称 | 物理路径 | 核心能力与适用场景 | 状态与版本 |
+|:---|:---|:---|:---:|
+| **`SkillFactCompiler`** | `openviking/service/skill_fact_compiler.py` | **技能静态事实编译器**：从全域 `SKILL.md` 静态提取 YAML Header、触发词与绑定工具，生成 L0/L1 事实大纲，严守查不到宁可留白公信力铁律。 | ✅ 已交付 (v1.6.9) |
+| **`CodeFactCompiler`** | `openviking/service/code_fact_compiler.py` | **源码 AST 静态事实编译器**：基于 Python AST 提取 FastMCP Tools 契约与 FastAPI 路由，零运行时导入副作用。 | ✅ 已交付 (v1.6.9) |
+| **`code_catalog_router`** | `openviking/server/routers/code_catalog.py` | **知识与事实目录 REST 路由**：暴露 `/api/v1/catalog/skills`, `/code`, `/summary` 端点。 | ✅ 已交付 (v1.6.9) |
+
+
 ## 🚀 四、 核心业务通用高阶公共轮子清单 (`src/components/common/` & 专属轮子)
 
 全系统已完成提纯并经受机器视网膜测试守护的系统级高阶轮子：
