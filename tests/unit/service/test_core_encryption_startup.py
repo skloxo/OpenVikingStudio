@@ -112,7 +112,11 @@ def test_ensure_data_dir_lock_acquired_once(monkeypatch, tmp_path):
     monkeypatch.setattr("openviking.utils.process_lock.acquire_data_dir_lock", _acquire)
     service = OpenVikingService.__new__(OpenVikingService)
     service._config = SimpleNamespace(
-        storage=SimpleNamespace(workspace=str(tmp_path), skip_process_lock=False)
+        storage=SimpleNamespace(
+            workspace=str(tmp_path),
+            skip_process_lock=False,
+            vectordb=SimpleNamespace(backend="local"),
+        )
     )
     service._data_dir_lock_acquired = False
     service._data_dir_lock_path = None
@@ -136,7 +140,11 @@ def test_ensure_data_dir_lock_respects_skip_process_lock(monkeypatch, tmp_path):
     monkeypatch.setattr("openviking.utils.process_lock.acquire_data_dir_lock", _acquire)
     service = OpenVikingService.__new__(OpenVikingService)
     service._config = SimpleNamespace(
-        storage=SimpleNamespace(workspace=str(tmp_path), skip_process_lock=True)
+        storage=SimpleNamespace(
+            workspace=str(tmp_path),
+            skip_process_lock=True,
+            vectordb=SimpleNamespace(backend="local"),
+        )
     )
     service._data_dir_lock_acquired = False
     service._data_dir_lock_path = None

@@ -262,6 +262,10 @@ def resolve_request_uri(uri: str, ctx: RequestContext) -> str:
     it fails closed with a hint pointing at ``viking://~/...``.
     """
     parts = uri_parts(uri)
+    # Root-role requests have no identity context — home alias cannot be expanded.
+    # Fail closed via resolve_uri which raises NamespaceShapeError for scope=="~".
+    if getattr(ctx.role, "value", str(ctx.role)) == "root":
+        return resolve_uri(uri).uri
     if parts and parts[0] == "~":
         return resolve_current_user_uri(uri, ctx)
     if ctx.role in {Role.USER, Role.ADMIN}:
