@@ -1,11 +1,22 @@
-import { useState, useEffect, useCallback } from 'react'
+/* eslint-disable i18next/no-literal-string */
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   GaugeIcon,
   ActivityIcon,
   SlidersIcon,
   UserCheckIcon,
   SparklesIcon,
+  RefreshCwIcon,
 } from 'lucide-react'
+import { ovClient } from '#/lib/ov-client'
+
+interface SensorTimelinePoint {
+  session_id: string
+  token_snr: number
+  p5_precision: number
+  interventions: number
+  timestamp: number
+}
 
 interface SensorSummaryData {
   sample_count: number
@@ -15,62 +26,62 @@ interface SensorSummaryData {
   snr_status: string
   p5_status: string
   intervention_status: string
-  recent_timeline: Array<{
-    session_id: string
-    token_snr: number
-    p5_precision: number
-    interventions: number
-    timestamp: number
-  }>
+  recent_timeline: SensorTimelinePoint[]
+}
+
+interface SamplePayload {
+  session_id: string
+  effective_tokens: number
+  total_tokens: number
+  top5_hits: number
+  interventions_count: number
 }
 
 export function AgentSensorsCard() {
-  const [data, setData] = useState<SensorSummaryData | null>(null)
-  const [loading, setLoading] = useState(false)
+  const queryClient = useQueryClient()
 
-  const fetchMetrics = useCallback(async () => {
-    try {
-      const res = await fetch('/api/v1/metrics/agent-sensors')
-      if (res.ok) {
-        const json = await res.json()
-        setData(json.data)
-      }
-    } catch {
-      // Keep existing state on error
-    }
-  }, [])
+  const { data, isFetching, refetch } = useQuery<SensorSummaryData>({
+    queryKey: ['agent-sensors-summary'],
+    queryFn: async () => {
+      const res = await ovClient.instance.get<{ status: string; data: SensorSummaryData }>(
+        '/api/v1/metrics/agent-sensors'
+      )
+      return res.data.data
+    },
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
+    staleTime: 15_000,
+  })
 
-  useEffect(() => {
-    fetchMetrics()
-    const interval = setInterval(fetchMetrics, 30_000)
-    return () => clearInterval(interval)
-  }, [fetchMetrics])
+  const sampleMutation = useMutation({
+    mutationFn: async (payload: SamplePayload) => {
+      const res = await ovClient.instance.post<{ status: string; point: any }>(
+        '/api/v1/metrics/agent-sensors/sample',
+        payload
+      )
+      return res.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['agent-sensors-summary'] })
+    },
+  })
 
-  const handleInjectSample = async () => {
-    setLoading(true)
-    try {
-      const randomSuffix = typeof window !== 'undefined' && window.crypto?.randomUUID
+  const handleInjectSample = () => {
+    const randomSuffix =
+      typeof window !== 'undefined' && window.crypto?.randomUUID
         ? window.crypto.randomUUID().slice(0, 8)
         : Date.now().toString(36)
-      const randomId = `sess_${randomSuffix}`
-      await fetch('/api/v1/metrics/agent-sensors/sample', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          session_id: randomId,
-          effective_tokens: 720,
-          total_tokens: 1000,
-          top5_hits: 4,
-          interventions_count: 0,
-        }),
-      })
-      await fetchMetrics()
-    } finally {
-      setLoading(false)
-    }
+    const randomId = `sess_${randomSuffix}`
+    sampleMutation.mutate({
+      session_id: randomId,
+      effective_tokens: 720,
+      total_tokens: 1000,
+      top5_hits: 4,
+      interventions_count: 0,
+    })
   }
 
-  const hasData = data && data.sample_count > 0
+  const hasData = Boolean(data && data.sample_count > 0)
 
   return (
     <div className="rounded-lg border border-border/60 bg-card/40 p-4 space-y-4 font-sans text-xs text-muted-foreground">
@@ -96,9 +107,18 @@ export function AgentSensorsCard() {
           </span>
           <button
             type="button"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="p-1 rounded bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            title="刷新探针"
+          >
+            <RefreshCwIcon className={`size-3.5 ${isFetching ? 'animate-spin' : ''}`} />
+          </button>
+          <button
+            type="button"
             onClick={handleInjectSample}
-            disabled={loading}
-            className="px-2.5 py-1 rounded bg-secondary hover:bg-secondary/80 text-foreground text-xs font-mono transition-colors flex items-center gap-1 cursor-pointer"
+            disabled={sampleMutation.isPending}
+            className="px-2.5 py-1 rounded bg-secondary hover:bg-secondary/80 text-foreground text-xs font-mono transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
           >
             <SparklesIcon className="size-3 text-cyan-500" />
             + 注入会话采样
@@ -117,18 +137,18 @@ export function AgentSensorsCard() {
             </span>
             <span
               className={`text-[12px] font-mono px-1.5 py-0.5 rounded ${
-                hasData && data.snr_status === 'optimal'
+                hasData && data?.snr_status === 'optimal'
                   ? 'bg-cyan-500/10 text-cyan-500'
                   : 'bg-muted text-muted-foreground'
               }`}
             >
-              {hasData ? (data.snr_status === 'optimal' ? 'SNR OPTIMAL' : 'DEGRADED') : '--'}
+              {hasData ? (data?.snr_status === 'optimal' ? 'SNR OPTIMAL' : 'DEGRADED') : '--'}
             </span>
           </div>
 
           <div className="flex items-baseline gap-2">
             <span className="text-lg font-bold font-mono text-foreground">
-              {hasData ? `${(data.avg_token_snr * 100).toFixed(1)}%` : '--'}
+              {hasData && data ? `${(data.avg_token_snr * 100).toFixed(1)}%` : '--'}
             </span>
             <span className="text-xs text-muted-foreground font-mono">基线目标: ≥65.0%</span>
           </div>
@@ -147,18 +167,18 @@ export function AgentSensorsCard() {
             </span>
             <span
               className={`text-[12px] font-mono px-1.5 py-0.5 rounded ${
-                hasData && data.p5_status === 'optimal'
+                hasData && data?.p5_status === 'optimal'
                   ? 'bg-cyan-500/10 text-cyan-500'
                   : 'bg-muted text-muted-foreground'
               }`}
             >
-              {hasData ? (data.p5_status === 'optimal' ? 'TARGET REACHED' : 'SUBOPTIMAL') : '--'}
+              {hasData ? (data?.p5_status === 'optimal' ? 'TARGET REACHED' : 'SUBOPTIMAL') : '--'}
             </span>
           </div>
 
           <div className="flex items-baseline gap-2">
             <span className="text-lg font-bold font-mono text-foreground">
-              {hasData ? `${(data.avg_p5_precision * 100).toFixed(1)}%` : '--'}
+              {hasData && data ? `${(data.avg_p5_precision * 100).toFixed(1)}%` : '--'}
             </span>
             <span className="text-xs text-muted-foreground font-mono">基线目标: ≥80.0%</span>
           </div>
@@ -177,18 +197,18 @@ export function AgentSensorsCard() {
             </span>
             <span
               className={`text-[12px] font-mono px-1.5 py-0.5 rounded ${
-                hasData && data.intervention_status === 'elevated'
+                hasData && data?.intervention_status === 'elevated'
                   ? 'bg-rose-500/10 text-rose-500'
                   : 'bg-cyan-500/10 text-cyan-500'
               }`}
             >
-              {hasData ? (data.intervention_status === 'optimal' ? 'STEERING LOW' : 'ELEVATED') : '--'}
+              {hasData ? (data?.intervention_status === 'optimal' ? 'STEERING LOW' : 'ELEVATED') : '--'}
             </span>
           </div>
 
           <div className="flex items-baseline gap-2">
             <span className="text-lg font-bold font-mono text-foreground">
-              {hasData ? `${(data.human_intervention_rate * 100).toFixed(1)}%` : '--'}
+              {hasData && data ? `${(data.human_intervention_rate * 100).toFixed(1)}%` : '--'}
             </span>
             <span className="text-xs text-muted-foreground font-mono">上限红线: ≤15.0%</span>
           </div>

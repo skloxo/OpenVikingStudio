@@ -1930,6 +1930,63 @@ async def openviking_retry_dead_letter(dlq_id: int) -> str:
         return f"Failed to retry dead letter #{dlq_id}: {e}"
 
 
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_context_route(
+    content: str,
+    default_code_mode: str = "skeleton",
+    target_dehydration_rate: float = 0.50,
+    enable_skillzip: bool = True,
+    preserve_static_header: bool = True,
+) -> str:
+    """Route, segment and compress hybrid multi-modal context (code, natural language, skills, static rules).
+
+    Dispatches code to TokenShift AST engine, prose to LLMLingua-2 dehydration,
+    skills to SkillZip contract compressor, and freezes static rule headers.
+    """
+    from openviking.service.context_router_engine import ContextRouterEngine
+    from openviking.service.context_router_types import ContextRouteRequest
+
+    engine = ContextRouterEngine.get_instance()
+    req = ContextRouteRequest(
+        content=content,
+        default_code_mode=default_code_mode,
+        target_dehydration_rate=target_dehydration_rate,
+        enable_skillzip=enable_skillzip,
+        preserve_static_header=preserve_static_header,
+    )
+    res = engine.route_and_compress(req)
+    seg_lines = []
+    for s in res.segments:
+        seg_lines.append(
+            f"  - [{s.engine.value}] {s.segment_type.value} ({s.original_tokens} -> {s.compressed_tokens} tok, saved {s.tokens_saved})"
+        )
+    segs_str = "\n".join(seg_lines)
+    return (
+        f"=== Context Router Compression Report ===\n"
+        f"Original Tokens: {res.total_original_tokens} | Compressed Tokens: {res.total_compressed_tokens}\n"
+        f"Overall Reduction: {res.overall_reduction_ratio:.1%} | Tokens Saved: {res.total_tokens_saved}\n"
+        f"Segment Routing Breakdown:\n{segs_str}\n\n"
+        f"=== Compressed Content Output ===\n"
+        f"{res.assembled_content}"
+    )
+
+
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_agent_sensors() -> str:
+    """Query 3D performance sensors (Token SNR effective ratio, P@5 Precision, Human Intervention Rate)."""
+    from openviking.core.agent_sensors import AgentSensorsAggregator
+
+    agg = AgentSensorsAggregator.get_instance()
+    m = agg.get_aggregated_metrics()
+    return (
+        f"=== Agent 3D Performance Sensors Telemetry ===\n"
+        f"Sample Count: {m.get('sample_count', 0)}\n"
+        f"Token SNR (Effective Payload Ratio): {m.get('avg_token_snr', 0.0):.1%} ({str(m.get('snr_status', 'unknown')).upper()}) [Target: >=65.0%]\n"
+        f"P@5 Retrieval Adoption Precision: {m.get('avg_p5_precision', 0.0):.1%} ({str(m.get('p5_status', 'unknown')).upper()}) [Target: >=80.0%]\n"
+        f"Human Intervention Rate: {m.get('human_intervention_rate', 0.0):.1%} ({str(m.get('intervention_status', 'unknown')).upper()}) [Limit: <=15.0%]"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Portable tool schemas
 # ---------------------------------------------------------------------------

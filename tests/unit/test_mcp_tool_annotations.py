@@ -46,6 +46,9 @@ async def test_mcp_tools_advertise_behavior_annotations():
         "openviking_tokenshift_compress": (True, False, True, False),
         "openviking_memory_purity_report": (True, False, True, False),
         "openviking_retry_dead_letter": (False, True, True, False),
+        # New FastMCP tools added in Card-58 (v1.7.12)
+        "openviking_context_route": (True, False, True, False),
+        "openviking_agent_sensors": (True, False, True, False),
     }
     fields = ("readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint")
 

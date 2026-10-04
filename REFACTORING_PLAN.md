@@ -9,11 +9,12 @@
 
 > **生产物理事实声明**：
 > - **线上正式部署版本**：**`v1.4.106`**（物理访问地址：`vk.tide.red/studio/home`，已实机验证）；
-> - **当前最新交付版本**：**`v1.7.11`**（Tag: `v1.7.11`，已全量通过 QueueFS 死信详情抽屉交互闭环、单条自愈重试、隐形导入 Bug 根治与 13 项单测与安全扫描）；
+> - **当前最新交付版本**：**`v1.7.12`**（Tag: `v1.7.12`，已全量通过统一通信层收口、3D 智能体传感器与全域上下文智能路由闭环、19 项单测、安全审计 0 密钥与前端生产构建 PASS）；
 > - **历史里程碑详单检索**：如需查阅 Milestone 1~4 及早期版本修改清单与架构细节，请点击跳转至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.7.12`** | **Card-58** | **统一通信层收口、3D 智能体传感器与全域上下文智能路由闭环 (Unified Communications SSOT, Agent 3D Sensors & Context Router Parity)** | 1. 统一通信层收口：`agent-sensors-card.tsx` 与 `evolution-cicd-cockpit.tsx` 彻底消除裸 fetch，100% 收敛至 `ovClient.instance` 与 TanStack Query，解决鉴权头丢失隐疾；<br>2. 补齐 2 大核心 FastMCP 原生工具：`openviking_context_route`（全域混合多模态上下文路由与 AST/语义/契约压缩）与 `openviking_agent_sensors`（3D 效能物理探针查询）；<br>3. MCP 注解四维契约全量登记：`test_mcp_tool_annotations.py` 覆盖更新；<br>4. 门禁全绿：19/19 单测全绿 (1.72s)，安全扫描 4625 文件 0 密钥，前端构建 16.20s PASS。<br>**Commit Hash**：`PENDING_COMMIT`<br>**测试**：19/19 全绿 (1.72s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.11`** | **Card-57** | **QueueFS DLQ 前端交互闭环与单条自愈抽屉 (QueueFS DLQ Inspection Drawer & Granular Healing Cockpit)** | 1. 落地 `DeadLetterDrawer.tsx` 详情抽屉，展示死信 ID、QueueFS 队列名、URI、错误诊断、调用栈轨迹与完整 Payload JSON；<br>2. 交互闭环升级：`VectorSyncDlqCard.tsx` 支持点击单条死信直接打开抽屉，支持单条死信一键自愈重试 (`POST /api/v1/queue/dlq/{id}/retry`) 与标记解决归档；<br>3. 根治隐形暗雷：排查修复 `queue.py` 与 `mcp_endpoint.py` 内部不存在的 `get_app_viking_service` 导入导致的崩溃 Bug；<br>4. 资产登记与门禁全绿：完成 `COMPONENT_AND_WHEEL_INVENTORY.md` 登记，13/13 单测全绿 (1.58s)，安全扫描 4625 文件 0 密钥，前端构建 13.87s PASS。<br>**Commit Hash**：`0124667a4`<br>**测试**：13/13 全绿 (1.58s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.10`** | **Card-56** | **FastMCP 关键核心能力桥接闭环与全集群智体赋能 (FastMCP Core Tooling Parity & Cluster Agent Empowerment)** | 1. 补齐 7 大核心 FastMCP 原生工具：`openviking_valet_handover`、`openviking_valet_ticket_status`、`openviking_dspy_compile`、`openviking_skill_zip`、`openviking_tokenshift_compress`、`openviking_memory_purity_report`、`openviking_retry_dead_letter`；<br>2. 彻底消灭后端孤岛与外部智体悬空断联，实现集群级异步入管防 504、契约化 Prompt 编译、AST 代码折叠、纯度健康报告与死信单条自愈；<br>3. MCP 注解四维契约全量登记：`test_mcp_tool_annotations.py` 严密受控；<br>4. 门禁全绿：10/10 专项与回归全绿 (1.46s)，安全扫描 4623 文件 0 密钥，前端构建 16.36s PASS。<br>**Commit Hash**：`674ef06f6`<br>**测试**：10/10 全绿 (1.46s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.9`** | **Card-55** | **8 个预存测试失败修复（5 组）(Pre-existing Test Failure Repair - 5 Groups)** | A. `test_core_encryption_startup` ×2：补充 `vectordb=SimpleNamespace(backend='local')` mock 缺失字段；<br>B. `test_search_tags_filter` ×2：删除 `propagate=True` 消除 caplog 双捕获噪声；<br>C. `test_mcp_tool_annotations`：将 8 个 v1.7.x 新增 MCP 工具注册到注解契约期望表；<br>D. `namespace.py` 源码 bug：`resolve_request_uri` 中 root role 应 fail-closed 不展开 `~` 别名；<br>E. `test_retrieval_superseded_filter`：URI 从 axiom-immune `master_memory` 改为 `user_notes` 使 decay 真实生效；<br>F. `test_valet_ingestion_engine`：延迟阈值 15ms→100ms 适配 CI 环境。<br>**Commit Hash**：`02ad768e7`<br>**测试**：8/8 全绿 (1.49s) ✅ | [x] 已验收通过 ✅ |
@@ -103,6 +104,39 @@
   - **自动化测试通过率**：4/4 专项单测全绿 (1.40s)，10 项全量回归测试全绿 (2.55s)；
   - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4609 个跟踪文件 0 密钥泄露；
   - **前端生产构建**：`npm run build` 耗时 15.02s 顺利 PASS。
+
+#### ✅ [P0] [x] Card-58 (v1.7.12): 统一通信层收口、3D 智能体传感器与全域上下文智能路由闭环 (Unified Communications SSOT, Agent 3D Sensors & Context Router Parity)
+- **类型**：统一通信层治理 / 3D 传感器观测闭环 / FastMCP 原生工具平价 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.12` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - 通信层协议散落与隐形暗雷：排查发现前端监控与检索大盘存在裸 `fetch()` 违规调用（`agent-sensors-card.tsx` 2 处，`evolution-cicd-cockpit.tsx` 8 处）。当系统部署在反向代理、自定义网关端口或需要认证 Bearer Token 时，裸 `fetch()` 无法继承 `ovClient` 拦截器注入的凭据与全局 Base URL，必触发 401 鉴权失败或网络断流；且 `agent-sensors-card.tsx` 点击注入采样时写死了假数据字段；
+  - 核心能力孤岛：后端虽已实现全域混合多模态上下文路由 `ContextRouterEngine`（统一智能调度 TokenShift 代码折叠、LLMLingua 自然语言脱水、SkillZip 契约压缩与 Native Caching 静态头保护），并在前端提供了交互试验台，但在 FastMCP 工具层严重缺失对称暴露，全集群智体无法通过原生工具调用统一脱水网关；
+  - 3D 传感器度量衡闭环：`AgentSensorsAggregator` 聚合了智能体核心 3D 性能标尺（Token SNR 有效载荷率、P@5 检索采纳精度、人工介入纠偏率），需要在 FastMCP 中暴露 `openviking_agent_sensors`，支持集群自治审计；
+  - 治理闭环：
+    1. 统一通信层收口：`agent-sensors-card.tsx` 与 `evolution-cicd-cockpit.tsx` 彻底消除裸 fetch，100% 收敛至 `ovClient.instance` 与 TanStack Query，增加刷新指示与错误防护；
+    2. FastMCP 平价闭环：落地 `openviking_context_route` 与 `openviking_agent_sensors`，严格遵行四维行为注解契约并在 `test_mcp_tool_annotations.py` 登记；
+    3. 版本号 SemVer 铁律：严格执行 Patch 递增至 `1.7.12`，主版本号与次版本号 100% 不可越权更改。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **前端裸 fetch 散落违规消除率**：从散落 10 处降为 **$0\%$**（全盘统一收敛至 `ovClient`）；
+    2. **全域上下文路由 FastMCP 工具覆盖率**：从 $0\%$ 提升至 **$100\%$**；
+    3. **Agent 3D 传感器探针可观测性**：FastMCP 原生探针覆盖率达到 **$100\%$**；
+    4. **单文件规模安全红线**：修改后所有涉及文件严格维持在 **$\le 336$ 行** 黄金甜点区（严禁超过 500 行）。
+  - **展示界面与卡片**：`/studio/monitoring` 智能体 3D 物理探针卡片、`/studio/retrieval` 上下文路由座舱与演化 CI/CD 流水线。
+- **核心交付目标与完成清单**：
+  1. `src/routes/monitoring/-components/agent-sensors-card.tsx` (228行)：接入 `ovClient.instance` 与 TanStack Query，消灭裸 fetch；
+  2. `src/routes/retrieval/-components/evolution-cicd-cockpit.tsx` (336行)：8 处裸 fetch 彻底替换为 `ovClient.instance`；
+  3. `openviking/server/mcp_endpoint.py`：新增 `openviking_context_route` 与 `openviking_agent_sensors` 工具；
+  4. `tests/unit/test_mcp_tool_annotations.py`：登记 2 个新增工具四维行为注解；
+  5. `package.json` 与 `openviking/_version.py`：版本号自增至 `1.7.12`；
+  6. 专项单测 `tests/unit/test_card58_protocol_consolidation_and_sensors.py`：4 项测试全绿 (1.33s)；
+  7. 门禁验证：安全审计 0 密钥、单测全绿、前端构建全绿。
+- **物理验收与门禁**：
+  - **Git Commit Hash**：`PENDING_COMMIT`
+  - **Git Tag**：`v1.7.12`
+  - **自动化测试通过率**：19/19 全绿 (1.72s)（4 项 Card-58 + 4 项 Card-57 + 6 项 Card-56 + 1 项注解 + 4 项版本门禁）✅
+  - **组件盘点机制**：`vitest run src/components/component-inventory.test.ts` 5/5 全绿 (614ms) ✅
+  - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4625 个跟踪文件 0 密钥泄露 ✅
+  - **前端生产构建**：`npm run build` 耗时 16.20s 顺利 PASS ✅
 
 #### ✅ [P0] [x] Card-57 (v1.7.11): QueueFS DLQ 前端交互闭环与单条自愈抽屉 (QueueFS DLQ Inspection Drawer & Granular Healing Cockpit)
 - **类型**：可观测性闭环 / 抽屉深度交互 / 隐形暗雷根治 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.11` ｜ **当前状态**：[x] 已验收通过 ✅
