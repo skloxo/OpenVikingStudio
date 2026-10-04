@@ -1972,11 +1972,24 @@ async def openviking_context_route(
 
 
 @mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
-async def openviking_agent_sensors() -> str:
-    """Query 3D performance sensors (Token SNR effective ratio, P@5 Precision, Human Intervention Rate)."""
+async def openviking_agent_sensors(session_id: str = "") -> str:
+    """Query 3D performance sensors (Token SNR effective ratio, P@5 Precision, Human Intervention Rate). If session_id provided, returns whitebox breakdown."""
     from openviking.core.agent_sensors import AgentSensorsAggregator
 
     agg = AgentSensorsAggregator.get_instance()
+    if session_id and session_id.strip():
+        detail = agg.get_session_detail(session_id.strip())
+        if detail:
+            return (
+                f"=== Agent Sensor Session Detail: {detail['session_id']} ===\n"
+                f"Total Tokens: {detail['total_tokens']:,} (Effective: {detail['effective_tokens']:,}, Overhead: {detail['overhead_tokens']:,})\n"
+                f"Token SNR: {detail['token_snr']:.1%} [{detail['snr_formula']}] ({detail['snr_status'].upper()})\n"
+                f"P@5 Adoption: {detail['p5_precision']:.1%} [{detail['p5_formula']}] ({detail['p5_status'].upper()})\n"
+                f"Human Steering: {detail['interventions_count']} intervention(s) ({detail['intervention_status'].upper()})\n"
+                f"Recorded At: {detail['timestamp']}"
+            )
+        return f"Session telemetry '{session_id}' not found in active window."
+
     m = agg.get_aggregated_metrics()
     return (
         f"=== Agent 3D Performance Sensors Telemetry ===\n"

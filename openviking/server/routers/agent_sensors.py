@@ -8,7 +8,7 @@ Exposes endpoints for querying Token SNR, P@5 Precision, and Human Intervention 
 from __future__ import annotations
 
 from typing import Any, Dict
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from openviking.core.agent_sensors import (
@@ -59,3 +59,17 @@ def record_agent_sensor_sample(req: RecordSampleRequest) -> Dict[str, Any]:
             "timestamp": point.timestamp,
         },
     }
+
+
+@router.get("/sessions/{session_id}")
+def get_agent_sensor_session_detail(session_id: str) -> Dict[str, Any]:
+    """Retrieve full telemetry breakdown and calculation details for a specific session."""
+    aggregator = AgentSensorsAggregator.get_instance()
+    detail = aggregator.get_session_detail(session_id)
+    if not detail:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Session telemetry for '{session_id}' not found in active window",
+        )
+    return {"status": "success", "data": detail}
+

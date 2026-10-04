@@ -1,4 +1,5 @@
 /* eslint-disable i18next/no-literal-string */
+import * as React from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   GaugeIcon,
@@ -8,12 +9,18 @@ import {
   RefreshCwIcon,
 } from 'lucide-react'
 import { ovClient } from '#/lib/ov-client'
+import { SensorDetailDrawer } from './sensor-detail-drawer'
+import type { SensorSessionDetail } from './sensor-detail-drawer'
 
-interface SensorTimelinePoint {
+export interface SensorTimelinePoint {
   session_id: string
   token_snr: number
   p5_precision: number
   interventions: number
+  human_intervention_flag?: boolean
+  effective_tokens?: number
+  total_tokens?: number
+  top5_hits?: number
   timestamp: number
 }
 
@@ -29,6 +36,8 @@ interface SensorSummaryData {
 }
 
 export function AgentSensorsCard() {
+  const [selectedSession, setSelectedSession] =
+    React.useState<SensorSessionDetail | null>(null)
   const { data, isFetching, refetch } = useQuery<SensorSummaryData>({
     queryKey: ['agent-sensors-summary'],
     queryFn: async () => {
@@ -208,29 +217,55 @@ export function AgentSensorsCard() {
       {data?.recent_timeline && data.recent_timeline.length > 0 && (
         <div className="rounded-md border border-border/30 bg-muted/20 p-3 space-y-2">
           <div className="flex items-center justify-between text-[12px] text-muted-foreground">
-            <span>近期会话时序探针采样流 (Recent 20 Sessions)</span>
+            <span>近期会话时序探针采样流 (Recent 20 Sessions - 点击查看白盒拆解)</span>
             <span className="font-mono">
               ~/.openviking/data/agent_metrics.jsonl
             </span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-1.5 pt-1 font-mono text-[12px]">
             {data.recent_timeline.map((pt, idx) => (
-              <div
+              <button
                 key={idx}
-                className="p-1.5 rounded border border-border/30 bg-background/60 flex items-center justify-between"
-                title={`Session: ${pt.session_id} | Interventions: ${pt.interventions}`}
+                type="button"
+                onClick={() =>
+                  setSelectedSession({
+                    session_id: pt.session_id,
+                    token_snr: pt.token_snr,
+                    p5_precision: pt.p5_precision,
+                    human_intervention_flag:
+                      pt.human_intervention_flag ?? false,
+                    effective_tokens: pt.effective_tokens ?? 0,
+                    total_tokens: pt.total_tokens ?? 0,
+                    overhead_tokens: Math.max(
+                      0,
+                      (pt.total_tokens ?? 0) - (pt.effective_tokens ?? 0),
+                    ),
+                    top5_hits: pt.top5_hits ?? 0,
+                    interventions_count: pt.interventions,
+                    timestamp: pt.timestamp,
+                  })
+                }
+                className="p-1.5 rounded border border-border/30 bg-background/60 hover:bg-secondary/50 hover:border-cyan-500/40 transition-colors flex items-center justify-between cursor-pointer text-left group"
+                title={`查看会话 ${pt.session_id} 物理探针详情`}
               >
-                <span className="truncate max-w-17.5 text-muted-foreground">
+                <span className="truncate max-w-17.5 text-muted-foreground group-hover:text-foreground">
                   {pt.session_id}
                 </span>
                 <span className="text-cyan-500 font-semibold">
                   {Math.round(pt.token_snr * 100)}%
                 </span>
-              </div>
+              </button>
             ))}
           </div>
         </div>
       )}
+
+      {/* Whitebox Inspection Drawer */}
+      <SensorDetailDrawer
+        session={selectedSession}
+        open={Boolean(selectedSession)}
+        onOpenChange={(open) => !open && setSelectedSession(null)}
+      />
     </div>
   )
 }

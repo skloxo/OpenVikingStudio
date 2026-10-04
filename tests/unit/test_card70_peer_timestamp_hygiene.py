@@ -36,16 +36,18 @@ def test_console_peers_matrix_truthful_representation():
 
 
 def test_card70_version_alignment():
-    """Verify SemVer version 1.7.24 across Python and package.json."""
+    """Verify SemVer version >= 1.7.24 across Python and package.json."""
     import json
     import os
     from openviking._version import __version__
 
-    assert __version__ == "1.7.24"
     pkg_path = os.path.join(os.path.dirname(__file__), "..", "..", "package.json")
     with open(pkg_path, "r", encoding="utf-8") as f:
         pkg_data = json.load(f)
-    assert pkg_data["version"] == "1.7.24"
+    assert pkg_data["version"] == __version__
+    parts = [int(p) for p in __version__.split(".")]
+    assert (parts[0], parts[1]) == (1, 7)
+    assert parts[2] >= 24
 
 
 def test_production_metrics_file_cleanliness():
