@@ -73,3 +73,42 @@ async def batch_audit_skills(
 ) -> BatchAuditSummary:
     """批量扫描已安装技能并汇总体检质量概览与等级分布。"""
     return _service.batch_audit_skills(skills_dir=skills_dir)
+
+
+class HealthScoreRequest(BaseModel):
+    """技能健康体检请求。"""
+    model_config = ConfigDict(strict=False)
+
+    skill_content: str = Field(..., description="技能完整 Markdown 文本")
+    skill_slug: Optional[str] = Field(None, description="可选技能标识")
+
+
+class RemediateRequest(BaseModel):
+    """技能自动修复建议与补丁生成请求。"""
+    model_config = ConfigDict(strict=False)
+
+    skill_content: str = Field(..., description="技能完整 Markdown 文本")
+    skill_slug: Optional[str] = Field(None, description="可选技能标识")
+
+
+@router.post("/health-score")
+async def calculate_skill_health(
+    req: HealthScoreRequest,
+    ctx: RequestContext = Depends(get_request_context),
+) -> dict:
+    """计算技能健康度评分与缺陷分类诊断报告 (SkillOpt SKILLOPT-02)。"""
+    from openviking.service.skill_health_scorer import SkillHealthScorer
+    report = SkillHealthScorer.calculate_health(raw_content=req.skill_content, skill_slug=req.skill_slug)
+    return report.to_dict()
+
+
+@router.post("/remediate")
+async def remediate_skill_content(
+    req: RemediateRequest,
+    ctx: RequestContext = Depends(get_request_context),
+) -> dict:
+    """生成技能确定性自动修复补丁与重构草稿 (SkillOpt SKILLOPT-02)。"""
+    from openviking.service.skill_health_scorer import SkillRemediationGenerator
+    result = SkillRemediationGenerator.remediate(raw_content=req.skill_content, skill_slug=req.skill_slug)
+    return result.to_dict()
+
