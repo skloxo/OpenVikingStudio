@@ -119,7 +119,7 @@
   5. 资产入库：已向 `docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md` 登记 `CodeCatalogCockpitCard`，`vitest` 5/5 全绿通过；
   6. 门禁验证：安全审计 0 密钥、前端构建 PASS、版本自增至 `1.7.2`。
 - **物理验收与门禁**：
-  - **Git Commit Hash**：(待提交)
+  - **Git Commit Hash**：`2c26e7e31`
   - **Git Tag**：`v1.7.2`
   - **自动化测试**：`pytest` 14/14 全量回归 passed；`vitest` 5/5 passed；
   - **安全审计**：`python3 scripts/security_check.py` PASS (0 secrets detected)；
