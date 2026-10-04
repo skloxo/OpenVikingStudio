@@ -2128,6 +2128,21 @@ async def openviking_skill_intent_match(
     return json.dumps(result.to_dict(), ensure_ascii=False, indent=2)
 
 
+@mcp.tool(annotations=_RETRY_SAFE_DESTRUCTIVE_TOOL_ANNOTATIONS)
+async def openviking_skill_publish(
+    raw_content: str,
+    force_overwrite: bool = False,
+) -> str:
+    """Pre-flight validate and atomically publish a SKILL.md draft into the Viking master memory vault."""
+    import json
+    from openviking.service.skill_publisher import SkillPublisher
+
+    result = SkillPublisher.publish_skill(
+        raw_content=raw_content, force_overwrite=force_overwrite
+    )
+    return json.dumps(result.to_dict(), ensure_ascii=False, indent=2)
+
+
 
 # ---------------------------------------------------------------------------
 # Portable tool schemas
