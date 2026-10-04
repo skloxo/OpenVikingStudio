@@ -88,6 +88,8 @@
   4. `tests/unit/test_impact_topology.py` (140行)：编写 4 项专项单测全绿通过 (1.40s)；
   5. `package.json` & `openviking/_version.py`：版本号自增至 `1.7.0`。
 - **物理验收与门禁**：
+  - **Git Commit Hash**：`29a930d3d`
+  - **Git Tag**：`v1.7.0`
   - **自动化测试通过率**：4/4 专项单测全绿 (1.40s)，10 项全量回归测试全绿 (2.55s)；
   - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4609 个跟踪文件 0 密钥泄露；
   - **前端生产构建**：`npm run build` 耗时 15.02s 顺利 PASS。
