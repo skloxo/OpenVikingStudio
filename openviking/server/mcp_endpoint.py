@@ -1987,6 +1987,105 @@ async def openviking_agent_sensors() -> str:
     )
 
 
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_active_notes_get(session_id: str = "default") -> str:
+    """Retrieve active goal, working constraints, current milestone state, and discovered facts for a session."""
+    from openviking.service.active_notes_history import ActiveNotesHistoryManager
+
+    manager = ActiveNotesHistoryManager.get_instance()
+    try:
+        norm_sess = session_id.strip() if session_id and session_id.strip() else "default"
+        notes = manager.get_or_create_notes(norm_sess)
+        stats = manager.get_stats(norm_sess)
+        constraints_str = "\n".join(f"  - {c}" for c in notes.working_constraints) if notes.working_constraints else "  (None)"
+        facts_str = "\n".join(f"  - {f}" for f in notes.discovered_facts) if notes.discovered_facts else "  (None)"
+        return (
+            f"=== Active Notes for Session [{notes.session_id}] (v{notes.version}) ===\n"
+            f"Active Goal: {notes.active_goal or '(None)'}\n"
+            f"Current State: {notes.current_state or '(None)'}\n"
+            f"Working Constraints:\n{constraints_str}\n"
+            f"Discovered Facts:\n{facts_str}\n\n"
+            f"=== Context Token Telemetry ===\n"
+            f"Estimated Active Notes Tokens: {notes.estimate_tokens()} tok\n"
+            f"Historical Messages in Archive: {stats.get('history_count', 0)} ({stats.get('history_total_tokens', 0)} tok)\n"
+            f"Token Saving Ratio: {stats.get('token_saving_ratio', 0.0):.1%}"
+        )
+    except Exception as e:
+        return f"Failed to retrieve active notes for session [{session_id}]: {e}"
+
+
+@mcp.tool(annotations=_RETRY_SAFE_DESTRUCTIVE_TOOL_ANNOTATIONS)
+async def openviking_active_notes_update(
+    session_id: str = "default",
+    active_goal: str = "",
+    working_constraints: list[str] | None = None,
+    current_state: str = "",
+    discovered_facts: list[str] | None = None,
+) -> str:
+    """Update active goal, working constraints, current milestone state, and immutable discovered facts."""
+    from openviking.service.active_notes_history import ActiveNotesHistoryManager
+
+    manager = ActiveNotesHistoryManager.get_instance()
+    try:
+        norm_sess = session_id.strip() if session_id and session_id.strip() else "default"
+        existing = manager.get_or_create_notes(norm_sess)
+        final_goal = active_goal if active_goal else existing.active_goal
+        final_state = current_state if current_state else existing.current_state
+        final_constraints = working_constraints if working_constraints is not None else existing.working_constraints
+        final_facts = discovered_facts if discovered_facts is not None else existing.discovered_facts
+
+        updated = manager.update_notes(
+            session_id=norm_sess,
+            active_goal=final_goal,
+            working_constraints=final_constraints,
+            current_state=final_state,
+            discovered_facts=final_facts,
+        )
+        return (
+            f"Successfully updated Active Notes for session [{norm_sess}] to version {updated.version}.\n"
+            f"Goal: {updated.active_goal}\n"
+            f"State: {updated.current_state}\n"
+            f"Constraints: {len(updated.working_constraints)} item(s)\n"
+            f"Facts: {len(updated.discovered_facts)} item(s)\n"
+            f"Estimated Size: {updated.estimate_tokens()} tokens"
+        )
+    except Exception as e:
+        return f"Failed to update active notes: {e}"
+
+
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_history_search(
+    query: str,
+    session_id: str = "default",
+    top_k: int = 5,
+) -> str:
+    """Search uncompressed historical dialogue stream via FTS5 full-text index with substring fallback."""
+    from openviking.service.active_notes_history import ActiveNotesHistoryManager
+
+    manager = ActiveNotesHistoryManager.get_instance()
+    try:
+        norm_sess = session_id.strip() if session_id and session_id.strip() else "default"
+        results = manager.search_history(
+            session_id=norm_sess,
+            query=query,
+            top_k=max(1, min(top_k, 50)),
+        )
+        if not results:
+            return f"No historical messages matched query '{query}' in session [{norm_sess}]."
+        lines = [f"=== History Search Results for '{query}' in [{norm_sess}] (Total Hits: {len(results)}) ==="]
+        for idx, hit in enumerate(results, 1):
+            snippet = hit.content.strip()
+            if len(snippet) > 300:
+                snippet = snippet[:300] + "... [truncated]"
+            lines.append(
+                f"{idx}. [{hit.role.upper()}][Turn #{hit.turn_index}] (Score: {hit.score}) (MsgID: {hit.message_id})\n   {snippet}"
+            )
+        return "\n\n".join(lines)
+    except Exception as e:
+        return f"Failed to search history: {e}"
+
+
+
 # ---------------------------------------------------------------------------
 # Portable tool schemas
 # ---------------------------------------------------------------------------

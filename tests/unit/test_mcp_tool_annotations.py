@@ -49,6 +49,10 @@ async def test_mcp_tools_advertise_behavior_annotations():
         # New FastMCP tools added in Card-58 (v1.7.12)
         "openviking_context_route": (True, False, True, False),
         "openviking_agent_sensors": (True, False, True, False),
+        # Context governance tools added in Card-59 (v1.7.13)
+        "openviking_active_notes_get": (True, False, True, False),
+        "openviking_active_notes_update": (False, True, True, False),
+        "openviking_history_search": (True, False, True, False),
     }
     fields = ("readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint")
 
