@@ -10,11 +10,12 @@
 > **生产物理事实声明**：
 >
 > - **线上正式部署版本**：**`v1.4.106`**（物理访问地址：`vk.tide.red/studio/home`，已实机验证）；
-> - **当前最新交付版本**：**`v1.7.24`**（Tag: `v1.7.24`，已全量通过探针单测物理环境隔离、消除伪时间戳、切除注水假按钮、11 项单测全绿、Vitest 5 项、安全审计 0 密钥与前端生产构建 PASS）；
+> - **当前最新交付版本**：**`v1.7.25`**（Tag: `v1.7.25`，已全量通过探针白盒数据透传、会话穿透详情抽屉、FastMCP session_id 穿透度量、11 项单测全绿、Vitest 5 项、安全审计 0 密钥与前端生产构建 PASS）；
 > - **历史里程碑详单检索**：如需查阅 Milestone 1~4 及早期版本修改清单与架构细节，请点击跳转至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。
 
 | 版本 Tag      | 任务工单 ID | 模块与重构主题                                                                                                                                                | 核心治理成果与物理交付物                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |     验收状态      |
 | :------------ | :---------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------: |
+| **`v1.7.25`** | **Card-71** | **探针白盒数据透传与会话穿透详情抽屉 (Whitebox Sensor Telemetry & Session Detail Inspection Drawer)**                                                              | 1. 后端白盒数据透传：`get_aggregated_metrics()` 补齐 `recent_timeline` 物理全息字段 (`effective_tokens`, `total_tokens`, `top5_hits`, `human_intervention_flag`)；<br>2. 新增会话详情端点与方法：`AgentSensorsAggregator.get_session_detail` 与 `GET /api/v1/metrics/agent-sensors/sessions/{session_id}`，输出有效载荷、系统冗余、数学公式与状态断言；<br>3. FastMCP 工具平价接入：`openviking_agent_sensors(session_id=...)` 拓展会话穿透诊断能力；<br>4. 前端座舱级穿透抽屉：编写 `SensorDetailDrawer.tsx`，在 `agent-sensors-card.tsx` 中实现点击采样瓦片秒级展开白盒公式拆解与原始 JSON 导出；<br>5. 门禁全绿：11/11 专项与回归全绿 (1.60s)，Vitest 5 项 PASS (642ms)，安全扫描 4655 文件 0 密钥，前端生产构建 17.08s PASS。<br>**Commit Hash**：`ea0c8b624`<br>**测试**：11/11 全绿 (1.60s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.24`** | **Card-70** | **探针单测物理环境隔离、消除伪活跃时间戳与切除注水假按钮 (Agent Sensors Test Isolation, Timestamp Truthfulness & Toy Button Removal)**                           | 1. 单测物理环境隔离根治：在 `test_card58` 中通过 `tmp_path` 与 `monkeypatch` 彻底隔离 metrics 文件，从根源阻断单测向生产磁盘泼脏水，生产代码保持 100% 纯净（零 hack 判断）；<br>2. 生产数据物理清洗：生产文件 `~/.openviking/data/agent_metrics.jsonl` 严格保留 6 条真实生产历史记录，脏数据彻底清零；<br>3. Peer 看板时间戳真实化：纠偏 `console.py` 中 0 消息节点时间戳逻辑漏洞，未同步节点诚实展示 `--`，消灭虚假繁荣；同时完整保留全集群在籍节点（含 Mac Studio 算力节点）；<br>4. 手术级切除注水按钮：彻底切除 `agent-sensors-card.tsx` 中 `+ 注入会话采样` 玩具按钮与 Mock Mutation，还原子系统为 100% 严肃生产级无感雷达；<br>5. 门禁全绿：11/11 专项与回归全绿 (1.60s)，Vitest 5 项 PASS (553ms)，安全扫描 4653 文件 0 密钥，前端生产构建 13.75s PASS。<br>**Commit Hash**：`161eda471`<br>**测试**：11/11 全绿 (1.60s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.23`** | **Card-69** | **数据隐私合规审计与敏感凭证隔离销毁 (Privacy Compliance Audit & Sensitive Credential Quarantine - BLUEPRINT Epic-PRIVACY-GOV PRIVACY-03)**                   | 1. 落地 `PrivacyQuarantineEngine` 敏感泄密隔离与合规审计引擎：支持风险凭据物理隔离至隔离仓目录 (`~/.openviking/data/quarantine/vault/`)，阻断检索召回；<br>2. 落地安全解冻恢复 (`restore`) 与物理销毁清零 (`purge` 覆盖清零) 闭环；<br>3. 落地不可篡改合规审计日记账 (`compliance_audit.jsonl`) 与分类统计度量报告大盘；<br>4. 完备双链路接口平价：FastMCP 原生工具新增 `openviking_privacy_quarantine`（受控写入可重试契约）与 `openviking_privacy_audit`（只读受控契约），REST 路由新增 `/api/v1/privacy-gov/quarantine`、`/restore`、`/audit-logs` 与 `/audit-report`；<br>5. 门禁全绿：108/108 专项与回归全绿 (3.98s)，注解契约测试 PASS，Vitest 5 项 PASS，安全扫描 4648 文件 0 密钥，前端生产构建 16.11s PASS。<br>**Commit Hash**：`271abf65b`<br>**测试**：108/108 全绿 (3.98s) ✅                                                                                                                     | [x] 已验收通过 ✅ |
 | **`v1.7.22`** | **Card-68** | **技能权重动态微调与沉淀 (Skill Weight Dynamic Tuner & Ingestion - BLUEPRINT Epic-SKILL-OPT SKILLOPT-03)**                                                    | 1. 落地 `SkillWeightTuner` 动态权重微调与学习引擎：基于微软 SkillOpt Attempt 判据（PASS/DEGRADED/FAIL）进行贝叶斯自适应调权，严格钳位 [0.1, 2.0] 效用区间；<br>2. 落地加权意图路由打分 (`calculate_weighted_score`)：赋能意图匹配器结合历史成功率动态调度高质量技能，降低翻车概率；<br>3. 完备双链路接口平价与磁盘持久化：FastMCP 原生工具新增 `openviking_skill_weight_tune`（受控写入可重试契约），REST 路由新增 `POST /api/v1/skill-opt/weight/tune` 与 `GET /api/v1/skill-opt/weights`；<br>4. 门禁全绿：100/100 专项与回归全绿 (3.82s)，注解契约测试 PASS，Vitest 5 项 PASS，安全扫描 4645 文件 0 密钥，前端生产构建 14.98s PASS。<br>**Commit Hash**：`58c8f9594`<br>**测试**：100/100 全绿 (3.82s) ✅                                                                                                                                                                                                   | [x] 已验收通过 ✅ | rd-68** | **技能权重动态微调与沉淀 (Skill Weight Dynamic Tuner & Ingestion - BLUEPRINT Epic-SKILL-OPT SKILLOPT-03)** | 1. 落地 `SkillWeightTuner` 动态权重微调与学习引擎：基于微软 SkillOpt Attempt 判据（PASS/DEGRADED/FAIL）进行贝叶斯自适应调权，严格钳位 [0.1, 2.0] 效用区间；<br>2. 落地加权意图路由打分 (`calculate_weighted_score`)：赋能意图匹配器结合历史成功率动态调度高质量技能，降低翻车概率；<br>3. 完备双链路接口平价与磁盘持久化：FastMCP 原生工具新增 `openviking_skill_weight_tune`（受控写入可重试契约），REST 路由新增 `POST /api/v1/skill-opt/weight/tune` 与 `GET /api/v1/skill-opt/weights`；<br>4. 门禁全绿：100/100 专项与回归全绿 (3.82s)，注解契约测试 PASS，Vitest 5 项 PASS，安全扫描 4645 文件 0 密钥，前端生产构建 14.98s PASS。<br>**Commit Hash**：`58c8f9594`<br>**测试**：100/100 全绿 (3.82s) ✅ | [x] 已验收通过 ✅ |
@@ -119,6 +120,43 @@
   - **自动化测试通过率**：4/4 专项单测全绿 (1.40s)，10 项全量回归测试全绿 (2.55s)；
   - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4609 个跟踪文件 0 密钥泄露；
   - **前端生产构建**：`npm run build` 耗时 15.02s 顺利 PASS。
+
+#### ✅ [P0] [x] Card-71 (v1.7.25): 探针白盒数据透传与会话穿透详情抽屉 (Whitebox Sensor Telemetry & Session Detail Inspection Drawer)
+
+- **类型**：可观测性白盒化 / 会话穿透详情抽屉 / FastMCP 探针会话下钻 / 纯净前端交互闭环 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.25` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - 核心痛点与深究死因（用户质问：“这功能干嘛的，怎么感觉怪怪的？加数据加功能吗？还是咋样🧠”）：
+    1. **指标黑盒缺乏可信度 (Root Cause 1)**：雷达只展示冷冰冰的综合百分比（如 `Token SNR 18%`），人类无法得知分母多少、分子多少、哪部分是代码哪部分是冗余上下文，产生强烈的黑盒与不信任感；
+    2. **看得见点不进去 (Root Cause 2)**：近期 20 会话时序流只是静态纯文本小方块，无法点击下钻，缺乏白盒物理凭证支持；
+    3. **MCP 外部调用失明 (Root Cause 3)**：`openviking_agent_sensors` 只能返回宏观摘要，无法按 `session_id` 穿透查询单次会话的具体健康得分与纠偏明细；
+  - 奥卡姆剃刀与信达雅根治：
+    1. **全息白盒数据透传**：`AgentSensorsAggregator.get_aggregated_metrics()` 补齐 `recent_timeline` 中 `effective_tokens`, `total_tokens`, `top5_hits`, `human_intervention_flag` 等物理事实字段；
+    2. **新增会话详情查询能力**：新增 `get_session_detail` 方法与 `GET /api/v1/metrics/agent-sensors/sessions/{session_id}` 端点，输出有效载荷、系统冗余、数学公式与状态断言；
+    3. **FastMCP 工具平价接入**：`openviking_agent_sensors(session_id=...)` 拓展可选入参，支持跨集群 Agent 针对特定会话一键下钻审计；
+    4. **前端座舱级白盒抽屉**：编写 `SensorDetailDrawer.tsx`，将 timeline 瓦片升级为可交互按钮，点击弹出物理白盒公式拆解、5 块采纳进度条、纠偏状态与一键复制原始 JSON；
+    5. **严格遵守 SemVer 铁律**：版本号自增至 `v1.7.25`。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **会话探针白盒可解释度**：单会话三维指标公式拆解与数据透传覆盖率达到 **$100\%$**；
+    2. **近期时序流可交互下钻率**：从 $0\%$ 跃升至 **$100\%$**（点击任意采样瓦片即刻弹出白盒抽屉）；
+    3. **FastMCP 探针会话下钻支持率**：达到 **$100\%$**（支持 `session_id` 过滤）；
+    4. **单文件规模安全红线**：`sensor-detail-drawer.tsx` (237行)、`agent-sensors-card.tsx` (271行)、`agent_sensors.py` (273行)，严格处于黄金甜点区。
+  - **展示界面与卡片**：`/studio/home` Agent 效能三维物理感知雷达 ➔ 点击任意采样瓦片展开 `SensorDetailDrawer`。
+- **核心交付目标与完成清单**：
+  1. `openviking/core/agent_sensors.py` (273行)：补齐 `recent_timeline` 白盒字段，实现 `get_session_detail`；
+  2. `openviking/server/routers/agent_sensors.py` (75行)：新增 `GET /sessions/{session_id}` 端点；
+  3. `openviking/server/mcp_endpoint.py`：扩展 `openviking_agent_sensors(session_id=...)` 会话下钻诊断；
+  4. `src/routes/monitoring/-components/sensor-detail-drawer.tsx` (237行)：新建座舱级白盒穿透抽屉；
+  5. `src/routes/monitoring/-components/agent-sensors-card.tsx` (271行)：联动抽屉与可交互采样瓦片；
+  6. `docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md`：登记 `SensorDetailDrawer`；
+  7. `tests/unit/test_card71_sensor_whitebox_and_drawer.py` (140行)：新增专项单元测试 4 项全绿通过；
+  8. `package.json` 与 `openviking/_version.py`：版本号同步自增至 `1.7.25`。
+- **交付验收结果 (Delivery Verification)**：
+  - **Git Commit Hash**：`ea0c8b624`
+  - **Git Tag**：`v1.7.25`
+  - **自动化测试通过率**：11/11 专项与回归全绿 (1.60s)，Vitest 5 项全绿 (642ms)；
+  - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4655 个跟踪文件 0 密钥泄露；
+  - **前端生产构建**：`npm run build` 耗时 17.08s 顺利 PASS。
 
 #### ✅ [P0] [x] Card-70 (v1.7.24): 探针单测物理环境隔离、消除伪活跃时间戳与切除注水假按钮 (Agent Sensors Test Isolation, Timestamp Truthfulness & Toy Button Removal)
 
