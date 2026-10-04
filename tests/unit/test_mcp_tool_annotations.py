@@ -55,8 +55,9 @@ async def test_mcp_tools_advertise_behavior_annotations():
         "openviking_history_search": (True, False, True, False),
         # Privacy governance tools added in Card-62 (v1.7.16)
         "openviking_privacy_mask": (True, False, True, False),
-        # Skill governance tools added in Card-63 (v1.7.17)
+        # Skill governance tools added in Card-63 (v1.7.17) & Card-64 (v1.7.18)
         "openviking_skill_validate": (True, False, True, False),
+        "openviking_skill_intent_match": (True, False, True, False),
     }
     fields = ("readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint")
 

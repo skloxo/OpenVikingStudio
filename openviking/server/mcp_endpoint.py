@@ -2112,6 +2112,22 @@ async def openviking_skill_validate(
     return json.dumps(result.to_dict(), ensure_ascii=False, indent=2)
 
 
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_skill_intent_match(
+    query: str,
+    triggers: list[str],
+    threshold: float = 0.6,
+) -> str:
+    """Simulate natural language intent matching against skill triggers in a zero-dependency sandbox."""
+    import json
+    from openviking.service.skill_intent_matcher import SkillIntentMatcher
+
+    result = SkillIntentMatcher.match_intent(
+        query=query, triggers=triggers, threshold=threshold
+    )
+    return json.dumps(result.to_dict(), ensure_ascii=False, indent=2)
+
+
 
 # ---------------------------------------------------------------------------
 # Portable tool schemas
