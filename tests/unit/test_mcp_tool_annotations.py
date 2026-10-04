@@ -53,6 +53,8 @@ async def test_mcp_tools_advertise_behavior_annotations():
         "openviking_active_notes_get": (True, False, True, False),
         "openviking_active_notes_update": (False, True, True, False),
         "openviking_history_search": (True, False, True, False),
+        # Privacy governance tools added in Card-62 (v1.7.16)
+        "openviking_privacy_mask": (True, False, True, False),
     }
     fields = ("readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint")
 

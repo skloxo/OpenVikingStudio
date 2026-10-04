@@ -2080,9 +2080,24 @@ async def openviking_history_search(
             lines.append(
                 f"{idx}. [{hit.role.upper()}][Turn #{hit.turn_index}] (Score: {hit.score}) (MsgID: {hit.message_id})\n   {snippet}"
             )
-        return "\n\n".join(lines)
+        from openviking.service.privacy_masker import PrivacyMasker
+        raw_output = "\n\n".join(lines)
+        return PrivacyMasker.mask_text(raw_output)
     except Exception as e:
         return f"Failed to search history: {e}"
+
+
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_privacy_mask(
+    text: str,
+    mask_private_endpoints: bool = False,
+) -> str:
+    """Sanitize sensitive credentials, API keys, JWT tokens, and database passwords from text."""
+    from openviking.service.privacy_masker import PrivacyMasker
+
+    return PrivacyMasker.mask_text(
+        text, mask_private_endpoints=mask_private_endpoints
+    )
 
 
 
