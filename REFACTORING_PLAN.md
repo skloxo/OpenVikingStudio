@@ -14,6 +14,7 @@
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.7.6`** | **Card-52** | **实验性编译器契约真实化、语法校验诚实性与双轨计数收口 (Contract Authenticity, Honest Syntax Validation & Single SSOT Tracking)** | 1. 契约真实化：`dspy_compiler_engine.py` 切除默认伪契约掩盖，非显式声明结构时诚实输出 `PARTIAL` 状态；<br>2. 语法校验诚实性：`tokenshift_engine.py` 未实现 AST 解析的语言明确拒绝假报 `valid=True`，诚实标记未验证；<br>3. 双轨计数彻底收拢：`vector_sync_tracker.py` 废除易失内存双轨计数器，100% 收口至 SQLite 物理索引 `COUNT(*) WHERE fast_path=1`；<br>4. 门禁全绿：专项单测全绿、安全扫描 0 密钥、前端构建 PASS。<br>**Commit Hash**：`ecc973977` | [x] 已验收通过 ✅ |
 | **`v1.7.5`** | **Card-51** | **静态事实目录去硬编码、SQL 拓扑解析强化与 mtime 增量感知 (Path Decoupling, Robust SQL Blast Radius & mtime Incremental Cache)** | 1. 动态路径解析：切除 `code_catalog.py` 中个人目录硬编码，自适应 `SKILLS_ROOT` 环境变量与项目上下文；<br>2. SQL 表拓扑强化：重构 `impact_topology.py`，支持多表逗号读解析、JOIN 别名清理与 CREATE TABLE 捕获；<br>3. mtime 增量指纹快照缓存：通过文件系统修改时间戳极速验证，无变更时 0ms 秒级命中，避免反复全盘 AST 遍历；<br>4. 门禁全绿：专项单测全绿、安全扫描 0 密钥、前端构建 PASS。<br>**Commit Hash**：`61da4f7f4` | [x] 已验收通过 ✅ |
 | **`v1.7.4`** | **Card-50** | **物理真实性、常数级去重与并发防死锁专项治理 (Physical Authenticity, O(1) Fingerprint Deduplication & Concurrency Lock Hygiene)** | 1. 探针物理真实性：切除 `system_probes.py` 硬件全零伪数据，显式返回 `available: False` 与真实占位符；<br>2. 建卡去重复杂度治理：`TaskCardManager` 引入内存哈希索引，去重从 $O(N)$ 磁盘全盘遍历降至 $O(1)$ 瞬时命中；<br>3. 二级缓存防死锁：`cache_tier2_engine.py` 引入 `in_flight_guard` RAII 上下文释放守卫，消灭回源异常永久死锁；<br>4. 测试视网膜真实化：重构 `test_retina_generator.py`，切除 MCP 假断言，注入可调用性与参数契约沙箱验证；<br>5. 门禁全绿：专项单测全绿、安全扫描 0 密钥、前端生产构建 PASS。<br>**Commit Hash**：`50e3c2b0e` | [x] 已验收通过 ✅ |
 | **`v1.7.3`** | **Card-49** | **跨集群智能体自主建卡与异常上报协议全链路座舱与闭环治理 (AIFP Full-Loop Cockpit, MCP Master Triage & Archive History)** | 1. 补齐 FastMCP 工具闭环：暴露 `openviking_list_pending_cards`、`openviking_resolve_task_card`、`openviking_task_cards_summary` 原生工具；<br>2. 修复 `TaskCardManager` 异步契约与兼容适配，补充 `list_resolved_cards`、`get_card_summary_stats` 与 `get_card_detail` 方法；<br>3. 扩展 REST 路由：新增 `/api/v1/task-cards/summary`、`/resolved`、`/{card_id}` 端点；<br>4. 前端座舱闭环：在任务中心上线 `IssueTaskCardsCockpit` 与 `TaskCardDetailDrawer`，提供 4 大高密指标瓦片、Pending/Resolved 双态切换与前端一键解决归档；<br>5. 门禁全绿：20 项回归单测 PASS、前端构建 PASS、安全审计 0 密钥。 | [x] 已验收通过 ✅ |
@@ -97,6 +98,34 @@
   - **自动化测试通过率**：4/4 专项单测全绿 (1.40s)，10 项全量回归测试全绿 (2.55s)；
   - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4609 个跟踪文件 0 密钥泄露；
   - **前端生产构建**：`npm run build` 耗时 15.02s 顺利 PASS。
+
+#### 📌 [P0] [x] Card-52 (v1.7.6): 实验性编译器契约真实化、语法校验诚实性与双轨计数收口 (Contract Authenticity, Honest Syntax Validation & Single SSOT Tracking)
+- **类型**：第一性原理真实性改造 / 语法校验收敛 / 数据库单一真相源 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.6` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - 提示词假契约与伪通过陷阱：`dspy_compiler_engine.py` 在输入 Prompt 缺乏显式输入/输出结构时，无脑硬编码填入默认的 `query` / `response`，导致校验断言 `if not signature.input_fields` 永远失活，虚假汇报 100% `PASS`；必须显式区分推断字段，当非显式声明结构时诚实标记 `is_inferred: True` 并输出 `PARTIAL` 状态；
+  - 语法伪通过欺骗：`tokenshift_engine.py` 对未实现 AST 解析器的语言（如 Shell/SQL/其他非 Python/TS/JS/JSON 语言），直接通过文本 strip 过滤空行后虚假断言 `valid=True`，给调用方造成语法已验证的严重错觉；必须实事求是标记为 `valid=False` 并指明未验证原因；
+  - 计数器双轨割裂：`vector_sync_tracker.py` 同时维护内存 `_fast_path_count` 与 SQLite 物理数据库列，并在度量查询中取 `max()` 混合；必须彻底切除内存易失计数，全盘收口至 SQLite 物理索引 `COUNT(*) WHERE fast_path=1`，确保唯一真相源 (SSOT)。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **Prompt 无结构场景伪通过率 (False Pass Rate)**：从 100% 降为 **$0\%$**（诚实回显 `PARTIAL`）；
+    2. **未解析语言虚假语法通过率**：从 100% 降为 **$0\%$**（实事求是标记未验证）；
+    3. **向量同步指标唯一真相源对齐率**：实现 SQLite 数据库 100% 物理对齐，切除内存中间割裂；
+    4. **单文件规模安全红线**：修改后所有涉及文件维持在 **$84 \sim 270$ 行** 黄金甜点区（严禁超过 500 行）。
+  - **展示界面与卡片**：`/studio/monitoring` 深度观测指标面板、`/studio/retrieval` 提示词与向量同步大盘。
+- **核心交付目标与完成清单**：
+  1. `openviking/service/dspy_compiler_types.py` (84行)：`CompiledSignature` 扩充 `is_inferred: bool = Field(False)`；
+  2. `openviking/service/dspy_compiler_engine.py` (242行)：完善字段提取正则，支持 `输入/输出参数` 与 `输入/输出字段`，在缺少显式声明时标记 `is_inferred: True`，并在 `compile()` 中诚实输出 `contract_status="PARTIAL"`；
+  3. `openviking/service/tokenshift_engine.py` (167行)：对非 AST/未知语言，拒绝虚假 `valid=True`，诚实标记 `valid=False, parser="text_strip_unverified"`；
+  4. `openviking/service/vector_sync_tracker.py` (269行)：彻底切除内存 `self._fast_path_count` 双轨易失计数，指标查询统一以 SQLite 物理数据库为唯一物理真相源 (SSOT)；
+  5. `package.json` 与 `openviking/_version.py`：版本号自增至 `1.7.6`；
+  6. 专项单测 `tests/unit/test_card52_contract_authenticity.py` (145行)：3 项专项单测全绿 (0.12s)。
+- **物理验收与门禁**：
+  - **Git Commit Hash**：`ecc973977`
+  - **Git Tag**：`v1.7.6`
+  - **自动化测试通过率**：3/3 专项单测全绿 (0.12s)，33 项全量回归测试全绿 (3.75s)；
+  - **活态资产盘点测试**：`src/components/component-inventory.test.ts` 5/5 全绿 (715ms)；
+  - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4620 个跟踪文件 0 密钥泄露；
+  - **前端生产构建**：`npm run build` 耗时 16.84s 顺利 PASS。
 
 #### 📌 [P0] [x] Card-51 (v1.7.5): 静态事实目录去硬编码、SQL 拓扑解析强化与 mtime 增量感知 (Path Decoupling, Robust SQL Blast Radius & mtime Incremental Cache)
 - **类型**：工程鲁棒性治理 / 动态路径解耦 / 增量文件指纹缓存 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.5` ｜ **当前状态**：[x] 已验收通过 ✅
