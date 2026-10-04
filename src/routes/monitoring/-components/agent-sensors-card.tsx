@@ -1,11 +1,10 @@
 /* eslint-disable i18next/no-literal-string */
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import {
   GaugeIcon,
   ActivityIcon,
   SlidersIcon,
   UserCheckIcon,
-  SparklesIcon,
   RefreshCwIcon,
 } from 'lucide-react'
 import { ovClient } from '#/lib/ov-client'
@@ -29,17 +28,7 @@ interface SensorSummaryData {
   recent_timeline: SensorTimelinePoint[]
 }
 
-interface SamplePayload {
-  session_id: string
-  effective_tokens: number
-  total_tokens: number
-  top5_hits: number
-  interventions_count: number
-}
-
 export function AgentSensorsCard() {
-  const queryClient = useQueryClient()
-
   const { data, isFetching, refetch } = useQuery<SensorSummaryData>({
     queryKey: ['agent-sensors-summary'],
     queryFn: async () => {
@@ -52,34 +41,6 @@ export function AgentSensorsCard() {
     refetchIntervalInBackground: false,
     staleTime: 15_000,
   })
-
-  const sampleMutation = useMutation({
-    mutationFn: async (payload: SamplePayload) => {
-      const res = await ovClient.instance.post<{ status: string; point: any }>(
-        '/api/v1/metrics/agent-sensors/sample',
-        payload
-      )
-      return res.data
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['agent-sensors-summary'] })
-    },
-  })
-
-  const handleInjectSample = () => {
-    const randomSuffix =
-      typeof window !== 'undefined' && window.crypto?.randomUUID
-        ? window.crypto.randomUUID().slice(0, 8)
-        : Date.now().toString(36)
-    const randomId = `sess_${randomSuffix}`
-    sampleMutation.mutate({
-      session_id: randomId,
-      effective_tokens: 720,
-      total_tokens: 1000,
-      top5_hits: 4,
-      interventions_count: 0,
-    })
-  }
 
   const hasData = Boolean(data && data.sample_count > 0)
 
@@ -113,15 +74,6 @@ export function AgentSensorsCard() {
             title="刷新探针"
           >
             <RefreshCwIcon className={`size-3.5 ${isFetching ? 'animate-spin' : ''}`} />
-          </button>
-          <button
-            type="button"
-            onClick={handleInjectSample}
-            disabled={sampleMutation.isPending}
-            className="px-2.5 py-1 rounded bg-secondary hover:bg-secondary/80 text-foreground text-xs font-mono transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
-          >
-            <SparklesIcon className="size-3 text-cyan-500" />
-            + 注入会话采样
           </button>
         </div>
       </div>
