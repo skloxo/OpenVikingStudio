@@ -62,6 +62,9 @@ async def test_mcp_tools_advertise_behavior_annotations():
         "openviking_skill_judge": (True, False, True, False),
         "openviking_skill_remediate": (True, False, True, False),
         "openviking_skill_weight_tune": (False, True, True, False),
+        # Privacy & Compliance Governance tools added in Card-69 (v1.7.23)
+        "openviking_privacy_quarantine": (False, True, True, False),
+        "openviking_privacy_audit": (True, False, True, False),
     }
     fields = ("readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint")
 

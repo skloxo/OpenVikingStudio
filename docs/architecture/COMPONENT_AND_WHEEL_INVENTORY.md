@@ -146,6 +146,7 @@
 | **`ValetIngestionCockpit`** | `src/routes/retrieval/-components/valet-ingestion-cockpit.tsx` | **前门代客泊车与反熵准入独立座舱**：集成 4 大核心 KPI 指标瓦片（交接时延、准入率、水深等）、异步 202 泊车控制台、车票流水审计与场景预设，完全切除结晶器冗余探针，消除双倍并发轮询。 | ✅ 已交付 (v1.7.14) |
 | **`UniversalPagination`** | `src/components/common/universal-pagination.tsx` | **统一高密分页控制器**：支持条数切换 (`10/20/50/100`)、首尾与翻页按钮、等宽页码、智能省略折叠与紧凑/标准双模态，严格 $\ge 12\text{px}$ 规范与 NO GREEN EVER。 | ✅ 已交付 (v1.7.15) |
 | **`MetricTile`** | `src/components/common/metric-tile.tsx` | **统一座舱高密指标瓦片**：规范 `p-3.5` 紧凑卡片、等宽大数字 (`tabular-nums font-mono`)、四态语义支持（中性/冰青/琥珀/玫瑰红，绝对无绿）、内建骨架屏加载过渡与自解释趋势指示。 | ✅ 已交付 (v1.7.15) |
+| **`PrivacyQuarantineEngine`** | `openviking/service/privacy_quarantine.py` | **敏感凭据物理隔离与合规审计引擎**：支持泄密风险内容物理隔离入仓 (`~/.openviking/data/quarantine/vault/`)、安全解冻恢复 (`restore`)、物理覆盖清零销毁 (`purge`) 与不可篡改合规审计日记账 (`compliance_audit.jsonl`)。 | ✅ 已交付 (v1.7.23) |
 | **`EmptyState`** | `src/components/common/empty-state.tsx` | 极客风空状态展示，支持图标胶囊、主副标题、可选重置筛选按钮。 | ⏳ 规划中 |
 
 ---
