@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { LayersIcon, LoaderCircleIcon, SparklesIcon, TargetIcon, ZapIcon } from 'lucide-react'
+import { CodeIcon, LayersIcon, LoaderCircleIcon, SparklesIcon, TargetIcon, ZapIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Badge } from '#/components/ui/badge'
@@ -14,6 +14,7 @@ import { SkillDetailSheet } from './-components/skill-detail-sheet'
 import { SkillZipCockpit } from './-components/skill-zip-cockpit'
 import { SkillLiveGenCockpit } from './-components/skill-livegen-cockpit'
 import { SkillOptCockpit } from './-components/skill-opt-cockpit'
+import { CodeCatalogCockpitCard } from './-components/code-catalog-cockpit-card'
 import { getErrorMessage } from './-lib/skill-data'
 import { useSkillsData } from './-lib/use-skills'
 
@@ -23,7 +24,7 @@ export const Route = createFileRoute('/skills')({
 
 function SkillsRoute() {
   const { t } = useTranslation('skillsPage')
-  const [activeTab, setActiveTab] = React.useState<'catalog' | 'zip' | 'livegen' | 'opt'>('catalog')
+  const [activeTab, setActiveTab] = React.useState<'catalog' | 'facts' | 'zip' | 'livegen' | 'opt'>('catalog')
   const data = useSkillsData()
   const {
     skills, filteredSkills, paginatedSkills, skillsQuery, detailQuery,
@@ -55,6 +56,15 @@ function SkillsRoute() {
         >
           <LayersIcon className="size-3.5 mr-1.5" />
           全量技能库 ({skills.length})
+        </Button>
+        <Button
+          variant={activeTab === 'facts' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setActiveTab('facts')}
+          className={`text-xs h-7 font-mono ${activeTab === 'facts' ? 'bg-cyan-600 text-white' : 'text-cyan-400'}`}
+        >
+          <CodeIcon className="size-3.5 mr-1.5" />
+          🧬 源码事实与测试视网膜
         </Button>
         <Button
           variant={activeTab === 'zip' ? 'default' : 'ghost'}
@@ -91,6 +101,8 @@ function SkillsRoute() {
         <SkillLiveGenCockpit />
       ) : activeTab === 'zip' ? (
         <SkillZipCockpit />
+      ) : activeTab === 'facts' ? (
+        <CodeCatalogCockpitCard />
       ) : (
         <>
           <SkillsMetricsCards metrics={harnessMetrics} totalSkills={skills.length} />

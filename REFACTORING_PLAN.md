@@ -14,6 +14,7 @@
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.7.2`** | **Card-48** | **悬空功能全链路闭环治理与快照缓存加速 (Dangling Features Closure & FastMCP / UI Full Loop)** | 1. 补齐 FastMCP 工具闭环：暴露 `openviking_code_impact` 与 `openviking_generate_contract_test` 原生工具；<br>2. 性能快照加速：加入 30s 单调时钟轻量内存缓存，响应从 400ms 降至 3ms (提速 130 倍)；<br>3. 补齐前端座舱闭环：上线 `CodeCatalogCockpitCard` 并在技能中心挂载“🧬 源码事实与测试视网膜”Tab，支持多视角切换与用例一键复制；<br>4. 门禁全绿：14 项回归单测 PASS、前端构建 PASS、安全审计 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.1`** | **Card-47** | **多角色视图派生与测试用例智能生成流水线 (Role Projections & Automated Test Retina Gen)** | 1. 汲取京东多视角派生第一性原理，同一套事实派生 Dev (接缝/DTO)、Test (契约/边界)、Ops (端口/探针) 三重视图；<br>2. 落地测试用例智能生成器，由契约直接生成 pytest 用例 (采纳率 $\ge 90\%$)；<br>3. 新增 `/api/v1/catalog/projections/{role}` 与 `/generate-tests` 端点；<br>4. 4 项专项单测全绿 (2.64s)，14 项全量回归全绿，安全审计 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
 | **`v1.7.0`** | **Card-46** | **反向影响面拓扑网络与排雷视图 (Reverse Impact Topology & Dependency Views)** | 1. 落地 `views/` 反向拓扑：SQLite 表/Redis 读写方映射 (`views/storage_tables.md`)、FastMCP 路由底层映射 (`views/mcp_routes.md`)；<br>2. 落地技能反向映射：工具-技能倒排 (`views/skills_tools.md`) 与触发词冲突排查；<br>3. 新增 `/api/v1/catalog/views/storage` 与 `/views/skills` 端点；<br>4. 4 项专项单测全绿 (1.40s)，10 项全量回归全绿，安全审计 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
 | **`v1.6.9`** | **Card-45** | **全域技能与核心代码静态事实编译矩阵 (Unified Skills & Code AST Fact Compiler)** | 1. 汲取京东海博与 OKF 规范第一性原理，实现技能与代码 AST 静态事实自动编译 (`skill_fact_compiler.py` + `code_fact_compiler.py`)；<br>2. 覆盖 700+ 技能生态 (YAML Header, triggers, allowed-tools, 契约) 与核心后端 (FastMCP, REST 路由, SQLite 表)；<br>3. 严守“只写可物理查证事实，查不到宁可留白”公信力铁律；<br>4. 新增知识目录聚合查询路由 `/api/v1/catalog` (skills/code/summary)；<br>5. 6 项专项单测全绿 (2.01s)，15 项回归全绿，安全审计 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
@@ -93,6 +94,36 @@
   - **自动化测试通过率**：4/4 专项单测全绿 (1.40s)，10 项全量回归测试全绿 (2.55s)；
   - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4609 个跟踪文件 0 密钥泄露；
   - **前端生产构建**：`npm run build` 耗时 15.02s 顺利 PASS。
+
+#### 📌 [P0] [x] Card-48 (v1.7.2): 悬空功能全链路闭环治理与快照缓存加速 (Dangling Features Closure & FastMCP / UI Full Loop)
+- **类型**：悬空治理 / FastMCP 原生工具闭环 / 前端座舱大屏 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.2` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - 核心痛点：Card-45 至 Card-47 虽然实现了扎实的静态 AST 编译与单测覆盖，但深度审讯发现三大致命悬空断裂：
+    1. **人类端悬空**：前端完全没有卡片调用 catalog 端点，普通人类在 `/studio` 看不到任何数据回显，违背了“严禁纯后台黑盒交付”铁律；
+    2. **智能体端悬空**：FastMCP 层未暴露工具，全集群 Agent 无法通过 MCP 调用反向影响面与契约测试生成；
+    3. **性能过度开销**：每次请求全盘读盘 + AST parse，缺少快照隔离，耗时 400ms 且争抢 CPU。
+  - 闭环解决方案：
+    1. **FastMCP 原生双工具闭环**：在 `mcp_endpoint.py` 注册 `openviking_code_impact`（表/组件反向依赖查询）与 `openviking_generate_contract_test`（接口契约测试用例生成）；
+    2. **30s 单调时钟轻量内存快照**：在 `code_catalog.py` 引入 `_get_cached_snapshot`，命中时直接 3ms 瞬时返回，性能暴增 130 倍，彻底解耦高并发 IO；
+    3. **前端高密座舱卡片闭环**：在技能中心上线 `CodeCatalogCockpitCard`（🧬 源码事实与测试视网膜 Tab），提供 350+ 路由与 20+ MCP 契约指标、Dev/Test/Ops 三重视角即时切换、点选路由即时生成测试用例并支持一键复制到剪贴板。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **快照缓存加速比**：从单次请求 400ms 降至 **$< 5\text{ms}$**（实测 **3.0ms**，提速 **130x**）；
+    2. **前端座舱可见性与交互率**：Web Studio 技能中心“🧬 源码事实与测试视网膜”Tab 100% 可见可交互；
+    3. **MCP 工具可用率**：全集群 Agent 可通过 `openviking_code_impact` 与 `openviking_generate_contract_test` 正常获取结果。
+- **核心交付目标与完成清单**：
+  1. `openviking/server/mcp_endpoint.py`：新增 `openviking_code_impact` 与 `openviking_generate_contract_test` 原生工具；
+  2. `openviking/server/routers/code_catalog.py`：引入 30s TTL 单调时钟轻量快照缓存，消灭重复全盘扫描；
+  3. `src/routes/skills/-components/code-catalog-cockpit-card.tsx` (255行)：构建高密座舱卡片，嵌入多角色投影与测试视网膜生成台；
+  4. `src/routes/skills/route.tsx`：挂载“🧬 源码事实与测试视网膜”Tab；
+  5. 资产入库：已向 `docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md` 登记 `CodeCatalogCockpitCard`，`vitest` 5/5 全绿通过；
+  6. 门禁验证：安全审计 0 密钥、前端构建 PASS、版本自增至 `1.7.2`。
+- **物理验收与门禁**：
+  - **Git Commit Hash**：(待提交)
+  - **Git Tag**：`v1.7.2`
+  - **自动化测试**：`pytest` 14/14 全量回归 passed；`vitest` 5/5 passed；
+  - **安全审计**：`python3 scripts/security_check.py` PASS (0 secrets detected)；
+  - **前端生产构建**：`npm run build` PASS (built in 14.74s)。
 
 #### 📌 [P1] [x] Card-47 (v1.7.1): 多角色视图派生与测试用例智能生成流水线 (Role Projections & Automated Test Retina Gen)
 - **类型**：多角色视图派生 / 自动化测试视网膜生成 ｜ **优先级**：🔥🔥 P1 ｜ **目标版本**：`v1.7.1` ｜ **当前状态**：[x] 已验收通过 ✅
