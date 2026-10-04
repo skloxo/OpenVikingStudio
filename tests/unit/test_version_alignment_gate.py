@@ -47,3 +47,19 @@ def test_dist_baked_version_integrity():
 
     # 验证虚假未来版本一定报错返回 False
     assert verify_dist_baked_version("999.999.999") is False
+
+
+def test_agent_patch_only_authority_gate():
+    """验证 Agent 默认无权擅自修改主版本号(X)与次版本号(Y)，日常仅限 Patch(Z) 递增。"""
+    current_ver = read_package_json_version()
+    parts = current_ver.split(".")
+    assert len(parts) >= 3, f"非法版本格式: {current_ver}"
+    major, minor, patch = int(parts[0]), int(parts[1]), int(parts[2])
+    
+    # 严格门禁：当前 Milestone 5 研发基线为 1.7.x，严禁 Agent 自作主张进位为 1.8.x
+    assert major == 1, f"主版本号越权变更: {major} != 1"
+    assert minor == 7, (
+        f"副版本号越权变更: {minor} != 7！"
+        "Agent 仅有权限递增补丁号(Patch: Z)，主/副版本号变更必须由人类明确指令授权！"
+    )
+    assert patch >= 9, f"补丁号异常回退: {patch} < 9"
