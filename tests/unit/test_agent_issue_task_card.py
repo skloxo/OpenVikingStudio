@@ -224,3 +224,39 @@ def test_task_cards_http_api_endpoints():
     assert list_data["status"] == "ok"
     pending_list = list_data["result"]["cards"]
     assert any(c["card_id"] == card_id for c in pending_list)
+
+    # 3. Get Summary Stats via HTTP GET
+    summary_resp = client.get("/api/v1/task-cards/summary")
+    assert summary_resp.status_code == 200
+    summary_data = summary_resp.json()["result"]
+    assert summary_data["pending_count"] >= 1
+    assert summary_data["p1_count"] >= 1
+    assert summary_data["total_occurrences"] >= 1
+
+    # 4. Get Detail via HTTP GET
+    detail_resp = client.get(f"/api/v1/task-cards/{card_id}")
+    assert detail_resp.status_code == 200
+    detail_data = detail_resp.json()["result"]
+    assert detail_data["card_id"] == card_id
+    assert detail_data["title"] == "API Gateway 504 on High Concurrency"
+
+    # 5. Resolve via HTTP POST
+    resolve_resp = client.post(
+        f"/api/v1/task-cards/{card_id}/resolve",
+        json={
+            "resolution_tag": "v1.7.3",
+            "commit_hash": "a1b2c3d4",
+            "summary": "Increased connection pool size to 200.",
+        },
+    )
+    assert resolve_resp.status_code == 200
+    resolve_data = resolve_resp.json()["result"]
+    assert resolve_data["status"] == "resolved"
+    assert resolve_data["resolution_tag"] == "v1.7.3"
+
+    # 6. List resolved via HTTP GET
+    resolved_resp = client.get("/api/v1/task-cards/resolved")
+    assert resolved_resp.status_code == 200
+    resolved_cards = resolved_resp.json()["result"]["cards"]
+    assert any(c["card_id"] == card_id for c in resolved_cards)
+

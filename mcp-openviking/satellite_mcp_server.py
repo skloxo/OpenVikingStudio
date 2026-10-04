@@ -470,6 +470,12 @@ def openviking_file_task_card(
 
 
 @_safe_tool()
+def openviking_list_pending_cards(limit: int = 20) -> str:
+    """查询中枢待分诊工单列表 (供巡检自查与协同排期)"""
+    return _format_result(http_client.get(f"/api/v1/task-cards/pending?limit={limit}"))
+
+
+@_safe_tool()
 def openviking_ping() -> str:
     """检测远端连接状态、网络延迟与可用工具数握手自检"""
     cfg = _get_config()

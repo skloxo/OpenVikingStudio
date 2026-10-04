@@ -8,6 +8,7 @@ import { useAppConnection } from '#/hooks/use-app-connection'
 import { TaskDetailSheet } from '#/routes/tasks/-components/task-detail-sheet'
 import { TasksMetricsCards } from '#/routes/tasks/-components/tasks-metrics-cards'
 import { TasksTableSection } from '#/routes/tasks/-components/tasks-table-section'
+import { IssueTaskCardsCockpit } from '#/routes/tasks/-components/issue-task-cards-cockpit'
 import { DEFAULT_PAGE_SIZE } from '#/routes/tasks/-lib/task-api'
 import type { TaskDataScope, TaskStatusFilter, TaskTypeFilter } from '#/routes/tasks/-lib/task-api'
 import { useTasks } from '#/routes/tasks/-lib/use-tasks'
@@ -84,6 +85,8 @@ function TasksRoute() {
       </header>
 
       <TasksMetricsCards kpiData={kpiData} queueObserverRows={queueObserverRows} isQueueLoading={queueObserverQuery.isLoading} />
+
+      <IssueTaskCardsCockpit />
 
       <TasksTableSection
         filters={{ dataScope, setDataScope, taskType, setTaskType, statusFilter, setStatusFilter, dedupByResource, setDedupByResource }}
