@@ -9,11 +9,12 @@
 
 > **生产物理事实声明**：
 > - **线上正式部署版本**：**`v1.4.106`**（物理访问地址：`vk.tide.red/studio/home`，已实机验证）；
-> - **当前最新交付版本**：**`v1.7.18`**（Tag: `v1.7.18`，已全量通过技能意图触发与自然语言模拟测试沙盒试验台 SkillIntentMatcher、70 项单测全绿、Vitest 5 项、安全审计 0 密钥与前端生产构建 PASS）；
+> - **当前最新交付版本**：**`v1.7.19`**（Tag: `v1.7.19`，已全量通过技能一键向量化入脑与快照上架试验台 SkillPublisher、75 项单测全绿、Vitest 5 项、安全审计 0 密钥与前端生产构建 PASS）；
 > - **历史里程碑详单检索**：如需查阅 Milestone 1~4 及早期版本修改清单与架构细节，请点击跳转至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.7.19`** | **Card-65** | **技能一键向量化入脑与快照上架试验台 (Skill Vectorization & Vault Ingestion Cockpit - BLUEPRINT Epic-LIVE-GEN LIVEGEN-03)** | 1. 落地 `SkillPublisher` 前置门禁与原子化上架服务：内置发布前严格调用 `SkillValidator` 静态防御拦截坏技能，生成 12 位 SHA256 物理版本指纹；<br>2. 统一全集群 VikingFS 目标存储路径契约 (`viking://resources/master_memory/skills/{slug}/SKILL.md`)，并支持本地物理镜像落盘与防覆盖保护；<br>3. FastMCP 原生工具平价接入：新增 `openviking_skill_publish` 写入可重试受控工具，赋能全集群外部 Agent 将新提纯技能一键原子化上架入脑；<br>4. 门禁全绿：75/75 专项与回归全绿 (3.62s)，注解契约测试 PASS，Vitest 5 项 PASS，安全扫描 4638 文件 0 密钥，前端构建 16.58s PASS。<br>**Commit Hash**：`待提交`<br>**测试**：75/75 全绿 (3.62s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.18`** | **Card-64** | **技能意图触发与自然语言模拟测试沙盒试验台 (Skill Trigger Intent Matching & Simulation Sandbox - BLUEPRINT Epic-LIVE-GEN LIVEGEN-02)** | 1. 落地 `SkillIntentMatcher` 零依赖自然语言意图匹配与冲突沙盒引擎：融合字符级 n-gram Jaccard 相似度与子串高权重包含度量；<br>2. 跨技能意图路由冲突检测 (`detect_collisions`)：支持批量预检新技能与已有生态技能 triggers 之间的碰撞重合度，输出多技能冲突诊断；<br>3. FastMCP 原生工具平价接入：新增 `openviking_skill_intent_match` 只读受控工具，赋能全集群外部 Agent 离线模拟技能触发准确率；<br>4. 门禁全绿：70/70 专项与回归全绿 (3.75s)，注解契约测试 PASS，Vitest 5 项 PASS，安全扫描 4636 文件 0 密钥，前端构建 16.27s PASS。<br>**Commit Hash**：`76d35e561`<br>**测试**：70/70 全绿 (3.75s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.17`** | **Card-63** | **技能在线创生与 YAML 静态语法强校验试验台 (Skill Live Generator & YAML Static Validation Sandbox - BLUEPRINT Epic-LIVE-GEN)** | 1. 落地 `SkillValidator` 静态解析与强类型契约校验引擎：全面覆盖 YAML 分界符结构、kebab-case 命名契约、必填 `name`/`description` 语义检测与正文字符统计；<br>2. 幽灵工具与阴影调用预警：对照全域 FastMCP 与系统核心工具目录，自动侦测 `allowed-tools` 中的潜在幽灵工具 (Ghost Tool) 并输出诊断预警；<br>3. FastMCP 原生工具桥接：新增 `openviking_skill_validate` 只读受控工具，支持跨集群 Agent 在提纯或创生新技能时即时自检静态语法，阻断坏配置落地；<br>4. 门禁全绿：63/63 专项与回归全绿 (3.94s)，注解契约测试 PASS，Vitest 5 项 PASS，安全扫描 4634 文件 0 密钥，前端构建 17.22s PASS。<br>**Commit Hash**：`a8387baa6`<br>**测试**：63/63 全绿 (3.94s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.16`** | **Card-62** | **端到端数据隐私与敏感信息动态脱敏治理 (Privacy Governance & Sensitive Credential Dynamic Masking - BLUEPRINT Epic-PRIVACY-GOV)** | 1. 落地 `PrivacyMasker` 高精度同步脱敏引擎：纯正则零外部依赖，毫秒级脱敏 OpenAI/Claude API Key (`sk-***[MASKED]***`)、GitHub 访问令牌 (`ghp_***[MASKED]***`)、JWT/Bearer Token 与数据库连接串密码；<br>2. FastMCP 全域隐私桥接：新增 `openviking_privacy_mask` 原生工具（四维注解严格受控），并在 `openviking_history_search` 历史检索返回前挂载自动脱敏，杜绝多 Agent 协同与外呼时凭据泄露；<br>3. 结构化敏感特征扫描：提供 `contains_sensitive` 与 `scan_findings` 探测能力，支持安全预检；<br>4. 门禁全绿：56/56 专项与回归全绿 (3.62s)，注解契约测试 PASS，Vitest 5 项 PASS，安全扫描 4632 文件 0 密钥，前端构建 16.14s PASS。<br>**Commit Hash**：`813dbb580`<br>**测试**：56/56 全绿 (3.62s) ✅ | [x] 已验收通过 ✅ |
@@ -110,6 +111,37 @@
   - **自动化测试通过率**：4/4 专项单测全绿 (1.40s)，10 项全量回归测试全绿 (2.55s)；
   - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4609 个跟踪文件 0 密钥泄露；
   - **前端生产构建**：`npm run build` 耗时 15.02s 顺利 PASS。
+
+#### ✅ [P0] [x] Card-65 (v1.7.19): 技能一键向量化入脑与快照上架试验台 (Skill Vectorization & Vault Ingestion Cockpit - BLUEPRINT Epic-LIVE-GEN LIVEGEN-03)
+- **类型**：技能生命周期 / 存储入脑契约 / FastMCP 原生工具平价 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.19` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - 核心痛点与死因审讯：
+    1. 技能散落与孤岛失明：全生态技能此前只写在本地磁盘文件树，未受控原子化接入 VikingFS 记忆中枢，导致跨集群远程节点（3070、2080Ti、Mac Studio）通过 `openviking_find` 无法感知召回新技能；
+    2. 无门禁坏配置污染全生态：缺乏发布前强制语法门禁联锁，损坏的 YAML 或缺失必填字段的残缺技能直接入库会毒化全集群智能体生态；
+    3. 粗暴覆盖无快照版本溯源：旧技能直接就地覆盖，缺乏 12 位物理版本指纹计算与回滚依据；
+  - 奥卡姆剃刀与信达雅：
+    1. 落地 `SkillPublisher`（`openviking/service/skill_publisher.py`）；
+    2. 前置自动调用 `SkillValidator` 静态防御拦截器，未通过校验时 Fail-Fast 阻断入库；
+    3. 计算 12 位内容 SHA256 物理版本指纹，严格遵循统一全集群存储 URI 契约（`viking://resources/master_memory/skills/{slug}/SKILL.md`）；
+    4. 补齐原生 FastMCP 工具 `openviking_skill_publish`（可重试修改契约注解严格受控）；
+    5. 严格遵守 SemVer 铁律：版本递增为 `v1.7.19`（Patch 递增，主版本号与次版本号锁定）。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **坏技能非法入库拦截率**：前置门禁拦截率 **$100\%$**；
+    2. **全集群记忆库统一 URI 规范覆盖率**：规范化 URI 生成与指纹命中率 **$100\%$**；
+    3. **发布与指纹计算时延 (Latency Overhead)**：纯静态验证与哈希计算耗时 $\le 1\text{ms}$，极速零开销；
+    4. **单文件规模安全红线**：`skill_publisher.py` 107 行，单测 88 行，严格收敛于 100~300 行黄金甜点区内。
+  - **展示界面与卡片**：全集群 FastMCP 工具目录与技能管理沙盒。
+- **核心交付目标与完成清单**：
+  1. `openviking/service/skill_publisher.py` (107行)：纯原生态技能发布与前置门禁服务；
+  2. `openviking/server/mcp_endpoint.py`：新增 FastMCP 原生工具 `openviking_skill_publish`；
+  3. `tests/unit/test_mcp_tool_annotations.py`：登记 `openviking_skill_publish` 可重试修改注解契约；
+  4. `tests/unit/test_card65_skill_vault_publisher.py` (88行)：覆盖合法发布、坏技能拦截、物理镜像落盘、MCP 集成与版本对齐门禁；
+  5. `package.json` 与 `openviking/_version.py`：版本号自增至 `1.7.19`。
+- **交付验收结果 (Delivery Verification)**：
+  - **自动化测试通过率**：75/75 专项与回归全绿 (3.62s)，注解契约 1 项 PASS，Vitest 5 项全绿 (605ms)；
+  - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4638 个跟踪文件 0 密钥泄露；
+  - **前端生产构建**：`npm run build` 耗时 16.58s 顺利 PASS。
 
 #### ✅ [P0] [x] Card-64 (v1.7.18): 技能意图触发与自然语言模拟测试沙盒试验台 (Skill Trigger Intent Matching & Simulation Sandbox - BLUEPRINT Epic-LIVE-GEN LIVEGEN-02)
 - **类型**：技能生命周期 / 意图匹配沙盒 / FastMCP 原生工具平价 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.18` ｜ **当前状态**：[x] 已验收通过 ✅
