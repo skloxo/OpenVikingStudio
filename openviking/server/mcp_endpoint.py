@@ -1748,6 +1748,187 @@ async def openviking_generate_contract_test(route_path: str) -> str:
     )
 
 
+@mcp.tool(annotations=_RETRY_SAFE_DESTRUCTIVE_TOOL_ANNOTATIONS)
+async def openviking_valet_handover(
+    uri: str,
+    content: str,
+    source: str = "mcp",
+    caller: str = "Agent",
+) -> str:
+    """Handover memory or documentation payload to Valet Parking for instant (<2ms) non-blocking ingestion.
+    Returns an HTTP 202-style ticket immediately, eliminating 504 Gateway Timeouts for large contents.
+    """
+    import time
+    from openviking.service.valet_ingestion import ValetIngestionEngine
+
+    t_start = time.perf_counter()
+    engine = ValetIngestionEngine.get_instance()
+    ticket = engine.handover(
+        uri=uri,
+        content=content,
+        source=source,
+        metadata={},
+        caller=caller,
+    )
+    latency_ms = (time.perf_counter() - t_start) * 1000.0
+    return (
+        f"=== Valet Ingestion Ticket Issued ===\n"
+        f"Ticket ID: {ticket.ticket_id}\n"
+        f"Status: {ticket.status}\n"
+        f"Target URI: {ticket.uri}\n"
+        f"Handover Latency: {latency_ms:.2f}ms\n"
+        f"Payload Size: {len(content)} chars"
+    )
+
+
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_valet_ticket_status(ticket_id: str) -> str:
+    """Check asynchronous ingestion and indexing status of a Valet ticket."""
+    from openviking.service.valet_ingestion import ValetIngestionEngine
+
+    engine = ValetIngestionEngine.get_instance()
+    ticket = engine.get_ticket(ticket_id)
+    if not ticket:
+        return f"Ticket '{ticket_id}' not found."
+    return (
+        f"=== Valet Ticket {ticket.ticket_id} ===\n"
+        f"Status: {ticket.status}\n"
+        f"Target URI: {ticket.uri}\n"
+        f"Initiator: {ticket.initiator}\n"
+        f"Action: {ticket.action or 'None'}\n"
+        f"Message: {ticket.message}"
+    )
+
+
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_dspy_compile(
+    raw_prompt: str,
+    task_objective: str = "",
+    signature_name: str = "TaskExecution",
+) -> str:
+    """Compile a loose prompt into a strongly-typed DSPy signature schema with contract validation."""
+    from openviking.service.dspy_compiler_engine import DSPyCompilerEngine
+    from openviking.service.dspy_compiler_types import DSPyCompileRequest
+
+    engine = DSPyCompilerEngine.get_instance()
+    req = DSPyCompileRequest(
+        raw_prompt=raw_prompt,
+        task_objective=task_objective,
+        signature_name=signature_name,
+    )
+    res = engine.compile(req)
+    saved_tokens = max(0, res.original_token_count - res.compiled_token_count)
+    lines = [
+        f"=== DSPy Prompt Compilation ({res.contract_status}) ===",
+        f"Signature: {res.signature.name}",
+        f"Objective: {res.signature.task_objective}",
+        f"Input Fields: {', '.join([f.name for f in res.signature.input_fields])}",
+        f"Output Fields: {', '.join([f.name for f in res.signature.output_fields])}",
+        f"Tokens Saved: {saved_tokens} (Ratio: {res.compression_ratio:.1%})",
+        f"Compiled Prompt:\n{res.compiled_prompt}",
+    ]
+    return "\n".join(lines)
+
+
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_skill_zip(skill_content: str) -> str:
+    """Perform 0-rollout deterministic contractual compression on skill content with 100% contract fidelity."""
+    from openviking.service.skill_zip_engine import SkillZipEngine
+
+    engine = SkillZipEngine.get_instance()
+    res = engine.compress(skill_content)
+    return (
+        f"=== SkillZip Compression Result ===\n"
+        f"Original Length: {res.original_length} chars\n"
+        f"Compressed Length: {res.compressed_length} chars\n"
+        f"Compression Ratio: {res.compression_ratio:.1%}\n"
+        f"Tokens Saved: ~{res.tokens_saved}\n"
+        f"Contract Fidelity: {res.contract_fidelity:.1f}\n"
+        f"Compressed Content:\n{res.compressed_content}"
+    )
+
+
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_tokenshift_compress(
+    code: str,
+    language: str = "auto",
+    mode: str = "outline",
+) -> str:
+    """Compress source code using TokenShift AST folding while preserving syntax validity."""
+    from openviking.service.tokenshift_engine import TokenShiftEngine
+    from openviking.service.tokenshift_types import (
+        TokenShiftLanguage,
+        TokenShiftMode,
+        TokenShiftRequest,
+    )
+
+    try:
+        lang_enum = TokenShiftLanguage(language.lower())
+    except ValueError:
+        lang_enum = TokenShiftLanguage.AUTO
+    try:
+        mode_enum = TokenShiftMode(mode.lower())
+    except ValueError:
+        mode_enum = TokenShiftMode.OUTLINE
+
+    req = TokenShiftRequest(code=code, language=lang_enum, mode=mode_enum)
+    res = TokenShiftEngine.compress(req)
+    lang_val = res.language.value if hasattr(res.language, "value") else str(res.language)
+    saved_tokens = max(0, res.original_tokens_est - res.compressed_tokens_est)
+    return (
+        f"=== TokenShift Code Compression ===\n"
+        f"Language: {lang_val}\n"
+        f"Syntax Valid: {res.syntax_validation.valid} (Parser: {res.syntax_validation.parser})\n"
+        f"Reduction Ratio: {res.reduction_ratio:.1%}\n"
+        f"Tokens Saved: ~{saved_tokens}\n"
+        f"Compressed Code:\n{res.compressed_code}"
+    )
+
+
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_memory_purity_report() -> str:
+    """Inspect external brain memory purity metrics (SNR, cognitive conflict rate, freshness, purity score)."""
+    from openviking.service.memory_purity import MemoryPurityBenchmark
+
+    bench = MemoryPurityBenchmark.get_instance()
+    rep = bench.compute_purity_report()
+    return (
+        f"=== OpenViking Memory Purity & Anti-Entropy Report ===\n"
+        f"Purity Health Score: {rep.purity_score}/100\n"
+        f"Signal-to-Noise Ratio (SNR): {rep.snr_ratio:.2f}\n"
+        f"Cognitive Conflict Rate: {rep.conflict_rate:.1%}\n"
+        f"90-Day Freshness Retained: {rep.freshness_retained:.1%}\n"
+        f"Total Memories: {rep.total_memories} (Active: {rep.active_count}, Superseded: {rep.superseded_count})\n"
+        f"Master Cards: {rep.master_cards_count}"
+    )
+
+
+@mcp.tool(annotations=_RETRY_SAFE_DESTRUCTIVE_TOOL_ANNOTATIONS)
+async def openviking_retry_dead_letter(dlq_id: int) -> str:
+    """Retry a failed/unprocessable QueueFS dead letter message by re-enqueuing into its target NamedQueue."""
+    from openviking.storage.queuefs.dlq_manager import DLQManager
+
+    dlq = DLQManager.get_instance()
+    record = dlq.get_dead_letter(dlq_id)
+    if not record:
+        return f"Dead letter #{dlq_id} not found."
+    try:
+        from openviking.server.app import get_app_viking_service
+
+        service = get_app_viking_service()
+        if hasattr(service, "_vikingdb") and service._vikingdb and service._vikingdb.has_queue_manager:
+            queue_name = record.get("queue_name") or "text_embedding"
+            queue = await service._vikingdb._queue_manager.get_queue(queue_name)
+            await queue.enqueue(record.get("payload", {}))
+            dlq.increment_retry(dlq_id)
+            dlq.resolve_dead_letter(dlq_id, resolution_note="Re-enqueued via FastMCP retry tool", resolved_status=2)
+            return f"Dead letter #{dlq_id} successfully re-enqueued to queue '{queue_name}' and marked resolved."
+        else:
+            dlq.increment_retry(dlq_id)
+            return f"Queue manager offline in current context. Retry count incremented for #{dlq_id}."
+    except Exception as e:
+        return f"Failed to retry dead letter #{dlq_id}: {e}"
+
 
 # ---------------------------------------------------------------------------
 # Portable tool schemas

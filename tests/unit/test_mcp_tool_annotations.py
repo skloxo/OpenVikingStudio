@@ -35,9 +35,17 @@ async def test_mcp_tools_advertise_behavior_annotations():
         "openviking_resolve_task_card": (False, True, True, False),
         "openviking_code_impact": (True, False, True, False),
         "openviking_vector_sync_metrics": (True, False, True, False),
-        "openviking_file_task_card": (False, True, True, False),
         "openviking_generate_contract_test": (True, False, True, False),
         "openviking_list_pending_cards": (True, False, True, False),
+        "openviking_file_task_card": (False, True, True, False),
+        # Core FastMCP tools added in Card-56 (v1.8.0)
+        "openviking_valet_handover": (False, True, True, False),
+        "openviking_valet_ticket_status": (True, False, True, False),
+        "openviking_dspy_compile": (True, False, True, False),
+        "openviking_skill_zip": (True, False, True, False),
+        "openviking_tokenshift_compress": (True, False, True, False),
+        "openviking_memory_purity_report": (True, False, True, False),
+        "openviking_retry_dead_letter": (False, True, True, False),
     }
     fields = ("readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint")
 
