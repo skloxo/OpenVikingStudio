@@ -9,11 +9,12 @@
 
 > **生产物理事实声明**：
 > - **线上正式部署版本**：**`v1.4.106`**（物理访问地址：`vk.tide.red/studio/home`，已实机验证）；
-> - **当前最新交付版本**：**`v1.8.0`**（Tag: `v1.8.0`，已全量通过 FastMCP 7 大核心工具平价、注解契约门禁、10 项单测与安全扫描）；
+> - **当前最新交付版本**：**`v1.8.1`**（Tag: `v1.8.1`，已全量通过 QueueFS 死信详情抽屉交互闭环、单条自愈重试、隐形导入 Bug 根治与 13 项单测与安全扫描）；
 > - **历史里程碑详单检索**：如需查阅 Milestone 1~4 及早期版本修改清单与架构细节，请点击跳转至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.8.1`** | **Card-57** | **QueueFS DLQ 前端交互闭环与单条自愈抽屉 (QueueFS DLQ Inspection Drawer & Granular Healing Cockpit)** | 1. 落地 `DeadLetterDrawer.tsx` 详情抽屉，展示死信 ID、QueueFS 队列名、URI、错误诊断、调用栈轨迹与完整 Payload JSON；<br>2. 交互闭环升级：`VectorSyncDlqCard.tsx` 支持点击单条死信直接打开抽屉，支持单条死信一键自愈重试 (`POST /api/v1/queue/dlq/{id}/retry`) 与标记解决归档；<br>3. 根治隐形暗雷：排查修复 `queue.py` 与 `mcp_endpoint.py` 内部不存在的 `get_app_viking_service` 导入导致的崩溃 Bug；<br>4. 资产登记与门禁全绿：完成 `COMPONENT_AND_WHEEL_INVENTORY.md` 登记，13/13 单测全绿 (1.58s)，安全扫描 4625 文件 0 密钥，前端构建 13.87s PASS。<br>**Commit Hash**：`0124667a4`<br>**测试**：13/13 全绿 (1.58s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.8.0`** | **Card-56** | **FastMCP 关键核心能力桥接闭环与全集群智体赋能 (FastMCP Core Tooling Parity & Cluster Agent Empowerment)** | 1. 补齐 7 大核心 FastMCP 原生工具：`openviking_valet_handover`、`openviking_valet_ticket_status`、`openviking_dspy_compile`、`openviking_skill_zip`、`openviking_tokenshift_compress`、`openviking_memory_purity_report`、`openviking_retry_dead_letter`；<br>2. 彻底消灭后端孤岛与外部智体悬空断联，实现集群级异步入管防 504、契约化 Prompt 编译、AST 代码折叠、纯度健康报告与死信单条自愈；<br>3. MCP 注解四维契约全量登记：`test_mcp_tool_annotations.py` 严密受控；<br>4. 门禁全绿：10/10 专项与回归全绿 (1.46s)，安全扫描 4623 文件 0 密钥，前端构建 16.36s PASS。<br>**Commit Hash**：`674ef06f6`<br>**测试**：10/10 全绿 (1.46s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.9`** | **Card-55** | **8 个预存测试失败修复（5 组）(Pre-existing Test Failure Repair - 5 Groups)** | A. `test_core_encryption_startup` ×2：补充 `vectordb=SimpleNamespace(backend='local')` mock 缺失字段；<br>B. `test_search_tags_filter` ×2：删除 `propagate=True` 消除 caplog 双捕获噪声；<br>C. `test_mcp_tool_annotations`：将 8 个 v1.7.x 新增 MCP 工具注册到注解契约期望表；<br>D. `namespace.py` 源码 bug：`resolve_request_uri` 中 root role 应 fail-closed 不展开 `~` 别名；<br>E. `test_retrieval_superseded_filter`：URI 从 axiom-immune `master_memory` 改为 `user_notes` 使 decay 真实生效；<br>F. `test_valet_ingestion_engine`：延迟阈值 15ms→100ms 适配 CI 环境。<br>**Commit Hash**：`02ad768e7`<br>**测试**：8/8 全绿 (1.49s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.8`** | **Card-54** | **TaskTracker 探针静音与安全判空、SkillOpt 全域动态路径解耦与 AHE 异常平滑防御 (TaskTracker Safe Probing, Dynamic SkillOpt Discovery & AHE Fault Tolerance)** | 1. 探针静音与判空：`task_tracker.py` 引入 `has_task_tracker()` 与 `get_task_tracker(optional=True)`，彻底切除长调用栈日志污染；<br>2. 任务流转闭环：`task_card_manager.py` 在建卡与解决工单时安全调用 tracker 登记与状态自动流转为 complete；<br>3. 动态路径解耦：`skill_opt_service.py` 实现全域动态优先级探测链（`SKILLS_ROOT`、家目录多规范、工作区），按技能名称去重消除写死失明；<br>4. 门禁平滑降级：`optimize_content` 对 AHE 异常全面保护，平滑反馈拦截原因避免 500 崩溃；<br>5. 门禁全绿：专项单测、回归单测、安全审计 0 密钥、前端构建全绿。<br>**Commit Hash**：`dc4e05049`<br>**修改文件**：`task_tracker.py`, `task_card_manager.py`, `skill_opt_service.py`, `_version.py`, `package.json`, `tests/unit/test_card54_task_tracker_and_skill_opt.py`<br>**测试**：4/4 专项单测全绿 (0.19s)，2184 通过 9 预存失败 19 跳过 (84.75s)<br>**安全**：4622 文件 0 密钥<br>**构建**：npm build 16.24s PASS | [x] 已验收通过 ✅ |
@@ -102,6 +103,42 @@
   - **自动化测试通过率**：4/4 专项单测全绿 (1.40s)，10 项全量回归测试全绿 (2.55s)；
   - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4609 个跟踪文件 0 密钥泄露；
   - **前端生产构建**：`npm run build` 耗时 15.02s 顺利 PASS。
+
+#### ✅ [P0] [x] Card-57 (v1.8.1): QueueFS DLQ 前端交互闭环与单条自愈抽屉 (QueueFS DLQ Inspection Drawer & Granular Healing Cockpit)
+- **类型**：可观测性闭环 / 抽屉深度交互 / 隐形暗雷根治 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.8.1` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - 前端观测断层与粗放操作：此前在监控大盘 `/studio/monitoring` 中，`VectorSyncDlqCard` 仅静态展示了最近 5 条死信的字符串文本，不可点击、不可查看详细 Payload，更无法查看异常 Traceback 调用栈；
+  - 过去管理员若发现死信，只能在卡片头部点击“自愈巡检”盲目触发全量批量重试，如果某条死信存在语法错误或有毒载荷 (Poison Pill)，批量自愈会反复失败甚至阻塞队列，严重缺失单条定位与精准自愈能力；
+  - 隐形暗雷挖掘与根治：深入排查发现 `openviking/server/routers/queue.py` 与 `openviking/server/mcp_endpoint.py` 内部均调用了不存在的 `from openviking.server.app import get_app_viking_service`，导致单条重试执行时必然触发 500 异常崩溃；
+  - 治理闭环：
+    1. 落地 `DeadLetterDrawer.tsx` 独立高密抽屉，展示死信 ID、队列名、状态 Badge、入管时间、重试计数、异常诊断、Traceback 调用栈及完整 Payload JSON，支持一键复制；
+    2. `VectorSyncDlqCard.tsx` 升级为交互式列表，点击任意死信项即刻滑出抽屉；
+    3. 支持单条自愈重试 (`POST /api/v1/queue/dlq/{id}/retry`) 与人工解决标记 (`POST /api/v1/queue/dlq/{id}/resolve`)；
+    4. 根治依赖注入暗雷，在 `dependencies.py` 与 `app.py` 中建立 SSOT 服务获取别名；
+    5. 完成资产档案库 `COMPONENT_AND_WHEEL_INVENTORY.md` 登记与测试视网膜通过。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **死信全生命周期可诊断可读性**：从仅看 20 字符摘要提升至 **$100\%$ 完整诊断与 Payload 可见**；
+    2. **单条精准自愈成功率**：单条隔离自愈支持率达成 **$100\%$**；
+    3. **隐形服务导入崩溃率**：从 $100\%$ 500 报错降至 **$0\%$**；
+    4. **单文件规模安全红线**：`DeadLetterDrawer.tsx` 358 行，`vector-sync-dlq-card.tsx` 228 行，全部处于黄金甜点区。
+  - **展示界面与卡片**：`/studio/monitoring` 向量同步与死信队列卡片及抽屉。
+- **核心交付目标与完成清单**：
+  1. `src/routes/monitoring/-components/dead-letter-drawer.tsx` (358行)：高密死信详情抽屉；
+  2. `src/routes/monitoring/-components/vector-sync-dlq-card.tsx` (228行)：列表点击绑定与单条操作流转；
+  3. `openviking/server/dependencies.py`：新增 `get_app_viking_service` 别名；
+  4. `openviking/server/app.py`：导出服务获取函数；
+  5. `openviking/server/routers/queue.py` & `openviking/server/mcp_endpoint.py`：根除错误 import 隐疾；
+  6. `docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md`：登记 `DeadLetterDrawer`；
+  7. `tests/unit/test_card57_dlq_inspection_and_healing.py` (157行)：编写 4 项专项单测全绿；
+  8. `package.json` 与 `openviking/_version.py`：版本号自增至 `1.8.1`。
+- **物理验收与门禁**：
+  - **Git Commit Hash**：`0124667a4`
+  - **Git Tag**：`v1.8.1`
+  - **自动化测试通过率**：13/13 全绿 (1.58s)（4 项 Card-57 专项测试 + 6 项 Card-56 专项测试 + 3 项版本对齐测试）✅
+  - **组件盘点机制**：`vitest run src/components/component-inventory.test.ts` 5/5 全绿 (635ms) ✅
+  - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4625 个跟踪文件 0 密钥泄露 ✅
+  - **前端生产构建**：`npm run build` 耗时 13.87s 顺利 PASS ✅
 
 #### ✅ [P0] [x] Card-56 (v1.8.0): FastMCP 关键核心能力桥接闭环与全集群智体赋能 (FastMCP Core Tooling Parity & Cluster Agent Empowerment)
 - **类型**：FastMCP 原生工具平价闭环 / 全集群智能体赋能 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.8.0` ｜ **当前状态**：[x] 已验收通过 ✅
