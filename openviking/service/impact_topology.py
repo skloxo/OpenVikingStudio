@@ -22,15 +22,23 @@ _SQL_WRITE_PATTERNS = [
     re.compile(r"INSERT\s+(?:OR\s+\w+\s+)?INTO\s+([a-zA-Z0-9_]+)", re.IGNORECASE),
     re.compile(r"UPDATE\s+([a-zA-Z0-9_]+)\s+SET", re.IGNORECASE),
     re.compile(r"DELETE\s+FROM\s+([a-zA-Z0-9_]+)", re.IGNORECASE),
+    re.compile(r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([a-zA-Z0-9_]+)", re.IGNORECASE),
+    re.compile(r"ALTER\s+TABLE\s+([a-zA-Z0-9_]+)", re.IGNORECASE),
 ]
-_SQL_READ_PATTERNS = [
-    re.compile(r"FROM\s+([a-zA-Z0-9_]+)", re.IGNORECASE),
-    re.compile(r"JOIN\s+([a-zA-Z0-9_]+)", re.IGNORECASE),
-]
+_SQL_READ_FROM_PATTERN = re.compile(
+    r"\bFROM\s+([a-zA-Z0-9_,\s]+?)(?:\bWHERE\b|\bGROUP\b|\bORDER\b|\bLIMIT\b|\bJOIN\b|;|\)|$)",
+    re.IGNORECASE,
+)
+_SQL_JOIN_PATTERN = re.compile(
+    r"\bJOIN\s+([a-zA-Z0-9_]+)",
+    re.IGNORECASE,
+)
 _SQL_KEYWORDS = {
     "select", "from", "where", "join", "inner", "left", "right", "outer",
     "on", "set", "values", "group", "by", "order", "limit", "and", "or",
     "table", "index", "exists", "not", "null", "as", "case", "when", "then",
+    "distinct", "union", "all", "cross", "natural", "into", "update", "delete",
+    "create", "alter", "drop", "primary", "foreign", "key", "references",
 }
 
 
@@ -108,29 +116,58 @@ class ImpactTopologyBuilder:
             "total_conflicts": len(conflicts),
         }
 
+    @staticmethod
+    def clean_table_identifier(raw: str) -> Optional[str]:
+        """Normalize raw token into valid SQL table name or return None if keyword/invalid."""
+        clean = raw.strip().strip("`'\"[]")
+        if not clean:
+            return None
+        # Handle aliases: "table AS t" or "table t"
+        tokens = clean.split()
+        candidate = tokens[0].strip().lower()
+        if candidate in _SQL_KEYWORDS or candidate.startswith("sqlite_"):
+            return None
+        # Filter purely numerical or invalid identifiers
+        if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", candidate):
+            return None
+        return candidate
+
     def analyze_source_sql(self, source_path: str, source_code: str) -> None:
         """Scan source code for SQL operations and record table readers/writers."""
         clean_path = source_path.replace("\\", "/")
 
+        # 1. Capture Table Writers (INSERT, UPDATE, DELETE, CREATE, ALTER)
         for pattern in _SQL_WRITE_PATTERNS:
             for match in pattern.finditer(source_code):
-                tbl = match.group(1).lower()
-                if tbl not in _SQL_KEYWORDS and not tbl.startswith("sqlite_"):
+                tbl = self.clean_table_identifier(match.group(1))
+                if tbl:
                     rec = self._table_records.setdefault(
                         tbl, TableImpactRecord(table_name=tbl)
                     )
                     if clean_path not in rec.writers:
                         rec.writers.append(clean_path)
 
-        for pattern in _SQL_READ_PATTERNS:
-            for match in pattern.finditer(source_code):
-                tbl = match.group(1).lower()
-                if tbl not in _SQL_KEYWORDS and not tbl.startswith("sqlite_"):
+        # 2. Capture Table Readers via FROM clause (supports single or comma-separated multiple tables)
+        for match in _SQL_READ_FROM_PATTERN.finditer(source_code):
+            raw_clause = match.group(1)
+            for part in raw_clause.split(","):
+                tbl = self.clean_table_identifier(part)
+                if tbl:
                     rec = self._table_records.setdefault(
                         tbl, TableImpactRecord(table_name=tbl)
                     )
                     if clean_path not in rec.readers:
                         rec.readers.append(clean_path)
+
+        # 3. Capture Table Readers via JOIN clause
+        for match in _SQL_JOIN_PATTERN.finditer(source_code):
+            tbl = self.clean_table_identifier(match.group(1))
+            if tbl:
+                rec = self._table_records.setdefault(
+                    tbl, TableImpactRecord(table_name=tbl)
+                )
+                if clean_path not in rec.readers:
+                    rec.readers.append(clean_path)
 
     def get_table_impact_map(self) -> Dict[str, TableImpactRecord]:
         """Return the collected table impact map."""
