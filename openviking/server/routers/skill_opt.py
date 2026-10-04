@@ -112,3 +112,47 @@ async def remediate_skill_content(
     result = SkillRemediationGenerator.remediate(raw_content=req.skill_content, skill_slug=req.skill_slug)
     return result.to_dict()
 
+
+class WeightTuneApiRequest(BaseModel):
+    """技能权重动态微调请求。"""
+    model_config = ConfigDict(strict=False)
+
+    skill_slug: str = Field(..., description="目标技能唯一标识 slug")
+    verdict: str = Field("PASS", description="Attempt 执行判据结果: PASS | DEGRADED | FAIL")
+    confidence: float = Field(1.0, ge=0.0, le=1.0, description="置信度系数 (0.0~1.0)")
+    notes: str = Field("", description="微调原因或执行摘要备注")
+
+
+@router.post("/weight/tune")
+async def tune_skill_weight(
+    req: WeightTuneApiRequest,
+    ctx: RequestContext = Depends(get_request_context),
+) -> dict:
+    """动态微调技能调度权重并沉淀入账本 (SkillOpt SKILLOPT-03)。"""
+    from openviking.service.skill_weight_tuner import SkillWeightTuner
+
+    tuner = SkillWeightTuner.get_instance()
+    result = tuner.tune_weight(
+        skill_slug=req.skill_slug,
+        verdict=req.verdict,
+        confidence=req.confidence,
+        notes=req.notes,
+    )
+    return result.to_dict()
+
+
+@router.get("/weights")
+async def list_skill_weights(
+    ctx: RequestContext = Depends(get_request_context),
+) -> dict:
+    """获取全量技能动态权重分布与执行履历概览 (SkillOpt SKILLOPT-03)。"""
+    from openviking.service.skill_weight_tuner import SkillWeightTuner
+
+    tuner = SkillWeightTuner.get_instance()
+    profiles = tuner.list_profiles()
+    return {
+        "total_skills": len(profiles),
+        "profiles": [p.to_dict() for p in profiles],
+    }
+
+
