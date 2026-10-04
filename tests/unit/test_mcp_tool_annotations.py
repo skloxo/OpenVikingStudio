@@ -65,6 +65,8 @@ async def test_mcp_tools_advertise_behavior_annotations():
         # Privacy & Compliance Governance tools added in Card-69 (v1.7.23)
         "openviking_privacy_quarantine": (False, True, True, False),
         "openviking_privacy_audit": (True, False, True, False),
+        # Harness & Engine Verification tools added in Card-75 (v1.7.29)
+        "openviking_harness_probe": (True, False, True, False),
     }
     fields = ("readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint")
 

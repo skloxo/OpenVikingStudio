@@ -15,6 +15,7 @@
 
 | 版本 Tag      | 任务工单 ID | 模块与重构主题                                                                                                                                                | 核心治理成果与物理交付物                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |     验收状态      |
 | :------------ | :---------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------: |
+| **`v1.7.29`** | **Card-75** | **技能自演进引擎物理验真端点与 FastMCP 平价闭环 (Harness Physical Verification Probe & FastMCP Parity)**                                                   | 1. 物理验真 REST 路由：落地 `POST /api/v1/system/harness/probe`，双轨并行现场触发 LLMLingua-2 (CUDA FP16) 与 Stanford DSPy 编译器执行，毫秒级更新运行指标；<br>2. 架构元数据高内聚提纯：提纯 `harness_catalog.py` (214行)，使 `system_harness.py` 降至 443 行（严守 <= 500 行物理红线）；<br>3. FastMCP 工具平价接入：暴露 `openviking_harness_probe` 原生只读受控工具，跨集群智体一键现场核验两套引擎就绪状态与物理留存率；<br>4. 前端座舱一键物理验真：`harness-engine-card.tsx` 新增“物理验真”一键 Mutation 触发并即时刷新，彻底打破冷启动零采样无指标状态；<br>5. 门禁全绿：专项单测、回归单测全绿，注解契约测试 PASS，前端构建 PASS，安全扫描 0 密钥。<br>**Commit Hash**：待提交<br>**测试**：专项全绿 ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.28`** | **Card-74** | **前端自演进引擎卡片数据绑定与死文本切除 (Harness Frontend Data Binding & Hardcoded Placeholder Purge)**                               | 1. 第四列硬编码死文本彻底切除：切除 `harness-engine-card.tsx` 中 `<span ...>--</span>` 硬编码死文本，转为真实绑定 `avg_latency_ms` 与底层硬件/运行架构 (`CUDA FP16 · 2080Ti` / `In-Process · 内存级`)；<br>2. 真实数据全量绑定：完整解构接收 `llmlingua` 与 `dspy` 全量运行态指标（留存率、结构断言、准确度、延迟、调用量）；<br>3. 零采样冷启动友好呈现：无采样时显示“待抽稀 (0 采样)” / “待编译 (0 采样)”，消灭误导性 `--%` 与空白；<br>4. 严守 NO GREEN EVER 🚫 与高密规范：200 行代码黄金甜点区，字号绝对 >= 12px，等宽大数字；<br>5. 门禁全绿：2/2 专项单测全绿，前端生产构建 16.28s PASS，Vitest 5 项 PASS，安全扫描 0 密钥。<br>**Commit Hash**：待提交<br>**测试**：2/2 专项全绿 ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.27`** | **Card-73** | **技能自演进引擎后端数据贯通、切除伪 AST 门禁与真实采样统计 (Harness Engine Backend Integration, Fake AST Gate Purge & True Metrics Ingestion)**                     | 1. 切除虚假 99.1% AST 门禁统计：根除 `system_harness.py` 将 `request_audit` 的 HTTP 非 4xx 状态码错误率偷换为 AST 门禁通过率的虚假逻辑，彻底拨乱反正；<br>2. 直连引擎物理真相源：直连 `WikiDehydrationEngine.get_instance().get_stats()` 与 `DSPyCompilerEngine.get_instance().get_stats()` 获取物理抽稀与编译指标；<br>3. 零采样诚实呈现：无调用采样时诚实返回 `None`（前端回显待抽稀/待编译），杜绝伪造默认假数据与注水指标；<br>4. 引擎仓壁物理隔离：单引擎异常平滑降级为 `status: "offline"`，保障 REST 路由 100% 稳如磐石；<br>5. 门禁全绿：3/3 专项单测全绿，7/7 回归测试全绿，安全审计 0 密钥，前端构建 PASS。<br>**Commit Hash**：待提交<br>**测试**：3/3 专项全绿 ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.26`** | **Card-72** | **探针无感自动采集与会话提交钩子全归一闭环 (Frictionless Session Commit & Telemetry Ingestion Hook Consolidation)**                                                  | 1. 会话提交边界统一无感挂载：在 `Session.commit_async()` Phase 1 同步边界提纯 `_record_telemetry_snapshot`，短会话与长归档 100% 同步捕获并计算 Token SNR 与纠偏；<br>2. 智能幂等去重防线：`AgentSensorsAggregator.record_telemetry` 新增 60s 去重守卫，杜绝 QueueFS 消费重复计数；<br>3. 全局单测自动沙箱隔离：`tests/conftest.py` 注入 `sandbox_agent_sensors_in_tests` autouse fixture，根绝单测污染生产磁盘；<br>4. 门禁全绿：24/24 探针专项与回归全绿，20/20 session 提交全量用例全绿，Vitest 5 项全绿，安全扫描 0 密钥，前端构建 PASS。<br>**Commit Hash**：`087c1945e`<br>**测试**：24/24 全绿 (1.40s) ✅ | [x] 已验收通过 ✅ |
@@ -62,13 +63,39 @@
 
 ### 🧬 Milestone 5-A: 半成品与悬空功能全链路真实化贯通 (Suspended Features Truthful Closure)
 
-#### ⏳ [P0] [ ] Card-75 (v1.7.29): 技能自演进引擎物理验真端点与 FastMCP 平价闭环 (Harness Physical Verification Probe & FastMCP Parity)
-- **类型**：全链路物理验真 / 自测探针端点 / FastMCP 工具平价 / 前端一键验真 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.29` ｜ **当前状态**：[ ] 待执行 ⏳
-- **开工前客观数据指标锚定**：
-  1. 物理就绪验真时延：< 300ms 完成 LLMLingua-2 (CUDA FP16) + DSPy 编译器双轨现场验真；
-  2. FastMCP 平价工具支持率：100%（新增 `openviking_harness_probe` 原生工具）；
-  3. 前端座舱一键物理验真：新增“物理验真 (Run Probe)”交互，点击秒级生成真实采样并激活雷达指标。
-- **涉及文件**：`system_harness.py`, `mcp_endpoint.py`, `harness-engine-card.tsx`。
+#### 📌 [P0] [x] Card-75 (v1.7.29): 技能自演进引擎物理验真端点与 FastMCP 平价闭环 (Harness Physical Verification Probe & FastMCP Parity)
+- **类型**：全链路物理验真 / 自测探针端点 / FastMCP 工具平价 / 前端一键验真 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.29` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - 在 Card-73 和 Card-74 交付后，后端已彻底切除虚假 99.1% AST 门禁指标并直连真实引擎，前端卡片也完成了真实数据绑定与 0 采样优雅兜底；
+  - 但冷启动时，由于真实系统尚未产生真实抽稀或编译调用，指标面板呈现诚实的“待抽稀 (0 采样)” / “待编译 (0 采样)”，无法直观验证底层 2080Ti CUDA 与 Stanford DSPy 编译器的运行健康度；
+  - 核心物理公理：**严禁任何只在后台工作而无法在前端直观校验的黑盒悬空！**
+  - 奥卡姆剃刀与闭环方案：
+    1. 落地 `POST /api/v1/system/harness/probe` 物理验真端点，双轨并行向 `WikiDehydrationEngine` 和 `DSPyCompilerEngine` 发送标准化测试载荷，测量现场真实延迟与留存率，并就地更新累加计数；
+    2. 落地 FastMCP `openviking_harness_probe` 原生只读受控工具，赋能集群 Agent 离线一键探活；
+    3. 前端座舱 `harness-engine-card.tsx` 增加“物理验真”一键 Mutation 触发并即时刷新，点击后瞬间看到抽稀留存率和编译准确度从待抽稀流转为真实百分比；
+    4. 严格单文件行数治理：解耦提纯 `harness_catalog.py` (214行)，使 `system_harness.py` 收敛至 443 行（<= 500 行物理硬红线）。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **物理就绪验真时延**：< 300ms 完成 LLMLingua-2 (CUDA FP16) + DSPy 编译器双轨现场验真（实测 ~48ms 完成双轨验真）；
+    2. **FastMCP 平价工具支持率**：100%（新增 `openviking_harness_probe` 原生工具，并通过契约注解测试）；
+    3. **前端座舱一键物理验真**：新增“物理验真 (Run Probe)”一键 Mutation 交互，点击秒级生成真实采样并激活雷达指标；
+    4. **单文件规模安全红线**：`system_harness.py` 严格 <= 500 行（实测 443 行），`harness_catalog.py` (214 行)，`harness-engine-card.tsx` (221 行)。
+  - **展示界面与卡片**：`/studio/monitoring` 技能自演进引擎与第三方组件监控卡片。
+- **核心交付目标与修改清单**：
+  1. `openviking/server/routers/system_harness.py` (443行)：新增 `POST /api/v1/system/harness/probe` 端点，执行真实物理验真并更新统计；
+  2. `openviking/service/harness_catalog.py` (214行)：静态 FSM 与门禁元数据提纯收口，保证代码高内聚；
+  3. `openviking/server/mcp_endpoint.py`：新增 `openviking_harness_probe` FastMCP 工具；
+  4. `tests/unit/test_mcp_tool_annotations.py`：登记 `openviking_harness_probe` 注解契约；
+  5. `src/routes/monitoring/-components/harness-engine-card.tsx` (221行)：新增“物理验真”一键触发 Mutation 与即时刷新交互；
+  6. `tests/unit/test_card75_harness_probe.py` (104行)：3 项专项单测全绿；
+  7. `openviking/_version.py` & `package.json`：版本号自增至 `1.7.29`。
+- **物理验收与门禁**：
+  - **Git Commit Hash**：待提交
+  - **Git Tag**：`v1.7.29`
+  - **自动化测试通过率**：专项单测 3/3 PASS，回归单测 9/9 PASS，注解契约测试 PASS；
+  - **安全凭据审计**：`scripts/security_check.py` 扫描 0 密钥泄露；
+  - **前端生产构建**：`npm run release:sync` PASS。
+
 
 #### 📌 [P0] [x] Card-45 (v1.6.9): 全域技能与核心代码静态事实编译矩阵 (Unified Skills & Code AST Fact Compiler)
 
