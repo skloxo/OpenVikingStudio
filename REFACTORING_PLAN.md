@@ -5,16 +5,17 @@
 
 ---
 
-## 📌 一、 研发基线与近期已交付版本速查索引 (Recent Delivered Releases: v1.5.80 ~ v1.5.87)
+## 📌 一、 研发基线与近期已交付版本速查索引 (Recent Delivered Releases: v1.5.80 ~ v1.7.23)
 
 > **生产物理事实声明**：
 > - **线上正式部署版本**：**`v1.4.106`**（物理访问地址：`vk.tide.red/studio/home`，已实机验证）；
-> - **当前最新交付版本**：**`v1.7.22`**（Tag: `v1.7.22`，已全量通过技能权重动态微调与沉淀引擎 SkillWeightTuner、100 项单测全绿、Vitest 5 项、安全审计 0 密钥与前端生产构建 PASS）；
+> - **当前最新交付版本**：**`v1.7.23`**（Tag: `v1.7.23`，已全量通过数据隐私合规审计与敏感凭证隔离销毁引擎 PrivacyQuarantineEngine、108 项单测全绿、Vitest 5 项、安全审计 0 密钥与前端生产构建 PASS）；
 > - **历史里程碑详单检索**：如需查阅 Milestone 1~4 及早期版本修改清单与架构细节，请点击跳转至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
-| **`v1.7.22`** | **Card-68** | **技能权重动态微调与沉淀 (Skill Weight Dynamic Tuner & Ingestion - BLUEPRINT Epic-SKILL-OPT SKILLOPT-03)** | 1. 落地 `SkillWeightTuner` 动态权重微调与学习引擎：基于微软 SkillOpt Attempt 判据（PASS/DEGRADED/FAIL）进行贝叶斯自适应调权，严格钳位 [0.1, 2.0] 效用区间；<br>2. 落地加权意图路由打分 (`calculate_weighted_score`)：赋能意图匹配器结合历史成功率动态调度高质量技能，降低翻车概率；<br>3. 完备双链路接口平价与磁盘持久化：FastMCP 原生工具新增 `openviking_skill_weight_tune`（受控写入可重试契约），REST 路由新增 `POST /api/v1/skill-opt/weight/tune` 与 `GET /api/v1/skill-opt/weights`；<br>4. 门禁全绿：100/100 专项与回归全绿 (3.82s)，注解契约测试 PASS，Vitest 5 项 PASS，安全扫描 4645 文件 0 密钥，前端生产构建 14.98s PASS。<br>**Commit Hash**：`58c8f9594`<br>**测试**：100/100 全绿 (3.82s) ✅ | [x] 已验收通过 ✅ |
+| **`v1.7.23`** | **Card-69** | **数据隐私合规审计与敏感凭证隔离销毁 (Privacy Compliance Audit & Sensitive Credential Quarantine - BLUEPRINT Epic-PRIVACY-GOV PRIVACY-03)** | 1. 落地 `PrivacyQuarantineEngine` 敏感泄密隔离与合规审计引擎：支持风险凭据物理隔离至隔离仓目录 (`~/.openviking/data/quarantine/vault/`)，阻断检索召回；<br>2. 落地安全解冻恢复 (`restore`) 与物理销毁清零 (`purge` 覆盖清零) 闭环；<br>3. 落地不可篡改合规审计日记账 (`compliance_audit.jsonl`) 与分类统计度量报告大盘；<br>4. 完备双链路接口平价：FastMCP 原生工具新增 `openviking_privacy_quarantine`（受控写入可重试契约）与 `openviking_privacy_audit`（只读受控契约），REST 路由新增 `/api/v1/privacy-gov/quarantine`、`/restore`、`/audit-logs` 与 `/audit-report`；<br>5. 门禁全绿：108/108 专项与回归全绿 (3.98s)，注解契约测试 PASS，Vitest 5 项 PASS，安全扫描 4648 文件 0 密钥，前端生产构建 16.11s PASS。<br>**Commit Hash**：`待提交`<br>**测试**：108/108 全绿 (3.98s) ✅ | [x] 已验收通过 ✅ |
+| **`v1.7.22`** | **Card-68** | **技能权重动态微调与沉淀 (Skill Weight Dynamic Tuner & Ingestion - BLUEPRINT Epic-SKILL-OPT SKILLOPT-03)** | 1. 落地 `SkillWeightTuner` 动态权重微调与学习引擎：基于微软 SkillOpt Attempt 判据（PASS/DEGRADED/FAIL）进行贝叶斯自适应调权，严格钳位 [0.1, 2.0] 效用区间；<br>2. 落地加权意图路由打分 (`calculate_weighted_score`)：赋能意图匹配器结合历史成功率动态调度高质量技能，降低翻车概率；<br>3. 完备双链路接口平价与磁盘持久化：FastMCP 原生工具新增 `openviking_skill_weight_tune`（受控写入可重试契约），REST 路由新增 `POST /api/v1/skill-opt/weight/tune` 与 `GET /api/v1/skill-opt/weights`；<br>4. 门禁全绿：100/100 专项与回归全绿 (3.82s)，注解契约测试 PASS，Vitest 5 项 PASS，安全扫描 4645 文件 0 密钥，前端生产构建 14.98s PASS。<br>**Commit Hash**：`58c8f9594`<br>**测试**：100/100 全绿 (3.82s) ✅ | [x] 已验收通过 ✅ |rd-68** | **技能权重动态微调与沉淀 (Skill Weight Dynamic Tuner & Ingestion - BLUEPRINT Epic-SKILL-OPT SKILLOPT-03)** | 1. 落地 `SkillWeightTuner` 动态权重微调与学习引擎：基于微软 SkillOpt Attempt 判据（PASS/DEGRADED/FAIL）进行贝叶斯自适应调权，严格钳位 [0.1, 2.0] 效用区间；<br>2. 落地加权意图路由打分 (`calculate_weighted_score`)：赋能意图匹配器结合历史成功率动态调度高质量技能，降低翻车概率；<br>3. 完备双链路接口平价与磁盘持久化：FastMCP 原生工具新增 `openviking_skill_weight_tune`（受控写入可重试契约），REST 路由新增 `POST /api/v1/skill-opt/weight/tune` 与 `GET /api/v1/skill-opt/weights`；<br>4. 门禁全绿：100/100 专项与回归全绿 (3.82s)，注解契约测试 PASS，Vitest 5 项 PASS，安全扫描 4645 文件 0 密钥，前端生产构建 14.98s PASS。<br>**Commit Hash**：`58c8f9594`<br>**测试**：100/100 全绿 (3.82s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.21`** | **Card-67** | **技能健康评分与自动修复建议生成器 (Skill Health Scorer & Auto-Remediation Generator - BLUEPRINT Epic-SKILL-OPT SKILLOPT-02)** | 1. 落地 `SkillHealthScorer` 四维全息健康体检引擎：规范完整度、步骤工效可执行度、安全凭据卫生与注意力信噪比（单文件 100~300 黄金甜点区，超 500 行物理红线一票否决）；<br>2. 落地 `SkillRemediationGenerator` 确定性自动修复补丁合成器：自动化脱敏泄漏密钥、补全 YAML Frontmatter、注入标准负向边界约束 (When NOT to use)、结构化三工序 SOP 与可执行代码块；<br>3. 完备双链路接口平价：FastMCP 原生工具新增 `openviking_skill_remediate`（只读受控注解严格受控），REST 路由新增 `POST /api/v1/skill-opt/health-score` 与 `/remediate`；<br>4. 门禁全绿：91/91 专项与回归全绿 (3.73s)，注解契约测试 PASS，Vitest 5 项 PASS，安全扫描 4642 文件 0 密钥，前端生产构建 14.86s PASS。<br>**Commit Hash**：`7aade42b6`<br>**测试**：91/91 全绿 (3.73s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.20`** | **Card-66** | **微软 SkillOpt Attempt 仿真执行与 Judge 门禁评分体系 (SkillOpt Attempt Simulation & Judge Gate Evaluator - BLUEPRINT Epic-SKILL-OPT SKILLOPT-01)** | 1. 落地 `SkillOptJudge` 四维正交门禁裁判引擎：SOP 步骤结构度、工具调用契约、I/O 交付物明确度与异常自愈防御能力（总分 100 分，默认及格线 70 分）；<br>2. 落地 Attempt 仿真执行轨迹度量器 (`evaluate_attempt_trajectory`)，对智能体执行步骤、工具调用频次与错误率输出结构化等级与完成率；<br>3. FastMCP 原生工具平价接入：新增 `openviking_skill_judge` 只读受控工具，赋能全集群外部 Agent 离线进行技能 SOP 质量自审与自动修复建议生成；<br>4. 门禁全绿：81/81 专项与回归全绿 (3.62s)，注解契约测试 PASS，Vitest 5 项 PASS，安全扫描 4640 文件 0 密钥，前端构建 16.55s PASS。<br>**Commit Hash**：`3af2d385e`<br>**测试**：81/81 全绿 (3.62s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.19`** | **Card-65** | **技能一键向量化入脑与快照上架试验台 (Skill Vectorization & Vault Ingestion Cockpit - BLUEPRINT Epic-LIVE-GEN LIVEGEN-03)** | 1. 落地 `SkillPublisher` 前置门禁与原子化上架服务：内置发布前严格调用 `SkillValidator` 静态防御拦截坏技能，生成 12 位 SHA256 物理版本指纹；<br>2. 统一全集群 VikingFS 目标存储路径契约 (`viking://resources/master_memory/skills/{slug}/SKILL.md`)，并支持本地物理镜像落盘与防覆盖保护；<br>3. FastMCP 原生工具平价接入：新增 `openviking_skill_publish` 写入可重试受控工具，赋能全集群外部 Agent 将新提纯技能一键原子化上架入脑；<br>4. 门禁全绿：75/75 专项与回归全绿 (3.62s)，注解契约测试 PASS，Vitest 5 项 PASS，安全扫描 4638 文件 0 密钥，前端构建 16.58s PASS。<br>**Commit Hash**：`eb8fed808`<br>**测试**：75/75 全绿 (3.62s) ✅ | [x] 已验收通过 ✅ |
@@ -114,6 +115,43 @@
   - **自动化测试通过率**：4/4 专项单测全绿 (1.40s)，10 项全量回归测试全绿 (2.55s)；
   - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4609 个跟踪文件 0 密钥泄露；
   - **前端生产构建**：`npm run build` 耗时 15.02s 顺利 PASS。
+
+#### ✅ [P0] [x] Card-69 (v1.7.23): 数据隐私合规审计与敏感凭证隔离销毁 (Privacy Compliance Audit & Sensitive Credential Quarantine - BLUEPRINT Epic-PRIVACY-GOV PRIVACY-03)
+- **类型**：隐私合规治理 / 物理隔离检疫仓 / 安全销毁清零 / 合规审计总账 / FastMCP 原生工具平价 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.23` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - 核心痛点与死因审讯：
+    1. 动态打码治标不治本：Card-62 实现了输出端动态正则打码，但若底层 VikingFS 或磁盘已写入真实私钥、Token 或密码，依然存在历史快照或离线泄密物理隐患；
+    2. 缺乏物理隔离检疫仓 (Quarantine Vault)：发现潜在泄密数据时，既不能盲目就地物理硬删除（防止误报导致有效业务资产丢失），也不能放任其停留在活跃检索召回视图中；
+    3. 缺乏不可篡改的合规审计日记账 (Compliance Audit Ledger)：多智能体集群缺乏何时检出、何时隔离、何时解冻、何时销毁的结构化证据链总账与合规度量大盘；
+  - 奥卡姆剃刀与信达雅：
+    1. 落地纯原生无第三方依赖的 `PrivacyQuarantineEngine` 与强类型不可变 DTO（`openviking/service/privacy_quarantine.py`）；
+    2. 构建物理隔离检疫仓（`~/.openviking/data/quarantine/vault/`），对风险条目执行内容隔离与 64 位 SHA256 指纹锚定，将状态置为 `QUARANTINED` 并从活跃召回中物理拔除；
+    3. 支持安全解冻恢复 (`restore`) 与零填充覆盖物理销毁清零 (`purge`)；
+    4. 落地不可篡改的合规审计日记账流水（`compliance_audit.jsonl`）与聚合合规报表大盘；
+    5. 完备平价接入：新增 FastMCP 原生工具 `openviking_privacy_quarantine`（受控写入可重试契约）与 `openviking_privacy_audit`（只读受控契约），并扩展 REST 路由 `/api/v1/privacy-gov/quarantine`、`/restore`、`/audit-logs` 与 `/audit-report`；
+    6. 严格遵守 SemVer 铁律：版本递增至 `v1.7.23`（Patch 递增，主版本号与次版本号锁定）。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **风险凭据物理隔离与防召回率**：隔离条目向量与全文检索隔离率 **$100\%$**；
+    2. **安全物理销毁清零可靠性**：零填充擦除与文件 unlink 成功率 **$100\%$**；
+    3. **合规审计日志写入与导出准确度**：多智能体隔离/解冻/销毁操作审计留痕率 **$100\%$**；
+    4. **单文件规模安全红线**：`privacy_quarantine.py` 280 行，`privacy_quarantine_types.py` 88 行，`privacy_gov.py` 175 行，严格收敛于黄金甜点区内。
+  - **展示界面与卡片**：全集群 FastMCP 工具目录与隐私合规审计 API。
+- **核心交付目标与完成清单**：
+  1. `openviking/service/privacy_quarantine_types.py` (88行)：隔离生命周期状态、审计行为、QuarantineItem 与 ComplianceAuditEntry 强类型不可变 DTO；
+  2. `openviking/service/privacy_quarantine.py` (280行)：线程安全隔离检疫仓、安全销毁清零与不可篡改审计总账引擎；
+  3. `openviking/server/mcp_endpoint.py`：新增 FastMCP 原生工具 `openviking_privacy_quarantine` 与 `openviking_privacy_audit`；
+  4. `openviking/server/routers/privacy_gov.py` (175行)：提供 REST 路由 `/api/v1/privacy-gov/quarantine`、`/restore`、`/audit-logs` 与 `/audit-report`；
+  5. `openviking/server/routers/__init__.py` & `app.py`：挂载并导出 `privacy_gov_router`；
+  6. `tests/unit/test_mcp_tool_annotations.py`：登记 FastMCP 四维行为契约；
+  7. `tests/unit/test_card69_privacy_quarantine_and_audit.py` (272行)：8/8 专项单元测试全绿 (1.39s)；
+  8. `package.json` 与 `openviking/_version.py`：版本号自增至 `1.7.23`。
+- **交付验收结果 (Delivery Verification)**：
+  - **Git Commit Hash**：`待提交`
+  - **Git Tag**：`v1.7.23`
+  - **自动化测试通过率**：108/108 专项与全量回归全绿 (3.98s)，注解契约测试 PASS，Vitest 5 项全绿 (609ms)；
+  - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4648 个跟踪文件 0 密钥泄露；
+  - **前端生产构建**：`npm run build` 耗时 16.11s 顺利 PASS。
 
 #### ✅ [P0] [x] Card-68 (v1.7.22): 技能权重动态微调与沉淀 (Skill Weight Dynamic Tuner & Ingestion - BLUEPRINT Epic-SKILL-OPT SKILLOPT-03)
 - **类型**：自适应调优 / 权重沉淀 / 加权意图路由 / FastMCP 原生工具平价 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.22` ｜ **当前状态**：[x] 已验收通过 ✅

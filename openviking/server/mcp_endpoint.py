@@ -2194,6 +2194,102 @@ async def openviking_skill_weight_tune(
     return json.dumps(result.to_dict(), ensure_ascii=False, indent=2)
 
 
+@mcp.tool(annotations=_RETRY_SAFE_DESTRUCTIVE_TOOL_ANNOTATIONS)
+async def openviking_privacy_quarantine(
+    action: str = "list",
+    target_uri: str = "",
+    raw_content: str = "",
+    quarantine_id: str = "",
+    reason: str = "",
+    category: str = "credential",
+    actor: str = "cluster_agent",
+) -> str:
+    """Isolate sensitive data leaks into Quarantine Vault, restore safe items, or purge permanently."""
+    import json
+    from openviking.service.privacy_quarantine import PrivacyQuarantineEngine
+
+    engine = PrivacyQuarantineEngine.get_instance()
+    act = action.lower().strip()
+
+    if act == "quarantine":
+        if not target_uri or not raw_content:
+            return json.dumps(
+                {"error": "target_uri and raw_content are required for quarantine action"},
+                ensure_ascii=False,
+            )
+        item = engine.quarantine(
+            target_uri=target_uri,
+            raw_content=raw_content,
+            reason=reason or "Discovered by cluster agent",
+            category=category,
+            actor=actor,
+        )
+        return json.dumps({"status": "ok", "item": item.to_dict()}, ensure_ascii=False, indent=2)
+
+    elif act == "restore":
+        if not quarantine_id:
+            return json.dumps({"error": "quarantine_id is required for restore"}, ensure_ascii=False)
+        try:
+            item = engine.restore(quarantine_id=quarantine_id, actor=actor, reason=reason or "Restored by agent")
+            return json.dumps({"status": "ok", "item": item.to_dict()}, ensure_ascii=False, indent=2)
+        except Exception as e:
+            return json.dumps({"error": str(e)}, ensure_ascii=False)
+
+    elif act == "purge":
+        if not quarantine_id:
+            return json.dumps({"error": "quarantine_id is required for purge"}, ensure_ascii=False)
+        try:
+            success = engine.purge(quarantine_id=quarantine_id, actor=actor, reason=reason or "Purged by agent")
+            return json.dumps({"status": "ok", "purged": success}, ensure_ascii=False, indent=2)
+        except Exception as e:
+            return json.dumps({"error": str(e)}, ensure_ascii=False)
+
+    elif act == "get":
+        if not quarantine_id:
+            return json.dumps({"error": "quarantine_id is required for get"}, ensure_ascii=False)
+        item = engine.get_quarantined(quarantine_id)
+        if not item:
+            return json.dumps({"error": f"Item not found: {quarantine_id}"}, ensure_ascii=False)
+        return json.dumps({"status": "ok", "item": item.to_dict()}, ensure_ascii=False, indent=2)
+
+    else:
+        # Default: list
+        items = engine.list_quarantined()
+        return json.dumps(
+            {"status": "ok", "items": [i.to_dict() for i in items], "count": len(items)},
+            ensure_ascii=False,
+            indent=2,
+        )
+
+
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_privacy_audit(
+    action: str = "report",
+    limit: int = 50,
+    filter_action: str = "",
+) -> str:
+    """Retrieve compliance audit trail logs and aggregated security report metrics."""
+    import json
+    from openviking.service.privacy_quarantine import PrivacyQuarantineEngine
+
+    engine = PrivacyQuarantineEngine.get_instance()
+    act = action.lower().strip()
+
+    if act == "list":
+        entries = engine.list_audit_entries(
+            limit=limit, action=filter_action.upper() if filter_action else None
+        )
+        return json.dumps(
+            {"status": "ok", "entries": [e.to_dict() for e in entries], "count": len(entries)},
+            ensure_ascii=False,
+            indent=2,
+        )
+    else:
+        report = engine.get_compliance_report()
+        return json.dumps({"status": "ok", "report": report.to_dict()}, ensure_ascii=False, indent=2)
+
+
+
 
 # ---------------------------------------------------------------------------
 # Portable tool schemas
