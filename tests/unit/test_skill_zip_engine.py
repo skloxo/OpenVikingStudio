@@ -137,6 +137,10 @@ def test_fastapi_skill_zip_endpoints():
     from openviking.server.app import create_app
     from openviking.server.auth import get_request_context
     from openviking.server.identity import RequestContext, Role, UserIdentifier
+    from openviking.service.skill_zip_engine import SkillZipEngine
+
+    # Reset singleton to prevent state pollution from other test cases in full suite
+    SkillZipEngine._instance = None
 
     app = create_app()
     app.dependency_overrides[get_request_context] = lambda: RequestContext(
