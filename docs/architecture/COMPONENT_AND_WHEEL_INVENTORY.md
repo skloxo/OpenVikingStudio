@@ -139,6 +139,7 @@
 | **`ImpactTopologyService`** | `openviking/service/impact_topology.py` | **逆向爆炸半径拓扑引擎**：提供 SQLite 数据表读写者正反向映射、MCP 工具被调技能反查与跨技能触发词冲突碰撞检测。 | ✅ 已交付 (v1.7.0) |
 | **`RoleProjector`** | `openviking/service/role_projector.py` | **多角色专属切片投影引擎**：按角色 (Developer/Operator/Reviewer) 即时合成脱水上下文切片，避免上下文毒化与 Token 浪费。 | ✅ 已交付 (v1.7.1) |
 | **`TestRetinaGenerator`** | `openviking/service/test_retina_generator.py` | **机器测试视网膜自动合成引擎**：从 AST 事实即时生成包含状态码、入参校验与契约断言的完整 pytest 测试用例脚手架。 | ✅ 已交付 (v1.7.1) |
+| **`CodeCatalogCockpitCard`** | `src/routes/skills/-components/code-catalog-cockpit-card.tsx` | **源码事实与多角色视网膜座舱卡片**：展示 350+ 路由与 20+ FastMCP 契约指标，支持 Dev/Test/Ops 三重视角即时切换，集成一键生成 pytest 视网膜与复制能力。 | ✅ 已交付 (v1.7.1) |
 | **`UniversalPagination`** | `src/components/common/universal-pagination.tsx` | 统一分页控制器：条数切换 (`10/25/50/100`)、翻页按钮、等宽页码，严格 $\ge 11\text{px}$ 规范。 | ⏳ 规划中 |
 | **`MetricTile`** | `src/components/common/metric-tile.tsx` | 统一 `p-3` 紧凑卡片、等宽大数字 (`tabular-nums font-mono`)、四态语义支持（冰青/湛蓝/琥珀/玫瑰红）。 | ⏳ 规划中 |
 | **`EmptyState`** | `src/components/common/empty-state.tsx` | 极客风空状态展示，支持图标胶囊、主副标题、可选重置筛选按钮。 | ⏳ 规划中 |

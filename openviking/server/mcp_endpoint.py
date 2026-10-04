@@ -1657,6 +1657,60 @@ async def openviking_vector_sync_metrics(account_id: str = "default") -> str:
     )
 
 
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_code_impact(target: str) -> str:
+    """Inspect blast-radius and reverse dependencies for a SQLite database table or component."""
+    from pathlib import Path
+    from openviking.service.impact_topology import ImpactTopologyBuilder
+
+    pkg_root = Path(__file__).resolve().parent.parent
+    builder = ImpactTopologyBuilder()
+    builder.scan_directory_sql(pkg_root)
+    table_map = builder.get_table_impact_map()
+
+    clean_target = target.strip().lower()
+    if clean_target in table_map:
+        record = table_map[clean_target]
+        writers = ", ".join(record.writers) if record.writers else "None"
+        readers = ", ".join(record.readers) if record.readers else "None"
+        return (
+            f"=== SQLite Table Impact: {record.table_name} ===\n"
+            f"Description: {record.description or 'Persistent SQLite table'}\n"
+            f"Total Writers: {len(record.writers)} -> {writers}\n"
+            f"Total Readers: {len(record.readers)} -> {readers}"
+        )
+
+    return f"Target '{target}' not found in SQLite tables. Available tables: {', '.join(sorted(table_map.keys()))}"
+
+
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_generate_contract_test(route_path: str) -> str:
+    """Generate a standard pytest contract test scaffold for an OpenViking REST route."""
+    from pathlib import Path
+    from openviking.service.code_fact_compiler import CodeFactCompiler
+    from openviking.service.test_retina_generator import TestRetinaGenerator
+
+    pkg_root = Path(__file__).resolve().parent.parent
+    facts = CodeFactCompiler.scan_project_tools_and_routes(pkg_root)
+    clean_path = route_path.strip().lower()
+
+    matched_routes = [
+        r for r in facts["routes"]
+        if clean_path in r.path.lower() or clean_path in r.handler_name.lower() or clean_path in r.source_file.lower()
+    ]
+    if not matched_routes:
+        return f"No route matching '{route_path}' found among {facts['total_routes']} detected routes."
+
+    target_route = matched_routes[0]
+    snippet = TestRetinaGenerator.generate_pytest_for_route(target_route)
+    return (
+        f"=== Generated Pytest Contract for {target_route.method} {target_route.path} ===\n"
+        f"Handler: {target_route.handler_name}\n"
+        f"Source: {target_route.source_file}:{target_route.line_number}\n\n"
+        f"{snippet}"
+    )
+
+
 
 # ---------------------------------------------------------------------------
 # Portable tool schemas
