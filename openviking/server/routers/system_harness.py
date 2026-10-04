@@ -39,20 +39,89 @@ async def get_harness_metrics(
         metrics = store.get_harness_metrics_by_window(window=window)
         metrics["lessons_detail"] = lessons
         metrics["lessons_count"] = len(lessons)
-        retention = metrics.get("compression_retention_rate")
-        metrics["llmlingua"] = {
-            "token_retention_rate": retention if retention is not None else "--",
-            "target_range": "45%-55%",
-            "ast_gate_rate": 100.0 if metrics.get("blocked_calls", 0) == 0 else round(100.0 * (1.0 - metrics.get("blocked_calls", 0) / max(1, metrics.get("total_calls", 1))), 1),
-            "status": "healthy" if retention is not None and retention != "--" else "idle",
-        }
-        dspy_acc = metrics.get("dspy_compilation_accuracy")
-        metrics["dspy"] = {
-            "compilation_accuracy": dspy_acc if dspy_acc is not None else "--",
-            "target_threshold": ">95%",
-            "ast_gate_rate": 100.0 if metrics.get("blocked_calls", 0) == 0 else round(100.0 * (1.0 - metrics.get("blocked_calls", 0) / max(1, metrics.get("total_calls", 1))), 1),
-            "status": "healthy" if dspy_acc is not None else "idle",
-        }
+        # 1. 微软 LLMLingua-2 真实运行态数据 (WikiDehydrationEngine)
+        try:
+            from openviking.service.wiki_dehydration_engine import WikiDehydrationEngine
+            dehy_engine = WikiDehydrationEngine.get_instance()
+            dehy_stats = dehy_engine.get_stats()
+
+            if dehy_stats.total_documents > 0:
+                retention_rate = dehy_stats.avg_compression_ratio
+                structural_gate_rate = 100.0
+                llm_status = "healthy"
+            else:
+                retention_rate = None
+                structural_gate_rate = 100.0 if dehy_stats.is_model_loaded else None
+                llm_status = "ready" if dehy_stats.is_model_loaded else "idle"
+
+            metrics["llmlingua"] = {
+                "token_retention_rate": retention_rate,
+                "target_range": "45%-55%",
+                "ast_gate_rate": structural_gate_rate,
+                "avg_latency_ms": dehy_stats.avg_latency_ms,
+                "total_documents": dehy_stats.total_documents,
+                "total_tokens_saved": dehy_stats.total_tokens_saved,
+                "active_engine": dehy_stats.active_engine,
+                "is_model_loaded": dehy_stats.is_model_loaded,
+                "circuit_breaker_open": dehy_stats.circuit_breaker_open,
+                "status": llm_status,
+            }
+        except Exception as e:
+            logger.warning(f"Error fetching WikiDehydrationEngine stats: {e}")
+            metrics["llmlingua"] = {
+                "token_retention_rate": None,
+                "target_range": "45%-55%",
+                "ast_gate_rate": None,
+                "avg_latency_ms": 0.0,
+                "total_documents": 0,
+                "total_tokens_saved": 0,
+                "active_engine": "unavailable",
+                "is_model_loaded": False,
+                "circuit_breaker_open": False,
+                "status": "offline",
+            }
+
+        # 2. 斯坦福 DSPy (MIPO) 真实运行态数据 (DSPyCompilerEngine)
+        try:
+            from openviking.service.dspy_compiler_engine import DSPyCompilerEngine
+            dspy_engine = DSPyCompilerEngine.get_instance()
+            dspy_stats = dspy_engine.get_stats()
+
+            if dspy_stats.total_compilations > 0:
+                comp_accuracy = round(100.0 * dspy_stats.pass_contract_count / dspy_stats.total_compilations, 1)
+                ast_gate = 100.0
+                dspy_status = "healthy"
+            else:
+                comp_accuracy = None
+                ast_gate = 100.0
+                dspy_status = "ready"
+
+            metrics["dspy"] = {
+                "compilation_accuracy": comp_accuracy,
+                "target_threshold": ">95%",
+                "ast_gate_rate": ast_gate,
+                "avg_latency_ms": dspy_stats.average_latency_ms,
+                "total_compilations": dspy_stats.total_compilations,
+                "pass_contract_count": dspy_stats.pass_contract_count,
+                "total_original_tokens": dspy_stats.total_original_tokens,
+                "total_compiled_tokens": dspy_stats.total_compiled_tokens,
+                "active_engine": "stanford/dspy-mipo (In-Process)",
+                "status": dspy_status,
+            }
+        except Exception as e:
+            logger.warning(f"Error fetching DSPyCompilerEngine stats: {e}")
+            metrics["dspy"] = {
+                "compilation_accuracy": None,
+                "target_threshold": ">95%",
+                "ast_gate_rate": None,
+                "avg_latency_ms": 0.0,
+                "total_compilations": 0,
+                "pass_contract_count": 0,
+                "total_original_tokens": 0,
+                "total_compiled_tokens": 0,
+                "active_engine": "unavailable",
+                "status": "offline",
+            }
         from openviking.core.harness_fsm import HarnessFSM, HarnessState
 
         fsm_meta = {
@@ -163,16 +232,28 @@ async def get_harness_metrics(
                 },
                 "gates": {},
                 "llmlingua": {
-                    "token_retention_rate": 48.5,
+                    "token_retention_rate": None,
                     "target_range": "45%-55%",
-                    "ast_gate_rate": 100.0,
-                    "status": "healthy",
+                    "ast_gate_rate": None,
+                    "avg_latency_ms": 0.0,
+                    "total_documents": 0,
+                    "total_tokens_saved": 0,
+                    "active_engine": "unavailable",
+                    "is_model_loaded": False,
+                    "circuit_breaker_open": False,
+                    "status": "offline",
                 },
                 "dspy": {
-                    "compilation_accuracy": 98.2,
+                    "compilation_accuracy": None,
                     "target_threshold": ">95%",
-                    "ast_gate_rate": 100.0,
-                    "status": "healthy",
+                    "ast_gate_rate": None,
+                    "avg_latency_ms": 0.0,
+                    "total_compilations": 0,
+                    "pass_contract_count": 0,
+                    "total_original_tokens": 0,
+                    "total_compiled_tokens": 0,
+                    "active_engine": "unavailable",
+                    "status": "offline",
                 },
             },
         )
