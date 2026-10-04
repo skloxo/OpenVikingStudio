@@ -60,7 +60,9 @@
   6. `docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md`：登记新增编译服务公共轮子；
   7. `tests/unit/test_skill_and_code_fact_compiler.py` (215行)：编写 6 项专项单测全绿通过 (2.01s)；
   8. `package.json` & `openviking/_version.py`：版本号同步自增至 `1.6.9`。
-- **物理验收与门禁**：
+  - **物理验收与门禁**：
+  - **Git Commit Hash**：`569358eed`
+  - **Git Tag**：`v1.6.9`
   - **自动化测试通过率**：6/6 专项单测全绿 (2.01s)，15 项关键回归测试全绿 (1.65s)；
   - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4605 个跟踪文件 0 密钥泄露；
   - **前端生产构建**：`npm run build` 耗时 17.89s 顺利 PASS。
