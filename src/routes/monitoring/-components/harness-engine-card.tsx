@@ -1,8 +1,7 @@
-import * as React from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Badge } from '#/components/ui/badge'
 import { Card, CardTitle } from '#/components/ui/card'
-import { CpuIcon, SparklesIcon } from 'lucide-react'
+import { CpuIcon, SparklesIcon, ZapIcon } from 'lucide-react'
 import { ovClient } from '#/lib/ov-client'
 
 export interface HarnessEngineCardProps {
@@ -10,26 +9,40 @@ export interface HarnessEngineCardProps {
   isHealthy?: boolean
 }
 
+interface HarnessMetricsResponse {
+  compression_retention_rate?: number
+  llmlingua?: {
+    token_retention_rate?: number | null
+    target_range?: string
+    ast_gate_rate?: number | null
+    avg_latency_ms?: number
+    total_documents?: number
+    total_tokens_saved?: number
+    active_engine?: string
+    is_model_loaded?: boolean
+    circuit_breaker_open?: boolean
+    status?: string
+  }
+  dspy?: {
+    compilation_accuracy?: number | null
+    target_threshold?: string
+    ast_gate_rate?: number | null
+    avg_latency_ms?: number
+    total_compilations?: number
+    pass_contract_count?: number
+    active_engine?: string
+    status?: string
+  }
+}
+
 export function HarnessEngineCard({ isHealthy = true }: HarnessEngineCardProps) {
   const harnessQuery = useQuery({
     queryKey: ['harness-engine-card-metrics'],
     queryFn: async () => {
       try {
-        const res = await ovClient.instance.get<{
-          compression_retention_rate?: number
-          llmlingua?: {
-            token_retention_rate?: number
-            target_range?: string
-            ast_gate_rate?: number
-            status?: string
-          }
-          dspy?: {
-            compilation_accuracy?: number
-            target_threshold?: string
-            ast_gate_rate?: number
-            status?: string
-          }
-        }>('/api/v1/system/harness_metrics')
+        const res = await ovClient.instance.get<HarnessMetricsResponse>(
+          '/api/v1/system/harness_metrics',
+        )
         return res.data
       } catch {
         return null
@@ -39,10 +52,23 @@ export function HarnessEngineCard({ isHealthy = true }: HarnessEngineCardProps) 
   })
 
   const data = harnessQuery.data
-  const llmRetention = data?.llmlingua?.token_retention_rate ?? data?.compression_retention_rate
-  const llmAst = data?.llmlingua?.ast_gate_rate
-  const dspyAst = data?.dspy?.ast_gate_rate
-  const dspyAccuracy = data?.dspy?.compilation_accuracy
+  const llm = data?.llmlingua
+  const dspy = data?.dspy
+
+  const llmRetention = llm?.token_retention_rate ?? data?.compression_retention_rate
+  const llmAst = llm?.ast_gate_rate
+  const llmDocs = llm?.total_documents ?? 0
+  const llmLatency = llm?.avg_latency_ms ?? 0
+  const llmLoaded = llm?.is_model_loaded ?? false
+  const llmEngine = llm?.active_engine ?? 'microsoft/llmlingua-2'
+
+  const dspyAst = dspy?.ast_gate_rate
+  const dspyAccuracy = dspy?.compilation_accuracy
+  const dspyCompiles = dspy?.total_compilations ?? 0
+  const dspyLatency = dspy?.avg_latency_ms ?? 0
+  const dspyEngine = dspy?.active_engine ?? 'stanford/dspy-mipo'
+
+  const overallReady = isHealthy && (llm?.status === 'ready' || llm?.status === 'healthy')
 
   return (
     <Card className="flex flex-col gap-4 p-4 shadow-none transition-colors hover:border-cyan-500/30">
@@ -58,7 +84,7 @@ export function HarnessEngineCard({ isHealthy = true }: HarnessEngineCardProps) 
           className="gap-1 font-mono text-xs border-cyan-500/40 bg-cyan-500/10 text-cyan-500"
         >
           <span className="size-1.5 rounded-full bg-cyan-500 animate-pulse" />
-          {isHealthy ? '组件熔融就位' : '组件降级'}
+          {overallReady ? '组件熔融就位' : '组件检测中'}
         </Badge>
       </div>
 
@@ -88,17 +114,23 @@ export function HarnessEngineCard({ isHealthy = true }: HarnessEngineCardProps) 
             </span>
           </div>
           <div className="text-right flex flex-col items-end">
-            <span className="font-semibold text-cyan-600 dark:text-cyan-400 tabular-nums">
-              {llmRetention !== undefined ? `${llmRetention}%` : '--'}
+            {llmRetention != null ? (
+              <span className="font-semibold text-cyan-600 dark:text-cyan-400 tabular-nums">
+                {llmRetention.toFixed(1)}%
+              </span>
+            ) : (
+              <span className="font-sans text-xs text-muted-foreground tabular-nums">待抽稀</span>
+            )}
+            <span className="text-xs text-muted-foreground font-sans">
+              ({llmDocs > 0 ? `${llmDocs} 篇` : '0 采样'} · 45-55%)
             </span>
-            <span className="text-xs text-muted-foreground font-sans">(安全 45-55%)</span>
           </div>
           <div className="text-right flex flex-col items-end">
             <span className="font-semibold text-cyan-600 dark:text-cyan-400 tabular-nums">
-              {llmAst !== undefined ? `${llmAst}%` : '--'}
+              {llmAst != null ? `${llmAst.toFixed(1)}%` : '--'}
             </span>
             <span className="text-xs text-cyan-600 dark:text-cyan-400 font-sans font-semibold">
-              {llmAst !== undefined ? '(100% 锁定)' : '--'}
+              {llmAst != null ? '(100% 结构断言)' : '--'}
             </span>
           </div>
           <div className="text-right flex flex-col items-end">
@@ -106,8 +138,13 @@ export function HarnessEngineCard({ isHealthy = true }: HarnessEngineCardProps) 
             <span className="text-xs text-muted-foreground font-sans">(N/A N-Gram)</span>
           </div>
           <div className="text-right flex flex-col items-end">
-            <span className="font-semibold text-muted-foreground tabular-nums">--</span>
-            <span className="text-xs text-muted-foreground font-sans">(&lt;500MB / &lt;10ms)</span>
+            <span className="font-semibold text-foreground tabular-nums flex items-center gap-1">
+              <ZapIcon className="size-3 text-cyan-500" />
+              {llmDocs > 0 ? `${llmLatency.toFixed(0)}ms` : llmLoaded ? '就绪 <200ms' : '--'}
+            </span>
+            <span className="text-xs text-muted-foreground font-sans truncate max-w-32.5" title={llmEngine}>
+              {llmEngine.includes('CUDA') ? 'CUDA FP16 · 2080Ti' : 'CPU 降级'}
+            </span>
           </div>
         </div>
 
@@ -128,23 +165,32 @@ export function HarnessEngineCard({ isHealthy = true }: HarnessEngineCardProps) 
           </div>
           <div className="text-right flex flex-col items-end">
             <span className="font-semibold text-cyan-600 dark:text-cyan-400 tabular-nums">
-              {dspyAst !== undefined ? `${dspyAst}%` : '--'}
+              {dspyAst != null ? `${dspyAst.toFixed(1)}%` : '--'}
             </span>
             <span className="text-xs text-cyan-600 dark:text-cyan-400 font-sans font-semibold">
-              {dspyAst !== undefined ? '(100% 锁定)' : '--'}
+              {dspyAst != null ? '(100% 规约锁定)' : '--'}
             </span>
           </div>
           <div className="text-right flex flex-col items-end">
-            <span className="font-semibold text-cyan-600 dark:text-cyan-400 tabular-nums">
-              {dspyAccuracy !== undefined ? `${dspyAccuracy}%` : '--'}
-            </span>
-            <span className="text-xs text-cyan-600 dark:text-cyan-400 font-sans font-semibold">
-              {dspyAccuracy !== undefined ? '(安全 >95%)' : '--'}
+            {dspyAccuracy != null ? (
+              <span className="font-semibold text-cyan-600 dark:text-cyan-400 tabular-nums">
+                {dspyAccuracy.toFixed(1)}%
+              </span>
+            ) : (
+              <span className="font-sans text-xs text-muted-foreground tabular-nums">待编译</span>
+            )}
+            <span className="text-xs text-muted-foreground font-sans">
+              ({dspyCompiles > 0 ? `${dspyCompiles} 次` : '0 采样'} · 门禁锁定)
             </span>
           </div>
           <div className="text-right flex flex-col items-end">
-            <span className="font-semibold text-muted-foreground tabular-nums">--</span>
-            <span className="text-xs text-muted-foreground font-sans">(&lt;500MB / &lt;10ms)</span>
+            <span className="font-semibold text-foreground tabular-nums flex items-center gap-1">
+              <ZapIcon className="size-3 text-cyan-500" />
+              {dspyCompiles > 0 ? `${dspyLatency.toFixed(0)}ms` : '就绪 <10ms'}
+            </span>
+            <span className="text-xs text-muted-foreground font-sans truncate max-w-32.5" title={dspyEngine}>
+              In-Process · 内存级
+            </span>
           </div>
         </div>
       </div>
