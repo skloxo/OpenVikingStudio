@@ -116,7 +116,7 @@
   5. 资产入库：已向 `docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md` 登记 `RoleProjector` 与 `TestRetinaGenerator`，`vitest` 5/5 全绿通过；
   6. 门禁验证：安全审计 0 密钥、前端构建 PASS、版本自增至 `1.7.1`。
 - **物理验收与门禁**：
-  - **Git Commit Hash**：(待提交)
+  - **Git Commit Hash**：`7d9f1c0a0`
   - **Git Tag**：`v1.7.1`
   - **自动化测试**：`pytest -o addopts="" tests/unit/test_role_projections_and_test_gen.py` 4/4 passed；14/14 全量回归 passed。
   - **安全审计**：`python3 scripts/security_check.py` PASS (0 secrets detected)。
