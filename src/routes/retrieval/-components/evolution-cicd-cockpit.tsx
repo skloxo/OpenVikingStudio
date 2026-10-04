@@ -1,3 +1,4 @@
+/* eslint-disable i18next/no-literal-string */
 import { useState, useEffect, useCallback } from 'react'
 import {
   ShieldAlertIcon,
@@ -9,6 +10,7 @@ import {
   SlidersIcon,
   SparklesIcon,
 } from 'lucide-react'
+import { ovClient } from '#/lib/ov-client'
 
 interface PackageItem {
   package_id: string
@@ -61,22 +63,19 @@ export function EvolutionCICDCockpit() {
   const [packages, setPackages] = useState<PackageItem[]>([])
   const [dreaming, setDreaming] = useState<DreamingStatus | null>(null)
   const [loading, setLoading] = useState(false)
-  const [targetSkill, setTargetSkill] = useState('agent-friendly-code-org')
-  const [samplePatch, setSamplePatch] = useState('+- DO NOT exceed 300 lines\n+- INSTEAD extract seam early')
+  const [targetSkill] = useState('agent-friendly-code-org')
+  const [samplePatch] = useState('+- DO NOT exceed 300 lines\n+- INSTEAD extract seam early')
 
   const fetchData = useCallback(async () => {
     try {
       const [govRes, pkgRes, dreamRes] = await Promise.all([
-        fetch('/api/v1/evolution/governance'),
-        fetch('/api/v1/evolution/pipeline/packages'),
-        fetch('/api/v1/evolution/dreaming/status'),
+        ovClient.instance.get<GovernanceState>('/api/v1/evolution/governance'),
+        ovClient.instance.get<{ packages: PackageItem[] }>('/api/v1/evolution/pipeline/packages'),
+        ovClient.instance.get<DreamingStatus>('/api/v1/evolution/dreaming/status'),
       ])
-      if (govRes.ok) setGovernance(await govRes.json())
-      if (pkgRes.ok) {
-        const d = await pkgRes.json()
-        setPackages(d.packages || [])
-      }
-      if (dreamRes.ok) setDreaming(await dreamRes.json())
+      if (govRes.data) setGovernance(govRes.data)
+      if (pkgRes.data) setPackages(pkgRes.data.packages || [])
+      if (dreamRes.data) setDreaming(dreamRes.data)
     } catch {
       // Keep state intact on fetch failure
     }
@@ -89,10 +88,9 @@ export function EvolutionCICDCockpit() {
   const handleCreatePackage = async () => {
     setLoading(true)
     try {
-      await fetch('/api/v1/evolution/pipeline/package', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ target_skill: targetSkill, diff_patch: samplePatch }),
+      await ovClient.instance.post('/api/v1/evolution/pipeline/package', {
+        target_skill: targetSkill,
+        diff_patch: samplePatch,
       })
       await fetchData()
     } finally {
@@ -103,10 +101,8 @@ export function EvolutionCICDCockpit() {
   const handleAdvance = async (pkgId: string) => {
     setLoading(true)
     try {
-      await fetch('/api/v1/evolution/pipeline/advance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ package_id: pkgId }),
+      await ovClient.instance.post('/api/v1/evolution/pipeline/advance', {
+        package_id: pkgId,
       })
       await fetchData()
     } finally {
@@ -117,10 +113,8 @@ export function EvolutionCICDCockpit() {
   const handleTriggerDreaming = async () => {
     setLoading(true)
     try {
-      await fetch('/api/v1/evolution/dreaming/trigger', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ traces: [{ success: false, category: 'InstructionDrift' }] }),
+      await ovClient.instance.post('/api/v1/evolution/dreaming/trigger', {
+        traces: [{ success: false, category: 'InstructionDrift' }],
       })
       await fetchData()
     } finally {
@@ -131,7 +125,7 @@ export function EvolutionCICDCockpit() {
   const handleEmergencyRollback = async () => {
     setLoading(true)
     try {
-      await fetch('/api/v1/evolution/governance/rollback', { method: 'POST' })
+      await ovClient.instance.post('/api/v1/evolution/governance/rollback')
       await fetchData()
     } finally {
       setLoading(false)
@@ -141,11 +135,7 @@ export function EvolutionCICDCockpit() {
   const handleSetLevel = async (level: string) => {
     setLoading(true)
     try {
-      await fetch('/api/v1/evolution/governance/level', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ level }),
-      })
+      await ovClient.instance.post('/api/v1/evolution/governance/level', { level })
       await fetchData()
     } finally {
       setLoading(false)
@@ -220,7 +210,7 @@ export function EvolutionCICDCockpit() {
             <button
               onClick={handleCreatePackage}
               disabled={loading}
-              className="px-2.5 py-1 rounded bg-secondary hover:bg-secondary/80 text-foreground text-xs font-mono transition-colors"
+              className="px-2.5 py-1 rounded bg-secondary hover:bg-secondary/80 text-foreground text-xs font-mono transition-colors cursor-pointer disabled:opacity-50"
             >
               + 注入演化候选 Patch
             </button>
@@ -250,7 +240,7 @@ export function EvolutionCICDCockpit() {
                       <button
                         onClick={() => handleAdvance(pkg.package_id)}
                         disabled={loading || pkg.rolled_back}
-                        className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-500 hover:bg-cyan-500/30 text-xs font-mono"
+                        className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-500 hover:bg-cyan-500/30 text-xs font-mono cursor-pointer disabled:opacity-50"
                       >
                         推进下一阶段 ➔
                       </button>
@@ -299,7 +289,7 @@ export function EvolutionCICDCockpit() {
                 <button
                   key={lvl}
                   onClick={() => handleSetLevel(lvl)}
-                  className={`px-2 py-1 rounded text-left truncate border ${
+                  className={`px-2 py-1 rounded text-left truncate border cursor-pointer ${
                     governance?.autonomous_level === lvl
                       ? 'border-cyan-500 bg-cyan-500/10 text-cyan-500 font-semibold'
                       : 'border-border/40 hover:bg-secondary/40 text-muted-foreground'
@@ -315,7 +305,7 @@ export function EvolutionCICDCockpit() {
               <button
                 onClick={handleTriggerDreaming}
                 disabled={loading}
-                className="w-full py-1.5 px-3 rounded bg-secondary hover:bg-secondary/80 text-foreground text-xs flex items-center justify-center gap-1.5 font-mono"
+                className="w-full py-1.5 px-3 rounded bg-secondary hover:bg-secondary/80 text-foreground text-xs flex items-center justify-center gap-1.5 font-mono cursor-pointer disabled:opacity-50"
               >
                 <SparklesIcon className="size-3 text-cyan-500" />
                 手动触发低峰 Dreaming 挖掘
@@ -330,7 +320,7 @@ export function EvolutionCICDCockpit() {
               <button
                 onClick={handleEmergencyRollback}
                 disabled={loading}
-                className="w-full py-1.5 px-3 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/30 text-xs font-mono font-semibold"
+                className="w-full py-1.5 px-3 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/30 text-xs font-mono font-semibold cursor-pointer disabled:opacity-50"
               >
                 🚨 触发 EMERGENCY KILL-SWITCH
               </button>
