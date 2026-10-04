@@ -121,7 +121,7 @@
   7. 资产登记：已向 `docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md` 登记新组件，`vitest` 5/5 全绿通过；
   8. 门禁验证：安全审计 0 密钥、单测 20/20 全绿、前端生产构建 PASS、版本自增至 `1.7.3`。
 - **物理验收与门禁**：
-  - **Git Commit Hash**：（本次提交）
+  - **Git Commit Hash**：`76cfd508b`
   - **Git Tag**：`v1.7.3`
   - **自动化测试**：`pytest` 20/20 全绿通过 (3.59s)；`vitest` 5/5 全绿通过 (742ms)；
   - **安全凭据审计**：`python3 scripts/security_check.py` PASS (Checked 4615 tracked files. Zero secrets detected)；
