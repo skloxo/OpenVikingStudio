@@ -309,15 +309,7 @@ function RetrievalPage() {
       {activeTab === 'context' && <ActiveNotesHistoryCockpit />}
 
       {/* Tab 7: 前门泊车与反熵准入座舱 */}
-      {activeTab === 'valet' && (
-        <div className="flex flex-col gap-4">
-          <MemoryPurityGaugeCard />
-          <ValetIngestionCockpit />
-          <TemporalDecayDreamCard />
-          <MemoryLineageDAGCard />
-          <MemoryGovernanceStreamCard />
-        </div>
-      )}
+      {activeTab === 'valet' && <ValetIngestionCockpit />}
 
       {/* Tab 8: LLMLingua 自然语言脱水座舱 */}
       {activeTab === 'llmlingua' && <LLMLinguaDehydrationCockpit />}
