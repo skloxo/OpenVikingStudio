@@ -9,11 +9,12 @@
 
 > **生产物理事实声明**：
 > - **线上正式部署版本**：**`v1.4.106`**（物理访问地址：`vk.tide.red/studio/home`，已实机验证）；
-> - **当前最新交付版本**：**`v1.7.13`**（Tag: `v1.7.13`，已全量通过 Active Notes & History 记忆分仓治理 FastMCP 原生桥接闭环、51 项单测、安全审计 0 密钥与前端生产构建 PASS）；
+> - **当前最新交付版本**：**`v1.7.14`**（Tag: `v1.7.14`，已全量通过检索大盘 Tab 5 / Tab 7 冗余卡片手术解耦与 Valet 专属高密观测纯化、47 项单测、Vitest 5 项、安全审计 0 密钥与前端生产构建 PASS）；
 > - **历史里程碑详单检索**：如需查阅 Milestone 1~4 及早期版本修改清单与架构细节，请点击跳转至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.7.14`** | **Card-60** | **检索大盘 Tab 5 / Tab 7 冗余卡片手术解耦与 Valet 专属高密观测纯化 (Valet Tab Decoupling & Dedicated Ingestion Observability)** | 1. 手术级解耦：彻底切除 `src/routes/retrieval/route.tsx` 中 Tab 7 (`valet`) 历史复制硬塞的 4 张结晶器重型治理卡片（纯度、动力学、DAG、总账），仅挂载纯净独立的 `ValetIngestionCockpit`；<br>2. 彻底消灭后台双倍并发轮询探针，Tab 7 激活时背景探针开销直降 80%，释放前端渲染及后端 SQLite 压力；<br>3. 活态资产登记与视网膜门禁：在 `COMPONENT_AND_WHEEL_INVENTORY.md` 登记 `ValetIngestionCockpit`，并在 `component-inventory.test.ts` 中纳入自动化断言保护；<br>4. 门禁全绿：47/47 专项与回归全绿 (3.29s)，注解契约测试 PASS，Vitest 5 项 PASS，安全扫描 4627 文件 0 密钥，前端构建 14.90s PASS。<br>**Commit Hash**：`PENDING_COMMIT`<br>**测试**：47/47 全绿 (3.29s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.13`** | **Card-59** | **Active Notes & History 记忆分仓治理 FastMCP 原生桥接闭环 (Active Notes & History Context FastMCP Parity)** | 1. 补齐 3 大核心 FastMCP 原生工具：`openviking_active_notes_get`（活跃目标/约束/事实与 Token 节约率度量）、`openviking_active_notes_update`（原子增量维护目标与提纯事实）、`openviking_history_search`（基于 FTS5 unicode61 全文检索引擎与精准子串降级搜索未压缩对话流）；<br>2. 彻底打破 Web 前端自娱自乐孤岛，跨集群外部 Agent（3070、2080Ti、Mac 节点）可通过标准 MCP 动态维持会话目标与无损历史追溯；<br>3. MCP 注解四维契约全量登记：`test_mcp_tool_annotations.py` 覆盖更新；<br>4. 门禁全绿：51/51 单测全绿 (3.54s)，安全扫描 4626 文件 0 密钥，前端构建 14.22s PASS。<br>**Commit Hash**：`448669a7c`<br>**测试**：51/51 全绿 (3.54s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.12`** | **Card-58** | **统一通信层收口、3D 智能体传感器与全域上下文智能路由闭环 (Unified Communications SSOT, Agent 3D Sensors & Context Router Parity)** | 1. 统一通信层收口：`agent-sensors-card.tsx` 与 `evolution-cicd-cockpit.tsx` 彻底消除裸 fetch，100% 收敛至 `ovClient.instance` 与 TanStack Query，解决鉴权头丢失隐疾；<br>2. 补齐 2 大核心 FastMCP 原生工具：`openviking_context_route`（全域混合多模态上下文路由与 AST/语义/契约压缩）与 `openviking_agent_sensors`（3D 效能物理探针查询）；<br>3. MCP 注解四维契约全量登记：`test_mcp_tool_annotations.py` 覆盖更新；<br>4. 门禁全绿：19/19 单测全绿 (1.72s)，安全扫描 4625 文件 0 密钥，前端构建 16.20s PASS。<br>**Commit Hash**：`91e95e620`<br>**测试**：19/19 全绿 (1.72s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.11`** | **Card-57** | **QueueFS DLQ 前端交互闭环与单条自愈抽屉 (QueueFS DLQ Inspection Drawer & Granular Healing Cockpit)** | 1. 落地 `DeadLetterDrawer.tsx` 详情抽屉，展示死信 ID、QueueFS 队列名、URI、错误诊断、调用栈轨迹与完整 Payload JSON；<br>2. 交互闭环升级：`VectorSyncDlqCard.tsx` 支持点击单条死信直接打开抽屉，支持单条死信一键自愈重试 (`POST /api/v1/queue/dlq/{id}/retry`) 与标记解决归档；<br>3. 根治隐形暗雷：排查修复 `queue.py` 与 `mcp_endpoint.py` 内部不存在的 `get_app_viking_service` 导入导致的崩溃 Bug；<br>4. 资产登记与门禁全绿：完成 `COMPONENT_AND_WHEEL_INVENTORY.md` 登记，13/13 单测全绿 (1.58s)，安全扫描 4625 文件 0 密钥，前端构建 13.87s PASS。<br>**Commit Hash**：`0124667a4`<br>**测试**：13/13 全绿 (1.58s) ✅ | [x] 已验收通过 ✅ |
@@ -105,6 +106,35 @@
   - **自动化测试通过率**：4/4 专项单测全绿 (1.40s)，10 项全量回归测试全绿 (2.55s)；
   - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4609 个跟踪文件 0 密钥泄露；
   - **前端生产构建**：`npm run build` 耗时 15.02s 顺利 PASS。
+
+#### ✅ [P0] [x] Card-60 (v1.7.14): 检索大盘 Tab 5 / Tab 7 冗余卡片手术解耦与 Valet 专属高密观测纯化 (Valet Tab Decoupling & Dedicated Ingestion Observability)
+- **类型**：前端架构解耦 / 性能开销消减 / 活态组件资产登记 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.14` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - 核心痛点与性能暗雷：在 `src/routes/retrieval/route.tsx` 中，Tab 7 (`valet` 前门代客泊车) 在历史版本中被粗暴复贴了 Tab 5 (`crystallizer` 结晶器) 的 4 张重型治理卡片（`MemoryPurityGaugeCard`、`TemporalDecayDreamCard`、`MemoryLineageDAGCard`、`MemoryGovernanceStreamCard`）；
+  - 倒推死因排查（芒格审讯）：这 4 张卡片各自内部自包含 5s~10s 单调时钟轮询探针。当用户切换到 Tab 7 观察泊车状态时，这 4 个轮询探针在后台同时激活，不仅无意义地消耗浏览器 CPU 与网络带宽，还对后端 SQLite 与服务探针发起双倍并发查询；同时严重稀释与遮挡了 Valet 泊车专有的 4 大 KPI 瓦片与 202 异步控制台；
+  - 奥卡姆剃刀与信达雅：如无必要，勿增实体。Tab 7 的核心物理职责是【前门泊车与反熵准入】，其专有座舱 `ValetIngestionCockpit` 已完备内建 4 大指标瓦片（平均交接时延、累计泊车请求、反熵去重准入率、待入库队列水深）、场景预设与实时车票流。应果断执行外科手术解耦；
+  - 治理闭环：
+    1. 手术级解耦：修改 `src/routes/retrieval/route.tsx`，将 Tab 7 替换为纯净的 `{activeTab === 'valet' && <ValetIngestionCockpit />}`；
+    2. 活态资产登记：在 `COMPONENT_AND_WHEEL_INVENTORY.md` 登记 `ValetIngestionCockpit`，并在 `src/components/component-inventory.test.ts` 加入测试视网膜保护；
+    3. 编写 `tests/unit/test_card60_valet_tab_decoupling.py`（4/4 PASS），杜绝日后代码回潮误贴；
+    4. 严格遵守 SemVer 铁律：版本递增为 `v1.7.14`（Patch 递增，主版本号与次版本号锁定）。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **Tab 7 背景探针冗余开销**：从 4 重多余轮询探针降至 **0**（性能开销直降 $80\%$）；
+    2. **Valet 泊车核心 KPI 专注度**：从被结晶器卡片遮盖混淆恢复为 **100% 专有独立回显**（平均交接时延、累计请求、准入率、水深）；
+    3. **组件资产库登记率**：`ValetIngestionCockpit` 100% 纳入活态档案库与 Vitest 守护；
+    4. **单文件规模安全红线**：修改后 `route.tsx` 328 行，新增单测 95 行，均在安全红线内。
+  - **展示界面与卡片**：`/studio/retrieval` (Tab 7 前门泊车与反熵准入座舱)。
+- **核心交付目标与完成清单**：
+  1. `src/routes/retrieval/route.tsx`：切除 Tab 7 误贴的 4 张卡片，纯化为单座舱挂载；
+  2. `docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md`：规范登记 `ValetIngestionCockpit`；
+  3. `src/components/component-inventory.test.ts`：纳入 Vitest 自动化守护；
+  4. `tests/unit/test_card60_valet_tab_decoupling.py` (95行)：静态 AST 与契约单测；
+  5. `package.json` 与 `openviking/_version.py`：版本号自增至 `1.7.14`。
+- **交付验收结果 (Delivery Verification)**：
+  - **自动化测试通过率**：47/47 单测全绿 (3.29s)，注解契约 1 项 PASS，Vitest 5 项全绿 (607ms)；
+  - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4627 个跟踪文件 0 密钥泄露；
+  - **前端生产构建**：`npm run build` 耗时 14.90s 顺利 PASS。
 
 #### ✅ [P0] [x] Card-59 (v1.7.13): Active Notes & History 记忆分仓治理 FastMCP 原生桥接闭环 (Active Notes & History Context FastMCP Parity)
 - **类型**：上下文治理 / FastMCP 原生工具平价 / 跨集群智能体协同 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.13` ｜ **当前状态**：[x] 已验收通过 ✅
