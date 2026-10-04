@@ -1,7 +1,7 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { Badge } from '#/components/ui/badge'
 import { Card, CardTitle } from '#/components/ui/card'
-import { CpuIcon, SparklesIcon, ZapIcon } from 'lucide-react'
+import { CpuIcon, FlaskConicalIcon, SparklesIcon, ZapIcon } from 'lucide-react'
 import { ovClient } from '#/lib/ov-client'
 
 export interface HarnessEngineCardProps {
@@ -51,6 +51,16 @@ export function HarnessEngineCard({ isHealthy = true }: HarnessEngineCardProps) 
     staleTime: 30_000,
   })
 
+  const probeMutation = useMutation({
+    mutationFn: async () => {
+      const res = await ovClient.instance.post('/api/v1/system/harness/probe')
+      return res.data
+    },
+    onSuccess: () => {
+      void harnessQuery.refetch()
+    },
+  })
+
   const data = harnessQuery.data
   const llm = data?.llmlingua
   const dspy = data?.dspy
@@ -79,13 +89,25 @@ export function HarnessEngineCard({ isHealthy = true }: HarnessEngineCardProps) 
             🛡️ Harness 技能自演进引擎与第三方组件监控
           </CardTitle>
         </div>
-        <Badge
-          variant="outline"
-          className="gap-1 font-mono text-xs border-cyan-500/40 bg-cyan-500/10 text-cyan-500"
-        >
-          <span className="size-1.5 rounded-full bg-cyan-500 animate-pulse" />
-          {overallReady ? '组件熔融就位' : '组件检测中'}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => probeMutation.mutate()}
+            disabled={probeMutation.isPending}
+            className="flex items-center gap-1 px-2.5 py-1 text-xs font-mono font-medium rounded-md border border-cyan-500/30 bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500/20 transition-colors disabled:opacity-50"
+            title="执行底层 LLMLingua-2 与 DSPy 物理采样验真"
+          >
+            <FlaskConicalIcon className={`size-3 text-cyan-500 ${probeMutation.isPending ? 'animate-spin' : ''}`} />
+            {probeMutation.isPending ? '验真中...' : '物理验真'}
+          </button>
+          <Badge
+            variant="outline"
+            className="gap-1 font-mono text-xs border-cyan-500/40 bg-cyan-500/10 text-cyan-500"
+          >
+            <span className="size-1.5 rounded-full bg-cyan-500 animate-pulse" />
+            {overallReady ? '组件熔融就位' : '组件检测中'}
+          </Badge>
+        </div>
       </div>
 
       <p className="text-xs text-muted-foreground font-mono">

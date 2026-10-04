@@ -140,3 +140,75 @@ def _get_active_skills_catalog() -> list[tuple[str, str, str]]:
         for name, desc in CORE_SKILLS_CATALOG:
             skills.append((name, desc, f"/home/skloxo/.gemini/config/skills/{name}/SKILL.md"))
     return skills
+
+
+def get_harness_fsm_meta() -> dict:
+    """Return runtime metadata for Harness State FSM."""
+    from openviking.core.harness_fsm import HarnessFSM, HarnessState
+
+    return {
+        "states": [s.value for s in HarnessState],
+        "current_state": "IDLE",
+        "active_state": "IDLE",
+        "transition_rules_count": sum(len(v) for v in HarnessFSM.TRANSITION_GRAPH.values()),
+        "pipeline": [
+            {"id": "SPEC_INGEST", "label": "规格摄取", "desc": "任务规格冻结与输入三元组校验 (Spec P Ingestion)", "role": "Orchestrator"},
+            {"id": "DECOMPOSE", "label": "工单拆解", "desc": "Tracer-Bullet 工单拆解与 DAG 依赖编排", "role": "Orchestrator"},
+            {"id": "DISPATCH", "label": "专业分发", "desc": "角色隔离沙箱分配 (Orchestrator != Specialist)", "role": "Orchestrator"},
+            {"id": "RUNNING", "label": "执行生成", "desc": "沙箱代码生成与工具调用拦截", "role": "Specialist"},
+            {"id": "VERIFY", "label": "物理验真", "desc": "真实物理 Diff + 测试视网膜执行门禁", "role": "MultiMetricGate"},
+            {"id": "EVALUATE", "label": "独立评审", "desc": "生成者与评估者物理防串通 (Generator != Evaluator)", "role": "Independent Evaluator"},
+            {"id": "CHECKPOINT", "label": "状态快照", "desc": "不可变 SHA-256 检查点落盘", "role": "Harness Trace"},
+            {"id": "COMPLETED", "label": "交付归档", "desc": "版本回溯与 Git Tag 物理留痕", "role": "Release SOP"},
+        ],
+        "exceptions": [
+            {"id": "BLOCKED", "label": "护栏拦截", "desc": "防偷懒省略 / 超大读取物理阻断", "type": "guard"},
+            {"id": "RECOVERING", "label": "自愈重试", "desc": "三元故障恢复与预算自愈", "type": "retry"},
+            {"id": "FAILED", "label": "熔断终止", "desc": "不可逆错误熔断阻断", "type": "terminal"},
+        ],
+    }
+
+
+HARNESS_GATES_META = {
+    "physical_diff": {
+        "name": "物理增量代码门禁 (Physical Diff Gate)",
+        "status": "active",
+        "badge": "Active Invariant",
+        "description": "严格剔除纯空格与纯注释伪变更，断言物理有效改动行 > 0",
+        "rules": ["min_effective_lines >= 1", "comment_only_filtered", "whitespace_filtered", "git_tree_asserted"],
+    },
+    "test_retina": {
+        "name": "测试视网膜反欺诈门禁 (Anti-Cheat Retina)",
+        "status": "active",
+        "badge": "Active Invariant",
+        "description": "拦截 false exit 0 假绿灯，真实校验 passed > 0 且 failed == 0",
+        "rules": ["real_process_execution", "test_report_parsed", "false_exit_zero_blocked", "duration_tracked"],
+    },
+    "anti_lazy": {
+        "name": "防偷懒代码省略占位符护栏 (Anti-Lazy Code Guard)",
+        "status": "active",
+        "badge": "Active Invariant",
+        "description": "AST 与正则实时扫描，物理封杀 pass、# TODO、...、NotImplementedError",
+        "rules": ["prohibit_pass_stub", "prohibit_todo_stub", "prohibit_ellipsis", "zero_omission_tolerance"],
+    },
+    "role_separation": {
+        "name": "生成与评估角色隔离 (Role Separation)",
+        "status": "active",
+        "badge": "Active Invariant",
+        "description": "物理隔离生成者与评估者，防止智能体自问自答自批改作弊",
+        "rules": ["generator_not_evaluator", "checkpoint_sha256_verified", "dual_axis_standards_spec"],
+    },
+    "cpa_teacher_guard": {
+        "name": "CPA 教师模型守卫拦截器 (CPA Teacher Model Guard)",
+        "status": "active",
+        "badge": "Active Invariant",
+        "description": "毫秒级物理拦截工兵任务/批量并发滥用昂贵教师模型 (GPT/Claude)，确保教师零泄漏、工兵高吞吐",
+        "rules": [
+            "teacher_models_restricted_to_deadlock_and_tradeoff",
+            "worker_pool_unlimited_throughput",
+            "pre_tool_interception_sub_2ms",
+            "discovery_to_card_proposal_enforced",
+        ],
+    },
+}
+
