@@ -145,7 +145,7 @@
   4. `tests/unit/test_card72_frictionless_commit_sensor_hook.py` (217行)：新增 4 项专项单元测试全绿通过；
   5. `package.json` 与 `openviking/_version.py`：版本号同步自增至 `1.7.26`。
 - **交付验收结果 (Delivery Verification)**：
-  - **Git Commit Hash**：待提交
+  - **Git Commit Hash**：`087c1945e`
   - **Git Tag**：`v1.7.26`
   - **自动化测试通过率**：24/24 探针专项与回归全绿，20/20 session 提交全量用例全绿，Vitest 5 项全绿；
   - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4655 个跟踪文件 0 密钥泄露；
