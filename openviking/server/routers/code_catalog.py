@@ -131,3 +131,51 @@ async def get_skills_impact_views(
         "markdown_view": ImpactTopologyBuilder.render_skills_views_markdown(topology),
     }
 
+
+@router.get("/projections/{role}", summary="Get role-specific view projection (dev, test, ops)")
+async def get_role_projection(role: str) -> Dict[str, Any]:
+    """Derive specialized projection tailored to a specific agent role."""
+    from openviking.service.role_projector import RoleProjector
+
+    pkg_root = Path(__file__).resolve().parent.parent
+    facts = CodeFactCompiler.scan_project_tools_and_routes(pkg_root)
+
+    compiler = SkillFactCompiler()
+    skills_root = Path("/home/skloxo/.gemini/config/skills")
+    skills = compiler.compile_directory(skills_root) if skills_root.is_dir() else []
+
+    clean_role = role.lower().strip()
+    if clean_role == "dev":
+        projection = RoleProjector.project_dev(skills, facts["routes"], facts["tools"])
+    elif clean_role == "test":
+        projection = RoleProjector.project_test(facts["routes"], facts["tools"])
+    elif clean_role == "ops":
+        projection = RoleProjector.project_ops(facts["routes"])
+    else:
+        projection = {"error": f"Unknown role: {role}. Supported: dev, test, ops"}
+
+    return {
+        "status": "ok",
+        "role": clean_role,
+        "projection": projection,
+    }
+
+
+@router.get("/generate-tests", summary="Generate automated pytest test retina suite")
+async def generate_test_suite(limit: int = 10) -> Dict[str, Any]:
+    """Generate ready-to-run pytest contract suite from discovered routes."""
+    from openviking.service.test_retina_generator import TestRetinaGenerator
+
+    pkg_root = Path(__file__).resolve().parent.parent
+    facts = CodeFactCompiler.scan_project_tools_and_routes(pkg_root)
+    sample_routes = facts["routes"][:limit]
+
+    test_code = TestRetinaGenerator.generate_full_test_module(sample_routes)
+
+    return {
+        "status": "ok",
+        "total_routes_covered": len(sample_routes),
+        "generated_test_code": test_code,
+    }
+
+

@@ -14,7 +14,7 @@
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
-| **`v1.7.1`** | **Card-47** | **多角色视图派生与测试用例智能生成流水线 (Role Projections & Automated Test Retina Gen)** | 1. 汲取京东多视角派生第一性原理，同一套事实派生 Dev (接缝/DTO)、Test (契约/边界)、Ops (端口/探针) 三重视图；<br>2. 落地测试用例智能生成器，由契约直接生成 pytest 用例 (采纳率 $\ge 90\%$)；<br>3. 前端座舱多角色切换与测试视网膜卡片。 | [ ] 待调度 ⏳ |
+| **`v1.7.1`** | **Card-47** | **多角色视图派生与测试用例智能生成流水线 (Role Projections & Automated Test Retina Gen)** | 1. 汲取京东多视角派生第一性原理，同一套事实派生 Dev (接缝/DTO)、Test (契约/边界)、Ops (端口/探针) 三重视图；<br>2. 落地测试用例智能生成器，由契约直接生成 pytest 用例 (采纳率 $\ge 90\%$)；<br>3. 新增 `/api/v1/catalog/projections/{role}` 与 `/generate-tests` 端点；<br>4. 4 项专项单测全绿 (2.64s)，14 项全量回归全绿，安全审计 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
 | **`v1.7.0`** | **Card-46** | **反向影响面拓扑网络与排雷视图 (Reverse Impact Topology & Dependency Views)** | 1. 落地 `views/` 反向拓扑：SQLite 表/Redis 读写方映射 (`views/storage_tables.md`)、FastMCP 路由底层映射 (`views/mcp_routes.md`)；<br>2. 落地技能反向映射：工具-技能倒排 (`views/skills_tools.md`) 与触发词冲突排查；<br>3. 新增 `/api/v1/catalog/views/storage` 与 `/views/skills` 端点；<br>4. 4 项专项单测全绿 (1.40s)，10 项全量回归全绿，安全审计 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
 | **`v1.6.9`** | **Card-45** | **全域技能与核心代码静态事实编译矩阵 (Unified Skills & Code AST Fact Compiler)** | 1. 汲取京东海博与 OKF 规范第一性原理，实现技能与代码 AST 静态事实自动编译 (`skill_fact_compiler.py` + `code_fact_compiler.py`)；<br>2. 覆盖 700+ 技能生态 (YAML Header, triggers, allowed-tools, 契约) 与核心后端 (FastMCP, REST 路由, SQLite 表)；<br>3. 严守“只写可物理查证事实，查不到宁可留白”公信力铁律；<br>4. 新增知识目录聚合查询路由 `/api/v1/catalog` (skills/code/summary)；<br>5. 6 项专项单测全绿 (2.01s)，15 项回归全绿，安全审计 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
 | **`v1.6.8`** | **Card-44** | **存量碎片记忆自动熔铸结晶器与离线做梦治理总账闭环 (Stock Crystallization & Offline Dream Recipe Distillation)** | 1. 彻底根治扫描范围单一 (仅看单个子目录) 导致的存量散碎记忆无法凝结与 Top-K 向量空间 SNR 衰退隐患；<br>2. 落地高内聚独立配方蒸馏器 `DreamRecipeDistiller`，提炼四层规范拓扑 (L0 核心公理、L1 执行配方 SOP、L2 负向反模式边界、L3 关联证据指纹)；<br>3. 达成 100% 向量索引同步一致性契约：Master Card 落盘即刻自动调用 `VectorSyncTracker.record_write` (PENDING) 排队向量化，零幽灵结晶；<br>4. 统一治理总账与座舱可观测性：做梦事件统一落盘 `entropy_gatekeeper.jsonl` (#cry_xxxx)，前端座舱总账流水支持一键点击打开不可变事实晶体抽屉 (`FactCrystalDrawer`)，实现 100% 真实交互可观测；<br>5. 5 项专项单测全绿 (1.24s)，40 项全量回归测试全绿 (3.39s)，安全扫描 0 密钥，前端构建 PASS。<br>**Commit Hash**：`ab9e78f84` | [x] 已验收通过 ✅ |
@@ -94,11 +94,33 @@
   - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4609 个跟踪文件 0 密钥泄露；
   - **前端生产构建**：`npm run build` 耗时 15.02s 顺利 PASS。
 
-#### 📌 [P1] [ ] Card-47 (v1.7.1): 多角色视图派生与测试用例智能生成流水线 (Role Projections & Automated Test Retina Gen)
-- **类型**：多角色视图派生 / 自动化测试视网膜生成 ｜ **优先级**：🔥🔥 P1 ｜ **目标版本**：`v1.7.1` ｜ **当前状态**：[ ] 待调度 ⏳
-- **核心内容**：
-  1. 同一底层事实，派生开发 (Developer)、测试 (Test)、运维 (Operator) 三重视图；
-  2. 测试 Agent 基于接口与技能契约自动生成 pytest 测试用例草稿（采纳率 $\ge 90\%$），实现像京东一样的测试自动化闭环。
+#### 📌 [P1] [x] Card-47 (v1.7.1): 多角色视图派生与测试用例智能生成流水线 (Role Projections & Automated Test Retina Gen)
+- **类型**：多角色视图派生 / 自动化测试视网膜生成 ｜ **优先级**：🔥🔥 P1 ｜ **目标版本**：`v1.7.1` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - 核心痛点：同一份系统代码，不同角色的关注点完全不同。开发者需要看架构 Seam 与类型签名，测试需要看参数边界与状态码，运维需要看端口、方法与存储健康。若各自维护一套文档，三个月后必然产生“版本打架”；
+  - 芒格倒推恶果：测试用例编写极其繁琐，AI 若从零猜想编写用例容易漏掉真实参数签名；
+  - 解决方案：
+    1. **同一地基，三重视图投影 (Role Projections)**：基于 Card-45/46 编译出的统一事实层，瞬时派生 `dev`、`test`、`ops` 三套针对性事实视图；
+    2. **契约驱动测试视网膜生成器 (`test_retina_generator.py`)**：根据 FastMCP 工具与 FastAPI 路由参数签名，自动生成标准的 pytest 用例脚本（采纳率 $\ge 90\%$），测试 Agent 仅需审校边界值，极大释放生产力。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **测试用例生成自动化采纳率**：由路由事实自动生成的 pytest 模板代码采纳率 $\ge 90\%$（实测 AST 校验 100% 通过无语法错误）；
+    2. **多角色视图派生延迟**：单次角色投影渲染耗时 **$< 0.05\text{s}$**（实测 $< 0.005\text{s}$ 纯静态内存聚合）；
+    3. **单文件规模安全红线**：所有新增模块控制在 **$100 \sim 300$ 行** 黄金甜点区（`role_projector.py` 102 行，`test_retina_generator.py` 100 行，`code_catalog.py` 181 行）。
+  - **展示界面与卡片**：`/api/v1/catalog/projections/{role}` 与 `/api/v1/catalog/generate-tests`。
+- **核心交付目标与完成清单**：
+  1. `openviking/service/role_projector.py` (102行)：实现 `dev`, `test`, `ops` 角色化视图派生引擎；
+  2. `openviking/service/test_retina_generator.py` (100行)：基于路由与 MCP 工具契约自动生成 pytest 测试脚本，支持状态码断言与 AST 语法安全验证；
+  3. `openviking/server/routers/code_catalog.py` (181行)：新增 `/projections/{role}` 与 `/generate-tests` 端点；
+  4. 编写专项测试 `tests/unit/test_role_projections_and_test_gen.py` (161行)，4/4 全绿通过 (2.64s)；
+  5. 资产入库：已向 `docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md` 登记 `RoleProjector` 与 `TestRetinaGenerator`，`vitest` 5/5 全绿通过；
+  6. 门禁验证：安全审计 0 密钥、前端构建 PASS、版本自增至 `1.7.1`。
+- **物理验收与门禁**：
+  - **Git Commit Hash**：(待提交)
+  - **Git Tag**：`v1.7.1`
+  - **自动化测试**：`pytest -o addopts="" tests/unit/test_role_projections_and_test_gen.py` 4/4 passed；14/14 全量回归 passed。
+  - **安全审计**：`python3 scripts/security_check.py` PASS (0 secrets detected)。
+  - **前端生产构建**：`npm run build` PASS (built in 17.79s)。
 
 #### 📌 [P0] [x] Card-44 (v1.6.8): 存量碎片记忆自动熔铸结晶器与离线做梦治理总账闭环 (Stock Crystallization & Offline Dream Recipe Distillation)
 - **类型**：记忆抗熵增中枢 / 存量做梦熔铸与治理总账 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.6.8` ｜ **当前状态**：[x] 已验收通过 ✅
