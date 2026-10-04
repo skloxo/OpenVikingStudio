@@ -144,8 +144,8 @@
 | **`TaskCardDetailDrawer`** | `src/routes/tasks/-components/task-card-detail-drawer.tsx` | **工单详情与快速闭环归档抽屉**：呈现完整报错堆栈、复现步骤、根因推测、波及智能体标签，集成前端一键解决并归档至目标 Release Tag。 | ✅ 已交付 (v1.7.3) |
 | **`DeadLetterDrawer`** | `src/routes/monitoring/-components/dead-letter-drawer.tsx` | **死信详情诊断与单条自愈抽屉**：呈现完整死信 ID、QueueFS 队列名、URI、错误原因、调用栈堆栈轨迹与原始 Payload JSON，支持前端单条自愈重试 (`POST /api/v1/queue/dlq/{id}/retry`) 与人工标记解决。 | ✅ 已交付 (v1.8.1) |
 | **`ValetIngestionCockpit`** | `src/routes/retrieval/-components/valet-ingestion-cockpit.tsx` | **前门代客泊车与反熵准入独立座舱**：集成 4 大核心 KPI 指标瓦片（交接时延、准入率、水深等）、异步 202 泊车控制台、车票流水审计与场景预设，完全切除结晶器冗余探针，消除双倍并发轮询。 | ✅ 已交付 (v1.7.14) |
-| **`UniversalPagination`** | `src/components/common/universal-pagination.tsx` | 统一分页控制器：条数切换 (`10/25/50/100`)、翻页按钮、等宽页码，严格 $\ge 11\text{px}$ 规范。 | ⏳ 规划中 |
-| **`MetricTile`** | `src/components/common/metric-tile.tsx` | 统一 `p-3` 紧凑卡片、等宽大数字 (`tabular-nums font-mono`)、四态语义支持（冰青/湛蓝/琥珀/玫瑰红）。 | ⏳ 规划中 |
+| **`UniversalPagination`** | `src/components/common/universal-pagination.tsx` | **统一高密分页控制器**：支持条数切换 (`10/20/50/100`)、首尾与翻页按钮、等宽页码、智能省略折叠与紧凑/标准双模态，严格 $\ge 12\text{px}$ 规范与 NO GREEN EVER。 | ✅ 已交付 (v1.7.15) |
+| **`MetricTile`** | `src/components/common/metric-tile.tsx` | **统一座舱高密指标瓦片**：规范 `p-3.5` 紧凑卡片、等宽大数字 (`tabular-nums font-mono`)、四态语义支持（中性/冰青/琥珀/玫瑰红，绝对无绿）、内建骨架屏加载过渡与自解释趋势指示。 | ✅ 已交付 (v1.7.15) |
 | **`EmptyState`** | `src/components/common/empty-state.tsx` | 极客风空状态展示，支持图标胶囊、主副标题、可选重置筛选按钮。 | ⏳ 规划中 |
 
 ---

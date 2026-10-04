@@ -19,6 +19,17 @@ export const common = {
     theme: {
       toggle: '切换主题',
     },
+    pagination: {
+      total: '共 {{total}} 条',
+      range: '{{start}}-{{end}}',
+      pageSize: '每页',
+      pageSizeUnit: '{{count}} 条',
+      firstPage: '首页',
+      previousPage: '上一页',
+      nextPage: '下一页',
+      lastPage: '尾页',
+      pageSizeAria: '每页显示条数',
+    },
   },
   appShell: {
     footer: {
