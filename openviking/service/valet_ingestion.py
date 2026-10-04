@@ -113,6 +113,12 @@ class ValetIngestionEngine:
 
         handover_ms = (time.perf_counter() - t_start) * 1000.0
         with self._tickets_lock:
+            if len(self._tickets) >= 2000:
+                evict_keys = [k for k, t in self._tickets.items() if t.status == "parked"]
+                if not evict_keys:
+                    evict_keys = list(self._tickets.keys())[:500]
+                for k in evict_keys[:500]:
+                    self._tickets.pop(k, None)
             self._tickets[ticket_id] = ticket
             self._total_handovers += 1
             self._total_handover_ms += handover_ms
@@ -379,23 +385,15 @@ class ValetIngestionEngine:
                     "action_type": "view_memory",
                 }
         elif decision.action == "update":
-            # Physically write updated content
-            self._write_local_file(uri, content)
+            if not disk_identical:
+                self._write_local_file(uri, content)
             action_msg = f"既有节点已成功升级演进 (相似度 {decision.similarity:.4f})"
-            deliverable = {
-                "uri": uri,
-                "label": "查看升级演进知识",
-                "action_type": "view_memory",
-            }
+            deliverable = {"uri": uri, "label": "查看升级演进知识", "action_type": "view_memory"}
         elif decision.action == "add":
-            # Physically write new atomic content
-            self._write_local_file(uri, content)
+            if not disk_identical:
+                self._write_local_file(uri, content)
             action_msg = f"已成功存储落盘 (独立新知识)"
-            deliverable = {
-                "uri": uri,
-                "label": "查看全新入库知识",
-                "action_type": "view_memory",
-            }
+            deliverable = {"uri": uri, "label": "查看全新入库知识", "action_type": "view_memory"}
         else:
             # Fallback for unexpected actions: ensure physical write occurs if file is missing/changed
             if not disk_identical:
@@ -477,9 +475,16 @@ class ValetIngestionEngine:
             logger.error("Failed to physically write valet file: %s", e)
 
     def _resolve_uri_to_path(self, uri: str) -> Optional[Path]:
-        clean = uri.replace("viking://resources/", "").lstrip("/")
-        base = Path.home() / ".openviking" / "data" / "viking" / "default" / "resources"
-        return base / clean
+        data_dir = os.environ.get("OPENVIKING_DATA_DIR")
+        base_data = Path(data_dir) if data_dir else (Path.home() / ".openviking" / "data")
+        clean_uri = uri.strip()
+        if clean_uri.startswith("viking://"):
+            rel_part = clean_uri[len("viking://") :].lstrip("/")
+            parts = rel_part.split("/", 1)
+            collection = parts[0] if parts else "resources"
+            subpath = parts[1] if len(parts) > 1 else ""
+            return base_data / "viking" / "default" / collection / subpath
+        return base_data / "viking" / "default" / "resources" / clean_uri.lstrip("/")
 
 
 # Ergonomic class alias

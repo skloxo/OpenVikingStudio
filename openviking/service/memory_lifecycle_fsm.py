@@ -199,6 +199,48 @@ class MemoryLifecycleStore:
         with self._cache_lock:
             self._cache[record.uri] = record
 
+    def save_records_batch_atomic(self, records: List[MemoryLifecycleRecord]) -> None:
+        """Atomically persist multiple lifecycle records within a single SQLite transaction."""
+        if not records:
+            return
+        query = """
+            INSERT INTO memory_lifecycle (uri, status, superseded_by, supersedes_uri, disputed_reason, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(uri) DO UPDATE SET
+                status=excluded.status,
+                superseded_by=excluded.superseded_by,
+                supersedes_uri=excluded.supersedes_uri,
+                disputed_reason=excluded.disputed_reason,
+                updated_at=excluded.updated_at
+        """
+        payload = [
+            (
+                r.uri,
+                r.status.value,
+                r.superseded_by,
+                r.supersedes_uri,
+                r.disputed_reason,
+                r.updated_at,
+            )
+            for r in records
+        ]
+        with self._get_connection() as conn:
+            conn.executemany(query, payload)
+        with self._cache_lock:
+            for r in records:
+                if len(self._cache) < 10000:
+                    self._cache[r.uri] = r
+
+    def get_status_counts(self) -> Dict[str, int]:
+        """Compute holistic status counts directly from SQLite index without truncation."""
+        counts = {"active": 0, "disputed": 0, "superseded": 0}
+        with self._get_connection() as conn:
+            for row in conn.execute("SELECT status, count(*) FROM memory_lifecycle GROUP BY status").fetchall():
+                st = row[0].lower()
+                if st in counts:
+                    counts[st] = row[1]
+        return counts
+
     def list_records(
         self, status: Optional[str] = None, limit: int = 50
     ) -> Tuple[List[MemoryLifecycleRecord], int, Dict[str, int]]:
@@ -254,7 +296,7 @@ class _LifecycleRegistryProxy(MutableMapping[str, MemoryLifecycleRecord]):
         pass
 
     def __iter__(self) -> Iterator[str]:
-        records, _, _ = MemoryLifecycleStore.get_instance().list_records(limit=200)
+        records, _, _ = MemoryLifecycleStore.get_instance().list_records(limit=100000)
         return iter(r.uri for r in records)
 
     def __len__(self) -> int:
@@ -324,6 +366,7 @@ class MemoryLifecycleFSM:
         reason: Optional[str] = None,
         now_ts: Optional[float] = None,
         store: Optional[MemoryLifecycleStore] = None,
+        persist: bool = True,
     ) -> MemoryLifecycleRecord:
         key = (record.status, event)
         if key not in cls._TRANSITIONS:
@@ -358,8 +401,9 @@ class MemoryLifecycleFSM:
             disputed_reason=disputed_reason,
             updated_at=current_time,
         )
-        active_store = store or MemoryLifecycleStore.get_instance()
-        active_store.save_record(updated)
+        if persist:
+            active_store = store or MemoryLifecycleStore.get_instance()
+            active_store.save_record(updated)
         return updated
 
     @classmethod
@@ -372,31 +416,35 @@ class MemoryLifecycleFSM:
         store: Optional[MemoryLifecycleStore] = None,
     ) -> tuple[MemoryLifecycleRecord, MemoryLifecycleRecord]:
         active_store = store or MemoryLifecycleStore.get_instance()
+        current_time = now_ts or time.time()
         updated_old = cls.transition(
             record=old_record,
             event=LifecycleTransitionEvent.SUPERSEDE,
             target_uri=new_uri,
             reason=reason,
-            now_ts=now_ts,
+            now_ts=current_time,
             store=active_store,
+            persist=False,
         )
         new_successor = MemoryLifecycleRecord(
             uri=new_uri,
             status=MemoryStatus.ACTIVE,
             supersedes_uri=old_record.uri,
-            updated_at=now_ts or time.time(),
+            updated_at=current_time,
         )
-        active_store.save_record(new_successor)
+        # Invariant: Atomic dual-write within single SQLite transaction (Zero dangling pointer)
+        active_store.save_records_batch_atomic([updated_old, new_successor])
         return updated_old, new_successor
 
     @classmethod
     def build_lineage_chain(
         cls,
         target_uri: str,
-        records: Any,
+        records: Any = None,
+        store: Optional[MemoryLifecycleStore] = None,
     ) -> Dict[str, Any]:
-        store = MemoryLifecycleStore.get_instance()
-        current = store.get_record(target_uri)
+        active_store = store or MemoryLifecycleStore.get_instance()
+        current = active_store.get_record(target_uri)
         predecessors: List[Dict[str, Any]] = []
         successors: List[Dict[str, Any]] = []
 
@@ -405,7 +453,7 @@ class MemoryLifecycleFSM:
         while cursor and cursor.supersedes_uri and cursor.supersedes_uri not in visited_back:
             pred_uri = cursor.supersedes_uri
             visited_back.add(pred_uri)
-            pred_rec = store.get_record(pred_uri)
+            pred_rec = active_store.get_record(pred_uri)
             if pred_rec:
                 predecessors.append(pred_rec.to_dict())
                 cursor = pred_rec
@@ -418,7 +466,7 @@ class MemoryLifecycleFSM:
         while cursor and cursor.superseded_by and cursor.superseded_by not in visited_fwd:
             succ_uri = cursor.superseded_by
             visited_fwd.add(succ_uri)
-            succ_rec = store.get_record(succ_uri)
+            succ_rec = active_store.get_record(succ_uri)
             if succ_rec:
                 successors.append(succ_rec.to_dict())
                 cursor = succ_rec

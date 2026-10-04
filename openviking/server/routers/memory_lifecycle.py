@@ -20,6 +20,7 @@ from openviking.server.identity import RequestContext
 from openviking.service.memory_lifecycle_fsm import (
     MemoryLifecycleFSM,
     MemoryLifecycleRecord,
+    MemoryLifecycleStore,
     MemoryStatus,
     LifecycleTransitionEvent,
     InvalidLifecycleTransitionError,
@@ -133,25 +134,18 @@ async def list_lifecycle_records(
 ) -> Dict[str, Any]:
     """
     List registered memory lifecycle records with optional status filtering.
+    Directly backed by SQLite persistent store and indexed status counts (SSOT).
     """
-    items = list(_LIFECYCLE_REGISTRY.values())
-    if status:
-        stat_lower = status.lower()
-        items = [r for r in items if r.status.value == stat_lower]
-
-    items.sort(key=lambda r: r.updated_at, reverse=True)
-    results = [r.to_dict() for r in items[:limit]]
+    store = MemoryLifecycleStore.get_instance()
+    records, total, status_counts = store.list_records(status=status, limit=limit)
+    results = [r.to_dict() for r in records]
 
     return {
         "status": "ok",
         "result": {
-            "total": len(items),
+            "total": total,
             "records": results,
-            "status_counts": {
-                "active": sum(1 for r in _LIFECYCLE_REGISTRY.values() if r.status == MemoryStatus.ACTIVE),
-                "disputed": sum(1 for r in _LIFECYCLE_REGISTRY.values() if r.status == MemoryStatus.DISPUTED),
-                "superseded": sum(1 for r in _LIFECYCLE_REGISTRY.values() if r.status == MemoryStatus.SUPERSEDED),
-            },
+            "status_counts": status_counts,
         },
     }
 
