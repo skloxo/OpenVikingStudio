@@ -9,11 +9,12 @@
 
 > **生产物理事实声明**：
 > - **线上正式部署版本**：**`v1.4.106`**（物理访问地址：`vk.tide.red/studio/home`，已实机验证）；
-> - **当前最新交付版本**：**`v1.7.12`**（Tag: `v1.7.12`，已全量通过统一通信层收口、3D 智能体传感器与全域上下文智能路由闭环、19 项单测、安全审计 0 密钥与前端生产构建 PASS）；
+> - **当前最新交付版本**：**`v1.7.13`**（Tag: `v1.7.13`，已全量通过 Active Notes & History 记忆分仓治理 FastMCP 原生桥接闭环、51 项单测、安全审计 0 密钥与前端生产构建 PASS）；
 > - **历史里程碑详单检索**：如需查阅 Milestone 1~4 及早期版本修改清单与架构细节，请点击跳转至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 |:---|:---|:---|:---|:---:|
+| **`v1.7.13`** | **Card-59** | **Active Notes & History 记忆分仓治理 FastMCP 原生桥接闭环 (Active Notes & History Context FastMCP Parity)** | 1. 补齐 3 大核心 FastMCP 原生工具：`openviking_active_notes_get`（活跃目标/约束/事实与 Token 节约率度量）、`openviking_active_notes_update`（原子增量维护目标与提纯事实）、`openviking_history_search`（基于 FTS5 unicode61 全文检索引擎与精准子串降级搜索未压缩对话流）；<br>2. 彻底打破 Web 前端自娱自乐孤岛，跨集群外部 Agent（3070、2080Ti、Mac 节点）可通过标准 MCP 动态维持会话目标与无损历史追溯；<br>3. MCP 注解四维契约全量登记：`test_mcp_tool_annotations.py` 覆盖更新；<br>4. 门禁全绿：51/51 单测全绿 (3.54s)，安全扫描 4626 文件 0 密钥，前端构建 14.22s PASS。<br>**Commit Hash**：`448669a7c`<br>**测试**：51/51 全绿 (3.54s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.12`** | **Card-58** | **统一通信层收口、3D 智能体传感器与全域上下文智能路由闭环 (Unified Communications SSOT, Agent 3D Sensors & Context Router Parity)** | 1. 统一通信层收口：`agent-sensors-card.tsx` 与 `evolution-cicd-cockpit.tsx` 彻底消除裸 fetch，100% 收敛至 `ovClient.instance` 与 TanStack Query，解决鉴权头丢失隐疾；<br>2. 补齐 2 大核心 FastMCP 原生工具：`openviking_context_route`（全域混合多模态上下文路由与 AST/语义/契约压缩）与 `openviking_agent_sensors`（3D 效能物理探针查询）；<br>3. MCP 注解四维契约全量登记：`test_mcp_tool_annotations.py` 覆盖更新；<br>4. 门禁全绿：19/19 单测全绿 (1.72s)，安全扫描 4625 文件 0 密钥，前端构建 16.20s PASS。<br>**Commit Hash**：`91e95e620`<br>**测试**：19/19 全绿 (1.72s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.11`** | **Card-57** | **QueueFS DLQ 前端交互闭环与单条自愈抽屉 (QueueFS DLQ Inspection Drawer & Granular Healing Cockpit)** | 1. 落地 `DeadLetterDrawer.tsx` 详情抽屉，展示死信 ID、QueueFS 队列名、URI、错误诊断、调用栈轨迹与完整 Payload JSON；<br>2. 交互闭环升级：`VectorSyncDlqCard.tsx` 支持点击单条死信直接打开抽屉，支持单条死信一键自愈重试 (`POST /api/v1/queue/dlq/{id}/retry`) 与标记解决归档；<br>3. 根治隐形暗雷：排查修复 `queue.py` 与 `mcp_endpoint.py` 内部不存在的 `get_app_viking_service` 导入导致的崩溃 Bug；<br>4. 资产登记与门禁全绿：完成 `COMPONENT_AND_WHEEL_INVENTORY.md` 登记，13/13 单测全绿 (1.58s)，安全扫描 4625 文件 0 密钥，前端构建 13.87s PASS。<br>**Commit Hash**：`0124667a4`<br>**测试**：13/13 全绿 (1.58s) ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.10`** | **Card-56** | **FastMCP 关键核心能力桥接闭环与全集群智体赋能 (FastMCP Core Tooling Parity & Cluster Agent Empowerment)** | 1. 补齐 7 大核心 FastMCP 原生工具：`openviking_valet_handover`、`openviking_valet_ticket_status`、`openviking_dspy_compile`、`openviking_skill_zip`、`openviking_tokenshift_compress`、`openviking_memory_purity_report`、`openviking_retry_dead_letter`；<br>2. 彻底消灭后端孤岛与外部智体悬空断联，实现集群级异步入管防 504、契约化 Prompt 编译、AST 代码折叠、纯度健康报告与死信单条自愈；<br>3. MCP 注解四维契约全量登记：`test_mcp_tool_annotations.py` 严密受控；<br>4. 门禁全绿：10/10 专项与回归全绿 (1.46s)，安全扫描 4623 文件 0 密钥，前端构建 16.36s PASS。<br>**Commit Hash**：`674ef06f6`<br>**测试**：10/10 全绿 (1.46s) ✅ | [x] 已验收通过 ✅ |
@@ -104,6 +105,35 @@
   - **自动化测试通过率**：4/4 专项单测全绿 (1.40s)，10 项全量回归测试全绿 (2.55s)；
   - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4609 个跟踪文件 0 密钥泄露；
   - **前端生产构建**：`npm run build` 耗时 15.02s 顺利 PASS。
+
+#### ✅ [P0] [x] Card-59 (v1.7.13): Active Notes & History 记忆分仓治理 FastMCP 原生桥接闭环 (Active Notes & History Context FastMCP Parity)
+- **类型**：上下文治理 / FastMCP 原生工具平价 / 跨集群智能体协同 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.13` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - 核心痛点与能力孤岛：后端在 `active_notes_history.py` 实现了完备的 Codex 级三级上下文分仓（活跃目标 `active_goal`、操作约束 `working_constraints`、不可变事实 `discovered_facts`、对话历史流与 FTS5 全文检索引擎），前端也在检索大盘上线了 `ActiveNotesHistoryCockpit.tsx`。但排查发现 **FastMCP (`mcp_endpoint.py`) 彻底缺失原生工具**；
+  - 倒推死因审讯：跨集群智能体（3070、2080Ti、Mac Studio 节点）在多步交互中，无法通过 MCP 感知或动态维护会话目标与提纯事实，上下文分仓沦为 Web 前端的孤岛玩具，外部 Agent 每次都要消耗海量 Token 重复传参；
+  - 铁锤人与奥卡姆剃刀排查：0 新外部依赖，100% 复用现有单例 `ActiveNotesHistoryManager`（SQLite WAL 模式 + busy_timeout 30s + FTS5 unicode61 分词）；
+  - 治理闭环：
+    1. FastMCP 平价工具暴露：落地 `openviking_active_notes_get`、`openviking_active_notes_update`、`openviking_history_search` 3 大原生工具；
+    2. 行为注解受控：在 `test_mcp_tool_annotations.py` 严格登记四维契约（只读 / 幂等写）；
+    3. 编写 `test_card59_active_notes_history_mcp.py` 专项单测覆盖全链路；
+    4. 严格遵守 SemVer 铁律：版本自增为 `v1.7.13`（Patch 递增，主版本号与次版本号锁定）。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **Active Notes & History FastMCP 工具覆盖率**：从 $0\%$ 提升至 **$100\%$**（3/3 核心工具完备接入）；
+    2. **会话历史检索性能 (FTS5 Search Latency)**：$\le 10\text{ms}$，未命中时平滑降级子串匹配；
+    3. **Token 节约率可观测性**：`ActiveNotes.estimate_tokens()` 与历史总 Token 比值在 MCP 与前端 100% 对齐回显；
+    4. **单文件规模安全红线**：新增单测文件 122 行（严格处于 100~300 行黄金甜点区）。
+  - **展示界面与卡片**：`/studio/retrieval` (Tab 6 上下文与历史分仓座舱) 及全集群 FastMCP 客户端。
+- **核心交付目标与完成清单**：
+  1. `openviking/server/mcp_endpoint.py`：新增 3 大 Active Notes & History 工具；
+  2. `tests/unit/test_mcp_tool_annotations.py`：登记 3 工具四维注解契约；
+  3. `tests/unit/test_card59_active_notes_history_mcp.py` (122行)：构建契约与边界单测；
+  4. `package.json` 与 `openviking/_version.py`：版本号自增至 `1.7.13`；
+  5. 修复 `test_core_encryption_startup.py` 中预存语法格式问题。
+- **交付验收结果 (Delivery Verification)**：
+  - **自动化测试通过率**：51/51 单测全绿 (3.54s)（4 项 Card-59 + 4 项 Card-58 + 4 项 Card-57 + 6 项 Card-56 + 1 项注解 + 4 项版本门禁 + 7 项加密启动等）✅；
+  - **安全凭据审计**：`python3 scripts/security_check.py` 扫描 4626 个跟踪文件 0 密钥泄露；
+  - **前端生产构建**：`npm run build` 耗时 14.22s 顺利 PASS。
 
 #### ✅ [P0] [x] Card-58 (v1.7.12): 统一通信层收口、3D 智能体传感器与全域上下文智能路由闭环 (Unified Communications SSOT, Agent 3D Sensors & Context Router Parity)
 - **类型**：统一通信层治理 / 3D 传感器观测闭环 / FastMCP 原生工具平价 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.12` ｜ **当前状态**：[x] 已验收通过 ✅
