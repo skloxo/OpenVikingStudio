@@ -216,3 +216,31 @@ def test_full_pipeline_run(mock_skills_env):
     assert report.clusters_crystallized >= 1
     assert report.avg_health_after > report.avg_health_before
     assert report.collisions_after == 0
+
+
+def test_crystallized_content_synthesis_broad_description_and_router(mock_skills_env):
+    """Test that crystallization produces broad synthesized descriptions and sub-scenario routers."""
+    pipeline, skills_root = mock_skills_env
+    clusters = pipeline.identify_homogenous_clusters()
+    feishu_cluster = next(c for c in clusters if c.cluster_id == "feishu-suite")
+
+    res = pipeline.crystallize_cluster(feishu_cluster, dry_run=False)
+    assert res.success is True
+
+    master_skill_md = skills_root / "feishu-hub" / "SKILL.md"
+    assert master_skill_md.exists()
+    content = master_skill_md.read_text(encoding="utf-8")
+
+    # Frontmatter contains broad description covering whole ecosystem, not narrow seed description
+    assert "飞书/Lark 生态全能操作中枢" in content
+    assert "多维表格" in content
+
+    # Contains Sub-Scenario Navigation Router
+    assert "领域多工序导航路由 (Sub-Scenario Router)" in content
+    assert "§1. CLI 认证与身份切换" in content
+    assert "§2. 文档与知识库协同" in content
+    assert "§3. 多维表格与数据资产" in content
+
+    # Aggregated tools
+    assert "allowed-tools:" in content
+    assert "aliases:" in content
