@@ -55,7 +55,6 @@ from openviking.server.routers.skill_opt import router as skill_opt_router
 from openviking.server.routers.tokenshift import router as tokenshift_router
 from openviking.server.routers.context_router import router as context_router
 from openviking.server.routers.dspy_compiler import router as dspy_compiler_router
-from openviking.server.routers.cache_tier2 import router as cache_tier2_router
 from openviking.server.routers.task_cards import router as task_cards_router
 from openviking.server.routers.code_catalog import router as code_catalog_router
 from openviking.server.routers.privacy_gov import router as privacy_gov_router
@@ -114,7 +113,6 @@ __all__ = [
     "tokenshift_router",
     "context_router",
     "dspy_compiler_router",
-    "cache_tier2_router",
     "task_cards_router",
     "code_catalog_router",
     "privacy_gov_router",
