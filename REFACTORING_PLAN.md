@@ -18,7 +18,7 @@
 | **`v1.7.47`** | **Card-93** | **向量节点真实探测、BM25 诚实降级与多模态检索闭环 (Honest Dense-Degradation & GPU Node Heartbeat Fallback)** | 1. 消除伪造假分数：彻底切除 hybrid_probe 中的假 Dense 匹配，绝不造假；<br>2. 向量节点真探活：轻量探测 2080Ti 端口 11432 状态；在线执行真 4096d+BM25 RRF 融合；离线诚实标记 `dense_status: 'offline'` 并平滑降级至纯 BM25；<br>3. 前端座舱白盒化：直观回显 GPU 节点真实存活状态与降级标签；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.46`** | **Card-92** | **真实记忆遗忘曲线评估与安全冷归档转移闭环 (Memory Temporal Decay & Non-Destructive Cold Archive)** | 1. 记忆全库生命周期体检：扫描真实 SQLite `viking_memories`，按遗忘曲线计算健康分；<br>2. 数据绝对安全（绝不物理删除）：低于阈值记忆安全迁移至 `memory_cold_archive` 冷存储表，活跃向量索引脱水提纯，数据零丢失；<br>3. 一键检视与安全复活：前端座舱支持冷记忆查阅与一键复活还原至活跃库；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.45`** | **Card-91** | **FastMCP 物理挂起与高危操作人工审批闭环 (HITL Dangerous Action Physical Interceptor & Gate)** | 1. FastMCP 网关拦截切面：在工具调用入口识别高危破坏性动作签名；<br>2. 真实的异步协程挂起：真正挂起协程（`SUSPENDED_WAITING_HITL`），带 300s 超时熔断；<br>3. 前端真实审批回显：人类在座舱中点击【批准】凭借 Nonce Token 恢复执行，点击【拒绝】熔断抛异常；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
-| **`v1.7.44`** | **Card-90** | **真实轻量故障注入中间件与韧性演练闭环 (Chaos Resilience Middleware & Watchdog Drill)** | 1. 显式沙箱隔离白名单：仅对带有 `X-Chaos-Probe: true` 的演练请求开启故障注入，100% 隔离生产业务；<br>2. 真实受控故障注入：真实触发 HTTP 429 限流响应与 Watchdog 超时中断信号；<br>3. 物理自愈行为校验：真实检验指数退避重试与僵尸协程物理销毁；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
+| **`v1.7.44`** | **Card-90** | **真实轻量故障注入中间件与韧性演练闭环 (Chaos Resilience Middleware & Watchdog Drill)** | 1. 显式沙箱隔离白名单：仅对带有 `X-Chaos-Probe: true` 的演练请求开启故障注入，100% 隔离生产业务；<br>2. 真实受控故障注入：真实触发 HTTP 429 限流响应与 Watchdog 超时中断信号；<br>3. 物理自愈行为校验：真实检验指数退避重试与僵尸协程物理销毁；<br>4. 门禁全绿：Pytest 16 项全绿、Vitest 2 项全绿，前端生产构建 14.40s PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.43`** | **Card-89** | **动态技能沙箱物理试跑与契约验证闭环 (Skill LiveGen Real Sandbox & Contract Validation)** | 1. 只读虚拟沙箱：在隔离目录内安全加载 LLM 生成的动态技能，挂载只读虚拟工作区；<br>2. 物理语法与契约门禁：AST 语法树校验与危险系统调用（`os.system` / `subprocess` / `eval`）物理阻断；<br>3. 真实 Tool Call 试跑：以受控参数执行 Tool Call 试跑，捕获真实 stdout/stderr 与执行耗时（带超时熔断）；<br>4. 数据安全防线：未通过沙箱测试物理阻断上架；门禁全绿：Pytest 10 项、Vitest 3 项全绿，前端生产构建 14.73s PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.42`** | **Card-88** | **切除“仿真/忽悠”伪逻辑与落地真实磁盘候选归档与动态指标度量 (Eradicate Simulation Pretense, Real Physical Candidate Archiving & Dynamic Physical Metrics)** | 1. 彻底消灭结晶假动作：当执行物理结晶时，不仅在隔离区做快照，更真正物理移出（rmtree）所有被吸收的旧同质化文件夹，使磁盘目录实打实收缩；回滚时物理复原并清理生成的聚合主技能；<br>2. 彻底消灭假数字与 `# 模拟快速基线`：后端动态扫描真实磁盘 734 个技能，真实统计规范达标率（0.97）与 Attempt 门禁放行率（1.0），零写死常数；<br>3. 前端彻底切除“仿真”忽悠字样：将“仿真演进试跑”改为“📋 扫描影响面清单”，将主操作直接定为“🔥 执行物理结晶收敛”，将“仿真守卫”还原为“质量契约门禁”；<br>4. 门禁全绿：单测全绿，Vitest 3 项通过，Pytest 13 项全绿，安全审计扫描 0 密钥，前端生产构建 PASS。 | [x] 已验收通过 ✅ |
 | **`v1.7.41`** | **Card-87** | **前端座舱演进结晶流水线看板与一键自驱交互 (Frontend Skill Evolution Cockpit & Interactive Pipeline)** | 1. 落地技能演进与结晶流水线前端座舱组件 (`src/routes/skills/-components/skill-evolution-cockpit.tsx`)；<br>2. 4 大客观数据指标真实回显：意图冲突消除数、全域平均健康分、Attempt 首解率、结晶主技能数；<br>3. 小白一键交互：提供“⚡ 一键全域演进结晶”与“↩️ 一键无悔回滚”按钮，彻底消灭命令行；<br>4. 门禁全绿：单测全绿，Vitest 5 项通过，安全扫描 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
@@ -2493,7 +2493,7 @@
 
 ---
 
-### 📌 [P1] [ ] Card-90 (v1.7.44): 真实轻量故障注入中间件与韧性演练闭环 (Chaos Resilience Middleware & Watchdog Drill) ⏳
+### 📌 [P1] [x] Card-90 (v1.7.44): 真实轻量故障注入中间件与韧性演练闭环 (Chaos Resilience Middleware & Watchdog Drill) ✅
 - **背景与第一性原理**：
   - **前序诱因与数据安全初衷**：验证系统在面对限流、抖动、卡死时的自愈韧性，需要混沌工程（Chaos Engineering）。但前人极度担心故障注入会污染正常生产会话或导致 OpenViking 守护进程崩溃，因此在 `simulate_probe` 中纯粹往内存字典记录静态假数据，甚至用 `[i*i for i in range(10000)]` 假装计算耗时；
   - **真正的闭环架构与安全防线**：
@@ -2506,9 +2506,19 @@
   - 僵尸协程超时熔断与资源回收耗时 (`watchdog_reclaim_ms`)
   - 生产业务 0 污染率 (`production_isolation_rate: 100%`)
 - **涉及核心文件清单**：
-  - `openviking/core/agent_loop_telemetry.py` (≤ 300 行)
-  - `openviking/server/routers/system_harness.py` (≤ 450 行)
-  - `src/routes/system/-components/harness-failure-sandbox-probe.tsx` (≤ 300 行)
+  - `openviking/core/chaos_resilience_engine.py` (242 行，真实受控故障注入引擎)
+  - `openviking/core/agent_loop_telemetry.py` (接入 Chaos 韧性遥测)
+  - `openviking/server/routers/failure_taxonomy.py` (提供真实故障注入与自愈演练路由)
+  - `src/routes/harness-logs/-components/harness-failure-sandbox-probe.tsx` (前端座舱真实演练触发与客观瓦片)
+  - `src/routes/harness-logs/-components/harness-failure-sandbox-probe.test.tsx` (Vitest 2/2 全绿通过)
+  - `tests/unit/test_failure_taxonomy_api.py` (Pytest 端点集成测试通过)
+  - `tests/unit/test_card90_chaos_resilience_drill.py` (Pytest 16/16 单元测试全绿通过)
+- **交付验收结果 (Delivery Verification)**：
+  - **Git Commit Hash**: `6effec135` (功能实现) + `b4190927d` (16 项单元测试套件)
+  - **Git Tag**: `v1.7.44`
+  - **自动化测试通过率**: Pytest 16/16 PASS (`test_card90_chaos_resilience_drill.py`), Vitest 2/2 PASS (`harness-failure-sandbox-probe.test.tsx`)
+  - **安全审计门禁**: 4684 文件扫描 PASS，0 密钥泄漏
+  - **前端生产构建**: 耗时 14.40s 顺利编译并产物验真成功
 
 ---
 
