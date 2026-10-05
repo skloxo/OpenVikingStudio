@@ -1,7 +1,8 @@
 # Copyright (c) 2026 Beijing Volcano Engine Technology Co., Ltd.
 # SPDX-License-Identifier: AGPL-3.0
-"""Skill Ingestion Gatekeeper & Staging REST Router (Card-94 & Card-95)."""
+"""Skill Ingestion Gatekeeper, Staging & Blackbox Provenance REST Router (Cards 94-98)."""
 
+from pathlib import Path
 from typing import Any, Dict, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -10,12 +11,14 @@ from openviking.server.auth import get_request_context
 from openviking.server.identity import RequestContext
 from openviking.service.skill_ingestion_validator import SkillIngestionValidator
 from openviking.service.skill_ingestion_worker import SkillIngestionWorker
+from openviking.service.skill_provenance_tracker import SkillProvenanceTracker
 from openviking.storage.skill_ingestion_store import SkillIngestionStore
 
 router = APIRouter(prefix="/api/v1/skills/ingestion", tags=["Skill Ingestion"])
 _validator = SkillIngestionValidator()
 _store = SkillIngestionStore.get_instance()
 _worker = SkillIngestionWorker(store=_store, validator=_validator)
+_tracker = SkillProvenanceTracker.get_instance()
 
 
 class ValidateRequest(BaseModel):
@@ -27,6 +30,11 @@ class SubmitSkillRequest(BaseModel):
     skill_name: str = Field(..., description="Skill name in kebab-case")
     content: str = Field(..., description="Raw markdown content of the skill including YAML frontmatter")
     author: str = Field(default="anonymous", description="Submitting author or agent")
+
+
+class RollbackRequest(BaseModel):
+    snapshot_path: str = Field(..., description="Snapshot file path to restore")
+    target_file_path: str = Field(..., description="Target skill file path to overwrite")
 
 
 @router.post("/validate")
@@ -69,10 +77,7 @@ async def get_ingestion_receipt(
     record = _store.get_record(receipt_id)
     if not record:
         raise HTTPException(status_code=404, detail=f"Ingestion receipt '{receipt_id}' not found.")
-    return {
-        "status": "ok",
-        "record": record.model_dump(),
-    }
+    return {"status": "ok", "record": record.model_dump()}
 
 
 @router.get("/queue")
@@ -95,10 +100,30 @@ async def trigger_worker_batch(
 ) -> Dict[str, Any]:
     """Manually trigger background worker tick to drain pending inbox items."""
     summary = _worker.run_worker_tick(batch_size=batch_size)
-    return {
-        "status": "ok",
-        "worker_summary": summary,
-    }
+    return {"status": "ok", "worker_summary": summary}
+
+
+@router.get("/provenance")
+async def get_provenance_audit_log(
+    skill_name: Optional[str] = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=200),
+    ctx: RequestContext = Depends(get_request_context),
+) -> Dict[str, Any]:
+    """Query blackbox provenance timeline events for human post-mortem audits."""
+    events = _tracker.list_events(skill_name=skill_name, limit=limit)
+    return {"status": "ok", "events": [e.model_dump() for e in events]}
+
+
+@router.post("/rollback")
+async def rollback_skill_snapshot(
+    payload: RollbackRequest,
+    ctx: RequestContext = Depends(get_request_context),
+) -> Dict[str, Any]:
+    """Sub-50ms deterministic rollback from snapshot."""
+    success = _tracker.rollback_snapshot(payload.snapshot_path, Path(payload.target_file_path))
+    if not success:
+        raise HTTPException(status_code=400, detail="Snapshot file not found or rollback failed.")
+    return {"status": "ok", "message": f"Successfully restored {payload.target_file_path} from snapshot."}
 
 
 @router.get("/rules")

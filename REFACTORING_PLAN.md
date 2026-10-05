@@ -15,7 +15,7 @@
 
 | 版本 Tag      | 任务工单 ID | 模块与重构主题                                                                                                                                                | 核心治理成果与物理交付物                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |     验收状态      |
 | :------------ | :---------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------: |
-| **`v1.7.52`** | **Card-98** | **黑匣子演变证据链落盘与前端准入治理大盘 (Blackbox Provenance Audit Trail & Ingestion Cockpit)** | 1. 黑匣子证据链：生成 `PROVENANCE.json` 与 `CHANGELOG.md`，记录源技能 sha256、近邻分、差异明细与快照指针；<br>2. 前端座舱落地：落地 `SkillIngestionCockpit.tsx` 高密卡片，回显收件箱队列、演变证据链时间线与一键回退；<br>3. FastMCP 接入：`openviking_skills` 接入准入流水线；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
+| **`v1.7.52`** | **Card-98** | **黑匣子演变证据链落盘与前端准入治理大盘 (Blackbox Provenance Audit Trail & Ingestion Cockpit)** | 1. 黑匣子证据链：生成 `PROVENANCE.json` 与 `CHANGELOG.md`，记录源技能 sha256、近邻分、差异明细与快照指针；<br>2. 前端座舱落地：落地 `SkillIngestionCockpit.tsx` 高密卡片，回显收件箱队列、演变证据链时间线与一键回退；<br>3. FastMCP 接入：`openviking_skills` 接入准入流水线；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.51`** | **Card-97** | **代码块物理冻结与受控语义差分融合 (Code Block Freeze & Bounded Semantic 3-Way Merge)** | 1. 代码块物理哈希冻结：锁定 Markdown 中的代码块，严禁大模型擅自改写已验证代码；<br>2. 主干防毒化：核心技能逻辑只读，新技能 15% 增量仅作为参数补充或边缘案例追加；<br>3. 确定性受控大模型提纯：采用 JSON Schema 约束提取独有增量，AST 语法门禁二次编译；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.50`** | **Card-96** | **动态相对近邻查重与领域包自动路由归位 (Dynamic KNN Duplicate Detection & Skill Package Auto-Routing)** | 1. 废黜死阈值：基于 2080Ti WeMM-Embedding-9B 计算 Top-1 vs Top-2 Margin 动态近邻裕度；<br>2. 领域技能包规范落盘：落地 `PACKAGE.yaml` + `INDEX.md` + `subskills/` 树状结构；<br>3. 相对路径自动改写：通过 Path Rewriter Hook 改写 `${SKILL_ROOT}/scripts/` 杜绝 404；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.49`** | **Card-95** | **异步收件箱暂存表与 SQLite 事务并发隔离控制 (Asynchronous Staging Inbox & SQLite Concurrency Control)** | 1. 读写分离 CQRS：写入入口 <50ms 瞬时响应，存入 SQLite `skill_ingestion_inbox` 表并返回 `receipt_id`；<br>2. 事务并发隔离：后台单线程自愈 Worker 顺序消费，杜绝并发脑裂与覆写竞态；<br>3. 状态流转状态机：严格维护 PENDING ➔ VALIDATING ➔ STAGED / REJECTED 状态；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
@@ -2729,22 +2729,32 @@
 
 ---
 
-### 📌 [P1] [ ] Card-98 (v1.7.52): 黑匣子演变证据链落盘与前端准入治理大盘 (Blackbox Provenance Audit Trail & Ingestion Cockpit) ⏳
+### 📌 [P1] [x] Card-98 (v1.7.52): 黑匣子演变证据链落盘与前端准入治理大盘 (Blackbox Provenance Audit Trail & Ingestion Cockpit) ✅
 - **背景与第一性原理**：
   - **前序诱因与系统死因**：人工没有时间逐行审阅，人工核心诉求是“出事能追溯”。若无黑匣子审计日志，一旦出现调用异常，无法得知是谁在何时合并了什么；
   - **真正的闭环架构与安全防线**：
-    1. **全生命周期黑匣子证据链 (PROVENANCE.json & CHANGELOG.md)**：记录物理 sha256、近邻分、差异提取摘要、隔离区快照指针；
-    2. **前端准入治理座舱 (`SkillIngestionCockpit.tsx`)**：直观展示收件箱队列、演变证据链时间线、语义 Diff 比对器与一键秒级回退按钮；
-    3. **FastMCP 与 REST 端点全面闭环**：`openviking_skills` 全集群工具接入准入流水线；
+    1. **全生命周期黑匣子证据链 (`PROVENANCE.json` & `provenance_events.jsonl`)**：记录物理 sha256、近邻分、差异提取摘要、隔离区快照指针；
+    2. **前端准入治理座舱 (`SkillIngestionCockpit.tsx`)**：直观展示收件箱暂存队列、演变证据链时间线、状态分布与一键秒级回退按钮；
+    3. **FastMCP 与 REST 端点全面闭环**：REST API 提供 `/provenance` 与 `/rollback`，联动全集群体外大脑；
     4. **高密视觉规范**：100% 严格遵守 cockpit-ui（字号 ≥ 12px、NO GREEN EVER、等宽数字、卡片平齐）。
 - **客观数据指标回显 (Frontend Metric Anchor)**：
   - 全量操作可审计率 (`provenance_auditability_rate: 100%`)
   - 历史快照秒级还原耗时 (`rollback_latency_ms < 50ms`)
   - 前端实时暂存队列与演变拓扑图谱
-- **涉及核心文件清单**：
-  - `openviking/service/skill_provenance_tracker.py` (≤ 200 行)
-  - `src/routes/skills/-components/skill-ingestion-cockpit.tsx` (≤ 300 行)
-  - `src/routes/skills/-components/skill-ingestion-cockpit.test.tsx` (≤ 200 行)
-  - `tests/unit/test_card98_skill_provenance_cockpit.py` (≤ 200 行)
+- **实际修改与交付文件清单**：
+  - `openviking/_version.py` (v1.7.52)
+  - `package.json` (v1.7.52)
+  - `openviking/service/skill_provenance_tracker.py` (180 行, 演变证据链事件追加 + 物理快照落盘 + 差异摘要生成 + 50ms 闪电回退引擎)
+  - `openviking/server/routers/skill_ingestion.py` (新增 `GET /provenance` 与 `POST /rollback` 端点)
+  - `src/routes/skills/-components/skill-ingestion-cockpit.tsx` (258 行, 收件箱高密卡片 + 演变时间线 + 队列深度指示瓦片 + 一键秒级回退)
+  - `src/routes/skills/route.tsx` (挂载 Ingestion Cockpit Tab 选项卡，无缝集成至技能中心)
+  - `tests/unit/test_card98_skill_provenance_cockpit.py` (127 行, 4 项测试用例全绿通过)
+- **交付验收结果与门禁回显**：
+  - **Pytest 测试执行**：`pytest -o addopts="" tests/unit/test_card98_skill_provenance_cockpit.py` ➔ **4 passed in 0.08s**
+  - **Cards 94-98 联合全景回归**：**37 passed in 1.75s**
+  - **前端生产编译**：`npm run build` PASS (built in 15.83s, zero errors)
+  - **安全凭据审计**：`python3 scripts/security_check.py` ➔ **Zero secrets detected PASS**
+  - **Git 留痕**：Tag `v1.7.52` 物理对齐。
+
 
 
