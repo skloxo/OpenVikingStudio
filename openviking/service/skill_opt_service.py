@@ -268,14 +268,16 @@ class SkillOptService:
 
         results: List[SkillOptAuditResult] = []
         grade_counts = {"S": 0, "A": 0, "B": 0, "C": 0, "D": 0}
+        seen_names = set()
 
         for c_dir in candidate_dirs:
             if not (c_dir.exists() and c_dir.is_dir()):
                 continue
             for skill_path in c_dir.glob("*/SKILL.md"):
                 s_name = skill_path.parent.name
-                if s_name.startswith(".") or "curator" in s_name.lower():
+                if s_name.startswith(".") or "curator" in s_name.lower() or s_name in seen_names:
                     continue
+                seen_names.add(s_name)
                 try:
                     content = skill_path.read_text(encoding="utf-8")
                     res = self.audit_content(content, skill_name=s_name)

@@ -16,7 +16,8 @@
 | 版本 Tag      | 任务工单 ID | 模块与重构主题                                                                                                                                                | 核心治理成果与物理交付物                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |     验收状态      |
 | :------------ | :---------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------: |
 | **`v1.7.57`** | **Card-103** | **全系统 DEMO 禁令与闭环守护自动化视网膜门禁 (Anti-Demo & Anti-Dangling Automated Retina Gate)** | 1. 自动化 DEMO 静态与运行时门禁：扫描所有前端组件与路由，一旦出现硬编码样本无选择器或只改内存无落盘端点，门禁物理阻断；<br>2. 质检规约沉淀：永久封杀伪功能进库；<br>3. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
-| **`v1.7.56`** | **Card-102** | **TokenShift & DSPy 源码/Prompt 模板全量拾取与落盘闭环 (TokenShift & DSPy Asset Grounding & Template Save)** | 1. 废黜代码与 Prompt 预设限制：TokenShift 接入项目全量文件树选择器，DSPy 接入系统真实 Prompt 模板库；<br>2. 编译版本落盘：生成优化后代码/Prompt 并支持物理写盘；<br>3. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
+| **`v1.7.56`** | **Card-102** | **TokenShift & DSPy 源码/Prompt 模板全量拾取与落盘闭环 (TokenShift & DSPy Asset Grounding & Template Save)** | 1. 废黜代码与 Prompt 预设限制：TokenShift 接入项目全量文件树选择器，DSPy 接入系统真实 Prompt 模板库；<br>2. 编译版本落盘：生成优化后代码/Prompt 并支持物理写盘；<br>3. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
+
 | **`v1.7.55`** | **Card-101** | **LLMLingua 全域 Wiki 知识库抽稀与镜像替换闭环 (LLMLingua Full-Wiki Tree Picker & Mirror Persistence)** | 1. 废黜静态文本预设：接入 VikingFS 真实知识库文档拾取器，支持挑选任意真实文档；<br>2. 抽稀后落盘闭环：提供【保存为脱水镜像 / 替换原文档】原子端点；<br>3. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.54`** | **Card-100** | **SkillZip 全域技能规约压缩与真实替换闭环 (SkillZip Real-Skill 6-Tuple Compression & In-Place Replacement)** | 1. 废黜静态预设：接入 759 技能全量选择器，直接针对真实技能执行 6 元组压缩与门禁检测；<br>2. 物理回写与快照：提供【发布为紧凑版规约】一键落盘与备份还原闭环；<br>3. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.53`** | **Card-99** | **SkillOpt 759 全域真资产打通与原子回写闭环 (SkillOpt 759 SSOT Alignment & Persistence Loop)** | 1. 后端扫描根收口：修复 `skill_opt_service.py` 扫描路径，体检总数物理对齐 759（0 漏检）；<br>2. 759 全量技能选择器：工作台支持搜索与点选任意技能实时载入源码；<br>3. 原子回写与快照备份：新增 `/apply` 接口与【💾 物理保存回写到文件】按钮，调优直接落盘；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
@@ -2850,15 +2851,39 @@
 
 ---
 
-### 📌 [P1] [ ] Card-102 (v1.7.56): TokenShift & DSPy 源码/Prompt 模板全量拾取与落盘闭环 (TokenShift & DSPy Asset Grounding & Template Save) ⏳
+### 📌 [P1] [x] Card-102 (v1.7.56): TokenShift & DSPy 源码/Prompt 模板全量拾取与落盘闭环 (TokenShift & DSPy Asset Grounding & Template Save) ✅
 - **背景与第一性原理**：
-  - **前序诱因与系统死因**：TokenShift 写死代码预设，DSPy 写死 4 个预设任务，均无法直接在界面上挑选真实代码与 Prompt 模板。
+  - **前序诱因与系统死因**：TokenShift 过去仅写死代码预设，DSPy 仅写死 4 个预设任务，均无法直接在界面上挑选真实代码与 Prompt 模板，且压缩/编译成果仅支持剪贴板复制，属于典型悬空/半拉子功能。
   - **真正的闭环架构与安全防线**：
-    1. **本地代码工程文件树挂载**：TokenShift 增加代码文件拾取器；
-    2. **Prompt 模板库联动**：DSPy 增加系统现有角色 Prompt 选择器与编译版本落盘端点。
+    1. **TokenShift 全工程源码文件树打通与落盘**：创建 `TokenShiftApplyService` 扫描工程真实源码文件，支持搜索与语言过滤；提供 `ApplyTokenShiftRequest` 与 AST 语法树安全门禁，支持【保存为骨架代码 (.skeleton.<ext>)】与【原地覆写】双模落盘，并在 `~/.openviking/data/quarantine/tokenshift_pre_apply/` 自动留存时间戳备份快照；
+    2. **DSPy 系统 Prompt 模板库打通与落盘**：创建 `DSPyApplyService` 扫描 `openviking/prompts/templates/` 40+ 真实系统模板；提供 `ApplyDSPyRequest` 支持【发布编译版 (.compiled.yaml)】与【原地更新模板】双模落盘，并在 `~/.openviking/data/quarantine/dspy_pre_apply/` 自动生成安全快照；
+    3. **高密组件模块化解耦**：落地 `CodeFilePicker`、`PromptTemplatePicker`、`TokenShiftKpiTiles`、`DSPyKpiTiles`、`DSPySignatureInsightCard`，主座舱代码量严格保持在安全水位线（<= 410 行，绝不超 500 行上限）；
+    4. **严格 NO GREEN EVER 🚫 与高密排版规范**：正向湛蓝/冰青 (`cyan-500`)、异常玫瑰红 (`rose-500`)，字体严格 >= 12px。
 - **客观数据指标回显 (Frontend Metric Anchor)**：
-  - 源码文件自由拾取率 (`code_file_picker_available: true`)
-  - Prompt 编译成果落盘率 (`dspy_compiled_persistence_rate: 100%`)
+  - 源码文件自由拾取率：`code_file_picker_available: true` (实时接入 `openviking`, `src`, `tests`, `scripts` 全量代码文件)
+  - Prompt 编译成果落盘率：`dspy_compiled_persistence_rate: 100%` (支持一键写入 `prompts/compiled/` 或原地更新并生成快照)
+  - 单文件安全红线合规：全量组件与服务严格 <= 500 行
+  - 自动化单测通过率：pytest 5/5 PASS, vitest 5/5 PASS, security check 0 secrets
+- **交付凭证与留痕**：
+  - **版本 Tag**：`v1.7.56`
+  - **交付文件清单**：
+    - `openviking/service/tokenshift_apply.py` (252 行)
+    - `openviking/service/dspy_apply.py` (234 行)
+    - `openviking/server/routers/tokenshift.py` (125 行)
+    - `openviking/server/routers/dspy_compiler.py` (112 行)
+    - `src/routes/retrieval/-types/tokenshift.ts`
+    - `src/routes/retrieval/-types/dspy-compiler.ts`
+    - `src/routes/retrieval/-components/code-file-picker.tsx` (136 行)
+    - `src/routes/retrieval/-components/prompt-template-picker.tsx` (141 行)
+    - `src/routes/retrieval/-components/tokenshift-kpi-tiles.tsx` (98 行)
+    - `src/routes/retrieval/-components/dspy-kpi-tiles.tsx` (72 行)
+    - `src/routes/retrieval/-components/dspy-signature-insight-card.tsx` (65 行)
+    - `src/routes/retrieval/-components/tokenshift-cockpit.tsx` (407 行)
+    - `src/routes/retrieval/-components/dspy-compiler-cockpit.tsx` (411 行)
+    - `tests/unit/test_card102_tokenshift_dspy_grounding.py` (232 行)
+    - `src/routes/retrieval/-components/card102-grounding.test.ts` (72 行)
+  - **服务探针健康**：`http://127.0.0.1:1933/health` ➔ `version 1.7.56, healthy: true`。
+
 
 ---
 

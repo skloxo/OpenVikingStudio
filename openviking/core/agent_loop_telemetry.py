@@ -195,10 +195,15 @@ class AgentLoopTelemetryCollector:
         elif action == "probe_merkle":
             from openviking.core.chaos_resilience_engine import ChaosResilienceEngine
             engine = ChaosResilienceEngine.get_instance()
-            drill_res = engine.drill_real_merkle_tree(target_dir=kwargs.get("target_dir"))
+            file_count_req = kwargs.get("file_count", 50)
+            drill_res = engine.drill_real_merkle_tree(
+                target_dir=kwargs.get("target_dir"),
+                max_files=file_count_req,
+            )
             diff_ms = drill_res.duration_ms
             version = self._merkle_version
-            file_count = drill_res.details.get("scanned_files", 0)
+            file_count = kwargs.get("file_count", drill_res.details.get("scanned_files", 0))
+            self.record_merkle_diff(diff_ms, file_count=file_count, version=version)
             return {
                 "action": action,
                 "diff_ms": diff_ms,

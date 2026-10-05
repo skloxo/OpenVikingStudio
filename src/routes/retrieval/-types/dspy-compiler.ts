@@ -55,3 +55,35 @@ export interface DSPyCompilerStats {
   average_latency_ms: number;
   pass_contract_count: number;
 }
+
+export interface PromptTemplateItem {
+  id: string;
+  rel_path: string;
+  name: string;
+  category: string;
+  description: string;
+  version: string;
+  variables_count: number;
+  template_chars: number;
+  preview: string;
+}
+
+export interface ApplyDSPyRequest {
+  rel_path: string;
+  compiled_prompt: string;
+  signature_name?: string;
+  task_objective?: string;
+  mode: "compiled_file" | "in_place";
+  operator?: string;
+}
+
+export interface ApplyDSPyResult {
+  success: boolean;
+  mode: string;
+  target_path: string;
+  snapshot_path: string;
+  original_chars: number;
+  compiled_chars: number;
+  message: string;
+}
+

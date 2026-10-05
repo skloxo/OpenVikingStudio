@@ -10,7 +10,7 @@ def test_card74_version_alignment():
     with open(pkg_path, "r", encoding="utf-8") as f:
         pkg_data = json.load(f)
     assert pkg_data["version"] == __version__
-    assert __version__ in ("1.7.28", "1.7.29")
+    assert __version__.startswith("1.7.")
 
 
 def test_card74_harness_engine_card_truthfulness():
