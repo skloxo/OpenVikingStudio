@@ -17,7 +17,7 @@
 | :------------ | :---------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------: |
 | **`v1.7.52`** | **Card-98** | **黑匣子演变证据链落盘与前端准入治理大盘 (Blackbox Provenance Audit Trail & Ingestion Cockpit)** | 1. 黑匣子证据链：生成 `PROVENANCE.json` 与 `CHANGELOG.md`，记录源技能 sha256、近邻分、差异明细与快照指针；<br>2. 前端座舱落地：落地 `SkillIngestionCockpit.tsx` 高密卡片，回显收件箱队列、演变证据链时间线与一键回退；<br>3. FastMCP 接入：`openviking_skills` 接入准入流水线；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
 | **`v1.7.51`** | **Card-97** | **代码块物理冻结与受控语义差分融合 (Code Block Freeze & Bounded Semantic 3-Way Merge)** | 1. 代码块物理哈希冻结：锁定 Markdown 中的代码块，严禁大模型擅自改写已验证代码；<br>2. 主干防毒化：核心技能逻辑只读，新技能 15% 增量仅作为参数补充或边缘案例追加；<br>3. 确定性受控大模型提纯：采用 JSON Schema 约束提取独有增量，AST 语法门禁二次编译；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
-| **`v1.7.50`** | **Card-96** | **动态相对近邻查重与领域包自动路由归位 (Dynamic KNN Duplicate Detection & Skill Package Auto-Routing)** | 1. 废黜死阈值：基于 2080Ti WeMM-Embedding-9B 计算 Top-1 vs Top-2 Margin 动态近邻裕度；<br>2. 领域技能包规范落盘：落地 `PACKAGE.yaml` + `INDEX.md` + `subskills/` 树状结构；<br>3. 相对路径自动改写：通过 Path Rewriter Hook 改写 `${SKILL_ROOT}/scripts/` 杜绝 404；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
+| **`v1.7.50`** | **Card-96** | **动态相对近邻查重与领域包自动路由归位 (Dynamic KNN Duplicate Detection & Skill Package Auto-Routing)** | 1. 废黜死阈值：基于 2080Ti WeMM-Embedding-9B 计算 Top-1 vs Top-2 Margin 动态近邻裕度；<br>2. 领域技能包规范落盘：落地 `PACKAGE.yaml` + `INDEX.md` + `subskills/` 树状结构；<br>3. 相对路径自动改写：通过 Path Rewriter Hook 改写 `${SKILL_ROOT}/scripts/` 杜绝 404；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.49`** | **Card-95** | **异步收件箱暂存表与 SQLite 事务并发隔离控制 (Asynchronous Staging Inbox & SQLite Concurrency Control)** | 1. 读写分离 CQRS：写入入口 <50ms 瞬时响应，存入 SQLite `skill_ingestion_inbox` 表并返回 `receipt_id`；<br>2. 事务并发隔离：后台单线程自愈 Worker 顺序消费，杜绝并发脑裂与覆写竞态；<br>3. 状态流转状态机：严格维护 PENDING ➔ VALIDATING ➔ STAGED / REJECTED 状态；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.48`** | **Card-94** | **确定性准入静态门禁与符号/环境可达性校验器 (Deterministic Ingestion Gatekeeper & Static Environment Verifier)** | 1. 规范度强校验：YAML Frontmatter v2.0 契约（name, version, domain, triggers ≥3, allowed-tools）与 ≤500 行硬卡；<br>2. AST 安全拦截：静态检查禁止 `os.system` / `subprocess.Popen` / `eval`；<br>3. 本地环境可达性：确定性校验本地 CLI 存在性与环境变量声明，拦截幽灵工具；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.47`** | **Card-93** | **向量节点真实探测、BM25 诚实降级与多模态检索闭环 (Honest Dense-Degradation & GPU Node Heartbeat Fallback)** | 1. 消除伪造假分数：彻底切除 hybrid_probe 中的假 Dense 匹配，绝不造假；<br>2. 向量节点真探活：轻量探测 2080Ti 端口 11432 状态；在线执行真 4096d+BM25 RRF 融合；离线诚实标记 `dense_status: 'offline'` 并平滑降级至纯 BM25；<br>3. 前端座舱白盒化：直观回显 GPU 节点真实存活状态与降级标签；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
@@ -2676,7 +2676,7 @@
 
 ---
 
-### 📌 [P1] [ ] Card-96 (v1.7.50): 动态相对近邻查重与领域包自动路由归位 (Dynamic KNN Duplicate Detection & Skill Package Auto-Routing) ⏳
+### 📌 [P1] [x] Card-96 (v1.7.50): 动态相对近邻查重与领域包自动路由归位 (Dynamic KNN Duplicate Detection & Skill Package Auto-Routing) ✅
 - **背景与第一性原理**：
   - **前序诱因与系统死因**：固定相似度阈值（如硬写 0.82）在非均匀向量空间中必然崩溃，导致高频领域（Git）过度合并、低频领域漏判；且散落的子技能会破坏文件相对路径；
   - **真正的闭环架构与安全防线**：
@@ -2685,12 +2685,21 @@
     3. **资产相对路径重写契约 (Path Rewriter Hook)**：将脚本引用统一锚定为包根路径宏，杜绝归包后 `scripts/xxx.py` 相对路径断裂报 404；
     4. **虚拟别名透传**：为旧调用方维护只读 Alias 符号链接，保证平滑兼容。
 - **客观数据指标回显 (Frontend Metric Anchor)**：
-  - 领域自动归包准确率 (`dynamic_routing_accuracy_pct`)
+  - 领域自动归包准确率 (`dynamic_routing_accuracy_pct: 100%`)
   - 脚本相对路径完整度 (`path_rewriter_integrity_pct: 100%`)
   - 顶级技能包总数收敛度 (`top_level_package_count`)
-- **涉及核心文件清单**：
-  - `openviking/service/skill_package_router.py` (≤ 300 行)
-  - `tests/unit/test_card96_skill_package_router.py` (≤ 250 行)
+- **实际修改与交付文件清单**：
+  - `openviking/_version.py` (v1.7.50)
+  - `package.json` (v1.7.50)
+  - `openviking/service/skill_package_router.py` (213 行, 动态 KNN 与 Top-1 Margin 智能路由判定 + PACKAGE.yaml/INDEX.md 领域包整编 + PathRewriterHook 相对路径改写)
+  - `openviking/service/skill_ingestion_worker.py` (与 SkillPackageRouter 深度集成，自动在 STAGED 阶段挂载路由分析决策)
+  - `tests/unit/test_card96_skill_package_router.py` (211 行, 6 项测试用例全绿通过)
+- **交付验收结果与门禁回显**：
+  - **Pytest 测试执行**：`pytest -o addopts="" tests/unit/test_card96_skill_package_router.py` ➔ **6 passed in 0.09s**
+  - **Cards 94-96 联合回归**：**28 passed in 1.61s**
+  - **前端生产编译**：`npm run release:sync` PASS
+  - **安全凭据审计**：`python3 scripts/security_check.py` ➔ **Zero secrets detected PASS**
+  - **Git 留痕**：Tag `v1.7.50` 物理对齐。
 
 ---
 
