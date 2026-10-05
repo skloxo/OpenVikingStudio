@@ -122,3 +122,59 @@ def test_failure_taxonomy_http_endpoints(client):
     probe_data = res_post.json()
     assert probe_data["category"] == "transient"
     assert probe_data["can_retry"] is True
+    assert probe_data["real_drill_executed"] is True
+    assert probe_data["drill_success"] is True
+
+
+def test_chaos_drill_transient_429_direct():
+    """Card-90: 验证 ChaosResilienceEngine 真实 429 注入与指数退避自愈。"""
+    import asyncio
+    from openviking.core.chaos_resilience_engine import ChaosResilienceEngine
+
+    engine = ChaosResilienceEngine.get_instance()
+    res = asyncio.run(engine.drill_transient_retry(tool_name="test_api_probe", max_retries=3))
+    assert res.success is True
+    assert res.drill_type == "transient_429"
+    assert res.duration_ms > 0.0
+    assert res.details["attempts_used"] == 2
+    assert res.details["healed"] is True
+    assert len(res.details["retry_delays_ms"]) >= 1
+
+
+def test_chaos_drill_watchdog_timeout_direct():
+    """Card-90: 验证 Watchdog 僵尸任务超时熔断与物理回收。"""
+    import asyncio
+    from openviking.core.chaos_resilience_engine import ChaosResilienceEngine
+
+    engine = ChaosResilienceEngine.get_instance()
+    res = asyncio.run(engine.drill_watchdog_timeout(hang_duration_sec=0.5, watchdog_limit_sec=0.05))
+    assert res.success is True
+    assert res.drill_type == "watchdog_timeout"
+    assert res.details["timeout_triggered"] is True
+    assert res.details["task_reclaimed"] is True
+    assert res.details["reclaim_latency_ms"] >= 0.0
+
+
+def test_chaos_drill_real_merkle_tree():
+    """Card-90: 验证真实 Merkle 状态树哈希计算，彻底消除 dummy [i*i] 假代码。"""
+    from openviking.core.chaos_resilience_engine import ChaosResilienceEngine
+
+    engine = ChaosResilienceEngine.get_instance()
+    res = engine.drill_real_merkle_tree()
+    assert res.success is True
+    assert res.drill_type == "real_merkle"
+    assert res.details["scanned_files"] > 0
+    assert len(res.details["merkle_root"]) == 64
+    assert res.duration_ms > 0.0
+
+
+def test_agent_loop_probe_merkle_real():
+    """Card-90: 验证 AgentLoopTelemetry 接入真实 Merkle 计算。"""
+    from openviking.core.agent_loop_telemetry import get_agent_loop_telemetry_collector
+
+    collector = get_agent_loop_telemetry_collector()
+    res = collector.simulate_probe("probe_merkle")
+    assert res["success"] is True
+    assert res["file_count"] > 0
+    assert len(res["merkle_root"]) == 64
+    assert res["diff_ms"] > 0.0

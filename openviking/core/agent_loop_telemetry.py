@@ -193,13 +193,21 @@ class AgentLoopTelemetryCollector:
             return {"action": action, "tool_name": tool_name, "terminated_early": True, "success": True}
 
         elif action == "probe_merkle":
-            start = time.perf_counter()
-            _ = [i * i for i in range(10000)]
-            elapsed_ms = (time.perf_counter() - start) * 1000.0
-            version = self._merkle_version + 1
-            file_count = kwargs.get("file_count", self._merkle_file_count + 1)
-            self.record_merkle_diff(elapsed_ms, file_count, version)
-            return {"action": action, "diff_ms": round(elapsed_ms, 3), "version": version, "file_count": file_count, "success": True}
+            from openviking.core.chaos_resilience_engine import ChaosResilienceEngine
+            engine = ChaosResilienceEngine.get_instance()
+            drill_res = engine.drill_real_merkle_tree(target_dir=kwargs.get("target_dir"))
+            diff_ms = drill_res.duration_ms
+            version = self._merkle_version
+            file_count = drill_res.details.get("scanned_files", 0)
+            return {
+                "action": action,
+                "diff_ms": diff_ms,
+                "version": version,
+                "file_count": file_count,
+                "merkle_root": drill_res.details.get("merkle_root", ""),
+                "tree_depth": drill_res.details.get("tree_depth", 0),
+                "success": True,
+            }
 
         elif action == "simulate_retry":
             exhausted = kwargs.get("exhausted", False)

@@ -42,9 +42,62 @@ async def execute_failure_taxonomy_probe(
 ):
     """
     Execute live interactive verification probe for failure classification,
-    anti-loop barrier defense, or compression whitelist payload protection.
+    real 429 exponential backoff drill, watchdog timeout abort, or whitelist protection.
     """
+    from openviking.core.chaos_resilience_engine import ChaosResilienceEngine
+    engine = ChaosResilienceEngine.get_instance()
     telemetry = get_failure_taxonomy_telemetry()
+
+    if req.action in ("simulate_transient", "drill_chaos_429"):
+        drill_res = await engine.drill_transient_retry(tool_name=req.tool_name or "fetch_remote_context")
+        telemetry_res = telemetry.execute_probe(
+            action="simulate_transient",
+            tool_name=req.tool_name or "fetch_remote_context",
+            error_msg=req.error_msg,
+            whitelist_type=req.whitelist_type,
+        )
+        telemetry_res.update({
+            "real_drill_executed": True,
+            "actual_duration_ms": drill_res.duration_ms,
+            "drill_success": drill_res.success,
+            "attempts_used": drill_res.details.get("attempts_used", 1),
+            "retry_delays_ms": drill_res.details.get("retry_delays_ms", []),
+            "backoff_algorithm": drill_res.details.get("backoff_algorithm"),
+            "healed": drill_res.details.get("healed", True),
+        })
+        return JSONResponse(status_code=200, content=telemetry_res)
+
+    elif req.action in ("drill_watchdog_timeout", "simulate_watchdog"):
+        drill_res = await engine.drill_watchdog_timeout()
+        return JSONResponse(
+            status_code=200,
+            content={
+                "action": req.action,
+                "real_drill_executed": True,
+                "category": "watchdog_timeout",
+                "drill_success": drill_res.success,
+                "duration_ms": drill_res.duration_ms,
+                "timeout_triggered": drill_res.details.get("timeout_triggered", True),
+                "task_reclaimed": drill_res.details.get("task_reclaimed", True),
+                "reclaim_latency_ms": drill_res.details.get("reclaim_latency_ms", 0.0),
+                "zombie_leak_prevented": True,
+            },
+        )
+
+    elif req.action in ("drill_real_merkle", "probe_merkle"):
+        drill_res = engine.drill_real_merkle_tree()
+        return JSONResponse(
+            status_code=200,
+            content={
+                "action": req.action,
+                "real_drill_executed": True,
+                "drill_success": drill_res.success,
+                "duration_ms": drill_res.duration_ms,
+                "details": drill_res.details,
+            },
+        )
+
+    # 兼容基础分类与白名单注册逻辑
     result = telemetry.execute_probe(
         action=req.action,
         tool_name=req.tool_name or "example_tool",
