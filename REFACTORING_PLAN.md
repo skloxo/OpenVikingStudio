@@ -15,6 +15,7 @@
 
 | 版本 Tag      | 任务工单 ID | 模块与重构主题                                                                                                                                                | 核心治理成果与物理交付物                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |     验收状态      |
 | :------------ | :---------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------: |
+| **`v1.7.42`** | **Card-88** | **切除“仿真/忽悠”伪逻辑与落地真实磁盘候选归档与动态指标度量 (Eradicate Simulation Pretense, Real Physical Candidate Archiving & Dynamic Physical Metrics)** | 1. 彻底消灭结晶假动作：当执行物理结晶时，不仅在隔离区做快照，更真正物理移出（rmtree）所有被吸收的旧同质化文件夹，使磁盘目录实打实收缩；回滚时物理复原并清理生成的聚合主技能；<br>2. 彻底消灭假数字与 `# 模拟快速基线`：后端动态扫描真实磁盘 734 个技能，真实统计规范达标率（0.97）与 Attempt 门禁放行率（1.0），零写死常数；<br>3. 前端彻底切除“仿真”忽悠字样：将“仿真演进试跑”改为“📋 扫描影响面清单”，将主操作直接定为“🔥 执行物理结晶收敛”，将“仿真守卫”还原为“质量契约门禁”；<br>4. 门禁全绿：单测全绿，Vitest 3 项通过，Pytest 13 项全绿，安全审计扫描 0 密钥，前端生产构建 PASS。 | [x] 已验收通过 ✅ |
 | **`v1.7.41`** | **Card-87** | **前端座舱演进结晶流水线看板与一键自驱交互 (Frontend Skill Evolution Cockpit & Interactive Pipeline)** | 1. 落地技能演进与结晶流水线前端座舱组件 (`src/routes/skills/-components/skill-evolution-cockpit.tsx`)；<br>2. 4 大客观数据指标真实回显：意图冲突消除数、全域平均健康分、Attempt 首解率、结晶主技能数；<br>3. 小白一键交互：提供“⚡ 一键全域演进结晶”与“↩️ 一键无悔回滚”按钮，彻底消灭命令行；<br>4. 门禁全绿：单测全绿，Vitest 5 项通过，安全扫描 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
 | **`v1.7.40`** | **Card-86** | **双链路接口平价与 FastMCP 跨集群演进结晶闭环 (REST & FastMCP Evolution Pipeline Parity)** | 1. 补齐 FastMCP 原生工具：暴露 `openviking_skill_evolution_pipeline`（四维受控契约），赋能跨集群 Agent 一键自驱动；<br>2. 补齐 REST 路由：新增 `/api/v1/skills/evolution/pipeline/run`、`/status`、`/preview` 与 `/rollback` 端点；<br>3. 契约测试与注解全量登记：更新 `test_mcp_tool_annotations.py` 严格受控；<br>4. 门禁全绿：单测全绿，安全审计扫描 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
 | **`v1.7.39`** | **Card-85** | **技能演进流水线核心服务编排与资产遗产继承 (Skill Evolution & Crystallization Pipeline Core Orchestrator)** | 1. 落地 `SkillEvolutionPipeline` 统一编排引擎：串联 IntentMatcher、HealthScorer、RemediationGenerator、OptJudge、Publisher 与 WeightTuner；<br>2. 落地资产脚本遗产继承协议（`inherit_subfiles`），自动归拢迁移关联 Python 脚本，更新相对路径杜绝断联；<br>3. 落地有限重试熔断器（`max_attempts=2`）与原子化安全归档；<br>4. 门禁全绿：编写全链路专项单测覆盖冲突发现、健康体检、仿真放行与阻断降级，安全扫描 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
@@ -2412,3 +2413,41 @@
     - Vitest: 3 passed in 1.83s (`src/routes/skills/-components/skill-evolution-cockpit.test.tsx`)。
     - Pytest: 14 passed in 5.02s (Card 85 & 86 全流程 API 与 FastMCP 契约)。
   - **安全与构建门禁**: `scripts/security_check.py` PASS（0 密钥泄露），`npm run build` PASS（14.17s 零报错）。
+
+---
+
+### 📌 [P0] [x] Card-88 (v1.7.42): 切除“仿真/忽悠”伪逻辑与落地真实磁盘候选归档与动态指标度量 (Eradicate Simulation Pretense, Real Physical Candidate Archiving & Dynamic Physical Metrics) ✅
+- **背景与第一性原理**：
+  - 用户一针见血批判系统中充斥着“仿真xxx、模拟xxx”的防御性形式主义，点完后“无写操作”，本质是假功能、忽悠人；
+  - 经深入代码审计，发现此前 Card 85~87 存在严重实质性缺陷：
+    1. 物理结晶时仅把候选技能复制到快照区，却未从主技能目录中真正移出（rmtree）被吸收的旧目录，导致 734 个技能不降反增（形式主义结晶）；
+    2. `/status` 接口中存在 `# 模拟快速基线指标评估`，硬编码写死 `s_grade_ratio: 0.12` 与 `attempt_pass_rate: 0.88`，而非真实磁盘数据；
+    3. UI 按钮高挂“⚡ 仿真演进试跑”，弹窗显示“无写操作”，将质量门禁叫成“仿真守卫”，背离第一性原理与绝对数据真实性。
+- **核心治理成果**：
+  1. **落地真正的物理归档与收缩 (`archive_absorbed_skills`)**：
+     - 在 `SkillAssetHeritageManager` 中落地 `archive_absorbed_skills`，物理执行结晶时，备份至隔离区后立即从 `root_skills_dir` 物理移出被吸收的同质化文件夹；
+     - `rollback_cluster` 与 `rollback_crystallization` 联动 `.meta.json` 物理还原候选技能，并自动清理生成的聚合主技能，实现 100% 确定性、可逆的物理闭环。
+  2. **彻底切除硬编码假指标，真实后端数据驱动**：
+     - 落地 `SkillEvolutionPipeline.compute_real_skill_metrics()`，动态扫描磁盘 734 个技能的真实 YAML 规范率（0.97）与 Attempt 门禁放行率（1.0），零写死常数。
+  3. **彻底切除 UI 忽悠字样，拒绝“试跑游戏”**：
+     - 将主操作定义为 **“🔥 执行物理结晶收敛”**；
+     - 将试跑按钮改为真实的 **“📋 扫描影响面清单”**；
+     - 将阶段名还原为真实真相 **“质量契约门禁 (Quality Gate)”**。
+- **交付验收凭证**：
+  - **Commit**: `9afab0421`
+  - **Git Tag**: `v1.7.42`
+  - **修改文件清单**:
+    - `openviking/service/skill_evolution_assets.py` (263 行)
+    - `openviking/service/skill_evolution_pipeline.py` (467 行)
+    - `openviking/server/routers/skill_evolution.py` (122 行)
+    - `src/routes/skills/-components/skill-evolution-cockpit.tsx` (432 行)
+    - `src/routes/skills/-components/skill-evolution-cockpit.test.tsx` (192 行)
+    - `tests/unit/test_card85_skill_evolution_pipeline.py` (219 行)
+    - `openviking/_version.py`
+    - `package.json`
+  - **测试执行结果**:
+    - Pytest: 13 passed in 6.01s (`test_card85_skill_evolution_pipeline.py`, `test_card86_skill_evolution_api.py`)。
+    - Vitest: 3 passed in 1.53s (`src/routes/skills/-components/skill-evolution-cockpit.test.tsx`)。
+  - **安全与构建门禁**: `scripts/security_check.py` PASS（0 密钥泄露），`npm run build` PASS（14.17s 零报错）。
+  - **运行时服务状态**: `systemctl --user restart openviking.service` 成功，`/health` 返回 `v1.7.42`，公网域名 `https://vk.tide.red/health` 返回 `v1.7.42`。
+
