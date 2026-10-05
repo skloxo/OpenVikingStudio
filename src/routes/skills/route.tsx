@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { CodeIcon, LayersIcon, LoaderCircleIcon, SparklesIcon, TargetIcon, ZapIcon } from 'lucide-react'
+import { CodeIcon, InboxIcon, LayersIcon, LoaderCircleIcon, SparklesIcon, TargetIcon, ZapIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Badge } from '#/components/ui/badge'
@@ -15,6 +15,7 @@ import { SkillZipCockpit } from './-components/skill-zip-cockpit'
 import { SkillLiveGenCockpit } from './-components/skill-livegen-cockpit'
 import { SkillOptCockpit } from './-components/skill-opt-cockpit'
 import { SkillEvolutionCockpit } from './-components/skill-evolution-cockpit'
+import { SkillIngestionCockpit } from './-components/skill-ingestion-cockpit'
 import { CodeCatalogCockpitCard } from './-components/code-catalog-cockpit-card'
 import { getErrorMessage } from './-lib/skill-data'
 import { useSkillsData } from './-lib/use-skills'
@@ -25,7 +26,7 @@ export const Route = createFileRoute('/skills')({
 
 function SkillsRoute() {
   const { t } = useTranslation('skillsPage')
-  const [activeTab, setActiveTab] = React.useState<'catalog' | 'evolution' | 'facts' | 'zip' | 'livegen' | 'opt'>('catalog')
+  const [activeTab, setActiveTab] = React.useState<'catalog' | 'evolution' | 'facts' | 'zip' | 'livegen' | 'opt' | 'ingestion'>('catalog')
   const data = useSkillsData()
   const {
     skills, filteredSkills, paginatedSkills, skillsQuery, detailQuery,
@@ -103,9 +104,20 @@ function SkillsRoute() {
           <TargetIcon className="size-3.5 mr-1.5" />
           🎯 SkillOpt 评测与体检
         </Button>
+        <Button
+          variant={activeTab === 'ingestion' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setActiveTab('ingestion')}
+          className={`text-xs h-7 font-mono ${activeTab === 'ingestion' ? 'bg-cyan-600 text-white' : 'text-cyan-400'}`}
+        >
+          <InboxIcon className="size-3.5 mr-1.5" />
+          📥 准入治理与黑匣子证据链
+        </Button>
       </div>
 
-      {activeTab === 'evolution' ? (
+      {activeTab === 'ingestion' ? (
+        <SkillIngestionCockpit />
+      ) : activeTab === 'evolution' ? (
         <SkillEvolutionCockpit />
       ) : activeTab === 'opt' ? (
         <SkillOptCockpit />
