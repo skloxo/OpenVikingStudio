@@ -79,6 +79,7 @@ STANDARD_ALLOWED_TOOLS = {
     "openviking_diff", "openviking_health", "openviking_metrics", "openviking_valet_handover",
     "find", "search", "read", "write", "run_command", "view_file", "write_to_file",
     "replace_file_content", "grep_search", "list_dir", "read_url_content", "web_search",
+    "bash", "exec", "python", "sh",
 }
 
 
