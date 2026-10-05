@@ -33,15 +33,37 @@ class SkillClusterCandidate:
     candidate_slugs: List[str]
     seed_slug: str = ""
     reasons: List[str] = field(default_factory=list)
+    avg_health_score: float = 75.0
+
+    @property
+    def candidate_count(self) -> int:
+        return len(self.candidate_slugs)
+
+    @property
+    def domain(self) -> str:
+        return self.domain_name
+
+    @property
+    def cluster_name(self) -> str:
+        return self.domain_name
+
+    @property
+    def target_crystallized_slug(self) -> str:
+        return self.target_slug
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "cluster_id": self.cluster_id,
             "domain_name": self.domain_name,
+            "cluster_name": self.domain_name,
+            "domain": self.domain_name,
             "target_slug": self.target_slug,
+            "target_crystallized_slug": self.target_slug,
             "candidate_slugs": self.candidate_slugs,
+            "candidate_count": self.candidate_count,
             "seed_slug": self.seed_slug,
             "reasons": self.reasons,
+            "avg_health_score": round(self.avg_health_score, 1),
         }
 
 
@@ -117,15 +139,32 @@ class PipelineSummaryReport:
     avg_health_after: float
     results: List[ClusterCrystallizeResult] = field(default_factory=list)
 
+    @property
+    def processed_clusters(self) -> int:
+        return self.clusters_identified
+
+    @property
+    def total_crystallized(self) -> int:
+        return self.clusters_crystallized
+
+    @property
+    def overall_attempt_pass_rate(self) -> float:
+        if self.clusters_identified == 0:
+            return 1.0
+        return round(self.clusters_crystallized / self.clusters_identified, 2)
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "total_candidates": self.total_candidates,
             "clusters_identified": self.clusters_identified,
+            "processed_clusters": self.processed_clusters,
             "clusters_crystallized": self.clusters_crystallized,
+            "total_crystallized": self.total_crystallized,
             "clusters_blocked": self.clusters_blocked,
             "collisions_before": self.collisions_before,
             "collisions_after": self.collisions_after,
             "avg_health_before": round(self.avg_health_before, 2),
             "avg_health_after": round(self.avg_health_after, 2),
+            "overall_attempt_pass_rate": self.overall_attempt_pass_rate,
             "results": [r.to_dict() for r in self.results],
         }

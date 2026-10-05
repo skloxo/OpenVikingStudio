@@ -67,6 +67,8 @@ async def test_mcp_tools_advertise_behavior_annotations():
         "openviking_privacy_audit": (True, False, True, False),
         # Harness & Engine Verification tools added in Card-75 (v1.7.29)
         "openviking_harness_probe": (True, False, True, False),
+        # Skill Evolution Pipeline added in Card-86 (v1.7.40)
+        "openviking_skill_evolution_pipeline": (False, True, True, False),
     }
     fields = ("readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint")
 

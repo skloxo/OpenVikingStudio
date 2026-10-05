@@ -39,42 +39,12 @@ from openviking.service.skill_opt_judge import SkillOptJudge
 from openviking.service.skill_publisher import SkillPublisher
 from openviking.service.skill_weight_tuner import SkillWeightTuner
 from openviking.service.skill_weight_types import AttemptVerdict
+from openviking.service.skill_evolution_assets import (
+    CANONICAL_DOMAINS,
+    SkillAssetHeritageManager,
+)
 
 logger = logging.getLogger(__name__)
-
-# Canonical clustering definitions for known high-density domains
-CANONICAL_DOMAINS: List[Dict[str, Any]] = [
-    {
-        "id": "feishu-suite",
-        "domain": "Feishu / Lark 飞书生态",
-        "target": "feishu-hub",
-        "keywords": ["feishu", "lark", "bitable"],
-    },
-    {
-        "id": "tide-quant",
-        "domain": "Financial & Trading 股票/量化/交易",
-        "target": "tide-quant-hub",
-        "keywords": ["stock", "trading", "akshare", "alpha", "crypto", "kline", "market"],
-    },
-    {
-        "id": "git-forge",
-        "domain": "Git & GitHub 版本管理与协作",
-        "target": "git-forge",
-        "keywords": ["github", "gitlab", "git-workflow", "git-pr"],
-    },
-    {
-        "id": "devops-ops",
-        "domain": "DevOps & Infrastructure 运维/容器/部署",
-        "target": "devops-ops",
-        "keywords": ["docker", "k8s", "kubernetes", "container", "deploy", "server-monitor"],
-    },
-    {
-        "id": "web-automation",
-        "domain": "Web & Browser 自动化与爬虫",
-        "target": "web-automation",
-        "keywords": ["browser", "playwright", "puppeteer", "scrapling", "selenium", "crawl"],
-    },
-]
 
 
 class SkillEvolutionPipeline:
@@ -97,7 +67,9 @@ class SkillEvolutionPipeline:
         return cls._instance
 
     def identify_homogenous_clusters(
-        self, available_skills: Optional[List[Dict[str, Any]]] = None
+        self,
+        available_skills: Optional[List[Dict[str, Any]]] = None,
+        min_cluster_size: int = 2,
     ) -> List[SkillClusterCandidate]:
         """Group available skills into homogenous clusters for consolidation."""
         skills = available_skills or self._scan_installed_skills()
@@ -117,7 +89,7 @@ class SkillEvolutionPipeline:
                     if name != target_slug and name not in matched_slugs:
                         matched_slugs.append(s.get("name", ""))
 
-            if len(matched_slugs) >= 2:
+            if len(matched_slugs) >= min_cluster_size:
                 clusters.append(
                     SkillClusterCandidate(
                         cluster_id=domain_id,
@@ -329,12 +301,26 @@ class SkillEvolutionPipeline:
         )
 
     def run_pipeline(
-        self, dry_run: bool = False, target_cluster_id: Optional[str] = None
+        self,
+        dry_run: bool = False,
+        target_cluster_id: Optional[str] = None,
+        max_clusters: int = 10,
+        target_domain: Optional[str] = None,
     ) -> PipelineSummaryReport:
         """Run the full evolution assembly line across all or specified clusters."""
         clusters = self.identify_homogenous_clusters()
         if target_cluster_id:
             clusters = [c for c in clusters if c.cluster_id == target_cluster_id]
+        elif target_domain:
+            td = target_domain.lower().strip()
+            clusters = [
+                c
+                for c in clusters
+                if td in c.cluster_id.lower() or td in c.domain_name.lower() or td in c.target_slug.lower()
+            ]
+
+        if max_clusters and max_clusters > 0:
+            clusters = clusters[:max_clusters]
 
         results: List[ClusterCrystallizeResult] = []
         crystallized_count = 0
@@ -374,6 +360,34 @@ class SkillEvolutionPipeline:
                     shutil.rmtree(target_dest)
                 shutil.copytree(skill_dir, target_dest)
         return True
+
+    def rollback_crystallization(self, quarantine_timestamp: Optional[str] = None) -> Dict[str, Any]:
+        """Restore original candidate skills from quarantine backup."""
+        if not self.backup_root.exists():
+            return {"restored_skills": 0, "quarantine_dir": str(self.backup_root), "status": "noop"}
+
+        restored_count = 0
+        target_dirs = (
+            [self.backup_root / quarantine_timestamp]
+            if quarantine_timestamp and (self.backup_root / quarantine_timestamp).exists()
+            else [d for d in self.backup_root.iterdir() if d.is_dir()]
+        )
+
+        for bdir in target_dirs:
+            if bdir.is_dir():
+                for skill_dir in bdir.iterdir():
+                    if skill_dir.is_dir():
+                        target_dest = self.root_skills_dir / skill_dir.name
+                        if target_dest.exists():
+                            shutil.rmtree(target_dest)
+                        shutil.copytree(skill_dir, target_dest)
+                        restored_count += 1
+
+        return {
+            "restored_skills": restored_count,
+            "quarantine_dir": str(self.backup_root),
+            "status": "ok" if restored_count > 0 else "noop",
+        }
 
     # --- Private Helpers ---
 
@@ -450,35 +464,18 @@ class SkillEvolutionPipeline:
 
     def _inherit_subfiles(self, candidate_slugs: List[str], target_dir: Path, dry_run: bool = False) -> List[str]:
         """Migrate auxiliary scripts and references from absorbed skills."""
-        inherited: List[str] = []
-        scripts_dest = target_dir / "scripts"
-
-        for slug in candidate_slugs:
-            src_dir = self.root_skills_dir / slug
-            if not src_dir.exists():
-                continue
-            for item in src_dir.rglob("*"):
-                if item.is_file() and item.name != "SKILL.md" and not item.name.startswith("."):
-                    rel = item.relative_to(src_dir)
-                    inherited.append(f"{slug}/{rel}")
-                    if not dry_run:
-                        dest_file = target_dir / rel
-                        dest_file.parent.mkdir(parents=True, exist_ok=True)
-                        shutil.copy2(item, dest_file)
-
-        return inherited
+        return SkillAssetHeritageManager.inherit_subfiles(
+            candidate_slugs=candidate_slugs,
+            root_skills_dir=self.root_skills_dir,
+            target_dir=target_dir,
+            dry_run=dry_run,
+        )
 
     def _backup_pre_crystal_skills(self, candidate_slugs: List[str], cluster_id: str) -> Path:
         """Create an atomic snapshot of candidate skills before modification."""
-        backup_dir = self.backup_root / cluster_id
-        backup_dir.mkdir(parents=True, exist_ok=True)
-
-        for slug in candidate_slugs:
-            src = self.root_skills_dir / slug
-            if src.exists():
-                dest = backup_dir / slug
-                if dest.exists():
-                    shutil.rmtree(dest)
-                shutil.copytree(src, dest)
-
-        return backup_dir
+        return SkillAssetHeritageManager.backup_pre_crystal_skills(
+            candidate_slugs=candidate_slugs,
+            root_skills_dir=self.root_skills_dir,
+            backup_root=self.backup_root,
+            cluster_id=cluster_id,
+        )
