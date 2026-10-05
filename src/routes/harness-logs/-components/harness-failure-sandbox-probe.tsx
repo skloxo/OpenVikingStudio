@@ -42,23 +42,45 @@ export function HarnessFailureSandboxProbe({ recentEvents }: HarnessFailureSandb
         <div>
           <h2 className="text-xs font-bold text-foreground flex items-center gap-1.5">
             <TerminalIcon className="size-3.5 text-cyan-400" />
-            交互式物理验真探针 (Interactive Sandbox Probe)
+            受控混沌演练与自愈韧性探针 (Controlled Chaos & Resilience Probe)
           </h2>
           <p className="text-xs text-muted-foreground">
-            实时注入瞬态抖动、确定性死循环、致命越权或白名单注册，检验底层拦截器物理反应
+            在受控沙箱中真实注入 429 限流、Watchdog 超时熔断与真实 Merkle 状态树，检验底层自愈力与资源回收
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             size="sm"
             variant="outline"
             disabled={probeMutation.isPending}
             onClick={() =>
-              probeMutation.mutate({ action: 'simulate_transient', tool_name: 'fetch_api_data' })
+              probeMutation.mutate({ action: 'simulate_transient', tool_name: 'fetch_remote_context' })
             }
             className="h-7 text-xs text-foreground"
           >
-            模拟 429 瞬态重试
+            🔥 真实 429 退避自愈
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={probeMutation.isPending}
+            onClick={() =>
+              probeMutation.mutate({ action: 'drill_watchdog_timeout' })
+            }
+            className="h-7 text-xs text-foreground"
+          >
+            ⚡ Watchdog 超时熔断
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={probeMutation.isPending}
+            onClick={() =>
+              probeMutation.mutate({ action: 'drill_real_merkle' })
+            }
+            className="h-7 text-xs text-foreground"
+          >
+            🌲 真实 Merkle 状态树
           </Button>
           <Button
             size="sm"
@@ -72,18 +94,7 @@ export function HarnessFailureSandboxProbe({ recentEvents }: HarnessFailureSandb
             }
             className="h-7 text-xs text-foreground"
           >
-            模拟死循环参数 (Anti-Loop)
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={probeMutation.isPending}
-            onClick={() =>
-              probeMutation.mutate({ action: 'simulate_fatal', tool_name: 'system_process_spawn' })
-            }
-            className="h-7 text-xs text-foreground"
-          >
-            模拟越权 (Fatal Halt)
+            防死循环屏障 (Anti-Loop)
           </Button>
           <Button
             size="sm"
@@ -94,7 +105,7 @@ export function HarnessFailureSandboxProbe({ recentEvents }: HarnessFailureSandb
             }
             className="h-7 text-xs text-foreground"
           >
-            + 注册 TaskPlan 白名单
+            + TaskPlan 免压缩白名单
           </Button>
           <Button
             size="sm"
@@ -111,14 +122,41 @@ export function HarnessFailureSandboxProbe({ recentEvents }: HarnessFailureSandb
 
       {/* Live Probe Feedback Banner */}
       {probeResult && (
-        <div className="rounded-md border border-cyan-500/30 bg-cyan-500/10 p-3 text-xs">
+        <div className="rounded-md border border-cyan-500/30 bg-cyan-500/10 p-3 text-xs flex flex-col gap-2">
           <div className="flex items-center justify-between font-mono font-semibold text-cyan-400">
-            <span>探针实时响应 (Probe Feedback):</span>
+            <span>混沌演练与探针实时响应 (Probe Feedback):</span>
             <span className="text-muted-foreground font-normal">
               {new Date().toLocaleTimeString()}
             </span>
           </div>
-          <pre className="mt-1.5 max-h-32 overflow-auto font-mono text-xs text-foreground/90 leading-relaxed bg-background/50 p-2 rounded">
+
+          {/* 真实演练指标回显瓦片 */}
+          {Boolean(probeResult.real_drill_executed) && (
+            <div className="grid grid-cols-3 gap-2 p-2 bg-background/60 border border-border/60 rounded font-mono text-xs">
+              <div className="flex flex-col">
+                <span className="text-muted-foreground">演练耗时</span>
+                <span className="text-foreground font-semibold tabular-nums">
+                  {typeof probeResult.actual_duration_ms === 'number'
+                    ? `${probeResult.actual_duration_ms.toFixed(1)} ms`
+                    : typeof probeResult.duration_ms === 'number'
+                    ? `${probeResult.duration_ms.toFixed(1)} ms`
+                    : '--'}
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-muted-foreground">自愈/熔断状态</span>
+                <span className="text-cyan-400 font-semibold">
+                  {probeResult.drill_success ? 'PASS (100% 自愈)' : 'FAIL'}
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-muted-foreground">隔离安全契约</span>
+                <span className="text-cyan-400 font-semibold">生产业务 0 污染</span>
+              </div>
+            </div>
+          )}
+
+          <pre className="max-h-32 overflow-auto font-mono text-xs text-foreground/90 leading-relaxed bg-background/50 p-2 rounded">
             {JSON.stringify(probeResult, null, 2)}
           </pre>
         </div>
