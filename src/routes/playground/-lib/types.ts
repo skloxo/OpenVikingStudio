@@ -1,6 +1,6 @@
 import type { VikingFsEntry } from '#/routes/resources/-types/viking-fm'
 
-export type PlaygroundPanel = 'agent' | 'terminal'
+export type PlaygroundPanel = 'agent' | 'terminal' | 'visualLauncher'
 
 export type PlaygroundSearch = {
   uri?: string

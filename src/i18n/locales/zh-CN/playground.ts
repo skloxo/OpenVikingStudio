@@ -9,6 +9,19 @@ export const playground = {
     tabs: {
       terminal: '终端',
       agent: 'Agent',
+      visualLauncher: '直通台',
+    },
+    visualLauncher: {
+      title: '可视化功能直通台',
+      badge: '零命令行直达',
+      selectPrompt: '选择要调用的核心功能：',
+      btnRun: '立即运行',
+      running: '执行中...',
+      reqPayload: '请求参数 (JSON Payload):',
+      resultTitle: '执行结果:',
+      btnCopy: '复制结果',
+      copied: '已复制',
+      duration: '耗时 {{ms}}ms',
     },
     actionPanel: {
       collapse: '收起面板',
