@@ -9,6 +9,19 @@ export const playground = {
     tabs: {
       terminal: 'Terminal',
       agent: 'Agent',
+      visualLauncher: 'Launcher',
+    },
+    visualLauncher: {
+      title: 'Visual Action Launcher',
+      badge: 'Zero-CLI Direct',
+      selectPrompt: 'Select a core action to invoke:',
+      btnRun: 'Run Action',
+      running: 'Running...',
+      reqPayload: 'Request Parameters (JSON Payload):',
+      resultTitle: 'Execution Result:',
+      btnCopy: 'Copy Result',
+      copied: 'Copied',
+      duration: 'Took {{ms}}ms',
     },
     actionPanel: {
       collapse: 'Collapse panel',

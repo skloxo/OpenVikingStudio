@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import {
   ArrowLeftIcon,
   BotIcon,
+  LayersIcon,
   PanelRightCloseIcon,
   TerminalIcon,
 } from 'lucide-react'
@@ -16,6 +17,7 @@ import type { VikingFsEntry } from '#/routes/resources/-types/viking-fm'
 import { AgentPanel } from './agent-panel'
 import { PanelTab } from './context-explorer'
 import { TerminalPanel } from './terminal-panel'
+import { VisualActionLauncher } from './visual-action-launcher'
 import type { PlaygroundPanel, ResourceOpenHandler } from '../-lib/types'
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -66,6 +68,12 @@ export function PlaygroundActionTabs({
         label={t('tabs.agent')}
         onClick={() => onPanelChange('agent')}
       />
+      <PanelTab
+        active={activePanel === 'visualLauncher'}
+        icon={LayersIcon}
+        label={t('tabs.visualLauncher')}
+        onClick={() => onPanelChange('visualLauncher')}
+      />
     </div>
   )
 }
@@ -106,13 +114,15 @@ export function PlaygroundActionContent({
           sessionId={sessionId}
           toolbarContainer={toolbarContainer}
         />
-      ) : (
+      ) : activePanel === 'agent' ? (
         <AgentPanel
           initialSessionId={sessionId}
           onOpenResource={onOpenResource}
           onSessionChange={onSessionChange}
           toolbarContainer={toolbarContainer}
         />
+      ) : (
+        <VisualActionLauncher />
       )}
     </div>
   )

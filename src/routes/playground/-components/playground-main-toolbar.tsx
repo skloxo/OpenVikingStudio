@@ -5,6 +5,7 @@
 import {
   BotIcon,
   ClipboardIcon,
+  LayersIcon,
   PanelRightOpenIcon,
   TerminalIcon,
 } from 'lucide-react'
@@ -84,6 +85,16 @@ export function PlaygroundMainToolbar({
           onClick={() => onOpenActionPanel('agent')}
         >
           <BotIcon className="size-4" />
+        </Button>
+        <Button
+          type="button"
+          size="icon-sm"
+          variant={activePanel === 'visualLauncher' ? 'secondary' : 'ghost'}
+          title={t('tabs.visualLauncher')}
+          aria-label={t('tabs.visualLauncher')}
+          onClick={() => onOpenActionPanel('visualLauncher')}
+        >
+          <LayersIcon className="size-4" />
         </Button>
       </div>
       {rightCollapsed && !isFocusCanvas ? (
