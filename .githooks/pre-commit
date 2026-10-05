@@ -75,4 +75,19 @@ if [ -f "$AHE_CHECK" ]; then
     fi
 fi
 
+# 5. 全系统 DEMO 禁令与闭环守护自动化视网膜门禁 (anti_demo_gate.py)
+ANTI_DEMO_CHECK="$REPO_ROOT/scripts/anti_demo_gate.py"
+if [ -f "$ANTI_DEMO_CHECK" ]; then
+    python3 "$ANTI_DEMO_CHECK"
+    RESULT=$?
+    if [ $RESULT -ne 0 ]; then
+        echo ""
+        echo "🚨 [GIT COMMIT 物理阻断] 检测到 DEMO 标记、悬空未闭环逻辑或微字号违规！"
+        echo "代码提交已终止。请根据上述报错根治假功能、补齐真实物理落盘或修正样式。"
+        echo ""
+        exit 1
+    fi
+fi
+
 exit 0
+

@@ -60,6 +60,7 @@ from openviking.server.routers.code_catalog import router as code_catalog_router
 from openviking.server.routers.privacy_gov import router as privacy_gov_router
 from openviking.server.routers.skill_evolution import router as skill_evolution_router
 from openviking.server.routers.skill_ingestion import router as skill_ingestion_router
+from openviking.server.routers.anti_demo import anti_demo_router
 
 __all__ = [
     "acl_router",
@@ -120,5 +121,7 @@ __all__ = [
     "privacy_gov_router",
     "skill_evolution_router",
     "skill_ingestion_router",
+    "anti_demo_router",
 ]
+
 
