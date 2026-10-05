@@ -28,31 +28,7 @@ def _self_memory_target(target_uri: str) -> bool:
 
 async def test_default_scope_searches_other_peers_with_an_open_context(
     client: httpx.AsyncClient,
-    service,
-    monkeypatch,
 ):
-    calls = []
-    read_calls = []
-
-    async def fake_find(**kwargs):
-        calls.append(kwargs)
-        target_uri = kwargs["target_uri"]
-        if _self_memory_target(target_uri):
-            return _FakeFindResult([_memory(f"{target_uri}/global.md", 0.8, "global")])
-        if target_uri.endswith("/peers/current/memories/events"):
-            return _FakeFindResult([_memory(f"{target_uri}/current.md", 0.91, "current")])
-        if target_uri.endswith("/peers"):
-            return _FakeFindResult(
-                [_memory(f"{target_uri}/other/memories/events/other.md", 0.89, "other")]
-            )
-        return _FakeFindResult([])
-
-    async def fake_read(uri, **kwargs):
-        read_calls.append((uri, kwargs.get("ctx")))
-        return f"content for {uri}"
-
-    monkeypatch.setattr(service.search, "find", fake_find)
-    monkeypatch.setattr(service.fs, "read", fake_read)
     response = await client.post(
         "/api/v1/search/recall",
         headers={"X-OpenViking-Actor-Peer": "current"},
@@ -62,41 +38,13 @@ async def test_default_scope_searches_other_peers_with_an_open_context(
             "max_chars": 5000,
         },
     )
-
-    assert response.status_code == 200
-    result = response.json()["result"]
-    assert [entry["origin"] for entry in result["entries"]] == [
-        "actor_peer",
-        "self",
-        "other_peer",
-    ]
-    peer_call = next(call for call in calls if call["target_uri"].endswith("/peers"))
-    assert peer_call["ctx"].actor_peer_id is None
-    other_read_ctx = next(ctx for uri, ctx in read_calls if uri.endswith("/other.md"))
-    assert other_read_ctx.actor_peer_id is None
+    # Deprecated /recall has been retired in Card-80 (v1.7.34)
+    assert response.status_code == 404
 
 
 async def test_actor_scope_skips_the_open_peer_scan(
     client: httpx.AsyncClient,
-    service,
-    monkeypatch,
 ):
-    calls = []
-
-    async def fake_find(**kwargs):
-        calls.append(kwargs)
-        if kwargs["target_uri"].endswith("/events"):
-            return _FakeFindResult(
-                [_memory("viking://user/test_user/peers/current/memories/events/current.md")]
-            )
-        return _FakeFindResult([])
-
-    async def fake_read(uri, **kwargs):
-        del uri, kwargs
-        return "Summary: actor only.\n2026-07-09 ChatLog: details"
-
-    monkeypatch.setattr(service.search, "find", fake_find)
-    monkeypatch.setattr(service.fs, "read", fake_read)
     response = await client.post(
         "/api/v1/search/recall",
         headers={"X-OpenViking-Actor-Peer": "current"},
@@ -107,7 +55,4 @@ async def test_actor_scope_skips_the_open_peer_scan(
             "max_chars": 300,
         },
     )
-
-    assert response.status_code == 200
-    assert response.json()["result"]["rendered"].count("<memory ") == 1
-    assert all(not call["target_uri"].endswith("/peers") for call in calls)
+    assert response.status_code == 404
