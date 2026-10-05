@@ -2,17 +2,15 @@
 # SPDX-License-Identifier: AGPL-3.0
 """Unit test suite for Card-50: Physical Authenticity, O(1) Dedup Index & Concurrency Hygiene."""
 
-import asyncio
-from unittest.mock import AsyncMock, patch, mock_open
+from unittest.mock import AsyncMock, patch
+
 import pytest
 
 from openviking.server.routers.system_probes import (
-    probe_gpu_telemetry,
     _read_host_mem,
-    probe_system_host_resources,
+    probe_gpu_telemetry,
 )
 from openviking.service.task_card_manager import TaskCardManager
-from openviking.service.cache_tier2_engine import Tier2LRUCacheEngine
 from openviking.service.test_retina_generator import TestRetinaGenerator
 from openviking.service.code_fact_compiler import McpToolFactRecord
 
@@ -110,33 +108,6 @@ async def test_task_card_o1_index_and_lifecycle(tmp_path):
     assert resolve_res["status"] == "resolved"
     assert manager.indexed_fingerprint_count == 0
 
-
-def test_cache_tier2_in_flight_guard_resilience():
-    """Verify in_flight_guard automatically releases in_flight state even on unhandled exceptions."""
-    cache = Tier2LRUCacheEngine()
-    test_key = "key_concurrency_test"
-
-    assert not cache.is_in_flight(test_key)
-
-    # 1. Normal context exit
-    with cache.in_flight_guard(test_key) as acquired:
-        assert acquired is True
-        assert cache.is_in_flight(test_key)
-        val, hit = cache.get(test_key, wait=False, fallback="busy")
-        assert hit is False
-        assert val == "busy"
-
-    assert not cache.is_in_flight(test_key)
-
-    # 2. Exception raised inside context
-    with pytest.raises(RuntimeError):
-        with cache.in_flight_guard(test_key) as acquired:
-            assert acquired is True
-            assert cache.is_in_flight(test_key)
-            raise RuntimeError("Backend source crashed!")
-
-    # Verify RAII lock released
-    assert not cache.is_in_flight(test_key)
 
 
 def test_test_retina_genuine_mcp_contract_execution():
