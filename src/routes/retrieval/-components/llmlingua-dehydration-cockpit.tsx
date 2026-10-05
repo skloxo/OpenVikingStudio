@@ -1,123 +1,31 @@
-// Copyright (c) 2026 Beijing Volcano Engine Technology Co., Ltd.
-// SPDX-License-Identifier: AGPL-3.0
-
-import * as React from 'react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ActivityIcon,
+  CheckCircleIcon,
   CopyIcon,
+  FileCheckIcon,
   PlayIcon,
   RefreshCwIcon,
+  SaveIcon,
   ScissorsIcon,
   ShieldCheckIcon,
   SparklesIcon,
 } from 'lucide-react'
 import { Button } from '#/components/ui/button'
 import { ovClient } from '#/lib/ov-client'
-
-interface DehydrationResult {
-  original_chars: number
-  compressed_chars: number
-  original_tokens: number
-  compressed_tokens: number
-  tokens_saved: number
-  compression_ratio: number
-  structural_fidelity: number
-  frozen_blocks_count: number
-  latency_ms: number
-  engine_used: string
-  dehydrated_content: string
-}
-
-interface DehydrationStats {
-  total_documents: number
-  total_tokens_saved: number
-  avg_compression_ratio: number
-  avg_latency_ms: number
-  active_engine: string
-  is_model_loaded: boolean
-}
-
-const PRESET_SAMPLES: Record<string, string> = {
-  spec: `---
-title: OpenViking Context Engine Architecture Specification
-version: 1.5.46
-category: knowledge-base
----
-
-# 模块设计规范与第一性原理
-众所周知，代码库必须拥有清晰高内聚的领域接缝。
-显而易见的是，我们必须严格遵守单文件 100 到 300 行的黄金甜点区红线。
-毋庸置疑的是，严禁任何人在代码库中引入未经脱水审计的外部臃肿包。
-值得注意的是，我们必须保护否定词和控制词，严禁反转核心语义。
-
-\`\`\`python
-def evaluate_gate(rate: float) -> bool:
-    # 绝对禁止任何绿色，统一采用冰青信号
-    assert rate >= 0.50
-    return True
-\`\`\`
-
-总的来说，归根结底，正如前文所述，系统必须兼顾极致性能与零幻觉。`,
-
-  whitepaper: `---
-title: Multi-Engine Context Compression Whitepaper
-version: 1.5.46
----
-
-# 课题五：多引擎分级智能压缩体系架构
-在现代大规模智能体系统中，上下文膨胀消耗推理 Token 并诱发中间信息衰减。
-从某种角度来看，众所周知的是，传统的单一截断策略无法兼顾精度与结构完整性。
-具体来说，本系统设计了三层正交压缩矩阵：
-1. 阿里 SkillZip：针对可执行流程进行确定性 6 元组规约；
-2. Notes-History：针对多轮对话历史进行动态结晶；
-3. 微软 LLMLingua-2：针对自然语言 Wiki 文档进行毫秒级抽稀，削减 50% 水话冗余。
-
-\`\`\`bash
-# 启动脱水后台任务
-openviking wiki dehydrate --rate 0.50 --threshold 0.35
-\`\`\`
-
-正如前文所述，整个过程绝对禁止常驻显存，保障 2080Ti 纯净。`,
-}
-
-function KpiTile({
-  icon: Icon,
-  label,
-  value,
-  sub,
-  accent,
-}: {
-  icon: React.ElementType
-  label: string
-  value: string | number
-  sub?: string
-  accent?: boolean
-}) {
-  return (
-    <div className="flex flex-col gap-1 rounded-md border border-border/70 bg-card p-3 shadow-xs">
-      <div className="flex items-center gap-1.5 text-muted-foreground">
-        <Icon className="size-3.5 shrink-0 text-cyan-500" />
-        <span className="text-xs truncate">{label}</span>
-      </div>
-      <div
-        className={`text-base font-mono font-semibold tabular-nums ${
-          accent ? 'text-cyan-600 dark:text-cyan-400' : 'text-foreground'
-        }`}
-      >
-        {value}
-      </div>
-      {sub && <span className="text-xs text-muted-foreground truncate">{sub}</span>}
-    </div>
-  )
-}
+import { WikiDocumentPicker } from './wiki-document-picker'
+import { KpiTile } from './llmlingua-kpi-tile'
+import type { ApplyResult, DehydrationResult, DehydrationStats } from './llmlingua-types'
+import { PRESET_SAMPLES } from './llmlingua-types'
 
 export function LLMLinguaDehydrationCockpit() {
   const { t } = useTranslation('retrieval')
   const queryClient = useQueryClient()
-  const [inputText, setInputText] = useState(PRESET_SAMPLES.spec)
+  const [inputText, setInputText] = useState(PRESET_SAMPLES.spec.content)
+  const [selectedUri, setSelectedUri] = useState<string>(PRESET_SAMPLES.spec.uri)
+  const [selectedName, setSelectedName] = useState<string>(PRESET_SAMPLES.spec.title)
   const [targetRate, setTargetRate] = useState<number>(0.50)
   const [preserveStructure, setPreserveStructure] = useState<boolean>(true)
   const [copied, setCopied] = useState<boolean>(false)
@@ -145,6 +53,20 @@ export function LLMLinguaDehydrationCockpit() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wiki-dehydrate-stats'] })
+      applyMutation.reset()
+    },
+  })
+
+  // 3. Physical Persistence Apply Mutation (Card-101)
+  const applyMutation = useMutation<ApplyResult, Error, { mode: 'mirror' | 'in_place' }>({
+    mutationFn: async ({ mode }) => {
+      const res = await ovClient.instance.post('/api/v1/wiki/dehydrate/apply', {
+        uri: selectedUri,
+        dehydrated_content: dehydrateMutation.data?.dehydrated_content || '',
+        mode,
+        operator: 'wiki_cockpit',
+      })
+      return (res as { data: { status: string; data: ApplyResult } }).data.data
     },
   })
 
@@ -155,6 +77,19 @@ export function LLMLinguaDehydrationCockpit() {
     void navigator.clipboard.writeText(result.dehydrated_content)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleSelectRealDoc = async (uri: string, name: string) => {
+    try {
+      const res = await ovClient.instance.get(`/api/v1/wiki/dehydrate/document?uri=${encodeURIComponent(uri)}`)
+      const content = (res as { data: { content: string } }).data.content
+      setInputText(content)
+      setSelectedUri(uri)
+      setSelectedName(name)
+      applyMutation.reset()
+    } catch (err) {
+      console.error('Failed to load wiki doc', err)
+    }
   }
 
   return (
@@ -190,40 +125,51 @@ export function LLMLinguaDehydrationCockpit() {
         />
       </div>
 
-      {/* 预置样本选择与控制栏 */}
+      {/* 预置样本与全域知识库文档拾取栏 */}
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/70 bg-card px-3 py-2 shadow-xs">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-foreground">
-            {t('llmlingua.presetSamples', '预置样本')}
+        <div className="flex flex-wrap items-center gap-2">
+          <WikiDocumentPicker onSelect={handleSelectRealDoc} currentUri={selectedUri} />
+          <span className="text-xs text-muted-foreground">|</span>
+          <span className="text-xs font-semibold text-foreground">快速预设:</span>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 text-xs px-2"
+            onClick={() => {
+              setInputText(PRESET_SAMPLES.spec.content)
+              setSelectedUri(PRESET_SAMPLES.spec.uri)
+              setSelectedName(PRESET_SAMPLES.spec.title)
+              applyMutation.reset()
+            }}
+          >
+            {PRESET_SAMPLES.spec.title}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 text-xs px-2"
+            onClick={() => {
+              setInputText(PRESET_SAMPLES.whitepaper.content)
+              setSelectedUri(PRESET_SAMPLES.whitepaper.uri)
+              setSelectedName(PRESET_SAMPLES.whitepaper.title)
+              applyMutation.reset()
+            }}
+          >
+            {PRESET_SAMPLES.whitepaper.title}
+          </Button>
+          <span className="rounded bg-muted/60 px-2 py-0.5 text-xs font-mono text-cyan-600 dark:text-cyan-400 border border-border/60 max-w-65 truncate">
+            {selectedName}
           </span>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-6 text-xs px-2"
-            onClick={() => setInputText(PRESET_SAMPLES.spec)}
-          >
-            {t('llmlingua.presetSpec', '架构规格书')}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-6 text-xs px-2"
-            onClick={() => setInputText(PRESET_SAMPLES.whitepaper)}
-          >
-            {t('llmlingua.presetWhitepaper', '压缩白皮书')}
-          </Button>
         </div>
-        <div className="flex items-center gap-3">
-          <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
-            <input
-              type="checkbox"
-              checked={preserveStructure}
-              onChange={(e) => setPreserveStructure(e.target.checked)}
-              className="rounded border-input text-cyan-600 focus:ring-cyan-500"
-            />
-            {t('llmlingua.freezeStructure', '物理冻结 YAML 头部 & 代码块')}
-          </label>
-        </div>
+        <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
+          <input
+            type="checkbox"
+            checked={preserveStructure}
+            onChange={(e) => setPreserveStructure(e.target.checked)}
+            className="rounded border-input text-cyan-600 focus:ring-cyan-500"
+          />
+          {t('llmlingua.freezeStructure', '物理冻结 YAML 头部 & 代码块')}
+        </label>
       </div>
 
       {/* 交互实验台双栏 (原始 vs 脱水成果) */}
@@ -241,7 +187,7 @@ export function LLMLinguaDehydrationCockpit() {
           <textarea
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            rows={14}
+            rows={13}
             className="w-full rounded-md border border-input bg-background p-2.5 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:border-cyan-500 focus:outline-none resize-none"
             placeholder={t('llmlingua.placeholderInput', '请输入或粘贴待脱水长篇自然语言文档...')}
           />
@@ -279,12 +225,12 @@ export function LLMLinguaDehydrationCockpit() {
           </div>
         </div>
 
-        {/* 右栏：脱水成果展示 */}
+        {/* 右栏：脱水成果展示与物理落盘闭环 */}
         <div className="flex flex-col gap-2 rounded-md border border-border/70 bg-card p-3 shadow-xs">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-xs font-semibold text-foreground">
-                {t('llmlingua.dehydratedResult', '脱水后纯净文本')}
+                {t('llmlingua.dehydratedResult', '脱水纯净成果')}
               </span>
               {result && (
                 <span className="rounded bg-cyan-50 dark:bg-cyan-950/80 px-1.5 py-0.5 text-xs font-mono font-medium text-cyan-800 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800/60">
@@ -304,7 +250,7 @@ export function LLMLinguaDehydrationCockpit() {
               </Button>
             )}
           </div>
-          <div className="relative h-64 w-full overflow-y-auto rounded-md border border-border/60 bg-muted/20 p-2.5 font-mono text-xs text-foreground">
+          <div className="relative h-56 w-full overflow-y-auto rounded-md border border-border/60 bg-muted/20 p-2.5 font-mono text-xs text-foreground">
             {result ? (
               <pre className="whitespace-pre-wrap font-mono leading-relaxed">
                 {result.dehydrated_content}
@@ -315,17 +261,55 @@ export function LLMLinguaDehydrationCockpit() {
               </div>
             )}
           </div>
+
           {result && (
-            <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-muted-foreground">
-              <span className="rounded bg-muted px-1.5 py-0.5 font-mono border border-border">
-                冻结结构块: {result.frozen_blocks_count} 处
-              </span>
-              <span className="rounded bg-muted px-1.5 py-0.5 font-mono border border-border">
-                结构保真: {result.structural_fidelity.toFixed(1)}%
-              </span>
-              <span className="rounded bg-muted px-1.5 py-0.5 font-mono border border-border text-cyan-600 dark:text-cyan-400">
-                耗时: {result.latency_ms.toFixed(1)}ms
-              </span>
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-border/60">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
+                <span>冻结: {result.frozen_blocks_count}处</span>
+                <span>保真: {result.structural_fidelity.toFixed(1)}%</span>
+                <span className="text-cyan-600 dark:text-cyan-400">{result.latency_ms.toFixed(1)}ms</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={applyMutation.isPending || !selectedUri}
+                  onClick={() => applyMutation.mutate({ mode: 'mirror' })}
+                  className="h-7 text-xs border-cyan-500/40 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10 cursor-pointer"
+                >
+                  {applyMutation.isPending ? <RefreshCwIcon className="size-3 animate-spin mr-1" /> : <SaveIcon className="size-3 mr-1" />}
+                  发布为脱水镜像 (.dehydrated.md)
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={applyMutation.isPending || !selectedUri}
+                  onClick={() => applyMutation.mutate({ mode: 'in_place' })}
+                  className="h-7 text-xs border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 cursor-pointer"
+                >
+                  {applyMutation.isPending ? <RefreshCwIcon className="size-3 animate-spin mr-1" /> : <FileCheckIcon className="size-3 mr-1" />}
+                  原地安全覆写
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {applyMutation.data && (
+            <div className="rounded-md border border-cyan-500/30 bg-cyan-50/40 dark:bg-cyan-950/20 p-2.5 text-xs font-mono space-y-1">
+              <div className="flex items-center gap-1.5 text-cyan-700 dark:text-cyan-300 font-semibold">
+                <CheckCircleIcon className="size-3.5 text-cyan-500" />
+                <span>物理落盘成功 ({applyMutation.data.mode === 'mirror' ? '镜像模式' : '原地覆写'})</span>
+                <span className="ml-auto text-muted-foreground tabular-nums">节省 {applyMutation.data.saved_chars} 字符</span>
+              </div>
+              <div className="text-muted-foreground truncate">目标: {applyMutation.data.target_path}</div>
+              <div className="text-muted-foreground truncate">快照: {applyMutation.data.snapshot_path}</div>
+              <div className="text-muted-foreground truncate">证据: {applyMutation.data.provenance_event_id}</div>
+            </div>
+          )}
+
+          {applyMutation.error && (
+            <div className="rounded-md border border-rose-500/40 bg-rose-50/50 dark:bg-rose-950/20 p-2 text-xs font-mono text-rose-600 dark:text-rose-400">
+              落盘受阻: {applyMutation.error.message}
             </div>
           )}
         </div>
