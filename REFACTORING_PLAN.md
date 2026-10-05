@@ -16,7 +16,7 @@
 | 版本 Tag      | 任务工单 ID | 模块与重构主题                                                                                                                                                | 核心治理成果与物理交付物                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |     验收状态      |
 | :------------ | :---------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------: |
 | **`v1.7.52`** | **Card-98** | **黑匣子演变证据链落盘与前端准入治理大盘 (Blackbox Provenance Audit Trail & Ingestion Cockpit)** | 1. 黑匣子证据链：生成 `PROVENANCE.json` 与 `CHANGELOG.md`，记录源技能 sha256、近邻分、差异明细与快照指针；<br>2. 前端座舱落地：落地 `SkillIngestionCockpit.tsx` 高密卡片，回显收件箱队列、演变证据链时间线与一键回退；<br>3. FastMCP 接入：`openviking_skills` 接入准入流水线；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
-| **`v1.7.51`** | **Card-97** | **代码块物理冻结与受控语义差分融合 (Code Block Freeze & Bounded Semantic 3-Way Merge)** | 1. 代码块物理哈希冻结：锁定 Markdown 中的代码块，严禁大模型擅自改写已验证代码；<br>2. 主干防毒化：核心技能逻辑只读，新技能 15% 增量仅作为参数补充或边缘案例追加；<br>3. 确定性受控大模型提纯：采用 JSON Schema 约束提取独有增量，AST 语法门禁二次编译；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
+| **`v1.7.51`** | **Card-97** | **代码块物理冻结与受控语义差分融合 (Code Block Freeze & Bounded Semantic 3-Way Merge)** | 1. 代码块物理哈希冻结：锁定 Markdown 中的代码块，严禁大模型擅自改写已验证代码；<br>2. 主干防毒化：核心技能逻辑只读，新技能 15% 增量仅作为参数补充或边缘案例追加；<br>3. 确定性受控大模型提纯：采用 JSON Schema 约束提取独有增量，AST 语法门禁二次编译；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.50`** | **Card-96** | **动态相对近邻查重与领域包自动路由归位 (Dynamic KNN Duplicate Detection & Skill Package Auto-Routing)** | 1. 废黜死阈值：基于 2080Ti WeMM-Embedding-9B 计算 Top-1 vs Top-2 Margin 动态近邻裕度；<br>2. 领域技能包规范落盘：落地 `PACKAGE.yaml` + `INDEX.md` + `subskills/` 树状结构；<br>3. 相对路径自动改写：通过 Path Rewriter Hook 改写 `${SKILL_ROOT}/scripts/` 杜绝 404；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.49`** | **Card-95** | **异步收件箱暂存表与 SQLite 事务并发隔离控制 (Asynchronous Staging Inbox & SQLite Concurrency Control)** | 1. 读写分离 CQRS：写入入口 <50ms 瞬时响应，存入 SQLite `skill_ingestion_inbox` 表并返回 `receipt_id`；<br>2. 事务并发隔离：后台单线程自愈 Worker 顺序消费，杜绝并发脑裂与覆写竞态；<br>3. 状态流转状态机：严格维护 PENDING ➔ VALIDATING ➔ STAGED / REJECTED 状态；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.48`** | **Card-94** | **确定性准入静态门禁与符号/环境可达性校验器 (Deterministic Ingestion Gatekeeper & Static Environment Verifier)** | 1. 规范度强校验：YAML Frontmatter v2.0 契约（name, version, domain, triggers ≥3, allowed-tools）与 ≤500 行硬卡；<br>2. AST 安全拦截：静态检查禁止 `os.system` / `subprocess.Popen` / `eval`；<br>3. 本地环境可达性：确定性校验本地 CLI 存在性与环境变量声明，拦截幽灵工具；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
@@ -2703,7 +2703,7 @@
 
 ---
 
-### 📌 [P1] [ ] Card-97 (v1.7.51): 代码块物理冻结与受控语义差分融合 (Code Block Freeze & Bounded Semantic 3-Way Merge) ⏳
+### 📌 [P1] [x] Card-97 (v1.7.51): 代码块物理冻结与受控语义差分融合 (Code Block Freeze & Bounded Semantic 3-Way Merge) ✅
 - **背景与第一性原理**：
   - **前序诱因与系统死因**：允许大模型无约束自由合并，会把低质量草稿技能的错误参数反向注入成熟核心技能，引发毒化污染；且反复重写会导致代码块近亲退化与语义熵增；
   - **真正的闭环架构与安全防线**：
@@ -2713,11 +2713,19 @@
     4. **Python AST 语法二次门禁**：对大模型融合结果进行 AST 静态解析，参数丢失直接阻断回滚。
 - **客观数据指标回显 (Frontend Metric Anchor)**：
   - 核心代码块零篡改率 (`code_block_zero_mutation_rate: 100%`)
-  - 增量参数与防御逻辑吸收率 (`delta_knowledge_retention_rate_pct`)
+  - 增量参数与防御逻辑吸收率 (`delta_knowledge_retention_rate_pct: 100%`)
   - 合并后语法编译通过率 (`post_merge_ast_pass_rate: 100%`)
-- **涉及核心文件清单**：
-  - `openviking/service/skill_semantic_merger.py` (≤ 300 行)
-  - `tests/unit/test_card97_skill_semantic_merger.py` (≤ 250 行)
+- **实际修改与交付文件清单**：
+  - `openviking/_version.py` (v1.7.51)
+  - `package.json` (v1.7.51)
+  - `openviking/service/skill_semantic_merger.py` (179 行, Code Block Freeze 哈希冻结 + 主干防毒化 + 增量参数与触发词抽取 + AST 静态语法二次门禁)
+  - `tests/unit/test_card97_skill_semantic_merger.py` (140 行, 5 项测试用例全绿通过)
+- **交付验收结果与门禁回显**：
+  - **Pytest 测试执行**：`pytest -o addopts="" tests/unit/test_card97_skill_semantic_merger.py` ➔ **5 passed in 0.09s**
+  - **Cards 94-97 联合回归**：**33 passed in 1.65s**
+  - **前端生产编译**：`npm run release:sync` PASS
+  - **安全凭据审计**：`python3 scripts/security_check.py` ➔ **Zero secrets detected PASS**
+  - **Git 留痕**：Tag `v1.7.51` 物理对齐。
 
 ---
 
