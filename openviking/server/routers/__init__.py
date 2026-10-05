@@ -58,6 +58,7 @@ from openviking.server.routers.dspy_compiler import router as dspy_compiler_rout
 from openviking.server.routers.task_cards import router as task_cards_router
 from openviking.server.routers.code_catalog import router as code_catalog_router
 from openviking.server.routers.privacy_gov import router as privacy_gov_router
+from openviking.server.routers.skill_evolution import router as skill_evolution_router
 
 __all__ = [
     "acl_router",
@@ -116,5 +117,6 @@ __all__ = [
     "task_cards_router",
     "code_catalog_router",
     "privacy_gov_router",
+    "skill_evolution_router",
 ]
 
