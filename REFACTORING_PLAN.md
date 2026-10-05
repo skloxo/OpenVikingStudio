@@ -18,7 +18,7 @@
 | **`v1.7.52`** | **Card-98** | **黑匣子演变证据链落盘与前端准入治理大盘 (Blackbox Provenance Audit Trail & Ingestion Cockpit)** | 1. 黑匣子证据链：生成 `PROVENANCE.json` 与 `CHANGELOG.md`，记录源技能 sha256、近邻分、差异明细与快照指针；<br>2. 前端座舱落地：落地 `SkillIngestionCockpit.tsx` 高密卡片，回显收件箱队列、演变证据链时间线与一键回退；<br>3. FastMCP 接入：`openviking_skills` 接入准入流水线；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
 | **`v1.7.51`** | **Card-97** | **代码块物理冻结与受控语义差分融合 (Code Block Freeze & Bounded Semantic 3-Way Merge)** | 1. 代码块物理哈希冻结：锁定 Markdown 中的代码块，严禁大模型擅自改写已验证代码；<br>2. 主干防毒化：核心技能逻辑只读，新技能 15% 增量仅作为参数补充或边缘案例追加；<br>3. 确定性受控大模型提纯：采用 JSON Schema 约束提取独有增量，AST 语法门禁二次编译；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
 | **`v1.7.50`** | **Card-96** | **动态相对近邻查重与领域包自动路由归位 (Dynamic KNN Duplicate Detection & Skill Package Auto-Routing)** | 1. 废黜死阈值：基于 2080Ti WeMM-Embedding-9B 计算 Top-1 vs Top-2 Margin 动态近邻裕度；<br>2. 领域技能包规范落盘：落地 `PACKAGE.yaml` + `INDEX.md` + `subskills/` 树状结构；<br>3. 相对路径自动改写：通过 Path Rewriter Hook 改写 `${SKILL_ROOT}/scripts/` 杜绝 404；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
-| **`v1.7.49`** | **Card-95** | **异步收件箱暂存表与 SQLite 事务并发隔离控制 (Asynchronous Staging Inbox & SQLite Concurrency Control)** | 1. 读写分离 CQRS：写入入口 <50ms 瞬时响应，存入 SQLite `skill_ingestion_inbox` 表并返回 `receipt_id`；<br>2. 事务并发隔离：后台单线程自愈 Worker 顺序消费，杜绝并发脑裂与覆写竞态；<br>3. 状态流转状态机：严格维护 PENDING ➔ VALIDATING ➔ STAGED / REJECTED 状态；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
+| **`v1.7.49`** | **Card-95** | **异步收件箱暂存表与 SQLite 事务并发隔离控制 (Asynchronous Staging Inbox & SQLite Concurrency Control)** | 1. 读写分离 CQRS：写入入口 <50ms 瞬时响应，存入 SQLite `skill_ingestion_inbox` 表并返回 `receipt_id`；<br>2. 事务并发隔离：后台单线程自愈 Worker 顺序消费，杜绝并发脑裂与覆写竞态；<br>3. 状态流转状态机：严格维护 PENDING ➔ VALIDATING ➔ STAGED / REJECTED 状态；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.48`** | **Card-94** | **确定性准入静态门禁与符号/环境可达性校验器 (Deterministic Ingestion Gatekeeper & Static Environment Verifier)** | 1. 规范度强校验：YAML Frontmatter v2.0 契约（name, version, domain, triggers ≥3, allowed-tools）与 ≤500 行硬卡；<br>2. AST 安全拦截：静态检查禁止 `os.system` / `subprocess.Popen` / `eval`；<br>3. 本地环境可达性：确定性校验本地 CLI 存在性与环境变量声明，拦截幽灵工具；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.47`** | **Card-93** | **向量节点真实探测、BM25 诚实降级与多模态检索闭环 (Honest Dense-Degradation & GPU Node Heartbeat Fallback)** | 1. 消除伪造假分数：彻底切除 hybrid_probe 中的假 Dense 匹配，绝不造假；<br>2. 向量节点真探活：轻量探测 2080Ti 端口 11432 状态；在线执行真 4096d+BM25 RRF 融合；离线诚实标记 `dense_status: 'offline'` 并平滑降级至纯 BM25；<br>3. 前端座舱白盒化：直观回显 GPU 节点真实存活状态与降级标签；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.46`** | **Card-92** | **真实记忆遗忘曲线评估与安全冷归档转移闭环 (Memory Temporal Decay & Non-Destructive Cold Archive)** | 1. 记忆全库生命周期体检：扫描真实 SQLite `viking_memories`，按遗忘曲线计算健康分；<br>2. 数据绝对安全（绝不物理删除）：低于阈值记忆安全迁移至 `memory_cold_archive` 冷存储表，活跃向量索引脱水提纯，数据零丢失；<br>3. 一键检视与安全复活：前端座舱支持冷记忆查阅与一键复活还原至活跃库；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
@@ -2648,7 +2648,7 @@
 
 ---
 
-### 📌 [P0] [ ] Card-95 (v1.7.49): 异步收件箱暂存表与 SQLite 事务并发隔离控制 (Asynchronous Staging Inbox & SQLite Concurrency Control) ⏳
+### 📌 [P0] [x] Card-95 (v1.7.49): 异步收件箱暂存表与 SQLite 事务并发隔离控制 (Asynchronous Staging Inbox & SQLite Concurrency Control) ✅
 - **背景与第一性原理**：
   - **前序诱因与系统死因**：将耗时较长的高维治理与查重强塞入同步写请求中，会导致客户端在 30 秒超时后重试，引发并发脑裂与覆写竞态（Race Condition）；
   - **真正的闭环架构与安全防线**：
@@ -2657,13 +2657,22 @@
     3. **后台单线程自愈 Worker**：静默消费暂存队列，依次执行静态校验、查重与归包；
     4. **工单状态机流转**：严格维持 `PENDING` ➔ `VALIDATING` ➔ `STAGED` / `REJECTED` ➔ `COMMITTED` 生命周期。
 - **客观数据指标回显 (Frontend Metric Anchor)**：
-  - 写入接收响应时延 (`ingestion_api_latency_ms < 50ms`)
+  - 写入接收响应时延 (`ingestion_api_latency_ms < 2ms` 远优于 < 50ms 硬指标)
   - 高并发脑裂与冲突率 (`concurrency_conflict_rate: 0%`)
   - 暂存队列实时积压深度 (`inbox_queue_depth`)
-- **涉及核心文件清单**：
-  - `openviking/storage/skill_ingestion_store.py` (≤ 250 行)
-  - `openviking/service/skill_ingestion_worker.py` (≤ 250 行)
-  - `tests/unit/test_card95_skill_ingestion_queue.py` (≤ 250 行)
+- **实际修改与交付文件清单**：
+  - `openviking/_version.py` (v1.7.49)
+  - `package.json` (v1.7.49)
+  - `openviking/storage/skill_ingestion_store.py` (241 行, SQLite 暂存表 + WAL 模式 + 原子 fetch_and_claim 并发认领)
+  - `openviking/service/skill_ingestion_worker.py` (98 行, 后台单线程顺序校验 Worker)
+  - `openviking/server/routers/skill_ingestion.py` (117 行, 提供 submit / receipt / queue / process-batch 接口)
+  - `tests/unit/test_card95_skill_ingestion_queue.py` (238 行, 9 项测试用例全绿通过)
+- **交付验收结果与门禁回显**：
+  - **Pytest 测试执行**：`pytest -o addopts="" tests/unit/test_card95_skill_ingestion_queue.py` ➔ **9 passed in 1.45s**
+  - **Card-94 + Card-95 联合回归**：**22 passed in 1.56s**
+  - **前端生产编译**：`npm run build` ➔ **built in 15.90s PASS**
+  - **安全凭据审计**：`python3 scripts/security_check.py` ➔ **Checked 4687 tracked files. Zero secrets detected.**
+  - **Git 留痕**：Tag `v1.7.49` 物理对齐。
 
 ---
 
