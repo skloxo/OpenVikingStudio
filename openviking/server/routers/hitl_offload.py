@@ -4,8 +4,10 @@
 HITL Approval Center & Read-Side Offload Endpoints (Card-Observability-ReadOffload-HITLApprovalCenter / v1.5.12).
 """
 
+import asyncio
 from dataclasses import asdict
 import hashlib
+import logging
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
@@ -14,6 +16,8 @@ from pydantic import BaseModel
 from openviking.core.hitl_offload_telemetry import HITLOffloadTelemetry
 from openviking.server.auth import get_request_context
 from openviking.server.identity import RequestContext
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["hitl_offload"])
 
@@ -26,12 +30,14 @@ class HITLResolveRequest(BaseModel):
 
 
 class HITLOffloadProbeRequest(BaseModel):
-    probe_type: str  # "simulate_read_offload" | "simulate_hitl_intercept" | "reset"
+    probe_type: str  # "simulate_read_offload" | "simulate_hitl_intercept" | "real_suspended_drill" | "reset"
     target_path: Optional[str] = None
     line_count: Optional[int] = 1200
-    tool_name: Optional[str] = "deploy_production"
+    tool_name: Optional[str] = "run_command"
     command: Optional[str] = None
     danger_reason: Optional[str] = None
+    timeout_seconds: Optional[float] = 180.0
+    live_suspend: Optional[bool] = False
 
 
 @router.get("/api/v1/system/hitl_offload_metrics")
@@ -54,7 +60,7 @@ async def resolve_hitl_action(
 ):
     """
     Approve or reject a pending Human-In-The-Loop dangerous action.
-    If approved, generates and authorizes approval token in HITLGate.
+    If approved, generates and authorizes approval token in HITLGate and wakes suspended coroutines.
     """
     telemetry = HITLOffloadTelemetry()
     item = telemetry.resolve_action(
@@ -76,7 +82,7 @@ async def execute_hitl_offload_probe(
 ):
     """
     Execute live interactive verification probe for read-side offload simulation
-    or HITL dangerous operation interception simulation.
+    or HITL dangerous operation interception simulation / real coroutine suspension drill.
     """
     telemetry = HITLOffloadTelemetry()
 
@@ -98,6 +104,43 @@ async def execute_hitl_offload_probe(
                 "probe_type": req.probe_type,
                 "record": asdict(record),
                 "message": f"成功模拟 Offload 文件 {path} ({lines}行)，节约 {record.tokens_saved} Tokens！",
+            },
+        )
+
+    elif req.probe_type == "real_suspended_drill" or (req.probe_type == "simulate_hitl_intercept" and req.live_suspend):
+        tool = req.tool_name or "run_command"
+        args_summary = f"CommandLine='{req.command or 'rm -rf /var/data/models/*'}'"
+        reason = req.danger_reason or "高危破坏性指令模式: 'rm -rf' (协程挂起审批)"
+        timeout = float(req.timeout_seconds or 180.0)
+
+        created_event = asyncio.Event()
+
+        async def _background_drill():
+            try:
+                created_event.set()
+                await telemetry.suspend_and_wait_approval(
+                    tool_name=tool,
+                    args_summary=args_summary,
+                    danger_reason=reason,
+                    timeout=timeout,
+                    phase="drill",
+                )
+            except Exception as e:
+                logger.info(f"[HITLDrill] Drill completed/interrupted: {e}")
+
+        asyncio.create_task(_background_drill())
+        await created_event.wait()
+        await asyncio.sleep(0.02)
+
+        pending = telemetry.get_metrics_snapshot()["hitl_queue"]["pending"]
+        item = pending[0] if pending else None
+        return JSONResponse(
+            status_code=200,
+            content={
+                "status": "ok",
+                "probe_type": "real_suspended_drill",
+                "action": item,
+                "message": f"成功发起高危操作物理挂起演练！任务协程已处于 SUSPENDED 状态，等待座舱人工审批 (硬超时 {timeout}s)。",
             },
         )
 

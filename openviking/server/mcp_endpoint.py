@@ -1504,8 +1504,25 @@ async def glob(pattern: str, uri: str = "viking://", node_limit: int = 100) -> s
 
 
 @mcp.tool(annotations=_RETRY_SAFE_DESTRUCTIVE_TOOL_ANNOTATIONS)
-async def forget(uri: str, recursive: bool = False) -> str:
-    """Permanently delete a viking:// URI from OpenViking. Irreversible — confirm with user before calling."""
+async def forget(uri: str, recursive: bool = False, approval_token: Optional[str] = None) -> str:
+    """Permanently delete a viking:// URI from OpenViking. Irreversible — confirm with user before calling.
+
+    If approval_token is not provided, this tool physically suspends execution and waits for
+    Human-In-The-Loop approval via the OpenViking Cockpit with a 180s safety watchdog timeout.
+    """
+    from openviking.core.hitl_gate import HITLGate
+    from openviking.core.hitl_offload_telemetry import HITLOffloadTelemetry
+
+    gate = HITLGate()
+    if not (approval_token and approval_token.strip() in gate.policy.valid_approval_tokens):
+        telemetry = HITLOffloadTelemetry()
+        await telemetry.suspend_and_wait_approval(
+            tool_name="forget",
+            args_summary=f"uri='{uri}', recursive={recursive}",
+            danger_reason=f"永久物理删除 Viking 资源 '{uri}'，操作不可逆",
+            timeout=180.0,
+        )
+
     service = get_service()
     ctx = _get_ctx()
     resolved_uri = _resolve_mcp_workspace_uri(uri, ctx)

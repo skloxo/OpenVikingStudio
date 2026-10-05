@@ -7,8 +7,10 @@ import {
   CheckCircle2Icon,
   FileCodeIcon,
   HistoryIcon,
+  PauseCircleIcon,
   ShieldAlertIcon,
   ShieldCheckIcon,
+  TimerIcon,
   XCircleIcon,
   ZapIcon,
 } from 'lucide-react'
@@ -37,6 +39,9 @@ export interface HITLActionItem {
   resolved_at?: number
   resolved_by?: string
   comment?: string
+  is_live_suspended?: boolean
+  timeout_seconds?: number
+  resume_latency_ms?: number
 }
 
 export interface HITLOffloadData {
@@ -49,6 +54,10 @@ export interface HITLOffloadData {
     approved_count: number
     rejected_count: number
     danger_interception_rate_pct: number
+    live_suspended_count?: number
+    avg_resume_latency_ms?: number
+    timed_out_count?: number
+    approval_timeout_abort_rate_pct?: number
   }
   read_offload: {
     total_files_offloaded: number
@@ -72,9 +81,9 @@ export function HarnessHITLOffloadCenter() {
       const res = await ovClient.instance.get<HITLOffloadData>('/api/v1/system/hitl_offload_metrics')
       return res.data
     },
-    refetchInterval: 10_000,
+    refetchInterval: 5_000,
     refetchIntervalInBackground: false,
-    staleTime: 10_000,
+    staleTime: 5_000,
   })
 
   const resolveMutation = useMutation({
@@ -83,23 +92,24 @@ export function HarnessHITLOffloadCenter() {
         action_id: actionId,
         decision,
         resolved_by: 'operator@console',
-        comment: decision === 'approve' ? '座舱控制台人工批准授权' : '座舱控制台人工驳回高危操作',
+        comment: decision === 'approve' ? '座舱控制台人工批准授权放行' : '座舱控制台人工驳回高危操作并安全熔断',
       })
       return res.data
     },
     onSuccess: (data) => {
+      const latencyStr = data.action.resume_latency_ms ? ` (恢复耗时 ${data.action.resume_latency_ms}ms)` : ''
       setProbeNotice(
         data.action.status === 'approved'
-          ? `已批准高危操作 ${data.action.tool_name}，授权令牌已生效！`
-          : `已驳回高危操作 ${data.action.tool_name}！`
+          ? `已批准放行高危操作 ${data.action.tool_name}${latencyStr}，协程已恢复安全执行！`
+          : `已驳回高危操作 ${data.action.tool_name}，安全熔断拦截成功！`
       )
       void queryClient.invalidateQueries({ queryKey: ['hitl-offload-metrics'] })
     },
   })
 
-  const probeMutation = useMutation({
-    mutationFn: async (payload: { probe_type: string; target_path?: string; tool_name?: string; command?: string }) => {
-      const res = await ovClient.instance.post<{ status: string; message: string }>('/api/v1/hitl/probe', payload)
+  const drillMutation = useMutation({
+    mutationFn: async (payload: { probe_type: string; target_path?: string; tool_name?: string; command?: string; live_suspend?: boolean }) => {
+      const res = await ovClient.instance.post<{ status: string; message: string; action?: HITLActionItem }>('/api/v1/hitl/probe', payload)
       return res.data
     },
     onSuccess: (data) => {
@@ -109,6 +119,9 @@ export function HarnessHITLOffloadCenter() {
   })
 
   const data = metricsQuery.data
+  const summary = data?.summary
+  const readOffload = data?.read_offload
+  const hitlQueue = data?.hitl_queue
 
   return (
     <div className="space-y-4">
@@ -137,54 +150,54 @@ export function HarnessHITLOffloadCenter() {
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>读 Offload 累计节约</span>
             <Badge variant="outline" className="h-4 border-cyan-500/30 bg-cyan-500/10 px-1 text-xs text-cyan-400">
-              减负 {data?.summary?.reduction_ratio_pct ?? '--'}%
+              减负 {summary?.reduction_ratio_pct ?? '--'}%
             </Badge>
           </div>
           <div className="my-1 font-mono text-lg font-semibold tabular-nums text-cyan-400">
-            {data?.summary?.total_tokens_saved?.toLocaleString() ?? '--'}{' '}
+            {summary?.total_tokens_saved !== undefined ? summary.total_tokens_saved.toLocaleString() : '--'}{' '}
             <span className="text-xs font-normal text-muted-foreground">Tok</span>
           </div>
           <div className="text-xs text-muted-foreground">
-            原文 {data?.read_offload?.total_raw_tokens?.toLocaleString() ?? '--'} ➔ Offload{' '}
-            {data?.read_offload?.total_offloaded_tokens?.toLocaleString() ?? '--'}
+            原文 {readOffload?.total_raw_tokens !== undefined ? readOffload.total_raw_tokens.toLocaleString() : '--'} ➔ Offload{' '}
+            {readOffload?.total_offloaded_tokens !== undefined ? readOffload.total_offloaded_tokens.toLocaleString() : '--'}
           </div>
         </div>
 
-        {/* Metric 2: Active FileRef Handles */}
+        {/* Metric 2: Live Suspended Coroutines */}
         <div className="flex flex-col justify-between rounded-md border border-border/60 bg-muted/20 p-3">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>活跃 FileRef 句柄</span>
-            <FileCodeIcon className="size-3.5 text-muted-foreground" />
-          </div>
-          <div className="my-1 font-mono text-lg font-semibold tabular-nums text-foreground">
-            {data?.summary?.active_refs_count ?? '--'}{' '}
-            <span className="text-xs font-normal text-muted-foreground">个句柄</span>
-          </div>
-          <div className="text-xs text-muted-foreground">
-            累计 Offload {data?.read_offload?.total_files_offloaded ?? '--'} 个超大文件
-          </div>
-        </div>
-
-        {/* Metric 3: HITL Pending Actions */}
-        <div className="flex flex-col justify-between rounded-md border border-border/60 bg-muted/20 p-3">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>HITL 待审高危操作</span>
-            {(data?.summary?.pending_hitl_count ?? 0) > 0 ? (
-              <Badge variant="outline" className="h-4 border-amber-500/30 bg-amber-500/10 px-1 text-xs text-amber-400 animate-pulse">
-                需确认
+            <span>物理挂起中协程</span>
+            {(summary?.live_suspended_count ?? 0) > 0 ? (
+              <Badge variant="outline" className="h-4 border-amber-500/30 bg-amber-500/20 px-1 text-xs text-amber-400 animate-pulse">
+                挂起等待
               </Badge>
             ) : (
               <Badge variant="outline" className="h-4 border-muted-foreground/30 bg-muted px-1 text-xs text-muted-foreground">
-                全就绪
+                0 挂起
               </Badge>
             )}
           </div>
           <div className="my-1 font-mono text-lg font-semibold tabular-nums text-amber-400">
-            {data?.summary?.pending_hitl_count ?? '--'}{' '}
-            <span className="text-xs font-normal text-muted-foreground">项待审</span>
+            {summary?.live_suspended_count ?? 0}{' '}
+            <span className="text-xs font-normal text-muted-foreground">个协程</span>
           </div>
           <div className="text-xs text-muted-foreground">
-            已批准 {data?.summary?.approved_count ?? 0} ｜ 已驳回 {data?.summary?.rejected_count ?? 0}
+            待审总数 {summary?.pending_hitl_count ?? 0} ｜ 超时熔断 {summary?.timed_out_count ?? 0}
+          </div>
+        </div>
+
+        {/* Metric 3: Resume Latency */}
+        <div className="flex flex-col justify-between rounded-md border border-border/60 bg-muted/20 p-3">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>平均恢复耗时</span>
+            <TimerIcon className="size-3.5 text-cyan-400" />
+          </div>
+          <div className="my-1 font-mono text-lg font-semibold tabular-nums text-cyan-400">
+            {summary?.avg_resume_latency_ms ?? 0}{' '}
+            <span className="text-xs font-normal text-muted-foreground">ms</span>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            已批准 {summary?.approved_count ?? 0} ｜ 已驳回 {summary?.rejected_count ?? 0}
           </div>
         </div>
 
@@ -195,10 +208,10 @@ export function HarnessHITLOffloadCenter() {
             <ShieldCheckIcon className="size-3.5 text-cyan-400" />
           </div>
           <div className="my-1 font-mono text-lg font-semibold tabular-nums text-cyan-400">
-            {data?.summary?.danger_interception_rate_pct ?? '--'}%
+            {summary?.danger_interception_rate_pct ?? 100.0}%
           </div>
           <div className="text-xs text-muted-foreground">
-            拦截 {data?.summary?.total_interceptions ?? 0} 次，0 越权通过
+            拦截 {summary?.total_interceptions ?? 0} 次，0 越权通过
           </div>
         </div>
       </div>
@@ -215,9 +228,9 @@ export function HarnessHITLOffloadCenter() {
             <Button
               variant="outline"
               size="sm"
-              disabled={probeMutation.isPending}
+              disabled={drillMutation.isPending}
               onClick={() =>
-                probeMutation.mutate({
+                drillMutation.mutate({
                   probe_type: 'simulate_read_offload',
                   target_path: `openviking/service/large_dataset_${Date.now().toString().slice(-4)}.py`,
                 })
@@ -225,17 +238,17 @@ export function HarnessHITLOffloadCenter() {
               className="h-6 gap-1 px-2 text-xs text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-300"
             >
               <ZapIcon className="size-3" />
-              模拟超大文件 Offload
+              离线缓存 Offload
             </Button>
           </div>
 
           <div className="text-xs text-muted-foreground mb-2">
-            腾讯 DECO 读护栏：针对 &gt;300行 或 &gt;12KB 文件，自动离线缓存并返回轻量 FileRefHandle，防止全文撑爆模型工作记忆。
+            读侧防线：针对 &gt;300行 或 &gt;12KB 文件，自动离线缓存并返回轻量 FileRefHandle，防止全文撑爆模型工作记忆。
           </div>
 
           <div className="flex-1 space-y-2 overflow-y-auto max-h-80 pr-1">
-            {data?.read_offload?.active_handles?.length ? (
-              data.read_offload.active_handles.map((item: FileRefHandleItem) => (
+            {readOffload?.active_handles && readOffload.active_handles.length > 0 ? (
+              readOffload.active_handles.map((item: FileRefHandleItem) => (
                 <div
                   key={item.ref_id}
                   className="rounded border border-border/50 bg-background/50 p-2.5 text-xs transition-colors hover:border-cyan-500/30"
@@ -273,46 +286,57 @@ export function HarnessHITLOffloadCenter() {
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ShieldAlertIcon className="size-4 text-amber-400" />
-              <span className="text-xs font-semibold text-foreground">HITL 危险操作待审与授权控制台</span>
+              <span className="text-xs font-semibold text-foreground">HITL 危险操作物理挂起与授权控制台</span>
             </div>
             <Button
               variant="outline"
               size="sm"
-              disabled={probeMutation.isPending}
+              disabled={drillMutation.isPending}
               onClick={() =>
-                probeMutation.mutate({
-                  probe_type: 'simulate_hitl_intercept',
+                drillMutation.mutate({
+                  probe_type: 'real_suspended_drill',
                   tool_name: 'run_command',
                   command: 'rm -rf /tmp/production_dump/*',
                 })
               }
               className="h-6 gap-1 px-2 text-xs text-amber-400 hover:bg-amber-500/10 hover:text-amber-300"
             >
-              <ZapIcon className="size-3" />
-              模拟高危操作拦截
+              <PauseCircleIcon className="size-3" />
+              发起真实挂起演练
             </Button>
           </div>
 
           <div className="text-xs text-muted-foreground mb-2">
-            腾讯 DECO 生产护栏：物理拦截 destructive/deploy 危险操作，必须由人工在座舱授予有效 approval_token 方可放行。
+            生产防线：物理拦截破坏性操作，真正挂起执行协程（SUSPENDED_WAITING_HITL），必须由人工在座舱授予 Nonce 令牌恢复执行。
           </div>
 
           {/* Pending Action Items */}
-          <div className="flex-1 space-y-2 overflow-y-auto max-h-40 pr-1 mb-3">
-            <div className="text-xs font-semibold text-muted-foreground">待审任务队列 ({data?.hitl_queue?.pending?.length ?? 0})</div>
-            {data?.hitl_queue?.pending?.length ? (
-              data.hitl_queue.pending.map((action: HITLActionItem) => (
+          <div className="flex-1 space-y-2 overflow-y-auto max-h-44 pr-1 mb-3">
+            <div className="text-xs font-semibold text-muted-foreground">
+              待审挂起队列 ({hitlQueue?.pending ? hitlQueue.pending.length : 0})
+            </div>
+            {hitlQueue?.pending && hitlQueue.pending.length > 0 ? (
+              hitlQueue.pending.map((action: HITLActionItem) => (
                 <div
                   key={action.action_id}
                   className="rounded border border-amber-500/30 bg-amber-500/5 p-2.5 text-xs transition-colors"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-xs font-bold text-amber-400">
-                      {action.tool_name} <span className="font-normal text-muted-foreground">({action.action_id})</span>
-                    </span>
-                    <Badge variant="outline" className="h-4 border-amber-500/30 bg-amber-500/20 px-1 text-xs text-amber-400">
-                      阶段: {action.phase}
-                    </Badge>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono text-xs font-bold text-amber-400">
+                        {action.tool_name}
+                      </span>
+                      <span className="font-mono text-xs text-muted-foreground">({action.action_id})</span>
+                    </div>
+                    {action.is_live_suspended ? (
+                      <Badge variant="outline" className="h-4 border-amber-500/40 bg-amber-500/20 px-1 text-xs text-amber-400 animate-pulse">
+                        协程物理挂起中 ⏳
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="h-4 border-amber-500/30 bg-amber-500/20 px-1 text-xs text-amber-400">
+                        阶段: {action.phase}
+                      </Badge>
+                    )}
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground line-clamp-1" title={action.args_summary}>
                     参数: {action.args_summary}
@@ -329,7 +353,7 @@ export function HarnessHITLOffloadCenter() {
                       className="h-5 px-2 text-xs text-rose-400 hover:bg-rose-500/10 border-rose-500/30"
                     >
                       <XCircleIcon className="mr-1 size-3" />
-                      驳回
+                      安全熔断驳回
                     </Button>
                     <Button
                       variant="outline"
@@ -339,7 +363,7 @@ export function HarnessHITLOffloadCenter() {
                       className="h-5 px-2 text-xs text-cyan-400 hover:bg-cyan-500/10 border-cyan-500/30"
                     >
                       <CheckCircle2Icon className="mr-1 size-3" />
-                      批准执行
+                      批准放行执行
                     </Button>
                   </div>
                 </div>
@@ -355,9 +379,9 @@ export function HarnessHITLOffloadCenter() {
               <span>已审/拦截审计流水</span>
               <HistoryIcon className="size-3 text-muted-foreground" />
             </div>
-            <div className="space-y-1.5 overflow-y-auto max-h-30 pr-1">
-              {data?.hitl_queue?.history?.length ? (
-                data.hitl_queue.history.slice(0, 5).map((item: HITLActionItem) => (
+            <div className="space-y-1.5 overflow-y-auto max-h-32 pr-1">
+              {hitlQueue?.history && hitlQueue.history.length > 0 ? (
+                hitlQueue.history.slice(0, 5).map((item: HITLActionItem) => (
                   <div
                     key={item.action_id}
                     className="flex items-center justify-between rounded border border-border/40 bg-background/40 px-2 py-1 text-xs"
@@ -375,9 +399,12 @@ export function HarnessHITLOffloadCenter() {
                         {item.comment || item.args_summary}
                       </span>
                     </div>
-                    <span className="text-muted-foreground font-mono shrink-0">
-                      {item.resolved_by || 'system'}
-                    </span>
+                    <div className="flex items-center gap-1 text-muted-foreground font-mono shrink-0">
+                      {item.resume_latency_ms ? (
+                        <span className="text-cyan-400">{item.resume_latency_ms}ms</span>
+                      ) : null}
+                      <span>{item.resolved_by || 'system'}</span>
+                    </div>
                   </div>
                 ))
               ) : (
