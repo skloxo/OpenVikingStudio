@@ -14,6 +14,7 @@ import { SkillDetailSheet } from './-components/skill-detail-sheet'
 import { SkillZipCockpit } from './-components/skill-zip-cockpit'
 import { SkillLiveGenCockpit } from './-components/skill-livegen-cockpit'
 import { SkillOptCockpit } from './-components/skill-opt-cockpit'
+import { SkillEvolutionCockpit } from './-components/skill-evolution-cockpit'
 import { CodeCatalogCockpitCard } from './-components/code-catalog-cockpit-card'
 import { getErrorMessage } from './-lib/skill-data'
 import { useSkillsData } from './-lib/use-skills'
@@ -24,7 +25,7 @@ export const Route = createFileRoute('/skills')({
 
 function SkillsRoute() {
   const { t } = useTranslation('skillsPage')
-  const [activeTab, setActiveTab] = React.useState<'catalog' | 'facts' | 'zip' | 'livegen' | 'opt'>('catalog')
+  const [activeTab, setActiveTab] = React.useState<'catalog' | 'evolution' | 'facts' | 'zip' | 'livegen' | 'opt'>('catalog')
   const data = useSkillsData()
   const {
     skills, filteredSkills, paginatedSkills, skillsQuery, detailQuery,
@@ -85,6 +86,15 @@ function SkillsRoute() {
           ✨ LiveGen 在线技能创生
         </Button>
         <Button
+          variant={activeTab === 'evolution' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setActiveTab('evolution')}
+          className={`text-xs h-7 font-mono ${activeTab === 'evolution' ? 'bg-cyan-600 text-white' : 'text-cyan-400'}`}
+        >
+          <SparklesIcon className="size-3.5 mr-1.5" />
+          ⚡ 演进与结晶流水线
+        </Button>
+        <Button
           variant={activeTab === 'opt' ? 'default' : 'ghost'}
           size="sm"
           onClick={() => setActiveTab('opt')}
@@ -95,7 +105,9 @@ function SkillsRoute() {
         </Button>
       </div>
 
-      {activeTab === 'opt' ? (
+      {activeTab === 'evolution' ? (
+        <SkillEvolutionCockpit />
+      ) : activeTab === 'opt' ? (
         <SkillOptCockpit />
       ) : activeTab === 'livegen' ? (
         <SkillLiveGenCockpit />
