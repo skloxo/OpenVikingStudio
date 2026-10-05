@@ -8,15 +8,16 @@ REST Endpoints for Hybrid BM25-Dense Retrieval & Real-Time Diagnostics.
 import logging
 import time
 from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, Depends, Query
+
+from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from openviking.retrieve.hybrid_retriever import HybridRetrievalTelemetry
+from openviking.retrieve.rrf_fusion import rrf_fuse
 from openviking.server.auth import get_request_context
 from openviking.server.identity import RequestContext
 from openviking.storage.bm25_fts_index import BM25FTSIndex, BM25Match
-from openviking.retrieve.rrf_fusion import FusedCandidate, rrf_fuse
-from openviking.retrieve.hybrid_retriever import HybridRetrievalTelemetry
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +65,6 @@ async def get_hybrid_metrics(_ctx: RequestContext = Depends(get_request_context)
 
 
 @router.post("/api/v1/search/hybrid_probe")
-@router.post("/api/v1/search/hybrid/probe")
 async def run_hybrid_probe(
     req: HybridProbeRequest,
     _ctx: RequestContext = Depends(get_request_context),

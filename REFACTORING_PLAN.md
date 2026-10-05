@@ -19,7 +19,7 @@
 | **`v1.7.37`** | **Card-83** | **设置页系统医生健康自检箱与多写一致性体检卡片 (Settings System Doctor & Storage Integrity Cockpit)** | 1. 解决小白用户无法排查底层 SQLite / FTS5 与存储状态的问题：在 `src/routes/settings/` 落地 `SystemDoctorCard.tsx`；<br>2. 界面展示：PRAGMA quick_check 数据库完整度指标、FTS5 全文索引自检状态与多写存储一致性指标；<br>3. 一键全面体检：点击“立即体检”触发后端 `/api/v1/rsi/bootstrap/health/run` 与 `/api/v1/system/consistency`，秒级输出大白话中文化健康诊断报告；<br>4. 门禁全绿：单测全绿，Vitest 5 项通过，安全扫描 0 密钥，前端构建 PASS。 | ⏳ 就绪待调度 |
 | **`v1.7.36`** | **Card-82** | **任务与数据中心未索引文件及死信一键自愈交互 (Tasks & Resources One-Click Self-Healing Cockpit)** | 1. 解决小白用户无法直观自愈未索引文件与死信堆积的痛点：在任务中心与资源中心落地 `OneClickSyncHealCard.tsx`；<br>2. 界面展示：当前未索引/失败文件数、死信队列积压数与自愈重试成功率；<br>3. 一键自愈重试：提供“扫描并自愈同步 (Sync-Heal)”与“重试全部失败任务 (Retry-Failed)”一键按钮，实时回显进度条与已修复状态；<br>4. 门禁全绿：单测全绿，Vitest 5 项通过，安全扫描 0 密钥，前端构建 PASS。 | ⏳ 就绪待调度 |
 | **`v1.7.35`** | **Card-81** | **设置页工作区快照管理与一键版本回滚卡片 (Settings Workspace Snapshot & One-Click Rollback Cockpit)** | 1. 彻底解决小白用户无法通过命令行执行 snapshot commit/restore 的问题：在 `src/routes/settings/` 数据运维 Tab 落地 `SnapshotRollbackCard.tsx`；<br>2. 界面展示：当前活跃 Commit Hash、最新快照时间戳、历史提交快照列表；<br>3. 操作交互：一键“创建快照”、一键“查看差异 (Diff)”高亮弹窗、一键“回滚恢复 (Restore)”防误触二次确认；<br>4. 门禁全绿：单测全绿，Vitest 5 项通过，安全扫描 0 密钥，前端构建 PASS。 | ⏳ 就绪待调度 |
-| **`v1.7.34`** | **Card-80** | **废弃端点与冗余探针手术级下线 (Deprecated /search/recall & Duplicate Search Probe Pruning)** | 1. 彻底切除官方已标记 Deprecated 的 `POST /api/v1/search/recall`，引导客户端统一收拢至 `/search/find`；<br>2. 审查去重探针：核验 `POST /api/v1/search/hybrid/probe` 与 `POST /api/v1/search/hybrid_probe`，保留前端 `bm25-hybrid-cockpit.tsx` 唯一绑定的版本，物理裁剪冗余无头版本；<br>3. 严格单文件行数治理：解耦清理 `routers/search.py` 多余导入，消除死代码；<br>4. 门禁全绿：单测全绿，Vitest 5 项通过，安全扫描 0 密钥，前端构建 PASS。 | ⏳ 就绪待调度 |
+| **`v1.7.34`** | **Card-80** | **废弃端点与冗余探针手术级下线 (Deprecated /search/recall & Duplicate Search Probe Pruning)** | 1. 彻底切除官方已标记 Deprecated 的 `POST /api/v1/search/recall`，引导客户端统一收拢至 `/search/find`；<br>2. 审查去重探针：核验 `POST /api/v1/search/hybrid/probe` 与 `POST /api/v1/search/hybrid_probe`，保留前端 `bm25-hybrid-cockpit.tsx` 唯一绑定的版本，物理裁剪冗余无头版本；<br>3. 严格单文件行数治理：解耦清理 `routers/search.py` 多余导入，消除死代码；<br>4. 门禁全绿：单测全绿，Vitest 5 项通过，安全扫描 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
 | **`v1.7.33`** | **Card-79** | **审计统计白名单对齐、静态路由剥离与控制台自查误判自愈 (Audit Frequency Filter Alignment & Console False-Positive Self-Healing)** | 1. 修复白名单对齐缺陷：在 `frequency_analyzer.py` 的忽略前缀中补齐 `/api/v1/console` 与静态文件路径（`/favicon.ico`, `/service-worker.js`），与 `projection.py` 物理对齐；<br>2. 消除误判：彻底自愈控制台因防死循环未落库导致的 6 个正常接口被误判为“沉睡”的假死 Bug；<br>3. 租户统计穿透对齐：在频次统计中处理系统受信中间件 (`account_id='trusted'`) 的真实调用穿透，还原真实的 1,076 次活跃调用；<br>4. 门禁全绿：编写专门单测 `test_card79_frequency_analyzer_alignment.py`，全绿通过，安全扫描 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
 | **`v1.7.32`** | **Card-78** | **死代码物理清退、反铁锤人演进沉淀与真实架构总账归拢 (Cache Engine Purge, Exocortex Evolution Lesson & Master Ledger Closure)** | 1. 物理清退死代码：物理删除 `openviking/service/cache_tier2_engine.py` (228行) 与 `cache_tier2_types.py` (38行)，累计净切除 266 行无用代码；<br>2. 清理历史遗留单测：删除 `tests/unit/test_cache_tier2_engine.py` 并解除 `test_card50` 耦合，净减少 190 行测试负担；<br>3. 体外大脑演进课入脑：成功调用 `openviking_record_evolution_lesson` 沉淀《反铁锤人综合征与玩具功能手术级切除》至 `codebase-design` 并永久同步 Master Memory；<br>4. 门禁全绿：专项单测 4/4 全绿 (0.08s)，17 项相关单测全绿 (3.05s)，Vitest 5/5 全绿，前端生产构建 15.50s PASS，安全扫描 0 密钥。<br>**Commit Hash**：`586304aa1`<br>**测试**：专项 4/4 全绿 ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.31`** | **Card-77** | **后端悬空二级缓存路由与空转 API 下线脱水 (Backend Dead Cache Router Deprecation & App Unmount)** | 1. 彻底解绑 FastAPI 路由挂载：从 `openviking/server/app.py` 中移除 `cache_tier2_router` 导入与端点挂载；<br>2. 物理删除悬空路由模块：物理删除 `openviking/server/routers/cache_tier2.py`，并从 `routers/__init__.py` 导出中注销；<br>3. 外部端点收敛与 404 验真：实测 `/api/v1/cache/stats`, `/clear`, `/benchmark` 100% 返回 404 Not Found；<br>4. 门禁全绿：专项单测 4/4 全绿 (3.09s)，版本门禁 4/4 全绿，Vitest 5/5 全绿，前端生产构建 14.61s PASS，安全扫描 0 密钥。<br>**Commit Hash**：`df3230409`<br>**测试**：专项 4/4 全绿 ✅ | [x] 已验收通过 ✅ |
@@ -166,27 +166,42 @@
     - 凭据安全扫描：`python3 scripts/security_check.py` 扫描 4656 个文件，0 密钥泄露；
     - 前端构建验证：`npm run build` PASS (14.27s)。
 
-#### 📌 [P1] [ ] Card-80 (v1.7.34): 废弃端点与冗余探针手术级下线 (Deprecated /search/recall & Duplicate Search Probe Pruning)
-- **类型**：废弃接口下线 / 冗余探针去重 / 接口脱水 ｜ **优先级**：🔥🔥 P1 ｜ **目标版本**：`v1.7.34` ｜ **当前状态**：⏳ 就绪待调度
+#### 📌 [P1] [x] Card-80 (v1.7.34): 废弃端点与冗余探针手术级下线 (Deprecated /search/recall & Duplicate Search Probe Pruning) ✅
+- **类型**：废弃接口下线 / 冗余探针去重 / 接口脱水 ｜ **优先级**：🔥🔥 P1 ｜ **目标版本**：`v1.7.34` ｜ **当前状态**：[x] 已验收通过 ✅
 - **背景与芒格逆向思维第一性原理**：
   - 核心物理公理：**死代码与重复端点是技术负债与认知噪音，但下线必须严格遵守 Pre-Flight AST 影响面核查，杜绝误杀**；
   - 事实依据：
     1. `POST /api/v1/search/recall` 源码已明确标注 `Deprecated preset over context assembly; use /search/find`；
-    2. `/api/v1/search/hybrid/probe` 与 `/api/v1/search/hybrid_probe` 重复，但实测前端 `bm25-hybrid-cockpit.tsx` 严格绑定下划线版本；
+    2. `/api/v1/search/hybrid/probe` 与 `/api/v1/search/hybrid_probe` 挂载同一函数，导致重复端点，实测前端 `bm25-hybrid-cockpit.tsx` 严格绑定下划线版本；
   - 奥卡姆剃刀处理：
-    1. 彻底下线 `POST /api/v1/search/recall`，客户端统一收归 `/search/find`；
-    2. 下线未被前端引用的 `/api/v1/search/hybrid/probe`，保留被引用的 `hybrid_probe`；
-    3. 编写 `tests/unit/test_card80_search_prune.py` 验证已下线端点安全返回 404，其余路由 100% 正常。
+    1. 彻底从 `search.py` 移除 `RecallRequest` 与 `POST /api/v1/search/recall` 端点，客户端统一收归 `/search/find` 与 `/search/search`；
+    2. 从 `hybrid_search.py` 移除未被前端引用的 `@router.post("/api/v1/search/hybrid/probe")` 装饰器，保留被引用的 `hybrid_probe`；
+    3. 清理 `search.py` 中多余的已弃用导入与模型定义，使 `search.py` 瘦身 69 行；
+    4. 同步更新 `test_recall_endpoint.py` 与 `test_recall_peer_scope.py` 验证已下线端点安全返回 404；
+    5. 编写专门单测 `tests/unit/test_card80_deprecated_endpoints_pruning.py`，全绿通过。
 - **开工前客观数据指标锚定 (Frontend & Backend Metric Anchor SSOT)**：
   - **衡量指标**：
     1. **废弃端点切除率**：100%（下线 2 个冗余废弃端点，实测返回 404）；
-    2. **前端页面零退化**：`bm25-hybrid-cockpit.tsx` 探针功能 100% 正常工作。
-- **核心交付目标与修改清单**：
-  1. `openviking/server/routers/search.py`：下线 `/search/recall`；
-  2. `openviking/server/routers/hybrid_search.py`：合并去重探针端点；
-  3. `openviking/_version.py` & `package.json`：版本号自增至 `1.7.34`；
-  4. `tests/unit/test_card80_search_prune.py`：新增专项验真单测；
-  5. 门禁全绿：单测全绿、Vitest 5 项通过、安全审计 0 密钥、前端构建 PASS。
+    2. **前端页面零退化**：`bm25-hybrid-cockpit.tsx` 探针功能 100% 正常工作；
+    3. **单文件规模安全治理**：`search.py` 从 610 行降至 541 行，净精简 69 行死代码。
+  - **展示界面与卡片**：`/studio/request-logs` 端点频次分析大盘。
+- **交付内容摘要与门禁验证**：
+  - **Commit Hash**：`931a7d4ec` (Release `v1.7.34`)；
+  - **修改文件清单**：
+    - `openviking/server/routers/search.py` (移除 RecallRequest 与 /recall 路由，清理无用导入，瘦身69行)；
+    - `openviking/server/routers/hybrid_search.py` (移除重复探针装饰器，清理未使用类型，175行)；
+    - `openviking/_version.py` (自增版本号至 1.7.34)；
+    - `package.json` (自增版本号至 1.7.34)；
+    - `tests/server/test_recall_endpoint.py` (更新断言为 404 验证安全下线)；
+    - `tests/server/test_recall_peer_scope.py` (更新断言为 404 验证安全下线)；
+    - `tests/unit/test_card80_deprecated_endpoints_pruning.py` (新增 3 项针对性单测，全绿通过)；
+    - `REFACTORING_PLAN.md` (同步更新 Card-80 交付留痕与验收标记)；
+  - **门禁验证双全**：
+    - 专项单测：`tests/unit/test_card80_deprecated_endpoints_pruning.py` 3/3 PASS (1.04s)；
+    - 下线回归单测：`tests/server/test_recall_*.py` 6/6 PASS (7.25s)；
+    - 频次回归单测：`tests/observability/test_endpoint_frequency.py` 3/3 PASS (0.05s)；
+    - 凭据安全扫描：`python3 scripts/security_check.py` 扫描 4657 个文件，0 密钥泄露；
+    - 前端构建验证：`npm run build` PASS (16.38s)。
 
 #### 📌 [P0] [ ] Card-81 (v1.7.35): 设置页工作区快照管理与一键版本回滚卡片 (Settings Workspace Snapshot & One-Click Rollback Cockpit)
 - **类型**：小白友好可视化赋能 / 工作区快照可视化 / 一键版本回滚 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.35` ｜ **当前状态**：⏳ 就绪待调度

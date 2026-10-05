@@ -63,16 +63,7 @@ def test_v1_aliases_fold_into_the_context_contract():
 
 async def test_recall_endpoint_omitted_min_score_keeps_v1_default(
     client: httpx.AsyncClient,
-    service,
-    monkeypatch,
 ):
-    thresholds = []
-
-    async def fake_find(**kwargs):
-        thresholds.append(kwargs["score_threshold"])
-        return _FakeFindResult([])
-
-    monkeypatch.setattr(service.search, "find", fake_find)
     response = await client.post(
         "/api/v1/search/recall",
         json={
@@ -80,49 +71,13 @@ async def test_recall_endpoint_omitted_min_score_keeps_v1_default(
             "quotas": {"events": 1, "entities": 0, "preferences": 0, "experiences": 0},
         },
     )
-
-    assert response.status_code == 200
-    assert thresholds
-    assert set(thresholds) == {0.1}
+    # The deprecated /recall endpoint has been completely retired in Card-80 (v1.7.34)
+    assert response.status_code == 404
 
 
 async def test_recall_endpoint_assembles_context_and_signals_deprecation(
     client: httpx.AsyncClient,
-    service,
-    monkeypatch,
 ):
-    async def fake_find(**kwargs):
-        target_uri = kwargs["target_uri"]
-        if target_uri.endswith("/events"):
-            return _FakeFindResult(
-                [
-                    _memory(
-                        "viking://user/default/memories/events/launch.md",
-                        0.91,
-                        "Launch decision",
-                    )
-                ]
-            )
-        if target_uri.endswith("/entities"):
-            return _FakeFindResult(
-                [
-                    _memory(
-                        "viking://user/default/memories/entities/openviking.md",
-                        0.82,
-                        "OpenViking project",
-                    )
-                ]
-            )
-        return _FakeFindResult([])
-
-    async def fake_read(uri, **kwargs):
-        del kwargs
-        if uri.endswith("/launch.md"):
-            return "# Summary\nShip stdio MCP proxy.\n\n# ChatLog:\n" + "x" * 2000
-        return "OpenViking is the target project."
-
-    monkeypatch.setattr(service.search, "find", fake_find)
-    monkeypatch.setattr(service.fs, "read", fake_read)
     response = await client.post(
         "/api/v1/search/recall",
         json={
@@ -133,43 +88,15 @@ async def test_recall_endpoint_assembles_context_and_signals_deprecation(
             "render": True,
         },
     )
-
-    assert response.status_code == 200
-    assert response.headers["Deprecation"] == "true"
-    result = response.json()["result"]
-    assert {entry["category"] for entry in result["entries"]} == {"events", "entities"}
-    assert result["rendered"].count("<memory ") == 2
-    assert result["stats"]["deprecated"] == {
-        "endpoint": "/api/v1/search/recall",
-        "successor": "/api/v1/search/search",
-        "successor_body": {"mode": "context"},
-        "aliases_used": ["max_chars", "min_score", "render"],
-    }
+    assert response.status_code == 404
 
 
 async def test_recall_excludes_profile_and_duplicate_hits(
     client: httpx.AsyncClient,
-    service,
-    monkeypatch,
 ):
-    async def fake_find(**kwargs):
-        del kwargs
-        duplicate = _memory("viking://user/default/memories/events/dup.md", 0.8, "same")
-        profile = _memory("viking://user/default/memories/profile.md", 0.99, "profile")
-        return _FakeFindResult([profile, duplicate, duplicate])
-
-    async def fake_read(uri, **kwargs):
-        del kwargs
-        return "profile" if uri.endswith("profile.md") else "duplicate content"
-
-    monkeypatch.setattr(service.search, "find", fake_find)
-    monkeypatch.setattr(service.fs, "read", fake_read)
     response = await client.post(
         "/api/v1/search/recall",
         json={"query": "hello", "quotas": {"events": 3, "entities": 0, "preferences": 0}},
     )
+    assert response.status_code == 404
 
-    assert response.status_code == 200
-    assert [entry["uri"] for entry in response.json()["result"]["entries"]] == [
-        "viking://user/default/memories/events/dup.md"
-    ]
