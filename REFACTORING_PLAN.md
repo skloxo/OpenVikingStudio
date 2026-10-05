@@ -17,7 +17,7 @@
 | :------------ | :---------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------: |
 | **`v1.7.57`** | **Card-103** | **全系统 DEMO 禁令与闭环守护自动化视网膜门禁 (Anti-Demo & Anti-Dangling Automated Retina Gate)** | 1. 自动化 DEMO 静态与运行时门禁：扫描所有前端组件与路由，一旦出现硬编码样本无选择器或只改内存无落盘端点，门禁物理阻断；<br>2. 质检规约沉淀：永久封杀伪功能进库；<br>3. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
 | **`v1.7.56`** | **Card-102** | **TokenShift & DSPy 源码/Prompt 模板全量拾取与落盘闭环 (TokenShift & DSPy Asset Grounding & Template Save)** | 1. 废黜代码与 Prompt 预设限制：TokenShift 接入项目全量文件树选择器，DSPy 接入系统真实 Prompt 模板库；<br>2. 编译版本落盘：生成优化后代码/Prompt 并支持物理写盘；<br>3. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
-| **`v1.7.55`** | **Card-101** | **LLMLingua 全域 Wiki 知识库抽稀与镜像替换闭环 (LLMLingua Full-Wiki Tree Picker & Mirror Persistence)** | 1. 废黜静态文本预设：接入 VikingFS 真实知识库文档拾取器，支持挑选任意真实文档；<br>2. 抽稀后落盘闭环：提供【保存为脱水镜像 / 替换原文档】原子端点；<br>3. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
+| **`v1.7.55`** | **Card-101** | **LLMLingua 全域 Wiki 知识库抽稀与镜像替换闭环 (LLMLingua Full-Wiki Tree Picker & Mirror Persistence)** | 1. 废黜静态文本预设：接入 VikingFS 真实知识库文档拾取器，支持挑选任意真实文档；<br>2. 抽稀后落盘闭环：提供【保存为脱水镜像 / 替换原文档】原子端点；<br>3. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.54`** | **Card-100** | **SkillZip 全域技能规约压缩与真实替换闭环 (SkillZip Real-Skill 6-Tuple Compression & In-Place Replacement)** | 1. 废黜静态预设：接入 759 技能全量选择器，直接针对真实技能执行 6 元组压缩与门禁检测；<br>2. 物理回写与快照：提供【发布为紧凑版规约】一键落盘与备份还原闭环；<br>3. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.53`** | **Card-99** | **SkillOpt 759 全域真资产打通与原子回写闭环 (SkillOpt 759 SSOT Alignment & Persistence Loop)** | 1. 后端扫描根收口：修复 `skill_opt_service.py` 扫描路径，体检总数物理对齐 759（0 漏检）；<br>2. 759 全量技能选择器：工作台支持搜索与点选任意技能实时载入源码；<br>3. 原子回写与快照备份：新增 `/apply` 接口与【💾 物理保存回写到文件】按钮，调优直接落盘；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.52`** | **Card-98** | **黑匣子演变证据链落盘与前端准入治理大盘 (Blackbox Provenance Audit Trail & Ingestion Cockpit)** | 1. 黑匣子证据链：生成 `PROVENANCE.json` 与 `CHANGELOG.md`，记录源技能 sha256、近邻分、差异明细与快照指针；<br>2. 前端座舱落地：落地 `SkillIngestionCockpit.tsx` 高密卡片，回显收件箱队列、演变证据链时间线与一键回退；<br>3. FastMCP 接入：`openviking_skills` 接入准入流水线；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
@@ -2821,15 +2821,32 @@
 
 ---
 
-### 📌 [P1] [ ] Card-101 (v1.7.55): LLMLingua 全域 Wiki 知识库抽稀与镜像替换闭环 (LLMLingua Full-Wiki Tree Picker & Mirror Persistence) ⏳
+### 📌 [P1] [x] Card-101 (v1.7.55): LLMLingua 全域 Wiki 知识库抽稀与镜像替换闭环 (LLMLingua Full-Wiki Tree Picker & Mirror Persistence) ✅
 - **背景与第一性原理**：
-  - **前序诱因与系统死因**：写死两篇静态示例文本文档（`PRESET_SAMPLES.spec` 与 `whitepaper`），没有知识库文档拾取器，无法对系统真实成百上千篇 Wiki 进行抽稀；脱水后无保存替换端点。
+  - **前序诱因与系统死因**：写死两篇静态示例文本文档（`PRESET_SAMPLES.spec` 与 `whitepaper`），没有知识库文档拾取器，无法对系统真实成百上千篇 Wiki 进行抽稀；脱水后无保存替换端点，属于无落盘能力的玩具。
   - **真正的闭环架构与安全防线**：
-    1. **Wiki 知识库资产接入**：增加 Wiki 目录树与文档选择器，支持从 `viking://resources/` 任意挑选真实文档；
-    2. **保存为脱水镜像**：提供持久化保存端点，支持将抽稀后的文档保存为 `.dehydrated.md` 镜像或替换原文档。
+    1. **Wiki 知识库资产接入 (`WikiDocumentPicker`)**：接入 VikingFS 真实知识库文档拾取组件，支持从 `viking://resources/master_memory/` 600+ 篇真实文档中自由搜索、按分类挑选并即时调入编辑器；
+    2. **保存为脱水镜像或原地覆写**：新增 `WikiDehydrateApplyService` 与 `POST /api/v1/wiki/dehydrate/apply` 端点，支持一键将抽稀文本发布为 `.dehydrated.md` 镜像或安全覆写原文件；
+    3. **灾备快照与审计证据链**：落盘前在隔离区 (`~/.openviking/data/quarantine/wiki_dehydration_pre_apply/`) 自动创建带时间戳的完整物理备份快照，执行 YAML 头部与代码块数量完整性结构门禁，并向 `provenance_events.jsonl` 登记审计记录；
+    4. **前端反馈与高密规范合规**：落盘后即时渲染包含目标文件路径、隔离区快照路径、证据链事件 ID 与节省字符数的高密反馈瓦片；拆分为 `llmlingua-kpi-tile.tsx`、`wiki-document-picker.tsx`、`llmlingua-types.ts` 等高内聚子模块，严格维持主组件 319 行（≤ 350 门禁线）；严格遵循 NO GREEN EVER 🚫 与字号 ≥ 12px 铁律。
 - **客观数据指标回显 (Frontend Metric Anchor)**：
-  - 知识库真实文档接入率 (`wiki_document_picker_available: true`)
+  - 知识库真实文档接入率 (`wiki_document_picker_available: 100%`)
   - 脱水镜像落盘持久化率 (`dehydration_persistence_rate: 100%`)
+  - 隔离区快照秒级灾备备份率 (`dehydration_snapshot_backup_rate: 100%`)
+- **涉及核心文件清单**：
+  - `openviking/service/wiki_dehydrate_apply.py` (新增 Wiki 文档发现、结构门禁、快照备份与物理落盘服务，206 行)
+  - `openviking/server/routers/wiki_dehydration.py` (新增 `/documents`, `/document`, `/apply` 端点，165 行)
+  - `src/routes/retrieval/-components/wiki-document-picker.tsx` (全域 600+ 知识库文档拾取弹窗与分类搜索，155 行)
+  - `src/routes/retrieval/-components/llmlingua-kpi-tile.tsx` (高密 KPI 指标瓦片组件，34 行)
+  - `src/routes/retrieval/-components/llmlingua-types.ts` (抽稀接口契约与预置样本，88 行)
+  - `src/routes/retrieval/-components/llmlingua-dehydration-cockpit.tsx` (重构为接入真文档与双模式落盘闭环，319 行)
+  - `tests/unit/test_card101_wiki_dehydration_grounding.py` (6 项全闭环单元测试，218 行)
+- **物理验收与门禁**：
+  - **Git Tag**：`v1.7.55`
+  - **自动化测试通过率**：`tests/unit/test_card101_wiki_dehydration_grounding.py` 6/6 PASS (2.14s)，Cards 95-101 回归 80/80 PASS (6.09s)，Vitest 5/5 PASS；
+  - **安全凭据审计**：`scripts/security_check.py` 4,707 文件扫描 0 密钥泄露；
+  - **前端生产编译**：`npm run build` PASS (built in 14.00s)；
+  - **服务探针健康**：`http://127.0.0.1:1933/health` ➔ `version 1.7.55, healthy: true`。
 
 ---
 

@@ -104,3 +104,61 @@ async def get_dehydration_stats(
     """Retrieve runtime observability metrics and active engine state."""
     engine = WikiDehydrationEngine.get_instance()
     return engine.get_stats()
+
+
+@router.get("/documents", response_model=List[dict])
+async def list_wiki_documents(
+    search: Optional[str] = None,
+    category: Optional[str] = None,
+    limit: int = 150,
+    ctx: RequestContext = Depends(get_request_context),
+) -> List[dict]:
+    """List real Wiki documents from VikingFS knowledge base for selective dehydration."""
+    from openviking.service.wiki_dehydrate_apply import WikiDehydrateApplyService
+
+    svc = WikiDehydrateApplyService()
+    docs = svc.list_documents(search=search, category=category, limit=limit)
+    return [d.model_dump() for d in docs]
+
+
+@router.get("/document")
+async def get_wiki_document(
+    uri: str,
+    ctx: RequestContext = Depends(get_request_context),
+) -> dict:
+    """Read full text of a real Wiki document by Viking URI."""
+    from openviking.service.wiki_dehydrate_apply import WikiDehydrateApplyService
+
+    svc = WikiDehydrateApplyService()
+    try:
+        content = svc.read_document(uri)
+        return {"status": "ok", "uri": uri, "content": content}
+    except FileNotFoundError as err:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail=str(err))
+
+
+@router.post("/apply")
+async def apply_wiki_dehydration(
+    req: dict,
+    ctx: RequestContext = Depends(get_request_context),
+) -> dict:
+    """Persist dehydrated content to disk with quarantine snapshot and Provenance audit."""
+    from openviking.service.wiki_dehydrate_apply import (
+        ApplyDehydrationRequest,
+        WikiDehydrateApplyService,
+    )
+    from fastapi import HTTPException
+
+    svc = WikiDehydrateApplyService()
+    try:
+        parsed_req = ApplyDehydrationRequest(**req)
+        res = svc.apply_dehydration(parsed_req)
+        return {"status": "ok", "data": res.model_dump()}
+    except ValueError as err:
+        raise HTTPException(status_code=422, detail=str(err))
+    except FileNotFoundError as err:
+        raise HTTPException(status_code=404, detail=str(err))
+    except Exception as err:
+        logger.error("Failed to apply wiki dehydration: %s", err, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(err))
