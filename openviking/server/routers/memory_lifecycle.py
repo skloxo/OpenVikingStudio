@@ -213,6 +213,80 @@ class SimulateDecayRequest(BaseModel):
     status: str = Field("active", description="active, disputed, superseded")
 
 
+class ColdArchiveExecuteRequest(BaseModel):
+    uri: str = Field(..., description="Target memory URI to safely archive to cold storage")
+    reason: Optional[str] = Field("Temporal decay threshold reached", description="Audit reason")
+    decay_score: Optional[float] = Field(None, description="Calculated decay score")
+
+
+class ColdReviveRequest(BaseModel):
+    uri: str = Field(..., description="Target memory URI in cold storage to safely revive")
+    reason: Optional[str] = Field("Operator manual revival from cockpit", description="Revival reason")
+
+
+@router.get("/cold/audit")
+async def audit_cold_storage(
+    decay_threshold: float = Query(0.35, ge=0.0, le=1.0),
+    limit: int = Query(100, ge=1, le=500),
+    ctx: RequestContext = Depends(get_request_context),
+) -> Dict[str, Any]:
+    """Execute live SQLite storage audit for temporal decay and cold archive candidates."""
+    from openviking.service.memory_cold_archive_service import MemoryColdArchiveService
+    service = MemoryColdArchiveService.get_instance()
+    res = service.audit_storage_lifecycle(decay_threshold=decay_threshold, limit=limit)
+    return {"status": "ok", "result": res}
+
+
+@router.get("/cold/list")
+async def list_cold_archive_records(
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    ctx: RequestContext = Depends(get_request_context),
+) -> Dict[str, Any]:
+    """List safely archived cold memories with pagination."""
+    from openviking.service.memory_cold_archive_service import MemoryColdArchiveService
+    service = MemoryColdArchiveService.get_instance()
+    records, total = service.list_cold_records(limit=limit, offset=offset)
+    return {
+        "status": "ok",
+        "result": {
+            "total": total,
+            "records": [r.to_dict() for r in records],
+        },
+    }
+
+
+@router.post("/cold/archive")
+async def archive_memory_to_cold(
+    req: ColdArchiveExecuteRequest,
+    ctx: RequestContext = Depends(get_request_context),
+) -> Dict[str, Any]:
+    """Atomically transfer an aging memory into cold storage without physical deletion."""
+    from openviking.service.memory_cold_archive_service import MemoryColdArchiveService
+    service = MemoryColdArchiveService.get_instance()
+    rec = service.archive_to_cold(
+        uri=req.uri,
+        reason=req.reason or "Temporal decay cold archive",
+        decay_score=req.decay_score,
+    )
+    return {"status": "ok", "result": rec.to_dict()}
+
+
+@router.post("/cold/revive")
+async def revive_memory_from_cold(
+    req: ColdReviveRequest,
+    ctx: RequestContext = Depends(get_request_context),
+) -> Dict[str, Any]:
+    """Atomically restore a cold-archived memory back to active retrieval index."""
+    from openviking.service.memory_cold_archive_service import MemoryColdArchiveService
+    service = MemoryColdArchiveService.get_instance()
+    try:
+        res = service.revive_from_cold(uri=req.uri, reason=req.reason or "Operator manual revival")
+        return {"status": "ok", "result": res}
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
 @router.post("/decay/simulate")
 async def simulate_temporal_decay(
     req: SimulateDecayRequest,
