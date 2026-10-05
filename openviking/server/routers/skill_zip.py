@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 
 from openviking.server.auth import get_request_context
 from openviking.server.identity import RequestContext
+from openviking.service.skill_zip_apply import SkillZipApplyService
 from openviking.service.skill_zip_engine import (
     SkillZipEngine,
     SkillZipResult,
@@ -31,6 +32,13 @@ class CompressSkillRequest(BaseModel):
 class GateCheckRequest(BaseModel):
     skill_content: str = Field(..., description="Candidate skill content to verify against gate")
     seed_length: int = Field(400, description="Length of seed skill baseline")
+
+
+class ApplySkillZipRequest(BaseModel):
+    skill_slug: str = Field(..., description="Unique slug or name of the skill")
+    compressed_content: str = Field(..., description="Compressed skill markdown with YAML header")
+    mode: str = Field("in_place", description="Apply mode: 'in_place' (overwrite SKILL.md) or 'compact_variant' (SKILL.compact.md)")
+    target_path: Optional[str] = Field(None, description="Explicit target filesystem path")
 
 
 @router.post("/compress", response_model=SkillZipResult)
@@ -66,3 +74,29 @@ async def get_zip_stats(
     """Retrieve rolling metrics for the SkillZip compression engine."""
     engine = SkillZipEngine.get_instance()
     return engine.get_stats()
+
+
+@router.post("/apply")
+async def apply_compressed_skill(
+    req: ApplySkillZipRequest,
+    ctx: RequestContext = Depends(get_request_context),
+) -> Dict[str, Any]:
+    """Atomically write compressed skill to production storage with quarantine backup snapshot."""
+    service = SkillZipApplyService()
+    try:
+        result = service.apply_compressed_skill(
+            skill_slug=req.skill_slug,
+            compressed_content=req.compressed_content,
+            mode=req.mode,
+            target_path=req.target_path,
+        )
+        return result
+    except ValueError as ve:
+        logger.warning(f"SkillZip apply validation failed: {ve}")
+        return {"status": "error", "skill_slug": req.skill_slug, "message": str(ve)}
+    except FileNotFoundError as fe:
+        logger.warning(f"SkillZip apply target not found: {fe}")
+        return {"status": "error", "skill_slug": req.skill_slug, "message": str(fe)}
+    except Exception as exc:
+        logger.error(f"SkillZip apply unexpected error: {exc}", exc_info=True)
+        return {"status": "error", "skill_slug": req.skill_slug, "message": f"落盘失败: {exc}"}

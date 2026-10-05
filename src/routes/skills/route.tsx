@@ -124,7 +124,7 @@ function SkillsRoute() {
       ) : activeTab === 'livegen' ? (
         <SkillLiveGenCockpit />
       ) : activeTab === 'zip' ? (
-        <SkillZipCockpit />
+        <SkillZipCockpit skills={skills} initialSkillSlug={selectedSkill?.name} />
       ) : activeTab === 'facts' ? (
         <CodeCatalogCockpitCard />
       ) : (

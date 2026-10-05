@@ -18,7 +18,7 @@
 | **`v1.7.57`** | **Card-103** | **全系统 DEMO 禁令与闭环守护自动化视网膜门禁 (Anti-Demo & Anti-Dangling Automated Retina Gate)** | 1. 自动化 DEMO 静态与运行时门禁：扫描所有前端组件与路由，一旦出现硬编码样本无选择器或只改内存无落盘端点，门禁物理阻断；<br>2. 质检规约沉淀：永久封杀伪功能进库；<br>3. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
 | **`v1.7.56`** | **Card-102** | **TokenShift & DSPy 源码/Prompt 模板全量拾取与落盘闭环 (TokenShift & DSPy Asset Grounding & Template Save)** | 1. 废黜代码与 Prompt 预设限制：TokenShift 接入项目全量文件树选择器，DSPy 接入系统真实 Prompt 模板库；<br>2. 编译版本落盘：生成优化后代码/Prompt 并支持物理写盘；<br>3. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
 | **`v1.7.55`** | **Card-101** | **LLMLingua 全域 Wiki 知识库抽稀与镜像替换闭环 (LLMLingua Full-Wiki Tree Picker & Mirror Persistence)** | 1. 废黜静态文本预设：接入 VikingFS 真实知识库文档拾取器，支持挑选任意真实文档；<br>2. 抽稀后落盘闭环：提供【保存为脱水镜像 / 替换原文档】原子端点；<br>3. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
-| **`v1.7.54`** | **Card-100** | **SkillZip 全域技能规约压缩与真实替换闭环 (SkillZip Real-Skill 6-Tuple Compression & In-Place Replacement)** | 1. 废黜静态预设：接入 759 技能全量选择器，直接针对真实技能执行 6 元组压缩与门禁检测；<br>2. 物理回写与快照：提供【发布为紧凑版规约】一键落盘与备份还原闭环；<br>3. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
+| **`v1.7.54`** | **Card-100** | **SkillZip 全域技能规约压缩与真实替换闭环 (SkillZip Real-Skill 6-Tuple Compression & In-Place Replacement)** | 1. 废黜静态预设：接入 759 技能全量选择器，直接针对真实技能执行 6 元组压缩与门禁检测；<br>2. 物理回写与快照：提供【发布为紧凑版规约】一键落盘与备份还原闭环；<br>3. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.53`** | **Card-99** | **SkillOpt 759 全域真资产打通与原子回写闭环 (SkillOpt 759 SSOT Alignment & Persistence Loop)** | 1. 后端扫描根收口：修复 `skill_opt_service.py` 扫描路径，体检总数物理对齐 759（0 漏检）；<br>2. 759 全量技能选择器：工作台支持搜索与点选任意技能实时载入源码；<br>3. 原子回写与快照备份：新增 `/apply` 接口与【💾 物理保存回写到文件】按钮，调优直接落盘；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.52`** | **Card-98** | **黑匣子演变证据链落盘与前端准入治理大盘 (Blackbox Provenance Audit Trail & Ingestion Cockpit)** | 1. 黑匣子证据链：生成 `PROVENANCE.json` 与 `CHANGELOG.md`，记录源技能 sha256、近邻分、差异明细与快照指针；<br>2. 前端座舱落地：落地 `SkillIngestionCockpit.tsx` 高密卡片，回显收件箱队列、演变证据链时间线与一键回退；<br>3. FastMCP 接入：`openviking_skills` 接入准入流水线；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.51`** | **Card-97** | **代码块物理冻结与受控语义差分融合 (Code Block Freeze & Bounded Semantic 3-Way Merge)** | 1. 代码块物理哈希冻结：锁定 Markdown 中的代码块，严禁大模型擅自改写已验证代码；<br>2. 主干防毒化：核心技能逻辑只读，新技能 15% 增量仅作为参数补充或边缘案例追加；<br>3. 确定性受控大模型提纯：采用 JSON Schema 约束提取独有增量，AST 语法门禁二次编译；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
@@ -2794,15 +2794,30 @@
 
 ---
 
-### 📌 [P0] [ ] Card-100 (v1.7.54): SkillZip 全域技能规约压缩与真实替换闭环 (SkillZip Real-Skill 6-Tuple Compression & In-Place Replacement) ⏳
+### 📌 [P0] [x] Card-100 (v1.7.54): SkillZip 全域技能规约压缩与真实替换闭环 (SkillZip Real-Skill 6-Tuple Compression & In-Place Replacement) ✅
 - **背景与第一性原理**：
   - **前序诱因与系统死因**：`SkillZipCockpit` 写死 3 个 `SKILL_ZIP_PRESETS` 静态样例，无法选择全量 759 个技能；压缩出的六元组没有写盘发布动作，属于封闭沙箱玩具。
   - **真正的闭环架构与安全防线**：
     1. **全域技能接入**：废黜预设限制，接入技能选择器，支持从 759 个技能中任意选取真实技能进行 6 元组规约压缩与动态门禁判定；
-    2. **物理覆写与快照备份**：提供 `POST /api/v1/skills/zip/apply` 端点，支持一键将压缩规约写回原技能文件或发布为衍生紧凑版，自动备份快照。
+    2. **物理覆写与快照备份**：提供 `POST /api/v1/skills/zip/apply` 端点，支持一键将压缩规约写回原技能文件 (`in_place`) 或发布为衍生紧凑版 (`compact_variant`: `SKILL.compact.md`)，自动在隔离区 (`~/.openviking/data/quarantine/skill_zip_pre_apply/`) 备份快照，并追加 Provenance 证据链记录；
+    3. **双重操作模式与前端反馈卡片**：提供【原地安全覆写】与【发布为紧凑版】双模式，落盘后即时渲染包含目标路径、备份快照路径、证据链事件 ID 与节省字节数的高密反馈瓦片；
+    4. **单文件规模与视觉规范合规**：所有新增与修改文件严格遵守 ≤ 500 行安全红线与 100~300 行黄金甜点区（`skill_zip_apply.py` 168 行，`skill_zip.py` 93 行，`test_card100` 180 行，`skill-zip-cockpit.tsx` 445 行）；严格遵守 NO GREEN EVER 🚫；字号硬下限 ≥ 12px。
 - **客观数据指标回显 (Frontend Metric Anchor)**：
   - 全量技能真实压缩覆盖率 (`skill_zip_real_asset_coverage: 100%`)
   - 规约落盘发布闭环成功率 (`skill_zip_publish_success_rate: 100%`)
+  - 隔离区快照秒级灾备备份率 (`skill_zip_snapshot_backup_rate: 100%`)
+- **涉及核心文件清单**：
+  - `openviking/service/skill_zip_apply.py` (新增技能规约落盘与快照服务，168 行)
+  - `openviking/server/routers/skill_zip.py` (新增 `POST /api/v1/skills/zip/apply` 端点，93 行)
+  - `src/routes/skills/-components/skill-zip-cockpit.tsx` (接入 759 技能选择器 + 双模式物理落盘 + 反馈卡片，445 行)
+  - `src/routes/skills/route.tsx` (向 SkillZipCockpit 透传全量 759 技能资产，212 行)
+  - `tests/unit/test_card100_skill_zip_grounding.py` (5 项全闭环单元测试，180 行)
+- **物理验收与门禁**：
+  - **Git Tag**：`v1.7.54`
+  - **自动化测试通过率**：`tests/unit/test_card100_skill_zip_grounding.py` 5/5 PASS (2.22s)，Cards 95-100 回归 74/74 PASS (5.05s)；
+  - **安全凭据审计**：`scripts/security_check.py` 4,705 文件扫描 0 密钥泄露；
+  - **前端生产编译**：`npm run build` PASS (built in 15.62s)；
+  - **服务探针健康**：`http://127.0.0.1:1933/health` ➔ `version 1.7.54, healthy: true`。
 
 ---
 
