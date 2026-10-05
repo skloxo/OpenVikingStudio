@@ -36,9 +36,17 @@ export interface BM25IndexStats {
   is_ready: boolean
 }
 
+export interface GpuNodeInfo {
+  host: string
+  port: number
+  status: 'online' | 'offline' | 'error'
+  latency_ms: number
+}
+
 export interface HybridMetricsResponse {
   telemetry: HybridTelemetrySnapshot
   index_stats: BM25IndexStats
+  gpu_node?: GpuNodeInfo
 }
 
 export interface FusedItem {
@@ -55,6 +63,9 @@ export interface FusedItem {
 
 export interface HybridProbeResponse {
   query: string
+  dense_status: 'online' | 'offline' | 'error'
+  degraded: boolean
+  gpu_heartbeat_ms: number
   sparse_bm25_count: number
   dense_count: number
   fused_count: number
@@ -106,6 +117,7 @@ export function BM25HybridCockpit() {
 
   const telemetry = metricsQuery.data?.telemetry
   const indexStats = metricsQuery.data?.index_stats
+  const gpuNode = metricsQuery.data?.gpu_node
 
   return (
     <Card className="flex flex-col gap-3 p-3.5 border-border/60 bg-card/60 shadow-none">
@@ -131,6 +143,18 @@ export function BM25HybridCockpit() {
           >
             <CpuIcon className="mr-1 size-3 text-cyan-600 dark:text-cyan-400" />
             {indexStats?.is_ready ? 'FTS5: READY' : 'FTS5: INIT'}
+          </Badge>
+          <Badge
+            variant="outline"
+            className={`h-5 px-2 text-xs font-mono tabular-nums ${
+              gpuNode?.status === 'online'
+                ? 'border-cyan-500/40 text-cyan-400 bg-cyan-500/5'
+                : gpuNode?.status === 'offline'
+                  ? 'border-amber-500/40 text-amber-400 bg-amber-500/5'
+                  : 'border-border/60 text-muted-foreground bg-muted/30'
+            }`}
+          >
+            GPU {gpuNode ? (gpuNode.status === 'online' ? `${gpuNode.latency_ms}ms` : '离线') : '--'}
           </Badge>
           <Badge
             variant="outline"
@@ -208,6 +232,32 @@ export function BM25HybridCockpit() {
             纯单调时钟归并 · 零额外 RPC
           </p>
         </div>
+
+        {/* GPU 节点心跳状态瓦片 */}
+        <div className={`flex flex-col gap-0.5 rounded-md border p-2.5 ${
+          gpuNode?.status === 'online'
+            ? 'border-cyan-500/30 bg-cyan-500/5'
+            : gpuNode?.status === 'offline'
+              ? 'border-amber-500/30 bg-amber-500/5'
+              : 'border-border/50 bg-muted/10'
+        }`}>
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>{t('hybrid.gpuNode', 'GPU 向量节点')}</span>
+            <CpuIcon className={`size-3 ${
+              gpuNode?.status === 'online' ? 'text-cyan-400' : 'text-amber-400'
+            }`} />
+          </div>
+          <div className="flex items-baseline gap-1">
+            <span className={`font-mono text-base font-bold tabular-nums ${
+              gpuNode?.status === 'online' ? 'text-cyan-400' : 'text-amber-400'
+            }`}>
+              {gpuNode ? (gpuNode.status === 'online' ? '在线' : '离线') : '--'}
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground truncate font-mono">
+            {gpuNode ? `${gpuNode.host}:${gpuNode.port} · ${gpuNode.latency_ms}ms` : '探测中...'}
+          </p>
+        </div>
       </div>
 
       {/* 2.5 Dense vs Sparse 召回名次分布直方图 */}
@@ -270,20 +320,40 @@ export function BM25HybridCockpit() {
         {/* 探测结果回显 */}
         {probeResult && (
           <div className="flex flex-col gap-2 pt-2 border-t border-border/40">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground flex-wrap">
               <span>
                 探测耗时:{' '}
                 <span className="font-mono text-foreground font-semibold">
                   {probeResult.latency_ms}ms
                 </span>{' '}
-                · BM25 命中:{' '}
+                · BM25:{' '}
                 <span className="font-mono text-foreground">{probeResult.sparse_bm25_count}</span>{' '}
-                · 向量命中:{' '}
+                · Dense:{' '}
                 <span className="font-mono text-foreground">{probeResult.dense_count}</span>{' '}
-                · RRF 融合总数:{' '}
+                · RRF:{' '}
                 <span className="font-mono text-cyan-700 dark:text-cyan-400 font-semibold">{probeResult.fused_count}</span>
               </span>
-              <span className="text-xs text-muted-foreground">Top-5 融合排名</span>
+              <div className="flex items-center gap-1.5">
+                {probeResult.degraded && (
+                  <Badge
+                    variant="outline"
+                    className="h-4 px-1.5 text-xs font-mono border-amber-500/40 text-amber-400 bg-amber-500/5"
+                  >
+                    ⚠ BM25 诚实降级
+                  </Badge>
+                )}
+                <Badge
+                  variant="outline"
+                  className={`h-4 px-1.5 text-xs font-mono ${
+                    probeResult.dense_status === 'online'
+                      ? 'border-cyan-500/40 text-cyan-400'
+                      : 'border-amber-500/40 text-amber-400'
+                  }`}
+                >
+                  Dense: {probeResult.dense_status}
+                </Badge>
+                <span className="text-xs text-muted-foreground">Top-5 融合排名</span>
+              </div>
             </div>
 
             <div className="flex flex-col gap-1.5">
