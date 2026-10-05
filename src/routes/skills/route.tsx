@@ -120,7 +120,7 @@ function SkillsRoute() {
       ) : activeTab === 'evolution' ? (
         <SkillEvolutionCockpit />
       ) : activeTab === 'opt' ? (
-        <SkillOptCockpit />
+        <SkillOptCockpit skills={skills} initialSkillSlug={selectedSkill?.name} />
       ) : activeTab === 'livegen' ? (
         <SkillLiveGenCockpit />
       ) : activeTab === 'zip' ? (

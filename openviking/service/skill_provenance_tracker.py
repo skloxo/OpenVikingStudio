@@ -27,6 +27,7 @@ class ProvenanceAction(str, Enum):
     VALIDATE = "VALIDATE"
     ROUTE = "ROUTE"
     MERGE = "MERGE"
+    OPTIMIZE = "OPTIMIZE"
     ROLLBACK = "ROLLBACK"
 
 

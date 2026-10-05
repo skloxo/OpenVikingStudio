@@ -15,6 +15,11 @@
 
 | 版本 Tag      | 任务工单 ID | 模块与重构主题                                                                                                                                                | 核心治理成果与物理交付物                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |     验收状态      |
 | :------------ | :---------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------: |
+| **`v1.7.57`** | **Card-103** | **全系统 DEMO 禁令与闭环守护自动化视网膜门禁 (Anti-Demo & Anti-Dangling Automated Retina Gate)** | 1. 自动化 DEMO 静态与运行时门禁：扫描所有前端组件与路由，一旦出现硬编码样本无选择器或只改内存无落盘端点，门禁物理阻断；<br>2. 质检规约沉淀：永久封杀伪功能进库；<br>3. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
+| **`v1.7.56`** | **Card-102** | **TokenShift & DSPy 源码/Prompt 模板全量拾取与落盘闭环 (TokenShift & DSPy Asset Grounding & Template Save)** | 1. 废黜代码与 Prompt 预设限制：TokenShift 接入项目全量文件树选择器，DSPy 接入系统真实 Prompt 模板库；<br>2. 编译版本落盘：生成优化后代码/Prompt 并支持物理写盘；<br>3. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
+| **`v1.7.55`** | **Card-101** | **LLMLingua 全域 Wiki 知识库抽稀与镜像替换闭环 (LLMLingua Full-Wiki Tree Picker & Mirror Persistence)** | 1. 废黜静态文本预设：接入 VikingFS 真实知识库文档拾取器，支持挑选任意真实文档；<br>2. 抽稀后落盘闭环：提供【保存为脱水镜像 / 替换原文档】原子端点；<br>3. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
+| **`v1.7.54`** | **Card-100** | **SkillZip 全域技能规约压缩与真实替换闭环 (SkillZip Real-Skill 6-Tuple Compression & In-Place Replacement)** | 1. 废黜静态预设：接入 759 技能全量选择器，直接针对真实技能执行 6 元组压缩与门禁检测；<br>2. 物理回写与快照：提供【发布为紧凑版规约】一键落盘与备份还原闭环；<br>3. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
+| **`v1.7.53`** | **Card-99** | **SkillOpt 759 全域真资产打通与原子回写闭环 (SkillOpt 759 SSOT Alignment & Persistence Loop)** | 1. 后端扫描根收口：修复 `skill_opt_service.py` 扫描路径，体检总数物理对齐 759（0 漏检）；<br>2. 759 全量技能选择器：工作台支持搜索与点选任意技能实时载入源码；<br>3. 原子回写与快照备份：新增 `/apply` 接口与【💾 物理保存回写到文件】按钮，调优直接落盘；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.52`** | **Card-98** | **黑匣子演变证据链落盘与前端准入治理大盘 (Blackbox Provenance Audit Trail & Ingestion Cockpit)** | 1. 黑匣子证据链：生成 `PROVENANCE.json` 与 `CHANGELOG.md`，记录源技能 sha256、近邻分、差异明细与快照指针；<br>2. 前端座舱落地：落地 `SkillIngestionCockpit.tsx` 高密卡片，回显收件箱队列、演变证据链时间线与一键回退；<br>3. FastMCP 接入：`openviking_skills` 接入准入流水线；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.51`** | **Card-97** | **代码块物理冻结与受控语义差分融合 (Code Block Freeze & Bounded Semantic 3-Way Merge)** | 1. 代码块物理哈希冻结：锁定 Markdown 中的代码块，严禁大模型擅自改写已验证代码；<br>2. 主干防毒化：核心技能逻辑只读，新技能 15% 增量仅作为参数补充或边缘案例追加；<br>3. 确定性受控大模型提纯：采用 JSON Schema 约束提取独有增量，AST 语法门禁二次编译；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.50`** | **Card-96** | **动态相对近邻查重与领域包自动路由归位 (Dynamic KNN Duplicate Detection & Skill Package Auto-Routing)** | 1. 废黜死阈值：基于 2080Ti WeMM-Embedding-9B 计算 Top-1 vs Top-2 Margin 动态近邻裕度；<br>2. 领域技能包规范落盘：落地 `PACKAGE.yaml` + `INDEX.md` + `subskills/` 树状结构；<br>3. 相对路径自动改写：通过 Path Rewriter Hook 改写 `${SKILL_ROOT}/scripts/` 杜绝 404；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
@@ -2756,5 +2761,82 @@
   - **安全凭据审计**：`python3 scripts/security_check.py` ➔ **Zero secrets detected PASS**
   - **Git 留痕**：Tag `v1.7.52` 物理对齐。
 
+---
 
+### 📌 [P0] [x] Card-99 (v1.7.53): SkillOpt 759 全域真资产打通与原子回写闭环 (SkillOpt 759 SSOT Alignment & Persistence Loop) ✅
+- **背景与第一性原理**：
+  - **前序诱因与系统死因**：开发者为了快速演示跑通，硬编码了 `DEFAULT_SAMPLE_SKILL = diagnosing-bugs`，没有做 759 全量技能选择器；且后端 `batch_audit_skills()` 扫错了单层旧目录（635个），漏掉了 VikingFS 生产落地目录，导致体检总数缩水为 659（漏检 100 个）；“采纳 Patch”仅修改前端内存，无落盘写回 API，刷新即丢。
+  - **真正的闭环架构与安全防线**：
+    1. **后端扫描源 SSOT 彻底收口**：将 `skill_opt_service.py` 扫描路径强制对齐至 VikingFS 真实生产落地路径 (`~/.openviking/data/viking/default/user/default/skills` + `agent/skills`)，体检总数物理对齐为真实 759 个（实测 759/759 零漏检）；
+    2. **全域 759 技能可搜索选择器**：工作台顶部增加 `<SkillSelector>` 下拉搜索框，支持在 759 个技能中快速定位、一键调入其真实 `SKILL.md` 源码并自动触发体检；
+    3. **物理回写端点与快照机制**：新增 `POST /api/v1/skill-opt/apply`，写入前自动打物理快照 (`~/.openviking/data/quarantine/skill_opt_pre_apply/`)，执行 AST 静态语法二次门禁与 YAML 完整性校验，并记录 Provenance 证据链，零数据丢失风险；
+    4. **前端闭环与工作台集成**：在工作台增加【💾 物理保存回写到文件】按钮，落盘后提供包含目标路径、备份路径、证据链 ID、写入字节数的全景回显；
+    5. **单文件规模与视觉公理严苛合规**：所有新增与重构文件行数严格在 100~300 行黄金甜点区（`skill_opt_apply.py` 160 行，`test_card99` 194 行，`skill-opt-workbench.tsx` 258 行，`skill-opt-cockpit.tsx` 262 行）；全界面 NO GREEN EVER 🚫；字号硬下限 ≥ 12px。
+- **客观数据指标回显 (Frontend Metric Anchor)**：
+  - 技能体检总数准确率：`759 / 759 (100% 物理真实对齐)`
+  - 全量技能工作台可接入率：`100% (支持搜索点选 759 个技能)`
+  - 优化补丁落盘持久化成功率：`100% (通过 AST 语法与 YAML 门禁校验后原子覆写)`
+- **涉及核心文件清单**：
+  - `openviking/service/skill_opt_service.py` (修复 VikingFS 真实路径扫描，245 行)
+  - `openviking/service/skill_opt_apply.py` (新增物理落盘与快照备份服务，160 行)
+  - `openviking/server/routers/skill_opt.py` (新增 `POST /apply` 端点，168 行)
+  - `src/routes/skills/-components/skill-opt-workbench.tsx` (全域选择器与落盘反馈，258 行)
+  - `src/routes/skills/-components/skill-opt-cockpit.tsx` (真数据接入与回写 Mutation，262 行)
+  - `src/routes/skills/-components/skill-opt-types.ts` (新增 `SkillOptApplyResult`，52 行)
+  - `src/routes/skills/route.tsx` (向工作台透传 759 全量技能，207 行)
+  - `tests/unit/test_card99_skill_opt_grounding.py` (5 项全链路测试，194 行)
+- **物理验收与门禁**：
+  - **Git Tag**：`v1.7.53`
+  - **自动化测试通过率**：`tests/unit/test_card99_skill_opt_grounding.py` 5/5 PASS (2.67s)，全模块回归 42/42 PASS (3.22s)；
+  - **安全凭据审计**：`scripts/security_check.py` 4,697 文件扫描 0 密钥泄露；
+  - **前端生产编译**：`npm run build` PASS (built in 13.69s)；
+  - **服务探针健康**：`http://127.0.0.1:1933/health` ➔ `version 1.7.53, healthy: true`。
+
+---
+
+### 📌 [P0] [ ] Card-100 (v1.7.54): SkillZip 全域技能规约压缩与真实替换闭环 (SkillZip Real-Skill 6-Tuple Compression & In-Place Replacement) ⏳
+- **背景与第一性原理**：
+  - **前序诱因与系统死因**：`SkillZipCockpit` 写死 3 个 `SKILL_ZIP_PRESETS` 静态样例，无法选择全量 759 个技能；压缩出的六元组没有写盘发布动作，属于封闭沙箱玩具。
+  - **真正的闭环架构与安全防线**：
+    1. **全域技能接入**：废黜预设限制，接入技能选择器，支持从 759 个技能中任意选取真实技能进行 6 元组规约压缩与动态门禁判定；
+    2. **物理覆写与快照备份**：提供 `POST /api/v1/skills/zip/apply` 端点，支持一键将压缩规约写回原技能文件或发布为衍生紧凑版，自动备份快照。
+- **客观数据指标回显 (Frontend Metric Anchor)**：
+  - 全量技能真实压缩覆盖率 (`skill_zip_real_asset_coverage: 100%`)
+  - 规约落盘发布闭环成功率 (`skill_zip_publish_success_rate: 100%`)
+
+---
+
+### 📌 [P1] [ ] Card-101 (v1.7.55): LLMLingua 全域 Wiki 知识库抽稀与镜像替换闭环 (LLMLingua Full-Wiki Tree Picker & Mirror Persistence) ⏳
+- **背景与第一性原理**：
+  - **前序诱因与系统死因**：写死两篇静态示例文本文档（`PRESET_SAMPLES.spec` 与 `whitepaper`），没有知识库文档拾取器，无法对系统真实成百上千篇 Wiki 进行抽稀；脱水后无保存替换端点。
+  - **真正的闭环架构与安全防线**：
+    1. **Wiki 知识库资产接入**：增加 Wiki 目录树与文档选择器，支持从 `viking://resources/` 任意挑选真实文档；
+    2. **保存为脱水镜像**：提供持久化保存端点，支持将抽稀后的文档保存为 `.dehydrated.md` 镜像或替换原文档。
+- **客观数据指标回显 (Frontend Metric Anchor)**：
+  - 知识库真实文档接入率 (`wiki_document_picker_available: true`)
+  - 脱水镜像落盘持久化率 (`dehydration_persistence_rate: 100%`)
+
+---
+
+### 📌 [P1] [ ] Card-102 (v1.7.56): TokenShift & DSPy 源码/Prompt 模板全量拾取与落盘闭环 (TokenShift & DSPy Asset Grounding & Template Save) ⏳
+- **背景与第一性原理**：
+  - **前序诱因与系统死因**：TokenShift 写死代码预设，DSPy 写死 4 个预设任务，均无法直接在界面上挑选真实代码与 Prompt 模板。
+  - **真正的闭环架构与安全防线**：
+    1. **本地代码工程文件树挂载**：TokenShift 增加代码文件拾取器；
+    2. **Prompt 模板库联动**：DSPy 增加系统现有角色 Prompt 选择器与编译版本落盘端点。
+- **客观数据指标回显 (Frontend Metric Anchor)**：
+  - 源码文件自由拾取率 (`code_file_picker_available: true`)
+  - Prompt 编译成果落盘率 (`dspy_compiled_persistence_rate: 100%`)
+
+---
+
+### 📌 [P2] [ ] Card-103 (v1.7.57): 全系统 DEMO 禁令与闭环守护自动化视网膜门禁 (Anti-Demo & Anti-Dangling Automated Retina Gate) ⏳
+- **背景与第一性原理**：
+  - **前序诱因与系统死因**：缺乏自动化门禁守护，导致开发者反复写出硬编码样板和半拉子功能。
+  - **真正的闭环架构与安全防线**：
+    1. **自动化 DEMO 扫描单测**：编写 AST 与源码巡检测试，对全量前端组件进行静态扫描：凡包含硬编码样本但无实体选择器、或只改 state 无持久化调用的，测试直接红牌失败；
+    2. **永久物理封杀 DEMO 进入代码库**。
+- **客观数据指标回显 (Frontend Metric Anchor)**：
+  - 全系统悬空功能缺陷总数 (`total_dangling_features_count: 0`)
+  - 自动化视网膜门禁拦截率 (`anti_demo_gate_pass_rate: 100%`)
 

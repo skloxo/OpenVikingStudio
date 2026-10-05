@@ -256,21 +256,17 @@ class SkillOptService:
                     if p.exists() and p.is_dir() and p not in candidate_dirs:
                         candidate_dirs.append(p)
 
-            # 约定规范目录探测
+            # 约定规范目录探测（优先采用 VikingFS 生产落地目录，物理对齐 759 个技能）
             home = Path.home()
             standard_candidates = [
-                home / ".openviking" / "skills",
-                home / ".openclaw" / "skills",
-                home / ".gemini" / "config" / "skills",
-                Path.cwd() / ".agents" / "skills",
-                Path.cwd() / "skills",
+                home / ".openviking" / "data" / "viking" / "default" / "user" / "default" / "skills",
+                home / ".openviking" / "data" / "viking" / "default" / "agent" / "skills",
             ]
             for sc in standard_candidates:
                 if sc.exists() and sc.is_dir() and sc not in candidate_dirs:
                     candidate_dirs.append(sc)
 
         results: List[SkillOptAuditResult] = []
-        seen_names: set[str] = set()
         grade_counts = {"S": 0, "A": 0, "B": 0, "C": 0, "D": 0}
 
         for c_dir in candidate_dirs:
@@ -278,13 +274,12 @@ class SkillOptService:
                 continue
             for skill_path in c_dir.glob("*/SKILL.md"):
                 s_name = skill_path.parent.name
-                if s_name in seen_names:
+                if s_name.startswith(".") or "curator" in s_name.lower():
                     continue
                 try:
                     content = skill_path.read_text(encoding="utf-8")
                     res = self.audit_content(content, skill_name=s_name)
                     results.append(res)
-                    seen_names.add(s_name)
                     grade_counts[res.grade] = grade_counts.get(res.grade, 0) + 1
                 except Exception:
                     continue

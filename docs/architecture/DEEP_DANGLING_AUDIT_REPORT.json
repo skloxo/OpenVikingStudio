@@ -1,0 +1,128 @@
+[
+  {
+    "file": "src/routes/skills/-components/skill-opt-cockpit.tsx",
+    "name": "skill-opt-cockpit.tsx",
+    "elapsed": 12.33,
+    "audit": {
+      "raw": ""
+    },
+    "error": null
+  },
+  {
+    "file": "src/routes/skills/-components/skill-livegen-cockpit.tsx",
+    "name": "skill-livegen-cockpit.tsx",
+    "elapsed": 14.74,
+    "audit": {
+      "raw": ""
+    },
+    "error": null
+  },
+  {
+    "file": "src/routes/skills/-components/skill-zip-cockpit.tsx",
+    "name": "skill-zip-cockpit.tsx",
+    "elapsed": 14.99,
+    "audit": {
+      "raw": ""
+    },
+    "error": null
+  },
+  {
+    "file": "src/routes/retrieval/-components/context-router-cockpit.tsx",
+    "name": "context-router-cockpit.tsx",
+    "elapsed": 15.19,
+    "audit": {
+      "raw": ""
+    },
+    "error": null
+  },
+  {
+    "file": "src/routes/retrieval/-components/llmlingua-dehydration-cockpit.tsx",
+    "name": "llmlingua-dehydration-cockpit.tsx",
+    "elapsed": 15.38,
+    "audit": {
+      "raw": ""
+    },
+    "error": null
+  },
+  {
+    "file": "src/routes/retrieval/-components/dspy-compiler-cockpit.tsx",
+    "name": "dspy-compiler-cockpit.tsx",
+    "elapsed": 15.67,
+    "audit": {
+      "raw": "```json\n{\n  \"file_name\": \"dspy-compiler-cockpit.tsx\",\n  \"is_dangling\": true,\n  \"severity\": \"HIGH\",\n  \"dangling_type\": \"ISOLATED_PLAYGROUND\",\n  \"phenomenon\": \"前端界面呈现为工业级 DSPy 编译控制台，但实际仅能操作 4 个写死的静态预设（DSPY_PRESETS），无法从全量技能库、Wiki 文档或真实代码库中动态选择编译目标，形成封闭的演示玩具；编译结果仅存于 React state，刷新即丢失，无持久化闭环。\",\n  \"root_cause\": \"1) 预设数据源为"
+    },
+    "error": null
+  },
+  {
+    "file": "src/routes/skills/-components/skill-opt-workbench.tsx",
+    "name": "skill-opt-workbench.tsx",
+    "elapsed": 15.99,
+    "audit": {
+      "raw": ""
+    },
+    "error": null
+  },
+  {
+    "file": "src/routes/retrieval/-components/tokenshift-cockpit.tsx",
+    "name": "tokenshift-cockpit.tsx",
+    "elapsed": 16.84,
+    "audit": {
+      "raw": ""
+    },
+    "error": null
+  },
+  {
+    "file": "src/routes/retrieval/-components/skill-kd-cockpit.tsx",
+    "name": "skill-kd-cockpit.tsx",
+    "elapsed": 11.88,
+    "audit": {
+      "raw": ""
+    },
+    "error": null
+  },
+  {
+    "file": "src/routes/settings/-components/privacy-tab.tsx",
+    "name": "privacy-tab.tsx",
+    "elapsed": 11.53,
+    "audit": {
+      "raw": ""
+    },
+    "error": null
+  },
+  {
+    "file": "openviking/service/skill_evolution_pipeline.py",
+    "name": "skill_evolution_pipeline.py",
+    "elapsed": 13.25,
+    "audit": {
+      "raw": ""
+    },
+    "error": null
+  },
+  {
+    "file": "src/routes/retrieval/-components/bm25-hybrid-cockpit.tsx",
+    "name": "bm25-hybrid-cockpit.tsx",
+    "elapsed": 14.25,
+    "audit": {
+      "raw": ""
+    },
+    "error": null
+  },
+  {
+    "file": "src/routes/retrieval/-components/entropy-crystallizer-cockpit.tsx",
+    "name": "entropy-crystallizer-cockpit.tsx",
+    "elapsed": 17.5,
+    "audit": {
+      "raw": ""
+    },
+    "error": null
+  },
+  {
+    "file": "openviking/service/skill_opt_service.py",
+    "name": "skill_opt_service.py",
+    "elapsed": 14.86,
+    "audit": {
+      "raw": ""
+    },
+    "error": null
+  }
+]
