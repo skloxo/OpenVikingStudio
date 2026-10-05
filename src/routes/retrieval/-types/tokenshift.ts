@@ -49,3 +49,32 @@ export interface TokenShiftStats {
   average_reduction_ratio: number
   syntax_pass_rate: number
 }
+
+export interface CodeFileItem {
+  rel_path: string
+  filename: string
+  language: string
+  size_bytes: number
+  line_count: number
+  preview: string
+}
+
+export interface ApplyTokenShiftRequest {
+  rel_path: string
+  compressed_code: string
+  mode: 'skeleton_file' | 'in_place'
+  operator?: string
+}
+
+export interface ApplyTokenShiftResult {
+  success: boolean
+  mode: string
+  target_path: string
+  snapshot_path: string
+  original_chars: number
+  compressed_chars: number
+  saved_chars: number
+  syntax_valid: boolean
+  message: string
+}
+
