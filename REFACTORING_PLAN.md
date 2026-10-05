@@ -15,6 +15,7 @@
 
 | 版本 Tag      | 任务工单 ID | 模块与重构主题                                                                                                                                                | 核心治理成果与物理交付物                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |     验收状态      |
 | :------------ | :---------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------: |
+| **`v1.7.32`** | **Card-78** | **死代码物理清退、反铁锤人演进沉淀与真实架构总账归拢 (Cache Engine Purge, Exocortex Evolution Lesson & Master Ledger Closure)** | 1. 物理清退死代码：物理删除 `openviking/service/cache_tier2_engine.py` (228行) 与 `cache_tier2_types.py` (38行)，累计净切除 266 行无用代码；<br>2. 清理历史遗留单测：删除 `tests/unit/test_cache_tier2_engine.py` 并解除 `test_card50` 耦合，净减少 190 行测试负担；<br>3. 体外大脑演进课入脑：成功调用 `openviking_record_evolution_lesson` 沉淀《反铁锤人综合征与玩具功能手术级切除》至 `codebase-design` 并永久同步 Master Memory；<br>4. 门禁全绿：专项单测 4/4 全绿 (0.08s)，17 项相关单测全绿 (3.05s)，Vitest 5/5 全绿，前端生产构建 15.50s PASS，安全扫描 0 密钥。<br>**Commit Hash**：待提交<br>**测试**：专项 4/4 全绿 ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.31`** | **Card-77** | **后端悬空二级缓存路由与空转 API 下线脱水 (Backend Dead Cache Router Deprecation & App Unmount)** | 1. 彻底解绑 FastAPI 路由挂载：从 `openviking/server/app.py` 中移除 `cache_tier2_router` 导入与端点挂载；<br>2. 物理删除悬空路由模块：物理删除 `openviking/server/routers/cache_tier2.py`，并从 `routers/__init__.py` 导出中注销；<br>3. 外部端点收敛与 404 验真：实测 `/api/v1/cache/stats`, `/clear`, `/benchmark` 100% 返回 404 Not Found；<br>4. 门禁全绿：专项单测 4/4 全绿 (3.09s)，版本门禁 4/4 全绿，Vitest 5/5 全绿，前端生产构建 14.61s PASS，安全扫描 0 密钥。<br>**Commit Hash**：`df3230409`<br>**测试**：专项 4/4 全绿 ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.30`** | **Card-76** | **前端大盘假缓存卡片与玩具压测按钮手术级切除 (Frontend Tier-2 Cache Card & Toy Benchmark Removal)**                                          | 1. 彻底切除前端大盘假卡片挂载：从 `src/routes/home/route.tsx` 中彻底移除 `Tier2CacheCard` 导入与第 155 行 JSX 挂载；<br>2. 物理删除假组件死代码：删除 `src/routes/monitoring/-components/tier2-cache-card.tsx`（消除 214 行死肉代码）；<br>3. 彻底阻断无效定时轮询：彻底消灭每 10 秒对 `/api/v1/cache/stats` 的无效请求，释放前端渲染与网络开销；<br>4. 门禁全绿：Vitest 资产单测 5/5 全绿，前端生产打包 18s PASS，版本注入 1.7.30，安全扫描 0 密钥。<br>**Commit Hash**：`ac99ab4dd`<br>**测试**：Vitest 5/5 全绿 ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.29`** | **Card-75** | **技能自演进引擎物理验真端点与 FastMCP 平价闭环 (Harness Physical Verification Probe & FastMCP Parity)**                                                   | 1. 物理验真 REST 路由：落地 `POST /api/v1/system/harness/probe`，双轨并行现场触发 LLMLingua-2 (CUDA FP16) 与 Stanford DSPy 编译器执行，毫秒级更新运行指标；<br>2. 架构元数据高内聚提纯：提纯 `harness_catalog.py` (214行)，使 `system_harness.py` 降至 443 行（严守 <= 500 行物理红线）；<br>3. FastMCP 工具平价接入：暴露 `openviking_harness_probe` 原生只读受控工具，跨集群智体一键现场核验两套引擎就绪状态与物理留存率；<br>4. 前端座舱一键物理验真：`harness-engine-card.tsx` 新增“物理验真”一键 Mutation 触发并即时刷新，彻底打破冷启动零采样无指标状态；<br>5. 门禁全绿：专项单测、回归单测全绿，注解契约测试 PASS，前端构建 PASS，安全扫描 0 密钥。<br>**Commit Hash**：`2dce6c25d`<br>**测试**：专项全绿 ✅ | [x] 已验收通过 ✅ |
@@ -124,11 +125,37 @@
   - **安全凭据审计**：`scripts/security_check.py` 扫描 0 密钥泄露；
   - **前端生产构建**：`npm run release:sync` PASS (14.61s)。
 
-#### ⏳ [P1] [ ] Card-78 (v1.7.32): 冗余代码彻底清退与真实轻量缓存机制架构归纳 (Cache Engine Deletion, Pattern Harvest & Master Ledger Update)
-- **类型**：死代码物理清退 / 踩坑事实体外沉淀 / 交付总账归档 ｜ **优先级**：🔥🔥 P1 ｜ **目标版本**：`v1.7.32` ｜ **当前状态**：[ ] 待执行 ⏳
-- **开工前客观数据指标锚定**：
-  1. 核心工程代码纯净度：物理切除 `cache_tier2_engine.py` (228行) 与 `cache_tier2_types.py` (38行)，累计净减少 500+ 行死肉代码；
-  2. 体外大脑演进课沉淀：自动调用 `openviking_record_evolution_lesson` 沉淀“反铁锤人综合征与玩具功能手术切除”原则。
+#### 📌 [P1] [x] Card-78 (v1.7.32): 冗余代码彻底清退、反铁锤人演进沉淀与真实架构总账归档 (Cache Engine Deletion, Pattern Harvest & Master Ledger Update)
+- **类型**：死代码物理清退 / 踩坑事实体外沉淀 / 交付总账归档 ｜ **优先级**：🔥🔥 P1 ｜ **目标版本**：`v1.7.32` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - 在 Card-76 (前端卡片移除) 与 Card-77 (后端路由解绑) 完成后，底层 `cache_tier2_engine.py` 与 `cache_tier2_types.py` 已彻底失去任何生产调用入口；
+  - 核心物理公理：**死代码如果留在代码库中，会误导后续 Agent 重复引用、增加编译扫描耗时、引发无意义的重构负担**；
+  - 奥卡姆剃刀处理：
+    1. 物理删除 `openviking/service/cache_tier2_engine.py` (228行)；
+    2. 物理删除 `openviking/service/cache_tier2_types.py` (38行)；
+    3. 物理删除 `tests/unit/test_cache_tier2_engine.py` (152行)；
+    4. 解耦并清理 `tests/unit/test_card50_authenticity_and_scale.py` 中的残留引用；
+    5. 编写 `tests/unit/test_card78_dead_cache_purge.py` 验证模块物理彻底消除、服务命名空间零残留；
+    6. 调用 `openviking_record_evolution_lesson` 将本次“反铁锤人综合征与玩具功能手术级切除”沉淀为永久制度规范，镜像入脑 Master Memory。
+- **开工前客观数据指标锚定 (Frontend & Backend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **核心工程代码纯净度**：物理切除 `cache_tier2_engine.py` (228行) 与 `cache_tier2_types.py` (38行) + 测试用例 (152行)，累计净减少 418 行死肉代码；
+    2. **体外大脑演进课沉淀**：自动调用 `openviking_record_evolution_lesson` 成功沉淀规范（Lesson #191）；
+    3. **版本双端对齐率**：100% 对齐至 `v1.7.32`。
+- **核心交付目标与修改清单**：
+  1. `openviking/service/cache_tier2_engine.py`：物理删除；
+  2. `openviking/service/cache_tier2_types.py`：物理删除；
+  3. `tests/unit/test_cache_tier2_engine.py`：物理删除；
+  4. `tests/unit/test_card50_authenticity_and_scale.py`：解耦残留引用并清理 unused imports；
+  5. `openviking/_version.py` & `package.json`：版本号自增至 `1.7.32`；
+  6. `tests/unit/test_card78_dead_cache_purge.py`：新增 4 项物理切除验真单测；
+  7. OpenViking Master Memory：沉淀反铁锤人演进课。
+- **物理验收与门禁**：
+  - **Git Commit Hash**：待提交
+  - **Git Tag**：`v1.7.32`
+  - **自动化测试通过率**：专项单测 4/4 PASS (0.08s)，17 项全套单测 PASS (3.05s)，Vitest 5/5 PASS；
+  - **安全凭据审计**：`scripts/security_check.py` 扫描 0 密钥泄露；
+  - **前端生产构建**：`npm run release:sync` PASS (15.50s)。
 
 #### 📌 [P0] [x] Card-75 (v1.7.29): 技能自演进引擎物理验真端点与 FastMCP 平价闭环 (Harness Physical Verification Probe & FastMCP Parity)
 - **类型**：全链路物理验真 / 自测探针端点 / FastMCP 工具平价 / 前端一键验真 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.29` ｜ **当前状态**：[x] 已验收通过 ✅
