@@ -96,7 +96,9 @@ from openviking.server.routers import (
     privacy_gov_router,
     skill_evolution_router,
     skill_ingestion_router,
+    anti_demo_router,
 )
+
 from openviking.service.core import OpenVikingService
 from openviking.service.task_tracker import get_task_tracker
 from openviking_cli.exceptions import OpenVikingError
@@ -766,6 +768,7 @@ def create_app(
     app.include_router(privacy_gov_router)
     app.include_router(skill_evolution_router)
     app.include_router(skill_ingestion_router)
+    app.include_router(anti_demo_router)
     app.include_router(bot_router, prefix="/bot/v1")
 
     # OAuth 2.1: when enabled, mount the official MCP SDK auth routes

@@ -151,9 +151,10 @@ export function VisualActionLauncher() {
               >
                 <div className="flex items-center justify-between gap-1">
                   <span className="text-xs font-medium text-foreground truncate">{preset.title}</span>
-                  <Badge variant="outline" className="h-4 px-1 text-[11px] font-mono shrink-0">
+                  <Badge variant="outline" className="h-4 px-1 text-xs font-mono shrink-0">
                     {preset.method}
                   </Badge>
+
                 </div>
                 <p className="text-xs text-muted-foreground line-clamp-1">{preset.desc}</p>
               </button>

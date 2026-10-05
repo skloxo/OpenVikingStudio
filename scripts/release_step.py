@@ -200,6 +200,9 @@ def main() -> None:
     # 安全凭据审计门禁
     run_cmd(["python3", "scripts/security_check.py"], "安全凭据审计门禁")
 
+    # 全系统 DEMO 禁令与闭环守护自动化视网膜门禁 (Card-103)
+    run_cmd(["python3", "scripts/anti_demo_gate.py"], "全系统 DEMO 禁令与闭环守护自动化视网膜门禁")
+
     # 重启服务并校验
     if not args.skip_restart:
         run_cmd(["systemctl", "--user", "restart", "openviking"], "重启 openviking.service")

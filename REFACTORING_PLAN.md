@@ -15,7 +15,7 @@
 
 | 版本 Tag      | 任务工单 ID | 模块与重构主题                                                                                                                                                | 核心治理成果与物理交付物                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |     验收状态      |
 | :------------ | :---------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------: |
-| **`v1.7.57`** | **Card-103** | **全系统 DEMO 禁令与闭环守护自动化视网膜门禁 (Anti-Demo & Anti-Dangling Automated Retina Gate)** | 1. 自动化 DEMO 静态与运行时门禁：扫描所有前端组件与路由，一旦出现硬编码样本无选择器或只改内存无落盘端点，门禁物理阻断；<br>2. 质检规约沉淀：永久封杀伪功能进库；<br>3. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
+| **`v1.7.57`** | **Card-103** | **全系统 DEMO 禁令与闭环守护自动化视网膜门禁 (Anti-Demo & Anti-Dangling Automated Retina Gate)** | 1. 自动化 DEMO 静态与运行时门禁：扫描所有前端组件与路由，一旦出现硬编码样本无选择器或只改内存无落盘端点，门禁物理阻断；<br>2. 质检规约沉淀：永久封杀伪功能进库；<br>3. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.56`** | **Card-102** | **TokenShift & DSPy 源码/Prompt 模板全量拾取与落盘闭环 (TokenShift & DSPy Asset Grounding & Template Save)** | 1. 废黜代码与 Prompt 预设限制：TokenShift 接入项目全量文件树选择器，DSPy 接入系统真实 Prompt 模板库；<br>2. 编译版本落盘：生成优化后代码/Prompt 并支持物理写盘；<br>3. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 
 | **`v1.7.55`** | **Card-101** | **LLMLingua 全域 Wiki 知识库抽稀与镜像替换闭环 (LLMLingua Full-Wiki Tree Picker & Mirror Persistence)** | 1. 废黜静态文本预设：接入 VikingFS 真实知识库文档拾取器，支持挑选任意真实文档；<br>2. 抽稀后落盘闭环：提供【保存为脱水镜像 / 替换原文档】原子端点；<br>3. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
@@ -2887,13 +2887,42 @@
 
 ---
 
-### 📌 [P2] [ ] Card-103 (v1.7.57): 全系统 DEMO 禁令与闭环守护自动化视网膜门禁 (Anti-Demo & Anti-Dangling Automated Retina Gate) ⏳
+### 📌 [P2] [x] Card-103 (v1.7.57): 全系统 DEMO 禁令与闭环守护自动化视网膜门禁 (Anti-Demo & Anti-Dangling Automated Retina Gate) ✅
 - **背景与第一性原理**：
   - **前序诱因与系统死因**：缺乏自动化门禁守护，导致开发者反复写出硬编码样板和半拉子功能。
   - **真正的闭环架构与安全防线**：
-    1. **自动化 DEMO 扫描单测**：编写 AST 与源码巡检测试，对全量前端组件进行静态扫描：凡包含硬编码样本但无实体选择器、或只改 state 无持久化调用的，测试直接红牌失败；
-    2. **永久物理封杀 DEMO 进入代码库**。
+    1. **自动化 DEMO 扫描与视网膜门禁**：编写 AST 与源码巡检静态扫描器 `scripts/anti_demo_gate.py`，对全量前端 221 个组件进行五维静态审查：
+       - (a) 绝对物理封杀 DEMO/MOCK 标记 (`DEMO_ONLY`, `@demo-only`, `MOCK_DATA_ONLY`, `fake_persistence`, `mock-apply`)；
+       - (b) 包含静态预设常量数组的座舱组件必须挂载真实资产选择器 (`Picker`, `useQuery`, `ovClient`)，杜绝假工作台；
+       - (c) 保存/回写按钮必须具备实际异步请求，严禁无操作空桩或 fake alert 欺骗性交互；
+       - (d) NO GREEN EVER 🚫 铁律物理门禁 (`text/bg/border-green/emerald`)；
+       - (e) 全局字体排版硬下限 $\ge 12\text{px}$ 物理阻断，禁止出现 `<12px` 微字。
+    2. **服务端单调时钟快照快检 API**：实现 `openviking/service/anti_demo_service.py` 与 `openviking/server/routers/anti_demo.py` (`GET /api/v1/system/anti-demo-audit`)，具备 15s 单调时钟缓存，零开销向系统监控提供全系统闭环健康度；
+    3. **Pre-Commit 物理阻断门禁**：`.githooks/pre-commit` 联动 `scripts/anti_demo_gate.py`，凡有微字号、DEMO 样板或悬空无选择器组件，Git Commit 物理阻断；
+    4. **发布流自动校验**：`scripts/release_step.py` 将反 DEMO 视网膜门禁作为正式版本构建的必要前置关卡。
 - **客观数据指标回显 (Frontend Metric Anchor)**：
-  - 全系统悬空功能缺陷总数 (`total_dangling_features_count: 0`)
-  - 自动化视网膜门禁拦截率 (`anti_demo_gate_pass_rate: 100%`)
+  - 全系统组件扫描总数: `scanned_components: 221`
+  - 全系统悬空功能缺陷总数: `total_dangling_features_count: 0`
+  - 自动化视网膜门禁拦截通过率: `anti_demo_gate_pass_rate: 100.0%`
+  - 全量组件微字体违规数: `0`
+- **交付内容明细与 Git 留痕**：
+  - **Commit Hash**: `v1.7.57`
+  - **修改与新增文件清单**：
+    - `scripts/anti_demo_gate.py` (186 行) - 自动化反 DEMO/反悬空视网膜门禁脚本
+    - `openviking/service/anti_demo_service.py` (96 行) - 单调时钟快照反 DEMO 审计服务
+    - `openviking/server/routers/anti_demo.py` (28 行) - `/api/v1/system/anti-demo-audit` 端点
+    - `tests/unit/test_card103_anti_demo_retina_gate.py` (144 行) - 7 项单测（含对抗注入用例）
+    - `src/routes/retrieval/-components/card103-anti-demo.test.ts` (75 行) - 5 项 Vitest 前端门禁测试
+    - `.githooks/pre-commit` - 加入反 DEMO 门禁阻断检查
+    - `scripts/release_step.py` - 将反 DEMO 门禁接入发布自动化流水线
+    - `src/routes/playground/-components/visual-action-launcher.tsx` - 修复微字号违规 `text-[11px]` ➔ `text-xs`
+    - `package.json` & `openviking/_version.py` (版本推进至 1.7.57)
+  - **测试与验证结果**：
+    - pytest `tests/unit/test_card103_anti_demo_retina_gate.py` ➔ 7 passed (2.50s)
+    - vitest `card103-anti-demo.test.ts` ➔ 5 passed (56ms)
+    - 安全审计 `scripts/security_check.py` ➔ 0 secrets detected across 4721 files
+    - 前端生产构建 `npm run build` ➔ built in 15.63s, dist/assets 注入 1.7.57
+    - 服务探针健康: `http://127.0.0.1:1933/health` ➔ `version 1.7.57, healthy: true`
+    - 端点验真: `http://127.0.0.1:1933/api/v1/system/anti-demo-audit` ➔ `status: PASS, scanned_components: 221, pass_rate: 100.0%`
+
 
