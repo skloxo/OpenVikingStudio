@@ -2,10 +2,17 @@
 # SPDX-License-Identifier: AGPL-3.0
 """
 REST Endpoints for Hybrid BM25-Dense Retrieval & Real-Time Diagnostics.
-(Card-Retrieval-BM25Hybrid / v1.5.16)
+Card-93: Honest Dense-Degradation & GPU Node Heartbeat Fallback.
+
+Architecture:
+  - Lightweight 0.2s heartbeat probe to 2080Ti WeMM-Embedding-9B (port 11432)
+  - If ONLINE: real RRF fusion of true 4096d dense + BM25 sparse
+  - If OFFLINE: honest degradation to pure BM25, never fake a Dense score
+  - Response always declares dense_status: "online" | "offline" & degraded: bool
 """
 
 import logging
+import socket
 import time
 from typing import Any, Dict, List, Optional
 
@@ -23,6 +30,35 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["hybrid_search"])
 
+# GPU node configuration (2080Ti WeMM-Embedding-9B)
+_GPU_NODE_HOST = "127.0.0.1"
+_GPU_NODE_PORT = 11432
+_HEARTBEAT_TIMEOUT_S = 0.2  # 200ms max probe wait
+
+
+# --------------------------------------------------------------------------- #
+#  GPU Heartbeat Probe (physical, no faking)
+# --------------------------------------------------------------------------- #
+
+def probe_gpu_node(
+    host: str = _GPU_NODE_HOST,
+    port: int = _GPU_NODE_PORT,
+    timeout_s: float = _HEARTBEAT_TIMEOUT_S,
+) -> tuple[bool, float]:
+    """TCP heartbeat probe to GPU vector node. Returns (is_alive, latency_ms)."""
+    t0 = time.monotonic()
+    try:
+        with socket.create_connection((host, port), timeout=timeout_s):
+            latency_ms = (time.monotonic() - t0) * 1000.0
+            return True, round(latency_ms, 2)
+    except (ConnectionRefusedError, TimeoutError, OSError):
+        latency_ms = (time.monotonic() - t0) * 1000.0
+        return False, round(latency_ms, 2)
+
+
+# --------------------------------------------------------------------------- #
+#  Pydantic Schemas
+# --------------------------------------------------------------------------- #
 
 class HybridSearchRequest(BaseModel):
     query: str
@@ -46,20 +82,32 @@ class IndexDocRequest(BaseModel):
     context_type: str = "resource"
 
 
+# --------------------------------------------------------------------------- #
+#  Routes
+# --------------------------------------------------------------------------- #
+
 @router.get("/api/v1/search/hybrid_metrics")
 @router.get("/api/v1/search/hybrid/metrics")
 async def get_hybrid_metrics(_ctx: RequestContext = Depends(get_request_context)):
-    """Get aggregate hybrid retrieval performance metrics."""
+    """Get aggregate hybrid retrieval performance metrics + GPU node live status."""
     bm25 = BM25FTSIndex.get_instance()
     telemetry = HybridRetrievalTelemetry.get_instance()
     stats = bm25.get_stats()
     snapshot = telemetry.get_snapshot(is_bm25_ready=stats.is_ready)
+
+    gpu_alive, gpu_latency_ms = probe_gpu_node()
 
     return JSONResponse(
         status_code=200,
         content={
             "telemetry": snapshot.model_dump(),
             "index_stats": stats.model_dump(),
+            "gpu_node": {
+                "host": _GPU_NODE_HOST,
+                "port": _GPU_NODE_PORT,
+                "status": "online" if gpu_alive else "offline",
+                "latency_ms": gpu_latency_ms,
+            },
         },
     )
 
@@ -70,45 +118,65 @@ async def run_hybrid_probe(
     _ctx: RequestContext = Depends(get_request_context),
 ):
     """
-    Run comparative probe on a test query:
-    Executes Sparse BM25, simulated Dense matches, and RRF Fusion to evaluate exact symbol recall.
+    Run comparative probe on a test query with honest GPU node detection.
+
+    - If GPU node ONLINE: executes real dense retrieval + BM25 + RRF fusion.
+    - If GPU node OFFLINE: returns pure BM25 sparse results with degraded=true.
+      NEVER generates fake / simulated Dense scores.
     """
     t0 = time.monotonic()
     bm25 = BM25FTSIndex.get_instance()
     sparse_matches: List[BM25Match] = bm25.search(req.query, limit=req.limit)
 
-    # Query real dense vector candidates via service search.find, or empty list
+    # --- GPU Heartbeat Probe (physical, 200ms max) ---
+    gpu_alive, gpu_heartbeat_ms = probe_gpu_node()
     dense_results: List[Dict[str, Any]] = []
-    try:
-        from openviking.server.dependencies import get_service
+    dense_status = "offline"
+    degraded = True
 
-        service = get_service()
-        if service and hasattr(service, "search"):
-            find_res = await service.search.find(
-                query=req.query,
-                ctx=_ctx,
-                limit=req.limit,
-            )
-            find_dict = (
-                find_res.to_dict()
-                if hasattr(find_res, "to_dict")
-                else (find_res if isinstance(find_res, dict) else {})
-            )
-            all_hits = (
-                find_dict.get("resources", [])
-                + find_dict.get("memories", [])
-                + find_dict.get("skills", [])
-            )
-            for hit in all_hits:
-                dense_results.append({
-                    "uri": hit.get("uri", ""),
-                    "title": hit.get("title") or (hit.get("uri", "").split("/")[-1] if hit.get("uri") else ""),
-                    "score": float(hit.get("score", 0.0)),
-                    "snippet": hit.get("abstract") or (hit.get("content", "")[:120] if hit.get("content") else ""),
-                    "level": int(hit.get("level", 1) or 1),
-                })
-    except Exception as e:
-        logger.debug(f"Dense vector probe search bypassed: {e}")
+    if gpu_alive:
+        dense_status = "online"
+        degraded = False
+        # Attempt real dense retrieval via service search
+        try:
+            from openviking.server.dependencies import get_service
+
+            service = get_service()
+            if service and hasattr(service, "search"):
+                find_res = await service.search.find(
+                    query=req.query,
+                    ctx=_ctx,
+                    limit=req.limit,
+                )
+                find_dict = (
+                    find_res.to_dict()
+                    if hasattr(find_res, "to_dict")
+                    else (find_res if isinstance(find_res, dict) else {})
+                )
+                all_hits = (
+                    find_dict.get("resources", [])
+                    + find_dict.get("memories", [])
+                    + find_dict.get("skills", [])
+                )
+                for hit in all_hits:
+                    dense_results.append({
+                        "uri": hit.get("uri", ""),
+                        "title": (
+                            hit.get("title")
+                            or (hit.get("uri", "").split("/")[-1] if hit.get("uri") else "")
+                        ),
+                        "score": float(hit.get("score", 0.0)),
+                        "snippet": (
+                            hit.get("abstract")
+                            or (hit.get("content", "")[:120] if hit.get("content") else "")
+                        ),
+                        "level": int(hit.get("level", 1) or 1),
+                    })
+        except Exception as exc:
+            logger.warning(f"Dense retrieval failed despite GPU probe online: {exc}")
+            # Node was alive at probe time but retrieval failed — honest degradation
+            dense_status = "error"
+            degraded = True
 
     sparse_dicts = [
         {
@@ -122,10 +190,16 @@ async def run_hybrid_probe(
         for m in sparse_matches
     ]
 
-    fused = rrf_fuse(dense_results=dense_results, sparse_results=sparse_dicts, top_k=req.limit)
+    # RRF fusion only makes sense when both streams contribute
+    if dense_results:
+        fused = rrf_fuse(dense_results=dense_results, sparse_results=sparse_dicts, top_k=req.limit)
+    else:
+        # Honest pure-BM25 fallback — fused = sparse, dense_rank=None for all
+        fused = rrf_fuse(dense_results=[], sparse_results=sparse_dicts, top_k=req.limit)
+
     latency_ms = (time.monotonic() - t0) * 1000.0
 
-    # Record probe in telemetry
+    # Telemetry recording
     overlap_cnt = sum(1 for f in fused if f.origin == "hybrid")
     dense_only_cnt = sum(1 for f in fused if f.origin == "dense_only")
     sparse_only_cnt = sum(1 for f in fused if f.origin == "sparse_only")
@@ -146,6 +220,9 @@ async def run_hybrid_probe(
         status_code=200,
         content={
             "query": req.query,
+            "dense_status": dense_status,
+            "degraded": degraded,
+            "gpu_heartbeat_ms": gpu_heartbeat_ms,
             "sparse_bm25_count": len(sparse_matches),
             "dense_count": len(dense_results),
             "fused_count": len(fused),
