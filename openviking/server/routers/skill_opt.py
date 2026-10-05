@@ -156,3 +156,34 @@ async def list_skill_weights(
     }
 
 
+class ApplySkillPatchRequest(BaseModel):
+    """技能优化补丁物理落盘请求。"""
+    model_config = ConfigDict(strict=False)
+
+    skill_slug: str = Field(..., description="目标技能 slug")
+    optimized_content: str = Field(..., description="优化后的完整 Markdown 文本")
+    target_path: Optional[str] = Field(None, description="可选指定写入物理文件绝对路径")
+
+
+@router.post("/apply")
+async def apply_skill_patch(
+    req: ApplySkillPatchRequest,
+    ctx: RequestContext = Depends(get_request_context),
+) -> dict:
+    """将工作台调优后的技能补丁安全物理写回文件，执行快照备份与 AST 校验。"""
+    from openviking.service.skill_opt_apply import SkillOptApplyService
+    service = SkillOptApplyService()
+    try:
+        result = service.apply_patch(
+            skill_slug=req.skill_slug,
+            optimized_content=req.optimized_content,
+            target_path=req.target_path,
+        )
+        return result
+    except (ValueError, FileNotFoundError) as exc:
+        return {"status": "error", "error": str(exc)}
+    except Exception as exc:
+        return {"status": "error", "error": f"Internal error: {exc}"}
+
+
+

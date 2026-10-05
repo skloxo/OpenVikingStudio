@@ -1,0 +1,48 @@
+[
+  {
+    "file": "src/routes/skills/-components/skill-opt-cockpit.tsx",
+    "name": "skill-opt-cockpit.tsx",
+    "elapsed": 16.74,
+    "review": {
+      "is_confirmed_dangling": true,
+      "severity": "MEDIUM",
+      "summary": "",
+      "raw": ""
+    },
+    "clues": [
+      {
+        "line": 20,
+        "category": "HARDCODED_SAMPLE",
+        "code_snippet": "const DEFAULT_SAMPLE_SKILL = `---",
+        "description": "存在写死的 DEFAULT_SAMPLE 样例常量，可能缺少从全库选择加载功能"
+      },
+      {
+        "line": 1,
+        "category": "ISOLATED_WORKBENCH",
+        "code_snippet": "skill-opt-cockpit.tsx",
+        "description": "工作台包含硬编码示例，但通篇没有任何实体选择器 (<Select>/<Dropdown>/搜索框)，无法从全量资产中选取"
+      }
+    ],
+    "error": null
+  },
+  {
+    "file": "src/routes/settings/-components/privacy-tab.tsx",
+    "name": "privacy-tab.tsx",
+    "elapsed": 19.04,
+    "review": {
+      "is_confirmed_dangling": true,
+      "severity": "MEDIUM",
+      "summary": "",
+      "raw": ""
+    },
+    "clues": [
+      {
+        "line": 13,
+        "category": "HARDCODED_SAMPLE",
+        "code_snippet": "const DEFAULT_SAMPLE_TEXT =",
+        "description": "存在写死的 DEFAULT_SAMPLE 样例常量，可能缺少从全库选择加载功能"
+      }
+    ],
+    "error": null
+  }
+]

@@ -39,3 +39,13 @@ export interface BatchAuditSummary {
   grade_counts: Record<string, number>
   results: SkillOptAuditResult[]
 }
+
+export interface SkillOptApplyResult {
+  status: 'ok' | 'error'
+  skill_slug: string
+  target_path: string
+  backup_path: string
+  event_id: string
+  bytes_written: number
+  message: string
+}

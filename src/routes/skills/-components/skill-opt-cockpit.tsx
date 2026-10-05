@@ -10,8 +10,10 @@ import { Card } from '#/components/ui/card'
 import { ovClient } from '#/lib/ov-client'
 import { SkillOptScorecard } from './skill-opt-scorecard'
 import { SkillOptWorkbench } from './skill-opt-workbench'
+import type { SkillItem } from '../-lib/skill-types'
 import type {
   BatchAuditSummary,
+  SkillOptApplyResult,
   SkillOptAttemptResult,
   SkillOptAuditResult,
   SkillOptOptimizeResult,
@@ -46,11 +48,19 @@ pytest tests/unit/ -k test_leak -v
 \`\`\`
 `
 
-export function SkillOptCockpit() {
+interface SkillOptCockpitProps {
+  skills?: SkillItem[]
+  initialSkillSlug?: string
+}
+
+export function SkillOptCockpit({ skills = [], initialSkillSlug }: SkillOptCockpitProps) {
+  const [selectedSlug, setSelectedSlug] = React.useState<string>(initialSkillSlug || 'diagnosing-bugs')
   const [content, setContent] = React.useState(DEFAULT_SAMPLE_SKILL)
   const [auditResult, setAuditResult] = React.useState<SkillOptAuditResult | null>(null)
   const [attemptResult, setAttemptResult] = React.useState<SkillOptAttemptResult | null>(null)
   const [optimizeResult, setOptimizeResult] = React.useState<SkillOptOptimizeResult | null>(null)
+  const [applyResult, setApplyResult] = React.useState<SkillOptApplyResult | null>(null)
+  const [isLoadingSkill, setIsLoadingSkill] = React.useState(false)
 
   // 1. Batch Audit Query
   const { data: batchData, refetch: refetchBatch, isLoading: isBatchLoading } = useQuery({
@@ -102,9 +112,71 @@ export function SkillOptCockpit() {
     },
   })
 
+  // 5. Apply Mutation (Atomic write to disk & snapshot)
+  const applyMutation = useMutation({
+    mutationFn: async () => {
+      const payloadContent = optimizeResult?.optimized_content || content
+      const res = await ovClient.instance.post<SkillOptApplyResult>('/api/v1/skill-opt/apply', {
+        skill_slug: selectedSlug,
+        optimized_content: payloadContent,
+      })
+      return res.data
+    },
+    onSuccess: (data) => {
+      setApplyResult(data)
+      if (data.status === 'ok') {
+        if (optimizeResult?.optimized_content) {
+          setContent(optimizeResult.optimized_content)
+        }
+        refetchBatch()
+      }
+    },
+    onError: (err: any) => {
+      setApplyResult({
+        status: 'error',
+        skill_slug: selectedSlug,
+        target_path: '',
+        backup_path: '',
+        event_id: '',
+        bytes_written: 0,
+        message: err?.response?.data?.detail || err?.message || '回写物理文件失败',
+      })
+    },
+  })
+
+  const loadSkillContent = React.useCallback(async (slug: string) => {
+    setIsLoadingSkill(true)
+    setApplyResult(null)
+    setOptimizeResult(null)
+    setAttemptResult(null)
+    try {
+      const res = await ovClient.instance.get<{ content?: string; overview?: string }>(
+        `/api/v1/skills/${encodeURIComponent(slug)}?include_content=true`
+      )
+      const rawContent = res.data.content || ''
+      if (rawContent) {
+        setContent(rawContent)
+        auditMutation.mutate(rawContent)
+      }
+    } catch (e) {
+      console.error('Failed to load skill content for', slug, e)
+    } finally {
+      setIsLoadingSkill(false)
+    }
+  }, [auditMutation])
+
+  const handleSelectSkill = (slug: string) => {
+    setSelectedSlug(slug)
+    loadSkillContent(slug)
+  }
+
   // 初始自动体检一次
   React.useEffect(() => {
-    auditMutation.mutate(DEFAULT_SAMPLE_SKILL)
+    if (initialSkillSlug) {
+      loadSkillContent(initialSkillSlug)
+    } else {
+      auditMutation.mutate(DEFAULT_SAMPLE_SKILL)
+    }
   }, [])
 
   return (
@@ -168,11 +240,18 @@ export function SkillOptCockpit() {
           onAudit={() => auditMutation.mutate(content)}
           onAttempt={(q) => attemptMutation.mutate(q)}
           onOptimize={() => optimizeMutation.mutate()}
+          onApplyPatch={() => applyMutation.mutate()}
           attemptResult={attemptResult}
           optimizeResult={optimizeResult}
+          applyResult={applyResult}
           isAuditing={auditMutation.isPending}
           isAttempting={attemptMutation.isPending}
           isOptimizing={optimizeMutation.isPending}
+          isApplying={applyMutation.isPending}
+          currentSkillSlug={selectedSlug}
+          availableSkills={skills}
+          onSelectSkill={handleSelectSkill}
+          isLoadingSkill={isLoadingSkill}
         />
 
         <SkillOptScorecard audit={auditResult} isLoading={auditMutation.isPending} />
