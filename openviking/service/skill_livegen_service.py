@@ -20,6 +20,7 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field
 
 from openviking.core.skill_loader import SkillLoader, validate_skill_format
+from openviking.service.skill_sandbox_runner import SkillSandboxRunner, SandboxExecutionReport
 
 
 class SkillScaffoldRequest(BaseModel):
@@ -60,6 +61,13 @@ class SkillSimulationResult(BaseModel):
     passed_queries: int
     pass_rate: float
     results: List[QuerySimulationItem]
+    # Card-89 新增真实受限沙箱与安全门禁物理指标
+    sandbox_passed: bool = Field(default=True, description="沙箱受限试跑与安全门禁是否全部通过")
+    sandbox_duration_ms: float = Field(default=0.0, description="沙箱物理执行与契约验证耗时 (ms)")
+    security_blocked_count: int = Field(default=0, description="拦截的高危系统调用数")
+    security_issues: List[str] = Field(default_factory=list, description="具体安全拦截详情清单")
+    stdout: str = Field(default="", description="沙箱进程标准输出")
+    stderr: str = Field(default="", description="沙箱进程错误输出")
 
 
 class SkillPublishResult(BaseModel):
@@ -150,9 +158,12 @@ class SkillLiveGenService:
         )
 
     def simulate_trigger(self, content: str, queries: List[str]) -> SkillSimulationResult:
-        """沙盒环境模拟 Agent 自然语言触发测试。"""
+        """沙盒环境真实执行试跑与 Agent 自然语言触发意图度量。"""
         with self._stats_lock:
             self._total_simulations += 1
+
+        # 1. 物理受限沙箱试跑与 AST 安全门禁审计
+        sandbox_rep = SkillSandboxRunner.run_isolated_trial(content, queries=queries)
 
         try:
             parsed = SkillLoader.parse(content)
@@ -168,46 +179,68 @@ class SkillLiveGenService:
         results: List[QuerySimulationItem] = []
         passed_count = 0
 
-        for q in queries:
-            matched_kw: List[str] = []
-            q_lower = q.lower()
-            for kw in keywords:
-                if kw.lower() in q_lower:
-                    matched_kw.append(kw)
-
-            # 置信度计算：命中关键词权重 + 字符重合比例
-            if keywords:
-                overlap_ratio = len(matched_kw) / min(len(keywords), 5)
-            else:
-                overlap_ratio = 0.0
-
-            exact_hit = (name.lower() in q_lower) or any(t.lower() in q_lower for t in tags)
-            confidence = min(1.0, 0.40 * float(exact_hit) + 0.60 * overlap_ratio)
-            is_matched = confidence >= 0.35 or bool(matched_kw)
-
-            if is_matched:
-                passed_count += 1
-                explanation = f"命中关键词: [{', '.join(matched_kw[:3])}]" if matched_kw else "命中技能名称/标签"
-            else:
-                explanation = "未提取到匹配意图特征"
-
-            results.append(
-                QuerySimulationItem(
-                    query=q,
-                    matched=is_matched,
-                    confidence=round(confidence, 2),
-                    matched_keywords=matched_kw,
-                    explanation=explanation,
+        # 如果沙箱拦截到高危代码注入，全量标记为安全阻断
+        if sandbox_rep.security_blocked_count > 0 or not sandbox_rep.passed:
+            security_detail = "; ".join(sandbox_rep.security_issues) or sandbox_rep.stderr
+            for q in queries:
+                results.append(
+                    QuerySimulationItem(
+                        query=q,
+                        matched=False,
+                        confidence=0.0,
+                        matched_keywords=[],
+                        explanation=f"【沙箱安全阻断】{security_detail}",
+                    )
                 )
-            )
+            pass_rate = 0.0
+        else:
+            for q in queries:
+                matched_kw: List[str] = []
+                q_lower = q.lower()
+                for kw in keywords:
+                    if kw.lower() in q_lower:
+                        matched_kw.append(kw)
 
-        pass_rate = round(passed_count / max(len(queries), 1), 2)
+                # 置信度计算：命中关键词权重 + 字符重合比例
+                if keywords:
+                    overlap_ratio = len(matched_kw) / min(len(keywords), 5)
+                else:
+                    overlap_ratio = 0.0
+
+                exact_hit = (name.lower() in q_lower) or any(t.lower() in q_lower for t in tags)
+                confidence = min(1.0, 0.40 * float(exact_hit) + 0.60 * overlap_ratio)
+                is_matched = confidence >= 0.35 or bool(matched_kw)
+
+                if is_matched:
+                    passed_count += 1
+                    explanation = f"命中关键词: [{', '.join(matched_kw[:3])}]" if matched_kw else "命中技能名称/标签"
+                else:
+                    explanation = "未提取到匹配意图特征"
+
+                results.append(
+                    QuerySimulationItem(
+                        query=q,
+                        matched=is_matched,
+                        confidence=round(confidence, 2),
+                        matched_keywords=matched_kw,
+                        explanation=explanation,
+                    )
+                )
+
+            pass_rate = round(passed_count / max(len(queries), 1), 2)
+
         return SkillSimulationResult(
             skill_name=name or "untitled-skill",
             total_queries=len(queries),
             passed_queries=passed_count,
             pass_rate=pass_rate,
             results=results,
+            sandbox_passed=sandbox_rep.passed,
+            sandbox_duration_ms=sandbox_rep.duration_ms,
+            security_blocked_count=sandbox_rep.security_blocked_count,
+            security_issues=sandbox_rep.security_issues,
+            stdout=sandbox_rep.stdout,
+            stderr=sandbox_rep.stderr,
         )
 
     def publish_skill(
@@ -215,8 +248,10 @@ class SkillLiveGenService:
         skill_name: str,
         content: str,
         base_dir: Optional[str] = None,
+        require_sandbox_verified: bool = True,
     ) -> SkillPublishResult:
         """校验并上架发布技能至存储目录。"""
+        # 1. 静态格式与规范门禁
         val = self.validate_draft(content, strict=True)
         if not val.valid:
             error_msgs = "; ".join(e.get("message", "") for e in val.errors)
@@ -228,6 +263,20 @@ class SkillLiveGenService:
                 body_lines=val.body_lines,
                 message=f"校验失败阻断发布: {error_msgs}",
             )
+
+        # 2. 真实沙箱受限试跑与 AST 安全门禁 (Card-89 核心防线)
+        if require_sandbox_verified:
+            sandbox_rep = SkillSandboxRunner.run_isolated_trial(content)
+            if not sandbox_rep.passed:
+                issues = "; ".join(sandbox_rep.security_issues) or sandbox_rep.stderr or "沙箱执行异常"
+                return SkillPublishResult(
+                    success=False,
+                    skill_name=skill_name,
+                    target_path="",
+                    content_hash="",
+                    body_lines=val.body_lines,
+                    message=f"沙箱安全审计或试跑未通过阻断发布: {issues}",
+                )
 
         root = Path(base_dir) if base_dir else Path.home() / ".openviking" / "skills"
         target_folder = root / skill_name
@@ -246,7 +295,7 @@ class SkillLiveGenService:
             target_path=str(target_file),
             content_hash=content_hash,
             body_lines=val.body_lines,
-            message="技能校验通过并已成功持久化上架",
+            message="技能通过沙箱安全验证并已成功持久化上架",
         )
 
     def get_stats(self) -> Dict[str, Any]:

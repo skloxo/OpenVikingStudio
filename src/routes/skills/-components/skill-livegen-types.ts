@@ -34,6 +34,12 @@ export interface SimulationResult {
   passed_queries: number
   pass_rate: number
   results: QuerySimulationItem[]
+  sandbox_passed?: boolean
+  sandbox_duration_ms?: number
+  security_blocked_count?: number
+  security_issues?: string[]
+  stdout?: string
+  stderr?: string
 }
 
 export interface PublishResult {

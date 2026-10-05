@@ -49,6 +49,7 @@ class PublishSkillRequest(BaseModel):
     skill_name: str = Field(..., description="技能唯一标识")
     content: str = Field(..., description="校验通过的 SKILL.md 内容")
     base_dir: Optional[str] = Field(None, description="自定义存储基础目录")
+    require_sandbox: bool = Field(default=True, description="是否要求强制沙箱安全试跑通过")
 
 
 @router.post("/scaffold", response_model=ScaffoldResponse)
@@ -79,7 +80,7 @@ async def simulate_trigger(
     req: SimulateTriggerRequest,
     ctx: RequestContext = Depends(get_request_context),
 ) -> SkillSimulationResult:
-    """沙盒环境模拟 Agent 自然语言触发测试。"""
+    """沙盒环境真实执行试跑与 Agent 自然语言触发测试。"""
     svc = SkillLiveGenService.get_instance()
     result = svc.simulate_trigger(req.content, req.queries)
     return result
@@ -90,9 +91,14 @@ async def publish_skill(
     req: PublishSkillRequest,
     ctx: RequestContext = Depends(get_request_context),
 ) -> SkillPublishResult:
-    """校验并一键持久化发布技能至 Viking 中枢。"""
+    """校验并通过真实沙箱审计后一键持久化发布技能至 Viking 中枢。"""
     svc = SkillLiveGenService.get_instance()
-    result = svc.publish_skill(req.skill_name, req.content, base_dir=req.base_dir)
+    result = svc.publish_skill(
+        req.skill_name,
+        req.content,
+        base_dir=req.base_dir,
+        require_sandbox_verified=req.require_sandbox,
+    )
     logger.info(f"LiveGen published skill '{req.skill_name}': success={result.success}")
     return result
 

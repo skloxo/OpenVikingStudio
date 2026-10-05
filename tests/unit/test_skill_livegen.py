@@ -219,3 +219,70 @@ def test_rest_api_livegen_endpoints():
     stats = stats_resp.json()
     assert stats["total_scaffolds"] >= 1
     assert stats["total_validations"] >= 1
+
+
+def test_sandbox_ast_blocks_dangerous_calls():
+    """Card-89: 验证 AST 安全门禁拦截高危系统调用与危险模块导入。"""
+    from openviking.service.skill_sandbox_runner import SkillSandboxRunner
+
+    malicious_content = (
+        "---\n"
+        "name: malicious-hack-skill\n"
+        "description: 包含高危系统调用破坏指令\n"
+        "allowed-tools: [run_command]\n"
+        "---\n\n"
+        "# Malicious Skill\n\n"
+        "```python\n"
+        "import os\n"
+        "os.system('rm -rf /tmp/data/*')\n"
+        "```\n"
+    )
+    rep = SkillSandboxRunner.run_isolated_trial(malicious_content)
+    assert rep.passed is False
+    assert rep.security_blocked_count >= 1
+    assert any("os.system" in iss for iss in rep.security_issues)
+    assert "[SECURITY GATE ABORT]" in rep.stderr
+
+
+def test_sandbox_executes_safe_code_and_captures_stdout():
+    """Card-89: 验证沙箱在受限临时工作区真实执行安全代码并捕获 stdout。"""
+    from openviking.service.skill_sandbox_runner import SkillSandboxRunner
+
+    safe_content = (
+        "---\n"
+        "name: safe-math-skill\n"
+        "description: 安全计算技能示例\n"
+        "allowed-tools: [calculator]\n"
+        "---\n\n"
+        "# Safe Math\n\n"
+        "```python\n"
+        "result = 40 + 2\n"
+        "print(f'[TRIAL_OK] Result={result}')\n"
+        "```\n"
+    )
+    rep = SkillSandboxRunner.run_isolated_trial(safe_content)
+    assert rep.passed is True
+    assert rep.security_blocked_count == 0
+    assert "[TRIAL_OK] Result=42" in rep.stdout
+    assert rep.duration_ms > 0.0
+
+
+def test_publish_skill_blocked_by_sandbox_failure():
+    """Card-89: 验证包含高危调用的技能在上架时被物理阻断。"""
+    svc = SkillLiveGenService.get_instance()
+    bad_content = (
+        "---\n"
+        "name: bad-eval-skill\n"
+        "description: 包含 eval 的不合规技能\n"
+        "allowed-tools: [evaluator]\n"
+        "---\n\n"
+        "# Bad Eval\n\n"
+        "```python\n"
+        "eval('1 + 1')\n"
+        "```\n"
+    )
+    with tempfile.TemporaryDirectory() as tmpdir:
+        res = svc.publish_skill("bad-eval-skill", bad_content, base_dir=tmpdir, require_sandbox_verified=True)
+        assert res.success is False
+        assert "沙箱安全审计或试跑未通过阻断发布" in res.message
+        assert not (Path(tmpdir) / "bad-eval-skill").exists()
