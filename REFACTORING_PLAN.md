@@ -19,7 +19,7 @@
 | **`v1.7.46`** | **Card-92** | **真实记忆遗忘曲线评估与安全冷归档转移闭环 (Memory Temporal Decay & Non-Destructive Cold Archive)** | 1. 记忆全库生命周期体检：扫描真实 SQLite `viking_memories`，按遗忘曲线计算健康分；<br>2. 数据绝对安全（绝不物理删除）：低于阈值记忆安全迁移至 `viking_memories_cold` 冷存储表，活跃向量索引脱水提纯，数据零丢失；<br>3. 一键检视与安全复活：前端座舱支持冷记忆查阅与一键复活还原至活跃库；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
 | **`v1.7.45`** | **Card-91** | **FastMCP 物理挂起与高危操作人工审批闭环 (HITL Dangerous Action Physical Interceptor & Gate)** | 1. FastMCP 网关拦截切面：在工具调用入口识别高危破坏性动作签名；<br>2. 真实的异步协程挂起：真正挂起协程（`SUSPENDED_WAITING_HITL`），带 300s 超时熔断；<br>3. 前端真实审批回显：人类在座舱中点击【批准】凭借 Nonce Token 恢复执行，点击【拒绝】熔断抛异常；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
 | **`v1.7.44`** | **Card-90** | **真实轻量故障注入中间件与韧性演练闭环 (Chaos Resilience Middleware & Watchdog Drill)** | 1. 显式沙箱隔离白名单：仅对带有 `X-Chaos-Probe: true` 的演练请求开启故障注入，100% 隔离生产业务；<br>2. 真实受控故障注入：真实触发 HTTP 429 限流响应与 Watchdog 超时中断信号；<br>3. 物理自愈行为校验：真实检验指数退避重试与僵尸协程物理销毁；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
-| **`v1.7.43`** | **Card-89** | **动态技能沙箱物理试跑与契约验证闭环 (Skill LiveGen Real Sandbox & Contract Validation)** | 1. 只读虚拟沙箱：在隔离目录内安全加载 LLM 生成的动态技能，挂载只读 VikingFS；<br>2. 物理语法与契约门禁：AST 语法树校验与危险系统调用物理阻断；<br>3. 真实 Tool Call 试跑：以受控参数执行 Tool Call 试跑，捕获真实输出与执行耗时（5s 硬超时熔断）；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
+| **`v1.7.43`** | **Card-89** | **动态技能沙箱物理试跑与契约验证闭环 (Skill LiveGen Real Sandbox & Contract Validation)** | 1. 只读虚拟沙箱：在隔离目录内安全加载 LLM 生成的动态技能，挂载只读虚拟工作区；<br>2. 物理语法与契约门禁：AST 语法树校验与危险系统调用（`os.system` / `subprocess` / `eval`）物理阻断；<br>3. 真实 Tool Call 试跑：以受控参数执行 Tool Call 试跑，捕获真实 stdout/stderr 与执行耗时（带超时熔断）；<br>4. 数据安全防线：未通过沙箱测试物理阻断上架；门禁全绿：Pytest 10 项、Vitest 3 项全绿，前端生产构建 14.73s PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.42`** | **Card-88** | **切除“仿真/忽悠”伪逻辑与落地真实磁盘候选归档与动态指标度量 (Eradicate Simulation Pretense, Real Physical Candidate Archiving & Dynamic Physical Metrics)** | 1. 彻底消灭结晶假动作：当执行物理结晶时，不仅在隔离区做快照，更真正物理移出（rmtree）所有被吸收的旧同质化文件夹，使磁盘目录实打实收缩；回滚时物理复原并清理生成的聚合主技能；<br>2. 彻底消灭假数字与 `# 模拟快速基线`：后端动态扫描真实磁盘 734 个技能，真实统计规范达标率（0.97）与 Attempt 门禁放行率（1.0），零写死常数；<br>3. 前端彻底切除“仿真”忽悠字样：将“仿真演进试跑”改为“📋 扫描影响面清单”，将主操作直接定为“🔥 执行物理结晶收敛”，将“仿真守卫”还原为“质量契约门禁”；<br>4. 门禁全绿：单测全绿，Vitest 3 项通过，Pytest 13 项全绿，安全审计扫描 0 密钥，前端生产构建 PASS。 | [x] 已验收通过 ✅ |
 | **`v1.7.41`** | **Card-87** | **前端座舱演进结晶流水线看板与一键自驱交互 (Frontend Skill Evolution Cockpit & Interactive Pipeline)** | 1. 落地技能演进与结晶流水线前端座舱组件 (`src/routes/skills/-components/skill-evolution-cockpit.tsx`)；<br>2. 4 大客观数据指标真实回显：意图冲突消除数、全域平均健康分、Attempt 首解率、结晶主技能数；<br>3. 小白一键交互：提供“⚡ 一键全域演进结晶”与“↩️ 一键无悔回滚”按钮，彻底消灭命令行；<br>4. 门禁全绿：单测全绿，Vitest 5 项通过，安全扫描 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
 | **`v1.7.40`** | **Card-86** | **双链路接口平价与 FastMCP 跨集群演进结晶闭环 (REST & FastMCP Evolution Pipeline Parity)** | 1. 补齐 FastMCP 原生工具：暴露 `openviking_skill_evolution_pipeline`（四维受控契约），赋能跨集群 Agent 一键自驱动；<br>2. 补齐 REST 路由：新增 `/api/v1/skills/evolution/pipeline/run`、`/status`、`/preview` 与 `/rollback` 端点；<br>3. 契约测试与注解全量登记：更新 `test_mcp_tool_annotations.py` 严格受控；<br>4. 门禁全绿：单测全绿，安全审计扫描 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
@@ -2458,22 +2458,38 @@
 
 ---
 
-### 📌 [P1] [ ] Card-89 (v1.7.43): 动态技能沙箱物理试跑与契约验证闭环 (Skill LiveGen Real Sandbox & Contract Validation) ⏳
+### 📌 [P1] [x] Card-89 (v1.7.43): 动态技能沙箱物理试跑与契约验证闭环 (Skill LiveGen Real Sandbox & Contract Validation) ✅
 - **背景与第一性原理**：
-  - **前序诱因与数据安全初衷**：动态生成的技能（LiveGen）由 LLM 在运行时实时产出，包含未知的执行逻辑和潜在的破坏性操作（如恶意文件覆写、死循环卡死主服务）。前人出于对系统稳定与数据安全的防御性考虑，不敢真跑代码，只在 `simulate_trigger` 中做了纯字符串关键词打分，使“沙盒模拟”沦为没有任何试跑能力的文字游戏；
+  - **前序诱因与数据安全初衷**：动态生成的技能（LiveGen）由 LLM 在运行时实时产出，包含未知的执行逻辑和潜在破坏性操作。前人出于对主服务稳定与数据安全考虑不敢真跑代码，只做了字符串关键词打分，使“沙盒模拟”沦为没有试跑能力的文字游戏；
   - **真正的闭环架构与安全防线**：
-    1. **只读虚拟沙箱 (Isolated Temp Sandpit)**：在隔离临时目录中挂载只读虚拟文件系统，物理阻断对系统根目录与生产技能库的写权限；
-    2. **物理静态语法与契约门禁 (AST & Security Guard)**：通过 Python `ast` 严格检查语法合规性，封杀 `eval`、`exec`、`subprocess` 危险系统调用；
-    3. **真实 Tool Call 受控试跑 (Real Tool Call Trial)**：传入受控参数，真实调用本地 2080Ti 模型或模拟器试跑其 Tool Call 契约，捕获真实的 stdout/stderr、返回结构与毫秒级耗时（带 5 秒硬超时熔断）；
-    4. **数字签名准入与物理发布 (Verified Publish)**：唯有在沙箱内 100% 试跑通过且契约合规的动态技能，才允许颁发准入签名并物理写入技能库，彻底终结“假模拟”。
-- **客观数据指标回显 (Frontend Metric Anchor)**：
-  - 沙箱试跑真实执行耗时 (`sandbox_duration_ms`)
-  - Tool Call 契约验证通过率 (`contract_pass_rate`)
-  - 动态技能语法与危险调用拦截数 (`unsafe_invocations_blocked`)
-- **涉及核心文件清单**：
-  - `openviking/service/skill_livegen_service.py` (≤ 400 行)
-  - `openviking/server/routers/skill_livegen.py` (≤ 150 行)
-  - `src/routes/skills/-components/skill-livegen-cockpit.tsx` (≤ 300 行)
+    1. **只读虚拟沙箱 (Isolated Temp Sandpit)**：独立提纯 `SkillSandboxRunner`，在隔离临时目录中只读运行，物理阻断对根目录与生产技能库的写权限；
+    2. **物理静态语法与契约门禁 (AST & Security Guard)**：使用 Python `ast.parse` 深度遍历抽象语法树，硬编码封杀 `os.system`、`shutil.rmtree`、`subprocess`、`eval`、`exec` 等高危调用；
+    3. **真实 Tool Call 受控试跑 (Real Tool Call Trial)**：在安全隔离环境中执行试跑，真实捕获 stdout/stderr、退出码与执行毫秒耗时（带 3 秒硬超时熔断）；
+    4. **数据安全防线与物理准入 (Verified Publish)**：未通过沙箱安全测试或命中高危调用的技能，在前端与后端物理阻断上架，彻底消灭带病入库隐患。
+- **核心治理成果与物理交付物**：
+  - 落地 `SkillSandboxRunner` 独立执行与安全分析深模块 (`openviking/service/skill_sandbox_runner.py`, 180 行)；
+  - 升级 `SkillLiveGenService`，连接真实沙箱指标（`sandbox_passed`, `sandbox_duration_ms`, `security_blocked_count`），并在发布前强制执行沙箱安全审计；
+  - 升级 REST 端点 `/api/v1/skills/livegen/publish` 支持 `require_sandbox` 安全守卫；
+  - 前端座舱落地客观数据瓦片（真实耗时、安全拦截数、白盒终端日志抽屉）与“数据安全防线：未通过沙箱物理禁用上架”机制；
+  - 严格遵守单文件行数铁律：所有文件均在 500 行以内（大部分位于 100~300 行黄金甜点区）。
+- **交付验收凭证**：
+  - **Commit**: `35d5a8ebd`
+  - **Git Tag**: `v1.7.43`
+  - **修改文件清单**:
+    - `openviking/service/skill_sandbox_runner.py` (新文件, 180 行)
+    - `openviking/service/skill_livegen_service.py` (365 行)
+    - `openviking/server/routers/skill_livegen.py` (112 行)
+    - `src/routes/skills/-components/skill-livegen-types.ts` (53 行)
+    - `src/routes/skills/-components/skill-livegen-sandbox.tsx` (248 行)
+    - `src/routes/skills/-components/skill-livegen-sandbox.test.tsx` (新测试, 137 行)
+    - `tests/unit/test_skill_livegen.py` (288 行)
+    - `openviking/_version.py` & `package.json`
+  - **测试执行结果**:
+    - Pytest: 10 passed in 2.24s (`tests/unit/test_skill_livegen.py`)。
+    - Vitest: 3 passed in 1.76s (`src/routes/skills/-components/skill-livegen-sandbox.test.tsx`)。
+    - 前端构建: `npm run release:sync` PASS (14.73s)。
+    - 安全审计: `python3 scripts/security_check.py` PASS (0 密钥泄露)。
+  - **运行时服务状态**: `openviking.service` 健康运行，`/health` 与 `https://vk.tide.red/health` 全面返回 `1.7.43`。
 
 ---
 
