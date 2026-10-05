@@ -15,6 +15,11 @@
 
 | 版本 Tag      | 任务工单 ID | 模块与重构主题                                                                                                                                                | 核心治理成果与物理交付物                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |     验收状态      |
 | :------------ | :---------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------: |
+| **`v1.7.47`** | **Card-93** | **向量节点真实探测、BM25 诚实降级与多模态检索闭环 (Honest Dense-Degradation & GPU Node Heartbeat Fallback)** | 1. 消除伪造假分数：彻底切除 hybrid_probe 中的假 Dense 匹配，绝不造假；<br>2. 向量节点真探活：轻量探测 2080Ti 端口 11432 状态；在线执行真 4096d+BM25 RRF 融合；离线诚实标记 `dense_status: 'offline'` 并平滑降级至纯 BM25；<br>3. 前端座舱白盒化：直观回显 GPU 节点真实存活状态与降级标签；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
+| **`v1.7.46`** | **Card-92** | **真实记忆遗忘曲线评估与安全冷归档转移闭环 (Memory Temporal Decay & Non-Destructive Cold Archive)** | 1. 记忆全库生命周期体检：扫描真实 SQLite `viking_memories`，按遗忘曲线计算健康分；<br>2. 数据绝对安全（绝不物理删除）：低于阈值记忆安全迁移至 `viking_memories_cold` 冷存储表，活跃向量索引脱水提纯，数据零丢失；<br>3. 一键检视与安全复活：前端座舱支持冷记忆查阅与一键复活还原至活跃库；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
+| **`v1.7.45`** | **Card-91** | **FastMCP 物理挂起与高危操作人工审批闭环 (HITL Dangerous Action Physical Interceptor & Gate)** | 1. FastMCP 网关拦截切面：在工具调用入口识别高危破坏性动作签名；<br>2. 真实的异步协程挂起：真正挂起协程（`SUSPENDED_WAITING_HITL`），带 300s 超时熔断；<br>3. 前端真实审批回显：人类在座舱中点击【批准】凭借 Nonce Token 恢复执行，点击【拒绝】熔断抛异常；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
+| **`v1.7.44`** | **Card-90** | **真实轻量故障注入中间件与韧性演练闭环 (Chaos Resilience Middleware & Watchdog Drill)** | 1. 显式沙箱隔离白名单：仅对带有 `X-Chaos-Probe: true` 的演练请求开启故障注入，100% 隔离生产业务；<br>2. 真实受控故障注入：真实触发 HTTP 429 限流响应与 Watchdog 超时中断信号；<br>3. 物理自愈行为校验：真实检验指数退避重试与僵尸协程物理销毁；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
+| **`v1.7.43`** | **Card-89** | **动态技能沙箱物理试跑与契约验证闭环 (Skill LiveGen Real Sandbox & Contract Validation)** | 1. 只读虚拟沙箱：在隔离目录内安全加载 LLM 生成的动态技能，挂载只读 VikingFS；<br>2. 物理语法与契约门禁：AST 语法树校验与危险系统调用物理阻断；<br>3. 真实 Tool Call 试跑：以受控参数执行 Tool Call 试跑，捕获真实输出与执行耗时（5s 硬超时熔断）；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
 | **`v1.7.42`** | **Card-88** | **切除“仿真/忽悠”伪逻辑与落地真实磁盘候选归档与动态指标度量 (Eradicate Simulation Pretense, Real Physical Candidate Archiving & Dynamic Physical Metrics)** | 1. 彻底消灭结晶假动作：当执行物理结晶时，不仅在隔离区做快照，更真正物理移出（rmtree）所有被吸收的旧同质化文件夹，使磁盘目录实打实收缩；回滚时物理复原并清理生成的聚合主技能；<br>2. 彻底消灭假数字与 `# 模拟快速基线`：后端动态扫描真实磁盘 734 个技能，真实统计规范达标率（0.97）与 Attempt 门禁放行率（1.0），零写死常数；<br>3. 前端彻底切除“仿真”忽悠字样：将“仿真演进试跑”改为“📋 扫描影响面清单”，将主操作直接定为“🔥 执行物理结晶收敛”，将“仿真守卫”还原为“质量契约门禁”；<br>4. 门禁全绿：单测全绿，Vitest 3 项通过，Pytest 13 项全绿，安全审计扫描 0 密钥，前端生产构建 PASS。 | [x] 已验收通过 ✅ |
 | **`v1.7.41`** | **Card-87** | **前端座舱演进结晶流水线看板与一键自驱交互 (Frontend Skill Evolution Cockpit & Interactive Pipeline)** | 1. 落地技能演进与结晶流水线前端座舱组件 (`src/routes/skills/-components/skill-evolution-cockpit.tsx`)；<br>2. 4 大客观数据指标真实回显：意图冲突消除数、全域平均健康分、Attempt 首解率、结晶主技能数；<br>3. 小白一键交互：提供“⚡ 一键全域演进结晶”与“↩️ 一键无悔回滚”按钮，彻底消灭命令行；<br>4. 门禁全绿：单测全绿，Vitest 5 项通过，安全扫描 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
 | **`v1.7.40`** | **Card-86** | **双链路接口平价与 FastMCP 跨集群演进结晶闭环 (REST & FastMCP Evolution Pipeline Parity)** | 1. 补齐 FastMCP 原生工具：暴露 `openviking_skill_evolution_pipeline`（四维受控契约），赋能跨集群 Agent 一键自驱动；<br>2. 补齐 REST 路由：新增 `/api/v1/skills/evolution/pipeline/run`、`/status`、`/preview` 与 `/rollback` 端点；<br>3. 契约测试与注解全量登记：更新 `test_mcp_tool_annotations.py` 严格受控；<br>4. 门禁全绿：单测全绿，安全审计扫描 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
@@ -2450,4 +2455,100 @@
     - Vitest: 3 passed in 1.53s (`src/routes/skills/-components/skill-evolution-cockpit.test.tsx`)。
   - **安全与构建门禁**: `scripts/security_check.py` PASS（0 密钥泄露），`npm run build` PASS（14.17s 零报错）。
   - **运行时服务状态**: `systemctl --user restart openviking.service` 成功，`/health` 返回 `v1.7.42`，公网域名 `https://vk.tide.red/health` 返回 `v1.7.42`。
+
+---
+
+### 📌 [P1] [ ] Card-89 (v1.7.43): 动态技能沙箱物理试跑与契约验证闭环 (Skill LiveGen Real Sandbox & Contract Validation) ⏳
+- **背景与第一性原理**：
+  - **前序诱因与数据安全初衷**：动态生成的技能（LiveGen）由 LLM 在运行时实时产出，包含未知的执行逻辑和潜在的破坏性操作（如恶意文件覆写、死循环卡死主服务）。前人出于对系统稳定与数据安全的防御性考虑，不敢真跑代码，只在 `simulate_trigger` 中做了纯字符串关键词打分，使“沙盒模拟”沦为没有任何试跑能力的文字游戏；
+  - **真正的闭环架构与安全防线**：
+    1. **只读虚拟沙箱 (Isolated Temp Sandpit)**：在隔离临时目录中挂载只读虚拟文件系统，物理阻断对系统根目录与生产技能库的写权限；
+    2. **物理静态语法与契约门禁 (AST & Security Guard)**：通过 Python `ast` 严格检查语法合规性，封杀 `eval`、`exec`、`subprocess` 危险系统调用；
+    3. **真实 Tool Call 受控试跑 (Real Tool Call Trial)**：传入受控参数，真实调用本地 2080Ti 模型或模拟器试跑其 Tool Call 契约，捕获真实的 stdout/stderr、返回结构与毫秒级耗时（带 5 秒硬超时熔断）；
+    4. **数字签名准入与物理发布 (Verified Publish)**：唯有在沙箱内 100% 试跑通过且契约合规的动态技能，才允许颁发准入签名并物理写入技能库，彻底终结“假模拟”。
+- **客观数据指标回显 (Frontend Metric Anchor)**：
+  - 沙箱试跑真实执行耗时 (`sandbox_duration_ms`)
+  - Tool Call 契约验证通过率 (`contract_pass_rate`)
+  - 动态技能语法与危险调用拦截数 (`unsafe_invocations_blocked`)
+- **涉及核心文件清单**：
+  - `openviking/service/skill_livegen_service.py` (≤ 400 行)
+  - `openviking/server/routers/skill_livegen.py` (≤ 150 行)
+  - `src/routes/skills/-components/skill-livegen-cockpit.tsx` (≤ 300 行)
+
+---
+
+### 📌 [P1] [ ] Card-90 (v1.7.44): 真实轻量故障注入中间件与韧性演练闭环 (Chaos Resilience Middleware & Watchdog Drill) ⏳
+- **背景与第一性原理**：
+  - **前序诱因与数据安全初衷**：验证系统在面对限流、抖动、卡死时的自愈韧性，需要混沌工程（Chaos Engineering）。但前人极度担心故障注入会污染正常生产会话或导致 OpenViking 守护进程崩溃，因此在 `simulate_probe` 中纯粹往内存字典记录静态假数据，甚至用 `[i*i for i in range(10000)]` 假装计算耗时；
+  - **真正的闭环架构与安全防线**：
+    1. **显式沙箱隔离白名单 (Probe Header Isolation)**：仅对带有 `X-Chaos-Probe: true` 请求头或专用测试 Session 激活故障中间件，对普通请求 100% 旁路放行，绝不污染生产业务；
+    2. **真实受控故障注入 (Controlled Fault Injection)**：在网关层真实触发瞬态 HTTP 429（Too Many Requests）响应、注入 1500ms 网络抖动延迟、或触发 Watchdog `abort_controller` 中断；
+    3. **物理自愈行为校验 (Self-Healing Behavior Verification)**：真实检验客户端/Agent 是否正确执行带 Jitter 的指数退避重试，检验 Watchdog 是否在超时后物理终止僵尸协程并回收线程锁；
+    4. **自动复原与客观指标回显 (Auto-Recovery & Real Telemetry)**：单次演练结束（最多 30 秒）自动关闭注入开关，前端座舱回显真实的重试轮次、熔断拦截成功率与资源回收耗时，彻底终结假数据自嗨。
+- **客观数据指标回显 (Frontend Metric Anchor)**：
+  - 真实 429 指数退避自愈成功率 (`backoff_recovery_rate`)
+  - 僵尸协程超时熔断与资源回收耗时 (`watchdog_reclaim_ms`)
+  - 生产业务 0 污染率 (`production_isolation_rate: 100%`)
+- **涉及核心文件清单**：
+  - `openviking/core/agent_loop_telemetry.py` (≤ 300 行)
+  - `openviking/server/routers/system_harness.py` (≤ 450 行)
+  - `src/routes/system/-components/harness-failure-sandbox-probe.tsx` (≤ 300 行)
+
+---
+
+### 📌 [P1] [ ] Card-91 (v1.7.45): FastMCP 物理挂起与高危操作人工审批闭环 (HITL Dangerous Action Physical Interceptor & Gate) ⏳
+- **背景与第一性原理**：
+  - **前序诱因与数据安全初衷**：智能体自主操作时，破坏性命令（如 `rm -rf`、`DELETE FROM`、修改凭据配置）具有不可逆性，必须人工介入（HITL）。前人只在前端画了审批卡片，后端只提供了往内存 push 假卡片的 `simulate_hitl_intercept`，因为底层缺乏异步协程挂起与放行机制，怕把 Agent 永久挂死；
+  - **真正的闭环架构与安全防线**：
+    1. **FastMCP 网关安全拦截切面 (Gateway AOP Interceptor)**：在 FastMCP 工具分发前置钩子中定义高危正则与动作签名；
+    2. **真实的异步协程挂起 (Physical Async Suspend)**：命中高危动作时，中间件创建唯一的 `PendingApprovalFuture` 并真正 `await` 挂起该任务协程（状态置为 `SUSPENDED_WAITING_HITL`），带 300 秒硬超时熔断（超时自动拒绝并释放锁）；
+    3. **前端真实工单回显与双向交互 (Real Approval Cockpit)**：前端座舱实时拉取真实的挂起工单，展示发起 Agent、调用参数白盒快照与风险级别；
+    4. **数字签名放行与熔断终止 (Nonce Token Resume or Abort)**：人类点击【批准】后，系统向该 Future 发送放行信号（含单次 Nonce 签名）恢复物理执行；人类点击【拒绝】则抛出安全拒绝异常终止执行，形成全链路物理拦截与数据防伤闭环。
+- **客观数据指标回显 (Frontend Metric Anchor)**：
+  - 真实高危操作拦截率 (`dangerous_intercept_rate`)
+  - 审批等待超时自动熔断率 (`approval_timeout_abort_rate`)
+  - 审批通过后协程安全恢复耗时 (`resume_latency_ms`)
+- **涉及核心文件清单**：
+  - `openviking/core/hitl_offload_telemetry.py` (≤ 300 行)
+  - `openviking/server/routers/hitl_offload.py` (≤ 150 行)
+  - `openviking/server/mcp_endpoint.py` (挂载安全拦截切面)
+  - `src/routes/system/-components/harness-hitl-offload-center.tsx` (≤ 300 行)
+
+---
+
+### 📌 [P1] [ ] Card-92 (v1.7.46): 真实记忆遗忘曲线评估与安全冷归档转移闭环 (Memory Temporal Decay & Non-Destructive Cold Archive) ⏳
+- **背景与第一性原理**：
+  - **前序诱因与数据安全初衷**：海量历史记忆如果不做生命周期管理，会严重稀释向量检索精度；但记忆是用户最核心的智力资产，任何物理删除一旦发生误判，数据将彻底丢失！前人出于极度的数据安全敬畏，只做了一个纯前端算公式的“衰减模拟器”，对真实 SQLite 数据库不敢碰分毫；
+  - **真正的闭环架构与安全防线**：
+    1. **真实 SQLite 全库生命周期体检 (Real SQLite Storage Audit)**：按记忆类型、最后访问间隔、命中频次与半衰期公式，动态计算全量记忆项的真实健康分；
+    2. **数据绝对安全 —— 冷归档而非物理删除 (Archive, Never Delete)**：针对健康分低于阈值的休眠记忆，**严禁使用 DELETE 物理抹除**！而是通过事务将其移入 `viking_memories_cold` 冷存储表，从高频向量索引中安全剥离，确保日常检索信噪比提升，且原始数据零丢失；
+    3. **一键检视与安全复活/唤醒 (One-Click Inspect & Revive)**：前端座舱真实展示活跃记忆与冷归档记忆比例，支持随时查阅冷存储，并在需要时“一键安全复活 (Revive)”还原至活跃库；
+    4. **两阶段转移事务安全保障 (2PC Transaction Guard)**：冷归档迁移过程使用 SQLite 事务原子提交，任何异常自动回滚，确保数据 100% 完整无损。
+- **客观数据指标回显 (Frontend Metric Anchor)**：
+  - 活跃记忆检索信噪比提升率 (`retrieval_snr_gain`)
+  - 冷归档安全迁移记忆数 (`cold_archived_count`)
+  - 冷记忆一键安全复活成功率 (`revive_success_rate: 100%`)
+- **涉及核心文件清单**：
+  - `openviking/service/memory_lifecycle_fsm.py` (≤ 350 行)
+  - `openviking/server/routers/memory_lifecycle.py` (≤ 250 行)
+  - `src/routes/memory/-components/temporal-decay-simulator.tsx` (重构为真实冷归档座舱，≤ 300 行)
+
+---
+
+### 📌 [P1] [ ] Card-93 (v1.7.47): 向量节点真实探测、BM25 诚实降级与多模态检索闭环 (Honest Dense-Degradation & GPU Node Heartbeat Fallback) ⏳
+- **背景与第一性原理**：
+  - **前序诱因与数据安全初衷**：混合检索依赖本地 Windows 2080Ti 节点的向量服务（11432端口）。当 GPU 服务离线或网络微抖动时，为了不给调用方抛 500 报错，前人写下了“simulated Dense matches”等代码伪造假分数，违反了绝对数据真实性；
+  - **真正的闭环架构与安全防线**：
+    1. **GPU 向量节点超低时延心跳嗅探 (Lightweight Heartbeat Probe)**：每次检索前以 0.2s 极短超时探活 2080Ti 本地 11432 端口（WeMM-Embedding-9B）；
+    2. **在线全功能闭环 (Online RRF Fusion)**：若 GPU 节点在线，执行真实的 4096d 密集嵌入提取，并与 SQLite FTS5 的 BM25 稀疏分数进行真实的 RRF（倒数排序融合）；
+    3. **离线诚实安全降级 (Honest Fallback Degradation)**：若 GPU 节点离线，**坚决不生成任何伪造的 Dense 分数**！而是以纯 BM25 稀疏结果作为最终排序，响应体中诚实标记 `dense_status: "offline", degraded: true`，确保服务高可用（永不报 500）且数据 100% 诚实真实；
+    4. **前端大盘真实回显与告警提示 (Transparent Frontend Status)**：前端座舱直观展示 Dense 节点在线状态、混合融合耗时与降级标牌，让开发者和 Agent 白盒掌握当前的检索置信度。
+- **客观数据指标回显 (Frontend Metric Anchor)**：
+  - 向量节点真实在线率与心跳延迟 (`gpu_node_health_ms`)
+  - 真实 RRF 融合准确率 (`real_rrf_recall_at_5`)
+  - 离线降级零假分合规率 (`zero_mock_compliance_rate: 100%`)
+- **涉及核心文件清单**：
+  - `openviking/server/routers/hybrid_search.py` (≤ 200 行)
+  - `openviking/retrieve/bm25_fts_index.py` (≤ 300 行)
+  - `src/routes/search/-components/bm25-hybrid-cockpit.tsx` (≤ 300 行)
 
