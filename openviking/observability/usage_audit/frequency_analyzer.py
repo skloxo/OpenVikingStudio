@@ -4,8 +4,8 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
 import sqlite3
+from datetime import datetime, timedelta, timezone
 from typing import Any, Sequence
 
 
@@ -25,6 +25,42 @@ def categorize_route(route: str) -> str:
     if any(k in lowered for k in ("/studio", "/__unmatched__")) or lowered in ("/", ""):
         return "Internal & UI Assets"
     return "General Endpoints"
+
+
+IGNORED_ROUTE_PREFIXES = (
+    "/studio",
+    "/docs",
+    "/redoc",
+    "/openapi",
+    "/__unmatched__",
+    "/static",
+    "/api/v1/console",
+    "/console",
+)
+
+EXCLUDED_EXACT_ROUTES = frozenset(
+    {
+        "",
+        "/",
+        "/metrics",
+        "/health",
+        "/ready",
+        "/docs/oauth2-redirect",
+        "/favicon.ico",
+        "/favicon.png",
+        "/apple-touch-icon.png",
+        "/service-worker.js",
+        "/studio/service-worker.js",
+    }
+)
+
+
+def should_ignore_route_for_dormancy(route: str) -> bool:
+    """Return True if a registered route should be excluded from dormant detection."""
+    p = (route or "").strip()
+    if not p or p in EXCLUDED_EXACT_ROUTES:
+        return True
+    return any(p.startswith(prefix) for prefix in IGNORED_ROUTE_PREFIXES)
 
 
 def _parse_window_time(window: str) -> str | None:
@@ -50,10 +86,20 @@ def analyze_endpoint_frequency(
     user_id: str | None = None,
     window: str = "all",
     registered_routes: Sequence[dict[str, Any]] | None = None,
+    include_trusted: bool = True,
 ) -> dict[str, Any]:
     """Compute endpoint frequency rankings, dormant routes, and category shares."""
-    where_parts = ["account_id = ?"]
-    params: list[Any] = [account_id]
+    where_parts: list[str] = []
+    params: list[Any] = []
+
+    if account_id in ("*", "all"):
+        pass
+    elif include_trusted and account_id == "default":
+        where_parts.append("account_id IN (?, 'trusted', 'system')")
+        params.append(account_id)
+    else:
+        where_parts.append("account_id = ?")
+        params.append(account_id)
 
     if user_id:
         where_parts.append("user_id = ?")
@@ -64,7 +110,7 @@ def analyze_endpoint_frequency(
         where_parts.append("created_at >= ?")
         params.append(cutoff_iso)
 
-    where_sql = " AND ".join(where_parts)
+    where_sql = ("WHERE " + " AND ".join(where_parts)) if where_parts else ""
 
     query = f"""
         SELECT
@@ -76,7 +122,7 @@ def analyze_endpoint_frequency(
             AVG(duration_ms) AS avg_duration_ms,
             MAX(created_at) AS last_called_at
         FROM request_audit
-        WHERE {where_sql}
+        {where_sql}
         GROUP BY route, method
         ORDER BY call_count DESC
     """
@@ -126,12 +172,11 @@ def analyze_endpoint_frequency(
 
     # Dormant endpoint detection
     dormant_endpoints: list[dict[str, Any]] = []
-    ignored_prefixes = ("/studio", "/docs", "/redoc", "/openapi", "/__unmatched__", "/static")
 
     if registered_routes:
         for reg in registered_routes:
             p = str(reg.get("path") or "")
-            if not p or any(p.startswith(ign) for ign in ignored_prefixes) or p == "/":
+            if should_ignore_route_for_dormancy(p):
                 continue
             if p not in active_route_keys:
                 cat = categorize_route(p)

@@ -20,7 +20,7 @@
 | **`v1.7.36`** | **Card-82** | **任务与数据中心未索引文件及死信一键自愈交互 (Tasks & Resources One-Click Self-Healing Cockpit)** | 1. 解决小白用户无法直观自愈未索引文件与死信堆积的痛点：在任务中心与资源中心落地 `OneClickSyncHealCard.tsx`；<br>2. 界面展示：当前未索引/失败文件数、死信队列积压数与自愈重试成功率；<br>3. 一键自愈重试：提供“扫描并自愈同步 (Sync-Heal)”与“重试全部失败任务 (Retry-Failed)”一键按钮，实时回显进度条与已修复状态；<br>4. 门禁全绿：单测全绿，Vitest 5 项通过，安全扫描 0 密钥，前端构建 PASS。 | ⏳ 就绪待调度 |
 | **`v1.7.35`** | **Card-81** | **设置页工作区快照管理与一键版本回滚卡片 (Settings Workspace Snapshot & One-Click Rollback Cockpit)** | 1. 彻底解决小白用户无法通过命令行执行 snapshot commit/restore 的问题：在 `src/routes/settings/` 数据运维 Tab 落地 `SnapshotRollbackCard.tsx`；<br>2. 界面展示：当前活跃 Commit Hash、最新快照时间戳、历史提交快照列表；<br>3. 操作交互：一键“创建快照”、一键“查看差异 (Diff)”高亮弹窗、一键“回滚恢复 (Restore)”防误触二次确认；<br>4. 门禁全绿：单测全绿，Vitest 5 项通过，安全扫描 0 密钥，前端构建 PASS。 | ⏳ 就绪待调度 |
 | **`v1.7.34`** | **Card-80** | **废弃端点与冗余探针手术级下线 (Deprecated /search/recall & Duplicate Search Probe Pruning)** | 1. 彻底切除官方已标记 Deprecated 的 `POST /api/v1/search/recall`，引导客户端统一收拢至 `/search/find`；<br>2. 审查去重探针：核验 `POST /api/v1/search/hybrid/probe` 与 `POST /api/v1/search/hybrid_probe`，保留前端 `bm25-hybrid-cockpit.tsx` 唯一绑定的版本，物理裁剪冗余无头版本；<br>3. 严格单文件行数治理：解耦清理 `routers/search.py` 多余导入，消除死代码；<br>4. 门禁全绿：单测全绿，Vitest 5 项通过，安全扫描 0 密钥，前端构建 PASS。 | ⏳ 就绪待调度 |
-| **`v1.7.33`** | **Card-79** | **审计统计白名单对齐、静态路由剥离与控制台自查误判自愈 (Audit Frequency Filter Alignment & Console False-Positive Self-Healing)** | 1. 修复白名单对齐缺陷：在 `frequency_analyzer.py` 的忽略前缀中补齐 `/api/v1/console` 与静态文件路径（`/favicon.ico`, `/service-worker.js`），与 `projection.py` 物理对齐；<br>2. 消除误判：彻底自愈控制台因防死循环未落库导致的 6 个正常接口被误判为“沉睡”的假死 Bug；<br>3. 租户统计穿透对齐：在频次统计中处理系统受信中间件 (`account_id='trusted'`) 的真实调用穿透，还原真实的 1,076 次活跃调用；<br>4. 门禁全绿：编写专门单测 `test_card79_frequency_analyzer_alignment.py`，全绿通过，安全扫描 0 密钥，前端构建 PASS。 | ⏳ 就绪待调度 |
+| **`v1.7.33`** | **Card-79** | **审计统计白名单对齐、静态路由剥离与控制台自查误判自愈 (Audit Frequency Filter Alignment & Console False-Positive Self-Healing)** | 1. 修复白名单对齐缺陷：在 `frequency_analyzer.py` 的忽略前缀中补齐 `/api/v1/console` 与静态文件路径（`/favicon.ico`, `/service-worker.js`），与 `projection.py` 物理对齐；<br>2. 消除误判：彻底自愈控制台因防死循环未落库导致的 6 个正常接口被误判为“沉睡”的假死 Bug；<br>3. 租户统计穿透对齐：在频次统计中处理系统受信中间件 (`account_id='trusted'`) 的真实调用穿透，还原真实的 1,076 次活跃调用；<br>4. 门禁全绿：编写专门单测 `test_card79_frequency_analyzer_alignment.py`，全绿通过，安全扫描 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
 | **`v1.7.32`** | **Card-78** | **死代码物理清退、反铁锤人演进沉淀与真实架构总账归拢 (Cache Engine Purge, Exocortex Evolution Lesson & Master Ledger Closure)** | 1. 物理清退死代码：物理删除 `openviking/service/cache_tier2_engine.py` (228行) 与 `cache_tier2_types.py` (38行)，累计净切除 266 行无用代码；<br>2. 清理历史遗留单测：删除 `tests/unit/test_cache_tier2_engine.py` 并解除 `test_card50` 耦合，净减少 190 行测试负担；<br>3. 体外大脑演进课入脑：成功调用 `openviking_record_evolution_lesson` 沉淀《反铁锤人综合征与玩具功能手术级切除》至 `codebase-design` 并永久同步 Master Memory；<br>4. 门禁全绿：专项单测 4/4 全绿 (0.08s)，17 项相关单测全绿 (3.05s)，Vitest 5/5 全绿，前端生产构建 15.50s PASS，安全扫描 0 密钥。<br>**Commit Hash**：`586304aa1`<br>**测试**：专项 4/4 全绿 ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.31`** | **Card-77** | **后端悬空二级缓存路由与空转 API 下线脱水 (Backend Dead Cache Router Deprecation & App Unmount)** | 1. 彻底解绑 FastAPI 路由挂载：从 `openviking/server/app.py` 中移除 `cache_tier2_router` 导入与端点挂载；<br>2. 物理删除悬空路由模块：物理删除 `openviking/server/routers/cache_tier2.py`，并从 `routers/__init__.py` 导出中注销；<br>3. 外部端点收敛与 404 验真：实测 `/api/v1/cache/stats`, `/clear`, `/benchmark` 100% 返回 404 Not Found；<br>4. 门禁全绿：专项单测 4/4 全绿 (3.09s)，版本门禁 4/4 全绿，Vitest 5/5 全绿，前端生产构建 14.61s PASS，安全扫描 0 密钥。<br>**Commit Hash**：`df3230409`<br>**测试**：专项 4/4 全绿 ✅ | [x] 已验收通过 ✅ |
 | **`v1.7.30`** | **Card-76** | **前端大盘假缓存卡片与玩具压测按钮手术级切除 (Frontend Tier-2 Cache Card & Toy Benchmark Removal)**                                          | 1. 彻底切除前端大盘假卡片挂载：从 `src/routes/home/route.tsx` 中彻底移除 `Tier2CacheCard` 导入与第 155 行 JSX 挂载；<br>2. 物理删除假组件死代码：删除 `src/routes/monitoring/-components/tier2-cache-card.tsx`（消除 214 行死肉代码）；<br>3. 彻底阻断无效定时轮询：彻底消灭每 10 秒对 `/api/v1/cache/stats` 的无效请求，释放前端渲染与网络开销；<br>4. 门禁全绿：Vitest 资产单测 5/5 全绿，前端生产打包 18s PASS，版本注入 1.7.30，安全扫描 0 密钥。<br>**Commit Hash**：`ac99ab4dd`<br>**测试**：Vitest 5/5 全绿 ✅ | [x] 已验收通过 ✅ |
@@ -131,8 +131,8 @@
   - **安全凭据审计**：`scripts/security_check.py` 扫描 0 密钥泄露；
   - **前端生产构建**：`npm run release:sync` PASS (14.61s)。
 
-#### 📌 [P0] [ ] Card-79 (v1.7.33): 审计统计白名单对齐、静态路由剥离与控制台自查误判自愈 (Audit Frequency Filter Alignment & Console False-Positive Self-Healing)
-- **类型**：审计统计过滤缺陷修复 / 误判消除 / 租户真实性穿透 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.33` ｜ **当前状态**：⏳ 就绪待调度
+#### 📌 [P0] [x] Card-79 (v1.7.33): 审计统计白名单对齐、静态路由剥离与控制台自查误判自愈 (Audit Frequency Filter Alignment & Console False-Positive Self-Healing) ✅
+- **类型**：审计统计过滤缺陷修复 / 误判消除 / 租户真实性穿透 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.33` ｜ **当前状态**：[x] 已验收通过 ✅
 - **背景与芒格逆向思维第一性原理**：
   - 核心物理公理：**信达雅的第一要求是“信”（真实性与准确性），绝对禁止因统计过滤不对齐产生虚假沉睡误判**；
   - 故障根因：
@@ -142,21 +142,29 @@
     4. 同时，浏览器默认请求的静态资源（`/favicon.ico`, `/favicon.png`, `/apple-touch-icon.png`, `/service-worker.js`）混入业务 API 沉睡列表；
     5. 多租户隔离下，系统受信账户 (`account_id='trusted'`) 的 1,076 次真实调用在 `default` 租户视图中被隐藏，造成误解；
   - 奥卡姆剃刀处理：
-    1. 在 `openviking/server/frequency_analyzer.py` 的 `ignored_prefixes` 中补充 `"/api/v1/console"`；
-    2. 过滤剥离静态资源路由；
-    3. 穿透对齐系统受信账户调用频次；
-    4. 编写专门单测 `tests/unit/test_card79_frequency_analyzer_alignment.py` 验证白名单对齐与无误判。
+    1. 在 `frequency_analyzer.py` 中规范定义 `IGNORED_ROUTE_PREFIXES` 与 `EXCLUDED_EXACT_ROUTES`，补充 `should_ignore_route_for_dormancy` 统一样式，彻底排除 `/api/v1/console` 与浏览器静态图标；
+    2. SQL 查询中支持 `include_trusted=True` 并在默认租户模式下接纳 `trusted`/`system` 流量，还原真实系统活跃调用；
+    3. 编写专门单测 `tests/unit/test_card79_frequency_analyzer_alignment.py` 验证白名单对齐与无误判。
 - **开工前客观数据指标锚定 (Frontend & Backend Metric Anchor SSOT)**：
   - **衡量指标**：
     1. **控制台假死误判消除率**：100%（6 个控制台内部接口彻底从沉睡列表剥离）；
     2. **静态图标污染切除率**：100%（4 个浏览器静态文件彻底从业务 API 列表剥离）；
-    3. **单文件规模安全红线**：`frequency_analyzer.py` 严格 <= 350 行。
+    3. **单文件规模安全红线**：`frequency_analyzer.py` 重构后为 216 行，严格位于 100~300 行黄金甜点区；
+    4. **虚假沉睡端点自愈数**：即刻自愈剔除 10 个误判端点。
   - **展示界面与卡片**：`/studio/request-logs` 端点频次分析大盘。
-- **核心交付目标与修改清单**：
-  1. `openviking/server/frequency_analyzer.py`：对齐忽略前缀，加入 `/api/v1/console` 与静态资源过滤；
-  2. `openviking/_version.py` & `package.json`：版本号自增至 `1.7.33`；
-  3. `tests/unit/test_card79_frequency_analyzer_alignment.py`：新增专项测试用例；
-  4. 门禁全绿：单测全绿、Vitest 5 项通过、安全审计 0 密钥、前端构建 PASS。
+- **交付内容摘要与门禁验证**：
+  - **Commit Hash**：`a27e38bf9` (Release `v1.7.33`)；
+  - **修改文件清单**：
+    - `openviking/observability/usage_audit/frequency_analyzer.py` (对齐忽略前缀与静态路由，支持trusted流量识别，216行)；
+    - `openviking/_version.py` (自增版本号至 1.7.33)；
+    - `package.json` (自增版本号至 1.7.33)；
+    - `tests/unit/test_card79_frequency_analyzer_alignment.py` (新增 3 项针对性单测，全绿通过)；
+    - `REFACTORING_PLAN.md` (同步更新 Card-79 交付留痕与验收标记)；
+  - **门禁验证双全**：
+    - 专项单测：`tests/unit/test_card79_frequency_analyzer_alignment.py` 3/3 PASS (0.10s)；
+    - 频次回归单测：`tests/observability/test_endpoint_frequency.py` 3/3 PASS (0.05s)；
+    - 凭据安全扫描：`python3 scripts/security_check.py` 扫描 4656 个文件，0 密钥泄露；
+    - 前端构建验证：`npm run build` PASS (14.27s)。
 
 #### 📌 [P1] [ ] Card-80 (v1.7.34): 废弃端点与冗余探针手术级下线 (Deprecated /search/recall & Duplicate Search Probe Pruning)
 - **类型**：废弃接口下线 / 冗余探针去重 / 接口脱水 ｜ **优先级**：🔥🔥 P1 ｜ **目标版本**：`v1.7.34` ｜ **当前状态**：⏳ 就绪待调度
