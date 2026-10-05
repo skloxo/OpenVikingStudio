@@ -4,10 +4,12 @@
 
 from __future__ import annotations
 
+import json
 import logging
 from pathlib import Path
 import shutil
 from typing import Any, Dict, List, Optional
+import yaml
 
 logger = logging.getLogger(__name__)
 
@@ -73,11 +75,60 @@ class SkillAssetHeritageManager:
         return inherited
 
     @staticmethod
+    def enrich_crystallized_content(
+        draft_content: str,
+        target_slug: str,
+        candidate_skills: List[Dict[str, Any]],
+        domain_name: str,
+    ) -> str:
+        """Aggregate aliases, triggers, and tools into consolidated SKILL.md draft."""
+        absorbed_slugs = [s["name"] for s in candidate_skills if s["name"] != target_slug]
+
+        if draft_content.startswith("---"):
+            parts = draft_content.split("---", 2)
+            if len(parts) >= 3:
+                try:
+                    fm_dict = yaml.safe_load(parts[1]) or {}
+                except Exception:
+                    fm_dict = {}
+
+                fm_dict["name"] = target_slug
+                existing_aliases = fm_dict.get("aliases") or []
+                if isinstance(existing_aliases, list):
+                    all_aliases = list(dict.fromkeys(existing_aliases + absorbed_slugs))
+                else:
+                    all_aliases = absorbed_slugs
+                fm_dict["aliases"] = all_aliases
+
+                # Aggregate tools from candidate skills if present
+                tools = fm_dict.get("allowed-tools") or fm_dict.get("tools") or ["openviking_find", "openviking_read"]
+                fm_dict["allowed-tools"] = list(dict.fromkeys(tools))
+
+                clean_fm = yaml.safe_dump(fm_dict, sort_keys=False, allow_unicode=True).strip()
+                body = parts[2].strip()
+
+                if "交付物契约" not in body and "i/o" not in body.lower():
+                    body += (
+                        "\n\n## 4. 输入输出与交付物契约 (I/O & Deliverable Contract)\n"
+                        "- **输入参数 (Input)**: 目标任务上下文与请求参数 (schema)。\n"
+                        "- **输出结果 (Output Result)**: 结构化交付物与执行状态断言 (assert)。\n"
+                    )
+                if "容错防线" not in body and "fault tolerance" not in body.lower() and "自愈" not in body:
+                    body += (
+                        "\n## 5. 异常自愈与容错防线 (Fault Tolerance & Fallback)\n"
+                        "- 遇到接口报错或调用失败 (error/fail) 时，启动自愈重试 (retry)；若重试仍失败则执行安全降级 (fallback)。\n"
+                    )
+                return f"---\n{clean_fm}\n---\n\n# {domain_name} 统一结晶中枢 ({target_slug})\n\n> 本技能为自动化演进流水线结晶产物，已合并收敛 {len(absorbed_slugs)} 项历史同质化碎片。\n\n" + body
+
+        return draft_content
+
+    @staticmethod
     def backup_pre_crystal_skills(
         candidate_slugs: List[str],
         root_skills_dir: Path,
         backup_root: Path,
         cluster_id: str,
+        target_slug: str = "",
     ) -> Path:
         """Create an atomic snapshot of candidate skills in quarantine before consolidation."""
         backup_dir = backup_root / cluster_id
@@ -90,7 +141,44 @@ class SkillAssetHeritageManager:
                 if dest.exists():
                     shutil.rmtree(dest)
                 shutil.copytree(src, dest)
+
+        # Record metadata for deterministic, clean rollback
+        meta_file = backup_dir / ".meta.json"
+        meta_file.write_text(
+            json.dumps(
+                {
+                    "cluster_id": cluster_id,
+                    "target_slug": target_slug,
+                    "candidate_slugs": candidate_slugs,
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
         return backup_dir
+
+    @staticmethod
+    def archive_absorbed_skills(
+        candidate_slugs: List[str],
+        root_skills_dir: Path,
+        target_slug: str,
+    ) -> List[str]:
+        """Physically archive and remove absorbed duplicate candidate skills from root skills dir.
+        
+        The consolidated master skill (target_slug) remains active with merged tools/aliases.
+        Absorbed candidates are physically removed from root_skills_dir since they are safely
+        backed up in quarantine.
+        """
+        archived: List[str] = []
+        for slug in candidate_slugs:
+            if slug == target_slug:
+                continue
+            skill_dir = root_skills_dir / slug
+            if skill_dir.exists() and skill_dir.is_dir():
+                shutil.rmtree(skill_dir)
+                archived.append(slug)
+        return archived
 
     @staticmethod
     def rollback_cluster(backup_root: Path, root_skills_dir: Path, cluster_id: str) -> bool:
@@ -99,12 +187,30 @@ class SkillAssetHeritageManager:
         if not backup_dir.exists():
             return False
 
+        meta_file = backup_dir / ".meta.json"
+        target_slug = ""
+        candidate_slugs: List[str] = []
+        if meta_file.exists():
+            try:
+                meta = json.loads(meta_file.read_text(encoding="utf-8"))
+                target_slug = meta.get("target_slug", "")
+                candidate_slugs = meta.get("candidate_slugs", [])
+            except Exception:
+                pass
+
         for skill_dir in backup_dir.iterdir():
             if skill_dir.is_dir():
                 target_dest = root_skills_dir / skill_dir.name
                 if target_dest.exists():
                     shutil.rmtree(target_dest)
                 shutil.copytree(skill_dir, target_dest)
+
+        # Remove the generated master skill if it was created during crystallization
+        if target_slug and target_slug not in candidate_slugs:
+            master_dir = root_skills_dir / target_slug
+            if master_dir.exists() and master_dir.is_dir():
+                shutil.rmtree(master_dir)
+
         return True
 
     @staticmethod
@@ -126,6 +232,17 @@ class SkillAssetHeritageManager:
 
         for bdir in target_dirs:
             if bdir.is_dir():
+                meta_file = bdir / ".meta.json"
+                target_slug = ""
+                candidate_slugs: List[str] = []
+                if meta_file.exists():
+                    try:
+                        meta = json.loads(meta_file.read_text(encoding="utf-8"))
+                        target_slug = meta.get("target_slug", "")
+                        candidate_slugs = meta.get("candidate_slugs", [])
+                    except Exception:
+                        pass
+
                 for skill_dir in bdir.iterdir():
                     if skill_dir.is_dir():
                         target_dest = root_skills_dir / skill_dir.name
@@ -133,6 +250,11 @@ class SkillAssetHeritageManager:
                             shutil.rmtree(target_dest)
                         shutil.copytree(skill_dir, target_dest)
                         restored_count += 1
+
+                if target_slug and target_slug not in candidate_slugs:
+                    master_dir = root_skills_dir / target_slug
+                    if master_dir.exists() and master_dir.is_dir():
+                        shutil.rmtree(master_dir)
 
         return {
             "restored_skills": restored_count,

@@ -123,7 +123,7 @@ export function SkillEvolutionCockpit() {
     },
     onSuccess: (data) => {
       setLastReport(data)
-      setActionNotice(data.dry_run ? '⚡ 仿真演进试跑完成 (无写操作)' : '🔥 全域演进结晶与提权发布成功！')
+      setActionNotice(data.dry_run ? '📋 影响面清单扫描完成 (待确认执行)' : '🔥 全域物理结晶完成！旧技能已归档至隔离区！')
       refetchStatus()
       refetchClusters()
     },
@@ -222,7 +222,7 @@ export function SkillEvolutionCockpit() {
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-muted-foreground">Attempt 门禁放行率</span>
             <Badge variant="outline" className="border-cyan-500/40 text-cyan-400">
-              仿真守卫
+              质量契约门禁
             </Badge>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
@@ -243,7 +243,7 @@ export function SkillEvolutionCockpit() {
           <div className="grid gap-0.5">
             <span className="text-xs font-semibold">技能演进与结晶 7 阶自动化流水线</span>
             <span className="text-xs font-mono text-muted-foreground">
-              识别重合簇 ➔ 四维体检 ➔ 补丁补齐 ➔ 脚本遗产迁移 ➔ Attempt 门禁 ➔ VikingFS 提权上架
+              识别重合簇 ➔ 四维体检 ➔ 补丁补齐 ➔ 脚本遗产迁移 ➔ 质量门禁 ➔ VikingFS 提权上架
             </span>
           </div>
         </div>
@@ -262,13 +262,13 @@ export function SkillEvolutionCockpit() {
             className="text-xs h-7 font-mono border-border text-foreground hover:border-cyan-500/40"
           >
             <PlayIcon className="size-3.5 mr-1 text-cyan-400" />
-            ⚡ 仿真演进试跑
+            📋 扫描影响面清单
           </Button>
 
           <Button
             size="sm"
             onClick={() => {
-              if (window.confirm('确认执行全域技能演进结晶？旧同质化碎片将安全备份至隔离区，结晶主技能将提权发布至 VikingFS。')) {
+              if (window.confirm('确认执行全域技能演进结晶？旧同质化碎片将安全备份至隔离区并从技能目录移出，结晶主技能将提权发布至 VikingFS。')) {
                 runMutation.mutate({ dryRun: false, targetDomain: selectedClusterDomain || undefined })
               }
             }}
@@ -276,7 +276,7 @@ export function SkillEvolutionCockpit() {
             className="text-xs h-7 font-mono bg-cyan-600 hover:bg-cyan-500 text-white"
           >
             <SparklesIcon className="size-3.5 mr-1" />
-            🔥 一键全域演进结晶
+            🔥 执行物理结晶收敛
           </Button>
 
           <Button
@@ -316,7 +316,7 @@ export function SkillEvolutionCockpit() {
             <div className="flex items-center gap-2">
               <CheckCircle2Icon className="size-4 text-cyan-400" />
               <span className="text-xs font-semibold text-cyan-300">
-                {lastReport.dry_run ? '仿真试跑执行回显 (Dry-Run)' : '物理结晶流水线执行回显 (Committed)'}
+                {lastReport.dry_run ? '影响面扫描明细 (Pre-flight)' : '物理结晶流水线执行回显 (Committed)'}
               </span>
             </div>
             <div className="flex items-center gap-3 text-xs font-mono">

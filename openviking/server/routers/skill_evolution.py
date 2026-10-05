@@ -95,9 +95,10 @@ async def get_pipeline_status(
     clusters = _pipeline.identify_homogenous_clusters(min_cluster_size=2)
     total_candidates = sum(c.candidate_count for c in clusters)
     
-    # 模拟快速基线指标评估
+    # 真实计算全域技能指标（零硬编码、真实后端数据驱动）
+    real_metrics = _pipeline.compute_real_skill_metrics()
     sample_scores: List[float] = [c.avg_health_score for c in clusters if c.avg_health_score > 0]
-    avg_health = sum(sample_scores) / len(sample_scores) if sample_scores else 71.2
+    avg_health = sum(sample_scores) / len(sample_scores) if sample_scores else real_metrics["avg_health"]
     
     return {
         "status": "ok",
@@ -105,8 +106,8 @@ async def get_pipeline_status(
             "intent_collisions": len(clusters),
             "total_homogenous_skills": total_candidates,
             "average_health_score": round(avg_health, 1),
-            "s_grade_ratio": 0.12,
-            "attempt_pass_rate": 0.88,
+            "s_grade_ratio": real_metrics["s_grade_ratio"],
+            "attempt_pass_rate": real_metrics["attempt_pass_rate"],
         },
         "clusters_summary": [
             {

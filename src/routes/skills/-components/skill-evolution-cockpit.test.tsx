@@ -158,14 +158,14 @@ describe('SkillEvolutionCockpit', () => {
       </QueryClientProvider>
     )
 
-    const previewBtn = screen.getByRole('button', { name: /仿真演进试跑/i })
+    const previewBtn = screen.getByRole('button', { name: /扫描影响面清单/i })
     expect(previewBtn).toBeDefined()
 
     fireEvent.click(previewBtn)
 
     await waitFor(() => {
       expect(mockOvClient.instance.post).toHaveBeenCalled()
-      expect(screen.getByText(/仿真试跑执行回显/i)).toBeDefined()
+      expect(screen.getByText(/影响面扫描明细/i)).toBeDefined()
     })
   })
 

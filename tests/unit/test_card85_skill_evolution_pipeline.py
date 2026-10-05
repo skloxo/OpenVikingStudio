@@ -196,15 +196,15 @@ def test_atomic_backup_and_rollback(mock_skills_env):
     assert res.success is True
     assert (skills_root / "feishu-hub").exists()
 
-    # Tamper with or delete one of original skills
-    shutil.rmtree(skills_root / "feishu-bitable")
+    # The candidate was physically archived out of active skills_root
     assert not (skills_root / "feishu-bitable").exists()
 
-    # Rollback
+    # Rollback restores candidates and removes generated master skill
     rollback_ok = pipeline.rollback_cluster("feishu-suite")
     assert rollback_ok is True
     assert (skills_root / "feishu-bitable").exists()
     assert (skills_root / "feishu-bitable" / "scripts" / "bitable_client.py").exists()
+    assert not (skills_root / "feishu-hub").exists()
 
 
 def test_full_pipeline_run(mock_skills_env):
