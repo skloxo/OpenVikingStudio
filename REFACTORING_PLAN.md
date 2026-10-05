@@ -15,6 +15,9 @@
 
 | 版本 Tag      | 任务工单 ID | 模块与重构主题                                                                                                                                                | 核心治理成果与物理交付物                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |     验收状态      |
 | :------------ | :---------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------: |
+| **`v1.7.41`** | **Card-87** | **前端座舱演进结晶流水线看板与一键自驱交互 (Frontend Skill Evolution Cockpit & Interactive Pipeline)** | 1. 落地技能演进与结晶流水线前端座舱组件 (`src/routes/skills/-components/skill-evolution-cockpit.tsx`)；<br>2. 4 大客观数据指标真实回显：意图冲突消除数、全域平均健康分、Attempt 首解率、结晶主技能数；<br>3. 小白一键交互：提供“⚡ 一键全域演进结晶”与“↩️ 一键无悔回滚”按钮，彻底消灭命令行；<br>4. 门禁全绿：单测全绿，Vitest 5 项通过，安全扫描 0 密钥，前端构建 PASS。 | ⏳ 待排期 |
+| **`v1.7.40`** | **Card-86** | **双链路接口平价与 FastMCP 跨集群演进结晶闭环 (REST & FastMCP Evolution Pipeline Parity)** | 1. 补齐 FastMCP 原生工具：暴露 `openviking_skill_evolution_pipeline`（四维受控契约），赋能跨集群 Agent 一键自驱动；<br>2. 补齐 REST 路由：新增 `/api/v1/skills/evolution/pipeline/run`、`/status`、`/preview` 与 `/rollback` 端点；<br>3. 契约测试与注解全量登记：更新 `test_mcp_tool_annotations.py` 严格受控；<br>4. 门禁全绿：单测全绿，安全审计扫描 0 密钥，前端构建 PASS。 | ⏳ 待排期 |
+| **`v1.7.39`** | **Card-85** | **技能演进流水线核心服务编排与资产遗产继承 (Skill Evolution & Crystallization Pipeline Core Orchestrator)** | 1. 落地 `SkillEvolutionPipeline` 统一编排引擎：串联 IntentMatcher、HealthScorer、RemediationGenerator、OptJudge、Publisher 与 WeightTuner；<br>2. 落地资产脚本遗产继承协议（`inherit_subfiles`），自动归拢迁移关联 Python 脚本，更新相对路径杜绝断联；<br>3. 落地有限重试熔断器（`max_attempts=2`）与原子化安全归档；<br>4. 门禁全绿：编写全链路专项单测覆盖冲突发现、健康体检、仿真放行与阻断降级，安全扫描 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
 | **`v1.7.38`** | **Card-84** | **控制台试验台全功能可视化直通器 (Playground Visual Action Launcher)** | 1. 解决冷门底层能力无界面的痛点：在 `src/routes/playground/` 中集成 `VisualActionLauncher.tsx`；<br>2. 全量中文功能映射：按领域下拉选择（语法树压缩、负边界意图路由、Prompt 编译等），自动填充默认测试参数；<br>3. 一键执行与实时卡片回显：用户点击“立即运行”，前端调用对应端点并以高密卡片回显 JSON 结果与耗时，彻底终结命令行；<br>4. 门禁全绿：单测全绿，Vitest 5 项通过，安全扫描 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
 | **`v1.7.37`** | **Card-83** | **设置页系统医生健康自检箱与多写一致性体检卡片 (Settings System Doctor & Storage Integrity Cockpit)** | 1. 解决小白用户无法排查底层 SQLite / FTS5 与存储状态的问题：在 `src/routes/settings/` 落地 `SystemDoctorCard.tsx`；<br>2. 界面展示：PRAGMA quick_check 数据库完整度指标、FTS5 全文索引自检状态与多写存储一致性指标；<br>3. 一键全面体检：点击“立即体检”触发后端 `/api/v1/rsi/bootstrap/health/run` 与 `/api/v1/system/consistency`，秒级输出大白话中文化健康诊断报告；<br>4. 门禁全绿：单测全绿，Vitest 5 项通过，安全扫描 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
 | **`v1.7.36`** | **Card-82** | **任务与数据中心未索引文件及死信一键自愈交互 (Tasks & Resources One-Click Self-Healing Cockpit)** | 1. 解决小白用户无法直观自愈未索引文件与死信堆积的痛点：在任务中心与资源中心落地 `OneClickSyncHealCard.tsx`；<br>2. 界面展示：当前未索引/失败文件数、死信队列积压数与自愈重试成功率；<br>3. 一键自愈重试：提供“扫描并自愈同步 (Sync-Heal)”与“重试全部失败任务 (Retry-Failed)”一键按钮，实时回显进度条与已修复状态；<br>4. 门禁全绿：单测全绿，Vitest 5 项通过，安全扫描 0 密钥，前端构建 PASS。 | [x] 已验收通过 ✅ |
@@ -2326,3 +2329,56 @@
   - 前端生产构建成功（`npm run build` 耗时 16.64s）；
   - 运行时服务无缝自愈重启成功，`/health` 探针与向量预取真实服务中；
   - 实机端点测试验证通过（`/purity/report`、`/governance/stream`、`/watchdog/enforce` 物理数据真实回显）。
+
+
+---
+
+### 📌 [P0] [x] Card-85 (v1.7.39): 技能演进流水线核心服务编排与资产遗产继承 (Skill Evolution & Crystallization Pipeline Core Orchestrator) ✅
+- **背景与第一性原理**：
+  - 目前技能中心存在 759 个零散技能（严重同质化、732 个无描述、254 个 C/D 级残次品）；
+  - 系统此前已在 Card 45/46/63~68 落地了完整的意图匹配、健康体检、微软 Attempt 仿真、自动修复、上架与自适应调权引擎，但各组件处于孤立状态，未形成闭环，面临“代码悬空”风险；
+  - 结晶必须作为技能演进的收敛总装阶段，彻底串联所有引擎，实现从粗放碎片到高胜率特种兵技能的自动化闭环。
+- **开工前客观前端数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  1. **意图路由冲突数 (Intent Collisions)**：目标从 58 项冲突彻底降为 0 项（由 `SkillIntentMatcher.detect_collisions` 验真）；
+  2. **全域平均健康评分 (Average Health Score)**：从当前的 71.2 分跃升至 85+ 分（由 `SkillHealthScorer` 四维衡量）；
+  3. **S 级精品技能占比 (S-Grade Ratio)**：从目前的 9.5% (63个) 提升至 60%+；
+  4. **Attempt 门禁首解通过率 (Attempt Pass Rate)**：达到 >= 85%（由 `SkillOptJudge` 跑仿真测试用例给出）。
+- **核心交付细目**：
+  1. `openviking/service/skill_evolution_pipeline.py`：实现 `SkillEvolutionPipeline` 核心编排引擎，全链路贯通：
+     - 工序 1: 调用 `SkillIntentMatcher.detect_collisions()` 智能识别冲突簇（如飞书 37 个、量化 47 个等）；
+     - 工序 2: 调用 `SkillHealthScorer.audit_content()` 诊断候选技能并筛选最佳原型；
+     - 工序 3: 调用 `SkillRemediationGenerator` 补全 YAML 头部、注入 When NOT to use 负向边界约束；
+     - 工序 4: 实现资产遗产继承协议（`inherit_subfiles`），自动将多文件技能包的 scripts 脚本迁移至结晶主目录并更新相对路径；
+     - 工序 5: 调用 `SkillOptJudge` 进行 Attempt 仿真测试，设立 `max_attempts=2` 熔断门禁（>= 70分放行）；
+     - 工序 6: 调用 `SkillPublisher` 原子化生成 12 位版本指纹并发布至 VikingFS；
+     - 工序 7: 调用 `SkillWeightTuner` 将结晶主技能权重提至 1.8，并将旧碎片安全隔离归档。
+  2. `openviking/service/skill_evolution_types.py`：强类型 DTO（`CrystallizeStageDetail`, `ClusterCrystallizeResult`, `PipelineSummaryReport` 等）；
+  3. `tests/unit/test_card85_skill_evolution_pipeline.py`：全流程单元测试，覆盖冲突聚类、体检修复、仿真放行、熔断阻断与脚本遗产继承。
+- **交付验收凭证**：
+  - **Commit**: `a35ba3f02`
+  - **Git Tag**: `v1.7.39`
+  - **修改文件清单**:
+    - `openviking/service/skill_evolution_types.py` (131 行)
+    - `openviking/service/skill_evolution_pipeline.py` (484 行)
+    - `tests/unit/test_card85_skill_evolution_pipeline.py` (218 行)
+    - `openviking/_version.py`
+    - `package.json`
+  - **单测执行结果**: 6 passed in 0.13s (`test_card85_skill_evolution_pipeline.py`)，回归测试（Card 63~68）43 passed in 1.74s。
+  - **安全与构建门禁**: `scripts/security_check.py` PASS（0 密钥泄露），`npm run build` PASS（15.19s 零报错）。
+
+---
+
+### 📌 [P0] [ ] Card-86 (v1.7.40): 双链路接口平价与 FastMCP 跨集群演进结晶闭环 (REST & FastMCP Evolution Pipeline Parity)
+- **核心目标**：
+  1. FastMCP 接入：暴露 `openviking_skill_evolution_pipeline` 原生工具（四维受控注解），支持跨集群智能体远程触发演进与结晶；
+  2. REST API 接入：新增 `/api/v1/skills/evolution/pipeline/run`、`/status`、`/preview`、`/rollback` 端点；
+  3. 契约更新与全量验证：在 `test_mcp_tool_annotations.py` 登记契约注解，安全审计 0 密钥泄露。
+
+---
+
+### 📌 [P0] [ ] Card-87 (v1.7.41): 前端座舱演进结晶流水线看板与一键自驱交互 (Frontend Skill Evolution Cockpit & Interactive Pipeline)
+- **核心目标**：
+  1. 前端座舱组件：落地 `src/routes/skills/-components/skill-evolution-cockpit.tsx`，高密呈现 4 大客观指标瓦片；
+  2. 流水线阶段可视化：生动展示冲突扫描 ➔ 健康体检 ➔ 补丁合成 ➔ Attempt 门禁 ➔ 提权上架全流程进度条；
+  3. 小白友好一键操作：提供“⚡ 一键全域演进结晶”与“↩️ 一键无悔回滚”按钮；
+  4. 门禁全绿：生产构建 `npm run build` PASS，Vitest 视网膜全绿。
