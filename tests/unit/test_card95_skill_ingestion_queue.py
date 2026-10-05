@@ -157,7 +157,7 @@ def test_worker_processes_valid_skill(worker, store):
     assert len(processed) == 1
     assert processed[0].receipt_id == r.receipt_id
     assert processed[0].status == IngestionStatus.STAGED
-    assert "Passed all static checks" in processed[0].status_message
+    assert "Passed static checks" in processed[0].status_message
 
     record = store.get_record(r.receipt_id)
     assert record.status == IngestionStatus.STAGED

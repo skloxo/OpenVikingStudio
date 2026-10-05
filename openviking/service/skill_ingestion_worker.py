@@ -10,10 +10,12 @@
 
 from __future__ import annotations
 
+from dataclasses import asdict
 import logging
 from typing import Any, Dict, List, Optional
 
 from openviking.service.skill_ingestion_validator import SkillIngestionValidator
+from openviking.service.skill_package_router import SkillPackageRouter
 from openviking.storage.skill_ingestion_store import (
     IngestionRecord,
     IngestionStatus,
@@ -30,12 +32,14 @@ class SkillIngestionWorker:
         self,
         store: Optional[SkillIngestionStore] = None,
         validator: Optional[SkillIngestionValidator] = None,
+        router: Optional[SkillPackageRouter] = None,
     ):
         self._store = store or SkillIngestionStore.get_instance()
         self._validator = validator or SkillIngestionValidator()
+        self._router = router or SkillPackageRouter()
 
     def process_next_batch(self, batch_size: int = 1) -> List[IngestionRecord]:
-        """批量原子认领并执行准入校验流水线。"""
+        """批量原子认领并执行准入校验与路由流水线。"""
         claimed_records = self._store.fetch_and_claim_pending(batch_size=batch_size)
         if not claimed_records:
             return []
@@ -51,7 +55,14 @@ class SkillIngestionWorker:
 
                 if receipt.is_valid:
                     status = IngestionStatus.STAGED
-                    msg = "Passed all static checks (v2.0 contract + clean AST)"
+                    # Dynamic routing analysis
+                    decision = self._router.analyze_routing(
+                        skill_name=record.skill_name,
+                        content=record.raw_content,
+                        existing_skills=[],
+                    )
+                    report_dict["routing"] = asdict(decision)
+                    msg = f"Passed static checks. Routed to '{decision.target_package}' ({decision.action.value})"
                 else:
                     status = IngestionStatus.REJECTED
                     error_details = "; ".join(v.message for v in (receipt.critical_violations or receipt.violations))
