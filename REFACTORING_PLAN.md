@@ -19,7 +19,7 @@
 | **`v1.7.51`** | **Card-97** | **代码块物理冻结与受控语义差分融合 (Code Block Freeze & Bounded Semantic 3-Way Merge)** | 1. 代码块物理哈希冻结：锁定 Markdown 中的代码块，严禁大模型擅自改写已验证代码；<br>2. 主干防毒化：核心技能逻辑只读，新技能 15% 增量仅作为参数补充或边缘案例追加；<br>3. 确定性受控大模型提纯：采用 JSON Schema 约束提取独有增量，AST 语法门禁二次编译；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
 | **`v1.7.50`** | **Card-96** | **动态相对近邻查重与领域包自动路由归位 (Dynamic KNN Duplicate Detection & Skill Package Auto-Routing)** | 1. 废黜死阈值：基于 2080Ti WeMM-Embedding-9B 计算 Top-1 vs Top-2 Margin 动态近邻裕度；<br>2. 领域技能包规范落盘：落地 `PACKAGE.yaml` + `INDEX.md` + `subskills/` 树状结构；<br>3. 相对路径自动改写：通过 Path Rewriter Hook 改写 `${SKILL_ROOT}/scripts/` 杜绝 404；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
 | **`v1.7.49`** | **Card-95** | **异步收件箱暂存表与 SQLite 事务并发隔离控制 (Asynchronous Staging Inbox & SQLite Concurrency Control)** | 1. 读写分离 CQRS：写入入口 <50ms 瞬时响应，存入 SQLite `skill_ingestion_inbox` 表并返回 `receipt_id`；<br>2. 事务并发隔离：后台单线程自愈 Worker 顺序消费，杜绝并发脑裂与覆写竞态；<br>3. 状态流转状态机：严格维护 PENDING ➔ VALIDATING ➔ STAGED / REJECTED 状态；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
-| **`v1.7.48`** | **Card-94** | **确定性准入静态门禁与符号/环境可达性校验器 (Deterministic Ingestion Gatekeeper & Static Environment Verifier)** | 1. 规范度强校验：YAML Frontmatter v2.0 契约（name, version, domain, triggers ≥3, allowed-tools）与 ≤500 行硬卡；<br>2. AST 安全拦截：静态检查禁止 `os.system` / `subprocess.Popen` / `eval`；<br>3. 本地环境可达性：确定性校验本地 CLI 存在性与环境变量声明，拦截幽灵工具；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | ⏳ 待排期 |
+| **`v1.7.48`** | **Card-94** | **确定性准入静态门禁与符号/环境可达性校验器 (Deterministic Ingestion Gatekeeper & Static Environment Verifier)** | 1. 规范度强校验：YAML Frontmatter v2.0 契约（name, version, domain, triggers ≥3, allowed-tools）与 ≤500 行硬卡；<br>2. AST 安全拦截：静态检查禁止 `os.system` / `subprocess.Popen` / `eval`；<br>3. 本地环境可达性：确定性校验本地 CLI 存在性与环境变量声明，拦截幽灵工具；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.47`** | **Card-93** | **向量节点真实探测、BM25 诚实降级与多模态检索闭环 (Honest Dense-Degradation & GPU Node Heartbeat Fallback)** | 1. 消除伪造假分数：彻底切除 hybrid_probe 中的假 Dense 匹配，绝不造假；<br>2. 向量节点真探活：轻量探测 2080Ti 端口 11432 状态；在线执行真 4096d+BM25 RRF 融合；离线诚实标记 `dense_status: 'offline'` 并平滑降级至纯 BM25；<br>3. 前端座舱白盒化：直观回显 GPU 节点真实存活状态与降级标签；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.46`** | **Card-92** | **真实记忆遗忘曲线评估与安全冷归档转移闭环 (Memory Temporal Decay & Non-Destructive Cold Archive)** | 1. 记忆全库生命周期体检：扫描真实 SQLite `viking_memories`，按遗忘曲线计算健康分；<br>2. 数据绝对安全（绝不物理删除）：低于阈值记忆安全迁移至 `memory_cold_archive` 冷存储表，活跃向量索引脱水提纯，数据零丢失；<br>3. 一键检视与安全复活：前端座舱支持冷记忆查阅与一键复活还原至活跃库；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
 | **`v1.7.45`** | **Card-91** | **FastMCP 物理挂起与高危操作人工审批闭环 (HITL Dangerous Action Physical Interceptor & Gate)** | 1. FastMCP 网关拦截切面：在工具调用入口识别高危破坏性动作签名；<br>2. 真实的异步协程挂起：真正挂起协程（`SUSPENDED_WAITING_HITL`），带 300s 超时熔断；<br>3. 前端真实审批回显：人类在座舱中点击【批准】凭借 Nonce Token 恢复执行，点击【拒绝】熔断抛异常；<br>4. 门禁全绿：单测全绿，前端生产构建 PASS，安全扫描 0 密钥。 | [x] 已验收通过 ✅ |
@@ -2619,7 +2619,7 @@
 
 ---
 
-### 📌 [P0] [ ] Card-94 (v1.7.48): 确定性准入静态门禁与符号/环境可达性校验器 (Deterministic Ingestion Gatekeeper & Static Environment Verifier) ⏳
+### 📌 [P0] [x] Card-94 (v1.7.48): 确定性准入静态门禁与符号/环境可达性校验器 (Deterministic Ingestion Gatekeeper & Static Environment Verifier) ✅
 - **背景与第一性原理**：
   - **前序诱因与系统死因**：存量治理只能治一时，如果增量技能入库没有强行门禁，各种未规范、缺少契约、带高危系统调用（`os.system`）、调用未注册幽灵工具（Ghost Tools）的野生技能会不断侵蚀知识库；
   - **真正的闭环架构与安全防线**：
@@ -2629,13 +2629,22 @@
     4. **本地符号与依赖可达性检查**：纯算法确定性检查声明的本地 CLI 是否在系统 `PATH`（`shutil.which`）、依赖环境变量是否在 `os.environ` 注册，对照 FastMCP 注册表拦截幽灵工具；
     5. **结构化诊断回执**：输出 `ValidationReceipt`，包含通过状态、违规条目与修复建议。
 - **客观数据指标回显 (Frontend Metric Anchor)**：
-  - 静态规范门禁拦截率 (`static_gate_pass_rate_pct`)
+  - 静态规范门禁拦截率 (`static_gate_pass_rate_pct: 100%`)
   - 幽灵工具与高危调用物理阻断率 (`ghost_tool_interception_rate: 100%`)
   - 格式自检诊断耗时 (`validation_latency_ms < 10ms`)
-- **涉及核心文件清单**：
-  - `openviking/service/skill_ingestion_validator.py` (≤ 250 行)
-  - `openviking/server/routers/skill_ingestion.py` (≤ 150 行)
-  - `tests/unit/test_card94_skill_ingestion_validator.py` (≤ 250 行)
+- **实际修改与交付文件清单**：
+  - `openviking/_version.py` (v1.7.48)
+  - `package.json` (v1.7.48)
+  - `openviking/service/skill_ingestion_validator.py` (312 行, YAML Frontmatter v2.0 / AST 静态安全 / 符号可达性校验器)
+  - `openviking/server/routers/skill_ingestion.py` (45 行, 准入静态校验 REST 端点 `/api/v1/skills/ingestion/validate`)
+  - `openviking/server/routers/__init__.py`
+  - `openviking/server/app.py`
+  - `tests/unit/test_card94_skill_ingestion_validator.py` (204 行, 13 项单元测试全绿通过)
+- **交付验收结果与门禁回显**：
+  - **Pytest 测试执行**：`pytest -o addopts="" tests/unit/test_card94_skill_ingestion_validator.py` ➔ **13 passed in 1.15s**
+  - **前端生产编译**：`npm run build` ➔ **built in 13.89s PASS**
+  - **安全凭据审计**：`python3 scripts/security_check.py` ➔ **Checked 4684 tracked files. Zero secrets detected.**
+  - **Git 留痕**：Tag `v1.7.48` 物理对齐。
 
 ---
 
