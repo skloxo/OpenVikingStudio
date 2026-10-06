@@ -168,6 +168,10 @@ const config = defineConfig(({ command }) => ({
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
   },
+  build: {
+    // 保护历史 chunk：构建时不物理清空 dist 目录，确保发版后旧版客户端请求历史 chunk 依然 200 可达
+    emptyOutDir: false,
+  },
 }))
 
 export default config

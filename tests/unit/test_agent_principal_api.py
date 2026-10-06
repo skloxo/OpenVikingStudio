@@ -170,3 +170,42 @@ def test_mcp_middleware_soft_delete_interception(tmp_path: Path):
     assert "not found or credential invalid" in res_nonexistent.json()["error"]["message"]
 
 
+def test_update_agent_connection_mode_topology(client: TestClient):
+    """测试智能体在本地直连(2080Ti)与公网远程(3070)模式之间平滑切换与持久化."""
+    # 1. 创建本地模式智能体
+    create_res = client.post(
+        "/api/v1/users/default/agents",
+        json={
+            "agent_name": "2080Ti本地助手",
+            "role_desc": "本机推理与中枢调度",
+            "connection_mode": "realtimeApi",
+            "allowed_tools": ["find", "search"],
+        },
+    )
+    assert create_res.status_code == 200
+    agent = create_res.json()["result"]["agent"]
+    agent_id = agent["agent_id"]
+    assert agent["connection_mode"] == "realtimeApi"
+
+    # 2. 切换为公网远程模式 (如工位 3070 通过 FRP / 公网访问)
+    patch_res = client.patch(
+        f"/api/v1/users/default/agents/{agent_id}",
+        json={
+            "connection_mode": "apiClient",
+            "role_desc": "3070工位巡检助手",
+        },
+    )
+    assert patch_res.status_code == 200
+    updated = patch_res.json()["result"]
+    assert updated["connection_mode"] == "apiClient"
+    assert updated["role_desc"] == "3070工位巡检助手"
+
+    # 3. 再次读取列表，验证 SQLite 物理持久化
+    list_res = client.get("/api/v1/users/default/agents")
+    assert list_res.status_code == 200
+    items = list_res.json()["result"]
+    target = next((item for item in items if item["agent_id"] == agent_id), None)
+    assert target is not None
+    assert target["connection_mode"] == "apiClient"
+
+

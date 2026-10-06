@@ -56,6 +56,11 @@ export function ToolACLMatrix({
     })
   }, [allToolMap, userRole])
 
+  // 有效的已选工具列表（严格对齐合法工具字典，彻底切除历史废弃脏ID）
+  const validSelectedIds = React.useMemo(() => {
+    return selectedTools.filter((id) => allToolMap.has(id))
+  }, [selectedTools, allToolMap])
+
   // 1. 全选所有可用项
   const handleSelectAll = React.useCallback(() => {
     onChange([...allowedToolIds])
@@ -131,7 +136,7 @@ export function ToolACLMatrix({
             <div className="font-semibold text-foreground flex items-center gap-1.5 flex-wrap">
               <span>FastMCP 场景化工具授权矩阵</span>
               <Badge variant="outline" className="text-xs font-mono font-normal">
-                已选 {selectedTools.length} / {allowedToolIds.length} 可用项 (总计 {ALL_TOOL_IDS.length})
+                已选 {validSelectedIds.length} / {allowedToolIds.length} 可用项 (总计 {ALL_TOOL_IDS.length})
               </Badge>
               {userRole === 'user' && allowedToolIds.length < ALL_TOOL_IDS.length && (
                 <Badge variant="secondary" className="text-xs font-normal text-muted-foreground">
@@ -155,7 +160,7 @@ export function ToolACLMatrix({
             className="h-7 px-2 text-xs text-cyan-600 dark:text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10"
             onClick={handleSelectSatellite}
             disabled={disabled}
-            title="一键授予卫星节点轻量协作所需的 15 项工具"
+            title={`一键授予卫星节点远程协同所需的 ${SATELLITE_TOOL_IDS.length} 项工具`}
           >
             <RadioIcon className="size-3 mr-1" />
             卫星协作预设
@@ -167,7 +172,7 @@ export function ToolACLMatrix({
             className="h-7 px-2 text-xs text-cyan-600 dark:text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10"
             onClick={handleSelectCoreMaster}
             disabled={disabled}
-            title="一键授予中枢全栈研发所需的 32 项工具"
+            title={`一键授予中枢全栈研发所需的 ${CORE_MASTER_TOOL_IDS.length} 项工具`}
           >
             <CpuIcon className="size-3 mr-1" />
             中枢全栈预设

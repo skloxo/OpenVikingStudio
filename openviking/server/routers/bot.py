@@ -290,7 +290,7 @@ async def health_check(request: Request):
             # Forward to Vikingbot OpenAPIChannel health endpoint
             headers = {"X-Gateway-Token": BOT_API_KEY} if BOT_API_KEY else None
             response = await client.get(
-                f"{bot_url}/bot/v1/health",
+                f"{bot_url}/health",
                 headers=headers,
                 timeout=5.0,
             )
