@@ -342,6 +342,8 @@ export const settings = {
       apiKey: 'API key',
       role: '角色',
       user: 'User',
+      agents: '在册智能体',
+      activeAgents: '{{count}} 个在册',
     },
     toast: {
       accountCreated: 'Account 已创建',

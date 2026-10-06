@@ -44,7 +44,7 @@ import { copyTextToClipboard } from '#/lib/clipboard'
 import { resolveStudioManagementCapabilities } from '#/lib/studio-permissions'
 
 import { AddUserDialog } from './-components/add-user-dialog'
-import { UserAgentsSheet } from './-components/user-agents-sheet'
+import { UserDetailSheet } from './-components/user-detail-sheet'
 import { UserManagementDialogs } from './-components/user-management-dialogs'
 import { UserTable } from './-components/user-table'
 import { getErrorMessage } from './-lib/user-utils'
@@ -73,9 +73,9 @@ function UserManagementRoute() {
   const [pendingRoleChange, setPendingRoleChange] =
     React.useState<UpdateUserRoleInput | null>(null)
   const [switchingIdentityKey, setSwitchingIdentityKey] = React.useState('')
-  const [selectedUserForAgents, setSelectedUserForAgents] =
+  const [selectedUserForDetail, setSelectedUserForDetail] =
     React.useState<AdminUser | null>(null)
-  const [agentsSheetOpen, setAgentsSheetOpen] = React.useState(false)
+  const [detailSheetOpen, setDetailSheetOpen] = React.useState(false)
 
   const { canManageAccounts, canManageUsers } =
     resolveStudioManagementCapabilities({
@@ -359,9 +359,9 @@ function UserManagementRoute() {
         onInitiateRegenerate={(user) => setPendingRegenerateUser(user)}
         onInitiateRemove={(user) => setPendingRemoveUser(user)}
         onInitiateRoleChange={(input) => setPendingRoleChange(input)}
-        onManageAgents={(user) => {
-          setSelectedUserForAgents(user)
-          setAgentsSheetOpen(true)
+        onSelectUser={(user) => {
+          setSelectedUserForDetail(user)
+          setDetailSheetOpen(true)
         }}
         onUseUserIdentity={(user) => void useUserIdentity(user)}
         serverMode={serverMode}
@@ -369,10 +369,13 @@ function UserManagementRoute() {
         users={users}
       />
 
-      <UserAgentsSheet
-        user={selectedUserForAgents}
-        open={agentsSheetOpen}
-        onOpenChange={setAgentsSheetOpen}
+      <UserDetailSheet
+        user={selectedUserForDetail}
+        open={detailSheetOpen}
+        onOpenChange={setDetailSheetOpen}
+        currentUserId={connection.userId}
+        onSwitchIdentity={(u) => void useUserIdentity(u)}
+        onRegenerateKey={(u) => setPendingRegenerateUser(u)}
       />
 
       <AddUserDialog

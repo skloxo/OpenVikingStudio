@@ -310,7 +310,7 @@ class AgentPrincipalStore:
             with self._get_connection() as conn:
                 cur = conn.execute(
                     "UPDATE agent_principals SET is_deleted = 0, deleted_at = 0.0, status = 'active' WHERE agent_id = ?;",
-                    (clean_id),
+                    (clean_id,),
                 )
                 conn.commit()
                 return cur.rowcount > 0

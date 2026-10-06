@@ -472,6 +472,7 @@ export async function updateAdminUserRole(
 
 export type UserAgentItem = {
   agent_id: string
+  agent_name: string
   user_id: string
   role_desc: string
   icon: string
@@ -480,13 +481,24 @@ export type UserAgentItem = {
   total_messages: number
   last_seen: number
   created_at: number
+  allowed_tools: string[]
 }
 
 export type CreateAgentInput = {
-  agent_id: string
+  agent_name: string
+  agent_id?: string
   role_desc: string
   icon?: string
   connection_mode?: string
+  allowed_tools?: string[]
+}
+
+export type UpdateAgentInput = {
+  agent_name?: string
+  role_desc?: string
+  connection_mode?: string
+  allowed_tools?: string[]
+  status?: string
 }
 
 export type CreateAgentResponse = {
@@ -511,6 +523,17 @@ export async function fetchUserAgents(
   return data.result || []
 }
 
+export async function fetchUserAgentCounts(): Promise<Record<string, number>> {
+  try {
+    const resp = await fetch('/api/v1/users/agent-counts')
+    if (!resp.ok) return {}
+    const data = await resp.json()
+    return data.result || {}
+  } catch {
+    return {}
+  }
+}
+
 export async function createUserAgent(
   userId: string,
   input: CreateAgentInput,
@@ -527,7 +550,27 @@ export async function createUserAgent(
   return data.result
 }
 
-export async function revokeUserAgent(
+export async function updateUserAgent(
+  userId: string,
+  agentId: string,
+  input: UpdateAgentInput,
+): Promise<UserAgentItem> {
+  const resp = await fetch(
+    `/api/v1/users/${encodeURIComponent(userId)}/agents/${encodeURIComponent(agentId)}`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    },
+  )
+  if (!resp.ok) {
+    throw new Error(`Failed to update agent: ${resp.statusText}`)
+  }
+  const data = await resp.json()
+  return data.result
+}
+
+export async function deleteUserAgent(
   userId: string,
   agentId: string,
 ): Promise<void> {
@@ -536,20 +579,7 @@ export async function revokeUserAgent(
     { method: 'DELETE' },
   )
   if (!resp.ok) {
-    throw new Error(`Failed to revoke agent: ${resp.statusText}`)
-  }
-}
-
-export async function purgeUserAgent(
-  userId: string,
-  agentId: string,
-): Promise<void> {
-  const resp = await fetch(
-    `/api/v1/users/${encodeURIComponent(userId)}/agents/${encodeURIComponent(agentId)}?purge=true`,
-    { method: 'DELETE' },
-  )
-  if (!resp.ok) {
-    throw new Error(`Failed to purge agent: ${resp.statusText}`)
+    throw new Error(`Failed to soft-delete agent: ${resp.statusText}`)
   }
 }
 
@@ -565,4 +595,5 @@ export async function activateUserAgent(
     throw new Error(`Failed to activate agent: ${resp.statusText}`)
   }
 }
+
 

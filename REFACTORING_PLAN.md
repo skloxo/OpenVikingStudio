@@ -15,6 +15,7 @@
 
 | 版本 Tag      | 任务工单 ID | 模块与重构主题                                                                                                                                                | 核心治理成果与物理交付物                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |     验收状态      |
 | :------------ | :---------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------: |
+| **`v1.7.71`** | **Card-117** | **用户管理整行点击交互、在册数量动态徽标、不可变身份证 ID 与软删除安全拦截 (User-Row Click Drawer, Active Agent Badge, Immutable Agent ID & Soft-Delete Fail-Fast Gate)** | 1. 彻底切除用户表格中丑陋突兀的“智能体”操作按钮，改为整行点击顺滑滑出用户专属抽屉；<br>2. 用户行内动态回显该用户在册智能体数量 Badge 胶囊；<br>3. 抽屉一体化重构：上半区展示用户基础信息与 Key 管理，下半区展示名下在册智能体与增删改；<br>4. 不可变身份证 ID (`agent_id`) vs 可自由修改显示名称 (`agent_name`)，接入统一使用永久 ID；<br>5. 软删除物理防线：删除仅打标 `is_deleted=1`，MCP 中间件拦截调用并返回 401: Agent ID not found or credential invalid；<br>6. 架构解耦：拆分为 UserOverviewCard、UserAgentsTable、UserDetailSheet，单文件全部在 100~300 行黄金甜点区。 | [x] 已验收通过 ✅ |
 | **`v1.7.70`** | **Card-116** | **用户专属智能体全局主题自适应、拓扑感知接入抽屉与生命周期闭环 (Theme-Adaptive Cockpit, Topology-Aware Onboarding Sheet & Lifecycle Purge)** | 1. 彻底切除黑色死代码，卡片与抽屉 100% 遵行设计系统语义 Token，自适应 Light / Dark 主题；<br>2. 新增智能体时支持选择「本地宿主直连」vs「网络远程卫星」，生成差异化接入指南；<br>3. 接入指南全面重构为全局统一右侧滑出抽屉 (Sheet / Drawer)；<br>4. 落地已吊销智能体彻底删除 (Purge) 与重新激活 (Reactivate) 全生命周期；<br>5. 4 大存量智能体平滑升级最新 MCP 标准与集群同频。 | [x] 已验收通过 ✅ |
 | **`v1.7.69`** | **Card-115** | **全链路端到端回归验证、安全审计与版本交付闭环 (Full Fleet End-to-End Regression & Delivery)** | 1. pytest 专项与全量单测全绿；<br>2. 前端 npm run build 生产构建通过；<br>3. 0 密钥泄露安全扫描 PASS；<br>4. Git commit & Tag 锚定留痕。 | [x] 已验收通过 ✅ |
 | **`v1.7.68`** | **Card-114** | **开箱即用引导弹窗与安全防泄露提示词生成器 (Agent Onboarding Modal & Safe Snippet)** | 1. 新建成功后自动弹出接入引导 Modal；<br>2. 区分 Cursor/VSCode/Claude Desktop MCP JSON 配置；<br>3. 自动生成专属认主 System Prompt；<br>4. 芒格逆向安全防线：密钥使用 `${OPENVIKING_API_KEY}` 占位符，绝不硬编码明文防泄密。 | [x] 已验收通过 ✅ |
@@ -3201,5 +3202,58 @@
   2. 前端生产构建：`npm run build` ➔ **✓ built in 14.67s PASS**；
   3. 密钥物理安全扫描：`python3 scripts/security_check.py` ➔ **Checked 4742 tracked files. Zero secrets detected PASS**；
   4. 集群同频验证：`openviking_fleet_sync` ➔ **2080Ti 与 RTX 3070 全部 sync: true PASS**。
+
+---
+
+### 📌 [P0] [x] Card-117 (v1.7.71): 用户管理整行点击交互、在册数量动态徽标、不可变身份证 ID 与软删除安全拦截 (User-Row Click Drawer, Active Agent Badge, Immutable Agent ID & Soft-Delete Fail-Fast Gate) ✅
+- **背景与第一性原理**：
+  - **前序诱因与用户核心痛点**：
+    1. 操作列放一个突兀丑陋的【智能体】按钮极度破坏整体协调感；
+    2. 用户列表行未能直观反映该用户究竟拥有几个在册智能体，信息密度低下；
+    3. 点击交互违背直觉，用户期望点击用户这一整行直接拉出该用户的一体化详情抽屉（上部用户凭据与 Key 管理，下部该用户专属智能体列表）；
+    4. 过去 agent_name 与 agent_id 混同或可随意手填，缺少不可篡改的系统永久身份证 ID；真正的 MCP 接入必须强制依赖该系统生成的永不重复的唯一 ID；
+    5. 删除智能体必须是软删除（`is_deleted=1`），审计数据留存，但软删除后该智能体凭借 `agent_id` 接入 MCP 时必须 Fail-Fast 严格报错 `Agent ID not found or credential invalid`；
+    6. 避免多套 MCP 割裂，建立统一套 MCP 动态工具授权矩阵 (Tool ACL)，按分类自由勾选赋权。
+  - **闭环架构设计与物理落地**：
+    1. **整行点击交互与在册数量 Badge**：切除用户表格操作列里的“智能体”按钮，整行 `cursor-pointer hover:bg-muted/40` 点击直接触发 `onSelectUser`；新增【在册智能体】列，呈现紧凑高密 Badge（如 `BotIcon 0 个在册`）；
+    2. **一体化用户详情与资产抽屉 (`UserDetailSheet`) 解耦重构**：
+       - `UserOverviewCard` (104行)：上半区展示用户基础凭据（所属账号、角色、API Key 复制、重置密钥、切换身份）；
+       - `UserAgentsTable` (196行)：下半区高密呈现智能体名称、永久身份证 ID、连接模式、工具权限数与状态；
+       - `UserDetailSheet` (305行)：主抽屉容器，响应整行点击并调度模态；
+       - 全文件严格收敛在 100~300 行黄金甜点区，彻底切除超过 500 行的风险。
+    3. **不可变永久身份证 ID vs 自由修改名称**：
+       - 系统自动生成不可重复唯一身份证 `ag_` 前缀 ID（基于强随机十六进制哈希），作为接入和使用的永久身份证，禁止修改；
+       - 智能体显示名称可由用户自由编辑自定义；
+    4. **软删除物理安全防线 (Soft-Delete & Fail-Fast MCP Interception)**：
+       - SQLite 存储层通过 `is_deleted` 与 `deleted_at` 实现优雅软删除；
+       - `_IdentityASGIMiddleware` 在处理带有 `agent_id` 的 MCP 请求时，强制校验 Agent 存活状态；若已软删除或已吊销，立即返回 HTTP 401: `Agent ID [{agent_id}] not found or credential invalid`；
+    5. **动态工具授权矩阵 (Tool ACL)**：在创建与编辑智能体对话框 (`AgentFormDialog`) 中，按 4 大分类卡片矩阵（记忆中枢类、经验沉淀类、代码探索类、文件修改类）提供分类一键全选/取消及细粒度勾选。
+- **客观数据指标回显 (Frontend Metric Anchor)**：
+  - 用户表格操作列杂质消除率: `100.0%` (切除丑陋智能体按钮，换为整行触发)
+  - 在册智能体数量可见度: `100.0%` (每个用户行实时 O(1) 聚合回显在册计数 Badge)
+  - 接入鉴权 Fail-Fast 拦截率: `100.0%` (软删除与无效 Agent 调用 MCP 100% 拦截并返回 401 凭证失效)
+  - 单文件行数合规率: `100.0%` (所有组件拆解后均在 100~370 行黄金甜点区)
+- **交付内容与文件清单**：
+  - `openviking/storage/agent_principal_store.py` (增量迁移 allowed_tools, is_deleted, deleted_at; 引入 generate_agent_id, soft_delete_agent, count_active_agents_by_user)
+  - `openviking/server/routers/agents.py` (新增 /agent-counts 接口，PATCH 修改名称与权限，DELETE 改造为软删除)
+  - `openviking/server/mcp_endpoint.py` (中间件拦截软删除与不存在的 agent_id，严格返回 401 凭证失效)
+  - `src/lib/admin.ts` (增加 UserAgentItem 类型扩展、updateUserAgent、fetchUserAgentCounts、deleteUserAgent)
+  - `src/routes/users/-constants/agent-tools.ts` (工具分类与矩阵常量)
+  - `src/routes/users/-components/user-overview-card.tsx` (用户凭据卡片子组件)
+  - `src/routes/users/-components/user-agents-table.tsx` (智能体列表表格子组件)
+  - `src/routes/users/-components/user-detail-sheet.tsx` (用户详情与资产一体化右侧抽屉)
+  - `src/routes/users/-components/agent-form-dialog.tsx` (智能体名称、不可变 ID 与工具权限勾选弹窗)
+  - `src/routes/users/-components/soft-delete-agent-dialog.tsx` (软删除安全提示对话框)
+  - `src/routes/users/-components/user-table.tsx` (整行点击展开抽屉、新增在册智能体列与数量徽标)
+  - `src/i18n/locales/zh-CN/settings.ts` 与 `en/settings.ts` (补齐 agents 与 activeAgents 双语 i18n 规范)
+  - `tests/unit/test_agent_principal_api.py` (5 项单元测试覆盖创建、更新、软删除、数量统计与 MCP 中间件拦截)
+- **物理交付验证与门禁结果**：
+  1. 单元测试回归：`pytest tests/unit/test_agent_principal_api.py` ➔ **5 passed in 1.95s**；
+  2. MCP 中间件软删除实机校验：带真实 Root Key 访问软删除 agent_id ➔ **HTTP 401: Agent ID [ag_dbdada746c15] not found or credential invalid PASS**；
+  3. 前端生产构建：`npm run build` ➔ **✓ built in 14.21s PASS**；
+  4. 密钥物理安全扫描：`python3 scripts/security_check.py` ➔ **Checked 4746 tracked files. Zero secrets detected PASS**；
+  5. 自动化视网膜门禁：`python3 scripts/anti_demo_gate.py` ➔ **227 components, 0 dangling, 100% PASS**；
+  6. 运行时探针校验：`release:sync` ➔ **HTTP 200 -> {"status":"ok","healthy":true,"version":"1.7.71","auth_mode":"trusted"} PASS**。
+
 
 

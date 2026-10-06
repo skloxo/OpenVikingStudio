@@ -40,7 +40,7 @@ import {
   AppConnectionProvider,
   useAppConnection,
 } from '#/hooks/use-app-connection'
-import { useServerVersion } from '#/hooks/use-server-version'
+import { useServerVersionDetails } from '#/hooks/use-server-version'
 import { resolveStudioManagementCapabilities } from '#/lib/studio-permissions'
 import {
   NAV_ITEMS,
@@ -69,7 +69,8 @@ function IdentityScopedAppShell({ children }: { children: React.ReactNode }) {
 
 function AppShellInner({ children }: { children: React.ReactNode }) {
   const { i18n, t } = useTranslation(['appShell', 'common'])
-  const appVersion = useServerVersion()
+  const versionDetails = useServerVersionDetails()
+  const appVersion = versionDetails.version
   const navigate = useNavigate()
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
@@ -126,9 +127,29 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           <div className="flex h-full items-center justify-between gap-2 group-data-[collapsible=icon]:justify-center">
             <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
               <AccountSwitcher />
-              <span className="text-xs font-mono text-slate-400 dark:text-slate-500 font-normal leading-none select-none block px-2 -mt-1">
-                v{appVersion}
-              </span>
+              <div className="flex items-center gap-1.5 px-2 -mt-1">
+                <span
+                  className="text-xs font-mono text-slate-400 dark:text-slate-500 font-normal leading-none select-none cursor-pointer hover:text-foreground transition-colors"
+                  title={
+                    versionDetails.isDrifted
+                      ? `⚠️ 版本脱节: 前端 UI (v${versionDetails.appVersion}) 与 服务端 (v${versionDetails.remoteVersion}) 不一致，点击刷新网页`
+                      : `OpenViking v${appVersion}`
+                  }
+                  onClick={() => {
+                    if (versionDetails.isDrifted) {
+                      window.location.reload()
+                    }
+                  }}
+                >
+                  v{appVersion}
+                </span>
+                {versionDetails.isDrifted && (
+                  <span
+                    className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"
+                    title={`前后端版本脱节 (UI: v${versionDetails.appVersion} / Server: v${versionDetails.remoteVersion})`}
+                  />
+                )}
+              </div>
             </div>
             <SidebarTrigger className="shrink-0" />
           </div>
@@ -376,8 +397,23 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               <span>OpenViking Studio</span>
             </span>
           </div>
-          <span className="text-xs font-mono text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded border border-border/40">
+          <span
+            className="text-xs font-mono text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded border border-border/40 cursor-pointer"
+            title={
+              versionDetails.isDrifted
+                ? `UI: v${versionDetails.appVersion} / Server: v${versionDetails.remoteVersion}`
+                : `v${appVersion}`
+            }
+            onClick={() => {
+              if (versionDetails.isDrifted) {
+                window.location.reload()
+              }
+            }}
+          >
             v{appVersion}
+            {versionDetails.isDrifted && (
+              <span className="ml-1 text-amber-400">⚠️</span>
+            )}
           </span>
         </header>
 

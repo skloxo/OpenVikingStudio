@@ -177,6 +177,29 @@ class _IdentityASGIMiddleware:
             actor_peer_id = normalize_actor_peer_header(
                 request.headers.get("x-openviking-actor-peer")
             )
+            declared_agent_id = (
+                request.query_params.get("agent_id")
+                or request.headers.get("x-openviking-agent-id")
+                or actor_peer_id
+            )
+            if declared_agent_id:
+                from openviking.storage.agent_principal_store import AgentPrincipalStore
+                agent_rec = AgentPrincipalStore.get_instance().get_agent(
+                    declared_agent_id, include_deleted=False
+                )
+                if not agent_rec or agent_rec.status == "revoked":
+                    resp = JSONResponse(
+                        {
+                            "jsonrpc": "2.0",
+                            "id": None,
+                            "error": {
+                                "code": -32001,
+                                "message": f"Agent ID [{declared_agent_id}] not found or credential invalid",
+                            },
+                        },
+                        status_code=401,
+                    )
+                    return await resp(scope, receive, send)
         except (UnauthenticatedError, PermissionDeniedError, InvalidArgumentError) as exc:
             status = (
                 401
