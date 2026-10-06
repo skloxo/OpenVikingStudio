@@ -68,13 +68,16 @@ def test_configured_compressor_is_visible_in_status_table():
 
 
 def test_compressor_token_usage_is_visible():
-    observer = ModelsObserver(compressor_instance=_CompressorWithUsage())
-    status = observer.get_status_table()
+    from unittest.mock import patch
 
-    assert "Compressor Models:" in status
-    assert "42" in status
-    assert "12800" in status
-    assert "19000" in status
+    with patch("openviking.storage.observers.models_observer._get_telemetry_model_usage", return_value={}):
+        observer = ModelsObserver(compressor_instance=_CompressorWithUsage())
+        status = observer.get_status_table()
+
+        assert "Compressor Models:" in status
+        assert "42" in status
+        assert "12800" in status
+        assert "19000" in status
 
 
 def test_historical_models_are_consolidated_per_domain():

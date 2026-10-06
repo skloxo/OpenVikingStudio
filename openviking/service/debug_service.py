@@ -187,20 +187,11 @@ class ObserverService:
         # Get compressor instance if available (Microsoft LLMLingua-2)
         compressor_instance = None
         try:
-            from openviking.server.dependencies import get_service
+            from openviking.service.wiki_dehydration_engine import WikiDehydrationEngine
 
-            svc = get_service()
-            if hasattr(svc, "session_compressor") and svc.session_compressor is not None:
-                compressor_instance = svc.session_compressor
-            elif hasattr(svc, "_session_compressor") and svc._session_compressor is not None:
-                compressor_instance = svc._session_compressor
-            else:
-                class _ConfiguredCompressor:
-                    model_name = "microsoft/llmlingua-2-xlm-roberta-large-meetingbank"
-                    provider = "local"
-
-                compressor_instance = _ConfiguredCompressor()
-        except Exception:
+            compressor_instance = WikiDehydrationEngine.get_instance()
+        except Exception as e:
+            logger.debug(f"Failed to load WikiDehydrationEngine for observer: {e}")
             class _ConfiguredCompressor:
                 model_name = "microsoft/llmlingua-2-xlm-roberta-large-meetingbank"
                 provider = "local"
