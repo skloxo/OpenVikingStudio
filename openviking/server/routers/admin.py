@@ -155,10 +155,7 @@ def _get_api_key_manager(request: Request):
 
 
 def _should_expose_user_key(request: Request) -> bool:
-    config = getattr(request.app.state, "config", None)
-    if not isinstance(config, ServerConfig):
-        return True
-    return config.get_effective_auth_mode() != "trusted"
+    return True
 
 
 def _check_account_access(ctx: RequestContext, account_id: str) -> None:

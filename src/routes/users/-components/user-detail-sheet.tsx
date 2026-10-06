@@ -141,7 +141,7 @@ export function UserDetailSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-2xl md:max-w-3xl overflow-y-auto flex flex-col gap-4 font-sans p-5 text-xs bg-card border-l border-border"
+        className="w-full data-[side=right]:sm:max-w-[780px] data-[side=right]:lg:max-w-[920px] data-[side=right]:xl:max-w-[1060px] overflow-y-auto flex flex-col gap-4 font-sans p-6 text-xs bg-card border-l border-border"
       >
         <SheetHeader className="pb-3 border-b border-border/70 space-y-1">
           <div className="flex items-center gap-2">
@@ -212,6 +212,7 @@ export function UserDetailSheet({
             onClose={() => setShowNewAgentCard(false)}
             onSubmit={(input) => createMutation.mutate(input)}
             isPending={createMutation.isPending}
+            userRole={user?.role ?? 'user'}
           />
 
           {/* 智能体卡片列表 */}
@@ -231,6 +232,7 @@ export function UserDetailSheet({
                   key={agent.agent_id}
                   agent={agent}
                   userId={userId}
+                  userRole={user?.role ?? 'user'}
                   isExpanded={expandedAgentId === agent.agent_id}
                   onToggleExpand={() =>
                     setExpandedAgentId((prev) => (prev === agent.agent_id ? null : agent.agent_id))

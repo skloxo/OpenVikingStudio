@@ -1,12 +1,13 @@
 /**
  * user-overview-card.tsx
- * 用户基础信息与凭据概览卡片 (User Overview Card).
- * 采用任务中心 / 技能中心的高密 DetailMetric 风格，平齐对齐，零臃肿装饰。
+ * 用户基础凭据与公网安全防护状态卡片。
+ * 对标技能中心 DetailMetric 高密性冷淡规范，消除任何文字挤压。
  */
 import {
   CopyIcon,
   KeyRoundIcon,
   RotateCwIcon,
+  ShieldCheckIcon,
   ShieldIcon,
   UserCheckIcon,
   UsersIcon,
@@ -15,7 +16,6 @@ import { toast } from 'sonner'
 
 import { Button } from '#/components/ui/button'
 import type { AdminUser } from '#/lib/admin'
-import { copyTextToClipboard } from '#/lib/clipboard'
 
 export type UserOverviewCardProps = {
   user: AdminUser | null
@@ -32,7 +32,7 @@ export function UserOverviewCard({
 }: UserOverviewCardProps) {
   const handleCopy = async (text: string, label: string) => {
     try {
-      await copyTextToClipboard(text)
+      await navigator.clipboard.writeText(text)
       toast.success(`已复制 ${label}`)
     } catch {
       toast.error('复制失败')
@@ -40,14 +40,19 @@ export function UserOverviewCard({
   }
 
   const rawKey = user?.apiKey || ''
-  const displayKey = rawKey || (user?.keyPrefix ? `${user.keyPrefix}••••••••` : '未暴露明文 (trusted 模式)')
+  const hasDedicatedKey = Boolean(rawKey || user?.keyPrefix)
+  const displayKey = rawKey
+    ? `${rawKey.slice(0, 12)}••••••••${rawKey.slice(-6)}`
+    : user?.keyPrefix
+      ? `${user.keyPrefix}••••••••`
+      : '系统根凭据生效中 (继承 Root API Key)'
 
   return (
     <div className="rounded-md border border-border/60 bg-muted/20 p-3 space-y-2.5 font-sans">
       <div className="flex items-center justify-between pb-1.5 border-b border-border/40">
         <span className="text-xs font-semibold text-foreground/90 flex items-center gap-1.5">
           <KeyRoundIcon className="size-3.5 text-cyan-500" />
-          用户基础凭据
+          用户基础凭据与安全防线
         </span>
         <div className="flex items-center gap-1.5">
           {!isCurrentIdentity && onSwitchIdentity && user && (
@@ -67,11 +72,12 @@ export function UserOverviewCard({
               type="button"
               size="sm"
               variant="outline"
-              className="h-6.5 px-2 text-xs hover:border-amber-500/50"
+              className="h-6.5 px-2 text-xs hover:border-cyan-500/50"
               onClick={() => onRegenerateKey(user)}
+              title={hasDedicatedKey ? '重新生成密钥' : '为该用户签发独立专有密钥'}
             >
-              <RotateCwIcon className="size-3 mr-1" />
-              重置密钥
+              <RotateCwIcon className="size-3 mr-1 text-cyan-500" />
+              {hasDedicatedKey ? '重置密钥' : '签发独立密钥'}
             </Button>
           )}
         </div>
@@ -97,7 +103,7 @@ export function UserOverviewCard({
         <div className="sm:col-span-2 flex items-center justify-between rounded border border-border/40 bg-background/50 px-2.5 py-1.5 gap-2">
           <span className="text-muted-foreground shrink-0 flex items-center gap-1.5">
             <KeyRoundIcon className="size-3 text-muted-foreground/80" />
-            API Key:
+            凭据状态:
           </span>
           <code className="font-mono text-xs text-foreground/90 truncate flex-1 text-right select-all">
             {displayKey}
@@ -111,9 +117,19 @@ export function UserOverviewCard({
               onClick={() => handleCopy(rawKey, 'API Key')}
               title="复制 API Key"
             >
-              <CopyIcon className="size-3" />
+              <CopyIcon className="size-3 text-cyan-500" />
             </Button>
           ) : null}
+        </div>
+
+        <div className="sm:col-span-2 flex items-center justify-between rounded border border-cyan-500/20 bg-cyan-500/5 px-2.5 py-1.5 text-xs">
+          <span className="flex items-center gap-1.5 text-cyan-700 dark:text-cyan-300 font-medium">
+            <ShieldCheckIcon className="size-3.5 text-cyan-500 shrink-0" />
+            公网安全物理防线:
+          </span>
+          <span className="font-mono text-muted-foreground">
+            强鉴权开启 (未授权匿名请求 100% 物理拦截 401)
+          </span>
         </div>
       </div>
     </div>

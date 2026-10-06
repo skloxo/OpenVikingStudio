@@ -25,5 +25,5 @@ export function maskApiKey(value: string | undefined): string {
 }
 
 export function resolveKeyLabel(user: AdminUser): string {
-  return user.apiKey ? maskApiKey(user.apiKey) : user.keyPrefix || '-'
+  return user.apiKey ? maskApiKey(user.apiKey) : user.keyPrefix ? `${user.keyPrefix}••••` : '继承系统根凭据'
 }
