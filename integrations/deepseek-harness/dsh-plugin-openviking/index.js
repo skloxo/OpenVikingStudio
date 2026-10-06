@@ -7,7 +7,7 @@
  * 2. Post-Turn Harvesting: Observes completed assistant messages via session events.
  */
 
-import { appendFileSync } from 'node:fs'
+import { appendFileSync, statSync, renameSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 export const name = 'dsh-plugin-openviking'
@@ -23,11 +23,23 @@ let lastInjectedMemory = ''
 let lastFetchTime = 0
 const CACHE_TTL_MS = 60_000
 
+// 🛡️ 生产级日志防爆与轻量滚动保护 (2MB 硬上限，双文件滚动)
+const MAX_LOG_BYTES = 2 * 1024 * 1024
+let writeCount = 0
+
 function log(msg) {
   try {
-    const home = process.env.USERPROFILE || process.env.HOME || 'C:\\Users\\Skl'
+    const home = process.env.USERPROFILE || process.env.HOME || 'C:\Users\Skl'
     const logPath = resolve(home, '.dsh', 'openviking-hook.log')
-    const line = `[${new Date().toISOString()}] ${msg}\n`
+
+    if (++writeCount % 50 === 0 && existsSync(logPath)) {
+      if (statSync(logPath).size > MAX_LOG_BYTES) {
+        const oldPath = resolve(home, '.dsh', 'openviking-hook.log.old')
+        renameSync(logPath, oldPath)
+      }
+    }
+
+    const line = 
     appendFileSync(logPath, line, 'utf8')
   } catch (_) {}
 }
