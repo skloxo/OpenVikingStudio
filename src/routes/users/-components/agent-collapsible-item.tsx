@@ -2,14 +2,15 @@
  * agent-collapsible-item.tsx
  * 单个智能体原位折叠展开面板 (Collapsible Item)。
  * 彻底切除字体重叠、排版挤压与跳页。全面整合 47 个 FastMCP 工具与 HOOK 生命周期契约。
+ * 彻底切除硬编码的本地/公网模式选择，全面拥抱“角色工具包”与端点智能自适应！
  */
 import {
   CheckSquareIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   CopyIcon,
-  GlobeIcon,
-  LaptopIcon,
+  CpuIcon,
+  RadioIcon,
   RotateCcwIcon,
   SaveIcon,
   ShieldCheckIcon,
@@ -26,7 +27,7 @@ import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import type { UpdateAgentInput, UserAgentItem } from '#/lib/admin'
-import { ALL_TOOL_IDS } from '../-constants/agent-tools'
+import { ALL_TOOL_IDS, MASTER_MAINTAINER_TOOL_IDS } from '../-constants/agent-tools'
 
 import { ToolACLMatrix } from './tool-acl-matrix'
 
@@ -58,21 +59,8 @@ export function AgentCollapsibleItem({
   const [selectedTools, setSelectedTools] = React.useState<string[]>(
     agent.allowed_tools,
   )
-  const initialMode =
-    agent.connection_mode === 'realtimeApi' ||
-    agent.connection_mode === 'local' ||
-    agent.agent_id.includes('2080ti')
-      ? 'realtimeApi'
-      : 'apiClient'
-  const [connectionMode, setConnectionMode] = React.useState<'realtimeApi' | 'apiClient'>(initialMode)
-  const [publicGatewayUrl, setPublicGatewayUrl] = React.useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('ov_public_gateway_url') || 'https://vk.tide.red'
-    }
-    return 'https://vk.tide.red'
-  })
 
-  // Hook 核心生命周期控制状态 (可显式勾选配置)
+  // Hook 核心生命周期控制状态
   const [hookAutoRecall, setHookAutoRecall] = React.useState(true)
   const [hookAutoCapture, setHookAutoCapture] = React.useState(true)
   const [hookPreToolGuard, setHookPreToolGuard] = React.useState(true)
@@ -81,13 +69,6 @@ export function AgentCollapsibleItem({
     setName(agent.agent_name || '')
     setRoleDesc(agent.role_desc || '')
     setSelectedTools(agent.allowed_tools)
-    const mode =
-      agent.connection_mode === 'realtimeApi' ||
-      agent.connection_mode === 'local' ||
-      agent.agent_id.includes('2080ti')
-        ? 'realtimeApi'
-        : 'apiClient'
-    setConnectionMode(mode)
   }, [agent])
 
   const handleCopy = async (text: string, label: string, e?: React.MouseEvent) => {
@@ -102,31 +83,38 @@ export function AgentCollapsibleItem({
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
-    if (typeof window !== 'undefined' && publicGatewayUrl.trim()) {
-      localStorage.setItem('ov_public_gateway_url', publicGatewayUrl.trim())
-    }
     onUpdate(agent.agent_id, {
       agent_name: name.trim() || undefined,
       role_desc: roleDesc.trim() || undefined,
-      connection_mode: connectionMode,
       allowed_tools: selectedTools,
     })
   }
 
-  const isLocal = connectionMode === 'realtimeApi'
   const isActive = agent.status === 'active'
   const validToolCount = agent.allowed_tools.includes('*')
     ? ALL_TOOL_IDS.length
     : agent.allowed_tools.filter((id) => ALL_TOOL_IDS.includes(id)).length
 
-  const localOrigin =
-    typeof window !== 'undefined' && window.location.origin.includes('localhost')
-      ? window.location.origin
-      : 'http://127.0.0.1:1933'
-  const cleanPublicGateway = (publicGatewayUrl.trim() || 'https://vk.tide.red').replace(/\/+$/, '')
-  const activeBaseUrl = isLocal ? localOrigin : cleanPublicGateway
+  // 检测是否拥有中枢运维全量工具
+  const isMasterBundle =
+    agent.allowed_tools.includes('*') ||
+    validToolCount >= MASTER_MAINTAINER_TOOL_IDS.length
 
-  const mcpUrl = `${activeBaseUrl}/mcp?agent_id=${encodeURIComponent(agent.agent_id)}&user_id=${encodeURIComponent(userId)}`
+  // 智能自适应网络端点：根据访问宿主自动匹配最优端点
+  const adaptiveBaseUrl = React.useMemo(() => {
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname
+      if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return window.location.origin.includes(':1933')
+          ? window.location.origin
+          : 'http://127.0.0.1:1933'
+      }
+      return 'https://vk.tide.red'
+    }
+    return 'https://vk.tide.red'
+  }, [])
+
+  const mcpUrl = `${adaptiveBaseUrl}/mcp?agent_id=${encodeURIComponent(agent.agent_id)}&user_id=${encodeURIComponent(userId)}`
 
   const clientConfigSnippet = JSON.stringify(
     {
@@ -137,7 +125,7 @@ export function AgentCollapsibleItem({
           headers: {
             'X-OpenViking-Agent': agent.agent_id,
             'X-OpenViking-User': userId,
-            ...(!isLocal ? { Authorization: 'Bearer ${OPENVIKING_API_KEY}' } : {}),
+            'Authorization': 'Bearer ${OPENVIKING_API_KEY}',
           },
         },
       },
@@ -149,10 +137,9 @@ export function AgentCollapsibleItem({
   const hookConfigSnippet = JSON.stringify(
     {
       openviking: {
-        serverUrl: activeBaseUrl,
+        serverUrl: adaptiveBaseUrl,
         agentId: agent.agent_id,
         userId: userId,
-        mode: isLocal ? 'local_direct' : 'remote_gateway',
         hooks: {
           autoRecall: { event: 'UserPromptSubmit', enabled: hookAutoRecall },
           autoCapture: { event: 'afterTurn', enabled: hookAutoCapture },
@@ -259,7 +246,7 @@ export function AgentCollapsibleItem({
           </div>
         </div>
 
-        {/* 第二行：身份证 ID 芯片 + 拓扑 Badge + 工具数 Badge + 消息统计 */}
+        {/* 第二行：身份证 ID 芯片 + 角色工具包 Badge + 工具数 Badge + 消息统计 */}
         <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/20 text-xs font-mono">
           <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-background/80 border border-border/50 text-foreground">
             <span className="text-muted-foreground">ID:</span>
@@ -274,13 +261,14 @@ export function AgentCollapsibleItem({
             </button>
           </div>
 
+          {/* 角色定位徽标：纯角色驱动，告别硬编码网络标签 */}
           <Badge variant="outline" className="text-xs h-5 px-1.5 gap-1 border-border/60">
-            {isLocal ? (
-              <LaptopIcon className="size-2.5 text-cyan-500" />
+            {isMasterBundle ? (
+              <CpuIcon className="size-2.5 text-cyan-500" />
             ) : (
-              <GlobeIcon className="size-2.5 text-cyan-500" />
+              <RadioIcon className="size-2.5 text-cyan-500" />
             )}
-            {isLocal ? '本地直连 (2080Ti)' : '网络远程 (3070)'}
+            {isMasterBundle ? '🧠 中枢总控角色' : '🛰️ 卫星工兵角色'}
           </Badge>
 
           <Badge variant="outline" className="text-xs h-5 px-1.5 gap-1 border-border/60">
@@ -321,82 +309,7 @@ export function AgentCollapsibleItem({
               />
             </div>
 
-            {/* 网络拓扑方式选择 (本地环境 2080Ti vs 公网模式 3070) */}
-            <div className="sm:col-span-2 space-y-1.5 p-2.5 rounded-md border border-border/50 bg-muted/20">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-medium text-foreground flex items-center gap-1.5">
-                  <GlobeIcon className="size-3 text-cyan-500" />
-                  网络拓扑接入模式 (支持随时切换)
-                </Label>
-                <span className="text-xs font-mono text-muted-foreground">
-                  {isLocal ? '本机直连 · 127.0.0.1:1933' : '公网中继 · FRP 穿透'}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setConnectionMode('realtimeApi')}
-                  className={`p-2 rounded border text-left transition-colors cursor-pointer ${
-                    connectionMode === 'realtimeApi'
-                      ? 'border-cyan-500 bg-cyan-500/10 text-foreground font-medium shadow-xs'
-                      : 'border-border/60 bg-background text-muted-foreground hover:bg-muted/30'
-                  }`}
-                >
-                  <div className="flex items-center gap-1 text-xs">
-                    <LaptopIcon className="size-3 text-cyan-500" />
-                    <span>本地宿主直连</span>
-                    <span className="text-xs text-cyan-600 dark:text-cyan-400 font-mono ml-auto">2080Ti / 本机</span>
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-0.5">
-                    智能体与中枢同机/局域网，直连 127.0.0.1:1933
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setConnectionMode('apiClient')}
-                  className={`p-2 rounded border text-left transition-colors cursor-pointer ${
-                    connectionMode === 'apiClient'
-                      ? 'border-cyan-500 bg-cyan-500/10 text-foreground font-medium shadow-xs'
-                      : 'border-border/60 bg-background text-muted-foreground hover:bg-muted/30'
-                  }`}
-                >
-                  <div className="flex items-center gap-1 text-xs">
-                    <GlobeIcon className="size-3 text-cyan-500" />
-                    <span>公网远程模式</span>
-                    <span className="text-xs text-cyan-600 dark:text-cyan-400 font-mono ml-auto">3070 / 工位</span>
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-0.5">
-                    跨公网卫星节点，通过 FRP 穿透或公网网关连接
-                  </div>
-                </button>
-              </div>
-
-              {/* 公网模式下展开公网 Base URL 配置 */}
-              {!isLocal && (
-                <div className="pt-2 border-t border-border/30 space-y-1">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">公网端点 Base URL (3070 等远程工位节点使用):</span>
-                    <button
-                      type="button"
-                      className="text-xs text-cyan-600 hover:underline cursor-pointer"
-                      onClick={() => setPublicGatewayUrl('https://vk.tide.red')}
-                    >
-                      重置默认 (vk.tide.red)
-                    </button>
-                  </div>
-                  <Input
-                    value={publicGatewayUrl}
-                    onChange={(e) => setPublicGatewayUrl(e.target.value)}
-                    placeholder="例如 https://vk.tide.red 或 FRP 穿透端点"
-                    className="h-7 text-xs font-mono bg-background"
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* 独立 ID 卡片，两行自解释，绝无重叠 */}
+            {/* 独立 ID 卡片，两行自解释 */}
             <div className="sm:col-span-2 rounded-md border border-border/50 bg-muted/20 p-2.5 space-y-1.5">
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>系统唯一永久身份证 (ID)</span>
@@ -419,7 +332,7 @@ export function AgentCollapsibleItem({
             </div>
           </div>
 
-          {/* 工具授权矩阵 (Tool ACL) */}
+          {/* 工具授权矩阵 - 角色工具包驱动 */}
           <ToolACLMatrix
             selectedTools={selectedTools}
             onChange={setSelectedTools}
@@ -427,7 +340,7 @@ export function AgentCollapsibleItem({
             userRole={userRole}
           />
 
-          {/* 被动 Hook 核心生命周期控制卡片 (可显式勾选配置) */}
+          {/* 被动 Hook 核心生命周期控制卡片 */}
           <div className="space-y-2 pt-2 border-t border-border/40">
             <div className="flex items-center justify-between">
               <span className="font-semibold text-foreground flex items-center gap-1.5">
@@ -440,7 +353,6 @@ export function AgentCollapsibleItem({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              {/* 1. 先验记忆自动预取 */}
               <div
                 onClick={() => setHookAutoRecall(!hookAutoRecall)}
                 className={`p-2.5 rounded-md border text-left transition-all cursor-pointer select-none space-y-1 ${
@@ -467,7 +379,6 @@ export function AgentCollapsibleItem({
                 </div>
               </div>
 
-              {/* 2. 轮次经验自动沉淀 */}
               <div
                 onClick={() => setHookAutoCapture(!hookAutoCapture)}
                 className={`p-2.5 rounded-md border text-left transition-all cursor-pointer select-none space-y-1 ${
@@ -494,7 +405,6 @@ export function AgentCollapsibleItem({
                 </div>
               </div>
 
-              {/* 3. 工具前置安全守卫 */}
               <div
                 onClick={() => setHookPreToolGuard(!hookPreToolGuard)}
                 className={`p-2.5 rounded-md border text-left transition-all cursor-pointer select-none space-y-1 ${
@@ -523,18 +433,23 @@ export function AgentCollapsibleItem({
             </div>
           </div>
 
-          {/* 统一整合：FastMCP 工具端点 + HOOK 生命周期插件 */}
+          {/* 统一整合：FastMCP 工具端点 + HOOK 生命周期插件 (端点智能自适应) */}
           <div className="space-y-2 pt-2 border-t border-border/40">
-            <span className="font-semibold text-foreground flex items-center gap-1.5">
-              <ZapIcon className="size-3.5 text-cyan-500" />
-              中枢接入与 MCP + HOOK 一体化整合
-            </span>
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-foreground flex items-center gap-1.5">
+                <ZapIcon className="size-3.5 text-cyan-500" />
+                接入配置 (网络端点已自适应当前环境)
+              </span>
+              <span className="text-xs text-muted-foreground font-mono">
+                基准端点: {adaptiveBaseUrl}
+              </span>
+            </div>
 
             <div className="rounded border border-border/40 bg-background p-2.5 space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <TerminalIcon className="size-3 text-cyan-500" />
-                  <span>FastMCP 专属端点 (Streamable HTTP):</span>
+                  <span>FastMCP 端点 (Streamable HTTP):</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Button
@@ -583,6 +498,9 @@ export function AgentCollapsibleItem({
               <code className="font-mono text-xs block p-1.5 rounded bg-muted/30 select-all truncate">
                 {mcpUrl}
               </code>
+              <div className="text-xs text-muted-foreground leading-relaxed">
+                💡 <strong>自适应说明</strong>：同机直连建议使用 <code>http://127.0.0.1:1933/mcp</code>；跨网/远程卫星请使用 <code>https://vk.tide.red/mcp</code>，两者鉴权协议与工具权限 100% 连通互等。
+              </div>
             </div>
           </div>
 

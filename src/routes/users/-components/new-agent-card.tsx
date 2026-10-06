@@ -1,7 +1,8 @@
 /**
  * new-agent-card.tsx
  * 新智能体就地签发卡片 (New Agent Inline Form Card).
- * 嵌入在抽屉面板顶部，点击展开就地签发，完成即收起，彻底杜绝 Dialog 模态跳层与跳页！
+ * 嵌入在抽屉面板顶部，点击展开就地签发，完成即收起。
+ * 彻底切除死板的本地/公网模式选择，全面拥抱“角色工具包”与端点智能自适应！
  */
 import { PlusIcon, SparklesIcon, XIcon } from 'lucide-react'
 import * as React from 'react'
@@ -11,7 +12,7 @@ import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import type { CreateAgentInput } from '#/lib/admin'
-import { DEFAULT_TOOL_IDS } from '../-constants/agent-tools'
+import { SATELLITE_CONSUMER_TOOL_IDS } from '../-constants/agent-tools'
 
 import { ToolACLMatrix } from './tool-acl-matrix'
 
@@ -32,8 +33,8 @@ export function NewAgentCard({
 }: NewAgentCardProps) {
   const [name, setName] = React.useState('')
   const [roleDesc, setRoleDesc] = React.useState('')
-  const [connectionMode, setConnectionMode] = React.useState<'realtimeApi' | 'apiClient'>('apiClient')
-  const [selectedTools, setSelectedTools] = React.useState<string[]>(DEFAULT_TOOL_IDS)
+  // 默认直接赋权官方推荐的「卫星工兵工具包 (31项)」
+  const [selectedTools, setSelectedTools] = React.useState<string[]>(SATELLITE_CONSUMER_TOOL_IDS)
 
   if (!open) return null
 
@@ -45,8 +46,8 @@ export function NewAgentCard({
     }
     onSubmit({
       agent_name: name.trim(),
-      role_desc: roleDesc.trim() || (connectionMode === 'realtimeApi' ? '本地宿主助手' : '远程卫星助手'),
-      connection_mode: connectionMode,
+      role_desc: roleDesc.trim() || '业务研发与知识协作智能体',
+      connection_mode: 'apiClient',
       allowed_tools: selectedTools,
     })
     // 重置
@@ -94,54 +95,18 @@ export function NewAgentCard({
           <Input
             value={roleDesc}
             onChange={(e) => setRoleDesc(e.target.value)}
-            placeholder="例如 自动化编译巡检、代码审查"
+            placeholder="例如 自动化编译巡检、代码审查、业务结对"
             className="h-7 text-xs bg-background"
           />
         </div>
 
-        <div className="sm:col-span-2 space-y-1">
-          <Label className="text-xs font-medium text-foreground">接入拓扑方式</Label>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setConnectionMode('realtimeApi')}
-              className={`p-2 rounded border text-left transition-colors cursor-pointer ${
-                connectionMode === 'realtimeApi'
-                  ? 'border-cyan-500 bg-cyan-500/10 text-foreground font-medium'
-                  : 'border-border/60 bg-background text-muted-foreground hover:bg-muted/30'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <span>本地宿主直连</span>
-                <span className="text-xs text-cyan-600 dark:text-cyan-400 font-mono">2080Ti / 本机</span>
-              </div>
-              <div className="text-muted-foreground mt-0.5 text-xs">同一主机/局域网直连 (127.0.0.1:1933)</div>
-            </button>
-            <button
-              type="button"
-              onClick={() => setConnectionMode('apiClient')}
-              className={`p-2 rounded border text-left transition-colors cursor-pointer ${
-                connectionMode === 'apiClient'
-                  ? 'border-cyan-500 bg-cyan-500/10 text-foreground font-medium'
-                  : 'border-border/60 bg-background text-muted-foreground hover:bg-muted/30'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <span>公网远程卫星</span>
-                <span className="text-xs text-cyan-600 dark:text-cyan-400 font-mono">3070 / 工位</span>
-              </div>
-              <div className="text-muted-foreground mt-0.5 text-xs">跨公网节点，通过 FRP 穿透网关连接</div>
-            </button>
-          </div>
-        </div>
-
         <div className="sm:col-span-2 rounded border border-border/40 bg-muted/20 px-2.5 py-1.5 flex items-center justify-between text-muted-foreground">
           <span>系统唯一身份证 (ID):</span>
-          <span className="font-mono text-foreground">签发时自动生成不可重复 ag_xxxx（永久锁定不可篡改）</span>
+          <span className="font-mono text-foreground">签发时自动生成不可重复 ag_xxxx（永久锁定不可篡改，网络端点全自动自适应）</span>
         </div>
       </div>
 
-      {/* 工具授权矩阵 - 47 项 FastMCP 工具 */}
+      {/* 工具授权矩阵 - 基于角色工具包点选赋权 */}
       <ToolACLMatrix
         selectedTools={selectedTools}
         onChange={setSelectedTools}
