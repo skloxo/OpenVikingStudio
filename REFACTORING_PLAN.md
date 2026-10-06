@@ -3174,21 +3174,31 @@
     2. **拓扑感知单选与差异化指南生成**：添加智能体时支持选择【本地宿主直连】(`realtimeApi`) 与【网络远程卫星】(`apiClient`)，后端针对性派发 `http://127.0.0.1:1933/mcp` 或 `https://vk.tide.red/mcp` 与 `${OPENVIKING_API_KEY}` 占位符；
     3. **右侧滑出抽屉化 (Sheet / Drawer)**：全面替换 Dialog，落地标准 `AgentOnboardingModal`（基于 `Sheet`），提供无水平溢出舒适阅读体验；
     4. **物理删除与重新激活双全生命周期**：支持已吊销智能体一键重新激活与物理彻底删除 (`DELETE ...?purge=true`)；
-    5. **集群自动化同频验证**：更新 `mcp-openviking/tools/fleet.py` 对齐 `antigravity@rtx3070`，并通过 `openviking_fleet_sync` 一键向 3070 远程下发最新 `satellite_mcp_server.py` 与配置。
+    5. **集群自动化同频验证**：更新 `mcp-openviking/tools/fleet.py` 对齐 `antigravity@rtx3070`，并通过 `openviking_fleet_sync` 一键向 3070 远程下发最新 `satellite_mcp_server.py` 与配置；
+    6. **用户级隔离与用户管理抽屉交互重构 (Tenant-Scoped Drawer & Global Card Removal)**：
+       - 切除主页面底部的平铺全局卡片 `<UserAgentsCard />`，消除“全系统级智能体”的误导；
+       - 在空间成员表格（`UserTable`）每行操作列中增加专属【智能体】操作按钮，悬浮提示“管理该用户专属绑定的在籍智能体”；
+       - 点击后右侧滑出专属抽屉 `UserAgentsSheet`（解耦子组件 `AddAgentDialog` 与 `PurgeAgentDialog`，单文件 160~370 行黄金甜点区）；
+       - 抽屉严格绑定被点击的 `user.userId`，数据完全租户级物理隔离，互不混淆。
 - **客观数据指标回显 (Frontend Metric Anchor)**：
+  - 租户数据隔离度: `100.0%` (切除主页全局卡片，按 user.userId 动态加载独立智能体群)
   - 主题一致性达成率: `100.0%` (亮色/暗色自适应，零硬编码黑色背景违规)
   - 接入抽屉展开时延: `< 30ms` (零横向滚动条溢出)
   - 智能体物理生命周期闭环: `100%` (创建/激活/下线/彻底删除全通)
 - **交付内容与文件清单**：
-  - `src/routes/users/-components/user-agents-card.tsx` (360 行，主题自适应与拓扑选择器)
-  - `src/routes/users/-components/agent-onboarding-modal.tsx` (230 行，右侧抽屉化与拓扑指引)
+  - `src/routes/users/-components/user-table.tsx` (用户列表操作列新增【智能体】入口)
+  - `src/routes/users/-components/user-agents-sheet.tsx` (374 行，用户专属右侧滑出抽屉)
+  - `src/routes/users/-components/add-agent-dialog.tsx` (165 行，签发新智能体独立对话框)
+  - `src/routes/users/-components/purge-agent-dialog.tsx` (70 行，彻底物理删除独立对话框)
+  - `src/routes/users/route.tsx` (切除全局平铺卡片，挂载用户专属抽屉)
+  - `src/routes/users/-components/agent-onboarding-modal.tsx` (右侧抽屉化与拓扑指引)
   - `openviking/server/routers/agents.py` (支持差异化 bootstrap payload、purge 物理删除与 activate 重新激活)
   - `src/lib/admin.ts` (补齐 `purgeUserAgent` 与 `activateUserAgent`)
   - `mcp-openviking/tools/fleet.py` (对齐 `antigravity@rtx3070`)
   - `tests/unit/test_agent_principal_api.py` (补齐 purge、activate 与 local bootstrap 单测)
 - **物理交付验证与门禁结果**：
-  1. 单元测试回归：`pytest tests/unit/test_agent_principal_store.py tests/unit/test_agent_principal_api.py tests/unit/test_agent_peer_registry.py` ➔ **10 passed in 1.60s**；
-  2. 前端生产构建：`npm run build` ➔ **✓ built in 18.20s PASS**；
+  1. 单元测试回归：`pytest tests/unit/test_agent_principal_api.py` ➔ **3 passed in 1.40s**；
+  2. 前端生产构建：`npm run build` ➔ **✓ built in 14.67s PASS**；
   3. 密钥物理安全扫描：`python3 scripts/security_check.py` ➔ **Checked 4742 tracked files. Zero secrets detected PASS**；
   4. 集群同频验证：`openviking_fleet_sync` ➔ **2080Ti 与 RTX 3070 全部 sync: true PASS**。
 

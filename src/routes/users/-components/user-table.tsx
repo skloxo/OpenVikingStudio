@@ -4,6 +4,7 @@
  * 展示账户下的用户成员、角色配置、API 密钥以及身份切换和删除操作。
  */
 import {
+  BotIcon,
   CheckIcon,
   CopyIcon,
   KeyRoundIcon,
@@ -64,6 +65,7 @@ export type UserTableProps = {
   onInitiateRegenerate: (user: AdminUser) => void
   onInitiateRemove: (user: AdminUser) => void
   onInitiateRoleChange: (input: UpdateUserRoleInput) => void
+  onManageAgents?: (user: AdminUser) => void
   onUseUserIdentity: (user: AdminUser) => void
   serverMode?: string
   switchingIdentityKey: string
@@ -84,6 +86,7 @@ export function UserTable({
   onInitiateRegenerate,
   onInitiateRemove,
   onInitiateRoleChange,
+  onManageAgents,
   onUseUserIdentity,
   serverMode,
   switchingIdentityKey,
@@ -277,7 +280,25 @@ export function UserTable({
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center justify-end gap-1">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Tooltip>
+                            <TooltipTrigger
+                              render={
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8 gap-1.5 text-xs hover:border-cyan-500/50 hover:bg-cyan-500/5"
+                                  onClick={() => onManageAgents?.(user)}
+                                >
+                                  <BotIcon className="size-3.5 text-cyan-500" />
+                                  <span>智能体</span>
+                                </Button>
+                              }
+                            />
+                            <TooltipContent>管理该用户专属绑定的在籍智能体</TooltipContent>
+                          </Tooltip>
+
                           {canSwitchIdentity ? (
                             <Button
                               type="button"
