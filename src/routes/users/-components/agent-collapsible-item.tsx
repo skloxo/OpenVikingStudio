@@ -5,7 +5,6 @@
  * 彻底切除硬编码的本地/公网模式选择，全面拥抱“角色工具包”与端点智能自适应！
  */
 import {
-  CheckSquareIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   CopyIcon,
@@ -14,8 +13,7 @@ import {
   RotateCcwIcon,
   SaveIcon,
   ShieldCheckIcon,
-  SquareIcon,
-  TerminalIcon,
+  SparklesIcon,
   Trash2Icon,
   ZapIcon,
 } from 'lucide-react'
@@ -29,6 +27,7 @@ import { Label } from '#/components/ui/label'
 import type { UpdateAgentInput, UserAgentItem } from '#/lib/admin'
 import { ALL_TOOL_IDS, MASTER_MAINTAINER_TOOL_IDS } from '../-constants/agent-tools'
 
+import { HookLifecycleMatrix } from './hook-lifecycle-matrix'
 import { ToolACLMatrix } from './tool-acl-matrix'
 
 export type AgentCollapsibleItemProps = {
@@ -116,43 +115,8 @@ export function AgentCollapsibleItem({
 
   const mcpUrl = `${adaptiveBaseUrl}/mcp?agent_id=${encodeURIComponent(agent.agent_id)}&user_id=${encodeURIComponent(userId)}`
 
-  const clientConfigSnippet = JSON.stringify(
-    {
-      mcpServers: {
-        openviking: {
-          url: mcpUrl,
-          type: 'streamable-http',
-          headers: {
-            'X-OpenViking-Agent': agent.agent_id,
-            'X-OpenViking-User': userId,
-            'Authorization': 'Bearer ${OPENVIKING_API_KEY}',
-          },
-        },
-      },
-    },
-    null,
-    2,
-  )
-
-  const hookConfigSnippet = JSON.stringify(
-    {
-      openviking: {
-        serverUrl: adaptiveBaseUrl,
-        agentId: agent.agent_id,
-        userId: userId,
-        hooks: {
-          autoRecall: { event: 'UserPromptSubmit', enabled: hookAutoRecall },
-          autoCapture: { event: 'afterTurn', enabled: hookAutoCapture },
-          preToolGuard: { event: 'PreToolUse', enabled: hookPreToolGuard },
-        },
-      },
-    },
-    null,
-    2,
-  )
-
-  const unifiedPluginConfigSnippet = JSON.stringify(
-    {
+  const unifiedPluginConfigSnippet = React.useMemo(() => {
+    return JSON.stringify({
       name: 'dsh-plugin-openviking',
       serverName: 'openviking',
       transport: 'streamable-http',
@@ -162,15 +126,45 @@ export function AgentCollapsibleItem({
         'X-OpenViking-User': userId,
         'Authorization': 'Bearer ${OPENVIKING_API_KEY}',
       },
-      hooks: {
-        autoRecall: hookAutoRecall,
-        autoCapture: hookAutoCapture,
-        preToolGuard: hookPreToolGuard,
-      },
-    },
-    null,
-    2,
-  )
+      hooks: { autoRecall: hookAutoRecall, autoCapture: hookAutoCapture, preToolGuard: hookPreToolGuard },
+    }, null, 2)
+  }, [mcpUrl, agent.agent_id, userId, hookAutoRecall, hookAutoCapture, hookPreToolGuard])
+
+  const universalPromptSnippet = React.useMemo(() => {
+    const roleTitle = isMasterBundle
+      ? '🧠 中枢总控角色 (全量 47 项特权工具 + 集群底座治理)'
+      : '🛰️ 卫星工兵角色 (一线业务使用 31 项工具 + 知识读写/AST/契约测试/技能自进化)'
+
+    const hookItems = [
+      hookAutoRecall ? '✅ 已开启「先验记忆自动预取」：收到复杂编程或架构任务时，优先调用 `find` 向体外大脑检索规范与历史经验；' : '⚪ 未开启先验记忆预取；',
+      hookAutoCapture ? '✅ 已开启「轮次经验自动沉淀」：踩坑排障或得出重要结论后，主动调用 `openviking_record_evolution_lesson` 或记忆回传接口入库；' : '⚪ 未开启轮次经验沉淀；',
+      hookPreToolGuard ? '✅ 已开启「工具前置安全守卫」：严禁越权或泄露敏感 Key，受控沙箱运行。' : '⚪ 未开启工具前置守卫。',
+    ].join('\n  - ')
+
+    return `# OpenViking 智能体认主与接入协议 (Universal Agent Prompt)
+
+你是已在 OpenViking 认证在籍的智能体。请读取并严格遵守以下身份凭据与行为契约：
+
+## 一、 智能体凭证 (Identity Credentials)
+- **智能体 ID (Agent ID)**: \`${agent.agent_id}\`
+- **智能体名称 (Agent Name)**: \`${agent.agent_name || agent.agent_id}\`
+- **所属用户 (User ID)**: \`${userId}\`
+- **角色定位 (Role)**: ${roleTitle}
+- **FastMCP 服务端点 (Streamable HTTP)**: \`${mcpUrl}\`
+- **请求头鉴权 Header**:
+  - \`X-OpenViking-Agent-ID\`: \`${agent.agent_id}\`
+  - \`X-OpenViking-User\`: \`${userId}\`
+  - \`Authorization\`: \`Bearer \${OPENVIKING_API_KEY}\` (请替换为所属用户实际的 API Key)
+
+## 二、 Hook 核心反射弧规则 (Neuro-Reflex Arcs)
+  - ${hookItems}
+
+## 三、 绝对工程红线与规范 (Baseline Engineering Rules)
+1. **代码审美与字号**：遵循高密冷淡设计规范，界面严禁微字（字号物理硬下限 >= 12px / text-xs），NO GREEN EVER 🚫（正常中性哑光灰，偏离基线上色）；
+2. **单文件规模**：严守 100~300 行黄金甜点区，绝对物理硬上限 <= 500 行，违者主动拆解领域接缝；
+3. **闭环留痕**：完成复杂迭代后，确保测试通过，版本一致并记录体外大脑。
+`
+  }, [agent.agent_id, agent.agent_name, userId, isMasterBundle, mcpUrl, hookAutoRecall, hookAutoCapture, hookPreToolGuard])
 
   return (
     <div
@@ -276,6 +270,11 @@ export function AgentCollapsibleItem({
             {validToolCount} / {ALL_TOOL_IDS.length} 项工具
           </Badge>
 
+          <Badge variant="outline" className="text-xs h-5 px-1.5 gap-1 border-border/60">
+            <ZapIcon className="size-2.5 text-cyan-500" />
+            Hook {[hookAutoRecall, hookAutoCapture, hookPreToolGuard].filter(Boolean).length} / 3 启用
+          </Badge>
+
           <span className="text-muted-foreground ml-auto tabular-nums">
             {agent.total_messages} 条消息
           </span>
@@ -340,166 +339,130 @@ export function AgentCollapsibleItem({
             userRole={userRole}
           />
 
-          {/* 被动 Hook 核心生命周期控制卡片 */}
-          <div className="space-y-2 pt-2 border-t border-border/40">
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-foreground flex items-center gap-1.5">
-                <ShieldCheckIcon className="size-3.5 text-cyan-500" />
-                Hook 核心生命周期与被动注入控制
-              </span>
-              <span className="text-xs text-muted-foreground font-mono">
-                已启用 {[hookAutoRecall, hookAutoCapture, hookPreToolGuard].filter(Boolean).length} / 3 项被动钩子
-              </span>
-            </div>
+          {/* Hook 核心生命周期与被动注入控制卡片 */}
+          <HookLifecycleMatrix
+            autoRecall={hookAutoRecall}
+            onToggleAutoRecall={() => setHookAutoRecall(!hookAutoRecall)}
+            autoCapture={hookAutoCapture}
+            onToggleAutoCapture={() => setHookAutoCapture(!hookAutoCapture)}
+            preToolGuard={hookPreToolGuard}
+            onTogglePreToolGuard={() => setHookPreToolGuard(!hookPreToolGuard)}
+            disabled={isUpdating}
+          />
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <div
-                onClick={() => setHookAutoRecall(!hookAutoRecall)}
-                className={`p-2.5 rounded-md border text-left transition-all cursor-pointer select-none space-y-1 ${
-                  hookAutoRecall
-                    ? 'border-cyan-500/60 bg-cyan-500/10 text-foreground'
-                    : 'border-border/60 bg-muted/10 text-muted-foreground hover:bg-muted/20'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 font-medium text-xs">
-                    {hookAutoRecall ? (
-                      <CheckSquareIcon className="size-3.5 text-cyan-500" />
-                    ) : (
-                      <SquareIcon className="size-3.5 text-muted-foreground" />
-                    )}
-                    <span>🧠 先验记忆自动预取</span>
-                  </div>
-                  <Badge variant="outline" className="text-xs font-mono h-4 px-1">
-                    Prompt 前置
-                  </Badge>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  模型组装提示词前，自动从体外大脑检索相关经验注入 System Prompt
-                </div>
-              </div>
-
-              <div
-                onClick={() => setHookAutoCapture(!hookAutoCapture)}
-                className={`p-2.5 rounded-md border text-left transition-all cursor-pointer select-none space-y-1 ${
-                  hookAutoCapture
-                    ? 'border-cyan-500/60 bg-cyan-500/10 text-foreground'
-                    : 'border-border/60 bg-muted/10 text-muted-foreground hover:bg-muted/20'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 font-medium text-xs">
-                    {hookAutoCapture ? (
-                      <CheckSquareIcon className="size-3.5 text-cyan-500" />
-                    ) : (
-                      <SquareIcon className="size-3.5 text-muted-foreground" />
-                    )}
-                    <span>📥 轮次经验自动沉淀</span>
-                  </div>
-                  <Badge variant="outline" className="text-xs font-mono h-4 px-1">
-                    对话后置
-                  </Badge>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  单轮会话结束后，自动捕获助手输出的新结论与踩坑事实并入库
-                </div>
-              </div>
-
-              <div
-                onClick={() => setHookPreToolGuard(!hookPreToolGuard)}
-                className={`p-2.5 rounded-md border text-left transition-all cursor-pointer select-none space-y-1 ${
-                  hookPreToolGuard
-                    ? 'border-cyan-500/60 bg-cyan-500/10 text-foreground'
-                    : 'border-border/60 bg-muted/10 text-muted-foreground hover:bg-muted/20'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 font-medium text-xs">
-                    {hookPreToolGuard ? (
-                      <CheckSquareIcon className="size-3.5 text-cyan-500" />
-                    ) : (
-                      <SquareIcon className="size-3.5 text-muted-foreground" />
-                    )}
-                    <span>🛡️ 工具前置安全守卫</span>
-                  </div>
-                  <Badge variant="outline" className="text-xs font-mono h-4 px-1">
-                    工具拦截
-                  </Badge>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  工具执行前拦截敏感 Key 泄露、检测目标路径越权，确保安全沙箱
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 统一整合：FastMCP 工具端点 + HOOK 生命周期插件 (端点智能自适应) */}
+          {/* 接入与托底指令中心 (两大纯粹场景：DSH GUI 一键接入 vs 通用智能体认主提示词) */}
           <div className="space-y-2 pt-2 border-t border-border/40">
             <div className="flex items-center justify-between">
               <span className="font-semibold text-foreground flex items-center gap-1.5">
                 <ZapIcon className="size-3.5 text-cyan-500" />
-                接入配置 (网络端点已自适应当前环境)
+                智能体接入方案 (二选一极简落地)
               </span>
               <span className="text-xs text-muted-foreground font-mono">
-                基准端点: {adaptiveBaseUrl}
+                自适应端点: {adaptiveBaseUrl}
               </span>
             </div>
 
-            <div className="rounded border border-border/40 bg-background p-2.5 space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <TerminalIcon className="size-3 text-cyan-500" />
-                  <span>FastMCP 端点 (Streamable HTTP):</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* 场景 1：DeepSeek Harness (DSH GUI 插件/MCP 图形化安装) */}
+              <div className="rounded-lg border border-border/60 bg-muted/15 p-3 space-y-2.5 flex flex-col justify-between">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-foreground flex items-center gap-1.5 text-xs">
+                      <RadioIcon className="size-3.5 text-cyan-500" />
+                      方案一：DSH GUI 图形化安装
+                    </span>
+                    <Badge variant="outline" className="text-xs font-mono h-4 px-1 border-border/60">
+                      DSH 客户端
+                    </Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground leading-relaxed">
+                    在 DSH 客户端左下角点击「设置」➔「插件 / MCP」➔「添加服务器」，无需修改任何代码文件。
+                  </div>
+
+                  {/* 填写要素快速对照 */}
+                  <div className="space-y-1 font-mono text-xs bg-background/80 p-2 rounded border border-border/40">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">服务名称 (Name):</span>
+                      <span className="text-foreground font-semibold">openviking</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">传输类型 (Type):</span>
+                      <span className="text-foreground">streamable-http</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-muted-foreground shrink-0">端点 (URL):</span>
+                      <span className="text-cyan-600 dark:text-cyan-400 truncate max-w-44 select-all" title={mcpUrl}>
+                        {mcpUrl}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
+
+                <div className="flex items-center gap-2 pt-1 border-t border-border/30">
                   <Button
                     type="button"
                     size="sm"
-                    variant="ghost"
-                    className="h-6 px-1.5 text-xs text-cyan-600 hover:bg-cyan-500/10 font-semibold"
-                    onClick={(e) => handleCopy(unifiedPluginConfigSnippet, 'DSH 一体化插件整合配置', e)}
-                    title="复制 MCP + Hook 合二为一的完整 DSH 插件配置"
+                    variant="outline"
+                    className="h-7 text-xs flex-1 text-cyan-600 border-cyan-500/40 hover:bg-cyan-500/10 font-medium"
+                    onClick={(e) => handleCopy(mcpUrl, 'DSH MCP 端点 URL', e)}
+                    title="复制用于 DSH GUI 输入框的端点 URL"
                   >
                     <CopyIcon className="size-3 mr-1" />
-                    复制一体化插件配置
+                    复制端点 URL
                   </Button>
                   <Button
                     type="button"
                     size="sm"
-                    variant="ghost"
-                    className="h-6 px-1.5 text-xs text-cyan-600 hover:bg-cyan-500/10"
-                    onClick={(e) => handleCopy(mcpUrl, 'FastMCP 链接', e)}
+                    variant="outline"
+                    className="h-7 text-xs flex-1 text-foreground border-border hover:bg-muted"
+                    onClick={(e) => handleCopy(unifiedPluginConfigSnippet, 'DSH 一体化插件 JSON', e)}
+                    title="复制包含 Hook 的完整 DSH 插件配置"
                   >
                     <CopyIcon className="size-3 mr-1" />
-                    复制 URL
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 px-1.5 text-xs text-muted-foreground hover:text-foreground"
-                    onClick={(e) => handleCopy(clientConfigSnippet, '客户端 MCP JSON', e)}
-                  >
-                    <CopyIcon className="size-3 mr-1" />
-                    独立 MCP 配置
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 px-1.5 text-xs text-muted-foreground hover:text-foreground"
-                    onClick={(e) => handleCopy(hookConfigSnippet, 'HOOK 生命周期配置', e)}
-                  >
-                    <CopyIcon className="size-3 mr-1" />
-                    独立 Hook 配置
+                    复制插件 JSON
                   </Button>
                 </div>
               </div>
-              <code className="font-mono text-xs block p-1.5 rounded bg-muted/30 select-all truncate">
-                {mcpUrl}
-              </code>
-              <div className="text-xs text-muted-foreground leading-relaxed">
-                💡 <strong>自适应说明</strong>：同机直连建议使用 <code>http://127.0.0.1:1933/mcp</code>；跨网/远程卫星请使用 <code>https://vk.tide.red/mcp</code>，两者鉴权协议与工具权限 100% 连通互等。
+
+              {/* 场景 2：通用智能体认主提示词 (直接复制发给 Agent 托底) */}
+              <div className="rounded-lg border border-cyan-500/30 bg-cyan-500/5 p-3 space-y-2.5 flex flex-col justify-between">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-foreground flex items-center gap-1.5 text-xs">
+                      <SparklesIcon className="size-3.5 text-cyan-500" />
+                      方案二：通用认主提示词 (一键托底)
+                    </span>
+                    <Badge variant="outline" className="text-xs font-mono h-4 px-1 border-cyan-500/40 text-cyan-600 dark:text-cyan-400">
+                      Cursor / VSCode / Claude / 外部 Agent
+                    </Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground leading-relaxed">
+                    复制结构化提示词直接发给目标 Agent 的聊天框。智能体自动读懂身份 ID、MCP 接口与 Hook 规范，自行完成对接托底。
+                  </div>
+
+                  {/* 提示词要素卡片 */}
+                  <div className="font-mono text-xs bg-background/80 p-2 rounded border border-border/40 text-muted-foreground space-y-0.5">
+                    <div className="text-foreground font-medium flex items-center gap-1">
+                      <ShieldCheckIcon className="size-3 text-cyan-500" />
+                      已封装着籍 ID、FastMCP 端点与 Hook 契约
+                    </div>
+                    <div className="truncate">Agent: {agent.agent_id} ({agent.agent_name || '未命名'})</div>
+                    <div className="truncate text-muted-foreground/80">包含先验检索、经验回传与单文件黄金甜点区规范</div>
+                  </div>
+                </div>
+
+                <div className="pt-1 border-t border-border/30">
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="h-7 text-xs w-full bg-cyan-600 hover:bg-cyan-500 text-white font-medium shadow-xs"
+                    onClick={(e) => handleCopy(universalPromptSnippet, '通用智能体认主提示词', e)}
+                    title="复制结构化 Prompt 直接发给目标 Agent 聊天框"
+                  >
+                    <CopyIcon className="size-3 mr-1" />
+                    一键复制通用认主提示词 (直接发给 Agent)
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

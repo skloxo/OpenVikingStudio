@@ -2,7 +2,7 @@
  * new-agent-card.tsx
  * 新智能体就地签发卡片 (New Agent Inline Form Card).
  * 嵌入在抽屉面板顶部，点击展开就地签发，完成即收起。
- * 彻底切除死板的本地/公网模式选择，全面拥抱“角色工具包”与端点智能自适应！
+ * 整合官方角色工具包 (Tool Bundles) 与 Hook 核心生命周期控制 (Hook Lifecycle Matrix)！
  */
 import { PlusIcon, SparklesIcon, XIcon } from 'lucide-react'
 import * as React from 'react'
@@ -14,6 +14,7 @@ import { Label } from '#/components/ui/label'
 import type { CreateAgentInput } from '#/lib/admin'
 import { SATELLITE_CONSUMER_TOOL_IDS } from '../-constants/agent-tools'
 
+import { HookLifecycleMatrix } from './hook-lifecycle-matrix'
 import { ToolACLMatrix } from './tool-acl-matrix'
 
 export type NewAgentCardProps = {
@@ -35,6 +36,11 @@ export function NewAgentCard({
   const [roleDesc, setRoleDesc] = React.useState('')
   // 默认直接赋权官方推荐的「卫星工兵工具包 (31项)」
   const [selectedTools, setSelectedTools] = React.useState<string[]>(SATELLITE_CONSUMER_TOOL_IDS)
+
+  // Hook 核心生命周期默认开启
+  const [hookAutoRecall, setHookAutoRecall] = React.useState(true)
+  const [hookAutoCapture, setHookAutoCapture] = React.useState(true)
+  const [hookPreToolGuard, setHookPreToolGuard] = React.useState(true)
 
   if (!open) return null
 
@@ -106,12 +112,23 @@ export function NewAgentCard({
         </div>
       </div>
 
-      {/* 工具授权矩阵 - 基于角色工具包点选赋权 */}
+      {/* 工具授权矩阵 - 角色工具包驱动 */}
       <ToolACLMatrix
         selectedTools={selectedTools}
         onChange={setSelectedTools}
         disabled={isPending}
         userRole={userRole}
+      />
+
+      {/* Hook 核心生命周期控制卡片 */}
+      <HookLifecycleMatrix
+        autoRecall={hookAutoRecall}
+        onToggleAutoRecall={() => setHookAutoRecall(!hookAutoRecall)}
+        autoCapture={hookAutoCapture}
+        onToggleAutoCapture={() => setHookAutoCapture(!hookAutoCapture)}
+        preToolGuard={hookPreToolGuard}
+        onTogglePreToolGuard={() => setHookPreToolGuard(!hookPreToolGuard)}
+        disabled={isPending}
       />
 
       <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
