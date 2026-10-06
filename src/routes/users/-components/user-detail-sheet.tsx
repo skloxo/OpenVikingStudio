@@ -1,7 +1,10 @@
 /**
  * user-detail-sheet.tsx
- * 用户详情与专属资产管理右侧抽屉 (User Detail & Assets Sheet).
- * 一体化融合展示用户基础信息、API 密钥凭据以及下属在册智能体 (Agent) 资产。
+ * 用户详情与专属资产管理右侧抽屉面板 (User Detail & Assets Control Panel).
+ * 对标技能中心 / 任务中心高密座舱面板设计：
+ * 1. 抽屉内容不整体突变、零多层弹窗遮挡、零跳页！
+ * 2. 纯内嵌面板交互：基本操作采用优雅平滑的原位展开与收起 (Collapsible)；
+ * 3. 上半区高密用户凭据网格，下半区在册智能体原位就地编辑、权限勾选与接入令查看；
  * 严守 NO GREEN EVER 🚫、>= 12px 字体下限与单文件黄金甜点区。
  */
 import * as React from 'react'
@@ -26,7 +29,6 @@ import {
 import type {
   AdminUser,
   CreateAgentInput,
-  CreateAgentResponse,
   UpdateAgentInput,
   UserAgentItem,
 } from '#/lib/admin'
@@ -37,10 +39,9 @@ import {
   fetchUserAgents,
   updateUserAgent,
 } from '#/lib/admin'
-import { AgentFormDialog } from './agent-form-dialog'
-import { AgentOnboardingModal } from './agent-onboarding-modal'
+import { AgentCollapsibleItem } from './agent-collapsible-item'
+import { NewAgentCard } from './new-agent-card'
 import { SoftDeleteAgentDialog } from './soft-delete-agent-dialog'
-import { UserAgentsTable } from './user-agents-table'
 import { UserOverviewCard } from './user-overview-card'
 
 export type UserDetailSheetProps = {
@@ -64,12 +65,10 @@ export function UserDetailSheet({
   const userId = user?.userId || 'default'
   const isCurrentIdentity = currentUserId === userId
 
-  // 模态弹窗状态
-  const [formDialogOpen, setFormDialogOpen] = React.useState(false)
-  const [editingAgent, setEditingAgent] = React.useState<UserAgentItem | null>(null)
+  // 抽屉内嵌就地状态：展开的新建卡片、当前展开的智能体 ID
+  const [showNewAgentCard, setShowNewAgentCard] = React.useState(false)
+  const [expandedAgentId, setExpandedAgentId] = React.useState<string | null>(null)
   const [pendingDeleteAgent, setPendingDeleteAgent] = React.useState<UserAgentItem | null>(null)
-  const [onboardingData, setOnboardingData] = React.useState<CreateAgentResponse | null>(null)
-  const [onboardingOpen, setOnboardingOpen] = React.useState(false)
 
   // 1. 获取指定用户的在册智能体
   const { data: agents = [], isLoading, refetch, isFetching } = useQuery({
@@ -79,7 +78,7 @@ export function UserDetailSheet({
     staleTime: 5000,
   })
 
-  // 2. 突变：创建或编辑智能体
+  // 2. 突变：创建新智能体
   const createMutation = useMutation({
     mutationFn: (input: CreateAgentInput) => createUserAgent(userId, input),
     onSuccess: (data) => {
@@ -87,30 +86,29 @@ export function UserDetailSheet({
       queryClient.invalidateQueries({ queryKey: ['user-agent-counts'] })
       queryClient.invalidateQueries({ queryKey: ['console-peers'] })
       toast.success(`智能体「${data.agent.agent_name}」已签发成功`)
-      setFormDialogOpen(false)
-      setOnboardingData(data)
-      setOnboardingOpen(true)
+      setShowNewAgentCard(false)
+      // 自动展开新创建的智能体面板
+      setExpandedAgentId(data.agent.agent_id)
     },
     onError: (err: unknown) => {
       toast.error(err instanceof Error ? err.message : '创建智能体失败')
     },
   })
 
+  // 3. 突变：就地更新智能体
   const updateMutation = useMutation({
     mutationFn: ({ agentId, input }: { agentId: string; input: UpdateAgentInput }) =>
       updateUserAgent(userId, agentId, input),
     onSuccess: (updated) => {
       queryClient.invalidateQueries({ queryKey: ['user-agents', userId] })
-      toast.success(`智能体「${updated.agent_name}」配置已更新`)
-      setFormDialogOpen(false)
-      setEditingAgent(null)
+      toast.success(`智能体「${updated.agent_name}」配置已就地保存`)
     },
     onError: (err: unknown) => {
-      toast.error(err instanceof Error ? err.message : '更新配置失败')
+      toast.error(err instanceof Error ? err.message : '保存配置失败')
     },
   })
 
-  // 3. 突变：软删除智能体
+  // 4. 突变：软删除下线智能体
   const deleteMutation = useMutation({
     mutationFn: (agentId: string) => deleteUserAgent(userId, agentId),
     onSuccess: () => {
@@ -125,7 +123,7 @@ export function UserDetailSheet({
     },
   })
 
-  // 4. 突变：重新激活智能体
+  // 5. 突变：重新激活智能体
   const activateMutation = useMutation({
     mutationFn: (agentId: string) => activateUserAgent(userId, agentId),
     onSuccess: () => {
@@ -139,61 +137,32 @@ export function UserDetailSheet({
     },
   })
 
-  // 打开接入指南
-  const handleOpenGuide = (agent: UserAgentItem) => {
-    const isLocal = agent.connection_mode === 'realtimeApi'
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'http://127.0.0.1:1933'
-    const mcpUrl = `${origin}/mcp?user_id=${encodeURIComponent(userId)}&agent_id=${encodeURIComponent(agent.agent_id)}`
-    const prompt = `你是已在 OpenViking 注册在籍的智能体 [${agent.agent_name}]。\n你的系统永久身份证为: ${agent.agent_id}，所属用户为: ${userId}。\n请通过 FastMCP 端点接入中枢: ${mcpUrl}`
-
-    setOnboardingData({
-      agent,
-      bootstrap: {
-        topology: isLocal ? 'local_copilot' : 'remote_satellite',
-        remote_mcp_url: mcpUrl,
-        system_prompt: prompt,
-        mcp_config: {
-          mcpServers: {
-            openviking: {
-              url: mcpUrl,
-            },
-          },
-        },
-      },
-    })
-    setOnboardingOpen(true)
-  }
-
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-2xl md:max-w-3xl overflow-y-auto flex flex-col gap-5 font-sans p-6"
+        className="w-full sm:max-w-2xl md:max-w-3xl overflow-y-auto flex flex-col gap-4 font-sans p-5 text-xs bg-card border-l border-border"
       >
-        <SheetHeader className="pb-3 border-b border-border/70">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <SheetTitle className="text-base font-semibold tracking-tight">
-                  用户详情与资产看板
-                </SheetTitle>
-                <Badge variant="outline" className="text-xs font-mono">
-                  {userId}
-                </Badge>
-                {isCurrentIdentity && (
-                  <Badge className="text-xs bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/30">
-                    当前使用身份
-                  </Badge>
-                )}
-              </div>
-              <SheetDescription className="text-xs text-muted-foreground mt-1">
-                管理该用户的基本权限、API 访问密钥与名下在册智能体。
-              </SheetDescription>
-            </div>
+        <SheetHeader className="pb-3 border-b border-border/70 space-y-1">
+          <div className="flex items-center gap-2">
+            <SheetTitle className="text-base font-semibold tracking-tight text-foreground">
+              用户详情与资产座舱
+            </SheetTitle>
+            <Badge variant="outline" className="text-xs font-mono">
+              {userId}
+            </Badge>
+            {isCurrentIdentity && (
+              <Badge className="text-xs bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/30">
+                当前使用身份
+              </Badge>
+            )}
           </div>
+          <SheetDescription className="text-xs text-muted-foreground">
+            管理当前用户的基本权限凭据与名下在册智能体。支持原位展开收起与就地编辑配置。
+          </SheetDescription>
         </SheetHeader>
 
-        {/* 上半区：用户基础信息与核心凭据 */}
+        {/* 区域 1：用户基础凭据网格 */}
         <UserOverviewCard
           user={user}
           isCurrentIdentity={isCurrentIdentity}
@@ -201,23 +170,24 @@ export function UserDetailSheet({
           onRegenerateKey={onRegenerateKey}
         />
 
-        {/* 下半区：用户名下在册智能体 (Agent Principals) */}
-        <div className="flex-1 flex flex-col gap-3">
+        {/* 区域 2：用户名下在册智能体 (Agent Principals) 纯面板，原位展开收起 */}
+        <div className="flex-1 flex flex-col gap-2.5 pt-1">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="p-1 rounded bg-muted border text-cyan-500">
-                <BotIcon className="size-4" />
+              <div className="p-1 rounded bg-muted/60 border border-border/60 text-cyan-500">
+                <BotIcon className="size-3.5" />
               </div>
-              <span className="text-xs font-semibold text-foreground">
-                在册智能体列表 ({agents.length})
+              <span className="font-semibold text-foreground/90">
+                名下在册智能体 ({agents.length})
               </span>
             </div>
 
             <div className="flex items-center gap-2">
               <Button
+                type="button"
                 size="sm"
                 variant="outline"
-                className="h-7 text-xs"
+                className="h-6.5 px-2 text-xs"
                 onClick={() => refetch()}
                 disabled={isFetching}
               >
@@ -225,75 +195,62 @@ export function UserDetailSheet({
                 刷新
               </Button>
               <Button
+                type="button"
                 size="sm"
-                className="h-7 text-xs"
-                onClick={() => {
-                  setEditingAgent(null)
-                  setFormDialogOpen(true)
-                }}
+                className="h-6.5 px-2 text-xs"
+                onClick={() => setShowNewAgentCard((prev) => !prev)}
               >
                 <PlusIcon className="size-3 mr-1" />
-                签发新智能体
+                {showNewAgentCard ? '收起签发表单' : '签发新智能体'}
               </Button>
             </div>
           </div>
 
+          {/* 就地展开的新智能体签发表单 (零跳页) */}
+          <NewAgentCard
+            open={showNewAgentCard}
+            onClose={() => setShowNewAgentCard(false)}
+            onSubmit={(input) => createMutation.mutate(input)}
+            isPending={createMutation.isPending}
+          />
+
+          {/* 智能体卡片列表 */}
           {isLoading ? (
-            <div className="flex items-center justify-center py-12 text-xs text-muted-foreground">
+            <div className="flex items-center justify-center py-10 text-xs text-muted-foreground">
               <LoaderCircleIcon className="size-4 animate-spin mr-2 text-cyan-500" />
-              正在加载在册智能体...
+              正在加载智能体资产...
             </div>
-          ) : agents.length === 0 ? (
-            <div className="text-center py-10 border border-dashed rounded-md text-xs text-muted-foreground">
+          ) : agents.length === 0 && !showNewAgentCard ? (
+            <div className="text-center py-8 border border-dashed rounded-md text-xs text-muted-foreground">
               该用户暂无在册智能体。点击右上角【签发新智能体】为其创建专属 Agent。
             </div>
           ) : (
-            <UserAgentsTable
-              agents={agents}
-              onOpenGuide={handleOpenGuide}
-              onEditAgent={(agent) => {
-                setEditingAgent(agent)
-                setFormDialogOpen(true)
-              }}
-              onDeleteAgent={(agent) => setPendingDeleteAgent(agent)}
-              onActivateAgent={(agentId) => activateMutation.mutate(agentId)}
-              isActivating={activateMutation.isPending}
-            />
+            <div className="space-y-2">
+              {agents.map((agent) => (
+                <AgentCollapsibleItem
+                  key={agent.agent_id}
+                  agent={agent}
+                  userId={userId}
+                  isExpanded={expandedAgentId === agent.agent_id}
+                  onToggleExpand={() =>
+                    setExpandedAgentId((prev) => (prev === agent.agent_id ? null : agent.agent_id))
+                  }
+                  onUpdate={(agentId, input) => updateMutation.mutate({ agentId, input })}
+                  onDelete={(a) => setPendingDeleteAgent(a)}
+                  onActivate={(id) => activateMutation.mutate(id)}
+                  isUpdating={updateMutation.isPending}
+                />
+              ))}
+            </div>
           )}
         </div>
 
-        {/* 智能体表单弹窗 (创建或编辑) */}
-        <AgentFormDialog
-          open={formDialogOpen}
-          onOpenChange={setFormDialogOpen}
-          userId={userId}
-          initialAgent={editingAgent}
-          isPending={createMutation.isPending || updateMutation.isPending}
-          onSubmit={(data) => {
-            if (data.update && editingAgent) {
-              updateMutation.mutate({
-                agentId: editingAgent.agent_id,
-                input: data.update,
-              })
-            } else if (data.create) {
-              createMutation.mutate(data.create)
-            }
-          }}
-        />
-
-        {/* 软删除确认弹窗 */}
+        {/* 软删除下线确认弹窗 */}
         <SoftDeleteAgentDialog
           agent={pendingDeleteAgent}
           isPending={deleteMutation.isPending}
           onClose={() => setPendingDeleteAgent(null)}
           onConfirm={(agentId) => deleteMutation.mutate(agentId)}
-        />
-
-        {/* 接入令指南弹窗 */}
-        <AgentOnboardingModal
-          open={onboardingOpen}
-          onOpenChange={setOnboardingOpen}
-          data={onboardingData}
         />
       </SheetContent>
     </Sheet>
