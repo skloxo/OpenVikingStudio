@@ -348,6 +348,8 @@ export const settings = {
       apiKey: 'API key',
       role: 'Role',
       user: 'User',
+      agents: 'Agents',
+      activeAgents: '{{count}} Active',
     },
     toast: {
       accountCreated: 'Account created',

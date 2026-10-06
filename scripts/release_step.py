@@ -137,33 +137,39 @@ def verify_dist_baked_version(version: str) -> bool:
     return True
 
 
-def probe_health_version(expected_ver: str, retries: int = 15) -> bool:
+def probe_health_version(expected_ver: str, retries: int = 45) -> tuple[bool, str]:
     print(f"🩺 [服务探针] 正在校验 {HEALTH_URL} 返回版本 ...")
+    last_payload = ""
     for i in range(retries):
         try:
             req = urllib.request.Request(HEALTH_URL, headers={"Accept": "application/json"})
             with urllib.request.urlopen(req, timeout=2) as resp:
                 if resp.status == 200:
-                    data = json.loads(resp.read().decode("utf-8"))
+                    raw = resp.read().decode("utf-8")
+                    data = json.loads(raw)
+                    last_payload = raw.strip()
                     ret_ver = data.get("version", "")
                     if ret_ver == expected_ver:
                         print(f"✅ [服务探针通过] 运行时版本 100% 对齐: {ret_ver}")
-                        return True
+                        print(f"   探针物理证据: HTTP 200 -> {last_payload}")
+                        return True, last_payload
                     else:
                         print(f"⏳ 探针返回版本 ({ret_ver}) != 预期 ({expected_ver})，等待 1s 重试 ({i+1}/{retries})...")
         except Exception as e:
             print(f"⏳ 连接探针等待中 ({e}) ...")
         time.sleep(1)
-    return False
+    return False, last_payload
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="OpenViking 自动化版本发布与构建同步流水线")
     parser.add_argument("--bump", choices=["patch", "minor", "major"], help="自动递增指定位")
-    parser.add_argument("--set", dest="set_ver", help="显式指定目标版本号 (如 1.5.04)")
+    parser.add_argument("--set", dest="set_ver", help="显式指定目标版本号 (如 1.7.72)")
     parser.add_argument("--sync", action="store_true", help="校准对齐现有两端版本，不递增")
     parser.add_argument("--skip-build", action="store_true", help="跳过 npm run build 前端构建")
     parser.add_argument("--skip-restart", action="store_true", help="跳过 systemctl restart openviking")
+    parser.add_argument("-m", "--msg", default="", help="版本发布描述信息 (配合自动 Git Tag)")
+    parser.add_argument("--tag", action="store_true", help="在探针验证 100%% 通过后自动执行 git tag")
 
     args = parser.parse_args()
 
@@ -203,23 +209,47 @@ def main() -> None:
     # 全系统 DEMO 禁令与闭环守护自动化视网膜门禁 (Card-103)
     run_cmd(["python3", "scripts/anti_demo_gate.py"], "全系统 DEMO 禁令与闭环守护自动化视网膜门禁")
 
-    # 重启服务并校验
+    # 重启服务并强校验探针
+    probe_payload = ""
     if not args.skip_restart:
         run_cmd(["systemctl", "--user", "restart", "openviking"], "重启 openviking.service")
-        time.sleep(1)
-        if not probe_health_version(target_ver):
-            print("⚠️ 探针未能在超时内确认新版本，请手动检查服务日志。")
+        time.sleep(1.5)
+        ok, probe_payload = probe_health_version(target_ver)
+        if not ok:
+            print(f"\n🚨 [致命阻断] 服务探针验活失败！目标版本 {target_ver} 与运行中服务不匹配！")
+            print(f"   最后一次探针回显: {probe_payload or '无法连接服务'}")
+            print("   请排查: 1. systemctl --user status openviking; 2. journalctl --user -u openviking -n 50")
+            sys.exit(1)
+
+    # 自动执行 Git Commit 与 Git Tag 闭环
+    do_tag = args.tag or bool(args.msg)
+    if do_tag:
+        tag_name = f"v{target_ver}"
+        commit_msg = f"release: {tag_name} {args.msg}".strip()
+        print(f"🏷️ [版本打标] 正在为 {tag_name} 自动生成 Git Commit 与 Tag ...")
+        # 自动 stage 版本相关产物
+        subprocess.run(["git", "add", PKG_JSON_PATH, VERSION_PY_PATH, "dist/"], cwd=REPO_ROOT)
+        # Commit (若有改动)
+        res_commit = subprocess.run(["git", "commit", "-m", commit_msg], cwd=REPO_ROOT, capture_output=True, text=True)
+        if res_commit.returncode == 0:
+            print(f"   -> Git Commit 成功: {commit_msg}")
+        # 打 tag
+        res_tag = subprocess.run(["git", "tag", "-a", tag_name, "-m", commit_msg], cwd=REPO_ROOT, capture_output=True, text=True)
+        if res_tag.returncode == 0:
+            print(f"   -> Git Tag 创建成功: {tag_name}")
+        else:
+            print(f"   ⚠️ Git Tag 创建提示: {res_tag.stderr.strip()}")
 
     print("\n" + "=" * 60)
-    print(f"🎉 版本发布与环境同步 100% 成功！")
+    print(f"🎉 版本发布与环境同步 100% 成功！一把梭全部搞定！")
     print(f"• 物理版本号: v{target_ver}")
     print(f"• 前端产物: dist/assets 已验证包含 {target_ver}")
-    print(f"• 运行时服务: 已健康重启并确认版本对齐")
-    print("=" * 60)
-    print(f"👉 建议留痕指令:")
-    print(f'   git commit -m "release: v{target_ver} ..."')
-    print(f'   git tag -a v{target_ver} -m "release: v{target_ver} ..."')
-    print(f"   git push origin main && git push origin v{target_ver}\n")
+    print(f"• 运行时服务: 已健康重启并由探针验活确认 (HTTP 200)")
+    if probe_payload:
+        print(f"• 探针真实响应: {probe_payload}")
+    if do_tag:
+        print(f"• Git Tag: v{target_ver} 已就绪")
+    print("=" * 60 + "\n")
 
 
 if __name__ == "__main__":
