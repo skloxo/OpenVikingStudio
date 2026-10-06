@@ -241,7 +241,7 @@ def main():
     bot_process: Optional[BotProcess] = None
     if config.with_bot:
         bot_port = args.bot_port
-        config.bot_api_url = f"http://{VIKINGBOT_DEFAULT_HOST}:{bot_port}"
+        config.bot_api_url = f"http://127.0.0.1:{bot_port}"
         _abort_if_port_in_use(bot_port, "vikingbot gateway")
         print(f"Bot API proxy enabled, forwarding to {config.bot_api_url}")
         enable_bot_logging = args.enable_bot_logging

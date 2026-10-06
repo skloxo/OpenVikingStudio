@@ -19,18 +19,26 @@ describe('FastMCP Tool ACL Scenario & Role Gating (Card-122)', () => {
     expect(catKeys).toEqual(['satellite', 'core_master', 'cluster_ops'])
   })
 
-  it('should categorize 15 tools into satellite scenario and 17 into core_master', () => {
-    expect(SATELLITE_TOOL_IDS.length).toBe(15)
-    expect(CORE_MASTER_TOOL_IDS.length).toBe(32) // satellite (15) + core_master (17)
+  it('should categorize 21 tools into satellite scenario, 13 into core_master, and 13 into cluster_ops', () => {
+    expect(SATELLITE_TOOL_IDS.length).toBe(21)
+    expect(CORE_MASTER_TOOL_IDS.length).toBe(34) // satellite (21) + core_master (13)
 
     const satelliteCat = TOOL_CATEGORIES.find((c) => c.id === 'satellite')
-    expect(satelliteCat?.tools.length).toBe(15)
+    expect(satelliteCat?.tools.length).toBe(21)
+    // 验证新纳入卫星组的一线战地核心工具
+    const satIds = satelliteCat?.tools.map((t) => t.id) ?? []
+    expect(satIds).toContain('openviking_code_impact')
+    expect(satIds).toContain('openviking_tokenshift_compress')
+    expect(satIds).toContain('openviking_context_route')
+    expect(satIds).toContain('openviking_skill_validate')
+    expect(satIds).toContain('openviking_skill_publish')
+    expect(satIds).toContain('openviking_privacy_mask')
 
     const coreCat = TOOL_CATEGORIES.find((c) => c.id === 'core_master')
-    expect(coreCat?.tools.length).toBe(17)
+    expect(coreCat?.tools.length).toBe(13)
 
     const opsCat = TOOL_CATEGORIES.find((c) => c.id === 'cluster_ops')
-    expect(opsCat?.tools.length).toBe(15)
+    expect(opsCat?.tools.length).toBe(13)
   })
 
   it('should preserve original technical modules as categoryBadge property', () => {
@@ -64,9 +72,12 @@ describe('FastMCP Tool ACL Scenario & Role Gating (Card-122)', () => {
     const satelliteCat = TOOL_CATEGORIES.find((c) => c.id === 'satellite')!
     const findTool = satelliteCat.tools.find((t) => t.id === 'find')!
     expect(findTool.requiredRole).toBeUndefined()
-
     expect(isToolDisabledByRole(findTool, 'user')).toBe(false)
-    expect(isToolDisabledByRole(findTool, 'admin')).toBe(false)
-    expect(isToolDisabledByRole(findTool, 'root')).toBe(false)
+
+    const maskTool = satelliteCat.tools.find((t) => t.id === 'openviking_privacy_mask')!
+    expect(maskTool.requiredRole).toBeUndefined()
+    expect(isToolDisabledByRole(maskTool, 'user')).toBe(false)
+    expect(isToolDisabledByRole(maskTool, 'admin')).toBe(false)
+    expect(isToolDisabledByRole(maskTool, 'root')).toBe(false)
   })
 })

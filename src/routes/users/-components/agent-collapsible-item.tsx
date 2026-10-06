@@ -4,6 +4,7 @@
  * 彻底切除字体重叠、排版挤压与跳页。全面整合 47 个 FastMCP 工具与 HOOK 生命周期契约。
  */
 import {
+  CheckSquareIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   CopyIcon,
@@ -12,6 +13,7 @@ import {
   RotateCcwIcon,
   SaveIcon,
   ShieldCheckIcon,
+  SquareIcon,
   TerminalIcon,
   Trash2Icon,
   ZapIcon,
@@ -56,11 +58,36 @@ export function AgentCollapsibleItem({
   const [selectedTools, setSelectedTools] = React.useState<string[]>(
     agent.allowed_tools,
   )
+  const initialMode =
+    agent.connection_mode === 'realtimeApi' ||
+    agent.connection_mode === 'local' ||
+    agent.agent_id.includes('2080ti')
+      ? 'realtimeApi'
+      : 'apiClient'
+  const [connectionMode, setConnectionMode] = React.useState<'realtimeApi' | 'apiClient'>(initialMode)
+  const [publicGatewayUrl, setPublicGatewayUrl] = React.useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('ov_public_gateway_url') || 'https://vk.tide.red'
+    }
+    return 'https://vk.tide.red'
+  })
+
+  // Hook 核心生命周期控制状态 (可显式勾选配置)
+  const [hookAutoRecall, setHookAutoRecall] = React.useState(true)
+  const [hookAutoCapture, setHookAutoCapture] = React.useState(true)
+  const [hookPreToolGuard, setHookPreToolGuard] = React.useState(true)
 
   React.useEffect(() => {
     setName(agent.agent_name || '')
     setRoleDesc(agent.role_desc || '')
     setSelectedTools(agent.allowed_tools)
+    const mode =
+      agent.connection_mode === 'realtimeApi' ||
+      agent.connection_mode === 'local' ||
+      agent.agent_id.includes('2080ti')
+        ? 'realtimeApi'
+        : 'apiClient'
+    setConnectionMode(mode)
   }, [agent])
 
   const handleCopy = async (text: string, label: string, e?: React.MouseEvent) => {
@@ -75,21 +102,31 @@ export function AgentCollapsibleItem({
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
+    if (typeof window !== 'undefined' && publicGatewayUrl.trim()) {
+      localStorage.setItem('ov_public_gateway_url', publicGatewayUrl.trim())
+    }
     onUpdate(agent.agent_id, {
       agent_name: name.trim() || undefined,
       role_desc: roleDesc.trim() || undefined,
+      connection_mode: connectionMode,
       allowed_tools: selectedTools,
     })
   }
 
-  const isLocal =
-    agent.connection_mode === 'local' ||
-    agent.agent_id.includes('2080ti') ||
-    agent.agent_id.includes('local')
+  const isLocal = connectionMode === 'realtimeApi'
   const isActive = agent.status === 'active'
+  const validToolCount = agent.allowed_tools.includes('*')
+    ? ALL_TOOL_IDS.length
+    : agent.allowed_tools.filter((id) => ALL_TOOL_IDS.includes(id)).length
 
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'http://127.0.0.1:1933'
-  const mcpUrl = `${origin}/mcp?agent_id=${encodeURIComponent(agent.agent_id)}&user_id=${encodeURIComponent(userId)}`
+  const localOrigin =
+    typeof window !== 'undefined' && window.location.origin.includes('localhost')
+      ? window.location.origin
+      : 'http://127.0.0.1:1933'
+  const cleanPublicGateway = (publicGatewayUrl.trim() || 'https://vk.tide.red').replace(/\/+$/, '')
+  const activeBaseUrl = isLocal ? localOrigin : cleanPublicGateway
+
+  const mcpUrl = `${activeBaseUrl}/mcp?agent_id=${encodeURIComponent(agent.agent_id)}&user_id=${encodeURIComponent(userId)}`
 
   const clientConfigSnippet = JSON.stringify(
     {
@@ -100,6 +137,7 @@ export function AgentCollapsibleItem({
           headers: {
             'X-OpenViking-Agent': agent.agent_id,
             'X-OpenViking-User': userId,
+            ...(!isLocal ? { Authorization: 'Bearer ${OPENVIKING_API_KEY}' } : {}),
           },
         },
       },
@@ -111,14 +149,36 @@ export function AgentCollapsibleItem({
   const hookConfigSnippet = JSON.stringify(
     {
       openviking: {
-        serverUrl: origin,
+        serverUrl: activeBaseUrl,
         agentId: agent.agent_id,
         userId: userId,
+        mode: isLocal ? 'local_direct' : 'remote_gateway',
         hooks: {
-          autoRecall: { event: 'UserPromptSubmit', enabled: true },
-          autoCapture: { event: 'afterTurn', enabled: true },
-          preToolGuard: { event: 'PreToolUse', enabled: true },
+          autoRecall: { event: 'UserPromptSubmit', enabled: hookAutoRecall },
+          autoCapture: { event: 'afterTurn', enabled: hookAutoCapture },
+          preToolGuard: { event: 'PreToolUse', enabled: hookPreToolGuard },
         },
+      },
+    },
+    null,
+    2,
+  )
+
+  const unifiedPluginConfigSnippet = JSON.stringify(
+    {
+      name: 'dsh-plugin-openviking',
+      serverName: 'openviking',
+      transport: 'streamable-http',
+      url: mcpUrl,
+      headers: {
+        'X-OpenViking-Agent-ID': agent.agent_id,
+        'X-OpenViking-User': userId,
+        'Authorization': 'Bearer ${OPENVIKING_API_KEY}',
+      },
+      hooks: {
+        autoRecall: hookAutoRecall,
+        autoCapture: hookAutoCapture,
+        preToolGuard: hookPreToolGuard,
       },
     },
     null,
@@ -218,14 +278,14 @@ export function AgentCollapsibleItem({
             {isLocal ? (
               <LaptopIcon className="size-2.5 text-cyan-500" />
             ) : (
-              <GlobeIcon className="size-2.5 text-muted-foreground" />
+              <GlobeIcon className="size-2.5 text-cyan-500" />
             )}
-            {isLocal ? '本地直连' : '网络远程'}
+            {isLocal ? '本地直连 (2080Ti)' : '网络远程 (3070)'}
           </Badge>
 
           <Badge variant="outline" className="text-xs h-5 px-1.5 gap-1 border-border/60">
             <ShieldCheckIcon className="size-2.5 text-cyan-500" />
-            {agent.allowed_tools.length} / {ALL_TOOL_IDS.length} 项工具
+            {validToolCount} / {ALL_TOOL_IDS.length} 项工具
           </Badge>
 
           <span className="text-muted-foreground ml-auto tabular-nums">
@@ -261,6 +321,81 @@ export function AgentCollapsibleItem({
               />
             </div>
 
+            {/* 网络拓扑方式选择 (本地环境 2080Ti vs 公网模式 3070) */}
+            <div className="sm:col-span-2 space-y-1.5 p-2.5 rounded-md border border-border/50 bg-muted/20">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                  <GlobeIcon className="size-3 text-cyan-500" />
+                  网络拓扑接入模式 (支持随时切换)
+                </Label>
+                <span className="text-xs font-mono text-muted-foreground">
+                  {isLocal ? '本机直连 · 127.0.0.1:1933' : '公网中继 · FRP 穿透'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConnectionMode('realtimeApi')}
+                  className={`p-2 rounded border text-left transition-colors cursor-pointer ${
+                    connectionMode === 'realtimeApi'
+                      ? 'border-cyan-500 bg-cyan-500/10 text-foreground font-medium shadow-xs'
+                      : 'border-border/60 bg-background text-muted-foreground hover:bg-muted/30'
+                  }`}
+                >
+                  <div className="flex items-center gap-1 text-xs">
+                    <LaptopIcon className="size-3 text-cyan-500" />
+                    <span>本地宿主直连</span>
+                    <span className="text-xs text-cyan-600 dark:text-cyan-400 font-mono ml-auto">2080Ti / 本机</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    智能体与中枢同机/局域网，直连 127.0.0.1:1933
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setConnectionMode('apiClient')}
+                  className={`p-2 rounded border text-left transition-colors cursor-pointer ${
+                    connectionMode === 'apiClient'
+                      ? 'border-cyan-500 bg-cyan-500/10 text-foreground font-medium shadow-xs'
+                      : 'border-border/60 bg-background text-muted-foreground hover:bg-muted/30'
+                  }`}
+                >
+                  <div className="flex items-center gap-1 text-xs">
+                    <GlobeIcon className="size-3 text-cyan-500" />
+                    <span>公网远程模式</span>
+                    <span className="text-xs text-cyan-600 dark:text-cyan-400 font-mono ml-auto">3070 / 工位</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    跨公网卫星节点，通过 FRP 穿透或公网网关连接
+                  </div>
+                </button>
+              </div>
+
+              {/* 公网模式下展开公网 Base URL 配置 */}
+              {!isLocal && (
+                <div className="pt-2 border-t border-border/30 space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">公网端点 Base URL (3070 等远程工位节点使用):</span>
+                    <button
+                      type="button"
+                      className="text-xs text-cyan-600 hover:underline cursor-pointer"
+                      onClick={() => setPublicGatewayUrl('https://vk.tide.red')}
+                    >
+                      重置默认 (vk.tide.red)
+                    </button>
+                  </div>
+                  <Input
+                    value={publicGatewayUrl}
+                    onChange={(e) => setPublicGatewayUrl(e.target.value)}
+                    placeholder="例如 https://vk.tide.red 或 FRP 穿透端点"
+                    className="h-7 text-xs font-mono bg-background"
+                  />
+                </div>
+              )}
+            </div>
+
             {/* 独立 ID 卡片，两行自解释，绝无重叠 */}
             <div className="sm:col-span-2 rounded-md border border-border/50 bg-muted/20 p-2.5 space-y-1.5">
               <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -292,6 +427,102 @@ export function AgentCollapsibleItem({
             userRole={userRole}
           />
 
+          {/* 被动 Hook 核心生命周期控制卡片 (可显式勾选配置) */}
+          <div className="space-y-2 pt-2 border-t border-border/40">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-foreground flex items-center gap-1.5">
+                <ShieldCheckIcon className="size-3.5 text-cyan-500" />
+                Hook 核心生命周期与被动注入控制
+              </span>
+              <span className="text-xs text-muted-foreground font-mono">
+                已启用 {[hookAutoRecall, hookAutoCapture, hookPreToolGuard].filter(Boolean).length} / 3 项被动钩子
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {/* 1. 先验记忆自动预取 */}
+              <div
+                onClick={() => setHookAutoRecall(!hookAutoRecall)}
+                className={`p-2.5 rounded-md border text-left transition-all cursor-pointer select-none space-y-1 ${
+                  hookAutoRecall
+                    ? 'border-cyan-500/60 bg-cyan-500/10 text-foreground'
+                    : 'border-border/60 bg-muted/10 text-muted-foreground hover:bg-muted/20'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 font-medium text-xs">
+                    {hookAutoRecall ? (
+                      <CheckSquareIcon className="size-3.5 text-cyan-500" />
+                    ) : (
+                      <SquareIcon className="size-3.5 text-muted-foreground" />
+                    )}
+                    <span>🧠 先验记忆自动预取</span>
+                  </div>
+                  <Badge variant="outline" className="text-xs font-mono h-4 px-1">
+                    Prompt 前置
+                  </Badge>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  模型组装提示词前，自动从体外大脑检索相关经验注入 System Prompt
+                </div>
+              </div>
+
+              {/* 2. 轮次经验自动沉淀 */}
+              <div
+                onClick={() => setHookAutoCapture(!hookAutoCapture)}
+                className={`p-2.5 rounded-md border text-left transition-all cursor-pointer select-none space-y-1 ${
+                  hookAutoCapture
+                    ? 'border-cyan-500/60 bg-cyan-500/10 text-foreground'
+                    : 'border-border/60 bg-muted/10 text-muted-foreground hover:bg-muted/20'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 font-medium text-xs">
+                    {hookAutoCapture ? (
+                      <CheckSquareIcon className="size-3.5 text-cyan-500" />
+                    ) : (
+                      <SquareIcon className="size-3.5 text-muted-foreground" />
+                    )}
+                    <span>📥 轮次经验自动沉淀</span>
+                  </div>
+                  <Badge variant="outline" className="text-xs font-mono h-4 px-1">
+                    对话后置
+                  </Badge>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  单轮会话结束后，自动捕获助手输出的新结论与踩坑事实并入库
+                </div>
+              </div>
+
+              {/* 3. 工具前置安全守卫 */}
+              <div
+                onClick={() => setHookPreToolGuard(!hookPreToolGuard)}
+                className={`p-2.5 rounded-md border text-left transition-all cursor-pointer select-none space-y-1 ${
+                  hookPreToolGuard
+                    ? 'border-cyan-500/60 bg-cyan-500/10 text-foreground'
+                    : 'border-border/60 bg-muted/10 text-muted-foreground hover:bg-muted/20'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 font-medium text-xs">
+                    {hookPreToolGuard ? (
+                      <CheckSquareIcon className="size-3.5 text-cyan-500" />
+                    ) : (
+                      <SquareIcon className="size-3.5 text-muted-foreground" />
+                    )}
+                    <span>🛡️ 工具前置安全守卫</span>
+                  </div>
+                  <Badge variant="outline" className="text-xs font-mono h-4 px-1">
+                    工具拦截
+                  </Badge>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  工具执行前拦截敏感 Key 泄露、检测目标路径越权，确保安全沙箱
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* 统一整合：FastMCP 工具端点 + HOOK 生命周期插件 */}
           <div className="space-y-2 pt-2 border-t border-border/40">
             <span className="font-semibold text-foreground flex items-center gap-1.5">
@@ -310,6 +541,17 @@ export function AgentCollapsibleItem({
                     type="button"
                     size="sm"
                     variant="ghost"
+                    className="h-6 px-1.5 text-xs text-cyan-600 hover:bg-cyan-500/10 font-semibold"
+                    onClick={(e) => handleCopy(unifiedPluginConfigSnippet, 'DSH 一体化插件整合配置', e)}
+                    title="复制 MCP + Hook 合二为一的完整 DSH 插件配置"
+                  >
+                    <CopyIcon className="size-3 mr-1" />
+                    复制一体化插件配置
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
                     className="h-6 px-1.5 text-xs text-cyan-600 hover:bg-cyan-500/10"
                     onClick={(e) => handleCopy(mcpUrl, 'FastMCP 链接', e)}
                   >
@@ -324,7 +566,7 @@ export function AgentCollapsibleItem({
                     onClick={(e) => handleCopy(clientConfigSnippet, '客户端 MCP JSON', e)}
                   >
                     <CopyIcon className="size-3 mr-1" />
-                    复制 MCP 配置
+                    独立 MCP 配置
                   </Button>
                   <Button
                     type="button"
@@ -334,7 +576,7 @@ export function AgentCollapsibleItem({
                     onClick={(e) => handleCopy(hookConfigSnippet, 'HOOK 生命周期配置', e)}
                   >
                     <CopyIcon className="size-3 mr-1" />
-                    复制 Hook 配置
+                    独立 Hook 配置
                   </Button>
                 </div>
               </div>

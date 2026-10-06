@@ -105,26 +105,32 @@ export function NewAgentCard({
             <button
               type="button"
               onClick={() => setConnectionMode('realtimeApi')}
-              className={`p-2 rounded border text-left transition-colors ${
+              className={`p-2 rounded border text-left transition-colors cursor-pointer ${
                 connectionMode === 'realtimeApi'
                   ? 'border-cyan-500 bg-cyan-500/10 text-foreground font-medium'
                   : 'border-border/60 bg-background text-muted-foreground hover:bg-muted/30'
               }`}
             >
-              <div>本地宿主直连</div>
-              <div className="text-muted-foreground mt-0.5">同一主机直连 (1933)</div>
+              <div className="flex items-center justify-between">
+                <span>本地宿主直连</span>
+                <span className="text-xs text-cyan-600 dark:text-cyan-400 font-mono">2080Ti / 本机</span>
+              </div>
+              <div className="text-muted-foreground mt-0.5 text-xs">同一主机/局域网直连 (127.0.0.1:1933)</div>
             </button>
             <button
               type="button"
               onClick={() => setConnectionMode('apiClient')}
-              className={`p-2 rounded border text-left transition-colors ${
+              className={`p-2 rounded border text-left transition-colors cursor-pointer ${
                 connectionMode === 'apiClient'
                   ? 'border-cyan-500 bg-cyan-500/10 text-foreground font-medium'
                   : 'border-border/60 bg-background text-muted-foreground hover:bg-muted/30'
               }`}
             >
-              <div>网络远程卫星</div>
-              <div className="text-muted-foreground mt-0.5">跨机器 / 远程节点网关</div>
+              <div className="flex items-center justify-between">
+                <span>公网远程卫星</span>
+                <span className="text-xs text-cyan-600 dark:text-cyan-400 font-mono">3070 / 工位</span>
+              </div>
+              <div className="text-muted-foreground mt-0.5 text-xs">跨公网节点，通过 FRP 穿透网关连接</div>
             </button>
           </div>
         </div>
