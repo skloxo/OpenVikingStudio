@@ -163,7 +163,7 @@ class _IdentityASGIMiddleware:
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
 
-        request = Request(scope)
+        request = Request(scope, receive=receive)
         x_api_key = request.headers.get("x-api-key")
         authorization = request.headers.get("authorization")
         try:
@@ -182,6 +182,7 @@ class _IdentityASGIMiddleware:
                 or request.headers.get("x-openviking-agent-id")
                 or actor_peer_id
             )
+            agent_rec = None
             if declared_agent_id:
                 from openviking.storage.agent_principal_store import AgentPrincipalStore
                 agent_rec = AgentPrincipalStore.get_instance().get_agent(
@@ -200,6 +201,61 @@ class _IdentityASGIMiddleware:
                         status_code=401,
                     )
                     return await resp(scope, receive, send)
+
+            # Enforce physical Tool ACL validation for POST tools/call requests
+            replay_receive = receive
+            if declared_agent_id and agent_rec and request.method == "POST":
+                import json
+                import time
+                body = await request.body()
+
+                body_consumed = False
+                async def _replay_receive():
+                    nonlocal body_consumed
+                    if not body_consumed:
+                        body_consumed = True
+                        return {"type": "http.request", "body": body, "more_body": False}
+                    return {"type": "http.request", "body": b"", "more_body": False}
+
+                replay_receive = _replay_receive
+
+                try:
+                    payload = json.loads(body)
+                    calls = payload if isinstance(payload, list) else [payload]
+                    for call_obj in calls:
+                        if isinstance(call_obj, dict) and call_obj.get("method") == "tools/call":
+                            params = call_obj.get("params") or {}
+                            tool_name = params.get("name")
+                            allowed = set(agent_rec.allowed_tools) if agent_rec.allowed_tools else set()
+                            if "*" not in allowed and tool_name and tool_name not in allowed:
+                                req_id = call_obj.get("id")
+                                logger.warning(
+                                    f"Tool ACL Denied: Agent [{declared_agent_id}] attempted unauthorized tool [{tool_name}]. Allowed: {agent_rec.allowed_tools}"
+                                )
+                                resp = JSONResponse(
+                                    {
+                                        "jsonrpc": "2.0",
+                                        "id": req_id,
+                                        "error": {
+                                            "code": -32003,
+                                            "message": f"Permission Denied: Tool [{tool_name}] is not authorized for Agent Principal [{declared_agent_id}]. Please grant access in OpenViking Tool ACL Matrix.",
+                                        },
+                                    },
+                                    status_code=403,
+                                )
+                                return await resp(scope, _replay_receive, send)
+                            # Heartbeat & message count increment
+                            try:
+                                AgentPrincipalStore.get_instance().update_agent(
+                                    declared_agent_id,
+                                    total_messages=agent_rec.total_messages + 1,
+                                    last_seen=time.time(),
+                                )
+                            except Exception:
+                                pass
+                except Exception as parse_err:
+                    logger.debug(f"Tool ACL bypass parse error: {parse_err}")
+
         except (UnauthenticatedError, PermissionDeniedError, InvalidArgumentError) as exc:
             status = (
                 401
@@ -207,10 +263,6 @@ class _IdentityASGIMiddleware:
                 else (403 if isinstance(exc, PermissionDeniedError) else 400)
             )
             headers: dict[str, str] = {}
-            # When OAuth is enabled and the request is unauthenticated, advertise
-            # the OAuth 2.0 protected resource metadata so MCP clients (Claude.ai,
-            # Claude Desktop, etc.) can auto-discover the authorization server
-            # per RFC 9728 §5.1.
             if status == 401 and _oauth_enabled(scope):
                 origin = _scope_to_origin(scope)
                 if origin:
@@ -224,15 +276,8 @@ class _IdentityASGIMiddleware:
             )
             return await resp(scope, receive, send)
 
-        # Mirror the identity fallback RequestContext applies below, so the
-        # observability stamp and the request context never disagree.
         effective_account_id = identity.account_id or "default"
         effective_user_id = identity.user_id or "default"
-        # Stamp the resolved identity onto the outer request's root
-        # observability context, mirroring what get_request_context does for
-        # REST routes. MCP authentication bypasses FastAPI's REST context
-        # dependency; request.state shares scope["state"] with the outer app,
-        # where the observability middleware attached root_span_attrs.
         update_root_span_identity(
             request_state=request.state,
             account_id=effective_account_id,
@@ -256,7 +301,7 @@ class _IdentityASGIMiddleware:
         ctx_token = _mcp_ctx.set(ctx)
         url_token = _request_url_ctx.set(url_info)
         try:
-            return await self.app(scope, receive, send)
+            return await self.app(scope, replay_receive, send)
         finally:
             _mcp_ctx.reset(ctx_token)
             _request_url_ctx.reset(url_token)

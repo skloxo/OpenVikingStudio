@@ -10,11 +10,12 @@
 > **生产物理事实声明**：
 >
 > - **线上正式部署版本**：**`v1.4.106`**（物理访问地址：`vk.tide.red/studio/home`，已实机验证）；
-> - **当前最新交付版本**：**`v1.7.25`**（Tag: `v1.7.25`，已全量通过探针白盒数据透传、会话穿透详情抽屉、FastMCP session_id 穿透度量、11 项单测全绿、Vitest 5 项、安全审计 0 密钥与前端生产构建 PASS）；
+> - **当前最新交付版本**：**`v1.7.76`**（Tag: `v1.7.76`，已全量通过场景化工具分类重构、角色置灰门禁与预设模板、Vitest 场景单测与 Pytest ACL 双全绿、安全审计 0 密钥、DEMO与微字号视网膜门禁 PASS，服务探针 HTTP 200 验活）；
 > - **历史里程碑详单检索**：如需查阅 Milestone 1~4 及早期版本修改清单与架构细节，请点击跳转至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。
 
 | 版本 Tag      | 任务工单 ID | 模块与重构主题                                                                                                                                                | 核心治理成果与物理交付物                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |     验收状态      |
 | :------------ | :---------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------: |
+| **`v1.7.76`** | **Card-122** | **FastMCP 场景化工具重构、用户角色高危置灰门禁与一键预设模板 (User-Centric Scenario Tool Matrix, Role-Based Disabled Gate & Preset Templates)** | 1. 彻底终结技术模块割裂分类：将 FastMCP 47 项工具重构为三大用户使用习惯场景：🛰️ 远程协同与日常感知 (15项)、🧠 中枢全栈与工程研发 (17项)、🛡️ 集群运维与高危自愈 (15项)；<br>2. 技术属性与场景解耦：原记忆、AST、代码写入等技术分类沉淀为卡片上的精巧属性 Badge 标签；<br>3. 用户基础角色强门禁：普通 user 角色下，11 项高危系统运维工具自动置灰 (disabled) 且带 Tooltip 权限提示，全选时自动跳过置灰项；<br>4. 快捷预设模板一键下发：提供【🛰️ 卫星协作预设 (15项)】、【🧠 中枢全栈预设 (32项)】与【✨ 全选可用项】交互；<br>5. 严守字号底线与门禁全绿：彻底切除所有 text-[11px] 违规，字号硬性对齐 >= 12px (text-xs)；Vite Build 生产构建通过，安全审计 0 泄密，全系统 DEMO 与字号视网膜门禁 PASS，前后端自动化测试全绿，服务探针 HTTP 200 返回 1.7.76。 | [x] 已验收通过 ✅ |
 | **`v1.7.75`** | **Card-121** | **FastMCP 47 工具真身物理对齐、Tool ACL 运行时强拦截门禁落地与多租户权限模型澄清 (FastMCP 47 Tools SSOT Alignment, Runtime Tool ACL Gatekeeper & Multi-Tenant Role Isolation)** | 1. 彻底消灭 50 vs 47 工具数量矛盾：经后端 FastMCP 探针实测确认真实物理工具确凿为 47 项，清洗前端 agent-tools.ts 剔除 4 个幽灵工具并补齐 openviking_memory_purity_report，全选按钮绑定动态 `{ALL_TOOL_IDS.length}`；<br>2. 彻底终结 Tool ACL 概念悬空：在 mcp_endpoint.py 的 _IdentityASGIMiddleware 中物理落地 tools/call 请求拦截，未在 allowed_tools 授权的工具调用直接被 JSON-RPC 403 阻断并记录审计日志；<br>3. 消息计数与心跳自动激活：合法工具调用自动原子更新 AgentPrincipal 的 total_messages 与 last_seen 心跳；<br>4. 单元测试视网膜覆盖：编写 test_mcp_tool_acl_enforcement.py，覆盖已授权放行、未授权 403 拦截、通配符 `*` 放行全闭环验证；<br>5. 门禁全绿：Pytest 专项通过，Vite Build 生产构建通过，安全审计 0 泄密，DEMO 与字号视网膜 PASS，健康探针 HTTP 200 返回 1.7.75。 | [x] 已验收通过 ✅ |
 | **`v1.7.74`** | **Card-120** | **用户抽屉放大突破 384px 桎梏至 800-1060px、抽离复用 ToolACLMatrix 并落地分组批量全选/单选一键交互 (User Drawer Expansion 800-1060px, Reusable ToolACLMatrix & Category Batch/Item Toggling)** | 1. 彻底击碎 384px 宽度挤压病根：在 SheetContent 显式注入 `data-[side=right]:sm:max-w-[780px] lg:max-w-[920px] xl:max-w-[1060px]`，成功覆写 Radix 默认狭窄限制，抽屉横向空间倍增 2~2.5 倍；<br>2. 提纯公用组件 ToolACLMatrix (227行)：消灭在 new-agent-card 与 agent-collapsible-item 中的 200 行重复代码，严格遵守 DRY 与 100~300 行黄金甜点区；<br>3. 分组批量全选与状态联动：7 大领域分组标题栏支持一键点击整行切换“全选此组”/“取消全选”，实时回显 `X/Y` 选中计数胶囊与高亮状态；<br>4. 工具单选项高密交互：工具卡片支持整卡点击切换 (toggle)，悬浮高亮，完整回显等宽工具名、中文别名与详细功能描述，彻底消灭文字截断与折叠拥挤；<br>5. 门禁全绿：Vite Build 生产构建通过，安全审计 0 泄密，全系统 DEMO 与字号视网膜门禁 PASS，服务健康探针 HTTP 200 返回 1.7.74。 | [x] 已验收通过 ✅ |
 | **`v1.7.73`** | **Card-119** | **FastMCP 47项全量工具映射、客户端 HOOK 一体化整合、抽屉高密解耦排版与公网鉴权安全澄清 (Full 47 FastMCP Tools Mapping, Unified HOOK Integration, Drawer Anti-Collision Typography & Public Key Security Gate)** | 1. 彻底解决抽屉字体重叠碰撞：重构两行解耦头部，ID独立芯片卡片，字号硬性对齐 >=12px (text-xs)，抽屉宽度提升至 max-w-2xl/3xl；<br>2. 映射 FastMCP 真实的 47 项全量工具：涵盖记忆中枢 (6)、代码工作区 (7)、工单与AIFP (6)、AST与架构防护 (3)、技能自进化 (9)、压缩隐私 (7)、集群协同运维 (12) 共 7 大领域细粒度授权；<br>3. 客户端 MCP+HOOK 深度整合：提供包含 agent_id 与各生命周期 HOOK 契约的一体化 JSON 配置一键复制；<br>4. 公网安全与密钥展示治本：实机 curl 验证匿名请求 100% 物理拦截 401，后端修复 _should_expose_user_key 消除 trusted 掩蔽，前端增加安全盾牌提示；<br>5. 门禁全绿：Vite Build 生产构建通过，安全审计 0 泄密，全系统 DEMO 与字号视网膜门禁 PASS，服务健康探针 HTTP 200 返回 1.7.73。 | [x] 已验收通过 ✅ |
@@ -108,6 +109,41 @@
 ---
 
 ### 🧬 Milestone 5-A: 半成品与悬空功能全链路真实化贯通 (Suspended Features Truthful Closure)
+
+#### 📌 [P0] [x] Card-122 (v1.7.76): FastMCP 场景化工具重构、用户角色高危置灰门禁与一键预设模板 (User-Centric Scenario Tool Matrix, Role-Based Disabled Gate & Preset Templates)
+- **类型**：工具场景重构 / 用户角色置灰门禁 / 预设模板下发 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.76` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - 用户痛点与死因诊断：原有按“技术模块”（记忆、代码、AST、工单等）分类，割裂了真实用户的交互心智。用户关注的是“这个智能体是干什么的”（卫星随身协作、中枢主力研发、集群运维自愈）；
+  - 角色权限断层：当主账号为普通 `user` 角色时，高危运维工具如果与普通工具平铺展示并允许勾选，会引发运行态 403 挫败感；
+  - 核心治理闭环：
+    1. **场景化三阶重构**：将 FastMCP 47 项真实物理工具归拢为 3 大用户使用场景：
+       - 🛰️ 远程协同与日常感知 (`satellite` - 15项，适用于 3070/Mac 等随身与结对助手)；
+       - 🧠 中枢全栈与工程研发 (`core_master` - 17项，适用于总控与全栈开发助手)；
+       - 🛡️ 集群运维与高危自愈 (`cluster_ops` - 15项，适用于平台治理与系统自愈)；
+    2. **属性解耦为标签**：原技术分类沉淀为卡片上的精巧属性 Badge（`categoryBadge: 记忆检索/代码写入/AST分析/AIFP工单/观测雷达`）；
+    3. **用户角色置灰门禁**：高危系统运维工具标注 `requiredRole: 'admin'`，当所属用户为普通 `user` 角色时，卡片自动置灰 (`disabled`)、禁用复选框、鼠标呈现 `cursor-not-allowed` 并挂载 Tooltip 权限提示（需 admin/root 角色）；全选按钮自动跳过不可用项；
+    4. **一键快捷场景预设**：提供【🛰️ 卫星协作预设 (15项)】、【🧠 中枢全栈预设 (32项)】与【✨ 全选可用项】交互；
+    5. **全局微字号绝杀**：全盘消灭 `text-[11px]` 违规，严守全局字号硬下限 $\ge 12\text{px}$ (`text-xs`)。
+- **开工前客观数据指标锚定 (Frontend Metric Anchor SSOT)**：
+  - **衡量指标**：
+    1. **工具场景归拢覆盖度**：100% 涵盖 FastMCP 47 项真实物理工具（15 + 17 + 15 = 47 项）；
+    2. **角色置灰防御率**：普通 `user` 角色下 100% 拦截并置灰 11 项高危运维工具；
+    3. **微字号清零率**：`src/routes/users` 下 `text-[11px]` 违规彻底归零 (0 项)；
+    4. **单测视网膜覆盖**：Vitest `tool-acl-scenario.test.ts` 5/5 全绿，Pytest `test_mcp_tool_acl_enforcement.py` 1/1 全绿。
+  - **展示界面与卡片**：`/studio/users` 用户详情抽屉【FastMCP 场景化工具授权矩阵】。
+- **核心交付目标与修改清单**：
+  1. `src/routes/users/-constants/agent-tools.ts`：47 工具场景化重构、属性 Badge 标签与角色门禁声明；
+  2. `src/routes/users/-components/tool-acl-matrix.tsx`：场景分组卡片渲染、用户角色置灰防御、Tooltip 权限提示、预设模板下发与微字号合规；
+  3. `src/routes/users/-components/user-detail-sheet.tsx`、`new-agent-card.tsx`、`agent-collapsible-item.tsx`：全链路贯通并注入 `userRole`；
+  4. `src/routes/users/-components/tool-acl-scenario.test.ts`：自动化测试视网膜保护；
+  5. `openviking/_version.py` & `package.json`：版本号提升至 `1.7.76`。
+- **物理验收与门禁**：
+  - **Git Commit Hash**：`26dded78c`
+  - **Git Tag**：`v1.7.76`
+  - **自动化测试通过率**：Vitest 5/5 PASS (5ms)，Pytest 1/1 PASS (0.33s)；
+  - **安全凭据审计**：`scripts/security_check.py` 扫描 4748 文件 0 密钥泄露；
+  - **全系统 DEMO 与字号视网膜门禁**：`scripts/anti_demo_gate.py` PASS (100.0%)；
+  - **服务探针验活**：HTTP 200 -> `{"status":"ok","healthy":true,"version":"1.7.76","auth_mode":"trusted"}`。
 
 #### 📌 [P0] [x] Card-76 (v1.7.30): 前端大盘假缓存卡片与玩具压测按钮手术级切除 (Frontend Tier-2 Cache Card & Toy Benchmark Removal)
 - **类型**：前端大盘脱水 / 假卡片与玩具按钮切除 / 停止无效轮询 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.30` ｜ **当前状态**：[x] 已验收通过 ✅

@@ -1,12 +1,9 @@
 /**
  * agent-collapsible-item.tsx
- * 智能体就地展开/收起面板项 (Agent Collapsible Item).
- * 彻底消除弹窗覆盖与跳页！所有修改与接入令均在抽屉内原位展开收起。
- * 严守 NO GREEN EVER 🚫、>= 12px 字体下限与单文件黄金甜点区。
+ * 单个智能体原位折叠展开面板 (Collapsible Item)。
+ * 彻底切除字体重叠、排版挤压与跳页。全面整合 47 个 FastMCP 工具与 HOOK 生命周期契约。
  */
-import * as React from 'react'
 import {
-  CheckIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   CopyIcon,
@@ -17,7 +14,9 @@ import {
   ShieldCheckIcon,
   TerminalIcon,
   Trash2Icon,
+  ZapIcon,
 } from 'lucide-react'
+import * as React from 'react'
 import { toast } from 'sonner'
 
 import { Badge } from '#/components/ui/badge'
@@ -25,23 +24,26 @@ import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import type { UpdateAgentInput, UserAgentItem } from '#/lib/admin'
-import { copyTextToClipboard } from '#/lib/clipboard'
-import { DEFAULT_TOOL_IDS, TOOL_CATEGORIES } from '../-constants/agent-tools'
+import { ALL_TOOL_IDS } from '../-constants/agent-tools'
+
+import { ToolACLMatrix } from './tool-acl-matrix'
 
 export type AgentCollapsibleItemProps = {
   agent: UserAgentItem
   userId: string
+  userRole?: string
   isExpanded: boolean
   onToggleExpand: () => void
   onUpdate: (agentId: string, input: UpdateAgentInput) => void
   onDelete: (agent: UserAgentItem) => void
   onActivate: (agentId: string) => void
-  isUpdating?: boolean
+  isUpdating: boolean
 }
 
 export function AgentCollapsibleItem({
   agent,
   userId,
+  userRole = 'user',
   isExpanded,
   onToggleExpand,
   onUpdate,
@@ -49,69 +51,73 @@ export function AgentCollapsibleItem({
   onActivate,
   isUpdating,
 }: AgentCollapsibleItemProps) {
-  const isLocal = agent.connection_mode === 'realtimeApi'
-  const isActive = agent.status === 'active'
-
-  // 本地就地编辑状态
-  const [name, setName] = React.useState(agent.agent_name || agent.agent_id)
+  const [name, setName] = React.useState(agent.agent_name || '')
   const [roleDesc, setRoleDesc] = React.useState(agent.role_desc || '')
   const [selectedTools, setSelectedTools] = React.useState<string[]>(
-    agent.allowed_tools.length > 0 ? agent.allowed_tools : DEFAULT_TOOL_IDS,
+    agent.allowed_tools,
   )
 
-  // 当外部数据变动时同步
   React.useEffect(() => {
-    setName(agent.agent_name || agent.agent_id)
+    setName(agent.agent_name || '')
     setRoleDesc(agent.role_desc || '')
-    setSelectedTools(agent.allowed_tools.length > 0 ? agent.allowed_tools : DEFAULT_TOOL_IDS)
+    setSelectedTools(agent.allowed_tools)
   }, [agent])
 
   const handleCopy = async (text: string, label: string, e?: React.MouseEvent) => {
     e?.stopPropagation()
     try {
-      await copyTextToClipboard(text)
+      await navigator.clipboard.writeText(text)
       toast.success(`已复制 ${label}`)
     } catch {
       toast.error('复制失败')
     }
   }
 
-  const toggleTool = (toolId: string) => {
-    setSelectedTools((prev) =>
-      prev.includes(toolId) ? prev.filter((id) => id !== toolId) : [...prev, toolId],
-    )
-  }
-
-  const toggleCategory = (catToolIds: string[]) => {
-    const allSelected = catToolIds.every((id) => selectedTools.includes(id))
-    if (allSelected) {
-      setSelectedTools((prev) => prev.filter((id) => !catToolIds.includes(id)))
-    } else {
-      setSelectedTools((prev) => Array.from(new Set([...prev, ...catToolIds])))
-    }
-  }
-
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name.trim()) {
-      toast.error('请输入智能体名称')
-      return
-    }
     onUpdate(agent.agent_id, {
-      agent_name: name.trim(),
-      role_desc: roleDesc.trim(),
+      agent_name: name.trim() || undefined,
+      role_desc: roleDesc.trim() || undefined,
       allowed_tools: selectedTools,
     })
   }
 
-  // 生成接入命令与 URL
+  const isLocal =
+    agent.connection_mode === 'local' ||
+    agent.agent_id.includes('2080ti') ||
+    agent.agent_id.includes('local')
+  const isActive = agent.status === 'active'
+
   const origin = typeof window !== 'undefined' ? window.location.origin : 'http://127.0.0.1:1933'
-  const mcpUrl = `${origin}/mcp?user_id=${encodeURIComponent(userId)}&agent_id=${encodeURIComponent(agent.agent_id)}`
+  const mcpUrl = `${origin}/mcp?agent_id=${encodeURIComponent(agent.agent_id)}&user_id=${encodeURIComponent(userId)}`
+
   const clientConfigSnippet = JSON.stringify(
     {
       mcpServers: {
         openviking: {
           url: mcpUrl,
+          type: 'streamable-http',
+          headers: {
+            'X-OpenViking-Agent': agent.agent_id,
+            'X-OpenViking-User': userId,
+          },
+        },
+      },
+    },
+    null,
+    2,
+  )
+
+  const hookConfigSnippet = JSON.stringify(
+    {
+      openviking: {
+        serverUrl: origin,
+        agentId: agent.agent_id,
+        userId: userId,
+        hooks: {
+          autoRecall: { event: 'UserPromptSubmit', enabled: true },
+          autoCapture: { event: 'afterTurn', enabled: true },
+          preToolGuard: { event: 'PreToolUse', enabled: true },
         },
       },
     },
@@ -127,80 +133,46 @@ export function AgentCollapsibleItem({
           : 'border-border/60 bg-muted/10 hover:bg-muted/30'
       }`}
     >
-      {/* 收起态横条 (可点击展开) */}
+      {/* 收起态结构：两行清晰布局，彻底消除挤压与重叠 */}
       <div
-        className="flex items-center justify-between p-2.5 cursor-pointer select-none gap-2"
+        className="p-3 cursor-pointer select-none space-y-2"
         onClick={onToggleExpand}
       >
-        <div className="flex items-center gap-2 min-w-0">
-          <button
-            type="button"
-            className="p-0.5 text-muted-foreground hover:text-foreground shrink-0"
-            title={isExpanded ? '收起详情' : '展开就地配置'}
+        {/* 第一行：展开图标 + 名称 + 状态 + 快捷操作 */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <button
+              type="button"
+              className="p-0.5 text-muted-foreground hover:text-foreground shrink-0"
+              title={isExpanded ? '收起详情' : '展开就地配置'}
+            >
+              {isExpanded ? (
+                <ChevronDownIcon className="size-4 text-cyan-500" />
+              ) : (
+                <ChevronRightIcon className="size-4" />
+              )}
+            </button>
+
+            <span className="font-semibold text-foreground text-sm truncate max-w-48 sm:max-w-64">
+              {agent.agent_name || agent.agent_id}
+            </span>
+
+            <Badge
+              variant="outline"
+              className={`text-xs px-1.5 py-0 font-normal shrink-0 ${
+                isActive
+                  ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400'
+                  : 'border-muted-foreground/30 bg-muted text-muted-foreground'
+              }`}
+            >
+              {isActive ? '在籍' : '已下线'}
+            </Badge>
+          </div>
+
+          <div
+            className="flex items-center gap-1 shrink-0"
+            onClick={(e) => e.stopPropagation()}
           >
-            {isExpanded ? (
-              <ChevronDownIcon className="size-3.5 text-cyan-500" />
-            ) : (
-              <ChevronRightIcon className="size-3.5" />
-            )}
-          </button>
-
-          <div className="space-y-0.5 min-w-0">
-            <div className="flex items-center gap-1.5 font-medium text-foreground">
-              <span className="truncate max-w-40 sm:max-w-50 font-semibold">
-                {agent.agent_name || agent.agent_id}
-              </span>
-              <Badge
-                variant="outline"
-                className={`text-xs h-4.5 px-1 font-normal ${
-                  isActive
-                    ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400'
-                    : 'border-muted-foreground/30 bg-muted text-muted-foreground'
-                }`}
-              >
-                {isActive ? '在籍' : '已下线'}
-              </Badge>
-            </div>
-
-            <div className="flex items-center gap-1 font-mono text-muted-foreground">
-              <span className="text-muted-foreground/90">{agent.agent_id}</span>
-              <button
-                type="button"
-                className="hover:text-foreground p-0.5"
-                onClick={(e) => handleCopy(agent.agent_id, '永久身份证 ID', e)}
-                title="复制永久身份证 ID"
-              >
-                <CopyIcon className="size-3 text-muted-foreground" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="hidden sm:flex items-center gap-1 text-muted-foreground font-mono">
-            {isLocal ? (
-              <Badge variant="outline" className="text-xs h-5 px-1.5 gap-1 border-border/60">
-                <LaptopIcon className="size-2.5 text-cyan-500" />
-                本地直连
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="text-xs h-5 px-1.5 gap-1 border-border/60">
-                <GlobeIcon className="size-2.5 text-muted-foreground" />
-                网络远程
-              </Badge>
-            )}
-          </div>
-
-          <Badge variant="outline" className="text-xs h-5 px-1.5 gap-1 font-mono border-border/60">
-            <ShieldCheckIcon className="size-2.5 text-cyan-500" />
-            {agent.allowed_tools.length} 项工具
-          </Badge>
-
-          <span className="font-mono tabular-nums text-muted-foreground hidden md:inline-block">
-            {agent.total_messages} 条消息
-          </span>
-
-          <div className="flex items-center gap-1 pl-1 border-l border-border/40" onClick={(e) => e.stopPropagation()}>
             {isActive ? (
               <Button
                 type="button"
@@ -226,11 +198,45 @@ export function AgentCollapsibleItem({
             )}
           </div>
         </div>
+
+        {/* 第二行：身份证 ID 芯片 + 拓扑 Badge + 工具数 Badge + 消息统计 */}
+        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/20 text-xs font-mono">
+          <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-background/80 border border-border/50 text-foreground">
+            <span className="text-muted-foreground">ID:</span>
+            <span>{agent.agent_id}</span>
+            <button
+              type="button"
+              className="hover:text-foreground p-0.5"
+              onClick={(e) => handleCopy(agent.agent_id, '永久身份证 ID', e)}
+              title="复制永久身份证 ID"
+            >
+              <CopyIcon className="size-3 text-muted-foreground hover:text-foreground" />
+            </button>
+          </div>
+
+          <Badge variant="outline" className="text-xs h-5 px-1.5 gap-1 border-border/60">
+            {isLocal ? (
+              <LaptopIcon className="size-2.5 text-cyan-500" />
+            ) : (
+              <GlobeIcon className="size-2.5 text-muted-foreground" />
+            )}
+            {isLocal ? '本地直连' : '网络远程'}
+          </Badge>
+
+          <Badge variant="outline" className="text-xs h-5 px-1.5 gap-1 border-border/60">
+            <ShieldCheckIcon className="size-2.5 text-cyan-500" />
+            {agent.allowed_tools.length} / {ALL_TOOL_IDS.length} 项工具
+          </Badge>
+
+          <span className="text-muted-foreground ml-auto tabular-nums">
+            {agent.total_messages} 条消息
+          </span>
+        </div>
       </div>
 
       {/* 展开态：就地原位编辑与接入配置面板 (Zero Jump, Pure In-place) */}
       {isExpanded && (
-        <form onSubmit={handleSave} className="border-t border-border/50 p-3.5 space-y-3.5 bg-background/50">
+        <form onSubmit={handleSave} className="border-t border-border/50 p-4 space-y-4 bg-background/50">
           {/* 基本属性原位修改 */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
@@ -255,103 +261,86 @@ export function AgentCollapsibleItem({
               />
             </div>
 
-            <div className="sm:col-span-2 rounded border border-border/40 bg-muted/20 px-2.5 py-1.5 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">系统唯一永久身份证 (ID):</span>
-                <code className="font-mono font-semibold text-foreground">{agent.agent_id}</code>
+            {/* 独立 ID 卡片，两行自解释，绝无重叠 */}
+            <div className="sm:col-span-2 rounded-md border border-border/50 bg-muted/20 p-2.5 space-y-1.5">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>系统唯一永久身份证 (ID)</span>
+                <span className="font-mono text-xs">永久锁定 · MCP / HOOK 鉴权凭据</span>
               </div>
-              <span className="text-muted-foreground text-xs font-mono">永久锁定，接入唯一凭据</span>
+              <div className="flex items-center justify-between gap-2">
+                <code className="font-mono text-xs font-semibold text-foreground px-2 py-0.5 rounded bg-background border border-border/60 select-all">
+                  {agent.agent_id}
+                </code>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 text-xs px-2 text-cyan-600 hover:bg-cyan-500/10"
+                  onClick={(e) => handleCopy(agent.agent_id, '永久身份证 ID', e)}
+                >
+                  <CopyIcon className="size-3 mr-1" /> 复制 ID
+                </Button>
+              </div>
             </div>
           </div>
 
           {/* 工具授权矩阵 (Tool ACL) */}
-          <div className="space-y-2 pt-1 border-t border-border/40">
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-foreground flex items-center gap-1.5">
-                <ShieldCheckIcon className="size-3.5 text-cyan-500" />
-                工具授权矩阵 (Tool ACL)
-              </span>
-              <span className="font-mono text-muted-foreground">
-                已勾选 {selectedTools.length} 项工具
-              </span>
-            </div>
+          <ToolACLMatrix
+            selectedTools={selectedTools}
+            onChange={setSelectedTools}
+            disabled={isUpdating}
+            userRole={userRole}
+          />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {TOOL_CATEGORIES.map((cat) => {
-                const catToolIds = cat.tools.map((t) => t.id)
-                const isAllSelected = catToolIds.every((id) => selectedTools.includes(id))
-
-                return (
-                  <div key={cat.id} className="rounded border border-border/50 bg-background/60 p-2 space-y-1.5">
-                    <div className="flex items-center justify-between pb-1 border-b border-border/30">
-                      <span className="font-medium text-foreground">{cat.name}</span>
-                      <button
-                        type="button"
-                        className="text-xs text-cyan-600 dark:text-cyan-400 hover:underline"
-                        onClick={() => toggleCategory(catToolIds)}
-                      >
-                        {isAllSelected ? '取消该类' : '全选该类'}
-                      </button>
-                    </div>
-
-                    <div className="space-y-1">
-                      {cat.tools.map((tool) => {
-                        const checked = selectedTools.includes(tool.id)
-                        return (
-                          <div
-                            key={tool.id}
-                            onClick={() => toggleTool(tool.id)}
-                            className={`flex items-center justify-between p-1 rounded cursor-pointer transition-colors ${
-                              checked ? 'bg-cyan-500/10 text-foreground' : 'text-muted-foreground hover:bg-muted/40'
-                            }`}
-                          >
-                            <span className="font-mono text-xs">{tool.name}</span>
-                            <div
-                              className={`size-3 rounded flex items-center justify-center border ${
-                                checked ? 'bg-cyan-500 border-cyan-500 text-white' : 'border-border'
-                              }`}
-                            >
-                              {checked && <CheckIcon className="size-2 stroke-3" />}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* 接入指令与 URL (就地查看与复制，绝不跳页) */}
-          <div className="space-y-1.5 pt-1 border-t border-border/40">
+          {/* 统一整合：FastMCP 工具端点 + HOOK 生命周期插件 */}
+          <div className="space-y-2 pt-2 border-t border-border/40">
             <span className="font-semibold text-foreground flex items-center gap-1.5">
-              <TerminalIcon className="size-3.5 text-cyan-500" />
-              中枢接入端点与客户端配置
+              <ZapIcon className="size-3.5 text-cyan-500" />
+              中枢接入与 MCP + HOOK 一体化整合
             </span>
 
-            <div className="flex items-center gap-1.5 rounded border border-border/40 bg-background px-2 py-1">
-              <code className="font-mono text-xs flex-1 truncate select-all">{mcpUrl}</code>
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                className="h-6 px-1.5 text-xs text-cyan-600 hover:bg-cyan-500/10"
-                onClick={(e) => handleCopy(mcpUrl, 'FastMCP 链接', e)}
-              >
-                <CopyIcon className="size-3 mr-1" />
-                复制 URL
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                className="h-6 px-1.5 text-xs text-muted-foreground hover:text-foreground"
-                onClick={(e) => handleCopy(clientConfigSnippet, '客户端 JSON 配置', e)}
-              >
-                <CopyIcon className="size-3 mr-1" />
-                复制 JSON
-              </Button>
+            <div className="rounded border border-border/40 bg-background p-2.5 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <TerminalIcon className="size-3 text-cyan-500" />
+                  <span>FastMCP 专属端点 (Streamable HTTP):</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 px-1.5 text-xs text-cyan-600 hover:bg-cyan-500/10"
+                    onClick={(e) => handleCopy(mcpUrl, 'FastMCP 链接', e)}
+                  >
+                    <CopyIcon className="size-3 mr-1" />
+                    复制 URL
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 px-1.5 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={(e) => handleCopy(clientConfigSnippet, '客户端 MCP JSON', e)}
+                  >
+                    <CopyIcon className="size-3 mr-1" />
+                    复制 MCP 配置
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 px-1.5 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={(e) => handleCopy(hookConfigSnippet, 'HOOK 生命周期配置', e)}
+                  >
+                    <CopyIcon className="size-3 mr-1" />
+                    复制 Hook 配置
+                  </Button>
+                </div>
+              </div>
+              <code className="font-mono text-xs block p-1.5 rounded bg-muted/30 select-all truncate">
+                {mcpUrl}
+              </code>
             </div>
           </div>
 
