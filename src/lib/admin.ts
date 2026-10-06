@@ -469,3 +469,72 @@ export async function updateAdminUserRole(
     }),
   )
 }
+
+export type UserAgentItem = {
+  agent_id: string
+  user_id: string
+  role_desc: string
+  icon: string
+  connection_mode: string
+  status: 'active' | 'suspended' | 'revoked'
+  total_messages: number
+  last_seen: number
+  created_at: number
+}
+
+export type CreateAgentInput = {
+  agent_id: string
+  role_desc: string
+  icon?: string
+  connection_mode?: string
+}
+
+export type CreateAgentResponse = {
+  agent: UserAgentItem
+  bootstrap: {
+    mcp_config: Record<string, unknown>
+    system_prompt: string
+    remote_mcp_url: string
+  }
+}
+
+export async function fetchUserAgents(
+  userId: string = 'default',
+): Promise<UserAgentItem[]> {
+  const resp = await fetch(`/api/v1/users/${encodeURIComponent(userId)}/agents?status=all`)
+  if (!resp.ok) {
+    throw new Error(`Failed to fetch agents: ${resp.statusText}`)
+  }
+  const data = await resp.json()
+  return data.result || []
+}
+
+export async function createUserAgent(
+  userId: string,
+  input: CreateAgentInput,
+): Promise<CreateAgentResponse> {
+  const resp = await fetch(`/api/v1/users/${encodeURIComponent(userId)}/agents`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  if (!resp.ok) {
+    throw new Error(`Failed to create agent: ${resp.statusText}`)
+  }
+  const data = await resp.json()
+  return data.result
+}
+
+export async function revokeUserAgent(
+  userId: string,
+  agentId: string,
+): Promise<void> {
+  const resp = await fetch(
+    `/api/v1/users/${encodeURIComponent(userId)}/agents/${encodeURIComponent(agentId)}`,
+    { method: 'DELETE' },
+  )
+  if (!resp.ok) {
+    throw new Error(`Failed to revoke agent: ${resp.statusText}`)
+  }
+}
+

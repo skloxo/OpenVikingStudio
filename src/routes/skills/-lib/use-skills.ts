@@ -3,7 +3,6 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useAppConnection } from '#/hooks/use-app-connection'
 import { isOvClientError, ovClient } from '#/lib/ov-client'
 import type {
-  SkillDetail,
   SkillHarnessMetrics,
   SkillItem,
   SkillScopeFilter,
@@ -23,48 +22,6 @@ export function useSkillsData() {
   const [activeScopeFilter, setActiveScopeFilter] =
     React.useState<SkillScopeFilter>('all')
 
-  const [refinedSkills, setRefinedSkills] = React.useState<
-    Record<string, 'idle' | 'p1' | 'p2' | 'done'>
-  >(() => {
-    try {
-      const saved = localStorage.getItem('ov_refined_skills')
-      return saved ? JSON.parse(saved) : {}
-    } catch {
-      return {}
-    }
-  })
-
-  const handleRefineSkill = async (key: string, skillsList: string[]) => {
-    setRefinedSkills((prev) => {
-      const next = { ...prev, [key]: 'p1' as const }
-      try {
-        localStorage.setItem('ov_refined_skills', JSON.stringify(next))
-      } catch {}
-      return next
-    })
-    try {
-      await ovClient.instance.post('/api/v1/harness/refine_gate', { skills: skillsList })
-    } catch {}
-    setTimeout(() => {
-      setRefinedSkills((prev) => {
-        const next = { ...prev, [key]: 'p2' as const }
-        try {
-          localStorage.setItem('ov_refined_skills', JSON.stringify(next))
-        } catch {}
-        return next
-      })
-      setTimeout(() => {
-        setRefinedSkills((prev) => {
-          const next = { ...prev, [key]: 'done' as const }
-          try {
-            localStorage.setItem('ov_refined_skills', JSON.stringify(next))
-          } catch {}
-          return next
-        })
-      }, 800)
-    }, 700)
-  }
-
   // Pagination states (Default 12 per page)
   const [currentPage, setCurrentPage] = React.useState(1)
   const [pageSize, setPageSize] = React.useState(12)
@@ -79,13 +36,18 @@ export function useSkillsData() {
   })
   const skills = skillsQuery.data ?? []
 
-  // 客户端毫秒级检索与 Scope 筛选过滤
+  // 客户端毫秒级检索与 Scope 领域正交分类筛选
   const filteredSkills = React.useMemo(() => {
     return skills.filter((s) => {
-      if (activeScopeFilter === 'engineering' && !isEngineeringSkill(s.name, s.source)) return false
-      if (activeScopeFilter === 'agent' && (s.scope !== 'agent' || isEngineeringSkill(s.name, s.source))) return false
-      if (activeScopeFilter === 'data' && !isDataSkill(s.name)) return false
-      if (activeScopeFilter === 'idle' && isEngineeringSkill(s.name, s.source)) return false
+      const isEng = isEngineeringSkill(s.name, s.source)
+      const isAg = s.scope === 'agent' && !isEng
+      const isDat = !isEng && !isAg && isDataSkill(s.name)
+
+      if (activeScopeFilter === 'engineering' && !isEng) return false
+      if (activeScopeFilter === 'agent' && !isAg) return false
+      if (activeScopeFilter === 'data' && !isDat) return false
+      if (activeScopeFilter === 'general' && (isEng || isAg || isDat)) return false
+
       if (!searchQuery.trim()) return true
       const q = searchQuery.toLowerCase()
       const cnName = s.cnName || getChineseSkillName(s.name)
@@ -184,15 +146,10 @@ export function useSkillsData() {
         ).toFixed(1)
       : null
 
-  const doneRefinedCount = Object.values(refinedSkills).filter(
-    (v) => v === 'done',
-  ).length
   const lessonsCount =
     hasRealMetrics && typeof metricsData?.lessons_count === 'number'
-      ? metricsData.lessons_count + doneRefinedCount
-      : doneRefinedCount > 0
-        ? doneRefinedCount
-        : null
+      ? metricsData.lessons_count
+      : null
   const builtinLessonsCount =
     hasRealMetrics && typeof metricsData?.builtin_lessons_count === 'number'
       ? metricsData.builtin_lessons_count
@@ -246,8 +203,6 @@ export function useSkillsData() {
     setSearchQuery,
     activeScopeFilter,
     setActiveScopeFilter,
-    refinedSkills,
-    handleRefineSkill,
     currentPage,
     setCurrentPage,
     pageSize,
@@ -256,3 +211,4 @@ export function useSkillsData() {
     harnessMetrics,
   }
 }
+

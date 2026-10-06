@@ -86,7 +86,8 @@ def _resolve_actor_peer(explicit_peer: str = "") -> str:
     client = os.environ.get("OPENVIKING_CLIENT", "").strip().lower()
     if not client:
         full_ctx = (sys.executable + " " + " ".join(sys.argv) + " " + os.getcwd()).lower() + " " + (" ".join(os.environ.keys()) + " " + " ".join(os.environ.values())).lower()
-        if any(x in full_ctx for x in ("antigravity", "gemini")): client = "antigravity"
+        if any(x in full_ctx for x in ("deepseek", "harness", "dsh")): client = "deepseek-harness"
+        elif any(x in full_ctx for x in ("antigravity", "gemini")): client = "antigravity"
         elif any(x in full_ctx for x in ("workbuddy", "codebuddy")): client = "workbuddy"
         elif any(x in full_ctx for x in ("mimocode", "xiaomimo")): client = "xiaomimo"
         elif "openclaw" in full_ctx: client = "openclaw"
@@ -112,6 +113,13 @@ def _record_harness_call(call_type: str, actor_peer: str = "default"):
     resolved_peer = _resolve_actor_peer(actor_peer)
     peers = HARNESS_METRICS.setdefault("actor_peers", {})
     peers[resolved_peer] = peers.get(resolved_peer, 0) + 1
+
+    # 同步通知动态 Peer 注册中心
+    try:
+        from openviking.service.agent_peer_registry import AgentPeerRegistry
+        AgentPeerRegistry.get_instance().record_peer_activity(resolved_peer, calls=1)
+    except Exception:
+        pass
 
     _save_harness_metrics()
 

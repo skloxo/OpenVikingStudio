@@ -61,8 +61,10 @@ from openviking.server.routers.privacy_gov import router as privacy_gov_router
 from openviking.server.routers.skill_evolution import router as skill_evolution_router
 from openviking.server.routers.skill_ingestion import router as skill_ingestion_router
 from openviking.server.routers.anti_demo import anti_demo_router
+from openviking.server.routers.agents import router as agents_router
 
 __all__ = [
+    "agents_router",
     "acl_router",
     "admin_router",
     "agent_evolution_router",

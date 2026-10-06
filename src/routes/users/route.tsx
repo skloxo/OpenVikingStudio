@@ -44,6 +44,7 @@ import { copyTextToClipboard } from '#/lib/clipboard'
 import { resolveStudioManagementCapabilities } from '#/lib/studio-permissions'
 
 import { AddUserDialog } from './-components/add-user-dialog'
+import { UserAgentsCard } from './-components/user-agents-card'
 import { UserManagementDialogs } from './-components/user-management-dialogs'
 import { UserTable } from './-components/user-table'
 import { getErrorMessage } from './-lib/user-utils'
@@ -360,6 +361,8 @@ function UserManagementRoute() {
         switchingIdentityKey={switchingIdentityKey}
         users={users}
       />
+
+      <UserAgentsCard userId={connection.userId || 'default'} />
 
       <AddUserDialog
         open={addUserOpen}

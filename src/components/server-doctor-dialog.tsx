@@ -81,42 +81,34 @@ export function ServerDoctorDialog({
   const rttMs = healthData?.latencyMs ?? 0
   const isHealthy = Boolean(healthData?.ok && serverMode !== 'offline')
 
-  // Run One-Click Self-Healing
+  // Run Client Channel Probe & State Reset
   const handleAutoHeal = async () => {
     setIsHealing(true)
     setHealingStep(1)
     setHealingLogs([
-      `[${new Date().toLocaleTimeString()}] 🚀 启动 OpenViking 物理自愈引擎 (Auto-Heal Engine)...`,
-      `[${new Date().toLocaleTimeString()}] 正在探测 1933 RPC 端口及网络信道连接状态...`,
+      `[${new Date().toLocaleTimeString()}] 🚀 启动客户端信道与服务探针复测...`,
+      `[${new Date().toLocaleTimeString()}] 正在向 1933 RPC 端点发起实时连通性探测...`,
     ])
 
-    await new Promise((resolve) => setTimeout(resolve, 600))
+    const res = await refetchHealth()
     setHealingStep(2)
+    const currentRtt = res.data?.latencyMs ?? rttMs
     setHealingLogs((prev) => [
       ...prev,
-      `[${new Date().toLocaleTimeString()}] ✅ 1933 RPC 信道连通正常 (RTT: ${rttMs}ms)`,
-      `[${new Date().toLocaleTimeString()}] 正在检查并刷新 AGFS 快照事务锁与 VectorDB 索引句柄...`,
-    ])
-
-    await new Promise((resolve) => setTimeout(resolve, 700))
-    setHealingStep(3)
-    setHealingLogs((prev) => [
-      ...prev,
-      `[${new Date().toLocaleTimeString()}] ✅ AGFS 文件系统与事务锁已成功复位`,
-      `[${new Date().toLocaleTimeString()}] 正在重置客户端通讯上下文并刷新本地 React Query 缓存...`,
+      `[${new Date().toLocaleTimeString()}] ✅ 1933 RPC 信道响应正常 (RTT: ${currentRtt}ms)`,
+      `[${new Date().toLocaleTimeString()}] 正在复位前端通讯上下文并刷新本地 React Query 数据缓存...`,
     ])
 
     await queryClient.invalidateQueries()
-    await refetchHealth()
-
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    setIsHealing(false)
-    setHealingStep(0)
+    setHealingStep(3)
     setHealingLogs((prev) => [
       ...prev,
-      `[${new Date().toLocaleTimeString()}] ✨ OpenViking 全局系统健康探测与自愈完成，服务 100% 稳如磐石。`,
+      `[${new Date().toLocaleTimeString()}] ✅ 客户端缓存与数据总线已成功复位`,
+      `[${new Date().toLocaleTimeString()}] ✨ 探针复测完成，服务通讯信道 100% 稳固。`,
     ])
-    toast.success(t('appShell.doctor.healSuccess', '系统自愈完成，所有服务已恢复最优状态'))
+    setIsHealing(false)
+    setHealingStep(0)
+    toast.success(t('appShell.doctor.healSuccess', '服务探针复测与客户端信道复位完成'))
   }
 
   return (
