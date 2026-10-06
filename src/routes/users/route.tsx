@@ -44,7 +44,7 @@ import { copyTextToClipboard } from '#/lib/clipboard'
 import { resolveStudioManagementCapabilities } from '#/lib/studio-permissions'
 
 import { AddUserDialog } from './-components/add-user-dialog'
-import { UserAgentsCard } from './-components/user-agents-card'
+import { UserAgentsSheet } from './-components/user-agents-sheet'
 import { UserManagementDialogs } from './-components/user-management-dialogs'
 import { UserTable } from './-components/user-table'
 import { getErrorMessage } from './-lib/user-utils'
@@ -73,6 +73,9 @@ function UserManagementRoute() {
   const [pendingRoleChange, setPendingRoleChange] =
     React.useState<UpdateUserRoleInput | null>(null)
   const [switchingIdentityKey, setSwitchingIdentityKey] = React.useState('')
+  const [selectedUserForAgents, setSelectedUserForAgents] =
+    React.useState<AdminUser | null>(null)
+  const [agentsSheetOpen, setAgentsSheetOpen] = React.useState(false)
 
   const { canManageAccounts, canManageUsers } =
     resolveStudioManagementCapabilities({
@@ -356,13 +359,21 @@ function UserManagementRoute() {
         onInitiateRegenerate={(user) => setPendingRegenerateUser(user)}
         onInitiateRemove={(user) => setPendingRemoveUser(user)}
         onInitiateRoleChange={(input) => setPendingRoleChange(input)}
+        onManageAgents={(user) => {
+          setSelectedUserForAgents(user)
+          setAgentsSheetOpen(true)
+        }}
         onUseUserIdentity={(user) => void useUserIdentity(user)}
         serverMode={serverMode}
         switchingIdentityKey={switchingIdentityKey}
         users={users}
       />
 
-      <UserAgentsCard userId={connection.userId || 'default'} />
+      <UserAgentsSheet
+        user={selectedUserForAgents}
+        open={agentsSheetOpen}
+        onOpenChange={setAgentsSheetOpen}
+      />
 
       <AddUserDialog
         open={addUserOpen}
