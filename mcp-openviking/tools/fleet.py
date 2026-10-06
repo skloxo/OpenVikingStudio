@@ -172,33 +172,6 @@ def _check_remote_3070() -> Dict[str, Any]:
     return res
 
 
-def _check_mac_studio() -> Dict[str, Any]:
-    res = {"node": "Mac Studio (M3 Ultra)", "status": "ok", "checks": {}}
-    ssh_target = os.environ.get("OV_MAC_STUDIO_SSH")
-    ssh_port = os.environ.get("OV_MAC_STUDIO_PORT", "13100")
-    if not ssh_target:
-        res["status"] = "unconfigured"
-        res["error"] = "OV_MAC_STUDIO_SSH not configured"
-        return res
-    cmd = [
-        "ssh", "-p", str(ssh_port),
-        "-o", "StrictHostKeyChecking=no",
-        "-o", "ConnectTimeout=4",
-        ssh_target,
-        "echo mac-studio-ok"
-    ]
-    try:
-        cp = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
-        if cp.returncode == 0 and "mac-studio-ok" in cp.stdout:
-            res["checks"]["ssh_connected"] = True
-        else:
-            res["status"] = "unreachable"
-            res["error"] = cp.stderr.strip() or "Connection timed out"
-    except Exception as e:
-        res["status"] = "unreachable"
-        res["error"] = str(e)
-    return res
-
 
 def _sync_to_3070() -> Dict[str, Any]:
     log_res = {"target": "RTX 3070", "satellite_mcp": False, "workbuddy_mcp": False, "mimo_plugin": False, "agents_md": False, "antigravity_config": False}
@@ -296,7 +269,7 @@ def register_fleet_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Callable
 
     @mcp_tool()
     def openviking_fleet_check(
-        target_node: str = Field(default="all", description="目标节点：'all'、'3070'、'2080ti'、'mac_studio'")
+        target_node: str = Field(default="all", description="目标节点：'all'、'3070'、'2080ti'")
     ) -> str:
         """【卫星集群运维】全集群卫星节点健康巡检，排查 SSH 连通性、MCP 403 风险与 AGENTS.md 规范状态。"""
         results = []
@@ -305,8 +278,6 @@ def register_fleet_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Callable
             results.append(_check_local_2080ti())
         if target in ("all", "3070", "remote"):
             results.append(_check_remote_3070())
-        if target in ("all", "mac_studio", "mac"):
-            results.append(_check_mac_studio())
 
         return json.dumps({"status": "ok", "fleet": results, "timestamp": int(time.time())}, indent=2, ensure_ascii=False)
 
