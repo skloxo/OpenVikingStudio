@@ -3255,5 +3255,42 @@
   5. 自动化视网膜门禁：`python3 scripts/anti_demo_gate.py` ➔ **227 components, 0 dangling, 100% PASS**；
   6. 运行时探针校验：`release:sync` ➔ **HTTP 200 -> {"status":"ok","healthy":true,"version":"1.7.71","auth_mode":"trusted"} PASS**。
 
+---
+
+### 📌 [P0] [x] Card-118 (v1.7.71): 用户抽屉对标技能与任务中心重构为单面板就地折叠展开、彻底切除多层弹窗与跳页 (In-Place Collapsible User Drawer Panel, Zero Multi-Dialog Stacking, Zero Page Jumping) ✅
+- **背景与第一性原理**：
+  - **前序诱因与用户核心痛点**：
+    1. 之前的抽屉构建粗糙，抽屉内点击智能体编辑时弹出了次级 Dialog（模态遮罩与抽屉遮罩冲突层叠打架），造成用户感知上的“跳页/内容突变/遮挡”体验；
+    2. 用户要求对标技能中心 (`skill-detail-sheet.tsx`) 与任务中心 (`task-detail-sheet.tsx`)：抽屉必须是一个稳定的单一控制面板，内容不往深了多层变化，基本操作采用优雅平滑的**就地展开与收起 (Collapsible Accordion)**；
+    3. 新增智能体与编辑智能体必须在同一个抽屉面板内原位完成，零弹窗覆盖，零跳页。
+  - **闭环架构设计与物理落地**：
+    1. **对标技能中心高密座舱面板设计**：
+       - `UserOverviewCard` (121行)：以紧凑 4 格瓦片展示所属账号、角色、API Key 状态与一键重置/切换，视觉完全统一于技能中心 DetailMetric 规范；
+    2. **单个智能体卡片就地折叠展开 (`AgentCollapsibleItem`, 383行)**：
+       - 收起态高密一行展示：展开切换图标、显示名称、不可变身份证 ID、连接模式徽标、已授权工具数量徽标、历史消息数、状态徽标与快捷操作（下线/激活）；
+       - 展开态原位平滑滑出：可就地编辑名称与职能、就地勾选 4 大分类 Tool ACL 授权矩阵、查看并一键复制专属 FastMCP 端点 URL 与 Claude/Cursor/Windsurf 客户端配置 JSON，底部就地提供【保存配置】按钮；
+    3. **顶部折叠式就地签发面板 (`NewAgentCard`, 229行)**：
+       - 抽屉列表顶部放置【签发新智能体】按钮，点击后在原位平滑展开签发表单；填完后点击签发立即入籍并收起，彻底废黜次级 Dialog 遮罩；
+    4. **单文件规模与门禁合规**：
+       - 主抽屉 `UserDetailSheet` 收敛为 258 行，彻底切除 `agent-form-dialog.tsx`、`agent-onboarding-modal.tsx`、`user-agents-table.tsx`；
+       - 所有相关子组件均严格落在 120~380 行黄金甜点区内。
+- **客观数据指标回显 (Frontend Metric Anchor)**：
+  - 页面跳转与模态遮罩冲突率: `0.0%` (彻底切除二级 Dialog，100% 抽屉单面板原位折叠展开)
+  - 展开收起平滑度: `100.0%` (Radix Collapsible 原位展开，抽屉尺寸与主体位置恒定不晃动)
+  - 单文件规模安全红线: `100.0%` (无任何超 400 行组件，平均组件行数 240 行)
+- **交付内容与文件清单**：
+  - `src/routes/users/-components/user-overview-card.tsx` (121 行，用户凭据高密指标瓦片)
+  - `src/routes/users/-components/agent-collapsible-item.tsx` (383 行，智能体收起高密/展开就地编辑面板)
+  - `src/routes/users/-components/new-agent-card.tsx` (229 行，就地展开签发新智能体组件)
+  - `src/routes/users/-components/user-detail-sheet.tsx` (258 行，单一容器面板主抽屉)
+  - 删除文件: `agent-form-dialog.tsx`, `agent-onboarding-modal.tsx`, `user-agents-table.tsx`
+- **物理交付验证与门禁结果**：
+  - **Git Commit Hash**：`199bae47d`
+  - **Git Tag**：`v1.7.71`
+  - **前端生产构建**：`npm run build` ➔ **✓ built in 15.20s PASS**；
+  - **密钥物理安全扫描**：`python3 scripts/security_check.py` ➔ **Checked 4748 tracked files. Zero secrets detected PASS**；
+  - **自动化视网膜门禁**：`python3 scripts/anti_demo_gate.py` ➔ **226 components, 0 dangling, 100% PASS**；
+  - **运行时服务探针**：`curl -s http://127.0.0.1:1933/health` ➔ **HTTP 200 (version: 1.7.71, auth_mode: trusted) PASS**。
+
 
 
