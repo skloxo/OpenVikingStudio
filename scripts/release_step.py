@@ -137,7 +137,7 @@ def verify_dist_baked_version(version: str) -> bool:
     return True
 
 
-def probe_health_version(expected_ver: str, retries: int = 45) -> tuple[bool, str]:
+def probe_health_version(expected_ver: str, retries: int = 70) -> tuple[bool, str]:
     print(f"🩺 [服务探针] 正在校验 {HEALTH_URL} 返回版本 ...")
     last_payload = ""
     for i in range(retries):
