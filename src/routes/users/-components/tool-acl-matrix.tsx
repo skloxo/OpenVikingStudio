@@ -224,8 +224,12 @@ export function ToolACLMatrix({
 
               <div className="pt-2 mt-2 border-t border-border/30 text-xs text-muted-foreground/80 flex items-center justify-between">
                 <span>{bundle.recommendedFor}</span>
-                <span className="font-mono text-cyan-600 dark:text-cyan-400 shrink-0 ml-1">
-                  点选一键授权 →
+                <span className="font-mono shrink-0 ml-1 font-medium">
+                  {isSelected ? (
+                    <span className="text-cyan-600 dark:text-cyan-400">✓ 当前角色已装配</span>
+                  ) : (
+                    <span className="text-muted-foreground group-hover:text-foreground">点击装配此角色 →</span>
+                  )}
                 </span>
               </div>
             </div>

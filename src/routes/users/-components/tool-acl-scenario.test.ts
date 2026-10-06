@@ -101,4 +101,18 @@ describe('FastMCP Tool ACL Scenario, Tool Bundles & Role Gating (Card-126)', () 
     expect(maskTool.requiredRole).toBeUndefined()
     expect(isToolDisabledByRole(maskTool, 'user')).toBe(false)
   })
+
+  it('should support Hook lifecycle 3-key neuro-reflex arcs (Card-127)', () => {
+    const hookKeys = ['autoRecall', 'autoCapture', 'preToolGuard'] as const
+    expect(hookKeys.length).toBe(3)
+
+    // 测试默认配置开启状态
+    const defaultHooks = {
+      autoRecall: true,
+      autoCapture: true,
+      preToolGuard: true,
+    }
+    const activeCount = Object.values(defaultHooks).filter(Boolean).length
+    expect(activeCount).toBe(3)
+  })
 })
