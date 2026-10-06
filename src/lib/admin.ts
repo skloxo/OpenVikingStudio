@@ -492,6 +492,8 @@ export type CreateAgentInput = {
 export type CreateAgentResponse = {
   agent: UserAgentItem
   bootstrap: {
+    topology?: string
+    target_server?: string
     mcp_config: Record<string, unknown>
     system_prompt: string
     remote_mcp_url: string
@@ -535,6 +537,32 @@ export async function revokeUserAgent(
   )
   if (!resp.ok) {
     throw new Error(`Failed to revoke agent: ${resp.statusText}`)
+  }
+}
+
+export async function purgeUserAgent(
+  userId: string,
+  agentId: string,
+): Promise<void> {
+  const resp = await fetch(
+    `/api/v1/users/${encodeURIComponent(userId)}/agents/${encodeURIComponent(agentId)}?purge=true`,
+    { method: 'DELETE' },
+  )
+  if (!resp.ok) {
+    throw new Error(`Failed to purge agent: ${resp.statusText}`)
+  }
+}
+
+export async function activateUserAgent(
+  userId: string,
+  agentId: string,
+): Promise<void> {
+  const resp = await fetch(
+    `/api/v1/users/${encodeURIComponent(userId)}/agents/${encodeURIComponent(agentId)}/activate`,
+    { method: 'POST' },
+  )
+  if (!resp.ok) {
+    throw new Error(`Failed to activate agent: ${resp.statusText}`)
   }
 }
 
