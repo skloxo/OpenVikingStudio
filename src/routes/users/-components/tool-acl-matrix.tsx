@@ -133,15 +133,15 @@ export function ToolACLMatrix({
               <Badge variant="outline" className="text-xs font-mono font-normal">
                 已选 {selectedTools.length} / {allowedToolIds.length} 可用项 (总计 {ALL_TOOL_IDS.length})
               </Badge>
-              {userRole === 'user' && (
+              {userRole === 'user' && allowedToolIds.length < ALL_TOOL_IDS.length && (
                 <Badge variant="secondary" className="text-xs font-normal text-muted-foreground">
                   <LockIcon className="size-2.5 mr-1" />
-                  普通用户权限 (部分高危运维项已安全置灰)
+                  当前用户权限受限 ({ALL_TOOL_IDS.length - allowedToolIds.length} 项超出用户权限已置灰)
                 </Badge>
               )}
             </div>
             <div className="text-xs text-muted-foreground mt-0.5">
-              按照用户实际使用场景归类（卫星协作 / 中枢研发 / 集群运维），结合用户凭证角色实施双重安全门禁。
+              按照用户实际使用场景归类（卫星协作 / 中枢研发 / 集群运维），智能体工具权限严格继承并受限于当前所属用户的凭证权限。
             </div>
           </div>
         </div>
@@ -328,7 +328,7 @@ export function ToolACLMatrix({
                               }`}
                             >
                               <LockIcon className="size-2.5 mr-0.5" />
-                              需 {tool.requiredRole}+
+                              需 {tool.requiredRole} 权限
                             </Badge>
                           )}
                         </div>
@@ -358,7 +358,7 @@ export function ToolACLMatrix({
                       <Tooltip key={tool.id}>
                         <TooltipTrigger render={cardContent} />
                         <TooltipContent className="text-xs max-w-xs">
-                          当前所属用户角色为 <strong>{userRole}</strong>，无权授权此高危/系统级运维工具。需将用户提升为 <strong>{tool.requiredRole}</strong> 或 <strong>root</strong> 角色。
+                          当前所属用户角色为 <strong>{userRole}</strong>，其账号凭证权限未包含此系统特权工具。智能体权限不得超越所属用户，若需开启，请在用户管理中将该用户提升为 <strong>{tool.requiredRole}</strong> 或 <strong>root</strong> 权限。
                         </TooltipContent>
                       </Tooltip>
                     )

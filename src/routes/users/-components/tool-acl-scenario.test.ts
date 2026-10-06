@@ -42,20 +42,25 @@ describe('FastMCP Tool ACL Scenario & Role Gating (Card-122)', () => {
     }
   })
 
-  it('should disable admin/ops tools when user role is regular user', () => {
+  it('should disable system privileged tools when user role is regular user', () => {
     const opsCat = TOOL_CATEGORIES.find((c) => c.id === 'cluster_ops')!
-    const adminTool = opsCat.tools.find((t) => t.id === 'forget')!
+    const adminTool = opsCat.tools.find((t) => t.id === 'list_watches')!
     expect(adminTool.requiredRole).toBe('admin')
 
-    // 普通用户视角下高危工具必须置灰禁用
+    // 普通用户视角下超出权限的系统级特权工具置灰禁用
     expect(isToolDisabledByRole(adminTool, 'user')).toBe(true)
 
-    // 管理员或 root 视角下高危工具可授权解锁
+    // 管理员或 root 视角下系统特权工具可授权解锁
     expect(isToolDisabledByRole(adminTool, 'admin')).toBe(false)
     expect(isToolDisabledByRole(adminTool, 'root')).toBe(false)
   })
 
-  it('should allow regular tools for all user roles', () => {
+  it('should allow regular tools including forget and privacy_mask for all user roles', () => {
+    const opsCat = TOOL_CATEGORIES.find((c) => c.id === 'cluster_ops')!
+    const forgetTool = opsCat.tools.find((t) => t.id === 'forget')!
+    expect(forgetTool.requiredRole).toBeUndefined()
+    expect(isToolDisabledByRole(forgetTool, 'user')).toBe(false)
+
     const satelliteCat = TOOL_CATEGORIES.find((c) => c.id === 'satellite')!
     const findTool = satelliteCat.tools.find((t) => t.id === 'find')!
     expect(findTool.requiredRole).toBeUndefined()
