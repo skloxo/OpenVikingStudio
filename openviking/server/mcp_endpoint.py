@@ -543,8 +543,8 @@ def _mcp_media_download_hint(uri: str) -> str:
 
 
 @mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS, structured_output=False)
-async def read(uris: str | list[str], dehydrate: bool = False) -> str | list[ContentBlock]:
-    """Read one or more viking:// file URIs. Raster images and supported audio return native MCP content blocks. For directory listing, use the list tool instead. Set dehydrate=True to apply LLMLingua-2 natural language compression on text content."""
+async def read(uris: str | list[str], dehydrate: Optional[bool] = None) -> str | list[ContentBlock]:
+    """Read one or more viking:// file URIs. Raster images and supported audio return native MCP content blocks. For directory listing, use the list tool instead. Set dehydrate=True to force LLMLingua-2 compression, False to disable, or leave as default (None) for adaptive auto-dehydration."""
     import asyncio
 
     service = get_service()
@@ -642,7 +642,17 @@ async def read(uris: str | list[str], dehydrate: bool = False) -> str | list[Con
                         return _mcp_image_content(data, mime_type)
                     return _mcp_audio_content(data, mime_type)
                 content = await service.fs.read_visible(resolved_uri, ctx=ctx)
-                if dehydrate and isinstance(content, str) and len(content) > 100:
+                # Adaptive auto-dehydration & explicit flag handling (Zero-Intervention SSOT)
+                should_run_dehydration = False
+                if dehydrate is True:
+                    should_run_dehydration = isinstance(content, str) and len(content) > 100
+                elif dehydrate is None:
+                    # Adaptive mode: silently auto-detect long markdown / prose documents
+                    if isinstance(content, str):
+                        from openviking.service.wiki_dehydration_adaptive import should_auto_dehydrate
+                        should_run_dehydration, _ = should_auto_dehydrate(content, resolved_uri)
+
+                if should_run_dehydration and isinstance(content, str):
                     try:
                         from openviking.service.wiki_dehydration_engine import (
                             WikiDehydrationEngine,

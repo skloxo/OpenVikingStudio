@@ -11,6 +11,7 @@ Provides dedicated Viking Adapter encapsulation over Microsoft LLMLingua-2:
 
 from __future__ import annotations
 
+from datetime import datetime
 import json
 import logging
 import re
@@ -18,6 +19,8 @@ import time
 import urllib.request
 from typing import Any, Dict, List, Optional, Tuple
 from pydantic import BaseModel, Field
+
+from openviking.service.wiki_dehydration_adaptive import should_auto_dehydrate
 
 logger = logging.getLogger(__name__)
 
@@ -109,12 +112,42 @@ class WikiDehydrationEngine:
         self._model_available: bool = False
         self._total_documents: int = 0
         self._total_tokens_saved: int = 0
+        self._total_prompt_tokens: int = 0
+        self._total_completion_tokens: int = 0
+        self._last_call_timestamp: float = 0.0
         self._sum_compression_ratio: float = 0.0
         self._total_latency_ms: float = 0.0
         self._consecutive_remote_failures: int = 0
         self._circuit_open_until: float = 0.0
         self._circuit_tripped_count: int = 0
         self._remote_success_count: int = 0
+        self.model_name: str = "microsoft/llmlingua-2-xlm-roberta-large-meetingbank"
+
+    @property
+    def provider(self) -> str:
+        """Dynamic provider resolution (CUDA remote or local CPU)."""
+        return "cuda" if (self._is_remote_engine_available() and not self.is_circuit_open()) else "local"
+
+    def get_token_usage(self) -> Dict[str, Any]:
+        """Return token usage conforming to standard ModelsObserver / Telemetry format."""
+        prov = self.provider
+        last_ts = self._last_call_timestamp
+        ts_str = datetime.fromtimestamp(last_ts).isoformat() if last_ts > 0 else "--"
+        return {
+            "usage_by_model": {
+                self.model_name: {
+                    "usage_by_provider": {
+                        prov: {
+                            "call_count": self._total_documents,
+                            "prompt_tokens": self._total_prompt_tokens,
+                            "completion_tokens": self._total_completion_tokens,
+                            "total_tokens": self._total_prompt_tokens + self._total_completion_tokens,
+                            "last_updated": ts_str,
+                        }
+                    }
+                }
+            }
+        }
 
     @classmethod
     def get_instance(cls) -> WikiDehydrationEngine:
@@ -378,8 +411,28 @@ class WikiDehydrationEngine:
 
         self._total_documents += 1
         self._total_tokens_saved += tokens_saved
+        self._total_prompt_tokens += orig_tokens
+        self._total_completion_tokens += comp_tokens
+        self._last_call_timestamp = time.time()
         self._sum_compression_ratio += compression_ratio
         self._total_latency_ms += latency_ms
+
+        # Record in unified TelemetryStore (SSOT) & ModelsObserver bus
+        try:
+            from openviking.telemetry.telemetry_store import TelemetryStore
+            store = TelemetryStore.get_instance()
+            prov = "cuda" if "CUDA" in engine_name else "local"
+            store.record_model_usage(
+                model_type="compressor",
+                model_name=self.model_name,
+                provider=prov,
+                prompt_tokens=orig_tokens,
+                completion_tokens=comp_tokens,
+                call_count=1,
+                duration_ms=latency_ms,
+            )
+        except Exception as exc:
+            logger.debug("Failed to record compressor model usage in TelemetryStore: %s", exc)
 
         return DehydrationResult(
             original_chars=orig_chars,

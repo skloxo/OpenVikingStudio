@@ -335,6 +335,9 @@ class ModelsObserver(BaseObserver):
                         "Total": 0,
                         "Last Updated": "--",
                     }
+                else:
+                    active_row["Model"] = act_model
+                    active_row["Provider"] = act_prov
                 groups[cat].append(active_row)
             elif active_row is not None:
                 groups[cat].append(active_row)

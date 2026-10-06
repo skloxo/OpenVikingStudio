@@ -7,7 +7,7 @@ import hashlib
 import io
 import zipfile
 from pathlib import PurePosixPath
-from typing import Literal
+from typing import Literal, Optional
 from urllib.parse import quote
 
 from fastapi import APIRouter, Body, Depends, Query
@@ -239,7 +239,7 @@ async def read(
     offset: int = Query(0, description="Starting line number (0-indexed)"),
     limit: int = Query(-1, description="Number of lines to read, -1 means read to end"),
     raw: bool = Query(False, description="Return raw stored content without memory-field cleanup"),
-    dehydrate: bool = Query(False, description="Apply LLMLingua-2 natural language dehydration to save tokens"),
+    dehydrate: Optional[bool] = Query(None, description="Apply LLMLingua-2 natural language dehydration to save tokens (None for adaptive auto-mode)"),
     _ctx: RequestContext = Depends(get_request_context),
 ):
     """Read file content (L2)."""
@@ -250,7 +250,16 @@ async def read(
             result = await service.fs.read(uri, ctx=_ctx, offset=offset, limit=limit)
         else:
             result = await service.fs.read_visible(uri, ctx=_ctx, offset=offset, limit=limit)
-        if dehydrate and isinstance(result, str) and len(result) > 100:
+
+        should_dehydrate = False
+        if dehydrate is True:
+            should_dehydrate = isinstance(result, str) and len(result) > 100
+        elif dehydrate is None:
+            if isinstance(result, str):
+                from openviking.service.wiki_dehydration_adaptive import should_auto_dehydrate
+                should_dehydrate, _ = should_auto_dehydrate(result, uri)
+
+        if should_dehydrate and isinstance(result, str):
             try:
                 from openviking.service.wiki_dehydration_engine import (
                     WikiDehydrationEngine,
