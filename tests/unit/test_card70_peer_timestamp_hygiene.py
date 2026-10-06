@@ -26,8 +26,9 @@ def test_console_peers_matrix_truthful_representation():
     peers = body["result"]
 
     peer_ids = [p["id"] for p in peers]
-    # 1. Mac Studio exists in fleet definitions as remote compute node
-    assert "antigravity@macstudio" in peer_ids
+    # 1. 动态集群中必须包含本地坐镇的反重力主控与现役 deepseek-harness
+    assert "antigravity@2080ti" in peer_ids
+    assert "deepseek-harness@2080ti" in peer_ids
 
     # 2. Inactive/0-message peers must have lastSync '--' (never fabricated now_str)
     for p in peers:

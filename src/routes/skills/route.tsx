@@ -31,7 +31,7 @@ function SkillsRoute() {
   const {
     skills, filteredSkills, paginatedSkills, skillsQuery, detailQuery,
     selectedSkill, setSelectedSkill, searchQuery, setSearchQuery,
-    activeScopeFilter, setActiveScopeFilter, refinedSkills, handleRefineSkill,
+    activeScopeFilter, setActiveScopeFilter,
     currentPage, setCurrentPage, pageSize, setPageSize,
     connectionUnavailable, harnessMetrics,
   } = data
@@ -137,8 +137,6 @@ function SkillsRoute() {
             onSelectScopeFilter={setActiveScopeFilter}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
-            refinedSkills={refinedSkills}
-            onRefineSkill={handleRefineSkill}
           />
 
       {skillsQuery.isLoading ? (

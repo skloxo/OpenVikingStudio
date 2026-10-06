@@ -131,6 +131,25 @@ def scan_file(file_path: Path, repo_root: Path) -> List[Dict[str, Any]]:
             "message": "Component contains Save/Apply button that only invokes browser alert without physical persistence",
         })
 
+    # 6. Fake Progress Simulation (chained setTimeout simulating async stages)
+    if "setTimeout" in content:
+        if re.search(r"setTimeout\s*\(\s*\(\s*\)\s*=>\s*\{[\s\S]*?setTimeout\s*\(", content):
+            violations.append({
+                "file": rel_path,
+                "rule": "FAKE_PROGRESS_TIMEOUT_SIMULATION",
+                "line": 1,
+                "message": "Chained setTimeout detected simulating multi-step fake execution progress",
+            })
+
+    # 7. Disguised Mock Storage Check (localStorage used as phantom persistence for backend entities)
+    if "ov_refined_skills" in content:
+        violations.append({
+            "file": rel_path,
+            "rule": "PHANTOM_MOCK_STORAGE",
+            "line": 1,
+            "message": "Phantom mock storage key 'ov_refined_skills' detected",
+        })
+
     return violations
 
 

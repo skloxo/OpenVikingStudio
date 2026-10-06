@@ -97,6 +97,7 @@ from openviking.server.routers import (
     skill_evolution_router,
     skill_ingestion_router,
     anti_demo_router,
+    agents_router,
 )
 
 from openviking.service.core import OpenVikingService
@@ -714,6 +715,7 @@ def create_app(
     app.include_router(system_router)
     app.include_router(acl_router)
     app.include_router(admin_router)
+    app.include_router(agents_router)
     app.include_router(agent_evolution_router)
     app.include_router(resources_router)
     app.include_router(filesystem_router)

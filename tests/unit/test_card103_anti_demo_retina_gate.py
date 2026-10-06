@@ -93,6 +93,46 @@ def test_adversarial_dangling_action_alert(tmp_path: Path):
     assert any(v["rule"] == "DANGLING_ACTION_FAKE_ALERT" for v in violations)
 
 
+def test_adversarial_fake_progress_timeout(tmp_path: Path):
+    """Adversarial Test: Verify chained setTimeout simulating multi-step execution is flagged."""
+    file = tmp_path / "fake-progress.tsx"
+    file.write_text(
+        """export function FakeProgress() {
+  const run = () => {
+    setTimeout(() => {
+      setStep(1)
+      setTimeout(() => {
+        setStep(2)
+      }, 500)
+    }, 500)
+  }
+  return <button onClick={run}>Run</button>
+}
+""",
+        encoding="utf-8",
+    )
+    violations = scan_file(file, tmp_path)
+    assert len(violations) >= 1
+    assert any(v["rule"] == "FAKE_PROGRESS_TIMEOUT_SIMULATION" for v in violations)
+
+
+def test_adversarial_phantom_mock_storage(tmp_path: Path):
+    """Adversarial Test: Verify phantom mock storage key is flagged."""
+    file = tmp_path / "phantom-storage.tsx"
+    file.write_text(
+        """export function PhantomStorage() {
+  localStorage.setItem('ov_refined_skills', '{}')
+  return <div>phantom</div>
+}
+""",
+        encoding="utf-8",
+    )
+    violations = scan_file(file, tmp_path)
+    assert len(violations) >= 1
+    assert any(v["rule"] == "PHANTOM_MOCK_STORAGE" for v in violations)
+
+
+
 def test_anti_demo_service_and_api_endpoint():
     """Verify runtime service caching and FastAPI endpoint /api/v1/system/anti-demo-audit."""
     service = AntiDemoGateService.get_instance()

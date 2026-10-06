@@ -1,6 +1,6 @@
 export type SkillScope = 'agent' | 'user'
 
-export type SkillScopeFilter = 'all' | 'engineering' | 'agent' | 'data' | 'idle'
+export type SkillScopeFilter = 'all' | 'engineering' | 'agent' | 'data' | 'general'
 
 export type SkillFile = {
   isDir: boolean
