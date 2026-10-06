@@ -80,3 +80,44 @@ def test_revoke_agent_api(client: TestClient):
     all_res = client.get("/api/v1/users/default/agents?status=all")
     assert len(all_res.json()["result"]) == 1
     assert all_res.json()["result"][0]["status"] == "revoked"
+
+    # Reactivate
+    act_res = client.post("/api/v1/users/default/agents/test_agent@laptop/activate")
+    assert act_res.status_code == 200
+    assert act_res.json()["result"]["activated"] is True
+
+    # Check active list has it back
+    active_res = client.get("/api/v1/users/default/agents?status=active")
+    assert len(active_res.json()["result"]) == 1
+
+    # Revoke then purge permanently
+    client.delete("/api/v1/users/default/agents/test_agent@laptop")
+    purge_res = client.delete("/api/v1/users/default/agents/test_agent@laptop?purge=true")
+    assert purge_res.status_code == 200
+    assert purge_res.json()["result"]["deleted"] is True
+    assert purge_res.json()["result"]["purged"] is True
+
+    # Verify completely gone
+    all_res_after = client.get("/api/v1/users/default/agents?status=all")
+    assert len(all_res_after.json()["result"]) == 0
+
+
+def test_local_direct_bootstrap_api(client: TestClient):
+    """Verify local direct agent returns 127.0.0.1 bootstrap without public key."""
+    res = client.post(
+        "/api/v1/users/default/agents",
+        json={
+            "agent_id": "antigravity@2080ti",
+            "role_desc": "本地反重力 IDE",
+            "connection_mode": "realtimeApi",
+        },
+    )
+    assert res.status_code == 200
+    data = res.json()["result"]
+    bootstrap = data["bootstrap"]
+    assert bootstrap["topology"] == "local"
+    assert "127.0.0.1:1933/mcp" in bootstrap["target_server"]
+    # Local direct should not require public key in args
+    args_str = str(bootstrap["mcp_config"]["mcpServers"]["openviking"]["args"])
+    assert "127.0.0.1:1933/mcp" in args_str
+    assert "--key" not in args_str

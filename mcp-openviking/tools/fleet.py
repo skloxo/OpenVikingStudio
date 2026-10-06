@@ -207,16 +207,16 @@ def _sync_to_3070() -> Dict[str, Any]:
     if tmp_agents.exists():
         tmp_agents.unlink()
 
-    # 自动保障 3070 反重力 IDE (antigravity@3070) 与 XiaomiMo (xiaomimo@3070) 独立身份
+    # 自动保障 3070 反重力 IDE (antigravity@rtx3070) 与 XiaomiMo (xiaomimo@3070) 独立身份
     update_py = (
         "import json, os\n"
         "p = r'C:\\Users\\Skl\\.gemini\\config\\mcp_config.json'\n"
         "if os.path.exists(p):\n"
         "    with open(p, 'r', encoding='utf-8-sig') as f: data = json.load(f)\n"
         "    env = data.setdefault('mcpServers', {}).setdefault('openviking', {}).setdefault('env', {})\n"
-        "    env['OPENVIKING_ACTOR_PEER'] = 'antigravity@3070'\n"
+        "    env['OPENVIKING_ACTOR_PEER'] = 'antigravity@rtx3070'\n"
         "    env['OPENVIKING_CLIENT'] = 'antigravity'\n"
-        "    env['OPENVIKING_NODE'] = '3070'\n"
+        "    env['OPENVIKING_NODE'] = 'rtx3070'\n"
         "    with open(p, 'w', encoding='utf-8') as f: json.dump(data, f, indent=2, ensure_ascii=False)\n"
         "pm = r'C:\\Users\\Skl\\.config\\mimocode\\mimocode.jsonc'\n"
         "if os.path.exists(pm):\n"
