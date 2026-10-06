@@ -138,7 +138,7 @@
   4. `src/routes/users/-components/tool-acl-scenario.test.ts`：自动化测试视网膜保护；
   5. `openviking/_version.py` & `package.json`：版本号提升至 `1.7.76`。
 - **物理验收与门禁**：
-  - **Git Commit Hash**：`26dded78c`
+  - **Git Commit Hash**：`7729ee595`
   - **Git Tag**：`v1.7.76`
   - **自动化测试通过率**：Vitest 5/5 PASS (5ms)，Pytest 1/1 PASS (0.33s)；
   - **安全凭据审计**：`scripts/security_check.py` 扫描 4748 文件 0 密钥泄露；
