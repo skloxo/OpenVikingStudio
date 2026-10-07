@@ -5,6 +5,7 @@
  * 彻底切除硬编码的本地/公网模式选择，全面拥抱“角色工具包”与端点智能自适应！
  */
 import {
+  BookOpenIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   CopyIcon,
@@ -28,10 +29,11 @@ import type { UpdateAgentInput, UserAgentItem } from '#/lib/admin'
 import {
   ALL_TOOL_IDS,
   DSH_PLUGIN_VERSION,
-  MASTER_MAINTAINER_TOOL_IDS,
+  SATELLITE_CONSUMER_TOOL_IDS,
+  MASTER_OPS_TOOL_IDS,
+  COMPANION_SKILLS,
 } from '../-constants/agent-tools'
 
-import { HookLifecycleMatrix } from './hook-lifecycle-matrix'
 import { ToolACLMatrix } from './tool-acl-matrix'
 
 export type AgentCollapsibleItemProps = {
@@ -96,10 +98,19 @@ export function AgentCollapsibleItem({
     ? ALL_TOOL_IDS.length
     : agent.allowed_tools.filter((id) => ALL_TOOL_IDS.includes(id)).length
 
-  // 检测是否拥有中枢运维全量工具
-  const isMasterBundle =
+  const hasSatellite =
     agent.allowed_tools.includes('*') ||
-    validToolCount >= MASTER_MAINTAINER_TOOL_IDS.length
+    SATELLITE_CONSUMER_TOOL_IDS.every((id) => agent.allowed_tools.includes(id))
+  const hasOps =
+    agent.allowed_tools.includes('*') ||
+    MASTER_OPS_TOOL_IDS.every((id) => agent.allowed_tools.includes(id))
+
+  const roleBadgeText = React.useMemo(() => {
+    if (hasSatellite && hasOps) return '🧠 中枢总控 (47项)'
+    if (hasOps) return '🔧 纯运维 (16项)'
+    if (hasSatellite) return '🛰️ 业务工兵 (31项)'
+    return `⚡ 定制 (${validToolCount}项)`
+  }, [hasSatellite, hasOps, validToolCount])
 
   // 网络端点物理双轨：同时提供同机内网与跨网公网两个端点，消除切换与输入认知成本
   const localMcpUrl = `http://127.0.0.1:1933/mcp?agent_id=${encodeURIComponent(agent.agent_id)}&user_id=${encodeURIComponent(userId)}`
@@ -126,7 +137,12 @@ export function AgentCollapsibleItem({
     enableHook: ${hookEnabled}`, [publicMcpUrl, agent.agent_id, hookEnabled])
 
   const universalPromptSnippet = React.useMemo(() => {
-    const roleTitle = isMasterBundle ? '🧠 中枢运维角色 (47项全特权工具)' : '🛰️ 业务使用者角色 (31项一线业务工具)'
+    let roleTitle = '🛰️ 业务使用者角色 (31项一线业务工具)'
+    if (hasSatellite && hasOps) {
+      roleTitle = '🧠 中枢总控角色 (47项全特权工具)'
+    } else if (hasOps) {
+      roleTitle = '🔧 运维特权角色 (16项专属运维工具)'
+    }
     const hookStatus = hookEnabled
       ? '✅ 已整组装配 Hook 核心生命周期（先验检索、经验回传与安全沙箱守卫）'
       : '⚪ 未装配 Hook 生命期钩子'
@@ -138,10 +154,12 @@ export function AgentCollapsibleItem({
 - 鉴权契约: User Key + Agent ID 绑定校验 (Header: \`Authorization: Bearer \${OPENVIKING_API_KEY}\`)
 ## Hook 规则:
   - ${hookStatus}
+## 配套技能生态:
+  - 搭载体外记忆召回、TDD 红绿循环、Bug 根因追踪与高密视觉等 6 项工程技能
 ## 绝对工程红线:
 1. 视觉字号 >= 12px (text-xs)，NO GREEN EVER 🚫；
 2. 单文件严守 100~300 行黄金甜点区，硬上限 <= 500 行；`
-  }, [agent.agent_id, userId, isMasterBundle, localMcpUrl, publicMcpUrl, hookEnabled])
+  }, [agent.agent_id, userId, hasSatellite, hasOps, localMcpUrl, publicMcpUrl, hookEnabled])
 
   return (
     <div
@@ -227,8 +245,8 @@ export function AgentCollapsibleItem({
             </button>
           </div>
           <Badge variant="outline" className="text-xs h-5 px-1.5 gap-1 border-border/60">
-            {isMasterBundle ? <CpuIcon className="size-2.5 text-cyan-500" /> : <RadioIcon className="size-2.5 text-cyan-500" />}
-            {isMasterBundle ? '🧠 中枢运维' : '🛰️ 业务使用者'}
+            {hasOps ? <CpuIcon className="size-2.5 text-cyan-500" /> : <RadioIcon className="size-2.5 text-cyan-500" />}
+            {roleBadgeText}
           </Badge>
           <Badge variant="outline" className="text-xs h-5 px-1.5 gap-1 border-border/60">
             <ShieldCheckIcon className="size-2.5 text-cyan-500" />
@@ -236,7 +254,11 @@ export function AgentCollapsibleItem({
           </Badge>
           <Badge variant="outline" className="text-xs h-5 px-1.5 gap-1 border-border/60">
             <ZapIcon className="size-2.5 text-cyan-500" />
-            Hook {hookEnabled ? '已装配' : '未启用'}
+            Hook {hookEnabled ? '3/3' : '0/3'}
+          </Badge>
+          <Badge variant="outline" className="text-xs h-5 px-1.5 gap-1 border-border/60 text-muted-foreground">
+            <BookOpenIcon className="size-2.5 text-cyan-500" />
+            Skill {COMPANION_SKILLS.length}项
           </Badge>
           <span className="text-muted-foreground ml-auto tabular-nums">{agent.total_messages} 消息</span>
         </div>
@@ -281,19 +303,14 @@ export function AgentCollapsibleItem({
             </div>
           </div>
 
-          {/* 工具授权矩阵 - 角色工具包驱动 */}
+          {/* 工具与能力授权矩阵 - 四大能力包整包装配与按需展开 */}
           <ToolACLMatrix
             selectedTools={selectedTools}
             onChange={setSelectedTools}
+            hookEnabled={hookEnabled}
+            onToggleHookEnabled={setHookEnabled}
             disabled={isUpdating}
             userRole={userRole}
-          />
-
-          {/* Hook 核心生命周期与被动注入控制卡片 (整组选用) */}
-          <HookLifecycleMatrix
-            enabled={hookEnabled}
-            onToggleEnabled={setHookEnabled}
-            disabled={isUpdating}
           />
 
           {/* 接入与托底指令中心 (两大纯粹场景：DSH GUI 一键接入 vs 通用智能体认主提示词) */}

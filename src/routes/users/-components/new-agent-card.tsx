@@ -14,7 +14,6 @@ import { Label } from '#/components/ui/label'
 import type { CreateAgentInput } from '#/lib/admin'
 import { SATELLITE_CONSUMER_TOOL_IDS } from '../-constants/agent-tools'
 
-import { HookLifecycleMatrix } from './hook-lifecycle-matrix'
 import { ToolACLMatrix } from './tool-acl-matrix'
 
 export type NewAgentCardProps = {
@@ -110,19 +109,14 @@ export function NewAgentCard({
         </div>
       </div>
 
-      {/* 工具授权矩阵 - 角色工具包驱动 */}
+      {/* 工具与能力授权矩阵 - 角色装备包驱动 */}
       <ToolACLMatrix
         selectedTools={selectedTools}
         onChange={setSelectedTools}
+        hookEnabled={hookEnabled}
+        onToggleHookEnabled={setHookEnabled}
         disabled={isPending}
         userRole={userRole}
-      />
-
-      {/* Hook 核心生命周期控制卡片 (整组选用) */}
-      <HookLifecycleMatrix
-        enabled={hookEnabled}
-        onToggleEnabled={setHookEnabled}
-        disabled={isPending}
       />
 
       <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
