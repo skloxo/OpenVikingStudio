@@ -5,11 +5,11 @@
  * 彻底切除硬编码的本地/公网模式选择，全面拥抱“角色工具包”与端点智能自适应！
  */
 import {
-  BookOpenIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   CopyIcon,
   CpuIcon,
+  PackageIcon,
   RadioIcon,
   RotateCcwIcon,
   SaveIcon,
@@ -146,6 +146,9 @@ export function AgentCollapsibleItem({
     const hookStatus = hookEnabled
       ? '✅ 已整组装配 Hook 核心生命周期（先验检索、经验回传与安全沙箱守卫）'
       : '⚪ 未装配 Hook 生命期钩子'
+    const pluginSkillStatus = COMPANION_SKILLS.length > 0
+      ? `搭载当前插件包内置的 ${COMPANION_SKILLS.length} 项随包技能`
+      : '当前插件包专注 MCP 工具箱与 Hook 守卫，未内置独立技能 (运行态由体外大脑自主感知调度)'
 
     return `# OpenViking 智能体认主与接入协议 (Universal Agent Prompt)
 你是已在 OpenViking 认证在籍的智能体。请读取并严格遵守以下契约：
@@ -154,8 +157,8 @@ export function AgentCollapsibleItem({
 - 鉴权契约: User Key + Agent ID 绑定校验 (Header: \`Authorization: Bearer \${OPENVIKING_API_KEY}\`)
 ## Hook 规则:
   - ${hookStatus}
-## 配套技能生态:
-  - 搭载体外记忆召回、TDD 红绿循环、Bug 根因追踪与高密视觉等 6 项工程技能
+## 插件技能:
+  - ${pluginSkillStatus}
 ## 绝对工程红线:
 1. 视觉字号 >= 12px (text-xs)，NO GREEN EVER 🚫；
 2. 单文件严守 100~300 行黄金甜点区，硬上限 <= 500 行；`
@@ -257,8 +260,8 @@ export function AgentCollapsibleItem({
             Hook {hookEnabled ? '3/3' : '0/3'}
           </Badge>
           <Badge variant="outline" className="text-xs h-5 px-1.5 gap-1 border-border/60 text-muted-foreground">
-            <BookOpenIcon className="size-2.5 text-cyan-500" />
-            Skill {COMPANION_SKILLS.length}项
+            <PackageIcon className="size-2.5 text-cyan-500" />
+            插件技能 {COMPANION_SKILLS.length}项
           </Badge>
           <span className="text-muted-foreground ml-auto tabular-nums">{agent.total_messages} 消息</span>
         </div>

@@ -173,23 +173,42 @@ export const HOOK_CAPABILITIES: HookCapabilityItem[] = [
 ]
 
 /**
- * 配套研发与业务技能生态包 (Skills Bundle) 定义
+ * 插件包关联技能 (Plugin Bundled Skills) 数据模型
+ * 真实反映当前插件包 (如 dsh-plugin-openviking) 实际捆绑的技能清单。
+ * 遵循绝对真实性原则，绝不假造或硬编码虚拟技能。
  */
-export type CompanionSkillItem = {
+export type PluginSkillItem = {
   id: string
   name: string
   category: string
   description: string
 }
 
-export const COMPANION_SKILLS: CompanionSkillItem[] = [
-  { id: 'openviking-memory', name: 'OpenViking 体外记忆中枢', category: '体外大脑', description: '跨会话记忆自动检索召回与经验事实双写入库' },
-  { id: 'diagnosing-bugs', name: 'Bug 诊断与根因追踪闭环', category: '工程方法', description: '日志自动提取、根因深入追踪与修复后自动化验证' },
-  { id: 'tdd', name: '测试驱动开发 (TDD)', category: '工程方法', description: '遵循红-绿-重构循环，优先编写失败契约测试再实现功能' },
-  { id: 'code-review', name: '双轴代码审查', category: '质量保证', description: '基于工程规范 (Standards) 与需求规格 (Spec) 的双重审查' },
-  { id: 'living-asset-system', name: '四大活态资产复用', category: '资产治理', description: '开工查库第一公理，提纯公共轮子并自动通过测试视网膜验证' },
-  { id: 'cockpit-ui', name: '座舱级高密 UI 体系', category: '视觉交互', description: 'NO GREEN EVER 铁律、最高信息密度与字号 >= 12px 物理契约' },
-]
+export type PluginBundleMeta = {
+  pluginName: string
+  version: string
+  skills: PluginSkillItem[]
+  description: string
+}
+
+/**
+ * DSH 官方 OpenViking 插件当前最新发布版本号 (SSOT)
+ */
+export const DSH_PLUGIN_VERSION = '1.5.0'
+
+/**
+ * 当前标杆官方插件包元数据 (dsh-plugin-openviking)
+ * 物理事实：该插件专注于 FastMCP 工具箱桥接与 Hook 生命周期拦截，未随包内置独立技能 (0 项技能)。
+ */
+export const OFFICIAL_PLUGIN_META: PluginBundleMeta = {
+  pluginName: 'dsh-plugin-openviking',
+  version: DSH_PLUGIN_VERSION,
+  skills: [], // 真实物理事实：当前插件包内置 0 项随包技能
+  description: '专注于 FastMCP 工具箱桥接与 Hook 前置预取/后置沉淀守卫，未随包附带独立技能',
+}
+
+// 保持兼容别名导出（指向真实插件技能列表，真实为 0 项）
+export const COMPANION_SKILLS: PluginSkillItem[] = OFFICIAL_PLUGIN_META.skills
 
 /**
  * 官方标准能力包 (Bundles) 定义
@@ -240,8 +259,3 @@ export function isToolDisabledByRole(tool: ToolItem, userRole?: string): boolean
   if (role === 'root' || role === 'admin') return false
   return true
 }
-
-/**
- * DSH 官方 OpenViking 插件当前最新发布版本号 (SSOT)
- */
-export const DSH_PLUGIN_VERSION = '1.5.0'

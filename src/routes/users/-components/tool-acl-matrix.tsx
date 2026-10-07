@@ -5,7 +5,7 @@ import {
   RadioIcon,
   CpuIcon,
   LockIcon,
-  BookOpenIcon,
+  PackageIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   ZapIcon,
@@ -18,7 +18,7 @@ import {
   SATELLITE_CONSUMER_TOOL_IDS,
   MASTER_OPS_TOOL_IDS,
   HOOK_CAPABILITIES,
-  COMPANION_SKILLS,
+  OFFICIAL_PLUGIN_META,
   isToolDisabledByRole,
 } from '../-constants/agent-tools'
 import type { ToolItem } from '../-constants/agent-tools'
@@ -28,6 +28,8 @@ export type ToolACLMatrixProps = {
   onChange: (tools: string[]) => void
   hookEnabled?: boolean
   onToggleHookEnabled?: (enabled: boolean) => void
+  pluginSkillsEnabled?: boolean
+  onTogglePluginSkillsEnabled?: (enabled: boolean) => void
   disabled?: boolean
   userRole?: string
 }
@@ -39,11 +41,18 @@ export function ToolACLMatrix({
   onChange,
   hookEnabled = true,
   onToggleHookEnabled,
+  pluginSkillsEnabled = true,
+  onTogglePluginSkillsEnabled,
   disabled = false,
   userRole = 'user',
 }: ToolACLMatrixProps) {
   // 当前正在展开审阅的工具/能力包（独立按需展开，杜绝全量铺陈噪音）
   const [inspectingBundle, setInspectingBundle] = React.useState<BundleInspectType>(null)
+
+  // 真实插件包关联技能 (当前标杆插件 dsh-plugin-openviking 真实为 0 项随包技能)
+  const pluginSkills = OFFICIAL_PLUGIN_META.skills
+  const hasPluginSkills = pluginSkills.length > 0
+  const isPluginSkillActive = hasPluginSkills && pluginSkillsEnabled
 
   // 构建工具字典
   const allToolMap = React.useMemo(() => {
@@ -97,11 +106,9 @@ export function ToolACLMatrix({
   const handleToggleSatellite = React.useCallback(() => {
     if (disabled) return
     if (isSatelliteEquipped) {
-      // 卸载业务包工具
       const satSet = new Set(SATELLITE_CONSUMER_TOOL_IDS)
       onChange(selectedTools.filter((id) => !satSet.has(id)))
     } else {
-      // 装配业务包工具
       const combined = Array.from(new Set([...selectedTools, ...satAllowed]))
       onChange(combined)
     }
@@ -111,11 +118,9 @@ export function ToolACLMatrix({
   const handleToggleOps = React.useCallback(() => {
     if (disabled) return
     if (isOpsEquipped) {
-      // 卸载运维包特权
       const opsSet = new Set(MASTER_OPS_TOOL_IDS)
       onChange(selectedTools.filter((id) => !opsSet.has(id)))
     } else {
-      // 装配运维包特权
       const combined = Array.from(new Set([...selectedTools, ...opsAllowed]))
       onChange(combined)
     }
@@ -131,7 +136,7 @@ export function ToolACLMatrix({
 
   return (
     <div className="space-y-3 pt-2 border-t border-border/40 font-sans text-xs">
-      {/* 头部标题与严谨分类统计 (业务 31 / 运维 16 / Hook 3 / Skill 6 绝对真实无混淆) */}
+      {/* 头部标题与绝对严谨分类统计 (业务 31 / 运维 16 / Hook 3 / 插件技能按真实情况度量) */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <ShieldCheckIcon className="size-4 text-cyan-500 shrink-0" />
@@ -146,8 +151,13 @@ export function ToolACLMatrix({
             <Badge variant="outline" className="text-xs h-5 px-1.5 border-border/60">
               🛡️ Hook: {hookEnabled ? '3/3' : '0/3'}
             </Badge>
-            <Badge variant="outline" className="text-xs h-5 px-1.5 border-border/60 text-muted-foreground">
-              📚 Skill: {COMPANION_SKILLS.length} 项挂载
+            <Badge
+              variant="outline"
+              className={`text-xs h-5 px-1.5 border-border/60 ${
+                isPluginSkillActive ? 'border-cyan-500/40 text-cyan-600 dark:text-cyan-400' : 'text-muted-foreground'
+              }`}
+            >
+              📦 插件: {hasPluginSkills ? (isPluginSkillActive ? `${pluginSkills.length}/${pluginSkills.length}` : `0/${pluginSkills.length}`) : '0 技能 (未附带)'}
             </Badge>
           </div>
         </div>
@@ -160,7 +170,7 @@ export function ToolACLMatrix({
         )}
       </div>
 
-      {/* 核心能力矩阵卡片：四组平级、支持多选组合装配 (业务 31 + 运维 16 + Hook 3 + Skill 6) */}
+      {/* 核心能力矩阵卡片：四组平级、支持多选组合装配 (业务 31 + 运维 16 + Hook 3 + 插件技能真实映射) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* 卡片 1: 🛰️ 业务使用者工具包 (31 项) */}
         <div
@@ -312,21 +322,36 @@ export function ToolACLMatrix({
           </div>
         </div>
 
-        {/* 卡片 4: 📚 配套研发与业务技能包 (Skills Bundle) */}
-        <div className="p-3 rounded-lg border border-border/60 bg-muted/15 hover:border-border hover:bg-muted/30 transition-all flex flex-col justify-between">
+        {/* 卡片 4: 📦 插件包关联技能 (Plugin Skills - 真实反映当前插件包实际情况) */}
+        <div
+          className={`p-3 rounded-lg border transition-all flex flex-col justify-between ${
+            isPluginSkillActive
+              ? 'border-cyan-500 bg-cyan-500/10 shadow-xs ring-1 ring-cyan-500/30'
+              : 'border-border/60 bg-muted/15 hover:border-border hover:bg-muted/30'
+          }`}
+        >
           <div>
             <div className="flex items-center justify-between gap-2 mb-1.5">
               <div className="flex items-center gap-1.5">
-                <BookOpenIcon className="size-4 text-cyan-500 shrink-0" />
-                <span className="font-semibold text-foreground text-xs">📚 配套研发与业务技能包</span>
+                <PackageIcon className="size-4 text-cyan-500 shrink-0" />
+                <span className="font-semibold text-foreground text-xs">📦 插件包关联技能</span>
               </div>
-              <Badge variant="outline" className="text-xs font-mono font-normal h-5 px-1.5 border-border/60 text-muted-foreground">
-                {COMPANION_SKILLS.length} 项工程技能
+              <Badge
+                variant="outline"
+                className={`text-xs font-mono font-normal h-5 px-1.5 ${
+                  isPluginSkillActive
+                    ? 'border-cyan-500/40 text-cyan-600 dark:text-cyan-400 bg-cyan-500/5'
+                    : 'text-muted-foreground border-border/60'
+                }`}
+              >
+                {hasPluginSkills ? `${pluginSkills.length} 项随包技能` : '0 项随包技能'}
               </Badge>
             </div>
-            <div className="text-xs text-foreground/90 font-medium mb-1">定位：思维规约 / 领域工程方法论</div>
+            <div className="text-xs text-foreground/90 font-medium mb-1">定位：插件随包技能 / 扩展规约</div>
             <div className="text-xs text-muted-foreground leading-relaxed">
-              自动搭载体外大脑经验召回、Bug 诊断排障、TDD 单测、双轴代码审查与高密视觉等规范。
+              {hasPluginSkills
+                ? `由当前接入插件包 (${OFFICIAL_PLUGIN_META.pluginName}) 真实捆绑附带的特定领域技能。`
+                : `当前官方标杆插件 (${OFFICIAL_PLUGIN_META.pluginName} v${OFFICIAL_PLUGIN_META.version}) 专注于 MCP 工具箱与 Hook 守卫，未内置随包技能。`}
             </div>
           </div>
 
@@ -336,12 +361,43 @@ export function ToolACLMatrix({
               onClick={() => toggleInspect('skill')}
               className="text-muted-foreground hover:text-foreground flex items-center gap-1 cursor-pointer font-sans"
             >
-              <span>{inspectingBundle === 'skill' ? '收起清单' : `📋 查看 ${COMPANION_SKILLS.length} 项技能`}</span>
+              <span>
+                {inspectingBundle === 'skill'
+                  ? '收起说明'
+                  : hasPluginSkills
+                    ? `📋 查看 ${pluginSkills.length} 项技能`
+                    : '📋 查看说明'}
+              </span>
               {inspectingBundle === 'skill' ? <ChevronUpIcon className="size-3" /> : <ChevronDownIcon className="size-3" />}
             </button>
-            <Badge variant="secondary" className="h-6 px-2 text-xs font-normal border border-border/40 text-muted-foreground">
-              ✓ 系统默认全域挂载
-            </Badge>
+
+            {hasPluginSkills ? (
+              <Button
+                type="button"
+                size="sm"
+                variant={pluginSkillsEnabled ? 'default' : 'outline'}
+                disabled={disabled}
+                onClick={() => onTogglePluginSkillsEnabled?.(!pluginSkillsEnabled)}
+                className={`h-6 px-2 text-xs cursor-pointer font-sans ${
+                  pluginSkillsEnabled
+                    ? 'bg-cyan-600 hover:bg-cyan-700 text-white dark:bg-cyan-500 dark:hover:bg-cyan-600'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {pluginSkillsEnabled ? (
+                  <>
+                    <CheckIcon className="size-3 mr-1 stroke-2.5" />
+                    已装配插件技能
+                  </>
+                ) : (
+                  '＋ 装配插件技能'
+                )}
+              </Button>
+            ) : (
+              <Badge variant="secondary" className="h-6 px-2 text-xs font-normal border border-border/40 text-muted-foreground">
+                当前插件未附带技能
+              </Badge>
+            )}
           </div>
         </div>
       </div>
@@ -443,32 +499,51 @@ export function ToolACLMatrix({
             </div>
           )}
 
-          {/* 4. 配套技能包清单 */}
+          {/* 4. 插件包关联技能说明与清单 */}
           {inspectingBundle === 'skill' && (
             <div>
               <div className="flex items-center justify-between pb-2 border-b border-border/30 mb-2">
                 <div className="flex items-center gap-2">
-                  <BookOpenIcon className="size-4 text-cyan-500" />
-                  <span className="font-semibold text-foreground text-xs">📚 配套研发与业务技能生态 ({COMPANION_SKILLS.length} 项)</span>
-                  <span className="text-xs text-muted-foreground">规范化智能体思维链路与工程 SOP</span>
+                  <PackageIcon className="size-4 text-cyan-500" />
+                  <span className="font-semibold text-foreground text-xs">
+                    📦 插件包关联技能 ({pluginSkills.length} 项)
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    基于当前接入插件包 ({OFFICIAL_PLUGIN_META.pluginName}) 的真实随包技能清单
+                  </span>
                 </div>
                 <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs text-muted-foreground cursor-pointer" onClick={() => setInspectingBundle(null)}>
-                  收起清单 ✕
+                  收起说明 ✕
                 </Button>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                {COMPANION_SKILLS.map((s) => (
-                  <div key={s.id} className="p-2.5 rounded border border-border/40 bg-muted/15 space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-xs text-foreground font-sans">{s.name}</span>
-                      <Badge variant="outline" className="text-xs h-4.5 px-1 text-muted-foreground border-border/60">
-                        {s.category}
-                      </Badge>
+
+              {hasPluginSkills ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                  {pluginSkills.map((s) => (
+                    <div key={s.id} className="p-2.5 rounded border border-border/40 bg-muted/15 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-xs text-foreground font-sans">{s.name}</span>
+                        <Badge variant="outline" className="text-xs h-4.5 px-1 text-muted-foreground border-border/60">
+                          {s.category}
+                        </Badge>
+                      </div>
+                      <div className="text-xs text-muted-foreground leading-relaxed">{s.description}</div>
                     </div>
-                    <div className="text-xs text-muted-foreground leading-relaxed">{s.description}</div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-2.5 rounded border border-border/40 bg-muted/15 space-y-1.5 text-xs">
+                  <div className="text-foreground font-medium flex items-center gap-1.5">
+                    <span>💡 当前插件包未内置随包技能</span>
                   </div>
-                ))}
-              </div>
+                  <div className="text-muted-foreground leading-relaxed">
+                    当前官方标杆插件 <code>{OFFICIAL_PLUGIN_META.pluginName} (v{OFFICIAL_PLUGIN_META.version})</code> 专注于 FastMCP 工具箱桥接与 Prompt 前后置 Hook 拦截生命周期，插件自身未捆绑独立技能。
+                  </div>
+                  <div className="text-muted-foreground/80 leading-relaxed">
+                    智能体在执行任务时，直接由体外大脑 (OpenViking) 自动召回长程经验，或读取工作区本地 <code>.agents/skills/</code> 规约，无需随包技能强依赖。
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
