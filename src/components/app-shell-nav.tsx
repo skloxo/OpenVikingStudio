@@ -2,6 +2,7 @@ import * as React from 'react'
 import { Link } from '@tanstack/react-router'
 import {
   BlocksIcon,
+  BoxesIcon,
   BrainCircuitIcon,
   ChevronRightIcon,
   ClipboardListIcon,
@@ -99,6 +100,13 @@ export const NAV_ITEMS: readonly NavItem[] = [
     section: 'workspace',
     titleKey: 'navigation.sessions.title',
     to: '/sessions',
+  },
+  {
+    icon: BoxesIcon,
+    id: 'plugins',
+    section: 'workspace',
+    titleKey: 'navigation.plugins.title',
+    to: '/plugins',
   },
   {
     icon: ScrollTextIcon,
