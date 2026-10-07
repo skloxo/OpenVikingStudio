@@ -39,6 +39,7 @@ class CreateAgentRequest(BaseModel):
     icon: str = Field("terminal", description="Lucide icon name")
     connection_mode: str = Field("apiClient", description="realtimeApi (本地直连) | apiClient (网络远程)")
     allowed_tools: Optional[List[str]] = Field(None, description="Tool names authorized for this agent")
+    plugin_grants: Optional[Dict[str, List[str]]] = Field(None, description="Plugin-scoped tool grants e.g. {'openviking-memory': ['openviking_find']}")
 
 
 class UpdateAgentRequest(BaseModel):
@@ -46,6 +47,7 @@ class UpdateAgentRequest(BaseModel):
     role_desc: Optional[str] = Field(None, description="Updated role description")
     connection_mode: Optional[str] = Field(None, description="realtimeApi | apiClient")
     allowed_tools: Optional[List[str]] = Field(None, description="Updated tool list")
+    plugin_grants: Optional[Dict[str, List[str]]] = Field(None, description="Updated plugin grants mapping")
     status: Optional[str] = Field(None, description="active | suspended | revoked")
 
 
@@ -152,7 +154,8 @@ async def create_user_agent(
         role_desc=req.role_desc,
         icon=req.icon,
         connection_mode=req.connection_mode,
-        allowed_tools=req.allowed_tools or list(DEFAULT_ALLOWED_TOOLS),
+        allowed_tools=req.allowed_tools,
+        plugin_grants=req.plugin_grants,
     )
 
     host_url = str(request.base_url).rstrip("/")
@@ -193,6 +196,7 @@ async def update_user_agent(
         role_desc=req.role_desc,
         connection_mode=req.connection_mode,
         allowed_tools=req.allowed_tools,
+        plugin_grants=req.plugin_grants,
         status=req.status,
     )
     if not updated:

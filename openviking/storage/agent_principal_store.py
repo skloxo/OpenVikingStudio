@@ -60,6 +60,10 @@ class AgentPrincipal(BaseModel):
         default_factory=lambda: list(DEFAULT_ALLOWED_TOOLS),
         description="Granted tool names or ['*']",
     )
+    plugin_grants: Dict[str, List[str]] = Field(
+        default_factory=dict,
+        description="Granted plugin-to-tools mapping e.g. {'openviking-memory': ['openviking_find']}",
+    )
     is_deleted: int = Field(0, description="1 if soft deleted, 0 otherwise")
     deleted_at: float = Field(0.0, description="Timestamp of soft deletion")
 
@@ -120,6 +124,7 @@ class AgentPrincipalStore:
                         last_seen REAL NOT NULL DEFAULT 0.0,
                         created_at REAL NOT NULL,
                         allowed_tools TEXT NOT NULL DEFAULT '["find", "search", "read", "record_evolution_lesson"]',
+                        plugin_grants TEXT NOT NULL DEFAULT '{}',
                         is_deleted INTEGER NOT NULL DEFAULT 0,
                         deleted_at REAL NOT NULL DEFAULT 0.0
                     );
@@ -132,6 +137,8 @@ class AgentPrincipalStore:
                     conn.execute("UPDATE agent_principals SET agent_name = agent_id WHERE agent_name = '';")
                 if "allowed_tools" not in columns:
                     conn.execute("ALTER TABLE agent_principals ADD COLUMN allowed_tools TEXT NOT NULL DEFAULT '[\"find\", \"search\", \"read\", \"record_evolution_lesson\"]';")
+                if "plugin_grants" not in columns:
+                    conn.execute("ALTER TABLE agent_principals ADD COLUMN plugin_grants TEXT NOT NULL DEFAULT '{}';")
                 if "is_deleted" not in columns:
                     conn.execute("ALTER TABLE agent_principals ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0;")
                 if "deleted_at" not in columns:
@@ -154,13 +161,25 @@ class AgentPrincipalStore:
         icon: str = "terminal",
         connection_mode: str = "apiClient",
         allowed_tools: Optional[List[str]] = None,
+        plugin_grants: Optional[Dict[str, List[str]]] = None,
         total_messages: int = 0,
     ) -> AgentPrincipal:
         """Register a new agent principal or update an existing one."""
         clean_id = (agent_id.strip() if agent_id else generate_agent_id())
         clean_name = agent_name.strip() or clean_id
-        tools = allowed_tools if allowed_tools is not None else list(DEFAULT_ALLOWED_TOOLS)
+
+        # Dual-track sync: derive allowed_tools from plugin_grants if allowed_tools is None
+        if plugin_grants is not None and allowed_tools is None:
+            flat_tools: List[str] = []
+            for t_list in plugin_grants.values():
+                flat_tools.extend(t_list)
+            tools = list(dict.fromkeys(flat_tools))
+        else:
+            tools = allowed_tools if allowed_tools is not None else list(DEFAULT_ALLOWED_TOOLS)
+
+        grants = plugin_grants if plugin_grants is not None else {}
         tools_json = json.dumps(tools, ensure_ascii=False)
+        grants_json = json.dumps(grants, ensure_ascii=False)
         now = time.time()
 
         with self._db_lock:
@@ -169,9 +188,9 @@ class AgentPrincipalStore:
                     """
                     INSERT INTO agent_principals (
                         agent_id, agent_name, user_id, role_desc, icon, connection_mode,
-                        status, total_messages, last_seen, created_at, allowed_tools,
+                        status, total_messages, last_seen, created_at, allowed_tools, plugin_grants,
                         is_deleted, deleted_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, 0, 0.0)
+                    ) VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, ?, 0, 0.0)
                     ON CONFLICT(agent_id) DO UPDATE SET
                         agent_name = excluded.agent_name,
                         user_id = excluded.user_id,
@@ -179,12 +198,13 @@ class AgentPrincipalStore:
                         icon = CASE WHEN excluded.icon != 'terminal' THEN excluded.icon ELSE agent_principals.icon END,
                         connection_mode = excluded.connection_mode,
                         allowed_tools = excluded.allowed_tools,
+                        plugin_grants = CASE WHEN excluded.plugin_grants != '{}' THEN excluded.plugin_grants ELSE agent_principals.plugin_grants END,
                         total_messages = CASE WHEN excluded.total_messages > 0 THEN excluded.total_messages ELSE agent_principals.total_messages END,
                         status = 'active',
                         is_deleted = 0,
                         deleted_at = 0.0;
                     """,
-                    (clean_id, clean_name, user_id, role_desc, icon, connection_mode, total_messages, now, now, tools_json),
+                    (clean_id, clean_name, user_id, role_desc, icon, connection_mode, total_messages, now, now, tools_json, grants_json),
                 )
                 conn.commit()
         return self.get_agent(clean_id, include_deleted=True)  # type: ignore
@@ -196,6 +216,7 @@ class AgentPrincipalStore:
         role_desc: Optional[str] = None,
         connection_mode: Optional[str] = None,
         allowed_tools: Optional[List[str]] = None,
+        plugin_grants: Optional[Dict[str, List[str]]] = None,
         status: Optional[str] = None,
     ) -> Optional[AgentPrincipal]:
         """Update mutable fields of an agent (agent_id is strictly immutable)."""
@@ -216,6 +237,14 @@ class AgentPrincipalStore:
         if connection_mode is not None:
             fields.append("connection_mode = ?")
             values.append(connection_mode.strip())
+        if plugin_grants is not None:
+            fields.append("plugin_grants = ?")
+            values.append(json.dumps(plugin_grants, ensure_ascii=False))
+            if allowed_tools is None:
+                flat_tools: List[str] = []
+                for t_list in plugin_grants.values():
+                    flat_tools.extend(t_list)
+                allowed_tools = list(dict.fromkeys(flat_tools))
         if allowed_tools is not None:
             fields.append("allowed_tools = ?")
             values.append(json.dumps(allowed_tools, ensure_ascii=False))
@@ -256,6 +285,13 @@ class AgentPrincipalStore:
                         data["allowed_tools"] = json.loads(data["allowed_tools"])
                     except Exception:
                         data["allowed_tools"] = list(DEFAULT_ALLOWED_TOOLS)
+                if isinstance(data.get("plugin_grants"), str):
+                    try:
+                        data["plugin_grants"] = json.loads(data["plugin_grants"])
+                    except Exception:
+                        data["plugin_grants"] = {}
+                elif not data.get("plugin_grants"):
+                    data["plugin_grants"] = {}
                 if not data.get("agent_name"):
                     data["agent_name"] = data["agent_id"]
                 return AgentPrincipal(**data)
@@ -290,6 +326,13 @@ class AgentPrincipalStore:
                             d["allowed_tools"] = json.loads(d["allowed_tools"])
                         except Exception:
                             d["allowed_tools"] = list(DEFAULT_ALLOWED_TOOLS)
+                    if isinstance(d.get("plugin_grants"), str):
+                        try:
+                            d["plugin_grants"] = json.loads(d["plugin_grants"])
+                        except Exception:
+                            d["plugin_grants"] = {}
+                    elif not d.get("plugin_grants"):
+                        d["plugin_grants"] = {}
                     if not d.get("agent_name"):
                         d["agent_name"] = d["agent_id"]
                     results.append(AgentPrincipal(**d))
@@ -360,9 +403,9 @@ class AgentPrincipalStore:
                         """
                         INSERT INTO agent_principals (
                             agent_id, agent_name, user_id, role_desc, icon, connection_mode,
-                            status, total_messages, last_seen, created_at, allowed_tools,
+                            status, total_messages, last_seen, created_at, allowed_tools, plugin_grants,
                             is_deleted, deleted_at
-                        ) VALUES (?, ?, ?, ?, 'terminal', 'apiClient', 'active', ?, ?, ?, ?, 0, 0.0);
+                        ) VALUES (?, ?, ?, ?, 'terminal', 'apiClient', 'active', ?, ?, ?, ?, '{}', 0, 0.0);
                         """,
                         (clean_id, clean_id, user_id, f"Agent {clean_id}", increment, now, now, tools_json),
                     )

@@ -152,6 +152,50 @@ def _oauth_enabled(scope: Scope) -> bool:
     return getattr(app.state, "oauth_provider", None) is not None
 
 
+def _filter_obj_tools(obj: Any, allowed_tools: set[str]) -> None:
+    items = obj if isinstance(obj, list) else [obj]
+    for item in items:
+        if isinstance(item, dict) and "result" in item:
+            res = item["result"]
+            if isinstance(res, dict) and "tools" in res and isinstance(res["tools"], list):
+                res["tools"] = [
+                    t for t in res["tools"]
+                    if isinstance(t, dict) and (t.get("name") in allowed_tools or "*" in allowed_tools)
+                ]
+
+
+def _filter_tools_list_payload(body_bytes: bytes, allowed_tools: set[str]) -> bytes:
+    """Filter tools in JSON or SSE formatted MCP tools/list response."""
+    import json
+    if not body_bytes or "*" in allowed_tools:
+        return body_bytes
+    text = body_bytes.decode("utf-8", errors="replace")
+
+    # Check if SSE streamable payload
+    if "data:" in text:
+        lines = text.split("\n")
+        new_lines = []
+        for line in lines:
+            if line.startswith("data:"):
+                raw_json = line[len("data:"):].strip()
+                try:
+                    obj = json.loads(raw_json)
+                    _filter_obj_tools(obj, allowed_tools)
+                    new_lines.append(f"data: {json.dumps(obj, ensure_ascii=False)}")
+                except Exception:
+                    new_lines.append(line)
+            else:
+                new_lines.append(line)
+        return "\n".join(new_lines).encode("utf-8")
+    else:
+        try:
+            obj = json.loads(text)
+            _filter_obj_tools(obj, allowed_tools)
+            return json.dumps(obj, ensure_ascii=False).encode("utf-8")
+        except Exception:
+            return body_bytes
+
+
 class _IdentityASGIMiddleware:
     """ASGI middleware: delegates to auth.resolve_identity (the same function
     used by all REST API routes) so authentication logic is never duplicated."""
@@ -267,8 +311,9 @@ class _IdentityASGIMiddleware:
                     )
                     return await resp(scope, receive, send)
 
-            # Enforce physical Tool ACL validation for POST tools/call requests
+            # Enforce physical Tool ACL validation and dynamic tools/list projection
             replay_receive = receive
+            is_tools_list = False
             if declared_agent_id and agent_rec and request.method == "POST":
                 import json
                 import time
@@ -288,36 +333,40 @@ class _IdentityASGIMiddleware:
                     payload = json.loads(body)
                     calls = payload if isinstance(payload, list) else [payload]
                     for call_obj in calls:
-                        if isinstance(call_obj, dict) and call_obj.get("method") == "tools/call":
-                            params = call_obj.get("params") or {}
-                            tool_name = params.get("name")
-                            allowed = set(agent_rec.allowed_tools) if agent_rec.allowed_tools else set()
-                            if "*" not in allowed and tool_name and tool_name not in allowed:
-                                req_id = call_obj.get("id")
-                                logger.warning(
-                                    f"Tool ACL Denied: Agent [{declared_agent_id}] attempted unauthorized tool [{tool_name}]. Allowed: {agent_rec.allowed_tools}"
-                                )
-                                resp = JSONResponse(
-                                    {
-                                        "jsonrpc": "2.0",
-                                        "id": req_id,
-                                        "error": {
-                                            "code": -32003,
-                                            "message": f"Permission Denied: Tool [{tool_name}] is not authorized for Agent Principal [{declared_agent_id}]. Please grant access in OpenViking Tool ACL Matrix.",
+                        if isinstance(call_obj, dict):
+                            m_name = call_obj.get("method")
+                            if m_name == "tools/list":
+                                is_tools_list = True
+                            elif m_name == "tools/call":
+                                params = call_obj.get("params") or {}
+                                tool_name = params.get("name")
+                                allowed = set(agent_rec.allowed_tools) if agent_rec.allowed_tools else set()
+                                if "*" not in allowed and tool_name and tool_name not in allowed:
+                                    req_id = call_obj.get("id")
+                                    logger.warning(
+                                        f"Tool ACL Denied: Agent [{declared_agent_id}] attempted unauthorized tool [{tool_name}]. Allowed: {agent_rec.allowed_tools}"
+                                    )
+                                    resp = JSONResponse(
+                                        {
+                                            "jsonrpc": "2.0",
+                                            "id": req_id,
+                                            "error": {
+                                                "code": -32003,
+                                                "message": f"Permission Denied: Tool [{tool_name}] is not authorized for Agent Principal [{declared_agent_id}]. Please grant access in OpenViking Tool ACL Matrix.",
+                                            },
                                         },
-                                    },
-                                    status_code=403,
-                                )
-                                return await resp(scope, _replay_receive, send)
-                            # Heartbeat & message count increment
-                            try:
-                                AgentPrincipalStore.get_instance().update_agent(
-                                    declared_agent_id,
-                                    total_messages=agent_rec.total_messages + 1,
-                                    last_seen=time.time(),
-                                )
-                            except Exception:
-                                pass
+                                        status_code=403,
+                                    )
+                                    return await resp(scope, _replay_receive, send)
+                                # Heartbeat & message count increment
+                                try:
+                                    AgentPrincipalStore.get_instance().update_agent(
+                                        declared_agent_id,
+                                        total_messages=agent_rec.total_messages + 1,
+                                        last_seen=time.time(),
+                                    )
+                                except Exception:
+                                    pass
                 except Exception as parse_err:
                     logger.debug(f"Tool ACL bypass parse error: {parse_err}")
 
@@ -365,8 +414,44 @@ class _IdentityASGIMiddleware:
         }
         ctx_token = _mcp_ctx.set(ctx)
         url_token = _request_url_ctx.set(url_info)
+
+        effective_send: Send = send
+        allowed_tools_set = set(agent_rec.allowed_tools) if (agent_rec and agent_rec.allowed_tools) else set()
+        if is_tools_list and "*" not in allowed_tools_set:
+            original_send = send
+            response_start_message: Optional[dict] = None
+            response_body_chunks: List[bytes] = []
+
+            async def filtering_send(message: Any) -> None:
+                nonlocal response_start_message, response_body_chunks
+                if message["type"] == "http.response.start":
+                    response_start_message = message
+                elif message["type"] == "http.response.body":
+                    response_body_chunks.append(message.get("body", b""))
+                    if not message.get("more_body", False):
+                        full_body = b"".join(response_body_chunks)
+                        modified_body = _filter_tools_list_payload(full_body, allowed_tools_set)
+                        if response_start_message:
+                            new_headers = []
+                            for h_name, h_val in response_start_message.get("headers", []):
+                                if h_name.lower() == b"content-length":
+                                    new_headers.append((b"content-length", str(len(modified_body)).encode("latin1")))
+                                else:
+                                    new_headers.append((h_name, h_val))
+                            response_start_message["headers"] = new_headers
+                            await original_send(response_start_message)
+                        await original_send({
+                            "type": "http.response.body",
+                            "body": modified_body,
+                            "more_body": False,
+                        })
+                else:
+                    await original_send(message)
+
+            effective_send = filtering_send
+
         try:
-            return await self.app(scope, replay_receive, send)
+            return await self.app(scope, replay_receive, effective_send)
         finally:
             _mcp_ctx.reset(ctx_token)
             _request_url_ctx.reset(url_token)

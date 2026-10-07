@@ -30,140 +30,13 @@ from _core.config import (
 from .observability import HARNESS_METRICS, _record_harness_call
 from .skill_onboarder import ONBOARDING_QUEUE, generate_ai_skill_md
 
+from .skill_syncer import _auto_sync_skills, _desensitize_text, start_skill_sync_worker
+
 logger = logging.getLogger("openviking-mcp")
 
-def _desensitize_text(text: str) -> str:
-    if not text:
-        return ""
-    try:
-        from openviking.privacy.privacy_masker import mask_text
-
-        text = mask_text(text)
-    except Exception:
-        text = re.sub(r"8\.129\.0\.26", "127.0.0.1", text)
-        text = re.sub(r"100\.78\.64\.128", "100.x.x.x", text)
-        text = re.sub(r"sk-[a-zA-Z0-9_-]{24,}", "sk-[REDACTED_API_KEY]", text)
-        text = re.sub(r"ghp_[a-zA-Z0-9_-]{24,}", "ghp_[REDACTED_TOKEN]", text)
-    text = re.sub(r"Skl328" + r"9568", "[REDACTED_PASSWORD]", text)
-    text = re.sub(r"s@8" + r"xx5\.com", "user@internal.example.com", text)
-    return text
-
-# SECTION: Auto Sync Skills
-def _auto_sync_skills():
-    """自动探针：全量递归扫描 IDE/OpenClaw/Gemini/Project 技能目录，生成全量带简介的 ~/.openviking/all_skills.json"""
-    try:
-        target_base = os.path.expanduser("~/.openviking/skills")
-        os.makedirs(target_base, exist_ok=True)
-
-        base_sources = _get_skill_base_sources()
-        found = {}
-        for base in base_sources:
-            if not os.path.exists(base):
-                continue
-            for root, dirs, files in os.walk(base):
-                dirs[:] = [d for d in dirs if not d.startswith(".") and d not in ("node_modules", ".git", ".cache", ".npm", "cleanup-backup", "fastapi", ".venv", "dist", "build", ".next", "__pycache__")]
-                if "SKILL.md" in files:
-                    dirs[:] = []
-                    skill_name = os.path.basename(root)
-                    skill_md = os.path.join(root, "SKILL.md")
-                    if skill_name not in found:
-                        link_path = os.path.join(target_base, skill_name)
-                        if not os.path.exists(link_path):
-                            try:
-                                os.symlink(root, link_path)
-                            except Exception:
-                                pass
-                        desc = _desensitize_text(_parse_skill_description(skill_md))
-                        source = _infer_skill_source(skill_name, root)
-                        scope = "user" if "gemini" in root else "agent"
-                        content = ""
-                        try:
-                            with open(skill_md, "r", encoding="utf-8", errors="ignore") as fp:
-                                content = _desensitize_text(fp.read())
-                        except Exception:
-                            pass
-
-                        tags = []
-                        allowed_tools = []
-                        try:
-                            if content.startswith("---"):
-                                parts = content.split("---", 2)
-                                if len(parts) >= 3:
-                                    fm = parts[1]
-                                    in_tags = False
-                                    in_tools = False
-                                    for line in fm.splitlines():
-                                        sline = line.strip()
-                                        if sline.startswith("tags:"):
-                                            in_tags = True
-                                            in_tools = False
-                                        elif sline.startswith("allowed-tools:") or sline.startswith("allowed_tools:"):
-                                            in_tools = True
-                                            in_tags = False
-                                        elif sline.startswith("- ") and in_tags:
-                                            tags.append(sline[2:].strip().strip("\"'"))
-                                        elif sline.startswith("- ") and in_tools:
-                                            allowed_tools.append(sline[2:].strip().strip("\"'"))
-                                        elif ":" in sline:
-                                            in_tags = False
-                                            in_tools = False
-                        except Exception:
-                            pass
-
-                        skill_files = []
-                        try:
-                            for r_sub, d_sub, filenames in os.walk(root):
-                                rel_root = os.path.relpath(r_sub, root)
-                                if rel_root != ".":
-                                    skill_files.append({
-                                        "name": os.path.basename(r_sub),
-                                        "path": rel_root,
-                                        "is_dir": True,
-                                        "kind": "directory"
-                                    })
-                                for fn in sorted(filenames):
-                                    if fn.startswith("."):
-                                        continue
-                                    file_rel_path = os.path.join(rel_root, fn) if rel_root != "." else fn
-                                    kind = "definition" if fn == "SKILL.md" else ("auxiliary" if fn.endswith(".md") or fn.endswith(".sh") or fn.endswith(".py") else "file")
-                                    skill_files.append({
-                                        "name": fn,
-                                        "path": file_rel_path,
-                                        "is_dir": False,
-                                        "kind": kind
-                                    })
-                        except Exception:
-                            pass
-
-                        found[skill_name] = {
-                            "name": skill_name,
-                            "description": desc,
-                            "source": source,
-                            "path": root,
-                            "uri": f"viking://user/skills/{skill_name}/SKILL.md",
-                            "scope": scope,
-                            "content": content,
-                            "files": skill_files,
-                            "tags": tags,
-                            "allowedTools": allowed_tools,
-                        }
-
-        all_skills = list(found.values())
-        json_path = os.path.expanduser("~/.openviking/all_skills.json")
-        with open(json_path, "w", encoding="utf-8") as f:
-            json.dump(all_skills, f, ensure_ascii=False, indent=2)
-
-        cwd_public = Path.cwd() / "public" / "all_skills.json"
-        if cwd_public.parent.exists():
-            with open(cwd_public, "w", encoding="utf-8") as f:
-                json.dump(all_skills, f, ensure_ascii=False, indent=2)
-    except Exception as e:
-        logger.warning(f"技能自动同步异常: {e}")
-
-
-# 关联回调并启动守护线程
+# 关联回调并启动技能常驻自愈同步守护线程
 ONBOARDING_QUEUE.sync_callback = _auto_sync_skills
-threading.Thread(target=_auto_sync_skills, daemon=True, name="skill-sync").start()
+start_skill_sync_worker()
 
 # SECTION: Tool Registration
 def register_skills_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Callable]:
@@ -272,6 +145,7 @@ def register_skills_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Callabl
         description: str = Field(default="", description="技能描述（add 时必填）"),
         content: str = Field(default="", description="技能内容（Markdown）"),
         tags: str = Field(default="", description="标签（逗号分隔）"),
+        target_uri: str = Field(default="viking://agent/skills", description="目标根 URI，默认 viking://agent/skills"),
     ) -> str:
         """技能管理：列出或添加技能"""
         if action == "list":
@@ -280,12 +154,25 @@ def register_skills_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Callabl
         elif action == "add":
             if not name or not description:
                 return _make_error("添加技能需要 name 和 description")
-            body: Dict[str, Any] = {"name": name, "description": description}
-            if content:
-                body["content"] = content
-            if tags:
-                body["tags"] = [t.strip() for t in tags.split(",")]
-            result = http_client.post("/api/v1/skills", body)
+
+            if content and content.strip().startswith("---"):
+                formatted_content = content
+            else:
+                tag_lines = ""
+                if tags:
+                    tag_list = [t.strip() for t in tags.split(",") if t.strip()]
+                    tag_lines = "\ntags:\n" + "\n".join(f"  - {t}" for t in tag_list)
+                escaped_desc = description.replace('"', '\\"')
+                body_text = content or f"# {name}\n\n{description}"
+                formatted_content = (
+                    f'---\nname: {name}\ndescription: "{escaped_desc}"{tag_lines}\n---\n\n{body_text}'
+                )
+
+            payload = {
+                "data": formatted_content,
+                "target_uri": target_uri or "viking://agent/skills",
+            }
+            result = http_client.post("/api/v1/skills", payload)
             return _format_result(result)
         else:
             return _make_error(f"无效操作: {action}。可选: list, add")

@@ -259,3 +259,63 @@ export function isToolDisabledByRole(tool: ToolItem, userRole?: string): boolean
   if (role === 'root' || role === 'admin') return false
   return true
 }
+
+export const BIG_THREE_PLUGIN_MAPPINGS: Record<string, { name: string; tools: string[] }> = {
+  'openviking-memory': {
+    name: 'OpenViking 记忆体外大脑',
+    tools: [
+      'find', 'search', 'read', 'remember', 'openviking_history_search',
+      'openviking_active_notes_get', 'openviking_active_notes_update', 'openviking_context_route',
+      'list', 'tree', 'grep', 'glob', 'zg_search', 'openviking_code_impact', 'openviking_tokenshift_compress',
+      'openviking_generate_contract_test', 'openviking_skill_validate', 'openviking_skill_judge',
+      'openviking_skill_remediate', 'openviking_skill_zip', 'openviking_skill_intent_match', 'openviking_skill_publish',
+      'openviking_file_task_card', 'openviking_list_pending_cards', 'openviking_resolve_task_card',
+      'openviking_task_cards_summary', 'openviking_valet_handover', 'openviking_valet_ticket_status',
+      'health', 'openviking_privacy_mask', 'openviking_agent_sensors',
+      'write', 'edit', 'openviking_dspy_compile', 'openviking_vector_sync_metrics', 'openviking_skill_weight_tune',
+      'openviking_isolate_agent', 'openviking_skill_quarantine', 'openviking_skill_unquarantine',
+      'openviking_skill_rebalance', 'openviking_dlq_status', 'openviking_retry_dead_letter',
+      'openviking_harness_probe', 'forget', 'list_watches', 'cancel_watch', 'manage_watch',
+    ],
+  },
+  'keepass-vault': {
+    name: 'KeePass 凭据保险箱',
+    tools: [
+      'keepass_search', 'keepass_get', 'keepass_status', 'keepass_add', 'keepass_edit',
+      'keepass_rm', 'keepass_list_tree', 'keepass_analyze', 'keepass_export_attachment',
+    ],
+  },
+  'network-search': {
+    name: '联网搜索与采集聚合器',
+    tools: [
+      'web_search', 'web_fetch', 'openviking_web_search',
+    ],
+  },
+}
+
+export function derivePluginGrantsFromTools(selectedTools: string[]): Record<string, string[]> {
+  const selectedSet = new Set(selectedTools)
+  const grants: Record<string, string[]> = {}
+
+  for (const [pluginId, meta] of Object.entries(BIG_THREE_PLUGIN_MAPPINGS)) {
+    const granted = meta.tools.filter((t) => selectedSet.has(t))
+    if (granted.length > 0) {
+      grants[pluginId] = granted
+    }
+  }
+
+  const bigThreeTools = new Set(
+    Object.values(BIG_THREE_PLUGIN_MAPPINGS).flatMap((m) => m.tools)
+  )
+  const unmapped = selectedTools.filter((t) => !bigThreeTools.has(t))
+  if (unmapped.length > 0) {
+    grants['custom'] = unmapped
+  }
+
+  return grants
+}
+
+export function deriveToolsFromPluginGrants(grants: Record<string, string[]>): string[] {
+  const tools = Object.values(grants).flatMap((tList) => tList)
+  return Array.from(new Set(tools))
+}
