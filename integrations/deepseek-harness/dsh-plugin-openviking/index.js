@@ -8,23 +8,13 @@
  * 3. Dynamic Streamable-HTTP MCP Mounting: Dynamically mounts @deepseek-ai/dsh-mcp-client with Authorization Header.
  */
 
-import { appendFileSync, statSync, renameSync, existsSync } from 'node:fs'
+import { appendFileSync, statSync, renameSync, existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 export const name = 'dsh-plugin-openviking'
 export const inject = ['systemPrompt']
 
-// 动态兼容 Schemastery Schema 规范
-let Schema = null
-try {
-  const mod = await import('@deepseek-ai/schemastery')
-  Schema = mod.default || mod.Schema || mod
-} catch (_) {
-  try {
-    const mod = await import('schemastery')
-    Schema = mod.default || mod.Schema || mod
-  } catch (_) {}
-}
+import Schema from './schema.js'
 
 // 🛡️ 防御性 volatile 修饰包装器
 function v(s) {
@@ -33,13 +23,14 @@ function v(s) {
 
 // 遵循 DSH 官方规范：只有标记为 .volatile() 的字段才会被 SettingsForm 投影到 GUI 表单中
 export const Config = Schema ? Schema.object({
-  apiUrl: v(Schema.string().default('https://vk.tide.red')).description('OpenViking 服务端端点 (如 https://vk.tide.red)'),
+  apiUrl: v(Schema.string().default('http://127.0.0.1:1933')).description('OpenViking 服务端端点 (如 http://127.0.0.1:1933 或 https://vk.tide.red)'),
   userId: v(Schema.string().default('default')).description('租户 / 账户身份标识 (默认 default)'),
-  agentId: v(Schema.string().default('')).description('智能体工兵 ID (从 OpenViking Studio 智能体管理中复制，如 ag_cd3c029d7ea4)'),
+  agentId: v(Schema.string().default('deepseek-harness@2080ti')).description('智能体工兵 ID (如 deepseek-harness@2080ti 或 ag_cd3c029d7ea4)'),
   apiKey: v(Schema.string().role('secret').default('')).description('用户的 API Key / User Key (在请求头中传递鉴权，带密码遮罩)'),
+  apiKeyEnv: v(Schema.string().default('OPENVIKING_API_KEY')).description('从 DSH 凭据库 (.credentials.yaml) 或环境变量中引用的 Key 名称 (默认 OPENVIKING_API_KEY)'),
   enableMcp: v(Schema.boolean().default(true)).description('是否挂载体外 MCP 工具箱 (开启后自动向模型提供 47 项体外大脑工具)'),
   enableHook: v(Schema.boolean().default(true)).description('是否启用前置记忆感知 Hook (自动在 Prompt 组装时感知并注入上下文)'),
-  peer: v(Schema.string().default('deepseek-harness@satellite')).description('调用方节点名称标识 (用于审计日志与调用链追踪)')
+  peer: v(Schema.string().default('deepseek-harness@2080ti')).description('调用方节点名称标识 (用于审计日志与调用链追踪)')
 }).description('OpenViking 体外大脑一体化套件配置') : undefined
 
 const STEP_WORDS = new Set([
@@ -170,42 +161,88 @@ function getVal(v, fallback = '') {
   if (v === undefined || v === null) return fallback
   if (typeof v?.get === 'function') {
     const val = v.get()
-    return val !== undefined && val !== null ? val : fallback
+    return (val !== undefined && val !== null && val !== '') ? String(val).trim() : fallback
+  }
+  if (typeof v === 'string') {
+    const trimmed = v.trim()
+    return trimmed !== '' ? trimmed : fallback
   }
   return v
 }
 
 export function apply(ctx, config = {}) {
-  const getApi = () => getVal(config.apiUrl || config.api, process.env.OPENVIKING_API || 'https://vk.tide.red')
-  const getKey = () => getVal(config.apiKey || config.key, process.env.OPENVIKING_API_KEY || '')
-  const getPeer = () => getVal(config.peer, process.env.OPENVIKING_ACTOR_PEER || 'deepseek-harness@satellite')
+  const getApi = () => getVal(config.apiUrl || config.api, process.env.OPENVIKING_API || 'http://127.0.0.1:1933')
+  const getKey = () => {
+    const raw = getVal(config.apiKey || config.key)
+    if (raw) return raw
+    const envKeyName = getVal(config.apiKeyEnv, 'OPENVIKING_API_KEY')
+    if (process.env[envKeyName]) return process.env[envKeyName]
+    // 🛡️ 官方 DSH 标准：从 ~/.dsh/.credentials.yaml 自动读取 refs 凭据
+    try {
+      const home = process.env.USERPROFILE || process.env.HOME || 'C:\\Users\\Skl'
+      const credPath = resolve(home, '.dsh', '.credentials.yaml')
+      if (existsSync(credPath)) {
+        const text = readFileSync(credPath, 'utf8')
+        const regex = new RegExp(`^\\s*${envKeyName}:\\s*([^\\s\\r\\n]+)`, 'm')
+        const m = text.match(regex)
+        if (m) return m[1]
+      }
+    } catch (_) {}
+    return ''
+  }
+  const getPeer = () => getVal(config.peer, process.env.OPENVIKING_ACTOR_PEER || 'deepseek-harness@2080ti')
   const getUserId = () => getVal(config.userId, 'default')
-  const getAgentId = () => getVal(config.agentId, process.env.OPENVIKING_AGENT_ID || '')
+  const getAgentId = () => getVal(config.agentId, process.env.OPENVIKING_AGENT_ID || 'deepseek-harness@2080ti')
   const getEnableHook = () => getVal(config.enableHook, true) !== false
   const getEnableMcp = () => getVal(config.enableMcp, true) !== false
 
   log(`[INIT] OpenViking DSH Plugin activated (peer=${getPeer()}, api=${getApi()}, agentId=${getAgentId() || 'none'}, hook=${getEnableHook()}, mcp=${getEnableMcp()})`)
 
-  let mcpMounted = false
+  let currentMcpFork = null
+  let lastMcpSignature = ''
+
   function mountMcpIfNeeded() {
-    if (mcpMounted) return
     const agentId = getAgentId()
     const enableMcp = getEnableMcp()
-    if (!enableMcp || !agentId) return
+
+    if (!enableMcp || !agentId) {
+      if (currentMcpFork) {
+        log('[MCP_UNMOUNT] MCP disabled or agentId empty, disposing previous MCP fork')
+        try { currentMcpFork.dispose() } catch (_) {}
+        currentMcpFork = null
+        lastMcpSignature = ''
+      }
+      return
+    }
 
     try {
       const api = getApi()
       const userId = getUserId()
       const key = getKey()
       const mcpUrl = `${api.replace(/\/+$/, '')}/mcp?agent_id=${encodeURIComponent(agentId)}&user_id=${encodeURIComponent(userId)}`
+      const signature = `${mcpUrl}#${key || 'nokey'}`
+
+      if (currentMcpFork && signature === lastMcpSignature) {
+        log(`[MCP_SKIP] MCP client already mounted with identical signature (${signature})`)
+        return
+      }
+
+      if (currentMcpFork) {
+        log(`[MCP_RELOAD] config changed, disposing previous MCP fork before remounting`)
+        try { currentMcpFork.dispose() } catch (_) {}
+        currentMcpFork = null
+      }
+
       log(`[MCP_MOUNT] mounting @deepseek-ai/dsh-mcp-client at ${mcpUrl}`)
       
-      const mcpHeaders = {}
+      const mcpHeaders = {
+        'Accept': 'application/json, text/event-stream'
+      }
       if (key) {
         mcpHeaders['Authorization'] = `Bearer ${key}`
       }
       
-      ctx.plugin('@deepseek-ai/dsh-mcp-client', {
+      currentMcpFork = ctx.plugin('@deepseek-ai/dsh-mcp-client', {
         serverName: 'openviking',
         transport: 'streamable-http',
         url: mcpUrl,
@@ -217,10 +254,10 @@ export function apply(ctx, config = {}) {
           maxAttempts: 10
         }
       })
-      mcpMounted = true
+      lastMcpSignature = signature
       log('[MCP_MOUNT_SUCCESS] @deepseek-ai/dsh-mcp-client mounted successfully')
     } catch (err) {
-      log(`[MCP_MOUNT_WARN] failed to mount mcp client dynamically: ${err?.message || err}`)
+      log(`[MCP_MOUNT_WARN] failed to mount mcp client dynamically: ${err?.stack || err?.message || err}`)
     }
   }
 

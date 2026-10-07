@@ -2,10 +2,11 @@
     - id: openviking
       name: dsh-plugin-openviking
       config:
-        apiUrl: "https://vk.tide.red"
+        apiUrl: "http://127.0.0.1:1933"
         userId: "default"
-        agentId: ""
+        agentId: "deepseek-harness@2080ti"
         apiKey: ""
+        apiKeyEnv: "OPENVIKING_API_KEY"
         enableMcp: true
         enableHook: true
-        peer: "deepseek-harness@satellite"
+        peer: "deepseek-harness@2080ti"

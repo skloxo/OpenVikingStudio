@@ -106,12 +106,8 @@ export function AgentCollapsibleItem({
   // 网络端点物理双轨：同时提供同机内网与跨网公网两个端点，消除切换与输入认知成本
   const localMcpUrl = `http://127.0.0.1:1933/mcp?agent_id=${encodeURIComponent(agent.agent_id)}&user_id=${encodeURIComponent(userId)}`
   const publicMcpUrl = `https://vk.tide.red/mcp?agent_id=${encodeURIComponent(agent.agent_id)}&user_id=${encodeURIComponent(userId)}`
-  const dshPluginTarballUrl = React.useMemo(() => {
-    if (typeof window !== 'undefined' && window.location.origin) {
-      return `${window.location.origin}/studio/dsh-plugin-openviking-${DSH_PLUGIN_VERSION}.tgz`
-    }
-    return `https://vk.tide.red/studio/dsh-plugin-openviking-${DSH_PLUGIN_VERSION}.tgz`
-  }, [])
+  // DSH 插件公网安装包地址 (全局唯一公网 SSOT，彻底切除本地动态自适应过度工程)
+  const dshPluginTarballUrl = `https://vk.tide.red/studio/dsh-plugin-openviking-${DSH_PLUGIN_VERSION}.tgz`
 
   const dshYamlSnippet = React.useMemo(() => `- id: mcp-openviking
   name: "@deepseek-ai/dsh-mcp-client"
