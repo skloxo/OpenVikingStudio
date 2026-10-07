@@ -172,7 +172,7 @@ class _IdentityASGIMiddleware:
                 x_api_key=x_api_key,
                 authorization=authorization,
                 x_openviking_account=request.headers.get("x-openviking-account"),
-                x_openviking_user=request.headers.get("x-openviking-user"),
+                x_openviking_user=request.headers.get("x-openviking-user") or request.query_params.get("user_id"),
             )
             actor_peer_id = normalize_actor_peer_header(
                 request.headers.get("x-openviking-actor-peer")
@@ -201,6 +201,39 @@ class _IdentityASGIMiddleware:
                         status_code=401,
                     )
                     return await resp(scope, receive, send)
+
+                # 🛡️ 属主匹配强校验：防串户与越权接入 (Owner-Agent Cross Verification)
+                declared_user_id = request.query_params.get("user_id") or request.headers.get("x-openviking-user")
+                if declared_user_id and agent_rec.user_id and declared_user_id != agent_rec.user_id:
+                    resp = JSONResponse(
+                        {
+                            "jsonrpc": "2.0",
+                            "id": None,
+                            "error": {
+                                "code": -32003,
+                                "message": f"Cross-tenant access denied: Agent [{declared_agent_id}] belongs to user [{agent_rec.user_id}], but request specified user [{declared_user_id}]",
+                            },
+                        },
+                        status_code=403,
+                    )
+                    return await resp(scope, receive, send)
+
+                auth_user = getattr(identity, "user_id", None) if identity else None
+                if auth_user and auth_user not in ("anonymous", "default_anonymous") and agent_rec.user_id:
+                    auth_role = getattr(identity, "role", "")
+                    if auth_role != "admin" and auth_user != agent_rec.user_id:
+                        resp = JSONResponse(
+                            {
+                                "jsonrpc": "2.0",
+                                "id": None,
+                                "error": {
+                                    "code": -32003,
+                                    "message": f"Owner mismatch: Agent [{declared_agent_id}] belongs to user [{agent_rec.user_id}], but authenticated key belongs to [{auth_user}]",
+                                },
+                            },
+                            status_code=403,
+                        )
+                        return await resp(scope, receive, send)
 
             # Enforce physical Tool ACL validation for POST tools/call requests
             replay_receive = receive
