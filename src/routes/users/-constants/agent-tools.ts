@@ -186,3 +186,8 @@ export function isToolDisabledByRole(tool: ToolItem, userRole?: string): boolean
   if (role === 'root' || role === 'admin') return false
   return true
 }
+
+/**
+ * DSH 官方 OpenViking 插件当前最新发布版本号 (SSOT)
+ */
+export const DSH_PLUGIN_VERSION = '1.5.0'

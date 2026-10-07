@@ -25,7 +25,11 @@ import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import type { UpdateAgentInput, UserAgentItem } from '#/lib/admin'
-import { ALL_TOOL_IDS, MASTER_MAINTAINER_TOOL_IDS } from '../-constants/agent-tools'
+import {
+  ALL_TOOL_IDS,
+  DSH_PLUGIN_VERSION,
+  MASTER_MAINTAINER_TOOL_IDS,
+} from '../-constants/agent-tools'
 
 import { HookLifecycleMatrix } from './hook-lifecycle-matrix'
 import { ToolACLMatrix } from './tool-acl-matrix'
@@ -102,7 +106,12 @@ export function AgentCollapsibleItem({
   // 网络端点物理双轨：同时提供同机内网与跨网公网两个端点，消除切换与输入认知成本
   const localMcpUrl = `http://127.0.0.1:1933/mcp?agent_id=${encodeURIComponent(agent.agent_id)}&user_id=${encodeURIComponent(userId)}`
   const publicMcpUrl = `https://vk.tide.red/mcp?agent_id=${encodeURIComponent(agent.agent_id)}&user_id=${encodeURIComponent(userId)}`
-  const dshPluginTarballUrl = 'https://vk.tide.red/studio/dsh-plugin-openviking.tgz'
+  const dshPluginTarballUrl = React.useMemo(() => {
+    if (typeof window !== 'undefined' && window.location.origin) {
+      return `${window.location.origin}/studio/dsh-plugin-openviking-${DSH_PLUGIN_VERSION}.tgz`
+    }
+    return `https://vk.tide.red/studio/dsh-plugin-openviking-${DSH_PLUGIN_VERSION}.tgz`
+  }, [])
 
   const dshYamlSnippet = React.useMemo(() => `- id: mcp-openviking
   name: "@deepseek-ai/dsh-mcp-client"
@@ -330,14 +339,17 @@ export function AgentCollapsibleItem({
                   {/* 步骤 1：插件一键安装包 (tarball) */}
                   <div className="rounded border border-cyan-500/30 bg-cyan-500/5 p-2 space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-foreground text-xs flex items-center gap-1">
-                        📦 步骤 1：复制插件安装包链接 (.tgz)
+                      <span className="font-semibold text-foreground text-xs flex items-center gap-1.5">
+                        <span>📦 步骤 1：复制插件安装包链接 (.tgz)</span>
+                        <Badge variant="outline" className="text-xs font-mono h-4 px-1.5 border-cyan-500/40 text-cyan-600 dark:text-cyan-400">
+                          v{DSH_PLUGIN_VERSION}
+                        </Badge>
                       </span>
                       <button
                         type="button"
-                        onClick={(e) => handleCopy(dshPluginTarballUrl, 'DSH 插件安装链接', e)}
+                        onClick={(e) => handleCopy(dshPluginTarballUrl, `DSH 插件安装链接 (v${DSH_PLUGIN_VERSION})`, e)}
                         className="text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1 text-xs font-medium cursor-pointer"
-                        title="复制可直接贴入 DSH「添加插件」的安装包链接"
+                        title={`复制可直接贴入 DSH「添加插件」的安装包链接 (v${DSH_PLUGIN_VERSION})`}
                       >
                         <CopyIcon className="size-3" />
                         一键复制
@@ -382,11 +394,11 @@ export function AgentCollapsibleItem({
                     size="sm"
                     variant="outline"
                     className="h-7 text-xs flex-1 text-cyan-600 border-cyan-500/40 hover:bg-cyan-500/10 font-medium px-1"
-                    onClick={(e) => handleCopy(dshPluginTarballUrl, 'DSH 插件安装链接', e)}
-                    title="复制可以直接贴入 DSH「添加插件」的安装包链接"
+                    onClick={(e) => handleCopy(dshPluginTarballUrl, `DSH 插件安装链接 (v${DSH_PLUGIN_VERSION})`, e)}
+                    title={`复制可以直接贴入 DSH「添加插件」的安装包链接 (v${DSH_PLUGIN_VERSION})`}
                   >
                     <CopyIcon className="size-3 mr-1" />
-                    插件链接
+                    插件 v{DSH_PLUGIN_VERSION}
                   </Button>
                   <Button
                     type="button"
