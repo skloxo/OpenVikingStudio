@@ -188,13 +188,6 @@ class _IdentityASGIMiddleware:
         x_api_key = request.headers.get("x-api-key")
         authorization = request.headers.get("authorization")
         try:
-            identity = await resolve_identity(
-                request,
-                x_api_key=x_api_key,
-                authorization=authorization,
-                x_openviking_account=request.headers.get("x-openviking-account"),
-                x_openviking_user=request.headers.get("x-openviking-user") or request.query_params.get("user_id"),
-            )
             actor_peer_id = normalize_actor_peer_header(
                 request.headers.get("x-openviking-actor-peer")
             )
@@ -204,6 +197,7 @@ class _IdentityASGIMiddleware:
                 or actor_peer_id
             )
             agent_rec = None
+            inferred_user_id = None
             if declared_agent_id:
                 from openviking.storage.agent_principal_store import AgentPrincipalStore
                 agent_rec = AgentPrincipalStore.get_instance().get_agent(
@@ -222,39 +216,56 @@ class _IdentityASGIMiddleware:
                         status_code=401,
                     )
                     return await resp(scope, receive, send)
+                inferred_user_id = agent_rec.user_id
 
-                # 🛡️ 属主匹配强校验：防串户与越权接入 (Owner-Agent Cross Verification)
-                declared_user_id = request.query_params.get("user_id") or request.headers.get("x-openviking-user")
-                if declared_user_id and agent_rec.user_id and declared_user_id != agent_rec.user_id:
+            # 自动推断属主：只要指定了 agent_id，系统自动解析归属 user_id，严禁强迫调用方在 URL 拼接 user_id
+            effective_user_param = (
+                request.headers.get("x-openviking-user")
+                or request.query_params.get("user_id")
+                or inferred_user_id
+                or "default"
+            )
+
+            identity = await resolve_identity(
+                request,
+                x_api_key=x_api_key,
+                authorization=authorization,
+                x_openviking_account=request.headers.get("x-openviking-account") or "default",
+                x_openviking_user=effective_user_param,
+            )
+
+            # 🛡️ 属主匹配强校验：防串户与越权接入 (Owner-Agent Cross Verification)
+            declared_user_id = request.query_params.get("user_id") or request.headers.get("x-openviking-user")
+            if declared_user_id and agent_rec and agent_rec.user_id and declared_user_id != agent_rec.user_id:
+                resp = JSONResponse(
+                    {
+                        "jsonrpc": "2.0",
+                        "id": None,
+                        "error": {
+                            "code": -32003,
+                            "message": f"Cross-tenant access denied: Agent [{declared_agent_id}] belongs to user [{agent_rec.user_id}], but request specified user [{declared_user_id}]",
+                        },
+                    },
+                    status_code=403,
+                )
+                return await resp(scope, receive, send)
+
+            auth_user = getattr(identity, "user_id", None) if identity else None
+            if auth_user and auth_user not in ("anonymous", "default_anonymous") and agent_rec and agent_rec.user_id:
+                auth_role = getattr(identity, "role", "")
+                if auth_role != "admin" and auth_user != agent_rec.user_id:
                     resp = JSONResponse(
                         {
                             "jsonrpc": "2.0",
                             "id": None,
                             "error": {
                                 "code": -32003,
-                                "message": f"Cross-tenant access denied: Agent [{declared_agent_id}] belongs to user [{agent_rec.user_id}], but request specified user [{declared_user_id}]",
+                                "message": f"Owner mismatch: Agent [{declared_agent_id}] belongs to user [{agent_rec.user_id}], but authenticated key belongs to [{auth_user}]",
                             },
                         },
                         status_code=403,
                     )
                     return await resp(scope, receive, send)
-
-                auth_user = getattr(identity, "user_id", None) if identity else None
-                if auth_user and auth_user not in ("anonymous", "default_anonymous") and agent_rec.user_id:
-                    auth_role = getattr(identity, "role", "")
-                    if auth_role != "admin" and auth_user != agent_rec.user_id:
-                        resp = JSONResponse(
-                            {
-                                "jsonrpc": "2.0",
-                                "id": None,
-                                "error": {
-                                    "code": -32003,
-                                    "message": f"Owner mismatch: Agent [{declared_agent_id}] belongs to user [{agent_rec.user_id}], but authenticated key belongs to [{auth_user}]",
-                                },
-                            },
-                            status_code=403,
-                        )
-                        return await resp(scope, receive, send)
 
             # Enforce physical Tool ACL validation for POST tools/call requests
             replay_receive = receive
@@ -269,7 +280,7 @@ class _IdentityASGIMiddleware:
                     if not body_consumed:
                         body_consumed = True
                         return {"type": "http.request", "body": body, "more_body": False}
-                    return {"type": "http.request", "body": b"", "more_body": False}
+                    return await receive()
 
                 replay_receive = _replay_receive
 

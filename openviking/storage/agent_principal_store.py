@@ -237,12 +237,14 @@ class AgentPrincipalStore:
         return self.get_agent(clean_id, include_deleted=True)
 
     def get_agent(self, agent_id: str, include_deleted: bool = False) -> Optional[AgentPrincipal]:
-        """Fetch an agent principal. Soft-deleted agents return None unless include_deleted=True."""
+        """Fetch an agent principal. Soft-deleted agents return None unless include_deleted=True.
+        Supports lookup by either primary agent_id or user-friendly agent_name."""
+        target = agent_id.strip()
         with self._db_lock:
             with self._get_connection() as conn:
                 row = conn.execute(
-                    "SELECT * FROM agent_principals WHERE agent_id = ?;",
-                    (agent_id.strip(),),
+                    "SELECT * FROM agent_principals WHERE agent_id = ? OR agent_name = ?;",
+                    (target, target),
                 ).fetchone()
                 if not row:
                     return None
