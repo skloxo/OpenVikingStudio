@@ -63,10 +63,8 @@ export function AgentCollapsibleItem({
     agent.allowed_tools,
   )
 
-  // Hook 核心生命周期控制状态
-  const [hookAutoRecall, setHookAutoRecall] = React.useState(true)
-  const [hookAutoCapture, setHookAutoCapture] = React.useState(true)
-  const [hookPreToolGuard, setHookPreToolGuard] = React.useState(true)
+  // Hook 核心生命周期控制状态 (整组选用)
+  const [hookEnabled, setHookEnabled] = React.useState(true)
 
   React.useEffect(() => {
     setName(agent.agent_name || '')
@@ -125,17 +123,13 @@ export function AgentCollapsibleItem({
   config:
     api: "${publicMcpUrl.split('/mcp')[0]}"
     peer: "${agent.agent_id}"
-    autoRecall: ${hookAutoRecall}
-    autoCapture: ${hookAutoCapture}
-    preToolGuard: ${hookPreToolGuard}`, [publicMcpUrl, agent.agent_id, hookAutoRecall, hookAutoCapture, hookPreToolGuard])
+    enableHook: ${hookEnabled}`, [publicMcpUrl, agent.agent_id, hookEnabled])
 
   const universalPromptSnippet = React.useMemo(() => {
-    const roleTitle = isMasterBundle ? '🧠 中枢总控角色 (47项全特权工具)' : '🛰️ 卫星工兵角色 (31项一线业务工具)'
-    const hookItems = [
-      hookAutoRecall ? '✅ 已开启「先验记忆自动预取」：优先调用 `find` 向体外大脑检索' : '⚪ 未开启先验记忆预取',
-      hookAutoCapture ? '✅ 已开启「轮次经验自动沉淀」：排障后主动调用 `record_lesson`' : '⚪ 未开启轮次经验沉淀',
-      hookPreToolGuard ? '✅ 已开启「工具前置安全守卫」：严禁越权或泄露敏感 Key' : '⚪ 未开启工具前置守卫',
-    ].join('\n  - ')
+    const roleTitle = isMasterBundle ? '🧠 中枢运维角色 (47项全特权工具)' : '🛰️ 业务使用者角色 (31项一线业务工具)'
+    const hookStatus = hookEnabled
+      ? '✅ 已整组装配 Hook 核心生命周期（先验检索、经验回传与安全沙箱守卫）'
+      : '⚪ 未装配 Hook 生命期钩子'
 
     return `# OpenViking 智能体认主与接入协议 (Universal Agent Prompt)
 你是已在 OpenViking 认证在籍的智能体。请读取并严格遵守以下契约：
@@ -143,11 +137,11 @@ export function AgentCollapsibleItem({
 - 内网端点: \`${localMcpUrl}\` | 公网端点: \`${publicMcpUrl}\`
 - 鉴权契约: User Key + Agent ID 绑定校验 (Header: \`Authorization: Bearer \${OPENVIKING_API_KEY}\`)
 ## Hook 规则:
-  - ${hookItems}
+  - ${hookStatus}
 ## 绝对工程红线:
 1. 视觉字号 >= 12px (text-xs)，NO GREEN EVER 🚫；
 2. 单文件严守 100~300 行黄金甜点区，硬上限 <= 500 行；`
-  }, [agent.agent_id, userId, isMasterBundle, localMcpUrl, publicMcpUrl, hookAutoRecall, hookAutoCapture, hookPreToolGuard])
+  }, [agent.agent_id, userId, isMasterBundle, localMcpUrl, publicMcpUrl, hookEnabled])
 
   return (
     <div
@@ -234,7 +228,7 @@ export function AgentCollapsibleItem({
           </div>
           <Badge variant="outline" className="text-xs h-5 px-1.5 gap-1 border-border/60">
             {isMasterBundle ? <CpuIcon className="size-2.5 text-cyan-500" /> : <RadioIcon className="size-2.5 text-cyan-500" />}
-            {isMasterBundle ? '🧠 中枢总控' : '🛰️ 卫星工兵'}
+            {isMasterBundle ? '🧠 中枢运维' : '🛰️ 业务使用者'}
           </Badge>
           <Badge variant="outline" className="text-xs h-5 px-1.5 gap-1 border-border/60">
             <ShieldCheckIcon className="size-2.5 text-cyan-500" />
@@ -242,7 +236,7 @@ export function AgentCollapsibleItem({
           </Badge>
           <Badge variant="outline" className="text-xs h-5 px-1.5 gap-1 border-border/60">
             <ZapIcon className="size-2.5 text-cyan-500" />
-            Hook {[hookAutoRecall, hookAutoCapture, hookPreToolGuard].filter(Boolean).length}/3
+            Hook {hookEnabled ? '已装配' : '未启用'}
           </Badge>
           <span className="text-muted-foreground ml-auto tabular-nums">{agent.total_messages} 消息</span>
         </div>
@@ -295,14 +289,10 @@ export function AgentCollapsibleItem({
             userRole={userRole}
           />
 
-          {/* Hook 核心生命周期与被动注入控制卡片 */}
+          {/* Hook 核心生命周期与被动注入控制卡片 (整组选用) */}
           <HookLifecycleMatrix
-            autoRecall={hookAutoRecall}
-            onToggleAutoRecall={() => setHookAutoRecall(!hookAutoRecall)}
-            autoCapture={hookAutoCapture}
-            onToggleAutoCapture={() => setHookAutoCapture(!hookAutoCapture)}
-            preToolGuard={hookPreToolGuard}
-            onTogglePreToolGuard={() => setHookPreToolGuard(!hookPreToolGuard)}
+            enabled={hookEnabled}
+            onToggleEnabled={setHookEnabled}
             disabled={isUpdating}
           />
 

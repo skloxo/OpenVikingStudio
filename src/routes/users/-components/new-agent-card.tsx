@@ -37,10 +37,8 @@ export function NewAgentCard({
   // 默认直接赋权官方推荐的「卫星工兵工具包 (31项)」
   const [selectedTools, setSelectedTools] = React.useState<string[]>(SATELLITE_CONSUMER_TOOL_IDS)
 
-  // Hook 核心生命周期默认开启
-  const [hookAutoRecall, setHookAutoRecall] = React.useState(true)
-  const [hookAutoCapture, setHookAutoCapture] = React.useState(true)
-  const [hookPreToolGuard, setHookPreToolGuard] = React.useState(true)
+  // Hook 核心生命周期默认整组开启
+  const [hookEnabled, setHookEnabled] = React.useState(true)
 
   if (!open) return null
 
@@ -120,14 +118,10 @@ export function NewAgentCard({
         userRole={userRole}
       />
 
-      {/* Hook 核心生命周期控制卡片 */}
+      {/* Hook 核心生命周期控制卡片 (整组选用) */}
       <HookLifecycleMatrix
-        autoRecall={hookAutoRecall}
-        onToggleAutoRecall={() => setHookAutoRecall(!hookAutoRecall)}
-        autoCapture={hookAutoCapture}
-        onToggleAutoCapture={() => setHookAutoCapture(!hookAutoCapture)}
-        preToolGuard={hookPreToolGuard}
-        onTogglePreToolGuard={() => setHookPreToolGuard(!hookPreToolGuard)}
+        enabled={hookEnabled}
+        onToggleEnabled={setHookEnabled}
         disabled={isPending}
       />
 
