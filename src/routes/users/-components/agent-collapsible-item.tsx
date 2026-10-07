@@ -102,9 +102,9 @@ export function AgentCollapsibleItem({
   // 网络端点物理双轨：同时提供同机内网与跨网公网两个端点，消除切换与输入认知成本
   const localMcpUrl = `http://127.0.0.1:1933/mcp?agent_id=${encodeURIComponent(agent.agent_id)}&user_id=${encodeURIComponent(userId)}`
   const publicMcpUrl = `https://vk.tide.red/mcp?agent_id=${encodeURIComponent(agent.agent_id)}&user_id=${encodeURIComponent(userId)}`
+  const dshPluginTarballUrl = 'https://vk.tide.red/studio/dsh-plugin-openviking-1.3.0.tgz'
 
-  const dshYamlSnippet = React.useMemo(() => {
-    return `- id: mcp-openviking
+  const dshYamlSnippet = React.useMemo(() => `- id: mcp-openviking
   name: "@deepseek-ai/dsh-mcp-client"
   config:
     serverName: openviking
@@ -112,7 +112,6 @@ export function AgentCollapsibleItem({
     url: "${publicMcpUrl}"
     headers:
       Authorization: "Bearer <OPENVIKING_API_KEY>"
-    toolCallTimeoutMs: 60000
     reconnect:
       enabled: true
 
@@ -123,41 +122,26 @@ export function AgentCollapsibleItem({
     peer: "${agent.agent_id}"
     autoRecall: ${hookAutoRecall}
     autoCapture: ${hookAutoCapture}
-    preToolGuard: ${hookPreToolGuard}`
-  }, [publicMcpUrl, agent.agent_id, hookAutoRecall, hookAutoCapture, hookPreToolGuard])
+    preToolGuard: ${hookPreToolGuard}`, [publicMcpUrl, agent.agent_id, hookAutoRecall, hookAutoCapture, hookPreToolGuard])
 
   const universalPromptSnippet = React.useMemo(() => {
-    const roleTitle = isMasterBundle
-      ? '🧠 中枢总控角色 (47项全特权工具 + 底座治理)'
-      : '🛰️ 卫星工兵角色 (31项一线业务工具 + 知识/AST/单测)'
-
+    const roleTitle = isMasterBundle ? '🧠 中枢总控角色 (47项全特权工具)' : '🛰️ 卫星工兵角色 (31项一线业务工具)'
     const hookItems = [
-      hookAutoRecall ? '✅ 已开启「先验记忆自动预取」：优先调用 `find` 向体外大脑检索规范与历史经验；' : '⚪ 未开启先验记忆预取；',
-      hookAutoCapture ? '✅ 已开启「轮次经验自动沉淀」：排障或得出重要结论后，主动调用 `record_lesson` 入库；' : '⚪ 未开启轮次经验沉淀；',
-      hookPreToolGuard ? '✅ 已开启「工具前置安全守卫」：严禁越权或泄露敏感 Key，受控沙箱运行。' : '⚪ 未开启工具前置守卫。',
+      hookAutoRecall ? '✅ 已开启「先验记忆自动预取」：优先调用 `find` 向体外大脑检索' : '⚪ 未开启先验记忆预取',
+      hookAutoCapture ? '✅ 已开启「轮次经验自动沉淀」：排障后主动调用 `record_lesson`' : '⚪ 未开启轮次经验沉淀',
+      hookPreToolGuard ? '✅ 已开启「工具前置安全守卫」：严禁越权或泄露敏感 Key' : '⚪ 未开启工具前置守卫',
     ].join('\n  - ')
 
     return `# OpenViking 智能体认主与接入协议 (Universal Agent Prompt)
-
-你是已在 OpenViking 认证在籍的智能体。请读取并严格遵守以下身份凭据与行为契约：
-
-## 一、 智能体凭证 (Identity Credentials)
-- **智能体 ID**: \`${agent.agent_id}\`
-- **所属用户**: \`${userId}\`
-- **角色定位**: ${roleTitle}
-- **同机内网端点**: \`${localMcpUrl}\`
-- **跨网公网端点**: \`${publicMcpUrl}\`
-- **鉴权契约**: \`User Key + Agent ID\` 双向强绑定验证（严禁跨租户冒充）
-- **认证 Header**: \`Authorization: Bearer \${OPENVIKING_API_KEY}\` (请替换为所属用户实际的 API Key)
-
-## 二、 Hook 核心反射弧规则
+你是已在 OpenViking 认证在籍的智能体。请读取并严格遵守以下契约：
+- 智能体 ID: \`${agent.agent_id}\` | 所属用户: \`${userId}\` | 角色: ${roleTitle}
+- 内网端点: \`${localMcpUrl}\` | 公网端点: \`${publicMcpUrl}\`
+- 鉴权契约: User Key + Agent ID 绑定校验 (Header: \`Authorization: Bearer \${OPENVIKING_API_KEY}\`)
+## Hook 规则:
   - ${hookItems}
-
-## 三、 绝对工程红线与规范
-1. **代码审美与字号**：高密冷淡规范，字号物理硬下限 >= 12px (text-xs)，NO GREEN EVER 🚫；
-2. **单文件规模**：严守 100~300 行黄金甜点区，绝对物理硬上限 <= 500 行，违者主动拆解领域接缝；
-3. **闭环留痕**：完成复杂迭代后，确保测试通过，版本一致并记录体外大脑。
-`
+## 绝对工程红线:
+1. 视觉字号 >= 12px (text-xs)，NO GREEN EVER 🚫；
+2. 单文件严守 100~300 行黄金甜点区，硬上限 <= 500 行；`
   }, [agent.agent_id, userId, isMasterBundle, localMcpUrl, publicMcpUrl, hookAutoRecall, hookAutoCapture, hookPreToolGuard])
 
   return (
@@ -335,54 +319,59 @@ export function AgentCollapsibleItem({
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <span className="font-semibold text-foreground flex items-center gap-1.5 text-xs">
-                      <RadioIcon className="size-3.5 text-cyan-500" />
-                      方案一：DSH 一体化套件配置
+                      <ZapIcon className="size-3.5 text-cyan-500" />
+                      方案一：DSH 客户端一体化套件 (GUI 表单)
                     </span>
                     <Badge variant="outline" className="text-xs font-mono h-4 px-1 border-border/60">
                       DSH 客户端
                     </Badge>
                   </div>
-                  <div className="text-xs text-muted-foreground leading-relaxed">
-                    DSH 通过 <span className="font-mono text-cyan-600 dark:text-cyan-400">cordis.patch.yml</span> 挂载。注：DSH 插件弹窗仅认本地目录或 npm 包，不可直接粘贴 HTTP 网址。
+
+                  {/* 步骤 1：插件一键安装包 (tarball) */}
+                  <div className="rounded border border-cyan-500/30 bg-cyan-500/5 p-2 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-foreground text-xs flex items-center gap-1">
+                        📦 步骤 1：复制插件安装包链接 (.tgz)
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => handleCopy(dshPluginTarballUrl, 'DSH 插件安装链接', e)}
+                        className="text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1 text-xs font-medium cursor-pointer"
+                        title="复制可直接贴入 DSH「添加插件」的安装包链接"
+                      >
+                        <CopyIcon className="size-3" />
+                        一键复制
+                      </button>
+                    </div>
+                    <div className="text-xs text-muted-foreground truncate font-mono bg-background/60 px-1.5 py-0.5 rounded border border-border/30">
+                      {dshPluginTarballUrl}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      打开 DSH 客户端 → 插件 → 添加插件 → 粘贴此链接，点击「安装」即可。
+                    </div>
                   </div>
 
-                  {/* 填写要素快速对照 */}
-                  <div className="space-y-1.5 font-mono text-xs bg-background/80 p-2 rounded border border-border/40">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">服务名称 (Name):</span>
-                      <span className="text-foreground font-semibold">openviking</span>
+                  {/* 步骤 2：在 DSH 设置中填入本工兵身份 */}
+                  <div className="space-y-1 font-mono text-xs bg-background/80 p-2 rounded border border-border/40">
+                    <div className="text-xs text-muted-foreground font-sans">
+                      ⚙️ 步骤 2：在 DSH「设置 → OpenViking」填入以下专属身份：
+                    </div>
+                    <div className="flex items-center justify-between pt-1 border-t border-border/30">
+                      <span className="text-muted-foreground">智能体工兵 ID (agentId):</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-foreground font-semibold">{agent.agent_id}</span>
+                        <button type="button" onClick={(e) => handleCopy(agent.agent_id, '工兵 ID', e)} className="p-0.5 hover:text-foreground cursor-pointer" title="复制工兵 ID">
+                          <CopyIcon className="size-3 text-cyan-600" />
+                        </button>
+                      </div>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">传输类型 (Type):</span>
-                      <span className="text-foreground">streamable-http</span>
+                      <span className="text-muted-foreground">服务端点 (apiUrl):</span>
+                      <span className="text-foreground">https://vk.tide.red</span>
                     </div>
-                    <div className="flex items-center justify-between gap-1 pt-1 border-t border-border/30">
-                      <span className="text-muted-foreground shrink-0">🏠 同机内网 URL:</span>
-                      <button
-                        type="button"
-                        onClick={(e) => handleCopy(localMcpUrl, '同机内网端点 URL', e)}
-                        className="text-cyan-600 dark:text-cyan-400 hover:underline truncate max-w-44 text-right cursor-pointer"
-                        title={localMcpUrl}
-                      >
-                        {localMcpUrl}
-                      </button>
-                    </div>
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="text-muted-foreground shrink-0">🌐 跨网公网 URL:</span>
-                      <button
-                        type="button"
-                        onClick={(e) => handleCopy(publicMcpUrl, '跨网公网端点 URL', e)}
-                        className="text-cyan-600 dark:text-cyan-400 hover:underline truncate max-w-44 text-right cursor-pointer"
-                        title={publicMcpUrl}
-                      >
-                        {publicMcpUrl}
-                      </button>
-                    </div>
-                    <div className="flex items-center justify-between gap-1 pt-1 border-t border-border/30">
-                      <span className="text-muted-foreground shrink-0">Header 凭据:</span>
-                      <span className="text-foreground font-medium truncate">
-                        Authorization: Bearer {'<用户Key>'}
-                      </span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">用户认证 (apiKey):</span>
+                      <span className="text-foreground">个人中心 User Key</span>
                     </div>
                   </div>
                 </div>
@@ -393,11 +382,11 @@ export function AgentCollapsibleItem({
                     size="sm"
                     variant="outline"
                     className="h-7 text-xs flex-1 text-cyan-600 border-cyan-500/40 hover:bg-cyan-500/10 font-medium px-1"
-                    onClick={(e) => handleCopy(localMcpUrl, '同机内网端点 URL', e)}
-                    title="复制同机内网 URL (127.0.0.1:1933)"
+                    onClick={(e) => handleCopy(dshPluginTarballUrl, 'DSH 插件安装链接', e)}
+                    title="复制可以直接贴入 DSH「添加插件」的安装包链接"
                   >
                     <CopyIcon className="size-3 mr-1" />
-                    内网 URL
+                    插件链接
                   </Button>
                   <Button
                     type="button"
