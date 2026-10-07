@@ -99,33 +99,32 @@ export function AgentCollapsibleItem({
     agent.allowed_tools.includes('*') ||
     validToolCount >= MASTER_MAINTAINER_TOOL_IDS.length
 
-  // 网络端点策略：初值根据访问宿主工程化自适应，支持显式胶囊秒级切换
-  const defaultMode = React.useMemo<'local' | 'public'>(() => {
-    if (typeof window !== 'undefined') {
-      const h = window.location.hostname
-      return (h === 'localhost' || h === '127.0.0.1') ? 'local' : 'public'
-    }
-    return 'public'
-  }, [])
-  const [endpointMode, setEndpointMode] = React.useState<'local' | 'public'>(defaultMode)
-  const activeBaseUrl = endpointMode === 'local' ? 'http://127.0.0.1:1933' : 'https://vk.tide.red'
+  // 网络端点物理双轨：同时提供同机内网与跨网公网两个端点，消除切换与输入认知成本
+  const localMcpUrl = `http://127.0.0.1:1933/mcp?agent_id=${encodeURIComponent(agent.agent_id)}&user_id=${encodeURIComponent(userId)}`
+  const publicMcpUrl = `https://vk.tide.red/mcp?agent_id=${encodeURIComponent(agent.agent_id)}&user_id=${encodeURIComponent(userId)}`
 
-  const mcpUrl = `${activeBaseUrl}/mcp?agent_id=${encodeURIComponent(agent.agent_id)}&user_id=${encodeURIComponent(userId)}`
+  const dshYamlSnippet = React.useMemo(() => {
+    return `- id: mcp-openviking
+  name: "@deepseek-ai/dsh-mcp-client"
+  config:
+    serverName: openviking
+    transport: streamable-http
+    url: "${publicMcpUrl}"
+    headers:
+      Authorization: "Bearer <OPENVIKING_API_KEY>"
+    toolCallTimeoutMs: 60000
+    reconnect:
+      enabled: true
 
-  const unifiedPluginConfigSnippet = React.useMemo(() => {
-    return JSON.stringify({
-      name: 'dsh-plugin-openviking',
-      serverName: 'openviking',
-      transport: 'streamable-http',
-      url: mcpUrl,
-      headers: {
-        'X-OpenViking-Agent-ID': agent.agent_id,
-        'X-OpenViking-User': userId,
-        ...(endpointMode === 'public' ? { 'Authorization': 'Bearer ${OPENVIKING_API_KEY}' } : {}),
-      },
-      hooks: { autoRecall: hookAutoRecall, autoCapture: hookAutoCapture, preToolGuard: hookPreToolGuard },
-    }, null, 2)
-  }, [mcpUrl, agent.agent_id, userId, endpointMode, hookAutoRecall, hookAutoCapture, hookPreToolGuard])
+- id: openviking-hook
+  name: dsh-plugin-openviking
+  config:
+    api: "${publicMcpUrl.split('/mcp')[0]}"
+    peer: "${agent.agent_id}"
+    autoRecall: ${hookAutoRecall}
+    autoCapture: ${hookAutoCapture}
+    preToolGuard: ${hookPreToolGuard}`
+  }, [publicMcpUrl, agent.agent_id, hookAutoRecall, hookAutoCapture, hookPreToolGuard])
 
   const universalPromptSnippet = React.useMemo(() => {
     const roleTitle = isMasterBundle
@@ -138,31 +137,28 @@ export function AgentCollapsibleItem({
       hookPreToolGuard ? '✅ 已开启「工具前置安全守卫」：严禁越权或泄露敏感 Key，受控沙箱运行。' : '⚪ 未开启工具前置守卫。',
     ].join('\n  - ')
 
-    const authDesc = endpointMode === 'local'
-      ? '- **认证模式**: 同机内网直连（免 API Key，系统以 `agent_id` 身份证唯一识别）'
-      : '- **认证模式**: 跨网公网（双重安全防护：`agent_id` 身份证 + 所属用户 API Key）\n- **Header**: `Authorization: Bearer ${OPENVIKING_API_KEY}` (请替换为所属用户实际的 API Key)'
-
     return `# OpenViking 智能体认主与接入协议 (Universal Agent Prompt)
 
 你是已在 OpenViking 认证在籍的智能体。请读取并严格遵守以下身份凭据与行为契约：
 
 ## 一、 智能体凭证 (Identity Credentials)
 - **智能体 ID**: \`${agent.agent_id}\`
-- **智能体名称**: \`${agent.agent_name || agent.agent_id}\`
 - **所属用户**: \`${userId}\`
 - **角色定位**: ${roleTitle}
-- **FastMCP 端点**: \`${mcpUrl}\`
-${authDesc}
+- **同机内网端点**: \`${localMcpUrl}\`
+- **跨网公网端点**: \`${publicMcpUrl}\`
+- **鉴权契约**: \`User Key + Agent ID\` 双向强绑定验证（严禁跨租户冒充）
+- **认证 Header**: \`Authorization: Bearer \${OPENVIKING_API_KEY}\` (请替换为所属用户实际的 API Key)
 
 ## 二、 Hook 核心反射弧规则
   - ${hookItems}
 
 ## 三、 绝对工程红线与规范
-1. **代码审美与字号**：遵循高密冷淡设计规范，字号物理硬下限 >= 12px (text-xs)，NO GREEN EVER 🚫；
+1. **代码审美与字号**：高密冷淡规范，字号物理硬下限 >= 12px (text-xs)，NO GREEN EVER 🚫；
 2. **单文件规模**：严守 100~300 行黄金甜点区，绝对物理硬上限 <= 500 行，违者主动拆解领域接缝；
 3. **闭环留痕**：完成复杂迭代后，确保测试通过，版本一致并记录体外大脑。
 `
-  }, [agent.agent_id, agent.agent_name, userId, isMasterBundle, mcpUrl, endpointMode, hookAutoRecall, hookAutoCapture, hookPreToolGuard])
+  }, [agent.agent_id, userId, isMasterBundle, localMcpUrl, publicMcpUrl, hookAutoRecall, hookAutoCapture, hookPreToolGuard])
 
   return (
     <div
@@ -326,55 +322,32 @@ ${authDesc}
             <div className="flex flex-wrap items-center justify-between gap-1.5">
               <span className="font-semibold text-foreground flex items-center gap-1.5">
                 <ZapIcon className="size-3.5 text-cyan-500" />
-                智能体接入方案 (二选一极简落地)
+                智能体接入方案 (提供同机内网与跨网公网双端点)
               </span>
-              <div className="flex items-center gap-1 bg-muted/40 p-0.5 rounded border border-border/40 font-mono text-xs">
-                <button
-                  type="button"
-                  onClick={() => setEndpointMode('local')}
-                  className={`px-1.5 py-0.5 rounded transition-colors ${
-                    endpointMode === 'local'
-                      ? 'bg-background text-cyan-600 dark:text-cyan-400 font-medium shadow-2xs'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                  title="同机 0 延迟直连，信任免 Key"
-                >
-                  🏠 同机内网
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEndpointMode('public')}
-                  className={`px-1.5 py-0.5 rounded transition-colors ${
-                    endpointMode === 'public'
-                      ? 'bg-background text-cyan-600 dark:text-cyan-400 font-medium shadow-2xs'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                  title="跨网公网穿透，双重鉴权防护"
-                >
-                  🌐 跨网公网
-                </button>
-              </div>
+              <span className="text-muted-foreground text-xs font-mono">
+                统一鉴权: User Key + Agent ID 绑定校验
+              </span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {/* 场景 1：DeepSeek Harness (DSH GUI 插件/MCP 图形化安装) */}
+              {/* 场景 1：DeepSeek Harness (DSH 插件/MCP 接入) */}
               <div className="rounded-lg border border-border/60 bg-muted/15 p-3 space-y-2.5 flex flex-col justify-between">
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <span className="font-semibold text-foreground flex items-center gap-1.5 text-xs">
                       <RadioIcon className="size-3.5 text-cyan-500" />
-                      方案一：DSH GUI 图形化安装
+                      方案一：DSH 一体化套件配置
                     </span>
                     <Badge variant="outline" className="text-xs font-mono h-4 px-1 border-border/60">
                       DSH 客户端
                     </Badge>
                   </div>
                   <div className="text-xs text-muted-foreground leading-relaxed">
-                    在 DSH 客户端左下角点击「设置」➔「插件 / MCP」➔「添加服务器」，无需修改任何代码文件。
+                    DSH 通过 <span className="font-mono text-cyan-600 dark:text-cyan-400">cordis.patch.yml</span> 挂载。注：DSH 插件弹窗仅认本地目录或 npm 包，不可直接粘贴 HTTP 网址。
                   </div>
 
                   {/* 填写要素快速对照 */}
-                  <div className="space-y-1 font-mono text-xs bg-background/80 p-2 rounded border border-border/40">
+                  <div className="space-y-1.5 font-mono text-xs bg-background/80 p-2 rounded border border-border/40">
                     <div className="flex items-center justify-between">
                       <span className="text-muted-foreground">服务名称 (Name):</span>
                       <span className="text-foreground font-semibold">openviking</span>
@@ -383,47 +356,70 @@ ${authDesc}
                       <span className="text-muted-foreground">传输类型 (Type):</span>
                       <span className="text-foreground">streamable-http</span>
                     </div>
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="text-muted-foreground shrink-0">端点 (URL):</span>
-                      <span className="text-cyan-600 dark:text-cyan-400 truncate max-w-44 select-all" title={mcpUrl}>
-                        {mcpUrl}
-                      </span>
+                    <div className="flex items-center justify-between gap-1 pt-1 border-t border-border/30">
+                      <span className="text-muted-foreground shrink-0">🏠 同机内网 URL:</span>
+                      <button
+                        type="button"
+                        onClick={(e) => handleCopy(localMcpUrl, '同机内网端点 URL', e)}
+                        className="text-cyan-600 dark:text-cyan-400 hover:underline truncate max-w-44 text-right cursor-pointer"
+                        title={localMcpUrl}
+                      >
+                        {localMcpUrl}
+                      </button>
                     </div>
-                    <div className="flex items-center justify-between gap-1 pt-0.5 border-t border-border/20">
-                      <span className="text-muted-foreground shrink-0">鉴权模式:</span>
-                      <span className="truncate text-foreground">
-                        {endpointMode === 'local' ? (
-                          <span className="text-cyan-600 dark:text-cyan-400 font-medium">免 Key (以 Agent ID 身份证认证)</span>
-                        ) : (
-                          <span className="text-amber-500 dark:text-amber-400">需带 Bearer {'<用户Key>'}</span>
-                        )}
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-muted-foreground shrink-0">🌐 跨网公网 URL:</span>
+                      <button
+                        type="button"
+                        onClick={(e) => handleCopy(publicMcpUrl, '跨网公网端点 URL', e)}
+                        className="text-cyan-600 dark:text-cyan-400 hover:underline truncate max-w-44 text-right cursor-pointer"
+                        title={publicMcpUrl}
+                      >
+                        {publicMcpUrl}
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-between gap-1 pt-1 border-t border-border/30">
+                      <span className="text-muted-foreground shrink-0">Header 凭据:</span>
+                      <span className="text-foreground font-medium truncate">
+                        Authorization: Bearer {'<用户Key>'}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 pt-1 border-t border-border/30">
+                <div className="flex items-center gap-1.5 pt-1 border-t border-border/30">
                   <Button
                     type="button"
                     size="sm"
                     variant="outline"
-                    className="h-7 text-xs flex-1 text-cyan-600 border-cyan-500/40 hover:bg-cyan-500/10 font-medium"
-                    onClick={(e) => handleCopy(mcpUrl, 'DSH MCP 端点 URL', e)}
-                    title="复制用于 DSH GUI 输入框的端点 URL"
+                    className="h-7 text-xs flex-1 text-cyan-600 border-cyan-500/40 hover:bg-cyan-500/10 font-medium px-1"
+                    onClick={(e) => handleCopy(localMcpUrl, '同机内网端点 URL', e)}
+                    title="复制同机内网 URL (127.0.0.1:1933)"
                   >
                     <CopyIcon className="size-3 mr-1" />
-                    复制端点 URL
+                    内网 URL
                   </Button>
                   <Button
                     type="button"
                     size="sm"
                     variant="outline"
-                    className="h-7 text-xs flex-1 text-foreground border-border hover:bg-muted"
-                    onClick={(e) => handleCopy(unifiedPluginConfigSnippet, 'DSH 一体化插件 JSON', e)}
-                    title="复制包含 Hook 的完整 DSH 插件配置"
+                    className="h-7 text-xs flex-1 text-cyan-600 border-cyan-500/40 hover:bg-cyan-500/10 font-medium px-1"
+                    onClick={(e) => handleCopy(publicMcpUrl, '跨网公网端点 URL', e)}
+                    title="复制跨网公网 URL (vk.tide.red)"
                   >
                     <CopyIcon className="size-3 mr-1" />
-                    复制插件 JSON
+                    公网 URL
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs flex-1 text-foreground border-border hover:bg-muted px-1"
+                    onClick={(e) => handleCopy(dshYamlSnippet, 'DSH 一体化 Patch (YAML)', e)}
+                    title="复制可直接贴入 cordis.patch.yml 的 YAML 配置"
+                  >
+                    <CopyIcon className="size-3 mr-1" />
+                    复制 YAML
                   </Button>
                 </div>
               </div>

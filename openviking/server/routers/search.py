@@ -323,6 +323,27 @@ async def find(
         result = result.to_dict(include_provenance=request.include_provenance)
     if request.read_content:
         result = await _inline_read_content(result, service=service, ctx=_ctx)
+
+    # 🛡️ Purity Gate: 自动清洗毒化/爬虫抓取失败的纯 HTML 垃圾网页切片与未清洗资源
+    if result and isinstance(result, dict):
+        for category in ("resources", "memories", "skills"):
+            hits = result.get(category, [])
+            if isinstance(hits, list):
+                clean_hits = []
+                for hit in hits:
+                    if not isinstance(hit, dict):
+                        continue
+                    uri_val = str(hit.get("uri", ""))
+                    abstract_val = str(hit.get("abstract", "") or hit.get("content", ""))
+                    is_garbage = (
+                        "<!DOCTYPE html" in abstract_val
+                        or "open-platform-wrapper" in abstract_val
+                        or "lark-markdown" in uri_val
+                    )
+                    if not is_garbage:
+                        clean_hits.append(hit)
+                result[category] = clean_hits
+
     is_internal_probe = raw_request.headers.get("x-openviking-internal-probe") == "1"
     if result and isinstance(result, dict) and request.query and not is_internal_probe:
         total = result.get("total", 0)
