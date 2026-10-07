@@ -99,21 +99,18 @@ export function AgentCollapsibleItem({
     agent.allowed_tools.includes('*') ||
     validToolCount >= MASTER_MAINTAINER_TOOL_IDS.length
 
-  // 智能自适应网络端点：根据访问宿主自动匹配最优端点
-  const adaptiveBaseUrl = React.useMemo(() => {
+  // 网络端点策略：初值根据访问宿主工程化自适应，支持显式胶囊秒级切换
+  const defaultMode = React.useMemo<'local' | 'public'>(() => {
     if (typeof window !== 'undefined') {
-      const hostname = window.location.hostname
-      if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        return window.location.origin.includes(':1933')
-          ? window.location.origin
-          : 'http://127.0.0.1:1933'
-      }
-      return 'https://vk.tide.red'
+      const h = window.location.hostname
+      return (h === 'localhost' || h === '127.0.0.1') ? 'local' : 'public'
     }
-    return 'https://vk.tide.red'
+    return 'public'
   }, [])
+  const [endpointMode, setEndpointMode] = React.useState<'local' | 'public'>(defaultMode)
+  const activeBaseUrl = endpointMode === 'local' ? 'http://127.0.0.1:1933' : 'https://vk.tide.red'
 
-  const mcpUrl = `${adaptiveBaseUrl}/mcp?agent_id=${encodeURIComponent(agent.agent_id)}&user_id=${encodeURIComponent(userId)}`
+  const mcpUrl = `${activeBaseUrl}/mcp?agent_id=${encodeURIComponent(agent.agent_id)}&user_id=${encodeURIComponent(userId)}`
 
   const unifiedPluginConfigSnippet = React.useMemo(() => {
     return JSON.stringify({
@@ -124,47 +121,48 @@ export function AgentCollapsibleItem({
       headers: {
         'X-OpenViking-Agent-ID': agent.agent_id,
         'X-OpenViking-User': userId,
-        'Authorization': 'Bearer ${OPENVIKING_API_KEY}',
+        ...(endpointMode === 'public' ? { 'Authorization': 'Bearer ${OPENVIKING_API_KEY}' } : {}),
       },
       hooks: { autoRecall: hookAutoRecall, autoCapture: hookAutoCapture, preToolGuard: hookPreToolGuard },
     }, null, 2)
-  }, [mcpUrl, agent.agent_id, userId, hookAutoRecall, hookAutoCapture, hookPreToolGuard])
+  }, [mcpUrl, agent.agent_id, userId, endpointMode, hookAutoRecall, hookAutoCapture, hookPreToolGuard])
 
   const universalPromptSnippet = React.useMemo(() => {
     const roleTitle = isMasterBundle
-      ? '🧠 中枢总控角色 (全量 47 项特权工具 + 集群底座治理)'
-      : '🛰️ 卫星工兵角色 (一线业务使用 31 项工具 + 知识读写/AST/契约测试/技能自进化)'
+      ? '🧠 中枢总控角色 (47项全特权工具 + 底座治理)'
+      : '🛰️ 卫星工兵角色 (31项一线业务工具 + 知识/AST/单测)'
 
     const hookItems = [
-      hookAutoRecall ? '✅ 已开启「先验记忆自动预取」：收到复杂编程或架构任务时，优先调用 `find` 向体外大脑检索规范与历史经验；' : '⚪ 未开启先验记忆预取；',
-      hookAutoCapture ? '✅ 已开启「轮次经验自动沉淀」：踩坑排障或得出重要结论后，主动调用 `openviking_record_evolution_lesson` 或记忆回传接口入库；' : '⚪ 未开启轮次经验沉淀；',
+      hookAutoRecall ? '✅ 已开启「先验记忆自动预取」：优先调用 `find` 向体外大脑检索规范与历史经验；' : '⚪ 未开启先验记忆预取；',
+      hookAutoCapture ? '✅ 已开启「轮次经验自动沉淀」：排障或得出重要结论后，主动调用 `record_lesson` 入库；' : '⚪ 未开启轮次经验沉淀；',
       hookPreToolGuard ? '✅ 已开启「工具前置安全守卫」：严禁越权或泄露敏感 Key，受控沙箱运行。' : '⚪ 未开启工具前置守卫。',
     ].join('\n  - ')
+
+    const authDesc = endpointMode === 'local'
+      ? '- **认证模式**: 同机内网直连（免 API Key，系统以 `agent_id` 身份证唯一识别）'
+      : '- **认证模式**: 跨网公网（双重安全防护：`agent_id` 身份证 + 所属用户 API Key）\n- **Header**: `Authorization: Bearer ${OPENVIKING_API_KEY}` (请替换为所属用户实际的 API Key)'
 
     return `# OpenViking 智能体认主与接入协议 (Universal Agent Prompt)
 
 你是已在 OpenViking 认证在籍的智能体。请读取并严格遵守以下身份凭据与行为契约：
 
 ## 一、 智能体凭证 (Identity Credentials)
-- **智能体 ID (Agent ID)**: \`${agent.agent_id}\`
-- **智能体名称 (Agent Name)**: \`${agent.agent_name || agent.agent_id}\`
-- **所属用户 (User ID)**: \`${userId}\`
-- **角色定位 (Role)**: ${roleTitle}
-- **FastMCP 服务端点 (Streamable HTTP)**: \`${mcpUrl}\`
-- **请求头鉴权 Header**:
-  - \`X-OpenViking-Agent-ID\`: \`${agent.agent_id}\`
-  - \`X-OpenViking-User\`: \`${userId}\`
-  - \`Authorization\`: \`Bearer \${OPENVIKING_API_KEY}\` (请替换为所属用户实际的 API Key)
+- **智能体 ID**: \`${agent.agent_id}\`
+- **智能体名称**: \`${agent.agent_name || agent.agent_id}\`
+- **所属用户**: \`${userId}\`
+- **角色定位**: ${roleTitle}
+- **FastMCP 端点**: \`${mcpUrl}\`
+${authDesc}
 
-## 二、 Hook 核心反射弧规则 (Neuro-Reflex Arcs)
+## 二、 Hook 核心反射弧规则
   - ${hookItems}
 
-## 三、 绝对工程红线与规范 (Baseline Engineering Rules)
-1. **代码审美与字号**：遵循高密冷淡设计规范，界面严禁微字（字号物理硬下限 >= 12px / text-xs），NO GREEN EVER 🚫（正常中性哑光灰，偏离基线上色）；
+## 三、 绝对工程红线与规范
+1. **代码审美与字号**：遵循高密冷淡设计规范，字号物理硬下限 >= 12px (text-xs)，NO GREEN EVER 🚫；
 2. **单文件规模**：严守 100~300 行黄金甜点区，绝对物理硬上限 <= 500 行，违者主动拆解领域接缝；
 3. **闭环留痕**：完成复杂迭代后，确保测试通过，版本一致并记录体外大脑。
 `
-  }, [agent.agent_id, agent.agent_name, userId, isMasterBundle, mcpUrl, hookAutoRecall, hookAutoCapture, hookPreToolGuard])
+  }, [agent.agent_id, agent.agent_name, userId, isMasterBundle, mcpUrl, endpointMode, hookAutoRecall, hookAutoCapture, hookPreToolGuard])
 
   return (
     <div
@@ -245,39 +243,23 @@ export function AgentCollapsibleItem({
           <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-background/80 border border-border/50 text-foreground">
             <span className="text-muted-foreground">ID:</span>
             <span>{agent.agent_id}</span>
-            <button
-              type="button"
-              className="hover:text-foreground p-0.5"
-              onClick={(e) => handleCopy(agent.agent_id, '永久身份证 ID', e)}
-              title="复制永久身份证 ID"
-            >
+            <button type="button" className="hover:text-foreground p-0.5" onClick={(e) => handleCopy(agent.agent_id, '永久身份证 ID', e)} title="复制永久身份证 ID">
               <CopyIcon className="size-3 text-muted-foreground hover:text-foreground" />
             </button>
           </div>
-
-          {/* 角色定位徽标：纯角色驱动，告别硬编码网络标签 */}
           <Badge variant="outline" className="text-xs h-5 px-1.5 gap-1 border-border/60">
-            {isMasterBundle ? (
-              <CpuIcon className="size-2.5 text-cyan-500" />
-            ) : (
-              <RadioIcon className="size-2.5 text-cyan-500" />
-            )}
-            {isMasterBundle ? '🧠 中枢总控角色' : '🛰️ 卫星工兵角色'}
+            {isMasterBundle ? <CpuIcon className="size-2.5 text-cyan-500" /> : <RadioIcon className="size-2.5 text-cyan-500" />}
+            {isMasterBundle ? '🧠 中枢总控' : '🛰️ 卫星工兵'}
           </Badge>
-
           <Badge variant="outline" className="text-xs h-5 px-1.5 gap-1 border-border/60">
             <ShieldCheckIcon className="size-2.5 text-cyan-500" />
-            {validToolCount} / {ALL_TOOL_IDS.length} 项工具
+            {validToolCount}/{ALL_TOOL_IDS.length} 工具
           </Badge>
-
           <Badge variant="outline" className="text-xs h-5 px-1.5 gap-1 border-border/60">
             <ZapIcon className="size-2.5 text-cyan-500" />
-            Hook {[hookAutoRecall, hookAutoCapture, hookPreToolGuard].filter(Boolean).length} / 3 启用
+            Hook {[hookAutoRecall, hookAutoCapture, hookPreToolGuard].filter(Boolean).length}/3
           </Badge>
-
-          <span className="text-muted-foreground ml-auto tabular-nums">
-            {agent.total_messages} 条消息
-          </span>
+          <span className="text-muted-foreground ml-auto tabular-nums">{agent.total_messages} 消息</span>
         </div>
       </div>
 
@@ -308,26 +290,15 @@ export function AgentCollapsibleItem({
               />
             </div>
 
-            {/* 独立 ID 卡片，两行自解释 */}
-            <div className="sm:col-span-2 rounded-md border border-border/50 bg-muted/20 p-2.5 space-y-1.5">
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>系统唯一永久身份证 (ID)</span>
-                <span className="font-mono text-xs">永久锁定 · MCP / HOOK 鉴权凭据</span>
+            {/* 独立 ID 卡片，单行紧凑自解释 */}
+            <div className="sm:col-span-2 rounded-md border border-border/50 bg-muted/20 p-2 flex items-center justify-between gap-2">
+              <div className="text-xs text-muted-foreground flex items-center gap-1.5 truncate">
+                <span>永久身份证 (ID):</span>
+                <code className="font-mono text-xs font-semibold text-foreground px-1.5 py-0.5 rounded bg-background border border-border/60 select-all">{agent.agent_id}</code>
               </div>
-              <div className="flex items-center justify-between gap-2">
-                <code className="font-mono text-xs font-semibold text-foreground px-2 py-0.5 rounded bg-background border border-border/60 select-all">
-                  {agent.agent_id}
-                </code>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="h-6 text-xs px-2 text-cyan-600 hover:bg-cyan-500/10"
-                  onClick={(e) => handleCopy(agent.agent_id, '永久身份证 ID', e)}
-                >
-                  <CopyIcon className="size-3 mr-1" /> 复制 ID
-                </Button>
-              </div>
+              <Button type="button" size="sm" variant="ghost" className="h-6 text-xs px-2 text-cyan-600 hover:bg-cyan-500/10 shrink-0" onClick={(e) => handleCopy(agent.agent_id, '永久身份证 ID', e)}>
+                <CopyIcon className="size-3 mr-1" /> 复制 ID
+              </Button>
             </div>
           </div>
 
@@ -352,14 +323,37 @@ export function AgentCollapsibleItem({
 
           {/* 接入与托底指令中心 (两大纯粹场景：DSH GUI 一键接入 vs 通用智能体认主提示词) */}
           <div className="space-y-2 pt-2 border-t border-border/40">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-1.5">
               <span className="font-semibold text-foreground flex items-center gap-1.5">
                 <ZapIcon className="size-3.5 text-cyan-500" />
                 智能体接入方案 (二选一极简落地)
               </span>
-              <span className="text-xs text-muted-foreground font-mono">
-                自适应端点: {adaptiveBaseUrl}
-              </span>
+              <div className="flex items-center gap-1 bg-muted/40 p-0.5 rounded border border-border/40 font-mono text-xs">
+                <button
+                  type="button"
+                  onClick={() => setEndpointMode('local')}
+                  className={`px-1.5 py-0.5 rounded transition-colors ${
+                    endpointMode === 'local'
+                      ? 'bg-background text-cyan-600 dark:text-cyan-400 font-medium shadow-2xs'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                  title="同机 0 延迟直连，信任免 Key"
+                >
+                  🏠 同机内网
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEndpointMode('public')}
+                  className={`px-1.5 py-0.5 rounded transition-colors ${
+                    endpointMode === 'public'
+                      ? 'bg-background text-cyan-600 dark:text-cyan-400 font-medium shadow-2xs'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                  title="跨网公网穿透，双重鉴权防护"
+                >
+                  🌐 跨网公网
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -393,6 +387,16 @@ export function AgentCollapsibleItem({
                       <span className="text-muted-foreground shrink-0">端点 (URL):</span>
                       <span className="text-cyan-600 dark:text-cyan-400 truncate max-w-44 select-all" title={mcpUrl}>
                         {mcpUrl}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-1 pt-0.5 border-t border-border/20">
+                      <span className="text-muted-foreground shrink-0">鉴权模式:</span>
+                      <span className="truncate text-foreground">
+                        {endpointMode === 'local' ? (
+                          <span className="text-cyan-600 dark:text-cyan-400 font-medium">免 Key (以 Agent ID 身份证认证)</span>
+                        ) : (
+                          <span className="text-amber-500 dark:text-amber-400">需带 Bearer {'<用户Key>'}</span>
+                        )}
                       </span>
                     </div>
                   </div>
