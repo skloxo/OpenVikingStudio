@@ -126,11 +126,15 @@ export const DEFAULT_TOOL_IDS = TOOL_CATEGORIES.flatMap((c) =>
   c.tools.filter((t) => t.defaultSelected).map((t) => t.id),
 )
 
-// 卫星工兵工具包 (使用者全量 - 31项)
+// 卫星业务使用者工具包 (31项)
 export const SATELLITE_CONSUMER_TOOL_IDS =
   TOOL_CATEGORIES.find((c) => c.id === 'satellite')?.tools.map((t) => t.id) ?? []
 
-// 中枢总控工具包 (使用者 + 运维特权 = 全量 47项)
+// 中枢运维特权工具包 (47 - 31 = 剩下的 16项专属特权)
+export const MASTER_OPS_TOOL_IDS =
+  TOOL_CATEGORIES.find((c) => c.id === 'master_ops')?.tools.map((t) => t.id) ?? []
+
+// 中枢总控工具包 (业务 31项 + 运维 16项 = 全量 47项)
 export const MASTER_MAINTAINER_TOOL_IDS = ALL_TOOL_IDS
 
 // 保持历史导出别名对齐
@@ -138,9 +142,59 @@ export const SATELLITE_TOOL_IDS = SATELLITE_CONSUMER_TOOL_IDS
 export const CORE_MASTER_TOOL_IDS = MASTER_MAINTAINER_TOOL_IDS
 
 /**
- * 官方标准工具包 (Tool Bundles) 定义
+ * Hook 核心生命周期与被动注入控制定义 (3 项)
  */
-export type ToolBundleId = 'satellite_consumer' | 'master_maintainer'
+export type HookCapabilityItem = {
+  id: string
+  name: string
+  timing: string
+  description: string
+}
+
+export const HOOK_CAPABILITIES: HookCapabilityItem[] = [
+  {
+    id: 'pre_prompt_recall',
+    name: '🧠 先验记忆自动预取',
+    timing: 'Prompt 前置',
+    description: '模型组装提示词前，自动从体外大脑检索相关经验并注入 System Prompt',
+  },
+  {
+    id: 'post_turn_capture',
+    name: '📥 轮次经验自动沉淀',
+    timing: '对话后置',
+    description: '单轮会话结束后，自动捕获助手输出的新结论与踩坑事实并入库',
+  },
+  {
+    id: 'pre_tool_guard',
+    name: '🛡️ 工具前置安全守卫',
+    timing: '工具拦截',
+    description: '工具执行前拦截敏感 Key 泄露、检测目标路径越权，确保安全沙箱',
+  },
+]
+
+/**
+ * 配套研发与业务技能生态包 (Skills Bundle) 定义
+ */
+export type CompanionSkillItem = {
+  id: string
+  name: string
+  category: string
+  description: string
+}
+
+export const COMPANION_SKILLS: CompanionSkillItem[] = [
+  { id: 'openviking-memory', name: 'OpenViking 体外记忆中枢', category: '体外大脑', description: '跨会话记忆自动检索召回与经验事实双写入库' },
+  { id: 'diagnosing-bugs', name: 'Bug 诊断与根因追踪闭环', category: '工程方法', description: '日志自动提取、根因深入追踪与修复后自动化验证' },
+  { id: 'tdd', name: '测试驱动开发 (TDD)', category: '工程方法', description: '遵循红-绿-重构循环，优先编写失败契约测试再实现功能' },
+  { id: 'code-review', name: '双轴代码审查', category: '质量保证', description: '基于工程规范 (Standards) 与需求规格 (Spec) 的双重审查' },
+  { id: 'living-asset-system', name: '四大活态资产复用', category: '资产治理', description: '开工查库第一公理，提纯公共轮子并自动通过测试视网膜验证' },
+  { id: 'cockpit-ui', name: '座舱级高密 UI 体系', category: '视觉交互', description: 'NO GREEN EVER 铁律、最高信息密度与字号 >= 12px 物理契约' },
+]
+
+/**
+ * 官方标准能力包 (Bundles) 定义
+ */
+export type ToolBundleId = 'satellite_consumer' | 'master_ops'
 
 export type ToolBundle = {
   id: ToolBundleId
@@ -165,14 +219,14 @@ export const OFFICIAL_TOOL_BUNDLES: ToolBundle[] = [
     highlightBadge: '31 项业务工具',
   },
   {
-    id: 'master_maintainer',
+    id: 'master_ops',
     name: '🧠 中枢运维者工具包',
     shortName: '中枢运维者包',
-    roleTitle: '自治中枢 / 运维与总控大脑',
-    description: '在业务工具基础上，追加工作区代码写改、底座探针自愈与集群底座运维特权',
-    toolIds: MASTER_MAINTAINER_TOOL_IDS,
-    recommendedFor: '适用于系统核心大脑、巡检自治与集群总控智能体',
-    highlightBadge: '47 项全量特权',
+    roleTitle: '自治中枢 / 运维特权',
+    description: '涵盖工作区代码写改、底座探针自愈、隔离舱与集群底座运维专属特权',
+    toolIds: MASTER_OPS_TOOL_IDS,
+    recommendedFor: '适用于具备本地代码修改、自愈重试与系统治理能力的运维总控智能体',
+    highlightBadge: '16 项运维特权',
   },
 ]
 
