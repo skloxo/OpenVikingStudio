@@ -30,8 +30,8 @@ export type ToolCategory = {
 export const TOOL_CATEGORIES: ToolCategory[] = [
   {
     id: 'satellite',
-    name: '🛰️ 业务使用者工具池 (卫星工兵 / 一线全功能 - 31项)',
-    description: '适用于卫星工兵与一线研发使用者，涵盖知识沉淀、代码分析、契约测试、工单闭环、技能评估发布与异步文档消化',
+    name: '🛰️ 业务使用者工具池 (31 项)',
+    description: '涵盖知识检索、代码分析、契约单测、工单流转与全网采集等通用研发工具',
     tools: [
       // 1. 记忆与知识沉淀
       { id: 'find', name: 'find (语义召回)', description: '基于分层语义索引智能查找最相关记忆', categoryBadge: '记忆检索', defaultSelected: true },
@@ -86,8 +86,8 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
   },
   {
     id: 'master_ops',
-    name: '🛡️ 中枢运维与全栈特权工具池 (运维与总控大脑专属 - 16项)',
-    description: '适用于中枢总控大脑与运维自治智能体，具备本地写改、提示词编译、死信自愈、安全隔离舱与底层硬件探针权限',
+    name: '🧠 中枢运维特权工具池 (16 项)',
+    description: '涵盖工作区代码写改、底层自愈、隔离舱与运维探针特权',
     tools: [
       // 1. 本地代码精准写改
       { id: 'write', name: 'write (写入文件)', description: '新建或全量覆写工作区文件内容', categoryBadge: '代码写入' },
@@ -156,23 +156,23 @@ export type ToolBundle = {
 export const OFFICIAL_TOOL_BUNDLES: ToolBundle[] = [
   {
     id: 'satellite_consumer',
-    name: '🛰️ 卫星工兵工具包 (一线使用者角色)',
-    shortName: '卫星工兵包',
-    roleTitle: '一线业务使用者 / 结对工兵',
-    description: '打包赋予知识读写、代码阅读/AST/TDD、工单闭环、技能评估发布与异步文档消化等全套一线武器',
+    name: '🛰️ 业务使用者工具包',
+    shortName: '业务使用者包',
+    roleTitle: '一线业务工兵 / 研发助手',
+    description: '涵盖知识读写、代码分析、契约单测、工单流转与全球搜索等一线全套工具',
     toolIds: SATELLITE_CONSUMER_TOOL_IDS,
-    recommendedFor: '适用于 3070、Mac Studio、IDE 结对编程助手及全场景业务工兵 Agent',
-    highlightBadge: '31 项使用者工具',
+    recommendedFor: '适用于常规编程助手、业务自动化与各类一线任务工兵智能体',
+    highlightBadge: '31 项业务工具',
   },
   {
     id: 'master_maintainer',
-    name: '🧠 中枢总控工具包 (使用者兼运维者角色)',
-    shortName: '中枢总控包',
-    roleTitle: '总控大脑 / 即是使用者又是运维者',
-    description: '赋予 47 项全量特权，涵盖业务使用者全套工具 + 工作区代码写改、死信自愈、安全隔离与集群底座运维',
+    name: '🧠 中枢运维者工具包',
+    shortName: '中枢运维者包',
+    roleTitle: '自治中枢 / 运维与总控大脑',
+    description: '在业务工具基础上，追加工作区代码写改、底座探针自愈与集群底座运维特权',
     toolIds: MASTER_MAINTAINER_TOOL_IDS,
-    recommendedFor: '适用于 2080Ti 本地中枢总控 Agent、系统巡检与运维自治智能体',
-    highlightBadge: '47 项全量工具',
+    recommendedFor: '适用于系统核心大脑、巡检自治与集群总控智能体',
+    highlightBadge: '47 项全量特权',
   },
 ]
 
