@@ -39,6 +39,9 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
       { id: 'read', name: 'read (读取记忆)', description: '读取特定记忆资源或文档的完整内容', categoryBadge: '记忆读取', defaultSelected: true },
       { id: 'remember', name: 'remember (长程沉淀)', description: '将结构化对话与重要知识写入长程记忆', categoryBadge: '记忆沉淀', defaultSelected: true },
       { id: 'openviking_history_search', name: 'history_search (历史检索)', description: 'FTS5 对话全文字词与知识召回检索', categoryBadge: '对话记录' },
+      { id: 'web_search', name: 'web_search (全网搜索)', description: '像素级对齐 DSH，45+ 引擎聚合与百度广告清洗，带 1.3ms 极速缓存', categoryBadge: '全球情报', defaultSelected: true },
+      { id: 'web_fetch', name: 'web_fetch (网页精读)', description: '像素级对齐 DSH，Crawl4AI Playwright 无头穿透渲染提取纯净正文', categoryBadge: '全球情报', defaultSelected: true },
+      { id: 'openviking_web_search', name: 'openviking_web_search (中枢搜索)', description: 'OpenViking 原生全网高精搜索兼容易名', categoryBadge: '全球情报' },
 
       // 2. 上下文与工作约束
       { id: 'openviking_active_notes_get', name: 'active_notes_get (获取约束)', description: '检索活跃里程碑与工作约束', categoryBadge: '上下文' },

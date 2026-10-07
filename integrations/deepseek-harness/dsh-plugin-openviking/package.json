@@ -1,16 +1,37 @@
 {
   "name": "dsh-plugin-openviking",
-  "version": "1.0.0",
+  "version": "1.4.0",
   "type": "module",
   "main": "index.js",
-  "description": "OpenViking 体外大脑一体化套件 (主动 MCP 工具箱 + 被动先验拦截 Hook)",
+  "description": "OpenViking 体外大脑一体化官方插件 (主动 47项 MCP 工具箱 + 被动先验拦截 Hook)",
+  "keywords": [
+    "deepseek-harness",
+    "dsh-plugin",
+    "cordis",
+    "openviking",
+    "mcp",
+    "memory"
+  ],
   "files": [
     "index.js",
-    "cordis.patch.yml"
+    "cordis.patch.yml",
+    "README.md"
   ],
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "*",
+    "@deepseek-ai/schemastery": "*"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/cordis": {
+      "optional": true
+    },
+    "@deepseek-ai/schemastery": {
+      "optional": true
     }
   }
 }

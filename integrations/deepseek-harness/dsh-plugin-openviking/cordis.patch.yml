@@ -1,26 +1,11 @@
 - insert:
-    - id: mcp-openviking
-      name: "@deepseek-ai/dsh-mcp-client"
-      config:
-        serverName: openviking
-        transport: stdio
-        command: wsl.exe
-        args:
-          - -e
-          - python3
-          - /home/skloxo/aho/openclaw/project/OpenVikingStudio/mcp-openviking/satellite_mcp_server.py
-        env:
-          OPENVIKING_API: "http://127.0.0.1:1933"
-          OPENVIKING_ACTOR_PEER: "deepseek-harness@2080ti"
-          OPENVIKING_CLIENT: "deepseek-harness"
-        reconnect:
-          enabled: true
-          initialDelayMs: 500
-          maxDelayMs: 15000
-          maxAttempts: 10
-
-    - id: openviking-hook
+    - id: openviking
       name: dsh-plugin-openviking
       config:
-        api: "http://127.0.0.1:1933"
-        peer: "deepseek-harness@2080ti"
+        apiUrl: "https://vk.tide.red"
+        userId: "default"
+        agentId: ""
+        apiKey: ""
+        enableMcp: true
+        enableHook: true
+        peer: "deepseek-harness@satellite"

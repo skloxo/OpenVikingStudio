@@ -29,6 +29,9 @@ async def test_mcp_tools_advertise_behavior_annotations():
         "forget": (False, True, True, False),
         "health": (True, False, True, False),
         "zg_search": (True, False, True, False),
+        "openviking_web_search": (True, False, True, False),
+        "web_search": (True, False, True, False),
+        "web_fetch": (True, False, True, False),
         # Task card & analytics tools added in v1.7.x
         "openviking_task_cards_summary": (True, False, True, False),
         "openviking_dlq_status": (True, False, True, False),

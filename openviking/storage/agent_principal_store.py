@@ -33,6 +33,9 @@ DEFAULT_ALLOWED_TOOLS = [
     "search",
     "read",
     "record_evolution_lesson",
+    "web_search",
+    "web_fetch",
+    "openviking_web_search",
 ]
 
 
