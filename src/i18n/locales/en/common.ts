@@ -106,6 +106,15 @@ export const common = {
       settings: {
         title: 'Settings',
       },
+      accounts: {
+        title: 'Spaces',
+      },
+      plugins: {
+        title: 'Plugin Center',
+      },
+      agents: {
+        title: 'Agent Center',
+      },
       playground: {
         title: 'Interactive Playground',
       },

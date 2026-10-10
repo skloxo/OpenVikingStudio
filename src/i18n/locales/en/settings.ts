@@ -350,6 +350,8 @@ export const settings = {
       user: 'User',
       agents: 'Agents',
       activeAgents: '{{count}} Active',
+      pluginAccess: 'Plugin Access',
+      pluginAccessTooltip: 'Configure and copy plugin bridge credentials for this user',
     },
     toast: {
       accountCreated: 'Account created',

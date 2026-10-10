@@ -106,6 +106,15 @@ export const common = {
       settings: {
         title: '设置中枢',
       },
+      accounts: {
+        title: '空间管理',
+      },
+      plugins: {
+        title: '插件中心',
+      },
+      agents: {
+        title: '智能体中心',
+      },
       playground: {
         title: '交互沙盘',
       },

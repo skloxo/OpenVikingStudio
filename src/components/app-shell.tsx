@@ -4,6 +4,7 @@ import {
   ActivityIcon,
   BookOpenIcon,
   BracesIcon,
+  Building2Icon,
   GlobeIcon,
   KeyRoundIcon,
   MoonIcon,
@@ -92,7 +93,8 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     useAppConnection()
   const settingsActive = pathname === '/settings'
   const usersActive = pathname === '/users'
-  const { canManageUsers } = resolveStudioManagementCapabilities({
+  const accountsActive = pathname === '/accounts'
+  const { canManageAccounts, canManageUsers } = resolveStudioManagementCapabilities({
     hasControlCredential: Boolean(connection.adminApiKey.trim()),
     isRoleLoading: isConnectionRoleLoading,
     role: connectionRole,
@@ -225,6 +227,19 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                     <span>{t('navigation.settings.title', { ns: 'appShell' })}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                {canManageAccounts ? (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      render={<Link to="/accounts" />}
+                      isActive={accountsActive}
+                      tooltip={t('navigation.accounts.title', { ns: 'appShell' })}
+                      className="h-9"
+                    >
+                      <Building2Icon />
+                      <span>{t('navigation.accounts.title', { ns: 'appShell' })}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ) : null}
                 {canManageUsers ? (
                   <SidebarMenuItem>
                     <SidebarMenuButton
