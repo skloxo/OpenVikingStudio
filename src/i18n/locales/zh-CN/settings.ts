@@ -344,6 +344,8 @@ export const settings = {
       user: 'User',
       agents: '在册智能体',
       activeAgents: '{{count}} 个在册',
+      pluginAccess: '插件接入',
+      pluginAccessTooltip: '配置并获取该用户的插件接入与客户端配置',
     },
     toast: {
       accountCreated: 'Account 已创建',

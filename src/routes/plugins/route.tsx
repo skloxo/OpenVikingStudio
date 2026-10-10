@@ -12,7 +12,6 @@ import {
   SearchIcon,
 } from 'lucide-react'
 import { Badge } from '#/components/ui/badge'
-import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { PluginMetricsBar } from './-components/plugin-metrics-bar'
 import { PluginQuadCard } from './-components/plugin-quad-card'
@@ -25,14 +24,12 @@ export const Route = createFileRoute('/plugins')({
 
 function PluginsRoute() {
   const {
-    categoryFilter,
     filteredPlugins,
     healthSummary,
     isLoading,
     plugins,
     searchQuery,
     selectedPlugin,
-    setCategoryFilter,
     setSearchQuery,
     setSelectedPlugin,
   } = usePluginsData()
@@ -44,17 +41,17 @@ function PluginsRoute() {
         <div className="grid gap-1">
           <h1 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-foreground">
             <BoxesIcon className="size-5 text-cyan-400" />
-            插件中心 (Plugin Center)
+            插件中心
           </h1>
           <p className="max-w-3xl text-xs text-muted-foreground font-mono">
-            全集群四位一体插件注册中枢 (Quad-Plugin Hub)：MCP物理工具箱 + Hook神经反射 + Skill认知导轨 + GUI交互配置
+            全集群四位一体插件注册中枢：标准 MCP 工具 + Hook 拦截反射 + 认知导轨规约 + 交互配置界面
           </p>
         </div>
         <Badge
           variant="outline"
           className="border-border bg-muted/30 px-2 py-0.5 text-xs font-mono text-foreground"
         >
-          ⚡ Streamable-HTTP 通道已就绪
+          ⚡ HTTP 流式通道就绪
         </Badge>
       </header>
 
@@ -63,31 +60,10 @@ function PluginsRoute() {
 
       {/* 筛选与搜索工具条 */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3 pt-1">
-        <div className="flex items-center gap-1.5">
-          <Button
-            variant={categoryFilter === 'all' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setCategoryFilter('all')}
-            className="h-7 text-xs font-mono"
-          >
-            全部插件 ({plugins.length})
-          </Button>
-          <Button
-            variant={categoryFilter === 'platform' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setCategoryFilter('platform')}
-            className="h-7 text-xs font-mono"
-          >
-            官方中枢标杆
-          </Button>
-          <Button
-            variant={categoryFilter === 'user' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setCategoryFilter('user')}
-            className="h-7 text-xs font-mono"
-          >
-            租户私有
-          </Button>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="h-7 px-2.5 text-xs font-mono text-muted-foreground border-border/70">
+            全集群可用插件 ({plugins.length})
+          </Badge>
         </div>
 
         <div className="relative w-64">

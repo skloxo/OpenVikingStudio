@@ -10,6 +10,8 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AccountsRouteRouteImport } from './routes/accounts/route'
+import { Route as AgentsRouteRouteImport } from './routes/agents/route'
 import { Route as EvolutionRouteRouteImport } from './routes/evolution/route'
 import { Route as FleetRouteImport } from './routes/fleet'
 import { Route as GraphRouteRouteImport } from './routes/graph/route'
@@ -36,6 +38,16 @@ import { Route as SkillsHarnessLogsRouteImport } from './routes/skills/harness-l
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountsRouteRoute = AccountsRouteRouteImport.update({
+  id: '/accounts',
+  path: '/accounts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AgentsRouteRoute = AgentsRouteRouteImport.update({
+  id: '/agents',
+  path: '/agents',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EvolutionRouteRoute = EvolutionRouteRouteImport.update({
@@ -151,6 +163,8 @@ const SkillsHarnessLogsRoute = SkillsHarnessLogsRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/accounts': typeof AccountsRouteRoute
+  '/agents': typeof AgentsRouteRoute
   '/evolution': typeof EvolutionRouteRoute
   '/graph': typeof GraphRouteRoute
   '/home': typeof HomeRouteRoute
@@ -176,6 +190,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/accounts': typeof AccountsRouteRoute
+  '/agents': typeof AgentsRouteRoute
   '/evolution': typeof EvolutionRouteRoute
   '/graph': typeof GraphRouteRoute
   '/home': typeof HomeRouteRoute
@@ -201,6 +217,8 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/accounts': typeof AccountsRouteRoute
+  '/agents': typeof AgentsRouteRoute
   '/evolution': typeof EvolutionRouteRoute
   '/graph': typeof GraphRouteRoute
   '/home': typeof HomeRouteRoute
@@ -228,6 +246,8 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/accounts'
+    | '/agents'
     | '/evolution'
     | '/graph'
     | '/home'
@@ -253,6 +273,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/accounts'
+    | '/agents'
     | '/evolution'
     | '/graph'
     | '/home'
@@ -277,6 +299,8 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/accounts'
+    | '/agents'
     | '/evolution'
     | '/graph'
     | '/home'
@@ -303,6 +327,8 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AccountsRouteRoute: typeof AccountsRouteRoute
+  AgentsRouteRoute: typeof AgentsRouteRoute
   EvolutionRouteRoute: typeof EvolutionRouteRoute
   GraphRouteRoute: typeof GraphRouteRoute
   HomeRouteRoute: typeof HomeRouteRoute
@@ -332,6 +358,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/accounts': {
+      id: '/accounts'
+      path: '/accounts'
+      fullPath: '/accounts'
+      preLoaderRoute: typeof AccountsRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/agents': {
+      id: '/agents'
+      path: '/agents'
+      fullPath: '/agents'
+      preLoaderRoute: typeof AgentsRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/evolution': {
@@ -517,6 +557,8 @@ const SkillsRouteRouteWithChildren = SkillsRouteRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AccountsRouteRoute: AccountsRouteRoute,
+  AgentsRouteRoute: AgentsRouteRoute,
   EvolutionRouteRoute: EvolutionRouteRoute,
   GraphRouteRoute: GraphRouteRoute,
   HomeRouteRoute: HomeRouteRoute,

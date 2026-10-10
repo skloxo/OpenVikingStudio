@@ -40,6 +40,7 @@ export const CHINESE_SKILL_NAME_MAP: Record<string, string> = {
   'hermes-config-audit': 'Hermes 运行时配置自检与优化',
   'repo-tracker': 'Git 仓库代码变动与演进跟踪',
   'cpa-squad': 'CPA 弹性无限算力总线与多智能体协同参谋团',
+  'oracle-cloud-ops': 'Oracle Cloud 免费层运维与防封合规指南',
 }
 
 export const ENGINEERING_SKILLS = [
@@ -74,6 +75,7 @@ export const ENGINEERING_SKILLS = [
   'skill-governance',
   'hermes-config-audit',
   'repo-tracker',
+  'oracle-cloud-ops',
 ]
 
 export function isEngineeringSkill(name: string, source?: string): boolean {

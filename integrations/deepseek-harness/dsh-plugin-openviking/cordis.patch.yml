@@ -2,11 +2,11 @@
     - id: openviking
       name: dsh-plugin-openviking
       config:
-        apiUrl: "http://127.0.0.1:1933"
+        endpointUrl: "http://127.0.0.1:1933/mcp"
+        userKey: ""
+        userKeyEnv: "OPENVIKING_USER_KEY"
+        agentId: "deepseek-harness@satellite"
         userId: "default"
-        agentId: "deepseek-harness@2080ti"
-        apiKey: ""
-        apiKeyEnv: "OPENVIKING_API_KEY"
         enableMcp: true
         enableHook: true
-        peer: "deepseek-harness@2080ti"
+        peer: "deepseek-harness@satellite"

@@ -33,7 +33,7 @@ import {
   MASTER_OPS_TOOL_IDS,
   COMPANION_SKILLS,
 } from '../-constants/agent-tools'
-
+import { fetchLatestClientBridge } from '../../agents/-lib/capability-bundles'
 import { ToolACLMatrix } from './tool-acl-matrix'
 
 export type AgentCollapsibleItemProps = {
@@ -61,11 +61,7 @@ export function AgentCollapsibleItem({
 }: AgentCollapsibleItemProps) {
   const [name, setName] = React.useState(agent.agent_name || '')
   const [roleDesc, setRoleDesc] = React.useState(agent.role_desc || '')
-  const [selectedTools, setSelectedTools] = React.useState<string[]>(
-    agent.allowed_tools,
-  )
-
-  // Hook 核心生命周期控制状态 (整组选用)
+  const [selectedTools, setSelectedTools] = React.useState<string[]>(agent.allowed_tools)
   const [hookEnabled, setHookEnabled] = React.useState(true)
 
   React.useEffect(() => {
@@ -115,8 +111,24 @@ export function AgentCollapsibleItem({
   // 网络端点物理双轨：同时提供同机内网与跨网公网两个端点，消除切换与输入认知成本
   const localMcpUrl = `http://127.0.0.1:1933/mcp?agent_id=${encodeURIComponent(agent.agent_id)}&user_id=${encodeURIComponent(userId)}`
   const publicMcpUrl = `https://vk.tide.red/mcp?agent_id=${encodeURIComponent(agent.agent_id)}&user_id=${encodeURIComponent(userId)}`
-  // DSH 插件公网安装包地址 (全局唯一公网 SSOT，彻底切除本地动态自适应过度工程)
-  const dshPluginTarballUrl = `https://vk.tide.red/studio/dsh-plugin-openviking-${DSH_PLUGIN_VERSION}.tgz`
+  const [pluginVersion, setPluginVersion] = React.useState(DSH_PLUGIN_VERSION)
+  const [dshPluginTarballUrl, setDshPluginTarballUrl] = React.useState(`https://vk.tide.red/studio/dsh-plugin-openviking-${DSH_PLUGIN_VERSION}.tgz`)
+
+  React.useEffect(() => {
+    if (!isExpanded) return
+    fetchLatestClientBridge('public').then((info) => {
+      setPluginVersion(info.version)
+      setDshPluginTarballUrl(info.packageUrl)
+    })
+  }, [isExpanded])
+
+  const handleCopyPluginTarball = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const latest = await fetchLatestClientBridge('public')
+    setPluginVersion(latest.version)
+    setDshPluginTarballUrl(latest.packageUrl)
+    handleCopy(latest.packageUrl, `DSH 插件安装链接 (v${latest.version})`, e)
+  }
 
   const dshYamlSnippet = React.useMemo(() => `- id: mcp-openviking
   name: "@deepseek-ai/dsh-mcp-client"
@@ -213,25 +225,11 @@ export function AgentCollapsibleItem({
             onClick={(e) => e.stopPropagation()}
           >
             {isActive ? (
-              <Button
-                type="button"
-                size="icon-xs"
-                variant="ghost"
-                className="size-6 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10"
-                onClick={() => onDelete(agent)}
-                title="下线软删除"
-              >
+              <Button type="button" size="icon-xs" variant="ghost" className="size-6 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10" onClick={() => onDelete(agent)} title="下线软删除">
                 <Trash2Icon className="size-3" />
               </Button>
             ) : (
-              <Button
-                type="button"
-                size="icon-xs"
-                variant="ghost"
-                className="size-6 text-cyan-600 hover:bg-cyan-500/10"
-                onClick={() => onActivate(agent.agent_id)}
-                title="重新激活"
-              >
+              <Button type="button" size="icon-xs" variant="ghost" className="size-6 text-cyan-600 hover:bg-cyan-500/10" onClick={() => onActivate(agent.agent_id)} title="重新激活">
                 <RotateCcwIcon className="size-3" />
               </Button>
             )}
@@ -348,14 +346,14 @@ export function AgentCollapsibleItem({
                       <span className="font-semibold text-foreground text-xs flex items-center gap-1.5">
                         <span>📦 步骤 1：复制插件安装包链接 (.tgz)</span>
                         <Badge variant="outline" className="text-xs font-mono h-4 px-1.5 border-cyan-500/40 text-cyan-600 dark:text-cyan-400">
-                          v{DSH_PLUGIN_VERSION}
+                          v{pluginVersion}
                         </Badge>
                       </span>
                       <button
                         type="button"
-                        onClick={(e) => handleCopy(dshPluginTarballUrl, `DSH 插件安装链接 (v${DSH_PLUGIN_VERSION})`, e)}
+                        onClick={handleCopyPluginTarball}
                         className="text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1 text-xs font-medium cursor-pointer"
-                        title={`复制可直接贴入 DSH「添加插件」的安装包链接 (v${DSH_PLUGIN_VERSION})`}
+                        title={`复制可直接贴入 DSH「添加插件」的最新安装包链接 (v${pluginVersion})`}
                       >
                         <CopyIcon className="size-3" />
                         一键复制
@@ -400,11 +398,11 @@ export function AgentCollapsibleItem({
                     size="sm"
                     variant="outline"
                     className="h-7 text-xs flex-1 text-cyan-600 border-cyan-500/40 hover:bg-cyan-500/10 font-medium px-1"
-                    onClick={(e) => handleCopy(dshPluginTarballUrl, `DSH 插件安装链接 (v${DSH_PLUGIN_VERSION})`, e)}
-                    title={`复制可以直接贴入 DSH「添加插件」的安装包链接 (v${DSH_PLUGIN_VERSION})`}
+                    onClick={handleCopyPluginTarball}
+                    title={`复制可以直接贴入 DSH「添加插件」的安装包链接 (v${pluginVersion})`}
                   >
                     <CopyIcon className="size-3 mr-1" />
-                    插件 v{DSH_PLUGIN_VERSION}
+                    插件 v{pluginVersion}
                   </Button>
                   <Button
                     type="button"
@@ -476,21 +474,10 @@ export function AgentCollapsibleItem({
 
           {/* 底部就地操作栏 */}
           <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={onToggleExpand}
-            >
+            <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={onToggleExpand}>
               收起面板
             </Button>
-            <Button
-              type="submit"
-              size="sm"
-              className="h-7 text-xs"
-              disabled={isUpdating}
-            >
+            <Button type="submit" size="sm" className="h-7 text-xs" disabled={isUpdating}>
               <SaveIcon className="size-3 mr-1" />
               {isUpdating ? '保存中...' : '保存配置'}
             </Button>

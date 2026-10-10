@@ -396,6 +396,16 @@ export async function createAdminAccount(
   return normalizeKeyResult(result)
 }
 
+export async function deleteAdminAccount(
+  connection: AdminConnection,
+  accountId: string,
+): Promise<void> {
+  const client = createAdminClient(connection)
+  await client.delete({
+    url: `/api/v1/admin/accounts/${encodeURIComponent(accountId)}`,
+  })
+}
+
 export async function createAdminUser(
   connection: AdminConnection,
   input: CreateUserInput,
@@ -491,6 +501,7 @@ export type CreateAgentInput = {
   icon?: string
   connection_mode?: string
   allowed_tools?: string[]
+  plugin_grants?: Record<string, string[]>
 }
 
 export type UpdateAgentInput = {
@@ -498,6 +509,7 @@ export type UpdateAgentInput = {
   role_desc?: string
   connection_mode?: string
   allowed_tools?: string[]
+  plugin_grants?: Record<string, string[]>
   status?: string
 }
 

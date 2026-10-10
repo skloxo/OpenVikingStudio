@@ -49,70 +49,91 @@ function SkillsRoute() {
       </header>
 
       {/* View Switcher Tabs */}
-      <div className="flex items-center gap-2 border-b border-border/60 pb-2">
-        <Button
-          variant={activeTab === 'catalog' ? 'default' : 'ghost'}
-          size="sm"
+      <div className="flex items-center gap-1 overflow-x-auto rounded-md border border-border/70 bg-muted/30 p-0.5">
+        <button
+          type="button"
           onClick={() => setActiveTab('catalog')}
-          className="text-xs h-7 font-mono"
+          className={`flex h-6.5 items-center gap-1.5 rounded px-2.5 text-xs font-mono transition-all shrink-0 ${
+            activeTab === 'catalog'
+              ? 'border border-border/80 bg-background font-medium text-foreground shadow-xs dark:border-border/60'
+              : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+          }`}
         >
-          <LayersIcon className="size-3.5 mr-1.5" />
+          <LayersIcon className="size-3.5" />
           全量技能库 ({skills.length})
-        </Button>
-        <Button
-          variant={activeTab === 'facts' ? 'default' : 'ghost'}
-          size="sm"
+        </button>
+        <button
+          type="button"
           onClick={() => setActiveTab('facts')}
-          className={`text-xs h-7 font-mono ${activeTab === 'facts' ? 'bg-cyan-600 text-white' : 'text-cyan-400'}`}
+          className={`flex h-6.5 items-center gap-1.5 rounded px-2.5 text-xs font-mono transition-all shrink-0 ${
+            activeTab === 'facts'
+              ? 'border border-cyan-500/40 bg-cyan-500/10 font-medium text-cyan-700 shadow-xs dark:border-cyan-500/50 dark:bg-cyan-950/40 dark:text-cyan-300'
+              : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+          }`}
         >
-          <CodeIcon className="size-3.5 mr-1.5" />
+          <CodeIcon className="size-3.5" />
           🧬 源码事实与测试视网膜
-        </Button>
-        <Button
-          variant={activeTab === 'zip' ? 'default' : 'ghost'}
-          size="sm"
+        </button>
+        <button
+          type="button"
           onClick={() => setActiveTab('zip')}
-          className={`text-xs h-7 font-mono ${activeTab === 'zip' ? 'bg-cyan-600 text-white' : 'text-cyan-400'}`}
+          className={`flex h-6.5 items-center gap-1.5 rounded px-2.5 text-xs font-mono transition-all shrink-0 ${
+            activeTab === 'zip'
+              ? 'border border-cyan-500/40 bg-cyan-500/10 font-medium text-cyan-700 shadow-xs dark:border-cyan-500/50 dark:bg-cyan-950/40 dark:text-cyan-300'
+              : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+          }`}
         >
-          <ZapIcon className="size-3.5 mr-1.5" />
-          ⚡ SkillZip 写入即压缩与门禁
-        </Button>
-        <Button
-          variant={activeTab === 'livegen' ? 'default' : 'ghost'}
-          size="sm"
+          <ZapIcon className="size-3.5" />
+          ⚡ SkillZip 压缩与门禁
+        </button>
+        <button
+          type="button"
           onClick={() => setActiveTab('livegen')}
-          className={`text-xs h-7 font-mono ${activeTab === 'livegen' ? 'bg-cyan-600 text-white' : 'text-cyan-400'}`}
+          className={`flex h-6.5 items-center gap-1.5 rounded px-2.5 text-xs font-mono transition-all shrink-0 ${
+            activeTab === 'livegen'
+              ? 'border border-cyan-500/40 bg-cyan-500/10 font-medium text-cyan-700 shadow-xs dark:border-cyan-500/50 dark:bg-cyan-950/40 dark:text-cyan-300'
+              : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+          }`}
         >
-          <SparklesIcon className="size-3.5 mr-1.5" />
-          ✨ LiveGen 在线技能创生
-        </Button>
-        <Button
-          variant={activeTab === 'evolution' ? 'default' : 'ghost'}
-          size="sm"
+          <SparklesIcon className="size-3.5" />
+          ✨ LiveGen 技能创生
+        </button>
+        <button
+          type="button"
           onClick={() => setActiveTab('evolution')}
-          className={`text-xs h-7 font-mono ${activeTab === 'evolution' ? 'bg-cyan-600 text-white' : 'text-cyan-400'}`}
+          className={`flex h-6.5 items-center gap-1.5 rounded px-2.5 text-xs font-mono transition-all shrink-0 ${
+            activeTab === 'evolution'
+              ? 'border border-cyan-500/40 bg-cyan-500/10 font-medium text-cyan-700 shadow-xs dark:border-cyan-500/50 dark:bg-cyan-950/40 dark:text-cyan-300'
+              : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+          }`}
         >
-          <SparklesIcon className="size-3.5 mr-1.5" />
+          <SparklesIcon className="size-3.5" />
           ⚡ 演进与结晶流水线
-        </Button>
-        <Button
-          variant={activeTab === 'opt' ? 'default' : 'ghost'}
-          size="sm"
+        </button>
+        <button
+          type="button"
           onClick={() => setActiveTab('opt')}
-          className={`text-xs h-7 font-mono ${activeTab === 'opt' ? 'bg-cyan-600 text-white' : 'text-cyan-400'}`}
+          className={`flex h-6.5 items-center gap-1.5 rounded px-2.5 text-xs font-mono transition-all shrink-0 ${
+            activeTab === 'opt'
+              ? 'border border-cyan-500/40 bg-cyan-500/10 font-medium text-cyan-700 shadow-xs dark:border-cyan-500/50 dark:bg-cyan-950/40 dark:text-cyan-300'
+              : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+          }`}
         >
-          <TargetIcon className="size-3.5 mr-1.5" />
+          <TargetIcon className="size-3.5" />
           🎯 SkillOpt 评测与体检
-        </Button>
-        <Button
-          variant={activeTab === 'ingestion' ? 'default' : 'ghost'}
-          size="sm"
+        </button>
+        <button
+          type="button"
           onClick={() => setActiveTab('ingestion')}
-          className={`text-xs h-7 font-mono ${activeTab === 'ingestion' ? 'bg-cyan-600 text-white' : 'text-cyan-400'}`}
+          className={`flex h-6.5 items-center gap-1.5 rounded px-2.5 text-xs font-mono transition-all shrink-0 ${
+            activeTab === 'ingestion'
+              ? 'border border-cyan-500/40 bg-cyan-500/10 font-medium text-cyan-700 shadow-xs dark:border-cyan-500/50 dark:bg-cyan-950/40 dark:text-cyan-300'
+              : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+          }`}
         >
-          <InboxIcon className="size-3.5 mr-1.5" />
+          <InboxIcon className="size-3.5" />
           📥 准入治理与黑匣子证据链
-        </Button>
+        </button>
       </div>
 
       {activeTab === 'ingestion' ? (

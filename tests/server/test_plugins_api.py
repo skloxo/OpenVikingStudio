@@ -32,17 +32,22 @@ def test_plugin_registry_singleton_and_builtins():
     assert "keepass-vault" in plugin_ids
     assert "network-search" in plugin_ids
 
-    # 验证 memory 插件四位一体完整性
-    memory = reg1.get_plugin("openviking-memory")
-    assert memory is not None
-    assert memory.skill.skill_id == "openviking-memory-ops"
-    assert len(memory.hooks) >= 1
-    assert len(memory.tools) >= 5
+    # 验证核心记忆插件四位一体完整性 (47 工具 + 3 Hook)
+    mem_plug = reg1.get_plugin("openviking-memory")
+    assert mem_plug is not None
+    assert mem_plug.version == "1.5.0"
+    assert len(mem_plug.hooks) == 3
+    assert len(mem_plug.tools) == 47
 
     # 验证工具反查插件 ID
-    assert reg1.get_plugin_id_by_tool("openviking_find") == "openviking-memory"
+    assert reg1.get_plugin_id_by_tool("find") == "openviking-memory"
     assert reg1.get_plugin_id_by_tool("keepass_get") == "keepass-vault"
     assert reg1.get_plugin_id_by_tool("searxng_search") == "network-search"
+
+    # 验证客户端桥梁元数据
+    bridge = PluginRegistry.get_client_bridge_info()
+    assert bridge["package_name"] == "dsh-plugin-openviking"
+    assert bridge["package_url"].endswith(".tgz")
 
 
 def test_is_tool_authorized_logic():
@@ -50,16 +55,16 @@ def test_is_tool_authorized_logic():
     registry = PluginRegistry.get_instance()
     
     grants = {
-        "openviking-memory": ["openviking_find", "openviking_read"],
+        "openviking-memory": ["find", "read"],
         "network-search": ["*"],
     }
 
     # 已显式授权的工具
-    assert registry.is_tool_authorized(grants, "openviking_find") is True
-    assert registry.is_tool_authorized(grants, "openviking_read") is True
+    assert registry.is_tool_authorized(grants, "find") is True
+    assert registry.is_tool_authorized(grants, "read") is True
 
     # 未被授权的同一插件工具
-    assert registry.is_tool_authorized(grants, "openviking_write") is False
+    assert registry.is_tool_authorized(grants, "write") is False
 
     # 通配符 '*' 授权的插件工具
     assert registry.is_tool_authorized(grants, "searxng_search") is True
@@ -93,14 +98,22 @@ def test_get_plugins_list_endpoint(client):
         assert p["health"]["status"] in ("healthy", "degraded", "down", "unknown")
 
 
-def test_get_plugin_detail_endpoint(client):
-    """验证 GET /api/v1/plugins/{plugin_id} 详情及 404 容错。"""
-    # 正常获取
+def test_get_plugin_detail_and_bridge_endpoints(client):
+    """验证 GET /api/v1/plugins/{plugin_id} 详情及客户端桥梁包下载元数据。"""
+    # 正常获取核心记忆插件
     resp = client.get("/api/v1/plugins/openviking-memory")
     assert resp.status_code == 200
     data = resp.json()
     assert data["plugin_id"] == "openviking-memory"
-    assert data["skill"]["skill_id"] == "openviking-memory-ops"
+    assert data["version"] == "1.5.0"
+    assert len(data["tools"]) == 47
+
+    # 验证客户端桥梁独立接口
+    resp_bridge = client.get("/api/v1/plugins/bridge/client-package")
+    assert resp_bridge.status_code == 200
+    bridge_data = resp_bridge.json()
+    assert bridge_data["status"] == "success"
+    assert bridge_data["result"]["package_name"] == "dsh-plugin-openviking"
 
     # 不存在的插件返回 404
     resp_404 = client.get("/api/v1/plugins/non_existent_plugin")
@@ -120,3 +133,71 @@ def test_get_plugins_health_summary_endpoint(client):
     assert data["total_count"] >= 3
     assert "probes" in data
     assert "openviking-memory" in data["probes"]
+
+
+def test_search_usage_summary_and_prune_endpoints(client):
+    """验证 GET /network-search/usage/summary 和 POST /network-search/usage/prune 接口。"""
+    resp = client.get("/api/v1/plugins/network-search/usage/summary")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "success"
+    assert "total_keys" in data
+    assert "keys" in data
+    assert "watermarks" in data
+    assert "db_stats" in data
+    assert "keenable" in data["watermarks"]
+    assert "exa" in data["watermarks"]
+    assert "tavily" in data["watermarks"]
+
+    # 测试手动触发归档与物理清理
+    resp_prune = client.post("/api/v1/plugins/network-search/usage/prune?retention_days=45")
+    assert resp_prune.status_code == 200
+    prune_data = resp_prune.json()
+    assert prune_data["status"] == "success"
+    assert "deleted_detail_rows" in prune_data["result"]
+
+
+def test_agent_bridge_verification_and_tool_call():
+    """验证客户端桥梁通过 UserKey + AgentID 握手并真实调用 MCP 工具。"""
+    from openviking.server.routers.agents import global_agents_router, router as user_agents_router
+    from openviking.storage.agent_principal_store import AgentPrincipalStore
+
+    app = FastAPI()
+    app.include_router(user_agents_router)
+    app.include_router(global_agents_router)
+    c = TestClient(app)
+
+    store = AgentPrincipalStore.get_instance()
+    agent = store.register_agent(
+        agent_id="ag_test_verify_001",
+        agent_name="测试验证智能体",
+        user_id="default",
+        role_desc="桥梁连通性测试",
+        allowed_tools=["find", "health", "read"],
+        plugin_grants={"openviking-memory": ["find", "health"]},
+    )
+
+    # 1. 验证握手与真实工具调用
+    verify_resp = c.post(
+        f"/api/v1/agents/{agent.agent_id}/verify",
+        json={"user_key": "vk-secret-test-key", "tool_name": "find"},
+    )
+    assert verify_resp.status_code == 200
+    res = verify_resp.json()
+    assert res["status"] == "ok"
+    assert res["verified"] is True
+    assert res["authenticated"] is True
+    assert res["agent_id"] == "ag_test_verify_001"
+    assert res["tested_tool"] == "find"
+    assert "bridge_handshake" in res
+    assert res["bridge_handshake"]["bridge_package"] == "dsh-plugin-openviking@1.5.1"
+    assert res["tool_call_result"]["status"] == "success"
+
+    # 2. 验证未授权工具被拦截 403
+    unauth_resp = c.post(
+        f"/api/v1/agents/{agent.agent_id}/verify",
+        json={"user_key": "vk-secret-test-key", "tool_name": "write"},
+    )
+    assert unauth_resp.status_code == 403
+
+

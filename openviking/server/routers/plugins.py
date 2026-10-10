@@ -7,8 +7,9 @@ SSOT: docs/architecture/ATOMIC_TASK_CARDS_MATRIX.md -> TASK-PLUG-04
 
 from __future__ import annotations
 
+import time
 from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Response
 from pydantic import BaseModel, Field
 
 from openviking.models.plugin import PluginHealthProbe, QuadPluginDefinition
@@ -88,3 +89,59 @@ async def get_plugins_health_summary() -> PluginsHealthSummaryResponse:
         total_count=total,
         probes=probes,
     )
+
+
+@router.get("/network-search/usage/summary")
+async def get_network_search_usage_summary(
+    month: Optional[str] = Query(None, description="查询月份 (YYYY-MM)，默认当月"),
+) -> Dict[str, Any]:
+    """直出 26-Key 指纹脱敏微缩健康矩阵与月度权威消耗汇总。"""
+    from openviking.service.search_accounting_store import SearchAccountingStore
+    from openviking.service.search_key_rotator import SearchKeyRotator
+
+    rotator = SearchKeyRotator.get_instance()
+    store = SearchAccountingStore.get_instance()
+
+    overview = rotator.get_key_health_overview()
+    db_stats = store.get_database_stats()
+
+    return {
+        "status": "success",
+        "month": month or time.strftime("%Y-%m"),
+        "total_keys": overview["total_keys"],
+        "keys": overview["keys"],
+        "watermarks": overview["watermarks"],
+        "db_stats": db_stats,
+        "updated_at": overview["updated_at"],
+    }
+
+
+@router.post("/network-search/usage/prune")
+async def trigger_search_usage_prune(
+    retention_days: int = Query(45, ge=1, le=365, description="保留明细天数，超期将归档并物理删除"),
+) -> Dict[str, Any]:
+    """手动触发搜索流水账滚动归档与物理清理 (消灭数据库膨胀)。"""
+    from openviking.service.search_accounting_store import SearchAccountingStore
+
+    store = SearchAccountingStore.get_instance()
+    result = store.rollup_and_prune_older_than(retention_days=retention_days)
+    return {
+        "status": "success",
+        "message": f"Successfully pruned and rolled up logs older than {retention_days} days",
+        "result": result,
+    }
+
+
+@router.get("/bridge/client-package")
+async def get_client_bridge_package(response: Response) -> Dict[str, Any]:
+    """获取独立客户端通信通道桥 (dsh-plugin-openviking) 的下载元数据与接入规范。"""
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    bridge_info = PluginRegistry.get_client_bridge_info()
+    return {
+        "status": "success",
+        "result": bridge_info,
+    }
+
+

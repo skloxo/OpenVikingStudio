@@ -98,6 +98,7 @@ from openviking.server.routers import (
     skill_ingestion_router,
     anti_demo_router,
     agents_router,
+    global_agents_router,
     plugins_router,
 )
 
@@ -717,6 +718,7 @@ def create_app(
     app.include_router(acl_router)
     app.include_router(admin_router)
     app.include_router(agents_router)
+    app.include_router(global_agents_router)
     app.include_router(plugins_router)
     app.include_router(agent_evolution_router)
     app.include_router(resources_router)

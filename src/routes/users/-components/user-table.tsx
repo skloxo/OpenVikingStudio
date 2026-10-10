@@ -4,9 +4,8 @@
  * 展示账户下的用户成员、在册智能体概览、角色配置、API 密钥以及身份切换和删除操作。
  * 点击整行直接滑出用户专属详情与资产抽屉。
  */
-import { useQuery } from '@tanstack/react-query'
 import {
-  BotIcon,
+  BoxesIcon,
   CheckIcon,
   CopyIcon,
   KeyRoundIcon,
@@ -46,7 +45,6 @@ import {
   TooltipTrigger,
 } from '#/components/ui/tooltip'
 import type { AdminUser, UpdateUserRoleInput } from '#/lib/admin'
-import { fetchUserAgentCounts } from '#/lib/admin'
 import {
   USER_ROLE_OPTIONS,
   getErrorMessage,
@@ -68,6 +66,7 @@ export type UserTableProps = {
   onInitiateRegenerate: (user: AdminUser) => void
   onInitiateRemove: (user: AdminUser) => void
   onInitiateRoleChange: (input: UpdateUserRoleInput) => void
+  onOpenPluginBridge?: (user: AdminUser) => void
   onSelectUser?: (user: AdminUser) => void
   onUseUserIdentity: (user: AdminUser) => void
   serverMode?: string
@@ -89,6 +88,7 @@ export function UserTable({
   onInitiateRegenerate,
   onInitiateRemove,
   onInitiateRoleChange,
+  onOpenPluginBridge,
   onSelectUser,
   onUseUserIdentity,
   serverMode,
@@ -96,13 +96,6 @@ export function UserTable({
   users,
 }: UserTableProps) {
   const { t } = useTranslation('settings')
-
-  // 动态读取每个用户的在册智能体数量
-  const { data: agentCounts = {} } = useQuery({
-    queryKey: ['user-agent-counts'],
-    queryFn: fetchUserAgentCounts,
-    staleTime: 10_000,
-  })
 
   return (
     <Card className="overflow-hidden">
@@ -171,8 +164,6 @@ export function UserTable({
                       ? t('management.cannotRemoveLastManager')
                       : t('actions.removeUser', { user: user.userId })
 
-                  const count = agentCounts[user.userId] ?? 0
-
                   return (
                     <TableRow
                       key={identityKey}
@@ -198,13 +189,19 @@ export function UserTable({
                         </div>
                       </TableCell>
 
-                      <TableCell>
+                      <TableCell
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onOpenPluginBridge?.(user)
+                        }}
+                      >
                         <Badge
                           variant="outline"
-                          className="text-xs font-mono h-5.5 px-2 border-cyan-500/30 text-cyan-600 dark:text-cyan-400 bg-cyan-500/5 hover:bg-cyan-500/10 transition-colors"
+                          className="text-xs font-mono h-5.5 px-2 border-cyan-500/30 text-cyan-600 dark:text-cyan-400 bg-cyan-500/5 hover:bg-cyan-500/15 cursor-pointer transition-colors"
+                          title={t('table.pluginAccessTooltip')}
                         >
-                          <BotIcon className="size-3 mr-1 text-cyan-500" />
-                          {t('table.activeAgents', { count })}
+                          <BoxesIcon className="size-3 mr-1 text-cyan-500" />
+                          {t('table.pluginAccess')}
                         </Badge>
                       </TableCell>
 
@@ -313,6 +310,17 @@ export function UserTable({
 
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="text-xs h-7 gap-1 border-cyan-500/30 text-cyan-400 hover:bg-cyan-950/20"
+                            onClick={() => onOpenPluginBridge?.(user)}
+                            title={t('table.pluginAccessTooltip')}
+                          >
+                            <BoxesIcon className="size-3 text-cyan-500" />
+                            {t('table.pluginAccess')}
+                          </Button>
                           {canSwitchIdentity ? (
                             <Button
                               type="button"
