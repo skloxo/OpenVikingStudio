@@ -8,11 +8,12 @@
  * - Dynamic Capability Projection: Streamable-HTTP proxy with Auth header & volatile hot-reload.
  */
 
-import { appendFileSync, statSync, renameSync, existsSync, readFileSync } from 'node:fs'
+import { appendFileSync, statSync, renameSync, existsSync, readFileSync, copyFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 export const name = 'dsh-plugin-openviking'
-export const inject = ['systemPrompt']
+export const inject = ['agents', 'sessions', 'tools', 'systemPrompt']
 
 import Schema from './schema.js'
 
@@ -23,7 +24,7 @@ function v(s) {
 
 // 遵循 DSH 官方规范：标记为 .volatile() 的字段会被 SettingsForm 投影到 GUI 表单中
 export const Config = Schema ? Schema.object({
-  endpointUrl: v(Schema.string().default('http://127.0.0.1:1933/mcp')).description('OpenViking 通信端点 URL (如 http://127.0.0.1:1933/mcp 或 https://vk.tide.red/mcp)'),
+  endpointUrl: v(Schema.string().default('https://vk.tide.red/mcp')).description('OpenViking 通信端点 URL (公网默认 https://vk.tide.red/mcp，本地开发可填 http://127.0.0.1:1933/mcp)'),
   apiUrl: v(Schema.string().default('')).description('【兼容别名】服务端 HTTP 端点 (建议留空，自动由 endpointUrl 推导)'),
   agentId: v(Schema.string().default('deepseek-harness@satellite')).description('智能体工兵 ID (在 OpenViking 智能体中心复制，如 deepseek-harness@satellite 或 ag_xxx)'),
   userKey: v(Schema.string().role('secret').default('')).description('所属用户 API Key / User Key (在 HTTP Header 中安全传递，带密码遮罩)'),
@@ -67,11 +68,38 @@ function log(msg) {
   } catch (_) {}
 }
 
+
+// 🛡️ 智能 Query 轻量脱水：剔除客套前缀与口头禅，保留纯技术词；若脱水后过短则安全回退原句
+function dehydrateQuery(query) {
+  if (!query) return ''
+  let q = query.trim()
+  const patterns = [
+    /^(请问|请教一下|请详细告诉我|请问一下|请告诉我|麻烦问一下|帮我查一下|查一下|查找|检索)/i,
+    /^(在|从)?(体外大脑|知识库|wiki|OpenViking)(中)?(记录的|里)?/i,
+    /^(根据|基于)(体外大脑|知识库|wiki|OpenViking)(的)?(记录|内容)?/i
+  ]
+  let changed = true
+  while (changed) {
+    changed = false
+    for (const p of patterns) {
+      if (p.test(q)) {
+        q = q.replace(p, '').trim()
+        changed = true
+      }
+    }
+  }
+  // 剥离句尾常见套话
+  q = q.replace(/(是什么[？?]?|有哪些[？?]?|请详细说明[。！!]?|的具体实现[？?]?|的设计与实现是什么[？?]?)$/i, '').trim()
+  // 安全兜底：若脱水后长度过短（小于 2 字），回退原输入，绝不丢词
+  return q.length >= 2 ? q : query.trim()
+}
+
 async function fetchMemory(api, key, peer, agentId, query) {
   try {
+    const cleanQuery = dehydrateQuery(query)
     const now = Date.now()
-    if (query === lastQuery && (now - lastFetchTime) < CACHE_TTL_MS && lastInjectedMemory) {
-      log(`[CACHE_HIT] reusing prefetch for "${query.slice(0, 30)}..."`)
+    if (cleanQuery === lastQuery && (now - lastFetchTime) < CACHE_TTL_MS && lastInjectedMemory) {
+      log(`[CACHE_HIT] reusing prefetch for "${cleanQuery.slice(0, 30)}..."`)
       return lastInjectedMemory
     }
 
@@ -83,21 +111,30 @@ async function fetchMemory(api, key, peer, agentId, query) {
       'Content-Type': 'application/json',
       'X-Agent-ID': agentId,
       'X-OpenViking-Actor-Peer': peer,
-      'X-Caller': peer
+      'X-Caller': peer,
+      'X-OpenViking-Account': 'default'
     }
     if (key) {
       headers['Authorization'] = `Bearer ${key}`
     }
 
-    log(`[FETCH] querying ${url} for "${query.slice(0, 40)}..."`)
+    // 判断用户是否明确查询历史会话
+    const isArchiveQuery = /(历史|归档|上次|之前|会话|session)/i.test(query)
+    const reqBody = {
+      query: cleanQuery.slice(0, 300),
+      limit: 6,
+      mode: 'fast'
+    }
+    // 保护：日常技术提问显式声明只搜 resource，彻底杜绝 archived_sessions 虚拟省略号假路径
+    if (!isArchiveQuery) {
+      reqBody.context_type = 'resource'
+    }
+
+    log(`[FETCH] querying ${url} for "${cleanQuery.slice(0, 40)}..." (context_type=${reqBody.context_type || 'all'})`)
     const res = await fetch(url, {
       method: 'POST',
       headers,
-      body: JSON.stringify({
-        query: query.slice(0, 300),
-        limit: 2,
-        mode: 'fast'
-      }),
+      body: JSON.stringify(reqBody),
       signal: controller.signal
     })
     clearTimeout(timer)
@@ -119,13 +156,25 @@ async function fetchMemory(api, key, peer, agentId, query) {
       return ''
     }
 
-    const lines = [`【OpenViking 核心记忆预取 (${peer})】`]
-    const topItems = items.slice(0, 2)
+    // 智能去噪：若非明确询问历史会话/归档，过滤掉会话归档噪音与虚拟路径
+    let filteredItems = items
+    if (!isArchiveQuery) {
+      const docItems = items.filter(it => {
+        const u = it?.uri || ''
+        return !u.includes('archived_sessions') && !u.includes('staging/') && !u.includes('...')
+      })
+      if (docItems.length > 0) {
+        filteredItems = docItems
+      }
+    }
 
-    // 并发读取 L2 完整正文
+    const lines = [`【OpenViking 核心记忆预取 (${peer})】`]
+    const topItems = filteredItems.slice(0, 2)
+
+    // 并发读取 L2 完整正文，单篇截断不超过 2000 字符（约 100 行），防止 Token 溢出
     const readPromises = topItems.map(async (item) => {
       const uri = item?.uri || ''
-      if (!uri) return ''
+      if (!uri || uri.includes('...')) return ''
       try {
         const readUrl = `${api.replace(/\/+$/, '')}/api/v1/content/read?uri=${encodeURIComponent(uri)}`
         const r = await fetch(readUrl, { headers, signal: AbortSignal.timeout(2000) })
@@ -133,7 +182,9 @@ async function fetchMemory(api, key, peer, agentId, query) {
           const j = await r.json()
           const raw = typeof j.result === 'string' ? j.result : (j.result?.content || j.result?.text || '')
           if (raw && raw.trim()) {
-            return `- [${uri}]:\n${raw.trim().slice(0, 1500)}`
+            const trimmed = raw.trim()
+            const truncated = trimmed.length > 2000 ? trimmed.slice(0, 2000) + '\n...(已安全截断)' : trimmed
+            return `- [${uri}]:\n${truncated}`
           }
         }
       } catch (_) {}
@@ -146,14 +197,14 @@ async function fetchMemory(api, key, peer, agentId, query) {
       if (text) lines.push(text)
     }
 
-    lines.push('💡 协同契约：以上为体外大脑预取的先验记忆，请直接吸收并融入回答，无需机械复述。')
+    lines.push('💡 协同契约：体外大脑知识库先验记忆已在上方为您预取完毕！请直接吸收并基于此回答，无需重复发起搜索或检索工具调用；若某条资源读取返回 File not found，说明该资源属于内部归档或已被合并，严禁循环发起超过 2 次工具调用，应立即基于上方已有事实向用户直接作答。')
     const finalMemory = lines.join('\n\n')
 
-    lastQuery = query
+    lastQuery = cleanQuery
     lastInjectedMemory = finalMemory
     lastFetchTime = Date.now()
 
-    log(`[PREFETCH_SUCCESS] retrieved ${readResults.length} items for "${query.slice(0, 30)}..."`)
+    log(`[PREFETCH_SUCCESS] retrieved ${readResults.length} items for "${cleanQuery.slice(0, 30)}..."`)
     return finalMemory
   } catch (err) {
     log(`[FETCH_ERROR] ${err?.message || err}`)
@@ -172,6 +223,23 @@ function getVal(v, fallback = '') {
     return trimmed !== '' ? trimmed : fallback
   }
   return v
+}
+
+const MEMORY_KEYWORDS = [
+  '体外大脑', 'openviking', 'wiki', '记忆', '知识库', 'paperclip',
+  '架构', '方案', '规范', '密码', 'keepass', '凭据', 'token',
+  '查一下', '检索', '历史记录', '之前说的', '上次提到', '项目设计'
+]
+
+function isMemoryIntent(text) {
+  if (!text) return false
+  const t = text.trim()
+  if (t.length < 3) return false
+  if (/^(\d+\s*[\+\-\*\/]\d+|hi|hello|你好|在吗|ok|好的|收到|测试|test)$/i.test(t)) {
+    return false
+  }
+  const lower = t.toLowerCase()
+  return MEMORY_KEYWORDS.some(k => lower.includes(k))
 }
 
 export function apply(ctx, config = {}) {
@@ -229,6 +297,7 @@ export function apply(ctx, config = {}) {
   }
 
   const getPeer = () => getVal(config.peer, process.env.OPENVIKING_ACTOR_PEER || 'deepseek-harness@satellite')
+  const getAccountId = () => getVal(config.accountId, getVal(config.account, process.env.OPENVIKING_ACCOUNT || 'default'))
   const getUserId = () => getVal(config.userId, 'default')
   const getAgentId = () => getVal(config.agentId, process.env.OPENVIKING_AGENT_ID || 'deepseek-harness@satellite')
   const getEnableHook = () => getVal(config.enableHook, true) !== false
@@ -239,7 +308,7 @@ export function apply(ctx, config = {}) {
   let currentMcpFork = null
   let lastMcpSignature = ''
 
-  function mountMcpIfNeeded() {
+  async function mountMcpIfNeeded() {
     const agentId = getAgentId()
     const enableMcp = getEnableMcp()
 
@@ -271,44 +340,65 @@ export function apply(ctx, config = {}) {
         currentMcpFork = null
       }
 
-      log(`[MCP_MOUNT] mounting @deepseek-ai/dsh-mcp-client at ${mcpUrl}`)
-      
-      const mcpHeaders = {
-        'Accept': 'application/json, text/event-stream',
-        'X-Agent-ID': agentId,
-        'X-OpenViking-Actor-Peer': getPeer(),
-        'X-Caller': getPeer()
-      }
-      if (key) {
-        mcpHeaders['Authorization'] = `Bearer ${key}`
-      }
-      
-      currentMcpFork = ctx.plugin('@deepseek-ai/dsh-mcp-client', {
-        serverName: 'openviking',
-        transport: 'streamable-http',
-        url: mcpUrl,
-        headers: mcpHeaders,
-        reconnect: {
-          enabled: true,
-          initialDelayMs: 500,
-          maxDelayMs: 15000,
-          maxAttempts: 10
+      const proxyPath = fileURLToPath(new URL('./servers/mcp-proxy.mjs', import.meta.url))
+      log(`[MCP_MOUNT] mounting @deepseek-ai/dsh-mcp-client via stdio proxy (${proxyPath}) targeting ${mcpBase}`)
+
+      let mcpPlugin = null
+      try {
+        const mod = await import('@deepseek-ai/dsh-mcp-client')
+        mcpPlugin = mod?.default || mod
+      } catch (_) {
+        if (typeof ctx.loader?.resolve === 'function') {
+          try { mcpPlugin = ctx.loader.resolve('@deepseek-ai/dsh-mcp-client') } catch (_) {}
         }
-      })
-      lastMcpSignature = signature
-      log('[MCP_MOUNT_SUCCESS] @deepseek-ai/dsh-mcp-client mounted successfully')
+      }
+
+      if (mcpPlugin && typeof ctx.plugin === 'function') {
+        const homeDir = process.env.USERPROFILE || process.env.HOME || 'C:\\Users\\Skl'
+        const childEnv = {
+          ...process.env,
+          ELECTRON_RUN_AS_NODE: '1',
+          OPENVIKING_URL: mcpBase,
+          OPENVIKING_MCP_URL: mcpBase,
+          OPENVIKING_PEER_ID: getPeer(),
+          OV_DEBUG_LOG: resolve(homeDir, '.dsh', 'mcp-proxy-debug.log')
+        }
+        if (key) childEnv.OPENVIKING_API_KEY = key
+        childEnv.OPENVIKING_ACCOUNT = getAccountId()
+        childEnv.OPENVIKING_USER = getUserId()
+
+        currentMcpFork = ctx.plugin(mcpPlugin, {
+          serverName: 'openviking',
+          transport: 'stdio',
+          command: process.execPath,
+          args: [proxyPath],
+          env: childEnv,
+          toolCallTimeoutMs: 60000,
+          failOnStartupError: false,
+          reconnect: {
+            enabled: true,
+            initialDelayMs: 500,
+            maxDelayMs: 15000,
+            maxAttempts: 10
+          }
+        })
+        lastMcpSignature = signature
+        log(`[MCP_MOUNT_SUCCESS] @deepseek-ai/dsh-mcp-client mounted successfully via stdio proxy`)
+      } else {
+        log('[MCP_MOUNT_INFO] dynamic import skipped; bundle patch handles mcp client registration')
+      }
     } catch (err) {
       log(`[MCP_MOUNT_WARN] failed to mount mcp client dynamically: ${err?.stack || err?.message || err}`)
     }
   }
 
   // 1. 尝试初始挂载 MCP
-  mountMcpIfNeeded()
+  mountMcpIfNeeded().catch(() => {})
 
   // 2. 监听 volatile 配置动态热更新（用户在 DSH GUI 点击【保存】时触发，零重启热生效）
   ctx.on('loader/volatile-update', () => {
     log(`[VOLATILE_UPDATE] GUI settings saved, reloading dynamic config (agentId=${getAgentId() || 'none'})`)
-    mountMcpIfNeeded()
+    mountMcpIfNeeded().catch(() => {})
   })
 
   // 3. 被动先验 Hook：动态感知用户输入事件
@@ -319,14 +409,75 @@ export function apply(ctx, config = {}) {
         if (event?.type === 'user/message') {
           const raw = event?.content || event?.text || ''
           const text = typeof raw === 'string' ? raw.trim() : (raw?.[0]?.text || '').trim()
-          if (text && text.length >= 2 && !STEP_WORDS.has(text.toLowerCase())) {
-            log(`[USER_MSG_DETECTED] "${text.slice(0, 50)}..."`)
+          if (isMemoryIntent(text)) {
+            log(`[USER_MSG_DETECTED] memory intent detected: "${text.slice(0, 50)}..."`)
             // 异步触发预热
             fetchMemory(getBaseApi(), getKey(), getPeer(), getAgentId(), text).catch(() => {})
           }
         }
       } catch (_) {}
     })
+
+    // 🛡️ 官方 agent/pre-step 瀑布流拦截器：在当前 step 发起前同步预热记忆并注入 SystemPrompt
+    // ⚠️ 铁律：绝对禁止篡改 user messages 数组！用户消息气泡必须 100% 保持人类原始输入！
+    ctx.on('agent/pre-step', async ({ agent, messages, signal }, next) => {
+      try {
+        const msgs = messages || []
+        const lastUserMsg = [...msgs].reverse().find(m => {
+          if (m.role !== 'user' && m.type !== 'user/message') return false
+          const c = m.content
+          const t = typeof c === 'string' ? c : (Array.isArray(c) ? c.map(p => p.text || '').join(' ') : '')
+          const s = t.trim()
+          if (!s || s.startsWith('Current runtime context') || s.startsWith('Time sampled while') || s.startsWith('【OpenViking')) return false
+          return true
+        })
+        const rawContent = lastUserMsg?.content
+        const rawText = typeof rawContent === 'string'
+          ? rawContent
+          : (Array.isArray(rawContent) ? rawContent.map(c => c.text || '').join(' ') : '')
+        const query = rawText.trim()
+
+        if (isMemoryIntent(query)) {
+          log(`[PRE_STEP_QUERY] fetching memory for intent "${query.slice(0, 40)}..."`)
+          const mem = await fetchMemory(getBaseApi(), getKey(), getPeer(), getAgentId(), query)
+          if (mem && mem.trim() && !signal?.aborted) {
+            log(`[PRE_STEP_INJECT] appending hidden runtime-context snapshot (${mem.length} chars)`)
+            lastInjectedMemory = mem
+
+            // 构造合法的 DSH 原生 runtime-context 隐式快照 (UI 界面对人类 100% 隐藏，对模型完全可见)
+            const contextMsg = {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: `Current runtime context. This snapshot supersedes earlier runtime-context snapshots.\n\n${mem}`
+                }
+              ],
+              source: {
+                kind: 'runtime-context',
+                form: 'snapshot',
+                sections: [
+                  {
+                    name: 'openviking-memory-prefetch',
+                    text: mem
+                  }
+                ]
+              }
+            }
+            return {
+              kind: 'enter',
+              messages: [...msgs, contextMsg]
+            }
+          }
+        } else {
+          // 非记忆意图直接清空上下文，杜绝残留污染后续轮次
+          lastInjectedMemory = ''
+        }
+      } catch (err) {
+        log(`[PRE_STEP_WARN] ${err.message}`)
+      }
+      return next()
+    }, { prepend: true })
 
     // 3. 注入 System Prompt 动态上下文（在模型组装 Prompt 阶段无感注入）
     if (ctx.systemPrompt) {
@@ -342,12 +493,66 @@ export function apply(ctx, config = {}) {
             return ''
           }
         })
-        log('[INJECTOR_READY] ctx.systemPrompt.context registered successfully')
+        log('[INJECTOR_READY] ctx.systemPrompt.context (openviking-memory-prefetch) registered successfully')
+
+        // 4. 注入系统级智能工具路由指南 (无论是否有预取记忆，始终引导模型优先使用 OpenViking 核心套件)
+        ctx.systemPrompt.context({
+          name: 'openviking-routing-guide',
+          order: 15,
+          text: () => [
+            '【OpenViking 智能工具路由与协同导轨】',
+            '1. 联网搜索与时效资讯：当用户询问最新资讯、新闻、外部技术或网页时，模型自动调用 `mcp__openviking__web_search` 或 `mcp__openviking__web_fetch`，严禁调用失效或计费的官方 web_search。',
+            '2. 账号密码与安全凭据：当用户询问外部服务密码、Token、API Key 或连接凭据时，模型自动调用 `keepass_search` 与 `keepass_get`，严禁向用户索要明文密码。',
+            '3. 核心长程记忆与知识库：【体外大脑 (OpenViking)】运行于服务端，绝非本地磁盘工作区文件！严禁调用 pwsh、cmd 或 glob 在本地翻找体外大脑。当用户询问体外大脑、历史方案或架构设计时，若上方预取不足，第一跳请调用 `mcp__openviking__find` 检索，该工具已默认附带核心文档正文，搜完请直接基于内联正文向用户作答，无需再调用 read 工具。'
+          ].join('\n')
+        })
+        log('[ROUTING_GUIDE_READY] ctx.systemPrompt.context (openviking-routing-guide) registered successfully')
       } catch (e) {
         log(`[INJECTOR_WARN] could not register systemPrompt context: ${e.message}`)
       }
     }
   }
+
+  // 🛡️ 进程内工具执行前置守卫 (In-Process Tool Pre-Execute Guard)
+  // 遵循官方规范：零侵入宿主配置，静默拦截并纠偏越界调用
+  try {
+    ctx.on('tools/pre-execute', async (exec, next) => {
+      try {
+        // 1. 守卫官方收费/空壳搜索：一旦模型触发官方 web_search，直接纠偏拦截，防止扣费与 403 崩溃
+        if (exec.name === 'web_search' || exec.name === 'tool-web') {
+          log(`[GUARD_SEARCH] intercepted official search call: "${JSON.stringify(exec.arguments)}"`)
+          return {
+            kind: 'deny',
+            reason: 'DeepSeek Harness 官方 web_search 未配置或需要额外计费。请改用 OpenViking 免费多云聚合搜索工具：mcp__openviking__web_search(query="...") 或 mcp__openviking__search_deep。'
+          }
+        }
+
+        // 3. 守卫虚拟 URI (移植官方 uri-guard 智慧)：模型试图用本地文件工具读写 viking:// 时拦截纠偏
+        const FILE_TOOLS = ['read', 'write', 'edit', 'glob', 'grep', 'str_replace_editor', 'bash']
+        if (FILE_TOOLS.includes(exec.name)) {
+          const argsStr = JSON.stringify(exec.arguments || {})
+          if (argsStr.includes('viking://')) {
+            const pathVal = String(exec.arguments?.file_path || exec.arguments?.path || exec.arguments?.command || '')
+            if (pathVal.includes('viking://')) {
+              const match = pathVal.match(/viking:\/\/[^\s"'`\\)]+/i)
+              const uri = match ? match[0] : 'viking://'
+              log(`[GUARD_URI] intercepted virtual URI on local tool ${exec.name}: ${uri}`)
+              return {
+                kind: 'deny',
+                reason: `viking:// 属于 OpenViking 体外大脑的虚拟资源路径，非宿主机本地文件系统路径。请改用 mcp__openviking__read(uri="${uri}") 或 mcp__openviking__search 查询。`
+              }
+            }
+          }
+        }
+      } catch (err) {
+        log(`[GUARD_ERROR] guard pre-execute failed: ${err.message}`)
+      }
+      return next()
+    })
+    log('[GUARD_READY] tools/pre-execute search & uri guards registered successfully')
+  } catch (err) {
+    log(`[GUARD_WARN] failed to register tools/pre-execute guard: ${err.message}`)
+  }
 }
 
-apply.inject = ['systemPrompt']
+apply.inject = ['systemPrompt', 'tools']

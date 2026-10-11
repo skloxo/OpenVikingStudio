@@ -510,21 +510,37 @@ def _resolve_context_type_filter(
 
 @mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
 async def find(
-    query: str,
+    query: Optional[Union[str, List[str]]] = None,
+    queries: Optional[Union[str, List[str]]] = None,
     target_uri: str = "",
     limit: int = 10,
     min_score: float = 0.35,
     level: Optional[List[int]] = None,
     context_type: Optional[Union[str, List[str]]] = None,
-    read_content: bool = False,
+    read_content: bool = True,
 ) -> str:
     """Fast semantic retrieval without session context. Returns ranked memories, resources, and skills with URI, abstract, and score."""
     service = get_service()
     ctx = _get_ctx()
+    target_q = ""
+    for candidate in (query, queries):
+        if isinstance(candidate, str) and candidate.strip():
+            target_q = candidate.strip()
+            break
+        elif isinstance(candidate, (list, tuple)) and candidate:
+            for item in candidate:
+                if isinstance(item, str) and item.strip():
+                    target_q = item.strip()
+                    break
+            if target_q:
+                break
+    if not target_q:
+        return "=== find: No query provided ==="
+
     if target_uri:
         target_uri = _resolve_mcp_workspace_uri(target_uri, ctx)
     result = await service.search.find(
-        query=query,
+        query=target_q,
         ctx=ctx,
         target_uri=target_uri,
         limit=limit,
@@ -537,7 +553,8 @@ async def find(
 
 @mcp.tool(annotations=_DESTRUCTIVE_TOOL_ANNOTATIONS)
 async def search(
-    query: str,
+    query: Optional[Union[str, List[str]]] = None,
+    queries: Optional[Union[str, List[str]]] = None,
     target_uri: str = "",
     session_id: Optional[str] = None,
     limit: int = 10,
@@ -570,6 +587,21 @@ async def search(
     """
     service = get_service()
     ctx = _get_ctx()
+    target_q = ""
+    for candidate in (query, queries):
+        if isinstance(candidate, str) and candidate.strip():
+            target_q = candidate.strip()
+            break
+        elif isinstance(candidate, (list, tuple)) and candidate:
+            for item in candidate:
+                if isinstance(item, str) and item.strip():
+                    target_q = item.strip()
+                    break
+            if target_q:
+                break
+    if not target_q:
+        return "=== search: No query provided ==="
+
     context_filter = _resolve_context_type_filter(context_type)
     if mode == "context":
         if read_content:
@@ -593,7 +625,7 @@ async def search(
             service=service,
             ctx=ctx,
             params=AssembleParams(
-                query=query,
+                query=target_q,
                 limit=limit,
                 score_threshold=min_score,
                 filter=context_filter,
@@ -625,7 +657,7 @@ async def search(
         session = service.sessions.session(ctx, session_id)
         await session.load()
     result = await service.search.search(
-        query=query,
+        query=target_q,
         ctx=ctx,
         target_uri=target_uri,
         session=session,
@@ -656,16 +688,22 @@ async def _format_search_result(result, *, service, ctx, read_content: bool = Fa
     if read_content:
         import asyncio
 
-        semaphore = asyncio.Semaphore(10)
+        semaphore = asyncio.Semaphore(5)
+        # 保护：只读取 Top 2 文档的全文，过滤带省略号 '...' 的虚拟路径，防止 I/O 风暴与 Token 爆炸
+        targets = [m for _, m in items if "..." not in getattr(m, "uri", "")][:2]
 
         async def _read(uri: str) -> None:
             async with semaphore:
                 try:
-                    contents[uri] = await service.fs.read_visible(uri, ctx=ctx)
+                    text = await service.fs.read_visible(uri, ctx=ctx)
+                    # 保护：单篇正文截断，最多 2500 字符（约 150 行），避免 Token 膨胀
+                    if text and len(text) > 2500:
+                        text = text[:2500] + "\n\n... (正文已按安全预算截断，如需完整细节可调 read)"
+                    contents[uri] = text
                 except Exception:
                     pass
 
-        await asyncio.gather(*(_read(m.uri) for _, m in items))
+        await asyncio.gather(*(_read(m.uri) for m in targets))
 
     lines = []
     for ctx_type, m in items:
@@ -674,14 +712,21 @@ async def _format_search_result(result, *, service, ctx, read_content: bool = Fa
         ).strip()
         score = getattr(m, "score", 0.0)
         line = f"- [{ctx_type} {score * 100:.0f}%] {m.uri}\n    {abstract}"
-        if m.uri in contents:
-            line += f"\n\n    {contents[m.uri]}"
+        if m.uri in contents and contents[m.uri]:
+            body_lines = "\n    ".join(contents[m.uri].strip().splitlines())
+            line += f"\n\n    【文档核心正文内联】:\n    {body_lines}"
         lines.append(line)
+
+    footer = ""
+    if read_content and contents:
+        footer = "\n\n💡 协同提示：Top 核心文档的正文已直接内联展示在上方，请直接吸收并基于上述事实向用户作答，无需再发起二次 read 工具调用。"
+    else:
+        footer = "\n\nUse the read tool to expand a URI."
 
     return (
         f"Found {len(items)} item(s):\n\n"
         + "\n".join(lines)
-        + ("" if read_content else "\n\nUse the read tool to expand a URI.")
+        + footer
     )
 
 
@@ -763,13 +808,20 @@ def _mcp_media_download_hint(uri: str) -> str:
 
 
 @mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS, structured_output=False)
-async def read(uris: str | list[str], dehydrate: Optional[bool] = None) -> str | list[ContentBlock]:
+async def read(
+    uris: Optional[Union[str, list[str]]] = None,
+    uri: Optional[Union[str, list[str]]] = None,
+    dehydrate: Optional[bool] = None,
+) -> str | list[ContentBlock]:
     """Read one or more viking:// file URIs. Raster images and supported audio return native MCP content blocks. For directory listing, use the list tool instead. Set dehydrate=True to force LLMLingua-2 compression, False to disable, or leave as default (None) for adaptive auto-dehydration."""
     import asyncio
 
     service = get_service()
     ctx = _get_ctx()
-    uri_list = uris if isinstance(uris, list) else [uris]
+    raw_uris = uris if uris is not None else uri
+    if raw_uris is None:
+        return "=== read: No URI provided ==="
+    uri_list = raw_uris if isinstance(raw_uris, list) else [raw_uris]
     semaphore = asyncio.Semaphore(10)
 
     async def _preflight_one(uri: str) -> tuple[str, Optional[int], Optional[str]]:
@@ -1055,7 +1107,11 @@ class StoreMessage(BaseModel):
 
 
 @mcp.tool(annotations=_DESTRUCTIVE_TOOL_ANNOTATIONS)
-async def remember(messages: list[StoreMessage]) -> str:
+async def remember(
+    messages: Optional[Union[list[StoreMessage], list[dict]]] = None,
+    content: Optional[str] = None,
+    message: Optional[str] = None,
+) -> str:
     """Store information into OpenViking long-term memory. Use when the user says 'remember this', shares preferences, important facts, or decisions worth persisting."""
     import uuid
 
@@ -1063,9 +1119,25 @@ async def remember(messages: list[StoreMessage]) -> str:
 
     service = get_service()
     ctx = _get_ctx()
+
+    target_msgs: list[StoreMessage] = []
+    if messages:
+        for m in messages:
+            if isinstance(m, StoreMessage):
+                target_msgs.append(m)
+            elif isinstance(m, dict):
+                role = m.get("role", "user")
+                c = m.get("content") or m.get("text") or ""
+                target_msgs.append(StoreMessage(role=role, content=c))
+    elif content or message:
+        target_msgs.append(StoreMessage(role="user", content=content or message or ""))
+
+    if not target_msgs:
+        return "=== remember: No messages provided to store ==="
+
     session_id = f"mcp-store-{uuid.uuid4().hex[:12]}"
     session = await service.sessions.get(session_id, ctx, auto_create=True)
-    for msg in messages:
+    for msg in target_msgs:
         if msg.content:
             add_async = getattr(session, "add_message_async", None)
             if callable(add_async):
@@ -1073,7 +1145,7 @@ async def remember(messages: list[StoreMessage]) -> str:
             else:
                 session.add_message(msg.role, [TextPart(text=msg.content)])
     await service.sessions.commit_async(session_id, ctx)
-    return f"Stored {len(messages)} message(s) and committed for memory extraction."
+    return f"Stored {len(target_msgs)} message(s) and committed for memory extraction."
 
 
 # -- write -----------------------------------------------------------------
@@ -1811,12 +1883,19 @@ async def zg_search(
 
 
 # ---------------------------------------------------------------------------
-# 联网搜索与采集聚合插件 (network-search v1.1.0) 模块化 MCP 工具池挂载
+# 联网搜索与采集聚合插件 (network-search v1.1.1) 模块化 MCP 工具池挂载
 # 与插件中心 (plugin_registry.py) 100% 物理对齐解耦
 # ---------------------------------------------------------------------------
 from openviking.service.search_mcp_tools import register_search_mcp_tools
 
 register_search_mcp_tools(mcp, _READ_ONLY_TOOL_ANNOTATIONS)
+
+# ---------------------------------------------------------------------------
+# 凭据保险箱插件 (keepass-vault v1.1.0) 模块化 MCP 工具池挂载
+# ---------------------------------------------------------------------------
+from openviking.service.keepass_mcp_tools import register_keepass_mcp_tools
+
+register_keepass_mcp_tools(mcp, _READ_ONLY_TOOL_ANNOTATIONS)
 
 
 @mcp.tool(annotations=_RETRY_SAFE_DESTRUCTIVE_TOOL_ANNOTATIONS)
