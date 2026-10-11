@@ -202,9 +202,9 @@ class PluginRegistry:
         search_plugin = QuadPluginDefinition(
             plugin_id="network-search",
             name="联网搜索与网页采集",
-            version="1.1.0",
+            version="1.1.2",
             category="platform",
-            description="在线搜索矩阵 (Keenable / Tavily / SearXNG) 统一调度与滚动记账引擎",
+            description="在线搜索矩阵 (Keenable / Exa / Tavily / SearXNG) 统一调度与滚动记账引擎",
             skill=SkillDefinition(
                 skill_id="network-search-ops",
                 name="搜索采集认知导轨",
@@ -247,8 +247,9 @@ class PluginRegistry:
                 ToolDefinition(name="extract_urls", description="Tavily / Exa 免爬虫快速正文脱水抽取", category="search"),
                 ToolDefinition(name="tavily_crawl", description="Tavily Map + Extract 整站自动化爬行流水线", category="search"),
                 ToolDefinition(name="crawl_local", description="本地 Crawl4AI 18789 Playwright 动态无头渲染", category="search"),
-                ToolDefinition(name="deep_research", description="Exa Agent 多步自主调研长报告", category="search"),
-                ToolDefinition(name="benchmark_needle", description="Keenable NEEDLE 自建基准校验", category="search"),
+                ToolDefinition(name="deep_research", description="Exa Agent 多步自主调研长报告 (POST /agent/runs)", category="search"),
+                ToolDefinition(name="search_vertical_expert", description="Keenable NEEDLE 5大垂类高精专家检索 (Scholar/Finance/Legal/News/Rare)", category="search"),
+                ToolDefinition(name="benchmark_needle", description="Keenable NEEDLE 自建基准校验 (兼容别名)", category="search"),
             ],
             gui=GuiSchemaDefinition(
                 settings_fields={
