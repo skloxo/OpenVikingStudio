@@ -539,23 +539,28 @@ async def find(
 
     if target_uri:
         target_uri = _resolve_mcp_workspace_uri(target_uri, ctx)
+    # 扩大底层候选池 (over-fetch)，彻底防止被多篇近期聊天归档挤爆导致有效文档变为 0
+    raw_limit = max(limit * 8, 80)
     result = await service.search.find(
         query=target_q,
         ctx=ctx,
         target_uri=target_uri,
-        limit=limit,
+        limit=raw_limit,
         score_threshold=min_score,
         filter=_resolve_context_type_filter(context_type),
         level=level,
     )
 
-    # 🛡️ 智能去噪：非明确查询会话归档时，过滤掉 archived_sessions，防止二手聊天记录抢占榜首并诱发假路径报错
+    # 🛡️ 智能去噪：非明确查询会话归档时，过滤掉 archived_sessions 与流水账
     is_archive_q = any(k in target_q.lower() for k in ["会话", "归档", "上次", "之前", "session", "archive"])
     if not is_archive_q and result:
         if hasattr(result, "resources") and result.resources:
-            result.resources = [r for r in result.resources if "archived_sessions" not in getattr(r, "uri", "")]
+            filtered_res = [r for r in result.resources if "archived_sessions" not in getattr(r, "uri", "") and "staging/" not in getattr(r, "uri", "")]
+            # 防空兜底：若过滤后非空，取前 limit 个；若过滤后全空，保留原结果前 limit 个
+            result.resources = filtered_res[:limit] if filtered_res else result.resources[:limit]
         if hasattr(result, "memories") and result.memories:
-            result.memories = [m for m in result.memories if "archived_sessions" not in getattr(m, "uri", "")]
+            filtered_mem = [m for m in result.memories if "archived_sessions" not in getattr(m, "uri", "") and "staging/" not in getattr(m, "uri", "")]
+            result.memories = filtered_mem[:limit] if filtered_mem else result.memories[:limit]
 
     return await _format_search_result(result, service=service, ctx=ctx, read_content=read_content)
 
@@ -665,33 +670,41 @@ async def search(
     if session_id and service.search.is_intent_enabled():
         session = service.sessions.session(ctx, session_id)
         await session.load()
+    raw_limit = max(limit * 8, 80)
     result = await service.search.search(
         query=target_q,
         ctx=ctx,
         target_uri=target_uri,
         session=session,
-        limit=limit,
+        limit=raw_limit,
         score_threshold=0.35 if min_score is None else min_score,
         filter=context_filter,
         level=level,
     )
-    return await _format_search_result(result, service=service, ctx=ctx, read_content=read_content)
+    return await _format_search_result(result, service=service, ctx=ctx, read_content=read_content, limit=limit)
 
 
-async def _format_search_result(result, *, service, ctx, read_content: bool = False) -> str:
+async def _format_search_result(result, *, service, ctx, read_content: bool = False, limit: int = 10) -> str:
     items = []
+    fallback_items = []
     for ctx_type, contexts in [
         ("memory", result.memories),
         ("resource", result.resources),
         ("skill", result.skills),
     ]:
         for m in contexts:
+            fallback_items.append((ctx_type, m))
             # 🛡️ 物理过滤：排除 archived_sessions 历史会话归档，杜绝二手聊天记录与假路径污染
-            if "archived_sessions" in getattr(m, "uri", ""):
+            if "archived_sessions" in getattr(m, "uri", "") or "staging/" in getattr(m, "uri", ""):
                 continue
             items.append((ctx_type, m))
 
+    # 防空兜底：若过滤后全空，回退使用原始条目，绝不向模型返回虚假空列表
+    if not items and fallback_items:
+        items = fallback_items
+
     items.sort(key=lambda x: getattr(x[1], "score", 0.0), reverse=True)
+    items = items[:limit]
 
     if not items:
         return "No matching context found."
@@ -950,6 +963,23 @@ async def read(
                         logger.warning("MCP read dehydration fallback: %s", err)
                 return content
             except OpenVikingError as exc:
+                # 🛡️ 智能模糊容错自愈：如果由于路径缺层导致 File not found，尝试在同资源包内自动补全真实路径
+                if "not found" in str(exc).lower():
+                    try:
+                        filename = PurePosixPath(resolved_uri.split("#", 1)[0].split("?", 1)[0]).name
+                        if filename and len(filename) > 5 and not filename.startswith("*"):
+                            parts = resolved_uri.split("/")
+                            if len(parts) >= 4:
+                                root_uri = "/".join(parts[:4])
+                                glob_res = await service.fs.glob(f"**/{filename}", uri=root_uri, ctx=ctx, node_limit=1)
+                                matches = glob_res.get("matches", []) if isinstance(glob_res, dict) else []
+                                if matches:
+                                    real_uri = matches[0].get("uri", str(matches[0])) if isinstance(matches[0], dict) else str(matches[0])
+                                    if real_uri and real_uri != resolved_uri:
+                                        logger.info("[MCP.read] Auto-healed path: %s -> %s", resolved_uri, real_uri)
+                                        return await service.fs.read_visible(real_uri, ctx=ctx)
+                    except Exception:
+                        pass
                 return str(exc)
 
     if len(uri_list) == 1:
