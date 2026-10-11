@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import time
 from typing import Any, Dict, List, Optional
 import urllib.parse
@@ -52,7 +53,7 @@ class OmniSearchClient:
         method: str = "POST",
         json_body: Optional[Dict[str, Any]] = None,
         custom_headers: Optional[Dict[str, str]] = None,
-        max_retries: int = 2,
+        max_retries: int = 4,
     ) -> Dict[str, Any]:
         """执行 HTTP 调用，遇到 429 自动冷却并在微秒级切换下一个 Key 重试。"""
         headers = dict(custom_headers or {})
@@ -70,6 +71,7 @@ class OmniSearchClient:
                 headers["x-api-key"] = key_item.api_key
                 headers["Content-Type"] = "application/json"
             elif engine == "tavily":
+                headers["Authorization"] = f"Bearer {key_item.api_key}"
                 if json_body is not None:
                     json_body["api_key"] = key_item.api_key
 
@@ -158,7 +160,7 @@ class OmniSearchClient:
             engine="keenable",
             tool_name="web_search",
             url="https://api.keenable.ai/v1/search",
-            json_body={"query": query, "num": max_results},
+            json_body={"query": query, "max_results": max_results},
         )
         if "results" in res and res["results"]:
             return {"engine": "keenable", "results": res["results"][:max_results]}
@@ -323,13 +325,29 @@ class OmniSearchClient:
     ) -> Dict[str, Any]:
         start_t = time.perf_counter()
         try:
-            payload: Dict[str, Any] = {"urls": url, "priority": 10}
+            url_list = [url] if isinstance(url, str) else list(url)
+            payload: Dict[str, Any] = {"urls": url_list, "priority": 10}
             if css_selector:
                 payload["css_selector"] = css_selector
             if wait_for:
                 payload["wait_for"] = wait_for
 
-            r = await self.client.post("http://127.0.0.1:18789/crawl", json=payload, timeout=20.0)
+            token = os.environ.get("CRAWL4AI_API_TOKEN", "")
+            if not token and os.path.exists("/home/skloxo/aho/crawl4ai/.env"):
+                try:
+                    with open("/home/skloxo/aho/crawl4ai/.env") as f:
+                        for line in f:
+                            if line.startswith("CRAWL4AI_API_TOKEN="):
+                                token = line.strip().split("=", 1)[1]
+                                break
+                except Exception:
+                    pass
+
+            headers = {"Content-Type": "application/json"}
+            if token:
+                headers["Authorization"] = f"Bearer {token}"
+
+            r = await self.client.post("http://127.0.0.1:18789/crawl", json=payload, headers=headers, timeout=20.0)
             lat = (time.perf_counter() - start_t) * 1000.0
             data = r.json()
             self.rotator.record_usage_audit(
@@ -355,26 +373,37 @@ class OmniSearchClient:
             return {"error": f"Crawl4AI local offline: {exc}"}
 
     # -------------------------------------------------------------------------
-    # 11. deep_research: Exa Agent 多步自主调研长报告
+    # 11. deep_research: Exa Agent 多步自主调研长报告 (POST /agent/runs)
     # -------------------------------------------------------------------------
     async def deep_research(self, topic: str, instructions: Optional[str] = None) -> Dict[str, Any]:
-        body: Dict[str, Any] = {"topic": topic}
-        if instructions:
-            body["instructions"] = instructions
+        query = f"{topic}. {instructions}" if instructions else topic
+        body: Dict[str, Any] = {"query": query, "effort": "auto"}
         return await self._execute_with_retry(
             engine="exa",
             tool_name="deep_research",
-            url="https://api.exa.ai/research",
+            url="https://api.exa.ai/agent/runs",
             json_body=body,
         )
 
     # -------------------------------------------------------------------------
-    # 12. benchmark_needle: Keenable NEEDLE 自建基准校验
+    # 12. search_vertical_expert: Keenable 垂直专家检索 (Scholar/Finance/Legal/News/Rare)
     # -------------------------------------------------------------------------
-    async def benchmark_needle(self, category: str, query: str) -> Dict[str, Any]:
+    async def search_vertical_expert(
+        self, category: str, query: str, max_results: int = 10
+    ) -> Dict[str, Any]:
+        """Keenable 垂直专家搜索 (NEEDLE 5大垂类)，使用 mode="pro" 与垂类指令提权。"""
+        vertical_prompt = f"[{category.upper()} VERTICAL] {query}"
         return await self._execute_with_retry(
             engine="keenable",
-            tool_name="benchmark_needle",
-            url="https://api.keenable.ai/v1/needle/eval",
-            json_body={"category": category, "query": query},
+            tool_name="search_vertical_expert",
+            url="https://api.keenable.ai/v1/search",
+            json_body={
+                "query": vertical_prompt,
+                "mode": "pro",
+                "max_results": max_results,
+            },
         )
+
+    async def benchmark_needle(self, category: str, query: str) -> Dict[str, Any]:
+        """兼容别名：调用 Keenable 垂直专家检索。"""
+        return await self.search_vertical_expert(category=category, query=query)
