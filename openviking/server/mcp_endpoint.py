@@ -548,6 +548,15 @@ async def find(
         filter=_resolve_context_type_filter(context_type),
         level=level,
     )
+
+    # 🛡️ 智能去噪：非明确查询会话归档时，过滤掉 archived_sessions，防止二手聊天记录抢占榜首并诱发假路径报错
+    is_archive_q = any(k in target_q.lower() for k in ["会话", "归档", "上次", "之前", "session", "archive"])
+    if not is_archive_q and result:
+        if hasattr(result, "resources") and result.resources:
+            result.resources = [r for r in result.resources if "archived_sessions" not in getattr(r, "uri", "")]
+        if hasattr(result, "memories") and result.memories:
+            result.memories = [m for m in result.memories if "archived_sessions" not in getattr(m, "uri", "")]
+
     return await _format_search_result(result, service=service, ctx=ctx, read_content=read_content)
 
 
@@ -677,6 +686,9 @@ async def _format_search_result(result, *, service, ctx, read_content: bool = Fa
         ("skill", result.skills),
     ]:
         for m in contexts:
+            # 🛡️ 物理过滤：排除 archived_sessions 历史会话归档，杜绝二手聊天记录与假路径污染
+            if "archived_sessions" in getattr(m, "uri", ""):
+                continue
             items.append((ctx_type, m))
 
     items.sort(key=lambda x: getattr(x[1], "score", 0.0), reverse=True)
