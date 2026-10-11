@@ -1106,6 +1106,8 @@ class _OpsMixin:
         uri: str = "viking://",
         node_limit: Optional[int] = None,
         ctx: Optional[RequestContext] = None,
+        extra_fields: Optional[List[str]] = None,
+        **kwargs: Any,
     ) -> Dict:
         """File pattern matching, supports **/*.md recursive."""
         _ensure_non_empty_search_query(pattern)
