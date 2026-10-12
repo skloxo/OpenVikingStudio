@@ -1,0 +1,33 @@
+{
+  "name": "dsh-plugin-search-gateway",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "description": "Search Gateway 独立多引擎联网搜索与采集聚合插件 (26-Key 轮询矩阵 + 12大原子工具)",
+  "keywords": [
+    "deepseek-harness",
+    "dsh-plugin",
+    "cordis",
+    "search-gateway",
+    "mcp",
+    "search"
+  ],
+  "exports": {
+    ".": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "schema.js",
+    "README.md"
+  ],
+  "dsh": {
+    "manifest": {
+      "id": "search-gateway",
+      "name": "Search Gateway 独立搜索与采集网关",
+      "description": "专职负责多渠道联网检索、学术/金融/代码快搜与网页正文深度脱水提取",
+      "version": "1.0.0",
+      "entry": "./index.js",
+      "configSchema": "./schema.js"
+    }
+  }
+}

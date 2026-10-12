@@ -11,6 +11,7 @@ from openviking.core.namespace import (
     canonical_session_uri,
     classify_uri,
     context_type_for_uri,
+    is_accessible,
     is_content_root_uri,
     is_session_uri,
     owner_space_for_uri,
@@ -330,3 +331,21 @@ def test_home_alias_is_only_recognized_as_first_segment():
     # Anywhere else it stays a literal path segment.
     assert resolve_request_uri("viking://resources/~/x", ctx) == "viking://resources/~/x"
     assert resolve_request_uri("viking://user/alice/~/x", ctx) == "viking://user/alice/~/x"
+
+
+def test_agent_skills_is_accessible_with_actor_peer_id():
+    ctx = RequestContext(
+        user=UserIdentifier(account_id="default", user_id="Antigravity@2080Ti"),
+        role=Role.USER,
+        actor_peer_id="antigravity@2080ti",
+    )
+    # Global agent subpaths must be accessible even when actor_peer_id is set
+    assert is_accessible("viking://agent/skills", ctx) is True
+    assert is_accessible("viking://agent/skills/demo-skill", ctx) is True
+    assert is_accessible("viking://agent/endpoints", ctx) is True
+    assert is_accessible("viking://agent/tools", ctx) is True
+
+    # Legacy peer-scoped agent paths still require match
+    assert is_accessible("viking://agent/antigravity@2080ti/sub", ctx) is True
+    assert is_accessible("viking://agent/other_agent/sub", ctx) is False
+

@@ -348,10 +348,8 @@ export const settings = {
       apiKey: 'API key',
       role: 'Role',
       user: 'User',
-      agents: 'Agents',
-      activeAgents: '{{count}} Active',
-      pluginAccess: 'Plugin Access',
-      pluginAccessTooltip: 'Configure and copy plugin bridge credentials for this user',
+      pluginAccess: 'Plugin Assembly',
+      pluginAccessTooltip: 'Configure plugin tool access and get one-click client bridge setup',
     },
     toast: {
       accountCreated: 'Account created',
