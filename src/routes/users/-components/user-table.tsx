@@ -135,7 +135,6 @@ export function UserTable({
               <TableHeader>
                 <TableRow className="bg-muted/20 hover:bg-muted/20">
                   <TableHead>{t('table.user')}</TableHead>
-                  <TableHead className="w-36">{t('table.agents')}</TableHead>
                   <TableHead>{t('table.role')}</TableHead>
                   <TableHead>{t('table.apiKey')}</TableHead>
                   <TableHead className="text-right">
@@ -187,22 +186,6 @@ export function UserTable({
                             </Badge>
                           ) : null}
                         </div>
-                      </TableCell>
-
-                      <TableCell
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onOpenPluginBridge?.(user)
-                        }}
-                      >
-                        <Badge
-                          variant="outline"
-                          className="text-xs font-mono h-5.5 px-2 border-cyan-500/30 text-cyan-600 dark:text-cyan-400 bg-cyan-500/5 hover:bg-cyan-500/15 cursor-pointer transition-colors"
-                          title={t('table.pluginAccessTooltip')}
-                        >
-                          <BoxesIcon className="size-3 mr-1 text-cyan-500" />
-                          {t('table.pluginAccess')}
-                        </Badge>
                       </TableCell>
 
                       <TableCell onClick={(e) => e.stopPropagation()}>
@@ -314,11 +297,11 @@ export function UserTable({
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="text-xs h-7 gap-1 border-cyan-500/30 text-cyan-400 hover:bg-cyan-950/20"
+                            className="text-xs h-7 gap-1.5 border-cyan-500/40 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-500/10 font-medium"
                             onClick={() => onOpenPluginBridge?.(user)}
                             title={t('table.pluginAccessTooltip')}
                           >
-                            <BoxesIcon className="size-3 text-cyan-500" />
+                            <BoxesIcon className="size-3.5 text-cyan-500" />
                             {t('table.pluginAccess')}
                           </Button>
                           {canSwitchIdentity ? (

@@ -242,7 +242,7 @@ export function ServerDoctorDialog({
             </div>
             <div className="font-mono text-xs space-y-1 text-muted-foreground">
               <div className="flex items-center justify-between">
-                <span>当前账号:</span>
+                <span>当前空间:</span>
                 <span className="text-foreground font-medium">
                   {connection.accountId || 'default'}
                 </span>

@@ -342,10 +342,8 @@ export const settings = {
       apiKey: 'API key',
       role: '角色',
       user: 'User',
-      agents: '在册智能体',
-      activeAgents: '{{count}} 个在册',
-      pluginAccess: '插件接入',
-      pluginAccessTooltip: '配置并获取该用户的插件接入与客户端配置',
+      pluginAccess: '插件装配',
+      pluginAccessTooltip: '配置此用户的插件与工具授权，并获取客户端一键接入指引',
     },
     toast: {
       accountCreated: 'Account 已创建',

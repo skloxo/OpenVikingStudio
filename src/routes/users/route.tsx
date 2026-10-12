@@ -46,7 +46,7 @@ import { resolveStudioManagementCapabilities } from '#/lib/studio-permissions'
 import { AddUserDialog } from './-components/add-user-dialog'
 import { UserDetailSheet } from './-components/user-detail-sheet'
 import { UserManagementDialogs } from './-components/user-management-dialogs'
-import { UserPluginBridgeDrawer } from './-components/user-plugin-bridge-drawer'
+import { UserPluginCockpitDrawer } from './-components/user-plugin-cockpit-drawer'
 import { UserTable } from './-components/user-table'
 import { getErrorMessage } from './-lib/user-utils'
 
@@ -377,7 +377,7 @@ function UserManagementRoute() {
         users={users}
       />
 
-      <UserPluginBridgeDrawer
+      <UserPluginCockpitDrawer
         user={pluginBridgeUser}
         open={pluginBridgeOpen}
         onOpenChange={setPluginBridgeOpen}
@@ -391,6 +391,10 @@ function UserManagementRoute() {
         currentUserId={connection.userId}
         onSwitchIdentity={(u) => void useUserIdentity(u)}
         onRegenerateKey={(u) => setPendingRegenerateUser(u)}
+        onOpenPluginDrawer={(u) => {
+          setPluginBridgeUser(u)
+          setPluginBridgeOpen(true)
+        }}
       />
 
       <AddUserDialog

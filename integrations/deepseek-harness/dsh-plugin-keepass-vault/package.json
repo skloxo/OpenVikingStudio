@@ -1,0 +1,34 @@
+{
+  "name": "dsh-plugin-keepass-vault",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "description": "KeePass Vault 独立凭据中枢与保险箱插件 (本地 KDBX 读取 + 查库第一公理 + 零后端依赖)",
+  "keywords": [
+    "deepseek-harness",
+    "dsh-plugin",
+    "cordis",
+    "keepass",
+    "vault",
+    "credentials",
+    "mcp"
+  ],
+  "exports": {
+    ".": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "schema.js",
+    "README.md"
+  ],
+  "dsh": {
+    "manifest": {
+      "id": "keepass-vault",
+      "name": "KeePass 凭据保险箱",
+      "description": "全集群密码、SSH 私钥与 API Key 凭据保险箱，本地 KDBX 零泄漏读取，写前自动快照容灾",
+      "version": "1.0.0",
+      "entry": "./index.js",
+      "configSchema": "./schema.js"
+    }
+  }
+}

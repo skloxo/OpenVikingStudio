@@ -24,6 +24,8 @@ import { Input } from '#/components/ui/input'
 import { copyTextToClipboard } from '#/lib/clipboard'
 import type { QuadPluginItem, ToolItem } from '../-lib/plugin-types'
 import { NetworkSearchDashboard } from './network-search-dashboard'
+import { SearchIntegrationGuide } from './search-integration-guide'
+import { VaultIntegrationGuide } from './vault-integration-guide'
 
 export type PluginDetailDrawerProps = {
   plugin: QuadPluginItem | null
@@ -198,9 +200,16 @@ export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps)
             )}
           </div>
 
-          {/* 专享大盘：针对 network-search 插件直出 26-Key 微缩健康矩阵与月度配额 */}
-          {plugin.plugin_id === 'network-search' && (activeTab === 'all' || activeTab === 'config') && (
-            <NetworkSearchDashboard />
+          {/* 专享大盘与接入指南：根据插件类型动态装配 */}
+          {plugin.plugin_id === 'network-search' && (
+            <div className="space-y-4">
+              <SearchIntegrationGuide />
+              {(activeTab === 'all' || activeTab === 'config') && <NetworkSearchDashboard />}
+            </div>
+          )}
+
+          {plugin.plugin_id === 'keepass-vault' && (
+            <VaultIntegrationGuide />
           )}
 
           {/* ================= 维度一：MCP 工具池 ================= */}
@@ -415,11 +424,27 @@ export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps)
               {/* 3. 架构解耦与通信契约自解释说明 */}
               <div className="rounded-md border border-border/40 bg-muted/10 p-3 text-xs leading-relaxed text-muted-foreground">
                 <span className="font-semibold text-foreground">💡 架构解耦契约：</span>
-                本插件属于 OpenViking 服务端中心化部署的物理能力。外部智能体
-                <strong className="text-foreground">无需在本地安装本插件代码</strong>
-                ，只需在「智能体中心」为智能体一键接入通用的客户端通信桥梁 (
-                <code className="text-cyan-700 dark:text-cyan-400 font-mono">dsh-plugin-openviking</code>
-                )，即可通过统一通道安全调用全量能力。
+                {plugin.plugin_id === 'openviking-memory' && (
+                  <>
+                    本插件为 OpenViking 服务端中心化核心能力。外部智能体只需接入通用的客户端通信桥梁 (
+                    <code className="text-cyan-700 dark:text-cyan-400 font-mono">dsh-plugin-openviking</code>
+                    )，即可通过统一通道安全调用全量长程记忆。
+                  </>
+                )}
+                {plugin.plugin_id === 'network-search' && (
+                  <>
+                    本插件为独立微服务部署。支持<strong className="text-foreground">形态 A【原生标准 API (免装插件)】</strong>与<strong className="text-foreground">形态 B【定制插件 (
+                    <code className="text-cyan-700 dark:text-cyan-400 font-mono">dsh-plugin-search-gateway</code>
+                    )】</strong>双模态接入，底层共享 26-Key 轮询矩阵。
+                  </>
+                )}
+                {plugin.plugin_id === 'keepass-vault' && (
+                  <>
+                    本插件与 OpenViking 服务端<strong className="text-foreground">零运行时强依赖</strong>。OpenViking 仅作为官方展示展厅与统一发布托管源，客户端直接通过 (
+                    <code className="text-cyan-700 dark:text-cyan-400 font-mono">dsh-plugin-keepass-vault</code>
+                    ) 读取智能体本地加密 KDBX。
+                  </>
+                )}
               </div>
             </div>
           )}

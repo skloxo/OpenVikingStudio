@@ -45,6 +45,21 @@ export function PluginQuadCard({ plugin, onSelect }: PluginQuadCardProps) {
             >
               v{plugin.version}
             </Badge>
+            {plugin.plugin_id === 'openviking-memory' && (
+              <Badge variant="outline" className="text-xs font-mono border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 px-1.5 py-0 shrink-0">
+                平台底座
+              </Badge>
+            )}
+            {plugin.plugin_id === 'network-search' && (
+              <Badge variant="outline" className="text-xs font-mono border-border/60 bg-muted/20 text-muted-foreground px-1.5 py-0 shrink-0">
+                双模态
+              </Badge>
+            )}
+            {plugin.plugin_id === 'keepass-vault' && (
+              <Badge variant="outline" className="text-xs font-mono border-border/60 bg-muted/20 text-muted-foreground px-1.5 py-0 shrink-0">
+                零依赖
+              </Badge>
+            )}
           </div>
 
           {/* 运行态状态胶囊 (性冷淡高密风格，NO GREEN EVER) */}

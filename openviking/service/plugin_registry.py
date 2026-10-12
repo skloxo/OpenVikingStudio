@@ -114,9 +114,9 @@ class PluginRegistry:
         memory_plugin = QuadPluginDefinition(
             plugin_id="openviking-memory",
             name="OpenViking 核心记忆",
-            version="1.5.0",
+            version="2.0.11",
             category="platform",
-            description="体外大脑中心化记忆中枢：长程记忆存储、代码语义索引与上下文自动路由",
+            description="体外大脑中心化记忆中枢：长程记忆存储、代码语义索引与上下文自动路由 (官方平台底座)",
             skill=SkillDefinition(
                 skill_id="openviking-memory",
                 name="核心记忆认知导轨",
@@ -159,13 +159,13 @@ class PluginRegistry:
             health=PluginHealthProbe(status="healthy", latency_ms=1.1, message="FastMCP 47 tools ready"),
         )
 
-        # 2. KeePass 凭据保险箱 (keepass-vault)
+        # 2. KeePass 凭据保险箱 (keepass-vault - 独立生态插件)
         keepass_plugin = QuadPluginDefinition(
             plugin_id="keepass-vault",
             name="KeePass 凭据保险箱",
             version="1.0.0",
-            category="platform",
-            description="全集群密码、SSH 私钥与 API Key 凭据存储保险箱",
+            category="user",
+            description="全集群密码、SSH 私钥与 API Key 凭据存储保险箱 (独立生态插件 · 零后端依赖)",
             skill=SkillDefinition(
                 skill_id="keepass-vault",
                 name="凭据中枢认知导轨",
@@ -198,13 +198,13 @@ class PluginRegistry:
             health=PluginHealthProbe(status="healthy", latency_ms=0.8, message="Vault unlocked"),
         )
 
-        # 3. 联网搜索与网页深度清洗 (network-search)
+        # 3. 联网搜索与网页深度清洗 (network-search - 独立生态插件)
         search_plugin = QuadPluginDefinition(
             plugin_id="network-search",
-            name="联网搜索与网页采集",
-            version="1.1.2",
-            category="platform",
-            description="在线搜索矩阵 (Keenable / Exa / Tavily / SearXNG) 统一调度与滚动记账引擎",
+            name="联网搜索与采集网关",
+            version="1.0.0",
+            category="user",
+            description="独立多引擎联网搜索与采集聚合网关，支持原生标准 API (免装插件) 与定制插件双模态",
             skill=SkillDefinition(
                 skill_id="network-search-ops",
                 name="搜索采集认知导轨",

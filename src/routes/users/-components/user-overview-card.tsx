@@ -10,7 +10,6 @@ import {
   ShieldCheckIcon,
   ShieldIcon,
   UserCheckIcon,
-  UsersIcon,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -86,8 +85,8 @@ export function UserOverviewCard({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
         <div className="flex items-center justify-between rounded border border-border/40 bg-background/50 px-2.5 py-1.5">
           <span className="text-muted-foreground flex items-center gap-1.5">
-            <UsersIcon className="size-3 text-muted-foreground/80" />
-            所属账号:
+            <ShieldCheckIcon className="size-3 text-muted-foreground/80" />
+            所属空间:
           </span>
           <span className="font-mono font-medium text-foreground">{user?.accountId || 'default'}</span>
         </div>
