@@ -500,10 +500,9 @@ export function apply(ctx, config = {}) {
           name: 'openviking-routing-guide',
           order: 15,
           text: () => [
-            '【OpenViking 智能工具路由与协同导轨】',
-            '1. 联网搜索与时效资讯：当用户询问最新资讯、新闻、外部技术或网页时，模型自动调用 `mcp__openviking__web_search` 或 `mcp__openviking__web_fetch`，严禁调用失效或计费的官方 web_search。',
-            '2. 账号密码与安全凭据：当用户询问外部服务密码、Token、API Key 或连接凭据时，模型自动调用 `keepass_search` 与 `keepass_get`，严禁向用户索要明文密码。',
-            '3. 核心长程记忆与知识库：【体外大脑 (OpenViking)】运行于服务端，绝非本地磁盘工作区文件！严禁调用 pwsh、cmd 或 glob 在本地翻找体外大脑。当用户询问体外大脑、历史方案或架构设计时，若上方预取不足，第一跳请调用 `mcp__openviking__find` 检索，该工具已默认附带核心文档正文，搜完请直接基于内联正文向用户作答，无需再调用 read 工具。'
+            '【OpenViking 体外大脑长程记忆导轨】',
+            '1. 核心长程记忆与知识库：【体外大脑 (OpenViking)】运行于服务端，绝非本地磁盘工作区文件！严禁调用 pwsh、cmd 或 glob 在本地翻找体外大脑。当用户询问体外大脑、历史方案或架构设计时，若上方预取不足，第一跳请调用 `mcp__openviking__find` 检索，该工具已默认附带核心文档正文，搜完请直接基于内联正文向用户作答，无需再调用 read 工具。',
+            '2. 正交解耦规范：联网搜索已解耦至专用 Search Gateway；凭据管理已解耦至专用 KeePass Vault。OpenViking 专职提供高可靠长程记忆与知识检索支撑。'
           ].join('\n')
         })
         log('[ROUTING_GUIDE_READY] ctx.systemPrompt.context (openviking-routing-guide) registered successfully')
