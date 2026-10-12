@@ -1924,22 +1924,6 @@ async def zg_search(
     return "\n".join(lines)
 
 
-# ---------------------------------------------------------------------------
-# 联网搜索与采集聚合插件 (network-search v1.1.1) 模块化 MCP 工具池挂载
-# 与插件中心 (plugin_registry.py) 100% 物理对齐解耦
-# ---------------------------------------------------------------------------
-from openviking.service.search_mcp_tools import register_search_mcp_tools
-
-register_search_mcp_tools(mcp, _READ_ONLY_TOOL_ANNOTATIONS)
-
-# ---------------------------------------------------------------------------
-# 凭据保险箱插件 (keepass-vault v1.1.0) 模块化 MCP 工具池挂载
-# ---------------------------------------------------------------------------
-from openviking.service.keepass_mcp_tools import register_keepass_mcp_tools
-
-register_keepass_mcp_tools(mcp, _READ_ONLY_TOOL_ANNOTATIONS)
-
-
 @mcp.tool(annotations=_RETRY_SAFE_DESTRUCTIVE_TOOL_ANNOTATIONS)
 async def openviking_file_task_card(
     title: str,
