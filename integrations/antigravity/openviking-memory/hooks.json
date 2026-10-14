@@ -1,0 +1,20 @@
+{
+  "openviking-memory-prefetch": {
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "python3 hooks/ov_pre_invocation.py",
+        "timeout": 4
+      }
+    ]
+  },
+  "openviking-session-archiver": {
+    "Stop": [
+      {
+        "type": "command",
+        "command": "python3 hooks/ov_session_archiver.py",
+        "timeout": 3
+      }
+    ]
+  }
+}
