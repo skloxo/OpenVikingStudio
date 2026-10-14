@@ -2,26 +2,25 @@
 # Copyright (c) 2026 Beijing Volcano Engine Technology Co., Ltd.
 # SPDX-License-Identifier: AGPL-3.0
 """
-OpenViking Antigravity Plugin PreInvocation Hook
-自包含钩子：从插件本地 config.json 或环境变量读取地址与密钥，
-在模型推理前自动提取用户意图并预取体外大脑关联记忆。
+OpenViking Antigravity Plugin PreInvocation Hook (v2.0.11)
+自包含钩子：从插件本地 config.json 读取凭据，
+具备云端用户中心 (User Cockpit) 动态权限与 Hook 开关智能感知：
+若在用户中心关闭了本 Hook 或对应插件，本地毫秒级短路，严格尊重云端管控。
 """
 
 import json
 import os
 import sys
+import time
 import urllib.request
 from pathlib import Path
 
 
 def load_plugin_config():
-    """读取插件本地配置 config.json，兼顾环境变量覆盖"""
     plugin_dir = Path(__file__).resolve().parent.parent
     config_file = plugin_dir / "config.json"
-    
     api = os.environ.get("OPENVIKING_API", "").strip()
     key = os.environ.get("OPENVIKING_API_KEY", "").strip()
-    
     if config_file.exists():
         try:
             with open(config_file, "r", encoding="utf-8") as f:
@@ -32,13 +31,54 @@ def load_plugin_config():
                     key = data.get("api_key", "").strip()
         except Exception:
             pass
-            
     api = api or "http://127.0.0.1:1933"
-    return api.rstrip("/"), key
+    return api.rstrip("/"), key, plugin_dir
+
+
+def is_hook_enabled_in_cloud(api: str, key: str, plugin_dir: Path) -> bool:
+    """带 60s TTL 单调时钟缓存，动态感知云端用户中心是否开启了 ov_pre_invocation"""
+    cache_file = plugin_dir / ".caps_cache.json"
+    now = time.time()
+    
+    # 1. 尝试读本地快照缓存 (TTL 60s)
+    if cache_file.exists():
+        try:
+            with open(cache_file, "r", encoding="utf-8") as f:
+                cached = json.load(f)
+                if now - cached.get("timestamp", 0) < 60:
+                    return cached.get("enabled", True)
+        except Exception:
+            pass
+
+    # 2. 缓存过期时向云端快速拉取 (限时 1.2s，失败降级默认 True)
+    try:
+        url = f"{api}/api/v1/system/client-capabilities"
+        headers = {"User-Agent": "Antigravity-OpenViking-Plugin/2.0.11"}
+        if key:
+            headers["Authorization"] = f"Bearer {key}"
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=1.2) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            hooks = data.get("hooks", [])
+            is_enabled = True
+            for h in hooks:
+                if h.get("id") == "ov_pre_invocation":
+                    is_enabled = bool(h.get("enabled", True))
+                    break
+            
+            # 写入轻量快照
+            try:
+                with open(cache_file, "w", encoding="utf-8") as f:
+                    json.dump({"timestamp": now, "enabled": is_enabled}, f)
+            except Exception:
+                pass
+            return is_enabled
+    except Exception:
+        # 网络抖动平滑降级，不阻断
+        return True
 
 
 def extract_query_from_stdin():
-    """从 stdin 提取最近一条用户输入"""
     try:
         if not sys.stdin.isatty():
             raw = sys.stdin.read()
@@ -61,30 +101,33 @@ def extract_query_from_stdin():
 
 
 def main():
-    api, key = load_plugin_config()
-    query = extract_query_from_stdin()
+    api, key, plugin_dir = load_plugin_config()
     
+    # 核心：云端用户中心 Hook 开关动态适配
+    if not is_hook_enabled_in_cloud(api, key, plugin_dir):
+        # 云端管理员关闭了该用户的预取 Hook，本地直接静默退出
+        print("{}")
+        return
+
+    query = extract_query_from_stdin()
     if not query or len(query) < 2:
         print("{}")
         return
 
-    # 过滤简单确认词
     lowered = query.lower()
     if lowered in {"ok", "yes", "好", "好的", "收到", "继续", "同意"}:
         print("{}")
         return
 
-    # 向 OpenViking 搜索先验记忆
     url = f"{api}/api/v1/search/find"
     payload = json.dumps({"query": query[:300], "limit": 2}).encode("utf-8")
-    
     headers = {
         "Content-Type": "application/json",
         "User-Agent": "Antigravity-OpenViking-Plugin/2.0.11"
     }
     if key:
         headers["Authorization"] = f"Bearer {key}"
-        
+
     req = urllib.request.Request(url, data=payload, headers=headers, method="POST")
     try:
         with urllib.request.urlopen(req, timeout=2.5) as resp:
@@ -93,7 +136,7 @@ def main():
             if not items:
                 print("{}")
                 return
-            
+
             lines = [f"【OpenViking 核心记忆预取 ({api})】"]
             for r in items[:2]:
                 uri = r.get("uri", "")
@@ -101,7 +144,7 @@ def main():
                 if len(abstract) > 180:
                     abstract = abstract[:180] + "..."
                 lines.append(f"- [{uri}]: {abstract}")
-            
+
             hint = "\n".join(lines)
             output = {"context_injection": hint}
             print(json.dumps(output, ensure_ascii=False))
