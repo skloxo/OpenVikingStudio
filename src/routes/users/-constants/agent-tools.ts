@@ -291,6 +291,14 @@ export const BIG_THREE_PLUGIN_MAPPINGS: Record<string, { name: string; tools: st
       'web_search', 'web_fetch', 'openviking_web_search',
     ],
   },
+  dify: {
+    name: 'Dify 智能体与工作流中枢',
+    tools: [
+      'dify_status', 'dify_list_apps', 'dify_get_app', 'dify_export_dsl', 'dify_import_dsl',
+      'dify_delete_app', 'dify_run_workflow', 'dify_list_datasets', 'dify_create_dataset',
+      'dify_delete_dataset', 'dify_search_dataset', 'dify_list_model_providers',
+    ],
+  },
 }
 
 export function derivePluginGrantsFromTools(selectedTools: string[]): Record<string, string[]> {
