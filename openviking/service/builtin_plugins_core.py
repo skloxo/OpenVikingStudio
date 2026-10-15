@@ -146,6 +146,9 @@ def create_core_and_ops_plugins(
             tool_to_plugin_map[short] = "openviking-memory"
             aliases[short] = name
 
+    aliases["memory"] = "openviking-memory"
+    aliases["core"] = "openviking-memory"
+
     memory_plugin = QuadPluginDefinition(
         plugin_id="openviking-memory",
         name="OpenViking 核心记忆与代码战地",
@@ -223,6 +226,9 @@ def create_core_and_ops_plugins(
         short = name[len("openviking_"):] if name.startswith("openviking_") else name
         tool_to_plugin_map[short] = "openviking-ops"
         aliases[short] = name
+
+    aliases["ops"] = "openviking-ops"
+    aliases["openviking_ops"] = "openviking-ops"
 
     ops_plugin = QuadPluginDefinition(
         plugin_id="openviking-ops",
