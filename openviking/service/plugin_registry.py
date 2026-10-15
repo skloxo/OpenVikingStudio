@@ -58,8 +58,8 @@ class PluginRegistry:
 
     def _init_builtin_plugins(self) -> None:
         """初始化三大官方标杆插件 (The Big Three)。"""
-        # 1. 核心记忆插件 (openviking-memory) - 两组共 58 项标准 MCP 工具 + 3 项 Hook 守卫 + 认知导轨 + GUI
-        memory_58_tools = [
+        # 1. 核心记忆插件 (openviking-memory) - 54 项核心战地工具 (CPA/Fleet 独立解耦) + 3 项 Hook 守卫 + 认知导轨 + GUI
+        memory_core_tools = [
             # 业务使用者工具池 (31 项)
             ToolDefinition(name="find", description="基于向量与分词的混合记忆语义检索", category="core"),
             ToolDefinition(name="search", description="高级混合关键词与过滤检索引擎", category="core"),
@@ -109,11 +109,7 @@ class PluginRegistry:
             ToolDefinition(name="cancel_watch", description="取消自动刷新系统监听订阅", category="ops"),
             ToolDefinition(name="add_resource", description="异步向体外大脑挂载新资源", category="ops"),
             ToolDefinition(name="openviking_harness_probe", description="硬件与驱动探针物理验证", category="ops"),
-            # 集群算力与协同工具池 (11 项) -> 补齐至 FastMCP 58 完全体单一真实源
-            ToolDefinition(name="openviking_cpa_consult", description="CPA 专家模型异步咨询与决策协同", category="cpa"),
-            ToolDefinition(name="openviking_cpa_fanout", description="CPA 任务批量扇出并行调度", category="cpa"),
-            ToolDefinition(name="openviking_fleet_check", description="卫星集群节点运行态健康体检", category="fleet"),
-            ToolDefinition(name="openviking_fleet_sync", description="跨节点配置与技能一键同频同步", category="fleet"),
+            # 核心战地大纲与技能中心直连感知工具池 (7 项)
             ToolDefinition(name="openviking_smart_read", description="分层自适应智能知识提取与概括", category="core"),
             ToolDefinition(name="openviking_code_outline", description="代码 AST 语法大纲提取", category="code"),
             ToolDefinition(name="openviking_code_search", description="代码语义符号深度检索", category="code"),
@@ -156,7 +152,7 @@ class PluginRegistry:
                     description="高危写操作与越权执行毫秒级安全阻断",
                 ),
             ],
-            tools=memory_58_tools,
+            tools=memory_core_tools,
             gui=GuiSchemaDefinition(
                 settings_fields={
                     "storageEngine": "SQLite FTS5 + VikingFS /queue",
@@ -168,7 +164,7 @@ class PluginRegistry:
                 },
                 dashboard_route="/",
             ),
-            health=PluginHealthProbe(status="healthy", latency_ms=1.1, message="FastMCP 58 tools ready"),
+            health=PluginHealthProbe(status="healthy", latency_ms=1.1, message="FastMCP 54 tools ready (CPA/Fleet Decoupled)"),
         )
 
         # 2. KeePass 凭据保险箱 (keepass-vault - 独立生态插件)
@@ -337,14 +333,110 @@ class PluginRegistry:
             health=PluginHealthProbe(status="healthy", latency_ms=1.2, message="Dify :13000 connected"),
         )
 
-        for p in (memory_plugin, keepass_plugin, search_plugin, dify_plugin):
+        # 5. CPA 跨模型算力协同中枢 (cpa-squad - 独立生态插件 · 物理宿主 2080Ti WSL2)
+        cpa_plugin = QuadPluginDefinition(
+            plugin_id="cpa-squad",
+            name="CPA 跨模型算力协同",
+            version="1.0.0",
+            category="user",
+            description="CPA 多模型智囊协同与工兵批量调度中枢 (独立微服务 · 物理宿主 2080Ti WSL2 虚拟服务器)",
+            skill=SkillDefinition(
+                skill_id="cpa-squad",
+                name="CPA 算力与工兵协同认知导轨",
+                description="Claude/GPT 专家决策咨询，Gemini/DeepSeek 工兵批量扇出，MIMO 限速避坑与故障无感转移规约",
+                sop_summary="研判任务复杂度 -> 高难决策调 consult 问专家 -> 批量重复任务调 fanout 扇出工兵 -> 自动记账",
+                rules=[
+                    "专家模型(Claude/GPT)严格用于高难推演与决策，严禁用于机械体力活",
+                    "工兵模型(Flash/V3)负责批量吞吐，遇429自动触发MIMO冷却避坑",
+                    "CPA 服务宕机或网络中断时，本地业务核心100%自主运行不受阻断",
+                ],
+            ),
+            hooks=[
+                HookDefinition(
+                    hook_id="cpa_fallback_failover_hook",
+                    name="429 智能降级与熔断转移",
+                    trigger_event="before_cpa_dispatch",
+                    description="专家模型遭遇 429 限流或网络超时时，毫秒级无感降级到工兵集群，杜绝调用挂死",
+                ),
+                HookDefinition(
+                    hook_id="cpa_cost_telemetry_hook",
+                    name="Token 消耗与成本审计",
+                    trigger_event="after_cpa_response",
+                    description="自动提取请求输入/输出真实 Token 数与耗时，沉淀结构化记账日志",
+                ),
+            ],
+            tools=[
+                ToolDefinition(name="openviking_cpa_consult", description="CPA 专家模型异步咨询与决策协同", category="cpa"),
+                ToolDefinition(name="openviking_cpa_fanout", description="CPA 任务批量扇出并行调度", category="cpa"),
+            ],
+            gui=GuiSchemaDefinition(
+                settings_fields={
+                    "cpaHost": "http://127.0.0.1:18000",
+                    "workerNode": "2080Ti WSL2 (Dedicated Server)",
+                    "expertModel": "claude-3-5-sonnet / gpt-4o",
+                    "workerModels": "gemini-2.5-flash / deepseek-v3 / qwen-max",
+                    "rateLimitAvoidance": "MIMO Enabled (Multi-Key Failover)",
+                },
+                dashboard_route="/plugins",
+            ),
+            health=PluginHealthProbe(status="healthy", latency_ms=1.2, message="CPA squad ready & workers active"),
+        )
+
+        # 6. 卫星集群同频运维中枢 (fleet-mesh - 独立生态插件 · 跨物理机节点)
+        fleet_plugin = QuadPluginDefinition(
+            plugin_id="fleet-mesh",
+            name="卫星集群同频运维",
+            version="1.0.0",
+            category="user",
+            description="跨物理机节点（MacBook M3 / 宿主 PC / 云端 VPS）健康巡检与配置技能一键同频",
+            skill=SkillDefinition(
+                skill_id="satellite-fleet-ops",
+                name="卫星集群运维认知导轨",
+                description="跨物理机节点巡检、网络拓扑探测与一键同频同步 SOP",
+                sop_summary="定期体检 fleet_check -> 发现配置/技能漂移 -> 执行 fleet_sync 一键同频",
+                rules=[
+                    "跨节点同频前必须核验 Master Memory 版本指纹",
+                    "网络隔离或高延迟节点自动标记休眠，禁止强行同步导致脑裂",
+                ],
+            ),
+            hooks=[
+                HookDefinition(
+                    hook_id="fleet_heartbeat_sync_hook",
+                    name="集群节点心跳同频探针",
+                    trigger_event="before_node_probe",
+                    description="侦测到跨物理机节点离线超时或新节点上线时，触发同频校验与拓扑自愈",
+                ),
+            ],
+            tools=[
+                ToolDefinition(name="openviking_fleet_check", description="卫星集群节点运行态健康体检", category="fleet"),
+                ToolDefinition(name="openviking_fleet_sync", description="跨节点配置与技能一键同频同步", category="fleet"),
+            ],
+            gui=GuiSchemaDefinition(
+                settings_fields={
+                    "clusterDomain": "vk.tide.red",
+                    "masterNode": "vk-master (Primary SSOT)",
+                    "satelliteNodes": "Mac-Studio-M3, Host-PC-Windows, Cloud-VPS",
+                    "syncInterval": "300s",
+                },
+                dashboard_route="/plugins",
+            ),
+            health=PluginHealthProbe(status="healthy", latency_ms=0.9, message="Cluster mesh synchronized"),
+        )
+
+        for p in (memory_plugin, keepass_plugin, search_plugin, dify_plugin, cpa_plugin, fleet_plugin):
             self.register_plugin(p)
         # 向下兼容历史 ID 与工具映射别名 (独立别名表，绝不污染 _plugins 真实列表)
         self._aliases["dsh-plugin-openviking"] = "openviking-memory"
         self._aliases["dify-workflow"] = "dify"
         self._aliases["dify-control-plane"] = "dify"
+        self._aliases["cpa"] = "cpa-squad"
+        self._aliases["fleet"] = "fleet-mesh"
         self._tool_to_plugin_map["searxng_search"] = "network-search"
         self._tool_to_plugin_map["crawl4ai_extract"] = "network-search"
+        self._tool_to_plugin_map["cpa_consult"] = "cpa-squad"
+        self._tool_to_plugin_map["cpa_fanout"] = "cpa-squad"
+        self._tool_to_plugin_map["fleet_check"] = "fleet-mesh"
+        self._tool_to_plugin_map["fleet_sync"] = "fleet-mesh"
 
     @classmethod
     def get_client_bridge_info(cls) -> Dict[str, Any]:

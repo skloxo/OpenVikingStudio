@@ -32,17 +32,25 @@ def test_plugin_registry_singleton_and_builtins():
     assert "keepass-vault" in plugin_ids
     assert "network-search" in plugin_ids
 
-    # 验证核心记忆插件四位一体完整性 (FastMCP 58 完全体 + 3 Hook)
+    # 验证核心记忆插件四位一体完整性 (FastMCP 54 核心工具 + 3 Hook, CPA/Fleet 独立解耦)
     mem_plug = reg1.get_plugin("openviking-memory")
     assert mem_plug is not None
     assert mem_plug.version == "2.0.11"
     assert len(mem_plug.hooks) == 3
-    assert len(mem_plug.tools) == 58
+    assert len(mem_plug.tools) == 54
+
+    # 验证解耦独立插件 cpa-squad 与 fleet-mesh
+    assert "cpa-squad" in plugin_ids
+    assert "fleet-mesh" in plugin_ids
+    assert len(reg1.get_plugin("cpa-squad").tools) == 2
+    assert len(reg1.get_plugin("fleet-mesh").tools) == 2
 
     # 验证工具反查插件 ID
     assert reg1.get_plugin_id_by_tool("find") == "openviking-memory"
     assert reg1.get_plugin_id_by_tool("keepass_get") == "keepass-vault"
     assert reg1.get_plugin_id_by_tool("searxng_search") == "network-search"
+    assert reg1.get_plugin_id_by_tool("openviking_cpa_consult") == "cpa-squad"
+    assert reg1.get_plugin_id_by_tool("openviking_fleet_check") == "fleet-mesh"
 
     # 验证客户端桥梁元数据
     bridge = PluginRegistry.get_client_bridge_info()
@@ -106,7 +114,18 @@ def test_get_plugin_detail_and_bridge_endpoints(client):
     data = resp.json()
     assert data["plugin_id"] == "openviking-memory"
     assert data["version"] == "2.0.11"
-    assert len(data["tools"]) == 58
+    assert len(data["tools"]) == 54
+
+    # 验证获取解耦独立插件详情
+    resp_cpa = client.get("/api/v1/plugins/cpa-squad")
+    assert resp_cpa.status_code == 200
+    assert resp_cpa.json()["plugin_id"] == "cpa-squad"
+    assert len(resp_cpa.json()["tools"]) == 2
+
+    resp_fleet = client.get("/api/v1/plugins/fleet-mesh")
+    assert resp_fleet.status_code == 200
+    assert resp_fleet.json()["plugin_id"] == "fleet-mesh"
+    assert len(resp_fleet.json()["tools"]) == 2
 
     # 验证客户端桥梁独立接口
     resp_bridge = client.get("/api/v1/plugins/bridge/client-package")

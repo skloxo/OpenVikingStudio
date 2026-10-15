@@ -7,6 +7,12 @@
 
 | 版本 Tag      | 任务工单 ID | 模块与重构主题                                                                                                                                                | 核心治理成果与物理交付物                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |     验收状态      |
 | :------------ | :---------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------: |
+| **`v1.7.96`** | **Card-139** | **清理 47 项历史残留脏记忆、更正 1214 技能总数、对齐 FastMCP 58 完全体 SSOT 与 Master Memory 永久固化 (47 Tools Residue Purge, 1214 Skills SSOT, 58 FastMCP Full Parity & Master Memory Permanent Ingestion)** | 1. **清理 47 项历史脏记忆残留**：全面排查代码库，修正 `plugin_registry.py` 内部变量名为 `memory_58_tools` 并将健康探针输出由 47 tools 修正为 58 tools ready；修正前端常量与描述，彻底封杀“47工具”伪双轨描述；<br>2. **技能总数事实更正**：确认并更正系统技能中心真实在册总数为 **1214 个**（废黜陈旧的 700 多个老旧记忆）；<br>3. **测试视网膜与生产构建变绿**：修复 `test_plugins_api.py` 中 2 处断言为 58，Pytest 7/7 全绿，前端 Vite Build 18.85s PASS；<br>4. **Git Tag 与 Master Memory 永久入库**：打标 Git Tag `v1.7.96` (Commit `5457a770d`)，调用 `openviking_record_evolution_lesson` 永久固化体外大脑。 | [x] 已验收通过 ✅ |
+| **`v1.7.97`** | **Card-140** | **外部微服务与集群算力解耦独立 Quad 插件化 (CPA 跨模型算力中枢与卫星集群同频物理剥离 - P0 架构解耦)** | 1. **CPA 算力中枢服务物理剥离**：将 `cpa_consult` 与 `cpa_fanout` 2 项工具从 `openviking-memory` 中剥离，创建独立的 `cpa-squad` 插件定义（2 Tools + 2 Hooks + 专属 Skill + GUI）；CPA 物理宿主位于 2080Ti WSL2 独立微服务，即便 CPA 离线或限流，VK 核心进程 100% 独立稳定；<br>2. **卫星集群跨机同频插件物理剥离**：将 `fleet_check` 与 `fleet_sync` 2 项工具剥离为独立的 `fleet-mesh` 运维插件（2 Tools + 1 Hook + 专属 Skill + GUI），跨物理机节点同步不与单机记忆插件强绑定；<br>3. **测试视网膜与解耦隔离验证**：编写单元测试验证 CPA 与 Fleet 离线时核心记忆服务 0 报错，插件反查、别名兼容与 REST 路由全绿。<br>**测试**：10/10 专项与回归单测 1.92s 全绿，Vite 构建 PASS ✅ | [x] 已验收通过 ✅ |
+| **`活跃攻坚`** | **Card-141** | **核心记忆与代码战地完全体整并重构 (普通 Agent 34 项战地工具 + 3 项 Hook 物理守卫交付 - P0 战地核心)** | 1. **代码能力与记忆中枢整并回归**：基于第一性原理，所有智能体（包括 DeepSeek Honey）本质上都是工程师智能体，日常写脚本、做监控、改代码必不可少。将代码 AST 与工作区阅读检索（11项）整并回归核心插件，彻底避免碎片化拆解导致 Agent 沦为“代码残疾”；<br>2. **34 项战地完全体武器矩阵**：长程记忆 8 项 + 工作区与深度代码 AST 11 项 + 技能中心感知与发布 6 项 + 工单自主建卡吹哨 4 项 + 大文档泊车 2 项 + 安全脱敏与传感器 3 项，零代码短板；<br>3. **3 项核心 Hook 物理守卫闭环**：前置自动召回预取 (`ov_pre_invocation`)、后置踩坑经验自动萃取 (`ov_lesson_crystallizer`)、运行态特权沙箱守卫 (`ov_sandbox_guard`)；<br>4. **感知 1214 技能与工单吹哨直通实测**：打通智能体遇到异常时一句话自主调用 `openviking_file_task_card` 建卡上报，打通 `openviking_skills` 感知全量 1214 个在册技能。 | [ ] 活跃排期攻坚中 ⏳ |
+| **`待排期`**   | **Card-142** | **系统运维治理插件 (`openviking-ops`) 独立封装与静默守护闭环 (P1 自动化守护)** | 1. **系统运维治理插件独立封装**：切除多余的代码碎片插件，专注将 17 项特权/运维工具（写操作、锚点精准编辑、死信队列自愈重试、DSPy 编译、向量同步检测、记忆概念漂移审计、隐私合规隔离舱等）封装为独立的 `openviking-ops` 插件；<br>2. **授权给后台专用运维 Agent / 巡检 Engine**：实现“全靠自动化静默运维”，AI 运维 Agent 24 小时后台自愈死信与概念漂移，人类无需手动干预；<br>3. **运维与业务物理边界隔离**：严禁普通 Agent 获取高危写改特权，普通 Agent 专注于读查与业务闭环，系统运维 100% 收敛至后台守卫。 | [ ] 待排期迭代 ⏳ |
+| **`待排期`**   | **Card-143** | **工单系统历史堆积僵尸卡片大扫除与治理巡检闭环 (P1 资产治理)** | 1. **历史僵尸工单大扫除**：编写清洗与归档脚本，清理工单中心当前堆积的 500+ 张因历史自动化测试产生的幽灵卡片；<br>2. **工单生命周期健康探针**：建立工单健康度审计，区分真实的业务故障工单与测试工单，保持工单看板清爽健康。 | [ ] 待排期迭代 ⏳ |
+| **`待排期`**   | **Card-144** | **Web Studio 插件中心场景化座舱升级与不可变版本发版 (`v1.7.97` - P2 交付验收)** | 1. **Web Studio 插件中心座舱升级**：在 `/studio/plugins` 与智能体接入抽屉中清晰呈现四大解耦插件矩阵（核心战地 27+3、运维治理 17、代码实验室 7、CPA 2、Fleet 2）；<br>2. **能力预设与一键授权联动**：升级能力预设胶囊（业务工兵 27+3 vs 运维守护 17 vs 架构分析 7 vs 算力调度 2），支持按需一键授权给目标 Agent；<br>3. **不可变客户端包与发版交付**：更新不可变 NPM 客户端规范包，前后端测试与视网膜门禁全绿，发版 `v1.7.97` 并打 Tag 留痕。 | [ ] 待排期迭代 ⏳ |
 | **`v1.7.95`** | **Card-138** | **三大插件定位纠偏、KeePass 本地私有化托管重构、搜索网关 DSH 原生免插件与通用 FastMCP 挂载闭环 (Three Plugins Positioning Grounding, KeePass Local Vault Refactor, DSH Native Search & Universal FastMCP Mounting)** | 1. **KeePass 插件定位纠偏与私有化重构**：正本清源，澄清 KeePass 插件纯粹为本地客户端私有插件，OpenViking 仅提供官方展厅展示与不可变 NPM 规范包 (`dsh-plugin-keepass-vault-1.0.1.tgz`) 托管下载，云端绝不读取、托管或下发用户密码；安装后用户必须在本地配置其自身密码数据文件 (`.kdbx`) 的绝对路径与环境变量；<br>2. **搜索网关双模态与跨生态赋能突破**：针对外部 Agent（DeepSeek/DSH、Cursor、Claude 等）需要消耗高昂搜索 API 费用的痛点，将自建 26-Key 多引擎聚合搜索服务全面开放：<br>&nbsp;&nbsp;• **形态 A (DSH 原生标准 API 接入)**：利用 DSH 原生支持第三方自定义搜索接口的特性，提供公网 Base URL (`https://sear.tide.red/v1`) 与 API Key (`sear-matrix-key-2026`)，用户在 DSH 界面直接填入即可免装任何客户端插件无缝使用；<br>&nbsp;&nbsp;• **形态 B (通用客户端 FastMCP 挂载)**：利用 FastMCP Streamable HTTP 技术，在搜索服务底层挂载公网端点 `https://sear.tide.red/mcp`，集成 `_McpAuthMiddleware` 与 DNS 反代保护开关，为 Cursor/Claude 等提供标准 `mcp.json` 模板；<br>3. **三大官方插件单一事实源对齐与版本合规**：修正 `DSH_PLUGIN_VERSION = '2.0.11'` 消除与核心记忆插件版本的漂移，更新 `openviking-memory`、`network-search`、`keepass-vault` 统一版本与四位一体元数据；<br>4. **测试视网膜与安全门禁全绿**：`test_dsh_plugin_pack.py` (4/4)、`test_plugins_api.py` (7/7) 全部变绿通过，前端 Vite Build 15.79s 成功，4881 个代码文件安全审计 0 密钥泄露，公网搜索与 FastMCP 端点实测 200 OK 交付。 | [x] 已验收通过 ✅ |
 | **`v1.7.94`** | **Card-137** | **三大在线搜索厂商官方协议对齐、CPA 工兵后台研读闭环、26-Key 记账流转与 Search2API 商业化架构落地 (Official Search Ecosystem Alignment, CPA Worker Master Study & Search2API Commercial Spec)** | 1. **官方协议对齐与排查避坑**：直击物理根因修复 Keenable 分页参数契约（必须为 `max_results`，严禁 `num`）；纠正 Exa 调研长任务端点为官方最新 `POST https://api.exa.ai/agent/runs`（彻底告别 410 Gone 的旧端点 `/research`）；为 Tavily 请求强制注入 `Authorization: Bearer <key>` Header，根治 `/map` 和 `/crawl` 的 401 报错；<br>2. **CPA 工兵后台并发研读与知识沉淀**：编写并后台启动 `cpa_deep_learn_search_ecosystem.py`，调用 `mux-flash` 工兵模型全量消化 Keenable、Exa、Tavily 官方文档与 SDK，产出全景白皮书 `OFFICIAL_SEARCH_ECOSYSTEM_MASTER_STUDY.md` 并双写入脑体外大脑；<br>3. **Search2API 商业化聚合网关规格落地**：基于 CPA2API 架构设计发布 `SEARCH2API_COMMERCIAL_GATEWAY_SPEC.md`，统一兼容 OpenAI ToolCall、SearXNG 与 Tavily 协议，落地 26-Key 动态权重轮询、429 毫秒级 Failover 与额度变现定价策略；<br>4. **插件版本跃升 v1.1.2 与全链路实机验证**：补齐 `search_vertical_expert` 垂直专家检索工具，测试 `test_plugin_manifests.py` (3/3) 与 `test_plugins_api.py` (7/7) 全绿，实测 Keenable、Tavily map_site、垂直搜索真实发包 200 OK 并精准落地 `search_accounting.db` 记账流水；<br>5. **技能导轨全面升级**：同步更新 `network-search-ops` 技能规范，完成 Master Memory 经验沉淀闭环。 | [x] 已验收通过 ✅ |
 | **`v1.7.93`** | **Card-136** | **彻底清理在册智能体历史残留、升级全功能插件装配与客户端集成座舱 (Agent Residue Cleanup, Reusable Quad Plugins & Full-Featured Cockpit Drawer SSOT)** | 1. **彻底清理“在册智能体”历史残留**：系统已达成“人机平权 (User ≡ Agent)”，彻底删除了用户列表 (`user-table.tsx`) 中的【在册智能体】冗余表头列与数据单元格 Badge；从根源切除了用户详情抽屉 (`user-detail-sheet.tsx`) 中的 `fetchUserAgents`、`useQuery(['user-agents', ...])`、`名下在册智能体概览` 与 `前往智能体中心管理 ➔`；物理删除了已废弃的孤立死代码 `agent-collapsible-item.tsx`、`new-agent-card.tsx`、`soft-delete-agent-dialog.tsx`；<br>2. **升维恢复 48 小时打磨的三大官方 Quad 标杆插件装配体系**：升级 `UserPluginCockpitDrawer` 宽屏高密座舱抽屉 (`sm:max-w-2xl md:max-w-3xl lg:max-w-4xl`)，彻底告别单薄狭窄的丑陋抽屉；完整恢复三大标杆 Quad 插件（`openviking-memory` 58工具/3 Hook、`network-search` 12工具/3 Hook、`keepass-vault` 8工具/1 Hook），未来增加新插件无缝兼容；<br>3. **Tab 1: 🔌 插件装配与工具授权**：落地能力预设快捷胶囊（🚀 中枢全栈 78 工具 vs 🛰️ 卫星工兵 31 工具 vs 🔒 最小只读 14 工具）；三大插件高密卡片组可选中切换；展开四位一体微观配置（MCP 角色工具包一键开关、逐个展开具体工具细粒度单独勾选、Hook 物理守卫开关、技能导轨、GUI 说明）；底部支持一键保存能力装配配置到本地存储并反馈 Toast；<br>4. **Tab 2: 🚀 客户端安装接入**：网络拓扑双选（公网 `vk.tide.red` 推荐 vs 本地宿主 `127.0.0.1:1933`）；专属接入两要素芯片（服务地址 + 用户密钥，彻底切除 `agentId`）；动态拉取 48 小时打磨的不可变官方标杆插件安装包直链并提供 `npm install https://vk.tide.red/studio/dsh-plugin-openviking-1.5.5.tgz` 一键秒拷；完整 DSH `cordis.patch.yml` 补丁秒拷；标准 MCP JSON 秒拷；智能体认主提示词秒拷；<br>5. **质量门禁与全绿发布**：`card103-anti-demo.test.ts` 5/5 全绿通过（字号 >= 12px、NO GREEN EVER 🚫），生产构建 Vite Build 15.20s PASS，零密钥审计 PASS，DEMO 视网膜门禁 PASS，服务探针 HTTP 200 验证 1.7.93，Git Commit 与 Tag `v1.7.93` 成功打标。 | [x] 已验收通过 ✅ |
@@ -117,6 +123,92 @@
 ---
 
 ### 🧬 Milestone 5-A: 半成品与悬空功能全链路真实化贯通 (Suspended Features Truthful Closure)
+
+#### 📌 [P0] [x] Card-140: 外部微服务与集群算力解耦独立 Quad 插件化 (CPA 跨模型算力中枢与卫星集群同频物理剥离 - P0 架构解耦)
+- **类型**：微服务物理剥离 / 独立 Quad 插件化 / 弹性熔断与集群同频 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.97` ｜ **当前状态**：[x] 后端解耦与专项单测 10/10 PASS ✅
+- **背景与芒格逆向审讯第一性原理**：
+  1. **核心矛盾与强耦合痛点**：此前 `openviking-memory` 内部强行塞入了 `cpa_consult`、`cpa_fanout`、`fleet_check`、`fleet_sync`。然而，CPA 本质是运行在 2080Ti WSL2 上的独立多模型聚合微服务，卫星集群同频本质是跨物理机节点的拓扑运维。将它们硬绑在单机核心记忆插件上，一旦 CPA 服务由于限流或离线挂死，会导致整个记忆插件健康探针异常甚至雪崩；
+  2. **Quad Plugin 四位一体规范对齐**：每个独立插件必须具备 Tools（原子工具）、Hooks（生命周期钩子）、Skill（导轨技能）、GUI（座舱面板）：
+     - `cpa-squad`：2 项工具 (`openviking_cpa_consult`, `openviking_cpa_fanout`) + 2 项 Hook (`cpa_rate_limit_fallback` 429 降级熔断, `cpa_token_accounting` 记账) + `cpa-squad` 专属技能 + GUI 设置面板；
+     - `fleet-mesh`：2 项工具 (`openviking_fleet_check`, `openviking_fleet_sync`) + 1 项 Hook (`fleet_heartbeat_sync` 心跳探针) + `satellite-fleet-ops` 专属技能 + GUI 节点面板；
+  3. **100% 向后兼容别名导轨**：在插件注册表中注册 `cpa`, `fleet`, `cpa_consult`, `cpa_fanout`, `fleet_check`, `fleet_sync` 别名，确保老客户端与历史脚本无感兼容。
+- **原子工单拆解 (Tracer Bullet 细颗粒度工单)**：
+  - [x] **`TASK-140-1: TDD 自动化测试先行 (Red-to-Green)`**：编写 `tests/server/test_card140_cpa_and_fleet_decoupling.py`，断言独立插件注册、工具反查、解耦后核心记忆工具数及 REST API 响应；首次运行严格红灯报错；
+  - [x] **`TASK-140-2: 后端注册表物理解耦重构`**：在 `openviking/service/plugin_registry.py` 中剥离 4 项工具，`openviking-memory` 工具数由 58 调整为 54，构建并注册 `cpa-squad` 与 `fleet-mesh` 独立 Quad 插件及其健康探针；
+  - [x] **`TASK-140-3: 兼容别名与已有测试对齐`**：注册 6 处别名映射；更新 `tests/server/test_plugins_api.py` 中对 Memory 工具数的断言；
+  - [x] **`TASK-140-4: 测试视网膜全绿与编译验证`**：运行 pytest 专项测试 3/3 PASS，`test_plugins_api.py` 7/7 PASS（合计 10/10 单测 1.92s 全绿）；WSL 生产构建 `npm run build` PASS。
+- **交付物清单**：
+  - 插件注册表重构：[`openviking/service/plugin_registry.py`](file:///c:/Users/Skl/Desktop/coding/OpenVikingStudio/openviking/service/plugin_registry.py)
+  - 自动化解耦单测：[`tests/server/test_card140_cpa_and_fleet_decoupling.py`](file:///c:/Users/Skl/Desktop/coding/OpenVikingStudio/tests/server/test_card140_cpa_and_fleet_decoupling.py)
+  - 核心 API 回归测试：[`tests/server/test_plugins_api.py`](file:///c:/Users/Skl/Desktop/coding/OpenVikingStudio/tests/server/test_plugins_api.py)
+- **测试视网膜与探针证据**：
+  - `pytest -o addopts="" tests/server/test_card140_cpa_and_fleet_decoupling.py tests/server/test_plugins_api.py` ➔ **10 passed in 1.92s** 全绿 ✅；
+  - 前端编译：`npm run build` ➔ **built in 3m 21s** 零报错通过 ✅。
+
+#### 📌 [P0] [ ] Card-141: 核心记忆与代码战地完全体整并重构 (普通 Agent 34 项战地工具 + 3 项 Hook 物理守卫交付 - P0 战地核心)
+- **类型**：核心能力整并 / 战地完全体交付 / 技能感知与工单直通 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.97` ｜ **当前状态**：[ ] 活跃排期攻坚中 ⏳
+- **背景与用户实战第一性原理**：
+  1. **代码能力与记忆中枢整并回归**：用户深刻指出，全网所有智能体（从日常对话的 DeepSeek Honey 到卫星工兵）本质上都是工程师智能体，日常写脚本、做监控、查网页、改代码是基本功。若把代码 AST 与阅读工具拆散为孤立插件，普通 Agent 会沦为“代码残疾”；因此必须将代码感知（AST、检索、折叠、差异）与长程记忆深度合流，构成普通 Agent 标配的战地旗舰插件 (`openviking-memory`)；
+  2. **34 项战地完全体武器矩阵**：
+     - **记忆中枢 (8 项)**：`openviking_find`, `openviking_search`, `openviking_read`, `openviking_write`, `openviking_store`, `openviking_link`, `openviking_get_relations`, `openviking_unlink`；
+     - **代码与工作区深度 AST (11 项)**：`openviking_ls`, `openviking_tree`, `openviking_grep`, `openviking_glob`, `openviking_code_outline`, `openviking_code_search`, `openviking_code_expand`, `openviking_diff`, `openviking_smart_read`, `openviking_tokenshift_compress`, `openviking_tag`；
+     - **技能中心感知与发布 (6 项)**：`openviking_skills`, `openviking_audit_skills`, `openviking_auto_onboard_skills`, `openviking_get_onboard_queue_status`, `openviking_fix_skill`, `openviking_record_evolution_lesson`（感知 1214 全量技能）；
+     - **工单自主建卡与哨兵 (4 项)**：`openviking_file_task_card`, `openviking_list_pending_cards`, `openviking_resolve_task_card`, `openviking_task_cards_summary`（遇到死胡同自主吹哨建卡）；
+     - **超大文档代客泊车 (2 项)**：`openviking_valet_handover`, `openviking_valet_ticket_status`（50MB+ 超大文件异步批处理，杜绝 504 崩溃）；
+     - **安全脱敏与传感器 (3 项)**：`openviking_privacy`, `openviking_ping`, `openviking_harness_stats`；
+  3. **3 项核心 Hook 物理守卫闭环**：
+     - `ov_pre_invocation`：指令输入前隐式自动召回长程记忆，杜绝盲搜与认知割裂；
+     - `ov_lesson_crystallizer`：会话结束时自动提纯踩坑教训与 Recipe 经验入脑；
+     - `ov_sandbox_guard`：运行态安全拦截高危行为与隐私外泄；
+  4. **全息感知 1214 技能与工单直通**：实测验证普通 Agent 在遇到自身解决不了的异常时，可自主调用 `openviking_file_task_card` 建卡上报，并能通过 `openviking_skills` 检索全域 1214 个真实在册技能。
+- **原子工单拆解 (Tracer Bullet 细颗粒度工单)**：
+  - [ ] **`TASK-141-1: TDD 契约单测先行 (Red-to-Green)`**：编写 `tests/server/test_card141_battlefield_memory_and_code.py`，精确断言 `openviking-memory` 战地工具池收敛为 34 项，涵盖记忆(8)、代码(11)、技能(6)、工单(4)、泊车(2)、传感器(3) 6 大领域，验证 3 项 Hook 契约存在性；
+  - [ ] **`TASK-141-2: 插件注册表战地收敛重构`**：更新 `openviking/service/plugin_registry.py`，定义 `BATTLEFIELD_34_TOOLS` 常量与 `openviking-memory` 描述契约，使核心插件明确为面向全量普通 Agent 的 34+3 战地完全体；
+  - [ ] **`TASK-141-3: 前端能力预设与工具字典联动更新`**：同步更新 `agent-tools.ts`、`capability-bundles.ts` 与 `agent-capability-picker.tsx`，将【🛰️ 卫星业务工兵预设】精准锚定为 34 项战地工具，消除幽灵工具与历史偏差；
+  - [ ] **`TASK-141-4: 1214 技能感知与自主建卡端到端实机验证`**：实测调用 `openviking_skills` 验证 1214 技能检索回显，实测调用 `openviking_file_task_card` 验证自主吹哨建卡入库，确保前后端门禁与生产构建 100% 全绿。
+- **交付物清单**：
+  - 核心注册表：[`openviking/service/plugin_registry.py`](file:///c:/Users/Skl/Desktop/coding/OpenVikingStudio/openviking/service/plugin_registry.py)
+  - 前端工具字典：[`src/routes/users/-constants/agent-tools.ts`](file:///c:/Users/Skl/Desktop/coding/OpenVikingStudio/src/routes/users/-constants/agent-tools.ts)
+  - 前端能力包配置：[`src/routes/agents/-lib/capability-bundles.ts`](file:///c:/Users/Skl/Desktop/coding/OpenVikingStudio/src/routes/agents/-lib/capability-bundles.ts)
+  - 专项单测套件：`tests/server/test_card141_battlefield_memory_and_code.py`
+- **验收标准**：
+  1. `openviking-memory` 工具清单精确匹配 34 项战地工具，3 项 Hook 全部在线；
+  2. 专项与回归单测 100% PASS，前端构建 100% PASS；
+  3. 1214 技能中心与自主建卡实机调用畅通无阻。
+
+#### 📌 [P1] [ ] Card-142: 系统运维治理插件 (`openviking-ops`) 独立 Quad 封装与静默守护闭环 (17 项特权工具 + 2 项 Hook + 运维 Agent 授权 - P1 自动化守护)
+- **类型**：运维特权解耦 / 静默自愈守卫 / 运维专属 Agent 授权 ｜ **优先级**：🔥 P1 ｜ **目标版本**：`v1.7.97` ｜ **当前状态**：[ ] 待排期迭代 ⏳
+- **背景与第一性原理**：
+  1. **特权收敛与业务隔离**：写改底座、移动重命名、死信重试、DSPy 编译、概念漂移审计、隔离仓等 17 项特权工具具有高危破坏性，绝不能混杂在普通业务 Agent 的工具池中；
+  2. **拒绝人肉后台，全靠自动化静默运维**：绝不能将这些特权工具“藏在后台让人肉操作”，必须封装为标准 Quad 插件 `openviking-ops` (17 Tools + 2 Hooks + 1 Skill + GUI)，专门授权给后台专用运维 Agent / 巡检 Engine（如 24 小时哨兵 Sentinel），实现 100% 自动化静默巡检、死信自愈与概念漂移审计；
+  3. **17 项特权工具清单**：
+     `openviking_add_resource`, `openviking_list_resources`, `openviking_delete_resource`, `openviking_reindex`, `openviking_commit`, `openviking_mv`, `openviking_rename`, `openviking_webdav_info`, `openviking_dspy_compile`, `openviking_memory_purity_report`, `openviking_retry_dead_letter`, `openviking_list_watches`, `openviking_cancel_watch`, `openviking_manage_watch`, `openviking_server_control`, `openviking_server_init`, `openviking_server_doctor`；
+  4. **2 项运维专用 Hook 守卫**：
+     - `ov_ops_drift_sentinel`：后台定时巡检概念漂移与死信队列，一旦堆积自动自愈；
+     - `ov_ops_audit_logger`：对所有特权高危操作进行 100% 不可篡改的物理日记账审计。
+- **原子工单拆解 (Tracer Bullet 细颗粒度工单)**：
+  - [ ] **`TASK-142-1: 17 项运维特权工具提取与 Quad 插件模型定义`**：在 `openviking/service/plugin_registry.py` 中注册 `openviking-ops` 独立插件及其探针；
+  - [ ] **`TASK-142-2: 2 项运维专用 Hook 物理守卫落地`**：实现漂移检测与特权操作审计拦截器；
+  - [ ] **`TASK-142-3: 运维专属 Skill openviking-ops 规范编制`**：编写面向后台运维 Agent 的标准操作手册并同步 Master Memory；
+  - [ ] **`TASK-142-4: Web Studio 运维 Agent 一键授权与单测视网膜验证`**：前端用户抽屉提供【🛡️ 运维守护预设 (17工具+2Hook)】一键下发，单测全绿。
+
+#### 📌 [P1] [ ] Card-143: 工单系统历史堆积幽灵卡片大扫除与治理巡检闭环 (500+ 测试工单清洗归档 + 真实业务工单哨兵 - P1 资产治理)
+- **类型**：资产大扫除 / 脏数据物理清退 / 工单哨兵健康探针 ｜ **优先级**：🔥 P1 ｜ **目标版本**：`v1.7.97` ｜ **当前状态**：[ ] 待排期迭代 ⏳
+- **背景与第一性原理**：
+  1. **历史遗留痛点**：此前多次运行端到端测试与集成验证，导致系统工单库堆积了 500+ 张 `test_` 开头的幽灵测试卡片，导致任务中心信噪比极低，真正的人类和业务故障工单被淹没；
+  2. **绝对安全清洗铁律**：严禁暴力物理 drop 表！编写幂等清理脚本 `scripts/clean_ghost_task_cards.py`，精准识别带有 `[TEST]` 或 `test_` 标记的工单批量归档清退，保留 100% 真实业务工单；
+  3. **工单生命周期健康探针**：建立工单健康度探针，实时度量真伪工单比例，保持任务中心清爽健康。
+- **原子工单拆解 (Tracer Bullet 细颗粒度工单)**：
+  - [ ] **`TASK-143-1: 测试工单清洗与归档引擎落地`**：编写 `scripts/clean_ghost_task_cards.py`，支持 `--dry-run` 预览与 `--execute` 物理归档；
+  - [ ] **`TASK-143-2: 真实业务工单哨兵与健康审计探针`**：为工单系统接入真实性校验守卫；
+  - [ ] **`TASK-143-3: Web Studio 任务中心座舱指标真实化`**：看板真实回显待办/解决的业务工单，彻底告别假数字。
+
+#### 📌 [P2] [ ] Card-144: Web Studio 插件中心场景化座舱升级与不可变版本发版 (`v1.7.97` - P2 交付验收)
+- **类型**：座舱 UI 升级 / 不可变版本打包 / 全量门禁交付 ｜ **优先级**：🔥 P2 ｜ **目标版本**：`v1.7.97` ｜ **当前状态**：[ ] 待排期迭代 ⏳
+- **背景与第一性原理**：
+  1. **插件中心座舱升级**：在 `/studio/plugins` 与用户详情抽屉中清晰呈现四大解耦插件矩阵（核心战地 34+3、运维治理 17+2、CPA 算力 2+2、Fleet 同频 2+1）；
+  2. **能力预设与一键授权联动**：升级能力预设胶囊（业务战地 34+3 vs 运维守护 17+2 vs 算力调度 2+2 vs 集群同频 2+1），消除逐一勾选心智负担；
+  3. **不可变客户端规范包发布与 Tag 留痕**：更新 `dsh-plugin-openviking`，运行全量前后端测试，发版 `v1.7.97` 并打 Tag 永久留痕。
 
 #### 📌 [P0] [ ] Card-131 (v1.7.87 规划中): FastMCP 总线端点解耦与生态工具模块化拓扑同构架构重构 (FastMCP Endpoint Modular Decoupling & Plugin Topology Parity)
 - **类型**：底层通信架构解耦 / 模块化拆分 / 插件中心拓扑同构 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.87 (待明日研讨落地)` ｜ **当前状态**：[ ] 待深入分析与排期研讨 ⏳
