@@ -30,105 +30,87 @@ export type ToolCategory = {
 export const TOOL_CATEGORIES: ToolCategory[] = [
   {
     id: 'satellite',
-    name: '🛰️ 业务使用者工具池 (31 项)',
-    description: '涵盖知识检索、代码分析、契约单测、工单流转与全网采集等通用研发工具',
+    name: '🛰️ 核心战地工具池 (34 项)',
+    description: '涵盖长程记忆、工作区 AST、1214技能感知、工单吹哨与大文档代客泊车 (面向全量研发工兵)',
     tools: [
-      // 1. 记忆与知识沉淀
-      { id: 'find', name: 'find (语义召回)', description: '基于分层语义索引智能查找最相关记忆', categoryBadge: '记忆检索', defaultSelected: true },
-      { id: 'search', name: 'search (精确检索)', description: '对记忆中枢进行关键词与过滤检索', categoryBadge: '记忆检索', defaultSelected: true },
-      { id: 'read', name: 'read (读取记忆)', description: '读取特定记忆资源或文档的完整内容', categoryBadge: '记忆读取', defaultSelected: true },
-      { id: 'remember', name: 'remember (长程沉淀)', description: '将结构化对话与重要知识写入长程记忆', categoryBadge: '记忆沉淀', defaultSelected: true },
-      { id: 'openviking_history_search', name: 'history_search (历史检索)', description: 'FTS5 对话全文字词与知识召回检索', categoryBadge: '对话记录' },
-      { id: 'web_search', name: 'web_search (全网搜索)', description: '像素级对齐 DSH，45+ 引擎聚合与百度广告清洗，带 1.3ms 极速缓存', categoryBadge: '全球情报', defaultSelected: true },
-      { id: 'web_fetch', name: 'web_fetch (网页精读)', description: '像素级对齐 DSH，Crawl4AI Playwright 无头穿透渲染提取纯净正文', categoryBadge: '全球情报', defaultSelected: true },
-      { id: 'openviking_web_search', name: 'openviking_web_search (中枢搜索)', description: 'OpenViking 原生全网高精搜索兼容易名', categoryBadge: '全球情报' },
+      // 1. 记忆中枢 (8 项)
+      { id: 'find', name: 'find (语义召回)', description: '基于向量与分词的混合记忆语义检索', categoryBadge: '记忆中枢', defaultSelected: true },
+      { id: 'search', name: 'search (精确检索)', description: '高级混合关键词与过滤检索引擎', categoryBadge: '记忆中枢', defaultSelected: true },
+      { id: 'read', name: 'read (读取记忆)', description: '深读知识全文与 L2 正文切片', categoryBadge: '记忆中枢', defaultSelected: true },
+      { id: 'write', name: 'write (长程沉淀)', description: '将重要记忆与结构化事实写入长程记忆', categoryBadge: '记忆中枢', defaultSelected: true },
+      { id: 'store', name: 'store (原子持久化)', description: '原子持久化事实结晶与关系拓扑', categoryBadge: '记忆中枢', defaultSelected: true },
+      { id: 'link', name: 'link (实体双向关联)', description: '关联建立两个知识实体之间的双向语义链接', categoryBadge: '记忆中枢' },
+      { id: 'get_relations', name: 'get_relations (拓扑反查)', description: '查询知识实体的所有拓扑关联与反向引用', categoryBadge: '记忆中枢' },
+      { id: 'unlink', name: 'unlink (解除实体关联)', description: '安全解除知识实体之间的语义关联', categoryBadge: '记忆中枢' },
 
-      // 2. 上下文与工作约束
-      { id: 'openviking_active_notes_get', name: 'active_notes_get (获取约束)', description: '检索活跃里程碑与工作约束', categoryBadge: '上下文' },
-      { id: 'openviking_active_notes_update', name: 'active_notes_update (更新约束)', description: '更新当前目标与工作约束', categoryBadge: '上下文' },
-      { id: 'openviking_context_route', name: 'context_route (上下文路由)', description: '多模态上下文自适应分流与压缩决策', categoryBadge: '上下文' },
+      // 2. 代码与工作区深度 AST (11 项)
+      { id: 'ls', name: 'ls (目录列举)', description: '列出当前工作区目录结构条目', categoryBadge: '工作区AST' },
+      { id: 'tree', name: 'tree (递归目录树)', description: '获取代码库或工作区的层级结构树', categoryBadge: '工作区AST' },
+      { id: 'grep', name: 'grep (正则匹配)', description: '在工作区文件中快速正则检索文本模式', categoryBadge: '工作区AST' },
+      { id: 'glob', name: 'glob (文件通配)', description: '按文件名通配符模式快速定位文件', categoryBadge: '工作区AST' },
+      { id: 'openviking_code_outline', name: 'code_outline (AST大纲)', description: '代码 AST 语法大纲提取', categoryBadge: '工作区AST' },
+      { id: 'openviking_code_search', name: 'code_search (语义搜索)', description: '代码语义符号深度检索', categoryBadge: '工作区AST' },
+      { id: 'openviking_code_expand', name: 'code_expand (按需展开)', description: '代码上下文智能折叠与按需展开', categoryBadge: '工作区AST' },
+      { id: 'openviking_diff', name: 'diff (差异对比)', description: '文件与代码版本差异对比分析', categoryBadge: '工作区AST' },
+      { id: 'openviking_smart_read', name: 'smart_read (分层深读)', description: '分层自适应智能知识提取与概括', categoryBadge: '工作区AST' },
+      { id: 'openviking_tokenshift_compress', name: 'tokenshift_compress (AST折叠)', description: 'TokenShift 源码 AST 折叠压缩，节约远程传输', categoryBadge: '工作区AST' },
+      { id: 'openviking_tag', name: 'tag (标签标注)', description: '资源与代码标签标注及分类检索', categoryBadge: '工作区AST' },
 
-      // 3. 工作区文件与代码分析 (只读安全)
-      { id: 'list', name: 'list (目录列举)', description: '列出 viking:// 目录结构条目', categoryBadge: '工作区' },
-      { id: 'tree', name: 'tree (递归目录树)', description: '获取代码库或工作区的层级结构', categoryBadge: '工作区' },
-      { id: 'grep', name: 'grep (正则匹配)', description: '在工作区文件中快速检索正则文本模式', categoryBadge: '工作区' },
-      { id: 'glob', name: 'glob (文件通配)', description: '按文件名通配符扫描定位文件', categoryBadge: '工作区' },
-      { id: 'zg_search', name: 'zg_search (AST检索)', description: '阿里 zg-grep 代码语义 AST 静态搜索', categoryBadge: '代码分析' },
-      { id: 'openviking_code_impact', name: 'code_impact (爆炸半径)', description: '查询表/接口反向依赖与爆炸半径，改动前查清影响面', categoryBadge: '代码分析' },
-      { id: 'openviking_tokenshift_compress', name: 'tokenshift_compress (代码压缩)', description: 'TokenShift 源码 AST 折叠压缩，节约远程传输与上下文', categoryBadge: '上下文' },
+      // 3. 技能中心感知与发布 (6 项 - 锚定 1214 全域技能)
+      { id: 'openviking_skills', name: 'skills (技能总览)', description: '知识中枢 1214 全量技能状态与分类总览', categoryBadge: '技能中心', defaultSelected: true },
+      { id: 'openviking_audit_skills', name: 'audit_skills (技能审计)', description: '知识中枢技能规范静态安全审计', categoryBadge: '技能中心' },
+      { id: 'openviking_auto_onboard_skills', name: 'auto_onboard_skills (技能入库)', description: '自动化技能入库校验与发布上架', categoryBadge: '技能中心' },
+      { id: 'openviking_get_onboard_queue_status', name: 'get_onboard_queue_status (入库队列)', description: '技能入库队列状态与审批进展查询', categoryBadge: '技能中心' },
+      { id: 'openviking_fix_skill', name: 'fix_skill (技能修复)', description: '技能缺陷自动化诊断与一键修复', categoryBadge: '技能中心' },
+      { id: 'openviking_record_evolution_lesson', name: 'record_lesson (经验入脑)', description: '踩坑事实与自演进经验入脑存盘', categoryBadge: '技能中心', defaultSelected: true },
 
-      // 4. 测试与研发辅助 (TDD 契约单测)
-      { id: 'openviking_generate_contract_test', name: 'generate_contract_test (契约测试)', description: '由 AST 事实直接派生 pytest 契约测试脚手架', categoryBadge: 'AST测试' },
-
-      // 5. 技能生态全周期 (编写/评估/修复/上架)
-      { id: 'openviking_skill_validate', name: 'skill_validate (契约校验)', description: '校验 SKILL.md YAML 头与规约契约合法性', categoryBadge: '技能生态' },
-      { id: 'openviking_skill_judge', name: 'skill_judge (质量评分)', description: '技能 4 维质量评分与达标门禁', categoryBadge: '技能生态' },
-      { id: 'openviking_skill_remediate', name: 'skill_remediate (自愈修复)', description: '技能缺陷诊断与自愈修复建议', categoryBadge: '技能生态' },
-      { id: 'openviking_skill_zip', name: 'skill_zip (规约压缩)', description: '技能 0-rollout 契约级压缩', categoryBadge: '规约压缩' },
-      { id: 'openviking_skill_intent_match', name: 'skill_intent_match (意图匹配)', description: '自然语言意图匹配与冲突检测', categoryBadge: '技能生态' },
-      { id: 'openviking_skill_publish', name: 'skill_publish (技能发布)', description: '一线工兵技能成果发布上架至体外大脑', categoryBadge: '技能生态' },
-
-      // 6. AIFP 工单流转闭环 (建卡/看卡/结单/看板)
-      { id: 'openviking_file_task_card', name: 'file_task_card (自主建卡)', description: '智能体异常现场自主建卡上报', categoryBadge: 'AIFP工单', defaultSelected: true },
+      // 4. 工单自主建卡与哨兵 (4 项 - 异常自主建卡吹哨)
+      { id: 'openviking_file_task_card', name: 'file_task_card (自主建卡)', description: '智能体异常现场自主建卡吹哨上报', categoryBadge: 'AIFP工单', defaultSelected: true },
       { id: 'openviking_list_pending_cards', name: 'list_pending_cards (待办工单)', description: '查看待排期与未解决工单清单', categoryBadge: 'AIFP工单' },
       { id: 'openviking_resolve_task_card', name: 'resolve_task_card (工单归档)', description: '闭环归档工单并绑定 Git Tag', categoryBadge: 'AIFP工单' },
       { id: 'openviking_task_cards_summary', name: 'task_cards_summary (工单总览)', description: '工单运转指标总览与趋势分析', categoryBadge: 'AIFP工单' },
 
-      // 7. 异步大文档消化外包 (泊车管家)
-      { id: 'openviking_valet_handover', name: 'valet_handover (泊车消化)', description: '泊车管家异步大文档深度消化', categoryBadge: '异步批处理' },
-      { id: 'openviking_valet_ticket_status', name: 'valet_ticket_status (泊车进度)', description: '查看泊车管家消化与入库进度', categoryBadge: '异步批处理' },
+      // 5. 超大文档代客泊车 (2 项 - 50MB+ 异步批处理防 504)
+      { id: 'openviking_valet_handover', name: 'valet_handover (泊车消化)', description: '泊车管家 50MB+ 超大文档异步离线消化', categoryBadge: '泊车管家' },
+      { id: 'openviking_valet_ticket_status', name: 'valet_ticket_status (泊车进度)', description: '查看泊车管家消化与入库进度', categoryBadge: '泊车管家' },
 
-      // 8. 安全感知与雷达
-      { id: 'health', name: 'health (服务探针)', description: '检测记忆引擎与向量数据库健康状态', categoryBadge: '探针检测' },
-      { id: 'openviking_privacy_mask', name: 'privacy_mask (脱敏过滤)', description: '脱敏敏感凭据、Token 与私有端点，公网出海防泄密', categoryBadge: '隐私脱敏' },
-      { id: 'openviking_agent_sensors', name: 'agent_sensors (3D传感器)', description: 'Token SNR, P@5 召回率传感器', categoryBadge: '观测雷达' },
+      // 6. 安全脱敏与传感器 (3 项)
+      { id: 'openviking_privacy', name: 'privacy (隐私脱敏)', description: '脱敏敏感凭据、Token 与私有端点', categoryBadge: '安全脱敏' },
+      { id: 'openviking_ping', name: 'ping (毫秒测活)', description: '检测体外大脑与核心服务毫秒级连通性', categoryBadge: '探针雷达' },
+      { id: 'openviking_harness_stats', name: 'harness_stats (雷达指标)', description: 'Token SNR、P@5 召回率与模型性能统计', categoryBadge: '探针雷达' },
     ],
   },
   {
     id: 'master_ops',
-    name: '🧠 中枢运维特权工具池 (27 项)',
-    description: '涵盖工作区代码写改、底层自愈、隔离舱、CPA算力、集群协同与运维探针特权',
+    name: '🛡️ 系统运维治理特权工具池 (17 项)',
+    description: '涵盖存储资源管理、文件重定位、死信自愈、系统监听与底座体检 (授权给后台专用运维 Agent / 巡检 Engine)',
     tools: [
-      // 1. 本地代码精准写改
-      { id: 'write', name: 'write (写入文件)', description: '新建或全量覆写工作区文件内容', categoryBadge: '代码写入' },
-      { id: 'edit', name: 'edit (精准编辑)', description: '对指定文件执行唯一指纹锚点编辑', categoryBadge: '代码修改' },
+      // 1. 存储与资源管理 (5 项)
+      { id: 'openviking_add_resource', name: 'add_resource (挂载资源)', description: '异步向体外大脑挂载新资源', categoryBadge: '存储资源' },
+      { id: 'openviking_list_resources', name: 'list_resources (资源列表)', description: '列出已登记的体外大脑物理资源', categoryBadge: '存储资源' },
+      { id: 'openviking_delete_resource', name: 'delete_resource (注销资源)', description: '安全注销指定体外大脑资源', categoryBadge: '存储资源', requiredRole: 'admin' },
+      { id: 'openviking_reindex', name: 'reindex (全盘重索引)', description: '触发知识与向量库全盘或增量重索引', categoryBadge: '存储资源' },
+      { id: 'openviking_commit', name: 'commit (版本快照)', description: '工作区变更版本快照物理提交', categoryBadge: '存储资源' },
 
-      // 2. 编译与底座度量
-      { id: 'openviking_dspy_compile', name: 'dspy_compile (DSPy编译)', description: '提示词强类型 DSPy 签名编译', categoryBadge: '提示词编译' },
-      { id: 'openviking_vector_sync_metrics', name: 'vector_sync_metrics (同步度量)', description: '向量索引同步完成度与未索引积压检测', categoryBadge: '索引度量' },
-      { id: 'openviking_skill_weight_tune', name: 'skill_weight_tune (权重调优)', description: '动态调优技能唤醒权重', categoryBadge: '技能生态' },
+      // 2. 文件与目录写改 (3 项)
+      { id: 'openviking_mv', name: 'mv (安全移动)', description: '底层文件或目录安全原子重定位', categoryBadge: '底层写改', requiredRole: 'admin' },
+      { id: 'openviking_rename', name: 'rename (安全重命名)', description: '知识库文件或目录重命名', categoryBadge: '底层写改', requiredRole: 'admin' },
+      { id: 'openviking_webdav_info', name: 'webdav_info (WebDAV配额)', description: 'WebDAV 协议挂载端点与配额信息', categoryBadge: '底层写改' },
 
-      // 3. 底座数据治理与消息自愈
-      { id: 'forget', name: 'forget (永久遗忘)', description: '永久删除指定 URI 记忆资源 (高危)', categoryBadge: '记忆抹除' },
-      { id: 'openviking_memory_purity_report', name: 'memory_purity_report (纯度报告)', description: '体外大脑记忆纯度评估与概念漂移审计', categoryBadge: '记忆审计' },
-      { id: 'openviking_dlq_status', name: 'dlq_status (死信队列)', description: '查看死信队列积压与健康状态', categoryBadge: '系统队列' },
-      { id: 'openviking_retry_dead_letter', name: 'retry_dead_letter (死信重试)', description: '重试失败的死信消息', categoryBadge: '故障自愈' },
+      // 3. 系统自愈与纯度度量 (3 项)
+      { id: 'openviking_dspy_compile', name: 'dspy_compile (DSPy编译)', description: '提示词强类型 DSPy 签名编译与调优', categoryBadge: '系统自愈' },
+      { id: 'openviking_memory_purity_report', name: 'memory_purity_report (纯度报告)', description: '体外大脑记忆纯度评估与概念漂移审计', categoryBadge: '系统自愈' },
+      { id: 'openviking_retry_dead_letter', name: 'retry_dead_letter (死信重试)', description: '死信队列消息自愈重试与故障排查', categoryBadge: '系统自愈' },
 
-      // 4. 全域自演进流水线
-      { id: 'openviking_skill_evolution_pipeline', name: 'skill_evolution_pipeline (自演进流水线)', description: '技能自演进流水线执行与回滚', categoryBadge: '核心流水线' },
+      // 4. 系统监听 (3 项)
+      { id: 'openviking_list_watches', name: 'list_watches (订阅列表)', description: '查看自动刷新系统监听订阅', categoryBadge: '系统监听', requiredRole: 'admin' },
+      { id: 'openviking_cancel_watch', name: 'cancel_watch (取消订阅)', description: '取消自动刷新系统监听订阅', categoryBadge: '系统监听', requiredRole: 'admin' },
+      { id: 'openviking_manage_watch', name: 'manage_watch (管理监听)', description: '动态更新或调整系统监听器参数', categoryBadge: '系统监听', requiredRole: 'admin' },
 
-      // 5. 隔离舱与安全合规
-      { id: 'openviking_privacy_quarantine', name: 'privacy_quarantine (隔离舱)', description: '敏感数据隔离舱封存与还原', categoryBadge: '凭证隔离' },
-      { id: 'openviking_privacy_audit', name: 'privacy_audit (合规审计)', description: '合规安全审计流水追溯', categoryBadge: '安全审计' },
-
-      // 6. 底层监听与硬件探针
-      { id: 'list_watches', name: 'list_watches (订阅列表)', description: '查看自动刷新系统监听订阅', categoryBadge: '系统监听', requiredRole: 'admin' },
-      { id: 'cancel_watch', name: 'cancel_watch (取消订阅)', description: '取消自动刷新系统监听订阅', categoryBadge: '系统监听', requiredRole: 'admin' },
-      { id: 'add_resource', name: 'add_resource (挂载资源)', description: '异步向体外大脑挂载新资源', categoryBadge: '存储挂载' },
-      { id: 'openviking_harness_probe', name: 'harness_probe (探针验证)', description: '探针物理验证', categoryBadge: '硬件探针' },
-
-      // 7. 集群算力与协同中枢 (FastMCP 58 完全体)
-      { id: 'openviking_cpa_consult', name: 'cpa_consult (CPA咨询)', description: 'CPA 专家模型异步咨询与决策协同', categoryBadge: 'CPA算力' },
-      { id: 'openviking_cpa_fanout', name: 'cpa_fanout (CPA扇出)', description: 'CPA 任务批量扇出并行调度', categoryBadge: 'CPA算力' },
-      { id: 'openviking_fleet_check', name: 'fleet_check (集群体检)', description: '卫星集群节点运行态健康体检', categoryBadge: '集群协同' },
-      { id: 'openviking_fleet_sync', name: 'fleet_sync (集群同频)', description: '跨节点配置与技能一键同频同步', categoryBadge: '集群协同' },
-      { id: 'openviking_smart_read', name: 'smart_read (分层深读)', description: '分层自适应智能知识提取与概括', categoryBadge: '分层阅读' },
-      { id: 'openviking_code_outline', name: 'code_outline (AST大纲)', description: '代码 AST 语法大纲提取', categoryBadge: '代码感知' },
-      { id: 'openviking_code_search', name: 'code_search (语义搜索)', description: '代码语义符号深度检索', categoryBadge: '代码感知' },
-      { id: 'openviking_code_expand', name: 'code_expand (按需展开)', description: '代码上下文智能折叠与按需展开', categoryBadge: '代码感知' },
-      { id: 'openviking_record_evolution_lesson', name: 'record_lesson (经验入脑)', description: '踩坑事实与自演进经验入脑存盘', categoryBadge: '自演进' },
-      { id: 'openviking_skills', name: 'skills (技能总览)', description: '知识中枢全量技能状态与分类总览', categoryBadge: '技能中心' },
-      { id: 'openviking_audit_skills', name: 'audit_skills (技能审计)', description: '知识中枢技能规范静态安全审计', categoryBadge: '安全审计' },
+      // 5. 服务控制与体检 (3 项)
+      { id: 'openviking_server_control', name: 'server_control (服务控制)', description: '核心中枢服务生命周期与优雅重启控制', categoryBadge: '服务控制', requiredRole: 'admin' },
+      { id: 'openviking_server_init', name: 'server_init (引导初始化)', description: '底座存储引擎与数据表引导初始化', categoryBadge: '服务控制', requiredRole: 'admin' },
+      { id: 'openviking_server_doctor', name: 'server_doctor (深度体检)', description: '全系统底层硬件与数据库深度体检诊断', categoryBadge: '服务控制' },
     ],
   },
 ]
@@ -139,15 +121,15 @@ export const DEFAULT_TOOL_IDS = TOOL_CATEGORIES.flatMap((c) =>
   c.tools.filter((t) => t.defaultSelected).map((t) => t.id),
 )
 
-// 卫星业务使用者工具包 (31项)
+// 核心战地工具包 (34项)
 export const SATELLITE_CONSUMER_TOOL_IDS =
   TOOL_CATEGORIES.find((c) => c.id === 'satellite')?.tools.map((t) => t.id) ?? []
 
-// 中枢运维特权工具包 (58 - 31 = 剩下的 27项专属特权)
+// 系统运维治理特权工具包 (17项专属特权)
 export const MASTER_OPS_TOOL_IDS =
   TOOL_CATEGORIES.find((c) => c.id === 'master_ops')?.tools.map((t) => t.id) ?? []
 
-// 中枢总控工具包 (业务 31项 + 运维 27项 = FastMCP 58项完全体)
+// 中枢总控工具包 (战地 34项 + 运维 17项 = 51项全量核心)
 export const MASTER_MAINTAINER_TOOL_IDS = ALL_TOOL_IDS
 
 // 保持历史导出别名对齐
@@ -187,8 +169,6 @@ export const HOOK_CAPABILITIES: HookCapabilityItem[] = [
 
 /**
  * 插件包关联技能 (Plugin Bundled Skills) 数据模型
- * 真实反映当前插件包 (如 dsh-plugin-openviking) 实际捆绑的技能清单。
- * 遵循绝对真实性原则，绝不假造或硬编码虚拟技能。
  */
 export type PluginSkillItem = {
   id: string
@@ -204,23 +184,15 @@ export type PluginBundleMeta = {
   description: string
 }
 
-/**
- * DSH 官方 OpenViking 插件当前最新发布版本号 (SSOT)
- */
 export const DSH_PLUGIN_VERSION = '2.0.11'
 
-/**
- * 当前标杆官方插件包元数据 (dsh-plugin-openviking)
- * 物理事实：该插件专注于 FastMCP 工具箱桥接与 Hook 生命周期拦截，未随包内置独立技能 (0 项技能)。
- */
 export const OFFICIAL_PLUGIN_META: PluginBundleMeta = {
   pluginName: 'dsh-plugin-openviking',
   version: DSH_PLUGIN_VERSION,
-  skills: [], // 真实物理事实：当前插件包内置 0 项随包技能
+  skills: [],
   description: '专注于 FastMCP 工具箱桥接与 Hook 前置预取/后置沉淀守卫，未随包附带独立技能',
 }
 
-// 保持兼容别名导出（指向真实插件技能列表，真实为 0 项）
 export const COMPANION_SKILLS: PluginSkillItem[] = OFFICIAL_PLUGIN_META.skills
 
 /**
@@ -242,23 +214,23 @@ export type ToolBundle = {
 export const OFFICIAL_TOOL_BUNDLES: ToolBundle[] = [
   {
     id: 'satellite_consumer',
-    name: '🛰️ 业务使用者工具包',
-    shortName: '业务使用者包',
-    roleTitle: '一线业务工兵 / 研发助手',
-    description: '涵盖知识读写、代码分析、契约单测、工单流转与全球搜索等一线全套工具',
+    name: '🛰️ 核心战地工具包',
+    shortName: '战地工兵包',
+    roleTitle: '战地旗舰 / 研发工兵',
+    description: '涵盖知识读写、长程记忆、工作区 AST、技能中心感知、工单吹哨与泊车管家 (面向全量普通 Agent)',
     toolIds: SATELLITE_CONSUMER_TOOL_IDS,
-    recommendedFor: '适用于常规编程助手、业务自动化与各类一线任务工兵智能体',
-    highlightBadge: '31 项业务工具',
+    recommendedFor: '适用于常规业务编程助手、脚本自动化与各类一线任务工兵智能体',
+    highlightBadge: '34 项战地武器',
   },
   {
     id: 'master_ops',
-    name: '🧠 中枢运维者工具包',
-    shortName: '中枢运维者包',
-    roleTitle: '自治中枢 / 运维特权',
-    description: '涵盖工作区代码写改、底座探针自愈、隔离舱与集群底座运维专属特权',
+    name: '🛡️ 系统运维特权工具包',
+    shortName: '运维特权包',
+    roleTitle: '哨兵治理 / 运维特权',
+    description: '涵盖底层存储挂载、文件重定位、死信自愈重试、系统监听订阅与底座体检',
     toolIds: MASTER_OPS_TOOL_IDS,
-    recommendedFor: '适用于具备本地代码修改、自愈重试与系统治理能力的运维总控智能体',
-    highlightBadge: '16 项运维特权',
+    recommendedFor: '适用于后台自动化运维智能体 (如 24 小时哨兵 Sentinel) 与巡检 Engine',
+    highlightBadge: '17 项运维特权',
   },
 ]
 
@@ -275,20 +247,27 @@ export function isToolDisabledByRole(tool: ToolItem, userRole?: string): boolean
 
 export const BIG_THREE_PLUGIN_MAPPINGS: Record<string, { name: string; tools: string[] }> = {
   'openviking-memory': {
-    name: 'OpenViking 记忆体外大脑',
+    name: 'OpenViking 核心记忆与代码战地',
     tools: [
-      'find', 'search', 'read', 'remember', 'openviking_history_search',
-      'openviking_active_notes_get', 'openviking_active_notes_update', 'openviking_context_route',
-      'list', 'tree', 'grep', 'glob', 'zg_search', 'openviking_code_impact', 'openviking_tokenshift_compress',
-      'openviking_generate_contract_test', 'openviking_skill_validate', 'openviking_skill_judge',
-      'openviking_skill_remediate', 'openviking_skill_zip', 'openviking_skill_intent_match', 'openviking_skill_publish',
+      'find', 'search', 'read', 'write', 'store', 'link', 'get_relations', 'unlink',
+      'ls', 'tree', 'grep', 'glob', 'openviking_code_outline', 'openviking_code_search',
+      'openviking_code_expand', 'openviking_diff', 'openviking_smart_read', 'openviking_tokenshift_compress',
+      'openviking_tag', 'openviking_skills', 'openviking_audit_skills', 'openviking_auto_onboard_skills',
+      'openviking_get_onboard_queue_status', 'openviking_fix_skill', 'openviking_record_evolution_lesson',
       'openviking_file_task_card', 'openviking_list_pending_cards', 'openviking_resolve_task_card',
       'openviking_task_cards_summary', 'openviking_valet_handover', 'openviking_valet_ticket_status',
-      'health', 'openviking_privacy_mask', 'openviking_agent_sensors',
-      'write', 'edit', 'openviking_dspy_compile', 'openviking_vector_sync_metrics', 'openviking_skill_weight_tune',
-      'openviking_isolate_agent', 'openviking_skill_quarantine', 'openviking_skill_unquarantine',
-      'openviking_skill_rebalance', 'openviking_dlq_status', 'openviking_retry_dead_letter',
-      'openviking_harness_probe', 'forget', 'list_watches', 'cancel_watch', 'manage_watch',
+      'openviking_privacy', 'openviking_ping', 'openviking_harness_stats',
+    ],
+  },
+  'openviking-ops': {
+    name: 'OpenViking 系统运维治理',
+    tools: [
+      'openviking_add_resource', 'openviking_list_resources', 'openviking_delete_resource',
+      'openviking_reindex', 'openviking_commit', 'openviking_mv', 'openviking_rename',
+      'openviking_webdav_info', 'openviking_dspy_compile', 'openviking_memory_purity_report',
+      'openviking_retry_dead_letter', 'openviking_list_watches', 'openviking_cancel_watch',
+      'openviking_manage_watch', 'openviking_server_control', 'openviking_server_init',
+      'openviking_server_doctor',
     ],
   },
   'keepass-vault': {
@@ -299,9 +278,11 @@ export const BIG_THREE_PLUGIN_MAPPINGS: Record<string, { name: string; tools: st
     ],
   },
   'network-search': {
-    name: '联网搜索与采集聚合器',
+    name: '联网搜索与采集聚合网关',
     tools: [
-      'web_search', 'web_fetch', 'openviking_web_search',
+      'web_search', 'search_neural', 'search_qna', 'search_deep', 'search_code_context',
+      'search_similar_repos', 'map_site', 'extract_urls', 'tavily_crawl', 'crawl_local',
+      'deep_research', 'search_vertical_expert', 'benchmark_needle',
     ],
   },
   dify: {
@@ -311,6 +292,14 @@ export const BIG_THREE_PLUGIN_MAPPINGS: Record<string, { name: string; tools: st
       'dify_delete_app', 'dify_run_workflow', 'dify_list_datasets', 'dify_create_dataset',
       'dify_delete_dataset', 'dify_search_dataset', 'dify_list_model_providers',
     ],
+  },
+  'cpa-squad': {
+    name: 'CPA 跨模型算力协同',
+    tools: ['openviking_cpa_consult', 'openviking_cpa_fanout'],
+  },
+  'fleet-mesh': {
+    name: '卫星集群同频运维',
+    tools: ['openviking_fleet_check', 'openviking_fleet_sync'],
   },
 }
 
@@ -325,10 +314,10 @@ export function derivePluginGrantsFromTools(selectedTools: string[]): Record<str
     }
   }
 
-  const bigThreeTools = new Set(
+  const allMappedTools = new Set(
     Object.values(BIG_THREE_PLUGIN_MAPPINGS).flatMap((m) => m.tools)
   )
-  const unmapped = selectedTools.filter((t) => !bigThreeTools.has(t))
+  const unmapped = selectedTools.filter((t) => !allMappedTools.has(t))
   if (unmapped.length > 0) {
     grants['custom'] = unmapped
   }

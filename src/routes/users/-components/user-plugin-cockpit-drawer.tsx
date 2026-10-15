@@ -52,35 +52,66 @@ export function UserPluginCockpitDrawer({
   const [hooksState, setHooksState] = React.useState<Record<string, boolean>>({})
   const [isSaving, setIsSaving] = React.useState(false)
 
-  // 初始化加载该用户的插件与工具装配配置
+  // 初始化加载该用户的插件与工具装配配置 (云端单一真实源优先)
   React.useEffect(() => {
     if (!user) return
-    const storageKey = `user-plugin-config-${user.accountId || currentAccountId}-${user.userId}`
-    const saved = localStorage.getItem(storageKey)
-    if (saved) {
+    let isCancelled = false
+    const accountId = user.accountId || currentAccountId
+    const userId = user.userId
+
+    async function loadAssembly() {
       try {
-        const parsed = JSON.parse(saved)
-        if (Array.isArray(parsed.selectedTools)) {
-          setSelectedTools(parsed.selectedTools)
+        const res = await fetch(
+          `/api/v1/plugins/user-assembly?account_id=${encodeURIComponent(accountId)}&user_id=${encodeURIComponent(userId)}`
+        )
+        if (res.ok) {
+          const data = await res.json()
+          if (!isCancelled && data?.assembly) {
+            if (Array.isArray(data.assembly.selected_tools)) {
+              setSelectedTools(data.assembly.selected_tools)
+            }
+            if (data.assembly.hooks_state && typeof data.assembly.hooks_state === 'object') {
+              setHooksState(data.assembly.hooks_state)
+            }
+            return
+          }
         }
-        if (parsed.hooksState && typeof parsed.hooksState === 'object') {
-          setHooksState(parsed.hooksState)
-        }
-        return
-      } catch {
-        // 解析异常则走默认预设
+      } catch (_) {}
+
+      // 本地缓存降级兜底
+      const storageKey = `user-plugin-config-${accountId}-${userId}`
+      const saved = localStorage.getItem(storageKey)
+      if (saved && !isCancelled) {
+        try {
+          const parsed = JSON.parse(saved)
+          if (Array.isArray(parsed.selectedTools)) {
+            setSelectedTools(parsed.selectedTools)
+          }
+          if (parsed.hooksState && typeof parsed.hooksState === 'object') {
+            setHooksState(parsed.hooksState)
+          }
+          return
+        } catch (_) {}
+      }
+
+      // 默认预设
+      if (!isCancelled) {
+        const allTools = PLUGIN_CAPABILITIES.flatMap((p) => p.bundles.flatMap((b) => b.toolIds))
+        const defaultHooks: Record<string, boolean> = {}
+        PLUGIN_CAPABILITIES.forEach((p) => {
+          p.hooks.forEach((h) => {
+            defaultHooks[h.id] = h.defaultEnabled ?? true
+          })
+        })
+        setSelectedTools(allTools)
+        setHooksState(defaultHooks)
       }
     }
-    // 默认全量装配全部 67 项工具与 7 项 Hook
-    const allTools = PLUGIN_CAPABILITIES.flatMap((p) => p.bundles.flatMap((b) => b.toolIds))
-    const defaultHooks: Record<string, boolean> = {}
-    PLUGIN_CAPABILITIES.forEach((p) => {
-      p.hooks.forEach((h) => {
-        defaultHooks[h.id] = h.defaultEnabled ?? true
-      })
-    })
-    setSelectedTools(allTools)
-    setHooksState(defaultHooks)
+
+    loadAssembly()
+    return () => {
+      isCancelled = true
+    }
   }, [user, currentAccountId])
 
   if (!user) return null
@@ -129,20 +160,20 @@ export function UserPluginCockpitDrawer({
       const allHooks: Record<string, boolean> = {}
       PLUGIN_CAPABILITIES.forEach((p) => p.hooks.forEach((h) => (allHooks[h.id] = true)))
       setHooksState(allHooks)
-      toast.success('已切换为「中枢全栈模式」：装配全部 67 项 MCP 工具 + 7 项 Hook')
+      toast.success(`已切换为「中枢全栈模式」：装配全部 ${allTools.length} 项 MCP 工具 + ${Object.keys(allHooks).length} 项 Hook`)
     } else if (presetKey === 'satellite') {
-      // 卫星工兵预设：业务使用者工具 (31 项) + 核心 Hook
+      // 战地工兵预设：核心战地工具 (34 项) + 核心 Hook
       const satelliteTools =
         PLUGIN_CAPABILITIES.find((p) => p.pluginId === 'openviking-memory')
-          ?.bundles.find((b) => b.id === 'memory-consumer')
+          ?.bundles.find((b) => b.id === 'memory-consumer' || b.id === 'memory-battlefield')
           ?.toolIds || []
       setSelectedTools(satelliteTools)
-      toast.success('已切换为「卫星工兵模式」：装配 31 项高频检索、代码与工单协同工具')
+      toast.success('已切换为「战地工兵模式」：装配 34 项长程记忆、工作区 AST、技能与工单协同工具')
     } else if (presetKey === 'readonly') {
-      // 只读模式：find, search, read, list, tree, zg_search, web_search, keepass_get
+      // 只读模式：find, search, read, ls, tree, grep, glob, openviking_skills, keepass_get, keepass_search, web_search, openviking_ping
       const readonlyTools = [
-        'find', 'search', 'read', 'list', 'tree', 'zg_search',
-        'web_search', 'search_qna', 'keepass_get', 'keepass_search', 'keepass_list_tree', 'health',
+        'find', 'search', 'read', 'ls', 'tree', 'grep', 'glob',
+        'openviking_skills', 'keepass_get', 'keepass_search', 'web_search', 'openviking_ping',
       ]
       setSelectedTools(readonlyTools)
       toast.success('已切换为「最小只读模式」：仅保留 12 项安全只读检索算子')
