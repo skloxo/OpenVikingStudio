@@ -78,11 +78,18 @@ class TaskCardManager:
     def _compute_fingerprint(self, module: str, symptom: str) -> str:
         """Compute 12-char deterministic fingerprint from module and normalized symptom core."""
         norm_mod = module.strip().lower()
-        # Strip timestamps, dynamic numbers, and hex IDs from symptom signature
+        # Strip timestamps, dynamic numbers, PIDs, and hex IDs from symptom signature
         norm_sym = symptom.strip().lower()
         norm_sym = re.sub(r"0x[0-9a-f]+", "", norm_sym)
         norm_sym = re.sub(r"\d{4}-\d{2}-\d{2}[t\s]\d{2}:\d{2}:\d{2}", "", norm_sym)
         norm_sym = re.sub(r"\d+\.\d+ms", "", norm_sym)
+        # 脱敏进程 PID / 线程 ID，杜绝因进程号漂移引发卡片风暴
+        norm_sym = re.sub(r"(pid|process|thread|task)[^0-9a-zA-Z]*\d+", r"\1 *", norm_sym, flags=re.IGNORECASE)
+        # 脱敏浮点与百分比指标 (如 100.0% 或 98.5%)
+        norm_sym = re.sub(r"\d+(\.\d+)?%", "*%", norm_sym)
+        # 脱敏临时端口与连续多位数字
+        norm_sym = re.sub(r":\d{4,5}\b", ":*", norm_sym)
+        norm_sym = re.sub(r"\b\d{4,}\b", "*", norm_sym)
         signature = f"{norm_mod}::{norm_sym[:120]}"
         return hashlib.sha256(signature.encode("utf-8")).hexdigest()[:12]
 
