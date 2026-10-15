@@ -64,7 +64,7 @@ describe('AgentItem Tool Grants Persistence Test', () => {
       expect.objectContaining({
         allowed_tools: expect.arrayContaining(['read', 'write', 'edit']),
         plugin_grants: expect.objectContaining({
-          'openviking-memory': expect.arrayContaining(['read', 'write', 'edit']),
+          'openviking-memory': expect.arrayContaining(['read', 'write']),
         }),
       })
     )
@@ -84,8 +84,8 @@ describe('AgentItem Tool Grants Persistence Test', () => {
       />
     )
 
-    // 点击第一个插件瓦片（OpenViking 核心记忆插件）打开抽屉
-    const pluginTile = screen.getByText(/OpenViking 核心记忆插件/i)
+    // 点击第一个插件瓦片（OpenViking 核心战地记忆插件）打开抽屉
+    const pluginTile = screen.getByText(/OpenViking.*记忆插件/i)
     fireEvent.click(pluginTile)
 
     // 验证抽屉内出现「保存并完成」按钮

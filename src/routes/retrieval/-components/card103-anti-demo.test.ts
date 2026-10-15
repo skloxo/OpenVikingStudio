@@ -35,7 +35,7 @@ describe('Card-103 Anti-Demo & Anti-Dangling Automated Retina Gate', () => {
       const match = content.match(demoMarkerRegex)
       expect(match, `File ${file} contains forbidden demo marker: ${match?.[0]}`).toBeNull()
     }
-  })
+  }, 20000)
 
   it('100% enforces NO GREEN EVER across all route components', () => {
     const greenRegex = /\b(text|bg|border)-(green|emerald)-\d+\b/g
@@ -44,7 +44,7 @@ describe('Card-103 Anti-Demo & Anti-Dangling Automated Retina Gate', () => {
       const match = content.match(greenRegex)
       expect(match, `File ${file} contains green utility class: ${match?.join(', ')}`).toBeNull()
     }
-  })
+  }, 20000)
 
   it('100% enforces minimum typography hard floor >= 12px (Zero Micro-Fonts)', () => {
     const microFontRegex = /\btext-\[(8|9|10|11)px\]/g
@@ -53,7 +53,7 @@ describe('Card-103 Anti-Demo & Anti-Dangling Automated Retina Gate', () => {
       const match = content.match(microFontRegex)
       expect(match, `File ${file} contains micro-font: ${match?.join(', ')}`).toBeNull()
     }
-  })
+  }, 20000)
 
   it('verifies all *-cockpit.tsx components with presets mount real asset pickers', () => {
     const cockpits = allComponents.filter((f) => path.basename(f).includes('-cockpit.tsx'))

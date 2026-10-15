@@ -60,6 +60,11 @@ export function PluginQuadCard({ plugin, onSelect }: PluginQuadCardProps) {
                 零依赖
               </Badge>
             )}
+            {plugin.plugin_id === 'dify' && (
+              <Badge variant="outline" className="text-xs font-mono border-border/60 bg-muted/20 text-muted-foreground px-1.5 py-0 shrink-0">
+                工作流
+              </Badge>
+            )}
           </div>
 
           {/* 运行态状态胶囊 (性冷淡高密风格，NO GREEN EVER) */}

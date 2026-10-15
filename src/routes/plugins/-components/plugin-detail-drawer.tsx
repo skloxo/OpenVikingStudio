@@ -370,10 +370,14 @@ export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps)
                       ? '全景记忆库与知识图谱视窗'
                       : plugin.plugin_id === 'network-search'
                         ? '在线搜索试验台与配额大盘'
-                        : '凭据分组拓扑与体检视窗'}
+                        : plugin.plugin_id === 'dify'
+                          ? 'Dify 可视化编排与知识库中枢'
+                          : '凭据分组拓扑与体检视窗'}
                   </span>
                   <a
-                    href={plugin.gui?.dashboard_route || '/'}
+                    href={plugin.plugin_id === 'dify' ? 'http://127.0.0.1:13000' : (plugin.gui?.dashboard_route || '/')}
+                    target={plugin.plugin_id === 'dify' ? '_blank' : undefined}
+                    rel="noreferrer"
                     className="flex items-center gap-1 text-xs font-mono text-cyan-700 dark:text-cyan-400 hover:underline"
                   >
                     前往专属控制台
@@ -385,7 +389,9 @@ export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps)
                     ? '提供体外大脑长程记忆观测大盘、FTS5 全文索引、知识图谱拓扑与纯度审计。'
                     : plugin.plugin_id === 'network-search'
                       ? '提供多路 Key 轮询健康度观测、Credits 消耗流水账与爬虫渲染测试台。'
-                      : '提供 KDBX 凭据分组拓扑树、弱密体检与自动化备份容灾管理。'}
+                      : plugin.plugin_id === 'dify'
+                        ? '提供可视化工作流编排大盘、DSL 导入导出、知识库检索引擎与模型提供商管理。'
+                        : '提供 KDBX 凭据分组拓扑树、弱密体检与自动化备份容灾管理。'}
                 </p>
               </div>
 
@@ -443,6 +449,11 @@ export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps)
                     本插件与 OpenViking 服务端<strong className="text-foreground">零运行时强依赖</strong>。OpenViking 仅作为官方展示展厅与统一发布托管源，客户端直接通过 (
                     <code className="text-cyan-700 dark:text-cyan-400 font-mono">dsh-plugin-keepass-vault</code>
                     ) 读取智能体本地加密 KDBX。
+                  </>
+                )}
+                {plugin.plugin_id === 'dify' && (
+                  <>
+                    本插件为 Dify 独立工作流与知识库生态扩展。支持通过 FastMCP 客户端 (<code className="text-cyan-700 dark:text-cyan-400 font-mono">dify_mcp_server.py</code>) 直接调度本地 Docker 实例 (13000 端口)，实现应用全生命周期纳管、DSL 代码化导入导出与工作流实时触发。
                   </>
                 )}
               </div>

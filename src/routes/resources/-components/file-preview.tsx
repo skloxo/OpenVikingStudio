@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react'
 import { X, Pencil, Save, XCircle, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 import { Button } from '#/components/ui/button'
 import { ScrollArea } from '#/components/ui/scroll-area'

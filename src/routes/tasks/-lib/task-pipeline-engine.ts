@@ -196,7 +196,8 @@ export function deriveUniversalPipelineSteps(
     } else if (type === 'add_skill' && (state === 'completed' || state === 'running')) {
       const skillCount =
         extractFirstNumber(resObj, ['valid_skills', 'scanned_skills', 'total_skills']) ??
-        extractFirstNumber(metaObj, ['valid_skills', 'scanned_skills', 'total_skills'])
+        extractFirstNumber(metaObj, ['valid_skills', 'scanned_skills', 'total_skills']) ??
+        (state === 'completed' ? 1 : undefined)
 
       if (skillCount !== undefined) {
         if (spec.id === 'step_skill_scan') {

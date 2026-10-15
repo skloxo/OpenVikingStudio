@@ -22,7 +22,6 @@ import {
 import { cn } from '#/lib/utils'
 import type { SkillDetail, SkillTocItem } from '../-lib/skill-types'
 import { extractSkillToc, extractSopOverview } from '../-lib/skill-data'
-import { getFallbackSkillContent } from '../-lib/skill-translations'
 
 interface SkillDetailSheetProps {
   open: boolean
@@ -397,25 +396,20 @@ export function SkillDetailSheet({
                   ))}
                 </div>
               ) : (
-                <div className="overflow-hidden rounded border border-border/60 bg-card p-2 font-mono text-xs text-foreground flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 font-bold">
-                    <FileCode2Icon className="size-3.5 text-muted-foreground" />
-                    SKILL.md
-                  </span>
-                  <Badge
-                    variant="outline"
-                    className="rounded-xs text-xs px-1.5 py-0 border-border bg-muted/40 text-foreground"
-                  >
-                    单文件精简规范
-                  </Badge>
+                <div className="rounded border border-dashed border-border/60 bg-muted/10 p-3 text-center text-xs text-muted-foreground font-mono">
+                  暂无独立物理文件列表记录
                 </div>
               )}
             </DetailSection>
 
             <DetailSection title="📄 SKILL.md 全量源码与 TOC 结构索引 (Full Source & TOC)">
-              <SkillSourceViewer
-                content={detail.content || getFallbackSkillContent(detail.name, detail.description)}
-              />
+              {detail.content ? (
+                <SkillSourceViewer content={detail.content} />
+              ) : (
+                <div className="rounded border border-dashed border-border/60 bg-muted/10 p-6 text-center text-xs text-muted-foreground font-mono">
+                  {isLoading ? '正在从 OpenViking 中枢拉取真实源码...' : '⚠️ 未检索到 SKILL.md 源码内容，或该技能为纯抽象定义。'}
+                </div>
+              )}
             </DetailSection>
           </div>
         )}
