@@ -194,7 +194,7 @@ export type PluginBundleMeta = {
 /**
  * DSH 官方 OpenViking 插件当前最新发布版本号 (SSOT)
  */
-export const DSH_PLUGIN_VERSION = '1.0.0'
+export const DSH_PLUGIN_VERSION = '2.0.11'
 
 /**
  * 当前标杆官方插件包元数据 (dsh-plugin-openviking)

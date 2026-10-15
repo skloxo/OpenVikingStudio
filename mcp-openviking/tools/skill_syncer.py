@@ -123,6 +123,8 @@ def _auto_ingest_missing_to_vikingfs(found_skills: Dict[str, Dict[str, Any]]):
                 continue
             if name.startswith(".") or name in ("skills", "scripts", "bin", "lib", "src", "public", "__pycache__"):
                 continue
+            if not all(ch.isascii() and (ch.isalnum() or ch in {"_", "-"}) for ch in name):
+                continue
             desc = item.get("description", "").strip()
             if not desc or desc == "暂无简介":
                 continue
@@ -135,6 +137,9 @@ def _auto_ingest_missing_to_vikingfs(found_skills: Dict[str, Dict[str, Any]]):
             return
 
         logger.info("发现 %d 个本地技能未收录至 Wiki 技能中心，正在自动补齐入库...", len(missing))
+        consecutive_failures = 0
+        MAX_CONSECUTIVE_FAILURES = 3
+
         for name, content in missing:
             try:
                 payload = {
@@ -144,10 +149,20 @@ def _auto_ingest_missing_to_vikingfs(found_skills: Dict[str, Dict[str, Any]]):
                 sub_res = http_client.post("/api/v1/skills", payload)
                 if isinstance(sub_res, dict) and sub_res.get("status") == "ok":
                     logger.info("已自动补齐技能收录至 Wiki 技能中心: %s", name)
+                    consecutive_failures = 0
                 else:
-                    logger.warning("自动收录技能返回异常 (%s): %s", name, sub_res)
+                    consecutive_failures += 1
+                    logger.warning("自动收录技能返回异常 (%s): %s [连续失败 %d 次]", name, sub_res, consecutive_failures)
             except Exception as item_err:
-                logger.warning("自动收录技能失败 (%s): %s", name, item_err)
+                consecutive_failures += 1
+                logger.warning("自动收录技能失败 (%s): %s [连续失败 %d 次]", name, item_err, consecutive_failures)
+
+            if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
+                logger.error(
+                    "自动补齐技能连续失败达 %d 次，触发安全熔断保护，立即终止本次补齐批次，避免过载轰炸与刷屏！",
+                    MAX_CONSECUTIVE_FAILURES
+                )
+                break
             time.sleep(1.0)
     except Exception as e:
         logger.debug("比对并入库缺失技能异常: %s", e)

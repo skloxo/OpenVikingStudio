@@ -229,17 +229,15 @@ class OpenVikingHTTPClient:
         cfg = _get_config()
         api_key = cfg["api_key"] or self.api_key
 
-        peer_id = get_resolved_actor_peer("antigravity")
         headers = {
             "Content-Type": "application/json",
-            "X-OpenViking-Account": "default",
-            "X-OpenViking-User": "default",
-            "X-OpenViking-Actor-Peer": peer_id,
-            "X-Caller": peer_id,
         }
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
             headers["X-API-Key"] = api_key
+        else:
+            headers["X-OpenViking-Account"] = "default"
+            headers["X-OpenViking-User"] = "default"
 
         data = None
         if body is not None:

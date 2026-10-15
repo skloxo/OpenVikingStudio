@@ -32,13 +32,29 @@ export function SearchIntegrationGuide({ userApiKey = '' }: SearchIntegrationGui
 
   const isPublic = network === 'public'
   const apiEndpoint = isPublic
-    ? 'https://vk.tide.red:18888/v1/search'
-    : 'http://127.0.0.1:18888/v1/search'
+    ? 'https://sear.tide.red/v1'
+    : 'http://127.0.0.1:18888/v1'
   const mcpEndpoint = isPublic
-    ? 'https://vk.tide.red:18888/mcp'
+    ? 'https://sear.tide.red/mcp'
     : 'http://127.0.0.1:18888/mcp'
 
+  const effectiveApiKey = userApiKey || 'sear-matrix-key-2026'
   const installCmd = 'npm install https://vk.tide.red/studio/dsh-plugin-search-gateway.tgz'
+
+  const universalMcpSnippet = JSON.stringify(
+    {
+      mcpServers: {
+        'search-gateway': {
+          url: mcpEndpoint,
+          headers: {
+            'x-api-key': effectiveApiKey,
+          },
+        },
+      },
+    },
+    null,
+    2,
+  )
 
   const handleCopy = async (text: string, label: string) => {
     try {
@@ -70,7 +86,7 @@ export function SearchIntegrationGuide({ userApiKey = '' }: SearchIntegrationGui
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            公网中继
+            公网中继 (sear.tide.red)
           </button>
           <button
             type="button"
@@ -81,7 +97,7 @@ export function SearchIntegrationGuide({ userApiKey = '' }: SearchIntegrationGui
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            本地局域网
+            本地局域网 (18888)
           </button>
         </div>
       </div>
@@ -104,7 +120,7 @@ export function SearchIntegrationGuide({ userApiKey = '' }: SearchIntegrationGui
             </Badge>
           </div>
           <div className="mt-0.5 text-xs text-muted-foreground font-normal">
-            客户端自带第三方搜索配置，直接填入接口地址 + Key 即可使用
+            DSH 官方原生支持：一条接口地址加一个密钥直接对接，免装任何客户端插件
           </div>
         </button>
 
@@ -118,13 +134,13 @@ export function SearchIntegrationGuide({ userApiKey = '' }: SearchIntegrationGui
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="font-semibold">形态 B · 定制插件包 (MCP / DSH)</span>
+            <span className="font-semibold">形态 B · 通用 MCP 与高级插件</span>
             <Badge variant="outline" className="text-xs border-border/60 text-muted-foreground">
               12 大高级工具
             </Badge>
           </div>
           <div className="mt-0.5 text-xs text-muted-foreground font-normal">
-            客户端无原生搜索配置，或需要学术/金融/动态渲染正文高级工具
+            Cursor / Claude / Windsurf 通用 MCP 挂载，或 DSH 定制插件包
           </div>
         </button>
       </div>
@@ -133,13 +149,13 @@ export function SearchIntegrationGuide({ userApiKey = '' }: SearchIntegrationGui
       {mode === 'api' && (
         <div className="space-y-2.5 pt-1">
           <div className="rounded border border-border/60 bg-muted/20 p-2.5 text-xs text-muted-foreground leading-relaxed">
-            💡 <strong>适用场景：</strong>DeepSeek Harness (DSH) 原生搜索插件、或具备自定义 Web Search 端点的现代智能体。<strong>无需在客户端安装额外包</strong>，直接填入以下两项：
+            💡 <strong>极简免装插件对接：</strong>DeepSeek Harness (DSH) 原生网页搜索设置完全支持标准 API 接口。<strong>无需安装额外插件包</strong>，直接在设置中填入以下两项：
           </div>
 
           {/* 1. 接口地址 */}
           <div className="space-y-1">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-medium text-muted-foreground">搜索接口端点 (Search Endpoint)</span>
+              <span className="font-medium text-muted-foreground">搜索接口 Base URL (Search API Endpoint)</span>
               <Button
                 variant="ghost"
                 size="sm"
@@ -162,48 +178,69 @@ export function SearchIntegrationGuide({ userApiKey = '' }: SearchIntegrationGui
           {/* 2. 鉴权密钥 */}
           <div className="space-y-1">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-medium text-muted-foreground">用户密钥 (User API Key)</span>
-              {userApiKey && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 px-1.5 text-xs text-muted-foreground hover:text-foreground gap-1"
-                  onClick={() => handleCopy(userApiKey, '用户密钥')}
-                >
-                  {copiedKey === '用户密钥' ? (
-                    <CheckIcon className="size-3 text-cyan-400" />
-                  ) : (
-                    <CopyIcon className="size-3" />
-                  )}
-                  复制
-                </Button>
-              )}
+              <span className="font-medium text-muted-foreground">搜索接口 API Key</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-1.5 text-xs text-muted-foreground hover:text-foreground gap-1"
+                onClick={() => handleCopy(effectiveApiKey, '搜索密钥')}
+              >
+                {copiedKey === '搜索密钥' ? (
+                  <CheckIcon className="size-3 text-cyan-400" />
+                ) : (
+                  <CopyIcon className="size-3" />
+                )}
+                复制
+              </Button>
             </div>
             <div className="rounded border border-border/60 bg-background/80 p-2 font-mono text-xs text-foreground break-all select-all">
-              {userApiKey || '请在用户详情中复制对应的 User API Key'}
+              {effectiveApiKey}
             </div>
           </div>
 
           {/* 3. 规范说明 */}
           <div className="rounded border border-border/40 bg-muted/10 p-2 font-mono text-xs text-muted-foreground space-y-1">
-            <div>• 支持协议：POST /v1/search (入参: query, limit, include_raw)</div>
-            <div>• 极简协议：GET /v1/search?q=关键词&limit=5</div>
-            <div>• 底层保障：26-Key 轮询矩阵 (Keenable 80万次池 + Tavily + SearXNG 保底)</div>
+            <div>• DSH 设置：在 DSH 网页搜索设置中填写 BaseURL ({apiEndpoint}) 与 API Key 即可原生激活。</div>
+            <div>• REST 协议：支持 POST /v1/search (query, limit) 与 GET /v1/search?q=关键词。</div>
+            <div>• 底层保障：26-Key 轮询矩阵 (Keenable 80万次池 + Tavily + Crawl4AI 无头爬虫 + SearXNG 保底)。</div>
           </div>
         </div>
       )}
 
-      {/* 模式 B：定制插件包与 MCP 引导 */}
+      {/* 模式 B：定制插件包与 通用 MCP 引导 */}
       {mode === 'plugin' && (
         <div className="space-y-2.5 pt-1">
           <div className="rounded border border-border/60 bg-muted/20 p-2.5 text-xs text-muted-foreground leading-relaxed">
-            💡 <strong>适用场景：</strong>客户端无原生配置项，或需要挂载 12 项原子级 MCP 工具 (代码库反查、站点拓扑测绘、Crawl4AI 本地动态渲染)。
+            💡 <strong>适用场景：</strong>通用智能体 (Cursor / Claude Desktop / Windsurf / Cline) 通过 Streamable HTTP 协议接入 12 项原子级高级工具 (代码反查、学术、无头网页渲染脱水)。
           </div>
 
-          {/* 1. 一键安装命令 */}
+          {/* 1. 通用 MCP JSON 配置 */}
           <div className="space-y-1">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-medium text-muted-foreground">客户端 NPM 安装命令</span>
+              <span className="font-medium text-muted-foreground">通用 MCP 配置文件 (mcp.json / claude_desktop_config.json)</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-1.5 text-xs text-muted-foreground hover:text-foreground gap-1"
+                onClick={() => handleCopy(universalMcpSnippet, '通用MCP配置')}
+              >
+                {copiedKey === '通用MCP配置' ? (
+                  <CheckIcon className="size-3 text-cyan-400" />
+                ) : (
+                  <CopyIcon className="size-3" />
+                )}
+                复制 MCP 配置
+              </Button>
+            </div>
+            <pre className="rounded border border-border/60 bg-background/80 p-2 font-mono text-xs text-foreground overflow-x-auto leading-relaxed">
+              {universalMcpSnippet}
+            </pre>
+          </div>
+
+          {/* 2. DSH 定制插件包一键安装 */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-medium text-muted-foreground">DSH 独立插件 NPM 安装命令 (可选高级工具包)</span>
               <Button
                 variant="ghost"
                 size="sm"
@@ -215,34 +252,11 @@ export function SearchIntegrationGuide({ userApiKey = '' }: SearchIntegrationGui
                 ) : (
                   <CopyIcon className="size-3" />
                 )}
-                复制
+                复制命令
               </Button>
             </div>
             <div className="rounded border border-border/60 bg-background/80 p-2 font-mono text-xs text-foreground select-all">
               {installCmd}
-            </div>
-          </div>
-
-          {/* 2. MCP 服务端点 */}
-          <div className="space-y-1">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-medium text-muted-foreground">独立 MCP 服务端点</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 px-1.5 text-xs text-muted-foreground hover:text-foreground gap-1"
-                onClick={() => handleCopy(mcpEndpoint, 'MCP服务端点')}
-              >
-                {copiedKey === 'MCP服务端点' ? (
-                  <CheckIcon className="size-3 text-cyan-400" />
-                ) : (
-                  <CopyIcon className="size-3" />
-                )}
-                复制
-              </Button>
-            </div>
-            <div className="rounded border border-border/60 bg-background/80 p-2 font-mono text-xs text-foreground select-all">
-              {mcpEndpoint}
             </div>
           </div>
         </div>

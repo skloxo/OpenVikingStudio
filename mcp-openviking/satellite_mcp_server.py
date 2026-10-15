@@ -121,18 +121,15 @@ class SatelliteHTTPClient:
 
         cfg = _get_config()
         api_key = cfg["api_key"] or self.api_key
-        peer_id = get_resolved_actor_peer("workbuddy")
-
         headers = {
             "Content-Type": "application/json",
-            "X-OpenViking-Account": "default",
-            "X-OpenViking-User": os.environ.get("OPENVIKING_USER", "default"),
-            "X-OpenViking-Actor-Peer": peer_id,
-            "X-Caller": peer_id,
         }
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
             headers["X-API-Key"] = api_key
+        else:
+            headers["X-OpenViking-Account"] = "default"
+            headers["X-OpenViking-User"] = os.environ.get("OPENVIKING_USER", "default")
 
         data = json.dumps(body).encode("utf-8") if body is not None else None
         req = Request(url, data=data, headers=headers, method=method)
