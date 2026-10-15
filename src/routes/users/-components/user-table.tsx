@@ -8,7 +8,6 @@ import {
   BoxesIcon,
   CheckIcon,
   CopyIcon,
-  KeyRoundIcon,
   LoaderCircleIcon,
   RotateCwIcon,
   Trash2Icon,
@@ -68,9 +67,6 @@ export type UserTableProps = {
   onInitiateRoleChange: (input: UpdateUserRoleInput) => void
   onOpenPluginBridge?: (user: AdminUser) => void
   onSelectUser?: (user: AdminUser) => void
-  onUseUserIdentity: (user: AdminUser) => void
-  serverMode?: string
-  switchingIdentityKey: string
   users: AdminUser[]
 }
 
@@ -90,9 +86,6 @@ export function UserTable({
   onInitiateRoleChange,
   onOpenPluginBridge,
   onSelectUser,
-  onUseUserIdentity,
-  serverMode,
-  switchingIdentityKey,
   users,
 }: UserTableProps) {
   const { t } = useTranslation('settings')
@@ -148,10 +141,6 @@ export function UserTable({
                   const isCurrentIdentity =
                     user.accountId === connection.accountId &&
                     user.userId === connection.userId
-                  const canSwitchIdentity =
-                    !isCurrentIdentity &&
-                    (serverMode === 'trusted' || Boolean(user.apiKey))
-                  const isSwitching = switchingIdentityKey === identityKey
                   const isLastManager =
                     (user.role === 'admin' || user.role === 'root') &&
                     managerCount <= 1
@@ -274,10 +263,7 @@ export function UserTable({
                                     size="icon-xs"
                                     aria-label={t('actions.regenerate')}
                                     onClick={() => onInitiateRegenerate(user)}
-                                    disabled={
-                                      isRegeneratePending ||
-                                      Boolean(switchingIdentityKey)
-                                    }
+                                    disabled={isRegeneratePending}
                                   />
                                 }
                               >
@@ -304,30 +290,6 @@ export function UserTable({
                             <BoxesIcon className="size-3.5 text-cyan-500" />
                             {t('table.pluginAccess')}
                           </Button>
-                          {canSwitchIdentity ? (
-                            <Button
-                              type="button"
-                              variant="secondary"
-                              size="sm"
-                              className="text-xs h-7 gap-1"
-                              disabled={Boolean(switchingIdentityKey)}
-                              onClick={() => onUseUserIdentity(user)}
-                            >
-                              {isSwitching ? (
-                                <LoaderCircleIcon className="size-3 animate-spin" />
-                              ) : (
-                                <KeyRoundIcon className="size-3" />
-                              )}
-                              {t('actions.switchIdentity')}
-                            </Button>
-                          ) : isCurrentIdentity ? (
-                            <span
-                              aria-hidden="true"
-                              className="px-3 text-muted-foreground/45 text-xs"
-                            >
-                              —
-                            </span>
-                          ) : null}
                           <Tooltip>
                             <TooltipTrigger
                               render={

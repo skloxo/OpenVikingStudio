@@ -257,16 +257,7 @@ export function normalizeSkillDetail(
         : ''
 
   const parsedFiles = parseSkillFiles(rawFiles)
-  const finalFiles =
-    parsedFiles.length > 0
-      ? parsedFiles
-      : [
-          {
-            isDir: false,
-            name: 'SKILL.md',
-            path: 'SKILL.md',
-          },
-        ]
+  const finalFiles = parsedFiles
 
   return {
     allowedTools: stringArray(detail?.allowed_tools),
@@ -323,12 +314,8 @@ export async function fetchSkillDetail(skill: SkillItem): Promise<SkillDetail> {
       'viking://user/skills/',
       'viking://user/default/skills/',
     )
-  } else if (targetUri.startsWith('viking://agent/skills/')) {
-    targetUri = targetUri.replace(
-      'viking://agent/skills/',
-      'viking://agent/default/skills/',
-    )
   }
+
 
   try {
     const result = await getOvResult<unknown>(

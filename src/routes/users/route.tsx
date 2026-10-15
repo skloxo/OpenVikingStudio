@@ -37,7 +37,6 @@ import type {
   AdminConnection,
   AdminUser,
   CreateUserInput,
-  KeyResult,
   UpdateUserRoleInput,
 } from '#/lib/admin'
 import { copyTextToClipboard } from '#/lib/clipboard'
@@ -63,7 +62,6 @@ function UserManagementRoute() {
     isConnectionRoleLoading,
     serverMode,
     setGeneratedCredential,
-    switchIdentity,
   } = useAppConnection()
 
   const [addUserOpen, setAddUserOpen] = React.useState(false)
@@ -73,7 +71,6 @@ function UserManagementRoute() {
     React.useState<AdminUser | null>(null)
   const [pendingRoleChange, setPendingRoleChange] =
     React.useState<UpdateUserRoleInput | null>(null)
-  const [switchingIdentityKey, setSwitchingIdentityKey] = React.useState('')
   const [selectedUserForDetail, setSelectedUserForDetail] =
     React.useState<AdminUser | null>(null)
   const [detailSheetOpen, setDetailSheetOpen] = React.useState(false)
@@ -120,21 +117,9 @@ function UserManagementRoute() {
     mutationFn: (input: CreateUserInput) =>
       createAdminUser(adminConnection, input),
     onError: (error) => toast.error(getErrorMessage(error)),
-    onSuccess: async (result, input) => {
+    onSuccess: async (result) => {
       setGeneratedCredential(result)
       setAddUserOpen(false)
-      if (result.apiKey) {
-        try {
-          await switchIdentity({
-            accountId: result.accountId || input.accountId,
-            allowLegacyIdentityFallback: true,
-            apiKey: result.apiKey,
-            userId: result.userId || input.userId,
-          })
-        } catch (error) {
-          toast.error(getErrorMessage(error))
-        }
-      }
       toast.success(t('toast.userCreated'))
       await queryClient.invalidateQueries({ queryKey: ['managed-users'] })
       await queryClient.invalidateQueries({ queryKey: ['account-switcher'] })
@@ -145,21 +130,9 @@ function UserManagementRoute() {
     mutationFn: (user: AdminUser) =>
       regenerateAdminUserKey(adminConnection, user.accountId, user.userId),
     onError: (error) => toast.error(getErrorMessage(error)),
-    onSuccess: async (result, user) => {
+    onSuccess: async (result) => {
       setGeneratedCredential(result)
       setPendingRegenerateUser(null)
-      if (
-        user.accountId === connection.accountId &&
-        user.userId === connection.userId &&
-        result.apiKey
-      ) {
-        await switchIdentity({
-          accountId: user.accountId,
-          allowLegacyIdentityFallback: true,
-          apiKey: result.apiKey,
-          userId: user.userId,
-        })
-      }
       toast.success(t('toast.keyRegenerated'))
       await queryClient.invalidateQueries({ queryKey: ['managed-users'] })
     },
@@ -200,30 +173,6 @@ function UserManagementRoute() {
       toast.success(t('toast.copied'))
     } catch {
       toast.error(t('toast.copyFailed'))
-    }
-  }
-
-  async function useUserIdentity(user: AdminUser | KeyResult): Promise<void> {
-    if (serverMode !== 'trusted' && !user.apiKey) {
-      toast.error(t('management.noUsableKey'))
-      return
-    }
-    const accountId = user.accountId || connection.accountId
-    const userId = user.userId || connection.userId
-    const identityKey = `${accountId}:${userId}`
-    setSwitchingIdentityKey(identityKey)
-    try {
-      await switchIdentity({
-        accountId,
-        allowLegacyIdentityFallback: true,
-        apiKey: user.apiKey || '',
-        userId,
-      })
-      toast.success(t('toast.dataKeySelected'))
-    } catch (error) {
-      toast.error(getErrorMessage(error))
-    } finally {
-      setSwitchingIdentityKey('')
     }
   }
 
@@ -371,9 +320,6 @@ function UserManagementRoute() {
           setSelectedUserForDetail(user)
           setDetailSheetOpen(true)
         }}
-        onUseUserIdentity={(user) => void useUserIdentity(user)}
-        serverMode={serverMode}
-        switchingIdentityKey={switchingIdentityKey}
         users={users}
       />
 
@@ -389,7 +335,6 @@ function UserManagementRoute() {
         open={detailSheetOpen}
         onOpenChange={setDetailSheetOpen}
         currentUserId={connection.userId}
-        onSwitchIdentity={(u) => void useUserIdentity(u)}
         onRegenerateKey={(u) => setPendingRegenerateUser(u)}
         onOpenPluginDrawer={(u) => {
           setPluginBridgeUser(u)

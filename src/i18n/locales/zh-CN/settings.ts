@@ -291,9 +291,9 @@ export const settings = {
       description:
         '查看选中 accounts 下的 users 和凭证，并在网页端新增 user 或轮换 key。',
       memberListDescription:
-        '“切换身份”会将该用户设为 Playground、检索等数据页面的访问身份，不会改变当前 Root/Admin 管理凭证。',
+        '查看空间下的成员与访问凭证，支持重置密钥或管理插件装配。',
       memberListDescriptionRoot:
-        '可直接修改成员角色；“切换身份”只会改变 Playground、检索等数据页面的访问身份，不会改变当前 Root 管理凭证。',
+        '可直接修改成员角色、管理访问凭证与插件装配。',
       memberListTitle: '空间成员',
       cannotRemoveCurrentIdentity: '不能删除当前正在使用的身份。',
       cannotRemoveLastManager: '不能删除空间内最后一个管理员。',
