@@ -58,8 +58,8 @@ class PluginRegistry:
 
     def _init_builtin_plugins(self) -> None:
         """初始化三大官方标杆插件 (The Big Three)。"""
-        # 1. 核心记忆插件 (openviking-memory v1.5.0) - 两组共 47 项标准 MCP 工具 + 3 项 Hook 守卫 + 认知导轨 + GUI
-        memory_47_tools = [
+        # 1. 核心记忆插件 (openviking-memory) - 两组共 58 项标准 MCP 工具 + 3 项 Hook 守卫 + 认知导轨 + GUI
+        memory_58_tools = [
             # 业务使用者工具池 (31 项)
             ToolDefinition(name="find", description="基于向量与分词的混合记忆语义检索", category="core"),
             ToolDefinition(name="search", description="高级混合关键词与过滤检索引擎", category="core"),
@@ -109,6 +109,18 @@ class PluginRegistry:
             ToolDefinition(name="cancel_watch", description="取消自动刷新系统监听订阅", category="ops"),
             ToolDefinition(name="add_resource", description="异步向体外大脑挂载新资源", category="ops"),
             ToolDefinition(name="openviking_harness_probe", description="硬件与驱动探针物理验证", category="ops"),
+            # 集群算力与协同工具池 (11 项) -> 补齐至 FastMCP 58 完全体单一真实源
+            ToolDefinition(name="openviking_cpa_consult", description="CPA 专家模型异步咨询与决策协同", category="cpa"),
+            ToolDefinition(name="openviking_cpa_fanout", description="CPA 任务批量扇出并行调度", category="cpa"),
+            ToolDefinition(name="openviking_fleet_check", description="卫星集群节点运行态健康体检", category="fleet"),
+            ToolDefinition(name="openviking_fleet_sync", description="跨节点配置与技能一键同频同步", category="fleet"),
+            ToolDefinition(name="openviking_smart_read", description="分层自适应智能知识提取与概括", category="core"),
+            ToolDefinition(name="openviking_code_outline", description="代码 AST 语法大纲提取", category="code"),
+            ToolDefinition(name="openviking_code_search", description="代码语义符号深度检索", category="code"),
+            ToolDefinition(name="openviking_code_expand", description="代码上下文智能折叠与按需展开", category="code"),
+            ToolDefinition(name="openviking_record_evolution_lesson", description="踩坑事实与自演进经验入脑存盘", category="skill"),
+            ToolDefinition(name="openviking_skills", description="知识中枢全量技能状态与分类总览", category="skill"),
+            ToolDefinition(name="openviking_audit_skills", description="知识中枢技能规范静态安全审计", category="skill"),
         ]
 
         memory_plugin = QuadPluginDefinition(
@@ -144,7 +156,7 @@ class PluginRegistry:
                     description="高危写操作与越权执行毫秒级安全阻断",
                 ),
             ],
-            tools=memory_47_tools,
+            tools=memory_58_tools,
             gui=GuiSchemaDefinition(
                 settings_fields={
                     "storageEngine": "SQLite FTS5 + VikingFS /queue",
@@ -156,7 +168,7 @@ class PluginRegistry:
                 },
                 dashboard_route="/",
             ),
-            health=PluginHealthProbe(status="healthy", latency_ms=1.1, message="FastMCP 47 tools ready"),
+            health=PluginHealthProbe(status="healthy", latency_ms=1.1, message="FastMCP 58 tools ready"),
         )
 
         # 2. KeePass 凭据保险箱 (keepass-vault - 独立生态插件)
@@ -267,10 +279,70 @@ class PluginRegistry:
             health=PluginHealthProbe(status="healthy", latency_ms=1.8, message="26 Keys active & SearXNG connected"),
         )
 
-        for p in (memory_plugin, keepass_plugin, search_plugin):
+        # 4. Dify 智能体与工作流中枢 (dify - 独立生态插件)
+        dify_plugin = QuadPluginDefinition(
+            plugin_id="dify",
+            name="Dify 智能体与工作流中枢",
+            version="1.0.0",
+            category="user",
+            description="全生命周期可视化 AI 智能体编排与工作流中枢 (应用管理、DSL 导入导出、知识库检索引擎与模型提供商)",
+            skill=SkillDefinition(
+                skill_id="dify-ops",
+                name="Dify 工作流编排认知导轨",
+                description="可视化工作流调度、DSL 规范导入导出与知识库 Hit-Testing 检索契约",
+                sop_summary="探针测活 -> 列出应用与工作流 -> 导出/同步 DSL -> 触发工作流执行 -> 知识库召回",
+                rules=[
+                    "高危应用与知识库删除操作前必须二次确认",
+                    "DSL 导入必须遵循官方 YAML 规范版本",
+                    "工作流触发执行必须提供完整的必填 inputs 参数",
+                ],
+            ),
+            hooks=[
+                HookDefinition(
+                    hook_id="dify_execution_audit",
+                    name="工作流入参合规审计",
+                    trigger_event="before_workflow_run",
+                    description="工作流触发前校验 inputs 契约与入参必填项，防止脏入参导致执行崩溃",
+                ),
+                HookDefinition(
+                    hook_id="dify_dsl_backup_hook",
+                    name="DSL 覆写前自动备份",
+                    trigger_event="before_dsl_import",
+                    description="覆盖导入应用 DSL 前自动拉取当前版本归档备份，保障安全回滚",
+                ),
+            ],
+            tools=[
+                ToolDefinition(name="dify_status", description="检查 Dify 服务端连通状态与资产总览", category="workflow"),
+                ToolDefinition(name="dify_list_apps", description="分页列出工作区内应用与工作流清单", category="workflow"),
+                ToolDefinition(name="dify_get_app", description="获取指定应用/工作流详细配置规格", category="workflow"),
+                ToolDefinition(name="dify_export_dsl", description="导出应用或工作流完整 YAML DSL 规范配置", category="workflow"),
+                ToolDefinition(name="dify_import_dsl", description="导入 YAML DSL 创建或覆盖更新应用", category="workflow"),
+                ToolDefinition(name="dify_delete_app", description="按 UUID 物理删除指定应用 (高危)", category="workflow", is_dangerous=True),
+                ToolDefinition(name="dify_run_workflow", description="传入参数触发执行指定工作流并捕获执行轨迹", category="workflow"),
+                ToolDefinition(name="dify_list_datasets", description="分页列出工作区内知识库数据集清单", category="knowledge"),
+                ToolDefinition(name="dify_create_dataset", description="新建高品质知识库数据集", category="knowledge"),
+                ToolDefinition(name="dify_delete_dataset", description="按 UUID 物理删除指定知识库 (高危)", category="knowledge", is_dangerous=True),
+                ToolDefinition(name="dify_search_dataset", description="对指定知识库执行 Hit-Testing 语义测试检索", category="knowledge"),
+                ToolDefinition(name="dify_list_model_providers", description="列出工作区已配置模型提供商与凭据状态", category="models"),
+            ],
+            gui=GuiSchemaDefinition(
+                settings_fields={
+                    "apiUrl": "http://127.0.0.1:13000",
+                    "workspaceId": "693e2343-fa88-4273-9360-b7e4c8b0bd83",
+                    "authMode": "Admin API Key (Verified)",
+                    "consoleRoute": "/console/api",
+                },
+                dashboard_route="/plugins",
+            ),
+            health=PluginHealthProbe(status="healthy", latency_ms=1.2, message="Dify :13000 connected"),
+        )
+
+        for p in (memory_plugin, keepass_plugin, search_plugin, dify_plugin):
             self.register_plugin(p)
         # 向下兼容历史 ID 与工具映射别名 (独立别名表，绝不污染 _plugins 真实列表)
         self._aliases["dsh-plugin-openviking"] = "openviking-memory"
+        self._aliases["dify-workflow"] = "dify"
+        self._aliases["dify-control-plane"] = "dify"
         self._tool_to_plugin_map["searxng_search"] = "network-search"
         self._tool_to_plugin_map["crawl4ai_extract"] = "network-search"
 
@@ -324,10 +396,31 @@ class PluginRegistry:
             "version": latest_version,
             "package_file": latest_filename,
             "package_url": package_url,
-            "architecture": "Client-Side RPC Bridge (无状态轻量通道桥)",
-            "description": "专供外部智能体 (DSH / Claude / 自定义 Agent) 本地安装的通道桥梁。安装后配置 userKey 与 agentId，即可安全连通 VK 服务端中心化三大标杆插件 (记忆/搜索/凭据) 动态能力。",
+            "architecture": "Multi-Channel Standard Bridge (三大官方标杆渠道接入中枢)",
+            "description": "专供智能体生态 (Google 反重力 / DeepSeek Harness / 通用 MCP 智能体) 本地开箱即用安装的通道桥梁。安装后配置 userKey 与 agentId，即可安全连通 VK 服务端中心化三大标杆插件 (记忆/搜索/凭据) 动态能力。",
             "install_command": f"npm install {package_url}",
             "handshake_protocol": "HTTP/SSE + Bearer Auth (UserKey:AgentID)",
+            "channels": {
+                "antigravity": {
+                    "name": "Google 反重力",
+                    "standard": "Google Gemini Agent Framework Plugin Specification",
+                    "version": "2.0.11",
+                    "plugin_dir": "integrations/antigravity/openviking-memory",
+                    "setup_script": "setup.py",
+                },
+                "dsh": {
+                    "name": "DeepSeek Harness",
+                    "standard": "Cordis Plugin Ecosystem",
+                    "version": latest_version,
+                    "package_url": package_url,
+                    "install_command": f"npm install {package_url}",
+                },
+                "universal_mcp": {
+                    "name": "标准通用智能体",
+                    "standard": "Universal Model Context Protocol (Streamable-HTTP / Stdio)",
+                    "endpoint_url": "https://vk.tide.red/mcp",
+                },
+            },
         }
 
     def register_plugin(self, plugin: QuadPluginDefinition) -> None:

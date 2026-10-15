@@ -32,12 +32,12 @@ def test_plugin_registry_singleton_and_builtins():
     assert "keepass-vault" in plugin_ids
     assert "network-search" in plugin_ids
 
-    # 验证核心记忆插件四位一体完整性 (47 工具 + 3 Hook)
+    # 验证核心记忆插件四位一体完整性 (FastMCP 58 完全体 + 3 Hook)
     mem_plug = reg1.get_plugin("openviking-memory")
     assert mem_plug is not None
     assert mem_plug.version == "2.0.11"
     assert len(mem_plug.hooks) == 3
-    assert len(mem_plug.tools) == 47
+    assert len(mem_plug.tools) == 58
 
     # 验证工具反查插件 ID
     assert reg1.get_plugin_id_by_tool("find") == "openviking-memory"
@@ -106,7 +106,7 @@ def test_get_plugin_detail_and_bridge_endpoints(client):
     data = resp.json()
     assert data["plugin_id"] == "openviking-memory"
     assert data["version"] == "2.0.11"
-    assert len(data["tools"]) == 47
+    assert len(data["tools"]) == 58
 
     # 验证客户端桥梁独立接口
     resp_bridge = client.get("/api/v1/plugins/bridge/client-package")

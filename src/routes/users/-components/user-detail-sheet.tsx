@@ -36,7 +36,6 @@ export type UserDetailSheetProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   currentUserId?: string
-  onSwitchIdentity?: (user: AdminUser) => void
   onRegenerateKey?: (user: AdminUser) => void
   onOpenPluginDrawer?: (user: AdminUser) => void
 }
@@ -46,7 +45,6 @@ export function UserDetailSheet({
   open,
   onOpenChange,
   currentUserId,
-  onSwitchIdentity,
   onRegenerateKey,
   onOpenPluginDrawer,
 }: UserDetailSheetProps) {
@@ -68,7 +66,7 @@ export function UserDetailSheet({
       version: 'v2.0.11',
       icon: <BotIcon className="size-4 text-cyan-600 dark:text-cyan-400" />,
       desc: '体外大脑语义向量检索、AST 代码感知与长程经验沉淀 (官方平台底座)',
-      meta: '47 工具 · 3 Hook',
+      meta: '58 工具 · 3 Hook',
     },
     {
       id: 'network-search',
@@ -117,7 +115,6 @@ export function UserDetailSheet({
         <UserOverviewCard
           user={user}
           isCurrentIdentity={isCurrentIdentity}
-          onSwitchIdentity={onSwitchIdentity}
           onRegenerateKey={onRegenerateKey}
         />
 

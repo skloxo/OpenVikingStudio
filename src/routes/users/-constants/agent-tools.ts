@@ -1,13 +1,13 @@
 /**
  * agent-tools.ts
  * 智能体工具池常量、角色工具包 (Tool Bundles) 与权限管理 (Tool ACL Matrix)
- * 100% 对齐 FastMCP 47 个全量物理工具 (SSOT)。
+ * 100% 对齐 FastMCP 58 个全量物理工具 (SSOT)。
  *
  * 核心设计哲学 (第一性原理)：
  * 1. 角色分明：
  *    - 🛰️ 卫星工兵 (Satellite Consumer)：纯粹的使用者角色 (31项工具)，负责知识读写、代码阅读/AST/TDD、工单闭环、技能自上架与异步消化。
- *    - 🧠 中枢总控 (Master Maintainer)：即是使用者又是运维者 (47项全量工具)，涵盖使用者全量武器 + 代码写改、死信自愈、安全隔离与底座治理。
- * 2. 工具包直选：一键点选工具包卡片，免去 47 个复选框逐一勾选的繁琐认知负担。
+ *    - 🧠 中枢总控 (Master Maintainer)：即是使用者又是运维者 (58项全量工具)，涵盖使用者全量武器 + 代码写改、死信自愈、安全隔离与底座治理。
+ * 2. 工具包直选：一键点选工具包卡片，免去 58 个复选框逐一勾选的繁琐认知负担。
  * 3. 网络自适应：彻底剥离硬编码的本地/公网标签，由运行时端点智能自适应。
  */
 
@@ -86,8 +86,8 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
   },
   {
     id: 'master_ops',
-    name: '🧠 中枢运维特权工具池 (16 项)',
-    description: '涵盖工作区代码写改、底层自愈、隔离舱与运维探针特权',
+    name: '🧠 中枢运维特权工具池 (27 项)',
+    description: '涵盖工作区代码写改、底层自愈、隔离舱、CPA算力、集群协同与运维探针特权',
     tools: [
       // 1. 本地代码精准写改
       { id: 'write', name: 'write (写入文件)', description: '新建或全量覆写工作区文件内容', categoryBadge: '代码写入' },
@@ -116,6 +116,19 @@ export const TOOL_CATEGORIES: ToolCategory[] = [
       { id: 'cancel_watch', name: 'cancel_watch (取消订阅)', description: '取消自动刷新系统监听订阅', categoryBadge: '系统监听', requiredRole: 'admin' },
       { id: 'add_resource', name: 'add_resource (挂载资源)', description: '异步向体外大脑挂载新资源', categoryBadge: '存储挂载' },
       { id: 'openviking_harness_probe', name: 'harness_probe (探针验证)', description: '探针物理验证', categoryBadge: '硬件探针' },
+
+      // 7. 集群算力与协同中枢 (FastMCP 58 完全体)
+      { id: 'openviking_cpa_consult', name: 'cpa_consult (CPA咨询)', description: 'CPA 专家模型异步咨询与决策协同', categoryBadge: 'CPA算力' },
+      { id: 'openviking_cpa_fanout', name: 'cpa_fanout (CPA扇出)', description: 'CPA 任务批量扇出并行调度', categoryBadge: 'CPA算力' },
+      { id: 'openviking_fleet_check', name: 'fleet_check (集群体检)', description: '卫星集群节点运行态健康体检', categoryBadge: '集群协同' },
+      { id: 'openviking_fleet_sync', name: 'fleet_sync (集群同频)', description: '跨节点配置与技能一键同频同步', categoryBadge: '集群协同' },
+      { id: 'openviking_smart_read', name: 'smart_read (分层深读)', description: '分层自适应智能知识提取与概括', categoryBadge: '分层阅读' },
+      { id: 'openviking_code_outline', name: 'code_outline (AST大纲)', description: '代码 AST 语法大纲提取', categoryBadge: '代码感知' },
+      { id: 'openviking_code_search', name: 'code_search (语义搜索)', description: '代码语义符号深度检索', categoryBadge: '代码感知' },
+      { id: 'openviking_code_expand', name: 'code_expand (按需展开)', description: '代码上下文智能折叠与按需展开', categoryBadge: '代码感知' },
+      { id: 'openviking_record_evolution_lesson', name: 'record_lesson (经验入脑)', description: '踩坑事实与自演进经验入脑存盘', categoryBadge: '自演进' },
+      { id: 'openviking_skills', name: 'skills (技能总览)', description: '知识中枢全量技能状态与分类总览', categoryBadge: '技能中心' },
+      { id: 'openviking_audit_skills', name: 'audit_skills (技能审计)', description: '知识中枢技能规范静态安全审计', categoryBadge: '安全审计' },
     ],
   },
 ]
@@ -130,11 +143,11 @@ export const DEFAULT_TOOL_IDS = TOOL_CATEGORIES.flatMap((c) =>
 export const SATELLITE_CONSUMER_TOOL_IDS =
   TOOL_CATEGORIES.find((c) => c.id === 'satellite')?.tools.map((t) => t.id) ?? []
 
-// 中枢运维特权工具包 (47 - 31 = 剩下的 16项专属特权)
+// 中枢运维特权工具包 (58 - 31 = 剩下的 27项专属特权)
 export const MASTER_OPS_TOOL_IDS =
   TOOL_CATEGORIES.find((c) => c.id === 'master_ops')?.tools.map((t) => t.id) ?? []
 
-// 中枢总控工具包 (业务 31项 + 运维 16项 = 全量 47项)
+// 中枢总控工具包 (业务 31项 + 运维 27项 = FastMCP 58项完全体)
 export const MASTER_MAINTAINER_TOOL_IDS = ALL_TOOL_IDS
 
 // 保持历史导出别名对齐
