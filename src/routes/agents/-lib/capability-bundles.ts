@@ -5,7 +5,7 @@
  * 核心架构哲学：
  * 1. 客户端通信桥梁 (dsh-plugin-openviking) 独立打包托管，供外部智能体安装通道；
  * 2. 服务端真实三大官方标杆 Quad 插件 (The Big Three)：
- *    - openviking-memory (47工具, 3 Hook, 记忆检索与代码感知)；
+ *    - openviking-memory (58工具, 3 Hook, 记忆检索与代码感知)；
  *    - network-search (12工具, 3 Hook, 26-Key 轮询与全网采集)；
  *    - keepass-vault (8工具, 1 Hook, 密码凭据单一真实源)；
  * 3. “四位一体 (Quad)”架构：每个插件均具备【① 技能导轨 + ② Hook 拦截 + ③ MCP 角色包 + ④ GUI 视窗】；
@@ -129,7 +129,7 @@ export const PLUGIN_CAPABILITIES: PluginCapability[] = [
     name: 'OpenViking 核心记忆插件',
     version: '1.5.0',
     description: '体外大脑记忆语义检索、代码感知、上下文路由与经验沉淀核心',
-    totalTools: 47,
+    totalTools: 58,
     skill: {
       name: 'openviking-memory',
       summary: '指导 Agent 开局主动向体外记忆检索、解决复杂难题后自动沉淀教训的标准技能。',
