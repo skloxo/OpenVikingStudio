@@ -58,7 +58,7 @@
     "url": "https://github.com/volcengine/OpenViking"
   },
   "overrides": {
-    "axios": "^1.16.1"
+    "axios": "^1.20.0"
   },
   "homepage": "https://github.com/volcengine/OpenViking/tree/main/examples/openclaw-plugin",
   "license": "MIT",
@@ -81,6 +81,6 @@
     "@types/node": "^25.3.5",
     "@volcengine/tos-sdk": "^2.9.1",
     "typescript": "^5.8.0",
-    "vitest": "^4.1.0"
+    "vitest": "^5.0.2"
   }
 }
