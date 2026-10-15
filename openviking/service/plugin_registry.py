@@ -34,7 +34,7 @@ class PluginRegistry:
     _lock = threading.Lock()
 
     def __init__(self) -> None:
-        self._registry_lock = threading.Lock()
+        self._registry_lock = threading.RLock()
         self._plugins: Dict[str, QuadPluginDefinition] = {}
         self._aliases: Dict[str, str] = {}
         self._tool_to_plugin_map: Dict[str, str] = {}
@@ -147,6 +147,11 @@ class PluginRegistry:
             for tool in plugin.tools:
                 self._tool_to_plugin_map[tool.name] = plugin.plugin_id
             logger.info("已注册插件: %s (%s, %d tools)", plugin.plugin_id, plugin.name, len(plugin.tools))
+
+    def resolve_alias(self, alias: str) -> str:
+        """解析别名至标准 Canonical Plugin ID 或 Tool Name。"""
+        with self._registry_lock:
+            return self._aliases.get(alias, alias)
 
     def get_plugin(self, plugin_id: str) -> Optional[QuadPluginDefinition]:
         """按 ID 查询插件，支持别名自动映射。"""
