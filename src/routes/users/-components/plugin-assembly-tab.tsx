@@ -20,6 +20,7 @@ import {
   SaveIcon,
   SparklesIcon,
   TerminalIcon,
+  WorkflowIcon,
   ZapIcon,
 } from 'lucide-react'
 import { Badge } from '#/components/ui/badge'
@@ -72,6 +73,8 @@ export function PluginAssemblyTab({
         return <GlobeIcon className="size-4 text-cyan-600 dark:text-cyan-400" />
       case 'keepass-vault':
         return <KeyIcon className="size-4 text-cyan-600 dark:text-cyan-400" />
+      case 'dify':
+        return <WorkflowIcon className="size-4 text-cyan-600 dark:text-cyan-400" />
       default:
         return <PackageIcon className="size-4 text-cyan-600 dark:text-cyan-400" />
     }
@@ -97,9 +100,9 @@ export function PluginAssemblyTab({
             variant="outline"
             className="h-6.5 text-xs font-mono border-border/60 hover:border-cyan-500/50"
             onClick={() => onApplyPreset('full')}
-            title="全部 67 项 MCP 工具 + 7 项 Hook"
+            title={`全部 ${totalAllToolsCount} 项 MCP 工具 + ${totalAllHooksCount} 项 Hook`}
           >
-            🚀 中枢全栈 (67工具)
+            🚀 中枢全栈 ({totalAllToolsCount}工具)
           </Button>
           <Button
             type="button"
@@ -107,9 +110,9 @@ export function PluginAssemblyTab({
             variant="outline"
             className="h-6.5 text-xs font-mono border-border/60 hover:border-cyan-500/50"
             onClick={() => onApplyPreset('satellite')}
-            title="卫星/通用业务 31 项工具"
+            title="核心战地/研发工兵 34 项工具"
           >
-            🛰️ 卫星工兵 (31工具)
+            🛰️ 战地工兵 (34工具)
           </Button>
           <Button
             type="button"
@@ -117,9 +120,9 @@ export function PluginAssemblyTab({
             variant="outline"
             className="h-6.5 text-xs font-mono border-border/60 hover:border-cyan-500/50"
             onClick={() => onApplyPreset('readonly')}
-            title="最小只读检索与拓扑 14 项工具"
+            title="最小安全只读检索 12 项工具"
           >
-            🔒 最小只读 (14工具)
+            🔒 最小只读 (12工具)
           </Button>
         </div>
       </div>

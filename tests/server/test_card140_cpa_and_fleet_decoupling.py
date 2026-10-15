@@ -91,8 +91,8 @@ def test_tool_to_plugin_mapping_decoupled(registry):
     assert "openviking_cpa_fanout" not in mem_tool_names
     assert "openviking_fleet_check" not in mem_tool_names
     assert "openviking_fleet_sync" not in mem_tool_names
-    # 58 剥离 4 项后为 54 项
-    assert len(mem.tools) == 54
+    # 战地核心工具精准收敛为 34 项 (Card-141 战地核心)
+    assert len(mem.tools) == 34
 
 
 def test_plugins_rest_api_returns_cpa_and_fleet(client):
