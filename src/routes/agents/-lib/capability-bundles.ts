@@ -310,8 +310,8 @@ export const PLUGIN_CAPABILITIES: PluginCapability[] = [
   {
     pluginId: 'keepass-vault',
     name: 'KeePass 凭据保险箱插件',
-    version: '1.0.0',
-    description: '全集群密码、SSH 私钥与 API Key 凭据单一真实源 (Credential SSOT)',
+    version: '1.0.1',
+    description: '本地私有凭据管理插件 (云端零密码存储，客户端本地直接挂载 KDBX 数据文件)',
     totalTools: 8,
     skill: {
       name: 'keepass-vault',
@@ -323,9 +323,9 @@ export const PLUGIN_CAPABILITIES: PluginCapability[] = [
       ],
     },
     gui: {
-      name: '凭据保险箱安全控制台',
-      cloudConfigSummary: '云端管理控制台用于锁定/解锁 KDBX 数据库、维护分组拓扑树、发起弱密码体检与生成脱敏安全审计报表。',
-      clientDialogSummary: '在 Agent 客户端环境若遇未授权操作，通过对话框特殊表格提示用户进行指纹或主密码提权授权。',
+      name: '本地私有凭据托管展厅',
+      cloudConfigSummary: '云端控制台仅提供官方展厅展示、不可变插件包托管下载与配置引导，绝不集中存储或远程传输用户私有密码库。',
+      clientDialogSummary: '智能体客户端直接在本地通过 keepassxc-cli 解密用户本机的 .kdbx 数据库文件，密码数据 100% 留存本地。',
     },
     hooks: [
       { id: 'vault_guard_hook', name: '写前防抖物理快照', triggerEvent: 'before_vault_write', description: '任何凭据增删改前自动生成 *.bak 快照防抖备份', defaultEnabled: true },
