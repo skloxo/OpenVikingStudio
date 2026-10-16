@@ -97,188 +97,134 @@ window.__ModuleLoader__.load({
             setProbeReport({
               ok: true,
               totalLatency,
-              version: data.version || '1.0.0',
-              user: `${data.account_id || 'default'} / ${data.user_id || 'default'} (${data.role || 'user'})`,
-              toolsCount: data.total_authorized_tools || 17,
+              version: data.version || '2.0.12',
+              toolsCount: data.total_authorized_tools || data.plugins?.[0]?.tools?.length || 17,
+              hooksCount: data.hooks?.length || 2,
+              role: data.role || 'user',
               probes: data.probes || {},
             });
           } else {
-            let errMsg = `HTTP ${res.status}`;
-            try {
-              const errJson = await res.json();
-              errMsg = errJson.detail || errJson.error?.message || errMsg;
-            } catch (_) {}
-            setProbeReport({ ok: false, totalLatency, error: errMsg });
+            setProbeReport({
+              ok: false,
+              totalLatency,
+              status: res.status,
+              error: `HTTP ${res.status} 鉴权或服务拒绝 (${res.statusText || 'Error'})`,
+            });
           }
         } catch (err) {
-          setProbeReport({ ok: false, totalLatency: Date.now() - start, error: err.message || '网络超时或服务端不可达' });
+          setProbeReport({
+            ok: false,
+            totalLatency: Date.now() - start,
+            error: err.message || '网络连接超时或地址不可达',
+          });
         } finally {
           setTesting(false);
         }
       };
 
-      const handleSave = async () => {
+      const handleSave = () => {
         setSaving(true);
-        setSaveToast(null);
-        const base = getBaseUrl(config.endpointUrl);
-        const fetchFn = typeof window !== 'undefined' && window.fetch ? window.fetch.bind(window) : fetch;
-
-        const headers = { 'Content-Type': 'application/json' };
-        if (config.userKey) headers['Authorization'] = `Bearer ${config.userKey}`;
-        if (config.agentId) headers['X-Agent-ID'] = config.agentId;
-
-        try {
-          const res = await fetchFn(`${base}/api/v1/system/client-capabilities?plugin_id=openviking-ops&probe=full`, {
-            headers,
-            signal: AbortSignal.timeout(5000),
-          });
-
-          if (!res.ok) {
-            let errMsg = `HTTP ${res.status}`;
-            try {
-              const errJson = await res.json();
-              errMsg = errJson.detail || errJson.error?.message || errMsg;
-            } catch (_) {}
-            setSaveToast({ ok: false, msg: `云端鉴权未通过：${errMsg}。请修正服务地址或用户密钥！` });
-            setSaving(false);
-            return;
-          }
-
-          const data = await res.json();
-          setCaps(data);
-          saveCaps(data);
-          saveConfig(config);
-
-          if (props?.form?.mutate) {
-            try {
-              props.form.mutate([
-                { op: 'replace', path: '/endpointUrl', value: config.endpointUrl },
-                { op: 'replace', path: '/agentId', value: config.agentId },
-                { op: 'replace', path: '/userKey', value: config.userKey },
-              ]);
-            } catch (_) {}
-          }
-
-          const toolsTotal = data.total_authorized_tools || 17;
-          const enabledCount = toolsTotal - (config.disabledTools || []).length;
-          setSaveToast({
-            ok: true,
-            msg: `配置保存成功 · 已同步 ${enabledCount} / ${toolsTotal} 项已授权工具及专属 Hooks！`,
-          });
-          setTimeout(() => setSaveToast(null), 4000);
-        } catch (err) {
-          setSaveToast({ ok: false, msg: `保存失败：服务端连接不可达 (${err.message})` });
-        } finally {
+        saveConfig(config);
+        setTimeout(() => {
           setSaving(false);
-        }
+          setSaveToast({ ok: true, msg: '配置已持久化保存，将在下次会话原子生效' });
+          setTimeout(() => setSaveToast(null), 3500);
+        }, 300);
       };
 
-      const disabledList = config.disabledTools || [];
-      const pluginObj = (caps?.plugins || [])[0];
-      const toolsList = pluginObj?.tools || [];
+      const toolsList = caps?.plugins?.[0]?.tools || [];
 
-      return h(
-        'div',
-        {
-          style: {
-            background: 'var(--dsw-alias-settings-card-fill, var(--dsw-alias-button-elevated-fill, #ffffff))',
-            border: '1px solid var(--dsw-alias-settings-card-stroke, var(--dsw-alias-border-l2, rgba(0, 0, 0, 0.08)))',
-            borderRadius: '6px',
-            padding: '14px',
-            marginBottom: '14px',
-            fontFamily: 'var(--dsw-font-family, system-ui, -apple-system, sans-serif)',
-            fontSize: '12px',
-            color: 'var(--dsw-alias-label-primary, #0f1115)',
-            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.03)',
-          },
-        },
+      return h('div', {
+        style: {
+          padding: '16px',
+          background: 'var(--dsw-alias-bg-l1, #ffffff)',
+          color: 'var(--dsw-alias-text-primary, #0f1115)',
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+          fontSize: '12px',
+          borderRadius: '8px',
+          border: '1px solid var(--dsw-alias-border-l1, rgba(0,0,0,0.08))',
+          margin: '8px 0',
+        }
+      },
         // 头部
-        h(
-          'div',
-          {
-            style: {
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '12px',
-              borderBottom: '1px solid var(--dsw-alias-border-l2, rgba(0, 0, 0, 0.06))',
-              paddingBottom: '8px',
-            },
-          },
-          h(
-            'div',
-            { style: { display: 'flex', alignItems: 'center', gap: '6px' } },
-            h('span', { style: { fontSize: '15px' } }, '🛡️'),
-            h('span', { style: { fontWeight: '600', fontSize: '13px', letterSpacing: '-0.01em' } }, 'OpenViking 系统运维治理插件'),
-            h('span', { style: { fontSize: '12px', background: 'rgba(6, 182, 212, 0.12)', color: '#0891b2', border: '1px solid rgba(6, 182, 212, 0.25)', padding: '1px 5px', borderRadius: '4px', fontFamily: 'monospace', fontWeight: '600' } }, 'SSOT')
+        h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--dsw-alias-border-l1, rgba(0,0,0,0.08))', paddingBottom: '10px' } },
+          h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
+            h('span', { style: { fontSize: '18px' } }, '🛡️'),
+            h('div', null,
+              h('div', { style: { fontWeight: '600', fontSize: '13px' } }, 'OpenViking 系统运维治理插件'),
+              h('div', { style: { fontSize: '11px', color: '#64748b' } }, 'dsh-plugin-openviking-ops · 专属解耦通信桥梁')
+            )
           ),
           h('button', {
             type: 'button',
             onClick: handleTest,
-            disabled: testing || saving,
+            disabled: testing,
             style: {
-              background: 'var(--dsw-alias-bg-layer-2, rgba(0, 0, 0, 0.04))',
-              border: '1px solid var(--dsw-alias-border-l2, rgba(0, 0, 0, 0.15))',
-              color: 'var(--dsw-alias-label-primary, inherit)',
-              padding: '4px 10px',
+              background: '#0891b2',
+              color: '#ffffff',
+              border: 'none',
+              padding: '4px 12px',
               borderRadius: '6px',
               fontSize: '12px',
-              cursor: testing ? 'not-allowed' : 'pointer',
               fontWeight: '500',
+              cursor: testing ? 'not-allowed' : 'pointer',
             },
-          }, testing ? '体检中...' : '⚡ 测试连通性')
+          }, testing ? '探测中...' : '⚡ 连通性测试')
         ),
-        // 体检卡片
+        // 探针报告条
         probeReport
-          ? h(
-              'div',
-              {
-                style: {
-                  padding: '10px 12px',
-                  borderRadius: '6px',
-                  marginBottom: '12px',
-                  fontSize: '12px',
-                  background: probeReport.ok ? 'rgba(6, 182, 212, 0.05)' : 'rgba(244, 63, 94, 0.05)',
-                  border: `1px solid ${probeReport.ok ? 'rgba(6, 182, 212, 0.28)' : 'rgba(244, 63, 94, 0.28)'}`,
-                  color: probeReport.ok ? '#0891b2' : '#e11d48',
-                },
+          ? h('div', {
+              style: {
+                margin: '10px 0',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                background: probeReport.ok ? 'rgba(6, 182, 212, 0.08)' : 'rgba(244, 63, 94, 0.08)',
+                border: `1px solid ${probeReport.ok ? '#0891b2' : '#e11d48'}`,
+                color: probeReport.ok ? '#0891b2' : '#e11d48',
               },
-              h('div', { style: { fontWeight: '600', marginBottom: '6px', display: 'flex', justifyContent: 'space-between' } },
-                h('span', null, probeReport.ok ? '🌟 专属插件通道体检通过' : '❌ 连通失败'),
-                h('span', { style: { fontFamily: 'monospace' } }, `${probeReport.totalLatency}ms`)
-              ),
-              probeReport.ok && probeReport.probes
-                ? h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' } },
-                    Object.entries(probeReport.probes).map(([k, p]) =>
-                      h('div', { key: k, style: { padding: '4px 6px', background: 'rgba(255, 255, 255, 0.6)', border: '1px solid rgba(6, 182, 212, 0.15)', borderRadius: '4px' } },
-                        h('div', { style: { fontWeight: '600', color: '#0891b2' } }, p.name || k),
-                        h('div', { style: { fontSize: '11px', color: '#64748b' } }, p.message || '就绪')
-                      )
-                    )
-                  )
-                : h('div', null, `原因: ${probeReport.error}`)
+            },
+            probeReport.ok
+              ? `✅ 连接成功 · 延迟 ${probeReport.totalLatency}ms · 服务端版本 v${probeReport.version} · 鉴权身份: ${probeReport.role} (就绪 ${probeReport.toolsCount} 项工具 / ${probeReport.hooksCount} 项 Hook)`
+              : `❌ 连接失败 · ${probeReport.error}`
             )
           : null,
-        // 表单字段
-        h('div', { style: { display: 'flex', flexDirection: 'column', gap: '10px' } },
+        // 表单字段组
+        h('div', { style: { marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' } },
+          // 接口地址
           h('div', null,
-            h('label', { style: { display: 'block', fontSize: '12px', fontWeight: '500', marginBottom: '3px' } }, '服务地址 *'),
+            h('div', { style: { display: 'flex', justifyContent: 'space-between', marginBottom: '4px' } },
+              h('label', { style: { fontWeight: '500' } }, 'OpenViking 服务端接口地址:'),
+              h('div', { style: { display: 'flex', gap: '6px' } },
+                h('button', {
+                  type: 'button',
+                  onClick: () => handleChange('endpointUrl', 'https://vk.tide.red'),
+                  style: { fontSize: '11px', padding: '1px 6px', background: config.endpointUrl.includes('vk.tide.red') ? '#0891b2' : 'transparent', color: config.endpointUrl.includes('vk.tide.red') ? '#fff' : '#0891b2', border: '1px solid #0891b2', borderRadius: '4px', cursor: 'pointer' }
+                }, '公网 vk.tide.red'),
+                h('button', {
+                  type: 'button',
+                  onClick: () => handleChange('endpointUrl', 'http://127.0.0.1:1933'),
+                  style: { fontSize: '11px', padding: '1px 6px', background: config.endpointUrl.includes('127.0.0.1') ? '#0891b2' : 'transparent', color: config.endpointUrl.includes('127.0.0.1') ? '#fff' : '#0891b2', border: '1px solid #0891b2', borderRadius: '4px', cursor: 'pointer' }
+                }, '本地 127.0.0.1')
+              )
+            ),
             h('input', {
               type: 'text',
               value: config.endpointUrl,
               onChange: (e) => handleChange('endpointUrl', e.target.value),
-              placeholder: 'https://vk.tide.red 或 http://127.0.0.1:1933',
+              placeholder: '例如 https://vk.tide.red 或 http://127.0.0.1:1933',
               style: { width: '100%', boxSizing: 'border-box', padding: '6px 8px', fontSize: '12px', fontFamily: 'monospace', borderRadius: '6px', border: '1px solid var(--dsw-alias-border-l2, rgba(0,0,0,0.15))', background: 'rgba(0,0,0,0.02)' },
             })
           ),
+          // User API Key
           h('div', null,
-            h('label', { style: { display: 'block', fontSize: '12px', fontWeight: '500', marginBottom: '3px' } }, '用户密钥 (User Key) *'),
+            h('label', { style: { display: 'block', marginBottom: '4px', fontWeight: '500' } }, '用户专属 API 密钥 (User Key):'),
             h('div', { style: { display: 'flex', gap: '6px' } },
               h('input', {
                 type: showKey ? 'text' : 'password',
                 value: config.userKey,
                 onChange: (e) => handleChange('userKey', e.target.value),
-                placeholder: '在 Web Studio 用户中心复制专属 User Key',
+                placeholder: '在 Web Studio 用户管理复制您的专属 User Key',
                 style: { flex: 1, boxSizing: 'border-box', padding: '6px 8px', fontSize: '12px', fontFamily: 'monospace', borderRadius: '6px', border: '1px solid var(--dsw-alias-border-l2, rgba(0,0,0,0.15))', background: 'rgba(0,0,0,0.02)' },
               }),
               h('button', {
@@ -289,7 +235,7 @@ window.__ModuleLoader__.load({
             )
           )
         ),
-        // 能力呈现
+        // 专属能力清单呈现
         h('div', { style: { marginTop: '12px', padding: '8px 10px', background: 'rgba(6, 182, 212, 0.03)', border: '1px solid rgba(6, 182, 212, 0.18)', borderRadius: '6px' } },
           h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
             h('span', { style: { fontWeight: '600', color: '#0891b2' } }, `专属能力: ${toolsList.length || 17} 工具 · ${caps?.hooks?.length || 2} Hooks`),
@@ -343,9 +289,32 @@ window.__ModuleLoader__.load({
       );
     }
 
+    function apply(ctx) {
+      ctx.slots.inject('plugins.bundle.config', () =>
+        ctx.slots.register(
+            {
+              name: 'plugins.bundle.config',
+              key: 'dsh-plugin-openviking-ops',
+            },
+            DshPluginOpenvikingOpsPanel
+        )
+      );
+      if ('dsh-plugin-openviking-ops' === 'dsh-plugin-openviking-memory') {
+        ctx.slots.inject('plugins.bundle.config', () =>
+          ctx.slots.register(
+              {
+                name: 'plugins.bundle.config',
+                key: 'dsh-plugin-openviking',
+              },
+              DshPluginOpenvikingOpsPanel
+          )
+        );
+      }
+    }
+
     return {
-      name: 'dsh-plugin-openviking-ops',
-      ConfigPanel: DshPluginOpenvikingOpsPanel,
+      inject: ['slots'],
+      apply,
     };
   },
 });
