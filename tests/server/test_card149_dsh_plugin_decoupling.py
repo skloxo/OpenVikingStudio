@@ -45,7 +45,7 @@ def test_client_capabilities_memory_plugin_strict_alignment(client):
     assert len(data["plugins"]) == 1
     plugin = data["plugins"][0]
     assert plugin["id"] == "openviking-memory"
-    assert plugin["version"] == "2.0.12"
+    assert plugin["version"] == "2.0.13"
 
     # 验证 34 项战地工具真身
     tool_ids = [t["id"] for t in plugin["tools"]]
@@ -143,18 +143,18 @@ def test_dsh_independent_bridge_package_names():
     """
     mem_bridge = PluginRegistry.get_client_bridge_info("openviking-memory")
     assert mem_bridge["package_name"] == "dsh-plugin-openviking-memory"
-    assert mem_bridge["version"] == "2.0.12"
-    assert "dsh-plugin-openviking-memory-2.0.12.tgz" in mem_bridge["package_url"]
+    assert mem_bridge["version"] == "2.0.13"
+    assert "dsh-plugin-openviking-memory-2.0.13.tgz" in mem_bridge["package_url"]
 
     ops_bridge = PluginRegistry.get_client_bridge_info("openviking-ops")
     assert ops_bridge["package_name"] == "dsh-plugin-openviking-ops"
-    assert ops_bridge["version"] == "1.0.0"
-    assert "dsh-plugin-openviking-ops-1.0.0.tgz" in ops_bridge["package_url"]
+    assert ops_bridge["version"] == "1.0.1"
+    assert "dsh-plugin-openviking-ops-1.0.1.tgz" in ops_bridge["package_url"]
 
     fleet_bridge = PluginRegistry.get_client_bridge_info("fleet-mesh")
     assert fleet_bridge["package_name"] == "dsh-plugin-openviking-fleet"
-    assert fleet_bridge["version"] == "1.0.0"
-    assert "dsh-plugin-openviking-fleet-1.0.0.tgz" in fleet_bridge["package_url"]
+    assert fleet_bridge["version"] == "1.0.1"
+    assert "dsh-plugin-openviking-fleet-1.0.1.tgz" in fleet_bridge["package_url"]
 
 
 def test_validate_config_with_plugin_id(client):

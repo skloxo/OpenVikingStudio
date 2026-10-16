@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-cpa",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "main": "index.js",
   "description": "CPA 跨模型算力协同中枢 DSH 独立桥接器 (支持多模型聚合分摊与 2080Ti 算力集群调度)",
