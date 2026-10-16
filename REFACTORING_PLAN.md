@@ -2,11 +2,12 @@
 
 > **关联研发大蓝图**：[`BLUEPRINT.md`](file:///home/skloxo/aho/openclaw/project/.agents/BLUEPRINT.md) ｜ **交付全量归档台账**：[`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md) ｜ **通用资产档案库**：[`COMPONENT_AND_WHEEL_INVENTORY.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md) ｜ **👁️ 人工验收测试指南**：[`docs/HUMAN_ACCEPTANCE_TESTING.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/HUMAN_ACCEPTANCE_TESTING.md)
 > **唯一真相源 (SSOT)**：本文档为 OpenViking 当前活跃的重构规划与就绪待调度的任务矩阵看板。历史所有已验收交付的版本履历（Milestone 1~4 全量 19 张 Task Cards 及前序波次）已完整归档至 [`DELIVERY_ARCHIVE.md`]- **线上正式部署版本**：**`v1.4.106`**（物理访问地址：`vk.tide.red/studio/home`，已实机验证）；
-- **当前最新交付版本**：**`v1.7.108`**（Tag: `v1.7.108`，全域历史遗留死代码与悬空组件深度大扫除）；
+- **当前最新交付版本**：**`v1.7.109`**（Tag: `v1.7.109`，三大原生插件独立 DSH 桥接器解耦与 34 战地工具/3 Hook 严格对齐）；
 - **历史里程碑详单检索**：如需查阅 Milestone 1~4 及早期版本修改清单与架构细节，请点击跳转至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。
 
 | 版本 Tag      | 任务工单 ID | 模块与重构主题                                                                                                                                                | 核心治理成果与物理交付物                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |     验收状态      |
 | :------------ | :---------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------: |
+| **`v1.7.109`** | **Card-149** | **三大原生插件独立 DSH 桥接器解耦与 34 战地工具/3 Hook 严格对齐 (Native Plugins Independent DSH Bridges Decoupling & 34 Battlefield Tools SSOT)** | 1. **DSH 桥接器物理解耦为 3 个独立包**：彻底打破历史单包混杂与越权污染，生成 3 个专属独立的 DSH 插件包：`dsh-plugin-openviking-memory` (专属 34 工具 + 3 Hook，纯净无搜索/KeePass 噪音)、`dsh-plugin-openviking-ops` (专属 17 工具 + 2 Hook)、`dsh-plugin-openviking-fleet` (专属 2 工具 + 1 Hook) 及兼容别名包；<br>2. **后端能力路由精准隔离**：重构 `client_caps.py`，支持 `plugin_id` 精准路由。传入 `openviking-memory` 时 100% 仅返回 34 项战地武器与 3 项核心 Hook，彻底切除搜索和 KeePass 跨插件污染；<br>3. **纯 Python 容灾构建流水线**：升级 `pack_dsh_plugin.py`，针对 Windows 宿主无全局 npm 的物理现状实现纯 Python tarfile 打包引擎，一键烘焙并部署全量 `.tgz` 产物至 `public/` 与 `dist/`；<br>4. **前端接入指南动态感知**：`native-bridge-integration-guide.tsx` 动态直出所选插件专属包名与接入配置；<br>5. **范式 A 双端同频与全绿门禁**：专项单测 5/5 全绿，回归测试 18/18 全绿，Vite 构建 0 报错，服务探针 200 OK 交付 `v1.7.109`。 | [x] 已验收通过 ✅ |
 | **`v1.7.108`** | **Card-152** | **全域历史遗留死代码与悬空组件深度大扫除 (Global Dead Code & Abandoned Components Purge SSOT)** | 1. **彻底物理铲除 30+ 历史悬空死文件**：物理删除 `src/routes/agents/` 下整套废弃组件与库 (24 个死文件)、`src/routes/users/` 遗留的 `client-install-tab.tsx` 与伪 ACL 矩阵 `tool-acl-matrix.tsx` (80KB)、悬空导航栏 `Navbar.tsx`、悬空对话标题生成器 `generate-title.ts`、悬空时间轴 `version-timeline-dialog.tsx` 与工单全景 `pipeline-steps-panorama.tsx` (共清退 300+ KB 冗余代码)；<br>2. **根除代码回潮与幽灵导入**：切除一切已废弃界面的历史残留，防止后续 Agent 误读误引，保障代码库单一真相源 (SSOT) 纯度；<br>3. **范式 A 双端镜像同频与全绿验证**：全量代码与 WSL Git 仓/生产目录物理对齐，Vite 构建编译全绿 (0 报错)，服务探针 200 OK 交付 `v1.7.108`。 | [x] 已验收通过 ✅ |
 | **`v1.7.107`** | **Card-151** | **用户列表操作列旧插件装配按钮彻底铲除与双端代码物理镜像同频治理 (User Table Legacy Plugin Button Purge & Full Sync Pipeline SSOT)** | 1. **直击物理根因**：排查发现 Windows 本地 `src/routes/users` 早已切除【插件装配】按钮，但此前流水线同步清单缺失 `src/routes/users`，导致 WSL 仓库一直残留旧源码，每次打包都将旧版操作列打包进 `dist/`；<br>2. **死代码与遗留组件物理铲除**：完全镜像同步 Windows 纯净代码至 WSL，物理清除 WSL 仓中的 4 个旧抽屉遗留死代码文件；<br>3. **用户列表彻底纯粹化**：操作列仅保留删除按钮，点击整行滑出纯粹的用户身份与 User API Key 复制面板，彻底终结反复回潮；<br>4. **范式 A 重新编译与发版**：Vite 重新构建，清除 dist 脏缓存，服务探针 200 OK 验证 `v1.7.107`。 | [x] 已验收通过 ✅ |
 | **`v1.7.106`** | **Card-148** | **抽屉“全景全貌”去冗重塑、四维能力矩阵快速导览与真实用户密钥去伪治理 (Plugin Drawer Overview Decoupling & Real User Key SSOT)** | 1. **全景抽屉去冗重塑**：彻底切除“全景全貌”Tab 自顶向下平铺全部子 Tab（工具池/Hook拦截/技能/接入指南/GUI配置）的机械堆叠；提纯独立规格组件 `plugin-overview-tab.tsx`（185 行，黄金甜点区），落地高密四维能力矩阵 4 宫格卡片，点击一键跳转对应专属 Tab；<br>2. **子 Tab 互斥渲染**：各专属 Tab（MCP工具、Hook拦截、技能导轨、客户端接入、GUI参数）单一职责互斥渲染，消灭任何内容重复；`plugin-detail-drawer.tsx` 从 404 行压缩至 356 行；<br>3. **用户密钥真实性治理与去伪**：彻底切除 `native-bridge-integration-guide.tsx` 中 `vk-user-key-xxxx` 硬编码假占位符；通过 `useAppConnection()` 真实读取当前连接密钥；未检测到有效 Key 时，优雅展示友好警示卡片并提供【前往用户列表查看与复制专属密钥 ➔】直达链接，Prompt 中使用 `<YOUR_USER_KEY>` 明确标识；<br>4. **范式 A 门禁验证**：新增 `plugin-drawer-governance.test.tsx` 3/3 单测全绿，Vite 构建打包成功，服务端探针 200 OK 交付。 | [x] 已验收通过 ✅ |
@@ -131,6 +132,35 @@
 ---
 
 ### 🧬 Milestone 5-A: 半成品与悬空功能全链路真实化贯通 (Suspended Features Truthful Closure)
+
+#### 📌 [P0] [x] Card-149: 三大原生插件独立 DSH 桥接器解耦与 34 战地工具/3 Hook 严格对齐 (Native Plugins Independent DSH Bridges Decoupling & 34 Battlefield Tools SSOT) ✅ (v1.7.109)
+- **类型**：客户端桥梁物理解耦 / 34+3 纯净契约对齐 / 纯 Python 容灾打包流水线 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.109` ｜ **当前状态**：[x] 已验收通过 ✅ (v1.7.109)
+- **背景与第一性原理**：
+  1. **核心痛点根除**：3070 节点实测安装 `openviking-memory` 插件后，DSH 端出现【联网搜索】与【KeePass】选项，暴露工具与核心记忆实际的 34 工具 + 3 Hook 不符；
+  2. **三大原生桥接器物理解耦**：将 VK 原生插件解耦为 3 个独立的 DSH 桥接器工程：
+     - `dsh-plugin-openviking-memory/`: v2.0.12 (专属 34 工具 + 3 Hook，纯净无搜索/KeePass 噪音)
+     - `dsh-plugin-openviking-ops/`: v1.0.0 (专属 17 工具 + 2 Hook)
+     - `dsh-plugin-openviking-fleet/`: v1.0.0 (专属 2 工具 + 1 Hook)
+     - `dsh-plugin-openviking/`: v2.0.12 (兼容别名包)
+  3. **后端能力路由精准隔离**：`client_caps.py` 动态感知 `plugin_id`，传入 `openviking-memory` 时 100% 仅返回 34 工具与 3 Hook；
+  4. **纯 Python 容灾构建流水线**：针对 Windows 宿主无全局 npm 的物理现状，`pack_dsh_plugin.py` 内置纯 Python `tarfile` 打包引擎，一键烘焙并部署全量 `.tgz` 产物至 `public/` 与 `dist/`。
+- **原子工单拆解 (Tracer Bullet 细颗粒度工单)**：
+  - [x] **`TASK-149-1: 后端常数与能力路由精准隔离`**：重构 `client_caps_constants.py` 与 `client_caps.py`，支持 `plugin_id` 精准路由；
+  - [x] **`TASK-149-2: 三大 DSH 独立桥接器工程落地`**：编写 `scripts/generate_dsh_plugins.py`，落地 3 大独立桥接器工程与兼容别名包；
+  - [x] **`TASK-149-3: 纯 Python 容灾打包流水线升级`**：升级 `scripts/pack_dsh_plugin.py`，烘焙 4 大 `.tgz` 包并部署至 `public/` 与 `dist/`；
+  - [x] **`TASK-149-4: 前端接入指南动态拓扑感知`**：升级 `native-bridge-integration-guide.tsx` 动态直出专属桥接器包；
+  - [x] **`TASK-149-5: 专项单测视网膜与全绿门禁闭环`**：编写 `test_card149_dsh_plugin_decoupling.py`，5/5 专项单测通过，18/18 插件生态回归通过，Vite 编译 0 报错，服务探针 200 OK 交付。
+- **交付物清单**：
+  - 后端路由与常数：`openviking/server/routers/client_caps.py`, `client_caps_constants.py`
+  - 插件注册表：`openviking/service/plugin_registry.py`
+  - 前端接入指南：`src/routes/plugins/-components/native-bridge-integration-guide.tsx`
+  - 独立桥接器源码：`integrations/deepseek-harness/dsh-plugin-openviking-memory/`, `ops/`, `fleet/`, `openviking/`
+  - 独立包产物：`public/dsh-plugin-openviking-memory-2.0.12.tgz`, `ops-1.0.0.tgz`, `fleet-1.0.0.tgz`, `openviking-2.0.12.tgz`
+  - 专项单测套件：`tests/server/test_card149_dsh_plugin_decoupling.py`
+- **交付留痕 (Verification & Evidence)**：
+  - **Git Tag**：`v1.7.109`
+  - **测试验证**：5/5 专项测试 PASS，18/18 插件生态回归 PASS，Vite 生产编译 PASS，服务探针 200 OK。
+
 
 #### 📌 [P0] [x] Card-140: 外部微服务与集群算力解耦独立 Quad 插件化 (CPA 跨模型算力中枢与卫星集群同频物理剥离 - P0 架构解耦)
 - **类型**：微服务物理剥离 / 独立 Quad 插件化 / 弹性熔断与集群同频 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.97` ｜ **当前状态**：[x] 后端解耦与专项单测 10/10 PASS ✅ ｜ **Commit Hash**：6444739bc

@@ -56,7 +56,7 @@ def test_plugin_registry_singleton_and_builtins():
 
     # 验证客户端桥梁元数据
     bridge = PluginRegistry.get_client_bridge_info()
-    assert bridge["package_name"] == "dsh-plugin-openviking"
+    assert bridge["package_name"] in ("dsh-plugin-openviking-memory", "dsh-plugin-openviking")
     assert bridge["package_url"].endswith(".tgz")
 
 
@@ -134,7 +134,7 @@ def test_get_plugin_detail_and_bridge_endpoints(client):
     assert resp_bridge.status_code == 200
     bridge_data = resp_bridge.json()
     assert bridge_data["status"] == "success"
-    assert bridge_data["result"]["package_name"] == "dsh-plugin-openviking"
+    assert bridge_data["result"]["package_name"] in ("dsh-plugin-openviking-memory", "dsh-plugin-openviking")
 
     # 不存在的插件返回 404
     resp_404 = client.get("/api/v1/plugins/non_existent_plugin")
@@ -156,26 +156,16 @@ def test_get_plugins_health_summary_endpoint(client):
     assert "openviking-memory" in data["probes"]
 
 
-def test_search_usage_summary_and_prune_endpoints(client):
-    """验证 GET /network-search/usage/summary 和 POST /network-search/usage/prune 接口。"""
+def test_search_usage_endpoints_removed_and_bridge_package(client):
+    """验证侵入式外部搜索流水接口已彻底切除 (404)，且客户端通道桥包接口正常。"""
     resp = client.get("/api/v1/plugins/network-search/usage/summary")
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["status"] == "success"
-    assert "total_keys" in data
-    assert "keys" in data
-    assert "watermarks" in data
-    assert "db_stats" in data
-    assert "keenable" in data["watermarks"]
-    assert "exa" in data["watermarks"]
-    assert "tavily" in data["watermarks"]
+    assert resp.status_code == 404
 
-    # 测试手动触发归档与物理清理
-    resp_prune = client.post("/api/v1/plugins/network-search/usage/prune?retention_days=45")
-    assert resp_prune.status_code == 200
-    prune_data = resp_prune.json()
-    assert prune_data["status"] == "success"
-    assert "deleted_detail_rows" in prune_data["result"]
+    resp_bridge = client.get("/api/v1/plugins/bridge/client-package")
+    assert resp_bridge.status_code == 200
+    bridge_data = resp_bridge.json()
+    assert bridge_data["status"] == "success"
+    assert "package_name" in bridge_data["result"]
 
 
 def test_agent_bridge_verification_and_tool_call():

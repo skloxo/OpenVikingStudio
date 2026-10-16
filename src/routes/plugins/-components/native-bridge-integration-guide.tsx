@@ -56,8 +56,33 @@ export function NativeBridgeIntegrationGuide({
 
   const isLocal = networkMode === 'local'
   const serviceAddress = isLocal ? 'http://127.0.0.1:1933' : 'https://vk.tide.red'
-  const bridgeVersion = '2.0.11'
-  const bridgeTarballUrl = `https://vk.tide.red/studio/dsh-plugin-openviking-${bridgeVersion}.tgz`
+  // 动态根据 pluginId 映射独立专属桥接器包
+  const getPluginBridgeDetails = (pid: string) => {
+    const id = (pid || 'openviking-memory').toLowerCase()
+    if (id.includes('ops')) {
+      return {
+        pkgName: 'dsh-plugin-openviking-ops',
+        version: '1.0.0',
+        antigravityDir: 'openviking-ops',
+      }
+    }
+    if (id.includes('fleet')) {
+      return {
+        pkgName: 'dsh-plugin-openviking-fleet',
+        version: '1.0.0',
+        antigravityDir: 'openviking-fleet',
+      }
+    }
+    return {
+      pkgName: 'dsh-plugin-openviking-memory',
+      version: '2.0.12',
+      antigravityDir: 'openviking-memory',
+    }
+  }
+
+  const bridgeDetails = getPluginBridgeDetails(pluginId)
+  const bridgeVersion = bridgeDetails.version
+  const bridgeTarballUrl = `https://vk.tide.red/studio/${bridgeDetails.pkgName}-${bridgeVersion}.tgz`
   const installCmd = `npm install ${bridgeTarballUrl}`
 
   const handleCopy = async (text: string, label: string) => {
@@ -72,13 +97,13 @@ export function NativeBridgeIntegrationGuide({
   }
 
   // 渠道 1：Google 反重力 (Antigravity IDE / CLI)
-  const antigravitySetupCmdWin = `cmd /c mklink /J "$env:USERPROFILE\\.gemini\\config\\plugins\\openviking-memory" "OpenVikingStudio路径\\integrations\\antigravity\\openviking-memory"\npython setup.py --api ${serviceAddress} --key "${effectiveApiKey}"`
+  const antigravitySetupCmdWin = `cmd /c mklink /J "$env:USERPROFILE\\.gemini\\config\\plugins\\${bridgeDetails.antigravityDir}" "OpenVikingStudio路径\\integrations\\antigravity\\${bridgeDetails.antigravityDir}"\npython setup.py --api ${serviceAddress} --key "${effectiveApiKey}"`
 
-  const antigravitySetupCmdUnix = `mkdir -p ~/.gemini/config/plugins && ln -s /path/to/OpenVikingStudio/integrations/antigravity/openviking-memory ~/.gemini/config/plugins/openviking-memory\ncd ~/.gemini/config/plugins/openviking-memory && python3 setup.py --api ${serviceAddress} --key "${effectiveApiKey}"`
+  const antigravitySetupCmdUnix = `mkdir -p ~/.gemini/config/plugins && ln -s /path/to/OpenVikingStudio/integrations/antigravity/${bridgeDetails.antigravityDir} ~/.gemini/config/plugins/${bridgeDetails.antigravityDir}\ncd ~/.gemini/config/plugins/${bridgeDetails.antigravityDir} && python3 setup.py --api ${serviceAddress} --key "${effectiveApiKey}"`
 
   const antigravityAgentPrompt = `请帮我将当前反重力开发座舱 (Antigravity IDE) 接入 OpenViking 官方核心标准插件：
-1. 插件挂载规范目录：~/.gemini/config/plugins/openviking-memory/
-2. 插件源码物理路径：OpenVikingStudio/integrations/antigravity/openviking-memory
+1. 插件挂载规范目录：~/.gemini/config/plugins/${bridgeDetails.antigravityDir}/
+2. 插件源码物理路径：OpenVikingStudio/integrations/antigravity/${bridgeDetails.antigravityDir}
 3. 服务端接入地址：${serviceAddress}
 4. 专属授权凭据：${effectiveApiKey}${!hasValidApiKey ? ' (⚠️ 请替换为在用户列表复制的真实 User Key)' : ''}
 5. 目标接入插件：${pluginName} (${pluginId})
@@ -89,18 +114,19 @@ export function NativeBridgeIntegrationGuide({
 
   // 渠道 2：DeepSeek Harness (DSH)
   const dshCordisPatchYaml = `plugins:
-  'dsh-plugin-openviking':
+  '${bridgeDetails.pkgName}':
     version: '${bridgeVersion}'
     resolved: '${bridgeTarballUrl}'
     config:
       serverUrl: '${serviceAddress}'
       userApiKey: '${effectiveApiKey}'`
 
-  const dshAgentPrompt = `请帮我安装并接入 OpenViking 官方客户端通信桥梁：
-1. NPM 安装命令：${installCmd}
-2. 服务地址：${serviceAddress}
-3. 专属凭据：${effectiveApiKey}${!hasValidApiKey ? ' (⚠️ 请替换为在用户列表复制的真实 User Key)' : ''}
-4. 请将上述配置写入 cordis.patch.yml 并重启 Harness 服务。`
+  const dshAgentPrompt = `请帮我安装并接入 ${pluginName} 专属客户端通信桥梁：
+1. 目标插件：${bridgeDetails.pkgName}
+2. NPM 安装命令：${installCmd}
+3. 服务地址：${serviceAddress}
+4. 专属凭据：${effectiveApiKey}${!hasValidApiKey ? ' (⚠️ 请替换为在用户列表复制的真实 User Key)' : ''}
+5. 请将上述配置写入 cordis.patch.yml 并重启 Harness 服务。`
 
   // 渠道 3：标准通用智能体 (Universal MCP)
   const universalMcpHttpJson = JSON.stringify(

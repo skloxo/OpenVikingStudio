@@ -64,16 +64,27 @@ class PluginRegistry:
         self._tool_to_plugin_map.update(tool_map)
 
     @classmethod
-    def get_client_bridge_info(cls) -> Dict[str, Any]:
+    def get_client_bridge_info(cls, plugin_id: str = "openviking-memory") -> Dict[str, Any]:
         """
-        现场物理扫描磁盘最新客户端通信通道桥 (dsh-plugin-openviking) 安装包 (单一真实源 SSOT)。
-        绝不依赖任何硬编码字符串或内存静态配置，每次调用实时向物理磁盘寻源最新 SemVer 对应包。
+        现场物理扫描磁盘最新客户端通信通道桥安装包 (单一真实源 SSOT)。
+        支持原生三大插件 (openviking-memory, openviking-ops, fleet-mesh) 的独立桥接器。
         """
         from pathlib import Path
         import re
 
-        latest_version = "1.5.2"
-        latest_filename = f"dsh-plugin-openviking-{latest_version}.tgz"
+        pid = (plugin_id or "openviking-memory").strip().lower()
+        if pid in ("openviking-ops", "ops"):
+            target_pkg = "dsh-plugin-openviking-ops"
+            def_ver = "1.0.0"
+        elif pid in ("fleet-mesh", "fleet", "openviking-fleet"):
+            target_pkg = "dsh-plugin-openviking-fleet"
+            def_ver = "1.0.0"
+        else:
+            target_pkg = "dsh-plugin-openviking-memory"
+            def_ver = "2.0.12"
+
+        latest_version = def_ver
+        latest_filename = f"{target_pkg}-{latest_version}.tgz"
 
         try:
             current_dir = Path(__file__).resolve().parent
@@ -81,26 +92,34 @@ class PluginRegistry:
             search_dirs = [
                 studio_root / "dist",
                 studio_root / "public",
+                studio_root / "integrations" / "deepseek-harness" / target_pkg,
                 studio_root / "integrations" / "deepseek-harness" / "dsh-plugin-openviking",
             ]
 
-            candidates = []
+            target_candidates = []
+            fallback_candidates = []
             for sdir in search_dirs:
                 if not sdir.is_dir():
                     continue
-                for fpath in sdir.glob("dsh-plugin-openviking-*.tgz"):
-                    m = re.match(r"^dsh-plugin-openviking-(\d+(?:\.\d+)+.*?)\.tgz$", fpath.name)
+                # 1. 严格精准匹配当前插件专属包
+                for fpath in sdir.glob(f"{target_pkg}-*.tgz"):
+                    m = re.match(r"^" + re.escape(target_pkg) + r"-(\d+(?:\.\d+)+.*?)\.tgz$", fpath.name)
                     if m:
                         ver_str = m.group(1)
                         parts = re.split(r"[-+.]", ver_str)
-                        nums = []
-                        for p in parts:
-                            try:
-                                nums.append(int(p))
-                            except ValueError:
-                                pass
-                        candidates.append((tuple(nums), fpath.stat().st_mtime, ver_str, fpath.name))
+                        nums = [int(p) for p in parts if p.isdigit()]
+                        target_candidates.append((tuple(nums), fpath.stat().st_mtime, ver_str, fpath.name))
+                # 2. 仅当专属包不存在时，兼容历史别名包
+                if target_pkg == "dsh-plugin-openviking-memory":
+                    for fpath in sdir.glob("dsh-plugin-openviking-*.tgz"):
+                        m = re.match(r"^dsh-plugin-openviking-(\d+(?:\.\d+)+.*?)\.tgz$", fpath.name)
+                        if m:
+                            ver_str = m.group(1)
+                            parts = re.split(r"[-+.]", ver_str)
+                            nums = [int(p) for p in parts if p.isdigit()]
+                            fallback_candidates.append((tuple(nums), fpath.stat().st_mtime, ver_str, fpath.name))
 
+            candidates = target_candidates if target_candidates else fallback_candidates
             if candidates:
                 candidates.sort(key=lambda x: (x[0], x[1]), reverse=True)
                 _, _, latest_version, latest_filename = candidates[0]
@@ -109,19 +128,19 @@ class PluginRegistry:
 
         package_url = f"https://vk.tide.red/studio/{latest_filename}"
         return {
-            "package_name": "dsh-plugin-openviking",
+            "package_name": target_pkg,
             "version": latest_version,
             "package_file": latest_filename,
             "package_url": package_url,
-            "architecture": "Multi-Channel Standard Bridge (三大官方标杆渠道接入中枢)",
-            "description": "专供智能体生态 (Google 反重力 / DeepSeek Harness / 通用 MCP 智能体) 本地开箱即用安装的通道桥梁。安装后配置 userKey 与 agentId，即可安全连通 VK 服务端中心化三大标杆插件 (记忆/搜索/凭据) 动态能力。",
+            "architecture": f"Independent Quad Bridge ({target_pkg})",
+            "description": f"专供智能体生态接入 {plugin_id} 的独立轻量级通信桥梁，开箱即用。",
             "install_command": f"npm install {package_url}",
             "handshake_protocol": "HTTP/SSE + Bearer Auth (UserKey:AgentID)",
             "channels": {
                 "antigravity": {
                     "name": "Google 反重力",
                     "standard": "Google Gemini Agent Framework Plugin Specification",
-                    "version": "2.0.11",
+                    "version": "2.0.12",
                     "plugin_dir": "integrations/antigravity/openviking-memory",
                     "setup_script": "setup.py",
                 },
