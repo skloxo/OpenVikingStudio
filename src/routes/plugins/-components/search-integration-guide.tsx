@@ -102,6 +102,11 @@ export function SearchIntegrationGuide({ userApiKey = '' }: SearchIntegrationGui
         </div>
       </div>
 
+      {/* 独立服务凭据声明 */}
+      <div className="rounded border border-border/60 bg-muted/20 p-2.5 text-xs text-muted-foreground leading-relaxed">
+        🛡️ <strong>独立后端凭据声明</strong>：联网搜索网关为解耦运行的独立服务，其鉴权 Key 由搜索网关服务独立签发与管控。OpenViking 不托管该 Key，亦不当下位系统的消耗账本。请在客户端安装或接入时，直接配置搜索服务对应的接口地址与专用 Key。
+      </div>
+
       {/* 模态双选切换器 */}
       <div className="flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 p-1 text-xs">
         <button
