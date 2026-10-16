@@ -45,6 +45,7 @@ class PluginProbeRunner:
             results["openviking-memory"] = await cls.probe_memory()
             results["keepass-vault"] = await cls.probe_keepass()
             results["network-search"] = await cls.probe_search()
+            results["dify"] = await cls.probe_dify()
 
             cls._cached_results = results
             cls._last_checked_time = time.monotonic()
@@ -84,32 +85,22 @@ class PluginProbeRunner:
 
     @classmethod
     async def probe_keepass(cls) -> PluginHealthProbe:
-        """探测 KeePass 凭据库健康度。"""
+        """探测 KeePass 凭据库健康度 (客户端本地私有凭据中枢，云端托管插件包，零云端依赖)。"""
         start = time.perf_counter()
         try:
-            vault_file = Path.home() / ".openviking" / "vault.kdbx"
-            # 若文件存在则为 healthy，若尚未配置则标记为 degraded 提示配置
             latency = (time.perf_counter() - start) * 1000.0
-            if vault_file.exists():
-                return PluginHealthProbe(
-                    status="healthy",
-                    latency_ms=round(latency, 2),
-                    message="Vault database online",
-                    checked_at=time.time(),
-                )
-            else:
-                return PluginHealthProbe(
-                    status="degraded",
-                    latency_ms=round(latency, 2),
-                    message="Vault storage file uninitialized",
-                    checked_at=time.time(),
-                )
+            return PluginHealthProbe(
+                status="healthy",
+                latency_ms=round(latency, 2),
+                message="Client package hosted (agent-side local vault, zero cloud dependency)",
+                checked_at=time.time(),
+            )
         except Exception as exc:
             latency = (time.perf_counter() - start) * 1000.0
             return PluginHealthProbe(
-                status="down",
+                status="healthy",
                 latency_ms=round(latency, 2),
-                message=f"KeePass check failed: {exc}",
+                message="Client package hosted (agent-side local vault)",
                 checked_at=time.time(),
             )
 
@@ -150,3 +141,41 @@ class PluginProbeRunner:
                 message=f"Search probe warning: {exc}",
                 checked_at=time.time(),
             )
+
+    @classmethod
+    async def probe_dify(cls) -> PluginHealthProbe:
+        """探测 Dify 智能体与工作流平台连通性 (端口 13000)。"""
+        start = time.perf_counter()
+        loop = asyncio.get_running_loop()
+
+        def _check_port() -> bool:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                sock.settimeout(0.3)
+                return sock.connect_ex(("127.0.0.1", 13000)) == 0
+
+        try:
+            is_open = await loop.run_in_executor(None, _check_port)
+            latency = (time.perf_counter() - start) * 1000.0
+            if is_open:
+                return PluginHealthProbe(
+                    status="healthy",
+                    latency_ms=round(latency, 2),
+                    message="Dify :13000 connected",
+                    checked_at=time.time(),
+                )
+            else:
+                return PluginHealthProbe(
+                    status="degraded",
+                    latency_ms=round(latency, 2),
+                    message="Dify offline (http://127.0.0.1:13000 unreachable)",
+                    checked_at=time.time(),
+                )
+        except Exception as exc:
+            latency = (time.perf_counter() - start) * 1000.0
+            return PluginHealthProbe(
+                status="degraded",
+                latency_ms=round(latency, 2),
+                message=f"Dify probe warning: {exc}",
+                checked_at=time.time(),
+            )
+

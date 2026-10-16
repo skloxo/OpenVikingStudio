@@ -34,7 +34,6 @@ import { NativeBridgeIntegrationGuide } from './native-bridge-integration-guide'
 import { PluginConfigSection } from './plugin-config-section'
 import { PluginOverviewTab } from './plugin-overview-tab'
 import { SearchIntegrationGuide } from './search-integration-guide'
-import { VaultIntegrationGuide } from './vault-integration-guide'
 
 export type PluginDetailDrawerProps = {
   plugin: QuadPluginItem | null
@@ -382,9 +381,9 @@ export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps)
           {/* Tab 5: 客户端接入指南 */}
           {activeTab === 'install' && (
             <div className="space-y-4">
-              {plugin.plugin_id === 'network-search' && <SearchIntegrationGuide />}
-              {plugin.plugin_id === 'keepass-vault' && <VaultIntegrationGuide />}
-              {plugin.plugin_id !== 'network-search' && plugin.plugin_id !== 'keepass-vault' && (
+              {plugin.plugin_id === 'network-search' ? (
+                <SearchIntegrationGuide />
+              ) : (
                 <NativeBridgeIntegrationGuide
                   pluginId={plugin.plugin_id}
                   pluginName={cleanName}

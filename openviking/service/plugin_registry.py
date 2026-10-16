@@ -79,6 +79,15 @@ class PluginRegistry:
         elif pid in ("fleet-mesh", "fleet", "openviking-fleet"):
             target_pkg = "dsh-plugin-openviking-fleet"
             def_ver = "1.0.0"
+        elif pid in ("keepass-vault", "keepass", "vault"):
+            target_pkg = "dsh-plugin-keepass-vault"
+            def_ver = "1.0.1"
+        elif pid in ("dify", "dify-workflow"):
+            target_pkg = "dsh-plugin-dify"
+            def_ver = "1.0.0"
+        elif pid in ("cpa-squad", "cpa"):
+            target_pkg = "dsh-plugin-cpa"
+            def_ver = "1.0.0"
         else:
             target_pkg = "dsh-plugin-openviking-memory"
             def_ver = "2.0.12"

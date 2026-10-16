@@ -1,0 +1,7 @@
+# CPA 跨模型算力协同中枢 Bundle Patch for DeepSeek Harness (DSH)
+- insert:
+    - id: cpa-squad
+      name: dsh-plugin-cpa
+      config:
+        apiUrl: "http://localhost:8317/v1"
+        apiKey: "sk-cpa-master-2026"

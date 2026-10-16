@@ -95,7 +95,11 @@ export function PluginQuadCard({ plugin, onSelect }: PluginQuadCardProps) {
               }`}
             />
             <span className={isHealthy ? 'text-cyan-700 dark:text-cyan-400 font-medium' : 'text-amber-700 dark:text-amber-400 font-medium'}>
-              {isHealthy ? '服务就绪' : '部分降级'}
+              {plugin.plugin_id === 'keepass-vault'
+                ? '托管就绪'
+                : isHealthy
+                  ? '服务就绪'
+                  : '部分降级'}
             </span>
           </div>
         </div>
