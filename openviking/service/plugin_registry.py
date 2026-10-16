@@ -75,22 +75,22 @@ class PluginRegistry:
         pid = (plugin_id or "openviking-memory").strip().lower()
         if pid in ("openviking-ops", "ops"):
             target_pkg = "dsh-plugin-openviking-ops"
-            def_ver = "1.0.0"
+            def_ver = "1.0.1"
         elif pid in ("fleet-mesh", "fleet", "openviking-fleet"):
             target_pkg = "dsh-plugin-openviking-fleet"
-            def_ver = "1.0.0"
+            def_ver = "1.0.1"
         elif pid in ("keepass-vault", "keepass", "vault"):
             target_pkg = "dsh-plugin-keepass-vault"
-            def_ver = "1.0.1"
+            def_ver = "1.0.2"
         elif pid in ("dify", "dify-workflow"):
             target_pkg = "dsh-plugin-dify"
-            def_ver = "1.0.0"
+            def_ver = "1.0.1"
         elif pid in ("cpa-squad", "cpa"):
             target_pkg = "dsh-plugin-cpa"
-            def_ver = "1.0.0"
+            def_ver = "1.0.1"
         else:
             target_pkg = "dsh-plugin-openviking-memory"
-            def_ver = "2.0.12"
+            def_ver = "2.0.13"
 
         latest_version = def_ver
         latest_filename = f"{target_pkg}-{latest_version}.tgz"
@@ -149,7 +149,7 @@ class PluginRegistry:
                 "antigravity": {
                     "name": "Google 反重力",
                     "standard": "Google Gemini Agent Framework Plugin Specification",
-                    "version": "2.0.12",
+                    "version": latest_version,
                     "plugin_dir": "integrations/antigravity/openviking-memory",
                     "setup_script": "setup.py",
                 },

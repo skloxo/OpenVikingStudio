@@ -297,7 +297,7 @@ async def get_client_capabilities(
     try:
         from openviking._version import version as __version__
     except Exception:
-        __version__ = "2.0.12"
+        __version__ = "2.0.13"
 
     target = (plugin_id or "").strip().lower()
 
@@ -324,7 +324,7 @@ async def get_client_capabilities(
             "plugins": [{
                 "id": "openviking-memory",
                 "name": "OpenViking 核心记忆与代码战地",
-                "version": "2.0.12",
+                "version": "2.0.13",
                 "status": "active",
                 "total_tools": len(authed_tools),
                 "description": "体外大脑长程记忆语义检索、代码感知、上下文路由与经验沉淀完全体 (34 项战地工具 + 3 项 Hook 物理守卫)",
@@ -356,7 +356,7 @@ async def get_client_capabilities(
             "plugins": [{
                 "id": "openviking-ops",
                 "name": "OpenViking 系统运维治理插件",
-                "version": "1.0.0",
+                "version": "1.0.1",
                 "status": "active" if auth_info["role"] == "admin" else "restricted",
                 "total_tools": len(authed_tools),
                 "description": "后台专属运维治理、死信自愈、知识索引重建与哨兵巡检 (17 项运维特权工具 + 2 项 Hook 守卫)",
@@ -388,7 +388,7 @@ async def get_client_capabilities(
             "plugins": [{
                 "id": "fleet-mesh",
                 "name": "卫星集群同频运维插件",
-                "version": "1.0.0",
+                "version": "1.0.1",
                 "status": "active",
                 "total_tools": len(authed_tools),
                 "description": "跨物理机节点同频健康体检、代码与配置一键同频同步 (2 项跨机工具 + 1 项 Hook 守卫)",
@@ -404,7 +404,7 @@ async def get_client_capabilities(
         {
             "id": "openviking-memory",
             "name": "OpenViking 核心记忆与代码战地",
-            "version": "2.0.12",
+            "version": "2.0.13",
             "status": "active",
             "total_tools": len(authed_mem),
             "description": "体外大脑长程记忆语义检索、代码感知、上下文路由与经验沉淀完全体",
@@ -413,7 +413,7 @@ async def get_client_capabilities(
         {
             "id": "openviking-ops",
             "name": "OpenViking 系统运维治理插件",
-            "version": "1.0.0",
+            "version": "1.0.1",
             "status": "active" if auth_info["role"] == "admin" else "restricted",
             "total_tools": len(OPS_17_TOOLS),
             "description": "后台专属运维治理、死信自愈、知识索引重建与哨兵巡检",
@@ -422,7 +422,7 @@ async def get_client_capabilities(
         {
             "id": "fleet-mesh",
             "name": "卫星集群同频运维插件",
-            "version": "1.0.0",
+            "version": "1.0.1",
             "status": "active",
             "total_tools": len(FLEET_2_TOOLS),
             "description": "跨物理机节点同频健康体检、代码与配置一键同频同步",

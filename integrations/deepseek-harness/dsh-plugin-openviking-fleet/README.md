@@ -9,5 +9,5 @@
 
 ## 安装方式
 ```bash
-npm install https://vk.tide.red/studio/dsh-plugin-openviking-fleet-1.0.0.tgz
+npm install https://vk.tide.red/studio/dsh-plugin-openviking-fleet-1.0.1.tgz
 ```

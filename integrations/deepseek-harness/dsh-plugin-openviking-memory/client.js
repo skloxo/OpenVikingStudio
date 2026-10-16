@@ -97,7 +97,7 @@ window.__ModuleLoader__.load({
             setProbeReport({
               ok: true,
               totalLatency,
-              version: data.version || '2.0.12',
+              version: data.version || '2.0.13',
               toolsCount: data.total_authorized_tools || data.plugins?.[0]?.tools?.length || 34,
               hooksCount: data.hooks?.length || 3,
               role: data.role || 'user',

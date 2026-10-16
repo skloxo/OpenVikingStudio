@@ -9,5 +9,5 @@
 
 ## 安装方式
 ```bash
-npm install https://vk.tide.red/studio/dsh-plugin-openviking-memory-2.0.12.tgz
+npm install https://vk.tide.red/studio/dsh-plugin-openviking-memory-2.0.13.tgz
 ```

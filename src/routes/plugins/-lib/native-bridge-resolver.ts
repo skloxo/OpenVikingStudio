@@ -33,7 +33,7 @@ export function resolvePluginBridgeConfig(
   // 1. Dify 独立工作流中枢
   if (id.includes('dify')) {
     const pkgName = 'dsh-plugin-dify'
-    const version = '1.0.0'
+    const version = '1.0.1'
     const tarballUrl = `https://vk.tide.red/studio/${pkgName}-${version}.tgz`
     const installCmd = `npm install ${tarballUrl}`
     const dshPatch = `plugins:
@@ -88,7 +88,7 @@ export function resolvePluginBridgeConfig(
   // 2. CPA 跨模型算力协同
   if (id.includes('cpa')) {
     const pkgName = 'dsh-plugin-cpa'
-    const version = '1.0.0'
+    const version = '1.0.1'
     const tarballUrl = `https://vk.tide.red/studio/${pkgName}-${version}.tgz`
     const installCmd = `npm install ${tarballUrl}`
     const dshPatch = `plugins:
@@ -143,7 +143,7 @@ export function resolvePluginBridgeConfig(
   // 3. KeePass 客户端本地私有凭据中枢 (零云端依赖)
   if (id.includes('keepass')) {
     const pkgName = 'dsh-plugin-keepass-vault'
-    const version = '1.0.1'
+    const version = '1.0.2'
     const tarballUrl = `https://vk.tide.red/studio/${pkgName}-${version}.tgz`
     const installCmd = `npm install ${tarballUrl}`
     const dshPatch = `plugins:
@@ -200,7 +200,7 @@ export function resolvePluginBridgeConfig(
   // 4. 原生 Ops 系统运维治理
   if (id.includes('ops')) {
     const pkgName = 'dsh-plugin-openviking-ops'
-    const version = '1.0.0'
+    const version = '1.0.1'
     const tarballUrl = `https://vk.tide.red/studio/${pkgName}-${version}.tgz`
     const installCmd = `npm install ${tarballUrl}`
     const dshPatch = `plugins:
@@ -258,7 +258,7 @@ export function resolvePluginBridgeConfig(
   // 5. 原生 Fleet 卫星同频
   if (id.includes('fleet')) {
     const pkgName = 'dsh-plugin-openviking-fleet'
-    const version = '1.0.0'
+    const version = '1.0.1'
     const tarballUrl = `https://vk.tide.red/studio/${pkgName}-${version}.tgz`
     const installCmd = `npm install ${tarballUrl}`
     const dshPatch = `plugins:
@@ -315,7 +315,7 @@ export function resolvePluginBridgeConfig(
 
   // 6. 原生 Memory 核心长程记忆与代码战地 (默认)
   const pkgName = 'dsh-plugin-openviking-memory'
-  const version = '2.0.12'
+  const version = '2.0.13'
   const tarballUrl = `https://vk.tide.red/studio/${pkgName}-${version}.tgz`
   const installCmd = `npm install ${tarballUrl}`
   const dshPatch = `plugins:

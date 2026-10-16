@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-keepass-vault",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "main": "index.js",
   "description": "KeePass Vault 本地私有化凭据插件 (客户端本地挂载 KDBX + 查库第一公理 + 零云端依赖)",

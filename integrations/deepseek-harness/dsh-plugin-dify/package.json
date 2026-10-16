@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-dify",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "main": "index.js",
   "description": "Dify 智能体与工作流中枢 DSH 独立桥接器 (支持工作流唤起、Agent 协同与知识库检索)",
