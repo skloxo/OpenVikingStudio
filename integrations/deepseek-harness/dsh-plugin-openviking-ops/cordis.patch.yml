@@ -1,0 +1,13 @@
+# OpenViking 系统运维治理插件 Bundle Patch for DeepSeek Harness (DSH)
+# 遵循高内聚单包自包含规范，零侵入宿主配置，内部静默自治挂载
+- insert:
+    - id: openviking-ops
+      name: dsh-plugin-openviking-ops
+      config:
+        endpointUrl: "https://vk.tide.red/mcp"
+        userKey: ""
+        userKeyEnv: "OPENVIKING_USER_KEY"
+        agentId: "openviking-ops@sentinel"
+        userId: "default"
+        enableMcp: true
+        peer: "openviking-ops@sentinel"
