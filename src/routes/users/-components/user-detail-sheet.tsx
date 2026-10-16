@@ -10,17 +10,14 @@
  */
 
 
+import { Link } from '@tanstack/react-router'
 import {
   BoxesIcon,
-  BotIcon,
   ExternalLinkIcon,
-  GlobeIcon,
-  KeyIcon,
-  LayersIcon,
+  ShieldCheckIcon,
 } from 'lucide-react'
 
 import { Badge } from '#/components/ui/badge'
-import { Button } from '#/components/ui/button'
 import {
   Sheet,
   SheetContent,
@@ -37,7 +34,6 @@ export type UserDetailSheetProps = {
   onOpenChange: (open: boolean) => void
   currentUserId?: string
   onRegenerateKey?: (user: AdminUser) => void
-  onOpenPluginDrawer?: (user: AdminUser) => void
 }
 
 export function UserDetailSheet({
@@ -46,45 +42,9 @@ export function UserDetailSheet({
   onOpenChange,
   currentUserId,
   onRegenerateKey,
-  onOpenPluginDrawer,
 }: UserDetailSheetProps) {
   const userId = user?.userId || 'default'
   const isCurrentIdentity = currentUserId === userId
-
-  const handleOpenPluginDrawer = () => {
-    if (user && onOpenPluginDrawer) {
-      onOpenChange(false)
-      onOpenPluginDrawer(user)
-    }
-  }
-
-  // 官方标杆生态插件概览
-  const officialPlugins = [
-    {
-      id: 'openviking-memory',
-      name: 'OpenViking 核心记忆',
-      version: 'v2.0.11',
-      icon: <BotIcon className="size-4 text-cyan-600 dark:text-cyan-400" />,
-      desc: '体外大脑语义向量检索、AST 代码感知与长程经验沉淀 (官方平台底座)',
-      meta: '58 工具 · 3 Hook',
-    },
-    {
-      id: 'network-search',
-      name: '联网搜索与采集网关',
-      version: 'v1.0.0',
-      icon: <GlobeIcon className="size-4 text-cyan-600 dark:text-cyan-400" />,
-      desc: '26-Key 多源轮询，支持原生标准 API (免装插件) 与定制插件双模态',
-      meta: '12 工具 · 双模态',
-    },
-    {
-      id: 'keepass-vault',
-      name: 'KeePass 凭据保险箱',
-      version: 'v1.0.0',
-      icon: <KeyIcon className="size-4 text-cyan-600 dark:text-cyan-400" />,
-      desc: '全集群凭据保险箱，本地 KDBX 零泄漏读取，与 VK 零运行时依赖',
-      meta: '8 工具 · 零依赖',
-    },
-  ]
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -107,7 +67,7 @@ export function UserDetailSheet({
             )}
           </div>
           <SheetDescription className="text-xs text-muted-foreground">
-            管理当前用户的角色权限、安全密钥与插件能力装配。智能体与人类平权共享用户体系。
+            管理当前用户的空间角色与专属 User API Key 凭据。人机平权统一接入。
           </SheetDescription>
         </SheetHeader>
 
@@ -118,70 +78,40 @@ export function UserDetailSheet({
           onRegenerateKey={onRegenerateKey}
         />
 
-        {/* 区域 2：插件装配与能力概览 */}
-        <div className="flex flex-1 flex-col gap-3 border-t border-border/60 pt-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="rounded border border-border/60 bg-muted/60 p-1 text-cyan-500">
-                <BoxesIcon className="size-3.5" />
+        {/* 区域 2：能力接入指南指引卡片 */}
+        <div className="flex flex-1 flex-col justify-between gap-3 border-t border-border/60 pt-3">
+          <div className="rounded-md border border-border/60 bg-muted/20 p-3 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="rounded border border-border/60 bg-muted/60 p-1 text-cyan-500">
+                  <BoxesIcon className="size-3.5" />
+                </div>
+                <span className="font-semibold text-foreground/90 text-xs">
+                  全集群插件与能力连接
+                </span>
               </div>
-              <span className="font-semibold text-foreground/90 text-xs">
-                插件与能力装配概览 (已就绪 3 项标杆插件)
-              </span>
             </div>
 
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="h-6.5 gap-1 border-cyan-500/40 bg-cyan-500/10 px-2.5 font-mono text-xs text-cyan-700 hover:bg-cyan-500/20 active:bg-cyan-500/30 dark:border-cyan-500/50 dark:bg-cyan-950/40 dark:text-cyan-300 dark:hover:bg-cyan-900/50"
-              onClick={handleOpenPluginDrawer}
-            >
-              <ExternalLinkIcon className="size-3" />
-              打开插件装配座舱 ➔
-            </Button>
-          </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              本用户的专属 <code className="font-mono text-foreground font-medium">User API Key</code> 可直接用于授权外部智能体（DSH、Antigravity、Cursor 等）接入 Wiki 原生能力插件。
+              全集群所有能力插件（核心记忆、系统运维、联网搜索、KeePass、Dify、CPA 算力等）已统一收拢至「插件中心」，可前往获取对应插件的接口地址、NPM 安装包直链及 MCP 客户端配置模板。
+            </p>
 
-          <div className="space-y-2">
-            {officialPlugins.map((plugin) => (
-              <div
-                key={plugin.id}
-                onClick={handleOpenPluginDrawer}
-                className="group flex cursor-pointer flex-col justify-between gap-1.5 rounded-md border border-border/70 bg-muted/20 p-2.5 transition-all hover:border-cyan-500/60 hover:bg-muted/40 hover:shadow-xs"
+            <div className="pt-1">
+              <Link
+                to="/plugins"
+                onClick={() => onOpenChange(false)}
+                className="inline-flex h-7 items-center gap-1.5 rounded-md border border-cyan-500/40 bg-cyan-500/10 px-2.5 font-mono text-xs text-cyan-700 hover:bg-cyan-500/20 active:bg-cyan-500/30 dark:border-cyan-500/50 dark:bg-cyan-950/40 dark:text-cyan-300 dark:hover:bg-cyan-900/50 transition-colors"
               >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="p-1 rounded bg-background/80 border border-border/40 shrink-0">
-                      {plugin.icon}
-                    </div>
-                    <span className="font-semibold text-foreground text-xs group-hover:text-cyan-500 transition-colors">
-                      {plugin.name}
-                    </span>
-                    <span className="font-mono text-xs text-muted-foreground">
-                      {plugin.version}
-                    </span>
-                  </div>
-
-                  <Badge
-                    variant="outline"
-                    className="font-mono text-xs border-cyan-500/30 text-cyan-600 dark:text-cyan-400 bg-cyan-950/10"
-                  >
-                    {plugin.meta}
-                  </Badge>
-                </div>
-
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  {plugin.desc}
-                </p>
-              </div>
-            ))}
+                <ExternalLinkIcon className="size-3" />
+                前往插件中心查看与安装能力 ➔
+              </Link>
+            </div>
           </div>
 
-          <div className="mt-auto rounded-md border border-border/60 bg-muted/20 p-2.5 text-xs text-muted-foreground flex items-center justify-between">
-            <span className="flex items-center gap-1.5">
-              <LayersIcon className="size-3.5 text-cyan-500" />
-              可通过插件装配座舱配置细粒度 MCP 工具可选、Hook 守卫开关及 NPM 安装包。
-            </span>
+          <div className="mt-auto rounded-md border border-border/50 bg-muted/10 p-2.5 text-xs text-muted-foreground/80 flex items-center gap-1.5 font-mono">
+            <ShieldCheckIcon className="size-3.5 text-cyan-500 shrink-0" />
+            <span>原则：A 就是 A，Key 对了就能用。敏感特权插件在调用时由服务端执行显式校验。</span>
           </div>
         </div>
       </SheetContent>

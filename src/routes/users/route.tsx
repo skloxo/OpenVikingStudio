@@ -45,7 +45,6 @@ import { resolveStudioManagementCapabilities } from '#/lib/studio-permissions'
 import { AddUserDialog } from './-components/add-user-dialog'
 import { UserDetailSheet } from './-components/user-detail-sheet'
 import { UserManagementDialogs } from './-components/user-management-dialogs'
-import { UserPluginCockpitDrawer } from './-components/user-plugin-cockpit-drawer'
 import { UserTable } from './-components/user-table'
 import { getErrorMessage } from './-lib/user-utils'
 
@@ -74,9 +73,6 @@ function UserManagementRoute() {
   const [selectedUserForDetail, setSelectedUserForDetail] =
     React.useState<AdminUser | null>(null)
   const [detailSheetOpen, setDetailSheetOpen] = React.useState(false)
-  const [pluginBridgeUser, setPluginBridgeUser] =
-    React.useState<AdminUser | null>(null)
-  const [pluginBridgeOpen, setPluginBridgeOpen] = React.useState(false)
 
   const { canManageAccounts, canManageUsers } =
     resolveStudioManagementCapabilities({
@@ -312,22 +308,11 @@ function UserManagementRoute() {
         onInitiateRegenerate={(user) => setPendingRegenerateUser(user)}
         onInitiateRemove={(user) => setPendingRemoveUser(user)}
         onInitiateRoleChange={(input) => setPendingRoleChange(input)}
-        onOpenPluginBridge={(user) => {
-          setPluginBridgeUser(user)
-          setPluginBridgeOpen(true)
-        }}
         onSelectUser={(user) => {
           setSelectedUserForDetail(user)
           setDetailSheetOpen(true)
         }}
         users={users}
-      />
-
-      <UserPluginCockpitDrawer
-        user={pluginBridgeUser}
-        open={pluginBridgeOpen}
-        onOpenChange={setPluginBridgeOpen}
-        currentAccountId={connection.accountId}
       />
 
       <UserDetailSheet
@@ -336,10 +321,6 @@ function UserManagementRoute() {
         onOpenChange={setDetailSheetOpen}
         currentUserId={connection.userId}
         onRegenerateKey={(u) => setPendingRegenerateUser(u)}
-        onOpenPluginDrawer={(u) => {
-          setPluginBridgeUser(u)
-          setPluginBridgeOpen(true)
-        }}
       />
 
       <AddUserDialog
