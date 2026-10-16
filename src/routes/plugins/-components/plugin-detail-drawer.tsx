@@ -1,9 +1,15 @@
 /**
  * plugin-detail-drawer.tsx
  * 四位一体插件全景规格与控制抽屉组件 (Cockpit UI 规范)。
- * 严守单文件黄金甜点区 (<= 350 行)、NO GREEN EVER 🚫、>= 12px 字体下限、全屏遮罩与零嵌套截断。
+ * 严守单文件黄金甜点区 (100~300 行)、NO GREEN EVER 🚫、>= 12px 字体下限、全屏遮罩与零嵌套截断。
+ *
+ * 核心设计哲学 (Card-148 奥卡姆剃刀与单一真相源)：
+ * 1. 【切除机械重复】：各个 Tab 严格互斥渲染，“概览规格”作为指标摘要，严禁自顶向下平铺全部子 Tab 内容；
+ * 2. 【四位一体导航】：概览页 4 宫格卡片支持一键跳转对应子 Tab；
+ * 3. 【真实权限拦截】：严格执行 Card-144 鉴权门禁与特权徽章拦截。
  */
 
+import * as React from 'react'
 import {
   BrainIcon,
   CheckCircle2Icon,
@@ -13,7 +19,6 @@ import {
   XIcon,
   ZapIcon,
 } from 'lucide-react'
-import * as React from 'react'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
@@ -27,6 +32,7 @@ import {
 import type { QuadPluginItem, ToolItem } from '../-lib/plugin-types'
 import { NativeBridgeIntegrationGuide } from './native-bridge-integration-guide'
 import { PluginConfigSection } from './plugin-config-section'
+import { PluginOverviewTab } from './plugin-overview-tab'
 import { SearchIntegrationGuide } from './search-integration-guide'
 import { VaultIntegrationGuide } from './vault-integration-guide'
 
@@ -51,7 +57,6 @@ export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps)
   if (!plugin) return null
 
   const privilege = getPluginPrivilegeStatus(connectionRole, plugin.plugin_id)
-  const isHealthy = plugin.health.status === 'healthy'
   const tools = plugin.tools || []
   const hooks = plugin.hooks || []
   const cleanName = plugin.name.replace(/\s*\([^)]*\)/g, '').trim()
@@ -71,7 +76,9 @@ export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps)
   // 渲染单个工具卡片 (Card-144 权限拦截门禁)
   const renderToolCard = (tool: ToolItem) => {
     const isOps = isPrivilegedTool(tool)
-    const isRestricted = !privilege.isAllowed || (isOps && connectionRole !== 'admin' && connectionRole !== 'root')
+    const isRestricted =
+      !privilege.isAllowed ||
+      (isOps && connectionRole !== 'admin' && connectionRole !== 'root')
 
     return (
       <div
@@ -172,7 +179,10 @@ export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps)
                 <ShieldAlertIcon className="size-3.5 shrink-0" />
                 <span className="truncate">{privilege.reason || '当前为普通用户身份，特权运维受限'}</span>
               </div>
-              <Badge variant="outline" className="border-amber-500/50 bg-amber-500/20 text-amber-700 dark:text-amber-300 text-xs shrink-0 font-mono">
+              <Badge
+                variant="outline"
+                className="border-amber-500/50 bg-amber-500/20 text-amber-700 dark:text-amber-300 text-xs shrink-0 font-mono"
+              >
                 受限模式
               </Badge>
             </div>
@@ -182,7 +192,10 @@ export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps)
                 <CheckCircle2Icon className="size-3.5 shrink-0 text-cyan-500" />
                 <span className="truncate">平台特权已就绪：当前处于管理员模式 ({connectionRole})</span>
               </div>
-              <Badge variant="outline" className="border-cyan-500/50 bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 text-xs shrink-0 font-mono">
+              <Badge
+                variant="outline"
+                className="border-cyan-500/50 bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 text-xs shrink-0 font-mono"
+              >
                 Admin 授权
               </Badge>
             </div>
@@ -191,7 +204,7 @@ export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps)
           {/* 四位一体高密分段导航 Tab 条 */}
           <div className="mt-3 flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 p-1 text-xs font-mono">
             {[
-              { key: 'all', label: '全景全貌' },
+              { key: 'all', label: '概览规格' },
               { key: 'tools', label: `MCP 工具 (${tools.length})` },
               { key: 'hooks', label: `Hook 拦截 (${hooks.length})` },
               { key: 'skill', label: '技能认知导轨' },
@@ -217,52 +230,23 @@ export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps)
           </div>
         </div>
 
-        {/* 抽屉平滑自然滚动正文 (彻底消灭嵌套截断与 flex 溢出) */}
-        <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-5">
-          {/* 运行态探针健康条 (全局常驻) */}
-          <div className="rounded-md border border-border/60 bg-muted/20 p-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-foreground">底层运行态探针</span>
-              <Badge
-                variant="outline"
-                className={`text-xs font-mono ${
-                  isHealthy
-                    ? 'border-cyan-500/30 bg-cyan-500/10 text-cyan-700 dark:text-cyan-400'
-                    : 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400'
-                }`}
-              >
-                {isHealthy ? '探针存活' : '状态异常'} · 本地响应 {plugin.health?.latency_ms?.toFixed(1) || '0.1'}ms
-              </Badge>
-            </div>
-            <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
-              {plugin.description}
-            </p>
-            {plugin.health?.message && (
-              <p className="mt-1 font-mono text-xs text-muted-foreground/70">
-                探活详情：{plugin.health.message}
-              </p>
-            )}
-          </div>
-
-          {/* 接入指南：根据插件类型动态装配 */}
-          {(activeTab === 'all' || activeTab === 'install') && (
-            <div className="space-y-4">
-              {plugin.plugin_id === 'network-search' && <SearchIntegrationGuide />}
-              {plugin.plugin_id === 'keepass-vault' && <VaultIntegrationGuide />}
-              {plugin.plugin_id !== 'network-search' && plugin.plugin_id !== 'keepass-vault' && (
-                <NativeBridgeIntegrationGuide
-                  pluginId={plugin.plugin_id}
-                  pluginName={cleanName}
-                />
-              )}
-            </div>
+        {/* 抽屉平滑自然滚动正文 (严格互斥渲染，消灭内容重复) */}
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+          {/* Tab 1: 概览规格 (单一真相源，绝不平铺子 Tab 内容) */}
+          {activeTab === 'all' && (
+            <PluginOverviewTab
+              plugin={plugin}
+              privilege={privilege}
+              connectionRole={connectionRole}
+              onNavigateTab={(tab) => setActiveTab(tab)}
+            />
           )}
 
-          {/* ================= 维度一：MCP 工具池 ================= */}
-          {(activeTab === 'all' || activeTab === 'tools') && (
-            <div className="space-y-3">
+          {/* Tab 2: MCP 工具池 */}
+          {activeTab === 'tools' && (
+            <div className="space-y-3 font-sans text-xs">
               <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-2">
-                <h4 className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                <h4 className="flex items-center gap-1.5 font-semibold text-foreground">
                   <LayersIcon className="size-3.5 text-cyan-600 dark:text-cyan-400" />
                   MCP 标准工具全景 ({filteredTools.length}/{tools.length})
                 </h4>
@@ -281,7 +265,6 @@ export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps)
               {/* 针对核心记忆插件进行角色工具包拆解展示 */}
               {isMemoryPlugin ? (
                 <div className="space-y-4">
-                  {/* 业务使用者工具包 (31 项) */}
                   {consumerTools.length > 0 && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-xs">
@@ -299,7 +282,6 @@ export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps)
                     </div>
                   )}
 
-                  {/* 中枢运维特权工具包 (16 项) */}
                   {opsTools.length > 0 && (
                     <div className="space-y-2 pt-2 border-t border-border/30">
                       <div className="flex items-center justify-between text-xs">
@@ -318,7 +300,6 @@ export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps)
                   )}
                 </div>
               ) : (
-                /* 其他插件直接全平铺网格展示 */
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {filteredTools.map(renderToolCard)}
                 </div>
@@ -326,18 +307,18 @@ export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps)
             </div>
           )}
 
-          {/* ================= 维度二：Hook 神经反射拦截 ================= */}
-          {(activeTab === 'all' || activeTab === 'hooks') && (
-            <div className="space-y-2.5">
-              <h4 className="flex items-center gap-1.5 text-xs font-semibold text-foreground border-b border-border/40 pb-2">
+          {/* Tab 3: Hook 神经反射 */}
+          {activeTab === 'hooks' && (
+            <div className="space-y-2.5 font-sans text-xs">
+              <h4 className="flex items-center gap-1.5 font-semibold text-foreground border-b border-border/40 pb-2">
                 <ZapIcon className="size-3.5 text-cyan-600 dark:text-cyan-400" />
-                Hook 拦截事件与神经反射 ({hooks.length})
+                Hook 拦截事件与生命周期神经反射 ({hooks.length})
               </h4>
               <div className="space-y-2">
                 {hooks.map((hook) => (
                   <div
                     key={hook.hook_id}
-                    className="rounded-md border border-border/50 bg-card/40 p-3 text-xs space-y-1.5"
+                    className="rounded-md border border-border/50 bg-card/40 p-3 space-y-1.5"
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-medium text-foreground">{hook.name}</span>
@@ -357,45 +338,63 @@ export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps)
             </div>
           )}
 
-          {/* ================= 维度三：技能认知导轨 ================= */}
-          {(activeTab === 'all' || activeTab === 'skill') && plugin.skill && (
-            <div className="space-y-2.5">
-              <h4 className="flex items-center gap-1.5 text-xs font-semibold text-foreground border-b border-border/40 pb-2">
+          {/* Tab 4: 技能认知导轨 */}
+          {activeTab === 'skill' && (
+            <div className="space-y-2.5 font-sans text-xs">
+              <h4 className="flex items-center gap-1.5 font-semibold text-foreground border-b border-border/40 pb-2">
                 <BrainIcon className="size-3.5 text-muted-foreground" />
                 技能认知导轨规约
               </h4>
-              <div className="rounded-md border border-border/50 bg-card/40 p-3.5 text-xs space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-foreground text-xs">{plugin.skill.name}</span>
-                  <Badge variant="outline" className="text-xs font-mono text-muted-foreground">
-                    {plugin.skill.skill_id}
-                  </Badge>
-                </div>
-                <div className="rounded bg-muted/40 p-2.5 font-mono text-xs text-muted-foreground leading-relaxed">
-                  💡 <strong>标准流程 (SOP)：</strong>
-                  <div className="mt-1 text-foreground/90">{plugin.skill.sop_summary}</div>
-                </div>
-                {plugin.skill.rules && plugin.skill.rules.length > 0 && (
-                  <div className="space-y-1.5 pt-1">
-                    <div className="font-medium text-muted-foreground text-xs">执行红线门禁:</div>
-                    <div className="grid gap-1">
-                      {plugin.skill.rules.map((rule, idx) => (
-                        <div key={idx} className="flex items-center gap-1.5 text-xs text-foreground">
-                          <CheckCircle2Icon className="size-3 text-cyan-400 shrink-0" />
-                          <span>{rule}</span>
-                        </div>
-                      ))}
-                    </div>
+              {plugin.skill ? (
+                <div className="rounded-md border border-border/50 bg-card/40 p-3.5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-foreground text-xs">{plugin.skill.name}</span>
+                    <Badge variant="outline" className="text-xs font-mono text-muted-foreground">
+                      {plugin.skill.skill_id}
+                    </Badge>
                   </div>
-                )}
-              </div>
+                  <div className="rounded bg-muted/40 p-2.5 font-mono text-xs text-muted-foreground leading-relaxed">
+                    💡 <strong>标准流程 (SOP)：</strong>
+                    <div className="mt-1 text-foreground/90">{plugin.skill.sop_summary}</div>
+                  </div>
+                  {plugin.skill.rules && plugin.skill.rules.length > 0 && (
+                    <div className="space-y-1.5 pt-1">
+                      <div className="font-medium text-muted-foreground text-xs">执行红线门禁:</div>
+                      <div className="grid gap-1">
+                        {plugin.skill.rules.map((rule, idx) => (
+                          <div key={idx} className="flex items-center gap-1.5 text-foreground">
+                            <CheckCircle2Icon className="size-3 text-cyan-400 shrink-0" />
+                            <span>{rule}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="rounded-md border border-border/60 bg-muted/20 p-4 text-center text-muted-foreground">
+                  本插件暂无独立技能认知导轨规约
+                </div>
+              )}
             </div>
           )}
 
-          {/* ================= 维度四：GUI 交互视窗与运行配置 ================= */}
-          {(activeTab === 'all' || activeTab === 'config') && (
-            <PluginConfigSection plugin={plugin} />
+          {/* Tab 5: 客户端接入指南 */}
+          {activeTab === 'install' && (
+            <div className="space-y-4">
+              {plugin.plugin_id === 'network-search' && <SearchIntegrationGuide />}
+              {plugin.plugin_id === 'keepass-vault' && <VaultIntegrationGuide />}
+              {plugin.plugin_id !== 'network-search' && plugin.plugin_id !== 'keepass-vault' && (
+                <NativeBridgeIntegrationGuide
+                  pluginId={plugin.plugin_id}
+                  pluginName={cleanName}
+                />
+              )}
+            </div>
           )}
+
+          {/* Tab 6: GUI 交互视窗与运行配置 */}
+          {activeTab === 'config' && <PluginConfigSection plugin={plugin} />}
         </div>
       </div>
     </>
