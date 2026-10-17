@@ -154,22 +154,59 @@ def _oauth_enabled(scope: Scope) -> bool:
     return getattr(app.state, "oauth_provider", None) is not None
 
 
-def _filter_obj_tools(obj: Any, allowed_tools: set[str]) -> None:
+def _filter_obj_tools(obj: Any, target_plugin: str) -> None:
+    from openviking.server.routers.client_caps_constants import (
+        BATTLEFIELD_34_TOOLS,
+        OPS_17_TOOLS,
+        FLEET_2_TOOLS,
+    )
+
+    clean_plugin = (target_plugin or "").lower().strip()
+    if clean_plugin in ("fleet-mesh", "fleet", "openviking-fleet", "dsh-plugin-openviking-fleet"):
+        expected_spec = FLEET_2_TOOLS
+    elif clean_plugin in ("openviking-ops", "ops", "dsh-plugin-openviking-ops"):
+        expected_spec = OPS_17_TOOLS
+    elif clean_plugin in ("*", "all"):
+        return
+    else:
+        expected_spec = BATTLEFIELD_34_TOOLS
+
+    spec_map: dict[str, dict[str, Any]] = {}
+    for spec in expected_spec:
+        spec_map[spec["id"]] = spec
+        if spec.get("name"):
+            spec_map[spec["name"]] = spec
+        clean = spec["id"].replace("openviking_", "")
+        spec_map[clean] = spec
+        if clean == "store": spec_map["remember"] = spec
+        elif clean == "ls": spec_map["list"] = spec
+        elif clean == "delete_resource": spec_map["forget"] = spec
+        elif clean == "privacy": spec_map["openviking_privacy_mask"] = spec
+        elif clean == "ping": spec_map["health"] = spec
+        elif clean == "harness_stats": spec_map["openviking_harness_probe"] = spec
+
     items = obj if isinstance(obj, list) else [obj]
     for item in items:
         if isinstance(item, dict) and "result" in item:
             res = item["result"]
             if isinstance(res, dict) and "tools" in res and isinstance(res["tools"], list):
-                res["tools"] = [
-                    t for t in res["tools"]
-                    if isinstance(t, dict) and (t.get("name") in allowed_tools or "*" in allowed_tools)
-                ]
+                selected = []
+                seen_spec_ids = set()
+                for t in res["tools"]:
+                    if isinstance(t, dict):
+                        t_name = t.get("name", "")
+                        if t_name in spec_map:
+                            spec = spec_map[t_name]
+                            if spec["id"] not in seen_spec_ids:
+                                seen_spec_ids.add(spec["id"])
+                                selected.append(t)
+                res["tools"] = selected
 
 
-def _filter_tools_list_payload(body_bytes: bytes, allowed_tools: set[str]) -> bytes:
-    """Filter tools in JSON or SSE formatted MCP tools/list response."""
+def _filter_tools_list_payload(body_bytes: bytes, target_plugin: str) -> bytes:
+    """Filter tools in JSON or SSE formatted MCP tools/list response strictly for target plugin."""
     import json
-    if not body_bytes or "*" in allowed_tools:
+    if not body_bytes or target_plugin in ("*", "all"):
         return body_bytes
     text = body_bytes.decode("utf-8", errors="replace")
 
@@ -182,7 +219,7 @@ def _filter_tools_list_payload(body_bytes: bytes, allowed_tools: set[str]) -> by
                 raw_json = line[len("data:"):].strip()
                 try:
                     obj = json.loads(raw_json)
-                    _filter_obj_tools(obj, allowed_tools)
+                    _filter_obj_tools(obj, target_plugin)
                     new_lines.append(f"data: {json.dumps(obj, ensure_ascii=False)}")
                 except Exception:
                     new_lines.append(line)
@@ -192,7 +229,7 @@ def _filter_tools_list_payload(body_bytes: bytes, allowed_tools: set[str]) -> by
     else:
         try:
             obj = json.loads(text)
-            _filter_obj_tools(obj, allowed_tools)
+            _filter_obj_tools(obj, target_plugin)
             return json.dumps(obj, ensure_ascii=False).encode("utf-8")
         except Exception:
             return body_bytes
@@ -242,33 +279,11 @@ class _IdentityASGIMiddleware:
                 or request.headers.get("x-openviking-agent-id")
                 or actor_peer_id
             )
-            agent_rec = None
-            inferred_user_id = None
-            if declared_agent_id:
-                from openviking.storage.agent_principal_store import AgentPrincipalStore
-                agent_rec = AgentPrincipalStore.get_instance().get_agent(
-                    declared_agent_id, include_deleted=False
-                )
-                if not agent_rec or agent_rec.status == "revoked":
-                    resp = JSONResponse(
-                        {
-                            "jsonrpc": "2.0",
-                            "id": None,
-                            "error": {
-                                "code": -32001,
-                                "message": f"Agent ID [{declared_agent_id}] not found or credential invalid",
-                            },
-                        },
-                        status_code=401,
-                    )
-                    return await resp(scope, receive, send)
-                inferred_user_id = agent_rec.user_id
 
-            # 自动推断属主：只要指定了 agent_id，系统自动解析归属 user_id，严禁强迫调用方在 URL 拼接 user_id
+            # 鉴权唯一真相源收敛至 User Key (resolve_identity)，废黜 agent_id 强校验拦截
             effective_user_param = (
                 request.headers.get("x-openviking-user")
                 or request.query_params.get("user_id")
-                or inferred_user_id
                 or "default"
             )
 
@@ -280,45 +295,75 @@ class _IdentityASGIMiddleware:
                 x_openviking_user=effective_user_param,
             )
 
-            # 🛡️ 属主匹配强校验：防串户与越权接入 (Owner-Agent Cross Verification)
-            declared_user_id = request.query_params.get("user_id") or request.headers.get("x-openviking-user")
-            if declared_user_id and agent_rec and agent_rec.user_id and declared_user_id != agent_rec.user_id:
-                resp = JSONResponse(
-                    {
-                        "jsonrpc": "2.0",
-                        "id": None,
-                        "error": {
-                            "code": -32003,
-                            "message": f"Cross-tenant access denied: Agent [{declared_agent_id}] belongs to user [{agent_rec.user_id}], but request specified user [{declared_user_id}]",
-                        },
-                    },
-                    status_code=403,
-                )
-                return await resp(scope, receive, send)
+            auth_role = getattr(identity, "role", "user") or "user"
 
-            auth_user = getattr(identity, "user_id", None) if identity else None
-            if auth_user and auth_user not in ("anonymous", "default_anonymous") and agent_rec and agent_rec.user_id:
-                auth_role = getattr(identity, "role", "")
-                if auth_role != "admin" and auth_user != agent_rec.user_id:
+            # 识别目标插件包 (plugin_id / target_plugin)
+            raw_plugin = (
+                request.query_params.get("plugin_id")
+                or request.query_params.get("plugin")
+                or request.headers.get("x-openviking-plugin")
+                or request.headers.get("x-plugin-id")
+                or ""
+            ).strip().lower()
+
+            if not raw_plugin:
+                peer_lower = (actor_peer_id or declared_agent_id or "").lower()
+                if any(k in peer_lower for k in ("fleet", "mesh", "coordinator")):
+                    raw_plugin = "fleet-mesh"
+                elif any(k in peer_lower for k in ("ops", "sentinel")):
+                    raw_plugin = "openviking-ops"
+                else:
+                    raw_plugin = "openviking-memory"
+
+            # 🛡️ 插件角色权限硬门禁 (RBAC Gate)
+            if raw_plugin in ("openviking-ops", "ops", "dsh-plugin-openviking-ops", "fleet-mesh", "fleet", "openviking-fleet", "dsh-plugin-openviking-fleet"):
+                if auth_role != "admin":
                     resp = JSONResponse(
                         {
                             "jsonrpc": "2.0",
                             "id": None,
                             "error": {
                                 "code": -32003,
-                                "message": f"Owner mismatch: Agent [{declared_agent_id}] belongs to user [{agent_rec.user_id}], but authenticated key belongs to [{auth_user}]",
+                                "message": f"Permission Denied: Plugin [{raw_plugin}] requires administrator privileges (role='admin'). Current user role is [{auth_role}].",
                             },
                         },
                         status_code=403,
                     )
                     return await resp(scope, receive, send)
 
-            # Enforce physical Tool ACL validation and dynamic tools/list projection
+            # 依据目标插件包计算该连接允许的工具集 (Tool ACL SSOT)
+            from openviking.server.routers.client_caps_constants import (
+                BATTLEFIELD_34_TOOLS,
+                OPS_17_TOOLS,
+                FLEET_2_TOOLS,
+            )
+
+            if raw_plugin in ("fleet-mesh", "fleet", "openviking-fleet", "dsh-plugin-openviking-fleet"):
+                allowed_spec = FLEET_2_TOOLS
+            elif raw_plugin in ("openviking-ops", "ops", "dsh-plugin-openviking-ops"):
+                allowed_spec = OPS_17_TOOLS
+            else:
+                allowed_spec = BATTLEFIELD_34_TOOLS
+
+            allowed_tools_set = set()
+            for s in allowed_spec:
+                allowed_tools_set.add(s["id"])
+                if s.get("name"):
+                    allowed_tools_set.add(s["name"])
+                clean = s["id"].replace("openviking_", "")
+                allowed_tools_set.add(clean)
+                if clean == "store": allowed_tools_set.add("remember")
+                elif clean == "ls": allowed_tools_set.add("list")
+                elif clean == "delete_resource": allowed_tools_set.add("forget")
+                elif clean == "privacy": allowed_tools_set.add("openviking_privacy_mask")
+                elif clean == "ping": allowed_tools_set.add("health")
+                elif clean == "harness_stats": allowed_tools_set.add("openviking_harness_probe")
+
+            # 拦截 POST 请求进行 tools/list 过滤与 tools/call ACL 校验
             replay_receive = receive
             is_tools_list = False
-            if declared_agent_id and agent_rec and request.method == "POST":
+            if request.method == "POST":
                 import json
-                import time
                 body = await request.body()
 
                 body_consumed = False
@@ -342,11 +387,10 @@ class _IdentityASGIMiddleware:
                             elif m_name == "tools/call":
                                 params = call_obj.get("params") or {}
                                 tool_name = params.get("name")
-                                allowed = set(agent_rec.allowed_tools) if agent_rec.allowed_tools else set()
-                                if "*" not in allowed and tool_name and tool_name not in allowed:
+                                if tool_name and tool_name not in allowed_tools_set:
                                     req_id = call_obj.get("id")
                                     logger.warning(
-                                        f"Tool ACL Denied: Agent [{declared_agent_id}] attempted unauthorized tool [{tool_name}]. Allowed: {agent_rec.allowed_tools}"
+                                        f"Tool ACL Denied: Tool [{tool_name}] not authorized for plugin [{raw_plugin}]"
                                     )
                                     resp = JSONResponse(
                                         {
@@ -354,21 +398,12 @@ class _IdentityASGIMiddleware:
                                             "id": req_id,
                                             "error": {
                                                 "code": -32003,
-                                                "message": f"Permission Denied: Tool [{tool_name}] is not authorized for Agent Principal [{declared_agent_id}]. Please grant access in OpenViking Tool ACL Matrix.",
+                                                "message": f"Permission Denied: Tool [{tool_name}] is not part of plugin [{raw_plugin}] capability package.",
                                             },
                                         },
                                         status_code=403,
                                     )
                                     return await resp(scope, _replay_receive, send)
-                                # Heartbeat & message count increment
-                                try:
-                                    AgentPrincipalStore.get_instance().update_agent(
-                                        declared_agent_id,
-                                        total_messages=agent_rec.total_messages + 1,
-                                        last_seen=time.time(),
-                                    )
-                                except Exception:
-                                    pass
                 except Exception as parse_err:
                     logger.debug(f"Tool ACL bypass parse error: {parse_err}")
 
@@ -418,8 +453,7 @@ class _IdentityASGIMiddleware:
         url_token = _request_url_ctx.set(url_info)
 
         effective_send: Send = send
-        allowed_tools_set = set(agent_rec.allowed_tools) if (agent_rec and agent_rec.allowed_tools) else set()
-        if is_tools_list and "*" not in allowed_tools_set:
+        if is_tools_list:
             original_send = send
             response_start_message: Optional[dict] = None
             response_body_chunks: List[bytes] = []
@@ -432,7 +466,7 @@ class _IdentityASGIMiddleware:
                     response_body_chunks.append(message.get("body", b""))
                     if not message.get("more_body", False):
                         full_body = b"".join(response_body_chunks)
-                        modified_body = _filter_tools_list_payload(full_body, allowed_tools_set)
+                        modified_body = _filter_tools_list_payload(full_body, raw_plugin)
                         if response_start_message:
                             new_headers = []
                             for h_name, h_val in response_start_message.get("headers", []):
@@ -2889,11 +2923,58 @@ def _portable_schema(schema: Any, defs: Optional[Dict[str, Any]] = None) -> Any:
     return node
 
 
+def _register_domain_packages() -> None:
+    try:
+        from pathlib import Path
+        import sys
+
+        repo_root = Path(__file__).resolve().parent.parent.parent
+        mcp_ov_dir = repo_root / "mcp-openviking"
+        if mcp_ov_dir.is_dir() and str(mcp_ov_dir) not in sys.path:
+            sys.path.insert(0, str(mcp_ov_dir))
+
+        from tools.fleet import register_fleet_tools
+        from tools.code import register_code_tools
+        from tools.skills import register_skills_tools
+        from tools.filesystem import register_filesystem_tools
+        from tools.system import register_system_tools
+        from tools.memory import register_memory_tools
+        from tools.sessions import register_sessions_tools
+        from tools.observability import register_observability_tools
+
+        existing = {t.name for t in mcp._tool_manager.list_tools()}
+
+        def _dec_factory():
+            def _dec(fn):
+                name = fn.__name__
+                if name not in existing:
+                    try:
+                        mcp.tool(name=name)(fn)
+                        existing.add(name)
+                    except Exception as e:
+                        logger.debug(f"Failed to register domain tool {name}: {e}")
+                return fn
+            return _dec
+
+        d = _dec_factory
+        register_fleet_tools(mcp, d)
+        register_code_tools(mcp, d)
+        register_skills_tools(mcp, d)
+        register_filesystem_tools(mcp, d)
+        register_system_tools(mcp, d)
+        register_memory_tools(mcp, d)
+        register_sessions_tools(mcp, d)
+        register_observability_tools(mcp, d)
+    except Exception as exc:
+        logger.warning(f"Domain packages registration notice: {exc}")
+
+
 def _apply_portable_schemas() -> None:
     for tool in mcp._tool_manager.list_tools():
         tool.parameters = _portable_schema(tool.parameters)
 
 
+_register_domain_packages()
 _apply_portable_schemas()
 
 

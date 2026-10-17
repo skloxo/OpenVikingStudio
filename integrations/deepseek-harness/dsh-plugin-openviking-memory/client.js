@@ -20,8 +20,7 @@ window.__ModuleLoader__.load({
         if (raw) return JSON.parse(raw);
       } catch (_) {}
       return {
-        endpointUrl: 'https://vk.tide.red',
-        agentId: 'deepseek-harness@satellite',
+        endpointUrl: '',
         userKey: '',
         disabledTools: [],
         disabledHooks: [],
@@ -69,19 +68,27 @@ window.__ModuleLoader__.load({
       const getBaseUrl = (url) => {
         let base = (url || '').trim();
         base = base.replace(/\/mcp\/?$/i, '').replace(/\/+$/, '');
-        return base || 'https://vk.tide.red';
+        return base;
       };
 
       const handleTest = async () => {
         setTesting(true);
         setProbeReport(null);
         const base = getBaseUrl(config.endpointUrl);
+        if (!base) {
+          setProbeReport({
+            ok: false,
+            totalLatency: 0,
+            error: '请先填写 OpenViking 服务端接口地址',
+          });
+          setTesting(false);
+          return;
+        }
         const start = Date.now();
         const fetchFn = typeof window !== 'undefined' && window.fetch ? window.fetch.bind(window) : fetch;
 
         const headers = { 'Content-Type': 'application/json' };
         if (config.userKey) headers['Authorization'] = `Bearer ${config.userKey}`;
-        if (config.agentId) headers['X-Agent-ID'] = config.agentId;
 
         try {
           const res = await fetchFn(`${base}/api/v1/system/client-capabilities?plugin_id=openviking-memory&probe=full`, {
@@ -97,7 +104,7 @@ window.__ModuleLoader__.load({
             setProbeReport({
               ok: true,
               totalLatency,
-              version: data.version || '2.0.13',
+              version: data.version || '2.0.15',
               toolsCount: data.total_authorized_tools || data.plugins?.[0]?.tools?.length || 34,
               hooksCount: data.hooks?.length || 3,
               role: data.role || 'user',
@@ -193,20 +200,8 @@ window.__ModuleLoader__.load({
         h('div', { style: { marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' } },
           // 接口地址
           h('div', null,
-            h('div', { style: { display: 'flex', justifyContent: 'space-between', marginBottom: '4px' } },
-              h('label', { style: { fontWeight: '500' } }, 'OpenViking 服务端接口地址:'),
-              h('div', { style: { display: 'flex', gap: '6px' } },
-                h('button', {
-                  type: 'button',
-                  onClick: () => handleChange('endpointUrl', 'https://vk.tide.red'),
-                  style: { fontSize: '11px', padding: '1px 6px', background: config.endpointUrl.includes('vk.tide.red') ? '#0891b2' : 'transparent', color: config.endpointUrl.includes('vk.tide.red') ? '#fff' : '#0891b2', border: '1px solid #0891b2', borderRadius: '4px', cursor: 'pointer' }
-                }, '公网 vk.tide.red'),
-                h('button', {
-                  type: 'button',
-                  onClick: () => handleChange('endpointUrl', 'http://127.0.0.1:1933'),
-                  style: { fontSize: '11px', padding: '1px 6px', background: config.endpointUrl.includes('127.0.0.1') ? '#0891b2' : 'transparent', color: config.endpointUrl.includes('127.0.0.1') ? '#fff' : '#0891b2', border: '1px solid #0891b2', borderRadius: '4px', cursor: 'pointer' }
-                }, '本地 127.0.0.1')
-              )
+            h('div', { style: { marginBottom: '4px' } },
+              h('label', { style: { fontWeight: '500' } }, 'OpenViking 服务端接口地址:')
             ),
             h('input', {
               type: 'text',

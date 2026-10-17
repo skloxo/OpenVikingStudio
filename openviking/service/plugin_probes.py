@@ -56,7 +56,7 @@ class PluginProbeRunner:
         """探测 OpenViking Memory 记忆库健康度。"""
         start = time.perf_counter()
         try:
-            db_path = Path.home() / ".openviking" / "data" / "agent_principals.db"
+            db_path = Path.home() / ".openviking" / "data" / "memory_lifecycle.db"
             if db_path.exists():
                 stat = db_path.stat()
                 latency = (time.perf_counter() - start) * 1000.0

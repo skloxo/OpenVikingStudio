@@ -190,7 +190,7 @@ def create_core_and_ops_plugins(
                 "rerankerModel": "Qwen3-VL-Reranker-2B (INT8)",
                 "compressionPipeline": "TokenShift (AST) + LLMLingua-2 (rate=0.50)",
                 "contextRouting": "L0/L1/L2 Autonomous Adaptive Dehydration",
-                "storageDatabase": "~/.openviking/data/agent_principals.db",
+                "storageDatabase": "~/.openviking/data/memory_lifecycle.db",
             },
             dashboard_route="/",
         ),

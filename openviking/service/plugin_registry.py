@@ -75,10 +75,10 @@ class PluginRegistry:
         pid = (plugin_id or "openviking-memory").strip().lower()
         if pid in ("openviking-ops", "ops"):
             target_pkg = "dsh-plugin-openviking-ops"
-            def_ver = "1.0.1"
+            def_ver = "1.0.3"
         elif pid in ("fleet-mesh", "fleet", "openviking-fleet"):
             target_pkg = "dsh-plugin-openviking-fleet"
-            def_ver = "1.0.1"
+            def_ver = "1.0.3"
         elif pid in ("keepass-vault", "keepass", "vault"):
             target_pkg = "dsh-plugin-keepass-vault"
             def_ver = "1.0.2"
@@ -90,7 +90,7 @@ class PluginRegistry:
             def_ver = "1.0.1"
         else:
             target_pkg = "dsh-plugin-openviking-memory"
-            def_ver = "2.0.13"
+            def_ver = "2.0.15"
 
         latest_version = def_ver
         latest_filename = f"{target_pkg}-{latest_version}.tgz"
@@ -144,7 +144,7 @@ class PluginRegistry:
             "architecture": f"Independent Quad Bridge ({target_pkg})",
             "description": f"专供智能体生态接入 {plugin_id} 的独立轻量级通信桥梁，开箱即用。",
             "install_command": f"npm install {package_url}",
-            "handshake_protocol": "HTTP/SSE + Bearer Auth (UserKey:AgentID)",
+            "handshake_protocol": "HTTP/SSE + Bearer Auth (UserKey)",
             "channels": {
                 "antigravity": {
                     "name": "Google 反重力",

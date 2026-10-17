@@ -18,13 +18,12 @@ function v(s) {
 }
 
 export const Config = Schema ? Schema.object({
-  endpointUrl: v(Schema.string().default('https://vk.tide.red/mcp')).description('OpenViking 通信端点 URL (公网默认 https://vk.tide.red/mcp)'),
-  agentId: v(Schema.string().default('fleet-mesh@coordinator')).description('智能体工兵 ID (在 OpenViking 智能体中心复制)'),
+  endpointUrl: v(Schema.string().default('')).description('OpenViking 通信端点 URL (例如 https://vk.tide.red/mcp 或 http://127.0.0.1:1933/mcp)'),
   userKey: v(Schema.string().role('secret').default('')).description('所属用户 API Key / User Key (在 HTTP Header 中安全传递，带密码遮罩)'),
   userKeyEnv: v(Schema.string().default('OPENVIKING_USER_KEY')).description('从 DSH 凭据库 (.credentials.yaml) 或环境变量中引用的 Key 变量名'),
   userId: v(Schema.string().default('default')).description('租户 / 账户身份标识 (默认 default)'),
   enableMcp: v(Schema.boolean().default(true)).description('是否挂载 FastMCP 工具箱'),
-  peer: v(Schema.string().default('fleet-mesh@coordinator')).description('调用方节点标识 (用于服务端审计日志与调用链追踪)')
+  peer: v(Schema.string().default('fleet-mesh')).description('调用方节点标识 (用于服务端审计日志与调用链追踪)')
 }).description('卫星集群同频运维插件 通信桥梁配置') : undefined
 
 function log(msg) {
@@ -50,9 +49,10 @@ function getVal(v, fallback = '') {
 }
 
 export function apply(ctx, config = {}) {
-  const getEndpoint = () => getVal(config.endpointUrl, 'https://vk.tide.red/mcp')
+  const getEndpoint = () => getVal(config.endpointUrl, '')
   const getMcpBaseUrl = () => {
     let ep = getEndpoint().trim()
+    if (!ep) return ''
     if (!ep.endsWith('/mcp')) ep = `${ep.replace(/\/+$/, '')}/mcp`
     return ep
   }
@@ -65,9 +65,8 @@ export function apply(ctx, config = {}) {
     }
     return ''
   }
-  const getPeer = () => getVal(config.peer, 'fleet-mesh@coordinator')
+  const getPeer = () => getVal(config.peer, 'fleet-mesh')
   const getUserId = () => getVal(config.userId, 'default')
-  const getAgentId = () => getVal(config.agentId, 'fleet-mesh@coordinator')
   const getEnableMcp = () => getVal(config.enableMcp, true) !== false
 
   log(`[INIT] dsh-plugin-openviking-fleet activated (peer=${getPeer()}, endpoint=${getEndpoint()})`)
@@ -76,9 +75,9 @@ export function apply(ctx, config = {}) {
   let lastMcpSignature = ''
 
   async function mountMcpIfNeeded() {
-    const agentId = getAgentId()
     const enableMcp = getEnableMcp()
-    if (!enableMcp || !agentId) {
+    const mcpBase = getMcpBaseUrl()
+    if (!enableMcp || !mcpBase) {
       if (currentMcpFork) {
         try { currentMcpFork.dispose() } catch (_) {}
         currentMcpFork = null
@@ -88,9 +87,8 @@ export function apply(ctx, config = {}) {
     }
 
     try {
-      const mcpBase = getMcpBaseUrl()
       const key = getKey()
-      const mcpUrl = `${mcpBase}?agent_id=${encodeURIComponent(agentId)}&plugin_id=fleet-mesh`
+      const mcpUrl = `${mcpBase}?plugin_id=fleet-mesh`
       const signature = `${mcpUrl}#${key || 'nokey'}`
 
       if (currentMcpFork && signature === lastMcpSignature) return
@@ -100,7 +98,7 @@ export function apply(ctx, config = {}) {
       }
 
       const proxyPath = fileURLToPath(new URL('./servers/mcp-proxy.mjs', import.meta.url))
-      log(`[MCP_MOUNT] mounting stdio proxy (${proxyPath}) targeting ${mcpBase}`)
+      log(`[MCP_MOUNT] mounting stdio proxy (${proxyPath}) targeting ${mcpUrl}`)
 
       let mcpPlugin = null
       try {
@@ -118,7 +116,7 @@ export function apply(ctx, config = {}) {
           ...process.env,
           ELECTRON_RUN_AS_NODE: '1',
           OPENVIKING_URL: mcpBase,
-          OPENVIKING_MCP_URL: mcpBase,
+          OPENVIKING_MCP_URL: mcpUrl,
           OPENVIKING_PEER_ID: getPeer(),
           OV_TARGET_PLUGIN: 'fleet-mesh',
           OV_DEBUG_LOG: resolve(homeDir, '.dsh', 'dsh-plugin-openviking-fleet-proxy.log')
