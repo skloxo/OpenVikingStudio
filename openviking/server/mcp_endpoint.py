@@ -2853,6 +2853,394 @@ async def openviking_skill_evolution_pipeline(
         )
 
 
+# ===========================================================================
+# 战地核心工具原生实现 (消除 HTTP 自身回环自锁与 CLI 依赖)
+# ===========================================================================
+
+def _safe_resolve_target_uri(target_uri: str, ctx: RequestContext) -> str:
+    """容错解析 target_uri：兼容本地物理文件与标准 viking://resources/... 格式。"""
+    raw = (target_uri or "").strip()
+    if not raw:
+        return ""
+    from pathlib import Path
+    p = Path(raw)
+    if p.exists() and p.is_file():
+        return str(p)
+    if not raw.startswith("viking://"):
+        raw = f"viking://resources/{raw.lstrip('/')}"
+    try:
+        return _resolve_mcp_workspace_uri(raw, ctx)
+    except Exception:
+        return raw
+
+
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_code_outline(target_uri: str) -> str:
+    """提取代码或知识文件的符号结构大纲（函数、类、主要章节等）。"""
+    service = get_service()
+    ctx = _get_ctx()
+    resolved_uri = _safe_resolve_target_uri(target_uri, ctx)
+    try:
+        overview_data = await service.fs.overview(resolved_uri, ctx=ctx)
+        if isinstance(overview_data, str) and overview_data.strip():
+            return overview_data
+        elif isinstance(overview_data, dict):
+            import json
+            return json.dumps(overview_data, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+    try:
+        text = await service.fs.read_visible(resolved_uri, ctx=ctx)
+        lines = text.splitlines()[:100]
+        return "\n".join(lines)
+    except Exception as e:
+        return f"Error reading outline for {target_uri}: {e}"
+
+
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_code_search(query: str, target_uri: str = "viking://") -> str:
+    """基于 AST 与语义检索代码符号（函数、类、变量等）。"""
+    service = get_service()
+    ctx = _get_ctx()
+    resolved_uri = _resolve_mcp_workspace_uri(target_uri, ctx) if target_uri and target_uri != "viking://" else None
+    try:
+        results = await service.find(query=query, target_uri=resolved_uri, ctx=ctx)
+        if hasattr(results, "resources") or hasattr(results, "memories"):
+            return await _format_search_result(results, service=service, ctx=ctx, limit=10)
+        import json
+        return json.dumps(results, ensure_ascii=False, indent=2) if results else f"No code symbols found for '{query}'"
+    except Exception as e:
+        return f"Error searching code: {e}"
+
+
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_code_expand(target_uri: str, symbol: str = "") -> str:
+    """返回文件源码或指定符号的完整实现切片。"""
+    service = get_service()
+    ctx = _get_ctx()
+    resolved_uri = _resolve_mcp_workspace_uri(target_uri, ctx)
+    try:
+        content = await service.fs.read_visible(resolved_uri, ctx=ctx)
+        if not symbol or not symbol.strip():
+            return content
+        sym = symbol.strip()
+        lines = content.splitlines()
+        matched_idx = -1
+        for idx, line in enumerate(lines):
+            if sym in line:
+                matched_idx = idx
+                break
+        if matched_idx >= 0:
+            start_line = max(0, matched_idx - 10)
+            end_line = min(len(lines), matched_idx + 60)
+            slice_lines = lines[start_line:end_line]
+            return f"=== Symbol '{sym}' slice ({start_line+1}-{end_line}) ===\n" + "\n".join(slice_lines)
+        return content
+    except Exception as e:
+        return f"Error expanding symbol in {target_uri}: {e}"
+
+
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_diff(source_uri: str, target_uri: str) -> str:
+    """纯 Python 快速比对两个资源或文件的内容差异 (Unified Diff)，零外部依赖。"""
+    import difflib
+    from pathlib import Path
+    service = get_service()
+    ctx = _get_ctx()
+
+    async def _get_text(uri_or_path: str) -> str:
+        p = Path(uri_or_path)
+        if p.exists() and p.is_file():
+            return p.read_text(encoding="utf-8", errors="replace")
+        resolved = _safe_resolve_target_uri(uri_or_path, ctx)
+        try:
+            return await service.fs.read_visible(resolved, ctx=ctx)
+        except Exception:
+            return ""
+
+    text1 = await _get_text(source_uri)
+    text2 = await _get_text(target_uri)
+    diff_lines = list(
+        difflib.unified_diff(
+            text1.splitlines(keepends=True),
+            text2.splitlines(keepends=True),
+            fromfile=source_uri,
+            tofile=target_uri,
+        )
+    )
+    if not diff_lines:
+        return f"=== diff: No differences found between {source_uri} and {target_uri} ==="
+    return "".join(diff_lines)
+
+
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_smart_read(
+    query: str,
+    level: int = 1,
+    limit: int = 3,
+    score_threshold: float = 0.0,
+) -> str:
+    """智能读取：语义检索与多级内容聚合。支持 L0(摘要)、L1(概览结构)、L2(全文切片)。"""
+    service = get_service()
+    ctx = _get_ctx()
+    try:
+        search_res = await service.find(query=query, limit=limit, ctx=ctx)
+        items = []
+        for ctx_type, group in [("memory", getattr(search_res, "memories", [])),
+                                ("resource", getattr(search_res, "resources", [])),
+                                ("skill", getattr(search_res, "skills", []))]:
+            for item in group:
+                score = getattr(item, "score", 0.0)
+                if score >= score_threshold:
+                    items.append((ctx_type, item, score))
+        items.sort(key=lambda x: x[2], reverse=True)
+        items = items[:limit]
+        if not items:
+            return f"=== smart_read: No matching context found for '{query}' ==="
+
+        output_parts = [f"=== smart_read (Level {level}) for '{query}': {len(items)} hits ==="]
+        for ctype, m, score in items:
+            uri = getattr(m, "uri", "unknown")
+            abstract = getattr(m, "abstract", "") or "(no abstract)"
+            if level == 0:
+                output_parts.append(f"[{ctype}] {uri} (score: {score:.2f})\nAbstract: {abstract}\n")
+            elif level == 1:
+                overview = ""
+                try:
+                    overview = await service.fs.overview(uri, ctx=ctx)
+                except Exception:
+                    overview = abstract
+                output_parts.append(f"[{ctype}] {uri} (score: {score:.2f})\nOverview: {overview}\n")
+            else:
+                content = ""
+                try:
+                    content = await service.fs.read_visible(uri, ctx=ctx)
+                    if len(content) > 3000:
+                        content = content[:3000] + "\n... (truncated)"
+                except Exception:
+                    content = abstract
+                output_parts.append(f"[{ctype}] {uri} (score: {score:.2f})\nContent:\n{content}\n")
+        return "\n".join(output_parts)
+    except Exception as e:
+        return f"Error executing smart_read: {e}"
+
+
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_skills(
+    action: str = "list",
+    name: str = "",
+    description: str = "",
+    content: str = "",
+    tags: str = "",
+    target_uri: str = "viking://agent/skills",
+) -> str:
+    """感知与列出全域在册技能，或注册新技能。"""
+    import json
+    service = get_service()
+    ctx = _get_ctx()
+    act = action.lower().strip()
+    if act == "list":
+        try:
+            from openviking.server.routers.skills_helpers import _list_skills_from_root
+            skills = await _list_skills_from_root(service, ctx, target_uri or "viking://agent/skills")
+            return json.dumps({"status": "ok", "total": len(skills), "skills": skills}, ensure_ascii=False, indent=2)
+        except Exception as e:
+            return json.dumps({"status": "error", "error": str(e)}, ensure_ascii=False)
+    elif act == "add":
+        if not name or not description:
+            return json.dumps({"status": "error", "error": "add action requires name and description"}, ensure_ascii=False)
+        tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else []
+        body_text = content or f"# {name}\n\n{description}"
+        frontmatter = f"---\nname: {name}\ndescription: \"{description}\"\n"
+        if tag_list:
+            frontmatter += "tags:\n" + "\n".join(f"  - {t}" for t in tag_list) + "\n"
+        frontmatter += f"---\n\n{body_text}"
+        save_uri = f"{target_uri.rstrip('/')}/{name}/SKILL.md"
+        try:
+            await service.fs.write_file(save_uri, frontmatter, ctx=ctx)
+            return json.dumps({"status": "ok", "message": f"Skill '{name}' registered at {save_uri}"}, ensure_ascii=False)
+        except Exception as e:
+            return json.dumps({"status": "error", "error": str(e)}, ensure_ascii=False)
+    return json.dumps({"status": "error", "error": f"Invalid action: {action}. Expected: list | add"}, ensure_ascii=False)
+
+
+@mcp.tool(annotations=_RETRY_SAFE_DESTRUCTIVE_TOOL_ANNOTATIONS)
+async def openviking_link(
+    from_uri: str = "",
+    to_uris: Union[str, List[str]] = "",
+    reason: str = "",
+    link_type: str = "related_to",
+    weight: float = 1.0,
+    source: str = "",
+    target: str = "",
+) -> str:
+    """建立记忆或资源节点间的拓扑关联边。兼容 (from_uri, to_uris) 与 (source, target)。"""
+    import json
+    from openviking.storage.relations_store import RelationStore
+    service = get_service()
+    ctx = _get_ctx()
+    eff_from = resolve_path_variables(from_uri or source)
+    raw_to = to_uris or target
+    if not eff_from or not raw_to:
+        return json.dumps({"status": "error", "error": "link requires source/from_uri and target/to_uris"}, ensure_ascii=False)
+    eff_to = [resolve_path_variables(u) for u in raw_to] if isinstance(raw_to, list) else resolve_path_variables(raw_to)
+    try:
+        if hasattr(service, "relations") and service.relations:
+            await service.relations.link(eff_from, eff_to, ctx=ctx, reason=reason, link_type=link_type, weight=weight)
+        else:
+            store = RelationStore.get_instance()
+            if isinstance(eff_to, list):
+                store.add_links_batch(eff_from, eff_to, reason=reason, link_type=link_type, weight=weight)
+            else:
+                store.add_link(eff_from, eff_to, reason=reason, link_type=link_type, weight=weight)
+        return json.dumps({"status": "ok", "message": f"Linked {eff_from} -> {eff_to}"}, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({"status": "error", "error": str(e)}, ensure_ascii=False)
+
+
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_get_relations(uri: str) -> str:
+    """查询指定记忆或资源节点的出向关联图谱。"""
+    import json
+    from openviking.storage.relations_store import RelationStore
+    service = get_service()
+    ctx = _get_ctx()
+    eff_uri = resolve_path_variables(uri)
+    try:
+        if hasattr(service, "relations") and service.relations:
+            res = await service.relations.relations(eff_uri, ctx=ctx)
+        else:
+            store = RelationStore.get_instance()
+            res = store.get_outbound(eff_uri)
+        return json.dumps({"status": "ok", "result": res}, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"status": "error", "error": str(e)}, ensure_ascii=False)
+
+
+@mcp.tool(annotations=_RETRY_SAFE_DESTRUCTIVE_TOOL_ANNOTATIONS)
+async def openviking_unlink(
+    from_uri: str = "",
+    to_uri: str = "",
+    source: str = "",
+    target: str = "",
+) -> str:
+    """解绑记忆或资源节点间的关联边。"""
+    import json
+    from openviking.storage.relations_store import RelationStore
+    service = get_service()
+    ctx = _get_ctx()
+    eff_from = resolve_path_variables(from_uri or source)
+    eff_to = resolve_path_variables(to_uri or target)
+    if not eff_from or not eff_to:
+        return json.dumps({"status": "error", "error": "unlink requires from_uri and to_uri"}, ensure_ascii=False)
+    try:
+        if hasattr(service, "relations") and service.relations:
+            await service.relations.unlink(eff_from, eff_to, ctx=ctx)
+        else:
+            store = RelationStore.get_instance()
+            store.delete_link(eff_from, eff_to)
+        return json.dumps({"status": "ok", "message": f"Unlinked {eff_from} -> {eff_to}"}, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({"status": "error", "error": str(e)}, ensure_ascii=False)
+
+
+@mcp.tool(annotations=_RETRY_SAFE_DESTRUCTIVE_TOOL_ANNOTATIONS)
+async def openviking_tag(
+    target_uri: str,
+    action: str = "get",
+    tags: str = "",
+) -> str:
+    """标签管理：获取、设置或移除指定资源的语义标签。"""
+    import json
+    service = get_service()
+    ctx = _get_ctx()
+    resolved_uri = _resolve_mcp_workspace_uri(target_uri, ctx)
+    act = action.lower().strip()
+    try:
+        if act == "get":
+            meta = await service.fs.stat(resolved_uri, ctx=ctx)
+            current_tags = meta.get("tags", [])
+            return json.dumps({"status": "ok", "uri": resolved_uri, "tags": current_tags}, ensure_ascii=False)
+        elif act in ("set", "add"):
+            tag_list = [t.strip() for t in tags.split(",") if t.strip()]
+            await service.fs.set_tags(resolved_uri, tag_list, ctx=ctx)
+            return json.dumps({"status": "ok", "uri": resolved_uri, "tags": tag_list}, ensure_ascii=False)
+        elif act == "remove":
+            tag_list = [t.strip() for t in tags.split(",") if t.strip()]
+            meta = await service.fs.stat(resolved_uri, ctx=ctx)
+            current_tags = [t for t in meta.get("tags", []) if t not in tag_list]
+            await service.fs.set_tags(resolved_uri, current_tags, ctx=ctx)
+            return json.dumps({"status": "ok", "uri": resolved_uri, "tags": current_tags}, ensure_ascii=False)
+        return json.dumps({"status": "error", "error": f"Invalid action: {action}. Expected: get | set | remove"}, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({"status": "error", "error": str(e)}, ensure_ascii=False)
+
+
+# ---------------------------------------------------------------------------
+# FastMCP 双向透明别名解析器 (消除 Unknown Tool 与短名称不兼容)
+# ---------------------------------------------------------------------------
+
+def _install_aliased_tool_manager(mcp_instance: FastMCP) -> None:
+    """为 FastMCP 安装双向透明别名解析器。
+    
+    1. 彻底消灭 DSH 客户端调用短名 (code_outline) 时的 'Unknown tool: code_outline' 报错；
+    2. 允许全名 (openviking_*) 与短名 (*) 相互透明双向寻址；
+    3. 支持核心语义同义词映射 (store -> remember, ping -> health, ls -> list 等)。
+    """
+    tm = mcp_instance._tool_manager
+    if getattr(tm, "_aliasing_installed", False):
+        return
+
+    orig_get_tool = tm.get_tool
+
+    ALIAS_SYNONYMS = {
+        "store": "remember",
+        "openviking_store": "remember",
+        "list": "ls",
+        "openviking_list": "ls",
+        "delete_resource": "forget",
+        "openviking_delete_resource": "forget",
+        "ping": "health",
+        "openviking_ping": "health",
+        "harness_stats": "openviking_harness_probe",
+        "openviking_harness_stats": "openviking_harness_probe",
+        "privacy": "openviking_privacy_mask",
+        "openviking_privacy": "openviking_privacy_mask",
+    }
+
+    def _aliased_get_tool(name: str):
+        tool = orig_get_tool(name)
+        if tool is not None:
+            return tool
+
+        alt = ALIAS_SYNONYMS.get(name)
+        if alt:
+            tool = orig_get_tool(alt)
+            if tool is not None:
+                return tool
+
+        if name.startswith("openviking_"):
+            short_name = name[len("openviking_"):]
+            tool = orig_get_tool(short_name)
+            if tool is not None:
+                return tool
+            alt = ALIAS_SYNONYMS.get(short_name)
+            if alt:
+                tool = orig_get_tool(alt)
+                if tool is not None:
+                    return tool
+
+        candidate = f"openviking_{name}"
+        tool = orig_get_tool(candidate)
+        if tool is not None:
+            return tool
+
+        return None
+
+    tm.get_tool = _aliased_get_tool
+    tm._aliasing_installed = True
+
+
 # ---------------------------------------------------------------------------
 # Portable tool schemas
 # ---------------------------------------------------------------------------
@@ -2953,11 +3341,37 @@ def _register_domain_packages() -> None:
         from tools.observability import register_observability_tools
 
         existing = {t.name for t in mcp._tool_manager.list_tools()}
+        # 🛡️ 战地原生优先保护：绝对禁止用外部阻塞 HTTP / CLI 桥接函数覆盖我们内部的高性能原生异步工具
+        NATIVE_PROTECTED_TOOLS = {
+            "openviking_code_outline", "code_outline",
+            "openviking_code_search", "code_search",
+            "openviking_code_expand", "code_expand",
+            "openviking_diff", "diff",
+            "openviking_smart_read", "smart_read",
+            "openviking_skills", "skills",
+            "openviking_link", "link",
+            "openviking_get_relations", "get_relations",
+            "openviking_unlink", "unlink",
+            "openviking_tag", "tag",
+            "openviking_find", "find",
+            "openviking_search", "search",
+            "openviking_read", "read",
+            "openviking_write", "write",
+            "openviking_remember", "remember",
+            "openviking_list", "list",
+            "openviking_ls", "ls",
+            "openviking_tree", "tree",
+            "openviking_grep", "grep",
+            "openviking_glob", "glob",
+            "openviking_health", "health",
+            "openviking_forget", "forget",
+        }
+        existing.update(NATIVE_PROTECTED_TOOLS)
 
         def _dec_factory():
             def _dec(fn):
                 name = fn.__name__
-                if name not in existing:
+                if name not in existing and name.replace("openviking_", "") not in existing:
                     try:
                         mcp.tool(name=name)(fn)
                         existing.add(name)
@@ -2986,6 +3400,7 @@ def _apply_portable_schemas() -> None:
 
 _register_domain_packages()
 _apply_portable_schemas()
+_install_aliased_tool_manager(mcp)
 
 
 # ---------------------------------------------------------------------------
