@@ -136,6 +136,30 @@
 
 ### 🧬 Milestone 5-A: 半成品与悬空功能全链路真实化贯通 (Suspended Features Truthful Closure)
 
+#### 📌 [P0] [x] Card-154: 废黜 Agent-ID 强校验收敛至 User Key、RBAC 管理员双层门禁、三大原生插件精确工具投影 (34/17/2) 与 GUI 纯净重塑 (Agent-ID Deprecation, User Key SSOT, Admin RBAC Dual-Tier Gate, Exact Tool Projection 34/17/2 & Pure GUI Cockpit SSOT) ✅ (v1.7.112)
+- **类型**：鉴权底层重构 / RBAC 双层门禁 / 工具 1:1 精确投影 / 污染记忆彻底清退 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.112` ｜ **当前状态**：[x] 已验收通过 ✅ (v1.7.112)
+- **背景与第一性原理**：
+  1. **旧时代 Agent-ID 彻底废黜**：鉴权唯一真相源收口至 User Key (`resolve_identity`)。服务端 `mcp_endpoint.py` 彻底移除对 `AgentPrincipalStore` 的强校验拦截（消除未在本地登记 agent_id 即报 401 拒连问题）；清理体外大脑与全量技能历史脏记忆残留，归档 Evolution Lesson；
+  2. **RBAC 角色权限双层门禁 (Admin vs Regular User)**：在 Capabilities 与 MCP 端点双重落地 RBAC 硬门禁，`openviking-ops` (17项运维特权) 与 `fleet-mesh` (2项跨机同频工具) 必须具备管理员身份 (`role == 'admin'`) 方可接入，普通用户访问物理拦截返回 HTTP 403 Forbidden；`openviking-memory` (34项战地武器) 面向全员开放；
+  3. **三大原生插件工具 1:1 精确投影**：彻底纠偏 3070 误测出 47 项工具问题，通过去重指纹精准算法锁定原生工具列表（Memory 严格 34 项、Ops 严格 17 项、Fleet 严格 2 项），分毫不差；
+  4. **GUI 纯净重塑与过度工程切除**：彻底切除 `client.js` 界面中多余的【公网 vk.tide.red】与【本地 127.0.0.1】切换按钮，回归极简纯净 `<input>`；所有配置项默认值全部归空（零假地址、零假密钥）；
+  5. **挂起非核心任务卡片**：按指令登记 Card-157 (KeePass 体验演进) 与 Card-158 (Dify/CPA 工具机制演进) 待排期。
+- **原子工单拆解 (Tracer Bullet 细颗粒度工单)**：
+  - [x] **`TASK-154-1: 服务端废黜 agent_rec 强校验与落地 RBAC 双层门禁`**：在 `mcp_endpoint.py` 与 `client_caps.py` 废黜 `agent_rec` 强校验，增加 `auth_role != 'admin'` 403 物理拦截；
+  - [x] **`TASK-154-2: DSH 生成器切除 agentId 与 GUI 表单纯净化`**：重构 `generate_dsh_plugins.py`，彻底清除所有插件包模板中残留的 `agentId`、假地址与假密钥，支持用户纯净输入；
+  - [x] **`TASK-154-3: 全量技能与体外大脑脏记忆清理`**：更新 `openviking-plugin-ops` (SKILL.md & references/dsh.md & references/claude-desktop.md) 与 `deepseek-harness-ops`，清除 `agent_principals.db` 47 工具脏记录，删除废旧演进教训；
+  - [x] **`TASK-154-4: 独立桥接器重新打包与 SemVer 击穿缓存`**：版本自增 Memory (2.0.15), Ops (1.0.3), Fleet (1.0.3)，纯 Python 流水线重新烘焙全量 `.tgz` 产物并部署至 `public/` 与 `dist/`；
+  - [x] **`TASK-154-5: 视网膜单测与实机 Live API 100% 验证`**：更新 `test_card150_dsh_full_plugins_ecosystem.py` 5/5 全绿，运行 `test_live_api.py` 实机验证 Capabilities 与 MCP tools/list 34/17/2 纯净直出及 403 权限拦截全绿。
+- **交付物清单**：
+  - 后端鉴权与端点：[`openviking/server/mcp_endpoint.py`](file:///c:/Users/Skl/Desktop/coding/OpenVikingStudio/openviking/server/mcp_endpoint.py), [`openviking/server/routers/client_caps.py`](file:///c:/Users/Skl/Desktop/coding/OpenVikingStudio/openviking/server/routers/client_caps.py)
+  - 服务与注册表：[`openviking/service/builtin_plugins_core.py`](file:///c:/Users/Skl/Desktop/coding/OpenVikingStudio/openviking/service/builtin_plugins_core.py), [`openviking/service/plugin_probes.py`](file:///c:/Users/Skl/Desktop/coding/OpenVikingStudio/openviking/service/plugin_probes.py), [`openviking/service/plugin_registry.py`](file:///c:/Users/Skl/Desktop/coding/OpenVikingStudio/openviking/service/plugin_registry.py)
+  - 插件生成与打包：[`scripts/generate_dsh_plugins.py`](file:///c:/Users/Skl/Desktop/coding/scripts/generate_dsh_plugins.py), [`scripts/clean_dirty_memory.py`](file:///c:/Users/Skl/Desktop/coding/scripts/clean_dirty_memory.py)
+  - 视网膜单测套件：`tests/server/test_card150_dsh_full_plugins_ecosystem.py`, `scripts/test_live_api.py`
+- **交付留痕 (Verification & Evidence)**：
+  - **Git Commit**：`01d2c23fb` (`feat(plugins): Card-154 deprecate agent-id, enforce user key SSOT, admin RBAC dual-tier gate and exact tool projection 34/17/2`)
+  - **Git Tag**：`v1.7.112`
+  - **测试验证**：`test_card150_dsh_full_plugins_ecosystem.py` 5/5 全绿 (0.10s)；实机 Live 探针 Memory (34 tools), Ops (17 tools), Fleet (2 tools) 100% 吻合，普通 User 访问 Ops/Fleet 403 拦截 100% 吻合。
+
 #### 📌 [P0] [x] Card-149: 三大原生插件独立 DSH 桥接器解耦与 34 战地工具/3 Hook 严格对齐 (Native Plugins Independent DSH Bridges Decoupling & 34 Battlefield Tools SSOT) ✅ (v1.7.109)
 - **类型**：客户端桥梁物理解耦 / 34+3 纯净契约对齐 / 纯 Python 容灾打包流水线 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.109` ｜ **当前状态**：[x] 已验收通过 ✅ (v1.7.109)
 - **背景与第一性原理**：
