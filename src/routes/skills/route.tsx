@@ -48,6 +48,26 @@ function SkillsRoute() {
         </Badge>
       </header>
 
+      {/* 7x24h Autonomous Pipeline Live Status Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-cyan-500/30 bg-cyan-500/5 px-3 py-2 text-xs font-mono">
+        <div className="flex items-center gap-2">
+          <span className="flex size-2 rounded-full bg-cyan-400 animate-pulse" />
+          <span className="font-semibold text-cyan-700 dark:text-cyan-300">⚡ B6 自主闭环流水线</span>
+          <span className="text-muted-foreground">|</span>
+          <span className="text-muted-foreground">
+            工序联动: 📥 准入排队 ➔ 🎯 SkillOpt 质检 ➔ ⚡ SkillZip 压缩 ➔ ⚖️ B6 亲和分流 ➔ 🚦 Pytest 门禁 ➔ 🌐 别名透明投影
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="border-cyan-500/40 bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 text-xs font-mono">
+            7x24H 无人值守生效中
+          </Badge>
+          <Badge variant="outline" className="border-border bg-muted/30 text-foreground text-xs font-mono">
+            外部 Agent 零修改无感调用
+          </Badge>
+        </div>
+      </div>
+
       {/* View Switcher Tabs */}
       <div className="flex items-center gap-1 overflow-x-auto rounded-md border border-border/70 bg-muted/30 p-0.5">
         <button

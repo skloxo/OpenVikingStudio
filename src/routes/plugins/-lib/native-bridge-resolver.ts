@@ -200,7 +200,7 @@ export function resolvePluginBridgeConfig(
   // 4. 原生 Ops 系统运维治理
   if (id.includes('ops')) {
     const pkgName = 'dsh-plugin-openviking-ops'
-    const version = '1.0.1'
+    const version = '1.0.3'
     const tarballUrl = `https://vk.tide.red/studio/${pkgName}-${version}.tgz`
     const installCmd = `npm install ${tarballUrl}`
     const dshPatch = `plugins:
@@ -258,7 +258,7 @@ export function resolvePluginBridgeConfig(
   // 5. 原生 Fleet 卫星同频
   if (id.includes('fleet')) {
     const pkgName = 'dsh-plugin-openviking-fleet'
-    const version = '1.0.1'
+    const version = '1.0.3'
     const tarballUrl = `https://vk.tide.red/studio/${pkgName}-${version}.tgz`
     const installCmd = `npm install ${tarballUrl}`
     const dshPatch = `plugins:
@@ -315,7 +315,7 @@ export function resolvePluginBridgeConfig(
 
   // 6. 原生 Memory 核心长程记忆与代码战地 (默认)
   const pkgName = 'dsh-plugin-openviking-memory'
-  const version = '2.0.13'
+  const version = '2.0.15'
   const tarballUrl = `https://vk.tide.red/studio/${pkgName}-${version}.tgz`
   const installCmd = `npm install ${tarballUrl}`
   const dshPatch = `plugins:
