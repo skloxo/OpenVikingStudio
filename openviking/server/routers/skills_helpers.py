@@ -153,6 +153,36 @@ def _parse_abstract_meta(abstract: str) -> Dict[str, Any]:
 
 
 def _skill_summary_from_meta(name: str, root_uri: str, meta: Dict[str, Any]) -> Dict[str, Any]:
+    is_bundle = False
+    scenario_count = 0
+    scenarios: list[str] = []
+    parent_bundle: Optional[str] = None
+
+    for base in [
+        FilePath("/home/skloxo/.openviking/data/viking/default/agent/skills"),
+        FilePath("/home/skloxo/.openviking/data/viking/default/user/default/skills"),
+    ]:
+        p = base / name
+        sc_dir = p / "scenarios"
+        mod_dir = p / "modules"
+        if sc_dir.is_dir() or mod_dir.is_dir():
+            is_bundle = True
+            if sc_dir.is_dir():
+                sc_files = [f.stem for f in sc_dir.glob("*.md")]
+                scenario_count = len(sc_files)
+                scenarios = sc_files
+            break
+
+    if not is_bundle:
+        try:
+            from openviking.service.skill_aliasing_router import SkillAliasingRouter
+            router = SkillAliasingRouter()
+            alias_map = router.get_alias_map()
+            if name in alias_map:
+                parent_bundle = alias_map[name].get("bundle")
+        except Exception:
+            pass
+
     return {
         "type": "skill",
         "name": name,
@@ -163,6 +193,11 @@ def _skill_summary_from_meta(name: str, root_uri: str, meta: Dict[str, Any]) -> 
         "triggers": meta.get("triggers") or [],
         "tags": meta.get("tags") or [],
         "allowed_tools": meta.get("allowed_tools") or meta.get("allowed-tools") or [],
+        "is_bundle": is_bundle,
+        "scenario_count": scenario_count,
+        "scenarios": scenarios,
+        "parent_bundle": parent_bundle,
+        "is_absorbed": bool(parent_bundle),
     }
 
 

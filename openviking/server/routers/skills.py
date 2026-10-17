@@ -315,12 +315,14 @@ async def get_skill(
             details={"field": "level", "allowed": [0, 1, 2]},
         )
     service = get_service()
+    from openviking.service.skill_aliasing_router import EXPLICIT_ALIASES
+    effective_name = EXPLICIT_ALIASES.get(skill_name, skill_name)
     try:
-        root_uri = await _require_skill(service, _ctx, skill_name, target_uri)
+        root_uri = await _require_skill(service, _ctx, effective_name, target_uri)
         result = await _read_skill_detail(
             service,
             _ctx,
-            skill_name=skill_name,
+            skill_name=effective_name,
             root_uri=root_uri,
             include_content=include_content,
             include_files=include_files,
@@ -328,6 +330,9 @@ async def get_skill(
             include_source=include_source,
             level=level,
         )
+        if result and isinstance(result, dict) and skill_name != effective_name:
+            result["alias_of"] = effective_name
+            result["requested_name"] = skill_name
     except Exception as exc:
         # Fallback to SkillAliasingRouter virtual projection
         from openviking.service.skill_aliasing_router import SkillAliasingRouter
