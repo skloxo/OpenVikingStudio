@@ -73,6 +73,7 @@ from openviking.server.routers import (
     snapshot_router,
     stats_router,
     system_router,
+    client_caps_router,
     tasks_router,
     user_settings_router,
     valet_router,
@@ -404,6 +405,11 @@ def create_app(
         entropy_watchdog = get_entropy_watchdog()
         entropy_watchdog.start(task_tracker)
 
+        # Start SkillAutonomousPipeline automated daemon (7x24h Unattended Pipeline)
+        from openviking.service.skill_autonomous_pipeline import get_skill_autonomous_pipeline
+        skill_pipeline = get_skill_autonomous_pipeline()
+        skill_pipeline.start(interval_seconds=30)
+
         # Initialize tracing and OTLP log export from server.observability.
         from openviking.telemetry import tracer_module
 
@@ -426,6 +432,7 @@ def create_app(
         await shutdown_metrics_async(app=app)
         task_tracker.stop_cleanup_loop()
         entropy_watchdog.stop()
+        skill_pipeline.stop()
         auth_plugin_state = getattr(app.state, "auth_plugin", None)
         if auth_plugin_state is not None:
             try:
@@ -715,6 +722,7 @@ def create_app(
 
     # Register routers
     app.include_router(system_router)
+    app.include_router(client_caps_router)
     app.include_router(acl_router)
     app.include_router(admin_router)
     app.include_router(agents_router)
@@ -936,6 +944,18 @@ def create_app(
             # If a missing asset (.js, .css, etc.) is requested, return 404 so
             # the browser module loader can trigger vite:preloadError reload
             # instead of receiving index.html and throwing a syntax error.
+            # 兼容从 /studio/dsh-plugin-*.tgz 下载
+            if path.endswith(".tgz") and ("dsh-plugin-openviking" in path or "plugin" in path):
+                clean_name = Path(path).name
+                for candidate_dir in (_studio_root, _studio_root.parent / "public"):
+                    candidate_file = candidate_dir / clean_name
+                    if candidate_file.is_file():
+                        return FileResponse(
+                            candidate_file,
+                            media_type="application/gzip",
+                            headers={"Cache-Control": "no-cache, must-revalidate"}
+                        )
+
             try:
                 requested = (_studio_root / path).resolve()
             except OSError:
@@ -960,6 +980,21 @@ def create_app(
                 raise HTTPException(status_code=404, detail="Static asset not found")
 
             return _studio_response(_studio_index, immutable=False)
+
+        @app.api_route("/{filename:path}", methods=["GET", "HEAD"], include_in_schema=False)
+        async def _root_direct_tgz_handler(filename: str):
+            # 兼容客户端从根路径下载 dsh-plugin-openviking-*.tgz 安装包
+            if filename.endswith(".tgz") and ("dsh-plugin-openviking" in filename or "plugin" in filename):
+                clean_name = Path(filename).name
+                for candidate_dir in (_studio_root, _studio_root.parent / "public"):
+                    candidate_file = candidate_dir / clean_name
+                    if candidate_file.is_file():
+                        return FileResponse(
+                            candidate_file,
+                            media_type="application/gzip",
+                            headers={"Cache-Control": "no-cache, must-revalidate"}
+                        )
+            raise HTTPException(status_code=404, detail="File not found")
 
         logger.info("Web Studio mounted at /studio from %s", _studio_root)
     else:

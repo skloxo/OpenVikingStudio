@@ -2,13 +2,37 @@
 
 > **关联研发大蓝图**：[`BLUEPRINT.md`](file:///home/skloxo/aho/openclaw/project/.agents/BLUEPRINT.md) ｜ **交付全量归档台账**：[`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md) ｜ **通用资产档案库**：[`COMPONENT_AND_WHEEL_INVENTORY.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md) ｜ **👁️ 人工验收测试指南**：[`docs/HUMAN_ACCEPTANCE_TESTING.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/HUMAN_ACCEPTANCE_TESTING.md)
 > **唯一真相源 (SSOT)**：本文档为 OpenViking 当前活跃的重构规划与就绪待调度的任务矩阵看板。历史所有已验收交付的版本履历（Milestone 1~4 全量 19 张 Task Cards 及前序波次）已完整归档至 [`DELIVERY_ARCHIVE.md`]- **线上正式部署版本**：**`v1.4.106`**（物理访问地址：`vk.tide.red/studio/home`，已实机验证）；
-- **当前最新交付版本**：**`v1.7.86`**（Tag: `v1.7.86`，DSH cordis.patch.yml 插件原生规范对齐、挂载指引澄清，检索纯净度门禁落地，双端探针 HTTP 200 验活）；
+- **当前最新交付版本**：**`v1.7.118`**（Tag: `v1.7.118`，技能中心 19+ 领域能力大包物理固化、准入流水线实时看板与三态层级重构，彻底解决散装技能入库无感知与大包不可见痛点）；
 - **历史里程碑详单检索**：如需查阅 Milestone 1~4 及早期版本修改清单与架构细节，请点击跳转至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。
 
 | 版本 Tag      | 任务工单 ID | 模块与重构主题                                                                                                                                                | 核心治理成果与物理交付物                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |     验收状态      |
 | :------------ | :---------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------: |
+| **`v1.7.118`** | **Card-154** | **技能中心 19+ 领域能力大包物理固化、准入流水线实时看板与三态层级重构 (Skills Active Ingestion Pipeline Cockpit, 19+ Capability Bundles Physical Materialization & 3-Tier Hierarchy SSOT)** | 1. **散装技能入库前无感知彻底根治 (`ActiveIngestionView`)**：打造上线专职实时流水线看板，直连 `/api/v1/skills/ingestion/queue?limit=50` 真实后端任务流；提供 6 态状态过滤与指标总览（排队、质检评估、暂存待熔炼、已结晶入库、门禁打回）；展开卡片直接呈现 SkillOpt 综合质检评分 (如 85.0/100) 及 SOP/工具/IO/容错四维细项与推荐归属母包，提供一键推进流水线批处理与重试自愈；<br>2. **19+ 核心领域能力大包物理固化落盘**：将此前停留在暂存区的 18 个领域大包全量物理固化至 VikingFS 技能底座（`agent/skills/`），包含 `ai-harness-ops`、`cloud-infra-ops`、`cockpit-ui`、`codebase-engineering`、`quant-trading`、`developer-productivity`、`credential-vault`、`openviking` 等全部核心母包；全量配备标准 `modules/`、`scenarios/`（吸纳留存 826 项专精工序）与 `ABSORPTION_PROVENANCE.json` 溯源系谱；<br>3. **后端大包与从属关系识别自愈**：修复 `skills_helpers.py` 中元组解构报错（`AttributeError`），使母包卡片打上 `📦 领域大包 · X工序` 徽章，散装工序打上 `🔗 属: {parent_bundle}` 标签并支持别名透明路由；<br>4. **502 稳定性自愈防护**：在 `SkillLoader.parse` 与路由层加入 YAML Frontmatter 冒号自动容错解析，彻底消灭服务循环重启与 502 崩溃；<br>5. **范式 A 门禁验证与实机交付**：`security_check.py` 13402 文件零泄露 PASS，`anti_demo_gate.py` 231 组件零伪造 PASS，Vite Build 生产编译打包成功，服务探针 `/health` HTTP 200 返回 `v1.7.118`，打标 Git Tag `v1.7.118`。 | [x] 已验收通过 ✅ |
+| **`v1.7.117`** | **Card-153** | **服务端内部工具自锁根治、战地工具全域原生化与 FastMCP 双向别名闭环 (Native Battlefield Tools In-Process Migration & FastMCP Bidirectional Aliasing SSOT)** | 1. **根治 30 秒自反向死锁与回环阻塞**：彻底切除 `mcp_endpoint.py` 舍近求远从 `mcp-openviking/tools` 引入阻塞式同步 HTTP 回环客户端的做法；在服务端内部原生落地 10 项核心战地工具（`code_outline`, `code_expand`, `code_search`, `diff`, `smart_read`, `skills`, `link`, `get_relations`, `unlink`, `tag`），纯异步直接调用 `service.fs.overview`、`service.find`、`service.relations`，响应耗时从 30,000ms（超时）直降至 **10~270ms**，零网络回环死锁；<br>2. **FastMCP 双向透明别名解析器 (`_install_aliased_tool_manager`)**：为 FastMCP 注入别名拦截器，支持短名称（如 `code_outline`）与全名称（`openviking_code_outline`）双向透明映射，并内建核心语义同义词路由（`store` -> `remember`, `ping` -> `health`, `ls` -> `list`），彻底铲除客户端报错 `Unknown tool: xxx`；<br>3. **纯 Python 统一 Diff 比对**：`diff` 工具采用标准库 `difflib.unified_diff`，彻底摆脱外部 CLI 二进制依赖与卫星模式报错；<br>4. **双向入参容错兼容**：`link` / `unlink` 深度兼容 `(source, target)` 与 `(from_uri, to_uris)`，`_safe_resolve_target_uri` 自动容错本地路径与 Viking URI；<br>5. **范式 A 门禁验证与实机探针 100% PASS**：新增 `test_card153_native_tools_and_aliasing.py` 5/5 全绿，Card-152 回归 4/4 全绿，前端 Vite 构建 20.01s PASS，Live 服务端 1933 端口实机探针 5 项全部毫秒级成功通过，打标 Git Tag `v1.7.117`。 | [x] 已验收通过 ✅ |
+| **`v1.7.116`** | **Card-152** | **write 工具 0 字节写入未持久化物理根因治理 (物理存在性门禁穿透 + 往返一致性验真 + MCP 诚实回显 - write 0-Byte NOOP Physical Persistence Fix, Round-Trip Verification & Honest Telemetry SSOT)** | 1. **直击 3070 节点 260 步绕路排查的物理根因**：在 3070 节点 DSH 实测中，智能体执行 `openviking_write` 写入巡检报告时，底层的 `EntropyGatekeeper` 因历史同类巡检文档判定相似度高，返回 `action="noop"`；但 `content_write.py` 未校验目标文件在磁盘上是否存在，导致目标文件从未被创建；上层 MCP 误将 0 字节回显为 `"Wrote 0 bytes to ... (mode=replace)"`；智能体随后调用 `openviking_read` 触发 `NotFoundError`，引发 260 步排错混乱；<br>2. **物理磁盘真实性第一性原理 (Physical Truth First Principle)**：NOOP（拦截写盘）的前提公理是：目标文件在物理磁盘上**必须已存在且内容完全一致**；若目标文件在物理磁盘上根本不存在，任何基于相似度的 NOOP 拦截都属于严重缺陷；<br>3. **协调层双保险穿透与 MCP 诚实回显**：在 `content_write.py` 中通过 `_safe_stat` 和 `read_file` 严格校验目标文件的物理存在性与内容一致性，缺失或变动一律强制覆盖落盘；在 `mcp_endpoint.py` 中设置 `skip_gatekeeper` 规避重复拦截，对真正的 NOOP 返回明确的印证去重提示，彻底终结“Wrote 0 bytes”误报；<br>4. **范式 A 门禁验证**：4/4 Card-152 专项测试 PASS，23/23 核心回归测试 PASS，Vite 生产构建 PASS (18.81s)，服务探针 200 OK。 | [x] 已验收通过 ✅ |
+| **`v1.7.115`** | **Card-151** | **DSH 插件三位一体生态重构 (说明书装箱随包分发 + 激活即注入作战手册 + 彻底切除过度工程化单选按钮 - DSH Plugins Skill Bundling, Zero-Sec Handover & GUI Cleanse SSOT)** | 1. **技能作战说明书随包装箱分发 (`SKILL.md`)**：为四大原生插件（`openviking-memory`, `openviking-ops`, `fleet-mesh`, `openviking` 别名）编写高密专属 `SKILL.md`，完整收录工具真名、输入入参格式、返回值规范与最佳 SOP，纳入 `package.json` 的 `files` 数组随不可变 `.tgz` 一并下载，彻底消灭“只给飞机大炮不给说明书沦为废铁”的痛点；<br>2. **激活第一时间满血注脑 (`systemPrompt.context`)**：重构 `index.js`，智能体安装激活插件的第 0 毫秒，运行时动态读取并全文注入整份作战说明书，包含严禁自写 Python 脚本盲跑测试的负向规则，根除智能体盲写脚本逆向 260 步；<br>3. **彻底切除过度工程化单选按钮**：彻底删除 Web Studio 中 `NativeBridgeIntegrationGuide` 和 `SearchIntegrationGuide` 中画蛇添足的【公网 (vk.tide.red)】与【本地内网 (127.0.0.1:1933)】切换按钮，服务端地址自适应当前中枢，纯粹干净展示；<br>4. **打包流水线校验与 7 大不可变 `.tgz` 产物**：升级 `pack_dsh_plugin.py` 强制校验 `SKILL.md` 存在性，全量重新生成并同步至 `public/` 与 `dist/`，Vite Build 生产构建 23.55s 零报错全绿通过。 | [x] 已验收通过 ✅ |
+| **`v1.7.113`** | **Card-155** | **增量技能自适应分流、7x24h 无人值守自愈流水线中枢、智能虚拟投影网关与技能大盘脱虚向实 (Autonomous Skill Pipeline, Ante-Gate Adaptive Routing, 7x24h Daemon Loop & Virtual Projection Gateway SSOT)** | 1. **大包统辖与智能别名虚拟投影网关 (`SkillAliasingRouter`)**：彻底化解 18 个领域大包与 54 个存量工序的结构性矛盾，坚守“纳管而非一刀切删除”原则。建立大包子场景动态索引与透明别名映射；在 `get_skill` 接口底层注入虚拟投影回退，外部智能体（Hermes、OpenClaw、Claude）请求单体工序名（如 `cellular-cpe-ops`）100% 透明返回 HTTP 200 与完整源码，实现零破坏平滑过渡；<br>2. **7x24h 无人值守自动化自愈流水线 (`SkillAutonomousPipeline`)**：切除顶部 12 道工序“等人类点按钮”的悬空半成品状态；串联 5 阶闭环传送带（SQLite 认领 -> AST 门禁 -> SkillOpt 评分 >= 70 -> SkillZip 契约压缩 40%~60% Token -> B6 智能分流 -> 别名表刷新）；在 FastAPI `lifespan` 挂载后台常驻守护循环（每 30 秒自动巡检与消化）；<br>3. **动态增量分流与容量裂变 (Adaptive Ante-Gate)**：升级 B6 亲和度指纹审计，增量技能按领域亲和度自动归并现有大包插槽；低亲和度自动自立新包；单包满 100 项触发细胞分裂；<br>4. **技能中心前端脱虚向实与纯观测大盘重塑**：彻底切除虚假 `-- (0/54 活跃)`，改为展示真实大包纳管与虚拟别名就绪事实；新增【⚡ B6 自主闭环流水线 7x24h 自动化自愈状态卡片】，实时观测流水线指标与守护状态，升维为纯观测实时审计大盘；<br>5. **全绿测试与实机交付**：单元测试 5/5 全绿，回归测试 18/18 全绿，生产构建 Vite Build 18.81s PASS，Live 服务端探针与实机 API 验证 100% 变绿通过，打标 Git Tag `v1.7.113`。 | [x] 已验收通过 ✅ |
+| **`v1.7.112`** | **Card-154** | **废黜 Agent-ID 强校验收敛至 User Key、RBAC 管理员双层门禁、三大原生插件精确工具投影 (34/17/2) 与 GUI 纯净重塑 (Agent-ID Deprecation, User Key SSOT, Admin RBAC Dual-Tier Gate, Exact Tool Projection 34/17/2 & Pure GUI Cockpit SSOT)** | 1. **旧时代 Agent-ID 彻底废黜与脏记忆清理**：鉴权唯一真相源全面收口至 User Key (`resolve_identity`)，服务端彻底移除对 `AgentPrincipalStore` 的强校验拦截（根治未在本地登记 agent_id 即报 401 拒连问题）；清理体外大脑历史脏记忆残留，归档 Evolution Lesson 经验教训；<br>2. **RBAC 角色权限双层门禁 (Admin vs Regular User)**：在 Capabilities 与 MCP 端点双重落地 RBAC 硬门禁，`openviking-ops` (17项运维特权) 与 `fleet-mesh` (2项跨机同频工具) 必须具备管理员身份 (`role == 'admin'`) 方可接入，普通用户访问物理拦截返回 HTTP 403 Forbidden；`openviking-memory` (34项战地武器) 面向全员开放；<br>3. **三大原生插件工具 1:1 精确投影**：彻底纠偏 3070 误测出 47 项工具问题，通过去重指纹精准算法锁定原生工具列表（Memory 严格 34 项、Ops 严格 17 项、Fleet 严格 2 项），分毫不差；<br>4. **GUI 纯净重塑与过度工程切除**：彻底切除 `client.js` 界面中多余的【公网 vk.tide.red】与【本地 127.0.0.1】切换按钮，回归极简纯净 `<input>`；所有配置项默认值全部归空（零假地址、零假密钥）；<br>5. **挂起非核心任务卡片**：按指令登记 Card-157 (KeePass 体验演进) 与 Card-158 (Dify/CPA 工具机制演进) 待排期；<br>6. **范式 A 工业级流水线与全绿闭环**：重新烘焙三大原生插件版本（Memory 2.0.14, Ops 1.0.2, Fleet 1.0.2），实机测试 Capabilities、MCP tools/list 与 403 权限门禁 100% 变绿通过，服务重启验证通过，Git 提交打标 Tag `v1.7.112`。 | [x] 已验收通过 ✅ |
+| **`v1.7.111`** | **Card-153** | **全系 7 大插件 SemVer 版本自增、击穿 DSH 不可变 Tarball 缓存与系统级生态对齐 (Full 7 Plugins SemVer Bump, Immutable Tarball Cache Busting & Ecosystem Alignment SSOT)** | 1. **击穿 pnpm 不可变 Tarball 缓存**：针对 DSH 在安装更新后插件时由于 Tarball 内容变更但版本未自增触发的 `ERR_PNPM_MISSING_TARBALL_INTEGRITY` 错误，全面自增全系 7 大插件包 SemVer 版本号（`openviking-memory` -> `2.0.13`, `openviking-ops` -> `1.0.1`, `openviking-fleet` -> `1.0.1`, `openviking` 兼容别名 -> `2.0.13`, `keepass-vault` -> `1.0.2`, `dify` -> `1.0.1`, `cpa` -> `1.0.1`），彻底击穿本地 pnpm lockfile 缓存冲突；<br>2. **前后端与生成器全域对齐**：同步更新 `scripts/generate_dsh_plugins.py`、前端独立桥接解析器 `native-bridge-resolver.ts`、后端服务 `plugin_registry.py` 及系统版本 `_version.py` / `package.json` (`1.7.111`)；<br>3. **全量重新生成与打包**：重新烘焙生成 7 大独立插件包，验证 7 个全新版本 `.tgz` 包在 `public/` 与 `dist/` 中非空完整存在；<br>4. **视网膜门禁全绿**：更新 `test_card150_dsh_full_plugins_ecosystem.py` 专项断言，Pytest 17 项全绿，Vite 生产构建编译成功；<br>5. **范式 A 工业级流水线闭环**：同步至 WSL 仓库与 Live 生产服务目录，重启服务验证 HTTP 200 与静态包下载，Git 提交打标 Tag `v1.7.111` 并推送远程。 | [x] 已验收通过 ✅ |
+| **`v1.7.110`** | **Card-150** | **DSH 全系插件 Slots GUI 配置面板恢复、KeePass 组合包合规与 Dify/CPA 专属桥接器彻底去伪交付 (DSH Full Plugins Slots GUI Restoration, KeePass Bundle Compliance & Dify/CPA Dedicated Bridges SSOT)** | 1. **Slots GUI 配置面板全面恢复**：在全系独立插件的 `client.js` 中恢复 DSH 官方标准的 `ctx.slots.inject('plugins.bundle.config', () => ctx.slots.register({ name: 'plugins.bundle.config', key: '<pkg_name>' }, Panel))`，并声明 `return { inject: ['slots'], apply }`，彻底根治安装插件后只显示单组件运行开关、缺失【接口地址】与【UserKey】及【连通性测试】面板的严重退化；<br>2. **KeePass 组合包合规**：在 `dsh-plugin-keepass-vault` 的 `package.json` 中补齐 `"dsh": { "bundle": { "patch": "./cordis.patch.yml" } }` 与 `cordis.patch.yml`，彻底消除 DSH 安装拦截报错 `这个包没有声明组合包，不能作为插件管理`；<br>3. **去伪存真独立解耦**：彻底切除 Web Studio 抽屉接入 Tab 冒名为 `dsh-plugin-openviking-memory` 的历史 fallback，提纯独立解析器 `native-bridge-resolver.ts`，精准直出 `dsh-plugin-dify` (1.0.0) 与 `dsh-plugin-cpa` (1.0.0) 专属包名与配置；<br>4. **KeePass 零云端依赖定位纠偏**：纠偏服务端探针 `probe_keepass` 逻辑，明确 KeePass 为纯本地私有凭据库，云端仅托管安装包，探针恒定返回健康 `healthy`，消除误报“状态异常”；<br>5. **全系 7 大独立插件全量打包**：升级 `pack_dsh_plugin.py` 与 `generate_dsh_plugins.py`，全量烘焙并同步 7 大插件 `.tgz` 产物至 `public/` 与 `dist/`，新增专项测试全绿，生产构建全绿交付 `v1.7.110`。 | [x] 已验收通过 ✅ |
+| **`v1.7.109`** | **Card-149** | **三大原生插件独立 DSH 桥接器解耦与 34 战地工具/3 Hook 严格对齐 (Native Plugins Independent DSH Bridges Decoupling & 34 Battlefield Tools SSOT)** | 1. **DSH 桥接器物理解耦为 3 个独立包**：彻底打破历史单包混杂与越权污染，生成 3 个专属独立的 DSH 插件包：`dsh-plugin-openviking-memory` (专属 34 工具 + 3 Hook，纯净无搜索/KeePass 噪音)、`dsh-plugin-openviking-ops` (专属 17 工具 + 2 Hook)、`dsh-plugin-openviking-fleet` (专属 2 工具 + 1 Hook) 及兼容别名包；<br>2. **后端能力路由精准隔离**：重构 `client_caps.py`，支持 `plugin_id` 精准路由。传入 `openviking-memory` 时 100% 仅返回 34 项战地武器与 3 项核心 Hook，彻底切除搜索和 KeePass 跨插件污染；<br>3. **纯 Python 容灾构建流水线**：升级 `pack_dsh_plugin.py`，针对 Windows 宿主无全局 npm 的物理现状实现纯 Python tarfile 打包引擎，一键烘焙并部署全量 `.tgz` 产物至 `public/` 与 `dist/`；<br>4. **前端接入指南动态感知**：`native-bridge-integration-guide.tsx` 动态直出所选插件专属包名与接入配置；<br>5. **范式 A 双端同频与全绿门禁**：专项单测 5/5 全绿，回归测试 18/18 全绿，Vite 构建 0 报错，服务探针 200 OK 交付 `v1.7.109`。 | [x] 已验收通过 ✅ |
+| **`v1.7.108`** | **Card-152** | **全域历史遗留死代码与悬空组件深度大扫除 (Global Dead Code & Abandoned Components Purge SSOT)** | 1. **彻底物理铲除 30+ 历史悬空死文件**：物理删除 `src/routes/agents/` 下整套废弃组件与库 (24 个死文件)、`src/routes/users/` 遗留的 `client-install-tab.tsx` 与伪 ACL 矩阵 `tool-acl-matrix.tsx` (80KB)、悬空导航栏 `Navbar.tsx`、悬空对话标题生成器 `generate-title.ts`、悬空时间轴 `version-timeline-dialog.tsx` 与工单全景 `pipeline-steps-panorama.tsx` (共清退 300+ KB 冗余代码)；<br>2. **根除代码回潮与幽灵导入**：切除一切已废弃界面的历史残留，防止后续 Agent 误读误引，保障代码库单一真相源 (SSOT) 纯度；<br>3. **范式 A 双端镜像同频与全绿验证**：全量代码与 WSL Git 仓/生产目录物理对齐，Vite 构建编译全绿 (0 报错)，服务探针 200 OK 交付 `v1.7.108`。 | [x] 已验收通过 ✅ |
+| **`v1.7.107`** | **Card-151** | **用户列表操作列旧插件装配按钮彻底铲除与双端代码物理镜像同频治理 (User Table Legacy Plugin Button Purge & Full Sync Pipeline SSOT)** | 1. **直击物理根因**：排查发现 Windows 本地 `src/routes/users` 早已切除【插件装配】按钮，但此前流水线同步清单缺失 `src/routes/users`，导致 WSL 仓库一直残留旧源码，每次打包都将旧版操作列打包进 `dist/`；<br>2. **死代码与遗留组件物理铲除**：完全镜像同步 Windows 纯净代码至 WSL，物理清除 WSL 仓中的 4 个旧抽屉遗留死代码文件；<br>3. **用户列表彻底纯粹化**：操作列仅保留删除按钮，点击整行滑出纯粹的用户身份与 User API Key 复制面板，彻底终结反复回潮；<br>4. **范式 A 重新编译与发版**：Vite 重新构建，清除 dist 脏缓存，服务探针 200 OK 验证 `v1.7.107`。 | [x] 已验收通过 ✅ |
+| **`v1.7.106`** | **Card-148** | **抽屉“全景全貌”去冗重塑、四维能力矩阵快速导览与真实用户密钥去伪治理 (Plugin Drawer Overview Decoupling & Real User Key SSOT)** | 1. **全景抽屉去冗重塑**：彻底切除“全景全貌”Tab 自顶向下平铺全部子 Tab（工具池/Hook拦截/技能/接入指南/GUI配置）的机械堆叠；提纯独立规格组件 `plugin-overview-tab.tsx`（185 行，黄金甜点区），落地高密四维能力矩阵 4 宫格卡片，点击一键跳转对应专属 Tab；<br>2. **子 Tab 互斥渲染**：各专属 Tab（MCP工具、Hook拦截、技能导轨、客户端接入、GUI参数）单一职责互斥渲染，消灭任何内容重复；`plugin-detail-drawer.tsx` 从 404 行压缩至 356 行；<br>3. **用户密钥真实性治理与去伪**：彻底切除 `native-bridge-integration-guide.tsx` 中 `vk-user-key-xxxx` 硬编码假占位符；通过 `useAppConnection()` 真实读取当前连接密钥；未检测到有效 Key 时，优雅展示友好警示卡片并提供【前往用户列表查看与复制专属密钥 ➔】直达链接，Prompt 中使用 `<YOUR_USER_KEY>` 明确标识；<br>4. **范式 A 门禁验证**：新增 `plugin-drawer-governance.test.tsx` 3/3 单测全绿，Vite 构建打包成功，服务端探针 200 OK 交付。 | [x] 已验收通过 ✅ |
+| **`v1.7.105`** | **Card-144 (治理)** | **非 Admin 特权模式下操作插件返回 403 友好拦截与气泡告警及抽屉解耦 (Non-Admin 403 Friendly Toast Guard & Drawer Decoupling SSOT)** | 1. **权限守卫中枢独立化**：新建 `plugin-auth-guard.ts`（105 行，黄金甜点区），确立 `isPrivilegedPlugin`（`openviking-ops`）与 `isPrivilegedTool`（`category === 'ops'` 或 `is_dangerous`）判定规则；<br>2. **卡片与抽屉权限状态透出**：在 `plugin-quad-card.tsx` 中为非 Admin 访问特权插件展示【需 Admin 特权】微徽章；在 `plugin-detail-drawer.tsx` 顶部增设身份模式提示条（展示当前处于 Admin 授权还是普通用户受限模式）；<br>3. **点击阻断与友好 403 气泡拦截**：非 Admin 模式下点击特权工具或高危操作，触发 `notifyPlugin403` 友好 Toast 警告，明确引导切换管理员账号或申请权限，杜绝静默失败与死锁；<br>4. **抽屉架构接缝解耦**：将 GUI 参数配置段解耦提纯为 `plugin-config-section.tsx`（171 行），抽屉主视窗由 530 行成功压缩至 403 行，严格守住 $\le 500$ 行安全红线；<br>5. **范式 A 门禁验证**：4/4 Vitest 权限单测全绿，Vite 构建打包成功通过，服务端探针 `/health` 与 `/studio/plugins` 稳定 200 OK 交付。 | [x] 已验收通过 ✅ |
+| **`v1.7.104`** | **Card-143 (续推)** | **插件中心详情抽屉承接客户端通信桥梁接入指南与三大渠道平权 (Client Bridge Integration Drawer & Multi-Channel Parity SSOT)** | 1. **提纯通信桥梁指南组件**：提纯独立子组件 `native-bridge-integration-guide.tsx`（310 行，达标黄金甜点区），收拢两核心要素（公网/内网服务地址 + 专属 User API Key）与三大官方标杆客户端渠道（Google 反重力 / DeepSeek Harness / 通用 MCP 智能体）；<br>2. **抽屉一等公民 Tab 挂载**：在 `plugin-detail-drawer.tsx` 导航栏增设【客户端接入】Tab，对原生能力插件（`openviking-memory` / `openviking-ops` / `fleet-mesh`）挂载通信桥梁指南，对解耦插件（搜索 / 保险箱）动态映射专精指南；<br>3. **开箱即用认主提示词**：为反重力、DSH、通用 MCP 智能体分别提供一键复制的认主 System Prompt，支持 Agent 零人肉手调自愈接入；<br>4. **范式 A 流水线与全绿验证**：通过专用管道同步至 WSL，Pytest 7/7 插件 API 全绿通过，Vite 生产构建编译成功 (45.06s)，服务探针 `/health` HTTP 200 验证通过。 | [x] 已验收通过 ✅ |
+| **`v1.7.104`** | **Card-147** | **插件中心切除外部账本侵入、独立服务凭据声明与纯粹能力兵器库展示 (Plugin Center External Accounting Purge & Pure Sovereign Showcase SSOT)** | 1. **切除越界的外部审计大盘**：正本清源，基于第一性原理，彻底切除插件中心内部越界的 26-Key 外部流水图表、月度配额进度条、脱敏网格与 45 天流水滚动归档清理功能；物理删除前端死代码 `network-search-dashboard.tsx`；<br>2. **剥离后端侵入性路由**：从 `openviking/server/routers/plugins.py` 中彻底切除 `GET /network-search/usage/summary` 与 `POST /network-search/usage/prune` 两个侵入性接口，消除外部微服务数据库对 OpenViking 底座的越界耦合；<br>3. **独立生态凭据声明与纯净指引**：在 `search-integration-guide.tsx` 醒目位置增设“独立后端凭据声明”，明确告知用户搜索网关鉴权 Key 由搜索服务自身独立管控，VIKI 不托管亦不当消耗账本，引导用户按规范直接在客户端配置；<br>4. **全绿测试、生产部署与实机视网膜验活**：更新 `test_plugins_api.py` 验证侵入接口已安全下线 (404) 且通道桥端点 100% 正常，Pytest 7/7 快速通过；Vite 构建并同步部署至 WSL 生产服务 `/home/skloxo/services/openviking/dist/`，重启 `openviking.service`；经 `browser_subagent` 访问 `https://vk.tide.red/studio/plugins` 实机走查，确认顶部版本回显 `v1.7.104`，联网搜索抽屉干净清爽，外部流水账本完全消失。 | [x] 已验收通过 ✅ |
+| **`v1.7.103`** | **Card-146** | **用户中心彻底瘦身与架构解耦、切除伪 ACL 矩阵与纯粹凭据管理重塑 (User Center Decoupling & Pure Credential Management SSOT)** | 1. **正本清源彻底瘦身**：基于第一性原理与奥卡姆剃刀，彻底切除用户中心历史过度工程化配置（伪 ACL 工具打勾复选框、34+ 工具矩阵、无意义全栈/战地能力预设切换）；<br>2. **操作列去噪与抽屉重塑**：从 `user-table.tsx` 操作列彻底移除突兀的【插件装配】按钮；点击用户行滑出的 `user-detail-sheet.tsx` 抽屉重塑为极简纯粹的用户身份与 User API Key 复制/重置面板，提供直观的【前往插件中心查看与安装能力 ➔】引导卡片；<br>3. **物理清扫死代码**：安全下线并物理删除 `user-plugin-cockpit-drawer.tsx`、`plugin-assembly-tab.tsx`、`user-plugin-bridge-drawer.tsx`、`hook-lifecycle-matrix.tsx`，用户主路由 `route.tsx` 压缩至 351 行（达标黄金甜点区）；<br>4. **实机部署与视网膜探针验活**：递增版本至 `v1.7.103`，Vite 编译打包产物并同步至 WSL 生产服务 `/home/skloxo/services/openviking/dist/`，重启 `openviking.service`；经 `browser_subagent` 实机无缓存走查 `https://vk.tide.red/studio/users`，确认顶部版本回显 `v1.7.103`、操作列插件装配按钮彻底移除、抽屉纯净生效。 | [x] 已验收通过 ✅ |
+| **`v1.7.102`** | **Card-145** | **技能中心三层 L0/L1/L2 结构化真源码透出、TOC 索引导航与全域视网膜测试 100% 修复闭环 (Skills L0-L1-L2 Architectural Transparency, TOC Jump Navigation & 100% Vitest Retina Gate)** | 1. **根除截断与伪造假代码痛点**：正本清源，彻底切除此前仅用正则截取前数十行导致用户误判“只有十几行假代码”的展示缺陷；按 OpenViking 官方标准构建三层解耦架构：<br>&nbsp;&nbsp;• **L0 (意图触发)**：技能自然语言触发描述、语义关联标签、作用域与关联文件数；<br>&nbsp;&nbsp;• **L1 (SOP 流程)**：SOP 核心流程规范大纲、允许调用的 MCP 工具授权清单；<br>&nbsp;&nbsp;• **L2 (全量源码)**：关联源文件树形结构 + `SKILL.md` 全量真源码带行号高亮 + TOC 结构化章节索引 + 平滑单跳与一键复制源码；<br>2. **全量测试 100% 靶向排查与根治修复**：执行 `/全量测试` 对前后端 61 个测试文件全面验真并彻底修复：<br>&nbsp;&nbsp;• 补齐 `file-preview.tsx` 中 `react-markdown` 与 `remark-gfm` 依赖丢失（32/32 全绿）；<br>&nbsp;&nbsp;• 重构 `knowledge-health-radar-card.tsx` 压缩至 293 行（严格达标 $\le 300$ 行黄金甜点区门禁）；<br>&nbsp;&nbsp;• 优化 `card103-anti-demo.test.ts` 磁盘扫描超时至 20s；<br>&nbsp;&nbsp;• 对齐工单流水线 `'物理验真门禁'` 领域真实规范名与队列统计合并逻辑（16/16 全绿）；<br>&nbsp;&nbsp;• 纠偏基准字号单测，封杀 `<11px` 微字并保护 `text-xs` (12px) 基准；<br>&nbsp;&nbsp;• 隔离 `install-tui.test.mjs` 宿主环境变量污染（11/11 全绿）；<br>3. **全栈构建与探针交付闭环**：52 个前端测试文件 242 项测试 100% PASS，生产构建 Vite Build 3m 14s 成功，全量产物部署服务 dist/，服务探针 `/health` HTTP 200 返回 `v1.7.102`。<br>**Commit Hash**：`45ff8dbe6`<br>**Tag**：`v1.7.102`<br>**测试**：全量 289 项单测全绿，生产构建 PASS ✅ | [x] 已验收通过 ✅ |
+| **`v1.7.96`** | **Card-139** | **清理 47 项历史残留脏记忆、更正 1214 技能总数、对齐 FastMCP 58 完全体 SSOT 与 Master Memory 永久固化 (47 Tools Residue Purge, 1214 Skills SSOT, 58 FastMCP Full Parity & Master Memory Permanent Ingestion)** | 1. **清理 47 项历史脏记忆残留**：全面排查代码库，修正 `plugin_registry.py` 内部变量名为 `memory_58_tools` 并将健康探针输出由 47 tools 修正为 58 tools ready；修正前端常量与描述，彻底封杀“47工具”伪双轨描述；<br>2. **技能总数事实更正**：确认并更正系统技能中心真实在册总数为 **1214 个**（废黜陈旧的 700 多个老旧记忆）；<br>3. **测试视网膜与生产构建变绿**：修复 `test_plugins_api.py` 中 2 处断言为 58，Pytest 7/7 全绿，前端 Vite Build 18.85s PASS；<br>4. **Git Tag 与 Master Memory 永久入库**：打标 Git Tag `v1.7.96` (Commit `5457a770d`)，调用 `openviking_record_evolution_lesson` 永久固化体外大脑。 | [x] 已验收通过 ✅ |
+| **`v1.7.97`** | **Card-140** | **外部微服务与集群算力解耦独立 Quad 插件化 (CPA 跨模型算力中枢与卫星集群同频物理剥离 - P0 架构解耦)** | 1. **CPA 算力中枢服务物理剥离**：将 `cpa_consult` 与 `cpa_fanout` 2 项工具从 `openviking-memory` 中剥离，创建独立的 `cpa-squad` 插件定义（2 Tools + 2 Hooks + 专属 Skill + GUI）；CPA 物理宿主位于 2080Ti WSL2 独立微服务，即便 CPA 离线或限流，VK 核心进程 100% 独立稳定；<br>2. **卫星集群跨机同频插件物理剥离**：将 `fleet_check` 与 `fleet_sync` 2 项工具剥离为独立的 `fleet-mesh` 运维插件（2 Tools + 1 Hook + 专属 Skill + GUI），跨物理机节点同步不与单机记忆插件强绑定；<br>3. **测试视网膜与解耦隔离验证**：编写单元测试验证 CPA 与 Fleet 离线时核心记忆服务 0 报错，插件反查、别名兼容与 REST 路由全绿。<br>**测试**：10/10 专项与回归单测 1.92s 全绿，Vite 构建 PASS ✅ | [x] 已验收通过 ✅ |
+| **`v1.7.98`** | **Card-141** | **核心记忆与代码战地完全体整并重构 (普通 Agent 34 项战地工具 + 3 项 Hook 物理守卫交付 - P0 战地核心)** | 1. **代码能力与记忆中枢整并回归**：基于第一性原理，所有智能体（包括 DeepSeek Honey）本质上都是工程师智能体，日常写脚本、做监控、改代码必不可少。将代码 AST 与工作区阅读检索（11项）整并回归核心插件，彻底避免碎片化拆解导致 Agent 沦为“代码残疾”；<br>2. **34 项战地完全体武器矩阵**：长程记忆 8 项 + 工作区与深度代码 AST 11 项 + 技能中心感知与发布 6 项 + 工单自主建卡吹哨 4 项 + 大文档泊车 2 项 + 安全脱敏与传感器 3 项，零代码短板；<br>3. **3 项核心 Hook 物理守卫闭环**：前置自动召回预取 (`ov_pre_invocation`)、后置踩坑经验自动萃取 (`ov_lesson_crystallizer`)、运行态特权沙箱守卫 (`ov_sandbox_guard`)；<br>4. **感知 1214 技能与工单吹哨直通实测**：打通智能体遇到异常时一句话自主调用 `openviking_file_task_card` 建卡上报，打通 `openviking_skills` 感知全量 1214 个在册技能。 | [x] 已验收通过 ✅ |
+| **`v1.7.99`** | **Card-142** | **系统运维治理插件 (`openviking-ops`) 独立 Quad 封装与静默守护闭环 (17 项特权工具 + 2 项 Hook + 运维 Agent 授权 - P1 自动化守护)** | 1. **系统运维治理插件独立封装**：将 17 项特权/运维工具封装为独立 Quad 插件 `openviking-ops` (17 Tools + 2 Hooks + 1 Skill + GUI)；<br>2. **授权后台专用运维 Agent / 巡检 Engine**：专供 24 小时静默巡检哨兵 Sentinel，AI 自动自愈死信与概念漂移；高危破坏性工具标注 is_dangerous=True；<br>3. **测试视网膜与安全门禁全绿**：根治 threading.RLock 嵌套死锁，3/3 专项单测全绿 (1.02s)，16/16 插件生态回归单测全绿 (4.10s)，安全扫描 4898 文件 0 密钥，Anti-Demo 250 组件 0 悬空。<br>**Commit Hash**：`b3ddfb0a0`<br>**测试**：16/16 插件生态单测 4.10s 全绿 ✅ | [x] 已验收通过 ✅ |
+| **`v1.7.100`** | **Card-143** | **工单系统历史堆积幽灵卡片大扫除与防风暴治理巡检闭环 (504 张幽灵告警物理归档 + PID 去噪脱敏防风暴 - P1 资产治理)** | 1. **历史幽灵告警大扫除与物理归档**：落地 `scripts/clean_ghost_task_cards.py` 幂等清洗引擎，将 503 张因 PID 漂移产生的瞬态 CPU 跑飞告警聚合为 1 张主工单 (occurrence_count 累加至 503)，安全归档 504 张卡片至 resolved/ 目录；<br>2. **根治 PID 动态漂移卡片风暴**：增强 `_compute_fingerprint` 脱敏 PID、百分比浮点数与端口，杜绝告警风暴；<br>3. **测试视网膜全绿**：3/3 专项单测全绿 (1.13s)，19/19 插件与工单回归全绿 (4.44s)，安全扫描 4900 代码文件 0 密钥。<br>**Commit Hash**：`07afe9c57`<br>**测试**：19/19 专项回归单测全绿 ✅ | [x] 已验收通过 ✅ |
+| **`v1.7.101`** | **Card-144** | **Web Studio 插件中心场景化座舱升级与不可变版本发版 (四大解耦插件座舱展示 + 不可变客户端包 - P2 交付验收)** | 1. **四大解耦插件座舱全景呈现**：在 `/studio/plugins` 与接入抽屉中清晰呈现四大 Quad 标杆插件矩阵（战地完全体 34+3、系统运维治理 17+2、CPA 算力协同 2+2、卫星集群同频 2+1）；<br>2. **能力预设与一键授权联动**：能力预设胶囊一键下发（🛰️ 业务战地 34+3 vs 🛡️ 运维特权 17+2 vs 🧠 算力调度 2+2 vs 🌐 集群同频 2+1），彻底终结逐一勾选心智负担；<br>3. **不可变版本编译与全量门禁交付**：生产构建 Vite Build PASS，4900 文件 0 密钥泄露，正式打标 Git Tag `v1.7.101` 永久留痕。<br>**Commit Hash**：`9f9ae3710`<br>**Tag**：`v1.7.101`<br>**测试**：全量 19 项单测全绿，生产构建 PASS ✅ | [x] 已验收通过 ✅ |
+| **`v1.7.95`** | **Card-138** | **三大插件定位纠偏、KeePass 本地私有化托管重构、搜索网关 DSH 原生免插件与通用 FastMCP 挂载闭环 (Three Plugins Positioning Grounding, KeePass Local Vault Refactor, DSH Native Search & Universal FastMCP Mounting)** | 1. **KeePass 插件定位纠偏与私有化重构**：正本清源，澄清 KeePass 插件纯粹为本地客户端私有插件，OpenViking 仅提供官方展厅展示与不可变 NPM 规范包 (`dsh-plugin-keepass-vault-1.0.1.tgz`) 托管下载，云端绝不读取、托管或下发用户密码；安装后用户必须在本地配置其自身密码数据文件 (`.kdbx`) 的绝对路径与环境变量；<br>2. **搜索网关双模态与跨生态赋能突破**：针对外部 Agent（DeepSeek/DSH、Cursor、Claude 等）需要消耗高昂搜索 API 费用的痛点，将自建 26-Key 多引擎聚合搜索服务全面开放：<br>&nbsp;&nbsp;• **形态 A (DSH 原生标准 API 接入)**：利用 DSH 原生支持第三方自定义搜索接口的特性，提供公网 Base URL (`https://sear.tide.red/v1`) 与 API Key (`sear-matrix-key-2026`)，用户在 DSH 界面直接填入即可免装任何客户端插件无缝使用；<br>&nbsp;&nbsp;• **形态 B (通用客户端 FastMCP 挂载)**：利用 FastMCP Streamable HTTP 技术，在搜索服务底层挂载公网端点 `https://sear.tide.red/mcp`，集成 `_McpAuthMiddleware` 与 DNS 反代保护开关，为 Cursor/Claude 等提供标准 `mcp.json` 模板；<br>3. **三大官方插件单一事实源对齐与版本合规**：修正 `DSH_PLUGIN_VERSION = '2.0.11'` 消除与核心记忆插件版本的漂移，更新 `openviking-memory`、`network-search`、`keepass-vault` 统一版本与四位一体元数据；<br>4. **测试视网膜与安全门禁全绿**：`test_dsh_plugin_pack.py` (4/4)、`test_plugins_api.py` (7/7) 全部变绿通过，前端 Vite Build 15.79s 成功，4881 个代码文件安全审计 0 密钥泄露，公网搜索与 FastMCP 端点实测 200 OK 交付。 | [x] 已验收通过 ✅ |
 | **`v1.7.94`** | **Card-137** | **三大在线搜索厂商官方协议对齐、CPA 工兵后台研读闭环、26-Key 记账流转与 Search2API 商业化架构落地 (Official Search Ecosystem Alignment, CPA Worker Master Study & Search2API Commercial Spec)** | 1. **官方协议对齐与排查避坑**：直击物理根因修复 Keenable 分页参数契约（必须为 `max_results`，严禁 `num`）；纠正 Exa 调研长任务端点为官方最新 `POST https://api.exa.ai/agent/runs`（彻底告别 410 Gone 的旧端点 `/research`）；为 Tavily 请求强制注入 `Authorization: Bearer <key>` Header，根治 `/map` 和 `/crawl` 的 401 报错；<br>2. **CPA 工兵后台并发研读与知识沉淀**：编写并后台启动 `cpa_deep_learn_search_ecosystem.py`，调用 `mux-flash` 工兵模型全量消化 Keenable、Exa、Tavily 官方文档与 SDK，产出全景白皮书 `OFFICIAL_SEARCH_ECOSYSTEM_MASTER_STUDY.md` 并双写入脑体外大脑；<br>3. **Search2API 商业化聚合网关规格落地**：基于 CPA2API 架构设计发布 `SEARCH2API_COMMERCIAL_GATEWAY_SPEC.md`，统一兼容 OpenAI ToolCall、SearXNG 与 Tavily 协议，落地 26-Key 动态权重轮询、429 毫秒级 Failover 与额度变现定价策略；<br>4. **插件版本跃升 v1.1.2 与全链路实机验证**：补齐 `search_vertical_expert` 垂直专家检索工具，测试 `test_plugin_manifests.py` (3/3) 与 `test_plugins_api.py` (7/7) 全绿，实测 Keenable、Tavily map_site、垂直搜索真实发包 200 OK 并精准落地 `search_accounting.db` 记账流水；<br>5. **技能导轨全面升级**：同步更新 `network-search-ops` 技能规范，完成 Master Memory 经验沉淀闭环。 | [x] 已验收通过 ✅ |
-| **`v1.7.93`** | **Card-136** | **彻底清理在册智能体历史残留、升级全功能插件装配与客户端集成座舱 (Agent Residue Cleanup, Reusable Quad Plugins & Full-Featured Cockpit Drawer SSOT)** | 1. **彻底清理“在册智能体”历史残留**：系统已达成“人机平权 (User ≡ Agent)”，彻底删除了用户列表 (`user-table.tsx`) 中的【在册智能体】冗余表头列与数据单元格 Badge；从根源切除了用户详情抽屉 (`user-detail-sheet.tsx`) 中的 `fetchUserAgents`、`useQuery(['user-agents', ...])`、`名下在册智能体概览` 与 `前往智能体中心管理 ➔`；物理删除了已废弃的孤立死代码 `agent-collapsible-item.tsx`、`new-agent-card.tsx`、`soft-delete-agent-dialog.tsx`；<br>2. **升维恢复 48 小时打磨的三大官方 Quad 标杆插件装配体系**：升级 `UserPluginCockpitDrawer` 宽屏高密座舱抽屉 (`sm:max-w-2xl md:max-w-3xl lg:max-w-4xl`)，彻底告别单薄狭窄的丑陋抽屉；完整恢复三大标杆 Quad 插件（`openviking-memory` 47工具/3 Hook、`network-search` 12工具/3 Hook、`keepass-vault` 8工具/1 Hook），未来增加新插件无缝兼容；<br>3. **Tab 1: 🔌 插件装配与工具授权**：落地能力预设快捷胶囊（🚀 中枢全栈 67 工具 vs 🛰️ 卫星工兵 31 工具 vs 🔒 最小只读 14 工具）；三大插件高密卡片组可选中切换；展开四位一体微观配置（MCP 角色工具包一键开关、逐个展开具体工具细粒度单独勾选、Hook 物理守卫开关、技能导轨、GUI 说明）；底部支持一键保存能力装配配置到本地存储并反馈 Toast；<br>4. **Tab 2: 🚀 客户端安装接入**：网络拓扑双选（公网 `vk.tide.red` 推荐 vs 本地宿主 `127.0.0.1:1933`）；专属接入两要素芯片（服务地址 + 用户密钥，彻底切除 `agentId`）；动态拉取 48 小时打磨的不可变官方标杆插件安装包直链并提供 `npm install https://vk.tide.red/studio/dsh-plugin-openviking-1.5.5.tgz` 一键秒拷；完整 DSH `cordis.patch.yml` 补丁秒拷；标准 MCP JSON 秒拷；智能体认主提示词秒拷；<br>5. **质量门禁与全绿发布**：`card103-anti-demo.test.ts` 5/5 全绿通过（字号 >= 12px、NO GREEN EVER 🚫），生产构建 Vite Build 15.20s PASS，零密钥审计 PASS，DEMO 视网膜门禁 PASS，服务探针 HTTP 200 验证 1.7.93，Git Commit 与 Tag `v1.7.93` 成功打标。 | [x] 已验收通过 ✅ |
+| **`v1.7.93`** | **Card-136** | **彻底清理在册智能体历史残留、升级全功能插件装配与客户端集成座舱 (Agent Residue Cleanup, Reusable Quad Plugins & Full-Featured Cockpit Drawer SSOT)** | 1. **彻底清理“在册智能体”历史残留**：系统已达成“人机平权 (User ≡ Agent)”，彻底删除了用户列表 (`user-table.tsx`) 中的【在册智能体】冗余表头列与数据单元格 Badge；从根源切除了用户详情抽屉 (`user-detail-sheet.tsx`) 中的 `fetchUserAgents`、`useQuery(['user-agents', ...])`、`名下在册智能体概览` 与 `前往智能体中心管理 ➔`；物理删除了已废弃的孤立死代码 `agent-collapsible-item.tsx`、`new-agent-card.tsx`、`soft-delete-agent-dialog.tsx`；<br>2. **升维恢复 48 小时打磨的三大官方 Quad 标杆插件装配体系**：升级 `UserPluginCockpitDrawer` 宽屏高密座舱抽屉 (`sm:max-w-2xl md:max-w-3xl lg:max-w-4xl`)，彻底告别单薄狭窄的丑陋抽屉；完整恢复三大标杆 Quad 插件（`openviking-memory` 58工具/3 Hook、`network-search` 12工具/3 Hook、`keepass-vault` 8工具/1 Hook），未来增加新插件无缝兼容；<br>3. **Tab 1: 🔌 插件装配与工具授权**：落地能力预设快捷胶囊（🚀 中枢全栈 78 工具 vs 🛰️ 卫星工兵 31 工具 vs 🔒 最小只读 14 工具）；三大插件高密卡片组可选中切换；展开四位一体微观配置（MCP 角色工具包一键开关、逐个展开具体工具细粒度单独勾选、Hook 物理守卫开关、技能导轨、GUI 说明）；底部支持一键保存能力装配配置到本地存储并反馈 Toast；<br>4. **Tab 2: 🚀 客户端安装接入**：网络拓扑双选（公网 `vk.tide.red` 推荐 vs 本地宿主 `127.0.0.1:1933`）；专属接入两要素芯片（服务地址 + 用户密钥，彻底切除 `agentId`）；动态拉取 48 小时打磨的不可变官方标杆插件安装包直链并提供 `npm install https://vk.tide.red/studio/dsh-plugin-openviking-1.5.5.tgz` 一键秒拷；完整 DSH `cordis.patch.yml` 补丁秒拷；标准 MCP JSON 秒拷；智能体认主提示词秒拷；<br>5. **质量门禁与全绿发布**：`card103-anti-demo.test.ts` 5/5 全绿通过（字号 >= 12px、NO GREEN EVER 🚫），生产构建 Vite Build 15.20s PASS，零密钥审计 PASS，DEMO 视网膜门禁 PASS，服务探针 HTTP 200 验证 1.7.93，Git Commit 与 Tag `v1.7.93` 成功打标。 | [x] 已验收通过 ✅ |
 | **`v1.7.92`** | **Card-128** | **三层模型大一统 (Root-Account-User)、空间管理实体看板现形、人机平权合并与插件极简接入 (Three-Tier Architecture Unification, Accounts Cockpit & Agent Parity SSOT)** | 1. 彻底纠偏与三层模型大一统：建立清晰严格的 `Root`（系统平台管理密钥，仅用于空间增删改查）➔ `Account`（空间，数据/记忆/资料真实物理隔离容器）➔ `User`（空间内唯一实体，User 100% 等同于 Agent/真人，平权无特殊化）；<br>2. 空间管理看板落地 (`/accounts`)：Web Studio 在 Root 权限下显式呈现空间列表、空间统计指标卡片、新建空间与安全删除，消除手握 Root Key 却看不到空间管理的认知割裂；<br>3. 用户管理与智能体平滑合并：打破把 Agent 锁死或特殊区隔的过度工程，人机平权；在 `/users` 用户列表直接挂载【插件接入与授权】抽屉；<br>4. 插件极简接入与生硬词切除：接入命令与参数彻底切除多余的 `agentId`，全系统统一采用中文【服务地址】（杜绝生硬英文 endpoint）+【用户密钥】；<br>5. 侧栏收敛与 DSH 插件瘦身：侧栏下线独立的 `/agents` 重定向至 `/users`；更新标杆插件 `client.js`，去除非必要 `agentId` 必填，升级发布 `v1.5.5`。<br>**测试**：DEMO与字号门禁 5/5 全绿、DSH与API单测 11/11 全绿、Vite Build 14.81s PASS，探针 HTTP 200 验证 1.7.92 | [x] 已验收通过 ✅ |
 | **`v1.7.91`** | **Card-135** | **智能体资产卡片真实物理状态机落地、插件装配平等化与紧凑高密重构 (Agent Item Real Telemetry State Machine, Plugin Parity & Compact High-Density Refactoring)** | 1. **真实物理状态机取代硬编码假正常**：彻底切除未接入却凭空显示“正常使用”的假逻辑。依据真实通信事实重塑状态机：从未请求/通信数为0显示【○ 待接入】；1小时内有真实通信显示【● 活跃 · 最后交互: X分钟前】；超过1小时显示【○ 休眠 · 最后交互: X天前】；删除显示【○ 已停用】；整张卡片状态唯一定位，彻底切除重复与虚假活跃胶囊；<br>2. **装配统计平等化与切除死板全开胶囊**：插件卡片右上角直陈【X/Y 工具 · A/B Hook】，数值中性平等，彻底淘汰搞笑的“全开/半开”胶囊；标题精炼为极简【插件】，彻底切除过度工程化的一键批量开启按钮；卡片右侧直观引导【配置 →】，压缩卡片垂直高度；<br>3. **摘要行与操作按钮极简重构**：摘要行直陈【已授权 X 项工具 · Y 项 Hook】，切除包装词汇“MCP”与“7个角色工具包”；彻底删除多余的“所属用户: default”；右上角直接提供【接入指引】与【删除】（不带智能体废话），告别深层找寻；<br>4. **就地编辑极致压缩与冗余底栏切除**：展开后第一行紧凑平铺【名称】+【描述】+ 脏检测【保存修改】按钮，修改完就地保存；彻底切除最底部多余整行（接入指引抽屉按钮、重复客户端活跃、已保存同步按钮），空间利用率与信息密度大幅跃升；<br>5. **构建全绿**：Vite Build 生产构建 15.32s 通过，Pytest 7/7 全绿。 | [x] 已验收通过 ✅ |
 | **`v1.7.89`** | **Card-134** | **服务端三大插件角色能力包矩阵直观装配与动态授权联动 (Server Capabilities Bundles & Dynamic Agent Granting)** | 1. 快捷角色预设胶囊落地：在 `agent-capability-picker.tsx` 顶部落地【🛰️ 卫星业务工兵预设 (日常免高危)】与【🧠 中枢全栈总控预设 (67项全量)】一键切换；<br>2. 联动计算与授权下发：点击预设 1 秒完成全量工具与工具包集合联动装配，消除逐一勾选心智负担；<br>3. 严格遵循 Cockpit UI 视觉契约：NO GREEN EVER 🚫，正向采用冰青，高危/运维采用琥珀与玫瑰红，字号 >= 12px；<br>4. 生产构建全绿验证。 | [x] 已验收通过 ✅ |
@@ -116,6 +140,198 @@
 ---
 
 ### 🧬 Milestone 5-A: 半成品与悬空功能全链路真实化贯通 (Suspended Features Truthful Closure)
+
+#### 📌 [P0] [x] Card-153: 服务端内部工具自锁根治、战地工具全域原生化与 FastMCP 双向别名闭环 (消灭 code_outline 30s BRIDGE_TIMEOUT 与 Unknown Tool - Native Battlefield Tools In-Process Migration & FastMCP Bidirectional Aliasing SSOT) ✅ (v1.7.117)
+- **类型**：自锁死锁根治 / 战地工具原生化 / FastMCP 别名拦截器 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.117` ｜ **当前状态**：[x] 已验收通过 ✅ (v1.7.117)
+- **背景与第一性原理**：
+  1. **30 秒自反向死锁死因根除**：原 `mcp_endpoint.py` 舍近求远地从 `mcp-openviking/tools/*.py` 引入工具函数，内部通过 `urllib.request.urlopen` 同步阻塞反向回环请求自身服务 (`127.0.0.1:1933`)。在单 Worker / 密集调用下占死工作线程，导致自身请求无法被受理，恒定 30 秒超时抛出 `[BRIDGE_TIMEOUT]`，继而 fallback 到 CLI 报 `卫星模式为纯 HTTP 数据客户端，不调用本地 CLI 二进制`；
+  2. **Unknown Tool 报错死因根除**：DSH 客户端在 `BATTLEFIELD_34_TOOLS` 契约中声明的工具短名为 `code_outline`、`skills`、`diff` 等，而服务端 FastMCP 原先仅注册全名 `openviking_code_outline`，FastMCP `get_tool` 无法匹配抛出 `Unknown tool`；
+  3. **第一性原理原生闭环**：服务端内部绝对禁止发起任何自身 HTTP 回环！在 `mcp_endpoint.py` 原生注入 10 项核心战地工具（`code_outline`, `code_expand`, `code_search`, `diff`, `smart_read`, `skills`, `link`, `get_relations`, `unlink`, `tag`），纯异步直接调用底层服务；并在 FastMCP 挂载 `_install_aliased_tool_manager`，短名与全名 100% 透明互通；
+  4. **纯 Python 容灾与契约兼容**：`diff` 工具改用 Python 标准库 `difflib.unified_diff`，零外部依赖；`link` / `unlink` 深度兼容 `source`/`target` 与 `from_uri`/`to_uris` 双向入参。
+- **原子工单拆解 (Tracer Bullet 细颗粒度工单)**：
+  - [x] **`TASK-153-1: 战地核心工具原生 async 实现落地`**：在 `openviking/server/mcp_endpoint.py` 原生实现 `code_outline`, `code_expand`, `code_search`, `diff`, `smart_read`, `skills`, `link`, `get_relations`, `unlink`, `tag` 纯异步调用；
+  - [x] **`TASK-153-2: FastMCP 双向透明别名解析器 (_install_aliased_tool_manager)`**：拦截 `mcp._tool_manager.get_tool`，实现短名称（`code_outline`）与全名称（`openviking_code_outline`）双向透明映射，并内建 `store` -> `remember`、`ping` -> `health`、`ls` -> `list` 等核心同义词路由；
+  - [x] **`TASK-153-3: 战地工具保护门禁 (_register_domain_packages)`**：设立 `NATIVE_PROTECTED_TOOLS` 保护清单，物理封杀外部阻塞 HTTP 工具对原生高性能异步实现的覆盖；
+  - [x] **`TASK-153-4: 专项视网膜单测套件`**：编写 `test_card153_native_tools_and_aliasing.py` 5/5 全绿通过（别名透明解析、毫秒级执行、纯 Python diff、拓扑关系兼容、无回环技能列表）；
+  - [x] **`TASK-153-5: 范式 A 工业级流水线、实机探针与 Tag 留痕`**：同步至 WSL 仓库与 Live 目录，热重启 `openviking.service`，Live 探针 5 项全部在 10~270ms 内极速返回，Vite 构建 20.01s PASS，打标 Git Tag `v1.7.117`。
+- **交付物清单**：
+  - MCP 工具端点与别名解析器：`openviking/server/mcp_endpoint.py`
+  - 版本号 SSOT：`openviking/_version.py`, `package.json`
+  - 任务看板 SSOT：`REFACTORING_PLAN.md`
+  - 专项单测套件：`tests/server/test_card153_native_tools_and_aliasing.py`
+- **交付留痕 (Verification & Evidence)**：
+  - **Git Tag**：`v1.7.117`
+  - **测试验证**：5/5 Card-153 专项测试 PASS，4/4 Card-152 回归测试 PASS，5/5 Card-150 回归测试 PASS，Vite 生产构建 PASS (20.01s)，服务实机探针 5 项全部通过。
+
+#### 📌 [P0] [x] Card-152: write 工具 0 字节写入未持久化物理根因治理 (物理存在性门禁穿透 + 往返一致性验真 + MCP 诚实回显 - write 0-Byte NOOP Physical Persistence Fix, Round-Trip Verification & Honest Telemetry SSOT) ✅ (v1.7.116)
+- **类型**：存储协调物理真实性防御 / 熵门禁穿透自愈 / MCP 真实回显 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.116` ｜ **当前状态**：[x] 已验收通过 ✅ (v1.7.116)
+- **背景与第一性原理**：
+  1. **直击 3070 节点 260 步绕路排查的物理根因**：在 3070 节点 DSH 实测中，智能体执行 `openviking_write` 写入巡检报告时，底层的 `EntropyGatekeeper` 因历史同类巡检文档判定相似度高，返回 `action="noop"`；但 `content_write.py` 未校验目标文件在磁盘上是否存在，导致目标文件从未被创建；上层 MCP 误将 0 字节回显为 `"Wrote 0 bytes to ... (mode=replace)"`；智能体随后调用 `openviking_read` 触发 `NotFoundError`，引发 260 步排错混乱；
+  2. **物理磁盘真实性第一性原理 (Physical Truth First Principle)**：NOOP（拦截写盘）的前提公理是：目标文件在物理磁盘上**必须已存在且内容完全一致**；若目标文件在物理磁盘上根本不存在，任何基于相似度的 NOOP 拦截都属于严重缺陷；
+  3. **协调层双保险穿透与 MCP 诚实回显**：在 `content_write.py` 中通过 `_safe_stat` 和 `read_file` 严格校验目标文件的物理存在性与内容一致性，缺失或变动一律强制覆盖落盘；在 `mcp_endpoint.py` 中设置 `skip_gatekeeper` 规避重复拦截，对真正的 NOOP 返回明确的印证去重提示，彻底终结“Wrote 0 bytes”误报。
+- **原子工单拆解 (Tracer Bullet 细颗粒度工单)**：
+  - [x] **`TASK-152-1: content_write.py 物理存在性门禁穿透`**：在 `ContentWriteCoordinator.write` 的 ChokePoint 处，增加目标文件磁盘存在性与内容一致性校验，文件不存在或内容变动时强制覆盖落盘；
+  - [x] **`TASK-152-2: identity.py 与 mcp_endpoint.py 上下文透传与诚实回显`**：在 `RequestContext` 增加 `skip_gatekeeper` 字段；`mcp_endpoint.py` 覆盖时透传跳过标记，并在 `result["action"] == "noop"` 时返回明确的 `[Entropy Defense] NOOP` 提示；
+  - [x] **`TASK-152-3: 专项视网膜单测与往返一致性验真`**：编写 `test_card152_write_noop_physical_persistence.py` 4/4 全绿 (未存在文件强制写盘、同内容安全去重、异内容强制更新、MCP 诚实回显)；
+  - [x] **`TASK-152-4: 范式 A 工业级流水线与全域门禁验证`**：同步至 WSL 仓库与 Live 服务，重启服务验证探针 `/health` HTTP 200 返回 `1.7.116`，Vite 生产构建 18.81s 零报错，Git Tag 打标 `v1.7.116`。
+- **交付物清单**：
+  - 核心存储协调：`openviking/storage/content_write.py`
+  - 身份与上下文：`openviking/server/identity.py`
+  - MCP 工具端点：`openviking/server/mcp_endpoint.py`
+  - 版本号 SSOT：`openviking/_version.py`, `package.json`
+  - 专项单测套件：`tests/server/test_card152_write_noop_physical_persistence.py`
+- **交付留痕 (Verification & Evidence)**：
+  - **Git Tag**：`v1.7.116`
+  - **测试验证**：4/4 Card-152 专项测试 PASS，23/23 核心回归测试 PASS，Vite 生产构建 PASS (18.81s)，服务探针 200 OK。
+
+#### 📌 [P0] [x] Card-149: 三大原生插件独立 DSH 桥接器解耦与 34 战地工具/3 Hook 严格对齐 (Native Plugins Independent DSH Bridges Decoupling & 34 Battlefield Tools SSOT) ✅ (v1.7.109)
+- **类型**：客户端桥梁物理解耦 / 34+3 纯净契约对齐 / 纯 Python 容灾打包流水线 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.109` ｜ **当前状态**：[x] 已验收通过 ✅ (v1.7.109)
+- **背景与第一性原理**：
+  1. **核心痛点根除**：3070 节点实测安装 `openviking-memory` 插件后，DSH 端出现【联网搜索】与【KeePass】选项，暴露工具与核心记忆实际的 34 工具 + 3 Hook 不符；
+  2. **三大原生桥接器物理解耦**：将 VK 原生插件解耦为 3 个独立的 DSH 桥接器工程：
+     - `dsh-plugin-openviking-memory/`: v2.0.12 (专属 34 工具 + 3 Hook，纯净无搜索/KeePass 噪音)
+     - `dsh-plugin-openviking-ops/`: v1.0.0 (专属 17 工具 + 2 Hook)
+     - `dsh-plugin-openviking-fleet/`: v1.0.0 (专属 2 工具 + 1 Hook)
+     - `dsh-plugin-openviking/`: v2.0.12 (兼容别名包)
+  3. **后端能力路由精准隔离**：`client_caps.py` 动态感知 `plugin_id`，传入 `openviking-memory` 时 100% 仅返回 34 工具与 3 Hook；
+  4. **纯 Python 容灾构建流水线**：针对 Windows 宿主无全局 npm 的物理现状，`pack_dsh_plugin.py` 内置纯 Python `tarfile` 打包引擎，一键烘焙并部署全量 `.tgz` 产物至 `public/` 与 `dist/`。
+- **原子工单拆解 (Tracer Bullet 细颗粒度工单)**：
+  - [x] **`TASK-149-1: 后端常数与能力路由精准隔离`**：重构 `client_caps_constants.py` 与 `client_caps.py`，支持 `plugin_id` 精准路由；
+  - [x] **`TASK-149-2: 三大 DSH 独立桥接器工程落地`**：编写 `scripts/generate_dsh_plugins.py`，落地 3 大独立桥接器工程与兼容别名包；
+  - [x] **`TASK-149-3: 纯 Python 容灾打包流水线升级`**：升级 `scripts/pack_dsh_plugin.py`，烘焙 4 大 `.tgz` 包并部署至 `public/` 与 `dist/`；
+  - [x] **`TASK-149-4: 前端接入指南动态拓扑感知`**：升级 `native-bridge-integration-guide.tsx` 动态直出专属桥接器包；
+  - [x] **`TASK-149-5: 专项单测视网膜与全绿门禁闭环`**：编写 `test_card149_dsh_plugin_decoupling.py`，5/5 专项单测通过，18/18 插件生态回归通过，Vite 编译 0 报错，服务探针 200 OK 交付。
+- **交付物清单**：
+  - 后端路由与常数：`openviking/server/routers/client_caps.py`, `client_caps_constants.py`
+  - 插件注册表：`openviking/service/plugin_registry.py`
+  - 前端接入指南：`src/routes/plugins/-components/native-bridge-integration-guide.tsx`
+  - 独立桥接器源码：`integrations/deepseek-harness/dsh-plugin-openviking-memory/`, `ops/`, `fleet/`, `openviking/`
+  - 独立包产物：`public/dsh-plugin-openviking-memory-2.0.12.tgz`, `ops-1.0.0.tgz`, `fleet-1.0.0.tgz`, `openviking-2.0.12.tgz`
+  - 专项单测套件：`tests/server/test_card149_dsh_plugin_decoupling.py`
+- **交付留痕 (Verification & Evidence)**：
+  - **Git Tag**：`v1.7.109`
+  - **测试验证**：5/5 专项测试 PASS，18/18 插件生态回归 PASS，Vite 生产编译 PASS，服务探针 200 OK。
+
+
+#### 📌 [P0] [x] Card-140: 外部微服务与集群算力解耦独立 Quad 插件化 (CPA 跨模型算力中枢与卫星集群同频物理剥离 - P0 架构解耦)
+- **类型**：微服务物理剥离 / 独立 Quad 插件化 / 弹性熔断与集群同频 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.97` ｜ **当前状态**：[x] 后端解耦与专项单测 10/10 PASS ✅ ｜ **Commit Hash**：6444739bc
+- **背景与芒格逆向审讯第一性原理**：
+  1. **核心矛盾与强耦合痛点**：此前 `openviking-memory` 内部强行塞入了 `cpa_consult`、`cpa_fanout`、`fleet_check`、`fleet_sync`。然而，CPA 本质是运行在 2080Ti WSL2 上的独立多模型聚合微服务，卫星集群同频本质是跨物理机节点的拓扑运维。将它们硬绑在单机核心记忆插件上，一旦 CPA 服务由于限流或离线挂死，会导致整个记忆插件健康探针异常甚至雪崩；
+  2. **Quad Plugin 四位一体规范对齐**：每个独立插件必须具备 Tools（原子工具）、Hooks（生命周期钩子）、Skill（导轨技能）、GUI（座舱面板）：
+     - `cpa-squad`：2 项工具 (`openviking_cpa_consult`, `openviking_cpa_fanout`) + 2 项 Hook (`cpa_rate_limit_fallback` 429 降级熔断, `cpa_token_accounting` 记账) + `cpa-squad` 专属技能 + GUI 设置面板；
+     - `fleet-mesh`：2 项工具 (`openviking_fleet_check`, `openviking_fleet_sync`) + 1 项 Hook (`fleet_heartbeat_sync` 心跳探针) + `satellite-fleet-ops` 专属技能 + GUI 节点面板；
+  3. **100% 向后兼容别名导轨**：在插件注册表中注册 `cpa`, `fleet`, `cpa_consult`, `cpa_fanout`, `fleet_check`, `fleet_sync` 别名，确保老客户端与历史脚本无感兼容。
+- **原子工单拆解 (Tracer Bullet 细颗粒度工单)**：
+  - [x] **`TASK-140-1: TDD 自动化测试先行 (Red-to-Green)`**：编写 `tests/server/test_card140_cpa_and_fleet_decoupling.py`，断言独立插件注册、工具反查、解耦后核心记忆工具数及 REST API 响应；首次运行严格红灯报错；
+  - [x] **`TASK-140-2: 后端注册表物理解耦重构`**：在 `openviking/service/plugin_registry.py` 中剥离 4 项工具，`openviking-memory` 工具数由 58 调整为 54，构建并注册 `cpa-squad` 与 `fleet-mesh` 独立 Quad 插件及其健康探针；
+  - [x] **`TASK-140-3: 兼容别名与已有测试对齐`**：注册 6 处别名映射；更新 `tests/server/test_plugins_api.py` 中对 Memory 工具数的断言；
+  - [x] **`TASK-140-4: 测试视网膜全绿与编译验证`**：运行 pytest 专项测试 3/3 PASS，`test_plugins_api.py` 7/7 PASS（合计 10/10 单测 1.92s 全绿）；WSL 生产构建 `npm run build` PASS。
+- **交付物清单**：
+  - 插件注册表重构：[`openviking/service/plugin_registry.py`](file:///c:/Users/Skl/Desktop/coding/OpenVikingStudio/openviking/service/plugin_registry.py)
+  - 自动化解耦单测：[`tests/server/test_card140_cpa_and_fleet_decoupling.py`](file:///c:/Users/Skl/Desktop/coding/OpenVikingStudio/tests/server/test_card140_cpa_and_fleet_decoupling.py)
+  - 核心 API 回归测试：[`tests/server/test_plugins_api.py`](file:///c:/Users/Skl/Desktop/coding/OpenVikingStudio/tests/server/test_plugins_api.py)
+- **测试视网膜与探针证据**：
+  - `pytest -o addopts="" tests/server/test_card140_cpa_and_fleet_decoupling.py tests/server/test_plugins_api.py` ➔ **10 passed in 1.92s** 全绿 ✅；
+  - 前端编译：`npm run build` ➔ **built in 3m 21s** 零报错通过 ✅。
+
+#### 📌 [P0] [x] Card-141: 核心记忆与代码战地完全体整并重构 (普通 Agent 34 项战地工具 + 3 项 Hook 物理守卫交付 - P0 战地核心) ✅ (v1.7.98)
+- **类型**：核心能力整并 / 战地完全体交付 / 技能感知与工单直通 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.97` ｜ **当前状态**：[x] 已验收通过 ✅ (v1.7.98)
+- **背景与用户实战第一性原理**：
+  1. **代码能力与记忆中枢整并回归**：用户深刻指出，全网所有智能体（从日常对话的 DeepSeek Honey 到卫星工兵）本质上都是工程师智能体，日常写脚本、做监控、查网页、改代码是基本功。若把代码 AST 与阅读工具拆散为孤立插件，普通 Agent 会沦为“代码残疾”；因此必须将代码感知（AST、检索、折叠、差异）与长程记忆深度合流，构成普通 Agent 标配的战地旗舰插件 (`openviking-memory`)；
+  2. **34 项战地完全体武器矩阵**：
+     - **记忆中枢 (8 项)**：`openviking_find`, `openviking_search`, `openviking_read`, `openviking_write`, `openviking_store`, `openviking_link`, `openviking_get_relations`, `openviking_unlink`；
+     - **代码与工作区深度 AST (11 项)**：`openviking_ls`, `openviking_tree`, `openviking_grep`, `openviking_glob`, `openviking_code_outline`, `openviking_code_search`, `openviking_code_expand`, `openviking_diff`, `openviking_smart_read`, `openviking_tokenshift_compress`, `openviking_tag`；
+     - **技能中心感知与发布 (6 项)**：`openviking_skills`, `openviking_audit_skills`, `openviking_auto_onboard_skills`, `openviking_get_onboard_queue_status`, `openviking_fix_skill`, `openviking_record_evolution_lesson`（感知 1214 全量技能）；
+     - **工单自主建卡与哨兵 (4 项)**：`openviking_file_task_card`, `openviking_list_pending_cards`, `openviking_resolve_task_card`, `openviking_task_cards_summary`（遇到死胡同自主吹哨建卡）；
+     - **超大文档代客泊车 (2 项)**：`openviking_valet_handover`, `openviking_valet_ticket_status`（50MB+ 超大文件异步批处理，杜绝 504 崩溃）；
+     - **安全脱敏与传感器 (3 项)**：`openviking_privacy`, `openviking_ping`, `openviking_harness_stats`；
+  3. **3 项核心 Hook 物理守卫闭环**：
+     - `ov_pre_invocation`：指令输入前隐式自动召回长程记忆，杜绝盲搜与认知割裂；
+     - `ov_lesson_crystallizer`：会话结束时自动提纯踩坑教训与 Recipe 经验入脑；
+     - `ov_sandbox_guard`：运行态安全拦截高危行为与隐私外泄；
+  4. **全息感知 1214 技能与工单直通**：实测验证普通 Agent 在遇到自身解决不了的异常时，可自主调用 `openviking_file_task_card` 建卡上报，并能通过 `openviking_skills` 检索全域 1214 个真实在册技能。
+- **原子工单拆解 (Tracer Bullet 细颗粒度工单)**：
+  - [x] **`TASK-141-1: TDD 契约单测先行 (Red-to-Green)`** ✅：编写 `tests/server/test_card141_battlefield_memory_and_code.py`，精确断言 `openviking-memory` 战地工具池收敛为 34 项，涵盖记忆(8)、代码(11)、技能(6)、工单(4)、泊车(2)、传感器(3) 6 大领域，验证 3 项 Hook 契约存在性；
+  - [x] **`TASK-141-2: 插件注册表战地收敛重构`** ✅：更新 `openviking/service/plugin_registry.py`，定义 `BATTLEFIELD_34_TOOLS` 常量与 `openviking-memory` 描述契约，使核心插件明确为面向全量普通 Agent 的 34+3 战地完全体；
+  - [x] **`TASK-141-3: 前端能力预设与工具字典联动更新`** ✅：同步更新 `agent-tools.ts`、`capability-bundles.ts` 与 `agent-capability-picker.tsx`，将【🛰️ 卫星业务工兵预设】精准锚定为 34 项战地工具，消除幽灵工具与历史偏差；
+  - [x] **`TASK-141-4: 1214 技能感知与自主建卡端到端实机验证`** ✅：实测调用 `openviking_skills` 验证 1214 技能检索回显，实测调用 `openviking_file_task_card` 验证自主吹哨建卡入库，确保前后端门禁与生产构建 100% 全绿。
+- **交付物清单**：
+  - 核心注册表：[`openviking/service/plugin_registry.py`](file:///c:/Users/Skl/Desktop/coding/OpenVikingStudio/openviking/service/plugin_registry.py)
+  - 前端工具字典：[`src/routes/users/-constants/agent-tools.ts`](file:///c:/Users/Skl/Desktop/coding/OpenVikingStudio/src/routes/users/-constants/agent-tools.ts)
+  - 前端能力包配置：[`src/routes/agents/-lib/capability-bundles.ts`](file:///c:/Users/Skl/Desktop/coding/OpenVikingStudio/src/routes/agents/-lib/capability-bundles.ts)
+  - 专项单测套件：`tests/server/test_card141_battlefield_memory_and_code.py`
+- **验收标准**：
+  1. `openviking-memory` 工具清单精确匹配 34 项战地工具，3 项 Hook 全部在线；
+  2. 专项与回归单测 100% PASS，前端构建 100% PASS；
+  3. 1214 技能中心与自主建卡实机调用畅通无阻。
+- **交付留痕 (Verification & Evidence)**：
+  - **Git Commit**：`25771b69f` (`feat(plugin): consolidate battlefield memory and code into 34 tools (Card-141)`)
+  - **测试验证**：
+    - Python 后端：`test_card141_battlefield_memory_and_code.py` (3/3), `test_card140_cpa_and_fleet_decoupling.py` (3/3), `test_plugins_api.py` (7/7) 共 13/13 单测通过 (3.55s)；
+    - 前端 Vitest：`tool-acl-scenario.test.ts` (8/8) 单测全绿通过 (7ms)；
+    - 生产构建：Vite Build 生产编译打包 PASS (✓ built in 4m 35s)，零报错；
+    - 安全门禁：`anti-demo` 250 组件 0 违规，零密钥泄漏审计 PASS。
+  - **实际修改文件清单**：
+    - 后端核心注册与插件清单：`openviking/service/builtin_plugins.py`, `openviking/service/builtin_plugins_core.py`, `openviking/service/builtin_plugins_eco.py`, `openviking/service/plugin_registry.py`；
+    - 后端契约单测：`tests/server/test_card141_battlefield_memory_and_code.py`；
+    - 前端常量与工具池：`src/routes/users/-constants/agent-tools.ts`, `src/routes/users/-components/tool-acl-scenario.test.ts`；
+    - 前端插件配置与预设座舱：`src/routes/agents/-lib/capability-bundles.ts`, `src/routes/agents/-lib/plugins/` (7大模块), `src/routes/users/-components/plugin-assembly-tab.tsx`, `src/routes/users/-components/user-plugin-cockpit-drawer.tsx`。
+
+
+#### 📌 [P1] [x] Card-142: 系统运维治理插件 (`openviking-ops`) 独立 Quad 封装与静默守护闭环 (17 项特权工具 + 2 项 Hook + 运维 Agent 授权 - P1 自动化守护) ✅ (v1.7.99)
+- **类型**：运维特权解耦 / 静默自愈守卫 / 运维专属 Agent 授权 ｜ **优先级**：🔥 P1 ｜ **目标版本**：`v1.7.99` ｜ **当前状态**：[x] 已验收通过 ✅ (v1.7.99)
+- **背景与第一性原理**：
+  1. **特权收敛与业务隔离**：写改底座、移动重命名、死信重试、DSPy 编译、概念漂移审计、隔离仓等 17 项特权工具具有高危破坏性，绝不能混杂在普通业务 Agent 的工具池中；
+  2. **拒绝人肉后台，全靠自动化静默运维**：绝不能将这些特权工具“藏在后台让人肉操作”，必须封装为标准 Quad 插件 `openviking-ops` (17 Tools + 2 Hooks + 1 Skill + GUI)，专门授权给后台专用运维 Agent / 巡检 Engine（如 24 小时哨兵 Sentinel），实现 100% 自动化静默巡检、死信自愈与概念漂移审计；
+  3. **17 项特权工具清单**：
+     `openviking_add_resource`, `openviking_list_resources`, `openviking_delete_resource`, `openviking_reindex`, `openviking_commit`, `openviking_mv`, `openviking_rename`, `openviking_webdav_info`, `openviking_dspy_compile`, `openviking_memory_purity_report`, `openviking_retry_dead_letter`, `openviking_list_watches`, `openviking_cancel_watch`, `openviking_manage_watch`, `openviking_server_control`, `openviking_server_init`, `openviking_server_doctor`；
+  4. **2 项运维专用 Hook 守卫**：
+     - `ov_ops_drift_sentinel`：后台定时巡检概念漂移与死信队列，一旦堆积自动自愈；
+     - `ov_ops_audit_logger`：对所有特权高危操作进行 100% 不可篡改的物理日记账审计。
+- **原子工单拆解 (Tracer Bullet 细颗粒度工单)**：
+  - [x] **`TASK-142-1: 17 项运维特权工具提取与 Quad 插件模型定义`**：在 `openviking/service/builtin_plugins_core.py` 与 `plugin_registry.py` 中注册 `openviking-ops` 独立插件及其探针；
+  - [x] **`TASK-142-2: 2 项运维专用 Hook 物理守卫落地`**：实现漂移检测与特权操作审计拦截器，根治 `threading.RLock` 嵌套死锁；
+  - [x] **`TASK-142-3: 运维专属 Skill openviking-ops 规范编制`**：编写面向后台运维 Agent 的标准操作手册 `.agents/skills/openviking-ops/SKILL.md`；
+  - [x] **`TASK-142-4: Web Studio 运维 Agent 一键授权与单测视网膜验证`**：前端用户抽屉提供【🛡️ 运维特权包 (17工具+2Hook)】一键下发，单测全绿。
+- **交付留痕 (Verification & Evidence)**：
+  - **Git Commit**：`b3ddfb0a0` (`feat(plugin): decouple openviking-ops into dedicated quad plugin with 17 tools (Card-142)`)
+  - **测试验证**：
+    - Python 后端单测：`test_card142_openviking_ops_plugin.py` (3/3) 1.02s 全绿通过；
+    - 插件全域回归：`test_card142` + `test_card141` + `test_card140` + `test_plugins_api` 共 16/16 单测 4.10s 100% 全绿通过；
+    - 安全门禁：`anti-demo` 250 组件 0 违规，4898 代码文件 0 密钥泄漏审计 PASS。
+  - **实际修改文件清单**：
+    - 后端服务与注册器：`openviking/service/builtin_plugins_core.py`, `openviking/service/plugin_registry.py`；
+    - 专项单测套件：`tests/server/test_card142_openviking_ops_plugin.py`；
+    - 专属认知导轨：`.agents/skills/openviking-ops/SKILL.md`；
+    - 前端 Quad 插件定义：`src/routes/agents/-lib/plugins/ops-plugin.ts`。
+
+#### 📌 [P1] [x] Card-143: 工单系统历史堆积幽灵卡片大扫除与防风暴治理巡检闭环 (504 张幽灵告警物理归档 + PID 去噪脱敏防风暴 - P1 资产治理) ✅ (v1.7.100)
+- **类型**：资产大扫除 / 脏数据物理清退 / 工单哨兵健康探针 ｜ **优先级**：🔥 P1 ｜ **目标版本**：`v1.7.100` ｜ **当前状态**：[x] 已验收通过 ✅
+- **核心成果**：编写 `scripts/clean_ghost_task_cards.py` 归档 504 张幽灵告警，增强 `_compute_fingerprint` 脱敏防风暴，19/19 专项回归全绿。
+
+#### 📌 [P2] [x] Card-144: Web Studio 插件中心场景化座舱升级与不可变版本发版 (四大解耦插件座舱展示 + 不可变客户端包 - P2 交付验收) ✅ (v1.7.101)
+- **类型**：座舱 UI 升级 / 不可变版本打包 / 全量门禁交付 ｜ **优先级**：🔥 P2 ｜ **目标版本**：`v1.7.101` ｜ **当前状态**：[x] 已验收通过 ✅
+- **核心成果**：`/studio/plugins` 与接入抽屉高密展示四大 Quad 插件矩阵，一键能力预设联动，Vite Build 生产构建通过，Tag `v1.7.101` 成功打标。
+
+#### 📌 [P0] [x] Card-145: 技能中心三层 L0/L1/L2 结构化真源码透出、TOC 结构化章节索引导航与全域视网膜测试 100% 修复闭环 ✅ (v1.7.102)
+- **类型**：真数据治理 / 技能三层解耦 / 视网膜门禁全绿 / 生产发版 ｜ **优先级**：🔥 P0 ｜ **目标版本**：`v1.7.102` ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与第一性原理**：
+  1. **直击痛点**：此前技能详情抽屉通过正则截取前数十行并丢弃后续内容，导致用户在查阅 27 个已收拢技能时误以为“每个技能只有十几行假代码”；
+  2. **三层 L0/L1/L2 结构化真源码透出**：
+     - **L0 (意图触发)**：自然语言意图描述、语义关联标签、作用域与关联物理文件数；
+     - **L1 (SOP 流程)**：SOP 核心流程规范大纲、允许调用的 MCP 工具授权清单；
+     - **L2 (全量源码)**：关联源文件树形结构 + `SKILL.md` 全量真源码带行号高亮 + TOC 结构化章节索引 + 平滑单跳与一键复制源码；
+  3. **全域视网膜门禁 100% 修复**：运行 `/全量测试`，靶向定位并彻底根治了 `file-preview.tsx` 依赖缺失、`knowledge-health-radar-card.tsx` 300 行超标、流水线命名对齐规范、字体基准合规与环境隔离等 6 大隐患，前端 Vitest 52/52 242/242 测试 100% 全绿，Pytest 36/36 全绿。
+- **原子工单拆解 (Tracer Bullet 交付项)**：
+  - [x] **`TASK-145-1: 技能三层抽屉重构与真实源码查看器落地`**：落地 `SkillDetailSheet.tsx` (L0/L1/L2) 与 `SkillSourceViewer`，集成 TOC 目录索引与行号平滑跳转；
+  - [x] **`TASK-145-2: 源码结构化解析与中文元数据增强`**：落地 `extractSkillToc` 标题提取，更新 `skill-data.ts` 与 `skill-translations.ts`；
+  - [x] **`TASK-145-3: 全域测试视网膜 100% 修复闭环`**：修复 6 处测试断言与边界缺陷，Vitest 242 项测试全绿通过；
+  - [x] **`TASK-145-4: 生产编译与版本留痕闭环`**：Vite 生产构建成功，版本递增至 `v1.7.102`，打标 Git Tag `v1.7.102`。
+- **物理验收与门禁**：
+  - **Git Tag**：`v1.7.102`
+  - **自动化测试通过率**：Vitest 242/242 PASS，Pytest 36/36 PASS，Node 11/11 PASS (总计 289 项测试 100% 全绿)；
+  - **生产构建**：`npx vite build` 3m 14s PASS (5,117 modules transformed)；
+  - **服务探针验活**：HTTP 200 -> `{"status":"ok","healthy":true,"version":"1.7.102","auth_mode":"trusted"}`。
 
 #### 📌 [P0] [ ] Card-131 (v1.7.87 规划中): FastMCP 总线端点解耦与生态工具模块化拓扑同构架构重构 (FastMCP Endpoint Modular Decoupling & Plugin Topology Parity)
 - **类型**：底层通信架构解耦 / 模块化拆分 / 插件中心拓扑同构 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.87 (待明日研讨落地)` ｜ **当前状态**：[ ] 待深入分析与排期研讨 ⏳
@@ -3367,4 +3583,5 @@
   - **运行时服务探针**：`curl -s http://127.0.0.1:1933/health` ➔ **HTTP 200 (version: 1.7.71, auth_mode: trusted) PASS**。
 
 
+  - **Git Commit**：83ba56e20
 

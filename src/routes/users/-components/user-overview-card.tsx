@@ -9,7 +9,6 @@ import {
   RotateCwIcon,
   ShieldCheckIcon,
   ShieldIcon,
-  UserCheckIcon,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -19,14 +18,12 @@ import type { AdminUser } from '#/lib/admin'
 export type UserOverviewCardProps = {
   user: AdminUser | null
   isCurrentIdentity: boolean
-  onSwitchIdentity?: (user: AdminUser) => void
   onRegenerateKey?: (user: AdminUser) => void
 }
 
 export function UserOverviewCard({
   user,
   isCurrentIdentity,
-  onSwitchIdentity,
   onRegenerateKey,
 }: UserOverviewCardProps) {
   const handleCopy = async (text: string, label: string) => {
@@ -54,18 +51,6 @@ export function UserOverviewCard({
           用户基础凭据与安全防线
         </span>
         <div className="flex items-center gap-1.5">
-          {!isCurrentIdentity && onSwitchIdentity && user && (
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="h-6.5 px-2 text-xs"
-              onClick={() => onSwitchIdentity(user)}
-            >
-              <UserCheckIcon className="size-3 mr-1 text-cyan-500" />
-              切换身份
-            </Button>
-          )}
           {onRegenerateKey && user && (
             <Button
               type="button"

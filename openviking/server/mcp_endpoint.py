@@ -154,22 +154,59 @@ def _oauth_enabled(scope: Scope) -> bool:
     return getattr(app.state, "oauth_provider", None) is not None
 
 
-def _filter_obj_tools(obj: Any, allowed_tools: set[str]) -> None:
+def _filter_obj_tools(obj: Any, target_plugin: str) -> None:
+    from openviking.server.routers.client_caps_constants import (
+        BATTLEFIELD_34_TOOLS,
+        OPS_17_TOOLS,
+        FLEET_2_TOOLS,
+    )
+
+    clean_plugin = (target_plugin or "").lower().strip()
+    if clean_plugin in ("fleet-mesh", "fleet", "openviking-fleet", "dsh-plugin-openviking-fleet"):
+        expected_spec = FLEET_2_TOOLS
+    elif clean_plugin in ("openviking-ops", "ops", "dsh-plugin-openviking-ops"):
+        expected_spec = OPS_17_TOOLS
+    elif clean_plugin in ("*", "all"):
+        return
+    else:
+        expected_spec = BATTLEFIELD_34_TOOLS
+
+    spec_map: dict[str, dict[str, Any]] = {}
+    for spec in expected_spec:
+        spec_map[spec["id"]] = spec
+        if spec.get("name"):
+            spec_map[spec["name"]] = spec
+        clean = spec["id"].replace("openviking_", "")
+        spec_map[clean] = spec
+        if clean == "store": spec_map["remember"] = spec
+        elif clean == "ls": spec_map["list"] = spec
+        elif clean == "delete_resource": spec_map["forget"] = spec
+        elif clean == "privacy": spec_map["openviking_privacy_mask"] = spec
+        elif clean == "ping": spec_map["health"] = spec
+        elif clean == "harness_stats": spec_map["openviking_harness_probe"] = spec
+
     items = obj if isinstance(obj, list) else [obj]
     for item in items:
         if isinstance(item, dict) and "result" in item:
             res = item["result"]
             if isinstance(res, dict) and "tools" in res and isinstance(res["tools"], list):
-                res["tools"] = [
-                    t for t in res["tools"]
-                    if isinstance(t, dict) and (t.get("name") in allowed_tools or "*" in allowed_tools)
-                ]
+                selected = []
+                seen_spec_ids = set()
+                for t in res["tools"]:
+                    if isinstance(t, dict):
+                        t_name = t.get("name", "")
+                        if t_name in spec_map:
+                            spec = spec_map[t_name]
+                            if spec["id"] not in seen_spec_ids:
+                                seen_spec_ids.add(spec["id"])
+                                selected.append(t)
+                res["tools"] = selected
 
 
-def _filter_tools_list_payload(body_bytes: bytes, allowed_tools: set[str]) -> bytes:
-    """Filter tools in JSON or SSE formatted MCP tools/list response."""
+def _filter_tools_list_payload(body_bytes: bytes, target_plugin: str) -> bytes:
+    """Filter tools in JSON or SSE formatted MCP tools/list response strictly for target plugin."""
     import json
-    if not body_bytes or "*" in allowed_tools:
+    if not body_bytes or target_plugin in ("*", "all"):
         return body_bytes
     text = body_bytes.decode("utf-8", errors="replace")
 
@@ -182,7 +219,7 @@ def _filter_tools_list_payload(body_bytes: bytes, allowed_tools: set[str]) -> by
                 raw_json = line[len("data:"):].strip()
                 try:
                     obj = json.loads(raw_json)
-                    _filter_obj_tools(obj, allowed_tools)
+                    _filter_obj_tools(obj, target_plugin)
                     new_lines.append(f"data: {json.dumps(obj, ensure_ascii=False)}")
                 except Exception:
                     new_lines.append(line)
@@ -192,7 +229,7 @@ def _filter_tools_list_payload(body_bytes: bytes, allowed_tools: set[str]) -> by
     else:
         try:
             obj = json.loads(text)
-            _filter_obj_tools(obj, allowed_tools)
+            _filter_obj_tools(obj, target_plugin)
             return json.dumps(obj, ensure_ascii=False).encode("utf-8")
         except Exception:
             return body_bytes
@@ -242,33 +279,11 @@ class _IdentityASGIMiddleware:
                 or request.headers.get("x-openviking-agent-id")
                 or actor_peer_id
             )
-            agent_rec = None
-            inferred_user_id = None
-            if declared_agent_id:
-                from openviking.storage.agent_principal_store import AgentPrincipalStore
-                agent_rec = AgentPrincipalStore.get_instance().get_agent(
-                    declared_agent_id, include_deleted=False
-                )
-                if not agent_rec or agent_rec.status == "revoked":
-                    resp = JSONResponse(
-                        {
-                            "jsonrpc": "2.0",
-                            "id": None,
-                            "error": {
-                                "code": -32001,
-                                "message": f"Agent ID [{declared_agent_id}] not found or credential invalid",
-                            },
-                        },
-                        status_code=401,
-                    )
-                    return await resp(scope, receive, send)
-                inferred_user_id = agent_rec.user_id
 
-            # 自动推断属主：只要指定了 agent_id，系统自动解析归属 user_id，严禁强迫调用方在 URL 拼接 user_id
+            # 鉴权唯一真相源收敛至 User Key (resolve_identity)，废黜 agent_id 强校验拦截
             effective_user_param = (
                 request.headers.get("x-openviking-user")
                 or request.query_params.get("user_id")
-                or inferred_user_id
                 or "default"
             )
 
@@ -280,45 +295,75 @@ class _IdentityASGIMiddleware:
                 x_openviking_user=effective_user_param,
             )
 
-            # 🛡️ 属主匹配强校验：防串户与越权接入 (Owner-Agent Cross Verification)
-            declared_user_id = request.query_params.get("user_id") or request.headers.get("x-openviking-user")
-            if declared_user_id and agent_rec and agent_rec.user_id and declared_user_id != agent_rec.user_id:
-                resp = JSONResponse(
-                    {
-                        "jsonrpc": "2.0",
-                        "id": None,
-                        "error": {
-                            "code": -32003,
-                            "message": f"Cross-tenant access denied: Agent [{declared_agent_id}] belongs to user [{agent_rec.user_id}], but request specified user [{declared_user_id}]",
-                        },
-                    },
-                    status_code=403,
-                )
-                return await resp(scope, receive, send)
+            auth_role = getattr(identity, "role", "user") or "user"
 
-            auth_user = getattr(identity, "user_id", None) if identity else None
-            if auth_user and auth_user not in ("anonymous", "default_anonymous") and agent_rec and agent_rec.user_id:
-                auth_role = getattr(identity, "role", "")
-                if auth_role != "admin" and auth_user != agent_rec.user_id:
+            # 识别目标插件包 (plugin_id / target_plugin)
+            raw_plugin = (
+                request.query_params.get("plugin_id")
+                or request.query_params.get("plugin")
+                or request.headers.get("x-openviking-plugin")
+                or request.headers.get("x-plugin-id")
+                or ""
+            ).strip().lower()
+
+            if not raw_plugin:
+                peer_lower = (actor_peer_id or declared_agent_id or "").lower()
+                if any(k in peer_lower for k in ("fleet", "mesh", "coordinator")):
+                    raw_plugin = "fleet-mesh"
+                elif any(k in peer_lower for k in ("ops", "sentinel")):
+                    raw_plugin = "openviking-ops"
+                else:
+                    raw_plugin = "openviking-memory"
+
+            # 🛡️ 插件角色权限硬门禁 (RBAC Gate)
+            if raw_plugin in ("openviking-ops", "ops", "dsh-plugin-openviking-ops", "fleet-mesh", "fleet", "openviking-fleet", "dsh-plugin-openviking-fleet"):
+                if auth_role != "admin":
                     resp = JSONResponse(
                         {
                             "jsonrpc": "2.0",
                             "id": None,
                             "error": {
                                 "code": -32003,
-                                "message": f"Owner mismatch: Agent [{declared_agent_id}] belongs to user [{agent_rec.user_id}], but authenticated key belongs to [{auth_user}]",
+                                "message": f"Permission Denied: Plugin [{raw_plugin}] requires administrator privileges (role='admin'). Current user role is [{auth_role}].",
                             },
                         },
                         status_code=403,
                     )
                     return await resp(scope, receive, send)
 
-            # Enforce physical Tool ACL validation and dynamic tools/list projection
+            # 依据目标插件包计算该连接允许的工具集 (Tool ACL SSOT)
+            from openviking.server.routers.client_caps_constants import (
+                BATTLEFIELD_34_TOOLS,
+                OPS_17_TOOLS,
+                FLEET_2_TOOLS,
+            )
+
+            if raw_plugin in ("fleet-mesh", "fleet", "openviking-fleet", "dsh-plugin-openviking-fleet"):
+                allowed_spec = FLEET_2_TOOLS
+            elif raw_plugin in ("openviking-ops", "ops", "dsh-plugin-openviking-ops"):
+                allowed_spec = OPS_17_TOOLS
+            else:
+                allowed_spec = BATTLEFIELD_34_TOOLS
+
+            allowed_tools_set = set()
+            for s in allowed_spec:
+                allowed_tools_set.add(s["id"])
+                if s.get("name"):
+                    allowed_tools_set.add(s["name"])
+                clean = s["id"].replace("openviking_", "")
+                allowed_tools_set.add(clean)
+                if clean == "store": allowed_tools_set.add("remember")
+                elif clean == "ls": allowed_tools_set.add("list")
+                elif clean == "delete_resource": allowed_tools_set.add("forget")
+                elif clean == "privacy": allowed_tools_set.add("openviking_privacy_mask")
+                elif clean == "ping": allowed_tools_set.add("health")
+                elif clean == "harness_stats": allowed_tools_set.add("openviking_harness_probe")
+
+            # 拦截 POST 请求进行 tools/list 过滤与 tools/call ACL 校验
             replay_receive = receive
             is_tools_list = False
-            if declared_agent_id and agent_rec and request.method == "POST":
+            if request.method == "POST":
                 import json
-                import time
                 body = await request.body()
 
                 body_consumed = False
@@ -342,11 +387,10 @@ class _IdentityASGIMiddleware:
                             elif m_name == "tools/call":
                                 params = call_obj.get("params") or {}
                                 tool_name = params.get("name")
-                                allowed = set(agent_rec.allowed_tools) if agent_rec.allowed_tools else set()
-                                if "*" not in allowed and tool_name and tool_name not in allowed:
+                                if tool_name and tool_name not in allowed_tools_set:
                                     req_id = call_obj.get("id")
                                     logger.warning(
-                                        f"Tool ACL Denied: Agent [{declared_agent_id}] attempted unauthorized tool [{tool_name}]. Allowed: {agent_rec.allowed_tools}"
+                                        f"Tool ACL Denied: Tool [{tool_name}] not authorized for plugin [{raw_plugin}]"
                                     )
                                     resp = JSONResponse(
                                         {
@@ -354,21 +398,12 @@ class _IdentityASGIMiddleware:
                                             "id": req_id,
                                             "error": {
                                                 "code": -32003,
-                                                "message": f"Permission Denied: Tool [{tool_name}] is not authorized for Agent Principal [{declared_agent_id}]. Please grant access in OpenViking Tool ACL Matrix.",
+                                                "message": f"Permission Denied: Tool [{tool_name}] is not part of plugin [{raw_plugin}] capability package.",
                                             },
                                         },
                                         status_code=403,
                                     )
                                     return await resp(scope, _replay_receive, send)
-                                # Heartbeat & message count increment
-                                try:
-                                    AgentPrincipalStore.get_instance().update_agent(
-                                        declared_agent_id,
-                                        total_messages=agent_rec.total_messages + 1,
-                                        last_seen=time.time(),
-                                    )
-                                except Exception:
-                                    pass
                 except Exception as parse_err:
                     logger.debug(f"Tool ACL bypass parse error: {parse_err}")
 
@@ -418,8 +453,7 @@ class _IdentityASGIMiddleware:
         url_token = _request_url_ctx.set(url_info)
 
         effective_send: Send = send
-        allowed_tools_set = set(agent_rec.allowed_tools) if (agent_rec and agent_rec.allowed_tools) else set()
-        if is_tools_list and "*" not in allowed_tools_set:
+        if is_tools_list:
             original_send = send
             response_start_message: Optional[dict] = None
             response_body_chunks: List[bytes] = []
@@ -432,7 +466,7 @@ class _IdentityASGIMiddleware:
                     response_body_chunks.append(message.get("body", b""))
                     if not message.get("more_body", False):
                         full_body = b"".join(response_body_chunks)
-                        modified_body = _filter_tools_list_payload(full_body, allowed_tools_set)
+                        modified_body = _filter_tools_list_payload(full_body, raw_plugin)
                         if response_start_message:
                             new_headers = []
                             for h_name, h_val in response_start_message.get("headers", []):
@@ -1247,6 +1281,10 @@ async def write(
                 "[EntropyGatekeeper][MCP] Overriding NOOP with physical write for %s: Target file missing or content changed.",
                 uri,
             )
+            if isinstance(ctx, dict):
+                ctx["skip_gatekeeper"] = True
+            elif hasattr(ctx, "skip_gatekeeper"):
+                setattr(ctx, "skip_gatekeeper", True)
 
     try:
         result = await service.fs.write(
@@ -1262,6 +1300,12 @@ async def write(
             uri=uri, content=content, ctx=ctx, mode="create", wait=wait, timeout=timeout
         )
     written = result.get("written_bytes", 0)
+    action = result.get("action")
+    if action == "noop":
+        return (
+            f"[Entropy Defense] NOOP (印证去重): 目标节点 {result.get('uri', uri)} 已存在且内容完全一致 (0 字节变动)。"
+            f"已拦截物理重复落盘。"
+        )
     message = (
         f"Wrote {written} bytes to {result.get('uri', uri)} (mode={result.get('mode', mode)})."
     )
@@ -2809,6 +2853,394 @@ async def openviking_skill_evolution_pipeline(
         )
 
 
+# ===========================================================================
+# 战地核心工具原生实现 (消除 HTTP 自身回环自锁与 CLI 依赖)
+# ===========================================================================
+
+def _safe_resolve_target_uri(target_uri: str, ctx: RequestContext) -> str:
+    """容错解析 target_uri：兼容本地物理文件与标准 viking://resources/... 格式。"""
+    raw = (target_uri or "").strip()
+    if not raw:
+        return ""
+    from pathlib import Path
+    p = Path(raw)
+    if p.exists() and p.is_file():
+        return str(p)
+    if not raw.startswith("viking://"):
+        raw = f"viking://resources/{raw.lstrip('/')}"
+    try:
+        return _resolve_mcp_workspace_uri(raw, ctx)
+    except Exception:
+        return raw
+
+
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_code_outline(target_uri: str) -> str:
+    """提取代码或知识文件的符号结构大纲（函数、类、主要章节等）。"""
+    service = get_service()
+    ctx = _get_ctx()
+    resolved_uri = _safe_resolve_target_uri(target_uri, ctx)
+    try:
+        overview_data = await service.fs.overview(resolved_uri, ctx=ctx)
+        if isinstance(overview_data, str) and overview_data.strip():
+            return overview_data
+        elif isinstance(overview_data, dict):
+            import json
+            return json.dumps(overview_data, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+    try:
+        text = await service.fs.read_visible(resolved_uri, ctx=ctx)
+        lines = text.splitlines()[:100]
+        return "\n".join(lines)
+    except Exception as e:
+        return f"Error reading outline for {target_uri}: {e}"
+
+
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_code_search(query: str, target_uri: str = "viking://") -> str:
+    """基于 AST 与语义检索代码符号（函数、类、变量等）。"""
+    service = get_service()
+    ctx = _get_ctx()
+    resolved_uri = _resolve_mcp_workspace_uri(target_uri, ctx) if target_uri and target_uri != "viking://" else None
+    try:
+        results = await service.find(query=query, target_uri=resolved_uri, ctx=ctx)
+        if hasattr(results, "resources") or hasattr(results, "memories"):
+            return await _format_search_result(results, service=service, ctx=ctx, limit=10)
+        import json
+        return json.dumps(results, ensure_ascii=False, indent=2) if results else f"No code symbols found for '{query}'"
+    except Exception as e:
+        return f"Error searching code: {e}"
+
+
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_code_expand(target_uri: str, symbol: str = "") -> str:
+    """返回文件源码或指定符号的完整实现切片。"""
+    service = get_service()
+    ctx = _get_ctx()
+    resolved_uri = _resolve_mcp_workspace_uri(target_uri, ctx)
+    try:
+        content = await service.fs.read_visible(resolved_uri, ctx=ctx)
+        if not symbol or not symbol.strip():
+            return content
+        sym = symbol.strip()
+        lines = content.splitlines()
+        matched_idx = -1
+        for idx, line in enumerate(lines):
+            if sym in line:
+                matched_idx = idx
+                break
+        if matched_idx >= 0:
+            start_line = max(0, matched_idx - 10)
+            end_line = min(len(lines), matched_idx + 60)
+            slice_lines = lines[start_line:end_line]
+            return f"=== Symbol '{sym}' slice ({start_line+1}-{end_line}) ===\n" + "\n".join(slice_lines)
+        return content
+    except Exception as e:
+        return f"Error expanding symbol in {target_uri}: {e}"
+
+
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_diff(source_uri: str, target_uri: str) -> str:
+    """纯 Python 快速比对两个资源或文件的内容差异 (Unified Diff)，零外部依赖。"""
+    import difflib
+    from pathlib import Path
+    service = get_service()
+    ctx = _get_ctx()
+
+    async def _get_text(uri_or_path: str) -> str:
+        p = Path(uri_or_path)
+        if p.exists() and p.is_file():
+            return p.read_text(encoding="utf-8", errors="replace")
+        resolved = _safe_resolve_target_uri(uri_or_path, ctx)
+        try:
+            return await service.fs.read_visible(resolved, ctx=ctx)
+        except Exception:
+            return ""
+
+    text1 = await _get_text(source_uri)
+    text2 = await _get_text(target_uri)
+    diff_lines = list(
+        difflib.unified_diff(
+            text1.splitlines(keepends=True),
+            text2.splitlines(keepends=True),
+            fromfile=source_uri,
+            tofile=target_uri,
+        )
+    )
+    if not diff_lines:
+        return f"=== diff: No differences found between {source_uri} and {target_uri} ==="
+    return "".join(diff_lines)
+
+
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_smart_read(
+    query: str,
+    level: int = 1,
+    limit: int = 3,
+    score_threshold: float = 0.0,
+) -> str:
+    """智能读取：语义检索与多级内容聚合。支持 L0(摘要)、L1(概览结构)、L2(全文切片)。"""
+    service = get_service()
+    ctx = _get_ctx()
+    try:
+        search_res = await service.find(query=query, limit=limit, ctx=ctx)
+        items = []
+        for ctx_type, group in [("memory", getattr(search_res, "memories", [])),
+                                ("resource", getattr(search_res, "resources", [])),
+                                ("skill", getattr(search_res, "skills", []))]:
+            for item in group:
+                score = getattr(item, "score", 0.0)
+                if score >= score_threshold:
+                    items.append((ctx_type, item, score))
+        items.sort(key=lambda x: x[2], reverse=True)
+        items = items[:limit]
+        if not items:
+            return f"=== smart_read: No matching context found for '{query}' ==="
+
+        output_parts = [f"=== smart_read (Level {level}) for '{query}': {len(items)} hits ==="]
+        for ctype, m, score in items:
+            uri = getattr(m, "uri", "unknown")
+            abstract = getattr(m, "abstract", "") or "(no abstract)"
+            if level == 0:
+                output_parts.append(f"[{ctype}] {uri} (score: {score:.2f})\nAbstract: {abstract}\n")
+            elif level == 1:
+                overview = ""
+                try:
+                    overview = await service.fs.overview(uri, ctx=ctx)
+                except Exception:
+                    overview = abstract
+                output_parts.append(f"[{ctype}] {uri} (score: {score:.2f})\nOverview: {overview}\n")
+            else:
+                content = ""
+                try:
+                    content = await service.fs.read_visible(uri, ctx=ctx)
+                    if len(content) > 3000:
+                        content = content[:3000] + "\n... (truncated)"
+                except Exception:
+                    content = abstract
+                output_parts.append(f"[{ctype}] {uri} (score: {score:.2f})\nContent:\n{content}\n")
+        return "\n".join(output_parts)
+    except Exception as e:
+        return f"Error executing smart_read: {e}"
+
+
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_skills(
+    action: str = "list",
+    name: str = "",
+    description: str = "",
+    content: str = "",
+    tags: str = "",
+    target_uri: str = "viking://agent/skills",
+) -> str:
+    """感知与列出全域在册技能，或注册新技能。"""
+    import json
+    service = get_service()
+    ctx = _get_ctx()
+    act = action.lower().strip()
+    if act == "list":
+        try:
+            from openviking.server.routers.skills_helpers import _list_skills_from_root
+            skills = await _list_skills_from_root(service, ctx, target_uri or "viking://agent/skills")
+            return json.dumps({"status": "ok", "total": len(skills), "skills": skills}, ensure_ascii=False, indent=2)
+        except Exception as e:
+            return json.dumps({"status": "error", "error": str(e)}, ensure_ascii=False)
+    elif act == "add":
+        if not name or not description:
+            return json.dumps({"status": "error", "error": "add action requires name and description"}, ensure_ascii=False)
+        tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else []
+        body_text = content or f"# {name}\n\n{description}"
+        frontmatter = f"---\nname: {name}\ndescription: \"{description}\"\n"
+        if tag_list:
+            frontmatter += "tags:\n" + "\n".join(f"  - {t}" for t in tag_list) + "\n"
+        frontmatter += f"---\n\n{body_text}"
+        save_uri = f"{target_uri.rstrip('/')}/{name}/SKILL.md"
+        try:
+            await service.fs.write_file(save_uri, frontmatter, ctx=ctx)
+            return json.dumps({"status": "ok", "message": f"Skill '{name}' registered at {save_uri}"}, ensure_ascii=False)
+        except Exception as e:
+            return json.dumps({"status": "error", "error": str(e)}, ensure_ascii=False)
+    return json.dumps({"status": "error", "error": f"Invalid action: {action}. Expected: list | add"}, ensure_ascii=False)
+
+
+@mcp.tool(annotations=_RETRY_SAFE_DESTRUCTIVE_TOOL_ANNOTATIONS)
+async def openviking_link(
+    from_uri: str = "",
+    to_uris: Union[str, List[str]] = "",
+    reason: str = "",
+    link_type: str = "related_to",
+    weight: float = 1.0,
+    source: str = "",
+    target: str = "",
+) -> str:
+    """建立记忆或资源节点间的拓扑关联边。兼容 (from_uri, to_uris) 与 (source, target)。"""
+    import json
+    from openviking.storage.relations_store import RelationStore
+    service = get_service()
+    ctx = _get_ctx()
+    eff_from = resolve_path_variables(from_uri or source)
+    raw_to = to_uris or target
+    if not eff_from or not raw_to:
+        return json.dumps({"status": "error", "error": "link requires source/from_uri and target/to_uris"}, ensure_ascii=False)
+    eff_to = [resolve_path_variables(u) for u in raw_to] if isinstance(raw_to, list) else resolve_path_variables(raw_to)
+    try:
+        if hasattr(service, "relations") and service.relations:
+            await service.relations.link(eff_from, eff_to, ctx=ctx, reason=reason, link_type=link_type, weight=weight)
+        else:
+            store = RelationStore.get_instance()
+            if isinstance(eff_to, list):
+                store.add_links_batch(eff_from, eff_to, reason=reason, link_type=link_type, weight=weight)
+            else:
+                store.add_link(eff_from, eff_to, reason=reason, link_type=link_type, weight=weight)
+        return json.dumps({"status": "ok", "message": f"Linked {eff_from} -> {eff_to}"}, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({"status": "error", "error": str(e)}, ensure_ascii=False)
+
+
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_get_relations(uri: str) -> str:
+    """查询指定记忆或资源节点的出向关联图谱。"""
+    import json
+    from openviking.storage.relations_store import RelationStore
+    service = get_service()
+    ctx = _get_ctx()
+    eff_uri = resolve_path_variables(uri)
+    try:
+        if hasattr(service, "relations") and service.relations:
+            res = await service.relations.relations(eff_uri, ctx=ctx)
+        else:
+            store = RelationStore.get_instance()
+            res = store.get_outbound(eff_uri)
+        return json.dumps({"status": "ok", "result": res}, ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({"status": "error", "error": str(e)}, ensure_ascii=False)
+
+
+@mcp.tool(annotations=_RETRY_SAFE_DESTRUCTIVE_TOOL_ANNOTATIONS)
+async def openviking_unlink(
+    from_uri: str = "",
+    to_uri: str = "",
+    source: str = "",
+    target: str = "",
+) -> str:
+    """解绑记忆或资源节点间的关联边。"""
+    import json
+    from openviking.storage.relations_store import RelationStore
+    service = get_service()
+    ctx = _get_ctx()
+    eff_from = resolve_path_variables(from_uri or source)
+    eff_to = resolve_path_variables(to_uri or target)
+    if not eff_from or not eff_to:
+        return json.dumps({"status": "error", "error": "unlink requires from_uri and to_uri"}, ensure_ascii=False)
+    try:
+        if hasattr(service, "relations") and service.relations:
+            await service.relations.unlink(eff_from, eff_to, ctx=ctx)
+        else:
+            store = RelationStore.get_instance()
+            store.delete_link(eff_from, eff_to)
+        return json.dumps({"status": "ok", "message": f"Unlinked {eff_from} -> {eff_to}"}, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({"status": "error", "error": str(e)}, ensure_ascii=False)
+
+
+@mcp.tool(annotations=_RETRY_SAFE_DESTRUCTIVE_TOOL_ANNOTATIONS)
+async def openviking_tag(
+    target_uri: str,
+    action: str = "get",
+    tags: str = "",
+) -> str:
+    """标签管理：获取、设置或移除指定资源的语义标签。"""
+    import json
+    service = get_service()
+    ctx = _get_ctx()
+    resolved_uri = _resolve_mcp_workspace_uri(target_uri, ctx)
+    act = action.lower().strip()
+    try:
+        if act == "get":
+            meta = await service.fs.stat(resolved_uri, ctx=ctx)
+            current_tags = meta.get("tags", [])
+            return json.dumps({"status": "ok", "uri": resolved_uri, "tags": current_tags}, ensure_ascii=False)
+        elif act in ("set", "add"):
+            tag_list = [t.strip() for t in tags.split(",") if t.strip()]
+            await service.fs.set_tags(resolved_uri, tag_list, ctx=ctx)
+            return json.dumps({"status": "ok", "uri": resolved_uri, "tags": tag_list}, ensure_ascii=False)
+        elif act == "remove":
+            tag_list = [t.strip() for t in tags.split(",") if t.strip()]
+            meta = await service.fs.stat(resolved_uri, ctx=ctx)
+            current_tags = [t for t in meta.get("tags", []) if t not in tag_list]
+            await service.fs.set_tags(resolved_uri, current_tags, ctx=ctx)
+            return json.dumps({"status": "ok", "uri": resolved_uri, "tags": current_tags}, ensure_ascii=False)
+        return json.dumps({"status": "error", "error": f"Invalid action: {action}. Expected: get | set | remove"}, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({"status": "error", "error": str(e)}, ensure_ascii=False)
+
+
+# ---------------------------------------------------------------------------
+# FastMCP 双向透明别名解析器 (消除 Unknown Tool 与短名称不兼容)
+# ---------------------------------------------------------------------------
+
+def _install_aliased_tool_manager(mcp_instance: FastMCP) -> None:
+    """为 FastMCP 安装双向透明别名解析器。
+    
+    1. 彻底消灭 DSH 客户端调用短名 (code_outline) 时的 'Unknown tool: code_outline' 报错；
+    2. 允许全名 (openviking_*) 与短名 (*) 相互透明双向寻址；
+    3. 支持核心语义同义词映射 (store -> remember, ping -> health, ls -> list 等)。
+    """
+    tm = mcp_instance._tool_manager
+    if getattr(tm, "_aliasing_installed", False):
+        return
+
+    orig_get_tool = tm.get_tool
+
+    ALIAS_SYNONYMS = {
+        "store": "remember",
+        "openviking_store": "remember",
+        "list": "ls",
+        "openviking_list": "ls",
+        "delete_resource": "forget",
+        "openviking_delete_resource": "forget",
+        "ping": "health",
+        "openviking_ping": "health",
+        "harness_stats": "openviking_harness_probe",
+        "openviking_harness_stats": "openviking_harness_probe",
+        "privacy": "openviking_privacy_mask",
+        "openviking_privacy": "openviking_privacy_mask",
+    }
+
+    def _aliased_get_tool(name: str):
+        tool = orig_get_tool(name)
+        if tool is not None:
+            return tool
+
+        alt = ALIAS_SYNONYMS.get(name)
+        if alt:
+            tool = orig_get_tool(alt)
+            if tool is not None:
+                return tool
+
+        if name.startswith("openviking_"):
+            short_name = name[len("openviking_"):]
+            tool = orig_get_tool(short_name)
+            if tool is not None:
+                return tool
+            alt = ALIAS_SYNONYMS.get(short_name)
+            if alt:
+                tool = orig_get_tool(alt)
+                if tool is not None:
+                    return tool
+
+        candidate = f"openviking_{name}"
+        tool = orig_get_tool(candidate)
+        if tool is not None:
+            return tool
+
+        return None
+
+    tm.get_tool = _aliased_get_tool
+    tm._aliasing_installed = True
+
+
 # ---------------------------------------------------------------------------
 # Portable tool schemas
 # ---------------------------------------------------------------------------
@@ -2889,12 +3321,86 @@ def _portable_schema(schema: Any, defs: Optional[Dict[str, Any]] = None) -> Any:
     return node
 
 
+def _register_domain_packages() -> None:
+    try:
+        from pathlib import Path
+        import sys
+
+        repo_root = Path(__file__).resolve().parent.parent.parent
+        mcp_ov_dir = repo_root / "mcp-openviking"
+        if mcp_ov_dir.is_dir() and str(mcp_ov_dir) not in sys.path:
+            sys.path.insert(0, str(mcp_ov_dir))
+
+        from tools.fleet import register_fleet_tools
+        from tools.code import register_code_tools
+        from tools.skills import register_skills_tools
+        from tools.filesystem import register_filesystem_tools
+        from tools.system import register_system_tools
+        from tools.memory import register_memory_tools
+        from tools.sessions import register_sessions_tools
+        from tools.observability import register_observability_tools
+
+        existing = {t.name for t in mcp._tool_manager.list_tools()}
+        # 🛡️ 战地原生优先保护：绝对禁止用外部阻塞 HTTP / CLI 桥接函数覆盖我们内部的高性能原生异步工具
+        NATIVE_PROTECTED_TOOLS = {
+            "openviking_code_outline", "code_outline",
+            "openviking_code_search", "code_search",
+            "openviking_code_expand", "code_expand",
+            "openviking_diff", "diff",
+            "openviking_smart_read", "smart_read",
+            "openviking_skills", "skills",
+            "openviking_link", "link",
+            "openviking_get_relations", "get_relations",
+            "openviking_unlink", "unlink",
+            "openviking_tag", "tag",
+            "openviking_find", "find",
+            "openviking_search", "search",
+            "openviking_read", "read",
+            "openviking_write", "write",
+            "openviking_remember", "remember",
+            "openviking_list", "list",
+            "openviking_ls", "ls",
+            "openviking_tree", "tree",
+            "openviking_grep", "grep",
+            "openviking_glob", "glob",
+            "openviking_health", "health",
+            "openviking_forget", "forget",
+        }
+        existing.update(NATIVE_PROTECTED_TOOLS)
+
+        def _dec_factory():
+            def _dec(fn):
+                name = fn.__name__
+                if name not in existing and name.replace("openviking_", "") not in existing:
+                    try:
+                        mcp.tool(name=name)(fn)
+                        existing.add(name)
+                    except Exception as e:
+                        logger.debug(f"Failed to register domain tool {name}: {e}")
+                return fn
+            return _dec
+
+        d = _dec_factory
+        register_fleet_tools(mcp, d)
+        register_code_tools(mcp, d)
+        register_skills_tools(mcp, d)
+        register_filesystem_tools(mcp, d)
+        register_system_tools(mcp, d)
+        register_memory_tools(mcp, d)
+        register_sessions_tools(mcp, d)
+        register_observability_tools(mcp, d)
+    except Exception as exc:
+        logger.warning(f"Domain packages registration notice: {exc}")
+
+
 def _apply_portable_schemas() -> None:
     for tool in mcp._tool_manager.list_tools():
         tool.parameters = _portable_schema(tool.parameters)
 
 
+_register_domain_packages()
 _apply_portable_schemas()
+_install_aliased_tool_manager(mcp)
 
 
 # ---------------------------------------------------------------------------

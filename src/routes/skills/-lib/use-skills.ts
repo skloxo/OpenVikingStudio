@@ -26,6 +26,8 @@ export function useSkillsData() {
   const [currentPage, setCurrentPage] = React.useState(1)
   const [pageSize, setPageSize] = React.useState(12)
 
+  const [viewMode, setViewMode] = React.useState<'bundles' | 'ingesting' | 'all'>('bundles')
+
   const skillsQuery = useQuery({
     placeholderData: keepPreviousData,
     queryFn: fetchSkills,
@@ -36,9 +38,40 @@ export function useSkillsData() {
   })
   const skills = skillsQuery.data ?? []
 
+  const ingestionQuery = useQuery({
+    queryKey: ['skills-ingestion-queue-depth', identityScopeKey],
+    queryFn: async () => {
+      try {
+        const res = await ovClient.instance.get<{
+          queue_depth?: { total?: number; pending?: number; validating?: number; staged?: number; rejected?: number; committed?: number }
+        }>('/api/v1/skills/ingestion/queue?limit=1')
+        return res.data?.queue_depth || { total: 0, pending: 0, validating: 0, staged: 0, rejected: 0, committed: 0 }
+      } catch {
+        return { total: 0, pending: 0, validating: 0, staged: 0, rejected: 0, committed: 0 }
+      }
+    },
+    refetchInterval: 10000,
+  })
+  const queueDepth = ingestionQuery.data || { total: 0, pending: 0, validating: 0, staged: 0, rejected: 0, committed: 0 }
+  const activeIngestionCount = (queueDepth.pending || 0) + (queueDepth.validating || 0) + (queueDepth.staged || 0)
+
+  const bundles = React.useMemo(() => skills.filter((s) => s.is_bundle), [skills])
+  const flatSkills = React.useMemo(() => skills.filter((s) => !s.is_bundle), [skills])
+
+  // 根据当前体系视图模式选取技能基准集合
+  const targetSkills = React.useMemo(() => {
+    if (viewMode === 'bundles') {
+      return bundles.length > 0 ? bundles : skills
+    }
+    if (viewMode === 'all') {
+      return flatSkills.length > 0 ? flatSkills : skills
+    }
+    return skills
+  }, [viewMode, bundles, flatSkills, skills])
+
   // 客户端毫秒级检索与 Scope 领域正交分类筛选
   const filteredSkills = React.useMemo(() => {
-    return skills.filter((s) => {
+    return targetSkills.filter((s) => {
       const isEng = isEngineeringSkill(s.name, s.source)
       const isAg = s.scope === 'agent' && !isEng
       const isDat = !isEng && !isAg && isDataSkill(s.name)
@@ -59,11 +92,11 @@ export function useSkillsData() {
         cnDesc.toLowerCase().includes(q)
       )
     })
-  }, [skills, searchQuery, activeScopeFilter])
+  }, [targetSkills, searchQuery, activeScopeFilter])
 
   React.useEffect(() => {
     setCurrentPage(1)
-  }, [searchQuery, activeScopeFilter])
+  }, [searchQuery, activeScopeFilter, viewMode])
 
   const paginatedSkills = React.useMemo(() => {
     if (pageSize >= 1000) return filteredSkills
@@ -193,6 +226,10 @@ export function useSkillsData() {
 
   return {
     skills,
+    bundles,
+    flatSkills,
+    viewMode,
+    setViewMode,
     filteredSkills,
     paginatedSkills,
     skillsQuery,
@@ -209,6 +246,8 @@ export function useSkillsData() {
     setPageSize,
     connectionUnavailable,
     harnessMetrics,
+    queueDepth,
+    activeIngestionCount,
   }
 }
 

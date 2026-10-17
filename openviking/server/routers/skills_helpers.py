@@ -3,6 +3,7 @@
 """Path, URI, and metadata summary helpers for skills router."""
 
 from typing import Any, Dict, Optional
+import re
 import yaml
 
 from openviking.core.namespace import canonical_user_root
@@ -15,21 +16,22 @@ from openviking_cli.exceptions import InvalidArgumentError, NotFoundError
 
 
 def _agent_skills_root(ctx: RequestContext, target_uri: Optional[str] = None) -> str:
-    user_root = f"{canonical_user_root(ctx)}/skills"
+    agent_root = "viking://agent/skills"
     if not target_uri:
-        return user_root
+        return agent_root
     resolved_uri = validate_request_viking_uri(
         resolve_path_variables(target_uri), ctx, field_name="target_uri"
     ).rstrip("/")
-    if resolved_uri == "viking://agent/skills" or resolved_uri.startswith("viking://agent/skills/"):
-        return "viking://agent/skills"
+    if resolved_uri == agent_root or resolved_uri.startswith(f"{agent_root}/") or resolved_uri.startswith("viking://agent/default/skills"):
+        return agent_root
+    user_root = f"{canonical_user_root(ctx)}/skills"
     if resolved_uri == user_root or resolved_uri.startswith(f"{user_root}/"):
-        return user_root
+        return agent_root  # 物理重定向归拢至 agent 公共根
     raise InvalidArgumentError(
         f"Unsupported skill target URI: {target_uri}",
         details={
             "field": "target_uri",
-            "allowed": [user_root, "viking://agent/skills"],
+            "allowed": [agent_root, user_root],
         },
     )
 
@@ -139,14 +141,57 @@ def _skill_file_kind(path: str, is_dir: bool) -> str:
 
 
 def _parse_abstract_meta(abstract: str) -> Dict[str, Any]:
+    if not abstract:
+        return {}
+    m = re.match(r"^---\s*\n(.*?)\n---", abstract, re.DOTALL)
+    text_to_parse = m.group(1) if m else abstract
     try:
-        parsed = yaml.safe_load(abstract or "") or {}
+        parsed = yaml.safe_load(text_to_parse) or {}
     except Exception:
         return {}
     return parsed if isinstance(parsed, dict) else {}
 
 
 def _skill_summary_from_meta(name: str, root_uri: str, meta: Dict[str, Any]) -> Dict[str, Any]:
+    is_bundle = False
+    scenario_count = 0
+    scenarios: list[str] = []
+    parent_bundle: Optional[str] = None
+
+    if meta.get("is_bundle") or meta.get("is-bundle"):
+        is_bundle = True
+
+    for base in [
+        FilePath("/home/skloxo/.openviking/data/viking/default/agent/skills"),
+        FilePath("/home/skloxo/.openviking/data/viking/default/user/default/skills"),
+    ]:
+        p = base / name
+        sc_dir = p / "scenarios"
+        mod_dir = p / "modules"
+        if sc_dir.is_dir() or mod_dir.is_dir():
+            is_bundle = True
+            if sc_dir.is_dir():
+                sc_files = [f.stem for f in sc_dir.glob("*.md")]
+                scenario_count = len(sc_files)
+                scenarios = sc_files
+            break
+
+    if not is_bundle:
+        try:
+            from openviking.service.skill_aliasing_router import SkillAliasingRouter
+            router = SkillAliasingRouter()
+            alias_map = router.get_alias_map()
+            if name in alias_map:
+                entry = alias_map[name]
+                if isinstance(entry, tuple) and len(entry) > 0:
+                    parent_bundle = entry[0]
+                elif isinstance(entry, dict):
+                    parent_bundle = entry.get("bundle")
+                elif isinstance(entry, str):
+                    parent_bundle = entry
+        except Exception:
+            pass
+
     return {
         "type": "skill",
         "name": name,
@@ -154,15 +199,49 @@ def _skill_summary_from_meta(name: str, root_uri: str, meta: Dict[str, Any]) -> 
         "root_uri": root_uri,
         "skill_md_uri": _skill_md_uri(root_uri),
         "description": meta.get("description", ""),
+        "triggers": meta.get("triggers") or [],
         "tags": meta.get("tags") or [],
         "allowed_tools": meta.get("allowed_tools") or meta.get("allowed-tools") or [],
+        "is_bundle": is_bundle,
+        "scenario_count": scenario_count,
+        "scenarios": scenarios,
+        "parent_bundle": parent_bundle,
+        "is_absorbed": bool(parent_bundle),
     }
+
+
+from pathlib import Path as FilePath
+
+def _read_skill_md_meta(skill_name: str) -> Dict[str, Any]:
+    for base in [
+        FilePath("/home/skloxo/.openviking/data/viking/default/agent/skills"),
+        FilePath("/home/skloxo/.openviking/data/viking/default/user/default/skills"),
+    ]:
+        p = base / skill_name / "SKILL.md"
+        if p.exists():
+            try:
+                content = p.read_text(encoding="utf-8")
+                match = re.match(r"^---\s*\n(.*?)\n---", content, re.DOTALL)
+                if match:
+                    parsed = yaml.safe_load(match.group(1))
+                    if isinstance(parsed, dict):
+                        return parsed
+            except Exception:
+                pass
+    return {}
 
 
 def _skill_summary_from_entry(entry: Dict[str, Any]) -> Dict[str, Any]:
     root_uri = entry.get("uri", "")
     name = entry.get("name") or _skill_name_from_uri(root_uri)
-    return _skill_summary_from_meta(name, root_uri, _parse_abstract_meta(entry.get("abstract", "")))
+    meta = _parse_abstract_meta(entry.get("abstract", ""))
+    if not meta.get("triggers") or not meta.get("description"):
+        disk_meta = _read_skill_md_meta(name)
+        if disk_meta:
+            for k in ("triggers", "description", "tags", "allowed_tools"):
+                if not meta.get(k) and disk_meta.get(k):
+                    meta[k] = disk_meta[k]
+    return _skill_summary_from_meta(name, root_uri, meta)
 
 
 def _skill_summary_from_hit(hit: Dict[str, Any]) -> Dict[str, Any]:

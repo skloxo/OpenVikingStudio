@@ -22,7 +22,6 @@ import {
 import { cn } from '#/lib/utils'
 import type { SkillDetail, SkillTocItem } from '../-lib/skill-types'
 import { extractSkillToc, extractSopOverview } from '../-lib/skill-data'
-import { getFallbackSkillContent } from '../-lib/skill-translations'
 
 interface SkillDetailSheetProps {
   open: boolean
@@ -344,6 +343,40 @@ export function SkillDetailSheet({
                 value={String(detail.files.length)}
               />
             </div>
+
+            {detail.is_bundle && (
+              <DetailSection title={`📦 领域大包专精工序 (${detail.scenarios?.length ?? detail.scenario_count ?? 0} 项)`}>
+                {detail.scenarios && detail.scenarios.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-2 rounded border border-border/40 bg-muted/20">
+                    {detail.scenarios.map((sc) => (
+                      <Badge
+                        key={sc}
+                        variant="outline"
+                        className="text-xs px-2 py-0.5 border-cyan-300 bg-cyan-50/70 text-cyan-800 dark:border-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-300 font-mono"
+                      >
+                        ⚡ {sc}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground font-mono">
+                    包含标准核心工序模块 (modules/)
+                  </p>
+                )}
+              </DetailSection>
+            )}
+
+            {detail.parent_bundle && (
+              <DetailSection title="🔗 所属领域能力大包">
+                <div className="flex items-center gap-2 p-2 rounded border border-cyan-500/30 bg-cyan-500/5 text-cyan-700 dark:text-cyan-300 font-mono text-xs">
+                  <span>📦 已结晶沉淀入母包:</span>
+                  <Badge variant="outline" className="text-xs font-semibold border-cyan-400 bg-cyan-100/50 text-cyan-800 dark:border-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-200">
+                    {detail.parent_bundle}
+                  </Badge>
+                  <span className="text-muted-foreground text-xs ml-auto">支持智能别名透明路由</span>
+                </div>
+              </DetailSection>
+            )}
           </div>
         )}
 
@@ -397,25 +430,20 @@ export function SkillDetailSheet({
                   ))}
                 </div>
               ) : (
-                <div className="overflow-hidden rounded border border-border/60 bg-card p-2 font-mono text-xs text-foreground flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 font-bold">
-                    <FileCode2Icon className="size-3.5 text-muted-foreground" />
-                    SKILL.md
-                  </span>
-                  <Badge
-                    variant="outline"
-                    className="rounded-xs text-xs px-1.5 py-0 border-border bg-muted/40 text-foreground"
-                  >
-                    单文件精简规范
-                  </Badge>
+                <div className="rounded border border-dashed border-border/60 bg-muted/10 p-3 text-center text-xs text-muted-foreground font-mono">
+                  暂无独立物理文件列表记录
                 </div>
               )}
             </DetailSection>
 
             <DetailSection title="📄 SKILL.md 全量源码与 TOC 结构索引 (Full Source & TOC)">
-              <SkillSourceViewer
-                content={detail.content || getFallbackSkillContent(detail.name, detail.description)}
-              />
+              {detail.content ? (
+                <SkillSourceViewer content={detail.content} />
+              ) : (
+                <div className="rounded border border-dashed border-border/60 bg-muted/10 p-6 text-center text-xs text-muted-foreground font-mono">
+                  {isLoading ? '正在从 OpenViking 中枢拉取真实源码...' : '⚠️ 未检索到 SKILL.md 源码内容，或该技能为纯抽象定义。'}
+                </div>
+              )}
             </DetailSection>
           </div>
         )}

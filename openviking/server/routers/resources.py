@@ -367,6 +367,10 @@ async def add_skill(
                 target_uri=target_uri,
             )
             await persist_skill_source_metadata(service, _ctx, result, source_metadata)
+        except HTTPException:
+            raise
+        except ValueError as ve:
+            raise HTTPException(status_code=400, detail=str(ve))
         except Exception:
             raise
         else:

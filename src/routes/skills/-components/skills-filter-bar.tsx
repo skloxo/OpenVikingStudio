@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { SearchIcon } from 'lucide-react'
+import { Badge } from '#/components/ui/badge'
 import { cn } from '#/lib/utils'
 import type { SkillItem, SkillScopeFilter } from '../-lib/skill-types'
 import { isDataSkill, isEngineeringSkill } from '../-lib/skill-translations'
@@ -10,6 +11,11 @@ interface SkillsFilterBarProps {
   onSelectScopeFilter: (scope: SkillScopeFilter) => void
   searchQuery: string
   onSearchChange: (query: string) => void
+  viewMode: 'bundles' | 'ingesting' | 'all'
+  onViewModeChange: (mode: 'bundles' | 'ingesting' | 'all') => void
+  bundlesCount: number
+  ingestionCount: number
+  flatCount: number
 }
 
 export function SkillsFilterBar({
@@ -18,6 +24,11 @@ export function SkillsFilterBar({
   onSelectScopeFilter,
   searchQuery,
   onSearchChange,
+  viewMode,
+  onViewModeChange,
+  bundlesCount,
+  ingestionCount,
+  flatCount,
 }: SkillsFilterBarProps) {
   const engineeringCount = skills.filter((s) => isEngineeringSkill(s.name, s.source)).length
   const agentCount = skills.filter((s) => s.scope === 'agent' && !isEngineeringSkill(s.name, s.source)).length
@@ -27,7 +38,75 @@ export function SkillsFilterBar({
   const generalCount = Math.max(0, skills.length - engineeringCount - agentCount - dataCount)
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2.5 font-sans">
+      {/* 体系视图层级切换器 (Primary View Hierarchy Switcher) */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-2">
+        <div className="flex items-center gap-1.5 font-mono text-xs">
+          <button
+            type="button"
+            onClick={() => onViewModeChange('bundles')}
+            className={cn(
+              'flex items-center gap-1.5 rounded-sm px-3 py-1 font-semibold transition-all cursor-pointer text-xs',
+              viewMode === 'bundles'
+                ? 'bg-cyan-600 text-white dark:bg-cyan-500 dark:text-black shadow-xs'
+                : 'bg-muted/30 text-muted-foreground hover:bg-muted/60 hover:text-foreground border border-border/50'
+            )}
+          >
+            <span>📦 领域能力大包</span>
+            <Badge variant="outline" className={cn(
+              'px-1.5 py-0 text-xs font-mono',
+              viewMode === 'bundles' ? 'border-white/30 text-white dark:border-black/30 dark:text-black' : 'border-border/60 text-muted-foreground'
+            )}>
+              {bundlesCount}
+            </Badge>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onViewModeChange('ingesting')}
+            className={cn(
+              'flex items-center gap-1.5 rounded-sm px-3 py-1 font-semibold transition-all cursor-pointer text-xs',
+              viewMode === 'ingesting'
+                ? 'bg-amber-600 text-white dark:bg-amber-500 dark:text-black shadow-xs'
+                : 'bg-muted/30 text-muted-foreground hover:bg-muted/60 hover:text-foreground border border-border/50'
+            )}
+          >
+            <span>📥 正在入库流水线</span>
+            <Badge variant="outline" className={cn(
+              'px-1.5 py-0 text-xs font-mono',
+              viewMode === 'ingesting' ? 'border-white/30 text-white dark:border-black/30 dark:text-black' : 'border-border/60 text-muted-foreground',
+              ingestionCount > 0 && 'border-amber-400 font-bold'
+            )}>
+              {ingestionCount}
+            </Badge>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onViewModeChange('all')}
+            className={cn(
+              'flex items-center gap-1.5 rounded-sm px-3 py-1 font-semibold transition-all cursor-pointer text-xs',
+              viewMode === 'all'
+                ? 'bg-foreground text-background shadow-xs'
+                : 'bg-muted/30 text-muted-foreground hover:bg-muted/60 hover:text-foreground border border-border/50'
+            )}
+          >
+            <span>📜 全量工序平铺</span>
+            <Badge variant="outline" className={cn(
+              'px-1.5 py-0 text-xs font-mono',
+              viewMode === 'all' ? 'border-background/30 text-background' : 'border-border/60 text-muted-foreground'
+            )}>
+              {flatCount}
+            </Badge>
+          </button>
+        </div>
+
+        <div className="text-xs text-muted-foreground font-mono">
+          {viewMode === 'bundles' && '已完成内聚熔炼结晶的顶层领域母能力大包'}
+          {viewMode === 'ingesting' && '散装技能过流程中 · 自动化准入与质检实时态势'}
+          {viewMode === 'all' && '全量细粒度领域工序与场景统一索引'}
+        </div>
+      </div>
       {/* 技能业务领域正交分类筛选标签栏 + 搜索框 */}
       <div className="flex items-center justify-between gap-2 rounded border border-border/60 bg-muted/20 p-1 font-mono text-xs">
         <div className="flex items-center gap-1">

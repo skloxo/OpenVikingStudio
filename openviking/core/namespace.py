@@ -339,6 +339,8 @@ def is_accessible(uri: str, ctx: RequestContext) -> bool:
         return True
     if target.scope == "agent":
         parts = uri_parts(target.uri)
+        if len(parts) >= 2 and parts[1] in {"skills", "endpoints", "tools", "payments"}:
+            return True
         if ctx.actor_peer_id and len(parts) >= 2 and parts[1] != ctx.actor_peer_id:
             return False
         return True

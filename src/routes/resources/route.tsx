@@ -1,14 +1,17 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { z } from 'zod'
 
-const resourcesSearchSchema = z.object({
-  uri: z.string().optional(),
-  file: z.string().optional(),
-  search: z.string().optional(),
-})
+interface ResourcesSearch {
+  uri?: string
+  file?: string
+  search?: string
+}
 
 export const Route = createFileRoute('/resources')({
-  validateSearch: resourcesSearchSchema,
+  validateSearch: (search: Record<string, unknown>): ResourcesSearch => ({
+    uri: typeof search.uri === 'string' ? search.uri : undefined,
+    file: typeof search.file === 'string' ? search.file : undefined,
+    search: typeof search.search === 'string' ? search.search : undefined,
+  }),
   beforeLoad: ({ search }) => {
     throw redirect({
       to: '/playground',

@@ -295,9 +295,9 @@ export const settings = {
       description:
         'Review users and credentials for selected accounts, then add users or rotate keys from the web UI.',
       memberListDescription:
-        '"Switch identity" uses that user for data pages such as Playground and Retrieval without changing the active Root/Admin management credential.',
+        'Review users and access credentials in this workspace, rotate keys, and manage plugin capabilities.',
       memberListDescriptionRoot:
-        'You can change member roles here. "Switch identity" only changes the user used by data pages such as Playground and Retrieval; it does not change the active Root management credential.',
+        'Manage member roles, rotate access credentials, and configure plugin capabilities.',
       memberListTitle: 'Workspace members',
       cannotRemoveCurrentIdentity: 'The active identity cannot be deleted.',
       cannotRemoveLastManager:

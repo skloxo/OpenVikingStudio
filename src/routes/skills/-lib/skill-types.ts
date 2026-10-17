@@ -20,6 +20,11 @@ export type SkillItem = {
   content?: string
   files?: SkillFile[]
   file_count?: number
+  is_bundle?: boolean
+  scenario_count?: number
+  scenarios?: string[]
+  parent_bundle?: string
+  is_absorbed?: boolean
 }
 
 export type SkillListResult = {

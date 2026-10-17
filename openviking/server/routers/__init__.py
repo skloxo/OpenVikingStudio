@@ -63,8 +63,10 @@ from openviking.server.routers.skill_ingestion import router as skill_ingestion_
 from openviking.server.routers.anti_demo import anti_demo_router
 from openviking.server.routers.agents import router as agents_router, global_agents_router
 from openviking.server.routers.plugins import router as plugins_router
+from openviking.server.routers.client_caps import router as client_caps_router
 
 __all__ = [
+    "client_caps_router",
     "plugins_router",
     "global_agents_router",
     "agents_router",

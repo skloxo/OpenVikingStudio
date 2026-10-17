@@ -98,16 +98,24 @@ class SkillIngestionStore:
             conn.execute("CREATE INDEX IF NOT EXISTS idx_inbox_status ON skill_ingestion_inbox(status);")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_inbox_created ON skill_ingestion_inbox(created_at);")
 
-    def enqueue_skill(self, skill_name: str, raw_content: str, author: str = "anonymous") -> IngestionRecord:
+    def enqueue_skill(
+        self,
+        skill_name: str,
+        raw_content: str,
+        author: str = "anonymous",
+        source_path: str = "",
+    ) -> IngestionRecord:
         """毫秒级写入暂存队列，立即返回回执。"""
         now = time.time()
         receipt_id = f"ingest_{uuid.uuid4().hex[:12]}"
+        init_report = {"source_path": source_path} if source_path else None
         record = IngestionRecord(
             receipt_id=receipt_id,
             skill_name=skill_name,
             raw_content=raw_content,
             author=author,
             status=IngestionStatus.PENDING,
+            validation_report=init_report,
             created_at=now,
             updated_at=now,
         )
@@ -126,7 +134,7 @@ class SkillIngestionStore:
                     record.author,
                     record.status.value,
                     record.status_message,
-                    None,
+                    json.dumps(init_report) if init_report else None,
                     record.retry_count,
                     record.created_at,
                     record.updated_at,

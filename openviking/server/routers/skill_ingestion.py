@@ -30,6 +30,7 @@ class SubmitSkillRequest(BaseModel):
     skill_name: str = Field(..., description="Skill name in kebab-case")
     content: str = Field(..., description="Raw markdown content of the skill including YAML frontmatter")
     author: str = Field(default="anonymous", description="Submitting author or agent")
+    source_path: str = Field(default="", description="Source file or origin path")
 
 
 class RollbackRequest(BaseModel):
@@ -57,6 +58,7 @@ async def submit_skill_to_inbox(
         skill_name=payload.skill_name,
         raw_content=payload.content,
         author=payload.author,
+        source_path=payload.source_path,
     )
     return {
         "status": "ok",
@@ -98,8 +100,10 @@ async def trigger_worker_batch(
     batch_size: int = Query(default=5, ge=1, le=50),
     ctx: RequestContext = Depends(get_request_context),
 ) -> Dict[str, Any]:
-    """Manually trigger background worker tick to drain pending inbox items."""
-    summary = _worker.run_worker_tick(batch_size=batch_size)
+    """Trigger autonomous pipeline cycle to process pending inbox items through 5-stage conveyor belt."""
+    from openviking.service.skill_autonomous_pipeline import SkillAutonomousPipeline
+    pipeline = SkillAutonomousPipeline()
+    summary = pipeline.process_one_cycle(batch_size=batch_size)
     return {"status": "ok", "worker_summary": summary}
 
 
