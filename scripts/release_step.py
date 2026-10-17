@@ -212,6 +212,11 @@ def main() -> None:
     # 重启服务并强校验探针
     probe_payload = ""
     if not args.skip_restart:
+        live_service_dir = "/home/skloxo/services/openviking"
+        if os.path.isdir(live_service_dir) and os.path.abspath(REPO_ROOT) != os.path.abspath(live_service_dir):
+            subprocess.run(["rsync", "-a", os.path.join(REPO_ROOT, "openviking/"), os.path.join(live_service_dir, "openviking/")])
+            if os.path.isdir(os.path.join(REPO_ROOT, "dist")):
+                subprocess.run(["rsync", "-a", "--delete", os.path.join(REPO_ROOT, "dist/"), os.path.join(live_service_dir, "dist/")])
         run_cmd(["systemctl", "--user", "restart", "openviking"], "重启 openviking.service")
         time.sleep(1.5)
         ok, probe_payload = probe_health_version(target_ver)
