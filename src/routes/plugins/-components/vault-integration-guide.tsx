@@ -61,9 +61,17 @@ export function VaultIntegrationGuide() {
       </div>
 
       {/* 架构解耦物理说明 */}
-      <div className="rounded border border-border/60 bg-muted/20 p-2.5 text-xs text-muted-foreground leading-relaxed">
-        <strong className="text-foreground">💡 架构解耦契约：</strong>
-        本插件与 OpenViking 服务端<strong className="text-foreground">无实质功能依赖与运行时绑定</strong>。OpenViking 仅作为官方展厅展示曝光、统一版本发布与托管下载渠道。智能体客户端直接在本地挂载并读取加密保险箱文件。
+      <div className="rounded border border-border/60 bg-muted/20 p-2.5 text-xs text-muted-foreground leading-relaxed space-y-1">
+        <div className="flex items-center gap-1.5 text-cyan-600 dark:text-cyan-400 font-semibold">
+          <ShieldCheckIcon className="size-3.5" />
+          <span>本地化私有凭据定位 · 云端零密码托管声明</span>
+        </div>
+        <p>
+          本插件定位为<strong className="text-foreground">纯本地化私有插件</strong>。OpenViking (VK) 仅作为官方展厅展示曝光与 NPM 安装包托管下载中枢，<strong className="text-foreground">绝非从云端获取或集中托管密码保险库</strong>！
+        </p>
+        <p className="text-foreground/90 font-medium">
+          ⚠️ 智能体安装后，必须由用户在本地客户端配置中指定自身本地机器上的 <code className="text-cyan-600 dark:text-cyan-400 font-mono">.kdbx</code> 数据文件物理绝对路径与主密码环境变量。
+        </p>
       </div>
 
       {/* 1. 托管安装命令 */}
@@ -93,7 +101,7 @@ export function VaultIntegrationGuide() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
         <div className="space-y-1 rounded border border-border/50 bg-card/30 p-2.5">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">本地 KDBX 文件路径</span>
+            <span className="text-muted-foreground">本地 KDBX 物理路径示例</span>
             <Button
               variant="ghost"
               size="sm"
@@ -103,8 +111,11 @@ export function VaultIntegrationGuide() {
               复制
             </Button>
           </div>
-          <div className="font-mono text-foreground font-medium text-xs truncate">
+          <div className="font-mono text-foreground font-medium text-xs truncate" title="Linux/Mac: ~/.openviking/vault.kdbx | Windows: C:/Users/YourName/.openviking/vault.kdbx">
             {defaultPath}
+          </div>
+          <div className="text-xs text-muted-foreground truncate">
+            Windows: C:/Users/YourName/.openviking/vault.kdbx
           </div>
         </div>
 
@@ -122,6 +133,9 @@ export function VaultIntegrationGuide() {
           </div>
           <div className="font-mono text-foreground font-medium text-xs truncate">
             {defaultEnv}
+          </div>
+          <div className="text-xs text-muted-foreground truncate">
+            在本地 Shell 或操作系统环境变量中配置
           </div>
         </div>
       </div>
@@ -153,10 +167,11 @@ export function VaultIntegrationGuide() {
       <div className="rounded border border-border/40 bg-muted/10 p-2 text-xs text-muted-foreground space-y-1">
         <div className="flex items-center gap-1.5 text-foreground font-medium">
           <RefreshCwIcon className="size-3 text-cyan-500" />
-          <span>支持热重载与刷新：</span>
+          <span>本地私有凭据保障契约：</span>
         </div>
-        <div>• 智能体客户端支持热更新刷新插件，更新后自动重连本地凭据存储。</div>
-        <div>• 任何增删改凭据操作前，底层强制自动生成 *.bak 灾备物理快照。</div>
+        <div>• 智能体客户端直接在本地执行 keepassxc-cli 解密，密码数据 100% 留存本地，永不上云。</div>
+        <div>• 智能体客户端支持热重载，修改本地 .kdbx 路径或凭据后免重启即刻生效。</div>
+        <div>• 任何增删改凭据操作前，底层强制自动生成 *.bak 灾备物理快照，防止误操作。</div>
       </div>
     </div>
   )

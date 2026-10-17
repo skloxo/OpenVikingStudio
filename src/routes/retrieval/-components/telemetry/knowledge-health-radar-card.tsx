@@ -21,13 +21,6 @@ interface HygieneResponse {
     latency_ms: number
     task_id?: string
     total_in_store?: number
-    issues: Array<{
-      uri: string
-      issue_type: string
-      severity: string
-      detail: string
-      recommendation: string
-    }>
     recommendations: string[]
   }
 }
@@ -85,25 +78,16 @@ export function KnowledgeHealthRadarCard() {
   const radarMetrics = useMemo(() => {
     if (!report || inspected === 0) {
       return [
-        { label: '保真度', val: 0.95 },
-        { label: '活跃度', val: 0.85 },
-        { label: '连通度', val: 0.90 },
-        { label: '新鲜度', val: 0.88 },
-        { label: '防线', val: 0.98 },
+        { label: '保真度', val: 0.95 }, { label: '活跃度', val: 0.85 },
+        { label: '连通度', val: 0.90 }, { label: '新鲜度', val: 0.88 }, { label: '防线', val: 0.98 },
       ]
     }
-    const fidelity = Math.max(0.4, 1.0 - ((disputed * 5 + superseded * 0.4) / 100))
-    const activity = Math.max(0.4, 1.0 - (dormant / Math.max(1, inspected)))
-    const connectivity = Math.max(0.4, 1.0 - (report.orphaned_count / Math.max(1, inspected)))
-    const freshness = Math.max(0.4, 1.0 - (report.stale_percentage / 100.0))
-    const defense = 0.95
-
     return [
-      { label: '保真度', val: fidelity },
-      { label: '活跃度', val: activity },
-      { label: '连通度', val: connectivity },
-      { label: '新鲜度', val: freshness },
-      { label: '防线', val: defense },
+      { label: '保真度', val: Math.max(0.4, 1.0 - ((disputed * 5 + superseded * 0.4) / 100)) },
+      { label: '活跃度', val: Math.max(0.4, 1.0 - (dormant / Math.max(1, inspected))) },
+      { label: '连通度', val: Math.max(0.4, 1.0 - (report.orphaned_count / Math.max(1, inspected))) },
+      { label: '新鲜度', val: Math.max(0.4, 1.0 - (report.stale_percentage / 100.0)) },
+      { label: '防线', val: 0.95 },
     ]
   }, [report, inspected, dormant, disputed, superseded])
 

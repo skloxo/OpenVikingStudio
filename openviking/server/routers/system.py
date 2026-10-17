@@ -5,7 +5,7 @@
 import asyncio
 from typing import Any
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from openviking.core.defensive import get_defensive_telemetry
@@ -375,3 +375,5 @@ async def get_defensive_telemetry_endpoint(
         status="ok",
         result=get_defensive_telemetry(),
     ).model_dump(exclude_none=True)
+
+

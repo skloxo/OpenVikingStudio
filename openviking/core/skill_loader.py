@@ -70,9 +70,30 @@ class SkillLoader:
         if not frontmatter:
             raise ValueError("SKILL.md must have YAML frontmatter")
 
-        meta = yaml.safe_load(frontmatter)
+        try:
+            meta = yaml.safe_load(frontmatter)
+        except Exception:
+            # Resilient auto-repair: quote description if unquoted colons caused ScannerError
+            fixed_lines = []
+            for line in frontmatter.splitlines():
+                sline = line.strip()
+                if (
+                    sline.startswith("description:")
+                    and not sline.startswith('description: "')
+                    and not sline.startswith("description: '")
+                ):
+                    k, v = line.split("description:", 1)
+                    clean_v = v.strip().replace('"', '\\"')
+                    fixed_lines.append(f'{k}description: "{clean_v}"')
+                else:
+                    fixed_lines.append(line)
+            try:
+                meta = yaml.safe_load("\n".join(fixed_lines))
+            except Exception as e:
+                raise ValueError(f"Invalid YAML frontmatter: {e}")
+
         if not isinstance(meta, dict):
-            raise ValueError("Invalid YAML frontmatter")
+            raise ValueError("Invalid YAML frontmatter: must be a key-value mapping")
 
         if "name" not in meta:
             raise ValueError("Skill must have 'name' field")

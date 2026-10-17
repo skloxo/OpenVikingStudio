@@ -139,6 +139,24 @@ class SearchKeyRotator:
                         for idx, it in enumerate(items)
                         if it.get("key")
                     ]
+            # 恢复当月持久化统计与耗尽状态，杜绝重启“失忆”
+            try:
+                monthly_summary = self._store.get_monthly_summary()
+                summary_map = {row["key_fingerprint"]: row for row in monthly_summary}
+                with self._keys_lock:
+                    for eng, keys in self._keys_by_engine.items():
+                        for k in keys:
+                            if k.fingerprint in summary_map:
+                                row = summary_map[k.fingerprint]
+                                k.total_calls = int(row.get("total_calls", 0))
+                                total_credits = float(row.get("total_credits", 0.0))
+                                if k.total_calls > 0:
+                                    k.status = "active"
+                                if total_credits >= k.monthly_quota:
+                                    k.status = "exhausted"
+            except Exception as e:
+                logger.warning("Failed to hydrate search key states from store: %s", e)
+
             logger.info(
                 "SearchKeyRotator loaded %d Keenable, %d Exa, %d Tavily keys",
                 len(self._keys_by_engine["keenable"]),

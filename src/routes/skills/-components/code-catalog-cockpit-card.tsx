@@ -96,7 +96,7 @@ export function CodeCatalogCockpitCard() {
           <div>
             <h2 className="text-xs font-semibold tracking-tight text-foreground flex items-center gap-1.5">
               🧬 源码事实与多角色视网膜座舱
-              <Badge variant="outline" className="text-xs font-mono border-cyan-500/30 text-cyan-400 bg-cyan-950/20 px-1 py-0">
+              <Badge variant="outline" className="text-xs font-mono border-cyan-300 text-cyan-800 bg-cyan-50 dark:border-cyan-700 dark:text-cyan-300 dark:bg-cyan-950/40 px-1 py-0">
                 JIT AST SSOT
               </Badge>
             </h2>

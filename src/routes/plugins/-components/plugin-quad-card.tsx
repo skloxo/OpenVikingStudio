@@ -11,6 +11,8 @@ import {
   ZapIcon,
 } from 'lucide-react'
 import { Badge } from '#/components/ui/badge'
+import { useAppConnection } from '#/hooks/use-app-connection'
+import { getPluginPrivilegeStatus, isPrivilegedPlugin } from '../-lib/plugin-auth-guard'
 import type { QuadPluginItem } from '../-lib/plugin-types'
 
 export type PluginQuadCardProps = {
@@ -19,6 +21,8 @@ export type PluginQuadCardProps = {
 }
 
 export function PluginQuadCard({ plugin, onSelect }: PluginQuadCardProps) {
+  const { connectionRole } = useAppConnection()
+  const privilege = getPluginPrivilegeStatus(connectionRole, plugin.plugin_id)
   const isHealthy = plugin.health.status === 'healthy'
   const toolCount = plugin.tools.length
   const hookCount = plugin.hooks.length
@@ -60,6 +64,27 @@ export function PluginQuadCard({ plugin, onSelect }: PluginQuadCardProps) {
                 零依赖
               </Badge>
             )}
+            {plugin.plugin_id === 'dify' && (
+              <Badge variant="outline" className="text-xs font-mono border-border/60 bg-muted/20 text-muted-foreground px-1.5 py-0 shrink-0">
+                工作流
+              </Badge>
+            )}
+            {!privilege.isAllowed && (
+              <Badge
+                variant="outline"
+                className="text-xs font-mono border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400 px-1.5 py-0 shrink-0"
+              >
+                {privilege.badgeText}
+              </Badge>
+            )}
+            {privilege.isAllowed && isPrivilegedPlugin(plugin.plugin_id) && (
+              <Badge
+                variant="outline"
+                className="text-xs font-mono border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 px-1.5 py-0 shrink-0"
+              >
+                特权运维
+              </Badge>
+            )}
           </div>
 
           {/* 运行态状态胶囊 (性冷淡高密风格，NO GREEN EVER) */}
@@ -70,7 +95,11 @@ export function PluginQuadCard({ plugin, onSelect }: PluginQuadCardProps) {
               }`}
             />
             <span className={isHealthy ? 'text-cyan-700 dark:text-cyan-400 font-medium' : 'text-amber-700 dark:text-amber-400 font-medium'}>
-              {isHealthy ? '服务就绪' : '部分降级'}
+              {plugin.plugin_id === 'keepass-vault'
+                ? '托管就绪'
+                : isHealthy
+                  ? '服务就绪'
+                  : '部分降级'}
             </span>
           </div>
         </div>

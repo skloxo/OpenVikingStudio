@@ -28,6 +28,7 @@ from openviking.resource.processing_mode import (
 from openviking.resource.watch_storage import is_watch_task_control_uri
 from openviking.server.identity import RequestContext
 from openviking.session.memory.memory_updater import MemoryUpdater
+from openviking.session.memory.utils.content_visibility import visible_content
 from openviking.session.memory.utils.memory_file_utils import MemoryFileUtils
 from openviking.session.memory.utils.resource_refs import (
     RESOURCE_REF_SOURCE_CONTENT_WRITE,
@@ -161,21 +162,54 @@ class ContentWriteCoordinator:
                     ctx=ctx,
                 )
                 if decision.action == "noop":
-                    logger.info(
-                        "[EntropyGatekeeper][ChokePoint] Intercepted redundant write for %s (matched: %s, sim: %.4f)",
-                        normalized_uri,
-                        decision.matched_uri,
-                        decision.similarity,
-                    )
-                    return {
-                        "uri": normalized_uri,
-                        "mode": mode,
-                        "written_bytes": 0,
-                        "action": "noop",
-                        "similarity": decision.similarity,
-                        "matched_uri": decision.matched_uri,
-                        "message": f"NOOP (印证去重): 事实已高度存在于 {decision.matched_uri} (相似度: {decision.similarity:.4f} >= 0.95)，已拦截落盘。",
-                    }
+                    # Munger Inversion & Physical Truth SSOT:
+                    # NOOP is ONLY valid if the target file actually exists on physical disk AND
+                    # already contains this content. A non-existent file must NEVER be dropped with NOOP!
+                    stat = await self._safe_stat(normalized_uri, ctx=ctx, allow_not_found=True)
+                    target_missing = stat.get("not_found", False) or stat.get("isDir", False)
+
+                    if target_missing:
+                        logger.warning(
+                            "[EntropyGatekeeper][ChokePoint] Intercepted NOOP for %s, but target file does not exist on disk! Overriding NOOP with physical write.",
+                            normalized_uri,
+                        )
+                    else:
+                        disk_identical = False
+                        try:
+                            existing_raw = await self._viking_fs.read_file(normalized_uri, ctx=ctx)
+                            if existing_raw.strip() == content.strip():
+                                disk_identical = True
+                            elif visible_content(existing_raw, uri=normalized_uri).strip() == content.strip():
+                                disk_identical = True
+                        except Exception as e:
+                            logger.warning(
+                                "[EntropyGatekeeper][ChokePoint] Failed to verify existing content for %s: %s",
+                                normalized_uri,
+                                e,
+                            )
+                            disk_identical = False
+
+                        if disk_identical:
+                            logger.info(
+                                "[EntropyGatekeeper][ChokePoint] Intercepted redundant write for %s (matched: %s, sim: %.4f)",
+                                normalized_uri,
+                                decision.matched_uri,
+                                decision.similarity,
+                            )
+                            return {
+                                "uri": normalized_uri,
+                                "mode": mode,
+                                "written_bytes": 0,
+                                "action": "noop",
+                                "similarity": decision.similarity,
+                                "matched_uri": decision.matched_uri,
+                                "message": f"NOOP (印证去重): 目标节点已存在且内容完全一致 (相似度: {decision.similarity:.4f})，已拦截落盘。",
+                            }
+                        else:
+                            logger.warning(
+                                "[EntropyGatekeeper][ChokePoint] Overriding NOOP with physical write for %s: Target file exists but content changed.",
+                                normalized_uri,
+                            )
                 elif decision.action == "dlq":
                     logger.warning(
                         "[EntropyGatekeeper][ChokePoint] Blocked malicious content for %s, trapped in DLQ",

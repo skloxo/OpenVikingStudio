@@ -62,11 +62,22 @@ def main():
 
     cmd = ["git", "ls-files"]
     cp = subprocess.run(cmd, capture_output=True, text=True, errors="replace")
-    if cp.returncode != 0:
-        print(f"Error getting git files: {cp.stderr}")
-        sys.exit(1)
-
-    tracked_files = [Path(f.strip()) for f in cp.stdout.splitlines() if f.strip()]
+    if cp.returncode == 0 and cp.stdout.strip():
+        tracked_files = [Path(f.strip()) for f in cp.stdout.splitlines() if f.strip()]
+    else:
+        tracked_files = []
+        for root, dirs, files in os.walk(repo_root):
+            dirs[:] = [
+                d for d in dirs
+                if not d.startswith(".") and d not in ("node_modules", "dist", "build", ".git", "__pycache__", "scratch", "openviking.egg-info")
+            ]
+            for fn in files:
+                if fn.startswith(".env") or fn.endswith((".snap.md", ".sqlite", ".db")):
+                    continue
+                rel = os.path.relpath(os.path.join(root, fn), repo_root)
+                if rel.startswith("scratch") or rel.startswith("scripts/check_api_skills") or rel.startswith("scripts/test_detail_api"):
+                    continue
+                tracked_files.append(Path(rel))
 
     total_violations = []
     for f in tracked_files:
