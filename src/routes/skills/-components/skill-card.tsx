@@ -61,6 +61,22 @@ export function SkillCard({ skill, onSelect }: SkillCardProps) {
             </h3>
           </div>
           <div className="flex items-center gap-1 shrink-0 font-mono text-xs">
+            {skill.is_bundle ? (
+              <Badge
+                variant="outline"
+                className="rounded-xs px-2 py-0.5 text-xs font-medium border-cyan-500/50 bg-cyan-950/40 text-cyan-300"
+              >
+                📦 领域大包 · {skill.scenario_count ?? 0}工序
+              </Badge>
+            ) : skill.parent_bundle ? (
+              <Badge
+                variant="outline"
+                className="rounded-xs px-2 py-0.5 text-xs font-normal border-border/80 bg-muted/40 text-muted-foreground"
+                title={`已纳入领域大包: ${skill.parent_bundle}`}
+              >
+                🔗 属: {skill.parent_bundle}
+              </Badge>
+            ) : null}
             <Badge
               variant="outline"
               className={cn(

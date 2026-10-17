@@ -26,6 +26,8 @@ export function useSkillsData() {
   const [currentPage, setCurrentPage] = React.useState(1)
   const [pageSize, setPageSize] = React.useState(12)
 
+  const [viewMode, setViewMode] = React.useState<'bundles' | 'all'>('bundles')
+
   const skillsQuery = useQuery({
     placeholderData: keepPreviousData,
     queryFn: fetchSkills,
@@ -35,6 +37,9 @@ export function useSkillsData() {
     staleTime: 60_000,
   })
   const skills = skillsQuery.data ?? []
+
+  const bundles = React.useMemo(() => skills.filter((s) => s.is_bundle), [skills])
+  const flatSkills = React.useMemo(() => skills.filter((s) => !s.is_bundle), [skills])
 
   // 客户端毫秒级检索与 Scope 领域正交分类筛选
   const filteredSkills = React.useMemo(() => {
@@ -59,11 +64,11 @@ export function useSkillsData() {
         cnDesc.toLowerCase().includes(q)
       )
     })
-  }, [skills, searchQuery, activeScopeFilter])
+  }, [skills, bundles, viewMode, searchQuery, activeScopeFilter])
 
   React.useEffect(() => {
     setCurrentPage(1)
-  }, [searchQuery, activeScopeFilter])
+  }, [searchQuery, activeScopeFilter, viewMode])
 
   const paginatedSkills = React.useMemo(() => {
     if (pageSize >= 1000) return filteredSkills
@@ -193,6 +198,10 @@ export function useSkillsData() {
 
   return {
     skills,
+    bundles,
+    flatSkills,
+    viewMode,
+    setViewMode,
     filteredSkills,
     paginatedSkills,
     skillsQuery,

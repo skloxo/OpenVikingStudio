@@ -180,6 +180,10 @@ export function normalizeSkills(value: unknown): SkillItem[] {
         name: finalName,
         scope,
         uri,
+        is_bundle: Boolean(skill?.is_bundle),
+        scenario_count: typeof skill?.scenario_count === 'number' ? skill.scenario_count : 0,
+        scenarios: Array.isArray(skill?.scenarios) ? (skill.scenarios as string[]) : undefined,
+        parent_bundle: typeof skill?.parent_bundle === 'string' ? skill.parent_bundle : undefined,
       },
     ]
   })

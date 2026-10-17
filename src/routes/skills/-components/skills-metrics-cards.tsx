@@ -158,13 +158,13 @@ export function SkillsMetricsCards({
           <span className="text-xs font-normal text-muted-foreground">
             {activeUtilizationRatio !== null && activeUtilizationRatio > 0
               ? `(${activeSkillsCount}/${totalSkills} 项活跃)`
-              : '(18 大包全域就绪)'}
+              : `(${totalSkills} 项核心技能就绪)`}
           </span>
         </div>
         <p className="text-xs text-muted-foreground truncate">
           {activeSkillsCount > 0
             ? `近 24H ${activeSkillsCount} 项技能真实被唤醒`
-            : '18 个领域大包全量就绪 · 支持智能别名透明投影'}
+            : `${totalSkills} 项核心领域技能全量就绪 · 支持智能别名透明投影`}
         </p>
       </Card>
 
