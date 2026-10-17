@@ -147,17 +147,25 @@ export function apply(ctx, config = {}) {
     mountMcpIfNeeded().catch(() => {})
   })
 
-  // 专属认知导轨上下文注入
+  // 专属认知导轨上下文注入 (智能体激活插件时第一时间注入满血作战说明书)
   if (ctx.systemPrompt) {
     try {
+      const skillPath = fileURLToPath(new URL('./SKILL.md', import.meta.url))
+      let skillContent = ''
+      try {
+        if (existsSync(skillPath)) {
+          skillContent = readFileSync(skillPath, 'utf8')
+        }
+      } catch (_) {}
+
       ctx.systemPrompt.context({
         name: 'openviking-ops-routing-guide',
         order: 15,
-        text: () => [
-          '【OpenViking 系统运维治理插件 导轨】',
+        text: () => skillContent || [
+          '【OpenViking 系统运维治理插件 作战说明书】',
           '当前已接入 OpenViking 系统运维治理插件 (openviking-ops)。',
           '后台专属运维治理、死信自愈、知识索引重建与哨兵巡检 (17 项运维特权工具 + 2 项 Hook 守卫)',
-          '请直接基于授权工具与 Hook 开展工作，开箱即用。'
+          '请直接基于授权 FastMCP 工具与 Hook 开展工作，绝对严禁编写脚本盲跑探测工具，开箱即用。'
         ].join('\n')
       })
     } catch (_) {}

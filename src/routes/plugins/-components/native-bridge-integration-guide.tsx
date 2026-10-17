@@ -45,7 +45,6 @@ export function NativeBridgeIntegrationGuide({
   userApiKey = '',
 }: NativeBridgeIntegrationGuideProps) {
   const { connection } = useAppConnection()
-  const [networkMode, setNetworkMode] = React.useState<'public' | 'local'>('public')
   const [activeChannel, setActiveChannel] = React.useState<ChannelType>('antigravity')
   const [copiedItem, setCopiedItem] = React.useState<string | null>(null)
 
@@ -54,8 +53,8 @@ export function NativeBridgeIntegrationGuide({
   const hasValidApiKey = Boolean(rawApiKey && rawApiKey !== 'vk-user-key-xxxx')
   const effectiveApiKey = hasValidApiKey ? rawApiKey : '<YOUR_USER_KEY>'
 
-  const isLocal = networkMode === 'local'
-  const serviceAddress = isLocal ? 'http://127.0.0.1:1933' : 'https://vk.tide.red'
+  // 动态采用当前 Web Studio 所在实际中枢地址，杜绝过度工程化的单选切换
+  const serviceAddress = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://vk.tide.red'
 
   const bridge = resolvePluginBridgeConfig(
     pluginId,
@@ -128,30 +127,6 @@ export function NativeBridgeIntegrationGuide({
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground font-medium">1. 服务中枢地址</span>
-              <div className="inline-flex rounded border border-border/60 bg-background/80 p-0.5 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setNetworkMode('public')}
-                  className={`px-2 py-0.5 rounded transition-all ${
-                    networkMode === 'public'
-                      ? 'bg-muted text-cyan-700 dark:text-cyan-400 font-semibold shadow-xs'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  公网 (vk.tide.red)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setNetworkMode('local')}
-                  className={`px-2 py-0.5 rounded transition-all ${
-                    networkMode === 'local'
-                      ? 'bg-muted text-cyan-700 dark:text-cyan-400 font-semibold shadow-xs'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  本地内网 (127.0.0.1:1933)
-                </button>
-              </div>
               <Button
                 variant="ghost"
                 size="sm"
@@ -163,7 +138,7 @@ export function NativeBridgeIntegrationGuide({
                 ) : (
                   <CopyIcon className="size-3" />
                 )}
-                复制
+                复制服务地址
               </Button>
             </div>
             <div className="rounded border border-border/50 bg-background/80 px-2 py-1.5 font-mono text-xs text-foreground select-all">

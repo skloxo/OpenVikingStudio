@@ -27,16 +27,10 @@ export type SearchIntegrationGuideProps = {
 
 export function SearchIntegrationGuide({ userApiKey = '' }: SearchIntegrationGuideProps) {
   const [mode, setMode] = React.useState<'api' | 'plugin'>('api')
-  const [network, setNetwork] = React.useState<'public' | 'local'>('public')
   const [copiedKey, setCopiedKey] = React.useState<string | null>(null)
 
-  const isPublic = network === 'public'
-  const apiEndpoint = isPublic
-    ? 'https://sear.tide.red/v1'
-    : 'http://127.0.0.1:18888/v1'
-  const mcpEndpoint = isPublic
-    ? 'https://sear.tide.red/mcp'
-    : 'http://127.0.0.1:18888/mcp'
+  const apiEndpoint = 'https://sear.tide.red/v1'
+  const mcpEndpoint = 'https://sear.tide.red/mcp'
 
   const effectiveApiKey = userApiKey || 'sear-matrix-key-2026'
   const installCmd = 'npm install https://vk.tide.red/studio/dsh-plugin-search-gateway.tgz'
@@ -76,30 +70,9 @@ export function SearchIntegrationGuide({ userApiKey = '' }: SearchIntegrationGui
             联网搜索接入指南 (双模态单一真相源)
           </span>
         </div>
-        <div className="inline-flex rounded-md border border-border/60 bg-muted/20 p-0.5 text-xs font-mono">
-          <button
-            type="button"
-            onClick={() => setNetwork('public')}
-            className={`px-2 py-0.5 rounded transition-all ${
-              isPublic
-                ? 'bg-background text-cyan-600 dark:text-cyan-400 shadow-xs font-medium'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            公网中继 (sear.tide.red)
-          </button>
-          <button
-            type="button"
-            onClick={() => setNetwork('local')}
-            className={`px-2 py-0.5 rounded transition-all ${
-              !isPublic
-                ? 'bg-background text-cyan-600 dark:text-cyan-400 shadow-xs font-medium'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            本地局域网 (18888)
-          </button>
-        </div>
+        <Badge variant="outline" className="text-xs font-mono border-cyan-500/40 text-cyan-700 dark:text-cyan-400 bg-cyan-500/10">
+          独立搜索网关
+        </Badge>
       </div>
 
       {/* 独立服务凭据声明 */}

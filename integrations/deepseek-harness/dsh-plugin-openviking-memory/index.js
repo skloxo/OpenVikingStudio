@@ -147,17 +147,25 @@ export function apply(ctx, config = {}) {
     mountMcpIfNeeded().catch(() => {})
   })
 
-  // 专属认知导轨上下文注入
+  // 专属认知导轨上下文注入 (智能体激活插件时第一时间注入满血作战说明书)
   if (ctx.systemPrompt) {
     try {
+      const skillPath = fileURLToPath(new URL('./SKILL.md', import.meta.url))
+      let skillContent = ''
+      try {
+        if (existsSync(skillPath)) {
+          skillContent = readFileSync(skillPath, 'utf8')
+        }
+      } catch (_) {}
+
       ctx.systemPrompt.context({
         name: 'openviking-memory-routing-guide',
         order: 15,
-        text: () => [
-          '【OpenViking 核心长程记忆与代码战地 导轨】',
+        text: () => skillContent || [
+          '【OpenViking 核心长程记忆与代码战地 作战说明书】',
           '当前已接入 OpenViking 核心长程记忆与代码战地 (openviking-memory)。',
           '体外大脑长程记忆语义检索、代码感知、上下文路由与经验沉淀完全体 (34 项战地工具 + 3 项 Hook 物理守卫)',
-          '请直接基于授权工具与 Hook 开展工作，开箱即用。'
+          '请直接基于授权 FastMCP 工具与 Hook 开展工作，绝对严禁编写脚本盲跑探测工具，开箱即用。'
         ].join('\n')
       })
     } catch (_) {}
