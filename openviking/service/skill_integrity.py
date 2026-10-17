@@ -207,6 +207,21 @@ async def _read_skill_detail(
     async def read_fields() -> Dict[str, Any]:
         abstract = await service.fs.abstract(root_uri, ctx=ctx)
         result = _skill_summary_from_meta(skill_name, root_uri, _parse_abstract_meta(abstract))
+        if not result.get("triggers") or not result.get("description"):
+            try:
+                skill_content = await service.fs.read(_skill_md_uri(root_uri), ctx=ctx)
+                if skill_content:
+                    import re, yaml
+                    m = re.match(r"^---\s*\n(.*?)\n---", skill_content, re.DOTALL)
+                    if m:
+                        fm = yaml.safe_load(m.group(1)) or {}
+                        if isinstance(fm, dict):
+                            if not result.get("triggers"):
+                                result["triggers"] = fm.get("triggers") or []
+                            if not result.get("description"):
+                                result["description"] = fm.get("description") or ""
+            except Exception:
+                pass
         if level is None or level == 0:
             result["abstract"] = abstract
         if level is None or level == 1:

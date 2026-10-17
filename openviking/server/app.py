@@ -405,6 +405,11 @@ def create_app(
         entropy_watchdog = get_entropy_watchdog()
         entropy_watchdog.start(task_tracker)
 
+        # Start SkillAutonomousPipeline automated daemon (7x24h Unattended Pipeline)
+        from openviking.service.skill_autonomous_pipeline import get_skill_autonomous_pipeline
+        skill_pipeline = get_skill_autonomous_pipeline()
+        skill_pipeline.start(interval_seconds=30)
+
         # Initialize tracing and OTLP log export from server.observability.
         from openviking.telemetry import tracer_module
 
@@ -427,6 +432,7 @@ def create_app(
         await shutdown_metrics_async(app=app)
         task_tracker.stop_cleanup_loop()
         entropy_watchdog.stop()
+        skill_pipeline.stop()
         auth_plugin_state = getattr(app.state, "auth_plugin", None)
         if auth_plugin_state is not None:
             try:

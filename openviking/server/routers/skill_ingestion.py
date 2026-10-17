@@ -98,8 +98,10 @@ async def trigger_worker_batch(
     batch_size: int = Query(default=5, ge=1, le=50),
     ctx: RequestContext = Depends(get_request_context),
 ) -> Dict[str, Any]:
-    """Manually trigger background worker tick to drain pending inbox items."""
-    summary = _worker.run_worker_tick(batch_size=batch_size)
+    """Trigger autonomous pipeline cycle to process pending inbox items through 5-stage conveyor belt."""
+    from openviking.service.skill_autonomous_pipeline import SkillAutonomousPipeline
+    pipeline = SkillAutonomousPipeline()
+    summary = pipeline.process_one_cycle(batch_size=batch_size)
     return {"status": "ok", "worker_summary": summary}
 
 

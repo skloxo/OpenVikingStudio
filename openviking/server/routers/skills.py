@@ -93,17 +93,26 @@ async def list_skills(
         return Response(
             status="ok", result={"root_uri": resolved_uri, "skills": skills, "total": len(skills)}
         )
+    # 核心公理：技能为公共能力资产，唯一真相源为 viking://agent/skills
+    agent_skills = await _list_skills_from_root(service, _ctx, "viking://agent/skills")
     user_skills = await _list_skills_from_root(
         service, _ctx, f"{canonical_user_root(_ctx)}/skills"
     )
-    agent_skills = await _list_skills_from_root(service, _ctx, "viking://agent/skills")
-    merged_skills = [*user_skills, *agent_skills]
+    # 按技能名称强制全局唯一去重，彻底消除双作用域 404 幽灵重复
+    seen_names = set()
+    deduped_skills = []
+    for s in [*agent_skills, *user_skills]:
+        name = s.get("name")
+        if name and name not in seen_names:
+            seen_names.add(name)
+            deduped_skills.append(s)
+
     return Response(
         status="ok",
         result={
-            "root_uris": [f"{canonical_user_root(_ctx)}/skills", "viking://agent/skills"],
-            "skills": merged_skills,
-            "total": len(merged_skills),
+            "root_uris": ["viking://agent/skills"],
+            "skills": deduped_skills,
+            "total": len(deduped_skills),
         },
     )
 
@@ -183,18 +192,31 @@ async def find_skills(
     )
     agent_hits = [_skill_summary_from_hit(hit) for hit in agent_result_dict.get("skills", [])]
 
-    merged_hits = [*user_hits, *agent_hits]
-    if merged_hits and "score" in merged_hits[0]:
-        merged_hits.sort(key=lambda x: x.get("score", 0), reverse=True)
+    seen_hit_names = set()
+    deduped_hits = []
+    for hit in [*agent_hits, *user_hits]:
+        name = hit.get("name")
+        if name and name not in seen_hit_names:
+            seen_hit_names.add(name)
+            deduped_hits.append(hit)
+
+    if deduped_hits:
+        q_lower = request.query.lower()
+        def _hit_sort_key(hit):
+            base_score = float(hit.get("score", 0.0) or 0.0)
+            triggers = hit.get("triggers", []) or []
+            matched_len = sum(len(t) for t in triggers if t and str(t).lower() in q_lower)
+            return (base_score + 0.005 * matched_len, base_score)
+        deduped_hits.sort(key=_hit_sort_key, reverse=True)
 
     return Response(
         status="ok",
         result={
-            "root_uris": [user_root, agent_root],
-            "skills": merged_hits,
-            "total": len(merged_hits),
+            "root_uris": [agent_root],
+            "skills": deduped_hits,
+            "total": len(deduped_hits),
         },
-        telemetry=user_execution.telemetry,
+        telemetry=agent_execution.telemetry,
     ).model_dump(exclude_none=True)
 
 
@@ -293,18 +315,28 @@ async def get_skill(
             details={"field": "level", "allowed": [0, 1, 2]},
         )
     service = get_service()
-    root_uri = await _require_skill(service, _ctx, skill_name, target_uri)
-    result = await _read_skill_detail(
-        service,
-        _ctx,
-        skill_name=skill_name,
-        root_uri=root_uri,
-        include_content=include_content,
-        include_files=include_files,
-        include_integrity=include_integrity,
-        include_source=include_source,
-        level=level,
-    )
+    try:
+        root_uri = await _require_skill(service, _ctx, skill_name, target_uri)
+        result = await _read_skill_detail(
+            service,
+            _ctx,
+            skill_name=skill_name,
+            root_uri=root_uri,
+            include_content=include_content,
+            include_files=include_files,
+            include_integrity=include_integrity,
+            include_source=include_source,
+            level=level,
+        )
+    except Exception as exc:
+        # Fallback to SkillAliasingRouter virtual projection
+        from openviking.service.skill_aliasing_router import SkillAliasingRouter
+        aliasing_router = SkillAliasingRouter()
+        virtual_skill = aliasing_router.get_virtual_skill(skill_name)
+        if virtual_skill:
+            return Response(status="ok", result=virtual_skill)
+        raise exc
+
     return Response(status="ok", result=result)
 
 

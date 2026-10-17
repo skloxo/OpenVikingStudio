@@ -602,18 +602,17 @@ async def set_user_role(
     user_id: str = Path(..., description="User ID"),
     ctx: RequestContext = Depends(get_request_context),
 ):
-    """Promote an account user to ADMIN."""
+    """Set an account user's role (ADMIN or USER)."""
     _check_account_access(ctx, account_id)
-    if body.role != Role.ADMIN:
-        raise InvalidArgumentError("set_user_role only supports promotion to admin.")
+    resolved_role = validate_account_user_role(body.role)
     manager = _get_api_key_manager(request)
-    await manager.set_role(account_id, user_id, Role.ADMIN)
+    await manager.set_role(account_id, user_id, resolved_role)
     return Response(
         status="ok",
         result={
             "account_id": account_id,
             "user_id": user_id,
-            "role": Role.ADMIN,
+            "role": resolved_role,
         },
     )
 
