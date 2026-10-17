@@ -25,7 +25,8 @@
     "cordis.patch.yml",
     "README.md",
     "servers/",
-    "shared/"
+    "shared/",
+    "SKILL.md"
   ],
   "dsh": {
     "bundle": {

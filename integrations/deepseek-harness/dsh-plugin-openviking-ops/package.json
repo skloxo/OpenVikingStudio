@@ -23,6 +23,7 @@
     "mcp.mjs",
     "cordis.patch.yml",
     "README.md",
+    "SKILL.md",
     "servers/",
     "shared/"
   ],
