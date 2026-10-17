@@ -2,7 +2,7 @@
 
 > **关联研发大蓝图**：[`BLUEPRINT.md`](file:///home/skloxo/aho/openclaw/project/.agents/BLUEPRINT.md) ｜ **交付全量归档台账**：[`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md) ｜ **通用资产档案库**：[`COMPONENT_AND_WHEEL_INVENTORY.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md) ｜ **👁️ 人工验收测试指南**：[`docs/HUMAN_ACCEPTANCE_TESTING.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/HUMAN_ACCEPTANCE_TESTING.md)
 > **唯一真相源 (SSOT)**：本文档为 OpenViking 当前活跃的重构规划与就绪待调度的任务矩阵看板。历史所有已验收交付的版本履历（Milestone 1~4 全量 19 张 Task Cards 及前序波次）已完整归档至 [`DELIVERY_ARCHIVE.md`]- **线上正式部署版本**：**`v1.4.106`**（物理访问地址：`vk.tide.red/studio/home`，已实机验证）；
-- **当前最新交付版本**：**`v1.7.115`**（Tag: `v1.7.115`，增量技能自适应分流、7x24h 无人值守自动化自愈流水线、虚拟投影网关与技能大盘脱虚向实）；
+- **当前最新交付版本**：**`v1.7.116`**（Tag: `v1.7.116`，write 工具 0 字节写入未持久化物理根因治理、物理存在性门禁穿透与 MCP 诚实回显）；
 - **历史里程碑详单检索**：如需查阅 Milestone 1~4 及早期版本修改清单与架构细节，请点击跳转至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。
 
 | 版本 Tag      | 任务工单 ID | 模块与重构主题                                                                                                                                                | 核心治理成果与物理交付物                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |     验收状态      |
@@ -137,6 +137,27 @@
 ---
 
 ### 🧬 Milestone 5-A: 半成品与悬空功能全链路真实化贯通 (Suspended Features Truthful Closure)
+
+#### 📌 [P0] [x] Card-152: write 工具 0 字节写入未持久化物理根因治理 (物理存在性门禁穿透 + 往返一致性验真 + MCP 诚实回显 - write 0-Byte NOOP Physical Persistence Fix, Round-Trip Verification & Honest Telemetry SSOT) ✅ (v1.7.116)
+- **类型**：存储协调物理真实性防御 / 熵门禁穿透自愈 / MCP 真实回显 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.116` ｜ **当前状态**：[x] 已验收通过 ✅ (v1.7.116)
+- **背景与第一性原理**：
+  1. **直击 3070 节点 260 步绕路排查的物理根因**：在 3070 节点 DSH 实测中，智能体执行 `openviking_write` 写入巡检报告时，底层的 `EntropyGatekeeper` 因历史同类巡检文档判定相似度高，返回 `action="noop"`；但 `content_write.py` 未校验目标文件在磁盘上是否存在，导致目标文件从未被创建；上层 MCP 误将 0 字节回显为 `"Wrote 0 bytes to ... (mode=replace)"`；智能体随后调用 `openviking_read` 触发 `NotFoundError`，引发 260 步排错混乱；
+  2. **物理磁盘真实性第一性原理 (Physical Truth First Principle)**：NOOP（拦截写盘）的前提公理是：目标文件在物理磁盘上**必须已存在且内容完全一致**；若目标文件在物理磁盘上根本不存在，任何基于相似度的 NOOP 拦截都属于严重缺陷；
+  3. **协调层双保险穿透与 MCP 诚实回显**：在 `content_write.py` 中通过 `_safe_stat` 和 `read_file` 严格校验目标文件的物理存在性与内容一致性，缺失或变动一律强制覆盖落盘；在 `mcp_endpoint.py` 中设置 `skip_gatekeeper` 规避重复拦截，对真正的 NOOP 返回明确的印证去重提示，彻底终结“Wrote 0 bytes”误报。
+- **原子工单拆解 (Tracer Bullet 细颗粒度工单)**：
+  - [x] **`TASK-152-1: content_write.py 物理存在性门禁穿透`**：在 `ContentWriteCoordinator.write` 的 ChokePoint 处，增加目标文件磁盘存在性与内容一致性校验，文件不存在或内容变动时强制覆盖落盘；
+  - [x] **`TASK-152-2: identity.py 与 mcp_endpoint.py 上下文透传与诚实回显`**：在 `RequestContext` 增加 `skip_gatekeeper` 字段；`mcp_endpoint.py` 覆盖时透传跳过标记，并在 `result["action"] == "noop"` 时返回明确的 `[Entropy Defense] NOOP` 提示；
+  - [x] **`TASK-152-3: 专项视网膜单测与往返一致性验真`**：编写 `test_card152_write_noop_physical_persistence.py` 4/4 全绿 (未存在文件强制写盘、同内容安全去重、异内容强制更新、MCP 诚实回显)；
+  - [x] **`TASK-152-4: 范式 A 工业级流水线与全域门禁验证`**：同步至 WSL 仓库与 Live 服务，重启服务验证探针 `/health` HTTP 200 返回 `1.7.116`，Vite 生产构建 18.81s 零报错，Git Tag 打标 `v1.7.116`。
+- **交付物清单**：
+  - 核心存储协调：`openviking/storage/content_write.py`
+  - 身份与上下文：`openviking/server/identity.py`
+  - MCP 工具端点：`openviking/server/mcp_endpoint.py`
+  - 版本号 SSOT：`openviking/_version.py`, `package.json`
+  - 专项单测套件：`tests/server/test_card152_write_noop_physical_persistence.py`
+- **交付留痕 (Verification & Evidence)**：
+  - **Git Tag**：`v1.7.116`
+  - **测试验证**：4/4 Card-152 专项测试 PASS，23/23 核心回归测试 PASS，Vite 生产构建 PASS (18.81s)，服务探针 200 OK。
 
 #### 📌 [P0] [x] Card-149: 三大原生插件独立 DSH 桥接器解耦与 34 战地工具/3 Hook 严格对齐 (Native Plugins Independent DSH Bridges Decoupling & 34 Battlefield Tools SSOT) ✅ (v1.7.109)
 - **类型**：客户端桥梁物理解耦 / 34+3 纯净契约对齐 / 纯 Python 容灾打包流水线 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.109` ｜ **当前状态**：[x] 已验收通过 ✅ (v1.7.109)

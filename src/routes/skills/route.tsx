@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { CodeIcon, InboxIcon, LayersIcon, LoaderCircleIcon, SparklesIcon, TargetIcon, ZapIcon } from 'lucide-react'
+import { LayersIcon, LoaderCircleIcon, SparklesIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Badge } from '#/components/ui/badge'
@@ -11,12 +11,6 @@ import { SkillCard } from './-components/skill-card'
 import { SkillsFilterBar } from './-components/skills-filter-bar'
 import { SkillsMetricsCards } from './-components/skills-metrics-cards'
 import { SkillDetailSheet } from './-components/skill-detail-sheet'
-import { SkillZipCockpit } from './-components/skill-zip-cockpit'
-import { SkillLiveGenCockpit } from './-components/skill-livegen-cockpit'
-import { SkillOptCockpit } from './-components/skill-opt-cockpit'
-import { SkillEvolutionCockpit } from './-components/skill-evolution-cockpit'
-import { SkillIngestionCockpit } from './-components/skill-ingestion-cockpit'
-import { CodeCatalogCockpitCard } from './-components/code-catalog-cockpit-card'
 import { getErrorMessage } from './-lib/skill-data'
 import { useSkillsData } from './-lib/use-skills'
 
@@ -26,10 +20,10 @@ export const Route = createFileRoute('/skills')({
 
 function SkillsRoute() {
   const { t } = useTranslation('skillsPage')
-  const [activeTab, setActiveTab] = React.useState<'catalog' | 'evolution' | 'facts' | 'zip' | 'livegen' | 'opt' | 'ingestion'>('catalog')
   const data = useSkillsData()
   const {
-    skills, filteredSkills, paginatedSkills, skillsQuery, detailQuery,
+    skills, bundles, flatSkills, viewMode, setViewMode,
+    filteredSkills, paginatedSkills, skillsQuery, detailQuery,
     selectedSkill, setSelectedSkill, searchQuery, setSearchQuery,
     activeScopeFilter, setActiveScopeFilter,
     currentPage, setCurrentPage, pageSize, setPageSize,
@@ -68,117 +62,35 @@ function SkillsRoute() {
         </div>
       </div>
 
-      {/* View Switcher Tabs */}
-      <div className="flex items-center gap-1 overflow-x-auto rounded-md border border-border/70 bg-muted/30 p-0.5">
-        <button
-          type="button"
-          onClick={() => setActiveTab('catalog')}
-          className={`flex h-6.5 items-center gap-1.5 rounded px-2.5 text-xs font-mono transition-all shrink-0 ${
-            activeTab === 'catalog'
-              ? 'border border-border/80 bg-background font-medium text-foreground shadow-xs dark:border-border/60'
-              : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
-          }`}
-        >
-          <LayersIcon className="size-3.5" />
-          全量技能库 ({skills.length})
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('facts')}
-          className={`flex h-6.5 items-center gap-1.5 rounded px-2.5 text-xs font-mono transition-all shrink-0 ${
-            activeTab === 'facts'
-              ? 'border border-cyan-500/40 bg-cyan-500/10 font-medium text-cyan-700 shadow-xs dark:border-cyan-500/50 dark:bg-cyan-950/40 dark:text-cyan-300'
-              : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
-          }`}
-        >
-          <CodeIcon className="size-3.5" />
-          🧬 源码事实与测试视网膜
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('zip')}
-          className={`flex h-6.5 items-center gap-1.5 rounded px-2.5 text-xs font-mono transition-all shrink-0 ${
-            activeTab === 'zip'
-              ? 'border border-cyan-500/40 bg-cyan-500/10 font-medium text-cyan-700 shadow-xs dark:border-cyan-500/50 dark:bg-cyan-950/40 dark:text-cyan-300'
-              : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
-          }`}
-        >
-          <ZapIcon className="size-3.5" />
-          ⚡ SkillZip 压缩与门禁
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('livegen')}
-          className={`flex h-6.5 items-center gap-1.5 rounded px-2.5 text-xs font-mono transition-all shrink-0 ${
-            activeTab === 'livegen'
-              ? 'border border-cyan-500/40 bg-cyan-500/10 font-medium text-cyan-700 shadow-xs dark:border-cyan-500/50 dark:bg-cyan-950/40 dark:text-cyan-300'
-              : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
-          }`}
-        >
-          <SparklesIcon className="size-3.5" />
-          ✨ LiveGen 技能创生
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('evolution')}
-          className={`flex h-6.5 items-center gap-1.5 rounded px-2.5 text-xs font-mono transition-all shrink-0 ${
-            activeTab === 'evolution'
-              ? 'border border-cyan-500/40 bg-cyan-500/10 font-medium text-cyan-700 shadow-xs dark:border-cyan-500/50 dark:bg-cyan-950/40 dark:text-cyan-300'
-              : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
-          }`}
-        >
-          <SparklesIcon className="size-3.5" />
-          ⚡ 演进与结晶流水线
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('opt')}
-          className={`flex h-6.5 items-center gap-1.5 rounded px-2.5 text-xs font-mono transition-all shrink-0 ${
-            activeTab === 'opt'
-              ? 'border border-cyan-500/40 bg-cyan-500/10 font-medium text-cyan-700 shadow-xs dark:border-cyan-500/50 dark:bg-cyan-950/40 dark:text-cyan-300'
-              : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
-          }`}
-        >
-          <TargetIcon className="size-3.5" />
-          🎯 SkillOpt 评测与体检
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('ingestion')}
-          className={`flex h-6.5 items-center gap-1.5 rounded px-2.5 text-xs font-mono transition-all shrink-0 ${
-            activeTab === 'ingestion'
-              ? 'border border-cyan-500/40 bg-cyan-500/10 font-medium text-cyan-700 shadow-xs dark:border-cyan-500/50 dark:bg-cyan-950/40 dark:text-cyan-300'
-              : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
-          }`}
-        >
-          <InboxIcon className="size-3.5" />
-          📥 准入治理与黑匣子证据链
-        </button>
+      {/* 核心领域技能资产总览条 */}
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/70 bg-muted/20 px-3 py-1.5 text-xs font-mono">
+        <div className="flex items-center gap-2">
+          <LayersIcon className="size-3.5 text-cyan-500" />
+          <span className="font-semibold text-foreground">
+            🧠 核心领域技能中枢 ({skills.length} 项全域就绪)
+          </span>
+          <span className="text-muted-foreground">|</span>
+          <span className="text-muted-foreground">
+            内聚工程研发、智能体治理、底座运维与逆向学习全域母能力 · 支持智能别名透明投影
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Badge variant="outline" className="border-border bg-background text-foreground text-xs font-mono">
+            零手动配置 · 自动化后台护航
+          </Badge>
+        </div>
       </div>
 
-      {activeTab === 'ingestion' ? (
-        <SkillIngestionCockpit />
-      ) : activeTab === 'evolution' ? (
-        <SkillEvolutionCockpit />
-      ) : activeTab === 'opt' ? (
-        <SkillOptCockpit skills={skills} initialSkillSlug={selectedSkill?.name} />
-      ) : activeTab === 'livegen' ? (
-        <SkillLiveGenCockpit />
-      ) : activeTab === 'zip' ? (
-        <SkillZipCockpit skills={skills} initialSkillSlug={selectedSkill?.name} />
-      ) : activeTab === 'facts' ? (
-        <CodeCatalogCockpitCard />
-      ) : (
-        <>
-          <SkillsMetricsCards metrics={harnessMetrics} totalSkills={skills.length} />
+      <SkillsMetricsCards metrics={harnessMetrics} totalSkills={skills.length} />
 
-          <SkillsFilterBar
-            skills={skills}
-            activeScopeFilter={activeScopeFilter}
-            onSelectScopeFilter={setActiveScopeFilter}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-          />
+      <SkillsFilterBar
+        skills={skills}
+        activeScopeFilter={activeScopeFilter}
+        onSelectScopeFilter={setActiveScopeFilter}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+      />
 
       {skillsQuery.isLoading ? (
         <Card className="min-h-56 items-center justify-center">
@@ -231,10 +143,8 @@ function SkillsRoute() {
           />
         </div>
       )}
-    </>
-  )}
 
-  <SkillDetailSheet
+      <SkillDetailSheet
         open={Boolean(selectedSkill)}
         onOpenChange={(open) => { if (!open) setSelectedSkill(null) }}
         detail={detailQuery.data ?? null}

@@ -1281,6 +1281,10 @@ async def write(
                 "[EntropyGatekeeper][MCP] Overriding NOOP with physical write for %s: Target file missing or content changed.",
                 uri,
             )
+            if isinstance(ctx, dict):
+                ctx["skip_gatekeeper"] = True
+            elif hasattr(ctx, "skip_gatekeeper"):
+                setattr(ctx, "skip_gatekeeper", True)
 
     try:
         result = await service.fs.write(
@@ -1296,6 +1300,12 @@ async def write(
             uri=uri, content=content, ctx=ctx, mode="create", wait=wait, timeout=timeout
         )
     written = result.get("written_bytes", 0)
+    action = result.get("action")
+    if action == "noop":
+        return (
+            f"[Entropy Defense] NOOP (印证去重): 目标节点 {result.get('uri', uri)} 已存在且内容完全一致 (0 字节变动)。"
+            f"已拦截物理重复落盘。"
+        )
     message = (
         f"Wrote {written} bytes to {result.get('uri', uri)} (mode={result.get('mode', mode)})."
     )
