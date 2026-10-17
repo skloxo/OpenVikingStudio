@@ -4,10 +4,9 @@
     - id: openviking-ops
       name: dsh-plugin-openviking-ops
       config:
-        endpointUrl: "https://vk.tide.red/mcp"
+        endpointUrl: ""
         userKey: ""
         userKeyEnv: "OPENVIKING_USER_KEY"
-        agentId: "openviking-ops@sentinel"
         userId: "default"
         enableMcp: true
-        peer: "openviking-ops@sentinel"
+        peer: "openviking-ops"

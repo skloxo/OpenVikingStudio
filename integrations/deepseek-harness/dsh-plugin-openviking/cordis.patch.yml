@@ -4,10 +4,9 @@
     - id: openviking-memory
       name: dsh-plugin-openviking-memory
       config:
-        endpointUrl: "https://vk.tide.red/mcp"
+        endpointUrl: ""
         userKey: ""
         userKeyEnv: "OPENVIKING_USER_KEY"
-        agentId: "deepseek-harness@satellite"
         userId: "default"
         enableMcp: true
-        peer: "deepseek-harness@satellite"
+        peer: "openviking-memory"

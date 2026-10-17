@@ -4,10 +4,9 @@
     - id: fleet-mesh
       name: dsh-plugin-openviking-fleet
       config:
-        endpointUrl: "https://vk.tide.red/mcp"
+        endpointUrl: ""
         userKey: ""
         userKeyEnv: "OPENVIKING_USER_KEY"
-        agentId: "fleet-mesh@coordinator"
         userId: "default"
         enableMcp: true
-        peer: "fleet-mesh@coordinator"
+        peer: "fleet-mesh"

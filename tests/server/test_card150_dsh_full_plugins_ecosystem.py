@@ -18,19 +18,19 @@ STUDIO_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 def test_semver_consistency():
-    """验证版本号严格同步至 1.7.111。"""
-    assert __version__ == "1.7.111"
+    """验证版本号严格同步至 1.7.112。"""
+    assert __version__ == "1.7.112"
     pkg = json.loads((STUDIO_DIR / "package.json").read_text(encoding="utf-8"))
-    assert pkg["version"] == "1.7.111"
+    assert pkg["version"] == "1.7.112"
 
 
 def test_all_7_plugins_tarball_exist_and_valid():
     """验证 7 大独立插件包在 public/ 和 dist/ 中完整存在且非空。"""
     expected_tarballs = [
-        "dsh-plugin-openviking-memory-2.0.13.tgz",
-        "dsh-plugin-openviking-ops-1.0.1.tgz",
-        "dsh-plugin-openviking-fleet-1.0.1.tgz",
-        "dsh-plugin-openviking-2.0.13.tgz",
+        "dsh-plugin-openviking-memory-2.0.15.tgz",
+        "dsh-plugin-openviking-ops-1.0.3.tgz",
+        "dsh-plugin-openviking-fleet-1.0.3.tgz",
+        "dsh-plugin-openviking-2.0.15.tgz",
         "dsh-plugin-keepass-vault-1.0.2.tgz",
         "dsh-plugin-dify-1.0.1.tgz",
         "dsh-plugin-cpa-1.0.1.tgz",
@@ -45,9 +45,9 @@ def test_all_7_plugins_tarball_exist_and_valid():
 def test_dsh_slots_gui_and_bundle_patch_in_tarballs():
     """验证 7 大独立插件内联 Slots GUI 注入与 bundle patch 声明。"""
     packages_to_check = [
-        "dsh-plugin-openviking-memory-2.0.13.tgz",
-        "dsh-plugin-openviking-ops-1.0.1.tgz",
-        "dsh-plugin-openviking-fleet-1.0.1.tgz",
+        "dsh-plugin-openviking-memory-2.0.15.tgz",
+        "dsh-plugin-openviking-ops-1.0.3.tgz",
+        "dsh-plugin-openviking-fleet-1.0.3.tgz",
         "dsh-plugin-keepass-vault-1.0.2.tgz",
         "dsh-plugin-dify-1.0.1.tgz",
         "dsh-plugin-cpa-1.0.1.tgz",
@@ -86,12 +86,12 @@ async def test_keepass_health_probe_zero_cloud_dependency():
 def test_plugin_registry_bridge_info_resolution():
     """验证 PluginRegistry 能够精准解析全系 6 种不同插件 ID 的独立桥接包。"""
     cases = [
-        ("openviking-ops", "dsh-plugin-openviking-ops", "1.0.1"),
-        ("fleet-mesh", "dsh-plugin-openviking-fleet", "1.0.1"),
+        ("openviking-ops", "dsh-plugin-openviking-ops", "1.0.3"),
+        ("fleet-mesh", "dsh-plugin-openviking-fleet", "1.0.3"),
         ("keepass-vault", "dsh-plugin-keepass-vault", "1.0.2"),
         ("dify", "dsh-plugin-dify", "1.0.1"),
         ("cpa-squad", "dsh-plugin-cpa", "1.0.1"),
-        ("openviking-memory", "dsh-plugin-openviking-memory", "2.0.13"),
+        ("openviking-memory", "dsh-plugin-openviking-memory", "2.0.15"),
     ]
 
     for pid, expected_pkg, expected_ver in cases:

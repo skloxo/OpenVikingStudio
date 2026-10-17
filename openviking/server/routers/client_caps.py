@@ -114,7 +114,7 @@ async def _verify_auth(request: Request) -> Dict[str, Any]:
             )
             account_id = str(identity.account_id)
             user_id = str(identity.user_id)
-            role = str(identity.role)
+            role = str(getattr(identity.role, "value", identity.role)).lower()
             authenticated = True
         except Exception as e:
             raise HTTPException(status_code=401, detail=f"密钥校验未通过: {str(e)}")
@@ -335,6 +335,11 @@ async def get_client_capabilities(
         }
 
     if target in ("openviking-ops", "ops", "dsh-plugin-openviking-ops"):
+        if auth_info["role"] != "admin":
+            raise HTTPException(
+                status_code=403,
+                detail=f"Permission Denied: Plugin [{target}] requires administrator privileges (role='admin'). Current user role is [{auth_info['role']}].",
+            )
         authed_tools = OPS_17_TOOLS
         authed_hooks = [h for h in OPS_2_HOOKS if hooks_state.get(h["id"], True)]
         probes = await _run_full_probes(
@@ -357,7 +362,7 @@ async def get_client_capabilities(
                 "id": "openviking-ops",
                 "name": "OpenViking 系统运维治理插件",
                 "version": "1.0.1",
-                "status": "active" if auth_info["role"] == "admin" else "restricted",
+                "status": "active",
                 "total_tools": len(authed_tools),
                 "description": "后台专属运维治理、死信自愈、知识索引重建与哨兵巡检 (17 项运维特权工具 + 2 项 Hook 守卫)",
                 "tools": authed_tools,
@@ -367,6 +372,11 @@ async def get_client_capabilities(
         }
 
     if target in ("fleet-mesh", "openviking-fleet", "fleet", "dsh-plugin-openviking-fleet"):
+        if auth_info["role"] != "admin":
+            raise HTTPException(
+                status_code=403,
+                detail=f"Permission Denied: Plugin [{target}] requires administrator privileges (role='admin'). Current user role is [{auth_info['role']}].",
+            )
         authed_tools = FLEET_2_TOOLS
         authed_hooks = [h for h in FLEET_1_HOOKS if hooks_state.get(h["id"], True)]
         probes = await _run_full_probes(

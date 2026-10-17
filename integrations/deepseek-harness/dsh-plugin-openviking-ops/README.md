@@ -5,9 +5,8 @@
 ## 接入要素
 - 服务端端点: `https://vk.tide.red/mcp`
 - 专属凭据: 用户 API Key (User Key)
-- 智能体 ID: `openviking-ops@sentinel`
 
 ## 安装方式
 ```bash
-npm install https://vk.tide.red/studio/dsh-plugin-openviking-ops-1.0.1.tgz
+npm install https://vk.tide.red/studio/dsh-plugin-openviking-ops-1.0.3.tgz
 ```
