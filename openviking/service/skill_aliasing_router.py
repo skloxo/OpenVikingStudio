@@ -20,7 +20,7 @@ DEFAULT_SKILLS_DIR = Path("/home/skloxo/.openviking/data/viking/default/agent/sk
 # 明确的重定向与归一化别名映射
 EXPLICIT_ALIASES: Dict[str, str] = {
     "cpa_squad": "cpa-squad",
-    "keepass-vault": "credential-vault",
+    "credential-vault": "keepass-vault",
     "web-search-pro": "web-harvest-pro",
     "network-search-ops": "web-harvest-pro",
     "wechat-article-reader": "web-harvest-pro",
@@ -102,7 +102,7 @@ class SkillAliasingRouter:
     def get_virtual_skill(self, skill_name: str) -> Optional[Dict[str, Any]]:
         """Construct an OpenAPI-compliant skill response dict for virtual scenarios."""
         res = self.resolve(skill_name)
-        if not res or not res["is_virtual"]:
+        if not res:
             return None
 
         bundle_name = res["bundle_name"]
