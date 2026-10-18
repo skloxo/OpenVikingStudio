@@ -60,3 +60,4 @@ test_data/
 *.coverage.*
 *.db
 *.sqlite*
+.caps_cache.json

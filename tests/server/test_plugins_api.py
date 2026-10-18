@@ -32,21 +32,31 @@ def test_plugin_registry_singleton_and_builtins():
     assert "keepass-vault" in plugin_ids
     assert "network-search" in plugin_ids
 
-    # 验证核心记忆插件四位一体完整性 (47 工具 + 3 Hook)
+    # 验证核心战地记忆插件四位一体完整性 (FastMCP 34 战地工具 + 3 Hook)
     mem_plug = reg1.get_plugin("openviking-memory")
     assert mem_plug is not None
-    assert mem_plug.version == "1.5.0"
+    assert mem_plug.version == "2.0.11"
     assert len(mem_plug.hooks) == 3
-    assert len(mem_plug.tools) == 47
+    assert len(mem_plug.tools) == 34
+
+    # 验证解耦独立插件 cpa-squad、fleet-mesh 与 openviking-ops
+    assert "cpa-squad" in plugin_ids
+    assert "fleet-mesh" in plugin_ids
+    assert "openviking-ops" in plugin_ids
+    assert len(reg1.get_plugin("cpa-squad").tools) == 2
+    assert len(reg1.get_plugin("fleet-mesh").tools) == 2
+    assert len(reg1.get_plugin("openviking-ops").tools) == 17
 
     # 验证工具反查插件 ID
     assert reg1.get_plugin_id_by_tool("find") == "openviking-memory"
     assert reg1.get_plugin_id_by_tool("keepass_get") == "keepass-vault"
     assert reg1.get_plugin_id_by_tool("searxng_search") == "network-search"
+    assert reg1.get_plugin_id_by_tool("openviking_cpa_consult") == "cpa-squad"
+    assert reg1.get_plugin_id_by_tool("openviking_fleet_check") == "fleet-mesh"
 
     # 验证客户端桥梁元数据
     bridge = PluginRegistry.get_client_bridge_info()
-    assert bridge["package_name"] == "dsh-plugin-openviking"
+    assert bridge["package_name"] in ("dsh-plugin-openviking-memory", "dsh-plugin-openviking")
     assert bridge["package_url"].endswith(".tgz")
 
 
@@ -105,15 +115,26 @@ def test_get_plugin_detail_and_bridge_endpoints(client):
     assert resp.status_code == 200
     data = resp.json()
     assert data["plugin_id"] == "openviking-memory"
-    assert data["version"] == "1.5.0"
-    assert len(data["tools"]) == 47
+    assert data["version"] == "2.0.11"
+    assert len(data["tools"]) == 34
+
+    # 验证获取解耦独立插件详情
+    resp_cpa = client.get("/api/v1/plugins/cpa-squad")
+    assert resp_cpa.status_code == 200
+    assert resp_cpa.json()["plugin_id"] == "cpa-squad"
+    assert len(resp_cpa.json()["tools"]) == 2
+
+    resp_fleet = client.get("/api/v1/plugins/fleet-mesh")
+    assert resp_fleet.status_code == 200
+    assert resp_fleet.json()["plugin_id"] == "fleet-mesh"
+    assert len(resp_fleet.json()["tools"]) == 2
 
     # 验证客户端桥梁独立接口
     resp_bridge = client.get("/api/v1/plugins/bridge/client-package")
     assert resp_bridge.status_code == 200
     bridge_data = resp_bridge.json()
     assert bridge_data["status"] == "success"
-    assert bridge_data["result"]["package_name"] == "dsh-plugin-openviking"
+    assert bridge_data["result"]["package_name"] in ("dsh-plugin-openviking-memory", "dsh-plugin-openviking")
 
     # 不存在的插件返回 404
     resp_404 = client.get("/api/v1/plugins/non_existent_plugin")
@@ -135,26 +156,16 @@ def test_get_plugins_health_summary_endpoint(client):
     assert "openviking-memory" in data["probes"]
 
 
-def test_search_usage_summary_and_prune_endpoints(client):
-    """验证 GET /network-search/usage/summary 和 POST /network-search/usage/prune 接口。"""
+def test_search_usage_endpoints_removed_and_bridge_package(client):
+    """验证侵入式外部搜索流水接口已彻底切除 (404)，且客户端通道桥包接口正常。"""
     resp = client.get("/api/v1/plugins/network-search/usage/summary")
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data["status"] == "success"
-    assert "total_keys" in data
-    assert "keys" in data
-    assert "watermarks" in data
-    assert "db_stats" in data
-    assert "keenable" in data["watermarks"]
-    assert "exa" in data["watermarks"]
-    assert "tavily" in data["watermarks"]
+    assert resp.status_code == 404
 
-    # 测试手动触发归档与物理清理
-    resp_prune = client.post("/api/v1/plugins/network-search/usage/prune?retention_days=45")
-    assert resp_prune.status_code == 200
-    prune_data = resp_prune.json()
-    assert prune_data["status"] == "success"
-    assert "deleted_detail_rows" in prune_data["result"]
+    resp_bridge = client.get("/api/v1/plugins/bridge/client-package")
+    assert resp_bridge.status_code == 200
+    bridge_data = resp_bridge.json()
+    assert bridge_data["status"] == "success"
+    assert "package_name" in bridge_data["result"]
 
 
 def test_agent_bridge_verification_and_tool_call():

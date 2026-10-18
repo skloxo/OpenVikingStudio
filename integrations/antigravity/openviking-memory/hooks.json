@@ -3,8 +3,22 @@
     "PreInvocation": [
       {
         "type": "command",
-        "command": "python3 hooks/ov_pre_invocation.py",
+        "command": "python -X utf8 hooks/ov_pre_invocation.py",
         "timeout": 4
+      }
+    ]
+  },
+  "openviking-sandbox-guard": {
+    "PreToolUse": [
+      {
+        "matcher": "run_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -X utf8 hooks/ov_sandbox_guard.py",
+            "timeout": 3
+          }
+        ]
       }
     ]
   },
@@ -12,7 +26,7 @@
     "Stop": [
       {
         "type": "command",
-        "command": "python3 hooks/ov_session_archiver.py",
+        "command": "python -X utf8 hooks/ov_session_archiver.py",
         "timeout": 3
       }
     ]

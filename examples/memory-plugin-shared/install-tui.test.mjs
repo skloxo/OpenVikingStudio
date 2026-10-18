@@ -69,6 +69,7 @@ test("a pre-existing TRAE home directory keeps TRAE Desktop as the default", (t)
 PATH=/usr/bin:/bin
 HOME=${JSON.stringify(home)}
 refresh_available_harnesses
+HAVE_CLAUDE=0
 HAVE_CURSOR=0
 INTERACTIVE=0
 REQUESTED_HARNESSES=""
@@ -90,6 +91,7 @@ test("TRAE CLI configuration does not auto-select the TRAE CLI harness", (t) => 
 PATH=/usr/bin:/bin
 HOME=${JSON.stringify(home)}
 refresh_available_harnesses
+HAVE_CLAUDE=0
 HAVE_CURSOR=0
 INTERACTIVE=0
 REQUESTED_HARNESSES=""
@@ -119,6 +121,7 @@ refresh_available_harnesses
 TUI_CODEX_BINS="$CODEX_BINS"
 add_detected_traecode_cli_alias
 refresh_available_harnesses
+HAVE_CLAUDE=0
 HAVE_CURSOR=0
 tui_reset_bin_selection
 INTERACTIVE=0

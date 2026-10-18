@@ -1,14 +1,12 @@
-# OpenViking Native Cordis Universal RPC Bridge Bundle Patch for DeepSeek Harness (DSH)
+# OpenViking 核心长程记忆与代码战地 Bundle Patch for DeepSeek Harness (DSH)
 # 遵循高内聚单包自包含规范，零侵入宿主配置，内部静默自治挂载
 - insert:
-    - id: openviking
-      name: dsh-plugin-openviking
+    - id: openviking-memory
+      name: dsh-plugin-openviking-memory
       config:
-        endpointUrl: "https://vk.tide.red/mcp"
+        endpointUrl: ""
         userKey: ""
         userKeyEnv: "OPENVIKING_USER_KEY"
-        agentId: "deepseek-harness@satellite"
         userId: "default"
         enableMcp: true
-        enableHook: true
-        peer: "deepseek-harness@satellite"
+        peer: "openviking-memory"
