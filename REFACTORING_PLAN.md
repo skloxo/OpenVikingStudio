@@ -2,7 +2,7 @@
 
 > **关联研发大蓝图**：[`BLUEPRINT.md`](file:///home/skloxo/aho/openclaw/project/.agents/BLUEPRINT.md) ｜ **交付全量归档台账**：[`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md) ｜ **通用资产档案库**：[`COMPONENT_AND_WHEEL_INVENTORY.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md) ｜ **👁️ 人工验收测试指南**：[`docs/HUMAN_ACCEPTANCE_TESTING.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/HUMAN_ACCEPTANCE_TESTING.md)
 > **唯一真相源 (SSOT)**：本文档为 OpenViking 当前活跃的重构规划与就绪待调度的任务矩阵看板。历史所有已验收交付的版本履历（Milestone 1~4 全量 19 张 Task Cards 及前序波次）已完整归档至 [`DELIVERY_ARCHIVE.md`]- **线上正式部署版本**：**`v1.4.106`**（物理访问地址：`vk.tide.red/studio/home`，已实机验证）；
-- **当前最新交付版本**：**`v1.7.128`**（Tag: `v1.7.128`，上游 v0.5.0 单阶段全局检索重构与 3 天保护期时间衰减落地、24/24 核心单测与 63/63 全域检索测试全绿通过）；
+- **当前最新交付版本**：**`v1.7.129`**（Tag: `v1.7.129`，Tool Output 大体积外部化与会话自动轻量化、19/19 专项单测全绿通过）；
 - **历史里程碑详单检索**：如需查阅 Milestone 1~4 及早期版本修改清单与架构细节，请点击跳转至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。
 
 | 版本 Tag      | 任务工单 ID | 模块与重构主题                                                                                                                                                | 核心治理成果与物理交付物                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |     验收状态      |
@@ -3642,3 +3642,33 @@
   4. 单文件行数红线：`hierarchical_retriever.py` 由 992 行骤降至 411 行（≤ 500 行安全红线与黄金甜点区）。
 - **Git Commit Hash**：`e3f1f2452`
 - **Git Tag**：`v1.7.128`
+
+### 📌 [P0] [x] Card-170 (v1.7.129): Tool Output 大体积外部化与会话自动轻量化 (External Tool Call Persistence & Lightweight Session History SSOT) ✅
+- **背景与第一性原理**：
+  - **前序痛点与架构缺陷**：
+    1. **Token 爆炸与会话膨胀**：在智能体执行代码调试、批量抓取、长日志输出或大型 JSON 数据获取时，单个工具结果常达到数万至数十万字符，直接导致上下文窗口撑爆或被物理截断；
+    2. **历史回溯失真**：由于长输出被暴力截断，后续轮次推理丢失关键细节，且工作区快照和 Working Memory 提取被巨型输出冲垮；
+    3. **缺乏受控读取与分页检索**：智能体无法按需对超长输出进行切片检索，必须全量加载。
+  - **闭环架构设计与物理落地**：
+    1. **大体积工具输出物理外部化 (ToolResultStore)**：拦截超阈值（	hreshold_chars）或超出一轮 inline 预算（ssistant_turn_inline_budget_chars）的巨型输出，自动落盘存储至 VikingFS 影子文件（{session_uri}/tool-results/{tool_result_id}/ 下的 output.txt 与 metadata.json）；
+    2. **轻量化会话上下文存根 (Typed Synopsis Stub)**：在消息流中仅保留紧凑的结构化存根（[OpenViking tool result externalized]，包含 SHA256 哈希、字符长度统计与预览摘要），从物理层杜绝长会话膨胀；
+    3. **受控分页读取与全文片段检索 (
+ead_tool_result / search_tool_result)**：支持基于 offset/limit 的任意分页只读读取与元数据校验；支持在持久化大输出中精准搜索目标关键词并返回上下文 Snippet；
+    4. **记忆提取与归档按需水合 (_hydrate_tool_outputs_for_extraction)**：在执行 Working Memory 提取或技能推理归档时，支持纯内存按需还原完整工具输出，保障认知提取不失真且会话持久化不膨胀；
+    5. **单文件规模与黄金甜点区**：	ests/session/test_tool_result_externalization.py（273行）与 	ool_result_store.py（324行）均严格守住黄金甜点区。
+- **涉及文件清单与修改范围**：
+  - openviking/session/session.py (修复：在 _append_messages_authoritatively 中增加 pathlock duck-typing 防护，解决轻量与测试 fs 适配)
+  - openviking/session/tool_result_store.py (核心：大体积工具输出影子文件外部化存储、按 ID 分页读取与全文片段搜索)
+  - openviking/session/tool_result_synopsis.py (核心：轻量化结构化存根生成与渲染)
+  - openviking/server/config.py (配置：ToolOutputExternalizationConfig 参数规约与预算控制)
+  - openviking/_version.py (自增版本号至 1.7.129)
+  - package.json (自增版本号至 1.7.129)
+  - 	ests/session/test_tool_result_externalization.py (新增：覆盖阈值内联、阈值超限外部化、影子文件落盘、分页读取、片段检索与提取水合)
+  - REFACTORING_PLAN.md (同步更新 Card-170 交付留痕与验收标记)
+- **物理交付验证与门禁标准**：
+  1. 单元测试全绿：pytest tests/session/test_tool_result_externalization.py tests/session/test_tool_result_synopsis.py ➔ **19 passed in 0.89s PASS**；
+  2. 密钥安全与代码合规：python scripts/security_check.py ➔ **Checked 5064 tracked files. Zero secrets detected PASS**；
+  3. 单文件行数红线：	est_tool_result_externalization.py 为 273 行（100~300 行黄金甜点区）；
+  4. 分支规范：保持在 main 主线开发，版本严格 Patch 递增至 1.7.129。
+- **Git Commit Hash**：待提交
+- **Git Tag**：1.7.129

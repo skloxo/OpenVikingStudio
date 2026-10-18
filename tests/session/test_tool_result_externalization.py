@@ -21,8 +21,11 @@ class MemoryVikingFS:
     async def write_file(self, uri, content, *, ctx=None, lease_ref=None):  # noqa: ANN001
         self.files[uri] = content
 
-    async def append_file(self, uri, content, *, ctx=None):  # noqa: ANN001
+    async def append_file(self, uri, content, *, ctx=None, lease_ref=None):  # noqa: ANN001
         self.files[uri] = self.files.get(uri, "") + content
+
+    async def exists(self, uri, ctx=None):  # noqa: ANN001
+        return uri in self.files
 
     async def read_file(self, uri, *, ctx=None):  # noqa: ANN001
         if uri not in self.files:
@@ -144,3 +147,126 @@ async def test_list_tool_results_filters_tool_name_before_limit():
     result = await store.list(tool_name="target", limit=1)
 
     assert result["tool_results"] == [{"tool_result_id": "tr_target", "tool_name": "target"}]
+
+
+async def test_tool_output_below_threshold_stays_inline(session: Session):
+    session._tool_output_externalization_config = _small_config(
+        threshold_chars=50,
+        preview_chars=20,
+    )
+    small_output = "Short tool output within threshold"
+    session.add_message(
+        "user",
+        [
+            ToolPart(
+                tool_id="call_small_001",
+                tool_name="small_fetch",
+                tool_output=small_output,
+                tool_status="completed",
+            )
+        ],
+    )
+    msg = session.messages[-1]
+    part = msg.parts[0]
+    assert isinstance(part, ToolPart)
+    assert part.tool_output == small_output
+    assert not part.tool_output_truncated
+    assert part.tool_output_ref is None or part.tool_output_ref == ""
+
+
+async def test_tool_output_above_threshold_externalized_and_persisted(session: Session):
+    session._tool_output_externalization_config = _small_config(
+        threshold_chars=30,
+        preview_chars=15,
+    )
+    long_output = "Line 1: system initialized successfully\nLine 2: diagnostics ok\nLine 3: finished."
+    session.add_message(
+        "user",
+        [
+            ToolPart(
+                tool_id="call_large_001",
+                tool_name="run_diagnostics",
+                tool_output=long_output,
+                tool_status="completed",
+            )
+        ],
+    )
+    msg = session.messages[-1]
+    part = msg.parts[0]
+    assert isinstance(part, ToolPart)
+    assert part.tool_output_truncated is True
+    assert part.tool_output_original_chars == len(long_output)
+    assert part.tool_output_ref.startswith(f"{session._session_uri}/tool-results/tr_")
+    assert "[OpenViking tool result externalized]" in part.tool_output
+
+    # 验证影子文件落盘
+    tool_result_id = part.tool_output_ref.rstrip("/").split("/")[-1]
+    output_file = f"{part.tool_output_ref}/output.txt"
+    meta_file = f"{part.tool_output_ref}/metadata.json"
+    assert output_file in session._viking_fs.files
+    assert meta_file in session._viking_fs.files
+    assert session._viking_fs.files[output_file] == long_output
+
+    # 验证 read_tool_result 接口
+    read_full = await session.read_tool_result(tool_result_id, limit=-1)
+    assert read_full["content"] == long_output
+    assert read_full["total_chars"] == len(long_output)
+    assert read_full["has_more"] is False
+    assert read_full["metadata"]["tool_name"] == "run_diagnostics"
+
+    # 验证分页读取
+    read_chunk = await session.read_tool_result(tool_result_id, offset=0, limit=20)
+    assert read_chunk["content"] == long_output[:20]
+    assert read_chunk["has_more"] is True
+
+
+async def test_search_tool_result(session: Session):
+    session._tool_output_externalization_config = _small_config(
+        threshold_chars=20,
+        preview_chars=10,
+    )
+    content = "Alpha beta gamma delta epsilon zeta eta theta iota kappa"
+    session.add_message(
+        "user",
+        [
+            ToolPart(
+                tool_id="call_search_001",
+                tool_name="search_probe",
+                tool_output=content,
+                tool_status="completed",
+            )
+        ],
+    )
+    part = session.messages[-1].parts[0]
+    tool_result_id = part.tool_output_ref.rstrip("/").split("/")[-1]
+
+    search_res = await session.search_tool_result(tool_result_id, query="gamma", limit=5)
+    assert len(search_res["matches"]) >= 1
+    assert "gamma" in search_res["matches"][0]["snippet"]
+
+
+async def test_hydrate_tool_outputs_for_extraction(session: Session):
+    session._tool_output_externalization_config = _small_config(
+        threshold_chars=25,
+        preview_chars=10,
+    )
+    original_text = "Important memory payload that exceeds threshold for extraction test"
+    session.add_message(
+        "user",
+        [
+            ToolPart(
+                tool_id="call_extract_001",
+                tool_name="extract_source",
+                tool_output=original_text,
+                tool_status="completed",
+            )
+        ],
+    )
+    assert session.messages[-1].parts[0].tool_output_truncated is True
+
+    hydrated = await session._hydrate_tool_outputs_for_extraction(session.messages)
+    hydrated_part = hydrated[-1].parts[0]
+    assert isinstance(hydrated_part, ToolPart)
+    assert hydrated_part.tool_output == original_text
+    # 消息实例本身依然保持轻量存根，不被水合污染
+    assert session.messages[-1].parts[0].tool_output != original_text

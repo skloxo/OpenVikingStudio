@@ -885,10 +885,15 @@ class Session:
             await self._apply_appended_messages_to_state(messages)
             return
 
-        session_path = self._viking_fs._uri_to_path(self._session_uri, ctx=self.ctx)
-        lease = await self._viking_fs._async_agfs.pathlock_acquire_tree(
-            session_path, timeout_secs=_SESSION_PHASE1_LOCK_TIMEOUT_SECONDS
+        has_pathlock = hasattr(self._viking_fs, "_uri_to_path") and hasattr(
+            self._viking_fs, "_async_agfs"
         )
+        lease = None
+        if has_pathlock:
+            session_path = self._viking_fs._uri_to_path(self._session_uri, ctx=self.ctx)
+            lease = await self._viking_fs._async_agfs.pathlock_acquire_tree(
+                session_path, timeout_secs=_SESSION_PHASE1_LOCK_TIMEOUT_SECONDS
+            )
         try:
             live_messages_missing = False
             try:
@@ -928,7 +933,8 @@ class Session:
                 )
             await self._save_meta(lease_ref=lease)
         finally:
-            await self._viking_fs._async_agfs.pathlock_release(lease)
+            if lease is not None and has_pathlock:
+                await self._viking_fs._async_agfs.pathlock_release(lease)
 
     async def _apply_appended_messages_to_state(self, messages: List[Message]) -> None:
         """Update in-memory counters after an authoritative root reload."""
