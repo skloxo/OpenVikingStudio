@@ -306,18 +306,21 @@ async def get_skill(
     include_integrity: bool = False,
     include_source: bool = False,
     level: Optional[int] = None,
+    compact: bool = False,
+    budget_tokens: Optional[int] = None,
     _ctx: RequestContext = Depends(get_request_context),
 ):
-    """Show one installed agent skill."""
+    """Show one installed agent skill with optional runtime compact injection."""
     if level is not None and level not in {0, 1, 2}:
         raise InvalidArgumentError(
             "Skill show level must be 0, 1, or 2",
             details={"field": "level", "allowed": [0, 1, 2]},
         )
-    service = get_service()
     from openviking.service.skill_aliasing_router import EXPLICIT_ALIASES
     effective_name = EXPLICIT_ALIASES.get(skill_name, skill_name)
+    result = None
     try:
+        service = get_service()
         root_uri = await _require_skill(service, _ctx, effective_name, target_uri)
         result = await _read_skill_detail(
             service,
@@ -339,10 +342,19 @@ async def get_skill(
         aliasing_router = SkillAliasingRouter()
         virtual_skill = aliasing_router.get_virtual_skill(skill_name)
         if virtual_skill:
-            return Response(status="ok", result=virtual_skill)
-        raise exc
+            result = virtual_skill
+        else:
+            raise exc
+
+
+    if result and isinstance(result, dict) and (compact or budget_tokens):
+        from openviking.service.skill_injection_service import SkillInjectionService
+        SkillInjectionService.get_instance().inject_into_dict(
+            result, compact=compact, budget_tokens=budget_tokens
+        )
 
     return Response(status="ok", result=result)
+
 
 
 @router.put("/{skill_name}")

@@ -3033,19 +3033,111 @@ async def openviking_skills(
     content: str = "",
     tags: str = "",
     target_uri: str = "viking://agent/skills",
+    compact: bool = False,
+    budget_tokens: Optional[int] = None,
 ) -> str:
-    """感知与列出全域在册技能，或注册新技能。"""
+    """感知与列出全域在册技能、注册新技能，或按需动态注脑并自适应抽稀规约。"""
     import json
-    service = get_service()
-    ctx = _get_ctx()
+    try:
+        service = get_service()
+    except Exception:
+        service = None
+    try:
+        ctx = _get_ctx()
+    except Exception:
+        ctx = None
     act = action.lower().strip()
     if act == "list":
         try:
             from openviking.server.routers.skills_helpers import _list_skills_from_root
-            skills = await _list_skills_from_root(service, ctx, target_uri or "viking://agent/skills")
+            if service and ctx:
+                skills = await _list_skills_from_root(service, ctx, target_uri or "viking://agent/skills")
+            else:
+                from openviking.service.skill_aliasing_router import SkillAliasingRouter
+                router = SkillAliasingRouter()
+                skills = [{"name": b, "kind": "bundle"} for b in router.list_canonical_bundles()]
             return json.dumps({"status": "ok", "total": len(skills), "skills": skills}, ensure_ascii=False, indent=2)
         except Exception as e:
             return json.dumps({"status": "error", "error": str(e)}, ensure_ascii=False)
+    elif act in ("get", "read", "inject", "show"):
+        if not name:
+            return json.dumps({"status": "error", "error": f"{act} action requires 'name' parameter"}, ensure_ascii=False)
+        from openviking.service.skill_aliasing_router import EXPLICIT_ALIASES, SkillAliasingRouter
+        from openviking.service.skill_injection_service import SkillInjectionService
+        eff_name = EXPLICIT_ALIASES.get(name, name)
+        raw_text = ""
+        # 1. 优先尝试从虚拟场景或别名网关召回
+        aliasing_router = SkillAliasingRouter()
+        virt = aliasing_router.get_virtual_skill(eff_name) or aliasing_router.get_virtual_skill(name)
+        if virt and virt.get("content"):
+            raw_text = virt["content"]
+        elif service and hasattr(service, "fs") and ctx:
+            # 2. 尝试从 VikingFS 标准 URI 读取
+            lookup_uris = [
+                f"{target_uri.rstrip('/')}/{eff_name}/SKILL.md",
+                f"{target_uri.rstrip('/')}/{name}/SKILL.md",
+                f"viking://agent/skills/{eff_name}/SKILL.md",
+            ]
+            for u in lookup_uris:
+                try:
+                    raw_text = await service.fs.read_file(u, ctx=ctx)
+                    if raw_text:
+                        break
+                except Exception:
+                    continue
+
+        # 3. 兜底尝试从本地母包 scenarios 目录直接寻址
+        if not raw_text:
+            local_scenarios = aliasing_router.find_scenario_file(eff_name) or aliasing_router.find_scenario_file(name)
+            if local_scenarios and local_scenarios.is_file():
+                try:
+                    raw_text = local_scenarios.read_text(encoding="utf-8")
+                except Exception:
+                    pass
+
+        # 4. 兜底尝试从本地大包主目录读取 SKILL.md
+        if not raw_text:
+            candidate_bundle_dirs = [
+                aliasing_router._skills_root / eff_name / "SKILL.md",
+                aliasing_router._skills_root / name / "SKILL.md",
+                aliasing_router._skills_root / eff_name.replace("-", "_") / "SKILL.md",
+                aliasing_router._skills_root / eff_name.replace("_", "-") / "SKILL.md",
+            ]
+            for cand in candidate_bundle_dirs:
+                if cand.is_file():
+                    try:
+                        raw_text = cand.read_text(encoding="utf-8")
+                        if raw_text:
+                            break
+                    except Exception:
+                        pass
+
+
+        if not raw_text:
+            return json.dumps({
+                "status": "error",
+                "error": f"Skill '{name}' not found in active bundles or virtual scenarios.",
+                "hint": "Call openviking_skills(action='list') to see available 20 capability bundles."
+            }, ensure_ascii=False)
+
+        inj_svc = SkillInjectionService.get_instance()
+        inj_res = inj_svc.compress_for_injection(raw_text, compact=compact, budget_tokens=budget_tokens)
+        return json.dumps({
+            "status": "ok",
+            "name": eff_name,
+            "is_compact": inj_res.is_compact,
+            "compression": {
+                "ratio": inj_res.compression_ratio,
+                "original_length": inj_res.original_length,
+                "compressed_length": inj_res.compressed_length,
+                "estimated_tokens": inj_res.estimated_tokens,
+                "tokens_saved": inj_res.tokens_saved,
+                "contract_fidelity": inj_res.contract_fidelity,
+                "latency_ms": inj_res.latency_ms,
+            },
+            "content": inj_res.content,
+        }, ensure_ascii=False, indent=2)
+
     elif act == "add":
         if not name or not description:
             return json.dumps({"status": "error", "error": "add action requires name and description"}, ensure_ascii=False)
@@ -3061,7 +3153,8 @@ async def openviking_skills(
             return json.dumps({"status": "ok", "message": f"Skill '{name}' registered at {save_uri}"}, ensure_ascii=False)
         except Exception as e:
             return json.dumps({"status": "error", "error": str(e)}, ensure_ascii=False)
-    return json.dumps({"status": "error", "error": f"Invalid action: {action}. Expected: list | add"}, ensure_ascii=False)
+    return json.dumps({"status": "error", "error": f"Invalid action: {action}. Expected: list | get | inject | add"}, ensure_ascii=False)
+
 
 
 @mcp.tool(annotations=_RETRY_SAFE_DESTRUCTIVE_TOOL_ANNOTATIONS)
