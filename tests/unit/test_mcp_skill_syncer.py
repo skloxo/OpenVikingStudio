@@ -157,6 +157,13 @@ def test_skill_loader_resilient_frontmatter_parsing():
     parsed2 = SkillLoader.parse(raw_blanks)
     assert parsed2["name"] == "blank-prefix"
 
+    # 3. 字段内包含三短横线及正文内包含水平分割线（逆向审讯：绝不提前误切断）
+    raw_with_dashes = '---\nname: inner-dashes\ndescription: "包含---但不是闭合"\n---\n# Body\n---\nMore body'
+    parsed3 = SkillLoader.parse(raw_with_dashes)
+    assert parsed3["name"] == "inner-dashes"
+    assert parsed3["description"] == "包含---但不是闭合"
+    assert "# Body\n---\nMore body" in parsed3["content"]
+
 
 def test_auto_ingest_skips_scenarios_and_caches_rejections():
     """验证已作为 Scenario/Alias 归入大包的技能被直接跳过，且失败技能被哈希缓存抑制重发"""
@@ -223,6 +230,11 @@ def test_auto_ingest_scenario_md_and_hyphen_normalization_dedup():
             "description": "已被大包收录的工序",
             "content": "---\nname: auto-pr\ndescription: \"已收录工序\"\n---\n# Content",
         },
+        "path-skill": {
+            "name": "path-skill",
+            "description": "服务端返回带路径的场景",
+            "content": "---\nname: path-skill\ndescription: \"带路径场景\"\n---\n# Content",
+        },
     }
 
     mock_client = MagicMock()
@@ -238,15 +250,20 @@ def test_auto_ingest_scenario_md_and_hyphen_normalization_dedup():
                     "name": "codebase-engineering",
                     "scenarios": [{"name": "auto-pr.md"}],
                 },
+                {
+                    "name": "developer-productivity",
+                    "scenarios": ["scenarios/deep/path-skill.md"],
+                },
             ]
         },
     }
 
     with patch("tools.skill_syncer.http_client", mock_client):
         _auto_ingest_missing_to_vikingfs(found_skills)
-        # 两项均命中场景去重，绝不发起远程 POST 请求
+        # 三项均命中场景去重，绝不发起远程 POST 请求
         assert mock_client.post.call_count == 0
         assert "mac_production_deploy" in _synced_skills_cache
         assert "auto-pr" in _synced_skills_cache
+        assert "path-skill" in _synced_skills_cache
 
 

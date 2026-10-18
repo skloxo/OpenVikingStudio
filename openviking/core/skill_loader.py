@@ -13,7 +13,10 @@ class SkillLoader:
     """Load and parse SKILL.md files."""
 
     FRONTMATTER_PATTERN = re.compile(
-        r"^\s*---\s*\r?\n(.*?)(?:\r?\n|(?<=[^\s]))---\s*(?:\r?\n(.*))?$", re.DOTALL
+        r"^\s*---\s*\r?\n(.*?)\r?\n---\s*(?:\r?\n(.*))?$", re.DOTALL
+    )
+    RESILIENT_STICKY_PATTERN = re.compile(
+        r"^\s*---\s*\r?\n(.*?)(?<=\S)---\s*(?:\r?\n(.*))?$", re.DOTALL
     )
 
     @staticmethod
@@ -129,12 +132,17 @@ class SkillLoader:
         if not trimmed.startswith("---"):
             return None, content
 
-        # 3. 正则匹配：支持前导空白、CRLF与粘连闭合 ---
+        # 3. 严格标准匹配：优先识别独立成行的 \r?\n---\s*（保障正文内字符串绝不被误伤）
         match = cls.FRONTMATTER_PATTERN.match(content)
         if match:
             return match.group(1), match.group(2) or ""
 
-        # 4. 保守按行切分兜底 (换行缺失或特殊符号粘连)
+        # 4. 宽容粘连匹配：容错行末粘连的闭合分隔符（如 description: "xxx"---）
+        match_sticky = cls.RESILIENT_STICKY_PATTERN.match(content)
+        if match_sticky:
+            return match_sticky.group(1), match_sticky.group(2) or ""
+
+        # 5. 保守按行切分兜底 (换行缺失或特殊符号粘连)
         lines = trimmed.splitlines()
         if lines and lines[0].strip() == "---":
             fm_lines = []
@@ -145,7 +153,7 @@ class SkillLoader:
                     body_start_idx = idx + 1
                     break
                 elif sline.endswith("---") and len(sline) > 3:
-                    prefix = line[:-3]
+                    prefix = line[:line.rfind("---")]
                     fm_lines.append(prefix)
                     body_start_idx = idx + 1
                     break
