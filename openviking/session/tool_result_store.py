@@ -321,3 +321,55 @@ class ToolResultStore:
             if len(results) >= limit:
                 break
         return {"tool_results": results}
+
+    async def prune(
+        self,
+        *,
+        max_age_seconds: Optional[float] = None,
+        max_entries: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """Prune expired or excess externalized tool results for storage quota control."""
+        import time
+        from datetime import datetime
+        entries_resp = await self.list(limit=10_000)
+        tool_results = entries_resp.get("tool_results", [])
+        pruned_ids: List[str] = []
+        now = time.time()
+        for tr in tool_results:
+            tr_id = tr.get("tool_result_id")
+            created_at_str = tr.get("created_at")
+            should_prune = False
+            if max_age_seconds is not None and created_at_str:
+                try:
+                    dt = datetime.fromisoformat(created_at_str)
+                    if (now - dt.timestamp()) > max_age_seconds:
+                        should_prune = True
+                except Exception:
+                    pass
+            if should_prune and tr_id:
+                try:
+                    if hasattr(self._viking_fs, "rm"):
+                        await self._viking_fs.rm(self._result_uri(tr_id), recursive=True, ctx=self._ctx)
+                    elif hasattr(self._viking_fs, "delete_file"):
+                        await self._viking_fs.delete_file(f"{self._result_uri(tr_id)}/output.txt", ctx=self._ctx)
+                        await self._viking_fs.delete_file(f"{self._result_uri(tr_id)}/metadata.json", ctx=self._ctx)
+                    pruned_ids.append(tr_id)
+                except Exception:
+                    pass
+        if max_entries is not None and max_entries > 0:
+            remaining = [tr for tr in tool_results if tr.get("tool_result_id") not in pruned_ids]
+            if len(remaining) > max_entries:
+                excess = len(remaining) - max_entries
+                for tr in remaining[:excess]:
+                    tr_id = tr.get("tool_result_id")
+                    if tr_id:
+                        try:
+                            if hasattr(self._viking_fs, "rm"):
+                                await self._viking_fs.rm(self._result_uri(tr_id), recursive=True, ctx=self._ctx)
+                            elif hasattr(self._viking_fs, "delete_file"):
+                                await self._viking_fs.delete_file(f"{self._result_uri(tr_id)}/output.txt", ctx=self._ctx)
+                                await self._viking_fs.delete_file(f"{self._result_uri(tr_id)}/metadata.json", ctx=self._ctx)
+                            pruned_ids.append(tr_id)
+                        except Exception:
+                            pass
+        return {"pruned_count": len(pruned_ids), "pruned_ids": pruned_ids}

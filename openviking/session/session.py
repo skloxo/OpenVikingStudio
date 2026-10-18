@@ -1157,6 +1157,17 @@ class Session:
             return {"tool_results": []}
         return await store.list(tool_name=tool_name, limit=limit)
 
+    async def prune_tool_results(
+        self,
+        *,
+        max_age_seconds: Optional[float] = None,
+        max_entries: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        store = self._tool_result_store()
+        if not store:
+            return {"pruned_count": 0, "pruned_ids": []}
+        return await store.prune(max_age_seconds=max_age_seconds, max_entries=max_entries)
+
     def _remember_retention_policy(
         self,
         *,
