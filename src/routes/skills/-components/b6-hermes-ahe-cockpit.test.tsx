@@ -109,6 +109,23 @@ vi.mock('#/lib/ov-client', () => ({
         if (url.includes('/api/v1/ahe/manifest')) {
           return Promise.resolve({ data: mockManifests })
         }
+        if (url.includes('/api/v1/system/harness_metrics')) {
+          return Promise.resolve({
+            data: {
+              lessons_count: 99,
+              lessons_detail: [
+                {
+                  id: 1,
+                  title: 'DSH 原生 Web 搜索协议 Schema 陷阱与反爬优雅降级规范',
+                  context: 'Recorded from master memory',
+                  reflection: 'Session trace reflection',
+                  lesson: '严格遵守 DTO 结构',
+                  source: 'master_memory/lesson_01.md',
+                },
+              ],
+            },
+          })
+        }
         return Promise.resolve({ data: {} })
       }),
       post: vi.fn((url: string) => {
@@ -127,7 +144,7 @@ vi.mock('#/lib/ov-client', () => ({
   },
 }))
 
-describe('B6HermesAheCockpit (Card-178)', () => {
+describe('B6HermesAheCockpit (Card-178 & Lessons Recovery)', () => {
   let queryClient: QueryClient
 
   beforeEach(() => {
@@ -148,11 +165,12 @@ describe('B6HermesAheCockpit (Card-178)', () => {
     )
   }
 
-  it('renders dual stage tabs and 4 KPI metrics correctly', async () => {
+  it('renders tri-stage tabs and 4 KPI metrics correctly', async () => {
     renderCockpit()
 
     expect(screen.getByText(/第 11 阶: Hermes 经历微手术补丁审查/)).toBeDefined()
     expect(screen.getByText(/第 10 阶: AHE 契约假设与漂移对抗/)).toBeDefined()
+    expect(screen.getByText(/第 12 阶: 演进与反思教训档案/)).toBeDefined()
 
     await waitFor(() => {
       expect(screen.getByText('1250')).toBeDefined()
@@ -211,6 +229,18 @@ describe('B6HermesAheCockpit (Card-178)', () => {
 
     await waitFor(() => {
       expect(screen.getByText('deepseek-harness-ops')).toBeDefined()
+    })
+  })
+
+  it('switches to lessons mode and displays evolution lessons table', async () => {
+    renderCockpit()
+
+    const lessonsTab = screen.getByText(/第 12 阶: 演进与反思教训档案/)
+    fireEvent.click(lessonsTab)
+
+    await waitFor(() => {
+      expect(screen.getByText(/DSH 原生 Web 搜索协议 Schema 陷阱/)).toBeDefined()
+      expect(screen.getByText(/严格遵守 DTO 结构/)).toBeDefined()
     })
   })
 })
