@@ -84,4 +84,13 @@ export interface AHESummary {
   }
 }
 
-export type HermesAheTrackMode = 'hermes_patch' | 'ahe_guard'
+export interface LessonItem {
+  id: number
+  title: string
+  context: string
+  reflection: string
+  lesson: string
+  source?: string
+}
+
+export type HermesAheTrackMode = 'hermes_patch' | 'ahe_guard' | 'lessons'

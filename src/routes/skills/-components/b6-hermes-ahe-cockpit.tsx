@@ -18,11 +18,13 @@ import { Input } from '#/components/ui/input'
 import { ovClient } from '#/lib/ov-client'
 import { B6AheManifestPanel } from './b6-ahe-manifest-panel'
 import { B6HermesPatchPanel } from './b6-hermes-patch-panel'
+import { B6LessonsPanel } from './b6-lessons-panel'
 import type {
   AHEManifest,
   AHESummary,
   HermesAheTrackMode,
   HermesSummary,
+  LessonItem,
   SkillPatch,
 } from '../-types/hermes-ahe'
 
@@ -87,7 +89,29 @@ export function B6HermesAheCockpit() {
     refetchInterval: 30_000,
   })
 
-  // 5. 应用 Hermes 微补丁
+  // 5. 全量事故与演进教训档案
+  const {
+    data: lessons = [],
+    isLoading: lessonsLoading,
+    refetch: refetchLessons,
+  } = useQuery<LessonItem[]>({
+    queryKey: ['evolution-harness-lessons'],
+    queryFn: async () => {
+      try {
+        const res = await ovClient.instance.get<{
+          lessons_count?: number
+          lessons_detail?: LessonItem[]
+        }>('/api/v1/system/harness_metrics')
+        return res.data?.lessons_detail ?? []
+      } catch (err) {
+        console.warn('Failed to fetch evolution lessons:', err)
+        return []
+      }
+    },
+    staleTime: 15_000,
+  })
+
+  // 6. 应用 Hermes 微补丁
   const applyPatchMutation = useMutation({
     mutationFn: async (patchId: string) => {
       const res = await ovClient.instance.post(`/api/v1/hermes/patch/apply?patch_id=${patchId}`)
@@ -193,6 +217,18 @@ export function B6HermesAheCockpit() {
             <ShieldCheckIcon className="size-3.5 text-cyan-600 dark:text-cyan-400" />
             <span>🛡️ 第 10 阶: AHE 契约假设与漂移对抗 ({filteredManifests.length})</span>
           </button>
+          <button
+            type="button"
+            onClick={() => setActiveMode('lessons')}
+            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-mono font-medium transition-all cursor-pointer ${
+              activeMode === 'lessons'
+                ? 'bg-cyan-100 text-cyan-900 border border-cyan-300 dark:bg-cyan-950/60 dark:text-cyan-200 dark:border-cyan-800 font-semibold'
+                : 'text-muted-foreground hover:bg-muted/40 border border-transparent'
+            }`}
+          >
+            <LayersIcon className="size-3.5 text-cyan-600 dark:text-cyan-400" />
+            <span>📋 第 12 阶: 演进与反思教训档案 ({lessons.length})</span>
+          </button>
         </div>
 
         <div className="flex items-center gap-2">
@@ -201,11 +237,11 @@ export function B6HermesAheCockpit() {
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="搜索技能/原因/ID..."
+              placeholder="搜索技能/教训/原因/ID..."
               className="text-xs font-mono h-7 pl-7 pr-2 border-border/80"
             />
           </div>
-          {activeMode === 'hermes_patch' ? (
+          {activeMode === 'hermes_patch' && (
             <Button
               size="sm"
               variant="outline"
@@ -219,7 +255,8 @@ export function B6HermesAheCockpit() {
               <RefreshCwIcon className={`size-3 mr-1 ${hermesLoading || patchesLoading ? 'animate-spin' : ''}`} />
               刷新
             </Button>
-          ) : (
+          )}
+          {activeMode === 'ahe_guard' && (
             <div className="flex items-center gap-1.5">
               <Button
                 size="sm"
@@ -244,6 +281,18 @@ export function B6HermesAheCockpit() {
                 刷新
               </Button>
             </div>
+          )}
+          {activeMode === 'lessons' && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => refetchLessons()}
+              disabled={lessonsLoading}
+              className="text-xs h-7 font-mono px-2 border-border/80 cursor-pointer"
+            >
+              <RefreshCwIcon className={`size-3 mr-1 ${lessonsLoading ? 'animate-spin' : ''}`} />
+              刷新
+            </Button>
           )}
         </div>
       </div>
@@ -291,20 +340,20 @@ export function B6HermesAheCockpit() {
 
         <div className="rounded-md border border-border/70 bg-card p-2.5 shadow-2xs">
           <div className="flex items-center justify-between text-xs font-mono text-muted-foreground">
-            <span>假设违规拦截数</span>
-            <ShieldAlertIcon className="size-3.5 text-rose-600 dark:text-rose-400" />
+            <span>演进教训归档总数</span>
+            <LayersIcon className="size-3.5 text-cyan-600 dark:text-cyan-400" />
           </div>
-          <div className="text-lg font-bold font-mono text-rose-700 dark:text-rose-400 mt-1">
-            {violatedCount}
+          <div className="text-lg font-bold font-mono text-cyan-800 dark:text-cyan-300 mt-1">
+            {lessons.length}
           </div>
           <div className="text-xs font-mono text-muted-foreground mt-0.5 truncate">
-            违反即物理阻断提交
+            Master Memory: 99 项实机沉淀
           </div>
         </div>
       </div>
 
-      {/* 3. 双轨解耦互动沙盘展示区 */}
-      {activeMode === 'hermes_patch' ? (
+      {/* 3. 三轨解耦互动沙盘展示区 */}
+      {activeMode === 'hermes_patch' && (
         <B6HermesPatchPanel
           patches={filteredPatches}
           isLoading={patchesLoading}
@@ -313,10 +362,18 @@ export function B6HermesAheCockpit() {
           isApplying={applyPatchMutation.isPending}
           isReverting={revertPatchMutation.isPending}
         />
-      ) : (
+      )}
+      {activeMode === 'ahe_guard' && (
         <B6AheManifestPanel
           manifests={filteredManifests}
           isLoading={manifestsLoading}
+        />
+      )}
+      {activeMode === 'lessons' && (
+        <B6LessonsPanel
+          lessons={lessons}
+          searchQuery={searchQuery}
+          isLoading={lessonsLoading}
         />
       )}
     </div>
