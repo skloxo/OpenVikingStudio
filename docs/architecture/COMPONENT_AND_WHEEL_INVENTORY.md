@@ -155,6 +155,7 @@
 | **`B6ProvenanceMultiLedger`** | `src/routes/skills/-components/b6-provenance-multi-ledger.tsx` | **全息流水第一轨多轨流水审计账本**：黑匣子证据链时间线（源 sha256、近邻打分、差异摘要、状态流转）与 SQLite 准入流水（SkillOpt 四维打分、AST 自愈记录、入库/拦截详情）双轨平滑切换与实时单批处理执行。 | ✅ 已交付 (v1.7.131) |
 | **`ProvenanceDetailSheet`** | `src/routes/skills/-components/provenance-detail-sheet.tsx` | **演变审计与准入穿透详情抽屉**：统一 Diff 对比审查面板（增删高亮）、物理快照指针与一键秒级还原 (`<50ms`)、AST 自愈字段回显与 SkillOpt 质检决策穿透。 | ✅ 已交付 (v1.7.131) |
 | **`B6RetinaRegressionCockpit`** | `src/routes/skills/-components/b6-retina-regression-cockpit.tsx` | **全息流水第二轨行为视网膜与零退化沙盒**：承接第 7 阶（技能视网膜沙箱用例评测）与第 8 阶（RSI 零退化回归保护门禁），支持沙箱用例动态运行断言、Dual-Split 保留集回归校验与冻结面保护。 | ✅ 已交付 (v1.7.132) |
+| **`B6HermesAheCockpit`** | `src/routes/skills/-components/b6-hermes-ahe-cockpit.tsx` | **全息流水第三轨 Hermes 经历微手术与 AHE 漂移对抗座舱**：承接第 11 阶（Hermes 经历微手术补丁审查与秒级无损回退）与第 10 阶（AHE 契约假设与 Polar 断言对抗防漂移），解耦集成 `B6HermesPatchPanel` 与 `B6AheManifestPanel`，内建 4 维核心 KPI 瓦片与细粒度 Diff 审查沙盘。 | ✅ 已交付 (v1.7.133) |
 
 ---
 

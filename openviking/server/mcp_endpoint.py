@@ -3275,6 +3275,81 @@ async def openviking_tag(
         return json.dumps({"status": "error", "error": str(e)}, ensure_ascii=False)
 
 
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_tool_result_read(
+    ref: str = "",
+    session_id: str = "",
+    tool_result_id: str = "",
+    offset: int = 0,
+    limit: int = 20_000,
+) -> str:
+    """Read an externalized tool result by character range (Unicode code points)."""
+    import json
+    service = get_service()
+    ctx = _get_ctx()
+    if ref and not tool_result_id:
+        parts = ref.rstrip("/").split("/")
+        if len(parts) >= 2 and parts[-2] == "tool-results":
+            tool_result_id = parts[-1]
+            if not session_id and len(parts) >= 4 and parts[-4] == "sessions":
+                session_id = parts[-3]
+    if not session_id:
+        session_id = "default"
+    try:
+        session = await service.sessions.get(session_id, ctx, auto_create=False)
+        res = await session.read_tool_result(tool_result_id, offset=offset, limit=limit)
+        return json.dumps({"status": "ok", "result": res}, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({"status": "error", "error": str(e)}, ensure_ascii=False)
+
+
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_tool_result_search(
+    query: str,
+    ref: str = "",
+    session_id: str = "",
+    tool_result_id: str = "",
+    limit: int = 20,
+    context_chars: int = 300,
+) -> str:
+    """Search within an externalized tool result for query terms and snippets."""
+    import json
+    service = get_service()
+    ctx = _get_ctx()
+    if ref and not tool_result_id:
+        parts = ref.rstrip("/").split("/")
+        if len(parts) >= 2 and parts[-2] == "tool-results":
+            tool_result_id = parts[-1]
+            if not session_id and len(parts) >= 4 and parts[-4] == "sessions":
+                session_id = parts[-3]
+    if not session_id:
+        session_id = "default"
+    try:
+        session = await service.sessions.get(session_id, ctx, auto_create=False)
+        res = await session.search_tool_result(tool_result_id, query=query, limit=limit, context_chars=context_chars)
+        return json.dumps({"status": "ok", "result": res}, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({"status": "error", "error": str(e)}, ensure_ascii=False)
+
+
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_tool_result_list(
+    session_id: str = "default",
+    tool_name: str = "",
+    limit: int = 50,
+) -> str:
+    """List all externalized tool results for a session."""
+    import json
+    service = get_service()
+    ctx = _get_ctx()
+    try:
+        session = await service.sessions.get(session_id or "default", ctx, auto_create=False)
+        res = await session.list_tool_results(tool_name=tool_name or None, limit=limit)
+        return json.dumps({"status": "ok", "result": res}, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({"status": "error", "error": str(e)}, ensure_ascii=False)
+
+
 # ---------------------------------------------------------------------------
 # FastMCP 双向透明别名解析器 (消除 Unknown Tool 与短名称不兼容)
 # ---------------------------------------------------------------------------

@@ -9,6 +9,7 @@ import { Card } from '#/components/ui/card'
 import { ActiveIngestionView } from './-components/active-ingestion-view'
 import { B6EvolutionPipelineCockpit } from './-components/b6-evolution-pipeline-cockpit'
 import { B6RetinaRegressionCockpit } from './-components/b6-retina-regression-cockpit'
+import { B6HermesAheCockpit } from './-components/b6-hermes-ahe-cockpit'
 import { B6ProvenanceMultiLedger } from './-components/b6-provenance-multi-ledger'
 import { SkillsPagination } from './-components/pagination'
 import { SkillCard } from './-components/skill-card'
@@ -95,6 +96,7 @@ function SkillsRoute() {
         <div className="flex flex-col gap-4">
           <B6EvolutionPipelineCockpit />
           <B6RetinaRegressionCockpit />
+          <B6HermesAheCockpit />
           <B6ProvenanceMultiLedger />
         </div>
       ) : (
