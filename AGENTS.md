@@ -17,7 +17,7 @@
 
 ---
 
-## ⚡ 二、 研发六大绝对红线 (Non-Negotiable Baseline Rules)
+## ⚡ 二、 研发七大绝对红线 (Non-Negotiable Baseline Rules)
 
 1. **绝对禁止盲目修改代码 (Disaster Recovery First)**：
    - 任何敏感数据/记忆/架构重构，必须先做可行性与安全性评估；
@@ -51,6 +51,15 @@
    - **纯动态环境解析**：所有敏感凭据与网络端点统一通过 `os.environ.get()` 或本地 `chmod 600` 的 `.env`（严格由 `.gitignore` 阻断）动态读取；
    - **Git 物理阻断门禁**：必须常驻安装 `.git/hooks/pre-commit` 联动 `scripts/security_check.py`，检测到敏感字符物理拒绝 Commit；
    - **衍生资产自动脱敏**：由扫描器或脚本生成的本地缓存与 JSON 资产，严禁打包真实节点密码与私有配置，且必须加入 `.gitignore` 物理隔离。
+
+7. **全项目统一开发协作范式 A 铁律与 9P 物理阻断 (Paradigm A & Anti-9P SSOT) ⭐⭐⭐⭐⭐**：
+   - **双战场职责清晰解耦**：Windows 宿主纯粹作为代码编辑与 Git 追踪主战场；WSL2（`/home/skloxo/services/openviking`）作为真实生产构建与测试运行环境，严禁代码两地手工混乱维护；
+   - **绝对物理红线**：严禁任何 Agent 针对 Windows 挂载盘（`/mnt/c/...`）直接发起 `vite build`、`pnpm`、`pytest` 等重型命令，违者物理阻断并直接判定 P0 级违规；
+   - **唯一标准化执行入口**：
+     - 日常增量同步与热更新：统一执行 `python scripts/sync_to_wsl.py -r`（~1s 极速生效）；
+     - 前端改动极速打包：统一执行 `python scripts/sync_to_wsl.py -b`（~15s Linux 原生 ext4 构建，彻底告别 3 分多钟 9P 卡死）；
+     - 正式发布与版本打标：统一执行 `python scripts/release_step.py --bump patch -m "..."`；
+   - **安全与防呆门禁**：Windows 下严禁裸写未带 `-UseBasicParsing` 的 `Invoke-WebRequest`，统一使用 `curl.exe -s`；测试由 `tests/unit/test_paradigm_a_sync_and_release.py` 自动化视网膜门禁实时守门。
 
 ---
 
