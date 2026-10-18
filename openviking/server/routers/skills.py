@@ -5,8 +5,10 @@
 import asyncio
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, WebSocket, WebSocketDisconnect
 from fastapi import Path as ApiPath
+from fastapi.responses import StreamingResponse
+
 
 from openviking.core.namespace import canonical_user_root
 from openviking.core.path_variables import resolve_path_variables
@@ -297,6 +299,33 @@ async def heal_skills_retina(
     )
 
 
+@router.get("/events")
+async def stream_skill_events(
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """Stream real-time skill mutation events via SSE."""
+    del _ctx
+    from openviking.service.skill_event_bus import SkillEventBus
+    bus = SkillEventBus.get_instance()
+    return StreamingResponse(
+        bus.subscribe(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@router.websocket("/ws")
+async def websocket_skill_events(websocket: WebSocket) -> None:
+    """Full-duplex WebSocket endpoint for real-time skill mutation and pipeline events."""
+    from openviking.service.skill_event_bus import SkillEventBus
+    bus = SkillEventBus.get_instance()
+    await bus.subscribe_ws(websocket)
+
+
 @router.get("/{skill_name}")
 async def get_skill(
     skill_name: str = ApiPath(..., description="Skill name"),
@@ -376,6 +405,8 @@ async def update_skill(
         service=service,
         persist_metadata_fn=persist_skill_source_metadata,
     )
+    from openviking.service.skill_event_bus import SkillEventBus, SkillEvent
+    SkillEventBus.get_instance().emit(SkillEvent.SKILL_UPDATED, {"name": skill_name})
     return Response(
         status="ok",
         result=execution.result,
@@ -401,4 +432,9 @@ async def delete_skill(
     if isinstance(result, dict) and "estimated_deleted_count" in result:
         response_result["estimated_deleted_count"] = result["estimated_deleted_count"]
     response_result["privacy_deleted"] = privacy_deleted
+
+    from openviking.service.skill_event_bus import SkillEventBus, SkillEvent
+    SkillEventBus.get_instance().emit(SkillEvent.SKILL_DELETED, {"name": skill_name})
+
     return Response(status="ok", result=response_result)
+

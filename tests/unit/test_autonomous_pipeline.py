@@ -62,11 +62,11 @@ def test_autonomous_pipeline_single_cycle():
     
     # 2. 运行一轮自主流水线
     pipeline = SkillAutonomousPipeline(skills_root=TEST_SKILLS_DIR, store=store)
-    result = pipeline.process_one_cycle(batch_size=1)
+    result = pipeline.process_one_cycle(batch_size=10)
     
     assert result["processed_count"] >= 1, "Pipeline failed to claim and process pending record"
-    item = result["results"][0]
-    assert item["receipt_id"] == receipt_id
+    item = next((r for r in result["results"] if r["receipt_id"] == receipt_id), None)
+    assert item is not None, f"Target receipt {receipt_id} not in results: {result['results']}"
     assert item["quality_score"] >= 70.0, f"SkillOpt rejected valid skill: {item['quality_score']}"
     assert item["compressed"] is True, "SkillZip failed to compress"
     assert item["decision"] in ["MERGE_INTO_EXISTING", "SPAWN_NEW_BUNDLE"]

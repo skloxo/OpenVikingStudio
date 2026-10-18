@@ -13,6 +13,7 @@ import { SkillsFilterBar } from './-components/skills-filter-bar'
 import { SkillsMetricsCards } from './-components/skills-metrics-cards'
 import { SkillDetailSheet } from './-components/skill-detail-sheet'
 import { SkillIngestionCockpit } from './-components/skill-ingestion-cockpit'
+import { useSkillEventBus } from './-hooks/use-skill-event-bus'
 import { getErrorMessage } from './-lib/skill-data'
 import { useSkillsData } from './-lib/use-skills'
 
@@ -23,6 +24,7 @@ export const Route = createFileRoute('/skills')({
 function SkillsRoute() {
   const { t } = useTranslation('skillsPage')
   const [showIngestionCockpit, setShowIngestionCockpit] = React.useState(false)
+  const { isConnected: isEventBusConnected } = useSkillEventBus()
   const data = useSkillsData()
   const {
     skills, bundles, flatSkills, viewMode, setViewMode,
@@ -72,6 +74,10 @@ function SkillsRoute() {
           </Badge>
           <Badge variant="outline" className="border-border bg-background/80 text-foreground text-xs font-mono">
             外部 Agent 零修改无感调用
+          </Badge>
+          <Badge variant="outline" className="border-border bg-background/80 text-foreground text-xs font-mono flex items-center gap-1.5">
+            <span className={`size-1.5 rounded-full ${isEventBusConnected ? 'bg-cyan-500 animate-pulse' : 'bg-muted-foreground'}`} />
+            <span>{isEventBusConnected ? 'SSE 实时双工已联通' : '60S 轮询保障中'}</span>
           </Badge>
         </div>
       </div>

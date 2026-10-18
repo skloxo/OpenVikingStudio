@@ -78,6 +78,19 @@ class SkillAutonomousPipeline:
         # Refresh alias router cache after batch
         self.aliasing_router.get_alias_map(force_refresh=True)
 
+        if results:
+            try:
+                from openviking.service.skill_event_bus import SkillEventBus, SkillEvent
+                SkillEventBus.get_instance().emit(
+                    SkillEvent.PIPELINE_PULSE,
+                    {
+                        "stage": "CYCLE_COMPLETED",
+                        "processed_count": len(results),
+                    },
+                )
+            except Exception as ev_err:
+                logger.debug("Failed to emit cycle pulse: %s", ev_err)
+
         return {"processed_count": len(results), "results": results}
 
     def _process_single_record(self, record: IngestionRecord) -> Dict[str, Any]:
@@ -272,11 +285,53 @@ class SkillAutonomousPipeline:
                 validation_report={"opt_score": opt_report.total_score, "ante_gate": ante_gate_res, "source_path": source_path},
             )
             summary["status"] = "COMMITTED"
+
+            # Emit real-time events to SkillEventBus
+            try:
+                from openviking.service.skill_event_bus import SkillEventBus, SkillEvent
+                SkillEventBus.get_instance().emit(
+                    SkillEvent.PIPELINE_PULSE,
+                    {
+                        "stage": "COMMITTED",
+                        "status": "COMMITTED",
+                        "skill_name": skill_name,
+                        "receipt_id": receipt_id,
+                        "target_bundle": target,
+                        "decision": decision,
+                        "opt_score": opt_report.total_score,
+                    },
+                )
+                SkillEventBus.get_instance().emit(
+                    SkillEvent.SKILLS_MUTATED,
+                    {
+                        "reason": f"Skill {skill_name} committed to {target}",
+                        "skill_name": skill_name,
+                        "target_bundle": target,
+                    },
+                )
+            except Exception as ev_err:
+                logger.debug("Failed to emit pipeline commit event: %s", ev_err)
+
             return summary
 
         except Exception as exc:
             logger.exception("Error in autonomous pipeline processing %s: %s", skill_name, exc)
             self.store.update_status(receipt_id, IngestionStatus.ERROR, str(exc))
+
+            try:
+                from openviking.service.skill_event_bus import SkillEventBus, SkillEvent
+                SkillEventBus.get_instance().emit(
+                    SkillEvent.PIPELINE_PULSE,
+                    {
+                        "stage": "PIPELINE_ERROR",
+                        "status": "ERROR",
+                        "skill_name": skill_name,
+                        "receipt_id": receipt_id,
+                        "error": str(exc),
+                    },
+                )
+            except Exception:
+                pass
             self.tracker.record_event(
                 action=ProvenanceAction.VALIDATE,
                 skill_name=skill_name,
