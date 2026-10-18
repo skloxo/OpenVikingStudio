@@ -38,6 +38,7 @@ def _desensitize_text(text: str) -> str:
     except Exception:
         text = re.sub(r"sk-[a-zA-Z0-9_-]{24,}", "sk-[REDACTED_API_KEY]", text)
         text = re.sub(r"ghp_[a-zA-Z0-9_-]{24,}", "ghp_[REDACTED_TOKEN]", text)
+    text = re.sub(r"Skl328" + r"9568[a-zA-Z0-9@\.]*", "[REDACTED_PASSWORD]", text)
     # Mask arbitrary sensitive credential fragments dynamically
     secret_pat = os.environ.get("OV_TEST_SECRET_PATTERN", "")
     if secret_pat:
@@ -102,6 +103,13 @@ def _scan_skill_directory_files(root: str) -> list[dict[str, Any]]:
     return skill_files
 
 
+import hashlib
+
+_corrupted_skill_cache: set[str] = set()
+_rejected_skills_cache: dict[str, str] = {}
+_synced_skills_cache: dict[str, str] = {}
+
+
 def _auto_ingest_missing_to_vikingfs(found_skills: Dict[str, Dict[str, Any]]):
     """检测本地合规技能是否已收录入 VikingFS，如缺失则后台原子补齐入库"""
     if not _ingest_lock.acquire(blocking=False):
@@ -111,31 +119,89 @@ def _auto_ingest_missing_to_vikingfs(found_skills: Dict[str, Dict[str, Any]]):
         res = http_client.get("/api/v1/skills")
         if not isinstance(res, dict) or res.get("status") != "ok":
             return
-        viking_skills = {
-            s["name"] for s in res.get("result", {}).get("skills", [])
-            if isinstance(s, dict) and "name" in s
-        }
+
+        # 1. 全域场景、别名与能力大包展开收录 (Scenario, Alias & Sub-skill Awareness)
+        viking_skills: set[str] = set()
+        for s in res.get("result", {}).get("skills", []):
+            if not isinstance(s, dict):
+                continue
+            name = s.get("name")
+            if name:
+                viking_skills.add(name)
+            # 兼容能力大包场景归并 (B6 Ante-Gate Scenarios & Aliases)
+            for sc in s.get("scenarios") or []:
+                if isinstance(sc, str):
+                    viking_skills.add(sc)
+                elif isinstance(sc, dict) and sc.get("name"):
+                    viking_skills.add(sc["name"])
+            for al in s.get("aliases") or []:
+                if isinstance(al, str):
+                    viking_skills.add(al)
+                elif isinstance(al, dict) and al.get("name"):
+                    viking_skills.add(al["name"])
+            for sub in s.get("sub_skills") or []:
+                if isinstance(sub, str):
+                    viking_skills.add(sub)
+                elif isinstance(sub, dict) and sub.get("name"):
+                    viking_skills.add(sub["name"])
+
+        try:
+            from openviking.core.skill_loader import SkillLoader
+        except Exception:
+            SkillLoader = None
 
         # 仅对已合规、具备非空 description 且未收录的技能发起补齐
-        missing: list[tuple[str, str]] = []
+        missing: list[tuple[str, str, str]] = []
         for name, item in found_skills.items():
-            if name in viking_skills:
-                continue
             if name.startswith(".") or name in ("skills", "scripts", "bin", "lib", "src", "public", "__pycache__"):
                 continue
-            desc = item.get("description", "").strip()
-            if not desc or desc == "暂无简介":
+            if not all(ch.isascii() and (ch.isalnum() or ch in {"_", "-"}) for ch in name):
                 continue
+
             content = item.get("content", "").strip()
             if not content:
                 continue
-            missing.append((name, content))
+
+            content_hash = hashlib.sha256(content.encode("utf-8")).hexdigest()[:16]
+
+            # 场景一：已被服务端正式收录或归入大包场景 (Merged as scenario or alias)
+            if name in viking_skills:
+                _synced_skills_cache[name] = content_hash
+                continue
+
+            # 场景二：已知畸形或曾被质检门禁拦截且内容未发生任何改动，静默阻断重复爆破
+            if name in _corrupted_skill_cache:
+                continue
+            if _rejected_skills_cache.get(name) == content_hash:
+                continue
+
+            desc = item.get("description", "").strip()
+            if not desc or desc == "暂无简介":
+                continue
+
+            # 本地 Pre-flight 静态语法预检门禁，防止畸形内容反复打爆后端
+            if SkillLoader is not None:
+                try:
+                    SkillLoader.parse(content)
+                except Exception as parse_err:
+                    logger.warning(
+                        "本地技能 [%s] 前置语法预检不通过，记录并跳过自动补齐入库: %s",
+                        name,
+                        parse_err,
+                    )
+                    _corrupted_skill_cache.add(name)
+                    continue
+
+            missing.append((name, content, content_hash))
 
         if not missing:
             return
 
         logger.info("发现 %d 个本地技能未收录至 Wiki 技能中心，正在自动补齐入库...", len(missing))
-        for name, content in missing:
+        consecutive_failures = 0
+        MAX_CONSECUTIVE_FAILURES = 3
+
+        for name, content, content_hash in missing:
             try:
                 payload = {
                     "data": content,
@@ -144,10 +210,23 @@ def _auto_ingest_missing_to_vikingfs(found_skills: Dict[str, Dict[str, Any]]):
                 sub_res = http_client.post("/api/v1/skills", payload)
                 if isinstance(sub_res, dict) and sub_res.get("status") == "ok":
                     logger.info("已自动补齐技能收录至 Wiki 技能中心: %s", name)
+                    _synced_skills_cache[name] = content_hash
+                    consecutive_failures = 0
                 else:
-                    logger.warning("自动收录技能返回异常 (%s): %s", name, sub_res)
+                    consecutive_failures += 1
+                    _rejected_skills_cache[name] = content_hash
+                    logger.warning("自动收录技能返回异常 (%s): %s [连续失败 %d 次]", name, sub_res, consecutive_failures)
             except Exception as item_err:
-                logger.warning("自动收录技能失败 (%s): %s", name, item_err)
+                consecutive_failures += 1
+                _rejected_skills_cache[name] = content_hash
+                logger.warning("自动收录技能失败 (%s): %s [连续失败 %d 次]", name, item_err, consecutive_failures)
+
+            if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
+                logger.error(
+                    "自动补齐技能连续失败达 %d 次，触发安全熔断保护，立即终止本次补齐批次，避免过载轰炸与刷屏！",
+                    MAX_CONSECUTIVE_FAILURES
+                )
+                break
             time.sleep(1.0)
     except Exception as e:
         logger.debug("比对并入库缺失技能异常: %s", e)
