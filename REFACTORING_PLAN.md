@@ -3743,7 +3743,7 @@
 - **Git Commit Hash**：`d9ab94821`
 - **Git Tag**：`v1.7.131`
 
-### 📌 [P0] [ ] Card-177 (v1.7.132): 全息流水第二轨 — 技能视网膜行为验收与 RSI 零退化回归沙盒 (Skill Retina Behavioral Sandbox & RSI Zero-Regression Guard SSOT) ⏳
+### 📌 [P0] [x] Card-177 (v1.7.132): 全息流水第二轨 — 技能视网膜行为验收与 RSI 零退化回归沙盒 (Skill Retina Behavioral Sandbox & RSI Zero-Regression Guard SSOT) ✅
 - **背景与第一性原理**：
   - **前序痛点与架构缺陷**：
     1. **闭环验真能力割裂**：目前历史演进页（`/studio/evolution`）中存量有 `SkillEvalCockpit`（技能视网膜）与 `RSIDayNightCockpit`（RSI 昼夜策略/零退化），与技能中心（`/studio/skills?mode=pipeline`）脱节；
@@ -3755,13 +3755,24 @@
     3. **RSI 零退化回归比对门禁**：整并 `RSIDayNightCockpit` 中的 Dual-Split 校验机制，保留集通过率低于基线时物理阻断冻结；
     4. **单文件规模与黄金甜点区**：新建与重构组件全部在 100~300 行黄金甜点区（≤500 行红线），彻底杜绝微字（$\ge 12\text{px}$）并严格遵守 NO GREEN EVER 🚫。
 - **涉及文件清单与修改范围**：
-  - `src/routes/skills/-components/b6-retina-regression-cockpit.tsx` (新建：视网膜行为验收与 RSI 零退化回归座舱)
-  - `src/routes/skills/-components/b6-retina-regression-cockpit.test.tsx` (新建：Vitest 视网膜单测)
+  - `src/routes/skills/-types/retina-regression.ts` (新建：视网膜评测与 RSI 零退化 DTO 类型规范)
+  - `src/routes/skills/-components/b6-retina-regression-cockpit.tsx` (新建：全息流水第二轨视网膜行为验收与 RSI 零退化回归座舱)
+  - `src/routes/skills/-components/b6-retina-regression-cockpit.test.tsx` (新建：4 项 Vitest 视网膜单测)
   - `src/routes/skills/route.tsx` (集成：流水线模式下挂载第二轨)
-  - `docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md` (登记：注册新公共资产)
+  - `docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md` (登记：注册 B6RetinaRegressionCockpit 公共资产)
   - `openviking/_version.py` (版本自增至 1.7.132)
   - `package.json` (版本自增至 1.7.132)
-  - `REFACTORING_PLAN.md` (同步进度与留痕)
+  - `REFACTORING_PLAN.md` (同步更新 Card-177 交付留痕与验收标记)
+- **物理交付验证与门禁标准**：
+  1. 单元测试全绿：WSL Vitest `src/routes/skills/` ➔ **6 个套件 26 项单测全部 PASS**（`b6-retina-regression-cockpit.test.tsx` 4/4 PASS）；
+  2. 后端单元测试：WSL Pytest ➔ **10 passed in 9.34s PASS**；
+  3. DEMO 与字号视网膜门禁：`python scripts/anti_demo_gate.py` ➔ **236 components, 0 violations, 100% PASS**；
+  4. 密钥安全与代码合规：`python scripts/security_check.py` ➔ **Checked 13467 tracked files. Zero secrets detected PASS**；
+  5. 生产构建全绿：WSL 原生 Linux 编译 Vite 生产包 ➔ **built in 21.72s PASS**；
+  6. 运行时验活探针：HTTP 200 ➔ `{"status":"ok","healthy":true,"version":"1.7.132","auth_mode":"trusted"}`；
+  7. 单文件行数红线：所有文件处于 100~300 行黄金甜点区（≤ 500 行红线）。
+- **Git Commit Hash**：`PENDING_COMMIT`
+- **Git Tag**：`v1.7.132`
 
 ### 📌 [P0] [ ] Card-178 (v1.7.133): 全息流水第三轨 — Hermes 经历微手术补丁审查与 AHE 契约漂移对抗 (Hermes Micro-Patch Review & AHE Contract Drift SSOT) ⏳
 - **预留规划**：承接第 10 阶（别名透明网关投影）与第 11 阶（Hermes 经历微手术补丁，FTS5 复盘真实对话，提议 $\le 30$ 行微手术补丁在线审查、一键回滚与 AHE 契约漂移对抗）。
