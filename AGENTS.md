@@ -17,7 +17,7 @@
 
 ---
 
-## ⚡ 二、 研发七大绝对红线 (Non-Negotiable Baseline Rules)
+## ⚡ 二、 研发八大绝对红线 (Non-Negotiable Baseline Rules)
 
 1. **绝对禁止盲目修改代码 (Disaster Recovery First)**：
    - 任何敏感数据/记忆/架构重构，必须先做可行性与安全性评估；
@@ -60,6 +60,11 @@
      - 前端改动极速打包：统一执行 `python scripts/sync_to_wsl.py -b`（~15s Linux 原生 ext4 构建，彻底告别 3 分多钟 9P 卡死）；
      - 正式发布与版本打标：统一执行 `python scripts/release_step.py --bump patch -m "..."`；
    - **安全与防呆门禁**：Windows 下严禁裸写未带 `-UseBasicParsing` 的 `Invoke-WebRequest`，统一使用 `curl.exe -s`；测试由 `tests/unit/test_paradigm_a_sync_and_release.py` 自动化视网膜门禁实时守门。
+
+8. **知识分层与虚拟投影透明路由铁律 (Knowledge Hierarchy & Virtual Projection Routing SSOT) ⭐⭐⭐⭐⭐**：
+   - **宏观高内聚收敛**：技能中心与 API 默认列表严格收敛为领域能力母包（20~21 个），底层细分工序统一通过母包下的子目录（`scenarios/`）组织，严禁在顶层任意散落单体过渡目录；
+   - **虚拟投影透明回退 (Zero-Breaking Virtual Routing)**：外部系统若请求单体工序名，底层必须由动态投影网关（`SkillAliasingRouter`）无感拦截并透明回退至母包场景子文件，返回标准 200 OK，多智能体调用零中断；
+   - **零配置动态扫盘 (Zero-Config Globbing)**：场景映射严禁静态硬编码大型字典；必须完全依托文件系统 `*.md` 动态 Glob 映射，实现“放盘即生效、删盘即自愈”的零维护自治。
 
 ---
 
