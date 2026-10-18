@@ -81,16 +81,16 @@ def is_hook_enabled_in_cloud(api: str, key: str, plugin_dir: Path) -> bool:
 def extract_query_from_stdin():
     try:
         if not sys.stdin.isatty():
-            raw = sys.stdin.read()
-            if raw.strip():
-                data = json.loads(raw)
-                transcript_path = data.get("transcript_path")
+            line = sys.stdin.readline()
+            if line and line.strip():
+                data = json.loads(line.strip())
+                transcript_path = data.get("transcriptPath") or data.get("transcript_path")
                 if transcript_path and os.path.exists(transcript_path):
                     with open(transcript_path, "r", encoding="utf-8", errors="ignore") as f:
                         lines = f.readlines()
-                        for line in reversed(lines[-40:]):
+                        for line_item in reversed(lines[-40:]):
                             try:
-                                entry = json.loads(line)
+                                entry = json.loads(line_item)
                                 if entry.get("type") == "USER_INPUT" and entry.get("content"):
                                     return entry["content"].strip()
                             except Exception:
@@ -100,23 +100,33 @@ def extract_query_from_stdin():
     return ""
 
 
+def emit_json(payload: dict):
+    try:
+        data = json.dumps(payload, ensure_ascii=False)
+        sys.stdout.buffer.write(data.encode("utf-8") + b"\n")
+        sys.stdout.buffer.flush()
+    except BaseException:
+        sys.stdout.buffer.write(b"{}\n")
+        sys.stdout.buffer.flush()
+
+
 def main():
     api, key, plugin_dir = load_plugin_config()
     
     # 核心：云端用户中心 Hook 开关动态适配
     if not is_hook_enabled_in_cloud(api, key, plugin_dir):
         # 云端管理员关闭了该用户的预取 Hook，本地直接静默退出
-        print("{}")
+        emit_json({})
         return
 
     query = extract_query_from_stdin()
     if not query or len(query) < 2:
-        print("{}")
+        emit_json({})
         return
 
     lowered = query.lower()
     if lowered in {"ok", "yes", "好", "好的", "收到", "继续", "同意"}:
-        print("{}")
+        emit_json({})
         return
 
     url = f"{api}/api/v1/search/find"
@@ -130,11 +140,11 @@ def main():
 
     req = urllib.request.Request(url, data=payload, headers=headers, method="POST")
     try:
-        with urllib.request.urlopen(req, timeout=2.5) as resp:
+        with urllib.request.urlopen(req, timeout=1.8) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             items = data.get("result", {}).get("resources", [])
             if not items:
-                print("{}")
+                emit_json({})
                 return
 
             lines = [f"【OpenViking 核心记忆预取 ({api})】"]
@@ -146,14 +156,27 @@ def main():
                 lines.append(f"- [{uri}]: {abstract}")
 
             hint = "\n".join(lines)
-            output = {"context_injection": hint}
-            print(json.dumps(output, ensure_ascii=False))
+            # 严格对齐 Antigravity 官方 PreInvocation 注入契约 (injectSteps)
+            output = {
+                "injectSteps": [
+                    {
+                        "ephemeralMessage": hint
+                    }
+                ]
+            }
+            emit_json(output)
             return
     except Exception:
         pass
 
-    print("{}")
+    emit_json({})
 
 
 if __name__ == "__main__":
-    main()
+    # 最高级别物理屏障：任何异常直写 {} 并返回 0，严禁抛出非零退出码或阻塞宿主
+    try:
+        main()
+    except BaseException:
+        sys.stdout.buffer.write(b"{}\n")
+        sys.stdout.buffer.flush()
+    sys.exit(0)
