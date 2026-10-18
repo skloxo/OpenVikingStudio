@@ -256,7 +256,11 @@ def _auto_ingest_missing_to_vikingfs(found_skills: Dict[str, Dict[str, Any]]):
     except Exception as e:
         logger.debug("比对并入库缺失技能异常: %s", e)
     finally:
-        _ingest_lock.release()
+        if _ingest_lock.locked():
+            try:
+                _ingest_lock.release()
+            except RuntimeError:
+                pass
 
 
 def _auto_sync_skills():

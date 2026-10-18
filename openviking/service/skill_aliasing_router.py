@@ -17,11 +17,10 @@ import yaml
 
 DEFAULT_SKILLS_DIR = Path("/home/skloxo/.openviking/data/viking/default/agent/skills")
 
-# 明确的重定向与归一化别名映射
+# 明确的重定向与归一化别名映射 (用于无独立 scenario 的泛化退化别名)
 EXPLICIT_ALIASES: Dict[str, str] = {
-    "cpa_squad": "cpa-squad",
-    "credential-vault": "keepass-vault",
-    "web-search-pro": "web-harvest-pro",
+    "cpa-squad": "cpa_squad",
+    "keepass-vault": "credential-vault",
     "network-search-ops": "web-harvest-pro",
     "wechat-article-reader": "web-harvest-pro",
 }
@@ -70,32 +69,78 @@ class SkillAliasingRouter:
         return mapping
 
     def resolve(self, skill_name: str) -> Optional[Dict[str, Any]]:
-        """Resolve a requested skill name to a bundle or scenario projection."""
-        # 1. 显式归一化别名
-        norm_name = EXPLICIT_ALIASES.get(skill_name, skill_name)
+        """Resolve a requested skill name to a bundle or scenario projection.
+        
+        Priority order:
+        1. Exact match top-level bundle directory
+        2. Exact/normalized match scenario in any bundle (preserves granular precision)
+        3. Explicit alias mapping fallback
+        4. Hyphen/underscore normalized top-level bundle directory
+        """
+        clean_name = skill_name.strip()
 
-        # 2. 检查是否直接是顶级目录
-        direct_path = self.skills_root / norm_name
+        # 1. 优先检查是否直接是顶级目录 (真正的 bundle)
+        direct_path = self.skills_root / clean_name
         if direct_path.exists() and direct_path.is_dir():
             return {
                 "type": "bundle",
-                "target_name": norm_name,
-                "bundle_name": norm_name,
+                "target_name": clean_name,
+                "bundle_name": clean_name,
                 "file_path": direct_path / "SKILL.md",
                 "is_virtual": False,
             }
 
-        # 3. 检查是否是某大包下的子 scenario
+        # 2. 检查是否是某大包下的子 scenario (场景投影优先于泛化别名)
         sc_map = self.get_alias_map()
-        if norm_name in sc_map:
-            bundle_name, file_path = sc_map[norm_name]
-            return {
-                "type": "scenario_projection",
-                "target_name": norm_name,
-                "bundle_name": bundle_name,
-                "file_path": file_path,
-                "is_virtual": True,
-            }
+        candidates = [
+            clean_name,
+            clean_name.replace("_", "-"),
+            clean_name.replace("-", "_"),
+        ]
+        for cand in candidates:
+            if cand in sc_map:
+                bundle_name, file_path = sc_map[cand]
+                return {
+                    "type": "scenario_projection",
+                    "target_name": clean_name,
+                    "bundle_name": bundle_name,
+                    "file_path": file_path,
+                    "is_virtual": True,
+                }
+
+        # 3. 检查显式别名重定向
+        if clean_name in EXPLICIT_ALIASES:
+            target_alias = EXPLICIT_ALIASES[clean_name]
+            alias_path = self.skills_root / target_alias
+            if alias_path.exists() and alias_path.is_dir():
+                return {
+                    "type": "bundle",
+                    "target_name": clean_name,
+                    "bundle_name": target_alias,
+                    "file_path": alias_path / "SKILL.md",
+                    "is_virtual": True,
+                }
+            if target_alias in sc_map:
+                bundle_name, file_path = sc_map[target_alias]
+                return {
+                    "type": "scenario_projection",
+                    "target_name": clean_name,
+                    "bundle_name": bundle_name,
+                    "file_path": file_path,
+                    "is_virtual": True,
+                }
+
+        # 4. 检查连字符/下划线归一化后的顶层大包目录
+        for cand in candidates[1:]:
+            cand_path = self.skills_root / cand
+            if cand_path.exists() and cand_path.is_dir():
+                return {
+                    "type": "bundle",
+                    "target_name": clean_name,
+                    "bundle_name": cand,
+                    "file_path": cand_path / "SKILL.md",
+                    "is_virtual": True,
+                }
 
         return None
 

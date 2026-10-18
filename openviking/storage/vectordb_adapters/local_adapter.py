@@ -2,8 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 """Local backend collection adapter."""
 
-from __future__ import annotations
-
+import json
 import os
 import threading
 from pathlib import Path
@@ -11,8 +10,11 @@ from typing import Any, Dict, List, Optional
 
 from openviking.storage.vectordb.collection.collection import Collection
 from openviking.storage.vectordb.collection.local_collection import get_or_create_local_collection
+from openviking_cli.utils.logger import get_logger
 
 from .base import CollectionAdapter
+
+logger = get_logger(__name__)
 
 
 class LocalCollectionAdapter(CollectionAdapter):
@@ -71,6 +73,22 @@ class LocalCollectionAdapter(CollectionAdapter):
                 self._collection = get_or_create_local_collection(
                     path=collection_path, config=self._collection_config
                 )
+                if self._index_name and not self._collection.has_index(self._index_name):
+                    try:
+                        with open(meta_path, "r", encoding="utf-8") as f:
+                            meta = json.load(f)
+                        scalar_index_fields = meta.get("ScalarIndex", [])
+                        index_meta = self._build_default_index_meta(
+                            index_name=self._index_name,
+                            distance="cosine",
+                            use_sparse=False,
+                            sparse_weight=0.0,
+                            scalar_index_fields=scalar_index_fields,
+                        )
+                        self._collection.create_index(self._index_name, index_meta)
+                        logger.info("Automatically restored missing index '%s'", self._index_name)
+                    except Exception as exc:
+                        logger.warning("Failed to auto-restore missing index %s: %s", self._index_name, exc)
 
     def _create_backend_collection(self, meta: Dict[str, Any]) -> Collection:
         collection_path = self._collection_path()

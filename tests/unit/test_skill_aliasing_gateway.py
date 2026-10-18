@@ -24,7 +24,7 @@ def test_explicit_alias_resolution():
     # 验证 cpa_squad -> cpa-squad 别名解析
     res = router.resolve("cpa_squad")
     assert res is not None
-    assert res["target_name"] in ["cpa-squad", "quant-trading"]
+    assert res["target_name"] in ["cpa_squad", "cpa-squad", "quant-trading"]
 
 def test_virtual_skill_detail_assembly():
     router = SkillAliasingRouter(skills_root=SKILLS_DIR)

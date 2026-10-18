@@ -204,8 +204,10 @@ async def _fetch_index_records(vector_store, uri: str, ctx: RequestContext) -> l
     if not vector_store or not hasattr(vector_store, "filter"):
         return []
 
+    # 对齐底层向量库 VikingDBManager 过滤契约 {"op": "must", "field": "uri", "conds": [uri]}
+    # 规避 Eq("uri", uri) 诱发的 -d=0 路径深度语义阻抗失配
     kwargs = {
-        "filter": Eq("uri", uri),
+        "filter": {"op": "must", "field": "uri", "conds": [uri]},
         "limit": 10,
         "output_fields": ["uri", "level"],
     }
@@ -229,13 +231,22 @@ async def _fetch_all_indexed_uris(vector_store, root_uri: str, ctx: RequestConte
 
     try:
         if hasattr(vector_store, "scroll"):
-            records = await vector_store.scroll(limit=2000, output_fields=["uri"], ctx=ctx)
+            res = None
+            try:
+                res = await vector_store.scroll(limit=2000, output_fields=["uri"], ctx=ctx)
+            except TypeError:
+                res = await vector_store.scroll(limit=2000, output_fields=["uri"])
+            records = res[0] if isinstance(res, tuple) else res
             for r in records or []:
                 u = r.get("uri") if isinstance(r, dict) else getattr(r, "uri", None)
                 if u and _is_subpath_or_equal(u, root_uri):
                     indexed_uris.add(u)
         elif hasattr(vector_store, "filter"):
-            records = await vector_store.filter(limit=2000, output_fields=["uri"], ctx=ctx)
+            records = None
+            try:
+                records = await vector_store.filter(limit=2000, output_fields=["uri"], ctx=ctx)
+            except TypeError:
+                records = await vector_store.filter(limit=2000, output_fields=["uri"])
             for r in records or []:
                 u = r.get("uri") if isinstance(r, dict) else getattr(r, "uri", None)
                 if u and _is_subpath_or_equal(u, root_uri):
@@ -291,7 +302,10 @@ async def check_index_consistency(
         for u in orphan_vector_records:
             if hasattr(vector_store, "remove_by_uri"):
                 try:
-                    await vector_store.remove_by_uri(u)
+                    try:
+                        await vector_store.remove_by_uri(u, ctx=ctx)
+                    except TypeError:
+                        await vector_store.remove_by_uri(u)
                     pruned_vector_count += 1
                 except Exception as exc:
                     logger.warning(f"Failed to prune orphan vector {u}: {exc}")
