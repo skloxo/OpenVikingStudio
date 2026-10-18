@@ -3740,6 +3740,6 @@
   4. 密钥安全与代码合规：`python scripts/security_check.py` ➔ **Checked 5067 tracked files. Zero secrets detected PASS**；
   5. 生产构建全绿：WSL `npm run build` ➔ **built in 2m 55s PASS**；
   6. 单文件行数红线：所有文件处于 100~300 行黄金甜点区（≤ 500 行红线）。
-- **Git Commit Hash**：`PENDING_COMMIT`
+- **Git Commit Hash**：`d9ab94821`
 - **Git Tag**：`v1.7.131`
 
