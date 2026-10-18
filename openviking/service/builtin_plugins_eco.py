@@ -14,6 +14,7 @@ from openviking.models.plugin import (
     GuiSchemaDefinition,
     PluginHealthProbe,
 )
+from openviking.service.builtin_plugins_core import resolve_package_version
 
 
 def create_ecosystem_plugins(
@@ -41,7 +42,7 @@ def create_ecosystem_plugins(
     keepass_plugin = QuadPluginDefinition(
         plugin_id="keepass-vault",
         name="KeePass 凭据保险箱",
-        version="1.0.0",
+        version=resolve_package_version("dsh-plugin-keepass-vault", "1.0.2"),
         category="user",
         description="全集群密码、SSH 私钥与 API Key 凭据存储保险箱 (独立生态插件 · 零后端依赖)",
         skill=SkillDefinition(
@@ -164,7 +165,7 @@ def create_ecosystem_plugins(
     dify_plugin = QuadPluginDefinition(
         plugin_id="dify",
         name="Dify 智能体与工作流中枢",
-        version="1.0.0",
+        version=resolve_package_version("dsh-plugin-dify", "1.0.1"),
         category="user",
         description="全生命周期可视化 AI 智能体编排与工作流中枢 (应用管理、DSL 导入导出、知识库检索引擎与模型提供商)",
         skill=SkillDefinition(
@@ -213,7 +214,7 @@ def create_ecosystem_plugins(
     cpa_plugin = QuadPluginDefinition(
         plugin_id="cpa-squad",
         name="CPA 跨模型算力协同",
-        version="1.0.0",
+        version=resolve_package_version("dsh-plugin-cpa", "1.0.1"),
         category="user",
         description="CPA 多模型智囊协同与工兵批量调度中枢 (独立微服务 · 物理宿主 2080Ti WSL2 虚拟服务器)",
         skill=SkillDefinition(
@@ -267,7 +268,7 @@ def create_ecosystem_plugins(
     fleet_plugin = QuadPluginDefinition(
         plugin_id="fleet-mesh",
         name="卫星集群同频运维",
-        version="1.0.0",
+        version=resolve_package_version("dsh-plugin-openviking-fleet", "1.0.3"),
         category="user",
         description="跨物理机节点（MacBook M3 / 宿主 PC / 云端 VPS）健康巡检与配置技能一键同频",
         skill=SkillDefinition(

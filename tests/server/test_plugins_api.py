@@ -35,7 +35,7 @@ def test_plugin_registry_singleton_and_builtins():
     # 验证核心战地记忆插件四位一体完整性 (FastMCP 34 战地工具 + 3 Hook)
     mem_plug = reg1.get_plugin("openviking-memory")
     assert mem_plug is not None
-    assert mem_plug.version == "2.0.11"
+    assert mem_plug.version == "2.0.15"
     assert len(mem_plug.hooks) == 3
     assert len(mem_plug.tools) == 34
 
@@ -115,7 +115,7 @@ def test_get_plugin_detail_and_bridge_endpoints(client):
     assert resp.status_code == 200
     data = resp.json()
     assert data["plugin_id"] == "openviking-memory"
-    assert data["version"] == "2.0.11"
+    assert data["version"] == "2.0.15"
     assert len(data["tools"]) == 34
 
     # 验证获取解耦独立插件详情
