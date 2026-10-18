@@ -5,6 +5,7 @@ VikingDB Manager class that extends VikingVectorIndexBackend with queue manageme
 """
 
 from contextlib import asynccontextmanager
+from datetime import datetime
 from typing import Any, AsyncIterator, Dict, List, Mapping, Optional, Tuple
 
 from openviking.server.identity import RequestContext
@@ -273,10 +274,15 @@ class VikingDBManagerProxy:
         return await self._manager.drop_collection()
 
     async def collection_exists(self) -> bool:
+        if hasattr(self._manager, "get_account_backend"):
+            backend = await self._manager.get_account_backend(self._ctx.account_id)
+            return await backend.collection_exists()
         return await self._manager.collection_exists()
 
     async def collection_exists_bound(self) -> bool:
-        return await self._manager.collection_exists_bound()
+        if hasattr(self._manager, "collection_exists_bound"):
+            return await self._manager.collection_exists_bound()
+        return await self.collection_exists()
 
     async def get_collection_info(self) -> Optional[Dict[str, Any]]:
         return await self._manager.get_collection_info()
@@ -445,18 +451,25 @@ class VikingDBManagerProxy:
         level: Optional[List[int]] = None,
         limit: int = 10,
         offset: int = 0,
+        events_time_decay_protection: Optional[str] = None,
+        request_now: Optional[datetime] = None,
     ) -> List[Dict[str, Any]]:
-        return await self._manager.search_in_tenant(
-            self._ctx,
-            query_vector=query_vector,
-            sparse_query_vector=sparse_query_vector,
-            context_type=context_type,
-            target_directories=target_directories,
-            extra_filter=extra_filter,
-            level=level,
-            limit=limit,
-            offset=offset,
-        )
+        kwargs: Dict[str, Any] = {
+            "query_vector": query_vector,
+            "sparse_query_vector": sparse_query_vector,
+            "context_type": context_type,
+            "target_directories": target_directories,
+            "extra_filter": extra_filter,
+            "level": level,
+            "limit": limit,
+            "offset": offset,
+        }
+        if events_time_decay_protection is not None:
+            kwargs.update(
+                events_time_decay_protection=events_time_decay_protection,
+                request_now=request_now,
+            )
+        return await self._manager.search_in_tenant(self._ctx, **kwargs)
 
     async def filter_in_tenant(
         self,

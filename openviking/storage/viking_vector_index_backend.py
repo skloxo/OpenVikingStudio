@@ -8,7 +8,10 @@ import asyncio
 import uuid
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any, AsyncIterator, Dict, List, Mapping, Optional
+
+from openviking.utils.time_decay import parse_duration_ms
 
 from openviking.core.namespace import canonical_user_root, resolve_uri, uri_parts, visible_roots
 from openviking.server.identity import RequestContext, Role
@@ -1502,6 +1505,8 @@ class VikingVectorIndexBackend:
         level: Optional[List[int]] = None,
         limit: int = 10,
         offset: int = 0,
+        events_time_decay_protection: Optional[str] = None,
+        request_now: Optional[datetime] = None,
     ) -> List[Dict[str, Any]]:
         scope_filter = self._build_scope_filter(
             ctx=ctx,
@@ -1510,15 +1515,72 @@ class VikingVectorIndexBackend:
             extra_filter=extra_filter,
             level=level,
         )
-        return await self.search(
+        if events_time_decay_protection is None:
+            return await self.search(
+                query_vector=query_vector,
+                sparse_query_vector=sparse_query_vector,
+                filter=scope_filter,
+                limit=limit,
+                offset=offset,
+                output_fields=RETRIEVAL_OUTPUT_FIELDS,
+                ctx=ctx,
+            )
+
+        parse_duration_ms(
+            events_time_decay_protection, parameter_name="events_time_decay_protection"
+        )
+        return await self._search_with_event_time_decay(
+            ctx=ctx,
             query_vector=query_vector,
             sparse_query_vector=sparse_query_vector,
-            filter=scope_filter,
+            scope_filter=scope_filter,
             limit=limit,
             offset=offset,
-            output_fields=RETRIEVAL_OUTPUT_FIELDS,
-            ctx=ctx,
+            events_time_decay_protection=events_time_decay_protection,
+            request_now=request_now,
         )
+
+    async def _search_with_event_time_decay(
+        self,
+        *,
+        ctx: RequestContext,
+        query_vector: Optional[List[float]],
+        sparse_query_vector: Optional[Dict[str, float]],
+        scope_filter: Optional[FilterExpr],
+        limit: int,
+        offset: int,
+        events_time_decay_protection: str,
+        request_now: Optional[datetime],
+    ) -> List[Dict[str, Any]]:
+        request_now = request_now or datetime.now(timezone.utc)
+        final_window = limit + offset
+        event_filter = self._merge_filters(scope_filter, Eq("search_tags", "memory_type=events"))
+        non_event_filter = self._merge_filters(
+            scope_filter,
+            RawDSL({"op": "must_not", "field": "search_tags", "conds": ["memory_type=events"]}),
+        )
+        advance = {
+            "time_decay": {
+                "protection": events_time_decay_protection,
+                "origin": request_now.isoformat(),
+            }
+        }
+        search_kwargs: Dict[str, Any] = {
+            "ctx": ctx,
+            "query_vector": query_vector,
+            "sparse_query_vector": sparse_query_vector,
+            "limit": final_window,
+            "offset": 0,
+            "output_fields": RETRIEVAL_OUTPUT_FIELDS,
+        }
+        remaining_results, event_results = await asyncio.gather(
+            self.search(filter=non_event_filter, **search_kwargs),
+            self.search(filter=event_filter, advance=advance, **search_kwargs),
+        )
+
+        results = remaining_results + event_results
+        results.sort(key=lambda item: item.get("_score", 0.0), reverse=True)
+        return results[offset : offset + limit]
 
     async def filter_in_tenant(
         self,

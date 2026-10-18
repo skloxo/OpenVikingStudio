@@ -92,7 +92,7 @@ async def test_image_query_uses_multimodal_input_without_filtering_non_images(mo
     ]
     assert FakeProxy.captured["context_type"] == "resource"
     assert FakeProxy.captured["level"] == [2]
-    assert FakeProxy.captured["limit"] == 50
+    assert FakeProxy.captured["limit"] == 2
 
 
 @pytest.mark.asyncio
