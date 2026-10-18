@@ -752,7 +752,13 @@ class _SingleAccountBackend:
             logger.error("Error removing URI %s: %s", uri, e)
             return 0
 
-    async def _remove_descendants(self, parent_uri: str) -> int:
+    async def _remove_descendants(self, parent_uri: str, visited: Optional[set[str]] = None) -> int:
+        if visited is None:
+            visited = set()
+        if parent_uri in visited:
+            return 0
+        visited.add(parent_uri)
+
         total_deleted = 0
         children = await self.filter(
             PathScope("uri", parent_uri, depth=1),
@@ -761,9 +767,11 @@ class _SingleAccountBackend:
         )
         for child in children:
             child_uri = child.get("uri")
+            if not child_uri or child_uri == parent_uri or child_uri in visited:
+                continue
             level = child.get("level", 2)
-            if level in [0, 1] and child_uri:
-                total_deleted += await self._remove_descendants(parent_uri=child_uri)
+            if level in [0, 1]:
+                total_deleted += await self._remove_descendants(parent_uri=child_uri, visited=visited)
             child_id = child.get("id")
             if child_id:
                 await self.delete([child_id])

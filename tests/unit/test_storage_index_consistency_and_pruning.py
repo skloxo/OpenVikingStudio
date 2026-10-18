@@ -77,7 +77,12 @@ class TestCheckIndexConsistencyWithOrphanPruning:
 
         async def fake_filter(**kwargs):
             filter_expr = kwargs.get("filter")
-            if filter_expr and getattr(filter_expr, "value", None) == "viking://resources/f1.md":
+            target_uri = (
+                filter_expr.get("conds", [None])[0]
+                if isinstance(filter_expr, dict)
+                else getattr(filter_expr, "value", None)
+            )
+            if target_uri == "viking://resources/f1.md":
                 return [{"uri": "viking://resources/f1.md", "level": 2}]
             return []
 
@@ -132,7 +137,11 @@ class TestCheckIndexConsistencyWithOrphanPruning:
 
         async def fake_filter(**kwargs):
             filter_expr = kwargs.get("filter")
-            target_uri = getattr(filter_expr, "value", None)
+            target_uri = (
+                filter_expr.get("conds", [None])[0]
+                if isinstance(filter_expr, dict)
+                else getattr(filter_expr, "value", None)
+            )
             if target_uri == "viking://resources":
                 return [
                     {"uri": "viking://resources", "level": 0},

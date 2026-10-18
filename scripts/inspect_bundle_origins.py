@@ -1,30 +1,47 @@
 from pathlib import Path
 import json
+import urllib.request
+import re
 
-skills_dir = Path("/home/skloxo/.openviking/data/viking/default/agent/skills")
-for d in sorted(skills_dir.iterdir()):
-    if not d.is_dir():
-        continue
-    prov_file = d / "ABSORPTION_PROVENANCE.json"
-    sk_file = d / "SKILL.md"
-    sc_dir = d / "scenarios"
-    sc_count = len(list(sc_dir.glob("*.md"))) if sc_dir.is_dir() else 0
+conf_file = Path("/home/skloxo/.openviking/ov.conf")
+conf_text = conf_file.read_text(encoding="utf-8") if conf_file.exists() else ""
+match = re.search(r'"root_api_key":\s*"([^"]+)"', conf_text)
+key = match.group(1) if match else ""
 
-    if prov_file.exists():
-        try:
-            data = json.loads(prov_file.read_text(encoding="utf-8"))
-            engine = data.get("engine_version", "")
-            c_at = data.get("crystallized_at", "")
-            sc_provenance = data.get("total_member_scenarios", 0)
-            print(f"[PROV]    {d.name:26} | c_at={c_at} | sc_dir={sc_count:3d} | prov_sc={sc_provenance:3d} | {engine}")
-        except Exception as e:
-            print(f"[ERR]     {d.name:26} | {e}")
-    else:
-        # Check SKILL.md
-        sk_desc = ""
-        if sk_file.exists():
-            for line in sk_file.read_text(encoding="utf-8").splitlines()[:10]:
-                if line.startswith("description:"):
-                    sk_desc = line[:70]
-                    break
-        print(f"[NO_PROV] {d.name:26} | sc_dir={sc_count:3d} | {sk_desc}")
+req = urllib.request.Request(
+    "http://127.0.0.1:1933/api/v1/skills",
+    headers={
+        "Authorization": f"Bearer {key}",
+        "X-API-Key": key,
+    } if key else {}
+)
+
+try:
+    with urllib.request.urlopen(req) as resp:
+        data = json.loads(resp.read().decode("utf-8"))
+        skills = data.get("result", {}).get("skills", [])
+        print(f"Total skills returned from API: {len(skills)}")
+        bundle_skills = [s for s in skills if s.get("is_bundle")]
+        non_bundle_skills = [s for s in skills if not s.get("is_bundle")]
+        print(f"Bundles: {len(bundle_skills)}, Non-bundles: {len(non_bundle_skills)}")
+        for s in non_bundle_skills:
+            print(f"  Loose skill: {s.get('name')}")
+        all_scs = set()
+        for b in bundle_skills:
+            for sc in b.get("scenarios") or []:
+                all_scs.add(sc)
+                all_scs.add(sc.replace("_", "-"))
+                all_scs.add(sc.replace("-", "_"))
+        targets = [
+            "agent-governance-guardrails",
+            "capability-bundle-crystallizer",
+            "clash_verge_governance",
+            "deepseek-harness-ops",
+            "global-agent-core",
+            "web-search-pro",
+        ]
+        print("\nChecking Target Scenarios across all bundles:")
+        for t in targets:
+            print(f"  {t:32} -> in_scenarios: {t in all_scs}")
+except Exception as e:
+    print(f"API request failed: {e}")

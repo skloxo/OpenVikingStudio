@@ -61,6 +61,21 @@ def test_extract_frontmatter_empty_or_non_yaml():
 
 
 def test_auto_ingest_missing_to_vikingfs():
+    from tools.skill_syncer import (
+        _corrupted_skill_cache,
+        _rejected_skills_cache,
+        _synced_skills_cache,
+        _ingest_lock,
+    )
+    if _ingest_lock.locked():
+        try:
+            _ingest_lock.release()
+        except RuntimeError:
+            pass
+    _corrupted_skill_cache.clear()
+    _rejected_skills_cache.clear()
+    _synced_skills_cache.clear()
+
     found_skills = {
         "existing-skill": {
             "name": "existing-skill",

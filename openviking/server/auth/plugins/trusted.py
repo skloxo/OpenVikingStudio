@@ -198,10 +198,10 @@ class TrustedAuthPlugin(AuthPlugin):
                 )
 
         api_key_manager = getattr(request.app.state, "api_key_manager", None)
-        trusted_role = Role.USER
+        trusted_role = Role.ROOT if is_root else Role.USER
         if asserted_role is not None:
             trusted_role = asserted_role
-        elif api_key_manager and effective_account_id and effective_user_id:
+        elif not is_root and api_key_manager and effective_account_id and effective_user_id:
             looked_up_role = api_key_manager.get_user_role(effective_account_id, effective_user_id)
             if looked_up_role is not None:
                 trusted_role = looked_up_role
