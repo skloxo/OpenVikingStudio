@@ -142,6 +142,22 @@ async def embed_compat(
         return await embedder.embed_async(embedding_input, is_query=is_query)
 
 
+async def embedder_supports_multimodal(embedder: Any) -> bool:
+    """Whether ``embedder`` accepts image inputs.
+
+    Account-bound embedders resolve the account's current resource, so the
+    capability must be read asynchronously instead of from an attribute.
+    """
+    try:
+        from openviking.config.embedding import AccountBoundEmbedder
+
+        if isinstance(embedder, AccountBoundEmbedder):
+            return await embedder.supports_multimodal_async()
+    except (ImportError, AttributeError):
+        pass
+    return bool(getattr(embedder, "supports_multimodal", False))
+
+
 async def _embed_from_request_cache(
     embedder: "EmbedderBase", embedding_input: "EmbeddingInput", stage: str
 ) -> Optional["EmbedResult"]:
