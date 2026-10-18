@@ -32,13 +32,13 @@ do
     fi
 
     if [ "$remote_sha" = "$z40" ]; then
-        range="$local_sha"
+        diff_cmd="git show --format= $local_sha"
     else
-        range="$remote_sha..$local_sha"
+        diff_cmd="git diff $remote_sha..$local_sha"
     fi
 
     # 扫描新增行是否包含敏感模式
-    leaks=$(git diff "$range" | grep '^[+][^+]' | grep -iE '(s[k]-[a-zA-Z0-9_-]{24,}|g[h]p_[a-zA-Z0-9_-]{24,}|8\.129\.0\.26|100\.78\.64\.128|Skl[0-9]{7}|s@8[x]{2}5\.com)' | head -n 10)
+    leaks=$($diff_cmd | grep '^[+][^+]' | grep -iE '(\bs[k]-[a-zA-Z0-9_-]{24,}|\bg[h]p_[a-zA-Z0-9_-]{24,}|8\.129\.0\.26|100\.78\.64\.128|Skl[0-9]{7}|s@8[x]{2}5\.com)' | head -n 10)
 
     if [ -n "$leaks" ]; then
         echo ""
