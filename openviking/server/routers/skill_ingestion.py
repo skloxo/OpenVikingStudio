@@ -60,6 +60,20 @@ async def submit_skill_to_inbox(
         author=payload.author,
         source_path=payload.source_path,
     )
+    try:
+        from openviking.service.skill_event_bus import SkillEventBus, SkillEvent
+        SkillEventBus.get_instance().emit(
+            SkillEvent.PIPELINE_PULSE,
+            {
+                "stage": "ENQUEUED",
+                "status": "PENDING",
+                "skill_name": record.skill_name,
+                "receipt_id": record.receipt_id,
+            },
+        )
+    except Exception:
+        pass
+
     return {
         "status": "ok",
         "receipt_id": record.receipt_id,

@@ -3150,9 +3150,15 @@ async def openviking_skills(
         save_uri = f"{target_uri.rstrip('/')}/{name}/SKILL.md"
         try:
             await service.fs.write_file(save_uri, frontmatter, ctx=ctx)
+            try:
+                from openviking.service.skill_event_bus import SkillEventBus, SkillEvent
+                SkillEventBus.get_instance().emit(SkillEvent.SKILL_ADDED, {"name": name, "uri": save_uri})
+            except Exception:
+                pass
             return json.dumps({"status": "ok", "message": f"Skill '{name}' registered at {save_uri}"}, ensure_ascii=False)
         except Exception as e:
             return json.dumps({"status": "error", "error": str(e)}, ensure_ascii=False)
+
     return json.dumps({"status": "error", "error": f"Invalid action: {action}. Expected: list | get | inject | add"}, ensure_ascii=False)
 
 
