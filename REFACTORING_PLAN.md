@@ -3640,3 +3640,5 @@
   2. 检索专项测试：`pytest tests/retrieve/test_time_decay.py tests/retrieve/test_hierarchical_retriever_rerank.py` ➔ **24 passed in 1.44s PASS**；
   3. 密钥安全与代码合规：`python scripts/security_check.py` ➔ **Checked 5061 tracked files. Zero secrets detected PASS**；
   4. 单文件行数红线：`hierarchical_retriever.py` 由 992 行骤降至 411 行（≤ 500 行安全红线与黄金甜点区）。
+- **Git Commit Hash**：`e3f1f2452`
+- **Git Tag**：`v1.7.128`
