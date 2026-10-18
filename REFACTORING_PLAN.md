@@ -3771,7 +3771,7 @@
   5. 生产构建全绿：WSL 原生 Linux 编译 Vite 生产包 ➔ **built in 21.72s PASS**；
   6. 运行时验活探针：HTTP 200 ➔ `{"status":"ok","healthy":true,"version":"1.7.132","auth_mode":"trusted"}`；
   7. 单文件行数红线：所有文件处于 100~300 行黄金甜点区（≤ 500 行红线）。
-- **Git Commit Hash**：`PENDING_COMMIT`
+- **Git Commit Hash**：`5939f9d59`
 - **Git Tag**：`v1.7.132`
 
 ### 📌 [P0] [ ] Card-178 (v1.7.133): 全息流水第三轨 — Hermes 经历微手术补丁审查与 AHE 契约漂移对抗 (Hermes Micro-Patch Review & AHE Contract Drift SSOT) ⏳
