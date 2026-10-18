@@ -152,6 +152,8 @@
 | **`EmptyState`** | `src/components/common/empty-state.tsx` | 极客风空状态展示，支持图标胶囊、主副标题、可选重置筛选按钮。 | ⏳ 规划中 |
 | **`AgentCircuitBreaker`** | `~/.gemini/config/plugins/agent-circuit-breaker/` | **智能体防死循环熔断断路器官方标准插件 (四位一体)**：<br>• **MCP 服务**：暴露 `circuit_breaker_status`、`circuit_breaker_reset` 交互接口；<br>• **生命周期 Hook**：`PreToolUse` / `PostToolUse` 绝对路径 + Shell 级双重 Fail-Open 兜底；<br>• **运维技能**：`circuit-breaker-ops` 标准规程与 3070 节点秒级一键同步；<br>• **座舱 GUI**：防死循环实时遥测与高密状态看板。 | ✅ 已交付 (v1.1.0) |
 | **`B6EvolutionPipelineCockpit`** | `src/routes/skills/-components/b6-evolution-pipeline-cockpit.tsx` | **B6 全息演进流水线与运行中枢座舱**：实时队列与 SSE 脉冲监控、12 阶自适应生命周期态势图（准入熔炼 6 阶 + 闭环验真 6 阶）、工序物理贯彻契约深度穿透视窗与批处理一键执行。 | ✅ 已交付 (v1.7.130) |
+| **`B6ProvenanceMultiLedger`** | `src/routes/skills/-components/b6-provenance-multi-ledger.tsx` | **全息流水第一轨多轨流水审计账本**：黑匣子证据链时间线（源 sha256、近邻打分、差异摘要、状态流转）与 SQLite 准入流水（SkillOpt 四维打分、AST 自愈记录、入库/拦截详情）双轨平滑切换与实时单批处理执行。 | ✅ 已交付 (v1.7.131) |
+| **`ProvenanceDetailSheet`** | `src/routes/skills/-components/provenance-detail-sheet.tsx` | **演变审计与准入穿透详情抽屉**：统一 Diff 对比审查面板（增删高亮）、物理快照指针与一键秒级还原 (`<50ms`)、AST 自愈字段回显与 SkillOpt 质检决策穿透。 | ✅ 已交付 (v1.7.131) |
 
 ---
 

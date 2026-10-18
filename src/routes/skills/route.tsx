@@ -8,6 +8,7 @@ import { Button } from '#/components/ui/button'
 import { Card } from '#/components/ui/card'
 import { ActiveIngestionView } from './-components/active-ingestion-view'
 import { B6EvolutionPipelineCockpit } from './-components/b6-evolution-pipeline-cockpit'
+import { B6ProvenanceMultiLedger } from './-components/b6-provenance-multi-ledger'
 import { SkillsPagination } from './-components/pagination'
 import { SkillCard } from './-components/skill-card'
 import { SkillsFilterBar } from './-components/skills-filter-bar'
@@ -92,21 +93,7 @@ function SkillsRoute() {
       {centerMode === 'pipeline' ? (
         <div className="flex flex-col gap-4">
           <B6EvolutionPipelineCockpit />
-
-          <div className="rounded-md border border-border/80 bg-card p-3.5 shadow-2xs">
-            <div className="flex items-center justify-between border-b border-border/60 pb-2 mb-3">
-              <div className="flex items-center gap-2">
-                <InboxIcon className="size-4 text-cyan-600 dark:text-cyan-400" />
-                <h3 className="text-xs font-semibold font-mono text-foreground">
-                  📋 准入队列与黑匣子演变审计总账 (Ingestion Queue & Provenance Ledger)
-                </h3>
-              </div>
-              <Badge variant="outline" className="text-xs font-mono text-cyan-800 bg-cyan-50 border-cyan-300 dark:text-cyan-300 dark:bg-cyan-950/40 dark:border-cyan-800">
-                实时持久化真相源
-              </Badge>
-            </div>
-            <SkillIngestionCockpit />
-          </div>
+          <B6ProvenanceMultiLedger />
         </div>
       ) : (
         <>
