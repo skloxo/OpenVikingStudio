@@ -18,7 +18,7 @@
 | **`待排期`** | **Card-177** | **全息流水第二轨 — Hermes 经历微手术补丁与一键安全回滚 (Hermes Patches & FTS5 Experiences SSOT - 主线 B)** | 1. 接入真实后端 `/api/v1/hermes/patches` 与 `/api/v1/hermes/summary`；<br>2. `<=30行` 微手术补丁列表、状态与一键安全 Apply/Revert；<br>3. 嵌入 FTS5 经历检索透传。 | [ ] 待排期迭代 ⏳ |
 | **`v1.7.133`** | **Card-178** | **全息流水第三轨 — Hermes 经历微手术补丁审查与 AHE 契约漂移对抗 (Hermes Micro-Patch Review & AHE Contract Drift SSOT - 主线 B)** | 1. **Hermes 经历微手术补丁审查与一键安全回退 (`B6HermesPatchPanel`)**：接入后端 `/api/v1/hermes/patches` 与 `/api/v1/hermes/summary`，支持 `<=30行` 局部微手术补丁（proposed/applied/reverted 状态流转）、秒级无损回退 (`RotateCcw`) 与紧凑 Diff 差异对比（增删红青分色）；<br>2. **AHE 契约假设与漂移对抗清单 (`B6AheManifestPanel`)**：接入 `/api/v1/ahe/manifest` 与 `/api/v1/ahe/summary`，展示技能契约假设、Polar 规则校验、冻结面声明与违规根因穿透，支持一键发起全量核验 (`POST /api/v1/ahe/verify`)；<br>3. **架构解耦与防超标重构 (`B6HermesAheCockpit`)**：彻底消灭单文件超标风险，将原单体大组件解耦为轻量容器 (220 行) + 2 个原子面板 (147 行与 119 行)，全量落在 100~300 行黄金甜点区；<br>4. **测试视网膜与安全门禁全绿**：7 个 Vitest 套件 30 项测试 100% PASS，`anti_demo_gate.py` 239 组件 100% PASS，严格遵守 NO GREEN EVER 与字号 $\ge 12\text{px}$ 规范。 | [x] 已验收通过 ✅ |
 | **`v1.7.134`** | **Card-179** | **探针归位 `/harness-logs`、彻底斩杀 `/evolution` 页面与抗熵减 (Purge /evolution & Consolidate Probes SSOT - 主线 B)** | 1. 链接重定向至 `/skills`；<br>2. 物理删除 `/evolution` 悬空路由与死代码；<br>3. Linux 原生编译与全量安全门禁通过，Git Tag 封板。 | [x] 已验收通过 ✅ |
-| **`待排期`** | **Card-166** | **技能中心使用频次遥测、ROI 价值度量与高频技能自动排序反哺中枢 (Skill Usage Telemetry, ROI Ranking & Auto-Promotion SSOT)** | 1. **全域技能调用埋点与命中遥测**：拦截 `skills.find`、`skills.get` (JIT 注脑) 及外部 Agent 调用，向 SQLite 轻量持久化调用事件；<br>2. **ROI 价值动态排序算法**：按“调用频次 × 执行成功率 × Token 压缩节省收益”综合加权排序，高价值母包自动置顶推荐；<br>3. **僵尸技能与低频工序预警**：连续 30 天 0 调用或评分长期低于 70 的边缘工序标红预警，提供一键安全合并或归档建议。 | [ ] 待排期迭代 ⏳ |
+| **`v1.7.136`** | **Card-166** | **技能中心使用频次遥测、ROI 价值度量与高频技能自动排序反哺中枢 (Skill Usage Telemetry, ROI Ranking & Auto-Promotion SSOT)** | 1. **全域技能调用埋点与轻量持久化 (`SkillTelemetryStore`)**：落地 SQLite `skill_events` 表，双检锁单例拦截 `skills.find`、`skills.get` (JIT 注脑) 及 FastMCP `openviking_skills`，自动记录事件与 90 天滚动清理；<br>2. **ROI 价值动态排序算法与接口反哺**：按“调用频次 × 成功率 × Token 压缩节省”综合加权归一化 (0~100 分)，挂载 `/api/v1/skills/telemetry/roi` 与 `/api/v1/skills?sort_by=roi` 动态升降序；<br>3. **前端座舱卡片 (`SkillRoiCockpitCard`)**：4 维核心指标瓦片（30天调用量、节省 Token、综合成功率、沉睡预警）+ Top 5 ROI 母包与工序排行榜 + 沉睡工序折叠面板，严格遵循 NO GREEN EVER 🚫 与字号 $\ge 12\text{px}$ 规范；<br>4. **测试视网膜与安全门禁 100% PASS**：后端 pytest 5/5 全绿，前端 vitest 4/4 全绿，`security_check.py` 0 泄露，`anti_demo_gate.py` 100% 通过，打标 Tag `v1.7.136` 交付。 | [x] 已验收通过 ✅ |
 | **`待排期`** | **Card-167** | **技能大盘在线交互测试沙箱与意图命中试算器 (Skill Playground, Intent Hit-Testing & Scaffolding SSOT)** | 1. **Web Studio 交互式意图沙箱**：提供开发者调试终端，输入任意 Prompt 实时可视化命中分析（母包亲和度、子场景路由与别名透明投影）；<br>2. **动态注脑压缩实时度量**：在线对比原始全文 vs 自适应抽稀后的 Token 消耗与压缩耗时，所见即所得；<br>3. **标准技能脚手架生成器**：提供符合标准规范的 YAML Frontmatter 与标准 6 章节 Markdown 模板一键导出。 | [ ] 待排期迭代 ⏳ |
 | **`待排期`** | **Card-168** | **系统底层与体外大脑五层抗熵增治理中枢 (Anti-Entropy Memory Evolution, Superseded DAG & Offline Distillation SSOT)** | 1. **前门语义准入与去重判别 (`Ingestion Dedup`)**：余弦相似度 > 0.88 时触发增量合并判别而非盲目重复写入，切除密集空间信噪比劣化；<br>2. **认知冲突消解与版本演进链 (`Superseded DAG`)**：新经验推翻旧做法时，旧文件 Frontmatter 显式注入 `superseded_by: <new_uri>`，检索层物理阻断已失效经验，杜绝智能体认知倒退；<br>3. **差异化时效动力学与半衰期衰减**：永久规范（权重 1.0 不衰减）、踩坑经验（半衰期 90 天）、临时事件（半衰期 14 天冷归档）；<br>4. **夜间离线做梦归纳蒸馏 (`ov_dream`)**：空闲算力驱动，20 条同类碎片聚类蒸馏为 1 条高精纯 Recipe，维持体外大脑 $O(1)$ 紧凑度；<br>5. **物理快照保护与后悔药灾备**：治理前强制 `VikingFS.commit` 快照，支持秒级无损回滚。 | [ ] 待排期迭代 ⏳ |
 | **`待排期`** | **Card-158** | **KeePass 本地凭据保险箱端侧体验与安全体检深化 (KeePass Local Vault Client Experience & Security Inspection)** | 1. **本地数据库智能寻路与格式校验**：在 DSH 客户端端侧增加对本地 `.kdbx` 文件有效性检查，支持自动识别常见路径（如 KeePassXC 默认库目录）；<br>2. **本地解锁与密码有效性测试**：在 DSH 插件配置面板中，提供本地文件只读解密测试按钮，反馈握手状态；<br>3. **端侧安全体检与高熵生成**：提供本地弱口令扫描、凭据重复度分析与本地高熵密码生成能力；<br>4. **安全规范与说明书深化**：在 Web Studio 抽屉与客户端接入指南中，完善安全声明与私有化配置引导。 | [ ] 待排期迭代 ⏳ |
@@ -3825,3 +3825,20 @@
        - 原生 Linux Vite 编译烘焙通过 (18.69s)，Security Scan 13475 文件零泄露，Anti-Demo 239 组件 100% PASS；
        - 服务端探针实机验活通过：HTTP 200 `{"status":"ok","healthy":true,"version":"1.7.135","auth_mode":"trusted"}`。
 - **Git Tag**：`v1.7.135`
+
+### 📌 [P0] [ ] Card-166 (v1.7.136): 技能中心使用频次遥测、ROI 价值度量与高频技能自动排序反哺中枢 (Skill Usage Telemetry, ROI Ranking & Auto-Promotion SSOT) ⏳
+- **类型**：全域遥测埋点 / ROI 加权动态排序 / 边缘工序自愈预警 / 技能大盘闭环 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**： 1.7.136 ｜ **当前状态**：[ ] 正在攻坚中 ⏳
+- **背景与芒格逆向思维第一性原理**：
+  - **核心物理公理**：技能资产如果缺乏真实运行态调用与命中统计，就会沦为“不知谁在用、不知好不好用、僵尸技能堆积”的黑盒；必须在服务端入口（FastMCP、REST API）精准埋点，按第一性原理量化计算技能 ROI 收益，驱动高频高价值技能自适应置顶与边缘死工序智能预警。
+  - **闭环架构设计与物理落地**：
+    1. **全域技能调用与命中轻量持久化 (`SkillUsageStore`)**：
+       - 基于本地 SQLite (`~/.openviking/data/skill_usage.db`) 建立轻量日记账表 `skill_events`；
+       - 在 `skills.py` 路由与 FastMCP `openviking_skills` / `smart_read` 调用链路无感拦截埋点，记录 `skill_id`、`bundle_name`、`event_type` (invoke/jit_read/eval)、`success`、`tokens_saved`、`latency_ms`、`caller_agent`；
+    2. **ROI 价值动态排序算法 (`SkillRoiEngine`)**：
+       - 综合加权计算公式：$\text{ROI Score} = \log_{10}(\text{calls} + 1) \times 0.4 + \text{success\_rate} \times 0.3 + \min(1.0, \frac{\text{tokens\_saved}}{5000}) \times 0.3$；
+       - 后端 `/api/v1/skills` 与 `/api/v1/skills/telemetry/roi` 返回母包与场景工序的 ROI 排名、调用频次与节省 Token 估值；
+    3. **技能中心前端座舱联动 (`SkillRoiCockpitCard`)**：
+       - 在技能大盘顶部挂载高密 ROI 态势与频次导览条，支持按“默认分类 / ROI 价值排序 / 调用频次排序 / 僵尸预警”一键切换；
+       - 高频母包标注冰青色 `⚡ Top ROI` 徽章，连续 30 天 0 调用或评分偏低工序标注琥珀色 `⚠️ 僵尸工序` 预警；
+    4. **单文件规模与黄金甜点区**：所有新增后端与前端组件单文件严格维持在 100~300 行；
+    5. **全绿测试与安全门禁**：新增 `tests/skills/test_card166_skill_telemetry_and_roi.py` 与前端 Vitest 单测，全量通过，0 密钥泄露。
