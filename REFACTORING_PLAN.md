@@ -3710,3 +3710,36 @@
   6. 单文件行数红线：新建组件 232 行，常数 152 行，单测 90 行，主路由 275 行（全部在 100~300 行黄金甜点区，≤ 500 行红线）。
 - **Git Commit Hash**：`6200be427`
 - **Git Tag**：`v1.7.130`
+
+### 📌 [P0] [x] Card-176 (v1.7.131): 全息流水第一轨 — 黑匣子演变审计与准入队列流水账本 (Provenance Ledger & Ingestion Multi-Ledger SSOT) ✅
+- **背景与第一性原理**：
+  - **前序痛点与架构缺陷**：
+    1. **黑匣子审计与准入队列展示脱节**：虽然底层已具备 `SkillProvenanceTracker` 黑匣子证据链与 SQLite WAL 准入队列，但前端仅有初版粗糙面板，缺乏参考任务中心的系统化多轨流水账本与过滤视图；
+    2. **缺乏深度穿透抽屉与秒级回滚**：审计记录缺少滑出式抽屉展示统一 Diff 对比面板、物理快照指针、AST 语法自愈补齐字段与 SkillOpt 四维质检打分；
+    3. **批处理与实时联动缺失**：未提供一目了然的单批处理动作与待办状态反馈。
+  - **闭环架构设计与物理落地**：
+    1. **多轨流水高密账本 (`B6ProvenanceMultiLedger`)**：基于任务中心高密表格范式，落地 `[ 📜 轨道 1: 黑匣子证据链 (PROVENANCE.jsonl) ]` 与 `[ 📥 轨道 2: SQLite 准入流水 (SQLite WAL) ]` 平滑切换，支持关键词模糊搜索、状态 Badge 与分页控制器 (`UniversalPagination`)；
+    2. **穿透详情与秒级回退抽屉 (`ProvenanceDetailSheet`)**：点击任意审计或准入行滑出右侧抽屉，深度呈现物理文件定位 (`source_path`/`landing_path`)、快照指针一键秒级还原 (`<50ms`)、AST 自愈字段标签、SkillOpt 质量评分与统一增删 Diff 审查面板；
+    3. **双工心跳与单批处理推进**：无缝直连 SQLite 队列深度，pending > 0 时激活动态脉冲批处理按钮，单批次推进自主闭环处理；
+    4. **单文件规模与黄金甜点区**：新建 `provenance-ledger.ts` (78行)、`provenance-detail-sheet.tsx` (285行)、`b6-provenance-multi-ledger.tsx` (326行)、`b6-provenance-multi-ledger.test.tsx` (179行)，主路由由 276 行优化至 263 行，全部在 100~300 行黄金甜点区，≤ 500 行安全红线；
+    5. **NO GREEN EVER 与 12px 门禁**：彻底切除绿色，正向冰青 (`cyan-500`) / 湛蓝 (`sky-500`)，异常玫瑰红 (`rose-500`)，字体严格 $\ge 12\text{px}$，`anti_demo_gate.py` 235 项扫描 100% PASS。
+- **涉及文件清单与修改范围**：
+  - `src/routes/skills/-types/provenance-ledger.ts` (新增：黑匣子审计与准入队列 DTO 与类型规范)
+  - `src/routes/skills/-components/provenance-detail-sheet.tsx` (新增：演变审计详情与快照秒级回退穿透抽屉)
+  - `src/routes/skills/-components/b6-provenance-multi-ledger.tsx` (新增：全息流水第一轨多轨流水账本组件)
+  - `src/routes/skills/-components/b6-provenance-multi-ledger.test.tsx` (新增：5 项 Vitest 视网膜单测)
+  - `src/routes/skills/route.tsx` (重构：挂载 B6 全息第一轨多轨审计总账)
+  - `docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md` (登记：注册 B6ProvenanceMultiLedger 与 ProvenanceDetailSheet 公共资产)
+  - `openviking/_version.py` (自增版本号至 1.7.131)
+  - `package.json` (自增版本号至 1.7.131)
+  - `REFACTORING_PLAN.md` (同步更新 Card-176 交付留痕与验收标记)
+- **物理交付验证与门禁标准**：
+  1. 单元测试全绿：WSL Vitest `src/routes/skills/` ➔ **22 passed in 2.18s PASS**（`b6-provenance-multi-ledger.test.tsx` 5/5 PASS）；
+  2. 后端单元测试：WSL Pytest ➔ **10 passed in 7.70s PASS**；
+  3. DEMO 与字号视网膜门禁：`python scripts/anti_demo_gate.py` ➔ **235 components, 0 violations, 100% PASS**；
+  4. 密钥安全与代码合规：`python scripts/security_check.py` ➔ **Checked 5067 tracked files. Zero secrets detected PASS**；
+  5. 生产构建全绿：WSL `npm run build` ➔ **built in 2m 55s PASS**；
+  6. 单文件行数红线：所有文件处于 100~300 行黄金甜点区（≤ 500 行红线）。
+- **Git Commit Hash**：`PENDING_COMMIT`
+- **Git Tag**：`v1.7.131`
+
