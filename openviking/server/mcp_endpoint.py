@@ -3122,6 +3122,22 @@ async def openviking_skills(
 
         inj_svc = SkillInjectionService.get_instance()
         inj_res = inj_svc.compress_for_injection(raw_text, compact=compact, budget_tokens=budget_tokens)
+
+        # Record Skill Telemetry & ROI (fail-open)
+        try:
+            from openviking.service.skill_telemetry import SkillTelemetryStore
+            SkillTelemetryStore.get_instance().record_event(
+                skill_id=name,
+                bundle_name=eff_name,
+                event_type="invoke",
+                success=True,
+                tokens_saved=inj_res.tokens_saved,
+                latency_ms=inj_res.latency_ms,
+                caller_agent=getattr(ctx, "agent_id", "mcp_client"),
+            )
+        except Exception:
+            pass
+
         return json.dumps({
             "status": "ok",
             "name": eff_name,

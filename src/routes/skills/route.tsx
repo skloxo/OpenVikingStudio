@@ -17,6 +17,7 @@ import { SkillsFilterBar } from './-components/skills-filter-bar'
 import { SkillsMetricsCards } from './-components/skills-metrics-cards'
 import { SkillDetailSheet } from './-components/skill-detail-sheet'
 import { SkillIngestionCockpit } from './-components/skill-ingestion-cockpit'
+import { SkillRoiCockpitCard } from './-components/skill-roi-cockpit-card'
 import { useSkillEventBus } from './-hooks/use-skill-event-bus'
 import { getErrorMessage } from './-lib/skill-data'
 import { useSkillsData } from './-lib/use-skills'
@@ -156,6 +157,8 @@ function SkillsRoute() {
           </div>
 
           <SkillsMetricsCards metrics={harnessMetrics} totalSkills={skills.length} />
+
+          <SkillRoiCockpitCard />
 
           {/* 自动化准入流水线与黑匣子演变审计折叠看板 */}
           <div className="rounded-md border border-border/80 bg-card px-3 py-2.5 shadow-2xs">

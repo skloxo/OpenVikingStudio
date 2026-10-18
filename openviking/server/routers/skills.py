@@ -54,7 +54,7 @@ from openviking.service.skill_integrity import (
     _skill_snapshot_lock,
 )
 from openviking.service.skill_retina_cron import SkillRetinaAuditor
-from openviking.service.skill_updater import execute_skill_update
+from openviking.service.skill_telemetry import SkillTelemetryStore
 from openviking_cli.exceptions import InvalidArgumentError
 
 router = APIRouter(prefix="/api/v1/skills", tags=["skills"])
@@ -82,9 +82,10 @@ __all__ = [
 async def list_skills(
     node_limit: int = 1000,
     target_uri: Optional[str] = None,
+    sort_by: Optional[str] = None,
     _ctx: RequestContext = Depends(get_request_context),
 ):
-    """List installed agent skills."""
+    """List installed agent skills with optional ROI-based auto-promotion."""
     del node_limit
     service = get_service()
     if target_uri:
@@ -109,12 +110,25 @@ async def list_skills(
             seen_names.add(name)
             deduped_skills.append(s)
 
+    if sort_by == "roi":
+        telemetry = SkillTelemetryStore.get_instance().get_telemetry_report(days=30)
+        roi_map = {item["skill_id"]: item["roi_score"] for item in telemetry.get("top_roi_skills", [])}
+        bundle_roi_map = {item["bundle_name"]: item["roi_score"] for item in telemetry.get("bundle_rankings", [])}
+        deduped_skills.sort(
+            key=lambda s: max(
+                roi_map.get(s.get("name", ""), 0.0),
+                bundle_roi_map.get(s.get("name", ""), 0.0),
+            ),
+            reverse=True,
+        )
+
     return Response(
         status="ok",
         result={
             "root_uris": ["viking://agent/skills"],
             "skills": deduped_skills,
             "total": len(deduped_skills),
+            "sort_by": sort_by or "default",
         },
     )
 
@@ -236,6 +250,47 @@ async def validate_skill(
         source_path=request.source_path,
     )
     return Response(status="ok", result=result)
+
+
+@router.get("/telemetry/roi")
+async def get_skill_roi_telemetry(
+    days: int = 30,
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """Retrieve skill invocation telemetry, ROI ranking, and dormant/zombie warnings."""
+    registered_names = []
+    try:
+        service = get_service()
+        agent_skills = await _list_skills_from_root(service, _ctx, "viking://agent/skills")
+        registered_names = [s.get("name") for s in agent_skills if s.get("name")]
+    except Exception:
+        pass
+    report = SkillTelemetryStore.get_instance().get_telemetry_report(
+        days=days,
+        all_registered_skills=registered_names,
+    )
+    return Response(status="ok", result=report)
+
+
+@router.post("/telemetry/record")
+async def record_skill_telemetry_event(
+    payload: Dict[str, Any],
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """Record a skill execution event (invocations, tokens saved, latency) from agents."""
+    skill_id = payload.get("skill_id") or ""
+    if not skill_id:
+        raise InvalidArgumentError("Missing required field: skill_id")
+    event_id = SkillTelemetryStore.get_instance().record_event(
+        skill_id=skill_id,
+        bundle_name=payload.get("bundle_name"),
+        event_type=payload.get("event_type", "invoke"),
+        success=bool(payload.get("success", True)),
+        tokens_saved=int(payload.get("tokens_saved", 0)),
+        latency_ms=float(payload.get("latency_ms", 0.0)),
+        caller_agent=payload.get("caller_agent", getattr(_ctx, "agent_id", "unknown")),
+    )
+    return Response(status="ok", result={"event_id": event_id})
 
 
 @router.get("/retina/status")
@@ -381,6 +436,21 @@ async def get_skill(
         SkillInjectionService.get_instance().inject_into_dict(
             result, compact=compact, budget_tokens=budget_tokens
         )
+
+    # Record JIT telemetry event (fail-open)
+    if result and isinstance(result, dict):
+        try:
+            tokens_saved = int(result.get("tokens_saved", 500 if (compact or budget_tokens) else 0))
+            SkillTelemetryStore.get_instance().record_event(
+                skill_id=skill_name,
+                bundle_name=result.get("parent_bundle") or skill_name,
+                event_type="jit_read",
+                success=True,
+                tokens_saved=tokens_saved,
+                caller_agent=getattr(_ctx, "agent_id", "unknown"),
+            )
+        except Exception:
+            pass
 
     return Response(status="ok", result=result)
 
