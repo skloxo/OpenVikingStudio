@@ -20,6 +20,13 @@ import re
 import sys
 from typing import Any, Dict, List
 
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 # Regex Patterns
 RE_DEMO_MARKERS = re.compile(
     r"(\bDEMO_ONLY\b|@demo-only|MOCK_DATA_ONLY|//\s*TODO:\s*(mock|demo)\s*only|fake_persistence|mock-apply)",
