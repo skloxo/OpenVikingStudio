@@ -1,8 +1,8 @@
-﻿# 🗺️ OpenViking 项目主线重构与原子化任务卡片总看板 (Master Task Cards Kanban - SSOT)
+# 🗺️ OpenViking 项目主线重构与原子化任务卡片总看板 (Master Task Cards Kanban - SSOT)
 
 > **关联研发大蓝图**：[`BLUEPRINT.md`](file:///home/skloxo/aho/openclaw/project/.agents/BLUEPRINT.md) ｜ **交付全量归档台账**：[`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md) ｜ **通用资产档案库**：[`COMPONENT_AND_WHEEL_INVENTORY.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md) ｜ **👁️ 人工验收测试指南**：[`docs/HUMAN_ACCEPTANCE_TESTING.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/HUMAN_ACCEPTANCE_TESTING.md)
 > **唯一真相源 (SSOT)**：本文档为 OpenViking 当前活跃的重构规划与就绪待调度的任务矩阵看板。历史所有已验收交付的版本履历（Milestone 1~4 全量 19 张 Task Cards 及前序波次）已完整归档至 [`DELIVERY_ARCHIVE.md`]- **线上正式部署版本**：**`v1.4.106`**（物理访问地址：`vk.tide.red/studio/home`，已实机验证）；
-- **当前最新交付版本**：**`v1.7.129`**（Tag: `v1.7.129`，Tool Output 大体积外部化与会话自动轻量化、19/19 专项单测全绿通过）；
+- **当前最新交付版本**：**`v1.7.130`**（Tag: `v1.7.130`，技能中心「B6 演进流水线与全息运行中枢」核心架构、双模式切换与 12 阶态势沙盘）；
 - **历史里程碑详单检索**：如需查阅 Milestone 1~4 及早期版本修改清单与架构细节，请点击跳转至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。
 
 | 版本 Tag      | 任务工单 ID | 模块与重构主题                                                                                                                                                | 核心治理成果与物理交付物                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |     验收状态      |
@@ -10,6 +10,14 @@
 | **`v1.7.127`** | **Card-165** | **全双工实时事件总线接入与技能大盘毫秒级自愈刷新 (Full-Duplex Real-Time Event Bus & Instant Skills Query Invalidation SSOT)** | 1. **WebSocket / SSE 实时事件总线全双工接入**：在 `SkillEventBus` 落地 `subscribe_ws` 与 `subscribe` 双引擎，在 `openviking/server/routers/skills.py` 暴露 `/events` (SSE) 与 `/ws` (WebSocket) 双端点，彻底切除前端 TanStack Query 60s 静态轮询缓存延迟；<br>2. **流水线状态微脉冲下发 (PIPELINE_PULSE)**：在 `SkillAutonomousPipeline` 与 `skill_ingestion.py` 串联事件中枢，当技能入库 (ENQUEUED)、质检拦截 (REJECTED)、自主落盘 (COMMITTED) 与批处理完成 (CYCLE_COMPLETED) 时，毫秒级广播微脉冲；<br>3. **前端静默自愈拉新与全域缓存失效**：在 `use-skill-event-bus.ts` 捕获 `PIPELINE_PULSE` 与 `SKILLS_MUTATED`，毫秒级触发 `queryClient.invalidateQueries` 精准刷新 `skills`、`skills-ingestion-queue-depth`、`skills-ingestion-queue`、`skills-provenance-events` 与 `skill-detail`，实现无感即时刷新；<br>4. **视网膜单测与门禁全绿交付**：新增 `test_card165_realtime_event_bus.py` 6/6 全绿通过，结合 `test_autonomous_pipeline.py` 7/7 快速通过 (7.57s)，Vite 生产构建编译通过 (20.42s)，Security Scan 5058 文件零泄露，Anti-Demo 232 组件 100% PASS。 | [x] 已验收通过 ✅ |
 | **`v1.7.128`** | **Card-169** | **上游 v0.5.0 突破吸收首战 — 单阶段全局检索重构与 3 天保护期时间衰减落地 (Single-Pass Global Retrieval & 3-Day Event Time Decay SSOT)** | 1. **切除分层树检索与父级分数下传 (Deprecate Hierarchical Walking)**：彻底重构 `openviking/retrieve/hierarchical_retriever.py`，从 992 行精简至 411 行黄金甜点区，移除递归逐层与父级打分逻辑，消灭目录摘要偏差导致的知识饿死；<br>2. **单阶段全局召回 (Single-Pass Global Vector Recall)**：直接在目标命名空间发起全局单次向量检索，消除逐层等待耗时；<br>3. **3 天保护期与 7 天指数半衰期时间衰减 (`time_decay.py`)**：移植落地 `openviking/utils/time_decay.py`，配置 3 天宽裕保护期（3 天内新记忆 100% 满分无惩罚），超过 3 天后平滑指数半衰（`decay: 0.5, scale: 7d`），仅作用于动态事件记忆，静态规范/技能 100% 满分保护；<br>4. **候选池两倍精排与 2080Ti SLA 保护**：在 `THINKING` 模式且配置 Reranker 时拉取 `2 × limit` 个候选执行统一重排，保障 2080Ti 毫秒级推理预算；保留 `RetrieverMode.FAST` 兼容性与异常降级；<br>5. **视网膜单测与门禁全绿**：新增 `test_time_decay.py` 覆盖 3 天保护期、7 天半衰期与边界异常；更新 `test_hierarchical_retriever_rerank.py` 与 `test_hierarchical_retriever_image.py`；`tests/retrieve/` 63 项测试 100% PASS，Security Scan 5061 文件零泄露。 | [x] 已验收通过 ✅ |
 | **`v1.7.121`** | **Card-157** | **消灭管理后台与插件中心版本漂移断层、彻底对齐 DSH 全系插件单一真相源 (DSH Plugins Version Drift Elimination & Builtin Ecosystem SSOT Grounding)** | 1. **版本漂移物理根因终结**：针对管理后台抽屉标题与接入指引版本脱节（抽屉顶部旧版 `v2.0.11` vs 指引最新 `v2.0.15`）痛点，在 `builtin_plugins_core.py` 与 `builtin_plugins_eco.py` 中落地 `resolve_package_version` 动态解析引擎，直连 `integrations/deepseek-harness/{pkg_name}/package.json` 单一真相源；<br>2. **全系 7 大插件版本物理对齐**：Memory (`2.0.15`)、Ops (`1.0.3`)、Fleet (`1.0.3`)、KeePass (`1.0.2`)、Dify (`1.0.1`)、CPA (`1.0.1`) 全系生态插件动态自适应，彻底铲除任何硬编码常数导致漂移的物理隐患；<br>3. **视网膜单测与断言纠偏**：更新 `tests/server/test_plugins_api.py`，将写死的历史断言对齐真实最新源，WSL 原生环境 7/7 全绿通过 (0.11s)；<br>4. **范式 A 原生极速构建与实机验真**：通过 `sync_to_wsl.py` 增量同步至 WSL2 原生目录，Vite 构建 17.39s 完成并增量回传 `dist/`，重启 `openviking.service` 校验 `/health` 返回 `v1.7.121`，`/api/v1/plugins` 探针真实返回 `openviking-memory: 2.0.15`，实机抽屉与指引 100% 严格一致。 | [x] 已验收通过 ✅ |
+| **`v1.7.129`** | **Card-170** | **Tool Output 大体积外部化与会话自动轻量化 (External Tool Call Persistence & Lightweight Session History SSOT - 上游主线 A)** | 1. 拦截大体积工具输出（> 500 字符或特定大型 JSON/抓取内容），自动计算哈希并外部化持久化为 VikingFS 影子文件；<br>2. 核心会话上下文仅保留轻量级短指针引用，大模型按需读取；<br>3. 彻底根除长文本工具执行导致 Token 爆炸与上下文截断的痛点。 | [x] 已验收通过 ✅ |
+| **`待排期`** | **Card-171** | **多格式文档原生 AST 分块与抽取器 (Native Document Parsing & Content Extractor SSOT - 上游主线 A)** | 1. 引入纯原生、零外部笨重依赖的 Markdown/HTML/代码段 AST 精准分块抽取器；<br>2. 保留段落、表格与代码块完整语义边界，大幅提升后续 RAG 嵌入质量与召回纯度。 | [ ] 待排期迭代 ⏳ |
+| **`待排期`** | **Card-172** | **OKF 侧车正文提取与多模态纯原生检索对齐 (OKF Sidecar Body Preview & Multimodal Search Grounding - 上游主线 A)** | 1. 严格基于 OKF 协议解析侧车正文，过滤 YAML Frontmatter 仅透出干净的 preview body；<br>2. 完善多模态（文本+图像）纯原生检索与账户级 Embedder 绑定，杜绝侧车格式失真。 | [ ] 待排期迭代 ⏳ |
+| **`v1.7.130`** | **Card-175** | **技能中心「B6 演进流水线与全息运行中枢」核心架构、双模式切换与 12 阶态势沙盘 (B6 Evolution Pipeline, Dual-Mode Cockpit & 12-Stage Visual Map SSOT - 主线 B 首战)** | 1. **双模式无缝切换**：在 `src/routes/skills/` 顶部引入 `[ 📚 核心领域技能大盘 ]` vs `[ ⚡ B6 全息演进流水线与运行中枢 ]`，支持 URL `?mode=pipeline` 参数直达；<br>2. **12 阶工序动态态势沙盘 (12-Stage Visual Map)**：落地前 6 阶准入熔炼（排队、自愈、门禁、压缩、裁决、排他防撞）+ 后 6 阶闭环验真（视网膜验收、零退化保护、黑匣子留痕、别名投影、Hermes微手术、教训结晶）全流程动态穿透解析；<br>3. **实时脉冲与队列态势带**：挂载 `SkillEventBus` 实时心跳双工连通指示与 SQLite 准入队列深度；<br>4. **测试视网膜与安全门禁**：4 项 Vitest 单测全绿，`anti_demo_gate.py` 100% PASS，遵循单文件 100~300 行与 NO GREEN EVER 规范。 | [x] 已验收通过 ✅ |
+| **`待排期`** | **Card-176** | **全息流水第一轨 — 黑匣子演变审计与准入队列流水账本 (Provenance Ledger & Ingestion Multi-Ledger SSOT - 主线 B)** | 1. 参考任务中心表格范式（状态过滤/时间跨度），呈现 `SkillProvenanceTracker` 黑匣子证据链；<br>2. 呈现 SQLite 准入历史流水（SkillOpt 打分、自愈记录）；<br>3. 交付流水详情抽屉（快照、Diff 比对与元数据）。 | [ ] 待排期迭代 ⏳ |
+| **`待排期`** | **Card-177** | **全息流水第二轨 — Hermes 经历微手术补丁与一键安全回滚 (Hermes Patches & FTS5 Experiences SSOT - 主线 B)** | 1. 接入真实后端 `/api/v1/hermes/patches` 与 `/api/v1/hermes/summary`；<br>2. `<=30行` 微手术补丁列表、状态与一键安全 Apply/Revert；<br>3. 嵌入 FTS5 经历检索透传。 | [ ] 待排期迭代 ⏳ |
+| **`待排期`** | **Card-178** | **全息流水第三轨 — 安全装甲教训档案并流、腾讯能力三段式边界与右上角联动闭环 (Evolution Lessons, Boundary Pages & Guardrails Link SSOT - 主线 B)** | 1. 接入 `/api/v1/system/harness_metrics` 教训档案，打通装甲拦截到技能自进化的闭环；<br>2. 接入 `/api/v1/capability-pages` 三段式边界（正向触发+负向排他）；<br>3. 将安全装甲右上角“查看演进教训与自愈”精准重定向到技能中心运行中枢。 | [ ] 待排期迭代 ⏳ |
+| **`待排期`** | **Card-179** | **探针归位 `/harness-logs`、彻底斩杀 `/evolution` 页面与抗熵减 (Purge /evolution & Consolidate Probes SSOT - 主线 B)** | 1. 二分自愈与防偷懒探针归位移回 `/harness-logs`；<br>2. 物理删除 `/evolution` 悬空路由与死代码；<br>3. 全量测试通过，Git Tag 封板。 | [ ] 待排期迭代 ⏳ |
 | **`待排期`** | **Card-166** | **技能中心使用频次遥测、ROI 价值度量与高频技能自动排序反哺中枢 (Skill Usage Telemetry, ROI Ranking & Auto-Promotion SSOT)** | 1. **全域技能调用埋点与命中遥测**：拦截 `skills.find`、`skills.get` (JIT 注脑) 及外部 Agent 调用，向 SQLite 轻量持久化调用事件；<br>2. **ROI 价值动态排序算法**：按“调用频次 × 执行成功率 × Token 压缩节省收益”综合加权排序，高价值母包自动置顶推荐；<br>3. **僵尸技能与低频工序预警**：连续 30 天 0 调用或评分长期低于 70 的边缘工序标红预警，提供一键安全合并或归档建议。 | [ ] 待排期迭代 ⏳ |
 | **`待排期`** | **Card-167** | **技能大盘在线交互测试沙箱与意图命中试算器 (Skill Playground, Intent Hit-Testing & Scaffolding SSOT)** | 1. **Web Studio 交互式意图沙箱**：提供开发者调试终端，输入任意 Prompt 实时可视化命中分析（母包亲和度、子场景路由与别名透明投影）；<br>2. **动态注脑压缩实时度量**：在线对比原始全文 vs 自适应抽稀后的 Token 消耗与压缩耗时，所见即所得；<br>3. **标准技能脚手架生成器**：提供符合标准规范的 YAML Frontmatter 与标准 6 章节 Markdown 模板一键导出。 | [ ] 待排期迭代 ⏳ |
 | **`待排期`** | **Card-168** | **系统底层与体外大脑五层抗熵增治理中枢 (Anti-Entropy Memory Evolution, Superseded DAG & Offline Distillation SSOT)** | 1. **前门语义准入与去重判别 (`Ingestion Dedup`)**：余弦相似度 > 0.88 时触发增量合并判别而非盲目重复写入，切除密集空间信噪比劣化；<br>2. **认知冲突消解与版本演进链 (`Superseded DAG`)**：新经验推翻旧做法时，旧文件 Frontmatter 显式注入 `superseded_by: <new_uri>`，检索层物理阻断已失效经验，杜绝智能体认知倒退；<br>3. **差异化时效动力学与半衰期衰减**：永久规范（权重 1.0 不衰减）、踩坑经验（半衰期 90 天）、临时事件（半衰期 14 天冷归档）；<br>4. **夜间离线做梦归纳蒸馏 (`ov_dream`)**：空闲算力驱动，20 条同类碎片聚类蒸馏为 1 条高精纯 Recipe，维持体外大脑 $O(1)$ 紧凑度；<br>5. **物理快照保护与后悔药灾备**：治理前强制 `VikingFS.commit` 快照，支持秒级无损回滚。 | [ ] 待排期迭代 ⏳ |
@@ -3672,3 +3680,33 @@
   5. 分支规范：保持在 `main` 主线开发，版本严格 Patch 递增至 `1.7.129`。
 - **Git Commit Hash**：`d364cd24a`
 - **Git Tag**：`v1.7.129`
+
+### 📌 [P0] [x] Card-175 (v1.7.130): 技能中心「B6 演进流水线与全息运行中枢」核心架构、双模式切换与 12 阶态势沙盘 (B6 Evolution Pipeline, Dual-Mode Cockpit & 12-Stage Visual Map SSOT) ✅
+- **背景与第一性原理**：
+  - **前序痛点与架构缺陷**：
+    1. **前沿自进化概念悬空割裂**：历史演进页面（`/studio/evolution`）中散落七阶流水线、Hermes 经历微补丁、技能视网膜评测、腾讯能力三段式边界等前沿概念，与技能中心（`/studio/skills`）割裂脱节；
+    2. **缺乏统一演进运行全景**：B6 自动化流水线已产生真实 SQLite 准入流水与黑匣子证据链，但前端缺乏统一高密座舱回显；
+    3. **双模式缺乏平滑分流**：用户需要在“核心领域母包技能大盘”与“B6 全息演进流水线态势”之间自由切换。
+  - **闭环架构设计与物理落地**：
+    1. **双模式顶层无缝切换**：在 `src/routes/skills/` 顶部引入 `[ 📚 核心领域技能大盘 ]` vs `[ ⚡ B6 全息演进流水线与运行中枢 ]` 双模式 Tab，支持 URL `?mode=pipeline` 参数直达；
+    2. **12 阶自适应生命周期态势沙盘 (`B6EvolutionPipelineCockpit`)**：完整规范并落地前 6 阶准入熔炼（准入排队、AST自愈、质量门禁、契约压缩、接缝裁决、三段式排他防撞）与后 6 阶闭环验真（视网膜验收、零退化保护、黑匣子留痕、别名投影、Hermes微手术、教训结晶）全工序元数据与契约穿透展示；
+    3. **实时脉冲与队列态势带**：直连 `SkillEventBus` 实时双工心跳与 SQLite 队列深度（待审/落盘计数），提供一键推进批处理交互；
+    4. **单文件规模与视网膜门禁**：所有新建与重构文件（152行、232行、90行、275行）全部在 100~300 行黄金甜点区，彻底切除微字违规（`text-[11px]`/`text-[10px]` 升维至 `text-xs`），`anti_demo_gate.py` 100% PASS，严格遵循 NO GREEN EVER 🚫 规范。
+- **涉及文件清单与修改范围**：
+  - `src/routes/skills/-constants/b6-pipeline-stages.ts` (新增：12 阶工序元数据、承载引擎与 Invariants 契约定义)
+  - `src/routes/skills/-components/b6-evolution-pipeline-cockpit.tsx` (新增：B6 全息演进流水线与运行中枢座舱组件)
+  - `src/routes/skills/-components/b6-evolution-pipeline-cockpit.test.tsx` (新增：4 项 Vitest 视网膜单测)
+  - `src/routes/skills/route.tsx` (重构：挂载双模式切换与 B6 流水线总控大盘)
+  - `docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md` (登记：注册 B6EvolutionPipelineCockpit 公共资产)
+  - `openviking/_version.py` (自增版本号至 1.7.130)
+  - `package.json` (自增版本号至 1.7.130)
+  - `REFACTORING_PLAN.md` (同步更新 Card-175 交付留痕与验收标记)
+- **物理交付验证与门禁标准**：
+  1. 单元测试全绿：WSL Vitest `src/routes/skills/` ➔ **17 passed in 2.01s PASS**（`b6-evolution-pipeline-cockpit.test.tsx` 4/4 PASS）；
+  2. 事件总线单测：WSL Pytest `tests/unit/test_card165_realtime_event_bus.py` ➔ **6 passed in 1.60s PASS**；
+  3. DEMO 与字号视网膜门禁：`python scripts/anti_demo_gate.py` ➔ **233 components, 0 violations, 100% PASS**；
+  4. 密钥安全与代码合规：`python scripts/security_check.py` ➔ **Checked 5064 tracked files. Zero secrets detected PASS**；
+  5. 生产构建全绿：WSL `npm run build` ➔ **built in 19.32s PASS**；
+  6. 单文件行数红线：新建组件 232 行，常数 152 行，单测 90 行，主路由 275 行（全部在 100~300 行黄金甜点区，≤ 500 行红线）。
+- **Git Commit Hash**：`PENDING_COMMIT`
+- **Git Tag**：`v1.7.130`

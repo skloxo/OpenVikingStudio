@@ -313,7 +313,43 @@ export function resolvePluginBridgeConfig(
     }
   }
 
-  // 6. 原生 Memory 核心长程记忆与代码战地 (默认)
+  // 6. 智能体熔断断路器 (agent-circuit-breaker 物理护栏)
+  if (id.includes('circuit-breaker') || id.includes('circuit_breaker')) {
+    const pkgName = 'agent-circuit-breaker'
+    const version = '1.2.0'
+    const tarballUrl = `https://vk.tide.red/studio/${pkgName}-${version}.tgz`
+    const installCmd = `python3 setup.py install`
+
+    return {
+      pkgName,
+      version,
+      antigravityDir: 'agent-circuit-breaker',
+      isLocalVault: true,
+      isExternalService: false,
+      tarballUrl,
+      installCmd,
+      dshCordisPatchYaml: `# 智能体熔断断路器属于客户端物理层生命周期守卫，无需 DSH 远程挂载`,
+      dshAgentPrompt: `请将智能体熔断断路器作为客户端物理护栏部署：\n1. 目录：~/.gemini/config/plugins/agent-circuit-breaker/\n2. 执行 python3 setup.py install 即可完成自举部署。`,
+      antigravitySetupCmdWin: `cd "$env:USERPROFILE\\.gemini\\config\\plugins\\agent-circuit-breaker" && python setup.py install`,
+      antigravitySetupCmdUnix: `cd ~/.gemini/config/plugins/agent-circuit-breaker && python3 setup.py install`,
+      antigravityAgentPrompt: `请帮我将当前反重力开发座舱接入智能体熔断断路器护栏：\n1. 挂载目录：~/.gemini/config/plugins/agent-circuit-breaker/\n2. 运行 python setup.py install 完成绝对路径与二进制裸流生命周期钩子挂载；\n3. 激活连续写报错 >= 3 次熔断与单轮 18 步预算保护。`,
+      universalMcpJson: JSON.stringify(
+        {
+          mcpServers: {
+            'circuit-breaker': {
+              command: 'python3',
+              args: ['~/.gemini/config/plugins/agent-circuit-breaker/server.py'],
+            },
+          },
+        },
+        null,
+        2,
+      ),
+      universalAgentPrompt: `请将智能体断路器 MCP 伺服接入当前环境：\n1. 启动命令：python3 ~/.gemini/config/plugins/agent-circuit-breaker/server.py\n2. 写入 mcp.json 并验证 circuit_breaker_status 工具。`,
+    }
+  }
+
+  // 7. 原生 Memory 核心长程记忆与代码战地 (默认)
   const pkgName = 'dsh-plugin-openviking-memory'
   const version = '2.0.15'
   const tarballUrl = `https://vk.tide.red/studio/${pkgName}-${version}.tgz`
