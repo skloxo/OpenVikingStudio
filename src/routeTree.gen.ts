@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AccountsRouteRouteImport } from './routes/accounts/route'
 import { Route as AgentsRouteRouteImport } from './routes/agents/route'
-import { Route as EvolutionRouteRouteImport } from './routes/evolution/route'
 import { Route as FleetRouteImport } from './routes/fleet'
 import { Route as GraphRouteRouteImport } from './routes/graph/route'
 import { Route as HarnessLogsRouteImport } from './routes/harness-logs'
@@ -48,11 +47,6 @@ const AccountsRouteRoute = AccountsRouteRouteImport.update({
 const AgentsRouteRoute = AgentsRouteRouteImport.update({
   id: '/agents',
   path: '/agents',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EvolutionRouteRoute = EvolutionRouteRouteImport.update({
-  id: '/evolution',
-  path: '/evolution',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FleetRoute = FleetRouteImport.update({
@@ -165,7 +159,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/accounts': typeof AccountsRouteRoute
   '/agents': typeof AgentsRouteRoute
-  '/evolution': typeof EvolutionRouteRoute
   '/graph': typeof GraphRouteRoute
   '/home': typeof HomeRouteRoute
   '/monitoring': typeof MonitoringRouteRoute
@@ -192,7 +185,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/accounts': typeof AccountsRouteRoute
   '/agents': typeof AgentsRouteRoute
-  '/evolution': typeof EvolutionRouteRoute
   '/graph': typeof GraphRouteRoute
   '/home': typeof HomeRouteRoute
   '/monitoring': typeof MonitoringRouteRoute
@@ -219,7 +211,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/accounts': typeof AccountsRouteRoute
   '/agents': typeof AgentsRouteRoute
-  '/evolution': typeof EvolutionRouteRoute
   '/graph': typeof GraphRouteRoute
   '/home': typeof HomeRouteRoute
   '/monitoring': typeof MonitoringRouteRoute
@@ -248,7 +239,6 @@ export interface FileRouteTypes {
     | '/'
     | '/accounts'
     | '/agents'
-    | '/evolution'
     | '/graph'
     | '/home'
     | '/monitoring'
@@ -275,7 +265,6 @@ export interface FileRouteTypes {
     | '/'
     | '/accounts'
     | '/agents'
-    | '/evolution'
     | '/graph'
     | '/home'
     | '/monitoring'
@@ -301,7 +290,6 @@ export interface FileRouteTypes {
     | '/'
     | '/accounts'
     | '/agents'
-    | '/evolution'
     | '/graph'
     | '/home'
     | '/monitoring'
@@ -329,7 +317,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountsRouteRoute: typeof AccountsRouteRoute
   AgentsRouteRoute: typeof AgentsRouteRoute
-  EvolutionRouteRoute: typeof EvolutionRouteRoute
   GraphRouteRoute: typeof GraphRouteRoute
   HomeRouteRoute: typeof HomeRouteRoute
   MonitoringRouteRoute: typeof MonitoringRouteRoute
@@ -372,13 +359,6 @@ declare module '@tanstack/react-router' {
       path: '/agents'
       fullPath: '/agents'
       preLoaderRoute: typeof AgentsRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/evolution': {
-      id: '/evolution'
-      path: '/evolution'
-      fullPath: '/evolution'
-      preLoaderRoute: typeof EvolutionRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/fleet': {
@@ -559,7 +539,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountsRouteRoute: AccountsRouteRoute,
   AgentsRouteRoute: AgentsRouteRoute,
-  EvolutionRouteRoute: EvolutionRouteRoute,
   GraphRouteRoute: GraphRouteRoute,
   HomeRouteRoute: HomeRouteRoute,
   MonitoringRouteRoute: MonitoringRouteRoute,
