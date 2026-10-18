@@ -18,6 +18,22 @@ from openviking.models.plugin import (
     PluginHealthProbe,
 )
 
+
+def resolve_package_version(pkg_name: str, fallback: str) -> str:
+    """从本地 package.json 读取真实版本号，确保与 DSH 客户端插件 100% 同步 SSOT。"""
+    try:
+        from pathlib import Path
+        import json
+        pkg_file = Path(__file__).resolve().parent.parent.parent / "integrations" / "deepseek-harness" / pkg_name / "package.json"
+        if pkg_file.is_file():
+            data = json.loads(pkg_file.read_text(encoding="utf-8"))
+            if data.get("version"):
+                return data["version"]
+    except Exception:
+        pass
+    return fallback
+
+
 # 战地 34 工具物理名称清单 SSOT (普通业务与研发 Agent 全量武器库)
 BATTLEFIELD_34_TOOL_NAMES: List[str] = [
     # 1. 记忆中枢 (8 项)
@@ -152,7 +168,7 @@ def create_core_and_ops_plugins(
     memory_plugin = QuadPluginDefinition(
         plugin_id="openviking-memory",
         name="OpenViking 核心记忆与代码战地",
-        version="2.0.11",
+        version=resolve_package_version("dsh-plugin-openviking-memory", "2.0.15"),
         category="platform",
         description="体外大脑中心化战地旗舰：长程记忆、工作区 AST、1214技能感知、工单吹哨与泊车管家 (面向全量普通 Agent)",
         skill=SkillDefinition(
@@ -233,7 +249,7 @@ def create_core_and_ops_plugins(
     ops_plugin = QuadPluginDefinition(
         plugin_id="openviking-ops",
         name="OpenViking 系统运维治理",
-        version="1.0.0",
+        version=resolve_package_version("dsh-plugin-openviking-ops", "1.0.3"),
         category="platform",
         description="系统底层自愈、死信队列重试、概念漂移审计与特权写改中枢 (专门授权给后台专用运维 Agent / 巡检 Engine)",
         skill=SkillDefinition(
