@@ -207,7 +207,7 @@ function RetrievalPage() {
 
         {/* 跨领域联动平滑导流：直接跳转至独立的技能自演进中心 */}
         <Link
-          to="/evolution"
+          to="/skills"
           className="ml-auto flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-cyan-600 dark:text-cyan-400 hover:text-cyan-500 rounded border border-cyan-800/30 bg-cyan-950/20 whitespace-nowrap transition-colors"
         >
           <DnaIcon className="size-3" />

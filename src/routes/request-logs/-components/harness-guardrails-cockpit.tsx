@@ -87,7 +87,7 @@ export function HarnessGuardrailsCockpit() {
         <div className="rounded-md border border-border/70 bg-card p-3 shadow-xs flex flex-col justify-between">
           <div className="text-xs text-muted-foreground">演进与自愈中心联动</div>
           <div className="mt-1">
-            <Link to="/evolution" search={{ tab: 'lessons' }}>
+            <Link to="/skills" search={{ mode: 'pipeline' }}>
               <Button size="sm" variant="outline" className="h-7 w-full text-xs font-mono text-cyan-800 dark:text-cyan-400 border-cyan-300 dark:border-cyan-800/40 bg-cyan-50 dark:bg-cyan-950/20 hover:bg-cyan-100 dark:hover:bg-cyan-950/40 cursor-pointer">
                 <DnaIcon className="mr-1 size-3" />
                 查看演进教训与自愈 ➔
