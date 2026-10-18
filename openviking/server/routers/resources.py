@@ -354,7 +354,31 @@ async def add_skill(
         if resolved.original_filename and request.source_metadata is None:
             source_metadata["original_filename"] = resolved.original_filename
 
-    source_path_hint = resolved.original_filename if resolved else None
+    # 场景归并与大包纯化防线：如果技能已被母包 scenarios 吸收，自动合流至母包而非散落顶层
+    try:
+        from openviking.core.skill_loader import SkillLoader
+        from openviking.service.skill_aliasing_router import SkillAliasingRouter
+        if isinstance(data, str) and ("name:" in data or "---" in data):
+            meta, _ = SkillLoader._split_frontmatter(data)
+            parsed_name = meta.get("name")
+            if parsed_name:
+                router = SkillAliasingRouter()
+                resolved_sc = router.resolve(str(parsed_name).strip())
+                if resolved_sc and resolved_sc.get("is_virtual"):
+                    parent_bundle = resolved_sc.get("bundle_name")
+                    sc_filename = resolved_sc.get("scenario_file") or f"{parsed_name}.md"
+                    target_file = Path("/home/skloxo/.openviking/data/viking/default/agent/skills") / parent_bundle / "scenarios" / sc_filename
+                    if target_file.parent.exists():
+                        target_file.write_text(data, encoding="utf-8")
+                        return Response(status="ok", result={
+                            "name": parsed_name,
+                            "uri": f"viking://agent/skills/{parent_bundle}/scenarios/{sc_filename}",
+                            "parent_bundle": parent_bundle,
+                            "is_absorbed": True,
+                        }).model_dump(exclude_none=True)
+    except Exception:
+        pass
+
     async def _add() -> dict[str, Any]:
         try:
             result = await service.resources.add_skill(

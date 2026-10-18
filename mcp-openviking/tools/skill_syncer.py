@@ -140,6 +140,17 @@ def _auto_ingest_missing_to_vikingfs(found_skills: Dict[str, Dict[str, Any]]):
 
         # 1. 全域场景、别名与能力大包展开收录 (Scenario, Alias & Sub-skill Awareness)
         viking_skills: set[str] = set()
+        KNOWN_MERGED_SCENARIOS = {
+            "web-search-pro",
+            "agent-governance-guardrails",
+            "capability-bundle-crystallizer",
+            "clash_verge_governance",
+            "deepseek-harness-ops",
+            "global-agent-core",
+        }
+        for km in KNOWN_MERGED_SCENARIOS:
+            _register_skill_alias(km)
+
         for s in res.get("result", {}).get("skills", []):
             if not isinstance(s, dict):
                 continue
