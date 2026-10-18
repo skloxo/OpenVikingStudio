@@ -22,6 +22,7 @@ import {
 import { cn } from '#/lib/utils'
 import type { SkillDetail, SkillTocItem } from '../-lib/skill-types'
 import { extractSkillToc, extractSopOverview } from '../-lib/skill-data'
+import { BundleScenariosBrowser } from './bundle-scenarios-browser'
 
 interface SkillDetailSheetProps {
   open: boolean
@@ -346,23 +347,10 @@ export function SkillDetailSheet({
 
             {detail.is_bundle && (
               <DetailSection title={`📦 领域大包专精工序 (${detail.scenarios?.length ?? detail.scenario_count ?? 0} 项)`}>
-                {detail.scenarios && detail.scenarios.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-2 rounded border border-border/40 bg-muted/20">
-                    {detail.scenarios.map((sc) => (
-                      <Badge
-                        key={sc}
-                        variant="outline"
-                        className="text-xs px-2 py-0.5 border-cyan-300 bg-cyan-50/70 text-cyan-800 dark:border-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-300 font-mono"
-                      >
-                        ⚡ {sc}
-                      </Badge>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-muted-foreground font-mono">
-                    包含标准核心工序模块 (modules/)
-                  </p>
-                )}
+                <BundleScenariosBrowser
+                  scenarios={detail.scenarios ?? []}
+                  bundleName={detail.name}
+                />
               </DetailSection>
             )}
 
