@@ -3743,3 +3743,30 @@
 - **Git Commit Hash**：`d9ab94821`
 - **Git Tag**：`v1.7.131`
 
+### 📌 [P0] [ ] Card-177 (v1.7.132): 全息流水第二轨 — 技能视网膜行为验收与 RSI 零退化回归沙盒 (Skill Retina Behavioral Sandbox & RSI Zero-Regression Guard SSOT) ⏳
+- **背景与第一性原理**：
+  - **前序痛点与架构缺陷**：
+    1. **闭环验真能力割裂**：目前历史演进页（`/studio/evolution`）中存量有 `SkillEvalCockpit`（技能视网膜）与 `RSIDayNightCockpit`（RSI 昼夜策略/零退化），与技能中心（`/studio/skills?mode=pipeline`）脱节；
+    2. **缺乏行为级沙箱动态断言**：单纯的静态门禁无法断言智能体在真实场景下的工具入参、输出匹配与退出码；
+    3. **零退化保留集缺乏自动化防护**：增量技能融入大包时，缺乏与历史 Holdout 保留集的自动化对比阻断。
+  - **闭环架构设计与物理落地**：
+    1. **全息流水第二轨沙盘挂载 (`B6RetinaRegressionCockpit`)**：承接 12 阶自适应生命周期中的第 7 阶（技能视网膜行为验收）与第 8 阶（RSI 零退化回归保护），在 `?mode=pipeline` 架构下提供第二轨交互体验与实时验真看板；
+    2. **视网膜沙箱动态用例评测**：整并 `SkillEvalCockpit`，支持在线运行 YAML 测试用例沙箱，动态断言真实工具调用契约、真实返回值与非零退出码阻断；
+    3. **RSI 零退化回归比对门禁**：整并 `RSIDayNightCockpit` 中的 Dual-Split 校验机制，保留集通过率低于基线时物理阻断冻结；
+    4. **单文件规模与黄金甜点区**：新建与重构组件全部在 100~300 行黄金甜点区（≤500 行红线），彻底杜绝微字（$\ge 12\text{px}$）并严格遵守 NO GREEN EVER 🚫。
+- **涉及文件清单与修改范围**：
+  - `src/routes/skills/-components/b6-retina-regression-cockpit.tsx` (新建：视网膜行为验收与 RSI 零退化回归座舱)
+  - `src/routes/skills/-components/b6-retina-regression-cockpit.test.tsx` (新建：Vitest 视网膜单测)
+  - `src/routes/skills/route.tsx` (集成：流水线模式下挂载第二轨)
+  - `docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md` (登记：注册新公共资产)
+  - `openviking/_version.py` (版本自增至 1.7.132)
+  - `package.json` (版本自增至 1.7.132)
+  - `REFACTORING_PLAN.md` (同步进度与留痕)
+
+### 📌 [P0] [ ] Card-178 (v1.7.133): 全息流水第三轨 — Hermes 经历微手术补丁审查与 AHE 契约漂移对抗 (Hermes Micro-Patch Review & AHE Contract Drift SSOT) ⏳
+- **预留规划**：承接第 10 阶（别名透明网关投影）与第 11 阶（Hermes 经历微手术补丁，FTS5 复盘真实对话，提议 $\le 30$ 行微手术补丁在线审查、一键回滚与 AHE 契约漂移对抗）。
+
+### 📌 [P0] [ ] Card-179 (v1.7.134): 全息流水第四轨 — 战地安全装甲拦截、事故教训反哺结晶与演进页面平滑退役 (Safety Armor Interceptor, Lessons Crystallizer & Smooth Retirement SSOT) ⏳
+- **预留规划**：承接第 12 阶（事故教训反哺结晶，整并 `EvolutionLessonsCockpit`、请求日志中的 Agent 门禁安全装甲拦截事件，实现终生免疫结晶，并平滑退役旧 `/studio/evolution` 路由做 301/重定向）。
+
+
