@@ -150,6 +150,8 @@
 | **`SensorDetailDrawer`** | `src/routes/monitoring/-components/sensor-detail-drawer.tsx` | **智能体会话探针白盒穿透抽屉**：呈现完整会话 ID、Token SNR 有效载荷信噪比与进度条、P@5 5块采纳指示、人工纠偏介入度量与物理原始 JSON，彻底切除黑盒感。 | ✅ 已交付 (v1.7.25) |
 | **`WikiDehydrationAdaptive`** | `openviking/service/wiki_dehydration_adaptive.py` | **自适应无感脱水嗅探与内容分类器**：基于芒格逆向思维实现长自然语言与文档静默无感脱水，源码与短文本零延迟直通安全保护，彻底消灭显式参数人机负担。 | ✅ 已交付 (v1.7.12) |
 | **`EmptyState`** | `src/components/common/empty-state.tsx` | 极客风空状态展示，支持图标胶囊、主副标题、可选重置筛选按钮。 | ⏳ 规划中 |
+| **`AgentCircuitBreaker`** | `~/.gemini/config/plugins/agent-circuit-breaker/` | **智能体防死循环熔断断路器官方标准插件 (四位一体)**：<br>• **MCP 服务**：暴露 `circuit_breaker_status`、`circuit_breaker_reset` 交互接口；<br>• **生命周期 Hook**：`PreToolUse` / `PostToolUse` 绝对路径 + Shell 级双重 Fail-Open 兜底；<br>• **运维技能**：`circuit-breaker-ops` 标准规程与 3070 节点秒级一键同步；<br>• **座舱 GUI**：防死循环实时遥测与高密状态看板。 | ✅ 已交付 (v1.1.0) |
+| **`B6EvolutionPipelineCockpit`** | `src/routes/skills/-components/b6-evolution-pipeline-cockpit.tsx` | **B6 全息演进流水线与运行中枢座舱**：实时队列与 SSE 脉冲监控、12 阶自适应生命周期态势图（准入熔炼 6 阶 + 闭环验真 6 阶）、工序物理贯彻契约深度穿透视窗与批处理一键执行。 | ✅ 已交付 (v1.7.130) |
 
 ---
 

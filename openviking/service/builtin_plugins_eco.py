@@ -301,6 +301,53 @@ def create_ecosystem_plugins(
         health=PluginHealthProbe(status="healthy", latency_ms=0.9, message="Cluster mesh synchronized"),
     )
 
+    # -------------------------------------------------------------
+    # 6. 智能体熔断断路器 (agent-circuit-breaker)
+    # -------------------------------------------------------------
+    circuit_breaker_tools = [
+        ToolDefinition(name="circuit_breaker_status", description="断路器健康状态与活跃会话步数/错误计数监控", category="guard"),
+        ToolDefinition(name="circuit_breaker_reset", description="重置并清空断路器会话状态缓存与报错计数器", category="guard"),
+    ]
+    for t in circuit_breaker_tools:
+        tool_to_plugin_map[t.name] = "agent-circuit-breaker"
+
+    circuit_breaker_plugin = QuadPluginDefinition(
+        plugin_id="agent-circuit-breaker",
+        name="智能体熔断断路器",
+        version="1.2.0",
+        category="user",
+        description="防死循环与 Token 烧尽物理断路器，具备二进制裸流直通与 force_ask 零误杀双重防护",
+        skill=SkillDefinition(
+            skill_id="circuit-breaker-ops",
+            name="断路器运维认知导轨",
+            description="物理级连续报错熔断、单轮步数门禁与同文件震荡拦截 SOP",
+            sop_summary="检测连续写报错 >= 3 -> 触发 force_ask 求证 -> 规约输出三行事实+双选裁决",
+            rules=[
+                "连续 3 次写报错强行冻结，禁止盲目打补丁",
+                "单轮步数硬预算 18 步，12 步渐进预警",
+                "只读探索工具 100% 免检放行",
+            ],
+        ),
+        hooks=[
+            HookDefinition(
+                hook_id="pre_tool_guard_hook",
+                name="PreTool 物理拦截守卫",
+                trigger_event="before_tool_execution",
+                description="工具执行前毫秒级拦截连续写报错与死循环震荡，零 Token 消耗神经反射弧",
+            ),
+        ],
+        tools=circuit_breaker_tools,
+        gui=GuiSchemaDefinition(
+            settings_fields={
+                "maxConsecutiveFailures": 3,
+                "maxStepBudget": 18,
+                "oscillationThreshold": 3,
+            },
+            dashboard_route="/plugins",
+        ),
+        health=PluginHealthProbe(status="healthy", latency_ms=0.5, message="Circuit breaker active"),
+    )
+
     # 注册别名映射
     aliases["dsh-plugin-openviking"] = "openviking-memory"
     aliases["dify-workflow"] = "dify"
@@ -308,6 +355,8 @@ def create_ecosystem_plugins(
     aliases["cpa"] = "cpa-squad"
     aliases["fleet"] = "fleet-mesh"
     aliases["ops"] = "openviking-ops"
+    aliases["circuit-breaker"] = "agent-circuit-breaker"
+    aliases["circuit_breaker"] = "agent-circuit-breaker"
     aliases["cpa_consult"] = "openviking_cpa_consult"
     aliases["cpa_fanout"] = "openviking_cpa_fanout"
     aliases["fleet_check"] = "openviking_fleet_check"
@@ -318,5 +367,7 @@ def create_ecosystem_plugins(
     tool_to_plugin_map["cpa_fanout"] = "cpa-squad"
     tool_to_plugin_map["fleet_check"] = "fleet-mesh"
     tool_to_plugin_map["fleet_sync"] = "fleet-mesh"
+    tool_to_plugin_map["circuit_breaker_status"] = "agent-circuit-breaker"
+    tool_to_plugin_map["circuit_breaker_reset"] = "agent-circuit-breaker"
 
-    return [keepass_plugin, search_plugin, dify_plugin, cpa_plugin, fleet_plugin]
+    return [keepass_plugin, search_plugin, dify_plugin, cpa_plugin, fleet_plugin, circuit_breaker_plugin]
