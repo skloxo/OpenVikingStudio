@@ -52,14 +52,19 @@
    - **Git 物理阻断门禁**：必须常驻安装 `.git/hooks/pre-commit` 联动 `scripts/security_check.py`，检测到敏感字符物理拒绝 Commit；
    - **衍生资产自动脱敏**：由扫描器或脚本生成的本地缓存与 JSON 资产，严禁打包真实节点密码与私有配置，且必须加入 `.gitignore` 物理隔离。
 
-7. **全项目统一开发协作范式 A 铁律与 9P 物理阻断 (Paradigm A & Anti-9P SSOT) ⭐⭐⭐⭐⭐**：
-   - **双战场职责清晰解耦**：Windows 宿主纯粹作为代码编辑与 Git 追踪主战场；WSL2（`/home/skloxo/services/openviking`）作为真实生产构建与测试运行环境，严禁代码两地手工混乱维护；
-   - **绝对物理红线**：严禁任何 Agent 针对 Windows 挂载盘（`/mnt/c/...`）直接发起 `vite build`、`pnpm`、`pytest` 等重型命令，违者物理阻断并直接判定 P0 级违规；
-   - **唯一标准化执行入口**：
-     - 日常增量同步与热更新：统一执行 `python scripts/sync_to_wsl.py -r`（~1s 极速生效）；
-     - 前端改动极速打包：统一执行 `python scripts/sync_to_wsl.py -b`（~15s Linux 原生 ext4 构建，彻底告别 3 分多钟 9P 卡死）；
-     - 正式发布与版本打标：统一执行 `python scripts/release_step.py --bump patch -m "..."`；
-   - **安全与防呆门禁**：Windows 下严禁裸写未带 `-UseBasicParsing` 的 `Invoke-WebRequest`，统一使用 `curl.exe -s`；测试由 `tests/unit/test_paradigm_a_sync_and_release.py` 自动化视网膜门禁实时守门。
+7. **全项目统一开发协作范式 A 铁律与动静分离门禁 (Paradigm A & Clean Verification SSOT) ⭐⭐⭐⭐⭐**：
+   - **双战场职责清晰解耦**：Windows 宿主纯粹作为代码编辑与 Git 追踪主战场；WSL2（`/home/skloxo/services/openviking`）作为真实生产构建与运行环境，严禁代码两地手工混乱维护；
+   - **9P 物理红线与动静分离（核心真理）**：
+     - 🛑 **重型前端构建（严禁跨盘）**：严禁针对 Windows 挂载盘（`/mnt/c/...`）直接发起 `vite build`、`pnpm`、`npm install`（因 `node_modules` 5 万碎文件 9P IO 会卡死数分钟），前端打包必须通过 `python scripts/sync_to_wsl.py -b` 在 WSL 原生 ext4 极速构建并回传；
+     - ⚡ **轻量 Python 单测（强制挂载盘直接执行，3秒极速）**：日常业务与算法单元测试，**统一直接执行 `wsl python3 -m pytest tests/unit/test_xxx.py -q`（实测 3 秒极速通过！零同步、零等待）**；
+   - **严禁滥用生产服务带电热拔插（消灭拖延症核心铁律）**：
+     - 🛑 **严禁在日常单测调试中调用 `sync_to_wsl.py -r` 重启后台常驻守护服务**！严禁将生产常驻进程当单测沙盒！违者视为严重违规；
+     - 唯一允许使用 `sync_to_wsl.py -r` 的时机：**全量单测通过后、打 Tag 发版前的最后 1 次集成验活**；
+   - **标准化执行入口**：
+     - 日常高频单测调试：`wsl python3 -m pytest tests/unit/test_xxx.py -q`（3秒极速反馈）；
+     - 前端改动极速打包：`python scripts/sync_to_wsl.py -b`（~15s Linux 原生 ext4 构建）；
+     - 正式发布与版本打标：`python scripts/release_step.py --bump patch -m "..."`；
+   - **安全与防呆门禁**：Windows 下严禁裸写未带 `-UseBasicParsing` 的 `Invoke-WebRequest`，统一使用 `curl.exe -s`。
 
 8. **知识分层与虚拟投影透明路由铁律 (Knowledge Hierarchy & Virtual Projection Routing SSOT) ⭐⭐⭐⭐⭐**：
    - **宏观高内聚收敛**：技能中心与 API 默认列表严格收敛为领域能力母包（20~21 个），底层细分工序统一通过母包下的子目录（`scenarios/`）组织，严禁在顶层任意散落单体过渡目录；
