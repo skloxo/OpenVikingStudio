@@ -12,7 +12,9 @@ import yaml
 class SkillLoader:
     """Load and parse SKILL.md files."""
 
-    FRONTMATTER_PATTERN = re.compile(r"^---\s*\n(.*?)\n---\s*\n(.*)$", re.DOTALL)
+    FRONTMATTER_PATTERN = re.compile(
+        r"^\s*---\s*\r?\n(.*?)(?:\r?\n|(?<=[^\s]))---\s*(?:\r?\n(.*))?$", re.DOTALL
+    )
 
     @staticmethod
     def _normalize_allowed_tools(value: Any) -> list[str]:
@@ -77,13 +79,9 @@ class SkillLoader:
             fixed_lines = []
             for line in frontmatter.splitlines():
                 sline = line.strip()
-                if (
-                    sline.startswith("description:")
-                    and not sline.startswith('description: "')
-                    and not sline.startswith("description: '")
-                ):
+                if sline.startswith("description:"):
                     k, v = line.split("description:", 1)
-                    clean_v = v.strip().replace('"', '\\"')
+                    clean_v = v.strip().strip('"\'\\').replace('"', '\\"')
                     fixed_lines.append(f'{k}description: "{clean_v}"')
                 else:
                     fixed_lines.append(line)
@@ -119,10 +117,43 @@ class SkillLoader:
 
     @classmethod
     def _split_frontmatter(cls, content: str) -> Tuple[Optional[str], str]:
-        """Split frontmatter and body."""
+        """Split frontmatter and body with resilient BOM & delimiter tolerance."""
+        if not content:
+            return None, ""
+
+        # 1. 物理剥离 Windows UTF-8 BOM (\ufeff)
+        content = content.lstrip("\ufeff")
+
+        # 2. 容错前导空行与空白
+        trimmed = content.lstrip()
+        if not trimmed.startswith("---"):
+            return None, content
+
+        # 3. 正则匹配：支持前导空白、CRLF与粘连闭合 ---
         match = cls.FRONTMATTER_PATTERN.match(content)
         if match:
-            return match.group(1), match.group(2)
+            return match.group(1), match.group(2) or ""
+
+        # 4. 保守按行切分兜底 (换行缺失或特殊符号粘连)
+        lines = trimmed.splitlines()
+        if lines and lines[0].strip() == "---":
+            fm_lines = []
+            body_start_idx = -1
+            for idx, line in enumerate(lines[1:], start=1):
+                sline = line.strip()
+                if sline == "---":
+                    body_start_idx = idx + 1
+                    break
+                elif sline.endswith("---") and len(sline) > 3:
+                    prefix = line[:-3]
+                    fm_lines.append(prefix)
+                    body_start_idx = idx + 1
+                    break
+                else:
+                    fm_lines.append(line)
+            if body_start_idx != -1:
+                return "\n".join(fm_lines), "\n".join(lines[body_start_idx:])
+
         return None, content
 
     @classmethod

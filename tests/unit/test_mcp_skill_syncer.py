@@ -206,3 +206,47 @@ def test_auto_ingest_skips_scenarios_and_caches_rejections():
         assert mock_client.post.call_count == 1
 
 
+def test_auto_ingest_scenario_md_and_hyphen_normalization_dedup():
+    """验证包含 .md 后缀的场景名以及下划线/连字符归一化技能被 100% 识别并跳过"""
+    from tools.skill_syncer import _synced_skills_cache
+
+    _synced_skills_cache.clear()
+
+    found_skills = {
+        "mac_production_deploy": {
+            "name": "mac_production_deploy",
+            "description": "下划线命名的本地技能",
+            "content": "---\nname: mac_production_deploy\ndescription: \"下划线技能\"\n---\n# Content",
+        },
+        "auto-pr": {
+            "name": "auto-pr",
+            "description": "已被大包收录的工序",
+            "content": "---\nname: auto-pr\ndescription: \"已收录工序\"\n---\n# Content",
+        },
+    }
+
+    mock_client = MagicMock()
+    mock_client.get.return_value = {
+        "status": "ok",
+        "result": {
+            "skills": [
+                {
+                    "name": "park-grid-governance",
+                    "scenarios": ["mac-production-deploy.md"],
+                },
+                {
+                    "name": "codebase-engineering",
+                    "scenarios": [{"name": "auto-pr.md"}],
+                },
+            ]
+        },
+    }
+
+    with patch("tools.skill_syncer.http_client", mock_client):
+        _auto_ingest_missing_to_vikingfs(found_skills)
+        # 两项均命中场景去重，绝不发起远程 POST 请求
+        assert mock_client.post.call_count == 0
+        assert "mac_production_deploy" in _synced_skills_cache
+        assert "auto-pr" in _synced_skills_cache
+
+

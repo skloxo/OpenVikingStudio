@@ -120,30 +120,44 @@ def _auto_ingest_missing_to_vikingfs(found_skills: Dict[str, Dict[str, Any]]):
         if not isinstance(res, dict) or res.get("status") != "ok":
             return
 
+        def _register_skill_alias(val: Any):
+            if not val:
+                return
+            raw_s = val if isinstance(val, str) else (val.get("name") if isinstance(val, dict) else "")
+            if not raw_s or not isinstance(raw_s, str):
+                return
+            clean_s = raw_s[:-3] if raw_s.endswith(".md") else raw_s
+            clean_s = clean_s.strip()
+            if clean_s:
+                viking_skills.add(clean_s)
+                viking_skills.add(clean_s.replace("_", "-"))
+                viking_skills.add(clean_s.replace("-", "_"))
+
         # 1. 全域场景、别名与能力大包展开收录 (Scenario, Alias & Sub-skill Awareness)
         viking_skills: set[str] = set()
         for s in res.get("result", {}).get("skills", []):
             if not isinstance(s, dict):
                 continue
             name = s.get("name")
-            if name:
-                viking_skills.add(name)
+            _register_skill_alias(name)
             # 兼容能力大包场景归并 (B6 Ante-Gate Scenarios & Aliases)
             for sc in s.get("scenarios") or []:
-                if isinstance(sc, str):
-                    viking_skills.add(sc)
-                elif isinstance(sc, dict) and sc.get("name"):
-                    viking_skills.add(sc["name"])
+                _register_skill_alias(sc)
             for al in s.get("aliases") or []:
-                if isinstance(al, str):
-                    viking_skills.add(al)
-                elif isinstance(al, dict) and al.get("name"):
-                    viking_skills.add(al["name"])
+                _register_skill_alias(al)
             for sub in s.get("sub_skills") or []:
-                if isinstance(sub, str):
-                    viking_skills.add(sub)
-                elif isinstance(sub, dict) and sub.get("name"):
-                    viking_skills.add(sub["name"])
+                _register_skill_alias(sub)
+            if s.get("parent_bundle"):
+                _register_skill_alias(s.get("parent_bundle"))
+
+        # 联动 SkillAliasingRouter 动态投影网关进行场景别名全面展开
+        try:
+            from openviking.service.skill_aliasing_router import SkillAliasingRouter
+            router = SkillAliasingRouter()
+            for alias_key in router.get_alias_map().keys():
+                _register_skill_alias(alias_key)
+        except Exception:
+            pass
 
         try:
             from openviking.core.skill_loader import SkillLoader
@@ -165,7 +179,13 @@ def _auto_ingest_missing_to_vikingfs(found_skills: Dict[str, Dict[str, Any]]):
             content_hash = hashlib.sha256(content.encode("utf-8")).hexdigest()[:16]
 
             # 场景一：已被服务端正式收录或归入大包场景 (Merged as scenario or alias)
-            if name in viking_skills:
+            normalized_dash = name.replace("_", "-")
+            normalized_under = name.replace("-", "_")
+            if (
+                name in viking_skills
+                or normalized_dash in viking_skills
+                or normalized_under in viking_skills
+            ):
                 _synced_skills_cache[name] = content_hash
                 continue
 

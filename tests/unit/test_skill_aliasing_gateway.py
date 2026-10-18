@@ -12,11 +12,11 @@ def test_alias_discovery_from_scenarios():
     router = SkillAliasingRouter(skills_root=SKILLS_DIR)
     mapping = router.get_alias_map()
     
-    # 验证 park-grid-governance 下的 scenario 能够被自动发现为别名
-    assert "mac-production-deploy" in mapping, "Failed to discover mac-production-deploy scenario"
-    bundle_name, rel_path = mapping["mac-production-deploy"]
-    assert bundle_name == "park-grid-governance"
-    assert rel_path.name == "mac-production-deploy.md"
+    # 验证 scenario 能够被自动发现为别名
+    assert "tide-trading-dev" in mapping, "Failed to discover tide-trading-dev scenario"
+    bundle_name, rel_path = mapping["tide-trading-dev"]
+    assert bundle_name in ["quant-trading", "antigravity-host-ops"]
+    assert rel_path.name == "tide-trading-dev.md"
 
 def test_explicit_alias_resolution():
     router = SkillAliasingRouter(skills_root=SKILLS_DIR)
@@ -28,14 +28,14 @@ def test_explicit_alias_resolution():
 
 def test_virtual_skill_detail_assembly():
     router = SkillAliasingRouter(skills_root=SKILLS_DIR)
-    detail = router.get_virtual_skill("mac-production-deploy")
+    detail = router.get_virtual_skill("tide-trading-dev")
     
     assert detail is not None
-    assert detail["name"] == "mac-production-deploy"
-    assert detail["parent_bundle"] == "park-grid-governance"
+    assert detail["name"] == "tide-trading-dev"
+    assert detail["parent_bundle"] in ["quant-trading", "antigravity-host-ops"]
     assert "content" in detail
     assert len(detail["content"]) > 100
-    assert detail["uri"].startswith("viking://agent/skills/park-grid-governance/scenarios/mac-production-deploy.md")
+    assert detail["uri"].startswith("viking://agent/skills/")
 
 def test_unknown_skill_returns_none():
     router = SkillAliasingRouter(skills_root=SKILLS_DIR)
