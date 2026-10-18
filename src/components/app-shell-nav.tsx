@@ -74,13 +74,6 @@ export const NAV_ITEMS: readonly NavItem[] = [
     to: '/retrieval',
   },
   {
-    icon: DnaIcon,
-    id: 'evolution',
-    section: 'workspace',
-    titleKey: 'navigation.evolution.title',
-    to: '/skills',
-  },
-  {
     icon: SparklesIcon,
     id: 'skills',
     section: 'workspace',

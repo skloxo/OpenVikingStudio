@@ -50,4 +50,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except BaseException:
+        sys.stdout.buffer.write(b"{}\n")
+        sys.stdout.buffer.flush()
+    sys.exit(0)
