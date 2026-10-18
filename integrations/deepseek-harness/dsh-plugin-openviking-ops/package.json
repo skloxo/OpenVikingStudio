@@ -1,0 +1,55 @@
+{
+  "name": "dsh-plugin-openviking-ops",
+  "version": "1.0.3",
+  "type": "module",
+  "main": "index.js",
+  "description": "后台专属运维治理、死信自愈、知识索引重建与哨兵巡检 (17 项运维特权工具 + 2 项 Hook 守卫)",
+  "keywords": [
+    "deepseek-harness",
+    "dsh-plugin",
+    "cordis",
+    "openviking",
+    "openviking-ops"
+  ],
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "schema.js",
+    "config.mjs",
+    "mcp.mjs",
+    "cordis.patch.yml",
+    "README.md",
+    "SKILL.md",
+    "servers/",
+    "shared/"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-plugin-manager",
+        "@deepseek-ai/dsh-client-ui-conversation"
+      ]
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "*",
+    "@deepseek-ai/schemastery": "*"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/cordis": {
+      "optional": true
+    },
+    "@deepseek-ai/schemastery": {
+      "optional": true
+    }
+  }
+}

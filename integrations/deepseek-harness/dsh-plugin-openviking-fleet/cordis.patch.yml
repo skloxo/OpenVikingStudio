@@ -1,0 +1,12 @@
+# 卫星集群同频运维插件 Bundle Patch for DeepSeek Harness (DSH)
+# 遵循高内聚单包自包含规范，零侵入宿主配置，内部静默自治挂载
+- insert:
+    - id: fleet-mesh
+      name: dsh-plugin-openviking-fleet
+      config:
+        endpointUrl: ""
+        userKey: ""
+        userKeyEnv: "OPENVIKING_USER_KEY"
+        userId: "default"
+        enableMcp: true
+        peer: "fleet-mesh"
