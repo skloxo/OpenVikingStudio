@@ -12,7 +12,7 @@
 | **`v1.7.121`** | **Card-157** | **消灭管理后台与插件中心版本漂移断层、彻底对齐 DSH 全系插件单一真相源 (DSH Plugins Version Drift Elimination & Builtin Ecosystem SSOT Grounding)** | 1. **版本漂移物理根因终结**：针对管理后台抽屉标题与接入指引版本脱节（抽屉顶部旧版 `v2.0.11` vs 指引最新 `v2.0.15`）痛点，在 `builtin_plugins_core.py` 与 `builtin_plugins_eco.py` 中落地 `resolve_package_version` 动态解析引擎，直连 `integrations/deepseek-harness/{pkg_name}/package.json` 单一真相源；<br>2. **全系 7 大插件版本物理对齐**：Memory (`2.0.15`)、Ops (`1.0.3`)、Fleet (`1.0.3`)、KeePass (`1.0.2`)、Dify (`1.0.1`)、CPA (`1.0.1`) 全系生态插件动态自适应，彻底铲除任何硬编码常数导致漂移的物理隐患；<br>3. **视网膜单测与断言纠偏**：更新 `tests/server/test_plugins_api.py`，将写死的历史断言对齐真实最新源，WSL 原生环境 7/7 全绿通过 (0.11s)；<br>4. **范式 A 原生极速构建与实机验真**：通过 `sync_to_wsl.py` 增量同步至 WSL2 原生目录，Vite 构建 17.39s 完成并增量回传 `dist/`，重启 `openviking.service` 校验 `/health` 返回 `v1.7.121`，`/api/v1/plugins` 探针真实返回 `openviking-memory: 2.0.15`，实机抽屉与指引 100% 严格一致。 | [x] 已验收通过 ✅ |
 | **`v1.7.129`** | **Card-170** | **Tool Output 大体积外部化与会话自动轻量化 (External Tool Call Persistence & Lightweight Session History SSOT - 上游主线 A)** | 1. 拦截大体积工具输出（> 500 字符或特定大型 JSON/抓取内容），自动计算哈希并外部化持久化为 VikingFS 影子文件；<br>2. 核心会话上下文仅保留轻量级短指针引用，大模型按需读取；<br>3. 彻底根除长文本工具执行导致 Token 爆炸与上下文截断的痛点。 | [x] 已验收通过 ✅ |
 | **`v1.7.133`** | **Card-171** | **FastMCP 外部化工具结果读取/检索端点挂载与影子文件 GC 闭环 (Tool Result FastMCP Parity & Storage Quota GC SSOT - 上游主线 A 闭环)** | 1. **FastMCP 3 大原生战地工具挂载**：在 FastMCP 服务端注册 `openviking_tool_result_read`、`openviking_tool_result_search`、`openviking_tool_result_list`，终结客户端 Agent 遭遇 `Unknown tool` 的契约断层；<br>2. **透明别名映射与能力清单更新**：在 `_install_aliased_tool_manager` 与 `client_caps_constants.py` 注入映射，确保短名/全名双向畅通；<br>3. **影子文件容量配额与过期 GC 治理**：在 `ToolResultStore` 落地 `prune_expired` 与配额清理，彻底切除长效活跃会话的磁盘黑洞隐患；<br>4. **视网膜单测与门禁全绿**：新增针对性单测全绿通过，安全审计 0 泄露。 | [x] 已验收通过 ✅ |
-| **`v1.7.135`** | **Card-172** | **Working Memory 状态机重构与轻量归纳引擎 (`wm_synthesizer.py`) (Session WM Synthesizer & Auto-Commit Refactor SSOT)** | 1. **切除历史冗余归纳逻辑**：彻底重构 `wm_synthesizer.py`，引入上游更纯粹的 Working Memory 增量推断与会话自动提炼机制；<br>2. **单文件规模安全红线**：重构后 `wm_synthesizer.py` 严格控制在 100~300 行黄金甜点区；<br>3. **视网膜单测验证**：编写覆盖状态机转换与多轮增量更新的专项单测，保障长会话记忆总结不失真。 | [ ] 正在攻坚中 ⏳ |
+| **`v1.7.135`** | **Card-172** | **Working Memory 状态机重构与轻量归纳引擎 (`wm_synthesizer.py`) (Session WM Synthesizer & Auto-Commit Refactor SSOT)** | 1. **切除历史冗余归纳逻辑**：彻底重构 `wm_synthesizer.py`，引入上游更纯粹的 Working Memory 增量推断与会话自动提炼机制；<br>2. **单文件规模安全红线**：重构后 `wm_synthesizer.py` 严格控制在 296 行黄金甜点区（红线 $\le 500$ 行）；<br>3. **视网膜单测验证**：新增 `test_card172_wm_synthesizer_state_machine.py` 8/8 全绿，连同 session 系列 17 项单测 100% 满绿通过，长会话关键事实与锚点零漂移。 | [x] 已验收通过 ✅ |
 | **`v1.7.130`** | **Card-175** | **技能中心「B6 演进流水线与全息运行中枢」核心架构、双模式切换与 12 阶态势沙盘 (B6 Evolution Pipeline, Dual-Mode Cockpit & 12-Stage Visual Map SSOT - 主线 B 首战)** | 1. **双模式无缝切换**：在 `src/routes/skills/` 顶部引入 `[ 📚 核心领域技能大盘 ]` vs `[ ⚡ B6 全息演进流水线与运行中枢 ]`，支持 URL `?mode=pipeline` 参数直达；<br>2. **12 阶工序动态态势沙盘 (12-Stage Visual Map)**：落地前 6 阶准入熔炼（排队、自愈、门禁、压缩、裁决、排他防撞）+ 后 6 阶闭环验真（视网膜验收、零退化保护、黑匣子留痕、别名投影、Hermes微手术、教训结晶）全流程动态穿透解析；<br>3. **实时脉冲与队列态势带**：挂载 `SkillEventBus` 实时心跳双工连通指示与 SQLite 准入队列深度；<br>4. **测试视网膜与安全门禁**：4 项 Vitest 单测全绿，`anti_demo_gate.py` 100% PASS，遵循单文件 100~300 行与 NO GREEN EVER 规范。 | [x] 已验收通过 ✅ |
 | **`待排期`** | **Card-176** | **全息流水第一轨 — 黑匣子演变审计与准入队列流水账本 (Provenance Ledger & Ingestion Multi-Ledger SSOT - 主线 B)** | 1. 参考任务中心表格范式（状态过滤/时间跨度），呈现 `SkillProvenanceTracker` 黑匣子证据链；<br>2. 呈现 SQLite 准入历史流水（SkillOpt 打分、自愈记录）；<br>3. 交付流水详情抽屉（快照、Diff 比对与元数据）。 | [ ] 待排期迭代 ⏳ |
 | **`待排期`** | **Card-177** | **全息流水第二轨 — Hermes 经历微手术补丁与一键安全回滚 (Hermes Patches & FTS5 Experiences SSOT - 主线 B)** | 1. 接入真实后端 `/api/v1/hermes/patches` 与 `/api/v1/hermes/summary`；<br>2. `<=30行` 微手术补丁列表、状态与一键安全 Apply/Revert；<br>3. 嵌入 FTS5 经历检索透传。 | [ ] 待排期迭代 ⏳ |
@@ -3793,8 +3793,8 @@
      - 服务端探针验活通过：HTTP 200 `{"status":"ok","healthy":true,"version":"1.7.134","auth_mode":"trusted"}`。
 - **Git Tag**：`v1.7.134`
 
-### 📌 [P0] [ ] Card-171 (v1.7.133): FastMCP 外部化工具结果读取/检索端点挂载与影子文件 GC 闭环 (Tool Result FastMCP Parity & Storage Quota GC SSOT) ⏳
-- **类型**：FastMCP 战地工具补全 / 端到端契约闭环 / 存储配额与 GC 治理 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：1.7.133 ｜ **当前状态**：[ ] 正在攻坚中 ⏳
+### 📌 [P0] [x] Card-171 (v1.7.133): FastMCP 外部化工具结果读取/检索端点挂载与影子文件 GC 闭环 (Tool Result FastMCP Parity & Storage Quota GC SSOT) ✅
+- **类型**：FastMCP 战地工具补全 / 端到端契约闭环 / 存储配额与 GC 治理 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：1.7.133 ｜ **当前状态**：[x] 已验收通过 ✅
 - **背景与芒格逆向思维第一性原理**：
   - **核心物理公理**：存根文案明确引导智能体 Use openviking_tool_result_read with ref={ref}，但服务端未在 FastMCP 挂载该工具，导致客户端 Agent 遭遇 Unknown tool 陷入排错死循环；同时影子文件缺乏容量与时间淘汰机制，存在长效磁盘膨胀隐患。
   - **闭环架构设计与物理落地**：
@@ -3803,3 +3803,25 @@
     3. **影子文件容量配额与过期清理 (ToolResultStore.prune_expired)**：在 ToolResultStore 落地 prune 机制，支持基于保留天数（默认 30 天）或单个会话结果上限自动清理过期的影子文件；
     4. **单文件规模与黄金甜点区**：新增测试文件 	ests/session/test_card171_tool_result_mcp_and_gc.py 严格控制在 100~300 行；
     5. **全绿测试与安全门禁**：WSL 原生环境下单测 100% PASS，security_check.py 0 密钥泄露。
+- **Git Tag**：`v1.7.133`
+
+### 📌 [P0] [x] Card-172 (v1.7.135): Working Memory 状态机重构与轻量归纳引擎 (Session WM Synthesizer & Auto-Commit Refactor SSOT) ✅
+- **类型**：会话长程记忆引擎 / 状态机防退化门禁 / 单文件黄金甜点区重构 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**： 1.7.135 ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与芒格逆向思维第一性原理**：
+  - **核心物理公理**：单文件超过 500 行触犯 Agent 认知注意力衰减红线；Working Memory 在长会话中容易遭遇大模型幻觉式过度压缩、核心事实/日期锚点静默丢失或遗漏已追踪代码文件路径；
+  - **闭环架构设计与物理落地**：
+    1. **切除历史冗余归纳逻辑与极客重构**：彻底重构 `openviking/session/wm_synthesizer.py`，收口为高内聚状态机转换引擎（KEEP/UPDATE/APPEND），停用词与正则紧凑高效化，消除多层防御嵌套；
+    2. **单文件规模黄金甜点区 (296行)**：从原先 556 行（超标）重构压缩至 **296 行**，完美落入 `100 ~ 300 行` 黄金甜点区（硬上限 $\le 500$ 行），零注意力漂移；
+    3. **核心事实锚点与防退化五重门禁**：
+       - `enforce_append_only`: Errors & Corrections 强制只增不减，覆写自动抢救为 APPEND；
+       - `enforce_key_facts_consolidation`: 核心锚点保护率 $\ge 70\%$ 与压缩率 $\ge 15\%$，超标截断与紧急阻断；
+       - `enforce_files_no_regression`: 自动侦测被漏掉的代码文件路径，强制追加保护；
+       - `enforce_title_stability`: 会话标题跨语义漂移自动阻断回退；
+       - `enforce_open_issues_resolved`: 未决事项未处理且被静默遗漏时，自动打上 `[silently dropped, restored]` 恢复；
+    4. **视网膜单测与回归门禁全绿**：
+       - 新增 `tests/session/test_card172_wm_synthesizer_state_machine.py` 8/8 全绿通过 (0.67s)；
+       - 结合 session 全系列回归测试 17/17 全绿通过 (2.53s)；
+       - `COMPONENT_AND_WHEEL_INVENTORY.md` 登记 WorkingMemorySynthesizer 资产；
+       - 原生 Linux Vite 编译烘焙通过 (18.69s)，Security Scan 13475 文件零泄露，Anti-Demo 239 组件 100% PASS；
+       - 服务端探针实机验活通过：HTTP 200 `{"status":"ok","healthy":true,"version":"1.7.135","auth_mode":"trusted"}`。
+- **Git Tag**：`v1.7.135`
