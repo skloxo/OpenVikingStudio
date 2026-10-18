@@ -128,10 +128,15 @@ def _auto_ingest_missing_to_vikingfs(found_skills: Dict[str, Dict[str, Any]]):
                 return
             clean_s = raw_s[:-3] if raw_s.endswith(".md") else raw_s
             clean_s = clean_s.strip()
-            if clean_s:
-                viking_skills.add(clean_s)
-                viking_skills.add(clean_s.replace("_", "-"))
-                viking_skills.add(clean_s.replace("-", "_"))
+            if not clean_s:
+                return
+            # 彻底剥离可能携带的目录路径 (例如 scenarios/foo 或 dir/foo)
+            base_name = os.path.basename(clean_s.replace("\\", "/")).strip()
+            for item in set([clean_s, base_name]):
+                if item:
+                    viking_skills.add(item)
+                    viking_skills.add(item.replace("_", "-"))
+                    viking_skills.add(item.replace("-", "_"))
 
         # 1. 全域场景、别名与能力大包展开收录 (Scenario, Alias & Sub-skill Awareness)
         viking_skills: set[str] = set()
