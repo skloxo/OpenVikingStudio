@@ -120,7 +120,7 @@ class AssembleParams:
     """Resolved request contract for one context assembly run."""
 
     query: str = ""
-    image_url: Optional[str] = None
+    image_url: str | list[str] | None = None
     limit: int = DEFAULT_LIMIT
     score_threshold: Optional[float] = None
     filter: Optional[Dict[str, Any]] = None

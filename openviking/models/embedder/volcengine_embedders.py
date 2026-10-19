@@ -497,14 +497,22 @@ class VolcengineHybridEmbedder(HybridEmbedderBase):
 
     @property
     def supports_multimodal(self) -> bool:
-        """Hybrid vectors include sparse output and therefore require text input.
+        """The dense channel accepts images independently of sparse support."""
+        return self.input_type == "multimodal"
 
-        A hybrid provider request enables sparse embedding, for which image and
-        video parts are unsupported. The base guard performs a deterministic
-        text-only downgrade for mixed content. Image-only search remains
-        unsupported because dropping its only input would produce an empty query.
-        """
-        return False
+    def _embedding_requests(self, content: "EmbeddingInput") -> List[Dict[str, Any]]:
+        parts = to_multimodal_input(content)
+        if all(part.get("type") == "text" for part in parts):
+            return [{"input": parts, "sparse_embedding": {"type": "enabled"}}]
+        # Ark rejects media when sparse output is enabled. Keep every media
+        # part in the dense request, and derive sparse weights from text only.
+        requests = [{"input": parts}]
+        text = extract_text_from_content(content)
+        if text.strip():
+            requests.append(
+                {"input": to_multimodal_input(text), "sparse_embedding": {"type": "enabled"}}
+            )
+        return requests
 
     def embed(self, content: "EmbeddingInput", is_query: bool = False) -> EmbedResult:
         """Perform hybrid embedding on text or multimodal content
@@ -522,22 +530,20 @@ class VolcengineHybridEmbedder(HybridEmbedderBase):
         """
 
         def _embed_call():
-            # Always use multimodal for hybrid to get both
-
-            response = self.client.multimodal_embeddings.create(
-                input=to_multimodal_input(content),
-                model=self.model_name,
-                sparse_embedding={"type": "enabled"},
-                extra_headers=self.extra_headers,
-            )
-            self._update_telemetry_token_usage(response)
-            item = response.data
-            dense_vector = truncate_and_normalize(item.embedding, self.dimension)
-            sparse_vector = getattr(item, "sparse_embedding", None)
-
-            return EmbedResult(
-                dense_vector=dense_vector, sparse_vector=process_sparse_embedding(sparse_vector)
-            )
+            dense_vector = None
+            sparse_vector = None
+            for request in self._embedding_requests(content):
+                response = self.client.multimodal_embeddings.create(
+                    model=self.model_name, extra_headers=self.extra_headers, **request
+                )
+                self._update_telemetry_token_usage(response)
+                if dense_vector is None:
+                    dense_vector = truncate_and_normalize(response.data.embedding, self.dimension)
+                if "sparse_embedding" in request:
+                    sparse_vector = process_sparse_embedding(
+                        getattr(response.data, "sparse_embedding", None)
+                    )
+            return EmbedResult(dense_vector=dense_vector, sparse_vector=sparse_vector)
 
         try:
             return self._run_with_retry(
@@ -557,20 +563,20 @@ class VolcengineHybridEmbedder(HybridEmbedderBase):
         client = self._get_async_client()
 
         async def _embed_call() -> EmbedResult:
-            response = await client.multimodal_embeddings.create(
-                input=to_multimodal_input(content),
-                model=self.model_name,
-                sparse_embedding={"type": "enabled"},
-                extra_headers=self.extra_headers,
-            )
-            self._update_telemetry_token_usage(response)
-            item = response.data
-            dense_vector = truncate_and_normalize(item.embedding, self.dimension)
-            sparse_vector = getattr(item, "sparse_embedding", None)
-            return EmbedResult(
-                dense_vector=dense_vector,
-                sparse_vector=process_sparse_embedding(sparse_vector),
-            )
+            dense_vector = None
+            sparse_vector = None
+            for request in self._embedding_requests(content):
+                response = await client.multimodal_embeddings.create(
+                    model=self.model_name, extra_headers=self.extra_headers, **request
+                )
+                self._update_telemetry_token_usage(response)
+                if dense_vector is None:
+                    dense_vector = truncate_and_normalize(response.data.embedding, self.dimension)
+                if "sparse_embedding" in request:
+                    sparse_vector = process_sparse_embedding(
+                        getattr(response.data, "sparse_embedding", None)
+                    )
+            return EmbedResult(dense_vector=dense_vector, sparse_vector=sparse_vector)
 
         try:
             return await self._run_with_async_retry(

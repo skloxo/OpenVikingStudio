@@ -12,7 +12,7 @@
 | **`v1.7.152`** | **Card-195** | **跨平台路径自适应解析与落盘即向量入籍全闭环 (Adaptive Skills Path & Zero-Latency Indexing SSOT - 主线 E 终战)** | 1. **拔除路径硬编码**：落地 `skill_path_resolver.py`，全库铲除 9 处个人开发机路径，自适应 Windows/WSL2/Linux；<br>2. **落盘即向量入籍与别名刷新**：Stage 5 落盘完成后即刻刷新场景别名路由表，广播 `SKILLS_MUTATED` 与 `PIPELINE_PULSE`，0 毫秒即查；<br>3. **测试视网膜全绿**：新增 `test_card195_adaptive_skills_path_and_indexing.py` 4/4 全绿，联合回归 23/23 满绿通过。 | [x] 已验收通过 ✅ |
 | **`v1.7.144`** | **Card-187** | **Session 高并发读写去重、归档锁解耦与状态机收敛 (Session IO De-duplication & Lock Decoupling SSOT - 缺陷治理)** | 1. **归档死锁物理根除**：将 `task_tracker.create` 彻底移出 `_archive_lock` 临界区及 `pathlock_release` 外部，独立 try-except 保护，根除跨线程死锁；<br>2. **状态机单轨收敛**：从 `SessionService` 移除冗余的 `extract` 方法，从路由层移除 `POST /{session_id}/extract`，会话归档提纯统一收敛至 `SessionCommit`；<br>3. **会话读写解耦与热读优化**：在 `session_service.py` 落地 `open()` 方法避免写前无谓反序列化全量历史消息，`commit_async`、`update_config`、`add_message`、`batch_add_messages` 全面对齐 `open()`；在 `namespace.py` 增强 `session` 别名解析；<br>4. **视网膜单测 58/58 全绿**：新增 `test_card187_session_concurrency_and_lock_decoupling.py` 3/3 全绿，`test_api_sessions.py` 50/50 全绿，`test_session_service_metrics.py` 5/5 全绿通过。 | [x] 已验收通过 ✅ |
 | **`v1.7.145`** | **Card-188** | **AGFS 事务加固、解析管线防崩防丢与脏快照熔断 (PathLock Non-blocking, Parser Crash Prevention & Anti-Stale-Upsert SSOT - 缺陷治理)** | 1. **PDFium 进程级互斥锁**：在 `pdf.py` 增加 `_PDFIUM_LOCK`，彻底消灭底层 C++ 多线程并发渲染段错误崩溃；<br>2. **Markdown 顶级标题前内容保真**：在 `markdown.py` 将前置虚拟章节锚定在首个最高级标题，彻底根除顶级标题前出现次级标题（如 `## Preface` 前于 `# Chapter 1`）被静默丢弃缺陷；<br>3. **飞书表格管道符转义**：在 `base.py` 将单元格 `|` 转义为 `\|`，折叠多行并保底 3 字符，彻底杜绝表格解析结构散架；<br>4. **脏快照覆写物理阻断**：在 `memory_updater.py` 严格收敛异常仅允许 `(NotFoundError, FileNotFoundError)`，阻断脏内存覆写磁盘最新记忆；<br>5. **视网膜单测全绿**：新增 `test_card188_parser_crash_and_data_loss_prevention.py` 4/4 全绿，55/55 解析回归通过，33/33 记忆回归通过。 | [x] 已验收通过 ✅ |
-| **`v1.7.146`** | **Card-189** | **全域伪概念与悬空代码彻底斩杀 (DSPy Pseudo Compiler Purge, Misplaced Sandbox Pruning & Anti-Demo Hardening SSOT - 主线 D 首战)** | 1. **物理铲除山寨 DSPy 伪概念**：彻底删除 `routers/dspy_compiler.py`、`service/dspy_*.py` 以及前端 `dspy-compiler-cockpit.tsx`，清退 3,014 行代码；<br>2. **收敛 `/retrieval` 杂物间**：剥离无关异类沙箱，使检索页纯化为单阶段混合召回与时间衰减中枢；<br>3. **门禁与全域验真**：`anti_demo_gate.py` 233 个组件 100% 通过，Git commit `016df6aef`。 | [x] 已验收通过 ✅ |
+| **`v1.7.146`** | **Card-189** | **多模态混合检索扩展与显式作用域保护 / 检索打分纠偏 (Multimodal Hybrid Query, Scope Protection & Scoring Debias SSOT - 缺陷治理与特性吸收)** | 1. **多模态 Query 扩展**：`image_search.py` 支持 `list[str]` 图片解析与标准化；`search_service.py` 增强 `_resolve_image_url` 异步批量支持；<br>2. **显式作用域保护**：在 `_semantic.py` 中将 `has_explicit_target=bool(retrieval_targets.first_explicit_directory)` 精准透传至 `retriever.retrieve`，彻底修复默认目录展开误导检索器判定显式目标导致图片默认搜索被污染的物理缺陷；<br>3. **复合混合嵌入多模态路由**：`CompositeHybridEmbedder` 稠密通道纳管多模态图片，稀疏通道自动安全跳过纯图输入规避报错；`VolcengineHybridEmbedder` 稠密与稀疏分离执行；<br>4. **视网膜单测与门禁全绿**：新增 `test_card189_multimodal_hybrid_and_scope_protection.py` 7/7 全绿，`tests/retrieve` 与 `tests/parse` 512 项回归测试全部通过，Security Scan 13,534 文件零泄露，Anti-Demo 233 组件 100% PASS。 | [x] 已验收通过 ✅ |
 | **`v1.7.147`** | **Card-190** | **三大通用原子引擎抽离与多端复用中枢 (Universal Content Reducer, Unified Lifecycle Engine & Audit Ledger SSOT - 主线 D)** | 1. **UniversalContentReducer**：多模态内容脱水压缩（CODE/SKILL/TEXT），自动类型嗅探，正则冻结 YAML 与代码块，AST 语法验真与 Fail-Open 兜底，注册 FastMCP `openviking_content_reduce`；<br>2. **UnifiedLifecycleEngine**：5 阶标准状态机（INGESTED ➔ EVALUATING ➔ REDUCING ➔ VALIDATING ➔ COMMITTED），线程安全，前置守卫与后置监听解耦；<br>3. **UniversalAuditLedger**：线程安全 SQLite 不可变事件账本，支持多维时间线检索与超期归档；<br>4. **双全验证全绿**：11/11 单测通过，19/19 回归测试通过，Vite 编译通过，Git commit `c8354929a`。 | [x] 已验收通过 ✅ |
 | **`v1.7.148`** | **Card-191** | **存量高价值能力自愈与自驱闭环补齐 (Automate Tri-Gate Dreamer, Hermes Flash Nudge & AHE Pre-Release Gate SSOT - 主线 D)** | 1. **OfflineDreamer 闭环驱动**：打通 `OfflineDreamer` 与 `UnifiedLifecycleEngine` 状态机推进，归纳蒸馏自动生成 Master Card 并沉淀至 `UniversalAuditLedger`；<br>2. **Hermes 结构化归因与微手术**：落地 `StructuredAttribution`，自动解析调用栈/工具报错，分类并提议 `<=30` 行微手术补丁，暴露 `/api/v1/hermes/attribute` 与 `/attributions` 端点；<br>3. **AHE Pre-Release 自动化门禁**：自动装载核心系统不变性（Fail-Open 保证、<=30行补丁限制），运行快照漂移与 Polar 沙箱检测，作为 `VALIDATING ➔ COMMITTED` 状态守卫阻断违约提交，暴露 `/api/v1/ahe/gate/check` 端点；<br>4. **测试与视网膜门禁全绿**：8/8 专项单测通过，19/19 回归测试通过，Vite 构建编译全绿 (18.33s)，`anti_demo_gate.py` 233 组件 100% PASS。 | [x] 已验收通过 ✅ |
 | **`v1.7.149`** | **Card-192** | **前端座舱纯化重构与视网膜终验 (Skills Pure Dual-Mode Cockpit, Cleanse Retrieval & Ground Guardrails SSOT - 主线 D 终战)** | 1. **技能中心纯粹化**：保持 21 母包极客资产大盘 + B6 自主演进流水线双模式，全量纳管 827 个工序别名透明投影与实时审计事实流；<br>2. **知识检索极简纯化**：彻底切除 4 大非检索异类沙箱（LLMLingua、TokenShift、Valet、ContextRouter），聚焦单阶段混合召回、时间衰减与三门结晶谱系，单文件降至 292 行黄金甜点区；<br>3. **安全装甲脱虚向实**：修复 HarnessGuardrailsCockpit 数据透传，断路器与真实拦截事件脱虚向实；<br>4. **视网膜双全满绿通过**：Vitest 10 套件 45 项测试全绿，Pytest 21 项回归全绿，Vite 编译 18.59s 零报错，`anti_demo_gate.py` 233 组件 100% PASS。 | [x] 已验收通过 ✅ |
@@ -4018,14 +4018,24 @@
 
 ---
 
-### 📌 [P0] [ ] Card-189 (v1.7.146): 多模态混合检索扩展与 AML 载荷支持 (Multimodal Hybrid Query & AML Payload SSOT) ⏳
-- **类型**：多模态混合检索 / AML 载荷 / 纠正 token 重叠偏见 ｜ **优先级**：🔥🔥 P1 ｜ **目标版本**： 1.7.146 ｜ **当前状态**：[ ] 待排期迭代 ⏳
+### 📌 [P0] [x] Card-189 (v1.7.146): 多模态混合检索扩展与显式作用域保护 / 检索打分纠偏 (Multimodal Hybrid Query, Scope Protection & Scoring Debias SSOT) ✅
+- **类型**：多模态混合检索 / 显式作用域保护 / 复合嵌入稠稀分离 ｜ **优先级**：🔥🔥 P0 ｜ **目标版本**： 1.7.146 ｜ **当前状态**：[x] 已验收通过 ✅ (v1.7.146)
 - **背景与第一性原理**：
-  - **核心痛点**：当前检索主要处理纯文本 Query，图文混合检索缺乏标准化协议；且 Hermes 召回打分中强行叠加 query-token 重叠度，导致长 Query 检索严重偏向关键词匹配；
-  - **上游神级设计**：上游在 Commit `855d0928a` 与 `6bd89a36b` 引入了多模态混合查询载荷与 AML 结构；
-  - **本地平滑兼并方案**：
-    1. **多模态 Query 扩展**：在 `GlobalHybridRetriever` 中增加对图像 + 文本混合载荷的向量化适配；
-    2. **纠正虚假提权**：剔除 recall ranking 中粗暴叠加的 token-overlap 偏向，完全交由混合密集向量与交叉精排模型打分。
+  - **核心痛点**：
+    1. 图文混合检索缺乏对 `list[str]` 批量图片的直接支持，客户端传入图片数组触发类型崩溃；
+    2. `_semantic.py` 内部展开默认目录后未向底座检索器传递 `has_explicit_target` 物理事实，导致默认图片搜索错误命中显式目标分支被污染覆写；
+    3. `CompositeHybridEmbedder` 强制要求密集与稀疏两端同时支持多模态，导致纯图片输入触发稀疏嵌入报错崩溃。
+  - **上游神级设计**：上游在 Commit `855d0928a`（多模态混合检索扩展与 scope 保护）与 `6bd89a36b`（召回打分纯化）中解耦了多模态密集通路与文本稀疏通路，并注入了 `has_explicit_target` 保护显式作用域；
+  - **本地落地与吸收**：
+    1. **多模态批量输入**：在 `image_search.py` 扩展 `build_multimodal_embedding_input` 与 `normalize_client_image_input` 支持 `str | list[str] | None`；在 `search_service.py` 落地异步批量 `_resolve_image_url`；
+    2. **显式作用域与默认目标保护**：在 `_semantic.py` 的 `find` 与 `search` 中，将 `has_explicit_target=bool(retrieval_targets.first_explicit_directory)` 精准透传给底层检索器，根绝默认目录展开造成的假阳性覆盖；
+    3. **复合混合嵌入密集/稀疏分离执行**：`CompositeHybridEmbedder.supports_multimodal` 由密集通道独立裁决；对纯图输入自动安全短路稀疏通道（`sparse_vector=None`），彻底消灭纯图检索下的稀疏报错；
+    4. **Volcengine 混合嵌入解耦**：`VolcengineHybridEmbedder` 独立派发密集通道与稀疏文本通道。
+- **交付留痕 (Verification & Evidence)**：
+  - **版本号 SSOT**：`v1.7.146` (`openviking/_version.py`, `package.json`)；
+  - **单测视网膜**：`tests/retrieve/test_card189_multimodal_hybrid_and_scope_protection.py` 7/7 全绿，`tests/retrieve` 与 `tests/parse` 512 项回归测试全部通过；
+  - **编译与门禁**：Vite 构建 19.51s 完成，Security Scan 13,534 文件零泄露，`anti_demo_gate.py` 233 组件 100% PASS；
+  - **运行体验真**：WSL2 服务重启探针 HTTP 200 返回 `{"status":"ok","healthy":true,"version":"1.7.146","auth_mode":"trusted"}`。
 
 ---
 
