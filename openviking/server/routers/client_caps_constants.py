@@ -73,7 +73,6 @@ OPS_17_TOOLS: List[Dict[str, Any]] = [
     {"id": "openviking_mv", "name": "mv", "description": "移动知识资源节点路径"},
     {"id": "openviking_rename", "name": "rename", "description": "重命名知识资源节点"},
     {"id": "openviking_webdav_info", "name": "webdav_info", "description": "WebDAV 挂载服务状态与连接凭据"},
-    {"id": "openviking_dspy_compile", "name": "dspy_compile", "description": "提示词 DSPy 签名编译"},
     {"id": "openviking_memory_purity_report", "name": "memory_purity_report", "description": "概念漂移与记忆纯度审计报告"},
     {"id": "openviking_retry_dead_letter", "name": "retry_dead_letter", "description": "单条重试 QueueFS 失败死信消息"},
     {"id": "openviking_list_watches", "name": "list_watches", "description": "查看活跃的文件系统监听任务"},

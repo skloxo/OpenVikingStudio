@@ -50,11 +50,11 @@ export function HarnessGuardrailsCockpit() {
     staleTime: 15_000,
   })
 
-  const metrics = harnessStatusQuery.data
-  const activeGatesCount = metrics?.gates
+  const hasGates = Boolean(metrics?.gates && Object.keys(metrics.gates).length > 0)
+  const activeGatesCount = hasGates
     ? Object.values(metrics.gates).filter((g: any) => g.status === 'active').length
-    : 5
-  const totalGatesCount = metrics?.gates ? Object.keys(metrics.gates).length : 5
+    : null
+  const totalGatesCount = hasGates ? Object.keys(metrics.gates).length : null
 
   return (
     <div className="flex flex-col gap-4">
@@ -63,15 +63,17 @@ export function HarnessGuardrailsCockpit() {
         <div className="rounded-md border border-border/70 bg-card p-3 shadow-xs">
           <div className="text-xs text-muted-foreground">物理贯彻门禁</div>
           <div className="mt-1 font-mono text-xl font-bold text-cyan-700 dark:text-cyan-400">
-            {activeGatesCount} / {totalGatesCount}
-            <span className="ml-1 text-xs font-normal text-muted-foreground">项已激活</span>
+            {activeGatesCount !== null ? `${activeGatesCount} / ${totalGatesCount}` : '--'}
+            <span className="ml-1 text-xs font-normal text-muted-foreground">
+              {activeGatesCount !== null ? '项已激活' : '待遥测'}
+            </span>
           </div>
         </div>
 
         <div className="rounded-md border border-border/70 bg-card p-3 shadow-xs">
           <div className="text-xs text-muted-foreground">确定性状态机</div>
           <div className="mt-1 font-mono text-xl font-bold text-cyan-700 dark:text-cyan-400">
-            {metrics?.fsm?.states?.length ?? 12}
+            {metrics?.fsm?.states?.length ?? '--'}
             <span className="ml-1 text-xs font-normal text-muted-foreground">态 Deterministic</span>
           </div>
         </div>
@@ -79,7 +81,7 @@ export function HarnessGuardrailsCockpit() {
         <div className="rounded-md border border-border/70 bg-card p-3 shadow-xs">
           <div className="text-xs text-muted-foreground">FSM 转移规则</div>
           <div className="mt-1 font-mono text-xl font-bold text-foreground">
-            {metrics?.fsm?.transition_rules_count ?? 26}
+            {metrics?.fsm?.transition_rules_count ?? '--'}
             <span className="ml-1 text-xs font-normal text-muted-foreground">条有向边</span>
           </div>
         </div>

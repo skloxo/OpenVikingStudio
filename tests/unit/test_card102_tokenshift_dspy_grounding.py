@@ -14,10 +14,6 @@ from openviking.service.tokenshift_apply import (
     ApplyTokenShiftRequest,
     TokenShiftApplyService,
 )
-from openviking.service.dspy_apply import (
-    ApplyDSPyRequest,
-    DSPyApplyService,
-)
 
 
 @pytest.fixture
@@ -142,62 +138,6 @@ def test_tokenshift_apply_skeleton_and_inplace(temp_project):
         service.apply_compression(req_bad_syntax)
 
 
-def test_dspy_list_and_read_templates(temp_project):
-    service = DSPyApplyService(
-        templates_dir=temp_project["prompts_dir"],
-        compiled_dir=temp_project["compiled_dir"],
-        backup_root=temp_project["backup"] / "dspy",
-    )
-
-    templates = service.list_prompt_templates()
-    assert len(templates) >= 1
-    assert templates[0].id == "test_cat.greet"
-    assert templates[0].category == "test_cat"
-
-    # Read template
-    data = service.read_prompt_template("test_cat/greet.yaml")
-    assert data["name"] == "Greeting Template"
-    assert "Hello, {{ username }}!" in data["template"]
-
-    # Security check: path traversal
-    with pytest.raises(ValueError, match="Path traversal detected"):
-        service.read_prompt_template("../../../etc/shadow")
-
-
-def test_dspy_apply_compiled_and_inplace(temp_project):
-    service = DSPyApplyService(
-        templates_dir=temp_project["prompts_dir"],
-        compiled_dir=temp_project["compiled_dir"],
-        backup_root=temp_project["backup"] / "dspy",
-    )
-
-    compiled_text = "[MIPO STRICT SCHEMA]\nINPUT: username (string)\nOUTPUT: greeting (string)\nRULE: zero hallucination"
-
-    # 1. Compiled file mode
-    req_compiled = ApplyDSPyRequest(
-        rel_path="test_cat/greet.yaml",
-        compiled_prompt=compiled_text,
-        signature_name="GreetSignature",
-        mode="compiled_file",
-    )
-    res_compiled = service.apply_compiled_prompt(req_compiled)
-    assert res_compiled.success is True
-    assert "greet.compiled.yaml" in res_compiled.target_path
-    assert Path(res_compiled.snapshot_path).exists()
-    assert Path(res_compiled.target_path).exists()
-
-    # 2. In-place overwrite mode
-    req_inplace = ApplyDSPyRequest(
-        rel_path="test_cat/greet.yaml",
-        compiled_prompt="Updated template in place",
-        mode="in_place",
-    )
-    res_inplace = service.apply_compiled_prompt(req_inplace)
-    assert res_inplace.success is True
-    updated_yaml = temp_project["tpl_file"].read_text(encoding="utf-8")
-    assert "Updated template in place" in updated_yaml
-
-
 def test_card102_api_endpoints_live():
     """Verify live API routes registered with FastAPI."""
     from openviking.server.auth import get_request_context
@@ -226,17 +166,4 @@ def test_card102_api_endpoints_live():
     assert res_read.status_code == 200
     assert "content" in res_read.json()
 
-    # 3. DSPy templates catalog
-    res_dspy = client.get("/api/v1/dspy/templates?limit=10")
-    assert res_dspy.status_code == 200
-    templates = res_dspy.json()
-    assert isinstance(templates, list)
-    assert len(templates) > 0
-    assert "id" in templates[0]
-
-    # 4. DSPy read template
-    first_tpl_path = templates[0]["rel_path"]
-    res_tpl_read = client.get(f"/api/v1/dspy/template?path={first_tpl_path}")
-    assert res_tpl_read.status_code == 200
-    assert "template" in res_tpl_read.json()
 

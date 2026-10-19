@@ -86,47 +86,8 @@ async def get_harness_metrics(
                 "status": "offline",
             }
 
-        # 2. 斯坦福 DSPy (MIPO) 真实运行态数据 (DSPyCompilerEngine)
-        try:
-            from openviking.service.dspy_compiler_engine import DSPyCompilerEngine
-            dspy_engine = DSPyCompilerEngine.get_instance()
-            dspy_stats = dspy_engine.get_stats()
-
-            if dspy_stats.total_compilations > 0:
-                comp_accuracy = round(100.0 * dspy_stats.pass_contract_count / dspy_stats.total_compilations, 1)
-                ast_gate = 100.0
-                dspy_status = "healthy"
-            else:
-                comp_accuracy = None
-                ast_gate = 100.0
-                dspy_status = "ready"
-
-            metrics["dspy"] = {
-                "compilation_accuracy": comp_accuracy,
-                "target_threshold": ">95%",
-                "ast_gate_rate": ast_gate,
-                "avg_latency_ms": dspy_stats.average_latency_ms,
-                "total_compilations": dspy_stats.total_compilations,
-                "pass_contract_count": dspy_stats.pass_contract_count,
-                "total_original_tokens": dspy_stats.total_original_tokens,
-                "total_compiled_tokens": dspy_stats.total_compiled_tokens,
-                "active_engine": "stanford/dspy-mipo (In-Process)",
-                "status": dspy_status,
-            }
-        except Exception as e:
-            logger.warning(f"Error fetching DSPyCompilerEngine stats: {e}")
-            metrics["dspy"] = {
-                "compilation_accuracy": None,
-                "target_threshold": ">95%",
-                "ast_gate_rate": None,
-                "avg_latency_ms": 0.0,
-                "total_compilations": 0,
-                "pass_contract_count": 0,
-                "total_original_tokens": 0,
-                "total_compiled_tokens": 0,
-                "active_engine": "unavailable",
-                "status": "offline",
-            }
+        # 2. 斯坦福 DSPy 伪编译器已物理退役 (Card-189 SSOT)
+        metrics["dspy"] = None
         fsm_meta = get_harness_fsm_meta()
         gates_meta = HARNESS_GATES_META
 
@@ -364,14 +325,12 @@ async def bisection_heal_simulation_probe(
 async def trigger_harness_probe(
     _ctx: RequestContext = Depends(get_request_context),
 ):
-    """Execute live physical verification probe for LLMLingua-2 and Stanford DSPy Compiler."""
+    """Execute live physical verification probe for LLMLingua-2 Dehydration Engine."""
     import time
     from openviking.service.wiki_dehydration_engine import (
         WikiDehydrationEngine,
         DehydrationRequest,
     )
-    from openviking.service.dspy_compiler_engine import DSPyCompilerEngine
-    from openviking.service.dspy_compiler_types import DSPyCompileRequest
 
     results: Dict[str, Any] = {
         "status": "ok",
@@ -410,36 +369,7 @@ async def trigger_harness_probe(
             "engine": "microsoft/llmlingua-2 (CUDA FP16)",
         }
 
-    # 2. 斯坦福 DSPy 编译器物理探针
-    try:
-        dspy_engine = DSPyCompilerEngine.get_instance()
-        prompt_sample = (
-            "Task: System Diagnostic Probe Analysis\n"
-            "Input: query\n"
-            "Output: diagnosis\n"
-            "Constraint: MUST adhere to strict type schema"
-        )
-        t0 = time.perf_counter()
-        dspy_res = dspy_engine.compile(
-            DSPyCompileRequest(raw_prompt=prompt_sample, signature_name="SystemDiagnosticProbe")
-        )
-        dspy_latency = (time.perf_counter() - t0) * 1000
-
-        results["dspy"] = {
-            "passed": dspy_res.contract_status in ("PASS", "PARTIAL"),
-            "contract_status": dspy_res.contract_status,
-            "latency_ms": round(dspy_latency, 2),
-            "accuracy": 1.0 if dspy_res.contract_status == "PASS" else 0.8,
-            "signature": dspy_res.signature.name,
-            "original_tokens": dspy_res.original_token_count,
-            "compiled_tokens": dspy_res.compiled_token_count,
-            "engine": "stanford/dspy-mipo (In-Process)",
-        }
-    except Exception as e:
-        results["dspy"] = {
-            "passed": False,
-            "error": str(e),
-            "engine": "stanford/dspy-mipo (In-Process)",
-        }
+    # 2. 斯坦福 DSPy 编译器已物理退役 (Card-189 SSOT)
+    results["dspy"] = None
 
     return JSONResponse(status_code=200, content=results)

@@ -17,7 +17,6 @@ import re
 from openviking.server.mcp_endpoint import (
     openviking_valet_handover,
     openviking_valet_ticket_status,
-    openviking_dspy_compile,
     openviking_skill_zip,
     openviking_tokenshift_compress,
     openviking_memory_purity_report,
@@ -48,25 +47,6 @@ async def test_mcp_valet_tools():
     assert ticket_id in status_res
     assert "Target URI: viking://resources/mcp_test_doc.md" in status_res
     assert "Status:" in status_res
-
-
-@pytest.mark.asyncio
-async def test_mcp_dspy_compile_tool():
-    """Verify DSPy prompt compilation tool through FastMCP."""
-    raw_prompt = """
-    输入字段: query, context
-    输出字段: answer
-    Objective: Answer user question accurately based on context.
-    """
-    res = await openviking_dspy_compile(
-        raw_prompt=raw_prompt,
-        task_objective="Answer user query",
-        signature_name="QASignature",
-    )
-    assert "DSPy Prompt Compilation" in res
-    assert "QASignature" in res
-    assert "query" in res
-    assert "answer" in res
 
 
 @pytest.mark.asyncio

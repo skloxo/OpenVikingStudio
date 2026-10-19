@@ -91,7 +91,6 @@ from openviking.server.routers import (
     skill_opt_router,
     tokenshift_router,
     context_router,
-    dspy_compiler_router,
     task_cards_router,
     code_catalog_router,
     privacy_gov_router,
@@ -776,7 +775,6 @@ def create_app(
     app.include_router(skill_opt_router)
     app.include_router(tokenshift_router)
     app.include_router(context_router)
-    app.include_router(dspy_compiler_router)
     app.include_router(task_cards_router)
     app.include_router(code_catalog_router)
     app.include_router(privacy_gov_router)

@@ -40,7 +40,7 @@ def get_active_states() -> list:
     name="circuit_breaker_status",
     description="查看当前 Antigravity 宿主断路器的运行状态、活跃会话步数与错误计数监控大屏"
 )
-def circuit_breaker_status(session_id: Optional[str] = None) -> str:
+def circuit_breaker_status(session_id: Optional[str] = None):
     """查询断路器状态监控座舱"""
     states = get_active_states()
     if session_id:
@@ -82,7 +82,7 @@ def circuit_breaker_status(session_id: Optional[str] = None) -> str:
     name="circuit_breaker_reset",
     description="重置并清空断路器会话状态缓存与报错计数器"
 )
-def circuit_breaker_reset(session_id: Optional[str] = None) -> str:
+def circuit_breaker_reset(session_id: Optional[str] = None):
     """重置断路器会话状态缓存与计数器"""
     sdir = get_state_dir()
     count = 0

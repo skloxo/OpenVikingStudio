@@ -2205,35 +2205,6 @@ async def openviking_valet_ticket_status(ticket_id: str) -> str:
     )
 
 
-@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
-async def openviking_dspy_compile(
-    raw_prompt: str,
-    task_objective: str = "",
-    signature_name: str = "TaskExecution",
-) -> str:
-    """Compile a loose prompt into a strongly-typed DSPy signature schema with contract validation."""
-    from openviking.service.dspy_compiler_engine import DSPyCompilerEngine
-    from openviking.service.dspy_compiler_types import DSPyCompileRequest
-
-    engine = DSPyCompilerEngine.get_instance()
-    req = DSPyCompileRequest(
-        raw_prompt=raw_prompt,
-        task_objective=task_objective,
-        signature_name=signature_name,
-    )
-    res = engine.compile(req)
-    saved_tokens = max(0, res.original_token_count - res.compiled_token_count)
-    lines = [
-        f"=== DSPy Prompt Compilation ({res.contract_status}) ===",
-        f"Signature: {res.signature.name}",
-        f"Objective: {res.signature.task_objective}",
-        f"Input Fields: {', '.join([f.name for f in res.signature.input_fields])}",
-        f"Output Fields: {', '.join([f.name for f in res.signature.output_fields])}",
-        f"Tokens Saved: {saved_tokens} (Ratio: {res.compression_ratio:.1%})",
-        f"Compiled Prompt:\n{res.compiled_prompt}",
-    ]
-    return "\n".join(lines)
-
 
 @mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
 async def openviking_skill_zip(skill_content: str) -> str:
@@ -2720,8 +2691,6 @@ async def openviking_harness_probe() -> str:
         WikiDehydrationEngine,
         DehydrationRequest,
     )
-    from openviking.service.dspy_compiler_engine import DSPyCompilerEngine
-    from openviking.service.dspy_compiler_types import DSPyCompileRequest
 
     results: Dict[str, Any] = {"status": "ok", "timestamp": time.time()}
 
@@ -2749,31 +2718,8 @@ async def openviking_harness_probe() -> str:
     except Exception as e:
         results["llmlingua"] = {"passed": False, "error": str(e)}
 
-    try:
-        dspy_engine = DSPyCompilerEngine.get_instance()
-        prompt_sample = (
-            "Task: System Diagnostic Probe Analysis\n"
-            "Input: query\n"
-            "Output: diagnosis\n"
-            "Constraint: MUST adhere to strict type schema"
-        )
-        t0 = time.perf_counter()
-        dspy_res = dspy_engine.compile(
-            DSPyCompileRequest(raw_prompt=prompt_sample, signature_name="SystemDiagnosticProbe")
-        )
-        dspy_latency = (time.perf_counter() - t0) * 1000
-        results["dspy"] = {
-            "passed": dspy_res.contract_status in ("PASS", "PARTIAL"),
-            "contract_status": dspy_res.contract_status,
-            "latency_ms": round(dspy_latency, 2),
-            "accuracy": 1.0 if dspy_res.contract_status == "PASS" else 0.8,
-            "signature": dspy_res.signature.name,
-            "original_tokens": dspy_res.original_token_count,
-            "compiled_tokens": dspy_res.compiled_token_count,
-            "engine": "stanford/dspy-mipo (In-Process)",
-        }
-    except Exception as e:
-        results["dspy"] = {"passed": False, "error": str(e)}
+    # 2. 斯坦福 DSPy 编译器已物理退役 (Card-189 SSOT)
+    results["dspy"] = None
 
     return json.dumps(results, ensure_ascii=False, indent=2)
 
