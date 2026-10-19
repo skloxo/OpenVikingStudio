@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Iterable, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Iterable, Literal, Mapping, Sequence
+
+from pydantic import BaseModel, ConfigDict, model_validator
 
 from openviking.core.identifiers import validate_identifier_part, validate_user_id
 from openviking.core.namespace import uri_parts
@@ -52,6 +54,35 @@ class AclEntry:
 
     def to_dict(self) -> dict[str, str]:
         return {"principal": self.principal, "level": self.level.value}
+
+
+class AclMode(str, Enum):
+    INHERIT = "inherit"
+    RESTRICTED = "restricted"
+
+
+class AclSpec(BaseModel):
+    """Explicit changes to a node's own permissions, never inherited grants."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    entries: tuple[AclEntry, ...] | None = None
+    acl_mode: Literal[AclMode.INHERIT, AclMode.RESTRICTED] | None = None
+
+    @model_validator(mode="after")
+    def normalize(self) -> "AclSpec":
+        if self.entries is None and self.acl_mode is None:
+            raise ValueError("entries or acl_mode must be provided")
+        if self.entries is not None:
+            object.__setattr__(self, "entries", tuple(_normalize_entries(self.entries)))
+        return self
+
+
+class AclUpdate(BaseModel):
+    """An authorized ACL change bound to its final target URI."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    uri: str
+    acl: AclSpec
 
 
 @dataclass(frozen=True)

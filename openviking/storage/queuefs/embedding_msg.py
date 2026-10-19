@@ -44,6 +44,45 @@ class EmbeddingMsg:
         return obj
 
     @classmethod
+    def for_delete(
+        cls,
+        record_ids: List[str],
+        context_data: Dict[str, Any],
+        telemetry_id: str = "",
+    ) -> "EmbeddingMsg":
+        ctx_data = dict(context_data)
+        ctx_data["action"] = "delete"
+        ctx_data["record_ids"] = list(record_ids)
+        return cls(
+            message="",
+            context_data=ctx_data,
+            telemetry_id=telemetry_id,
+        )
+
+    @classmethod
+    def for_update_fields(
+        cls,
+        record_id: str,
+        field_patch: Any,
+        context_data: Dict[str, Any],
+        telemetry_id: str = "",
+    ) -> "EmbeddingMsg":
+        ctx_data = dict(context_data)
+        ctx_data["action"] = "update_fields"
+        ctx_data["record_id"] = record_id
+        if hasattr(field_patch, "to_dict"):
+            ctx_data["field_patch"] = field_patch.to_dict()
+        elif hasattr(field_patch, "values"):
+            ctx_data["field_patch"] = dict(field_patch.values)
+        else:
+            ctx_data["field_patch"] = field_patch
+        return cls(
+            message="",
+            context_data=ctx_data,
+            telemetry_id=telemetry_id,
+        )
+
+    @classmethod
     def from_json(cls, json_str: str) -> "EmbeddingMsg":
         """Safely create object from JSON string."""
         try:
@@ -51,3 +90,4 @@ class EmbeddingMsg:
             return cls.from_dict(data)
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON string: {e}")
+

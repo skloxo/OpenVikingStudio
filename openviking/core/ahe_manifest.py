@@ -77,16 +77,31 @@ class FileSnapshot(BaseModel):
                 txt = None
         return cls(path=str(p), sha256=sha, content_backup=txt)
 
+    def resolve_actual_path(self) -> Path:
+        """自适应解析快照文件真实路径，支持工作区搬迁与跨平台对齐。"""
+        target = Path(self.path)
+        if target.exists():
+            return target
+        p_str = str(self.path).replace("\\", "/")
+        marker = "OpenVikingStudio/"
+        if marker in p_str:
+            rel_part = p_str.split(marker, 1)[1]
+            root_candidate = Path(__file__).resolve().parents[2] / rel_part
+            if root_candidate.exists():
+                return root_candidate
+        return target
+
     def still_matches(self) -> bool:
         """判断文件内容是否与快照一致。"""
-        return self.capture(self.path, backup_content=False).sha256 == self.sha256
+        p = self.resolve_actual_path()
+        return self.capture(str(p), backup_content=False).sha256 == self.sha256
 
     def rollback(self) -> bool:
         """物理还原快照备份内容至目标路径。"""
         if self.content_backup is None:
             return False
         try:
-            p = Path(self.path)
+            p = self.resolve_actual_path()
             p.parent.mkdir(parents=True, exist_ok=True)
             p.write_text(self.content_backup, encoding="utf-8")
             return True

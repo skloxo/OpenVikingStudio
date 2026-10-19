@@ -1,9 +1,9 @@
 {
   "mcpServers": {
-    "openviking": {
+    "openviking-memory": {
       "command": "C:/Python311/python.exe",
       "args": [
-        "C:/Users/Skl/Desktop/coding/OpenVikingStudio/mcp-openviking/mcp_openviking_server.py",
+        "C:/Users/Skl/Desktop/Workspace/coding/OpenVikingStudio/mcp-openviking/mcp_openviking_server.py",
         "--mode=memory"
       ],
       "env": {

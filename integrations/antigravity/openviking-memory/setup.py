@@ -50,10 +50,10 @@ def get_plugin_version() -> str:
     if pj.exists():
         try:
             with open(pj, "r", encoding="utf-8") as f:
-                return json.load(f).get("version", "2.0.14")
+                return json.load(f).get("version", "2.0.15")
         except Exception:
             pass
-    return "2.0.14"
+    return "2.0.15"
 
 
 PLUGIN_VERSION = get_plugin_version()
@@ -204,19 +204,9 @@ def sync_mcp_dual_track(api: str, key: str, target_dir: Path):
 
     py_cmd = sys.executable.replace("\\", "/")
 
-    # 2. 插件私有 mcp_config.json (支持 openviking 与 openviking-memory)
+    # 2. 插件私有 mcp_config.json (收敛为单一规范服务名 openviking-memory)
     p_mcp = {
         "mcpServers": {
-            "openviking": {
-                "command": py_cmd,
-                "args": [server_script, "--mode=memory"],
-                "env": {
-                    "OPENVIKING_API": api,
-                    "OPENVIKING_API_KEY": key,
-                    "OPENVIKING_MCP_MODE": "memory",
-                    "PYTHONIOENCODING": "utf-8"
-                }
-            },
             "openviking-memory": {
                 "command": py_cmd,
                 "args": [server_script, "--mode=memory"],
@@ -231,7 +221,7 @@ def sync_mcp_dual_track(api: str, key: str, target_dir: Path):
     }
     with open(target_dir / "mcp_config.json", "w", encoding="utf-8") as f:
         json.dump(p_mcp, f, indent=2, ensure_ascii=False)
-    print("  ✔ 插件私有 mcp_config.json 双轨别名配置完成")
+    print("  ✔ 插件私有 mcp_config.json 单一核心服务名 (openviking-memory) 配置完成")
 
     # 3. 全局 ~/.gemini/config/mcp_config.json 联动
     g_mcp_path = GEMINI_CONFIG_DIR / "mcp_config.json"
@@ -240,22 +230,23 @@ def sync_mcp_dual_track(api: str, key: str, target_dir: Path):
             with open(g_mcp_path, "r", encoding="utf-8") as f:
                 g_data = json.load(f)
             servers = g_data.get("mcpServers", {})
-            for alias in ["openviking", "openviking-memory"]:
-                servers[alias] = {
-                    "command": py_cmd,
-                    "args": [server_script, "--mode=memory"],
-                    "env": {
-                        "OPENVIKING_API": api,
-                        "OPENVIKING_API_KEY": key,
-                        "OPENVIKING_MCP_MODE": "memory",
-                        "OPENVIKING_ACTOR_PEER": "antigravity@2080Ti",
-                        "PYTHONIOENCODING": "utf-8"
-                    }
+            # 物理清除历史遗留的旧别名 openviking，彻底消灭双胞胎重复挂载
+            servers.pop("openviking", None)
+            servers["openviking-memory"] = {
+                "command": py_cmd,
+                "args": [server_script, "--mode=memory"],
+                "env": {
+                    "OPENVIKING_API": api,
+                    "OPENVIKING_API_KEY": key,
+                    "OPENVIKING_MCP_MODE": "memory",
+                    "OPENVIKING_ACTOR_PEER": "antigravity@2080Ti",
+                    "PYTHONIOENCODING": "utf-8"
                 }
+            }
             g_data["mcpServers"] = servers
             with open(g_mcp_path, "w", encoding="utf-8") as f:
                 json.dump(g_data, f, indent=2, ensure_ascii=False)
-            print("  ✔ 全局 mcp_config.json 双轨别名与 API Key 联动完成")
+            print("  ✔ 全局 mcp_config.json openviking-memory 单一真相源联动完成 (已清洗历史冗余 openviking)")
         except Exception as e:
             print(f"  ⚠️ 全局 mcp_config.json 联动失败: {e}")
 
