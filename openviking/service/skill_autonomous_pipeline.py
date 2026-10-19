@@ -39,6 +39,10 @@ from openviking.service.skill_provenance_tracker import (
     SkillProvenanceTracker,
 )
 from openviking.service.skill_auto_remediator import SkillAutoRemediator
+from openviking.service.skill_mutation_engine import (
+    SkillMutationEngine,
+    MutationVerdict,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +64,7 @@ class SkillAutonomousPipeline:
         self.zip_engine = SkillZipEngine.get_instance()
         self.aliasing_router = SkillAliasingRouter(skills_root=self.skills_root)
         self.tracker = SkillProvenanceTracker.get_instance()
+        self.mutation_engine = SkillMutationEngine(skills_root=self.skills_root)
         self._is_running = False
         self._task: Optional[asyncio.Task] = None
 
@@ -255,6 +260,85 @@ class SkillAutonomousPipeline:
                     "message": f"门禁质检通过 (评分: {opt_report.total_score:.1f}/100)",
                 },
             )
+
+            # 2.5 存量技能血缘嗅探与微手术热更新通道 (Card-193: Mutation Channel)
+            is_existing, existing_bundle, target_path = self.mutation_engine.find_existing_target(skill_name)
+            if is_existing and target_path:
+                verdict, diff_summary, patched_content = self.mutation_engine.audit_mutation(
+                    skill_name=skill_name,
+                    incoming_content=raw_content,
+                    target_path=target_path,
+                )
+                if verdict == MutationVerdict.REJECTED_VANDALISM:
+                    msg = f"Retina Anti-Vandalism Gate blocked: {diff_summary}"
+                    self.store.update_status(receipt_id, IngestionStatus.REJECTED, msg)
+                    self.tracker.record_event(
+                        action=ProvenanceAction.VALIDATE,
+                        skill_name=skill_name,
+                        receipt_id=receipt_id,
+                        operator="mutation-engine",
+                        details={
+                            "stage": "VANDALISM_BLOCKED",
+                            "is_valid": False,
+                            "error": msg,
+                            "source_path": source_path,
+                            "message": msg,
+                        },
+                    )
+                    summary["error"] = msg
+                    return summary
+                elif verdict == MutationVerdict.NO_CHANGE:
+                    self.store.update_status(
+                        receipt_id=receipt_id,
+                        status=IngestionStatus.COMMITTED,
+                        status_message="No changes detected, idempotent commit",
+                    )
+                    summary["status"] = "COMMITTED"
+                    summary["decision"] = "MUTATE_EXISTING"
+                    summary["target_bundle"] = existing_bundle
+                    return summary
+                else:
+                    # APPLY_PATCH: 原地微手术写盘
+                    self.mutation_engine.apply_mutation(
+                        skill_name=skill_name,
+                        patched_content=patched_content,
+                        target_path=target_path,
+                        operator=record.author or "mutation-engine",
+                    )
+                    self.store.update_status(
+                        receipt_id=receipt_id,
+                        status=IngestionStatus.COMMITTED,
+                        status_message=f"In-place micro-patch committed: {diff_summary}",
+                        validation_report={"opt_score": opt_report.total_score, "diff": diff_summary},
+                    )
+                    summary["status"] = "COMMITTED"
+                    summary["decision"] = "MUTATE_EXISTING"
+                    summary["target_bundle"] = existing_bundle
+                    try:
+                        from openviking.service.skill_event_bus import SkillEventBus, SkillEvent
+                        SkillEventBus.get_instance().emit(
+                            SkillEvent.PIPELINE_PULSE,
+                            {
+                                "stage": "COMMITTED",
+                                "status": "COMMITTED",
+                                "skill_name": skill_name,
+                                "receipt_id": receipt_id,
+                                "target_bundle": existing_bundle,
+                                "decision": "MUTATE_EXISTING",
+                                "diff": diff_summary,
+                            },
+                        )
+                        SkillEventBus.get_instance().emit(
+                            SkillEvent.SKILLS_MUTATED,
+                            {
+                                "reason": f"Skill {skill_name} micro-patched into {existing_bundle}",
+                                "skill_name": skill_name,
+                                "target_bundle": existing_bundle,
+                            },
+                        )
+                    except Exception:
+                        pass
+                    return summary
 
             # Stage 3: SkillZip 6-tuple contractual compression
             zip_res = self.zip_engine.compress(raw_content)
