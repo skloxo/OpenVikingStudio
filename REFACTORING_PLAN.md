@@ -4085,7 +4085,7 @@
     4. **`semantic_processor.py` & `content_write.py`**：在 `batch_write` 与 `_write_direct_with_refresh` 中生成协调器消息并保持写锁，`SemanticProcessor.on_dequeue` 识别协调器并执行优雅轮询重入队与最终锁释放（严格维持 `in_progress` 记账一致性，杜绝 `/wait` 504）；
     5. **`add_resource_processor.py`**：捕获 `asyncio.CancelledError` 并根据任务状态进行精细化处理，仅在显式取消时清理暂存源文件。
 - **交付留痕 (Verification & Evidence)**：
-  - **Git 提交与 Tag**：Commit `待提交`，Tag `v1.7.148`；
+  - **Git 提交与 Tag**：Commit `67b2b6e5e`，Tag `v1.7.148`；
   - **版本号 SSOT**：`v1.7.148` (`openviking/_version.py`, `package.json`)；
   - **单测视网膜**：
     - `tests/agfs/test_async_client.py`: 8/8 PASS in 0.76s；
