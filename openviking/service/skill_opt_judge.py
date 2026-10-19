@@ -17,7 +17,7 @@ from openviking.service.skill_validator import SkillValidator
 
 
 _STEP_PATTERN = re.compile(
-    r"(?m)^\s*(?:(?:\d+\.)|(?:Step\s*\d+:?)|(?:第[一二三四五六七八九十0-9]+步))",
+    r"(?m)^\s*(?:#{1,4}\s*)?(?:(?:\d+[\.、\)])|(?:Step\s*\d+:?)|(?:第[一二三四五六七八九十0-9]+步))",
     re.IGNORECASE,
 )
 _TOOL_MENTION_PATTERN = re.compile(
@@ -25,6 +25,19 @@ _TOOL_MENTION_PATTERN = re.compile(
 )
 _IO_KEYWORDS = ("input", "output", "参数", "返回值", "交付物", "assert", "断言", "result", "schema")
 _FAULT_KEYWORDS = ("error", "fail", "retry", "exception", "fallback", "报错", "失败", "重试", "自愈", "兜底")
+
+_CODE_BLOCK_RE = re.compile(r"```[a-zA-Z0-9_-]*\n([\s\S]*?)```")
+_CLI_COMMAND_RE = re.compile(
+    r"\b(?:kubectl|docker|git|npm|pnpm|pytest|python3?|curl|gcloud|aws|systemctl|bq|pip|sed|grep|awk|tar|zip|ssh|rsync|export)\b"
+)
+_CLI_FLAGS_RE = re.compile(r"(?:\s|^)(--[a-zA-Z0-9][a-zA-Z0-9_-]+|-[a-zA-Z0-9])(?=\s|$|[=,])")
+_ENV_VAR_RE = re.compile(r"\b[A-Z0-9_]{4,}(?:_KEY|_TOKEN|_PATH|_URL|_DIR|_PORT|_HOST|_CONFIG|_SECRET|_ID|KUBECONFIG)\b")
+_URL_RE = re.compile(r"https?://[^\s'\")]+|viking://[^\s'\")]+")
+_GUARDRAIL_RE = re.compile(r"(?:MUST NOT|MUST|SHALL|REQUIRED|FORBIDDEN|严禁|必须|强制|门禁|物理阻断|SSOT|Fail-Fast|Fail-Open)")
+_ERROR_SIGNAL_RE = re.compile(
+    r"\b(?:Exit Code \d+|HTTP \d{3}|\d{3}\s+(?:OK|Bad Request|Not Found|Internal Server Error|Bad Gateway)|[A-Z][a-zA-Z]+Error|[A-Z][a-zA-Z]+Exception|timeout)\b",
+    re.IGNORECASE,
+)
 
 
 @dataclass
@@ -37,6 +50,7 @@ class SkillJudgeReport:
     scores: dict[str, float] = field(default_factory=dict)
     diagnostics: list[str] = field(default_factory=list)
     recommendations: list[str] = field(default_factory=list)
+    is_raw_gold: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -132,6 +146,21 @@ class SkillOptJudge:
             recommendations.append("Include failure recovery SOP (e.g. fallback tools, retry thresholds).")
 
         total = round(sop_score + tool_score + io_score + fault_score, 2)
+
+        # 5. Technical Entity Density & Dual-Track Valuation (Card-194)
+        density_info = cls.calculate_technical_density(raw_content)
+        is_raw_gold = density_info["score"] >= 60.0
+
+        if is_raw_gold:
+            diagnostics.append(
+                f"Technical Density: High ({density_info['score']} pts, detected "
+                f"{density_info['code_blocks_count']} code blocks, {len(density_info['cli_commands'])} CLI cmds, "
+                f"{len(density_info['env_and_urls'])} endpoints/envs). Promoted as Raw Gold."
+            )
+            promoted_score = round(min(95.0, density_info["score"] * 0.95), 2)
+            if total < promoted_score:
+                total = promoted_score
+
         passed = total >= passing_score and validation.is_valid
 
         if not validation.is_valid:
@@ -143,6 +172,7 @@ class SkillOptJudge:
             "tool_contract": tool_score,
             "io_contract": io_score,
             "fault_tolerance": fault_score,
+            "technical_density": density_info["score"],
         }
 
         return SkillJudgeReport(
@@ -152,7 +182,57 @@ class SkillOptJudge:
             scores=scores,
             diagnostics=diagnostics,
             recommendations=recommendations,
+            is_raw_gold=is_raw_gold,
         )
+
+    @classmethod
+    def calculate_technical_density(cls, raw_content: str) -> dict[str, Any]:
+        """Quantify technical entity density across 5 engineering dimensions (Card-194)."""
+        if not raw_content or not raw_content.strip():
+            return {
+                "score": 0.0,
+                "code_blocks_count": 0,
+                "cli_commands": [],
+                "env_and_urls": [],
+                "guardrail_terms": [],
+                "error_signals": [],
+            }
+
+        # 1. Code Blocks
+        code_blocks = _CODE_BLOCK_RE.findall(raw_content)
+        valid_code_blocks = [cb for cb in code_blocks if len(cb.strip()) >= 10]
+        code_score = min(30.0, len(valid_code_blocks) * 10.0)
+
+        # 2. CLI commands & flags
+        cli_cmds = _CLI_COMMAND_RE.findall(raw_content)
+        cli_flags = _CLI_FLAGS_RE.findall(raw_content)
+        combined_cli = list(dict.fromkeys(cli_cmds + [f.strip() for f in cli_flags]))
+        cli_score = min(25.0, len(combined_cli) * 2.5)
+
+        # 3. Environment & URLs
+        envs = _ENV_VAR_RE.findall(raw_content)
+        urls = _URL_RE.findall(raw_content)
+        combined_env_urls = list(dict.fromkeys(envs + urls))
+        env_url_score = min(20.0, len(combined_env_urls) * 4.0)
+
+        # 4. Guardrail & Invariant Terms
+        guardrails = list(dict.fromkeys(_GUARDRAIL_RE.findall(raw_content)))
+        guardrail_score = min(15.0, len(guardrails) * 3.0)
+
+        # 5. Error & Status Signals
+        errors = list(dict.fromkeys(_ERROR_SIGNAL_RE.findall(raw_content)))
+        error_score = min(15.0, len(errors) * 3.0)
+
+        total_density = round(min(100.0, code_score + cli_score + env_url_score + guardrail_score + error_score), 2)
+
+        return {
+            "score": total_density,
+            "code_blocks_count": len(valid_code_blocks),
+            "cli_commands": combined_cli,
+            "env_and_urls": combined_env_urls,
+            "guardrail_terms": guardrails,
+            "error_signals": errors,
+        }
 
     @classmethod
     def evaluate_attempt_trajectory(
