@@ -32,15 +32,37 @@ FINALIZATION_FILE_KEYWORDS = (
 )
 
 
+def get_current_mode() -> str:
+    return sys.argv[1] if len(sys.argv) > 1 else "pre-tool"
+
+
+def emit_safe_fallback(mode: str = None):
+    """Fail-Open 降级输出：按官方各生命周期钩子规范输出最合规的空操作响应，彻底杜绝 protojson 校验崩溃"""
+    if mode is None:
+        mode = get_current_mode()
+    try:
+        if mode == "pre-tool":
+            sys.stdout.buffer.write(b'{"decision":"allow"}\n')
+        else:
+            sys.stdout.buffer.write(b"{}\n")
+        sys.stdout.buffer.flush()
+    except BaseException:
+        pass
+
+
 def emit_json(payload: dict):
-    """通过纯二进制缓冲流直写单行 UTF-8 JSON，完全绕过 Windows 控制台转义与 CP936 污染"""
+    """通过纯二进制缓冲流直写单行 UTF-8 JSON，严格对齐官方 protojson 契约分流"""
+    mode = get_current_mode()
+    # 物理防御：官方 protojson 严格校验，PostToolUse / PreInvocation 绝对禁止包含 decision 字段
+    if mode in ("post-tool", "pre-invocation") and isinstance(payload, dict):
+        payload = {k: v for k, v in payload.items() if k != "decision"}
+
     try:
         data = json.dumps(payload, ensure_ascii=False)
         sys.stdout.buffer.write(data.encode("utf-8") + b"\n")
         sys.stdout.buffer.flush()
     except BaseException:
-        sys.stdout.buffer.write(b'{"decision":"allow"}\n')
-        sys.stdout.buffer.flush()
+        emit_safe_fallback(mode)
 
 
 def read_stdin_json() -> dict:
@@ -258,7 +280,7 @@ def handle_post_tool():
 
 
 def handle_pre_invocation():
-    """PreInvocation: 用户发送新提示/开启新轮次，重置单轮步数与动态租约"""
+    """PreInvocation: 用户发送新提示/开启新轮次，重置单轮步数与动态租约；并在警戒时注入 ephemeralMessage"""
     data = read_stdin_json()
     if not data:
         emit_json({})
@@ -273,20 +295,20 @@ def handle_pre_invocation():
     state["current_step_limit"] = BASE_HEALTHY_STEP_LIMIT if is_healthy else BASE_UNHEALTHY_STEP_LIMIT
     save_state(conv_id, state)
 
-    emit_json({})
+    # 官方高级特性：当检测到连续报错且接近警戒线时，通过 ephemeralMessage 注入临时温和注脑预警
+    inject_steps = []
+    if state.get("consecutive_failures", 0) >= 2:
+        inject_steps.append({
+            "ephemeralMessage": "[Antigravity 断路器预警]: 检测到连续写操作报错，请遵循【三行事实+双选裁决】契约收敛，严禁盲目尝试打补丁。"
+        })
+
+    emit_json({"injectSteps": inject_steps})
 
 
-def handle_session_start():
-    """SessionStart: 新会话初始化，重置隔离状态"""
+def handle_stop():
+    """Stop: 官方标准执行循环终止拦截与状态自愈收口"""
     data = read_stdin_json()
-    if data:
-        try:
-            conv_id = data.get("conversationId", "default")
-            sf = get_state_file(conv_id)
-            if sf.exists():
-                sf.unlink(missing_ok=True)
-        except BaseException:
-            pass
+    # 默认放行终止；在 Stop 阶段进行状态轻量留痕
     emit_json({})
 
 
@@ -298,17 +320,16 @@ def main():
         handle_post_tool()
     elif mode == "pre-invocation":
         handle_pre_invocation()
-    elif mode == "session-start":
-        handle_session_start()
+    elif mode in ("stop", "session-start"):
+        handle_stop()
     else:
-        emit_json({"decision": "allow"})
+        emit_json({})
 
 
 if __name__ == "__main__":
-    # 最高级别物理屏障：任何未预料的 BaseException 发生时，绝不抛出非零退出码，直写 allow 确保宿主零阻塞
+    # 最高级别物理屏障：任何未预料的 BaseException 发生时，绝不抛出非零退出码，按 mode 分流输出合规 fallback
     try:
         main()
     except BaseException:
-        sys.stdout.buffer.write(b'{"decision":"allow"}\n')
-        sys.stdout.buffer.flush()
+        emit_safe_fallback()
     sys.exit(0)

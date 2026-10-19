@@ -45,7 +45,7 @@ def build_hooks_config(guard_script_path: Path) -> dict:
     cmd_pre_tool = f"{base_cmd} pre-tool"
     cmd_post_tool = f"{base_cmd} post-tool"
     cmd_pre_inv = f"{base_cmd} pre-invocation"
-    cmd_session_start = f"{base_cmd} session-start"
+    cmd_stop = f"{base_cmd} stop"
 
     return {
         "agent-circuit-breaker": {
@@ -80,10 +80,10 @@ def build_hooks_config(guard_script_path: Path) -> dict:
                     "timeout": timeout_sec
                 }
             ],
-            "SessionStart": [
+            "Stop": [
                 {
                     "type": "command",
-                    "command": cmd_session_start,
+                    "command": cmd_stop,
                     "timeout": timeout_sec
                 }
             ]
@@ -91,9 +91,50 @@ def build_hooks_config(guard_script_path: Path) -> dict:
     }
 
 
+def register_global_mcp(server_py_path: Path):
+    """双轨注册机制：将 circuit-breaker MCP 服务联动注册至全局 mcp_config.json，使 Manage MCP Servers 100% 显式呈现"""
+    global_mcp_file = Path.home() / ".gemini" / "config" / "mcp_config.json"
+    try:
+        cfg = {}
+        if global_mcp_file.exists():
+            with open(global_mcp_file, "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+        if "mcpServers" not in cfg:
+            cfg["mcpServers"] = {}
+
+        py_exe = get_python_cmd()
+        cfg["mcpServers"]["circuit-breaker"] = {
+            "command": py_exe,
+            "args": [str(server_py_path.resolve()).replace("\\", "/")],
+            "env": {
+                "PYTHONIOENCODING": "utf-8"
+            }
+        }
+        with open(global_mcp_file, "w", encoding="utf-8") as f:
+            json.dump(cfg, f, ensure_ascii=False, indent=2)
+        print("✅ 5. 全局 MCP 双轨穿透完成 (~/.gemini/config/mcp_config.json 成功挂载 circuit-breaker)")
+    except Exception as e:
+        print(f"⚠️ 全局 MCP 挂载略过: {e}")
+
+
+def unregister_global_mcp():
+    global_mcp_file = Path.home() / ".gemini" / "config" / "mcp_config.json"
+    if global_mcp_file.exists():
+        try:
+            with open(global_mcp_file, "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+            if "mcpServers" in cfg and "circuit-breaker" in cfg["mcpServers"]:
+                del cfg["mcpServers"]["circuit-breaker"]
+                with open(global_mcp_file, "w", encoding="utf-8") as f:
+                    json.dump(cfg, f, ensure_ascii=False, indent=2)
+                print("✅ 已从全局 mcp_config.json 安全注销 circuit-breaker 服务。")
+        except Exception:
+            pass
+
+
 def install(target_dir: Path = None):
     print("=" * 65)
-    print("🛡️ [Agent Circuit Breaker] 官方智能体断路器自举安装向导 (v1.3.0)")
+    print("🛡️ [Agent Circuit Breaker] 官方智能体断路器自举安装向导 (v1.3.2)")
     print(f"操作系统: {platform.system()} ({platform.machine()})")
     print(f"源包目录: {PLUGIN_SRC_DIR}")
     print("=" * 65)
@@ -119,21 +160,26 @@ def install(target_dir: Path = None):
         print("✅ 1. 核心插件文件已同步至用户配置目录")
         active_guard = dest_dir / "scripts" / "circuit_guard.py"
         active_hooks_file = dest_dir / "hooks.json"
+        active_server = dest_dir / "server.py"
     else:
         active_guard = GUARD_SCRIPT
         active_hooks_file = HOOKS_FILE
+        active_server = PLUGIN_SRC_DIR / "server.py"
 
     # 生成 hooks.json
     hooks_config = build_hooks_config(active_guard)
     with open(active_hooks_file, "w", encoding="utf-8") as f:
         json.dump(hooks_config, f, ensure_ascii=False, indent=2)
 
-    print("✅ 2. 自适应弹性 hooks.json 生成完毕 (-E -s -S 隔离参数已绑定)")
+    print("✅ 2. 自适应弹性 hooks.json 生成完毕 (官方标准 5 大 Hook 规范)")
     print(f"✅ 3. Guard 脚本绝对路径绑定: {active_guard}")
     print(f"✅ 4. Python 解释器绝对路径绑定: {get_python_cmd()}")
 
+    # 双轨注册全局 MCP
+    register_global_mcp(active_server)
+
     # 执行开箱即用自测探针
-    print("\n🧪 5. 执行开箱即用自测探针 (模拟 MCP 只读穿透放行)...")
+    print("\n🧪 6. 执行开箱即用自测探针 (模拟 MCP 只读穿透放行)...")
     try:
         py_exe = get_python_cmd()
         test_payload = json.dumps({
@@ -176,6 +222,8 @@ def uninstall(target_dir: Path = None):
         print("✅ 已安全移除 hooks.json，生命周期钩子已完全解绑。")
     else:
         print("ℹ️ hooks.json 不存在，当前处于未激活状态。")
+
+    unregister_global_mcp()
 
 
 def status(target_dir: Path = None):

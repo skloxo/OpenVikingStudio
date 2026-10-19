@@ -89,7 +89,8 @@ export function useSkillsData() {
         s.name.toLowerCase().includes(q) ||
         s.description.toLowerCase().includes(q) ||
         cnName.toLowerCase().includes(q) ||
-        cnDesc.toLowerCase().includes(q)
+        cnDesc.toLowerCase().includes(q) ||
+        Boolean(s.scenarios?.some((sc) => sc.toLowerCase().includes(q)))
       )
     })
   }, [targetSkills, searchQuery, activeScopeFilter])
