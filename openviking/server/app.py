@@ -101,7 +101,9 @@ from openviking.server.routers import (
     global_agents_router,
     plugins_router,
     universal_reducer_router,
+    gateway_router,
 )
+
 
 from openviking.service.core import OpenVikingService
 from openviking.service.task_tracker import get_task_tracker
@@ -783,7 +785,9 @@ def create_app(
     app.include_router(skill_ingestion_router)
     app.include_router(anti_demo_router)
     app.include_router(universal_reducer_router)
+    app.include_router(gateway_router)
     app.include_router(bot_router, prefix="/bot/v1")
+
 
     # OAuth 2.1: when enabled, mount the official MCP SDK auth routes
     # (DCR / authorize / token / metadata) plus our authorize page + consent /

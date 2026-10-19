@@ -6,7 +6,9 @@ import { SlaTrendChart } from './sla-trend-chart'
 import { RetrievalAccuracyTrendChart } from './retrieval-accuracy-trend-chart'
 import { TokenBreakdownPieChart } from './token-breakdown-pie-chart'
 import { ModelMonitoringCard } from './model-monitoring-card'
+import { PromptCacheCockpitCard } from './prompt-cache-cockpit-card'
 import { HarnessEngineCard } from './harness-engine-card'
+
 import { SystemResourceChart } from './system-resource-chart'
 import { HttpStatusChart } from './http-status-chart'
 import type { TimeWindow } from './system-health-banner'
@@ -83,6 +85,10 @@ export function MonitoringAnalyticsSection({
         status={modelsStatus}
         isHealthy={isModelsHealthy}
       />
+
+      {/* Gateway 2.0 Prompt Cache 态势与未命中告警卡片 */}
+      <PromptCacheCockpitCard />
+
 
       {/* Harness 技能自演进引擎监控卡片 */}
       <HarnessEngineCard

@@ -8,10 +8,13 @@ Provides bidirectional translation between OpenAI and Anthropic formats:
 
 from __future__ import annotations
 
+import json
+import re
 import time
 import uuid
 from typing import Any, Dict, List, Optional, Tuple, Union
 from pydantic import BaseModel, Field
+
 
 
 class AnthropicMessage(BaseModel):
@@ -108,9 +111,7 @@ def openai_to_anthropic_response(resp: Dict[str, Any]) -> Dict[str, Any]:
         elif openai_finish == "stop":
             stop_reason = "end_turn"
 
-    usage = resp.get("usage", {})
-    input_tokens = usage.get("prompt_tokens", 0)
-    output_tokens = usage.get("completion_tokens", 0)
+    usage_info = usage_of(resp, excludes_cache=False)
 
     return {
         "id": msg_id,
@@ -121,10 +122,13 @@ def openai_to_anthropic_response(resp: Dict[str, Any]) -> Dict[str, Any]:
         "stop_reason": stop_reason,
         "stop_sequence": None,
         "usage": {
-            "input_tokens": input_tokens,
-            "output_tokens": output_tokens,
+            "input_tokens": usage_info["input_tokens"],
+            "output_tokens": usage_info["output_tokens"],
+            "cache_read_input_tokens": usage_info["cached_tokens"],
+            "cache_creation_input_tokens": usage_info["cache_write_tokens"],
         },
     }
+
 
 
 class OpenAIToAnthropicStreamAdapter:
@@ -209,8 +213,8 @@ class OpenAIToAnthropicStreamAdapter:
             elif finish_reason == "tool_calls":
                 stop_reason = "tool_use"
 
-            usage = chunk.get("usage", {})
-            output_tokens = usage.get("completion_tokens", 0)
+            usage_info = usage_of(chunk, excludes_cache=False)
+            output_tokens = usage_info["output_tokens"]
 
             events.append(
                 (
@@ -221,6 +225,12 @@ class OpenAIToAnthropicStreamAdapter:
                     },
                 )
             )
+            message_delta_usage: Dict[str, Any] = {"output_tokens": output_tokens}
+            if usage_info["cached_tokens"]:
+                message_delta_usage["cache_read_input_tokens"] = usage_info["cached_tokens"]
+            if usage_info["cache_write_tokens"]:
+                message_delta_usage["cache_creation_input_tokens"] = usage_info["cache_write_tokens"]
+
             events.append(
                 (
                     "message_delta",
@@ -230,10 +240,120 @@ class OpenAIToAnthropicStreamAdapter:
                             "stop_reason": stop_reason,
                             "stop_sequence": None,
                         },
-                        "usage": {"output_tokens": output_tokens},
+                        "usage": message_delta_usage,
                     },
                 )
             )
             events.append(("message_stop", {"type": "message_stop"}))
 
         return events
+
+
+# Fields relays put cache counts in, at the top of usage or in its token details.
+CACHE_READ = ("cache_read_input_tokens", "cached_tokens", "prompt_cache_hit_tokens")
+CACHE_WRITE = ("cache_creation_input_tokens", "cache_write_tokens", "cached_creation_tokens")
+
+
+def usage_of(value: dict, excludes_cache: bool = False) -> dict:
+    """Token counts from any protocol's usage, including compatible endpoints that mix forms.
+
+    ``input_tokens`` always includes cached and written tokens: Anthropic counts them apart
+    (``excludes_cache``), Chat and Responses totals already hold them.
+    """
+    usage = value.get("usage") or {}
+    scopes = [
+        usage,
+        usage.get("prompt_tokens_details") or {},
+        usage.get("input_tokens_details") or {},
+    ]
+    # Relays copy one count into several fields and zero-fill the rest.
+    cached, written = (
+        max((s[k] for s in scopes for k in keys if s.get(k) is not None), default=0)
+        for keys in (CACHE_READ, CACHE_WRITE)
+    )
+    # Each protocol's own total first; compatible endpoints often fill both, one with zero.
+    own, other = (
+        ("input_tokens", "prompt_tokens") if excludes_cache else ("prompt_tokens", "input_tokens")
+    )
+    input_tokens = usage.get(own) or usage.get(other) or 0
+    # A total below its own cache counted the cache apart, as older relays do too.
+    if excludes_cache or input_tokens < cached + written:
+        input_tokens += cached + written
+    return {
+        "input_tokens": input_tokens,
+        "output_tokens": usage.get("completion_tokens") or usage.get("output_tokens") or 0,
+        "cached_tokens": cached,
+        "cache_write_tokens": written,
+    }
+
+
+def add_usage(total: dict, usage: dict) -> None:
+    """Accumulate usage numbers in-place, skipping nulls and preserving boolean/string flags."""
+    for key, value in (usage or {}).items():
+        if value is None:
+            continue
+        if isinstance(value, dict):
+            sub = total.setdefault(key, {})
+            if isinstance(sub, dict):
+                add_usage(sub, value)
+        elif isinstance(value, (int, float)) and not isinstance(value, bool):
+            total[key] = total.get(key, 0) + value
+        else:
+            total[key] = value
+
+
+class SSEDecoder:
+    """Incremental byte framing with precompiled newline-first pattern."""
+
+    # A frame ends at a blank line. Finding the newline first is much faster than an optional CR.
+    frame_end = re.compile(rb"\n\r?\n")
+
+    def __init__(self, max_buffer: int = 8 * 1024 * 1024):
+        self.buffer = b""
+        self.max_buffer = max_buffer
+
+    def feed(self, chunk: bytes) -> list[bytes]:
+        buffer, frames, start = self.buffer + chunk, [], 0
+        for match in self.frame_end.finditer(buffer):
+            frames.append(buffer[start : match.end()])
+            start = match.end()
+        self.buffer = buffer[start:]
+        if len(self.buffer) > self.max_buffer:
+            raise ValueError("SSE event exceeds capture limit")
+        return frames
+
+    @staticmethod
+    def data(frame: bytes) -> dict | None:
+        lines = [line[5:].lstrip(b" ") for line in frame.splitlines() if line.startswith(b"data:")]
+        if not lines:
+            return None
+        payload = b"\n".join(lines).strip()
+        if not payload or payload == b"[DONE]":
+            return None
+        try:
+            return json.loads(payload.decode("utf-8"))
+        except Exception:
+            return None
+
+
+REI_CASE_EXCEPTIONS = ("\u0130", "\u0131", "\u00df")  # i-dot, dotless-i, sharp-s
+
+AUXILIARY_PATTERNS = [
+    r"summariz",
+    r"compact",
+    r"title",
+    r"classify",
+    r"heartbeat",
+    r"suggest",
+]
+LOWERED_AUXILIARY = [re.compile(p) for p in AUXILIARY_PATTERNS]
+
+
+def auxiliary(text: str) -> bool:
+    """Whether ``text`` matches an auxiliary pattern, ignoring case with O(1) literal scan."""
+    if LOWERED_AUXILIARY and not any(c in text for c in REI_CASE_EXCEPTIONS):
+        text_lower = text.lower()
+        return any(pattern.search(text_lower) for pattern in LOWERED_AUXILIARY)
+    return any(re.search(pattern, text, re.I) for pattern in AUXILIARY_PATTERNS)
+
+
