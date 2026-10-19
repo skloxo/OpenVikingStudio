@@ -2,7 +2,7 @@
 name: antigravity-plugin-crafting
 description: >-
   Google Antigravity 与 Antigravity IDE 原生插件标准工程工法、脚手架构建与全生命周期开发指南。
-  涵盖官方六大构件标准、芒格逆向七大避坑铁律、反重力桌面端与IDE双端自适应适配、双轨MCP注册、以及生命周期Hooks工业级防爆SOP。
+  涵盖官方六大构件标准、芒格逆向八大避坑铁律、反重力桌面端与IDE双端自适应适配、双轨MCP注册、以及生命周期Hooks工业级防爆SOP。
 ---
 
 # Google Antigravity 原生插件开发与工程工法指南 (Antigravity Plugin Crafting)
@@ -11,7 +11,7 @@ description: >-
 
 ---
 
-## 🧭 一、 查理·芒格逆向工程思考 — 7 大“必死之招”与防御铁律 (Munger Inversion)
+## 🧭 一、 查理·芒格逆向工程思考 — 8 大“必死之招”与防御铁律 (Munger Inversion)
 
 > “反过来想，总是反过来想（Invert, always invert）。如果我知道自己会死在哪里，那我将永远不去那个地方。” —— 查理·芒格
 
@@ -26,6 +26,7 @@ description: >-
 | **死穴 5** | **配置孤岛：仅配私有 MCP 导致主面板失明** | 仅在 `plugins/<name>/mcp_config.json` 中配置，桌面端主界面「MCP 服务器」列表与「Manage MCP servers」无法感知，沦为孤岛。 | **双轨注册机制 (Dual-Track MCP)**：既保留插件私有 `mcp_config.json`（内聚规范），安装器同时优雅联动全局 `~/.gemini/config/mcp_config.json`，实现双向点亮。 |
 | **死穴 6** | **写死单端脑区路径，跨端即瘫痪** | 桌面端脑区路径为 `antigravity/`，IDE 端为 `antigravity-ide/`。硬编码任一路径会导致在另一端找不到会话与状态文件。 | **双端路径自适应嗅探**：看门狗脚本根据 payload 中的 `artifactDirectoryPath` 动态提取宿主类型，实现桌面端与 IDE 端无感切换。 |
 | **死穴 7** | **机械步数一刀切，打断长线交付** | 写死单轮 18 步硬上限，在端到端交付、TDD 测试与收尾提交时连环弹窗误杀，破坏开发者心流。 | **自适应弹性增量租约**：36 步健康态 / 15 步警戒态 / 人类放行 +15 步租约 / 收尾文档白名单 / 轮次清零。 |
+| **死穴 8** | **端侧就地魔改与多机人工穿刺** | 跑到 ~/.gemini/config/plugins/ 里打临时补丁，或逐台 SSH 到远程机器手动改文件。导致 10,000 台机器版本全部分裂断层，沦为不可控的“雪花环境”。 | **唯一公共源修改 + 单向拉取部署 (Pull-Only)**：严禁端侧就地改动。所有修复 100% 在统一源码中枢（OpenVikingStudio/integrations/）进行、严格 Bump 版本并提交 Git；客户端只通过标准一键拉取安装命令部署。 |
 
 ---
 
