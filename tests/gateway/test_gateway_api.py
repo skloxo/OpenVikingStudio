@@ -3,7 +3,7 @@
 import json
 import pytest
 from starlette.testclient import TestClient
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from openviking_gateway.config import GatewayConfig
 from openviking_gateway.app import create_gateway_app
@@ -196,4 +196,106 @@ def test_invalid_json_body_returns_400(test_app):
     )
     assert resp2.status_code == 400
     assert "Invalid JSON body" in resp2.json()["error"]["message"]
+
+
+def test_chat_completions_auto_memory_injection(test_app):
+    client = TestClient(test_app)
+
+    # Mock kernel.fetch_memories returning real memory chunks
+    async def mock_memories(query: str, top_k: int = 3):
+        return [{"text": "Special Viking Project Rule: NO GREEN EVER", "uri": "viking://rules"}]
+
+    test_app.state.proxy.kernel.fetch_memories = mock_memories
+
+    captured_payload = {}
+
+    async def mock_post(url, json=None, headers=None):
+        nonlocal captured_payload
+        captured_payload = json
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            "id": "chatcmpl-test",
+            "choices": [{"message": {"role": "assistant", "content": "Acknowledged rule."}}],
+        }
+        return mock_resp
+
+    test_app.state.proxy._client = MagicMock()
+    test_app.state.proxy._client.is_closed = False
+    test_app.state.proxy._client.post = AsyncMock(side_effect=mock_post)
+    test_app.state.proxy._owns_client = False
+
+    resp = client.post(
+        "/v1/chat/completions",
+        json={"model": "mock-gpt", "messages": [{"role": "user", "content": "What is the UI rule?"}]},
+    )
+    assert resp.status_code == 200
+    # Assert system message was injected with retrieved memory
+    injected_system = captured_payload["messages"][0]
+    assert injected_system["role"] == "system"
+    assert "Special Viking Project Rule: NO GREEN EVER" in injected_system["content"]
+
+
+def test_chat_completions_hidden_tool_loop_integration(test_app):
+    client = TestClient(test_app)
+
+    # Disable memory injection for clean tool loop isolation
+    test_app.state.proxy.config.enable_auto_memory_injection = False
+
+    # Mock tool dispatching
+    async def mock_dispatch(name: str, args: dict):
+        return json.dumps({"content": "Retrieved secretly: secret_val_999"})
+
+    test_app.state.proxy.tool_loop.dispatch_tool = mock_dispatch
+
+    call_count = 0
+
+    async def mock_multi_turn_post(url, json=None, headers=None):
+        nonlocal call_count
+        call_count += 1
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+
+        if call_count == 1:
+            # First turn: model requests tool call
+            mock_resp.json.return_value = {
+                "id": "chatcmpl-turn-1",
+                "choices": [
+                    {
+                        "message": {
+                            "role": "assistant",
+                            "tool_calls": [
+                                {
+                                    "id": "call_1",
+                                    "type": "function",
+                                    "function": {"name": "openviking_read", "arguments": '{"uri":"viking://secret"}'},
+                                }
+                            ],
+                        }
+                    }
+                ],
+            }
+        else:
+            # Second turn: model sees tool output and answers user cleanly
+            mock_resp.json.return_value = {
+                "id": "chatcmpl-turn-2",
+                "choices": [{"message": {"role": "assistant", "content": "The secret is secret_val_999."}}],
+            }
+        return mock_resp
+
+    test_app.state.proxy._client = MagicMock()
+    test_app.state.proxy._client.is_closed = False
+    test_app.state.proxy._client.post = AsyncMock(side_effect=mock_multi_turn_post)
+    test_app.state.proxy._owns_client = False
+
+    resp = client.post(
+        "/v1/chat/completions",
+        json={"model": "mock-gpt", "messages": [{"role": "user", "content": "What is the secret?"}]},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert call_count == 2
+    assert data["choices"][0]["message"]["content"] == "The secret is secret_val_999."
+
+
 

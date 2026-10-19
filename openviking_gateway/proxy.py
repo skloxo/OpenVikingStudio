@@ -5,6 +5,7 @@ Handles transparent upstream streaming, header cleansing, and dual-track transla
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from typing import Any, AsyncGenerator, Dict, Optional
@@ -13,11 +14,17 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response, StreamingResponse
 
 from openviking_gateway.config import GatewayConfig
+from openviking_gateway.kernel import GatewayKernel
 from openviking_gateway.protocols import (
     anthropic_to_openai_request,
     openai_to_anthropic_response,
     OpenAIToAnthropicStreamAdapter,
 )
+from openviking_gateway.tool_loop import (
+    HiddenToolLoopExecutor,
+    VIKING_HIDDEN_TOOLS_OPENAI,
+)
+from openviking_gateway.capture import SessionCaptureEngine
 
 logger = logging.getLogger("openviking_gateway.proxy")
 
@@ -53,6 +60,9 @@ class GatewayProxy:
         self.config = config
         self._client = client
         self._owns_client = client is None
+        self.kernel = GatewayKernel(config)
+        self.tool_loop = HiddenToolLoopExecutor(config)
+        self.capture = SessionCaptureEngine(config)
 
     async def get_client(self) -> httpx.AsyncClient:
         """Retrieve or lazily initialize the shared AsyncClient."""
@@ -66,9 +76,12 @@ class GatewayProxy:
         return self._client
 
     async def aclose(self) -> None:
-        """Close the internal HTTP client."""
+        """Close the internal HTTP client and companion engines."""
         if self._owns_client and self._client and not self._client.is_closed:
             await self._client.aclose()
+        await self.kernel.aclose()
+        await self.tool_loop.aclose()
+        await self.capture.aclose()
 
     def _prepare_headers(
         self, request: Request, target_protocol: str
@@ -106,17 +119,32 @@ class GatewayProxy:
     async def forward_chat_completions(
         self, request: Request, payload: Dict[str, Any]
     ) -> Response:
-        """Forward OpenAI /v1/chat/completions to upstream."""
+        """Forward OpenAI /v1/chat/completions to upstream with memory injection & tool loop."""
         client = await self.get_client()
         stream = bool(payload.get("stream", False))
         headers = self._prepare_headers(request, target_protocol=self.config.upstream_protocol)
         target_url = f"{self.config.upstream_base_url}/chat/completions"
 
+        req_payload = dict(payload)
+        # 1. Pre-flight memory context injection
+        messages = req_payload.get("messages", [])
+        injected_messages = await self.kernel.pre_flight_inject(messages)
+        req_payload["messages"] = injected_messages
+
+        # 2. Attach hidden tools if enabled and non-streaming
+        if not stream and self.config.enable_hidden_tool_loop:
+            existing_tools = list(req_payload.get("tools") or [])
+            tool_names = {t.get("function", {}).get("name") for t in existing_tools if isinstance(t, dict)}
+            for ht in VIKING_HIDDEN_TOOLS_OPENAI:
+                if ht["function"]["name"] not in tool_names:
+                    existing_tools.append(ht)
+            req_payload["tools"] = existing_tools
+
         try:
             if stream:
                 async def sse_stream_gen() -> AsyncGenerator[bytes, None]:
                     async with client.stream(
-                        "POST", target_url, json=payload, headers=headers
+                        "POST", target_url, json=req_payload, headers=headers
                     ) as upstream_resp:
                         if upstream_resp.status_code >= 400:
                             err_body = await upstream_resp.aread()
@@ -132,12 +160,29 @@ class GatewayProxy:
                     headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
                 )
 
-            # Non-streaming request
-            resp = await client.post(target_url, json=payload, headers=headers)
+            # Non-streaming request with hidden tool loop
+            resp = await client.post(target_url, json=req_payload, headers=headers)
             try:
                 data = resp.json()
             except Exception:
                 data = {"raw": resp.text}
+
+            if resp.status_code == 200 and isinstance(data, dict):
+                # Run hidden tool loop if model invoked viking tools
+                data = await self.tool_loop.run_loop_if_needed(
+                    client, target_url, headers, req_payload, data
+                )
+                # 3. Asynchronous session capture
+                choices = data.get("choices", [])
+                if choices:
+                    reply = choices[0].get("message", {}).get("content", "")
+                    if reply:
+                        asyncio.create_task(
+                            self.capture.capture_turn(
+                                injected_messages, reply, model=req_payload.get("model", "")
+                            )
+                        )
+
             return JSONResponse(content=data, status_code=resp.status_code)
 
         except Exception as exc:
@@ -188,6 +233,18 @@ class GatewayProxy:
         headers = self._prepare_headers(request, target_protocol="openai")
         target_url = f"{self.config.upstream_base_url}/chat/completions"
 
+        # Pre-flight memory injection for Anthropic protocol
+        injected_messages = await self.kernel.pre_flight_inject(openai_req.get("messages", []))
+        openai_req["messages"] = injected_messages
+
+        if not stream and self.config.enable_hidden_tool_loop:
+            existing_tools = list(openai_req.get("tools") or [])
+            tool_names = {t.get("function", {}).get("name") for t in existing_tools if isinstance(t, dict)}
+            for ht in VIKING_HIDDEN_TOOLS_OPENAI:
+                if ht["function"]["name"] not in tool_names:
+                    existing_tools.append(ht)
+            openai_req["tools"] = existing_tools
+
         try:
             if stream:
                 adapter = OpenAIToAnthropicStreamAdapter(model=payload.get("model", "gpt-4o"))
@@ -226,7 +283,7 @@ class GatewayProxy:
                     headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
                 )
 
-            # Non-streaming dual-track translation
+            # Non-streaming dual-track translation with tool loop
             resp = await client.post(target_url, json=openai_req, headers=headers)
             if resp.status_code >= 400:
                 return JSONResponse(
@@ -234,7 +291,26 @@ class GatewayProxy:
                     status_code=resp.status_code,
                 )
             openai_resp = resp.json()
+
+            # Execute tool loop if needed
+            if isinstance(openai_resp, dict):
+                openai_resp = await self.tool_loop.run_loop_if_needed(
+                    client, target_url, headers, openai_req, openai_resp
+                )
+
             anthropic_resp = openai_to_anthropic_response(openai_resp)
+
+            # Capture turn asynchronously
+            content_blocks = anthropic_resp.get("content", [])
+            if content_blocks:
+                reply_text = content_blocks[0].get("text", "")
+                if reply_text:
+                    asyncio.create_task(
+                        self.capture.capture_turn(
+                            injected_messages, reply_text, model=payload.get("model", "")
+                        )
+                    )
+
             return JSONResponse(content=anthropic_resp, status_code=200)
 
         except Exception as exc:
