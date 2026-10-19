@@ -50,6 +50,7 @@ export function HarnessGuardrailsCockpit() {
     staleTime: 15_000,
   })
 
+  const metrics = harnessStatusQuery.data
   const hasGates = Boolean(metrics?.gates && Object.keys(metrics.gates).length > 0)
   const activeGatesCount = hasGates
     ? Object.values(metrics.gates).filter((g: any) => g.status === 'active').length
