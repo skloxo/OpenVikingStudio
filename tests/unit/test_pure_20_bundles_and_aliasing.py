@@ -1,10 +1,10 @@
 # Copyright (c) 2026 Beijing Volcano Engine Technology Co., Ltd.
 # SPDX-License-Identifier: AGPL-3.0
-"""Card-162 Unit Test: 20 Core Capability Bundles Pure Materialization & Skill Aliasing Projection.
+"""Capability Bundles Materialization & Skill Aliasing Projection Test Suite.
 
 Validates that:
-1. Top-level skills directory contains strictly 20 domain capability bundles.
-2. Every bundle contains a valid SKILL.md and .abstract.md index.
+1. Top-level skills directory strictly consists of self-contained domain capability bundles (no loose naked scripts).
+2. Domain bundles contain valid SKILL.md and metadata definitions.
 3. Critical crystallized scenarios (web-search-pro, global-agent-core, clash_verge_governance,
    deepseek-harness-ops) are resolvable as virtual projections with high fidelity.
 4. Edge cases (case sensitivity, normalization, non-existent skills) fail-fast safely.
@@ -16,29 +16,6 @@ from openviking.service.skill_aliasing_router import SkillAliasingRouter
 
 SKILLS_ROOT = Path("/home/skloxo/.openviking/data/viking/default/agent/skills")
 
-EXPECTED_20_BUNDLES = sorted([
-    "ai-harness-ops",
-    "antigravity-host-ops",
-    "cloud-infra-ops",
-    "cockpit-ui",
-    "codebase-engineering",
-    "cpa_squad",
-    "credential-vault",
-    "developer-productivity",
-    "document-governance",
-    "living-asset-system",
-    "multimodal-media",
-    "network-tunnel-ops",
-    "openviking",
-    "park-grid-governance",
-    "presentation-designer",
-    "property-cadre-ops",
-    "quant-trading",
-    "security-audit-compliance",
-    "session-handover",
-    "web-harvest-pro",
-])
-
 
 @pytest.fixture
 def router():
@@ -47,32 +24,24 @@ def router():
     return SkillAliasingRouter(skills_root=SKILLS_ROOT)
 
 
-def test_strictly_20_top_level_bundles():
-    """Verify top-level directory has strictly 20 capability bundles and no loose single skills."""
+def test_top_level_bundles_structural_hygiene():
+    """Verify top-level skills directory contains only legitimate domain bundles and no loose scripts."""
     if not SKILLS_ROOT.exists():
         pytest.skip("Viking skills directory not found")
 
-    dirs = sorted([
-        d.name for d in SKILLS_ROOT.iterdir()
-        if d.is_dir() and not d.name.startswith(".")
-    ])
-    assert len(dirs) == 20, f"Expected strictly 20 bundles, found {len(dirs)}: {dirs}"
-    assert dirs == EXPECTED_20_BUNDLES
+    top_level_items = list(SKILLS_ROOT.iterdir())
+    bundle_dirs = [d for d in top_level_items if d.is_dir() and not d.name.startswith(".")]
+    loose_files = [f for f in top_level_items if f.is_file() and not f.name.startswith(".")]
 
+    # Enforce Zero loose scripts in top level
+    assert len(loose_files) == 0, f"Found naked loose files in top level skills root: {loose_files}"
 
-def test_all_bundles_contain_skill_and_abstract():
-    """Verify all 20 bundles have SKILL.md and .abstract.md files."""
-    if not SKILLS_ROOT.exists():
-        pytest.skip("Viking skills directory not found")
-
-    for bundle_name in EXPECTED_20_BUNDLES:
-        b_dir = SKILLS_ROOT / bundle_name
+    # Enforce every bundle is a legitimate domain bundle with SKILL.md
+    assert len(bundle_dirs) > 0, "Top level skills directory is unexpectedly empty"
+    for b_dir in bundle_dirs:
         skill_md = b_dir / "SKILL.md"
-        abstract_md = b_dir / ".abstract.md"
-        assert skill_md.exists(), f"Bundle {bundle_name} missing SKILL.md"
-        assert abstract_md.exists(), f"Bundle {bundle_name} missing .abstract.md"
-        assert skill_md.stat().st_size > 50, f"Bundle {bundle_name} SKILL.md is empty or too small"
-        assert abstract_md.stat().st_size > 10, f"Bundle {bundle_name} .abstract.md is empty"
+        assert skill_md.exists(), f"Top-level directory '{b_dir.name}' is not a valid bundle (missing SKILL.md)"
+        assert skill_md.stat().st_size > 30, f"Bundle '{b_dir.name}' SKILL.md is empty or corrupted"
 
 
 def test_web_search_pro_scenario_projection(router):

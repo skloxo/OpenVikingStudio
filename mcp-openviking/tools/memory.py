@@ -418,4 +418,4 @@ def register_memory_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Callabl
         })
     registered["openviking_smart_read"] = openviking_smart_read
 
-    return registered
+    return {k: v for k, v in registered.items() if v is not None}

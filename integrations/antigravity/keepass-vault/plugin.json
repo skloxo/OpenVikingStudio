@@ -1,0 +1,27 @@
+{
+  "name": "keepass-vault",
+  "displayName": "KeePass Vault",
+  "version": "1.2.0",
+  "description": "基于 keepassxc-cli 打造的本地高安全凭据保险库与 MCP 工具中枢 (9 Tools)。支持本地 kdbx 数据库路径与访问密钥可视化配置，支持灾难恢复写前备份。",
+  "logo": "assets/logo.svg",
+  "suggestedPrompts": [
+    "检查本地 KeePass 密码数据库状态与连通性",
+    "检索 KeePass 数据库中的凭据或服务器密码",
+    "向 KeePass 密码库安全新增或更新凭据条目"
+  ],
+  "author": {
+    "name": "OpenViking Team",
+    "url": "https://github.com/volcengine/OpenViking"
+  },
+  "homepage": "https://github.com/volcengine/OpenViking",
+  "repository": "https://github.com/volcengine/OpenViking",
+  "license": "AGPL-3.0",
+  "keywords": [
+    "keepass",
+    "kdbx",
+    "vault",
+    "security",
+    "credentials",
+    "antigravity"
+  ]
+}

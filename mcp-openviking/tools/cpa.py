@@ -347,4 +347,4 @@ def register_cpa_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Any]:
 
     registered["openviking_cpa_fanout"] = openviking_cpa_fanout
 
-    return registered
+    return {k: v for k, v in registered.items() if v is not None}

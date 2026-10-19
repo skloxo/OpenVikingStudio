@@ -1,0 +1,26 @@
+{
+  "name": "cpa-squad",
+  "displayName": "OpenViking CPA Squad",
+  "version": "1.0.0",
+  "description": "OpenViking 跨模型协同与算力工兵插件 (Antigravity IDE 官方版)。提供架构与算法第二意见咨询 (cpa_consult) 与大规模多工兵并发扇出 (cpa_fanout) 2 大算力工具。",
+  "logo": "assets/logo.svg",
+  "suggestedPrompts": [
+    "调用 DeepSeek-V3/R1 对当前架构方案进行第二意见交叉核验",
+    "并发扇出 10 个子任务进行快速调研与脱水"
+  ],
+  "author": {
+    "name": "OpenViking Team",
+    "url": "https://github.com/volcengine/OpenViking"
+  },
+  "homepage": "https://github.com/volcengine/OpenViking",
+  "repository": "https://github.com/volcengine/OpenViking",
+  "license": "AGPL-3.0",
+  "keywords": [
+    "openviking",
+    "cpa",
+    "deepseek",
+    "parallel",
+    "multi-agent",
+    "antigravity"
+  ]
+}

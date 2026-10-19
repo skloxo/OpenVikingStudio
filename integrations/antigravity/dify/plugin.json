@@ -1,0 +1,27 @@
+{
+  "name": "dify",
+  "displayName": "Dify Orchestrator",
+  "version": "1.0.0",
+  "description": "Dify 官方全量编排与知识库控制面工具集 (12 Tools)。用于管理应用、运行工作流、导入导出 DSL 蓝图及自动化管理知识库。",
+  "logo": "assets/logo.svg",
+  "suggestedPrompts": [
+    "检查本地 Dify 控制台连接状态与工作区概况",
+    "列出 Dify 中的所有已部署应用与工作流",
+    "导出指定应用的 DSL 蓝图配置"
+  ],
+  "author": {
+    "name": "OpenViking Team",
+    "url": "https://github.com/volcengine/OpenViking"
+  },
+  "homepage": "https://github.com/volcengine/OpenViking",
+  "repository": "https://github.com/volcengine/OpenViking",
+  "license": "AGPL-3.0",
+  "keywords": [
+    "dify",
+    "workflow",
+    "rag",
+    "llm-orchestration",
+    "dsl",
+    "antigravity"
+  ]
+}

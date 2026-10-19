@@ -210,4 +210,4 @@ def register_observability_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, 
             return _handle_http_error(e)
     registered["openviking_metrics"] = openviking_metrics
 
-    return registered
+    return {k: v for k, v in registered.items() if v is not None}

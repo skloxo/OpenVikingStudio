@@ -14,7 +14,13 @@ import logging
 from functools import wraps
 from typing import Any, Callable, Optional
 from mcp.server.fastmcp import FastMCP
-from .config import SATELLITE_ALLOWED_TOOLS
+from .config import (
+    SATELLITE_ALLOWED_TOOLS,
+    MEMORY_37_TOOL_NAMES,
+    OPS_17_TOOL_NAMES,
+    FLEET_2_TOOL_NAMES,
+    CPA_2_TOOL_NAMES,
+)
 
 # Pydantic 2.9+ / FastMCP 1.29+ compatibility shim
 try:
@@ -47,10 +53,29 @@ def _get_heavy_semaphore() -> asyncio.Semaphore:
     return _heavy_semaphore
 
 
+def _is_tool_allowed(tool_name: str, mcp_mode: str) -> bool:
+    """根据运行模式判定该工具是否允许注册"""
+    mode = (mcp_mode or "all").lower().strip()
+    if mode in ("all", "core"):
+        return True
+    if mode == "memory":
+        return tool_name in MEMORY_37_TOOL_NAMES
+    if mode == "ops":
+        return tool_name in OPS_17_TOOL_NAMES
+    if mode == "fleet":
+        return tool_name in FLEET_2_TOOL_NAMES
+    if mode == "cpa":
+        return tool_name in CPA_2_TOOL_NAMES
+    if mode == "satellite":
+        return tool_name in SATELLITE_ALLOWED_TOOLS
+    return tool_name in MEMORY_37_TOOL_NAMES
+
+
 # SECTION: Decorator Factory
 def create_mcp_tool_decorator(mcp: FastMCP, mcp_mode: str) -> Callable:
-    """创建双模态感知的 MCP 工具注册装饰器。
-    在 Satellite 模式下只注册 16 个安全实用数据工具，物理阻断 40+ 运维特权；
+    """创建领域分权感知的 MCP 工具注册装饰器。
+    支持 memory (37), ops (17), fleet (2), cpa (2), satellite, all 模式精准物理隔离；
+    不符合当前模式允许集合的工具直接返回 None，杜绝特权越界与认知过载；
     自动解包 FastMCP/Pydantic FieldInfo 默认对象，防止序列化崩塌；
     针对 openviking_find 自动注入【Mandatory First Step】强注意力触发头；
     将所有工具通过 async def 包装并使用 asyncio.to_thread 卸载到 worker 线程池，
@@ -59,9 +84,9 @@ def create_mcp_tool_decorator(mcp: FastMCP, mcp_mode: str) -> Callable:
     def mcp_tool(*args, **kwargs):
         def decorator(fn):
             tool_name = kwargs.get("name") or fn.__name__
-            if mcp_mode == "satellite" and tool_name not in SATELLITE_ALLOWED_TOOLS:
-                logger.debug(f"[Dual-Mode MCP] Satellite mode: skipping registration of sensitive tool '{tool_name}'")
-                return fn
+            if not _is_tool_allowed(tool_name, mcp_mode):
+                logger.debug(f"[Domain Filter] Mode '{mcp_mode}': skipping registration of tool '{tool_name}'")
+                return None
 
             tool_kwargs = dict(kwargs)
             if tool_name == "openviking_find":

@@ -163,4 +163,4 @@ def register_filesystem_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Cal
         })
     registered["openviking_webdav_info"] = openviking_webdav_info
 
-    return registered
+    return {k: v for k, v in registered.items() if v is not None}

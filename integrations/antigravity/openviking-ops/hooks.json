@@ -1,0 +1,16 @@
+{
+  "openviking-ops-audit": {
+    "PreToolUse": [
+      {
+        "matcher": "openviking_server_control",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -X utf8 hooks/ov_ops_audit.py",
+            "timeout": 3
+          }
+        ]
+      }
+    ]
+  }
+}

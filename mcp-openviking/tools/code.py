@@ -116,4 +116,4 @@ def register_code_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Callable]
         return _api_then_cli(_api, ["glob", pattern, "--uri", target_uri])
     registered["openviking_glob"] = openviking_glob
 
-    return registered
+    return {k: v for k, v in registered.items() if v is not None}

@@ -297,4 +297,4 @@ def register_fleet_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Callable
 
     registered["openviking_fleet_check"] = openviking_fleet_check
     registered["openviking_fleet_sync"] = openviking_fleet_sync
-    return registered
+    return {k: v for k, v in registered.items() if v is not None}

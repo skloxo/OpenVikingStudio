@@ -374,7 +374,7 @@ sequenceDiagram
 2. **多维视网膜门禁校验 (Retina & Security Validation)**：
    - 校验 YAML Frontmatter（`name`, `description`, `version`, `author`）；
    - 执行 Zero-Secrets 零凭据泄漏审计（拦截高熵密码、Token、API Key）；
-   - 执行领域 Seam 判定，自动匹配 20 大母包归属。若不合规立即流转为 `REJECTED` 并记录失败根因。
+   - 执行领域 Seam 判定，动态评估领域亲和度与上下文内聚度，自动决策归入合适母包场景或自立新包。若不合规立即流转为 `REJECTED` 并记录失败根因。
 3. **衍生结晶与索引重构 (Distillation & Indexing)**：
    - 自动在母包场景下生成 `.abstract.md`、`.overview.md`；
    - 自动刷新 `all_skills.json` 注册表与技能关系图谱；

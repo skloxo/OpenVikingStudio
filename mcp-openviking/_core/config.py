@@ -41,7 +41,45 @@ DEFAULT_CLI = os.environ.get("OPENVIKING_CLI", "openviking")
 DEFAULT_ROOT_API_KEY = os.environ.get("OPENVIKING_ROOT_API_KEY", "")
 CLI_ONLY_MODE = False
 
-# 卫星模式精选 18 个全能安全数据与环境感知工具
+# 战地核心记忆 37 工具 SSOT
+MEMORY_37_TOOL_NAMES = {
+    # memory (6)
+    "openviking_find", "openviking_search", "openviking_read", "openviking_write", "openviking_store", "openviking_smart_read",
+    # code (5)
+    "openviking_code_outline", "openviking_code_search", "openviking_code_expand", "openviking_grep", "openviking_glob",
+    # filesystem (4)
+    "openviking_ls", "openviking_tree", "openviking_tag", "openviking_diff",
+    # skills (6)
+    "openviking_record_evolution_lesson", "openviking_skills", "openviking_audit_skills", "openviking_auto_onboard_skills", "openviking_get_onboard_queue_status", "openviking_fix_skill",
+    # sessions (6)
+    "openviking_list_sessions", "openviking_get_session", "openviking_create_session", "openviking_link", "openviking_get_relations", "openviking_unlink",
+    # system (6)
+    "openviking_health", "openviking_system_status", "openviking_server_doctor", "openviking_privacy", "openviking_consistency", "openviking_ping",
+    # observability (4)
+    "openviking_harness_stats", "openviking_usage_stats", "openviking_observer", "openviking_metrics",
+}
+
+# 运维治理特权 17 工具 SSOT
+OPS_17_TOOL_NAMES = {
+    # memory (5)
+    "openviking_add_resource", "openviking_list_resources", "openviking_delete_resource", "openviking_reindex", "openviking_commit",
+    # filesystem (3)
+    "openviking_mv", "openviking_rename", "openviking_webdav_info",
+    # system (9)
+    "openviking_list_watches", "openviking_cancel_watch", "openviking_manage_watch", "openviking_export", "openviking_import", "openviking_backup", "openviking_restore", "openviking_server_control", "openviking_server_init",
+}
+
+# 卫星同频 2 工具
+FLEET_2_TOOL_NAMES = {
+    "openviking_fleet_check", "openviking_fleet_sync",
+}
+
+# CPA 算力 2 工具
+CPA_2_TOOL_NAMES = {
+    "openviking_cpa_consult", "openviking_cpa_fanout",
+}
+
+# 卫星模式精选 18 个全能安全数据与环境感知工具 (兼容历史)
 SATELLITE_ALLOWED_TOOLS = {
     "openviking_find", "openviking_search", "openviking_smart_read", "openviking_read", "openviking_store",
     "openviking_write", "openviking_code_search", "openviking_code_outline", "openviking_code_expand",
@@ -52,7 +90,7 @@ SATELLITE_ALLOWED_TOOLS = {
 
 # SECTION: Mode Resolution
 def resolve_mcp_mode(argv: Optional[List[str]] = None, env: Optional[Dict[str, str]] = None) -> str:
-    """智能决议当前运行模式 (core 核心模式 vs satellite 卫星模式)"""
+    """智能决议当前运行模式 (memory 记忆核心 | ops 运维特权 | fleet 卫星同频 | cpa 算力 | all 全量 | satellite 卫星兼容)"""
     args = argv if argv is not None else sys.argv[1:]
     env_map: Dict[str, str] = dict(env) if env is not None else dict(os.environ)
 
@@ -63,17 +101,19 @@ def resolve_mcp_mode(argv: Optional[List[str]] = None, env: Optional[Dict[str, s
         elif arg == "--mode" and idx < len(args) - 1:
             cli_mode = args[idx + 1].strip().lower()
 
-    if cli_mode in ("satellite", "core"):
-        return cli_mode
+    valid_modes = ("memory", "ops", "fleet", "cpa", "all", "core", "satellite")
+    if cli_mode in valid_modes:
+        return "memory" if cli_mode == "core" else cli_mode
 
     env_mode = env_map.get("OPENVIKING_MCP_MODE") or env_map.get("OPENVIKING_MODE")
-    if env_mode and env_mode.strip().lower() in ("satellite", "core"):
-        return env_mode.strip().lower()
+    if env_mode and env_mode.strip().lower() in valid_modes:
+        val = env_mode.strip().lower()
+        return "memory" if val == "core" else val
 
     target_api = env_map.get("OPENVIKING_API", DEFAULT_API).lower()
     has_root = bool(env_map.get("OPENVIKING_ROOT_API_KEY"))
     is_local = "127.0.0.1" in target_api or "localhost" in target_api
-    return "core" if (is_local and has_root) else "satellite"
+    return "memory" if (is_local and has_root) else "satellite"
 
 
 def _get_active_mode() -> str:
@@ -85,8 +125,67 @@ def _get_active_mode() -> str:
 
 
 def _get_config() -> Dict[str, str]:
-    """读取并归一化服务配置，优先级：环境变量 -> ~/.openviking/ov.conf -> ~/.openviking/ovcli.conf"""
-    api_key = os.environ.get("OPENVIKING_API_KEY") or os.environ.get("OPENVIKING_ROOT_API_KEY") or ""
+    """读取并归一化服务配置，优先级：
+    1. 显式指定的 config.json (--config 或 OPENVIKING_CONFIG_PATH / OPENVIKING_CONFIG_FILE)
+    2. 当前模式关联的 Antigravity 插件目录 config.json (~/.gemini/config/plugins/<plugin>/config.json)
+    3. 环境变量 (OPENVIKING_API, OPENVIKING_API_KEY)
+    4. 本地用户全局配置 (~/.openviking/ov.conf, ovcli.conf)
+    """
+    api = ""
+    api_key = ""
+
+    # 1. 尝试从显式配置路径读取
+    cfg_file = os.environ.get("OPENVIKING_CONFIG_PATH") or os.environ.get("OPENVIKING_CONFIG_FILE")
+    if not cfg_file:
+        for idx, arg in enumerate(sys.argv):
+            if arg.startswith("--config="):
+                cfg_file = arg.split("=", 1)[1].strip()
+                break
+            elif arg == "--config" and idx < len(sys.argv) - 1:
+                cfg_file = sys.argv[idx + 1].strip()
+                break
+
+    # 2. 尝试从 Antigravity 插件私有目录推导
+    if not cfg_file:
+        mode = _get_active_mode()
+        plugin_name_map = {
+            "memory": "openviking-memory",
+            "ops": "openviking-ops",
+            "fleet": "fleet-mesh",
+            "cpa": "cpa-squad",
+        }
+        p_name = plugin_name_map.get(mode, "openviking-memory")
+        candidate_plugin_cfg = Path.home() / ".gemini" / "config" / "plugins" / p_name / "config.json"
+        if candidate_plugin_cfg.exists():
+            cfg_file = str(candidate_plugin_cfg)
+
+    # 如果发现了有效的 config.json，私有配置强制优先生效 (支持 api_url, api, userkey, api_key)
+    if cfg_file and Path(cfg_file).exists():
+        try:
+            with open(cfg_file, "r", encoding="utf-8") as f:
+                plugin_cfg = json.load(f)
+                p_api = plugin_cfg.get("api_url") or plugin_cfg.get("api")
+                p_key = (
+                    plugin_cfg.get("api_key")
+                    or plugin_cfg.get("userkey")
+                    or plugin_cfg.get("user_key")
+                    or plugin_cfg.get("root_api_key")
+                )
+                if p_api and str(p_api).strip():
+                    api = str(p_api).strip()
+                if p_key and str(p_key).strip():
+                    api_key = str(p_key).strip()
+        except Exception:
+            pass
+
+    # 3. 环境变量次优降级
+    if not api:
+        api = os.environ.get("OPENVIKING_API", "").strip()
+    if not api_key:
+        api_key = os.environ.get("OPENVIKING_API_KEY") or os.environ.get("OPENVIKING_ROOT_API_KEY") or ""
+
+
+    # 3. 兜底全局 ~/.openviking/ov.conf
     if not api_key:
         conf_path = Path.home() / ".openviking" / "ov.conf"
         if conf_path.exists():
@@ -105,11 +204,13 @@ def _get_config() -> Dict[str, str]:
                     api_key = conf_data.get("root_api_key", "")
             except Exception:
                 pass
+
     return {
-        "api": os.environ.get("OPENVIKING_API", DEFAULT_API).rstrip("/"),
+        "api": (api or DEFAULT_API).rstrip("/"),
         "api_key": api_key,
         "cli": os.environ.get("OPENVIKING_CLI", DEFAULT_CLI),
     }
+
 
 
 def get_resolved_actor_peer(default_client: str = "antigravity") -> str:
