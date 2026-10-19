@@ -379,4 +379,4 @@ def register_skills_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Callabl
             return _make_error(str(e))
     registered["openviking_fix_skill"] = openviking_fix_skill
 
-    return registered
+    return {k: v for k, v in registered.items() if v is not None}

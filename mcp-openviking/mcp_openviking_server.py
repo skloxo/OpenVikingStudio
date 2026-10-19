@@ -16,6 +16,19 @@ import os
 import sys
 import urllib.request
 from urllib.request import urlopen
+
+# Windows 宿主标准输入输出 UTF-8 强防御 (消灭 GBK 编码管道崩溃)
+if sys.platform == "win32":
+    try:
+        if hasattr(sys.stdin, "reconfigure"):
+            sys.stdin.reconfigure(encoding="utf-8")
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8")
+        if hasattr(sys.stderr, "reconfigure"):
+            sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 from mcp.server.fastmcp import FastMCP
 
 from _core.config import (
@@ -73,12 +86,38 @@ logger = logging.getLogger("openviking-mcp")
 MCP_MODE = resolve_mcp_mode()
 logger.info(f"[Dual-Mode MCP] Active mode: [{MCP_MODE.upper()}]")
 
+MODE_PROFILES = {
+    "memory": {
+        "name": "openviking-memory",
+        "instructions": "OpenViking 战地记忆中枢 (37 Tools) — 语义检索、两阶段重排、分层读取、会话管理与踩坑存盘。",
+    },
+    "ops": {
+        "name": "openviking-ops",
+        "instructions": "OpenViking 运维管控特权 (17 Tools) — 资源索引、文件归档、备份恢复与服务初始化管控。",
+    },
+    "fleet": {
+        "name": "fleet-mesh",
+        "instructions": "OpenViking 卫星集群同频 (2 Tools) — 多节点体检、健康对齐与状态同步。",
+    },
+    "cpa": {
+        "name": "cpa-squad",
+        "instructions": "OpenViking CPA 跨模型协同 (2 Tools) — 算力咨询与多模型并发扇出。",
+    },
+    "satellite": {
+        "name": "openviking-satellite",
+        "instructions": "OpenViking 卫星客户端 — 专注于数据面语义检索与记忆协作。",
+    },
+    "all": {
+        "name": "openviking",
+        "instructions": "OpenViking 语义记忆全量管理工具集 (58 Tools)。优先 HTTP API，CLI 回退。",
+    },
+}
+
+_active_profile = MODE_PROFILES.get(MCP_MODE, MODE_PROFILES["all"])
+
 mcp = FastMCP(
-    name="openviking",
-    instructions=(
-        "OpenViking 语义记忆管理工具集 — 资源管理、语义搜索、分层读取、"
-        "会话管理、系统监控。优先 HTTP API，CLI 回退。"
-    ),
+    name=_active_profile["name"],
+    instructions=_active_profile["instructions"],
 )
 
 # SECTION: Tool Registration via Decorator Factory

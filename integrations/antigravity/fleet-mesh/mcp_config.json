@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "fleet-mesh": {
+      "command": "C:/Python311/python.exe",
+      "args": [
+        "C:/Users/Skl/Desktop/coding/OpenVikingStudio/mcp-openviking/mcp_openviking_server.py",
+        "--mode=fleet"
+      ],
+      "env": {
+        "OPENVIKING_API": "http://127.0.0.1:1933",
+        "OPENVIKING_MCP_MODE": "fleet"
+      }
+    }
+  }
+}

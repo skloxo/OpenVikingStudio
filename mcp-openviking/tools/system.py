@@ -315,4 +315,4 @@ def register_system_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Callabl
         return _format_result(status)
     registered["openviking_ping"] = openviking_ping
 
-    return registered
+    return {k: v for k, v in registered.items() if v is not None}

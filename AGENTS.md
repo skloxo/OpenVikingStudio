@@ -66,8 +66,8 @@
      - 正式发布与版本打标：`python scripts/release_step.py --bump patch -m "..."`；
    - **安全与防呆门禁**：Windows 下严禁裸写未带 `-UseBasicParsing` 的 `Invoke-WebRequest`，统一使用 `curl.exe -s`。
 
-8. **知识分层与虚拟投影透明路由铁律 (Knowledge Hierarchy & Virtual Projection Routing SSOT) ⭐⭐⭐⭐⭐**：
-   - **宏观高内聚收敛**：技能中心与 API 默认列表严格收敛为领域能力母包（20~21 个），底层细分工序统一通过母包下的子目录（`scenarios/`）组织，严禁在顶层任意散落单体过渡目录；
+8. **知识分层与虚拟投影透明路由标准 (Knowledge Hierarchy & Virtual Projection Routing SSOT) ⭐⭐⭐⭐⭐**：
+   - **宏观高内聚收敛**：技能中心与 API 默认列表以**领域完整性与生命周期自治为导向进行高内聚聚合**（大包数量由业务领域边界自然演进，不预设死板指标，无论 10 个、20 个还是 30 个，以实际内聚与认知负荷效果为准）；底层细分工序统一通过母包下的子目录（`scenarios/`）组织，严禁在顶层任意散落单一原子脚本孤岛；
    - **虚拟投影透明回退 (Zero-Breaking Virtual Routing)**：外部系统若请求单体工序名，底层必须由动态投影网关（`SkillAliasingRouter`）无感拦截并透明回退至母包场景子文件，返回标准 200 OK，多智能体调用零中断；
    - **零配置动态扫盘 (Zero-Config Globbing)**：场景映射严禁静态硬编码大型字典；必须完全依托文件系统 `*.md` 动态 Glob 映射，实现“放盘即生效、删盘即自愈”的零维护自治。
 

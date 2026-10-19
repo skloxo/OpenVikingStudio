@@ -133,4 +133,4 @@ def register_sessions_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Calla
         return _api_then_cli(_api, ["unlink", source_uri, target_uri])
     registered["openviking_unlink"] = openviking_unlink
 
-    return registered
+    return {k: v for k, v in registered.items() if v is not None}

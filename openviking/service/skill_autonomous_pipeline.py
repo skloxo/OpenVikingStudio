@@ -349,16 +349,17 @@ class SkillAutonomousPipeline:
             # Extract triggers & tools for Ante-Gate
             triggers, tools = self._extract_metadata(raw_content)
 
-            # Stage 4: B6 Ante-Gate Adaptive Routing
+            # Stage 4: B6 Ante-Gate Adaptive Routing (Contractual & Affinity-Driven)
             ante_gate_res = SeamDecisionGateB5.route_incremental_skill(
                 skill_name=skill_name,
                 keywords=triggers,
                 toolchain=tools,
                 existing_bundles_dir=self.skills_root,
+                raw_content=raw_content,
             )
 
             decision = ante_gate_res.get("decision", "MERGE_INTO_EXISTING")
-            target = ante_gate_res.get("target") or "system-fleet-ops"
+            target = ante_gate_res.get("target") or skill_name
             summary["decision"] = decision
             summary["target_bundle"] = target
 

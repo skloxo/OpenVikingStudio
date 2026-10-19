@@ -148,3 +148,94 @@ def test_triad_fingerprint_low_affinity_spawn(tmp_path: Path):
 
     assert decision["decision"] == "SPAWN_NEW_BUNDLE"
     assert decision["affinity_score"] <= 25.0
+
+
+def test_route_incremental_explicit_parent_contract(tmp_path: Path):
+    """Explicit parent_bundle declaration takes top priority for merging."""
+    cloud_bundle = tmp_path / "cloud-infra-ops"
+    cloud_bundle.mkdir()
+    (cloud_bundle / "SKILL.md").write_text("---\nname: cloud-infra-ops\n---\n", encoding="utf-8")
+
+    raw_content = "---\nname: custom-k8s\nparent_bundle: cloud-infra-ops\n---\n# Custom K8s"
+    decision = SeamDecisionGateB5.route_incremental_skill(
+        skill_name="custom-k8s",
+        keywords=["custom"],
+        toolchain=[],
+        existing_bundles_dir=tmp_path,
+        raw_content=raw_content,
+    )
+    assert decision["decision"] == "MERGE_INTO_EXISTING"
+    assert decision["target"] == "cloud-infra-ops"
+    assert decision["affinity_score"] == 100.0
+
+
+def test_route_incremental_explicit_standalone_contract(tmp_path: Path):
+    """Explicit bundle_type: standalone allows authentic spawning of new bundle."""
+    raw_content = "---\nname: drone-flight-ops\nbundle_type: standalone\n---\n# Drone Ops"
+    decision = SeamDecisionGateB5.route_incremental_skill(
+        skill_name="drone-flight-ops",
+        keywords=["drone", "mavlink"],
+        toolchain=["qgc"],
+        existing_bundles_dir=tmp_path,
+        raw_content=raw_content,
+    )
+    assert decision["decision"] == "SPAWN_NEW_BUNDLE"
+    assert decision["target"] == "drone-flight-ops"
+
+
+def test_route_incremental_affinity_merge_and_capacity_guard(tmp_path: Path):
+    """High affinity merges into existing bundle; triggers cell division if scenarios >= 80."""
+    cloud_bundle = tmp_path / "cloud-infra-ops"
+    scenarios_dir = cloud_bundle / "scenarios"
+    scenarios_dir.mkdir(parents=True)
+    (cloud_bundle / "SKILL.md").write_text(
+        "---\nname: cloud-infra-ops\ntriggers:\n  - gcp\n  - k8s\n  - terraform\n---\n",
+        encoding="utf-8",
+    )
+
+    # 1. Normal capacity: should merge
+    decision = SeamDecisionGateB5.route_incremental_skill(
+        skill_name="gcp-k8s-pod-scaler",
+        keywords=["gcp", "k8s"],
+        toolchain=["kubectl"],
+        existing_bundles_dir=tmp_path,
+    )
+    assert decision["decision"] == "MERGE_INTO_EXISTING"
+    assert decision["target"] == "cloud-infra-ops"
+
+    # 2. Reaching 80 scenarios: trigger CELL_DIVISION_REQUIRED
+    for i in range(80):
+        (scenarios_dir / f"sc_{i:03d}.md").write_text("Mock", encoding="utf-8")
+
+    decision_div = SeamDecisionGateB5.route_incremental_skill(
+        skill_name="gcp-k8s-pod-scaler",
+        keywords=["gcp", "k8s"],
+        toolchain=["kubectl"],
+        existing_bundles_dir=tmp_path,
+    )
+    assert decision_div["decision"] == "CELL_DIVISION_REQUIRED"
+    assert decision_div["target"] == "cloud-infra-ops"
+
+
+def test_route_incremental_orthogonal_spawns_new_bundle(tmp_path: Path):
+    """Orthogonal domain (e.g. drone flight control) spawns new bundle without arbitrary fallback."""
+    # Existing bundles are unrelated (e.g. code engineering)
+    code_bundle = tmp_path / "codebase-engineering"
+    code_bundle.mkdir()
+    (code_bundle / "SKILL.md").write_text(
+        "---\nname: codebase-engineering\ntriggers:\n  - python\n  - git\n---\n",
+        encoding="utf-8",
+    )
+
+    decision = SeamDecisionGateB5.route_incremental_skill(
+        skill_name="drone-mission-control",
+        keywords=["drone", "mavlink", "telemetry", "autopilot"],
+        toolchain=["qgroundcontrol"],
+        existing_bundles_dir=tmp_path,
+        raw_content="---\nname: drone-mission-control\n---\n# Autopilot and Telemetry",
+    )
+    # Must NOT fallback to developer-productivity! Must spawn new bundle authentically.
+    assert decision["decision"] == "SPAWN_NEW_BUNDLE"
+    assert decision["target"] == "drone-mission-control"
+    assert decision["affinity_score"] < 20.0
+

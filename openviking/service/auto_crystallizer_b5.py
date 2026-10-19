@@ -207,84 +207,178 @@ class SeamDecisionGateB6:
         keywords: List[str],
         toolchain: List[str],
         existing_bundles_dir: Path,
+        raw_content: str = "",
+        explicit_parent: str = "",
+        bundle_type: str = "",
     ) -> Dict[str, Any]:
-        """Routes a single incoming incremental skill to an existing bundle or new bundle."""
+        """Routes an incoming skill based on domain affinity, subject identity, and explicit contracts.
+        
+        Adheres to First Principles:
+        1. Explicit contract first (parent_bundle / bundle_type).
+        2. Multi-track affinity scoring across triggers, tools, naming tokens, and deep module content.
+        3. High affinity (>=30.0) -> MERGE_INTO_EXISTING with capacity guard (80 scenarios max).
+        4. Mid affinity (20.0~29.9) -> MERGE_INTO_EXISTING as secondary scenario.
+        5. Low affinity (<20.0) & Orthogonal -> SPAWN_NEW_BUNDLE (no rigid count limits).
+        """
         cand_kws = {k.lower() for k in keywords if k.lower() not in GENERIC_STOP_WORDS}
         cand_tools = {t.lower() for t in toolchain if t.lower() not in GENERIC_STOP_WORDS}
+        name_tokens = {p.lower() for p in skill_name.split("-") if p.lower() not in GENERIC_STOP_WORDS}
 
-        best_bundle = None
-        max_affinity = 0.0
-
-        for bundle_dir in existing_bundles_dir.iterdir():
-            if not bundle_dir.is_dir() or bundle_dir.name == skill_name:
-                continue
-            skill_md = bundle_dir / "SKILL.md"
-            if not skill_md.exists():
-                continue
+        # Stage 1: Explicit Frontmatter Contract Priority
+        if raw_content and not explicit_parent:
             try:
-                content = skill_md.read_text(encoding="utf-8")
-                parts = content.split("---", 2)
+                parts = raw_content.split("---", 2)
                 if len(parts) >= 3:
                     fm = yaml.safe_load(parts[1]) or {}
-                    b_triggers = [t.lower() for t in fm.get("triggers", []) if t.lower() not in GENERIC_STOP_WORDS]
-                else:
-                    b_triggers = []
+                    explicit_parent = fm.get("parent_bundle") or fm.get("domain") or ""
+                    if not bundle_type:
+                        bundle_type = fm.get("bundle_type") or fm.get("type") or ""
             except Exception:
+                pass
+
+        if explicit_parent:
+            target_dir = existing_bundles_dir / explicit_parent
+            if target_dir.exists() and target_dir.is_dir():
+                return {
+                    "decision": "MERGE_INTO_EXISTING",
+                    "target": explicit_parent,
+                    "affinity_score": 100.0,
+                    "reason": f"显式契约声明归属母包: {explicit_parent}",
+                }
+
+        if bundle_type in ("standalone", "bundle"):
+            return {
+                "decision": "SPAWN_NEW_BUNDLE",
+                "target": skill_name,
+                "affinity_score": 0.0,
+                "reason": f"显式契约声明独立母包架构 ({bundle_type})，准予自立新领域母包",
+            }
+
+        # Stage 2: Multi-Track Affinity Scoring across Existing Bundles
+        best_bundle = None
+        max_affinity = 0.0
+        collision_sources: Dict[str, List[str]] = {}
+
+        if existing_bundles_dir.exists():
+            for bundle_dir in existing_bundles_dir.iterdir():
+                if not bundle_dir.is_dir() or bundle_dir.name == skill_name:
+                    continue
+                skill_md = bundle_dir / "SKILL.md"
+                if not skill_md.exists():
+                    continue
+
+                content = ""
                 b_triggers = []
+                try:
+                    content = skill_md.read_text(encoding="utf-8")
+                    parts = content.split("---", 2)
+                    if len(parts) >= 3:
+                        fm = yaml.safe_load(parts[1]) or {}
+                        b_triggers = [t.lower() for t in fm.get("triggers", []) if t.lower() not in GENERIC_STOP_WORDS]
+                except Exception:
+                    pass
 
-            overlap_kws = cand_kws.intersection(set(b_triggers))
-            score = min(len(overlap_kws) * 20.0, 60.0)
-            body_lower = content.lower()
-            tool_match = sum(1 for t in cand_tools if t in body_lower)
-            score += min(tool_match * 10.0, 30.0)
+                # Deep scan modules text if present
+                modules_text = ""
+                modules_dir = bundle_dir / "modules"
+                if modules_dir.exists():
+                    for mf in modules_dir.glob("*.md"):
+                        try:
+                            modules_text += "\n" + mf.read_text(encoding="utf-8")
+                        except Exception:
+                            pass
+                full_bundle_text = (content + "\n" + modules_text).lower()
 
-            # Check bundle name in keywords or skill name tokens
-            if any(part in bundle_dir.name for part in skill_name.split("-")):
-                score += 20.0
+                # Track A: Triggers overlap (0 ~ 45 pts)
+                overlap_kws = cand_kws.intersection(set(b_triggers))
+                if overlap_kws:
+                    collision_sources[bundle_dir.name] = list(overlap_kws)
+                score = min(len(overlap_kws) * 20.0, 45.0)
 
-            if score > max_affinity:
-                max_affinity = score
-                best_bundle = bundle_dir.name
+                # Track B: Toolchain & CLI overlap (0 ~ 25 pts)
+                tool_match = sum(1 for t in cand_tools if t in full_bundle_text)
+                score += min(tool_match * 10.0, 25.0)
 
-        # 核心领域语义雷达映射字典 (Macro Bundle Semantic Radar)
+                # Track C: Naming token resonance (0 ~ 20 pts)
+                bundle_name_parts = set(bundle_dir.name.lower().split("-"))
+                token_overlap = name_tokens.intersection(bundle_name_parts)
+                if token_overlap:
+                    score += min(len(token_overlap) * 15.0, 20.0)
+
+                # Track D: Deep content co-occurrence (0 ~ 15 pts)
+                deep_hits = sum(1 for tok in name_tokens if tok in full_bundle_text)
+                score += min(deep_hits * 5.0, 15.0)
+
+                if score > max_affinity:
+                    max_affinity = score
+                    best_bundle = bundle_dir.name
+
+        # Stage 3: Domain Semantic Radar Enhancement
         domain_radar = {
-            "cloud-infra-ops": {"gcp", "aws", "azure", "k8s", "kubernetes", "docker", "cluster", "terraform", "sql", "bigquery", "infra", "pipeline", "spark", "ipmi"},
+            "cloud-infra-ops": {"gcp", "aws", "azure", "k8s", "kubernetes", "docker", "cluster", "terraform", "sql", "bigquery", "infra", "pipeline", "spark", "ipmi", "prometheus", "grafana"},
             "codebase-engineering": {"code", "python", "pip", "poetry", "npm", "pnpm", "git", "dependency", "test", "lint", "refactor", "ast", "clean", "architecture", "tdd", "pr", "asset"},
-            "openviking": {"viking", "memory", "session", "handover", "distill", "recipe", "ledger", "mcp", "fastmcp"},
+            "openviking": {"viking", "memory", "session", "handover", "distill", "recipe", "ledger", "mcp", "fastmcp", "plugin"},
             "quant-trading": {"trade", "trading", "quant", "stock", "etf", "finance", "crypto", "fund", "tide"},
             "cockpit-ui": {"ui", "frontend", "css", "tailwind", "react", "vue", "homepage", "component", "dashboard", "view"},
             "security-audit-compliance": {"security", "audit", "pentest", "vulnerability", "auth", "secret", "permission"},
-            "credential-vault": {"keepass", "vault", "password", "key", "token", "credential", "dify"},
-            "developer-productivity": {"doc", "meeting", "calendar", "task", "tool", "productivity"},
+            "credential-vault": {"keepass", "vault", "password", "key", "token", "credential"},
+            "satellite-fleet-ops": {"satellite", "fleet", "mesh", "sync", "node"},
+            "cellular-cpe-ops": {"cpe", "nradio", "cellular", "cj888", "sim", "lte", "5g"},
+            "deepseek-harness-ops": {"dsh", "harness", "deepseek", "session_v4"},
         }
 
-        # 1. 达到亲和度门限，直接合并入最佳母包
-        if max_affinity >= 25.0 and best_bundle:
+        all_candidate_terms = cand_kws.union(name_tokens)
+        radar_target = None
+        for parent_domain, domain_terms in domain_radar.items():
+            if all_candidate_terms.intersection(domain_terms):
+                parent_dir = existing_bundles_dir / parent_domain
+                if parent_dir.exists() and parent_dir.is_dir():
+                    radar_target = parent_domain
+                    break
+
+        if radar_target and (max_affinity < 30.0 or best_bundle is None):
+            best_bundle = radar_target
+            max_affinity = max(max_affinity, 35.0)
+
+        # Stage 4: Scientific Divergence Gate
+        # Case A: High affinity (>= 30.0) -> MERGE_INTO_EXISTING with Capacity Guard
+        if max_affinity >= 30.0 and best_bundle:
+            target_dir = existing_bundles_dir / best_bundle
+            scenarios_dir = target_dir / "scenarios"
+            sc_count = len(list(scenarios_dir.glob("*.md"))) if scenarios_dir.exists() else 0
+
+            if sc_count >= 80:
+                return {
+                    "decision": "CELL_DIVISION_REQUIRED",
+                    "target": best_bundle,
+                    "affinity_score": round(max_affinity, 1),
+                    "current_scenarios": sc_count,
+                    "reason": f"目标母包 '{best_bundle}' 场景数已达 {sc_count} 项上限 (>= 80)，触发细胞分裂机制",
+                }
+
             return {
                 "decision": "MERGE_INTO_EXISTING",
                 "target": best_bundle,
                 "affinity_score": round(max_affinity, 1),
+                "reason": f"领域亲和度达到 {max_affinity:.1f}分 (>= 30.0)，与 '{best_bundle}' 高度内聚，合并入母包场景插槽",
             }
 
-        # 2. 领域语义雷达兜底匹配：杜绝单工序因浅层未撞词而盲目自立新包
-        name_tokens = set(skill_name.lower().split("-"))
-        all_tokens = cand_kws.union(name_tokens)
-        for parent_domain, domain_terms in domain_radar.items():
-            if all_tokens.intersection(domain_terms):
-                parent_dir = existing_bundles_dir / parent_domain
-                if parent_dir.exists() and parent_dir.is_dir():
-                    return {
-                        "decision": "MERGE_INTO_EXISTING",
-                        "target": parent_domain,
-                        "affinity_score": 30.0,
-                    }
+        # Case B: Mid affinity (20.0 <= score < 30.0) -> Merge into best matching bundle
+        if max_affinity >= 20.0 and best_bundle:
+            return {
+                "decision": "MERGE_INTO_EXISTING",
+                "target": best_bundle,
+                "affinity_score": round(max_affinity, 1),
+                "reason": f"存在领域弱关联 (亲和度 {max_affinity:.1f}分)，优先归入相近母包 '{best_bundle}' scenarios，避免顶层碎片化",
+            }
 
-        # 3. 严格单工序建包门禁：单体工序绝对严禁在顶层自立门户，默认归并至 developer-productivity
-        default_fallback = "developer-productivity" if (existing_bundles_dir / "developer-productivity").exists() else "cloud-infra-ops"
+        # Case C: Low affinity (< 20.0) -> Authentic Orthogonal Domain Spawning
+        # If it is a completely orthogonal domain, spawn a new bundle without arbitrary count constraints!
         return {
-            "decision": "MERGE_INTO_EXISTING",
-            "target": default_fallback,
-            "affinity_score": 25.0,
+            "decision": "SPAWN_NEW_BUNDLE",
+            "target": skill_name,
+            "affinity_score": round(max_affinity, 1),
+            "reason": f"与全量现有母包亲和度极低 ({max_affinity:.1f}分 < 20.0)，技术客体正交独立，准予自立全新领域母包 (大包数量自然演进，不设死板上限)",
         }
 
 
