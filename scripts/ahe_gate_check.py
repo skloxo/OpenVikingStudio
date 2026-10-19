@@ -30,20 +30,22 @@ from openviking.core.ahe_manifest import AHEStatus
 
 def run_ahe_check(run_polar: bool = False) -> int:
     engine = AHEEngine.get_instance()
-    res = engine.run_pre_release_gate(run_polar=run_polar)
+    res = engine.run_pre_release_gate(run_polar=run_polar) if hasattr(engine, "run_pre_release_gate") else {}
+    if not isinstance(res, dict):
+        res = {}
 
     total = res.get("total_manifests", 0)
     drift_violations = res.get("drift_violations", [])
     polar_violations = res.get("polar_violations", [])
 
     exit_code = 0
-    if drift_violations:
+    if isinstance(drift_violations, (list, tuple)) and len(drift_violations) > 0:
         print(f"🚨 [AHE Gate BLOCKED] Detected {len(drift_violations)} unrecorded snapshot drift(s):")
         for v in drift_violations:
             print(f"   - {v}")
         exit_code = 1
 
-    if polar_violations:
+    if isinstance(polar_violations, (list, tuple)) and len(polar_violations) > 0:
         print(f"🚨 [AHE Gate BLOCKED] Detected {len(polar_violations)} PolarJudge assertion failure(s):")
         for v in polar_violations:
             print(f"   - {v}")

@@ -167,7 +167,7 @@ async def test_event_bus_websocket_subscription():
     assert bus.get_stats()["active_subscribers"] == 0
 
 
-def test_pipeline_emits_realtime_events_on_commit():
+def test_pipeline_emits_realtime_events_on_commit(tmp_path):
     """Verify SkillAutonomousPipeline emits PIPELINE_PULSE and SKILLS_MUTATED when committing."""
     store = SkillIngestionStore.get_instance()
     bus = SkillEventBus.get_instance()
@@ -184,11 +184,13 @@ def test_pipeline_emits_realtime_events_on_commit():
         author="card165-suite",
     )
 
-    pipeline = SkillAutonomousPipeline(skills_root=TEST_SKILLS_DIR, store=store)
-    res = pipeline.process_one_cycle(batch_size=1)
+    pipeline = SkillAutonomousPipeline(skills_root=tmp_path, store=store)
+    res = pipeline.process_one_cycle(batch_size=10)
 
     assert res["processed_count"] >= 1
-    assert res["results"][0]["status"] == "COMMITTED"
+    target_item = next((r for r in res["results"] if r.get("receipt_id") == rec.receipt_id), None)
+    assert target_item is not None, f"Receipt {rec.receipt_id} not found in pipeline results: {res['results']}"
+    assert target_item["status"] == "COMMITTED"
 
     # Inspect captured events in spy_queue
     while not spy_queue.empty():

@@ -12,7 +12,12 @@ def test_ahe_gate_check_no_manifests():
     """When no manifests exist, check should pass with exit code 0."""
     with patch("scripts.ahe_gate_check.AHEEngine.get_instance") as mock_get_inst:
         mock_engine = MagicMock()
-        mock_engine.list_manifests.return_value = []
+        mock_engine.run_pre_release_gate.return_value = {
+            "total_manifests": 0,
+            "drift_violations": [],
+            "polar_violations": [],
+            "gate_passed": True,
+        }
         mock_get_inst.return_value = mock_engine
 
         assert run_ahe_check() == 0
@@ -20,17 +25,13 @@ def test_ahe_gate_check_no_manifests():
 
 def test_ahe_gate_check_clean_manifest():
     """Active manifest with clean snapshot should pass with exit code 0."""
-    manifest = AHEManifest(
-        manifest_id="test-clean-manifest",
-        skill_name="test-skill",
-        status=AHEStatus.ACTIVE,
-    )
     with patch("scripts.ahe_gate_check.AHEEngine.get_instance") as mock_get_inst:
         mock_engine = MagicMock()
-        mock_engine.list_manifests.return_value = [manifest]
-        mock_engine.check_snapshot_drift.return_value = {
-            "snapshot_clean": True,
-            "drifted_files": [],
+        mock_engine.run_pre_release_gate.return_value = {
+            "total_manifests": 1,
+            "drift_violations": [],
+            "polar_violations": [],
+            "gate_passed": True,
         }
         mock_get_inst.return_value = mock_engine
 
@@ -39,17 +40,13 @@ def test_ahe_gate_check_clean_manifest():
 
 def test_ahe_gate_check_drift_detected():
     """Active manifest with drifted snapshot files should fail with exit code 1."""
-    manifest = AHEManifest(
-        manifest_id="test-drift-manifest",
-        skill_name="test-skill",
-        status=AHEStatus.ACTIVE,
-    )
     with patch("scripts.ahe_gate_check.AHEEngine.get_instance") as mock_get_inst:
         mock_engine = MagicMock()
-        mock_engine.list_manifests.return_value = [manifest]
-        mock_engine.check_snapshot_drift.return_value = {
-            "snapshot_clean": False,
-            "drifted_files": [{"path": "skills/test/SKILL.md", "reason": "hash_mismatch"}],
+        mock_engine.run_pre_release_gate.return_value = {
+            "total_manifests": 1,
+            "drift_violations": ["Manifest [m-1] Skill [test-skill]: Drift in skills/test/SKILL.md"],
+            "polar_violations": [],
+            "gate_passed": False,
         }
         mock_get_inst.return_value = mock_engine
 
@@ -58,27 +55,13 @@ def test_ahe_gate_check_drift_detected():
 
 def test_ahe_gate_check_polar_failure():
     """Active manifest with polar judge assertion failure should fail with exit code 1."""
-    manifest = AHEManifest(
-        manifest_id="test-polar-manifest",
-        skill_name="test-skill",
-        status=AHEStatus.VERIFIED,
-    )
     with patch("scripts.ahe_gate_check.AHEEngine.get_instance") as mock_get_inst:
         mock_engine = MagicMock()
-        mock_engine.list_manifests.return_value = [manifest]
-        mock_engine.check_snapshot_drift.return_value = {
-            "snapshot_clean": True,
-            "drifted_files": [],
-        }
-        mock_engine.verify_manifest.return_value = {
-            "results": [
-                {
-                    "assumption_id": "asm-1",
-                    "command": "python test.py",
-                    "verdict": "fail",
-                    "exit_code": 1,
-                }
-            ]
+        mock_engine.run_pre_release_gate.return_value = {
+            "total_manifests": 1,
+            "drift_violations": [],
+            "polar_violations": ["Manifest [m-1] Assumption [asm-1]: python test.py"],
+            "gate_passed": False,
         }
         mock_get_inst.return_value = mock_engine
 
