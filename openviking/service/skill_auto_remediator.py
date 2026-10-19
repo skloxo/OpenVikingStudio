@@ -216,44 +216,62 @@ class SkillAutoRemediator:
 
         clean_name = skill_name.replace("_", "-")
 
-        # 1. 检查并补全步骤编号 (SOP Structure >= 3 steps)
+        # 1. 检查并补全步骤编号 (优先提取原生段落 SOP)
+        from openviking.service.skill_native_sop_extractor import SkillNativeSOPExtractor
+        native_extractor = SkillNativeSOPExtractor()
+
         step_matches = _STEP_PATTERN.findall(body)
         if len(step_matches) < 3:
-            sop_block = (
-                "\n\n## 自动化执行流程与工序 (Execution SOP)\n"
-                "### 1. 前置环境与依赖探测 (Step 1: Environment & Dependency Check)\n"
-                "- 检查环境工具链、依赖包管理工具与鉴权凭据就绪状态，遵循 Fail-Fast 原则。\n\n"
-                "### 2. 核心工序执行与编排 (Step 2: Execution & Orchestration)\n"
-                "- 依据任务指令调度指定工具执行核心逻辑，严格遵循本技能的规约与参数边界。\n\n"
-                "### 3. 产物校验与交付断言 (Step 3: Verification & Assertion)\n"
-                "- 验证执行状态码为 0，核验生成代码、配置文件或业务数据完整性与合规性。\n"
-            )
-            body += sop_block
-            fixes.append("规范注入标准三阶有轨电车 SOP 流程 (Step 1/2/3)")
+            native_sop = native_extractor.extract_native_sop(body)
+            if native_sop:
+                body += native_sop
+                fixes.append("提纯野生段落工序并标准化升维为有轨电车 SOP")
+            else:
+                sop_block = (
+                    "\n\n## 自动化执行流程与工序 (Execution SOP)\n"
+                    "### 1. 前置环境与依赖探测 (Step 1: Environment & Dependency Check)\n"
+                    "- 检查环境工具链、依赖包管理工具与鉴权凭据就绪状态，遵循 Fail-Fast 原则。\n\n"
+                    "### 2. 核心工序执行与编排 (Step 2: Execution & Orchestration)\n"
+                    "- 依据任务指令调度指定工具执行核心逻辑，严格遵循本技能的规约与参数边界。\n\n"
+                    "### 3. 产物校验与交付断言 (Step 3: Verification & Assertion)\n"
+                    "- 验证执行状态码为 0，核验生成代码、配置文件或业务数据完整性与合规性。\n"
+                )
+                body += sop_block
+                fixes.append("规范注入标准三阶有轨电车 SOP 流程 (Step 1/2/3)")
 
-        # 2. 检查并补全 I/O 契约 (I/O & Delivery Contract)
+        # 2. 检查并补全 I/O 契约 (优先提取原生参数与断言)
         lower_body = body.lower()
         matched_io = [kw for kw in _IO_KEYWORDS if kw in lower_body]
         if len(matched_io) < 2:
-            io_block = (
-                "\n\n## 交付契约与验收标准 (I/O & Delivery Contract)\n"
-                "- **输入规格 (Inputs)**: 目标任务参数、运行环境与相关配置文件。\n"
-                "- **预期交付物 (Output Deliverables)**: 执行结果日志、生成的规范代码或配置产物。\n"
-                "- **完成断言 (Assert Criteria)**: 验证状态码为 0，且无异常未捕获报错。\n"
-            )
-            body += io_block
-            fixes.append("规范注入标准 I/O 交付契约与验收断言")
+            native_io = native_extractor.extract_native_io_contract(body, clean_name)
+            if native_io:
+                body += native_io
+                fixes.append("提纯原生技术参数与输出规约作为 I/O 交付契约")
+            else:
+                io_block = (
+                    "\n\n## 交付契约与验收标准 (I/O & Delivery Contract)\n"
+                    "- **输入规格 (Inputs)**: 目标任务参数、运行环境与相关配置文件。\n"
+                    "- **预期交付物 (Output Deliverables)**: 执行结果日志、生成的规范代码或配置产物。\n"
+                    "- **完成断言 (Assert Criteria)**: 验证状态码为 0，且无异常未捕获报错。\n"
+                )
+                body += io_block
+                fixes.append("规范注入标准 I/O 交付契约与验收断言")
 
-        # 3. 检查并补全容错与兜底机制 (Fault Tolerance)
+        # 3. 检查并补全容错与兜底机制 (优先提取原文异常处置规约)
         matched_fault = [kw for kw in _FAULT_KEYWORDS if kw in lower_body]
         if len(matched_fault) < 2:
-            fault_block = (
-                "\n\n## 故障排查与自愈恢复 (Failure Recovery SOP)\n"
-                "- **报错识别 (Error Detection)**: 遇到执行失败或指令异常时，即刻捕获核心错误日志与堆栈上下文。\n"
-                "- **重试与兜底 (Retry & Fallback)**: 允许指数退避重试最多 2 次；重试未果时执行优雅降级并输出明确归因。\n"
-            )
-            body += fault_block
-            fixes.append("规范注入标准故障自愈与降级重试 SOP")
+            native_fault = native_extractor.extract_native_fault_recovery(body)
+            if native_fault:
+                body += native_fault
+                fixes.append("提纯原生异常拦截规约与重试机制作为故障自愈 SOP")
+            else:
+                fault_block = (
+                    "\n\n## 故障排查与自愈恢复 (Failure Recovery SOP)\n"
+                    "- **报错识别 (Error Detection)**: 遇到执行失败或指令异常时，即刻捕获核心错误日志与堆栈上下文。\n"
+                    "- **重试与兜底 (Retry & Fallback)**: 允许指数退避重试最多 2 次；重试未果时执行优雅降级并输出明确归因。\n"
+                )
+                body += fault_block
+                fixes.append("规范注入标准故障自愈与降级重试 SOP")
 
         # 4. 检查工具显式引用 (Tool Contract)
         tool_mentions = _TOOL_MENTION_PATTERN.findall(body)
