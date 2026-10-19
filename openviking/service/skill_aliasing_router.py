@@ -15,7 +15,9 @@ import re
 from typing import Any, Dict, List, Optional, Tuple
 import yaml
 
-DEFAULT_SKILLS_DIR = Path("/home/skloxo/.openviking/data/viking/default/agent/skills")
+from openviking.service.skill_path_resolver import resolve_skills_root
+
+DEFAULT_SKILLS_DIR = resolve_skills_root()
 
 # 明确的重定向与归一化别名映射 (用于无独立 scenario 的泛化退化别名)
 EXPLICIT_ALIASES: Dict[str, str] = {

@@ -25,6 +25,7 @@ from openviking.service.skill_provenance_tracker import (
     ProvenanceAction,
     SkillProvenanceTracker,
 )
+from openviking.service.skill_path_resolver import resolve_skills_root
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ class SkillMutationEngine:
     """存量技能微手术热更新与微观技术实体 Diff 审计引擎。"""
 
     def __init__(self, skills_root: Optional[Path | str] = None) -> None:
-        self.skills_root = Path(skills_root) if skills_root else Path("/home/skloxo/.openviking/data/viking/default/agent/skills")
+        self.skills_root = Path(skills_root) if skills_root else resolve_skills_root()
         self.tracker = SkillProvenanceTracker.get_instance()
 
     def find_existing_target(self, skill_name: str) -> Tuple[bool, Optional[str], Optional[Path]]:

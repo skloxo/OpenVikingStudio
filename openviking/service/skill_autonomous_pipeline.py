@@ -43,10 +43,11 @@ from openviking.service.skill_mutation_engine import (
     SkillMutationEngine,
     MutationVerdict,
 )
+from openviking.service.skill_path_resolver import resolve_skills_root
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_SKILLS_DIR = Path("/home/skloxo/.openviking/data/viking/default/agent/skills")
+DEFAULT_SKILLS_DIR = resolve_skills_root()
 
 
 class SkillAutonomousPipeline:
@@ -431,6 +432,8 @@ class SkillAutonomousPipeline:
                         "target_bundle": target,
                     },
                 )
+                # Instant 0-latency alias projection refresh
+                self.aliasing_router.get_alias_map(force_refresh=True)
             except Exception as ev_err:
                 logger.debug("Failed to emit pipeline commit event: %s", ev_err)
 
