@@ -246,16 +246,45 @@ class SeamDecisionGateB6:
                 max_affinity = score
                 best_bundle = bundle_dir.name
 
+        # 核心领域语义雷达映射字典 (Macro Bundle Semantic Radar)
+        domain_radar = {
+            "cloud-infra-ops": {"gcp", "aws", "azure", "k8s", "kubernetes", "docker", "cluster", "terraform", "sql", "bigquery", "infra", "pipeline", "spark", "ipmi"},
+            "codebase-engineering": {"code", "python", "pip", "poetry", "npm", "pnpm", "git", "dependency", "test", "lint", "refactor", "ast", "clean", "architecture", "tdd", "pr", "asset"},
+            "openviking": {"viking", "memory", "session", "handover", "distill", "recipe", "ledger", "mcp", "fastmcp"},
+            "quant-trading": {"trade", "trading", "quant", "stock", "etf", "finance", "crypto", "fund", "tide"},
+            "cockpit-ui": {"ui", "frontend", "css", "tailwind", "react", "vue", "homepage", "component", "dashboard", "view"},
+            "security-audit-compliance": {"security", "audit", "pentest", "vulnerability", "auth", "secret", "permission"},
+            "credential-vault": {"keepass", "vault", "password", "key", "token", "credential", "dify"},
+            "developer-productivity": {"doc", "meeting", "calendar", "task", "tool", "productivity"},
+        }
+
+        # 1. 达到亲和度门限，直接合并入最佳母包
         if max_affinity >= 25.0 and best_bundle:
             return {
                 "decision": "MERGE_INTO_EXISTING",
                 "target": best_bundle,
                 "affinity_score": round(max_affinity, 1),
             }
+
+        # 2. 领域语义雷达兜底匹配：杜绝单工序因浅层未撞词而盲目自立新包
+        name_tokens = set(skill_name.lower().split("-"))
+        all_tokens = cand_kws.union(name_tokens)
+        for parent_domain, domain_terms in domain_radar.items():
+            if all_tokens.intersection(domain_terms):
+                parent_dir = existing_bundles_dir / parent_domain
+                if parent_dir.exists() and parent_dir.is_dir():
+                    return {
+                        "decision": "MERGE_INTO_EXISTING",
+                        "target": parent_domain,
+                        "affinity_score": 30.0,
+                    }
+
+        # 3. 严格单工序建包门禁：单体工序绝对严禁在顶层自立门户，默认归并至 developer-productivity
+        default_fallback = "developer-productivity" if (existing_bundles_dir / "developer-productivity").exists() else "cloud-infra-ops"
         return {
-            "decision": "SPAWN_NEW_BUNDLE",
-            "target": skill_name,
-            "affinity_score": round(max_affinity, 1),
+            "decision": "MERGE_INTO_EXISTING",
+            "target": default_fallback,
+            "affinity_score": 25.0,
         }
 
 
