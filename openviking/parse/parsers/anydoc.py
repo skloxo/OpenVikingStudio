@@ -59,18 +59,13 @@ class AnyDocParser(BaseParser):
         if not path.is_file():
             raise FileNotFoundError(f"Document file not found: {path}")
 
-        if not self.anydoc_config.enabled:
-            raise RuntimeError(
-                "AnyDoc parser is disabled; Office and EPUB legacy parsers have been removed"
-            )
-
-        from openviking.parse.parsers.anydoc_converter import AnyDocConverter
+        from openviking.parse.parsers.anydoc_adapter import AnyDocAdapter
         from openviking_cli.utils.storage import get_storage
 
         storage = get_storage()
         resource_name = kwargs.get("resource_name") or kwargs.get("source_name") or path.stem
-        conversion = await asyncio.to_thread(
-            AnyDocConverter().convert,
+        adapter = AnyDocAdapter(self.anydoc_config)
+        conversion = await adapter.parse_file(
             path,
             resource_name=resource_name,
             storage=storage,
@@ -97,12 +92,17 @@ class AnyDocParser(BaseParser):
         result.parse_time = time.time() - started
         result.meta.update(
             {
-                "converter": "firecrawl-anydoc",
+                "converter": "anydoc-adapter",
                 "intermediate_markdown_length": len(conversion.markdown),
                 "images_extracted": conversion.images_saved,
                 "assets_referenced": getattr(conversion, "assets_referenced", 0),
+                "fail_open_fallback": conversion.is_fallback,
+                "fallback_reason": conversion.fallback_reason,
+                "extracted_tables": conversion.extracted_tables,
             }
         )
+        if not self.anydoc_config.enabled:
+            result.warnings.append("AnyDoc parser is disabled; fell back to Fail-Open adapter")
         result.warnings.extend(getattr(conversion, "warnings", ()))
         return result
 

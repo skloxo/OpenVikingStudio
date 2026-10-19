@@ -302,11 +302,11 @@ def create_ecosystem_plugins(
     )
 
     # -------------------------------------------------------------
-    # 6. 智能体熔断断路器 (agent-circuit-breaker)
+    # 6. 智能体自适应熔断断路器 (agent-circuit-breaker)
     # -------------------------------------------------------------
     circuit_breaker_tools = [
-        ToolDefinition(name="circuit_breaker_status", description="断路器健康状态与活跃会话步数/错误计数监控", category="guard"),
-        ToolDefinition(name="circuit_breaker_reset", description="重置并清空断路器会话状态缓存与报错计数器", category="guard"),
+        ToolDefinition(name="circuit_breaker_status", description="自适应断路器健康状态、活跃会话步数预算与错误计数监控", category="guard"),
+        ToolDefinition(name="circuit_breaker_reset", description="重置并清空断路器会话状态缓存、增量租约与报错计数器", category="guard"),
     ]
     for t in circuit_breaker_tools:
         tool_to_plugin_map[t.name] = "agent-circuit-breaker"
@@ -314,18 +314,20 @@ def create_ecosystem_plugins(
     circuit_breaker_plugin = QuadPluginDefinition(
         plugin_id="agent-circuit-breaker",
         name="智能体熔断断路器",
-        version="1.2.0",
+        version="1.3.0",
         category="user",
-        description="防死循环与 Token 烧尽物理断路器，具备二进制裸流直通与 force_ask 零误杀双重防护",
+        description="防死循环与 Token 烧尽物理断路器，具备自适应增量租约、二进制裸流直通与 force_ask 零误杀多重防护",
         skill=SkillDefinition(
             skill_id="circuit-breaker-ops",
             name="断路器运维认知导轨",
-            description="物理级连续报错熔断、单轮步数门禁与同文件震荡拦截 SOP",
-            sop_summary="检测连续写报错 >= 3 -> 触发 force_ask 求证 -> 规约输出三行事实+双选裁决",
+            description="物理级连续报错熔断、自适应动态步数租约、同文件震荡与良性收尾豁免拦截 SOP",
+            sop_summary="检测连续写报错 >= 3 -> 触发 force_ask 求证 -> 规约输出三行事实+双选裁决 -> 人类放行追加 +15 步租约",
             rules=[
-                "连续 3 次写报错强行冻结，禁止盲目打补丁",
-                "单轮步数硬预算 18 步，12 步渐进预警",
-                "只读探索工具 100% 免检放行",
+                "连续 3 次写报错强行求证，严禁盲目尝试打补丁",
+                "自适应弹性预算：全绿灯健康态 36 步，警戒收敛态 15 步",
+                "自适应增量租约：人类授权放行后自动延展 +15 步额度，彻底消除连环弹窗",
+                "只读探索（view_file/grep/openviking 等）100% 免检直通",
+                "良性收尾与文档记录（REFACTORING_PLAN 等）在健康状态下自动豁免步数护栏",
             ],
         ),
         hooks=[
@@ -333,19 +335,39 @@ def create_ecosystem_plugins(
                 hook_id="pre_tool_guard_hook",
                 name="PreTool 物理拦截守卫",
                 trigger_event="before_tool_execution",
-                description="工具执行前毫秒级拦截连续写报错与死循环震荡，零 Token 消耗神经反射弧",
+                description="工具执行前毫秒级拦截连续写报错、步数超标与死循环震荡，零 Token 消耗神经反射弧",
+            ),
+            HookDefinition(
+                hook_id="post_tool_recorder_hook",
+                name="PostTool 执行结果监听器",
+                trigger_event="after_tool_execution",
+                description="捕获并记账工具执行结果，错误即时累加计数，成功动态自愈清零",
+            ),
+            HookDefinition(
+                hook_id="pre_invocation_reset_hook",
+                name="PreInvocation 轮次重置守卫",
+                trigger_event="before_agent_turn",
+                description="用户每轮输入新指令时自动重置单轮步数计数，跨会话隔离无污染",
+            ),
+            HookDefinition(
+                hook_id="session_start_hook",
+                name="SessionStart 会话冷启动守卫",
+                trigger_event="session_initialize",
+                description="新会话初始化与状态恢复，载入全局熔断规则与隔离环境自检",
             ),
         ],
         tools=circuit_breaker_tools,
         gui=GuiSchemaDefinition(
             settings_fields={
                 "maxConsecutiveFailures": 3,
-                "maxStepBudget": 18,
+                "healthyStepLimit": 36,
+                "unhealthyStepLimit": 15,
+                "leaseExtensionSteps": 15,
                 "oscillationThreshold": 3,
             },
             dashboard_route="/plugins",
         ),
-        health=PluginHealthProbe(status="healthy", latency_ms=0.5, message="Circuit breaker active"),
+        health=PluginHealthProbe(status="healthy", latency_ms=0.5, message="Adaptive circuit breaker v1.3.0 active"),
     )
 
     # 注册别名映射

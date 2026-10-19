@@ -313,11 +313,11 @@ export function resolvePluginBridgeConfig(
     }
   }
 
-  // 6. 智能体熔断断路器 (agent-circuit-breaker 物理护栏)
+  // 6. 智能体自适应熔断断路器 (agent-circuit-breaker 物理护栏)
   if (id.includes('circuit-breaker') || id.includes('circuit_breaker')) {
     const pkgName = 'agent-circuit-breaker'
-    const version = '1.2.0'
-    const tarballUrl = `https://vk.tide.red/studio/${pkgName}-${version}.tgz`
+    const version = '1.3.0'
+    const tarballUrl = `https://vk.tide.red/studio/${pkgName}.tgz`
     const installCmd = `python3 setup.py install`
 
     return {
@@ -328,11 +328,11 @@ export function resolvePluginBridgeConfig(
       isExternalService: false,
       tarballUrl,
       installCmd,
-      dshCordisPatchYaml: `# 智能体熔断断路器属于客户端物理层生命周期守卫，无需 DSH 远程挂载`,
-      dshAgentPrompt: `请将智能体熔断断路器作为客户端物理护栏部署：\n1. 目录：~/.gemini/config/plugins/agent-circuit-breaker/\n2. 执行 python3 setup.py install 即可完成自举部署。`,
-      antigravitySetupCmdWin: `cd "$env:USERPROFILE\\.gemini\\config\\plugins\\agent-circuit-breaker" && python setup.py install`,
-      antigravitySetupCmdUnix: `cd ~/.gemini/config/plugins/agent-circuit-breaker && python3 setup.py install`,
-      antigravityAgentPrompt: `请帮我将当前反重力开发座舱接入智能体熔断断路器护栏：\n1. 挂载目录：~/.gemini/config/plugins/agent-circuit-breaker/\n2. 运行 python setup.py install 完成绝对路径与二进制裸流生命周期钩子挂载；\n3. 激活连续写报错 >= 3 次熔断与单轮 18 步预算保护。`,
+      dshCordisPatchYaml: `# 【生态规划中】智能体熔断断路器当前专为 Google Antigravity 原生内核定制\n# DSH 与 Claude Code 架构适配已纳入后续路线图，敬请期待`,
+      dshAgentPrompt: `【生态规划提示】智能体熔断断路器当前深度定制于 Google Antigravity 原生 Hook 与 Fail-Open 架构。\nDSH 等其他智能体适配正在规划中，暂请优先在反重力环境中开箱使用。`,
+      antigravitySetupCmdWin: `powershell -ExecutionPolicy Bypass -Command "iwr -Uri '${tarballUrl}' -OutFile '$env:TEMP\\acb.tgz'; New-Item -ItemType Directory -Force -Path \\"$env:USERPROFILE\\.gemini\\config\\plugins\\agent-circuit-breaker\\" | Out-Null; tar -xzf '$env:TEMP\\acb.tgz' -C \\"$env:USERPROFILE\\.gemini\\config\\plugins\\agent-circuit-breaker\\"; python \\"$env:USERPROFILE\\.gemini\\config\\plugins\\agent-circuit-breaker\\setup.py\\" install"`,
+      antigravitySetupCmdUnix: `curl -fsSL ${tarballUrl} -o /tmp/acb.tgz && mkdir -p ~/.gemini/config/plugins/agent-circuit-breaker && tar -xzf /tmp/acb.tgz -C ~/.gemini/config/plugins/agent-circuit-breaker && python3 ~/.gemini/config/plugins/agent-circuit-breaker/setup.py install`,
+      antigravityAgentPrompt: `请帮我将当前反重力开发座舱接入智能体自适应熔断断路器护栏：\n1. 执行开箱即用一键安装命令；\n2. 挂载目录：~/.gemini/config/plugins/agent-circuit-breaker/；\n3. 激活自适应弹性预算（健康态 36 步 / 警戒态 15 步 / 授权后 +15 步增量租约）；\n4. 激活 PreTool / PostTool / PreInvocation / SessionStart 四维原生生命周期钩子，开启 force_ask 零误杀防护。`,
       universalMcpJson: JSON.stringify(
         {
           mcpServers: {
@@ -345,7 +345,7 @@ export function resolvePluginBridgeConfig(
         null,
         2,
       ),
-      universalAgentPrompt: `请将智能体断路器 MCP 伺服接入当前环境：\n1. 启动命令：python3 ~/.gemini/config/plugins/agent-circuit-breaker/server.py\n2. 写入 mcp.json 并验证 circuit_breaker_status 工具。`,
+      universalAgentPrompt: `请将智能体断路器 MCP 伺服接入当前通用 MCP 客户端：\n1. 启动命令：python3 ~/.gemini/config/plugins/agent-circuit-breaker/server.py\n2. 写入 mcp.json 并验证 circuit_breaker_status 工具。\n注：高级 Hook 物理拦截拦截点当前为反重力原生独占。`,
     }
   }
 
