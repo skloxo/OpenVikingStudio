@@ -32,6 +32,7 @@ BATTLEFIELD_34_TOOLS: List[Dict[str, str]] = [
     {"id": "openviking_diff", "name": "diff", "description": "比对工作区文件变更或版本差异"},
     {"id": "openviking_smart_read", "name": "smart_read", "description": "自适应多级智能折叠精读代码"},
     {"id": "openviking_tokenshift_compress", "name": "tokenshift_compress", "description": "TokenShift 源码 AST 折叠压缩"},
+    {"id": "openviking_content_reduce", "name": "content_reduce", "description": "通用内容脱水压缩(AST/技能/文本)"},
     {"id": "openviking_tag", "name": "tag", "description": "为指定知识或代码节点打上语义标签"},
     # 技能中心感知与发布 (6 项 - 锚定 1214 全域技能)
     {"id": "openviking_skills", "name": "skills", "description": "感知并列出系统全域 1214 个在册技能"},

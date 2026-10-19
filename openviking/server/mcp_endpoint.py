@@ -3312,6 +3312,60 @@ async def openviking_tool_result_list(
         return json.dumps({"status": "error", "error": str(e)}, ensure_ascii=False)
 
 
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_content_reduce(
+    content: str,
+    target_type: str = "AUTO",
+    rate: float = 0.5,
+    threshold: float = 0.35,
+    source_uri: str = "",
+) -> str:
+    """通用多模态内容脱水压缩引擎 (Card-190 SSOT)。
+    
+    统一收敛代码 AST (TokenShift)、技能六元组 (SkillZip) 与文本 Markdown (WikiDehydration)。
+    具备类型自嗅探 (AUTO/CODE/SKILL/TEXT)、Fail-Open 物理兜底保证与多维审计留痕。
+    
+    Args:
+        content: 待压缩的原始文本/代码/技能内容。
+        target_type: 内容类型，支持 'AUTO', 'CODE', 'SKILL', 'TEXT'。默认 'AUTO'。
+        rate: 压缩率目标 (0.1 ~ 0.9)，默认 0.5。
+        threshold: 语义重要度保留阈值 (0.0 ~ 1.0)，默认 0.35。
+        source_uri: 资源标识或文件路径 (可选)，用于溯源。
+    
+    Returns:
+        JSON 格式压缩结果，包含 reduced_content, original_tokens, reduced_tokens, compression_ratio, engine_used。
+    """
+    import json
+    from openviking.service.universal_reducer import (
+        ReductionMode,
+        UniversalContentReducer,
+        UniversalReduceRequest,
+    )
+    try:
+        clean_type = (target_type or "auto").lower()
+        mode_val = (
+            ReductionMode(clean_type)
+            if clean_type in ("auto", "code", "skill", "text")
+            else ReductionMode.AUTO
+        )
+        req = UniversalReduceRequest(
+            content=content,
+            mode=mode_val,
+            target_ratio=rate,
+        )
+        res = UniversalContentReducer.get_instance().reduce(req)
+        return json.dumps(res.model_dump(), ensure_ascii=False, indent=2)
+    except Exception as e:
+        return json.dumps({
+            "reduced_content": content,
+            "original_tokens": len(content.split()),
+            "reduced_tokens": len(content.split()),
+            "compression_ratio": 1.0,
+            "engine_used": "fail_open_fallback",
+            "error": str(e),
+        }, ensure_ascii=False, indent=2)
+
+
 # ---------------------------------------------------------------------------
 # FastMCP 双向透明别名解析器 (消除 Unknown Tool 与短名称不兼容)
 # ---------------------------------------------------------------------------
@@ -3501,6 +3555,7 @@ def _register_domain_packages() -> None:
             "openviking_glob", "glob",
             "openviking_health", "health",
             "openviking_forget", "forget",
+            "openviking_content_reduce", "content_reduce",
         }
         existing.update(NATIVE_PROTECTED_TOOLS)
 

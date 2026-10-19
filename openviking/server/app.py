@@ -100,6 +100,7 @@ from openviking.server.routers import (
     agents_router,
     global_agents_router,
     plugins_router,
+    universal_reducer_router,
 )
 
 from openviking.service.core import OpenVikingService
@@ -781,6 +782,7 @@ def create_app(
     app.include_router(skill_evolution_router)
     app.include_router(skill_ingestion_router)
     app.include_router(anti_demo_router)
+    app.include_router(universal_reducer_router)
     app.include_router(bot_router, prefix="/bot/v1")
 
     # OAuth 2.1: when enabled, mount the official MCP SDK auth routes

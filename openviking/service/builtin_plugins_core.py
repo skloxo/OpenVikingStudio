@@ -56,6 +56,7 @@ BATTLEFIELD_34_TOOL_NAMES: List[str] = [
     "openviking_diff",
     "openviking_smart_read",
     "openviking_tokenshift_compress",
+    "openviking_content_reduce",
     "openviking_tag",
     # 3. 技能中心感知与发布 (6 项 - 锚定 1214 全域技能)
     "openviking_skills",
@@ -128,6 +129,7 @@ def create_core_and_ops_plugins(
         ToolDefinition(name="openviking_diff", description="文件与代码版本差异对比分析", category="code"),
         ToolDefinition(name="openviking_smart_read", description="分层自适应智能知识提取与概括", category="code"),
         ToolDefinition(name="openviking_tokenshift_compress", description="TokenShift 源码 AST 折叠压缩", category="code"),
+        ToolDefinition(name="openviking_content_reduce", description="通用内容脱水压缩(AST/技能/文本)", category="code"),
         ToolDefinition(name="openviking_tag", description="资源与代码标签标注及分类检索", category="workspace"),
         # 3. 技能中心感知与发布 (6 项 - 锚定 1214 全域技能)
         ToolDefinition(name="openviking_skills", description="知识中枢 1214 全量技能状态与分类总览", category="skill"),
