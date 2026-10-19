@@ -193,7 +193,7 @@ class _SemanticMixin:
         filter: Optional[Dict] = None,
         ctx: Optional[RequestContext] = None,
         level: Optional[List[int]] = None,
-        image_url: Optional[str] = None,
+        image_url: str | list[str] | None = None,
         mode: Optional[str] = None,
     ):
         """Semantic search.
@@ -283,6 +283,7 @@ class _SemanticMixin:
             limit=limit,
             mode=mode,
             score_threshold=score_threshold,
+            has_explicit_target=bool(retrieval_targets.first_explicit_directory),
             scope_dsl=filter,
             level=level,
         )
@@ -375,7 +376,7 @@ class _SemanticMixin:
         filter: Optional[Dict] = None,
         ctx: Optional[RequestContext] = None,
         level: Optional[List[int]] = None,
-        image_url: Optional[str] = None,
+        image_url: str | list[str] | None = None,
     ):
         """Complex search with session context.
 
@@ -485,6 +486,7 @@ class _SemanticMixin:
                 ctx=real_ctx,
                 limit=limit,
                 score_threshold=score_threshold,
+                has_explicit_target=bool(retrieval_targets.first_explicit_directory),
                 scope_dsl=filter,
                 level=level,
             )

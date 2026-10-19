@@ -207,7 +207,7 @@ async def gather_candidates(
     limit: int,
     score_threshold: Optional[float],
     filter: Optional[Dict[str, Any]] = None,
-    image_url: Optional[str] = None,
+    image_url: str | list[str] | None = None,
     peer_scope: str = "all",
     penalties: Optional[Mapping[str, float]] = None,
     excluded: Optional[Set[str]] = None,

@@ -35,7 +35,7 @@ QUERY_CACHE_MAXSIZE = 1000  # LRU capacity
 
 def _ensure_non_empty_query(
     query: str,
-    image_url: Optional[str] = None,
+    image_url: str | list[str] | None = None,
     filter: Optional[Dict] = None,
 ) -> None:
     """Reject a request that gives the search nothing to work with.
@@ -128,9 +128,11 @@ class SearchService:
 
     async def _resolve_image_url(
         self,
-        image_url: Optional[str],
+        image_url: str | list[str] | None,
         ctx: RequestContext,
-    ) -> Optional[str]:
+    ) -> str | list[str] | None:
+        if isinstance(image_url, list):
+            return [await self._resolve_image_url(url, ctx) for url in image_url]
         if not image_url:
             return None
         if is_viking_uri(image_url):
@@ -153,7 +155,7 @@ class SearchService:
         score_threshold: Optional[float] = None,
         filter: Optional[Dict] = None,
         level: Optional[List[int]] = None,
-        image_url: Optional[str] = None,
+        image_url: str | list[str] | None = None,
     ) -> Any:
         """Complex search with session context.
 
@@ -217,7 +219,7 @@ class SearchService:
         score_threshold: Optional[float] = None,
         filter: Optional[Dict] = None,
         level: Optional[List[int]] = None,
-        image_url: Optional[str] = None,
+        image_url: str | list[str] | None = None,
         mode: Optional[str] = None,
     ) -> Any:
         """Semantic search without session context.
