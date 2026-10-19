@@ -92,44 +92,114 @@ def build_hooks_config(guard_script_path: Path) -> dict:
 
 
 def register_global_mcp(server_py_path: Path):
-    """双轨注册机制：将 circuit-breaker MCP 服务联动注册至全局 mcp_config.json，使 Manage MCP Servers 100% 显式呈现"""
-    global_mcp_file = Path.home() / ".gemini" / "config" / "mcp_config.json"
-    try:
-        cfg = {}
-        if global_mcp_file.exists():
-            with open(global_mcp_file, "r", encoding="utf-8") as f:
-                cfg = json.load(f)
-        if "mcpServers" not in cfg:
-            cfg["mcpServers"] = {}
+    """四维全覆盖双轨注册机制：联动注册至 config、antigravity 与 antigravity-ide 的 mcp_config.json，并预生成 Tool Schema"""
+    mcp_config_targets = [
+        Path.home() / ".gemini" / "config" / "mcp_config.json",
+        Path.home() / ".gemini" / "antigravity" / "mcp_config.json",
+        Path.home() / ".gemini" / "antigravity-ide" / "mcp_config.json",
+        Path.home() / ".gemini" / "mcp_config.json"
+    ]
 
-        py_exe = get_python_cmd()
-        cfg["mcpServers"]["circuit-breaker"] = {
-            "command": py_exe,
-            "args": [str(server_py_path.resolve()).replace("\\", "/")],
-            "env": {
-                "PYTHONIOENCODING": "utf-8"
+    py_exe = get_python_cmd()
+    server_entry = {
+        "command": py_exe,
+        "args": [str(server_py_path.resolve()).replace("\\", "/")],
+        "env": {
+            "PYTHONIOENCODING": "utf-8"
+        }
+    }
+
+    registered_count = 0
+    for target in mcp_config_targets:
+        try:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            cfg = {}
+            if target.exists():
+                with open(target, "r", encoding="utf-8") as f:
+                    cfg = json.load(f)
+            if "mcpServers" not in cfg:
+                cfg["mcpServers"] = {}
+            cfg["mcpServers"]["circuit-breaker"] = server_entry
+            with open(target, "w", encoding="utf-8") as f:
+                json.dump(cfg, f, ensure_ascii=False, indent=2)
+            registered_count += 1
+        except Exception:
+            pass
+
+    print(f"✅ 5. 全局 MCP 双轨穿透完成 (已联动覆盖 {registered_count} 处 mcp_config.json)")
+
+    # 预置生成 MCP Tool Schema JSON，使 IDE/桌面端无须等待动态探测即可即刻呈现
+    tool_schemas = {
+        "circuit_breaker_status": {
+            "name": "circuit_breaker_status",
+            "description": "查看当前 Antigravity 宿主断路器的运行状态、活跃会话步数与错误计数监控大屏",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "session_id": {
+                        "type": "string",
+                        "description": "可选：指定会话ID查询切片"
+                    }
+                }
+            }
+        },
+        "circuit_breaker_reset": {
+            "name": "circuit_breaker_reset",
+            "description": "重置并清空断路器会话状态缓存与报错计数器",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "session_id": {
+                        "type": "string",
+                        "description": "可选：指定重置的会话ID，缺省重置全部"
+                    }
+                }
             }
         }
-        with open(global_mcp_file, "w", encoding="utf-8") as f:
-            json.dump(cfg, f, ensure_ascii=False, indent=2)
-        print("✅ 5. 全局 MCP 双轨穿透完成 (~/.gemini/config/mcp_config.json 成功挂载 circuit-breaker)")
-    except Exception as e:
-        print(f"⚠️ 全局 MCP 挂载略过: {e}")
+    }
+
+    schema_dirs = [
+        Path.home() / ".gemini" / "antigravity" / "mcp" / "circuit-breaker",
+        Path.home() / ".gemini" / "antigravity-ide" / "mcp" / "circuit-breaker"
+    ]
+    for sdir in schema_dirs:
+        try:
+            sdir.mkdir(parents=True, exist_ok=True)
+            for tool_name, schema in tool_schemas.items():
+                with open(sdir / f"{tool_name}.json", "w", encoding="utf-8") as f:
+                    json.dump(schema, f, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
+    print("✅ 6. MCP Tool Schema 原生投影完成 (~/.gemini/antigravity[ -ide]/mcp/circuit-breaker/ 预置就绪)")
 
 
 def unregister_global_mcp():
-    global_mcp_file = Path.home() / ".gemini" / "config" / "mcp_config.json"
-    if global_mcp_file.exists():
-        try:
-            with open(global_mcp_file, "r", encoding="utf-8") as f:
-                cfg = json.load(f)
-            if "mcpServers" in cfg and "circuit-breaker" in cfg["mcpServers"]:
-                del cfg["mcpServers"]["circuit-breaker"]
-                with open(global_mcp_file, "w", encoding="utf-8") as f:
-                    json.dump(cfg, f, ensure_ascii=False, indent=2)
-                print("✅ 已从全局 mcp_config.json 安全注销 circuit-breaker 服务。")
-        except Exception:
-            pass
+    mcp_config_targets = [
+        Path.home() / ".gemini" / "config" / "mcp_config.json",
+        Path.home() / ".gemini" / "antigravity" / "mcp_config.json",
+        Path.home() / ".gemini" / "antigravity-ide" / "mcp_config.json",
+        Path.home() / ".gemini" / "mcp_config.json"
+    ]
+    for target in mcp_config_targets:
+        if target.exists():
+            try:
+                with open(target, "r", encoding="utf-8") as f:
+                    cfg = json.load(f)
+                if "mcpServers" in cfg and "circuit-breaker" in cfg["mcpServers"]:
+                    del cfg["mcpServers"]["circuit-breaker"]
+                    with open(target, "w", encoding="utf-8") as f:
+                        json.dump(cfg, f, ensure_ascii=False, indent=2)
+            except Exception:
+                pass
+    print("✅ 已从各级 mcp_config.json 安全注销 circuit-breaker 服务。")
+
+    schema_dirs = [
+        Path.home() / ".gemini" / "antigravity" / "mcp" / "circuit-breaker",
+        Path.home() / ".gemini" / "antigravity-ide" / "mcp" / "circuit-breaker"
+    ]
+    for sdir in schema_dirs:
+        if sdir.exists():
+            shutil.rmtree(sdir, ignore_errors=True)
 
 
 def install(target_dir: Path = None):

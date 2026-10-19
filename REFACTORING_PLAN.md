@@ -3954,3 +3954,14 @@
     2. **格式与本地大包体系对齐**：编译输出的 L0/L1 摘要自动适配本地 21 个核心领域能力大包格式，丰富各母包的微观子场景；
     3. **性能基准验证**：在万行示例工程中测试编译速度与索引质量，确保离线任务不抢占实时在线检索资源。
 
+---
+
+### 📌 [P0] [x] Card-188 (v1.7.145): B6 技能演进流水线跨宿主自动感知链路修复与黑匣子全证据链沉淀 (B6 Autonomous Ingestion Cross-Host Perception Link SSOT) ✅
+- **类型**：跨宿主感知盲区物理根治 / 演进流水线提交协议纠偏 / 黑匣子留痕 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**： 1.7.145 ｜ **当前状态**：[x] 已验收通过 ✅
+- **背景与第一性原理**：
+  - **核心痛点**：在 Windows 宿主端新落盘的一级技能（如 `antigravity-plugin-crafting`）未被位于 WSL2 容器内的 OpenViking 服务感知与收录，链路出现断裂。原因在于：1) `_get_skill_base_sources()` 仅探测 WSL 本地家目录，未探测 `/mnt/c/Users/*/.gemini/config/skills` 与 `Desktop/*/.agents/skills`；2) 历史自动同步脚本 `skill_syncer.py` 仍调用已弃用的 `POST /api/v1/skills`（导致 404/405），未走 B6 自主演进接入信箱 `POST /api/v1/skills/ingestion/submit`；
+  - **兼并方案与工程修复**：
+    1. **跨宿主目录探测自适应与权限熔断**：在 `mcp-openviking/_core/config.py` 中引入 Windows 宿主用户目录动态嗅探机制，跨 WSL2 `/mnt/c/Users/` 与 Windows 原生双向打通，并在目录遍历中注入 `onerror` 权限防崩溃门禁；
+    2. **对齐 B6 演进投递协议**：将 `skill_syncer.py` 的落盘提交目标全面修正为 `POST /api/v1/skills/ingestion/submit`，与 `SkillAutonomousPipeline` 无缝咬合；
+    3. **端到端演进闭环实测**：首个新技能 `antigravity-plugin-crafting` (Receipt `ingest_f1d92cac178b`) 成功通过 AST 语法校验自愈、SkillOpt 质量评测（得分 90.0 分）、SkillZip 契约压缩、Ante-Gate 路由裁决 (`SPAWN_NEW_BUNDLE`)，成功跃迁至 `COMMITTED` 并挂载至 `viking://agent/skills/`；
+    4. **五阶黑匣子留痕与经验沉淀**：`SkillProvenanceTracker` 完整记录 INGEST ➔ OPTIMIZE ➔ VALIDATE ➔ ROUTE ➔ COMMITTED 审计事实流，同时调用 `openviking_record_evolution_lesson` 将避坑经验与双端路径映射规则写入体外大脑 Master Memory。
