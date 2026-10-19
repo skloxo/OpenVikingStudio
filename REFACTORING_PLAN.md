@@ -2,11 +2,15 @@
 
 > **关联研发大蓝图**：[`BLUEPRINT.md`](file:///home/skloxo/aho/openclaw/project/.agents/BLUEPRINT.md) ｜ **交付全量归档台账**：[`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md) ｜ **通用资产档案库**：[`COMPONENT_AND_WHEEL_INVENTORY.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md) ｜ **👁️ 人工验收测试指南**：[`docs/HUMAN_ACCEPTANCE_TESTING.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/HUMAN_ACCEPTANCE_TESTING.md)
 > **唯一真相源 (SSOT)**：本文档为 OpenViking 当前活跃的重构规划与就绪待调度的任务矩阵看板。历史所有已验收交付的版本履历（Milestone 1~4 全量 19 张 Task Cards 及前序波次）已完整归档至 [`DELIVERY_ARCHIVE.md`]- **线上正式部署版本**：**`v1.4.106`**（物理访问地址：`vk.tide.red/studio/home`，已实机验证）；
-- **当前最新交付版本**：**`v1.7.140`**（Tag: `v1.7.140`，检索层单阶段全局混合召回重构、RRF 物理连续打分保真与非对称时间衰减深度咬合）；
+- **当前最新交付版本**：**`v1.7.130`**（Tag: `v1.7.130`，技能中心「B6 演进流水线与全息运行中枢」核心架构、双模式切换与 12 阶态势沙盘）；
 - **历史里程碑详单检索**：如需查阅 Milestone 1~4 及早期版本修改清单与架构细节，请点击跳转至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。
 
 | 版本 Tag      | 任务工单 ID | 模块与重构主题                                                                                                                                                | 核心治理成果与物理交付物                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |     验收状态      |
 | :------------ | :---------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------: |
+| **`v1.7.146`** | **Card-189** | **全域伪概念与悬空代码彻底斩杀 (DSPy Pseudo Compiler Purge, Misplaced Sandbox Pruning & Anti-Demo Hardening SSOT - 主线 D 首战)** | 1. **物理铲除山寨 DSPy 伪概念**：彻底删除 `routers/dspy_compiler.py`、`service/dspy_*.py` 以及前端 `dspy-compiler-cockpit.tsx`，清退 3,014 行代码；<br>2. **收敛 `/retrieval` 杂物间**：剥离无关异类沙箱，使检索页纯化为单阶段混合召回与时间衰减中枢；<br>3. **门禁与全域验真**：`anti_demo_gate.py` 233 个组件 100% 通过，Git commit `016df6aef`。 | [x] 已验收通过 ✅ |
+| **`v1.7.147`** | **Card-190** | **三大通用原子引擎抽离与多端复用中枢 (Universal Content Reducer, Unified Lifecycle Engine & Audit Ledger SSOT - 主线 D)** | 1. **UniversalContentReducer**：多模态内容脱水压缩（CODE/SKILL/TEXT），自动类型嗅探，正则冻结 YAML 与代码块，AST 语法验真与 Fail-Open 兜底，注册 FastMCP `openviking_content_reduce`；<br>2. **UnifiedLifecycleEngine**：5 阶标准状态机（INGESTED ➔ EVALUATING ➔ REDUCING ➔ VALIDATING ➔ COMMITTED），线程安全，前置守卫与后置监听解耦；<br>3. **UniversalAuditLedger**：线程安全 SQLite 不可变事件账本，支持多维时间线检索与超期归档；<br>4. **双全验证全绿**：11/11 单测通过，19/19 回归测试通过，Vite 编译通过，Git commit `c8354929a`。 | [x] 已验收通过 ✅ |
+| **`v1.7.148`** | **Card-191** | **存量高价值能力自愈与自驱闭环补齐 (Automate Tri-Gate Dreamer, Hermes Flash Nudge & AHE Pre-Release Gate SSOT - 主线 D)** | 1. **OfflineDreamer 闭环驱动**：打通 `OfflineDreamer` 与 `UnifiedLifecycleEngine` 状态机推进，归纳蒸馏自动生成 Master Card 并沉淀至 `UniversalAuditLedger`；<br>2. **Hermes 结构化归因与微手术**：落地 `StructuredAttribution`，自动解析调用栈/工具报错，分类并提议 `<=30` 行微手术补丁，暴露 `/api/v1/hermes/attribute` 与 `/attributions` 端点；<br>3. **AHE Pre-Release 自动化门禁**：自动装载核心系统不变性（Fail-Open 保证、<=30行补丁限制），运行快照漂移与 Polar 沙箱检测，作为 `VALIDATING ➔ COMMITTED` 状态守卫阻断违约提交，暴露 `/api/v1/ahe/gate/check` 端点；<br>4. **测试与视网膜门禁全绿**：8/8 专项单测通过，19/19 回归测试通过，Vite 构建编译全绿 (18.33s)，`anti_demo_gate.py` 233 组件 100% PASS。 | [x] 已验收通过 ✅ |
+| **`v1.7.149`** | **Card-192** | **前端座舱纯化重构与视网膜终验 (Skills Pure Dual-Mode Cockpit, Cleanse Retrieval & Ground Guardrails SSOT - 主线 D 终战)** | 1. **技能中心纯粹化**：21 母包大盘 + B6 自主闭环流水线（含黑匣子审计事实流与 Hermes 微补丁）；<br>2. **知识检索纯粹化**：收敛至单阶段全局混合召回与时间衰减；<br>3. **安全装甲脱虚向实**：自适应断路器大盘 + 真实门禁拦截计数；<br>4. **终验交付**：全量回归单测与端到端实机验证。 | [ ] 待排期迭代 ⏳ |
 | **`v1.7.127`** | **Card-165** | **全双工实时事件总线接入与技能大盘毫秒级自愈刷新 (Full-Duplex Real-Time Event Bus & Instant Skills Query Invalidation SSOT)** | 1. **WebSocket / SSE 实时事件总线全双工接入**：在 `SkillEventBus` 落地 `subscribe_ws` 与 `subscribe` 双引擎，在 `openviking/server/routers/skills.py` 暴露 `/events` (SSE) 与 `/ws` (WebSocket) 双端点，彻底切除前端 TanStack Query 60s 静态轮询缓存延迟；<br>2. **流水线状态微脉冲下发 (PIPELINE_PULSE)**：在 `SkillAutonomousPipeline` 与 `skill_ingestion.py` 串联事件中枢，当技能入库 (ENQUEUED)、质检拦截 (REJECTED)、自主落盘 (COMMITTED) 与批处理完成 (CYCLE_COMPLETED) 时，毫秒级广播微脉冲；<br>3. **前端静默自愈拉新与全域缓存失效**：在 `use-skill-event-bus.ts` 捕获 `PIPELINE_PULSE` 与 `SKILLS_MUTATED`，毫秒级触发 `queryClient.invalidateQueries` 精准刷新 `skills`、`skills-ingestion-queue-depth`、`skills-ingestion-queue`、`skills-provenance-events` 与 `skill-detail`，实现无感即时刷新；<br>4. **视网膜单测与门禁全绿交付**：新增 `test_card165_realtime_event_bus.py` 6/6 全绿通过，结合 `test_autonomous_pipeline.py` 7/7 快速通过 (7.57s)，Vite 生产构建编译通过 (20.42s)，Security Scan 5058 文件零泄露，Anti-Demo 232 组件 100% PASS。 | [x] 已验收通过 ✅ |
 | **`v1.7.128`** | **Card-169** | **上游 v0.5.0 突破吸收首战 — 单阶段全局检索重构与 3 天保护期时间衰减落地 (Single-Pass Global Retrieval & 3-Day Event Time Decay SSOT)** | 1. **切除分层树检索与父级分数下传 (Deprecate Hierarchical Walking)**：彻底重构 `openviking/retrieve/hierarchical_retriever.py`，从 992 行精简至 411 行黄金甜点区，移除递归逐层与父级打分逻辑，消灭目录摘要偏差导致的知识饿死；<br>2. **单阶段全局召回 (Single-Pass Global Vector Recall)**：直接在目标命名空间发起全局单次向量检索，消除逐层等待耗时；<br>3. **3 天保护期与 7 天指数半衰期时间衰减 (`time_decay.py`)**：移植落地 `openviking/utils/time_decay.py`，配置 3 天宽裕保护期（3 天内新记忆 100% 满分无惩罚），超过 3 天后平滑指数半衰（`decay: 0.5, scale: 7d`），仅作用于动态事件记忆，静态规范/技能 100% 满分保护；<br>4. **候选池两倍精排与 2080Ti SLA 保护**：在 `THINKING` 模式且配置 Reranker 时拉取 `2 × limit` 个候选执行统一重排，保障 2080Ti 毫秒级推理预算；保留 `RetrieverMode.FAST` 兼容性与异常降级；<br>5. **视网膜单测与门禁全绿**：新增 `test_time_decay.py` 覆盖 3 天保护期、7 天半衰期与边界异常；更新 `test_hierarchical_retriever_rerank.py` 与 `test_hierarchical_retriever_image.py`；`tests/retrieve/` 63 项测试 100% PASS，Security Scan 5061 文件零泄露。 | [x] 已验收通过 ✅ |
 | **`v1.7.121`** | **Card-157** | **消灭管理后台与插件中心版本漂移断层、彻底对齐 DSH 全系插件单一真相源 (DSH Plugins Version Drift Elimination & Builtin Ecosystem SSOT Grounding)** | 1. **版本漂移物理根因终结**：针对管理后台抽屉标题与接入指引版本脱节（抽屉顶部旧版 `v2.0.11` vs 指引最新 `v2.0.15`）痛点，在 `builtin_plugins_core.py` 与 `builtin_plugins_eco.py` 中落地 `resolve_package_version` 动态解析引擎，直连 `integrations/deepseek-harness/{pkg_name}/package.json` 单一真相源；<br>2. **全系 7 大插件版本物理对齐**：Memory (`2.0.15`)、Ops (`1.0.3`)、Fleet (`1.0.3`)、KeePass (`1.0.2`)、Dify (`1.0.1`)、CPA (`1.0.1`) 全系生态插件动态自适应，彻底铲除任何硬编码常数导致漂移的物理隐患；<br>3. **视网膜单测与断言纠偏**：更新 `tests/server/test_plugins_api.py`，将写死的历史断言对齐真实最新源，WSL 原生环境 7/7 全绿通过 (0.11s)；<br>4. **范式 A 原生极速构建与实机验真**：通过 `sync_to_wsl.py` 增量同步至 WSL2 原生目录，Vite 构建 17.39s 完成并增量回传 `dist/`，重启 `openviking.service` 校验 `/health` 返回 `v1.7.121`，`/api/v1/plugins` 探针真实返回 `openviking-memory: 2.0.15`，实机抽屉与指引 100% 严格一致。 | [x] 已验收通过 ✅ |
@@ -21,14 +25,8 @@
 | **`v1.7.136`** | **Card-166** | **技能中心使用频次遥测、ROI 价值度量与高频技能自动排序反哺中枢 (Skill Usage Telemetry, ROI Ranking & Auto-Promotion SSOT)** | 1. **全域技能调用埋点与轻量持久化 (`SkillTelemetryStore`)**：落地 SQLite `skill_events` 表，双检锁单例拦截 `skills.find`、`skills.get` (JIT 注脑) 及 FastMCP `openviking_skills`，自动记录事件与 90 天滚动清理；<br>2. **ROI 价值动态排序算法与接口反哺**：按“调用频次 × 成功率 × Token 压缩节省”综合加权归一化 (0~100 分)，挂载 `/api/v1/skills/telemetry/roi` 与 `/api/v1/skills?sort_by=roi` 动态升降序；<br>3. **前端座舱卡片 (`SkillRoiCockpitCard`)**：4 维核心指标瓦片（30天调用量、节省 Token、综合成功率、沉睡预警）+ Top 5 ROI 母包与工序排行榜 + 沉睡工序折叠面板，严格遵循 NO GREEN EVER 🚫 与字号 $\ge 12\text{px}$ 规范；<br>4. **测试视网膜与安全门禁 100% PASS**：后端 pytest 5/5 全绿，前端 vitest 4/4 全绿，`security_check.py` 0 泄露，`anti_demo_gate.py` 100% 通过，打标 Tag `v1.7.136` 交付。 | [x] 已验收通过 ✅ |
 | **`v1.7.137`** | **Card-180** | **OpenViking Gateway 2.0 核心代理骨架与双协议透传 (Gateway Core Proxy & Protocol Dual-Track SSOT - 主线 C 首战)** | 1. **独立微服务沙盒隔离 (`openviking_gateway`)**：创建完全解耦的独立微服务包，在独立端口 1934 运行，100% 隔离现有 1933 核心端口；<br>2. **OpenAI / Anthropic 双协议转发与转接**：对外提供标准 `/v1/chat/completions` 与 `/v1/messages` 兼容代理，流式透传至上游真实大模型并支持双向转接；<br>3. **零门槛外部接入**：Cursor、Cline、VSCode 插件零改动修改 BaseURL 即可直接连通；<br>4. **单文件甜点区与视网膜门禁全绿**：全量代码文件均在 30~246 行（严格控制在 100~300 行黄金甜点区，硬上限 $\le 500$ 行），17/17 单元测试全绿，安全审计与防悬空门禁 100% PASS，打标 Tag `v1.7.137`。 | [x] 已验收通过 ✅ |
 | **`v1.7.138`** | **Card-181** | **Gateway 隐式记忆检索拦截与隐藏工具自循环 (Hidden Tool Loop & Auto Memory Injection SSOT - 主线 C)** | 1. **前门隐式记忆检索注脑 (`kernel.py`)**：网关在转发至 LLM 前，纯异步调用本地 `search/find` 自动召回关联记忆并以 `<openviking_context>` 隐式组装至 System Prompt，带 1.0s 超时 Fail-Open 降级；<br>2. **隐藏工具就地执行循环 (`tool_loop.py`)**：就地拦截并执行大模型返回的 `openviking_read` / `openviking_find` 工具调用，将执行结果塞回 Messages 历史发起下一轮推理，多轮闭环直至最终文本答案透传给客户端；<br>3. **异步会话自动捕获 (`capture.py`)**：后台异步将本次交互事实与工具调用产物脱水提炼并持久化入 VikingFS 账本；<br>4. **视网膜单测与门禁全绿**：新增 11 项单测/集成测试（全套 28 项单测 100% PASS），安全审计与防悬空门禁 100% PASS，打标 Tag `v1.7.138`。 | [x] 已验收通过 ✅ |
-| **`v1.7.139`** | **Card-182** | **AnyDoc 统一全格式文档解析引擎接入与多模态抽取增强 (AnyDoc Universal Parser & Multimodal Extraction SSOT - 主线 C)** | 1. **独立解析适配器解耦 (`AnyDocAdapter`)**：封装独立解析适配器 `openviking/parse/parsers/anydoc_adapter.py` (300 行黄金甜点区)，彻底解耦外部重依赖与全局解析入口；<br>2. **统一多模态与全格式 Office 抽取**：支持 DOCX/XLSX/PPTX/CSV/ODT/EPUB 结构化抽取，高保真还原 Markdown 表格与段落结构，透传图片媒体与资产计数；<br>3. **Fail-Open 毫秒级安全降级防护**：无论缺失第三方 C 依赖、解析器被显式禁用或遇到损坏文件，毫秒级无损降级回退至内置纯文本与轻量 XML 表格解析，主进程绝不挂起崩溃；<br>4. **视网膜单测与门禁全绿**：新增 8 项专用单测 100% PASS，全局 ParserRouter 与 Gateway 测试 0 回归，安全扫描 0 泄露。 | [x] 已验收通过 ✅ |
-| **`v1.7.144`** | **Card-187** | **Google 反重力智能体自适应熔断断路器标准化插件托管、开箱即用指引与生命周期全息闭环 (Agent Circuit Breaker Standardized Plugin, Turnkey Installation & Adaptive Lifecycle SSOT)** | 1. **标准化插件源工程落地 (`integrations/antigravity/agent-circuit-breaker/`)**：封装标准 `plugin.json` (v1.3.0)、`scripts/circuit_guard.py` (36步健康态/15步警戒态/+15步增量租约自适应看门狗)、跨平台 `setup.py` (支持 Windows/Linux/macOS 一键安装与隔离参数配置)、`server.py` (FastMCP 状态与重置服务)、`rules/AGENTS.md` (三行事实汇报规约) 与 `skills/circuit-breaker-ops/SKILL.md` (跨机同步与五大避坑 SOP)；<br>2. **全自动不可变打包发布 (`public/agent-circuit-breaker.tgz`)**：打包生成不可变 tarball 归档至 `public/`，提供直链高速下载；<br>3. **后端生态插件元数据升级 (`builtin_plugins_eco.py`)**：升级为 `1.3.0`，完整补全 4 个原生生命周期 Hooks (`pre_tool_guard_hook`, `post_tool_recorder_hook`, `pre_invocation_reset_hook`, `session_start_hook`) 与自适应 GUI 参数定义；<br>4. **前端极速开箱与客户端接入指南升级 (`native-bridge-resolver.ts`)**：提供 Windows PowerShell 与 Linux/macOS 一键拉包解压安装管道，反重力专精展示并清晰标明多智能体生态后续路线图；<br>5. **视网膜单测与门禁全绿**：前端 Vitest 7/7 全绿，`anti_demo_gate.py` 239 组件 100% PASS，0 悬空违规。 | [x] 已验收通过 ✅ |
-| **`v1.7.145`** | **Card-188** | **B6 技能演进流水线跨宿主自动感知链路修复与黑匣子全证据链沉淀 (B6 Autonomous Ingestion Cross-Host Perception Link SSOT)** | 1. **跨宿主感知盲区物理根治**：`mcp-openviking/_core/config.py` 与 WSL 镜像打通 Windows/WSL 跨宿主路径双向探测 (`/mnt/c/Users/*/.gemini/config/skills` 与 `Desktop/*/.agents/skills`)，并注入 `onerror` 权限安全熔断，彻底消灭孤立本地落盘；<br>2. **演进流水线提交协议纠偏**：`skill_syncer.py` 废弃陈旧 `POST /api/v1/skills`，全面对齐 B6 演进投递入口 `POST /api/v1/skills/ingestion/submit`；<br>3. **首批新技能端到端收录实测**：`antigravity-plugin-crafting` 经 AST 语法自愈、SkillOpt 质量评测 (90.0 分)、SkillZip 契约压缩、Ante-Gate 路由裁决 (`SPAWN_NEW_BUNDLE`)，状态跃迁至 `COMMITTED`；<br>4. **黑匣子全生命周期留痕**：`SkillProvenanceTracker` 5 节点审计流归档，OpenViking 演进教训入库 Master Memory，前端检索即搜即得。 | [x] 已验收通过 ✅ |
-| **`v1.7.146`** | **Card-189** | **伪概念山寨 DSPy 物理退役与前端无关沙箱纯化 (DSPy & Misplaced Sandboxes Purge SSOT - 主线 D)** | 1. **物理退役伪概念 DSPy 编译器**：物理删除 `routers/dspy_compiler.py`、`service/dspy_*.py` 与前端 `dspy-*.tsx`，下线 `openviking_dspy_compile` FastMCP 工具，切除手写正则套壳；<br>2. **纯化 `/retrieval` 检索主页**：物理铲除 AHE/Hermes 复制残渣与无关沙箱，检索页聚焦混合召回与时间衰减；<br>3. **切除 UI 伪指标卡片**：彻底切除静态写死 5/5 的门禁伪角标，无后端遥测时诚实显示 `--` 与 `待遥测`；<br>4. **视网膜门禁与全域单测全绿**：`anti_demo_gate.py` 233 项组件 100% PASS，后端 20 项关联单测全绿 (2.38s)，Vite 生产构建通过 (19.71s)。 | [x] 已验收通过 ✅ |
-| **`v1.7.147`** | **Card-190** | **全平台三大通用底层原子引擎抽离与落地 (Universal Content Reducer, Lifecycle Engine & Audit Ledger SSOT - 主线 D)** | 1. **通用内容脱水压缩引擎 (`UniversalContentReducer`)**：统一收敛代码 AST 折叠 (TokenShift)、技能六元组契约压缩 (SkillZip) 与文本 Markdown 蒸馏 (WikiDehydration)，具备类型自嗅探 (AUTO/CODE/SKILL/TEXT) 与 100% Fail-Open 物理兜底，挂载 FastMCP 工具 `openviking_content_reduce` 与 REST 端点 `POST /api/v1/universal/reduce`；<br>2. **通用对象生命周期状态机 (`UnifiedLifecycleEngine`)**：标准化五阶状态机 DAG (INGESTED ➔ EVALUATING ➔ REDUCING ➔ VALIDATING ➔ COMMITTED / REJECTED / ROLLED_BACK)，支持前置 Guard 拦截与后置事件广播，挂载端点 `GET /api/v1/universal/lifecycle/state`；<br>3. **通用不可变审计事实账本 (`UniversalAuditLedger`)**：线程安全 SQLite WAL 账本 (`audit_ledger.db`)，实现事件原子留痕、多轴时序检索与过期修剪，挂载端点 `GET /api/v1/universal/audit/timeline`；<br>4. **视网膜单测与门禁全绿交付**：`test_card190_universal_atomic_engines.py` 11/11 全绿 (4.92s)，19 项核心回归单测 100% PASS (5.59s)，`anti_demo_gate.py` 233 项组件 100% PASS，Vite 生产构建 18.40s PASS，服务端探针 HTTP 200 验证。 | [x] 已验收通过 ✅ |
-| **`v1.7.148`** | **Card-191** | **存量高价值能力自愈与自驱闭环补齐 (Automate Tri-Gate Dreamer, Hermes Flash Nudge & AHE Pre-Release Gate SSOT - 主线 D)** | 1. **三门结晶后台做梦守护 (`ov_dream`)**：闲时自动聚类三门结晶，实现知识负熵自愈；<br>2. **Hermes 经历提纯大模型结构化归因**：接入工兵模型真实分析错误堆栈并生成建议微补丁；<br>3. **AHE 契约收拢至发布门禁**：融入构建与 PR 发版门禁。 | [ ] 待排期迭代 ⏳ |
-| **`v1.7.149`** | **Card-192** | **前端三大业务中枢纯粹化与极客座舱重塑 (Three Cohesive Cockpits & Visual De-cluttering SSOT - 主线 D)** | 1. **`/skills` 技能中枢**：21 领域母包资产 + B6 自主演进流水线双模纯粹化；<br>2. **`/retrieval` 检索中枢**：极致专注于混合召回、Grep 与时间衰减；<br>3. **`/guardrails` 安全装甲**：升级 `/request-logs` 为断路器 + 真实门禁 + 审计日志三维装甲。 | [ ] 待排期迭代 ⏳ |
-| **`v1.7.140`** | **Card-183** | **检索层单阶段全局混合召回重构与层级饿死彻底根除 (Single-Stage Global Hybrid Retrieval SSOT - 主线 C)** | 1. **彻底根除层级递归与子目录饿死 (Deprecate Hierarchical Walking)**：彻底终结自顶向下分层递归爬取导致的深层文件饿死与局部最优陷阱，确立单阶段全局混合召回 (`GlobalHybridRetriever`)；<br>2. **高保真单阶段全局并发召回与 RRF 融合**：密集向量流与 SQLite FTS5 BM25 稀疏流完全并发召回，以物理密集余弦分为基准无缝叠加 RRF 秩增益调权，确保得分严格落在 $[0, 1]$ 连续物理区间，彻底规避阈值大屠杀；<br>3. **非对称时间衰减引擎深度咬合**：打通 `AsymmetricDecayEngine`，3 天宽裕保护期、7 天半衰期与历史事实平滑退火，动态保护核心规范与公理；<br>4. **门面向后兼容与 Fail-Open 弹性兜底**：保留 `HierarchicalRetriever` 门面及原有所有属性、方法与动态挂载点，100% 零破坏兼容历史代码与测试；BM25 异常时自动 Fail-Open 降级并诚实打标 Telemetry；<br>5. **视网膜单测与门禁全绿交付**：新增针对性单测 5/5 全绿，回归测试 21/21 全绿，`tests/retrieve/` 全套 68 项单测 1.70s 100% 满绿通过，`anti_demo_gate.py` 239 组件 100% PASS，打标 Tag `v1.7.140`。 | [x] 已验收通过 ✅ |
+| **`v1.7.139`** | **Card-182** | **AnyDoc 统一全格式文档解析引擎接入与多模态抽取增强 (AnyDoc Universal Parser & Multimodal Extraction SSOT - 主线 C)** | 1. **独立解析适配器解耦 (`AnyDocAdapter`)**：封装独立解析适配器挂载至 `openviking/parse/parsers/`，避免外部重依赖污染全局；<br>2. **复杂 Office / 表格 / 多模态图片统一抽取**：针对 Word/Excel/PPT 与内嵌图片实现高质量文本提纯与表格保留；<br>3. **Fail-Open 安全降级机制**：遇到解析异常或格式损坏，毫秒级无损降级回退至现有文本解析器，主进程绝不挂起。 | [ ] 待排期迭代 ⏳ |
+| **`v1.7.140`** | **Card-183** | **检索层单阶段全局混合召回重构与层级饿死彻底根除 (Single-Stage Global Hybrid Retrieval SSOT - 主线 C)** | 1. **切除分层递归树状爬取**：废弃容易引发“深层子目录饿死”与大目录贪婪的分层搜索逻辑；<br>2. **单阶段向量+稀疏混合召回**：全局并行触发密集向量与稀疏关键词召回，由 RRF 算法加权融合；<br>3. **无缝对接非对称时间衰减**：全面接入本地 `AsymmetricDecayEngine`，检索耗时降低 50%，Top-5 命中率显著提升。 | [ ] 待排期迭代 ⏳ |
 | **`v1.7.141`** | **Card-184** | **RNFV 两阶段存储事务模型与并发写锁彻底解耦 (Resource RNFV Transaction Model & Anti-Deadlock SSOT - 主线 C)** | 1. **意图规划与物理执行分离**：将资源写入解耦为 Resource-Node-File-Vector 两阶段事务状态机；<br>2. **消除长耗时写锁阻塞**：耗时的高维向量计算与持久化移入异步队列，读操作与轻量写操作零死锁等待；<br>3. **孤儿向量自动清理**：事务回滚时物理联动清理已生成的中间文件与孤儿向量。 | [ ] 待排期迭代 ⏳ |
 | **`v1.7.142`** | **Card-185** | **VikingBot 流式实时中断与动态舵向注入协议 (Stream Steer & Interruption Protocol SSOT - 主线 C)** | 1. **流式原子中断控制**：SSE 流式生成链路中支持客户端发送中断指令，服务端状态机毫秒级释放资源并记录截断标记；<br>2. **动态舵向注入 (Steer)**：允许在长生成过程中动态修正大模型注意力方向；<br>3. **前端交互适配**：在 Studio 对话区提供一键打断与指令纠偏按钮，严格遵守 NO GREEN EVER 规范。 | [ ] 待排期迭代 ⏳ |
 | **`v1.7.143`** | **Card-186** | **Map-Shuffle-Reduce 知识多阶段编译管线与离线分桶审查 (Map-Shuffle-Reduce Knowledge Compiler SSOT - 主线 C)** | 1. **Map-Shuffle-Reduce 编译引擎**：将海量代码库与文档切片（Map）、领域分桶聚类（Shuffle）、蒸馏生成 L0/L1 摘要系谱（Reduce）；<br>2. **CLI 与后台任务集成**：提供 `ov compile` 命令行与后台异步任务，支持超大型工程秒级知识索引；<br>3. **保护本地 21 能力大包规范**：编译产物自动对齐本地能力大包结构，绝不破坏现有技能标准。 | [ ] 待排期迭代 ⏳ |
@@ -3839,8 +3837,8 @@
        - 服务端探针实机验活通过：HTTP 200 `{"status":"ok","healthy":true,"version":"1.7.135","auth_mode":"trusted"}`。
 - **Git Tag**：`v1.7.135`
 
-### 📌 [P0] [x] Card-166 (v1.7.136): 技能中心使用频次遥测、ROI 价值度量与高频技能自动排序反哺中枢 (Skill Usage Telemetry, ROI Ranking & Auto-Promotion SSOT) ✅
-- **类型**：全域遥测埋点 / ROI 加权动态排序 / 边缘工序自愈预警 / 技能大盘闭环 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**： 1.7.136 ｜ **当前状态**：[x] 已验收通过 ✅
+### 📌 [P0] [ ] Card-166 (v1.7.136): 技能中心使用频次遥测、ROI 价值度量与高频技能自动排序反哺中枢 (Skill Usage Telemetry, ROI Ranking & Auto-Promotion SSOT) ⏳
+- **类型**：全域遥测埋点 / ROI 加权动态排序 / 边缘工序自愈预警 / 技能大盘闭环 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**： 1.7.136 ｜ **当前状态**：[ ] 正在攻坚中 ⏳
 - **背景与芒格逆向思维第一性原理**：
   - **核心物理公理**：技能资产如果缺乏真实运行态调用与命中统计，就会沦为“不知谁在用、不知好不好用、僵尸技能堆积”的黑盒；必须在服务端入口（FastMCP、REST API）精准埋点，按第一性原理量化计算技能 ROI 收益，驱动高频高价值技能自适应置顶与边缘死工序智能预警。
   - **闭环架构设计与物理落地**：
@@ -3895,25 +3893,20 @@
 
 ---
 
-### 📌 [P0] [x] Card-182 (v1.7.139): AnyDoc 统一全格式文档解析引擎接入与多模态抽取增强 (AnyDoc Universal Parser & Multimodal Extraction SSOT) ✅
-- **类型**：多模态解析器解耦 / Office 复杂格式提取 / Fail-Open 降级 ｜ **优先级**：🔥🔥 P1 ｜ **目标版本**： 1.7.139 ｜ **当前状态**：[x] 已验收通过 ✅
+### 📌 [P0] [ ] Card-182 (v1.7.139): AnyDoc 统一全格式文档解析引擎接入与多模态抽取增强 (AnyDoc Universal Parser & Multimodal Extraction SSOT) ⏳
+- **类型**：多模态解析器解耦 / Office 复杂格式提取 / Fail-Open 降级 ｜ **优先级**：🔥🔥 P1 ｜ **目标版本**： 1.7.139 ｜ **当前状态**：[ ] 待排期迭代 ⏳
 - **背景与第一性原理**：
   - **核心痛点**：目前本地针对 Word、Excel、PPT 和内嵌复杂图片的提取缺乏工业级容错，格式丢失严重；
   - **上游神级设计**：上游在 `v0.4.17` 统一引入了 `AnyDoc` 多模态解析引擎，大幅提升了对 Office 系列、嵌套 Markdown 表格和图片 OCR/VLM 的理解精度；
   - **本地平滑兼并方案**：
-    1. **专用适配器模式 (`AnyDocAdapter`)**：绝不直接修改全局解析入口，而在 `openviking/parse/parsers/anydoc_adapter.py` 封装专职适配层（300 行黄金甜点区）；
-    2. **Fail-Open 降级防护**：若 AnyDoc 遇到未安装第三方 C 依赖、显式禁用或解析抛错，捕获异常后毫秒级静默回退至内置纯文本与轻量 XML 表格解析，保障文件入库 100% 成功；
-    3. **测试覆盖**：编写 Docx、Xlsx、复杂表格和纯文本对照解析单测（8/8 全绿），验证表格 Markdown 化与多模态元数据保留。
-- **交付物理产物**：
-  - 核心适配器：[`openviking/parse/parsers/anydoc_adapter.py`](file:///c:/Users/Skl/Desktop/coding/OpenVikingStudio/openviking/parse/parsers/anydoc_adapter.py) (300 行)
-  - 解析器集成：[`openviking/parse/parsers/anydoc.py`](file:///c:/Users/Skl/Desktop/coding/OpenVikingStudio/openviking/parse/parsers/anydoc.py) (126 行)
-  - 存储容错：[`openviking/parse/parsers/base_parser.py`](file:///c:/Users/Skl/Desktop/coding/OpenVikingStudio/openviking/parse/parsers/base_parser.py) (128 行)
-  - 专项单测：[`tests/parse/test_anydoc_adapter.py`](file:///c:/Users/Skl/Desktop/coding/OpenVikingStudio/tests/parse/test_anydoc_adapter.py) (8/8 PASS)
+    1. **专用适配器模式 (`AnyDocAdapter`)**：绝不直接修改全局解析入口，而在 `openviking/parse/parsers/anydoc_adapter.py` 封装专职适配层；
+    2. **Fail-Open 降级防护**：若 AnyDoc 遇到未安装第三方 C 依赖或解析抛错，捕获异常后毫秒级静默回退至现有的纯文本与普通 Markdown 解析器，保障文件入库 100% 成功；
+    3. **测试覆盖**：编写 Docx、Xlsx、复杂表格和纯文本对照解析单测，验证表格 Markdown 化与多模态元数据保留。
 
 ---
 
-### 📌 [P0] [x] Card-183 (v1.7.140): 检索层单阶段全局混合召回重构与层级饿死彻底根除 (Single-Stage Global Hybrid Retrieval SSOT) ✅
-- **类型**：全局单阶段召回 / 消除目录饿死 / RRF 融合重排 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**： 1.7.140 ｜ **当前状态**：[x] 已验收通过 ✅
+### 📌 [P0] [ ] Card-183 (v1.7.140): 检索层单阶段全局混合召回重构与层级饿死彻底根除 (Single-Stage Global Hybrid Retrieval SSOT) ⏳
+- **类型**：全局单阶段召回 / 消除目录饿死 / RRF 融合重排 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**： 1.7.140 ｜ **当前状态**：[ ] 待排期迭代 ⏳
 - **背景与第一性原理**：
   - **核心痛点**：旧版分层树状递归检索机制在子目录较深时，由于父目录评分被稀释，极易导致深层高价值内容“被饿死”搜不出来；且递归爬取目录网络 IO 与计算开销大；
   - **上游神级设计**：上游在 `v0.4.21` (commit `69e71e4ff`) 彻底废弃了分层树爬取，转向单阶段全局密集向量检索 + 稀疏关键词检索并行发起，再由交叉模型精排；
@@ -3924,28 +3917,27 @@
 
 ---
 
-### 📌 [P0] [x] Card-184 (v1.7.141): RNFV 两阶段存储事务模型与并发写锁彻底解耦 (Resource RNFV Transaction Model & Anti-Deadlock SSOT) ✅
-- **类型**：纯函数式事务规划 / 四元快照无状态对齐 / 孤儿向量熔断 ｜ **优先级**：🔥🔥 P1 ｜ **目标版本**： 1.7.141 ｜ **当前状态**：[x] 已验收通过 ✅
+### 📌 [P0] [ ] Card-184 (v1.7.141): RNFV 两阶段存储事务模型与并发写锁彻底解耦 (Resource RNFV Transaction Model & Anti-Deadlock SSOT) ⏳
+- **类型**：存储事务状态机 / 写入意图与执行解耦 / 孤儿向量自动熔断 ｜ **优先级**：🔥🔥 P1 ｜ **目标版本**： 1.7.141 ｜ **当前状态**：[ ] 待排期迭代 ⏳
 - **背景与第一性原理**：
-  - **核心痛点**：高并发写入或批量协同存入时，长时间占用 PathLock 导致读请求被阻塞，触发 502 Bad Gateway；若中途异常，向量与磁盘容易产生不同步的“孤儿数据”；
-  - **上游精髓与奥卡姆剃刀**：彻底剔除上游 4,000+ 行重度侵入抽象，拒绝新建任何常驻服务实体；仅在 `openviking/storage/transaction/rnfv_plan.py` 提纯出轻量无状态纯函数管线；
+  - **核心痛点**：在高并发大文件写入或多 Agent 协同存入时，长时间占用 PathLock 导致读请求被阻塞，触发 502 Bad Gateway 或死锁；若写入中途崩溃，向量数据库与磁盘文件容易产生不同步的“孤儿向量”；
+  - **上游神级设计**：上游重构了 `resource_rnfv.py`，确立 Resource-Node-File-Vector 事务计划，将“写入意图校验与分配”控制在 1ms 内完成并释放锁，高耗时的向量计算与写盘放入后台事务流水线；
   - **本地平滑兼并方案**：
-    1. **四元不可变快照 (`RNFVSnapshot`)**：装配 Request Intent (R), New Artifacts (N), Formal Tree (F), Vector Index (V) 强类型 DTO；
-    2. **纯内存规划管线 (`plan_rnfv_actions`)**：输入快照，纯计算产出确定性 `ActionPlan`（文件增删与向量增删 Diff），0 I/O 耗时 $\le 1\text{ms}$；
-    3. **零实体复用兜底**：状态追踪复用现成 `TaskTracker`，异常死信复用现成 `DLQManager`，锁释放复用现成 `RAGFSBindingClient`；
-    4. **单测覆盖**：红绿驱动单测覆盖纯计算 Diff、覆盖冲突熔断与孤儿清理生成。
+    1. **两阶段事务协调器 (`RnTransactionCoordinator`)**：落地 `Phase 1: Plan`（生成文件与向量映射，分配 ID，释放锁）➔ `Phase 2: Commit`（异步执行物理写入与向量插入）；
+    2. **事务回滚与孤儿自愈**：Phase 2 失败时自动执行 Compensating Action，物理删除残余文件与向量索引；
+    3. **单测覆盖**：模拟并发写入竞争、模拟中途异常回滚，断言 0 死锁、0 孤儿数据。
 
 ---
 
-### 📌 [P0] [x] Card-185 (v1.7.142): VikingBot 流式实时中断与动态舵向注入协议 (Stream Steer & Interruption Protocol SSOT) ✅
-- **类型**：SSE 原子中断 / 动态注意力纠偏 / 交互体验升级 ｜ **优先级**：🔥🔥 P1 ｜ **目标版本**： 1.7.142 ｜ **当前状态**：[x] 已验收通过 ✅
+### 📌 [P0] [ ] Card-185 (v1.7.142): VikingBot 流式实时中断与动态舵向注入协议 (Stream Steer & Interruption Protocol SSOT) ⏳
+- **类型**：SSE 原子中断 / 动态注意力纠偏 / 交互体验升级 ｜ **优先级**：🔥🔥 P1 ｜ **目标版本**： 1.7.142 ｜ **当前状态**：[ ] 待排期迭代 ⏳
 - **背景与第一性原理**：
-  - **核心痛点**：在长文本或代码生成过程中，一旦智能体出现偏差，人类只能干等全部输出完成才能纠偏，严重浪费 Token 与时间；
-  - **上游神级设计与奥卡姆剃刀**：零新增独立实体，利用现有 VikingBot 会话通道与 1933 网关代理，暴露原子中断与动态舵向挂载协议；
+  - **核心痛点**：在长文本或复杂代码生成过程中，一旦智能体出现偏差，人类只能干等全部输出完成才能纠偏，浪费大量 Token 与时间；
+  - **上游神级设计**：上游落地了 VikingBot 流式中断与动态舵向注入（Steer & Interrupt），允许客户端在生成途中随时发送中断信号，或即时追加指导性指令动态调整后续输出；
   - **本地平滑兼并方案**：
-    1. **网关中断与舵向路由**：在 `openviking/server/routers/bot.py` 挂载 `/sessions/{session_id}/interrupt` 与 `/sessions/{session_id}/steer`，附带完整认证透传；
-    2. **时序与取消安全守卫**：中断排队未执行 Turn，保护历史持久化不被意外腰斩，丢弃被截断的残余片段；
-    3. **单测覆盖**：红绿单测覆盖中断透传、覆盖动态舵向消息挂载与鉴权注入。
+    1. **后端状态机中断信号监听**：在流式生成端点挂载 `AbortSignal` 监听，接收到中断信号时毫秒级切断模型上游生成，保留已生成部分并安全释放连接；
+    2. **动态舵向 (Steer) 注入接口**：支持中途发送 `POST /api/v1/sessions/{id}/steer`，将修正指令无缝合并入当前推理上下文；
+    3. **座舱前端交互落地**：在 Studio 对话面板接入“打断”与“方向微调”控件，严格遵循 NO GREEN EVER 规范（使用琥珀黄与冰青色）。
 
 ---
 
@@ -3959,65 +3951,3 @@
     2. **格式与本地大包体系对齐**：编译输出的 L0/L1 摘要自动适配本地 21 个核心领域能力大包格式，丰富各母包的微观子场景；
     3. **性能基准验证**：在万行示例工程中测试编译速度与索引质量，确保离线任务不抢占实时在线检索资源。
 
----
-
-### 📌 [P0] [x] Card-188 (v1.7.145): B6 技能演进流水线跨宿主自动感知链路修复与黑匣子全证据链沉淀 (B6 Autonomous Ingestion Cross-Host Perception Link SSOT) ✅
-- **类型**：跨宿主感知盲区物理根治 / 演进流水线提交协议纠偏 / 黑匣子留痕 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**： 1.7.145 ｜ **当前状态**：[x] 已验收通过 ✅
-- **背景与第一性原理**：
-  - **核心痛点**：在 Windows 宿主端新落盘的一级技能（如 `antigravity-plugin-crafting`）未被位于 WSL2 容器内的 OpenViking 服务感知与收录，链路出现断裂。原因在于：1) `_get_skill_base_sources()` 仅探测 WSL 本地家目录，未探测 `/mnt/c/Users/*/.gemini/config/skills` 与 `Desktop/*/.agents/skills`；2) 历史自动同步脚本 `skill_syncer.py` 仍调用已弃用的 `POST /api/v1/skills`（导致 404/405），未走 B6 自主演进接入信箱 `POST /api/v1/skills/ingestion/submit`；
-  - **兼并方案与工程修复**：
-    1. **跨宿主目录探测自适应与权限熔断**：在 `mcp-openviking/_core/config.py` 中引入 Windows 宿主用户目录动态嗅探机制，跨 WSL2 `/mnt/c/Users/` 与 Windows 原生双向打通，并在目录遍历中注入 `onerror` 权限防崩溃门禁；
-    2. **对齐 B6 演进投递协议**：将 `skill_syncer.py` 的落盘提交目标全面修正为 `POST /api/v1/skills/ingestion/submit`，与 `SkillAutonomousPipeline` 无缝咬合；
-    3. **端到端演进闭环实测**：首个新技能 `antigravity-plugin-crafting` (Receipt `ingest_f1d92cac178b`) 成功通过 AST 语法校验自愈、SkillOpt 质量评测（得分 90.0 分）、SkillZip 契约压缩、Ante-Gate 路由裁决 (`SPAWN_NEW_BUNDLE`)，成功跃迁至 `COMMITTED` 并挂载至 `viking://agent/skills/`；
-    4. **五阶黑匣子留痕与经验沉淀**：`SkillProvenanceTracker` 完整记录 INGEST ➔ OPTIMIZE ➔ VALIDATE ➔ ROUTE ➔ COMMITTED 审计事实流，同时调用 `openviking_record_evolution_lesson` 将避坑经验与双端路径映射规则写入体外大脑 Master Memory。
-
----
-
-### 📌 [P0] [x] Card-189 (v1.7.146): 伪概念山寨 DSPy 物理退役与前端无关沙箱纯化 (DSPy & Misplaced Sandboxes Purge SSOT - 主线 D 首战) ✅
-- **类型**：伪概念代码物理铲除 / 检索页去杂物化 / 数据真实性门禁 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**： 1.7.146 ｜ **当前状态**：[x] 已验收通过 ✅
-- **芒格逆向审问 (Munger Inversion)**：
-  - *死穴 1：挂羊头卖狗肉引发智能体认知投毒*：名曰 Stanford DSPy，实为手写正则替换，让 AI 误以为具备自动提示词优化能力而产生幻觉；
-  - *死穴 2：杂物间效应让使用者迷失*：`/retrieval` 塞入 12 个 Tab，将代码压缩、提示词调试混入检索，主次不分；
-  - *死穴 3：静态写死 5/5 伪状态欺骗*：前端卡片硬编码 fallback 5，掩盖后端真实探针状态，违背绝对数据真实性。
-- **物理工程交付物与闭环成果**：
-  1. **物理退役山寨 DSPy 编译器**：物理删除 `routers/dspy_compiler.py`、`service/dspy_*.py` 与前端 `dspy-*.tsx` 全量文件；从 FastMCP、PluginRegistry、Capabilities 彻底下线 `openviking_dspy_compile` 工具，彻底切除自欺欺人的手写正则套壳；
-  2. **纯化 `/retrieval` 检索主页**：物理铲除 `ahe-cockpit.tsx`、`hermes-evolve-cockpit.tsx`、`hermes-patch-drawer.tsx` 等散落复制品，将 `dspy` 从检索 Tab 彻底解绑，使检索页 100% 聚焦于混合检索、FTS5 BM25 与非对称时间衰减；
-  3. **切除硬编码 fallback，落实绝对数据真实性**：重构 `harness-guardrails-cockpit.tsx`，无后端实时遥测数据时诚实展示 `--` 与 `待遥测`，彻底消除静态 5/5 伪指标；
-  4. **视网膜门禁与全域单测 100% 变绿通过**：
-     - `scripts/anti_demo_gate.py` 自动化视网膜门禁扫描 233 个组件，0 悬空违规，**100.0% PASS**；
-     - WSL2 原生 Linux 环境下执行 7 大测试套件 20 项单元测试，**20/20 全部满绿通过** (2.38s)；
-     - Vite 生产构建打包成功 (19.71s)，dist/ 产物自动回传，服务探针 `/health` HTTP 200 返回正常。
-
----
-
-### 📌 [P0] [ ] Card-190 (v1.7.147): 全平台三大通用底层原子引擎抽离与落地 (Universal Content Reducer, Lifecycle Engine & Audit Ledger SSOT - 主线 D) ⏳
-- **类型**：全平台通用基础设施抽象 / 跨模块复用 / 架构防熵增 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**： 1.7.147 ｜ **当前状态**：[ ] 待排期迭代 ⏳
-- **背景与第一性原理**：
-  - **核心痛点**：脱水逻辑（SkillZip、TokenShift、LLMLingua）各自为政；状态机（B6流水、Harness 12态、Memory FSM）各自重复造轮子；审计日志（Provenance、经历流、请求日志）格式各异；
-  - **兼并方案与工程实现**：
-    1. **通用内容脱水器 (`UniversalContentReducer`)**：统一抽象代码 AST 压缩、自然语言脱水与 Markdown 契约精简，统一输入输出与 Fail-Open 语法验真；
-    2. **通用对象生命周期状态机 (`UnifiedLifecycleEngine`)**：统一五阶标准流转（INGEST ➔ EVALUATE ➔ REDUCE ➔ VALIDATE ➔ COMMIT/REJECT）；
-    3. **通用全息审计事实账本 (`UniversalAuditLedger`)**：统一全平台 SQLite 不可变事件审计表与时间线查询接口。
-
----
-
-### 📌 [P0] [ ] Card-191 (v1.7.148): 存量高价值能力自愈与自驱闭环补齐 (Automate Tri-Gate Dreamer, Hermes Flash Nudge & AHE Pre-Release Gate SSOT - 主线 D) ⏳
-- **类型**：顶会算法自驱补齐 / 离线做梦蒸馏 / 补丁一键应用回滚 ｜ **优先级**：🔥🔥 P1 ｜ **目标版本**： 1.7.148 ｜ **当前状态**：[ ] 待排期迭代 ⏳
-- **背景与第一性原理**：
-  - **核心痛点**：三门结晶算法硬核但无自动触发器；Hermes 经历提纯无大模型结构化归因；AHE 契约未与版本构建自动化咬合；
-  - **兼并方案与工程实现**：
-    1. **夜间离线做梦自动结晶 Worker (`ov_dream`)**：挂载后台空闲定时调度器，自动检索符合簇 $\ge 5$、相似度 $>0.75$、冷却期 $\ge 24\text{h}$ 的碎片，蒸馏生成 L0/L1/L2 结晶并原子标记 superseded；
-    2. **Hermes 轻量模型归因与微补丁自提议**：接入工兵模型真实分析执行失败上下文，自动建议 $\le 30$ 行补丁并支持一键应用与秒级回滚；
-    3. **AHE 契约收拢至 Pre-Release 质量门禁**：在任务交接与发版前自动触发 Polar 判官验真与快照漂移审计。
-
----
-
-### 📌 [P0] [ ] Card-192 (v1.7.149): 前端三大业务中枢纯粹化与极客座舱重塑 (Three Cohesive Cockpits & Visual De-cluttering SSOT - 主线 D) ⏳
-- **类型**：前端架构极简化 / 杜绝杂物间 / NO GREEN EVER 视觉座舱 ｜ **优先级**：🔥🔥 P1 ｜ **目标版本**： 1.7.149 ｜ **当前状态**：[ ] 待排期迭代 ⏳
-- **背景与第一性原理**：
-  - **核心痛点**：跨页面组件互相复制，Tab 过载，使用者难以快速理解核心指标；
-  - **兼并方案与工程实现**：
-    1. **`/skills` 纯粹化**：收敛为 21 领域能力母包大盘 + B6 自主演进流水线双模，抽屉式呈现详情；
-    2. **`/retrieval` 纯粹化**：彻底砍掉非检索 Tab，专注于单阶段混合召回、VikingFS Grep 与时间衰减；
-    3. **`/guardrails` 安全装甲升级**：统一收拢断路器看门狗、物理门禁真实拦截日志与 HTTP 请求分析；
-    4. **严格遵循座舱 UI 规范**：NO GREEN EVER 🚫、6px 微圆角、高信息密度并排平齐、字号 $\ge 12\text{px}$、真实后端数据驱动。

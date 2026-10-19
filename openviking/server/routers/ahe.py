@@ -128,3 +128,12 @@ async def list_clusters() -> Dict[str, Any]:
 async def ahe_summary() -> Dict[str, Any]:
     """AHE 全局汇总：Manifest 统计 + 聚类统计。"""
     return _engine.global_summary()
+
+
+@router.get("/gate/check")
+async def check_pre_release_gate(
+    run_polar: bool = Query(default=False, description="是否同时运行 Polar 物理沙箱验证"),
+) -> Dict[str, Any]:
+    """AHE 自动化 Pre-Release 门禁校验接口。"""
+    return _engine.run_pre_release_gate(run_polar=run_polar)
+
