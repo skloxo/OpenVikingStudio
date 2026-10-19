@@ -6,6 +6,10 @@ Retrieval module for OpenViking.
 Provides intent-driven hierarchical context retrieval.
 """
 
+from openviking.retrieve.global_hybrid_retriever import (
+    GlobalHybridRetriever,
+    RetrieverMode,
+)
 from openviking.retrieve.hierarchical_retriever import HierarchicalRetriever
 from openviking.retrieve.intent_analyzer import IntentAnalyzer
 from openviking_cli.retrieve.types import (
@@ -26,6 +30,8 @@ __all__ = [
     "QueryResult",
     "FindResult",
     # Retriever
+    "GlobalHybridRetriever",
     "HierarchicalRetriever",
+    "RetrieverMode",
     "IntentAnalyzer",
 ]

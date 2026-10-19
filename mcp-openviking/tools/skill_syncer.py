@@ -239,13 +239,16 @@ def _auto_ingest_missing_to_vikingfs(found_skills: Dict[str, Dict[str, Any]]):
 
         for name, content, content_hash in missing:
             try:
+                src_path = found_skills.get(name, {}).get("path", "")
                 payload = {
-                    "data": content,
-                    "target_uri": "viking://agent/skills"
+                    "skill_name": name,
+                    "content": content,
+                    "author": "skill-syncer-daemon",
+                    "source_path": src_path,
                 }
-                sub_res = http_client.post("/api/v1/skills", payload)
+                sub_res = http_client.post("/api/v1/skills/ingestion/submit", payload)
                 if isinstance(sub_res, dict) and sub_res.get("status") == "ok":
-                    logger.info("已自动补齐技能收录至 Wiki 技能中心: %s", name)
+                    logger.info("已自动投递技能至 B6 准入演进流水线: %s (receipt: %s)", name, sub_res.get("receipt_id"))
                     _synced_skills_cache[name] = content_hash
                     consecutive_failures = 0
                 else:
@@ -286,7 +289,7 @@ def _auto_sync_skills():
         for base in base_sources:
             if not os.path.exists(base):
                 continue
-            for root, dirs, files in os.walk(base):
+            for root, dirs, files in os.walk(base, onerror=lambda e: None):
                 dirs[:] = [
                     d for d in dirs
                     if not d.startswith(".") and d not in (

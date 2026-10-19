@@ -1,16 +1,26 @@
 {
+  "$schema": "https://antigravity.google/schemas/v1/plugin.json",
   "name": "agent-circuit-breaker",
-  "version": "1.3.0",
-  "description": "智能体自适应弹性断路器与自省护栏 (Agent Adaptive Elastic Circuit Breaker) — 专为 Google Antigravity 原生定制，Fail-Open 故障自愈，36步全绿灯预算 / 15步警戒收敛，+15步自动租约延展，MCP 只读穿透免检与三行事实交接契约。",
-  "author": "OpenViking Ecosystem",
-  "category": "user",
-  "tags": [
+  "displayName": "智能体自适应断路器",
+  "version": "1.3.2",
+  "description": "专为 Google 反重力深度定制的物理级自适应断路器插件。具备全绿灯 36 步健康预算、Fail-Open 故障自愈、增量租约延展与 force_ask 零误杀多重防护。",
+  "logo": "https://vk.tide.red/studio/ov-logo.png",
+  "suggestedPrompts": [
+    "检查当前断路器健康状态与步数预算",
+    "重置当前会话的断路器状态与报错计数",
+    "查看断路器自省停手规则与三行事实交接契约"
+  ],
+  "author": {
+    "name": "OpenViking Eco & Antigravity Squad"
+  },
+  "keywords": [
     "antigravity",
     "circuit-breaker",
     "guardrails",
-    "safety",
     "fail-open",
-    "token-saver"
+    "adaptive-lease",
+    "mcp"
   ],
-  "homepage": "https://vk.tide.red/plugins"
+  "repository": "https://vk.tide.red",
+  "license": "Apache-2.0"
 }

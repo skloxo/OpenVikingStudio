@@ -453,10 +453,10 @@ def _validate_score_threshold(val: Any, param_name: str = "score_threshold") -> 
 
 # SECTION: Skill Metadata Helpers
 def _get_skill_base_sources() -> List[str]:
-    """跨平台动态探测技能扫描基目录，兼容 Windows/WSL/Linux/macOS 任意用户。"""
+    """跨平台动态探测技能扫描基目录，兼容 Windows/WSL/Linux/macOS 任意用户与宿主挂载。"""
     home = Path.home()
     cwd = Path.cwd()
-    return [
+    sources = [
         str(home / ".gemini" / "config" / "skills"),
         str(home / ".openclaw" / "skills"),
         str(home / ".agents" / "skills"),
@@ -467,6 +467,50 @@ def _get_skill_base_sources() -> List[str]:
         str(home / "a" / "SenseNova-Skills" / "skills"),
         str(home / ".hermes" / "hermes-agent" / "optional-skills"),
     ]
+
+    # Windows 原生运行环境感知
+    if os.name == "nt":
+        user_profile = os.environ.get("USERPROFILE")
+        if user_profile:
+            p = Path(user_profile)
+            sources.append(str(p / ".gemini" / "config" / "skills"))
+            sources.append(str(p / "Desktop" / "Work" / ".agents" / "skills"))
+            sources.append(str(p / "Desktop" / "coding" / ".agents" / "skills"))
+            sources.append(str(p / "Desktop" / "One" / ".agents" / "skills"))
+
+    # WSL 运行环境穿透感知 Windows 宿主路径
+    wsl_c_users = Path("/mnt/c/Users")
+    if wsl_c_users.exists():
+        try:
+            for user_dir in wsl_c_users.iterdir():
+                try:
+                    if not user_dir.is_dir() or user_dir.name.startswith((".", "Default", "Public", "All Users", "DevToolsUser")):
+                        continue
+                    gemini_skills = user_dir / ".gemini" / "config" / "skills"
+                    if gemini_skills.exists():
+                        sources.append(str(gemini_skills))
+                    desktop = user_dir / "Desktop"
+                    if desktop.exists():
+                        for proj in desktop.iterdir():
+                            try:
+                                if proj.is_dir():
+                                    p_skills = proj / ".agents" / "skills"
+                                    if p_skills.exists():
+                                        sources.append(str(p_skills))
+                            except (PermissionError, OSError):
+                                continue
+                except (PermissionError, OSError):
+                    continue
+        except (PermissionError, OSError):
+            pass
+
+    seen = set()
+    deduped = []
+    for s in sources:
+        if s not in seen:
+            seen.add(s)
+            deduped.append(s)
+    return deduped
 
 
 def _infer_skill_source(name: str, path: str) -> str:

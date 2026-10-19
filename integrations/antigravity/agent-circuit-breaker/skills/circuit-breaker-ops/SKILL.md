@@ -89,3 +89,58 @@ python scripts/circuit_guard.py pre-tool
 3. **Win32 原生 PE 直调**：严禁通过 bat/cmd 包装，防止跨工作区丢失命令。
 4. **stderr 物理屏蔽与 GBK 零投毒**：stdout.buffer 直写 UTF-8，彻底屏蔽 stderr，杜绝 Go 进程 UTF-8 校验爆炸导致的会话白屏。
 5. **Fail-Open 托底**：任何异常必须回退 `{"decision": "allow"}`，exit code 恒为 0。
+
+---
+
+## 六、 插件全生命周期研发、打包发版与 SSOT 治理铁律 (Plugin SSOT Pipeline)
+
+> 🚨 **高压红线**：严禁直接在单台机器的 `~/.gemini/config/plugins/agent-circuit-breaker/` 目录私自打补丁！任何临时打补丁的行为都会制造本地配置孤岛，导致多机节点与后续 Agent 无法继承。
+
+### 1. 物理源码唯一事实源 (SSOT)
+- **源工程物理根目录**：`OpenVikingStudio/integrations/antigravity/agent-circuit-breaker/`
+- 所有的规则契约 (`rules/AGENTS.md`)、生命周期钩子 (`hooks.json`)、MCP 声明 (`mcp_config.json`) 及看门狗参数，**必须且只能在源工程内修改**。
+
+### 2. 四步标准研发与发版流水线 (Release SOP)
+
+```text
+[源工程代码/规则更新]
+        │
+        ▼
+[plugin.json 递增版本号 (SemVer)]
+        │
+        ▼
+[Python 扁平打包至 public/agent-circuit-breaker-<version>.tgz]
+        │
+        ▼
+[VK 插件中心面向全生态分发 (https://vk.tide.red/plugins)]
+        │
+        ▼
+[同步解压覆盖本机 ~/.gemini/config/plugins/ 完成闭环]
+```
+
+### 3. 一键标准打包代码范式 (Python Tarfile)
+```python
+import os, tarfile, shutil
+
+src = 'C:/Users/Skl/Desktop/coding/OpenVikingStudio/integrations/antigravity/agent-circuit-breaker'
+pub = 'C:/Users/Skl/Desktop/coding/OpenVikingStudio/public'
+local_runtime = 'C:/Users/Skl/.gemini/config/plugins/agent-circuit-breaker'
+
+# 1. 打包输出
+for out_name in ['agent-circuit-breaker-1.3.2.tgz', 'agent-circuit-breaker.tgz']:
+    with tarfile.open(os.path.join(pub, out_name), 'w:gz') as tar:
+        for item in os.listdir(src):
+            if not item.startswith('.') and item != '__pycache__':
+                tar.add(os.path.join(src, item), arcname=item)
+
+# 2. 同步覆盖本地运行时
+for item in os.listdir(src):
+    if not item.startswith('.') and item != '__pycache__':
+        s, d = os.path.join(src, item), os.path.join(local_runtime, item)
+        if os.path.isdir(s):
+            if os.path.exists(d): shutil.rmtree(d)
+            shutil.copytree(s, d)
+        else:
+            shutil.copy2(s, d)
+```
+
