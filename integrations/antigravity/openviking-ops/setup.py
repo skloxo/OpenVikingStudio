@@ -28,10 +28,23 @@ if sys.platform == "win32":
         pass
 
 PLUGIN_NAME = "openviking-ops"
-PLUGIN_VERSION = "1.0.1"
 PLUGIN_SRC_DIR = Path(__file__).resolve().parent
 GEMINI_CONFIG_DIR = Path.home() / ".gemini" / "config"
 DEFAULT_TARGET_DIR = GEMINI_CONFIG_DIR / "plugins" / PLUGIN_NAME
+
+
+def get_plugin_version() -> str:
+    pj = PLUGIN_SRC_DIR / "plugin.json"
+    if pj.exists():
+        try:
+            with open(pj, "r", encoding="utf-8") as f:
+                return json.load(f).get("version", "1.0.2")
+        except Exception:
+            pass
+    return "1.0.2"
+
+
+PLUGIN_VERSION = get_plugin_version()
 
 
 def get_python_cmd() -> str:

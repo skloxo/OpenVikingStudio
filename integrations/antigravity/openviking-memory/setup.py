@@ -40,10 +40,23 @@ if sys.platform == "win32":
         pass
 
 PLUGIN_NAME = "openviking-memory"
-PLUGIN_VERSION = "2.0.13"
 PLUGIN_SRC_DIR = Path(__file__).resolve().parent
 GEMINI_CONFIG_DIR = Path.home() / ".gemini" / "config"
 DEFAULT_TARGET_DIR = GEMINI_CONFIG_DIR / "plugins" / PLUGIN_NAME
+
+
+def get_plugin_version() -> str:
+    pj = PLUGIN_SRC_DIR / "plugin.json"
+    if pj.exists():
+        try:
+            with open(pj, "r", encoding="utf-8") as f:
+                return json.load(f).get("version", "2.0.14")
+        except Exception:
+            pass
+    return "2.0.14"
+
+
+PLUGIN_VERSION = get_plugin_version()
 
 
 def get_python_cmd() -> str:

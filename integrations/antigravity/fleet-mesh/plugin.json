@@ -1,7 +1,7 @@
 {
   "name": "fleet-mesh",
   "displayName": "OpenViking Fleet Mesh",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "OpenViking 卫星集群拓扑同频插件 (Antigravity IDE 官方版)。提供跨机集群巡检 (fleet_check) 与一键规则/代码同频分发 (fleet_sync) 2 大协同工具。",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [

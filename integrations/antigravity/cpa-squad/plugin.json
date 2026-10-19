@@ -1,7 +1,7 @@
 {
   "name": "cpa-squad",
   "displayName": "OpenViking CPA Squad",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "OpenViking 跨模型协同与算力工兵插件 (Antigravity IDE 官方版)。提供架构与算法第二意见咨询 (cpa_consult) 与大规模多工兵并发扇出 (cpa_fanout) 2 大算力工具。",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [

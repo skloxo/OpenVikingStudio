@@ -1,7 +1,7 @@
 {
   "name": "dify",
   "displayName": "Dify Orchestrator",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Dify 官方全量编排与知识库控制面工具集 (12 Tools)。用于管理应用、运行工作流、导入导出 DSL 蓝图及自动化管理知识库。",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
