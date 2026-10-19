@@ -126,24 +126,44 @@ class SearchService:
             return True
         return bool(self._viking_fs.retrieval_config.enable_intent)
 
+    async def _resolve_single_image_url(
+        self,
+        url: str,
+        ctx: RequestContext,
+    ) -> Optional[str]:
+        if not url or not isinstance(url, str):
+            return None
+        cleaned = url.strip()
+        if not cleaned:
+            return None
+        if is_viking_uri(cleaned):
+            viking_fs = self._ensure_initialized()
+            content = await viking_fs.read_file_bytes(cleaned, ctx=ctx)
+            return image_bytes_to_data_uri(content, cleaned)
+        if is_data_image_uri(cleaned) or is_http_url(cleaned):
+            return cleaned
+        raise InvalidArgumentError(
+            "image_url must be a data:image base64 URI, http(s) URL, or viking:// URI."
+        )
+
     async def _resolve_image_url(
         self,
         image_url: str | list[str] | None,
         ctx: RequestContext,
     ) -> str | list[str] | None:
-        if isinstance(image_url, list):
-            return [await self._resolve_image_url(url, ctx) for url in image_url]
-        if not image_url:
+        if image_url is None:
             return None
-        if is_viking_uri(image_url):
-            viking_fs = self._ensure_initialized()
-            content = await viking_fs.read_file_bytes(image_url, ctx=ctx)
-            return image_bytes_to_data_uri(content, image_url)
-        if is_data_image_uri(image_url) or is_http_url(image_url):
-            return image_url
-        raise InvalidArgumentError(
-            "image_url must be a data:image base64 URI, http(s) URL, or viking:// URI."
-        )
+        if isinstance(image_url, list):
+            valid_items = [u for u in image_url if u and isinstance(u, str) and u.strip()]
+            if not valid_items:
+                return None
+            resolved = await asyncio.gather(
+                *[self._resolve_single_image_url(url, ctx) for url in valid_items]
+            )
+            filtered = [r for r in resolved if r]
+            return filtered if filtered else None
+        return await self._resolve_single_image_url(image_url, ctx)
+
 
     async def search(
         self,

@@ -97,11 +97,11 @@ def build_multimodal_embedding_input(
     image_url: str | list[str] | None = None,
 ) -> List[Dict[str, Any]]:
     parts: List[Dict[str, Any]] = []
-    if text.strip():
-        parts.append({"type": "text", "text": text})
+    if text and text.strip():
+        parts.append({"type": "text", "text": text.strip()})
     for url in image_url if isinstance(image_url, list) else [image_url]:
-        if url:
-            parts.append({"type": "image_url", "image_url": {"url": url}})
+        if url and isinstance(url, str) and url.strip():
+            parts.append({"type": "image_url", "image_url": {"url": url.strip()}})
     return parts
 
 
@@ -109,15 +109,24 @@ def normalize_client_image_input(image: Any) -> str | list[str] | None:
     if image is None:
         return None
     if isinstance(image, list):
-        return [normalize_client_image_input(item) for item in image]
+        normalized = [normalize_client_image_input(item) for item in image]
+        filtered = [x for x in normalized if x and isinstance(x, str) and x.strip()]
+        return filtered if filtered else None
     if isinstance(image, (bytes, bytearray, memoryview)):
         return image_bytes_to_data_uri(image)
 
     value = os.fspath(image) if isinstance(image, os.PathLike) else str(image)
-    if is_data_image_uri(value) or is_http_url(value) or is_viking_uri(value):
-        return value
+    if not value or not value.strip():
+        return None
+    cleaned = value.strip()
+    if is_data_image_uri(cleaned) or is_http_url(cleaned) or is_viking_uri(cleaned):
+        return cleaned
 
-    path = Path(value).expanduser()
-    if path.is_file():
-        return image_bytes_to_data_uri(path.read_bytes(), path.name)
-    return value
+    try:
+        path = Path(cleaned).expanduser()
+        if path.is_file():
+            return image_bytes_to_data_uri(path.read_bytes(), path.name)
+    except Exception:
+        pass
+    return cleaned
+
