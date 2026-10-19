@@ -27,6 +27,41 @@ HOOKS_FILE = PLUGIN_SRC_DIR / "hooks.json"
 DEFAULT_USER_PLUGIN_DIR = Path.home() / ".gemini" / "config" / "plugins" / "agent-circuit-breaker"
 
 
+def get_plugin_version() -> str:
+    pj = PLUGIN_SRC_DIR / "plugin.json"
+    if pj.exists():
+        try:
+            with open(pj, "r", encoding="utf-8") as f:
+                return json.load(f).get("version", "1.3.3")
+        except Exception:
+            pass
+    return "1.3.3"
+
+
+def register_in_ide_config(version: str):
+    cfg_file = Path.home() / ".gemini" / "config" / "config.json"
+    if not cfg_file.exists():
+        return
+    try:
+        with open(cfg_file, "r", encoding="utf-8") as f:
+            cfg = json.load(f)
+        if "plugins" not in cfg:
+            cfg["plugins"] = {}
+        cfg["plugins"]["agent-circuit-breaker"] = {
+            "installedFrom": {
+                "id": "antigravity/plugin/agent-circuit-breaker",
+                "marketplace": "antigravity-marketplace",
+                "version": version
+            }
+        }
+        with open(cfg_file, "w", encoding="utf-8") as f:
+            json.dump(cfg, f, ensure_ascii=False, indent=2)
+            f.write("\n")
+        print(f"✅ 5.1 宿主注册表写入: ~/.gemini/config/config.json -> agent-circuit-breaker v{version}")
+    except Exception as e:
+        print(f"⚠ 宿主注册表更新跳过: {e}")
+
+
 def get_python_cmd() -> str:
     return sys.executable.replace("\\", "/")
 
@@ -311,6 +346,9 @@ def install(target_dir: Path = None):
             print(f"⚠️ 探针返回异常: {out_str}, stderr: {err.decode('utf-8', errors='replace')}")
     except Exception as e:
         print(f"⚠️ 探针执行略过: {e}")
+
+    # 注册入宿主 config.json
+    register_in_ide_config(get_plugin_version())
 
     print("\n🎉 安装成功！即插即用，反重力智能体已获得 Fail-Open 弹性断路守护。")
 

@@ -69,7 +69,9 @@ def test_core_crystallized_scenarios_resolution(router):
         ("clash_verge_governance", "network-tunnel-ops"),
         ("capability-bundle-crystallizer", "openviking"),
         ("global-agent-core", "codebase-engineering"),
-        ("tide-trading-dev", "antigravity-host-ops"),
+        ("tide-trading-dev", "quant-trading"),
+        ("grid-management", "park-grid-governance"),
+        ("cadre-apartment", "property-cadre-ops"),
     ]
     for skill_name, expected_bundle in cases:
         res = router.resolve(skill_name)

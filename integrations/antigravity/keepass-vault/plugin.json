@@ -1,7 +1,7 @@
 {
   "name": "keepass-vault",
   "displayName": "KeePass Vault",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "基于 keepassxc-cli 打造的本地高安全凭据保险库与 MCP 工具中枢 (9 Tools)。支持本地 kdbx 数据库路径与访问密钥可视化配置，支持灾难恢复写前备份。",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [

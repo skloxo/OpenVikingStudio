@@ -1,7 +1,7 @@
 {
   "name": "openviking-ops",
   "displayName": "OpenViking System Ops",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "OpenViking 系统运维与管控特权插件 (Antigravity IDE 官方版)。提供资源索引/删除/重建、文件移动/重命名/WebDAV、数据备份/恢复/导入导出与服务初始化管控特权 (17 Tools)。",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
