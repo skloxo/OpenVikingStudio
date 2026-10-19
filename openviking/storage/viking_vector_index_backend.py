@@ -28,11 +28,12 @@ from openviking.storage.vector_migration import (
     uri_in_transfer_scope,
 )
 
+from openviking.service.task_tracker_concurrency import run_to_completion
 from openviking.storage.vectordb.collection.collection import Collection
 from openviking.storage.vectordb.collection.result import UpdateResult
 from openviking.storage.vectordb.utils.logging_init import init_cpp_logging
 from openviking.storage.vectordb_adapters import create_collection_adapter
-from openviking.utils.tags import merge_search_tags
+from openviking.utils.tags import merge_search_tags, normalize_search_tags
 from openviking.utils.time_utils import get_current_timestamp
 from openviking_cli.exceptions import ConflictError, InvalidArgumentError
 from openviking_cli.utils import get_logger
@@ -146,10 +147,12 @@ class _AsyncVectorAdapter:
         self._adapter = adapter
 
     async def call(self, method_name: str, /, *args: Any, **kwargs: Any) -> Any:
-        return await asyncio.to_thread(getattr(self._adapter, method_name), *args, **kwargs)
+        return await run_to_completion(
+            lambda: asyncio.to_thread(getattr(self._adapter, method_name), *args, **kwargs)
+        )
 
     async def run(self, func: Any, /, *args: Any, **kwargs: Any) -> Any:
-        return await asyncio.to_thread(func, *args, **kwargs)
+        return await run_to_completion(lambda: asyncio.to_thread(func, *args, **kwargs))
 
     async def collection_meta(self) -> Dict[str, Any]:
         return await asyncio.to_thread(lambda: self._adapter.get_collection().get_meta_data() or {})
@@ -240,6 +243,11 @@ class _SingleAccountBackend:
         payload = {k: v for k, v in data.items() if v is not None}
         filtered = self._filter_known_fields(payload)
         result = {k: v for k, v in filtered.items() if v is not None}
+        # Full-record writes must not carry legacy invalid tags through a merge.
+        if "search_tags" in result:
+            result["search_tags"] = normalize_search_tags(
+                result["search_tags"], discard_invalid=True
+            )
 
         # Ensure text fields required by the schema are present (even if empty).
         # VikingDB requires all schema-defined fields in upsert data.

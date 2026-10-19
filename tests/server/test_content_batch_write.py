@@ -22,16 +22,57 @@ class _PathLockClient:
     def __init__(self):
         self.held = False
         self.releases = 0
+        self.handoffs = 0
+        self.paths = []
 
     async def pathlock_acquire_tree(self, path):
-        del path
+        self.paths = [path]
         self.held = True
         return {"lease_ref": "lock-1"}
+
+    async def pathlock_to_handoff(self, lease):
+        assert lease == {"lease_ref": "lock-1"}
+        assert self.held is True
+        return {
+            "owner_id": "lock-1",
+            "covered_paths": [{"path": path, "kind": "tree"} for path in self.paths],
+        }
+
+    async def pathlock_handoff(self, lease):
+        assert lease == {"lease_ref": "lock-1"}
+        assert self.held is True
+        self.held = False
+        self.handoffs += 1
 
     async def pathlock_release(self, lease):
         assert lease == {"lease_ref": "lock-1"}
         self.held = False
         self.releases += 1
+
+
+@pytest.fixture(autouse=True)
+def _coordinator_queue_for_unit_tests(monkeypatch, request):
+    if "client_with_resource" in request.fixturenames:
+        yield None
+        return
+
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+
+    queue = SimpleNamespace(enqueue=AsyncMock(return_value="queued"))
+    queue_manager = SimpleNamespace(
+        SEMANTIC="semantic",
+        get_queue=lambda *args, **kwargs: queue,
+    )
+    monkeypatch.setattr(content_write_module, "get_queue_manager", lambda: queue_manager)
+    yield queue
+
+    tracker = content_write_module.get_request_wait_tracker()
+    for call in queue.enqueue.await_args_list:
+        msg = call.args[0]
+        if getattr(msg, "wait_for_request_completion", False):
+            tracker.mark_semantic_done(msg.telemetry_id, msg.id, processed_delta=0)
+
 
 
 class _VFS:
@@ -165,7 +206,7 @@ async def test_batch_releases_tree_lock_before_one_aggregated_refresh(monkeypatc
     calls = []
 
     async def refresh(**kwargs):
-        assert locks.held is False
+        assert locks.held is True
         calls.append(kwargs["refresh_kinds"])
         return {"Semantic": {"processed": 1, "error_count": 0}}
 
@@ -183,7 +224,8 @@ async def test_batch_releases_tree_lock_before_one_aggregated_refresh(monkeypatc
     assert vfs.writes == [a, b]
     assert result["created"] == [a, b]
     assert calls == [{a: "added", b: "added"}]
-    assert locks.releases == 1
+    assert locks.releases == 0
+    assert locks.handoffs == 1
 
 
 @pytest.mark.asyncio
@@ -342,7 +384,7 @@ async def test_batch_partial_failure_refreshes_successful_files_and_retry_is_saf
     calls = []
 
     async def refresh(**kwargs):
-        assert locks.held is False
+        assert locks.held is True
         calls.append(dict(kwargs["refresh_kinds"]))
 
     monkeypatch.setattr(coordinator, "_refresh_batch", refresh)
@@ -483,6 +525,18 @@ async def test_batch_write_api_upserts_files(client_with_resource):
     assert first.status_code == 200
     assert first.json()["result"]["updated"] == [existing]
     assert first.json()["result"]["created"] == [created]
+
+    retry = await client.post(
+        "/api/v1/content/batch-write",
+        json={"root_uri": root, "operations": operations, "wait": False},
+    )
+    assert retry.status_code == 409
+
+    waited = await client.post(
+        "/api/v1/system/wait",
+        json={"timeout": 30.0},
+    )
+    assert waited.status_code == 200
 
     retry = await client.post(
         "/api/v1/content/batch-write",

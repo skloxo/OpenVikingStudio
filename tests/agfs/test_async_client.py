@@ -155,6 +155,7 @@ async def test_path_locks_are_forwarded_when_bypass_is_not_enabled(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_path_locks_are_disabled_by_default_and_can_be_explicitly_restored(monkeypatch):
+    monkeypatch.delenv("OPENVIKING_DISABLE_PATH_LOCKS", raising=False)
     agfs = AsyncAGFSClient(_PathLockRecordingAGFS())
 
     assert (await agfs.pathlock_acquire_exact("/local/default/a"))["owned"] is True
@@ -183,3 +184,45 @@ async def test_disabled_path_locks_disable_auto_locking_for_normal_file_operatio
     assert client.contexts == [
         {"account_id": "default", "disable_auto_pathlock": "true"}
     ]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("backend", ["agfs", "agfs_cp", "vector"])
+async def test_async_agfs_client_cancels_with_settled_physical_writes(backend, monkeypatch):
+    """Cancellation settles physical writes before cleanup may remove their data."""
+    import asyncio
+    import threading
+    from openviking.storage.viking_vector_index_backend import _AsyncVectorAdapter
+
+    started, release = threading.Event(), threading.Event()
+    writes = []
+
+    class Writer:
+        def write(self, path, data, **kwargs):
+            started.set()
+            if not release.wait(timeout=5):
+                raise TimeoutError("Test did not release the write")
+            writes.append((path, data))
+
+    writer = Writer()
+    monkeypatch.setattr(
+        "openviking.pyagfs.helpers.cp", lambda client, src, dst, **_: client.write(dst, b"data")
+    )
+    operation = asyncio.create_task(
+        AsyncAGFSClient(writer).cp("/local/account/source", "/local/account/file")
+        if backend == "agfs_cp"
+        else AsyncAGFSClient(writer).write("/local/account/file", b"data")
+        if backend == "agfs"
+        else _AsyncVectorAdapter(writer).call("write", "record", b"data")
+    )
+    try:
+        assert await asyncio.to_thread(started.wait, 5)
+        for _ in range(2):
+            operation.cancel()
+            await asyncio.sleep(0)
+            assert not operation.done()
+    finally:
+        release.set()
+        with pytest.raises(asyncio.CancelledError):
+            await operation
+    assert len(writes) == 1

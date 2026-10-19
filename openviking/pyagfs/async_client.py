@@ -10,6 +10,7 @@ from collections.abc import Iterator
 from typing import Any, BinaryIO, Dict, List, Union
 
 from .protocols import AGFSSyncClientProtocol
+from openviking.service.task_tracker_concurrency import run_to_completion
 
 _SYSTEM_ACCOUNT_ID = "_system"
 _DISABLE_PATH_LOCKS_ENV = "OPENVIKING_DISABLE_PATH_LOCKS"
@@ -113,22 +114,23 @@ class AsyncAGFSClient:
         self._client = client
 
     async def run(self, method_name: str, /, *args: Any, **kwargs: Any) -> Any:
-        """Run a sync client method in a worker thread, preserving ctx when supported."""
+        """Run a sync method off-thread, settling I/O before propagating cancellation."""
         if _path_locks_disabled() and isinstance(kwargs.get("ctx"), dict):
             ctx = dict(kwargs["ctx"])
             ctx.pop("lease_ref", None)
             ctx["disable_auto_pathlock"] = "true"
             kwargs["ctx"] = ctx
+        method = getattr(self._client, method_name)
         try:
-            return await asyncio.to_thread(getattr(self._client, method_name), *args, **kwargs)
+            return await run_to_completion(lambda: asyncio.to_thread(method, *args, **kwargs))
         except TypeError as exc:
             message = str(exc)
             if "ctx" not in kwargs or "unexpected keyword argument 'ctx'" not in message:
                 raise
             legacy_kwargs = dict(kwargs)
             legacy_kwargs.pop("ctx", None)
-            return await asyncio.to_thread(
-                getattr(self._client, method_name), *args, **legacy_kwargs
+            return await run_to_completion(
+                lambda: asyncio.to_thread(method, *args, **legacy_kwargs)
             )
 
     @staticmethod
@@ -350,15 +352,17 @@ class AsyncAGFSClient:
         """
         from .helpers import cp
 
-        return await asyncio.to_thread(
-            cp,
-            self._client,
-            src_path,
-            dst_path,
-            recursive=recursive,
-            stream=True,
-            fs_ctx=_fs_ctx_with_auto_pathlock(src_path, fs_ctx, auto_pathlock),
-            allow_same_mount_fast_path=allow_same_mount_fast_path,
+        return await run_to_completion(
+            lambda: asyncio.to_thread(
+                cp,
+                self._client,
+                src_path,
+                dst_path,
+                recursive=recursive,
+                stream=True,
+                fs_ctx=_fs_ctx_with_auto_pathlock(src_path, fs_ctx, auto_pathlock),
+                allow_same_mount_fast_path=allow_same_mount_fast_path,
+            )
         )
 
     async def grep(self, **kwargs: Any) -> Dict[str, Any]:

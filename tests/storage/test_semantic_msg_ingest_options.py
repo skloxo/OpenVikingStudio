@@ -74,3 +74,26 @@ def test_semantic_msg_round_trips_hierarchical_aggregation_policy():
 
     assert restored.use_hierarchical_aggregation is True
     assert restored.propagate_to_parent is False
+
+
+def test_semantic_msg_round_trips_request_completion_coordinator_flag():
+    msg = SemanticMsg(
+        uri="viking://resources/wide",
+        context_type="resource",
+        wait_for_request_completion=True,
+    )
+
+    assert SemanticMsg.from_json(msg.to_json()).wait_for_request_completion is True
+
+
+def test_semantic_msg_defaults_request_completion_coordinator_flag_for_legacy_payload():
+    msg = SemanticMsg.from_dict(
+        {
+            "uri": "viking://resources/wide",
+            "context_type": "resource",
+            "account_id": "default",
+        }
+    )
+
+    assert msg.wait_for_request_completion is False
+

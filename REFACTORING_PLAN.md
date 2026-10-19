@@ -2,7 +2,7 @@
 
 > **关联研发大蓝图**：[`BLUEPRINT.md`](file:///home/skloxo/aho/openclaw/project/.agents/BLUEPRINT.md) ｜ **交付全量归档台账**：[`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md) ｜ **通用资产档案库**：[`COMPONENT_AND_WHEEL_INVENTORY.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md) ｜ **👁️ 人工验收测试指南**：[`docs/HUMAN_ACCEPTANCE_TESTING.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/HUMAN_ACCEPTANCE_TESTING.md)
 > **唯一真相源 (SSOT)**：本文档为 OpenViking 当前活跃的重构规划与就绪待调度的任务矩阵看板。历史所有已验收交付的版本履历（Milestone 1~4 全量 19 张 Task Cards 及前序波次）已完整归档至 [`DELIVERY_ARCHIVE.md`]- **线上正式部署版本**：**`v1.4.106`**（物理访问地址：`vk.tide.red/studio/home`，已实机验证）；
-- **当前最新交付版本**：**`v1.7.130`**（Tag: `v1.7.130`，技能中心「B6 演进流水线与全息运行中枢」核心架构、双模式切换与 12 阶态势沙盘）；
+- **当前最新交付版本**：**`v1.7.148`**（Tag: `v1.7.148`，AGFS 写入事务加固、目录树一致性与底层存储防并发损坏 SSOT）；
 - **历史里程碑详单检索**：如需查阅 Milestone 1~4 及早期版本修改清单与架构细节，请点击跳转至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。
 
 | 版本 Tag      | 任务工单 ID | 模块与重构主题                                                                                                                                                | 核心治理成果与物理交付物                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |     验收状态      |
@@ -14,6 +14,7 @@
 | **`v1.7.145`** | **Card-188** | **AGFS 事务加固、解析管线防崩防丢与脏快照熔断 (PathLock Non-blocking, Parser Crash Prevention & Anti-Stale-Upsert SSOT - 缺陷治理)** | 1. **PDFium 进程级互斥锁**：在 `pdf.py` 增加 `_PDFIUM_LOCK`，彻底消灭底层 C++ 多线程并发渲染段错误崩溃；<br>2. **Markdown 顶级标题前内容保真**：在 `markdown.py` 将前置虚拟章节锚定在首个最高级标题，彻底根除顶级标题前出现次级标题（如 `## Preface` 前于 `# Chapter 1`）被静默丢弃缺陷；<br>3. **飞书表格管道符转义**：在 `base.py` 将单元格 `|` 转义为 `\|`，折叠多行并保底 3 字符，彻底杜绝表格解析结构散架；<br>4. **脏快照覆写物理阻断**：在 `memory_updater.py` 严格收敛异常仅允许 `(NotFoundError, FileNotFoundError)`，阻断脏内存覆写磁盘最新记忆；<br>5. **视网膜单测全绿**：新增 `test_card188_parser_crash_and_data_loss_prevention.py` 4/4 全绿，55/55 解析回归通过，33/33 记忆回归通过。 | [x] 已验收通过 ✅ |
 | **`v1.7.146`** | **Card-189** | **多模态混合检索扩展与显式作用域保护 / 检索打分纠偏 (Multimodal Hybrid Query, Scope Protection & Scoring Debias SSOT - 缺陷治理与特性吸收)** | 1. **多模态 Query 扩展**：`image_search.py` 支持 `list[str]` 图片解析与标准化；`search_service.py` 增强 `_resolve_image_url` 异步批量支持；<br>2. **显式作用域保护**：在 `_semantic.py` 中将 `has_explicit_target=bool(retrieval_targets.first_explicit_directory)` 精准透传至 `retriever.retrieve`，彻底修复默认目录展开误导检索器判定显式目标导致图片默认搜索被污染的物理缺陷；<br>3. **复合混合嵌入多模态路由**：`CompositeHybridEmbedder` 稠密通道纳管多模态图片，稀疏通道自动安全跳过纯图输入规避报错；`VolcengineHybridEmbedder` 稠密与稀疏分离执行；<br>4. **视网膜单测与门禁全绿**：新增 `test_card189_multimodal_hybrid_and_scope_protection.py` 7/7 全绿，`tests/retrieve` 与 `tests/parse` 512 项回归测试全部通过，Security Scan 13,534 文件零泄露，Anti-Demo 233 组件 100% PASS。 | [x] 已验收通过 ✅ |
 | **`v1.7.147`** | **Card-190** | **Gateway 2.0 吞吐优化与 Prompt Cache 命中率态势大盘 (Gateway CPU Optimization & Cache Telemetry SSOT - 上游突破兼并)** | 1. **多厂商 Prompt Cache 归一化提取**：在 `openviking_gateway/protocols.py` 落地 `usage_of` 与 `add_usage`，通过 `CACHE_READ` 与 `CACHE_WRITE` 键族无缝嗅探兼并 OpenAI, Anthropic, DeepSeek, Kimi, OpenRouter, DashScope；升级 `openai_to_anthropic_response` 与流式适配器透传缓存字段；<br>2. **网关流式分帧与模式匹配加速**：`SSEDecoder` 引入预编译 `\n\r?\n` 换行优先扫描，消除逐字节重复匹配；`auxiliary` 模式探测优先使用 `.lower()` 纯子串匹配削减 CPU 损耗；<br>3. **Prompt Cache 态势大盘与告警引擎**：新建 `openviking_gateway/overview.py`，实现 `overview_summary`、`cache_alerts`、`miss_streak`（$32\text{k}+$ 连续 3 次未命中判定）；<br>4. **REST 端点与前端座舱呈现**：在 `openviking/server/routers/gateway.py` 暴露 `/api/v1/gateway/overview` 与 `/api/v1/gateway/cache-alerts`；在前端落地 `PromptCacheCockpitCard` 并挂载于监控大屏，严守 **NO GREEN EVER 🚫** 与字号 $\ge 12\text{px}$ 门禁；<br>5. **双全验证全绿**：`tests/gateway/test_usage.py` (20/20 PASS) + `tests/gateway/test_overview.py` (4/4 PASS)，全量 `tests/gateway` 52/52 项单测全绿，Vite 编译构建通过，Security Scan 5173 文件 0 泄露，Anti-Demo 234 组件 100% PASS。 | [x] 已验收通过 ✅ |
+| **`v1.7.148`** | **Card-193** | **AGFS 写入事务加固、目录树一致性与底层存储防并发损坏 (AGFS Write Transaction, Tree Consistency & Concurrency Protection SSOT - 上游突破兼并)** | 1. **写入锁跨异步阶段保持**：在 `content_write.py` 引入 `_enqueue_lock_coordinator` 入队协调器转交锁所有权，`semantic_processor` 中处理协调器 requeue / settle，Embeddings 未 settle 前绝不提前释放锁，彻底消灭写入期间并发读取损坏；<br>2. **AGFS 异步拷贝与 run 接入 `run_to_completion`**：在 `async_client.py` 与 `viking_vector_index_backend.py` 深度接入 `run_to_completion`，确保外层协程取消前底层物理 I/O settle；<br>3. **409 `ResourceBusyError` 精准透传**：在 `viking_fs/_ops.py` 的 `append_file` 补齐 `map_exception` 保护，恢复 409 `ResourceBusyError` 避免折叠为 500；<br>4. **Worker 停机源文件安全保留**：在 `add_resource_processor.py` 区分 `TaskStatus.RUNNING`（Worker 停机）与 `CANCELLING`，停机时完整保留暂存源文件杜绝重试丢失；<br>5. **全量索引写入非法标签净化**：全量索引写入注入 `normalize_search_tags(..., discard_invalid=True)` 净化非法标签；<br>6. **视网膜单测与门禁全绿**：新增及更新 AGFS、write_locking、semantic_processor、request_wait_tracker 等专项与回归测试全部 100% 满绿通过，构建与安全扫描 100% PASS。 | [x] 已验收通过 ✅ |
 
 | **`v1.7.148`** | **Card-191** | **存量高价值能力自愈与自驱闭环补齐 (Automate Tri-Gate Dreamer, Hermes Flash Nudge & AHE Pre-Release Gate SSOT - 主线 D)** | 1. **OfflineDreamer 闭环驱动**：打通 `OfflineDreamer` 与 `UnifiedLifecycleEngine` 状态机推进，归纳蒸馏自动生成 Master Card 并沉淀至 `UniversalAuditLedger`；<br>2. **Hermes 结构化归因与微手术**：落地 `StructuredAttribution`，自动解析调用栈/工具报错，分类并提议 `<=30` 行微手术补丁，暴露 `/api/v1/hermes/attribute` 与 `/attributions` 端点；<br>3. **AHE Pre-Release 自动化门禁**：自动装载核心系统不变性（Fail-Open 保证、<=30行补丁限制），运行快照漂移与 Polar 沙箱检测，作为 `VALIDATING ➔ COMMITTED` 状态守卫阻断违约提交，暴露 `/api/v1/ahe/gate/check` 端点；<br>4. **测试与视网膜门禁全绿**：8/8 专项单测通过，19/19 回归测试通过，Vite 构建编译全绿 (18.33s)，`anti_demo_gate.py` 233 组件 100% PASS。 | [x] 已验收通过 ✅ |
 | **`v1.7.149`** | **Card-192** | **前端座舱纯化重构与视网膜终验 (Skills Pure Dual-Mode Cockpit, Cleanse Retrieval & Ground Guardrails SSOT - 主线 D 终战)** | 1. **技能中心纯粹化**：保持 21 母包极客资产大盘 + B6 自主演进流水线双模式，全量纳管 827 个工序别名透明投影与实时审计事实流；<br>2. **知识检索极简纯化**：彻底切除 4 大非检索异类沙箱（LLMLingua、TokenShift、Valet、ContextRouter），聚焦单阶段混合召回、时间衰减与三门结晶谱系，单文件降至 292 行黄金甜点区；<br>3. **安全装甲脱虚向实**：修复 HarnessGuardrailsCockpit 数据透传，断路器与真实拦截事件脱虚向实；<br>4. **视网膜双全满绿通过**：Vitest 10 套件 45 项测试全绿，Pytest 21 项回归全绿，Vite 编译 18.59s 零报错，`anti_demo_gate.py` 233 组件 100% PASS。 | [x] 已验收通过 ✅ |
@@ -4059,6 +4060,46 @@
   - **单测视网膜**：`tests/gateway/test_usage.py` (20/20 PASS) + `tests/gateway/test_overview.py` (4/4 PASS)，全量 `tests/gateway` 52/52 项测试 100% 通过 (4.19s)；
   - **编译与门禁**：Linux 原生 Vite 构建 (19.17s) 烘焙版本号，Security Scan 13,557 文件 0 凭据泄露，`anti_demo_gate.py` 234 组件 100% PASS，AHE 核心不变性门禁全绿；
   - **运行体验真**：WSL2 原生服务健康重启探针 100% 对齐：`HTTP 200 -> {"status":"ok","healthy":true,"version":"1.7.147","auth_mode":"trusted"}`。
+
+---
+
+### 📌 [P0] [x] Card-193 (v1.7.148): AGFS 写入事务加固、目录树一致性与底层存储防并发损坏 (AGFS Write Transaction, Tree Consistency & Concurrency Protection SSOT) ✅
+- **类型**：底层存储事务加固 / 写入锁生命周期延长 / I/O 防取消 / 409 异常映射 ｜ **优先级**：🔥🔥 P0 ｜ **目标版本**： 1.7.148 ｜ **当前状态**：[x] 已验收通过 ✅ (v1.7.148)
+- **背景与第一性原理**：
+  - **核心痛点**：
+    1. AGFS 写入在文件落盘后即刻释放了路径写入锁，但在异步向量生成（Embedding）阶段并未持有锁，导致高并发写入时产生并发冲突与目录树不一致；
+    2. 异步客户端在执行 `copy` 与后台任务时，协程一旦被外层取消会导致底层文件物理操作未完成就中断，造成脏数据或截断文件；
+    3. `append_file` 缺失底层异常映射，并发竞争时原本的 409 `ResourceBusyError` 被折叠为 500 服务器错误；
+    4. `AddResourceProcessor` 遇到任务取消时粗暴清理暂存源文件，服务优雅重启或 Worker 正常停机时会导致用户源文件丢失无法断点续传；
+    5. 向量索引批量写入时未清洗标签，非法标签引发索引入库报错。
+  - **上游神级设计**：兼并上游 5 大关键 Commit：
+    1. `6c802cd94`: 保持写入锁直至异步索引完成（通过 `_enqueue_lock_coordinator` 入队协调器转交锁所有权，`semantic_processor` 中处理协调器 requeue / settle，Embeddings 未 settle 前绝不提前释放锁）；
+    2. `dfc22d1de`: AGFS 异步拷贝与 run 接入 `run_to_completion`，确保外层取消前物理 I/O settle；
+    3. `3ecfa0a3d`: `append_file` 补齐 `map_exception`，恢复 409 `ResourceBusyError` 避免折叠为 500；
+    4. `5ece19654`: `AddResourceProcessor` 停机时保留暂存源文件（区分 `TaskStatus.RUNNING` 与 `CANCELLING`）；
+    5. `2d43f20ca`: 全量索引写入注入 `normalize_search_tags(..., discard_invalid=True)` 净化非法标签。
+  - **本地落地与吸收**：
+    1. **`async_client.py` & `viking_vector_index_backend.py`**：将 `copy` 与向量写入后台任务接入 `run_to_completion`，免受外层 CancelledError 截断；
+    2. **`viking_fs/_ops.py`**：在 `append_file` 处封装 `map_exception`，准确捕获并映射 `ResourceBusyError` (409)；
+    3. **`request_wait_tracker.py` & `semantic_msg.py`**：增强 `retained_roots`、`cleanup_requested`、`wait_for_embeddings`，赋予协调器感知与等待 embeddings 完成能力；
+    4. **`semantic_processor.py` & `content_write.py`**：在 `batch_write` 与 `_write_direct_with_refresh` 中生成协调器消息并保持写锁，`SemanticProcessor.on_dequeue` 识别协调器并执行优雅轮询重入队与最终锁释放（严格维持 `in_progress` 记账一致性，杜绝 `/wait` 504）；
+    5. **`add_resource_processor.py`**：捕获 `asyncio.CancelledError` 并根据任务状态进行精细化处理，仅在显式取消时清理暂存源文件。
+- **交付留痕 (Verification & Evidence)**：
+  - **Git 提交与 Tag**：Commit `待提交`，Tag `v1.7.148`；
+  - **版本号 SSOT**：`v1.7.148` (`openviking/_version.py`, `package.json`)；
+  - **单测视网膜**：
+    - `tests/agfs/test_async_client.py`: 8/8 PASS in 0.76s；
+    - `tests/storage/test_viking_fs_write_locking.py`: 11/11 PASS in 0.83s；
+    - `tests/telemetry/test_request_wait_tracker.py`: 8/8 PASS in 0.67s；
+    - `tests/storage/test_semantic_processor_lock_ownership.py`: 2/2 PASS in 0.81s；
+    - `tests/storage/test_semantic_msg_ingest_options.py`: 6/6 PASS in 0.78s；
+    - `tests/storage/test_content_write_processing_mode.py`: 7/7 PASS in 0.96s；
+    - `tests/server/test_content_batch_write.py`: 15/15 PASS in 80.58s；
+    - `tests/parse/test_feishu_parser_api.py -k test_add_resource`: 11/11 PASS in 0.95s；
+    - `tests/unit/test_pure_20_bundles_and_aliasing.py`: 5/5 PASS in 2.34s。
+  - **编译与门禁**：Linux 原生 Vite 构建 (19.09s) 烘焙版本号，Security Scan 13,607 文件 0 凭据泄露，`anti_demo_gate.py` 234 组件 100% PASS；
+  - **运行时验真**：版本号双写及产物已物理注入 `1.7.148`。
+
 
 
 
