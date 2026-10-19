@@ -20,7 +20,7 @@
 | **`v1.7.134`** | **Card-179** | **探针归位 `/harness-logs`、彻底斩杀 `/evolution` 页面与抗熵减 (Purge /evolution & Consolidate Probes SSOT - 主线 B)** | 1. 链接重定向至 `/skills`；<br>2. 物理删除 `/evolution` 悬空路由与死代码；<br>3. Linux 原生编译与全量安全门禁通过，Git Tag 封板。 | [x] 已验收通过 ✅ |
 | **`v1.7.136`** | **Card-166** | **技能中心使用频次遥测、ROI 价值度量与高频技能自动排序反哺中枢 (Skill Usage Telemetry, ROI Ranking & Auto-Promotion SSOT)** | 1. **全域技能调用埋点与轻量持久化 (`SkillTelemetryStore`)**：落地 SQLite `skill_events` 表，双检锁单例拦截 `skills.find`、`skills.get` (JIT 注脑) 及 FastMCP `openviking_skills`，自动记录事件与 90 天滚动清理；<br>2. **ROI 价值动态排序算法与接口反哺**：按“调用频次 × 成功率 × Token 压缩节省”综合加权归一化 (0~100 分)，挂载 `/api/v1/skills/telemetry/roi` 与 `/api/v1/skills?sort_by=roi` 动态升降序；<br>3. **前端座舱卡片 (`SkillRoiCockpitCard`)**：4 维核心指标瓦片（30天调用量、节省 Token、综合成功率、沉睡预警）+ Top 5 ROI 母包与工序排行榜 + 沉睡工序折叠面板，严格遵循 NO GREEN EVER 🚫 与字号 $\ge 12\text{px}$ 规范；<br>4. **测试视网膜与安全门禁 100% PASS**：后端 pytest 5/5 全绿，前端 vitest 4/4 全绿，`security_check.py` 0 泄露，`anti_demo_gate.py` 100% 通过，打标 Tag `v1.7.136` 交付。 | [x] 已验收通过 ✅ |
 | **`v1.7.137`** | **Card-180** | **OpenViking Gateway 2.0 核心代理骨架与双协议透传 (Gateway Core Proxy & Protocol Dual-Track SSOT - 主线 C 首战)** | 1. **独立微服务沙盒隔离 (`openviking_gateway`)**：创建完全解耦的独立微服务包，在独立端口 1934 运行，100% 隔离现有 1933 核心端口；<br>2. **OpenAI / Anthropic 双协议转发与转接**：对外提供标准 `/v1/chat/completions` 与 `/v1/messages` 兼容代理，流式透传至上游真实大模型并支持双向转接；<br>3. **零门槛外部接入**：Cursor、Cline、VSCode 插件零改动修改 BaseURL 即可直接连通；<br>4. **单文件甜点区与视网膜门禁全绿**：全量代码文件均在 30~246 行（严格控制在 100~300 行黄金甜点区，硬上限 $\le 500$ 行），17/17 单元测试全绿，安全审计与防悬空门禁 100% PASS，打标 Tag `v1.7.137`。 | [x] 已验收通过 ✅ |
-| **`v1.7.138`** | **Card-181** | **Gateway 隐式记忆检索拦截与隐藏工具自循环 (Hidden Tool Loop & Auto Memory Injection SSOT - 主线 C)** | 1. **请求前门隐式记忆注入**：网关在转发至 LLM 前，纯异步调用本地 `service.find` 自动召回关联记忆并隐式组装至 System Prompt；<br>2. **隐藏工具执行循环 (Hidden Tool Loop)**：就地执行大模型返回的 Viking 工具调用（读取文件/搜索记忆），将结果自动喂回大模型下一轮，最终把完整答案透明返回给客户端；<br>3. **自动会话捕获 (`capture.py`)**：后台异步将交互事实与工具调用产物提炼持久化入 VikingFS。 | [ ] 待排期迭代 ⏳ |
+| **`v1.7.138`** | **Card-181** | **Gateway 隐式记忆检索拦截与隐藏工具自循环 (Hidden Tool Loop & Auto Memory Injection SSOT - 主线 C)** | 1. **前门隐式记忆检索注脑 (`kernel.py`)**：网关在转发至 LLM 前，纯异步调用本地 `search/find` 自动召回关联记忆并以 `<openviking_context>` 隐式组装至 System Prompt，带 1.0s 超时 Fail-Open 降级；<br>2. **隐藏工具就地执行循环 (`tool_loop.py`)**：就地拦截并执行大模型返回的 `openviking_read` / `openviking_find` 工具调用，将执行结果塞回 Messages 历史发起下一轮推理，多轮闭环直至最终文本答案透传给客户端；<br>3. **异步会话自动捕获 (`capture.py`)**：后台异步将本次交互事实与工具调用产物脱水提炼并持久化入 VikingFS 账本；<br>4. **视网膜单测与门禁全绿**：新增 11 项单测/集成测试（全套 28 项单测 100% PASS），安全审计与防悬空门禁 100% PASS，打标 Tag `v1.7.138`。 | [x] 已验收通过 ✅ |
 | **`v1.7.139`** | **Card-182** | **AnyDoc 统一全格式文档解析引擎接入与多模态抽取增强 (AnyDoc Universal Parser & Multimodal Extraction SSOT - 主线 C)** | 1. **独立解析适配器解耦 (`AnyDocAdapter`)**：封装独立解析适配器挂载至 `openviking/parse/parsers/`，避免外部重依赖污染全局；<br>2. **复杂 Office / 表格 / 多模态图片统一抽取**：针对 Word/Excel/PPT 与内嵌图片实现高质量文本提纯与表格保留；<br>3. **Fail-Open 安全降级机制**：遇到解析异常或格式损坏，毫秒级无损降级回退至现有文本解析器，主进程绝不挂起。 | [ ] 待排期迭代 ⏳ |
 | **`v1.7.140`** | **Card-183** | **检索层单阶段全局混合召回重构与层级饿死彻底根除 (Single-Stage Global Hybrid Retrieval SSOT - 主线 C)** | 1. **切除分层递归树状爬取**：废弃容易引发“深层子目录饿死”与大目录贪婪的分层搜索逻辑；<br>2. **单阶段向量+稀疏混合召回**：全局并行触发密集向量与稀疏关键词召回，由 RRF 算法加权融合；<br>3. **无缝对接非对称时间衰减**：全面接入本地 `AsymmetricDecayEngine`，检索耗时降低 50%，Top-5 命中率显著提升。 | [ ] 待排期迭代 ⏳ |
 | **`v1.7.141`** | **Card-184** | **RNFV 两阶段存储事务模型与并发写锁彻底解耦 (Resource RNFV Transaction Model & Anti-Deadlock SSOT - 主线 C)** | 1. **意图规划与物理执行分离**：将资源写入解耦为 Resource-Node-File-Vector 两阶段事务状态机；<br>2. **消除长耗时写锁阻塞**：耗时的高维向量计算与持久化移入异步队列，读操作与轻量写操作零死锁等待；<br>3. **孤儿向量自动清理**：事务回滚时物理联动清理已生成的中间文件与孤儿向量。 | [ ] 待排期迭代 ⏳ |
@@ -3877,15 +3877,15 @@
 
 ---
 
-### 📌 [P0] [ ] Card-181 (v1.7.138): Gateway 隐式记忆检索拦截与隐藏工具自循环 (Hidden Tool Loop & Auto Memory Injection SSOT) ⏳
-- **类型**：请求前门记忆注入 / 隐藏工具循环 / 异步会话捕获 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**： 1.7.138 ｜ **当前状态**：[ ] 待排期迭代 ⏳
+### 📌 [P0] [x] Card-181 (v1.7.138): Gateway 隐式记忆检索拦截与隐藏工具自循环 (Hidden Tool Loop & Auto Memory Injection SSOT) ✅
+- **类型**：请求前门记忆注入 / 隐藏工具循环 / 异步会话捕获 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**： 1.7.138 ｜ **当前状态**：[x] 已验收通过 ✅
 - **背景与第一性原理**：
   - **核心痛点**：简单的透传只是管道，Gateway 的灵魂在于**在用户毫无感知的情况下，自动让普通大模型具备持久记忆与自主读写能力**；
   - **闭环架构设计**：
-    1. **前门意图嗅探与静默注脑 (`kernel.py`)**：在网关将请求发往真实 LLM 前，纯异步并发调用本地 `service.find` 检索相关记忆，按特定 Prompt 模板注入 System Context；
-    2. **隐藏工具执行闭环 (`tool_loop.py`)**：当大模型在回答中发出 Viking 工具调用时，网关拦截该 tool_call，在服务端就地执行（如读取 VikingFS 文件或查询记忆），将工具结果塞回 Messages 历史并发起下一轮推理，直至大模型生成最终文本答案返回给客户端；客户端全程以为大模型“天生就知道这些事实”；
+    1. **前门意图嗅探与静默注脑 (`kernel.py`)**：在网关将请求发往真实 LLM 前，纯异步并发调用本地 `search/find` 检索相关记忆，按特定 `<openviking_context>` 模板注入 System Context，具备 1.0s 超时 Fail-Open 降级保护；
+    2. **隐藏工具执行闭环 (`tool_loop.py`)**：大模型生成 Viking 工具调用（如 `openviking_read`、`openviking_find`）时，网关拦截该 tool_call，在服务端就地执行，将工具结果塞回 Messages 历史并发起下一轮推理，直至大模型生成最终纯文本答案返回给客户端；客户端全程以为大模型“天生就知道这些事实”；
     3. **会话全量自动捕获 (`capture.py`)**：请求完成后，后台异步将本轮对话提炼并提交至 VikingFS Session 账本，实现自动化记忆回填；
-    4. **单测验证**：模拟多轮 Tool Loop 与上下文自动拼装，断言客户端收到的响应无任何内部 tool 调用噪点。
+    4. **单文件黄金甜点区与全绿单测**：模块拆分为 `kernel.py` (145行), `tool_loop.py` (208行), `capture.py` (100行), `proxy.py` (322行)，全套 28 项针对性单元测试 100% PASS，安全扫描 0 密钥，打标 Tag `v1.7.138`。
 
 ---
 

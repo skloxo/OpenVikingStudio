@@ -46,6 +46,36 @@ class GatewayConfig(BaseModel):
     )
     debug: bool = Field(default=False, description="Enable debug logging")
 
+    # Card-181: Auto Memory Injection & Hidden Tool Loop
+    viking_core_url: str = Field(
+        default="http://127.0.0.1:1933",
+        description="Base URL of local OpenViking core service",
+    )
+    viking_api_key: str = Field(
+        default="",
+        description="Optional API key for authenticating with OpenViking core",
+    )
+    enable_auto_memory_injection: bool = Field(
+        default=True,
+        description="Pre-flight retrieve relevant memories and inject into system prompt",
+    )
+    memory_injection_top_k: int = Field(
+        default=3,
+        description="Max memory chunks to inject into context",
+    )
+    enable_hidden_tool_loop: bool = Field(
+        default=True,
+        description="Intercept model tool_calls, execute locally, and loop back",
+    )
+    max_hidden_tool_iterations: int = Field(
+        default=5,
+        description="Maximum iterations for hidden tool loop",
+    )
+    enable_session_capture: bool = Field(
+        default=True,
+        description="Asynchronously capture and record conversation into VikingFS",
+    )
+
     def __init__(self, **data):
         super().__init__(**data)
         # Strip trailing slash from upstream_base_url
@@ -106,6 +136,20 @@ def get_gateway_config(reload: bool = False) -> GatewayConfig:
     debug_val = os.environ.get("OPENVIKING_GATEWAY_DEBUG", "false").lower()
     debug = debug_val in ("1", "true", "yes", "on")
 
+    viking_core_url = (
+        os.environ.get("OPENVIKING_CORE_URL")
+        or os.environ.get("OPENVIKING_GATEWAY_CORE_URL")
+        or "http://127.0.0.1:1933"
+    )
+    viking_api_key = (
+        os.environ.get("OPENVIKING_API_KEY")
+        or os.environ.get("OPENVIKING_GATEWAY_CORE_KEY")
+        or ""
+    )
+    auto_mem = os.environ.get("OPENVIKING_GATEWAY_AUTO_MEMORY", "true").lower() in ("1", "true", "yes", "on")
+    hidden_tools = os.environ.get("OPENVIKING_GATEWAY_HIDDEN_TOOLS", "true").lower() in ("1", "true", "yes", "on")
+    capture = os.environ.get("OPENVIKING_GATEWAY_CAPTURE", "true").lower() in ("1", "true", "yes", "on")
+
     _GLOBAL_GATEWAY_CONFIG = GatewayConfig(
         host=host,
         port=port,
@@ -115,5 +159,10 @@ def get_gateway_config(reload: bool = False) -> GatewayConfig:
         default_model=default_model,
         timeout_seconds=timeout,
         debug=debug,
+        viking_core_url=viking_core_url,
+        viking_api_key=viking_api_key,
+        enable_auto_memory_injection=auto_mem,
+        enable_hidden_tool_loop=hidden_tools,
+        enable_session_capture=capture,
     )
     return _GLOBAL_GATEWAY_CONFIG
