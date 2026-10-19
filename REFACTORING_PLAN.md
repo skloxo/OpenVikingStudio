@@ -13,7 +13,8 @@
 | **`v1.7.144`** | **Card-187** | **Session 高并发读写去重、归档锁解耦与状态机收敛 (Session IO De-duplication & Lock Decoupling SSOT - 缺陷治理)** | 1. **归档死锁物理根除**：将 `task_tracker.create` 彻底移出 `_archive_lock` 临界区及 `pathlock_release` 外部，独立 try-except 保护，根除跨线程死锁；<br>2. **状态机单轨收敛**：从 `SessionService` 移除冗余的 `extract` 方法，从路由层移除 `POST /{session_id}/extract`，会话归档提纯统一收敛至 `SessionCommit`；<br>3. **会话读写解耦与热读优化**：在 `session_service.py` 落地 `open()` 方法避免写前无谓反序列化全量历史消息，`commit_async`、`update_config`、`add_message`、`batch_add_messages` 全面对齐 `open()`；在 `namespace.py` 增强 `session` 别名解析；<br>4. **视网膜单测 58/58 全绿**：新增 `test_card187_session_concurrency_and_lock_decoupling.py` 3/3 全绿，`test_api_sessions.py` 50/50 全绿，`test_session_service_metrics.py` 5/5 全绿通过。 | [x] 已验收通过 ✅ |
 | **`v1.7.145`** | **Card-188** | **AGFS 事务加固、解析管线防崩防丢与脏快照熔断 (PathLock Non-blocking, Parser Crash Prevention & Anti-Stale-Upsert SSOT - 缺陷治理)** | 1. **PDFium 进程级互斥锁**：在 `pdf.py` 增加 `_PDFIUM_LOCK`，彻底消灭底层 C++ 多线程并发渲染段错误崩溃；<br>2. **Markdown 顶级标题前内容保真**：在 `markdown.py` 将前置虚拟章节锚定在首个最高级标题，彻底根除顶级标题前出现次级标题（如 `## Preface` 前于 `# Chapter 1`）被静默丢弃缺陷；<br>3. **飞书表格管道符转义**：在 `base.py` 将单元格 `|` 转义为 `\|`，折叠多行并保底 3 字符，彻底杜绝表格解析结构散架；<br>4. **脏快照覆写物理阻断**：在 `memory_updater.py` 严格收敛异常仅允许 `(NotFoundError, FileNotFoundError)`，阻断脏内存覆写磁盘最新记忆；<br>5. **视网膜单测全绿**：新增 `test_card188_parser_crash_and_data_loss_prevention.py` 4/4 全绿，55/55 解析回归通过，33/33 记忆回归通过。 | [x] 已验收通过 ✅ |
 | **`v1.7.146`** | **Card-189** | **多模态混合检索扩展与显式作用域保护 / 检索打分纠偏 (Multimodal Hybrid Query, Scope Protection & Scoring Debias SSOT - 缺陷治理与特性吸收)** | 1. **多模态 Query 扩展**：`image_search.py` 支持 `list[str]` 图片解析与标准化；`search_service.py` 增强 `_resolve_image_url` 异步批量支持；<br>2. **显式作用域保护**：在 `_semantic.py` 中将 `has_explicit_target=bool(retrieval_targets.first_explicit_directory)` 精准透传至 `retriever.retrieve`，彻底修复默认目录展开误导检索器判定显式目标导致图片默认搜索被污染的物理缺陷；<br>3. **复合混合嵌入多模态路由**：`CompositeHybridEmbedder` 稠密通道纳管多模态图片，稀疏通道自动安全跳过纯图输入规避报错；`VolcengineHybridEmbedder` 稠密与稀疏分离执行；<br>4. **视网膜单测与门禁全绿**：新增 `test_card189_multimodal_hybrid_and_scope_protection.py` 7/7 全绿，`tests/retrieve` 与 `tests/parse` 512 项回归测试全部通过，Security Scan 13,534 文件零泄露，Anti-Demo 233 组件 100% PASS。 | [x] 已验收通过 ✅ |
-| **`v1.7.147`** | **Card-190** | **三大通用原子引擎抽离与多端复用中枢 (Universal Content Reducer, Unified Lifecycle Engine & Audit Ledger SSOT - 主线 D)** | 1. **UniversalContentReducer**：多模态内容脱水压缩（CODE/SKILL/TEXT），自动类型嗅探，正则冻结 YAML 与代码块，AST 语法验真与 Fail-Open 兜底，注册 FastMCP `openviking_content_reduce`；<br>2. **UnifiedLifecycleEngine**：5 阶标准状态机（INGESTED ➔ EVALUATING ➔ REDUCING ➔ VALIDATING ➔ COMMITTED），线程安全，前置守卫与后置监听解耦；<br>3. **UniversalAuditLedger**：线程安全 SQLite 不可变事件账本，支持多维时间线检索与超期归档；<br>4. **双全验证全绿**：11/11 单测通过，19/19 回归测试通过，Vite 编译通过，Git commit `c8354929a`。 | [x] 已验收通过 ✅ |
+| **`v1.7.147`** | **Card-190** | **Gateway 2.0 吞吐优化与 Prompt Cache 命中率态势大盘 (Gateway CPU Optimization & Cache Telemetry SSOT - 上游突破兼并)** | 1. **多厂商 Prompt Cache 归一化提取**：在 `openviking_gateway/protocols.py` 落地 `usage_of` 与 `add_usage`，通过 `CACHE_READ` 与 `CACHE_WRITE` 键族无缝嗅探兼并 OpenAI, Anthropic, DeepSeek, Kimi, OpenRouter, DashScope；升级 `openai_to_anthropic_response` 与流式适配器透传缓存字段；<br>2. **网关流式分帧与模式匹配加速**：`SSEDecoder` 引入预编译 `\n\r?\n` 换行优先扫描，消除逐字节重复匹配；`auxiliary` 模式探测优先使用 `.lower()` 纯子串匹配削减 CPU 损耗；<br>3. **Prompt Cache 态势大盘与告警引擎**：新建 `openviking_gateway/overview.py`，实现 `overview_summary`、`cache_alerts`、`miss_streak`（$32\text{k}+$ 连续 3 次未命中判定）；<br>4. **REST 端点与前端座舱呈现**：在 `openviking/server/routers/gateway.py` 暴露 `/api/v1/gateway/overview` 与 `/api/v1/gateway/cache-alerts`；在前端落地 `PromptCacheCockpitCard` 并挂载于监控大屏，严守 **NO GREEN EVER 🚫** 与字号 $\ge 12\text{px}$ 门禁；<br>5. **双全验证全绿**：`tests/gateway/test_usage.py` (20/20 PASS) + `tests/gateway/test_overview.py` (4/4 PASS)，全量 `tests/gateway` 52/52 项单测全绿，Vite 编译构建通过，Security Scan 5173 文件 0 泄露，Anti-Demo 234 组件 100% PASS。 | [x] 已验收通过 ✅ |
+
 | **`v1.7.148`** | **Card-191** | **存量高价值能力自愈与自驱闭环补齐 (Automate Tri-Gate Dreamer, Hermes Flash Nudge & AHE Pre-Release Gate SSOT - 主线 D)** | 1. **OfflineDreamer 闭环驱动**：打通 `OfflineDreamer` 与 `UnifiedLifecycleEngine` 状态机推进，归纳蒸馏自动生成 Master Card 并沉淀至 `UniversalAuditLedger`；<br>2. **Hermes 结构化归因与微手术**：落地 `StructuredAttribution`，自动解析调用栈/工具报错，分类并提议 `<=30` 行微手术补丁，暴露 `/api/v1/hermes/attribute` 与 `/attributions` 端点；<br>3. **AHE Pre-Release 自动化门禁**：自动装载核心系统不变性（Fail-Open 保证、<=30行补丁限制），运行快照漂移与 Polar 沙箱检测，作为 `VALIDATING ➔ COMMITTED` 状态守卫阻断违约提交，暴露 `/api/v1/ahe/gate/check` 端点；<br>4. **测试与视网膜门禁全绿**：8/8 专项单测通过，19/19 回归测试通过，Vite 构建编译全绿 (18.33s)，`anti_demo_gate.py` 233 组件 100% PASS。 | [x] 已验收通过 ✅ |
 | **`v1.7.149`** | **Card-192** | **前端座舱纯化重构与视网膜终验 (Skills Pure Dual-Mode Cockpit, Cleanse Retrieval & Ground Guardrails SSOT - 主线 D 终战)** | 1. **技能中心纯粹化**：保持 21 母包极客资产大盘 + B6 自主演进流水线双模式，全量纳管 827 个工序别名透明投影与实时审计事实流；<br>2. **知识检索极简纯化**：彻底切除 4 大非检索异类沙箱（LLMLingua、TokenShift、Valet、ContextRouter），聚焦单阶段混合召回、时间衰减与三门结晶谱系，单文件降至 292 行黄金甜点区；<br>3. **安全装甲脱虚向实**：修复 HarnessGuardrailsCockpit 数据透传，断路器与真实拦截事件脱虚向实；<br>4. **视网膜双全满绿通过**：Vitest 10 套件 45 项测试全绿，Pytest 21 项回归全绿，Vite 编译 18.59s 零报错，`anti_demo_gate.py` 233 组件 100% PASS。 | [x] 已验收通过 ✅ |
 | **`v1.7.127`** | **Card-165** | **全双工实时事件总线接入与技能大盘毫秒级自愈刷新 (Full-Duplex Real-Time Event Bus & Instant Skills Query Invalidation SSOT)** | 1. **WebSocket / SSE 实时事件总线全双工接入**：在 `SkillEventBus` 落地 `subscribe_ws` 与 `subscribe` 双引擎，在 `openviking/server/routers/skills.py` 暴露 `/events` (SSE) 与 `/ws` (WebSocket) 双端点，彻底切除前端 TanStack Query 60s 静态轮询缓存延迟；<br>2. **流水线状态微脉冲下发 (PIPELINE_PULSE)**：在 `SkillAutonomousPipeline` 与 `skill_ingestion.py` 串联事件中枢，当技能入库 (ENQUEUED)、质检拦截 (REJECTED)、自主落盘 (COMMITTED) 与批处理完成 (CYCLE_COMPLETED) 时，毫秒级广播微脉冲；<br>3. **前端静默自愈拉新与全域缓存失效**：在 `use-skill-event-bus.ts` 捕获 `PIPELINE_PULSE` 与 `SKILLS_MUTATED`，毫秒级触发 `queryClient.invalidateQueries` 精准刷新 `skills`、`skills-ingestion-queue-depth`、`skills-ingestion-queue`、`skills-provenance-events` 与 `skill-detail`，实现无感即时刷新；<br>4. **视网膜单测与门禁全绿交付**：新增 `test_card165_realtime_event_bus.py` 6/6 全绿通过，结合 `test_autonomous_pipeline.py` 7/7 快速通过 (7.57s)，Vite 生产构建编译通过 (20.42s)，Security Scan 5058 文件零泄露，Anti-Demo 232 组件 100% PASS。 | [x] 已验收通过 ✅ |
@@ -4039,14 +4040,25 @@
 
 ---
 
-### 📌 [P0] [ ] Card-190 (v1.7.147): Gateway 2.0 吞吐优化与 Prompt Cache 命中率态势大盘 (Gateway CPU Optimization & Cache Telemetry SSOT) ⏳
-- **类型**：反向代理吞吐优化 / Prompt Cache 态势大盘 / 长会话未命中预警 ｜ **优先级**：🔥🔥 P1 ｜ **目标版本**： 1.7.147 ｜ **当前状态**：[ ] 待排期迭代 ⏳
+### 📌 [P0] [x] Card-190 (v1.7.147): Gateway 2.0 吞吐优化与 Prompt Cache 命中率态势大盘 (Gateway CPU Optimization & Cache Telemetry SSOT) ✅
+- **类型**：反向代理吞吐优化 / Prompt Cache 态势大盘 / 长会话未命中预警 ｜ **优先级**：🔥🔥 P0 ｜ **目标版本**： 1.7.147 ｜ **当前状态**：[x] 已验收通过 ✅ (v1.7.147)
 - **背景与第一性原理**：
-  - **核心痛点**：网关转发中过多的消息转换拷贝增加 CPU 开销；开发者无法直观感知上游大模型（DeepSeek / Claude）的 Prompt Cache 命中情况；
-  - **上游神级设计**：上游在 Commit `26fa00b91` 与 `27db44123` 深度压榨了转发延迟，并捕获了各上游模型的 cache usage；
-  - **本地平滑兼并方案**：
-    1. **请求流转轻量化**：精简协议转接中的序列化路径，削减每请求 CPU 消耗；
-    2. **Prompt Cache 态势座舱**：在 Studio 大屏展示各模型提供商的缓存命中率，长对话未命中缓存时发出琥珀色高亮预警。
+  - **核心痛点**：
+    1. 多模型提供商（Anthropic / OpenAI / DeepSeek / Kimi / DashScope / LiteLLM）的 Prompt Cache 字段格式碎片化（`cached_tokens` / `prompt_cache_hit_tokens` / `cache_read_input_tokens` 等），存在重复计算或统计失真；
+    2. 网关请求处理中的频繁 `re.I` 搜索与 SSE 分帧重复内存拷贝增加 CPU 开销；
+    3. 缺乏端到端的 Prompt Cache 态势感知与长上下文未命中告警机制。
+  - **上游神级设计**：上游在 Commit `26fa00b91` 与 `27db44123` 建立了键族探测式 `usage_of`，优化了 `SSEDecoder.feed` 与 `.lower()` 模式快速扫描，并落地了 `overview.py` 态势与长上下文告警。
+  - **本地落地与吸收**：
+    1. **多厂商 Prompt Cache 归一化提取器**：在 `openviking_gateway/protocols.py` 落地 `usage_of` 与 `add_usage`，通过 `CACHE_READ` 与 `CACHE_WRITE` 键族无缝兼容 OpenAI, Anthropic, DeepSeek, Kimi, OpenRouter, DashScope；升级 `openai_to_anthropic_response` 与 `OpenAIToAnthropicStreamAdapter` 透传缓存字段；
+    2. **网关流式分帧与模式匹配加速**：`SSEDecoder` 引入预编译 `\n\r?\n` 换行优先扫描，消除逐字节重复匹配；引入 `auxiliary` 模式探测优先使用 `.lower()` 纯子串匹配，削减 CPU 损耗；
+    3. **Prompt Cache 态势大盘与告警引擎**：新建 `openviking_gateway/overview.py`，实现 `overview_summary`、`cache_alerts`、`miss_streak`（$32\text{k}+$ 连续 3 次未命中判定）；
+    4. **REST 端点与前端座舱呈现**：在 `openviking/server/routers/gateway.py` 暴露 `/api/v1/gateway/overview` 与 `/api/v1/gateway/cache-alerts`；在前端落地 `PromptCacheCockpitCard` 并挂载于监控大屏，严守 **NO GREEN EVER 🚫** 与字号 $\ge 12\text{px}$ 门禁。
+- **交付留痕 (Verification & Evidence)**：
+  - **版本号 SSOT**：`v1.7.147` (`openviking/_version.py`, `package.json`)；
+  - **单测视网膜**：`tests/gateway/test_usage.py` (20/20 PASS) + `tests/gateway/test_overview.py` (4/4 PASS)，全量 `tests/gateway` 52/52 项测试 100% 通过；
+  - **编译与门禁**：Vite 生产构建编译通过 (3m 2s)，Security Scan 5,173 文件零泄露，`anti_demo_gate.py` 234 组件 100% PASS；
+  - **运行体验真**：实时网关概览端点与长会话告警接口经集成测试验证通过。
+
 
 
 
