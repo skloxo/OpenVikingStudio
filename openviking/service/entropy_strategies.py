@@ -244,7 +244,8 @@ async def dispatch_entropy_strategy(
 
     now = time.time()
     date_str = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    base_dir = Path(f"/home/skloxo/.openviking/data/viking/{account_id}/resources/master_memory")
+    from openviking.service.skill_path_resolver import resolve_master_memory_root
+    base_dir = resolve_master_memory_root(account_id)
     spec = builder(target or "", account_id, base_dir, now)
 
     task_id = f"{spec['prefix']}-{date_str}-{str(uuid4())[:6]}"

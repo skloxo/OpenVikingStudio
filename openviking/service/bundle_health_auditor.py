@@ -26,8 +26,9 @@ from openviking.service.auto_crystallizer_b5 import (
     SeamDecisionGateB5,
     GENERIC_STOP_WORDS,
 )
+from openviking.service.skill_path_resolver import resolve_skills_root
 
-DEFAULT_SKILLS_DIR = Path("/home/skloxo/.openviking/data/viking/default/agent/skills")
+DEFAULT_SKILLS_DIR = resolve_skills_root()
 
 
 class BundleHealthAuditor:

@@ -161,10 +161,11 @@ def _skill_summary_from_meta(name: str, root_uri: str, meta: Dict[str, Any]) -> 
     if meta.get("is_bundle") or meta.get("is-bundle"):
         is_bundle = True
 
-    for base in [
-        FilePath("/home/skloxo/.openviking/data/viking/default/agent/skills"),
-        FilePath("/home/skloxo/.openviking/data/viking/default/user/default/skills"),
-    ]:
+    from openviking.service.skill_path_resolver import resolve_skills_root
+    agent_skills_base = resolve_skills_root("default")
+    user_skills_base = agent_skills_base.parent.parent / "user" / "default" / "skills"
+
+    for base in [agent_skills_base, user_skills_base]:
         p = base / name
         sc_dir = p / "scenarios"
         mod_dir = p / "modules"
@@ -213,10 +214,11 @@ def _skill_summary_from_meta(name: str, root_uri: str, meta: Dict[str, Any]) -> 
 from pathlib import Path as FilePath
 
 def _read_skill_md_meta(skill_name: str) -> Dict[str, Any]:
-    for base in [
-        FilePath("/home/skloxo/.openviking/data/viking/default/agent/skills"),
-        FilePath("/home/skloxo/.openviking/data/viking/default/user/default/skills"),
-    ]:
+    from openviking.service.skill_path_resolver import resolve_skills_root
+    agent_skills_base = resolve_skills_root("default")
+    user_skills_base = agent_skills_base.parent.parent / "user" / "default" / "skills"
+
+    for base in [agent_skills_base, user_skills_base]:
         p = base / skill_name / "SKILL.md"
         if p.exists():
             try:

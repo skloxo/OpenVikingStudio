@@ -366,8 +366,8 @@ async def add_skill(
                 resolved_sc = router.resolve(str(parsed_name).strip())
                 if resolved_sc and resolved_sc.get("is_virtual"):
                     parent_bundle = resolved_sc.get("bundle_name")
-                    sc_filename = resolved_sc.get("scenario_file") or f"{parsed_name}.md"
-                    target_file = Path("/home/skloxo/.openviking/data/viking/default/agent/skills") / parent_bundle / "scenarios" / sc_filename
+                    from openviking.service.skill_path_resolver import resolve_skills_root
+                    target_file = resolve_skills_root("default") / parent_bundle / "scenarios" / sc_filename
                     if target_file.parent.exists():
                         target_file.write_text(data, encoding="utf-8")
                         return Response(status="ok", result={
