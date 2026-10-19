@@ -652,9 +652,10 @@ class CompositeHybridEmbedder(HybridEmbedderBase):
 
     def _sparse_input(self, content: "EmbeddingInput") -> Optional[str]:
         text = extract_text_from_content(content)
-        if isinstance(content, list) and not text.strip():
+        if not text.strip():
             return None
         return self.sparse_embedder.prepare_embedding_input(text)
+
 
     def embed(self, content: "EmbeddingInput", is_query: bool = False) -> EmbedResult:
         """Combine results from both embedders"""

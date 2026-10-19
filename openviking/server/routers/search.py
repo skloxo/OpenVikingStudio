@@ -105,14 +105,25 @@ def _resolve_uri_list(uris: Sequence[str], ctx: RequestContext) -> list[str]:
 def _resolve_image_url(
     image_url: str | list[str] | None, ctx: RequestContext
 ) -> str | list[str] | None:
+    if image_url is None:
+        return None
     if isinstance(image_url, list):
-        return [_resolve_image_url(url, ctx) for url in image_url]
-    if not image_url:
-        return image_url
-    resolved = resolve_path_variables(image_url)
+        resolved_items = []
+        for url in image_url:
+            r = _resolve_image_url(url, ctx)
+            if r and isinstance(r, str) and r.strip():
+                resolved_items.append(r.strip())
+        return resolved_items if resolved_items else None
+    if not isinstance(image_url, str):
+        return None
+    cleaned = image_url.strip()
+    if not cleaned:
+        return None
+    resolved = resolve_path_variables(cleaned)
     if is_viking_uri(resolved):
         return validate_request_viking_uri(resolved, ctx, field_name="image_url")
     return resolved
+
 
 
 class FindRequest(BaseModel):

@@ -127,16 +127,25 @@ def _normalize_image_input(image: Any) -> str | list[str] | None:
     if image is None:
         return None
     if isinstance(image, list):
-        return [_normalize_image_input(item) for item in image]
+        normalized = [_normalize_image_input(item) for item in image]
+        filtered = [x for x in normalized if x and isinstance(x, str) and x.strip()]
+        return filtered if filtered else None
     if isinstance(image, (bytes, bytearray, memoryview)):
         return _image_to_data_uri(image)
     value = os.fspath(image) if isinstance(image, os.PathLike) else str(image)
-    if value.startswith(("data:image/", "http://", "https://", "viking://")):
-        return value
-    path = Path(value).expanduser()
-    if path.is_file():
-        return _image_to_data_uri(path.read_bytes(), path.name)
-    return value
+    if not value or not value.strip():
+        return None
+    cleaned = value.strip()
+    if cleaned.startswith(("data:image/", "http://", "https://", "viking://")):
+        return cleaned
+    try:
+        path = Path(cleaned).expanduser()
+        if path.is_file():
+            return _image_to_data_uri(path.read_bytes(), path.name)
+    except Exception:
+        pass
+    return cleaned
+
 
 
 class VikingURI:

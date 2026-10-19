@@ -292,3 +292,90 @@ async def test_viking_fs_find_and_search_passes_has_explicit_target():
         assert mock_retriever.retrieve.call_args.kwargs["has_explicit_target"] is True
 
 
+def test_blank_and_dirty_multimodal_input_sanitization():
+    """Verify blank, None, or dirty string items are sanitized across all input paths."""
+    # 1. build_multimodal_embedding_input filters dirty blank strings
+    res = build_multimodal_embedding_input("   ", ["   ", ""])
+    assert res == []
+
+    res2 = build_multimodal_embedding_input(
+        " valid text ", ["   ", "viking://valid.png", None]
+    )
+    assert res2 == [
+        {"type": "text", "text": "valid text"},
+        {"type": "image_url", "image_url": {"url": "viking://valid.png"}},
+    ]
+
+    # 2. normalize_client_image_input cleans blank and None items
+    assert normalize_client_image_input("   ") is None
+    assert normalize_client_image_input("") is None
+    assert normalize_client_image_input(["   ", "", None]) is None
+    assert normalize_client_image_input(["  viking://a.png  ", "", None]) == [
+        "viking://a.png"
+    ]
+
+
+@pytest.mark.asyncio
+async def test_search_service_concurrent_image_resolution_and_blank_filtration():
+    """Verify SearchService resolves image URLs concurrently and filters empty elements."""
+    service = SearchService()
+    mock_vfs = MagicMock()
+    mock_vfs.read_file_bytes = AsyncMock(return_value=b"fake-bytes")
+    service._viking_fs = mock_vfs
+    ctx = RequestContext(user=UserIdentifier.the_default_user("test_user"), role=Role.USER)
+
+    # 1. Blank inputs return None
+    assert await service._resolve_image_url("", ctx) is None
+    assert await service._resolve_image_url("   ", ctx) is None
+    assert await service._resolve_image_url(["", "   ", None], ctx) is None
+
+    # 2. Mixed inputs: empty items stripped, viking:// resolved concurrently
+    input_urls = [
+        "viking://resources/img1.png",
+        "   ",
+        "viking://resources/img2.png",
+        "data:image/png;base64,YQ==",
+        None,
+    ]
+    resolved = await service._resolve_image_url(input_urls, ctx)
+    assert isinstance(resolved, list)
+    assert len(resolved) == 3
+    assert resolved[0].startswith("data:image/png;base64,")
+    assert resolved[1].startswith("data:image/png;base64,")
+    assert resolved[2] == "data:image/png;base64,YQ=="
+    assert mock_vfs.read_file_bytes.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_composite_hybrid_embedder_sparse_blank_string_bypass():
+    """Verify CompositeHybridEmbedder bypasses sparse embedder on blank string input."""
+    dense = MockDenseEmbedder()
+    sparse = MockSparseEmbedder()
+    hybrid = CompositeHybridEmbedder(dense_embedder=dense, sparse_embedder=sparse)
+
+    # Blank string input
+    res = await hybrid.embed_async("    ", is_query=True)
+    assert res.dense_vector == [0.1, 0.2, 0.3, 0.4]
+    assert res.sparse_vector is None
+    assert sparse.sparse_calls == 0
+
+    # Sync path
+    sync_res = hybrid.embed("   ", is_query=True)
+    assert sync_res.sparse_vector is None
+    assert sparse.sparse_calls == 0
+
+
+def test_search_router_image_url_resolution_cleaner():
+    """Verify router-level _resolve_image_url filters blanks and strips strings."""
+    from openviking.server.routers.search import _resolve_image_url
+
+    ctx = RequestContext(user=UserIdentifier.the_default_user("test_user"), role=Role.USER)
+    assert _resolve_image_url(None, ctx) is None
+    assert _resolve_image_url("   ", ctx) is None
+    assert _resolve_image_url(["   ", "", None], ctx) is None
+
+    res = _resolve_image_url(["  https://example.com/pic.png  ", ""], ctx)
+    assert res == ["https://example.com/pic.png"]
+
+
+

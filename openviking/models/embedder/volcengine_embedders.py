@@ -2,9 +2,11 @@
 # SPDX-License-Identifier: AGPL-3.0
 """Volcengine Embedder Implementation"""
 
+import asyncio
 from typing import Any, Dict, List, Optional
 
 import volcenginesdkarkruntime
+
 
 from openviking.models.embedder.base import (
     DenseEmbedderBase,
@@ -563,20 +565,29 @@ class VolcengineHybridEmbedder(HybridEmbedderBase):
         client = self._get_async_client()
 
         async def _embed_call() -> EmbedResult:
+            requests = self._embedding_requests(content)
+            if not requests:
+                return EmbedResult()
+
+            async def _do_req(req: Dict[str, Any]):
+                resp = await client.multimodal_embeddings.create(
+                    model=self.model_name, extra_headers=self.extra_headers, **req
+                )
+                self._update_telemetry_token_usage(resp)
+                return req, resp
+
+            pairs = await asyncio.gather(*[_do_req(r) for r in requests])
             dense_vector = None
             sparse_vector = None
-            for request in self._embedding_requests(content):
-                response = await client.multimodal_embeddings.create(
-                    model=self.model_name, extra_headers=self.extra_headers, **request
-                )
-                self._update_telemetry_token_usage(response)
-                if dense_vector is None:
+            for req, response in pairs:
+                if dense_vector is None and getattr(response.data, "embedding", None) is not None:
                     dense_vector = truncate_and_normalize(response.data.embedding, self.dimension)
-                if "sparse_embedding" in request:
+                if "sparse_embedding" in req:
                     sparse_vector = process_sparse_embedding(
                         getattr(response.data, "sparse_embedding", None)
                     )
             return EmbedResult(dense_vector=dense_vector, sparse_vector=sparse_vector)
+
 
         try:
             return await self._run_with_async_retry(
