@@ -50,7 +50,7 @@ ping -c 4 192.168.1.1
 """
 
 
-def test_autonomous_pipeline_single_cycle():
+def test_autonomous_pipeline_single_cycle(tmp_path):
     store = SkillIngestionStore.get_instance()
     # 1. 模拟新技能投入收件箱暂存
     rec = store.enqueue_skill(
@@ -60,8 +60,8 @@ def test_autonomous_pipeline_single_cycle():
     )
     receipt_id = rec.receipt_id
     
-    # 2. 运行一轮自主流水线
-    pipeline = SkillAutonomousPipeline(skills_root=TEST_SKILLS_DIR, store=store)
+    # 2. 运行一轮自主流水线 (使用独立隔离目录，严禁污染宿主实装技能库)
+    pipeline = SkillAutonomousPipeline(skills_root=tmp_path, store=store)
     result = pipeline.process_one_cycle(batch_size=10)
     
     assert result["processed_count"] >= 1, "Pipeline failed to claim and process pending record"
