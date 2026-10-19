@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import {
   CompassIcon,
   DatabaseIcon,
+  DnaIcon,
   FileTextIcon,
   LayersIcon,
   SearchIcon,

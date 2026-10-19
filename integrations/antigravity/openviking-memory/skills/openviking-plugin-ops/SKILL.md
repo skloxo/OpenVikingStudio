@@ -1,7 +1,7 @@
 ---
 name: openviking-plugin-ops
 description: "OpenViking (VK) 插件中心与 Agent 生态制作与运维中枢：三大官方标杆插件(记忆/凭据/搜索)、四位一体全息模型(Skill+Hook+MCP+GUI)、零信任单轨鉴权铁律与私有封闭堡垒公理、空间用户双轴防碰撞物理契约、异构客户端(DSH) stdio 桥接与 pre-step 隐藏 runtime-context 注入闭环、SPA 路由先于通配注册铁律、用户消息气泡零污染铁律、新节点接入六阶闭环验收及四大反模式避坑指南 (SSOT)"
-version: 3.1.0
+version: 3.2.0
 author: Antigravity
 ---
 
@@ -357,6 +357,39 @@ sequenceDiagram
 
 ---
 
+---
+
+## 🧪 十、 Card-95 & Card-165 技能自动化准入演进流水线规约 (Autonomous Ingestion Pipeline SSOT) ⭐⭐⭐⭐⭐
+
+> **核心第一性原理 (2026-10-19 铭刻)**：  
+> “正常来说，VK技能中心感知到有新技能以后，它会走一个自动化的流程，这个技能才能正常的入库。”  
+> 绝对禁止 Agent 使用 `cp`、`mv` 等方式手工拷贝技能文件到 `agent/skills/` 底层目录！必须由守护进程自动发现，或通过官方 API 提交，经过事务队列、视网膜门禁校验、大包归属判定、场景结晶与向量构建全流程后，状态机转为 `COMMITTED` 方完成合法入库。
+
+### 1. 自动化准入四阶流水线 (The 4-Stage Autonomous Pipeline)
+
+1. **自动侦测与投递 (Detection & Ingestion)**：
+   - 本地开发目录变更由 `skill_syncer` 守护线程自动探测内容哈希；
+   - 或通过 HTTP 接口 `POST /api/v1/skills/ingestion/submit` 投递；
+   - 写入 `skill_ingestion_inbox.db` 事务数据库，生成唯一 `receipt_id`，初始状态为 `PENDING`。
+2. **多维视网膜门禁校验 (Retina & Security Validation)**：
+   - 校验 YAML Frontmatter（`name`, `description`, `version`, `author`）；
+   - 执行 Zero-Secrets 零凭据泄漏审计（拦截高熵密码、Token、API Key）；
+   - 执行领域 Seam 判定，自动匹配 20 大母包归属。若不合规立即流转为 `REJECTED` 并记录失败根因。
+3. **衍生结晶与索引重构 (Distillation & Indexing)**：
+   - 自动在母包场景下生成 `.abstract.md`、`.overview.md`；
+   - 自动刷新 `all_skills.json` 注册表与技能关系图谱；
+   - 触发后台向量重构与 BM25 全文检索索引建立。
+4. **事务提交与入籍 (Commitment & Receipt Finalization)**：
+   - 状态机最终流转为 **`COMMITTED`**，生成不可变入库凭证；
+   - 技能中枢对外 API 即刻可查询，动态投影至所有已授权的智能体与客户端。
+
+### 2. 手工拷贝的反模式与破坏性后果 (Failure Mode of Manual Copying)
+- **绕过安全审查**：手工拷贝跳过了密钥与敏感信息审查；
+- **缺失事务凭证**：跳过 `skill_ingestion_inbox` 导致无 `receipt_id`，无法追踪来源与版本履历；
+- **索引与大包断层**：未生成母包场景抽象与向量嵌入，导致“文件在磁盘上，但智能体检索网关搜不到”。
+
+---
+
 ## 🧪 九、 演进教训库 (Evolution Lessons Persisted)
 
 ---
@@ -562,3 +595,12 @@ sequenceDiagram
 - "api_key": "ZGVmYXVsdA..."
 + "api_key": "vk-sk-***"
 ```
+
+#### 📌 Lesson 2026-10-19：技能入库严禁手工文件拷贝强制走官方自动化准入流水线铁律
+- **CONTEXT**：在更新 OpenViking 技能中心时，Agent 企图用 Linux cp 命令手动拷贝技能目录到底座 SSOT 路径下。用户严正指出：系统内生有自动化准入流程，只有通过自动化流程才能正常入库。
+- **REFLECTION**：底层数据事实（skill_ingestion_inbox.db 记录着 63 COMMITTED, 1098 REJECTED, 25 ERROR）证明系统内生存在严密的 PENDING ➔ VALIDATING ➔ STAGED ➔ COMMITTED 状态机。手工拷贝绕过了这一体系，造成无 receipt_id、无母包结晶、无向量索引的严重后果。
+- **LESSON**：所有新技能与技能升级一律严禁手搓 cp。必须依托 skill_syncer 自动侦测或调用 /api/v1/skills/ingestion/submit，经 SkillIngestionValidator 安全与格式门禁校验通过并进入 COMMITTED 状态后，方属合法入库。
+- **DELTA**：
++ 升级 openviking-plugin-ops 至 v3.2.0
++ 确立 Card-95 & Card-165 技能自动化准入演进流水线规约 (Section 10)
++ AGENTS.md 全局追加第十二条铁律
