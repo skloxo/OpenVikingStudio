@@ -527,10 +527,22 @@ def _parse_skill_description(skill_md_path: str) -> str:
     try:
         if os.path.exists(skill_md_path):
             with open(skill_md_path, "r", encoding="utf-8") as f:
-                content = f.read(1000)
-                for line in content.split("\n"):
+                content = f.read(2048)
+                lines = content.split("\n")
+                for i, line in enumerate(lines):
                     if line.strip().startswith("description:"):
                         desc = line.split("description:", 1)[1].strip().strip("\"'")
+                        if desc in (">", ">-", "|", "|-", ""):
+                            multiline_parts = []
+                            for next_line in lines[i + 1 :]:
+                                if not next_line.strip():
+                                    continue
+                                if next_line.startswith((" ", "\t")):
+                                    multiline_parts.append(next_line.strip())
+                                else:
+                                    break
+                            if multiline_parts:
+                                return " ".join(multiline_parts)
                         if desc:
                             return desc
     except Exception:

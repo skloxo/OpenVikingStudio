@@ -1,8 +1,11 @@
 {
   "mcpServers": {
-    "agent-circuit-breaker": {
-      "command": "python",
-      "args": ["server.py"]
+    "circuit-breaker": {
+      "command": "C:/Python311/python.exe",
+      "args": ["C:/Users/Skl/.gemini/config/plugins/agent-circuit-breaker/server.py"],
+      "env": {
+        "PYTHONIOENCODING": "utf-8"
+      }
     }
   }
 }
