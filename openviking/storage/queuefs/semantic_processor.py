@@ -6,7 +6,7 @@ import asyncio
 import re
 import threading
 from contextlib import nullcontext
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 from urllib.parse import quote, unquote, urlsplit
 
 from openviking.observability.context import (
@@ -205,7 +205,12 @@ class SemanticProcessor(DequeueHandlerBase):
         # Default to other
         return FILE_TYPE_OTHER
 
-    async def _reenqueue_semantic_msg(self, msg: SemanticMsg) -> None:
+    async def _reenqueue_semantic_msg(
+        self,
+        msg: SemanticMsg,
+        *,
+        enqueue: Optional[Callable[[Any, SemanticMsg], Any]] = None,
+    ) -> None:
         """Re-enqueue a semantic message for later processing.
 
         Throttles with a sleep when the circuit breaker is open to prevent
@@ -223,10 +228,32 @@ class SemanticProcessor(DequeueHandlerBase):
         queue_manager = get_queue_manager()
         if queue_manager is not None:
             semantic_queue = queue_manager.get_queue(queue_manager.SEMANTIC)
-            await semantic_queue.enqueue(msg)
+            if enqueue is None:
+                await semantic_queue.enqueue(msg)
+            else:
+                await enqueue(semantic_queue, msg)
             logger.info(f"Re-enqueued semantic message: {msg.uri}")
         else:
             logger.warning(f"No queue manager available, cannot re-enqueue: {msg.uri}")
+
+    async def _enqueue_semantic_retry(
+        self, queue: Any, msg: SemanticMsg, scope: SemanticLockScope
+    ) -> None:
+        """Transfer the live semantic lease to a retry before releasing this worker."""
+        agfs = get_viking_fs()._async_agfs
+        handoff = await agfs.pathlock_to_handoff(scope.lock)
+        handed_off = False
+        try:
+            await agfs.pathlock_handoff(scope.lock)
+            handed_off = True
+            scope._owned = False
+            msg.lock_handoff = handoff
+            await queue.enqueue(msg)
+        except BaseException:
+            if handed_off:
+                scope.lock = await agfs.pathlock_adopt(handoff)
+                scope._owned = True
+            raise
 
     async def _requeue_semantic_msg_after_error(
         self,
@@ -344,6 +371,8 @@ class SemanticProcessor(DequeueHandlerBase):
 
             if "data" in data and isinstance(data["data"], str):
                 data = json.loads(data["data"])
+            elif "data" in data and isinstance(data["data"], dict):
+                data = data["data"]
 
             assert data is not None
             msg = SemanticMsg.from_dict(data)
@@ -422,11 +451,36 @@ class SemanticProcessor(DequeueHandlerBase):
                             msg.uri, ctx=current_ctx
                         ),
                     )
+                    if (
+                        msg.wait_for_request_completion
+                        and not get_request_wait_tracker().is_complete_except(
+                            msg.telemetry_id, msg.id
+                        )
+                    ):
+                        # Keep a single-worker semantic queue moving while this
+                        # coordinator retains the producer's lease.
+                        await asyncio.sleep(0.05)
+
+                        async def _requeue_with_scope(q, m):
+                            if (
+                                semantic_lock is not None
+                                and semantic_lock.lock is not None
+                                and semantic_lock._owned
+                            ):
+                                await self._enqueue_semantic_retry(q, m, semantic_lock)
+                            else:
+                                await q.enqueue(m)
+
+                        await self._reenqueue_semantic_msg(msg, enqueue=_requeue_with_scope)
+                        await semantic_lock.close()
+                        self.report_requeue()
+                        self.report_success()
+                        return None
                     try:
-                        # Regular memory writes keep their specialized update path.
-                        # Callers must explicitly opt into directory aggregation; the
-                        # trigger remains descriptive metadata, not an algorithm switch.
-                        if msg.context_type == "memory" and not msg.use_hierarchical_aggregation:
+                        if msg.wait_for_embeddings_only or msg.wait_for_request_completion:
+                            # Settle coordinator: does not generate overview/abstract
+                            pass
+                        elif msg.context_type == "memory" and not msg.use_hierarchical_aggregation:
                             await self._process_memory_directory(
                                 msg,
                                 ctx=current_ctx,
@@ -486,7 +540,12 @@ class SemanticProcessor(DequeueHandlerBase):
                                 target_uri=target_uri,
                                 target_preexisting=msg.target_preexisting,
                                 recursive=msg.recursive,
-                                lock=semantic_lock.lock,
+                                lock=(
+                                    None
+                                    if msg.generation_trigger == "content_write"
+                                    and msg.lock_handoff is not None
+                                    else semantic_lock.lock
+                                ),
                                 is_code_repo=msg.is_code_repo,
                                 changes=changes,
                                 skip_vectorization=msg.skip_vectorization,
@@ -519,9 +578,20 @@ class SemanticProcessor(DequeueHandlerBase):
                                     l0_body_changed=write_result.abstract_body_changed,
                                 )
                     finally:
+                        if msg.lock_handoff is not None:
+                            await get_request_wait_tracker().wait_for_embeddings(
+                                msg.telemetry_id,
+                                stop_waiting=getattr(self, "_embedding_worker_stopped", None),
+                            )
                         await semantic_lock.close()
-                    get_request_wait_tracker().mark_semantic_done(msg.telemetry_id, msg.id)
-                    self._merge_request_stats(msg.telemetry_id, processed=1)
+                    is_request_coordinator = msg.wait_for_request_completion
+                    get_request_wait_tracker().mark_semantic_done(
+                        msg.telemetry_id,
+                        msg.id,
+                        processed_delta=0 if is_request_coordinator else 1,
+                    )
+                    if not is_request_coordinator:
+                        self._merge_request_stats(msg.telemetry_id, processed=1)
                     logger.info(f"Completed semantic generation for: {msg.uri}")
                     self.report_success()
                     self._circuit_breaker.record_success()

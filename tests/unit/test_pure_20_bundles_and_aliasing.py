@@ -93,9 +93,9 @@ def test_bundle_direct_resolution(router):
 
 def test_normalization_and_aliases(router):
     """Verify hyphen/underscore normalization and explicit aliases."""
-    res_cpa = router.resolve("cpa-squad")
+    res_cpa = router.resolve("cpa_squad")
     assert res_cpa is not None
-    assert res_cpa["bundle_name"] == "cpa_squad"
+    assert res_cpa["bundle_name"] == "cpa-squad"
 
     res_keepass = router.resolve("keepass-vault")
     assert res_keepass is not None

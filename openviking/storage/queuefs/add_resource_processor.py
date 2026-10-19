@@ -261,6 +261,25 @@ class AddResourceProcessor(DequeueHandlerBase):
                 terminal = True
                 self.report_success()
                 return None
+            except asyncio.CancelledError:
+                latest_task = None
+                with suppress(Exception):
+                    latest_task = await tracker.get(
+                        msg.task_id,
+                        account_id=ctx.account_id,
+                        user_id=ctx.user.user_id,
+                    )
+                if latest_task is not None and latest_task.status in (
+                    TaskStatus.CANCELLING,
+                    TaskStatus.CANCELLED,
+                ):
+                    logger.warning(
+                        "[AddResourceCancelled] task_id=%s root=%s",
+                        msg.task_id,
+                        msg.root_uri,
+                    )
+                    terminal = True
+                raise
             except Exception as exc:
                 failure_result = (
                     {"code": exc.code} if isinstance(exc, OpenVikingError) and exc.code else None

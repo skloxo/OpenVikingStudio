@@ -8,13 +8,15 @@ import asyncio
 import threading
 import time
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set
+from typing import Callable, Dict, List, Optional, Set
 
 
 @dataclass
 class _RequestWaitState:
     pending_semantic_roots: Set[str] = field(default_factory=set)
     pending_embedding_roots: Set[str] = field(default_factory=set)
+    retained_roots: Set[str] = field(default_factory=set)
+    cleanup_requested: bool = False
     semantic_processed: int = 0
     semantic_requeue_count: int = 0
     semantic_error_count: int = 0
@@ -91,6 +93,31 @@ class RequestWaitTracker:
             state = self._states.get(telemetry_id)
             return state.embedding_context_count if state is not None else 0
 
+    def retain_request(self, telemetry_id: str, semantic_root_id: str) -> None:
+        """Keep the request registered until this coordinating root finishes."""
+        if not telemetry_id or not semantic_root_id:
+            return
+        with self._lock:
+            state = self._states.get(telemetry_id)
+            if state is not None:
+                state.retained_roots.add(semantic_root_id)
+
+    def _release_retained_root(
+        self,
+        telemetry_id: str,
+        root_id: str,
+        state: _RequestWaitState,
+    ) -> None:
+        state.retained_roots.discard(root_id)
+        if state.cleanup_requested and not state.retained_roots:
+            self._states.pop(telemetry_id, None)
+
+    def has_request(self, telemetry_id: str) -> bool:
+        if not telemetry_id:
+            return False
+        with self._lock:
+            return telemetry_id in self._states
+
     def mark_semantic_done(
         self,
         telemetry_id: str,
@@ -105,6 +132,7 @@ class RequestWaitTracker:
                 return
             state.pending_semantic_roots.discard(root_id)
             state.semantic_processed += max(processed_delta, 0)
+            self._release_retained_root(telemetry_id, root_id, state)
 
     def record_semantic_requeue(self, telemetry_id: str, delta: int = 1) -> None:
         if not telemetry_id:
@@ -126,6 +154,7 @@ class RequestWaitTracker:
             state.semantic_error_count += 1
             if message:
                 state.semantic_errors.append(message)
+            self._release_retained_root(telemetry_id, root_id, state)
 
     def mark_embedding_done(
         self,
@@ -168,6 +197,17 @@ class RequestWaitTracker:
                 return True
             return not state.pending_semantic_roots and not state.pending_embedding_roots
 
+    def is_complete_except(self, telemetry_id: str, semantic_root_id: str) -> bool:
+        """Return whether all work except one coordinating semantic root has settled."""
+        if not telemetry_id:
+            return True
+        with self._lock:
+            state = self._states.get(telemetry_id)
+            if state is None:
+                return True
+            pending_semantic = state.pending_semantic_roots - {semantic_root_id}
+            return not pending_semantic and not state.pending_embedding_roots
+
     async def wait_for_request(
         self,
         telemetry_id: str,
@@ -182,6 +222,28 @@ class RequestWaitTracker:
                 return
             if timeout is not None and (time.time() - start) > timeout:
                 raise TimeoutError(f"Request processing not complete after {timeout}s")
+            await asyncio.sleep(poll_interval)
+
+    async def wait_for_embeddings(
+        self,
+        telemetry_id: str,
+        poll_interval: float = 0.05,
+        *,
+        stop_waiting: Optional[Callable[[], bool]] = None,
+    ) -> None:
+        """Drain embeddings while the producing semantic root remains pending."""
+        if not telemetry_id:
+            return
+        while True:
+            with self._lock:
+                state = self._states.get(telemetry_id)
+                if state is None or not state.pending_embedding_roots:
+                    return
+            if stop_waiting is not None and stop_waiting():
+                # Shutdown has drained the embedding consumer's active writes.
+                # Leave this semantic delivery unacked for recovery rather than
+                # waiting forever for embeddings still in the persistent queue.
+                raise asyncio.CancelledError("Embedding worker stopped with queued work")
             await asyncio.sleep(poll_interval)
 
     def build_queue_status(self, telemetry_id: str) -> Dict[str, Dict[str, object]]:
@@ -206,7 +268,11 @@ class RequestWaitTracker:
         if not telemetry_id:
             return
         with self._lock:
-            self._states.pop(telemetry_id, None)
+            state = self._states.get(telemetry_id)
+            if state is not None and state.retained_roots:
+                state.cleanup_requested = True
+            else:
+                self._states.pop(telemetry_id, None)
 
 
 def get_request_wait_tracker() -> RequestWaitTracker:

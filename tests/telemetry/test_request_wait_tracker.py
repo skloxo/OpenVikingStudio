@@ -80,3 +80,60 @@ async def test_wait_for_request_timeout_keeps_existing_error():
 
     with pytest.raises(TimeoutError, match="Request processing not complete after 0.01s"):
         await tracker.wait_for_request(telemetry_id, timeout=0.01, poll_interval=0.001)
+
+
+def test_request_wait_tracker_completes_except_coordinator_after_siblings_settle():
+    tracker = RequestWaitTracker()
+    telemetry_id = "tm_batch_coordinator"
+
+    tracker.register_request(telemetry_id)
+    tracker.register_semantic_root(telemetry_id, "coordinator")
+    tracker.register_semantic_root(telemetry_id, "semantic-1")
+    tracker.register_embedding_root(telemetry_id, "embedding-1")
+
+    assert tracker.is_complete_except(telemetry_id, "coordinator") is False
+
+    tracker.mark_semantic_done(telemetry_id, "semantic-1")
+    assert tracker.is_complete_except(telemetry_id, "coordinator") is False
+
+    tracker.mark_embedding_done(telemetry_id, "embedding-1")
+    assert tracker.is_complete_except(telemetry_id, "coordinator") is True
+    assert tracker.is_complete(telemetry_id) is False
+
+    tracker.mark_semantic_done(telemetry_id, "coordinator")
+    tracker.cleanup(telemetry_id)
+
+
+def test_request_wait_tracker_retains_coordinator_after_request_cleanup():
+    tracker = RequestWaitTracker()
+    telemetry_id = "tm_batch_cleanup"
+
+    tracker.register_request(telemetry_id)
+    tracker.register_semantic_root(telemetry_id, "coordinator")
+    tracker.retain_request(telemetry_id, "coordinator")
+    tracker.cleanup(telemetry_id)
+
+    assert tracker.has_request(telemetry_id) is True
+
+    tracker.mark_semantic_done(telemetry_id, "coordinator")
+
+    assert tracker.has_request(telemetry_id) is False
+
+
+@pytest.mark.asyncio
+async def test_wait_for_embeddings_drains_until_roots_clear():
+    import asyncio
+    tracker = RequestWaitTracker()
+    telemetry_id = "tm_drain_embeddings"
+
+    tracker.register_request(telemetry_id)
+    tracker.register_embedding_root(telemetry_id, "emb-1")
+
+    async def _clear_later():
+        await asyncio.sleep(0.02)
+        tracker.mark_embedding_done(telemetry_id, "emb-1")
+
+    asyncio.create_task(_clear_later())
+    await tracker.wait_for_embeddings(telemetry_id, poll_interval=0.005)
+    assert tracker.is_complete(telemetry_id) is True
+

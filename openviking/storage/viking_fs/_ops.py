@@ -1723,6 +1723,9 @@ class _OpsMixin:
 
         except Exception as e:
             logger.error(f"[VikingFS] Failed to append to file {uri}: {e}")
+            mapped = map_exception(e, resource=uri)
+            if mapped is not None:
+                raise mapped from e
             raise IOError(f"Failed to append to file {uri}: {e}")
         finally:
             if owned_lease is not None:

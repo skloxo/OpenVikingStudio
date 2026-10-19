@@ -72,6 +72,10 @@ class SemanticMsg:
     aggregate_directory: bool = True
     use_hierarchical_aggregation: bool = False
     propagate_to_parent: bool = True
+    # Hold a producer's lease until already-enqueued embedding work settles.
+    wait_for_embeddings_only: bool = False
+    # Hold a producer's lease until every other root in this request settles.
+    wait_for_request_completion: bool = False
     copy_source_uri: str = ""
 
     def __init__(
@@ -99,6 +103,8 @@ class SemanticMsg:
         aggregate_directory: bool = True,
         use_hierarchical_aggregation: bool = False,
         propagate_to_parent: bool = True,
+        wait_for_embeddings_only: bool = False,
+        wait_for_request_completion: bool = False,
         copy_source_uri: str = "",
     ):
         self.id = str(uuid4())
@@ -125,6 +131,8 @@ class SemanticMsg:
         self.aggregate_directory = bool(aggregate_directory)
         self.use_hierarchical_aggregation = bool(use_hierarchical_aggregation)
         self.propagate_to_parent = bool(propagate_to_parent)
+        self.wait_for_embeddings_only = bool(wait_for_embeddings_only)
+        self.wait_for_request_completion = bool(wait_for_request_completion)
         self.copy_source_uri = copy_source_uri
 
     def to_dict(self) -> Dict[str, Any]:
@@ -184,6 +192,8 @@ class SemanticMsg:
             aggregate_directory=data.get("aggregate_directory", True),
             use_hierarchical_aggregation=data.get("use_hierarchical_aggregation", False),
             propagate_to_parent=data.get("propagate_to_parent", True),
+            wait_for_embeddings_only=data.get("wait_for_embeddings_only", False),
+            wait_for_request_completion=data.get("wait_for_request_completion", False),
             copy_source_uri=data.get("copy_source_uri", ""),
         )
         if "id" in data and data["id"]:

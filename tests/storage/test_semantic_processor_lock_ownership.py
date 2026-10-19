@@ -57,3 +57,52 @@ async def test_memory_semantic_directory_does_not_release_borrowed_lock(monkeypa
     )
 
     assert pathlock.release_calls == []
+
+
+@pytest.mark.asyncio
+async def test_content_write_waits_for_embeddings_before_releasing_handoff_lock(monkeypatch):
+    events = []
+    pathlock = _FakePathLock()
+    lease = {"id": "content-write-lock"}
+    msg = SemanticMsg(
+        uri="viking://resources/demo",
+        context_type="resource",
+        telemetry_id="content-write",
+        lock_handoff={"owner_id": "producer", "lock_paths": ["/fake/resources/demo"]},
+        generation_trigger="content_write",
+        wait_for_request_completion=True,
+    )
+
+    class Tracker:
+        def is_complete_except(self, telemetry_id, root_id):
+            return True
+
+        def mark_semantic_done(self, telemetry_id, root_id, processed_delta=0):
+            events.append("semantic-done")
+
+        async def wait_for_embeddings(self, telemetry_id, **kwargs):
+            assert telemetry_id == msg.telemetry_id
+            events.append("embeddings-settled")
+
+    monkeypatch.setattr(
+        "openviking.storage.queuefs.semantic_processor.get_request_wait_tracker", lambda: Tracker()
+    )
+    fake_fs = _FakeVikingFS(pathlock)
+    async def _fake_adopt(handoff):
+        return lease
+    fake_fs._async_agfs.pathlock_adopt = _fake_adopt
+    monkeypatch.setattr(
+        "openviking.storage.queuefs.semantic_lock.get_viking_fs",
+        lambda: fake_fs,
+    )
+    monkeypatch.setattr(
+        "openviking.storage.queuefs.semantic_processor.get_viking_fs",
+        lambda: fake_fs,
+    )
+
+    processor = SemanticProcessor()
+    await processor.on_dequeue({"data": msg.to_dict()})
+
+    assert "embeddings-settled" in events
+    assert pathlock.release_calls == ["content-write-lock"]
+

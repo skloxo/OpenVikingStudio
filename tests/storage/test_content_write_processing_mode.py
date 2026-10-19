@@ -25,13 +25,23 @@ class _FakePathLock:
     def __init__(self):
         self._lease = SimpleNamespace(id="lock-1")
         self.release_calls = []
+        self.handoff_calls = []
 
     async def pathlock_acquire_exact(self, lock_path):
         del lock_path
         return self._lease
 
     async def pathlock_release(self, lease):
-        self.release_calls.append(lease.id)
+        self.release_calls.append(getattr(lease, "id", "lock-1"))
+
+    async def pathlock_to_handoff(self, lease):
+        return {
+            "owner_id": getattr(lease, "id", "lock-1"),
+            "covered_paths": [{"path": "/fake/file", "kind": "exact"}],
+        }
+
+    async def pathlock_handoff(self, lease):
+        self.handoff_calls.append(getattr(lease, "id", "lock-1"))
 
 
 class _FakeVikingFS:
