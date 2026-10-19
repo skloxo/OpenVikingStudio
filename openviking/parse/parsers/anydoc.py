@@ -59,18 +59,41 @@ class AnyDocParser(BaseParser):
         if not path.is_file():
             raise FileNotFoundError(f"Document file not found: {path}")
 
-        from openviking.parse.parsers.anydoc_adapter import AnyDocAdapter
+        from openviking.parse.parsers.anydoc_adapter import AnyDocAdapter, AnyDocAdaptedContent
+        from openviking.parse.parsers.anydoc_converter import AnyDocConverter
         from openviking_cli.utils.storage import get_storage
 
         storage = get_storage()
         resource_name = kwargs.get("resource_name") or kwargs.get("source_name") or path.stem
         adapter = AnyDocAdapter(self.anydoc_config)
-        conversion = await adapter.parse_file(
-            path,
-            resource_name=resource_name,
-            storage=storage,
-            max_table_rows=self.anydoc_config.max_table_rows,
-        )
+
+        if self.anydoc_config.enabled and adapter.is_engine_available():
+            try:
+                converter = AnyDocConverter()
+                raw_conv = await asyncio.to_thread(
+                    converter.convert,
+                    path,
+                    resource_name=resource_name,
+                    storage=storage,
+                    max_table_rows=self.anydoc_config.max_table_rows,
+                )
+                conversion = AnyDocAdaptedContent(
+                    markdown=raw_conv.markdown,
+                    source_format=raw_conv.source_format,
+                    images_saved=getattr(raw_conv, "images_saved", 0),
+                    assets_referenced=getattr(raw_conv, "assets_referenced", 0),
+                    warnings=list(getattr(raw_conv, "warnings", ())),
+                )
+            except Exception as exc:
+                reason = f"Native AnyDoc parsing failed: {exc}"
+                conversion = adapter._fallback_parse(path, reason=reason)
+        else:
+            reason = (
+                "AnyDoc parser is disabled"
+                if not self.anydoc_config.enabled
+                else "Native anydoc library is not installed"
+            )
+            conversion = adapter._fallback_parse(path, reason=reason)
 
         markdown_kwargs = dict(kwargs)
         allowed_media_dirs = list(markdown_kwargs.get("allowed_media_dirs") or [])

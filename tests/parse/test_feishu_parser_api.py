@@ -500,6 +500,7 @@ async def test_uat_producer_payload_reaches_worker_without_persisting_token(
     expected_initial = {"status": "success", "task_id": "task-1"}
     if preflight_name:
         expected_initial["root_uri"] = root_uri
+        expected_initial["source_path"] = source
     assert initial_result == expected_initial
     assert task_tracker.create.await_args.kwargs["resource_id"] == (
         None if preflight_name is None else root_uri
