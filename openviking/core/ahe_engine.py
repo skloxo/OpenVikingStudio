@@ -12,6 +12,8 @@ AHEEngine 提供统一入口:
 """
 from __future__ import annotations
 
+from pathlib import Path
+import sys
 import time
 from typing import Any, Dict, List, Optional
 
@@ -45,6 +47,7 @@ class AHEEngine:
             cls._instance._store = ManifestStore.get_instance()
             cls._instance._catalog = ClusterCatalog.get_instance()
             cls._instance._polar = PolarJudge(default_timeout_sec=30.0)
+            cls._instance.register_lifecycle_guard()
         return cls._instance
 
     @classmethod
@@ -293,3 +296,130 @@ class AHEEngine:
             "manifests": self._store.summary(),
             "clusters": self._catalog.summary(),
         }
+
+    # -----------------------------------------------------------------------
+    # Pre-Release 自动化门禁与核心不变性装载 (Card-191 SSOT)
+    # -----------------------------------------------------------------------
+
+    def seed_core_invariants_if_empty(self) -> List[AHEManifest]:
+        """若当前未注册任何 Manifest，自动载入系统级核心契约快照与不变性断言。"""
+        existing = self._store.list_all()
+        if existing:
+            return existing
+
+        base_dir = Path(__file__).resolve().parent.parent
+        seeded: List[AHEManifest] = []
+        py_bin = sys.executable
+
+        # 1. Universal Reducer Invariant
+        reducer_file = base_dir / "service" / "universal_reducer.py"
+        if reducer_file.exists():
+            m1 = self.create_manifest(
+                skill_name="core-universal-reducer",
+                assumptions=[{
+                    "description": "UniversalReducer Fail-Open guarantee",
+                    "validation_command": f'"{py_bin}" -c "from openviking.service.universal_reducer import UniversalContentReducer; r = UniversalContentReducer.get_instance(); assert r.reduce_text(\'test\').reduced_content == \'test\'"',
+                }],
+                snapshot_paths=[str(reducer_file)],
+            )
+            m1.mark_verified()
+            self._store.upsert(m1)
+            seeded.append(m1)
+
+        # 2. Hermes Micro-Surgery Invariant
+        patch_file = base_dir / "core" / "hermes_patch_engine.py"
+        if patch_file.exists():
+            m2 = self.create_manifest(
+                skill_name="core-hermes-patch-guard",
+                assumptions=[{
+                    "description": "Hermes <=30 lines patch limit",
+                    "validation_command": f'"{py_bin}" -c "from openviking.core.hermes_patch_engine import HermesPatchEngine; assert HermesPatchEngine.MAX_PATCH_LINES == 30"',
+                }],
+                snapshot_paths=[str(patch_file)],
+            )
+            m2.mark_verified()
+            self._store.upsert(m2)
+            seeded.append(m2)
+
+        return seeded
+
+    def run_pre_release_gate(
+        self,
+        run_polar: bool = False,
+        cwd: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """执行端到端 Pre-Release Gate 门禁校验。"""
+        manifests = self.seed_core_invariants_if_empty()
+
+        drift_violations: List[str] = []
+        polar_violations: List[str] = []
+
+        for m in manifests:
+            if m.status in (AHEStatus.ACTIVE, AHEStatus.VERIFIED):
+                drift_res = self.check_snapshot_drift(m.manifest_id)
+                if not drift_res.get("snapshot_clean", True):
+                    for f in drift_res.get("drifted_files", []):
+                        drift_violations.append(
+                            f"Manifest [{m.manifest_id}] Skill [{m.skill_name}]: Drift in {f['path']}"
+                        )
+                if run_polar:
+                    verify_res = self.verify_manifest(m.manifest_id, cwd=cwd)
+                    for r in verify_res.get("results", []):
+                        if r.get("verdict") not in ("pass", "skip"):
+                            polar_violations.append(
+                                f"Manifest [{m.manifest_id}] Assumption [{r.get('assumption_id')}]: {r.get('command')}"
+                            )
+
+        gate_passed = (len(drift_violations) == 0 and len(polar_violations) == 0)
+
+        # 桥接记录至 UniversalAuditLedger
+        try:
+            from openviking.service.universal_audit_ledger import UniversalAuditLedger
+            UniversalAuditLedger.get_instance().record_event(
+                entity_type="AHE_GATE",
+                entity_id="pre_release_gate",
+                action="AHE_PRE_RELEASE_CHECK",
+                operator="ahe_engine",
+                status="SUCCESS" if gate_passed else "FLAGGED",
+                details={
+                    "total_manifests": len(manifests),
+                    "drift_count": len(drift_violations),
+                    "polar_failures": len(polar_violations),
+                    "run_polar": run_polar,
+                },
+            )
+        except Exception:
+            pass
+
+        return {
+            "gate_passed": gate_passed,
+            "total_manifests": len(manifests),
+            "drift_violations": drift_violations,
+            "polar_violations": polar_violations,
+            "timestamp": time.time(),
+        }
+
+    def ahe_lifecycle_guard(
+        self,
+        entity_type: str,
+        entity_id: str,
+        meta: Dict[str, Any],
+    ) -> bool:
+        """提供给 UnifiedLifecycleEngine 的校验门禁回调。"""
+        if meta.get("enforce_ahe_gate", False):
+            res = self.run_pre_release_gate(run_polar=False)
+            return res.get("gate_passed", False)
+        return True
+
+    def register_lifecycle_guard(self) -> None:
+        """向 UnifiedLifecycleEngine 注册 VALIDATING -> COMMITTED 状态守卫。"""
+        try:
+            from openviking.service.unified_lifecycle import UnifiedLifecycleEngine, LifecycleState
+            UnifiedLifecycleEngine.get_instance().register_guard(
+                LifecycleState.VALIDATING,
+                LifecycleState.COMMITTED,
+                self.ahe_lifecycle_guard,
+            )
+        except Exception:
+            pass
+

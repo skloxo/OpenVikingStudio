@@ -115,6 +115,31 @@ async def get_session_experiences(session_id: str) -> Dict[str, Any]:
 # Periodic Nudge 异步复盘端点
 # ---------------------------------------------------------------------------
 
+class AttributeSessionRequest(BaseModel):
+    session_id: str
+    auto_propose_patch: bool = False
+
+
+@router.post("/attribute")
+async def attribute_session(req: AttributeSessionRequest) -> Dict[str, Any]:
+    """对指定会话执行结构化归因分析与微补丁提议。"""
+    attr = _nudge_engine.attribute_session(req.session_id, auto_propose_patch=req.auto_propose_patch)
+    return attr.model_dump()
+
+
+@router.get("/attributions")
+async def list_attributions(
+    limit: int = Query(default=50, ge=1, le=100),
+    session_id: Optional[str] = Query(default=None),
+) -> Dict[str, Any]:
+    """查询结构化错误归因列表或指定会话归因。"""
+    if session_id:
+        res = _nudge_engine.get_attribution(session_id)
+        return {"session_id": session_id, "attributions": [res.model_dump()] if res else []}
+    attrs = _nudge_engine.list_attributions(limit=limit)
+    return {"total": len(attrs), "attributions": [a.model_dump() for a in attrs]}
+
+
 @router.post("/nudge/trigger")
 async def trigger_nudge(req: TriggerNudgeRequest) -> Dict[str, Any]:
     """将指定会话排入异步副进程复盘队列。"""

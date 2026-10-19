@@ -305,6 +305,35 @@ class OfflineDreamer:
                     "purity_snr": recipe.purity_snr,
                 })
 
+                # 5. Card-190 Universal Audit Ledger & Unified Lifecycle integration
+                try:
+                    from openviking.service.universal_audit_ledger import UniversalAuditLedger
+                    from openviking.service.unified_lifecycle import UnifiedLifecycleEngine, LifecycleState
+
+                    UniversalAuditLedger.get_instance().record_event(
+                        entity_type="CRYSTAL",
+                        entity_id=card_uri,
+                        action="DREAM_CONSOLIDATION",
+                        operator="offline_dreamer",
+                        status="SUCCESS",
+                        details={
+                            "theme": c_theme,
+                            "fragments_consolidated": len(frag_uris),
+                            "axioms_count": len(recipe.axioms),
+                            "steps_count": len(recipe.recipe_steps),
+                            "purity_snr": recipe.purity_snr,
+                            "net_entropy_reduced": max(0, len(frag_uris) - 1),
+                        },
+                    )
+
+                    lifecycle = UnifiedLifecycleEngine.get_instance()
+                    lifecycle.transition("crystal", card_uri, LifecycleState.INGESTED, operator="offline_dreamer")
+                    lifecycle.transition("crystal", card_uri, LifecycleState.REDUCING, operator="offline_dreamer")
+                    lifecycle.transition("crystal", card_uri, LifecycleState.VALIDATING, operator="offline_dreamer")
+                    lifecycle.transition("crystal", card_uri, LifecycleState.COMMITTED, operator="offline_dreamer")
+                except Exception as u_exc:
+                    logger.debug("[OfflineDreamer] Universal audit/lifecycle bridge skipped: %s", u_exc)
+
             created_cards.append(master_card)
             net_reduced += max(0, len(frag_uris) - 1)
 

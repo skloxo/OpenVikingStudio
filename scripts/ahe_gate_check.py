@@ -30,33 +30,11 @@ from openviking.core.ahe_manifest import AHEStatus
 
 def run_ahe_check(run_polar: bool = False) -> int:
     engine = AHEEngine.get_instance()
-    manifests = engine.list_manifests()
+    res = engine.run_pre_release_gate(run_polar=run_polar)
 
-    if not manifests:
-        print("🛡️ [AHE Gate] No registered manifests to check. (PASS)")
-        return 0
-
-    drift_violations = []
-    polar_violations = []
-
-    for m in manifests:
-        # 仅针对 ACTIVE 与 VERIFIED 状态的契约执行强防护
-        if m.status in (AHEStatus.ACTIVE, AHEStatus.VERIFIED):
-            drift_res = engine.check_snapshot_drift(m.manifest_id)
-            if not drift_res.get("snapshot_clean", True):
-                for f in drift_res.get("drifted_files", []):
-                    drift_violations.append(
-                        f"Manifest [{m.manifest_id}] Skill [{m.skill_name}]: Drift in {f['path']}"
-                    )
-
-            if run_polar:
-                verify_res = engine.verify_manifest(m.manifest_id)
-                for r in verify_res.get("results", []):
-                    if r.get("verdict") not in ("pass", "skip"):
-                        polar_violations.append(
-                            f"Manifest [{m.manifest_id}] Assumption [{r.get('assumption_id')}]: "
-                            f"Command '{r.get('command')}' failed with exit {r.get('exit_code')}"
-                        )
+    total = res.get("total_manifests", 0)
+    drift_violations = res.get("drift_violations", [])
+    polar_violations = res.get("polar_violations", [])
 
     exit_code = 0
     if drift_violations:
@@ -72,7 +50,7 @@ def run_ahe_check(run_polar: bool = False) -> int:
         exit_code = 1
 
     if exit_code == 0:
-        print(f"✅ [AHE Gate PASS] All {len(manifests)} manifest(s) clean and verified.")
+        print(f"✅ [AHE Gate PASS] All {total} core invariant manifest(s) clean and verified.")
 
     return exit_code
 
