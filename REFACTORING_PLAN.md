@@ -4054,10 +4054,11 @@
     3. **Prompt Cache 态势大盘与告警引擎**：新建 `openviking_gateway/overview.py`，实现 `overview_summary`、`cache_alerts`、`miss_streak`（$32\text{k}+$ 连续 3 次未命中判定）；
     4. **REST 端点与前端座舱呈现**：在 `openviking/server/routers/gateway.py` 暴露 `/api/v1/gateway/overview` 与 `/api/v1/gateway/cache-alerts`；在前端落地 `PromptCacheCockpitCard` 并挂载于监控大屏，严守 **NO GREEN EVER 🚫** 与字号 $\ge 12\text{px}$ 门禁。
 - **交付留痕 (Verification & Evidence)**：
+  - **Git 提交与 Tag**：Commit `23da3d5a1`，Tag `v1.7.147`；
   - **版本号 SSOT**：`v1.7.147` (`openviking/_version.py`, `package.json`)；
-  - **单测视网膜**：`tests/gateway/test_usage.py` (20/20 PASS) + `tests/gateway/test_overview.py` (4/4 PASS)，全量 `tests/gateway` 52/52 项测试 100% 通过；
-  - **编译与门禁**：Vite 生产构建编译通过 (3m 2s)，Security Scan 5,173 文件零泄露，`anti_demo_gate.py` 234 组件 100% PASS；
-  - **运行体验真**：实时网关概览端点与长会话告警接口经集成测试验证通过。
+  - **单测视网膜**：`tests/gateway/test_usage.py` (20/20 PASS) + `tests/gateway/test_overview.py` (4/4 PASS)，全量 `tests/gateway` 52/52 项测试 100% 通过 (4.19s)；
+  - **编译与门禁**：Linux 原生 Vite 构建 (19.17s) 烘焙版本号，Security Scan 13,557 文件 0 凭据泄露，`anti_demo_gate.py` 234 组件 100% PASS，AHE 核心不变性门禁全绿；
+  - **运行体验真**：WSL2 原生服务健康重启探针 100% 对齐：`HTTP 200 -> {"status":"ok","healthy":true,"version":"1.7.147","auth_mode":"trusted"}`。
 
 
 
