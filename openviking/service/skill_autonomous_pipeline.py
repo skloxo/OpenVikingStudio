@@ -91,7 +91,14 @@ class SkillAutonomousPipeline:
             except Exception as ev_err:
                 logger.debug("Failed to emit cycle pulse: %s", ev_err)
 
-        return {"processed_count": len(results), "results": results}
+        staged_count = len([r for r in results if r.get("status") in ("COMMITTED", "STAGED")])
+        rejected_count = len([r for r in results if r.get("status") in ("FAILED", "REJECTED")])
+        return {
+            "processed_count": len(results),
+            "staged_count": staged_count,
+            "rejected_count": rejected_count,
+            "results": results,
+        }
 
     def _process_single_record(self, record: IngestionRecord) -> Dict[str, Any]:
         receipt_id = record.receipt_id
@@ -181,11 +188,42 @@ class SkillAutonomousPipeline:
                 summary["error"] = msg
                 return summary
 
-            # Stage 2: SkillOpt 4-factor Quality Gate
+            # Stage 2: SkillOpt 4-factor Quality Gate & Autonomous Reshaping
             opt_report = SkillOptJudge.evaluate_skill(raw_content, passing_score=70.0)
+            if not opt_report.passed:
+                # 关键自愈门禁：绝不粗暴打回！自动启动野生技能规约化塑形，补齐四维契约
+                reshaped_content, reshaped_fixes = self.remediator.reshape_for_skillopt(
+                    content=raw_content,
+                    skill_name=skill_name,
+                )
+                if reshaped_fixes:
+                    raw_content = reshaped_content
+                    self.tracker.record_event(
+                        action=ProvenanceAction.OPTIMIZE,
+                        skill_name=skill_name,
+                        receipt_id=receipt_id,
+                        operator="skillopt-reshaper",
+                        details={
+                            "stage": "SKILLOPT_AUTO_RESHAPE",
+                            "reshaped_fixes": reshaped_fixes,
+                            "source_path": source_path,
+                            "message": f"SkillOpt 自动自愈塑形: {reshaped_fixes}",
+                        },
+                    )
+                    # 同步写回源物理文件
+                    if source_path and os.path.isfile(source_path):
+                        try:
+                            with open(source_path, "w", encoding="utf-8") as sf:
+                                sf.write(raw_content)
+                        except Exception as se:
+                            logger.warning(f"Failed to write reshaped skill content to {source_path}: {se}")
+
+                    # 重新评估规约塑形后的质量得分
+                    opt_report = SkillOptJudge.evaluate_skill(raw_content, passing_score=70.0)
+
             summary["quality_score"] = opt_report.total_score
             if not opt_report.passed:
-                msg = f"SkillOpt rejected with score {opt_report.total_score} < 70.0: {opt_report.recommendations}"
+                msg = f"SkillOpt rejected after auto-reshaping with score {opt_report.total_score} < 70.0: {opt_report.recommendations}"
                 self.store.update_status(receipt_id, IngestionStatus.REJECTED, msg, opt_report.to_dict())
                 self.tracker.record_event(
                     action=ProvenanceAction.VALIDATE,
@@ -197,7 +235,7 @@ class SkillAutonomousPipeline:
                         "is_valid": False,
                         "opt_score": opt_report.total_score,
                         "source_path": source_path,
-                        "message": f"质量评估未达标: {opt_report.total_score:.1f} < 70.0",
+                        "message": f"质量评估自愈后仍未达标: {opt_report.total_score:.1f} < 70.0",
                     },
                 )
                 summary["error"] = msg

@@ -121,6 +121,17 @@ class SkillIngestionStore:
         )
 
         with self._lock, self._get_connection() as conn:
+            # 幂等防抖门禁：若已存在同名技能正在排队或质检中，直接复用返回已有回执
+            cur = conn.execute(
+                "SELECT receipt_id FROM skill_ingestion_inbox WHERE skill_name = ? AND status IN ('pending', 'validating') ORDER BY created_at DESC LIMIT 1;",
+                (skill_name,),
+            )
+            row = cur.fetchone()
+            if row:
+                existing = self._get_record_by_id_locked(conn, row["receipt_id"])
+                if existing:
+                    return existing
+
             conn.execute(
                 """
                 INSERT INTO skill_ingestion_inbox
@@ -141,6 +152,14 @@ class SkillIngestionStore:
                 ),
             )
         return record
+
+    def _get_record_by_id_locked(self, conn: sqlite3.Connection, receipt_id: str) -> Optional[IngestionRecord]:
+        cur = conn.execute(
+            "SELECT * FROM skill_ingestion_inbox WHERE receipt_id = ?;",
+            (receipt_id,),
+        )
+        row = cur.fetchone()
+        return self._row_to_record(row) if row else None
 
     def get_record(self, receipt_id: str) -> Optional[IngestionRecord]:
         """根据 receipt_id 获取单条暂存记录。"""
