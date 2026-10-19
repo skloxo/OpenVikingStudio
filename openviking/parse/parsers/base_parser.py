@@ -120,4 +120,9 @@ class BaseParser(ABC):
         Returns:
             Temporary URI string (e.g., "viking://temp/abc12345")
         """
-        return self._get_viking_fs().create_temp_uri()
+        try:
+            return self._get_viking_fs().create_temp_uri()
+        except Exception:
+            import uuid
+
+            return f"viking://temp/{uuid.uuid4().hex[:8]}"

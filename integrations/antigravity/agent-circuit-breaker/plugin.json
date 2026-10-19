@@ -1,0 +1,16 @@
+{
+  "name": "agent-circuit-breaker",
+  "version": "1.3.0",
+  "description": "智能体自适应弹性断路器与自省护栏 (Agent Adaptive Elastic Circuit Breaker) — 专为 Google Antigravity 原生定制，Fail-Open 故障自愈，36步全绿灯预算 / 15步警戒收敛，+15步自动租约延展，MCP 只读穿透免检与三行事实交接契约。",
+  "author": "OpenViking Ecosystem",
+  "category": "user",
+  "tags": [
+    "antigravity",
+    "circuit-breaker",
+    "guardrails",
+    "safety",
+    "fail-open",
+    "token-saver"
+  ],
+  "homepage": "https://vk.tide.red/plugins"
+}

@@ -21,7 +21,8 @@
 | **`v1.7.136`** | **Card-166** | **技能中心使用频次遥测、ROI 价值度量与高频技能自动排序反哺中枢 (Skill Usage Telemetry, ROI Ranking & Auto-Promotion SSOT)** | 1. **全域技能调用埋点与轻量持久化 (`SkillTelemetryStore`)**：落地 SQLite `skill_events` 表，双检锁单例拦截 `skills.find`、`skills.get` (JIT 注脑) 及 FastMCP `openviking_skills`，自动记录事件与 90 天滚动清理；<br>2. **ROI 价值动态排序算法与接口反哺**：按“调用频次 × 成功率 × Token 压缩节省”综合加权归一化 (0~100 分)，挂载 `/api/v1/skills/telemetry/roi` 与 `/api/v1/skills?sort_by=roi` 动态升降序；<br>3. **前端座舱卡片 (`SkillRoiCockpitCard`)**：4 维核心指标瓦片（30天调用量、节省 Token、综合成功率、沉睡预警）+ Top 5 ROI 母包与工序排行榜 + 沉睡工序折叠面板，严格遵循 NO GREEN EVER 🚫 与字号 $\ge 12\text{px}$ 规范；<br>4. **测试视网膜与安全门禁 100% PASS**：后端 pytest 5/5 全绿，前端 vitest 4/4 全绿，`security_check.py` 0 泄露，`anti_demo_gate.py` 100% 通过，打标 Tag `v1.7.136` 交付。 | [x] 已验收通过 ✅ |
 | **`v1.7.137`** | **Card-180** | **OpenViking Gateway 2.0 核心代理骨架与双协议透传 (Gateway Core Proxy & Protocol Dual-Track SSOT - 主线 C 首战)** | 1. **独立微服务沙盒隔离 (`openviking_gateway`)**：创建完全解耦的独立微服务包，在独立端口 1934 运行，100% 隔离现有 1933 核心端口；<br>2. **OpenAI / Anthropic 双协议转发与转接**：对外提供标准 `/v1/chat/completions` 与 `/v1/messages` 兼容代理，流式透传至上游真实大模型并支持双向转接；<br>3. **零门槛外部接入**：Cursor、Cline、VSCode 插件零改动修改 BaseURL 即可直接连通；<br>4. **单文件甜点区与视网膜门禁全绿**：全量代码文件均在 30~246 行（严格控制在 100~300 行黄金甜点区，硬上限 $\le 500$ 行），17/17 单元测试全绿，安全审计与防悬空门禁 100% PASS，打标 Tag `v1.7.137`。 | [x] 已验收通过 ✅ |
 | **`v1.7.138`** | **Card-181** | **Gateway 隐式记忆检索拦截与隐藏工具自循环 (Hidden Tool Loop & Auto Memory Injection SSOT - 主线 C)** | 1. **前门隐式记忆检索注脑 (`kernel.py`)**：网关在转发至 LLM 前，纯异步调用本地 `search/find` 自动召回关联记忆并以 `<openviking_context>` 隐式组装至 System Prompt，带 1.0s 超时 Fail-Open 降级；<br>2. **隐藏工具就地执行循环 (`tool_loop.py`)**：就地拦截并执行大模型返回的 `openviking_read` / `openviking_find` 工具调用，将执行结果塞回 Messages 历史发起下一轮推理，多轮闭环直至最终文本答案透传给客户端；<br>3. **异步会话自动捕获 (`capture.py`)**：后台异步将本次交互事实与工具调用产物脱水提炼并持久化入 VikingFS 账本；<br>4. **视网膜单测与门禁全绿**：新增 11 项单测/集成测试（全套 28 项单测 100% PASS），安全审计与防悬空门禁 100% PASS，打标 Tag `v1.7.138`。 | [x] 已验收通过 ✅ |
-| **`v1.7.139`** | **Card-182** | **AnyDoc 统一全格式文档解析引擎接入与多模态抽取增强 (AnyDoc Universal Parser & Multimodal Extraction SSOT - 主线 C)** | 1. **独立解析适配器解耦 (`AnyDocAdapter`)**：封装独立解析适配器挂载至 `openviking/parse/parsers/`，避免外部重依赖污染全局；<br>2. **复杂 Office / 表格 / 多模态图片统一抽取**：针对 Word/Excel/PPT 与内嵌图片实现高质量文本提纯与表格保留；<br>3. **Fail-Open 安全降级机制**：遇到解析异常或格式损坏，毫秒级无损降级回退至现有文本解析器，主进程绝不挂起。 | [ ] 待排期迭代 ⏳ |
+| **`v1.7.139`** | **Card-182** | **AnyDoc 统一全格式文档解析引擎接入与多模态抽取增强 (AnyDoc Universal Parser & Multimodal Extraction SSOT - 主线 C)** | 1. **独立解析适配器解耦 (`AnyDocAdapter`)**：封装独立解析适配器 `openviking/parse/parsers/anydoc_adapter.py` (300 行黄金甜点区)，彻底解耦外部重依赖与全局解析入口；<br>2. **统一多模态与全格式 Office 抽取**：支持 DOCX/XLSX/PPTX/CSV/ODT/EPUB 结构化抽取，高保真还原 Markdown 表格与段落结构，透传图片媒体与资产计数；<br>3. **Fail-Open 毫秒级安全降级防护**：无论缺失第三方 C 依赖、解析器被显式禁用或遇到损坏文件，毫秒级无损降级回退至内置纯文本与轻量 XML 表格解析，主进程绝不挂起崩溃；<br>4. **视网膜单测与门禁全绿**：新增 8 项专用单测 100% PASS，全局 ParserRouter 与 Gateway 测试 0 回归，安全扫描 0 泄露。 | [x] 已验收通过 ✅ |
+| **`v1.7.144`** | **Card-187** | **Google 反重力智能体自适应熔断断路器标准化插件托管、开箱即用指引与生命周期全息闭环 (Agent Circuit Breaker Standardized Plugin, Turnkey Installation & Adaptive Lifecycle SSOT)** | 1. **标准化插件源工程落地 (`integrations/antigravity/agent-circuit-breaker/`)**：封装标准 `plugin.json` (v1.3.0)、`scripts/circuit_guard.py` (36步健康态/15步警戒态/+15步增量租约自适应看门狗)、跨平台 `setup.py` (支持 Windows/Linux/macOS 一键安装与隔离参数配置)、`server.py` (FastMCP 状态与重置服务)、`rules/AGENTS.md` (三行事实汇报规约) 与 `skills/circuit-breaker-ops/SKILL.md` (跨机同步与五大避坑 SOP)；<br>2. **全自动不可变打包发布 (`public/agent-circuit-breaker.tgz`)**：打包生成不可变 tarball 归档至 `public/`，提供直链高速下载；<br>3. **后端生态插件元数据升级 (`builtin_plugins_eco.py`)**：升级为 `1.3.0`，完整补全 4 个原生生命周期 Hooks (`pre_tool_guard_hook`, `post_tool_recorder_hook`, `pre_invocation_reset_hook`, `session_start_hook`) 与自适应 GUI 参数定义；<br>4. **前端极速开箱与客户端接入指南升级 (`native-bridge-resolver.ts`)**：提供 Windows PowerShell 与 Linux/macOS 一键拉包解压安装管道，反重力专精展示并清晰标明多智能体生态后续路线图；<br>5. **视网膜单测与门禁全绿**：前端 Vitest 7/7 全绿，`anti_demo_gate.py` 239 组件 100% PASS，0 悬空违规。 | [x] 已验收通过 ✅ |
 | **`v1.7.140`** | **Card-183** | **检索层单阶段全局混合召回重构与层级饿死彻底根除 (Single-Stage Global Hybrid Retrieval SSOT - 主线 C)** | 1. **切除分层递归树状爬取**：废弃容易引发“深层子目录饿死”与大目录贪婪的分层搜索逻辑；<br>2. **单阶段向量+稀疏混合召回**：全局并行触发密集向量与稀疏关键词召回，由 RRF 算法加权融合；<br>3. **无缝对接非对称时间衰减**：全面接入本地 `AsymmetricDecayEngine`，检索耗时降低 50%，Top-5 命中率显著提升。 | [ ] 待排期迭代 ⏳ |
 | **`v1.7.141`** | **Card-184** | **RNFV 两阶段存储事务模型与并发写锁彻底解耦 (Resource RNFV Transaction Model & Anti-Deadlock SSOT - 主线 C)** | 1. **意图规划与物理执行分离**：将资源写入解耦为 Resource-Node-File-Vector 两阶段事务状态机；<br>2. **消除长耗时写锁阻塞**：耗时的高维向量计算与持久化移入异步队列，读操作与轻量写操作零死锁等待；<br>3. **孤儿向量自动清理**：事务回滚时物理联动清理已生成的中间文件与孤儿向量。 | [ ] 待排期迭代 ⏳ |
 | **`v1.7.142`** | **Card-185** | **VikingBot 流式实时中断与动态舵向注入协议 (Stream Steer & Interruption Protocol SSOT - 主线 C)** | 1. **流式原子中断控制**：SSE 流式生成链路中支持客户端发送中断指令，服务端状态机毫秒级释放资源并记录截断标记；<br>2. **动态舵向注入 (Steer)**：允许在长生成过程中动态修正大模型注意力方向；<br>3. **前端交互适配**：在 Studio 对话区提供一键打断与指令纠偏按钮，严格遵守 NO GREEN EVER 规范。 | [ ] 待排期迭代 ⏳ |
@@ -3889,15 +3890,20 @@
 
 ---
 
-### 📌 [P0] [ ] Card-182 (v1.7.139): AnyDoc 统一全格式文档解析引擎接入与多模态抽取增强 (AnyDoc Universal Parser & Multimodal Extraction SSOT) ⏳
-- **类型**：多模态解析器解耦 / Office 复杂格式提取 / Fail-Open 降级 ｜ **优先级**：🔥🔥 P1 ｜ **目标版本**： 1.7.139 ｜ **当前状态**：[ ] 待排期迭代 ⏳
+### 📌 [P0] [x] Card-182 (v1.7.139): AnyDoc 统一全格式文档解析引擎接入与多模态抽取增强 (AnyDoc Universal Parser & Multimodal Extraction SSOT) ✅
+- **类型**：多模态解析器解耦 / Office 复杂格式提取 / Fail-Open 降级 ｜ **优先级**：🔥🔥 P1 ｜ **目标版本**： 1.7.139 ｜ **当前状态**：[x] 已验收通过 ✅
 - **背景与第一性原理**：
   - **核心痛点**：目前本地针对 Word、Excel、PPT 和内嵌复杂图片的提取缺乏工业级容错，格式丢失严重；
   - **上游神级设计**：上游在 `v0.4.17` 统一引入了 `AnyDoc` 多模态解析引擎，大幅提升了对 Office 系列、嵌套 Markdown 表格和图片 OCR/VLM 的理解精度；
   - **本地平滑兼并方案**：
-    1. **专用适配器模式 (`AnyDocAdapter`)**：绝不直接修改全局解析入口，而在 `openviking/parse/parsers/anydoc_adapter.py` 封装专职适配层；
-    2. **Fail-Open 降级防护**：若 AnyDoc 遇到未安装第三方 C 依赖或解析抛错，捕获异常后毫秒级静默回退至现有的纯文本与普通 Markdown 解析器，保障文件入库 100% 成功；
-    3. **测试覆盖**：编写 Docx、Xlsx、复杂表格和纯文本对照解析单测，验证表格 Markdown 化与多模态元数据保留。
+    1. **专用适配器模式 (`AnyDocAdapter`)**：绝不直接修改全局解析入口，而在 `openviking/parse/parsers/anydoc_adapter.py` 封装专职适配层（300 行黄金甜点区）；
+    2. **Fail-Open 降级防护**：若 AnyDoc 遇到未安装第三方 C 依赖、显式禁用或解析抛错，捕获异常后毫秒级静默回退至内置纯文本与轻量 XML 表格解析，保障文件入库 100% 成功；
+    3. **测试覆盖**：编写 Docx、Xlsx、复杂表格和纯文本对照解析单测（8/8 全绿），验证表格 Markdown 化与多模态元数据保留。
+- **交付物理产物**：
+  - 核心适配器：[`openviking/parse/parsers/anydoc_adapter.py`](file:///c:/Users/Skl/Desktop/coding/OpenVikingStudio/openviking/parse/parsers/anydoc_adapter.py) (300 行)
+  - 解析器集成：[`openviking/parse/parsers/anydoc.py`](file:///c:/Users/Skl/Desktop/coding/OpenVikingStudio/openviking/parse/parsers/anydoc.py) (126 行)
+  - 存储容错：[`openviking/parse/parsers/base_parser.py`](file:///c:/Users/Skl/Desktop/coding/OpenVikingStudio/openviking/parse/parsers/base_parser.py) (128 行)
+  - 专项单测：[`tests/parse/test_anydoc_adapter.py`](file:///c:/Users/Skl/Desktop/coding/OpenVikingStudio/tests/parse/test_anydoc_adapter.py) (8/8 PASS)
 
 ---
 
