@@ -1,14 +1,14 @@
 # 智能体自适应熔断断路器 (Agent Adaptive Circuit Breaker)
 
-[![Version](https://img.shields.io/badge/version-1.3.0-cyan.svg)](https://vk.tide.red)
+[![Version](https://img.shields.io/badge/version-1.3.2-cyan.svg)](https://vk.tide.red)
 [![Platform](https://img.shields.io/badge/platform-Google%20Antigravity-blue.svg)](https://antigravity.google)
-[![Architecture](https://img.shields.io/badge/architecture-Fail--Open%20%26%20Zero--Touch-green.svg)](https://vk.tide.red)
+[![Architecture](https://img.shields.io/badge/architecture-Fail--Open%20%26%20Zero--Touch-cyan.svg)](https://vk.tide.red)
 
 专为 **Google Antigravity IDE / Desktop** 深度定制的物理级断路器插件，通过原生 Hook 神经反射层守护智能体自治链路，彻底终结死循环打补丁、Token 烧尽与失控自嗨。
 
 ---
 
-## 🌟 核心特性 (v1.3.0)
+## 🌟 核心特性 (v1.3.2)
 
 1. **自适应弹性预算体系**：
    - **健康常态 (36 步)**：连续 0 报错全绿灯时，授予 36 步充裕预算，支持长线重构与端到端交付；
