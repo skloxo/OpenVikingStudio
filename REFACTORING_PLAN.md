@@ -3920,15 +3920,16 @@
 
 ---
 
-### 📌 [P0] [ ] Card-184 (v1.7.141): RNFV 两阶段存储事务模型与并发写锁彻底解耦 (Resource RNFV Transaction Model & Anti-Deadlock SSOT) ⏳
-- **类型**：存储事务状态机 / 写入意图与执行解耦 / 孤儿向量自动熔断 ｜ **优先级**：🔥🔥 P1 ｜ **目标版本**： 1.7.141 ｜ **当前状态**：[ ] 待排期迭代 ⏳
+### 📌 [P0] [x] Card-184 (v1.7.141): RNFV 两阶段存储事务模型与并发写锁彻底解耦 (Resource RNFV Transaction Model & Anti-Deadlock SSOT) ✅
+- **类型**：纯函数式事务规划 / 四元快照无状态对齐 / 孤儿向量熔断 ｜ **优先级**：🔥🔥 P1 ｜ **目标版本**： 1.7.141 ｜ **当前状态**：[x] 已验收通过 ✅
 - **背景与第一性原理**：
-  - **核心痛点**：在高并发大文件写入或多 Agent 协同存入时，长时间占用 PathLock 导致读请求被阻塞，触发 502 Bad Gateway 或死锁；若写入中途崩溃，向量数据库与磁盘文件容易产生不同步的“孤儿向量”；
-  - **上游神级设计**：上游重构了 `resource_rnfv.py`，确立 Resource-Node-File-Vector 事务计划，将“写入意图校验与分配”控制在 1ms 内完成并释放锁，高耗时的向量计算与写盘放入后台事务流水线；
+  - **核心痛点**：高并发写入或批量协同存入时，长时间占用 PathLock 导致读请求被阻塞，触发 502 Bad Gateway；若中途异常，向量与磁盘容易产生不同步的“孤儿数据”；
+  - **上游精髓与奥卡姆剃刀**：彻底剔除上游 4,000+ 行重度侵入抽象，拒绝新建任何常驻服务实体；仅在 `openviking/storage/transaction/rnfv_plan.py` 提纯出轻量无状态纯函数管线；
   - **本地平滑兼并方案**：
-    1. **两阶段事务协调器 (`RnTransactionCoordinator`)**：落地 `Phase 1: Plan`（生成文件与向量映射，分配 ID，释放锁）➔ `Phase 2: Commit`（异步执行物理写入与向量插入）；
-    2. **事务回滚与孤儿自愈**：Phase 2 失败时自动执行 Compensating Action，物理删除残余文件与向量索引；
-    3. **单测覆盖**：模拟并发写入竞争、模拟中途异常回滚，断言 0 死锁、0 孤儿数据。
+    1. **四元不可变快照 (`RNFVSnapshot`)**：装配 Request Intent (R), New Artifacts (N), Formal Tree (F), Vector Index (V) 强类型 DTO；
+    2. **纯内存规划管线 (`plan_rnfv_actions`)**：输入快照，纯计算产出确定性 `ActionPlan`（文件增删与向量增删 Diff），0 I/O 耗时 $\le 1\text{ms}$；
+    3. **零实体复用兜底**：状态追踪复用现成 `TaskTracker`，异常死信复用现成 `DLQManager`，锁释放复用现成 `RAGFSBindingClient`；
+    4. **单测覆盖**：红绿驱动单测覆盖纯计算 Diff、覆盖冲突熔断与孤儿清理生成。
 
 ---
 
