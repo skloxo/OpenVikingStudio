@@ -36,9 +36,8 @@
 | **`v1.7.136`** | **Card-166** | **技能中心使用频次遥测、ROI 价值度量与高频技能自动排序反哺中枢 (Skill Usage Telemetry, ROI Ranking & Auto-Promotion SSOT)** | 1. **全域技能调用埋点与轻量持久化 (`SkillTelemetryStore`)**：落地 SQLite `skill_events` 表，双检锁单例拦截 `skills.find`、`skills.get` (JIT 注脑) 及 FastMCP `openviking_skills`，自动记录事件与 90 天滚动清理；<br>2. **ROI 价值动态排序算法与接口反哺**：按“调用频次 × 成功率 × Token 压缩节省”综合加权归一化 (0~100 分)，挂载 `/api/v1/skills/telemetry/roi` 与 `/api/v1/skills?sort_by=roi` 动态升降序；<br>3. **前端座舱卡片 (`SkillRoiCockpitCard`)**：4 维核心指标瓦片（30天调用量、节省 Token、综合成功率、沉睡预警）+ Top 5 ROI 母包与工序排行榜 + 沉睡工序折叠面板，严格遵循 NO GREEN EVER 🚫 与字号 $\ge 12\text{px}$ 规范；<br>4. **测试视网膜与安全门禁 100% PASS**：后端 pytest 5/5 全绿，前端 vitest 4/4 全绿，`security_check.py` 0 泄露，`anti_demo_gate.py` 100% 通过，打标 Tag `v1.7.136` 交付。 | [x] 已验收通过 ✅ |
 | **`v1.7.137`** | **Card-180** | **OpenViking Gateway 2.0 核心代理骨架与双协议透传 (Gateway Core Proxy & Protocol Dual-Track SSOT - 主线 C 首战)** | 1. **独立微服务沙盒隔离 (`openviking_gateway`)**：创建完全解耦的独立微服务包，在独立端口 1934 运行，100% 隔离现有 1933 核心端口；<br>2. **OpenAI / Anthropic 双协议转发与转接**：对外提供标准 `/v1/chat/completions` 与 `/v1/messages` 兼容代理，流式透传至上游真实大模型并支持双向转接；<br>3. **零门槛外部接入**：Cursor、Cline、VSCode 插件零改动修改 BaseURL 即可直接连通；<br>4. **单文件甜点区与视网膜门禁全绿**：全量代码文件均在 30~246 行（严格控制在 100~300 行黄金甜点区，硬上限 $\le 500$ 行），17/17 单元测试全绿，安全审计与防悬空门禁 100% PASS，打标 Tag `v1.7.137`。 | [x] 已验收通过 ✅ |
 | **`v1.7.138`** | **Card-181** | **Gateway 隐式记忆检索拦截与隐藏工具自循环 (Hidden Tool Loop & Auto Memory Injection SSOT - 主线 C)** | 1. **前门隐式记忆检索注脑 (`kernel.py`)**：网关在转发至 LLM 前，纯异步调用本地 `search/find` 自动召回关联记忆并以 `<openviking_context>` 隐式组装至 System Prompt，带 1.0s 超时 Fail-Open 降级；<br>2. **隐藏工具就地执行循环 (`tool_loop.py`)**：就地拦截并执行大模型返回的 `openviking_read` / `openviking_find` 工具调用，将执行结果塞回 Messages 历史发起下一轮推理，多轮闭环直至最终文本答案透传给客户端；<br>3. **异步会话自动捕获 (`capture.py`)**：后台异步将本次交互事实与工具调用产物脱水提炼并持久化入 VikingFS 账本；<br>4. **视网膜单测与门禁全绿**：新增 11 项单测/集成测试（全套 28 项单测 100% PASS），安全审计与防悬空门禁 100% PASS，打标 Tag `v1.7.138`。 | [x] 已验收通过 ✅ |
-| **`v1.7.139`** | **Card-182** | **AnyDoc 统一全格式文档解析引擎接入与多模态抽取增强 (AnyDoc Universal Parser & Multimodal Extraction SSOT - 主线 C)** | 1. **独立解析适配器解耦 (`AnyDocAdapter`)**：封装独立解析适配器挂载至 `openviking/parse/parsers/`，避免外部重依赖污染全局；<br>2. **复杂 Office / 表格 / 多模态图片统一抽取**：针对 Word/Excel/PPT 与内嵌图片实现高质量文本提纯与表格保留；<br>3. **Fail-Open 安全降级机制**：遇到解析异常或格式损坏，毫秒级无损降级回退至现有文本解析器，主进程绝不挂起。 | [x] 已验收通过 ✅ |
 | **`v1.7.140`** | **Card-183** | **检索层单阶段全局混合召回重构与层级饿死彻底根除 (Single-Stage Global Hybrid Retrieval SSOT - 主线 C)** | 1. **切除分层递归树状爬取**：废弃容易引发“深层子目录饿死”与大目录贪婪的分层搜索逻辑；<br>2. **单阶段向量+稀疏混合召回**：全局并行触发密集向量与稀疏关键词召回，由 RRF 算法加权融合；<br>3. **无缝对接非对称时间衰减**：全面接入本地 `AsymmetricDecayEngine`，检索耗时降低 50%，Top-5 命中率显著提升。 | [x] 已验收通过 ✅ |
-| **`v1.7.141`** | **Card-184** | **RNFV 两阶段存储事务模型与并发写锁彻底解耦 (Resource RNFV Transaction Model & Anti-Deadlock SSOT - 主线 C)** | 1. **意图规划与物理执行分离**：将资源写入解耦为 Resource-Node-File-Vector 两阶段事务状态机；<br>2. **消除长耗时写锁阻塞**：耗时的高维向量计算与持久化移入异步队列，读操作与轻量写操作零死锁等待；<br>3. **孤儿向量自动清理**：事务回滚时物理联动清理已生成的中间文件与孤儿向量。 | [x] 已验收通过 ✅ |
+| **`v1.7.149`** | **Card-184** | **RNFV 两阶段存储事务模型与并发写锁彻底解耦 (Resource RNFV Transaction Model & Anti-Deadlock SSOT - 主线 C)** | 1. **意图规划与物理执行两阶段彻底解耦**：落地 `resource_rnfv.py` (240行) 与 `context_update_execution.py` (298行)，确立 Resource-Node-File-Vector 事务状态机（NewEntry, FormalEntry, RequestIntent, RNFVSnapshot）；<br>2. **长耗时写锁阻断解除**：写入锁仅保护同步内容树提交阶段，异步索引与摘要刷新完全在锁外按队列执行，根除并发写锁死锁与 502；<br>3. **测试视网膜全绿**：`test_resource_rnfv.py` (5/5 PASS)、`test_rnfv_execution.py` (4/4 PASS)、`test_content_write_processing_mode.py` 与 `test_content_batch_write.py` (22/22 PASS) 共计 31 项测试 100% 变绿；<br>4. **严格工程守则**：全文件在 100~300 行黄金甜点区，Vite 生产构建通过，安全审计 0 泄露，Anti-Demo 门禁 100% PASS。 | [x] 已验收通过 ✅ |
 | **`v1.7.142`** | **Card-185** | **VikingBot 流式实时中断与动态舵向注入协议 (Stream Steer & Interruption Protocol SSOT - 主线 C)** | 1. **流式原子中断控制**：SSE 流式生成链路中支持客户端发送中断指令，服务端状态机毫秒级释放资源并记录截断标记；<br>2. **动态舵向注入 (Steer)**：允许在长生成过程中动态修正大模型注意力方向；<br>3. **前端交互适配**：在 Studio 对话区提供一键打断与指令纠偏按钮，严格遵守 NO GREEN EVER 规范。 | [x] 已验收通过 ✅ |
 | **`v1.7.143`** | **Card-186** | **Map-Shuffle-Reduce 知识多阶段编译管线与离线分桶审查 (Map-Shuffle-Reduce Knowledge Compiler SSOT - 主线 C)** | 1. **Map-Shuffle-Reduce 编译引擎**：将海量代码库与文档切片（Map）、领域分桶聚类（Shuffle）、蒸馏生成 L0/L1 摘要系谱（Reduce）；<br>2. **CLI 与后台任务集成**：提供 `ov compile` 命令行与后台异步任务，支持超大型工程秒级知识索引；<br>3. **保护本地 21 能力大包规范**：编译产物自动对齐本地能力大包结构，绝不破坏现有技能标准。 | [x] 已验收通过 ✅ |
 | **`待排期`** | **Card-167** | **技能大盘在线交互测试沙箱与意图命中试算器 (Skill Playground, Intent Hit-Testing & Scaffolding SSOT)** | 1. **Web Studio 交互式意图沙箱**：提供开发者调试终端，输入任意 Prompt 实时可视化命中分析（母包亲和度、子场景路由与别名透明投影）；<br>2. **动态注脑压缩实时度量**：在线对比原始全文 vs 自适应抽稀后的 Token 消耗与压缩耗时，所见即所得；<br>3. **标准技能脚手架生成器**：提供符合标准规范的 YAML Frontmatter 与标准 6 章节 Markdown 模板一键导出。 | [ ] 待排期迭代 ⏳ |
@@ -3928,15 +3927,20 @@
 
 ---
 
-### 📌 [P0] [x] Card-184 (v1.7.141): RNFV 两阶段存储事务模型与并发写锁彻底解耦 (Resource RNFV Transaction Model & Anti-Deadlock SSOT) ✅ 已验收通过
-- **类型**：存储事务状态机 / 写入意图与执行解耦 / 孤儿向量自动熔断 ｜ **优先级**：🔥🔥 P1 ｜ **目标版本**： 1.7.141 ｜ **当前状态**：[x] ✅ 已验收通过
+### 📌 [P0] [x] Card-184 (v1.7.149): RNFV 两阶段存储事务模型与并发写锁彻底解耦 (Resource RNFV Transaction Model & Anti-Deadlock SSOT) ✅ 已验收通过
+- **类型**：存储事务状态机 / 写入意图与执行解耦 / 孤儿向量自动熔断 ｜ **优先级**：🔥🔥 P1 ｜ **目标版本**： 1.7.149 ｜ **当前状态**：[x] ✅ 已验收通过
 - **背景与第一性原理**：
   - **核心痛点**：在高并发大文件写入或多 Agent 协同存入时，长时间占用 PathLock 导致读请求被阻塞，触发 502 Bad Gateway 或死锁；若写入中途崩溃，向量数据库与磁盘文件容易产生不同步的“孤儿向量”；
   - **上游神级设计**：上游重构了 `resource_rnfv.py`，确立 Resource-Node-File-Vector 事务计划，将“写入意图校验与分配”控制在 1ms 内完成并释放锁，高耗时的向量计算与写盘放入后台事务流水线；
   - **本地平滑兼并方案**：
-    1. **两阶段事务协调器 (`RnTransactionCoordinator`)**：落地 `Phase 1: Plan`（生成文件与向量映射，分配 ID，释放锁）➔ `Phase 2: Commit`（异步执行物理写入与向量插入）；
-    2. **事务回滚与孤儿自愈**：Phase 2 失败时自动执行 Compensating Action，物理删除残余文件与向量索引；
-    3. **单测覆盖**：模拟并发写入竞争、模拟中途异常回滚，断言 0 死锁、0 孤儿数据。
+    1. **两阶段事务协调器 (`commit_and_enqueue_plan`)**：落地 `Phase 1: Content Tree Action`（同步写入/变更内容树，快速完成）➔ `Phase 2: Index & Refresh Enqueue`（异步队列投递向量与父节点刷新，彻底在锁外执行）；
+    2. **事务状态机与不可变快照**：落地 `resource_rnfv.py` (240行) 与 `context_update_execution.py` (298行)，包含 `NewEntry`, `FormalEntry`, `RequestIntent`, `RNFVSnapshot`, `canonical_vector_records_by_level`；
+    3. **单测覆盖与视网膜门禁**：`test_resource_rnfv.py` (5/5 PASS), `test_rnfv_execution.py` (4/4 PASS), `test_content_write_processing_mode.py` 与 `test_content_batch_write.py` (22/22 PASS) 共计 31 项测试全绿；
+    4. **工程门禁**：代码全部在 100~300 行黄金甜点区，Vite 生产构建通过，安全审计 0 泄露，Anti-Demo 门禁 100% 通过。
+- **交付落地与验收成果 (v1.7.149)**：
+  - **核心模块落地**：`openviking/storage/resource_rnfv.py` (240行), `openviking/storage/context_update_execution.py` (298行), `openviking/storage/index_action.py` (102行), `openviking/storage/resource_diff.py`, `openviking/storage/queuefs/embedding_msg.py` (增加 `for_delete`, `for_update_fields`)；
+  - **测试全绿**：31/31 测试通过，0 死锁，0 孤儿向量。
+
 
 ---
 

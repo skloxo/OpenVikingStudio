@@ -105,10 +105,12 @@ def main():
     with open(mcp_cfg_path, "r", encoding="utf-8") as f:
         mcp_cfg = json.load(f)
     servers = mcp_cfg.get("mcpServers", {})
-    expected_servers = ["openviking", "openviking-ops", "fleet-mesh", "cpa-squad", "keepass-vault", "dify", "circuit-breaker"]
+    expected_servers = ["openviking-memory", "openviking-ops", "fleet-mesh", "cpa-squad", "keepass-vault", "dify", "circuit-breaker"]
     for s in expected_servers:
         assert s in servers, f"Server '{s}' missing in global mcp_config.json!"
-    print(f"  ✔ [全局注册] mcp_config.json 成功注册 7 大分立服务: {list(servers.keys())}")
+    assert "openviking" not in servers, "Redundant alias 'openviking' must not exist in global mcp_config.json!"
+    assert len(servers) == 7, f"Expected exactly 7 decoupled servers, got {len(servers)}: {list(servers.keys())}"
+    print(f"  ✔ [全局注册] mcp_config.json 成功注册 7 大分立单一真相源服务 (0 别名重复): {list(servers.keys())}")
 
     print("=" * 60)
     print("🎉 全景生态验收 100% 通过！所有设计契约与用户诉求完全闭环！")
