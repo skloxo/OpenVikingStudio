@@ -98,3 +98,49 @@ export async function sendChat(
 
   return response.data as BotChatResponse
 }
+
+/**
+ * Atomically interrupt an active streaming session on the backend.
+ */
+export async function interruptSession(sessionId: string): Promise<{ status: string }> {
+  const baseUrl = ovClient.getOptions().baseUrl
+  const response = await fetch(`${baseUrl}/bot/v1/sessions/${encodeURIComponent(sessionId)}/interrupt`, {
+    method: 'POST',
+    headers: buildFetchHeaders(),
+  })
+  if (!response.ok) {
+    const text = await response.text().catch(() => '')
+    throw new OvClientError({
+      code: 'INTERRUPT_FAILED',
+      message: extractErrorMessage(text, `Interrupt failed (${response.status})`),
+      responseBody: text,
+      statusCode: response.status,
+    })
+  }
+  return response.json().catch(() => ({ status: 'interrupted' }))
+}
+
+/**
+ * Steer an active streaming session by injecting dynamic guidance.
+ */
+export async function steerSession(
+  sessionId: string,
+  message: string,
+): Promise<{ status: string }> {
+  const baseUrl = ovClient.getOptions().baseUrl
+  const response = await fetch(`${baseUrl}/bot/v1/sessions/${encodeURIComponent(sessionId)}/steer`, {
+    method: 'POST',
+    headers: buildFetchHeaders(),
+    body: JSON.stringify({ message }),
+  })
+  if (!response.ok) {
+    const text = await response.text().catch(() => '')
+    throw new OvClientError({
+      code: 'STEER_FAILED',
+      message: extractErrorMessage(text, `Steer failed (${response.status})`),
+      responseBody: text,
+      statusCode: response.status,
+    })
+  }
+  return response.json().catch(() => ({ status: 'steered' }))
+}

@@ -439,3 +439,103 @@ async def test_chat_stream_proxy_preserves_sse_event_boundaries(monkeypatch):
 
     assert response.status_code == 200
     assert response.text == payload
+
+
+@pytest.mark.asyncio
+async def test_interrupt_session_proxy_forwards_auth_headers(monkeypatch):
+    forwarded = {}
+
+    class FakeResponse:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"status": "interrupted", "session_id": "sess_test_123"}
+
+    class FakeClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return None
+
+        async def post(self, url, headers=None, **kwargs):
+            forwarded["url"] = url
+            forwarded["headers"] = headers or {}
+            return FakeResponse()
+
+    monkeypatch.setattr(bot_router_module, "BOT_API_URL", "http://127.0.0.1:18790")
+    monkeypatch.setattr(bot_router_module, "BOT_API_KEY", "gw-token-xyz")
+    monkeypatch.setattr(bot_router_module, "_create_bot_proxy_client", lambda: FakeClient())
+
+    app = FastAPI()
+    app.state.config = SimpleNamespace(get_effective_auth_mode=lambda: AuthMode.DEV)
+    app.state.auth_plugin = DevAuthPlugin()
+    app.include_router(bot_router_module.router, prefix="/bot/v1")
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app),
+        base_url="http://testserver",
+    ) as client:
+        response = await client.post(
+            "/bot/v1/sessions/sess_test_123/interrupt",
+            headers={"X-API-Key": "dev-user-key"},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "interrupted"
+    assert forwarded["url"] == "http://127.0.0.1:18790/bot/v1/sessions/sess_test_123/interrupt"
+    assert forwarded["headers"].get("X-Gateway-Token") == "gw-token-xyz"
+    assert forwarded["headers"].get("X-OpenViking-Account") == "default"
+
+
+@pytest.mark.asyncio
+async def test_steer_session_proxy_attaches_connection_payload(monkeypatch):
+    forwarded = {}
+
+    class FakeResponse:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"status": "steered", "accepted": True}
+
+    class FakeClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return None
+
+        async def post(self, url, json=None, headers=None, **kwargs):
+            forwarded["url"] = url
+            forwarded["json"] = json
+            forwarded["headers"] = headers or {}
+            return FakeResponse()
+
+    monkeypatch.setattr(bot_router_module, "BOT_API_URL", "http://127.0.0.1:18790")
+    monkeypatch.setattr(bot_router_module, "BOT_API_KEY", "gw-token-xyz")
+    monkeypatch.setattr(bot_router_module, "_create_bot_proxy_client", lambda: FakeClient())
+
+    app = FastAPI()
+    app.state.config = SimpleNamespace(get_effective_auth_mode=lambda: AuthMode.DEV)
+    app.state.auth_plugin = DevAuthPlugin()
+    app.include_router(bot_router_module.router, prefix="/bot/v1")
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app),
+        base_url="http://testserver",
+    ) as client:
+        response = await client.post(
+            "/bot/v1/sessions/sess_test_123/steer",
+            headers={"X-API-Key": "dev-user-key"},
+            json={"message": "please correct direction"},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "steered"
+    assert forwarded["url"] == "http://127.0.0.1:18790/bot/v1/sessions/sess_test_123/steer"
+    assert forwarded["headers"].get("X-Gateway-Token") == "gw-token-xyz"
+    assert "openviking_connection" in forwarded["json"]
+    assert forwarded["json"]["openviking_connection"]["account_id"] == "default"
+    assert forwarded["json"]["message"] == "please correct direction"
