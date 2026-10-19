@@ -51,7 +51,7 @@ class SkillValidator:
         "health", "zg_search", "openviking_task_cards_summary", "openviking_dlq_status",
         "openviking_resolve_task_card", "openviking_code_impact", "openviking_vector_sync_metrics",
         "openviking_generate_contract_test", "openviking_list_pending_cards", "openviking_file_task_card",
-        "openviking_valet_handover", "openviking_valet_ticket_status", "openviking_dspy_compile",
+        "openviking_valet_handover", "openviking_valet_ticket_status",
         "openviking_skill_zip", "openviking_tokenshift_compress", "openviking_memory_purity_report",
         "openviking_retry_dead_letter", "openviking_context_route", "openviking_agent_sensors",
         "openviking_active_notes_get", "openviking_active_notes_update", "openviking_history_search",

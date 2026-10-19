@@ -314,7 +314,7 @@ def create_ecosystem_plugins(
     circuit_breaker_plugin = QuadPluginDefinition(
         plugin_id="agent-circuit-breaker",
         name="智能体熔断断路器",
-        version="1.3.0",
+        version="1.3.2",
         category="user",
         description="防死循环与 Token 烧尽物理断路器，具备自适应增量租约、二进制裸流直通与 force_ask 零误杀多重防护",
         skill=SkillDefinition(
@@ -367,7 +367,7 @@ def create_ecosystem_plugins(
             },
             dashboard_route="/plugins",
         ),
-        health=PluginHealthProbe(status="healthy", latency_ms=0.5, message="Adaptive circuit breaker v1.3.0 active"),
+        health=PluginHealthProbe(status="healthy", latency_ms=0.5, message="Adaptive circuit breaker v1.3.2 active"),
     )
 
     # 注册别名映射

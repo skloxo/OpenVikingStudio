@@ -16,8 +16,6 @@ import pytest
 import sqlite3
 from typing import Any, Dict
 
-from openviking.service.dspy_compiler_engine import DSPyCompilerEngine
-from openviking.service.dspy_compiler_types import DSPyCompileRequest
 from openviking.service.tokenshift_engine import TokenShiftEngine
 from openviking.service.tokenshift_types import (
     TokenShiftLanguage,
@@ -25,59 +23,6 @@ from openviking.service.tokenshift_types import (
     TokenShiftRequest,
 )
 from openviking.service.vector_sync_tracker import VectorSyncTracker
-
-
-@pytest.fixture
-def compiler_engine():
-    engine = DSPyCompilerEngine.get_instance()
-    engine.reset_stats()
-    return engine
-
-
-def test_dspy_contract_authenticity_inferred_vs_explicit(compiler_engine):
-    """
-    Test 1: Verify DSPy compiler contract status reflects field inference honestly.
-    - Inferred fields -> is_inferred=True -> contract_status="PARTIAL"
-    - Explicit fields -> is_inferred=False -> contract_status="PASS"
-    """
-    # 1. Unstructured prompt (Inferred fields)
-    unstructured_prompt = "请帮我总结一下今天早盘市场风格偏好，并给出日内交易建议。"
-    sig_inferred = compiler_engine.extract_signature(
-        raw_prompt=unstructured_prompt,
-        custom_name="MarketSummarizer",
-    )
-    assert sig_inferred.is_inferred is True
-
-    req_inferred = DSPyCompileRequest(
-        task_name="MarketSummarizer",
-        raw_prompt=unstructured_prompt,
-        target_model="mux-flash",
-    )
-    result_inferred = compiler_engine.compile(req_inferred)
-    assert result_inferred.contract_status == "PARTIAL"
-    assert result_inferred.signature.is_inferred is True
-
-    # 2. Structured prompt (Explicit field contracts)
-    structured_prompt = """
-    你是一个严谨的金融量化数据提取器。
-    输入参数: Query: 用户自然语言查询, MarketData: 市场行情切片数据
-    输出字段: AlphaFactor: 因子计算逻辑, RiskAssessment: 风险暴露分析
-    约束要求: 绝对禁止使用未校验的黑盒包。
-    """
-    sig_explicit = compiler_engine.extract_signature(
-        raw_prompt=structured_prompt,
-        custom_name="AlphaExtractor",
-    )
-    assert sig_explicit.is_inferred is False
-
-    req_explicit = DSPyCompileRequest(
-        task_name="AlphaExtractor",
-        raw_prompt=structured_prompt,
-        target_model="mux-flash",
-    )
-    result_explicit = compiler_engine.compile(req_explicit)
-    assert result_explicit.contract_status == "PASS"
-    assert result_explicit.signature.is_inferred is False
 
 
 def test_tokenshift_syntax_honest_validation():

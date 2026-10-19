@@ -31,6 +31,26 @@ def get_python_cmd() -> str:
     return sys.executable.replace("\\", "/")
 
 
+def get_mcp_python_cmd() -> str:
+    """智能嗅探具备 FastMCP 与 Pydantic 依赖的 Python 环境"""
+    candidates = [
+        sys.executable,
+        str(Path.home() / ".venv-openviking" / "Scripts" / "python.exe"),
+        str(Path.home() / ".venv" / "Scripts" / "python.exe"),
+        str(Path.home() / "AppData" / "Local" / "Programs" / "Python" / "Python312" / "python.exe"),
+        str(Path.home() / "AppData" / "Local" / "Programs" / "Python" / "Python311" / "python.exe"),
+    ]
+    for c in candidates:
+        if c and Path(c).exists():
+            try:
+                cp = subprocess.run([c, "-c", "import mcp"], capture_output=True, timeout=3)
+                if cp.returncode == 0:
+                    return c.replace("\\", "/")
+            except Exception:
+                pass
+    return sys.executable.replace("\\", "/")
+
+
 def build_hooks_config(guard_script_path: Path) -> dict:
     py_exe = get_python_cmd()
     guard_path = str(guard_script_path.resolve()).replace("\\", "/")
@@ -100,7 +120,7 @@ def register_global_mcp(server_py_path: Path):
         Path.home() / ".gemini" / "mcp_config.json"
     ]
 
-    py_exe = get_python_cmd()
+    py_exe = get_mcp_python_cmd()
     server_entry = {
         "command": py_exe,
         "args": [str(server_py_path.resolve()).replace("\\", "/")],
@@ -224,9 +244,7 @@ def install(target_dir: Path = None):
             src_d = PLUGIN_SRC_DIR / dir_name
             dest_d = dest_dir / dir_name
             if src_d.exists():
-                if dest_d.exists():
-                    shutil.rmtree(dest_d)
-                shutil.copytree(src_d, dest_d)
+                shutil.copytree(src_d, dest_d, dirs_exist_ok=True)
         print("✅ 1. 核心插件文件已同步至用户配置目录")
         active_guard = dest_dir / "scripts" / "circuit_guard.py"
         active_hooks_file = dest_dir / "hooks.json"
@@ -244,6 +262,24 @@ def install(target_dir: Path = None):
     print("✅ 2. 自适应弹性 hooks.json 生成完毕 (官方标准 5 大 Hook 规范)")
     print(f"✅ 3. Guard 脚本绝对路径绑定: {active_guard}")
     print(f"✅ 4. Python 解释器绝对路径绑定: {get_python_cmd()}")
+
+    # 动态重写插件私有 mcp_config.json，彻底消除任何跨节点硬编码 Python 路径
+    plugin_mcp_cfg_file = dest_dir / "mcp_config.json"
+    mcp_py_exe = get_mcp_python_cmd()
+    plugin_mcp_data = {
+        "mcpServers": {
+            "circuit-breaker": {
+                "command": mcp_py_exe,
+                "args": [str(active_server.resolve()).replace("\\", "/")],
+                "env": {
+                    "PYTHONIOENCODING": "utf-8"
+                }
+            }
+        }
+    }
+    with open(plugin_mcp_cfg_file, "w", encoding="utf-8") as f:
+        json.dump(plugin_mcp_data, f, ensure_ascii=False, indent=2)
+    print(f"✅ 4.1 插件私有 mcp_config.json 动态绑定完成 (command: {mcp_py_exe})")
 
     # 双轨注册全局 MCP
     register_global_mcp(active_server)

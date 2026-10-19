@@ -20,7 +20,6 @@ from openviking.server.routers.system_harness import (
     get_harness_metrics,
     trigger_harness_probe,
 )
-from openviking.service.dspy_compiler_engine import DSPyCompilerEngine
 from openviking.service.wiki_dehydration_engine import WikiDehydrationEngine
 from openviking_cli.session.user_id import UserIdentifier
 
@@ -38,9 +37,6 @@ def reset_engines():
     dehy._total_tokens_saved = 0
     dehy._sum_compression_ratio = 0.0
     dehy._total_latency_ms = 0.0
-
-    dspy = DSPyCompilerEngine.get_instance()
-    dspy.reset_stats()
     yield
 
 
@@ -52,8 +48,7 @@ async def test_trigger_harness_probe_live(mock_ctx):
     data_before = json.loads(metrics_before.body.decode("utf-8"))
     assert data_before["llmlingua"]["total_documents"] == 0
     assert data_before["llmlingua"]["token_retention_rate"] is None
-    assert data_before["dspy"]["total_compilations"] == 0
-    assert data_before["dspy"]["compilation_accuracy"] is None
+    assert data_before["dspy"] is None
 
     # 2. Trigger active probe
     probe_res = await trigger_harness_probe(_ctx=mock_ctx)
@@ -65,9 +60,7 @@ async def test_trigger_harness_probe_live(mock_ctx):
     assert probe_data["llmlingua"] is not None
     assert probe_data["llmlingua"]["passed"] is True
     assert probe_data["llmlingua"]["latency_ms"] >= 0
-    assert probe_data["dspy"] is not None
-    assert probe_data["dspy"]["passed"] is True
-    assert probe_data["dspy"]["accuracy"] >= 0.8
+    assert probe_data["dspy"] is None
 
     # 3. After probe: stats updated truthfully
     metrics_after = await get_harness_metrics(window="24h", _ctx=mock_ctx)
@@ -75,8 +68,7 @@ async def test_trigger_harness_probe_live(mock_ctx):
     assert data_after["llmlingua"]["total_documents"] >= 1
     assert data_after["llmlingua"]["token_retention_rate"] is not None
     assert data_after["llmlingua"]["token_retention_rate"] > 0
-    assert data_after["dspy"]["total_compilations"] >= 1
-    assert data_after["dspy"]["compilation_accuracy"] == 100.0
+    assert data_after["dspy"] is None
 
 
 @pytest.mark.asyncio
@@ -88,9 +80,8 @@ async def test_fastmcp_harness_probe_tool():
 
     assert payload["status"] == "ok"
     assert payload["llmlingua"]["passed"] is True
-    assert payload["dspy"]["passed"] is True
+    assert payload["dspy"] is None
     assert "compression_ratio" in payload["llmlingua"]
-    assert "accuracy" in payload["dspy"]
 
 
 def test_version_and_single_file_governance():

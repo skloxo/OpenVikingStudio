@@ -14,8 +14,8 @@ from openviking.service.builtin_plugins_core import OPS_17_TOOL_NAMES
 
 
 def test_ops_17_tool_names_contract():
-    """验证 17 项运维特权工具单一真相源清单完备度。"""
-    assert len(OPS_17_TOOL_NAMES) == 17
+    """验证运维特权工具单一真相源清单完备度 (Card-189 移除伪概念 dspy 后为 16 项)。"""
+    assert len(OPS_17_TOOL_NAMES) == 16
     # 存储与资源挂载 (5 项)
     assert "openviking_add_resource" in OPS_17_TOOL_NAMES
     assert "openviking_list_resources" in OPS_17_TOOL_NAMES
@@ -26,8 +26,7 @@ def test_ops_17_tool_names_contract():
     assert "openviking_mv" in OPS_17_TOOL_NAMES
     assert "openviking_rename" in OPS_17_TOOL_NAMES
     assert "openviking_webdav_info" in OPS_17_TOOL_NAMES
-    # 系统自愈与纯度度量 (3 项)
-    assert "openviking_dspy_compile" in OPS_17_TOOL_NAMES
+    # 系统自愈与纯度度量 (2 项)
     assert "openviking_memory_purity_report" in OPS_17_TOOL_NAMES
     assert "openviking_retry_dead_letter" in OPS_17_TOOL_NAMES
     # 系统监听 (3 项)
@@ -47,10 +46,10 @@ def test_openviking_ops_quad_plugin_definition():
     assert plugin is not None
     assert plugin.plugin_id == "openviking-ops"
     assert plugin.name == "OpenViking 系统运维治理"
-    assert plugin.version == "1.0.0"
+    assert plugin.version == "1.0.3"
 
-    # 1. 17 项 MCP 工具
-    assert len(plugin.tools) == 17
+    # 1. 16 项 MCP 工具 (Card-189 移除伪概念 dspy 后为 16 项)
+    assert len(plugin.tools) == 16
     tool_names = [t.name for t in plugin.tools]
     for expected in OPS_17_TOOL_NAMES:
         assert expected in tool_names
