@@ -210,6 +210,8 @@ def _auto_ingest_missing_to_vikingfs(found_skills: Dict[str, Dict[str, Any]]):
                 continue
             if _rejected_skills_cache.get(name) == content_hash:
                 continue
+            if _synced_skills_cache.get(name) == content_hash:
+                continue
 
             desc = item.get("description", "").strip()
             if not desc or desc == "暂无简介":
