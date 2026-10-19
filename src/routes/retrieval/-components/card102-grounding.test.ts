@@ -13,10 +13,6 @@ describe('Card-102 TokenShift & DSPy Asset Grounding & Persistence Gates', () =>
       'tokenshift-cockpit.tsx',
       'tokenshift-kpi-tiles.tsx',
       'code-file-picker.tsx',
-      'dspy-compiler-cockpit.tsx',
-      'dspy-kpi-tiles.tsx',
-      'dspy-signature-insight-card.tsx',
-      'prompt-template-picker.tsx',
     ]
 
     for (const file of files) {
@@ -33,10 +29,6 @@ describe('Card-102 TokenShift & DSPy Asset Grounding & Persistence Gates', () =>
       'tokenshift-cockpit.tsx',
       'tokenshift-kpi-tiles.tsx',
       'code-file-picker.tsx',
-      'dspy-compiler-cockpit.tsx',
-      'dspy-kpi-tiles.tsx',
-      'dspy-signature-insight-card.tsx',
-      'prompt-template-picker.tsx',
     ]
 
     const greenRegex = /\b(text|bg|border)-(green|emerald)-\d+\b/g
@@ -53,10 +45,6 @@ describe('Card-102 TokenShift & DSPy Asset Grounding & Persistence Gates', () =>
       'tokenshift-cockpit.tsx',
       'tokenshift-kpi-tiles.tsx',
       'code-file-picker.tsx',
-      'dspy-compiler-cockpit.tsx',
-      'dspy-kpi-tiles.tsx',
-      'dspy-signature-insight-card.tsx',
-      'prompt-template-picker.tsx',
     ]
 
     const microFontRegex = /text-\[(8|9|10|11)px\]/g
@@ -76,11 +64,9 @@ describe('Card-102 TokenShift & DSPy Asset Grounding & Persistence Gates', () =>
     expect(content).toContain('in_place')
   })
 
-  it('verifies DSPy mounts PromptTemplatePicker and dual persistence endpoints', () => {
-    const content = fs.readFileSync(path.join(compDir, 'dspy-compiler-cockpit.tsx'), 'utf-8')
-    expect(content).toContain('PromptTemplatePicker')
-    expect(content).toContain('/api/v1/dspy/apply')
-    expect(content).toContain('compiled_file')
-    expect(content).toContain('in_place')
+  it('verifies DSPy pseudo compiler is fully purged (zero dangling files)', () => {
+    expect(fs.existsSync(path.join(compDir, 'dspy-compiler-cockpit.tsx'))).toBe(false)
+    expect(fs.existsSync(path.join(compDir, 'dspy-kpi-tiles.tsx'))).toBe(false)
+    expect(fs.existsSync(path.join(compDir, 'dspy-signature-insight-card.tsx'))).toBe(false)
   })
 })

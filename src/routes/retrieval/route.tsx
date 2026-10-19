@@ -9,12 +9,6 @@ import {
   SearchIcon,
   SparklesIcon,
   TerminalIcon,
-  ZapIcon,
-  ScissorsIcon,
-  DnaIcon,
-  CodeIcon,
-  NetworkIcon,
-  FileCodeIcon,
   SearchCodeIcon,
 } from 'lucide-react'
 
@@ -35,10 +29,6 @@ import { TemporalDecayDreamCard } from './-components/temporal-decay-dream-card'
 import { MemoryPurityGaugeCard } from './-components/memory-purity-gauge-card'
 import { MemoryGovernanceStreamCard } from './-components/memory-governance-stream-card'
 import { ActiveNotesHistoryCockpit } from './-components/active-notes-history-cockpit'
-import { ValetIngestionCockpit } from './-components/valet-ingestion-cockpit'
-import { LLMLinguaDehydrationCockpit } from './-components/llmlingua-dehydration-cockpit'
-import { TokenShiftCockpit } from './-components/tokenshift-cockpit'
-import { ContextRouterCockpit } from './-components/context-router-cockpit'
 import { RetrievalResults } from './-components/retrieval-results'
 import { RetrievalSearchBar } from './-components/search-bar'
 import {
@@ -62,10 +52,6 @@ export type RetrievalTab =
   | 'compass'
   | 'crystallizer'
   | 'context'
-  | 'valet'
-  | 'llmlingua'
-  | 'tokenshift'
-  | 'context-router'
 
 const RETRIEVAL_TABS: Array<{
   id: RetrievalTab
@@ -79,10 +65,6 @@ const RETRIEVAL_TABS: Array<{
   { id: 'compass', label: 'HG-RAG 拓扑与主动弃答', icon: <CompassIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
   { id: 'crystallizer', label: '三门结晶与不可变事实', icon: <SparklesIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
   { id: 'context', label: '主动上下文与历史分仓', icon: <DatabaseIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
-  { id: 'valet', label: '前门泊车与反熵准入', icon: <ZapIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
-  { id: 'llmlingua', label: 'LLMLingua 自然语言脱水', icon: <ScissorsIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
-  { id: 'tokenshift', label: 'TokenShift 代码语法保护', icon: <CodeIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
-  { id: 'context-router', label: 'Context Router 统一路由网关', icon: <NetworkIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
 ]
 
 export const Route = createFileRoute('/retrieval')({
@@ -304,18 +286,6 @@ function RetrievalPage() {
 
       {/* Tab 6: 主动上下文与历史分仓座舱 */}
       {activeTab === 'context' && <ActiveNotesHistoryCockpit />}
-
-      {/* Tab 7: 前门泊车与反熵准入座舱 */}
-      {activeTab === 'valet' && <ValetIngestionCockpit />}
-
-      {/* Tab 8: LLMLingua 自然语言脱水座舱 */}
-      {activeTab === 'llmlingua' && <LLMLinguaDehydrationCockpit />}
-
-      {/* Tab 9: TokenShift 代码语法保护与压缩座舱 */}
-      {activeTab === 'tokenshift' && <TokenShiftCockpit />}
-
-      {/* Tab 10: Context Router 统一路由网关座舱 */}
-      {activeTab === 'context-router' && <ContextRouterCockpit />}
     </div>
   )
 }
