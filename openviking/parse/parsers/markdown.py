@@ -1404,9 +1404,11 @@ class MarkdownParser(BaseParser):
                 ops.append(_LayoutOp("write", f"{root_dir}/{doc_name}_{part_idx}.md", part))
             return
 
-        # Build virtual section list (pre-heading content as first virtual section)
+        # Build virtual section list (content before the first top-level heading,
+        # including any lower-level headings there, is the first virtual section)
         sections = []
-        first_heading_start = headings[0][0]
+        min_level = min(h[3] for h in headings)
+        first_heading_start = next(h[0] for h in headings if h[3] == min_level)
         if first_heading_start > 0:
             pre_content = content[:first_heading_start].strip()
             if pre_content:
@@ -1422,7 +1424,6 @@ class MarkdownParser(BaseParser):
                 )
 
         # Add real sections (top-level only for this pass)
-        min_level = min(h[3] for h in headings)
         i = 0
         while i < len(headings):
             if headings[i][3] == min_level:
