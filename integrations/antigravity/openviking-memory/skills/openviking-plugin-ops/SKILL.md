@@ -359,6 +359,47 @@ sequenceDiagram
 
 ## 🧪 九、 演进教训库 (Evolution Lessons Persisted)
 
+---
+
+## 🚀 九、 插件统一公用源修改与单向拉取部署标准 SOP (Pull-Only Deployment SSOT) ⭐⭐⭐⭐⭐
+
+> **核心第一性原理 (2026-10-19 铭刻)**：  
+> “所有的插件以后修改的时候不允许改本地，只允许改线上统一、公用的插件。改完的插件重新在本地拉取，而不是直接去各个智能体手动去修改。这个插件你连到10000人的电脑上去修改吗？”  
+> 坚决切除在端侧 `~/.gemini/config/plugins/` 运行时目录打猴子补丁、以及人工逐机 SSH 维护的作坊式灾难。全系统遵循**【唯一源统一修改 ➔ 规范发版推流 ➔ 客户端单向一键拉取安装】**的工业级流水线！
+
+### 1. 唯一源修改与发版四步闭环 (The 4-Step SSOT Modification Loop)
+
+1. **唯一修改源物理定位**：
+   - **Google 反重力客户端插件**：`OpenVikingStudio/integrations/antigravity/<plugin-name>/`
+   - **DeepSeek Harness 客户端插件**：`OpenVikingStudio/integrations/deepseek-harness/<plugin-name>/`
+   - **严禁**：在任何宿主的 `plugins/` 运行目录下直接修改任何文件！
+2. **规范版本升阶 (Strict SemVer Bump)**：
+   - 在 `plugin.json` 或 `package.json` 中自增 SemVer 版本（日常排障必须升级 Patch，如 `2.0.11` ➔ `2.0.12`）；
+   - 反重力插件同步核验 `hooks.json` 动态渲染逻辑（绝对路径 + `-E -s -S` 隔离）；
+3. **安全门禁与本地验证 (Security & Retina Gate)**：
+   - 必须通过 Git Pre-Commit Hook 安全审计（Zero Secrets，严禁硬编码任何真实 Key）；
+   - 执行标准化构建与测试（`pytest` / `setup.py --inspect`）；
+4. **统一推流发布 (Push to SSOT)**：
+   - 执行 `git commit` 并 `git push origin main` 推流至线上统一仓库，正式建立不可变版本留痕。
+
+### 2. 客户端单向一键拉取部署规范 (One-Line Pull Deployment)
+
+任何节点（本地 2080Ti、远程 3070、MacBook M3 或未来 10,000 个使用者的终端）需要更新插件时，**绝对禁止人工穿刺魔改**，必须统一通过标准拉取命令部署：
+
+- **反重力客户端 (Antigravity IDE / Desktop)**：
+  ```powershell
+  # 统一拉取与标准自举安装命令：
+  python OpenVikingStudio/integrations/antigravity/<plugin-name>/setup.py --install
+  ```
+- **DSH 客户端 (DeepSeek Harness)**：
+  从 Web Studio 静态分发端点重新获取发布包：
+  ```bash
+  curl -fsSL https://vk.tide.red/studio/dsh-plugin-<name>-${VERSION}.tgz -o dsh-plugin.tgz
+  ```
+- **绝对禁令**：严禁 AI 或人类通过 SSH 登录多台电脑逐台打开编辑器手工改代码！
+
+---
+
 #### 📌 Lesson 2026-10-11：零信任单轨鉴权铁律、空间+用户双轴防串号契约与体外大脑绝对私有封闭堡垒法则
 - **CONTEXT**：在 3070 远程节点接入 DSH 客户端的实战闭环验收中，排查出三项致命架构隐患：1）“本地内网免密、公网远程要密”的双轨割裂，引发本地跑得通、远端必 401 暴雷；2）企图通过“访客模式 (Guest Mode)”搞免密只读，直接威胁体外大脑私有数据主权与机密安全；3）多租户下必须空间（Tenant）+ 用户（Agent）双轴强绑定（256-bit CSPRNG 高熵 Token + 笛卡尔积命名空间沙箱），杜绝同名用户跨空间串号；4）DSH 异构客户端必须基于 stdio proxy 挂载 MCP 桥梁，并通过 pre-step 瀑布流拦截穿透系统快照精准提取提问。
 - **REFLECTION**：安全没有特权，也没有双轨。本地免密是软件工程中典型的“环境特例主义大泥潭”。全系统无论本地还是公网，一律强制零信任单轨 Bearer 鉴权；体外大脑是绝对私有的外挂大脑，0 访客、0 免密、物理拒止；多租户严格双轴绑定沙箱化。从根源切除了环境特例与越权隐患。
