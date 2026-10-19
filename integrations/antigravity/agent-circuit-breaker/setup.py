@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Agent Circuit Breaker 官方插件自举安装向导 (v1.3.0 - 工业自适应弹性版)
+Agent Circuit Breaker 官方插件自举安装向导 (v1.3.2 - 工业自适应弹性版)
 支持跨平台一键开箱即用安装、卸载、巡检与生命周期钩子自检。
 """
 
