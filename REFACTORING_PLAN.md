@@ -11,6 +11,7 @@
 | **`v1.7.151`** | **Card-194** | **全新技能真金判定与技术实体密度量化器 (Technical Entity Density & Native SOP Extractor SSOT - 主线 E)** | 1. **废黜纯正则词频刻板打分**：在 `SkillOptJudge` 引入基于代码块、CLI 参数、端口/URL、环境变量、防御规约的技术实体密度量化算法，真金白银内容 100% 识别放行；<br>2. **原生工序提取与智能咀嚼**：升级 `SkillAutoRemediator` 原生工序提取器，基于野生文档自然段落提纯出专属 SOP，彻底杜绝机械追加通用模板；<br>3. **测试视网膜与自愈全绿**：新增针对性单测验证密度提取、原生 SOP 提纯与端到端无损自愈。 | [x] 已验收通过 ✅ |
 | **`v1.7.152`** | **Card-195** | **跨平台路径自适应解析与落盘即向量入籍全闭环 (Adaptive Skills Path & Zero-Latency Indexing SSOT - 主线 E 终战)** | 1. **拔除路径硬编码**：落地 `skill_path_resolver.py`，全库铲除 9 处个人开发机路径，自适应 Windows/WSL2/Linux；<br>2. **落盘即向量入籍与别名刷新**：Stage 5 落盘完成后即刻刷新场景别名路由表，广播 `SKILLS_MUTATED` 与 `PIPELINE_PULSE`，0 毫秒即查；<br>3. **测试视网膜全绿**：新增 `test_card195_adaptive_skills_path_and_indexing.py` 4/4 全绿，联合回归 23/23 满绿通过。 | [x] 已验收通过 ✅ |
 | **`v1.7.144`** | **Card-187** | **Session 高并发读写去重、归档锁解耦与状态机收敛 (Session IO De-duplication & Lock Decoupling SSOT - 缺陷治理)** | 1. **归档死锁物理根除**：将 `task_tracker.create` 彻底移出 `_archive_lock` 临界区及 `pathlock_release` 外部，独立 try-except 保护，根除跨线程死锁；<br>2. **状态机单轨收敛**：从 `SessionService` 移除冗余的 `extract` 方法，从路由层移除 `POST /{session_id}/extract`，会话归档提纯统一收敛至 `SessionCommit`；<br>3. **会话读写解耦与热读优化**：在 `session_service.py` 落地 `open()` 方法避免写前无谓反序列化全量历史消息，`commit_async`、`update_config`、`add_message`、`batch_add_messages` 全面对齐 `open()`；在 `namespace.py` 增强 `session` 别名解析；<br>4. **视网膜单测 58/58 全绿**：新增 `test_card187_session_concurrency_and_lock_decoupling.py` 3/3 全绿，`test_api_sessions.py` 50/50 全绿，`test_session_service_metrics.py` 5/5 全绿通过。 | [x] 已验收通过 ✅ |
+| **`v1.7.145`** | **Card-188** | **AGFS 事务加固、解析管线防崩防丢与脏快照熔断 (PathLock Non-blocking, Parser Crash Prevention & Anti-Stale-Upsert SSOT - 缺陷治理)** | 1. **PDFium 进程级互斥锁**：在 `pdf.py` 增加 `_PDFIUM_LOCK`，彻底消灭底层 C++ 多线程并发渲染段错误崩溃；<br>2. **Markdown 顶级标题前内容保真**：在 `markdown.py` 将前置虚拟章节锚定在首个最高级标题，彻底根除顶级标题前出现次级标题（如 `## Preface` 前于 `# Chapter 1`）被静默丢弃缺陷；<br>3. **飞书表格管道符转义**：在 `base.py` 将单元格 `|` 转义为 `\|`，折叠多行并保底 3 字符，彻底杜绝表格解析结构散架；<br>4. **脏快照覆写物理阻断**：在 `memory_updater.py` 严格收敛异常仅允许 `(NotFoundError, FileNotFoundError)`，阻断脏内存覆写磁盘最新记忆；<br>5. **视网膜单测全绿**：新增 `test_card188_parser_crash_and_data_loss_prevention.py` 4/4 全绿，55/55 解析回归通过，33/33 记忆回归通过。 | [x] 已验收通过 ✅ |
 | **`v1.7.146`** | **Card-189** | **全域伪概念与悬空代码彻底斩杀 (DSPy Pseudo Compiler Purge, Misplaced Sandbox Pruning & Anti-Demo Hardening SSOT - 主线 D 首战)** | 1. **物理铲除山寨 DSPy 伪概念**：彻底删除 `routers/dspy_compiler.py`、`service/dspy_*.py` 以及前端 `dspy-compiler-cockpit.tsx`，清退 3,014 行代码；<br>2. **收敛 `/retrieval` 杂物间**：剥离无关异类沙箱，使检索页纯化为单阶段混合召回与时间衰减中枢；<br>3. **门禁与全域验真**：`anti_demo_gate.py` 233 个组件 100% 通过，Git commit `016df6aef`。 | [x] 已验收通过 ✅ |
 | **`v1.7.147`** | **Card-190** | **三大通用原子引擎抽离与多端复用中枢 (Universal Content Reducer, Unified Lifecycle Engine & Audit Ledger SSOT - 主线 D)** | 1. **UniversalContentReducer**：多模态内容脱水压缩（CODE/SKILL/TEXT），自动类型嗅探，正则冻结 YAML 与代码块，AST 语法验真与 Fail-Open 兜底，注册 FastMCP `openviking_content_reduce`；<br>2. **UnifiedLifecycleEngine**：5 阶标准状态机（INGESTED ➔ EVALUATING ➔ REDUCING ➔ VALIDATING ➔ COMMITTED），线程安全，前置守卫与后置监听解耦；<br>3. **UniversalAuditLedger**：线程安全 SQLite 不可变事件账本，支持多维时间线检索与超期归档；<br>4. **双全验证全绿**：11/11 单测通过，19/19 回归测试通过，Vite 编译通过，Git commit `c8354929a`。 | [x] 已验收通过 ✅ |
 | **`v1.7.148`** | **Card-191** | **存量高价值能力自愈与自驱闭环补齐 (Automate Tri-Gate Dreamer, Hermes Flash Nudge & AHE Pre-Release Gate SSOT - 主线 D)** | 1. **OfflineDreamer 闭环驱动**：打通 `OfflineDreamer` 与 `UnifiedLifecycleEngine` 状态机推进，归纳蒸馏自动生成 Master Card 并沉淀至 `UniversalAuditLedger`；<br>2. **Hermes 结构化归因与微手术**：落地 `StructuredAttribution`，自动解析调用栈/工具报错，分类并提议 `<=30` 行微手术补丁，暴露 `/api/v1/hermes/attribute` 与 `/attributions` 端点；<br>3. **AHE Pre-Release 自动化门禁**：自动装载核心系统不变性（Fail-Open 保证、<=30行补丁限制），运行快照漂移与 Polar 沙箱检测，作为 `VALIDATING ➔ COMMITTED` 状态守卫阻断违约提交，暴露 `/api/v1/ahe/gate/check` 端点；<br>4. **测试与视网膜门禁全绿**：8/8 专项单测通过，19/19 回归测试通过，Vite 构建编译全绿 (18.33s)，`anti_demo_gate.py` 233 组件 100% PASS。 | [x] 已验收通过 ✅ |
@@ -3994,15 +3995,26 @@
 
 ---
 
-### 📌 [P0] [ ] Card-188 (v1.7.145): 存储事务与记忆快照原子性加固 (PathLock Non-blocking & Anti-Stale-Upsert SSOT) ⏳
-- **类型**：记忆一致性 / PathLock 非阻塞调度 / AGFS 取消优雅结算 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**： 1.7.145 ｜ **当前状态**：[ ] 待排期迭代 ⏳
+### 📌 [P0] [x] Card-188 (v1.7.145): AGFS 事务加固、解析管线防崩防丢与脏快照熔断 (PathLock Non-blocking, Parser Crash Prevention & Anti-Stale-Upsert SSOT - 缺陷治理) ✅
+- **类型**：PDFium 多线程段错误隔离 / Markdown 标题前内容保护 / 表格管道符转义 / 脏快照写回阻断 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.145` ｜ **当前状态**：[x] 已验收通过 ✅ (v1.7.145)
 - **背景与第一性原理**：
-  - **核心痛点**：读操作中途失败时，若基于过期的内存脏快照执行 upsert，会造成记忆历史覆写灾难；PathLock 阻塞等待线程会导致 FastAPI 执行线程池耗尽；
-  - **上游神级设计**：上游在 Commit `597db4fe2`、`b0d1d633f`、`dfc22d1de` 中严密阻断了脏快照写回，并改造了 PathLock 等待机制；
-  - **本地平滑兼并方案**：
-    1. **脏快照物理熔断门禁**：读取失败时强制标记快照为 Stale，拦截任何下游更新写回；
-    2. **PathLock 非阻塞调度**：采用非阻塞轮询与让步机制，释放后台 Executor 线程；
-    3. **AGFS 优雅取消**：任务被中断或取消时，先同步完成当前文件状态结算，防止产生孤儿副本。
+  - **核心痛点**：PDFium 底层 C++ 非线程安全，并行渲染时直接引发段错误使主进程暴毙；Markdown 顶级标题前内容被无情丢弃；飞书表格含 `|` 或换行导致 Markdown 表格散架；记忆更新遇未知读异常时吞掉报错并以旧快照写盘覆写最新数据；
+  - **上游神级设计**：上游在 Commit `92285e5b3`、`f596fa0ab`、`47b0c408e`、`597db4fe2` 中精准修复了这 4 大高危缺陷；
+  - **本地平滑兼并方案与原子工单闭环**：
+    - [x] **`TASK-188-1: PDFium 渲染进程级线程互斥锁 (PDFium Rendering Serialization)`**：在 `openviking/parse/parsers/pdf.py` 引入模块全局 `_PDFIUM_LOCK = threading.Lock()`，对 `to_image` 强制加锁互斥，防止底层 C++ 段错误崩溃；
+    - [x] **`TASK-188-2: Markdown 顶级标题前内容零丢弃 (Markdown Pre-heading Content Preservation)`**：在 `openviking/parse/parsers/markdown.py` 的 `_build_structure` 中，纠正 `first_heading_start` 计算逻辑：以第一个最高级标题（`h[3] == min_level`）作为分界，彻底杜绝顶级标题前出现次级标题（如 `## Preface` 前于 `# Chapter 1`）被静默丢弃的缺陷；
+    - [x] **`TASK-188-3: 飞书表格管道符转义与换行折叠 (Feishu Table Pipe Escape & Format Guard)`**：在 `openviking/parse/base.py` 的 `format_table_to_markdown` 中，将单元格 `|` 转义为 `\|`，多行单元格用 `<br>` 折叠为单行，并对所有列的分割行设置至少 `---`，彻底杜绝表格解析结构散架；
+    - [x] **`TASK-188-4: 记忆更新脏快照写回物理阻断 (Anti-Stale-Upsert Guard)`**：在 `openviking/session/memory/memory_updater.py` 的 `_apply_upsert` 中，精确收敛异常捕获仅允许 `(NotFoundError, FileNotFoundError)` 放行新文件创建；任何其他未知读异常向上抛出，物理阻断基于过期的内存脏快照覆写磁盘；
+    - [x] **`TASK-188-5: 专项视网膜单测与联合全绿回归`**：新增 `test_card188_parser_crash_and_data_loss_prevention.py` 4/4 全绿，更新 `test_markdown_no_split.py`、`test_feishu_accessor.py`、`test_pdf_bookmark_extraction.py`，全套 55 项解析测试 100% PASS，`test_memory_updater.py` 33 项 100% PASS！
+- **交付物清单**：
+  - PDFium 互斥锁：`openviking/parse/parsers/pdf.py`
+  - Markdown 标题前内容保护：`openviking/parse/parsers/markdown.py`
+  - 表格格式防崩：`openviking/parse/base.py`
+  - 记忆更新脏快照阻断：`openviking/session/memory/memory_updater.py`
+  - 专项单测套件：`tests/parse/test_card188_parser_crash_and_data_loss_prevention.py`
+- **交付留痕 (Verification & Evidence)**：
+  - **版本号 SSOT**：`v1.7.145` (`openviking/_version.py`, `package.json`)
+  - **测试验证**：55/55 解析单测 PASS，33/33 记忆更新单测 PASS，Security Scan 5131 文件零泄露，Anti-Demo 233 组件 100% PASS。
 
 ---
 

@@ -1109,10 +1109,11 @@ class MemoryUpdater:
                 content = await viking_fs.read_file(uri, ctx=ctx)
                 if content:
                     old_content = MemoryFileUtils.read(content, uri=uri)
-            except Exception:
+            except (NotFoundError, FileNotFoundError):
                 # File doesn't exist yet, that's okay
                 pass
-            # Fall back to pre-fetched content if disk read failed
+            # Any other read error propagates: the prefetched snapshot may be older
+            # than the file, so writing a result built on it could lose a newer update.
             if old_content is None:
                 old_content = resolved_op.old_memory_file_content
 
