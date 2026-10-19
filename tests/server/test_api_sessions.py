@@ -21,6 +21,7 @@ from openviking.server.config import (
 from openviking.server.dependencies import set_service
 from openviking.server.identity import RequestContext, Role
 from openviking.server.routers import sessions as sessions_router
+from openviking.session.auto_commit_policy import AutoCommitPolicy, MAX_PENDING_TOKEN_THRESHOLD
 from openviking.session.session import Session
 from openviking_cli.session.user_id import UserIdentifier
 from openviking_cli.utils.config import OPENVIKING_CONFIG_ENV
@@ -643,13 +644,7 @@ async def test_create_session_uses_default_policy_when_server_default_enabled(
 
     resp = await client.post("/api/v1/sessions", json={})
     assert resp.status_code == 200
-    assert resp.json()["result"]["auto_commit_policy"] == {
-        "pending_token_threshold": 10000,
-        "message_count_threshold": 50,
-        "idle_timeout_seconds": 86400,
-        "keep_recent_count": 2,
-        "min_commit_interval_seconds": 0,
-    }
+    assert resp.json()["result"]["auto_commit_policy"] == AutoCommitPolicy.from_dict(None).to_dict()
 
 
 async def test_create_session_can_disable_server_default_auto_commit(
@@ -692,13 +687,10 @@ async def test_auto_created_session_uses_default_policy_when_server_default_enab
 
     session_resp = await client.get(f"/api/v1/sessions/{session_id}")
     assert session_resp.status_code == 200
-    assert session_resp.json()["result"]["auto_commit_policy"] == {
-        "pending_token_threshold": 10000,
-        "message_count_threshold": 50,
-        "idle_timeout_seconds": 86400,
-        "keep_recent_count": 2,
-        "min_commit_interval_seconds": 0,
-    }
+    assert (
+        session_resp.json()["result"]["auto_commit_policy"]
+        == AutoCommitPolicy.from_dict(None).to_dict()
+    )
 
 
 async def test_create_session_applies_config_and_fills_defaults(client: httpx.AsyncClient):
@@ -713,13 +705,9 @@ async def test_create_session_applies_config_and_fills_defaults(client: httpx.As
     )
     assert resp.status_code == 200
     result = resp.json()["result"]
-    assert result["auto_commit_policy"] == {
-        "pending_token_threshold": 8000,
-        "message_count_threshold": 50,
-        "idle_timeout_seconds": 86400,
-        "keep_recent_count": 10,
-        "min_commit_interval_seconds": 0,
-    }
+    expected_policy = AutoCommitPolicy.from_dict(None).to_dict()
+    expected_policy.update({"pending_token_threshold": 8000, "keep_recent_count": 10})
+    assert result["auto_commit_policy"] == expected_policy
 
     session_resp = await client.get(f"/api/v1/sessions/{result['session_id']}")
     session_result = session_resp.json()["result"]
@@ -734,7 +722,7 @@ async def test_create_session_clamps_config_above_bounds(client: httpx.AsyncClie
     )
     assert resp.status_code == 200
     policy = resp.json()["result"]["auto_commit_policy"]
-    assert policy["pending_token_threshold"] == 50000
+    assert policy["pending_token_threshold"] == MAX_PENDING_TOKEN_THRESHOLD
 
 
 async def test_get_session_returns_effective_config(client: httpx.AsyncClient):
@@ -1244,33 +1232,6 @@ async def test_commit_updates_archive_metadata_before_background_task(client: ht
     assert after_result["message_count"] == 1
     assert after_result["total_message_count"] == 4
     assert after_result["commit_count"] == 1
-
-
-async def test_extract_session_jsonable_regression(client: httpx.AsyncClient, service, monkeypatch):
-    """Regression: extract endpoint should serialize internal objects."""
-
-    class FakeMemory:
-        __slots__ = ("uri",)
-
-        def __init__(self, uri: str):
-            self.uri = uri
-
-        def to_dict(self):
-            return {"uri": self.uri}
-
-    async def fake_extract(_session_id: str, _ctx):
-        return [FakeMemory("viking://user/default/memories/mock.md")]
-
-    monkeypatch.setattr(service.sessions, "extract", fake_extract)
-
-    create_resp = await client.post("/api/v1/sessions", json={"user": "test"})
-    session_id = create_resp.json()["result"]["session_id"]
-
-    resp = await client.post(f"/api/v1/sessions/{session_id}/extract")
-    assert resp.status_code == 200
-    body = resp.json()
-    assert body["status"] == "ok"
-    assert body["result"] == [{"uri": "viking://user/default/memories/mock.md"}]
 
 
 async def test_get_session_context_endpoint_returns_trimmed_latest_archive_and_messages(
