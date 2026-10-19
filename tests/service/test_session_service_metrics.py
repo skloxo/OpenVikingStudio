@@ -57,7 +57,7 @@ async def test_commit_async_keeps_working_when_session_metrics_fail(
     def _boom(*_args, **_kwargs):
         raise RuntimeError("metrics failed")
 
-    monkeypatch.setattr(service, "get", AsyncMock(return_value=session))
+    monkeypatch.setattr(service, "open", AsyncMock(return_value=session))
     monkeypatch.setattr(SessionLifecycleDataSource, "record_lifecycle", staticmethod(_boom))
     monkeypatch.setattr(SessionLifecycleDataSource, "record_archive", staticmethod(_boom))
     monkeypatch.setattr(session_service_module.logger, "debug", debug)
@@ -114,18 +114,24 @@ async def test_sessions_uses_canonical_scope_and_relies_on_storage_compatibility
             "uri": "viking://user/alice/sessions/duplicate",
             "is_dir": True,
             "mod_time": "2026-07-13T01:00:00Z",
+            "category": "interactive",
+            "is_heartbeat": False,
         },
         {
             "session_id": "new-session",
             "uri": "viking://user/alice/sessions/new-session",
             "is_dir": True,
             "mod_time": "2026-07-13T02:00:00Z",
+            "category": "interactive",
+            "is_heartbeat": False,
         },
         {
             "session_id": "legacy-session",
             "uri": "viking://user/alice/sessions/legacy-session",
             "is_dir": True,
             "mod_time": "2026-07-12T01:00:00Z",
+            "category": "interactive",
+            "is_heartbeat": False,
         },
     ]
     service._viking_fs.ls.assert_awaited_once()

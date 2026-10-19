@@ -72,6 +72,7 @@ from openviking.utils.time_utils import get_current_timestamp
 from openviking.utils.token_estimation import estimate_text_tokens, truncate_text_to_token_budget
 from openviking_cli.exceptions import (
     FailedPreconditionError,
+    InternalError,
     NotFoundError,
 )
 from openviking_cli.session.user_id import UserIdentifier
@@ -1810,15 +1811,6 @@ class Session:
                     queue_msg.to_dict(),
                 )
 
-                phase1_stage = "task_tracker_create"
-                await get_task_tracker().create(
-                    "session_commit",
-                    resource_id=self.session_id,
-                    account_id=self.ctx.account_id,
-                    user_id=self.ctx.user.user_id,
-                    task_id=task_id,
-                )
-
                 phase1_stage = "phase1_persist"
                 self._messages = retained_messages
                 await self._write_to_agfs_async(messages=self._messages, lease_ref=lease)
@@ -1878,6 +1870,28 @@ class Session:
                 original_messages,
                 usage_uris=[u.uri for u in usage_snapshot if getattr(u, "uri", None)],
             )
+
+        # Registration must not hold the session lock or roll back published Phase 1.
+        try:
+            await get_task_tracker().create(
+                "session_commit",
+                resource_id=self.session_id,
+                account_id=self.ctx.account_id,
+                user_id=self.ctx.user.user_id,
+                task_id=task_id,
+            )
+        except Exception as exc:
+            from openviking.server.error_mapping import map_exception
+
+            error = map_exception(exc) or InternalError(str(exc))
+            if hasattr(error, "details") and isinstance(error.details, dict):
+                error.details.update(
+                    task_id=task_id,
+                    archive_uri=archive_uri,
+                    archived=True,
+                    stage="task_tracker_create",
+                )
+            raise error
 
         return {
             "session_id": self.session_id,

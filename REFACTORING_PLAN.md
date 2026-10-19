@@ -10,6 +10,7 @@
 | **`v1.7.150`** | **Card-193** | **存量技能微手术热更新与微观实体 Diff 审计引擎 (Skill Micro-Mutation Engine & Anti-Vandalism Audit SSOT - 主线 E 首战)** | 1. **破除一刀切粗暴重叠率拦截**：根治 1 行关键参数变更因重叠率 99% 被拒收问题，新增 `skill_mutation_engine.py` 实现存量目标寻源定位与微观实体 Diff 提取（URL/Flag/Env/Port/代码块）；<br>2. **视网膜防洗劫门禁**：核心代码块清空 >50% 物理阻断，恶意清空拦截回退；<br>3. **原地微手术替换与 SemVer 自动自增**：无破坏性原地打补丁，版本号 patch 自增，更新时间戳与黑匣子溯源 (`MUTATE`)；<br>4. **测试视网膜全绿**：新增 `test_card193_micro_patch_and_mutation.py` 5/5 全绿，联合回归 15/15 全绿通过。 | [x] 已验收通过 ✅ |
 | **`v1.7.151`** | **Card-194** | **全新技能真金判定与技术实体密度量化器 (Technical Entity Density & Native SOP Extractor SSOT - 主线 E)** | 1. **废黜纯正则词频刻板打分**：在 `SkillOptJudge` 引入基于代码块、CLI 参数、端口/URL、环境变量、防御规约的技术实体密度量化算法，真金白银内容 100% 识别放行；<br>2. **原生工序提取与智能咀嚼**：升级 `SkillAutoRemediator` 原生工序提取器，基于野生文档自然段落提纯出专属 SOP，彻底杜绝机械追加通用模板；<br>3. **测试视网膜与自愈全绿**：新增针对性单测验证密度提取、原生 SOP 提纯与端到端无损自愈。 | [x] 已验收通过 ✅ |
 | **`v1.7.152`** | **Card-195** | **跨平台路径自适应解析与落盘即向量入籍全闭环 (Adaptive Skills Path & Zero-Latency Indexing SSOT - 主线 E 终战)** | 1. **拔除路径硬编码**：落地 `skill_path_resolver.py`，全库铲除 9 处个人开发机路径，自适应 Windows/WSL2/Linux；<br>2. **落盘即向量入籍与别名刷新**：Stage 5 落盘完成后即刻刷新场景别名路由表，广播 `SKILLS_MUTATED` 与 `PIPELINE_PULSE`，0 毫秒即查；<br>3. **测试视网膜全绿**：新增 `test_card195_adaptive_skills_path_and_indexing.py` 4/4 全绿，联合回归 23/23 满绿通过。 | [x] 已验收通过 ✅ |
+| **`v1.7.144`** | **Card-187** | **Session 高并发读写去重、归档锁解耦与状态机收敛 (Session IO De-duplication & Lock Decoupling SSOT - 缺陷治理)** | 1. **归档死锁物理根除**：将 `task_tracker.create` 彻底移出 `_archive_lock` 临界区及 `pathlock_release` 外部，独立 try-except 保护，根除跨线程死锁；<br>2. **状态机单轨收敛**：从 `SessionService` 移除冗余的 `extract` 方法，从路由层移除 `POST /{session_id}/extract`，会话归档提纯统一收敛至 `SessionCommit`；<br>3. **会话读写解耦与热读优化**：在 `session_service.py` 落地 `open()` 方法避免写前无谓反序列化全量历史消息，`commit_async`、`update_config`、`add_message`、`batch_add_messages` 全面对齐 `open()`；在 `namespace.py` 增强 `session` 别名解析；<br>4. **视网膜单测 58/58 全绿**：新增 `test_card187_session_concurrency_and_lock_decoupling.py` 3/3 全绿，`test_api_sessions.py` 50/50 全绿，`test_session_service_metrics.py` 5/5 全绿通过。 | [x] 已验收通过 ✅ |
 | **`v1.7.146`** | **Card-189** | **全域伪概念与悬空代码彻底斩杀 (DSPy Pseudo Compiler Purge, Misplaced Sandbox Pruning & Anti-Demo Hardening SSOT - 主线 D 首战)** | 1. **物理铲除山寨 DSPy 伪概念**：彻底删除 `routers/dspy_compiler.py`、`service/dspy_*.py` 以及前端 `dspy-compiler-cockpit.tsx`，清退 3,014 行代码；<br>2. **收敛 `/retrieval` 杂物间**：剥离无关异类沙箱，使检索页纯化为单阶段混合召回与时间衰减中枢；<br>3. **门禁与全域验真**：`anti_demo_gate.py` 233 个组件 100% 通过，Git commit `016df6aef`。 | [x] 已验收通过 ✅ |
 | **`v1.7.147`** | **Card-190** | **三大通用原子引擎抽离与多端复用中枢 (Universal Content Reducer, Unified Lifecycle Engine & Audit Ledger SSOT - 主线 D)** | 1. **UniversalContentReducer**：多模态内容脱水压缩（CODE/SKILL/TEXT），自动类型嗅探，正则冻结 YAML 与代码块，AST 语法验真与 Fail-Open 兜底，注册 FastMCP `openviking_content_reduce`；<br>2. **UnifiedLifecycleEngine**：5 阶标准状态机（INGESTED ➔ EVALUATING ➔ REDUCING ➔ VALIDATING ➔ COMMITTED），线程安全，前置守卫与后置监听解耦；<br>3. **UniversalAuditLedger**：线程安全 SQLite 不可变事件账本，支持多维时间线检索与超期归档；<br>4. **双全验证全绿**：11/11 单测通过，19/19 回归测试通过，Vite 编译通过，Git commit `c8354929a`。 | [x] 已验收通过 ✅ |
 | **`v1.7.148`** | **Card-191** | **存量高价值能力自愈与自驱闭环补齐 (Automate Tri-Gate Dreamer, Hermes Flash Nudge & AHE Pre-Release Gate SSOT - 主线 D)** | 1. **OfflineDreamer 闭环驱动**：打通 `OfflineDreamer` 与 `UnifiedLifecycleEngine` 状态机推进，归纳蒸馏自动生成 Master Card 并沉淀至 `UniversalAuditLedger`；<br>2. **Hermes 结构化归因与微手术**：落地 `StructuredAttribution`，自动解析调用栈/工具报错，分类并提议 `<=30` 行微手术补丁，暴露 `/api/v1/hermes/attribute` 与 `/attributions` 端点；<br>3. **AHE Pre-Release 自动化门禁**：自动装载核心系统不变性（Fail-Open 保证、<=30行补丁限制），运行快照漂移与 Polar 沙箱检测，作为 `VALIDATING ➔ COMMITTED` 状态守卫阻断违约提交，暴露 `/api/v1/ahe/gate/check` 端点；<br>4. **测试与视网膜门禁全绿**：8/8 专项单测通过，19/19 回归测试通过，Vite 构建编译全绿 (18.33s)，`anti_demo_gate.py` 233 组件 100% PASS。 | [x] 已验收通过 ✅ |
@@ -3971,15 +3972,25 @@
 
 ---
 
-### 📌 [P0] [ ] Card-187 (v1.7.144): Session 高并发读写去重、归档锁解耦与状态机收敛 (Session IO De-duplication & Lock Decoupling SSOT) ⏳
-- **类型**：会话热缓存 / 归档死锁根治 / 状态机单轨收敛 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**： 1.7.144 ｜ **当前状态**：[ ] 待排期迭代 ⏳
+### 📌 [P0] [x] Card-187 (v1.7.144): Session 高并发读写去重、归档锁解耦与状态机收敛 (Session IO De-duplication & Lock Decoupling SSOT) ✅
+- **类型**：会话热缓存 / 归档死锁根治 / 状态机单轨收敛 ｜ **优先级**：🔥🔥🔥 P0 ｜ **目标版本**：`v1.7.144` ｜ **当前状态**：[x] 已验收通过 ✅ (v1.7.144)
 - **背景与第一性原理**：
   - **核心痛点**：高频对话时，会话频繁反序列化造成额外 CPU 开销；删除会话时加载大附件浪费 IO；任务注册前持有归档锁容易引发并发死锁；且历史遗留的独立 extract 入口导致状态机双轨混乱；
   - **上游神级设计**：上游在 Commit `288617236`、`2ef422561`、`7c34e43c5`、`d1984f16e` 中收敛了会话读写缓存，删除了独立 extract 入口，统一由 `SessionCommit` 处理；
-  - **本地平滑兼并方案**：
-    1. **会话热读缓存与写入合并**：优化消息追加时的重复读取与序列化，减少 40% 会话链路 CPU 耗时；
-    2. **归档锁提前释放**：任务注册至 TaskTracker 前主动释放归档锁，物理阻断跨线程死锁；
-    3. **状态机单轨收敛**：清理冗余的独立 extract 入口，全量对齐至 `SessionCommit`。
+  - **本地平滑兼并方案与原子工单闭环**：
+    - [x] **`TASK-187-1: 归档死锁物理根除 (Lock Decoupling)`**：在 `openviking/session/session.py` 将 `task_tracker.create` 彻底移出 `_archive_lock` 临界区及 `pathlock_release` 外部，采用独立 try-except 保护，根除跨线程死锁；
+    - [x] **`TASK-187-2: 状态机单轨收敛 (Single-track Commit Unification)`**：清理 `SessionService.extract` 冗余入口，从 `openviking/server/routers/sessions.py` 彻底移除 `POST /{session_id}/extract`，会话归档提纯统一收敛至 `SessionCommit`；
+    - [x] **`TASK-187-3: 会话读写解耦与热读优化 (IO De-duplication)`**：在 `session_service.py` 落地 `open()` 方法避免写前无谓反序列化全量历史消息，`commit_async`、`update_config`、`add_message`、`batch_add_messages` 全面对齐 `open()`；在 `namespace.py` 增强 `session` 别名解析；
+    - [x] **`TASK-187-4: 专项视网膜单测与联合全绿回归`**：新增 `test_card187_session_concurrency_and_lock_decoupling.py` 3/3 全绿（100% 验证死锁根治、extract 移除与 open 性能），对齐 `test_api_sessions.py` 50/50 全绿，`test_session_service_metrics.py` 5/5 全绿，联合回归 58/58 全绿通过！
+- **交付物清单**：
+  - 核心会话生命周期与锁：`openviking/session/session.py`
+  - 会话服务层解耦：`openviking/service/session_service.py`
+  - 会话服务端路由收敛：`openviking/server/routers/sessions.py`
+  - 命名空间别名解析：`openviking/core/namespace.py`
+  - 专项视网膜测试：`tests/session/test_card187_session_concurrency_and_lock_decoupling.py`
+- **交付留痕 (Verification & Evidence)**：
+  - **版本号 SSOT**：`v1.7.144` (`openviking/_version.py`, `package.json`)
+  - **测试验证**：58/58 专项与相关测试 PASS，Security Scan 5130 文件零泄露，Anti-Demo 233 组件 100% PASS。
 
 ---
 
