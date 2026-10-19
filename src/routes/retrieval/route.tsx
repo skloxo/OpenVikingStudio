@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import {
   CompassIcon,
   DatabaseIcon,
+  FileTextIcon,
   LayersIcon,
   SearchIcon,
   SparklesIcon,
@@ -29,6 +30,7 @@ import { TemporalDecayDreamCard } from './-components/temporal-decay-dream-card'
 import { MemoryPurityGaugeCard } from './-components/memory-purity-gauge-card'
 import { MemoryGovernanceStreamCard } from './-components/memory-governance-stream-card'
 import { ActiveNotesHistoryCockpit } from './-components/active-notes-history-cockpit'
+import { LLMLinguaDehydrationCockpit } from './-components/llmlingua-dehydration-cockpit'
 import { RetrievalResults } from './-components/retrieval-results'
 import { RetrievalSearchBar } from './-components/search-bar'
 import {
@@ -52,6 +54,7 @@ export type RetrievalTab =
   | 'compass'
   | 'crystallizer'
   | 'context'
+  | 'llmlingua'
 
 const RETRIEVAL_TABS: Array<{
   id: RetrievalTab
@@ -65,6 +68,7 @@ const RETRIEVAL_TABS: Array<{
   { id: 'compass', label: 'HG-RAG 拓扑与主动弃答', icon: <CompassIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
   { id: 'crystallizer', label: '三门结晶与不可变事实', icon: <SparklesIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
   { id: 'context', label: '主动上下文与历史分仓', icon: <DatabaseIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
+  { id: 'llmlingua', label: 'LLMLingua 脱水压制', icon: <FileTextIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
 ]
 
 export const Route = createFileRoute('/retrieval')({
@@ -286,6 +290,9 @@ function RetrievalPage() {
 
       {/* Tab 6: 主动上下文与历史分仓座舱 */}
       {activeTab === 'context' && <ActiveNotesHistoryCockpit />}
+
+      {/* Tab 7: LLMLingua 语义脱水压制座舱 */}
+      {activeTab === 'llmlingua' && <LLMLinguaDehydrationCockpit />}
     </div>
   )
 }
