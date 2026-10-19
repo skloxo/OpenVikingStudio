@@ -54,6 +54,7 @@ class _FakeProcessor:
         ctx=None,
         ingest_options=None,
         creator_acl_grant=None,
+        **kwargs,
     ):
         pass
 
@@ -70,6 +71,7 @@ class _FakeProcessor:
         use_summary=False,
         ingest_options=None,
         creator_acl_grant=None,
+        **kwargs,
     ):
         self.vectorized_files.append(file_path)
 

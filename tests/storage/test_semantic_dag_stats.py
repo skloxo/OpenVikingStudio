@@ -93,6 +93,7 @@ class _FakeProcessor:
         ctx=None,
         ingest_options=None,
         creator_acl_grant=None,
+        **kwargs,
     ):
         self.vectorized_dirs.append(uri)
 
@@ -106,6 +107,7 @@ class _FakeProcessor:
         use_summary=False,
         ingest_options=None,
         creator_acl_grant=None,
+        **kwargs,
     ):
         if self.verify_streaming:
             assert summary_dict["content"]
