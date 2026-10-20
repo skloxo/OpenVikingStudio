@@ -3,7 +3,7 @@
 > **关联研发大蓝图**：[`BLUEPRINT.md`](file:///home/skloxo/aho/openclaw/project/.agents/BLUEPRINT.md) ｜ **交付全量归档台账**：[`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md) ｜ **通用资产档案库**：[`COMPONENT_AND_WHEEL_INVENTORY.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md)
 > **唯一真相源 (SSOT)**：本文档为 OpenViking 当前活跃的重构规划与就绪待调度的任务矩阵看板。历史所有已验收交付的版本履历已完整归档至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。
 > **战略外围项目隔离公理**：`Search2API 商业化搜索聚合网关` (`docs/search/SEARCH2API_COMMERCIAL_GATEWAY_SPEC.md`) 确认为独立多账号商业化代理项目，不占用 OpenViking 核心任务大盘卡槽。
-> **基线状态**：线上正式部署 **`v1.4.106`** ｜ 当前最新交付 **`v1.7.156`** (代码基线 `v1.7.149`) ｜ 分支状态：`main` 已全量同步远程 `origin/main`。
+> **基线状态**：线上正式部署 **`v1.4.106`** ｜ 当前最新交付 **`v1.7.156`** (代码基线 **`v1.7.150`**) ｜ 分支状态：`main` 已全量同步远程 `origin/main`。
 
 ---
 
@@ -11,6 +11,7 @@
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 | :--- | :--- | :--- | :--- | :---: |
+| **`v1.7.150`** | **Card-203** | **上游 Storage 写入锁协调提前消费与跨进程恢复整并 (Upstream Storage Lock)** | 吸收 upstream PR #6300 锁泄漏修复、#6281 跨进程自愈、#6298 大小写冲突规避，6/6 专项单测全绿。 | [x] 已验收通过 ✅ |
 | **`v1.7.153`** | **Card-196** | **生活与研发物理隔离 (Privacy Isolation)** | 家庭高隐私资产物理移入独立目录，斩除研发库临时私有目录，实现研发与生活物理隔离。 | [x] 已验收通过 ✅ |
 | **`v1.7.154`** | **Card-197** | **18 核心母包收敛与平权对齐 (Bundles Convergence)** | 3070 与 2080 平权对等，物理铲除 4 大无关大包 (115场景)，母包收敛至纯粹 18 个。 | [x] 已验收通过 ✅ |
 | **`v1.7.155`** | **Card-198** | **端侧极简瘦身与三层法典解耦 (3-Tier AGENTS Law)** | 切除端侧重复技能，全局保留 8 宿主核心骨架，确立单文件 ≤500 行硬上限与 100~300 行甜点区。 | [x] 已验收通过 ✅ |
@@ -31,7 +32,6 @@
 | **`v1.7.124`** | **Card-104** | **存量孤儿切片物理大扫除与向量库深度同步 (Ghost Slices Pruning)** | 修复向量过滤字典契约，彻底清退僵尸测试孤儿索引，批量清退 2,500+ 废弃向量切片。 | [x] 已验收通过 ✅ |
 | **`待排期`** | **Card-167** | **技能大盘在线交互测试沙箱与意图命中试算器 (Skill Playground & Scaffolding)** | 开发者交互调试终端，Prompt 命中可视化，注脑压缩对比度量，标准 6 章节脚手架生成。 | [ ] 待排期迭代 ⏳ |
 | **`待排期`** | **Card-168** | **系统底层与体外大脑五层抗熵增治理中枢 (Anti-Entropy Memory Evolution)** | 前门语义准入去重，失效认知版本演进链 (Superseded DAG)，夜间离线做梦蒸馏 (ov_dream)。 | [ ] 待排期迭代 ⏳ |
-| **`待排期`** | **Card-203** | **上游 Storage 写入锁协调提前消费与跨进程恢复整并 (Upstream Storage Lock)** | 吸收 upstream PR #6300 锁泄漏修复、#6281 跨进程恢复、#6298 大小写冲突规避。 | [ ] 待排期迭代 ⏳ |
 | **`待排期`** | **Card-204** | **上游 Gateway 缓存遥测增强与 DSH 无工具请求防重复召回整并 (Upstream Gateway)** | 吸收 upstream PR #6295 DSH 侧向请求防重复召回、#6267 缓存告警、#6026 降低 CPU 损耗。 | [ ] 待排期迭代 ⏳ |
 | **`待排期`** | **Card-205** | **上游 Session 消息写入与接口去重读取性能优化整并 (Upstream Session Perf)** | 吸收 upstream PR #6270 消息写入与 Session 重复读取优化、#6075 防脏快照 upsert。 | [ ] 待排期迭代 ⏳ |
 | **`待排期`** | **Card-206** | **上游 Studio 前端多语言 i18n 补全与 AppleDouble 元数据过滤整并 (Upstream Studio)** | 吸收 upstream PR #6292 全域多语言 i18n 补齐、#6316 AppleDouble 元数据过滤、#6215 Key 透传。 | [ ] 待排期迭代 ⏳ |
@@ -56,6 +56,14 @@
 
 ### 🚀 第一优先批次：核心主线与上游整并 (P0)
 
+#### 📌 [P0] [x] Card-203: 上游 Storage 写入锁协调提前消费与跨进程恢复整并 (Upstream Storage Lock Leak & Recovery Alignment) ✅
+- **类型**：底层存储加固 / 并发锁治理 / 跨进程恢复 ｜ **优先级**：🔥 P0 ｜ **交付版本**：`v1.7.150`
+- **核心治理成果与物理交付物**：
+  1. **吸收上游 PR #6300 (c89efb7c3)**：修复写入协调消息提前消费导致的锁泄漏；`_finish_write_lock` 先交接写入锁再发布提交完成标记，统一单文件与批量写入清理接入 `run_to_completion`，消除调度间隙锁泄漏；
+  2. **吸收上游 PR #6281 (c476a3184)**：整并跨进程崩溃自愈与残留锁清理 (`cross process recovery`)，确保进程意外中止后 PathLock 自动释放；
+  3. **吸收上游 PR #6298 (b51cba425)**：切除 `LocalParseOutputStore` 中大小写敏感冲突误报，允许不同大小写文件名在本地工件中共存；
+  4. **视网膜单测**：编写针对性单元测试 `tests/storage/test_card203_storage_lock_leak_and_recovery.py`，6/6 专项单测全绿 (0.78s)，回归测试 `test_content_write_processing_mode.py` 7/7 全绿，安全扫描 0 泄露，打标 Tag `v1.7.150`。
+
 #### 📌 [P0] [ ] Card-167: 技能大盘在线交互测试沙箱与意图命中试算器 (Skill Playground, Intent Hit-Testing & Scaffolding SSOT) ⏳
 - **类型**：Web Studio 交互调试 / 意图命中试算 / Token 压缩实时度量 / 标准脚手架生成 ｜ **优先级**：🔥 P0 首选
 - **核心契约与方案拆解**：
@@ -69,16 +77,8 @@
      - 表单化填写名称、触发词、领域与角色，自动生成标准 YAML Frontmatter 与 6 章节 Markdown，一键通过门禁检测并支持导出；
   4. **前端交互工作台 (`src/routes/skills/-components/skill-playground-cockpit.tsx`)**：
      - 顶栏模式切换直达，解耦三大面板 (`skill-hit-tester.tsx`, `skill-compression-bench.tsx`, `skill-scaffold-generator.tsx`)；
-     - 严格遵循 **NO GREEN EVER 🚫**，字号硬下限 $\ge 12	ext{px}$ (`text-xs`)，单文件 100~300 行黄金甜点区；
-  5. **视网膜单测与门禁**：WSL 原生 Pytest 单测变绿，Vitest 前端单测变绿，打标 Tag `v1.7.150`。
-
-#### 📌 [P0] [ ] Card-203: 上游 Storage 写入锁协调提前消费与跨进程恢复整并 (Upstream Storage Lock Leak & Recovery Alignment) ⏳
-- **类型**：底层存储加固 / 并发锁治理 / 跨进程恢复 ｜ **优先级**：🔥 P0
-- **核心契约与方案拆解**：
-  1. **吸收上游 PR #6300 (c89efb7c3)**：修复写入协调消息提前消费导致的锁泄漏；在消费协调器中确保锁释放与状态 settle 严格原子化；
-  2. **吸收上游 PR #6281 (c476a3184)**：整并跨进程崩溃自愈与残留锁清理 (`cross process recovery`)，确保进程意外中止后 PathLock 自动释放；
-  3. **吸收上游 PR #6298 (b51cba425)**：切除大小写敏感冲突误报；
-  4. **视网膜单测**：编写针对性锁泄漏与跨进程崩溃恢复单元测试，验证高并发 0 锁残留。
+     - 严格遵循 **NO GREEN EVER 🚫**，字号硬下限 $\ge 12\text{px}$ (`text-xs`)，单文件 100~300 行黄金甜点区；
+  5. **视网膜单测与门禁**：WSL 原生 Pytest 单测变绿，Vitest 前端单测变绿。
 
 #### 📌 [P0] [ ] Card-204: 上游 Gateway 缓存遥测增强与 DSH 无工具请求防重复召回整并 (Upstream Gateway Cache Telemetry & Anti-Duplicate Recall) ⏳
 - **类型**：网关吞吐优化 / 记忆召回防抖 / DSH 协议治理 ｜ **优先级**：🔥 P0
@@ -107,8 +107,15 @@
 #### 📌 [P1] [ ] Card-206: 上游 Studio 前端多语言 i18n 补全与 AppleDouble 元数据过滤整并 (Upstream Studio i18n & AppleDouble Metadata Filter) ⏳
 - **吸收内容**：上游 PR #6292 (UI 剩余文案全量 i18n 补齐并加入门禁检查)、PR #6316 (代码 Lint 忽略 AppleDouble 元数据)、PR #6215 (Bot 聊天请求透传 Admin Key)。
 
-#### 📌 [P1] [ ] Card-200 ~ Card-202: 插件母本自内聚转接驱动重构与自愈清洗三部曲 ⏳
-- **Card-200**: `openviking-memory` 插件母本自内聚转接驱动重构与自愈清洗 (SSOT v2.0.16)
+#### 📌 [P1] [x] Card-200: `openviking-memory` 插件母本自内聚转接驱动重构、自愈清洗与四维逆向加固 (SSOT v2.0.16) ✅
+- **治理成果与物理交付物**：
+  1. **守卫信号透传与显性降级 (Card-205A)**：`ov_sandbox_guard.py` 放行 `SystemExit` 与 `KeyboardInterrupt`，异常时显式输出 `stderr` 告警并附带 `SANDBOX_DEGRADED` 元数据，消除静默缴械；
+  2. **超时结构化反幻觉拦截 (Card-205B)**：`server.py` 在 15s 短超时与 120s 兜底超时触发时，恒定返回结构化 `TIMEOUT_TRUNCATED` 标头，阻断因超时致幻造轮子；
+  3. **拓扑身份显式三级链 (Card-205C)**：`setup.py` 固化 `CLI --peer` ➔ 环境变量 ➔ 配置文件 ➔ 兜底猜词链路，杜绝多节点记忆分裂脑；
+  4. **幽灵静态副本审计与 UTF-8 守护 (Card-205D)**：`setup.py` 探查静态实体目录阻断热更失效，Hook 命令行注入 `-X utf8 -E -s -S` 彻底根除 Windows 代码页异常；
+  5. **门禁与测试**：端侧 `setup.py --inspect` 毫秒级自检通过，WSL 核心单测套件 `12/12 passed in 2.77s` 全绿。
+
+#### 📌 [P1] [ ] Card-201 ~ Card-202: 插件母本自内聚转接驱动重构与自愈清洗 ⏳
 - **Card-201**: `openviking-ops` 插件母本自内聚转接驱动与运维接口标准化 (SSOT v1.0.3)
 - **Card-202**: `fleet-mesh` 插件母本自内聚转接驱动与多节点拓扑自适应 (SSOT v1.0.2)
 - **统一目标**：彻底拔除 setup.py 中外部桌面路径硬编码，直连母港，清洗历史残留幽灵别名。

@@ -191,18 +191,28 @@ def register_in_ide_config(plugin_name: str, version: str):
 
 
 def resolve_actor_peer(preferred: str = "") -> str:
-    """根据主机拓扑智能识别 Actor Peer，自动区分 3070 与 2080Ti"""
+    """根据优先级链条决议 Actor Peer 身份 (Explicit > Implicit)"""
     if preferred and preferred.strip():
         return preferred.strip()
-    env_peer = os.environ.get("OPENVIKING_ACTOR_PEER", "").strip()
+    env_peer = (
+        os.environ.get("OPENVIKING_ACTOR_PEER", "").strip()
+        or os.environ.get("OPENVIKING_PEER", "").strip()
+    )
     if env_peer:
         return env_peer
+    for cfg_p in [PLUGIN_SRC_DIR / "config.json", DEFAULT_TARGET_DIR / "config.json"]:
+        if cfg_p.exists():
+            try:
+                with open(cfg_p, "r", encoding="utf-8") as f:
+                    v = json.load(f).get("actor_peer", "").strip()
+                    if v:
+                        return v
+            except Exception:
+                pass
     node = platform.node().lower()
-    if "3070" in node:
-        return "antigravity@3070"
-    if "2080" in node:
-        return "antigravity@2080ti"
-    return f"antigravity@{platform.node()}"
+    guessed = "antigravity@3070" if "3070" in node else ("antigravity@2080ti" if "2080" in node else f"antigravity@{platform.node()}")
+    print(f"  ℹ️ [拓扑识别] 未显式配置 Peer 身份，采用主机名推断: 【{guessed}】(主机名: {platform.node()})")
+    return guessed
 
 
 def sync_mcp_dual_track(api: str, key: str, target_dir: Path, actor_peer: str = ""):
@@ -272,7 +282,7 @@ def install_plugin(target_dir: Path, api: str, key: str, actor_peer: str = ""):
 
     target_dir.mkdir(parents=True, exist_ok=True)
 
-    # 1. 同步构件 (软链同源检测防自毁)
+    # 1. 同步构件 (软链同源检测防自毁与幽灵副本审计)
     is_same_dir = False
     try:
         is_same_dir = (target_dir.resolve() == PLUGIN_SRC_DIR.resolve())
@@ -282,6 +292,10 @@ def install_plugin(target_dir: Path, api: str, key: str, actor_peer: str = ""):
     if is_same_dir:
         print("  ✔ 软链/同源挂载模式生效 (In-place Link)，跳过物理拷贝")
     else:
+        if target_dir.exists() and any(target_dir.iterdir()):
+            if not target_dir.is_symlink():
+                print("  ⚠️ [幽灵副本审计] 检测到目标目录已存在静态物理拷贝（非动态软链 Junction）。")
+                print("     在静态副本模式下，对 Workspace 源码的修改无法热生效。本地研发建议建立软链。")
         ignore_patterns = shutil.ignore_patterns(
             "__pycache__", "*.pyc", ".git*", "venv", ".pytest_cache", ".caps_cache.json"
         )
@@ -295,14 +309,14 @@ def install_plugin(target_dir: Path, api: str, key: str, actor_peer: str = ""):
                 shutil.copy2(item, dst)
         print("  ✔ 核心构件同步完成 (plugin.json, server.py, hooks/, skills/, rules/)")
 
-    # 2. 渲染动态 hooks.json
+    # 2. 渲染动态 hooks.json (注入 -X utf8 彻底根除 Windows 代码页异常)
     py_cmd = get_python_cmd()
     hooks_cfg = {
         "openviking-memory-prefetch": {
             "PreInvocation": [
                 {
                     "type": "command",
-                    "command": f"{py_cmd} -E -s -S {(target_dir / 'hooks' / 'ov_pre_invocation.py').as_posix()}",
+                    "command": f"{py_cmd} -X utf8 -E -s -S {(target_dir / 'hooks' / 'ov_pre_invocation.py').as_posix()}",
                     "timeout": 4
                 }
             ]
@@ -311,7 +325,7 @@ def install_plugin(target_dir: Path, api: str, key: str, actor_peer: str = ""):
             "Stop": [
                 {
                     "type": "command",
-                    "command": f"{py_cmd} -E -s -S {(target_dir / 'hooks' / 'ov_session_archiver.py').as_posix()}",
+                    "command": f"{py_cmd} -X utf8 -E -s -S {(target_dir / 'hooks' / 'ov_session_archiver.py').as_posix()}",
                     "timeout": 3
                 }
             ]
@@ -323,7 +337,7 @@ def install_plugin(target_dir: Path, api: str, key: str, actor_peer: str = ""):
                     "hooks": [
                         {
                             "type": "command",
-                            "command": f"{py_cmd} -E -s -S {(target_dir / 'hooks' / 'ov_sandbox_guard.py').as_posix()}",
+                            "command": f"{py_cmd} -X utf8 -E -s -S {(target_dir / 'hooks' / 'ov_sandbox_guard.py').as_posix()}",
                             "timeout": 3
                         }
                     ]
@@ -334,7 +348,7 @@ def install_plugin(target_dir: Path, api: str, key: str, actor_peer: str = ""):
     with open(target_dir / "hooks.json", "w", encoding="utf-8") as f:
         json.dump(hooks_cfg, f, indent=2, ensure_ascii=False)
         f.write("\n")
-    print("  ✔ hooks.json 动态构建完成 (绝对路径 + -E -s -S 隔离)")
+    print("  ✔ hooks.json 动态构建完成 (绝对路径 + -X utf8 + -E -s -S 隔离)")
 
     # 3. 校验并写入 config.json
     ok, user, latency, err = verify_connection(api, key)
@@ -347,7 +361,8 @@ def install_plugin(target_dir: Path, api: str, key: str, actor_peer: str = ""):
     config_data = {
         "api_url": api,
         "api_key": key,
-        "verified_user": user
+        "verified_user": user,
+        "actor_peer": peer
     }
     cfg_file = target_dir / "config.json"
     with open(cfg_file, "w", encoding="utf-8") as f:
