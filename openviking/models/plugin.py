@@ -67,6 +67,14 @@ class QuadPluginDefinition(BaseModel):
     category: Literal["platform", "user", "custom"] = Field("platform", description="插件类型 (platform=官方内置, user=租户私有)")
     description: str = Field(..., description="插件核心能力与职责自解释概述")
     
+    # 📝 原生 Markdown 介绍文档正文 (反重力 IDE 与 VK 插件中心互通共享单一真相源)
+    readme_content: Optional[str] = Field(None, description="插件原生 Markdown 说明文档正文")
+    author: Optional[str] = Field(None, description="作者或维护组织名称")
+    homepage: Optional[str] = Field(None, description="项目主页或仓库地址")
+    license: Optional[str] = Field(None, description="开源许可证 (例如: AGPL-3.0)")
+    tags: List[str] = Field(default_factory=list, description="分类标签与搜索关键字")
+    suggested_prompts: List[str] = Field(default_factory=list, description="建议提示词列表")
+
     # 🧩 四位一体维度核心对象
     skill: SkillDefinition = Field(..., description="1. 认知层 (Skill 操作手册)")
     hooks: List[HookDefinition] = Field(default_factory=list, description="2. 拦截层 (Hook 神经反射)")
@@ -75,3 +83,4 @@ class QuadPluginDefinition(BaseModel):
     
     # 探针运行态
     health: PluginHealthProbe = Field(default_factory=PluginHealthProbe, description="运行态健康心跳与探针数据")
+

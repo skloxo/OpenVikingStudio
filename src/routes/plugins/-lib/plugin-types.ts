@@ -43,12 +43,19 @@ export type QuadPluginItem = {
   version: string
   category: 'platform' | 'user' | 'custom'
   description: string
+  readme_content?: string
+  author?: string
+  homepage?: string
+  license?: string
+  tags?: string[]
+  suggested_prompts?: string[]
   skill: SkillItem
   hooks: HookItem[]
   tools: ToolItem[]
   gui: GuiSchema
   health: PluginHealth
 }
+
 
 export type PluginsHealthSummary = {
   total_count: number

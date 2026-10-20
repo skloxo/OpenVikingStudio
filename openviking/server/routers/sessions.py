@@ -880,7 +880,7 @@ async def record_used(
 ):
     """Record actually used contexts and skills in a session."""
     service = get_service()
-    session = await service.sessions.get(session_id, _ctx, auto_create=False)
+    session = await service.sessions.open(session_id, _ctx, auto_create=False)
 
     # Resolve path variables in contexts
     resolved_contexts = None

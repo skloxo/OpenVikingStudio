@@ -1,8 +1,8 @@
 {
   "name": "openviking-memory",
-  "displayName": "OpenViking Core Memory",
-  "version": "2.0.17",
-  "description": "OpenViking 体外大脑与核心记忆官方标准插件 (Antigravity IDE 官方版)。提供跨会话无缝记忆检索与持久化、自动化会话归档、踩坑反思沉淀与零损耗 Handover 接力。",
+  "displayName": "OpenViking Core Memory (v2.0.18)",
+  "version": "2.0.18",
+  "description": "[版本: v2.0.18 | 34项战地工具 + 3项Hook守卫] OpenViking 体外大脑与核心记忆官方标准插件。提供跨会话无缝记忆检索与持久化、自动化会话归档、踩坑反思沉淀与零损耗 Handover 接力。",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
     "搜索体外大脑中关于当前项目的核心架构设计与工程约束",

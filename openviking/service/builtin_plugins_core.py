@@ -178,7 +178,7 @@ def create_core_and_ops_plugins(
     memory_plugin = QuadPluginDefinition(
         plugin_id="openviking-memory",
         name="OpenViking 核心记忆与代码战地",
-        version=resolve_package_version("dsh-plugin-openviking-memory", "2.0.16"),
+        version=resolve_package_version("dsh-plugin-openviking-memory", "2.0.18"),
         category="platform",
         description="体外大脑中心化战地旗舰：长程记忆、工作区 AST、1214技能感知、工单吹哨与泊车管家 (面向全量普通 Agent)",
         skill=SkillDefinition(
@@ -258,7 +258,7 @@ def create_core_and_ops_plugins(
     ops_plugin = QuadPluginDefinition(
         plugin_id="openviking-ops",
         name="OpenViking 系统运维治理",
-        version=resolve_package_version("dsh-plugin-openviking-ops", "1.0.3"),
+        version=resolve_package_version("dsh-plugin-openviking-ops", "1.0.4"),
         category="platform",
         description="系统底层自愈、死信队列重试、概念漂移审计与特权写改中枢 (专门授权给后台专用运维 Agent / 巡检 Engine)",
         skill=SkillDefinition(

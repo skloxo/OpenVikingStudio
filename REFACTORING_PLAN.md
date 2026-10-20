@@ -36,8 +36,9 @@
 | **`待排期`** | **Card-205** | **上游 Session 消息写入与接口去重读取性能优化整并 (Upstream Session Perf)** | 吸收 upstream PR #6270 消息写入与 Session 重复读取优化、#6075 防脏快照 upsert。 | [ ] 待排期迭代 ⏳ |
 | **`待排期`** | **Card-206** | **上游 Studio 前端多语言 i18n 补全与 AppleDouble 元数据过滤整并 (Upstream Studio)** | 吸收 upstream PR #6292 全域多语言 i18n 补齐、#6316 AppleDouble 元数据过滤、#6215 Key 透传。 | [ ] 待排期迭代 ⏳ |
 | **`v1.7.157`** | **Card-200** | **`openviking-memory` 插件母本自内聚转接驱动重构与自愈清洗 (Antigravity Memory Proxy Stub & SSOT v2.0.16)** | 1. 彻底拔除 setup.py 中外部桌面路径硬编码与 candidate_scripts 扫描，插件目录自带自内聚 server.py 独立转接驱动；<br>2. 统一多机物理契约：2080Ti 本地与 3070 远程代码 100% 相同，唯一变量仅为 OPENVIKING_API；<br>3. 强制自愈清洗幽灵：安装与注册逻辑强制 pop("openviking", None)，消灭历史幽灵条目；<br>4. 版本原子递增：plugin.json 与 setup.py 同步自增至 v2.0.16，全景生态健康测试 100% 满绿通过。<br>*(Commit: `06dc379d0`, Tag: `v1.7.157`)* | [x] 已验收通过 ✅ |
-| **`待排期`** | **Card-201** | **`openviking-ops` 插件母本自内聚转接驱动与运维接口标准化 (SSOT v1.0.3)** | 拔除路径依赖，统一环境嗅探与单向部署，版本原子递增。 | [ ] 待排期迭代 ⏳ |
+| **`v1.7.158`** | **Card-201** | **插件与插件中心解耦、动态感知引擎与双端 README 一源互通 (Decoupled Plugin Perception & SSOT README)** | 1. 插件独立解耦托管于 integrations/antigravity，插件中心动态扫描自动感知；<br>2. 真实 AST 静态解析 server.py 工具，彻底斩除虚构假工具与版本断层；<br>3. 抽屉直连渲染原生 README.md，与 Antigravity 详情页 100% 互通共享单一真相源；<br>4. 自动化视网膜门禁全绿，前端生产集中编译生效。 | [x] 已验收通过 ✅ |
 | **`待排期`** | **Card-202** | **`fleet-mesh` 插件母本自内聚转接驱动与多节点拓扑自适应 (SSOT v1.0.2)** | 拔除路径依赖，自适应探测 2080Ti/3070 节点，版本原子递增。 | [ ] 待排期迭代 ⏳ |
+
 | **`待排期`** | **Card-207** | **知识盲区自愈、反思骨架铸造与双轨补全自进化 (Knowledge Deficit Scaffolding)** | 推理缺口捕获，自动生成反思骨架草稿，双轨触发本地/外部知识补全。 | [ ] 待排期迭代 ⏳ |
 | **`待排期`** | **Card-208** | **Workspace 分层配置与项目级 Peer 身份持久化 (Workspace Config & SSOT)** | 支持 `.openviking.toml` 项目级配置固化，解决跨设备/子目录迁移导致的项目记忆失效。 | [ ] 待排期迭代 ⏳ |
 | **`待排期`** | **Card-158** | **KeePass 本地凭据保险箱端侧体验与安全体检深化 (KeePass Local Vault)** | 本地 `.kdbx` 路径自动寻路、解密测试、弱口令分析与高熵生成。 | [ ] 待排期迭代 ⏳ |

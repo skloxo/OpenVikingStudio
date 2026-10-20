@@ -78,6 +78,7 @@ class SessionService:
         self._auto_commit_inflight_lock = asyncio.Lock()
         self._auto_commit_tasks: set[asyncio.Task] = set()
         self._heartbeat_session_ids: set[str] = set()
+        self._session_expiry_adapter: Optional[Any] = None
 
     def register_heartbeat_session(self, session_id: str) -> None:
         """Register a session as a routine heartbeat / cron probe."""
@@ -397,12 +398,27 @@ class SessionService:
         self._ensure_initialized()
 
         session_uri = canonical_session_uri(ctx, session_id)
-        session = await self.get(session_id, ctx)
+        session = self.session(ctx, session_id)
         if not await session.exists():
             self._record_lifecycle_metric("delete", "error")
             raise NotFoundError(session_id, "session")
 
-        await self._viking_fs.rm(session_uri, recursive=True, ctx=ctx)
+        await self._viking_fs.rm(session_uri, recursive=True, ctx=ctx, no_vector=True)
+        expiry_adapter = getattr(self, "_session_expiry_adapter", None)
+        if expiry_adapter is not None:
+            try:
+                from openviking.scheduling.expiry import SESSION_ITEM_TYPE, ItemIdentity
+
+                await expiry_adapter.cancel_item_async(
+                    ItemIdentity(
+                        account_id=getattr(ctx, "account_id", ""),
+                        user_id=ctx.user.user_id,
+                        item_type=SESSION_ITEM_TYPE,
+                        item_id=session_id,
+                    )
+                )
+            except Exception:
+                pass
         logger.info(f"Deleted session: {session_id}")
         self._record_lifecycle_metric("delete", "ok")
         return True

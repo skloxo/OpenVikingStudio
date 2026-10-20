@@ -1,14 +1,14 @@
 {
   "mcpServers": {
     "openviking-ops": {
-      "command": "C:/Python311/python.exe",
+      "command": "python",
       "args": [
-        "C:/Users/Skl/Desktop/coding/OpenVikingStudio/mcp-openviking/mcp_openviking_server.py",
-        "--mode=ops"
+        "server.py"
       ],
       "env": {
         "OPENVIKING_API": "http://127.0.0.1:1933",
-        "OPENVIKING_MCP_MODE": "ops"
+        "OPENVIKING_API_KEY": "",
+        "PYTHONIOENCODING": "utf-8"
       }
     }
   }

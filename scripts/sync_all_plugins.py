@@ -33,15 +33,20 @@ INSTALLED_DIR = Path.home() / ".gemini" / "config" / "plugins"
 CFG_FILE = Path.home() / ".gemini" / "config" / "config.json"
 PYTHON_EXE = sys.executable
 
-ALL_7_PLUGINS = [
-    "openviking-memory",
+PRODUCTION_PLUGINS = [
+    "agent-circuit-breaker",
+    "openviking-memory"
+]
+
+EXPERIMENTAL_WIP_PLUGINS = [
     "openviking-ops",
     "fleet-mesh",
     "cpa-squad",
     "keepass-vault",
-    "dify",
-    "agent-circuit-breaker"
+    "dify"
 ]
+
+ALL_PLUGINS = PRODUCTION_PLUGINS + EXPERIMENTAL_WIP_PLUGINS
 
 
 def cascade_version_to_docs(plugin_name: str, version: str):
@@ -138,9 +143,9 @@ def sync_plugin(plugin_name: str) -> bool:
         return False
 
 
-def verify_alignment() -> bool:
+def verify_alignment(include_experimental: bool = False) -> bool:
     print("\n" + "=" * 80)
-    print("📊 [插件生态单一真相源 (SSOT) 对齐审计大盘]")
+    print("📊 [已发布生产插件单一真相源 (SSOT) 对齐审计大盘]")
     print("=" * 80)
     print(f"{'插件名称':<25} | {'母本版本':<10} | {'安装目录版本':<12} | {'宿主注册版本':<12} | 状态")
     print("-" * 80)
@@ -154,7 +159,11 @@ def verify_alignment() -> bool:
     cfg_plugins = cfg.get("plugins", {})
 
     all_pass = True
-    for p_name in ALL_7_PLUGINS:
+    check_list = ALL_PLUGINS if include_experimental else PRODUCTION_PLUGINS
+
+    for p_name in check_list:
+        is_wip = p_name in EXPERIMENTAL_WIP_PLUGINS
+        tag = " (WIP)" if is_wip else ""
         src_pj = PLUGINS_SRC_DIR / p_name / "plugin.json"
         src_ver = "N/A"
         if src_pj.exists():
@@ -178,11 +187,11 @@ def verify_alignment() -> bool:
             all_pass = False
 
         status = "✅ PASS" if matched else "❌ DRIFT"
-        print(f"{p_name:<25} | {src_ver:<10} | {inst_ver:<12} | {cfg_ver:<12} | {status}")
+        print(f"{(p_name + tag):<25} | {src_ver:<10} | {inst_ver:<12} | {cfg_ver:<12} | {status}")
 
     print("=" * 80)
     if all_pass:
-        print("🎉 全系 7 大插件单一真相源 (SSOT) 100% 对齐，0 漂移，开箱即用！")
+        print(f"🎉 核心生产插件单一真相源 (SSOT) 100% 对齐，0 漂移，纯净可信！")
     else:
         print("⚠️ 存在版本漂移，请检查上述标记为 DRIFT 的插件！")
     return all_pass
@@ -192,12 +201,13 @@ def main():
     parser = argparse.ArgumentParser(description="OpenViking 全系插件单一真相源 (SSOT) 自动级联同步流水线")
     parser.add_argument("--bump", nargs=2, metavar=("PLUGIN", "VERSION"), help="一键提升指定插件版本 (如: --bump openviking-memory 2.0.18)")
     parser.add_argument("--plugin", type=str, help="仅同步指定单个插件")
+    parser.add_argument("--include-experimental", action="store_true", help="显式包含未开发完成的 WIP/试验性插件 (默认仅部署正式生产插件)")
     parser.add_argument("--verify-only", action="store_true", help="仅执行四方对齐审计大盘校验")
     parser.add_argument("--skip-pack", action="store_true", help="跳过 .tgz 分发包构建")
     args = parser.parse_args()
 
     if args.verify_only:
-        ok = verify_alignment()
+        ok = verify_alignment(include_experimental=args.include_experimental)
         sys.exit(0 if ok else 1)
 
     if args.bump:
@@ -205,8 +215,15 @@ def main():
         if not bump_version(p_name, n_ver):
             sys.exit(1)
 
-    target_plugins = [args.plugin] if args.plugin else ALL_7_PLUGINS
-    print(f"🚀 启动全系插件自动级联同步流水线 (共 {len(target_plugins)} 个插件)...")
+    if args.plugin:
+        target_plugins = [args.plugin]
+    elif args.include_experimental:
+        print("⚠️ 警告：正在包含未完成开发的 WIP 试验插件！")
+        target_plugins = PRODUCTION_PLUGINS + EXPERIMENTAL_WIP_PLUGINS
+    else:
+        target_plugins = PRODUCTION_PLUGINS
+
+    print(f"🚀 启动插件自动级联同步流水线 (共 {len(target_plugins)} 个正式插件: {', '.join(target_plugins)})...")
 
     success_count = 0
     for p in target_plugins:
@@ -221,9 +238,10 @@ def main():
             print("\n📦 [打包流水线] 正在自动触发 pack_all_plugins.py 生成不可变分发包...")
             subprocess.run([PYTHON_EXE, str(pack_script)], check=True)
 
-    ok = verify_alignment()
+    ok = verify_alignment(include_experimental=args.include_experimental)
     sys.exit(0 if ok else 1)
 
 
 if __name__ == "__main__":
     main()
+

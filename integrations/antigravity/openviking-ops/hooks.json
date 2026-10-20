@@ -1,4 +1,17 @@
 {
+  "openviking-ops-sentinel": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -X utf8 hooks/ov_ops_sentinel.py",
+            "timeout": 3
+          }
+        ]
+      }
+    ]
+  },
   "openviking-ops-audit": {
     "PreToolUse": [
       {
