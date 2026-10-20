@@ -15,7 +15,7 @@ from starlette.responses import JSONResponse
 from openviking_gateway.config import GatewayConfig, get_gateway_config
 from openviking_gateway.proxy import GatewayProxy
 
-GATEWAY_VERSION = "1.7.138"
+GATEWAY_VERSION = "1.7.151"
 
 
 def create_gateway_app(config: Optional[GatewayConfig] = None) -> FastAPI:

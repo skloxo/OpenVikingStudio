@@ -20,6 +20,7 @@ from openviking_gateway.protocols import (
     anthropic_to_openai_request,
     openai_to_anthropic_response,
     OpenAIToAnthropicStreamAdapter,
+    SSEDecoder,
 )
 from openviking_gateway.tool_loop import (
     HiddenToolLoopExecutor,
@@ -52,6 +53,50 @@ def _format_exc_message(exc: Exception) -> str:
         return str(exc.args[0]).strip()
     cls_name = exc.__class__.__name__
     return f"{cls_name}: Upstream connection or request error"
+
+
+def _extract_session_id(request: Request, payload: Dict[str, Any]) -> str:
+    """Extract session identity from request headers or payload."""
+    return (
+        request.headers.get("x-session-id")
+        or request.headers.get("session-id")
+        or request.headers.get("x-conversation-id")
+        or str(payload.get("session_id") or payload.get("session") or "")
+    )
+
+
+def _report_telemetry(
+    session_id: str,
+    protocol: str,
+    kind: str,
+    model: str,
+    status_code: int,
+    duration_ms: float,
+    usage_data: Optional[Dict[str, Any]] = None,
+) -> None:
+    """Safely push request telemetry into the real-time gateway event buffer."""
+    try:
+        from openviking.server.routers.gateway import record_gateway_request_event
+        from openviking_gateway.protocols import usage_of
+
+        usage = usage_of(usage_data or {}, excludes_cache=(protocol == "anthropic"))
+        event = {
+            "time": time.time(),
+            "duration_ms": duration_ms,
+            "status": status_code,
+            "protocol": protocol,
+            "kind": kind,
+            "session": session_id or "anonymous",
+            "model": model,
+            "upstream_id": "default",
+            "first_upstream_input_tokens": usage.get("input_tokens", 0),
+            "first_upstream_output_tokens": usage.get("output_tokens", 0),
+            "first_upstream_cached_tokens": usage.get("cached_tokens", 0),
+            "first_upstream_cache_write_tokens": usage.get("cache_write_tokens", 0),
+        }
+        record_gateway_request_event(event)
+    except Exception as exc:
+        logger.debug("Failed reporting gateway telemetry event: %s", exc)
 
 
 class GatewayProxy:
@@ -121,16 +166,23 @@ class GatewayProxy:
         self, request: Request, payload: Dict[str, Any]
     ) -> Response:
         """Forward OpenAI /v1/chat/completions to upstream with memory injection & tool loop."""
+        start_time = time.time()
         client = await self.get_client()
         stream = bool(payload.get("stream", False))
         headers = self._prepare_headers(request, target_protocol=self.config.upstream_protocol)
         target_url = f"{self.config.upstream_base_url}/chat/completions"
 
+        session_id = _extract_session_id(request, payload)
         req_payload = dict(payload)
-        # 1. Pre-flight memory context injection
+        tools = req_payload.get("tools")
+
+        # 1. Pre-flight memory context injection & intent classification
         messages = req_payload.get("messages", [])
-        injected_messages = await self.kernel.pre_flight_inject(messages)
+        injected_messages = await self.kernel.pre_flight_inject(
+            messages, tools=tools, session_id=session_id
+        )
         req_payload["messages"] = injected_messages
+        kind = self.kernel.last_classified_kind
 
         # 2. Attach hidden tools if enabled and non-streaming
         if not stream and self.config.enable_hidden_tool_loop:
@@ -155,6 +207,7 @@ class GatewayProxy:
                             if line:
                                 yield f"{line}\n\n".encode("utf-8")
 
+                _report_telemetry(session_id, "openai", kind, req_payload.get("model", ""), 200, (time.time() - start_time) * 1000)
                 return StreamingResponse(
                     sse_stream_gen(),
                     media_type="text/event-stream",
@@ -168,27 +221,45 @@ class GatewayProxy:
             except Exception:
                 data = {"raw": resp.text}
 
+            duration_ms = (time.time() - start_time) * 1000
             if resp.status_code == 200 and isinstance(data, dict):
                 # Run hidden tool loop if model invoked viking tools
                 data = await self.tool_loop.run_loop_if_needed(
                     client, target_url, headers, req_payload, data
                 )
-                # 3. Asynchronous session capture
+                # 3. Asynchronous session capture (skipped for auxiliary side requests)
                 choices = data.get("choices", [])
                 if choices:
                     reply = choices[0].get("message", {}).get("content", "")
                     if reply:
                         asyncio.create_task(
                             self.capture.capture_turn(
-                                injected_messages, reply, model=req_payload.get("model", "")
+                                injected_messages, reply, model=req_payload.get("model", ""), kind=kind
                             )
                         )
 
+            _report_telemetry(
+                session_id,
+                "openai",
+                kind,
+                req_payload.get("model", ""),
+                resp.status_code,
+                duration_ms,
+                data if isinstance(data, dict) else None,
+            )
             return JSONResponse(content=data, status_code=resp.status_code)
 
         except Exception as exc:
             err_msg = _format_exc_message(exc)
             logger.error("Error forwarding chat completion: %s", err_msg)
+            _report_telemetry(
+                session_id,
+                "openai",
+                kind,
+                req_payload.get("model", ""),
+                502,
+                (time.time() - start_time) * 1000,
+            )
             return JSONResponse(
                 content={"error": {"message": err_msg, "type": "gateway_proxy_error"}},
                 status_code=502,
@@ -198,8 +269,10 @@ class GatewayProxy:
         self, request: Request, payload: Dict[str, Any]
     ) -> Response:
         """Forward Anthropic /v1/messages, with dual-track translation if needed."""
+        start_time = time.time()
         client = await self.get_client()
         stream = bool(payload.get("stream", False))
+        session_id = _extract_session_id(request, payload)
 
         # Check if upstream is native Anthropic or OpenAI dual-track translation
         if self.config.upstream_protocol == "anthropic":
@@ -214,16 +287,20 @@ class GatewayProxy:
                             async for chunk in upstream_resp.aiter_bytes():
                                 yield chunk
 
+                    _report_telemetry(session_id, "anthropic", "user", payload.get("model", ""), 200, (time.time() - start_time) * 1000)
                     return StreamingResponse(
                         anthropic_sse_gen(),
                         media_type="text/event-stream",
                         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
                     )
                 resp = await client.post(target_url, json=payload, headers=headers)
-                return JSONResponse(content=resp.json(), status_code=resp.status_code)
+                data = resp.json()
+                _report_telemetry(session_id, "anthropic", "user", payload.get("model", ""), resp.status_code, (time.time() - start_time) * 1000, data if isinstance(data, dict) else None)
+                return JSONResponse(content=data, status_code=resp.status_code)
             except Exception as exc:
                 err_msg = _format_exc_message(exc)
                 logger.error("Error forwarding native Anthropic messages: %s", err_msg)
+                _report_telemetry(session_id, "anthropic", "user", payload.get("model", ""), 502, (time.time() - start_time) * 1000)
                 return JSONResponse(
                     content={"type": "error", "error": {"type": "api_error", "message": err_msg}},
                     status_code=502,
@@ -234,9 +311,13 @@ class GatewayProxy:
         headers = self._prepare_headers(request, target_protocol="openai")
         target_url = f"{self.config.upstream_base_url}/chat/completions"
 
-        # Pre-flight memory injection for Anthropic protocol
-        injected_messages = await self.kernel.pre_flight_inject(openai_req.get("messages", []))
+        # Pre-flight memory injection for Anthropic protocol with intent classification
+        tools = openai_req.get("tools")
+        injected_messages = await self.kernel.pre_flight_inject(
+            openai_req.get("messages", []), tools=tools, session_id=session_id
+        )
         openai_req["messages"] = injected_messages
+        kind = self.kernel.last_classified_kind
 
         if not stream and self.config.enable_hidden_tool_loop:
             existing_tools = list(openai_req.get("tools") or [])
@@ -249,6 +330,7 @@ class GatewayProxy:
         try:
             if stream:
                 adapter = OpenAIToAnthropicStreamAdapter(model=payload.get("model", "gpt-4o"))
+                decoder = SSEDecoder()
 
                 async def translated_sse_gen() -> AsyncGenerator[bytes, None]:
                     async with client.stream(
@@ -259,25 +341,16 @@ class GatewayProxy:
                             yield f"event: error\ndata: {json.dumps({'type': 'error', 'error': {'type': 'upstream_error', 'message': err_text}})}\n\n".encode("utf-8")
                             return
 
-                        buffer = ""
                         async for chunk_bytes in upstream_resp.aiter_bytes():
-                            buffer += chunk_bytes.decode("utf-8", errors="replace")
-                            while "\n" in buffer:
-                                line, buffer = buffer.split("\n", 1)
-                                line = line.strip()
-                                if not line or not line.startswith("data:"):
-                                    continue
-                                data_str = line[5:].strip()
-                                if data_str == "[DONE]":
-                                    continue
-                                try:
-                                    chunk_dict = json.loads(data_str)
+                            frames = decoder.feed(chunk_bytes)
+                            for frame in frames:
+                                chunk_dict = decoder.data(frame)
+                                if chunk_dict and isinstance(chunk_dict, dict):
                                     events = adapter.process_chunk(chunk_dict)
                                     for ev_type, ev_data in events:
                                         yield f"event: {ev_type}\ndata: {json.dumps(ev_data)}\n\n".encode("utf-8")
-                                except Exception:
-                                    pass
 
+                _report_telemetry(session_id, "anthropic", kind, payload.get("model", ""), 200, (time.time() - start_time) * 1000)
                 return StreamingResponse(
                     translated_sse_gen(),
                     media_type="text/event-stream",
@@ -287,6 +360,7 @@ class GatewayProxy:
             # Non-streaming dual-track translation with tool loop
             resp = await client.post(target_url, json=openai_req, headers=headers)
             if resp.status_code >= 400:
+                _report_telemetry(session_id, "anthropic", kind, payload.get("model", ""), resp.status_code, (time.time() - start_time) * 1000)
                 return JSONResponse(
                     content={"type": "error", "error": {"type": "upstream_error", "message": resp.text}},
                     status_code=resp.status_code,
@@ -301,22 +375,25 @@ class GatewayProxy:
 
             anthropic_resp = openai_to_anthropic_response(openai_resp)
 
-            # Capture turn asynchronously
+            # Capture turn asynchronously (skipped for auxiliary side requests)
             content_blocks = anthropic_resp.get("content", [])
             if content_blocks:
                 reply_text = content_blocks[0].get("text", "")
                 if reply_text:
                     asyncio.create_task(
                         self.capture.capture_turn(
-                            injected_messages, reply_text, model=payload.get("model", "")
+                            injected_messages, reply_text, model=payload.get("model", ""), kind=kind
                         )
                     )
 
+            duration_ms = (time.time() - start_time) * 1000
+            _report_telemetry(session_id, "anthropic", kind, payload.get("model", ""), 200, duration_ms, openai_resp if isinstance(openai_resp, dict) else None)
             return JSONResponse(content=anthropic_resp, status_code=200)
 
         except Exception as exc:
             err_msg = _format_exc_message(exc)
             logger.error("Error in dual-track messages translation: %s", err_msg)
+            _report_telemetry(session_id, "anthropic", kind, payload.get("model", ""), 502, (time.time() - start_time) * 1000)
             return JSONResponse(
                 content={"type": "error", "error": {"type": "api_error", "message": err_msg}},
                 status_code=502,

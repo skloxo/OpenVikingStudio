@@ -3,7 +3,7 @@
 > **关联研发大蓝图**：[`BLUEPRINT.md`](file:///home/skloxo/aho/openclaw/project/.agents/BLUEPRINT.md) ｜ **交付全量归档台账**：[`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md) ｜ **通用资产档案库**：[`COMPONENT_AND_WHEEL_INVENTORY.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md)
 > **唯一真相源 (SSOT)**：本文档为 OpenViking 当前活跃的重构规划与就绪待调度的任务矩阵看板。历史所有已验收交付的版本履历已完整归档至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。
 > **战略外围项目隔离公理**：`Search2API 商业化搜索聚合网关` (`docs/search/SEARCH2API_COMMERCIAL_GATEWAY_SPEC.md`) 确认为独立多账号商业化代理项目，不占用 OpenViking 核心任务大盘卡槽。
-> **基线状态**：线上正式部署 **`v1.4.106`** ｜ 当前最新交付 **`v1.7.156`** (代码基线 **`v1.7.150`**) ｜ 分支状态：`main` 已全量同步远程 `origin/main`。
+> **基线状态**：线上正式部署 **`v1.4.106`** ｜ 当前最新交付 **`v1.7.156`** (代码基线 **`v1.7.151`**) ｜ 分支状态：`main` 已全量同步远程 `origin/main`。
 
 ---
 
@@ -32,7 +32,7 @@
 | **`v1.7.124`** | **Card-104** | **存量孤儿切片物理大扫除与向量库深度同步 (Ghost Slices Pruning)** | 修复向量过滤字典契约，彻底清退僵尸测试孤儿索引，批量清退 2,500+ 废弃向量切片。 | [x] 已验收通过 ✅ |
 | **`待排期`** | **Card-167** | **技能大盘在线交互测试沙箱与意图命中试算器 (Skill Playground & Scaffolding)** | 开发者交互调试终端，Prompt 命中可视化，注脑压缩对比度量，标准 6 章节脚手架生成。 | [ ] 待排期迭代 ⏳ |
 | **`待排期`** | **Card-168** | **系统底层与体外大脑五层抗熵增治理中枢 (Anti-Entropy Memory Evolution)** | 前门语义准入去重，失效认知版本演进链 (Superseded DAG)，夜间离线做梦蒸馏 (ov_dream)。 | [ ] 待排期迭代 ⏳ |
-| **`待排期`** | **Card-204** | **上游 Gateway 缓存遥测增强与 DSH 无工具请求防重复召回整并 (Upstream Gateway)** | 吸收 upstream PR #6295 DSH 侧向请求防重复召回、#6267 缓存告警、#6026 降低 CPU 损耗。 | [ ] 待排期迭代 ⏳ |
+| **`v1.7.151`** | **Card-204** | **上游 Gateway 缓存遥测增强与 DSH 无工具请求防重复召回整并 (Upstream Gateway)** | 吸收 PR #6295 DSH 辅助防召回、#6026 回复增量哈希与 SSE 批量分帧、#6267 缓存告警闭环，61/61 测试全绿。 | [x] 已验收通过 ✅ |
 | **`待排期`** | **Card-205** | **上游 Session 消息写入与接口去重读取性能优化整并 (Upstream Session Perf)** | 吸收 upstream PR #6270 消息写入与 Session 重复读取优化、#6075 防脏快照 upsert。 | [ ] 待排期迭代 ⏳ |
 | **`待排期`** | **Card-206** | **上游 Studio 前端多语言 i18n 补全与 AppleDouble 元数据过滤整并 (Upstream Studio)** | 吸收 upstream PR #6292 全域多语言 i18n 补齐、#6316 AppleDouble 元数据过滤、#6215 Key 透传。 | [ ] 待排期迭代 ⏳ |
 | **`v1.7.157`** | **Card-200** | **`openviking-memory` 插件母本自内聚转接驱动重构与自愈清洗 (Antigravity Memory Proxy Stub & SSOT v2.0.16)** | 1. 彻底拔除 setup.py 中外部桌面路径硬编码与 candidate_scripts 扫描，插件目录自带自内聚 server.py 独立转接驱动；<br>2. 统一多机物理契约：2080Ti 本地与 3070 远程代码 100% 相同，唯一变量仅为 OPENVIKING_API；<br>3. 强制自愈清洗幽灵：安装与注册逻辑强制 pop("openviking", None)，消灭历史幽灵条目；<br>4. 版本原子递增：plugin.json 与 setup.py 同步自增至 v2.0.16，全景生态健康测试 100% 满绿通过。<br>*(Commit: `06dc379d0`, Tag: `v1.7.157`)* | [x] 已验收通过 ✅ |
@@ -80,13 +80,13 @@
      - 严格遵循 **NO GREEN EVER 🚫**，字号硬下限 $\ge 12\text{px}$ (`text-xs`)，单文件 100~300 行黄金甜点区；
   5. **视网膜单测与门禁**：WSL 原生 Pytest 单测变绿，Vitest 前端单测变绿。
 
-#### 📌 [P0] [ ] Card-204: 上游 Gateway 缓存遥测增强与 DSH 无工具请求防重复召回整并 (Upstream Gateway Cache Telemetry & Anti-Duplicate Recall) ⏳
-- **类型**：网关吞吐优化 / 记忆召回防抖 / DSH 协议治理 ｜ **优先级**：🔥 P0
-- **核心契约与方案拆解**：
-  1. **吸收上游 PR #6295 (e855796c8)**：针对 DSH 及无工具侧向请求，拦截并停止重复的记忆召回与无谓创建新 Session，大幅削减 CPU 与 Token 开销；
-  2. **吸收上游 PR #6267 (27db44123)**：从所有上游格式解析 Cache Usage，当长对话丢失 Prompt Cache 时主动发出预警；
-  3. **吸收上游 PR #6026 (26fa00b91)**：精简请求准备、回复中继与查找过程中的 CPU 消耗；
-  4. **视网膜单测**：单测覆盖 DSH 侧向请求拦截、Cache Usage 提取与报警，确保网关 0 冗余调用。
+#### 📌 [P0] [x] Card-204: 上游 Gateway 缓存遥测增强与 DSH 无工具请求防重复召回整并 (Upstream Gateway Cache Telemetry & Anti-Duplicate Recall) ✅
+- **类型**：网关吞吐优化 / 记忆召回防抖 / DSH 协议治理 ｜ **优先级**：🔥 P0 ｜ **交付版本**：`v1.7.151`
+- **核心治理成果与物理交付物**：
+  1. **吸收上游 PR #6295 (e855796c8)**：针对 DSH 会话标题生成与已发工具会话的单轮侧向请求，自动识别并拦截 `auxiliary`，阻断 0 价值记忆召回与幽灵 Session 污染；剥离 3 类诊断与运行上下文噪音；统一工具参数紧凑化 JSON 解析；
+  2. **吸收上游 PR #6026 (26fa00b91)**：落地回复增量哈希 (`reply_chain`) 根除 140k 上下文全文重复哈希的 CPU 损耗，落地 `SSEDecoder` 批量分帧与就地字符串拼接 (`safe_append_delta`)；
+  3. **吸收上游 PR #6267 (27db44123) 闭环**：在 `proxy.py` 成功与异常路径打通 `_report_telemetry`，物理接入 `_GATEWAY_EVENT_BUFFER`，精准驱动长对话连续 3 次 Miss 告警；
+  4. **视网膜单测**：编写专项测试 `tests/gateway/test_card204_gateway_telemetry_and_anti_duplicate_recall.py` (9/9 全绿)，全量 61/61 项网关单测 3.98s 满绿通过，安全扫描 0 泄露，打标 Tag `v1.7.151`。
 
 #### 📌 [P0] [ ] Card-168: 系统底层与体外大脑五层抗熵增治理中枢 (Anti-Entropy Memory Evolution, Superseded DAG & Offline Distillation SSOT) ⏳
 - **类型**：体外大脑演进 / 知识准入去重 / DAG 版本链 / 离线做梦蒸馏 ｜ **优先级**：🔥 P0 备选
@@ -115,10 +115,22 @@
   4. **幽灵静态副本审计与 UTF-8 守护 (Card-205D)**：`setup.py` 探查静态实体目录阻断热更失效，Hook 命令行注入 `-X utf8 -E -s -S` 彻底根除 Windows 代码页异常；
   5. **门禁与测试**：端侧 `setup.py --inspect` 毫秒级自检通过，WSL 核心单测套件 `12/12 passed in 2.77s` 全绿。
 
-#### 📌 [P1] [ ] Card-201 ~ Card-202: 插件母本自内聚转接驱动重构与自愈清洗 ⏳
-- **Card-201**: `openviking-ops` 插件母本自内聚转接驱动与运维接口标准化 (SSOT v1.0.3)
-- **Card-202**: `fleet-mesh` 插件母本自内聚转接驱动与多节点拓扑自适应 (SSOT v1.0.2)
-- **统一目标**：彻底拔除 setup.py 中外部桌面路径硬编码，直连母港，清洗历史残留幽灵别名。
+#### 📌 [P1] [x] Card-201: `openviking-ops` 系统运维特权插件三位一体架构与三大客户端适配 (SSOT v1.0.4) ✅
+- **核心成果与物理交付物**：
+  1. **Card-201A (反重力自内聚 Proxy Stub 与母本净化)**：
+     - 重构 `integrations/antigravity/openviking-ops/server.py`：纯净 FastMCP 自内聚转接驱动（254行），直连 `OPENVIKING_API`，精准提供 16 项特权运维算子 (SSOT)；
+     - 彻底拔除母本 `setup.py` 中历史旧桌面路径倒挂与 `candidate_scripts` 外部依赖；
+     - 物理清洗 `skills/` 误拷技能目录，全新构建 `openviking-ops/SKILL.md` 运维专家认知层；
+     - 编写 `tests/integration/test_openviking_ops_plugin.py` 沙盒自举与 16 项工具 AST 断言，`5/5 passed in 0.74s` 全绿。
+  2. **Card-201B (DSH 适配、零信任单轨鉴权与规范沉淀)**：
+     - 彻底铲除 `client_caps.py` 本地 127.0.0.1 免密后门，无凭据严密阻断 HTTP 401；
+     - 前端 `client.js` 强制增加 API Key 非空硬校验，杜绝虚假连通测试；
+     - 结晶落盘 `docs/guides/DSH_PLUGIN_DEVELOPMENT_SPEC.md` 确立 DSH 插件工程标准与 Cordis 微内核架构开发规范。
+  3. **Card-201C (全系插件自动化打包与分发闭环)**：
+     - 运行 `scripts/pack_all_plugins.py`，全系 DSH 与 Antigravity 插件（包括 `openviking-ops-1.0.4.tgz`）不可变构建落盘至 `public/` 与 `dist/`。
+
+#### 📌 [P1] [ ] Card-202: `fleet-mesh` 插件母本自内聚转接驱动与多节点拓扑自适应 (SSOT v1.0.2) ⏳
+- **核心目标**：彻底拔除 setup.py 中外部桌面路径硬编码，直连母港，清洗历史残留幽灵别名。
 
 #### 📌 [P1] [ ] Card-207: 知识盲区自愈、反思骨架铸造与双轨补全自进化 (Knowledge Deficit Scaffolding) ⏳
 - **来源规约**：[`docs/architecture/KNOWLEDGE_DEFICIT_SCAFFOLDING_SPEC.md`](file:///c:/Users/Skl/Desktop/Workspace/coding/OpenVikingStudio/docs/architecture/KNOWLEDGE_DEFICIT_SCAFFOLDING_SPEC.md)

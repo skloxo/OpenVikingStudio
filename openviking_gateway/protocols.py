@@ -361,8 +361,8 @@ def auxiliary(text: str) -> bool:
 
 DSH_NOISE_PATTERNS = [
     re.compile(r"\A\s*Attached image\(s\) from tool result:\s*\Z"),
-    re.compile(r"\A\s*Current runtime context\. This snapshot supersedes earlier runtime-context snapshots\.[\s\S]*"),
-    re.compile(r"\A\s*Time sampled while preparing turn \d+, step \d+: [\s\S]*"),
+    re.compile(r"\A\s*Current runtime context\. This snapshot supersedes earlier runtime-context snapshots\.(?:[\s\S]*?\n\n|[\s\S]*)"),
+    re.compile(r"\A\s*Time sampled while preparing turn \d+, step \d+: (?:[\s\S]*?\n\n|[\s\S]*)"),
 ]
 
 
