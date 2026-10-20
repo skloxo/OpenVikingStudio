@@ -77,6 +77,9 @@ def _clean_payload(obj: Any) -> Any:
     return obj
 
 
+DEFAULT_TIMEOUT: float = 120.0  # 兜底超时，防止任何工具挂死 IDE 会话
+
+
 def _api_request(
     method: str,
     endpoint: str,
@@ -107,9 +110,9 @@ def _api_request(
         headers["Content-Type"] = "application/json; charset=utf-8"
 
     req = urllib.request.Request(url, data=data, headers=headers, method=method)
+    effective_timeout = timeout if timeout is not None else DEFAULT_TIMEOUT
     try:
-        kwargs = {"timeout": timeout} if timeout is not None else {}
-        with urllib.request.urlopen(req, **kwargs) as resp:
+        with urllib.request.urlopen(req, timeout=effective_timeout) as resp:
             raw = resp.read().decode("utf-8", errors="replace")
             try:
                 parsed = json.loads(raw)

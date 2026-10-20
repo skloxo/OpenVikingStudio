@@ -90,7 +90,7 @@ class PluginRegistry:
             def_ver = "1.0.1"
         else:
             target_pkg = "dsh-plugin-openviking-memory"
-            def_ver = "2.0.15"
+            def_ver = "2.0.16"
 
         latest_version = def_ver
         latest_filename = f"{target_pkg}-{latest_version}.tgz"
