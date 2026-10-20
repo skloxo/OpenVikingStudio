@@ -75,6 +75,52 @@ class GatewayKernel:
         self.config = config
         self._client = client
         self._owns_client = client is None
+        self._sessions_with_client_tools: Set[str] = set()
+        self.last_classified_kind: str = "user"
+
+    def register_client_tools(self, session_id: str) -> None:
+        """Register that a session has actively sent client tools."""
+        if session_id:
+            self._sessions_with_client_tools.add(session_id)
+
+    def classify_request(
+        self,
+        messages: List[Dict[str, Any]],
+        tools: Optional[List[Dict[str, Any]]] = None,
+        session_id: Optional[str] = None,
+    ) -> Tuple[str, bool]:
+        """Classify request intent into ('user' | 'continuation' | 'auxiliary', should_recall).
+
+        DSH or Claude Code sending side requests (e.g. title generation, page summary)
+        in a session that has previously registered client tools must be treated as
+        'auxiliary' to bypass memory recall and avoid generating ghost sessions.
+        """
+        if tools and session_id:
+            self._sessions_with_client_tools.add(session_id)
+
+        query = extract_user_query(messages)
+
+        # 1. Matches explicit auxiliary patterns (e.g. 'Generate the session title from', 'summarize')
+        if query and auxiliary(query):
+            return "auxiliary", False
+
+        # 2. Tool-less side requests inside a session that previously used client tools
+        has_tools = bool(tools)
+        has_replies = any(m.get("role") == "assistant" for m in messages)
+        if (
+            not has_tools
+            and session_id
+            and session_id in self._sessions_with_client_tools
+            and not has_replies
+        ):
+            # A fresh side exchange without tools and without earlier assistant turns
+            return "auxiliary", False
+
+        # 3. Continuation turn (following previous assistant reply)
+        if has_replies:
+            return "continuation", False
+
+        return "user", True
 
     async def get_client(self) -> httpx.AsyncClient:
         """Retrieve or lazily initialize the shared HTTP client."""
@@ -121,10 +167,21 @@ class GatewayKernel:
             return []
 
     async def pre_flight_inject(
-        self, messages: List[Dict[str, Any]]
+        self,
+        messages: List[Dict[str, Any]],
+        tools: Optional[List[Dict[str, Any]]] = None,
+        session_id: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
-        """Pre-flight hook: sniff query, retrieve memories, and inject context."""
+        """Pre-flight hook: sniff query, classify intent, and inject context if appropriate."""
         if not self.config.enable_auto_memory_injection:
+            self.last_classified_kind = "user"
+            return messages
+
+        kind, should_recall = self.classify_request(messages, tools=tools, session_id=session_id)
+        self.last_classified_kind = kind
+
+        if not should_recall:
+            logger.debug("Bypassing memory recall for %s request (session=%s)", kind, session_id)
             return messages
 
         query = extract_user_query(messages)
