@@ -123,7 +123,19 @@ def _api_request(
         err_msg = e.read().decode("utf-8", errors="replace")
         return f"HTTP {e.code}: {err_msg}"
     except (urllib.error.URLError, TimeoutError, socket.timeout) as e:
-        return f"[Fail-Fast Guard] 请求后端超时 ({timeout}s) 自动熔断: {e}"
+        is_timeout = isinstance(e, (TimeoutError, socket.timeout)) or "timed out" in str(e).lower()
+        if is_timeout:
+            return json.dumps({
+                "status": "TIMEOUT_TRUNCATED",
+                "timeout_seconds": effective_timeout,
+                "error": f"请求后端超时 ({effective_timeout}s) 触发安全熔断: {e}",
+                "warning": (
+                    "⚠️ [ANTI-HALLUCINATION GUARD] 操作因超时被中断！"
+                    "绝对不能推定目标目录/资源为空或文件不存在！"
+                    "严禁在未确认物理事实前盲目重复手搓公共组件。请指定具体子路径缩小范围后再试。"
+                )
+            }, ensure_ascii=False, indent=2)
+        return f"[Fail-Fast Guard] 网络通信错误: {e}"
     except Exception as e:
         return f"Request Error: {e}"
 

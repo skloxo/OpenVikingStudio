@@ -79,15 +79,24 @@ def main():
                             "reason": f"【OpenViking 沙箱守卫】拦截到破坏性高危操作: 检测到模式 [{pat}]，违反安全红线！"
                         }, ensure_ascii=False))
                         return
-    except Exception:
-        pass
-
-    print(json.dumps({"decision": "allow"}))
+        print(json.dumps({"decision": "allow"}))
+    except (KeyboardInterrupt, SystemExit):
+        raise
+    except Exception as err:
+        sys.stderr.write(f"[WARN: ov_sandbox_guard] 沙箱守卫遇到异常降级放行: {type(err).__name__} - {err}\n")
+        sys.stderr.flush()
+        print(json.dumps({
+            "decision": "allow",
+            "warning": f"SANDBOX_DEGRADED: {type(err).__name__} - {err}"
+        }))
 
 
 if __name__ == "__main__":
     try:
         main()
-    except BaseException:
-        print(json.dumps({"decision": "allow"}))
+    except (KeyboardInterrupt, SystemExit):
+        raise
+    except Exception as err:
+        sys.stderr.write(f"[FATAL: ov_sandbox_guard] 未捕获致命异常降级放行: {err}\n")
+        print(json.dumps({"decision": "allow", "warning": f"SANDBOX_FATAL_DEGRADED: {err}"}))
     sys.exit(0)
