@@ -103,7 +103,7 @@ def build_hooks_config(guard_script_path: Path) -> dict:
     cmd_stop = f"{base_cmd} stop"
 
     return {
-        "agent-circuit-breaker": {
+        "agent-circuit-breaker-pre-tool": {
             "PreToolUse": [
                 {
                     "matcher": "*",
@@ -115,7 +115,9 @@ def build_hooks_config(guard_script_path: Path) -> dict:
                         }
                     ]
                 }
-            ],
+            ]
+        },
+        "agent-circuit-breaker-post-tool": {
             "PostToolUse": [
                 {
                     "matcher": "*",
@@ -127,14 +129,18 @@ def build_hooks_config(guard_script_path: Path) -> dict:
                         }
                     ]
                 }
-            ],
+            ]
+        },
+        "agent-circuit-breaker-pre-invocation": {
             "PreInvocation": [
                 {
                     "type": "command",
                     "command": cmd_pre_inv,
                     "timeout": timeout_sec
                 }
-            ],
+            ]
+        },
+        "agent-circuit-breaker-stop": {
             "Stop": [
                 {
                     "type": "command",

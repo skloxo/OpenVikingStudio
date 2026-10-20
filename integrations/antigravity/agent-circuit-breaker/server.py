@@ -7,10 +7,24 @@ Agent Circuit Breaker MCP Server (FastMCP Standard Edition)
 """
 
 import os
+import sys
 import json
 import tempfile
 from pathlib import Path
 from typing import Optional
+
+# SECTION: Windows UTF-8 Stdio Safeguard
+if sys.platform == "win32":
+    try:
+        if hasattr(sys.stdin, "reconfigure"):
+            sys.stdin.reconfigure(encoding="utf-8", errors="replace")
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        if hasattr(sys.stderr, "reconfigure"):
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 from mcp.server.fastmcp import FastMCP
 
 # 初始化官方 FastMCP 服务端
