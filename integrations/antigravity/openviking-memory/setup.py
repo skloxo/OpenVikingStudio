@@ -174,6 +174,7 @@ def register_in_ide_config(plugin_name: str, version: str):
         # 强制自愈清洗：消灭历史遗留幽灵别名 openviking
         plugins.pop("openviking", None)
         plugins[plugin_name] = {
+            "enabled": True,
             "installedFrom": {
                 "id": f"openviking/plugin/{plugin_name}",
                 "marketplace": "openviking-marketplace",
@@ -252,21 +253,28 @@ def install_plugin(target_dir: Path, api: str, key: str):
 
     target_dir.mkdir(parents=True, exist_ok=True)
 
-    # 1. 同步构件 (排除开发噪音)
-    ignore_patterns = shutil.ignore_patterns(
-        "__pycache__", "*.pyc", ".git*", "venv", ".pytest_cache", ".caps_cache.json"
-    )
-    for item in PLUGIN_SRC_DIR.iterdir():
-        if item.name in ["setup.py"]:
-            continue
-        dst = target_dir / item.name
-        if item.is_dir():
-            if dst.exists():
-                shutil.rmtree(dst)
-            shutil.copytree(item, dst, ignore=ignore_patterns)
-        else:
-            shutil.copy2(item, dst)
-    print("  ✔ 核心构件同步完成 (plugin.json, server.py, hooks/, skills/, rules/)")
+    # 1. 同步构件 (软链同源检测防自毁)
+    is_same_dir = False
+    try:
+        is_same_dir = (target_dir.resolve() == PLUGIN_SRC_DIR.resolve())
+    except Exception:
+        pass
+
+    if is_same_dir:
+        print("  ✔ 软链/同源挂载模式生效 (In-place Link)，跳过物理拷贝")
+    else:
+        ignore_patterns = shutil.ignore_patterns(
+            "__pycache__", "*.pyc", ".git*", "venv", ".pytest_cache", ".caps_cache.json"
+        )
+        for item in PLUGIN_SRC_DIR.iterdir():
+            if item.name in ["setup.py"]:
+                continue
+            dst = target_dir / item.name
+            if item.is_dir():
+                shutil.copytree(item, dst, ignore=ignore_patterns, dirs_exist_ok=True)
+            else:
+                shutil.copy2(item, dst)
+        print("  ✔ 核心构件同步完成 (plugin.json, server.py, hooks/, skills/, rules/)")
 
     # 2. 渲染动态 hooks.json
     py_cmd = get_python_cmd()
@@ -427,7 +435,9 @@ def main():
         return
 
     api, key = sniff_api_credentials(args.api)
-    if args.key:
+    if args.api and args.api.strip():
+        api = args.api.strip().rstrip("/")
+    if args.key and args.key.strip():
         key = args.key.strip()
 
     install_plugin(target_dir, api, key)

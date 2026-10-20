@@ -169,7 +169,7 @@ def create_core_and_ops_plugins(
     memory_plugin = QuadPluginDefinition(
         plugin_id="openviking-memory",
         name="OpenViking 核心记忆与代码战地",
-        version=resolve_package_version("dsh-plugin-openviking-memory", "2.0.15"),
+        version=resolve_package_version("dsh-plugin-openviking-memory", "2.0.16"),
         category="platform",
         description="体外大脑中心化战地旗舰：长程记忆、工作区 AST、1214技能感知、工单吹哨与泊车管家 (面向全量普通 Agent)",
         skill=SkillDefinition(
