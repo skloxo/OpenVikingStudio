@@ -59,16 +59,35 @@ API_KEY = (
 ACTOR_PEER = os.environ.get("OPENVIKING_ACTOR_PEER", "")
 
 
+import socket
+from pydantic.fields import FieldInfo
+
+
+def _clean_payload(obj: Any) -> Any:
+    if isinstance(obj, FieldInfo):
+        return None if obj.default is ... else obj.default
+    if isinstance(obj, dict):
+        return {
+            k: _clean_payload(v)
+            for k, v in obj.items()
+            if not (isinstance(v, FieldInfo) and v.default is ...)
+        }
+    if isinstance(obj, list):
+        return [_clean_payload(v) for v in obj]
+    return obj
+
+
 def _api_request(
     method: str,
     endpoint: str,
     params: Optional[Dict[str, Any]] = None,
     body: Optional[Dict[str, Any]] = None,
-    timeout: float = 30.0,
+    timeout: float = 5.0,
 ) -> str:
     url = f"{API_BASE}{endpoint}"
     if params:
-        clean_params = {k: v for k, v in params.items() if v is not None and v != ""}
+        cleaned_params = _clean_payload(params)
+        clean_params = {k: v for k, v in cleaned_params.items() if v is not None and v != ""}
         if clean_params:
             url += ("&" if "?" in url else "?") + urllib.parse.urlencode(clean_params)
 
@@ -83,7 +102,8 @@ def _api_request(
 
     data = None
     if body is not None:
-        data = json.dumps(body, ensure_ascii=False).encode("utf-8")
+        cleaned_body = _clean_payload(body)
+        data = json.dumps(cleaned_body, ensure_ascii=False).encode("utf-8")
         headers["Content-Type"] = "application/json; charset=utf-8"
 
     req = urllib.request.Request(url, data=data, headers=headers, method=method)
@@ -98,6 +118,8 @@ def _api_request(
     except urllib.error.HTTPError as e:
         err_msg = e.read().decode("utf-8", errors="replace")
         return f"HTTP {e.code}: {err_msg}"
+    except (urllib.error.URLError, TimeoutError, socket.timeout) as e:
+        return f"[Fail-Fast Guard] 请求后端超时 ({timeout}s) 自动熔断: {e}"
     except Exception as e:
         return f"Request Error: {e}"
 
@@ -114,16 +136,15 @@ def openviking_find(
     query: str = Field(description="搜索关键词或自然语言问题"),
     target_uri: str = Field(default="", description="搜索范围 URI，例如 viking://resources/"),
     limit: int = Field(default=10, description="返回结果最大条数"),
-    min_score: float = Field(default=0.35, description="语义相似度最低分"),
-    level: Optional[str] = Field(default=None, description="读取深度：abstract/overview/read"),
+    score_threshold: Optional[float] = Field(default=None, description="语义相似度最低阈值"),
 ) -> str:
     """两阶段混合语义检索记忆与资源。"""
-    body: Dict[str, Any] = {"query": query, "limit": limit, "min_score": min_score}
+    body: Dict[str, Any] = {"query": query, "limit": limit}
+    if score_threshold is not None:
+        body["score_threshold"] = score_threshold
     if target_uri:
         body["target_uri"] = target_uri
-    if level:
-        body["level"] = level
-    return _api_request("POST", "/api/v1/search/find", body=body, timeout=60.0)
+    return _api_request("POST", "/api/v1/search/find", body=body, timeout=8.0)
 
 @mcp.tool()
 def openviking_search(

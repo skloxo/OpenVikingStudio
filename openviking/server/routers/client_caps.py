@@ -324,7 +324,7 @@ async def get_client_capabilities(
             "plugins": [{
                 "id": "openviking-memory",
                 "name": "OpenViking 核心记忆与代码战地",
-                "version": "2.0.13",
+                "version": "2.0.16",
                 "status": "active",
                 "total_tools": len(authed_tools),
                 "description": "体外大脑长程记忆语义检索、代码感知、上下文路由与经验沉淀完全体 (34 项战地工具 + 3 项 Hook 物理守卫)",
@@ -414,7 +414,7 @@ async def get_client_capabilities(
         {
             "id": "openviking-memory",
             "name": "OpenViking 核心记忆与代码战地",
-            "version": "2.0.13",
+            "version": "2.0.16",
             "status": "active",
             "total_tools": len(authed_mem),
             "description": "体外大脑长程记忆语义检索、代码感知、上下文路由与经验沉淀完全体",

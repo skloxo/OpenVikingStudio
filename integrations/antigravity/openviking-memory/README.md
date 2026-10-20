@@ -1,6 +1,6 @@
 # OpenViking 核心记忆反重力官方标准插件 (openviking-memory)
 
-> **版本**：`v2.0.11`  
+> **版本**：`v2.0.16`  
 > **适用宿主**：Google Antigravity IDE (VS Code / Theia Agent 运行时)  
 > **开源协议**：AGPL-3.0
 
@@ -43,7 +43,7 @@ python3 setup.py
 
 | 组成部分 | 作用与功能 |
 | :--- | :--- |
-| **`plugin.json`** | 反重力官方插件清单，声明版本号 `2.0.11`、图标、作者及建议提示词 |
+| **`plugin.json`** | 反重力官方插件清单，声明版本号 `2.0.16`、图标、作者及建议提示词 |
 | **`hooks.json`** | 声明式 Hook：在推理前自动注入先验记忆，在会话结束时轻量心跳归档 |
 | **`skills/openviking-memory`** | 核心记忆生命周期技能：指导智能体按需召回、阅读切片与写回事实 |
 | **`skills/session-handover`** | 会话脱水结晶技能：三阶交接 SOP，生成供新会话秒级启动的 Handover Prompt |
