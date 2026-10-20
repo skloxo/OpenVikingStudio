@@ -61,9 +61,10 @@ export function PluginOverviewTab({
                 : 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400'
             }`}
           >
-            {plugin.plugin_id === 'keepass-vault'
-              ? '本地托管就绪 · 零云端依赖'
-              : `${isHealthy ? '探针存活' : '状态异常'} · 本地响应 ${plugin.health?.latency_ms?.toFixed(1) || '0.1'}ms`}
+            {isHealthy ? '探针存活' : '状态降级'}
+            {plugin.health?.latency_ms != null && plugin.health.latency_ms > 0
+              ? ` · 本地响应 ${plugin.health.latency_ms.toFixed(1)}ms`
+              : ''}
           </Badge>
         </div>
         <p className="text-xs text-muted-foreground leading-relaxed">

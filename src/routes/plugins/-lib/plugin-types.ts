@@ -51,11 +51,11 @@ export type QuadPluginItem = {
 }
 
 export type PluginsHealthSummary = {
-  total_plugins: number
+  total_count: number
   healthy_count: number
-  degraded_count: number
-  unhealthy_count: number
+  healthy_rate: number
   average_latency_ms: number
-  checked_at: number
-  overall_status: 'healthy' | 'degraded' | 'unhealthy'
+  overall_status: 'healthy' | 'degraded' | 'down' | 'unhealthy'
+  probes: Record<string, PluginHealth>
 }
+
