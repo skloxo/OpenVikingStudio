@@ -167,3 +167,56 @@ async def test_memory_updater_preserves_memories_when_fresh_read_fails():
     assert any(error is read_error for _, error in result.errors)
     assert update_uri not in result.written_uris
     assert update_uri not in result.edited_uris
+
+
+@pytest.mark.asyncio
+async def test_viking_fs_rm_not_found_with_no_vector_returns_zero():
+    """Verify rm(..., no_vector=True) on non-existent path immediately returns zero."""
+    from openviking.storage.viking_fs import VikingFS
+
+    fs = VikingFS.__new__(VikingFS)
+    test_ctx = RequestContext(user=UserIdentifier.the_default_user("test"), role=Role.USER)
+    fs._ctx_or_default = MagicMock(return_value=test_ctx)
+    fs._ensure_access = AsyncMock()
+    fs._uri_to_path = MagicMock(return_value="/sessions/missing-123")
+    fs._path_to_uri = MagicMock(return_value="viking://user/test/sessions/missing-123")
+
+    mock_agfs = MagicMock()
+    mock_agfs.stat = AsyncMock(side_effect=FileNotFoundError("not found"))
+    fs._async_agfs = mock_agfs
+    fs._collect_uris = AsyncMock()
+    fs._delete_from_vector_store = AsyncMock()
+
+    result = await fs.rm(
+        "viking://user/test/sessions/missing-123",
+        recursive=True,
+        no_vector=True,
+    )
+
+    assert result == {"estimated_deleted_count": 0}
+    fs._collect_uris.assert_not_called()
+    fs._delete_from_vector_store.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_record_used_uses_open_instead_of_get(ctx):
+    """Verify record_used router endpoint resolves session via open() rather than get()."""
+    from openviking.server.routers.sessions import record_used, UsedRequest
+
+    mock_service = MagicMock()
+    mock_session = MagicMock()
+    mock_session.stats.contexts_used = 1
+    mock_session.stats.skills_used = 0
+    mock_service.sessions.open = AsyncMock(return_value=mock_session)
+    mock_service.sessions.get = AsyncMock()
+
+    req = UsedRequest(contexts=["viking://resources/doc.md"])
+
+    with patch("openviking.server.routers.sessions.get_service", return_value=mock_service):
+        resp = await record_used(req, session_id="sess-used-test", _ctx=ctx)
+
+    assert resp.status == "ok"
+    mock_service.sessions.open.assert_awaited_once_with("sess-used-test", ctx, auto_create=False)
+    mock_service.sessions.get.assert_not_called()
+    mock_session.used.assert_called_once()
+
