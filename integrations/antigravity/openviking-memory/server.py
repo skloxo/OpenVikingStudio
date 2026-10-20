@@ -82,7 +82,7 @@ def _api_request(
     endpoint: str,
     params: Optional[Dict[str, Any]] = None,
     body: Optional[Dict[str, Any]] = None,
-    timeout: float = 5.0,
+    timeout: Optional[float] = None,
 ) -> str:
     url = f"{API_BASE}{endpoint}"
     if params:
@@ -108,7 +108,8 @@ def _api_request(
 
     req = urllib.request.Request(url, data=data, headers=headers, method=method)
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        kwargs = {"timeout": timeout} if timeout is not None else {}
+        with urllib.request.urlopen(req, **kwargs) as resp:
             raw = resp.read().decode("utf-8", errors="replace")
             try:
                 parsed = json.loads(raw)
@@ -144,7 +145,7 @@ def openviking_find(
         body["score_threshold"] = score_threshold
     if target_uri:
         body["target_uri"] = target_uri
-    return _api_request("POST", "/api/v1/search/find", body=body, timeout=8.0)
+    return _api_request("POST", "/api/v1/search/find", body=body, timeout=60.0)
 
 @mcp.tool()
 def openviking_search(
@@ -249,16 +250,16 @@ def openviking_glob(
 def openviking_ls(
     target_uri: str = Field(default="viking://", description="列出的 Viking URI 路径"),
 ) -> str:
-    """列出 VikingFS 目录中的文件和子目录。"""
-    return _api_request("GET", "/api/v1/fs/ls", params={"uri": target_uri})
+    """列出 VikingFS 目录中的文件和子目录（快速轻量模式）。"""
+    return _api_request("GET", "/api/v1/fs/ls", params={"uri": target_uri, "output": "original"}, timeout=15.0)
 
 @mcp.tool()
 def openviking_tree(
     target_uri: str = Field(default="viking://", description="目标 URI"),
     depth: int = Field(default=2, description="递归展开深度"),
 ) -> str:
-    """获取 VikingFS 目录树状结构。"""
-    return _api_request("GET", "/api/v1/fs/tree", params={"uri": target_uri, "level_limit": depth})
+    """获取 VikingFS 目录树状结构（快速轻量模式）。"""
+    return _api_request("GET", "/api/v1/fs/tree", params={"uri": target_uri, "level_limit": depth, "output": "original"}, timeout=15.0)
 
 @mcp.tool()
 def openviking_tag(
