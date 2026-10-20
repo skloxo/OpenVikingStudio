@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Agent Circuit Breaker 官方插件自举安装向导 (v1.3.2 - 工业自适应弹性版)
+Agent Circuit Breaker 官方插件自举安装向导 (v1.3.3 - 工业自适应弹性版)
 支持跨平台一键开箱即用安装、卸载、巡检与生命周期钩子自检。
 """
 
@@ -265,7 +265,7 @@ def unregister_global_mcp():
 
 def install(target_dir: Path = None):
     print("=" * 65)
-    print("🛡️ [Agent Circuit Breaker] 官方智能体断路器自举安装向导 (v1.3.2)")
+    print("🛡️ [Agent Circuit Breaker] 官方智能体断路器自举安装向导 (v1.3.3)")
     print(f"操作系统: {platform.system()} ({platform.machine()})")
     print(f"源包目录: {PLUGIN_SRC_DIR}")
     print("=" * 65)

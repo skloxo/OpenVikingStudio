@@ -1,6 +1,6 @@
 # OpenViking 核心记忆反重力官方标准插件 (openviking-memory)
 
-> **版本**：`v2.0.16`  
+> **版本**：`v2.0.17`  
 > **适用宿主**：Google Antigravity IDE (VS Code / Theia Agent 运行时)  
 > **开源协议**：AGPL-3.0
 
