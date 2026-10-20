@@ -3,12 +3,13 @@
     "openviking-memory": {
       "command": "C:/Python311/python.exe",
       "args": [
-        "C:/Users/Skl/Desktop/Workspace/coding/OpenVikingStudio/mcp-openviking/mcp_openviking_server.py",
+        "C:/Users/Skl/.gemini/config/plugins/openviking-memory/server.py",
         "--mode=memory"
       ],
       "env": {
         "OPENVIKING_API": "http://127.0.0.1:1933",
-        "OPENVIKING_MCP_MODE": "memory"
+        "OPENVIKING_MCP_MODE": "memory",
+        "PYTHONIOENCODING": "utf-8"
       }
     }
   }

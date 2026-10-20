@@ -112,6 +112,27 @@ def main():
     assert len(servers) == 7, f"Expected exactly 7 decoupled servers, got {len(servers)}: {list(servers.keys())}"
     print(f"  ✔ [全局注册] mcp_config.json 成功注册 7 大分立单一真相源服务 (0 别名重复): {list(servers.keys())}")
 
+    # 5. Card-200: 验证 openviking-memory 自内聚转接驱动 (server.py)
+    mem_server = Path.home() / ".gemini" / "config" / "plugins" / "openviking-memory" / "server.py"
+    assert mem_server.exists(), "openviking-memory self-contained server.py missing in plugins dir!"
+    mem_cfg_args = servers.get("openviking-memory", {}).get("args", [])
+    assert mem_cfg_args, "openviking-memory args missing in global mcp_config.json!"
+    assert "plugins/openviking-memory/server.py" in mem_cfg_args[0].replace("\\", "/"), (
+        f"openviking-memory command must point to self-contained server.py! Got: {mem_cfg_args[0]}"
+    )
+    assert "Desktop/coding/OpenVikingStudio" not in mem_cfg_args[0].replace("\\", "/"), (
+        "Forbidden external source code path found in openviking-memory server args!"
+    )
+
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("ov_mem_server", str(mem_server))
+    ov_server_mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ov_server_mod)
+    mem_tools = set(ov_server_mod.mcp._tool_manager._tools.keys())
+    assert len(mem_tools) == 37, f"Self-contained server.py tool count mismatch: {len(mem_tools)} != 37"
+    assert mem_tools == MEMORY_37_TOOL_NAMES, "Self-contained server.py tool set mismatch with MEMORY_37_TOOL_NAMES!"
+    print("  ✔ [Card-200 自内聚驱动] server.py 物理存在且精准承载 37 个核心工具，彻底斩除外部源码路径依赖")
+
     print("=" * 60)
     print("🎉 全景生态验收 100% 通过！所有设计契约与用户诉求完全闭环！")
     print("=" * 60)
