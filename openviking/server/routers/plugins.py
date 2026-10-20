@@ -30,6 +30,8 @@ class PluginsHealthSummaryResponse(BaseModel):
     overall_status: str = Field(..., description="全局健康态 (healthy | degraded | down)")
     healthy_count: int = Field(..., description="健康运行中插件数量")
     total_count: int = Field(..., description="注册插件总数")
+    healthy_rate: float = Field(100.0, description="健康百分比 (0.0 ~ 100.0)")
+    average_latency_ms: float = Field(0.0, description="真实物理平均探针时延 (毫秒)")
     probes: Dict[str, PluginHealthProbe] = Field(..., description="各插件探针详情字典")
 
 
@@ -51,22 +53,8 @@ async def list_plugins(
     return PluginsListResponse(total=len(plugins), plugins=plugins)
 
 
-@router.get("/{plugin_id}", response_model=QuadPluginDefinition)
-async def get_plugin_detail(plugin_id: str) -> QuadPluginDefinition:
-    """获取指定插件的四位一体规格详情。"""
-    registry = PluginRegistry.get_instance()
-    plugin = registry.get_plugin(plugin_id)
-    if not plugin:
-        raise HTTPException(status_code=404, detail=f"Plugin '{plugin_id}' not found")
-
-    probes = await PluginProbeRunner.check_all_plugins()
-    if plugin_id in probes:
-        plugin.health = probes[plugin_id]
-
-    return plugin
-
-
 @router.get("/health/summary", response_model=PluginsHealthSummaryResponse)
+@router.get("/health", response_model=PluginsHealthSummaryResponse)
 async def get_plugins_health_summary() -> PluginsHealthSummaryResponse:
     """获取全平台插件健康探针概览大盘数据。"""
     registry = PluginRegistry.get_instance()
@@ -75,7 +63,11 @@ async def get_plugins_health_summary() -> PluginsHealthSummaryResponse:
 
     healthy_count = sum(1 for p in probes.values() if p.status == "healthy")
     total = len(plugins)
-    
+    healthy_rate = round((healthy_count / total * 100.0), 1) if total > 0 else 0.0
+
+    latencies = [p.latency_ms for p in probes.values() if p.latency_ms > 0]
+    avg_latency = round(sum(latencies) / len(latencies), 1) if latencies else 0.0
+
     if healthy_count == total and total > 0:
         overall = "healthy"
     elif healthy_count > 0:
@@ -87,6 +79,8 @@ async def get_plugins_health_summary() -> PluginsHealthSummaryResponse:
         overall_status=overall,
         healthy_count=healthy_count,
         total_count=total,
+        healthy_rate=healthy_rate,
+        average_latency_ms=avg_latency,
         probes=probes,
     )
 
@@ -105,5 +99,20 @@ async def get_client_bridge_package(
         "status": "success",
         "result": bridge_info,
     }
+
+
+@router.get("/{plugin_id}", response_model=QuadPluginDefinition)
+async def get_plugin_detail(plugin_id: str) -> QuadPluginDefinition:
+    """获取指定插件的四位一体规格详情。"""
+    registry = PluginRegistry.get_instance()
+    plugin = registry.get_plugin(plugin_id)
+    if not plugin:
+        raise HTTPException(status_code=404, detail=f"Plugin '{plugin_id}' not found")
+
+    probes = await PluginProbeRunner.check_all_plugins()
+    if plugin_id in probes:
+        plugin.health = probes[plugin_id]
+
+    return plugin
 
 

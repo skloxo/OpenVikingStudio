@@ -31,12 +31,21 @@ async function fetchPluginsHealth(): Promise<PluginsHealthSummary | null> {
   try {
     const res = await getOvResult<PluginsHealthSummary>(
       ovClient.client.get({
-        url: '/api/v1/plugins/health',
+        url: '/api/v1/plugins/health/summary',
       }),
     )
     return res
-  } catch (err) {
-    return null
+  } catch {
+    try {
+      const fallbackRes = await getOvResult<PluginsHealthSummary>(
+        ovClient.client.get({
+          url: '/api/v1/plugins/health',
+        }),
+      )
+      return fallbackRes
+    } catch {
+      return null
+    }
   }
 }
 

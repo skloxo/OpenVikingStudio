@@ -144,7 +144,7 @@ def test_get_plugin_detail_and_bridge_endpoints(client):
 
 
 def test_get_plugins_health_summary_endpoint(client):
-    """验证 GET /api/v1/plugins/health/summary 健康探针大盘接口。"""
+    """验证 GET /api/v1/plugins/health/summary 健康探针大盘接口及 /health 别名。"""
     resp = client.get("/api/v1/plugins/health/summary")
     assert resp.status_code == 200
     data = resp.json()
@@ -153,9 +153,29 @@ def test_get_plugins_health_summary_endpoint(client):
     assert data["overall_status"] in ("healthy", "degraded", "down")
     assert "healthy_count" in data
     assert "total_count" in data
-    assert data["total_count"] >= 3
+    assert data["total_count"] == 8
+    assert "healthy_rate" in data
+    assert "average_latency_ms" in data
     assert "probes" in data
-    assert "openviking-memory" in data["probes"]
+    
+    # 验证全系 8 款插件探针 100% 覆盖，绝无盲区
+    for pid in [
+        "openviking-memory",
+        "openviking-ops",
+        "keepass-vault",
+        "network-search",
+        "dify",
+        "cpa-squad",
+        "fleet-mesh",
+        "agent-circuit-breaker",
+    ]:
+        assert pid in data["probes"], f"Probe missing for {pid}"
+        assert data["probes"][pid]["latency_ms"] >= 0.0
+
+    # 验证 /health 别名路由同频
+    resp_alias = client.get("/api/v1/plugins/health")
+    assert resp_alias.status_code == 200
+    assert resp_alias.json()["total_count"] == 8
 
 
 def test_search_usage_endpoints_removed_and_bridge_package(client):

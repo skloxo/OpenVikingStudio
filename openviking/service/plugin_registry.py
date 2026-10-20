@@ -75,26 +75,21 @@ class PluginRegistry:
         pid = (plugin_id or "openviking-memory").strip().lower()
         if pid in ("openviking-ops", "ops"):
             target_pkg = "dsh-plugin-openviking-ops"
-            def_ver = "1.0.4"
         elif pid in ("fleet-mesh", "fleet", "openviking-fleet"):
             target_pkg = "dsh-plugin-openviking-fleet"
-            def_ver = "1.0.4"
         elif pid in ("keepass-vault", "keepass", "vault"):
             target_pkg = "dsh-plugin-keepass-vault"
-            def_ver = "1.0.2"
         elif pid in ("dify", "dify-workflow"):
             target_pkg = "dsh-plugin-dify"
-            def_ver = "1.0.1"
         elif pid in ("cpa-squad", "cpa"):
             target_pkg = "dsh-plugin-cpa"
-            def_ver = "1.0.1"
         elif pid in ("agent-circuit-breaker", "circuit-breaker", "circuit_breaker"):
             target_pkg = "agent-circuit-breaker"
-            def_ver = "1.3.3"
         else:
             target_pkg = "dsh-plugin-openviking-memory"
-            def_ver = "2.0.16"
 
+        from openviking.service.builtin_plugins_core import resolve_package_version
+        def_ver = resolve_package_version(target_pkg, "1.0.0")
         latest_version = def_ver
         latest_filename = f"{target_pkg}-{latest_version}.tgz"
 

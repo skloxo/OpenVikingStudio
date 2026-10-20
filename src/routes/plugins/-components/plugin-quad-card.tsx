@@ -49,24 +49,13 @@ export function PluginQuadCard({ plugin, onSelect }: PluginQuadCardProps) {
             >
               v{plugin.version}
             </Badge>
-            {plugin.plugin_id === 'openviking-memory' && (
+            {plugin.category === 'platform' ? (
               <Badge variant="outline" className="text-xs font-mono border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 px-1.5 py-0 shrink-0">
-                平台底座
+                平台核心
               </Badge>
-            )}
-            {plugin.plugin_id === 'network-search' && (
+            ) : (
               <Badge variant="outline" className="text-xs font-mono border-border/60 bg-muted/20 text-muted-foreground px-1.5 py-0 shrink-0">
-                双模态
-              </Badge>
-            )}
-            {plugin.plugin_id === 'keepass-vault' && (
-              <Badge variant="outline" className="text-xs font-mono border-border/60 bg-muted/20 text-muted-foreground px-1.5 py-0 shrink-0">
-                零依赖
-              </Badge>
-            )}
-            {plugin.plugin_id === 'dify' && (
-              <Badge variant="outline" className="text-xs font-mono border-border/60 bg-muted/20 text-muted-foreground px-1.5 py-0 shrink-0">
-                工作流
+                生态扩展
               </Badge>
             )}
             {!privilege.isAllowed && (
@@ -87,19 +76,33 @@ export function PluginQuadCard({ plugin, onSelect }: PluginQuadCardProps) {
             )}
           </div>
 
-          {/* 运行态状态胶囊 (性冷淡高密风格，NO GREEN EVER) */}
+          {/* 运行态状态胶囊 (真实物理探针状态，NO GREEN EVER) */}
           <div className="flex shrink-0 items-center gap-1.5 rounded border border-border/60 bg-muted/30 px-2 py-0.5 text-xs font-mono">
             <span
               className={`size-1.5 rounded-full shrink-0 ${
-                isHealthy ? 'bg-cyan-500' : 'bg-amber-500'
+                plugin.health?.status === 'healthy'
+                  ? 'bg-cyan-500'
+                  : plugin.health?.status === 'degraded'
+                    ? 'bg-amber-500'
+                    : 'bg-rose-500'
               }`}
             />
-            <span className={isHealthy ? 'text-cyan-700 dark:text-cyan-400 font-medium' : 'text-amber-700 dark:text-amber-400 font-medium'}>
-              {plugin.plugin_id === 'keepass-vault'
-                ? '托管就绪'
-                : isHealthy
-                  ? '服务就绪'
-                  : '部分降级'}
+            <span
+              className={
+                plugin.health?.status === 'healthy'
+                  ? 'text-cyan-700 dark:text-cyan-400 font-medium'
+                  : plugin.health?.status === 'degraded'
+                    ? 'text-amber-700 dark:text-amber-400 font-medium'
+                    : 'text-rose-700 dark:text-rose-400 font-medium'
+              }
+            >
+              {plugin.health?.status === 'healthy'
+                ? '服务就绪'
+                : plugin.health?.status === 'degraded'
+                  ? '部分降级'
+                  : plugin.health?.status === 'down'
+                    ? '离线异常'
+                    : '检测中'}
             </span>
           </div>
         </div>
