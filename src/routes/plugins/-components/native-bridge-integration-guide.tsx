@@ -56,12 +56,35 @@ export function NativeBridgeIntegrationGuide({
   // 动态采用当前 Web Studio 所在实际中枢地址，杜绝过度工程化的单选切换
   const serviceAddress = typeof window !== 'undefined' && window.location.origin ? window.location.origin : 'https://vk.tide.red'
 
+  // 动态从后端拉取实时 SSOT 桥接元数据（版本号与分发包路径）
+  const [dynamicMeta, setDynamicMeta] = React.useState<{ version?: string; package_url?: string } | null>(null)
+
+  React.useEffect(() => {
+    let active = true
+    fetch(`${serviceAddress}/api/v1/plugins/bridge/client-package?plugin_id=${encodeURIComponent(pluginId)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (active && data?.status === 'success' && data?.result) {
+          setDynamicMeta({
+            version: data.result.version,
+            package_url: data.result.package_url,
+          })
+        }
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [pluginId, serviceAddress])
+
   const bridge = resolvePluginBridgeConfig(
     pluginId,
     pluginName,
     serviceAddress,
     effectiveApiKey,
     hasValidApiKey,
+    dynamicMeta?.version,
+    dynamicMeta?.package_url,
   )
 
   const handleCopy = async (text: string, label: string) => {

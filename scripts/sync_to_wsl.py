@@ -263,6 +263,14 @@ def main() -> None:
     print(f"• WSL2 原生目录: {target_dir}")
     print("=" * 60)
 
+    # 0. 自动扫描全系插件母本，生成/刷新不可变 .tgz 分发包至 public/ 和 dist/
+    pack_script = os.path.join(repo_root, "scripts", "pack_all_plugins.py")
+    if os.path.isfile(pack_script):
+        try:
+            subprocess.run([sys.executable, pack_script], check=True)
+        except Exception as e:
+            print(f"⚠️ [插件自动打包跳过或异常]: {e}")
+
     # 1. 增量同步源码至 WSL 原生服务目录
     if not sync_source(repo_root, target_dir, delete=args.delete):
         sys.exit(1)
