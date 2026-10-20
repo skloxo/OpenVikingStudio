@@ -351,7 +351,7 @@ export function resolvePluginBridgeConfig(
 
   // 7. 原生 Memory 核心长程记忆与代码战地 (默认)
   const pkgName = 'dsh-plugin-openviking-memory'
-  const version = '2.0.15'
+  const version = '2.0.16'
   const tarballUrl = `https://vk.tide.red/studio/${pkgName}-${version}.tgz`
   const installCmd = `npm install ${tarballUrl}`
   const dshPatch = `plugins:

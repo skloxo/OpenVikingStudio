@@ -18,10 +18,10 @@ STUDIO_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 def test_semver_consistency():
-    """验证版本号严格同步至 1.7.116。"""
-    assert __version__ == "1.7.116"
+    """验证版本号严格同步至 1.7.150。"""
+    assert __version__ == "1.7.150"
     pkg = json.loads((STUDIO_DIR / "package.json").read_text(encoding="utf-8"))
-    assert pkg["version"] == "1.7.116"
+    assert pkg["version"] == "1.7.150"
 
 
 def test_all_7_plugins_tarball_exist_and_valid():
@@ -86,12 +86,12 @@ async def test_keepass_health_probe_zero_cloud_dependency():
 def test_plugin_registry_bridge_info_resolution():
     """验证 PluginRegistry 能够精准解析全系 6 种不同插件 ID 的独立桥接包。"""
     cases = [
-        ("openviking-ops", "dsh-plugin-openviking-ops", "1.0.3"),
-        ("fleet-mesh", "dsh-plugin-openviking-fleet", "1.0.3"),
+        ("openviking-ops", "dsh-plugin-openviking-ops", "1.0.4"),
+        ("fleet-mesh", "dsh-plugin-openviking-fleet", "1.0.4"),
         ("keepass-vault", "dsh-plugin-keepass-vault", "1.0.2"),
         ("dify", "dsh-plugin-dify", "1.0.1"),
         ("cpa-squad", "dsh-plugin-cpa", "1.0.1"),
-        ("openviking-memory", "dsh-plugin-openviking-memory", "2.0.15"),
+        ("openviking-memory", "dsh-plugin-openviking-memory", "2.0.16"),
     ]
 
     for pid, expected_pkg, expected_ver in cases:
