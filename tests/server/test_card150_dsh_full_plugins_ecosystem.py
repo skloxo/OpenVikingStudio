@@ -91,7 +91,7 @@ def test_plugin_registry_bridge_info_resolution():
         ("keepass-vault", "dsh-plugin-keepass-vault", "1.0.2"),
         ("dify", "dsh-plugin-dify", "1.0.1"),
         ("cpa-squad", "dsh-plugin-cpa", "1.0.1"),
-        ("openviking-memory", "dsh-plugin-openviking-memory", "2.0.16"),
+        ("openviking-memory", "dsh-plugin-openviking-memory", "2.0.17"),
     ]
 
     for pid, expected_pkg, expected_ver in cases:
