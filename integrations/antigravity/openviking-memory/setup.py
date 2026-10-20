@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Beijing Volcano Engine Technology Co., Ltd.
 # SPDX-License-Identifier: AGPL-3.0
 """
-OpenViking 核心记忆反重力官方标准插件 (v2.0.13 - 全自动自举工业版)
+OpenViking 核心记忆反重力官方标准插件 (v2.0.16 - 全自动自举工业版)
 支持：
 1. 拓扑自适应：本地优先探测 127.0.0.1:1933，卫星端优雅降级公网域名
 2. 宿主注册表：自动幂等注入 ~/.gemini/config/config.json 点亮 IDE 已安装列表
@@ -50,10 +50,10 @@ def get_plugin_version() -> str:
     if pj.exists():
         try:
             with open(pj, "r", encoding="utf-8") as f:
-                return json.load(f).get("version", "2.0.15")
+                return json.load(f).get("version", "2.0.16")
         except Exception:
             pass
-    return "2.0.15"
+    return "2.0.16"
 
 
 PLUGIN_VERSION = get_plugin_version()
@@ -163,7 +163,7 @@ def verify_connection(api: str, key: str) -> tuple[bool, str, float, str]:
 
 
 def register_in_ide_config(plugin_name: str, version: str):
-    """自动幂等写入 ~/.gemini/config/config.json 点亮 IDE 已安装列表"""
+    """自动幂等写入 ~/.gemini/config/config.json 点亮 IDE 已安装列表并清洗历史幽灵"""
     cfg_file = GEMINI_CONFIG_DIR / "config.json"
     if not cfg_file.exists():
         return
@@ -171,6 +171,8 @@ def register_in_ide_config(plugin_name: str, version: str):
         with open(cfg_file, "r", encoding="utf-8") as f:
             cfg = json.load(f)
         plugins = cfg.get("plugins", {})
+        # 强制自愈清洗：消灭历史遗留幽灵别名 openviking
+        plugins.pop("openviking", None)
         plugins[plugin_name] = {
             "installedFrom": {
                 "id": f"openviking/plugin/{plugin_name}",
@@ -181,30 +183,18 @@ def register_in_ide_config(plugin_name: str, version: str):
         cfg["plugins"] = plugins
         with open(cfg_file, "w", encoding="utf-8") as f:
             json.dump(cfg, f, ensure_ascii=False, indent=2)
-        print(f"  ✔ 成功在 IDE config.json 注册表登记 {plugin_name} (v{version})")
+            f.write("\n")
+        print(f"  ✔ 成功在 IDE config.json 注册表登记 {plugin_name} (v{version}) (已清洗幽灵 openviking)")
     except Exception as e:
         print(f"  ⚠️ 注册 IDE config.json 失败: {e}")
 
 
 def sync_mcp_dual_track(api: str, key: str, target_dir: Path):
-    """双轨 MCP 别名配置与全局联动，彻底消灭名称分裂"""
-    # 1. 查找服务端脚本
-    candidate_scripts = [
-        Path.home() / "Desktop" / "coding" / "OpenVikingStudio" / "mcp-openviking" / "mcp_openviking_server.py",
-        PLUGIN_SRC_DIR.parent.parent / "mcp-openviking" / "mcp_openviking_server.py",
-    ]
-    server_script = ""
-    for c in candidate_scripts:
-        if c.exists():
-            server_script = str(c).replace("\\", "/")
-            break
-
-    if not server_script:
-        server_script = "C:/Users/Skl/Desktop/coding/OpenVikingStudio/mcp-openviking/mcp_openviking_server.py"
-
+    """自内聚双轨 MCP 配置与全局联动，彻底切除外部源码依赖"""
+    server_script = (target_dir / "server.py").as_posix()
     py_cmd = sys.executable.replace("\\", "/")
 
-    # 2. 插件私有 mcp_config.json (收敛为单一规范服务名 openviking-memory)
+    # 1. 插件私有 mcp_config.json (单一核心服务名 openviking-memory，命令路径永远固定为 target_dir / server.py)
     p_mcp = {
         "mcpServers": {
             "openviking-memory": {
@@ -221,9 +211,10 @@ def sync_mcp_dual_track(api: str, key: str, target_dir: Path):
     }
     with open(target_dir / "mcp_config.json", "w", encoding="utf-8") as f:
         json.dump(p_mcp, f, indent=2, ensure_ascii=False)
-    print("  ✔ 插件私有 mcp_config.json 单一核心服务名 (openviking-memory) 配置完成")
+        f.write("\n")
+    print("  ✔ 插件私有 mcp_config.json 自内聚配置完成 (直指 target_dir/server.py)")
 
-    # 3. 全局 ~/.gemini/config/mcp_config.json 联动
+    # 2. 全局 ~/.gemini/config/mcp_config.json 联动
     g_mcp_path = GEMINI_CONFIG_DIR / "mcp_config.json"
     if g_mcp_path.exists():
         try:
@@ -246,6 +237,7 @@ def sync_mcp_dual_track(api: str, key: str, target_dir: Path):
             g_data["mcpServers"] = servers
             with open(g_mcp_path, "w", encoding="utf-8") as f:
                 json.dump(g_data, f, indent=2, ensure_ascii=False)
+                f.write("\n")
             print("  ✔ 全局 mcp_config.json openviking-memory 单一真相源联动完成 (已清洗历史冗余 openviking)")
         except Exception as e:
             print(f"  ⚠️ 全局 mcp_config.json 联动失败: {e}")
@@ -274,7 +266,7 @@ def install_plugin(target_dir: Path, api: str, key: str):
             shutil.copytree(item, dst, ignore=ignore_patterns)
         else:
             shutil.copy2(item, dst)
-    print("  ✔ 核心构件同步完成 (plugin.json, hooks/, skills/, rules/)")
+    print("  ✔ 核心构件同步完成 (plugin.json, server.py, hooks/, skills/, rules/)")
 
     # 2. 渲染动态 hooks.json
     py_cmd = get_python_cmd()
@@ -359,8 +351,9 @@ def inspect_plugin(target_dir: Path):
     cfg_file = target_dir / "config.json"
     hooks_file = target_dir / "hooks.json"
     plugin_file = target_dir / "plugin.json"
+    server_file = target_dir / "server.py"
 
-    for f in [cfg_file, hooks_file, plugin_file]:
+    for f in [cfg_file, hooks_file, plugin_file, server_file]:
         if not f.exists():
             print(f"❌ 关键文件缺失: {f.name}")
             return False
