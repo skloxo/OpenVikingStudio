@@ -428,12 +428,6 @@ def openviking_system_status(
     """获取 OpenViking 核心队列、存储与引擎状态。"""
     return _api_request("GET", "/api/v1/system/status", params={"wait_timeout": wait_timeout, "reset_stats": reset_stats})
 
-@mcp.tool()
-def openviking_server_doctor(
-    auto_fix: bool = Field(default=False, description="是否尝试自愈修复"),
-) -> str:
-    """运行全套 OpenViking 服务端环境诊断探针。"""
-    return _api_request("GET", "/api/v1/system/doctor", params={"auto_fix": auto_fix})
 
 @mcp.tool()
 def openviking_privacy(
@@ -459,9 +453,9 @@ def openviking_ping() -> str:
     return json.dumps({
         "status": "ok",
         "proxy": "Antigravity-Memory-Proxy-Stub",
-        "version": "2.0.16",
+        "version": "2.0.18",
         "api_endpoint": API_BASE,
-        "tools_count": 37,
+        "tools_count": 36,
         "timestamp": time.time()
     }, ensure_ascii=False, indent=2)
 

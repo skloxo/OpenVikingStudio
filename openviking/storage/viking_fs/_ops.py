@@ -155,6 +155,8 @@ class _OpsMixin:
         ctx: Optional[RequestContext] = None,
         lease_ref: Dict[str, Any] | None = None,
         auto_pathlock: bool = True,
+        *,
+        no_vector: bool = False,
     ) -> Dict[str, Any]:
         """Delete file/directory + recursively update vector index.
 
@@ -164,6 +166,11 @@ class _OpsMixin:
         Acquires a path lock, deletes VectorDB records, then FS files.
         Raises ResourceBusyError when the target is locked by an ongoing
         operation (e.g. semantic processing).
+
+        Set ``no_vector`` only when the caller guarantees the target subtree
+        has no vector/context records. This skips vector cleanup and directory traversal
+        unless descendant ACL checks require it. Namespace permission checks
+        and path locking still apply.
 
         When ``auto_pathlock`` is False and no outer ``lease_ref`` is supplied,
         the VikingFS-level tree/exact lease is skipped and the underlying AGFS
@@ -208,6 +215,8 @@ class _OpsMixin:
                 raise
             if recursive:
                 await self._ensure_access(target_uri, ctx, action=AclAction.MANAGE)
+            if no_vector:
+                return {"estimated_deleted_count": 0}
             # Path does not exist: clean up any orphan index records and return
             uris_to_delete = await self._collect_uris(path, recursive, ctx=ctx)
             uris_to_delete.append(target_uri)
@@ -241,22 +250,29 @@ class _OpsMixin:
                 raise ResourceBusyError(f"Resource is being processed: {uri}", uri=uri)
 
         try:
+            check_descendant_acl = (
+                is_dir
+                and (not no_vector or is_acl_uri(target_uri))
+                and self._acl_enabled(ctx)
+            )
             uris_to_delete = (
                 await self._collect_uris(
                     path,
                     recursive,
                     ctx=ctx,
-                    strict=is_dir and self._acl_enabled(ctx),
+                    strict=check_descendant_acl,
                 )
-                if is_dir
+                if is_dir and (not no_vector or check_descendant_acl)
                 else []
             )
             uris_to_delete.append(target_uri)
             if is_dir:
                 await self._ensure_access_many(uris_to_delete, ctx, action=AclAction.MANAGE)
-            real_ctx = self._ctx_or_default(ctx)
-            estimated_count = await _estimate_deleted_count(path, real_ctx)
-            await self._delete_from_vector_store(uris_to_delete, ctx=ctx)
+            estimated_count = 0
+            if not no_vector:
+                real_ctx = self._ctx_or_default(ctx)
+                estimated_count = await _estimate_deleted_count(path, real_ctx)
+                await self._delete_from_vector_store(uris_to_delete, ctx=ctx)
             try:
                 result = await self._async_agfs.rm(
                     path,

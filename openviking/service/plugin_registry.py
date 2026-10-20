@@ -15,11 +15,7 @@ from openviking.models.plugin import (
     QuadPluginDefinition,
     ToolDefinition,
 )
-from openviking.service.builtin_plugins import (
-    BATTLEFIELD_34_TOOL_NAMES,
-    OPS_17_TOOL_NAMES,
-    create_builtin_plugins,
-)
+from openviking.service.plugin_scanner import scan_local_plugins
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +23,7 @@ logger = logging.getLogger(__name__)
 class PluginRegistry:
     """
     单例模式插件中枢注册表。
-    维护系统中已就绪的所有四位一体插件、工具反查映射与动态权限鉴权契约。
+    基于第一性原理，动态感知与自动扫描托管插件目录，实时维护四位一体插件列表与工具映射。
     """
 
     _instance: Optional[PluginRegistry] = None
@@ -38,7 +34,7 @@ class PluginRegistry:
         self._plugins: Dict[str, QuadPluginDefinition] = {}
         self._aliases: Dict[str, str] = {}
         self._tool_to_plugin_map: Dict[str, str] = {}
-        self._init_builtin_plugins()
+        self.rescan()
 
     @classmethod
     def get_instance(cls) -> PluginRegistry:
@@ -55,13 +51,23 @@ class PluginRegistry:
         with cls._lock:
             cls._instance = None
 
+    def rescan(self) -> None:
+        """从插件中心物理托管目录动态全量重新扫描感知所有插件 (SSOT)。"""
+        with self._registry_lock:
+            plugins, aliases, tool_map = scan_local_plugins()
+            self._plugins.clear()
+            self._aliases.clear()
+            self._tool_to_plugin_map.clear()
+            for p in plugins:
+                self.register_plugin(p)
+            self._aliases.update(aliases)
+            self._tool_to_plugin_map.update(tool_map)
+            logger.info("插件中心动态感知完成: %d 个插件, %d 项真实算子", len(self._plugins), len(self._tool_to_plugin_map))
+
     def _init_builtin_plugins(self) -> None:
-        """从单一真相源初始化官方内置 Quad 插件列表。"""
-        plugins, aliases, tool_map = create_builtin_plugins()
-        for p in plugins:
-            self.register_plugin(p)
-        self._aliases.update(aliases)
-        self._tool_to_plugin_map.update(tool_map)
+        """向后兼容历史调用接口，重定向至动态 rescan。"""
+        self.rescan()
+
 
     @classmethod
     def get_client_bridge_info(cls, plugin_id: str = "openviking-memory") -> Dict[str, Any]:

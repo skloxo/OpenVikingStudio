@@ -169,61 +169,17 @@ export function NativeBridgeIntegrationGuide({
             </div>
           </div>
 
-          {/* 要素 2：用户专属 API Key (真实性治理) */}
-          <div className="space-y-1.5 pt-1 border-t border-border/40">
-            {hasValidApiKey ? (
-              <>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground font-medium">
-                    2. 用户专属 API Key (人机平权统一凭据)
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 px-1.5 text-xs text-muted-foreground hover:text-foreground gap-1"
-                    onClick={() => handleCopy(effectiveApiKey, '用户密钥')}
-                  >
-                    {copiedItem === '用户密钥' ? (
-                      <CheckIcon className="size-3 text-cyan-500" />
-                    ) : (
-                      <CopyIcon className="size-3" />
-                    )}
-                    复制真实密钥
-                  </Button>
-                </div>
-                <div className="rounded border border-border/50 bg-background/80 px-2 py-1.5 font-mono text-xs text-foreground break-all select-all">
-                  {effectiveApiKey}
-                </div>
-              </>
-            ) : (
-              <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-2.5 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 font-semibold text-amber-700 dark:text-amber-400">
-                    <KeyIcon className="size-3.5 shrink-0" />
-                    <span>未检测到活跃用户密钥 (User API Key)</span>
-                  </div>
-                  <Badge
-                    variant="outline"
-                    className="text-xs font-mono border-amber-500/50 bg-amber-500/20 text-amber-700 dark:text-amber-300"
-                  >
-                    待绑定
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  客户端通信桥梁接入需要绑定您的真实专属 User Key。当前会话未检测到密钥，请前往用户管理中心进行复制或生成。
-                </p>
-                <div className="pt-0.5">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    asChild
-                    className="h-6.5 text-xs border-amber-500/40 text-amber-700 dark:text-amber-300 hover:bg-amber-500/15"
-                  >
-                    <Link to="/users">前往用户列表查看与复制专属密钥 ➔</Link>
-                  </Button>
-                </div>
-              </div>
-            )}
+          {/* 要素 2：认证凭据提示 (奥卡姆剃刀：不暴露密钥原文，引导获取) */}
+          <div className="flex items-center justify-between pt-1 border-t border-border/40 text-xs">
+            <span className="text-muted-foreground font-medium">2. 认证凭据 (User Key)</span>
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+              className="h-6 px-2 text-xs border-cyan-500/40 text-cyan-700 dark:text-cyan-400 hover:bg-cyan-500/10 font-mono"
+            >
+              <Link to="/users">前往用户中心获取专属 API Key ➔</Link>
+            </Button>
           </div>
         </div>
       )}

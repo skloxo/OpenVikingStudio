@@ -211,7 +211,7 @@ export function resolvePluginBridgeConfig(
     resolved: '${tarballUrl}'
     config:
       endpointUrl: '${serviceAddress}'
-      userKey: '${effectiveApiKey}'`
+      userKey: '<YOUR_USER_KEY>'`
 
     return {
       pkgName,
@@ -223,26 +223,25 @@ export function resolvePluginBridgeConfig(
       installCmd,
       dshCordisPatchYaml: dshPatch,
       dshAgentPrompt: `请帮我安装并接入 ${pluginName} 专属客户端通信桥梁：
-1. 目标插件：${pkgName}
+1. 目标插件包：${pkgName} (下载直链: ${tarballUrl})
 2. NPM 安装命令：${installCmd}
 3. 服务地址：${serviceAddress}
-4. 专属凭据：${effectiveApiKey}${!hasValidApiKey ? ' (⚠️ 请替换为在用户列表复制的真实 User Key)' : ''}
-5. 请将上述配置写入 cordis.patch.yml 并重启 Harness 服务。`,
-      antigravitySetupCmdWin: `cmd /c mklink /J "$env:USERPROFILE\\.gemini\\config\\plugins\\openviking-ops" "OpenVikingStudio路径\\integrations\\antigravity\\openviking-ops"\npython setup.py --api ${serviceAddress} --key "${effectiveApiKey}"`,
-      antigravitySetupCmdUnix: `mkdir -p ~/.gemini/config/plugins && ln -s /path/to/OpenVikingStudio/integrations/antigravity/openviking-ops ~/.gemini/config/plugins/openviking-ops\ncd ~/.gemini/config/plugins/openviking-ops && python3 setup.py --api ${serviceAddress} --key "${effectiveApiKey}"`,
+4. 认证凭据：请填入在用户中心获取的专属 API Key
+5. 将配置写入 cordis.patch.yml 并重启服务。`,
+      antigravitySetupCmdWin: `cmd /c mklink /J "$env:USERPROFILE\\.gemini\\config\\plugins\\openviking-ops" "OpenVikingStudio路径\\integrations\\antigravity\\openviking-ops"\npython setup.py --api ${serviceAddress}`,
+      antigravitySetupCmdUnix: `mkdir -p ~/.gemini/config/plugins && ln -s /path/to/OpenVikingStudio/integrations/antigravity/openviking-ops ~/.gemini/config/plugins/openviking-ops\ncd ~/.gemini/config/plugins/openviking-ops && python3 setup.py --api ${serviceAddress}`,
       antigravityAgentPrompt: `请帮我将反重力开发座舱接入 OpenViking 系统运维治理插件：
 1. 插件挂载目录：~/.gemini/config/plugins/openviking-ops/
 2. 服务端接入地址：${serviceAddress}
-3. 专属授权凭据：${effectiveApiKey}
-4. 运行 setup.py 激活 17 项运维特权工具与 2 项 Hook 守卫。`,
+3. 专属授权凭据：自动继承已认证凭据 (或通过 --key 指定)
+4. 运行 setup.py 激活 16 项特权运维算子与双 Hook 守卫。`,
       universalMcpJson: JSON.stringify(
         {
           mcpServers: {
             openviking_ops: {
               url: `${serviceAddress}/mcp`,
               headers: {
-                Authorization: `Bearer ${effectiveApiKey}`,
-                'X-API-Key': effectiveApiKey,
+                Authorization: 'Bearer <YOUR_USER_KEY>',
               },
             },
           },
@@ -252,7 +251,7 @@ export function resolvePluginBridgeConfig(
       ),
       universalAgentPrompt: `请将 OpenViking 运维中枢接入通用 MCP 环境：
 1. 端点：${serviceAddress}/mcp
-2. 认证头：Authorization: Bearer ${effectiveApiKey}
+2. 认证头：Authorization: Bearer <YOUR_USER_KEY> (请填入专属 Key)
 3. 写入 mcp.json 并验证运维特权连通性。`,
     }
   }
@@ -353,7 +352,7 @@ export function resolvePluginBridgeConfig(
 
   // 7. 原生 Memory 核心长程记忆与代码战地 (默认)
   const pkgName = 'dsh-plugin-openviking-memory'
-  const version = dynamicVersion || '2.0.16'
+  const version = dynamicVersion || '2.0.18'
   const tarballUrl = dynamicTarballUrl || `https://vk.tide.red/studio/${pkgName}-${version}.tgz`
   const installCmd = `npm install ${tarballUrl}`
   const dshPatch = `plugins:
@@ -362,7 +361,7 @@ export function resolvePluginBridgeConfig(
     resolved: '${tarballUrl}'
     config:
       endpointUrl: '${serviceAddress}'
-      userKey: '${effectiveApiKey}'`
+      userKey: '<YOUR_USER_KEY>'`
 
   return {
     pkgName,
@@ -374,29 +373,25 @@ export function resolvePluginBridgeConfig(
     installCmd,
     dshCordisPatchYaml: dshPatch,
     dshAgentPrompt: `请帮我安装并接入 ${pluginName} 专属客户端通信桥梁：
-1. 目标插件：${pkgName}
+1. 目标插件包：${pkgName} (下载直链: ${tarballUrl})
 2. NPM 安装命令：${installCmd}
 3. 服务地址：${serviceAddress}
-4. 专属凭据：${effectiveApiKey}${!hasValidApiKey ? ' (⚠️ 请替换为在用户列表复制的真实 User Key)' : ''}
-5. 请将上述配置写入 cordis.patch.yml 并重启 Harness 服务。`,
-    antigravitySetupCmdWin: `cmd /c mklink /J "$env:USERPROFILE\\.gemini\\config\\plugins\\openviking-memory" "OpenVikingStudio路径\\integrations\\antigravity\\openviking-memory"\npython setup.py --api ${serviceAddress} --key "${effectiveApiKey}"`,
-    antigravitySetupCmdUnix: `mkdir -p ~/.gemini/config/plugins && ln -s /path/to/OpenVikingStudio/integrations/antigravity/openviking-memory ~/.gemini/config/plugins/openviking-memory\ncd ~/.gemini/config/plugins/openviking-memory && python3 setup.py --api ${serviceAddress} --key "${effectiveApiKey}"`,
+4. 认证凭据：请填入在用户中心获取的专属 API Key
+5. 将配置写入 cordis.patch.yml 并重启服务。`,
+    antigravitySetupCmdWin: `cmd /c mklink /J "$env:USERPROFILE\\.gemini\\config\\plugins\\openviking-memory" "OpenVikingStudio路径\\integrations\\antigravity\\openviking-memory"\npython setup.py --api ${serviceAddress}`,
+    antigravitySetupCmdUnix: `mkdir -p ~/.gemini/config/plugins && ln -s /path/to/OpenVikingStudio/integrations/antigravity/openviking-memory ~/.gemini/config/plugins/openviking-memory\ncd ~/.gemini/config/plugins/openviking-memory && python3 setup.py --api ${serviceAddress}`,
     antigravityAgentPrompt: `请帮我将当前反重力开发座舱 (Antigravity IDE) 接入 OpenViking 核心战地长程记忆：
 1. 插件挂载规范目录：~/.gemini/config/plugins/openviking-memory/
 2. 服务端接入地址：${serviceAddress}
-3. 专属授权凭据：${effectiveApiKey}${!hasValidApiKey ? ' (⚠️ 请替换为在用户列表复制的真实 User Key)' : ''}
-4. 执行要求：
-   - 将插件源码通过目录软链挂载至全局 plugins 目录；
-   - 运行 python setup.py --api ${serviceAddress} --key "${effectiveApiKey}" 完成凭据落盘；
-   - 激活 PreInvocation（记忆预取）、PreToolUse（沙箱守卫）与 Stop（会话归档）三大完整 Hook。`,
+3. 专属授权凭据：自动继承已认证凭据 (或通过 --key 指定)
+4. 运行 setup.py 激活三大完整 Hook 与核心工具集。`,
     universalMcpJson: JSON.stringify(
       {
         mcpServers: {
           openviking: {
             url: `${serviceAddress}/mcp`,
             headers: {
-              Authorization: `Bearer ${effectiveApiKey}`,
-              'X-API-Key': effectiveApiKey,
+              Authorization: 'Bearer <YOUR_USER_KEY>',
             },
           },
         },
@@ -406,7 +401,7 @@ export function resolvePluginBridgeConfig(
     ),
     universalAgentPrompt: `请帮我将 OpenViking 体外大脑作为通用 MCP 工具接入当前环境：
 1. MCP 服务协议端点：${serviceAddress}/mcp (Streamable HTTP 模式)
-2. 认证请求头：Authorization: Bearer ${effectiveApiKey}${!hasValidApiKey ? ' (⚠️ 请替换为在用户列表复制的真实 User Key)' : ''}
-3. 请写入 mcp.json 并验证连通性。`,
+2. 认证请求头：Authorization: Bearer <YOUR_USER_KEY> (请填入专属 Key)
+3. 写入 mcp.json 并验证连通性。`,
   }
 }

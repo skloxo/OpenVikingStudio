@@ -2,9 +2,8 @@
 # Copyright (c) 2026 Beijing Volcano Engine Technology Co., Ltd.
 # SPDX-License-Identifier: AGPL-3.0
 """
-OpenViking System Ops Plugin Installer & Health Inspector (v1.0.1).
-Antigravity IDE 官方标准自举向导：提供 17 个运维特权工具的独立解耦部署。
-支持拓扑自适应、宿主注册表写入与双轨 MCP 联动。
+OpenViking System Ops Plugin Installer & Health Inspector.
+Antigravity IDE 官方标准自举向导：提供 16 项运维特权工具与认知层技能的自内聚部署。
 """
 
 import argparse
@@ -12,9 +11,7 @@ import json
 import os
 import shutil
 import stat
-import subprocess
 import sys
-import time
 import urllib.request
 from pathlib import Path
 
@@ -38,10 +35,10 @@ def get_plugin_version() -> str:
     if pj.exists():
         try:
             with open(pj, "r", encoding="utf-8") as f:
-                return json.load(f).get("version", "1.0.2")
+                return json.load(f).get("version", "1.0.4")
         except Exception:
             pass
-    return "1.0.2"
+    return "1.0.4"
 
 
 PLUGIN_VERSION = get_plugin_version()
@@ -91,28 +88,18 @@ def register_in_ide_config(plugin_name: str, version: str):
 
 
 def sync_mcp_ops(api: str, key: str, target_dir: Path):
-    candidate_scripts = [
-        Path.home() / "Desktop" / "coding" / "OpenVikingStudio" / "mcp-openviking" / "mcp_openviking_server.py",
-        PLUGIN_SRC_DIR.parent.parent / "mcp-openviking" / "mcp_openviking_server.py",
-    ]
-    server_script = ""
-    for c in candidate_scripts:
-        if c.exists():
-            server_script = str(c).replace("\\", "/")
-            break
-    if not server_script:
-        server_script = "C:/Users/Skl/Desktop/coding/OpenVikingStudio/mcp-openviking/mcp_openviking_server.py"
-
+    server_script = (target_dir / "server.py").resolve().as_posix()
     py_cmd = sys.executable.replace("\\", "/")
+
     p_mcp = {
         "mcpServers": {
             "openviking-ops": {
                 "command": py_cmd,
-                "args": [server_script, "--mode=ops"],
+                "args": [server_script],
                 "env": {
                     "OPENVIKING_API": api,
                     "OPENVIKING_API_KEY": key,
-                    "OPENVIKING_MCP_MODE": "ops",
+                    "OPENVIKING_ACTOR_PEER": "antigravity@2080Ti",
                     "PYTHONIOENCODING": "utf-8"
                 }
             }
@@ -120,6 +107,7 @@ def sync_mcp_ops(api: str, key: str, target_dir: Path):
     }
     with open(target_dir / "mcp_config.json", "w", encoding="utf-8") as f:
         json.dump(p_mcp, f, indent=2, ensure_ascii=False)
+    print("  ✔ 插件目录 mcp_config.json 生成完成 (自内聚 server.py)")
 
     g_mcp_path = GEMINI_CONFIG_DIR / "mcp_config.json"
     if g_mcp_path.exists():
@@ -129,11 +117,10 @@ def sync_mcp_ops(api: str, key: str, target_dir: Path):
             servers = g_data.get("mcpServers", {})
             servers["openviking-ops"] = {
                 "command": py_cmd,
-                "args": [server_script, "--mode=ops"],
+                "args": [server_script],
                 "env": {
                     "OPENVIKING_API": api,
                     "OPENVIKING_API_KEY": key,
-                    "OPENVIKING_MCP_MODE": "ops",
                     "OPENVIKING_ACTOR_PEER": "antigravity@2080Ti",
                     "PYTHONIOENCODING": "utf-8"
                 }
@@ -150,7 +137,7 @@ def install_plugin(target_dir: Path, api: str, key: str):
     print(f"📦 正在准备安装 OpenViking 运维特权插件 (v{PLUGIN_VERSION}) 至: {target_dir}")
     target_dir.mkdir(parents=True, exist_ok=True)
 
-    copy_items = ["hooks", "skills", "plugin.json", "mcp_config.json", "setup.py"]
+    copy_items = ["hooks", "skills", "plugin.json", "mcp_config.json", "server.py", "setup.py"]
     for item_name in copy_items:
         src = PLUGIN_SRC_DIR / item_name
         dst = target_dir / item_name
@@ -162,12 +149,30 @@ def install_plugin(target_dir: Path, api: str, key: str):
             else:
                 shutil.copy2(src, dst)
 
-    # 渲染 hooks.json
+    # 渲染 hooks.json (双 Hook 物理守卫)
     py_cmd = get_python_cmd()
     audit_script = (target_dir / "hooks" / "ov_ops_audit.py").resolve()
     audit_path = str(audit_script).replace("\\", "/")
     audit_cmd = f'{py_cmd} -E -s -S "{audit_path}"' if " " in audit_path else f"{py_cmd} -E -s -S {audit_path}"
+
+    sentinel_script = (target_dir / "hooks" / "ov_ops_sentinel.py").resolve()
+    sentinel_path = str(sentinel_script).replace("\\", "/")
+    sentinel_cmd = f'{py_cmd} -E -s -S "{sentinel_path}"' if " " in sentinel_path else f"{py_cmd} -E -s -S {sentinel_path}"
+
     hooks_cfg = {
+        "openviking-ops-sentinel": {
+            "SessionStart": [
+                {
+                    "hooks": [
+                        {
+                            "type": "command",
+                            "command": sentinel_cmd,
+                            "timeout": 3
+                        }
+                    ]
+                }
+            ]
+        },
         "openviking-ops-audit": {
             "PreToolUse": [
                 {
@@ -185,7 +190,7 @@ def install_plugin(target_dir: Path, api: str, key: str):
     }
     with open(target_dir / "hooks.json", "w", encoding="utf-8") as f:
         json.dump(hooks_cfg, f, indent=2, ensure_ascii=False)
-    print("  ✔ hooks.json 审计守卫构建完成")
+    print("  ✔ hooks.json 审计守卫构建完成 (双 Hook 物理守卫: sentinel + audit)")
 
     # 凭据配置
     cfg_data = {
@@ -205,7 +210,7 @@ def install_plugin(target_dir: Path, api: str, key: str):
     register_in_ide_config(PLUGIN_NAME, PLUGIN_VERSION)
     sync_mcp_ops(api, key, target_dir)
 
-    print("\n🎉 OpenViking 运维特权插件安装就绪！")
+    print(f"\n🎉 OpenViking 运维特权插件 (v{PLUGIN_VERSION}) 安装就绪！")
 
 
 def main():
@@ -226,6 +231,23 @@ def main():
             try:
                 with open(cfg, "r", encoding="utf-8") as f:
                     key = json.load(f).get("api_key", "")
+            except Exception:
+                pass
+    if not key:
+        mem_cfg = GEMINI_CONFIG_DIR / "plugins" / "openviking-memory" / "config.json"
+        if mem_cfg.exists():
+            try:
+                with open(mem_cfg, "r", encoding="utf-8") as f:
+                    key = json.load(f).get("api_key", "")
+            except Exception:
+                pass
+    if not key:
+        g_mcp = GEMINI_CONFIG_DIR / "mcp_config.json"
+        if g_mcp.exists():
+            try:
+                with open(g_mcp, "r", encoding="utf-8") as f:
+                    g_data = json.load(f)
+                key = g_data.get("mcpServers", {}).get("openviking-memory", {}).get("env", {}).get("OPENVIKING_API_KEY", "")
             except Exception:
                 pass
 

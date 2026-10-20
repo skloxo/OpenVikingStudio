@@ -84,11 +84,23 @@ window.__ModuleLoader__.load({
           setTesting(false);
           return;
         }
+        const key = (config.userKey || '').trim();
+        if (!key) {
+          setProbeReport({
+            ok: false,
+            totalLatency: 0,
+            error: '请先填写用户专属 API 密钥 (User Key)，严禁无密虚假测试！',
+          });
+          setTesting(false);
+          return;
+        }
         const start = Date.now();
         const fetchFn = typeof window !== 'undefined' && window.fetch ? window.fetch.bind(window) : fetch;
 
-        const headers = { 'Content-Type': 'application/json' };
-        if (config.userKey) headers['Authorization'] = `Bearer ${config.userKey}`;
+        const headers = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${key}`,
+        };
 
         try {
           const res = await fetchFn(`${base}/api/v1/system/client-capabilities?plugin_id=openviking-memory&probe=full`, {
