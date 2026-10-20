@@ -1,6 +1,6 @@
 # 智能体自适应熔断断路器 (Agent Adaptive Circuit Breaker)
 
-[![Version](https://img.shields.io/badge/version-1.3.2-cyan.svg)](https://vk.tide.red)
+[![Version](https://img.shields.io/badge/version-1.3.3-cyan.svg)](https://vk.tide.red)
 [![Platform](https://img.shields.io/badge/platform-Google%20Antigravity-blue.svg)](https://antigravity.google)
 [![Architecture](https://img.shields.io/badge/architecture-Fail--Open%20%26%20Zero--Touch-cyan.svg)](https://vk.tide.red)
 
@@ -8,7 +8,7 @@
 
 ---
 
-## 🌟 核心特性 (v1.3.2)
+## 🌟 核心特性 (v1.3.3)
 
 1. **自适应弹性预算体系**：
    - **健康常态 (36 步)**：连续 0 报错全绿灯时，授予 36 步充裕预算，支持长线重构与端到端交付；
