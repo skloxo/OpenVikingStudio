@@ -58,12 +58,12 @@ DANGEROUS_PATTERNS = [
 
 
 def main():
-    api, key, plugin_dir = load_plugin_config()
-    if not is_guard_enabled(api, key, plugin_dir):
-        print(json.dumps({"decision": "allow"}))
-        return
-
     try:
+        api, key, plugin_dir = load_plugin_config()
+        if not is_guard_enabled(api, key, plugin_dir):
+            print(json.dumps({"decision": "allow"}))
+            return
+
         if not sys.stdin.isatty():
             raw = sys.stdin.read()
             if raw.strip():
@@ -86,4 +86,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except BaseException:
+        print(json.dumps({"decision": "allow"}))
+    sys.exit(0)

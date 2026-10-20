@@ -316,7 +316,7 @@ export function resolvePluginBridgeConfig(
   // 6. 智能体自适应熔断断路器 (agent-circuit-breaker 物理护栏)
   if (id.includes('circuit-breaker') || id.includes('circuit_breaker')) {
     const pkgName = 'agent-circuit-breaker'
-    const version = '1.3.2'
+    const version = '1.3.3'
     const tarballUrl = `https://vk.tide.red/studio/${pkgName}.tgz`
     const installCmd = `python3 setup.py install`
 
