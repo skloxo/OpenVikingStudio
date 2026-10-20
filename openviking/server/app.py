@@ -948,10 +948,10 @@ def create_app(
             # If a missing asset (.js, .css, etc.) is requested, return 404 so
             # the browser module loader can trigger vite:preloadError reload
             # instead of receiving index.html and throwing a syntax error.
-            # 兼容从 /studio/dsh-plugin-*.tgz 下载
-            if path.endswith(".tgz") and ("dsh-plugin-openviking" in path or "plugin" in path):
+            # 兼容从 /studio/*.tgz 下载全系插件分发包
+            if path.endswith(".tgz"):
                 clean_name = Path(path).name
-                for candidate_dir in (_studio_root, _studio_root.parent / "public"):
+                for candidate_dir in (_studio_root, _studio_root.parent / "public", _studio_root.parent / "dist"):
                     candidate_file = candidate_dir / clean_name
                     if candidate_file.is_file():
                         return FileResponse(

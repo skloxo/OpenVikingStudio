@@ -92,12 +92,15 @@ async def get_plugins_health_summary() -> PluginsHealthSummaryResponse:
 
 
 @router.get("/bridge/client-package")
-async def get_client_bridge_package(response: Response) -> Dict[str, Any]:
-    """获取独立客户端通信通道桥 (dsh-plugin-openviking) 的下载元数据与接入规范。"""
+async def get_client_bridge_package(
+    response: Response,
+    plugin_id: Optional[str] = Query(None, alias="plugin_id"),
+) -> Dict[str, Any]:
+    """获取独立客户端通信通道桥的下载元数据与接入规范。"""
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
-    bridge_info = PluginRegistry.get_client_bridge_info()
+    bridge_info = PluginRegistry.get_client_bridge_info(plugin_id or "openviking-memory")
     return {
         "status": "success",
         "result": bridge_info,

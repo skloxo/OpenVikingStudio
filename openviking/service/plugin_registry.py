@@ -75,10 +75,10 @@ class PluginRegistry:
         pid = (plugin_id or "openviking-memory").strip().lower()
         if pid in ("openviking-ops", "ops"):
             target_pkg = "dsh-plugin-openviking-ops"
-            def_ver = "1.0.3"
+            def_ver = "1.0.4"
         elif pid in ("fleet-mesh", "fleet", "openviking-fleet"):
             target_pkg = "dsh-plugin-openviking-fleet"
-            def_ver = "1.0.3"
+            def_ver = "1.0.4"
         elif pid in ("keepass-vault", "keepass", "vault"):
             target_pkg = "dsh-plugin-keepass-vault"
             def_ver = "1.0.2"
@@ -88,6 +88,9 @@ class PluginRegistry:
         elif pid in ("cpa-squad", "cpa"):
             target_pkg = "dsh-plugin-cpa"
             def_ver = "1.0.1"
+        elif pid in ("agent-circuit-breaker", "circuit-breaker", "circuit_breaker"):
+            target_pkg = "agent-circuit-breaker"
+            def_ver = "1.3.3"
         else:
             target_pkg = "dsh-plugin-openviking-memory"
             def_ver = "2.0.16"
@@ -103,14 +106,34 @@ class PluginRegistry:
                 studio_root / "public",
                 studio_root / "integrations" / "deepseek-harness" / target_pkg,
                 studio_root / "integrations" / "deepseek-harness" / "dsh-plugin-openviking",
+                studio_root / "integrations" / "antigravity" / target_pkg,
             ]
+
+            # 1. 优先直连母本清单 (package.json 或 plugin.json) 单一真相源
+            live_ver = None
+            dsh_pkg_file = studio_root / "integrations" / "deepseek-harness" / target_pkg / "package.json"
+            ag_dir_name = "openviking-memory" if target_pkg == "dsh-plugin-openviking-memory" else target_pkg.replace("dsh-plugin-", "")
+            ag_plugin_file = studio_root / "integrations" / "antigravity" / ag_dir_name / "plugin.json"
+
+            if dsh_pkg_file.is_file():
+                try:
+                    import json
+                    live_ver = json.loads(dsh_pkg_file.read_text(encoding="utf-8")).get("version")
+                except Exception:
+                    pass
+            elif ag_plugin_file.is_file():
+                try:
+                    import json
+                    live_ver = json.loads(ag_plugin_file.read_text(encoding="utf-8")).get("version")
+                except Exception:
+                    pass
 
             target_candidates = []
             fallback_candidates = []
             for sdir in search_dirs:
                 if not sdir.is_dir():
                     continue
-                # 1. 严格精准匹配当前插件专属包
+                # 严格精准匹配当前插件专属包
                 for fpath in sdir.glob(f"{target_pkg}-*.tgz"):
                     m = re.match(r"^" + re.escape(target_pkg) + r"-(\d+(?:\.\d+)+.*?)\.tgz$", fpath.name)
                     if m:
@@ -118,7 +141,7 @@ class PluginRegistry:
                         parts = re.split(r"[-+.]", ver_str)
                         nums = [int(p) for p in parts if p.isdigit()]
                         target_candidates.append((tuple(nums), fpath.stat().st_mtime, ver_str, fpath.name))
-                # 2. 仅当专属包不存在时，兼容历史别名包
+                # 兼容历史别名包
                 if target_pkg == "dsh-plugin-openviking-memory":
                     for fpath in sdir.glob("dsh-plugin-openviking-*.tgz"):
                         m = re.match(r"^dsh-plugin-openviking-(\d+(?:\.\d+)+.*?)\.tgz$", fpath.name)
@@ -132,6 +155,14 @@ class PluginRegistry:
             if candidates:
                 candidates.sort(key=lambda x: (x[0], x[1]), reverse=True)
                 _, _, latest_version, latest_filename = candidates[0]
+
+            # 母本版本若存在且版本号更新，直接作为最高真相源
+            if live_ver:
+                parts_live = [int(p) for p in re.split(r"[-+.]", live_ver) if p.isdigit()]
+                parts_cur = [int(p) for p in re.split(r"[-+.]", latest_version) if p.isdigit()]
+                if tuple(parts_live) >= tuple(parts_cur):
+                    latest_version = live_ver
+                    latest_filename = f"{target_pkg}-{latest_version}.tgz"
         except Exception as e:
             logger.warning("动态扫描最新客户端通道桥包异常，启用安全保底: %s", e)
 

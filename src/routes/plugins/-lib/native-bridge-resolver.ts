@@ -27,14 +27,16 @@ export function resolvePluginBridgeConfig(
   serviceAddress: string,
   effectiveApiKey: string,
   hasValidApiKey: boolean,
+  dynamicVersion?: string,
+  dynamicTarballUrl?: string,
 ): PluginBridgeConfig {
   const id = (pluginId || 'openviking-memory').toLowerCase()
 
   // 1. Dify 独立工作流中枢
   if (id.includes('dify')) {
     const pkgName = 'dsh-plugin-dify'
-    const version = '1.0.1'
-    const tarballUrl = `https://vk.tide.red/studio/${pkgName}-${version}.tgz`
+    const version = dynamicVersion || '1.0.1'
+    const tarballUrl = dynamicTarballUrl || `https://vk.tide.red/studio/${pkgName}-${version}.tgz`
     const installCmd = `npm install ${tarballUrl}`
     const dshPatch = `plugins:
   '${pkgName}':
@@ -88,8 +90,8 @@ export function resolvePluginBridgeConfig(
   // 2. CPA 跨模型算力协同
   if (id.includes('cpa')) {
     const pkgName = 'dsh-plugin-cpa'
-    const version = '1.0.1'
-    const tarballUrl = `https://vk.tide.red/studio/${pkgName}-${version}.tgz`
+    const version = dynamicVersion || '1.0.1'
+    const tarballUrl = dynamicTarballUrl || `https://vk.tide.red/studio/${pkgName}-${version}.tgz`
     const installCmd = `npm install ${tarballUrl}`
     const dshPatch = `plugins:
   '${pkgName}':
@@ -143,8 +145,8 @@ export function resolvePluginBridgeConfig(
   // 3. KeePass 客户端本地私有凭据中枢 (零云端依赖)
   if (id.includes('keepass')) {
     const pkgName = 'dsh-plugin-keepass-vault'
-    const version = '1.0.2'
-    const tarballUrl = `https://vk.tide.red/studio/${pkgName}-${version}.tgz`
+    const version = dynamicVersion || '1.0.2'
+    const tarballUrl = dynamicTarballUrl || `https://vk.tide.red/studio/${pkgName}-${version}.tgz`
     const installCmd = `npm install ${tarballUrl}`
     const dshPatch = `plugins:
   '${pkgName}':
@@ -200,8 +202,8 @@ export function resolvePluginBridgeConfig(
   // 4. 原生 Ops 系统运维治理
   if (id.includes('ops')) {
     const pkgName = 'dsh-plugin-openviking-ops'
-    const version = '1.0.3'
-    const tarballUrl = `https://vk.tide.red/studio/${pkgName}-${version}.tgz`
+    const version = dynamicVersion || '1.0.4'
+    const tarballUrl = dynamicTarballUrl || `https://vk.tide.red/studio/${pkgName}-${version}.tgz`
     const installCmd = `npm install ${tarballUrl}`
     const dshPatch = `plugins:
   '${pkgName}':
@@ -258,8 +260,8 @@ export function resolvePluginBridgeConfig(
   // 5. 原生 Fleet 卫星同频
   if (id.includes('fleet')) {
     const pkgName = 'dsh-plugin-openviking-fleet'
-    const version = '1.0.3'
-    const tarballUrl = `https://vk.tide.red/studio/${pkgName}-${version}.tgz`
+    const version = dynamicVersion || '1.0.4'
+    const tarballUrl = dynamicTarballUrl || `https://vk.tide.red/studio/${pkgName}-${version}.tgz`
     const installCmd = `npm install ${tarballUrl}`
     const dshPatch = `plugins:
   '${pkgName}':
@@ -316,8 +318,8 @@ export function resolvePluginBridgeConfig(
   // 6. 智能体自适应熔断断路器 (agent-circuit-breaker 物理护栏)
   if (id.includes('circuit-breaker') || id.includes('circuit_breaker')) {
     const pkgName = 'agent-circuit-breaker'
-    const version = '1.3.3'
-    const tarballUrl = `https://vk.tide.red/studio/${pkgName}.tgz`
+    const version = dynamicVersion || '1.3.3'
+    const tarballUrl = dynamicTarballUrl || `https://vk.tide.red/studio/${pkgName}.tgz`
     const installCmd = `python3 setup.py install`
 
     return {
@@ -351,8 +353,8 @@ export function resolvePluginBridgeConfig(
 
   // 7. 原生 Memory 核心长程记忆与代码战地 (默认)
   const pkgName = 'dsh-plugin-openviking-memory'
-  const version = '2.0.16'
-  const tarballUrl = `https://vk.tide.red/studio/${pkgName}-${version}.tgz`
+  const version = dynamicVersion || '2.0.16'
+  const tarballUrl = dynamicTarballUrl || `https://vk.tide.red/studio/${pkgName}-${version}.tgz`
   const installCmd = `npm install ${tarballUrl}`
   const dshPatch = `plugins:
   '${pkgName}':
