@@ -190,10 +190,26 @@ def register_in_ide_config(plugin_name: str, version: str):
         print(f"  ⚠️ 注册 IDE config.json 失败: {e}")
 
 
-def sync_mcp_dual_track(api: str, key: str, target_dir: Path):
+def resolve_actor_peer(preferred: str = "") -> str:
+    """根据主机拓扑智能识别 Actor Peer，自动区分 3070 与 2080Ti"""
+    if preferred and preferred.strip():
+        return preferred.strip()
+    env_peer = os.environ.get("OPENVIKING_ACTOR_PEER", "").strip()
+    if env_peer:
+        return env_peer
+    node = platform.node().lower()
+    if "3070" in node:
+        return "antigravity@3070"
+    if "2080" in node:
+        return "antigravity@2080ti"
+    return f"antigravity@{platform.node()}"
+
+
+def sync_mcp_dual_track(api: str, key: str, target_dir: Path, actor_peer: str = ""):
     """自内聚双轨 MCP 配置与全局联动，彻底切除外部源码依赖"""
     server_script = (target_dir / "server.py").as_posix()
     py_cmd = sys.executable.replace("\\", "/")
+    peer = resolve_actor_peer(actor_peer)
 
     # 1. 插件私有 mcp_config.json (单一核心服务名 openviking-memory，命令路径永远固定为 target_dir / server.py)
     p_mcp = {
@@ -205,6 +221,7 @@ def sync_mcp_dual_track(api: str, key: str, target_dir: Path):
                     "OPENVIKING_API": api,
                     "OPENVIKING_API_KEY": key,
                     "OPENVIKING_MCP_MODE": "memory",
+                    "OPENVIKING_ACTOR_PEER": peer,
                     "PYTHONIOENCODING": "utf-8"
                 }
             }
@@ -213,7 +230,7 @@ def sync_mcp_dual_track(api: str, key: str, target_dir: Path):
     with open(target_dir / "mcp_config.json", "w", encoding="utf-8") as f:
         json.dump(p_mcp, f, indent=2, ensure_ascii=False)
         f.write("\n")
-    print("  ✔ 插件私有 mcp_config.json 自内聚配置完成 (直指 target_dir/server.py)")
+    print(f"  ✔ 插件私有 mcp_config.json 自内聚配置完成 (Actor Peer: {peer})")
 
     # 2. 全局 ~/.gemini/config/mcp_config.json 联动
     g_mcp_path = GEMINI_CONFIG_DIR / "mcp_config.json"
@@ -231,7 +248,7 @@ def sync_mcp_dual_track(api: str, key: str, target_dir: Path):
                     "OPENVIKING_API": api,
                     "OPENVIKING_API_KEY": key,
                     "OPENVIKING_MCP_MODE": "memory",
-                    "OPENVIKING_ACTOR_PEER": "antigravity@2080Ti",
+                    "OPENVIKING_ACTOR_PEER": peer,
                     "PYTHONIOENCODING": "utf-8"
                 }
             }
@@ -239,17 +256,19 @@ def sync_mcp_dual_track(api: str, key: str, target_dir: Path):
             with open(g_mcp_path, "w", encoding="utf-8") as f:
                 json.dump(g_data, f, indent=2, ensure_ascii=False)
                 f.write("\n")
-            print("  ✔ 全局 mcp_config.json openviking-memory 单一真相源联动完成 (已清洗历史冗余 openviking)")
+            print(f"  ✔ 全局 mcp_config.json openviking-memory 单一真相源联动完成 (Actor Peer: {peer})")
         except Exception as e:
             print(f"  ⚠️ 全局 mcp_config.json 联动失败: {e}")
 
 
-def install_plugin(target_dir: Path, api: str, key: str):
+def install_plugin(target_dir: Path, api: str, key: str, actor_peer: str = ""):
     """标准一键部署流程"""
+    peer = resolve_actor_peer(actor_peer)
     print(f"🚀 开始部署 OpenViking 核心记忆插件 (v{PLUGIN_VERSION}) ...")
     print(f"   源目录: {PLUGIN_SRC_DIR}")
     print(f"   目标目录: {target_dir}")
     print(f"   API 端点 (拓扑自适应): {api}")
+    print(f"   Actor Peer (智能拓扑): {peer}")
 
     target_dir.mkdir(parents=True, exist_ok=True)
 
@@ -342,7 +361,7 @@ def install_plugin(target_dir: Path, api: str, key: str):
 
     # 4. 注册到 IDE 注册表与双轨 MCP
     register_in_ide_config(PLUGIN_NAME, PLUGIN_VERSION)
-    sync_mcp_dual_track(api, key, target_dir)
+    sync_mcp_dual_track(api, key, target_dir, peer)
 
     print("\n🎉 OpenViking 核心记忆插件标准自举部署完成！")
     print(f"   路径: {target_dir}")
@@ -422,6 +441,7 @@ def main():
     parser.add_argument("--target", type=str, default="", help="指定安装目标目录")
     parser.add_argument("--api", type=str, default="", help="OpenViking API 地址")
     parser.add_argument("--key", type=str, default="", help="OpenViking API Key")
+    parser.add_argument("--peer", "--actor-peer", dest="peer", type=str, default="", help="专属 Actor Peer (如 antigravity@3070)")
 
     args = parser.parse_args()
     target_dir = Path(args.target).resolve() if args.target else DEFAULT_TARGET_DIR
@@ -440,7 +460,7 @@ def main():
     if args.key and args.key.strip():
         key = args.key.strip()
 
-    install_plugin(target_dir, api, key)
+    install_plugin(target_dir, api, key, actor_peer=args.peer)
     print("\n" + "=" * 50)
     inspect_plugin(target_dir)
 
