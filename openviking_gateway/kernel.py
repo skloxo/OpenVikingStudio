@@ -7,27 +7,33 @@ and fail-open contextual injection into System Prompt.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set, Tuple
 import httpx
 
 from openviking_gateway.config import GatewayConfig
+from openviking_gateway.protocols import auxiliary, clean_dsh_noise, is_dsh_noise
 
 logger = logging.getLogger("openviking_gateway.kernel")
 
 
 def extract_user_query(messages: List[Dict[str, Any]]) -> str:
-    """Extract text from the latest user message in history."""
+    """Extract and clean text from the latest user message in history."""
     for m in reversed(messages):
         if m.get("role") == "user":
             content = m.get("content")
+            raw_text = ""
             if isinstance(content, str):
-                return content.strip()
-            if isinstance(content, list):
+                raw_text = content.strip()
+            elif isinstance(content, list):
                 parts = []
                 for b in content:
                     if isinstance(b, dict) and b.get("type") == "text":
                         parts.append(str(b.get("text", "")))
-                return "\n".join(parts).strip()
+                raw_text = "\n".join(parts).strip()
+
+            cleaned = clean_dsh_noise(raw_text)
+            if cleaned and not is_dsh_noise(cleaned):
+                return cleaned
     return ""
 
 

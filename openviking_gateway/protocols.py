@@ -346,6 +346,7 @@ AUXILIARY_PATTERNS = [
     r"classify",
     r"heartbeat",
     r"suggest",
+    r"generate the session title from",
 ]
 LOWERED_AUXILIARY = [re.compile(p) for p in AUXILIARY_PATTERNS]
 
@@ -356,5 +357,78 @@ def auxiliary(text: str) -> bool:
         text_lower = text.lower()
         return any(pattern.search(text_lower) for pattern in LOWERED_AUXILIARY)
     return any(re.search(pattern, text, re.I) for pattern in AUXILIARY_PATTERNS)
+
+
+DSH_NOISE_PATTERNS = [
+    re.compile(r"\A\s*Attached image\(s\) from tool result:\s*\Z"),
+    re.compile(r"\A\s*Current runtime context\. This snapshot supersedes earlier runtime-context snapshots\.[\s\S]*"),
+    re.compile(r"\A\s*Time sampled while preparing turn \d+, step \d+: [\s\S]*"),
+]
+
+
+def is_dsh_noise(text: str) -> bool:
+    """Detect whether a message text matches common DSH/Agent diagnostic noise."""
+    if not text:
+        return False
+    return any(p.search(text) for p in DSH_NOISE_PATTERNS)
+
+
+def clean_dsh_noise(text: str) -> str:
+    """Strip transient tool and runtime noise from message content."""
+    if not text:
+        return ""
+    for pattern in DSH_NOISE_PATTERNS:
+        text = pattern.sub("", text)
+    return text.strip()
+
+
+def normalize_arguments_json(args: str) -> str:
+    """Normalize tool arguments JSON to compact spacing for robust matching across clients."""
+    if not args or not isinstance(args, str):
+        return args or ""
+    try:
+        parsed = json.loads(args)
+        return json.dumps(parsed, separators=(",", ":"), ensure_ascii=False)
+    except Exception:
+        return args.strip()
+
+
+def reply_chain(prior_chain: List[str], reply: Any, protocol: str = "openai") -> List[str]:
+    """Incremental reply anchor hashing without re-hashing prior conversation history.
+
+    Seeds from the last digest of `prior_chain` to produce bit-identical continuation anchors.
+    """
+    seed = prior_chain[-1] if prior_chain else ""
+    hasher = hashlib.sha256(seed.encode("utf-8"))
+
+    if isinstance(reply, str):
+        hasher.update(reply.encode("utf-8"))
+    elif isinstance(reply, dict):
+        # Canonical dump of reply dictionary
+        hasher.update(json.dumps(reply, sort_keys=True, ensure_ascii=False).encode("utf-8"))
+    elif isinstance(reply, list):
+        for item in reply:
+            if isinstance(item, dict):
+                hasher.update(json.dumps(item, sort_keys=True, ensure_ascii=False).encode("utf-8"))
+            else:
+                hasher.update(str(item).encode("utf-8"))
+    else:
+        hasher.update(str(reply).encode("utf-8"))
+
+    digest = hasher.hexdigest()
+    return [*prior_chain, digest]
+
+
+def safe_append_delta(container: Dict[str, Any], field: str, delta: Optional[str]) -> None:
+    """In-place safe string append for streaming chunks to prevent quadratic re-allocations."""
+    if delta is None:
+        return
+    current = container.get(field)
+    if current is None:
+        container[field] = str(delta)
+    elif isinstance(current, str):
+        container[field] = current + str(delta)
+    else:
+        container[field] = f"{current}{delta}"
 
 
