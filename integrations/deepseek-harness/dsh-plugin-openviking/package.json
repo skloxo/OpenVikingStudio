@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-openviking",
-  "version": "2.0.15",
+  "version": "2.0.16",
   "type": "module",
   "main": "index.js",
   "description": "OpenViking 体外大脑客户端通用 RPC 通信桥梁与先验 Hook 套件 (支持核心记忆、联网搜索与凭据中枢全量动态能力投影)",

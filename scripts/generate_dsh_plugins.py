@@ -23,7 +23,7 @@ if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8")
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
-STUDIO_DIR = ROOT_DIR / "OpenVikingStudio"
+STUDIO_DIR = ROOT_DIR if (ROOT_DIR / "integrations").exists() else ROOT_DIR / "OpenVikingStudio"
 BASE_DIR = STUDIO_DIR / "integrations" / "deepseek-harness"
 
 # =========================================================================
@@ -33,7 +33,7 @@ NATIVE_PLUGINS = {
     "dsh-plugin-openviking-memory": {
         "id": "openviking-memory",
         "pkg_name": "dsh-plugin-openviking-memory",
-        "version": "2.0.15",
+        "version": "2.0.16",
         "title": "OpenViking 核心长程记忆与代码战地",
         "icon": "🧠",
         "desc": "体外大脑长程记忆语义检索、代码感知、上下文路由与经验沉淀完全体 (34 项战地工具 + 3 项 Hook 物理守卫)",

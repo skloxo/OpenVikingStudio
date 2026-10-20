@@ -147,25 +147,17 @@ export function apply(ctx, config = {}) {
     mountMcpIfNeeded().catch(() => {})
   })
 
-  // 专属认知导轨上下文注入 (智能体激活插件时第一时间注入满血作战说明书)
+  // 专属认知导轨上下文注入
   if (ctx.systemPrompt) {
     try {
-      const skillPath = fileURLToPath(new URL('./SKILL.md', import.meta.url))
-      let skillContent = ''
-      try {
-        if (existsSync(skillPath)) {
-          skillContent = readFileSync(skillPath, 'utf8')
-        }
-      } catch (_) {}
-
       ctx.systemPrompt.context({
         name: 'fleet-mesh-routing-guide',
         order: 15,
-        text: () => skillContent || [
-          '【卫星集群同频运维插件 作战说明书】',
+        text: () => [
+          '【卫星集群同频运维插件 导轨】',
           '当前已接入 卫星集群同频运维插件 (fleet-mesh)。',
           '跨物理机节点同频健康体检、代码与配置一键同频同步 (2 项跨机工具 + 1 项 Hook 守卫)',
-          '请直接基于授权 FastMCP 工具与 Hook 开展工作，绝对严禁编写脚本盲跑探测工具，开箱即用。'
+          '请直接基于授权工具与 Hook 开展工作，开箱即用。'
         ].join('\n')
       })
     } catch (_) {}
