@@ -18,10 +18,10 @@ STUDIO_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 def test_semver_consistency():
-    """验证版本号严格同步至 1.7.150。"""
-    assert __version__ == "1.7.150"
+    """验证前后端版本号严格保持 100% 同频一致 (SSOT)。"""
     pkg = json.loads((STUDIO_DIR / "package.json").read_text(encoding="utf-8"))
-    assert pkg["version"] == "1.7.150"
+    assert pkg["version"] == __version__
+    assert len(__version__.split(".")) == 3
 
 
 def test_all_7_plugins_tarball_exist_and_valid():
