@@ -20,13 +20,22 @@ from openviking.models.plugin import (
 
 
 def resolve_package_version(pkg_name: str, fallback: str) -> str:
-    """从本地 package.json 读取真实版本号，确保与 DSH 客户端插件 100% 同步 SSOT。"""
+    """从本地 package.json 或 plugin.json 读取真实版本号，确保与各客户端插件 100% 同步 SSOT。"""
     try:
         from pathlib import Path
         import json
-        pkg_file = Path(__file__).resolve().parent.parent.parent / "integrations" / "deepseek-harness" / pkg_name / "package.json"
-        if pkg_file.is_file():
-            data = json.loads(pkg_file.read_text(encoding="utf-8"))
+        studio_root = Path(__file__).resolve().parent.parent.parent
+        # 1. 尝试 DSH package.json
+        dsh_pkg = studio_root / "integrations" / "deepseek-harness" / pkg_name / "package.json"
+        if dsh_pkg.is_file():
+            data = json.loads(dsh_pkg.read_text(encoding="utf-8"))
+            if data.get("version"):
+                return data["version"]
+        # 2. 尝试 Antigravity plugin.json
+        ag_name = "openviking-memory" if pkg_name == "dsh-plugin-openviking-memory" else pkg_name.replace("dsh-plugin-", "")
+        ag_plugin = studio_root / "integrations" / "antigravity" / ag_name / "plugin.json"
+        if ag_plugin.is_file():
+            data = json.loads(ag_plugin.read_text(encoding="utf-8"))
             if data.get("version"):
                 return data["version"]
     except Exception:
