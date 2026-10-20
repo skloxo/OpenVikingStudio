@@ -257,7 +257,7 @@ asyncio_mode = "auto"
 markers = [
     "integration: tests that require external services or real model configuration",
 ]
-addopts = "-v --cov=openviking --cov-report=term-missing"
+addopts = "-v --tb=short"
 
 [tool.ruff]
 line-length = 100

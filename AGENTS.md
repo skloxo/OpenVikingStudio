@@ -56,7 +56,8 @@
    - **双战场职责清晰解耦**：Windows 宿主纯粹作为代码编辑与 Git 追踪主战场；WSL2（`/home/skloxo/services/openviking`）作为真实生产构建与运行环境，严禁代码两地手工混乱维护；
    - **9P 物理红线与动静分离（核心真理）**：
      - 🛑 **重型前端构建（严禁跨盘）**：严禁针对 Windows 挂载盘（`/mnt/c/...`）直接发起 `vite build`、`pnpm`、`npm install`（因 `node_modules` 5 万碎文件 9P IO 会卡死数分钟），前端打包必须通过 `python scripts/sync_to_wsl.py -b` 在 WSL 原生 ext4 极速构建并回传；
-     - ⚡ **轻量 Python 单测（强制挂载盘直接执行，3秒极速）**：日常业务与算法单元测试，**统一直接执行 `wsl python3 -m pytest tests/unit/test_xxx.py -q`（实测 3 秒极速通过！零同步、零等待）**；
+      - ⚡ **轻量 Python 单测（强制脱水执行，0.5秒极速）**：日常业务与算法单元测试，**统一直接执行 `wsl python3 -m pytest -o addopts='' -q --tb=short tests/unit/test_xxx.py`（实测 0.5 秒极速通过！剥离耗时覆盖率，零同步、零等待）**；
+      - 🛑 **日常迭代严禁频繁打包**：日常功能编码与小步快跑迭代，**严禁在每个中间微步反复执行前端 `vite build` 生产打包**；执行版本或同步脚本必须携带 `--skip-build`，统一留到整个工单完工/最终交棒封板时集中构建 1 次；
    - **严禁滥用生产服务带电热拔插（消灭拖延症核心铁律）**：
      - 🛑 **严禁在日常单测调试中调用 `sync_to_wsl.py -r` 重启后台常驻守护服务**！严禁将生产常驻进程当单测沙盒！违者视为严重违规；
      - 唯一允许使用 `sync_to_wsl.py -r` 的时机：**全量单测通过后、打 Tag 发版前的最后 1 次集成验活**；
