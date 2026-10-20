@@ -15,21 +15,27 @@ import httpx
 
 from openviking_gateway.config import GatewayConfig
 from openviking_gateway.kernel import extract_user_query
+from openviking_gateway.protocols import reply_chain
 
 logger = logging.getLogger("openviking_gateway.capture")
 
 
 def dehydrate_conversation_turn(
-    messages: List[Dict[str, Any]], final_reply: str, model: str
+    messages: List[Dict[str, Any]],
+    final_reply: str,
+    model: str,
+    prior_chain: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
-    """Extract clean user prompt and assistant reply from turn history."""
+    """Extract clean user prompt, assistant reply, and anchor chain from turn history."""
     user_prompt = extract_user_query(messages)
+    chain = reply_chain(prior_chain or [], final_reply)
     return {
         "timestamp": int(time.time()),
         "model": model,
         "user_prompt": user_prompt,
         "assistant_reply": final_reply,
         "turn_length": len(messages),
+        "anchor_chain": chain,
     }
 
 
@@ -73,12 +79,21 @@ class SessionCaptureEngine:
         messages: List[Dict[str, Any]],
         assistant_reply: str,
         model: str,
+        kind: str = "user",
+        prior_chain: Optional[List[str]] = None,
     ) -> None:
-        """Asynchronously dispatch conversation turn into VikingFS session store."""
-        if not self.config.enable_session_capture:
+        """Asynchronously dispatch conversation turn into VikingFS session store.
+
+        Auxiliary side requests (e.g. title generation, summarization) are skipped
+        to prevent cluttering VikingFS with ghost or duplicate sessions.
+        """
+        if not self.config.enable_session_capture or kind == "auxiliary":
+            logger.debug("Skipping session capture (enabled=%s, kind=%s)", self.config.enable_session_capture, kind)
             return
 
-        turn_data = dehydrate_conversation_turn(messages, assistant_reply, model=model)
+        turn_data = dehydrate_conversation_turn(
+            messages, assistant_reply, model=model, prior_chain=prior_chain
+        )
         if not turn_data["user_prompt"] or not turn_data["assistant_reply"]:
             return
 
