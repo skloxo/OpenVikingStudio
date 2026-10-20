@@ -8,6 +8,7 @@ Provides bidirectional translation between OpenAI and Anthropic formats:
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import time
