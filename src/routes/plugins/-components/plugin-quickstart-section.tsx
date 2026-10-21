@@ -31,8 +31,8 @@ export type PluginQuickstartSectionProps = {
  * DSH (DeepSeek Harness) 专用 NPM 桥接包映射 (与 integrations/deepseek-harness package.json 对齐)
  */
 const DSH_BRIDGE_REGISTRY: DshPackageMapping = {
-  'openviking-memory': { pkg: 'dsh-plugin-openviking-memory', ver: '2.0.21' },
-  'openviking-ops': { pkg: 'dsh-plugin-openviking-ops', ver: '1.0.4' },
+  'openviking-memory': { pkg: 'dsh-plugin-openviking-memory', ver: '2.0.22' },
+  'openviking-ops': { pkg: 'dsh-plugin-openviking-ops', ver: '1.0.5' },
   'fleet-mesh': { pkg: 'dsh-plugin-openviking-fleet', ver: '1.0.3' },
   'keepass-vault': { pkg: 'dsh-plugin-keepass-vault', ver: '1.0.2' },
   'cpa-squad': { pkg: 'dsh-plugin-cpa', ver: '1.0.1' },

@@ -107,6 +107,11 @@ def resolve_group_ids(request: Request, account_id: str, user_id: str) -> tuple[
     return tuple(resolver(account_id, user_id)) if resolver is not None else ()
 
 
+def _uses_local_account_store(plugin) -> bool:
+    """Whether request authorization is backed by server-managed identities."""
+    return plugin.auth_mode in (AuthMode.API_KEY.value, AuthMode.TRUSTED.value)
+
+
 def _build_request_context(
     request: Request,
     identity: ResolvedIdentity,
