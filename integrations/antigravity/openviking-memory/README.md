@@ -35,10 +35,9 @@ tar -xzf /tmp/ov-mem.tgz -C ~/.gemini/config/plugins/openviking-memory && \
 python3 ~/.gemini/config/plugins/openviking-memory/setup.py --install
 ```
 
-### 方式三：DeepSeek Harness (NPM 安装直链)
-```bash
-npm install https://vk.tide.red/studio/dsh-plugin-openviking-memory.tgz
-```
+> **其他客户端生态适配说明**：
+> 若在 **DeepSeek Harness (Cordis)** 客户端中使用，请由 DSH 插件市场安装对应桥接包 `dsh-plugin-openviking-memory`。
+
 
 ---
 

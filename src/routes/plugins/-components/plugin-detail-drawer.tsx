@@ -1,18 +1,18 @@
 /**
  * plugin-detail-drawer.tsx
- * 四位一体插件全景规格与详情抽屉组件 (Cockpit UI 规范)。
+ * 四位一体插件详情高密抽屉组件 (参考任务中心抽屉单页连续折叠交互)。
  * 
- * 核心设计哲学 (与 Google Antigravity 插件介绍页互通 SSOT):
- * 1. 【一源两端】：默认以 Markdown 渲染插件根目录下的原生 README.md，两端展现完全一致；
- * 2. 【脱水聚焦】：主 Tab 为详情介绍，辅 Tab 仅保留 MCP 工具池、Hook 守卫与参数配置；
- * 3. 【真实权限拦截】：严格执行权限拦截门禁；
- * 4. 【严守黄金甜点区】：单文件 <= 300 行，NO GREEN EVER 🚫，字体硬下限 >= 12px (text-xs)。
+ * 核心设计哲学 (奥卡姆剃刀与单一真相源):
+ * 1. 【切除碎裂 Tab】：废除切来切去的 Tab 条，改用单一自上而下的无缝阅读流；
+ * 2. 【README 核心首发】：默认直览与反重力 100% 互通的原生 Markdown 介绍正文；
+ * 3. 【可折叠技术附录】：算子全景、认知导轨、Hook 守卫、参数配置按需折叠/展开，绝不产生重复冗余；
+ * 4. 【严守黄金甜点区】：单文件 <= 250 行，NO GREEN EVER 🚫，字体硬下限 >= 12px (text-xs)。
  */
 
 import * as React from 'react'
 import {
   BrainIcon,
-  FileTextIcon,
+  ChevronDownIcon,
   LayersIcon,
   SearchIcon,
   Settings2Icon,
@@ -38,15 +38,61 @@ export type PluginDetailDrawerProps = {
   onClose: () => void
 }
 
-type TabKey = 'readme' | 'tools' | 'skills' | 'hooks' | 'config'
+function CollapsibleSection({
+  title,
+  count,
+  icon,
+  isOpen,
+  onToggle,
+  children,
+}: {
+  title: string
+  count?: number
+  icon: React.ReactNode
+  isOpen: boolean
+  onToggle: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <div className="rounded-md border border-border/60 bg-card/40 overflow-hidden text-xs">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full flex items-center justify-between p-3 text-left font-medium text-foreground hover:bg-muted/30 transition-colors"
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-cyan-600 dark:text-cyan-400">{icon}</span>
+          <span className="font-semibold text-xs">{title}</span>
+          {count != null && (
+            <Badge variant="outline" className="text-xs font-mono px-1.5 py-0 border-border/70">
+              {count}
+            </Badge>
+          )}
+        </div>
+        <ChevronDownIcon
+          className={`size-4 text-muted-foreground transition-transform duration-200 ${
+            isOpen ? 'rotate-180 text-foreground' : ''
+          }`}
+        />
+      </button>
+      {isOpen && <div className="border-t border-border/40 p-3 bg-background/50 space-y-3">{children}</div>}
+    </div>
+  )
+}
 
 export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps) {
   const { connectionRole } = useAppConnection()
-  const [activeTab, setActiveTab] = React.useState<TabKey>('readme')
+  const [openTools, setOpenTools] = React.useState(false)
+  const [openSkills, setOpenSkills] = React.useState(false)
+  const [openHooks, setOpenHooks] = React.useState(false)
+  const [openConfig, setOpenConfig] = React.useState(false)
   const [toolSearch, setToolSearch] = React.useState('')
 
   React.useEffect(() => {
-    setActiveTab('readme')
+    setOpenTools(false)
+    setOpenSkills(false)
+    setOpenHooks(false)
+    setOpenConfig(false)
     setToolSearch('')
   }, [plugin?.plugin_id])
 
@@ -63,7 +109,6 @@ export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps)
     const q = toolSearch.toLowerCase()
     return t.name.toLowerCase().includes(q) || t.description.toLowerCase().includes(q)
   })
-
 
   const renderToolCard = (tool: ToolItem) => {
     const isOps = isPrivilegedTool(tool)
@@ -119,19 +164,6 @@ export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps)
     )
   }
 
-  const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
-    { key: 'readme', label: '详情介绍 (README)', icon: <FileTextIcon className="size-3.5" /> },
-    { key: 'tools', label: `MCP 工具 (${tools.length})`, icon: <LayersIcon className="size-3.5" /> },
-    ...(skills.length > 0
-      ? [{ key: 'skills' as TabKey, label: `认知导轨 (${skills.length})`, icon: <BrainIcon className="size-3.5" /> }]
-      : []),
-    ...(hooks.length > 0
-      ? [{ key: 'hooks' as TabKey, label: `Hook 守卫 (${hooks.length})`, icon: <ZapIcon className="size-3.5" /> }]
-      : []),
-    { key: 'config', label: '参数配置', icon: <Settings2Icon className="size-3.5" /> },
-  ]
-
-
   return (
     <div
       role="dialog"
@@ -139,7 +171,7 @@ export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps)
       className="fixed inset-y-0 right-0 z-50 flex w-full max-w-2xl flex-col border-l border-border/60 bg-background/95 backdrop-blur-md shadow-2xl transition-transform animate-in slide-in-from-right duration-200"
     >
       {/* 头部导航区 */}
-      <div className="border-b border-border/60 p-4 space-y-2.5">
+      <div className="border-b border-border/60 p-4 space-y-2">
         <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground font-mono">
           <span>插件中心 / {plugin.plugin_id}</span>
           <Button
@@ -168,7 +200,33 @@ export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps)
           </div>
         </div>
 
-        {/* 权限提示 */}
+        {/* 核心能力徽章一行速览 (消灭碎片化 Tab) */}
+        <div className="flex flex-wrap items-center gap-2 pt-1 font-mono text-xs text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <LayersIcon className="size-3 text-cyan-500" />
+            <span>算子: {tools.length}</span>
+          </span>
+          <span className="text-border">·</span>
+          <span className="flex items-center gap-1">
+            <BrainIcon className="size-3 text-cyan-500" />
+            <span>认知导轨: {skills.length}</span>
+          </span>
+          {hooks.length > 0 && (
+            <>
+              <span className="text-border">·</span>
+              <span className="flex items-center gap-1">
+                <ZapIcon className="size-3 text-cyan-500" />
+                <span>守卫: {hooks.length}</span>
+              </span>
+            </>
+          )}
+          <span className="text-border">·</span>
+          <Badge variant="outline" className="text-xs font-mono px-1.5 py-0 border-border/50">
+            {plugin.category === 'platform' ? '系统核心' : '扩展生态'}
+          </Badge>
+        </div>
+
+        {/* 权限受限提示 */}
         {!privilege.isAllowed && (
           <div className="flex items-center justify-between gap-2 rounded border border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5 text-xs text-amber-700 dark:text-amber-400">
             <div className="flex items-center gap-1.5 min-w-0">
@@ -183,159 +241,141 @@ export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps)
             </Badge>
           </div>
         )}
-
-        {/* Tab 导航栏 */}
-        <div className="flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 p-1 text-xs font-mono">
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab.key
-            return (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => setActiveTab(tab.key)}
-                className={`flex-1 flex items-center justify-center gap-1.5 rounded px-2 py-1 text-center font-medium transition-all ${
-                  isActive
-                    ? 'border border-cyan-500/40 bg-background text-cyan-700 dark:text-cyan-300 shadow-xs'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
-                }`}
-              >
-                {tab.icon}
-                <span>{tab.label}</span>
-              </button>
-            )
-          })}
-        </div>
       </div>
 
-      {/* 滚动正文 */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
-        {/* Tab 1: 详情介绍 (README 渲染 - 标杆互通) */}
-        {activeTab === 'readme' && (
+      {/* 滚动正文 (单页连续流: README 主体 + 技术字典折叠块) */}
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-5">
+        {/* 1. 原生 Markdown 详情说明正文 (默认展示，与反重力完全对齐) */}
+        <div className="rounded-md border border-border/40 bg-card/20 p-4">
           <PluginReadmeViewer
             content={plugin.readme_content}
             fallbackDescription={plugin.description}
           />
-        )}
+        </div>
 
-        {/* Tab 2: MCP 工具 */}
-        {activeTab === 'tools' && (
-          <div className="space-y-3 font-sans text-xs">
-            <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-2">
-              <h4 className="flex items-center gap-1.5 font-semibold text-foreground">
-                <LayersIcon className="size-3.5 text-cyan-600 dark:text-cyan-400" />
-                MCP 原子工具全景 ({filteredTools.length}/{tools.length})
-              </h4>
-              <div className="relative w-48">
-                <SearchIcon className="absolute left-2 top-1/2 size-3 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={toolSearch}
-                  onChange={(e) => setToolSearch(e.target.value)}
-                  placeholder="过滤工具名称或描述..."
-                  className="h-6.5 pl-6 text-xs font-mono"
-                />
-              </div>
+        {/* 2. 技术字典与规约折叠区 (参考任务中心抽屉交互，按需展开查阅) */}
+        <div className="space-y-3 pt-2">
+          {/* 折叠块 1: MCP 原子算子全景 */}
+          <CollapsibleSection
+            title="MCP 原子算子全景明细"
+            count={tools.length}
+            icon={<LayersIcon className="size-3.5" />}
+            isOpen={openTools}
+            onToggle={() => setOpenTools(!openTools)}
+          >
+            <div className="relative">
+              <SearchIcon className="absolute left-2.5 top-1/2 size-3 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={toolSearch}
+                onChange={(e) => setToolSearch(e.target.value)}
+                placeholder="筛选算子名称或描述..."
+                className="h-7 pl-7 text-xs font-mono"
+              />
             </div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 pt-1">
               {filteredTools.map(renderToolCard)}
             </div>
-          </div>
-        )}
+          </CollapsibleSection>
 
-        {/* Tab 3: 认知导轨 (专属 Skill 认知层) */}
-        {activeTab === 'skills' && (
-          <div className="space-y-3 font-sans text-xs">
-            <div className="flex items-center justify-between border-b border-border/40 pb-2">
-              <h4 className="flex items-center gap-1.5 font-semibold text-foreground">
-                <BrainIcon className="size-3.5 text-cyan-600 dark:text-cyan-400" />
-                配套专家操作手册与认知导轨 ({skills.length})
-              </h4>
-              <Badge variant="outline" className="text-xs font-mono border-border/60">
-                认知层规约
-              </Badge>
-            </div>
-            <div className="space-y-2.5">
-              {skills.map((skill) => (
-                <div
-                  key={skill.skill_id}
-                  className="rounded-md border border-border/50 bg-card/40 p-3 space-y-2"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold text-foreground text-xs">{skill.name}</span>
-                    <Badge
-                      variant="outline"
-                      className="text-xs font-mono border-cyan-500/30 bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 px-1.5 py-0 shrink-0"
-                    >
-                      {skill.skill_id}
-                    </Badge>
-                  </div>
-                  <p className="text-muted-foreground leading-relaxed text-xs">
-                    {skill.description}
-                  </p>
-                  {skill.sop_summary && (
-                    <div className="rounded border border-border/40 bg-muted/20 px-2.5 py-1.5 font-mono text-xs text-foreground/80 flex items-center gap-1.5">
-                      <span className="text-cyan-600 dark:text-cyan-400 shrink-0">SOP:</span>
-                      <span className="truncate">{skill.sop_summary}</span>
+          {/* 折叠块 2: 配套认知导轨与操作手册 */}
+          {skills.length > 0 && (
+            <CollapsibleSection
+              title="配套专家操作手册与认知导轨"
+              count={skills.length}
+              icon={<BrainIcon className="size-3.5" />}
+              isOpen={openSkills}
+              onToggle={() => setOpenSkills(!openSkills)}
+            >
+              <div className="space-y-2.5">
+                {skills.map((skill) => (
+                  <div
+                    key={skill.skill_id}
+                    className="rounded-md border border-border/50 bg-card/50 p-3 space-y-2"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold text-foreground text-xs">{skill.name}</span>
+                      <Badge
+                        variant="outline"
+                        className="text-xs font-mono border-cyan-500/30 bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 px-1.5 py-0 shrink-0"
+                      >
+                        {skill.skill_id}
+                      </Badge>
                     </div>
-                  )}
-                  {skill.rules?.length > 0 && (
-                    <div className="space-y-1 pt-1">
-                      <div className="text-muted-foreground text-xs font-medium">硬性规约与避坑指南:</div>
-                      <ul className="space-y-1 pl-1">
-                        {skill.rules.map((rule, idx) => (
-                          <li key={idx} className="flex items-start gap-1.5 text-xs text-foreground/80 leading-relaxed">
-                            <span className="size-1 rounded-full bg-cyan-500 shrink-0 mt-1.5" />
-                            <span>{rule}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Tab 4: Hook 守卫 */}
-        {activeTab === 'hooks' && (
-
-          <div className="space-y-2.5 font-sans text-xs">
-            <h4 className="flex items-center gap-1.5 font-semibold text-foreground border-b border-border/40 pb-2">
-              <ZapIcon className="size-3.5 text-cyan-600 dark:text-cyan-400" />
-              Hook 拦截事件与生命周期神经反射 ({hooks.length})
-            </h4>
-            <div className="space-y-2">
-              {hooks.map((hook) => (
-                <div
-                  key={hook.hook_id}
-                  className="rounded-md border border-border/50 bg-card/40 p-3 space-y-1.5"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-foreground">{hook.name}</span>
-                    <Badge
-                      variant="outline"
-                      className="text-xs font-mono border-cyan-500/30 bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 px-1.5 py-0"
-                    >
-                      {hook.trigger_event}
-                    </Badge>
+                    <p className="text-muted-foreground leading-relaxed text-xs">
+                      {skill.description}
+                    </p>
+                    {skill.sop_summary && (
+                      <div className="rounded border border-border/40 bg-muted/20 px-2.5 py-1.5 font-mono text-xs text-foreground/80 flex items-center gap-1.5">
+                        <span className="text-cyan-600 dark:text-cyan-400 shrink-0">SOP:</span>
+                        <span className="truncate">{skill.sop_summary}</span>
+                      </div>
+                    )}
+                    {skill.rules?.length > 0 && (
+                      <div className="space-y-1 pt-1">
+                        <div className="text-muted-foreground text-xs font-medium">硬性规约与避坑指南:</div>
+                        <ul className="space-y-1 pl-1">
+                          {skill.rules.map((rule, idx) => (
+                            <li key={idx} className="flex items-start gap-1.5 text-xs text-foreground/80 leading-relaxed">
+                              <span className="size-1 rounded-full bg-cyan-500 shrink-0 mt-1.5" />
+                              <span>{rule}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
-                  <p className="text-muted-foreground leading-relaxed text-xs">
-                    {hook.description}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+                ))}
+              </div>
+            </CollapsibleSection>
+          )}
 
-        {/* Tab 4: 参数配置 */}
-        {activeTab === 'config' && (
-          <PluginConfigSection
-            plugin={plugin}
-            connectionRole={connectionRole}
-            privilegeAllowed={privilege.isAllowed}
-          />
-        )}
+          {/* 折叠块 3: 生命周期 Hook 拦截守卫 */}
+          {hooks.length > 0 && (
+            <CollapsibleSection
+              title="生命周期 Hook 拦截守卫"
+              count={hooks.length}
+              icon={<ZapIcon className="size-3.5" />}
+              isOpen={openHooks}
+              onToggle={() => setOpenHooks(!openHooks)}
+            >
+              <div className="space-y-2">
+                {hooks.map((hook) => (
+                  <div
+                    key={hook.hook_id}
+                    className="rounded-md border border-border/50 bg-card/50 p-2.5 space-y-1"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-foreground">{hook.name}</span>
+                      <Badge
+                        variant="outline"
+                        className="text-xs font-mono border-cyan-500/30 bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 px-1.5 py-0"
+                      >
+                        {hook.trigger_event}
+                      </Badge>
+                    </div>
+                    <p className="text-muted-foreground leading-relaxed text-xs">
+                      {hook.description}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </CollapsibleSection>
+          )}
+
+          {/* 折叠块 4: 运行时参数与环境配置 */}
+          <CollapsibleSection
+            title="运行时核心参数与环境配置"
+            icon={<Settings2Icon className="size-3.5" />}
+            isOpen={openConfig}
+            onToggle={() => setOpenConfig(!openConfig)}
+          >
+            <PluginConfigSection
+              plugin={plugin}
+              connectionRole={connectionRole}
+              privilegeAllowed={privilege.isAllowed}
+            />
+          </CollapsibleSection>
+        </div>
       </div>
     </div>
   )
