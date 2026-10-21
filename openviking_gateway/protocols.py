@@ -40,6 +40,12 @@ class AnthropicMessagesRequest(BaseModel):
     tools: Optional[List[Dict[str, Any]]] = None
 
 
+def string_type(value: Any) -> str:
+    """A block's ``type`` when it is a string; malformed histories may carry an object."""
+    kind = value.get("type") if isinstance(value, dict) else None
+    return kind if isinstance(kind, str) else ""
+
+
 def _extract_text_content(content: Union[str, List[Dict[str, Any]]]) -> str:
     """Extract plain text from string or structured content blocks."""
     if isinstance(content, str):
@@ -47,8 +53,9 @@ def _extract_text_content(content: Union[str, List[Dict[str, Any]]]) -> str:
     if isinstance(content, list):
         parts: List[str] = []
         for block in content:
-            if isinstance(block, dict) and block.get("type") == "text":
-                parts.append(str(block.get("text", "")))
+            if isinstance(block, dict) and string_type(block) == "text":
+                text_val = block.get("text", "")
+                parts.append(str(text_val) if isinstance(text_val, str) else "")
         return "\n".join(parts)
     return str(content)
 
