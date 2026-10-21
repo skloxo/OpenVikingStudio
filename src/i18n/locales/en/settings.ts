@@ -212,6 +212,17 @@ export const settings = {
       description:
         'Configure the OpenViking server connection, control credential, and active data credential.',
       title: 'Connection settings',
+      directoryHint: 'Trusted Identity Directory',
+      directoryAdminHint:
+        'Inspect multi-tenant directory with Admin Key, then select target account and data user.',
+      directoryLoadFailed: 'Failed to load identity directory',
+      directoryIdentityMismatch: 'Selected identity differs from the admin token default identity',
+      directoryKeyHint:
+        'Data operations will execute under this trusted identity. Ensure it has appropriate permissions.',
+      directoryAccount: 'Target Account',
+      directoryUser: 'Assigned User',
+      selectAccount: 'Select account...',
+      selectUser: 'Select user...',
     },
     dialogs: {
       addAccount: {

@@ -334,4 +334,19 @@ describe('shouldRedirectToLoginOnApiError', () => {
       ),
     ).toBe(false)
   })
+
+  it('does not synchronize a control-key placeholder into the selected data user', () => {
+    expect(
+      synchronizeResolvedDataIdentity(
+        {
+          baseUrl: 'https://service.test',
+          apiKey: '',
+          adminApiKey: 'admin-key',
+          accountId: 'tenant',
+          userId: 'alice',
+        },
+        { role: 'admin', accountId: 'tenant', userId: 'default' },
+      ),
+    ).toBeNull()
+  })
 })

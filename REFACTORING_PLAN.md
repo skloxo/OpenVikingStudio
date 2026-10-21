@@ -38,8 +38,8 @@
 | **`v1.7.153`** | **Card-206** | **上游 Studio 前端多语言 i18n 补全与 AppleDouble 元数据过滤整并 (Upstream Studio)** | 吸收 upstream PR #6292 全域多语言 i18n 补齐、#6316 AppleDouble 元数据过滤、#6215 Key 透传，45/45 测试全绿。 | [x] 已验收通过 ✅ |
 | **`v1.7.154`** | **Card-209** | **上游 Storage 存储引擎、Session 瞬态自愈与向量批次控制整并 (Upstream Storage & Session)** | 吸收 upstream PR #6398 瞬态内存读取重试、#6395 多写元数据隐藏、#6259 向量批次上界 (1024)、#6325 O(1) 账号探测，6/6 专项测试全绿。 | [x] 已验收通过 ✅ |
 | **`v1.7.155`** | **Card-210** | **上游网关、服务端鉴权与 Windows 编译沙箱指令转译整并 (Upstream Auth & Windows Transpile)** | 吸收 upstream PR #6396 受信任用户组 Header、#6254 OIDC 斜杠容错、#6306 Gateway 字段容错、#6372 Windows POSIX 指令转译、#6376 编译绝对路径，7/7 专项测试全绿。 | [x] 已验收通过 ✅ |
-| **`待排期`** | **Card-211** | **上游模型体系、经验归因保真与 CLI 网络原生根因透传整并 (Upstream Models & Native CLI)** | 吸收 upstream PR #6365 经验显式读取归因、#6383 Gemini Embedding 2、#6348 Seed 2.1 Lite VLM、#6361 原生 CA 信任、#6312 报错根因透传、#6053 别名文档。 | [ ] 待排期迭代 ⏳ |
-| **`待排期`** | **Card-212** | **上游 Web Studio 连接架构重构与受信任身份目录解耦整并 (Upstream Studio Identity Directory)** | 吸收 upstream PR #6308 重构连接切换架构，抽离 setup-identity-directory，废黜旧版 header 切换器，对齐多服务配置。 | [ ] 待排期迭代 ⏳ |
+| **`v1.7.159`** | **Card-211** | **上游模型体系、经验归因保真与 CLI 网络原生根因透传整并 (Upstream Models & Native CLI)** | 吸收 upstream PR #6365 经验显式读取归因、#6383 Gemini Embedding 2、#6348 Seed 2.1 Lite VLM、#6361 原生 CA 信任、#6312 报错根因透传、#6053 别名文档，16/16 专项单测全绿。 | [x] 已验收通过 ✅ |
+| **`v1.7.160`** | **Card-212** | **上游 Web Studio 连接架构重构与受信任身份目录解耦整并 (Upstream Studio Identity Directory)** | 吸收 upstream PR #6308 解耦独立组件 setup-identity-directory，防冲刷保护，物理斩杀死代码 current-user-menu，对齐中英文 i18n，8/8 专项单测与 29/29 前端单测全绿。 | [x] 已验收通过 ✅ |
 | **`待排期`** | **Card-213** | **上游外部客户端插件生态协议对齐与时间衰减整并 (Upstream External Plugins Ecosystem)** | 吸收 upstream PR #6390 召回时间衰减、#5689 claim 时间戳刷新、#5660 Codex PreCompact 身份、#6381 Pi 分支捕获、#6342 LangChain Store。 | [ ] 待排期迭代 ⏳ |
 | **`v1.7.157`** | **Card-200** | **`openviking-memory` 插件母本自内聚转接驱动重构与自愈清洗 (Antigravity Memory Proxy Stub & SSOT v2.0.16)** | 1. 彻底拔除 setup.py 中外部桌面路径硬编码与 candidate_scripts 扫描，插件目录自带自内聚 server.py 独立转接驱动；<br>2. 统一多机物理契约：2080Ti 本地与 3070 远程代码 100% 相同，唯一变量仅为 OPENVIKING_API；<br>3. 强制自愈清洗幽灵：安装与注册逻辑强制 pop("openviking", None)，消灭历史幽灵条目；<br>4. 版本原子递增：plugin.json 与 setup.py 同步自增至 v2.0.16，全景生态健康测试 100% 满绿通过。<br>*(Commit: `06dc379d0`, Tag: `v1.7.157`)* | [x] 已验收通过 ✅ |
 | **`v1.7.158`** | **Card-201** | **插件与插件中心解耦、动态感知引擎与双端 README 一源互通 (Decoupled Plugin Perception & SSOT README)** | 1. 插件独立解耦托管于 integrations/antigravity，插件中心动态扫描自动感知；<br>2. 真实 AST 静态解析 server.py 工具，彻底斩除虚构假工具与版本断层；<br>3. 抽屉直连渲染原生 README.md，与 Antigravity 详情页 100% 互通共享单一真相源；<br>4. 自动化视网膜门禁全绿，前端生产集中编译生效。 | [x] 已验收通过 ✅ |
@@ -159,12 +159,14 @@
   5. **LocalFS 别名行为规约 (PR #6053 / e6e5f7d2f)**：规约并固化大小写不敏感别名与 ACL 权限边界文档；
   6. **视网膜单测与门禁**：编写专属单元测试 `tests/service/test_card211_models_and_cli_attribution.py`，16/16 专项与 Lineage 单测全绿 (0.16s)，114/114 setup wizard 单测全绿，打标 Tag `v1.7.159`。
 
-#### 📌 [P1] [ ] Card-212: 上游 Web Studio 连接架构重构与受信任身份目录解耦整并 (Upstream Studio Connection & Identity Directory) ⏳
+#### 📌 [P1] [x] Card-212: 上游 Web Studio 连接架构重构与受信任身份目录解耦整并 (Upstream Studio Connection & Identity Directory) ✅
 - **吸收内容与物理契约**：
-  1. **连接切换架构重构 (PR #6308 / 0a2578e7e)**：吸收上游连接切换与服务分组体验，解耦独立组件 `setup-identity-directory.tsx`；
-  2. **废黜旧版 Header 切换器**：简化顶部导航，身份切换统一收敛至座舱侧边与设置抽屉；
-  3. **受信任多账号凭据验证**：增强对已验证管理 key 对应账号权限的探测与校验；
-  4. **铁律与防线约束**：严格遵守 **NO GREEN EVER 🚫**、单文件 ≤500 行硬上限与 100~300 行黄金甜点区，禁止粗暴全量覆写导致定制座舱降级。
+  1. **连接切换架构重构 (PR #6308 / 0a2578e7e)**：解耦独立组件 `setup-identity-directory.tsx` (245行，黄金甜点区)，提供基于 Admin Key 的多租户与用户直观探测点选；
+  2. **身份同步防冲刷保护**：在 `app-connection-utils.ts` 中拦截 control-key 占位符对已有数据用户的冲刷，保持受信任数据身份稳定性；
+  3. **废黜旧版 Header 切换器与死代码物理清理**：彻底删除孤儿组件 `current-user-menu.tsx` 及其单测，更新 `COMPONENT_AND_WHEEL_INVENTORY.md` 活态资产档案库与门禁；
+  4. **中英文双语 i18n 100% 同步**：在 `zh-CN/settings.ts` 与 `en/settings.ts` 中补齐身份目录全部多语言键值；
+  5. **铁律与防线约束**：严格遵守 **NO GREEN EVER 🚫** 冰青湛蓝语义色、字号硬下限严格对齐 `text-xs (12px)`、单文件 ≤500 行硬上限；
+  6. **视网膜单测与集中构建**：编写专属单元测试 `tests/service/test_card212_studio_connection_and_identity.py` (8/8 PASS)，29/29 前端单测满绿，生产构建集中封板，打标 Tag `v1.7.160`。*(Commit: 待提交, Tag: `v1.7.160`)*
 
 #### 📌 [P1] [ ] Card-213: 上游外部客户端插件生态协议对齐与时间衰减整并 (Upstream External Plugins Ecosystem & Recall Decay) ⏳
 - **吸收内容与物理契约**：

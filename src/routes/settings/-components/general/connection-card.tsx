@@ -23,6 +23,7 @@ import {
   FieldLabel,
 } from '#/components/ui/field'
 import { Input } from '#/components/ui/input'
+import { SetupIdentityDirectory } from '#/components/setup-identity-directory'
 import { useAppConnection } from '#/hooks/use-app-connection'
 import type { ConnectionDraft } from '#/hooks/use-app-connection'
 import { probeStudioConnection } from '#/lib/admin'
@@ -384,6 +385,14 @@ export function ConnectionCard({
                 </FieldContent>
               </Field>
             </div>
+
+            {draft.adminApiKey.trim() ? (
+              <SetupIdentityDirectory
+                connection={draft}
+                disabled={isSaving}
+                onChange={updateDraft}
+              />
+            ) : null}
 
             <div className="grid gap-2 md:grid-cols-2">
               <CapabilityStatus

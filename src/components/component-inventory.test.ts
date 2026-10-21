@@ -54,7 +54,7 @@ describe('Component & Wheel Inventory SSOT Living Mechanism', () => {
     const inventoryContent = fs.readFileSync(inventoryPath, 'utf-8')
     const coreComponents = [
       'app-shell.tsx',
-      'current-user-menu.tsx',
+      'setup-identity-directory.tsx',
       'account-switcher.tsx',
       'server-doctor-dialog.tsx',
       'access-required-gate.tsx',
