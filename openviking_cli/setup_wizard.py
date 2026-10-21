@@ -743,7 +743,7 @@ CLOUD_PROVIDERS: list[CloudProvider] = [
         "https://ark.cn-beijing.volces.com/api/v3",
         "doubao-embedding-vision-251215",
         1024,
-        "doubao-seed-2-0-code-preview-260215",
+        "doubao-seed-2-1-lite-260915",
     ),
     CloudProvider(
         "BytePlus",
@@ -751,7 +751,7 @@ CLOUD_PROVIDERS: list[CloudProvider] = [
         "https://ark.ap-southeast.bytepluses.com/api/v3",
         "skylark-embedding-vision-251215",
         1024,
-        "doubao-seed-2-0-code-preview-260215",
+        "seed-2-0-lite-260428",
     ),
     CloudProvider(
         "OpenAI",
@@ -782,7 +782,7 @@ VOLCENGINE_PLANS: list[AccessPlan] = [
         "https://ark.cn-beijing.volces.com/api/plan/v3",
         "doubao-embedding-vision",
         1024,
-        "doubao-seed-2.0-lite",
+        "doubao-seed-2.1-lite",
         "(subscription — agent workloads)",
     ),
     AccessPlan(
@@ -790,7 +790,7 @@ VOLCENGINE_PLANS: list[AccessPlan] = [
         "https://ark.cn-beijing.volces.com/api/coding/v3",
         "doubao-embedding-vision",
         1024,
-        "doubao-seed-2.0-lite",
+        "doubao-seed-2.1-lite",
         "(subscription — coding assistants)",
     ),
     AccessPlan(
@@ -798,7 +798,7 @@ VOLCENGINE_PLANS: list[AccessPlan] = [
         "https://ark.cn-beijing.volces.com/api/v3",
         "doubao-embedding-vision-251215",
         1024,
-        "doubao-seed-2-0-code-preview-260215",
+        "doubao-seed-2-1-lite-260915",
         "(billed by API usage)",
     ),
 ]
@@ -818,7 +818,7 @@ BYTEPLUS_PLANS: list[AccessPlan] = [
         "https://ark.ap-southeast.bytepluses.com/api/v3",
         "skylark-embedding-vision-251215",
         1024,
-        "doubao-seed-2-0-code-preview-260215",
+        "seed-2-0-lite-260428",
         "(billed by API usage)",
     ),
 ]

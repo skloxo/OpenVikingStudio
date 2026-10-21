@@ -245,6 +245,29 @@ report = client.acl_delete("viking://resources/project-a")
 ov acl rm viking://resources/project-a
 ```
 
+## 大小写别名与 ACL
+
+使用 `localfs` 且底层文件系统大小写不敏感时，ACL 按请求 URI 解析权限，底层文件系统可能把仅大小写不同的 URI 解析到同一个真实文件或目录。若别名 URI 的权限判断被放行，后续 `read`、`stat`、`ls`、`write`、`rm`、`cp`、`mv` 等操作可能作用到真实对象。
+
+直观例子：
+
+```bash
+# Bob 的目录只给 Bob 权限
+ov acl set viking://resources/bob-private --acl-mode restricted --entry user:bob=manage
+
+# Alice 读取精确路径，应返回 403
+ov read viking://resources/bob-private/private.md
+
+# 在大小写不敏感的 localfs 上，别名目录可能命中同一个真实目录
+ov read viking://resources/BOB-PRIVATE/private.md
+ov ls viking://resources/BOB-PRIVATE
+ov write viking://resources/BOB-PRIVATE/private.md --content changed --mode replace
+```
+
+同一风险也适用于共享资源树中可通过公开 URI 访问的系统生成文件，例如 `.abstract.md` 和 `.overview.md`。例如真实文件是 `viking://resources/bob-private/.overview.md` 时，`viking://resources/BOB-PRIVATE/.OVERVIEW.md` 也可能命中它。未通过公开 URI 暴露的底层内部数据库、队列或锁文件不属于该 URI 别名问题的直接影响范围。
+
+大小写敏感系统上，`BOB-PRIVATE` 和 `bob-private` 是不同路径；别名目标不存在时返回 `NOT_FOUND`，不会触发该问题。
+
 ## 错误处理
 
 接口先校验 manage，再向已授权调用者确认 URI 是否存在，避免通过错误类型探测资源。

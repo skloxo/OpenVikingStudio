@@ -3,7 +3,7 @@
 > **关联研发大蓝图**：[`BLUEPRINT.md`](file:///home/skloxo/aho/openclaw/project/.agents/BLUEPRINT.md) ｜ **交付全量归档台账**：[`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md) ｜ **通用资产档案库**：[`COMPONENT_AND_WHEEL_INVENTORY.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md)
 > **唯一真相源 (SSOT)**：本文档为 OpenViking 当前活跃的重构规划与就绪待调度的任务矩阵看板。历史所有已验收交付的版本履历已完整归档至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。
 > **战略外围项目隔离公理**：`Search2API 商业化搜索聚合网关` (`docs/search/SEARCH2API_COMMERCIAL_GATEWAY_SPEC.md`) 确认为独立多账号商业化代理项目，不占用 OpenViking 核心任务大盘卡槽。
-> **基线状态**：线上正式部署 **`v1.4.106`** ｜ 当前最新交付 **`v1.7.156`** (代码基线 **`v1.7.153`**) ｜ 分支状态：`main` 已全量同步远程 `origin/main`。
+> **基线状态**：线上正式部署 **`v1.4.106`** ｜ 当前最新交付 **`v1.7.159`** (代码基线 **`v1.7.153`**) ｜ 分支状态：`main` 已全量同步远程 `origin/main`。
 
 ---
 
@@ -15,7 +15,7 @@
 | **`v1.7.153`** | **Card-196** | **生活与研发物理隔离 (Privacy Isolation)** | 家庭高隐私资产物理移入独立目录，斩除研发库临时私有目录，实现研发与生活物理隔离。 | [x] 已验收通过 ✅ |
 | **`v1.7.154`** | **Card-197** | **18 核心母包收敛与平权对齐 (Bundles Convergence)** | 3070 与 2080 平权对等，物理铲除 4 大无关大包 (115场景)，母包收敛至纯粹 18 个。 | [x] 已验收通过 ✅ |
 | **`v1.7.155`** | **Card-198** | **端侧极简瘦身与三层法典解耦 (3-Tier AGENTS Law)** | 切除端侧重复技能，全局保留 8 宿主核心骨架，确立单文件 ≤500 行硬上限与 100~300 行甜点区。 | [x] 已验收通过 ✅ |
-| **`v1.7.156`** | **Card-199** | **Workspace 超级航母重构与双 Junction (Super-Carrier)** | 建立 Workspace 超级航母，提纯 00_Common 六大通识，双 Junction 零中断保活，死链清零。 | [x] 已验收通过 ✅ |
+| **`v1.7.159`** | **Card-199** | **Workspace 超级航母重构与双 Junction (Super-Carrier)** | 建立 Workspace 超级航母，提纯 00_Common 六大通识，双 Junction 零中断保活，死链清零。 | [x] 已验收通过 ✅ |
 | **`v1.7.149`** | **Card-184** | **RNFV 两阶段存储事务模型与并发写锁彻底解耦 (Resource RNFV Transaction)** | 意图规划与物理执行两阶段彻底解耦，写入锁仅保护同步提交，根除写锁死锁，31/31 测试全绿。 | [x] 已验收通过 ✅ |
 | **`v1.7.148`** | **Card-193** | **AGFS 写入事务加固与目录树一致性 (AGFS Transaction)** | 写入锁跨阶段保持，AGFS 异步拷贝接入 run_to_completion，409 精准透传，索引写入标签净化。 | [x] 已验收通过 ✅ |
 | **`v1.7.147`** | **Card-190** | **Gateway 2.0 吞吐优化与 Prompt Cache 态势大盘 (Gateway Optimization)** | 多厂商 Prompt Cache 归一化提取，SSE 流式分帧加速，前端座舱呈现 PromptCache 态势大盘。 | [x] 已验收通过 ✅ |
@@ -139,13 +139,14 @@
   5. **编译工作区绝对路径 (PR #6376 / #6387 / 6545bb2a4)**：`bot/vikingbot/compile/sandbox.py` 在 `CompileSandboxManager` 初始化时强制解析为绝对物理路径，根除相对路径启动导致的 `ENOENT` 异常；
   6. **视网膜单测与门禁**：编写专属单元测试 `tests/service/test_card210_gateway_auth_and_posix_transpile.py`，7/7 专项单测全绿 (0.19s)，安全扫描 0 泄露，打标 Tag `v1.7.155`。
 
-#### 📌 [P1] [ ] Card-211: 上游模型体系、经验归因保真与 CLI 网络原生根因透传整并 (Upstream Models, Evolution Attribution & Native CLI) ⏳
+#### 📌 [P1] [x] Card-211: 上游模型体系、经验归因保真与 CLI 网络原生根因透传整并 (Upstream Models, Evolution Attribution & Native CLI v1.7.159) ✅
 - **吸收内容与物理契约**：
-  1. **经验读取归因保真 (PR #6365 / a07c02cd2)**：Agent Evolution 模块保留显式 Experience read attribution，确保经验复用链路可审计；
-  2. **Gemini Embedding 2 适配 (PR #6383 / b5a389245)**：集成并支持官方 Gemini Embedding 2 稳定多模态嵌入模型；
-  3. **默认 VLM 升级 (PR #6348 / 1455cb128)**：`openviking-server init` 默认多模态模型升级为 Seed 2.1 Lite；
-  4. **CLI 系统原生 CA 信任与报错透传 (PR #6361 / 5d1027468 & PR #6312 / a9cb3b4d4)**：CLI 原生信任系统 CA 证书，网络失败显式透传底层物理根因；
-  5. **LocalFS 别名行为规约 (PR #6053 / e6e5f7d2f)**：规约并固化大小写不敏感别名行为文档。
+  1. **经验读取归因保真 (PR #6365 / a07c02cd2)**：`openviking/session/memory/experience_lineage.py` 严格过滤带 Query/Fragment 脏 URI 并正确 resolve 相对与波浪号别名，支持插件命名空间工具提取；
+  2. **Gemini Embedding 2 适配 (PR #6383 / b5a389245)**：`openviking/models/embedder/gemini_embedders.py` 支持官方稳定 `gemini-embedding-2` 模型、3072 MRL 向量与文本任务指令前缀格式；
+  3. **默认 VLM 升级 (PR #6348 / 1455cb128)**：`openviking-server init` 向导与配置样例默认多模态模型升级为火山引擎 `doubao-seed-2.1-lite`、按量版 `doubao-seed-2-1-lite-260915` 与 BytePlus `seed-2-0-lite-260428`；
+  4. **CLI 系统原生 CA 信任与报错透传 (PR #6361 / 5d1027468 & PR #6312 / a9cb3b4d4)**：`crates/ov_cli` 原生信任系统 CA 证书，网络失败通过 `with_sources` 显式透传底层物理根因与证书链详情；
+  5. **LocalFS 别名行为规约 (PR #6053 / e6e5f7d2f)**：规约并固化大小写不敏感别名与 ACL 权限边界文档；
+  6. **视网膜单测与门禁**：编写专属单元测试 `tests/service/test_card211_models_and_cli_attribution.py`，16/16 专项与 Lineage 单测全绿 (0.16s)，114/114 setup wizard 单测全绿，打标 Tag `v1.7.159`。
 
 #### 📌 [P1] [ ] Card-212: 上游 Web Studio 连接架构重构与受信任身份目录解耦整并 (Upstream Studio Connection & Identity Directory) ⏳
 - **吸收内容与物理契约**：

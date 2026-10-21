@@ -247,6 +247,29 @@ report = client.acl_delete("viking://resources/project-a")
 ov acl rm viking://resources/project-a
 ```
 
+## Case Aliases and ACL
+
+When `localfs` runs on a case-insensitive filesystem, ACL is resolved from the requested URI while the underlying filesystem may resolve a URI that differs only by letter case to the same real file or directory. If the alias URI is authorized, later operations such as `read`, `stat`, `ls`, `write`, `rm`, `cp`, and `mv` may act on the real object.
+
+Concrete example:
+
+```bash
+# Directory belongs to Bob only
+ov acl set viking://resources/bob-private --acl-mode restricted --entry user:bob=manage
+
+# Alice reads the exact path and is blocked with 403
+ov read viking://resources/bob-private/private.md
+
+# On case-insensitive localfs, an alias directory may hit the same underlying directory
+ov read viking://resources/BOB-PRIVATE/private.md
+ov ls viking://resources/BOB-PRIVATE
+ov write viking://resources/BOB-PRIVATE/private.md --content changed --mode replace
+```
+
+The same risk applies to system-generated files that are accessible through public URIs in the shared resource tree, such as `.abstract.md` and `.overview.md`. For example, if the real file is `viking://resources/bob-private/.overview.md`, `viking://resources/BOB-PRIVATE/.OVERVIEW.md` may hit it. Underlying internal database, queue, or lock files not exposed through public URIs fall outside this URI alias issue.
+
+On case-sensitive systems, `BOB-PRIVATE` and `bob-private` are distinct paths; the missing alias target returns `NOT_FOUND` and does not trigger this issue.
+
 ## Errors
 
 The API checks manage permission before confirming existence to an authorized caller, preventing resource discovery through error types.
