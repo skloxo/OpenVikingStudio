@@ -45,6 +45,13 @@ class SkillDefinition(BaseModel):
     rules: List[str] = Field(default_factory=list, description="严禁违背的负向反模式与硬性契约")
 
 
+class RuleDefinition(BaseModel):
+    """插件内置规约法则与约束定义 DTO。"""
+    name: str = Field(..., description="规则名称或文件名 (例如: memory-ssot.md)")
+    description: Optional[str] = Field(None, description="规则自解释概述")
+    content: str = Field("", description="规则 Markdown 正文或约束法则")
+
+
 class GuiSchemaDefinition(BaseModel):
     """人机交互配置与座舱面板定义 DTO。"""
     settings_fields: Dict[str, Any] = Field(default_factory=dict, description="GUI 表单字段配置 Schema (用于 DSH SettingsForm)")
@@ -78,6 +85,7 @@ class QuadPluginDefinition(BaseModel):
     # 🧩 四位一体维度核心对象
     skill: SkillDefinition = Field(..., description="1. 认知层 (Skill 操作手册，兼容主导轨)")
     skills: List[SkillDefinition] = Field(default_factory=list, description="1. 认知层 (Skill 专属认知导轨全量列表)")
+    rules: List[RuleDefinition] = Field(default_factory=list, description="内置规约法则与安全红线列表")
     hooks: List[HookDefinition] = Field(default_factory=list, description="2. 拦截层 (Hook 神经反射)")
     tools: List[ToolDefinition] = Field(default_factory=list, description="3. 工具层 (MCP 物理算子列表)")
     gui: GuiSchemaDefinition = Field(default_factory=GuiSchemaDefinition, description="4. 交互层 (GUI 设置与驾驶舱)")

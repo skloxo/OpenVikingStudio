@@ -37,6 +37,12 @@ export type PluginHealth = {
   checked_at: number
 }
 
+export type RuleItem = {
+  name: string
+  description?: string
+  content: string
+}
+
 export type QuadPluginItem = {
   plugin_id: string
   name: string
@@ -51,6 +57,7 @@ export type QuadPluginItem = {
   suggested_prompts?: string[]
   skill: SkillItem
   skills?: SkillItem[]
+  rules?: RuleItem[]
   hooks: HookItem[]
   tools: ToolItem[]
   gui: GuiSchema
