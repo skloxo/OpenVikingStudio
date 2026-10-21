@@ -75,3 +75,18 @@ export type PluginsHealthSummary = {
   probes: Record<string, PluginHealth>
 }
 
+export type DshPluginBridgeInfo = {
+  pkg: string
+  ver: string
+}
+
+export type DshPackageMapping = Record<string, DshPluginBridgeInfo>
+
+export type QuickstartCommandItem = {
+  id: string
+  title: string
+  command: string
+  copyLabel: string
+  iconType?: 'laptop' | 'terminal' | 'cube'
+  badge?: string
+}

@@ -70,7 +70,8 @@
   2. **README 核心提纯与切除打断**：精简提纯 `openviking-memory` 与 `openviking-ops` 的 `README.md`，拔除冗长手写算子列表与终端安装命令，专注文档自身定位；
   3. **建议交互提示词 (suggestedPrompts) 构件**：新增 `plugin-prompts-section.tsx`，动态直连 `plugin.suggested_prompts`，支持一键点击复制与毫秒级反馈，1:1 对齐反重力原生交互体验；
   4. **解耦可折叠技术附录**：将极速开箱命令 (`PluginQuickstartSection`)、MCP 原子算子全景、配套认知导轨、Hook 守卫与运行时配置统一整编为底部可折叠附录，默认折叠，按需展开；
-  5. **全系 7 大插件通用互通**：覆盖 `openviking-memory`, `openviking-ops`, `agent-circuit-breaker`, `keepass-vault`, `fleet-mesh`, `dify`, `cpa-squad`，经浏览器实操全面打靶验收通过。
+  5. **全系 7 大插件通用互通**：覆盖 `openviking-memory`, `openviking-ops`, `agent-circuit-breaker`, `keepass-vault`, `fleet-mesh`, `dify`, `cpa-squad`，经浏览器实操全面打靶验收通过；
+  6. **强类型抽离与命令数据驱动**：在 `plugin-types.ts` 中单独定义 `DshPluginBridgeInfo`、`DshPackageMapping` 与 `QuickstartCommandItem`，消除组件内匿名弱类型与冗余模板代码，单文件严格保持 177 行黄金甜点区。
 
 #### 📌 [P0] [x] Card-203: 上游 Storage 写入锁协调提前消费与跨进程恢复整并 (Upstream Storage Lock Leak & Recovery Alignment) ✅
 - **类型**：底层存储加固 / 并发锁治理 / 跨进程恢复 ｜ **优先级**：🔥 P0 ｜ **交付版本**：`v1.7.150`
