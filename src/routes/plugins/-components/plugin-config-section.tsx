@@ -98,7 +98,15 @@ export function PluginConfigSection({ plugin }: PluginConfigSectionProps) {
             </div>
           ) : (
             settingsEntries.map(([key, value]) => {
-              const valStr = String(value)
+              let displayVal = ''
+              if (value == null) {
+                displayVal = '未配置 (默认)'
+              } else if (typeof value === 'object') {
+                displayVal = value.value || value.description || value.label || JSON.stringify(value)
+              } else {
+                displayVal = String(value)
+              }
+
               return (
                 <div
                   key={key}
@@ -106,15 +114,15 @@ export function PluginConfigSection({ plugin }: PluginConfigSectionProps) {
                 >
                   <div className="min-w-0 pr-2">
                     <div className="text-muted-foreground text-xs font-sans">{key}</div>
-                    <div className="truncate text-foreground font-medium text-xs mt-0.5" title={valStr}>
-                      {valStr}
+                    <div className="truncate text-foreground font-medium text-xs mt-0.5" title={displayVal}>
+                      {displayVal}
                     </div>
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
                     className="h-6 px-2 text-xs shrink-0"
-                    onClick={() => handleCopy(valStr, key)}
+                    onClick={() => handleCopy(displayVal, key)}
                   >
                     <CopyIcon className="mr-1 size-3" />
                     {copiedKey === key ? '已复制' : '复制'}
@@ -122,6 +130,7 @@ export function PluginConfigSection({ plugin }: PluginConfigSectionProps) {
                 </div>
               )
             })
+
           )}
         </div>
       </div>

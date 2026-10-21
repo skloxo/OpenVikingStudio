@@ -115,6 +115,70 @@ def extract_hooks_from_hooks_json(hooks_file: Path) -> List[HookDefinition]:
     return hooks
 
 
+def extract_skills_from_skills_dir(skills_dir: Path) -> List[SkillDefinition]:
+    """从插件物理 skills/ 目录动态扫描并解析所有专属操作手册与认知导轨 (SSOT)。"""
+    if not skills_dir.is_dir():
+        return []
+
+    skills: List[SkillDefinition] = []
+    for sub in sorted(skills_dir.iterdir()):
+        if not sub.is_dir():
+            continue
+        skill_file = sub / "SKILL.md"
+        if not skill_file.is_file():
+            continue
+
+        skill_id = sub.name
+        name = skill_id
+        description = f"{skill_id} 领域专家操作手册与认知导轨"
+        sop_summary = "查库第一公理 ➔ 规范提取 ➔ 原子执行 ➔ 验证反馈"
+        rules: List[str] = []
+
+        try:
+            content = skill_file.read_text(encoding="utf-8", errors="replace")
+            # 提取 YAML frontmatter
+            if content.startswith("---"):
+                parts = content.split("---", 2)
+                if len(parts) >= 3:
+                    fm_text = parts[1]
+                    for line in fm_text.splitlines():
+                        line_s = line.strip()
+                        if line_s.startswith("name:"):
+                            name = line_s.split(":", 1)[1].strip().strip("'\"")
+                        elif line_s.startswith("description:"):
+                            raw_desc = line_s.split(":", 1)[1].strip().strip(">-").strip()
+                            if raw_desc:
+                                description = raw_desc
+
+            # 提炼正文首个主要段落与规约
+            in_body = False
+            for line in content.splitlines():
+                line_s = line.strip()
+                if not in_body and line_s.startswith("# "):
+                    in_body = True
+                    continue
+                if in_body and line_s and not line_s.startswith("#") and description.endswith("认知导轨"):
+                    description = line_s
+                if line_s.startswith("- ") or line_s.startswith("1. "):
+                    clean_rule = line_s.lstrip("- 0123456789.").strip()
+                    if len(rules) < 3 and len(clean_rule) > 8:
+                        rules.append(clean_rule)
+        except Exception as e:
+            logger.warning("解析技能 %s 异常: %s", skill_file, e)
+
+        skills.append(
+            SkillDefinition(
+                skill_id=skill_id,
+                name=name,
+                description=description,
+                sop_summary=sop_summary,
+                rules=rules,
+            )
+        )
+
+    return skills
+
+
 def scan_single_plugin_dir(plugin_dir: Path) -> Optional[QuadPluginDefinition]:
     """扫描并组装单个插件目录的 QuadPluginDefinition 规格实体。"""
     manifest_file = plugin_dir / "plugin.json"
@@ -157,23 +221,28 @@ def scan_single_plugin_dir(plugin_dir: Path) -> Optional[QuadPluginDefinition]:
     hooks_file = plugin_dir / "hooks.json"
     hooks = extract_hooks_from_hooks_json(hooks_file)
 
-    # 4. 技能层装配
-    skill_def = SkillDefinition(
-        skill_id=f"{plugin_id}-ops",
-        name=f"{display_name} 官方操作手册",
-        description=f"{display_name} 领域专家操作认知手册",
-        sop_summary="查库第一公理 ➔ 规范提取 ➔ 原子执行 ➔ 验证反馈",
-        rules=["严禁私自绕过权限", "破坏性操作前自动触发前置审计"],
-    )
+    # 4. 动态提取 Skills (skills/ 物理目录全量扫描)
+    skills_dir = plugin_dir / "skills"
+    skills = extract_skills_from_skills_dir(skills_dir)
+    if skills:
+        skill_def = skills[0]
+    else:
+        skill_def = SkillDefinition(
+            skill_id=f"{plugin_id}-ops",
+            name=f"{display_name} 官方操作手册",
+            description=f"{display_name} 领域专家操作认知手册",
+            sop_summary="查库第一公理 ➔ 规范提取 ➔ 原子执行 ➔ 验证反馈",
+            rules=["严禁私自绕过权限", "破坏性操作前自动触发前置审计"],
+        )
+        skills = [skill_def]
 
-    # 5. GUI 与参数配置装配
+    # 5. GUI 与运行时参数配置装配 (脱水扁平字符映射，绝不输出对象嵌套)
     gui_def = GuiSchemaDefinition(
         settings_fields={
-            "user_key": {
-                "type": "string",
-                "label": "用户通行令牌 (UserKey)",
-                "description": "用于连接 OpenViking 核心服务的身份鉴权凭据",
-            }
+            "API 服务端点": "http://127.0.0.1:1933 (本地环回中枢直连)",
+            "鉴权凭据托管": "Bearer Token (已由宿主环境安全持久化)",
+            "通信通道模式": "Google Antigravity IDE (原生 Hook + Stdio 桥)",
+            "数据存储目录": "~/.openviking/data/ (本地加密落盘)",
         },
         dashboard_route="/plugins",
     )
@@ -193,11 +262,13 @@ def scan_single_plugin_dir(plugin_dir: Path) -> Optional[QuadPluginDefinition]:
         tags=keywords,
         suggested_prompts=suggested_prompts,
         skill=skill_def,
+        skills=skills,
         hooks=hooks,
         tools=tools,
         gui=gui_def,
         health=PluginHealthProbe(status="healthy", latency_ms=0.5, message="物理代码与契约自检存活"),
     )
+
 
 
 def scan_local_plugins(base_dir: Optional[Path] = None) -> Tuple[List[QuadPluginDefinition], Dict[str, str], Dict[str, str]]:
