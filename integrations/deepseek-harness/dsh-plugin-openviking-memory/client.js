@@ -512,17 +512,6 @@ window.__ModuleLoader__.load({
             DshPluginOpenvikingMemoryPanel
         )
       );
-      if ('dsh-plugin-openviking-memory' === 'dsh-plugin-openviking-memory') {
-        ctx.slots.inject('plugins.bundle.config', () =>
-          ctx.slots.register(
-              {
-                name: 'plugins.bundle.config',
-                key: 'dsh-plugin-openviking',
-              },
-              DshPluginOpenvikingMemoryPanel
-          )
-        );
-      }
     }
 
     return {

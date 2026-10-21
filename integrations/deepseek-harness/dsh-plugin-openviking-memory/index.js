@@ -7,6 +7,8 @@
 import { appendFileSync, statSync, renameSync, existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { homedir } from 'node:os'
+import { resolveOpenVikingCredentials } from './shared/credentials.mjs'
 
 export const name = 'dsh-plugin-openviking-memory'
 export const inject = ['agents', 'sessions', 'tools', 'systemPrompt']
@@ -28,7 +30,7 @@ export const Config = Schema ? Schema.object({
 
 function log(msg) {
   try {
-    const home = process.env.USERPROFILE || process.env.HOME || 'C:\\Users\\Skl'
+    const home = process.env.USERPROFILE || process.env.HOME || homedir()
     const logPath = resolve(home, '.dsh', 'dsh-plugin-openviking-memory-hook.log')
     const line = `[${new Date().toISOString()}] ${msg}\n`
     appendFileSync(logPath, line, 'utf8')
@@ -49,7 +51,12 @@ function getVal(v, fallback = '') {
 }
 
 export function apply(ctx, config = {}) {
-  const getEndpoint = () => getVal(config.endpointUrl, '')
+  const credentials = resolveOpenVikingCredentials()
+  const getEndpoint = () => {
+    const explicit = getVal(config.endpointUrl, '')
+    if (explicit) return explicit
+    return credentials.baseUrl || 'http://127.0.0.1:1933'
+  }
   const getMcpBaseUrl = () => {
     let ep = getEndpoint().trim()
     if (!ep) return ''
@@ -63,10 +70,10 @@ export function apply(ctx, config = {}) {
     for (const name of envNames) {
       if (name && process.env[name]) return process.env[name]
     }
-    return ''
+    return credentials.apiKey || ''
   }
-  const getPeer = () => getVal(config.peer, 'openviking-memory')
-  const getUserId = () => getVal(config.userId, 'default')
+  const getPeer = () => getVal(config.peer, credentials.peerId || 'openviking-memory')
+  const getUserId = () => getVal(config.userId, credentials.user || 'default')
   const getEnableMcp = () => getVal(config.enableMcp, true) !== false
 
   log(`[INIT] dsh-plugin-openviking-memory activated (peer=${getPeer()}, endpoint=${getEndpoint()})`)
@@ -111,7 +118,7 @@ export function apply(ctx, config = {}) {
       }
 
       if (mcpPlugin && typeof ctx.plugin === 'function') {
-        const homeDir = process.env.USERPROFILE || process.env.HOME || 'C:\\Users\\Skl'
+        const homeDir = process.env.USERPROFILE || process.env.HOME || homedir()
         const childEnv = {
           ...process.env,
           ELECTRON_RUN_AS_NODE: '1',
