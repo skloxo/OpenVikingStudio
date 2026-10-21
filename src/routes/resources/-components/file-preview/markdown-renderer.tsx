@@ -8,6 +8,7 @@ import {
 import hljs from 'highlight.js/lib/core'
 import { defaultUrlTransform } from 'react-markdown'
 
+import i18n from '#/i18n'
 import { client } from '#/gen/ov-client/client.gen'
 import { getContentDownload, ovClient } from '#/lib/ov-client'
 import { fileNameFromUri } from '#/lib/viking-uri'
@@ -219,7 +220,7 @@ export function MarkdownImage({
         })
         if (!alive) return
         const blob = response.data as Blob
-        if (blob.size === 0) throw new Error('empty blob')
+        if (blob.size === 0) throw new Error(i18n.t('studio:errors.emptyBlob'))
         created = URL.createObjectURL(blob)
         setObjectUrl(created)
       } catch {

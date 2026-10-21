@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import i18n from '#/i18n'
 import { getContentDownload } from '#/lib/ov-client'
 import type { VikingFsEntry } from '../../-types/viking-fm'
 import { toDownloadUrl, withCacheBust } from './markdown-renderer'
@@ -47,7 +48,7 @@ export function ImageViewer({ file, fileType }: ImageViewerProps) {
         if (!alive) return
 
         const blob = response.data as Blob
-        if (blob.size === 0) throw new Error('empty blob')
+        if (blob.size === 0) throw new Error(i18n.t('studio:errors.emptyBlob'))
 
         const nextUrl = URL.createObjectURL(blob)
         setImageUrl((prev) => {

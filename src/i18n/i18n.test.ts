@@ -30,6 +30,7 @@ describe('i18n configuration and modular dictionary parity', () => {
       'sessions',
       'oauth',
       'playground',
+      'studio',
     ]
 
     const zhKeys = Object.keys(resources['zh-CN'])
@@ -81,6 +82,34 @@ describe('i18n configuration and modular dictionary parity', () => {
       console.log('Found i18n differences:\n' + differences.join('\n'))
     }
     expect(differences).toEqual([])
+  })
+
+  it('has no empty translations or mismatched interpolation variables', () => {
+    function flatten(value: unknown, prefix = ''): Record<string, string> {
+      if (typeof value === 'string') return { [prefix]: value }
+      if (typeof value !== 'object' || value === null) return {}
+      return Object.assign(
+        {},
+        ...Object.entries(value as Record<string, unknown>).map(([key, child]) =>
+          flatten(child, prefix ? `${prefix}.${key}` : key),
+        ),
+      )
+    }
+
+    function placeholders(text: string): string[] {
+      return [...text.matchAll(/\{\{-?\s*([^},\s]+)[^}]*\}\}/g)]
+        .map((match) => match[1])
+        .sort()
+    }
+
+    const english = flatten(resources.en)
+    const chinese = flatten(resources['zh-CN'])
+
+    for (const [key, text] of Object.entries(english)) {
+      expect(text.trim(), `Empty en text for ${key}`).not.toBe('')
+      expect(chinese[key]?.trim(), `Empty zh-CN text for ${key}`).not.toBe('')
+      expect(placeholders(chinese[key] ?? ''), `Placeholder mismatch for ${key}`).toEqual(placeholders(text))
+    }
   })
 
   it('enforces single file size limit <= 500 lines for all i18n files', async () => {

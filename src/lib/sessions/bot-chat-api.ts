@@ -27,7 +27,7 @@ export function extractErrorMessage(text: string, fallback: string): string {
 export function buildFetchHeaders(): Record<string, string> {
   const conn = ovClient.getConnection()
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-  const apiKey = conn.adminApiKey || conn.apiKey
+  const apiKey = conn.apiKey || conn.adminApiKey
   if (apiKey) headers['X-API-Key'] = apiKey
   if (conn.identityHeaders) {
     if (conn.accountId) headers['X-OpenViking-Account'] = conn.accountId

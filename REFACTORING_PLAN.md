@@ -3,7 +3,7 @@
 > **关联研发大蓝图**：[`BLUEPRINT.md`](file:///home/skloxo/aho/openclaw/project/.agents/BLUEPRINT.md) ｜ **交付全量归档台账**：[`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md) ｜ **通用资产档案库**：[`COMPONENT_AND_WHEEL_INVENTORY.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md)
 > **唯一真相源 (SSOT)**：本文档为 OpenViking 当前活跃的重构规划与就绪待调度的任务矩阵看板。历史所有已验收交付的版本履历已完整归档至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。
 > **战略外围项目隔离公理**：`Search2API 商业化搜索聚合网关` (`docs/search/SEARCH2API_COMMERCIAL_GATEWAY_SPEC.md`) 确认为独立多账号商业化代理项目，不占用 OpenViking 核心任务大盘卡槽。
-> **基线状态**：线上正式部署 **`v1.4.106`** ｜ 当前最新交付 **`v1.7.156`** (代码基线 **`v1.7.152`**) ｜ 分支状态：`main` 已全量同步远程 `origin/main`。
+> **基线状态**：线上正式部署 **`v1.4.106`** ｜ 当前最新交付 **`v1.7.156`** (代码基线 **`v1.7.153`**) ｜ 分支状态：`main` 已全量同步远程 `origin/main`。
 
 ---
 
@@ -34,7 +34,7 @@
 | **`待排期`** | **Card-168** | **系统底层与体外大脑五层抗熵增治理中枢 (Anti-Entropy Memory Evolution)** | 前门语义准入去重，失效认知版本演进链 (Superseded DAG)，夜间离线做梦蒸馏 (ov_dream)。 | [ ] 待排期迭代 ⏳ |
 | **`v1.7.151`** | **Card-204** | **上游 Gateway 缓存遥测增强与 DSH 无工具请求防重复召回整并 (Upstream Gateway)** | 吸收 PR #6295 DSH 辅助防召回、#6026 回复增量哈希与 SSE 批量分帧、#6267 缓存告警闭环，61/61 测试全绿。 | [x] 已验收通过 ✅ |
 | **`v1.7.152`** | **Card-205** | **上游 Session 消息写入与接口去重读取性能优化整并 (Upstream Session Perf)** | 吸收 upstream PR #6270 消息写入与 Session 重复读取优化、#6075 防脏快照 upsert、#6165 rm(no_vector) 极速旁路，6/6 专项测试全绿。 | [x] 已验收通过 ✅ |
-| **`待排期`** | **Card-206** | **上游 Studio 前端多语言 i18n 补全与 AppleDouble 元数据过滤整并 (Upstream Studio)** | 吸收 upstream PR #6292 全域多语言 i18n 补齐、#6316 AppleDouble 元数据过滤、#6215 Key 透传。 | [ ] 待排期迭代 ⏳ |
+| **`v1.7.153`** | **Card-206** | **上游 Studio 前端多语言 i18n 补全与 AppleDouble 元数据过滤整并 (Upstream Studio)** | 吸收 upstream PR #6292 全域多语言 i18n 补齐、#6316 AppleDouble 元数据过滤、#6215 Key 透传，45/45 测试全绿。 | [x] 已验收通过 ✅ |
 | **`v1.7.157`** | **Card-200** | **`openviking-memory` 插件母本自内聚转接驱动重构与自愈清洗 (Antigravity Memory Proxy Stub & SSOT v2.0.16)** | 1. 彻底拔除 setup.py 中外部桌面路径硬编码与 candidate_scripts 扫描，插件目录自带自内聚 server.py 独立转接驱动；<br>2. 统一多机物理契约：2080Ti 本地与 3070 远程代码 100% 相同，唯一变量仅为 OPENVIKING_API；<br>3. 强制自愈清洗幽灵：安装与注册逻辑强制 pop("openviking", None)，消灭历史幽灵条目；<br>4. 版本原子递增：plugin.json 与 setup.py 同步自增至 v2.0.16，全景生态健康测试 100% 满绿通过。<br>*(Commit: `06dc379d0`, Tag: `v1.7.157`)* | [x] 已验收通过 ✅ |
 | **`v1.7.158`** | **Card-201** | **插件与插件中心解耦、动态感知引擎与双端 README 一源互通 (Decoupled Plugin Perception & SSOT README)** | 1. 插件独立解耦托管于 integrations/antigravity，插件中心动态扫描自动感知；<br>2. 真实 AST 静态解析 server.py 工具，彻底斩除虚构假工具与版本断层；<br>3. 抽屉直连渲染原生 README.md，与 Antigravity 详情页 100% 互通共享单一真相源；<br>4. 自动化视网膜门禁全绿，前端生产集中编译生效。 | [x] 已验收通过 ✅ |
 | **`待排期`** | **Card-202** | **`fleet-mesh` 插件母本自内聚转接驱动与多节点拓扑自适应 (SSOT v1.0.2)** | 拔除路径依赖，自适应探测 2080Ti/3070 节点，版本原子递增。 | [ ] 待排期迭代 ⏳ |
@@ -109,8 +109,13 @@
   3. **防脏快照覆写加固 (PR #6075)**：`MemoryUpdater.apply_operations` 新鲜读取失败时严禁回退到陈旧快照执行覆写，阻断脏数据落盘；
   4. **视网膜单测与门禁**：编写专项测试 `tests/service/test_card205_session_io_and_delete_perf.py` (6/6 全绿)，全量 Session 测试回归全绿，安全扫描 0 泄露，打标 Tag `v1.7.152`。
 
-#### 📌 [P1] [ ] Card-206: 上游 Studio 前端多语言 i18n 补全与 AppleDouble 元数据过滤整并 (Upstream Studio i18n & AppleDouble Metadata Filter) ⏳
-- **吸收内容**：上游 PR #6292 (UI 剩余文案全量 i18n 补齐并加入门禁检查)、PR #6316 (代码 Lint 忽略 AppleDouble 元数据)、PR #6215 (Bot 聊天请求透传 Admin Key)。
+#### 📌 [P1] [x] Card-206: 上游 Studio 前端多语言 i18n 补全与 AppleDouble 元数据过滤整并 (Upstream Studio i18n & AppleDouble Metadata Filter v1.7.153) ✅
+- **吸收内容与物理交付物**：
+  1. **AppleDouble 过滤与 i18n ESLint 规则插件 (PR #6316 & #6292)**：在 `eslint.config.js` 增加 `'**/._*'` 屏蔽 macOS 影子元数据；落地 `script/eslint-i18n.mjs`（`no-literal-message` 与 `explicit-locale`），并配合 `script/eslint-i18n.test.ts` (38/38 通过)；
+  2. **Bot 凭据鉴权优先级对齐 (PR #6215)**：`src/lib/sessions/bot-chat-api.ts` 修正 `buildFetchHeaders()` 优先级为 `conn.apiKey || conn.adminApiKey`，并补充 `src/lib/sessions/bot-chat-api.test.ts` (2/2 通过)；
+  3. **studio 命名空间与格式化基础设施 (PR #6292)**：建立 `src/i18n/format.ts` (`formatNumber`, `formatDateTime`)、`src/i18n/editor-phrases.ts`，落地 `src/i18n/locales/zh-CN/studio.ts` 与 `en/studio.ts` (70+ 条目)，并在 `index.ts` 监听同步 `document.documentElement.lang`；
+  4. **业务组件多语言净化**：`clipboard.ts`、`errors.ts`、`code-editor.tsx`、`task-detail-sheet.tsx`、`image-viewer.tsx`、`markdown-renderer.tsx` 消除裸写硬编码；
+  5. **视网膜门禁全绿**：`i18n.test.ts` (5/5 通过) 严格校验双语 Key 100% 对齐与插值占位符一致性，前端与后端单测 45/45 全绿，打标 Tag `v1.7.153`。
 
 #### 📌 [P1] [x] Card-200: `openviking-memory` 插件母本自内聚转接驱动重构、自愈清洗与四维逆向加固 (SSOT v2.0.16) ✅
 - **治理成果与物理交付物**：
