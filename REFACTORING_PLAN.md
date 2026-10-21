@@ -35,6 +35,11 @@
 | **`v1.7.151`** | **Card-204** | **上游 Gateway 缓存遥测增强与 DSH 无工具请求防重复召回整并 (Upstream Gateway)** | 吸收 PR #6295 DSH 辅助防召回、#6026 回复增量哈希与 SSE 批量分帧、#6267 缓存告警闭环，61/61 测试全绿。 | [x] 已验收通过 ✅ |
 | **`v1.7.152`** | **Card-205** | **上游 Session 消息写入与接口去重读取性能优化整并 (Upstream Session Perf)** | 吸收 upstream PR #6270 消息写入与 Session 重复读取优化、#6075 防脏快照 upsert、#6165 rm(no_vector) 极速旁路，6/6 专项测试全绿。 | [x] 已验收通过 ✅ |
 | **`v1.7.153`** | **Card-206** | **上游 Studio 前端多语言 i18n 补全与 AppleDouble 元数据过滤整并 (Upstream Studio)** | 吸收 upstream PR #6292 全域多语言 i18n 补齐、#6316 AppleDouble 元数据过滤、#6215 Key 透传，45/45 测试全绿。 | [x] 已验收通过 ✅ |
+| **`待排期`** | **Card-209** | **上游 Storage 存储引擎、Session 瞬态自愈与向量批次控制整并 (Upstream Storage & Session)** | 吸收 upstream PR #6398 瞬态内存读取重试、#6395 多写元数据隐藏、#6259 向量批次上界、#6325 O(1) 账号探测。 | [ ] 待排期迭代 ⏳ |
+| **`待排期`** | **Card-210** | **上游网关、服务端鉴权与 Windows 编译沙箱指令转译整并 (Upstream Auth & Windows Transpile)** | 吸收 upstream PR #6396 受信任用户组 Header、#6254 OIDC 斜杠容错、#6306 Gateway 字段容错、#6372 Windows POSIX 指令转译、#6376 编译绝对路径。 | [ ] 待排期迭代 ⏳ |
+| **`待排期`** | **Card-211** | **上游模型体系、经验归因保真与 CLI 网络原生根因透传整并 (Upstream Models & Native CLI)** | 吸收 upstream PR #6365 经验显式读取归因、#6383 Gemini Embedding 2、#6348 Seed 2.1 Lite VLM、#6361 原生 CA 信任、#6312 报错根因透传、#6053 别名文档。 | [ ] 待排期迭代 ⏳ |
+| **`待排期`** | **Card-212** | **上游 Web Studio 连接架构重构与受信任身份目录解耦整并 (Upstream Studio Identity Directory)** | 吸收 upstream PR #6308 重构连接切换架构，抽离 setup-identity-directory，废黜旧版 header 切换器，对齐多服务配置。 | [ ] 待排期迭代 ⏳ |
+| **`待排期`** | **Card-213** | **上游外部客户端插件生态协议对齐与时间衰减整并 (Upstream External Plugins Ecosystem)** | 吸收 upstream PR #6390 召回时间衰减、#5689 claim 时间戳刷新、#5660 Codex PreCompact 身份、#6381 Pi 分支捕获、#6342 LangChain Store。 | [ ] 待排期迭代 ⏳ |
 | **`v1.7.157`** | **Card-200** | **`openviking-memory` 插件母本自内聚转接驱动重构与自愈清洗 (Antigravity Memory Proxy Stub & SSOT v2.0.16)** | 1. 彻底拔除 setup.py 中外部桌面路径硬编码与 candidate_scripts 扫描，插件目录自带自内聚 server.py 独立转接驱动；<br>2. 统一多机物理契约：2080Ti 本地与 3070 远程代码 100% 相同，唯一变量仅为 OPENVIKING_API；<br>3. 强制自愈清洗幽灵：安装与注册逻辑强制 pop("openviking", None)，消灭历史幽灵条目；<br>4. 版本原子递增：plugin.json 与 setup.py 同步自增至 v2.0.16，全景生态健康测试 100% 满绿通过。<br>*(Commit: `06dc379d0`, Tag: `v1.7.157`)* | [x] 已验收通过 ✅ |
 | **`v1.7.158`** | **Card-201** | **插件与插件中心解耦、动态感知引擎与双端 README 一源互通 (Decoupled Plugin Perception & SSOT README)** | 1. 插件独立解耦托管于 integrations/antigravity，插件中心动态扫描自动感知；<br>2. 真实 AST 静态解析 server.py 工具，彻底斩除虚构假工具与版本断层；<br>3. 抽屉直连渲染原生 README.md，与 Antigravity 详情页 100% 互通共享单一真相源；<br>4. 自动化视网膜门禁全绿，前端生产集中编译生效。 | [x] 已验收通过 ✅ |
 | **`待排期`** | **Card-202** | **`fleet-mesh` 插件母本自内聚转接驱动与多节点拓扑自适应 (SSOT v1.0.2)** | 拔除路径依赖，自适应探测 2080Ti/3070 节点，版本原子递增。 | [ ] 待排期迭代 ⏳ |
@@ -116,6 +121,44 @@
   3. **studio 命名空间与格式化基础设施 (PR #6292)**：建立 `src/i18n/format.ts` (`formatNumber`, `formatDateTime`)、`src/i18n/editor-phrases.ts`，落地 `src/i18n/locales/zh-CN/studio.ts` 与 `en/studio.ts` (70+ 条目)，并在 `index.ts` 监听同步 `document.documentElement.lang`；
   4. **业务组件多语言净化**：`clipboard.ts`、`errors.ts`、`code-editor.tsx`、`task-detail-sheet.tsx`、`image-viewer.tsx`、`markdown-renderer.tsx` 消除裸写硬编码；
   5. **视网膜门禁全绿**：`i18n.test.ts` (5/5 通过) 严格校验双语 Key 100% 对齐与插值占位符一致性，前端与后端单测 45/45 全绿，打标 Tag `v1.7.153`。
+
+#### 📌 [P1] [ ] Card-209: 上游 Storage 存储引擎、Session 瞬态自愈与向量批次控制整并 (Upstream Storage, Transient Memory & Vector Replay) ⏳
+- **吸收内容与物理契约**：
+  1. **瞬态读取重试 (PR #6398 / c0e35a54c)**：`session/memory/memory_updater.py` 与 `session.py` 对 Session 内存瞬态读取失败增加受控重试，避免瞬态波动误触发昂贵的重新提取管线；
+  2. **多写元数据隐藏 (PR #6395 / c133b9467)**：`crates/ragfs` 升级后继续在挂载层隐藏旧版多写元数据，防止底层冗余属性泄漏；
+  3. **向量重放批次上界 (PR #6259 / aa49650a2)**：`storage/` 限制有序增量重放批次上限，规避海量增量回放时的内存激增与阻塞；
+  4. **账号轻量存在性端点 (PR #6325 / 102ff5925)**：提供 $O(1)$ 复杂度的账号与用户存在性轻量探测接口，加速高频身份鉴权。
+
+#### 📌 [P1] [ ] Card-210: 上游网关、服务端鉴权与 Windows 编译沙箱指令转译整并 (Upstream Gateway, Trusted Auth & Windows POSIX Transpile) ⏳
+- **吸收内容与物理契约**：
+  1. **受信任用户组 Header (PR #6396 / ce42a166b)**：服务端鉴权层支持 `trusted group header` 传递与校验，深化多用户组权限矩阵；
+  2. **OIDC 斜杠容错 (PR #6254 / 03b9aecfe)**：兼容 OIDC issuer 结尾带斜杠的边界情况，避免配置差异导致握手失败；
+  3. **网关历史容错 (PR #6306 / d9db19ab6)**：Gateway 兼容客户端会话历史非字符串 `type` 异常，提升鲁棒性；
+  4. **Windows POSIX 转译 (PR #6372 / feb051c70)**：Windows 宿主下 Bot 沙箱编译指令自动转译为 Windows 原生兼容命令；
+  5. **编译工作区绝对路径 (PR #6376 / #6387 / 6545bb2a4)**：强制保持编译工作区根目录为绝对路径，杜绝相对路径寻址漂移。
+
+#### 📌 [P1] [ ] Card-211: 上游模型体系、经验归因保真与 CLI 网络原生根因透传整并 (Upstream Models, Evolution Attribution & Native CLI) ⏳
+- **吸收内容与物理契约**：
+  1. **经验读取归因保真 (PR #6365 / a07c02cd2)**：Agent Evolution 模块保留显式 Experience read attribution，确保经验复用链路可审计；
+  2. **Gemini Embedding 2 适配 (PR #6383 / b5a389245)**：集成并支持官方 Gemini Embedding 2 稳定多模态嵌入模型；
+  3. **默认 VLM 升级 (PR #6348 / 1455cb128)**：`openviking-server init` 默认多模态模型升级为 Seed 2.1 Lite；
+  4. **CLI 系统原生 CA 信任与报错透传 (PR #6361 / 5d1027468 & PR #6312 / a9cb3b4d4)**：CLI 原生信任系统 CA 证书，网络失败显式透传底层物理根因；
+  5. **LocalFS 别名行为规约 (PR #6053 / e6e5f7d2f)**：规约并固化大小写不敏感别名行为文档。
+
+#### 📌 [P1] [ ] Card-212: 上游 Web Studio 连接架构重构与受信任身份目录解耦整并 (Upstream Studio Connection & Identity Directory) ⏳
+- **吸收内容与物理契约**：
+  1. **连接切换架构重构 (PR #6308 / 0a2578e7e)**：吸收上游连接切换与服务分组体验，解耦独立组件 `setup-identity-directory.tsx`；
+  2. **废黜旧版 Header 切换器**：简化顶部导航，身份切换统一收敛至座舱侧边与设置抽屉；
+  3. **受信任多账号凭据验证**：增强对已验证管理 key 对应账号权限的探测与校验；
+  4. **铁律与防线约束**：严格遵守 **NO GREEN EVER 🚫**、单文件 ≤500 行硬上限与 100~300 行黄金甜点区，禁止粗暴全量覆写导致定制座舱降级。
+
+#### 📌 [P1] [ ] Card-213: 上游外部客户端插件生态协议对齐与时间衰减整并 (Upstream External Plugins Ecosystem & Recall Decay) ⏳
+- **吸收内容与物理契约**：
+  1. **召回配置时间衰减窗口 (PR #6390 / 3edc0b7f7)**：在 recall 配置中支持传入事件时间衰减半衰期 (`time-decay window`)；
+  2. **增量重放 claim 刷新 (PR #5689 / f8d36722a)**：刷新 pending replay claim 时间戳，防止租约超时误判；
+  3. **Codex PreCompact 身份保持 (PR #5660 / 7355b926e)**：Codex 插件压缩阶段保留规范化 PreCompact 会话身份；
+  4. **Pi 与 LangChain 生态同步 (PR #6381 / 401c1f7ef & PR #6342 / 6ec6116b7)**：Pi 插件分支发散捕获，LangChain Store 读取与命名空间发现；
+  5. **Claude-Code 测试上下文预算 (PR #6353 / 0902110a0)**：控制测试 fixture 严格处于上下文预算以内。
 
 #### 📌 [P1] [x] Card-200: `openviking-memory` 插件母本自内聚转接驱动重构、自愈清洗与四维逆向加固 (SSOT v2.0.16) ✅
 - **治理成果与物理交付物**：
