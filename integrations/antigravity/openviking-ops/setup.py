@@ -93,7 +93,7 @@ def sync_mcp_ops(api: str, key: str, target_dir: Path):
 
     p_mcp = {
         "mcpServers": {
-            "openviking-ops": {
+            "core": {
                 "command": py_cmd,
                 "args": [server_script],
                 "env": {

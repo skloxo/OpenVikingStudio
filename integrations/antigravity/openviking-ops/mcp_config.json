@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "openviking-ops": {
+    "core": {
       "command": "python",
       "args": [
         "server.py"
