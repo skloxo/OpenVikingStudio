@@ -19,4 +19,13 @@ i18n
     supportedLngs: supportedLanguages,
   })
 
+function syncDocumentLanguage() {
+  if (typeof document !== 'undefined') {
+    document.documentElement.lang = i18n.resolvedLanguage ?? defaultLanguage
+  }
+}
+
+i18n.on('languageChanged', syncDocumentLanguage)
+syncDocumentLanguage()
+
 export default i18n

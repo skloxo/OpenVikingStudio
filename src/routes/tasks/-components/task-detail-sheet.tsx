@@ -6,6 +6,7 @@ import {
   RefreshCwIcon,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import i18n from '#/i18n'
 import { toast } from 'sonner'
 
 import { Button } from '#/components/ui/button'
@@ -76,7 +77,7 @@ async function fetchTask(taskId: string): Promise<TaskRecord> {
     }
   }
 
-  throw new Error('Task not found or expired')
+  throw new Error(i18n.t('studio:errors.invalidTaskResponse'))
 }
 
 export function TaskDetailSheet({

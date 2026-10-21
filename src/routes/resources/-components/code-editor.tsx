@@ -1,7 +1,8 @@
-import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react'
-import { EditorState } from '@codemirror/state'
+import { useEffect, useMemo, useRef, useImperativeHandle, forwardRef } from 'react'
+import { Compartment, EditorState } from '@codemirror/state'
 import {
   EditorView,
+  getDialog,
   keymap,
   lineNumbers,
   highlightActiveLine,
@@ -29,6 +30,8 @@ import {
   closeBracketsKeymap,
 } from '@codemirror/autocomplete'
 import { oneDark } from '@codemirror/theme-one-dark'
+import { useTranslation } from 'react-i18next'
+import { editorPhrases } from '#/i18n/editor-phrases'
 
 const languageLoaders: Partial<Record<string, () => Promise<LanguageSupport>>> =
   {
@@ -99,10 +102,32 @@ interface CodeEditorProps {
   initialContent: string
   filename: string
   isDark?: boolean
+  readOnly?: boolean
+  ariaLabel?: string
+  onChange?: (content: string) => void
 }
 
 export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
-  function CodeEditor({ initialContent, filename, isDark = false }, ref) {
+  function CodeEditor(
+    {
+      initialContent,
+      filename,
+      isDark = false,
+      readOnly = false,
+      ariaLabel,
+      onChange,
+    },
+    ref,
+  ) {
+    const { t } = useTranslation('studio')
+    const phrases = useMemo(() => editorPhrases(t), [t])
+    const phrasesRef = useRef(phrases)
+    phrasesRef.current = phrases
+    const phrasesCompartment = useRef(new Compartment())
+    const attributesRef = useRef(ariaLabel)
+    attributesRef.current = ariaLabel
+    const attributesCompartment = useRef(new Compartment())
+    const readOnlyCompartment = useRef(new Compartment())
     const containerRef = useRef<HTMLDivElement>(null)
     const viewRef = useRef<EditorView | null>(null)
 
@@ -164,6 +189,20 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
 
         if (destroyed) return
 
+        extensions.push(
+          phrasesCompartment.current.of(
+            EditorState.phrases.of(phrasesRef.current),
+          ),
+          attributesCompartment.current.of(
+            EditorView.contentAttributes.of(
+              attributesRef.current
+                ? { 'aria-label': attributesRef.current }
+                : {},
+            ),
+          ),
+          readOnlyCompartment.current.of(EditorState.readOnly.of(readOnly)),
+        )
+
         const state = EditorState.create({
           doc: initialContent,
           extensions,
@@ -184,7 +223,61 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(
         viewRef.current?.destroy()
         viewRef.current = null
       }
-    }, [filename, isDark, initialContent])
+    }, [filename, isDark, initialContent, readOnly])
+
+    useEffect(() => {
+      const view = viewRef.current
+      if (!view) return
+      const input = getDialog(
+        view,
+        'cm-dialog',
+      )?.dom.querySelector<HTMLInputElement>('input[name="line"]')
+      const draft = input
+        ? {
+            value: input.value,
+            start: input.selectionStart,
+            end: input.selectionEnd,
+            direction: input.selectionDirection,
+          }
+        : undefined
+      const activeElement = view.dom.ownerDocument.activeElement
+      view.dispatch({
+        effects: [
+          attributesCompartment.current.reconfigure(
+            EditorView.contentAttributes.of(
+              ariaLabel ? { 'aria-label': ariaLabel } : {},
+            ),
+          ),
+          phrasesCompartment.current.reconfigure(
+            EditorState.phrases.of(phrases),
+          ),
+        ],
+      })
+      if (!draft) return
+      const panel = getDialog(view, 'cm-dialog')?.dom
+      const nextInput =
+        panel?.querySelector<HTMLInputElement>('input[name="line"]')
+      if (!nextInput) return
+      nextInput.value = draft.value
+      nextInput.setSelectionRange(
+        draft.start,
+        draft.end,
+        draft.direction ?? undefined,
+      )
+      const label = nextInput.closest('label')?.firstChild
+      if (label?.nodeType === Node.TEXT_NODE)
+        label.textContent = `${view.state.phrase('Go to line')}: `
+      const submit = panel?.querySelector<HTMLButtonElement>(
+        'button[type="submit"]',
+      )
+      if (submit) submit.textContent = view.state.phrase('go')
+      if (activeElement === input) nextInput.focus()
+      else if (
+        activeElement instanceof HTMLElement &&
+        activeElement.isConnected
+      )
+        activeElement.focus()
+    }, [ariaLabel, phrases])
 
     return (
       <div

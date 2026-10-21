@@ -7,6 +7,7 @@ import settings from './settings'
 import sessions from './sessions'
 import home from './home'
 import playground from './playground'
+import studio from './studio'
 
 const zhCN = {
   ...common,
@@ -18,6 +19,7 @@ const zhCN = {
   ...sessions,
   ...home,
   ...playground,
+  studio,
 } as const
 
 export default zhCN
