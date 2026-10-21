@@ -11,6 +11,7 @@
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 | :--- | :--- | :--- | :--- | :---: |
+| **`v1.7.161`** | **Card-217** | **DSH 插件端点解析降级、宿主路径自适应与全系插件版本单点真相 (Plugin Ecosystem Parity v2.0.25)** | 1. 修复 DSH 插件 `index.js` 中 `getEndpoint()` 缺失凭据 fallback 导致 MCP 工具未挂载的 P0 致命缺陷，打通 `resolveOpenVikingCredentials` 多级降级；<br>2. 消除硬编码路径 `'C:\\Users\\Skl'`，改用 `os.homedir()` 确保跨机便携；<br>3. 废黜 `config.mjs` 硬编码版本，动态直连 `package.json`；清理 `client.js` 冗余插槽注册；<br>4. 发布插件 `v2.0.25`，生成不可变分发包并完成线上部署 (HTTP 200 验证)。 | [x] 已验收通过 ✅ |
 | **`v1.7.160`** | **Card-216** | **插件详情抽屉与反重力原生孪生体验像素级对齐 (Antigravity Digital Twin Parity)** | 1. 彻底拔除 README 中冗余源码挂载章节，并入专门“接入指引”Tab，README 回归纯粹架构单一真相源；<br>2. 像素级对齐反重力原生 Tab 切换架构 (概览、技能、MCP、钩子、规则、接入指引 6 大 Tab 解耦)；<br>3. 动态渲染 suggestedPrompts 卡片与 rules 规约文件；<br>4. 全系 7 大插件通用互通，集中构建部署验收通过。 | [x] 已验收通过 ✅ |
 | **`v1.7.150`** | **Card-203** | **上游 Storage 写入锁协调提前消费与跨进程恢复整并 (Upstream Storage Lock)** | 吸收 upstream PR #6300 锁泄漏修复、#6281 跨进程自愈、#6298 大小写冲突规避，6/6 专项单测全绿。 | [x] 已验收通过 ✅ |
 | **`v1.7.153`** | **Card-196** | **生活与研发物理隔离 (Privacy Isolation)** | 家庭高隐私资产物理移入独立目录，斩除研发库临时私有目录，实现研发与生活物理隔离。 | [x] 已验收通过 ✅ |

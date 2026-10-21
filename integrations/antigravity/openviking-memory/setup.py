@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Beijing Volcano Engine Technology Co., Ltd.
 # SPDX-License-Identifier: AGPL-3.0
 """
-OpenViking 核心记忆反重力官方标准插件 (v2.0.23 - 全自动自举工业版)
+OpenViking 核心记忆反重力官方标准插件 (v2.0.25 - 全自动自举工业版)
 支持：
 1. 拓扑自适应：本地优先探测 127.0.0.1:1933，卫星端优雅降级公网域名
 2. 宿主注册表：自动幂等注入 ~/.gemini/config/config.json 点亮 IDE 已安装列表
