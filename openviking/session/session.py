@@ -60,6 +60,7 @@ from openviking.session.tool_result_store import (
     render_preview_from_synopsis,
     sha256_text,
 )
+from openviking.session.memory.memory_updater import MemoryUpdateError
 from openviking.session.tool_result_synopsis import (
     ToolResultSynopsis,
     generate_tool_result_synopsis,
@@ -2242,7 +2243,10 @@ class Session:
                             max_retries=_MEMORY_EXTRACTION_MAX_RETRIES,
                             base_delay=_MEMORY_EXTRACTION_RETRY_BASE_DELAY_SECONDS,
                             max_delay=_MEMORY_EXTRACTION_RETRY_MAX_DELAY_SECONDS,
-                            is_retryable=is_retryable_api_error,
+                            is_retryable=lambda error: (
+                                not isinstance(error, MemoryUpdateError)
+                                and is_retryable_api_error(error)
+                            ),
                             logger=logger,
                             operation_name=operation_name,
                         )
