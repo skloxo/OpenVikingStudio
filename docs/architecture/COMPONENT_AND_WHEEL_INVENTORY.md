@@ -85,7 +85,7 @@
 | 轮子组件 | 物理路径 | 核心价值与复用方式 |
 |:---|:---|:---|
 | **AppShell** | `src/components/app-shell.tsx` | **系统主框架总线**：集中管理左侧高密折叠侧边栏、顶部面包屑与标题、暗黑/明亮自适应主题切换、网络状态心跳感知与全局快捷键（`Cmd+K`）。所有页面自动继承此框架，严禁在页面内自建外壳。 |
-| **CurrentUserMenu** | `src/components/current-user-menu.tsx` | **当前操作者与租户菜单**：展示当前鉴权角色、API Key 掩码、快速注销、系统版本号与诊断入口。 |
+| **SetupIdentityDirectory** | `src/components/setup-identity-directory.tsx` | **受信任身份目录解耦点选器**：利用管理秘钥 (Admin Key) 探测多租户目录，直观筛选与切换目标账户与归属用户，支持 RBAC 状态校验与受信任身份对齐。 |
 | **AccountSwitcher** | `src/components/account-switcher.tsx` | **多租户与身份切换器**：用于多节点、多受信任用户之间的无缝鉴权切换。 |
 | **ServerDoctorDialog** | `src/components/server-doctor-dialog.tsx` | **服务端一键诊断体检中心**：集成 1933 端口连通性、2080Ti GPU 显存、WSL 探针、SQLite 锁状态排查，任何页面可一键唤起。 |
 | **AccessRequiredGate** | `src/components/access-required-gate.tsx` | **鉴权阻断门禁容器**：对需要特定特权的页面自动拦截并引导输入凭据，保护敏感管理接口。 |

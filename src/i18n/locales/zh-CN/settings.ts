@@ -209,6 +209,15 @@ export const settings = {
     connectionPage: {
       description: '配置 OpenViking 服务连接、控制面凭证和当前数据访问凭证。',
       title: '连接设置',
+      directoryHint: '受信任身份目录 (Trusted Identity Directory)',
+      directoryAdminHint: '使用管理秘钥 (Admin Key) 探测多租户目录，直接点选目标账户与数据归属用户。',
+      directoryLoadFailed: '加载身份目录失败',
+      directoryIdentityMismatch: '当前选择的身份与管理令牌默认身份不一致',
+      directoryKeyHint: '此模式将以所选受信任身份执行数据操作。请确认该身份在服务端具备足够权限。',
+      directoryAccount: '目标账户 (Account)',
+      directoryUser: '归属用户 (User)',
+      selectAccount: '选择账户...',
+      selectUser: '选择用户...',
     },
     dialogs: {
       addAccount: {

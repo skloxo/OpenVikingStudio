@@ -380,6 +380,9 @@ export async function fetchAdminUsers(
     .filter((item): item is AdminUser => Boolean(item))
 }
 
+export const fetchAdminUserDirectory = fetchAdminUsers
+
+
 export async function createAdminAccount(
   connection: AdminConnection,
   input: CreateAccountInput,

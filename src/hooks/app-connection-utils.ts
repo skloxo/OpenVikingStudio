@@ -304,6 +304,7 @@ export function synchronizeResolvedDataIdentity(
   identity: ConnectionIdentity,
 ): ConnectionDraft | null {
   if (
+    (!connection.apiKey && Boolean(connection.adminApiKey)) ||
     (identity.role !== 'admin' && identity.role !== 'user') ||
     !identity.accountId ||
     !identity.userId ||
