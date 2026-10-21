@@ -134,7 +134,8 @@ def test_ops_setup_sandbox_install(tmp_path: Path, monkeypatch):
     assert mcp_cfg_file.exists()
     with open(mcp_cfg_file, "r", encoding="utf-8") as f:
         mcp_data = json.load(f)
-    server_entry = mcp_data["mcpServers"]["openviking-ops"]
+    server_entry = mcp_data["mcpServers"].get("core") or mcp_data["mcpServers"].get("openviking-ops")
+    assert server_entry is not None, "Server entry missing in sandbox mcp_config.json"
     assert server_entry["env"]["OPENVIKING_API"] == test_api
     assert server_entry["env"]["OPENVIKING_API_KEY"] == test_key
     # 关键断言：args 必须指向沙盒内部的 server.py，而不是任何旧工作区路径

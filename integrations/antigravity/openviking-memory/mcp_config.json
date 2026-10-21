@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "openviking-memory": {
+    "core": {
       "command": "C:/Python311/python.exe",
       "args": [
         "C:/Users/Skl/.gemini/config/plugins/openviking-memory/server.py",

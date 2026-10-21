@@ -29,10 +29,11 @@ export type PluginQuickstartSectionProps = {
 
 /**
  * DSH (DeepSeek Harness) 专用 NPM 桥接包映射 (与 integrations/deepseek-harness package.json 对齐)
+ * 遵循 SSOT 原则：版本默认动态继承自当前插件真实版本，杜绝硬编码滞后漂移。
  */
-const DSH_BRIDGE_REGISTRY: DshPackageMapping = {
-  'openviking-memory': { pkg: 'dsh-plugin-openviking-memory', ver: '2.0.22' },
-  'openviking-ops': { pkg: 'dsh-plugin-openviking-ops', ver: '1.0.5' },
+const DSH_BRIDGE_REGISTRY: Record<string, { pkg: string; ver?: string }> = {
+  'openviking-memory': { pkg: 'dsh-plugin-openviking-memory' },
+  'openviking-ops': { pkg: 'dsh-plugin-openviking-ops' },
   'fleet-mesh': { pkg: 'dsh-plugin-openviking-fleet', ver: '1.0.3' },
   'keepass-vault': { pkg: 'dsh-plugin-keepass-vault', ver: '1.0.2' },
   'cpa-squad': { pkg: 'dsh-plugin-cpa', ver: '1.0.1' },
@@ -58,10 +59,12 @@ export function PluginQuickstartSection({ plugin }: PluginQuickstartSectionProps
   const version = plugin.version || '1.0.0'
   const agTarball = `${pid}-${version}.tgz`
 
-  // DSH 专用桥接包版本对齐
+  // DSH 专用桥接包版本对齐 (SSOT: 动态直连当前插件真实版本)
   const registeredDsh = DSH_BRIDGE_REGISTRY[pid]
-  const dshInfo: DshPluginBridgeInfo = registeredDsh || { pkg: `dsh-plugin-${pid}`, ver: version }
-  const effectiveDshVer = (pid === 'openviking-memory' || pid === 'openviking-ops') ? version : dshInfo.ver
+  const dshInfo: DshPluginBridgeInfo = registeredDsh
+    ? { pkg: registeredDsh.pkg, ver: version || registeredDsh.ver || '1.0.0' }
+    : { pkg: `dsh-plugin-${pid}`, ver: version }
+  const effectiveDshVer = dshInfo.ver
   const dshTarball = `${dshInfo.pkg}-${effectiveDshVer}.tgz`
 
   // 强类型命令配置列表 (数据驱动统一渲染)
