@@ -11,6 +11,7 @@
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 | :--- | :--- | :--- | :--- | :---: |
+| **`v1.7.160`** | **Card-216** | **插件详情抽屉与反重力原生孪生体验像素级对齐 (Antigravity Digital Twin Parity)** | 1. 废除碎片 Tab，直出插件原生 README.md 单一真相源，两端 100% 物理复用同一套文档；<br>2. 像素级对齐反重力顶部交互，动态渲染 suggestedPrompts 场景提示词卡片 (支持点击复制)；<br>3. MCP 算子、安装命令、认知导轨解耦收敛为底部可折叠技术附录；<br>4. 全系 7 大插件通用互通，集中构建部署验收通过。 | [x] 已验收通过 ✅ |
 | **`v1.7.150`** | **Card-203** | **上游 Storage 写入锁协调提前消费与跨进程恢复整并 (Upstream Storage Lock)** | 吸收 upstream PR #6300 锁泄漏修复、#6281 跨进程自愈、#6298 大小写冲突规避，6/6 专项单测全绿。 | [x] 已验收通过 ✅ |
 | **`v1.7.153`** | **Card-196** | **生活与研发物理隔离 (Privacy Isolation)** | 家庭高隐私资产物理移入独立目录，斩除研发库临时私有目录，实现研发与生活物理隔离。 | [x] 已验收通过 ✅ |
 | **`v1.7.154`** | **Card-197** | **18 核心母包收敛与平权对齐 (Bundles Convergence)** | 3070 与 2080 平权对等，物理铲除 4 大无关大包 (115场景)，母包收敛至纯粹 18 个。 | [x] 已验收通过 ✅ |
@@ -61,6 +62,15 @@
 ## 📌 二、 待攻坚活跃任务卡片深度规划 (Active & Pending Task Cards Details)
 
 ### 🚀 第一优先批次：核心主线与上游整并 (P0)
+
+#### 📌 [P0] [x] Card-216: 插件详情抽屉与反重力原生孪生体验像素级对齐 (Antigravity Digital Twin Parity v1.7.160) ✅
+- **类型**：Web Studio 插件详情抽屉 / 单一真相源 (SSOT) 对齐 / 交互体验精纯化 ｜ **优先级**：🔥 P0 ｜ **交付版本**：`v1.7.160`
+- **核心治理成果与物理交付物**：
+  1. **单一真相源 (SSOT) 彻底落地**：Web Studio 抽屉与反重力（Google Antigravity IDE/Desktop）插件详情页 100% 物理复用同一套 `README.md` 与 `plugin.json`，两端数据完全对齐，彻底斩除“做两套文档”的代码与认知负债；
+  2. **README 核心提纯与切除打断**：精简提纯 `openviking-memory` 与 `openviking-ops` 的 `README.md`，拔除冗长手写算子列表与终端安装命令，专注文档自身定位；
+  3. **建议交互提示词 (suggestedPrompts) 构件**：新增 `plugin-prompts-section.tsx`，动态直连 `plugin.suggested_prompts`，支持一键点击复制与毫秒级反馈，1:1 对齐反重力原生交互体验；
+  4. **解耦可折叠技术附录**：将极速开箱命令 (`PluginQuickstartSection`)、MCP 原子算子全景、配套认知导轨、Hook 守卫与运行时配置统一整编为底部可折叠附录，默认折叠，按需展开；
+  5. **全系 7 大插件通用互通**：覆盖 `openviking-memory`, `openviking-ops`, `agent-circuit-breaker`, `keepass-vault`, `fleet-mesh`, `dify`, `cpa-squad`，经浏览器实操全面打靶验收通过。
 
 #### 📌 [P0] [x] Card-203: 上游 Storage 写入锁协调提前消费与跨进程恢复整并 (Upstream Storage Lock Leak & Recovery Alignment) ✅
 - **类型**：底层存储加固 / 并发锁治理 / 跨进程恢复 ｜ **优先级**：🔥 P0 ｜ **交付版本**：`v1.7.150`
