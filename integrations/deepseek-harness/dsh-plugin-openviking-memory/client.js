@@ -114,8 +114,8 @@ window.__ModuleLoader__.load({
             setProbeReport({
               ok: true,
               totalLatency,
-              version: data.version || '2.0.23',
-              toolsCount: data.total_authorized_tools || data.plugins?.[0]?.tools?.length || 36,
+              version: data.version || '2.0.24',
+              toolsCount: data.total_authorized_tools || data.total_tools || data.plugins?.[0]?.tools?.length || 35,
               hooksCount: data.hooks?.length || 3,
               role: data.role || 'user',
             });
@@ -142,8 +142,8 @@ window.__ModuleLoader__.load({
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(config)); } catch (_) {}
         setTimeout(() => {
           setSaving(false);
-          setToast({ ok: true, msg: '配置已落盘，将在下次会话原子生效' });
-          setTimeout(() => setToast(null), 3000);
+          setToast({ ok: true, msg: '配置已落盘！请点击左上角【➕ 新会话】以初始化挂载 MCP 工具与 Hook' });
+          setTimeout(() => setToast(null), 4000);
         }, 300);
       };
 
@@ -155,6 +155,11 @@ window.__ModuleLoader__.load({
         setToast({ ok: true, msg: '已彻底抹除本地历史凭据与能力缓存' });
         setTimeout(() => setToast(null), 3000);
       };
+
+      // 动态提取版本、工具数与 Hook 数 (废黜一切硬编码静态常数)
+      const currentVersion = caps?.version || probeReport?.version || '2.0.24';
+      const totalToolsCount = caps?.total_authorized_tools || caps?.total_tools || caps?.plugins?.[0]?.tools?.length || probeReport?.toolsCount || 35;
+      const totalHooksCount = caps?.hooks?.length || probeReport?.hooksCount || 3;
 
       // 容器：自适应明暗，零写死白色/黑字
       return h('div', {
@@ -175,13 +180,13 @@ window.__ModuleLoader__.load({
             h('div', { style: { fontSize: '26px', lineHeight: 1 } }, '🧠'),
             h('div', null,
               h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
-                h('span', { style: { fontWeight: '700', fontSize: '15px' } }, 'OpenViking Core Memory (v2.0.23)'),
+                h('span', { style: { fontWeight: '700', fontSize: '15px' } }, `OpenViking Core Memory (v${currentVersion})`),
                 probeReport && probeReport.ok
                   ? h('span', { style: { fontSize: '12px', color: '#0891b2', fontWeight: '500' } }, '● 已连通')
                   : h('span', { style: { fontSize: '12px', color: 'rgba(125, 125, 125, 0.6)' } }, '○ 待探测')
               ),
               h('div', { style: { marginTop: '4px', fontSize: '12px', opacity: 0.8, lineHeight: 1.4 } },
-                '[版本: v2.0.23] OpenViking 体外大脑与核心记忆官方标准插件。提供跨会话无缝记忆检索与持久化、自动化会话归档、踩坑反思沉淀与零损耗 Handover 接力。'
+                `[版本: v${currentVersion}] OpenViking 体外大脑与核心记忆官方标准插件。提供跨会话无缝记忆检索与持久化、自动化会话归档、踩坑反思沉淀与零损耗 Handover 接力。`
               )
             )
           ),
@@ -301,8 +306,11 @@ window.__ModuleLoader__.load({
               ),
               h('div', { style: { padding: '8px', borderRadius: '6px', border: '1px solid var(--dsw-alias-border-l1, rgba(125, 125, 125, 0.15))' } },
                 h('div', { style: { opacity: 0.6 } }, '核心工具规范:'),
-                h('div', { style: { fontFamily: 'monospace', fontWeight: '500', marginTop: '2px', color: '#0891b2' } }, '36 Tools SSOT / FastMCP')
+                h('div', { style: { fontFamily: 'monospace', fontWeight: '500', marginTop: '2px', color: '#0891b2' } }, `${totalToolsCount} Tools SSOT / FastMCP`)
               )
+            ),
+            h('div', { style: { padding: '8px 10px', borderRadius: '6px', background: 'rgba(8, 145, 178, 0.08)', border: '1px solid rgba(8, 145, 178, 0.2)', color: '#0891b2', fontSize: '12px', lineHeight: 1.5 } },
+              '💡 激活引导：配置或更新插件后，请在左侧点击【➕ 新会话】，新会话将自动注入 stdio MCP 工具与 Hook 守卫。'
             )
           ),
 
@@ -329,7 +337,7 @@ window.__ModuleLoader__.load({
             h('div', { style: { display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#0891b2', fontWeight: '600' } },
               h('span', null, 'openviking-memory_core'),
               h('span', { style: { opacity: 0.5 } }, '•'),
-              h('span', null, '36 tools enabled')
+              h('span', null, `${totalToolsCount} tools enabled`)
             ),
             MCP_TOOLS_CATALOG.map((group, gIdx) =>
               h('div', { key: gIdx, style: { marginBottom: '4px' } },
