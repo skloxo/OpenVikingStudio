@@ -36,7 +36,7 @@
 | **`v1.7.152`** | **Card-205** | **上游 Session 消息写入与接口去重读取性能优化整并 (Upstream Session Perf)** | 吸收 upstream PR #6270 消息写入与 Session 重复读取优化、#6075 防脏快照 upsert、#6165 rm(no_vector) 极速旁路，6/6 专项测试全绿。 | [x] 已验收通过 ✅ |
 | **`v1.7.153`** | **Card-206** | **上游 Studio 前端多语言 i18n 补全与 AppleDouble 元数据过滤整并 (Upstream Studio)** | 吸收 upstream PR #6292 全域多语言 i18n 补齐、#6316 AppleDouble 元数据过滤、#6215 Key 透传，45/45 测试全绿。 | [x] 已验收通过 ✅ |
 | **`v1.7.154`** | **Card-209** | **上游 Storage 存储引擎、Session 瞬态自愈与向量批次控制整并 (Upstream Storage & Session)** | 吸收 upstream PR #6398 瞬态内存读取重试、#6395 多写元数据隐藏、#6259 向量批次上界 (1024)、#6325 O(1) 账号探测，6/6 专项测试全绿。 | [x] 已验收通过 ✅ |
-| **`待排期`** | **Card-210** | **上游网关、服务端鉴权与 Windows 编译沙箱指令转译整并 (Upstream Auth & Windows Transpile)** | 吸收 upstream PR #6396 受信任用户组 Header、#6254 OIDC 斜杠容错、#6306 Gateway 字段容错、#6372 Windows POSIX 指令转译、#6376 编译绝对路径。 | [ ] 待排期迭代 ⏳ |
+| **`v1.7.155`** | **Card-210** | **上游网关、服务端鉴权与 Windows 编译沙箱指令转译整并 (Upstream Auth & Windows Transpile)** | 吸收 upstream PR #6396 受信任用户组 Header、#6254 OIDC 斜杠容错、#6306 Gateway 字段容错、#6372 Windows POSIX 指令转译、#6376 编译绝对路径，7/7 专项测试全绿。 | [x] 已验收通过 ✅ |
 | **`待排期`** | **Card-211** | **上游模型体系、经验归因保真与 CLI 网络原生根因透传整并 (Upstream Models & Native CLI)** | 吸收 upstream PR #6365 经验显式读取归因、#6383 Gemini Embedding 2、#6348 Seed 2.1 Lite VLM、#6361 原生 CA 信任、#6312 报错根因透传、#6053 别名文档。 | [ ] 待排期迭代 ⏳ |
 | **`待排期`** | **Card-212** | **上游 Web Studio 连接架构重构与受信任身份目录解耦整并 (Upstream Studio Identity Directory)** | 吸收 upstream PR #6308 重构连接切换架构，抽离 setup-identity-directory，废黜旧版 header 切换器，对齐多服务配置。 | [ ] 待排期迭代 ⏳ |
 | **`待排期`** | **Card-213** | **上游外部客户端插件生态协议对齐与时间衰减整并 (Upstream External Plugins Ecosystem)** | 吸收 upstream PR #6390 召回时间衰减、#5689 claim 时间戳刷新、#5660 Codex PreCompact 身份、#6381 Pi 分支捕获、#6342 LangChain Store。 | [ ] 待排期迭代 ⏳ |
@@ -130,13 +130,14 @@
   4. **账号轻量存在性端点 (PR #6325 / 102ff5925)**：`openviking/server/routers/admin.py` 补齐 `GET /api/v1/admin/accounts/{account_id}` 与 `GET /api/v1/admin/accounts/{account_id}/users/{user_id}` 零凭据点读探测端点，SDK (Python/Go/TS) 对应方法对齐；
   5. **视网膜单测与门禁**：编写专属单元测试 `tests/service/test_card209_storage_session_and_vector_replay.py`，6/6 专项单测全绿 (1.29s)，Session 提交与向量恢复回归测试套件全绿，安全扫描 0 泄露，打标 Tag `v1.7.154`。
 
-#### 📌 [P1] [ ] Card-210: 上游网关、服务端鉴权与 Windows 编译沙箱指令转译整并 (Upstream Gateway, Trusted Auth & Windows POSIX Transpile) ⏳
-- **吸收内容与物理契约**：
-  1. **受信任用户组 Header (PR #6396 / ce42a166b)**：服务端鉴权层支持 `trusted group header` 传递与校验，深化多用户组权限矩阵；
-  2. **OIDC 斜杠容错 (PR #6254 / 03b9aecfe)**：兼容 OIDC issuer 结尾带斜杠的边界情况，避免配置差异导致握手失败；
-  3. **网关历史容错 (PR #6306 / d9db19ab6)**：Gateway 兼容客户端会话历史非字符串 `type` 异常，提升鲁棒性；
-  4. **Windows POSIX 转译 (PR #6372 / feb051c70)**：Windows 宿主下 Bot 沙箱编译指令自动转译为 Windows 原生兼容命令；
-  5. **编译工作区绝对路径 (PR #6376 / #6387 / 6545bb2a4)**：强制保持编译工作区根目录为绝对路径，杜绝相对路径寻址漂移。
+#### 📌 [P1] [x] Card-210: 上游网关、服务端鉴权与 Windows 编译沙箱指令转译整并 (Upstream Gateway, Trusted Auth & Windows POSIX Transpile v1.7.155) ✅
+- **吸收内容与物理交付物**：
+  1. **网关类型容错 (PR #6306 / d9db19ab6)**：`openviking_gateway/protocols.py` 引入 `string_type` 防御提取函数，对客户端历史消息中嵌套的非字符串 `type`（如 JSON Schema 字典）进行优雅容错，彻底消除 `unhashable type` 异常与静默记忆丢失；
+  2. **受信任用户组 Header (PR #6396 / ce42a166b)**：`openviking/server/auth/plugins/trusted.py` 支持 `X-OpenViking-Groups` header 解析与去重，在 `_build_request_context` 中优先注入 `RequestContext.group_ids`，打通企业级外部网关用户组穿透；
+  3. **OIDC 斜杠容错 (PR #6254 / 03b9aecfe)**：`oidc_config.py` 保留精确的 issuer 配置，`plugins/oidc.py` 在 Discovery URL 构造时精准 strip 尾部斜杠，解决 Authentik/Auth0 等主流 IdP 握手兼容性；
+  4. **Windows POSIX 转译 (PR #6372 / feb051c70)**：`bot/vikingbot/sandbox/backends/direct.py` 内置轻量级 POSIX 转译器，原生支持 `mkdir -p`、`mkdir -m 700`、`chmod 600` 与环境变量剥离，配套 `test_direct_windows_posix.py` (5/5 满绿)；
+  5. **编译工作区绝对路径 (PR #6376 / #6387 / 6545bb2a4)**：`bot/vikingbot/compile/sandbox.py` 在 `CompileSandboxManager` 初始化时强制解析为绝对物理路径，根除相对路径启动导致的 `ENOENT` 异常；
+  6. **视网膜单测与门禁**：编写专属单元测试 `tests/service/test_card210_gateway_auth_and_posix_transpile.py`，7/7 专项单测全绿 (0.19s)，安全扫描 0 泄露，打标 Tag `v1.7.155`。
 
 #### 📌 [P1] [ ] Card-211: 上游模型体系、经验归因保真与 CLI 网络原生根因透传整并 (Upstream Models, Evolution Attribution & Native CLI) ⏳
 - **吸收内容与物理契约**：

@@ -22,6 +22,7 @@ from openviking_cli.exceptions import (
 _LOCALHOST_HOSTS = {"127.0.0.1", "localhost", "::1"}
 _TRUSTED_RELAXED_IDENTITY_PREFIXES = ("/api/v1/admin",)
 _TRUSTED_ROLE_HEADER = "X-OpenViking-Role"
+_TRUSTED_GROUPS_HEADER = "X-OpenViking-Groups"
 _TRUSTED_ASSERTABLE_ROLES = {
     Role.USER: Role.USER,
     Role.ADMIN: Role.ADMIN,
@@ -64,6 +65,24 @@ def _trusted_request_requires_explicit_identity(path: str) -> bool:
     if path.startswith(_TRUSTED_RELAXED_IDENTITY_PREFIXES):
         return False
     return True
+
+
+def _group_ids_from_header(request: Request) -> tuple[str, ...]:
+    raw_groups = request.headers.get(_TRUSTED_GROUPS_HEADER)
+    if raw_groups is None:
+        return ()
+    group_ids: list[str] = []
+    seen: set[str] = set()
+    for raw_group_id in raw_groups.split(","):
+        group_id = raw_group_id.strip()
+        if not group_id:
+            continue
+        if "/" in group_id or "\\" in group_id:
+            raise InvalidArgumentError(f"Invalid group_id: {group_id}")
+        if group_id not in seen:
+            group_ids.append(group_id)
+            seen.add(group_id)
+    return tuple(group_ids)
 
 
 def _asserted_role_from_header(request: Request, *, allow_assertion: bool) -> Optional[Role]:
@@ -210,6 +229,7 @@ class TrustedAuthPlugin(AuthPlugin):
             role=trusted_role,
             account_id=effective_account_id or "trusted",
             user_id=effective_user_id or "trusted",
+            group_ids=_group_ids_from_header(request),
         )
 
     def validate_config(self, config) -> None:
