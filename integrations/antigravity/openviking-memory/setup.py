@@ -242,33 +242,30 @@ def sync_mcp_dual_track(api: str, key: str, target_dir: Path, actor_peer: str = 
         f.write("\n")
     print(f"  ✔ 插件私有 mcp_config.json 自内聚配置完成 (Actor Peer: {peer})")
 
-    # 2. 全局 ~/.gemini/config/mcp_config.json 联动
+    # 2. 全局 ~/.gemini/config/mcp_config.json 残留清洗 (死穴 11 根治门禁)
+    # 核心契约：插件 MCP 100% 由插件私有 mcp_config.json ("core") 独立接管
+    # 物理清洗全局中的 openviking 与 openviking-memory，杜绝界面出现双胞胎与 40 字符超长溢出置灰
     g_mcp_path = GEMINI_CONFIG_DIR / "mcp_config.json"
     if g_mcp_path.exists():
         try:
             with open(g_mcp_path, "r", encoding="utf-8") as f:
                 g_data = json.load(f)
             servers = g_data.get("mcpServers", {})
-            # 物理清除历史遗留的旧别名 openviking，彻底消灭双胞胎重复挂载
-            servers.pop("openviking", None)
-            servers["openviking-memory"] = {
-                "command": py_cmd,
-                "args": [server_script, "--mode=memory"],
-                "env": {
-                    "OPENVIKING_API": api,
-                    "OPENVIKING_API_KEY": key,
-                    "OPENVIKING_MCP_MODE": "memory",
-                    "OPENVIKING_ACTOR_PEER": peer,
-                    "PYTHONIOENCODING": "utf-8"
-                }
-            }
-            g_data["mcpServers"] = servers
-            with open(g_mcp_path, "w", encoding="utf-8") as f:
-                json.dump(g_data, f, indent=2, ensure_ascii=False)
-                f.write("\n")
-            print(f"  ✔ 全局 mcp_config.json openviking-memory 单一真相源联动完成 (Actor Peer: {peer})")
+            popped_any = False
+            for old_key in ("openviking", "openviking-memory"):
+                if old_key in servers:
+                    servers.pop(old_key, None)
+                    popped_any = True
+            if popped_any:
+                g_data["mcpServers"] = servers
+                with open(g_mcp_path, "w", encoding="utf-8") as f:
+                    json.dump(g_data, f, indent=2, ensure_ascii=False)
+                    f.write("\n")
+                print(f"  ✔ 全局 mcp_config.json 历史残留 (openviking-memory) 已自动清洗，根绝双胞胎")
+            else:
+                print(f"  ✔ 全局 mcp_config.json 纯净无残留")
         except Exception as e:
-            print(f"  ⚠️ 全局 mcp_config.json 联动失败: {e}")
+            print(f"  ⚠️ 全局 mcp_config.json 清洗检查异常: {e}")
 
 
 def install_plugin(target_dir: Path, api: str, key: str, actor_peer: str = ""):
