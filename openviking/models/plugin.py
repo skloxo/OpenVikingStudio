@@ -76,10 +76,12 @@ class QuadPluginDefinition(BaseModel):
     suggested_prompts: List[str] = Field(default_factory=list, description="建议提示词列表")
 
     # 🧩 四位一体维度核心对象
-    skill: SkillDefinition = Field(..., description="1. 认知层 (Skill 操作手册)")
+    skill: SkillDefinition = Field(..., description="1. 认知层 (Skill 操作手册，兼容主导轨)")
+    skills: List[SkillDefinition] = Field(default_factory=list, description="1. 认知层 (Skill 专属认知导轨全量列表)")
     hooks: List[HookDefinition] = Field(default_factory=list, description="2. 拦截层 (Hook 神经反射)")
     tools: List[ToolDefinition] = Field(default_factory=list, description="3. 工具层 (MCP 物理算子列表)")
     gui: GuiSchemaDefinition = Field(default_factory=GuiSchemaDefinition, description="4. 交互层 (GUI 设置与驾驶舱)")
+
     
     # 探针运行态
     health: PluginHealthProbe = Field(default_factory=PluginHealthProbe, description="运行态健康心跳与探针数据")

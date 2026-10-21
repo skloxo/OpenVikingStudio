@@ -50,11 +50,13 @@ export type QuadPluginItem = {
   tags?: string[]
   suggested_prompts?: string[]
   skill: SkillItem
+  skills?: SkillItem[]
   hooks: HookItem[]
   tools: ToolItem[]
   gui: GuiSchema
   health: PluginHealth
 }
+
 
 
 export type PluginsHealthSummary = {
