@@ -17,6 +17,7 @@ import {
   SearchIcon,
   Settings2Icon,
   ShieldAlertIcon,
+  TerminalIcon,
   XIcon,
   ZapIcon,
 } from 'lucide-react'
@@ -31,6 +32,7 @@ import {
 } from '../-lib/plugin-auth-guard'
 import type { QuadPluginItem, ToolItem } from '../-lib/plugin-types'
 import { PluginConfigSection } from './plugin-config-section'
+import { PluginQuickstartSection } from './plugin-quickstart-section'
 import { PluginReadmeViewer } from './plugin-readme-viewer'
 
 export type PluginDetailDrawerProps = {
@@ -82,6 +84,7 @@ function CollapsibleSection({
 
 export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps) {
   const { connectionRole } = useAppConnection()
+  const [openQuickstart, setOpenQuickstart] = React.useState(false)
   const [openTools, setOpenTools] = React.useState(false)
   const [openSkills, setOpenSkills] = React.useState(false)
   const [openHooks, setOpenHooks] = React.useState(false)
@@ -89,6 +92,7 @@ export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps)
   const [toolSearch, setToolSearch] = React.useState('')
 
   React.useEffect(() => {
+    setOpenQuickstart(false)
     setOpenTools(false)
     setOpenSkills(false)
     setOpenHooks(false)
@@ -253,9 +257,19 @@ export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps)
           />
         </div>
 
-        {/* 2. 技术字典与规约折叠区 (参考任务中心抽屉交互，按需展开查阅) */}
+        {/* 2. 技术字典与规约折叠区 (参考任务中心抽屉交互，全部默认收起，按需查阅) */}
         <div className="space-y-3 pt-2">
-          {/* 折叠块 1: MCP 原子算子全景 */}
+          {/* 折叠块 1: 极速开箱与客户端接入指引 */}
+          <CollapsibleSection
+            title="极速开箱与客户端接入指引"
+            icon={<TerminalIcon className="size-3.5" />}
+            isOpen={openQuickstart}
+            onToggle={() => setOpenQuickstart(!openQuickstart)}
+          >
+            <PluginQuickstartSection plugin={plugin} />
+          </CollapsibleSection>
+
+          {/* 折叠块 2: MCP 原子算子全景 */}
           <CollapsibleSection
             title="MCP 原子算子全景明细"
             count={tools.length}
