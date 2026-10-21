@@ -32,6 +32,7 @@ import {
 } from '../-lib/plugin-auth-guard'
 import type { QuadPluginItem, ToolItem } from '../-lib/plugin-types'
 import { PluginConfigSection } from './plugin-config-section'
+import { PluginPromptsSection } from './plugin-prompts-section'
 import { PluginQuickstartSection } from './plugin-quickstart-section'
 import { PluginReadmeViewer } from './plugin-readme-viewer'
 
@@ -204,6 +205,13 @@ export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps)
           </div>
         </div>
 
+        {/* 插件概述短说明 (1:1 对齐反重力原生头部描述) */}
+        {plugin.description && (
+          <p className="text-xs text-muted-foreground leading-relaxed pt-0.5">
+            {plugin.description}
+          </p>
+        )}
+
         {/* 核心能力徽章一行速览 (消灭碎片化 Tab) */}
         <div className="flex flex-wrap items-center gap-2 pt-1 font-mono text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
@@ -247,9 +255,14 @@ export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps)
         )}
       </div>
 
-      {/* 滚动正文 (单页连续流: README 主体 + 技术字典折叠块) */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-5">
-        {/* 1. 原生 Markdown 详情说明正文 (默认展示，与反重力完全对齐) */}
+      {/* 滚动正文 (单页连续流: 建议提示词 + README 主体 + 技术字典折叠块) */}
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+        {/* 1. 建议交互提示词 (1:1 像素级对齐反重力原生 suggestedPrompts 构件) */}
+        {plugin.suggested_prompts && plugin.suggested_prompts.length > 0 && (
+          <PluginPromptsSection prompts={plugin.suggested_prompts} />
+        )}
+
+        {/* 2. 原生 Markdown 详情说明正文 (与反重力完全对齐单一真相源) */}
         <div className="rounded-md border border-border/40 bg-card/20 p-4">
           <PluginReadmeViewer
             content={plugin.readme_content}
