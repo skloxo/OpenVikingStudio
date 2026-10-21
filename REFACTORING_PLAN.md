@@ -35,7 +35,7 @@
 | **`v1.7.151`** | **Card-204** | **上游 Gateway 缓存遥测增强与 DSH 无工具请求防重复召回整并 (Upstream Gateway)** | 吸收 PR #6295 DSH 辅助防召回、#6026 回复增量哈希与 SSE 批量分帧、#6267 缓存告警闭环，61/61 测试全绿。 | [x] 已验收通过 ✅ |
 | **`v1.7.152`** | **Card-205** | **上游 Session 消息写入与接口去重读取性能优化整并 (Upstream Session Perf)** | 吸收 upstream PR #6270 消息写入与 Session 重复读取优化、#6075 防脏快照 upsert、#6165 rm(no_vector) 极速旁路，6/6 专项测试全绿。 | [x] 已验收通过 ✅ |
 | **`v1.7.153`** | **Card-206** | **上游 Studio 前端多语言 i18n 补全与 AppleDouble 元数据过滤整并 (Upstream Studio)** | 吸收 upstream PR #6292 全域多语言 i18n 补齐、#6316 AppleDouble 元数据过滤、#6215 Key 透传，45/45 测试全绿。 | [x] 已验收通过 ✅ |
-| **`待排期`** | **Card-209** | **上游 Storage 存储引擎、Session 瞬态自愈与向量批次控制整并 (Upstream Storage & Session)** | 吸收 upstream PR #6398 瞬态内存读取重试、#6395 多写元数据隐藏、#6259 向量批次上界、#6325 O(1) 账号探测。 | [ ] 待排期迭代 ⏳ |
+| **`v1.7.154`** | **Card-209** | **上游 Storage 存储引擎、Session 瞬态自愈与向量批次控制整并 (Upstream Storage & Session)** | 吸收 upstream PR #6398 瞬态内存读取重试、#6395 多写元数据隐藏、#6259 向量批次上界 (1024)、#6325 O(1) 账号探测，6/6 专项测试全绿。 | [x] 已验收通过 ✅ |
 | **`待排期`** | **Card-210** | **上游网关、服务端鉴权与 Windows 编译沙箱指令转译整并 (Upstream Auth & Windows Transpile)** | 吸收 upstream PR #6396 受信任用户组 Header、#6254 OIDC 斜杠容错、#6306 Gateway 字段容错、#6372 Windows POSIX 指令转译、#6376 编译绝对路径。 | [ ] 待排期迭代 ⏳ |
 | **`待排期`** | **Card-211** | **上游模型体系、经验归因保真与 CLI 网络原生根因透传整并 (Upstream Models & Native CLI)** | 吸收 upstream PR #6365 经验显式读取归因、#6383 Gemini Embedding 2、#6348 Seed 2.1 Lite VLM、#6361 原生 CA 信任、#6312 报错根因透传、#6053 别名文档。 | [ ] 待排期迭代 ⏳ |
 | **`待排期`** | **Card-212** | **上游 Web Studio 连接架构重构与受信任身份目录解耦整并 (Upstream Studio Identity Directory)** | 吸收 upstream PR #6308 重构连接切换架构，抽离 setup-identity-directory，废黜旧版 header 切换器，对齐多服务配置。 | [ ] 待排期迭代 ⏳ |
@@ -122,12 +122,13 @@
   4. **业务组件多语言净化**：`clipboard.ts`、`errors.ts`、`code-editor.tsx`、`task-detail-sheet.tsx`、`image-viewer.tsx`、`markdown-renderer.tsx` 消除裸写硬编码；
   5. **视网膜门禁全绿**：`i18n.test.ts` (5/5 通过) 严格校验双语 Key 100% 对齐与插值占位符一致性，前端与后端单测 45/45 全绿，打标 Tag `v1.7.153`。
 
-#### 📌 [P1] [ ] Card-209: 上游 Storage 存储引擎、Session 瞬态自愈与向量批次控制整并 (Upstream Storage, Transient Memory & Vector Replay) ⏳
-- **吸收内容与物理契约**：
-  1. **瞬态读取重试 (PR #6398 / c0e35a54c)**：`session/memory/memory_updater.py` 与 `session.py` 对 Session 内存瞬态读取失败增加受控重试，避免瞬态波动误触发昂贵的重新提取管线；
-  2. **多写元数据隐藏 (PR #6395 / c133b9467)**：`crates/ragfs` 升级后继续在挂载层隐藏旧版多写元数据，防止底层冗余属性泄漏；
-  3. **向量重放批次上界 (PR #6259 / aa49650a2)**：`storage/` 限制有序增量重放批次上限，规避海量增量回放时的内存激增与阻塞；
-  4. **账号轻量存在性端点 (PR #6325 / 102ff5925)**：提供 $O(1)$ 复杂度的账号与用户存在性轻量探测接口，加速高频身份鉴权。
+#### 📌 [P1] [x] Card-209: 上游 Storage 存储引擎、Session 瞬态自愈与向量批次控制整并 (Upstream Storage, Transient Memory & Vector Replay v1.7.154) ✅
+- **吸收内容与物理交付物**：
+  1. **瞬态读取重试 (PR #6398 / c0e35a54c)**：`openviking/session/memory/memory_updater.py` 封装 `read_fresh_memory(uri)` 并接入 `retry_async(max_retries=1, base_delay=0.1)` 瞬态重试；`MemoryReadError.retryable` 覆盖网络/AGFS/IO瞬态；`session.py` 提取重试判定改为 `not isinstance(error, MemoryUpdateError) and is_retryable_api_error(error)` 杜绝昂贵重提取；
+  2. **多写元数据隐藏 (PR #6395 / c133b9467)**：`crates/ragfs/src/core/internal_names.rs` 与 `mountable.rs` 在挂载层精准隐藏 `.redirect.json` 与 `.sync_log.json`，补充 `is_multiwrite_internal_path` 与单元测试；
+  3. **向量重放批次上界 (PR #6259 / aa49650a2)**：`openviking/storage/vectordb/collection/local_collection.py` 引入 `_RECOVERY_BATCH_SIZE = 1024`，在 `PersistCollection._recover_index` 中以 1024 为批次上限流式回放增量记录，消除海量 DeltaRecord 的内存积压；
+  4. **账号轻量存在性端点 (PR #6325 / 102ff5925)**：`openviking/server/routers/admin.py` 补齐 `GET /api/v1/admin/accounts/{account_id}` 与 `GET /api/v1/admin/accounts/{account_id}/users/{user_id}` 零凭据点读探测端点，SDK (Python/Go/TS) 对应方法对齐；
+  5. **视网膜单测与门禁**：编写专属单元测试 `tests/service/test_card209_storage_session_and_vector_replay.py`，6/6 专项单测全绿 (1.29s)，Session 提交与向量恢复回归测试套件全绿，安全扫描 0 泄露，打标 Tag `v1.7.154`。
 
 #### 📌 [P1] [ ] Card-210: 上游网关、服务端鉴权与 Windows 编译沙箱指令转译整并 (Upstream Gateway, Trusted Auth & Windows POSIX Transpile) ⏳
 - **吸收内容与物理契约**：
