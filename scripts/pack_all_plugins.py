@@ -49,10 +49,8 @@ def filter_tar_info(tarinfo: tarfile.TarInfo) -> tarfile.TarInfo | None:
 def pack_directory(src_dir: Path, target_base_name: str, version: str, is_npm: bool = False) -> tuple[int, Path]:
     """将插件目录打包为标准 .tgz，并同步至 public/ 与 dist/"""
     versioned_name = f"{target_base_name}-{version}.tgz"
-    latest_name = f"{target_base_name}.tgz"
-
+    # 单一不可变真身：仅分发带版本号的实体包，严禁生成无版本号影子别名包
     pub_v_path = PUBLIC_DIR / versioned_name
-    pub_l_path = PUBLIC_DIR / latest_name
 
     with tarfile.open(pub_v_path, "w:gz") as tar:
         for item in src_dir.iterdir():
@@ -61,12 +59,8 @@ def pack_directory(src_dir: Path, target_base_name: str, version: str, is_npm: b
             arc = f"package/{item.name}" if is_npm else item.name
             tar.add(item, arcname=arc, filter=filter_tar_info)
 
-    # 同步无版本后缀别名包
-    shutil.copy2(pub_v_path, pub_l_path)
-
-    # 同步至 dist/ 目录
+    # 同步至 dist/ 生产分发目录
     shutil.copy2(pub_v_path, DIST_DIR / versioned_name)
-    shutil.copy2(pub_l_path, DIST_DIR / latest_name)
 
     size = pub_v_path.stat().st_size
     return size, pub_v_path
