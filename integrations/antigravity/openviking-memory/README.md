@@ -18,13 +18,3 @@
    - 内置标准化三阶交接规约，一键输出供新会话秒级启动的接力提示词；
    - 疑难排障闭环后支持将物理根因、反思与代码差异原子沉淀至 Evolution Lessons。
 
----
-
-## 🛠️ 本地源码挂载
-
-若已克隆本仓库，在终端执行以下命令即可自举安装至当前宿主：
-```bash
-cd integrations/antigravity/openviking-memory
-python setup.py --install
-```
-自举向导将自动完成端侧健康巡检、验证用户身份并生成只读受控凭据 `config.json`（权限 0600）。

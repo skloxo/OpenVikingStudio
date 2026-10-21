@@ -21,6 +21,7 @@ from openviking.models.plugin import (
     HookDefinition,
     PluginHealthProbe,
     QuadPluginDefinition,
+    RuleDefinition,
     SkillDefinition,
     ToolDefinition,
 )
@@ -179,6 +180,28 @@ def extract_skills_from_skills_dir(skills_dir: Path) -> List[SkillDefinition]:
     return skills
 
 
+def extract_rules_from_rules_dir(rules_dir: Path) -> List[RuleDefinition]:
+    """从插件物理 rules/ 目录动态扫描并解析规约法则 Markdown 文件 (SSOT)。"""
+    if not rules_dir.is_dir():
+        return []
+
+    rules: List[RuleDefinition] = []
+    for rf in sorted(rules_dir.glob("*.md")):
+        try:
+            content = rf.read_text(encoding="utf-8", errors="replace").strip()
+            first_line = content.split("\n")[0].lstrip("# ").strip() if content else rf.name
+            rules.append(
+                RuleDefinition(
+                    name=rf.name,
+                    description=first_line,
+                    content=content,
+                )
+            )
+        except Exception as e:
+            logger.warning("解析规则 %s 失败: %s", rf, e)
+    return rules
+
+
 def scan_single_plugin_dir(plugin_dir: Path) -> Optional[QuadPluginDefinition]:
     """扫描并组装单个插件目录的 QuadPluginDefinition 规格实体。"""
     manifest_file = plugin_dir / "plugin.json"
@@ -236,6 +259,10 @@ def scan_single_plugin_dir(plugin_dir: Path) -> Optional[QuadPluginDefinition]:
         )
         skills = [skill_def]
 
+    # 4.1 动态提取 Rules (rules/ 物理目录全量扫描)
+    rules_dir = plugin_dir / "rules"
+    plugin_rules = extract_rules_from_rules_dir(rules_dir)
+
     # 5. GUI 与运行时参数配置装配 (脱水扁平字符映射，绝不输出对象嵌套)
     gui_def = GuiSchemaDefinition(
         settings_fields={
@@ -263,6 +290,7 @@ def scan_single_plugin_dir(plugin_dir: Path) -> Optional[QuadPluginDefinition]:
         suggested_prompts=suggested_prompts,
         skill=skill_def,
         skills=skills,
+        rules=plugin_rules,
         hooks=hooks,
         tools=tools,
         gui=gui_def,
