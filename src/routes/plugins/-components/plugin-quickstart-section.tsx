@@ -6,6 +6,7 @@
 
 import * as React from 'react'
 import {
+  BoxesIcon,
   CheckIcon,
   CopyIcon,
   LaptopIcon,
@@ -15,10 +16,28 @@ import { toast } from 'sonner'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { copyTextToClipboard } from '#/lib/clipboard'
-import type { QuadPluginItem } from '../-lib/plugin-types'
+import type {
+  DshPackageMapping,
+  DshPluginBridgeInfo,
+  QuadPluginItem,
+  QuickstartCommandItem,
+} from '../-lib/plugin-types'
 
 export type PluginQuickstartSectionProps = {
   plugin: QuadPluginItem
+}
+
+/**
+ * DSH (DeepSeek Harness) 专用 NPM 桥接包映射 (与 integrations/deepseek-harness package.json 对齐)
+ */
+const DSH_BRIDGE_REGISTRY: DshPackageMapping = {
+  'openviking-memory': { pkg: 'dsh-plugin-openviking-memory', ver: '2.0.21' },
+  'openviking-ops': { pkg: 'dsh-plugin-openviking-ops', ver: '1.0.4' },
+  'fleet-mesh': { pkg: 'dsh-plugin-openviking-fleet', ver: '1.0.3' },
+  'keepass-vault': { pkg: 'dsh-plugin-keepass-vault', ver: '1.0.2' },
+  'cpa-squad': { pkg: 'dsh-plugin-cpa', ver: '1.0.1' },
+  'dify': { pkg: 'dsh-plugin-dify', ver: '1.0.1' },
+  'agent-circuit-breaker': { pkg: 'agent-circuit-breaker', ver: '1.3.3' },
 }
 
 export function PluginQuickstartSection({ plugin }: PluginQuickstartSectionProps) {
@@ -36,13 +55,50 @@ export function PluginQuickstartSection({ plugin }: PluginQuickstartSectionProps
     }
   }
 
-  const psCmd = `powershell -ExecutionPolicy Bypass -Command "iwr -Uri 'https://vk.tide.red/studio/${pid}.tgz' -OutFile '$env:TEMP\\${pid}.tgz'; New-Item -ItemType Directory -Force -Path \\"$env:USERPROFILE\\.gemini\\config\\plugins\\${pid}\\" | Out-Null; tar -xzf '$env:TEMP\\${pid}.tgz' -C \\"$env:USERPROFILE\\.gemini\\config\\plugins\\${pid}\\"; python \\"$env:USERPROFILE\\.gemini\\config\\plugins\\${pid}\\setup.py\\" --install"`
-  const bashCmd = `curl -fsSL https://vk.tide.red/studio/${pid}.tgz -o /tmp/${pid}.tgz && mkdir -p ~/.gemini/config/plugins/${pid} && tar -xzf /tmp/${pid}.tgz -C ~/.gemini/config/plugins/${pid} && python3 ~/.gemini/config/plugins/${pid}/setup.py --install`
-  const localCmd = `cd integrations/antigravity/${pid}\npython setup.py --install`
-  const dshCmd = `npm install https://vk.tide.red/studio/dsh-plugin-${pid}.tgz`
+  const version = plugin.version || '1.0.0'
+  const agTarball = `${pid}-${version}.tgz`
 
-  // 判定是否提供 DSH 桥接包支持
-  const hasDshBridge = ['openviking-memory', 'openviking-ops', 'fleet-mesh', 'keepass-vault', 'dify', 'cpa-squad'].includes(pid)
+  // DSH 专用桥接包版本对齐
+  const registeredDsh = DSH_BRIDGE_REGISTRY[pid]
+  const dshInfo: DshPluginBridgeInfo = registeredDsh || { pkg: `dsh-plugin-${pid}`, ver: version }
+  const effectiveDshVer = (pid === 'openviking-memory' || pid === 'openviking-ops') ? version : dshInfo.ver
+  const dshTarball = `${dshInfo.pkg}-${effectiveDshVer}.tgz`
+
+  // 强类型命令配置列表 (数据驱动统一渲染)
+  const commands: QuickstartCommandItem[] = [
+    {
+      id: 'powershell',
+      title: '方式一：Windows PowerShell (Antigravity 一键全自动)',
+      command: `powershell -ExecutionPolicy Bypass -Command "iwr -Uri 'https://vk.tide.red/studio/${agTarball}' -OutFile '$env:TEMP\\${pid}.tgz'; New-Item -ItemType Directory -Force -Path \\"$env:USERPROFILE\\.gemini\\config\\plugins\\${pid}\\" | Out-Null; tar -xzf '$env:TEMP\\${pid}.tgz' -C \\"$env:USERPROFILE\\.gemini\\config\\plugins\\${pid}\\"; python \\"$env:USERPROFILE\\.gemini\\config\\plugins\\${pid}\\setup.py\\" --install"`,
+      copyLabel: 'PowerShell 开箱',
+      iconType: 'laptop',
+    },
+    {
+      id: 'bash',
+      title: '方式二：Linux / WSL2 (Antigravity 一键全自动)',
+      command: `curl -fsSL https://vk.tide.red/studio/${agTarball} -o /tmp/${pid}.tgz && mkdir -p ~/.gemini/config/plugins/${pid} && tar -xzf /tmp/${pid}.tgz -C ~/.gemini/config/plugins/${pid} && python3 ~/.gemini/config/plugins/${pid}/setup.py --install`,
+      copyLabel: 'Bash 开箱',
+      iconType: 'terminal',
+    },
+    {
+      id: 'local',
+      title: '本地源码仓库自举挂载',
+      command: `cd integrations/antigravity/${pid}\npython setup.py --install`,
+      copyLabel: '本地挂载',
+      iconType: 'terminal',
+    },
+  ]
+
+  if (['openviking-memory', 'openviking-ops', 'fleet-mesh', 'keepass-vault', 'dify', 'cpa-squad'].includes(pid)) {
+    commands.push({
+      id: 'dsh',
+      title: 'DeepSeek Harness (DSH / Cordis 客户端生态专用)',
+      command: `npm install https://vk.tide.red/studio/${dshTarball}`,
+      copyLabel: 'DSH NPM 安装',
+      iconType: 'cube',
+      badge: `v${effectiveDshVer}`,
+    })
+  }
 
   return (
     <div className="space-y-3 font-sans text-xs">
@@ -56,112 +112,42 @@ export function PluginQuickstartSection({ plugin }: PluginQuickstartSectionProps
         </Badge>
       </div>
 
-      {/* 方式一：Windows PowerShell */}
-      <div className="space-y-1.5 rounded-md border border-border/50 bg-card/40 p-3">
-        <div className="flex items-center justify-between gap-2">
-          <span className="font-semibold text-foreground text-xs flex items-center gap-1.5">
-            <LaptopIcon className="size-3.5 text-muted-foreground" />
-            方式一：Windows PowerShell (Antigravity 一键全自动)
-          </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2 text-xs font-mono gap-1 text-muted-foreground hover:text-foreground"
-            onClick={() => handleCopy(psCmd, 'PowerShell 开箱')}
-          >
-            {copiedKey === 'PowerShell 开箱' ? (
-              <>
-                <CheckIcon className="size-3 text-cyan-500" />
-                <span>已复制</span>
-              </>
-            ) : (
-              <>
-                <CopyIcon className="size-3" />
-                <span>复制</span>
-              </>
-            )}
-          </Button>
-        </div>
-        <pre className="rounded bg-muted/40 p-2 font-mono text-xs text-foreground/90 overflow-x-auto whitespace-pre-wrap break-all border border-border/40">
-          {psCmd}
-        </pre>
-      </div>
-
-      {/* 方式二：Linux / WSL2 */}
-      <div className="space-y-1.5 rounded-md border border-border/50 bg-card/40 p-3">
-        <div className="flex items-center justify-between gap-2">
-          <span className="font-semibold text-foreground text-xs flex items-center gap-1.5">
-            <TerminalIcon className="size-3.5 text-muted-foreground" />
-            方式二：Linux / WSL2 (Antigravity 一键全自动)
-          </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2 text-xs font-mono gap-1 text-muted-foreground hover:text-foreground"
-            onClick={() => handleCopy(bashCmd, 'Bash 开箱')}
-          >
-            {copiedKey === 'Bash 开箱' ? (
-              <>
-                <CheckIcon className="size-3 text-cyan-500" />
-                <span>已复制</span>
-              </>
-            ) : (
-              <>
-                <CopyIcon className="size-3" />
-                <span>复制</span>
-              </>
-            )}
-          </Button>
-        </div>
-        <pre className="rounded bg-muted/40 p-2 font-mono text-xs text-foreground/90 overflow-x-auto whitespace-pre-wrap break-all border border-border/40">
-          {bashCmd}
-        </pre>
-      </div>
-
-      {/* 方式三：本地开发手动挂载 */}
-      <div className="space-y-1.5 rounded-md border border-border/50 bg-card/40 p-3">
-        <div className="flex items-center justify-between gap-2">
-          <span className="font-semibold text-foreground text-xs">
-            本地源码仓库自举挂载
-          </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2 text-xs font-mono gap-1 text-muted-foreground hover:text-foreground"
-            onClick={() => handleCopy(localCmd, '本地挂载')}
-          >
-            {copiedKey === '本地挂载' ? (
-              <>
-                <CheckIcon className="size-3 text-cyan-500" />
-                <span>已复制</span>
-              </>
-            ) : (
-              <>
-                <CopyIcon className="size-3" />
-                <span>复制</span>
-              </>
-            )}
-          </Button>
-        </div>
-        <pre className="rounded bg-muted/40 p-2 font-mono text-xs text-foreground/90 overflow-x-auto whitespace-pre-wrap border border-border/40">
-          {localCmd}
-        </pre>
-      </div>
-
-      {/* 方式四：DeepSeek Harness (Cordis 生态) */}
-      {hasDshBridge && (
-        <div className="rounded-md border border-border/40 bg-muted/10 p-3 space-y-1.5">
+      {commands.map((item) => (
+        <div
+          key={item.id}
+          className={`space-y-1.5 rounded-md border p-3 ${
+            item.id === 'dsh'
+              ? 'border-border/40 bg-muted/10'
+              : 'border-border/50 bg-card/40'
+          }`}
+        >
           <div className="flex items-center justify-between gap-2">
-            <span className="text-muted-foreground text-xs">
-              DeepSeek Harness (DSH / Cordis 客户端生态专用)
+            <span
+              className={`font-semibold text-xs flex items-center gap-1.5 ${
+                item.id === 'dsh' ? 'text-muted-foreground' : 'text-foreground'
+              }`}
+            >
+              {item.iconType === 'laptop' ? (
+                <LaptopIcon className="size-3.5 text-muted-foreground" />
+              ) : item.iconType === 'cube' ? (
+                <BoxesIcon className="size-3.5 text-cyan-600 dark:text-cyan-400" />
+              ) : (
+                <TerminalIcon className="size-3.5 text-muted-foreground" />
+              )}
+              <span>{item.title}</span>
+              {item.badge && (
+                <Badge variant="outline" className="text-xs font-mono px-1.5 py-0 border-cyan-500/30 text-cyan-600 dark:text-cyan-400">
+                  {item.badge}
+                </Badge>
+              )}
             </span>
             <Button
               variant="ghost"
               size="sm"
               className="h-6 px-2 text-xs font-mono gap-1 text-muted-foreground hover:text-foreground"
-              onClick={() => handleCopy(dshCmd, 'DSH NPM 安装')}
+              onClick={() => handleCopy(item.command, item.copyLabel)}
             >
-              {copiedKey === 'DSH NPM 安装' ? (
+              {copiedKey === item.copyLabel ? (
                 <>
                   <CheckIcon className="size-3 text-cyan-500" />
                   <span>已复制</span>
@@ -174,11 +160,17 @@ export function PluginQuickstartSection({ plugin }: PluginQuickstartSectionProps
               )}
             </Button>
           </div>
-          <pre className="rounded bg-muted/30 p-2 font-mono text-xs text-muted-foreground overflow-x-auto whitespace-pre-wrap break-all border border-border/30">
-            {dshCmd}
+          <pre
+            className={`rounded p-2 font-mono text-xs overflow-x-auto whitespace-pre-wrap break-all border ${
+              item.id === 'dsh'
+                ? 'bg-muted/30 text-muted-foreground border-border/30'
+                : 'bg-muted/40 text-foreground/90 border border-border/40'
+            }`}
+          >
+            {item.command}
           </pre>
         </div>
-      )}
+      ))}
     </div>
   )
 }
