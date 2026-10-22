@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-openviking-memory",
-  "version": "2.0.27",
+  "version": "2.0.29",
   "type": "module",
   "main": "index.js",
   "description": "体外大脑长程记忆语义检索、代码感知、上下文路由与经验沉淀完全体 (战地工具与 Hook 物理守卫)",
@@ -12,12 +12,10 @@
     "openviking-memory"
   ],
   "exports": {
-    ".": "./index.js",
-    "./client": "./client.js"
+    ".": "./index.js"
   },
   "files": [
     "index.js",
-    "client.js",
     "schema.js",
     "config.mjs",
     "mcp.mjs",
@@ -29,14 +27,6 @@
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
-    },
-    "client": {
-      "platform": "web",
-      "immediately": true,
-      "inject": [
-        "@deepseek-ai/dsh-client-ui-plugin-manager",
-        "@deepseek-ai/dsh-client-ui-conversation"
-      ]
     }
   },
   "peerDependencies": {

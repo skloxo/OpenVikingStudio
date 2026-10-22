@@ -3,8 +3,17 @@
     "PreInvocation": [
       {
         "type": "command",
-        "command": "python -X utf8 hooks/ov_pre_invocation.py",
+        "command": "C:/Users/Skl/AppData/Local/Programs/Python/Python312/python.exe -X utf8 -E -s -S C:/Users/Skl/.gemini/config/plugins/openviking-memory/hooks/ov_pre_invocation.py",
         "timeout": 4
+      }
+    ]
+  },
+  "openviking-session-archiver": {
+    "Stop": [
+      {
+        "type": "command",
+        "command": "C:/Users/Skl/AppData/Local/Programs/Python/Python312/python.exe -X utf8 -E -s -S C:/Users/Skl/.gemini/config/plugins/openviking-memory/hooks/ov_session_archiver.py",
+        "timeout": 3
       }
     ]
   },
@@ -15,19 +24,10 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python -X utf8 hooks/ov_sandbox_guard.py",
+            "command": "C:/Users/Skl/AppData/Local/Programs/Python/Python312/python.exe -X utf8 -E -s -S C:/Users/Skl/.gemini/config/plugins/openviking-memory/hooks/ov_sandbox_guard.py",
             "timeout": 3
           }
         ]
-      }
-    ]
-  },
-  "openviking-session-archiver": {
-    "Stop": [
-      {
-        "type": "command",
-        "command": "python -X utf8 hooks/ov_session_archiver.py",
-        "timeout": 3
       }
     ]
   }

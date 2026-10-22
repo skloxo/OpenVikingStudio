@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "openviking-memory": {
+      "command": "C:/Users/Skl/AppData/Local/Programs/Python/Python312/python.exe",
+      "args": [
+        "C:/Users/Skl/.gemini/config/plugins/openviking-memory/server.py",
+        "--mode=memory"
+      ],
+      "env": {
+        "OPENVIKING_API": "https://vk.tide.red",
+        "OPENVIKING_API_KEY": "ZGVmYXVsdA.YW50aWdyYXZpdHlAcnR4MzA3MA.5889ef982bfb31d49d5f50beb4acc3a924802969b6265c8c2bc5a5beebbd1271",
+        "OPENVIKING_MCP_MODE": "memory",
+        "OPENVIKING_ACTOR_PEER": "antigravity@rtx3070",
+        "PYTHONIOENCODING": "utf-8"
+      }
+    }
+  }
+}
