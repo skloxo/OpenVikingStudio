@@ -65,20 +65,23 @@ def main():
             return
 
         if not sys.stdin.isatty():
-            raw = sys.stdin.read()
-            if raw.strip():
-                data = json.loads(raw)
-                tool_call = data.get("toolCall", {})
-                args = tool_call.get("args", {})
-                cmd = str(args.get("CommandLine", "")).lower()
+            line = sys.stdin.readline()
+            if line and line.strip():
+                try:
+                    data = json.loads(line)
+                    tool_call = data.get("toolCall", {})
+                    args = tool_call.get("args", {})
+                    cmd = str(args.get("CommandLine", "")).lower()
 
-                for pat in DANGEROUS_PATTERNS:
-                    if pat in cmd and "test" not in cmd:
-                        print(json.dumps({
-                            "decision": "deny",
-                            "reason": f"【OpenViking 沙箱守卫】拦截到破坏性高危操作: 检测到模式 [{pat}]，违反安全红线！"
-                        }, ensure_ascii=False))
-                        return
+                    for pat in DANGEROUS_PATTERNS:
+                        if pat in cmd and "test" not in cmd:
+                            print(json.dumps({
+                                "decision": "deny",
+                                "reason": f"【OpenViking 沙箱守卫】拦截到破坏性高危操作: 检测到模式 [{pat}]，违反安全红线！"
+                            }, ensure_ascii=False))
+                            return
+                except Exception:
+                    pass
         print(json.dumps({"decision": "allow"}))
     except (KeyboardInterrupt, SystemExit):
         raise

@@ -143,7 +143,7 @@ def _api_request(
 # SECTION: FastMCP Initialization
 mcp = FastMCP(
     name="openviking-memory",
-    instructions="OpenViking 战地记忆中枢 (37 Tools) — 语义检索、两阶段重排、分层读取、会话管理与踩坑存盘。",
+    instructions="OpenViking 战地记忆中枢 (26 Tools) — 语义检索、两阶段重排、分层读取、会话管理与踩坑存盘。",
 )
 
 # ─── 1. Memory Tools (6) ──────────────────────────────────────────────────
@@ -214,10 +214,10 @@ def openviking_store(
 def openviking_smart_read(
     query: str = Field(description="阅读需求或问题"),
     target_uri: str = Field(default="viking://", description="目标范围 URI"),
-    budget: int = Field(default=4000, description="Token 预算"),
+    limit: int = Field(default=10, description="最大召回条数"),
 ) -> str:
     """智能上下文提纯与按需抽稀阅读。"""
-    return _api_request("POST", "/api/v1/search/find", body={"query": query, "target_uri": target_uri, "budget": budget})
+    return _api_request("POST", "/api/v1/search/find", body={"query": query, "target_uri": target_uri, "limit": limit})
 
 # ─── 2. Code Tools (5) ────────────────────────────────────────────────────
 @mcp.tool()
@@ -276,31 +276,8 @@ def openviking_tree(
     """获取 VikingFS 目录树状结构（快速轻量模式）。"""
     return _api_request("GET", "/api/v1/fs/tree", params={"uri": target_uri, "level_limit": depth, "output": "original"}, timeout=15.0)
 
-@mcp.tool()
-def openviking_tag(
-    target_uri: str = Field(description="目标 Viking URI"),
-    action: str = Field(default="list", description="操作：list/add/remove"),
-    tags: str = Field(default="", description="标签（逗号分隔）"),
-) -> str:
-    """管理资源的标签元数据。"""
-    if action == "list":
-        return _api_request("GET", "/api/v1/tags", params={"uri": target_uri})
-    elif action == "add":
-        tag_list = [t.strip() for t in tags.split(",") if t.strip()]
-        return _api_request("POST", "/api/v1/tags", body={"uri": target_uri, "tags": tag_list})
-    elif action == "remove":
-        return _api_request("DELETE", f"/api/v1/tags?uri={urllib.parse.quote(target_uri)}&tags={urllib.parse.quote(tags)}")
-    return f"Invalid action: {action}"
 
-@mcp.tool()
-def openviking_diff(
-    source_uri: str = Field(description="源 Viking URI"),
-    target_uri: str = Field(description="目标 Viking URI"),
-) -> str:
-    """比较两个 Viking URI 之间的内容差异。"""
-    return _api_request("GET", "/api/v1/content/diff", params={"source": source_uri, "target": target_uri})
-
-# ─── 4. Skills Tools (6) ──────────────────────────────────────────────────
+# ─── 4. Skills Tools ──────────────────────────────────────────────────────
 @mcp.tool()
 def openviking_record_evolution_lesson(
     title: str = Field(description="排查踩坑教训标题"),
@@ -335,31 +312,31 @@ def openviking_skills(
     return f"Invalid action: {action}"
 
 @mcp.tool()
-def openviking_audit_skills(
-    fix: bool = Field(default=False, description="是否自动修复不合规项"),
-) -> str:
-    """全量技能规范与合规性审计。"""
-    return _api_request("GET", "/api/v1/skills/audit", params={"fix": fix})
-
-@mcp.tool()
 def openviking_auto_onboard_skills(
-    path: str = Field(default="", description="外部技能目录或文件路径"),
+    skill_name: str = Field(default="", description="技能名称（kebab-case）"),
+    content: str = Field(default="", description="技能 Markdown 全文（含 YAML Frontmatter）"),
+    path: str = Field(default="", description="可选：本地技能文件路径（若指定则自动读取）"),
 ) -> str:
-    """一键自动化批量纳管野生技能。"""
-    return _api_request("POST", "/api/v1/skills/ingestion/submit", body={"path": path})
+    """一键自动化批量纳管野生技能进入流水线。"""
+    final_name = skill_name.strip()
+    final_content = content.strip()
+    if path and Path(path).is_file():
+        try:
+            p = Path(path)
+            if not final_name:
+                final_name = p.stem.lower().replace("_", "-")
+            if not final_content:
+                final_content = p.read_text(encoding="utf-8", errors="replace")
+        except Exception as e:
+            return json.dumps({"status": "error", "message": f"读取本地技能文件失败: {e}"})
+    if not final_name or not final_content:
+        return json.dumps({"status": "error", "message": "必须提供 skill_name 与 content（或有效本地 path）"})
+    return _api_request("POST", "/api/v1/skills/ingestion/submit", body={"skill_name": final_name, "content": final_content, "source_path": path})
 
 @mcp.tool()
 def openviking_get_onboard_queue_status() -> str:
     """获取技能入库流水线队列排队状态。"""
     return _api_request("GET", "/api/v1/skills/ingestion/queue")
-
-@mcp.tool()
-def openviking_fix_skill(
-    skill_name: str = Field(description="待修复技能名"),
-    issue_description: str = Field(default="", description="问题描述"),
-) -> str:
-    """基于诊断报错微手术自愈修复技能。"""
-    return _api_request("POST", "/api/v1/skills/fix", body={"name": skill_name, "issue": issue_description})
 
 # ─── 5. Sessions Tools (6) ────────────────────────────────────────────────
 @mcp.tool()
@@ -394,10 +371,10 @@ def openviking_create_session(
 def openviking_link(
     source_uri: str = Field(description="源 Viking URI"),
     target_uri: str = Field(description="目标 Viking URI"),
-    relation_type: str = Field(default="related", description="关联类型"),
+    relation_type: str = Field(default="related_to", description="关联类型"),
 ) -> str:
     """在两组资源之间建立语义拓扑关联。"""
-    return _api_request("POST", "/api/v1/relations/link", body={"source": source_uri, "target": target_uri, "type": relation_type})
+    return _api_request("POST", "/api/v1/relations/link", body={"from_uri": source_uri, "to_uris": [target_uri], "relation_type": relation_type})
 
 @mcp.tool()
 def openviking_get_relations(
@@ -412,9 +389,9 @@ def openviking_unlink(
     target_uri: str = Field(description="目标 Viking URI"),
 ) -> str:
     """解除两组资源之间的语义拓扑关联。"""
-    return _api_request("POST", "/api/v1/relations/unlink", body={"source": source_uri, "target": target_uri})
+    return _api_request("POST", "/api/v1/relations/unlink", body={"from_uri": source_uri, "to_uri": target_uri})
 
-# ─── 6. System Tools (6) ──────────────────────────────────────────────────
+# ─── 6. System Tools (3) ──────────────────────────────────────────────────
 @mcp.tool()
 def openviking_health() -> str:
     """检查 OpenViking 服务端健康状态。"""
@@ -428,66 +405,17 @@ def openviking_system_status(
     """获取 OpenViking 核心队列、存储与引擎状态。"""
     return _api_request("GET", "/api/v1/system/status", params={"wait_timeout": wait_timeout, "reset_stats": reset_stats})
 
-
-@mcp.tool()
-def openviking_privacy(
-    action: str = Field(default="status", description="操作：status/categories/list/get/upsert"),
-    category: str = Field(default="", description="分类"),
-    target_key: str = Field(default="", description="目标键"),
-    values_json: str = Field(default="", description="JSON 值"),
-) -> str:
-    """隐私保护与敏感数据过滤配置管理。"""
-    return _api_request("GET", "/api/v1/privacy/status")
-
-@mcp.tool()
-def openviking_consistency(
-    target_uri: str = Field(default="viking://", description="检查范围 URI"),
-    fix: bool = Field(default=False, description="是否自动修复"),
-) -> str:
-    """检查文件系统与向量索引一致性。"""
-    return _api_request("GET", "/api/v1/fs/consistency", params={"uri": target_uri, "fix": fix})
-
 @mcp.tool()
 def openviking_ping() -> str:
     """快速网络测速与心跳保活握手。"""
     return json.dumps({
         "status": "ok",
         "proxy": "Antigravity-Memory-Proxy-Stub",
-        "version": "2.0.18",
+        "version": "2.0.26",
         "api_endpoint": API_BASE,
-        "tools_count": 36,
+        "tools_count": 26,
         "timestamp": time.time()
     }, ensure_ascii=False, indent=2)
-
-# ─── 7. Observability Tools (4) ───────────────────────────────────────────
-@mcp.tool()
-def openviking_harness_stats(
-    action: str = Field(default="get", description="操作：get/reset"),
-) -> str:
-    """获取 Harness 门禁拦截与调用遥测指标。"""
-    return _api_request("GET", "/api/v1/system/stats")
-
-@mcp.tool()
-def openviking_usage_stats(
-    period: str = Field(default="today", description="周期：today/week/month/all"),
-    reset: bool = Field(default=False, description="是否重置统计"),
-) -> str:
-    """获取 Token 消耗与检索耗时统计。"""
-    return _api_request("GET", "/api/v1/system/stats", params={"period": period, "reset": reset})
-
-@mcp.tool()
-def openviking_observer(
-    component: str = Field(default="overview", description="观察组件：queue/vikingdb/models/lock/retrieval/system"),
-) -> str:
-    """获取指定子系统实时运转态势数据。"""
-    return _api_request("GET", f"/api/v1/observer/{component}")
-
-@mcp.tool()
-def openviking_metrics(
-    category: str = Field(default="all", description="指标类别"),
-) -> str:
-    """获取 Prometheus 格式系统指标。"""
-    return _api_request("GET", "/metrics")
 
 
 if __name__ == "__main__":
