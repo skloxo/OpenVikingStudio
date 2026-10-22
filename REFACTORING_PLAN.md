@@ -3,7 +3,7 @@
 > **关联研发大蓝图**：[`BLUEPRINT.md`](file:///home/skloxo/aho/openclaw/project/.agents/BLUEPRINT.md) ｜ **交付全量归档台账**：[`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md) ｜ **通用资产档案库**：[`COMPONENT_AND_WHEEL_INVENTORY.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md)
 > **唯一真相源 (SSOT)**：本文档为 OpenViking 当前活跃的重构规划与就绪待调度的任务矩阵看板。历史所有已验收交付的版本履历已完整归档至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。
 > **战略外围项目隔离公理**：`Search2API 商业化搜索聚合网关` (`docs/search/SEARCH2API_COMMERCIAL_GATEWAY_SPEC.md`) 确认为独立多账号商业化代理项目，不占用 OpenViking 核心任务大盘卡槽。
-> **基线状态**：线上正式部署 **`v1.4.106`** ｜ 当前最新交付 **`v1.7.166`** (代码基线 **`v1.7.153`**) ｜ 分支状态：`main` 已全量同步远程 `origin/main`。
+> **基线状态**：线上正式部署 **`v1.4.106`** ｜ 当前最新交付 **`v1.7.167`** (代码基线 **`v1.7.153`**) ｜ 分支状态：`main` 已全量同步远程 `origin/main`。
 
 ---
 
@@ -11,6 +11,7 @@
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 | :--- | :--- | :--- | :--- | :---: |
+| **`v1.7.167`** | **Card-223** | **插件动态感知扫描引擎代理桥回填与后台 MCP 工具计数自愈 (Plugin Scanner Proxy Bridge Tools SSOT)** | 1. 彻底根治 Web Studio 插件中心显示“MCP 0”缺陷：重构 `plugin_scanner.py` 动态感知引擎，增加纯透明代理桥 (Proxy Bridge) 权威算子回填链路；<br>2. 针对纯透明代理桥（如 `openviking-memory` 35 项、`fleet-mesh` 2 项等）无本地 `@mcp.tool` 物理函数的情况，动态回填单一真相源标准工具清单；<br>3. 集成单测 `test_plugin_dynamic_scanner.py` 4/4 满绿通过，全集群 7 大插件 78 项真实算子全部点亮回显就绪。<br>*(Commit: 待提交, Tag: `v1.7.167`)* | [x] 已验收通过 ✅ |
 | **`v1.7.166`** | **Card-222** | **反重力 Stdio 桥 Notification 幽灵帧阻断与工具命名双向映射加固 (Notification Silence & Tool Mapping v2.0.27)** | 1. 根治反重力启动报错 `calling "tools/list": invalid request`：封杀向客户端回复无 id 的 Notification 响应，彻底消灭幽灵 `id: null` 乱序报文；<br>2. 落地双向工具名标准化映射：`find` ➔ `openviking_find` 等 10 项核心工具标准化对齐，`tools/call` 逆向无损映射回底层原生 API；<br>3. 安装目录 `openviking-memory/server.py` 同频自举部署，全链路 4 阶生命周期测试 100% 满绿通过。<br>*(Commit: `3037fa6de`, Tag: `v1.7.166`)* | [x] 已验收通过 ✅ |
 | **`v1.7.165`** | **Card-221** | **全域插件热更版本双轨显著感知体系、废黜死常数与三端同频对齐 (Omni-Platform Plugin Hot-Reload Version Observability v2.0.27)** | 1. 反重力端：`server.py` 在 `initialize` 握手中显著注入 `v2.0.27 [Kernel: v1.7.164 | 35 Tools Online | Synced]`，IDE 插件面板一眼洞悉；<br>2. DSH 端：`client.js` 拔除历史写死 `2.0.24`，顶部 Header 与连通报告显著并排呈现 `端侧: v2.0.27`、`内核: v1.7.164` 与 `35项工具热更同频` 冰青徽章；<br>3. 服务端：`client_caps.py` 彻底斩除写死常数，动态直连母本 `plugin.json`，返回双轨版本与热更状态；<br>4. Web Studio：详情抽屉 Header 显著并排呈现包版本、服务内核版本与实时热更同频指示；<br>5. WSL 原生单测 `4/4 PASS`，服务平滑重载验证通过。 | [x] 已验收通过 ✅ |
 | **`v1.7.164`** | **Card-220** | **反重力插件服务端原生驱动纯透明 MCP 代理架构、战地工具完全体与全系规约沉淀 (Antigravity Pure MCP Proxy Architecture v2.0.27)** | 1. 彻底废黜反重力端本地手写适配器模式，`server.py` 重构为 Stdio ➔ Streamable-HTTP (`/mcp`) 纯透明代理桥（代码量由 425 行锐减至 180 行）；<br>2. 工具集由 26 项跃升为服务端单一真实源 (SSOT) 驱动的 35 项战地工具完全体，两端完全同频且零 404/405；<br>3. 物理注入鉴权上下文三元组 (`Authorization`, `X-OpenViking-User`, `X-OpenViking-Account`) 与优雅 JSON-RPC 错误降级；<br>4. 沉淀全系架构规约 `docs/guides/ANTIGRAVITY_PURE_MCP_PROXY_SPEC.md`，确立未来全系插件开发法典；<br>5. 发布 `v2.0.27` 全系插件并生成不可变分发包，线上对齐通过。 | [x] 已验收通过 ✅ |
@@ -187,6 +188,13 @@
   2. **物理下线 10 项 404/405 幽灵工具**：斩除服务端未挂载路由的 10 项死工具，保留真实可调用的 26 项核心工具；
   3. **沙盒守卫流式安全改造**：`ov_sandbox_guard.py` 废黜阻塞式 `sys.stdin.read()`，改用非阻塞 `sys.stdin.readline()`；
   4. **全链路打靶与分发**：发布全系插件 `v2.0.26`，`test_26_tools.py` 物理打靶 26/26 项工具 100% 全绿，生成不可变分发包并部署上线 (HTTP 200)。<br>*(Commit: `f2befa274`, Tag: `v1.7.162`)*
+
+#### 📌 [P0] [x] Card-223: 插件动态感知扫描引擎代理桥回填与后台 MCP 工具计数自愈 (Plugin Scanner Proxy Bridge Tools SSOT v1.7.167) ✅
+- **治理成果与物理交付物**：
+  1. **代理桥权威算子回填引擎**：在 `openviking/service/plugin_scanner.py` 中引入 `resolve_builtin_tools(plugin_id)`，针对纯透明代理桥（如 `openviking-memory`）无本地 `@mcp.tool` 函数的物理特性，自动从单一真相源回填 35 项核心战地工具定义与 `openviking_*` 标准化命名，彻底根治 Web Studio 插件中心显示“MCP 0”缺陷；
+  2. **生态与多插件通用覆盖**：支持 `fleet-mesh`、`dify`、`cpa-squad` 等无本地独立 `server.py` 插件的权威工具定义回填；
+  3. **集成单测与系统门禁满绿**：更新 `tests/integration/test_plugin_dynamic_scanner.py`，WSL 原生 Pytest 单测 `4/4 passed in 2.64s` 100% 满绿通过；
+  4. **全链路平滑生效**：WSL 原生服务平滑重载，线上与本地 `/api/v1/plugins` 探针一手实测通过，7 个插件 78 项真实算子全部点亮就绪。<br>*(Commit: 待提交, Tag: `v1.7.167`)*
 
 #### 📌 [P0] [x] Card-222: 反重力 Stdio 桥 Notification 幽灵帧阻断与工具命名双向映射加固 (Notification Silence & Tool Mapping v2.0.27) ✅
 - **治理成果与物理交付物**：

@@ -202,6 +202,69 @@ def extract_rules_from_rules_dir(rules_dir: Path) -> List[RuleDefinition]:
     return rules
 
 
+def resolve_builtin_tools(plugin_id: str) -> List[ToolDefinition]:
+    """为纯透明代理桥架构 (Proxy Bridge) 或托管于 /mcp 的插件回填权威 MCP 算子定义 (SSOT)。"""
+    pid = (plugin_id or "").strip().lower()
+    if pid in ("openviking-memory", "memory"):
+        try:
+            from openviking.service.builtin_plugins_core import create_core_and_ops_plugins
+            core_plugins = create_core_and_ops_plugins({}, {})
+            for p in core_plugins:
+                if p.plugin_id == "openviking-memory":
+                    normalized_tools: List[ToolDefinition] = []
+                    for t in p.tools:
+                        c_name = t.name if t.name.startswith("openviking_") else f"openviking_{t.name}"
+                        normalized_tools.append(
+                            ToolDefinition(
+                                name=c_name,
+                                description=t.description,
+                                category=t.category,
+                                parameters_schema=t.parameters_schema,
+                                is_dangerous=t.is_dangerous,
+                            )
+                        )
+                    return normalized_tools
+        except Exception as e:
+            logger.warning("解析 openviking-memory 内置算子失败: %s", e)
+    elif pid in ("fleet-mesh", "fleet", "openviking-fleet"):
+        try:
+            from openviking.service.builtin_plugins_eco import create_ecosystem_plugins
+            eco_plugins = create_ecosystem_plugins({}, {})
+            for p in eco_plugins:
+                if p.plugin_id == "fleet-mesh":
+                    return p.tools
+        except Exception as e:
+            logger.warning("解析 fleet-mesh 内置算子失败: %s", e)
+    elif pid in ("dify", "dify-workflow"):
+        try:
+            from openviking.service.builtin_plugins_eco import create_ecosystem_plugins
+            eco_plugins = create_ecosystem_plugins({}, {})
+            for p in eco_plugins:
+                if p.plugin_id == "dify":
+                    return p.tools
+        except Exception as e:
+            logger.warning("解析 dify 内置算子失败: %s", e)
+    elif pid in ("cpa-squad", "cpa"):
+        try:
+            from openviking.service.builtin_plugins_eco import create_ecosystem_plugins
+            eco_plugins = create_ecosystem_plugins({}, {})
+            for p in eco_plugins:
+                if p.plugin_id == "cpa-squad":
+                    return p.tools
+        except Exception as e:
+            logger.warning("解析 cpa-squad 内置算子失败: %s", e)
+    elif pid in ("openviking-ops", "ops"):
+        try:
+            from openviking.service.builtin_plugins_core import create_core_and_ops_plugins
+            core_plugins = create_core_and_ops_plugins({}, {})
+            for p in core_plugins:
+                if p.plugin_id == "openviking-ops":
+                    return p.tools
+        except Exception as e:
+            logger.warning("解析 openviking-ops 内置算子失败: %s", e)
+    return []
+
+
 def scan_single_plugin_dir(plugin_dir: Path) -> Optional[QuadPluginDefinition]:
     """扫描并组装单个插件目录的 QuadPluginDefinition 规格实体。"""
     manifest_file = plugin_dir / "plugin.json"
@@ -236,9 +299,11 @@ def scan_single_plugin_dir(plugin_dir: Path) -> Optional[QuadPluginDefinition]:
         except Exception as e:
             logger.warning("读取 %s 异常: %s", readme_file, e)
 
-    # 2. 动态提取 MCP 工具 (server.py)
+    # 2. 动态提取 MCP 工具 (server.py 优先，代理桥与内置插件回填兜底)
     server_file = plugin_dir / "server.py"
     tools = extract_tools_from_server_py(server_file)
+    if not tools:
+        tools = resolve_builtin_tools(plugin_id)
 
     # 3. 动态提取 Hooks (hooks.json)
     hooks_file = plugin_dir / "hooks.json"
