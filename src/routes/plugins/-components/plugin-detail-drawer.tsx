@@ -24,6 +24,7 @@ import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { useAppConnection } from '#/hooks/use-app-connection'
+import { useServerVersionDetails } from '#/hooks/use-server-version'
 import {
   getPluginPrivilegeStatus,
   isPrivilegedTool,
@@ -44,6 +45,7 @@ type PluginTabId = 'overview' | 'skills' | 'mcp' | 'hooks' | 'rules' | 'quicksta
 
 export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps) {
   const { connectionRole } = useAppConnection()
+  const versionDetails = useServerVersionDetails()
   const [activeTab, setActiveTab] = React.useState<PluginTabId>('overview')
   const [toolSearch, setToolSearch] = React.useState('')
 
@@ -155,8 +157,16 @@ export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps)
             <h2 className="text-base font-semibold tracking-tight text-foreground truncate">
               {cleanName}
             </h2>
-            <Badge variant="outline" className="text-xs font-mono border-border/70 shrink-0">
-              v{plugin.version}
+            <Badge variant="outline" className="text-xs font-mono border-cyan-500/40 bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 shrink-0">
+              包: v{plugin.version}
+            </Badge>
+            {versionDetails?.version && (
+              <Badge variant="outline" className="text-xs font-mono border-border/70 text-muted-foreground shrink-0">
+                内核: v{versionDetails.version}
+              </Badge>
+            )}
+            <Badge variant="outline" className="text-xs font-mono border-cyan-500/30 text-cyan-700 dark:text-cyan-400 shrink-0">
+              ● {tools.length} 工具热更同频
             </Badge>
             {plugin.author && (
               <span className="text-xs text-muted-foreground truncate">

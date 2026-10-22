@@ -114,7 +114,8 @@ window.__ModuleLoader__.load({
             setProbeReport({
               ok: true,
               totalLatency,
-              version: data.version || '2.0.24',
+              version: data.kernel_version || data.version || '1.7.164',
+              pluginVersion: data.plugin_version || CLIENT_PLUGIN_VERSION,
               toolsCount: data.total_authorized_tools || data.total_tools || data.plugins?.[0]?.tools?.length || 35,
               hooksCount: data.hooks?.length || 3,
               role: data.role || 'user',
@@ -156,8 +157,10 @@ window.__ModuleLoader__.load({
         setTimeout(() => setToast(null), 3000);
       };
 
-      // 动态提取版本、工具数与 Hook 数 (废黜一切硬编码静态常数)
-      const currentVersion = caps?.version || probeReport?.version || '2.0.24';
+      // 动态提取版本、工具数与 Hook 数 (单一真相源 SSOT)
+      const CLIENT_PLUGIN_VERSION = '2.0.27';
+      const clientVer = probeReport?.pluginVersion || caps?.plugin_version || CLIENT_PLUGIN_VERSION;
+      const kernelVer = probeReport?.version || caps?.kernel_version || caps?.version || '1.7.164';
       const totalToolsCount = caps?.total_authorized_tools || caps?.total_tools || caps?.plugins?.[0]?.tools?.length || probeReport?.toolsCount || 35;
       const totalHooksCount = caps?.hooks?.length || probeReport?.hooksCount || 3;
 
@@ -174,19 +177,41 @@ window.__ModuleLoader__.load({
           margin: '8px 0',
         }
       },
-        // 1. 顶部 Header (与反重力 1:1 对齐)
+        // 1. 顶部 Header (显著双轨版本与热更感知大盘)
         h('div', { style: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' } },
           h('div', { style: { display: 'flex', gap: '12px' } },
-            h('div', { style: { fontSize: '26px', lineHeight: 1 } }, '🧠'),
+            h('div', { style: { fontSize: '28px', lineHeight: 1 } }, '🧠'),
             h('div', null,
-              h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
-                h('span', { style: { fontWeight: '700', fontSize: '15px' } }, `OpenViking Core Memory (v${currentVersion})`),
+              h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' } },
+                h('span', { style: { fontWeight: '700', fontSize: '15px' } }, 'OpenViking Core Memory'),
+                h('span', {
+                  style: {
+                    padding: '1px 6px',
+                    borderRadius: '4px',
+                    background: 'rgba(8, 145, 178, 0.12)',
+                    border: '1px solid rgba(8, 145, 178, 0.4)',
+                    color: '#0891b2',
+                    fontFamily: 'monospace',
+                    fontWeight: '600',
+                    fontSize: '12px',
+                  }
+                }, `端侧: v${clientVer}`),
+                h('span', {
+                  style: {
+                    padding: '1px 6px',
+                    borderRadius: '4px',
+                    background: 'rgba(125, 125, 125, 0.08)',
+                    border: '1px solid rgba(125, 125, 125, 0.2)',
+                    fontFamily: 'monospace',
+                    fontSize: '12px',
+                  }
+                }, `内核: v${kernelVer}`),
                 probeReport && probeReport.ok
-                  ? h('span', { style: { fontSize: '12px', color: '#0891b2', fontWeight: '500' } }, '● 已连通')
-                  : h('span', { style: { fontSize: '12px', color: 'rgba(125, 125, 125, 0.6)' } }, '○ 待探测')
+                  ? h('span', { style: { fontSize: '12px', color: '#0891b2', fontWeight: '500' } }, `● ${totalToolsCount} 项工具已同频`)
+                  : h('span', { style: { fontSize: '12px', color: 'rgba(125, 125, 125, 0.6)' } }, '○ 待同频探测')
               ),
               h('div', { style: { marginTop: '4px', fontSize: '12px', opacity: 0.8, lineHeight: 1.4 } },
-                `[版本: v${currentVersion}] OpenViking 体外大脑与核心记忆官方标准插件。提供跨会话无缝记忆检索与持久化、自动化会话归档、踩坑反思沉淀与零损耗 Handover 接力。`
+                `OpenViking 体外大脑官方标准插件 (纯透明 Stdio-HTTP 桥接)。跨会话长程记忆语义检索、代码感知、35 项战地工具实时热更驱动。`
               )
             )
           ),
@@ -248,7 +273,7 @@ window.__ModuleLoader__.load({
               },
             },
             probeReport.ok
-              ? `✅ 连接成功 · 延迟 ${probeReport.totalLatency}ms · 服务端版本 v${probeReport.version} · 鉴权身份: ${probeReport.role} (就绪 ${probeReport.toolsCount} 项工具 / ${probeReport.hooksCount} 项 Hook)`
+              ? `✅ 连通校验通过 · 延迟 ${probeReport.totalLatency}ms · 端侧适配器: v${probeReport.pluginVersion || CLIENT_PLUGIN_VERSION} · 服务端内核: v${probeReport.version} · 状态: ● 35 项战地工具热更同频 (${probeReport.role})`
               : `❌ 连接失败 · ${probeReport.error}`
             )
           : null,

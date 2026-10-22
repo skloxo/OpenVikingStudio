@@ -107,3 +107,22 @@ FLEET_1_HOOKS: List[Dict[str, Any]] = [
 MEMORY_CONSUMER_TOOLS = BATTLEFIELD_34_TOOLS
 MEMORY_OPS_TOOLS = OPS_17_TOOLS
 OFFICIAL_7_HOOKS = MEMORY_3_HOOKS + OPS_2_HOOKS + FLEET_1_HOOKS
+
+
+import json
+from pathlib import Path
+
+
+def get_plugin_manifest_version(plugin_id: str, default: str = "2.0.27") -> str:
+    """动态读取插件母本 plugin.json 作为唯一真相源 (SSOT)，彻底废黜硬编码常数."""
+    try:
+        repo_root = Path(__file__).resolve().parent.parent.parent.parent
+        p_json = repo_root / "integrations" / "antigravity" / plugin_id / "plugin.json"
+        if p_json.is_file():
+            data = json.loads(p_json.read_text(encoding="utf-8"))
+            if "version" in data:
+                return data["version"]
+    except Exception:
+        pass
+    return default
+
