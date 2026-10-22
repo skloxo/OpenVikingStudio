@@ -3,7 +3,7 @@
 > **关联研发大蓝图**：[`BLUEPRINT.md`](file:///home/skloxo/aho/openclaw/project/.agents/BLUEPRINT.md) ｜ **交付全量归档台账**：[`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md) ｜ **通用资产档案库**：[`COMPONENT_AND_WHEEL_INVENTORY.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md)
 > **唯一真相源 (SSOT)**：本文档为 OpenViking 当前活跃的重构规划与就绪待调度的任务矩阵看板。历史所有已验收交付的版本履历已完整归档至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。
 > **战略外围项目隔离公理**：`Search2API 商业化搜索聚合网关` (`docs/search/SEARCH2API_COMMERCIAL_GATEWAY_SPEC.md`) 确认为独立多账号商业化代理项目，不占用 OpenViking 核心任务大盘卡槽。
-> **基线状态**：线上正式部署 **`v1.4.106`** ｜ 当前最新交付 **`v1.7.167`** (代码基线 **`v1.7.153`**) ｜ 分支状态：`main` 已全量同步远程 `origin/main`。
+> **基线状态**：线上正式部署 **`v1.4.106`** ｜ 当前最新交付 **`v1.7.168`** (代码基线 **`v1.7.153`**) ｜ 分支状态：`main` 已全量同步远程 `origin/main`。
 
 ---
 
@@ -11,6 +11,7 @@
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 | :--- | :--- | :--- | :--- | :---: |
+| **`v1.7.168`** | **Card-224** | **智能体插件生态解耦与单一母港统一治理 (Agent Plugins Decoupling, Universal DSH Client Injection & Homeland SSOT - ADR-003)** | 1. **统一物理母港大合并 (Card-PLUG-01)**：彻底铲除反重力与 DSH 双轨维护目录，建立 `packages/plugins/openviking-memory/` 单一真相源，版本对齐 `v2.0.30`，消除冗余；<br>2. **打包期自动注入通用解释器 (Card-PLUG-02)**：确立 `universal_dsh_client.js`，源码保持 0 行前端，打包期自动向 DSH 包注入通用 `client.js`，恢复 5 大 Tab、README 渲染与动态健康探测；<br>3. **服务端扫描感知引擎升级 (Card-PLUG-03)**：`plugin_scanner.py` 优先扫描母港，结构化提取 `integration.channels`，`/api/v1/plugins` 接口透传单一真相；<br>4. **VK Web Studio 抽屉通用解耦 (Card-PLUG-04)**：提供【服务地址】与【User Key】自由输入框，彻底消灭黑盒智能猜测；代码块与命令单向动态插值；严守 NO GREEN EVER 🚫、字号 $\ge 12\text{px}$ 规范；前后端单测 100% 变绿；<br>5. **全链路实机部署验真 (Card-PLUG-05)**：3070 节点部署落地，WSL2 生产环境集中编译构建，四方版本原子同频。 | [x] 已验收通过 ✅ |
 | **`v1.7.167`** | **Card-223** | **插件动态感知扫描引擎代理桥回填与后台 MCP 工具计数自愈 (Plugin Scanner Proxy Bridge Tools SSOT)** | 1. 彻底根治 Web Studio 插件中心显示“MCP 0”缺陷：重构 `plugin_scanner.py` 动态感知引擎，增加纯透明代理桥 (Proxy Bridge) 权威算子回填链路；<br>2. 针对纯透明代理桥（如 `openviking-memory` 35 项、`fleet-mesh` 2 项等）无本地 `@mcp.tool` 物理函数的情况，动态回填单一真相源标准工具清单；<br>3. 集成单测 `test_plugin_dynamic_scanner.py` 4/4 满绿通过，全集群 7 大插件 78 项真实算子全部点亮回显就绪。<br>*(Commit: `ad526e252`, Tag: `v1.7.167`)* | [x] 已验收通过 ✅ |
 | **`v1.7.166`** | **Card-222** | **反重力 Stdio 桥 Notification 幽灵帧阻断与工具命名双向映射加固 (Notification Silence & Tool Mapping v2.0.27)** | 1. 根治反重力启动报错 `calling "tools/list": invalid request`：封杀向客户端回复无 id 的 Notification 响应，彻底消灭幽灵 `id: null` 乱序报文；<br>2. 落地双向工具名标准化映射：`find` ➔ `openviking_find` 等 10 项核心工具标准化对齐，`tools/call` 逆向无损映射回底层原生 API；<br>3. 安装目录 `openviking-memory/server.py` 同频自举部署，全链路 4 阶生命周期测试 100% 满绿通过。<br>*(Commit: `3037fa6de`, Tag: `v1.7.166`)* | [x] 已验收通过 ✅ |
 | **`v1.7.165`** | **Card-221** | **全域插件热更版本双轨显著感知体系、废黜死常数与三端同频对齐 (Omni-Platform Plugin Hot-Reload Version Observability v2.0.27)** | 1. 反重力端：`server.py` 在 `initialize` 握手中显著注入 `v2.0.27 [Kernel: v1.7.164 | 35 Tools Online | Synced]`，IDE 插件面板一眼洞悉；<br>2. DSH 端：`client.js` 拔除历史写死 `2.0.24`，顶部 Header 与连通报告显著并排呈现 `端侧: v2.0.27`、`内核: v1.7.164` 与 `35项工具热更同频` 冰青徽章；<br>3. 服务端：`client_caps.py` 彻底斩除写死常数，动态直连母本 `plugin.json`，返回双轨版本与热更状态；<br>4. Web Studio：详情抽屉 Header 显著并排呈现包版本、服务内核版本与实时热更同频指示；<br>5. WSL 原生单测 `4/4 PASS`，服务平滑重载验证通过。 | [x] 已验收通过 ✅ |

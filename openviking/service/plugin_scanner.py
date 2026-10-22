@@ -19,6 +19,8 @@ from typing import Any, Dict, List, Optional, Tuple
 from openviking.models.plugin import (
     GuiSchemaDefinition,
     HookDefinition,
+    IntegrationChannelDefinition,
+    IntegrationDefinition,
     PluginHealthProbe,
     QuadPluginDefinition,
     RuleDefinition,
@@ -339,6 +341,25 @@ def scan_single_plugin_dir(plugin_dir: Path) -> Optional[QuadPluginDefinition]:
         dashboard_route="/plugins",
     )
 
+    # 6. 动态提取 integration (多渠道接入指引)
+    integration_def: Optional[IntegrationDefinition] = None
+    if isinstance(manifest.get("integration"), dict):
+        raw_channels = manifest["integration"].get("channels", [])
+        channels: List[IntegrationChannelDefinition] = []
+        for ch in raw_channels:
+            if isinstance(ch, dict) and "id" in ch and "name" in ch:
+                channels.append(
+                    IntegrationChannelDefinition(
+                        id=ch["id"],
+                        name=ch["name"],
+                        install_cmd=ch.get("install_cmd", ""),
+                        config_snippet=ch.get("config_snippet", ""),
+                        docs_markdown=ch.get("docs_markdown", ""),
+                    )
+                )
+        if channels:
+            integration_def = IntegrationDefinition(channels=channels)
+
     category = "platform" if plugin_id in {"openviking-memory", "openviking-ops", "agent-circuit-breaker"} else "user"
 
     return QuadPluginDefinition(
@@ -359,43 +380,51 @@ def scan_single_plugin_dir(plugin_dir: Path) -> Optional[QuadPluginDefinition]:
         hooks=hooks,
         tools=tools,
         gui=gui_def,
+        integration=integration_def,
         health=PluginHealthProbe(status="healthy", latency_ms=0.5, message="物理代码与契约自检存活"),
     )
-
 
 
 def scan_local_plugins(base_dir: Optional[Path] = None) -> Tuple[List[QuadPluginDefinition], Dict[str, str], Dict[str, str]]:
     """
     全量物理扫描托管目录下的所有独立插件。
+    优先扫描 packages/plugins/ 统一母港，再补充扫描 integrations/antigravity/。
     返回: (插件列表, 别名映射字典, 工具反查字典)
     """
-    if base_dir is None:
-        studio_root = Path(__file__).resolve().parent.parent.parent
-        base_dir = studio_root / "integrations" / "antigravity"
+    studio_root = Path(__file__).resolve().parent.parent.parent
+
+    target_dirs: List[Path] = []
+    if base_dir is not None:
+        target_dirs.append(base_dir)
+    else:
+        # 优先扫描统一母港，其次补充扫描兼容目录
+        homeland = studio_root / "packages" / "plugins"
+        legacy = studio_root / "integrations" / "antigravity"
+        if homeland.is_dir():
+            target_dirs.append(homeland)
+        if legacy.is_dir():
+            target_dirs.append(legacy)
 
     plugins: List[QuadPluginDefinition] = []
     aliases: Dict[str, str] = {}
     tool_to_plugin_map: Dict[str, str] = {}
+    seen_plugin_ids: set[str] = set()
 
-    if not base_dir.is_dir():
-        logger.warning("托管插件目录 %s 不存在", base_dir)
-        return plugins, aliases, tool_to_plugin_map
-
-    # 遍历所有子目录，自动感知插件
-    for sub_dir in sorted(base_dir.iterdir()):
-        if not sub_dir.is_dir():
+    for s_dir in target_dirs:
+        if not s_dir.is_dir():
             continue
-        plugin = scan_single_plugin_dir(sub_dir)
-        if plugin:
-            plugins.append(plugin)
-            # 建立别名映射
-            aliases[plugin.plugin_id] = plugin.plugin_id
-            if sub_dir.name != plugin.plugin_id:
-                aliases[sub_dir.name] = plugin.plugin_id
-
-            # 工具映射反查
-            for tool in plugin.tools:
-                tool_to_plugin_map[tool.name] = plugin.plugin_id
+        for sub_dir in sorted(s_dir.iterdir()):
+            if not sub_dir.is_dir():
+                continue
+            plugin = scan_single_plugin_dir(sub_dir)
+            if plugin and plugin.plugin_id not in seen_plugin_ids:
+                seen_plugin_ids.add(plugin.plugin_id)
+                plugins.append(plugin)
+                aliases[plugin.plugin_id] = plugin.plugin_id
+                if sub_dir.name != plugin.plugin_id:
+                    aliases[sub_dir.name] = plugin.plugin_id
+                for tool in plugin.tools:
+                    tool_to_plugin_map[tool.name] = plugin.plugin_id
 
     # 常用易混淆别名
     aliases.update({

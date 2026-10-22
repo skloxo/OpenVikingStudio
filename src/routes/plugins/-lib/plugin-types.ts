@@ -62,6 +62,19 @@ export type QuadPluginItem = {
   tools: ToolItem[]
   gui: GuiSchema
   health: PluginHealth
+  integration?: IntegrationDefinition
+}
+
+export type IntegrationChannel = {
+  id: string
+  name: string
+  install_cmd?: string
+  config_snippet?: string
+  docs_markdown?: string
+}
+
+export type IntegrationDefinition = {
+  channels: IntegrationChannel[]
 }
 
 

@@ -66,6 +66,20 @@ class PluginHealthProbe(BaseModel):
     checked_at: float = Field(default_factory=time.time, description="最后一次探针采样 Unix 时间戳")
 
 
+class IntegrationChannelDefinition(BaseModel):
+    """多渠道接入指引渠道定义 DTO。"""
+    id: str = Field(..., description="渠道唯一标识 (antigravity | dsh | universal-mcp)")
+    name: str = Field(..., description="渠道显示名称 (Google 反重力 | DeepSeek Harness | 通用 MCP 智能体)")
+    install_cmd: str = Field("", description="安装或引入命令行模板")
+    config_snippet: str = Field("", description="配置代码片段模板 (JSON 或 YAML)")
+    docs_markdown: str = Field("", description="渠道专属接入详细说明 Markdown")
+
+
+class IntegrationDefinition(BaseModel):
+    """插件全渠道接入指引装配 DTO。"""
+    channels: List[IntegrationChannelDefinition] = Field(default_factory=list, description="支持的智能体接入渠道列表")
+
+
 class QuadPluginDefinition(BaseModel):
     """四位一体完整插件规格定义 SSOT DTO。"""
     plugin_id: str = Field(..., description="插件唯一全局标识 (例如: openviking-memory, keepass-vault)")
@@ -89,7 +103,7 @@ class QuadPluginDefinition(BaseModel):
     hooks: List[HookDefinition] = Field(default_factory=list, description="2. 拦截层 (Hook 神经反射)")
     tools: List[ToolDefinition] = Field(default_factory=list, description="3. 工具层 (MCP 物理算子列表)")
     gui: GuiSchemaDefinition = Field(default_factory=GuiSchemaDefinition, description="4. 交互层 (GUI 设置与驾驶舱)")
-
+    integration: Optional[IntegrationDefinition] = Field(default=None, description="5. 接入层 (多渠道智能体接入指引元数据)")
     
     # 探针运行态
     health: PluginHealthProbe = Field(default_factory=PluginHealthProbe, description="运行态健康心跳与探针数据")

@@ -4,8 +4,8 @@ import * as React from 'react'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { NativeBridgeIntegrationGuide } from './native-bridge-integration-guide'
 import { PluginOverviewTab } from './plugin-overview-tab'
+import { PluginQuickstartSection } from './plugin-quickstart-section'
 import type { QuadPluginItem } from '../-lib/plugin-types'
 
 const connectionMock = vi.hoisted(() => ({
@@ -35,21 +35,26 @@ vi.mock('sonner', () => ({
   },
 }))
 
+vi.mock('#/lib/clipboard', () => ({
+  copyTextToClipboard: vi.fn().mockResolvedValue(undefined),
+}))
+
 const mockPlugin: QuadPluginItem = {
   plugin_id: 'openviking-memory',
   name: '核心战地长程记忆 (openviking-memory)',
   description: '提供体外大脑长程语义检索与向量归档',
-  version: '2.0.11',
-  category: 'core',
-  is_installed: true,
+  version: '2.0.30',
+  category: 'platform',
   health: {
     status: 'healthy',
     latency_ms: 0.12,
+    message: 'OK',
+    checked_at: 1000,
   },
   tools: [
-    { name: 'openviking_search', description: '语义搜索', category: 'memory' },
-    { name: 'openviking_read', description: '读取记忆', category: 'memory' },
-    { name: 'openviking_system_status', description: '运维状态', category: 'ops' },
+    { name: 'openviking_search', description: '语义搜索', category: 'memory', is_dangerous: false },
+    { name: 'openviking_read', description: '读取记忆', category: 'memory', is_dangerous: false },
+    { name: 'openviking_system_status', description: '运维状态', category: 'ops', is_dangerous: false },
   ],
   hooks: [
     {
@@ -62,12 +67,17 @@ const mockPlugin: QuadPluginItem = {
   skill: {
     skill_id: 'openviking-memory',
     name: '体外大脑操作导轨',
+    description: '记忆操作',
     sop_summary: '查库第一，高熵落盘',
     rules: ['禁止硬编码假密钥', '严格红绿测试'],
   },
+  gui: {
+    settings_fields: {},
+    dashboard_route: '/plugins',
+  },
 }
 
-describe('Card-148: Plugin Overview & Key Governance', () => {
+describe('Card-148 & Card-PLUG-04: Plugin Drawer & Key Governance', () => {
   afterEach(() => {
     cleanup()
     vi.clearAllMocks()
@@ -107,32 +117,26 @@ describe('Card-148: Plugin Overview & Key Governance', () => {
     connectionMock.apiKey = ''
 
     const { container } = render(
-      <NativeBridgeIntegrationGuide
-        pluginId="openviking-memory"
-        pluginName="核心战地长程记忆"
-      />,
+      <PluginQuickstartSection plugin={mockPlugin} />,
     )
 
     // 严禁包含 vk-user-key-xxxx 假占位符
     expect(container.textContent).not.toContain('vk-user-key-xxxx')
 
-    // 应该展示未检测到密钥提示与前往用户中心链接
-    expect(screen.getByText('未检测到活跃用户密钥 (User API Key)')).toBeDefined()
-    const userLink = screen.getByRole('link', { name: /前往用户列表查看与复制专属密钥/ })
-    expect(userLink.getAttribute('href')).toBe('/users')
+    // 用户密钥输入框应为空
+    const keyInput = screen.getByPlaceholderText(/输入或粘贴你的专属 User Key/) as HTMLInputElement
+    expect(keyInput.value).toBe('')
   })
 
-  it('displays real API key when provided', () => {
+  it('displays and binds real API key when connection provides it', () => {
     connectionMock.apiKey = 'ov-real-user-key-9999'
 
     render(
-      <NativeBridgeIntegrationGuide
-        pluginId="openviking-memory"
-        pluginName="核心战地长程记忆"
-      />,
+      <PluginQuickstartSection plugin={mockPlugin} />,
     )
 
-    expect(screen.getByText('ov-real-user-key-9999')).toBeDefined()
-    expect(screen.getByRole('button', { name: /复制真实密钥/ })).toBeDefined()
+    const keyInput = screen.getByPlaceholderText(/输入或粘贴你的专属 User Key/) as HTMLInputElement
+    expect(keyInput.value).toBe('ov-real-user-key-9999')
+    expect(screen.getByText('已填入专属密钥')).toBeDefined()
   })
 })
