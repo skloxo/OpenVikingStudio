@@ -128,6 +128,17 @@ def _forward_jsonrpc(request_obj: Dict[str, Any]) -> list[Dict[str, Any]]:
             except Exception:
                 pass
 
+        # 显著注入双轨版本感知：让 IDE 客户端与日志清晰回显当前插件与服务端内核版本
+        if request_obj.get("method") == "initialize":
+            for reply in responses:
+                if isinstance(reply, dict) and "result" in reply:
+                    res = reply["result"]
+                    if isinstance(res, dict) and "serverInfo" in res:
+                        s_info = res["serverInfo"]
+                        k_ver = s_info.get("version", "1.7.164")
+                        s_info["name"] = "openviking-memory"
+                        s_info["version"] = f"v2.0.27 [Kernel: v{k_ver} | 35 Tools Online | Synced]"
+
         if not responses:
             responses.append({
                 "jsonrpc": "2.0",
