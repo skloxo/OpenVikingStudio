@@ -688,3 +688,31 @@ class OpenVikingService:
         if not self._directory_initializer:
             return 0
         return await self._directory_initializer.initialize_user_directories(ctx)
+
+    async def find(
+        self,
+        query: Optional[str] = None,
+        ctx: Optional[Any] = None,
+        target_uri: str | list[str] = "",
+        limit: int = 10,
+        score_threshold: float = 0.0,
+        filter: Optional[dict] = None,
+        level: Optional[list[int]] = None,
+        image_url: str | list[str] | None = None,
+        mode: Optional[str] = None,
+        **kwargs: Any,
+    ) -> Any:
+        """Top-level semantic search delegation to SearchService.find."""
+        self._ensure_initialized()
+        effective_ctx = ctx or RequestContext(user=self.user, role=Role.ROOT)
+        return await self.search.find(
+            query=query,
+            ctx=effective_ctx,
+            target_uri=target_uri or "",
+            limit=limit,
+            score_threshold=score_threshold,
+            filter=filter,
+            level=level,
+            image_url=image_url,
+            mode=mode,
+        )

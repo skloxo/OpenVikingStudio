@@ -3,7 +3,7 @@
 > **关联研发大蓝图**：[`BLUEPRINT.md`](file:///home/skloxo/aho/openclaw/project/.agents/BLUEPRINT.md) ｜ **交付全量归档台账**：[`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md) ｜ **通用资产档案库**：[`COMPONENT_AND_WHEEL_INVENTORY.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md)
 > **唯一真相源 (SSOT)**：本文档为 OpenViking 当前活跃的重构规划与就绪待调度的任务矩阵看板。历史所有已验收交付的版本履历已完整归档至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。
 > **战略外围项目隔离公理**：`Search2API 商业化搜索聚合网关` (`docs/search/SEARCH2API_COMMERCIAL_GATEWAY_SPEC.md`) 确认为独立多账号商业化代理项目，不占用 OpenViking 核心任务大盘卡槽。
-> **基线状态**：线上正式部署 **`v1.4.106`** ｜ 当前最新交付 **`v1.7.162`** (代码基线 **`v1.7.153`**) ｜ 分支状态：`main` 已全量同步远程 `origin/main`。
+> **基线状态**：线上正式部署 **`v1.4.106`** ｜ 当前最新交付 **`v1.7.163`** (代码基线 **`v1.7.153`**) ｜ 分支状态：`main` 已全量同步远程 `origin/main`。
 
 ---
 
@@ -11,6 +11,7 @@
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 | :--- | :--- | :--- | :--- | :---: |
+| **`v1.7.163`** | **Card-219** | **服务端原生 MCP 模块 OpenVikingService.find 缺失根治、单一真相源脱敏引擎归拢与芒格逆向对抗加固 (Server MCP find & Masking)** | 1. 在 `OpenVikingService` 增加顶层 `find` 异步快捷委托方法，彻底消除 `AttributeError`；<br>2. 纠偏 `mcp_endpoint.py` 内部 `openviking_code_search` 与 `openviking_smart_read` 的直接调用为 `service.search.find`；<br>3. 彻底归拢脱敏引擎至 `openviking/privacy/privacy_masker.py` 单一真相源，`openviking/service/privacy_masker.py` 改为直接门面引用；<br>4. 敏感正则精细化加固（API Key 兼容 16 字符短 Key，密码支持键值与负向预查排除语法关键字，严防破坏 `if password is None:`）；<br>5. 编写针对性单测 `4/4 passed in 0.09s` 满绿，WSL2 生产环境平滑重载实测通过。 | [x] 已验收通过 ✅ |
 | **`v1.7.162`** | **Card-218** | **反重力端契约对齐瘦身、幽灵工具物理下线与沙盒管道阻塞根除 (Antigravity Contract Parity & Pruning v2.0.26)** | 1. 修正 `server.py` 中 4 大核心工具传参 Bug（`smart_read` 剔除 extra 字段、`link/unlink` 纠正为 `from_uri/to_uris`、`auto_onboard_skills` 补齐正文上传）；<br>2. 物理下线 10 项 404/405 幽灵工具，全量保留 26 项真实绿灯工具；<br>3. 修复 `ov_sandbox_guard.py` 的阻塞式 `sys.stdin.read()` 为流式安全 `sys.stdin.readline()`；<br>4. 发布全系插件 `v2.0.26`，生成不可变分发包并完成部署，26/26 战地工具物理打靶 100% 全绿。 | [x] 已验收通过 ✅ |
 | **`v1.7.161`** | **Card-217** | **DSH 插件端点解析降级、宿主路径自适应与全系插件版本单点真相 (Plugin Ecosystem Parity v2.0.25)** | 1. 修复 DSH 插件 `index.js` 中 `getEndpoint()` 缺失凭据 fallback 导致 MCP 工具未挂载的 P0 致命缺陷，打通 `resolveOpenVikingCredentials` 多级降级；<br>2. 消除硬编码路径 `'C:\\Users\\Skl'`，改用 `os.homedir()` 确保跨机便携；<br>3. 废黜 `config.mjs` 硬编码版本，动态直连 `package.json`；清理 `client.js` 冗余插槽注册；<br>4. 发布插件 `v2.0.25`，生成不可变分发包并完成线上部署 (HTTP 200 验证)。 | [x] 已验收通过 ✅ |
 | **`v1.7.160`** | **Card-216** | **插件详情抽屉与反重力原生孪生体验像素级对齐 (Antigravity Digital Twin Parity)** | 1. 彻底拔除 README 中冗余源码挂载章节，并入专门“接入指引”Tab，README 回归纯粹架构单一真相源；<br>2. 像素级对齐反重力原生 Tab 切换架构 (概览、技能、MCP、钩子、规则、接入指引 6 大 Tab 解耦)；<br>3. 动态渲染 suggestedPrompts 卡片与 rules 规约文件；<br>4. 全系 7 大插件通用互通，集中构建部署验收通过。 | [x] 已验收通过 ✅ |
@@ -184,10 +185,12 @@
   3. **沙盒守卫流式安全改造**：`ov_sandbox_guard.py` 废黜阻塞式 `sys.stdin.read()`，改用非阻塞 `sys.stdin.readline()`；
   4. **全链路打靶与分发**：发布全系插件 `v2.0.26`，`test_26_tools.py` 物理打靶 26/26 项工具 100% 全绿，生成不可变分发包并部署上线 (HTTP 200)。<br>*(Commit: `f2befa274`, Tag: `v1.7.162`)*
 
-#### 📌 [P0] [ ] Card-219: 服务端原生 MCP 模块 OpenVikingService.find 缺失根治与 privacy_mask 真实脱敏加固 (Server MCP find & Masking) ⏳
-- **核心目标**：
-  1. 修复服务端原生 MCP 模块中 `OpenVikingService` 缺少 `find` 方法导致的 DSH 端报错；
-  2. 彻底落实 `privacy_mask` 真脱敏逻辑（目前仅为 pass-through 虚假占位）。
+#### 📌 [P0] [x] Card-219: 服务端原生 MCP 模块 OpenVikingService.find 缺失根治与 privacy_mask 真实脱敏加固 (Server MCP find & Masking) ✅
+- **治理成果与物理交付物**：
+  1. **服务端 find 入口双重兜底**：`OpenVikingService` 增加顶层 `find` 异步快捷委托，彻底消除 `AttributeError: 'OpenVikingService' object has no attribute 'find'`；同时纠偏 `mcp_endpoint.py` 内部两个直接调用点为 `service.search.find`；
+  2. **脱敏引擎统一归拢 (SSOT)**：彻底归拢脱敏引擎至 `openviking/privacy/privacy_masker.py` 单一真相源，`openviking/service/privacy_masker.py` 转化为统一门面，消灭双份实现与功能裂解；
+  3. **高精度敏感模式与芒格逆向守卫**：API Key 兼容 16 字符测试短 Key（`sk-1234567890abcdef`），密码支持配置键值与自然语言语境，并使用负向预查排除语法关键字，严密防御误杀 Python 代码（如 `if password is None:`）与前端 CSS 类名；
+  4. **门禁与测试**：针对性单测 `tests/unit/test_mcp_find_and_privacy_mask.py` 4/4 满绿通过（0.09s），WSL2 生产环境热生效平滑重载实测通过。<br>*(Commit: `55f681488`, Tag: `v1.7.163`)*
 
 #### 📌 [P1] [x] Card-200: `openviking-memory` 插件母本自内聚转接驱动重构、自愈清洗与四维逆向加固 (SSOT v2.0.16) ✅
 - **治理成果与物理交付物**：

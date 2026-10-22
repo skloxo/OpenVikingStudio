@@ -2848,9 +2848,9 @@ async def openviking_code_search(query: str, target_uri: str = "viking://") -> s
     """基于 AST 与语义检索代码符号（函数、类、变量等）。"""
     service = get_service()
     ctx = _get_ctx()
-    resolved_uri = _resolve_mcp_workspace_uri(target_uri, ctx) if target_uri and target_uri != "viking://" else None
+    resolved_uri = _resolve_mcp_workspace_uri(target_uri, ctx) if target_uri and target_uri != "viking://" else ""
     try:
-        results = await service.find(query=query, target_uri=resolved_uri, ctx=ctx)
+        results = await service.search.find(query=query, target_uri=resolved_uri or "", ctx=ctx)
         if hasattr(results, "resources") or hasattr(results, "memories"):
             return await _format_search_result(results, service=service, ctx=ctx, limit=10)
         import json
@@ -2930,7 +2930,7 @@ async def openviking_smart_read(
     service = get_service()
     ctx = _get_ctx()
     try:
-        search_res = await service.find(query=query, limit=limit, ctx=ctx)
+        search_res = await service.search.find(query=query, limit=limit, ctx=ctx)
         items = []
         for ctx_type, group in [("memory", getattr(search_res, "memories", [])),
                                 ("resource", getattr(search_res, "resources", [])),
