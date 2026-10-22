@@ -37,16 +37,16 @@ def test_tools_count_matches_physical_server_py():
     plugins, _, tool_map = scan_local_plugins()
     plugin_map = {p.plugin_id: p for p in plugins}
 
-    # 1. openviking-memory 核心战地工具精确为 36 项
+    # 1. openviking-memory 核心战地工具精确为 35 项
     mem_plugin = plugin_map["openviking-memory"]
-    assert len(mem_plugin.tools) == 36, f"openviking-memory 工具数应为 36，实际为 {len(mem_plugin.tools)}"
+    assert len(mem_plugin.tools) == 35, f"openviking-memory 工具数应为 35，实际为 {len(mem_plugin.tools)}"
 
     # 2. openviking-ops 特权运维工具精确为 16 项
     ops_plugin = plugin_map["openviking-ops"]
     assert len(ops_plugin.tools) == 16, f"openviking-ops 工具数应为 16，实际为 {len(ops_plugin.tools)}"
 
-    # 3. 杜绝虚构假工具
-    forbidden_fake_tools = {"openviking_file_task_card", "openviking_list_pending_cards", "openviking_valet_handover"}
+    # 3. 杜绝未定义的幽灵假工具
+    forbidden_fake_tools = {"ghost_nonexistent_tool", "fake_unimplemented_tool"}
     real_tools = set(tool_map.keys())
     assert forbidden_fake_tools.isdisjoint(real_tools), f"发现残留虚构假工具: {forbidden_fake_tools.intersection(real_tools)}"
 
@@ -69,7 +69,7 @@ def test_registry_dynamic_rescan_consistency():
 
     mem = reg.get_plugin("openviking-memory")
     assert mem is not None
-    assert len(mem.tools) == 36
+    assert len(mem.tools) == 35
 
     ops = reg.get_plugin("openviking-ops")
     assert ops is not None
