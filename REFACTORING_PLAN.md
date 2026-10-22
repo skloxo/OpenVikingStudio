@@ -3,7 +3,7 @@
 > **关联研发大蓝图**：[`BLUEPRINT.md`](file:///home/skloxo/aho/openclaw/project/.agents/BLUEPRINT.md) ｜ **交付全量归档台账**：[`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md) ｜ **通用资产档案库**：[`COMPONENT_AND_WHEEL_INVENTORY.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/docs/architecture/COMPONENT_AND_WHEEL_INVENTORY.md)
 > **唯一真相源 (SSOT)**：本文档为 OpenViking 当前活跃的重构规划与就绪待调度的任务矩阵看板。历史所有已验收交付的版本履历已完整归档至 [`DELIVERY_ARCHIVE.md`](file:///home/skloxo/aho/openclaw/project/OpenVikingStudio/DELIVERY_ARCHIVE.md)。
 > **战略外围项目隔离公理**：`Search2API 商业化搜索聚合网关` (`docs/search/SEARCH2API_COMMERCIAL_GATEWAY_SPEC.md`) 确认为独立多账号商业化代理项目，不占用 OpenViking 核心任务大盘卡槽。
-> **基线状态**：线上正式部署 **`v1.4.106`** ｜ 当前最新交付 **`v1.7.165`** (代码基线 **`v1.7.153`**) ｜ 分支状态：`main` 已全量同步远程 `origin/main`。
+> **基线状态**：线上正式部署 **`v1.4.106`** ｜ 当前最新交付 **`v1.7.166`** (代码基线 **`v1.7.153`**) ｜ 分支状态：`main` 已全量同步远程 `origin/main`。
 
 ---
 
@@ -11,6 +11,7 @@
 
 | 版本 Tag | 任务工单 ID | 模块与重构主题 | 核心治理成果与物理交付物 | 验收状态 |
 | :--- | :--- | :--- | :--- | :---: |
+| **`v1.7.166`** | **Card-222** | **反重力 Stdio 桥 Notification 幽灵帧阻断与工具命名双向映射加固 (Notification Silence & Tool Mapping v2.0.27)** | 1. 根治反重力启动报错 `calling "tools/list": invalid request`：封杀向客户端回复无 id 的 Notification 响应，彻底消灭幽灵 `id: null` 乱序报文；<br>2. 落地双向工具名标准化映射：`find` ➔ `openviking_find` 等 10 项核心工具标准化对齐，`tools/call` 逆向无损映射回底层原生 API；<br>3. 安装目录 `openviking-memory/server.py` 同频自举部署，全链路 4 阶生命周期测试 100% 满绿通过。 | [x] 已验收通过 ✅ |
 | **`v1.7.165`** | **Card-221** | **全域插件热更版本双轨显著感知体系、废黜死常数与三端同频对齐 (Omni-Platform Plugin Hot-Reload Version Observability v2.0.27)** | 1. 反重力端：`server.py` 在 `initialize` 握手中显著注入 `v2.0.27 [Kernel: v1.7.164 | 35 Tools Online | Synced]`，IDE 插件面板一眼洞悉；<br>2. DSH 端：`client.js` 拔除历史写死 `2.0.24`，顶部 Header 与连通报告显著并排呈现 `端侧: v2.0.27`、`内核: v1.7.164` 与 `35项工具热更同频` 冰青徽章；<br>3. 服务端：`client_caps.py` 彻底斩除写死常数，动态直连母本 `plugin.json`，返回双轨版本与热更状态；<br>4. Web Studio：详情抽屉 Header 显著并排呈现包版本、服务内核版本与实时热更同频指示；<br>5. WSL 原生单测 `4/4 PASS`，服务平滑重载验证通过。 | [x] 已验收通过 ✅ |
 | **`v1.7.164`** | **Card-220** | **反重力插件服务端原生驱动纯透明 MCP 代理架构、战地工具完全体与全系规约沉淀 (Antigravity Pure MCP Proxy Architecture v2.0.27)** | 1. 彻底废黜反重力端本地手写适配器模式，`server.py` 重构为 Stdio ➔ Streamable-HTTP (`/mcp`) 纯透明代理桥（代码量由 425 行锐减至 180 行）；<br>2. 工具集由 26 项跃升为服务端单一真实源 (SSOT) 驱动的 35 项战地工具完全体，两端完全同频且零 404/405；<br>3. 物理注入鉴权上下文三元组 (`Authorization`, `X-OpenViking-User`, `X-OpenViking-Account`) 与优雅 JSON-RPC 错误降级；<br>4. 沉淀全系架构规约 `docs/guides/ANTIGRAVITY_PURE_MCP_PROXY_SPEC.md`，确立未来全系插件开发法典；<br>5. 发布 `v2.0.27` 全系插件并生成不可变分发包，线上对齐通过。 | [x] 已验收通过 ✅ |
 | **`v1.7.163`** | **Card-219** | **服务端原生 MCP 模块 OpenVikingService.find 缺失根治、单一真相源脱敏引擎归拢与芒格逆向对抗加固 (Server MCP find & Masking)** | 1. 在 `OpenVikingService` 增加顶层 `find` 异步快捷委托方法，彻底消除 `AttributeError`；<br>2. 纠偏 `mcp_endpoint.py` 内部 `openviking_code_search` 与 `openviking_smart_read` 的直接调用为 `service.search.find`；<br>3. 彻底归拢脱敏引擎至 `openviking/privacy/privacy_masker.py` 单一真相源，`openviking/service/privacy_masker.py` 改为直接门面引用；<br>4. 敏感正则精细化加固（API Key 兼容 16 字符短 Key，密码支持键值与负向预查排除语法关键字，严防破坏 `if password is None:`）；<br>5. 编写针对性单测 `4/4 passed in 0.09s` 满绿，WSL2 生产环境平滑重载实测通过。 | [x] 已验收通过 ✅ |
@@ -186,6 +187,13 @@
   2. **物理下线 10 项 404/405 幽灵工具**：斩除服务端未挂载路由的 10 项死工具，保留真实可调用的 26 项核心工具；
   3. **沙盒守卫流式安全改造**：`ov_sandbox_guard.py` 废黜阻塞式 `sys.stdin.read()`，改用非阻塞 `sys.stdin.readline()`；
   4. **全链路打靶与分发**：发布全系插件 `v2.0.26`，`test_26_tools.py` 物理打靶 26/26 项工具 100% 全绿，生成不可变分发包并部署上线 (HTTP 200)。<br>*(Commit: `f2befa274`, Tag: `v1.7.162`)*
+
+#### 📌 [P0] [x] Card-222: 反重力 Stdio 桥 Notification 幽灵帧阻断与工具命名双向映射加固 (Notification Silence & Tool Mapping v2.0.27) ✅
+- **治理成果与物理交付物**：
+  1. **Notification 门禁与协议合规**：遵循 JSON-RPC 2.0 规范，对无 `id` 的通知对象（如 `notifications/initialized`）静默发送给 `/mcp`，绝对禁止向 `sys.stdout` 输出任何响应帧，彻底根治反重力 IDE 客户端在 `tools/list` 读到 `id: null` 导致的 `invalid request` 致命启动崩溃；
+  2. **双向工具名规范化映射**：引入 `SERVER_TO_CLIENT_TOOLS` 与 `CLIENT_TO_SERVER_TOOLS`，在 `tools/list` 时将 `find`, `search`, `read`, `list`, `tree`, `remember`, `write`, `grep`, `glob`, `health` 规范化为 `openviking_*`，在 `tools/call` 时自动逆向映射回服务端底层名称，实现端到端 100% 契约无缝衔接；
+  3. **生命周期打靶全绿**：编写 `scratch/simulate_ide_flow.py`，完整模拟 IDE 发起 `initialize` ➔ `notifications/initialized` ➔ `tools/list` ➔ `tools/call`，全流程 4 阶段测试 100% 满绿通过；
+  4. **全自动级联部署**：同步刷新 `C:\Users\Skl\.gemini\config\plugins\openviking-memory\server.py` 与不可变分发包。<br>*(Commit: 待提交, Tag: `v1.7.166`)*
 
 #### 📌 [P0] [x] Card-221: 全域插件热更版本双轨显著感知体系、废黜死常数与三端同频对齐 (Omni-Platform Hot-Reload Observability v2.0.27) ✅
 - **治理成果与物理交付物**：

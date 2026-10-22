@@ -96,9 +96,52 @@ def _build_headers() -> Dict[str, str]:
     return headers
 
 
-def _forward_jsonrpc(request_obj: Dict[str, Any]) -> list[Dict[str, Any]]:
+# SECTION: Bidirectional Tool Name Normalization
+SERVER_TO_CLIENT_TOOLS = {
+    "find": "openviking_find",
+    "search": "openviking_search",
+    "read": "openviking_read",
+    "list": "openviking_ls",
+    "tree": "openviking_tree",
+    "remember": "openviking_store",
+    "write": "openviking_write",
+    "grep": "openviking_grep",
+    "glob": "openviking_glob",
+    "health": "openviking_health",
+}
+CLIENT_TO_SERVER_TOOLS = {v: k for k, v in SERVER_TO_CLIENT_TOOLS.items()}
+CLIENT_TO_SERVER_TOOLS["openviking_list"] = "list"
+
+
+def _forward_notification(notification_obj: Dict[str, Any]) -> None:
+    """Forward notifications silently to /mcp without sending any response to stdout."""
+    payload = json.dumps(notification_obj, ensure_ascii=False).encode("utf-8")
+    req = urllib.request.Request(
+        MCP_ENDPOINT,
+        data=payload,
+        headers=_build_headers(),
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10.0) as resp:
+            resp.read()
+    except Exception:
+        pass
+
+
+def _forward_request(request_obj: Dict[str, Any]) -> list[Dict[str, Any]]:
     """Forward incoming JSON-RPC request to server /mcp endpoint and extract response objects."""
     req_id = request_obj.get("id")
+    method = request_obj.get("method")
+
+    # 1. tools/call 逆向映射: 将客户端的 openviking_* 还原为服务端原生 tool name
+    if method == "tools/call":
+        params = request_obj.get("params")
+        if isinstance(params, dict):
+            t_name = params.get("name", "")
+            if t_name in CLIENT_TO_SERVER_TOOLS:
+                params["name"] = CLIENT_TO_SERVER_TOOLS[t_name]
+
     payload = json.dumps(request_obj, ensure_ascii=False).encode("utf-8")
     req = urllib.request.Request(
         MCP_ENDPOINT,
@@ -111,7 +154,6 @@ def _forward_jsonrpc(request_obj: Dict[str, Any]) -> list[Dict[str, Any]]:
         with urllib.request.urlopen(req, timeout=DEFAULT_TIMEOUT) as resp:
             raw = resp.read().decode("utf-8", errors="replace")
 
-        # Handle Streamable-HTTP SSE format or pure JSON
         responses: list[Dict[str, Any]] = []
         for line in raw.splitlines():
             line_str = line.strip()
@@ -128,8 +170,8 @@ def _forward_jsonrpc(request_obj: Dict[str, Any]) -> list[Dict[str, Any]]:
             except Exception:
                 pass
 
-        # 显著注入双轨版本感知：让 IDE 客户端与日志清晰回显当前插件与服务端内核版本
-        if request_obj.get("method") == "initialize":
+        # 2. initialize 装饰: 显著注入双轨版本感知
+        if method == "initialize":
             for reply in responses:
                 if isinstance(reply, dict) and "result" in reply:
                     res = reply["result"]
@@ -138,6 +180,17 @@ def _forward_jsonrpc(request_obj: Dict[str, Any]) -> list[Dict[str, Any]]:
                         k_ver = s_info.get("version", "1.7.164")
                         s_info["name"] = "openviking-memory"
                         s_info["version"] = f"v2.0.27 [Kernel: v{k_ver} | 35 Tools Online | Synced]"
+
+        # 3. tools/list 正向映射: 将服务端原生无前缀工具统一规范化为 openviking_*
+        elif method == "tools/list":
+            for reply in responses:
+                if isinstance(reply, dict) and "result" in reply:
+                    res = reply["result"]
+                    if isinstance(res, dict) and "tools" in res and isinstance(res["tools"], list):
+                        for tool in res["tools"]:
+                            orig_name = tool.get("name", "")
+                            if orig_name in SERVER_TO_CLIENT_TOOLS:
+                                tool["name"] = SERVER_TO_CLIENT_TOOLS[orig_name]
 
         if not responses:
             responses.append({
@@ -184,8 +237,14 @@ def run_stdio_proxy() -> None:
             except Exception:
                 continue
 
-            # Forward request and reply back to stdout
-            replies = _forward_jsonrpc(msg)
+            # Notification 门禁: 无 id 的通知绝不产生任何 stdout 响应 (遵循 JSON-RPC 2.0 规范)
+            is_notification = ("id" not in msg) or (msg.get("id") is None)
+            if is_notification:
+                _forward_notification(msg)
+                continue
+
+            # 标准 Request 转发并回写 stdout
+            replies = _forward_request(msg)
             for reply in replies:
                 sys.stdout.write(json.dumps(reply, ensure_ascii=False) + "\n")
                 sys.stdout.flush()
@@ -199,6 +258,7 @@ def run_stdio_proxy() -> None:
 
 if __name__ == "__main__":
     if "--inspect" in sys.argv:
-        print(f"OpenViking Pure MCP Proxy: {MCP_ENDPOINT} (User: {VERIFIED_USER})")
+        print(f"OpenViking Pure MCP Proxy: {MCP_ENDPOINT} (User: {VERIFIED_USER}) [Hot-Reload Synced]")
         sys.exit(0)
     run_stdio_proxy()
+
