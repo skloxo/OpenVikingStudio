@@ -59,14 +59,37 @@ API_KEY = (
     or ""
 )
 
+
+def _decode_key_segment(segment: str) -> str:
+    if not segment:
+        return ""
+    try:
+        import base64
+        pad = 4 - (len(segment) % 4)
+        s = segment + ("=" * pad if pad != 4 else "")
+        return base64.urlsafe_b64decode(s).decode("utf-8")
+    except Exception:
+        return ""
+
+
+def _extract_from_key(k: str, idx: int) -> str:
+    if k and "." in k:
+        parts = k.split(".")
+        if len(parts) == 3 and 0 <= idx < 3:
+            return _decode_key_segment(parts[idx])
+    return ""
+
+
 VERIFIED_USER = (
     os.environ.get("OPENVIKING_USER")
-    or _LOCAL_CFG.get("verified_user")
+    or _extract_from_key(API_KEY, 1)
+    or (_LOCAL_CFG.get("verified_user") if _LOCAL_CFG.get("verified_user") != "authorized" else "")
     or "antigravity@2080ti"
 )
 
 ACCOUNT = (
     os.environ.get("OPENVIKING_ACCOUNT")
+    or _extract_from_key(API_KEY, 0)
     or _LOCAL_CFG.get("account")
     or "default"
 )

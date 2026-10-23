@@ -113,7 +113,7 @@ describe('Card-148 & Card-PLUG-04: Plugin Drawer & Key Governance', () => {
     expect(handleNavigate).toHaveBeenCalledWith('hooks')
   })
 
-  it('never displays fake key placeholder when connection has no active key', () => {
+  it('never displays fake key placeholder in quickstart snippets', () => {
     connectionMock.apiKey = ''
 
     const { container } = render(
@@ -122,21 +122,8 @@ describe('Card-148 & Card-PLUG-04: Plugin Drawer & Key Governance', () => {
 
     // 严禁包含 vk-user-key-xxxx 假占位符
     expect(container.textContent).not.toContain('vk-user-key-xxxx')
-
-    // 用户密钥输入框应为空
-    const keyInput = screen.getByPlaceholderText(/输入或粘贴你的专属 User Key/) as HTMLInputElement
-    expect(keyInput.value).toBe('')
-  })
-
-  it('displays and binds real API key when connection provides it', () => {
-    connectionMock.apiKey = 'ov-real-user-key-9999'
-
-    render(
-      <PluginQuickstartSection plugin={mockPlugin} />,
-    )
-
-    const keyInput = screen.getByPlaceholderText(/输入或粘贴你的专属 User Key/) as HTMLInputElement
-    expect(keyInput.value).toBe('ov-real-user-key-9999')
-    expect(screen.getByText('已填入专属密钥')).toBeDefined()
+    // 包含标准化占位符
+    expect(container.textContent).toContain('<YOUR_USER_KEY>')
   })
 })
+

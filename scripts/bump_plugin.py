@@ -122,6 +122,29 @@ def bump_plugin(plugin_name: str, target_version: str = "", bump_type: str = "pa
         pjson_file.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         print(f"  ✔ Antigravity plugin.json 同步完成 (v{new_ver})")
 
+    # 2.1 更新 packages/plugins/{pid}/ 统一母港
+    homeland_path = ROOT_DIR / "packages" / "plugins" / pid
+    if homeland_path.is_dir():
+        if (homeland_path / "plugin.json").exists():
+            hp_file = homeland_path / "plugin.json"
+            h_data = json.loads(hp_file.read_text(encoding="utf-8"))
+            h_data["version"] = new_ver
+            hp_file.write_text(json.dumps(h_data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            print(f"  ✔ Homeland plugin.json 同步完成 (v{new_ver})")
+        if (homeland_path / "package.json").exists():
+            hpk_file = homeland_path / "package.json"
+            hpk_data = json.loads(hpk_file.read_text(encoding="utf-8"))
+            hpk_data["version"] = new_ver
+            hpk_file.write_text(json.dumps(hpk_data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            print(f"  ✔ Homeland package.json 同步完成 (v{new_ver})")
+
+    if ag_path and (ag_path / "package.json").exists():
+        ag_pkg = ag_path / "package.json"
+        ag_data = json.loads(ag_pkg.read_text(encoding="utf-8"))
+        ag_data["version"] = new_ver
+        ag_pkg.write_text(json.dumps(ag_data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print(f"  ✔ Antigravity package.json 同步完成 (v{new_ver})")
+
     # 3. 更新 DSH package.json
     if dsh_path and (dsh_path / "package.json").exists():
         pkg_file = dsh_path / "package.json"

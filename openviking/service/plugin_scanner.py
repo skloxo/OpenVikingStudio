@@ -264,7 +264,17 @@ def resolve_builtin_tools(plugin_id: str) -> List[ToolDefinition]:
                     return p.tools
         except Exception as e:
             logger.warning("解析 openviking-ops 内置算子失败: %s", e)
+    elif pid in ("network-search", "search-gateway", "search"):
+        try:
+            from openviking.service.builtin_plugins_eco import create_ecosystem_plugins
+            eco_plugins = create_ecosystem_plugins({}, {})
+            for p in eco_plugins:
+                if p.plugin_id == "network-search":
+                    return p.tools
+        except Exception as e:
+            logger.warning("解析 network-search 内置算子失败: %s", e)
     return []
+
 
 
 def scan_single_plugin_dir(plugin_dir: Path) -> Optional[QuadPluginDefinition]:
@@ -353,6 +363,7 @@ def scan_single_plugin_dir(plugin_dir: Path) -> Optional[QuadPluginDefinition]:
                         id=ch["id"],
                         name=ch["name"],
                         install_cmd=ch.get("install_cmd", ""),
+                        agent_prompt=ch.get("agent_prompt", ""),
                         config_snippet=ch.get("config_snippet", ""),
                         docs_markdown=ch.get("docs_markdown", ""),
                     )
@@ -434,6 +445,9 @@ def scan_local_plugins(base_dir: Optional[Path] = None) -> Tuple[List[QuadPlugin
         "circuit_breaker": "agent-circuit-breaker",
         "vault": "keepass-vault",
         "fleet": "fleet-mesh",
+        "search": "network-search",
+        "search-gateway": "network-search",
     })
+
 
     return plugins, aliases, tool_to_plugin_map

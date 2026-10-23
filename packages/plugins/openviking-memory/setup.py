@@ -152,7 +152,20 @@ def verify_connection(api: str, key: str) -> tuple[bool, str, float, str]:
         with urllib.request.urlopen(req, timeout=3.0) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             elapsed_ms = (time.time() - t0) * 1000
-            user = data.get("user_id") or data.get("account_id") or "authorized"
+            user = data.get("user_id") or data.get("account_id")
+            if not user or user == "authorized":
+                if key and "." in key:
+                    parts = key.split(".")
+                    if len(parts) == 3:
+                        try:
+                            import base64
+                            pad = 4 - (len(parts[1]) % 4)
+                            s = parts[1] + ("=" * pad if pad != 4 else "")
+                            user = base64.urlsafe_b64decode(s).decode("utf-8")
+                        except Exception:
+                            pass
+            if not user:
+                user = "antigravity@2080ti"
             return True, user, elapsed_ms, ""
     except urllib.error.HTTPError as e:
         elapsed_ms = (time.time() - t0) * 1000
@@ -176,8 +189,8 @@ def register_in_ide_config(plugin_name: str, version: str):
         plugins[plugin_name] = {
             "enabled": True,
             "installedFrom": {
-                "id": f"openviking/plugin/{plugin_name}",
-                "marketplace": "openviking-marketplace",
+                "id": f"antigravity/plugin/{plugin_name}",
+                "marketplace": "openviking-studio",
                 "version": version
             }
         }

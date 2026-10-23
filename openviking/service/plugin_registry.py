@@ -91,8 +91,11 @@ class PluginRegistry:
             target_pkg = "dsh-plugin-cpa"
         elif pid in ("agent-circuit-breaker", "circuit-breaker", "circuit_breaker"):
             target_pkg = "agent-circuit-breaker"
+        elif pid in ("network-search", "search-gateway", "search"):
+            target_pkg = "dsh-plugin-search-gateway"
         else:
             target_pkg = "dsh-plugin-openviking-memory"
+
 
         from openviking.service.builtin_plugins_core import resolve_package_version
         def_ver = resolve_package_version(target_pkg, "1.0.0")

@@ -176,8 +176,8 @@ def register_in_ide_config(plugin_name: str, version: str):
         plugins[plugin_name] = {
             "enabled": True,
             "installedFrom": {
-                "id": f"openviking/plugin/{plugin_name}",
-                "marketplace": "openviking-marketplace",
+                "id": f"antigravity/plugin/{plugin_name}",
+                "marketplace": "openviking-studio",
                 "version": version
             }
         }

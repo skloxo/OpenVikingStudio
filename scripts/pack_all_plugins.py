@@ -95,31 +95,31 @@ def pack_dsh_with_injected_client(
                 continue
 
             if item.name == "package.json":
-                # 动态补全 package.json 的 client 导出与 dsh 注入声明
                 try:
                     pkg_dict = json.loads(item.read_text(encoding="utf-8"))
-                    pkg_dict["exports"] = {".": "./index.js", "./client": "./client.js"}
-                    if "client.js" not in pkg_dict.get("files", []):
-                        pkg_dict["files"] = pkg_dict.get("files", []) + ["client.js"]
-                    pkg_dict["dsh"] = {
-                        "bundle": {"patch": "./cordis.patch.yml"},
-                        "client": {
-                            "platform": "web",
-                            "immediately": True,
-                            "inject": [
-                                "@deepseek-ai/dsh-client-ui-plugin-manager",
-                                "@deepseek-ai/dsh-client-ui-conversation"
-                            ]
-                        }
+                except Exception as e:
+                    raise RuntimeError(f"🚨 [致命阻断] 插件 {src_dir.name}/package.json 非法或存在损坏编码，严禁打包: {e}") from e
+
+                pkg_dict["exports"] = {".": "./index.js", "./client": "./client.js"}
+                if "client.js" not in pkg_dict.get("files", []):
+                    pkg_dict["files"] = pkg_dict.get("files", []) + ["client.js"]
+                pkg_dict["dsh"] = {
+                    "bundle": {"patch": "./cordis.patch.yml"},
+                    "client": {
+                        "platform": "web",
+                        "immediately": True,
+                        "inject": [
+                            "@deepseek-ai/dsh-client-ui-plugin-manager",
+                            "@deepseek-ai/dsh-client-ui-conversation"
+                        ]
                     }
-                    pkg_bytes = json.dumps(pkg_dict, indent=2, ensure_ascii=False).encode("utf-8")
-                    ti = tarfile.TarInfo(name="package/package.json")
-                    ti.size = len(pkg_bytes)
-                    ti.mtime = int(item.stat().st_mtime)
-                    tar.addfile(ti, io.BytesIO(pkg_bytes))
-                    continue
-                except Exception:
-                    pass
+                }
+                pkg_bytes = json.dumps(pkg_dict, indent=2, ensure_ascii=False).encode("utf-8")
+                ti = tarfile.TarInfo(name="package/package.json")
+                ti.size = len(pkg_bytes)
+                ti.mtime = int(item.stat().st_mtime)
+                tar.addfile(ti, io.BytesIO(pkg_bytes))
+                continue
 
             arc = f"package/{item.name}"
             tar.add(item, arcname=arc, filter=filter_tar_info)
@@ -216,6 +216,18 @@ def main():
     print("  " + "-" * 82)
     for name, ver, size, eco in results:
         print(f"  {eco:<24} {name:<32} v{ver:<9} {size:<12}")
+
+    wsl_svc = Path("/home/skloxo/services/openviking")
+    if wsl_svc.is_dir() and wsl_svc != ROOT_DIR:
+        print("\n🔄 正在自动同频至生产服务分发目录 (/home/skloxo/services/openviking)...")
+        (wsl_svc / "dist").mkdir(parents=True, exist_ok=True)
+        (wsl_svc / "public").mkdir(parents=True, exist_ok=True)
+        for tgz in DIST_DIR.glob("*.tgz"):
+            shutil.copy2(tgz, wsl_svc / "dist" / tgz.name)
+        for tgz in PUBLIC_DIR.glob("*.tgz"):
+            shutil.copy2(tgz, wsl_svc / "public" / tgz.name)
+        print("  ✔ 生产服务静态分发目录同频完毕！")
+
     print("\n✅ 全系插件打包完成，随时可用于生产分发！")
 
 

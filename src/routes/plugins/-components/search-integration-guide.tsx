@@ -32,7 +32,7 @@ export function SearchIntegrationGuide({ userApiKey = '' }: SearchIntegrationGui
   const apiEndpoint = 'https://sear.tide.red/v1'
   const mcpEndpoint = 'https://sear.tide.red/mcp'
 
-  const effectiveApiKey = userApiKey || 'sear-matrix-key-2026'
+  const effectiveApiKey = userApiKey || '<YOUR_SEARCH_KEY>'
   const installCmd = 'npm install https://vk.tide.red/studio/dsh-plugin-search-gateway.tgz'
 
   const universalMcpSnippet = JSON.stringify(

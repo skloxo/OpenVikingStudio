@@ -35,6 +35,8 @@ import { PluginConfigSection } from './plugin-config-section'
 import { PluginPromptsSection } from './plugin-prompts-section'
 import { PluginQuickstartSection } from './plugin-quickstart-section'
 import { PluginReadmeViewer } from './plugin-readme-viewer'
+import { SearchIntegrationGuide } from './search-integration-guide'
+
 
 export type PluginDetailDrawerProps = {
   plugin: QuadPluginItem | null
@@ -391,8 +393,13 @@ export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps)
         {/* Tab 6: 接入指引 (Quickstart & Config) */}
         {activeTab === 'quickstart' && (
           <div className="space-y-4">
-            <PluginQuickstartSection plugin={plugin} />
+            {plugin.plugin_id === 'network-search' ? (
+              <SearchIntegrationGuide />
+            ) : (
+              <PluginQuickstartSection plugin={plugin} />
+            )}
             <div className="pt-2 border-t border-border/40">
+
               <h4 className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1.5">
                 <span>运行时核心参数与环境配置</span>
               </h4>

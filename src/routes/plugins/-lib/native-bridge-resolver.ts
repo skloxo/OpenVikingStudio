@@ -63,11 +63,11 @@ export function resolvePluginBridgeConfig(
 5. 请将上述配置写入 cordis.patch.yml 并重启服务。`,
       antigravitySetupCmdWin: `cmd /c mklink /J "$env:USERPROFILE\\.gemini\\config\\plugins\\dify" "OpenVikingStudio路径\\integrations\\antigravity\\dify"\npython setup.py --api https://api.dify.ai/v1 --key "<YOUR_DIFY_API_KEY>"`,
       antigravitySetupCmdUnix: `mkdir -p ~/.gemini/config/plugins && ln -s /path/to/OpenVikingStudio/integrations/antigravity/dify ~/.gemini/config/plugins/dify\ncd ~/.gemini/config/plugins/dify && python3 setup.py --api https://api.dify.ai/v1 --key "<YOUR_DIFY_API_KEY>"`,
-      antigravityAgentPrompt: `请帮我将反重力座舱接入 Dify 智能体与工作流中枢：
+      antigravityAgentPrompt: `请帮我将当前反重力客户端 (Antigravity IDE / Desktop) 接入 Dify 智能体与工作流中枢：
 1. 插件挂载目录：~/.gemini/config/plugins/dify/
 2. Dify API 地址：https://api.dify.ai/v1
 3. 专属凭据：<YOUR_DIFY_API_KEY>
-4. 运行 python setup.py 完成凭据落盘并激活工作流工具。`,
+4. 运行 python setup.py 完成凭据落盘并激活工作流工具（IDE 与 Desktop 双端自动同频生效）。`,
       universalMcpJson: JSON.stringify(
         {
           mcpServers: {
@@ -230,11 +230,11 @@ export function resolvePluginBridgeConfig(
 5. 将配置写入 cordis.patch.yml 并重启服务。`,
       antigravitySetupCmdWin: `cmd /c mklink /J "$env:USERPROFILE\\.gemini\\config\\plugins\\openviking-ops" "OpenVikingStudio路径\\integrations\\antigravity\\openviking-ops"\npython setup.py --api ${serviceAddress}`,
       antigravitySetupCmdUnix: `mkdir -p ~/.gemini/config/plugins && ln -s /path/to/OpenVikingStudio/integrations/antigravity/openviking-ops ~/.gemini/config/plugins/openviking-ops\ncd ~/.gemini/config/plugins/openviking-ops && python3 setup.py --api ${serviceAddress}`,
-      antigravityAgentPrompt: `请帮我将反重力开发座舱接入 OpenViking 系统运维治理插件：
+      antigravityAgentPrompt: `请帮我将当前反重力客户端 (Antigravity IDE / Desktop) 接入 OpenViking 系统运维治理插件：
 1. 插件挂载目录：~/.gemini/config/plugins/openviking-ops/
 2. 服务端接入地址：${serviceAddress}
 3. 专属授权凭据：自动继承已认证凭据 (或通过 --key 指定)
-4. 运行 setup.py 激活 16 项特权运维算子与双 Hook 守卫。`,
+4. 运行 setup.py 激活 16 项特权运维算子与双 Hook 守卫（IDE 与 Desktop 双端自动同频生效）。`,
       universalMcpJson: JSON.stringify(
         {
           mcpServers: {
@@ -287,11 +287,11 @@ export function resolvePluginBridgeConfig(
 5. 请将上述配置写入 cordis.patch.yml 并重启 Harness 服务。`,
       antigravitySetupCmdWin: `cmd /c mklink /J "$env:USERPROFILE\\.gemini\\config\\plugins\\openviking-fleet" "OpenVikingStudio路径\\integrations\\antigravity\\openviking-fleet"\npython setup.py --api ${serviceAddress} --key "${effectiveApiKey}"`,
       antigravitySetupCmdUnix: `mkdir -p ~/.gemini/config/plugins && ln -s /path/to/OpenVikingStudio/integrations/antigravity/openviking-fleet ~/.gemini/config/plugins/openviking-fleet\ncd ~/.gemini/config/plugins/openviking-fleet && python3 setup.py --api ${serviceAddress} --key "${effectiveApiKey}"`,
-      antigravityAgentPrompt: `请帮我将反重力开发座舱接入卫星集群同频运维插件：
+      antigravityAgentPrompt: `请帮我将当前反重力客户端 (Antigravity IDE / Desktop) 接入卫星集群同频运维插件：
 1. 插件挂载目录：~/.gemini/config/plugins/openviking-fleet/
 2. 服务端接入地址：${serviceAddress}
 3. 专属授权凭据：${effectiveApiKey}
-4. 运行 setup.py 激活集群体检与一键同频工具。`,
+4. 运行 setup.py 激活集群体检与一键同频工具（IDE 与 Desktop 双端自动同频生效）。`,
       universalMcpJson: JSON.stringify(
         {
           mcpServers: {
@@ -333,7 +333,7 @@ export function resolvePluginBridgeConfig(
       dshAgentPrompt: `【生态规划提示】智能体熔断断路器当前深度定制于 Google Antigravity 原生 Hook 与 Fail-Open 架构。\nDSH 等其他智能体适配正在规划中，暂请优先在反重力环境中开箱使用。`,
       antigravitySetupCmdWin: `powershell -ExecutionPolicy Bypass -Command "iwr -Uri '${tarballUrl}' -OutFile '$env:TEMP\\acb.tgz'; New-Item -ItemType Directory -Force -Path \\"$env:USERPROFILE\\.gemini\\config\\plugins\\agent-circuit-breaker\\" | Out-Null; tar -xzf '$env:TEMP\\acb.tgz' -C \\"$env:USERPROFILE\\.gemini\\config\\plugins\\agent-circuit-breaker\\"; python \\"$env:USERPROFILE\\.gemini\\config\\plugins\\agent-circuit-breaker\\setup.py\\" install"`,
       antigravitySetupCmdUnix: `curl -fsSL ${tarballUrl} -o /tmp/acb.tgz && mkdir -p ~/.gemini/config/plugins/agent-circuit-breaker && tar -xzf /tmp/acb.tgz -C ~/.gemini/config/plugins/agent-circuit-breaker && python3 ~/.gemini/config/plugins/agent-circuit-breaker/setup.py install`,
-      antigravityAgentPrompt: `请帮我将当前反重力开发座舱接入智能体自适应熔断断路器护栏：\n1. 执行开箱即用一键安装命令；\n2. 挂载目录：~/.gemini/config/plugins/agent-circuit-breaker/；\n3. 激活自适应弹性预算（健康态 36 步 / 警戒态 15 步 / 授权后 +15 步增量租约）；\n4. 激活 PreTool / PostTool / PreInvocation / SessionStart 四维原生生命周期钩子，开启 force_ask 零误杀防护。`,
+      antigravityAgentPrompt: `请帮我将当前反重力客户端 (Antigravity IDE / Desktop) 接入智能体自适应熔断断路器护栏：\n1. 执行开箱即用一键安装命令；\n2. 挂载目录：~/.gemini/config/plugins/agent-circuit-breaker/；\n3. 激活自适应弹性预算（健康态 36 步 / 警戒态 15 步 / 授权后 +15 步增量租约）；\n4. 激活 PreTool / PostTool / PreInvocation / SessionStart 四维原生生命周期钩子，开启 force_ask 零误杀防护（IDE 与 Desktop 双端自动同频生效）。`,
       universalMcpJson: JSON.stringify(
         {
           mcpServers: {
@@ -380,11 +380,11 @@ export function resolvePluginBridgeConfig(
 5. 将配置写入 cordis.patch.yml 并重启服务。`,
     antigravitySetupCmdWin: `cmd /c mklink /J "$env:USERPROFILE\\.gemini\\config\\plugins\\openviking-memory" "OpenVikingStudio路径\\integrations\\antigravity\\openviking-memory"\npython setup.py --api ${serviceAddress}`,
     antigravitySetupCmdUnix: `mkdir -p ~/.gemini/config/plugins && ln -s /path/to/OpenVikingStudio/integrations/antigravity/openviking-memory ~/.gemini/config/plugins/openviking-memory\ncd ~/.gemini/config/plugins/openviking-memory && python3 setup.py --api ${serviceAddress}`,
-    antigravityAgentPrompt: `请帮我将当前反重力开发座舱 (Antigravity IDE) 接入 OpenViking 核心战地长程记忆：
+    antigravityAgentPrompt: `请帮我将当前反重力客户端 (Antigravity IDE / Desktop) 接入 OpenViking 核心战地长程记忆：
 1. 插件挂载规范目录：~/.gemini/config/plugins/openviking-memory/
 2. 服务端接入地址：${serviceAddress}
 3. 专属授权凭据：自动继承已认证凭据 (或通过 --key 指定)
-4. 运行 setup.py 激活三大完整 Hook 与核心工具集。`,
+4. 运行 setup.py 激活三大完整 Hook 与核心工具集（IDE 与 Desktop 双端自动同频生效）。`,
     universalMcpJson: JSON.stringify(
       {
         mcpServers: {
