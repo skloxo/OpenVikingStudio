@@ -43,8 +43,10 @@ EXPERIMENTAL_WIP_PLUGINS = [
     "fleet-mesh",
     "cpa-squad",
     "keepass-vault",
-    "dify"
+    "dify",
+    "network-search"
 ]
+
 
 ALL_PLUGINS = PRODUCTION_PLUGINS + EXPERIMENTAL_WIP_PLUGINS
 

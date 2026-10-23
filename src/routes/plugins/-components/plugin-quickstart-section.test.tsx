@@ -60,9 +60,10 @@ const mockPluginWithChannels: QuadPluginItem = {
       {
         id: 'antigravity',
         name: 'Google 反重力',
-        install_cmd: 'code --install-extension openviking-memory',
-        config_snippet: '{\n  "plugins": ["openviking-memory"]\n}',
-        docs_markdown: '通过反重力插件中心启用',
+        install_cmd: 'powershell -ExecutionPolicy Bypass -Command "iwr -Uri \'{{ENDPOINT_URL}}/studio/openviking-memory-{{PLUGIN_VER}}.tgz\' -OutFile \'$env:TEMP\\openviking-memory.tgz\'; New-Item -ItemType Directory -Force -Path \\"$env:USERPROFILE\\.gemini\\config\\plugins\\openviking-memory\\" | Out-Null; tar -xzf \'$env:TEMP\\openviking-memory.tgz\' -C \\"$env:USERPROFILE\\.gemini\\config\\plugins\\openviking-memory\\"; python \\"$env:USERPROFILE\\.gemini\\config\\plugins\\openviking-memory\\setup.py\\" --install --api {{ENDPOINT_URL}} --key {{USER_KEY}}"',
+        agent_prompt: '请帮我将当前反重力客户端 (Antigravity IDE / Desktop) 接入 OpenViking 核心战地长程记忆：\n1. 目标包：{{ENDPOINT_URL}}/studio/openviking-memory-{{PLUGIN_VER}}.tgz\n2. 挂载目录：$env:USERPROFILE\\.gemini\\config\\plugins\\openviking-memory\n3. 服务端：{{ENDPOINT_URL}}\n4. 凭据：{{USER_KEY}}',
+        config_snippet: '{\n  "plugins": {\n    "openviking-memory": {\n      "version": "{{PLUGIN_VER}}"\n    }\n  }\n}',
+        docs_markdown: '通过反重力 PowerShell 命令或认主提示词启用',
       },
       {
         id: 'dsh',
@@ -89,33 +90,47 @@ describe('Card-PLUG-04: PluginQuickstartSection Multi-channel & Dynamic Input In
     connectionMock.apiKey = ''
   })
 
-  it('renders all integration channels defined in plugin.json', () => {
+  it('renders all integration channels defined in plugin.json and displays agent prompt for antigravity', () => {
     render(<PluginQuickstartSection plugin={mockPluginWithChannels} />)
 
     expect(screen.getByText('全渠道智能体接入指引')).toBeDefined()
     expect(screen.getByText('Google 反重力')).toBeDefined()
     expect(screen.getByText('DeepSeek Harness')).toBeDefined()
     expect(screen.getByText('通用 MCP 智能体')).toBeDefined()
+    expect(screen.getByText('智能体一键认主提示词 (发送给客户端对话框)')).toBeDefined()
   })
 
-  it('dynamically interpolates custom endpoint and user key into config snippets', () => {
+  it('dynamically interpolates custom endpoint into config snippets with static user key placeholder', () => {
     render(<PluginQuickstartSection plugin={mockPluginWithChannels} />)
 
     // 切换至 DSH 渠道
     fireEvent.click(screen.getByText('DeepSeek Harness'))
 
-    // 获取输入框
+    // 获取服务中枢输入框
     const endpointInput = screen.getByPlaceholderText(/例如: https:\/\/vk.tide.red/) as HTMLInputElement
-    const userKeyInput = screen.getByPlaceholderText(/输入或粘贴你的专属 User Key/) as HTMLInputElement
 
-    // 修改为自定义内网地址和专属 Key
+    // 修改为自定义内网地址
     fireEvent.change(endpointInput, { target: { value: 'http://192.168.1.100:1933' } })
-    fireEvent.change(userKeyInput, { target: { value: 'vk-usr-custom-secret-key-123' } })
 
     // 断言配置代码片段已即时动态插值
     expect(screen.getByText(/endpointUrl: "http:\/\/192.168.1.100:1933"/)).toBeDefined()
-    expect(screen.getByText(/userKey: "vk-usr-custom-secret-key-123"/)).toBeDefined()
+    expect(screen.getByText(/userKey: "<YOUR_USER_KEY>"/)).toBeDefined()
     expect(screen.getByText(/npm install http:\/\/192.168.1.100:1933\/studio\/dsh-plugin-openviking-memory-2.0.30.tgz/)).toBeDefined()
+  })
+
+
+  it('switches between local and public endpoint presets on click', () => {
+    render(<PluginQuickstartSection plugin={mockPluginWithChannels} />)
+
+    const publicBtn = screen.getByRole('button', { name: /公网云端:/ })
+    fireEvent.click(publicBtn)
+
+    const endpointInput = screen.getByPlaceholderText(/例如: https:\/\/vk.tide.red/) as HTMLInputElement
+    expect(endpointInput.value).toBe('https://vk.tide.red')
+
+    const localBtn = screen.getByRole('button', { name: /本地内网:/ })
+    fireEvent.click(localBtn)
+    expect(endpointInput.value).toContain(':1933')
   })
 
   it('gracefully handles plugins without explicit integration channels via default fallback', () => {

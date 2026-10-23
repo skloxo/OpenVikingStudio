@@ -15,7 +15,6 @@ import {
   CheckIcon,
   CopyIcon,
   GlobeIcon,
-  KeyIcon,
   LaptopIcon,
   LayersIcon,
   TerminalIcon,
@@ -24,7 +23,6 @@ import { toast } from 'sonner'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
-import { useAppConnection } from '#/hooks/use-app-connection'
 import { copyTextToClipboard } from '#/lib/clipboard'
 import type {
   IntegrationChannel,
@@ -36,15 +34,21 @@ export type PluginQuickstartSectionProps = {
 }
 
 export function PluginQuickstartSection({ plugin }: PluginQuickstartSectionProps) {
-  const { connection } = useAppConnection()
   const [copiedKey, setCopiedKey] = React.useState<string | null>(null)
 
-  // 1. 服务地址与密钥由用户自主掌控 (反过度工程化，支持内网与公网自主填写)
-  const defaultEndpoint = typeof window !== 'undefined' && window.location.origin
-    ? window.location.origin
-    : 'https://vk.tide.red'
-  const [endpointUrl, setEndpointUrl] = React.useState<string>(defaultEndpoint)
-  const [userKey, setUserKey] = React.useState<string>(connection?.apiKey || '')
+  // 1. 服务中枢地址提供【本地内网】与【公网云端】双模预设
+  const localPreset = typeof window !== 'undefined' && window.location.hostname !== 'vk.tide.red' && window.location.hostname
+    ? `${window.location.protocol}//${window.location.hostname}:1933`
+    : 'http://127.0.0.1:1933'
+  const publicPreset = 'https://vk.tide.red'
+
+  const [endpointUrl, setEndpointUrl] = React.useState<string>(() => {
+    if (typeof window !== 'undefined' && window.location.origin) {
+      if (window.location.origin.includes('vk.tide.red')) return publicPreset
+      return window.location.origin
+    }
+    return 'http://127.0.0.1:1933'
+  })
 
   const pid = plugin.plugin_id
   const version = plugin.version || '1.0.0'
@@ -61,9 +65,10 @@ export function PluginQuickstartSection({ plugin }: PluginQuickstartSectionProps
       {
         id: 'antigravity',
         name: 'Google 反重力',
-        install_cmd: `powershell -ExecutionPolicy Bypass -Command "iwr -Uri '{{ENDPOINT_URL}}/studio/${agTarball}' -OutFile '$env:TEMP\\${pid}.tgz'; New-Item -ItemType Directory -Force -Path \\"$env:USERPROFILE\\.gemini\\config\\plugins\\${pid}\\" | Out-Null; tar -xzf '$env:TEMP\\${pid}.tgz' -C \\"$env:USERPROFILE\\.gemini\\config\\plugins\\${pid}\\"; python \\"$env:USERPROFILE\\.gemini\\config\\plugins\\${pid}\\setup.py\\" --install"`,
-        config_snippet: `{\n  "plugins": [\n    "${pid}"\n  ]\n}`,
-        docs_markdown: '通过反重力 IDE / Desktop 插件市场加载，或解压至 ~/.gemini/config/plugins/',
+        install_cmd: `powershell -ExecutionPolicy Bypass -Command "iwr -Uri '{{ENDPOINT_URL}}/studio/${agTarball}' -OutFile '$env:TEMP\\${pid}.tgz'; New-Item -ItemType Directory -Force -Path \\"$env:USERPROFILE\\.gemini\\config\\plugins\\${pid}\\" | Out-Null; tar -xzf '$env:TEMP\\${pid}.tgz' -C \\"$env:USERPROFILE\\.gemini\\config\\plugins\\${pid}\\"; python \\"$env:USERPROFILE\\.gemini\\config\\plugins\\${pid}\\setup.py\\" --install --api {{ENDPOINT_URL}} --key {{USER_KEY}}"`,
+        agent_prompt: `请帮我将当前反重力客户端 (Antigravity IDE / Desktop) 接入 ${plugin.name} 插件：\n1. 目标包直链：{{ENDPOINT_URL}}/studio/${agTarball}\n2. 挂载目录：$env:USERPROFILE\\.gemini\\config\\plugins\\${pid}\n3. 服务中枢地址：{{ENDPOINT_URL}}\n4. 用户授权凭据：{{USER_KEY}}\n5. 执行：python setup.py --install --api {{ENDPOINT_URL}} --key {{USER_KEY}} 完成自举注册与 FastMCP 挂载。`,
+        config_snippet: `{\n  "plugins": {\n    "${pid}": {\n      "installedFrom": {\n        "id": "antigravity/plugin/${pid}",\n        "marketplace": "openviking-studio",\n        "version": "${version}"\n      }\n    }\n  }\n}`,
+        docs_markdown: '在 Windows PowerShell 中运行上述安装命令，自动完成下载解压、宿主注册与 FastMCP 双轨服务配置；亦可复制智能体认主提示词直接在反重力对话框中一键唤醒。',
       },
       {
         id: 'dsh',
@@ -92,15 +97,18 @@ export function PluginQuickstartSection({ plugin }: PluginQuickstartSectionProps
 
   const activeChannel = channels.find((c) => c.id === activeChannelId) || channels[0]
 
-  // 3. 动态占位符安全插值 (端点、密钥、版本与包URL)
+  const effectiveAgentPrompt = activeChannel?.agent_prompt || (activeChannel?.id === 'antigravity'
+    ? `请帮我将当前反重力客户端 (Antigravity IDE / Desktop) 接入 ${plugin.name} 插件：\n1. 目标包直链：{{ENDPOINT_URL}}/studio/${agTarball}\n2. 挂载目录：$env:USERPROFILE\\.gemini\\config\\plugins\\${pid}\n3. 服务中枢地址：{{ENDPOINT_URL}}\n4. 用户授权凭据：{{USER_KEY}}\n5. 执行：python setup.py --install --api {{ENDPOINT_URL}} --key {{USER_KEY}} 完成自举注册与 FastMCP 挂载。`
+    : undefined)
+
+  // 3. 动态占位符插值 (端点与包URL实时计算；User Key 保留占位符供用户手动替换)
   const interpolate = (template: string) => {
     if (!template) return ''
     const effectiveEndpoint = endpointUrl.trim().replace(/\/+$/, '') || '<ENDPOINT_URL>'
-    const effectiveKey = userKey.trim() || '<YOUR_USER_KEY>'
     const effectivePackageUrl = `${effectiveEndpoint}/studio/${dshTarball}`
     return template
       .replaceAll('{{ENDPOINT_URL}}', effectiveEndpoint)
-      .replaceAll('{{USER_KEY}}', effectiveKey)
+      .replaceAll('{{USER_KEY}}', '<YOUR_USER_KEY>')
       .replaceAll('{{PACKAGE_URL}}', effectivePackageUrl)
       .replaceAll('{{PLUGIN_ID}}', pid)
       .replaceAll('{{PLUGIN_VER}}', version)
@@ -136,43 +144,47 @@ export function PluginQuickstartSection({ plugin }: PluginQuickstartSectionProps
         </Badge>
       </div>
 
-      {/* 参数输入面板: 服务地址 + User Key (透明自主填写，即时插值) */}
-      <div className="rounded-md border border-border/50 bg-card/40 p-3 space-y-2.5">
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-          <div className="space-y-1">
-            <label className="flex items-center gap-1.5 font-medium text-foreground text-xs">
-              <GlobeIcon className="size-3 text-cyan-600 dark:text-cyan-400" />
-              服务中枢地址 (Endpoint URL)
-            </label>
-            <Input
-              value={endpointUrl}
-              onChange={(e) => setEndpointUrl(e.target.value)}
-              placeholder="例如: https://vk.tide.red 或 http://127.0.0.1:1933"
-              className="h-7 text-xs font-mono px-2 bg-background/80"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="flex items-center gap-1.5 font-medium text-foreground text-xs">
-              <KeyIcon className="size-3 text-cyan-600 dark:text-cyan-400" />
-              用户凭据密钥 (User Key)
-            </label>
-            <Input
-              value={userKey}
-              onChange={(e) => setUserKey(e.target.value)}
-              placeholder="输入或粘贴你的专属 User Key (例如: vk-usr-xxxx)"
-              className="h-7 text-xs font-mono px-2 bg-background/80"
-            />
+      {/* 服务地址输入 — 提供【本地内网】与【公网云端】双模预设与即时切换 */}
+      <div className="rounded-md border border-border/50 bg-card/40 p-3 space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <label className="flex items-center gap-1.5 font-medium text-foreground text-xs">
+            <GlobeIcon className="size-3 text-cyan-600 dark:text-cyan-400" />
+            服务中枢地址 (Endpoint URL)
+          </label>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setEndpointUrl(localPreset)}
+              className={`px-2 py-0.5 rounded text-xs font-mono transition-colors border cursor-pointer ${
+                endpointUrl.includes('127.0.0.1') || endpointUrl.includes('localhost') || endpointUrl.includes(':1933')
+                  ? 'border-cyan-500/50 bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 font-medium'
+                  : 'border-border/40 bg-muted/30 text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              }`}
+            >
+              本地内网: {localPreset}
+            </button>
+            <button
+              type="button"
+              onClick={() => setEndpointUrl(publicPreset)}
+              className={`px-2 py-0.5 rounded text-xs font-mono transition-colors border cursor-pointer ${
+                endpointUrl.includes('vk.tide.red')
+                  ? 'border-cyan-500/50 bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 font-medium'
+                  : 'border-border/40 bg-muted/30 text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              }`}
+            >
+              公网云端: {publicPreset}
+            </button>
           </div>
         </div>
-        <div className="text-xs text-muted-foreground flex items-center justify-between pt-0.5">
-          <span>修改地址或密钥后，下方各渠道命令与配置文件将自动同步插值，复制即用。</span>
-          {userKey && (
-            <Badge variant="outline" className="text-xs font-mono px-1.5 py-0 border-cyan-500/30 text-cyan-700 dark:text-cyan-400 bg-cyan-500/10">
-              已填入专属密钥
-            </Badge>
-          )}
-        </div>
+        <Input
+          value={endpointUrl}
+          onChange={(e) => setEndpointUrl(e.target.value)}
+          placeholder={`例如: ${publicPreset} 或 ${localPreset}`}
+          className="h-7 text-xs font-mono px-2 bg-background/80"
+        />
+        <p className="text-xs text-muted-foreground">
+          可直接点击上方标签在【本地内网】与【公网云端】间秒级切换，或输入自定义 IP。修改后安装命令中的下载地址自动同步。
+        </p>
       </div>
 
       {/* 渠道切换 Tab 导航 */}
@@ -232,6 +244,39 @@ export function PluginQuickstartSection({ plugin }: PluginQuickstartSectionProps
               </div>
               <pre className="rounded p-2 font-mono text-xs overflow-x-auto whitespace-pre-wrap break-all border border-border/40 bg-muted/40 text-foreground/90">
                 {interpolate(activeChannel.install_cmd)}
+              </pre>
+            </div>
+          )}
+
+          {/* 智能体认主提示词块 (支持一键复制提示词发给反重力 / 智能体) */}
+          {effectiveAgentPrompt && (
+            <div className="space-y-1.5 pt-1">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-semibold text-foreground text-xs flex items-center gap-1.5">
+                  <LaptopIcon className="size-3 text-cyan-600 dark:text-cyan-400" />
+                  <span>智能体一键认主提示词 (发送给客户端对话框)</span>
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-xs font-mono gap-1 text-muted-foreground hover:text-foreground"
+                  onClick={() => handleCopy(interpolate(effectiveAgentPrompt), `${activeChannel.name} 认主提示词`)}
+                >
+                  {copiedKey === `${activeChannel.name} 认主提示词` ? (
+                    <>
+                      <CheckIcon className="size-3 text-cyan-500" />
+                      <span>已复制</span>
+                    </>
+                  ) : (
+                    <>
+                      <CopyIcon className="size-3" />
+                      <span>复制</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+              <pre className="rounded p-2 font-mono text-xs overflow-x-auto whitespace-pre-wrap break-all border border-border/30 bg-muted/20 text-foreground/80">
+                {interpolate(effectiveAgentPrompt)}
               </pre>
             </div>
           )}

@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "core": {
+      "command": "python",
+      "args": [
+        "server.py"
+      ],
+      "env": {
+        "SEARCH_GATEWAY_URL": "http://127.0.0.1:18888",
+        "PYTHONIOENCODING": "utf-8"
+      }
+    }
+  }
+}

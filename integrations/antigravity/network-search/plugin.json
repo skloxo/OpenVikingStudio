@@ -1,0 +1,55 @@
+{
+  "name": "network-search",
+  "displayName": "联网搜索与采集网关",
+  "version": "1.1.2",
+  "description": "独立多引擎联网搜索与网页采集聚合网关 (Port 18888)，基于 26-Key 轮询矩阵 (Keenable 80万次池 + Tavily + SearXNG + Crawl4AI 无头渲染)。支持原生标准 API (DSH 免装插件) 与通用 FastMCP 算子双模态接入。",
+  "logo": "assets/logo.svg",
+  "suggestedPrompts": [
+    "调用联网搜索查询最新资讯或官方文档",
+    "使用多引擎轮询并发检索学术/金融/代码信息",
+    "通过无头浏览器深度抓取并提取指定网页正文"
+  ],
+  "author": {
+    "name": "OpenViking Team",
+    "url": "https://github.com/volcengine/OpenViking"
+  },
+  "homepage": "https://sear.tide.red",
+  "repository": "https://github.com/volcengine/OpenViking",
+  "license": "AGPL-3.0",
+  "keywords": [
+    "search",
+    "network-search",
+    "web-search",
+    "searxng",
+    "keenable",
+    "tavily",
+    "crawl4ai",
+    "antigravity"
+  ],
+  "integration": {
+    "channels": [
+      {
+        "id": "antigravity",
+        "name": "Google 反重力",
+        "install_cmd": "powershell -ExecutionPolicy Bypass -Command \"iwr -Uri '{{ENDPOINT_URL}}/studio/network-search-{{PLUGIN_VER}}.tgz' -OutFile '$env:TEMP\\network-search.tgz'; New-Item -ItemType Directory -Force -Path \\\"$env:USERPROFILE\\.gemini\\config\\plugins\\network-search\\\" | Out-Null; tar -xzf '$env:TEMP\\network-search.tgz' -C \\\"$env:USERPROFILE\\.gemini\\config\\plugins\\network-search\\\"; python \\\"$env:USERPROFILE\\.gemini\\config\\plugins\\network-search\\setup.py\\\"\"",
+        "agent_prompt": "请帮我将当前反重力客户端 (Antigravity IDE / Desktop) 接入联网搜索与采集网关 (network-search) 插件：\n1. 插件分发包直链：{{ENDPOINT_URL}}/studio/network-search-{{PLUGIN_VER}}.tgz\n2. 目标目录：$env:USERPROFILE\\.gemini\\config\\plugins\\network-search\n3. 执行：python setup.py 完成 12 项原子级高级联网搜索与无头爬虫 FastMCP 挂载（IDE 与 Desktop 双端自动生效）。",
+        "config_snippet": "{\n  \"plugins\": {\n    \"network-search\": {\n      \"installedFrom\": {\n        \"id\": \"antigravity/plugin/network-search\",\n        \"marketplace\": \"openviking-studio\",\n        \"version\": \"{{PLUGIN_VER}}\"\n      }\n    }\n  }\n}",
+        "docs_markdown": "在 Antigravity (IDE 与 Desktop 2.0 双端通用) 中挂载 12 项原子级高级联网搜索与无头爬虫 FastMCP 工具。"
+      },
+      {
+        "id": "dsh",
+        "name": "DeepSeek Harness (DSH)",
+        "install_cmd": "npm install https://vk.tide.red/studio/dsh-plugin-search-gateway.tgz",
+        "config_snippet": "Base URL: https://sear.tide.red/v1\nAPI Key: <YOUR_SEARCH_KEY>",
+        "docs_markdown": "DSH 官方原生支持直接填入 Base URL 与 API Key，无需安装额外插件包；亦可安装定制 NPM 插件包启用 12 项高级工具。"
+      },
+      {
+        "id": "universal-mcp",
+        "name": "Universal MCP (Cursor / Claude / Windsurf)",
+        "install_cmd": "",
+        "config_snippet": "{\n  \"mcpServers\": {\n    \"search-gateway\": {\n      \"url\": \"https://sear.tide.red/mcp\",\n      \"headers\": {\n        \"x-api-key\": \"<YOUR_SEARCH_KEY>\"\n      }\n    }\n  }\n}",
+        "docs_markdown": "通用智能体通过 Streamable HTTP / SSE 协议直连网关 18888 端口。"
+      }
+    ]
+  }
+}

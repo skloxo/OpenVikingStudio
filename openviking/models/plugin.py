@@ -71,6 +71,7 @@ class IntegrationChannelDefinition(BaseModel):
     id: str = Field(..., description="渠道唯一标识 (antigravity | dsh | universal-mcp)")
     name: str = Field(..., description="渠道显示名称 (Google 反重力 | DeepSeek Harness | 通用 MCP 智能体)")
     install_cmd: str = Field("", description="安装或引入命令行模板")
+    agent_prompt: str = Field("", description="智能体一键认主提示词模板")
     config_snippet: str = Field("", description="配置代码片段模板 (JSON 或 YAML)")
     docs_markdown: str = Field("", description="渠道专属接入详细说明 Markdown")
 

@@ -71,6 +71,7 @@ export type IntegrationChannel = {
   install_cmd?: string
   config_snippet?: string
   docs_markdown?: string
+  agent_prompt?: string
 }
 
 export type IntegrationDefinition = {

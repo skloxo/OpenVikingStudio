@@ -142,11 +142,13 @@ function UserApiKeyInput({
 interface ConnectionCardProps {
   onRecheckAll: () => void
   isRechecking?: boolean
+  isSaving?: boolean
 }
 
 export function ConnectionCard({
   onRecheckAll,
   isRechecking = false,
+  isSaving = false,
 }: ConnectionCardProps) {
   const { i18n, t } = useTranslation('settings')
   const isZh = i18n.resolvedLanguage?.startsWith('zh')
@@ -389,7 +391,7 @@ export function ConnectionCard({
             {draft.adminApiKey.trim() ? (
               <SetupIdentityDirectory
                 connection={draft}
-                disabled={isSaving}
+                disabled={isSaving || isRechecking}
                 onChange={updateDraft}
               />
             ) : null}
