@@ -20,7 +20,8 @@
     "index.js",
     "schema.js",
     "README.md",
-    "client.js"
+    "client.js",
+    "cordis.patch.yml"
   ],
   "dsh": {
     "bundle": {

@@ -93,10 +93,18 @@ def pack_dsh_with_injected_client(
             .replace("__TOOL_CATEGORIES_JSON__", "[]")
             .replace("__SKILLS_JSON__", "[]")
             .replace("__HOOKS_JSON__", "[]")
-            .replace("__OVERVIEW_CARDS_JSON__", "[]")
+            .replace("__RULES_JSON__", "[]")
+            .replace("__README_CONTENT_JSON__", json.dumps(safe_readme, ensure_ascii=False))
         )
 
     with tarfile.open(pub_v_path, "w:gz") as tar:
+        # 确保存在 cordis.patch.yml 满足 DSH 插件管理器的安装门禁
+        patch_file = src_dir / "cordis.patch.yml"
+        if not patch_file.is_file():
+            short_n = target_base_name.replace("dsh-plugin-", "")
+            patch_content = f"# dsh bundle patch: inserts this plugin into profile layer stack\n- insert:\n    - id: {short_n}\n      name: {target_base_name}\n"
+            patch_file.write_text(patch_content, encoding="utf-8")
+
         for item in src_dir.iterdir():
             if item.name in TAR_EXCLUDES or item.suffix == ".tgz" or item.name == "client.js":
                 continue
@@ -108,10 +116,15 @@ def pack_dsh_with_injected_client(
                     raise RuntimeError(f"🚨 [致命阻断] 插件 {src_dir.name}/package.json 非法或存在损坏编码，严禁打包: {e}") from e
 
                 pkg_dict["exports"] = {".": "./index.js", "./client": "./client.js"}
-                if "client.js" not in pkg_dict.get("files", []):
-                    pkg_dict["files"] = pkg_dict.get("files", []) + ["client.js"]
+                files_list = pkg_dict.get("files", [])
+                for f in ("client.js", "cordis.patch.yml"):
+                    if f not in files_list:
+                        files_list.append(f)
+                pkg_dict["files"] = files_list
                 pkg_dict["dsh"] = {
-                    "bundle": {"patch": "./cordis.patch.yml"},
+                    "bundle": {
+                        "patch": "./cordis.patch.yml"
+                    },
                     "client": {
                         "platform": "web",
                         "immediately": True,

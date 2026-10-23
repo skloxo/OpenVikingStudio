@@ -2,7 +2,7 @@
 # Copyright (c) 2026 Beijing Volcano Engine Technology Co., Ltd.
 # SPDX-License-Identifier: AGPL-3.0
 """
-OpenViking 核心记忆反重力官方标准插件 (v2.0.33 - 全自动自举工业版)
+OpenViking 核心记忆反重力官方标准插件 (v2.0.36 - 全自动自举工业版)
 支持：
 1. 拓扑自适应：本地优先探测 127.0.0.1:1933，卫星端优雅降级公网域名
 2. 宿主注册表：自动幂等注入 ~/.gemini/config/config.json 点亮 IDE 已安装列表
@@ -152,7 +152,20 @@ def verify_connection(api: str, key: str) -> tuple[bool, str, float, str]:
         with urllib.request.urlopen(req, timeout=3.0) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             elapsed_ms = (time.time() - t0) * 1000
-            user = data.get("user_id") or data.get("account_id") or "authorized"
+            user = data.get("user_id") or data.get("account_id")
+            if not user or user == "authorized":
+                if key and "." in key:
+                    parts = key.split(".")
+                    if len(parts) == 3:
+                        try:
+                            import base64
+                            pad = 4 - (len(parts[1]) % 4)
+                            s = parts[1] + ("=" * pad if pad != 4 else "")
+                            user = base64.urlsafe_b64decode(s).decode("utf-8")
+                        except Exception:
+                            pass
+            if not user:
+                user = "default"
             return True, user, elapsed_ms, ""
     except urllib.error.HTTPError as e:
         elapsed_ms = (time.time() - t0) * 1000
@@ -209,10 +222,7 @@ def resolve_actor_peer(preferred: str = "") -> str:
                         return v
             except Exception:
                 pass
-    node = platform.node().lower()
-    guessed = "antigravity@3070" if "3070" in node else ("antigravity@2080ti" if "2080" in node else f"antigravity@{platform.node()}")
-    print(f"  ℹ️ [拓扑识别] 未显式配置 Peer 身份，采用主机名推断: 【{guessed}】(主机名: {platform.node()})")
-    return guessed
+    return f"antigravity@{platform.node()}"
 
 
 def sync_mcp_dual_track(api: str, key: str, target_dir: Path, actor_peer: str = ""):
@@ -451,9 +461,10 @@ def main():
     parser.add_argument("--inspect", action="store_true", help="检查插件健康状态与连通性")
     parser.add_argument("--uninstall", action="store_true", help="卸载插件")
     parser.add_argument("--target", type=str, default="", help="指定安装目标目录")
+    parser.add_argument("--configure", action="store_true", help="交互式配置 API 地址与 UserKey")
     parser.add_argument("--api", type=str, default="", help="OpenViking API 地址")
     parser.add_argument("--key", type=str, default="", help="OpenViking API Key")
-    parser.add_argument("--peer", "--actor-peer", dest="peer", type=str, default="", help="专属 Actor Peer (如 antigravity@3070)")
+    parser.add_argument("--peer", "--actor-peer", dest="peer", type=str, default="", help="专属 Actor Peer")
 
     args = parser.parse_args()
     target_dir = Path(args.target).resolve() if args.target else DEFAULT_TARGET_DIR
@@ -464,6 +475,29 @@ def main():
 
     if args.inspect:
         inspect_plugin(target_dir)
+        return
+
+    if args.configure:
+        print("🔧 OpenViking 反重力插件终端自治配置向导:")
+        def_api = args.api or "http://127.0.0.1:1933"
+        in_api = input(f"? 请输入 OpenViking API 地址 [默认: {def_api}]: ").strip()
+        api = in_api or def_api
+        in_key = input("? 请输入您的专属 UserKey (留空使用已有配置): ").strip()
+        target_dir.mkdir(parents=True, exist_ok=True)
+        cfg_file = target_dir / "config.json"
+        cfg = {}
+        if cfg_file.exists():
+            try:
+                cfg = json.loads(cfg_file.read_text(encoding="utf-8"))
+            except Exception:
+                pass
+        cfg["api_url"] = api
+        if in_key:
+            cfg["api_key"] = in_key
+        cfg_file.write_text(json.dumps(cfg, indent=2, ensure_ascii=False), encoding="utf-8")
+        print(f"✔ 配置已成功写入插件本地目录: {cfg_file}")
+        sync_mcp_dual_track(api, in_key or cfg.get("api_key", ""), target_dir)
+        print("✔ MCP 运行态已成功同频！")
         return
 
     api, key = sniff_api_credentials(args.api)

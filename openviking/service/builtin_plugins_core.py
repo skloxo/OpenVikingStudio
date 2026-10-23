@@ -25,6 +25,20 @@ def resolve_package_version(pkg_name: str, fallback: str) -> str:
         from pathlib import Path
         import json
         studio_root = Path(__file__).resolve().parent.parent.parent
+        # 0. 优先尝试 packages/plugins 母港 (单一真相源)
+        clean_name = pkg_name.replace("dsh-plugin-", "")
+        pkg_bundle = studio_root / "packages" / "plugins" / clean_name
+        if pkg_bundle.is_dir():
+            pj = pkg_bundle / "package.json"
+            if pj.is_file():
+                data = json.loads(pj.read_text(encoding="utf-8"))
+                if data.get("version"):
+                    return data["version"]
+            plj = pkg_bundle / "plugin.json"
+            if plj.is_file():
+                data = json.loads(plj.read_text(encoding="utf-8"))
+                if data.get("version"):
+                    return data["version"]
         # 1. 尝试 DSH package.json
         dsh_pkg = studio_root / "integrations" / "deepseek-harness" / pkg_name / "package.json"
         if dsh_pkg.is_file():
@@ -178,7 +192,7 @@ def create_core_and_ops_plugins(
     memory_plugin = QuadPluginDefinition(
         plugin_id="openviking-memory",
         name="OpenViking 核心记忆与代码战地",
-        version=resolve_package_version("dsh-plugin-openviking-memory", "2.0.33"),
+        version=resolve_package_version("dsh-plugin-openviking-memory", "2.0.36"),
         category="platform",
         description="体外大脑中心化战地旗舰：长程记忆、工作区 AST、1214技能感知、工单吹哨与泊车管家 (面向全量普通 Agent)",
         skill=SkillDefinition(

@@ -151,20 +151,20 @@ def assemble_dsh_adapter(
 
     skills_data = [{"name": s.name, "desc": s.description} for s in skills]
     hooks_data = [{"name": h.name, "desc": h.description, "event": h.trigger_event} for h in hooks]
+    rules = q.rules if q and q.rules else []
+    rules_data = [{"name": r.name, "desc": r.description, "content": getattr(r, "content", "")} for r in rules]
 
-    # 4. 架构概览卡片
-    overview_cards = [
-        {"title": "🔌 架构定位与契约", "text": description},
-    ]
-    if suggested_prompts:
-        overview_cards.append({
-            "title": "🎯 建议交互指令",
-            "text": "\n".join(f"• {p}" for p in suggested_prompts),
-        })
-    overview_cards.append({
-        "title": "🛡️ 治理与审计规约",
-        "text": "遵循 OpenViking 零信任治理公理与单一真相源 (SSOT)。所有调用行为均自动留存安全审计轨迹与调用链追踪。",
-    })
+    # 4. 提取真实 README 内容 (唯一真相源)
+    readme_content = ""
+    if q and q.readme_content:
+        readme_content = q.readme_content
+    elif (kernel_dir / "README.md").is_file():
+        try:
+            readme_content = (kernel_dir / "README.md").read_text(encoding="utf-8")
+        except Exception:
+            pass
+    if not readme_content:
+        readme_content = f"# {display_name}\n\n{description}"
 
     # 5. 读取模板并完成 100% 参数化动态置换
     tpl_text = tpl_file.read_text(encoding="utf-8")
@@ -177,7 +177,8 @@ def assemble_dsh_adapter(
         .replace("__TOOL_CATEGORIES_JSON__", json.dumps(tool_categories_data, ensure_ascii=False))
         .replace("__SKILLS_JSON__", json.dumps(skills_data, ensure_ascii=False))
         .replace("__HOOKS_JSON__", json.dumps(hooks_data, ensure_ascii=False))
-        .replace("__OVERVIEW_CARDS_JSON__", json.dumps(overview_cards, ensure_ascii=False))
+        .replace("__RULES_JSON__", json.dumps(rules_data, ensure_ascii=False))
+        .replace("__README_CONTENT_JSON__", json.dumps(readme_content, ensure_ascii=False))
     )
 
     meta = {
@@ -188,6 +189,7 @@ def assemble_dsh_adapter(
         "tools_count": len(tools),
         "skills_count": len(skills),
         "hooks_count": len(hooks),
+        "rules_count": len(rules),
     }
     return assembled_code, meta
 
@@ -196,19 +198,31 @@ def assemble_and_write(kernel_dir: Path, target_dir: Path) -> Dict[str, Any]:
     """装配适配器并物理落盘 client.js 与修正 package.json。"""
     target_dir.mkdir(parents=True, exist_ok=True)
     assembled_code, meta = assemble_dsh_adapter(kernel_dir)
+    short_name = meta["short_name"]
+    dsh_pkg_name = meta["dsh_pkg_name"]
 
     client_path = target_dir / "client.js"
     client_path.write_text(assembled_code, encoding="utf-8")
+
+    # DSH 官方插件必须声明 dsh.bundle 及其 cordis.patch.yml，否则 DSH 会拦截报错“这个包没有声明组合包，不能作为插件管理”
+    patch_file = target_dir / "cordis.patch.yml"
+    patch_content = f"# dsh bundle patch: inserts this plugin into profile layer stack\n- insert:\n    - id: {short_name}\n      name: {dsh_pkg_name}\n"
+    patch_file.write_text(patch_content, encoding="utf-8")
 
     pkg_json_file = target_dir / "package.json"
     if pkg_json_file.is_file():
         try:
             pkg_data = json.loads(pkg_json_file.read_text(encoding="utf-8"))
             pkg_data["exports"] = {".": "./index.js", "./client": "./client.js"}
-            if "client.js" not in pkg_data.get("files", []):
-                pkg_data["files"] = pkg_data.get("files", []) + ["client.js"]
+            files_list = pkg_data.get("files", [])
+            for f in ("client.js", "cordis.patch.yml"):
+                if f not in files_list:
+                    files_list.append(f)
+            pkg_data["files"] = files_list
             pkg_data["dsh"] = {
-                "bundle": {"patch": "./cordis.patch.yml"},
+                "bundle": {
+                    "patch": "./cordis.patch.yml"
+                },
                 "client": {
                     "platform": "web",
                     "immediately": True,

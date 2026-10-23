@@ -1,10 +1,4 @@
-# KeePass Vault Bundle Patch for DeepSeek Harness (DSH)
-# 本地私有运行，无需云端依赖
+# dsh bundle patch: inserts this plugin into profile layer stack
 - insert:
     - id: keepass-vault
       name: dsh-plugin-keepass-vault
-      config:
-        kdbxPath: "~/.openviking/vault.kdbx"
-        passwordEnv: "KEEPASS_VAULT_PASSWORD"
-        masterKey: ""
-        autoSnapshot: true

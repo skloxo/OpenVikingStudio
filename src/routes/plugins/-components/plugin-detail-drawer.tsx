@@ -24,7 +24,6 @@ import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { useAppConnection } from '#/hooks/use-app-connection'
-import { useServerVersionDetails } from '#/hooks/use-server-version'
 import {
   getPluginPrivilegeStatus,
   isPrivilegedTool,
@@ -35,7 +34,6 @@ import { PluginConfigSection } from './plugin-config-section'
 import { PluginPromptsSection } from './plugin-prompts-section'
 import { PluginQuickstartSection } from './plugin-quickstart-section'
 import { PluginReadmeViewer } from './plugin-readme-viewer'
-import { SearchIntegrationGuide } from './search-integration-guide'
 
 
 export type PluginDetailDrawerProps = {
@@ -47,7 +45,6 @@ type PluginTabId = 'overview' | 'skills' | 'mcp' | 'hooks' | 'rules' | 'quicksta
 
 export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps) {
   const { connectionRole } = useAppConnection()
-  const versionDetails = useServerVersionDetails()
   const [activeTab, setActiveTab] = React.useState<PluginTabId>('overview')
   const [toolSearch, setToolSearch] = React.useState('')
 
@@ -160,13 +157,8 @@ export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps)
               {cleanName}
             </h2>
             <Badge variant="outline" className="text-xs font-mono border-cyan-500/40 bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 shrink-0">
-              包: v{plugin.version}
+              v{plugin.version}
             </Badge>
-            {versionDetails?.version && (
-              <Badge variant="outline" className="text-xs font-mono border-border/70 text-muted-foreground shrink-0">
-                内核: v{versionDetails.version}
-              </Badge>
-            )}
             <Badge variant="outline" className="text-xs font-mono border-cyan-500/30 text-cyan-700 dark:text-cyan-400 shrink-0">
               ● {tools.length} 工具热更同频
             </Badge>
@@ -390,14 +382,10 @@ export function PluginDetailDrawer({ plugin, onClose }: PluginDetailDrawerProps)
           </div>
         )}
 
-        {/* Tab 6: 接入指引 (Quickstart & Config) */}
+        {/* Tab 6: 接入指引 (Quickstart & Config) - 100% 通用泛型渲染器，零特例分支 */}
         {activeTab === 'quickstart' && (
           <div className="space-y-4">
-            {plugin.plugin_id === 'network-search' ? (
-              <SearchIntegrationGuide />
-            ) : (
-              <PluginQuickstartSection plugin={plugin} />
-            )}
+            <PluginQuickstartSection plugin={plugin} />
             <div className="pt-2 border-t border-border/40">
 
               <h4 className="text-xs font-semibold text-foreground mb-2 flex items-center gap-1.5">

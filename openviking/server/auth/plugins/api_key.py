@@ -91,17 +91,18 @@ class ApiKeyAuthPlugin(AuthPlugin):
             return oauth_identity
 
         identity = api_key_manager.resolve(api_key)
-        identity.account_id = identity.account_id or "default"
-        identity.user_id = identity.user_id or "default"
-
-        if x_openviking_account and x_openviking_account != identity.account_id:
-            raise PermissionDeniedError(
-                "X-OpenViking-Account cannot override account bound to API Key."
-            )
-        if x_openviking_user and x_openviking_user != identity.user_id:
-            raise PermissionDeniedError(
-                "X-OpenViking-Account and X-OpenViking-User cannot override user bound to API Key."
-            )
+        if identity.role == Role.ROOT:
+            # Root Key 支持通过 Header 显式代行模拟空间与用户
+            if x_openviking_account:
+                identity.account_id = x_openviking_account
+            if x_openviking_user:
+                identity.user_id = x_openviking_user
+            identity.account_id = identity.account_id or "default"
+            identity.user_id = identity.user_id or "default"
+        else:
+            # UserKey 模式：凭据即身份 (SSOT)，直接由密码学签名决定 account 与 user，永不误杀
+            identity.account_id = identity.account_id or "default"
+            identity.user_id = identity.user_id or "default"
 
         if x_openviking_account:
             _remove_header(request, b"x-openviking-account")
