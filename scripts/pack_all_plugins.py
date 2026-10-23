@@ -14,12 +14,11 @@ import sys
 import tarfile
 from pathlib import Path
 
-if sys.platform == "win32":
-    try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+# 引入智能体适配器装配流水线
+SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+from assemble_dsh_adapter import assemble_dsh_adapter, DSH_TO_KERNEL_MAP
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 PUBLIC_DIR = ROOT_DIR / "public"
@@ -68,26 +67,34 @@ def pack_dsh_with_injected_client(
     target_base_name: str,
     version: str,
     template_path: Path,
-    readme_path: Path
+    readme_path: Path,
+    kernel_dir: Path | None = None,
 ) -> tuple[int, Path]:
     """打包 DSH 插件包，并在打包时自动注入通用的 client.js 解释器，源码 0 行前端"""
     import io
     versioned_name = f"{target_base_name}-{version}.tgz"
     pub_v_path = PUBLIC_DIR / versioned_name
 
-    # 读取母本 README
-    readme_text = readme_path.read_text(encoding="utf-8") if readme_path.is_file() else "# " + target_base_name
-    safe_readme = readme_text.replace("`", "\\`").replace("${", "\\${")
-
-    # 读取并替换通用 client.js 模板
-    tpl_text = template_path.read_text(encoding="utf-8")
-    injected_client_js = (
-        tpl_text
-        .replace("__PLUGIN_ID__", target_base_name)
-        .replace("__PLUGIN_VERSION__", version)
-        .replace("__PLUGIN_NAME__", target_base_name)
-        .replace("__README_CONTENT__", safe_readme)
-    )
+    # 优先使用通用装配流水线动态提取内核能力并组装适配器代码
+    k_dir = kernel_dir or src_dir
+    try:
+        injected_client_js, meta = assemble_dsh_adapter(k_dir, template_path)
+    except Exception:
+        # 兼容退化
+        readme_text = readme_path.read_text(encoding="utf-8") if readme_path.is_file() else "# " + target_base_name
+        safe_readme = readme_text.replace("`", "\\`").replace("${", "\\${")
+        tpl_text = template_path.read_text(encoding="utf-8")
+        injected_client_js = (
+            tpl_text
+            .replace("__PLUGIN_ID__", target_base_name)
+            .replace("__PLUGIN_VERSION__", version)
+            .replace("__PLUGIN_NAME__", target_base_name)
+            .replace("__SHORT_NAME__", target_base_name.replace("dsh-plugin-", ""))
+            .replace("__TOOL_CATEGORIES_JSON__", "[]")
+            .replace("__SKILLS_JSON__", "[]")
+            .replace("__HOOKS_JSON__", "[]")
+            .replace("__OVERVIEW_CARDS_JSON__", "[]")
+        )
 
     with tarfile.open(pub_v_path, "w:gz") as tar:
         for item in src_dir.iterdir():
@@ -187,8 +194,20 @@ def main():
                     if name in processed_plugins:
                         continue
                     version = data.get("version", "1.0.0")
-                    size, _ = pack_directory(p_dir, name, version, is_npm=True)
-                    results.append((name, version, size, "DSH (Legacy)"))
+
+                    # 解析对应内核目录并自动装配 DSH 表现层适配器
+                    kernel_name = DSH_TO_KERNEL_MAP.get(name, name.replace("dsh-plugin-", ""))
+                    kernel_dir = ROOT_DIR / "integrations" / "antigravity" / kernel_name
+                    if not kernel_dir.is_dir():
+                        kernel_dir = ROOT_DIR / "packages" / "plugins" / kernel_name
+
+                    readme_path = p_dir / "README.md"
+                    size, _ = pack_dsh_with_injected_client(
+                        p_dir, name, version, template_path, readme_path,
+                        kernel_dir=kernel_dir if kernel_dir.is_dir() else None
+                    )
+                    results.append((name, version, size, "DSH (Auto-Injected)"))
+                    processed_plugins.add(name)
                 except Exception as e:
                     print(f"  ⚠️ 打包 DSH 插件 {p_dir.name} 失败: {e}")
 
