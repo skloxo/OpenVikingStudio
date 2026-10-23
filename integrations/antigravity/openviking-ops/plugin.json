@@ -25,5 +25,31 @@
     "doctor",
     "fastmcp",
     "antigravity"
-  ]
+  ],
+  "integration": {
+    "channels": [
+      {
+        "id": "antigravity",
+        "name": "Google 反重力",
+        "install_cmd": "powershell -ExecutionPolicy Bypass -Command \"iwr -Uri '{{ENDPOINT_URL}}/studio/openviking-ops-{{PLUGIN_VER}}.tgz' -OutFile '$env:TEMP\\openviking-ops.tgz'; New-Item -ItemType Directory -Force -Path \\\"$env:USERPROFILE\\.gemini\\config\\plugins\\openviking-ops\\\" | Out-Null; tar -xzf '$env:TEMP\\openviking-ops.tgz' -C \\\"$env:USERPROFILE\\.gemini\\config\\plugins\\openviking-ops\\\"; python \\\"$env:USERPROFILE\\.gemini\\config\\plugins\\openviking-ops\\setup.py\\\" --install --api {{ENDPOINT_URL}} --key {{USER_KEY}}\"",
+        "agent_prompt": "请帮我将当前反重力客户端 (Antigravity IDE / Desktop) 接入 OpenViking 系统运维治理 (openviking-ops) 插件：\n1. 分发包直链：{{ENDPOINT_URL}}/studio/openviking-ops-{{PLUGIN_VER}}.tgz\n2. 挂载目录：$env:USERPROFILE\\.gemini\\config\\plugins\\openviking-ops\n3. 执行：python setup.py --install --api {{ENDPOINT_URL}} --key {{USER_KEY}} 完成自举安装与 FastMCP 挂载。",
+        "config_snippet": "{\n  \"plugins\": {\n    \"openviking-ops\": {\n      \"installedFrom\": {\n        \"id\": \"antigravity/plugin/openviking-ops\",\n        \"marketplace\": \"openviking-studio\",\n        \"version\": \"{{PLUGIN_VER}}\"\n      }\n    }\n  }\n}",
+        "docs_markdown": "在 Windows PowerShell 中运行安装命令，自动完成下载解压、宿主注册与 FastMCP 双轨服务配置。亦可复制认主提示词直接在反重力对话框中一键启用。"
+      },
+      {
+        "id": "dsh",
+        "name": "DeepSeek Harness (DSH)",
+        "install_cmd": "npm install {{PACKAGE_URL}}",
+        "config_snippet": "openviking-ops:\n  endpointUrl: \"{{ENDPOINT_URL}}\"\n  userKey: \"{{USER_KEY}}\"\n  enableMcp: true",
+        "docs_markdown": "在 DSH 客户端插件市场安装，或在 profiles/desktop/node_modules 下解压加载。"
+      },
+      {
+        "id": "universal-mcp",
+        "name": "通用 MCP 智能体",
+        "install_cmd": "npx -y @openviking/mcp-gateway",
+        "config_snippet": "{\n  \"mcpServers\": {\n    \"openviking-ops\": {\n      \"url\": \"{{ENDPOINT_URL}}/mcp?plugin_id=openviking-ops\",\n      \"headers\": {\n        \"Authorization\": \"Bearer {{USER_KEY}}\"\n      }\n    }\n  }\n}",
+        "docs_markdown": "兼容 Claude Desktop, Cursor, Windsurf, OpenClaw 等遵循标准 MCP 协议的智能体客户端。"
+      }
+    ]
+  }
 }

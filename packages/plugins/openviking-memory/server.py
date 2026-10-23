@@ -80,24 +80,10 @@ def _extract_from_key(k: str, idx: int) -> str:
     return ""
 
 
-VERIFIED_USER = (
-    os.environ.get("OPENVIKING_USER")
-    or _extract_from_key(API_KEY, 1)
-    or (_LOCAL_CFG.get("verified_user") if _LOCAL_CFG.get("verified_user") != "authorized" else "")
-    or "antigravity@2080ti"
-)
-
-ACCOUNT = (
-    os.environ.get("OPENVIKING_ACCOUNT")
-    or _extract_from_key(API_KEY, 0)
-    or _LOCAL_CFG.get("account")
-    or "default"
-)
-
 ACTOR_PEER = (
     os.environ.get("OPENVIKING_ACTOR_PEER")
     or _LOCAL_CFG.get("actor_peer")
-    or "antigravity@2080ti"
+    or ""
 )
 
 MCP_ENDPOINT = f"{API_BASE}/mcp"
@@ -106,11 +92,9 @@ DEFAULT_TIMEOUT: float = 120.0
 
 def _build_headers() -> Dict[str, str]:
     headers = {
-        "User-Agent": "Antigravity-OpenViking-Pure-Proxy/2.0.27",
+        "User-Agent": "Antigravity-OpenViking-Pure-Proxy/2.0.33",
         "Content-Type": "application/json; charset=utf-8",
         "Accept": "application/json, text/event-stream",
-        "X-OpenViking-User": VERIFIED_USER,
-        "X-OpenViking-Account": ACCOUNT,
     }
     if API_KEY:
         headers["Authorization"] = f"Bearer {API_KEY}"

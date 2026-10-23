@@ -19,8 +19,8 @@
     "index.js",
     "client.js",
     "schema.js",
-    "cordis.patch.yml",
-    "README.md"
+    "README.md",
+    "cordis.patch.yml"
   ],
   "dsh": {
     "bundle": {

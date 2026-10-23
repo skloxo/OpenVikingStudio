@@ -21,10 +21,10 @@
     "schema.js",
     "config.mjs",
     "mcp.mjs",
-    "cordis.patch.yml",
     "README.md",
     "servers/",
-    "shared/"
+    "shared/",
+    "cordis.patch.yml"
   ],
   "dsh": {
     "bundle": {

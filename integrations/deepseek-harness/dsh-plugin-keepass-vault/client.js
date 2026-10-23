@@ -1,6 +1,6 @@
 /**
  * universal_dsh_client.js - OpenViking 通用无状态 DSH 插件座舱与配置面板模板
- * 100% 动态元数据与表单双轨驱动：支持服务端实时探针、端点与 UserKey 热配置、三锚点全冗余插槽注册。
+ * 100% 动态元数据与表单双轨驱动：支持服务端实时探针、端点与 UserKey 热配置、双锚点全冗余插槽注册。
  * 视觉铁律：NO GREEN EVER 🚫 (#0891b2 冰青 / #e11d48 玫瑰红)，字号 >= 12px，6px 微圆角，高对比度。
  */
 
@@ -9,7 +9,7 @@ window.__ModuleLoader__.load({
   factory(require) {
     const React = require('react');
     const h = React.createElement;
-    const { useState, useEffect } = React;
+    const { useState } = React;
 
     const PLUGIN_ID = 'dsh-plugin-keepass-vault';
     const CLIENT_VERSION = '1.2.1';
@@ -17,11 +17,12 @@ window.__ModuleLoader__.load({
     const SHORT_NAME = 'keepass-vault';
     const STORAGE_KEY = `dsh_plugin_${SHORT_NAME.replace(/-/g, '_')}_config`;
 
-    // 动态插值数据源
+    // 动态插值数据源 (离线兜底 SSOT)
     const TOOL_CATEGORIES = [{"cat": "本地高安全凭据保险库 (Credentials & Security)", "tools": ["keepass_status", "keepass_get", "keepass_add", "keepass_edit", "keepass_rm", "keepass_analyze", "keepass_export_attachment"]}, {"cat": "核心长程记忆与检索 (Memory & Context)", "tools": ["keepass_search", "keepass_list_tree"]}];
     const SKILLS = [{"name": "keepass-vault", "desc": "KeePass 本地密码保险库凭据管理与自动化中枢专用技能。涵盖查库第一公理、免明文索取、写前快照容灾、高熵密码入库与条目全生命周期管理。"}];
     const HOOKS = [];
-    const OVERVIEW_CARDS = [{"title": "🔌 架构定位与契约", "text": "基于 keepassxc-cli 打造的本地高安全凭据保险库与 MCP 工具中枢 (9 Tools)。支持本地 kdbx 数据库路径与访问密钥可视化配置，支持灾难恢复写前备份。"}, {"title": "🎯 建议交互指令", "text": "• 检查本地 KeePass 密码数据库状态与连通性\n• 检索 KeePass 数据库中的凭据或服务器密码\n• 向 KeePass 密码库安全新增或更新凭据条目"}, {"title": "🛡️ 治理与审计规约", "text": "遵循 OpenViking 零信任治理公理与单一真相源 (SSOT)。所有调用行为均自动留存安全审计轨迹与调用链追踪。"}];
+    const RULES = [];
+    const README_CONTENT = "# KeePass 凭据中枢物理守卫插件 (keepass-vault)\n\n[![Version](https://img.shields.io/badge/version-1.2.1-cyan.svg)](https://vk.tide.red)\n[![Platform](https://img.shields.io/badge/platform-Google%20Antigravity-blue.svg)](https://antigravity.google)\n[![Security](https://img.shields.io/badge/security-Encrypted%20KDBX-cyan.svg)](https://vk.tide.red)\n\n专为 **Google Antigravity IDE / Desktop** 与 OpenViking 生态打造的凭据保险库插件。落实查库第一公理，免除明文索取，高熵写盘，保障全集群凭据唯一真相源 (Credential SSOT)。\n\n---\n\n## 🌟 核心特性 (v1.2.1)\n\n1. **查库第一公理 (Credential SSOT)**：\n   - 全集群密码、SSH 私钥与 API Key 的唯一真实源，杜绝硬编码与明文传输；\n2. **免明文索取与高熵生成**：\n   - 自动生成符合强密码策略的高熵凭据，自动加密落盘；\n3. **写前快照与容灾备份**：\n   - 任何修改操作前自动创建时间戳快照，保障数据零丢失；\n4. **九项核心 MCP 凭据原子算子**：\n   - `keepass_status`, `keepass_search`, `keepass_get`, `keepass_add`, `keepass_update`, `keepass_generate_password`, `keepass_list_groups`, `keepass_verify_master_key`, `keepass_export_public_fingerprint`。\n\n---\n\n## 🚀 极速开箱安装 (One-Line Quickstart)\n\n### 方式一：Windows PowerShell (一键全自动开箱)\n```powershell\npowershell -ExecutionPolicy Bypass -Command \"iwr -Uri 'https://vk.tide.red/studio/keepass-vault.tgz' -OutFile '$env:TEMP\\kpv.tgz'; New-Item -ItemType Directory -Force -Path \\\"$env:USERPROFILE\\.gemini\\config\\plugins\\keepass-vault\\\" | Out-Null; tar -xzf '$env:TEMP\\kpv.tgz' -C \\\"$env:USERPROFILE\\.gemini\\config\\plugins\\keepass-vault\\\"; python \\\"$env:USERPROFILE\\.gemini\\config\\plugins\\keepass-vault\\setup.py\\\" install\"\n```\n\n### 方式二：Linux / macOS (一键全自动开箱)\n```bash\ncurl -fsSL https://vk.tide.red/studio/keepass-vault.tgz -o /tmp/kpv.tgz && \\\nmkdir -p ~/.gemini/config/plugins/keepass-vault && \\\ntar -xzf /tmp/kpv.tgz -C ~/.gemini/config/plugins/keepass-vault && \\\npython3 ~/.gemini/config/plugins/keepass-vault/setup.py install\n```\n\n---\n\n## 🛠️ 本地开发与手动挂载\n\n若已拉取本源码目录：\n```bash\n# 进入目录\ncd integrations/antigravity/keepass-vault\n\n# 一键安装挂载至当前机器的 Antigravity\npython setup.py install\n```\n";
 
     const totalToolsCount = TOOL_CATEGORIES.reduce((acc, c) => acc + (c.tools ? c.tools.length : 0), 0);
 
@@ -34,9 +35,9 @@ window.__ModuleLoader__.load({
         }
       } catch (_) {}
       return {
-        endpointUrl: 'https://vk.tide.red',
+        endpointUrl: '',
         userKey: '',
-        agentId: 'deepseek-harness@satellite',
+        agentId: '',
         peer: SHORT_NAME
       };
     }
@@ -47,6 +48,7 @@ window.__ModuleLoader__.load({
       } catch (_) {}
     }
 
+    // 1. 顶层组合包主控座舱 (Bundle Master Cockpit)
     function UniversalDshPanel(props) {
       if (props && props.view === 'summary') return null;
 
@@ -54,47 +56,34 @@ window.__ModuleLoader__.load({
         const initial = loadSavedConfig();
         const pCfg = props?.config || {};
         return {
-          endpointUrl: pCfg.endpointUrl || initial.endpointUrl || 'https://vk.tide.red',
+          endpointUrl: pCfg.endpointUrl || initial.endpointUrl || '',
           userKey: pCfg.userKey || initial.userKey || '',
-          agentId: pCfg.agentId || initial.agentId || 'deepseek-harness@satellite',
+          agentId: pCfg.agentId || initial.agentId || '',
           peer: pCfg.peer || initial.peer || SHORT_NAME
         };
       });
 
       const [tab, setTab] = useState('config');
       const [showKey, setShowKey] = useState(false);
-      const [probe, setProbe] = useState({ ok: false, latency: 0, toolsCount: totalToolsCount });
       const [testStatus, setTestStatus] = useState(null);
       const [testing, setTesting] = useState(false);
       const [saving, setSaving] = useState(false);
       const [saveToast, setSaveToast] = useState(null);
-
-      useEffect(() => {
-        let mounted = true;
-        const initial = loadSavedConfig();
-        const base = (initial.endpointUrl || formConfig.endpointUrl || 'https://vk.tide.red').trim().replace(/\/mcp\/?$/i, '').replace(/\/+$/, '');
-        const key = initial.userKey || formConfig.userKey || '';
-        const headers = { 'Content-Type': 'application/json' };
-        if (key) headers['Authorization'] = `Bearer ${key.trim()}`;
-
-        const start = Date.now();
-        fetch(`${base}/health`, { headers, signal: AbortSignal.timeout(3000) })
-          .then(res => res.ok ? res.json() : null)
-          .then(data => {
-            if (!mounted || !data) return;
-            setProbe({ ok: true, latency: Date.now() - start, toolsCount: totalToolsCount || 35 });
-          })
-          .catch(() => {});
-        return () => { mounted = false; };
-      }, []);
+      const [serverVersion, setServerVersion] = useState('');
+      const [liveToolsCount, setLiveToolsCount] = useState(totalToolsCount);
 
       const handleChange = (field, val) => setFormConfig(prev => ({ ...prev, [field]: val }));
       const handlePreset = (url) => setFormConfig(prev => ({ ...prev, endpointUrl: url }));
 
       const handleTest = async () => {
+        const endpoint = (formConfig.endpointUrl || '').trim();
+        if (!endpoint) {
+          setTestStatus({ ok: false, msg: '请先填写通信端点 (Endpoint URL)' });
+          return;
+        }
         setTesting(true);
         setTestStatus(null);
-        let base = (formConfig.endpointUrl || '').trim().replace(/\/mcp\/?$/i, '').replace(/\/+$/, '') || 'https://vk.tide.red';
+        const base = endpoint.replace(/\/mcp\/?$/i, '').replace(/\/+$/, '');
         const start = Date.now();
         const headers = { 'Content-Type': 'application/json' };
         if (formConfig.userKey) headers['Authorization'] = `Bearer ${formConfig.userKey.trim()}`;
@@ -105,6 +94,8 @@ window.__ModuleLoader__.load({
           const latency = Date.now() - start;
           if (res.ok) {
             const hData = await res.json();
+            const sVer = hData.version || '1.7';
+            setServerVersion(sVer);
             let toolCount = totalToolsCount || 35;
             let roleMsg = '服务连接正常';
             try {
@@ -113,16 +104,18 @@ window.__ModuleLoader__.load({
               });
               if (capRes.ok) {
                 const capData = await capRes.json();
-                if (Array.isArray(capData.tools) && capData.tools.length > 0) toolCount = capData.tools.length;
-                roleMsg = capData.role ? `鉴权角色: ${capData.role}` : '用户凭据有效';
+                if (Array.isArray(capData.tools) && capData.tools.length > 0) {
+                  toolCount = capData.tools.length;
+                  setLiveToolsCount(toolCount);
+                }
+                roleMsg = capData.role ? `角色: ${capData.role}` : '凭据有效';
               } else if (capRes.status === 401) {
-                setTestStatus({ ok: false, msg: '网络通畅但凭据被拒绝 (HTTP 401): 填写的 UserKey 无效或未授权' });
+                setTestStatus({ ok: false, msg: '网络通畅但凭据被拒绝 (HTTP 401): 填写的 UserKey 无效' });
                 setTesting(false);
                 return;
               }
             } catch (_) {}
-            setTestStatus({ ok: true, msg: `连接成功 (v${hData.version || '1.7'}) · 延迟 ${latency}ms · ${roleMsg} · 就绪 ${toolCount} 项工具` });
-            setProbe({ ok: true, latency, toolsCount: toolCount });
+            setTestStatus({ ok: true, msg: `连接成功 (v${sVer}) · 延迟 ${latency}ms · ${roleMsg} · 就绪 ${toolCount} 项工具` });
           } else {
             setTestStatus({ ok: false, msg: `服务端响应异常: HTTP ${res.status} ${res.statusText}` });
           }
@@ -151,17 +144,18 @@ window.__ModuleLoader__.load({
         }
         setTimeout(() => {
           setSaving(false);
-          setSaveToast({ ok: true, msg: '配置已持久化保存，并在 DSH 会话中实时热生效！' });
+          setSaveToast({ ok: true, msg: '配置已持久化保存，并在 DSH 会话中实时生效' });
           setTimeout(() => setSaveToast(null), 3000);
         }, 200);
       };
 
       const tabs = [
-        { key: 'config', label: '⚙️ 服务配置' },
-        ...(TOOL_CATEGORIES.length > 0 ? [{ key: 'mcp', label: `🦾 MCP 工具 (${probe.toolsCount || totalToolsCount})` }] : []),
-        ...(SKILLS.length > 0 ? [{ key: 'skills', label: `🧠 认知技能 (${SKILLS.length})` }] : []),
-        ...(HOOKS.length > 0 ? [{ key: 'hooks', label: `⚡ 拦截钩子 (${HOOKS.length})` }] : []),
-        { key: 'overview', label: '📖 架构概览' }
+        { key: 'config', label: '服务配置' },
+        { key: 'overview', label: '概览' },
+        ...(SKILLS.length > 0 ? [{ key: 'skills', label: `技能 (${SKILLS.length})` }] : []),
+        ...(TOOL_CATEGORIES.length > 0 ? [{ key: 'mcp', label: `MCP (${liveToolsCount})` }] : []),
+        ...(HOOKS.length > 0 ? [{ key: 'hooks', label: `钩子 (${HOOKS.length})` }] : []),
+        ...(RULES.length > 0 ? [{ key: 'rules', label: `规则 (${RULES.length})` }] : [])
       ];
 
       return h('div', {
@@ -177,30 +171,7 @@ window.__ModuleLoader__.load({
           margin: '6px 0',
         }
       },
-        // 1. 顶部状态横幅
-        h('div', {
-          style: {
-            padding: '8px 12px',
-            borderRadius: '6px',
-            marginBottom: '12px',
-            background: probe.ok ? 'rgba(8, 145, 178, 0.08)' : 'rgba(225, 29, 72, 0.06)',
-            border: `1px solid ${probe.ok ? '#0891b2' : 'rgba(225, 29, 72, 0.3)'}`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            fontSize: '12px',
-          }
-        },
-          h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
-            h('span', { style: { color: probe.ok ? '#0891b2' : '#e11d48', fontWeight: '600' } }, probe.ok ? '● 探针连接正常 (已鉴权)' : '○ 服务离线 / 待测试'),
-            h('span', { style: { opacity: 0.7, color: 'var(--dsw-alias-label-secondary, #334155)' } }, `时延: ${probe.latency}ms · v${CLIENT_VERSION}`)
-          ),
-          h('div', { style: { fontFamily: 'monospace', fontWeight: '500', color: probe.ok ? '#0891b2' : 'var(--dsw-alias-label-tertiary, #64748b)' } },
-            probe.ok ? `${probe.toolsCount || totalToolsCount} 项算子已挂载` : `${totalToolsCount} 项离线工具就绪`
-          )
-        ),
-
-        // 2. Tab 导航栏
+        // 1. Tab 导航栏
         h('div', {
           style: {
             display: 'flex',
@@ -228,7 +199,7 @@ window.__ModuleLoader__.load({
           }, t.label))
         ),
 
-        // 3. Tab 内容区
+        // 2. Tab 内容区
         tab === 'config' && h('div', { style: { display: 'flex', flexDirection: 'column', gap: '10px' } },
           h('div', null,
             h('div', { style: { display: 'flex', justifyContent: 'space-between', marginBottom: '4px' } },
@@ -236,21 +207,16 @@ window.__ModuleLoader__.load({
               h('div', { style: { display: 'flex', gap: '6px' } },
                 h('button', {
                   type: 'button',
-                  onClick: () => handlePreset('https://vk.tide.red'),
-                  style: { background: 'none', border: '1px solid #0891b2', color: '#0891b2', borderRadius: '4px', fontSize: '12px', padding: '1px 6px', cursor: 'pointer' }
-                }, '云端默认'),
-                h('button', {
-                  type: 'button',
                   onClick: () => handlePreset('http://127.0.0.1:1933'),
-                  style: { background: 'none', border: '1px solid #cbd5e1', color: 'var(--dsw-alias-label-secondary, #475569)', borderRadius: '4px', fontSize: '12px', padding: '1px 6px', cursor: 'pointer' }
-                }, '本地直连')
+                  style: { background: 'none', border: '1px solid #0891b2', color: '#0891b2', borderRadius: '4px', fontSize: '12px', padding: '1px 6px', cursor: 'pointer' }
+                }, '本地直连 (http://127.0.0.1:1933)')
               )
             ),
             h('input', {
               type: 'text',
               value: formConfig.endpointUrl,
               onChange: (e) => handleChange('endpointUrl', e.target.value),
-              placeholder: '例如 https://vk.tide.red 或 http://127.0.0.1:1933',
+              placeholder: '请输入通信端点 (例如 http://127.0.0.1:1933 或 https://vk.example.com)',
               style: {
                 width: '100%', padding: '6px 10px', borderRadius: '6px',
                 border: '1px solid var(--dsw-alias-input-border, #cbd5e1)',
@@ -260,13 +226,13 @@ window.__ModuleLoader__.load({
             })
           ),
           h('div', null,
-            h('label', { style: { display: 'block', fontWeight: '600', marginBottom: '4px', color: 'var(--dsw-alias-label-primary, #0f172a)' } }, '专属 API Key / User Key'),
+            h('label', { style: { display: 'block', fontWeight: '600', marginBottom: '4px', color: 'var(--dsw-alias-label-primary, #0f172a)' } }, '专属 UserKey 授权凭据'),
             h('div', { style: { display: 'flex', gap: '6px' } },
               h('input', {
                 type: showKey ? 'text' : 'password',
                 value: formConfig.userKey,
                 onChange: (e) => handleChange('userKey', e.target.value),
-                placeholder: '请输入用户授权密钥 (可留空自动继承环境凭据)',
+                placeholder: '请输入专属 UserKey (格式: account.user.signature，留空自动继承环境凭据)',
                 style: {
                   flex: 1, padding: '6px 10px', borderRadius: '6px',
                   border: '1px solid var(--dsw-alias-input-border, #cbd5e1)',
@@ -282,7 +248,7 @@ window.__ModuleLoader__.load({
                   background: 'var(--dsw-alias-bg-layer-2, #f8fafc)',
                   color: 'var(--dsw-alias-label-secondary, #475569)', cursor: 'pointer', fontSize: '12px'
                 }
-              }, showKey ? '🙈 隐藏' : '👁️ 显示')
+              }, showKey ? '隐藏' : '显示')
             )
           ),
           testStatus && h('div', {
@@ -301,7 +267,7 @@ window.__ModuleLoader__.load({
                 padding: '6px 14px', borderRadius: '6px', fontWeight: '600', fontSize: '12px',
                 cursor: testing ? 'not-allowed' : 'pointer'
               }
-            }, testing ? '⚡ 探测中...' : '⚡ 测试连通性'),
+            }, testing ? '探测中...' : '测试连通性'),
             h('button', {
               type: 'button', onClick: handleSave, disabled: saving,
               style: {
@@ -309,7 +275,7 @@ window.__ModuleLoader__.load({
                 padding: '6px 16px', borderRadius: '6px', fontWeight: '600', fontSize: '12px',
                 cursor: saving ? 'not-allowed' : 'pointer'
               }
-            }, saving ? '💾 保存中...' : '💾 保存并应用配置')
+            }, saving ? '保存中...' : '保存配置')
           ),
           saveToast && h('div', {
             style: {
@@ -320,8 +286,44 @@ window.__ModuleLoader__.load({
           }, saveToast.msg)
         ),
 
+        tab === 'overview' && h('div', {
+          style: {
+            maxHeight: '440px',
+            overflowY: 'auto',
+            padding: '12px 14px',
+            borderRadius: '6px',
+            background: 'var(--dsw-alias-bg-layer-2, #f8fafc)',
+            border: '1px solid var(--dsw-alias-border-l1, #e2e8f0)',
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+            fontSize: '12px',
+            lineHeight: 1.6,
+            color: 'var(--dsw-alias-label-primary, #0f172a)'
+          }
+        },
+          h('pre', {
+            style: {
+              margin: 0,
+              fontFamily: 'inherit',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+              fontSize: '12px',
+              color: 'inherit'
+            }
+          }, README_CONTENT || `${PLUGIN_NAME} 暂无详细文档说明`)
+        ),
+
+        tab === 'skills' && h('div', { style: { display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '440px', overflowY: 'auto' } },
+          SKILLS.map((s, idx) => h('div', {
+            key: idx,
+            style: { padding: '8px 10px', borderRadius: '6px', background: 'var(--dsw-alias-bg-layer-2, #f8fafc)', border: '1px solid #e2e8f0' }
+          },
+            h('div', { style: { fontFamily: 'monospace', fontWeight: '600', color: '#0891b2', fontSize: '12px' } }, s.name),
+            h('div', { style: { marginTop: '2px', color: 'var(--dsw-alias-label-secondary, #475569)', fontSize: '12px' } }, s.desc)
+          ))
+        ),
+
         tab === 'mcp' && h('div', {
-          style: { display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '400px', overflowY: 'auto' }
+          style: { display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '440px', overflowY: 'auto' }
         },
           TOOL_CATEGORIES.map((catGroup, cIdx) => h('div', {
             key: cIdx,
@@ -336,24 +338,14 @@ window.__ModuleLoader__.load({
                   fontFamily: 'monospace', fontSize: '12px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '4px'
                 }
               },
-                h('span', { style: { color: '#0891b2', fontWeight: 'bold' } }, '⚡'),
+                h('span', { style: { color: '#0891b2', fontWeight: 'bold' } }, '•'),
                 h('span', { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, tName)
               ))
             )
           ))
         ),
 
-        tab === 'skills' && h('div', { style: { display: 'flex', flexDirection: 'column', gap: '6px' } },
-          SKILLS.map((s, idx) => h('div', {
-            key: idx,
-            style: { padding: '8px 10px', borderRadius: '6px', background: 'var(--dsw-alias-bg-layer-2, #f8fafc)', border: '1px solid #e2e8f0' }
-          },
-            h('div', { style: { fontFamily: 'monospace', fontWeight: '600', color: '#0891b2', fontSize: '12px' } }, s.name),
-            h('div', { style: { marginTop: '2px', color: 'var(--dsw-alias-label-secondary, #475569)', fontSize: '12px' } }, s.desc)
-          ))
-        ),
-
-        tab === 'hooks' && h('div', { style: { display: 'flex', flexDirection: 'column', gap: '6px' } },
+        tab === 'hooks' && h('div', { style: { display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '440px', overflowY: 'auto' } },
           HOOKS.map((hk, idx) => h('div', {
             key: idx,
             style: { padding: '8px 10px', borderRadius: '6px', background: 'var(--dsw-alias-bg-layer-2, #f8fafc)', border: '1px solid #e2e8f0' }
@@ -364,19 +356,30 @@ window.__ModuleLoader__.load({
           ))
         ),
 
-        tab === 'overview' && h('div', {
-          style: { display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '400px', overflowY: 'auto' }
+        tab === 'rules' && h('div', {
+          style: { display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '440px', overflowY: 'auto' }
         },
-          OVERVIEW_CARDS.map((card, idx) => h('div', {
+          RULES.length === 0 ? h('div', { style: { padding: '12px', color: '#64748b', textAlign: 'center', fontSize: '12px' } }, '暂无规则规约') :
+          RULES.map((rule, idx) => h('div', {
             key: idx,
-            style: { padding: '10px', borderRadius: '6px', background: 'var(--dsw-alias-bg-layer-2, #f8fafc)', border: '1px solid #e2e8f0' }
+            style: { padding: '10px 12px', borderRadius: '6px', background: 'var(--dsw-alias-bg-layer-2, #f8fafc)', border: '1px solid #e2e8f0' }
           },
-            h('div', { style: { fontWeight: '600', fontSize: '12px', color: '#0891b2', marginBottom: '2px' } }, card.title),
-            h('div', { style: { color: 'var(--dsw-alias-label-secondary, #334155)', fontSize: '12px', lineHeight: 1.5 } }, card.text)
+            h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' } },
+              h('span', { style: { fontFamily: 'monospace', fontWeight: '600', color: '#0891b2', fontSize: '12px' } }, rule.name),
+              h('span', { style: { fontSize: '12px', color: 'var(--dsw-alias-label-tertiary, #64748b)' } }, rule.desc)
+            ),
+            rule.content && h('pre', {
+              style: {
+                marginTop: '6px', padding: '8px 10px', borderRadius: '4px',
+                background: 'var(--dsw-alias-bg-layer-1, #ffffff)', border: '1px solid #e2e8f0',
+                fontSize: '12px', fontFamily: 'monospace', whiteSpace: 'pre-wrap', lineHeight: 1.45,
+                color: 'var(--dsw-alias-label-secondary, #334155)', maxHeight: '200px', overflowY: 'auto'
+              }
+            }, rule.content)
           ))
         ),
 
-        // 4. 底部微弱版本声明
+        // 3. 底部版本声明与云端动态能力同频状态
         h('div', {
           style: {
             marginTop: '12px', paddingTop: '6px',
@@ -386,7 +389,59 @@ window.__ModuleLoader__.load({
           }
         },
           h('span', null, `OpenViking Universal Cockpit · ${PLUGIN_NAME}`),
-          h('span', null, `版本 v${CLIENT_VERSION}`)
+          h('span', null, serverVersion ? `端侧桥接器 v${CLIENT_VERSION} · 云端内核 v${serverVersion}` : `端侧桥接器 v${CLIENT_VERSION}`)
+        )
+      );
+    }
+
+    // 2. 底层组件行专属运行态详情卡 (Component Row Runtime Stub Card)
+    // 解决 DSH "包含的组件" 路由点击后的重复镜像套娃问题，以极轻卡片清晰展示通信管道状态
+    function UniversalDshRowPanel(props) {
+      if (props && props.view === 'summary') return null;
+      const initial = loadSavedConfig();
+      const endpoint = initial.endpointUrl || '未指定 (继承环境全局默认)';
+      const peer = initial.peer || SHORT_NAME;
+
+      return h('div', {
+        style: {
+          padding: '16px',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          fontSize: '12px',
+          color: 'var(--dsw-alias-label-primary, #0f172a)',
+          background: 'var(--dsw-alias-settings-card-fill, var(--dsw-alias-bg-l1, #ffffff))',
+          borderRadius: '8px',
+          border: '1px solid var(--dsw-alias-settings-card-stroke, var(--dsw-alias-border-l1, #e2e8f0))',
+          lineHeight: 1.6,
+          margin: '6px 0',
+        }
+      },
+        h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' } },
+          h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
+            h('span', { style: { fontSize: '13px', fontWeight: '600', color: '#0891b2' } }, '● 核心桥接存根运行态 (Bridge Runtime Stub)'),
+            h('span', { style: { background: 'rgba(8, 145, 178, 0.1)', color: '#0891b2', padding: '1px 6px', borderRadius: '4px', fontFamily: 'monospace' } }, `v${CLIENT_VERSION}`)
+          ),
+          h('span', { style: { color: '#64748b' } }, '无状态极轻转发存根')
+        ),
+        h('div', { style: { display: 'flex', flexDirection: 'column', gap: '8px', color: 'var(--dsw-alias-label-secondary, #475569)' } },
+          h('div', { style: { display: 'flex', justifyContent: 'space-between', padding: '6px 10px', background: 'var(--dsw-alias-bg-layer-2, #f8fafc)', borderRadius: '6px' } },
+            h('span', { style: { fontWeight: '600' } }, '宿主环境节点标识 (Peer ID):'),
+            h('span', { style: { fontFamily: 'monospace', color: '#0891b2' } }, peer)
+          ),
+          h('div', { style: { display: 'flex', justifyContent: 'space-between', padding: '6px 10px', background: 'var(--dsw-alias-bg-layer-2, #f8fafc)', borderRadius: '6px' } },
+            h('span', { style: { fontWeight: '600' } }, '目标通信中枢端点:'),
+            h('span', { style: { fontFamily: 'monospace', color: '#0891b2' } }, endpoint)
+          ),
+          h('div', { style: { display: 'flex', justifyContent: 'space-between', padding: '6px 10px', background: 'var(--dsw-alias-bg-layer-2, #f8fafc)', borderRadius: '6px' } },
+            h('span', { style: { fontWeight: '600' } }, '端侧 Hook 神经反射守卫:'),
+            h('span', { style: { color: '#0891b2' } }, `${HOOKS.length} 项守卫就绪 (${HOOKS.map(h => h.name).join(', ')})`)
+          ),
+          h('div', { style: { display: 'flex', justifyContent: 'space-between', padding: '6px 10px', background: 'var(--dsw-alias-bg-layer-2, #f8fafc)', borderRadius: '6px' } },
+            h('span', { style: { fontWeight: '600' } }, '物理职责说明:'),
+            h('span', { style: { color: '#64748b' } }, '本进程为纯透明转发存根，业务算子与计算本体 100% 运行于 OpenViking 服务端')
+          )
+        ),
+        h('div', { style: { marginTop: '12px', padding: '8px 12px', borderRadius: '6px', background: 'rgba(8, 145, 178, 0.05)', border: '1px solid rgba(8, 145, 178, 0.2)', color: '#0891b2', fontSize: '12px' } },
+          '💡 提示：所有参数配置、UserKey 凭据、技能手册与规则规约已由外层主控制台统一托管。点击左上方返回按钮即可回到插件主控制台。'
         )
       );
     }
@@ -395,7 +450,7 @@ window.__ModuleLoader__.load({
       const bundleKey = PLUGIN_ID;
       const shortKey = SHORT_NAME;
 
-      // 1. 组合包详情页配置插槽 (Bundle Detail Page) - 兼容全名与短名
+      // 1. 组合包详情页配置插槽 (Bundle Detail Page) - DSH 点击插件行直达 OpenViking 全功能主控座舱
       ctx.slots.inject('plugins.bundle.config', () => {
         ctx.slots.register({ name: 'plugins.bundle.config', key: bundleKey }, UniversalDshPanel);
         if (shortKey !== bundleKey) {
@@ -403,12 +458,11 @@ window.__ModuleLoader__.load({
         }
       });
 
-      // 2. 组件行专属抽屉插槽 (Row Detail / Configure Drawer) - 兼容 <bundle>#<row> 与短格式
+      // 2. 组件行专属抽屉插槽 (Row Detail / Configure Drawer) - 渲染轻量桥接运行态存根，彻底告别套娃重影
       ctx.slots.inject('plugins.row.config', () => {
-        ctx.slots.register({ name: 'plugins.row.config', key: `${bundleKey}#${shortKey}` }, UniversalDshPanel);
-        ctx.slots.register({ name: 'plugins.row.config', key: `${shortKey}#${shortKey}` }, UniversalDshPanel);
-        ctx.slots.register({ name: 'plugins.row.config', key: bundleKey }, UniversalDshPanel);
-        ctx.slots.register({ name: 'plugins.row.config', key: shortKey }, UniversalDshPanel);
+        ctx.slots.register({ name: 'plugins.row.config', key: bundleKey }, UniversalDshRowPanel);
+        ctx.slots.register({ name: 'plugins.row.config', key: shortKey }, UniversalDshRowPanel);
+        ctx.slots.register({ name: 'plugins.row.config', key: `${bundleKey}#${shortKey}` }, UniversalDshRowPanel);
       });
 
       // 3. 全局设置插件页 Tab (Settings -> Plugins Tab)

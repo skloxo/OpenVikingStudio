@@ -34,6 +34,8 @@ class PluginRegistry:
         self._plugins: Dict[str, QuadPluginDefinition] = {}
         self._aliases: Dict[str, str] = {}
         self._tool_to_plugin_map: Dict[str, str] = {}
+        self._last_check_time: float = 0.0
+        self._last_scanned_mtime: float = 0.0
         self.rescan()
 
     @classmethod
@@ -51,9 +53,49 @@ class PluginRegistry:
         with cls._lock:
             cls._instance = None
 
+    def _get_plugins_max_mtime(self) -> float:
+        """扫描磁盘所有托管插件描述文件 (plugin.json / package.json) 的最新修改时间戳。"""
+        try:
+            from pathlib import Path
+            studio_root = Path(__file__).resolve().parent.parent.parent
+            max_mtime = 0.0
+            dirs = [
+                studio_root / "packages" / "plugins",
+                studio_root / "integrations" / "antigravity",
+                studio_root / "integrations" / "deepseek-harness",
+            ]
+            for base in dirs:
+                if not base.is_dir():
+                    continue
+                for sub in base.iterdir():
+                    if not sub.is_dir():
+                        continue
+                    for fname in ("plugin.json", "package.json"):
+                        f = sub / fname
+                        if f.is_file():
+                            mt = f.stat().st_mtime
+                            if mt > max_mtime:
+                                max_mtime = mt
+            return max_mtime
+        except Exception:
+            return 0.0
+
+    def _check_and_rescan(self) -> None:
+        """动态感知磁盘插件变更：节流 1 秒探测 mtime，若有修改则毫秒级自愈热重载 (SSOT)。"""
+        import time
+        now = time.time()
+        if now - self._last_check_time < 1.0:
+            return
+        self._last_check_time = now
+        max_mtime = self._get_plugins_max_mtime()
+        if max_mtime > self._last_scanned_mtime:
+            logger.info("感知到插件母本更新 (mtime: %s > %s)，自动执行热重载...", max_mtime, self._last_scanned_mtime)
+            self.rescan()
+
     def rescan(self) -> None:
         """从插件中心物理托管目录动态全量重新扫描感知所有插件 (SSOT)。"""
         with self._registry_lock:
+            self._last_scanned_mtime = self._get_plugins_max_mtime()
             plugins, aliases, tool_map = scan_local_plugins()
             self._plugins.clear()
             self._aliases.clear()
@@ -218,12 +260,14 @@ class PluginRegistry:
 
     def get_plugin(self, plugin_id: str) -> Optional[QuadPluginDefinition]:
         """按 ID 查询插件，支持别名自动映射。"""
+        self._check_and_rescan()
         with self._registry_lock:
             canonical_id = self._aliases.get(plugin_id, plugin_id)
             return self._plugins.get(canonical_id)
 
     def list_plugins(self, category: Optional[str] = None) -> List[QuadPluginDefinition]:
         """列出所有插件，支持分类过滤。"""
+        self._check_and_rescan()
         with self._registry_lock:
             plugins = list(self._plugins.values())
             if category:

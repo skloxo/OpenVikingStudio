@@ -1,0 +1,4 @@
+# dsh bundle patch: inserts this plugin into profile layer stack
+- insert:
+    - id: network-search
+      name: dsh-plugin-search-gateway

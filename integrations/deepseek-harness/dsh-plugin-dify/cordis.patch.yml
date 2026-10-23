@@ -1,8 +1,4 @@
-# Dify 智能体与工作流中枢 Bundle Patch for DeepSeek Harness (DSH)
+# dsh bundle patch: inserts this plugin into profile layer stack
 - insert:
     - id: dify
       name: dsh-plugin-dify
-      config:
-        apiUrl: "https://api.dify.ai/v1"
-        apiKey: ""
-        apiKeyEnv: "DIFY_API_KEY"
