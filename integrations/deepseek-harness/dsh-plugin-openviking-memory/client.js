@@ -12,7 +12,7 @@ window.__ModuleLoader__.load({
     const { useState } = React;
 
     const PLUGIN_ID = 'dsh-plugin-openviking-memory';
-    const CLIENT_VERSION = '2.0.35';
+    const CLIENT_VERSION = '2.0.37';
     const PLUGIN_NAME = 'OpenViking Core Memory';
     const SHORT_NAME = 'openviking-memory';
     const STORAGE_KEY = `dsh_plugin_${SHORT_NAME.replace(/-/g, '_')}_config`;
@@ -171,6 +171,13 @@ window.__ModuleLoader__.load({
           margin: '6px 0',
         }
       },
+        // 0. 局部注入样式：彻底物理蒸发 DSH 原生冗余的 "包含的组件" (<section data-plugin-rows>) 区块
+        h('style', null, `
+          div[data-plugin-detail] [data-plugin-rows] {
+            display: none !important;
+          }
+        `),
+
         // 1. Tab 导航栏
         h('div', {
           style: {
@@ -394,58 +401,6 @@ window.__ModuleLoader__.load({
       );
     }
 
-    // 2. 底层组件行专属运行态详情卡 (Component Row Runtime Stub Card)
-    // 解决 DSH "包含的组件" 路由点击后的重复镜像套娃问题，以极轻卡片清晰展示通信管道状态
-    function UniversalDshRowPanel(props) {
-      if (props && props.view === 'summary') return null;
-      const initial = loadSavedConfig();
-      const endpoint = initial.endpointUrl || '未指定 (继承环境全局默认)';
-      const peer = initial.peer || SHORT_NAME;
-
-      return h('div', {
-        style: {
-          padding: '16px',
-          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-          fontSize: '12px',
-          color: 'var(--dsw-alias-label-primary, #0f172a)',
-          background: 'var(--dsw-alias-settings-card-fill, var(--dsw-alias-bg-l1, #ffffff))',
-          borderRadius: '8px',
-          border: '1px solid var(--dsw-alias-settings-card-stroke, var(--dsw-alias-border-l1, #e2e8f0))',
-          lineHeight: 1.6,
-          margin: '6px 0',
-        }
-      },
-        h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' } },
-          h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
-            h('span', { style: { fontSize: '13px', fontWeight: '600', color: '#0891b2' } }, '● 核心桥接存根运行态 (Bridge Runtime Stub)'),
-            h('span', { style: { background: 'rgba(8, 145, 178, 0.1)', color: '#0891b2', padding: '1px 6px', borderRadius: '4px', fontFamily: 'monospace' } }, `v${CLIENT_VERSION}`)
-          ),
-          h('span', { style: { color: '#64748b' } }, '无状态极轻转发存根')
-        ),
-        h('div', { style: { display: 'flex', flexDirection: 'column', gap: '8px', color: 'var(--dsw-alias-label-secondary, #475569)' } },
-          h('div', { style: { display: 'flex', justifyContent: 'space-between', padding: '6px 10px', background: 'var(--dsw-alias-bg-layer-2, #f8fafc)', borderRadius: '6px' } },
-            h('span', { style: { fontWeight: '600' } }, '宿主环境节点标识 (Peer ID):'),
-            h('span', { style: { fontFamily: 'monospace', color: '#0891b2' } }, peer)
-          ),
-          h('div', { style: { display: 'flex', justifyContent: 'space-between', padding: '6px 10px', background: 'var(--dsw-alias-bg-layer-2, #f8fafc)', borderRadius: '6px' } },
-            h('span', { style: { fontWeight: '600' } }, '目标通信中枢端点:'),
-            h('span', { style: { fontFamily: 'monospace', color: '#0891b2' } }, endpoint)
-          ),
-          h('div', { style: { display: 'flex', justifyContent: 'space-between', padding: '6px 10px', background: 'var(--dsw-alias-bg-layer-2, #f8fafc)', borderRadius: '6px' } },
-            h('span', { style: { fontWeight: '600' } }, '端侧 Hook 神经反射守卫:'),
-            h('span', { style: { color: '#0891b2' } }, `${HOOKS.length} 项守卫就绪 (${HOOKS.map(h => h.name).join(', ')})`)
-          ),
-          h('div', { style: { display: 'flex', justifyContent: 'space-between', padding: '6px 10px', background: 'var(--dsw-alias-bg-layer-2, #f8fafc)', borderRadius: '6px' } },
-            h('span', { style: { fontWeight: '600' } }, '物理职责说明:'),
-            h('span', { style: { color: '#64748b' } }, '本进程为纯透明转发存根，业务算子与计算本体 100% 运行于 OpenViking 服务端')
-          )
-        ),
-        h('div', { style: { marginTop: '12px', padding: '8px 12px', borderRadius: '6px', background: 'rgba(8, 145, 178, 0.05)', border: '1px solid rgba(8, 145, 178, 0.2)', color: '#0891b2', fontSize: '12px' } },
-          '💡 提示：所有参数配置、UserKey 凭据、技能手册与规则规约已由外层主控制台统一托管。点击左上方返回按钮即可回到插件主控制台。'
-        )
-      );
-    }
-
     function apply(ctx) {
       const bundleKey = PLUGIN_ID;
       const shortKey = SHORT_NAME;
@@ -458,14 +413,7 @@ window.__ModuleLoader__.load({
         }
       });
 
-      // 2. 组件行专属抽屉插槽 (Row Detail / Configure Drawer) - 渲染轻量桥接运行态存根，彻底告别套娃重影
-      ctx.slots.inject('plugins.row.config', () => {
-        ctx.slots.register({ name: 'plugins.row.config', key: bundleKey }, UniversalDshRowPanel);
-        ctx.slots.register({ name: 'plugins.row.config', key: shortKey }, UniversalDshRowPanel);
-        ctx.slots.register({ name: 'plugins.row.config', key: `${bundleKey}#${shortKey}` }, UniversalDshRowPanel);
-      });
-
-      // 3. 全局设置插件页 Tab (Settings -> Plugins Tab)
+      // 2. 全局设置插件页 Tab (Settings -> Plugins Tab)
       ctx.slots.inject('settings.plugins.tab', () => {
         ctx.slots.register({
           name: 'settings.plugins.tab',

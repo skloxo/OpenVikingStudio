@@ -32,9 +32,10 @@ def test_assemble_openviking_memory():
     assert meta["skills_count"] == 4
     assert meta["hooks_count"] == 3
 
-    # 验证插槽注入与代码特征 (双锚点冗余注册，保障 DSH 顶层与行级无缝直达)
+    # 验证插槽注入与代码特征 (顶层主控座舱直达，彻底封杀组件行抽屉与套娃)
     assert "plugins.bundle.config" in code
-    assert "plugins.row.config" in code
+    assert "plugins.row.config" not in code
+    assert "data-plugin-rows" in code  # CSS 物理蒸发门禁
     assert "settings.plugins.tab" in code
     assert "SHORT_NAME = 'openviking-memory'" in code
     assert "STORAGE_KEY" in code
