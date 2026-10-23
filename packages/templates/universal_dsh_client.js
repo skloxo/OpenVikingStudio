@@ -72,9 +72,13 @@ window.__ModuleLoader__.load({
     }
 
     function UniversalDshPanel(props) {
+      if (props && props.view === 'summary') {
+        return null;
+      }
+
       const [formConfig, setFormConfig] = useState(() => {
         const initial = loadSavedConfig();
-        const pCfg = props.config || {};
+        const pCfg = props?.config || {};
         return {
           endpointUrl: pCfg.endpointUrl || initial.endpointUrl || 'https://vk.tide.red',
           userKey: pCfg.userKey || initial.userKey || '',
@@ -90,6 +94,26 @@ window.__ModuleLoader__.load({
       const [testing, setTesting] = useState(false);
       const [saving, setSaving] = useState(false);
       const [saveToast, setSaveToast] = useState(null);
+
+      useEffect(() => {
+        let mounted = true;
+        const initial = loadSavedConfig();
+        const base = (initial.endpointUrl || formConfig.endpointUrl || 'https://vk.tide.red').trim().replace(/\/mcp\/?$/i, '').replace(/\/+$/, '');
+        const key = initial.userKey || formConfig.userKey || '';
+        const headers = { 'Content-Type': 'application/json' };
+        if (key) headers['Authorization'] = `Bearer ${key.trim()}`;
+
+        const start = Date.now();
+        fetch(`${base}/health`, { headers, signal: AbortSignal.timeout(3000) })
+          .then(res => res.ok ? res.json() : null)
+          .then(data => {
+            if (!mounted || !data) return;
+            const latency = Date.now() - start;
+            setProbe({ ok: true, latency, toolsCount: 35 });
+          })
+          .catch(() => {});
+        return () => { mounted = false; };
+      }, []);
 
       const handleChange = (field, val) => {
         setFormConfig(prev => ({ ...prev, [field]: val }));
@@ -580,15 +604,55 @@ window.__ModuleLoader__.load({
     }
 
     function apply(ctx) {
-      ctx.slots.inject('plugins.bundle.config', () =>
+      const bundleKey = PLUGIN_ID;
+      const shortKey = PLUGIN_ID.replace(/^dsh-plugin-/, '');
+
+      // 1. 组合包详情页配置插槽 (Bundle Detail Page) - 兼容全名与短名
+      ctx.slots.inject('plugins.bundle.config', () => {
+        ctx.slots.register(
+          { name: 'plugins.bundle.config', key: bundleKey },
+          UniversalDshPanel
+        );
+        if (shortKey !== bundleKey) {
+          ctx.slots.register(
+            { name: 'plugins.bundle.config', key: shortKey },
+            UniversalDshPanel
+          );
+        }
+      });
+
+      // 2. 组件行专属抽屉插槽 (Row Detail / Configure Drawer) - 兼容 <bundle>#<row> 与短格式
+      ctx.slots.inject('plugins.row.config', () => {
+        ctx.slots.register(
+          { name: 'plugins.row.config', key: `${bundleKey}#${shortKey}` },
+          UniversalDshPanel
+        );
+        ctx.slots.register(
+          { name: 'plugins.row.config', key: `${shortKey}#${shortKey}` },
+          UniversalDshPanel
+        );
+        ctx.slots.register(
+          { name: 'plugins.row.config', key: bundleKey },
+          UniversalDshPanel
+        );
+        ctx.slots.register(
+          { name: 'plugins.row.config', key: shortKey },
+          UniversalDshPanel
+        );
+      });
+
+      // 3. 全局设置插件页 Tab (Settings -> Plugins Tab)
+      ctx.slots.inject('settings.plugins.tab', () => {
         ctx.slots.register(
           {
-            name: 'plugins.bundle.config',
-            key: PLUGIN_ID,
+            name: 'settings.plugins.tab',
+            id: shortKey,
+            order: 50,
+            label: () => PLUGIN_NAME
           },
           UniversalDshPanel
-        )
-      );
+        );
+      });
     }
 
     return {
