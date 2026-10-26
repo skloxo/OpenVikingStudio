@@ -96,10 +96,11 @@ BATTLEFIELD_34_TOOL_NAMES: List[str] = [
     # 5. 超大文档代客泊车 (2 项 - 50MB+ 异步批处理防 504)
     "openviking_valet_handover",
     "openviking_valet_ticket_status",
-    # 6. 安全脱敏与传感器 (3 项)
+    # 6. 安全脱敏与传感器/身份自省 (4 项)
     "openviking_privacy",
     "openviking_ping",
     "openviking_harness_stats",
+    "openviking_whoami",
 ]
 
 # 运维治理 17 工具物理名称清单 SSOT (后台专属运维 Agent / 巡检 Engine 武器库)
@@ -169,10 +170,11 @@ def create_core_and_ops_plugins(
         # 5. 超大文档代客泊车 (2 项 - 50MB+ 异步批处理防 504)
         ToolDefinition(name="openviking_valet_handover", description="泊车管家 50MB+ 超大文档异步离线消化", category="async"),
         ToolDefinition(name="openviking_valet_ticket_status", description="查看泊车管家消化与入库进度", category="async"),
-        # 6. 安全脱敏与传感器 (3 项)
+        # 6. 安全脱敏与传感器/身份自省 (4 项)
         ToolDefinition(name="openviking_privacy", description="脱敏敏感凭据、Token 与私有端点", category="security"),
         ToolDefinition(name="openviking_ping", description="检测体外大脑与核心服务毫秒级连通性", category="health"),
         ToolDefinition(name="openviking_harness_stats", description="Token SNR、P@5 召回率与模型性能统计", category="sensors"),
+        ToolDefinition(name="openviking_whoami", description="查看当前连接的鉴权身份、所属角色、Peer 节点及遮罩 API Key", category="security"),
     ]
 
     for tool in battlefield_tools:
@@ -192,7 +194,7 @@ def create_core_and_ops_plugins(
     memory_plugin = QuadPluginDefinition(
         plugin_id="openviking-memory",
         name="OpenViking 核心记忆与代码战地",
-        version=resolve_package_version("dsh-plugin-openviking-memory", "2.0.37"),
+        version=resolve_package_version("dsh-plugin-openviking-memory", "2.0.39"),
         category="platform",
         description="体外大脑中心化战地旗舰：长程记忆、工作区 AST、1214技能感知、工单吹哨与泊车管家 (面向全量普通 Agent)",
         skill=SkillDefinition(

@@ -445,6 +445,7 @@ export function createOpenVikingMcpProxy({
       }
     } catch (err) {
       if (expectsResponse) {
+        logError("rpc_request_failed", err, { method: message?.method });
         await writeMessage(mapError(message, err));
       } else {
         logError("notification_unhandled", err);

@@ -155,31 +155,41 @@ export function resolveOpenVikingCredentials(env = process.env) {
 
   const baseUrl = deriveBaseUrl({ env, ...files, mode, useCli });
 
+  const envApiKey = str(env.OPENVIKING_BEARER_TOKEN, "") || str(env.OPENVIKING_API_KEY, "");
   const apiKey = useCli
     ? str(files.cliFile.api_key, "")
     : (
-        str(env.OPENVIKING_BEARER_TOKEN, "") ||
-        str(env.OPENVIKING_API_KEY, "") ||
+        envApiKey ||
         str(files.cliFile.api_key, "") ||
         str(cx.apiKey, "") ||
         str(server.root_api_key, "")
       );
 
-  const account = useCli
-    ? str(files.cliFile.account, str(files.cliFile.account_id, ""))
-    : (
-        str(env.OPENVIKING_ACCOUNT, "") ||
-        str(files.cliFile.account, str(files.cliFile.account_id, "")) ||
-        str(cx.accountId, "")
-      );
+  const isBoundUserKey = typeof apiKey === "string" && apiKey.trim().split(".").length === 3;
 
-  const user = useCli
-    ? str(files.cliFile.user, str(files.cliFile.user_id, ""))
-    : (
-        str(env.OPENVIKING_USER, "") ||
-        str(files.cliFile.user, str(files.cliFile.user_id, "")) ||
-        str(cx.userId, "")
-      );
+  const account = isBoundUserKey
+    ? ""
+    : useCli
+      ? str(files.cliFile.account, str(files.cliFile.account_id, ""))
+      : envApiKey
+        ? str(env.OPENVIKING_ACCOUNT, "")
+        : (
+            str(env.OPENVIKING_ACCOUNT, "") ||
+            str(files.cliFile.account, str(files.cliFile.account_id, "")) ||
+            str(cx.accountId, "")
+          );
+
+  const user = isBoundUserKey
+    ? ""
+    : useCli
+      ? str(files.cliFile.user, str(files.cliFile.user_id, ""))
+      : envApiKey
+        ? str(env.OPENVIKING_USER, "")
+        : (
+            str(env.OPENVIKING_USER, "") ||
+            str(files.cliFile.user, str(files.cliFile.user_id, "")) ||
+            str(cx.userId, "")
+          );
 
   const peerId = useCli
     ? str(files.cliFile.actor_peer_id, str(files.cliFile.peer_id, ""))

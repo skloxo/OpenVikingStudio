@@ -60,31 +60,15 @@ API_KEY = (
 )
 
 
-def _decode_key_segment(segment: str) -> str:
-    if not segment:
-        return ""
-    try:
-        import base64
-        pad = 4 - (len(segment) % 4)
-        s = segment + ("=" * pad if pad != 4 else "")
-        return base64.urlsafe_b64decode(s).decode("utf-8")
-    except Exception:
-        return ""
-
-
-def _extract_from_key(k: str, idx: int) -> str:
-    if k and "." in k:
-        parts = k.split(".")
-        if len(parts) == 3 and 0 <= idx < 3:
-            return _decode_key_segment(parts[idx])
-    return ""
-
-
 ACTOR_PEER = (
     os.environ.get("OPENVIKING_ACTOR_PEER")
     or _LOCAL_CFG.get("actor_peer")
     or ""
 )
+
+_IS_BOUND_USER_KEY = bool(API_KEY and len(API_KEY.strip().split(".")) == 3)
+VERIFIED_USER = "" if _IS_BOUND_USER_KEY else os.environ.get("OPENVIKING_USER", "").strip()
+ACCOUNT = "" if _IS_BOUND_USER_KEY else os.environ.get("OPENVIKING_ACCOUNT", "").strip()
 
 MCP_ENDPOINT = f"{API_BASE}/mcp"
 DEFAULT_TIMEOUT: float = 120.0
@@ -92,12 +76,17 @@ DEFAULT_TIMEOUT: float = 120.0
 
 def _build_headers() -> Dict[str, str]:
     headers = {
-        "User-Agent": "Antigravity-OpenViking-Pure-Proxy/2.0.33",
+        "User-Agent": "Antigravity-OpenViking-Pure-Proxy/2.0.40",
         "Content-Type": "application/json; charset=utf-8",
         "Accept": "application/json, text/event-stream",
+        "X-OpenViking-Plugin": "openviking-memory",
     }
     if API_KEY:
         headers["Authorization"] = f"Bearer {API_KEY}"
+    if VERIFIED_USER:
+        headers["X-OpenViking-User"] = VERIFIED_USER
+    if ACCOUNT:
+        headers["X-OpenViking-Account"] = ACCOUNT
     if ACTOR_PEER:
         headers["X-OpenViking-Actor-Peer"] = ACTOR_PEER
     return headers

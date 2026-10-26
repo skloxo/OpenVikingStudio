@@ -1,12 +1,126 @@
 /**
  * dsh-plugin-openviking-ops
  * OpenViking 系统运维治理插件 - DeepSeek Harness (DSH) 独立 Cordis RPC 桥接器与 Hook 套件。
- * 遵循官方 DSH Schemastery & Cordis 规范，单包自治，解耦独立。
+ * 遵循官方 DSH Schemastery & Cordis 规范，用户自主配置 Endpoint 与 UserKey，开箱即用。
  */
 
-import { appendFileSync, statSync, renameSync, existsSync, readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs'
+import { createServer } from 'node:http'
+import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { homedir } from 'node:os'
+import { resolveOpenVikingCredentials } from './shared/credentials.mjs'
+
+const PKG_NAME = 'dsh-plugin-openviking-ops'
+const TARGET_PLUGIN = 'openviking-ops'
+
+function getDshDir() {
+  const home = process.env.USERPROFILE || process.env.HOME || homedir()
+  return resolve(home, '.dsh')
+}
+
+function getUiConfigStorePath() {
+  return resolve(getDshDir(), 'openviking-plugins-config.json')
+}
+
+function readUiSavedConfig() {
+  try {
+    const p = getUiConfigStorePath()
+    if (existsSync(p)) {
+      const all = JSON.parse(readFileSync(p, 'utf8'))
+      return all[PKG_NAME] || all[TARGET_PLUGIN] || {}
+    }
+  } catch (_) {}
+  try {
+    const localCfg = fileURLToPath(new URL('./config.json', import.meta.url))
+    if (existsSync(localCfg)) {
+      const c = JSON.parse(readFileSync(localCfg, 'utf8'))
+      return {
+        endpointUrl: c.endpointUrl || c.api_url || '',
+        userKey: c.userKey || c.api_key || '',
+        peer: c.peer || c.actor_peer || ''
+      }
+    }
+  } catch (_) {}
+  return {}
+}
+
+function ensureLocalConfigBridge(onConfigUpdated) {
+  if (!globalThis.__ov_dsh_listeners__) {
+    globalThis.__ov_dsh_listeners__ = new Set()
+  }
+  globalThis.__ov_dsh_listeners__.add(onConfigUpdated)
+
+  if (!globalThis.__ov_dsh_config_server__) {
+    try {
+      const srv = createServer((req, res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+        if (req.method === 'OPTIONS') {
+          res.writeHead(204)
+          res.end()
+          return
+        }
+        if (req.method === 'POST' && req.url === '/ov-dsh-config') {
+          let body = ''
+          req.on('data', chunk => { body += chunk })
+          req.on('end', () => {
+            try {
+              const payload = JSON.parse(body || '{}')
+              const storePath = getUiConfigStorePath()
+              mkdirSync(dirname(storePath), { recursive: true })
+              let existing = {}
+              if (existsSync(storePath)) {
+                try { existing = JSON.parse(readFileSync(storePath, 'utf8')) } catch (_) {}
+              }
+              if (payload.pluginId) existing[payload.pluginId] = payload.config || {}
+              if (payload.shortName) existing[payload.shortName] = payload.config || {}
+              writeFileSync(storePath, JSON.stringify(existing, null, 2), 'utf8')
+              for (const fn of globalThis.__ov_dsh_listeners__ || []) {
+                try { fn(payload) } catch (_) {}
+              }
+              res.writeHead(200, { 'Content-Type': 'application/json' })
+              res.end(JSON.stringify({ ok: true }))
+            } catch (err) {
+              res.writeHead(400, { 'Content-Type': 'application/json' })
+              res.end(JSON.stringify({ ok: false, error: String(err) }))
+            }
+          })
+          return
+        }
+        res.writeHead(404)
+        res.end()
+      })
+      srv.on('error', () => {})
+      srv.listen(19339, '127.0.0.1', () => {
+        try { srv.unref() } catch (_) {}
+      })
+      globalThis.__ov_dsh_config_server__ = srv
+    } catch (_) {}
+  }
+
+  return () => {
+    try {
+      globalThis.__ov_dsh_listeners__?.delete(onConfigUpdated)
+    } catch (_) {}
+  }
+}
+
+function selfHealLegacyResidues() {
+  try {
+    const credPath = resolve(getDshDir(), '.credentials.yaml')
+    if (existsSync(credPath)) {
+      let content = readFileSync(credPath, 'utf8')
+      const revokedPrefix = 'vk-sk-'
+      if (content.includes('OPENVIKING_USER_KEY') && content.includes(revokedPrefix)) {
+        content = content.replace(new RegExp(`^\\s*OPENVIKING_USER_KEY:.*${revokedPrefix}[a-zA-Z0-9_-]*.*\\r?\\n?`, 'gm'), '')
+        content = content.replace(new RegExp(`^\\s*value:.*${revokedPrefix}[a-zA-Z0-9_-]*.*\\r?\\n?`, 'gm'), '')
+        writeFileSync(credPath, content, 'utf8')
+      }
+    }
+  } catch (_) {}
+}
 
 export const name = 'dsh-plugin-openviking-ops'
 export const inject = ['agents', 'sessions', 'tools', 'systemPrompt']
@@ -18,18 +132,17 @@ function v(s) {
 }
 
 export const Config = Schema ? Schema.object({
-  endpointUrl: v(Schema.string().default('')).description('OpenViking 通信端点 URL (例如 https://vk.tide.red/mcp 或 http://127.0.0.1:1933/mcp)'),
-  userKey: v(Schema.string().role('secret').default('')).description('所属用户 API Key / User Key (在 HTTP Header 中安全传递，带密码遮罩)'),
-  userKeyEnv: v(Schema.string().default('OPENVIKING_USER_KEY')).description('从 DSH 凭据库 (.credentials.yaml) 或环境变量中引用的 Key 变量名'),
-  userId: v(Schema.string().default('default')).description('租户 / 账户身份标识 (默认 default)'),
+  endpointUrl: v(Schema.string().default('')).description('OpenViking 通信端点 URL (由用户自主填写)'),
+  userKey: v(Schema.string().role('secret').default('')).description('所属用户 API Key / User Key (由用户自主填写)'),
+  userKeyEnv: v(Schema.string().default('OPENVIKING_USER_KEY')).description('从环境变量中引用的 Key 变量名'),
+  userId: v(Schema.string().default('')).description('可选显式用户标识 (留空由服务端从 UserKey 自动提取)'),
   enableMcp: v(Schema.boolean().default(true)).description('是否挂载 FastMCP 工具箱'),
-  peer: v(Schema.string().default('openviking-ops')).description('调用方节点标识 (用于服务端审计日志与调用链追踪)')
+  peer: v(Schema.string().default('openviking-ops')).description('调用方节点标识')
 }).description('OpenViking 系统运维治理插件 通信桥梁配置') : undefined
 
 function log(msg) {
   try {
-    const home = process.env.USERPROFILE || process.env.HOME || 'C:\\Users\\Skl'
-    const logPath = resolve(home, '.dsh', 'dsh-plugin-openviking-ops-hook.log')
+    const logPath = resolve(getDshDir(), `${PKG_NAME}-hook.log`)
     const line = `[${new Date().toISOString()}] ${msg}\n`
     appendFileSync(logPath, line, 'utf8')
   } catch (_) {}
@@ -49,7 +162,15 @@ function getVal(v, fallback = '') {
 }
 
 export function apply(ctx, config = {}) {
-  const getEndpoint = () => getVal(config.endpointUrl, '')
+  selfHealLegacyResidues()
+  const credentials = resolveOpenVikingCredentials()
+
+  const getEndpoint = () => {
+    const uiCfg = readUiSavedConfig()
+    const explicit = getVal(config.endpointUrl, '') || (uiCfg.endpointUrl || '').trim()
+    if (explicit) return explicit
+    return credentials.baseUrl || 'http://127.0.0.1:1933'
+  }
   const getMcpBaseUrl = () => {
     let ep = getEndpoint().trim()
     if (!ep) return ''
@@ -57,19 +178,25 @@ export function apply(ctx, config = {}) {
     return ep
   }
   const getKey = () => {
-    const raw = getVal(config.userKey, '')
+    const uiCfg = readUiSavedConfig()
+    const raw = getVal(config.userKey, '') || (uiCfg.userKey || '').trim()
     if (raw) return raw
     const envNames = [getVal(config.userKeyEnv, 'OPENVIKING_USER_KEY'), 'OPENVIKING_USER_KEY', 'OPENVIKING_API_KEY']
-    for (const name of envNames) {
-      if (name && process.env[name]) return process.env[name]
+    for (const envName of envNames) {
+      if (envName && process.env[envName]) return process.env[envName]
+    }
+    if (credentials.apiKey && !credentials.apiKey.startsWith('vk-sk-')) {
+      return credentials.apiKey
     }
     return ''
   }
-  const getPeer = () => getVal(config.peer, 'openviking-ops')
-  const getUserId = () => getVal(config.userId, 'default')
+  const getPeer = () => {
+    const uiCfg = readUiSavedConfig()
+    return getVal(config.peer, '') || (uiCfg.peer || '').trim() || credentials.peerId || TARGET_PLUGIN
+  }
   const getEnableMcp = () => getVal(config.enableMcp, true) !== false
 
-  log(`[INIT] dsh-plugin-openviking-ops activated (peer=${getPeer()}, endpoint=${getEndpoint()})`)
+  log(`[INIT] ${PKG_NAME} activated (peer=${getPeer()}, endpoint=${getEndpoint()})`)
 
   let currentMcpFork = null
   let lastMcpSignature = ''
@@ -88,7 +215,7 @@ export function apply(ctx, config = {}) {
 
     try {
       const key = getKey()
-      const mcpUrl = `${mcpBase}?plugin_id=openviking-ops`
+      const mcpUrl = `${mcpBase}?plugin_id=${TARGET_PLUGIN}`
       const signature = `${mcpUrl}#${key || 'nokey'}`
 
       if (currentMcpFork && signature === lastMcpSignature) return
@@ -111,20 +238,19 @@ export function apply(ctx, config = {}) {
       }
 
       if (mcpPlugin && typeof ctx.plugin === 'function') {
-        const homeDir = process.env.USERPROFILE || process.env.HOME || 'C:\\Users\\Skl'
         const childEnv = {
           ...process.env,
           ELECTRON_RUN_AS_NODE: '1',
           OPENVIKING_URL: mcpBase,
           OPENVIKING_MCP_URL: mcpUrl,
           OPENVIKING_PEER_ID: getPeer(),
-          OV_TARGET_PLUGIN: 'openviking-ops',
-          OV_DEBUG_LOG: resolve(homeDir, '.dsh', 'dsh-plugin-openviking-ops-proxy.log')
+          OV_TARGET_PLUGIN: TARGET_PLUGIN,
+          OV_DEBUG_LOG: resolve(getDshDir(), `${PKG_NAME}-proxy.log`)
         }
         if (key) childEnv.OPENVIKING_API_KEY = key
 
         currentMcpFork = ctx.plugin(mcpPlugin, {
-          serverName: 'openviking-ops',
+          serverName: TARGET_PLUGIN,
           transport: 'stdio',
           command: process.execPath,
           args: [proxyPath],
@@ -134,12 +260,17 @@ export function apply(ctx, config = {}) {
           reconnect: { enabled: true, initialDelayMs: 500, maxDelayMs: 15000, maxAttempts: 10 }
         })
         lastMcpSignature = signature
-        log(`[MCP_MOUNT_SUCCESS] dsh-plugin-openviking-ops mounted successfully`)
+        log(`[MCP_MOUNT_SUCCESS] ${PKG_NAME} mounted successfully`)
       }
     } catch (err) {
       log(`[MCP_MOUNT_WARN] failed to mount: ${err?.message || err}`)
     }
   }
+
+  const removeBridgeListener = ensureLocalConfigBridge(() => {
+    log('[UI_CONFIG_SYNC] received updated credentials from DSH UI panel, reloading MCP')
+    mountMcpIfNeeded().catch(() => {})
+  })
 
   mountMcpIfNeeded().catch(() => {})
   ctx.on('loader/volatile-update', () => {
@@ -147,17 +278,25 @@ export function apply(ctx, config = {}) {
     mountMcpIfNeeded().catch(() => {})
   })
 
-  // 专属认知导轨上下文注入
+  ctx.on('dispose', () => {
+    log('[DISPOSE] releasing child MCP processes and file locks')
+    removeBridgeListener()
+    if (currentMcpFork) {
+      try { currentMcpFork.dispose() } catch (_) {}
+      currentMcpFork = null
+      lastMcpSignature = ''
+    }
+  })
+
   if (ctx.systemPrompt) {
     try {
       ctx.systemPrompt.context({
-        name: 'openviking-ops-routing-guide',
+        name: `${TARGET_PLUGIN}-routing-guide`,
         order: 15,
         text: () => [
-          '【OpenViking 系统运维治理插件 导轨】',
-          '当前已接入 OpenViking 系统运维治理插件 (openviking-ops)。',
-          '后台专属运维治理、死信自愈、知识索引重建与哨兵巡检 (17 项运维特权工具 + 2 项 Hook 守卫)',
-          '请直接基于授权工具与 Hook 开展工作，开箱即用。'
+          `【OpenViking 系统运维治理插件 导轨】`,
+          `当前已接入 OpenViking 系统运维治理插件 (${TARGET_PLUGIN})。`,
+          `请直接基于授权工具与 Hook 开展工作，开箱即用。`
         ].join('\n')
       })
     } catch (_) {}

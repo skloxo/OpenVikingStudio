@@ -284,36 +284,33 @@ class _IdentityASGIMiddleware:
             effective_user_param = (
                 request.headers.get("x-openviking-user")
                 or request.query_params.get("user_id")
-                or "default"
             )
+            effective_account_param = (
+                request.headers.get("x-openviking-account")
+                or request.query_params.get("account_id")
+            )
+            if not x_api_key and not authorization:
+                effective_user_param = effective_user_param or "default"
+                effective_account_param = effective_account_param or "default"
 
             identity = await resolve_identity(
                 request,
                 x_api_key=x_api_key,
                 authorization=authorization,
-                x_openviking_account=request.headers.get("x-openviking-account") or "default",
+                x_openviking_account=effective_account_param,
                 x_openviking_user=effective_user_param,
             )
 
             auth_role = getattr(identity, "role", "user") or "user"
 
-            # 识别目标插件包 (plugin_id / target_plugin)
+            # 识别目标插件包 (plugin_id / target_plugin)，严格以插件显式声明为准，默认 openviking-memory
             raw_plugin = (
                 request.query_params.get("plugin_id")
                 or request.query_params.get("plugin")
                 or request.headers.get("x-openviking-plugin")
                 or request.headers.get("x-plugin-id")
-                or ""
+                or "openviking-memory"
             ).strip().lower()
-
-            if not raw_plugin:
-                peer_lower = (actor_peer_id or declared_agent_id or "").lower()
-                if any(k in peer_lower for k in ("fleet", "mesh", "coordinator")):
-                    raw_plugin = "fleet-mesh"
-                elif any(k in peer_lower for k in ("ops", "sentinel")):
-                    raw_plugin = "openviking-ops"
-                else:
-                    raw_plugin = "openviking-memory"
 
             # 🛡️ 插件角色权限硬门禁 (RBAC Gate)
             if raw_plugin in ("openviking-ops", "ops", "dsh-plugin-openviking-ops", "fleet-mesh", "fleet", "openviking-fleet", "dsh-plugin-openviking-fleet"):
@@ -3366,6 +3363,58 @@ async def openviking_content_reduce(
         }, ensure_ascii=False, indent=2)
 
 
+@mcp.tool(annotations=_READ_ONLY_TOOL_ANNOTATIONS)
+async def openviking_whoami() -> str:
+    """获取当前客户端连接的鉴权身份、所属角色、Peer 节点与安全脱敏后的 User Key 信息。
+
+    原子自省工具 (SSOT)，消除智能体在工作区盲目搜索猜测身份导致凭据泄露的风险。
+    """
+    import json
+    try:
+        ctx = _get_ctx()
+        user_id = ctx.user.user_id if hasattr(ctx.user, "user_id") else str(ctx.user)
+        account_id = ctx.user.account_id if hasattr(ctx.user, "account_id") else "default"
+        role = getattr(ctx, "role", "user") or "user"
+        peer = getattr(ctx, "actor_peer_id", None) or "unknown"
+        raw_key = getattr(ctx, "api_key", None)
+
+        # 单向掩码处理，杜绝全量明文反射
+        masked_key = "--"
+        if raw_key and isinstance(raw_key, str):
+            if len(raw_key) > 10:
+                masked_key = f"{raw_key[:5]}...{raw_key[-4:]}"
+            else:
+                masked_key = "***"
+
+        return json.dumps(
+            {
+                "user": user_id,
+                "account": account_id,
+                "peer": peer,
+                "role": role,
+                "authenticated": role in ("user", "admin"),
+                "masked_user_key": masked_key,
+                "protocol": "openviking-mcp/v1",
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    except Exception as e:
+        return json.dumps(
+            {
+                "user": "anonymous",
+                "account": "default",
+                "peer": "unknown",
+                "role": "unauthenticated",
+                "authenticated": False,
+                "masked_user_key": "--",
+                "error": str(e),
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+
+
 # ---------------------------------------------------------------------------
 # FastMCP 双向透明别名解析器 (消除 Unknown Tool 与短名称不兼容)
 # ---------------------------------------------------------------------------
@@ -3396,6 +3445,8 @@ def _install_aliased_tool_manager(mcp_instance: FastMCP) -> None:
         "openviking_harness_stats": "openviking_harness_probe",
         "privacy": "openviking_privacy_mask",
         "openviking_privacy": "openviking_privacy_mask",
+        "whoami": "openviking_whoami",
+        "openviking_whoami": "openviking_whoami",
     }
 
     def _aliased_get_tool(name: str):

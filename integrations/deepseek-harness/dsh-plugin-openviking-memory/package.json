@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-openviking-memory",
-  "version": "2.0.37",
+  "version": "2.0.40",
   "type": "module",
   "main": "index.js",
   "description": "体外大脑长程记忆语义检索、代码感知、上下文路由与经验沉淀完全体 (战地工具与 Hook 物理守卫)",

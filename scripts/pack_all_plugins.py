@@ -34,6 +34,9 @@ TAR_EXCLUDES = {
     ".pytest_cache",
     ".caps_cache.json",
     ".coverage",
+    "config.json",
+    "mcp_config.json",
+    ".ov_Hook.log",
 }
 
 

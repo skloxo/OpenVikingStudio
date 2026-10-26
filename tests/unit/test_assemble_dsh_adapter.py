@@ -28,7 +28,7 @@ def test_assemble_openviking_memory():
 
     assert meta["dsh_pkg_name"] == "dsh-plugin-openviking-memory"
     assert meta["short_name"] == "openviking-memory"
-    assert meta["tools_count"] == 35
+    assert meta["tools_count"] == 36
     assert meta["skills_count"] == 4
     assert meta["hooks_count"] == 3
 

@@ -49,10 +49,11 @@ BATTLEFIELD_34_TOOLS: List[Dict[str, str]] = [
     # 超大文档代客泊车 (2 项)
     {"id": "openviking_valet_handover", "name": "valet_handover", "description": "大文档代客泊车异步深度消化"},
     {"id": "openviking_valet_ticket_status", "name": "valet_ticket_status", "description": "查询代客泊车任务处理状态"},
-    # 安全脱敏与传感器 (3 项)
+    # 安全脱敏与传感器/身份自省 (4 项)
     {"id": "openviking_privacy", "name": "privacy", "description": "敏感凭据脱敏与私有端点保护"},
     {"id": "openviking_ping", "name": "ping", "description": "体外大脑端到端连通性心跳探针"},
     {"id": "openviking_harness_stats", "name": "harness_stats", "description": "智能体效能与硬件利用率探针"},
+    {"id": "openviking_whoami", "name": "whoami", "description": "查看当前连接的鉴权身份、所属角色、Peer 节点及遮罩 API Key"},
 ]
 
 # 核心战地记忆 3 项 Hook 物理守卫

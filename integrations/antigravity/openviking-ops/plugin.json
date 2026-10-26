@@ -1,7 +1,7 @@
 {
   "name": "openviking-ops",
   "displayName": "OpenViking System Ops (v1.0.6)",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "[版本: v1.0.6 | 16项特权运维算子 + 双Hook物理守卫] OpenViking 核心服务运维与管控特权插件。提供死信自愈巡检心跳、特权写改审计、服务启停重载、环境综合诊断、存储统计与快照灾备恢复。",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [

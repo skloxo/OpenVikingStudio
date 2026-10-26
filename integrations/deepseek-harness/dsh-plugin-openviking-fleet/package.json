@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-openviking-fleet",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "type": "module",
   "main": "index.js",
   "description": "跨物理机节点同频健康体检、代码与配置一键同频同步 (2 项跨机工具 + 1 项 Hook 守卫)",

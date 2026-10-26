@@ -103,11 +103,12 @@ export function buildMcpProxyConfig({
   watchedPaths = [],
   env = process.env,
 } = {}) {
+  const isBoundUserKey = typeof apiKey === "string" && apiKey.trim().split(".").length === 3;
   return {
     mcpUrl: mcpUrl || `${trimSlash(baseUrl)}/mcp`,
     apiKey: apiKey || "",
-    account: account || "",
-    user: user || "",
+    account: isBoundUserKey ? "" : (account || ""),
+    user: isBoundUserKey ? "" : (user || ""),
     peerId: peerId || "",
     userAgent: userAgent || "",
     timeoutMs: Math.max(

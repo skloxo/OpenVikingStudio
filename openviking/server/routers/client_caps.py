@@ -317,45 +317,13 @@ async def get_client_capabilities(
     except Exception:
         __version__ = "2.0.13"
 
-    target = (plugin_id or "").strip().lower()
-
-    # 1. 针对单一特定原生插件的精准返回
-    if target in ("openviking-memory", "memory", "dsh-plugin-openviking-memory", "dsh-plugin-openviking"):
-        authed_tools = [t for t in BATTLEFIELD_34_TOOLS if t["id"] in selected_tools_set] or BATTLEFIELD_34_TOOLS
-        authed_hooks = [h for h in MEMORY_3_HOOKS if hooks_state.get(h["id"], True)]
-        mem_ver = get_plugin_manifest_version("openviking-memory", "2.0.27")
-        probes = await _run_full_probes(
-            auth_info,
-            mem_count=len(authed_tools),
-            total_tools=len(authed_tools),
-            active_hooks=len(authed_hooks),
-            target_plugin="openviking-memory",
-        )
-        return {
-            "status": "ok",
-            "authenticated": auth_info["authenticated"],
-            "version": __version__,
-            "kernel_version": __version__,
-            "plugin_version": mem_ver,
-            "hot_reload_synced": True,
-            "user_id": auth_info["user_id"],
-            "account_id": auth_info["account_id"],
-            "role": auth_info["role"],
-            "plugin_id": "openviking-memory",
-            "total_authorized_tools": len(authed_tools),
-            "plugins": [{
-                "id": "openviking-memory",
-                "name": "OpenViking 核心记忆与代码战地",
-                "version": mem_ver,
-                "kernel_version": __version__,
-                "status": "active",
-                "total_tools": len(authed_tools),
-                "description": f"体外大脑长程记忆语义检索、代码感知、上下文路由与经验沉淀完全体 (v{mem_ver} · 内核 v{__version__} · {len(authed_tools)} 项战地工具)",
-                "tools": authed_tools,
-            }],
-            "hooks": authed_hooks,
-            "probes": probes,
-        }
+    target = (
+        plugin_id
+        or request.query_params.get("plugin")
+        or request.headers.get("x-openviking-plugin")
+        or request.headers.get("x-plugin-id")
+        or "openviking-memory"
+    ).strip().lower()
 
     if target in ("openviking-ops", "ops", "dsh-plugin-openviking-ops"):
         if auth_info["role"] != "admin":
@@ -399,40 +367,40 @@ async def get_client_capabilities(
             "hooks": authed_hooks, "probes": probes,
         }
 
-    # 2. 默认返回三大原生 Quad 插件 (动态真相源 SSOT)
-    authed_mem = [t for t in BATTLEFIELD_34_TOOLS if t["id"] in selected_tools_set] or BATTLEFIELD_34_TOOLS
+    # 默认严格按单插件 (openviking-memory, 36 工具) 返回，绝不混发多插件
+    authed_tools = [t for t in BATTLEFIELD_34_TOOLS if t["id"] in selected_tools_set] or BATTLEFIELD_34_TOOLS
+    authed_hooks = [h for h in MEMORY_3_HOOKS if hooks_state.get(h["id"], True)]
     mem_ver = get_plugin_manifest_version("openviking-memory", "2.0.27")
-    ops_ver = get_plugin_manifest_version("openviking-ops", "1.0.6")
-    fleet_ver = get_plugin_manifest_version("fleet-mesh", "1.0.2")
-    plugins = [
-        {"id": "openviking-memory", "name": "OpenViking 核心记忆与代码战地", "version": mem_ver, "kernel_version": __version__, "status": "active", "total_tools": len(authed_mem), "description": f"体外大脑长程记忆语义检索与经验沉淀 (v{mem_ver} · 内核 v{__version__})", "tools": authed_mem},
-        {"id": "openviking-ops", "name": "OpenViking 系统运维治理插件", "version": ops_ver, "kernel_version": __version__, "status": "active" if auth_info["role"] == "admin" else "restricted", "total_tools": len(OPS_17_TOOLS), "description": f"后台专属运维治理与哨兵巡检 (v{ops_ver} · 内核 v{__version__})", "tools": OPS_17_TOOLS},
-        {"id": "fleet-mesh", "name": "卫星集群同频运维插件", "version": fleet_ver, "kernel_version": __version__, "status": "active", "total_tools": len(FLEET_2_TOOLS), "description": f"跨物理节点同频健康体检与一键同步 (v{fleet_ver} · 内核 v{__version__})", "tools": FLEET_2_TOOLS},
-    ]
-
-    total_authorized = len(authed_mem) + len(OPS_17_TOOLS) + len(FLEET_2_TOOLS)
-    all_hooks = MEMORY_3_HOOKS + OPS_2_HOOKS + FLEET_1_HOOKS
-    authorized_hooks = [hk for hk in all_hooks if hooks_state.get(hk["id"], True)]
-
     probes = await _run_full_probes(
         auth_info,
-        mem_count=len(authed_mem),
-        ops_count=len(OPS_17_TOOLS),
-        fleet_count=len(FLEET_2_TOOLS),
-        total_tools=total_authorized,
-        active_hooks=len(authorized_hooks),
+        mem_count=len(authed_tools),
+        total_tools=len(authed_tools),
+        active_hooks=len(authed_hooks),
+        target_plugin="openviking-memory",
     )
-
     return {
         "status": "ok",
-        "authenticated": True,
+        "authenticated": auth_info["authenticated"],
         "version": __version__,
+        "kernel_version": __version__,
+        "plugin_version": mem_ver,
+        "hot_reload_synced": True,
         "user_id": auth_info["user_id"],
         "account_id": auth_info["account_id"],
         "role": auth_info["role"],
-        "total_authorized_tools": total_authorized,
-        "plugins": plugins,
-        "hooks": authorized_hooks,
+        "plugin_id": "openviking-memory",
+        "total_authorized_tools": len(authed_tools),
+        "plugins": [{
+            "id": "openviking-memory",
+            "name": "OpenViking 核心记忆与代码战地",
+            "version": mem_ver,
+            "kernel_version": __version__,
+            "status": "active",
+            "total_tools": len(authed_tools),
+            "description": f"体外大脑长程记忆语义检索、代码感知、上下文路由与经验沉淀完全体 (v{mem_ver} · 内核 v{__version__} · {len(authed_tools)} 项战地工具)",
+            "tools": authed_tools,
+        }],
+        "hooks": authed_hooks,
         "probes": probes,
     }
 

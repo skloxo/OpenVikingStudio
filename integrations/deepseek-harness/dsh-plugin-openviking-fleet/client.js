@@ -12,7 +12,7 @@ window.__ModuleLoader__.load({
     const { useState } = React;
 
     const PLUGIN_ID = 'dsh-plugin-openviking-fleet';
-    const CLIENT_VERSION = '1.0.2';
+    const CLIENT_VERSION = '1.0.5';
     const PLUGIN_NAME = 'OpenViking Fleet Mesh';
     const SHORT_NAME = 'fleet-mesh';
     const STORAGE_KEY = `dsh_plugin_${SHORT_NAME.replace(/-/g, '_')}_config`;
@@ -126,7 +126,7 @@ window.__ModuleLoader__.load({
         }
       };
 
-      const handleSave = () => {
+      const handleSave = async () => {
         setSaving(true);
         saveConfig(formConfig);
         if (props?.form?.mutate) {
@@ -142,11 +142,17 @@ window.__ModuleLoader__.load({
         if (typeof props?.onChange === 'function') {
           try { props.onChange({ ...props.config, ...formConfig }); } catch (_) {}
         }
-        setTimeout(() => {
-          setSaving(false);
-          setSaveToast({ ok: true, msg: '配置已持久化保存，并在 DSH 会话中实时生效' });
-          setTimeout(() => setSaveToast(null), 3000);
-        }, 200);
+        try {
+          await fetch('http://127.0.0.1:19339/ov-dsh-config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pluginId: PLUGIN_ID, shortName: SHORT_NAME, config: formConfig }),
+            signal: AbortSignal.timeout(2000)
+          });
+        } catch (_) {}
+        setSaving(false);
+        setSaveToast({ ok: true, msg: '配置已持久化保存，并在 DSH 会话中实时生效' });
+        setTimeout(() => setSaveToast(null), 3000);
       };
 
       const tabs = [
@@ -405,7 +411,19 @@ window.__ModuleLoader__.load({
       const bundleKey = PLUGIN_ID;
       const shortKey = SHORT_NAME;
 
-      // 1. 组合包详情页配置插槽 (Bundle Detail Page) - DSH 点击插件行直达 OpenViking 全功能主控座舱
+      // 启动时自动将浏览器端已保存的凭据同步至本机 Node.js 插件宿主，零手工干预生效
+      try {
+        const saved = loadSavedConfig();
+        if (saved && (saved.endpointUrl || saved.userKey)) {
+          fetch('http://127.0.0.1:19339/ov-dsh-config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pluginId: PLUGIN_ID, shortName: SHORT_NAME, config: saved })
+          }).catch(() => {});
+        }
+      } catch (_) {}
+
+      // 1. 组合包详情页配置插槽 (Bundle Detail Page)
       ctx.slots.inject('plugins.bundle.config', () => {
         ctx.slots.register({ name: 'plugins.bundle.config', key: bundleKey }, UniversalDshPanel);
         if (shortKey !== bundleKey) {

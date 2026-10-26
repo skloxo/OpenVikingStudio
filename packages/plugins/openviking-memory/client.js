@@ -12,13 +12,13 @@ window.__ModuleLoader__.load({
     const { useState } = React;
 
     const PLUGIN_ID = 'dsh-plugin-openviking-memory';
-    const CLIENT_VERSION = '2.0.37';
+    const CLIENT_VERSION = '2.0.40';
     const PLUGIN_NAME = 'OpenViking Core Memory';
     const SHORT_NAME = 'openviking-memory';
     const STORAGE_KEY = `dsh_plugin_${SHORT_NAME.replace(/-/g, '_')}_config`;
 
     // 动态插值数据源 (离线兜底 SSOT)
-    const TOOL_CATEGORIES = [{"cat": "核心长程记忆与检索 (Memory & Context)", "tools": ["openviking_find", "openviking_search", "openviking_read", "openviking_write", "openviking_store", "openviking_tree", "openviking_grep", "openviking_glob", "openviking_code_search", "openviking_smart_read"]}, {"cat": "原子扩展工具箱 (FastMCP Tools)", "tools": ["openviking_link", "openviking_get_relations", "openviking_unlink", "openviking_ls", "openviking_code_outline", "openviking_code_expand", "openviking_diff", "openviking_content_reduce", "openviking_tag", "openviking_skills", "openviking_auto_onboard_skills", "openviking_get_onboard_queue_status", "openviking_fix_skill", "openviking_record_evolution_lesson", "openviking_file_task_card", "openviking_list_pending_cards", "openviking_resolve_task_card", "openviking_task_cards_summary", "openviking_privacy", "openviking_ping", "openviking_harness_stats"]}, {"cat": "模型聚合路由与多租户分摊 (CPA Squad)", "tools": ["openviking_tokenshift_compress"]}, {"cat": "系统运维治理与快照 (Ops & Snapshots)", "tools": ["openviking_audit_skills"]}, {"cat": "卫星集群网络与节点同频 (Fleet & Mesh)", "tools": ["openviking_valet_handover", "openviking_valet_ticket_status"]}];
+    const TOOL_CATEGORIES = [{"cat": "核心长程记忆与检索 (Memory & Context)", "tools": ["openviking_find", "openviking_search", "openviking_read", "openviking_write", "openviking_store", "openviking_tree", "openviking_grep", "openviking_glob", "openviking_code_search", "openviking_smart_read"]}, {"cat": "原子扩展工具箱 (FastMCP Tools)", "tools": ["openviking_link", "openviking_get_relations", "openviking_unlink", "openviking_ls", "openviking_code_outline", "openviking_code_expand", "openviking_diff", "openviking_content_reduce", "openviking_tag", "openviking_skills", "openviking_auto_onboard_skills", "openviking_get_onboard_queue_status", "openviking_fix_skill", "openviking_record_evolution_lesson", "openviking_file_task_card", "openviking_list_pending_cards", "openviking_resolve_task_card", "openviking_task_cards_summary", "openviking_privacy", "openviking_ping", "openviking_harness_stats", "openviking_whoami"]}, {"cat": "模型聚合路由与多租户分摊 (CPA Squad)", "tools": ["openviking_tokenshift_compress"]}, {"cat": "系统运维治理与快照 (Ops & Snapshots)", "tools": ["openviking_audit_skills"]}, {"cat": "卫星集群网络与节点同频 (Fleet & Mesh)", "tools": ["openviking_valet_handover", "openviking_valet_ticket_status"]}];
     const SKILLS = [{"name": "antigravity-plugin-crafting", "desc": "本技能为在 **Google Antigravity Desktop (桌面端)** 与 **Google Antigravity IDE (编程端)** 生态下，打造 100% 官方合规、非暴力、非入侵式原生插件的**单一真相源 (SSOT) 标准工程工法**。"}, {"name": "openviking-memory", "desc": "OpenViking 体外大脑核心记忆操作规范 — 指导 Agent 在开局检索历史经验、执行中精准查阅架构与凭据、任务结束时将关键决策与经验教训持久化回写至 Master Memory。"}, {"name": "openviking-plugin-ops", "desc": "\"OpenViking (VK) 插件中心与 Agent 生态制作与运维中枢：三大官方标杆插件(记忆/凭据/搜索)、四位一体全息模型(Skill+Hook+MCP+GUI)、零信任单轨鉴权铁律与私有封闭堡垒公理、空间用户双轴防碰撞物理契约、异构客户端(DSH) stdio 桥接与 pre-step 隐藏 runtime-context 注入闭环、SPA 路由先于通配注册铁律、用户消息气泡零污染铁律、新节点接入六阶闭环验收及四大反模式避坑指南 (SSOT)\""}, {"name": "session-handover", "desc": "会话总结、经验沉淀与跨会话无缝接力技能 (Session Handover & Distillation SOP) — 当用户提到 \"总结会话\", \"交接本次会话\", \"开新的会话接续任务\", \"整理会话\", \"会话交接\", \"生成接力提示词\", \"无缝接力\", \"handoff\", \"handover session\", \"交接任务\", \"会话总结\", \"结晶会话\" 等意图时自动触发。负责脱水战地现场、提取 Evolution Lessons 与 Recipes 入 OpenViking 记忆中枢、审查演进技能库，并输出供全新冷启动会话 0 秒满血接续的标准化 Handover Prompt。"}];
     const HOOKS = [{"name": "openviking-memory-prefetch", "desc": "拦截 PreInvocation 事件，执行守卫检查", "event": "PreInvocation"}, {"name": "openviking-session-archiver", "desc": "拦截 Stop 事件，执行守卫检查", "event": "Stop"}, {"name": "openviking-sandbox-guard", "desc": "拦截 PreToolUse 事件，执行守卫检查", "event": "PreToolUse"}];
     const RULES = [{"name": "AGENTS.md", "desc": "OpenViking 记忆中枢交互与隔离准则 (Memory SSOT & Isolation Rules)", "content": "# OpenViking 记忆中枢交互与隔离准则 (Memory SSOT & Isolation Rules)\n\n1. **唯一真相源 (SSOT)**：\n   全系统所有架构决策、凭据配置与历史经验统一收口在 `viking://resources/master_memory/`，打破单会话与单智能体隔离。\n2. **私有与共享双层隔离**：\n   - 空间公共层：全智能体共享，用于权威规约与架构共识；\n   - 专属私有层：按 User ID 打标隔离（如 `AntigravityIDE@2080Ti`），过程性草稿与排障流水账默认不跨号污染。\n3. **安全与凭据铁律**：\n   - 严禁在代码、注释或对话中泄露明文 API Key；\n   - 客户端连接统一通过插件配置动态注入。"}];
@@ -126,7 +126,7 @@ window.__ModuleLoader__.load({
         }
       };
 
-      const handleSave = () => {
+      const handleSave = async () => {
         setSaving(true);
         saveConfig(formConfig);
         if (props?.form?.mutate) {
@@ -142,11 +142,17 @@ window.__ModuleLoader__.load({
         if (typeof props?.onChange === 'function') {
           try { props.onChange({ ...props.config, ...formConfig }); } catch (_) {}
         }
-        setTimeout(() => {
-          setSaving(false);
-          setSaveToast({ ok: true, msg: '配置已持久化保存，并在 DSH 会话中实时生效' });
-          setTimeout(() => setSaveToast(null), 3000);
-        }, 200);
+        try {
+          await fetch('http://127.0.0.1:19339/ov-dsh-config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pluginId: PLUGIN_ID, shortName: SHORT_NAME, config: formConfig }),
+            signal: AbortSignal.timeout(2000)
+          });
+        } catch (_) {}
+        setSaving(false);
+        setSaveToast({ ok: true, msg: '配置已持久化保存，并在 DSH 会话中实时生效' });
+        setTimeout(() => setSaveToast(null), 3000);
       };
 
       const tabs = [
@@ -405,7 +411,19 @@ window.__ModuleLoader__.load({
       const bundleKey = PLUGIN_ID;
       const shortKey = SHORT_NAME;
 
-      // 1. 组合包详情页配置插槽 (Bundle Detail Page) - DSH 点击插件行直达 OpenViking 全功能主控座舱
+      // 启动时自动将浏览器端已保存的凭据同步至本机 Node.js 插件宿主，零手工干预生效
+      try {
+        const saved = loadSavedConfig();
+        if (saved && (saved.endpointUrl || saved.userKey)) {
+          fetch('http://127.0.0.1:19339/ov-dsh-config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pluginId: PLUGIN_ID, shortName: SHORT_NAME, config: saved })
+          }).catch(() => {});
+        }
+      } catch (_) {}
+
+      // 1. 组合包详情页配置插槽 (Bundle Detail Page)
       ctx.slots.inject('plugins.bundle.config', () => {
         ctx.slots.register({ name: 'plugins.bundle.config', key: bundleKey }, UniversalDshPanel);
         if (shortKey !== bundleKey) {
