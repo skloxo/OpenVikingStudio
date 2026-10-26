@@ -56,11 +56,11 @@
 | **`v1.7.157`** | **Card-200** | **`openviking-memory` 插件母本自内聚转接驱动重构与自愈清洗 (Antigravity Memory Proxy Stub & SSOT v2.0.16)** | 1. 彻底拔除 setup.py 中外部桌面路径硬编码与 candidate_scripts 扫描，插件目录自带自内聚 server.py 独立转接驱动；<br>2. 统一多机物理契约：2080Ti 本地与 3070 远程代码 100% 相同，唯一变量仅为 OPENVIKING_API；<br>3. 强制自愈清洗幽灵：安装与注册逻辑强制 pop("openviking", None)，消灭历史幽灵条目；<br>4. 版本原子递增：plugin.json 与 setup.py 同步自增至 v2.0.16，全景生态健康测试 100% 满绿通过。<br>*(Commit: `06dc379d0`, Tag: `v1.7.157`)* | [x] 已验收通过 ✅ |
 | **`v1.7.158`** | **Card-201** | **插件与插件中心解耦、动态感知引擎与双端 README 一源互通 (Decoupled Plugin Perception & SSOT README)** | 1. 插件独立解耦托管于 integrations/antigravity，插件中心动态扫描自动感知；<br>2. 真实 AST 静态解析 server.py 工具，彻底斩除虚构假工具与版本断层；<br>3. 抽屉直连渲染原生 README.md，与 Antigravity 详情页 100% 互通共享单一真相源；<br>4. 自动化视网膜门禁全绿，前端生产集中编译生效。 | [x] 已验收通过 ✅ |
 | **`待排期`** | **Card-202** | **`fleet-mesh` 插件母本自内聚转接驱动与多节点拓扑自适应 (SSOT v1.0.2)** | 拔除路径依赖，自适应探测 2080Ti/3070 节点，版本原子递增。 | [ ] 待排期迭代 ⏳ |
-| **`v1.7.161`** | **Card-203** | **`keepass-vault` 本地高安全凭据保险箱完全体重构与标杆化落地 (Credential SSOT v1.2.1)** | 1. 统一母港 packages/plugins/keepass-vault 四位一体落盘；<br>2. FastMCP 9 大算子与 stdin 安全管道传递主密码；<br>3. 写前物理防抖快照 Hook (40ms 冷启动)；<br>4. 查库第一公理潜意识与 setup.py 双轨自举；<br>5. 不可变打包与 sync_all_plugins 100% 对齐，5/5 专项单测全绿。 | [x] 已验收通过 ✅ |
+| **`v1.7.172`** | **Card-203** | **`keepass-vault` 本地高安全凭据保险箱完全体重构与标杆化落地 (Credential SSOT v1.2.1)** | 1. 统一母港 packages/plugins/keepass-vault 四位一体落盘；<br>2. FastMCP 9 大算子与 stdin 安全管道传递主密码；<br>3. 写前物理防抖快照 Hook (40ms 冷启动)；<br>4. 查库第一公理潜意识与 setup.py 双轨自举；<br>5. 不可变打包与 sync_all_plugins 100% 对齐，5/5 专项单测全绿。<br>*(Commit: `85a063282`, Tag: `v1.7.172`)* | [x] 已验收通过 ✅ |
 
 | **`待排期`** | **Card-207** | **知识盲区自愈、反思骨架铸造与双轨补全自进化 (Knowledge Deficit Scaffolding)** | 推理缺口捕获，自动生成反思骨架草稿，双轨触发本地/外部知识补全。 | [ ] 待排期迭代 ⏳ |
 | **`待排期`** | **Card-208** | **Workspace 分层配置与项目级 Peer 身份持久化 (Workspace Config & SSOT)** | 支持 `.openviking.toml` 项目级配置固化，解决跨设备/子目录迁移导致的项目记忆失效。 | [ ] 待排期迭代 ⏳ |
-| **`v1.7.161`** | **Card-158** | **KeePass 本地凭据保险箱端侧体验与安全体检深化 (KeePass Local Vault)** | 由 Card-203 统一吸收完成四位一体与母港重构。 | [x] 已吸收通过 ✅ |
+| **`v1.7.172`** | **Card-158** | **KeePass 本地凭据保险箱端侧体验与安全体检深化 (KeePass Local Vault)** | 由 Card-203 统一吸收完成四位一体与母港重构。 | [x] 已吸收通过 ✅ |
 | **`待排期`** | **Card-159** | **Dify 智能体与工作流中枢插件机制演进与 DSL 备份回滚 (Dify Workflow)** | 工作流入参强校验，DSL 导入前本地快照备份与一键安全回滚。 | [ ] 待排期迭代 ⏳ |
 | **`待排期`** | **Card-160** | **CPA 跨模型算力协同工兵调度与 429 降级记账闭环 (CPA Multi-Model)** | 专家咨询与工兵扇出分工固化，429 限流自愈与熔断转移，Token 成本审计。 | [ ] 待排期迭代 ⏳ |
 | **`待排期`** | **Card-105** | **常驻自净巡检哨兵引擎 (MemoryPuritySentinel Daemon Engine)** | 单例低开销守护线程，串联孤儿清除、艾宾浩斯冷存、冲突脱水、staging TTL。 | [ ] 待排期迭代 ⏳ |
@@ -261,7 +261,7 @@
   3. **写前物理防抖快照 Hook (Disaster Recovery First)**：落地 `hooks/vault_guard.py`（纯标准库 `-X utf8 -E -s -S` 隔离，40ms 冷启动），写入前自动生成 `*.bak` 时间戳备份，实测成功生成备份；
   4. **查库第一公理潜意识固化**：落地 `rules/AGENTS.md` 与 `skills/keepass-vault/SKILL.md`，严禁索要明文密码，新增凭据强制高熵；
   5. **自举向导与双轨注册**：`setup.py` 自动写入宿主 `~/.gemini/config/config.json` 与 `mcp_config.json`，自检探针实测 `can_unlock: True (322 条凭据)`；
-  6. **不可变分发与流水线对齐**：构建落盘 `keepass-vault-1.2.1.tgz` 与 `dsh-plugin-keepass-vault-1.2.1.tgz`，`sync_all_plugins.py --verify-only` 实现 3 大生产标杆 100% PASS，专属单测 `test_keepass_vault_plugin.py` 5/5 满绿通过 (0.07s)。
+  6. **不可变分发与流水线对齐**：构建落盘 `keepass-vault-1.2.1.tgz` 与 `dsh-plugin-keepass-vault-1.2.1.tgz`，`sync_all_plugins.py --verify-only` 实现 3 大生产标杆 100% PASS，专属单测 `test_keepass_vault_plugin.py` 5/5 满绿通过 (0.07s)。<br>*(Commit: `85a063282`, Tag: `v1.7.172`)*
 
 #### 📌 [P1] [ ] Card-202: `fleet-mesh` 插件母本自内聚转接驱动与多节点拓扑自适应 (SSOT v1.0.2) ⏳
 - **核心目标**：彻底拔除 setup.py 中外部桌面路径硬编码，直连母港，清洗历史残留幽灵别名。
