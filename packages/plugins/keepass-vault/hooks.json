@@ -1,0 +1,16 @@
+{
+  "vault-guard": {
+    "PreToolUse": [
+      {
+        "matcher": "keepass_*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python.exe -X utf8 -E -s -S ${pluginDir}/hooks/vault_guard.py pre-tool",
+            "timeout": 3
+          }
+        ]
+      }
+    ]
+  }
+}
