@@ -35,26 +35,34 @@ PYTHON_EXE = sys.executable
 
 PRODUCTION_PLUGINS = [
     "agent-circuit-breaker",
-    "openviking-memory"
+    "openviking-memory",
+    "keepass-vault",
 ]
 
 EXPERIMENTAL_WIP_PLUGINS = [
     "openviking-ops",
     "fleet-mesh",
     "cpa-squad",
-    "keepass-vault",
     "dify",
-    "network-search"
+    "network-search",
 ]
 
 
 ALL_PLUGINS = PRODUCTION_PLUGINS + EXPERIMENTAL_WIP_PLUGINS
 
 
+def resolve_plugin_dir(plugin_name: str) -> Path:
+    """优先解析 packages/plugins 统一母港，兜底 integrations/antigravity"""
+    homeland = REPO_ROOT / "packages" / "plugins" / plugin_name
+    if homeland.is_dir():
+        return homeland
+    return PLUGINS_SRC_DIR / plugin_name
+
+
 def cascade_version_to_docs(plugin_name: str, version: str):
     """自动将 plugin.json 中的版本号级联至 README.md 与 setup.py，彻底消灭手动核对"""
     clean_ver = version.lstrip("v")
-    p_dir = PLUGINS_SRC_DIR / plugin_name
+    p_dir = resolve_plugin_dir(plugin_name)
     readme = p_dir / "README.md"
     if readme.exists():
         text = readme.read_text(encoding="utf-8")
@@ -81,7 +89,8 @@ def cascade_version_to_docs(plugin_name: str, version: str):
 def bump_version(plugin_name: str, new_version: str) -> bool:
     """单一真相源一键 Bump：修改 plugin.json 并联动级联 DSH package.json"""
     clean_ver = new_version.lstrip("v")
-    pj = PLUGINS_SRC_DIR / plugin_name / "plugin.json"
+    p_dir = resolve_plugin_dir(plugin_name)
+    pj = p_dir / "plugin.json"
     if not pj.exists():
         print(f"❌ 插件不存在: {plugin_name}")
         return False
@@ -107,7 +116,7 @@ def bump_version(plugin_name: str, new_version: str) -> bool:
 
 
 def sync_plugin(plugin_name: str) -> bool:
-    src_dir = PLUGINS_SRC_DIR / plugin_name
+    src_dir = resolve_plugin_dir(plugin_name)
     setup_file = src_dir / "setup.py"
     pj = src_dir / "plugin.json"
     if not setup_file.exists():
@@ -166,7 +175,7 @@ def verify_alignment(include_experimental: bool = False) -> bool:
     for p_name in check_list:
         is_wip = p_name in EXPERIMENTAL_WIP_PLUGINS
         tag = " (WIP)" if is_wip else ""
-        src_pj = PLUGINS_SRC_DIR / p_name / "plugin.json"
+        src_pj = resolve_plugin_dir(p_name) / "plugin.json"
         src_ver = "N/A"
         if src_pj.exists():
             with open(src_pj, "r", encoding="utf-8") as f:
