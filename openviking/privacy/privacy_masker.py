@@ -34,6 +34,7 @@ class PrivacyMasker:
     # Pre-compiled high-performance regex patterns
     PATTERNS: List[tuple[str, Pattern, str]] = [
         # 1. API Keys (OpenAI, DeepSeek, Claude, generic sk-, supports 16+ chars including test hashes)
+        ("openviking_api_key", re.compile(r"\b(vk-sk-[a-zA-Z0-9_\-]{16,})\b"), "vk-sk-***[REDACTED_API_KEY]"),
         ("openai_api_key", re.compile(r"\b(sk-(?:proj-|live-|test-)?[a-zA-Z0-9_\-]{16,})\b"), "sk-***[REDACTED_API_KEY]"),
         # 2. GitHub Personal Access & App Tokens
         ("github_token", re.compile(r"\b((?:ghp|gho|ghu|ghs|ghr|github_pat)_[a-zA-Z0-9_]{20,})\b"), "ghp_***[REDACTED_TOKEN]"),

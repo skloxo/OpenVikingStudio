@@ -67,6 +67,18 @@ test("debug stays strictly boolean-true opt-in", () => {
   assert.equal(buildMcpProxyConfig({ debug: true }).debug, true);
 });
 
+test("3-part UserKey omits redundant account and user headers to prevent 403 override rejection", () => {
+  const userKey = "ZGVmYXVsdA.RFNIQFJUWDMwNzA.fe6c2193e72f7b19c16dc47a1b725059dffcfdcfaf4bcab91e4d6cd57d57e1d2";
+  const cfg = buildMcpProxyConfig({
+    apiKey: userKey,
+    account: "default",
+    user: "default",
+  });
+  assert.equal(cfg.apiKey, userKey);
+  assert.equal(cfg.account, "");
+  assert.equal(cfg.user, "");
+});
+
 test("broad MCP recall does not send an actor peer header", () => {
   assert.equal(resolveMcpActorPeerId({ peerId: "workspace-a", recallPeerScope: "all" }), "");
   assert.equal(resolveMcpActorPeerId({ peerId: "workspace-a" }), "");

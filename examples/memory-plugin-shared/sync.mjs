@@ -65,6 +65,12 @@ export const TARGETS = [
   { dir: join(ROOT, "examples", "pi-coding-agent-extension", "shared"), files: PI_SHARED_FILES },
   { dir: join(ROOT, "examples", "zcode-memory-plugin", "scripts", "shared") , files: ZCODE_SHARED_FILES },
   { dir: join(ROOT, "agent-plugins", "servers", "shared"), files: AGENT_PLUGINS_SHARED_FILES },
+  { dir: join(ROOT, "packages", "plugins", "openviking-memory", "shared"), files: DSH_SHARED_FILES },
+  { dir: join(ROOT, "integrations", "antigravity", "openviking-memory", "shared"), files: DSH_SHARED_FILES },
+  { dir: join(ROOT, "integrations", "deepseek-harness", "dsh-plugin-openviking-memory", "shared"), files: DSH_SHARED_FILES },
+  { dir: join(ROOT, "integrations", "deepseek-harness", "dsh-plugin-openviking-ops", "shared"), files: DSH_SHARED_FILES },
+  { dir: join(ROOT, "integrations", "deepseek-harness", "dsh-plugin-openviking-fleet", "shared"), files: DSH_SHARED_FILES },
+  { dir: join(ROOT, "integrations", "deepseek-harness", "dsh-plugin-openviking", "shared"), files: DSH_SHARED_FILES },
 ];
 
 export const GENERATED_HEADER = "// GENERATED FROM examples/memory-plugin-shared/lib. DO NOT EDIT.\n";

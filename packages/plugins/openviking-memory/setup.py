@@ -66,76 +66,33 @@ def get_python_cmd() -> str:
 
 
 def resolve_best_api(preferred_api: str = "") -> str:
-    """自适应拓扑探测：本地 127.0.0.1:1933 优先，不可达回退公网域名"""
+    """严格遵循用户配置与环境变量，未指定时回退标准本地端口"""
     if preferred_api and str(preferred_api).strip():
         return str(preferred_api).strip().rstrip("/")
-
-    # 1. 优先探测本地 127.0.0.1:1933 (Master 本地宿主极速环回)
-    local_api = "http://127.0.0.1:1933"
-    try:
-        req = urllib.request.Request(f"{local_api}/health")
-        with urllib.request.urlopen(req, timeout=0.6) as resp:
-            if resp.status == 200:
-                return local_api
-    except Exception:
-        pass
-
-    # 2. 尝试从环境变量读取
     env_api = os.environ.get("OPENVIKING_API", "").strip()
     if env_api:
         return env_api.rstrip("/")
-
-    # 3. 远程卫星节点默认出口
-    return "https://vk.tide.red"
+    return "http://127.0.0.1:1933"
 
 
 def sniff_api_credentials(fallback_api: str = "") -> tuple[str, str]:
-    """多级智能嗅探可用的 OpenViking API 与 Key"""
+    """仅从环境变量或目标安装目录已存在的 config.json 读取，严禁跨源码目录或读取服务端 root_api_key"""
     api = os.environ.get("OPENVIKING_API", "").strip()
     key = os.environ.get("OPENVIKING_API_KEY", "").strip()
 
-    # 1. 尝试从既有插件 config.json 读取
-    for check_cfg in [
-        PLUGIN_SRC_DIR / "config.json",
-        DEFAULT_TARGET_DIR / "config.json",
-    ]:
-        if check_cfg.exists():
-            try:
-                with open(check_cfg, "r", encoding="utf-8") as f:
-                    c = json.load(f)
-                    if not api:
-                        api = c.get("api_url", "")
-                    if not key:
-                        key = c.get("api_key", "")
-            except Exception:
-                pass
+    check_cfg = DEFAULT_TARGET_DIR / "config.json"
+    if check_cfg.exists():
+        try:
+            with open(check_cfg, "r", encoding="utf-8") as f:
+                c = json.load(f)
+                if not api:
+                    api = c.get("api_url", "")
+                if not key:
+                    key = c.get("api_key", "")
+        except Exception:
+            pass
 
-    # 2. 尝试从 .openviking/ov.conf 读取 root_api_key
-    if not key:
-        conf_candidates = [
-            Path.home() / ".openviking" / "ov.conf",
-            Path("/mnt/c/Users") / os.environ.get("USERNAME", "") / ".openviking" / "ov.conf",
-        ]
-        if platform.system() == "Windows":
-            wsl_conf = Path(f"\\\\wsl.localhost\\Ubuntu\\home\\{os.environ.get('USERNAME', '').lower()}\\.openviking\\ov.conf")
-            conf_candidates.append(wsl_conf)
-
-        for c_file in conf_candidates:
-            if c_file.exists():
-                try:
-                    with open(c_file, "r", encoding="utf-8") as f:
-                        data = json.load(f)
-                        server_cfg = data.get("server", {})
-                        if not key:
-                            key = server_cfg.get("root_api_key", "")
-                        if not api:
-                            port = server_cfg.get("port", 1933)
-                            api = f"http://127.0.0.1:{port}"
-                except Exception:
-                    pass
-
-    # 3. 拓扑决议
-    final_api = resolve_best_api(api or fallback_api)
+    final_api = resolve_best_api(fallback_api or api)
     return final_api, key
 
 
@@ -213,7 +170,7 @@ def resolve_actor_peer(preferred: str = "") -> str:
     )
     if env_peer:
         return env_peer
-    for cfg_p in [PLUGIN_SRC_DIR / "config.json", DEFAULT_TARGET_DIR / "config.json"]:
+    for cfg_p in [DEFAULT_TARGET_DIR / "config.json"]:
         if cfg_p.exists():
             try:
                 with open(cfg_p, "r", encoding="utf-8") as f:

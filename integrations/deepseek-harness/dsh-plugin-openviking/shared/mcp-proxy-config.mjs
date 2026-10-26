@@ -104,17 +104,12 @@ export function buildMcpProxyConfig({
   watchedPaths = [],
   env = process.env,
 } = {}) {
-  let targetMcpUrl = mcpUrl;
-  if (!targetMcpUrl) {
-    const trimmed = trimSlash(baseUrl);
-    targetMcpUrl = trimmed.endsWith('/mcp') ? trimmed : (trimmed ? `${trimmed}/mcp` : '/mcp');
-  }
-
+  const isBoundUserKey = typeof apiKey === "string" && apiKey.trim().split(".").length === 3;
   return {
-    mcpUrl: targetMcpUrl,
+    mcpUrl: mcpUrl || `${trimSlash(baseUrl)}/mcp`,
     apiKey: apiKey || "",
-    account: account || "default",
-    user: user || "default",
+    account: isBoundUserKey ? "" : (account || ""),
+    user: isBoundUserKey ? "" : (user || ""),
     peerId: peerId || "",
     userAgent: userAgent || "",
     timeoutMs: Math.max(

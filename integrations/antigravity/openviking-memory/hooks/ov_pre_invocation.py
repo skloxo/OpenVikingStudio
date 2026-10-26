@@ -52,8 +52,11 @@ def is_hook_enabled_in_cloud(api: str, key: str, plugin_dir: Path) -> bool:
 
     # 2. 缓存过期时向云端快速拉取 (限时 1.2s，失败降级默认 True)
     try:
-        url = f"{api}/api/v1/system/client-capabilities"
-        headers = {"User-Agent": "Antigravity-OpenViking-Plugin/2.0.11"}
+        url = f"{api}/api/v1/system/client-capabilities?plugin_id=openviking-memory"
+        headers = {
+            "User-Agent": "Antigravity-OpenViking-Plugin/2.0.40",
+            "X-OpenViking-Plugin": "openviking-memory",
+        }
         if key:
             headers["Authorization"] = f"Bearer {key}"
         req = urllib.request.Request(url, headers=headers)

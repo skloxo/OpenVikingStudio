@@ -183,3 +183,23 @@ def test_validate_config_with_plugin_id(client):
     assert data["valid"] is True
     assert "message" in data
 
+
+def test_client_capabilities_default_no_plugin_id_does_not_leak_54_tools(client):
+    """
+    Card-228: 验证未显式传 plugin_id 时默认严格按单插件 (openviking-memory, 36 工具) 返回，
+    绝不将 3 个插件 (36+16+2=54) 混杂下发，也绝不向普通用户暴露 ops/fleet 工具。
+    """
+    for headers in (
+        {"Authorization": "Bearer test-user-token"},
+        {"Authorization": "Bearer test-admin-token", "X-OpenViking-Role": "admin"},
+    ):
+        resp = client.get("/api/v1/system/client-capabilities", headers=headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["plugin_id"] == "openviking-memory"
+        assert len(data["plugins"]) == 1
+        assert data["plugins"][0]["id"] == "openviking-memory"
+        assert data["total_authorized_tools"] == len(BATTLEFIELD_34_TOOLS)
+        assert len(data["plugins"][0]["tools"]) == len(BATTLEFIELD_34_TOOLS)
+
+
