@@ -1,8 +1,10 @@
 {
   "mcpServers": {
     "core": {
-      "command": "python.exe",
-      "args": ["${pluginDir}/server.py"],
+      "command": "C:/Python311/python.exe",
+      "args": [
+        "C:/Users/Skl/.gemini/config/plugins/keepass-vault/server.py"
+      ],
       "env": {
         "PYTHONIOENCODING": "utf-8"
       }

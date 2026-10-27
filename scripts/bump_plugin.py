@@ -137,6 +137,13 @@ def bump_plugin(plugin_name: str, target_version: str = "", bump_type: str = "pa
             hpk_data["version"] = new_ver
             hpk_file.write_text(json.dumps(hpk_data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             print(f"  ✔ Homeland package.json 同步完成 (v{new_ver})")
+        if (homeland_path / "client.js").exists():
+            hc_file = homeland_path / "client.js"
+            hc_text = hc_file.read_text(encoding="utf-8")
+            hc_text = re.sub(r"const CLIENT_VERSION = '[\d\.]+';", f"const CLIENT_VERSION = '{new_ver}';", hc_text)
+            hc_text = re.sub(r"\(client\.js v[\d\.]+\)", f"(client.js v{new_ver})", hc_text)
+            hc_file.write_text(hc_text, encoding="utf-8")
+            print(f"  ✔ Homeland client.js 版本同步完成 (v{new_ver})")
 
     if ag_path and (ag_path / "package.json").exists():
         ag_pkg = ag_path / "package.json"

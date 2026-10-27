@@ -85,6 +85,15 @@ def cascade_version_to_docs(plugin_name: str, version: str):
             setup_file.write_text(new_stext, encoding="utf-8")
             print(f"  📝 [自动级联] {plugin_name} setup.py 说明版本同步 -> v{clean_ver}")
 
+    client_file = p_dir / "client.js"
+    if client_file.exists():
+        ctext = client_file.read_text(encoding="utf-8")
+        new_ctext = re.sub(r"const CLIENT_VERSION = '[\d\.]+';", f"const CLIENT_VERSION = '{clean_ver}';", ctext)
+        new_ctext = re.sub(r"\(client\.js v[\d\.]+\)", f"(client.js v{clean_ver})", new_ctext)
+        if new_ctext != ctext:
+            client_file.write_text(new_ctext, encoding="utf-8")
+            print(f"  📝 [自动级联] {plugin_name} client.js 版本同步 -> v{clean_ver}")
+
 
 def bump_version(plugin_name: str, new_version: str) -> bool:
     """单一真相源一键 Bump：修改 plugin.json 并联动级联 DSH package.json"""
@@ -99,6 +108,14 @@ def bump_version(plugin_name: str, new_version: str) -> bool:
     data["version"] = clean_ver
     pj.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"✨ 成功升级 {plugin_name} 版本: v{old_ver} -> v{clean_ver}")
+
+    # 若母港存在 package.json，同步更新
+    pkg_file = p_dir / "package.json"
+    if pkg_file.exists():
+        pkg_data = json.loads(pkg_file.read_text(encoding="utf-8"))
+        pkg_data["version"] = clean_ver
+        pkg_file.write_text(json.dumps(pkg_data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        print(f"  ✨ 母港 package.json 版本同步 -> v{clean_ver}")
 
     # 级联更新文档
     cascade_version_to_docs(plugin_name, clean_ver)

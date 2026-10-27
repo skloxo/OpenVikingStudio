@@ -12,7 +12,7 @@ window.__ModuleLoader__.load({
     const { useState } = React;
 
     const PLUGIN_ID = 'dsh-plugin-openviking-memory';
-    const CLIENT_VERSION = '2.0.40';
+    const CLIENT_VERSION = '2.0.42';
     const PLUGIN_NAME = 'OpenViking Core Memory';
     const SHORT_NAME = 'openviking-memory';
     const STORAGE_KEY = `dsh_plugin_${SHORT_NAME.replace(/-/g, '_')}_config`;
