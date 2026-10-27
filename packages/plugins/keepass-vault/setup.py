@@ -200,8 +200,9 @@ def install_plugin(
             final_kdbx = str(desktop_kdbx).replace("\\", "/")
 
     # 3. 写入私有飞地受保护配置
+    default_kdbx = str(Path.home() / "Desktop" / "Key.kdbx").replace("\\", "/")
     cfg_data: Dict[str, Any] = {
-        "kdbx_path": final_kdbx or "C:/Users/Skl/Desktop/Key.kdbx",
+        "kdbx_path": final_kdbx or default_kdbx,
         "master_key": master_key or "",
         "password_env": password_env or "KPXC_MASTER_KEY",
         "version": PLUGIN_VERSION,

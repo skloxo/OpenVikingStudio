@@ -2,7 +2,8 @@
   "$schema": "https://antigravity.google/schemas/v1/plugin.json",
   "name": "keepass-vault",
   "displayName": "KeePass Vault",
-  "version": "1.2.1",
+  "version": "1.2.4",
+  "archetype": "local-offline",
   "description": "基于官方 keepassxc-cli 打造的本地高安全凭据保险库与 FastMCP 工具中枢 (9 Tools)。支持本地 kdbx 数据库解耦访问，落实查库第一公理，提供写前自动快照容灾防护。",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
@@ -31,8 +32,8 @@
       {
         "id": "antigravity",
         "name": "Google 反重力",
-        "install_cmd": "python setup.py --install",
-        "agent_prompt": "请帮我配置并激活当前反重力客户端的 KeePass 凭据保险箱插件：\n1. 执行命令：python setup.py --install --kdbx \"{{KDBX_PATH}}\" --key \"{{MASTER_KEY}}\"\n2. 执行自检：python setup.py --inspect\n3. 确认 314 项凭据正常解锁并向我汇报。",
+        "install_cmd": "powershell -ExecutionPolicy Bypass -Command \"iwr -Uri '{{ENDPOINT_URL}}/studio/keepass-vault-{{PLUGIN_VER}}.tgz' -OutFile '$env:TEMP\\keepass-vault.tgz'; New-Item -ItemType Directory -Force -Path \\\"$env:USERPROFILE\\.gemini\\config\\plugins\\keepass-vault\\\" | Out-Null; tar -xzf '$env:TEMP\\keepass-vault.tgz' -C \\\"$env:USERPROFILE\\.gemini\\config\\plugins\\keepass-vault\\\"; python \\\"$env:USERPROFILE\\.gemini\\config\\plugins\\keepass-vault\\setup.py\\\" --install --kdbx \\\"{{KDBX_PATH}}\\\" --key \\\"{{MASTER_KEY}}\\\"\"",
+        "agent_prompt": "请帮我配置并激活当前反重力客户端的 KeePass 凭据保险箱插件：\n1. 执行命令：python setup.py --install --kdbx \"{{KDBX_PATH}}\" --key \"{{MASTER_KEY}}\"\n2. 执行自检：python setup.py --inspect\n3. 确认凭据库正常解锁并汇报总条目数。",
         "config_snippet": "{\n  \"plugins\": {\n    \"keepass-vault\": {\n      \"installedFrom\": {\n        \"id\": \"antigravity/plugin/keepass-vault\",\n        \"marketplace\": \"openviking-studio\",\n        \"version\": \"{{PLUGIN_VER}}\"\n      }\n    }\n  }\n}",
         "docs_markdown": "KeePass 插件纯本地运行于 Antigravity 宿主机，通过 keepassxc-cli 驱动。直接在 Antigravity 对话框中提供 kdbx 路径与密码即可一键静默配置完成。"
       },
@@ -47,7 +48,7 @@
         "id": "universal-mcp",
         "name": "通用 MCP 智能体",
         "install_cmd": "python server.py",
-        "config_snippet": "{\n  \"mcpServers\": {\n    \"keepass-vault\": {\n      \"command\": \"python\",\n      \"args\": [\"path/to/server.py\"]\n    }\n  }\n}",
+        "config_snippet": "{\n  \"mcpServers\": {\n    \"core\": {\n      \"command\": \"python\",\n      \"args\": [\"path/to/server.py\"]\n    }\n  }\n}",
         "docs_markdown": "兼容 Claude Desktop, Cursor, Windsurf, OpenClaw 等遵循标准 MCP 协议的智能体客户端。"
       }
     ]

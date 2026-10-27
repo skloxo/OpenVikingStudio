@@ -8,3 +8,12 @@
 3. **安全与凭据铁律**：
    - 严禁在代码、注释或对话中泄露明文 API Key；
    - 客户端连接统一通过插件配置动态注入。
+4. **过程草稿与主脑物理隔离公理 (Zero Interference in Flight)**：
+   - 交互调试与开发过程中产生的一切中间文档、调试脚本和临时配置必须物理隔离在本地工作区或脑区临时目录；
+   - 严禁将未经验证的草稿与推测参数倒灌入 `viking://resources/master_memory/`；
+   - 生命周期 Hook 保持绝对静默，严禁在交互中途弹窗中断人类心流。
+5. **结案与交接闭环契约 (Contractual Closure & Zero Leaks)**：
+   - 智能体在宣布“任务结案”或用户触发 `/handover`（会话交接）时，必须执行物理清点对账；
+   - **若踩坑**：必须调用 `openviking_record_evolution_lesson` 录入体外大脑；
+   - **若形成新范式/新规**：必须调用 `openviking_write` 直写 `viking://resources/master_memory/recipes/`；
+   - 结案回复文末强制附带存盘 URI 对账单，严禁将已验证经验遗留为本地未同步死数据。

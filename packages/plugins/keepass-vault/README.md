@@ -1,6 +1,6 @@
 # KeePass 凭据中枢物理守卫插件 (keepass-vault)
 
-[![Version](https://img.shields.io/badge/version-1.2.1-cyan.svg)](https://vk.tide.red)
+[![Version](https://img.shields.io/badge/version-1.2.4-cyan.svg)](https://vk.tide.red)
 [![Platform](https://img.shields.io/badge/platform-Google%20Antigravity-blue.svg)](https://antigravity.google)
 [![Security](https://img.shields.io/badge/security-Encrypted%20KDBX-cyan.svg)](https://vk.tide.red)
 
@@ -8,7 +8,7 @@
 
 ---
 
-## 🌟 核心特性 (v1.2.1)
+## 🌟 核心特性 (v1.2.4)
 
 1. **查库第一公理 (Credential SSOT)**：
    - 全集群密码、SSH 私钥与 API Key 的唯一真实源，坚决杜绝硬编码与明文传输；
@@ -40,7 +40,7 @@
 
 ```powershell
 # 1. 带参一键静默安装并配置
-python setup.py --install --kdbx "C:/Users/Skl/Desktop/Key.kdbx" --key "你的密码"
+python setup.py --install --kdbx "~/Desktop/Key.kdbx" --key "你的密码"
 
 # 2. 真实物理健康度体检
 python setup.py --inspect

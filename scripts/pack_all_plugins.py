@@ -45,6 +45,12 @@ def filter_tar_info(tarinfo: tarfile.TarInfo) -> tarfile.TarInfo | None:
     for p in parts:
         if p in TAR_EXCLUDES or p.endswith(".pyc") or p.endswith(".tgz"):
             return None
+    # 强制固定归档时间戳，确保打包字节级确定性 (Deterministic Tarball)
+    tarinfo.mtime = 1700000000
+    tarinfo.uid = 0
+    tarinfo.gid = 0
+    tarinfo.uname = "openviking"
+    tarinfo.gname = "openviking"
     return tarinfo
 
 
@@ -52,6 +58,11 @@ def pack_directory(src_dir: Path, target_base_name: str, version: str, is_npm: b
     """将插件目录打包为标准 .tgz，并同步至 public/ 与 dist/"""
     versioned_name = f"{target_base_name}-{version}.tgz"
     pub_v_path = PUBLIC_DIR / versioned_name
+
+    # 严格守卫单一不可变发布包公理：已发布的包禁止无脑原地覆盖，防止客户端 lockfile 校验和崩溃
+    if pub_v_path.is_file() and not os.environ.get("FORCE_REPACK"):
+        shutil.copy2(pub_v_path, DIST_DIR / versioned_name)
+        return pub_v_path.stat().st_size, pub_v_path
 
     with tarfile.open(pub_v_path, "w:gz") as tar:
         for item in src_dir.iterdir():
@@ -78,27 +89,37 @@ def pack_dsh_with_injected_client(
     versioned_name = f"{target_base_name}-{version}.tgz"
     pub_v_path = PUBLIC_DIR / versioned_name
 
-    # 优先使用通用装配流水线动态提取内核能力并组装适配器代码
-    k_dir = kernel_dir or src_dir
-    try:
-        injected_client_js, meta = assemble_dsh_adapter(k_dir, template_path)
-    except Exception:
-        # 兼容退化
-        readme_text = readme_path.read_text(encoding="utf-8") if readme_path.is_file() else "# " + target_base_name
-        safe_readme = readme_text.replace("`", "\\`").replace("${", "\\${")
-        tpl_text = template_path.read_text(encoding="utf-8")
-        injected_client_js = (
-            tpl_text
-            .replace("__PLUGIN_ID__", target_base_name)
-            .replace("__PLUGIN_VERSION__", version)
-            .replace("__PLUGIN_NAME__", target_base_name)
-            .replace("__SHORT_NAME__", target_base_name.replace("dsh-plugin-", ""))
-            .replace("__TOOL_CATEGORIES_JSON__", "[]")
-            .replace("__SKILLS_JSON__", "[]")
-            .replace("__HOOKS_JSON__", "[]")
-            .replace("__RULES_JSON__", "[]")
-            .replace("__README_CONTENT_JSON__", json.dumps(safe_readme, ensure_ascii=False))
-        )
+    # 严格守卫单一不可变发布包公理：已发布的包禁止无脑原地覆盖，防止客户端 lockfile 校验和崩溃
+    if pub_v_path.is_file() and not os.environ.get("FORCE_REPACK"):
+        shutil.copy2(pub_v_path, DIST_DIR / versioned_name)
+        return pub_v_path.stat().st_size, pub_v_path
+
+    # 若插件目录下已存在专精定制的 client.js，优先使用母港原生适配器；否则使用通用模板动态组装
+    custom_client = src_dir / "client.js"
+    if custom_client.is_file():
+        injected_client_js = custom_client.read_text(encoding="utf-8")
+    else:
+        # 优先使用通用装配流水线动态提取内核能力并组装适配器代码
+        k_dir = kernel_dir or src_dir
+        try:
+            injected_client_js, meta = assemble_dsh_adapter(k_dir, template_path)
+        except Exception:
+            # 兼容退化
+            readme_text = readme_path.read_text(encoding="utf-8") if readme_path.is_file() else "# " + target_base_name
+            safe_readme = readme_text.replace("`", "\\`").replace("${", "\\${")
+            tpl_text = template_path.read_text(encoding="utf-8")
+            injected_client_js = (
+                tpl_text
+                .replace("__PLUGIN_ID__", target_base_name)
+                .replace("__PLUGIN_VERSION__", version)
+                .replace("__PLUGIN_NAME__", target_base_name)
+                .replace("__SHORT_NAME__", target_base_name.replace("dsh-plugin-", ""))
+                .replace("__TOOL_CATEGORIES_JSON__", "[]")
+                .replace("__SKILLS_JSON__", "[]")
+                .replace("__HOOKS_JSON__", "[]")
+                .replace("__RULES_JSON__", "[]")
+                .replace("__README_CONTENT_JSON__", json.dumps(safe_readme, ensure_ascii=False))
+            )
 
     with tarfile.open(pub_v_path, "w:gz") as tar:
         # 确保存在 cordis.patch.yml 满足 DSH 插件管理器的安装门禁

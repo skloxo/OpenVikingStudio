@@ -2,8 +2,12 @@
 # Copyright (c) 2026 Beijing Volcano Engine Technology Co., Ltd.
 # SPDX-License-Identifier: AGPL-3.0
 """
-OpenViking Antigravity Plugin Session Archiver Hook
-在 Agent 每次会话结束 (Stop) 时静默归档本次会话的上下文摘要与关键决策。
+OpenViking Antigravity Plugin Session Archiver Hook (v2.0.41)
+生命周期事件: Stop
+职责契约：
+1. 本钩子仅执行轻量级 Fail-Open 存活探测与状态心跳，耗时 <= 100ms；
+2. 严禁在 Stop 阶段发起高延迟大模型同步熔炼（避免击穿 3s 超时门禁与注意力劫持）；
+3. 记忆与经验结晶严格收口在任务结案收尾契约与 session-handover 门禁中。
 """
 
 import json
@@ -34,15 +38,15 @@ def load_plugin_config():
 
 
 def main():
-    # Stop 钩子只执行轻量归档心跳，绝不拖慢用户交互
+    # Stop 钩子保持绝对静默，不干扰心流，不向主脑倒灌未经验证草稿
     api, key = load_plugin_config()
     try:
         url = f"{api}/api/v1/system/status"
-        headers = {"User-Agent": "Antigravity-OpenViking-Plugin/2.0.11"}
+        headers = {"User-Agent": "Antigravity-OpenViking-Plugin/2.0.41"}
         if key:
             headers["Authorization"] = f"Bearer {key}"
         req = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(req, timeout=1.5):
+        with urllib.request.urlopen(req, timeout=1.0):
             pass
     except Exception:
         pass
