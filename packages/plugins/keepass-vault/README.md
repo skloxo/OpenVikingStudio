@@ -1,6 +1,6 @@
 # KeePass 凭据中枢物理守卫插件 (keepass-vault)
 
-[![Version](https://img.shields.io/badge/version-1.2.6-cyan.svg)](https://vk.tide.red)
+[![Version](https://img.shields.io/badge/version-1.2.8-cyan.svg)](https://vk.tide.red)
 [![Platform](https://img.shields.io/badge/platform-Google%20Antigravity-blue.svg)](https://antigravity.google)
 [![Security](https://img.shields.io/badge/security-Encrypted%20KDBX-cyan.svg)](https://vk.tide.red)
 
@@ -8,7 +8,7 @@
 
 ---
 
-## 🌟 核心特性 (v1.2.6)
+## 🌟 核心特性 (v1.2.8)
 
 1. **查库第一公理 (Credential SSOT)**：
    - 全集群密码、SSH 私钥与 API Key 的唯一真实源，坚决杜绝硬编码与明文传输；
@@ -16,7 +16,8 @@
    - 读取密码支持脱敏查看；新增凭据时强制自动生成 $\ge 16$ 位高熵密码；
 3. **写前防抖物理快照 (Disaster Recovery First)**：
    - 任何修改操作（add/edit/rm）前由 Hook 与底层自动创建 `*.bak` 时间戳快照，保障数据零丢失；
-4. **九项核心 MCP 凭据原子算子**：
+4. **十项核心 MCP 凭据原子算子**：
+   - `keepass_selfcheck`: 全生命周期 CRUD 沙箱真实打靶安全自检（验证 status/add/get/edit/rm，自动自毁零残留）；
    - `keepass_status`: 数据库连通性、主密钥及解锁状态体检；
    - `keepass_search`: 模糊与关键词检索匹配条目路径；
    - `keepass_get`: 安全提取用户名、密码（受保护）、URL 与 TOTP；

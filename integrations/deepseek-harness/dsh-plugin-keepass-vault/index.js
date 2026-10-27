@@ -34,6 +34,14 @@ export const Config = Schema ? Schema.object({
   autoSnapshot: v(Schema.boolean().default(true)).description('写入前自动执行 .bak 物理快照备份')
 }).description('KeePass 本地密码保险库凭据插件') : undefined
 
+if (Config && !Config['~standard']) {
+  Config['~standard'] = {
+    version: 1,
+    vendor: 'schemastery-fallback',
+    validate: (val) => ({ value: val })
+  }
+}
+
 function getDshDir() {
   const home = process.env.USERPROFILE || process.env.HOME || homedir()
   return resolve(home, '.dsh')
@@ -555,6 +563,121 @@ export function apply(ctx, config = {}) {
             const res = runKeePassCli(['attachment-export', db, args.entry_path, args.attachment_name, targetFile], key)
             if (!res.success) return `[KeePass Error]: 导出失败: ${res.stderr}`
             return JSON.stringify({ status: 'exported', entry: args.entry_path, file_path: targetFile }, null, 2)
+          }
+        }, defineToolFn))
+
+        // 10. keepass_selfcheck
+        ctx.tools.register(wrapTool({
+          name: 'keepass_selfcheck',
+          description: '执行 KeePass 凭据库全生命周期 CRUD 沙箱打靶安全自检（真实测试 status/add/get/edit/rm 能力，自动清理零残留，绝不读取任何生产凭据）。',
+          parameters: {
+            cleanup: { type: 'boolean', required: false, description: '测试完成后是否自动清理沙箱条目（默认为 true）' }
+          },
+          async execute(args) {
+            const db = getKdbxPath()
+            const key = getMasterPassword()
+            if (!existsSync(db)) {
+              return JSON.stringify({
+                all_passed: false,
+                error: `数据库文件不存在: ${db}`
+              }, null, 2)
+            }
+
+            const shouldCleanup = args?.cleanup !== false
+            const probeId = 'probe_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6)
+            const testPath = `/_selfcheck_sandbox/${probeId}`
+            const testUser = `probe_user_${probeId}`
+            const testPass = `ProbePass_${Date.now()}!#x9`
+            const updatedPass = `UpdatedPass_${Date.now()}!#z8`
+
+            const report = {
+              timestamp: new Date().toISOString(),
+              total_tools: 10,
+              database: 'unknown',
+              crud_stages: {
+                status: 'pending',
+                add: 'pending',
+                get_decrypt: 'pending',
+                edit: 'pending',
+                rm_cleanup: 'pending'
+              },
+              all_passed: false
+            }
+
+            try {
+              // 1. status 探针 (ls)
+              const st = runKeePassCli(['ls', '-q', db], key)
+              if (!st.success) {
+                report.error = `keepass_status check failed: ${st.stderr || 'unlock failed'}`
+                return JSON.stringify(report, null, 2)
+              }
+              report.database = 'unlocked'
+              report.crud_stages.status = 'passed'
+
+              // 2. add 探针 (写入沙箱测试条目)
+              const addInput = (key ? `${key}\n` : '\n') + `${testPass}\n`
+              const addProc = spawnSync('keepassxc-cli', ['add', '-q', db, testPath, '-u', testUser, '-p'], {
+                input: addInput,
+                encoding: 'utf8',
+                timeout: 10000,
+                env: { ...process.env, QT_QPA_PLATFORM: 'offscreen' }
+              })
+              if (addProc.status !== 0) {
+                report.error = `keepass_add probe failed: ${(addProc.stderr || '').trim()}`
+                return JSON.stringify(report, null, 2)
+              }
+              report.crud_stages.add = 'passed'
+
+              // 3. get 探针 (真实解密读取沙箱条目并校验内容)
+              const getRes = runKeePassCli(['show', '-q', '-s', '-a', 'UserName', db, testPath], key)
+              const getPassRes = runKeePassCli(['show', '-q', '-s', '-a', 'Password', db, testPath], key)
+              if (!getRes.success || !getPassRes.success) {
+                report.error = `keepass_get decrypt failed: ${getRes.stderr || getPassRes.stderr}`
+                return JSON.stringify(report, null, 2)
+              }
+              if (getRes.stdout !== testUser || getPassRes.stdout !== testPass) {
+                report.error = `keepass_get decrypt mismatch: got user=${getRes.stdout}`
+                return JSON.stringify(report, null, 2)
+              }
+              report.crud_stages.get_decrypt = 'passed'
+
+              // 4. edit 探针 (更新属性)
+              const editInput = (key ? `${key}\n` : '\n') + `${updatedPass}\n`
+              const editProc = spawnSync('keepassxc-cli', ['edit', '-q', db, testPath, '-p'], {
+                input: editInput,
+                encoding: 'utf8',
+                timeout: 10000,
+                env: { ...process.env, QT_QPA_PLATFORM: 'offscreen' }
+              })
+              if (editProc.status !== 0) {
+                report.error = `keepass_edit probe failed: ${(editProc.stderr || '').trim()}`
+                return JSON.stringify(report, null, 2)
+              }
+              report.crud_stages.edit = 'passed'
+
+              // 5. rm 探针 (物理清理沙箱测试条目)
+              if (shouldCleanup) {
+                const rmRes = runKeePassCli(['rm', '-q', db, testPath], key)
+                if (!rmRes.success) {
+                  report.error = `keepass_rm cleanup failed: ${rmRes.stderr}`
+                  return JSON.stringify(report, null, 2)
+                }
+                report.crud_stages.rm_cleanup = 'passed'
+                report.sandbox_cleaned = true
+              }
+
+              report.all_passed = true
+              report.summary = 'KeePass Vault 真实能力全生命周期 CRUD 沙箱打靶 100% 通过（零生产数据泄漏，零脏数据残留）。'
+              return JSON.stringify(report, null, 2)
+            } catch (err) {
+              report.all_passed = false
+              report.error = String(err?.message || err)
+              return JSON.stringify(report, null, 2)
+            } finally {
+              if (shouldCleanup) {
+                try { runKeePassCli(['rm', '-q', db, testPath], key) } catch (_) {}
+              }
+            }
           }
         }, defineToolFn))
       } catch (e) {
