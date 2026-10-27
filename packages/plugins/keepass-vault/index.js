@@ -6,7 +6,8 @@
  * 1. Zero Backend Dependency: Operates completely on agent's local environment.
  * 2. Credential SSOT: All keys, passwords, and tokens retrieved from local .kdbx vault.
  * 3. Law of Query-First: Never ask human users for plain secrets.
- * 4. Dual-Mode: Native keepassxc-cli local executor + FastMCP stdio bridge.
+ * 4. Zero-Crash Output: output.render strictly returns array of ContentBlock objects.
+ * 5. Complete 9-Tool Set: Status, Search, Get, Add, Edit, Rm, Tree, Analyze, Export.
  */
 
 import { spawnSync } from 'node:child_process'
@@ -14,12 +15,24 @@ import { existsSync, statSync, copyFileSync, readdirSync, unlinkSync, readFileSy
 import { createServer } from 'node:http'
 import { resolve, dirname, basename } from 'node:path'
 import { homedir } from 'node:os'
+import Schema from './schema.js'
 
 export const name = 'dsh-plugin-keepass-vault'
 export const inject = ['agents', 'tools', 'systemPrompt']
 
 const PKG_NAME = 'dsh-plugin-keepass-vault'
 const SHORT_NAME = 'keepass-vault'
+
+function v(s) {
+  return typeof s?.volatile === 'function' ? s.volatile() : s
+}
+
+export const Config = Schema ? Schema.object({
+  kdbxPath: v(Schema.string().default('~/Desktop/Key.kdbx')).description('KeePass .kdbx 数据库文件路径'),
+  passwordEnv: v(Schema.string().default('KEEPASS_VAULT_PASSWORD')).description('从系统环境变量中引用的密码变量名'),
+  masterKey: v(Schema.string().role('secret').default('')).description('主密码 (可选)'),
+  autoSnapshot: v(Schema.boolean().default(true)).description('写入前自动执行 .bak 物理快照备份')
+}).description('KeePass 本地密码保险库凭据插件') : undefined
 
 function getDshDir() {
   const home = process.env.USERPROFILE || process.env.HOME || homedir()
@@ -89,6 +102,30 @@ function runKeePassCli(args, masterKey, timeout = 10000) {
   }
 }
 
+function makeSnapshot(dbPath, maxBackups = 10) {
+  if (!existsSync(dbPath)) return null
+  try {
+    const d = new Date()
+    const pad = n => String(n).padStart(2, '0')
+    const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`
+    const bak = `${dbPath}.${stamp}.bak`
+    copyFileSync(dbPath, bak)
+    const dir = dirname(dbPath)
+    const base = basename(dbPath)
+    const all = readdirSync(dir)
+      .filter(f => f.startsWith(base) && f.endsWith('.bak'))
+      .sort()
+    if (all.length > maxBackups) {
+      for (const old of all.slice(0, all.length - maxBackups)) {
+        try { unlinkSync(resolve(dir, old)) } catch (_) {}
+      }
+    }
+    return bak
+  } catch (_) {
+    return null
+  }
+}
+
 function ensureKpvProbeBridge() {
   if (globalThis.__kpv_dsh_probe_server__) return
 
@@ -140,7 +177,6 @@ function ensureKpvProbeBridge() {
               return
             }
 
-            // 执行物理真实解锁测试
             const unlockRes = runKeePassCli(['ls', '-q', db], key)
             if (unlockRes.success) {
               const lines = unlockRes.stdout.split('\n').map(l => l.trim()).filter(Boolean)
@@ -207,26 +243,31 @@ function ensureKpvProbeBridge() {
   } catch (_) {}
 }
 
+const OUT_SPEC = {
+  schema: { type: 'string' },
+  render: (_args, value) => [{
+    type: 'text',
+    text: typeof value === 'string' ? value : JSON.stringify(value ?? '', null, 2)
+  }]
+}
+
 export function apply(ctx, config = {}) {
   ensureKpvProbeBridge()
 
   const getKdbxPath = () => {
-    const uiCfg = readUiSavedConfig()
-    const direct = getVal(config.kdbxPath, '') || (uiCfg.kdbxPath || '').trim() || process.env.KPXC_DB_PATH
-    if (direct) return resolvePath(direct)
-    const desktopKey = resolve(process.env.USERPROFILE || homedir(), 'Desktop/Key.kdbx')
-    if (existsSync(desktopKey)) return desktopKey
+    const ui = readUiSavedConfig()
+    const raw = getVal(config.kdbxPath, '') || ui.kdbxPath || ui.db_path || ''
+    if (raw) return resolvePath(raw)
+    const desk = resolve(process.env.USERPROFILE || homedir(), 'Desktop', 'Key.kdbx')
+    if (existsSync(desk)) return desk
     return resolvePath('~/.openviking/vault.kdbx')
   }
 
-  const getPasswordEnv = () => getVal(config.passwordEnv, 'KEEPASS_VAULT_PASSWORD')
-  const getAutoSnapshot = () => getVal(config.autoSnapshot, true) !== false
-
   const getMasterPassword = () => {
-    const uiCfg = readUiSavedConfig()
-    const direct = getVal(config.masterKey, '') || (uiCfg.masterKey || '').trim()
+    const ui = readUiSavedConfig()
+    const direct = getVal(config.masterKey, '') || (ui.masterKey || '').trim()
     if (direct) return direct
-    const envName = getPasswordEnv()
+    const envName = getVal(config.passwordEnv, 'KEEPASS_VAULT_PASSWORD')
     if (envName && process.env[envName]) return process.env[envName]
     if (process.env.KPXC_KEY) return process.env.KPXC_KEY
     if (process.env.KPXC_MASTER_KEY) return process.env.KPXC_MASTER_KEY
@@ -234,7 +275,6 @@ export function apply(ctx, config = {}) {
     return ''
   }
 
-  // 1. 注入 System Prompt 凭据查库第一公理
   if (ctx.systemPrompt) {
     try {
       ctx.systemPrompt.context({
@@ -242,27 +282,16 @@ export function apply(ctx, config = {}) {
         order: 15,
         text: () => [
           '【KeePass 凭据保险箱认知导轨 (Credential SSOT)】',
-          '1. 查库第一公理：需要任何第三方 API Key、Token、服务器密码或 SSH 私钥时，强制先调用 `keepass_search` / `keepass_get` 查询凭据库，严禁向用户索要明文密码。',
-          '2. 批量建号落盘：新建账户或获取凭据后，必须调用 `keepass_add` 自动生成 >=20 位高熵密码并安全落盘归档。',
+          '1. 查库第一公理：凡遇 API Key、SSH 密码/私钥、数据库连接串，强制先调用 keepass_search / keepass_get 查询凭据库，严禁向人类索要明文密码。',
+          '2. 批量建号落盘：新建账户或获取凭据后，必须调用 keepass_add 自动生成 >=20 位高熵密码并安全落盘归档。',
           '3. 灾备物理快照：写操作底层具备 *.bak 自动物理快照容灾。',
-          `当前配置本地保险箱路径: ${getKdbxPath()} (密码环境变量: ${getPasswordEnv()})。`
+          `当前本地保险箱路径: ${getKdbxPath()}。`
         ].join('\n')
       })
     } catch (_) {}
   }
 
-  // 2. 注册本地原子工具集到 ctx.tools
-  // DSH 契约：
-  // 1) output 必须声明 { schema: { type: 'string' }, render: (args, value) => ContentBlock[] }
-  // 2) render(args, value) 必须返回 Block 数组：[{ type: 'text', text: String(value) }]，绝对禁止返回裸字符串或未定义
-  // 3) presentCall(args) 负责渲染 UI 对话气泡中的调用卡片
   if (ctx.tools && typeof ctx.tools.register === 'function') {
-    const TOOL_PRESENTATION = {
-      keepass_search: { kind: 'read', title: args => `KeePass 凭据检索: ${args?.query ?? ''}` },
-      keepass_get: { kind: 'read', title: args => `KeePass 条目读取: ${args?.entry_path ?? ''}` },
-      keepass_status: { kind: 'other', title: () => 'KeePass 状态检查' },
-    }
-
     const toStandardJsonSchema = (params) => {
       if (!params || typeof params !== 'object') return { type: 'object', properties: {} }
       if (params.type === 'object' && params.properties) return params
@@ -283,25 +312,17 @@ export function apply(ctx, config = {}) {
     }
 
     const wrapTool = (def, defineToolFn) => {
-      const presentation = TOOL_PRESENTATION[def.name]
-      const textRender = (_args, value) => [{
-        type: 'text',
-        text: typeof value === 'string' ? value : JSON.stringify(value ?? '', null, 2)
-      }]
       const presentCall = args => ({
         card: 'generic',
-        kind: presentation?.kind || 'other',
-        title: typeof presentation?.title === 'function' ? presentation.title(args) : (presentation?.title || def.name),
+        kind: def.name.includes('search') || def.name.includes('get') ? 'read' : 'other',
+        title: def.description || def.name,
         rawInput: args
       })
 
       if (typeof defineToolFn === 'function') {
         return defineToolFn({
           ...def,
-          output: {
-            schema: { type: 'string' },
-            render: textRender
-          },
+          output: OUT_SPEC,
           presentCall
         })
       }
@@ -309,17 +330,48 @@ export function apply(ctx, config = {}) {
       return {
         ...def,
         parameters: toStandardJsonSchema(def.parameters),
-        output: {
-          schema: { type: 'string' },
-          render: textRender
-        },
+        output: OUT_SPEC,
         presentCall
       }
     }
 
-    const registerTools = (defineToolFn) => {
+    const registerAll = (defineToolFn) => {
       try {
-        // 工具 1: keepass_search
+        // 1. keepass_status
+        ctx.tools.register(wrapTool({
+          name: 'keepass_status',
+          description: '检查本地 KeePass 保险箱文件存在性、大小、就绪状态及总条目数。',
+          parameters: {},
+          async execute() {
+            const db = getKdbxPath()
+            const exists = existsSync(db)
+            const size = exists ? statSync(db).size : 0
+            const key = getMasterPassword()
+            let unlocked = false
+            let totalEntries = 0
+            let errDetail = ''
+            if (exists && key) {
+              const check = runKeePassCli(['ls', '-q', db], key)
+              unlocked = check.success
+              if (unlocked) {
+                totalEntries = check.stdout.split('\n').filter(Boolean).length
+              } else {
+                errDetail = check.stderr
+              }
+            }
+            return JSON.stringify({
+              db_path: db,
+              exists,
+              size_bytes: size,
+              unlocked,
+              auth_ready: Boolean(key),
+              total_root_entries: totalEntries,
+              error: errDetail || undefined
+            }, null, 2)
+          }
+        }, defineToolFn))
+
+        // 2. keepass_search
         ctx.tools.register(wrapTool({
           name: 'keepass_search',
           description: '按服务名、域名或账号关键词全局模糊搜索 KeePass 凭据库条目路径。',
@@ -329,53 +381,180 @@ export function apply(ctx, config = {}) {
           async execute(args) {
             const db = getKdbxPath()
             const key = getMasterPassword()
-            if (!existsSync(db)) return `[KeePass Error]: 本地数据库文件不存在: ${db}。请在客户端配置中指定您本地机器上的 .kdbx 真实文件路径。`
+            if (!existsSync(db)) return `[KeePass Error]: 本地数据库文件不存在: ${db}`
             const res = runKeePassCli(['search', '-q', db, args.query], key)
-            if (!res.success) return `[KeePass Error]: 搜索失败: ${res.stderr || '未知错误'}`
-            const lines = res.stdout.split('\n').filter(Boolean)
-            return lines.length === 0 ? `未找到匹配 "${args.query}" 的条目。` : `找到 ${lines.length} 个条目:\n` + lines.map(l => `- ${l}`).join('\n')
+            if (!res.success) return `[KeePass Error]: 搜索失败: ${res.stderr || '未找到匹配条目'}`
+            const lines = res.stdout.split('\n').map(s => s.trim()).filter(Boolean)
+            return JSON.stringify({ query: args.query, count: lines.length, matches: lines }, null, 2)
           }
         }, defineToolFn))
 
-        // 工具 2: keepass_get
+        // 3. keepass_get
         ctx.tools.register(wrapTool({
           name: 'keepass_get',
-          description: '读取 KeePass 指定条目的详细信息（用户名、密码、URL、备注等）。',
+          description: '读取 KeePass 指定条目的详细信息。show_protected=true 时明文返回密码。',
           parameters: {
-            entry_path: { type: 'string', required: true, description: '条目完整路径，如 /云服务/阿里云主力账号' }
+            entry_path: { type: 'string', required: true, description: '条目完整路径，如 /云服务/阿里云' },
+            show_protected: { type: 'boolean', required: false, description: '是否明文读取敏感字段 (默认 false)' }
           },
           async execute(args) {
             const db = getKdbxPath()
             const key = getMasterPassword()
-            if (!existsSync(db)) return `[KeePass Error]: 本地数据库文件不存在: ${db}。请在客户端配置中指定您本地机器上的 .kdbx 真实文件路径。`
-            const res = runKeePassCli(['show', '-q', '--all', '-s', db, args.entry_path], key)
-            if (!res.success) return `[KeePass Error]: 读取条目失败: ${res.stderr || '条目不存在'}`
-            return `条目 [${args.entry_path}] 详情:\n${res.stdout}`
+            if (!existsSync(db)) return `[KeePass Error]: 本地数据库文件不存在: ${db}`
+            const cmd = ['show', db, args.entry_path]
+            if (args.show_protected) cmd.push('-s')
+            const res = runKeePassCli(cmd, key)
+            if (!res.success) return `[KeePass Error]: 读取失败: ${res.stderr || '条目不存在'}`
+            const attrs = {}
+            for (const line of res.stdout.split('\n')) {
+              const idx = line.indexOf(':')
+              if (idx > 0) attrs[line.slice(0, idx).trim()] = line.slice(idx + 1).trim()
+            }
+            return JSON.stringify({ entry: args.entry_path, attributes: attrs }, null, 2)
           }
         }, defineToolFn))
 
-        // 工具 3: keepass_status
+        // 4. keepass_add
         ctx.tools.register(wrapTool({
-          name: 'keepass_status',
-          description: '检查本地 KeePass 保险箱文件存在性、大小、备份历史与就绪状态。',
+          name: 'keepass_add',
+          description: '向数据库新增凭据条目。写入前自动创建安全快照 (*.bak)。',
+          parameters: {
+            entry_path: { type: 'string', required: true, description: '新条目完整路径，如 /生产环境/DB' },
+            username: { type: 'string', required: false, description: '用户名/账号' },
+            password: { type: 'string', required: false, description: '指定密码 (留空则自动生成 >=20 位高熵密码)' },
+            url: { type: 'string', required: false, description: '关联 URL' },
+            notes: { type: 'string', required: false, description: '备注信息' }
+          },
+          async execute(args) {
+            const db = getKdbxPath()
+            const key = getMasterPassword()
+            if (!existsSync(db)) return `[KeePass Error]: 数据库文件不存在: ${db}`
+            const bak = makeSnapshot(db)
+            const cmd = ['add', '-q', db, args.entry_path]
+            if (args.username) cmd.push('-u', args.username)
+            if (args.url) cmd.push('--url', args.url)
+            if (args.password) {
+              cmd.push('-p')
+            } else {
+              cmd.push('-g', '-L', '20')
+            }
+            const stdinInput = (key ? `${key}\n` : '\n') + (args.password ? `${args.password}\n` : '')
+            try {
+              const proc = spawnSync('keepassxc-cli', cmd, { input: stdinInput, encoding: 'utf8', timeout: 15000 })
+              if (proc.status !== 0) return `[KeePass Error]: 添加失败: ${proc.stderr}`
+              return JSON.stringify({ status: 'success', entry: args.entry_path, backup: bak }, null, 2)
+            } catch (e) {
+              return `[KeePass Error]: 执行异常: ${e.message}`
+            }
+          }
+        }, defineToolFn))
+
+        // 5. keepass_edit
+        ctx.tools.register(wrapTool({
+          name: 'keepass_edit',
+          description: '修改已有凭据条目。修改前自动物理快照。',
+          parameters: {
+            entry_path: { type: 'string', required: true, description: '条目完整路径' },
+            username: { type: 'string', required: false, description: '新用户名' },
+            password: { type: 'string', required: false, description: '新密码' },
+            url: { type: 'string', required: false, description: '新 URL' },
+            notes: { type: 'string', required: false, description: '新备注' }
+          },
+          async execute(args) {
+            const db = getKdbxPath()
+            const key = getMasterPassword()
+            if (!existsSync(db)) return `[KeePass Error]: 数据库文件不存在: ${db}`
+            const bak = makeSnapshot(db)
+            const cmd = ['edit', '-q', db, args.entry_path]
+            if (args.username) cmd.push('-u', args.username)
+            if (args.url) cmd.push('--url', args.url)
+            if (args.notes) cmd.push('--notes', args.notes)
+            if (args.password) cmd.push('-p')
+            const stdinInput = (key ? `${key}\n` : '\n') + (args.password ? `${args.password}\n` : '')
+            try {
+              const proc = spawnSync('keepassxc-cli', cmd, { input: stdinInput, encoding: 'utf8', timeout: 15000 })
+              if (proc.status !== 0) return `[KeePass Error]: 编辑失败: ${proc.stderr}`
+              return JSON.stringify({ status: 'success', entry: args.entry_path, backup: bak }, null, 2)
+            } catch (e) {
+              return `[KeePass Error]: 执行异常: ${e.message}`
+            }
+          }
+        }, defineToolFn))
+
+        // 6. keepass_rm
+        ctx.tools.register(wrapTool({
+          name: 'keepass_rm',
+          description: '安全删除指定条目或分组。删除前强制物理快照备份。',
+          parameters: {
+            entry_path: { type: 'string', required: true, description: '要删除的条目或组路径' }
+          },
+          async execute(args) {
+            const db = getKdbxPath()
+            const key = getMasterPassword()
+            if (!existsSync(db)) return `[KeePass Error]: 数据库文件不存在: ${db}`
+            const bak = makeSnapshot(db)
+            const res = runKeePassCli(['rm', '-q', db, args.entry_path], key)
+            if (!res.success) return `[KeePass Error]: 删除失败: ${res.stderr}`
+            return JSON.stringify({ status: 'deleted', entry: args.entry_path, backup: bak }, null, 2)
+          }
+        }, defineToolFn))
+
+        // 7. keepass_list_tree
+        ctx.tools.register(wrapTool({
+          name: 'keepass_list_tree',
+          description: '树状遍历列出指定分组下的子分组与条目。',
+          parameters: {
+            group: { type: 'string', required: false, description: '起始组路径 (默认 "/")' },
+            recursive: { type: 'boolean', required: false, description: '是否递归列出 (默认 true)' }
+          },
+          async execute(args) {
+            const db = getKdbxPath()
+            const key = getMasterPassword()
+            if (!existsSync(db)) return `[KeePass Error]: 数据库文件不存在: ${db}`
+            const cmd = ['ls', '-q']
+            if (args.recursive !== false) cmd.push('-R')
+            cmd.push(db, args.group || '/')
+            const res = runKeePassCli(cmd, key)
+            if (!res.success) return `[KeePass Error]: 列出失败: ${res.stderr}`
+            const lines = res.stdout.split('\n').map(s => s.trim()).filter(Boolean)
+            return JSON.stringify({ group: args.group || '/', count: lines.length, items: lines }, null, 2)
+          }
+        }, defineToolFn))
+
+        // 8. keepass_analyze
+        ctx.tools.register(wrapTool({
+          name: 'keepass_analyze',
+          description: '数据库健康安全体检：检测弱密码、重复密码及泄露风险。',
           parameters: {},
           async execute() {
             const db = getKdbxPath()
-            const exists = existsSync(db)
-            const size = exists ? statSync(db).size : 0
             const key = getMasterPassword()
-            let unlocked = false
-            if (exists && key) {
-              const check = runKeePassCli(['db-info', '-q', db], key)
-              unlocked = check.success
-            }
-            return JSON.stringify({
-              db_path: db,
-              exists,
-              size_bytes: size,
-              unlocked,
-              auth_ready: Boolean(key)
-            }, null, 2)
+            if (!existsSync(db)) return `[KeePass Error]: 数据库文件不存在: ${db}`
+            const res = runKeePassCli(['analyze', '-q', db], key)
+            if (!res.success) return `[KeePass Error]: 分析失败: ${res.stderr}`
+            return JSON.stringify({ status: 'ok', report: res.stdout }, null, 2)
+          }
+        }, defineToolFn))
+
+        // 9. keepass_export_attachment
+        ctx.tools.register(wrapTool({
+          name: 'keepass_export_attachment',
+          description: '导出条目中的附件（如 SSH 私钥文件、证书）到指定本地目录。',
+          parameters: {
+            entry_path: { type: 'string', required: true, description: '条目完整路径' },
+            attachment_name: { type: 'string', required: true, description: '附件文件名' },
+            output_dir: { type: 'string', required: true, description: '目标保存目录' }
+          },
+          async execute(args) {
+            const db = getKdbxPath()
+            const key = getMasterPassword()
+            if (!existsSync(db)) return `[KeePass Error]: 数据库文件不存在: ${db}`
+            const targetDir = resolvePath(args.output_dir)
+            mkdirSync(targetDir, { recursive: true })
+            const targetFile = resolve(targetDir, args.attachment_name)
+            const res = runKeePassCli(['attachment-export', db, args.entry_path, args.attachment_name, targetFile], key)
+            if (!res.success) return `[KeePass Error]: 导出失败: ${res.stderr}`
+            return JSON.stringify({ status: 'exported', entry: args.entry_path, file_path: targetFile }, null, 2)
           }
         }, defineToolFn))
       } catch (e) {
@@ -389,12 +568,12 @@ export function apply(ctx, config = {}) {
     try {
       import('@deepseek-ai/dsh-tools').then((mod) => {
         const fn = mod?.defineTool || mod?.default?.defineTool
-        registerTools(fn)
+        registerAll(fn)
       }).catch(() => {
-        registerTools(null)
+        registerAll(null)
       })
     } catch (_) {
-      registerTools(null)
+      registerAll(null)
     }
   }
 }

@@ -2,7 +2,7 @@
   "$schema": "https://antigravity.google/schemas/v1/plugin.json",
   "name": "keepass-vault",
   "displayName": "KeePass Vault",
-  "version": "1.2.5",
+  "version": "1.2.6",
   "archetype": "local-offline",
   "description": "基于官方 keepassxc-cli 打造的本地高安全凭据保险库与 FastMCP 工具中枢 (9 Tools)。支持本地 kdbx 数据库解耦访问，落实查库第一公理，提供写前自动快照容灾防护。",
   "logo": "assets/logo.svg",
