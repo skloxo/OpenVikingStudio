@@ -100,18 +100,41 @@ def unregister_from_ide_config() -> None:
         print(f"  ⚠️ [宿主注册表] 注销异常: {e}")
 
 
-def register_mcp_servers(server_py_path: Path) -> None:
-    """四维全覆盖双轨注册：联动写入 config 与 antigravity 的 mcp_config.json"""
+def register_mcp_servers(server_py_path: Path, target_dir: Optional[Path] = None) -> None:
+    """四维全覆盖双轨注册：联动写入插件私有 mcp_config.json 与宿主全局 mcp_config.json"""
+    py_exe = get_python_cmd()
+    script_posix = str(server_py_path.resolve()).replace("\\", "/")
+
+    # 1. 自内聚动态写入插件私有 mcp_config.json (核心服务名 core)
+    if target_dir:
+        try:
+            target_dir.mkdir(parents=True, exist_ok=True)
+            p_mcp = {
+                "mcpServers": {
+                    "core": {
+                        "command": py_exe,
+                        "args": [script_posix],
+                        "env": {"PYTHONIOENCODING": "utf-8"},
+                    }
+                }
+            }
+            with open(target_dir / "mcp_config.json", "w", encoding="utf-8") as f:
+                json.dump(p_mcp, f, indent=2, ensure_ascii=False)
+                f.write("\n")
+            print(f"  ✔ [私有 MCP] {target_dir / 'mcp_config.json'} 自内聚配置写入成功")
+        except Exception as e:
+            print(f"  ⚠️ [私有 MCP] 写入异常: {e}")
+
+    # 2. 全局双轨联动写入宿主 mcp_config.json
     targets = [
         Path.home() / ".gemini" / "config" / "mcp_config.json",
         Path.home() / ".gemini" / "antigravity" / "mcp_config.json",
         Path.home() / ".gemini" / "antigravity-ide" / "mcp_config.json",
         Path.home() / ".gemini" / "mcp_config.json",
     ]
-    py_exe = get_python_cmd()
     entry = {
         "command": py_exe,
-        "args": [str(server_py_path.resolve()).replace("\\", "/")],
+        "args": [script_posix],
         "env": {"PYTHONIOENCODING": "utf-8"},
     }
 
@@ -228,7 +251,7 @@ def install_plugin(
 
     # 4. 注册宿主与 MCP
     register_in_ide_config(PLUGIN_VERSION)
-    register_mcp_servers(target_dir / "server.py")
+    register_mcp_servers(target_dir / "server.py", target_dir=target_dir)
 
     print(f"🎉 KeePass 凭据保险箱插件部署成功！(v{PLUGIN_VERSION})")
     return True
