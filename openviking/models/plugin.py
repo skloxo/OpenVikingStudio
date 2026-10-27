@@ -87,6 +87,7 @@ class QuadPluginDefinition(BaseModel):
     name: str = Field(..., description="插件显示名称 (例如: OpenViking 记忆体外大脑)")
     version: str = Field("1.0.0", description="语义化版本号 (严格遵循 SemVer X.Y.Z)")
     category: Literal["platform", "user", "custom"] = Field("platform", description="插件类型 (platform=官方内置, user=租户私有)")
+    archetype: Literal["local-offline", "server-backed", "hybrid-gateway"] = Field("server-backed", description="插件架构原型 (local-offline | server-backed | hybrid-gateway)")
     description: str = Field(..., description="插件核心能力与职责自解释概述")
     
     # 📝 原生 Markdown 介绍文档正文 (反重力 IDE 与 VK 插件中心互通共享单一真相源)

@@ -17,6 +17,7 @@ import {
   GlobeIcon,
   LaptopIcon,
   LayersIcon,
+  LockIcon,
   TerminalIcon,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -131,6 +132,8 @@ export function PluginQuickstartSection({ plugin }: PluginQuickstartSectionProps
     return <LayersIcon className="size-3.5" />
   }
 
+  const isLocalOffline = plugin.archetype === 'local-offline' || plugin.plugin_id === 'keepass-vault'
+
   return (
     <div className="space-y-3 font-sans text-xs">
       {/* 头部标题与开箱标识 */}
@@ -144,48 +147,68 @@ export function PluginQuickstartSection({ plugin }: PluginQuickstartSectionProps
         </Badge>
       </div>
 
-      {/* 服务地址输入 — 提供【本地内网】与【公网云端】双模预设与即时切换 */}
-      <div className="rounded-md border border-border/50 bg-card/40 p-3 space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <label className="flex items-center gap-1.5 font-medium text-foreground text-xs">
-            <GlobeIcon className="size-3 text-cyan-600 dark:text-cyan-400" />
-            服务中枢地址 (Endpoint URL)
-          </label>
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => setEndpointUrl(localPreset)}
-              className={`px-2 py-0.5 rounded text-xs font-mono transition-colors border cursor-pointer ${
-                endpointUrl.includes('127.0.0.1') || endpointUrl.includes('localhost') || endpointUrl.includes(':1933')
-                  ? 'border-cyan-500/50 bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 font-medium'
-                  : 'border-border/40 bg-muted/30 text-muted-foreground hover:text-foreground hover:bg-muted/50'
-              }`}
-            >
-              本地内网: {localPreset}
-            </button>
-            <button
-              type="button"
-              onClick={() => setEndpointUrl(publicPreset)}
-              className={`px-2 py-0.5 rounded text-xs font-mono transition-colors border cursor-pointer ${
-                endpointUrl.includes('vk.tide.red')
-                  ? 'border-cyan-500/50 bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 font-medium'
-                  : 'border-border/40 bg-muted/30 text-muted-foreground hover:text-foreground hover:bg-muted/50'
-              }`}
-            >
-              公网云端: {publicPreset}
-            </button>
+      {/* 针对纯本地离线插件：物理隐藏服务中枢配置，展示高安全本地离线信条 */}
+      {isLocalOffline ? (
+        <div className="rounded-md border border-cyan-500/30 bg-cyan-500/10 p-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <LockIcon className="size-4 text-cyan-600 dark:text-cyan-400 shrink-0" />
+            <div>
+              <div className="font-semibold text-foreground text-xs flex items-center gap-1.5">
+                纯本地离线凭据库 (Air-Gapped Local Vault)
+                <Badge variant="outline" className="border-cyan-500/40 text-cyan-600 dark:text-cyan-400 font-mono text-xs px-1 py-0">
+                  零网络依赖
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                凭据在本地机器通过 keepassxc-cli 物理读写，绝不向任何外部网络或远端服务传输数据。
+              </p>
+            </div>
           </div>
         </div>
-        <Input
-          value={endpointUrl}
-          onChange={(e) => setEndpointUrl(e.target.value)}
-          placeholder={`例如: ${publicPreset} 或 ${localPreset}`}
-          className="h-7 text-xs font-mono px-2 bg-background/80"
-        />
-        <p className="text-xs text-muted-foreground">
-          可直接点击上方标签在【本地内网】与【公网云端】间秒级切换，或输入自定义 IP。修改后安装命令中的下载地址自动同步。
-        </p>
-      </div>
+      ) : (
+        /* 服务地址输入 — 提供【本地内网】与【公网云端】双模预设与即时切换 */
+        <div className="rounded-md border border-border/50 bg-card/40 p-3 space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <label className="flex items-center gap-1.5 font-medium text-foreground text-xs">
+              <GlobeIcon className="size-3 text-cyan-600 dark:text-cyan-400" />
+              服务中枢地址 (Endpoint URL)
+            </label>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setEndpointUrl(localPreset)}
+                className={`px-2 py-0.5 rounded text-xs font-mono transition-colors border cursor-pointer ${
+                  endpointUrl.includes('127.0.0.1') || endpointUrl.includes('localhost') || endpointUrl.includes(':1933')
+                    ? 'border-cyan-500/50 bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 font-medium'
+                    : 'border-border/40 bg-muted/30 text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                }`}
+              >
+                本地内网: {localPreset}
+              </button>
+              <button
+                type="button"
+                onClick={() => setEndpointUrl(publicPreset)}
+                className={`px-2 py-0.5 rounded text-xs font-mono transition-colors border cursor-pointer ${
+                  endpointUrl.includes('vk.tide.red')
+                    ? 'border-cyan-500/50 bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 font-medium'
+                    : 'border-border/40 bg-muted/30 text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                }`}
+              >
+                公网云端: {publicPreset}
+              </button>
+            </div>
+          </div>
+          <Input
+            value={endpointUrl}
+            onChange={(e) => setEndpointUrl(e.target.value)}
+            placeholder={`例如: ${publicPreset} 或 ${localPreset}`}
+            className="h-7 text-xs font-mono px-2 bg-background/80"
+          />
+          <p className="text-xs text-muted-foreground">
+            可直接点击上方标签在【本地内网】与【公网云端】间秒级切换，或输入自定义 IP。修改后安装命令中的下载地址自动同步。
+          </p>
+        </div>
+      )}
 
       {/* 渠道切换 Tab 导航 */}
       {channels.length > 1 && (

@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "keepass-vault": {
+    "core": {
       "command": "python.exe",
       "args": ["${pluginDir}/server.py"],
       "env": {

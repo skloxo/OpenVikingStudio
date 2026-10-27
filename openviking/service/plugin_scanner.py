@@ -372,12 +372,14 @@ def scan_single_plugin_dir(plugin_dir: Path) -> Optional[QuadPluginDefinition]:
             integration_def = IntegrationDefinition(channels=channels)
 
     category = "platform" if plugin_id in {"openviking-memory", "openviking-ops", "agent-circuit-breaker"} else "user"
+    archetype = manifest.get("archetype") or ("local-offline" if plugin_id in {"keepass-vault"} else "server-backed")
 
     return QuadPluginDefinition(
         plugin_id=plugin_id,
         name=display_name,
         version=version,
         category=category,
+        archetype=archetype,
         description=description,
         readme_content=readme_content,
         author=author_name,

@@ -48,6 +48,7 @@ export type QuadPluginItem = {
   name: string
   version: string
   category: 'platform' | 'user' | 'custom'
+  archetype?: 'local-offline' | 'server-backed' | 'hybrid-gateway'
   description: string
   readme_content?: string
   author?: string
