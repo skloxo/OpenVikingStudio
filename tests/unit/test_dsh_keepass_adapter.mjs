@@ -23,12 +23,18 @@ test('DSH keepass-vault adapter output.render contract', async () => {
   // 等待微任务完成（如果有动态 import）
   await new Promise(r => setTimeout(r, 100))
 
-  assert.equal(registeredTools.length, 3, '应注册 3 个原子工具')
+  assert.equal(registeredTools.length, 9, '应注册 9 个原子工具')
 
   const names = registeredTools.map(t => t.name)
   assert.ok(names.includes('keepass_search'))
   assert.ok(names.includes('keepass_get'))
   assert.ok(names.includes('keepass_status'))
+  assert.ok(names.includes('keepass_add'))
+  assert.ok(names.includes('keepass_edit'))
+  assert.ok(names.includes('keepass_rm'))
+  assert.ok(names.includes('keepass_list_tree'))
+  assert.ok(names.includes('keepass_analyze'))
+  assert.ok(names.includes('keepass_export_attachment'))
 
   for (const tool of registeredTools) {
     assert.ok(tool.output, `工具 ${tool.name} 必须包含 output`)

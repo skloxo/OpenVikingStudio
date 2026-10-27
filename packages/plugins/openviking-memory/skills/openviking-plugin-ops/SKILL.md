@@ -604,3 +604,16 @@ sequenceDiagram
 + 升级 openviking-plugin-ops 至 v3.2.0
 + 确立 Card-95 & Card-165 技能自动化准入演进流水线规约 (Section 10)
 + AGENTS.md 全局追加第十二条铁律
+
+---
+
+## 🛡️ 七、 MCP 端侧代理自省数据闭环与轻量 Hook 旁路规范 (v3.3.0)
+
+### 1. 第一性原理：自省工具必须数据闭环 (Self-Contained Contract)
+- **严禁代偿性探查**：严禁让通用 Agent 在自检时因缺少 `api_endpoint`、`plugin_version` 等环境变量去自由调用 Shell 探查磁盘；
+- **端侧 Proxy 拦截增强**：客户端代理进程（Python `server.py` 或 Node `mcp-proxy-core.mjs`）直接持有当前生效的本地配置，必须在 `tools/call` 拦截 `whoami` 与 `health`，动态注入真实生效端点与版本号；
+- **确定性降级容灾**：在上游网络抖动或远端 500/400 时，`whoami` 依然能够安全返回本地脱敏凭据与状态，绝不抛出 RPC 异常诱发 Agent 代偿性盲翻。
+
+### 2. 自检轻量交互 Hook 旁路降噪铁律 (Zero Hallucination Priming)
+- **毫秒级旁路静默**：Pre-invocation Hook 必须对带有 `自检`、`health`、`whoami`、`selfcheck` 等自省关键词的指令执行旁路静默 (`emit_json({})`)；
+- **防上下文投毒**：严禁向自检上下文注入历史重度测试报告或巨石演进教训，严格消灭《死穴 15：Token 膨胀与上下文投毒》。
