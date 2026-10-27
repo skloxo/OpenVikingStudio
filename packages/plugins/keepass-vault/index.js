@@ -252,19 +252,80 @@ export function apply(ctx, config = {}) {
   }
 
   // 2. 注册本地原子工具集到 ctx.tools
+  // DSH 契约：
+  // 1) output 必须声明 { schema: { type: 'string' }, render: (args, value) => ContentBlock[] }
+  // 2) render(args, value) 必须返回 Block 数组：[{ type: 'text', text: String(value) }]，绝对禁止返回裸字符串或未定义
+  // 3) presentCall(args) 负责渲染 UI 对话气泡中的调用卡片
   if (ctx.tools && typeof ctx.tools.register === 'function') {
-    try {
-      import('@deepseek-ai/dsh-tools').then(({ defineTool }) => {
-        if (!defineTool) return
+    const TOOL_PRESENTATION = {
+      keepass_search: { kind: 'read', title: args => `KeePass 凭据检索: ${args?.query ?? ''}` },
+      keepass_get: { kind: 'read', title: args => `KeePass 条目读取: ${args?.entry_path ?? ''}` },
+      keepass_status: { kind: 'other', title: () => 'KeePass 状态检查' },
+    }
 
+    const toStandardJsonSchema = (params) => {
+      if (!params || typeof params !== 'object') return { type: 'object', properties: {} }
+      if (params.type === 'object' && params.properties) return params
+      const properties = {}
+      const required = []
+      for (const [k, v] of Object.entries(params)) {
+        properties[k] = { ...v }
+        if (v.required) {
+          required.push(k)
+          delete properties[k].required
+        }
+      }
+      return {
+        type: 'object',
+        properties,
+        ...(required.length > 0 ? { required } : {})
+      }
+    }
+
+    const wrapTool = (def, defineToolFn) => {
+      const presentation = TOOL_PRESENTATION[def.name]
+      const textRender = (_args, value) => [{
+        type: 'text',
+        text: typeof value === 'string' ? value : JSON.stringify(value ?? '', null, 2)
+      }]
+      const presentCall = args => ({
+        card: 'generic',
+        kind: presentation?.kind || 'other',
+        title: typeof presentation?.title === 'function' ? presentation.title(args) : (presentation?.title || def.name),
+        rawInput: args
+      })
+
+      if (typeof defineToolFn === 'function') {
+        return defineToolFn({
+          ...def,
+          output: {
+            schema: { type: 'string' },
+            render: textRender
+          },
+          presentCall
+        })
+      }
+
+      return {
+        ...def,
+        parameters: toStandardJsonSchema(def.parameters),
+        output: {
+          schema: { type: 'string' },
+          render: textRender
+        },
+        presentCall
+      }
+    }
+
+    const registerTools = (defineToolFn) => {
+      try {
         // 工具 1: keepass_search
-        ctx.tools.register(defineTool({
+        ctx.tools.register(wrapTool({
           name: 'keepass_search',
           description: '按服务名、域名或账号关键词全局模糊搜索 KeePass 凭据库条目路径。',
           parameters: {
             query: { type: 'string', required: true, description: '搜索关键词，如 aliyun, deepseek, 3070 等' }
           },
-          output: { schema: { type: 'string' } },
           async execute(args) {
             const db = getKdbxPath()
             const key = getMasterPassword()
@@ -274,16 +335,15 @@ export function apply(ctx, config = {}) {
             const lines = res.stdout.split('\n').filter(Boolean)
             return lines.length === 0 ? `未找到匹配 "${args.query}" 的条目。` : `找到 ${lines.length} 个条目:\n` + lines.map(l => `- ${l}`).join('\n')
           }
-        }))
+        }, defineToolFn))
 
         // 工具 2: keepass_get
-        ctx.tools.register(defineTool({
+        ctx.tools.register(wrapTool({
           name: 'keepass_get',
           description: '读取 KeePass 指定条目的详细信息（用户名、密码、URL、备注等）。',
           parameters: {
             entry_path: { type: 'string', required: true, description: '条目完整路径，如 /云服务/阿里云主力账号' }
           },
-          output: { schema: { type: 'string' } },
           async execute(args) {
             const db = getKdbxPath()
             const key = getMasterPassword()
@@ -292,14 +352,13 @@ export function apply(ctx, config = {}) {
             if (!res.success) return `[KeePass Error]: 读取条目失败: ${res.stderr || '条目不存在'}`
             return `条目 [${args.entry_path}] 详情:\n${res.stdout}`
           }
-        }))
+        }, defineToolFn))
 
         // 工具 3: keepass_status
-        ctx.tools.register(defineTool({
+        ctx.tools.register(wrapTool({
           name: 'keepass_status',
           description: '检查本地 KeePass 保险箱文件存在性、大小、备份历史与就绪状态。',
           parameters: {},
-          output: { schema: { type: 'string' } },
           async execute() {
             const db = getKdbxPath()
             const exists = existsSync(db)
@@ -318,9 +377,25 @@ export function apply(ctx, config = {}) {
               auth_ready: Boolean(key)
             }, null, 2)
           }
-        }))
-      }).catch(() => {})
-    } catch (_) {}
+        }, defineToolFn))
+      } catch (e) {
+        try {
+          const logPath = resolve(getDshDir(), 'dsh-plugin-keepass-vault-error.log')
+          writeFileSync(logPath, `[${new Date().toISOString()}] register tools failed: ${String(e?.message || e)}\n`, { flag: 'a', encoding: 'utf8' })
+        } catch (_) {}
+      }
+    }
+
+    try {
+      import('@deepseek-ai/dsh-tools').then((mod) => {
+        const fn = mod?.defineTool || mod?.default?.defineTool
+        registerTools(fn)
+      }).catch(() => {
+        registerTools(null)
+      })
+    } catch (_) {
+      registerTools(null)
+    }
   }
 }
 

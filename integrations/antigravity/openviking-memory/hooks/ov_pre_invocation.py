@@ -132,6 +132,12 @@ def main():
         emit_json({})
         return
 
+    # 旁路：自检、体检、自查、whoami 等轻量探测任务禁止记忆倒灌，消除死穴 15 投毒
+    bypass_keywords = ("自检", "health", "whoami", "selfcheck", "自查", "ping", "体检")
+    if any(k in lowered for k in bypass_keywords) or lowered.startswith(("/", "@")):
+        emit_json({})
+        return
+
     url = f"{api}/api/v1/search/find"
     payload = json.dumps({"query": query[:300], "limit": 2}).encode("utf-8")
     headers = {
