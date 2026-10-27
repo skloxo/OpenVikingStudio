@@ -1,5 +1,5 @@
 /**
- * KeePass Vault DSH Cockpit & Settings Adapter (client.js v1.2.6)
+ * KeePass Vault DSH Cockpit & Settings Adapter (client.js v1.3.0)
  * 专为 DeepSeek Harness 打造的本地凭据中枢座舱面板与配置表单。
  * 视觉铁律：NO GREEN EVER 🚫 (#0891b2 冰青 / #e11d48 玫瑰红)，字号 >= 12px，6px 微圆角，高信息密度。
  */
@@ -12,7 +12,7 @@ window.__ModuleLoader__.load({
     const { useState } = React;
 
     const PLUGIN_ID = 'dsh-plugin-keepass-vault';
-    const CLIENT_VERSION = '1.2.6';
+    const CLIENT_VERSION = '1.3.0';
     const PLUGIN_NAME = 'KeePass Vault';
     const SHORT_NAME = 'keepass-vault';
     const STORAGE_KEY = `dsh_plugin_${SHORT_NAME.replace(/-/g, '_')}_config`;
@@ -20,7 +20,7 @@ window.__ModuleLoader__.load({
     const TOOL_CATEGORIES = [
       {
         cat: '本地高安全凭据保险库 (Credentials & Security)',
-        tools: ['keepass_status', 'keepass_get', 'keepass_add', 'keepass_edit', 'keepass_rm', 'keepass_analyze', 'keepass_export_attachment']
+        tools: ['keepass_status', 'keepass_get', 'keepass_add', 'keepass_edit', 'keepass_rm', 'keepass_analyze', 'keepass_export_attachment', 'keepass_selfcheck']
       },
       {
         cat: '凭据检索与分组遍历 (Search & Hierarchy)',
@@ -51,7 +51,7 @@ window.__ModuleLoader__.load({
       }
     ];
 
-    const README_CONTENT = `# KeePass 凭据中枢物理守卫插件 (keepass-vault)\n\n专为 **DeepSeek Harness** 与集群智能体打造的本地凭据保险库插件。落实查库第一公理，免除明文索取，高熵写盘，保障全集群凭据唯一真相源 (Credential SSOT)。\n\n### 🌟 核心特性\n- 查库第一公理 (Credential SSOT)\n- 本地 KDBX 数据库解耦直连\n- 写前防抖物理快照 (Disaster Recovery First)\n- 9 项 FastMCP 原子算子\n`;
+    const README_CONTENT = `# KeePass 凭据中枢物理守卫插件 (keepass-vault)\n\n专为 **DeepSeek Harness** 与集群智能体打造的本地凭据保险库插件。落实查库第一公理，免除明文索取，高熵写盘，保障全集群凭据唯一真相源 (Credential SSOT)。\n\n### 🌟 核心特性\n- 查库第一公理 (Credential SSOT)\n- 本地 KDBX 数据库解耦直连\n- 写前防抖物理快照 (Disaster Recovery First)\n- 10 项 FastMCP 原子算子 (含 CRUD 沙箱打靶安全自检)\n`;
 
     const totalToolsCount = TOOL_CATEGORIES.reduce((acc, c) => acc + (c.tools ? c.tools.length : 0), 0);
 
