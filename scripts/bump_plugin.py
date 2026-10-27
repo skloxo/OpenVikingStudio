@@ -24,7 +24,7 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 
 PLUGIN_MAPPING = {
     "openviking-memory": {
-        "ag_dir": "integrations/antigravity/openviking-memory",
+        "ag_dir": "packages/plugins/openviking-memory",
         "dsh_dir": "integrations/deepseek-harness/dsh-plugin-openviking-memory",
     },
     "openviking-ops": {
@@ -36,7 +36,7 @@ PLUGIN_MAPPING = {
         "dsh_dir": "integrations/deepseek-harness/dsh-plugin-openviking-fleet",
     },
     "keepass-vault": {
-        "ag_dir": "integrations/antigravity/keepass-vault",
+        "ag_dir": "packages/plugins/keepass-vault",
         "dsh_dir": "integrations/deepseek-harness/dsh-plugin-keepass-vault",
     },
     "dify": {

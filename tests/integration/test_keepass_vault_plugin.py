@@ -77,6 +77,7 @@ def test_keepass_tools_ast():
         "keepass_list_tree",
         "keepass_analyze",
         "keepass_export_attachment",
+        "keepass_selfcheck",
     }
     assert expected_tools.issubset(tool_names), f"缺失核心工具: {expected_tools - tool_names}"
 

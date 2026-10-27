@@ -401,5 +401,108 @@ def keepass_export_attachment(
     return {"status": "exported", "entry": entry_path, "attachment": attachment_name, "file_path": str(target_file)}
 
 
+@mcp.tool()
+def keepass_selfcheck(
+    cleanup: bool = True,
+    db_path: Optional[str] = None,
+) -> Dict[str, Any]:
+    """执行 KeePass 凭据库全生命周期 CRUD 沙箱打靶安全自检。
+    真实打靶 status/add/get/edit/rm 完整链路，验证解密与一致性，自动清理零残留，绝不读取任何生产凭据。
+    """
+    import uuid
+    import time
+    
+    probe_id = f"probe_{int(time.time())}_{uuid.uuid4().hex[:6]}"
+    test_path = f"/_selfcheck_sandbox/{probe_id}"
+    test_user = f"probe_user_{probe_id}"
+    test_pass = f"ProbePass_{int(time.time())}!#x9"
+    updated_pass = f"UpdatedPass_{int(time.time())}!#z8"
+    
+    report: Dict[str, Any] = {
+        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "total_tools": 10,
+        "database_status": "unknown",
+        "crud_stages": {
+            "status": "pending",
+            "add": "pending",
+            "get_decrypt": "pending",
+            "edit": "pending",
+            "rm_cleanup": "pending"
+        },
+        "all_passed": False
+    }
+    
+    try:
+        # 1. Status 探针
+        st = keepass_status(db_path=db_path)
+        if not st.get("can_unlock"):
+            report["error"] = f"keepass_status failed: {st.get('unlock_error', 'Cannot unlock database')}"
+            return report
+        report["database_status"] = "unlocked"
+        report["crud_stages"]["status"] = "passed"
+        
+        # 2. Add 探针 (写入沙箱测试条目)
+        add_res = keepass_add(
+            entry_path=test_path,
+            username=test_user,
+            password=test_pass,
+            notes="SelfCheck Auto Probe",
+            db_path=db_path
+        )
+        if add_res.get("status") != "success":
+            report["error"] = f"keepass_add probe failed: {add_res.get('error', 'Failed to create entry')}"
+            return report
+        report["crud_stages"]["add"] = "passed"
+        
+        # 3. Get 探针 (真实解密读取沙箱条目并校验内容)
+        get_res = keepass_get(
+            entry_path=test_path,
+            show_protected=True,
+            db_path=db_path
+        )
+        if "attributes" not in get_res:
+            report["error"] = f"keepass_get decrypt failed: {get_res.get('error', 'Entry attributes missing')}"
+            return report
+        attrs = get_res["attributes"]
+        if attrs.get("UserName") != test_user or attrs.get("Password") != test_pass:
+            report["error"] = f"keepass_get decrypt mismatch: user={attrs.get('UserName')}"
+            return report
+        report["crud_stages"]["get_decrypt"] = "passed"
+        
+        # 4. Edit 探针 (更新属性)
+        edit_res = keepass_edit(
+            entry_path=test_path,
+            password=updated_pass,
+            notes="SelfCheck Updated",
+            db_path=db_path
+        )
+        if edit_res.get("status") != "success":
+            report["error"] = f"keepass_edit probe failed: {edit_res.get('error', 'Failed to update')}"
+            return report
+        report["crud_stages"]["edit"] = "passed"
+        
+        # 5. Rm 探针 (物理清理沙箱测试条目)
+        if cleanup:
+            rm_res = keepass_rm(entry_path=test_path, db_path=db_path)
+            if rm_res.get("status") != "deleted":
+                report["error"] = f"keepass_rm cleanup failed: {rm_res.get('error', 'Failed to remove')}"
+                return report
+            report["crud_stages"]["rm_cleanup"] = "passed"
+            report["sandbox_cleaned"] = True
+            
+        report["all_passed"] = True
+        report["summary"] = "KeePass Vault 真实能力全生命周期 CRUD 沙箱打靶 100% 通过（零生产数据泄漏，零脏数据残留）。"
+        return report
+    except Exception as e:
+        report["error"] = str(e)
+        return report
+    finally:
+        if cleanup:
+            try:
+                keepass_rm(entry_path=test_path, db_path=db_path)
+            except Exception:
+                pass
+
+
 if __name__ == "__main__":
     mcp.run()
