@@ -1,0 +1,54 @@
+{
+  "name": "openviking-memory",
+  "displayName": "OpenViking Core Memory",
+  "version": "2.0.42",
+  "description": "OpenViking 体外大脑与核心记忆官方标准插件。提供跨会话无缝记忆检索与持久化、自动化会话归档、踩坑反思沉淀与零损耗 Handover 接力。",
+  "logo": "assets/logo.svg",
+  "suggestedPrompts": [
+    "搜索体外大脑中关于当前项目的核心架构设计与工程约束",
+    "总结并交接本次会话，生成标准 Handover Brief 准备换机/开新会话",
+    "检查 OpenViking 记忆中枢健康状态与当前 Agent 用户凭据"
+  ],
+  "author": {
+    "name": "OpenViking Team",
+    "url": "https://github.com/volcengine/OpenViking"
+  },
+  "homepage": "https://github.com/volcengine/OpenViking",
+  "repository": "https://github.com/volcengine/OpenViking",
+  "license": "AGPL-3.0",
+  "keywords": [
+    "openviking",
+    "memory",
+    "context",
+    "mcp",
+    "vector-search",
+    "session-handover",
+    "antigravity"
+  ],
+  "integration": {
+    "channels": [
+      {
+        "id": "antigravity",
+        "name": "Google 反重力",
+        "install_cmd": "powershell -ExecutionPolicy Bypass -Command \"iwr -Uri '{{ENDPOINT_URL}}/studio/openviking-memory-{{PLUGIN_VER}}.tgz' -OutFile '$env:TEMP\\openviking-memory.tgz'; New-Item -ItemType Directory -Force -Path \\\"$env:USERPROFILE\\.gemini\\config\\plugins\\openviking-memory\\\" | Out-Null; tar -xzf '$env:TEMP\\openviking-memory.tgz' -C \\\"$env:USERPROFILE\\.gemini\\config\\plugins\\openviking-memory\\\"; python \\\"$env:USERPROFILE\\.gemini\\config\\plugins\\openviking-memory\\setup.py\\\" --install --api {{ENDPOINT_URL}} --key {{USER_KEY}}\"",
+        "agent_prompt": "请帮我将当前反重力客户端 (Antigravity IDE / Desktop) 接入 OpenViking 核心长程记忆插件：\n1. 分发包直链：{{ENDPOINT_URL}}/studio/openviking-memory-{{PLUGIN_VER}}.tgz\n2. 目标目录：$env:USERPROFILE\\.gemini\\config\\plugins\\openviking-memory\n3. 服务中枢：{{ENDPOINT_URL}}\n4. 授权凭据：{{USER_KEY}}\n5. 执行：python setup.py --install --api {{ENDPOINT_URL}} --key {{USER_KEY}} 完成自举注册与 FastMCP 挂载。",
+        "config_snippet": "{\n  \"plugins\": {\n    \"openviking-memory\": {\n      \"installedFrom\": {\n        \"id\": \"antigravity/plugin/openviking-memory\",\n        \"marketplace\": \"openviking-studio\",\n        \"version\": \"{{PLUGIN_VER}}\"\n      }\n    }\n  }\n}",
+        "docs_markdown": "在 Windows PowerShell 中运行上述安装命令，将自动下载分发包、解压至 ~/.gemini/config/plugins/openviking-memory 并执行 setup.py 完成宿主注册表写入与 FastMCP 双轨服务配置。亦可复制认主提示词直接在反重力对话框中一键启用。"
+      },
+      {
+        "id": "dsh",
+        "name": "DeepSeek Harness",
+        "install_cmd": "npm install {{PACKAGE_URL}}",
+        "config_snippet": "openviking-memory:\n  endpointUrl: \"{{ENDPOINT_URL}}\"\n  userKey: \"{{USER_KEY}}\"\n  enableMcp: true",
+        "docs_markdown": "在 DSH 客户端插件市场安装，或在 profiles/desktop/node_modules 下解压加载"
+      },
+      {
+        "id": "universal-mcp",
+        "name": "通用 MCP 智能体",
+        "install_cmd": "npx -y @openviking/mcp-gateway",
+        "config_snippet": "{\n  \"mcpServers\": {\n    \"openviking-memory\": {\n      \"url\": \"{{ENDPOINT_URL}}/mcp\",\n      \"headers\": {\n        \"Authorization\": \"Bearer {{USER_KEY}}\"\n      }\n    }\n  }\n}",
+        "docs_markdown": "兼容 Claude Desktop, Cursor, OpenClaw 等遵循标准 Model Context Protocol 的智能体客户端"
+      }
+    ]
+  }
+}

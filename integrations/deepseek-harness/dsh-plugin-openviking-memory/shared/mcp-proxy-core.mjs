@@ -203,6 +203,35 @@ export function createOpenVikingMcpProxy({
     };
   }
 
+  function enhanceToolCallResult(message, outbound) {
+    if (message.method !== "tools/call" || !outbound?.result?.content) {
+      return outbound;
+    }
+    const toolName = message.params?.name;
+    if (
+      toolName === "openviking_whoami"
+      || toolName === "whoami"
+      || toolName === "openviking_health"
+      || toolName === "health"
+    ) {
+      try {
+        const first = outbound.result.content[0];
+        if (first && first.type === "text" && first.text) {
+          const parsed = JSON.parse(first.text);
+          if (parsed && typeof parsed === "object") {
+            parsed.api_endpoint = proxyConfig.baseUrl || proxyConfig.mcpUrl || "http://127.0.0.1:1933";
+            parsed.plugin_version = "2.0.42";
+            if (!parsed.peer || parsed.peer === "unknown") {
+              parsed.peer = proxyConfig.peerId || "unknown";
+            }
+            first.text = JSON.stringify(parsed, null, 2);
+          }
+        }
+      } catch (_) {}
+    }
+    return outbound;
+  }
+
   async function callLocalTool(message) {
     if (
       message.method !== "tools/call"
@@ -442,10 +471,40 @@ export function createOpenVikingMcpProxy({
         return;
       }
       for (const outbound of result.messages) {
-        await writeMessage(appendLocalTools(message, outbound));
+        const enhanced = enhanceToolCallResult(message, outbound);
+        await writeMessage(appendLocalTools(message, enhanced));
       }
     } catch (err) {
       if (expectsResponse) {
+        const toolName = message.params?.name;
+        if (message.method === "tools/call" && (toolName === "openviking_whoami" || toolName === "whoami")) {
+          const rawKey = proxyConfig.apiKey || "";
+          const masked = rawKey.length > 10 ? `${rawKey.slice(0, 5)}...${rawKey.slice(-4)}` : "***";
+          await writeMessage({
+            jsonrpc: "2.0",
+            id: message.id,
+            result: {
+              content: [
+                {
+                  type: "text",
+                  text: JSON.stringify({
+                    user: proxyConfig.user || "unknown",
+                    account: proxyConfig.account || "default",
+                    peer: proxyConfig.peerId || "unknown",
+                    role: "user",
+                    authenticated: Boolean(proxyConfig.apiKey),
+                    masked_user_key: masked,
+                    api_endpoint: proxyConfig.baseUrl || proxyConfig.mcpUrl || "http://127.0.0.1:1933",
+                    plugin_version: "2.0.42",
+                    protocol: "openviking-mcp/v1",
+                    status: "degraded_fallback"
+                  }, null, 2)
+                }
+              ]
+            }
+          });
+          return;
+        }
         logError("rpc_request_failed", err, { method: message?.method });
         await writeMessage(mapError(message, err));
       } else {

@@ -29,11 +29,11 @@ allowed-tools:
 
 ---
 
-## 🧭 一、 查理·芒格逆向工程思考 — 17 大“必死之招”与防御铁律 (Munger Inversion)
+## 🧭 一、 查理·芒格逆向工程思考 — 18 大“必死之招”与防御铁律 (Munger Inversion)
 
 > “反过来想，总是反过来想（Invert, always invert）。如果我知道自己会死在哪里，那我将永远不去那个地方。” —— 查理·芒格
 
-若想让一个反重力插件必死无疑、引发宿主崩溃或被用户唾弃，最有效的做法如下。**看清这 17 大死穴，反向构建防御，插件必然稳如磐石**：
+若想让一个反重力插件必死无疑、引发宿主崩溃或被用户唾弃，最有效的做法如下。**看清这 18 大死穴，反向构建防御，插件必然稳如磐石**：
 
 | 序号 | 致命毒药 (Anti-Pattern) | 崩坏现象与物理根因 | 芒格逆向防御铁律 (Engineering Invariant) |
 | :--- | :--- | :--- | :--- |
@@ -54,6 +54,7 @@ allowed-tools:
 | **死穴 15** | **PreInvocation 上下文投毒与 Token 膨胀** | 贪大求全将全量巨石文档或庞大记忆每轮通过 `ephemeralMessage` 塞入上下文，5 轮会话耗尽 200k 窗口，注意力涣散且每轮空耗数十万 Token。 | **注脑 Token 物理硬预算 (≤ 300 Token)**：动态注入必须遵循“阅后即焚、脱水高密”。单次注入硬性下限不超过 3 行关键事实，总字符 ≤ 500 字节，严禁倾倒巨石文档。 |
 | **死穴 16** | **卸载半拉子留下的“僵尸钩子” (Zombie Hooks)** | 仅删除插件目录但未清理 `config.json` 注册表与 `hooks.json`。IDE 随后每次调用工具均因找不到守卫脚本抛出 `File Not Found`，工具链全量瘫痪。 | **生命周期对称与反向清理契约 (Symmetric Lifecycle)**：安装与卸载必须成对闭环。`setup.py` 必须提供完全对等的 `uninstall` 命令，负责注销 `config.json`、安全移除 MCP 联动并清理残留。 |
 | **死穴 17** | **工作区随地拉屎与凭据污染 (Workspace Pollution)** | 插件运行时在用户项目工作区根目录下创建 `.cache`、`state.json` 或 `debug.log`，污染用户 Git 状态，甚至意外将敏感 Key 推至公开仓库。 | **私有状态隔离飞地 (State Enclave)**：插件运行时数据绝对严禁写入用户工作区！所有状态、缓存与日志只能且必须保存在插件私有目录（`~/.gemini/config/plugins/<name>/data/`）或系统 `$TEMP` 中。 |
+| **死穴 18** | **Stop 钩子会话收尾同步阻塞与超时强杀 (Stop Hook Sync Hang)** | 在 Stop 钩子中同步进行网络状态上报、大模型总结或全文扫描。遇到网络抖动或大文件，耗时超出 IDE 3.0s 超时门禁，导致钩子被系统强杀，收尾状态损坏。 | **独立脱钩子进程与 $\le 30\text{ms}$ 瞬时放行 (Async Detached Worker)**：耗时操作必须通过 `DETACHED_PROCESS` + `DEVNULL` 派生独立脱钩后台子进程（如 `async_session_miner.py`），主钩子读取输入后 $\le 30\text{ms}$ 必须输出 `{}` 瞬时放行；测试钩子必须使用 `echo '{}' \| python ...` 管道模拟。 |
 
 ---
 
@@ -124,6 +125,32 @@ allowed-tools:
   }
 }
 ```
+
+**标准 Stop 钩子异步脱钩 Worker 模板 (零阻塞瞬时放行)**：
+```python
+def spawn_async_miner(transcript_path: str) -> None:
+    miner_script = Path(__file__).resolve().parent / "async_session_miner.py"
+    if not miner_script.exists() or not transcript_path or not os.path.exists(transcript_path):
+        return
+    flags = 0
+    if sys.platform == "win32":
+        flags = subprocess.CREATE_NEW_PROCESS_GROUP | getattr(subprocess, "DETACHED_PROCESS", 0x00000008)
+    try:
+        subprocess.Popen(
+            [sys.executable, str(miner_script), "--transcript", str(transcript_path)],
+            creationflags=flags,
+            close_fds=True,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    except Exception:
+        pass
+```
+
+> [!IMPORTANT]
+> **非 TTY 钩子测试管道注入契约**：在 PowerShell 或子进程中直接测试含 `sys.stdin.readline()` 的钩子脚本时，若未通过管道输入数据，脚本将无限期阻塞等待 EOF。必须通过标准输入管道注入合法 JSON 打靶测试：
+> `echo '{"transcriptPath": ""}' | python -X utf8 -E -s -S hook.py`
 
 ---
 
@@ -214,3 +241,30 @@ urllib.request.urlopen(urllib.request.Request(f"{BASE}/submit", data=s_payload, 
 urllib.request.urlopen(urllib.request.Request(f"{BASE}/process-batch?batch_size=1", data=b"", headers=HEADERS))
 ```
 状态机变更为 `COMMITTED` 后，全集群 Agent 自然语言即可 100% 自动找回！
+
+
+## 🚀 七、 3070 ➔ 2080Ti 跨机生产发布标准 SOP (Cross-Node Production Rollout)
+
+在具备“3070 编辑端 + 2080Ti 算力与服务生产中枢”的分布式拓扑下，插件发布严格执行四步闭环：
+
+### 1. 宿主安全穿透通道契约
+- **穿透通道**：从 KeePass 凭据库动态提取 SSH 隧道公网跳板 IP 与专属端口；
+- **认证身份**：Windows 域用户（从 KeePass 保险箱提取凭据）；
+- **通道工具**：由于 Windows OpenSSH 客户端对 Azure AD 存在 Session Channel 兼容缺陷，**统一且强制使用 `plink.exe` 批量模式**：
+  ```powershell
+  & "$env:TEMP\plink.exe" -batch -ssh -P $remotePort -hostkey "$hostKey" -l "$remoteUser" -pw "$remotePass" $jumpHost "<remote_command>"
+  ```
+
+### 2. 生产四步一体原子发布指令序列
+1. **第一步（WSL2 原生目录推入）**：
+   通过 plink 在 2080Ti 触发增量同步：
+   `wsl -e rsync -av --exclude=node_modules --exclude=.git --exclude=.venv --exclude=dist /mnt/c/Users/Skl/Desktop/Workspace/coding/OpenVikingStudio/ /home/skloxo/services/openviking/`
+2. **第二步（生产分发包构建）**：
+   `wsl -e bash -c 'cd /home/skloxo/services/openviking && python3 scripts/pack_all_plugins.py'`
+3. **第三步（生产守护进程平滑重载）**：
+   `wsl -e systemctl --user restart openviking`
+4. **第四步（公网打靶一手验真，必须作为交付报告的首要证据）**：
+   ```powershell
+   python -c "import urllib.request, json; data = json.loads(urllib.request.urlopen('https://vk.tide.red/api/v1/plugins', timeout=5).read().decode('utf-8')); print([(p.get('plugin_id'), p.get('version')) for p in data.get('plugins', []) if 'memory' in p.get('plugin_id', '')])"
+   ```
+   **门禁条件**：返回的版本号必须 100% 匹配新发布的版本号，否则严禁宣布任务完成！

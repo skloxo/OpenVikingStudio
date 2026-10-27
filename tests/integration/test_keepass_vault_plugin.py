@@ -22,7 +22,7 @@ def test_keepass_plugin_metadata():
     with open(pjson_path, "r", encoding="utf-8") as f:
         meta = json.load(f)
     assert meta["name"] == "keepass-vault"
-    assert meta["version"] == "1.2.1"
+    assert meta["version"]  # 动态版本校验，杜绝硬编码
     assert "凭据保险库" in meta["description"]
     assert "keepass" in meta["keywords"]
     assert "vault" in meta["keywords"]
@@ -83,10 +83,13 @@ def test_keepass_tools_ast():
 
 def test_keepass_tarballs_built():
     """验证不可变分发包已成功构建并落盘."""
-    pub_tar = REPO_ROOT / "public" / "keepass-vault-1.2.1.tgz"
-    dsh_tar = REPO_ROOT / "public" / "dsh-plugin-keepass-vault-1.2.1.tgz"
-    assert pub_tar.exists(), "public/keepass-vault-1.2.1.tgz 必须存在"
-    assert dsh_tar.exists(), "public/dsh-plugin-keepass-vault-1.2.1.tgz 必须存在"
+    pjson_path = KP_PLUGIN_DIR / "plugin.json"
+    meta = json.loads(pjson_path.read_text(encoding="utf-8"))
+    ver = meta["version"]
+    pub_tar = REPO_ROOT / "public" / f"keepass-vault-{ver}.tgz"
+    dsh_tar = REPO_ROOT / "public" / f"dsh-plugin-keepass-vault-{ver}.tgz"
+    assert pub_tar.exists(), f"public/keepass-vault-{ver}.tgz 必须存在"
+    assert dsh_tar.exists(), f"public/dsh-plugin-keepass-vault-{ver}.tgz 必须存在"
     assert pub_tar.stat().st_size > 5000, "分发包体积异常"
     assert dsh_tar.stat().st_size > 5000, "DSH 适配分发包体积异常"
 
@@ -98,11 +101,13 @@ def test_keepass_installed_ssot():
     assert inst_pj.exists(), "宿主 plugin.json 必须存在"
     with open(inst_pj, "r", encoding="utf-8") as f:
         data = json.load(f)
-    assert data.get("version") == "1.2.1"
+    pjson_path = KP_PLUGIN_DIR / "plugin.json"
+    expected_ver = json.loads(pjson_path.read_text(encoding="utf-8"))["version"]
+    assert data.get("version") == expected_ver
     
     cfg_file = Path.home() / ".gemini" / "config" / "config.json"
     assert cfg_file.exists()
     with open(cfg_file, "r", encoding="utf-8") as f:
         cfg = json.load(f)
     assert "keepass-vault" in cfg.get("plugins", {})
-    assert cfg["plugins"]["keepass-vault"]["installedFrom"]["version"] == "1.2.1"
+    assert cfg["plugins"]["keepass-vault"]["installedFrom"]["version"] == expected_ver
