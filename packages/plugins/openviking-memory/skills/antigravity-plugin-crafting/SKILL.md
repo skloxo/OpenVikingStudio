@@ -29,11 +29,11 @@ allowed-tools:
 
 ---
 
-## 🧭 一、 查理·芒格逆向工程思考 — 19 大“必死之招”与防御铁律 (Munger Inversion)
+## 🧭 一、 查理·芒格逆向工程思考 — 20 大“必死之招”与防御铁律 (Munger Inversion)
 
 > “反过来想，总是反过来想（Invert, always invert）。如果我知道自己会死在哪里，那我将永远不去那个地方。” —— 查理·芒格
 
-若想让一个反重力插件必死无疑、引发宿主崩溃或被用户唾弃，最有效的做法如下。**看清这 19 大死穴，反向构建防御，插件必然稳如磐石**：
+若想让一个反重力插件必死无疑、引发宿主崩溃或被用户唾弃，最有效的做法如下。**看清这 20 大死穴，反向构建防御，插件必然稳如磐石**：
 
 | 序号 | 致命毒药 (Anti-Pattern) | 崩坏现象与物理根因 | 芒格逆向防御铁律 (Engineering Invariant) |
 | :--- | :--- | :--- | :--- |
@@ -56,6 +56,7 @@ allowed-tools:
 | **死穴 17** | **工作区随地拉屎与凭据污染 (Workspace Pollution)** | 插件运行时在用户项目工作区根目录下创建 `.cache`、`state.json` 或 `debug.log`，污染用户 Git 状态，甚至意外将敏感 Key 推至公开仓库。 | **私有状态隔离飞地 (State Enclave)**：插件运行时数据绝对严禁写入用户工作区！所有状态、缓存与日志只能且必须保存在插件私有目录（`~/.gemini/config/plugins/<name>/data/`）或系统 `$TEMP` 中。 |
 | **死穴 18** | **伪隔离削足适履与因噎废食 (Procrustean Self-Check)** | 因插件自检缺失关键字段导致模型代偿性调用 Shell 翻找磁盘，就提议“切换到空目录”或“剥夺 Agent Shell 执行权限”。把系统设计的脆弱性转嫁为用户的运维成本，或把工业机器人砍断双腿防止跌倒。 | **环境正交性与数据闭环公理 (Orthogonal Invariant)**：插件自检必须在脏工作区、高特权环境下 100% 确定性跑通。不许要求空工作区，不许削弱任何系统执行特权，自检必须下沉为 1-step 纯 MCP 原子闭环。 |
 | **死穴 19** | **座舱漏登记与算子变动未 Bump** | 插件新增/删改了 MCP 原子算子，但前端座舱 (`client.js`) 的 `TOOL_CATEGORIES` 未登记，导致 DSH 客户端 Tab 工具数断层（如内核 10 工具却在客户端显示 `MCP (9)`）；且未 Bump 版本号导致不可变打包流水线跳过构建，客户端缓存击穿。 | **座舱与内核 100% 物理同频 + 算子变动必原子 Bump**：增删改 `@mcp.tool` 必须同步更新 `client.js` 工具分类数组；必须遵循 SemVer 强制递增版本号并重新生成全新不可变包，严禁在既有版本原地打补丁。 |
+| **死穴 20** | **私有 MCP 盲信 `${pluginDir}` 占位符导致路径断裂** | 在插件私有 `mcp_config.json` 中使用 `${pluginDir}` 宏变量。Windows Antigravity 未展开宏变量，直接拼接为 `C:\...\<plugin>\${pluginDir}\server.py`，触发 Python `[Errno 2] No such file or directory` 且 MCP 启动失败；且打包脚本排除此文件导致客户端解压缺失。 | **禁止宏变量母本 + setup.py 动态自内聚双轨写入**：母本严禁依赖非标宏变量；由 `setup.py` 在 `--install` 阶段自内聚动态探测 `sys.executable` 与 `target_dir`，生成绝对路径的 `mcp_config.json`，并联动全局注册表。 |
 
 ---
 
