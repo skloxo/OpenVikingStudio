@@ -29,11 +29,11 @@ allowed-tools:
 
 ---
 
-## 🧭 一、 查理·芒格逆向工程思考 — 18 大“必死之招”与防御铁律 (Munger Inversion)
+## 🧭 一、 查理·芒格逆向工程思考 — 19 大“必死之招”与防御铁律 (Munger Inversion)
 
 > “反过来想，总是反过来想（Invert, always invert）。如果我知道自己会死在哪里，那我将永远不去那个地方。” —— 查理·芒格
 
-若想让一个反重力插件必死无疑、引发宿主崩溃或被用户唾弃，最有效的做法如下。**看清这 18 大死穴，反向构建防御，插件必然稳如磐石**：
+若想让一个反重力插件必死无疑、引发宿主崩溃或被用户唾弃，最有效的做法如下。**看清这 19 大死穴，反向构建防御，插件必然稳如磐石**：
 
 | 序号 | 致命毒药 (Anti-Pattern) | 崩坏现象与物理根因 | 芒格逆向防御铁律 (Engineering Invariant) |
 | :--- | :--- | :--- | :--- |
@@ -55,6 +55,7 @@ allowed-tools:
 | **死穴 16** | **卸载半拉子留下的“僵尸钩子” (Zombie Hooks)** | 仅删除插件目录但未清理 `config.json` 注册表与 `hooks.json`。IDE 随后每次调用工具均因找不到守卫脚本抛出 `File Not Found`，工具链全量瘫痪。 | **生命周期对称与反向清理契约 (Symmetric Lifecycle)**：安装与卸载必须成对闭环。`setup.py` 必须提供完全对等的 `uninstall` 命令，负责注销 `config.json`、安全移除 MCP 联动并清理残留。 |
 | **死穴 17** | **工作区随地拉屎与凭据污染 (Workspace Pollution)** | 插件运行时在用户项目工作区根目录下创建 `.cache`、`state.json` 或 `debug.log`，污染用户 Git 状态，甚至意外将敏感 Key 推至公开仓库。 | **私有状态隔离飞地 (State Enclave)**：插件运行时数据绝对严禁写入用户工作区！所有状态、缓存与日志只能且必须保存在插件私有目录（`~/.gemini/config/plugins/<name>/data/`）或系统 `$TEMP` 中。 |
 | **死穴 18** | **Stop 钩子会话收尾同步阻塞与超时强杀 (Stop Hook Sync Hang)** | 在 Stop 钩子中同步进行网络状态上报、大模型总结或全文扫描。遇到网络抖动或大文件，耗时超出 IDE 3.0s 超时门禁，导致钩子被系统强杀，收尾状态损坏。 | **独立脱钩子进程与 $\le 30\text{ms}$ 瞬时放行 (Async Detached Worker)**：耗时操作必须通过 `DETACHED_PROCESS` + `DEVNULL` 派生独立脱钩后台子进程（如 `async_session_miner.py`），主钩子读取输入后 $\le 30\text{ms}$ 必须输出 `{}` 瞬时放行；测试钩子必须使用 `echo '{}' \| python ...` 管道模拟。 |
+| **死穴 19** | **私有 MCP 盲信 `${pluginDir}` 占位符导致路径断裂** | 在插件私有 `mcp_config.json` 中使用 `${pluginDir}` 宏变量。Windows Antigravity 未展开宏变量，直接拼接为 `C:\...\<plugin>\${pluginDir}\server.py`，触发 Python `[Errno 2] No such file or directory` 且 MCP 启动失败；且打包脚本排除此文件导致客户端解压缺失。 | **禁止宏变量母本 + setup.py 动态自内聚双轨写入**：母本严禁依赖非标宏变量；由 `setup.py` 在 `--install` 阶段自内聚动态探测 `sys.executable` 与 `target_dir`，生成绝对路径的 `mcp_config.json`，并联动全局注册表。 |
 
 ---
 
