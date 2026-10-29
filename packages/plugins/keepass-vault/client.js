@@ -1,5 +1,5 @@
 /**
- * KeePass Vault DSH Cockpit & Settings Adapter (client.js v1.3.0)
+ * KeePass Vault DSH Cockpit & Settings Adapter (client.js v1.3.4)
  * 专为 DeepSeek Harness 打造的本地凭据中枢座舱面板与配置表单。
  * 视觉铁律：NO GREEN EVER 🚫 (#0891b2 冰青 / #e11d48 玫瑰红)，字号 >= 12px，6px 微圆角，高信息密度。
  */
@@ -12,7 +12,7 @@ window.__ModuleLoader__.load({
     const { useState } = React;
 
     const PLUGIN_ID = 'dsh-plugin-keepass-vault';
-    const CLIENT_VERSION = '1.3.0';
+    const CLIENT_VERSION = '1.3.4';
     const PLUGIN_NAME = 'KeePass Vault';
     const SHORT_NAME = 'keepass-vault';
     const STORAGE_KEY = `dsh_plugin_${SHORT_NAME.replace(/-/g, '_')}_config`;
@@ -20,7 +20,7 @@ window.__ModuleLoader__.load({
     const TOOL_CATEGORIES = [
       {
         cat: '本地高安全凭据保险库 (Credentials & Security)',
-        tools: ['keepass_status', 'keepass_get', 'keepass_add', 'keepass_edit', 'keepass_rm', 'keepass_analyze', 'keepass_export_attachment', 'keepass_selfcheck']
+        tools: ['keepass_status', 'keepass_get', 'keepass_add', 'keepass_edit', 'keepass_rm', 'keepass_analyze', 'keepass_export_attachment']
       },
       {
         cat: '凭据检索与分组遍历 (Search & Hierarchy)',

@@ -1,38 +1,50 @@
-# dsh-plugin-keepass-vault
+# KeePass 凭据中枢物理守卫插件 (keepass-vault)
 
-> KeePass Vault 本地私有化凭据插件 (DeepSeek Harness / Cordis 规范)
+[![Version](https://img.shields.io/badge/version-1.3.2-cyan.svg)](https://vk.tide.red)
+[![Platform](https://img.shields.io/badge/platform-Google%20Antigravity-blue.svg)](https://antigravity.google)
+[![Security](https://img.shields.io/badge/security-Encrypted%20KDBX-cyan.svg)](https://vk.tide.red)
 
-## 核心设计哲学 (第一性原理)
+专为 **Google Antigravity IDE / Desktop** 与全集群智能体打造的本地凭据保险库插件。落实查库第一公理，免除明文索取，高熵写盘，保障全集群凭据唯一真相源 (Credential SSOT)。
 
-1. **本地私有凭据与零云端依赖 (Local Private Vault & Zero Cloud Custody)**：
-   本插件定位为纯本地私有化插件。OpenViking (VK) 仅作为官方展厅展示曝光与不可变安装包托管下载源，**绝不从云端集中存储或远程下发密码保险库**！智能体在本地直接挂载由 KeePassXC 管理的加密数据库文件 (`.kdbx`)。
-2. **凭据单一真相源 (Credential SSOT)**：
-   智能体在本地读取由用户本地安全保存的 `.kdbx` 数据库，彻底终结代码硬编码与向人类索要明文密码。
-3. **查库第一公理**：
-   任何第三方服务外呼鉴权、SSH 登录或 API Key 获取前，强制优先调用 `keepass_search` 与 `keepass_get` 检索本地库。
-4. **物理快照容灾**：
-   任何新增或修改条目操作前，底层强制自动创建 `*.bak` 本地物理快照备份。
+---
 
-## 客户端一键安装
+## 🌟 核心特性 (v1.3.2)
 
-在 DeepSeek Harness (DSH) 或 Cordis 环境中执行：
+1. **查库第一公理 (Credential SSOT)**：
+   - 全集群密码、SSH 私钥与 API Key 的唯一真实源，坚决杜绝硬编码与明文传输；
+2. **免明文索取与高熵生成**：
+   - 读取密码支持脱敏查看；新增凭据时强制自动生成 $\ge 20$ 位高熵密码；
+3. **写前防抖物理快照 (Disaster Recovery First)**：
+   - 任何修改操作（add/edit/rm）前由 Hook 与底层自动创建 `*.bak` 时间戳快照，保障数据零丢失；
+4. **九项核心 MCP 凭据原子算子**：
+   - `keepass_status`: 数据库连通性、主密钥及解锁状态体检；
+   - `keepass_search`: 模糊与关键词检索匹配条目路径；
+   - `keepass_get`: 安全提取用户名、密码（受保护）、URL 与 TOTP；
+   - `keepass_add`: 新增凭据条目（递归创建分组，高熵随机口令）；
+   - `keepass_edit`: 更新现有条目元数据或密码；
+   - `keepass_rm`: 安全删除或归档条目；
+   - `keepass_list_tree`: 树状或扁平列出指定分组结构；
+   - `keepass_analyze`: 数据库安全性体检（弱口令与重复密码审计）；
+   - `keepass_export_attachment`: 提取 SSH 私钥、证书或配置文件。
 
-```bash
-npm install https://vk.tide.red/studio/dsh-plugin-keepass-vault.tgz
-```
+---
 
-## 配置项 (cordis.yml)
+## 🚀 极速开箱使用 (Agent Natural Language First)
 
-> ⚠️ **重要**：`kdbxPath` 必须修改为您本机实际存放 `.kdbx` 文件的绝对路径！
+直接在 Antigravity 对话框中发送一句话，由 Agent 自动全权托管安装与测试：
+> *“帮我配置好 KeePass 插件，数据库在桌面 Key.kdbx，密码是 `xxxxxx`。”*
 
-```yaml
-plugins:
-  dsh-plugin-keepass-vault:
-    # 填入您本机本地的 KeePass .kdbx 数据库绝对路径 (切勿假设云端下发)
-    # Linux/Mac 例如: ~/.openviking/vault.kdbx
-    # Windows 例如: C:/Users/YourName/.openviking/vault.kdbx
-    kdbxPath: ~/.openviking/vault.kdbx
-    # 主密码所在的环境变量名 (推荐在系统或 shell 环境变量中配置)
-    passwordEnv: KEEPASS_VAULT_PASSWORD
-    autoSnapshot: true
+---
+
+## 🛠️ 本地命令行向导 (setup.py)
+
+```powershell
+# 1. 带参一键静默安装并配置
+python setup.py --install --kdbx "~/Desktop/Key.kdbx" --key "你的密码"
+
+# 2. 真实物理健康度体检
+python setup.py --inspect
+
+# 3. 卸载与清理注册表
+python setup.py --uninstall
 ```

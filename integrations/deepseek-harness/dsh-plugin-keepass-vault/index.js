@@ -300,14 +300,33 @@ export function apply(ctx, config = {}) {
   }
 
   if (ctx.tools && typeof ctx.tools.register === 'function') {
+    // DSH defineTool DSL: 期望传入属性字典 (ParameterSchemaSpec)，由 defineTool 内部统一包装为标准 Schema
+    // 属性内部若包含 required，必须且只能为 true；非必填项彻底物理删除 required 字段，杜绝 required: false
+    const toDshParameterSpec = (rawParams) => {
+      if (!rawParams || typeof rawParams !== 'object') return {}
+      const rawProps = (rawParams.type === 'object' && rawParams.properties && typeof rawParams.properties === 'object')
+        ? rawParams.properties
+        : rawParams
+      const spec = {}
+      for (const [k, v] of Object.entries(rawProps)) {
+        if (!v || typeof v !== 'object') continue
+        const prop = { ...v }
+        if (prop.required !== true) {
+          delete prop.required
+        }
+        spec[k] = prop
+      }
+      return spec
+    }
+
+    // 标准 JSON Schema (Fallback 模式): 顶层包装 { type: 'object', properties: { ... }, required: [ ... ] }
     const toStandardJsonSchema = (params) => {
-      if (!params || typeof params !== 'object') return { type: 'object', properties: {} }
-      if (params.type === 'object' && params.properties) return params
+      const spec = toDshParameterSpec(params)
       const properties = {}
       const required = []
-      for (const [k, v] of Object.entries(params)) {
+      for (const [k, v] of Object.entries(spec)) {
         properties[k] = { ...v }
-        if (v.required) {
+        if (properties[k].required === true) {
           required.push(k)
           delete properties[k].required
         }
@@ -328,13 +347,16 @@ export function apply(ctx, config = {}) {
       })
 
       if (typeof defineToolFn === 'function') {
+        // DSH 原生 defineTool 严格接收 ParameterSchemaSpec 属性字典
         return defineToolFn({
           ...def,
+          parameters: toDshParameterSpec(def.parameters),
           output: OUT_SPEC,
           presentCall
         })
       }
 
+      // 非 DSH 环境或 Fallback 模式：交付标准 JSON Schema 对象
       return {
         ...def,
         parameters: toStandardJsonSchema(def.parameters),
@@ -403,7 +425,7 @@ export function apply(ctx, config = {}) {
           description: '读取 KeePass 指定条目的详细信息。show_protected=true 时明文返回密码。',
           parameters: {
             entry_path: { type: 'string', required: true, description: '条目完整路径，如 /云服务/阿里云' },
-            show_protected: { type: 'boolean', required: false, description: '是否明文读取敏感字段 (默认 false)' }
+            show_protected: { type: 'boolean', description: '是否明文读取敏感字段 (默认 false)' }
           },
           async execute(args) {
             const db = getKdbxPath()
@@ -428,10 +450,10 @@ export function apply(ctx, config = {}) {
           description: '向数据库新增凭据条目。写入前自动创建安全快照 (*.bak)。',
           parameters: {
             entry_path: { type: 'string', required: true, description: '新条目完整路径，如 /生产环境/DB' },
-            username: { type: 'string', required: false, description: '用户名/账号' },
-            password: { type: 'string', required: false, description: '指定密码 (留空则自动生成 >=20 位高熵密码)' },
-            url: { type: 'string', required: false, description: '关联 URL' },
-            notes: { type: 'string', required: false, description: '备注信息' }
+            username: { type: 'string', description: '用户名/账号' },
+            password: { type: 'string', description: '指定密码 (留空则自动生成 >=20 位高熵密码)' },
+            url: { type: 'string', description: '关联 URL' },
+            notes: { type: 'string', description: '备注信息' }
           },
           async execute(args) {
             const db = getKdbxPath()
@@ -463,10 +485,10 @@ export function apply(ctx, config = {}) {
           description: '修改已有凭据条目。修改前自动物理快照。',
           parameters: {
             entry_path: { type: 'string', required: true, description: '条目完整路径' },
-            username: { type: 'string', required: false, description: '新用户名' },
-            password: { type: 'string', required: false, description: '新密码' },
-            url: { type: 'string', required: false, description: '新 URL' },
-            notes: { type: 'string', required: false, description: '新备注' }
+            username: { type: 'string', description: '新用户名' },
+            password: { type: 'string', description: '新密码' },
+            url: { type: 'string', description: '新 URL' },
+            notes: { type: 'string', description: '新备注' }
           },
           async execute(args) {
             const db = getKdbxPath()
@@ -512,8 +534,8 @@ export function apply(ctx, config = {}) {
           name: 'keepass_list_tree',
           description: '树状遍历列出指定分组下的子分组与条目。',
           parameters: {
-            group: { type: 'string', required: false, description: '起始组路径 (默认 "/")' },
-            recursive: { type: 'boolean', required: false, description: '是否递归列出 (默认 true)' }
+            group: { type: 'string', description: '起始组路径 (默认 "/")' },
+            recursive: { type: 'boolean', description: '是否递归列出 (默认 true)' }
           },
           async execute(args) {
             const db = getKdbxPath()
@@ -566,120 +588,6 @@ export function apply(ctx, config = {}) {
           }
         }, defineToolFn))
 
-        // 10. keepass_selfcheck
-        ctx.tools.register(wrapTool({
-          name: 'keepass_selfcheck',
-          description: '执行 KeePass 凭据库全生命周期 CRUD 沙箱打靶安全自检（真实测试 status/add/get/edit/rm 能力，自动清理零残留，绝不读取任何生产凭据）。',
-          parameters: {
-            cleanup: { type: 'boolean', required: false, description: '测试完成后是否自动清理沙箱条目（默认为 true）' }
-          },
-          async execute(args) {
-            const db = getKdbxPath()
-            const key = getMasterPassword()
-            if (!existsSync(db)) {
-              return JSON.stringify({
-                all_passed: false,
-                error: `数据库文件不存在: ${db}`
-              }, null, 2)
-            }
-
-            const shouldCleanup = args?.cleanup !== false
-            const probeId = 'probe_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6)
-            const testPath = `/_selfcheck_sandbox/${probeId}`
-            const testUser = `probe_user_${probeId}`
-            const testPass = `ProbePass_${Date.now()}!#x9`
-            const updatedPass = `UpdatedPass_${Date.now()}!#z8`
-
-            const report = {
-              timestamp: new Date().toISOString(),
-              total_tools: 10,
-              database: 'unknown',
-              crud_stages: {
-                status: 'pending',
-                add: 'pending',
-                get_decrypt: 'pending',
-                edit: 'pending',
-                rm_cleanup: 'pending'
-              },
-              all_passed: false
-            }
-
-            try {
-              // 1. status 探针 (ls)
-              const st = runKeePassCli(['ls', '-q', db], key)
-              if (!st.success) {
-                report.error = `keepass_status check failed: ${st.stderr || 'unlock failed'}`
-                return JSON.stringify(report, null, 2)
-              }
-              report.database = 'unlocked'
-              report.crud_stages.status = 'passed'
-
-              // 2. add 探针 (写入沙箱测试条目)
-              const addInput = (key ? `${key}\n` : '\n') + `${testPass}\n`
-              const addProc = spawnSync('keepassxc-cli', ['add', '-q', db, testPath, '-u', testUser, '-p'], {
-                input: addInput,
-                encoding: 'utf8',
-                timeout: 10000,
-                env: { ...process.env, QT_QPA_PLATFORM: 'offscreen' }
-              })
-              if (addProc.status !== 0) {
-                report.error = `keepass_add probe failed: ${(addProc.stderr || '').trim()}`
-                return JSON.stringify(report, null, 2)
-              }
-              report.crud_stages.add = 'passed'
-
-              // 3. get 探针 (真实解密读取沙箱条目并校验内容)
-              const getRes = runKeePassCli(['show', '-q', '-s', '-a', 'UserName', db, testPath], key)
-              const getPassRes = runKeePassCli(['show', '-q', '-s', '-a', 'Password', db, testPath], key)
-              if (!getRes.success || !getPassRes.success) {
-                report.error = `keepass_get decrypt failed: ${getRes.stderr || getPassRes.stderr}`
-                return JSON.stringify(report, null, 2)
-              }
-              if (getRes.stdout !== testUser || getPassRes.stdout !== testPass) {
-                report.error = `keepass_get decrypt mismatch: got user=${getRes.stdout}`
-                return JSON.stringify(report, null, 2)
-              }
-              report.crud_stages.get_decrypt = 'passed'
-
-              // 4. edit 探针 (更新属性)
-              const editInput = (key ? `${key}\n` : '\n') + `${updatedPass}\n`
-              const editProc = spawnSync('keepassxc-cli', ['edit', '-q', db, testPath, '-p'], {
-                input: editInput,
-                encoding: 'utf8',
-                timeout: 10000,
-                env: { ...process.env, QT_QPA_PLATFORM: 'offscreen' }
-              })
-              if (editProc.status !== 0) {
-                report.error = `keepass_edit probe failed: ${(editProc.stderr || '').trim()}`
-                return JSON.stringify(report, null, 2)
-              }
-              report.crud_stages.edit = 'passed'
-
-              // 5. rm 探针 (物理清理沙箱测试条目)
-              if (shouldCleanup) {
-                const rmRes = runKeePassCli(['rm', '-q', db, testPath], key)
-                if (!rmRes.success) {
-                  report.error = `keepass_rm cleanup failed: ${rmRes.stderr}`
-                  return JSON.stringify(report, null, 2)
-                }
-                report.crud_stages.rm_cleanup = 'passed'
-                report.sandbox_cleaned = true
-              }
-
-              report.all_passed = true
-              report.summary = 'KeePass Vault 真实能力全生命周期 CRUD 沙箱打靶 100% 通过（零生产数据泄漏，零脏数据残留）。'
-              return JSON.stringify(report, null, 2)
-            } catch (err) {
-              report.all_passed = false
-              report.error = String(err?.message || err)
-              return JSON.stringify(report, null, 2)
-            } finally {
-              if (shouldCleanup) {
-                try { runKeePassCli(['rm', '-q', db, testPath], key) } catch (_) {}
-              }
-            }
-          }
-        }, defineToolFn))
       } catch (e) {
         try {
           const logPath = resolve(getDshDir(), 'dsh-plugin-keepass-vault-error.log')

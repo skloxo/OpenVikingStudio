@@ -40,7 +40,7 @@ flowchart TD
     Check -- 是 --> Step2["2. keepass_get(entry_path='...', show_protected=True)"]
     Check -- 否 --> Step3["向人类报告未检索到条目\n请求授权新建或核对条目名"]
     Step2 --> Use["3. 注入系统或连接 (日志掩码脱敏)"]
-    Step3 --> Add["4. 若需新建: keepass_add\n(强制自动生成 >=16位高熵密码)"]
+    Step3 --> Add["4. 若需新建: keepass_add\n(强制自动生成 >=20位高熵密码)"]
 ```
 
 ---
