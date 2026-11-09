@@ -1,0 +1,4 @@
+# dsh bundle patch: inserts this plugin into profile layer stack
+- insert:
+    - id: tududi
+      name: dsh-plugin-tududi

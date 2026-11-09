@@ -1,0 +1,2091 @@
+[
+  {
+    "name": "add_subtask",
+    "description": "在指定父任务 (parent_id) 下新建可独立勾选验收的子任务 (Subtask)",
+    "category": "tasks",
+    "parameters": {
+      "properties": {
+        "due_date": {
+          "description": "Due date (YYYY-MM-DD). Treated as the whole day in the user's timezone, matching the web UI.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Subtask name",
+          "type": "string"
+        },
+        "parent_id": {
+          "description": "Parent task ID or UID",
+          "type": [
+            "number",
+            "string"
+          ]
+        },
+        "priority": {
+          "enum": [
+            "none",
+            "low",
+            "medium",
+            "high"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "parent_id",
+        "name"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "add_task_comment",
+    "description": "向指定任务 (主键参数名 id) 追加进展评论或跨部门协同备注",
+    "category": "tasks",
+    "parameters": {
+      "properties": {
+        "body": {
+          "description": "Comment text (required)",
+          "type": "string"
+        },
+        "id": {
+          "description": "Task ID (number) or UID (string)",
+          "type": [
+            "number",
+            "string"
+          ]
+        },
+        "mentioned_person_uids": {
+          "description": "Person UIDs mentioned in the comment; they get notified (optional)",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "parent_comment_uid": {
+          "description": "UID of the comment to reply to (optional, replies cannot be nested further)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "body"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "add_to_inbox",
+    "description": "向 GTD 收集箱快速录入未分类闪念、会议纪要或临时待办",
+    "category": "inbox",
+    "parameters": {
+      "properties": {
+        "content": {
+          "description": "Inbox item content (required)",
+          "type": "string"
+        },
+        "source": {
+          "default": "mcp",
+          "description": "Source of the item (default: mcp)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "content"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "complete_task",
+    "description": "将指定任务标记为已完成 (主键参数名 id，调用前需先写入成果总结)",
+    "category": "tasks",
+    "parameters": {
+      "properties": {
+        "id": {
+          "description": "Task ID or UID",
+          "type": [
+            "number",
+            "string"
+          ]
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "create_area",
+    "description": "创建新的顶级业务领域边界",
+    "category": "areas",
+    "parameters": {
+      "properties": {
+        "color": {
+          "description": "Optional hex color (e.g. #ff6b6b)",
+          "type": "string"
+        },
+        "description": {
+          "description": "Optional description",
+          "type": "string"
+        },
+        "name": {
+          "description": "Area name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "create_goal",
+    "description": "在指定领域 (area_id=6 工作) 下创建年度或季度 OKR 目标 (horizon: 'season'|'year')",
+    "category": "goals",
+    "parameters": {
+      "properties": {
+        "area_id": {
+          "description": "Parent area ID (required)",
+          "type": "number"
+        },
+        "horizon": {
+          "description": "Time horizon (default: season)",
+          "enum": [
+            "season",
+            "year"
+          ],
+          "type": "string"
+        },
+        "status": {
+          "description": "Goal status (default: active)",
+          "enum": [
+            "active",
+            "achieved",
+            "paused",
+            "dropped"
+          ],
+          "type": "string"
+        },
+        "target_date": {
+          "description": "Target date (YYYY-MM-DD)",
+          "type": "string"
+        },
+        "title": {
+          "description": "Goal title (required)",
+          "type": "string"
+        },
+        "why": {
+          "description": "The motivation behind the goal",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "area_id"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "create_habit",
+    "description": "创建周期性习惯或例行巡检打卡项 (priority: 'none'|'low'|'medium'|'high')",
+    "category": "habits",
+    "parameters": {
+      "properties": {
+        "habit_color": {
+          "description": "Accent color as a hex value from the tududi palette, e.g. #1d4ed8",
+          "type": "string"
+        },
+        "habit_frequency_period": {
+          "description": "Period for the target; interval means every habit_interval_days days",
+          "enum": [
+            "daily",
+            "weekly",
+            "monthly",
+            "interval"
+          ],
+          "type": "string"
+        },
+        "habit_interval_days": {
+          "description": "For the interval period: length in days (2-365)",
+          "type": "number"
+        },
+        "habit_polarity": {
+          "description": "build = a habit to do; quit = a habit to avoid (e.g. \"no sugar\"), where each logged completion records a slip",
+          "enum": [
+            "build",
+            "quit"
+          ],
+          "type": "string"
+        },
+        "habit_reminder_time": {
+          "description": "Daily reminder time HH:MM in the user timezone",
+          "type": "string"
+        },
+        "habit_schedule_days": {
+          "description": "Daily habits only: weekdays it is due, 0=Sunday..6=Saturday. Omit or null for every day.",
+          "items": {
+            "type": "number"
+          },
+          "type": "array"
+        },
+        "habit_target_count": {
+          "description": "Check-ins needed per period (build habits)",
+          "type": "number"
+        },
+        "habit_target_value": {
+          "description": "Makes the habit measurable: total amount needed per period (e.g. 20 for 20 pages). Null for a simple count.",
+          "type": "number"
+        },
+        "habit_time_of_day": {
+          "description": "Group the habit by time of day",
+          "enum": [
+            "morning",
+            "afternoon",
+            "evening"
+          ],
+          "type": "string"
+        },
+        "habit_unit": {
+          "description": "Unit for a measurable habit, e.g. \"pages\" or \"km\"",
+          "type": "string"
+        },
+        "name": {
+          "description": "Habit name",
+          "type": "string"
+        },
+        "note": {
+          "description": "Description or notes",
+          "type": "string"
+        },
+        "priority": {
+          "description": "Priority level",
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "create_note",
+    "description": "创建项目关联参考笔记、架构纪要或长效备忘录",
+    "category": "notes",
+    "parameters": {
+      "properties": {
+        "color": {
+          "description": "Optional hex color",
+          "type": "string"
+        },
+        "content": {
+          "description": "Note content (markdown supported)",
+          "type": "string"
+        },
+        "project_uid": {
+          "description": "Optional project UID to attach the note to",
+          "type": "string"
+        },
+        "tags": {
+          "description": "Array of tag names",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "title": {
+          "description": "Note title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "create_person",
+    "description": "新增项目干系人或跨部门协作联系人记录",
+    "category": "people",
+    "parameters": {
+      "properties": {
+        "color": {
+          "description": "Hex color for visual identification (e.g. #ff6b6b)",
+          "type": "string"
+        },
+        "email": {
+          "description": "Email address",
+          "type": "string"
+        },
+        "name": {
+          "description": "Full name (required)",
+          "type": "string"
+        },
+        "notes": {
+          "description": "Free-text notes about this person",
+          "type": "string"
+        },
+        "phone": {
+          "description": "Phone number",
+          "type": "string"
+        },
+        "relationship_type": {
+          "description": "Relationship type: colleague, friend, family, other (default: other)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "create_project",
+    "description": "在指定领域 (area_id) 与 OKR 目标 (goal_id/goal_uid) 下创建业务项目 (priority 传 0|1|2)",
+    "category": "projects",
+    "parameters": {
+      "properties": {
+        "area_id": {
+          "description": "Area ID",
+          "type": "number"
+        },
+        "description": {
+          "description": "Project description",
+          "type": "string"
+        },
+        "due_date_at": {
+          "description": "Due date (ISO 8601)",
+          "type": "string"
+        },
+        "goal_id": {
+          "description": "Goal ID to link the project to (null to unlink)",
+          "type": "number"
+        },
+        "goal_uid": {
+          "description": "Goal UID to link the project to (null or empty to unlink)",
+          "type": "string"
+        },
+        "image_url": {
+          "description": "Image URL (upload via POST /api/upload/project-image first)",
+          "type": "string"
+        },
+        "is_maintenance": {
+          "description": "Mark as a maintenance project (keeps something running, not goal-directed). Setting true unlinks any goal; linking a goal clears it.",
+          "type": "boolean"
+        },
+        "name": {
+          "description": "Project name (required)",
+          "type": "string"
+        },
+        "priority": {
+          "description": "Priority (0=low, 1=medium, 2=high)",
+          "type": "number"
+        },
+        "start_date": {
+          "description": "Start date (YYYY-MM-DD) in the user's timezone: when the project begins. Pass null to clear it.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "start_time": {
+          "description": "Optional start time (HH:mm, 24-hour) in the user's timezone. Omit or null for a whole-day start.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "enum": [
+            "not_started",
+            "planned",
+            "in_progress",
+            "waiting",
+            "done",
+            "cancelled"
+          ],
+          "type": "string"
+        },
+        "tags": {
+          "description": "Array of tag names",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "visibility": {
+          "description": "Who sees the project. 'area' (default): everyone its area or goal is shared with. 'restricted': only the owner, the area owner and people the project itself is shared with.",
+          "enum": [
+            "area",
+            "restricted"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "create_tag",
+    "description": "创建职能分类标签 (严禁创建 P0/紧急/待办/工作 等状态或优先级伪标签)",
+    "category": "tags",
+    "parameters": {
+      "properties": {
+        "name": {
+          "description": "Tag name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "create_task",
+    "description": "新建任务并绑定项目 (project_id) 与五大职能标签 (规划/开发/运维/汇报/缺陷)",
+    "category": "tasks",
+    "parameters": {
+      "properties": {
+        "area_id": {
+          "description": "Area ID to assign task to directly",
+          "type": "number"
+        },
+        "area_uid": {
+          "description": "Area UID to assign task to directly (alternative to area_id)",
+          "type": "string"
+        },
+        "assigned_to": {
+          "description": "Person UID to assign the task to (see list_people)",
+          "type": "string"
+        },
+        "completion_based": {
+          "description": "If true, the next occurrence is scheduled from the completion date instead of the fixed schedule",
+          "type": "boolean"
+        },
+        "defer_until": {
+          "description": "Defer until date/time (ISO 8601 format) - task is hidden from view until this point",
+          "type": "string"
+        },
+        "description": {
+          "description": "Task note (alias of note)",
+          "type": "string"
+        },
+        "due_date": {
+          "description": "Due date (YYYY-MM-DD). Treated as the whole day in the user's timezone, matching the web UI.",
+          "type": "string"
+        },
+        "due_time": {
+          "description": "Optional time of day (HH:mm, 24-hour) in the user's timezone, applied to due_date. Requires due_date. Omit for a whole-day due date.",
+          "type": "string"
+        },
+        "estimated_minutes": {
+          "description": "Estimated duration in minutes (whole number between 5 and 720)",
+          "type": "number"
+        },
+        "name": {
+          "description": "Task name (required)",
+          "type": "string"
+        },
+        "note": {
+          "description": "Task note",
+          "type": "string"
+        },
+        "priority": {
+          "description": "Task priority",
+          "enum": [
+            "none",
+            "low",
+            "medium",
+            "high"
+          ],
+          "type": "string"
+        },
+        "project_id": {
+          "description": "Project ID to assign task to",
+          "type": "number"
+        },
+        "recurrence_end_date": {
+          "description": "Optional end date for the recurrence (ISO 8601 format); omit for indefinite recurrence",
+          "type": "string"
+        },
+        "recurrence_interval": {
+          "description": "Repeat every N days/weeks/months, depending on recurrence_type (default 1)",
+          "type": "number"
+        },
+        "recurrence_month_day": {
+          "description": "Day of month for \"monthly\" recurrence (1-31, or -1 for the last day of the month)",
+          "type": "number"
+        },
+        "recurrence_type": {
+          "description": "Recurrence pattern for the task (\"none\" for a one-off task)",
+          "enum": [
+            "none",
+            "daily",
+            "weekly",
+            "monthly",
+            "monthly_weekday",
+            "monthly_last_day"
+          ],
+          "type": "string"
+        },
+        "recurrence_week_of_month": {
+          "description": "Week of month for \"monthly_weekday\" recurrence (1-5, or -1 for the last)",
+          "type": "number"
+        },
+        "recurrence_weekday": {
+          "description": "Weekday for \"weekly\" (single day) or \"monthly_weekday\" recurrence, 0=Sunday..6=Saturday",
+          "type": "number"
+        },
+        "recurrence_weekdays": {
+          "description": "Multiple weekdays for \"weekly\" recurrence (0=Sunday..6=Saturday); alternative to recurrence_weekday",
+          "items": {
+            "type": "number"
+          },
+          "type": "array"
+        },
+        "reminder_at": {
+          "description": "Optional ISO 8601 date-time to send a reminder notification at.",
+          "type": "string"
+        },
+        "start_date": {
+          "description": "Start date (YYYY-MM-DD) in the user's timezone: when work on the task begins.",
+          "type": "string"
+        },
+        "start_time": {
+          "description": "Optional start time (HH:mm, 24-hour) in the user's timezone. Requires start_date. Omit for a whole-day start.",
+          "type": "string"
+        },
+        "tags": {
+          "description": "Array of tag names",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "create_task_relation",
+    "description": "建立任务间先后阻塞依赖链 (例如 type='blocks' 串联跨周专题任务)",
+    "category": "tasks",
+    "parameters": {
+      "properties": {
+        "id": {
+          "description": "Task ID or UID to add the relation to",
+          "type": [
+            "number",
+            "string"
+          ]
+        },
+        "target_id": {
+          "description": "Task ID or UID of the other task",
+          "type": [
+            "number",
+            "string"
+          ]
+        },
+        "type": {
+          "enum": [
+            "blocks",
+            "blocked_by",
+            "related_to",
+            "duplicates",
+            "duplicated_by"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "target_id",
+        "type"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "create_view",
+    "description": "创建按项目、标签或优先级组合过滤的自定义看板视图",
+    "category": "views",
+    "parameters": {
+      "properties": {
+        "due": {
+          "description": "Due date filter (e.g. today, this_week)",
+          "type": "string"
+        },
+        "is_pinned": {
+          "default": false,
+          "description": "Pin view to sidebar",
+          "type": "boolean"
+        },
+        "name": {
+          "description": "View name (required)",
+          "type": "string"
+        },
+        "priority": {
+          "description": "Priority filter (low, medium, high)",
+          "type": "string"
+        },
+        "search_query": {
+          "description": "Text search query",
+          "type": "string"
+        },
+        "tags": {
+          "description": "Tag filters",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "task_status": {
+          "description": "Task status filter (not_started, planned, in_progress, waiting, done, cancelled, archived)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "delete_area",
+    "description": "删除指定的顶级领域 (高危操作，主键参数名 uid)",
+    "category": "areas",
+    "parameters": {
+      "properties": {
+        "uid": {
+          "description": "Area UID",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uid"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "delete_goal",
+    "description": "删除指定的 OKR 目标条目 (高危操作，主键参数名 uid)",
+    "category": "goals",
+    "parameters": {
+      "properties": {
+        "uid": {
+          "description": "Goal UID",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uid"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "delete_habit",
+    "description": "删除指定的习惯打卡项 (高危操作，主键参数名 uid)",
+    "category": "habits",
+    "parameters": {
+      "properties": {
+        "uid": {
+          "description": "Habit UID",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uid"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "delete_habit_completion",
+    "description": "撤销指定习惯 (uid) 的某次历史打卡记录 (completion_uid)",
+    "category": "habits",
+    "parameters": {
+      "properties": {
+        "completion_id": {
+          "description": "Completion ID to delete",
+          "type": "number"
+        },
+        "uid": {
+          "description": "Habit UID",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uid",
+        "completion_id"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "delete_inbox_item",
+    "description": "从收集箱中删除指定条目 (主键参数名 uid)",
+    "category": "inbox",
+    "parameters": {
+      "properties": {
+        "uid": {
+          "description": "Inbox item UID",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uid"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "delete_note",
+    "description": "删除指定的参考笔记 (高危操作，主键参数名 uid)",
+    "category": "notes",
+    "parameters": {
+      "properties": {
+        "uid": {
+          "description": "Note UID",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uid"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "delete_person",
+    "description": "删除指定的联系人记录 (主键参数名 uid)",
+    "category": "people",
+    "parameters": {
+      "properties": {
+        "uid": {
+          "description": "Person UID",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uid"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "delete_project",
+    "description": "安全归档或删除指定项目容器 (高危操作，主键参数名 uid)",
+    "category": "projects",
+    "parameters": {
+      "properties": {
+        "uid": {
+          "description": "Project UID",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uid"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "delete_tag",
+    "description": "删除冗余或违规标签 (主键参数名 uid)",
+    "category": "tags",
+    "parameters": {
+      "properties": {
+        "uid": {
+          "description": "Tag UID or name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uid"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "delete_task",
+    "description": "物理删除指定任务 (高危操作，主键参数名 id)",
+    "category": "tasks",
+    "parameters": {
+      "properties": {
+        "id": {
+          "description": "Task ID or UID",
+          "type": [
+            "number",
+            "string"
+          ]
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "delete_view",
+    "description": "删除指定的自定义视图 (主键参数名 uid)",
+    "category": "views",
+    "parameters": {
+      "properties": {
+        "uid": {
+          "description": "View UID",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uid"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "get_area",
+    "description": "根据领域唯一标识 uid 获取顶级领域的详细配置信息",
+    "category": "areas",
+    "parameters": {
+      "properties": {
+        "uid": {
+          "description": "Area UID",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uid"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "get_goal",
+    "description": "根据目标唯一标识 uid 获取 OKR 目标详情与关联的 KR 项目列表",
+    "category": "goals",
+    "parameters": {
+      "properties": {
+        "uid": {
+          "description": "Goal UID",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uid"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "get_habit",
+    "description": "根据习惯唯一标识 uid 获取习惯详情、目标频率与连续打卡记录",
+    "category": "habits",
+    "parameters": {
+      "properties": {
+        "uid": {
+          "description": "Habit UID",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uid"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "get_habit_completions",
+    "description": "查询指定习惯 (uid) 在时间窗口内的历史打卡完成记录",
+    "category": "habits",
+    "parameters": {
+      "properties": {
+        "end_date": {
+          "description": "End date (ISO 8601). Defaults to now.",
+          "type": "string"
+        },
+        "start_date": {
+          "description": "Start date (ISO 8601). Defaults to 30 days ago.",
+          "type": "string"
+        },
+        "uid": {
+          "description": "Habit UID",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uid"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "get_habit_stats",
+    "description": "获取指定习惯 (uid) 的连续达成天数 (Streak) 与完成率统计",
+    "category": "habits",
+    "parameters": {
+      "properties": {
+        "end_date": {
+          "description": "End date (ISO 8601)",
+          "type": "string"
+        },
+        "start_date": {
+          "description": "Start date (ISO 8601)",
+          "type": "string"
+        },
+        "uid": {
+          "description": "Habit UID",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uid"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "get_inbox_item",
+    "description": "根据收集箱条目 uid 获取单条闪念详情",
+    "category": "inbox",
+    "parameters": {
+      "properties": {
+        "uid": {
+          "description": "Inbox item UID",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uid"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "get_note",
+    "description": "根据笔记唯一标识 uid 读取完整 Markdown 笔记内容",
+    "category": "notes",
+    "parameters": {
+      "properties": {
+        "uid": {
+          "description": "Note UID",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uid"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "get_person",
+    "description": "根据联系人唯一标识 uid 获取干系人详情",
+    "category": "people",
+    "parameters": {
+      "properties": {
+        "uid": {
+          "description": "Person UID",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uid"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "get_project",
+    "description": "根据项目唯一标识 uid 获取项目详情、关联 OKR 目标与量化 KR 说明",
+    "category": "projects",
+    "parameters": {
+      "properties": {
+        "uid": {
+          "description": "Project UID",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uid"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "get_tag",
+    "description": "根据标签唯一标识 uid 获取单个职能标签详情",
+    "category": "tags",
+    "parameters": {
+      "properties": {
+        "name": {
+          "description": "Tag name (used if uid is not provided)",
+          "type": "string"
+        },
+        "uid": {
+          "description": "Tag UID",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  {
+    "name": "get_task",
+    "description": "根据任务主键 id 获取单条任务的完整详情、子任务与结构化笔记 (note)",
+    "category": "tasks",
+    "parameters": {
+      "properties": {
+        "id": {
+          "description": "Task ID (number) or UID (string)",
+          "type": [
+            "number",
+            "string"
+          ]
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "get_task_metrics",
+    "description": "获取全局或指定维度下的任务完成率、逾期率与生产力统计指标",
+    "category": "tasks",
+    "parameters": {
+      "properties": {},
+      "type": "object"
+    }
+  },
+  {
+    "name": "get_view",
+    "description": "根据视图唯一标识 uid 获取智能视图的过滤规则详情",
+    "category": "views",
+    "parameters": {
+      "properties": {
+        "uid": {
+          "description": "View UID",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uid"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "list_areas",
+    "description": "查询 L1 顶级公私物理边界领域列表 (工作 id=6 / 个人 id=7)",
+    "category": "areas",
+    "parameters": {
+      "properties": {},
+      "type": "object"
+    }
+  },
+  {
+    "name": "list_goals",
+    "description": "查询工作领域下的年度/季度 OKR 考核大项 (O1~O4) 列表与进度",
+    "category": "goals",
+    "parameters": {
+      "properties": {
+        "area_id": {
+          "description": "Filter by area ID",
+          "type": "number"
+        },
+        "status": {
+          "description": "Filter by status (default: all)",
+          "enum": [
+            "active",
+            "achieved",
+            "paused",
+            "dropped",
+            "all"
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  {
+    "name": "list_habits",
+    "description": "查询周期性工程巡检与个人习惯打卡列表",
+    "category": "habits",
+    "parameters": {
+      "properties": {
+        "archived": {
+          "description": "List archived habits instead",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    }
+  },
+  {
+    "name": "list_inbox",
+    "description": "查询 GTD 收集箱 (Inbox) 中待分拣的闪念与临时事项列表",
+    "category": "inbox",
+    "parameters": {
+      "properties": {
+        "limit": {
+          "default": 20,
+          "description": "Maximum number of items to return",
+          "type": "number"
+        },
+        "offset": {
+          "default": 0,
+          "description": "Number of items to skip",
+          "type": "number"
+        },
+        "status": {
+          "description": "Filter by a specific status (e.g. added, processed, deleted, trashed). Omit to return only active items.",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  {
+    "name": "list_notes",
+    "description": "查询项目参考资料与技术备忘笔记 (Notes) 列表",
+    "category": "notes",
+    "parameters": {
+      "properties": {
+        "order_by": {
+          "default": "title:asc",
+          "description": "Order by column:direction (e.g. title:asc, created_at:desc)",
+          "type": "string"
+        },
+        "tag": {
+          "description": "Filter notes by tag name",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  {
+    "name": "list_people",
+    "description": "查询跨部门协同干系人与通讯录联系人 (People) 列表",
+    "category": "people",
+    "parameters": {
+      "properties": {
+        "archived": {
+          "default": false,
+          "description": "Include archived contacts (default: false)",
+          "type": "boolean"
+        },
+        "relationship_type": {
+          "description": "Filter by relationship type (e.g. colleague, friend, family, other)",
+          "type": "string"
+        },
+        "sort": {
+          "default": "name",
+          "description": "Sort order (default: name)",
+          "enum": [
+            "name",
+            "created_at"
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  {
+    "name": "list_projects",
+    "description": "查询全部业务项目列表 (L3 核心 KR 载体，支持按状态 status 过滤)",
+    "category": "projects",
+    "parameters": {
+      "properties": {
+        "area_id": {
+          "description": "Filter by area ID",
+          "type": "number"
+        },
+        "limit": {
+          "default": 30,
+          "description": "Maximum number of projects to return",
+          "type": "number"
+        },
+        "status": {
+          "description": "Filter by project status",
+          "enum": [
+            "not_started",
+            "planned",
+            "in_progress",
+            "waiting",
+            "done",
+            "cancelled",
+            "all"
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  {
+    "name": "list_tags",
+    "description": "查询 L4 核心职能标签列表 (标准五标签：规划、开发、运维、汇报、缺陷)",
+    "category": "tags",
+    "parameters": {
+      "properties": {},
+      "type": "object"
+    }
+  },
+  {
+    "name": "list_task_comments",
+    "description": "查询指定任务 (主键参数名 id) 下的全部讨论评论与进展记录",
+    "category": "tasks",
+    "parameters": {
+      "properties": {
+        "id": {
+          "description": "Task ID (number) or UID (string)",
+          "type": [
+            "number",
+            "string"
+          ]
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "list_task_relations",
+    "description": "查询指定任务 (主键参数名 id) 关联的前置与后置依赖关系列表",
+    "category": "tasks",
+    "parameters": {
+      "properties": {
+        "id": {
+          "description": "Task ID or UID",
+          "type": [
+            "number",
+            "string"
+          ]
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "list_tasks",
+    "description": "按项目 (project_id)、状态 (status)、优先级 (priority) 或搜索词过滤查询任务列表",
+    "category": "tasks",
+    "parameters": {
+      "properties": {
+        "blocked": {
+          "description": "true: only tasks with an open blocker. false: only tasks without one. Omit for all tasks.",
+          "type": "boolean"
+        },
+        "limit": {
+          "default": 50,
+          "description": "Maximum number of tasks to return",
+          "type": "number"
+        },
+        "project_id": {
+          "description": "Filter by project ID",
+          "type": "number"
+        },
+        "status": {
+          "description": "Filter by status",
+          "enum": [
+            "not_started",
+            "pending",
+            "in_progress",
+            "done",
+            "completed",
+            "archived",
+            "waiting",
+            "cancelled",
+            "planned"
+          ],
+          "type": "string"
+        },
+        "type": {
+          "description": "Filter tasks by type. today: what the Today page shows (in progress, planned for today, due today, overdue). upcoming: tasks due or deferred in the next 7 days.",
+          "enum": [
+            "today",
+            "upcoming",
+            "completed",
+            "archived",
+            "all"
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  {
+    "name": "list_views",
+    "description": "查询自定义智能筛选视图 (Views) 列表",
+    "category": "views",
+    "parameters": {
+      "properties": {
+        "pinned_only": {
+          "default": false,
+          "description": "Return only pinned views",
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    }
+  },
+  {
+    "name": "log_habit_completion",
+    "description": "记录指定习惯 (主键参数名 uid) 在今日或指定日期的完成打卡",
+    "category": "habits",
+    "parameters": {
+      "properties": {
+        "completed_at": {
+          "description": "Completion timestamp (ISO 8601). Defaults to now.",
+          "type": "string"
+        },
+        "note": {
+          "description": "Optional note",
+          "type": "string"
+        },
+        "skip": {
+          "description": "Skip this day instead (rest day, illness). Build habits only.",
+          "type": "boolean"
+        },
+        "uid": {
+          "description": "Habit UID",
+          "type": "string"
+        },
+        "value": {
+          "description": "Amount, required for measurable habits",
+          "type": "number"
+        }
+      },
+      "required": [
+        "uid"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "process_inbox_item",
+    "description": "将收集箱条目 (主键参数名 uid) 标记为已分拣处理完毕",
+    "category": "inbox",
+    "parameters": {
+      "properties": {
+        "uid": {
+          "description": "Inbox item UID",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uid"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "remove_task_relation",
+    "description": "解除指定任务 (id) 上的特定关联依赖关系 (relation_uid)",
+    "category": "tasks",
+    "parameters": {
+      "properties": {
+        "id": {
+          "description": "Task ID or UID",
+          "type": [
+            "number",
+            "string"
+          ]
+        },
+        "relation_uid": {
+          "description": "Relation UID",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "relation_uid"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "search",
+    "description": "跨任务、项目、目标、笔记与标签执行全域关键词聚合检索",
+    "category": "core",
+    "parameters": {
+      "properties": {
+        "limit": {
+          "default": 10,
+          "description": "Maximum results per type",
+          "type": "number"
+        },
+        "query": {
+          "description": "Search query (required)",
+          "type": "string"
+        },
+        "type": {
+          "default": "all",
+          "description": "Resource type to search (default: all)",
+          "enum": [
+            "task",
+            "project",
+            "note",
+            "all"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "skip_task_occurrence",
+    "description": "跳过周期性重复任务的本次执行实例并滚动至下一周期 (主键参数名 id)",
+    "category": "tasks",
+    "parameters": {
+      "properties": {
+        "id": {
+          "description": "Task ID or UID",
+          "type": [
+            "number",
+            "string"
+          ]
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "update_area",
+    "description": "更新指定顶级领域 (主键参数名 uid) 的名称与描述信息",
+    "category": "areas",
+    "parameters": {
+      "properties": {
+        "color": {
+          "description": "New hex color or empty string to remove",
+          "type": "string"
+        },
+        "description": {
+          "description": "New description",
+          "type": "string"
+        },
+        "name": {
+          "description": "New name",
+          "type": "string"
+        },
+        "uid": {
+          "description": "Area UID",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uid"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "update_goal",
+    "description": "更新 OKR 目标标题、考核权重说明、状态 (active/achieved/paused/dropped) 或周期 (主键 uid)",
+    "category": "goals",
+    "parameters": {
+      "properties": {
+        "horizon": {
+          "description": "New time horizon",
+          "enum": [
+            "season",
+            "year"
+          ],
+          "type": "string"
+        },
+        "status": {
+          "description": "New status",
+          "enum": [
+            "active",
+            "achieved",
+            "paused",
+            "dropped"
+          ],
+          "type": "string"
+        },
+        "target_date": {
+          "description": "New target date (YYYY-MM-DD) or empty string to clear",
+          "type": "string"
+        },
+        "title": {
+          "description": "New title",
+          "type": "string"
+        },
+        "uid": {
+          "description": "Goal UID (required)",
+          "type": "string"
+        },
+        "why": {
+          "description": "New motivation text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uid"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "update_habit",
+    "description": "更新指定习惯 (主键参数名 uid) 的名称、周期频率或追踪配置",
+    "category": "habits",
+    "parameters": {
+      "properties": {
+        "archived": {
+          "description": "true archives the habit (keeps history), false restores it",
+          "type": "boolean"
+        },
+        "habit_color": {
+          "description": "Accent color as a hex value from the tududi palette, e.g. #1d4ed8",
+          "type": "string"
+        },
+        "habit_frequency_period": {
+          "description": "Period for the target; interval means every habit_interval_days days",
+          "enum": [
+            "daily",
+            "weekly",
+            "monthly",
+            "interval"
+          ],
+          "type": "string"
+        },
+        "habit_interval_days": {
+          "description": "For the interval period: length in days (2-365)",
+          "type": "number"
+        },
+        "habit_polarity": {
+          "description": "build = a habit to do; quit = a habit to avoid (e.g. \"no sugar\"), where each logged completion records a slip",
+          "enum": [
+            "build",
+            "quit"
+          ],
+          "type": "string"
+        },
+        "habit_reminder_time": {
+          "description": "Daily reminder time HH:MM in the user timezone",
+          "type": "string"
+        },
+        "habit_schedule_days": {
+          "description": "Daily habits only: weekdays it is due, 0=Sunday..6=Saturday. Omit or null for every day.",
+          "items": {
+            "type": "number"
+          },
+          "type": "array"
+        },
+        "habit_target_count": {
+          "description": "Check-ins needed per period (build habits)",
+          "type": "number"
+        },
+        "habit_target_value": {
+          "description": "Makes the habit measurable: total amount needed per period (e.g. 20 for 20 pages). Null for a simple count.",
+          "type": "number"
+        },
+        "habit_time_of_day": {
+          "description": "Group the habit by time of day",
+          "enum": [
+            "morning",
+            "afternoon",
+            "evening"
+          ],
+          "type": "string"
+        },
+        "habit_unit": {
+          "description": "Unit for a measurable habit, e.g. \"pages\" or \"km\"",
+          "type": "string"
+        },
+        "name": {
+          "description": "New habit name",
+          "type": "string"
+        },
+        "note": {
+          "description": "Description or notes",
+          "type": "string"
+        },
+        "priority": {
+          "description": "Priority level",
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "type": "string"
+        },
+        "uid": {
+          "description": "Habit UID",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uid"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "update_inbox_item",
+    "description": "更新收集箱条目 (主键参数名 uid) 的文本内容",
+    "category": "inbox",
+    "parameters": {
+      "properties": {
+        "content": {
+          "description": "New content",
+          "type": "string"
+        },
+        "status": {
+          "description": "New status (e.g. added, processed, deleted)",
+          "type": "string"
+        },
+        "uid": {
+          "description": "Inbox item UID",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uid"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "update_note",
+    "description": "更新指定笔记 (主键参数名 uid) 的标题、正文、颜色或绑定项目",
+    "category": "notes",
+    "parameters": {
+      "properties": {
+        "color": {
+          "description": "New hex color",
+          "type": "string"
+        },
+        "content": {
+          "description": "New content",
+          "type": "string"
+        },
+        "project_uid": {
+          "description": "Project UID to attach (empty string to detach)",
+          "type": "string"
+        },
+        "tags": {
+          "description": "Array of tag names (replaces existing)",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "title": {
+          "description": "New title",
+          "type": "string"
+        },
+        "uid": {
+          "description": "Note UID",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uid"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "update_person",
+    "description": "更新指定联系人 (主键参数名 uid) 的姓名、备注或关联信息",
+    "category": "people",
+    "parameters": {
+      "properties": {
+        "archived": {
+          "description": "Archive or unarchive this person",
+          "type": "boolean"
+        },
+        "color": {
+          "description": "New hex color or empty string to remove",
+          "type": "string"
+        },
+        "email": {
+          "description": "New email address",
+          "type": "string"
+        },
+        "name": {
+          "description": "New name",
+          "type": "string"
+        },
+        "notes": {
+          "description": "New notes",
+          "type": "string"
+        },
+        "phone": {
+          "description": "New phone number",
+          "type": "string"
+        },
+        "relationship_type": {
+          "description": "New relationship type",
+          "type": "string"
+        },
+        "uid": {
+          "description": "Person UID (required)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uid"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "update_project",
+    "description": "更新项目名称、量化 KR 描述、状态、领域 (area_id) 或绑定的 OKR 目标 (主键 uid)",
+    "category": "projects",
+    "parameters": {
+      "properties": {
+        "area_id": {
+          "description": "New area ID",
+          "type": "number"
+        },
+        "description": {
+          "description": "New description",
+          "type": "string"
+        },
+        "goal_id": {
+          "description": "Goal ID to link the project to (null to unlink)",
+          "type": "number"
+        },
+        "goal_uid": {
+          "description": "Goal UID to link the project to (null or empty to unlink)",
+          "type": "string"
+        },
+        "image_url": {
+          "description": "Image URL (upload via POST /api/upload/project-image first)",
+          "type": "string"
+        },
+        "is_maintenance": {
+          "description": "Mark as a maintenance project (keeps something running, not goal-directed). Setting true unlinks any goal; linking a goal clears it.",
+          "type": "boolean"
+        },
+        "name": {
+          "description": "New project name",
+          "type": "string"
+        },
+        "pinned": {
+          "description": "Pin to sidebar",
+          "type": "boolean"
+        },
+        "priority": {
+          "description": "New priority",
+          "type": "number"
+        },
+        "start_date": {
+          "description": "Start date (YYYY-MM-DD) in the user's timezone: when the project begins. Pass null to clear it.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "start_time": {
+          "description": "Optional start time (HH:mm, 24-hour) in the user's timezone. Omit or null for a whole-day start.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "enum": [
+            "not_started",
+            "planned",
+            "in_progress",
+            "waiting",
+            "done",
+            "cancelled"
+          ],
+          "type": "string"
+        },
+        "uid": {
+          "description": "Project UID (required)",
+          "type": "string"
+        },
+        "visibility": {
+          "description": "Who sees the project. 'area' (default): everyone its area or goal is shared with. 'restricted': only the owner, the area owner and people the project itself is shared with.",
+          "enum": [
+            "area",
+            "restricted"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "uid"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "update_tag",
+    "description": "更新指定标签 (主键参数名 uid) 的名称",
+    "category": "tags",
+    "parameters": {
+      "properties": {
+        "name": {
+          "description": "New tag name",
+          "type": "string"
+        },
+        "uid": {
+          "description": "Tag UID or current name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uid",
+        "name"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "update_task",
+    "description": "更新任务属性或写入【达成成果】与【解决挑战】双行汇报锚点 (主键参数名 id)",
+    "category": "tasks",
+    "parameters": {
+      "properties": {
+        "area_id": {
+          "description": "Area ID to assign task to directly (use null to remove area)",
+          "type": "number"
+        },
+        "area_uid": {
+          "description": "Area UID to assign task to directly (alternative to area_id)",
+          "type": "string"
+        },
+        "assigned_to": {
+          "description": "Person UID to assign the task to (see list_people), or null to unassign",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "completion_based": {
+          "description": "If true, the next occurrence is scheduled from the completion date instead of the fixed schedule",
+          "type": "boolean"
+        },
+        "defer_until": {
+          "description": "Defer until date/time (ISO 8601 format) - task is hidden from view until this point; pass null or an empty string to clear it",
+          "type": "string"
+        },
+        "description": {
+          "description": "New note (alias of note)",
+          "type": "string"
+        },
+        "due_date": {
+          "description": "New due date (YYYY-MM-DD). Treated as the whole day in the user's timezone, matching the web UI.",
+          "type": "string"
+        },
+        "due_time": {
+          "description": "Time of day (HH:mm, 24-hour) in the user's timezone to apply to the due date. Set null to clear the time and keep the whole day.",
+          "type": "string"
+        },
+        "estimated_minutes": {
+          "description": "Estimated duration in minutes (whole number between 5 and 720; pass null to clear)",
+          "type": "number"
+        },
+        "id": {
+          "description": "Task ID or UID",
+          "type": [
+            "number",
+            "string"
+          ]
+        },
+        "name": {
+          "description": "New task name",
+          "type": "string"
+        },
+        "note": {
+          "description": "New note",
+          "type": "string"
+        },
+        "priority": {
+          "enum": [
+            "none",
+            "low",
+            "medium",
+            "high"
+          ],
+          "type": "string"
+        },
+        "project_id": {
+          "description": "Project ID to assign task to (use null to remove project)",
+          "type": "number"
+        },
+        "recurrence_end_date": {
+          "description": "Optional end date for the recurrence (ISO 8601 format); omit for indefinite recurrence",
+          "type": "string"
+        },
+        "recurrence_interval": {
+          "description": "Repeat every N days/weeks/months, depending on recurrence_type (default 1)",
+          "type": "number"
+        },
+        "recurrence_month_day": {
+          "description": "Day of month for \"monthly\" recurrence (1-31, or -1 for the last day of the month)",
+          "type": "number"
+        },
+        "recurrence_type": {
+          "description": "Recurrence pattern for the task (\"none\" for a one-off task)",
+          "enum": [
+            "none",
+            "daily",
+            "weekly",
+            "monthly",
+            "monthly_weekday",
+            "monthly_last_day"
+          ],
+          "type": "string"
+        },
+        "recurrence_week_of_month": {
+          "description": "Week of month for \"monthly_weekday\" recurrence (1-5, or -1 for the last)",
+          "type": "number"
+        },
+        "recurrence_weekday": {
+          "description": "Weekday for \"weekly\" (single day) or \"monthly_weekday\" recurrence, 0=Sunday..6=Saturday",
+          "type": "number"
+        },
+        "recurrence_weekdays": {
+          "description": "Multiple weekdays for \"weekly\" recurrence (0=Sunday..6=Saturday); alternative to recurrence_weekday",
+          "items": {
+            "type": "number"
+          },
+          "type": "array"
+        },
+        "reminder_at": {
+          "description": "ISO 8601 date-time to send a reminder notification at. Set null to remove.",
+          "type": "string"
+        },
+        "start_date": {
+          "description": "New start date (YYYY-MM-DD) in the user's timezone. Pass null to clear it.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "start_time": {
+          "description": "Start time (HH:mm, 24-hour) in the user's timezone. Set null to keep a whole-day start.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "enum": [
+            "not_started",
+            "pending",
+            "in_progress",
+            "done",
+            "completed",
+            "archived",
+            "waiting",
+            "cancelled",
+            "planned"
+          ],
+          "type": "string"
+        },
+        "tags": {
+          "description": "Array of tag names to assign (replaces existing tags)",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "today": {
+          "description": "true adds the task to today's plan, false takes it off",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "update_view",
+    "description": "更新指定自定义视图 (主键参数名 uid) 的筛选条件与置顶状态",
+    "category": "views",
+    "parameters": {
+      "properties": {
+        "due": {
+          "description": "New due date filter",
+          "type": "string"
+        },
+        "is_pinned": {
+          "description": "Pin or unpin from sidebar",
+          "type": "boolean"
+        },
+        "name": {
+          "description": "New name",
+          "type": "string"
+        },
+        "priority": {
+          "description": "New priority filter",
+          "type": "string"
+        },
+        "search_query": {
+          "description": "New text search query",
+          "type": "string"
+        },
+        "tags": {
+          "description": "New tag filters",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "task_status": {
+          "description": "Task status filter (not_started, planned, in_progress, waiting, done, cancelled, archived)",
+          "type": "string"
+        },
+        "uid": {
+          "description": "View UID (required)",
+          "type": "string"
+        }
+      },
+      "required": [
+        "uid"
+      ],
+      "type": "object"
+    }
+  }
+]

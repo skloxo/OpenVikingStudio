@@ -37,6 +37,7 @@ PRODUCTION_PLUGINS = [
     "agent-circuit-breaker",
     "openviking-memory",
     "keepass-vault",
+    "tududi",
 ]
 
 EXPERIMENTAL_WIP_PLUGINS = [
@@ -60,21 +61,19 @@ def resolve_plugin_dir(plugin_name: str) -> Path:
 
 
 def cascade_version_to_docs(plugin_name: str, version: str):
-    """自动将 plugin.json 中的版本号级联至 README.md 与 setup.py，彻底消灭手动核对"""
+    """根据 SSOT 规范：plugin.json 为版本唯一真相源，README.md 严禁注入静态徽章与死版本号"""
     clean_ver = version.lstrip("v")
     p_dir = resolve_plugin_dir(plugin_name)
     readme = p_dir / "README.md"
     if readme.exists():
         text = readme.read_text(encoding="utf-8")
-        # 1. 替换 shields.io 徽章 version-X.Y.Z-cyan.svg
-        new_text = re.sub(r"badge/version-[\d\.]+-cyan\.svg", f"badge/version-{clean_ver}-cyan.svg", text)
-        # 2. 替换 > **版本**：`vX.Y.Z` 或 > **版本**：vX.Y.Z
-        new_text = re.sub(r"(> \*\*版本\*\*：`?v?)[\d\.]+(`?)", rf"\g<1>{clean_ver}\g<2>", new_text)
-        # 3. 替换 ## 🌟 核心特性 (vX.Y.Z)
-        new_text = re.sub(r"(## 🌟 核心特性 \(v)[\d\.]+(\))", rf"\g<1>{clean_ver}\g<2>", new_text)
-        if new_text != text:
-            readme.write_text(new_text, encoding="utf-8")
-            print(f"  📝 [自动级联] {plugin_name} README.md 文档版本同步 -> v{clean_ver}")
+        # 彻底清洗 README.md 中历史遗留的 shields.io 徽章与硬编码版本标头
+        cleaned = re.sub(r"\n*!?\[[^\]]*\]\(https://img\.shields\.io/badge/version-[^)]+\)\n*", "\n", text)
+        cleaned = re.sub(r"\n*> \*\*版本\*\*：`?v?[\d\.]+`?\n*", "\n", cleaned)
+        cleaned = re.sub(r"(## 🌟 [^\n(]+) \(v[\d\.]+\)", r"\1", cleaned)
+        if cleaned != text:
+            readme.write_text(cleaned, encoding="utf-8")
+            print(f"  📝 [自动清洗] {plugin_name} README.md 移除硬编码死徽章/版本号")
 
     setup_file = p_dir / "setup.py"
     if setup_file.exists():

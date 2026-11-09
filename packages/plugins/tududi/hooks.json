@@ -1,0 +1,16 @@
+{
+  "tududi-okr-gtd-guard": {
+    "PreToolUse": [
+      {
+        "matcher": "*tududi*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python.exe -X utf8 -E -s -S ${pluginDir}/hooks/tududi_guard.py",
+            "timeout": 3
+          }
+        ]
+      }
+    ]
+  }
+}

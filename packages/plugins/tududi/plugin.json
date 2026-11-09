@@ -1,0 +1,71 @@
+{
+  "$schema": "https://antigravity.google/schemas/v1/plugin.json",
+  "name": "tududi",
+  "displayName": "Tududi Task Manager",
+  "version": "1.1.9",
+  "archetype": "server-backed",
+  "description": "Tududi 全域任务管理与 OKR+GTD 生产力中枢官方标准插件。提供五层战略执行映射、Agent 三大自动作业反射、五重参数守卫与 65 项全能 MCP 算子。",
+  "logo": "assets/logo.svg",
+  "suggestedPrompts": [
+    "查看 Tududi 今日待办任务与各项目主线攻坚进度",
+    "向 Tududi 待办系统新增或推进任务并记录成果锚点",
+    "检查 Tududi 服务健康状态与 OKR 目标达成进度"
+  ],
+  "author": {
+    "name": "OpenViking Team",
+    "url": "https://vk.tide.red"
+  },
+  "homepage": "https://todo.tide.red",
+  "repository": "https://github.com/volcengine/OpenViking",
+  "license": "AGPL-3.0",
+  "keywords": [
+    "tududi",
+    "todo",
+    "tasks",
+    "habits",
+    "projects",
+    "areas",
+    "goals",
+    "okr",
+    "gtd",
+    "antigravity",
+    "dsh",
+    "mcp"
+  ],
+  "integration": {
+    "channels": [
+      {
+        "id": "antigravity",
+        "name": "Google 反重力",
+        "install_cmd": "powershell -ExecutionPolicy Bypass -Command \"iwr -Uri '{{ENDPOINT_URL}}/studio/tududi-{{PLUGIN_VER}}.tgz' -OutFile '$env:TEMP\\tududi.tgz'; New-Item -ItemType Directory -Force -Path \\\"$env:USERPROFILE\\.gemini\\config\\plugins\\tududi\\\" | Out-Null; tar -xzf '$env:TEMP\\tududi.tgz' -C \\\"$env:USERPROFILE\\.gemini\\config\\plugins\\tududi\\\"; python \\\"$env:USERPROFILE\\.gemini\\config\\plugins\\tududi\\setup.py\\\" --install\"",
+        "agent_prompt": "请帮我配置并激活当前反重力客户端的 Tududi 任务管理插件：\n1. 从本地 KeePass 保险库检索 /Tududi 任务管理系统 提取 API Token (MCP Bearer)；\n2. 执行命令：python setup.py --install --token <TOKEN>\n3. 执行自检：python setup.py --inspect\n4. 确认 65 项工具算子与五重 Hook 守卫正常挂载并汇报连通状态。",
+        "config_snippet": "{\n  \"plugins\": {\n    \"tududi\": {\n      \"installedFrom\": {\n        \"id\": \"antigravity/plugin/tududi\",\n        \"marketplace\": \"openviking-studio\",\n        \"version\": \"{{PLUGIN_VER}}\"\n      }\n    }\n  }\n}",
+        "docs_markdown": "在反重力 IDE / Desktop 中，Tududi 插件通过 Python Stdio 双网自愈网关与 Mac Studio 端点打通，安装后自动挂载 65 项 MCP 算子、OKR+GTD 规约与 tududi-okr-gtd-guard 五重守卫。"
+      },
+      {
+        "id": "dsh",
+        "name": "DeepSeek Harness (DSH)",
+        "install_cmd": "npm install {{PACKAGE_URL}}",
+        "agent_prompt": "请帮我安装并接入 Tududi 任务管理系统 DSH 插件：\n1. 插件包：{{PACKAGE_URL}}\n2. 执行：npm install {{PACKAGE_URL}}\n3. 在 cordis.patch.yml 激活 dsh-plugin-tududi 并在座舱中配置端点与 Token。",
+        "config_snippet": "tududi:\n  endpointUrl: \"https://todo.tide.red/api/mcp\"\n  internalUrl: \"http://10.128.226.5:3002/api/mcp\"\n  apiToken: \"<YOUR_TUDUDI_TOKEN>\"\n  enableMcp: true",
+        "docs_markdown": "在 DSH 客户端插件市场安装，或在 profiles/desktop/node_modules 下解压加载。"
+      },
+      {
+        "id": "universal-mcp",
+        "name": "通用 MCP 智能体",
+        "install_cmd": "python server.py",
+        "config_snippet": "{\n  \"mcpServers\": {\n    \"core\": {\n      \"command\": \"python\",\n      \"args\": [\"path/to/server.py\"]\n    }\n  }\n}",
+        "docs_markdown": "兼容 Claude Desktop, Cursor, Windsurf, OpenClaw 等遵循标准 MCP 协议的智能体客户端。"
+      }
+    ]
+  },
+  "gui": {
+    "dashboard_route": "https://todo.tide.red",
+    "settings_fields": {
+      "公网 MCP 端点": "https://todo.tide.red/api/mcp (HTTPS 443 反代首选)",
+      "内网容灾端点": "http://10.128.226.5:3002/api/mcp (Mac Studio 局域网秒级降级)",
+      "鉴权凭据托管": "Bearer Token (本地 KeePass /Tududi 任务管理系统)",
+      "通信通道模式": "Google Antigravity IDE & DSH (双网自愈 Stdio 桥 + PreToolUse 五重守卫)"
+    }
+  }
+}
