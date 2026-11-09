@@ -400,7 +400,7 @@ def inspect_plugin(target_dir: Path):
         else:
             print(f"❌ PreInvocation Hook 执行异常 (Code: {res.returncode}): {res.stderr}")
 
-    print("\n✅ 插件健康度巡检完成！")
+    print("\n🔵 插件健康度巡检完成！")
     return True
 
 

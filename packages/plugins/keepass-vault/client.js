@@ -1,7 +1,7 @@
 /**
- * KeePass Vault DSH Cockpit & Settings Adapter (client.js v1.3.4)
- * 专为 DeepSeek Harness 打造的本地凭据中枢座舱面板与配置表单。
- * 视觉铁律：NO GREEN EVER 🚫 (#0891b2 冰青 / #e11d48 玫瑰红)，字号 >= 12px，6px 微圆角，高信息密度。
+ * universal_dsh_client.js - OpenViking 通用无状态 DSH 插件座舱与配置面板模板
+ * 100% 动态元数据与表单双轨驱动：支持服务端实时探针、端点与 UserKey 热配置、双锚点全冗余插槽注册。
+ * 视觉铁律：NO GREEN EVER 🚫 (#0891b2 冰青 / #e11d48 玫瑰红)，字号 >= 12px，6px 微圆角，高对比度。
  */
 
 window.__ModuleLoader__.load({
@@ -13,45 +13,16 @@ window.__ModuleLoader__.load({
 
     const PLUGIN_ID = 'dsh-plugin-keepass-vault';
     const CLIENT_VERSION = '1.3.4';
-    const PLUGIN_NAME = 'KeePass Vault';
+    const PLUGIN_NAME = 'KeePass Vault (v1.3.4)';
     const SHORT_NAME = 'keepass-vault';
     const STORAGE_KEY = `dsh_plugin_${SHORT_NAME.replace(/-/g, '_')}_config`;
 
-    const TOOL_CATEGORIES = [
-      {
-        cat: '本地高安全凭据保险库 (Credentials & Security)',
-        tools: ['keepass_status', 'keepass_get', 'keepass_add', 'keepass_edit', 'keepass_rm', 'keepass_analyze', 'keepass_export_attachment']
-      },
-      {
-        cat: '凭据检索与分组遍历 (Search & Hierarchy)',
-        tools: ['keepass_search', 'keepass_list_tree']
-      }
-    ];
-
-    const SKILLS = [
-      {
-        name: 'keepass-vault',
-        desc: 'KeePass 本地密码保险库凭据管理与自动化中枢专用技能。落实查库第一公理、免明文索取、写前快照容灾、高熵密码入库与条目全生命周期管理。'
-      }
-    ];
-
-    const HOOKS = [
-      {
-        name: 'vault-guard',
-        desc: '写前自动快照容灾守护：在执行 add/edit/rm 修改前自动生成带时间戳的安全快照 (*.bak)，滚动保留 10 份。',
-        event: 'Pre-Execution'
-      }
-    ];
-
-    const RULES = [
-      {
-        name: 'AGENTS.md',
-        desc: '🔐 KeePass 凭据保险箱法则契约 (Credential SSOT Contract)',
-        content: '# 🔐 KeePass 凭据保险箱法则契约\n\n1. 查库第一公理：凡遇 API Key、SSH 密码/私钥、连接串，绝对禁止向人类直接索要明文，开局优先 keepass_search；\n2. 灾难恢复优先：写前自动创建时间戳安全快照；\n3. 免明文透传：对话与日志输出凭据强制掩码脱敏；\n4. 高熵生成律：新增密码强制生成 >=16 位高熵口令。'
-      }
-    ];
-
-    const README_CONTENT = `# KeePass 凭据中枢物理守卫插件 (keepass-vault)\n\n专为 **DeepSeek Harness** 与集群智能体打造的本地凭据保险库插件。落实查库第一公理，免除明文索取，高熵写盘，保障全集群凭据唯一真相源 (Credential SSOT)。\n\n### 🌟 核心特性\n- 查库第一公理 (Credential SSOT)\n- 本地 KDBX 数据库解耦直连\n- 写前防抖物理快照 (Disaster Recovery First)\n- 10 项 FastMCP 原子算子 (含 CRUD 沙箱打靶安全自检)\n`;
+    // 动态插值数据源 (离线兜底 SSOT)
+    const TOOL_CATEGORIES = [{"cat": "本地高安全凭据保险库 (Credentials & Security)", "tools": ["keepass_status", "keepass_get", "keepass_add", "keepass_edit", "keepass_rm", "keepass_analyze", "keepass_export_attachment"]}, {"cat": "核心长程记忆与检索 (Memory & Context)", "tools": ["keepass_search", "keepass_list_tree"]}];
+    const SKILLS = [{"name": "keepass-vault", "desc": "1. **交代底牌律 (Hook Transparency)**："}];
+    const HOOKS = [{"name": "vault-guard", "desc": "拦截 PreToolUse 事件，执行写前时间戳物理快照 (*.bak) 与高危删除保护", "event": "PreToolUse"}];
+    const RULES = [{"name": "AGENTS.md", "desc": "🔐 KeePass 凭据保险箱法则契约 (Credential SSOT Contract)", "content": "# 🔐 KeePass 凭据保险箱法则契约 (Credential SSOT Contract)\n\n本契约是全集群智能体涉及账号、密码、密钥与凭据操作的最高物理法则。\n\n---\n\n## 一、 查库第一公理 (Lookup First Axiom)\n1. **免明文索取**：凡遇到 API Key、服务器 SSH 密码/私钥、数据库连接串或第三方凭据时，**绝对禁止向人类直接索要明文**；\n2. **第一反射**：开局必须优先调用 `keepass_search` 搜索本地 KeePass 保险库；\n3. **查无此人方可求证**：仅在 `keepass_search` 确认返回 `count: 0` 时，方可向人类汇报未找到该凭据并请求授权新建或输入。\n\n---\n\n## 二、 灾难恢复优先与写前快照契约 (Disaster Recovery First)\n1. **写前物理快照**：针对密码库的任何写操作（`keepass_add`, `keepass_edit`, `keepass_rm`），系统由底层与 Hook 自动在写入前创建时间戳安全快照 (`Key.kdbx.YYYYMMDD_HHMMSS.bak`)；\n2. **滚动保留 10 份**：物理保证数据库零损坏、秒级可还原；\n3. **破坏性操作警惕**：`keepass_rm` 属于高危破坏性操作，执行前必须确认条目无其他依赖。\n\n---\n\n## 三、 免明文透传与高熵写盘契约 (Zero-Plaintext Defense)\n1. **最小特权读取**：读取条目时，若仅需确认存在性，默认仅查看非敏感元数据 (`title`, `username`, `url`)；\n2. **输出脱水脱敏**：对话与日志中输出凭据时，必须进行掩码脱敏（如 `sk-ant-***` 或 `[PROTECTED_PASSWORD]`），严禁在对话气泡中大段贴出明文密码；\n3. **高熵生成律**：新增密码条目时，必须强制生成 $\\ge 20$ 位包含大小写字母、数字及特殊符号的高熵密码。\n4. **配置排查零明文输出律 (No-Dump Config Axiom)**：在排查插件配置状态或连通性时，**绝对严禁直接使用 cat 或 Get-Content 原样输出包含 masterKey/master_key 的配置文件全文**；必须通过属性筛选（如排除 masterKey）或正则脱敏过滤后输出，杜绝数据库主密码泄露至会话历史与转储日志。"}];
+    const README_CONTENT = "# KeePass 凭据中枢物理守卫插件 (keepass-vault)\n\n[![Version](https://img.shields.io/badge/version-1.3.4-cyan.svg)](https://vk.tide.red)\n[![Platform](https://img.shields.io/badge/platform-Google%20Antigravity-blue.svg)](https://antigravity.google)\n[![Security](https://img.shields.io/badge/security-Encrypted%20KDBX-cyan.svg)](https://vk.tide.red)\n\n专为 **Google Antigravity IDE / Desktop** 与全集群智能体打造的本地凭据保险库插件。落实查库第一公理，免除明文索取，高熵写盘，保障全集群凭据唯一真相源 (Credential SSOT)。\n\n---\n\n## 🌟 核心特性 (v1.3.4)\n\n1. **查库第一公理 (Credential SSOT)**：\n   - 全集群密码、SSH 私钥与 API Key 的唯一真实源，坚决杜绝硬编码与明文传输；\n2. **免明文索取与高熵生成**：\n   - 读取密码支持脱敏查看；新增凭据时强制自动生成 $\\ge 20$ 位高熵密码；\n3. **写前防抖物理快照 (Disaster Recovery First)**：\n   - 任何修改操作（add/edit/rm）前由 Hook 与底层自动创建 `*.bak` 时间戳快照，保障数据零丢失；\n4. **九项核心 MCP 凭据原子算子**：\n   - `keepass_status`: 数据库连通性、主密钥及解锁状态体检；\n   - `keepass_search`: 模糊与关键词检索匹配条目路径；\n   - `keepass_get`: 安全提取用户名、密码（受保护）、URL 与 TOTP；\n   - `keepass_add`: 新增凭据条目（递归创建分组，高熵随机口令）；\n   - `keepass_edit`: 更新现有条目元数据或密码；\n   - `keepass_rm`: 安全删除或归档条目；\n   - `keepass_list_tree`: 树状或扁平列出指定分组结构；\n   - `keepass_analyze`: 数据库安全性体检（弱口令与重复密码审计）；\n   - `keepass_export_attachment`: 提取 SSH 私钥、证书或配置文件。\n\n---\n\n## 🚀 极速开箱使用 (Agent Natural Language First)\n\n直接在 Antigravity 对话框中发送一句话，由 Agent 自动全权托管安装与测试：\n> *“帮我配置好 KeePass 插件，数据库在桌面 Key.kdbx，密码是 `xxxxxx`。”*\n\n---\n\n## 🛠️ 本地命令行向导 (setup.py)\n\n```powershell\n# 1. 带参一键静默安装并配置\npython setup.py --install --kdbx \"~/Desktop/Key.kdbx\" --key \"你的密码\"\n\n# 2. 真实物理健康度体检\npython setup.py --inspect\n\n# 3. 卸载与清理注册表\npython setup.py --uninstall\n```\n";
 
     const totalToolsCount = TOOL_CATEGORIES.reduce((acc, c) => acc + (c.tools ? c.tools.length : 0), 0);
 
@@ -64,9 +35,10 @@ window.__ModuleLoader__.load({
         }
       } catch (_) {}
       return {
-        kdbxPath: '~/Desktop/Key.kdbx',
-        masterKey: '',
-        autoSnapshot: true
+        endpointUrl: '',
+        userKey: '',
+        agentId: '',
+        peer: SHORT_NAME
       };
     }
 
@@ -76,16 +48,18 @@ window.__ModuleLoader__.load({
       } catch (_) {}
     }
 
-    function KeePassDshPanel(props) {
+    // 1. 顶层组合包主控座舱 (Bundle Master Cockpit)
+    function UniversalDshPanel(props) {
       if (props && props.view === 'summary') return null;
 
       const [formConfig, setFormConfig] = useState(() => {
         const initial = loadSavedConfig();
         const pCfg = props?.config || {};
         return {
-          kdbxPath: pCfg.kdbxPath || initial.kdbxPath || '~/Desktop/Key.kdbx',
-          masterKey: pCfg.masterKey || initial.masterKey || '',
-          autoSnapshot: pCfg.autoSnapshot !== undefined ? pCfg.autoSnapshot : (initial.autoSnapshot !== false)
+          endpointUrl: pCfg.endpointUrl || initial.endpointUrl || '',
+          userKey: pCfg.userKey || initial.userKey || '',
+          agentId: pCfg.agentId || initial.agentId || '',
+          peer: pCfg.peer || initial.peer || SHORT_NAME
         };
       });
 
@@ -95,43 +69,58 @@ window.__ModuleLoader__.load({
       const [testing, setTesting] = useState(false);
       const [saving, setSaving] = useState(false);
       const [saveToast, setSaveToast] = useState(null);
+      const [serverVersion, setServerVersion] = useState('');
+      const [liveToolsCount, setLiveToolsCount] = useState(totalToolsCount);
 
       const handleChange = (field, val) => setFormConfig(prev => ({ ...prev, [field]: val }));
+      const handlePreset = (url) => setFormConfig(prev => ({ ...prev, endpointUrl: url }));
 
-      // 物理真实全链路测试：测试文件真实存在性与密码真实解锁能力
       const handleTest = async () => {
-        const dbPath = (formConfig.kdbxPath || '').trim();
-        if (!dbPath) {
-          setTestStatus({ ok: false, msg: '请先填写本地 KeePass 数据库路径 (.kdbx)' });
+        const endpoint = (formConfig.endpointUrl || '').trim();
+        if (!endpoint) {
+          setTestStatus({ ok: false, msg: '请先填写通信端点 (Endpoint URL)' });
           return;
         }
-        if (!formConfig.masterKey) {
-          setTestStatus({ ok: false, msg: '请填写主解锁口令，以便验证密码是否能够成功解密该文件。' });
-          return;
-        }
-
         setTesting(true);
         setTestStatus(null);
+        const base = endpoint.replace(/\/mcp\/?$/i, '').replace(/\/+$/, '');
+        const start = Date.now();
+        const headers = { 'Content-Type': 'application/json' };
+        if (formConfig.userKey) headers['Authorization'] = `Bearer ${formConfig.userKey.trim()}`;
+        if (formConfig.agentId) headers['X-Agent-ID'] = formConfig.agentId.trim();
 
         try {
-          const res = await fetch('http://127.0.0.1:19341/kpv-probe', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ kdbxPath: dbPath, masterKey: formConfig.masterKey }),
-            signal: AbortSignal.timeout(8000)
-          });
+          const res = await fetch(`${base}/health`, { headers, signal: AbortSignal.timeout(4000) });
+          const latency = Date.now() - start;
           if (res.ok) {
-            const data = await res.json();
-            if (data.ok) {
-              setTestStatus({ ok: true, msg: `✅ 物理体检通过: ${data.msg}` });
-            } else {
-              setTestStatus({ ok: false, msg: `❌ 物理体检失败: ${data.error}` });
-            }
+            const hData = await res.json();
+            const sVer = hData.version || '1.7';
+            setServerVersion(sVer);
+            let toolCount = totalToolsCount || 35;
+            let roleMsg = '服务连接正常';
+            try {
+              const capRes = await fetch(`${base}/api/v1/system/client-capabilities?plugin_id=${PLUGIN_ID}&probe=full`, {
+                headers, signal: AbortSignal.timeout(4000)
+              });
+              if (capRes.ok) {
+                const capData = await capRes.json();
+                if (Array.isArray(capData.tools) && capData.tools.length > 0) {
+                  toolCount = capData.tools.length;
+                  setLiveToolsCount(toolCount);
+                }
+                roleMsg = capData.role ? `角色: ${capData.role}` : '凭据有效';
+              } else if (capRes.status === 401) {
+                setTestStatus({ ok: false, msg: '网络通畅但凭据被拒绝 (HTTP 401): 填写的 UserKey 无效' });
+                setTesting(false);
+                return;
+              }
+            } catch (_) {}
+            setTestStatus({ ok: true, msg: `连接成功 (v${sVer}) · 延迟 ${latency}ms · ${roleMsg} · 就绪 ${toolCount} 项工具` });
           } else {
-            setTestStatus({ ok: false, msg: `本地探测探针返回状态异常: HTTP ${res.status}` });
+            setTestStatus({ ok: false, msg: `服务端响应异常: HTTP ${res.status} ${res.statusText}` });
           }
         } catch (err) {
-          setTestStatus({ ok: false, msg: `本地探针服务未就绪 (127.0.0.1:19341): ${err.message || '请确保插件处于已启用状态'}` });
+          setTestStatus({ ok: false, msg: `连接不可达: ${err.message || '网络超时或端点不可达'}` });
         } finally {
           setTesting(false);
         }
@@ -143,9 +132,10 @@ window.__ModuleLoader__.load({
         if (props?.form?.mutate) {
           try {
             props.form.mutate([
-              { op: 'replace', path: '/kdbxPath', value: formConfig.kdbxPath },
-              { op: 'replace', path: '/masterKey', value: formConfig.masterKey },
-              { op: 'replace', path: '/autoSnapshot', value: formConfig.autoSnapshot }
+              { op: 'replace', path: '/endpointUrl', value: formConfig.endpointUrl },
+              { op: 'replace', path: '/userKey', value: formConfig.userKey },
+              { op: 'replace', path: '/agentId', value: formConfig.agentId },
+              { op: 'replace', path: '/peer', value: formConfig.peer }
             ]);
           } catch (_) {}
         }
@@ -153,230 +143,266 @@ window.__ModuleLoader__.load({
           try { props.onChange({ ...props.config, ...formConfig }); } catch (_) {}
         }
         try {
-          await fetch('http://127.0.0.1:19341/kpv-save', {
+          await fetch('http://127.0.0.1:19339/ov-dsh-config', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(formConfig),
+            body: JSON.stringify({ pluginId: PLUGIN_ID, shortName: SHORT_NAME, config: formConfig }),
             signal: AbortSignal.timeout(2000)
           });
         } catch (_) {}
         setSaving(false);
-        setSaveToast({ ok: true, msg: '配置已持久化保存，KeePass 凭据中枢已在 DSH 会话中生效！' });
-        setTimeout(() => setSaveToast(null), 3500);
+        setSaveToast({ ok: true, msg: '配置已持久化保存，并在 DSH 会话中实时生效' });
+        setTimeout(() => setSaveToast(null), 3000);
       };
 
       const tabs = [
         { key: 'config', label: '服务配置' },
         { key: 'overview', label: '概览' },
-        { key: 'skills', label: `技能 (${SKILLS.length})` },
-        { key: 'tools', label: `MCP (${totalToolsCount})` },
-        { key: 'hooks', label: `钩子 (${HOOKS.length})` },
-        { key: 'rules', label: `规则 (${RULES.length})` }
+        ...(SKILLS.length > 0 ? [{ key: 'skills', label: `技能 (${SKILLS.length})` }] : []),
+        ...(TOOL_CATEGORIES.length > 0 ? [{ key: 'mcp', label: `MCP (${liveToolsCount})` }] : []),
+        ...(HOOKS.length > 0 ? [{ key: 'hooks', label: `钩子 (${HOOKS.length})` }] : []),
+        ...(RULES.length > 0 ? [{ key: 'rules', label: `规则 (${RULES.length})` }] : [])
       ];
 
       return h('div', {
         style: {
-          display: 'flex', flexDirection: 'column', gap: '14px',
-          padding: '16px', background: 'var(--dsw-alias-bg-layer-0, #ffffff)',
-          borderRadius: '6px', border: '1px solid var(--dsw-alias-border-l1, #e2e8f0)',
-          fontFamily: 'system-ui, -apple-system, sans-serif', fontSize: '12px',
-          color: 'var(--dsw-alias-label-primary, #0f172a)'
+          padding: '14px',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          fontSize: '12px',
+          color: 'var(--dsw-alias-label-primary, #0f172a)',
+          background: 'var(--dsw-alias-settings-card-fill, var(--dsw-alias-bg-l1, #ffffff))',
+          borderRadius: '8px',
+          border: '1px solid var(--dsw-alias-settings-card-stroke, var(--dsw-alias-border-l1, #e2e8f0))',
+          lineHeight: 1.5,
+          margin: '6px 0',
         }
       },
-        // 顶部标题与 Tab 栏
-        h('div', { style: { display: 'flex', borderBottom: '1px solid #e2e8f0', gap: '8px' } },
+        // 0. 局部注入样式：彻底物理蒸发 DSH 原生冗余的 "包含的组件" (<section data-plugin-rows>) 区块
+        h('style', null, `
+          div[data-plugin-detail] [data-plugin-rows] {
+            display: none !important;
+          }
+        `),
+
+        // 1. Tab 导航栏
+        h('div', {
+          style: {
+            display: 'flex',
+            gap: '4px',
+            borderBottom: '1px solid var(--dsw-alias-border-l1, #e2e8f0)',
+            marginBottom: '12px',
+            paddingBottom: '2px'
+          }
+        },
           tabs.map(t => h('button', {
             key: t.key,
+            type: 'button',
             onClick: () => setTab(t.key),
             style: {
-              padding: '6px 12px', fontSize: '12px', border: 'none', background: 'transparent',
-              cursor: 'pointer', borderBottom: tab === t.key ? '2px solid #0891b2' : '2px solid transparent',
-              color: tab === t.key ? '#0891b2' : 'var(--dsw-alias-label-secondary, #64748b)',
-              fontWeight: tab === t.key ? '600' : '400'
+              background: 'transparent',
+              border: 'none',
+              borderBottom: tab === t.key ? '2px solid #0891b2' : '2px solid transparent',
+              color: tab === t.key ? '#0891b2' : 'var(--dsw-alias-label-secondary, #475569)',
+              fontWeight: tab === t.key ? '600' : 'normal',
+              padding: '6px 12px',
+              fontSize: '12px',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease'
             }
           }, t.label))
         ),
 
-        // TAB 1: 服务配置 (KeePass 专属)
-        tab === 'config' && h('div', { style: { display: 'flex', flexDirection: 'column', gap: '12px' } },
+        // 2. Tab 内容区
+        tab === 'config' && h('div', { style: { display: 'flex', flexDirection: 'column', gap: '10px' } },
           h('div', null,
-            h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' } },
-              h('label', { style: { fontWeight: '600', fontSize: '12px' } }, '本地 KeePass 数据库路径 (.kdbx)'),
-              h('button', {
-                type: 'button',
-                onClick: () => handleChange('kdbxPath', '~/Desktop/Key.kdbx'),
-                style: {
-                  fontSize: '12px', color: '#0891b2', border: '1px solid #0891b2', background: 'transparent',
-                  padding: '2px 8px', borderRadius: '4px', cursor: 'pointer'
-                }
-              }, '快捷填入: ~/Desktop/Key.kdbx')
+            h('div', { style: { display: 'flex', justifyContent: 'space-between', marginBottom: '4px' } },
+              h('label', { style: { fontWeight: '600', color: 'var(--dsw-alias-label-primary, #0f172a)' } }, 'OpenViking 服务端通信端点 (Endpoint URL)'),
+              h('div', { style: { display: 'flex', gap: '6px' } },
+                h('button', {
+                  type: 'button',
+                  onClick: () => handlePreset('http://127.0.0.1:1933'),
+                  style: { background: 'none', border: '1px solid #0891b2', color: '#0891b2', borderRadius: '4px', fontSize: '12px', padding: '1px 6px', cursor: 'pointer' }
+                }, '本地直连 (http://127.0.0.1:1933)')
+              )
             ),
             h('input', {
               type: 'text',
-              value: formConfig.kdbxPath,
-              onChange: e => handleChange('kdbxPath', e.target.value),
-              placeholder: '例如: ~/Desktop/Key.kdbx 或 C:/Users/YourName/Desktop/Key.kdbx',
+              value: formConfig.endpointUrl,
+              onChange: (e) => handleChange('endpointUrl', e.target.value),
+              placeholder: '请输入通信端点 (例如 http://127.0.0.1:1933 或 https://vk.example.com)',
               style: {
-                width: '100%', padding: '8px 10px', fontSize: '12px', borderRadius: '6px',
-                border: '1px solid #cbd5e1', background: 'var(--dsw-alias-bg-layer-1, #f8fafc)',
-                boxSizing: 'border-box'
+                width: '100%', padding: '6px 10px', borderRadius: '6px',
+                border: '1px solid var(--dsw-alias-input-border, #cbd5e1)',
+                background: 'var(--dsw-alias-input-bg, #ffffff)',
+                color: 'var(--dsw-alias-label-primary, #0f172a)', fontSize: '12px', boxSizing: 'border-box'
               }
             })
           ),
-
           h('div', null,
-            h('label', { style: { fontWeight: '600', fontSize: '12px', display: 'block', marginBottom: '6px' } }, '数据库主解锁口令 (Master Password)'),
-            h('div', { style: { display: 'flex', gap: '8px' } },
+            h('label', { style: { display: 'block', fontWeight: '600', marginBottom: '4px', color: 'var(--dsw-alias-label-primary, #0f172a)' } }, '专属 UserKey 授权凭据'),
+            h('div', { style: { display: 'flex', gap: '6px' } },
               h('input', {
                 type: showKey ? 'text' : 'password',
-                value: formConfig.masterKey,
-                onChange: e => handleChange('masterKey', e.target.value),
-                placeholder: '请输入 .kdbx 解锁主口令 (受本地加密保护，严禁明文索取)',
+                value: formConfig.userKey,
+                onChange: (e) => handleChange('userKey', e.target.value),
+                placeholder: '请输入专属 UserKey (格式: account.user.signature，留空自动继承环境凭据)',
                 style: {
-                  flex: 1, padding: '8px 10px', fontSize: '12px', borderRadius: '6px',
-                  border: '1px solid #cbd5e1', background: 'var(--dsw-alias-bg-layer-1, #f8fafc)'
+                  flex: 1, padding: '6px 10px', borderRadius: '6px',
+                  border: '1px solid var(--dsw-alias-input-border, #cbd5e1)',
+                  background: 'var(--dsw-alias-input-bg, #ffffff)',
+                  color: 'var(--dsw-alias-label-primary, #0f172a)', fontSize: '12px', boxSizing: 'border-box'
                 }
               }),
               h('button', {
                 type: 'button',
                 onClick: () => setShowKey(!showKey),
                 style: {
-                  padding: '8px 14px', fontSize: '12px', borderRadius: '6px', border: '1px solid #cbd5e1',
-                  background: 'var(--dsw-alias-bg-layer-2, #ffffff)', cursor: 'pointer'
+                  padding: '0 10px', borderRadius: '6px', border: '1px solid #cbd5e1',
+                  background: 'var(--dsw-alias-bg-layer-2, #f8fafc)',
+                  color: 'var(--dsw-alias-label-secondary, #475569)', cursor: 'pointer', fontSize: '12px'
                 }
               }, showKey ? '隐藏' : '显示')
-            ),
-            h('div', { style: { fontSize: '12px', color: '#64748b', marginTop: '4px' } },
-              '说明：查库第一公理生效。主口令仅由本地 keepassxc-cli 解锁使用，绝不上云。'
             )
           ),
-
-          h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' } },
-            h('input', {
-              type: 'checkbox',
-              id: 'autoSnapshot',
-              checked: formConfig.autoSnapshot,
-              onChange: e => handleChange('autoSnapshot', e.target.checked),
-              style: { cursor: 'pointer' }
-            }),
-            h('label', { htmlFor: 'autoSnapshot', style: { fontSize: '12px', cursor: 'pointer' } },
-              '启用写操作自动 *.bak 时间戳快照容灾 (灾难恢复优先，滚动保留 10 份)'
-            )
-          ),
-
           testStatus && h('div', {
             style: {
-              padding: '8px 12px', borderRadius: '6px', fontSize: '12px',
-              background: testStatus.ok ? '#ecfeff' : '#fff1f2',
-              color: testStatus.ok ? '#0891b2' : '#e11d48',
-              border: `1px solid ${testStatus.ok ? '#a5f3fc' : '#fecdd3'}`
+              padding: '8px 10px', borderRadius: '6px', fontSize: '12px',
+              background: testStatus.ok ? 'rgba(8, 145, 178, 0.08)' : 'rgba(225, 29, 72, 0.08)',
+              border: `1px solid ${testStatus.ok ? '#0891b2' : '#e11d48'}`,
+              color: testStatus.ok ? '#0891b2' : '#e11d48'
             }
           }, testStatus.msg),
-
-          saveToast && h('div', {
-            style: {
-              padding: '8px 12px', borderRadius: '6px', fontSize: '12px',
-              background: '#ecfeff', color: '#0891b2', border: '1px solid #a5f3fc'
-            }
-          }, saveToast.msg),
-
-          h('div', { style: { display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '8px' } },
+          h('div', { style: { display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '6px' } },
             h('button', {
-              type: 'button',
-              onClick: handleTest,
-              disabled: testing,
+              type: 'button', onClick: handleTest, disabled: testing,
               style: {
-                padding: '8px 14px', fontSize: '12px', borderRadius: '6px', border: '1px solid #0891b2',
-                color: '#0891b2', background: 'transparent', cursor: 'pointer'
+                background: 'transparent', color: '#0891b2', border: '1px solid #0891b2',
+                padding: '6px 14px', borderRadius: '6px', fontWeight: '600', fontSize: '12px',
+                cursor: testing ? 'not-allowed' : 'pointer'
               }
-            }, testing ? '物理测试解锁中...' : '测试连通性与解锁'),
+            }, testing ? '探测中...' : '测试连通性'),
             h('button', {
-              type: 'button',
-              onClick: handleSave,
-              disabled: saving,
+              type: 'button', onClick: handleSave, disabled: saving,
               style: {
-                padding: '8px 18px', fontSize: '12px', borderRadius: '6px', border: 'none',
-                color: '#ffffff', background: '#0891b2', cursor: 'pointer', fontWeight: '600'
+                background: '#0891b2', color: '#ffffff', border: 'none',
+                padding: '6px 16px', borderRadius: '6px', fontWeight: '600', fontSize: '12px',
+                cursor: saving ? 'not-allowed' : 'pointer'
               }
             }, saving ? '保存中...' : '保存配置')
-          )
+          ),
+          saveToast && h('div', {
+            style: {
+              padding: '6px 10px', borderRadius: '6px', fontSize: '12px',
+              background: 'rgba(8, 145, 178, 0.1)', border: '1px solid #0891b2',
+              color: '#0891b2', fontWeight: '500', textAlign: 'center'
+            }
+          }, saveToast.msg)
         ),
 
-        // TAB 2: 概览 (README)
         tab === 'overview' && h('div', {
           style: {
-            padding: '12px', borderRadius: '6px', background: 'var(--dsw-alias-bg-layer-1, #f8fafc)',
-            border: '1px solid #e2e8f0', whiteSpace: 'pre-wrap', lineHeight: 1.5, fontSize: '12px'
+            maxHeight: '440px',
+            overflowY: 'auto',
+            padding: '12px 14px',
+            borderRadius: '6px',
+            background: 'var(--dsw-alias-bg-layer-2, #f8fafc)',
+            border: '1px solid var(--dsw-alias-border-l1, #e2e8f0)',
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+            fontSize: '12px',
+            lineHeight: 1.6,
+            color: 'var(--dsw-alias-label-primary, #0f172a)'
           }
-        }, README_CONTENT),
+        },
+          h('pre', {
+            style: {
+              margin: 0,
+              fontFamily: 'inherit',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+              fontSize: '12px',
+              color: 'inherit'
+            }
+          }, README_CONTENT || `${PLUGIN_NAME} 暂无详细文档说明`)
+        ),
 
-        // TAB 3: 技能
-        tab === 'skills' && h('div', { style: { display: 'flex', flexDirection: 'column', gap: '8px' } },
+        tab === 'skills' && h('div', { style: { display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '440px', overflowY: 'auto' } },
           SKILLS.map((s, idx) => h('div', {
             key: idx,
-            style: { padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0', background: 'var(--dsw-alias-bg-layer-1, #f8fafc)' }
+            style: { padding: '8px 10px', borderRadius: '6px', background: 'var(--dsw-alias-bg-layer-2, #f8fafc)', border: '1px solid #e2e8f0' }
           },
-            h('div', { style: { fontWeight: '600', color: '#0891b2', marginBottom: '4px' } }, s.name),
-            h('div', { style: { color: '#64748b' } }, s.desc)
+            h('div', { style: { fontFamily: 'monospace', fontWeight: '600', color: '#0891b2', fontSize: '12px' } }, s.name),
+            h('div', { style: { marginTop: '2px', color: 'var(--dsw-alias-label-secondary, #475569)', fontSize: '12px' } }, s.desc)
           ))
         ),
 
-        // TAB 4: MCP 工具
-        tab === 'tools' && h('div', { style: { display: 'flex', flexDirection: 'column', gap: '10px' } },
-          TOOL_CATEGORIES.map((cat, idx) => h('div', { key: idx },
-            h('div', { style: { fontWeight: '600', color: '#0891b2', marginBottom: '6px' } }, cat.cat),
-            h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: '6px' } },
-              cat.tools.map(tool => h('span', {
-                key: tool,
+        tab === 'mcp' && h('div', {
+          style: { display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '440px', overflowY: 'auto' }
+        },
+          TOOL_CATEGORIES.map((catGroup, cIdx) => h('div', {
+            key: cIdx,
+            style: { padding: '8px 10px', borderRadius: '6px', background: 'var(--dsw-alias-bg-layer-2, #f8fafc)', border: '1px solid #e2e8f0' }
+          },
+            h('div', { style: { fontWeight: '600', fontSize: '12px', color: '#0891b2', marginBottom: '6px' } }, catGroup.cat),
+            h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '4px' } },
+              catGroup.tools.map((tName, tIdx) => h('div', {
+                key: tIdx,
                 style: {
-                  padding: '3px 8px', borderRadius: '4px', background: '#f1f5f9',
-                  border: '1px solid #cbd5e1', fontFamily: 'monospace', fontSize: '12px'
+                  padding: '4px 6px', borderRadius: '4px', background: '#ffffff', border: '1px solid #cbd5e1',
+                  fontFamily: 'monospace', fontSize: '12px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '4px'
                 }
-              }, tool))
+              },
+                h('span', { style: { color: '#0891b2', fontWeight: 'bold' } }, '•'),
+                h('span', { style: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, tName)
+              ))
             )
           ))
         ),
 
-        // TAB 5: 钩子
-        tab === 'hooks' && h('div', { style: { display: 'flex', flexDirection: 'column', gap: '8px' } },
-          HOOKS.map((hItem, idx) => h('div', {
+        tab === 'hooks' && h('div', { style: { display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '440px', overflowY: 'auto' } },
+          HOOKS.map((hk, idx) => h('div', {
             key: idx,
-            style: { padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0', background: 'var(--dsw-alias-bg-layer-1, #f8fafc)' }
+            style: { padding: '8px 10px', borderRadius: '6px', background: 'var(--dsw-alias-bg-layer-2, #f8fafc)', border: '1px solid #e2e8f0' }
           },
-            h('div', { style: { display: 'flex', justifyContent: 'space-between', marginBottom: '4px' } },
-              h('span', { style: { fontWeight: '600', color: '#0891b2' } }, hItem.name),
-              h('span', { style: { fontSize: '12px', color: '#64748b' } }, hItem.event)
+            h('div', { style: { fontWeight: '600', color: '#0891b2', fontSize: '12px' } }, hk.name),
+            h('div', { style: { color: 'var(--dsw-alias-label-secondary, #475569)', fontSize: '12px' } }, hk.desc),
+            h('div', { style: { color: 'var(--dsw-alias-label-tertiary, #64748b)', fontSize: '12px', marginTop: '2px', fontFamily: 'monospace' } }, `拦截点: ${hk.event}`)
+          ))
+        ),
+
+        tab === 'rules' && h('div', {
+          style: { display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '440px', overflowY: 'auto' }
+        },
+          RULES.length === 0 ? h('div', { style: { padding: '12px', color: '#64748b', textAlign: 'center', fontSize: '12px' } }, '暂无规则规约') :
+          RULES.map((rule, idx) => h('div', {
+            key: idx,
+            style: { padding: '10px 12px', borderRadius: '6px', background: 'var(--dsw-alias-bg-layer-2, #f8fafc)', border: '1px solid #e2e8f0' }
+          },
+            h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' } },
+              h('span', { style: { fontFamily: 'monospace', fontWeight: '600', color: '#0891b2', fontSize: '12px' } }, rule.name),
+              h('span', { style: { fontSize: '12px', color: 'var(--dsw-alias-label-tertiary, #64748b)' } }, rule.desc)
             ),
-            h('div', { style: { color: '#64748b' } }, hItem.desc)
-          ))
-        ),
-
-        // TAB 6: 规则
-        tab === 'rules' && h('div', { style: { display: 'flex', flexDirection: 'column', gap: '8px' } },
-          RULES.map((r, idx) => h('div', {
-            key: idx,
-            style: { padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0', background: 'var(--dsw-alias-bg-layer-1, #f8fafc)' }
-          },
-            h('div', { style: { fontWeight: '600', color: '#0891b2', marginBottom: '4px' } }, r.name),
-            h('div', { style: { color: '#64748b', marginBottom: '6px' } }, r.desc),
-            r.content && h('pre', {
+            rule.content && h('pre', {
               style: {
-                padding: '8px', borderRadius: '4px', background: '#ffffff', border: '1px solid #e2e8f0',
-                fontSize: '12px', fontFamily: 'monospace', whiteSpace: 'pre-wrap', maxHeight: '180px', overflowY: 'auto'
+                marginTop: '6px', padding: '8px 10px', borderRadius: '4px',
+                background: 'var(--dsw-alias-bg-layer-1, #ffffff)', border: '1px solid #e2e8f0',
+                fontSize: '12px', fontFamily: 'monospace', whiteSpace: 'pre-wrap', lineHeight: 1.45,
+                color: 'var(--dsw-alias-label-secondary, #334155)', maxHeight: '200px', overflowY: 'auto'
               }
-            }, r.content)
+            }, rule.content)
           ))
         ),
 
-        // 底部版本声明
+        // 3. 底部版本声明与云端动态能力同频状态
         h('div', {
           style: {
-            marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #e2e8f0',
-            display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#94a3b8'
+            marginTop: '12px', paddingTop: '6px',
+            borderTop: '1px solid var(--dsw-alias-border-l1, #e2e8f0)',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            fontSize: '12px', color: 'var(--dsw-alias-label-tertiary, #64748b)',
           }
         },
-          h('span', null, `KeePass Vault Standalone Cockpit · 纯本地高安全`),
-          h('span', null, `端侧桥接器 v${CLIENT_VERSION}`)
+          h('span', null, `OpenViking Universal Cockpit · ${PLUGIN_NAME}`),
+          h('span', null, serverVersion ? `端侧桥接器 v${CLIENT_VERSION} · 云端内核 v${serverVersion}` : `端侧桥接器 v${CLIENT_VERSION}`)
         )
       );
     }
@@ -385,28 +411,40 @@ window.__ModuleLoader__.load({
       const bundleKey = PLUGIN_ID;
       const shortKey = SHORT_NAME;
 
-      // 1. 组合包详情页配置插槽
+      // 启动时自动将浏览器端已保存的凭据同步至本机 Node.js 插件宿主，零手工干预生效
+      try {
+        const saved = loadSavedConfig();
+        if (saved && (saved.endpointUrl || saved.userKey)) {
+          fetch('http://127.0.0.1:19339/ov-dsh-config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pluginId: PLUGIN_ID, shortName: SHORT_NAME, config: saved })
+          }).catch(() => {});
+        }
+      } catch (_) {}
+
+      // 1. 组合包详情页配置插槽 (Bundle Detail Page)
       ctx.slots.inject('plugins.bundle.config', () => {
-        ctx.slots.register({ name: 'plugins.bundle.config', key: bundleKey }, KeePassDshPanel);
+        ctx.slots.register({ name: 'plugins.bundle.config', key: bundleKey }, UniversalDshPanel);
         if (shortKey !== bundleKey) {
-          ctx.slots.register({ name: 'plugins.bundle.config', key: shortKey }, KeePassDshPanel);
+          ctx.slots.register({ name: 'plugins.bundle.config', key: shortKey }, UniversalDshPanel);
         }
       });
 
-      // 2. 全局设置插件页 Tab
+      // 2. 全局设置插件页 Tab (Settings -> Plugins Tab)
       ctx.slots.inject('settings.plugins.tab', () => {
         ctx.slots.register({
           name: 'settings.plugins.tab',
           id: shortKey,
           order: 50,
           label: () => PLUGIN_NAME
-        }, KeePassDshPanel);
+        }, UniversalDshPanel);
       });
     }
 
     return {
       inject: ['slots'],
-      apply
+      apply,
     };
-  }
+  },
 });

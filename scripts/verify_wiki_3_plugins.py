@@ -22,7 +22,7 @@ import yaml
 CONFIG_DIR = Path(r"C:\Users\Skl\.gemini\config")
 PLUGINS_DIR = CONFIG_DIR / "plugins"
 PYTHON_EXE = "C:/Python311/python.exe"
-TOKEN = "[REDACTED_OPENVIKING_KEY]"
+TOKEN = os.environ.get("OPENVIKING_API_KEY", "")
 
 def run_step(desc):
     print(f"\n👉 [{desc}]")

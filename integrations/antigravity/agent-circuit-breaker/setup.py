@@ -57,7 +57,7 @@ def register_in_ide_config(version: str):
         with open(cfg_file, "w", encoding="utf-8") as f:
             json.dump(cfg, f, ensure_ascii=False, indent=2)
             f.write("\n")
-        print(f"✅ 5.1 宿主注册表写入: ~/.gemini/config/config.json -> agent-circuit-breaker v{version}")
+        print(f"🔵 5.1 宿主注册表写入: ~/.gemini/config/config.json -> agent-circuit-breaker v{version}")
     except Exception as e:
         print(f"⚠ 宿主注册表更新跳过: {e}")
 
@@ -187,7 +187,7 @@ def register_global_mcp(server_py_path: Path):
         except Exception:
             pass
 
-    print(f"✅ 5. 全局 MCP 双轨穿透完成 (已联动覆盖 {registered_count} 处 mcp_config.json)")
+    print(f"🔵 5. 全局 MCP 双轨穿透完成 (已联动覆盖 {registered_count} 处 mcp_config.json)")
 
     # 预置生成 MCP Tool Schema JSON，使 IDE/桌面端无须等待动态探测即可即刻呈现
     tool_schemas = {
@@ -231,7 +231,7 @@ def register_global_mcp(server_py_path: Path):
                     json.dump(schema, f, ensure_ascii=False, indent=2)
         except Exception:
             pass
-    print("✅ 6. MCP Tool Schema 原生投影完成 (~/.gemini/antigravity[ -ide]/mcp/circuit-breaker/ 预置就绪)")
+    print("🔵 6. MCP Tool Schema 原生投影完成 (~/.gemini/antigravity[ -ide]/mcp/circuit-breaker/ 预置就绪)")
 
 
 def unregister_global_mcp():
@@ -252,7 +252,7 @@ def unregister_global_mcp():
                         json.dump(cfg, f, ensure_ascii=False, indent=2)
             except Exception:
                 pass
-    print("✅ 已从各级 mcp_config.json 安全注销 circuit-breaker 服务。")
+    print("🔵 已从各级 mcp_config.json 安全注销 circuit-breaker 服务。")
 
     schema_dirs = [
         Path.home() / ".gemini" / "antigravity" / "mcp" / "circuit-breaker",
@@ -286,7 +286,7 @@ def install(target_dir: Path = None):
             dest_d = dest_dir / dir_name
             if src_d.exists():
                 shutil.copytree(src_d, dest_d, dirs_exist_ok=True)
-        print("✅ 1. 核心插件文件已同步至用户配置目录")
+        print("🔵 1. 核心插件文件已同步至用户配置目录")
         active_guard = dest_dir / "scripts" / "circuit_guard.py"
         active_hooks_file = dest_dir / "hooks.json"
         active_server = dest_dir / "server.py"
@@ -300,9 +300,9 @@ def install(target_dir: Path = None):
     with open(active_hooks_file, "w", encoding="utf-8") as f:
         json.dump(hooks_config, f, ensure_ascii=False, indent=2)
 
-    print("✅ 2. 自适应弹性 hooks.json 生成完毕 (官方标准 5 大 Hook 规范)")
-    print(f"✅ 3. Guard 脚本绝对路径绑定: {active_guard}")
-    print(f"✅ 4. Python 解释器绝对路径绑定: {get_python_cmd()}")
+    print("🔵 2. 自适应弹性 hooks.json 生成完毕 (官方标准 5 大 Hook 规范)")
+    print(f"🔵 3. Guard 脚本绝对路径绑定: {active_guard}")
+    print(f"🔵 4. Python 解释器绝对路径绑定: {get_python_cmd()}")
 
     # 动态重写插件私有 mcp_config.json，彻底消除任何跨节点硬编码 Python 路径
     plugin_mcp_cfg_file = dest_dir / "mcp_config.json"
@@ -320,7 +320,7 @@ def install(target_dir: Path = None):
     }
     with open(plugin_mcp_cfg_file, "w", encoding="utf-8") as f:
         json.dump(plugin_mcp_data, f, ensure_ascii=False, indent=2)
-    print(f"✅ 4.1 插件私有 mcp_config.json 动态绑定完成 (command: {mcp_py_exe})")
+    print(f"🔵 4.1 插件私有 mcp_config.json 动态绑定完成 (command: {mcp_py_exe})")
 
     # 双轨注册全局 MCP
     register_global_mcp(active_server)
@@ -347,7 +347,7 @@ def install(target_dir: Path = None):
         out_str = out.decode("utf-8", errors="replace").strip()
 
         if proc.returncode == 0 and "allow" in out_str:
-            print(f"✅ 探针通过！返回: {out_str} (耗时毫秒级，0 报错)")
+            print(f"🔵 探针通过！返回: {out_str} (耗时毫秒级，0 报错)")
         else:
             print(f"⚠️ 探针返回异常: {out_str}, stderr: {err.decode('utf-8', errors='replace')}")
     except Exception as e:
@@ -369,7 +369,7 @@ def uninstall(target_dir: Path = None):
     hooks_file = dest_dir / "hooks.json"
     if hooks_file.exists():
         hooks_file.unlink(missing_ok=True)
-        print("✅ 已安全移除 hooks.json，生命周期钩子已完全解绑。")
+        print("🔵 已安全移除 hooks.json，生命周期钩子已完全解绑。")
     else:
         print("ℹ️ hooks.json 不存在，当前处于未激活状态。")
 
@@ -381,10 +381,10 @@ def status(target_dir: Path = None):
     print("=" * 65)
     print("🔍 [Agent Circuit Breaker] 插件巡检报告")
     print(f"插件目录: {dest_dir}")
-    print(f"Hooks 状态: {'🟢 已激活' if (dest_dir / 'hooks.json').exists() else '⚪ 未激活'}")
-    print(f"Guard 脚本: {'🟢 存在' if (dest_dir / 'scripts' / 'circuit_guard.py').exists() else '🔴 缺失'}")
-    print(f"MCP 服务: {'🟢 存在' if (dest_dir / 'server.py').exists() else '🔴 缺失'}")
-    print(f"Rules 规约: {'🟢 存在' if (dest_dir / 'rules' / 'AGENTS.md').exists() else '🔴 缺失'}")
+    print(f"Hooks 状态: {'🔵 已激活' if (dest_dir / 'hooks.json').exists() else '⚪ 未激活'}")
+    print(f"Guard 脚本: {'🔵 存在' if (dest_dir / 'scripts' / 'circuit_guard.py').exists() else '🔴 缺失'}")
+    print(f"MCP 服务: {'🔵 存在' if (dest_dir / 'server.py').exists() else '🔴 缺失'}")
+    print(f"Rules 规约: {'🔵 存在' if (dest_dir / 'rules' / 'AGENTS.md').exists() else '🔴 缺失'}")
     print("=" * 65)
 
 

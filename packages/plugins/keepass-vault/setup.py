@@ -329,10 +329,10 @@ def inspect_plugin(target_dir: Path) -> Dict[str, Any]:
 
     print("==================================================")
     print(f"📋 插件版本: v{report['plugin_version']}")
-    print(f"⚙️ keepassxc-cli 可用: {'✅ YES' if cli_check else '❌ NOT FOUND'}")
-    print(f"📂 数据库文件: {kdbx_path} ({'✅ 存在' if db_exists else '❌ 不存在'})")
-    print(f"🔑 主密钥已配置: {'✅ YES' if bool(master_key) else '❌ 缺失'}")
-    print(f"🔓 解锁测试: {'✅ SUCCESS' if can_unlock else '❌ FAILED'}")
+    print(f"⚙️ keepassxc-cli 可用: {'🔵 YES' if cli_check else '❌ NOT FOUND'}")
+    print(f"📂 数据库文件: {kdbx_path} ({'🔵 存在' if db_exists else '❌ 不存在'})")
+    print(f"🔑 主密钥已配置: {'🔵 YES' if bool(master_key) else '❌ 缺失'}")
+    print(f"🔓 解锁测试: {'🔵 SUCCESS' if can_unlock else '❌ FAILED'}")
     if can_unlock:
         print(f"📊 根分组条目数: {entry_count} 条 (数据库完全正常)")
     elif unlock_err:

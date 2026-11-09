@@ -101,7 +101,7 @@ def main() -> None:
         payload = json.loads(line)
         tool_call = payload.get("toolCall", {})
         tool_name = tool_call.get("name", "")
-        tool_args = tool_call.get("arguments", {})
+        tool_args = tool_call.get("arguments") or tool_call.get("args") or {}
 
         # 针对写操作（add, edit, rm）执行写前物理快照
         if action == "pre-tool" and any(k in tool_name for k in ("add", "edit", "rm", "delete")):

@@ -35,3 +35,11 @@ openviking_find    openviking_read    openviking_write /
 ### 3. 永久沉淀回写 (`openviking_write` / `openviking_record_evolution_lesson`)
 - **架构决策与规范**：写入 `viking://resources/master_memory/...`；
 - **踩坑与故障反思**：调用 `openviking_record_evolution_lesson`，系统自动写入本地技能与 Master Memory 双写存盘，形成智力复利。
+
+---
+
+## 三、 快思考记忆过滤与算子分工认知 (Fast-Thinking Memory Filter & Rerank SSOT)
+
+1. **快思考记忆层本质**：非自回归单次 Forward 剪枝（0 Token、30ms）。切勿引入外部闭源所谓“System One / Jev”模型，避免网络延迟反噬；
+2. **RER 算子唯一源**：记忆检索精排统一由本地 2080Ti 常驻的 `Qwen3-VL-Reranker-2B`（11433 端口 `/v1/rerank`）承接；
+3. **JEV 边界分工**：JEV 属流程控制模型（处理 Choice/Bool 决策），不可替代 RER 处理海量长文本与代码规范的语义交叉重排。

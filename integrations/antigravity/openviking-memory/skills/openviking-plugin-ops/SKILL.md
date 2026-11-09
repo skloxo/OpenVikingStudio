@@ -190,24 +190,17 @@ def before_extract(url: str):
 3. 【降级策略】：若返回 403 代表租户未授权，直接建议用户贴文本，严禁盲目重试。
 ```
 
-### 步骤 4：定义 GUI Settings Schema 并在插件中心登记 (Plugin Registry)
-在 `openviking/service/plugin_registry.py` 中全量登记四位一体元数据：
-```python
-PLUGIN_REGISTRY.register({
-    "plugin_id": "wechat-reader",
-    "name": "微信公众号文章解析器",
-    "version": "1.0.0",
-    "category": "platform",
-    "description": "免登录抓取微信长文并脱水过滤广告",
-    "skill_id": "wechat-extract",        # 配套认知指南 (Skill)
-    "hook_ids": ["wechat_guard"],         # 配套自主神经 (Hook)
-    "tools": [                            # 配套执行手 (MCP)
-        {"name": "wechat_extract_article", "description": "提取文章正文并清洗为 Markdown"}
-    ],
-    "gui_schema": {                       # 配套驾驶舱 (GUI)
-        "token": {"type": "string", "label": "抓取凭证 (可选)"}
-    }
-})
+### 步骤 4：内聚于 packages/plugins/<name>/ 物理构件并由扫描器 100% 动态反射 (Zero Hardcoding)
+所有插件统一收敛于母港 `packages/plugins/<name>/`。`openviking/service/plugin_scanner.py` 会自动通过 AST 动态扫描抽屉 6 大 Tab，**坚决废黜在 `plugin_registry.py` 中维护任何静态硬编码字典**：
+```text
+packages/plugins/<name>/
+├── plugin.json         # [1. 概览/6. 接入指引] 唯一版本源 SSOT、建议提示词、GUI 参数、集成命令模板
+├── README.md           # [1. 概览] 纯净 Markdown 正文 (严禁内嵌死徽章与版本号)
+├── skills/             # [2. 技能] 扫描 SKILL.md YAML Frontmatter (name, description, sop_summary)
+├── server.py/tools.json# [3. MCP 算子] AST 动态扫描算子定义、参数 Schema 与中文分类
+├── hooks.json          # [4. 钩子] 读取触发事件，并从 hooks/*.py 顶部 Docstring 提取守卫说明
+├── rules/AGENTS.md     # [5. 规则] 自动扫描 rules/*.md 并注入智能体上下文
+└── setup.py            # [安装] 自举安装向导，动态注入宿主注册表与 FastMCP 挂载
 ```
 
 ---
@@ -402,10 +395,13 @@ sequenceDiagram
 
 ### 1. 唯一源修改与发版四步闭环 (The 4-Step SSOT Modification Loop)
 
-1. **唯一修改源物理定位**：
-   - **Google 反重力客户端插件**：`OpenVikingStudio/integrations/antigravity/<plugin-name>/`
-   - **DeepSeek Harness 客户端插件**：`OpenVikingStudio/integrations/deepseek-harness/<plugin-name>/`
-   - **严禁**：在任何宿主的 `plugins/` 运行目录下直接修改任何文件！
+1. **唯一修改源物理定位 (Kernel SSOT)**：
+   - **全域插件唯一母港内核**：`packages/plugins/<plugin-name>/`
+   - **严禁**：在任何宿主的 `~/.gemini/config/plugins/` 运行目录下直接打本地猴子补丁！
+   - **三大端适配层动态投影**：
+     • 反重力：`packages/plugins/<name>/setup.py`
+     • DSH 客户端：`scripts/assemble_dsh_adapter.py` -> `client.js` + `index.js`
+     • VK 插件中心：`openviking/service/plugin_scanner.py` 100% 动态反射物理文件
 2. **规范版本升阶 (Strict SemVer Bump)**：
    - 在 `plugin.json` 或 `package.json` 中自增 SemVer 版本（日常排障必须升级 Patch，如 `2.0.11` ➔ `2.0.12`）；
    - 反重力插件同步核验 `hooks.json` 动态渲染逻辑（绝对路径 + `-E -s -S` 隔离）；
@@ -422,7 +418,7 @@ sequenceDiagram
 - **反重力客户端 (Antigravity IDE / Desktop)**：
   ```powershell
   # 统一拉取与标准自举安装命令：
-  python OpenVikingStudio/integrations/antigravity/<plugin-name>/setup.py --install
+  python packages/plugins/<plugin-name>/setup.py --install
   ```
 - **DSH 客户端 (DeepSeek Harness)**：
   从 Web Studio 静态分发端点重新获取发布包：
@@ -604,3 +600,16 @@ sequenceDiagram
 + 升级 openviking-plugin-ops 至 v3.2.0
 + 确立 Card-95 & Card-165 技能自动化准入演进流水线规约 (Section 10)
 + AGENTS.md 全局追加第十二条铁律
+
+---
+
+## 🛡️ 七、 MCP 端侧代理自省数据闭环与轻量 Hook 旁路规范 (v3.3.0)
+
+### 1. 第一性原理：自省工具必须数据闭环 (Self-Contained Contract)
+- **严禁代偿性探查**：严禁让通用 Agent 在自检时因缺少 `api_endpoint`、`plugin_version` 等环境变量去自由调用 Shell 探查磁盘；
+- **端侧 Proxy 拦截增强**：客户端代理进程（Python `server.py` 或 Node `mcp-proxy-core.mjs`）直接持有当前生效的本地配置，必须在 `tools/call` 拦截 `whoami` 与 `health`，动态注入真实生效端点与版本号；
+- **确定性降级容灾**：在上游网络抖动或远端 500/400 时，`whoami` 依然能够安全返回本地脱敏凭据与状态，绝不抛出 RPC 异常诱发 Agent 代偿性盲翻。
+
+### 2. 自检轻量交互 Hook 旁路降噪铁律 (Zero Hallucination Priming)
+- **毫秒级旁路静默**：Pre-invocation Hook 必须对带有 `自检`、`health`、`whoami`、`selfcheck` 等自省关键词的指令执行旁路静默 (`emit_json({})`)；
+- **防上下文投毒**：严禁向自检上下文注入历史重度测试报告或巨石演进教训，严格消灭《死穴 15：Token 膨胀与上下文投毒》。

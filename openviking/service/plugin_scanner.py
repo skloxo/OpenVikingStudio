@@ -89,7 +89,7 @@ def extract_tools_from_server_py(server_file: Path) -> List[ToolDefinition]:
 
 
 def extract_hooks_from_hooks_json(hooks_file: Path) -> List[HookDefinition]:
-    """从 hooks.json 动态提取 Hook 拦截器定义列表。"""
+    """从 hooks.json 及對應 hooks/*.py AST 动态提取 Hook 拦截器定义列表 (零硬编码)。"""
     if not hooks_file.is_file():
         return []
 
@@ -100,11 +100,37 @@ def extract_hooks_from_hooks_json(hooks_file: Path) -> List[HookDefinition]:
         return []
 
     hooks: List[HookDefinition] = []
+    plugin_dir = hooks_file.parent
     for hook_group_id, events in data.items():
         if not isinstance(events, dict):
             continue
         for event_name, hook_configs in events.items():
             desc = f"拦截 {event_name} 事件，执行守卫检查"
+            # 动态从 hooks/*.py 的模块 docstring 首行读取真实物理描述
+            if isinstance(hook_configs, list):
+                for item in hook_configs:
+                    if not isinstance(item, dict):
+                        continue
+                    inner_hooks = item.get("hooks", [item])
+                    for h_cmd_obj in inner_hooks:
+                        cmd_str = h_cmd_obj.get("command", "") if isinstance(h_cmd_obj, dict) else ""
+                        if ".py" in cmd_str:
+                            for token in cmd_str.split():
+                                if token.endswith(".py"):
+                                    rel = token.replace("${pluginDir}/", "").lstrip("/\\")
+                                    py_file = plugin_dir / rel
+                                    if not py_file.is_file():
+                                        py_file = plugin_dir / "hooks" / Path(token).name
+                                    if py_file.is_file():
+                                        try:
+                                            tree = ast.parse(py_file.read_text(encoding="utf-8"))
+                                            doc = ast.get_docstring(tree)
+                                            if doc:
+                                                first_line = doc.strip().splitlines()[0].strip()
+                                                if first_line:
+                                                    desc = first_line
+                                        except Exception:
+                                            pass
             hooks.append(
                 HookDefinition(
                     hook_id=f"{hook_group_id}_{event_name}",
@@ -139,11 +165,13 @@ def extract_skills_from_skills_dir(skills_dir: Path) -> List[SkillDefinition]:
 
         try:
             content = skill_file.read_text(encoding="utf-8", errors="replace")
+            body_text = content
             # 提取 YAML frontmatter
             if content.startswith("---"):
                 parts = content.split("---", 2)
                 if len(parts) >= 3:
                     fm_text = parts[1]
+                    body_text = parts[2]
                     for line in fm_text.splitlines():
                         line_s = line.strip()
                         if line_s.startswith("name:"):
@@ -152,17 +180,21 @@ def extract_skills_from_skills_dir(skills_dir: Path) -> List[SkillDefinition]:
                             raw_desc = line_s.split(":", 1)[1].strip().strip(">-").strip()
                             if raw_desc:
                                 description = raw_desc
+                        elif line_s.startswith("sop_summary:"):
+                            raw_sop = line_s.split(":", 1)[1].strip().strip("'\"")
+                            if raw_sop:
+                                sop_summary = raw_sop
 
-            # 提炼正文首个主要段落与规约
+            # 提炼正文首个主要段落与规约（仅扫描 frontmatter 之后的正文）
             in_body = False
-            for line in content.splitlines():
+            for line in body_text.splitlines():
                 line_s = line.strip()
                 if not in_body and line_s.startswith("# "):
                     in_body = True
                     continue
                 if in_body and line_s and not line_s.startswith("#") and description.endswith("认知导轨"):
                     description = line_s
-                if line_s.startswith("- ") or line_s.startswith("1. "):
+                if in_body and (line_s.startswith("- ") or line_s.startswith("1. ") or line_s.startswith("2. ") or line_s.startswith("3. ")):
                     clean_rule = line_s.lstrip("- 0123456789.").strip()
                     if len(rules) < 3 and len(clean_rule) > 8:
                         rules.append(clean_rule)
@@ -237,15 +269,6 @@ def resolve_builtin_tools(plugin_id: str) -> List[ToolDefinition]:
                     return p.tools
         except Exception as e:
             logger.warning("解析 fleet-mesh 内置算子失败: %s", e)
-    elif pid in ("dify", "dify-workflow"):
-        try:
-            from openviking.service.builtin_plugins_eco import create_ecosystem_plugins
-            eco_plugins = create_ecosystem_plugins({}, {})
-            for p in eco_plugins:
-                if p.plugin_id == "dify":
-                    return p.tools
-        except Exception as e:
-            logger.warning("解析 dify 内置算子失败: %s", e)
     elif pid in ("cpa-squad", "cpa"):
         try:
             from openviking.service.builtin_plugins_eco import create_ecosystem_plugins
@@ -275,6 +298,22 @@ def resolve_builtin_tools(plugin_id: str) -> List[ToolDefinition]:
             logger.warning("解析 network-search 内置算子失败: %s", e)
     return []
 
+
+
+def resolve_builtin_hooks(plugin_id: str) -> List[HookDefinition]:
+    """当插件目录未配置 hooks.json 时，回填内置生态中定义的 Hooks (SSOT)。"""
+    pid = plugin_id.strip().lower()
+    if pid in ("fleet-mesh", "fleet", "openviking-fleet", "cpa-squad", "cpa"):
+        try:
+            from openviking.service.builtin_plugins_eco import create_ecosystem_plugins
+            eco_plugins = create_ecosystem_plugins({}, {})
+            canonical_id = "fleet-mesh" if "fleet" in pid else "cpa-squad"
+            for p in eco_plugins:
+                if p.plugin_id == canonical_id:
+                    return p.hooks
+        except Exception as e:
+            logger.warning("解析 %s 内置 Hooks 失败: %s", pid, e)
+    return []
 
 
 def scan_single_plugin_dir(plugin_dir: Path) -> Optional[QuadPluginDefinition]:
@@ -311,15 +350,35 @@ def scan_single_plugin_dir(plugin_dir: Path) -> Optional[QuadPluginDefinition]:
         except Exception as e:
             logger.warning("读取 %s 异常: %s", readme_file, e)
 
-    # 2. 动态提取 MCP 工具 (server.py 优先，代理桥与内置插件回填兜底)
-    server_file = plugin_dir / "server.py"
-    tools = extract_tools_from_server_py(server_file)
-    if not tools:
-        tools = resolve_builtin_tools(plugin_id)
+    # 2. 动态提取 MCP 工具 (tools.json / server.py AST 优先，代理桥与内置插件回填兜底)
+    tools_file = plugin_dir / "tools.json"
+    if tools_file.is_file():
+        try:
+            tools_data = json.loads(tools_file.read_text(encoding="utf-8"))
+            tools = [
+                ToolDefinition(
+                    name=t.get("name"),
+                    description=t.get("description", ""),
+                    category=t.get("category", "core"),
+                    parameters_schema=t.get("parameters") or t.get("inputSchema"),
+                    is_dangerous=any(kw in t.get("name", "") for kw in {"delete", "remove", "drop", "purge", "kill"}),
+                )
+                for t in tools_data
+            ]
+        except Exception as e:
+            logger.warning("解析 %s 异常: %s", tools_file, e)
+            tools = []
+    else:
+        server_file = plugin_dir / "server.py"
+        tools = extract_tools_from_server_py(server_file)
+        if not tools:
+            tools = resolve_builtin_tools(plugin_id)
 
     # 3. 动态提取 Hooks (hooks.json)
     hooks_file = plugin_dir / "hooks.json"
     hooks = extract_hooks_from_hooks_json(hooks_file)
+    if not hooks:
+        hooks = resolve_builtin_hooks(plugin_id)
 
     # 4. 动态提取 Skills (skills/ 物理目录全量扫描)
     skills_dir = plugin_dir / "skills"
@@ -340,15 +399,16 @@ def scan_single_plugin_dir(plugin_dir: Path) -> Optional[QuadPluginDefinition]:
     rules_dir = plugin_dir / "rules"
     plugin_rules = extract_rules_from_rules_dir(rules_dir)
 
-    # 5. GUI 与运行时参数配置装配 (脱水扁平字符映射，绝不输出对象嵌套)
+    # 5. GUI 与运行时参数配置装配 (优先从 plugin.json["gui"] 动态读取，零硬编码)
+    raw_gui = manifest.get("gui") if isinstance(manifest.get("gui"), dict) else {}
     gui_def = GuiSchemaDefinition(
-        settings_fields={
+        settings_fields=raw_gui.get("settings_fields") or {
             "API 服务端点": "http://127.0.0.1:1933 (本地环回中枢直连)",
             "鉴权凭据托管": "Bearer Token (已由宿主环境安全持久化)",
             "通信通道模式": "Google Antigravity IDE (原生 Hook + Stdio 桥)",
             "数据存储目录": "~/.openviking/data/ (本地加密落盘)",
         },
-        dashboard_route="/plugins",
+        dashboard_route=raw_gui.get("dashboard_route") or "/plugins",
     )
 
     # 6. 动态提取 integration (多渠道接入指引)
@@ -438,6 +498,8 @@ def scan_local_plugins(base_dir: Optional[Path] = None) -> Tuple[List[QuadPlugin
                     aliases[sub_dir.name] = plugin.plugin_id
                 for tool in plugin.tools:
                     tool_to_plugin_map[tool.name] = plugin.plugin_id
+                    if tool.name.startswith("openviking_"):
+                        tool_to_plugin_map[tool.name[len("openviking_"):]] = plugin.plugin_id
 
     # 常用易混淆别名
     aliases.update({
@@ -449,6 +511,7 @@ def scan_local_plugins(base_dir: Optional[Path] = None) -> Tuple[List[QuadPlugin
         "fleet": "fleet-mesh",
         "search": "network-search",
         "search-gateway": "network-search",
+        "todo": "tududi",
     })
 
 

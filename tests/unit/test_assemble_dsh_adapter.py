@@ -82,13 +82,12 @@ def test_assemble_openviking_ops():
 def test_assemble_all_ecosystem():
     """测试全系插件一键全量装配。"""
     items = assemble_all()
-    assert len(items) >= 7
+    assert len(items) >= 6
 
     pkg_names = {it["dsh_pkg_name"] for it in items}
     assert "dsh-plugin-openviking-memory" in pkg_names
     assert "dsh-plugin-openviking-ops" in pkg_names
     assert "dsh-plugin-openviking-fleet" in pkg_names
     assert "dsh-plugin-keepass-vault" in pkg_names
-    assert "dsh-plugin-dify" in pkg_names
     assert "dsh-plugin-cpa" in pkg_names
     assert "dsh-plugin-search-gateway" in pkg_names

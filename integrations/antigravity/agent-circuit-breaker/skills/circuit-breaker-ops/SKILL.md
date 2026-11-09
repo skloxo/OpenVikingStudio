@@ -97,7 +97,7 @@ python scripts/circuit_guard.py pre-tool
 > 🚨 **高压红线**：严禁直接在单台机器的 `~/.gemini/config/plugins/agent-circuit-breaker/` 目录私自打补丁！任何临时打补丁的行为都会制造本地配置孤岛，导致多机节点与后续 Agent 无法继承。
 
 ### 1. 物理源码唯一事实源 (SSOT)
-- **源工程物理根目录**：`OpenVikingStudio/integrations/antigravity/agent-circuit-breaker/`
+- **源工程物理根目录**：`Workspace/coding/openviking/integrations/antigravity/agent-circuit-breaker/`
 - 所有的规则契约 (`rules/AGENTS.md`)、生命周期钩子 (`hooks.json`)、MCP 声明 (`mcp_config.json`) 及看门狗参数，**必须且只能在源工程内修改**。
 
 ### 2. 四步标准研发与发版流水线 (Release SOP)
@@ -122,8 +122,8 @@ python scripts/circuit_guard.py pre-tool
 ```python
 import os, tarfile, shutil
 
-src = 'C:/Users/Skl/Desktop/coding/OpenVikingStudio/integrations/antigravity/agent-circuit-breaker'
-pub = 'C:/Users/Skl/Desktop/coding/OpenVikingStudio/public'
+src = 'C:/Users/Skl/Desktop/Workspace/coding/openviking/integrations/antigravity/agent-circuit-breaker'
+pub = 'C:/Users/Skl/Desktop/Workspace/coding/openviking/public'
 local_runtime = 'C:/Users/Skl/.gemini/config/plugins/agent-circuit-breaker'
 
 # 1. 打包输出

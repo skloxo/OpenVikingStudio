@@ -26,10 +26,10 @@ def test_dynamic_scanner_auto_discovers_all_plugins():
         "agent-circuit-breaker",
         "keepass-vault",
         "fleet-mesh",
-        "dify",
         "cpa-squad",
     }
     assert expected_plugins.issubset(plugin_ids), f"缺失预期插件: {expected_plugins - plugin_ids}"
+    assert "dify" not in plugin_ids, "dify 插件已被彻底下架拔除，严禁被再次扫描"
 
 
 def test_tools_count_matches_physical_server_py():

@@ -10,6 +10,7 @@ OpenViking Antigravity Plugin PreInvocation Hook (v2.0.11)
 
 import json
 import os
+import re
 import sys
 import time
 import urllib.request
@@ -123,23 +124,34 @@ def main():
         return
 
     query = extract_query_from_stdin()
-    if not query or len(query) < 2:
+    # 核心：剥离 @[Quote] / @[...] 引用标记，提取真实提问文本防误杀
+    cleaned_query = re.sub(r"@\[[^\]]*\]", " ", query)
+    cleaned_query = re.sub(r"^\s*@[a-zA-Z0-9_-]+\s*", " ", cleaned_query)
+    cleaned_query = re.sub(r"\s+", " ", cleaned_query).strip()
+    target_query = cleaned_query if cleaned_query else query.strip()
+
+    if not target_query or len(target_query) < 2:
         emit_json({})
         return
 
-    lowered = query.lower()
+    lowered = target_query.lower()
     if lowered in {"ok", "yes", "好", "好的", "收到", "继续", "同意"}:
         emit_json({})
         return
 
-    # 旁路：自检、体检、自查、whoami 等轻量探测任务禁止记忆倒灌，消除死穴 15 投毒
+    # 旁路：自检探测与明确的 Slash 快捷指令静默，但绝对不误杀 Linux 绝对路径提问 (如 /var/log)
     bypass_keywords = ("自检", "health", "whoami", "selfcheck", "自查", "ping", "体检")
-    if any(k in lowered for k in bypass_keywords) or lowered.startswith(("/", "@")):
+    known_slash_commands = {
+        "/learn", "/goal", "/schedule", "/browser", "/plan", "/compact",
+        "/boost", "/teamwork", "/automation", "/clear", "/reset", "/help", "/grill-me"
+    }
+    first_token = target_query.split()[0].lower() if target_query.split() else ""
+    if any(k in lowered for k in bypass_keywords) or first_token in known_slash_commands:
         emit_json({})
         return
 
     url = f"{api}/api/v1/search/find"
-    payload = json.dumps({"query": query[:300], "limit": 2}).encode("utf-8")
+    payload = json.dumps({"query": target_query[:300], "limit": 2}).encode("utf-8")
     headers = {
         "Content-Type": "application/json",
         "User-Agent": "Antigravity-OpenViking-Plugin/2.0.11"

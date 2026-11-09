@@ -32,61 +32,6 @@ export function resolvePluginBridgeConfig(
 ): PluginBridgeConfig {
   const id = (pluginId || 'openviking-memory').toLowerCase()
 
-  // 1. Dify 独立工作流中枢
-  if (id.includes('dify')) {
-    const pkgName = 'dsh-plugin-dify'
-    const version = dynamicVersion || '1.0.1'
-    const tarballUrl = dynamicTarballUrl || `https://vk.tide.red/studio/${pkgName}-${version}.tgz`
-    const installCmd = `npm install ${tarballUrl}`
-    const dshPatch = `plugins:
-  '${pkgName}':
-    version: '${version}'
-    resolved: '${tarballUrl}'
-    config:
-      difyApiUrl: 'https://api.dify.ai/v1'
-      apiKey: '<YOUR_DIFY_API_KEY>'`
-
-    return {
-      pkgName,
-      version,
-      antigravityDir: 'dify',
-      isLocalVault: false,
-      isExternalService: true,
-      tarballUrl,
-      installCmd,
-      dshCordisPatchYaml: dshPatch,
-      dshAgentPrompt: `请帮我安装并接入 ${pluginName} 专属 DSH 桥接器：
-1. 目标插件包：${pkgName}
-2. NPM 安装命令：${installCmd}
-3. Dify API 端点：https://api.dify.ai/v1 (可按需调整为私有化部署地址)
-4. Dify API Key：请在 Dify 控制台获取并填入
-5. 请将上述配置写入 cordis.patch.yml 并重启服务。`,
-      antigravitySetupCmdWin: `cmd /c mklink /J "$env:USERPROFILE\\.gemini\\config\\plugins\\dify" "OpenVikingStudio路径\\integrations\\antigravity\\dify"\npython setup.py --api https://api.dify.ai/v1 --key "<YOUR_DIFY_API_KEY>"`,
-      antigravitySetupCmdUnix: `mkdir -p ~/.gemini/config/plugins && ln -s /path/to/OpenVikingStudio/integrations/antigravity/dify ~/.gemini/config/plugins/dify\ncd ~/.gemini/config/plugins/dify && python3 setup.py --api https://api.dify.ai/v1 --key "<YOUR_DIFY_API_KEY>"`,
-      antigravityAgentPrompt: `请帮我将当前反重力客户端 (Antigravity IDE / Desktop) 接入 Dify 智能体与工作流中枢：
-1. 插件挂载目录：~/.gemini/config/plugins/dify/
-2. Dify API 地址：https://api.dify.ai/v1
-3. 专属凭据：<YOUR_DIFY_API_KEY>
-4. 运行 python setup.py 完成凭据落盘并激活工作流工具（IDE 与 Desktop 双端自动同频生效）。`,
-      universalMcpJson: JSON.stringify(
-        {
-          mcpServers: {
-            dify: {
-              url: 'https://api.dify.ai/v1/mcp',
-              headers: { Authorization: 'Bearer <YOUR_DIFY_API_KEY>' },
-            },
-          },
-        },
-        null,
-        2,
-      ),
-      universalAgentPrompt: `请将 Dify 作为通用 MCP 工具接入当前环境：
-1. 服务地址：https://api.dify.ai/v1/mcp
-2. 认证头：Authorization: Bearer <YOUR_DIFY_API_KEY>
-3. 写入 mcp.json 并验证工作流列表连通性。`,
-    }
-  }
-
   // 2. CPA 跨模型算力协同
   if (id.includes('cpa')) {
     const pkgName = 'dsh-plugin-cpa'
@@ -347,6 +292,50 @@ export function resolvePluginBridgeConfig(
         2,
       ),
       universalAgentPrompt: `请将智能体断路器 MCP 伺服接入当前通用 MCP 客户端：\n1. 启动命令：python3 ~/.gemini/config/plugins/agent-circuit-breaker/server.py\n2. 写入 mcp.json 并验证 circuit_breaker_status 工具。\n注：高级 Hook 物理拦截拦截点当前为反重力原生独占。`,
+    }
+  }
+
+  // 6.5 Tududi 敏捷任务管理与全域 GTD 生产力中枢 (tududi / todo)
+  if (id.includes('tududi') || id.includes('todo')) {
+    const pkgName = 'dsh-plugin-tududi'
+    const version = dynamicVersion || '1.0.0'
+    const tarballUrl = dynamicTarballUrl || `https://vk.tide.red/studio/${pkgName}-${version}.tgz`
+    const installCmd = `npm install ${tarballUrl}`
+    const dshPatch = `plugins:
+  '${pkgName}':
+    version: '${version}'
+    resolved: '${tarballUrl}'
+    config:
+      endpointUrl: 'https://todo.tide.red/api/mcp'
+      internalUrl: 'http://10.128.226.5:3002/api/mcp'
+      apiToken: '<YOUR_TUDUDI_TOKEN>'`
+
+    return {
+      pkgName,
+      version,
+      antigravityDir: 'tududi',
+      isLocalVault: false,
+      isExternalService: true,
+      tarballUrl,
+      installCmd,
+      dshCordisPatchYaml: dshPatch,
+      dshAgentPrompt: `请帮我安装并接入 Tududi 任务管理系统 DSH 插件：\n1. 插件分发包：${tarballUrl}\n2. 执行安装命令：${installCmd}\n3. 在 cordis.patch.yml 写入配置，配置公网端点 https://todo.tide.red/api/mcp 与 Bearer Token。\n4. 重启后即刻获得 65 项全能任务、习惯打卡、项目与领域治理工具算子。`,
+      antigravitySetupCmdWin: `powershell -ExecutionPolicy Bypass -Command "iwr -Uri 'https://vk.tide.red/studio/tududi-${version}.tgz' -OutFile '$env:TEMP\\tududi.tgz'; New-Item -ItemType Directory -Force -Path \\"$env:USERPROFILE\\.gemini\\config\\plugins\\tududi\\" | Out-Null; tar -xzf '$env:TEMP\\tududi.tgz' -C \\"$env:USERPROFILE\\.gemini\\config\\plugins\\tududi\\"; python \\"$env:USERPROFILE\\.gemini\\config\\plugins\\tududi\\setup.py\\" --install"`,
+      antigravitySetupCmdUnix: `curl -fsSL https://vk.tide.red/studio/tududi-${version}.tgz -o /tmp/tududi.tgz && mkdir -p ~/.gemini/config/plugins/tududi && tar -xzf /tmp/tududi.tgz -C ~/.gemini/config/plugins/tududi && python3 ~/.gemini/config/plugins/tududi/setup.py --install --token "<YOUR_TUDUDI_TOKEN>"`,
+      antigravityAgentPrompt: `请帮我将当前反重力座舱接入 Tududi 任务管理系统插件：\n1. 挂载目录：~/.gemini/config/plugins/tududi/\n1. 从本地 KeePass 保险库检索 /Tududi 任务管理系统 提取 API Token (MCP Bearer)；\n2. 挂载目录：~/.gemini/config/plugins/tududi/\n3. 执行：python setup.py --install --token <TOKEN> 完成自举配置与自愈网关注册；\n3. 执行：python setup.py --inspect 验证 65 项 MCP 工具全部就绪。`,
+      universalMcpJson: JSON.stringify(
+        {
+          mcpServers: {
+            tududi: {
+              command: 'python',
+              args: ['~/.gemini/config/plugins/tududi/server.py'],
+            },
+          },
+        },
+        null,
+        2,
+      ),
+      universalAgentPrompt: `请将 Tududi 任务系统接入当前通用 MCP 客户端：\n1. 启动命令：python ~/.gemini/config/plugins/tududi/server.py\n2. 具备公网 (todo.tide.red) 与局域网 (10.128.226.5) 双网自愈路由。`,
     }
   }
 

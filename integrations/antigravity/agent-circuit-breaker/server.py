@@ -74,7 +74,7 @@ def circuit_breaker_status(session_id: Optional[str] = None):
         "| :--- | :--- | :--- | :--- |"
     ]
     if not states:
-        lines.append("| (暂无活跃会话) | 0 / 36 | 0 | 🟢 沉静正常 |")
+        lines.append("| (暂无活跃会话) | 0 / 36 | 0 | 🔵 沉静正常 |")
     else:
         for s in states:
             sid = s.get("_session_id", "default")[:12]
@@ -109,7 +109,7 @@ def circuit_breaker_reset(session_id: Optional[str] = None):
         for f in sdir.glob("cb_*.json"):
             f.unlink(missing_ok=True)
             count += 1
-    return f"✅ 已成功重置并清空 {count} 个会话的断路器熔断计数器与状态缓存。"
+    return f"🔵 已成功重置并清空 {count} 个会话的断路器熔断计数器与状态缓存。"
 
 
 if __name__ == "__main__":

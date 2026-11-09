@@ -18,7 +18,7 @@ def migrate_one_directory():
 
     # 2. 定义迁移计划 (源相对路径 -> 目标绝对路径)
     # Part A: 迁移至 Work
-    work_app_dir = work_dir / "07_技术运维" / "03_小程序资产"
+    work_app_dir = work_dir / "00_工作常用" / "04_基础设施与公共资产"
     work_app_dir.mkdir(parents=True, exist_ok=True)
 
     work_files = [

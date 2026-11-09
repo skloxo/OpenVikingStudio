@@ -70,7 +70,7 @@ def main():
                 try:
                     data = json.loads(line)
                     tool_call = data.get("toolCall", {})
-                    args = tool_call.get("args", {})
+                    args = tool_call.get("args") or tool_call.get("arguments") or {}
                     cmd = str(args.get("CommandLine", "")).lower()
 
                     for pat in DANGEROUS_PATTERNS:

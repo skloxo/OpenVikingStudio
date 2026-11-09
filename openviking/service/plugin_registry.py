@@ -127,14 +127,14 @@ class PluginRegistry:
             target_pkg = "dsh-plugin-openviking-fleet"
         elif pid in ("keepass-vault", "keepass", "vault"):
             target_pkg = "dsh-plugin-keepass-vault"
-        elif pid in ("dify", "dify-workflow"):
-            target_pkg = "dsh-plugin-dify"
         elif pid in ("cpa-squad", "cpa"):
             target_pkg = "dsh-plugin-cpa"
         elif pid in ("agent-circuit-breaker", "circuit-breaker", "circuit_breaker"):
             target_pkg = "agent-circuit-breaker"
         elif pid in ("network-search", "search-gateway", "search"):
             target_pkg = "dsh-plugin-search-gateway"
+        elif pid in ("tududi", "todo"):
+            target_pkg = "dsh-plugin-tududi"
         else:
             target_pkg = "dsh-plugin-openviking-memory"
 
@@ -147,21 +147,29 @@ class PluginRegistry:
         try:
             current_dir = Path(__file__).resolve().parent
             studio_root = current_dir.parent.parent  # OpenVikingStudio
+            ag_dir_name = "openviking-memory" if target_pkg == "dsh-plugin-openviking-memory" else target_pkg.replace("dsh-plugin-", "")
             search_dirs = [
                 studio_root / "dist",
                 studio_root / "public",
+                studio_root / "packages" / "plugins" / ag_dir_name,
                 studio_root / "integrations" / "deepseek-harness" / target_pkg,
                 studio_root / "integrations" / "deepseek-harness" / "dsh-plugin-openviking",
                 studio_root / "integrations" / "antigravity" / target_pkg,
             ]
 
-            # 1. 优先直连母本清单 (package.json 或 plugin.json) 单一真相源
+            # 1. 优先直连母本清单 (packages/plugins 统一母港 -> package.json -> plugin.json) 单一真相源
             live_ver = None
+            homeland_plugin_file = studio_root / "packages" / "plugins" / ag_dir_name / "plugin.json"
             dsh_pkg_file = studio_root / "integrations" / "deepseek-harness" / target_pkg / "package.json"
-            ag_dir_name = "openviking-memory" if target_pkg == "dsh-plugin-openviking-memory" else target_pkg.replace("dsh-plugin-", "")
             ag_plugin_file = studio_root / "integrations" / "antigravity" / ag_dir_name / "plugin.json"
 
-            if dsh_pkg_file.is_file():
+            if homeland_plugin_file.is_file():
+                try:
+                    import json
+                    live_ver = json.loads(homeland_plugin_file.read_text(encoding="utf-8")).get("version")
+                except Exception:
+                    pass
+            elif dsh_pkg_file.is_file():
                 try:
                     import json
                     live_ver = json.loads(dsh_pkg_file.read_text(encoding="utf-8")).get("version")
@@ -251,6 +259,8 @@ class PluginRegistry:
             self._plugins[plugin.plugin_id] = plugin
             for tool in plugin.tools:
                 self._tool_to_plugin_map[tool.name] = plugin.plugin_id
+                if tool.name.startswith("openviking_"):
+                    self._tool_to_plugin_map[tool.name[len("openviking_"):]] = plugin.plugin_id
             logger.info("已注册插件: %s (%s, %d tools)", plugin.plugin_id, plugin.name, len(plugin.tools))
 
     def resolve_alias(self, alias: str) -> str:
@@ -300,4 +310,6 @@ class PluginRegistry:
         allowed = plugin_grants[plugin_id]
         if "*" in allowed:
             return True
-        return tool_name in allowed
+        short_name = tool_name[len("openviking_"):] if tool_name.startswith("openviking_") else tool_name
+        full_name = f"openviking_{tool_name}" if not tool_name.startswith("openviking_") else tool_name
+        return tool_name in allowed or short_name in allowed or full_name in allowed

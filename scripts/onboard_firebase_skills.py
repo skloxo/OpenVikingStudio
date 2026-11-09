@@ -1,3 +1,4 @@
+import os
 #!/usr/bin/env python3
 # Copyright (c) 2026 Beijing Volcano Engine Technology Co., Ltd.
 # SPDX-License-Identifier: AGPL-3.0
@@ -19,7 +20,7 @@ import urllib.error
 from pathlib import Path
 import yaml
 
-TOKEN = "[REDACTED_OPENVIKING_KEY]"
+TOKEN = os.environ.get("OPENVIKING_API_KEY", "")
 BASE_URL = "http://127.0.0.1:1933/api/v1/skills/ingestion"
 HEADERS = {
     "Authorization": f"Bearer {TOKEN}",

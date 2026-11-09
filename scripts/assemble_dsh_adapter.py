@@ -42,10 +42,10 @@ KERNEL_TO_DSH_MAP: Dict[str, str] = {
     "openviking-ops": "dsh-plugin-openviking-ops",
     "fleet-mesh": "dsh-plugin-openviking-fleet",
     "keepass-vault": "dsh-plugin-keepass-vault",
-    "dify": "dsh-plugin-dify",
     "cpa-squad": "dsh-plugin-cpa",
     "network-search": "dsh-plugin-search-gateway",
     "agent-circuit-breaker": "agent-circuit-breaker",
+    "tududi": "dsh-plugin-tududi",
 }
 
 DSH_TO_KERNEL_MAP: Dict[str, str] = {v: k for k, v in KERNEL_TO_DSH_MAP.items()}
@@ -66,10 +66,10 @@ def categorize_tool(tool_name: str, raw_cat: str = "") -> str:
         return "卫星集群网络与节点同频 (Fleet & Mesh)"
     if any(k in nl or k in cl for k in ("cpa", "squad", "token", "quota")):
         return "模型聚合路由与多租户分摊 (CPA Squad)"
-    if any(k in nl or k in cl for k in ("dify", "workflow")):
-        return "Dify 工作流与编排引擎 (Dify Engine)"
     if any(k in nl or k in cl for k in ("breaker", "circuit", "guard", "fault")):
         return "熔断风控与护栏中枢 (Circuit Breaker)"
+    if any(k in nl or k in cl for k in ("task", "todo", "habit", "project", "inbox", "area", "goal", "comment", "view")):
+        return "敏捷任务与全域 GTD 生产力 (Tasks & Productivity)"
     if any(k in nl or k in cl for k in ("web", "url", "scrape", "crawl", "tavily", "searxng")):
         return "全网检索与智能抓取 (Network Search)"
     return "原子扩展工具箱 (FastMCP Tools)"
@@ -242,13 +242,18 @@ def assemble_and_write(kernel_dir: Path, target_dir: Path) -> Dict[str, Any]:
 def assemble_all() -> List[Dict[str, Any]]:
     """扫描全工作区全系插件内核，全自动批量装配 DSH 智能体适配器。"""
     results = []
-    # 1. packages/plugins/ 母港
-    homeland = ROOT_DIR / "packages" / "plugins" / "openviking-memory"
-    if homeland.is_dir():
-        dsh_target = ROOT_DIR / "integrations" / "deepseek-harness" / "dsh-plugin-openviking-memory"
-        m1 = assemble_and_write(homeland, homeland)
-        m2 = assemble_and_write(homeland, dsh_target)
-        results.append(m1)
+    # 1. packages/plugins/ 统一母港全量扫描
+    homeland_root = ROOT_DIR / "packages" / "plugins"
+    if homeland_root.is_dir():
+        for p_dir in sorted(homeland_root.iterdir()):
+            if not p_dir.is_dir() or not (p_dir / "plugin.json").is_file():
+                continue
+            m1 = assemble_and_write(p_dir, p_dir)
+            dsh_name = KERNEL_TO_DSH_MAP.get(p_dir.name, f"dsh-plugin-{p_dir.name}")
+            dsh_target = ROOT_DIR / "integrations" / "deepseek-harness" / dsh_name
+            if dsh_target.is_dir():
+                assemble_and_write(p_dir, dsh_target)
+            results.append(m1)
 
     # 2. integrations/antigravity/ 插件内核
     ag_dir = ROOT_DIR / "integrations" / "antigravity"

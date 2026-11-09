@@ -96,7 +96,8 @@ export function PluginReadmeViewer({ content, fallbackDescription }: PluginReadm
             </blockquote>
           ),
           code: ({ inline, className, children, ...props }: any) => {
-            if (inline) {
+            const isInline = inline ?? (!className && !String(children).includes('\n'))
+            if (isInline) {
               return (
                 <code
                   className="rounded bg-muted/60 px-1 py-0.5 font-mono text-xs text-cyan-600 dark:text-cyan-400 border border-border/40"
