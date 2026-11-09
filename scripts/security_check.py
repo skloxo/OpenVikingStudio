@@ -6,10 +6,12 @@ Pre-Commit & CI Secret Scanner for OpenViking.
 Ensures zero API keys, private IPs, SSH credentials, or internal accounts are ever committed to Git.
 """
 
+import hashlib
 import os
 import re
 import subprocess
 import sys
+import tarfile
 from pathlib import Path
 
 if sys.platform == "win32":
@@ -21,16 +23,26 @@ if sys.platform == "win32":
 
 PREFIX_SK = "s" + "k-"
 PREFIX_GHP = "g" + "hp_"
+PREFIX_GHFP = "github_" + "pat_"
+PREFIX_ZGV = "ZGVmYXVsdA" + r"\."
 
 SECRET_PATTERNS = [
     (re.compile(PREFIX_SK + r"[a-zA-Z0-9_-]{24,}"), "API Key Pattern"),
     (re.compile(PREFIX_GHP + r"[a-zA-Z0-9_-]{24,}"), "GitHub Token Pattern"),
-    (re.compile(r"203\.0\.113\.26"), "Internal FRP IP"),
-    (re.compile(r"100\.64\.0\.128"), "Tailscale Private IP"),
-    (re.compile(r"REDACTED_SSH_PASSWORD"), "Hardcoded SSH Password"),
-    (re.compile(r"ops@example\.com"), "Internal Azure Account"),
+    (re.compile(PREFIX_GHFP + r"[a-zA-Z0-9_]{24,}"), "GitHub Fine-Grained PAT"),
+    (re.compile(PREFIX_ZGV + r"[A-Za-z0-9_=-]+\.[A-Za-z0-9_=-]{16,}"), "OpenViking UserKey Pattern"),
     (re.compile(r"-----BEGIN (?:[A-Z]+ )?PRIVATE KEY-----"), "Private Key Header"),
 ]
+
+# One-way SHA-256 fingerprints of forbidden private infrastructure literals (zero plaintext stored)
+FORBIDDEN_SHA256 = {
+    "78a55a34f3a52e9f74af20996fea3171f4f899d882f7a98be3cf7777c09fb02c": "Internal FRP IP",
+    "3873364c490a00e2a021af12859ce9316786fe5d7e11a7d3cb159adfff373afa": "Tailscale Private IP",
+    "5e028ddf3dd97025b23f0ca5f593e0f4f5ee24175193fd2ed25aaf99811f32ae": "Internal Azure Account",
+    "2a844e3e7ac7d94a0afa710467fa20213b9d7d00c0818258915389874c761cfc": "Hardcoded SSH Password",
+    "8e44c56b7b6f4573f8da1ab079d0535047d76aa1f637472b04d51ead7f4914d7": "Hardcoded VLM API Key",
+}
+_TOKEN_CANDIDATES = re.compile(r"(?:\b(?:\d{1,3}\.){3}\d{1,3}\b|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}|[A-Za-z0-9_-]{8,})")
 
 WHITELIST_PATTERNS = [
     re.compile(r"sk-mock-token-sample"),
@@ -41,13 +53,40 @@ WHITELIST_PATTERNS = [
     re.compile(r"sk-xxxxxxxx"),
     re.compile(r"\[REDACTED"),
     re.compile(r"ZGVmYXVsdA\.ZGVmYXVsdA"),
+    re.compile(r"ZGVmYXVsdA\.dGVzdHVzZXI"),
+    re.compile(r"0123456789abcdef0123456789abcdef"),
     re.compile(r"sk-lf-vikingbot"),
     re.compile(r"name: dotenv"),
     re.compile(r"displayName\":\"Emacs Lisp"),
+    re.compile(r"sk-user-threat"),
 ]
 
 
+def _check_tarball(file_path: Path) -> list[str]:
+    violations = []
+    try:
+        with tarfile.open(file_path, "r:gz") as tf:
+            for member in tf.getmembers():
+                if not member.isfile():
+                    continue
+                bn = Path(member.name).name
+                if bn not in ("config.json", "mcp_config.json"):
+                    continue
+                data = tf.extractfile(member).read().decode("utf-8", errors="ignore")
+                if any(w.search(data) for w in WHITELIST_PATTERNS):
+                    continue
+                for pat, desc in SECRET_PATTERNS:
+                    if pat.search(data):
+                        violations.append(f"{file_path}!{member.name} - [{desc}] (packaged credential)")
+    except Exception:
+        pass
+    return violations
+
+
 def check_file(file_path: Path) -> list[str]:
+    if file_path.suffix == ".tgz":
+        return _check_tarball(file_path)
+
     violations = []
     try:
         content = file_path.read_text(encoding="utf-8", errors="ignore")
@@ -60,6 +99,10 @@ def check_file(file_path: Path) -> list[str]:
         for pat, desc in SECRET_PATTERNS:
             if pat.search(line):
                 violations.append(f"{file_path}:{line_idx} - [{desc}] (sensitive match masked)")
+        for cand in _TOKEN_CANDIDATES.findall(line):
+            digest = hashlib.sha256(cand.encode("utf-8")).hexdigest()
+            if digest in FORBIDDEN_SHA256:
+                violations.append(f"{file_path}:{line_idx} - [{FORBIDDEN_SHA256[digest]}] (sha256 match masked)")
     return violations
 
 

@@ -61,3 +61,5 @@ test_data/
 *.db
 *.sqlite*
 .caps_cache.json
+
+*.sync-conflict*

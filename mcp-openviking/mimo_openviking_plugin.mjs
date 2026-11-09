@@ -55,7 +55,7 @@ function resolveConfig() {
   }
 
   if (!env.api) env.api = "https://vk.tide.red";
-  if (!env.key) env.key = "[REDACTED_OPENVIKING_USER_KEY]";
+  if (!env.key) env.key = process.env.OPENVIKING_API_KEY || "";
   if (!env.peer) env.peer = "xiaomimo@3070";
   return env;
 }
