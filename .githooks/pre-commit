@@ -24,9 +24,18 @@ fi
 # 2. 版本号物理一致性门禁 (package.json ⟷ openviking/_version.py)
 if [ -f "$PKG_JSON" ] && [ -f "$VERSION_PY" ]; then
     PKG_VER=$(python -c "import json; print(json.load(open('$PKG_JSON'))['version'])" 2>/dev/null)
-    PY_VER=$(python -c "import re; m=re.search(r'__version__\s*=\s*[\"\']([^\"\']+)[\"\']', open('$VERSION_PY').read()); print(m.group(1) if m else '')" 2>/dev/null)
+    PY_VER=$(python -c "import re; m=re.search(r'(?:__version__|version)\s*=\s*(?:version\s*=\s*)?[\"\']([^\"\']+)[\"\']', open('$VERSION_PY').read()); print(m.group(1) if m else '')" 2>/dev/null)
     
-    if [ -n "$PKG_VER" ] && [ -n "$PY_VER" ] && [ "$PKG_VER" != "$PY_VER" ]; then
+    if [ -z "$PKG_VER" ] || [ -z "$PY_VER" ]; then
+        echo ""
+        echo "🚨 [GIT COMMIT 物理阻断] 版本号解析失败！"
+        echo "   • package.json 解析:        '$PKG_VER'"
+        echo "   • openviking/_version.py 解析: '$PY_VER'"
+        echo ""
+        exit 1
+    fi
+
+    if [ "$PKG_VER" != "$PY_VER" ]; then
         echo ""
         echo "🚨 [GIT COMMIT 物理阻断] 双端版本号脱节不一致！"
         echo "   • package.json 版本:        $PKG_VER"
