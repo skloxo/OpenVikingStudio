@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """内置生态扩展 Quad 插件定义清单 (Ecosystem Builtin Plugins SSOT)
 
-包含 KeePass 凭据、联网搜索、Dify 工作流、CPA 跨模型算力协同与卫星集群同频。
+包含 KeePass 凭据、联网搜索、CPA 跨模型算力协同与卫星集群同频。
 严格遵循四大标杆标准与单文件 100~300 行黄金甜点区 (<= 500 行安全红线)。
 """
 
@@ -21,7 +21,7 @@ def create_ecosystem_plugins(
     tool_to_plugin_map: Dict[str, str],
     aliases: Dict[str, str],
 ) -> List[QuadPluginDefinition]:
-    """创建并注册所有内置生态插件 (KeePass, Search, Dify, CPA, Fleet)。"""
+    """创建并注册所有内置生态插件 (KeePass, Search, CPA, Fleet)。"""
     # -------------------------------------------------------------
     # 1. KeePass 凭据保险箱 (keepass-vault)
     # -------------------------------------------------------------
@@ -142,64 +142,6 @@ def create_ecosystem_plugins(
         health=PluginHealthProbe(status="healthy", latency_ms=1.8, message="26 Keys active & SearXNG connected"),
     )
 
-    # -------------------------------------------------------------
-    # 3. Dify 智能体与工作流中枢 (dify)
-    # -------------------------------------------------------------
-    dify_tools = [
-        ToolDefinition(name="dify_status", description="检查 Dify 服务端连通状态与资产总览", category="workflow"),
-        ToolDefinition(name="dify_list_apps", description="分页列出工作区内应用与工作流清单", category="workflow"),
-        ToolDefinition(name="dify_get_app", description="获取指定应用/工作流详细配置规格", category="workflow"),
-        ToolDefinition(name="dify_export_dsl", description="导出应用或工作流完整 YAML DSL 规范配置", category="workflow"),
-        ToolDefinition(name="dify_import_dsl", description="导入 YAML DSL 创建或覆盖更新应用", category="workflow"),
-        ToolDefinition(name="dify_delete_app", description="按 UUID 物理删除指定应用 (高危)", category="workflow", is_dangerous=True),
-        ToolDefinition(name="dify_run_workflow", description="传入参数触发执行指定工作流并捕获执行轨迹", category="workflow"),
-        ToolDefinition(name="dify_list_datasets", description="分页列出工作区内知识库数据集清单", category="knowledge"),
-        ToolDefinition(name="dify_create_dataset", description="新建高品质知识库数据集", category="knowledge"),
-        ToolDefinition(name="dify_delete_dataset", description="按 UUID 物理删除指定知识库 (高危)", category="knowledge", is_dangerous=True),
-        ToolDefinition(name="dify_search_dataset", description="对指定知识库执行 Hit-Testing 语义测试检索", category="knowledge"),
-        ToolDefinition(name="dify_list_model_providers", description="列出工作区已配置模型提供商与凭据状态", category="models"),
-    ]
-    for t in dify_tools:
-        tool_to_plugin_map[t.name] = "dify"
-
-    dify_plugin = QuadPluginDefinition(
-        plugin_id="dify",
-        name="Dify 智能体与工作流中枢",
-        version=resolve_package_version("dsh-plugin-dify", "1.0.1"),
-        category="user",
-        description="全生命周期可视化 AI 智能体编排与工作流中枢 (应用管理、DSL 导入导出、知识库检索引擎与模型提供商)",
-        skill=SkillDefinition(
-            skill_id="dify-ops",
-            name="Dify 工作流编排认知导轨",
-            description="可视化工作流调度、DSL 规范导入导出与知识库 Hit-Testing 检索契约",
-            sop_summary="探针测活 -> 列出应用与工作流 -> 导出/同步 DSL -> 触发工作流执行 -> 知识库召回",
-            rules=["高危应用与知识库删除操作前必须二次确认", "DSL 导入必须遵循官方 YAML 规范版本"],
-        ),
-        hooks=[
-            HookDefinition(
-                hook_id="dify_execution_audit",
-                name="工作流入参合规审计",
-                trigger_event="before_workflow_run",
-                description="工作流触发前校验 inputs 契约与入参必填项，防止脏入参导致执行崩溃",
-            ),
-            HookDefinition(
-                hook_id="dify_dsl_backup_hook",
-                name="DSL 覆写前自动备份",
-                trigger_event="before_dsl_import",
-                description="覆盖导入应用 DSL 前自动拉取当前版本归档备份，保障安全回滚",
-            ),
-        ],
-        tools=dify_tools,
-        gui=GuiSchemaDefinition(
-            settings_fields={
-                "apiUrl": "http://127.0.0.1:13000",
-                "workspaceId": "693e2343-fa88-4273-9360-b7e4c8b0bd83",
-                "authMode": "Admin API Key (Verified)",
-            },
-            dashboard_route="/plugins",
-        ),
-        health=PluginHealthProbe(status="healthy", latency_ms=1.2, message="Dify :13000 connected"),
-    )
 
     # -------------------------------------------------------------
     # 4. CPA 跨模型算力协同中枢 (cpa-squad)
@@ -373,8 +315,6 @@ def create_ecosystem_plugins(
 
     # 注册别名映射
     aliases["dsh-plugin-openviking"] = "openviking-memory"
-    aliases["dify-workflow"] = "dify"
-    aliases["dify-control-plane"] = "dify"
     aliases["cpa"] = "cpa-squad"
     aliases["fleet"] = "fleet-mesh"
     aliases["ops"] = "openviking-ops"
@@ -393,4 +333,4 @@ def create_ecosystem_plugins(
     tool_to_plugin_map["circuit_breaker_status"] = "agent-circuit-breaker"
     tool_to_plugin_map["circuit_breaker_reset"] = "agent-circuit-breaker"
 
-    return [keepass_plugin, search_plugin, dify_plugin, cpa_plugin, fleet_plugin, circuit_breaker_plugin]
+    return [keepass_plugin, search_plugin, cpa_plugin, fleet_plugin, circuit_breaker_plugin]

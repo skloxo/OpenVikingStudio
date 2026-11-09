@@ -94,7 +94,7 @@ export function UserDetailSheet({
 
             <p className="text-xs text-muted-foreground leading-relaxed">
               本用户的专属 <code className="font-mono text-foreground font-medium">User API Key</code> 可直接用于授权外部智能体（DSH、Antigravity、Cursor 等）接入 Wiki 原生能力插件。
-              全集群所有能力插件（核心记忆、系统运维、联网搜索、KeePass、Dify、CPA 算力等）已统一收拢至「插件中心」，可前往获取对应插件的接口地址、NPM 安装包直链及 MCP 客户端配置模板。
+              全集群所有能力插件（核心记忆、系统运维、联网搜索、KeePass、CPA 算力等）已统一收拢至「插件中心」，可前往获取对应插件的接口地址、NPM 安装包直链及 MCP 客户端配置模板。
             </p>
 
             <div className="pt-1">

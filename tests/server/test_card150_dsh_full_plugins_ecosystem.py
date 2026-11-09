@@ -31,7 +31,6 @@ def test_all_7_plugins_tarball_exist_and_valid():
         "openviking-ops",
         "fleet-mesh",
         "keepass-vault",
-        "dify",
         "cpa-squad",
     ]
 
@@ -49,7 +48,6 @@ def test_dsh_slots_gui_and_bundle_patch_in_tarballs():
         "openviking-ops",
         "fleet-mesh",
         "keepass-vault",
-        "dify",
         "cpa-squad",
     ]
 
@@ -91,7 +89,6 @@ def test_plugin_registry_bridge_info_resolution():
         ("openviking-ops", "dsh-plugin-openviking-ops"),
         ("fleet-mesh", "dsh-plugin-openviking-fleet"),
         ("keepass-vault", "dsh-plugin-keepass-vault"),
-        ("dify", "dsh-plugin-dify"),
         ("cpa-squad", "dsh-plugin-cpa"),
         ("openviking-memory", "dsh-plugin-openviking-memory"),
     ]

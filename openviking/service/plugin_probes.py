@@ -47,7 +47,6 @@ class PluginProbeRunner:
             results["openviking-ops"] = await cls.probe_ops()
             results["keepass-vault"] = await cls.probe_keepass()
             results["network-search"] = await cls.probe_search()
-            results["dify"] = await cls.probe_dify()
             results["cpa-squad"] = await cls.probe_cpa()
             results["fleet-mesh"] = await cls.probe_fleet()
             results["agent-circuit-breaker"] = await cls.probe_circuit_breaker()
@@ -147,42 +146,6 @@ class PluginProbeRunner:
                 checked_at=time.time(),
             )
 
-    @classmethod
-    async def probe_dify(cls) -> PluginHealthProbe:
-        """探测 Dify 智能体与工作流平台连通性 (端口 13000)。"""
-        start = time.perf_counter()
-        loop = asyncio.get_running_loop()
-
-        def _check_port() -> bool:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-                sock.settimeout(0.3)
-                return sock.connect_ex(("127.0.0.1", 13000)) == 0
-
-        try:
-            is_open = await loop.run_in_executor(None, _check_port)
-            latency = (time.perf_counter() - start) * 1000.0
-            if is_open:
-                return PluginHealthProbe(
-                    status="healthy",
-                    latency_ms=round(latency, 2),
-                    message="Dify :13000 connected",
-                    checked_at=time.time(),
-                )
-            else:
-                return PluginHealthProbe(
-                    status="degraded",
-                    latency_ms=round(latency, 2),
-                    message="Dify offline (http://127.0.0.1:13000 unreachable)",
-                    checked_at=time.time(),
-                )
-        except Exception as exc:
-            latency = (time.perf_counter() - start) * 1000.0
-            return PluginHealthProbe(
-                status="degraded",
-                latency_ms=round(latency, 2),
-                message=f"Dify probe warning: {exc}",
-                checked_at=time.time(),
-            )
 
     @classmethod
     async def probe_ops(cls) -> PluginHealthProbe:
