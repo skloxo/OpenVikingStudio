@@ -42,7 +42,7 @@ FORBIDDEN_SHA256 = {
     "2a844e3e7ac7d94a0afa710467fa20213b9d7d00c0818258915389874c761cfc": "Hardcoded SSH Password",
     "8e44c56b7b6f4573f8da1ab079d0535047d76aa1f637472b04d51ead7f4914d7": "Hardcoded VLM API Key",
 }
-_TOKEN_CANDIDATES = re.compile(r"(?:\b(?:\d{1,3}\.){3}\d{1,3}\b|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}|[A-Za-z0-9_-]{8,})")
+_TOKEN_CANDIDATES = re.compile(r"(?:\b(?:\d{1,3}(?:\\\.|\.)){3}\d{1,3}\b|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+(?:\\\.|\.)[A-Za-z]{2,}|[A-Za-z0-9_-]{8,})")
 
 WHITELIST_PATTERNS = [
     re.compile(r"sk-mock-token-sample"),
@@ -100,7 +100,7 @@ def check_file(file_path: Path) -> list[str]:
             if pat.search(line):
                 violations.append(f"{file_path}:{line_idx} - [{desc}] (sensitive match masked)")
         for cand in _TOKEN_CANDIDATES.findall(line):
-            digest = hashlib.sha256(cand.encode("utf-8")).hexdigest()
+            digest = hashlib.sha256(cand.replace("\\.", ".").encode("utf-8")).hexdigest()
             if digest in FORBIDDEN_SHA256:
                 violations.append(f"{file_path}:{line_idx} - [{FORBIDDEN_SHA256[digest]}] (sha256 match masked)")
     return violations

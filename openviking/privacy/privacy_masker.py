@@ -9,6 +9,7 @@ Provides high-performance compiled regex masks for API keys, tokens, and credent
 
 from __future__ import annotations
 
+import hashlib
 import re
 import threading
 from typing import Any, Dict, List, Optional, Pattern, Union
@@ -68,10 +69,14 @@ class PrivacyMasker:
             re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----[\s\S]*?-----END (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----"),
             "[REDACTED_PRIVATE_KEY_BLOCK]",
         ),
-        # 9. Internal known node IPs / infrastructure addresses
-        ("internal_ip_fwd", re.compile(r"\b203\.0\.113\.26\b"), "127.0.0.1"),
-        ("tailscale_node_ip", re.compile(r"\b100\.64\.0\.128\b"), "100.x.x.x"),
     ]
+
+    # Internal infrastructure IPs matched via SHA-256 (zero plaintext IP stored in source)
+    _IPV4_PATTERN: Pattern = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
+    _INTERNAL_IP_SHA256: Dict[str, tuple[str, str]] = {
+        "78a55a34f3a52e9f74af20996fea3171f4f899d882f7a98be3cf7777c09fb02c": ("internal_ip_fwd", "127.0.0.1"),
+        "3873364c490a00e2a021af12859ce9316786fe5d7e11a7d3cb159adfff373afa": ("tailscale_node_ip", "100.x.x.x"),
+    }
 
     # RFC1918 Private endpoint pattern
     PRIVATE_ENDPOINT_PATTERN: Pattern = re.compile(
@@ -106,6 +111,12 @@ class PrivacyMasker:
         result = text
         for _name, pattern, replacement in self.PATTERNS:
             result = pattern.sub(replacement, result)
+        result = self._IPV4_PATTERN.sub(
+            lambda m: self._INTERNAL_IP_SHA256.get(
+                hashlib.sha256(m.group(0).encode("utf-8")).hexdigest(), (None, m.group(0))
+            )[1],
+            result,
+        )
         if mask_private_endpoints:
             result = self.PRIVATE_ENDPOINT_PATTERN.sub("***.***.***.***:***", result)
         return result
@@ -156,6 +167,12 @@ class PrivacyMasker:
                 preview = f"{raw[:4]}...{raw[-4:]}" if len(raw) > 8 else "***"
                 findings.append(
                     SensitiveFinding(category, preview, match.start(), match.end())
+                )
+        for match in self._IPV4_PATTERN.finditer(text):
+            digest = hashlib.sha256(match.group(0).encode("utf-8")).hexdigest()
+            if digest in self._INTERNAL_IP_SHA256:
+                findings.append(
+                    SensitiveFinding(self._INTERNAL_IP_SHA256[digest][0], "***", match.start(), match.end())
                 )
         if include_endpoints:
             for match in self.PRIVATE_ENDPOINT_PATTERN.finditer(text):
