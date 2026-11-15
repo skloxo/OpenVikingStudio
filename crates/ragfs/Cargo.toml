@@ -105,7 +105,7 @@ url = "2.5"
 # Encryption (envelope encryption: AES-256-GCM + HKDF-SHA256)
 aes-gcm = "0.10"
 hkdf = "0.12"
-sha2 = "0.10"
+sha2 = "0.11"
 sha1 = "0.10"
 rand = "0.8"
 
