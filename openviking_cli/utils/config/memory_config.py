@@ -1,6 +1,6 @@
 # Copyright (c) 2026 Beijing Volcano Engine Technology Co., Ltd.
 # SPDX-License-Identifier: AGPL-3.0
-from typing import Any, Dict
+from typing import Any, Dict, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -14,16 +14,42 @@ class SessionAutoCommitConfig(BaseModel):
 
     default_enabled: bool = False
     idle_enabled: bool = False
+    enabled: bool = Field(
+        default=False,
+        description=(
+            "Master switch for automatic session commits. When enabled, newly "
+            "created sessions without an explicit auto_commit_policy get a "
+            "default policy, and the idle-timeout background scheduler is "
+            "started. When disabled, neither happens."
+        ),
+    )
+    idle_backend: Literal["local", "redis"] = Field(
+        default="local",
+        description=(
+            "Idle timeout discovery backend. 'local' scans session metadata; "
+            "'redis' uses distributed expiry scheduling."
+        ),
+    )
     check_interval_seconds: float = Field(default=60.0, gt=0)
     scan_batch_size: int = Field(default=16, gt=0)
     scan_batch_pause_seconds: float = Field(default=0.0, ge=0)
-
-    model_config = {"extra": "forbid"}
-
+    scan_rate_limit_files_per_second: float = Field(
+        default=2.0,
+        gt=0,
+        description=(
+            "Maximum number of session .meta.json files read per second during the "
+            "idle auto-commit scan. Used to bound background IO pressure when the "
+            "sessions directory is very large."
+        ),
+    )
 
 class MemoryConfig(BaseModel):
     """Memory configuration for OpenViking."""
 
+    summary_budget_retry_enabled: bool = Field(
+        default=True,
+        description="Regenerate over-budget session summaries with the second and third prompts.",
+    )
     version: str = Field(
         default="v3",
         description="Deprecated and ignored. Memory extraction always uses v3.",
@@ -42,9 +68,9 @@ class MemoryConfig(BaseModel):
     eager_prefetch: bool = Field(
         default=True,
         description=(
-            "When enabled, prefetch will execute search + read to preload all memory file contents "
+            "When enabled (default), prefetch will execute search + read to preload all memory file contents "
             "into the context, and no read/search tools will be provided to the LLM. "
-            "When disabled (default), LLM has read tool and reads files on-demand."
+            "When disabled, LLM has read tool and reads files on-demand."
         ),
     )
     prefetch_search_topn: int = Field(
@@ -56,6 +82,14 @@ class MemoryConfig(BaseModel):
             "When multiple directories are searched, results are merged and top-N are read."
         ),
     )
+    maintenance_review_tokens: int = Field(
+        default=1000,
+        gt=0,
+        description=(
+            "Estimated token count above which a full memory read includes an LLM maintenance "
+            "notice asking it to choose between coherent splitting and single-file compaction."
+        ),
+    )
     extraction_enabled: bool = Field(
         default=True,
         description=(
@@ -63,6 +97,14 @@ class MemoryConfig(BaseModel):
             "to produce long-term memories. When disabled, sessions are archived "
             "but no memory extraction is performed. Useful for read-only or "
             "stateless deployments."
+        ),
+    )
+    extraction_output_format: Literal["json", "python"] = Field(
+        default="python",
+        description=(
+            "Final model-output protocol used by every memory extraction loop. "
+            "'python' uses the restricted internal memory SDK DSL (default); "
+            "'json' preserves the legacy structured JSON protocol."
         ),
     )
     session_skill_extraction_enabled: bool = Field(
@@ -85,15 +127,6 @@ class MemoryConfig(BaseModel):
         default_factory=SessionAutoCommitConfig,
         description="Server-wide controls for automatic session commits.",
     )
-    summary_budget_retry_enabled: bool = Field(
-        default=True,
-        description=(
-            "Whether rolling/final Working Memory summary retries compression once if output "
-            "exceeds summary_token_ratio * session_window_context."
-        ),
-    )
-
-    model_config = {"extra": "forbid"}
 
     @model_validator(mode="before")
     @classmethod

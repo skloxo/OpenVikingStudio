@@ -177,11 +177,23 @@ class AsyncAGFSClient(PathLockMixin):
     async def ensure_parent_dirs(
         self, path: str, mode: str = "755", *, fs_ctx: Dict[str, str] | None = None
     ) -> Dict[str, Any]:
-        if mode == "755":
-            return await self.run("ensure_parent_dirs", path, ctx=_fs_ctx_or_default(path, fs_ctx))
-        return await self.run(
-            "ensure_parent_dirs", path, mode=mode, ctx=_fs_ctx_or_default(path, fs_ctx)
-        )
+        if hasattr(self._client, "ensure_parent_dirs"):
+            if mode == "755":
+                return await self.run("ensure_parent_dirs", path, ctx=_fs_ctx_or_default(path, fs_ctx))
+            return await self.run(
+                "ensure_parent_dirs", path, mode=mode, ctx=_fs_ctx_or_default(path, fs_ctx)
+            )
+        parent = path.rsplit("/", 1)[0] if "/" in path else ""
+        if parent and parent != "/":
+            cur = ""
+            for seg in [s for s in parent.split("/") if s]:
+                cur = f"{cur}/{seg}"
+                try:
+                    await self.mkdir(cur, mode=mode, fs_ctx=fs_ctx)
+                except Exception as exc:
+                    if "exist" not in str(exc).lower():
+                        raise
+        return {}
 
     async def rm(
         self,

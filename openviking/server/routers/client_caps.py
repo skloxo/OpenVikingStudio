@@ -326,7 +326,7 @@ async def get_client_capabilities(
     ).strip().lower()
 
     if target in ("openviking-ops", "ops", "dsh-plugin-openviking-ops"):
-        if auth_info["role"] != "admin":
+        if auth_info["role"] not in ("admin", "root"):
             raise HTTPException(
                 status_code=403,
                 detail=f"Permission Denied: Plugin [{target}] requires admin role. Current role is [{auth_info['role']}].",
@@ -347,7 +347,7 @@ async def get_client_capabilities(
         }
 
     if target in ("fleet-mesh", "openviking-fleet", "fleet", "dsh-plugin-openviking-fleet"):
-        if auth_info["role"] != "admin":
+        if auth_info["role"] not in ("admin", "root"):
             raise HTTPException(
                 status_code=403,
                 detail=f"Permission Denied: Plugin [{target}] requires admin role. Current role is [{auth_info['role']}].",

@@ -30,7 +30,7 @@ from openviking.service.session_auto_commit import (
 from openviking.service.task_tracker import get_task_tracker
 from openviking.session import Session
 from openviking.session.auto_commit_policy import AutoCommitPolicy
-from openviking.session.memory.memory_type_registry import MemoryTypeRegistry
+from openviking.session.memory.memory_type_registry import MemoryTypeRegistry, get_default_registry
 from openviking.session.memory_policy import MemoryPolicy
 from openviking.storage.viking_fs import VikingFS
 from openviking.storage.vikingdb_manager import VikingDBManager
@@ -68,6 +68,7 @@ class SessionService:
         self._agent_evolution_config_provider: Optional[AgentEvolutionConfigProvider] = None
         self._agent_evolution_config_path: Optional[str] = None
         self._default_user_memory_policy: Optional[Dict[str, Any]] = None
+        self._default_user_auto_commit_policy: Optional[Dict[str, Any]] = None
         self._configure_agent_evolution_provider()
         self._usage_reporter: Optional["UsageReporter"] = None
         # Server-wide controls remain disabled until configured during app setup.
@@ -79,6 +80,11 @@ class SessionService:
         self._auto_commit_tasks: set[asyncio.Task] = set()
         self._heartbeat_session_ids: set[str] = set()
         self._session_expiry_adapter: Optional[Any] = None
+        self._runtime_config_manager: Optional[Any] = None
+
+    def set_runtime_config_manager(self, manager: Any) -> None:
+        """Bind runtime config manager for account agent_evolution resolution."""
+        self._runtime_config_manager = manager
 
     def register_heartbeat_session(self, session_id: str) -> None:
         """Register a session as a routine heartbeat / cron probe."""
@@ -114,12 +120,27 @@ class SessionService:
 
     def set_default_user_memory_policy(self, memory_policy: Optional[Dict[str, Any]]) -> None:
         """Set the server fallback used when a User has no persisted policy."""
+        from openviking.session.memory.memory_type_registry import get_default_registry
+
         if memory_policy is None:
             self._default_user_memory_policy = None
             return
         policy = MemoryPolicy.from_dict(memory_policy)
-        policy.validate_memory_types(set(MemoryTypeRegistry().list_names(include_disabled=False)))
+        policy.validate_memory_types(set(get_default_registry().list_names(include_disabled=False)))
         self._default_user_memory_policy = policy.to_dict()
+
+    def set_default_user_auto_commit_policy(self, auto_commit_policy: Optional[Dict[str, Any]]) -> None:
+        """Set the server fallback used when session creation has no explicit auto-commit policy."""
+        if auto_commit_policy is None:
+            self._default_user_auto_commit_policy = None
+            return
+        self._default_user_auto_commit_policy = AutoCommitPolicy.from_dict(
+            auto_commit_policy
+        ).to_dict()
+
+    @property
+    def _agent_evolution_default_enabled(self) -> bool:
+        return self._agent_evolution_enabled
 
     def set_agent_evolution_config(self, config: AgentEvolutionConfig) -> None:
         """Set the default used when an account has no persisted override."""
@@ -144,6 +165,14 @@ class SessionService:
 
     async def get_agent_evolution_enabled(self, account_id: str) -> bool:
         """Return the effective Agent Evolution switch for one account."""
+        manager = getattr(self, "_runtime_config_manager", None)
+        if manager is not None:
+            try:
+                cfg = await manager.get_account(account_id, "agent_evolution")
+                if cfg is not None and hasattr(cfg, "enabled"):
+                    return bool(cfg.enabled)
+            except Exception:
+                pass
         if self._agent_evolution_config_provider is None:
             return self._agent_evolution_enabled
         return await self._agent_evolution_config_provider.is_enabled(account_id)
@@ -279,9 +308,15 @@ class SessionService:
             # the server default turns it on. Absent both, it stays disabled.
             if update_auto_commit_policy and auto_commit_policy is None:
                 session.meta.auto_commit_policy = None
-            elif auto_commit_policy is not None or self._session_auto_commit_config.default_enabled:
+            elif auto_commit_policy is not None:
                 session.meta.auto_commit_policy = AutoCommitPolicy.from_dict(
                     auto_commit_policy
+                ).to_dict()
+            elif self._default_user_auto_commit_policy is not None:
+                session.meta.auto_commit_policy = dict(self._default_user_auto_commit_policy)
+            elif self._session_auto_commit_config.default_enabled:
+                session.meta.auto_commit_policy = AutoCommitPolicy.from_dict(
+                    None
                 ).to_dict()
             else:
                 session.meta.auto_commit_policy = None
@@ -310,7 +345,9 @@ class SessionService:
         if not await session.exists():
             if not auto_create:
                 raise NotFoundError(session_id, "session")
-            if self._session_auto_commit_config.default_enabled:
+            if self._default_user_auto_commit_policy is not None:
+                session.meta.auto_commit_policy = dict(self._default_user_auto_commit_policy)
+            elif self._session_auto_commit_config.default_enabled:
                 session.meta.auto_commit_policy = AutoCommitPolicy.from_dict(None).to_dict()
             await session.ensure_exists()
         return session

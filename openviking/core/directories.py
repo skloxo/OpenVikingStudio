@@ -150,9 +150,27 @@ class DirectoryInitializer:
         self,
         vikingdb: "VikingDBManager",
         viking_fs: Optional["VikingFS"] = None,
+        system_asset_synchronizer=None,
+        user_config_defaults=None,
     ):
         self.vikingdb = vikingdb
         self._viking_fs = viking_fs
+        self._system_asset_synchronizer = system_asset_synchronizer
+        self.user_config_defaults = user_config_defaults
+
+    async def initialize_account_workspace(
+        self,
+        ctx: RequestContext,
+        *,
+        sync_system_assets: bool = True,
+        lease_ref=None,
+    ) -> tuple[int, int]:
+        """Initialize account and first-user preset directories (and sync system assets)."""
+        if sync_system_assets and self._system_asset_synchronizer is not None:
+            await self._system_asset_synchronizer.sync(ctx, lease_ref=lease_ref)
+        account_count = await self.initialize_account_directories(ctx, lease_ref=lease_ref)
+        user_count = await self.initialize_user_directories(ctx, lease_ref=lease_ref)
+        return account_count, user_count
 
     def _get_viking_fs(self) -> "VikingFS":
         if self._viking_fs is not None:
@@ -161,7 +179,9 @@ class DirectoryInitializer:
 
         return get_viking_fs()
 
-    async def initialize_account_directories(self, ctx: RequestContext) -> int:
+    async def initialize_account_directories(
+        self, ctx: RequestContext, *, lease_ref=None
+    ) -> int:
         """Initialize account-shared scope roots.
 
         ``viking://user`` is the container of user spaces, not a space itself.
@@ -180,12 +200,15 @@ class DirectoryInitializer:
                 defn=defn,
                 scope=scope,
                 ctx=ctx,
+                lease_ref=lease_ref,
             )
             if created:
                 count += 1
         return count
 
-    async def initialize_user_directories(self, ctx: RequestContext) -> int:
+    async def initialize_user_directories(
+        self, ctx: RequestContext, *, lease_ref=None
+    ) -> int:
         """Initialize the current user's root and first-level entry directories.
 
         Concrete leaf namespaces under entries such as ``memories`` or ``sessions``
@@ -210,6 +233,7 @@ class DirectoryInitializer:
             defn=user_tree,
             scope="user",
             ctx=initialization_ctx,
+            lease_ref=lease_ref,
         ):
             count += 1
 
@@ -221,6 +245,7 @@ class DirectoryInitializer:
                 defn=child,
                 scope="user",
                 ctx=initialization_ctx,
+                lease_ref=lease_ref,
             ):
                 count += 1
 
@@ -233,6 +258,7 @@ class DirectoryInitializer:
         defn: DirectoryDefinition,
         scope: str,
         ctx: RequestContext,
+        lease_ref=None,
     ) -> bool:
         """Ensure directory exists, return whether newly created."""
         from openviking_cli.utils.logger import get_logger
@@ -243,7 +269,9 @@ class DirectoryInitializer:
         # 1. Ensure files exist in AGFS
         if not await self._check_agfs_files_exist(uri, ctx=ctx):
             logger.debug(f"[VikingFS] Creating directory: {uri} for scope {scope}")
-            await self._create_agfs_structure(uri, defn.abstract, defn.overview, ctx=ctx)
+            await self._create_agfs_structure(
+                uri, defn.abstract, defn.overview, ctx=ctx, lease_ref=lease_ref
+            )
             created = True
             agfs_created = True
         else:
@@ -342,7 +370,12 @@ class DirectoryInitializer:
         return count
 
     async def _create_agfs_structure(
-        self, uri: str, abstract: str, overview: str, ctx: RequestContext
+        self,
+        uri: str,
+        abstract: str,
+        overview: str,
+        ctx: RequestContext,
+        lease_ref=None,
     ) -> None:
         """Create L0/L1 file structure for directory in AGFS."""
         await self._get_viking_fs().write_context(
@@ -351,4 +384,5 @@ class DirectoryInitializer:
             overview=overview,
             is_leaf=False,  # Preset directories can continue traversing downward
             ctx=ctx,
+            lease_ref=lease_ref,
         )

@@ -62,7 +62,11 @@ from openviking.utils.skill_processor import SkillProcessor
 from openviking_cli.exceptions import InvalidArgumentError, NotInitializedError
 from openviking_cli.session.user_id import UserIdentifier
 from openviking_cli.utils import get_logger
+from openviking.server.config_models import UserConfigDefaults
+from openviking.service.core_runtime_config import _CoreRuntimeConfigMixin
+from openviking.system_assets.sync import SystemAssetSynchronizer
 from openviking_cli.utils.config import OPENVIKING_ENABLE_RECORDER_ENV, get_openviking_config
+from openviking_cli.utils.config.agent_evolution_config import AgentEvolutionConfig
 from openviking_cli.utils.config.git_config import GitConfig
 from openviking_cli.utils.config.memory_config import SessionAutoCommitConfig
 from openviking_cli.utils.config.open_viking_config import initialize_openviking_config
@@ -74,7 +78,7 @@ if TYPE_CHECKING:
     from openviking.session.compressor_v3 import SessionCompressorV3
 
 
-class OpenVikingService:
+class OpenVikingService(_CoreRuntimeConfigMixin):
     """
     OpenViking main service class.
 
@@ -119,6 +123,17 @@ class OpenVikingService:
         self._encryptor: Optional[Any] = None
         self._privacy_config_service: Optional[UserPrivacyConfigService] = None
         self._privacy_sanitizer: Optional[PrivacySanitizer] = None
+        self._runtime_config_manager: Optional[Any] = None
+        self._vector_config_resolver: Optional[Any] = None
+        self._embedding_provider: Optional[Any] = None
+        self._vlm_resolver: Optional[Any] = None
+        self._ttl_adapter: Optional[Any] = None
+        self._expiry_runtime: Optional[Any] = None
+        self._system_asset_synchronizer: Optional[SystemAssetSynchronizer] = None
+        self._agent_evolution_base_config = AgentEvolutionConfig(
+            enabled=bool(getattr(getattr(config, "agent_evolution", None), "enabled", False))
+        )
+        self._user_config_defaults = UserConfigDefaults()
         self._data_dir_lock_acquired = False
         self._data_dir_lock_path: Optional[str] = None
 
@@ -459,13 +474,17 @@ class OpenVikingService:
             vikingdb=self._vikingdb_manager,
         )
 
-        # Initialize directories
+        # Initialize system assets & directories
+        self._system_asset_synchronizer = SystemAssetSynchronizer(self._viking_fs)
         directory_initializer = DirectoryInitializer(
             vikingdb=self._vikingdb_manager,
             viking_fs=self._viking_fs,
+            system_asset_synchronizer=self._system_asset_synchronizer,
+            user_config_defaults=self._user_config_defaults,
         )
         self._directory_initializer = directory_initializer
         default_ctx = RequestContext(user=self._user, role=Role.ROOT)
+        await self._system_asset_synchronizer.sync(default_ctx)
         account_count = await directory_initializer.initialize_account_directories(default_ctx)
         user_count = await directory_initializer.initialize_user_directories(default_ctx)
         logger.info(
@@ -473,6 +492,7 @@ class OpenVikingService:
             account_count,
             user_count,
         )
+        await self._init_runtime_config_manager()
         self._privacy_config_service = UserPrivacyConfigService(self._viking_fs)
         self._viking_fs.set_global_policy_service(self._privacy_config_service.global_policies)
         self._privacy_sanitizer = PrivacySanitizer(self._privacy_config_service)
@@ -676,6 +696,9 @@ class OpenVikingService:
                     "MinerU preflight failed (fallback will retry on first parse): %s", exc
                 )
 
+        if self._runtime_config_manager is not None:
+            self._runtime_config_manager.start_refresh_loop()
+
         self._initialized = True
         logger.info("OpenVikingService initialized")
 
@@ -690,6 +713,14 @@ class OpenVikingService:
             await self._compile_scheduler.stop()
             self._compile_scheduler = None
             logger.info("CompileScheduler stopped")
+
+        if self._ttl_adapter is None:
+            await self._stop_expiry()
+
+        if self._runtime_config_manager is not None:
+            await self._runtime_config_manager.stop_refresh_loop()
+            self._runtime_config_manager = None
+            logger.info("Runtime config manager stopped")
 
         if self._rule_cleanup_scheduler is not None:
             await self._rule_cleanup_scheduler.stop()
@@ -712,8 +743,27 @@ class OpenVikingService:
             self._queue_manager = None
             logger.info("Queue manager stopped")
 
+        from openviking.ttl.wiring import get_ttl_adapter, set_ttl_adapter
+
+        ttl_adapter = get_ttl_adapter()
+        if ttl_adapter is not None:
+            await ttl_adapter.aclose()
+            set_ttl_adapter(None)
+        self._ttl_adapter = None
+
+        vlm_resolver = getattr(self, "_vlm_resolver", None)
+        if vlm_resolver is not None and hasattr(vlm_resolver, "close"):
+            await vlm_resolver.close()
+        self._vlm_resolver = None
+
         if self._vikingdb_manager:
             self._vikingdb_manager.mark_closing()
+
+        embedding_provider = getattr(self, "_embedding_provider", None)
+        if embedding_provider is not None:
+            await embedding_provider.close()
+            self._embedding_provider = None
+        self._vector_config_resolver = None
 
         if self._vikingdb_manager:
             await self._vikingdb_manager.close()

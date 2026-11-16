@@ -14,8 +14,6 @@ from typing import Any, Dict, Optional, Union
 
 from openviking_cli.utils.logger import get_logger
 
-from .config_utils import raise_unknown_config_fields
-
 logger = get_logger(__name__)
 
 
@@ -31,7 +29,7 @@ class ParserConfig:
         enabled: Whether the parser is enabled
         max_content_length: Maximum content length to process (characters)
         encoding: Default file encoding
-        max_section_size: Maximum tokens per section before splitting
+        max_section_size: Legacy option, ignored by native Markdown splitting
         section_size_flexibility: Allow overflow to maintain coherence (0.0-1.0)
         max_section_chars: Target character limit per section. A single oversized
             Markdown table row may remain intact to preserve table semantics.
@@ -42,9 +40,9 @@ class ParserConfig:
     encoding: str = "utf-8"
 
     # Smart splitting configuration
-    max_section_size: int = 2048  # Maximum tokens per section before splitting
+    max_section_size: int = 2048  # Legacy compatibility; splitting uses max_section_chars
     section_size_flexibility: float = 0.3  # Allow 30% overflow to maintain coherence
-    max_section_chars: int = 6000  # Target character limit per section
+    max_section_chars: int = 2000  # Target character limit per section
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "ParserConfig":
@@ -57,15 +55,10 @@ class ParserConfig:
         Returns:
             ParserConfig instance
 
-        Raises:
-            ValueError: If the dictionary contains unknown fields (with suggestions)
-
         Examples:
             >>> config = ParserConfig.from_dict({"max_content_length": 50000})
         """
-        valid_fields = {f.name for f in cls.__dataclass_fields__.values()}
-        raise_unknown_config_fields(data=data, valid_fields=valid_fields, context_name=cls.__name__)
-        return cls(**data)
+        return cls(**{key: value for key, value in data.items() if key in cls.__dataclass_fields__})
 
     @classmethod
     def from_yaml(cls, yaml_path: Union[str, Path]) -> "ParserConfig":
@@ -281,9 +274,7 @@ class CodeConfig(CodeHostingConfig):
                 "code summaries now always use the fixed skeleton route with LLM fallback"
             )
 
-        valid_fields = {f.name for f in cls.__dataclass_fields__.values()}
-        raise_unknown_config_fields(data=data, valid_fields=valid_fields, context_name=cls.__name__)
-        return cls(**data)
+        return super().from_dict(data)
 
     def validate(self) -> None:
         """
@@ -464,335 +455,17 @@ class MarkdownConfig(ParserConfig):
             raise ValueError("max_heading_depth must be at least 1")
 
 
-@dataclass
-class AnydocConfig(ParserConfig):
-    """Configuration for the shared anydoc Office converter."""
 
-    max_table_rows: int = 1000
 
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "AnydocConfig":
-        valid_fields = {f.name for f in cls.__dataclass_fields__.values()}
-        raise_unknown_config_fields(data=data, valid_fields=valid_fields, context_name=cls.__name__)
-        return cls(**data)
-
-    def validate(self) -> None:
-        super().validate()
-        if self.max_table_rows < 0:
-            raise ValueError("max_table_rows must be non-negative")
-
-
-@dataclass
-class HTMLConfig(ParserConfig):
-    """
-    Configuration for HTML parsing.
-
-    Attributes:
-        extract_text_only: Whether to extract only text content
-        preserve_structure: Whether to preserve HTML structure
-        clean_html: Whether to clean HTML tags and attributes
-        extract_metadata: Whether to extract metadata (title, description)
-    """
-
-    extract_text_only: bool = False
-    preserve_structure: bool = True
-    clean_html: bool = True
-    extract_metadata: bool = True
-
-    def validate(self) -> None:
-        """
-        Validate configuration.
-
-        Raises:
-            ValueError: If configuration is invalid
-        """
-        # Validate base class fields
-        super().validate()
-
-        # No additional validation needed for HTML config
-
-
-@dataclass
-class TextConfig(ParserConfig):
-    """
-    Configuration for plain text parsing.
-
-    Attributes:
-        detect_language: Whether to detect language automatically
-        split_by_paragraphs: Whether to split by paragraphs
-        max_paragraph_length: Maximum paragraph length before splitting
-        preserve_line_breaks: Whether to preserve original line breaks
-    """
-
-    detect_language: bool = True
-    split_by_paragraphs: bool = True
-    max_paragraph_length: int = 1000
-    preserve_line_breaks: bool = False
-
-    def validate(self) -> None:
-        """
-        Validate configuration.
-
-        Raises:
-            ValueError: If configuration is invalid
-        """
-        # Validate base class fields
-        super().validate()
-
-        # Validate text-specific fields
-        if self.max_paragraph_length <= 0:
-            raise ValueError("max_paragraph_length must be positive")
-
-
-@dataclass
-class FeishuConfig(ParserConfig):
-    """
-    Configuration for Feishu/Lark document parsing.
-
-    Attributes:
-        app_id: Feishu app ID (can also be set via FEISHU_APP_ID env var)
-        app_secret: Feishu app secret (can also be set via FEISHU_APP_SECRET env var)
-        domain: Feishu API domain
-        max_rows_per_sheet: Maximum rows per sheet for spreadsheets
-        max_records_per_table: Maximum records per table for bitable
-        download_images: Whether to download images from documents
-        request_timeout: HTTP request timeout in seconds
-    """
-
-    app_id: str = ""
-    app_secret: str = ""
-    domain: str = "https://open.feishu.cn"
-    max_rows_per_sheet: int = 1000
-    max_records_per_table: int = 1000
-    download_images: bool = True
-    request_timeout: float = (
-        30.0  # TODO: not yet passed to lark-oapi client, reserved for future use
-    )
-
-    def validate(self) -> None:
-        """
-        Validate configuration.
-
-        Raises:
-            ValueError: If configuration is invalid
-        """
-        super().validate()
-
-        if not self.domain:
-            raise ValueError("domain cannot be empty")
-
-        if self.max_rows_per_sheet <= 0:
-            raise ValueError("max_rows_per_sheet must be positive")
-
-        if self.max_records_per_table <= 0:
-            raise ValueError("max_records_per_table must be positive")
-
-        if self.request_timeout <= 0:
-            raise ValueError("request_timeout must be positive")
-
-
-@dataclass
-class DirectoryConfig(ParserConfig):
-    """
-    Configuration for directory parsing.
-
-    Attributes:
-        preserve_structure: Whether to preserve nested directory structure when
-            adding directory resources. When True (default), files maintain their
-            relative path hierarchy. When False, all files are flattened to a
-            single level under the resource root.
-    """
-
-    preserve_structure: bool = True
-
-
-@dataclass
-class WebFeedConfig(ParserConfig):
-    """
-    Configuration for whole-site ingestion via sitemap / RSS / Atom feeds.
-
-    Used by WebFeedAccessor (and its single-page detect-and-suggest helper).
-    Each setting can be overridden per call via add_resource ``args`` (e.g.
-    ``args={"max_pages": 50}``).
-
-    Attributes:
-        max_pages: Hard cap on the number of pages mirrored per site.
-        max_concurrency: Max concurrent page fetches.
-        request_timeout: Per-request timeout in seconds.
-        politeness_delay: Delay (seconds) before each page fetch, to be polite.
-        same_host_only: Only ingest URLs on the same host as the feed.
-        respect_robots: Honor robots.txt Disallow rules (and discover sitemaps).
-        max_depth: Max recursion depth when following <sitemapindex> entries.
-        suggest_feed: When adding a single webpage, probe for a sitemap/RSS and
-            append a one-line hint suggesting whole-site ingestion (never auto-crawls).
-        suggest_timeout: Hard timeout (seconds) for that single-page probe.
-    """
-
-    max_pages: int = 200
-    max_concurrency: int = 5
-    request_timeout: float = 30.0
-    politeness_delay: float = 0.2
-    same_host_only: bool = True
-    respect_robots: bool = True
-    max_depth: int = 2
-    suggest_feed: bool = True
-    suggest_timeout: float = 2.5
-
-    def validate(self) -> None:
-        """Validate web feed configuration."""
-        super().validate()
-
-        if self.max_pages <= 0:
-            raise ValueError("max_pages must be positive")
-        if self.max_concurrency <= 0:
-            raise ValueError("max_concurrency must be positive")
-        if self.request_timeout <= 0:
-            raise ValueError("request_timeout must be positive")
-        if self.politeness_delay < 0:
-            raise ValueError("politeness_delay must be non-negative")
-        if self.max_depth <= 0:
-            raise ValueError("max_depth must be positive")
-        if self.suggest_timeout <= 0:
-            raise ValueError("suggest_timeout must be positive")
-
-
-@dataclass
-class SemanticConfig:
-    """
-    Configuration for semantic processing (overview/abstract generation).
-
-    Controls prompt budget limits and output size constraints for the
-    SemanticProcessor pipeline.
-    """
-
-    max_file_content_chars: int = 30000
-    """Maximum characters of file content sent to LLM for summary generation."""
-
-    max_skeleton_chars: int = 12000
-    """Maximum characters of code skeleton used for embedding (~3000 tokens)."""
-
-    max_overview_prompt_chars: int = 60000
-    """Maximum characters allowed in the overview generation prompt.
-    If exceeded, file summaries are batched and merged."""
-
-    overview_batch_size: int = 50
-    """Maximum number of file summaries per batch when splitting oversized prompts."""
-
-    overview_sample_limit: int = 32
-    """Maximum direct-child summaries used in one generated directory sidecar."""
-
-    freshness_refresh_ratio: float = 0.10
-    """Pending direct-child change ratio that refreshes a wide directory."""
-
-    abstract_max_chars: int = 256
-    """Maximum characters for generated abstracts."""
-
-    overview_max_chars: int = 4000
-    """Maximum characters for generated overviews."""
-
-    memory_chunk_chars: int = 2000
-    """Maximum characters per chunk when splitting long memories for vectorization.
-    Memories shorter than this are vectorized as a single record."""
-
-    memory_chunk_overlap: int = 200
-    """Character overlap between adjacent memory chunks for context continuity."""
-
-    def __post_init__(self):
-        if self.overview_sample_limit <= 0:
-            raise ValueError("overview_sample_limit must be positive")
-        if not 0 < self.freshness_refresh_ratio <= 1:
-            raise ValueError("freshness_refresh_ratio must be in the range (0, 1]")
-        if self.memory_chunk_chars <= 0:
-            raise ValueError("memory_chunk_chars must be positive")
-        if self.memory_chunk_overlap < 0:
-            raise ValueError("memory_chunk_overlap must be non-negative")
-        if self.memory_chunk_overlap >= self.memory_chunk_chars:
-            raise ValueError("memory_chunk_overlap must be smaller than memory_chunk_chars")
-
-
-# Configuration registry for dynamic loading
-PARSER_CONFIG_REGISTRY = {
-    "pdf": PDFConfig,
-    "code": CodeConfig,
-    "image": ImageConfig,
-    "audio": AudioConfig,
-    "video": VideoConfig,
-    "markdown": MarkdownConfig,
-    "anydoc": AnydocConfig,
-    "html": HTMLConfig,
-    "text": TextConfig,
-    "directory": DirectoryConfig,
-    "feishu": FeishuConfig,
-    "webfeed": WebFeedConfig,
-}
-
-
-def get_parser_config(
-    parser_type: str, config_data: Optional[Dict[str, Any]] = None
-) -> ParserConfig:
-    """
-    Get parser configuration for a specific parser type.
-
-    Args:
-        parser_type: Type of parser (e.g., "pdf", "code", "image")
-        config_data: Optional configuration data dictionary
-
-    Returns:
-        ParserConfig instance for the specified parser type
-
-    Raises:
-        ValueError: If parser_type is not supported
-
-    Examples:
-        >>> # Get default PDF configuration
-        >>> pdf_config = get_parser_config("pdf")
-
-        >>> # Get custom code configuration
-        >>> code_config = get_parser_config("code", {
-        ...     "github_raw_domain": "raw.githubusercontent.com"
-        ... })
-    """
-    if parser_type not in PARSER_CONFIG_REGISTRY:
-        supported = list(PARSER_CONFIG_REGISTRY.keys())
-        raise ValueError(f"Unsupported parser type: '{parser_type}'. Supported: {supported}")
-
-    config_class = PARSER_CONFIG_REGISTRY[parser_type]
-
-    # Always go through from_dict, even with no data: configs that track which
-    # keys a source provided need to see the empty mapping to record that none
-    # were set.
-    return config_class.from_dict(config_data or {})
-
-
-def load_parser_configs_from_dict(config_dict: Dict[str, Any]) -> Dict[str, ParserConfig]:
-    """
-    Load all parser configurations from a dictionary.
-
-    Args:
-        config_dict: Configuration dictionary with parser sections
-
-    Returns:
-        Dictionary mapping parser types to their configurations
-
-    Examples:
-        >>> configs = load_parser_configs_from_dict({
-        ...     "pdf": {"strategy": "auto"},
-        ...     "code": {"github_raw_domain": "raw.githubusercontent.com"}
-        ... })
-        >>> pdf_config = configs["pdf"]
-        >>> code_config = configs["code"]
-    """
-    raise_unknown_config_fields(
-        data=config_dict,
-        valid_fields=set(PARSER_CONFIG_REGISTRY.keys()),
-        context_name="parsers",
-    )
-
-    configs = {}
-
-    for parser_type, config_class in PARSER_CONFIG_REGISTRY.items():
-        # from_dict on an empty mapping rather than a bare constructor, so
-        # configs that track provided keys record that a section was absent.
-        configs[parser_type] = config_class.from_dict(config_dict.get(parser_type) or {})
-
-    return configs
+from .parser_config_extra import (  # noqa: E402
+    PARSER_CONFIG_REGISTRY,
+    AnydocConfig,
+    DirectoryConfig,
+    FeishuConfig,
+    HTMLConfig,
+    SemanticConfig,
+    TextConfig,
+    WebFeedConfig,
+    get_parser_config,
+    load_parser_configs_from_dict,
+)

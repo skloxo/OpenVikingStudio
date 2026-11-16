@@ -41,6 +41,7 @@ except ImportError:
     LiteLLMDenseEmbedder = None  # litellm not installed
 from openviking.models.embedder.minimax_embedders import MinimaxDenseEmbedder
 from openviking.models.embedder.openai_embedders import OpenAIDenseEmbedder
+from openviking.models.embedder.retry_embedder import RetryEmbedder
 from openviking.models.embedder.vikingdb_embedders import (
     VikingDBDenseEmbedder,
     VikingDBHybridEmbedder,
@@ -78,6 +79,7 @@ __all__ = [
     "MinimaxDenseEmbedder",
     # OpenAI implementations
     "OpenAIDenseEmbedder",
+    "RetryEmbedder",
     # Voyage implementations
     "VoyageDenseEmbedder",
     # Volcengine implementations

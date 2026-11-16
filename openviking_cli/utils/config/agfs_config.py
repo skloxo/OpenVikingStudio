@@ -3,357 +3,21 @@
 from __future__ import annotations
 
 import os
-
-from enum import Enum
 from typing import Any, List, Literal, Optional
 from urllib.parse import urlparse
 
 from pydantic import BaseModel, Field, model_validator
 
-from openviking_cli.utils.logger import get_logger
-
-logger = get_logger(__name__)
-
-
-class DirectoryMarkerMode(str, Enum):
-    """How S3 directory markers should be persisted."""
-
-    NONE = "none"
-    EMPTY = "empty"
-    NONEMPTY = "nonempty"
-
-
-class S3Config(BaseModel):
-    """Configuration for S3 backend."""
-
-    bucket: Optional[str] = Field(default=None, description="S3 bucket name")
-
-    region: Optional[str] = Field(
-        default=None,
-        description="AWS region where the bucket is located (e.g., us-east-1, cn-beijing)",
-    )
-
-    access_key: Optional[str] = Field(
-        default=None,
-        description="S3 access key ID. If not provided, RAGFS may attempt to use environment variables or IAM roles.",
-    )
-
-    secret_key: Optional[str] = Field(
-        default=None,
-        description="S3 secret access key corresponding to the access key ID.",
-    )
-
-    endpoint: Optional[str] = Field(
-        default=None,
-        description="Custom S3 endpoint URL. Required for S3-compatible services like MinIO or LocalStack. "
-        "Leave empty for standard AWS S3.",
-    )
-
-    prefix: Optional[str] = Field(
-        default="",
-        description="Optional key prefix for namespace isolation. All objects will be stored under this prefix.",
-    )
-
-    use_ssl: bool = Field(
-        default=True,
-        description="Enable/Disable SSL (HTTPS) for S3 connections. Set to False for local testing without HTTPS.",
-    )
-
-    use_path_style: bool = Field(
-        default=True,
-        description="true represent UsePathStyle for MinIO and some S3-compatible services; false represent VirtualHostStyle for TOS  and some S3-compatible services.",
-    )
-
-    s3_vendor: Literal["standard", "aliyun_oss"] = Field(
-        default="standard",
-        description="S3 vendor behavior. Use 'aliyun_oss' for Alibaba Cloud OSS.",
-    )
-
-    directory_marker_mode: DirectoryMarkerMode = Field(
-        default=DirectoryMarkerMode.EMPTY,
-        description="How to persist S3 directory markers: 'none' skips marker creation, 'empty' writes a zero-byte marker, and 'nonempty' writes a non-empty marker payload. Defaults to 'empty'.",
-    )
-
-    disable_batch_delete: bool = Field(
-        default=False,
-        description="Disable batch delete (DeleteObjects) and use sequential single-object deletes instead. "
-        "Required for S3-compatible services like Alibaba Cloud OSS that require a Content-MD5 header "
-        "for DeleteObjects but AWS SDK v2 does not send it by default. Defaults to False.",
-    )
-
-    normalize_encoding_chars: str = Field(
-        default="?#%+@",
-        description="Characters to escape in S3 object keys as !HH hexadecimal bytes. "
-        "Set to an empty string to disable key normalization. Defaults to ?#%+@.",
-    )
-
-    auto_detect_content_type: bool = Field(
-        default=False,
-        description="Automatically infer S3 object Content-Type from the object key filename extension "
-        "during uploads. Disabled by default for backward compatibility.",
-    )
-
-    model_config = {"extra": "forbid"}
-
-    def validate_config(self):
-        """Validate S3 configuration completeness"""
-        missing = []
-        if not self.bucket:
-            missing.append("bucket")
-        if not self.endpoint:
-            missing.append("endpoint")
-        if not self.region:
-            missing.append("region")
-        if not self.access_key:
-            missing.append("access_key")
-        if not self.secret_key:
-            missing.append("secret_key")
-
-        if missing:
-            raise ValueError(f"S3 backend requires the following fields: {', '.join(missing)}")
-
-        return self
-
-
-class QueueFSConfig(BaseModel):
-    """Configuration for QueueFS backend."""
-
-    mode: str = Field(
-        default="shared",
-        description="QueueFS namespace mode: 'shared' | 'worker'",
-    )
-
-    backend: str = Field(
-        default="sqlite",
-        description="QueueFS backend: 'memory' | 'sqlite' | 'sqlite3' | 'cache'",
-    )
-
-    db_path: Optional[str] = Field(
-        default=None,
-        description="SQLite database path for QueueFS when backend is 'sqlite' or 'sqlite3'.",
-    )
-
-    recover_stale_sec: int = Field(
-        default=0,
-        description="Recover processing messages older than this many seconds on startup (0 = recover all).",
-    )
-
-    busy_timeout_ms: int = Field(
-        default=5000,
-        description="SQLite busy timeout for QueueFS in milliseconds.",
-    )
-
-    cache_key_prefix: str = Field(
-        default="default",
-        description="Queue key namespace when backend is 'cache'.",
-    )
-
-    model_config = {"extra": "forbid"}
-
-    @model_validator(mode="after")
-    def validate_config(self):
-        valid_modes = {"shared", "worker"}
-        if self.mode not in valid_modes:
-            raise ValueError("queuefs mode must be one of: 'shared', 'worker'")
-
-        valid_backends = {"memory", "sqlite", "sqlite3", "cache"}
-        if self.backend not in valid_backends:
-            raise ValueError(
-                "queuefs backend must be one of: 'memory', 'sqlite', 'sqlite3', 'cache'; "
-                "backend='redis' was removed, use backend='cache' with top-level cache.provider/cache.params"
-            )
-        if self.recover_stale_sec < 0:
-            raise ValueError("queuefs recover_stale_sec must be >= 0")
-        if self.busy_timeout_ms < 0:
-            raise ValueError("queuefs busy_timeout_ms must be >= 0")
-        if not self.cache_key_prefix.strip() or any(
-            marker in self.cache_key_prefix for marker in ("{", "}")
-        ):
-            raise ValueError(
-                "queuefs cache_key_prefix must be non-empty and must not contain '{' or '}'"
-            )
-        return self
-
-
-class AGFSCacheTraversalMode(str, Enum):
-    """Traversal strategy for cache-aware recursive RAGFS APIs."""
-
-    BACKEND = "backend"
-    CACHED_TRAVERSAL = "cached_traversal"
-
-
-class AGFSCacheFSConfig(BaseModel):
-    """CacheFS behavior independent from the selected global Provider."""
-
-    backend: Literal["local", "cache"] = Field(
-        default="local",
-        description="CacheFS backend: 'local' | 'cache'",
-    )
-    namespace: str = Field(default="openviking", description="RAGFS cache namespace")
-    max_file_size_bytes: int = Field(
-        default=1024 * 1024,
-        description="Maximum full-file object size admitted to cache",
-    )
-    traversal_mode: AGFSCacheTraversalMode = Field(
-        default=AGFSCacheTraversalMode.BACKEND,
-        description="Traversal strategy for tree, glob, and grep",
-    )
-    bypass_prefixes: list[str] = Field(
-        default_factory=list,
-        description="Path prefixes that bypass cache",
-    )
-
-    model_config = {"extra": "forbid"}
-
-    @model_validator(mode="after")
-    def validate_config(self):
-        if not self.namespace.strip():
-            raise ValueError("cachefs namespace must not be empty")
-        if self.max_file_size_bytes <= 0:
-            raise ValueError("cachefs max_file_size_bytes must be > 0")
-        return self
-
-
-class RedisCacheConfig(BaseModel):
-    """Configuration for Redis cache provider."""
-
-    mode: str = Field(default="standalone", description="Redis deployment mode")
-    endpoints: list[str] = Field(
-        default_factory=lambda: ["redis://127.0.0.1:6379"],
-        description="Redis endpoint URLs",
-    )
-    username: str = Field(default="", description="Redis ACL username")
-    password_env: str = Field(default="", description="Environment variable containing password")
-    password: str = Field(
-        default="",
-        description="Legacy plaintext Redis password; prefer password_env",
-        repr=False,
-    )
-    master_name: Optional[str] = Field(default=None, description="Sentinel master name")
-    sentinel_username: str = Field(default="", description="Sentinel ACL username")
-    sentinel_password_env: str = Field(
-        default="", description="Environment variable containing Sentinel password"
-    )
-    sentinel_password: str = Field(
-        default="",
-        description="Legacy plaintext Sentinel password; prefer sentinel_password_env",
-        repr=False,
-    )
-    db: int = Field(default=0, description="Redis database number")
-    pool_size: int = Field(default=32, description="Redis command concurrency")
-    connect_timeout_ms: int = Field(default=1000, description="Redis connect timeout")
-    command_timeout_ms: int = Field(default=20, description="Redis command timeout")
-    default_ttl_seconds: int = Field(default=3600, description="Redis default cache TTL")
-    tls_insecure_skip_verify: bool = Field(
-        default=False, description="Skip Redis TLS certificate verification"
-    )
-
-    model_config = {"extra": "forbid"}
-
-    @model_validator(mode="after")
-    def validate_config(self):
-        if self.mode not in {"standalone", "cluster", "sentinel"}:
-            raise ValueError("redis mode must be standalone, cluster, or sentinel")
-        if not self.endpoints:
-            raise ValueError("redis endpoints must not be empty")
-        schemes = set()
-        for endpoint in self.endpoints:
-            parsed = urlparse(endpoint)
-            if parsed.scheme not in {"redis", "rediss"} or not parsed.hostname:
-                raise ValueError("redis endpoints must use redis:// or rediss:// URLs")
-            schemes.add(parsed.scheme)
-            try:
-                port = parsed.port
-            except ValueError as error:
-                raise ValueError("redis endpoint port is invalid") from error
-            if port == 0:
-                raise ValueError("redis endpoint port is invalid")
-            if (
-                parsed.username is not None
-                or parsed.password is not None
-                or parsed.path not in {"", "/"}
-                or parsed.query
-                or parsed.fragment
-            ):
-                raise ValueError(
-                    "redis endpoints must not include credentials, database paths, "
-                    "query parameters, or fragments; use dedicated redis fields"
-                )
-        if self.mode == "standalone" and len(self.endpoints) != 1:
-            raise ValueError("redis standalone mode requires exactly one endpoint")
-        if self.mode == "cluster" and self.db != 0:
-            raise ValueError("redis cluster mode requires db=0")
-        if self.mode == "sentinel" and not (self.master_name or "").strip():
-            raise ValueError("redis sentinel mode requires master_name")
-        if self.db < 0 or self.db > 255:
-            raise ValueError("redis db must be between 0 and 255")
-        if self.pool_size <= 0:
-            raise ValueError("redis pool_size must be > 0")
-        if self.connect_timeout_ms <= 0:
-            raise ValueError("redis connect_timeout_ms must be > 0")
-        if self.command_timeout_ms <= 0:
-            raise ValueError("redis command_timeout_ms must be > 0")
-        if self.default_ttl_seconds < 0:
-            raise ValueError("redis default_ttl_seconds must be >= 0")
-        if len(schemes) != 1:
-            raise ValueError("redis endpoints must use the same URL scheme")
-        if self.password_env and self.password:
-            raise ValueError("redis password and password_env cannot both be configured")
-        if self.sentinel_password_env and self.sentinel_password:
-            raise ValueError(
-                "redis sentinel_password and sentinel_password_env cannot both be configured"
-            )
-        if self.tls_insecure_skip_verify and schemes != {"rediss"}:
-            raise ValueError("redis tls_insecure_skip_verify requires rediss:// endpoints")
-        return self
-
-
-class AGFSPathLockConfig(BaseModel):
-    """Configuration for the native RAGFS path lock service."""
-
-    @model_validator(mode="after")
-    def ignore_deprecated_lock_timeout(self):
-        """Warn and force the deprecated timeout back to the fixed runtime value."""
-        if "lock_timeout_secs" in self.model_fields_set:
-            logger.warning(
-                "AGFSPathLockConfig: 'storage.agfs.pathlock.lock_timeout_secs' is deprecated "
-                "and ignored; the runtime wait timeout is fixed at 0.0 seconds."
-            )
-            self.lock_timeout_secs = 0.0
-        return self
-
-    provider: str = Field(
-        default="filesystem",
-        description="PathLock provider: 'filesystem' | 'memory' | 'sqlite' | 'cache'",
-    )
-    sqlite_path: Optional[str] = Field(
-        default=None,
-        description="Absolute local SQLite lock database file path.",
-    )
-    lock_timeout_secs: float = Field(
-        default=0.0,
-        description="Deprecated internal field. Runtime auto-pathlock wait timeout is fixed at 0.0 seconds.",
-    )
-    lock_expire_secs: float = Field(
-        default=30.0,
-        description="Seconds before an unrefreshed lock token becomes stale.",
-    )
-
-    model_config = {"extra": "forbid"}
-
-    @model_validator(mode="after")
-    def validate_config(self):
-        """Validate provider and timeout/expiry ranges."""
-        if self.provider not in {"filesystem", "memory", "sqlite", "cache"}:
-            raise ValueError(
-                "pathlock provider must be one of: 'filesystem', 'memory', 'sqlite', 'cache'"
-            )
-        if self.provider == "sqlite" and self.sqlite_path is not None and not os.path.isabs(self.sqlite_path):
-            raise ValueError("pathlock sqlite_path must be an absolute path")
-        if self.lock_expire_secs < 1.0:
-            raise ValueError("pathlock lock_expire_secs must be >= 1.0")
-        return self
-
+from openviking_cli.utils.config.agfs_config_backends import (
+    AGFSCacheFSConfig,
+    AGFSCacheTraversalMode,
+    AGFSCoordinationConfig,
+    AGFSPathLockConfig,
+    DirectoryMarkerMode,
+    QueueFSConfig,
+    RedisCacheConfig,
+    S3Config,
+)
 
 class AGFSConfig(BaseModel):
     """Configuration for RAGFS (Rust-based AGFS)."""
@@ -426,6 +90,11 @@ class AGFSConfig(BaseModel):
         description="Native RAGFS path lock configuration.",
     )
 
+    coordination: AGFSCoordinationConfig = Field(
+        default_factory=AGFSCoordinationConfig,
+        description="Native coordination for leader leases and revisions; defaults to memory.",
+    )
+
     retry_times: Any = Field(
         default=None,
         exclude=True,
@@ -454,10 +123,8 @@ class AGFSConfig(BaseModel):
         default=None, description="Multi-write backups configuration. None = single backend mode."
     )
     redirects: Optional[List[dict[str, Any]]] = Field(
-        default=None, description="Primary redirect policies."
+        default=None, description="[Deprecated] Primary redirect policies. Ignored by V2."
     )
-
-    model_config = {"extra": "forbid"}
 
     @model_validator(mode="after")
     def validate_config(self):
@@ -504,9 +171,38 @@ class AGFSConfig(BaseModel):
                     "db_path/queue_db_path will be ignored."
                 )
 
-        if self.redirects is not None and self.backups is None:
-            raise ValueError(
-                "redirects requires backups; single-backend mode does not support redirects"
-            )
+        if self.backups is not None:
+            initial_partitions = self.backups.get("initial_partitions", 16)
+            if (
+                not isinstance(initial_partitions, int)
+                or isinstance(initial_partitions, bool)
+                or not 1 <= initial_partitions <= 1024
+            ):
+                raise ValueError("backups initial_partitions must be between 1 and 1024")
+
+            checkpoint_interval_secs = self.backups.get("checkpoint_interval_secs", 86400)
+            if (
+                not isinstance(checkpoint_interval_secs, int)
+                or isinstance(checkpoint_interval_secs, bool)
+                or checkpoint_interval_secs < 60
+            ):
+                raise ValueError("backups checkpoint_interval_secs must be at least 60")
+
+            if self.backups.get("provider", "filesystem") not in {"filesystem", "cache"}:
+                raise ValueError("backups provider must be 'filesystem' or 'cache'")
+
+            names = set()
+            for item in self.backups.get("items", []):
+                if not isinstance(item, dict):
+                    raise ValueError("backups items must be objects")
+                name = item.get("name")
+                if not isinstance(name, str) or not name.strip():
+                    raise ValueError("backup name must not be empty")
+                name = name.strip()
+                if name == "primary":
+                    raise ValueError("backup name 'primary' is reserved")
+                if name in names:
+                    raise ValueError("backup names must be unique")
+                names.add(name)
 
         return self

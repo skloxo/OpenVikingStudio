@@ -39,3 +39,18 @@ class AccountInfo:
     created_at: str
     users: Dict[str, dict] = field(default_factory=dict)
     groups: Dict[str, dict] = field(default_factory=dict)
+
+
+def validate_account_user_creation_role(role: str) -> Role:
+    """Role accepted when creating an account user (USER, ADMIN, or GLOBAL)."""
+    try:
+        resolved_role = Role(str(role).lower())
+    except ValueError as exc:
+        raise InvalidArgumentError("Account user role must be user, admin, or global.") from exc
+    if resolved_role == Role.ROOT:
+        raise PermissionDeniedError(
+            "Account users cannot be assigned ROOT; use server.root_api_key for ROOT access."
+        )
+    if resolved_role not in (Role.USER, Role.ADMIN, Role.GLOBAL):
+        raise InvalidArgumentError("Account user role must be user, admin, or global.")
+    return resolved_role

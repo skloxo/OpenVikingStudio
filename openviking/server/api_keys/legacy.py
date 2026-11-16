@@ -17,9 +17,11 @@ from argon2.exceptions import VerifyMismatchError
 
 from openviking.pyagfs import AGFSAlreadyExistsError, AGFSNotFoundError, AsyncAGFSClient
 from openviking.pyagfs.async_client import fs_ctx_from_agfs_path
+from openviking.server.api_keys.admin_compat import _APIKeyAdminCompatMixin
 from openviking.server.api_keys.models import (
     AccountInfo,
     UserKeyEntry,
+    validate_account_user_creation_role,
     validate_account_user_role,
 )
 from openviking.server.identity import ResolvedIdentity, Role
@@ -65,7 +67,7 @@ def derive_seeded_api_key_secret(user_id: str, seed: str) -> str:
     return hashlib.sha256(f"{user_id}\0{seed}".encode("utf-8")).hexdigest()
 
 
-class LegacyAPIKeyManager:
+class LegacyAPIKeyManager(_APIKeyAdminCompatMixin):
     """Manages API keys for multi-tenant authentication (legacy implementation)."""
 
     def __init__(
@@ -316,6 +318,8 @@ class LegacyAPIKeyManager:
         account_id: str,
         admin_user_id: str,
         seed: Optional[str] = None,
+        *,
+        lease_ref: object | None = None,
     ) -> str:
         """Create a new account (workspace) with its first admin user.
 
@@ -377,8 +381,8 @@ class LegacyAPIKeyManager:
 
         try:
             await self._save_accounts_json()
-            await self._save_users_json(account_id)
-            await self._write_groups_json(account_id, {})
+            await self._save_users_json(account_id, lease_ref=lease_ref)
+            await self._write_groups_json(account_id, {}, lease_ref=lease_ref)
         except Exception:
             await self._rollback_create_account(account_id)
             raise
@@ -401,7 +405,7 @@ class LegacyAPIKeyManager:
         seed: Optional[str] = None,
     ) -> str:
         """Register a new user in an account. Returns the user's API key (legacy format)."""
-        resolved_role = validate_account_user_role(role)
+        resolved_role = validate_account_user_creation_role(role)
         # Validate user_id format
         verr = validate_user_id(user_id)
         if verr:
@@ -1011,17 +1015,20 @@ class LegacyAPIKeyManager:
         if isinstance(content, str):
             content = content.encode("utf-8")
 
-        await self._ensure_parent_dirs_async(path)
+        fs_ctx = self._fs_ctx_with_lease(path, lease_ref)
+        await self._ensure_parent_dirs_async(path, fs_ctx=fs_ctx)
         await self._async_agfs.write(
             path,
             content,
-            fs_ctx=self._fs_ctx_with_lease(path, lease_ref),
+            fs_ctx=fs_ctx,
         )
 
-    async def _ensure_parent_dirs_async(self, path: str) -> None:
+    async def _ensure_parent_dirs_async(
+        self, path: str, *, fs_ctx: Dict[str, str] | None = None
+    ) -> None:
         """Recursively create all parent directories for a file path."""
         try:
-            await self._async_agfs.ensure_parent_dirs(path)
+            await self._async_agfs.ensure_parent_dirs(path, fs_ctx=fs_ctx)
         except AGFSAlreadyExistsError:
             return
 
@@ -1045,13 +1052,27 @@ class LegacyAPIKeyManager:
         finally:
             await self._async_agfs.pathlock_release(lease)
 
-    async def _save_users_json(self, account_id: str) -> None:
+    async def _save_users_json(
+        self, account_id: str, *, lease_ref: object | None = None
+    ) -> None:
         """Persist a single account's user registry."""
-        await self._save_users_json_for(account_id, self._accounts)
+        await self._save_users_json_for(account_id, self._accounts, lease_ref=lease_ref)
 
-    async def _save_users_json_for(self, account_id: str, accounts: Dict[str, AccountInfo]) -> None:
+    async def _save_users_json_for(
+        self,
+        account_id: str,
+        accounts: Dict[str, AccountInfo],
+        *,
+        lease_ref: object | None = None,
+    ) -> None:
         """Persist one account's user registry from the given accounts map."""
         path = USERS_PATH_TEMPLATE.format(account_id=account_id)
+        if lease_ref is not None:
+            account = accounts.get(account_id)
+            if account is None:
+                return
+            await self._write_json(path, {"users": account.users}, lease_ref=lease_ref)
+            return
         try:
             lease = await self._async_agfs.pathlock_acquire_exact(path, timeout_secs=10.0)
         except LockAcquisitionError as exc:
@@ -1068,6 +1089,8 @@ class LegacyAPIKeyManager:
         finally:
             await self._async_agfs.pathlock_release(lease)
 
-    async def _write_groups_json(self, account_id: str, groups: dict) -> None:
+    async def _write_groups_json(
+        self, account_id: str, groups: dict, *, lease_ref: object | None = None
+    ) -> None:
         path = GROUPS_PATH_TEMPLATE.format(account_id=account_id)
-        await self._write_json(path, {"groups": groups})
+        await self._write_json(path, {"groups": groups}, lease_ref=lease_ref)

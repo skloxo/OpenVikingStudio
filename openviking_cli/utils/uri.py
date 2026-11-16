@@ -10,6 +10,22 @@ viking://<scope>/<path>
 import re
 from typing import Dict, Optional
 
+_WINDOWS_RESERVED_STEMS = frozenset(
+    {
+        "CON",
+        "PRN",
+        "AUX",
+        "NUL",
+        *(f"COM{index}" for index in range(1, 10)),
+        *(f"LPT{index}" for index in range(1, 10)),
+    }
+)
+
+
+def _windows_reserved_stem(segment: str) -> str:
+    """Return the Win32 device-name stem used for portability checks."""
+    return segment.split(".", 1)[0].rstrip(" .").upper()
+
 
 class VikingURI:
     """
@@ -39,6 +55,7 @@ class VikingURI:
         "resources",
         "user",
         "agent",
+        "system",
     }
     PUBLIC_SCOPES = frozenset(LISTABLE_SCOPES)
     LEGACY_SCOPES = frozenset({"session"})
@@ -260,6 +277,8 @@ class VikingURI:
         safe = re.sub(r"_+", "_", safe)
         # Strip leading/trailing underscores and dots, limit length
         safe = safe.strip("_.")[:50]
+        if _windows_reserved_stem(safe) in _WINDOWS_RESERVED_STEMS:
+            safe = f"_{safe}"
         return safe or "unnamed"
 
     def __str__(self) -> str:

@@ -55,11 +55,14 @@ def _fs_ctx_with_auto_pathlock(
 ) -> Dict[str, str]:
     """Return FsContext with optional auto PathLock bypass for unlocked calls."""
     ctx = dict(_fs_ctx_or_default(path, fs_ctx))
-    if _path_locks_disabled() or not auto_pathlock:
+    lease_ref = ctx.get("lease_ref")
+    if lease_ref == _DISABLED_PATH_LOCK_OWNER_ID or (_path_locks_disabled() and not lease_ref):
         ctx.pop("lease_ref", None)
         ctx["disable_auto_pathlock"] = "true"
-    elif ctx.get("lease_ref"):
+    elif lease_ref:
         ctx.pop("disable_auto_pathlock", None)
+    elif not auto_pathlock:
+        ctx["disable_auto_pathlock"] = "true"
     return ctx
 
 

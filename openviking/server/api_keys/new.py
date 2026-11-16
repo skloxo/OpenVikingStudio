@@ -11,6 +11,7 @@ import hmac
 import secrets
 from typing import Optional, Tuple
 
+from openviking.server.api_keys.admin_compat import _APIKeyAdminCompatMixin
 from openviking.server.api_keys.legacy import (
     LegacyAPIKeyManager,
     derive_seeded_api_key_secret,
@@ -18,6 +19,7 @@ from openviking.server.api_keys.legacy import (
 from openviking.server.api_keys.models import (
     AccountInfo,
     UserKeyEntry,
+    validate_account_user_creation_role,
     validate_account_user_role,
 )
 from openviking.server.identity import ResolvedIdentity, Role
@@ -80,7 +82,7 @@ def generate_api_key(account_id: str, user_id: str, seed: Optional[str] = None) 
     return f"{account_segment}.{user_segment}.{secret_segment}"
 
 
-class NewAPIKeyManager:
+class NewAPIKeyManager(_APIKeyAdminCompatMixin):
     """Manages API keys for multi-tenant authentication with new key format.
 
     New key format: base64url(account_id).base64url(user_id).base64url(secret)
@@ -182,6 +184,8 @@ class NewAPIKeyManager:
         account_id: str,
         admin_user_id: str,
         seed: Optional[str] = None,
+        *,
+        lease_ref: object | None = None,
     ) -> str:
         """Create a new account (workspace) with its first admin user.
 
@@ -251,8 +255,8 @@ class NewAPIKeyManager:
 
         try:
             await self._legacy._save_accounts_json()
-            await self._legacy._save_users_json(account_id)
-            await self._legacy._write_groups_json(account_id, {})
+            await self._legacy._save_users_json(account_id, lease_ref=lease_ref)
+            await self._legacy._write_groups_json(account_id, {}, lease_ref=lease_ref)
         except Exception:
             await self._legacy._rollback_create_account(account_id)
             raise
@@ -270,7 +274,7 @@ class NewAPIKeyManager:
         seed: Optional[str] = None,
     ) -> str:
         """Register a new user in an account. Returns the user's API key in new format."""
-        resolved_role = validate_account_user_role(role)
+        resolved_role = validate_account_user_creation_role(role)
         # Validate user_id format
         verr = validate_user_id(user_id)
         if verr:

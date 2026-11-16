@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 
 class RetrievalConfig(BaseModel):
-    """Configuration for retrieval ranking behavior."""
+    """Configuration for query planning and context assembly."""
 
     hotness_alpha: float = Field(
         default=0.0,
@@ -29,7 +29,7 @@ class RetrievalConfig(BaseModel):
     recall_intent_timeout_s: float = Field(
         default=5.0,
         gt=0.0,
-        description="Timeout in seconds for optional context query expansion.",
+        description="Timeout in seconds for session intent analysis and context query expansion.",
     )
     recall_rewrite_timeout_s: float = Field(
         default=30.0,
@@ -53,5 +53,3 @@ class RetrievalConfig(BaseModel):
             "config; false keeps context mode on vector scores."
         ),
     )
-
-    model_config = {"extra": "forbid"}

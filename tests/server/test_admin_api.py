@@ -270,7 +270,7 @@ async def _wait_for_task(client: httpx.AsyncClient, task_id: str) -> dict:
         task = resp.json()["result"]
         if task["status"] in {"completed", "failed"}:
             return task
-        await asyncio.sleep(0.01)
+        await asyncio.sleep(0.05)
     raise AssertionError(f"Task {task_id} did not finish")
 
 
@@ -370,6 +370,7 @@ async def test_user_memory_policy_can_be_initialized_and_hot_updated(
     assert get_settings.json()["result"]["memory_policy"] == {
         "self": {"enabled": True},
         "peer": {"enabled": True},
+        "working_memory": {"enabled": False},
         "memory_types": ["profile"],
     }
 
@@ -421,6 +422,7 @@ async def test_user_memory_policy_can_be_initialized_and_hot_updated(
     assert reset_settings.json()["result"]["memory_policy"] == {
         "self": {"enabled": True},
         "peer": {"enabled": True},
+        "working_memory": {"enabled": False},
         "memory_types": ["events"],
     }
 
@@ -457,6 +459,7 @@ async def test_user_memory_policy_uses_server_default_without_user_override(
     assert get_settings.json()["result"]["memory_policy"] == {
         "self": {"enabled": True},
         "peer": {"enabled": True},
+        "working_memory": {"enabled": False},
         "memory_types": ["profile"],
     }
 
@@ -1353,15 +1356,15 @@ async def test_legacy_cleanup_removes_only_legacy_namespaces(
     removed = {
         (item["account_id"], item["source"]) for item in task["result"]["cleanup"]["targets"]
     }
-    assert (acct, "viking://agent") in removed
+    assert (acct, "viking://agent/code-agent") in removed
     assert (acct, "viking://session") in removed
     assert (acct, "viking://user/alice/agent") in removed
-    assert (other_acct, "viking://agent") in removed
+    assert (other_acct, "viking://agent/code-agent") in removed
 
-    assert not await _agfs_exists(admin_service, f"/local/{acct}/agent")
+    assert not await _agfs_exists(admin_service, f"/local/{acct}/agent/code-agent")
     assert not await _agfs_exists(admin_service, f"/local/{acct}/session")
     assert not await _agfs_exists(admin_service, f"/local/{acct}/user/alice/agent")
-    assert not await _agfs_exists(admin_service, f"/local/{other_acct}/agent")
+    assert not await _agfs_exists(admin_service, f"/local/{other_acct}/agent/code-agent")
     assert (
         await _agfs_read_text(
             admin_service,

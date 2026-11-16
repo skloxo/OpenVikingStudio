@@ -527,6 +527,7 @@ class _SemanticMixin:
         content_filename: str = "content.md",
         is_leaf: bool = False,
         ctx: Optional[RequestContext] = None,
+        lease_ref: Dict[str, Any] | None = None,
     ) -> None:
         """Write context to AGFS (L0/L1/L2)."""
 
@@ -534,16 +535,18 @@ class _SemanticMixin:
         path = self._uri_to_path(uri, ctx=ctx)
 
         try:
-            await self._ensure_parent_dirs(path, ctx=ctx)
+            await self._ensure_parent_dirs(path, ctx=ctx, lease_ref=lease_ref)
             try:
-                await self._async_agfs.mkdir(path)
+                await self._async_agfs.mkdir(
+                    path, fs_ctx=self._pathlock_fs_ctx(ctx, lease_ref)
+                )
             except Exception as e:
                 if "exist" not in str(e).lower():
                     raise
 
             if content:
                 content_uri = f"{uri}/{content_filename}"
-                await self.write_file(content_uri, content, ctx=ctx)
+                await self.write_file(content_uri, content, ctx=ctx, lease_ref=lease_ref)
 
             if abstract:
                 abstract_uri = f"{uri}/.abstract.md"
@@ -561,6 +564,7 @@ class _SemanticMixin:
                         },
                     ),
                     ctx=ctx,
+                    lease_ref=lease_ref,
                 )
 
             if overview:
@@ -579,6 +583,7 @@ class _SemanticMixin:
                         },
                     ),
                     ctx=ctx,
+                    lease_ref=lease_ref,
                 )
 
         except Exception as e:

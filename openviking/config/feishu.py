@@ -1,13 +1,15 @@
 # Copyright (c) 2026 Beijing Volcano Engine Technology Co., Ltd.
 # SPDX-License-Identifier: AGPL-3.0
-"""Account/cluster Feishu config resolution with legacy cluster fallback."""
+"""Business-level resolution for account and cluster Feishu configuration."""
 
 from __future__ import annotations
 
 from dataclasses import replace
 from typing import Any
 
-from openviking_cli.utils.config import get_openviking_config
+from openviking.config.account_config import AccountConfig
+from openviking.config.manager import AccountConfigView
+from openviking_cli.utils.config.open_viking_config import OpenVikingConfig
 from openviking_cli.utils.config.parser_config import FeishuConfig
 
 _ACCOUNT_FEISHU_FIELDS = (
@@ -20,10 +22,17 @@ _ACCOUNT_FEISHU_FIELDS = (
 )
 
 
-def resolve_feishu_config(view: Any) -> FeishuConfig:
-    """Resolve one account's Feishu configuration from an account/cluster view."""
+def resolve_feishu_config(
+    view: AccountConfigView[OpenVikingConfig, AccountConfig],
+) -> FeishuConfig:
+    """Resolve one account's Feishu configuration.
+
+    An account without a Feishu section uses the complete cluster configuration.
+    Once the section exists, only the API domain remains cluster-owned; omitted
+    account fields use ``FeishuConfig`` defaults instead of cluster values.
+    """
     cluster_config = view.cluster.feishu
-    account_config = getattr(view.account, "feishu", None)
+    account_config = view.account.feishu
     if account_config is None:
         return cluster_config
 
@@ -31,13 +40,11 @@ def resolve_feishu_config(view: Any) -> FeishuConfig:
     updates = {
         field: value
         for field in _ACCOUNT_FEISHU_FIELDS
-        if (value := getattr(account_config, field, None)) is not None
+        if (value := getattr(account_config, field)) is not None
     }
     return replace(account_defaults, **updates)
 
 
 async def get_effective_feishu_config(manager: Any, account_id: str) -> FeishuConfig:
-    """Resolve Feishu config from manager when present, else cluster config."""
-    if manager is not None and hasattr(manager, "resolve_account"):
-        return await manager.resolve_account(account_id, resolve_feishu_config)
-    return get_openviking_config().feishu
+    """Resolve Feishu config from one account/cluster publication pair."""
+    return await manager.resolve_account(account_id, resolve_feishu_config)

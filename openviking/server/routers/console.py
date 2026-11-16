@@ -21,7 +21,7 @@ def _split_multi(values: Optional[list[str]]) -> list[str]:
         return []
     result: list[str] = []
     for value in values:
-        result.extend(part.strip() for part in value.split(",") if part.strip())
+        result.extend(part.strip() for part in str(value).split(",") if part.strip())
     return result
 
 

@@ -42,6 +42,7 @@ from openviking.server.routers import (
     admin_router,
     agent_evolution_router,
     bot_router,
+    bot_studio_router,
     compile_router,
     console_router,
     content_router,
@@ -184,6 +185,33 @@ async def _initialize_auth_plugin(
     logger.info("Auth plugin initialized: %s", effective_auth_mode)
 
 
+async def _initialize_ttl_adapter(
+    app: FastAPI,
+    service: OpenVikingService,
+    config: ServerConfig,
+) -> None:
+    """Wire built-in Redis TTL when explicitly enabled."""
+    from openviking.ttl.wiring import build_ttl_adapter, install_ttl_hook, set_ttl_adapter
+
+    adapter = build_ttl_adapter(config.ttl_adapter)
+    set_ttl_adapter(adapter)
+    app.state.ttl_adapter = adapter
+    if adapter is None:
+        return
+    adapter.bind_runtime(service, app.state.api_key_manager)
+    if hasattr(service, "configure_ttl"):
+        service.configure_ttl(adapter)
+    viking_fs = getattr(service, "viking_fs", None)
+    if viking_fs is not None:
+        install_ttl_hook(viking_fs, adapter)
+    if not getattr(app.state, "ttl_routes_registered", False):
+        from openviking.ttl.internal import router as ttl_internal_router
+
+        app.include_router(ttl_internal_router)
+        app.state.ttl_routes_registered = True
+    logger.info("TTL adapter initialized")
+
+
 async def _initialize_runtime_state(
     app: FastAPI,
     service: OpenVikingService,
@@ -192,6 +220,9 @@ async def _initialize_runtime_state(
     """Initialize service and auth dependencies before traffic is accepted."""
     await service.initialize()
     await _initialize_auth_plugin(app, service, config)
+    await _initialize_ttl_adapter(app, service, config)
+    if hasattr(service, "apply_agent_evolution_config"):
+        await service.apply_agent_evolution_config()
     manager = app.state.api_key_manager
     if manager is not None:
         await service.load_acl_settings(
@@ -201,6 +232,10 @@ async def _initialize_runtime_state(
                 if item["account_id"] != service.user.account_id
             ]
         )
+    if manager is not None and getattr(get_openviking_config(), "reconcile_system_assets_on_startup", False):
+        if hasattr(service, "reconcile_system_assets"):
+            account_count = await service.reconcile_system_assets(manager)
+            logger.info("Reconciled system assets for %d active accounts", account_count)
     from openviking.service.user_deletion import setup_user_deletion
 
     app.state.user_deletion_service = await setup_user_deletion(
@@ -292,13 +327,15 @@ def create_app(
     config: Optional[ServerConfig] = None,
     service: Optional[OpenVikingService] = None,
     config_path: Optional[str] = None,
+    server_overrides: Optional[dict] = None,
 ) -> FastAPI:
     """Create FastAPI application.
 
     Args:
         config: Server configuration. If None, loads from default location.
         service: Pre-initialized OpenVikingService (optional).
-        config_path: Resolved ov.conf path used for live configuration reload.
+        config_path: Resolved ov.conf path used for startup configuration.
+        server_overrides: CLI arguments reapplied when loading the startup file.
 
     Returns:
         FastAPI application instance
@@ -327,6 +364,7 @@ def create_app(
         return usage_reporter
 
     def _configure_session_runtime(service_obj) -> None:  # noqa: ANN001
+        service_obj.user_config_defaults = config.user_config_defaults
         sessions = getattr(service_obj, "sessions", None)
         tool_output_setter = getattr(sessions, "set_tool_output_externalization_config", None)
         if callable(tool_output_setter):
@@ -336,7 +374,9 @@ def create_app(
         if callable(usage_reporter_setter):
             usage_reporter_setter(_get_usage_reporter())
 
-        agent_evolution_setter = getattr(sessions, "set_agent_evolution_config", None)
+        agent_evolution_setter = getattr(service_obj, "set_agent_evolution_config", None)
+        if not callable(agent_evolution_setter):
+            agent_evolution_setter = getattr(sessions, "set_agent_evolution_config", None)
         if callable(agent_evolution_setter):
             agent_evolution_setter(config.agent_evolution)
 
@@ -347,6 +387,10 @@ def create_app(
         )
         if callable(user_memory_policy_setter):
             user_memory_policy_setter(config.user_config_defaults.memory_policy)
+
+        auto_commit_setter = getattr(sessions, "set_default_user_auto_commit_policy", None)
+        if callable(auto_commit_setter):
+            auto_commit_setter(config.user_config_defaults.auto_commit_policy)
 
         agent_evolution_path_setter = getattr(
             sessions,
@@ -386,6 +430,9 @@ def create_app(
         if config.observability.metrics.enabled:
             logger.info("Prometheus metrics enabled at /metrics")
         await init_usage_audit_from_server_config(config, app=app, service=service)
+        from openviking.observability.reporting import start_reporting
+
+        app.state.event_reporter = await start_reporting(config.observability.reporting)
 
         # Initialize OAuth 2.1 store + provider when enabled in OpenViking config.
         # The store + provider instances were already constructed at app
@@ -475,6 +522,9 @@ def create_app(
                 logger.warning(f"OpenVikingService close failed during shutdown: {e}")
         if usage_reporter is not usage_reporter_unset and usage_reporter is not None:
             await usage_reporter.close()
+        from openviking.observability.reporting import stop_reporting
+
+        await stop_reporting()
 
     app = FastAPI(
         title="OpenViking API",
@@ -484,6 +534,11 @@ def create_app(
     )
 
     app.state.config = config
+    app.state.service_name = get_openviking_config().service_name
+    app.state.server_config_overrides = server_overrides or {}
+    from openviking.server.restart import RestartController
+
+    app.state.restart_controller = RestartController()
     app.state.api_key_manager = None
     app.state.user_deletion_service = None
     set_server_config(config)
@@ -739,6 +794,7 @@ def create_app(
     app.include_router(client_caps_router)
     app.include_router(acl_router)
     app.include_router(admin_router)
+    app.include_router(bot_studio_router)
     app.include_router(compile_router)
     app.include_router(agents_router)
     app.include_router(global_agents_router)

@@ -67,11 +67,13 @@ from openviking.server.routers.gateway import router as gateway_router
 from openviking.server.routers.agents import router as agents_router, global_agents_router
 
 from openviking.server.routers.plugins import router as plugins_router
+from openviking.server.routers.bot_studio import router as bot_studio_router
 from openviking.server.routers.client_caps import router as client_caps_router
 from openviking.server.routers.universal_reducer import router as universal_reducer_router
 
 __all__ = [
     "universal_reducer_router",
+    "bot_studio_router",
     "client_caps_router",
     "plugins_router",
     "global_agents_router",

@@ -6,11 +6,15 @@ import argparse
 import asyncio
 import os
 import shutil
+import signal
 import socket
 import subprocess
 import sys
+import threading
 import time
-from typing import Optional
+from contextlib import contextmanager
+from types import FrameType
+from typing import Iterator, NoReturn, Optional
 
 import uvicorn
 
@@ -87,7 +91,58 @@ def _normalize_host_arg(host: Optional[str]) -> Optional[str]:
     return host
 
 
+def _raise_sigterm_as_system_exit(signum: int, _frame: FrameType | None) -> NoReturn:
+    raise SystemExit(128 + signum)
+
+
+@contextmanager
+def _sigterm_runs_finally() -> Iterator[None]:
+    """Make Uvicorn's replayed SIGTERM unwind through managed-process cleanup."""
+    if os.name == "nt" or threading.current_thread() is not threading.main_thread():
+        yield
+        return
+    previous = signal.signal(signal.SIGTERM, _raise_sigterm_as_system_exit)
+    try:
+        yield
+    finally:
+        signal.signal(signal.SIGTERM, previous)
+
+
+def _run_restartable_server(app, recovery=None, **kwargs) -> bool:
+    from openviking.server.restart import RestartController
+
+    server = uvicorn.Server(uvicorn.Config(app, **kwargs))
+    controller = RestartController(lambda: setattr(server, "should_exit", True), recovery)
+    app.state.restart_controller = controller
+    if recovery is not None:
+        startup = server.startup
+
+        async def startup_with_recovery(*args, **kwargs):
+            await startup(*args, **kwargs)
+            if server.started:
+                recovery.ready()
+
+        server.startup = startup_with_recovery
+    server.run()
+    if recovery is not None and recovery.pending:
+        raise RuntimeError("Server failed to complete startup")
+    return controller.requested
+
+
 def main():
+    """Run the CLI with one recovery attempt for remote restart startup failures."""
+    from openviking.server.restart import RestartRecovery
+
+    recovery = RestartRecovery()
+    try:
+        _main(recovery)
+    except (Exception, SystemExit) as exc:
+        if not isinstance(exc, SystemExit) or exc.code not in (None, 0):
+            recovery.rollback()
+        raise
+
+
+def _main(recovery):
     """Main entry point for openviking-server command."""
     parser = argparse.ArgumentParser(
         description="OpenViking HTTP Server",
@@ -238,8 +293,14 @@ def main():
     if args.with_bot:
         config.with_bot = True
 
+    if recovery.pending and config.workers > 1:
+        raise ValueError("Remote restart recovery requires a single worker")
+
     bot_process: Optional[BotProcess] = None
     if config.with_bot:
+        import secrets
+
+        os.environ.setdefault("OPENVIKING_BOT_STUDIO_TOKEN", secrets.token_urlsafe(32))
         bot_port = args.bot_port
         config.bot_api_url = f"http://127.0.0.1:{bot_port}"
         _abort_if_port_in_use(bot_port, "vikingbot gateway")
@@ -264,6 +325,11 @@ def main():
 
     app = create_app(
         config,
+        server_overrides={
+            key: getattr(config, key)
+            for key in ("host", "port", "workers", "with_bot")
+            if getattr(args, key) is not None and (key != "with_bot" or args.with_bot)
+        },
         config_path=(
             str(resolved_config_path) if resolved_config_path is not None else args.config
         ),
@@ -271,31 +337,38 @@ def main():
     workers_info = f" (workers: {config.workers})" if config.workers > 1 else ""
     print(f"OpenViking HTTP Server is running on {config.host}:{config.port}{workers_info}")
 
+    restart_requested = False
     try:
-        workers = config.workers
-        if workers > 1:
-            os.environ[WORKER_WITH_BOT_ENV] = "1" if config.with_bot else "0"
-            os.environ[WORKER_BOT_API_URL_ENV] = config.bot_api_url
-            uvicorn.run(
-                "openviking.server.app:create_worker_app",
-                factory=True,
-                host=config.host,
-                port=config.port,
-                workers=workers,
-                timeout_keep_alive=config.timeout_keep_alive,
-                log_config=None,
-            )
-        else:
-            uvicorn.run(
-                app,
-                host=config.host,
-                port=config.port,
-                timeout_keep_alive=config.timeout_keep_alive,
-                log_config=None,
-            )
+        with _sigterm_runs_finally():
+            workers = config.workers
+            if workers > 1:
+                os.environ[WORKER_WITH_BOT_ENV] = "1" if config.with_bot else "0"
+                os.environ[WORKER_BOT_API_URL_ENV] = config.bot_api_url
+                uvicorn.run(
+                    "openviking.server.app:create_worker_app",
+                    factory=True,
+                    host=config.host,
+                    port=config.port,
+                    workers=workers,
+                    timeout_keep_alive=config.timeout_keep_alive,
+                    log_config=None,
+                )
+            else:
+                restart_requested = _run_restartable_server(
+                    app,
+                    recovery=recovery,
+                    host=config.host,
+                    port=config.port,
+                    timeout_keep_alive=config.timeout_keep_alive,
+                    log_config=None,
+                )
     finally:
         if bot_process is not None:
             _stop_vikingbot_gateway(bot_process)
+    if restart_requested:
+        if resolved_config_path is not None:
+            os.environ[OPENVIKING_CONFIG_ENV] = str(resolved_config_path)
+        os.execv(sys.executable, [sys.executable, *sys.orig_argv[1:]])
 
 
 if __name__ == "__main__":

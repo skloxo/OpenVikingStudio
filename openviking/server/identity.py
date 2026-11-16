@@ -27,6 +27,7 @@ class Role(str):
     ROOT = "root"
     ADMIN = "admin"
     USER = "user"
+    GLOBAL = "global"
 
     # Privilege ranking for role-downgrade detection.
     # Higher rank => more privilege.
@@ -143,3 +144,7 @@ class ToolContext:
     @property
     def account_id(self) -> str:
         return self.request_ctx.user.account_id
+
+
+ACCOUNT_USER_ASSIGNABLE_ROLES = frozenset({Role.USER, Role.ADMIN})
+ACCOUNT_USER_CREATION_ROLES = ACCOUNT_USER_ASSIGNABLE_ROLES | frozenset({Role.GLOBAL})

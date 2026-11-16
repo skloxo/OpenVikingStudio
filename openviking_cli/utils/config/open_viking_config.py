@@ -1,34 +1,54 @@
 # Copyright (c) 2026 Beijing Volcano Engine Technology Co., Ltd.
 # SPDX-License-Identifier: AGPL-3.0
+import hashlib
 import json
-import logging
-import os
 from pathlib import Path
-from threading import Lock
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field, ValidationError, model_validator
 
-from openviking_cli.session.user_id import UserIdentifier
-
+from .agfs_config import AGFSConfig
 from .cache_config import CacheConfig
-from .compile_config import CompileApiConfig
-from .config_loader import resolve_config_path
-from .config_utils import format_validation_error, raise_unknown_config_fields
 from .consts import (
     DEFAULT_CONFIG_DIR,
     DEFAULT_OV_CONF,
     OPENVIKING_CONFIG_ENV,
     SYSTEM_CONFIG_DIR,
 )
+from .config_utils import (
+    DEFAULT_SERVICE_NAME,
+    format_validation_error,
+    normalize_service_name,
+    warn_unknown_config_fields,
+    warn_unknown_fields,
+)
 from .embedding_config import EmbeddingConfig
 from .encryption_config import EncryptionConfig
+from .expiry_config import ExpiryConfig
 from .git_config import GitConfig
+from .glob_config import GlobConfig
 from .grep_config import GrepConfig
 from .ingest_config import IngestConfig
 from .log_config import LogConfig
 from .memory_config import MemoryConfig
 from .oauth_config import OAuthConfig
+from .open_viking_config_models import (
+    CompileApiConfig,
+    ConnectorConfig,
+    ParserApiConfig,
+    ParserRuntimeConfig,
+    RuntimeConfigSettings,
+    WebFeedConfig,
+)
+from .open_viking_config_singleton import (
+    OpenVikingConfigSingleton,
+    _get_config_logger,
+    initialize_openviking_config,
+    is_valid_openviking_config,
+    set_openviking_config,
+)
+from .openviking_gateway_config import EmbeddedGatewayConfig
+from .agent_evolution_config import AgentEvolutionConfig
 from .parser_config import (
     AnydocConfig,
     AudioConfig,
@@ -42,7 +62,6 @@ from .parser_config import (
     SemanticConfig,
     TextConfig,
     VideoConfig,
-    WebFeedConfig,
 )
 from .prompts_config import PromptsConfig
 from .queue_worker_config import QueueWorkersConfig
@@ -50,95 +69,21 @@ from .reindex_config import ReindexConfig
 from .rerank_config import RerankConfig
 from .retrieval_config import RetrievalConfig
 from .rules_config import RulesConfig
+from .runtime_field import RuntimeField
 from .storage_config import StorageConfig
 from .telemetry_config import TelemetryConfig
+from .ttl_config import TTLConfig
 from .vlm_config import VLMConfig
 
 
-def _get_config_logger():
-    """Use stdlib logging during config bootstrap to avoid early logger side effects."""
-    return logging.getLogger(__name__)
+def get_openviking_config() -> "OpenVikingConfig":
+    """Get the global OpenVikingConfig instance."""
+    return OpenVikingConfigSingleton.get_instance()
 
 
-class ConnectorConfig(BaseModel):
-    """Configuration for external Connector service."""
+from .open_viking_config_serde import _OpenVikingConfigSerdeMixin
 
-    enable: bool = False
-    connector: str = ""
-    tracker: str = ""
-    timeout_seconds: int = 3600
-    poll_interval_ms: int = 5000
-    allowed_add_types: List[str] = Field(default_factory=lambda: ["tos"])
-
-    model_config = {"extra": "forbid"}
-
-    @model_validator(mode="after")
-    def _validate(self) -> "ConnectorConfig":
-        if self.enable:
-            for name, url in (("connector", self.connector), ("tracker", self.tracker)):
-                if not url.strip():
-                    raise ValueError(f"connector.{name} is required when connector.enable=true")
-                if "://" not in url:
-                    raise ValueError(
-                        f"connector.{name} must be a full endpoint URL including scheme "
-                        "(e.g., http://...)"
-                    )
-        if self.timeout_seconds <= 0:
-            raise ValueError("connector.timeout_seconds must be > 0")
-        if self.poll_interval_ms <= 0:
-            raise ValueError("connector.poll_interval_ms must be > 0")
-        return self
-
-
-class ParserApiConfig(BaseModel):
-    """Configuration for the Understanding files/responses API."""
-
-    enable: bool = False
-    extensions: List[str] = Field(default_factory=list)
-    host: str = ""
-    api_key: str = ""
-    enable_feishu_url: bool = False
-    enable_resumable_upload: bool = False
-    upload_simple_max_bytes: int = 512 * 1024 * 1024
-    upload_part_size_bytes: int = 8 * 1024 * 1024
-    http_timeout_seconds: float = 10.0
-    response_timeout_seconds: int = 1800
-    poll_interval_ms: int = 3000
-    model_config = {"extra": "forbid"}
-
-    @model_validator(mode="after")
-    def _normalize_and_validate(self) -> "ParserApiConfig":
-        normalized_extensions: List[str] = []
-        for ext in self.extensions or []:
-            s = str(ext).strip().lower()
-            if not s:
-                continue
-            if s.startswith("."):
-                s = s[1:]
-            normalized_extensions.append(s)
-        self.extensions = normalized_extensions
-
-        if self.enable:
-            if not self.host.strip():
-                raise ValueError("parser_api.host is required when parser_api.enable=true")
-            if not self.api_key.strip():
-                raise ValueError("parser_api.api_key is required when parser_api.enable=true")
-        if self.host and "://" not in self.host:
-            raise ValueError("parser_api.host must include scheme (e.g., https://...)")
-        if self.upload_simple_max_bytes <= 0:
-            raise ValueError("parser_api.upload_simple_max_bytes must be > 0")
-        if self.upload_part_size_bytes <= 0:
-            raise ValueError("parser_api.upload_part_size_bytes must be > 0")
-        if self.http_timeout_seconds <= 0:
-            raise ValueError("parser_api.http_timeout_seconds must be > 0")
-        if self.response_timeout_seconds <= 0:
-            raise ValueError("parser_api.response_timeout_seconds must be > 0")
-        if self.poll_interval_ms <= 0:
-            raise ValueError("parser_api.poll_interval_ms must be > 0")
-        return self
-
-
-class OpenVikingConfig(BaseModel):
+class OpenVikingConfig(_OpenVikingConfigSerdeMixin, BaseModel):
     """Main configuration for OpenViking."""
 
     default_account: Optional[str] = Field(
@@ -149,6 +94,10 @@ class OpenVikingConfig(BaseModel):
         default=None,
         description="Deprecated and ignored. User is the only data-plane identity.",
     )
+    service_name: str = Field(
+        default=DEFAULT_SERVICE_NAME,
+        description="OpenViking deployment name shared by cache namespaces and OTel defaults",
+    )
 
     cache: Optional[CacheConfig] = Field(
         default=None,
@@ -157,6 +106,11 @@ class OpenVikingConfig(BaseModel):
 
     storage: StorageConfig = Field(
         default_factory=StorageConfig, description="Storage configuration"
+    )
+
+    parser: ParserRuntimeConfig = Field(
+        default_factory=ParserRuntimeConfig,
+        description="Runtime directories used by built-in parsers",
     )
 
     embedding: EmbeddingConfig = Field(
@@ -175,14 +129,24 @@ class OpenVikingConfig(BaseModel):
 
     rerank: RerankConfig = Field(default_factory=RerankConfig, description="Rerank configuration")
 
+    rules: RulesConfig = Field(
+        default_factory=RulesConfig,
+        description="Rule compilation and applicability model configuration",
+    )
+
     retrieval: RetrievalConfig = Field(
         default_factory=RetrievalConfig,
-        description="Retrieval ranking configuration",
+        description="Retrieval behavior configuration",
     )
 
     grep: GrepConfig = Field(
         default_factory=GrepConfig,
         description="Grep engine configuration",
+    )
+
+    glob: GlobConfig = Field(
+        default_factory=GlobConfig,
+        description="Glob engine configuration",
     )
 
     # Encryption configuration
@@ -257,11 +221,6 @@ class OpenVikingConfig(BaseModel):
         description="Third-party parser API configuration (files/responses)",
     )
 
-    rules: RulesConfig = Field(
-        default_factory=RulesConfig,
-        description="Rule compilation and applicability model configuration",
-    )
-
     compile_api: CompileApiConfig = Field(
         default_factory=CompileApiConfig,
         description="External Compile task API configuration",
@@ -272,12 +231,29 @@ class OpenVikingConfig(BaseModel):
         description="External Connector service configuration for data import",
     )
 
+    gateway: EmbeddedGatewayConfig = Field(default_factory=EmbeddedGatewayConfig)
+
     enable_watch_scheduler: bool = Field(
         default=True,
         description=(
-            "Whether to start the background WatchScheduler that periodically re-processes "
-            "watched resources. Disable on read-only replicas that share a writer's data "
-            "so only the writer runs the watch/refresh background loop."
+            "Whether this node may become the Watch scheduler leader that polls due "
+            "watches and settles their runs. Every node serves the Watch API either way; "
+            "disable on nodes that should never run the background watch/refresh loop."
+        ),
+    )
+    watch_leader_provider: Literal["auto", "local", "cache"] = Field(
+        default="auto",
+        description=(
+            "Deprecated; will be removed in the next version. Use "
+            "storage.agfs.coordination.provider instead; explicit coordination takes precedence."
+        ),
+        json_schema_extra={"deprecated": True},
+    )
+    reconcile_system_assets_on_startup: bool = Field(
+        default=True,
+        description=(
+            "Whether to reconcile packaged system assets for active accounts during startup. "
+            "Disable on read-only replicas that share a writer's data."
         ),
     )
 
@@ -325,9 +301,38 @@ class OpenVikingConfig(BaseModel):
         return self
 
     @model_validator(mode="after")
+    def _validate_service_name(self) -> "OpenVikingConfig":
+        """Validate and normalize the top-level service name."""
+        self.service_name = normalize_service_name(self.service_name)
+        return self
+
+    @model_validator(mode="after")
+    def _normalize_watch_leader_provider(self) -> "OpenVikingConfig":
+        if "watch_leader_provider" in self.model_fields_set:
+            _get_config_logger().warning(
+                "Config field 'watch_leader_provider' is deprecated and will be removed "
+                "in the next version; use 'storage.agfs.coordination.provider' instead."
+            )
+        coordination = self.storage.agfs.coordination
+        uses_cache = self.watch_leader_provider == "cache" or (
+            self.watch_leader_provider == "auto" and self.storage.watch_store.provider != "file"
+        )
+        if uses_cache and "provider" not in coordination.model_fields_set:
+            self.storage.agfs.coordination = coordination.model_copy(update={"provider": "cache"})
+        return self
+
+    @model_validator(mode="after")
     def _validate_cache_runtime_config(self) -> "OpenVikingConfig":
+        """Require the shared cache Provider whenever AGFS selects a cache-backed runtime."""
         agfs = self.storage.agfs
-        uses_canonical_cache = agfs.cachefs.backend == "cache" or agfs.queuefs.backend == "cache"
+        backups = agfs.backups or {}
+        uses_canonical_cache = (
+            agfs.cachefs.backend == "cache"
+            or agfs.queuefs.backend == "cache"
+            or agfs.pathlock.provider == "cache"
+            or agfs.coordination.provider == "cache"
+            or backups.get("provider", "filesystem") == "cache"
+        )
         if uses_canonical_cache and self.cache is None:
             raise ValueError("top-level cache config is required when an AGFS backend uses cache")
         return self
@@ -384,44 +389,65 @@ class OpenVikingConfig(BaseModel):
         data["git"] = git
         return data
 
-    @model_validator(mode="before")
-    @classmethod
-    def _reject_removed_cache_config(cls, data: Any) -> Any:
-        if not isinstance(data, dict):
-            return data
-
-        storage_value = data.get("storage")
-        if not isinstance(storage_value, dict):
-            return data
-        agfs_value = storage_value.get("agfs")
-        if not isinstance(agfs_value, dict):
-            return data
-        if "cache" in agfs_value:
-            raise ValueError(
-                "storage.agfs.cache has been removed; configure cache.provider/cache.params "
-                "and storage.agfs.cachefs.backend='cache'"
-            )
-        queuefs = agfs_value.get("queuefs")
-        if isinstance(queuefs, dict) and (
-            queuefs.get("backend") == "redis" or "redis" in queuefs
-        ):
-            raise ValueError(
-                "storage.agfs.queuefs backend='redis' and queuefs.redis have been removed; "
-                "use backend='cache' with top-level cache.provider/cache.params"
-            )
-        return data
-
     allow_private_networks: bool = Field(
         default=False,
         description=(
             "Allow fetching resources from private/non-public network addresses. "
-            "When disabled (default), only public IP addresses and hostnames are allowed."
+            "Configured code hosts may also use private networks. Loopback, link-local, "
+            "unspecified, multicast, reserved and known metadata addresses are always rejected."
         ),
     )
 
     log: LogConfig = Field(default_factory=LogConfig, description="Logging configuration")
 
     memory: MemoryConfig = Field(default_factory=MemoryConfig, description="Memory configuration")
+
+    expiry: ExpiryConfig = Field(
+        default_factory=ExpiryConfig,
+        description="Distributed expiry scheduling configuration",
+    )
+
+    ttl: TTLConfig = RuntimeField(
+        default_factory=TTLConfig,
+        description=(
+            "Directory TTL recycling policy. Default-off; requires the enabled Redis TTL runtime."
+        ),
+    )
+
+    @model_validator(mode="after")
+    def _validate_expiry_backend(self) -> "OpenVikingConfig":
+        self._check_expiry_backend()
+        return self
+
+    @model_validator(mode="after")
+    def _validate_watch_store(self) -> "OpenVikingConfig":
+        if self.storage.watch_store.provider == "mysql":
+            if not self.storage.watch_store.params.get("credential_encryption_key"):
+                raise ValueError(
+                    "storage.watch_store.provider='mysql' requires "
+                    "storage.watch_store.params.credential_encryption_key"
+                )
+        return self
+
+    def _check_expiry_backend(self) -> None:
+        if self.uses_redis_expiry():
+            self.expiry.validate_for_runtime()
+
+    def uses_redis_session_expiry(self) -> bool:
+        idle = self.memory.session_auto_commit
+        return idle.enabled and idle.idle_backend == "redis"
+
+    def uses_redis_compile_schedule(self) -> bool:
+        return self.compile_api.scheduler_enabled
+
+    def uses_redis_expiry(self) -> bool:
+        """Whether any feature needs the distributed ExpiryScheduler."""
+        return self.uses_redis_session_expiry() or self.uses_redis_compile_schedule()
+
+    agent_evolution: AgentEvolutionConfig = RuntimeField(
+        default_factory=AgentEvolutionConfig,
+        description="Dynamic cluster default for Agent Evolution.",
+    )
 
     oauth: OAuthConfig = Field(
         default_factory=OAuthConfig,
@@ -441,353 +467,13 @@ class OpenVikingConfig(BaseModel):
         description="Conversation-log ingest (openviking-server ingest) configuration",
     )
 
-    model_config = {"arbitrary_types_allowed": True, "extra": "forbid"}
+    runtime_config: RuntimeConfigSettings = Field(
+        default_factory=RuntimeConfigSettings,
+        description=(
+            "Boot-level selection of the runtime config source. "
+            "Read once at startup and never mutated by the dynamic config API."
+        ),
+    )
 
-    @classmethod
-    def from_dict(cls, config: Dict[str, Any]) -> "OpenVikingConfig":
-        """Create configuration from dictionary."""
-        try:
-            # Make a copy to avoid modifying the original
-            config_copy = config.copy()
+    model_config = {"arbitrary_types_allowed": True, "hide_input_in_errors": True}
 
-            parser_types = [
-                "pdf",
-                "code",
-                "image",
-                "audio",
-                "video",
-                "markdown",
-                "anydoc",
-                "html",
-                "text",
-                "directory",
-                "feishu",
-                "webfeed",
-            ]
-            raise_unknown_config_fields(
-                data=config_copy,
-                valid_fields=set(cls.model_fields.keys())
-                | {
-                    "server",
-                    "bot",
-                    "parsers",
-                    "skills",
-                    "output_language_override",
-                    "allow_private_networks",
-                },
-                context_name="OpenVikingConfig",
-            )
-
-            # Remove sections managed by other loaders (e.g. server config)
-            config_copy.pop("server", None)
-            config_copy.pop("bot", None)
-            config_copy.pop("skills", None)
-            config_copy.pop("output_language_override", None)
-            config_copy.pop("allow_private_networks", None)
-
-            # Handle parser configurations from nested "parsers" section
-            parser_configs = {}
-            if "parsers" in config_copy:
-                parser_configs = config_copy.pop("parsers")
-                if parser_configs is None:
-                    parser_configs = {}
-                if not isinstance(parser_configs, dict):
-                    raise ValueError("Invalid parsers config: 'parsers' section must be an object")
-                parser_configs = parser_configs.copy()
-                if "excel" in parser_configs:
-                    parser_configs.pop("excel")
-                    _get_config_logger().error(
-                        "Config field 'parsers.excel' was removed and is ignored; "
-                        "spreadsheet parsing now uses 'parsers.anydoc'."
-                    )
-            raise_unknown_config_fields(
-                data=parser_configs,
-                valid_fields=set(parser_types),
-                context_name="parsers",
-            )
-            for parser_type in parser_types:
-                if parser_type in config_copy:
-                    parser_configs[parser_type] = config_copy.pop(parser_type)
-
-            # Handle log configuration from nested "log" section
-            log_config_data = None
-            if "log" in config_copy:
-                log_config_data = config_copy.pop("log")
-
-            # Handle memory configuration from nested "memory" section
-            memory_config_data = None
-            if "memory" in config_copy:
-                memory_config_data = config_copy.pop("memory")
-
-            instance = cls(**config_copy)
-
-            # Apply log configuration
-            if log_config_data is not None:
-                instance.log = LogConfig.from_dict(log_config_data)
-
-            # Apply memory configuration
-            if memory_config_data is not None:
-                try:
-                    instance.memory = MemoryConfig.from_dict(memory_config_data)
-                except ValidationError as e:
-                    raise ValueError(
-                        format_validation_error(
-                            root_model=MemoryConfig,
-                            error=e,
-                            path_prefix="memory",
-                        )
-                    ) from e
-
-            # Apply parser configurations
-            for parser_type, parser_data in parser_configs.items():
-                if hasattr(instance, parser_type):
-                    config_class = getattr(instance, parser_type).__class__
-                    setattr(instance, parser_type, config_class.from_dict(parser_data))
-
-            # Check dimension consistency
-            if (
-                getattr(instance, "storage", None)
-                and getattr(instance.storage, "vectordb", None)
-                and getattr(instance, "embedding", None)
-            ):
-                db_dim = instance.storage.vectordb.dimension
-                emb_dim = instance.embedding.dimension
-                if db_dim > 0 and emb_dim > 0 and db_dim != emb_dim:
-                    logging.warning(
-                        f"Dimension mismatch: VectorDB dimension is {db_dim}, "
-                        f"but Embedding dimension is {emb_dim}. "
-                        "This may cause errors during vector search."
-                    )
-            return instance
-        except ValidationError as e:
-            raise ValueError(format_validation_error(root_model=cls, error=e)) from e
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert configuration to dictionary."""
-        return self.model_dump()
-
-    def get_query_planner(self) -> VLMConfig:
-        """Return the model config used for retrieval intent analysis and query planning."""
-        if self.query_planner is not None and self.query_planner._has_any_config():
-            return self.query_planner
-        return self.vlm
-
-
-class OpenVikingConfigSingleton:
-    """Global singleton for OpenVikingConfig.
-
-    Resolution chain for ov.conf:
-      1. Explicit path passed to initialize()
-      2. OPENVIKING_CONFIG_FILE environment variable
-      3. ~/.openviking/ov.conf
-      4. /etc/openviking/ov.conf
-      5. Error with clear guidance
-
-    ``_initializing`` prevents a same-thread deadlock: loading the config
-    triggers pydantic validation which can import modules whose module-level
-    ``get_logger()`` calls ``get_instance()`` again *before* the lock is
-    released.  The flag is checked **before** ``_lock.acquire()`` so the
-    re-entrant call raises immediately, letting ``_load_log_config()``
-    fall back to default logging.
-    """
-
-    _instance: Optional[OpenVikingConfig] = None
-    _lock: Lock = Lock()
-    _initializing: bool = False
-
-    @classmethod
-    def get_instance(cls) -> OpenVikingConfig:
-        """Get the global singleton instance.
-
-        Raises FileNotFoundError if no config file is found.
-        Raises RuntimeError if called re-entrantly during initialization.
-        """
-        if cls._initializing:
-            raise RuntimeError(
-                "OpenVikingConfigSingleton is still initializing "
-                "(re-entrant call detected, falling back to defaults)"
-            )
-        if cls._instance is None:
-            with cls._lock:
-                if cls._instance is None:
-                    cls._initializing = True
-                    try:
-                        config_path = resolve_config_path(
-                            None, OPENVIKING_CONFIG_ENV, DEFAULT_OV_CONF
-                        )
-                        if config_path is not None:
-                            cls._instance = cls._load_from_file(str(config_path))
-                        else:
-                            default_path_user = DEFAULT_CONFIG_DIR / DEFAULT_OV_CONF
-                            default_path_system = SYSTEM_CONFIG_DIR / DEFAULT_OV_CONF
-                            raise FileNotFoundError(
-                                f"OpenViking configuration file not found.\n"
-                                f"Please create {default_path_user} or {default_path_system}, "
-                                f"or set {OPENVIKING_CONFIG_ENV}.\n"
-                                f"See: https://openviking.ai/docs"
-                            )
-                    finally:
-                        cls._initializing = False
-                    from openviking_cli.utils.logger import reconfigure_logging
-
-                    reconfigure_logging()
-        return cls._instance
-
-    @classmethod
-    def initialize(
-        cls,
-        config_dict: Optional[Dict[str, Any]] = None,
-        config_path: Optional[str] = None,
-    ) -> OpenVikingConfig:
-        """Initialize the global singleton.
-
-        Args:
-            config_dict: Direct config dictionary (highest priority).
-            config_path: Explicit path to ov.conf file.
-        """
-        with cls._lock:
-            cls._initializing = True
-            try:
-                if config_dict is not None:
-                    cls._instance = OpenVikingConfig.from_dict(config_dict)
-                else:
-                    path = resolve_config_path(config_path, OPENVIKING_CONFIG_ENV, DEFAULT_OV_CONF)
-                    if path is not None:
-                        cls._instance = cls._load_from_file(str(path))
-                    else:
-                        default_path_user = DEFAULT_CONFIG_DIR / DEFAULT_OV_CONF
-                        default_path_system = SYSTEM_CONFIG_DIR / DEFAULT_OV_CONF
-                        raise FileNotFoundError(
-                            f"OpenViking configuration file not found.\n"
-                            f"Please create {default_path_user} or {default_path_system}, "
-                            f"or set {OPENVIKING_CONFIG_ENV}.\n"
-                            f"See: https://openviking.ai/docs"
-                        )
-            finally:
-                cls._initializing = False
-        from openviking_cli.utils.logger import reconfigure_logging
-
-        reconfigure_logging()
-        return cls._instance
-
-    @classmethod
-    def _load_from_file(cls, config_file: str) -> "OpenVikingConfig":
-        """Load configuration from JSON config file."""
-        try:
-            config_path = Path(config_file)
-            if not config_path.exists():
-                raise FileNotFoundError(f"Config file does not exist: {config_file}")
-
-            with open(config_path, "r", encoding="utf-8-sig") as f:
-                raw = f.read()
-
-            # Expand $VAR and ${VAR} inside the JSON text (useful for container deployments).
-            # Unset variables are left unchanged by expandvars().
-            raw = os.path.expandvars(raw)
-            config_data = json.loads(raw)
-
-            return OpenVikingConfig.from_dict(config_data)
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Config file JSON format error: {e}")
-        except ValueError:
-            raise
-        except Exception as e:
-            raise RuntimeError(f"Failed to load config file: {e}")
-
-    @classmethod
-    def reset_instance(cls) -> None:
-        """Reset the singleton instance (mainly for testing)."""
-        with cls._lock:
-            cls._instance = None
-
-
-# Global convenience function
-def get_openviking_config() -> OpenVikingConfig:
-    """Get the global OpenVikingConfig instance."""
-    return OpenVikingConfigSingleton.get_instance()
-
-
-def set_openviking_config(config: OpenVikingConfig) -> None:
-    """Set the global OpenVikingConfig instance."""
-    OpenVikingConfigSingleton.initialize(config_dict=config.to_dict())
-
-
-def is_valid_openviking_config(config: OpenVikingConfig) -> bool:
-    """
-    Check if OpenVikingConfig is valid.
-
-    Note: Most validation is now handled by Pydantic validators in individual config classes.
-    This function only validates cross-config consistency.
-
-    Raises:
-        ValueError: If configuration is invalid with detailed error messages
-
-    Returns:
-        bool: True if configuration is valid
-    """
-    errors = []
-
-    # Validate account identifier
-    if not config.default_account or not config.default_account.strip():
-        errors.append("Default account identifier cannot be empty")
-
-    if errors:
-        error_message = "Invalid OpenViking configuration:\n" + "\n".join(
-            f"  - {e}" for e in errors
-        )
-        raise ValueError(error_message)
-
-    return True
-
-
-def initialize_openviking_config(
-    user: Optional[UserIdentifier] = None,
-    path: Optional[str] = None,
-) -> OpenVikingConfig:
-    """
-    Initialize OpenViking configuration with provided parameters.
-
-    Loads ov.conf from the standard resolution chain, then applies
-    parameter overrides.
-
-    Args:
-        user: UserIdentifier for session management
-        path: Optional local workspace override for the service
-
-    Returns:
-        Configured OpenVikingConfig instance
-
-    Raises:
-        ValueError: If the resulting configuration is invalid
-        FileNotFoundError: If no config file is found
-    """
-    config = get_openviking_config()
-
-    if user:
-        # Set user if provided, like a email address or a account_id
-        config.default_account = user._account_id
-        config.default_user = user._user_id
-
-    # Configure storage based on provided parameters
-    if path:
-        # Explicit local workspace override
-        config.storage.agfs.backend = config.storage.agfs.backend or "local"
-        config.storage.vectordb.backend = config.storage.vectordb.backend or "local"
-        # Resolve and update workspace + dependent paths (model_validator won't
-        # re-run on attribute assignment, so sync agfs.path / vectordb.path here).
-        workspace_path = Path(path).expanduser().resolve()
-        workspace_path.mkdir(parents=True, exist_ok=True)
-        resolved = str(workspace_path)
-        config.storage.workspace = resolved
-        config.storage.agfs.path = resolved
-        config.storage.vectordb.path = resolved
-
-    # Ensure vector dimension is synced if not set in storage
-    if config.storage.vectordb.dimension == 0:
-        config.storage.vectordb.dimension = config.embedding.dimension
-
-    # Validate configuration
-    if not is_valid_openviking_config(config):
-        raise ValueError("Invalid OpenViking configuration")
-
-    return config
