@@ -25,7 +25,12 @@ router = APIRouter(prefix="/api/v1/evolution", tags=["evolution-cicd"])
 
 class CreatePackageRequest(BaseModel):
     target_skill: str = Field(..., description="Name of the skill being modified")
-    diff_patch: str = Field(..., description="Unified diff content of the modification")
+    diff_patch: str = Field("", description="Unified diff content of the modification")
+    skill_dir: Optional[str] = Field(None, description="Optional skill bundle directory path")
+    package_files: Optional[Dict[str, str]] = Field(None, description="Optional bundle file overlays (SKILL.md, scripts/, references/)")
+    diagnosis: str = Field("", description="Root-cause failure diagnosis for SkillHone tracking")
+    regression_commands: Optional[List[str]] = Field(None, description="Optional isolated regression commands")
+    enforce_regression: bool = Field(False, description="Force isolated bundle + regression check")
 
 
 class AdvancePackageRequest(BaseModel):
@@ -48,13 +53,24 @@ class RollbackRequest(BaseModel):
 def create_evolution_package(req: CreatePackageRequest) -> Dict[str, Any]:
     """Create a new candidate evolution package entering the pipeline."""
     pipeline = EvolutionCICDPipeline.get_instance()
-    pkg = pipeline.create_package(target_skill=req.target_skill, diff_patch=req.diff_patch)
+    pkg = pipeline.create_package(
+        target_skill=req.target_skill,
+        diff_patch=req.diff_patch,
+        skill_dir=req.skill_dir,
+        package_files=req.package_files,
+        diagnosis=req.diagnosis,
+        regression_commands=req.regression_commands,
+        enforce_regression=req.enforce_regression,
+    )
     return {
         "status": "success",
         "package": {
             "package_id": pkg.package_id,
             "target_skill": pkg.target_skill,
             "line_count": pkg.line_count,
+            "patch_fingerprint": pkg.patch_fingerprint,
+            "prior_rejected_count": len(pkg.rejected_history_refs),
+            "review_manifest": pkg.review_manifest,
             "current_stage": pkg.current_stage.value,
             "canary_traffic_pct": pkg.canary_traffic_pct,
             "passed_safety_gate": pkg.passed_safety_gate,
@@ -80,7 +96,22 @@ def advance_evolution_package(req: AdvancePackageRequest) -> Dict[str, Any]:
         "canary_traffic_pct": pkg.canary_traffic_pct,
         "passed_safety_gate": pkg.passed_safety_gate,
         "rolled_back": pkg.rolled_back,
+        "decision": pkg.decision,
+        "rationale": pkg.rationale,
+        "eval_evidence": pkg.eval_evidence,
     }
+
+
+@router.get("/decisions")
+def list_evolution_decisions(
+    skill_name: Optional[str] = None,
+    decision: Optional[str] = None,
+    limit: int = 50,
+) -> Dict[str, Any]:
+    """Retrieve persisted SkillHone evolution decisions and rejection rationales."""
+    pipeline = EvolutionCICDPipeline.get_instance()
+    items = pipeline.list_decisions(skill_name=skill_name, decision=decision, limit=limit)
+    return {"total": len(items), "items": items}
 
 
 @router.get("/pipeline/packages")

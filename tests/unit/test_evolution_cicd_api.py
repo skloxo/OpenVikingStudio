@@ -12,21 +12,30 @@ from openviking.core.evolution_cicd import (
 from openviking.core.dreaming_gate import (
     DreamingDefectMiner,
 )
+from openviking.core.rsi_trajectory_store import RSITrajectoryStore
 from openviking.server.routers.evolution_cicd import router
 
 
 @pytest.fixture
-def client():
+def client(tmp_path):
+    RSITrajectoryStore.reset_instance()
+    store = RSITrajectoryStore.get_instance(tmp_path / "test_cicd_api.db")
     app = FastAPI()
     app.include_router(router)
     pipeline = EvolutionCICDPipeline.get_instance()
+    pipeline.set_store(store)
     pipeline.packages.clear()
     pipeline.autonomous_level = AutonomousLevel.LEVEL_2_BOUNDED_AUTO
     pipeline.emergency_kill_switch_tripped = False
     pipeline.auto_downgrade_count = 0
     miner = DreamingDefectMiner.get_instance()
     miner.defects.clear()
-    return TestClient(app)
+    try:
+        yield TestClient(app)
+    finally:
+        pipeline.packages.clear()
+        pipeline.set_store(None)
+        RSITrajectoryStore.reset_instance()
 
 
 def test_api_package_lifecycle(client):

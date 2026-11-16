@@ -111,6 +111,26 @@ class RSITrajectoryStore:
                         file_path TEXT
                     );
                 """)
+
+                # 4. SkillHone 演进决策历史表 (Card-254)
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS skill_decision_history (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        package_id TEXT NOT NULL,
+                        skill_name TEXT NOT NULL,
+                        diagnosis TEXT NOT NULL,
+                        candidate_patches_json TEXT NOT NULL,
+                        eval_evidence_json TEXT NOT NULL,
+                        patch_fingerprint TEXT NOT NULL,
+                        decision TEXT NOT NULL,
+                        rationale TEXT NOT NULL,
+                        created_at REAL NOT NULL
+                    );
+                """)
+                cur.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_skill_decision_skill_time
+                    ON skill_decision_history (skill_name, created_at DESC);
+                """)
                 conn.commit()
             finally:
                 conn.close()
@@ -278,6 +298,104 @@ class RSITrajectoryStore:
             finally:
                 conn.close()
 
+    def record_skill_decision(
+        self,
+        *,
+        package_id: str,
+        skill_name: str,
+        diagnosis: str,
+        candidate_patches: Any,
+        eval_evidence: Any,
+        patch_fingerprint: str,
+        decision: str,
+        rationale: str,
+    ) -> int:
+        """持久化每次 Skill 演进决策（含诊断、候选补丁、评估证据、判定与理由）。"""
+        normalized = str(decision or "").strip().lower()
+        if normalized not in ("accepted", "rejected"):
+            raise ValueError(f"Invalid decision '{decision}': expected 'accepted' or 'rejected'.")
+        with self._db_lock:
+            conn = self._get_connection()
+            try:
+                cur = conn.cursor()
+                cur.execute(
+                    """
+                    INSERT INTO skill_decision_history (
+                        package_id, skill_name, diagnosis, candidate_patches_json,
+                        eval_evidence_json, patch_fingerprint, decision, rationale, created_at
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        package_id,
+                        skill_name,
+                        diagnosis,
+                        json.dumps(candidate_patches or {}, ensure_ascii=False),
+                        json.dumps(eval_evidence or {}, ensure_ascii=False),
+                        patch_fingerprint,
+                        normalized,
+                        rationale,
+                        time.time(),
+                    ),
+                )
+                conn.commit()
+                return int(cur.lastrowid or 0)
+            finally:
+                conn.close()
+
+    def list_skill_decisions(
+        self,
+        *,
+        skill_name: Optional[str] = None,
+        decision: Optional[str] = None,
+        limit: int = 50,
+    ) -> List[Dict[str, Any]]:
+        """检索 Skill 演进决策历史。"""
+        where: List[str] = []
+        params: List[Any] = []
+        if skill_name:
+            where.append("skill_name = ?")
+            params.append(skill_name)
+        if decision:
+            where.append("decision = ?")
+            params.append(decision.strip().lower())
+        where_sql = f"WHERE {' AND '.join(where)}" if where else ""
+        params.append(int(limit))
+        with self._db_lock:
+            conn = self._get_connection()
+            try:
+                rows = conn.execute(
+                    f"""
+                    SELECT id, package_id, skill_name, diagnosis, candidate_patches_json,
+                           eval_evidence_json, patch_fingerprint, decision, rationale, created_at
+                    FROM skill_decision_history
+                    {where_sql}
+                    ORDER BY id DESC LIMIT ?
+                    """,
+                    params,
+                ).fetchall()
+                return [
+                    {
+                        "id": row["id"],
+                        "package_id": row["package_id"],
+                        "skill_name": row["skill_name"],
+                        "diagnosis": row["diagnosis"],
+                        "candidate_patches": json.loads(row["candidate_patches_json"] or "{}"),
+                        "eval_evidence": json.loads(row["eval_evidence_json"] or "{}"),
+                        "patch_fingerprint": row["patch_fingerprint"],
+                        "decision": row["decision"],
+                        "rationale": row["rationale"],
+                        "created_at": row["created_at"],
+                    }
+                    for row in rows
+                ]
+            finally:
+                conn.close()
+
+    def get_rejected_decisions(self, skill_name: str, limit: int = 20) -> List[Dict[str, Any]]:
+        """生成补丁前检索目标 Skill 历史被拒方案及原因，避免重复踩坑。"""
+        return self.list_skill_decisions(skill_name=skill_name, decision="rejected", limit=limit)
+
     def count_summary(self) -> Dict[str, int]:
         """获取持久化总览统计。"""
         with self._db_lock:
@@ -294,11 +412,20 @@ class RSITrajectoryStore:
                 total_gates = grow[0] or 0
                 passed_gates = grow[1] or 0
 
+                cur.execute(
+                    "SELECT COUNT(*), SUM(CASE WHEN decision = 'rejected' THEN 1 ELSE 0 END) FROM skill_decision_history"
+                )
+                drow = cur.fetchone()
+                total_decisions = drow[0] or 0
+                rejected_decisions = drow[1] or 0
+
                 return {
                     "persisted_sessions": total_sessions,
                     "persisted_turns": total_turns,
                     "total_gate_checks": total_gates,
                     "passed_gate_checks": passed_gates,
+                    "skill_decisions_total": total_decisions,
+                    "skill_decisions_rejected": rejected_decisions,
                 }
             finally:
                 conn.close()

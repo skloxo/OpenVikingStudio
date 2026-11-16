@@ -8,11 +8,15 @@ from openviking.core.evolution_cicd import (
     PipelineStage,
     SecondOrderMetrics,
 )
+from openviking.core.rsi_trajectory_store import RSITrajectoryStore
 
 
 @pytest.fixture(autouse=True)
-def reset_pipeline():
+def reset_pipeline(tmp_path):
+    RSITrajectoryStore.reset_instance()
+    store = RSITrajectoryStore.get_instance(tmp_path / "test_cicd.db")
     pipeline = EvolutionCICDPipeline.get_instance()
+    pipeline.set_store(store)
     pipeline.packages.clear()
     pipeline.autonomous_level = AutonomousLevel.LEVEL_2_BOUNDED_AUTO
     pipeline.emergency_kill_switch_tripped = False
@@ -20,6 +24,8 @@ def reset_pipeline():
     pipeline.metrics = SecondOrderMetrics()
     yield
     pipeline.packages.clear()
+    pipeline.set_store(None)
+    RSITrajectoryStore.reset_instance()
 
 
 def test_package_creation_and_stage_transitions():
