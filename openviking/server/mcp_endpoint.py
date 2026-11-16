@@ -3481,6 +3481,10 @@ def _install_aliased_tool_manager(mcp_instance: FastMCP) -> None:
     tm.get_tool = _aliased_get_tool
     tm._aliasing_installed = True
 
+    from openviking.server.mcp_write_telemetry import install_mcp_write_telemetry
+
+    install_mcp_write_telemetry(tm, get_ctx=lambda: _mcp_ctx.get())
+
 
 # ---------------------------------------------------------------------------
 # Portable tool schemas

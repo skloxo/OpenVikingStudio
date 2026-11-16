@@ -16,6 +16,31 @@ from openviking.observability.http_error_context import (
 )
 
 UNKNOWN_IDENTITY = "__unknown__"
+VALID_CONTEXT_WRITE_OPERATIONS = frozenset(
+    {"add_resource", "add_skill", "session.add_message", "session.commit"}
+)
+CONTEXT_WRITE_HTTP_ROUTES: dict[str, str] = {
+    "/api/v1/resources": "add_resource",
+    "/api/v1/resources/cp": "add_resource",
+    "/api/v1/resources/mv": "add_resource",
+    "/api/v1/content/write": "add_resource",
+    "/api/v1/content/batch-write": "add_resource",
+    "/api/v1/content/set_tags": "add_resource",
+    "/api/v1/fs/mkdir": "add_resource",
+    "/api/v1/fs/cp": "add_resource",
+    "/api/v1/fs/mv": "add_resource",
+    "/api/v1/fs/attrs/set_tags": "add_resource",
+    "/api/v1/valet/handover": "add_resource",
+    "/api/v1/valet/batch": "add_resource",
+    "/api/v1/skills": "add_skill",
+    "/api/v1/skills/ingestion/submit": "add_skill",
+    "/api/v1/skills/ingestion/process-batch": "add_skill",
+    "/api/v1/sessions/{session_id}/messages": "session.add_message",
+    "/api/v1/sessions/{session_id}/messages/batch": "session.add_message",
+    "/api/v1/sessions/{session_id}/commit": "session.commit",
+    "/api/v1/task-cards/file": "session.commit",
+    "/api/v1/task-cards/{card_id}/resolve": "session.commit",
+}
 AUDIT_EXCLUDED_ROUTES = frozenset(
     {
         "",
@@ -150,6 +175,17 @@ def project_events(
             prev_count, prev_results = retrieval_rows[retrieval_key]
             result_count = safe_int(payload.get("result_count"), 0)
             retrieval_rows[retrieval_key] = (prev_count + 1, prev_results + result_count)
+            continue
+
+        if event.event_name == "context.write":
+            _add_context_write_row(
+                context_rows,
+                account_id=account_id,
+                user_id=user_id,
+                event_date=event_date,
+                event_hour=event_hour,
+                payload=payload,
+            )
             continue
 
         if event.event_name == "http.request":
@@ -312,19 +348,35 @@ def retrieval_operation_for_http(method: str, route: str) -> str | None:
     return None
 
 
+def _add_context_write_row(
+    context_rows: defaultdict[tuple, int],
+    *,
+    account_id: str,
+    user_id: str,
+    event_date: str,
+    event_hour: int,
+    payload: dict[str, Any],
+) -> None:
+    operation = str(payload.get("operation") or "").strip()
+    if operation not in VALID_CONTEXT_WRITE_OPERATIONS:
+        return
+    status = str(payload.get("status") or "success").strip().lower()
+    if status != "success":
+        return
+    count = max(safe_int(payload.get("count"), 1), 0)
+    if count <= 0:
+        return
+    op_account = normalize_identity(payload.get("account_id") or account_id, unknown=True)
+    op_user = normalize_identity(payload.get("user_id") or user_id)
+    context_key = (op_account, op_user, event_date, event_hour, operation)
+    context_rows[context_key] += count
+
+
 def context_write_operation_for_http(method: str, route: str, status_code: int) -> str | None:
     """Map successful write APIs from `http.request` into context-write heatmap buckets."""
     if method != "POST" or not (200 <= status_code < 400):
         return None
-    if route == "/api/v1/resources":
-        return "add_resource"
-    if route == "/api/v1/skills":
-        return "add_skill"
-    if route == "/api/v1/sessions/{session_id}/messages":
-        return "session.add_message"
-    if route == "/api/v1/sessions/{session_id}/commit":
-        return "session.commit"
-    return None
+    return CONTEXT_WRITE_HTTP_ROUTES.get(route)
 
 
 def derive_api_type(route: str) -> str:
