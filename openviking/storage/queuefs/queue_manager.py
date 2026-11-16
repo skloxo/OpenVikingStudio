@@ -36,6 +36,7 @@ def init_queue_manager(
     max_concurrent_external_parse: int = 4,
     max_concurrent_add_resource: int = 4,
     max_concurrent_session_commit: int = DEFAULT_MAX_CONCURRENT_SESSION_COMMIT,
+    max_concurrent_external_task: int = 10,
 ) -> "QueueManager":
     """Initialize QueueManager singleton."""
     global _instance
@@ -48,6 +49,7 @@ def init_queue_manager(
         max_concurrent_external_parse=max_concurrent_external_parse,
         max_concurrent_add_resource=max_concurrent_add_resource,
         max_concurrent_session_commit=max_concurrent_session_commit,
+        max_concurrent_external_task=max_concurrent_external_task,
     )
     return _instance
 
@@ -72,6 +74,7 @@ class QueueManager:
     EXTERNAL_PARSE = "ExternalParse"
     ADD_RESOURCE = "AddResource"
     SESSION_COMMIT = "SessionCommit"
+    EXTERNAL_TASK = "ExternalTask"
     USER_DELETION = "UserDeletion"
     # A deferred archive re-enqueues itself; throttle the next scheduling round.
     _SESSION_COMMIT_POLL_INTERVAL = 1.0
@@ -86,6 +89,7 @@ class QueueManager:
         max_concurrent_external_parse: int = 4,
         max_concurrent_add_resource: int = 4,
         max_concurrent_session_commit: int = DEFAULT_MAX_CONCURRENT_SESSION_COMMIT,
+        max_concurrent_external_task: int = 10,
     ):
         self._agfs, self.timeout, self.mount_point = agfs, timeout, mount_point
         self._max_concurrent_embedding = max_concurrent_embedding
@@ -93,6 +97,7 @@ class QueueManager:
         self._max_concurrent_external_parse = max_concurrent_external_parse
         self._max_concurrent_add_resource = max_concurrent_add_resource
         self._max_concurrent_session_commit = max_concurrent_session_commit
+        self._max_concurrent_external_task = max_concurrent_external_task
         self._queues: Dict[str, NamedQueue] = {}
         self._started = False
         self._queue_threads: Dict[str, threading.Thread] = {}
@@ -124,6 +129,12 @@ class QueueManager:
         owners = self._task_work_index.rebuild(snapshots)
         tracker.attach_work_index(self._task_work_index)
         await tracker.restore_work_tasks(owners)
+
+    async def get_queued_tasks(self, tracker: Any, queue_name: str) -> list[Any]:
+        """Read Tasks referenced by a queue's unacknowledged deliveries."""
+        from openviking.service.task_work_index import collect_queued_tasks
+
+        return await collect_queued_tasks(self._queues.get(queue_name), tracker)
 
     def setup_standard_queues(self, vector_store: Any, start: bool = True) -> None:
         """
@@ -191,6 +202,8 @@ class QueueManager:
             return self._max_concurrent_add_resource
         if queue_name == self.SESSION_COMMIT:
             return self._max_concurrent_session_commit
+        if queue_name == self.EXTERNAL_TASK:
+            return self._max_concurrent_external_task
         return self._max_concurrent_semantic
 
     def _queue_worker_loop(
@@ -205,7 +218,7 @@ class QueueManager:
         asyncio.set_event_loop(loop)
         poll_interval = (
             self._SESSION_COMMIT_POLL_INTERVAL
-            if queue.name == self.SESSION_COMMIT
+            if queue.name in {self.SESSION_COMMIT, self.EXTERNAL_TASK}
             else self._poll_interval
         )
         try:
@@ -221,7 +234,7 @@ class QueueManager:
                             data = loop.run_until_complete(queue.dequeue())
                             if data is not None:
                                 logger.debug("[QueueManager] Dequeued message from %s", queue.name)
-                            if queue.name == self.SESSION_COMMIT:
+                            if queue.name in {self.SESSION_COMMIT, self.EXTERNAL_TASK}:
                                 stop_event.wait(poll_interval)
                         else:
                             stop_event.wait(poll_interval)
@@ -248,7 +261,7 @@ class QueueManager:
         """
         poll_interval = (
             self._SESSION_COMMIT_POLL_INTERVAL
-            if queue.name == self.SESSION_COMMIT
+            if queue.name in {self.SESSION_COMMIT, self.EXTERNAL_TASK}
             else self._poll_interval
         )
         sem = asyncio.Semaphore(max_concurrent)

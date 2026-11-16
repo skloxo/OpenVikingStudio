@@ -2181,3 +2181,6 @@ def make_streaming_memory_updater_key(*, request_context: Any) -> StreamingMemor
     )
     user_id = getattr(request_context, "user_id", None) or getattr(user, "user_id", None) or ""
     return StreamingMemoryUpdaterKey(account_id=str(account_id), user_id=str(user_id))
+
+
+acquire_memory_operation_lease = _acquire_stable_operation_lease

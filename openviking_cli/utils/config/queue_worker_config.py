@@ -37,5 +37,8 @@ class QueueWorkersConfig(BaseModel):
     session_commit: QueueWorkerConfig = Field(
         default_factory=lambda: QueueWorkerConfig(max_concurrent=8)
     )
+    external_task: QueueWorkerConfig = Field(
+        default_factory=lambda: QueueWorkerConfig(max_concurrent=10)
+    )
 
     model_config = {"extra": "forbid"}

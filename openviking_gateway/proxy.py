@@ -17,7 +17,9 @@ from starlette.responses import JSONResponse, Response, StreamingResponse
 from openviking_gateway.config import GatewayConfig
 from openviking_gateway.kernel import GatewayKernel
 from openviking_gateway.protocols import (
+    HEARTBEAT_SECONDS,
     anthropic_to_openai_request,
+    heartbeat,
     openai_to_anthropic_response,
     OpenAIToAnthropicStreamAdapter,
     SSEDecoder,
@@ -29,6 +31,14 @@ from openviking_gateway.tool_loop import (
 from openviking_gateway.capture import SessionCaptureEngine
 
 logger = logging.getLogger("openviking_gateway.proxy")
+
+
+async def _sse_with_heartbeat(
+    chunks: AsyncGenerator[bytes, None],
+) -> AsyncGenerator[bytes, None]:
+    """Emit periodic SSE comments during upstream stalls to keep connections alive."""
+    async for chunk in heartbeat(chunks, HEARTBEAT_SECONDS):
+        yield b": keep-alive\n\n" if chunk is None else chunk
 
 HOP_BY_HOP_HEADERS = {
     "host",
@@ -209,7 +219,7 @@ class GatewayProxy:
 
                 _report_telemetry(session_id, "openai", kind, req_payload.get("model", ""), 200, (time.time() - start_time) * 1000)
                 return StreamingResponse(
-                    sse_stream_gen(),
+                    _sse_with_heartbeat(sse_stream_gen()),
                     media_type="text/event-stream",
                     headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
                 )
@@ -289,7 +299,7 @@ class GatewayProxy:
 
                     _report_telemetry(session_id, "anthropic", "user", payload.get("model", ""), 200, (time.time() - start_time) * 1000)
                     return StreamingResponse(
-                        anthropic_sse_gen(),
+                        _sse_with_heartbeat(anthropic_sse_gen()),
                         media_type="text/event-stream",
                         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
                     )
@@ -352,7 +362,7 @@ class GatewayProxy:
 
                 _report_telemetry(session_id, "anthropic", kind, payload.get("model", ""), 200, (time.time() - start_time) * 1000)
                 return StreamingResponse(
-                    translated_sse_gen(),
+                    _sse_with_heartbeat(translated_sse_gen()),
                     media_type="text/event-stream",
                     headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
                 )

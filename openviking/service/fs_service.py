@@ -20,6 +20,7 @@ from openviking.privacy import (
 from openviking.resource.uri_mutation_coordinator import UriMutationCoordinator
 from openviking.resource.watch_storage import is_watch_task_control_uri
 from openviking.server.identity import RequestContext
+from openviking.service.fs_compile_ops import _FSCompileOpsMixin
 from openviking.session.memory.memory_updater import MemoryUpdater
 from openviking.session.memory.utils.content_visibility import visible_content
 from openviking.storage.abstract_overview import (
@@ -73,7 +74,7 @@ if TYPE_CHECKING:
     from openviking.storage import VikingDBManager
 
 
-class FSService:
+class FSService(_FSCompileOpsMixin):
     """File system operations service."""
 
     def __init__(
@@ -84,13 +85,17 @@ class FSService:
         resource_memory_link_service: Optional["ResourceMemoryLinkService"] = None,
         watch_scheduler: Optional["WatchScheduler"] = None,
         uri_mutation_coordinator: Optional[UriMutationCoordinator] = None,
+        watch_manager: Optional["WatchManager"] = None,
     ):
         self._viking_fs = viking_fs
         self._vikingdb = vikingdb
         self._privacy_config_service = privacy_config_service
         self._resource_memory_link_service = resource_memory_link_service
         self._watch_scheduler = watch_scheduler
+        self._watch_manager = watch_manager
         self._uri_mutation_coordinator = uri_mutation_coordinator or UriMutationCoordinator()
+        self.compile_versions: Optional[Any] = None
+        self.compile_lifecycle: Optional[Any] = None
 
     def set_dependencies(
         self,
@@ -100,6 +105,7 @@ class FSService:
         resource_memory_link_service: Optional["ResourceMemoryLinkService"] = None,
         watch_scheduler: Optional["WatchScheduler"] = None,
         uri_mutation_coordinator: Optional[UriMutationCoordinator] = None,
+        watch_manager: Optional["WatchManager"] = None,
     ) -> None:
         """Set service dependencies (for deferred initialization)."""
         self._viking_fs = viking_fs
@@ -107,6 +113,8 @@ class FSService:
         self._privacy_config_service = privacy_config_service
         self._resource_memory_link_service = resource_memory_link_service
         self._watch_scheduler = watch_scheduler
+        if watch_manager is not None:
+            self._watch_manager = watch_manager
         if uri_mutation_coordinator is not None:
             self._uri_mutation_coordinator = uri_mutation_coordinator
 
@@ -117,9 +125,11 @@ class FSService:
         return self._viking_fs
 
     def _get_watch_manager(self) -> Optional["WatchManager"]:
+        if self._watch_manager is not None:
+            return self._watch_manager
         if not self._watch_scheduler:
             return None
-        return self._watch_scheduler.watch_manager
+        return getattr(self._watch_scheduler, "watch_manager", None)
 
     async def _attach_and_filter_tags(
         self,
@@ -820,17 +830,16 @@ class FSService:
             ctx.account_id,
             [from_uri, to_uri],
         ):
-            await watch_manager.validate_target_prefix_rewrite_internal(
-                from_uri,
-                to_uri,
-                account_id=ctx.account_id,
-            )
+            if await watch_manager.has_running_overlap(ctx.account_id, [from_uri, to_uri]):
+                from openviking.storage.errors import ResourceBusyError
+
+                raise ResourceBusyError("A watch task is currently running for this target")
             await viking_fs.mv(from_uri, to_uri, ctx=ctx)
             try:
-                await watch_manager.rewrite_target_prefix_internal(
-                    from_uri,
-                    to_uri,
+                await watch_manager.move(
                     account_id=ctx.account_id,
+                    from_uri=from_uri,
+                    to_uri=to_uri,
                 )
             except Exception as commit_error:
                 try:
@@ -917,10 +926,15 @@ class FSService:
             result, ctx, None, include_tags or "tags" in (extra_fields or [])
         )
 
-    async def stat(self, uri: str, ctx: RequestContext) -> Dict[str, Any]:
+    async def stat(
+        self, uri: str, ctx: RequestContext, skip_count: bool = False
+    ) -> Dict[str, Any]:
         """Get resource status."""
         viking_fs = self._ensure_initialized()
-        return await viking_fs.stat(uri, ctx=ctx)
+        kwargs: Dict[str, Any] = {"ctx": ctx}
+        if skip_count:
+            kwargs["skip_count"] = True
+        return await viking_fs.stat(uri, **kwargs)
 
     async def system_sync_status(self, uri: str, ctx: RequestContext) -> Dict[str, Any]:
         """Return multi-write sync status for one Viking URI subtree."""

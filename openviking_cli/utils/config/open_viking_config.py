@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field, ValidationError, model_validator
 from openviking_cli.session.user_id import UserIdentifier
 
 from .cache_config import CacheConfig
+from .compile_config import CompileApiConfig
 from .config_loader import resolve_config_path
 from .config_utils import format_validation_error, raise_unknown_config_fields
 from .consts import (
@@ -48,6 +49,7 @@ from .queue_worker_config import QueueWorkersConfig
 from .reindex_config import ReindexConfig
 from .rerank_config import RerankConfig
 from .retrieval_config import RetrievalConfig
+from .rules_config import RulesConfig
 from .storage_config import StorageConfig
 from .telemetry_config import TelemetryConfig
 from .vlm_config import VLMConfig
@@ -253,6 +255,16 @@ class OpenVikingConfig(BaseModel):
     parser_api: ParserApiConfig = Field(
         default_factory=ParserApiConfig,
         description="Third-party parser API configuration (files/responses)",
+    )
+
+    rules: RulesConfig = Field(
+        default_factory=RulesConfig,
+        description="Rule compilation and applicability model configuration",
+    )
+
+    compile_api: CompileApiConfig = Field(
+        default_factory=CompileApiConfig,
+        description="External Compile task API configuration",
     )
 
     connector: ConnectorConfig = Field(

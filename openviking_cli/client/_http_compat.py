@@ -285,6 +285,37 @@ class AsyncHTTPClient(import_openviking_sdk().AsyncHTTPClient):
         )
         return self._handle_response_data(response).get("result", {})
 
+    async def rule_search(
+        self,
+        task_context: str,
+        options: Dict[str, Any] | None = None,
+    ) -> Dict[str, Any]:
+        payload: Dict[str, Any] = {"task_context": task_context}
+        if options:
+            payload.update(options)
+        response = await self._request("POST", "/api/v1/rules/search", json=payload)
+        return self._handle_response_data(response).get("result", {})
+
+    async def find_mcp_tools(self, query: str, limit: int = 10) -> Dict[str, Any]:
+        response = await self._request(
+            "POST",
+            "/api/v1/mcps/find",
+            json={"query": query, "limit": limit, "include_definition": True},
+        )
+        return self._handle_response_data(response).get("result", {})
+
+    async def invoke_mcp_tool(
+        self,
+        tool_uri: str,
+        arguments: Dict[str, Any] | None = None,
+    ) -> Dict[str, Any]:
+        response = await self._request(
+            "POST",
+            "/api/v1/mcps/invoke",
+            json={"tool_uri": tool_uri, "arguments": dict(arguments or {})},
+        )
+        return self._handle_response_data(response).get("result", {})
+
 
 class SyncHTTPClient(import_openviking_sdk().SyncHTTPClient):
     def __init__(self, *args, **kwargs):

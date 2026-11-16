@@ -14,6 +14,23 @@ from .vectordb_config import VectorDBBackendConfig
 logger = get_logger(__name__)
 
 
+class WatchStoreConfig(BaseModel):
+    """Watch store: the VikingFS control file for one node."""
+
+    provider: str = "file"
+    params: Dict[str, Any] = Field(default_factory=dict)
+
+    model_config = {"extra": "forbid"}
+
+    @model_validator(mode="after")
+    def validate_provider(self) -> "WatchStoreConfig":
+        if self.provider not in ("file", "mysql"):
+            raise ValueError(
+                f"storage.watch_store.provider must be 'file' or 'mysql', got {self.provider!r}"
+            )
+        return self
+
+
 class StorageConfig(BaseModel):
     """Configuration for storage backend.
 
@@ -41,6 +58,11 @@ class StorageConfig(BaseModel):
     vectordb: VectorDBBackendConfig = Field(
         default_factory=VectorDBBackendConfig,
         description="VectorDB backend configuration",
+    )
+
+    watch_store: WatchStoreConfig = Field(
+        default_factory=WatchStoreConfig,
+        description="Watch task and scheduling storage backend",
     )
 
     params: Dict[str, Any] = Field(
@@ -130,3 +152,10 @@ class StorageConfig(BaseModel):
         from openviking.service.task_tracker import TaskTracker
 
         return TaskTracker(store=PersistentTaskStore(agfs))
+
+    def build_watch_store(self, *, service_name: str, viking_fs: Any):
+        """Build the configured Watch store."""
+        del service_name
+        from openviking.resource.watch_store_file import FileWatchStore
+
+        return FileWatchStore(viking_fs)

@@ -8,6 +8,7 @@ Provides bidirectional translation between OpenAI and Anthropic formats:
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import re
@@ -437,5 +438,48 @@ def safe_append_delta(container: Dict[str, Any], field: str, delta: Optional[str
         container[field] = current + str(delta)
     else:
         container[field] = f"{current}{delta}"
+
+
+# Stay below the common 60-second load-balancer idle timeout.
+HEARTBEAT_SECONDS = 15
+
+
+async def heartbeat(chunks, seconds: float = HEARTBEAT_SECONDS):
+    """Yield None during idle periods while one task owns the source iterator."""
+    queue: asyncio.Queue = asyncio.Queue(1)
+    end = object()
+
+    async def pump():
+        try:
+            async for chunk in chunks:
+                await queue.put(chunk)
+        except asyncio.CancelledError as error:
+            if throw := getattr(chunks, "athrow", None):
+                await throw(error)
+            raise
+        finally:
+            if close := getattr(chunks, "aclose", None):
+                await close()
+
+    def wake_consumer(_task):
+        if queue.empty():
+            queue.put_nowait(end)
+
+    task = asyncio.create_task(pump())
+    task.add_done_callback(wake_consumer)
+    try:
+        while not task.done() or not queue.empty():
+            try:
+                chunk = await asyncio.wait_for(queue.get(), seconds)
+            except asyncio.TimeoutError:
+                yield None
+                continue
+            if chunk is end:
+                break
+            yield chunk
+        await task
+    finally:
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
 
 

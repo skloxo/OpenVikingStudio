@@ -42,6 +42,7 @@ from openviking.server.routers import (
     admin_router,
     agent_evolution_router,
     bot_router,
+    compile_router,
     console_router,
     content_router,
     debug_router,
@@ -58,6 +59,7 @@ from openviking.server.routers import (
     wiki_dehydration_router,
     rag_abstention_router,
     hg_compass_router,
+    mcps_router,
     metrics_router,
     observer_router,
     openviking_assets_router,
@@ -67,6 +69,7 @@ from openviking.server.routers import (
     quarantine_router,
     relations_router,
     resources_router,
+    rules_router,
     search_router,
     sessions_router,
     skills_router,
@@ -206,6 +209,11 @@ async def _initialize_runtime_state(
         oauth_store=getattr(app.state, "oauth_store", None),
         usage_audit_runtime=getattr(app.state, "usage_audit_runtime", None),
     )
+    compile_scheduler = getattr(service, "compile_scheduler", None)
+    if manager is not None and compile_scheduler is not None:
+        compile_scheduler.set_identity_resolver(
+            manager.resolve_identity, manager.get_user_group_ids
+        )
     logger.info("OpenVikingService initialization complete")
 
 
@@ -362,6 +370,10 @@ def create_app(
             service = OpenVikingService()
 
         assert service is not None
+        if config.with_bot:
+            service.compile.configure_local_backend(
+                config.bot_api_url, load_bot_gateway_token()
+            )
         _configure_session_runtime(service)
         set_service(service)
 
@@ -727,12 +739,15 @@ def create_app(
     app.include_router(client_caps_router)
     app.include_router(acl_router)
     app.include_router(admin_router)
+    app.include_router(compile_router)
     app.include_router(agents_router)
     app.include_router(global_agents_router)
     app.include_router(plugins_router)
     app.include_router(agent_evolution_router)
     app.include_router(resources_router)
+    app.include_router(rules_router)
     app.include_router(filesystem_router)
+    app.include_router(mcps_router)
     app.include_router(content_router)
     app.include_router(console_router)
     app.include_router(search_router)
@@ -922,7 +937,8 @@ def create_app(
         else:
             _studio_dir = _candidate_pkg_dist
 
-    if _studio_dir.is_dir() and (_studio_dir / "index.html").is_file():
+    _has_studio_dist = _studio_dir.is_dir() and (_studio_dir / "index.html").is_file()
+    if _has_studio_dist:
         _studio_root = _studio_dir.resolve()
         _studio_index = _studio_root / "index.html"
         _studio_no_cache = {"Cache-Control": "no-cache, must-revalidate"}
@@ -985,6 +1001,47 @@ def create_app(
 
             return _studio_response(_studio_index, immutable=False)
 
+    @app.api_route("/service-worker.js", methods=["GET", "HEAD"], include_in_schema=False)
+    @app.api_route("/studio/service-worker.js", methods=["GET", "HEAD"], include_in_schema=False)
+    async def _service_worker_handler():
+        sw_candidates = [
+            _studio_dir / "service-worker.js" if _studio_dir else None,
+            _studio_dir / "sw.js" if _studio_dir else None,
+        ]
+        for cand in sw_candidates:
+            if cand and cand.is_file():
+                return FileResponse(cand, media_type="application/javascript", headers={"Cache-Control": "no-cache"})
+        return RawResponse(
+            content=(
+                "// OpenViking Studio no-op service worker\n"
+                "self.addEventListener('install', () => self.skipWaiting());\n"
+                "self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));\n"
+            ),
+            media_type="application/javascript",
+            headers={"Cache-Control": "no-cache"},
+        )
+
+    # MCP endpoint — register BEFORE the catch-all /{filename:path} route so POST /mcp is never shadowed.
+    from starlette.routing import Match, Route
+
+    from openviking.server.mcp_endpoint import create_mcp_app
+
+    class _ScopedRoute(Route):
+        """Expose the selected route through ``scope["route"]``, matching
+        ``APIRoute.matches``, so outer observability can resolve the static
+        ``/mcp`` route template."""
+
+        def matches(self, scope):
+            match, child_scope = super().matches(scope)
+            if match != Match.NONE:
+                child_scope["route"] = self
+            return match, child_scope
+
+    app.routes.append(
+        _ScopedRoute("/mcp", endpoint=create_mcp_app(), methods=["GET", "POST", "DELETE"])
+    )
+
+    if _has_studio_dist:
         @app.api_route(
             "/{filename:path}",
             methods=["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -1006,14 +1063,14 @@ def create_app(
                             media_type="application/gzip",
                             headers={"Cache-Control": "no-cache, must-revalidate"}
                         )
-            from starlette.routing import Match
+            from starlette.routing import Match as _Match
 
             allowed_methods: set[str] = set()
             for route in request.app.router.routes:
                 if getattr(route, "path", None) == "/{filename:path}":
                     continue
                 match, _ = route.matches(request.scope)
-                if match == Match.PARTIAL:
+                if match == _Match.PARTIAL:
                     allowed_methods.update(getattr(route, "methods", set()) or set())
             if allowed_methods:
                 raise HTTPException(
@@ -1026,47 +1083,5 @@ def create_app(
         logger.info("Web Studio mounted at /studio from %s", _studio_root)
     else:
         logger.info("Web Studio bundle not found at %s; skipping /studio mount", _studio_dir)
-
-    @app.api_route("/service-worker.js", methods=["GET", "HEAD"], include_in_schema=False)
-    @app.api_route("/studio/service-worker.js", methods=["GET", "HEAD"], include_in_schema=False)
-    async def _service_worker_handler():
-        sw_candidates = [
-            _studio_dir / "service-worker.js" if _studio_dir else None,
-            _studio_dir / "sw.js" if _studio_dir else None,
-        ]
-        for cand in sw_candidates:
-            if cand and cand.is_file():
-                return FileResponse(cand, media_type="application/javascript", headers={"Cache-Control": "no-cache"})
-        return RawResponse(
-            content=(
-                "// OpenViking Studio no-op service worker\n"
-                "self.addEventListener('install', () => self.skipWaiting());\n"
-                "self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));\n"
-            ),
-            media_type="application/javascript",
-            headers={"Cache-Control": "no-cache"},
-        )
-
-    # MCP endpoint — serves 15 tools (find, search, read, write, edit,
-    # list, tree, remember, add_resource, list_watches, cancel_watch, grep,
-    # glob, forget, health) via streamable HTTP for MCP clients.
-    from starlette.routing import Match, Route
-
-    from openviking.server.mcp_endpoint import create_mcp_app
-
-    class _ScopedRoute(Route):
-        """Expose the selected route through ``scope["route"]``, matching
-        ``APIRoute.matches``, so outer observability can resolve the static
-        ``/mcp`` route template."""
-
-        def matches(self, scope):
-            match, child_scope = super().matches(scope)
-            if match != Match.NONE:
-                child_scope["route"] = self
-            return match, child_scope
-
-    app.routes.append(
-        _ScopedRoute("/mcp", endpoint=create_mcp_app(), methods=["GET", "POST", "DELETE"])
-    )
 
     return app

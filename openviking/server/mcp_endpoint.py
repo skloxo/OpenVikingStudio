@@ -1718,12 +1718,12 @@ async def list_watches() -> str:
     """List watch tasks (auto-refresh subscriptions) visible to the current user."""
     service = get_service()
     ctx = _get_ctx()
-    scheduler = getattr(service, "watch_scheduler", None)
-    if scheduler is None or not scheduler.is_running:
-        return "Error: Watch scheduler not running"
-    wm = scheduler.watch_manager
+    wm = getattr(service, "watch_manager", None)
     if wm is None:
-        return "Error: Watch scheduler not running"
+        scheduler = getattr(service, "watch_scheduler", None)
+        wm = getattr(scheduler, "watch_manager", None) if scheduler is not None else None
+    if wm is None:
+        return "Error: Watch manager not initialized"
     # get_all_tasks does not raise PermissionDeniedError — it silently filters
     # tasks the caller cannot see (watch_manager.py:596-624), so we just
     # accept the filtered list.
@@ -1753,12 +1753,12 @@ async def cancel_watch(to_uri: str) -> str:
     service = get_service()
     ctx = _get_ctx()
     to_uri = _resolve_mcp_workspace_uri(to_uri, ctx)
-    scheduler = getattr(service, "watch_scheduler", None)
-    if scheduler is None or not scheduler.is_running:
-        return "Error: Watch scheduler not running"
-    wm = scheduler.watch_manager
+    wm = getattr(service, "watch_manager", None)
     if wm is None:
-        return "Error: Watch scheduler not running"
+        scheduler = getattr(service, "watch_scheduler", None)
+        wm = getattr(scheduler, "watch_manager", None) if scheduler is not None else None
+    if wm is None:
+        return "Error: Watch manager not initialized"
     task = await wm.get_task_by_uri(
         to_uri,
         ctx.account_id,
@@ -3640,6 +3640,14 @@ def _apply_portable_schemas() -> None:
         tool.parameters = _portable_schema(tool.parameters)
 
 
+from openviking.server.mcp_ext_tools import register_ext_tools
+
+register_ext_tools(
+    mcp,
+    get_ctx=_get_ctx,
+    read_annotations=_READ_ONLY_TOOL_ANNOTATIONS,
+    open_world_destructive_annotations=_OPEN_WORLD_DESTRUCTIVE_TOOL_ANNOTATIONS,
+)
 _register_domain_packages()
 _apply_portable_schemas()
 _install_aliased_tool_manager(mcp)

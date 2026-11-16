@@ -10,7 +10,33 @@ from dataclasses import dataclass, field
 from typing import Mapping
 from urllib.parse import urlparse
 
-from openviking_cli.exceptions import InvalidArgumentError
+from openviking_cli.exceptions import InvalidArgumentError, OpenVikingError
+
+GIT_AUTH_FAILED = "GIT_AUTH_FAILED"
+
+
+def raise_git_auth_error(stderr: bytes) -> None:
+    """Preserve explicit Git authentication failures without exposing credentials."""
+    error = stderr.decode(errors="replace").lower()
+    if any(
+        marker in error
+        for marker in (
+            "authentication failed",
+            "authentication failure",
+            "http basic: access denied",
+            "invalid username or password",
+            "invalid username or token",
+            "permission denied (publickey",
+            "permission denied (password",
+            "the requested url returned error: 401",
+            "could not read username",
+            "could not read password",
+        )
+    ):
+        raise OpenVikingError(
+            "Git authentication failed. Check your SSH keys or credentials.",
+            code=GIT_AUTH_FAILED,
+        )
 
 
 @dataclass(frozen=True)
@@ -19,6 +45,11 @@ class GitHttpAuthConfig:
 
     username: str
     token: str = field(repr=False)
+
+
+def is_git_https_url(repo_url: object) -> bool:
+    """Return whether HTTP token authentication is valid for this Git URL."""
+    return isinstance(repo_url, str) and repo_url.strip().lower().startswith("https://")
 
 
 def reject_git_http_userinfo(repo_url: str) -> None:
@@ -34,7 +65,7 @@ def reject_git_http_userinfo(repo_url: str) -> None:
 
 def _validate_git_https_auth_url(repo_url: str) -> str:
     normalized = repo_url.strip() if isinstance(repo_url, str) else ""
-    if not normalized.lower().startswith("https://"):
+    if not is_git_https_url(normalized):
         raise InvalidArgumentError(
             "args.auth_config token authentication requires an HTTPS Git URL."
         )
@@ -76,7 +107,7 @@ def git_http_basic_auth_header(config: GitHttpAuthConfig) -> str:
     return f"Authorization: Basic {encoded}"
 
 
-def _append_git_process_config(env: dict[str, str], key: str, value: str) -> None:
+def append_git_process_config(env: dict[str, str], key: str, value: str) -> None:
     """Append a process-local Git config entry without putting it in argv."""
 
     try:
@@ -99,21 +130,21 @@ def build_git_http_auth_env(
     env = dict(os.environ if base_env is None else base_env)
     env["GIT_TERMINAL_PROMPT"] = "0"
     env["GCM_INTERACTIVE"] = "Never"
-    _append_git_process_config(env, "credential.helper", "")
-    _append_git_process_config(env, f"credential.{normalized_repo_url}.helper", "")
+    append_git_process_config(env, "credential.helper", "")
+    append_git_process_config(env, f"credential.{normalized_repo_url}.helper", "")
     # Clear inherited extraHeader values before adding the one request-local
     # Authorization value. Git treats extraHeader as multi-valued otherwise.
-    _append_git_process_config(env, "http.extraHeader", "")
+    append_git_process_config(env, "http.extraHeader", "")
     scoped_extra_header = f"http.{normalized_repo_url}.extraHeader"
-    _append_git_process_config(env, scoped_extra_header, "")
-    _append_git_process_config(
+    append_git_process_config(env, scoped_extra_header, "")
+    append_git_process_config(
         env,
         scoped_extra_header,
         git_http_basic_auth_header(config),
     )
     # Refuse redirects at the same URL-specific precedence as the header, so
     # inherited per-repository config cannot move it to another host or HTTP.
-    _append_git_process_config(
+    append_git_process_config(
         env,
         f"http.{normalized_repo_url}.followRedirects",
         "false",

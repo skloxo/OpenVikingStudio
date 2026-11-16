@@ -15,7 +15,9 @@ from typing import Any
 
 from loguru import logger
 
+from openviking.models.model_error import model_error_kind
 from openviking.models.vlm.backends.volcengine_vlm import build_volcengine_request_headers
+from openviking.utils.message_format import tool_images_as_user_messages
 from openviking.utils.model_retry import is_retryable_rate_limit_error, rate_limit_retry_delay
 from openviking.utils.multimodal import redact_image_data_urls
 from vikingbot.integrations.langfuse import LangfuseClient
@@ -257,6 +259,8 @@ class VLMProviderAdapter(LLMProvider):
         max_tokens: int | None = None,
         temperature: float = 0.7,
         session_id: str | None = None,
+        thinking: bool | None = None,
+        reasoning_effort: str | None = None,
     ) -> LLMResponse:
         effective_model = model or self._default_model
 
@@ -287,11 +291,20 @@ class VLMProviderAdapter(LLMProvider):
             # An explicit empty list asks VLM backends for a structured response
             # without exposing tools, so per-response usage is preserved.
             response_tools = tools if tools is not None else []
+            request_messages = (
+                tool_images_as_user_messages(messages)
+                if getattr(self._vlm, "provider", None) not in {"anthropic", "gemini"}
+                else messages
+            )
             while True:
                 try:
                     result = await self._vlm.get_completion_async(
-                        messages=messages,
-                        thinking=getattr(self._vlm, "thinking", None),
+                        messages=request_messages,
+                        thinking=(
+                            thinking
+                            if thinking is not None
+                            else getattr(self._vlm, "thinking", None)
+                        ),
                         tools=response_tools,
                         tool_choice="auto" if response_tools else None,
                     )
@@ -324,6 +337,7 @@ class VLMProviderAdapter(LLMProvider):
             return LLMResponse(
                 content=f"Error calling LLM in VLM Adapter: {str(e)}",
                 finish_reason="error",
+                error_kind=model_error_kind(e),
             )
 
     async def chat_stream(

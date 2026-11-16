@@ -49,6 +49,10 @@ BATTLEFIELD_34_TOOLS: List[Dict[str, str]] = [
     # 超大文档代客泊车 (2 项)
     {"id": "openviking_valet_handover", "name": "valet_handover", "description": "大文档代客泊车异步深度消化"},
     {"id": "openviking_valet_ticket_status", "name": "valet_ticket_status", "description": "查询代客泊车任务处理状态"},
+    # 规则与动态 MCP 工具路由 (3 项 - #182 新增)
+    {"id": "openviking_rule_search", "name": "rule_search", "description": "基于当前任务上下文检索适用的目录级规则约束"},
+    {"id": "openviking_find_mcp_tools", "name": "find_mcp_tools", "description": "语义检索已挂载外部 MCP 服务的可用工具与 Schema"},
+    {"id": "openviking_invoke_mcp_tool", "name": "invoke_mcp_tool", "description": "通过路由 URI 安全调用已挂载的外部 MCP 工具"},
     # 安全脱敏与传感器/身份自省 (4 项)
     {"id": "openviking_privacy", "name": "privacy", "description": "敏感凭据脱敏与私有端点保护"},
     {"id": "openviking_ping", "name": "ping", "description": "体外大脑端到端连通性心跳探针"},

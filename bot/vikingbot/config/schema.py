@@ -432,6 +432,39 @@ class ChannelsConfig(BaseModel):
         return None
 
 
+class CompileConfig(BaseModel):
+    """Compile executor selection and complex-mode worker limits."""
+
+    mode: Literal["simple", "complex"] = Field(
+        default="simple",
+        description="Compile executor: single AgentLoop or the existing target-specific workflow.",
+    )
+    map_concurrency: int | None = Field(
+        default=None,
+        ge=1,
+        strict=True,
+        description="Maximum concurrent Map jobs per task; None inherits vlm.max_concurrent.",
+    )
+    shuffle_batch_size: int = Field(
+        default=4,
+        ge=1,
+        strict=True,
+        description="Maximum primary records per Shuffle routing request, independent of concurrency.",
+    )
+    shuffle_concurrency: int | None = Field(
+        default=None,
+        ge=1,
+        strict=True,
+        description="Maximum concurrent Shuffle routing jobs; None inherits vlm.max_concurrent.",
+    )
+    reduce_concurrency: int | None = Field(
+        default=None,
+        ge=1,
+        strict=True,
+        description="Maximum concurrent Reduce jobs per task; None inherits vlm.max_concurrent.",
+    )
+
+
 class AgentsConfig(BaseModel):
     """Agent configuration."""
 
@@ -877,6 +910,7 @@ class Config(BaseSettings):
 
     inherits_root_vlm_state: SkipJsonSchema[bool] = Field(default=False, repr=False)
     agents: AgentsConfig = Field(default_factory=AgentsConfig)
+    compile: CompileConfig = Field(default_factory=CompileConfig)
     channels: list[Any] = Field(default_factory=list)
     providers: ProvidersConfig = Field(
         default_factory=ProvidersConfig, deprecated=True

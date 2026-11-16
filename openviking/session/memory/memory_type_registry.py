@@ -319,3 +319,6 @@ def create_default_registry() -> MemoryTypeRegistry:
         MemoryTypeRegistry with built-in types (loaded in __init__)
     """
     return MemoryTypeRegistry(load_schemas=True)
+
+
+get_default_registry = create_default_registry

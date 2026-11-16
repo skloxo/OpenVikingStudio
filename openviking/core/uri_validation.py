@@ -115,3 +115,6 @@ def _matches_content_kind(uri: str, kind: str) -> bool:
         return True
     classification = classify_uri(uri)
     return classification.context_type == kind and classification.content_index is not None
+
+
+matches_content_kind = _matches_content_kind

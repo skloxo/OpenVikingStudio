@@ -1338,6 +1338,37 @@ class VikingClient:
             "commit": commit_result,
         }
 
+    async def rule_search(
+        self,
+        task_context: str,
+        options: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Search compiled Rules applicable to the current task context."""
+        return await self.client.rule_search(task_context, options=options)
+
+    async def compile_embeddings(
+        self, texts: List[str], *, target_uri: str, expected_model: str | None = None
+    ) -> Dict[str, Any]:
+        """Use the authenticated server embedder for transient Compile routing batches."""
+        response = await self.client._request(
+            "POST",
+            "/api/v1/compile/embeddings",
+            json={"texts": texts, "target_uri": target_uri, "expected_model": expected_model},
+        )
+        return self.client._handle_response_data(response).get("result", {})
+
+    async def find_mcp_tools(self, query: str, limit: int = 10) -> Dict[str, Any]:
+        """Discover OpenViking-managed MCP tools with complete definitions."""
+        return await self.client.find_mcp_tools(query, limit=limit)
+
+    async def invoke_mcp_tool(
+        self,
+        tool_uri: str,
+        arguments: Optional[Mapping[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Invoke an OpenViking-managed MCP tool using the current identity."""
+        return await self.client.invoke_mcp_tool(tool_uri, arguments=arguments)
+
     async def close(self):
         """关闭客户端"""
         await self.client.close()

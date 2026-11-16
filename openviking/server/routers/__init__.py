@@ -6,6 +6,7 @@ from openviking.server.routers.acl import router as acl_router
 from openviking.server.routers.admin import router as admin_router
 from openviking.server.routers.agent_evolution import router as agent_evolution_router
 from openviking.server.routers.bot import router as bot_router
+from openviking.server.routers.compile import router as compile_router
 from openviking.server.routers.console import router as console_router
 from openviking.server.routers.content import router as content_router
 from openviking.server.routers.debug import router as debug_router
@@ -21,6 +22,7 @@ from openviking.server.routers.active_notes_history import router as active_note
 from openviking.server.routers.skill_zip import router as skill_zip_router
 from openviking.server.routers.rag_abstention import router as rag_abstention_router
 from openviking.server.routers.hg_compass import router as hg_compass_router
+from openviking.server.routers.mcps import router as mcps_router
 from openviking.server.routers.metrics import router as metrics_router
 from openviking.server.routers.observer import router as observer_router
 from openviking.server.routers.openviking_assets import router as openviking_assets_router
@@ -30,6 +32,7 @@ from openviking.server.routers.queue import router as queue_router
 from openviking.server.routers.quarantine import router as quarantine_router
 from openviking.server.routers.relations import router as relations_router
 from openviking.server.routers.resources import router as resources_router
+from openviking.server.routers.rules import router as rules_router
 from openviking.server.routers.search import router as search_router
 from openviking.server.routers.sessions import router as sessions_router
 from openviking.server.routers.skills import router as skills_router
@@ -77,6 +80,9 @@ __all__ = [
     "admin_router",
     "agent_evolution_router",
     "bot_router",
+    "compile_router",
+    "mcps_router",
+    "rules_router",
     "system_router",
     "relations_router",
     "resources_router",

@@ -60,6 +60,7 @@
 ## 三、 Agent 三大自动作业神经反射 (Three Agent Reflexes)
 1. **开局自动领活 (Read on Start)**：新会话提及具体项目或询问下一步任务时，Agent 自动调用 `list_tasks(project_id=..., status="in_progress")` 与 `list_tasks(project_id=..., status="planned")` 盘点当前进度，免除人类翻找文档负担；
 2. **过程随手记分支 (Capture on the Fly)**：开发或排障中途发现顺带缺陷、分支问题或新优化点时，不打断当前主线，立即调用 `create_task` 挂入对应 `Project`（设 `status="not_started"`，打 `缺陷` 或 `开发`/`运维` 标签，默认分配给 `skloxo`），确保 100% 零遗忘；
+   - **建卡前强制查重门禁 (Zero Blind Create)**：调用 `create_task` 或 `add_subtask` 前，必须先按 `project_id` 执行 `list_tasks` 或 `search` 查重比对；若已有同类或覆盖范围重叠的任务，优先更新/合并进原有任务或挂为其子任务，**严禁无脑重复创建新卡**。
 3. **完工强制留双行汇报锚点 (Quantified Closure)**：任务达成调用 `complete_task` 前，必须通过 `update_task` 在任务 `note` 中写入结构化交付总结（供周报/月报/OKR 直接抽取）：
    - `【达成成果】`：量化交付物与真实物理锚点（具体模块、接口数、设备数、单测通过数）；
    - `【解决挑战】`：解决的业务痛点、技术难点或理顺的跨部门协同机制。
@@ -107,7 +108,10 @@
    - **绝对封杀中括号**：必须通过正则 `^[\[【](开发|运维|规划|缺陷|汇报|待办|测试)[\]】]\s*` 剥离方括号工种前缀，由下方正交 Tag Badge 自解释；
    - **软编号与链接下沉**：标题中手写的 `TASK-xxx` 软编号及超长 URL (如微信文章) 必须下沉存入详情 `note` 中的 `【关联编号】` 与 `【参考资料】`，标题只留 8~18 字精炼动宾短语。
 4. **自定义视图死引用排查律 (View Dead-Reference Scrubbing)**：
-   - 凡系统执行标签废黜（如删除 `汇报`、`today`）后，必须同步审计自定义视图 (`list_views`)，彻底移除过滤条件中已失效的标签死引用。
+   - 凡系统执行标签废黜（如删除 `汇报`、`today`、`urgent`）后，必须同步审计自定义视图 (`list_views`) 移除过滤条件中的死引用，并在确认 `usage_count=0` 后调用 `delete_tag` 物理移除该废黜标签，确保 `list_tags` 严格收敛为正交四标；
+5. **`Today` 防过载与重复卡合并清洗律**：
+   - **排期状态分界**：仅本周主线待推项可设为 `planned` 或 `in_progress`；下周联调及非本周待办须保持 `not_started`（配合 `due_date`/`defer_until`），严禁将远期任务标为 `planned` 污染 `Today` 视图；
+   - **合并保留上下文与 Habit 清理**：合并重复卡前，须先把重复卡的背景、实施要点与阶段进展折叠写入保留主卡 `note`，再将重复卡置为 `cancelled`；清理 `habit_mode=true` 的噪音条目须调用 `delete_habit`（而非仅 `delete_task`）彻底清除。
 
 ---
 
@@ -121,4 +125,11 @@
 3. **跨 Agent 调度总线身份契约 (Agent Dispatching Identity)**：
    - 服务类智能体（Antigravity, DSH, MOP, Komari, CPA Ops）作为独立协作者纳入 Tududi 调度体系；
    - 任务被指派给智能体后，智能体全自动领活并按【一卡一命一停手】施工，结案强制留双行交付总结回填至 task.note。
+4. **RPC 领活轻量状态剪枝定式 (RPC Pruning Invariant)**：
+   - 智能体开局领活时，**严禁裸调用全量 `list_tasks(project_id=...)`** 导致大 JSON 膨胀消耗上下文 Token；
+   - **强制带状态过滤**：仅允许查询 `status="in_progress"`（在手攻坚，通常 1~2 项）与 `status="planned"`（排期就绪，通常 2~3 项）；仅在明确需要审计全部历史结案时方可按需分页查询全量。
+5. **历史资产迁移与指针自愈契约 (Asset Migration & Pointer Healing)**：
+   - 存量本地卡片（如 `atomic_tasks`、`TASK_CARDS.md`）迁移至 Tududi 后，必须统一移入各专案 `archive/` 或 `旧任务卡片_归档/`；
+   - 迁移完成后必须执行全局链接检索，将存量文档中的历史文件链接原子替换为 Tududi 线上项目/任务锚点或归档新路径，杜绝死链。
+
 

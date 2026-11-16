@@ -1328,6 +1328,45 @@ class AgentLoop:
                 logger.warning("Tool-loop compaction summary attempt {}/3 failed: {}", attempt, exc)
         return ""
 
+    async def _preview_tool_result(
+        self,
+        result: Any,
+        session_key: SessionKey,
+        *,
+        preserve_complete: bool = False,
+        rule_budget: int | None = None,
+    ) -> Any:
+        """Save large text and return a bounded preview or complete Rule blocks."""
+        import uuid
+
+        from openviking.utils.rule_delivery import MAX_RULE_RESULT_CHARS, bound_rule_text
+        from vikingbot.agent.tools.base import TOOL_RESULT_DIRECTORY
+
+        effective_rule_budget = (
+            MAX_RULE_RESULT_CHARS if rule_budget is None else rule_budget
+        )
+        limit = effective_rule_budget if preserve_complete else 8_000
+        if not isinstance(result, str) or len(result) <= limit:
+            return result
+        path = f"{TOOL_RESULT_DIRECTORY}/{uuid.uuid4().hex}.txt"
+        try:
+            sandbox = await self.sandbox_manager.get_sandbox(session_key)
+            await sandbox.write_file_bytes(path, result.encode("utf-8"))
+            notice = (
+                f"Full output ({len(result)} characters) saved at task-relative path {path}. "
+                "Use read_file with offset/limit or a script to inspect selected sections; "
+                "do not print the complete file. This file is not a deliverable."
+            )
+        except Exception as exc:
+            notice = (
+                f"Full output ({len(result)} characters) could NOT be saved: "
+                f"{type(exc).__name__}. Only this preview is available; "
+                "retrieve smaller sections from the original source if needed."
+            )
+        if preserve_complete:
+            return bound_rule_text(result, effective_rule_budget, notice)
+        return f"{result[:4_000]}\n\n[Output truncated. {notice}]\n\n{result[-2_000:]}"
+
     async def _run_agent_loop(
         self,
         messages: list[dict],
@@ -1351,6 +1390,10 @@ class AgentLoop:
         context_compact_budget: int | None = None,
         status_note_provider: Any | None = None,
         skill_runtime: Any | None = None,
+        agent_id: str = "main",
+        max_iterations: int | None = None,
+        *,
+        require_natural_completion: bool = False,
     ) -> tuple[str | None, str | None, list[dict], dict[str, int], int]:
         """
         Run the core agent loop: call LLM, execute tools, repeat until done.
@@ -1422,7 +1465,9 @@ class AgentLoop:
             token_usage["total_tokens"] += cur_token.get("total_tokens", 0)
             token_usage["cache_read_input_tokens"] += cur_token.get("cache_read_input_tokens", 0)
 
-        while iteration < self.max_iterations:
+        iteration_limit = self.max_iterations if max_iterations is None else max_iterations
+
+        while iteration < iteration_limit:
             iteration += 1
 
             if context_compact_budget is not None:
@@ -1439,7 +1484,7 @@ class AgentLoop:
                 await self.bus.publish_outbound(
                     OutboundMessage(
                         session_key=session_key,
-                        content=f"Iteration {iteration}/{self.max_iterations}",
+                        content=f"Iteration {iteration}/{iteration_limit}",
                         event_type=OutboundEventType.ITERATION,
                     )
                 )
@@ -1466,6 +1511,19 @@ class AgentLoop:
                 publish_events=publish_events,
             )
             accumulate_token_usage(response)
+            if require_natural_completion:
+                if getattr(response, "error_kind", None) or getattr(
+                    response, "finish_reason", None
+                ) not in {
+                    "stop",
+                    "end_turn",
+                    "tool_calls",
+                    "tool_use",
+                    "function_call",
+                }:
+                    raise ValueError(
+                        f"Model did not complete its turn ({getattr(response, 'finish_reason', None)})"
+                    )
 
             if publish_events and response.reasoning_content and not streamed_reasoning:
                 await self.bus.publish_outbound(
@@ -1684,10 +1742,15 @@ class AgentLoop:
                                 event_type=OutboundEventType.TOOL_RESULT,
                             )
                         )
-                    model_result = result
                     if isinstance(result, MultimodalToolResult):
+                        model_result = result
                         result_media_bytes = _inline_media_bytes([{"content": result.content}])
-                        if not self.provider.supports_tool_result_media(self.model):
+                        inline_supported = getattr(
+                            self.provider,
+                            "should_inline_tool_result_media",
+                            self.provider.supports_tool_result_media,
+                        )(self.model)
+                        if not inline_supported:
                             model_result = (
                                 f"{result_text}\n\nMedia content was omitted because the configured "
                                 "model provider does not support media in tool results."
@@ -1716,6 +1779,14 @@ class AgentLoop:
                                 )
                             else:
                                 request_media_bytes += result_media_bytes
+                    else:
+                        preview_fn = getattr(self, "preview_hook", None) or self._preview_tool_result
+                        model_result = await preview_fn(
+                            result,
+                            session_key,
+                            preserve_complete=getattr(outcome, "preserve_complete_result", False),
+                        )
+                        recorded_result = model_result
                     messages = self.context.add_tool_result(
                         messages, tool_call.id, tool_call.name, model_result
                     )
@@ -1828,13 +1899,16 @@ class AgentLoop:
                 if routed:
                     continue
                 break
+        else:
+            if require_natural_completion:
+                return None, final_reasoning_content, tools_used, token_usage, iteration
 
         if final_content == "" and tools_used and tools_used[-1].get("tool_name") in stop_tools:
             pass
         elif final_content is None or (
             isinstance(final_content, str) and not final_content.strip()
         ):
-            if iteration >= self.max_iterations and allow_final_fallback:
+            if iteration >= iteration_limit and allow_final_fallback:
                 messages.append(
                     {
                         "role": "user",
@@ -1858,6 +1932,19 @@ class AgentLoop:
                     publish_events=publish_events,
                 )
                 accumulate_token_usage(response)
+            if require_natural_completion:
+                if getattr(response, "error_kind", None) or getattr(
+                    response, "finish_reason", None
+                ) not in {
+                    "stop",
+                    "end_turn",
+                    "tool_calls",
+                    "tool_use",
+                    "function_call",
+                }:
+                    raise ValueError(
+                        f"Model did not complete its turn ({getattr(response, 'finish_reason', None)})"
+                    )
                 final_content = response.content
                 final_reasoning_content = response.reasoning_content
 
@@ -1871,7 +1958,7 @@ class AgentLoop:
                     )
 
         if final_content is None or (isinstance(final_content, str) and not final_content.strip()):
-            if iteration >= self.max_iterations:
+            if iteration >= iteration_limit:
                 final_content = (
                     "I reached the tool-use limit before completing every step, and the "
                     "available tool results are not enough for a reliable final answer."

@@ -36,6 +36,10 @@ openviking_find    openviking_read    openviking_write /
 - **架构决策与规范**：写入 `viking://resources/master_memory/...`；
 - **踩坑与故障反思**：调用 `openviking_record_evolution_lesson`，系统自动写入本地技能与 Master Memory 双写存盘，形成智力复利。
 
+### 4. 目录级规则检索与外部 MCP 动态路由 (`openviking_rule_search` / `openviking_find_mcp_tools` / `openviking_invoke_mcp_tool`)
+- **规则上下文检索**：在执行目录操作前调用 `openviking_rule_search(task_context=...)`，获取并逐条评估适用规则约束；
+- **按需外部 MCP 调用**：先调用 `openviking_find_mcp_tools(query=...)` 获取路由 URI 与参数 Schema，再调用 `openviking_invoke_mcp_tool(tool_uri=..., arguments=...)` 透传执行。
+
 ---
 
 ## 三、 快思考记忆过滤与算子分工认知 (Fast-Thinking Memory Filter & Rerank SSOT)

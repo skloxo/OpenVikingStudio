@@ -64,11 +64,24 @@ class SessionExtractContextProvider(ExtractContextProvider):
         ctx: RequestContext = None,
         viking_fs: VikingFS = None,
         transaction_handle=None,
+        memory_registry: MemoryTypeRegistry | None = None,
+        vlm_config: Any = None,
+        *,
+        source_archive_uri: str = "",
+        extraction_scope: str = "",
+        output_language_override: str | None = None,
     ):
         self.messages = list(messages) if isinstance(messages, list) else messages
         self.latest_archive_overview = latest_archive_overview
+        self._source_archive_uri = source_archive_uri
+        self._extraction_scope = extraction_scope
+        self._output_language_override = (
+            get_openviking_config().output_language_override
+            if output_language_override is None
+            else output_language_override
+        )
         self._output_language = self._detect_language()
-        self._registry = None  # 延迟加载
+        self._registry = memory_registry  # 延迟加载
         self._schema_directories = None
         self._extract_context = None  # 缓存 ExtractContext 实例
         self._isolation_handler = isolation_handler
@@ -80,6 +93,7 @@ class SessionExtractContextProvider(ExtractContextProvider):
         self._ctx = ctx
         self._viking_fs = viking_fs
         self._transaction_handle = transaction_handle
+        self._vlm_config = vlm_config
         self._link_enabled = config.memory.link_enabled if config.memory else False
         self._vision_messages_prepared = False
         self._vision_vlm = None
@@ -156,7 +170,10 @@ class SessionExtractContextProvider(ExtractContextProvider):
                         user_text_parts.append(text)
 
         text_parts = user_text_parts or all_text_parts
-        return resolve_output_language("\n".join(text_parts))
+        return resolve_output_language(
+            "\n".join(text_parts),
+            output_language_override=self._output_language_override,
+        )
 
     @staticmethod
     def _language_signal_text(text: str, *, strip_language_detection_noise) -> str:

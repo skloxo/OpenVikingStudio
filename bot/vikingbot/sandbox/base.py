@@ -112,8 +112,8 @@ class SandboxBackend(ABC):
             raise ValueError("max_bytes must be non-negative")
 
     @staticmethod
-    def _validate_max_entries(max_entries: int) -> None:
-        if max_entries <= 0:
+    def _validate_max_entries(max_entries: int | None) -> None:
+        if max_entries is not None and max_entries <= 0:
             raise ValueError("max_entries must be positive")
 
     @staticmethod
@@ -281,7 +281,7 @@ class SandboxBackend(ABC):
         self,
         path: str = ".",
         *,
-        max_entries: int,
+        max_entries: int | None,
     ) -> list[SandboxFileInfo]:
         """Recursively list regular files without unbounded workspace traversal.
 
@@ -307,7 +307,7 @@ class SandboxBackend(ABC):
                 with stream:
                     for entry in stream:
                         visited += 1
-                        if visited > max_entries:
+                        if max_entries is not None and visited > max_entries:
                             raise ValueError(
                                 f"Sandbox workspace inventory exceeds {max_entries} entries"
                             )

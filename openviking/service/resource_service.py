@@ -188,15 +188,18 @@ class ResourceService:
         skill_processor: Optional[SkillProcessor] = None,
         watch_scheduler: Optional["WatchScheduler"] = None,
         resource_memory_link_service: Optional["ResourceMemoryLinkService"] = None,
+        watch_manager: Optional["WatchManager"] = None,
     ):
         self._vikingdb = vikingdb
         self._viking_fs = viking_fs
         self._resource_processor = resource_processor
         self._skill_processor = skill_processor
         self._watch_scheduler = watch_scheduler
+        self._watch_manager = watch_manager
         self._resource_memory_link_service = resource_memory_link_service
         self._background_tasks: set[asyncio.Task[Any]] = set()
         self._connector_delegate: Optional["ConnectorDelegate"] = None
+        self.compile_versions: Optional[Any] = None
 
     def set_dependencies(
         self,
@@ -206,6 +209,7 @@ class ResourceService:
         skill_processor: SkillProcessor,
         watch_scheduler: Optional["WatchScheduler"] = None,
         resource_memory_link_service: Optional["ResourceMemoryLinkService"] = None,
+        watch_manager: Optional["WatchManager"] = None,
     ) -> None:
         """Set dependencies (for deferred initialization)."""
         self._vikingdb = vikingdb
@@ -213,12 +217,29 @@ class ResourceService:
         self._resource_processor = resource_processor
         self._skill_processor = skill_processor
         self._watch_scheduler = watch_scheduler
+        if watch_manager is not None:
+            self._watch_manager = watch_manager
         self._resource_memory_link_service = resource_memory_link_service
 
     def _get_watch_manager(self) -> Optional["WatchManager"]:
+        if self._watch_manager is not None:
+            return self._watch_manager
         if not self._watch_scheduler:
             return None
-        return self._watch_scheduler.watch_manager
+        return getattr(self._watch_scheduler, "watch_manager", None)
+
+    async def record_watch_execution(
+        self,
+        task_id: str,
+        *,
+        execution_task_id: Optional[str] = None,
+        error: Optional[str] = None,
+    ) -> None:
+        """Settle initial watch execution against WatchManager when present."""
+        wm = self._get_watch_manager()
+        if wm is None or not execution_task_id:
+            return
+        await wm.settle(task_id, execution_task_id)
 
     def _sanitize_watch_processor_kwargs(self, processor_kwargs: Dict[str, Any]) -> Dict[str, Any]:
         sanitized: Dict[str, Any] = {}
@@ -1869,8 +1890,7 @@ class ResourceService:
 
             self._connector_delegate = ConnectorDelegate(
                 viking_fs=self._viking_fs,
-                background_tasks=self._background_tasks,
-                link_reason_memory=self._link_resource_reason_memory,
+                resource_memory_link_service=self._resource_memory_link_service,
             )
         return self._connector_delegate
 
@@ -1908,32 +1928,22 @@ class ResourceService:
         if not watch_manager:
             return
 
-        existing_task = await watch_manager.get_upsertable_task_by_uri(
-            path=path,
+        existing_task = await watch_manager.get_task_by_uri(
             to_uri=to_uri,
             account_id=ctx.account_id,
             user_id=ctx.user.user_id,
             role=str(ctx.role),
         )
-        if existing_task:
+        if existing_task and existing_task.path == path:
             was_active = existing_task.is_active
             await watch_manager.update_task(
                 task_id=existing_task.task_id,
                 account_id=ctx.account_id,
                 user_id=ctx.user.user_id,
                 role=str(ctx.role),
-                path=path,
-                to_uri=to_uri,
-                to_is_directory=to_is_directory,
-                parent_uri=parent_uri,
                 reason=reason,
                 instruction=instruction,
                 watch_interval=watch_interval,
-                build_index=build_index,
-                summarize=summarize,
-                processing_mode=processing_mode,
-                processor_kwargs=processor_kwargs,
-                auth_state=auth_state,
                 is_active=True,
             )
             logger.info(
@@ -1988,6 +1998,22 @@ class ResourceService:
             logger.info(
                 f"[ResourceService] Deactivated watch task {existing_task.task_id} for {to_uri}"
             )
+
+    @staticmethod
+    def _initial_source_checkpoint(
+        meta: Any,
+        *,
+        instruction: str = "",
+    ) -> Optional[Dict[str, Any]]:
+        """Build the watch source checkpoint from the imported revision meta."""
+        head_sha = meta.get("resolved_head_sha") if isinstance(meta, dict) else None
+        if head_sha:
+            return {
+                "kind": "git",
+                "head_sha": head_sha,
+                "instruction": instruction,
+            }
+        return None
 
     async def add_skill(
         self,

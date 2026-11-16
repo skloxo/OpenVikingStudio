@@ -9,23 +9,30 @@ lifecycle:
 
 - the routing decision (:meth:`ConnectorDelegate.should_delegate`): a
   three-state verdict — delegate, degrade to the standard pipeline, or raise;
-- payload construction and submission (:meth:`ConnectorDelegate.submit`);
-- background monitoring (:meth:`ConnectorDelegate._monitor`), closing the OV
-  TaskRecord from the remote task's terminal state.
+- payload construction and queue publication (:meth:`ConnectorDelegate.create`);
+- synchronous submission followed by durable monitoring in the ExternalTask queue.
 """
 
 from __future__ import annotations
 
-import asyncio
 import base64
 import json
 import re
 import time
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Set, Tuple
+from dataclasses import replace
+from typing import Any, Awaitable, Callable, Dict, List, Mapping, Optional, Set, Tuple
 from urllib.parse import urlsplit
 
 import httpx
 
+from openviking.connector.auth import (
+    OAUTH_REF_ARG,
+    confluence_auth_config,
+    document_auth_config,
+    extract_credential_reference,
+    project_auth_config,
+    resolve_connector_auth_config,
+)
 from openviking.connector.client import ConnectorClient
 from openviking.connector.routing import (
     CONNECTOR_ARGS_AUTH_CONFIG_KEY,
@@ -35,7 +42,15 @@ from openviking.connector.routing import (
     detect_connector_add_type,
     is_full_commit_sha,
 )
+from openviking.core.namespace import NamespaceShapeError
+from openviking.core.uri_validation import matches_content_kind
 from openviking.crypto.encryptor import MAGIC as ENCRYPTED_ENVELOPE_MAGIC
+from openviking.crypto.encryptor import build_credential_encryptor
+from openviking.metrics.datasources.resource import ResourceIngestionEventDataSource
+from openviking.observability.http_error_context import (
+    sanitize_public_error_details,
+    sanitize_public_http_error,
+)
 from openviking.parse.mode import ParseMode
 from openviking.resource.processing_mode import (
     DEFAULT_PROCESSING_MODE,
@@ -43,93 +58,57 @@ from openviking.resource.processing_mode import (
     ProcessingMode,
 )
 from openviking.server.identity import RequestContext
+from openviking.service.external_task_service import (
+    ExternalTaskCancellation,
+    ExternalTaskError,
+    ExternalTaskSnapshot,
+    get_external_task_service,
+)
+from openviking.service.task_domain import TaskPatch
+from openviking.service.task_tracker import TaskRecord, TaskStatus, get_task_tracker
+from openviking.service.task_tracker_concurrency import run_to_completion
+from openviking.storage.acl import AclUpdate
 from openviking.utils.tags import normalize_search_tags
 from openviking_cli.exceptions import InternalError, InvalidArgumentError
+from openviking_cli.session.user_id import UserIdentifier
 from openviking_cli.utils import get_logger
+from openviking_cli.utils.config.open_viking_config import get_openviking_config
 
 logger = get_logger(__name__)
 
 _TOS_BUCKET_PATTERN = re.compile(r"^[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])$")
+CONNECTOR_DISPLAY_RESOURCE_CONFIG_ARG = "resource_config"
+from openviking.connector.delegate_helpers import _ConnectorEnqueueMixin, _is_resource_target, _safe_http_response, _validate_tos_uri
+from openviking.connector.delegate_provider import _ConnectorProviderMixin
 
 
-def _validate_tos_uri(
-    value: Any,
-    field: str,
-    *,
-    allow_bucket_without_slash: bool = False,
-) -> None:
-    """Validate a Connector TOS URI without exposing it in client errors."""
-    error = InvalidArgumentError(f"{field} must be a valid TOS URI.")
-    if (
-        not isinstance(value, str)
-        or value != value.strip()
-        or not value.startswith("tos://")
-        or any(
-            char in "?#%" or ord(char) < 0x20 or ord(char) == 0x7F
-            for char in value
-        )
-    ):
-        raise error
+class ConnectorDelegate(_ConnectorEnqueueMixin, _ConnectorProviderMixin):
+    """Delegate supported imports to an external Connector service."""
 
-    try:
-        parsed = urlsplit(value)
-        hostname = parsed.hostname
-        port = parsed.port
-    except ValueError:
-        raise error from None
-    if (
-        parsed.scheme != "tos"
-        or parsed.username is not None
-        or parsed.password is not None
-        or port is not None
-        or not hostname
-        or hostname != parsed.netloc
-        or not _TOS_BUCKET_PATTERN.fullmatch(hostname)
-        or (not parsed.path and not allow_bucket_without_slash)
-        or (parsed.path and not parsed.path.startswith("/"))
-        or parsed.path.startswith("//")
-        or parsed.query
-        or parsed.fragment
-    ):
-        raise error
-
-
-class ConnectorDelegate:
-    """Routes add_resource requests to the external Connector service.
-
-    Collaborators are injected so the delegate stays free of service
-    lifecycle concerns:
-
-    - ``viking_fs``: used only for the parent-existence pre-check when
-      ``create_parent`` is not requested.
-    - ``background_tasks``: the ResourceService task set; monitors register
-      here so ``close_background_tasks`` keeps cancelling them on shutdown.
-    - ``link_reason_memory``: bound ResourceService method that links one
-      reason memory to the import root — shared semantics with the native
-      pipeline, so it is called back rather than duplicated.
-    """
+    task_type = "connector_import"
+    task_id_prefix = ""
+    poll_max_attempts = 3
+    _WATCH_AUTH_PROVIDER = "connector_encrypted"
+    _WATCH_PLAINTEXT_AUTH_PROVIDER = "connector_plaintext"
 
     def __init__(
         self,
         *,
         viking_fs: Any,
-        background_tasks: Set["asyncio.Task[Any]"],
-        link_reason_memory: Callable[..., Awaitable[None]],
+        resource_memory_link_service: Any = None,
     ) -> None:
         self._viking_fs = viking_fs
-        self._background_tasks = background_tasks
-        self._link_reason_memory = link_reason_memory
-
-    _WATCH_AUTH_PROVIDER = "connector_encrypted"
-    _WATCH_PLAINTEXT_AUTH_PROVIDER = "connector_plaintext"
+        self._resource_memory_link_service = resource_memory_link_service
+        self._watch_credential_encryptor: Any = None
 
     def _watch_encryptor(self) -> Any:
         encryptor = getattr(self._viking_fs, "_encryptor", None)
         if encryptor is None:
-            raise InvalidArgumentError(
-                "Connector watch requires encryption.enabled=true so credentials are "
-                "encrypted at rest."
-            )
+            if self._watch_credential_encryptor is None:
+                self._watch_credential_encryptor = build_credential_encryptor(
+                    get_openviking_config().encryption
+                )
+            encryptor = self._watch_credential_encryptor
         return encryptor
 
     async def create_watch_auth_state(
@@ -140,6 +119,7 @@ class ConnectorDelegate:
         add_type: str,
         path: str,
         connector_args: Optional[Dict[str, Any]],
+        connector_auth_config: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Build the private request state needed to replay a Connector watch."""
         if not api_key:
@@ -151,19 +131,17 @@ class ConnectorDelegate:
             "path": path,
             "connector_args": dict(connector_args or {}),
         }
-        encryptor = getattr(self._viking_fs, "_encryptor", None)
-        if encryptor is None:
-            return {
-                "provider": self._WATCH_PLAINTEXT_AUTH_PROVIDER,
-                "request": payload,
-            }
+        # Watches persist only the secret-free credential reference; the actual
+        # auth_config is resolved anew each round so refreshed tokens stay current.
+        if connector_auth_config:
+            payload["connector_auth_config"] = dict(connector_auth_config)
         try:
             plaintext = json.dumps(
                 payload,
                 ensure_ascii=False,
                 separators=(",", ":"),
             ).encode("utf-8")
-            ciphertext = await encryptor.encrypt(account_id, plaintext)
+            ciphertext = await self._watch_encryptor().encrypt(account_id, plaintext)
         except InvalidArgumentError:
             raise
         except Exception as exc:
@@ -175,11 +153,10 @@ class ConnectorDelegate:
 
     @classmethod
     def is_watch_auth_state(cls, auth_state: Optional[Dict[str, Any]]) -> bool:
-        return (
-            isinstance(auth_state, dict)
-            and auth_state.get("provider")
-            in {cls._WATCH_AUTH_PROVIDER, cls._WATCH_PLAINTEXT_AUTH_PROVIDER}
-        )
+        return isinstance(auth_state, dict) and auth_state.get("provider") in {
+            cls._WATCH_AUTH_PROVIDER,
+            cls._WATCH_PLAINTEXT_AUTH_PROVIDER,
+        }
 
     async def restore_watch_request(
         self,
@@ -187,8 +164,13 @@ class ConnectorDelegate:
         *,
         account_id: str,
         path: str,
-    ) -> Tuple[str, str, Dict[str, Any]]:
-        """Restore and validate a source-bound Connector watch request."""
+    ) -> Tuple[str, str, Dict[str, Any], Optional[Dict[str, Any]]]:
+        """Restore and validate a source-bound Connector watch request.
+
+        Returns ``(api_key, add_type, connector_args, connector_auth_config)``;
+        ``connector_auth_config`` is the secret-free credential reference and is
+        None for watches that predate it or use the legacy args channel.
+        """
         try:
             provider = auth_state.get("provider")
             if provider == self._WATCH_PLAINTEXT_AUTH_PROVIDER:
@@ -213,15 +195,25 @@ class ConnectorDelegate:
             api_key = payload.get("api_key")
             add_type = payload.get("add_type")
             connector_args = payload.get("connector_args")
+            connector_auth_config = payload.get("connector_auth_config")
             if (
                 not isinstance(api_key, str)
                 or not api_key
                 or not isinstance(add_type, str)
                 or not add_type
                 or not isinstance(connector_args, dict)
+                or (
+                    connector_auth_config is not None
+                    and not isinstance(connector_auth_config, dict)
+                )
             ):
                 raise ValueError("invalid watch request")
-            return api_key, add_type, dict(connector_args)
+            return (
+                api_key,
+                add_type,
+                dict(connector_args),
+                dict(connector_auth_config) if connector_auth_config else None,
+            )
         except InvalidArgumentError:
             raise
         except Exception as exc:
@@ -409,8 +401,11 @@ class ConnectorDelegate:
             unsupported.append("parent targets (Connector imports require an exact 'to' target)")
         if not to:
             unsupported.append("missing exact 'to' target")
-        elif to != "viking://resources" and not to.startswith("viking://resources/"):
-            unsupported.append("to outside the public resources root (viking://resources/...)")
+        elif not _is_resource_target(to):
+            unsupported.append(
+                "to outside a resources tree (viking://resources/... or "
+                "viking://user/<user_id>/resources/...)"
+            )
         if instruction:
             unsupported.append("instruction")
         if not build_index:
@@ -438,7 +433,9 @@ class ConnectorDelegate:
             supported_args = CONNECTOR_SUPPORTED_ARGS.get(
                 add_type, frozenset()
             ) | CONNECTOR_CREDENTIAL_ARGS.get(add_type, frozenset())
-            unknown_args = sorted(set(connector_args) - supported_args)
+            unknown_args = sorted(
+                set(connector_args) - supported_args - {CONNECTOR_DISPLAY_RESOURCE_CONFIG_ARG}
+            )
             if unknown_args:
                 supported_hint = (
                     f"supported: {sorted(supported_args)}"
@@ -455,347 +452,43 @@ class ConnectorDelegate:
                 unsupported.append("args.auth_config that is not an object of credential fields")
         return unsupported
 
-    async def submit(
+    async def create(
         self,
         path: str,
         ctx: RequestContext,
         to: Optional[str],
-        reason: str = "",
-        declared_add_type: Optional[str] = None,
-        connector_args: Optional[Dict[str, Any]] = None,
-        tags: Optional[List[str]] = None,
-        tag_mode: str = "replace",
+        *,
         wait_for_completion: bool = False,
-        on_success: Optional[Callable[[], Awaitable[None]]] = None,
+        task_id: Optional[str] = None,
+        on_task_created: Optional[Callable[[TaskRecord], Awaitable[None]]] = None,
         **kwargs: Any,
     ) -> Dict[str, Any]:
-        """Route add_resource to the external Connector service."""
-        from openviking.service.task_tracker import get_task_tracker
-        from openviking_cli.utils.config.open_viking_config import get_openviking_config
-
-        config = get_openviking_config().connector
-        if not ctx.api_key:
-            raise InvalidArgumentError("Connector import requires an API key in the request.")
-
-        resolved = self.resolve_add_type(path, declared_add_type)
-        if resolved is None:
-            raise InvalidArgumentError(f"'{path}' does not match any Connector source type.")
-        add_type, _ = resolved
-        if add_type == "tos":
-            _validate_tos_uri(path, "path", allow_bucket_without_slash=True)
-
-        task_resource_id = to or ""
-        if not task_resource_id:
-            raise InvalidArgumentError("Connector import requires an exact 'to' target.")
-
-        if not kwargs.get("create_parent", False):
-            # Match the native pipeline default: unless create_parent=true is
-            # given, the parent of the exact target must pre-exist.
-            parent_uri, _, _ = task_resource_id.rpartition("/")
-            if parent_uri.startswith("viking://") and not await self._viking_fs.exists(
-                parent_uri, ctx
-            ):
-                raise InvalidArgumentError(
-                    f"Parent directory '{parent_uri}' does not exist; "
-                    "pass create_parent=true to create it."
-                )
-
-        # Credentials are separated into the dedicated auth_config field before
-        # forwarding: Connector and plugin logs redact auth_config while logging
-        # param_config verbatim. The incoming OpenViking HTTP body may still be
-        # captured when the explicitly unsafe observability body dump is enabled.
-        if add_type in CONNECTOR_SUPPORTED_ARGS:
-            forwarded_args = {
-                key: value
-                for key, value in (connector_args or {}).items()
-                if key in CONNECTOR_SUPPORTED_ARGS.get(add_type, frozenset()) and value
-            }
-            auth_config = {
-                key: str(value)
-                for key, value in (connector_args or {}).items()
-                if key in CONNECTOR_CREDENTIAL_ARGS.get(add_type, frozenset()) and value
-            }
-        else:
-            # Declared add_type outside the registry: the plugin owns the args
-            # semantics, so they travel wholesale through param_config. The
-            # caller supplies credentials under the reserved args.auth_config
-            # key, lifted into the top-level auth_config field.
-            forwarded_args = {
-                key: value
-                for key, value in (connector_args or {}).items()
-                if key != CONNECTOR_ARGS_AUTH_CONFIG_KEY and value is not None
-            }
-            declared_auth = (connector_args or {}).get(CONNECTOR_ARGS_AUTH_CONFIG_KEY)
-            if declared_auth is not None and not isinstance(declared_auth, dict):
-                raise InvalidArgumentError(
-                    "args.auth_config must be an object of credential fields."
-                )
-            auth_config = {
-                str(key): str(value) for key, value in (declared_auth or {}).items() if value
-            }
-
-        tos_path: Optional[str] = None
-        param_config: Optional[Dict[str, Any]] = None
-        if add_type == "tos":
-            tos_args = connector_args or {}
-            if "tos_prefix" not in tos_args:
-                if "exclude" in tos_args:
-                    raise InvalidArgumentError("args.exclude requires args.tos_prefix.")
-                source_path = path[len("tos://") :].strip()
-                if not source_path:
-                    raise InvalidArgumentError(
-                        "Connector TOS import requires path='tos://<bucket>/<path>'."
-                    )
-                tos_path = source_path
-            else:
-                tos_prefix = tos_args["tos_prefix"]
-                if not isinstance(tos_prefix, list) or not tos_prefix:
-                    raise InvalidArgumentError(
-                        "args.tos_prefix must be a non-empty list of TOS URIs."
-                    )
-                for index, source in enumerate(tos_prefix):
-                    _validate_tos_uri(source, f"args.tos_prefix[{index}]")
-                if tos_prefix[0] != path:
-                    raise InvalidArgumentError("path must equal the first item in args.tos_prefix.")
-                exclude = tos_args.get("exclude", [])
-                if not isinstance(exclude, list):
-                    raise InvalidArgumentError("args.exclude must be a list of TOS URIs.")
-                for index, source in enumerate(exclude):
-                    _validate_tos_uri(source, f"args.exclude[{index}]")
-                param_config = {"tos_prefix": tos_prefix}
-                if exclude:
-                    param_config["exclude"] = exclude
-        elif add_type == "git":
-            from openviking.parse.accessors.git_accessor import GitAccessor
-
-            # Source-specific settings stay in param_config. The exact target
-            # is transported separately as the top-level ``to`` field.
-            repo_url, branch, commit = GitAccessor()._parse_repo_source(
-                path.strip(), **forwarded_args
+        """Submit an import, enqueue monitoring, and return its durable receipt."""
+        task = await run_to_completion(
+            lambda: self._enqueue(
+                path,
+                ctx,
+                to,
+                task_id=task_id,
+                on_task_created=on_task_created,
+                **kwargs,
             )
-            param_config = {"repo_url": repo_url}
-            if commit:
-                # Routing already degraded abbreviated SHAs to the standard
-                # pipeline. Preserve the native accessor's historical precedence:
-                # when both commit and branch/ref are present, send only the full
-                # commit SHA so the plugin receives an unambiguous pinned request.
-                param_config["commit"] = str(commit)
-            elif branch:
-                param_config["branch"] = str(branch)
-        else:
-            # Declared add_type outside the registry: the plugin owns the
-            # source semantics. The top-level path travels under the agreed
-            # param_config["path"] key -- args can never carry "path", it is
-            # a reserved core add_resource field.
-            param_config = dict(forwarded_args)
-            param_config["path"] = path
-
-        client = ConnectorClient(
-            doc_add_url=config.connector,
-            task_info_url=config.tracker,
-            account_id=ctx.account_id,
         )
-        extra_params = None
-        if tags is not None:
-            extra_params = {
-                "tags": normalize_search_tags(tags),
-                "tag_mode": tag_mode,
-            }
-
-        task_tracker = get_task_tracker()
-        task = await task_tracker.create(
-            "connector_import",
-            resource_id=task_resource_id,
-            account_id=ctx.account_id,
-            user_id=ctx.user.user_id,
-        )
-        try:
-            result = await client.submit_doc_add(
-                add_type=add_type,
-                api_key=ctx.api_key,
-                tos_path=tos_path,
-                to=task_resource_id,
-                include_child=True,
-                param_config=param_config,
-                auth_config=auth_config or None,
-                extra_params=extra_params,
-            )
-
-            connector_task_key = result.get("task_key") or result.get("TaskKey") or ""
-            if not connector_task_key:
-                raise InternalError(
-                    f"Connector accepted the import but returned no task key: {result}"
-                )
-        except asyncio.CancelledError:
-            await task_tracker.fail(
-                task.task_id,
-                "connector task submission cancelled",
-                account_id=ctx.account_id,
-                user_id=ctx.user.user_id,
-            )
-            raise
-        except Exception as exc:
-            await task_tracker.fail(
-                task.task_id,
-                str(exc),
-                account_id=ctx.account_id,
-                user_id=ctx.user.user_id,
-            )
-            raise
-
-        monitor = self._monitor(
-            client=client,
-            connector_task_key=connector_task_key,
-            ov_task_id=task.task_id,
-            poll_interval_ms=config.poll_interval_ms,
-            timeout_seconds=config.timeout_seconds,
-            ctx=ctx,
-            reason=reason,
-            link_root_uri=task_resource_id or "viking://resources",
-            on_success=on_success,
-        )
-
+        tracker = get_task_tracker()
+        owner = {"account_id": task.account_id, "user_id": task.user_id}
+        key = task.meta.get("connector_task_key")
+        if not key:
+            raise InternalError("Connector submission did not persist its task key")
         response = {
             "status": "accepted",
             "task_id": task.task_id,
-            "connector_task_key": connector_task_key,
+            "connector_task_key": key,
+            "resource_id": task.resource_id,
         }
-        if task_resource_id:
-            response["resource_id"] = task_resource_id
         if wait_for_completion:
-            response.update(await monitor)
-            return response
-
-        background = asyncio.create_task(monitor)
-        self._background_tasks.add(background)
-        background.add_done_callback(self._background_tasks.discard)
+            completed = await tracker.wait(task.task_id, **owner, timeout=None)
+            response.update(completed.result or {})
+            response["status"] = completed.status.value
+            if completed.error:
+                response["error"] = completed.error
         return response
-
-    async def _monitor(
-        self,
-        client: ConnectorClient,
-        connector_task_key: str,
-        ov_task_id: str,
-        poll_interval_ms: int,
-        timeout_seconds: int,
-        ctx: RequestContext,
-        reason: str = "",
-        link_root_uri: str = "",
-        on_success: Optional[Callable[[], Awaitable[None]]] = None,
-    ) -> Dict[str, Any]:
-        """Poll the Connector task until terminal state, then update OV TaskRecord.
-
-        Returns a terminal payload: ``{"status": "completed", ...}`` on
-        success, ``{"status": "failed", "error": ...}`` otherwise. When
-        *reason* is set, a successful import links one reason memory to
-        *link_root_uri* (the import root), matching the native add_resource
-        reason semantics of one reason entry referencing the resource root.
-        """
-        from openviking.service.task_tracker import get_task_tracker
-
-        task_tracker = get_task_tracker()
-        await task_tracker.start(
-            ov_task_id,
-            account_id=ctx.account_id,
-            user_id=ctx.user.user_id,
-        )
-
-        poll_interval = poll_interval_ms / 1000.0
-        deadline = time.perf_counter() + timeout_seconds
-        terminal_statuses = {"succeeded", "failed", "cancelled"}
-
-        try:
-            while time.perf_counter() < deadline:
-                await asyncio.sleep(poll_interval)
-                try:
-                    info = await client.get_task_info(connector_task_key, ctx.api_key)
-                except httpx.HTTPStatusError as exc:
-                    status_code = exc.response.status_code
-                    if status_code not in {408, 429} and status_code < 500:
-                        raise
-                    logger.warning(
-                        "[ConnectorDelegate] Transient Connector task polling HTTP error "
-                        f"for {connector_task_key}: {status_code}; retrying"
-                    )
-                    continue
-                except httpx.RequestError:
-                    logger.warning(
-                        "[ConnectorDelegate] Transient Connector task polling error "
-                        f"for {connector_task_key}; retrying"
-                    )
-                    continue
-                status = (info.get("Status") or info.get("status") or "").lower()
-
-                await task_tracker.update_stage(
-                    ov_task_id,
-                    f"connector:{status}",
-                    account_id=ctx.account_id,
-                    user_id=ctx.user.user_id,
-                )
-
-                if status in terminal_statuses:
-                    if status == "succeeded":
-                        completion: Dict[str, Any] = {
-                            "connector_status": status,
-                            "connector_task_key": connector_task_key,
-                        }
-                        if on_success is not None:
-                            await on_success()
-                        if (reason or "").strip() and link_root_uri:
-                            link_result: Dict[str, Any] = {"root_uri": link_root_uri}
-                            await self._link_reason_memory(
-                                result=link_result,
-                                ctx=ctx,
-                                reason=reason,
-                                source_name=None,
-                                timeout=None,
-                            )
-                            for key in ("memory_linking", "warnings"):
-                                if key in link_result:
-                                    completion[key] = link_result[key]
-                        await task_tracker.complete(
-                            ov_task_id,
-                            completion,
-                            account_id=ctx.account_id,
-                            user_id=ctx.user.user_id,
-                        )
-                        return {"status": "completed", **completion}
-                    error_msg = info.get("ErrorMessage") or info.get("error_message") or status
-                    failure = f"connector task {status}: {error_msg}"
-                    await task_tracker.fail(
-                        ov_task_id,
-                        failure,
-                        account_id=ctx.account_id,
-                        user_id=ctx.user.user_id,
-                    )
-                    return {"status": "failed", "error": failure}
-
-            timeout_msg = f"connector task timed out after {timeout_seconds}s"
-            await task_tracker.fail(
-                ov_task_id,
-                timeout_msg,
-                account_id=ctx.account_id,
-                user_id=ctx.user.user_id,
-            )
-            return {"status": "failed", "error": timeout_msg}
-        except asyncio.CancelledError:
-            await task_tracker.fail(
-                ov_task_id,
-                "background connector task monitoring cancelled",
-                account_id=ctx.account_id,
-                user_id=ctx.user.user_id,
-            )
-            raise
-        except Exception as exc:
-            failure = "connector task monitoring failed"
-            logger.error(
-                "[ConnectorDelegate] Connector task monitor error, error_type=%s",
-                type(exc).__name__,
-            )
-            await task_tracker.fail(
-                ov_task_id,
-                failure,
-                account_id=ctx.account_id,
-                user_id=ctx.user.user_id,
-            )
-            return {"status": "failed", "error": failure}

@@ -30,6 +30,9 @@ class TaskExecutionContext:
     task_id: str
     account_id: str
     user_id: str
+    work_id: Optional[str] = None
+    task_type: Optional[str] = None
+    enqueued_work: Optional[list] = None
 
 
 @dataclass(frozen=True)
@@ -51,6 +54,10 @@ def bind_task_context(
     task_id: str,
     account_id: str,
     user_id: str,
+    *,
+    work_id: Optional[str] = None,
+    task_type: Optional[str] = None,
+    enqueued_work: Optional[list] = None,
 ) -> Iterator[None]:
     """Propagate task ownership to queue messages produced by this coroutine."""
     token = _current_task_context.set(
@@ -58,6 +65,9 @@ def bind_task_context(
             task_id=str(task_id),
             account_id=str(account_id),
             user_id=str(user_id),
+            work_id=work_id,
+            task_type=task_type,
+            enqueued_work=enqueued_work,
         )
     )
     try:
@@ -318,3 +328,27 @@ class TaskWorkIndex:
             active = list(self._active.get(task_id, ()))
         for task in active:
             task.get_loop().call_soon_threadsafe(task.cancel)
+
+
+async def collect_queued_tasks(queue: Any, tracker: Any) -> list[Any]:
+    """Read Tasks referenced by a queue's unacknowledged deliveries."""
+    if queue is None:
+        return []
+    tasks = []
+    seen: set[tuple[str, str, str]] = set()
+    for message in await queue.snapshot():
+        metadata = extract_task_metadata(message)
+        if metadata is None or not metadata.account_id or not metadata.user_id:
+            continue
+        key = (metadata.task_id, metadata.account_id, metadata.user_id)
+        if key in seen:
+            continue
+        seen.add(key)
+        task = await tracker.get(
+            metadata.task_id,
+            account_id=metadata.account_id,
+            user_id=metadata.user_id,
+        )
+        if task is not None:
+            tasks.append(task)
+    return tasks

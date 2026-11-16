@@ -121,6 +121,9 @@ SERVER_TO_CLIENT_TOOLS = {
     "grep": "openviking_grep",
     "glob": "openviking_glob",
     "health": "openviking_health",
+    "rule_search": "openviking_rule_search",
+    "find_mcp_tools": "openviking_find_mcp_tools",
+    "invoke_mcp_tool": "openviking_invoke_mcp_tool",
 }
 CLIENT_TO_SERVER_TOOLS = {v: k for k, v in SERVER_TO_CLIENT_TOOLS.items()}
 CLIENT_TO_SERVER_TOOLS["openviking_list"] = "list"
@@ -192,7 +195,7 @@ def _forward_request(request_obj: Dict[str, Any]) -> list[Dict[str, Any]]:
                         s_info = res["serverInfo"]
                         k_ver = s_info.get("version", "1.7.164")
                         s_info["name"] = "openviking-memory"
-                        s_info["version"] = f"{PLUGIN_VERSION} [Kernel: v{k_ver} | 35 Tools Online | Synced]"
+                        s_info["version"] = f"{PLUGIN_VERSION} [Kernel: v{k_ver} | MCP Proxy | Synced]"
 
         # 3. tools/list 正向映射: 将服务端原生无前缀工具统一规范化为 openviking_*
         elif method == "tools/list":

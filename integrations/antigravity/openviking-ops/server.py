@@ -246,7 +246,7 @@ def openviking_list_watches(
     active_only: bool = Field(default=True, description="是否仅列出活跃状态的监听任务"),
 ) -> str:
     """查看自动刷新系统监听订阅任务清单。"""
-    return _api_request("GET", "/api/v1/system/watches", params={"active_only": active_only})
+    return _api_request("GET", "/api/v1/watches", params={"active_only": active_only})
 
 
 @mcp.tool()
@@ -254,21 +254,33 @@ def openviking_cancel_watch(
     target_uri: str = Field(description="要取消监听的 Viking URI"),
 ) -> str:
     """取消指定的自动刷新系统监听任务。"""
-    return _api_request("DELETE", f"/api/v1/system/watches?uri={urllib.parse.quote(target_uri, safe='')}")
+    return _api_request("DELETE", f"/api/v1/watches?to_uri={urllib.parse.quote(target_uri, safe='')}")
 
 
 @mcp.tool()
 def openviking_manage_watch(
     target_uri: str = Field(description="目标 Viking URI"),
-    interval_minutes: int = Field(default=10, description="轮询或检测周期（分钟）"),
-    active: bool = Field(default=True, description="是否激活"),
+    interval_minutes: Optional[int] = Field(default=None, description="轮询或检测周期（分钟），不传则保持原间隔"),
+    active: Optional[bool] = Field(default=None, description="是否激活（True 恢复 / False 暂停）"),
+    action: str = Field(default="update", description="动作类型：update / pause / resume / trigger"),
 ) -> str:
-    """动态更新或调整系统监听器参数。"""
-    return _api_request("POST", "/api/v1/system/watches", body={
-        "uri": target_uri,
-        "interval_minutes": interval_minutes,
-        "active": active,
-    })
+    """动态更新、暂停/恢复或立即触发指定资源监听任务。"""
+    encoded_uri = urllib.parse.quote(target_uri, safe="")
+    clean_action = (action or "update").strip().lower()
+    if clean_action == "trigger":
+        return _api_request("POST", f"/api/v1/watches/trigger?to_uri={encoded_uri}")
+
+    patch_body: Dict[str, Any] = {}
+    if interval_minutes is not None:
+        patch_body["watch_interval"] = float(interval_minutes)
+    if clean_action == "pause":
+        patch_body["is_active"] = False
+    elif clean_action == "resume":
+        patch_body["is_active"] = True
+    elif active is not None:
+        patch_body["is_active"] = bool(active)
+
+    return _api_request("PATCH", f"/api/v1/watches?to_uri={encoded_uri}", body=patch_body)
 
 
 @mcp.tool()
