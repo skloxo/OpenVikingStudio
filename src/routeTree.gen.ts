@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AccountsRouteRouteImport } from './routes/accounts/route'
+import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as AgentExperienceRouteRouteImport } from './routes/agent-experience/route'
 import { Route as AgentsRouteRouteImport } from './routes/agents/route'
 import { Route as ArrangerRouteRouteImport } from './routes/arranger/route'
@@ -33,6 +34,7 @@ import { Route as TasksRouteRouteImport } from './routes/tasks/route'
 import { Route as UsageAuditRouteImport } from './routes/usage-audit'
 import { Route as UsersRouteRouteImport } from './routes/users/route'
 import { Route as WatchesRouteRouteImport } from './routes/watches/route'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AgentExperienceIndexRouteImport } from './routes/agent-experience/index'
 import { Route as AgentExperienceExperienceUriRouteImport } from './routes/agent-experience/$experienceUri'
 import { Route as CompileIndexRouteImport } from './routes/compile/index'
@@ -41,6 +43,11 @@ import { Route as OauthConsentRouteImport } from './routes/oauth/consent'
 import { Route as OauthVerifyRouteImport } from './routes/oauth/verify'
 import { Route as SessionsIndexRouteImport } from './routes/sessions/index'
 import { Route as SkillsHarnessLogsRouteImport } from './routes/skills/harness-logs'
+import { Route as AdminConfigurationIndexRouteImport } from './routes/admin/configuration/index'
+import { Route as AdminConfigurationServerRouteImport } from './routes/admin/configuration/server'
+import { Route as AdminUsersGroupsRouteImport } from './routes/admin/users/groups'
+import { Route as AdminUsersMemoryTemplatesRouteImport } from './routes/admin/users/memory-templates'
+import { Route as AdminVikingbotIndexRouteImport } from './routes/admin/vikingbot/index'
 import { Route as CompileTasksTaskIdRouteImport } from './routes/compile/tasks/$taskId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -51,6 +58,11 @@ const IndexRoute = IndexRouteImport.update({
 const AccountsRouteRoute = AccountsRouteRouteImport.update({
   id: '/accounts',
   path: '/accounts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRouteRoute = AdminRouteRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AgentExperienceRouteRoute = AgentExperienceRouteRouteImport.update({
@@ -163,6 +175,11 @@ const WatchesRouteRoute = WatchesRouteRouteImport.update({
   path: '/watches',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AgentExperienceIndexRoute = AgentExperienceIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -204,6 +221,33 @@ const SkillsHarnessLogsRoute = SkillsHarnessLogsRouteImport.update({
   path: '/harness-logs',
   getParentRoute: () => SkillsRouteRoute,
 } as any)
+const AdminConfigurationIndexRoute = AdminConfigurationIndexRouteImport.update({
+  id: '/configuration/',
+  path: '/configuration/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminConfigurationServerRoute =
+  AdminConfigurationServerRouteImport.update({
+    id: '/configuration/server',
+    path: '/configuration/server',
+    getParentRoute: () => AdminRouteRoute,
+  } as any)
+const AdminUsersGroupsRoute = AdminUsersGroupsRouteImport.update({
+  id: '/users/groups',
+  path: '/users/groups',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminUsersMemoryTemplatesRoute =
+  AdminUsersMemoryTemplatesRouteImport.update({
+    id: '/users/memory-templates',
+    path: '/users/memory-templates',
+    getParentRoute: () => AdminRouteRoute,
+  } as any)
+const AdminVikingbotIndexRoute = AdminVikingbotIndexRouteImport.update({
+  id: '/vikingbot/',
+  path: '/vikingbot/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const CompileTasksTaskIdRoute = CompileTasksTaskIdRouteImport.update({
   id: '/tasks/$taskId',
   path: '/tasks/$taskId',
@@ -213,6 +257,7 @@ const CompileTasksTaskIdRoute = CompileTasksTaskIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/accounts': typeof AccountsRouteRoute
+  '/admin': typeof AdminRouteRouteWithChildren
   '/agent-experience': typeof AgentExperienceRouteRouteWithChildren
   '/agents': typeof AgentsRouteRoute
   '/arranger': typeof ArrangerRouteRoute
@@ -240,10 +285,16 @@ export interface FileRoutesByFullPath {
   '/oauth/consent': typeof OauthConsentRoute
   '/oauth/verify': typeof OauthVerifyRoute
   '/skills/harness-logs': typeof SkillsHarnessLogsRoute
+  '/admin/': typeof AdminIndexRoute
   '/agent-experience/': typeof AgentExperienceIndexRoute
   '/compile/': typeof CompileIndexRoute
   '/sessions/': typeof SessionsIndexRoute
+  '/admin/configuration/server': typeof AdminConfigurationServerRoute
+  '/admin/users/groups': typeof AdminUsersGroupsRoute
+  '/admin/users/memory-templates': typeof AdminUsersMemoryTemplatesRoute
   '/compile/tasks/$taskId': typeof CompileTasksTaskIdRoute
+  '/admin/configuration/': typeof AdminConfigurationIndexRoute
+  '/admin/vikingbot/': typeof AdminVikingbotIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -272,15 +323,22 @@ export interface FileRoutesByTo {
   '/oauth/consent': typeof OauthConsentRoute
   '/oauth/verify': typeof OauthVerifyRoute
   '/skills/harness-logs': typeof SkillsHarnessLogsRoute
+  '/admin': typeof AdminIndexRoute
   '/agent-experience': typeof AgentExperienceIndexRoute
   '/compile': typeof CompileIndexRoute
   '/sessions': typeof SessionsIndexRoute
+  '/admin/configuration/server': typeof AdminConfigurationServerRoute
+  '/admin/users/groups': typeof AdminUsersGroupsRoute
+  '/admin/users/memory-templates': typeof AdminUsersMemoryTemplatesRoute
   '/compile/tasks/$taskId': typeof CompileTasksTaskIdRoute
+  '/admin/configuration': typeof AdminConfigurationIndexRoute
+  '/admin/vikingbot': typeof AdminVikingbotIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/accounts': typeof AccountsRouteRoute
+  '/admin': typeof AdminRouteRouteWithChildren
   '/agent-experience': typeof AgentExperienceRouteRouteWithChildren
   '/agents': typeof AgentsRouteRoute
   '/arranger': typeof ArrangerRouteRoute
@@ -308,16 +366,23 @@ export interface FileRoutesById {
   '/oauth/consent': typeof OauthConsentRoute
   '/oauth/verify': typeof OauthVerifyRoute
   '/skills/harness-logs': typeof SkillsHarnessLogsRoute
+  '/admin/': typeof AdminIndexRoute
   '/agent-experience/': typeof AgentExperienceIndexRoute
   '/compile/': typeof CompileIndexRoute
   '/sessions/': typeof SessionsIndexRoute
+  '/admin/configuration/server': typeof AdminConfigurationServerRoute
+  '/admin/users/groups': typeof AdminUsersGroupsRoute
+  '/admin/users/memory-templates': typeof AdminUsersMemoryTemplatesRoute
   '/compile/tasks/$taskId': typeof CompileTasksTaskIdRoute
+  '/admin/configuration/': typeof AdminConfigurationIndexRoute
+  '/admin/vikingbot/': typeof AdminVikingbotIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/accounts'
+    | '/admin'
     | '/agent-experience'
     | '/agents'
     | '/arranger'
@@ -345,10 +410,16 @@ export interface FileRouteTypes {
     | '/oauth/consent'
     | '/oauth/verify'
     | '/skills/harness-logs'
+    | '/admin/'
     | '/agent-experience/'
     | '/compile/'
     | '/sessions/'
+    | '/admin/configuration/server'
+    | '/admin/users/groups'
+    | '/admin/users/memory-templates'
     | '/compile/tasks/$taskId'
+    | '/admin/configuration/'
+    | '/admin/vikingbot/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -377,14 +448,21 @@ export interface FileRouteTypes {
     | '/oauth/consent'
     | '/oauth/verify'
     | '/skills/harness-logs'
+    | '/admin'
     | '/agent-experience'
     | '/compile'
     | '/sessions'
+    | '/admin/configuration/server'
+    | '/admin/users/groups'
+    | '/admin/users/memory-templates'
     | '/compile/tasks/$taskId'
+    | '/admin/configuration'
+    | '/admin/vikingbot'
   id:
     | '__root__'
     | '/'
     | '/accounts'
+    | '/admin'
     | '/agent-experience'
     | '/agents'
     | '/arranger'
@@ -412,15 +490,22 @@ export interface FileRouteTypes {
     | '/oauth/consent'
     | '/oauth/verify'
     | '/skills/harness-logs'
+    | '/admin/'
     | '/agent-experience/'
     | '/compile/'
     | '/sessions/'
+    | '/admin/configuration/server'
+    | '/admin/users/groups'
+    | '/admin/users/memory-templates'
     | '/compile/tasks/$taskId'
+    | '/admin/configuration/'
+    | '/admin/vikingbot/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountsRouteRoute: typeof AccountsRouteRoute
+  AdminRouteRoute: typeof AdminRouteRouteWithChildren
   AgentExperienceRouteRoute: typeof AgentExperienceRouteRouteWithChildren
   AgentsRouteRoute: typeof AgentsRouteRoute
   ArrangerRouteRoute: typeof ArrangerRouteRoute
@@ -461,6 +546,13 @@ declare module '@tanstack/react-router' {
       path: '/accounts'
       fullPath: '/accounts'
       preLoaderRoute: typeof AccountsRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/agent-experience': {
@@ -617,6 +709,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WatchesRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/agent-experience/': {
       id: '/agent-experience/'
       path: '/'
@@ -673,6 +772,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SkillsHarnessLogsRouteImport
       parentRoute: typeof SkillsRouteRoute
     }
+    '/admin/configuration/': {
+      id: '/admin/configuration/'
+      path: '/configuration'
+      fullPath: '/admin/configuration/'
+      preLoaderRoute: typeof AdminConfigurationIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/configuration/server': {
+      id: '/admin/configuration/server'
+      path: '/configuration/server'
+      fullPath: '/admin/configuration/server'
+      preLoaderRoute: typeof AdminConfigurationServerRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/users/groups': {
+      id: '/admin/users/groups'
+      path: '/users/groups'
+      fullPath: '/admin/users/groups'
+      preLoaderRoute: typeof AdminUsersGroupsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/users/memory-templates': {
+      id: '/admin/users/memory-templates'
+      path: '/users/memory-templates'
+      fullPath: '/admin/users/memory-templates'
+      preLoaderRoute: typeof AdminUsersMemoryTemplatesRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/vikingbot/': {
+      id: '/admin/vikingbot/'
+      path: '/vikingbot'
+      fullPath: '/admin/vikingbot/'
+      preLoaderRoute: typeof AdminVikingbotIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/compile/tasks/$taskId': {
       id: '/compile/tasks/$taskId'
       path: '/tasks/$taskId'
@@ -682,6 +816,28 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AdminRouteRouteChildren {
+  AdminIndexRoute: typeof AdminIndexRoute
+  AdminConfigurationServerRoute: typeof AdminConfigurationServerRoute
+  AdminUsersGroupsRoute: typeof AdminUsersGroupsRoute
+  AdminUsersMemoryTemplatesRoute: typeof AdminUsersMemoryTemplatesRoute
+  AdminConfigurationIndexRoute: typeof AdminConfigurationIndexRoute
+  AdminVikingbotIndexRoute: typeof AdminVikingbotIndexRoute
+}
+
+const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminIndexRoute: AdminIndexRoute,
+  AdminConfigurationServerRoute: AdminConfigurationServerRoute,
+  AdminUsersGroupsRoute: AdminUsersGroupsRoute,
+  AdminUsersMemoryTemplatesRoute: AdminUsersMemoryTemplatesRoute,
+  AdminConfigurationIndexRoute: AdminConfigurationIndexRoute,
+  AdminVikingbotIndexRoute: AdminVikingbotIndexRoute,
+}
+
+const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
+  AdminRouteRouteChildren,
+)
 
 interface AgentExperienceRouteRouteChildren {
   AgentExperienceExperienceUriRoute: typeof AgentExperienceExperienceUriRoute
@@ -739,6 +895,7 @@ const SkillsRouteRouteWithChildren = SkillsRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountsRouteRoute: AccountsRouteRoute,
+  AdminRouteRoute: AdminRouteRouteWithChildren,
   AgentExperienceRouteRoute: AgentExperienceRouteRouteWithChildren,
   AgentsRouteRoute: AgentsRouteRoute,
   ArrangerRouteRoute: ArrangerRouteRoute,

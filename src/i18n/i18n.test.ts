@@ -34,6 +34,9 @@ describe('i18n configuration and modular dictionary parity', () => {
       'watchesPage',
       'compile',
       'arranger',
+      'adminConsole',
+      'memoryTemplates',
+      'vikingbot',
       'studio',
     ]
 

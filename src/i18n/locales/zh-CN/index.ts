@@ -12,6 +12,9 @@ import agentExperience from './agent-experience'
 import watches from './watches'
 import compile from './compile'
 import arranger from './arranger'
+import adminConsole from './admin'
+import memoryTemplates from './memory-templates'
+import vikingbot from './vikingbot'
 
 const zhCN = {
   ...common,
@@ -27,6 +30,9 @@ const zhCN = {
   ...watches,
   ...compile,
   ...arranger,
+  ...adminConsole,
+  ...memoryTemplates,
+  ...vikingbot,
   studio,
 } as const
 

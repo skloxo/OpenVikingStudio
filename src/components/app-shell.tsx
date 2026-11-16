@@ -7,9 +7,11 @@ import {
   Building2Icon,
   GlobeIcon,
   KeyRoundIcon,
+  LayoutGridIcon,
   MoonIcon,
   PlugZapIcon,
   SettingsIcon,
+  ShieldCheckIcon,
   SunIcon,
   UsersRoundIcon,
 } from 'lucide-react'
@@ -403,33 +405,52 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       </Sidebar>
 
       <SidebarInset className="min-h-0 flex-1 overflow-hidden rounded-none border-0 bg-background shadow-none ring-0 md:m-0 md:ml-0">
-        {/* 移动端专用顶栏 */}
-        <header className="flex md:hidden items-center justify-between border-b border-border/60 bg-background/95 backdrop-blur-md px-3 py-2 sticky top-0 z-40">
+        {/* 统一顶栏（工作台 ↔ 管理后台切换与移动端菜单触发器） */}
+        <header className="flex h-12 shrink-0 items-center justify-between border-b border-border/60 bg-background/95 backdrop-blur-md px-3 md:px-5 sticky top-0 z-30">
           <div className="flex items-center gap-2">
-            <SidebarTrigger className="h-8 w-8 rounded text-foreground hover:bg-muted font-mono" />
-            <span className="font-semibold text-xs tracking-tight text-foreground flex items-center gap-1.5">
+            <SidebarTrigger className="h-8 w-8 rounded text-foreground hover:bg-muted font-mono md:hidden" />
+            <span className="font-semibold text-xs tracking-tight text-foreground flex items-center gap-1.5 md:hidden">
               <span>🧠</span>
               <span>OpenViking Studio</span>
             </span>
           </div>
-          <span
-            className="text-xs font-mono text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded border border-border/40 cursor-pointer"
-            title={
-              versionDetails.isDrifted
-                ? `UI: v${versionDetails.appVersion} / Server: v${versionDetails.remoteVersion}`
-                : `v${appVersion}`
-            }
-            onClick={() => {
-              if (versionDetails.isDrifted) {
-                window.location.reload()
-              }
-            }}
-          >
-            v{appVersion}
-            {versionDetails.isDrifted && (
-              <span className="ml-1 text-amber-400">⚠️</span>
+          <div className="flex items-center gap-2 ml-auto">
+            {pathname === '/admin' || pathname.startsWith('/admin/') ? (
+              <Link
+                to="/"
+                className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+              >
+                <LayoutGridIcon className="size-3.5 text-cyan-500" />
+                <span>{t('backToWorkspace', { ns: 'adminConsole' })}</span>
+              </Link>
+            ) : (
+              <Link
+                to="/admin"
+                className="inline-flex h-8 items-center gap-1.5 rounded-md border border-cyan-500/30 bg-cyan-500/5 px-3 text-xs font-medium text-foreground transition-colors hover:bg-cyan-500/10"
+              >
+                <ShieldCheckIcon className="size-3.5 text-cyan-500" />
+                <span>{t('enterAdmin', { ns: 'adminConsole' })}</span>
+              </Link>
             )}
-          </span>
+            <span
+              className="flex md:hidden text-xs font-mono text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded border border-border/40 cursor-pointer"
+              title={
+                versionDetails.isDrifted
+                  ? `UI: v${versionDetails.appVersion} / Server: v${versionDetails.remoteVersion}`
+                  : `v${appVersion}`
+              }
+              onClick={() => {
+                if (versionDetails.isDrifted) {
+                  window.location.reload()
+                }
+              }}
+            >
+              v{appVersion}
+              {versionDetails.isDrifted && (
+                <span className="ml-1 text-amber-400">⚠️</span>
+              )}
+            </span>
+          </div>
         </header>
 
         <ScrollArea className="min-h-0 flex-1">
