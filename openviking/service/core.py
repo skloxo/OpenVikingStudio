@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 from openviking.core.directories import DirectoryInitializer
 from openviking.privacy import UserPrivacyConfigService
+from openviking.privacy.sanitizer import PrivacySanitizer
 from openviking.resource.uri_mutation_coordinator import UriMutationCoordinator
 from openviking.resource.watch_scheduler import WatchScheduler
 from openviking.server.account_settings import (
@@ -102,6 +103,7 @@ class OpenVikingService:
         self._session_auto_commit_scheduler: Optional[SessionAutoCommitScheduler] = None
         self._encryptor: Optional[Any] = None
         self._privacy_config_service: Optional[UserPrivacyConfigService] = None
+        self._privacy_sanitizer: Optional[PrivacySanitizer] = None
         self._data_dir_lock_acquired = False
         self._data_dir_lock_path: Optional[str] = None
 
@@ -307,6 +309,11 @@ class OpenVikingService:
         return self._privacy_config_service
 
     @property
+    def privacy_sanitizer(self) -> Optional[PrivacySanitizer]:
+        """Get shared PrivacySanitizer instance."""
+        return self._privacy_sanitizer
+
+    @property
     def debug(self) -> DebugService:
         """Get DebugService instance."""
         return self._debug_service
@@ -404,6 +411,9 @@ class OpenVikingService:
             user_count,
         )
         self._privacy_config_service = UserPrivacyConfigService(self._viking_fs)
+        self._viking_fs.set_global_policy_service(self._privacy_config_service.global_policies)
+        self._privacy_sanitizer = PrivacySanitizer(self._privacy_config_service)
+        self._viking_fs.set_privacy_sanitizer(self._privacy_sanitizer)
 
         # Initialize processors
         self._skill_processor = SkillProcessor(
@@ -587,6 +597,7 @@ class OpenVikingService:
         self._session_compressor = None
         self._directory_initializer = None
         self._privacy_config_service = None
+        self._privacy_sanitizer = None
         self._initialized = False
 
         # Clear the process-wide registration if it still points at us, so a
@@ -608,6 +619,7 @@ class OpenVikingService:
         *,
         uri: str,
         mode: str = "vectors_only",
+        force: bool = False,
         wait: bool = True,
         dry_run: bool = False,
         recursive: bool = True,

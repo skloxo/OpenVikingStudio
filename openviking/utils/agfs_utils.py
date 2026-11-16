@@ -13,6 +13,7 @@ from threading import Thread
 from typing import Any, Callable, Dict
 
 from openviking_cli.utils.config.config_loader import resolve_config_path
+from openviking_cli.utils.config.config_utils import DEFAULT_SERVICE_NAME, normalize_service_name
 from openviking_cli.utils.config.consts import DEFAULT_OV_CONF, OPENVIKING_CONFIG_ENV
 from openviking_cli.utils.logger import get_logger
 
@@ -28,6 +29,10 @@ class RagfsBindingConfig:
     root_key: bytes | None = None
     provider_type: int | None = None
     log: Dict[str, Any] | None = None
+    service_name: str = DEFAULT_SERVICE_NAME
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "service_name", normalize_service_name(self.service_name))
 
     def encryption_enabled(self) -> bool:
         """Return whether the binding stack should include the encryption layer."""
@@ -55,9 +60,25 @@ class RagfsBindingConfig:
                     "top-level cache config is required when CacheFS or QueueFS uses backend=cache"
                 )
             cache_config = _disabled_cache_config(cachefs)
+        pathlock = self.agfs.pathlock.model_dump(mode="json", exclude_none=True)
+        if pathlock.get("provider") == "sqlite":
+            sqlite_path = pathlock.get("sqlite_path")
+            if sqlite_path is None:
+                workspace = getattr(self.agfs, "path", None)
+                if not workspace:
+                    raise ValueError(
+                        "agfs_config.path is required for the default SQLite lock database"
+                    )
+                database = Path(workspace).expanduser().resolve() / "_system" / "pathlock" / "pathlock.db"
+            else:
+                database = Path(sqlite_path).resolve()
+            database.parent.mkdir(parents=True, exist_ok=True)
+            pathlock["sqlite_path"] = str(database)
+        cache_config.setdefault("service_name", self.service_name)
         binding_config: Dict[str, Any] = {
+            "service_name": self.service_name,
             "cache": cache_config,
-            "pathlock": self.agfs.pathlock.model_dump(mode="json"),
+            "pathlock": pathlock,
         }
 
         if self.log is not None:

@@ -5,118 +5,60 @@
 from __future__ import annotations
 
 import asyncio
-import os
 from collections.abc import Iterator
 from typing import Any, BinaryIO, Dict, List, Union
 
-from .protocols import AGFSSyncClientProtocol
 from openviking.service.task_tracker_concurrency import run_to_completion
 
-_SYSTEM_ACCOUNT_ID = "_system"
-_DISABLE_PATH_LOCKS_ENV = "OPENVIKING_DISABLE_PATH_LOCKS"
-_DISABLED_PATH_LOCK_OWNER_ID = "path-locks-disabled"
-_PATH_LOCK_RESTORE_VALUES = {"0", "false", "no", "off"}
+from .leader import _LOCAL_LEADER_BACKEND, LeaderCandidate, LeaderMode, leader_candidate
+from .pathlock_helpers import (
+    PathLockMixin,
+    _disabled_pathlock_lease,
+    _fs_ctx_or_default,
+    _fs_ctx_with_auto_pathlock,
+    _path_locks_disabled,
+    encryption_account_id_from_agfs_path,
+    ensure_same_encryption_account,
+    fs_ctx_from_agfs_path,
+    local_account_id_from_agfs_path,
+    sort_raw_entries,
+)
+from .protocols import AGFSSyncClientProtocol
 
 
-def _path_locks_disabled() -> bool:
-    """Return whether this process should bypass every Path Lock operation."""
-    value = os.environ.get(_DISABLE_PATH_LOCKS_ENV)
-    return value is None or value.strip().lower() not in _PATH_LOCK_RESTORE_VALUES
-
-
-def _disabled_pathlock_lease(lock_paths: list[str] | None = None) -> Dict[str, Any]:
-    """Return an owned lease shape accepted by existing Path Lock call sites."""
-    return {
-        "lease_ref": _DISABLED_PATH_LOCK_OWNER_ID,
-        "owner_id": _DISABLED_PATH_LOCK_OWNER_ID,
-        "ownership_ref": _DISABLED_PATH_LOCK_OWNER_ID,
-        "lock_paths": lock_paths or [],
-        "covered_paths": [],
-        "owned": True,
-    }
-
-
-def fs_ctx_from_agfs_path(path: str) -> Dict[str, str]:
-    """Derive a stable FsContext from an absolute AGFS path.
-
-    `/local/{account_id}/...` paths use their path-scoped account to match
-    VikingFS URI conversion. Plugin/system paths do not encode a tenant, so
-    they use the reserved system account key instead of running without ctx.
-    """
-    parts = path.strip("/").split("/")
-    if len(parts) >= 2 and parts[0] == "local" and parts[1]:
-        return {"account_id": parts[1]}
-    return {"account_id": _SYSTEM_ACCOUNT_ID}
-
-
-def _fs_ctx_or_default(path: str, fs_ctx: Dict[str, str] | None) -> Dict[str, str]:
-    """Return explicit FsContext when present, otherwise derive it from path."""
-    return fs_ctx if fs_ctx is not None else fs_ctx_from_agfs_path(path)
-
-
-def _fs_ctx_with_auto_pathlock(
-    path: str,
-    fs_ctx: Dict[str, str] | None,
-    auto_pathlock: bool,
-) -> Dict[str, str]:
-    """Return FsContext with optional auto PathLock bypass for unlocked calls.
-
-    Args:
-        path: AGFS path used to derive a default context when ``fs_ctx`` is absent.
-        fs_ctx: Optional caller-provided context.
-        auto_pathlock: Whether PathLockWrappedFS should acquire locks automatically.
-
-    Returns:
-        A copied FsContext. Existing ``lease_ref`` takes precedence and keeps wrapper
-        lease validation enabled; otherwise ``auto_pathlock=False`` disables auto-locking.
-    """
-    ctx = dict(_fs_ctx_or_default(path, fs_ctx))
-    if ctx.get("lease_ref"):
-        ctx.pop("disable_auto_pathlock", None)
-    elif not auto_pathlock:
-        ctx["disable_auto_pathlock"] = "true"
-    return ctx
-
-
-def local_account_id_from_agfs_path(path: str) -> str | None:
-    """Extract the account_id from `/local/{account_id}/...`, or None for non-local paths."""
-    parts = path.strip("/").split("/")
-    if len(parts) >= 2 and parts[0] == "local" and parts[1]:
-        return parts[1]
-    return None
-
-
-def encryption_account_id_from_agfs_path(path: str) -> str:
-    """Return the account_id used by the encryption layer for this AGFS path."""
-    return fs_ctx_from_agfs_path(path)["account_id"]
-
-
-def ensure_same_encryption_account(src_path: str, dst_path: str) -> None:
-    """Reject AGFS moves/copies across encryption-account domains."""
-    src_account = encryption_account_id_from_agfs_path(src_path)
-    dst_account = encryption_account_id_from_agfs_path(dst_path)
-    if src_account != dst_account:
-        raise ValueError(
-            f"cross-account AGFS move/copy is not supported: {src_account!r} -> {dst_account!r}"
-        )
-
-
-class AsyncAGFSClient:
-    """Run blocking AGFS binding client operations off the event loop.
-
-    This is intentionally a thin adapter over the synchronous RAGFS binding
-    client (``RAGFSBindingClient``). If the binding later provides native async
-    methods, they can be swapped in here without changing storage and
-    transaction call sites.
-    """
+class AsyncAGFSClient(PathLockMixin):
+    """Run blocking AGFS binding client operations off the event loop."""
 
     def __init__(self, client: AGFSSyncClientProtocol):
         self._client = client
 
+    def leader_candidate(
+        self,
+        key: str,
+        holder_id: str,
+        *,
+        ttl_secs: float,
+        renew_interval_secs: float,
+        retry_interval_secs: float,
+        mode: LeaderMode = "distributed",
+    ) -> LeaderCandidate:
+        """Create a leader candidate whose terms expose only a stop event."""
+        return leader_candidate(
+            self._client,
+            _LOCAL_LEADER_BACKEND,
+            key=key,
+            holder_id=holder_id,
+            ttl_secs=ttl_secs,
+            renew_interval_secs=renew_interval_secs,
+            retry_interval_secs=retry_interval_secs,
+            mode=mode,
+        )
+
     async def run(self, method_name: str, /, *args: Any, **kwargs: Any) -> Any:
         """Run a sync method off-thread, settling I/O before propagating cancellation."""
-        if _path_locks_disabled() and isinstance(kwargs.get("ctx"), dict):
-            ctx = dict(kwargs["ctx"])
+        ctx = kwargs.get("ctx")
+        if _path_locks_disabled() and isinstance(ctx, dict) and ctx.get("lease_ref"):
+            ctx = dict(ctx)
             ctx.pop("lease_ref", None)
             ctx["disable_auto_pathlock"] = "true"
             kwargs["ctx"] = ctx
@@ -139,38 +81,7 @@ class AsyncAGFSClient:
         sort_by: str | None,
         sort_order: str = "asc",
     ) -> List[Dict[str, Any]]:
-        if not sort_by:
-            return entries
-        descending = sort_order == "desc"
-        directories = [
-            e for e in entries if e.get("isDir", False) or e.get("info", {}).get("isDir", False)
-        ]
-        files = [
-            e
-            for e in entries
-            if not (e.get("isDir", False) or e.get("info", {}).get("isDir", False))
-        ]
-        if sort_by == "name":
-
-            def name_key(e: Dict[str, Any]) -> tuple[str, str]:
-                name = str(e.get("name") or e.get("info", {}).get("name") or "")
-                return name.lower(), name
-
-            directories.sort(key=name_key, reverse=descending)
-            files.sort(key=name_key, reverse=descending)
-            return directories + files
-        if sort_by == "mtime":
-
-            def mtime_key(e: Dict[str, Any]) -> float:
-                mtime = e.get("mtime") or e.get("modTime") or e.get("info", {}).get("mtime") or 0
-                if isinstance(mtime, (int, float)):
-                    return float(mtime)
-                return 0.0
-
-            directories.sort(key=mtime_key, reverse=descending)
-            files.sort(key=mtime_key, reverse=descending)
-            return directories + files
-        return entries
+        return sort_raw_entries(entries, sort_by=sort_by, sort_order=sort_order)
 
     async def ls(
         self,
@@ -196,7 +107,6 @@ class AsyncAGFSClient:
         except TypeError as exc:
             if "unexpected keyword argument" not in str(exc):
                 raise
-            # Fallback for precompiled binding without native pagination/sort kwargs
             entries = await self.run("ls", path, ctx=_fs_ctx_or_default(path, fs_ctx))
             if sort_by:
                 entries = self._sort_raw_entries(entries, sort_by=sort_by, sort_order=sort_order)
@@ -205,7 +115,6 @@ class AsyncAGFSClient:
                 end = None if limit is None else offset + limit
                 entries = entries[start:end]
             return entries
-
 
     async def read(
         self,
@@ -252,11 +161,7 @@ class AsyncAGFSClient:
         fs_ctx: Dict[str, str] | None = None,
         auto_pathlock: bool = True,
     ) -> str:
-        """Write file content to AGFS.
-
-        1. Automatic PathLock is enabled by default to prevent data conflicts in concurrent scenarios.
-        2. If automatic PathLock is disabled, the caller must assess the possible data conflict risk.
-        """
+        """Write file content to AGFS."""
         ctx = _fs_ctx_with_auto_pathlock(path, fs_ctx, auto_pathlock)
         if max_retries == 3:
             return await self.run("write", path, data, ctx=ctx)
@@ -287,11 +192,7 @@ class AsyncAGFSClient:
         fs_ctx: Dict[str, str] | None = None,
         auto_pathlock: bool = True,
     ) -> Dict[str, Any]:
-        """Remove a file or directory from AGFS.
-
-        1. Automatic PathLock is enabled by default to prevent data conflicts in concurrent scenarios.
-        2. If automatic PathLock is disabled, the caller must assess the possible data conflict risk.
-        """
+        """Remove a file or directory from AGFS."""
         kwargs: Dict[str, Any] = {}
         if recursive:
             kwargs["recursive"] = recursive
@@ -309,8 +210,6 @@ class AsyncAGFSClient:
     ) -> Dict[str, Any]:
         ctx = dict(_fs_ctx_or_default(path, fs_ctx))
         if bypass_cache:
-            # Force plugin-local metadata caches (e.g. S3FS stat cache) to serve
-            # fresh backend state so pollers observe writer-side changes.
             ctx["bypass_cache"] = "true"
         return await self.run("stat", path, ctx=ctx)
 
@@ -322,11 +221,7 @@ class AsyncAGFSClient:
         fs_ctx: Dict[str, str] | None = None,
         auto_pathlock: bool = True,
     ) -> Dict[str, Any]:
-        """Move or rename a path inside AGFS.
-
-        1. Automatic PathLock is enabled by default to prevent data conflicts in concurrent scenarios.
-        2. If automatic PathLock is disabled, the caller must assess the possible data conflict risk.
-        """
+        """Move or rename a path inside AGFS."""
         ensure_same_encryption_account(old_path, new_path)
         return await self.run(
             "mv",
@@ -345,11 +240,7 @@ class AsyncAGFSClient:
         auto_pathlock: bool = True,
         allow_same_mount_fast_path: bool = False,
     ) -> Any:
-        """Copy a path within AGFS while preserving the caller's FsContext.
-
-        1. Automatic PathLock is enabled by default to prevent data conflicts in concurrent scenarios.
-        2. If automatic PathLock is disabled, the caller must assess the possible data conflict risk.
-        """
+        """Copy a path within AGFS while preserving the caller's FsContext."""
         from .helpers import cp
 
         return await run_to_completion(
@@ -382,6 +273,7 @@ class AsyncAGFSClient:
         offset: int = 0,
         sort_by: str | None = None,
         sort_order: str = "asc",
+        directories_only: bool = False,
         fs_ctx: Dict[str, str] | None = None,
     ) -> list[Dict[str, Any]]:
         """Return a sorted range from a recursive directory traversal."""
@@ -390,6 +282,8 @@ class AsyncAGFSClient:
             "node_limit": node_limit,
             "level_limit": level_limit,
         }
+        if directories_only:
+            kwargs["directories_only"] = True
         if offset:
             kwargs["offset"] = offset
         if sort_by is not None:
@@ -405,7 +299,6 @@ class AsyncAGFSClient:
         except TypeError as exc:
             if "unexpected keyword argument" not in str(exc):
                 raise
-            # Fallback for precompiled binding without native pagination/sort kwargs
             legacy_kwargs = {
                 "show_hidden": show_hidden,
                 "node_limit": None if (offset or node_limit is not None or sort_by) else node_limit,
@@ -424,7 +317,6 @@ class AsyncAGFSClient:
                 end = None if node_limit is None else offset + node_limit
                 entries = entries[start:end]
             return entries
-
 
     async def glob_directory(
         self,
@@ -460,282 +352,15 @@ class AsyncAGFSClient:
         """Retry pending multi-write sync work for a file or directory path."""
         return await self.run("system_sync_retry", path, ctx=_fs_ctx_or_default(path, fs_ctx))
 
-    # -- pathlock async wrappers ------------------------------------------------
 
-    async def pathlock_acquire_exact(
-        self,
-        path: str,
-        timeout_secs: float = 0.0,
-        owner_lease_ref: Dict[str, Any] | None = None,
-        *,
-        fs_ctx: Dict[str, str] | None = None,
-    ) -> Dict[str, Any]:
-        """Acquire an exact lock on a single path."""
-        if _path_locks_disabled():
-            return _disabled_pathlock_lease([path])
-        return await self.run(
-            "pathlock_acquire_exact",
-            _fs_ctx_or_default(path, fs_ctx),
-            path,
-            timeout_secs,
-            owner_lease_ref,
-        )
-
-    async def pathlock_acquire_exact_batch(
-        self,
-        paths: list[str],
-        timeout_secs: float = 0.0,
-        owner_lease_ref: Dict[str, Any] | None = None,
-        *,
-        fs_ctx: Dict[str, str] | None = None,
-    ) -> Dict[str, Any]:
-        """Acquire exact locks on multiple paths."""
-        if _path_locks_disabled():
-            return _disabled_pathlock_lease(paths)
-        if hasattr(self._client, "pathlock_acquire_exact_batch"):
-            return await self.run(
-                "pathlock_acquire_exact_batch",
-                _fs_ctx_or_default(paths[0] if paths else "/", fs_ctx),
-                paths,
-                timeout_secs,
-                owner_lease_ref,
-            )
-        # Graceful fallback: convert to batch request with exact kind
-        requests = [{"path": p, "kind": "exact"} for p in paths]
-        return await self.pathlock_acquire_batch(
-            requests,
-            timeout_secs=timeout_secs,
-            owner_lease_ref=owner_lease_ref,
-            fs_ctx=fs_ctx,
-        )
-
-    async def pathlock_acquire_tree(
-        self,
-        path: str,
-        timeout_secs: float = 0.0,
-        owner_lease_ref: Dict[str, Any] | None = None,
-        *,
-        fs_ctx: Dict[str, str] | None = None,
-    ) -> Dict[str, Any]:
-        """Acquire a tree lock on a single path."""
-        if _path_locks_disabled():
-            return _disabled_pathlock_lease([path])
-        return await self.run(
-            "pathlock_acquire_tree",
-            _fs_ctx_or_default(path, fs_ctx),
-            path,
-            timeout_secs,
-            owner_lease_ref,
-        )
-
-    async def pathlock_acquire_tree_batch(
-        self,
-        paths: list[str],
-        timeout_secs: float = 0.0,
-        owner_lease_ref: Dict[str, Any] | None = None,
-        *,
-        fs_ctx: Dict[str, str] | None = None,
-    ) -> Dict[str, Any]:
-        """Acquire tree locks on multiple paths."""
-        if _path_locks_disabled():
-            return _disabled_pathlock_lease(paths)
-        return await self.run(
-            "pathlock_acquire_tree_batch",
-            _fs_ctx_or_default(paths[0] if paths else "/", fs_ctx),
-            paths,
-            timeout_secs,
-            owner_lease_ref,
-        )
-
-    async def pathlock_acquire_exact_tree_batch(
-        self,
-        exact_paths: list[str],
-        tree_paths: list[str],
-        timeout_secs: float = 0.0,
-        owner_lease_ref: Dict[str, Any] | None = None,
-        *,
-        fs_ctx: Dict[str, str] | None = None,
-    ) -> Dict[str, Any]:
-        """Acquire a mixed batch of exact and tree locks."""
-        if _path_locks_disabled():
-            return _disabled_pathlock_lease([*exact_paths, *tree_paths])
-        first = exact_paths[0] if exact_paths else (tree_paths[0] if tree_paths else "/")
-        return await self.run(
-            "pathlock_acquire_exact_tree_batch",
-            _fs_ctx_or_default(first, fs_ctx),
-            exact_paths,
-            tree_paths,
-            timeout_secs,
-            owner_lease_ref,
-        )
-
-    async def pathlock_acquire_batch(
-        self,
-        requests: list[Dict[str, str]],
-        timeout_secs: float = 0.0,
-        owner_lease_ref: Dict[str, Any] | None = None,
-        *,
-        fs_ctx: Dict[str, str] | None = None,
-    ) -> Dict[str, Any]:
-        """Acquire a batch of locks from a list of request dicts."""
-        if not requests:
-            raise ValueError("pathlock request batch must not be empty")
-        for request in requests:
-            path = request.get("path")
-            if not path or not path.startswith("/"):
-                raise ValueError("pathlock request.path must be an absolute path")
-            if request.get("kind") not in {"exact", "tree"}:
-                raise ValueError("pathlock request.kind must be 'exact' or 'tree'")
-        if _path_locks_disabled():
-            return _disabled_pathlock_lease([request["path"] for request in requests])
-        first = requests[0]["path"]
-        return await self.run(
-            "pathlock_acquire_batch",
-            _fs_ctx_or_default(first, fs_ctx),
-            requests,
-            timeout_secs,
-            owner_lease_ref,
-        )
-
-    async def pathlock_as_borrowed(
-        self,
-        owned_lease_ref: Dict[str, Any],
-        *,
-        fs_ctx: Dict[str, str] | None = None,
-    ) -> Dict[str, Any]:
-        """Create a borrowed view of an owned lease."""
-        if _path_locks_disabled():
-            return owned_lease_ref
-        return await self.run(
-            "pathlock_as_borrowed",
-            _fs_ctx_or_default("/", fs_ctx),
-            owned_lease_ref,
-        )
-
-    async def pathlock_refresh(
-        self,
-        owned_lease_ref: Dict[str, Any],
-        *,
-        fs_ctx: Dict[str, str] | None = None,
-    ) -> str:
-        """Refresh an owned lease. Returns 'refreshed', 'lost', or 'failed'."""
-        if _path_locks_disabled():
-            return "refreshed"
-        return await self.run(
-            "pathlock_refresh",
-            _fs_ctx_or_default("/", fs_ctx),
-            owned_lease_ref,
-        )
-
-    async def pathlock_release(
-        self,
-        owned_lease_ref: Dict[str, Any],
-        *,
-        fs_ctx: Dict[str, str] | None = None,
-    ) -> None:
-        """Release an owned lease."""
-        if _path_locks_disabled():
-            return
-        await self.run(
-            "pathlock_release",
-            _fs_ctx_or_default("/", fs_ctx),
-            owned_lease_ref,
-        )
-
-    async def pathlock_release_selected(
-        self,
-        owned_lease_ref: Dict[str, Any],
-        lock_paths: list[str],
-        *,
-        fs_ctx: Dict[str, str] | None = None,
-    ) -> None:
-        """Release selected lock paths from an owned lease."""
-        if _path_locks_disabled():
-            return
-        await self.run(
-            "pathlock_release_selected",
-            _fs_ctx_or_default("/", fs_ctx),
-            owned_lease_ref,
-            lock_paths,
-        )
-
-    async def pathlock_to_handoff(
-        self,
-        owned_lease_ref: Dict[str, Any],
-        *,
-        fs_ctx: Dict[str, str] | None = None,
-    ) -> Dict[str, Any]:
-        """Export a handoff ref from an owned lease."""
-        if _path_locks_disabled():
-            return owned_lease_ref
-        return await self.run(
-            "pathlock_to_handoff",
-            _fs_ctx_or_default("/", fs_ctx),
-            owned_lease_ref,
-        )
-
-    async def pathlock_handoff(
-        self,
-        owned_lease_ref: Dict[str, Any],
-        *,
-        fs_ctx: Dict[str, str] | None = None,
-    ) -> None:
-        """Mark an owned lease as handed off."""
-        if _path_locks_disabled():
-            return
-        method = "pathlock_handoff" if hasattr(self._client, "pathlock_handoff") else "pathlock_to_handoff"
-        await self.run(
-            method,
-            _fs_ctx_or_default("/", fs_ctx),
-            owned_lease_ref,
-        )
-
-    async def pathlock_adopt(
-        self,
-        handoff_ref: Dict[str, Any],
-        *,
-        fs_ctx: Dict[str, str] | None = None,
-    ) -> Dict[str, Any]:
-        """Adopt a handoff ref, returning a new owned lease."""
-        if _path_locks_disabled():
-            return _disabled_pathlock_lease(handoff_ref.get("lock_paths"))
-        return await self.run(
-            "pathlock_adopt",
-            _fs_ctx_or_default("/", fs_ctx),
-            handoff_ref,
-        )
-
-    async def pathlock_is_locked(
-        self,
-        path: str,
-        ignore_stale: bool = True,
-        *,
-        fs_ctx: Dict[str, str] | None = None,
-    ) -> bool:
-        """Check if a path is locked."""
-        if _path_locks_disabled():
-            return False
-        return await self.run(
-            "pathlock_is_locked",
-            _fs_ctx_or_default(path, fs_ctx),
-            path,
-            ignore_stale,
-        )
-
-    async def pathlock_observe(
-        self,
-        *,
-        fs_ctx: Dict[str, str] | None = None,
-    ) -> Dict[str, Any]:
-        """Return an observability snapshot of current lock state."""
-        if _path_locks_disabled():
-            return {
-                "active_locks": 0,
-                "waiting_locks": 0,
-                "stale_locks_removed": 0,
-                "conflicts": [],
-            }
-        return await self.run(
-            "pathlock_observe",
-            _fs_ctx_or_default("/", fs_ctx),
-        )
+__all__ = [
+    "AsyncAGFSClient",
+    "fs_ctx_from_agfs_path",
+    "_fs_ctx_or_default",
+    "_fs_ctx_with_auto_pathlock",
+    "local_account_id_from_agfs_path",
+    "encryption_account_id_from_agfs_path",
+    "ensure_same_encryption_account",
+    "_path_locks_disabled",
+    "_disabled_pathlock_lease",
+]

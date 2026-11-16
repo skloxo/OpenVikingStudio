@@ -43,6 +43,7 @@ from openviking_cli.exceptions import (
     InvalidArgumentError,
     NotFoundError,
     PermissionDeniedError,
+    ResourceExhaustedError,
 )
 from openviking_cli.utils.uri import VikingURI
 
@@ -1562,6 +1563,21 @@ class _OpsMixin:
         await self._ensure_parent_dirs(path, ctx=ctx, lease_ref=lease_ref)
 
         if isinstance(content, str):
+            sanitizer = getattr(self, "_privacy_sanitizer", None)
+            if sanitizer is not None and ctx is not None:
+                sanitized = await sanitizer.sanitize(content, ctx=ctx, uri=uri)
+                if sanitized.ambiguous_references:
+                    raise InvalidArgumentError(
+                        "Content contains a Privacy value mapped to multiple fields; "
+                        "insert the intended owner-bound reference explicitly",
+                        details={
+                            "uri": uri,
+                            "ambiguous_references": [
+                                list(item) for item in sanitized.ambiguous_references
+                            ],
+                        },
+                    )
+                content = sanitized.content
             content = content.encode("utf-8")
 
         await self._async_agfs.write(
@@ -1638,8 +1654,11 @@ class _OpsMixin:
         self,
         uri: str,
         ctx: Optional[RequestContext] = None,
+        max_bytes: Optional[int] = None,
     ) -> bytes:
-        """Read single binary file."""
+        """Read single binary file with optional max_bytes guard."""
+        if max_bytes is not None and max_bytes < 0:
+            raise InvalidArgumentError("max_bytes must be non-negative")
         await self._ensure_access(uri, ctx)
         real_ctx = self._ctx_or_default(ctx)
         primary_path = self._uri_to_path(uri, ctx=ctx)
@@ -1662,8 +1681,34 @@ class _OpsMixin:
                 f"Cannot read directory as file: {uri}",
                 details={"resource": uri, "expected": "file", "actual": "directory"},
             )
+        if max_bytes is not None:
+            size = stat.get("size") if isinstance(stat, dict) else None
+            if isinstance(size, int) and size > max_bytes:
+                raise ResourceExhaustedError(
+                    "File exceeds the configured read size limit",
+                    details={
+                        "uri": uri,
+                        "reason": "read_limit_exceeded",
+                        "size_bytes": size,
+                        "max_bytes": max_bytes,
+                    },
+                )
         try:
-            raw = self._handle_agfs_read(await self._async_agfs.read(path))
+            raw = self._handle_agfs_read(
+                await self._async_agfs.read(path, size=max_bytes + 1)
+                if max_bytes is not None
+                else await self._async_agfs.read(path)
+            )
+            if max_bytes is not None and len(raw) > max_bytes:
+                raise ResourceExhaustedError(
+                    "File exceeds the configured read size limit",
+                    details={
+                        "uri": uri,
+                        "reason": "read_limit_exceeded",
+                        "size_bytes": len(raw),
+                        "max_bytes": max_bytes,
+                    },
+                )
             return raw
         except Exception as exc:
             if is_not_found_error(exc):

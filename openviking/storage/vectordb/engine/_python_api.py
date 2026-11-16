@@ -316,7 +316,7 @@ class DeleteDataRequest(_RequestBase):
 
 
 class SearchRequest(_RequestBase):
-    __slots__ = ("query", "sparse_raw_terms", "sparse_values", "topk", "dsl")
+    __slots__ = ("query", "sparse_raw_terms", "sparse_values", "topk", "dsl", "time_decay")
 
     def __init__(self):
         self.query = []
@@ -324,6 +324,7 @@ class SearchRequest(_RequestBase):
         self.sparse_values = []
         self.topk = 0
         self.dsl = ""
+        self.time_decay = ""
 
 
 class SearchResult:
@@ -474,6 +475,17 @@ def build_abi3_exports(backend: Any) -> dict[str, Any]:
             return int(
                 self._backend._index_engine_delete_data(
                     self._handle, _request_list_to_backend(data_list)
+                )
+            )
+
+        def rebuild_scalar_index(
+            self, scalar_index_json: str, data_list: Iterable[AddDataRequest]
+        ) -> int:
+            return int(
+                self._backend._index_engine_rebuild_scalar_index(
+                    self._handle,
+                    scalar_index_json,
+                    data_list,
                 )
             )
 

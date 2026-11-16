@@ -7,6 +7,8 @@ from typing import Any, Optional, get_args, get_origin
 
 from pydantic import BaseModel, ValidationError
 
+DEFAULT_SERVICE_NAME = "openviking-server"
+
 
 def suggest_closest_field(field_name: str, valid_fields: set[str]) -> Optional[str]:
     """Return the closest matching field name when it is similar enough."""
@@ -114,3 +116,15 @@ def format_validation_error(
             formatted_errors.append(f"Invalid config value: {item.get('msg', 'validation failed')}")
 
     return "\n".join(formatted_errors)
+
+
+def normalize_service_name(value: Any, field_name: str = "service_name") -> str:
+    """Return a validated service name for cache namespaces and OTel defaults."""
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a string")
+    normalized = value.strip()
+    if not normalized:
+        raise ValueError(f"{field_name} must not be empty")
+    if any(not (char.isascii() and (char.isalnum() or char in "._-")) for char in normalized):
+        raise ValueError(f"{field_name} must contain only ASCII letters, digits, '.', '_' or '-'")
+    return normalized

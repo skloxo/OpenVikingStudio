@@ -1,8 +1,10 @@
 # Copyright (c) 2026 Beijing Volcano Engine Technology Co., Ltd.
 # SPDX-License-Identifier: AGPL-3.0
-"""Privacy config utilities for OpenViking."""
+"""User-scoped privacy config management and skill privacy helpers."""
 
+from openviking.privacy.global_policy import UserGlobalPolicyService
 from openviking.privacy.models import UserPrivacyConfigMeta, UserPrivacyConfigVersion
+from openviking.privacy.privacy_masker import PrivacyMasker, get_privacy_masker, mask_text
 from openviking.privacy.service import UserPrivacyConfigService
 from openviking.privacy.skill_extractor import (
     SkillPrivacyExtractionResult,
@@ -14,25 +16,26 @@ from openviking.privacy.skill_placeholder import (
     placeholderize_skill_content,
     placeholderize_skill_content_with_blocks,
 )
-from openviking.privacy.privacy_masker import (
-    PrivacyMasker,
-    get_privacy_masker,
-    mask_text,
+from openviking.privacy.skill_restore import (
+    get_skill_name_from_uri,
+    restore_skill_content,
+    restore_skill_content_async,
 )
-from openviking.privacy.skill_restore import get_skill_name_from_uri, restore_skill_content
 
 __all__ = [
     "UserPrivacyConfigMeta",
     "UserPrivacyConfigVersion",
     "UserPrivacyConfigService",
+    "UserGlobalPolicyService",
     "SkillPrivacyExtractionResult",
     "extract_skill_privacy_values",
     "SkillPrivacyPlaceholderizationResult",
     "build_placeholder",
-    "placeholderize_skill_content_with_blocks",
     "placeholderize_skill_content",
+    "placeholderize_skill_content_with_blocks",
     "get_skill_name_from_uri",
     "restore_skill_content",
+    "restore_skill_content_async",
     "PrivacyMasker",
     "get_privacy_masker",
     "mask_text",

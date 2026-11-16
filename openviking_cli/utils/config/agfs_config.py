@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: AGPL-3.0
 from __future__ import annotations
 
+import os
+
 from enum import Enum
 from typing import Any, List, Literal, Optional
 from urllib.parse import urlparse
@@ -322,7 +324,11 @@ class AGFSPathLockConfig(BaseModel):
 
     provider: str = Field(
         default="filesystem",
-        description="PathLock provider: 'filesystem' | 'memory'",
+        description="PathLock provider: 'filesystem' | 'memory' | 'sqlite' | 'cache'",
+    )
+    sqlite_path: Optional[str] = Field(
+        default=None,
+        description="Absolute local SQLite lock database file path.",
     )
     lock_timeout_secs: float = Field(
         default=0.0,
@@ -338,8 +344,12 @@ class AGFSPathLockConfig(BaseModel):
     @model_validator(mode="after")
     def validate_config(self):
         """Validate provider and timeout/expiry ranges."""
-        if self.provider not in {"filesystem", "memory"}:
-            raise ValueError("pathlock provider must be one of: 'filesystem', 'memory'")
+        if self.provider not in {"filesystem", "memory", "sqlite", "cache"}:
+            raise ValueError(
+                "pathlock provider must be one of: 'filesystem', 'memory', 'sqlite', 'cache'"
+            )
+        if self.provider == "sqlite" and self.sqlite_path is not None and not os.path.isabs(self.sqlite_path):
+            raise ValueError("pathlock sqlite_path must be an absolute path")
         if self.lock_expire_secs < 1.0:
             raise ValueError("pathlock lock_expire_secs must be >= 1.0")
         return self
