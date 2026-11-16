@@ -19,12 +19,14 @@ import { memoryFieldsDisplayContent } from '../-lib/syntax-highlight'
 import type { VikingFsEntry } from '../-types/viking-fm'
 import type { CodeEditorHandle } from './code-editor'
 import { OkfMetadataPanel } from './okf-metadata-panel'
+import { SharedResourceActions } from './shared-resource-actions'
 
 // ─── 子模块组件 ─────────────────────────────────────────────────────────────────
 import {
   markdownComponents,
   MarkdownImage,
   MarkdownLink,
+  remarkKatex,
 } from './file-preview/markdown-renderer'
 import { JsonlPreview } from './file-preview/jsonl-preview'
 import { DirectoryPreviewView } from './file-preview/directory-preview'
@@ -214,16 +216,23 @@ export function FilePreview({
                 </Button>
               </div>
             ) : (
-              canEdit && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setEditing(true)}
-                >
-                  <Pencil className="mr-1 size-3.5" />
-                  {t('filePreview.edit')}
-                </Button>
-              )
+              <div className="flex items-center gap-1">
+                {canEdit && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setEditing(true)}
+                  >
+                    <Pencil className="mr-1 size-3.5" />
+                    {t('filePreview.edit')}
+                  </Button>
+                )}
+                <SharedResourceActions
+                  file={previewFile}
+                  onNavigate={onNavigate}
+                  onDeleted={onClose}
+                />
+              </div>
             )}
           </div>
           {showCloseButton ? (
@@ -343,7 +352,7 @@ export function FilePreview({
                 ) : null}
                 <article className="prose prose-sm max-w-none break-words dark:prose-invert dark:prose-pre:bg-muted-foreground/20">
                   <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
+                    remarkPlugins={[remarkGfm, remarkKatex]}
                     urlTransform={(url) => url}
                     components={{
                       ...markdownComponents,

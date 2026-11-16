@@ -12,6 +12,7 @@ import { OkfMetadataPanel } from '../okf-metadata-panel'
 import {
   DirectoryMarkdownLink,
   markdownComponents,
+  remarkKatex,
   transformDirectoryMarkdownUrl,
 } from './markdown-renderer'
 
@@ -218,7 +219,7 @@ export function DirectoryPreviewView({
               {level.content.trim() ? (
                 <article className="prose prose-sm max-w-none break-words rounded-md border bg-muted/20 p-3 dark:prose-invert dark:prose-pre:bg-muted-foreground/20">
                   <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
+                    remarkPlugins={[remarkGfm, remarkKatex]}
                     urlTransform={transformDirectoryMarkdownUrl}
                     components={{
                       ...markdownComponents,

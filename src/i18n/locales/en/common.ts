@@ -121,6 +121,15 @@ export const common = {
       agentExperience: {
         title: 'Agent Experience',
       },
+      compile: {
+        title: 'Compile',
+      },
+      watches: {
+        title: 'Scheduled Sync',
+      },
+      arranger: {
+        title: 'Arrange',
+      },
     },
     sidebar: {
       groups: {

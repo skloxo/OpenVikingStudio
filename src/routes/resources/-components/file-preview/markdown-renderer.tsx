@@ -8,7 +8,7 @@ import {
 import hljs from 'highlight.js/lib/core'
 import { defaultUrlTransform } from 'react-markdown'
 
-import i18n from '#/i18n'
+import { useTranslation } from 'react-i18next'
 import { client } from '#/gen/ov-client/client.gen'
 import { getContentDownload, ovClient } from '#/lib/ov-client'
 import { fileNameFromUri } from '#/lib/viking-uri'
@@ -20,6 +20,10 @@ import {
   escapeHtml,
   normalizeMarkdownLanguage,
 } from '../../-lib/syntax-highlight'
+import { KatexFormula, remarkKatex } from './markdown-math'
+import { MermaidDiagram } from './mermaid-diagram'
+
+export { remarkKatex }
 
 export const vikingPrefix = 'viking://'
 export const contentDownloadUrl: GetContentDownloadData['url'] =
@@ -196,6 +200,7 @@ export function MarkdownImage({
   alt?: string
   fileUri: string
 }) {
+  const { t } = useTranslation('studio')
   const target = useMemo(
     () => (src ? resolveMarkdownAssetTarget(String(src), fileUri) : null),
     [src, fileUri],
@@ -220,7 +225,7 @@ export function MarkdownImage({
         })
         if (!alive) return
         const blob = response.data as Blob
-        if (blob.size === 0) throw new Error(i18n.t('studio:errors.emptyBlob'))
+        if (blob.size === 0) throw new Error(t('errors.emptyBlob'))
         created = URL.createObjectURL(blob)
         setObjectUrl(created)
       } catch {
@@ -313,6 +318,10 @@ export function MarkdownCode({
     )
   }
 
+  if (language === 'mermaid') {
+    return <MermaidDiagram code={rawText} />
+  }
+
   return (
     <code
       className={`hljs block overflow-x-auto whitespace-pre font-mono text-xs leading-6 ${className || ''}`}
@@ -322,6 +331,13 @@ export function MarkdownCode({
 }
 
 export function MarkdownPre({ children }: ComponentProps<'pre'>) {
+  const childProps =
+    children && typeof children === 'object' && 'props' in children
+      ? (children as { props?: { className?: string } }).props
+      : undefined
+  if (normalizeMarkdownLanguage(childProps?.className) === 'mermaid') {
+    return <div className="not-prose">{children}</div>
+  }
   return (
     <pre className="overflow-x-auto rounded-md border bg-muted/30 p-3 text-xs leading-6 text-foreground dark:bg-muted-foreground/20">
       {children}
@@ -332,6 +348,28 @@ export function MarkdownPre({ children }: ComponentProps<'pre'>) {
 export const markdownComponents = {
   code: MarkdownCode,
   pre: MarkdownPre,
+  span: ({
+    className,
+    children,
+    ...rest
+  }: ComponentProps<'span'> & {
+    'data-latex'?: string
+    'data-display'?: string
+  }) => {
+    if (className === 'ov-katex' && typeof rest['data-latex'] === 'string') {
+      return (
+        <KatexFormula
+          latex={rest['data-latex']}
+          displayMode={rest['data-display'] === 'true'}
+        />
+      )
+    }
+    return (
+      <span className={className} {...rest}>
+        {children}
+      </span>
+    )
+  },
   table: ({ children }: ComponentProps<'table'>) => (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">{children}</table>

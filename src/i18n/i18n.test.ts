@@ -31,6 +31,9 @@ describe('i18n configuration and modular dictionary parity', () => {
       'oauth',
       'playground',
       'agentExperiencePage',
+      'watchesPage',
+      'compile',
+      'arranger',
       'studio',
     ]
 

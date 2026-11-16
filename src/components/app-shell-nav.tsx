@@ -6,12 +6,15 @@ import {
   BrainCircuitIcon,
   ChevronRightIcon,
   ClipboardListIcon,
+  Clock3Icon,
   DnaIcon,
+  GitForkIcon,
   HomeIcon,
   PlugZapIcon,
   ScrollTextIcon,
   Share2Icon,
   SparklesIcon,
+  WandSparklesIcon,
 } from 'lucide-react'
 import type { useTranslation } from 'react-i18next'
 
@@ -102,6 +105,20 @@ export const NAV_ITEMS: readonly NavItem[] = [
     to: '/plugins',
   },
   {
+    icon: GitForkIcon,
+    id: 'arranger',
+    section: 'workspace',
+    titleKey: 'navigation.arranger.title',
+    to: '/arranger',
+  },
+  {
+    icon: WandSparklesIcon,
+    id: 'compile',
+    section: 'workspace',
+    titleKey: 'navigation.compile.title',
+    to: '/compile',
+  },
+  {
     icon: DnaIcon,
     id: 'agentExperience',
     section: 'operations',
@@ -121,6 +138,13 @@ export const NAV_ITEMS: readonly NavItem[] = [
     section: 'operations',
     titleKey: 'navigation.tasks.title',
     to: '/tasks',
+  },
+  {
+    icon: Clock3Icon,
+    id: 'watches',
+    section: 'operations',
+    titleKey: 'navigation.watches.title',
+    to: '/watches',
   },
 ]
 

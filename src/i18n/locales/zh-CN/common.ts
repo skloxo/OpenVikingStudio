@@ -121,6 +121,15 @@ export const common = {
       agentExperience: {
         title: 'Agent 经验',
       },
+      compile: {
+        title: '编译',
+      },
+      watches: {
+        title: '定时同步',
+      },
+      arranger: {
+        title: '编排',
+      },
     },
     sidebar: {
       groups: {

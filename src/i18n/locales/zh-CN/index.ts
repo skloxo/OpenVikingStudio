@@ -9,6 +9,9 @@ import home from './home'
 import playground from './playground'
 import studio from './studio'
 import agentExperience from './agent-experience'
+import watches from './watches'
+import compile from './compile'
+import arranger from './arranger'
 
 const zhCN = {
   ...common,
@@ -21,6 +24,9 @@ const zhCN = {
   ...home,
   ...playground,
   ...agentExperience,
+  ...watches,
+  ...compile,
+  ...arranger,
   studio,
 } as const
 
