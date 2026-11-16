@@ -29,6 +29,13 @@ from openviking.session.memory.dataclass import (
     SkippedMemoryOperation,
     StoredLink,
 )
+from openviking.session.memory.split_link_migration import (
+    build_split_targets_by_source,
+    collect_dangling_deleted_uris,
+    detect_split_replacements,
+    fan_out_stored_links,
+    fold_inherited_link,
+)
 from openviking.session.memory.memory_type_registry import MemoryTypeRegistry
 from openviking.session.memory.merge_op import MergeOpFactory
 from openviking.session.memory.page_id_map import PageIdMap
@@ -970,6 +977,13 @@ class MemoryUpdater:
             )
 
         # Distribute resolved_links to corresponding upsert operations
+        uri_remap = dict(getattr(operations, "delete_replacements", {}) or {})
+        split_replacements = detect_split_replacements(operations)
+        original_links = list(getattr(operations, "resolved_links", []) or [])
+        operations.resolved_links = fan_out_stored_links(
+            remap_stored_links(original_links, uri_remap),
+            split_replacements,
+        )
         self._distribute_links_to_operations(operations)
 
         # Apply unified operations - _apply_edit returns True if edited, False if written
@@ -996,16 +1010,44 @@ class MemoryUpdater:
                 for uri in resolved_op.uris:
                     result.add_error(uri, e)
 
-        operations.resolved_links = remap_stored_links(
-            list(getattr(operations, "resolved_links", []) or []),
-            dict(getattr(operations, "delete_replacements", {}) or {}),
+        failed_upsert_uris = {uri for uri, _error in result.errors}
+        active_uri_remap = {
+            source_uri: target_uri
+            for source_uri, target_uri in uri_remap.items()
+            if target_uri not in failed_upsert_uris
+        }
+        operations.delete_replacements = active_uri_remap
+        active_split_replacements = {
+            source_uri: [target for target in targets if target not in failed_upsert_uris]
+            for source_uri, targets in split_replacements.items()
+        }
+        active_split_replacements = {
+            source_uri: targets
+            for source_uri, targets in active_split_replacements.items()
+            if targets
+        }
+        failed_split_sources = set(split_replacements) - set(active_split_replacements)
+        operations.resolved_links = fan_out_stored_links(
+            remap_stored_links(original_links, active_uri_remap),
+            active_split_replacements,
         )
-        await self._inherit_deleted_link_relations(
+        link_migration_failed = not await self._inherit_deleted_link_relations(
             operations,
             result,
             ctx,
             lease_ref=self._transaction_handle,
+            split_replacements=active_split_replacements,
         )
+        failed_link_migration_sources = (
+            set(active_uri_remap) | set(active_split_replacements) | failed_split_sources
+            if link_migration_failed
+            else failed_split_sources
+        )
+        if link_migration_failed:
+            active_uri_remap = {}
+            active_split_replacements = {}
+            operations.delete_replacements = {}
+            operations.resolved_links = original_links
 
         # Apply delete operations (delete_file_contents is List[MemoryFile])
         # Skip deletes whose URI was just written in the same batch — this happens when the
@@ -1018,6 +1060,13 @@ class MemoryUpdater:
             if has_unresolved_upserts:
                 delete_error = ValueError(
                     "Skipped delete because batch contains unresolved upsert URIs"
+                )
+                result.add_error(delete_uri, delete_error)
+                tracer.error(f"Skipping delete for {delete_uri}: {delete_error}")
+                continue
+            if delete_uri in failed_link_migration_sources:
+                delete_error = ValueError(
+                    "Skipped delete because link/backlink migration was incomplete"
                 )
                 result.add_error(delete_uri, delete_error)
                 tracer.error(f"Skipping delete for {delete_uri}: {delete_error}")
@@ -1067,6 +1116,17 @@ class MemoryUpdater:
                 ctx,
                 deleted_uris=set(result.deleted_uris),
                 lease_ref=self._transaction_handle,
+            )
+
+        for uri in collect_dangling_deleted_uris(
+            operations.resolved_links, set(result.deleted_uris)
+        ):
+            result.add_error(
+                uri,
+                ValueError(
+                    "Deleted memory is still referenced by in-batch links after apply; "
+                    "its links/backlinks were not fully migrated"
+                ),
             )
 
         tracer.info(f"Memory operations applied: {result.summary()}")
@@ -1338,19 +1398,26 @@ class MemoryUpdater:
         result: MemoryUpdateResult,
         ctx: RequestContext,
         lease_ref: Any = None,
-    ) -> None:
+        split_replacements: Optional[Dict[str, List[str]]] = None,
+    ) -> bool:
         uri_remap = dict(getattr(operations, "delete_replacements", {}) or {})
-        if not uri_remap:
-            return
+        split_map = dict(split_replacements or {})
+        if not uri_remap and not split_map:
+            return True
         viking_fs = self._get_viking_fs()
         if not viking_fs:
-            return
+            return True
 
         from openviking.session.memory.merge_op.link_merge import merge_links
 
-        inherited_by_uri: Dict[str, Dict[str, List[Dict[str, Any]]]] = {}
-        for deleted_uri, replacement_uri in uri_remap.items():
-            if not deleted_uri or not replacement_uri or deleted_uri == replacement_uri:
+        inherited_by_uri: Dict[str, Dict[str, List[Tuple[str, Dict[str, Any]]]]] = {}
+        completed = True
+        stale_uris = set(uri_remap) | set(split_map)
+        targets_by_source = build_split_targets_by_source(
+            uri_remap, split_map, _resolve_replacement_uri
+        )
+        for deleted_uri, targets in targets_by_source.items():
+            if not deleted_uri or not targets:
                 continue
             try:
                 content = await viking_fs.read_file(deleted_uri, ctx=ctx)
@@ -1358,6 +1425,7 @@ class MemoryUpdater:
                 tracer.error(
                     f"Failed to read deleted memory links for replacement {deleted_uri}: {e}"
                 )
+                completed = False
                 continue
             if not content:
                 continue
@@ -1366,37 +1434,52 @@ class MemoryUpdater:
                 remapped = _remap_link_dict(link, uri_remap)
                 if remapped.get("from_uri") == remapped.get("to_uri"):
                     continue
-                target_uri = remapped.get("from_uri")
-                if target_uri:
-                    inherited_by_uri.setdefault(target_uri, {"links": [], "backlinks": []})[
-                        "links"
-                    ].append(remapped)
-                neighbor_uri = remapped.get("to_uri")
-                if neighbor_uri and neighbor_uri not in uri_remap:
-                    inherited_by_uri.setdefault(neighbor_uri, {"links": [], "backlinks": []})[
-                        "backlinks"
-                    ].append(remapped)
+                fold_inherited_link(
+                    inherited_by_uri,
+                    remapped,
+                    deleted_uri,
+                    targets,
+                    remapped.get("to_uri"),
+                    "links",
+                    stale_uris,
+                )
             for link in list(deleted_file.backlinks or []):
                 remapped = _remap_link_dict(link, uri_remap)
                 if remapped.get("from_uri") == remapped.get("to_uri"):
                     continue
-                target_uri = remapped.get("to_uri")
-                if target_uri:
-                    inherited_by_uri.setdefault(target_uri, {"links": [], "backlinks": []})[
-                        "backlinks"
-                    ].append(remapped)
-                neighbor_uri = remapped.get("from_uri")
-                if neighbor_uri and neighbor_uri not in uri_remap:
-                    inherited_by_uri.setdefault(neighbor_uri, {"links": [], "backlinks": []})[
-                        "links"
-                    ].append(remapped)
+                fold_inherited_link(
+                    inherited_by_uri,
+                    remapped,
+                    deleted_uri,
+                    targets,
+                    remapped.get("from_uri"),
+                    "backlinks",
+                    stale_uris,
+                )
 
-        written_or_edited = set(result.written_uris + result.edited_uris)
-        stale_uris = set(uri_remap)
+        implicit_migration_source_by_target = {
+            operation.uris[0]: operation.old_memory_file_content.uri
+            for operation in operations.upsert_operations
+            if operation.is_edit()
+            and operation.uris
+            and operation.old_memory_file_content
+            and operation.old_memory_file_content.uri
+        }
         for uri, link_groups in inherited_by_uri.items():
-            if uri in uri_remap:
+            if uri in stale_uris:
                 continue
-            if uri in written_or_edited:
+            implicit_source = implicit_migration_source_by_target.get(uri)
+            links_to_merge = [
+                record
+                for source_uri, record in link_groups["links"]
+                if source_uri != implicit_source
+            ]
+            backlinks_to_merge = [
+                record
+                for source_uri, record in link_groups["backlinks"]
+                if source_uri != implicit_source
+            ]
+            if not links_to_merge and not backlinks_to_merge:
                 continue
             try:
                 content = await viking_fs.read_file(uri, ctx=ctx)
@@ -1417,10 +1500,10 @@ class MemoryUpdater:
                     if link.get("from_uri") not in stale_uris
                     and link.get("to_uri") not in stale_uris
                 ]
-                if link_groups["links"]:
-                    mf.links = merge_links(mf.links, link_groups["links"])
-                if link_groups["backlinks"]:
-                    mf.backlinks = merge_links(mf.backlinks, link_groups["backlinks"])
+                if links_to_merge:
+                    mf.links = merge_links(mf.links, links_to_merge)
+                if backlinks_to_merge:
+                    mf.backlinks = merge_links(mf.backlinks, backlinks_to_merge)
                 current_trace_id = get_trace_id()
                 if current_trace_id:
                     mf.extra_fields["last_update_trace_id"] = current_trace_id
@@ -1433,7 +1516,9 @@ class MemoryUpdater:
                 )
                 result.add_edited(uri)
             except Exception as e:
+                completed = False
                 tracer.error(f"Failed to inherit deleted memory links for {uri}: {e}")
+        return completed
 
     async def _apply_delete(
         self,

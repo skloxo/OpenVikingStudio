@@ -10,7 +10,9 @@ from openviking.core.namespace import canonical_user_root
 from openviking.core.path_variables import resolve_path_variables
 from openviking.core.uri_validation import validate_request_viking_uri
 from openviking.server.identity import RequestContext
+from openviking.service.skill_retina_cron import SkillRetinaAuditor
 from openviking.service.skill_sanitizer import SkillSanitizer
+from openviking.service.skill_telemetry import SkillTelemetryStore
 from openviking.utils.skill_processor import validate_skill_name
 from openviking_cli.exceptions import InvalidArgumentError, NotFoundError
 
@@ -282,35 +284,60 @@ def _skill_root_from_hit_uri(hit_uri: str) -> str:
 async def _require_skill(
     service, ctx: RequestContext, skill_name: str, target_uri: Optional[str] = None
 ) -> str:
+    validated = _validate_skill_name(skill_name)
     if target_uri:
-        root_uri = _skill_root_uri(ctx, skill_name, target_uri)
+        candidates = [_skill_root_uri(ctx, validated, target_uri)]
+    else:
+        candidates = [
+            f"viking://agent/skills/{validated}",
+            f"{canonical_user_root(ctx)}/skills/{validated}",
+        ]
+
+    for root_uri in candidates:
         try:
             stat = await service.fs.stat(root_uri, ctx=ctx)
             if stat and stat.get("isDir", False):
                 return root_uri
-        except NotFoundError:
-            pass
-        except Exception as exc:
-            raise NotFoundError(root_uri, "skill") from exc
+        except Exception:
+            continue
 
-    user_root_uri = _skill_root_uri(ctx, skill_name)
-    try:
-        stat = await service.fs.stat(user_root_uri, ctx=ctx)
-        if stat and stat.get("isDir", False):
-            return user_root_uri
-    except NotFoundError:
-        pass
-    except Exception as exc:
-        raise NotFoundError(user_root_uri, "skill") from exc
+    raise NotFoundError(candidates[0], "skill")
 
-    agent_root_uri = _skill_root_uri(ctx, skill_name, "viking://agent/skills")
-    try:
-        stat = await service.fs.stat(agent_root_uri, ctx=ctx)
-        if stat and stat.get("isDir", False):
-            return agent_root_uri
-    except NotFoundError:
-        pass
-    except Exception as exc:
-        raise NotFoundError(agent_root_uri, "skill") from exc
 
-    raise NotFoundError(_skill_root_uri(ctx, skill_name), "skill")
+def _sort_skills_by_roi(skills: list[Dict[str, Any]]) -> None:
+    """Sort skill summaries in-place by 30-day ROI telemetry score descending."""
+    telemetry = SkillTelemetryStore.get_instance().get_telemetry_report(days=30)
+    roi_map = {
+        item["skill_id"]: item["roi_score"]
+        for item in telemetry.get("top_roi_skills", [])
+    }
+    bundle_roi_map = {
+        item["bundle_name"]: item["roi_score"]
+        for item in telemetry.get("bundle_rankings", [])
+    }
+    skills.sort(
+        key=lambda s: max(
+            roi_map.get(s.get("name", ""), 0.0),
+            bundle_roi_map.get(s.get("name", ""), 0.0),
+        ),
+        reverse=True,
+    )
+
+
+async def _run_skills_retina(
+    service, ctx: RequestContext, *, heal: bool = False
+) -> Dict[str, Any]:
+    """Run audit or heal across user and agent skill roots and aggregate payload."""
+    user_root = f"{canonical_user_root(ctx)}/skills"
+    agent_root = "viking://agent/skills"
+    runner = SkillRetinaAuditor.heal_skills if heal else SkillRetinaAuditor.audit_skills
+    user_report = await runner(service, ctx, user_root)
+    agent_report = await runner(service, ctx, agent_root)
+    payload: Dict[str, Any] = {
+        "user": user_report.to_dict(),
+        "agent": agent_report.to_dict(),
+        "is_identical": user_report.is_identical and agent_report.is_identical,
+    }
+    if heal:
+        payload["total_healed"] = user_report.healed_count + agent_report.healed_count
+    return payload

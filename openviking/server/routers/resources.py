@@ -2,157 +2,98 @@
 # SPDX-License-Identifier: AGPL-3.0
 """Resource endpoints for OpenViking HTTP Server."""
 
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Literal, Optional
+from urllib.parse import unquote
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
 
 from openviking.core.path_variables import resolve_path_variables
-from openviking.core.uri_validation import validate_content_target_uri
-from openviking.resource.processing_mode import DEFAULT_PROCESSING_MODE, ProcessingMode
+from openviking.core.uri_validation import validate_content_target_uri, validate_request_viking_uri
 from openviking.server.auth import get_request_context, get_upload_request_context
 from openviking.server.dependencies import get_service
 from openviking.server.identity import RequestContext
 from openviking.server.local_input_guard import require_remote_resource_source
 from openviking.server.resource_ingest import ingest_temp_upload
 from openviking.server.responses import response_from_result
+from openviking.server.routers.filesystem import CpRequest, MvRequest
+from openviking.server.routers.filesystem import cp as copy_filesystem_entry
+from openviking.server.routers.filesystem import mv as move_filesystem_entry
+from openviking.server.routers.filesystem import rm as remove_filesystem_entry
+from openviking.server.routers.resources_models import AddResourceRequest, AddSkillRequest
 from openviking.server.skill_source_metadata import persist_skill_source_metadata
 from openviking.server.telemetry import run_operation
 from openviking.server.temp_upload_store import TempUploadStore
-from openviking.telemetry import TelemetryRequest
 from openviking_cli.exceptions import InvalidArgumentError
 
 router = APIRouter(prefix="/api/v1", tags=["resources"])
 
+__all__ = ["router", "AddResourceRequest", "AddSkillRequest"]
 
-class AddResourceRequest(BaseModel):
-    """Request model for add_resource.
-
-    Attributes:
-        path: Remote resource source such as an HTTP(S) URL or repository URL.
-            Either path or temp_file_id must be provided.
-        temp_file_id: Temporary upload id returned by /api/v1/resources/temp_upload.
-            Either path or temp_file_id must be provided.
-        add_type: Explicit Connector source type (e.g. "tos", "git"). When set, the
-            request routes to the Connector integration: the type must be enabled in
-            connector.allowed_add_types, and args are forwarded to the source plugin
-            (credentials under args.auth_config). Never degrades to the standard
-            pipeline. Requires 'path' and an exact 'to' target; cannot be combined
-            with 'temp_file_id' or 'parent'.
-        to: Target URI for the resource (e.g., "viking://resources/my_resource").
-            Required when add_type is set. Otherwise, if not specified, an
-            auto-generated URI will be used.
-        parent: Parent URI under which the resource will be stored.
-            Cannot be used together with 'to' or 'add_type'.
-        create_parent: Whether to automatically create the parent directory if it doesn't exist.
-            Default is False.
-        reason: Reason for adding the resource. Used for documentation and monitoring.
-        instruction: Processing instruction for semantic extraction.
-            Provides hints for how the resource should be processed.
-        wait: Whether to wait for semantic extraction and vectorization to complete.
-            Default is False (async processing).
-        timeout: Timeout in seconds when wait=True. None means no timeout.
-        strict: Whether to use strict mode for processing. Default is True.
-        ignore_dirs: Comma-separated list of directory names to ignore during parsing.
-        include: Glob pattern for files to include during parsing.
-        exclude: Glob pattern for files to exclude during parsing.
-        directly_upload_media: Whether to directly upload media files. Default is True.
-        preserve_structure: Whether to preserve directory structure when adding directories.
-        args: Parser-specific import options. Native HTTPS Git imports accept
-            {"auth_config": {"username": "oauth2", "token": "..."}}; when
-            watch_interval > 0 the credentials are stored in private watch state.
-            For Feishu one-time user-token imports,
-            pass {"feishu_access_token": "..."}. For Feishu user-token watches,
-            pass {"feishu_access_token": "...", "feishu_refresh_token": "..."}.
-        watch_interval: Watch interval in minutes for automatic resource monitoring.
-            - watch_interval > 0: Creates or updates a watch task. The resource will be
-              automatically re-processed at the specified interval.
-            - watch_interval = 0: No watch task is created. If a watch task exists for
-              this resource, it will be cancelled (deactivated).
-            - watch_interval < 0: Same as watch_interval = 0, cancels any existing watch task.
-            Default is 0 (no monitoring).
-
-            Note: Re-adding the same source to the same target updates its active watch task.
-            A different source targeting an active watch raises ConflictError; cancel that
-            watch first with watch_interval <= 0. For Connector imports this check is
-            eventually consistent: the Watch is created only after the background import
-            succeeds, so overlapping imports may both write before Watch finalization
-            reports the conflict.
-    """
-
-    model_config = ConfigDict(extra="forbid")
-
-    path: Optional[str] = None
-    temp_file_id: Optional[str] = None
-    add_type: Optional[str] = None
-    to: Optional[str] = None
-    parent: Optional[str] = None
-    create_parent: bool = False
-    reason: str = ""
-    instruction: str = ""
-    wait: bool = False
-    timeout: Optional[float] = None
-    strict: bool = False
-    source_name: Optional[str] = None
-    ignore_dirs: Optional[str] = None
-    include: Optional[str] = None
-    exclude: Optional[str] = None
-    directly_upload_media: bool = True
-    preserve_structure: Optional[bool] = None
-    args: Dict[str, Any] = Field(default_factory=dict)
-    telemetry: TelemetryRequest = False
-    watch_interval: float = 0
-    processing_mode: ProcessingMode = DEFAULT_PROCESSING_MODE
-    tags: Optional[list[str]] = None
-    tag_mode: str = "replace"
-
-    @model_validator(mode="after")
-    def check_path_or_temp_file_id(self):
-        if not self.path and not self.temp_file_id:
-            raise ValueError("Either 'path' or 'temp_file_id' must be provided")
-        return self
-
-    @model_validator(mode="after")
-    def check_add_type(self):
-        if self.add_type is not None:
-            self.add_type = self.add_type.strip() or None
-        if self.add_type and self.temp_file_id:
-            raise ValueError("'add_type' cannot be combined with 'temp_file_id'")
-        if self.add_type and not self.path:
-            raise ValueError("'add_type' requires 'path'")
-        if self.add_type and self.parent:
-            raise ValueError("'add_type' cannot be combined with 'parent'")
-        if self.add_type and not self.to:
-            raise ValueError("'add_type' requires an exact 'to' target")
-        return self
+_SHARED_RESOURCES_ROOT = "viking://resources"
 
 
-class AddSkillRequest(BaseModel):
-    """Request model for add_skill.
+def _validate_shared_resource_uri(
+    uri: str,
+    ctx: RequestContext,
+    *,
+    field_name: str = "uri",
+) -> str:
+    resolved = validate_request_viking_uri(
+        resolve_path_variables(uri), ctx, field_name=field_name
+    ).rstrip("/")
+    decoded_segments = unquote(resolved).replace("\\", "/").split("/")
+    if not resolved.startswith(f"{_SHARED_RESOURCES_ROOT}/") or any(
+        segment in {".", ".."} for segment in decoded_segments
+    ):
+        raise InvalidArgumentError(
+            "Only children of viking://resources/ are allowed for this operation"
+        )
+    return resolved
 
-    Attributes:
-        data: Inline skill content or structured skill data. HTTP requests do not treat
-            string values as host filesystem paths.
-        temp_file_id: Temporary upload id returned by /api/v1/resources/temp_upload.
-        wait: Whether to wait for skill processing to complete.
-        timeout: Timeout in seconds when wait=True.
-    """
 
-    model_config = ConfigDict(extra="forbid")
+@router.post("/resources/cp")
+async def copy_resource(
+    request: CpRequest,
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """Copy a shared resource to another location in the shared subtree."""
+    from_uri = _validate_shared_resource_uri(request.from_uri, _ctx, field_name="from_uri")
+    to_uri = _validate_shared_resource_uri(request.to_uri, _ctx, field_name="to_uri")
+    return await copy_filesystem_entry(
+        CpRequest(from_uri=from_uri, to_uri=to_uri, recursive=request.recursive),
+        _ctx=_ctx,
+    )
 
-    data: Any = None
-    temp_file_id: Optional[str] = None
-    wait: bool = False
-    timeout: Optional[float] = None
-    source_metadata: Optional[Dict[str, Any]] = None
-    target_uri: Optional[str] = None
-    telemetry: TelemetryRequest = False
 
-    @model_validator(mode="after")
-    def check_data_or_temp_file_id(self):
-        if self.data is None and not self.temp_file_id:
-            raise ValueError("Either 'data' or 'temp_file_id' must be provided")
-        return self
+@router.post("/resources/mv")
+async def move_resource(
+    request: MvRequest,
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """Rename or move a shared resource within the shared subtree."""
+    from_uri = _validate_shared_resource_uri(request.from_uri, _ctx, field_name="from_uri")
+    to_uri = _validate_shared_resource_uri(request.to_uri, _ctx, field_name="to_uri")
+    return await move_filesystem_entry(
+        MvRequest(from_uri=from_uri, to_uri=to_uri),
+        _ctx=_ctx,
+    )
+
+
+@router.delete("/resources")
+async def delete_resource(
+    uri: str = Query(..., description="URI below viking://resources/"),
+    recursive: bool = Query(False, description="Remove a directory recursively"),
+    wait: bool = Query(True, description="Wait for semantic index cleanup"),
+    _ctx: RequestContext = Depends(get_request_context),
+):
+    """Delete one shared resource without exposing general filesystem deletion."""
+    resolved = _validate_shared_resource_uri(uri, _ctx)
+    return await remove_filesystem_entry(
+        uri=resolved,
+        recursive=recursive,
+        wait=wait,
+        _ctx=_ctx,
+    )
 
 
 @router.post("/resources/temp_upload")
@@ -334,6 +275,7 @@ async def add_skill(
     data = request.data
     allow_local_path_resolution = False
     resolved = None
+    source_path_hint = None
     source_metadata = request.source_metadata or {
         "type": "api",
         "source": "inline_content",
@@ -343,6 +285,7 @@ async def add_skill(
         store = TempUploadStore.build(http_request.app.state.config)
         resolved = await store.resolve_for_consume(request.temp_file_id, _ctx)
         data = resolved.local_path
+        source_path_hint = resolved.original_filename
         allow_local_path_resolution = True
         if request.source_metadata is None:
             source_metadata = {
@@ -366,6 +309,7 @@ async def add_skill(
                 resolved_sc = router.resolve(str(parsed_name).strip())
                 if resolved_sc and resolved_sc.get("is_virtual"):
                     parent_bundle = resolved_sc.get("bundle_name")
+                    sc_filename = f"{str(parsed_name).strip()}.md"
                     from openviking.service.skill_path_resolver import resolve_skills_root
                     target_file = resolve_skills_root("default") / parent_bundle / "scenarios" / sc_filename
                     if target_file.parent.exists():

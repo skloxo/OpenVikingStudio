@@ -91,7 +91,11 @@ class MemoryPolicy:
     self_enabled: bool = True
     peer_enabled: bool = True
     memory_types: Optional[set[str]] = None
-    working_memory_enabled: bool = True
+    enable_working_memory: bool = False
+
+    @property
+    def working_memory_enabled(self) -> bool:
+        return self.enable_working_memory
 
     @classmethod
     def default(cls) -> "MemoryPolicy":
@@ -114,8 +118,8 @@ class MemoryPolicy:
             self_enabled=_target_enabled(data.get("self"), default_enabled=True, key="self"),
             peer_enabled=_target_enabled(data.get("peer"), default_enabled=True, key="peer"),
             memory_types=_parse_memory_types(data.get("memory_types")),
-            working_memory_enabled=_target_enabled(
-                data.get("working_memory"), default_enabled=True, key="working_memory"
+            enable_working_memory=_target_enabled(
+                data.get("working_memory"), default_enabled=False, key="working_memory"
             ),
         )
 
@@ -133,8 +137,7 @@ class MemoryPolicy:
             "self": {"enabled": self.self_enabled},
             "peer": {"enabled": self.peer_enabled},
         }
-        if not self.working_memory_enabled:
-            data["working_memory"] = {"enabled": False}
+        data["working_memory"] = {"enabled": self.enable_working_memory}
         if self.memory_types is not None:
             data["memory_types"] = sorted(self.memory_types)
         return data

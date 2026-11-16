@@ -226,6 +226,7 @@ class VikingDBDenseEmbedder(DenseEmbedderBase, VikingDBClientMixin):
 
         result = await self._run_with_async_retry(
             _call,
+            is_query=is_query,
             logger=logger,
             operation_name="VikingDB async embedding",
         )
@@ -308,6 +309,7 @@ class VikingDBSparseEmbedder(SparseEmbedderBase, VikingDBClientMixin):
 
         result = await self._run_with_async_retry(
             _call,
+            is_query=is_query,
             logger=logger,
             operation_name="VikingDB async sparse embedding",
         )
@@ -421,6 +423,7 @@ class VikingDBHybridEmbedder(HybridEmbedderBase, VikingDBClientMixin):
 
         result = await self._run_with_async_retry(
             _call,
+            is_query=is_query,
             logger=logger,
             operation_name="VikingDB async hybrid embedding",
         )

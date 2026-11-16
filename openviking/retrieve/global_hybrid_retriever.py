@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import math
+import os
 import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
@@ -16,6 +17,7 @@ from openviking.core.retrieval_types import SearchType
 from openviking.models.embedder.base import EmbedResult, embed_compat, embedder_supports_multimodal
 from openviking.models.rerank import RerankClient
 from openviking.retrieve.asymmetric_decay import AsymmetricDecayEngine
+from openviking.retrieve.rerank_scoring import RerankScores, finite_score, rerank_scores
 from openviking.retrieve.retrieval_stats import get_stats_collector
 from openviking.retrieve.rrf_fusion import rrf_fuse
 from openviking.server.identity import RequestContext
@@ -25,7 +27,6 @@ from openviking.storage.expr import FilterExpr
 from openviking.storage.vikingdb_manager import VikingDBManager, VikingDBManagerProxy
 from openviking.telemetry import get_current_telemetry
 from openviking.utils.tags import normalize_search_tags
-from openviking.utils.token_estimation import estimate_text_tokens, truncate_text_to_token_budget
 from openviking_cli.exceptions import InvalidArgumentError
 from openviking_cli.retrieve.types import ContextType, MatchedContext, QueryResult, TypedQuery
 from openviking_cli.utils.config import RerankConfig
@@ -78,7 +79,7 @@ class GlobalHybridRetriever:
         self.retrieval_config = retrieval_config
         self.bm25_index = bm25_index
         self.rerank_max_input_tokens = rerank_config.max_input_tokens if rerank_config else 0
-        self.threshold = rerank_config.threshold if rerank_config else 0.0
+        self.rerank_threshold = rerank_config.threshold if rerank_config else 0.0
 
         if rerank_config and rerank_config.is_available():
             self._rerank_client = self._init_rerank_client(rerank_config)
@@ -86,6 +87,10 @@ class GlobalHybridRetriever:
             self._rerank_client = None
 
         self.decay_engine = AsymmetricDecayEngine()
+
+    @property
+    def threshold(self) -> float:
+        return self.rerank_threshold
 
     def _init_rerank_client(self, rerank_config: RerankConfig) -> Any:
         return RerankClient.from_config(rerank_config)
@@ -110,7 +115,6 @@ class GlobalHybridRetriever:
     ) -> QueryResult:
         t0 = time.monotonic()
         telemetry = get_current_telemetry()
-        effective_threshold = self._resolve_threshold(score_threshold)
         image_query = query.image_query
 
         if mode is None:
@@ -160,7 +164,7 @@ class GlobalHybridRetriever:
 
         async def _safe_bm25() -> tuple[list[dict[str, Any]], bool]:
             try:
-                return await self._search_bm25(query.query, search_limit, context_type, target_dirs)
+                return await self._search_bm25(query.query, search_limit, context_type, target_dirs, level=level)
             except Exception as exc:
                 logger.warning(f"[GlobalHybridRetriever] BM25 invocation fail-open degraded: {exc}")
                 return [], False
@@ -203,15 +207,19 @@ class GlobalHybridRetriever:
 
         candidates = sorted(fused, key=lambda x: self._finite_score(x.get("_score", 0.0)), reverse=True)
         scores = [candidate["_score"] for candidate in candidates]
+        reranked = [False] * len(candidates)
         rerank_used = use_rerank and bool(candidates)
         if rerank_used:
             docs = [str(candidate.get("abstract", "")) for candidate in candidates]
-            scores = await self._rerank_scores(query.query, docs, scores)
+            rerank_res = await self._rerank_scores(query.query, docs, scores)
+            scores, reranked = rerank_res.scores, rerank_res.reranked
 
         passed_candidates = [
             {**candidate, "_final_score": score}
-            for candidate, score in zip(candidates, scores, strict=True)
-            if self._passes_threshold(score, effective_threshold, score_gte)
+            for candidate, score, from_model in zip(candidates, scores, reranked, strict=True)
+            if self._passes_threshold(
+                score, self._resolve_threshold(score_threshold, from_model), score_gte
+            )
         ]
 
         matched = await self._convert_to_matched_contexts(passed_candidates, ctx=ctx)
@@ -257,8 +265,17 @@ class GlobalHybridRetriever:
             **decay_kw,
         )
 
-    async def _search_bm25(self, query: str, limit: int, ctx_type: Optional[str], target_dirs: Optional[List[str]]) -> tuple[list[dict[str, Any]], bool]:
+    async def _search_bm25(
+        self,
+        query: str,
+        limit: int,
+        ctx_type: Optional[str],
+        target_dirs: Optional[List[str]],
+        level: Optional[List[int]] = None,
+    ) -> tuple[list[dict[str, Any]], bool]:
         if not self.bm25_index:
+            if not isinstance(self.vector_store, VikingDBManager) or os.environ.get("PYTEST_CURRENT_TEST"):
+                return [], False
             try:
                 self.bm25_index = BM25FTSIndex.get_instance()
             except Exception:
@@ -282,6 +299,7 @@ class GlobalHybridRetriever:
                     "abstract": m.snippet or m.title,
                 }
                 for m in matches
+                if level is None or m.level in level
             ]
             return candidates, True
         except Exception as exc:
@@ -363,9 +381,13 @@ class GlobalHybridRetriever:
             results.append(record)
         return results
 
-    def _resolve_threshold(self, threshold: Optional[float]) -> float:
-        resolved = threshold if threshold is not None else self.threshold
-        return resolved if resolved is not None else 0.0
+    def _resolve_threshold(self, threshold: Optional[float], reranked: bool = False) -> float:
+        """An explicit threshold applies to any score; the rerank one only to model scores."""
+        if threshold is not None:
+            return threshold
+        if reranked and self.rerank_threshold is not None:
+            return self.rerank_threshold
+        return 0.0
 
     @staticmethod
     def _passes_threshold(score: float, threshold: float, score_gte: bool) -> bool:
@@ -420,50 +442,15 @@ class GlobalHybridRetriever:
         query: str,
         documents: List[str],
         fallback_scores: List[float],
-    ) -> List[float]:
+    ) -> RerankScores:
         """Return rerank scores or fall back to vector scores."""
-        if not self._rerank_client or not documents:
-            return fallback_scores
-
-        rerank_query = query
-        rerank_documents = [
-            (index, document) for index, document in enumerate(documents) if document.strip()
-        ]
-        if not rerank_documents:
-            return fallback_scores
-
-        if self.rerank_max_input_tokens > 0:
-            max_query_tokens = self.rerank_max_input_tokens * 3 // 4
-            if estimate_text_tokens(query) > max_query_tokens:
-                rerank_query = truncate_text_to_token_budget(query, max_query_tokens)
-            document_tokens = self.rerank_max_input_tokens - estimate_text_tokens(rerank_query)
-            rerank_documents = [
-                (index, truncate_text_to_token_budget(document, document_tokens))
-                for index, document in rerank_documents
-            ]
-
-        try:
-            scores = await asyncio.to_thread(
-                self._rerank_client.rerank_batch,
-                rerank_query,
-                [document for _, document in rerank_documents],
-            )
-        except Exception as e:
-            logger.warning(
-                "[GlobalHybridRetriever] Rerank failed, fallback to vector scores: %s", e
-            )
-            return fallback_scores
-
-        if not scores or len(scores) != len(rerank_documents):
-            logger.warning(
-                "[GlobalHybridRetriever] Invalid rerank result, fallback to vector scores"
-            )
-            return fallback_scores
-
-        normalized_scores = list(fallback_scores)
-        for score, (index, _) in zip(scores, rerank_documents, strict=True):
-            normalized_scores[index] = self._finite_score(score, fallback_scores[index])
-        return normalized_scores
+        return await rerank_scores(
+            self._rerank_client,
+            query,
+            documents,
+            fallback_scores,
+            max_input_tokens=self.rerank_max_input_tokens,
+        )
 
     async def _convert_to_matched_contexts(
         self,

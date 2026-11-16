@@ -360,3 +360,9 @@ def sandbox_agent_sensors_in_tests(tmp_path, monkeypatch):
     monkeypatch.setattr(agg, "metrics_file", test_metrics_file)
     monkeypatch.setattr(agg, "_history", [])
 
+
+@pytest.fixture
+def working_memory_policy():
+    """Explicit opt-in for tests exercising WM/checkpoint generation."""
+    return {"working_memory": {"enabled": True}}
+

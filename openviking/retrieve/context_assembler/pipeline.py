@@ -30,10 +30,25 @@ from openviking.retrieve.context_assembler.params import (
 from openviking.retrieve.context_assembler.render import render_context
 from openviking.retrieve.context_assembler.rewrite import rewrite_context, server_rewrite_enabled
 from openviking.retrieve.context_assembler.tiers import needs_content, prefetch_contents
+from openviking.retrieve.rerank_scoring import Reranker
 from openviking.server.identity import RequestContext
 from openviking_cli.utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+
+def _context_reranker(service: Any, params: AssembleParams) -> Optional[Reranker]:
+    """The server's opt-in context reranker, when it applies to this request."""
+    if not params.query.strip() or params.image_url:
+        return None
+    factory = getattr(service.search, "context_reranker", None)
+    if not callable(factory):
+        return None
+    try:
+        return factory()
+    except Exception as exc:
+        logger.warning("Context rerank unavailable, keeping vector scores: %s", exc)
+        return None
 
 
 async def _load_session(service: Any, ctx: RequestContext, session_id: Optional[str]) -> Any:
@@ -79,6 +94,7 @@ async def assemble_context(
     )
     cooled = ledger.cooled_uris() if ledger else set()
     excluded = normalize_exclude_uris(params.exclude_uris) | cooled
+    reranker = _context_reranker(service, params)
 
     candidates, gather_stats = await gather_candidates(
         service=service,
@@ -92,6 +108,8 @@ async def assemble_context(
         peer_scope=params.peer_scope,
         penalties=penalties,
         excluded=excluded,
+        reranker=reranker,
+        rerank_query="\n".join(queries),
     )
 
     # Read only the candidates whose planned tier actually needs a body: with

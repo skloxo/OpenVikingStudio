@@ -3,7 +3,7 @@
 """Persistent Session Phase 2 queue message."""
 
 from dataclasses import asdict, dataclass, field, fields
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
@@ -21,6 +21,10 @@ class SessionCommitMsg:
     # Resolved custom scalar tags to attach to event memories extracted in this
     # commit. Already normalized by the producer; empty means "no tags".
     event_search_tags: List[str] = field(default_factory=list)
+    session_window_context: int = 128_000
+    summary_token_ratio: float = 0.25
+    reasoning_effort: Optional[str] = None
+    memory_policy_version: int = 1
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -31,4 +35,9 @@ class SessionCommitMsg:
         if not isinstance(payload, dict):
             raise ValueError("session commit queue payload must be an object")
         known_fields = {item.name for item in fields(cls)}
-        return cls(**{key: value for key, value in payload.items() if key in known_fields})
+        data = {key: value for key, value in payload.items() if key in known_fields}
+        if payload.get("memory_policy_version", 0) == 0:
+            policy = dict(data.get("memory_policy") or {})
+            policy.setdefault("working_memory", {"enabled": True})
+            data["memory_policy"] = policy
+        return cls(**data)

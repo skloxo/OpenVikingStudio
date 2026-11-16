@@ -429,31 +429,31 @@ class SessionService:
         ctx: RequestContext,
         keep_recent_count: int = 0,
         *,
+        enable_working_memory: Optional[bool] = None,
         retention_mode: Optional[str] = None,
         keep_recent_turn_count: Optional[int] = None,
         retained_message_token_budget: Optional[int] = None,
         min_raw_tail_steps: Optional[int] = None,
+        session_window_context: Optional[int] = None,
+        summary_token_ratio: Optional[float] = None,
+        retained_token_ratio: Optional[float] = None,
+        reasoning_effort: Optional[str] = None,
         event_tags: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
-        """Commit a session (archive messages and extract memories).
-
-        Delegates to commit_async() for true non-blocking behavior.
-
-        Args:
-            session_id: Session ID to commit
-            keep_recent_count: See :meth:`commit_async`.
-
-        Returns:
-            Commit result
-        """
+        """Commit a session (archive messages and extract memories)."""
         return await self.commit_async(
             session_id,
             ctx,
             keep_recent_count=keep_recent_count,
+            enable_working_memory=enable_working_memory,
             retention_mode=retention_mode,
             keep_recent_turn_count=keep_recent_turn_count,
             retained_message_token_budget=retained_message_token_budget,
             min_raw_tail_steps=min_raw_tail_steps,
+            session_window_context=session_window_context,
+            summary_token_ratio=summary_token_ratio,
+            retained_token_ratio=retained_token_ratio,
+            reasoning_effort=reasoning_effort,
             event_tags=event_tags,
         )
 
@@ -463,34 +463,31 @@ class SessionService:
         ctx: RequestContext,
         keep_recent_count: int = 0,
         *,
+        enable_working_memory: Optional[bool] = None,
         retention_mode: Optional[str] = None,
         keep_recent_turn_count: Optional[int] = None,
         retained_message_token_budget: Optional[int] = None,
         min_raw_tail_steps: Optional[int] = None,
+        session_window_context: Optional[int] = None,
+        summary_token_ratio: Optional[float] = None,
+        retained_token_ratio: Optional[float] = None,
+        reasoning_effort: Optional[str] = None,
         event_tags: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
-        """Async commit a session.
-
-        Phase 1 (archive) always runs inline.  Phase 2 (memory extraction)
-        runs in a background task, returning a task_id for polling.
-
-        Args:
-            session_id: Session ID to commit
-            keep_recent_count: Number of most-recent messages to keep in the
-                live session after commit. ``0`` archives everything.
-
-        Returns:
-            Commit result with keys: session_id, status, task_id,
-            archive_uri, archived
-        """
+        """Async commit a session."""
         self._ensure_initialized()
         session = await self.open(session_id, ctx)
         commit_kwargs: Dict[str, Any] = {"keep_recent_count": keep_recent_count}
         optional_retention = {
+            "enable_working_memory": enable_working_memory,
             "retention_mode": retention_mode,
             "keep_recent_turn_count": keep_recent_turn_count,
             "retained_message_token_budget": retained_message_token_budget,
             "min_raw_tail_steps": min_raw_tail_steps,
+            "session_window_context": session_window_context,
+            "summary_token_ratio": summary_token_ratio,
+            "retained_token_ratio": retained_token_ratio,
+            "reasoning_effort": reasoning_effort,
         }
         commit_kwargs.update(
             {key: value for key, value in optional_retention.items() if value is not None}

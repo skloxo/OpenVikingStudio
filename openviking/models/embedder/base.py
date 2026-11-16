@@ -43,9 +43,10 @@ query_embed_cache_var: contextvars.ContextVar[Optional[Dict[Any, "asyncio.Task"]
 
 def _query_cache_key(embedder: "EmbedderBase", embedding_input: "EmbeddingInput") -> tuple:
     """Stable cache key for a prepared embedding input and its embedder."""
+    model_id = getattr(embedder, "model_name", None) or type(embedder).__name__
     if isinstance(embedding_input, str):
-        return (embedder.model_name, embedding_input)
-    return (embedder.model_name, repr(embedding_input))
+        return (model_id, embedding_input)
+    return (model_id, repr(embedding_input))
 
 
 class QueryEmbeddingCacheContext:
@@ -379,14 +380,20 @@ class EmbedderBase(ABC):
         self,
         func: Callable[[], Awaitable[T]],
         *,
+        is_query: bool = False,
         logger=None,
         operation_name: str,
     ) -> T:
         async def _wrapped() -> T:
-            semaphore = _get_async_embed_semaphore(self.max_concurrent)
-            wait_started = time.monotonic()
-            await semaphore.acquire()
-            wait_elapsed = time.monotonic() - wait_started
+            semaphore = None
+            wait_elapsed = 0.0
+            if not is_query:
+                semaphore = getattr(self, "_account_semaphore", None)
+                if semaphore is None:
+                    semaphore = _get_async_embed_semaphore(self.max_concurrent)
+                wait_started = time.monotonic()
+                await semaphore.acquire()
+                wait_elapsed = time.monotonic() - wait_started
             telemetry = get_current_telemetry()
             telemetry.set("embedding.async.max_concurrent", self.max_concurrent)
             telemetry.set("embedding.async.wait_ms", round(wait_elapsed * 1000, 3))
@@ -409,7 +416,8 @@ class EmbedderBase(ABC):
                         elapsed * 1000,
                     )
                 self._active_call_started_at = previous_started_at
-                semaphore.release()
+                if semaphore is not None:
+                    semaphore.release()
 
         return await retry_async(
             _wrapped,

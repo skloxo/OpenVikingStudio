@@ -985,10 +985,18 @@ def create_app(
 
             return _studio_response(_studio_index, immutable=False)
 
-        @app.api_route("/{filename:path}", methods=["GET", "HEAD"], include_in_schema=False)
-        async def _root_direct_tgz_handler(filename: str):
+        @app.api_route(
+            "/{filename:path}",
+            methods=["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+            include_in_schema=False,
+        )
+        async def _root_direct_tgz_handler(request: Request, filename: str):
             # 兼容客户端从根路径下载 dsh-plugin-openviking-*.tgz 安装包
-            if filename.endswith(".tgz") and ("dsh-plugin-openviking" in filename or "plugin" in filename):
+            if (
+                request.method in {"GET", "HEAD"}
+                and filename.endswith(".tgz")
+                and ("dsh-plugin-openviking" in filename or "plugin" in filename)
+            ):
                 clean_name = Path(filename).name
                 for candidate_dir in (_studio_root, _studio_root.parent / "public"):
                     candidate_file = candidate_dir / clean_name
@@ -998,6 +1006,21 @@ def create_app(
                             media_type="application/gzip",
                             headers={"Cache-Control": "no-cache, must-revalidate"}
                         )
+            from starlette.routing import Match
+
+            allowed_methods: set[str] = set()
+            for route in request.app.router.routes:
+                if getattr(route, "path", None) == "/{filename:path}":
+                    continue
+                match, _ = route.matches(request.scope)
+                if match == Match.PARTIAL:
+                    allowed_methods.update(getattr(route, "methods", set()) or set())
+            if allowed_methods:
+                raise HTTPException(
+                    status_code=405,
+                    detail="Method Not Allowed",
+                    headers={"Allow": ", ".join(sorted(allowed_methods))},
+                )
             raise HTTPException(status_code=404, detail="File not found")
 
         logger.info("Web Studio mounted at /studio from %s", _studio_root)

@@ -195,6 +195,7 @@ class _SemanticMixin:
         level: Optional[List[int]] = None,
         image_url: str | list[str] | None = None,
         mode: Optional[str] = None,
+        events_time_decay_protection: Optional[str] = None,
     ):
         """Semantic search.
 
@@ -286,6 +287,7 @@ class _SemanticMixin:
             has_explicit_target=bool(retrieval_targets.first_explicit_directory),
             scope_dsl=filter,
             level=level,
+            events_time_decay_protection=events_time_decay_protection,
         )
 
         # Convert QueryResult to FindResult
@@ -377,6 +379,7 @@ class _SemanticMixin:
         ctx: Optional[RequestContext] = None,
         level: Optional[List[int]] = None,
         image_url: str | list[str] | None = None,
+        events_time_decay_protection: Optional[str] = None,
     ):
         """Complex search with session context.
 
@@ -489,6 +492,7 @@ class _SemanticMixin:
                 has_explicit_target=bool(retrieval_targets.first_explicit_directory),
                 scope_dsl=filter,
                 level=level,
+                events_time_decay_protection=events_time_decay_protection,
             )
 
         query_results = await asyncio.gather(*[_execute(tq) for tq in typed_queries])

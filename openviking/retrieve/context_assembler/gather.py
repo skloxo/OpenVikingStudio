@@ -20,7 +20,10 @@ from openviking.retrieve.context_assembler.params import (
     OTHER_MEMORY_CATEGORY,
     OTHER_PEER_OVERFETCH,
     REPORTED_CATEGORY_KEYS,
+    RERANK_CANDIDATE_MULTIPLIER,
 )
+from openviking.retrieve.context_assembler.rerank_pool import cap_rerank_pool, rerank_groups
+from openviking.retrieve.rerank_scoring import Reranker
 from openviking.server.identity import RequestContext
 from openviking.utils.search_filters import merge_context_type_filter
 from openviking_cli.exceptions import InvalidArgumentError
@@ -211,6 +214,8 @@ async def gather_candidates(
     peer_scope: str = "all",
     penalties: Optional[Mapping[str, float]] = None,
     excluded: Optional[Set[str]] = None,
+    reranker: Optional[Reranker] = None,
+    rerank_query: str = "",
 ) -> Tuple[List[Candidate], Dict[str, Any]]:
     """Retrieve and rank candidates, returning ``(candidates, stats)``."""
     peer_scope = "actor" if peer_scope == "actor" else "all"
@@ -219,9 +224,11 @@ async def gather_candidates(
     penalties = penalties or {}
     excluded = excluded or set()
     planned = [q for q in queries if q] or [""]
+    recall_threshold = score_threshold if reranker is None else None
 
     searched: Dict[str, int] = {}
     retrieval_errors: List[str] = []
+    rerank_stats: Dict[str, Any] = {}
     excluded_count = 0
 
     def _build(items: Sequence[Tuple[Any, Optional[str]]]) -> List[Candidate]:
@@ -281,13 +288,13 @@ async def gather_candidates(
             ctx=find_ctx,
             target_uri=target_uri,
             limit=find_limit,
-            score_threshold=score_threshold,
+            score_threshold=recall_threshold,
             filter=find_filter if find_filter is not None else filter,
             image_url=image_url,
             level=None,
         )
 
-    async def gather_bucket(bucket: str, quota: int) -> List[Candidate]:
+    async def gather_bucket(bucket: str, width: int) -> List[Candidate]:
         targets = category_targets(bucket, ctx)
         context_type = {
             "resources": ContextType.RESOURCE,
@@ -299,7 +306,7 @@ async def gather_candidates(
                 query=query,
                 find_ctx=ctx,
                 target_uri=target,
-                find_limit=_overfetch(quota),
+                find_limit=_overfetch(width),
                 find_filter=bucket_filter,
             )
             for query in planned
@@ -312,7 +319,7 @@ async def gather_candidates(
                     query=query,
                     find_ctx=open_ctx,
                     target_uri=f"{user_root}/peers",
-                    find_limit=_overfetch(max(quota * OTHER_PEER_OVERFETCH, quota)),
+                    find_limit=_overfetch(max(width * OTHER_PEER_OVERFETCH, width)),
                     find_filter=bucket_filter,
                 )
                 for query in planned
@@ -333,15 +340,17 @@ async def gather_candidates(
         searched[bucket] = len(found)
         candidates = _build([(item, bucket) for item in found])
         candidates.sort(key=_rank_key, reverse=True)
-        return candidates[: max(0, quota)]
+        return candidates[: max(0, width)]
 
     async def gather_flat() -> List[Candidate]:
+        nonlocal rerank_stats
+        width = limit * RERANK_CANDIDATE_MULTIPLIER if reranker is not None else limit
         searches = [
             _find(
                 query=query,
                 find_ctx=ctx,
                 target_uri="",
-                find_limit=_overfetch(limit),
+                find_limit=_overfetch(width),
             )
             for query in planned
         ]
@@ -352,7 +361,7 @@ async def gather_candidates(
                     query=query,
                     find_ctx=open_ctx,
                     target_uri=f"{user_root}/peers",
-                    find_limit=_overfetch(max(limit * OTHER_PEER_OVERFETCH, limit)),
+                    find_limit=_overfetch(max(width * OTHER_PEER_OVERFETCH, width)),
                 )
                 for query in planned
             )
@@ -377,14 +386,33 @@ async def gather_candidates(
         searched["all"] = len(found)
         candidates = _build([(item, buckets.get(_uri(item))) for item in found])
         candidates.sort(key=_rank_key, reverse=True)
+        if reranker is not None:
+            capped = max(0, len(candidates) - width)
+            [candidates], rerank_stats = await rerank_groups(
+                reranker, rerank_query, [candidates[:width]], score_threshold, _rank_key
+            )
+            rerank_stats["capped"] = capped
         return candidates[: max(0, limit)]
 
     if quotas is None:
         candidates = await gather_flat()
     else:
         active = [(bucket, quota) for bucket, quota in quotas.items() if quota > 0]
-        buckets = await asyncio.gather(*(gather_bucket(b, q) for b, q in active))
-        candidates = [candidate for bucket in buckets for candidate in bucket]
+        def _width(quota: int) -> int:
+            return quota * RERANK_CANDIDATE_MULTIPLIER if reranker is not None else quota
+
+        buckets = await asyncio.gather(*(gather_bucket(b, _width(q)) for b, q in active))
+        if reranker is not None:
+            pool, capped = cap_rerank_pool(active, buckets, _rank_key)
+            buckets, rerank_stats = await rerank_groups(
+                reranker, rerank_query, pool, score_threshold, _rank_key
+            )
+            rerank_stats["capped"] = capped
+        candidates = [
+            candidate
+            for (_, quota), bucket in zip(active, buckets, strict=True)
+            for candidate in bucket[: max(0, quota)]
+        ]
         candidates = _dedupe_candidates(candidates)
         candidates.sort(key=_rank_key, reverse=True)
 
@@ -402,6 +430,8 @@ async def gather_candidates(
     }
     if retrieval_errors:
         stats["retrieval_errors"] = retrieval_errors[:5]
+    if reranker is not None:
+        stats["rerank"] = rerank_stats
     return candidates, stats
 
 

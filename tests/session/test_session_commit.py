@@ -585,7 +585,7 @@ class TestCommit:
         # Second round of conversation
         session.add_message("user", [TextPart("Second round message")])
         session.add_message("assistant", [TextPart("Second round response")])
-        result2 = await session.commit_async()
+        result2 = await session.commit_async(enable_working_memory=True)
         assert result2.get("status") == "accepted"
         assert result2.get("task_id") is not None
 
@@ -611,7 +611,7 @@ class TestCommit:
         session.add_message("user", [TextPart("Round 2 user")])
         session.add_message("assistant", [TextPart("Round 2 assistant")])
 
-        result = await session.commit_async(keep_recent_count=2)
+        result = await session.commit_async(keep_recent_count=2, enable_working_memory=True)
         task_result = await _wait_for_task(result["task_id"])
 
         assert task_result["status"] == "completed"
@@ -646,12 +646,13 @@ class TestCommit:
         session._meta.memory_policy = {
             "peer": {"enabled": False},
             "memory_types": ["profile"],
+            "working_memory": {"enabled": True},
         }
         session._session_compressor.extract_long_term_memories = AsyncMock(return_value=[])
 
         session.add_message("user", [TextPart("First round message")])
         session.add_message("assistant", [TextPart("First round response")])
-        result1 = await session.commit_async()
+        result1 = await session.commit_async(enable_working_memory=True)
         await _wait_for_task(result1["task_id"])
 
         previous_overview = body_for_preview(
@@ -682,7 +683,7 @@ class TestCommit:
 
         session.add_message("user", [TextPart("Second round message")])
         session.add_message("assistant", [TextPart("Second round response")])
-        result2 = await session.commit_async()
+        result2 = await session.commit_async(enable_working_memory=True)
         task_result = await _wait_for_task(result2["task_id"])
 
         assert task_result["status"] == "completed"

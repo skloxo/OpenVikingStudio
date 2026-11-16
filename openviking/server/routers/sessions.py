@@ -2,13 +2,11 @@
 # SPDX-License-Identifier: AGPL-3.0
 """Sessions endpoints for OpenViking HTTP Server."""
 
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query
-from pydantic import BaseModel, Field, field_validator, model_validator
 
 from openviking.core.path_variables import resolve_path_variables
-from openviking.core.peer_id import normalize_peer_id
 from openviking.core.uri_validation import validate_request_viking_uri
 from openviking.message.part import Part, TextPart, part_from_dict
 from openviking.server.auth import get_session_request_context
@@ -16,171 +14,48 @@ from openviking.server.dependencies import get_service
 from openviking.server.identity import RequestContext
 from openviking.server.models import Response
 from openviking.server.responses import error_response
+from openviking.server.routers.sessions_models import (
+    AddMessageRequest,
+    AutoCommitPolicyRequest,
+    BatchAddMessageRequest,
+    CommitRequest,
+    ContextPartRequest,
+    CreateSessionRequest,
+    EventExtractionConfigRequest,
+    EventExtractionMetadataRequest,
+    ExtractionMetadataRequest,
+    MemoryExtractionConfigRequest,
+    PartRequest,
+    TextPartRequest,
+    ToolPartRequest,
+    UpdateSessionConfigRequest,
+    UsedRequest,
+)
 from openviking.server.telemetry import run_operation
-from openviking.telemetry import TelemetryRequest
 from openviking.utils.image_search import is_viking_uri
 from openviking_cli.utils import get_logger
 
 router = APIRouter(prefix="/api/v1/sessions", tags=["sessions"])
 logger = get_logger(__name__)
 
-
-class TextPartRequest(BaseModel):
-    """Text part request model."""
-
-    type: Literal["text"] = "text"
-    text: str
-
-
-class ContextPartRequest(BaseModel):
-    """Context part request model."""
-
-    type: Literal["context"] = "context"
-    uri: str = ""
-    context_type: Literal["memory", "resource", "skill"] = "memory"
-    abstract: str = ""
-
-
-class ToolPartRequest(BaseModel):
-    """Tool part request model."""
-
-    type: Literal["tool"] = "tool"
-    tool_id: str = ""
-    tool_name: str = ""
-    tool_uri: str = ""
-    skill_uri: str = ""
-    tool_input: Optional[Dict[str, Any]] = None
-    tool_output: str = ""
-    tool_status: str = "pending"
-    duration_ms: Optional[float] = None
-    prompt_tokens: Optional[int] = None
-    completion_tokens: Optional[int] = None
-    tool_output_ref: str = ""
-    tool_output_truncated: bool = False
-    tool_output_original_chars: Optional[int] = None
-    tool_output_preview_chars: Optional[int] = None
-    tool_output_sha256: str = ""
-    tool_output_storage_uri: str = ""
-    tool_output_mime_type: str = "text/plain"
-    tool_output_source_ref: str = ""
-    tool_output_source_offset: Optional[int] = None
-    tool_output_source_limit: Optional[int] = None
-    tool_output_externalization_error: str = ""
-    tool_output_group_id: str = ""
-    tool_output_externalized_reason: str = ""
-    tool_output_group_original_chars: Optional[int] = None
-    tool_output_group_budget_chars: Optional[int] = None
-
-
-PartRequest = TextPartRequest | ContextPartRequest | ToolPartRequest
-
-
-class AutoCommitPolicyRequest(BaseModel):
-    """Session-level auto-commit policy overrides.
-
-    All fields are optional. Bounds are not enforced here: ``AutoCommitPolicy``
-    clamps every value into ``[0, max]`` so clamping lives in one place across
-    the HTTP, SDK, and CLI entrypoints.
-    """
-
-    pending_token_threshold: Optional[int] = None
-    message_count_threshold: Optional[int] = None
-    idle_timeout_seconds: Optional[int] = None
-    keep_recent_count: Optional[int] = None
-    min_commit_interval_seconds: Optional[int] = None
-
-    model_config = {"extra": "forbid"}
-
-    @model_validator(mode="after")
-    def reject_explicit_null_fields(self) -> "AutoCommitPolicyRequest":
-        null_fields = [field for field in self.model_fields_set if getattr(self, field) is None]
-        if null_fields:
-            raise ValueError(
-                "auto_commit_policy fields must be integers; use "
-                "auto_commit_policy=null to disable automatic commits"
-            )
-        return self
-
-
-class EventExtractionConfigRequest(BaseModel):
-    """Default event-memory extraction settings for a session."""
-
-    tags: Optional[List[str]] = Field(
-        default=None,
-        description=(
-            "Default custom scalar tags applied to event memories extracted from "
-            "this session. Each element is a strict 'key=value' string. Commit-time "
-            "tags override this default; an empty list clears it."
-        ),
-    )
-
-    model_config = {"extra": "forbid"}
-
-
-class MemoryExtractionConfigRequest(BaseModel):
-    """Per-memory-type extraction configuration."""
-
-    events: Optional[EventExtractionConfigRequest] = None
-
-    model_config = {"extra": "forbid"}
-
-
-class AddMessageRequest(BaseModel):
-    """Request model for adding a message.
-
-    Supports two modes:
-    1. Simple mode: provide `content` string (backward compatible)
-    2. Parts mode: provide `parts` array for full Part support
-
-    If both are provided, `parts` takes precedence.
-    """
-
-    role: str
-    peer_id: Optional[str] = None
-    content: Optional[str] = None
-    parts: Optional[List[Dict[str, Any]]] = None
-    created_at: Optional[str] = None
-    turn_id: Optional[str] = None
-    message_kind: Optional[
-        Literal["user_query", "assistant_step", "tool_transport", "checkpoint"]
-    ] = None
-    source_message_ids: Optional[List[str]] = None
-    telemetry: TelemetryRequest = False
-
-    @field_validator("peer_id")
-    @classmethod
-    def validate_peer_id(cls, value: Optional[str]) -> Optional[str]:
-        return normalize_peer_id(value)
-
-    @model_validator(mode="after")
-    def validate_content_or_parts(self) -> "AddMessageRequest":
-        if self.content is None and self.parts is None:
-            raise ValueError("Either 'content' or 'parts' must be provided")
-        return self
-
-
-class BatchAddMessageRequest(BaseModel):
-    """Request model for adding multiple messages in a single request."""
-
-    messages: List[AddMessageRequest] = Field(..., max_length=100)
-    telemetry: TelemetryRequest = False
-
-
-class UsedRequest(BaseModel):
-    """Request model for recording usage."""
-
-    contexts: Optional[List[str]] = None
-    skill: Optional[Dict[str, Any]] = None
-
-
-class CreateSessionRequest(BaseModel):
-    """Request model for creating a session."""
-
-    session_id: Optional[str] = None
-    memory_policy: Optional[Dict[str, Any]] = None
-    auto_commit_policy: Optional[AutoCommitPolicyRequest] = None
-    memory_extraction_config: Optional[MemoryExtractionConfigRequest] = None
-    telemetry: TelemetryRequest = False
+__all__ = [
+    "router",
+    "TextPartRequest",
+    "ContextPartRequest",
+    "ToolPartRequest",
+    "PartRequest",
+    "AutoCommitPolicyRequest",
+    "EventExtractionConfigRequest",
+    "MemoryExtractionConfigRequest",
+    "AddMessageRequest",
+    "BatchAddMessageRequest",
+    "UsedRequest",
+    "CreateSessionRequest",
+    "UpdateSessionConfigRequest",
+    "EventExtractionMetadataRequest",
+    "ExtractionMetadataRequest",
+    "CommitRequest",
+]
 
 
 def _event_tags_from_extraction_config(
@@ -380,20 +255,6 @@ async def get_session(
     return Response(status="ok", result=result)
 
 
-class UpdateSessionConfigRequest(BaseModel):
-    """Request body for PATCH /sessions/{id}/config.
-
-    Only the mutable extraction config is editable. Fields left unset are not
-    changed; setting ``events.tags`` to an empty list clears the default.
-    """
-
-    memory_extraction_config: Optional[MemoryExtractionConfigRequest] = None
-    auto_commit_policy: Optional[AutoCommitPolicyRequest] = None
-    telemetry: TelemetryRequest = False
-
-    model_config = {"extra": "forbid"}
-
-
 @router.patch("/{session_id}/config")
 async def update_session_config(
     session_id: str = Path(..., description="Session ID"),
@@ -580,104 +441,6 @@ async def delete_session(
     return Response(status="ok", result={"session_id": session_id})
 
 
-class EventExtractionMetadataRequest(BaseModel):
-    """Commit-time event-memory tag override.
-
-    ``tags`` uses three-state semantics: unset/``None`` falls back to the
-    session default, an empty list disables default-tag injection for this
-    commit, and a non-empty list overrides the session default. Existing tags
-    on a pre-existing URI are not removed. Normalization happens in the service
-    layer, so ``None`` is preserved here (not coerced to ``[]``).
-    """
-
-    tags: Optional[List[str]] = Field(
-        default=None,
-        description=(
-            "Custom scalar tags applied to event memories from this commit. Each "
-            "element is a strict 'key=value' string. Overrides the session default; "
-            "an empty list disables default-tag injection for this commit."
-        ),
-    )
-
-    model_config = {"extra": "forbid"}
-
-
-class ExtractionMetadataRequest(BaseModel):
-    """Per-memory-type extraction overrides for a single commit."""
-
-    event: Optional[EventExtractionMetadataRequest] = None
-
-    model_config = {"extra": "forbid"}
-
-
-class CommitRequest(BaseModel):
-    """Commit request body.
-
-    WM v2: ``keep_recent_count`` allows the plugin to retain a tail of recent
-    messages in the live session after commit so the next turn still has
-    immediate context. Default 0 preserves the pre-v2 "archive everything"
-    behavior.
-    """
-
-    keep_recent_count: int = Field(
-        default=0,
-        ge=0,
-        le=10_000,
-        description=(
-            "Number of most-recent messages to keep live after commit. "
-            "Plugin's afterTurn path typically passes its configured value "
-            "(default 10); compact path passes 0 to archive everything."
-        ),
-    )
-    retention_mode: Optional[Literal["turn_budget"]] = Field(
-        default=None,
-        description=(
-            "Opt in to logical Turn retention. Omit to preserve keep_recent_count semantics."
-        ),
-    )
-    keep_recent_turn_count: Optional[int] = Field(
-        default=None,
-        ge=0,
-        le=10_000,
-        description="Maximum number of newest logical user Turns to retain.",
-    )
-    retained_message_token_budget: Optional[int] = Field(
-        default=None,
-        ge=1,
-        description="Token budget for retained raw messages and checkpoint.",
-    )
-    min_raw_tail_steps: Optional[int] = Field(
-        default=None,
-        ge=0,
-        le=10_000,
-        description="Minimum number of latest atomic assistant Steps kept raw.",
-    )
-    extraction_metadata: Optional[ExtractionMetadataRequest] = Field(
-        default=None,
-        description=(
-            "Per-commit memory extraction overrides. ``event.tags`` sets the "
-            "custom scalar tags for event memories produced by this commit, "
-            "overriding the session default."
-        ),
-    )
-    telemetry: TelemetryRequest = False
-
-    @model_validator(mode="after")
-    def validate_turn_retention_opt_in(self) -> "CommitRequest":
-        if self.retention_mode is None and any(
-            value is not None
-            for value in (
-                self.keep_recent_turn_count,
-                self.retained_message_token_budget,
-                self.min_raw_tail_steps,
-            )
-        ):
-            raise ValueError(
-                "retention_mode='turn_budget' is required when Turn retention fields are set"
-            )
-        return self
-
-
 @router.post("/{session_id}/commit")
 async def commit_session(
     session_id: str = Path(..., description="Session ID"),
@@ -693,10 +456,15 @@ async def commit_session(
     service = get_service()
     commit_kwargs: Dict[str, Any] = {"keep_recent_count": body.keep_recent_count}
     optional_retention = {
+        "enable_working_memory": body.enable_working_memory,
         "retention_mode": body.retention_mode,
         "keep_recent_turn_count": body.keep_recent_turn_count,
         "retained_message_token_budget": body.retained_message_token_budget,
         "min_raw_tail_steps": body.min_raw_tail_steps,
+        "session_window_context": body.session_window_context,
+        "summary_token_ratio": body.summary_token_ratio,
+        "retained_token_ratio": body.retained_token_ratio,
+        "reasoning_effort": body.reasoning_effort,
     }
     commit_kwargs.update(
         {key: value for key, value in optional_retention.items() if value is not None}

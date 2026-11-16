@@ -25,6 +25,7 @@ from openviking.server.routers.skills_helpers import (
     _parse_abstract_meta,
     _relative_skill_path,
     _require_skill,
+    _run_skills_retina,
     _skill_file_kind,
     _skill_md_uri,
     _skill_name_from_uri,
@@ -33,6 +34,7 @@ from openviking.server.routers.skills_helpers import (
     _skill_summary_from_entry,
     _skill_summary_from_hit,
     _skill_summary_from_meta,
+    _sort_skills_by_roi,
     _validate_skill_name,
 )
 from openviking.server.routers.skills_models import (
@@ -53,8 +55,8 @@ from openviking.service.skill_integrity import (
     _skill_manifest_with_integrity,
     _skill_snapshot_lock,
 )
-from openviking.service.skill_retina_cron import SkillRetinaAuditor
 from openviking.service.skill_telemetry import SkillTelemetryStore
+from openviking.service.skill_updater import execute_skill_update
 from openviking_cli.exceptions import InvalidArgumentError
 
 router = APIRouter(prefix="/api/v1/skills", tags=["skills"])
@@ -111,16 +113,7 @@ async def list_skills(
             deduped_skills.append(s)
 
     if sort_by == "roi":
-        telemetry = SkillTelemetryStore.get_instance().get_telemetry_report(days=30)
-        roi_map = {item["skill_id"]: item["roi_score"] for item in telemetry.get("top_roi_skills", [])}
-        bundle_roi_map = {item["bundle_name"]: item["roi_score"] for item in telemetry.get("bundle_rankings", [])}
-        deduped_skills.sort(
-            key=lambda s: max(
-                roi_map.get(s.get("name", ""), 0.0),
-                bundle_roi_map.get(s.get("name", ""), 0.0),
-            ),
-            reverse=True,
-        )
+        _sort_skills_by_roi(deduped_skills)
 
     return Response(
         status="ok",
@@ -298,18 +291,9 @@ async def get_skill_retina_status(
     _ctx: RequestContext = Depends(get_request_context),
 ):
     """Get audit and physical identity status for skills roots."""
-    service = get_service()
-    user_root = f"{canonical_user_root(_ctx)}/skills"
-    agent_root = "viking://agent/skills"
-    user_report = await SkillRetinaAuditor.audit_skills(service, _ctx, user_root)
-    agent_report = await SkillRetinaAuditor.audit_skills(service, _ctx, agent_root)
     return Response(
         status="ok",
-        result={
-            "user": user_report.to_dict(),
-            "agent": agent_report.to_dict(),
-            "is_identical": user_report.is_identical and agent_report.is_identical,
-        },
+        result=await _run_skills_retina(get_service(), _ctx, heal=False),
     )
 
 
@@ -318,18 +302,9 @@ async def audit_skills_retina(
     _ctx: RequestContext = Depends(get_request_context),
 ):
     """Trigger physical retina audit on skills roots."""
-    service = get_service()
-    user_root = f"{canonical_user_root(_ctx)}/skills"
-    agent_root = "viking://agent/skills"
-    user_report = await SkillRetinaAuditor.audit_skills(service, _ctx, user_root)
-    agent_report = await SkillRetinaAuditor.audit_skills(service, _ctx, agent_root)
     return Response(
         status="ok",
-        result={
-            "user": user_report.to_dict(),
-            "agent": agent_report.to_dict(),
-            "is_identical": user_report.is_identical and agent_report.is_identical,
-        },
+        result=await _run_skills_retina(get_service(), _ctx, heal=False),
     )
 
 
@@ -338,19 +313,9 @@ async def heal_skills_retina(
     _ctx: RequestContext = Depends(get_request_context),
 ):
     """Trigger physical retina self-healing on skills roots."""
-    service = get_service()
-    user_root = f"{canonical_user_root(_ctx)}/skills"
-    agent_root = "viking://agent/skills"
-    user_report = await SkillRetinaAuditor.heal_skills(service, _ctx, user_root)
-    agent_report = await SkillRetinaAuditor.heal_skills(service, _ctx, agent_root)
     return Response(
         status="ok",
-        result={
-            "user": user_report.to_dict(),
-            "agent": agent_report.to_dict(),
-            "is_identical": user_report.is_identical and agent_report.is_identical,
-            "total_healed": user_report.healed_count + agent_report.healed_count,
-        },
+        result=await _run_skills_retina(get_service(), _ctx, heal=True),
     )
 
 

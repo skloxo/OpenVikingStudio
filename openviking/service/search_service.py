@@ -13,6 +13,10 @@ import time
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Union
 
+from openviking.core.namespace_policy import is_system_uri
+from openviking.core.retrieval_types import SearchType
+from openviking.models.rerank import RerankClient
+from openviking.retrieve.rerank_scoring import Reranker
 from openviking.server.identity import RequestContext
 from openviking.storage.viking_fs import VikingFS
 from openviking.utils.image_search import (
@@ -31,6 +35,13 @@ logger = get_logger(__name__)
 
 QUERY_CACHE_TTL = 120.0  # 120s TTL to shield downstream models from storm amplification
 QUERY_CACHE_MAXSIZE = 1000  # LRU capacity
+
+
+def _reject_system_targets(target_uri: Union[str, List[str]]) -> None:
+    targets = [target_uri] if isinstance(target_uri, str) else target_uri
+    for uri in targets:
+        if uri and is_system_uri(uri):
+            raise InvalidArgumentError(f"search is not supported for namespace: {uri}")
 
 
 def _ensure_non_empty_query(
@@ -72,18 +83,24 @@ class SearchService:
         score_threshold: Optional[float],
         filter: Optional[Dict],
         level: Optional[List[int]],
-        image_url: Optional[str],
+        image_url: Optional[str | list[str]],
         ctx: RequestContext,
         mode: Optional[str] = None,
+        events_time_decay_protection: Optional[str] = None,
     ) -> str:
         account_id = getattr(ctx, "account_id", None) or getattr(getattr(ctx, "user", None), "account_id", "default")
         user_id = getattr(getattr(ctx, "user", None), "user_id", None) or "default"
         t_uri = tuple(sorted(target_uri)) if isinstance(target_uri, list) else target_uri
         lvl = tuple(level) if isinstance(level, list) else (level or "")
         flt = json.dumps(filter, sort_keys=True) if filter else ""
-        img = (image_url[:100] + str(len(image_url))) if (image_url and len(image_url) > 100) else (image_url or "")
+        if isinstance(image_url, list):
+            img_raw = "|".join(image_url)
+        else:
+            img_raw = image_url or ""
+        img = (img_raw[:100] + str(len(img_raw))) if len(img_raw) > 100 else img_raw
         m = str(mode or "")
-        raw = f"{account_id}:{user_id}:{op}:{query.strip().lower()}:{t_uri}:{limit}:{score_threshold}:{lvl}:{flt}:{img}:{m}"
+        decay = str(events_time_decay_protection or "")
+        raw = f"{account_id}:{user_id}:{op}:{query.strip().lower()}:{t_uri}:{limit}:{score_threshold}:{lvl}:{flt}:{img}:{m}:{decay}"
         return hashlib.md5(raw.encode("utf-8")).hexdigest()
 
     def _get_cached(self, cache_key: str) -> Optional[Any]:
@@ -125,6 +142,24 @@ class SearchService:
         if not self._viking_fs or self._viking_fs.retrieval_config is None:
             return True
         return bool(self._viking_fs.retrieval_config.enable_intent)
+
+    def context_reranker(self) -> Optional[Reranker]:
+        """Opt-in reranker for search(mode='context') when configured."""
+        if not self._viking_fs or self._viking_fs.retrieval_config is None:
+            return None
+        if not self._viking_fs.retrieval_config.apply_rerank_to_context:
+            return None
+        rerank_config = self._viking_fs.rerank_config
+        if not rerank_config or not rerank_config.is_available():
+            return None
+        client = RerankClient.from_config(rerank_config)
+        if client is None:
+            return None
+        return Reranker(
+            client=client,
+            threshold=rerank_config.threshold,
+            max_input_tokens=rerank_config.max_input_tokens,
+        )
 
     async def _resolve_single_image_url(
         self,
@@ -176,6 +211,7 @@ class SearchService:
         filter: Optional[Dict] = None,
         level: Optional[List[int]] = None,
         image_url: str | list[str] | None = None,
+        events_time_decay_protection: Optional[str] = None,
     ) -> Any:
         """Complex search with session context.
 
@@ -193,6 +229,7 @@ class SearchService:
         """
         resolved_image_url = await self._resolve_image_url(image_url, ctx)
         _ensure_non_empty_query(query, resolved_image_url)
+        _reject_system_targets(target_uri)
         viking_fs = self._ensure_initialized()
 
         session_info = None
@@ -200,17 +237,21 @@ class SearchService:
         if session is not None and self.is_intent_enabled() and not resolved_image_url:
             session_info = await session.get_context_for_search(query)
 
-        result = await viking_fs.search(
-            query=query,
-            ctx=ctx,
-            target_uri=target_uri,
-            session_info=session_info,
-            limit=limit,
-            score_threshold=score_threshold,
-            filter=filter,
-            level=level,
-            image_url=resolved_image_url,
-        )
+        search_kwargs: Dict[str, Any] = {
+            "query": query,
+            "ctx": ctx,
+            "target_uri": target_uri,
+            "session_info": session_info,
+            "limit": limit,
+            "score_threshold": score_threshold,
+            "filter": filter,
+            "level": level,
+            "image_url": resolved_image_url,
+        }
+        if events_time_decay_protection is not None:
+            search_kwargs["events_time_decay_protection"] = events_time_decay_protection
+
+        result = await viking_fs.search(**search_kwargs)
         try:
             from openviking.observability.events import try_publish_event
             result_count = len(result) if hasattr(result, "__len__") else 0
@@ -241,6 +282,7 @@ class SearchService:
         level: Optional[List[int]] = None,
         image_url: str | list[str] | None = None,
         mode: Optional[str] = None,
+        events_time_decay_protection: Optional[str] = None,
     ) -> Any:
         """Semantic search without session context.
 
@@ -258,6 +300,7 @@ class SearchService:
         """
         resolved_image_url = await self._resolve_image_url(image_url, ctx)
         _ensure_non_empty_query(query, resolved_image_url, filter)
+        _reject_system_targets(target_uri)
         viking_fs = self._ensure_initialized()
 
         cache_key = self._make_cache_key(
@@ -271,22 +314,27 @@ class SearchService:
             image_url=resolved_image_url,
             ctx=ctx,
             mode=mode,
+            events_time_decay_protection=events_time_decay_protection,
         )
         cached = self._get_cached(cache_key)
         if cached is not None:
             return cached
 
-        result = await viking_fs.find(
-            query=query,
-            ctx=ctx,
-            target_uri=target_uri,
-            limit=limit,
-            score_threshold=score_threshold,
-            filter=filter,
-            level=level,
-            image_url=resolved_image_url,
-            mode=mode,
-        )
+        find_kwargs: Dict[str, Any] = {
+            "query": query,
+            "ctx": ctx,
+            "target_uri": target_uri,
+            "limit": limit,
+            "score_threshold": score_threshold,
+            "filter": filter,
+            "level": level,
+            "image_url": resolved_image_url,
+            "mode": mode,
+        }
+        if events_time_decay_protection is not None:
+            find_kwargs["events_time_decay_protection"] = events_time_decay_protection
+
+        result = await viking_fs.find(**find_kwargs)
         self._set_cached(cache_key, result)
 
         try:

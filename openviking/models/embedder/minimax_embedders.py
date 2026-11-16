@@ -219,6 +219,7 @@ class MinimaxDenseEmbedder(DenseEmbedderBase):
 
         result = await self._run_with_async_retry(
             _call,
+            is_query=is_query,
             logger=logger,
             operation_name="MiniMax async embedding",
         )

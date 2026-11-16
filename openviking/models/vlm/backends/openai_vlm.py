@@ -302,6 +302,8 @@ class OpenAIVLM(VLMBase):
         tool_choice: Optional[str] = None,
         messages: Optional[List[Dict[str, Any]]] = None,
         thinking: Optional[bool] = None,
+        max_tokens: Optional[int] = None,
+        reasoning_effort: Optional[str] = None,
     ) -> Dict[str, Any]:
         effective_thinking = self.thinking if thinking is None else thinking
         kwargs_messages = messages or [{"role": "user", "content": prompt}]
@@ -312,13 +314,20 @@ class OpenAIVLM(VLMBase):
             "messages": kwargs_messages,
             "stream": self.stream,
         }
-        if is_reasoning:
-            kwargs["reasoning_effort"] = self.reasoning_effort
-        else:
+        effective_reasoning_effort = (
+            self.reasoning_effort if reasoning_effort is None else reasoning_effort
+        )
+        if is_reasoning or reasoning_effort is not None:
+            if effective_reasoning_effort is not None:
+                kwargs["reasoning_effort"] = effective_reasoning_effort
+        if not is_reasoning:
             kwargs["temperature"] = self.temperature
         self._apply_provider_specific_extra_body(kwargs, effective_thinking)
-        if self.max_tokens is not None:
-            kwargs["max_completion_tokens" if is_reasoning else "max_tokens"] = self.max_tokens
+        effective_max_tokens = max_tokens if max_tokens is not None else self.max_tokens
+        if effective_max_tokens is not None:
+            kwargs["max_completion_tokens" if is_reasoning else "max_tokens"] = (
+                effective_max_tokens
+            )
         if tools:
             kwargs["tools"] = tools
             kwargs["tool_choice"] = tool_choice or "auto"
@@ -416,11 +425,21 @@ class OpenAIVLM(VLMBase):
         tools: Optional[List[Dict[str, Any]]] = None,
         tool_choice: Optional[str] = None,
         messages: Optional[List[Dict[str, Any]]] = None,
+        max_tokens: Optional[int] = None,
+        reasoning_effort: Optional[str] = None,
     ) -> Union[str, VLMResponse]:
         """Get text completion asynchronously"""
         effective_thinking = self.thinking if thinking is None else thinking
         client = self.get_async_client()
-        kwargs = self._build_text_kwargs(prompt, tools, tool_choice, messages, effective_thinking)
+        kwargs = self._build_text_kwargs(
+            prompt,
+            tools,
+            tool_choice,
+            messages,
+            effective_thinking,
+            max_tokens=max_tokens,
+            reasoning_effort=reasoning_effort,
+        )
 
         async def _call() -> Union[str, VLMResponse]:
             t0 = time.perf_counter()

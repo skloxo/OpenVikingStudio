@@ -258,7 +258,9 @@ class DashScopeDenseEmbedder(DenseEmbedderBase):
         if isinstance(text, list):
             contents = self._to_dashscope_contents(text)
             return await self.embed_content_async(
-                contents, enable_fusion=self._standard_input_fusion(contents)
+                contents,
+                enable_fusion=self._standard_input_fusion(contents),
+                is_query=is_query,
             )
 
         async def _call() -> EmbedResult:
@@ -280,7 +282,10 @@ class DashScopeDenseEmbedder(DenseEmbedderBase):
 
         try:
             return await self._run_with_async_retry(
-                _call, logger=logger, operation_name="DashScope async embedding"
+                _call,
+                is_query=is_query,
+                logger=logger,
+                operation_name="DashScope async embedding",
             )
         except Exception as e:
             raise RuntimeError(f"DashScope embedding failed: {e}") from e
@@ -325,7 +330,11 @@ class DashScopeDenseEmbedder(DenseEmbedderBase):
             raise RuntimeError(f"DashScope content embedding failed: {e}") from e
 
     async def embed_content_async(
-        self, contents: List[Dict[str, str]], *, enable_fusion: Optional[bool] = None
+        self,
+        contents: List[Dict[str, str]],
+        *,
+        enable_fusion: Optional[bool] = None,
+        is_query: bool = False,
     ) -> EmbedResult:
         """Async version of embed_content."""
 
@@ -349,7 +358,10 @@ class DashScopeDenseEmbedder(DenseEmbedderBase):
 
         try:
             return await self._run_with_async_retry(
-                _call, logger=logger, operation_name="DashScope async content embedding"
+                _call,
+                is_query=is_query,
+                logger=logger,
+                operation_name="DashScope async content embedding",
             )
         except Exception as e:
             raise RuntimeError(f"DashScope content embedding failed: {e}") from e

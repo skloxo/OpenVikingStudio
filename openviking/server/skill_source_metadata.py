@@ -20,8 +20,12 @@ async def read_skill_source_metadata(
     root_uri: str,
 ) -> Dict[str, Any]:
     uri = skill_source_metadata_uri(root_uri)
+    viking_fs = getattr(service, "viking_fs", None) or getattr(service, "_viking_fs", None)
     try:
-        raw = await service.fs.read(uri, ctx=ctx)
+        if viking_fs is not None:
+            raw = await viking_fs.read_file(uri, ctx=ctx)
+        else:
+            raw = await service.fs.read(uri, ctx=ctx)
     except Exception:
         return {
             "tracked": False,
@@ -66,7 +70,7 @@ async def persist_skill_source_metadata(
 
     uri = skill_source_metadata_uri(root_uri)
     content = json.dumps(record, ensure_ascii=False, indent=2, sort_keys=True)
-    viking_fs = getattr(service, "viking_fs", None)
+    viking_fs = getattr(service, "viking_fs", None) or getattr(service, "_viking_fs", None)
     if viking_fs is not None:
         await viking_fs.write(uri, content, ctx=ctx)
         return

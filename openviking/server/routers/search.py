@@ -4,32 +4,31 @@
 
 import asyncio
 import math
-from typing import Any, Dict, List, Literal, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 from fastapi import APIRouter, Depends, Request
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from fastapi import Response as FastAPIResponse
 
 from openviking.core.path_variables import resolve_path_variables
 from openviking.core.uri_validation import validate_request_viking_uri
 from openviking.models.embedder.base import query_embed_cache_var
 from openviking.pyagfs.exceptions import AGFSClientError, AGFSNotFoundError
-from openviking.retrieve.context_assembler import (
-    CATEGORY_KEYS,
-    DEFAULT_LIMIT,
-    DEFAULT_MAX_TOKENS,
-    MAX_EXCLUDE_URIS,
-    REPORTED_CATEGORY_KEYS,
-    AssembleParams,
-    DetailRequest,
-    assemble_context,
-)
+from openviking.retrieve.context_assembler import AssembleParams, assemble_context
 from openviking.server.auth import get_request_context
 from openviking.server.dependencies import get_service
 from openviking.server.error_mapping import map_exception
 from openviking.server.identity import RequestContext
 from openviking.server.models import Response
+from openviking.server.routers.search_models import (
+    CONTEXT_ONLY_FIELDS,
+    FindRequest,
+    GlobRequest,
+    GrepRequest,
+    SearchRequest,
+    TimeField,
+    context_only_fields_error,
+)
 from openviking.server.telemetry import run_operation
-from openviking.telemetry import TelemetryRequest
 from openviking.utils.image_search import is_viking_uri
 from openviking.utils.search_filters import (
     SearchContextTypeInput,
@@ -38,6 +37,16 @@ from openviking.utils.search_filters import (
 )
 from openviking.utils.tags import build_search_tags_filter
 from openviking_cli.exceptions import InvalidArgumentError, NotFoundError
+
+__all__ = [
+    "router",
+    "CONTEXT_ONLY_FIELDS",
+    "context_only_fields_error",
+    "FindRequest",
+    "SearchRequest",
+    "GrepRequest",
+    "GlobRequest",
+]
 
 
 def _sanitize_floats(obj: Any) -> Any:
@@ -54,7 +63,6 @@ def _sanitize_floats(obj: Any) -> Any:
 
 
 router = APIRouter(prefix="/api/v1/search", tags=["search"])
-TimeField = Literal["updated_at", "created_at"]
 
 
 def _resolve_search_limit(limit: int, node_limit: Optional[int]) -> int:
@@ -125,125 +133,6 @@ def _resolve_image_url(
     return resolved
 
 
-
-class FindRequest(BaseModel):
-    """Request model for find."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    query: str = ""
-    image_url: str | list[str] | None = None
-    target_uri: Union[str, List[str]] = ""
-    context_type: Optional[Union[str, List[str]]] = None
-    limit: int = DEFAULT_LIMIT
-    node_limit: Optional[int] = None
-    score_threshold: Optional[float] = None
-    filter: Optional[Dict[str, Any]] = None
-    include_provenance: bool = False
-    tags: Optional[List[str]] = None
-    since: Optional[str] = None
-    until: Optional[str] = None
-    time_field: Optional[TimeField] = None
-    level: Optional[Union[int, str, List[int]]] = None
-    read_content: bool = False
-    telemetry: TelemetryRequest = False
-    mode: Optional[str] = None
-
-
-def _reject_unknown_categories(value: Any, label: str, allowed: Sequence[str]) -> None:
-    if not isinstance(value, dict):
-        return
-    unknown = sorted(set(value) - set(allowed))
-    if unknown:
-        raise ValueError(
-            f"unknown {label} keys: {', '.join(unknown)}; allowed: {', '.join(allowed)}"
-        )
-
-
-def _reject_unknown_quota_and_detail(quotas: Any, detail: Any) -> None:
-    # Quotas name a retrieval bucket, `detail` names a reported category: the
-    # catch-all memory category is reportable but owns no bucket to size.
-    _reject_unknown_categories(quotas, "quota", CATEGORY_KEYS)
-    _reject_unknown_categories(detail, "detail", REPORTED_CATEGORY_KEYS)
-
-
-CONTEXT_ONLY_FIELDS = (
-    "query_expansion",
-    "max_tokens",
-    "quotas",
-    "purpose",
-    "detail",
-    "dedup_turns",
-    "exclude_uris",
-    "peer_scope",
-    "other_peer_penalty",
-    "rewrite",
-    "rewrite_max_bullets",
-)
-
-
-class SearchRequest(BaseModel):
-    """Request model for search with session.
-
-    ``mode="list"`` is the historical ranked-hit response. ``mode="context"``
-    turns the endpoint into the context assembly face: budgeting, detail tiers,
-    cross-turn dedup and the optional digest all live behind it.
-    """
-
-    model_config = ConfigDict(extra="forbid")
-
-    query: str = ""
-    image_url: str | list[str] | None = None
-    target_uri: Union[str, List[str]] = ""
-    context_type: Optional[Union[str, List[str]]] = None
-    session_id: Optional[str] = None
-    limit: int = DEFAULT_LIMIT
-    node_limit: Optional[int] = None
-    score_threshold: Optional[float] = None
-    filter: Optional[Dict[str, Any]] = None
-    include_provenance: bool = False
-    tags: Optional[List[str]] = None
-
-    since: Optional[str] = None
-    until: Optional[str] = None
-    time_field: Optional[TimeField] = None
-    level: Optional[Union[int, str, List[int]]] = None
-    read_content: bool = False
-    telemetry: TelemetryRequest = False
-
-    mode: Literal["list", "context"] = "list"
-
-    query_expansion: Literal["off", "auto"] = "auto"
-    max_tokens: int = Field(default=DEFAULT_MAX_TOKENS, ge=64, le=32000)
-    quotas: Optional[Dict[str, int]] = None
-    purpose: Optional[Literal["chat", "coding"]] = None
-    detail: Optional[DetailRequest] = None
-    dedup_turns: int = Field(default=0, ge=0, le=100)
-    exclude_uris: List[str] = Field(default_factory=list, max_length=MAX_EXCLUDE_URIS)
-    peer_scope: Literal["actor", "all"] = "all"
-    other_peer_penalty: Optional[Union[float, Dict[str, float]]] = None
-    rewrite: Union[bool, Literal["auto"]] = False
-    rewrite_max_bullets: int = Field(default=6, ge=1, le=20)
-
-    @model_validator(mode="after")
-    def _validate_mode(self) -> "SearchRequest":
-        if self.mode == "list":
-            used = sorted(set(CONTEXT_ONLY_FIELDS) & self.model_fields_set)
-            if used:
-                raise ValueError(
-                    f"{', '.join(used)} require mode='context'; "
-                    "set mode='context' or drop these fields"
-                )
-            return self
-
-        if self.read_content:
-            raise ValueError("read_content is only supported in mode='list'")
-        if self.target_uri:
-            raise ValueError("target_uri is not supported in mode='context'")
-        _reject_unknown_quota_and_detail(self.quotas, self.detail)
-        return self
-
-
 async def _inline_read_content(
     result: Any,
     *,
@@ -271,32 +160,6 @@ async def _inline_read_content(
 
     await asyncio.gather(*(_read(hit) for hit in hits))
     return result
-
-
-class GrepRequest(BaseModel):
-    """Request model for grep."""
-
-    uri: str
-    exclude_uri: Optional[str] = None
-    pattern: str
-    case_insensitive: bool = False
-    node_limit: Optional[int] = 256
-    level_limit: int = 10
-    tags: Optional[List[str]] = None
-    include_tags: bool = False
-    before_context: int = 0
-    after_context: int = 0
-
-
-class GlobRequest(BaseModel):
-    """Request model for glob."""
-
-    pattern: str
-    uri: str = "viking://"
-    node_limit: Optional[int] = 256
-    extra_fields: Optional[list[str]] = None
-    tags: Optional[List[str]] = None
-    include_tags: bool = False
 
 
 @router.post("/find")
@@ -331,6 +194,7 @@ async def find(
             level=_resolve_levels(request.level) or None,
             image_url=resolved_image_url,
             mode=request.mode,
+            events_time_decay_protection=request.events_time_decay_protection,
         ),
     )
     result = execution.result
@@ -480,6 +344,7 @@ async def search(
             filter=effective_filter,
             level=_resolve_levels(request.level) or None,
             image_url=resolved_image_url,
+            events_time_decay_protection=request.events_time_decay_protection,
         )
 
     execution = await run_operation(

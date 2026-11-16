@@ -85,6 +85,13 @@ class MemoryConfig(BaseModel):
         default_factory=SessionAutoCommitConfig,
         description="Server-wide controls for automatic session commits.",
     )
+    summary_budget_retry_enabled: bool = Field(
+        default=True,
+        description=(
+            "Whether rolling/final Working Memory summary retries compression once if output "
+            "exceeds summary_token_ratio * session_window_context."
+        ),
+    )
 
     model_config = {"extra": "forbid"}
 

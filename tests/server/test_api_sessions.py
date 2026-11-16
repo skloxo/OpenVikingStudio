@@ -472,7 +472,6 @@ async def test_get_session_context_includes_incomplete_archive_messages(
     assert resp.status_code == 200
     body = resp.json()
     assert [m["parts"][0]["text"] for m in body["result"]["messages"]] == [
-        "Archived seed",
         "Pending user message",
         "Pending assistant response",
         "Current live message",
@@ -1304,9 +1303,11 @@ async def test_get_session_context_endpoint_returns_trimmed_latest_archive_and_m
     )
 
 
+@pytest.mark.parametrize("wm_enabled", [False, True])
 async def test_get_session_archive_endpoint_returns_archive_details(
     client: httpx.AsyncClient,
     service,
+    wm_enabled,
 ):
     # See test_get_session_context_*: stub memory extraction (not covered by the
     # server fake VLM) so the archive completes; this test checks the archive
@@ -1328,7 +1329,11 @@ async def test_get_session_archive_endpoint_returns_archive_details(
         f"/api/v1/sessions/{session_id}/messages",
         json=_message_request("assistant", content="archived answer"),
     )
-    commit_resp = await client.post(f"/api/v1/sessions/{session_id}/commit")
+    commit_resp = await client.post(
+        f"/api/v1/sessions/{session_id}/commit",
+        json={"enable_working_memory": wm_enabled},
+    )
+    assert commit_resp.json()["result"]["effective_enable_working_memory"] is wm_enabled
     task_id = commit_resp.json()["result"]["task_id"]
     await _wait_for_task(client, task_id)
 
@@ -1337,8 +1342,8 @@ async def test_get_session_archive_endpoint_returns_archive_details(
     body = resp.json()
     assert body["status"] == "ok"
     assert body["result"]["archive_id"] == "archive_001"
-    assert body["result"]["overview"]
-    assert body["result"]["abstract"]
+    assert bool(body["result"]["overview"]) is wm_enabled
+    assert bool(body["result"]["abstract"]) is wm_enabled
     assert [m["parts"][0]["text"] for m in body["result"]["messages"]] == [
         "archived question",
         "archived answer",

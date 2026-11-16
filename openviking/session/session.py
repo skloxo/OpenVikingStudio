@@ -6,10 +6,11 @@ Session as Context: Sessions integrated into L0/L1/L2 system.
 """
 
 import asyncio
+from collections import deque
 import inspect
 import json
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, List, Literal, Optional
 from uuid import uuid4
@@ -48,10 +49,18 @@ from openviking.session.wm_synthesizer import WorkingMemorySynthesizer
 from openviking.session.retention import (
     RETENTION_MODE_TURN_BUDGET,
     RetentionPlan,
+    _message_tokens,
     build_turns,
     fit_active_messages_to_budget,
     is_user_query,
     plan_retention,
+)
+from openviking.session.summary_budget import (
+    complete_with_window_budget,
+    estimate_summary_template_tokens,
+    fit_summary_to_budget,
+    limit_summary_output_tokens,
+    pop_rolling_summary_batch,
 )
 from openviking.session.tool_result_store import (
     ToolResultStore,
@@ -194,7 +203,7 @@ def _apply_agent_evolution_setting(
         self_enabled=policy.self_enabled,
         peer_enabled=policy.peer_enabled,
         memory_types=effective_types,
-        working_memory_enabled=policy.working_memory_enabled,
+        enable_working_memory=policy.enable_working_memory,
     )
 
 
@@ -1428,20 +1437,30 @@ class Session:
         keep_recent_count: int = 0,
         *,
         memory_policy: Optional[Dict[str, Any]] = None,
+        enable_working_memory: Optional[bool] = None,
         retention_mode: Optional[str] = None,
         keep_recent_turn_count: Optional[int] = None,
         retained_message_token_budget: Optional[int] = None,
         min_raw_tail_steps: Optional[int] = None,
+        session_window_context: Optional[int] = None,
+        summary_token_ratio: Optional[float] = None,
+        retained_token_ratio: Optional[float] = None,
+        reasoning_effort: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Sync wrapper for commit_async()."""
         return run_async(
             self.commit_async(
                 keep_recent_count=keep_recent_count,
                 memory_policy=memory_policy,
+                enable_working_memory=enable_working_memory,
                 retention_mode=retention_mode,
                 keep_recent_turn_count=keep_recent_turn_count,
                 retained_message_token_budget=retained_message_token_budget,
                 min_raw_tail_steps=min_raw_tail_steps,
+                session_window_context=session_window_context,
+                summary_token_ratio=summary_token_ratio,
+                retained_token_ratio=retained_token_ratio,
+                reasoning_effort=reasoning_effort,
             )
         )
 
@@ -1489,10 +1508,15 @@ class Session:
         keep_recent_count: int = 0,
         *,
         memory_policy: Optional[Dict[str, Any]] = None,
+        enable_working_memory: Optional[bool] = None,
         retention_mode: Optional[str] = None,
         keep_recent_turn_count: Optional[int] = None,
         retained_message_token_budget: Optional[int] = None,
         min_raw_tail_steps: Optional[int] = None,
+        session_window_context: Optional[int] = None,
+        summary_token_ratio: Optional[float] = None,
+        retained_token_ratio: Optional[float] = None,
+        reasoning_effort: Optional[str] = None,
         persist_keep_recent_count: bool = True,
         record_auto_commit_success: bool = False,
         event_tags: Optional[List[str]] = None,
@@ -1547,16 +1571,33 @@ class Session:
                 "retention_mode='turn_budget' is required when Turn retention fields are set"
             )
         turn_mode = retention_mode == RETENTION_MODE_TURN_BUDGET
+        effective_window_context = max(1, int(session_window_context or 128_000))
+        effective_summary_ratio = float(
+            0.25 if summary_token_ratio is None else summary_token_ratio
+        )
+        effective_retained_ratio = float(
+            0.05 if retained_token_ratio is None else retained_token_ratio
+        )
+        if effective_summary_ratio <= 0:
+            raise ValueError("summary_token_ratio must be greater than 0")
+        if effective_retained_ratio <= 0:
+            raise ValueError("retained_token_ratio must be greater than 0")
         effective_keep_turns = max(
             0, int(3 if keep_recent_turn_count is None else keep_recent_turn_count)
         )
         effective_token_budget = max(
             0,
-            int(12_000 if retained_message_token_budget is None else retained_message_token_budget),
+            int(
+                max(1, int(effective_window_context * effective_retained_ratio))
+                if retained_message_token_budget is None
+                else retained_message_token_budget
+            ),
         )
         effective_min_tail = max(0, int(1 if min_raw_tail_steps is None else min_raw_tail_steps))
         if turn_mode and effective_token_budget <= 0:
             raise ValueError("retained_message_token_budget must be greater than 0")
+        if enable_working_memory is not None and not isinstance(enable_working_memory, bool):
+            raise ValueError("enable_working_memory must be a boolean or null")
         in_memory_default_memory_policy = self._meta.memory_policy
         agent_evolution_enabled = self._agent_evolution_enabled
         if self._agent_evolution_enabled_provider is not None:
@@ -1573,6 +1614,10 @@ class Session:
                 effective_policy,
                 agent_evolution_enabled=agent_evolution_enabled,
             )
+            if enable_working_memory is not None:
+                effective_policy = replace(
+                    effective_policy, enable_working_memory=enable_working_memory
+                )
             effective_memory_policy = effective_policy.to_dict()
             effective_memory_types = sorted(_effective_memory_types(effective_policy))
             agent_memory_skip_reason = _agent_memory_skip_reason(
@@ -1641,6 +1686,10 @@ class Session:
                     effective_policy,
                     agent_evolution_enabled=agent_evolution_enabled,
                 )
+                if enable_working_memory is not None:
+                    effective_policy = replace(
+                        effective_policy, enable_working_memory=enable_working_memory
+                    )
                 effective_memory_policy = effective_policy.to_dict()
                 effective_memory_types = sorted(_effective_memory_types(effective_policy))
                 agent_memory_skip_reason = _agent_memory_skip_reason(
@@ -1680,6 +1729,7 @@ class Session:
                     "archived": False,
                     "reason": "no_messages",
                     "trace_id": trace_id,
+                    "effective_enable_working_memory": effective_policy.enable_working_memory,
                 }
 
             total = len(self._messages)
@@ -1732,6 +1782,7 @@ class Session:
                     "archived": False,
                     "reason": "all_within_keep_window",
                     "trace_id": trace_id,
+                    "effective_enable_working_memory": effective_policy.enable_working_memory,
                     "estimated_active_tokens": (
                         retention_plan.estimated_active_tokens if retention_plan else 0
                     ),
@@ -1755,6 +1806,9 @@ class Session:
                 usage_uris=list(dict.fromkeys(u.uri for u in usage_snapshot if u.uri)),
                 record_auto_commit_success=record_auto_commit_success,
                 event_search_tags=list(effective_event_tags),
+                session_window_context=effective_window_context,
+                summary_token_ratio=effective_summary_ratio,
+                reasoning_effort=reasoning_effort,
             )
             phase1_stage = "phase1_persist"
             try:
@@ -1901,6 +1955,7 @@ class Session:
             "archive_uri": archive_uri,
             "archived": True,
             "trace_id": trace_id,
+            "effective_enable_working_memory": effective_policy.enable_working_memory,
             "estimated_active_tokens": (
                 retention_plan.estimated_active_tokens if retention_plan else 0
             ),
@@ -2048,6 +2103,9 @@ class Session:
             user_config_error=user_config_error,
             record_auto_commit_success=msg.record_auto_commit_success,
             event_search_tags=list(msg.event_search_tags or []),
+            session_window_context=msg.session_window_context,
+            summary_token_ratio=msg.summary_token_ratio,
+            reasoning_effort=msg.reasoning_effort,
         )
         return True
 
@@ -2088,6 +2146,9 @@ class Session:
         user_config_error: Optional[str] = None,
         record_auto_commit_success: bool = False,
         event_search_tags: Optional[List[str]] = None,
+        session_window_context: int = 128_000,
+        summary_token_ratio: float = 0.25,
+        reasoning_effort: Optional[str] = None,
     ) -> None:
         """Phase 2: Extract memories and enqueue semantic work in the background."""
         from openviking.service.task_tracker import get_task_tracker
@@ -2131,7 +2192,7 @@ class Session:
                 with bind_telemetry(telemetry):
                     ov_config = get_openviking_config()
                     effective_policy = MemoryPolicy.from_dict(memory_policy)
-                    working_memory_enabled = effective_policy.working_memory_enabled
+                    working_memory_enabled = effective_policy.enable_working_memory
                     checkpoint_requests = (
                         await self._collect_checkpoint_requests_for_phase2(
                             archive_uri,
@@ -2167,13 +2228,49 @@ class Session:
                             return
                         summary_kwargs: Dict[str, Any] = {
                             "latest_archive_overview": latest_archive_overview,
+                            "session_window_context": session_window_context,
+                            "summary_token_ratio": summary_token_ratio,
+                            "reasoning_effort": reasoning_effort,
                         }
                         if checkpoint_requests:
                             summary_kwargs["checkpoint_requests"] = checkpoint_requests
-                        generated = await self._generate_archive_summary_async(
-                            extraction_messages,
-                            **summary_kwargs,
+                        material_limit = max(1, int(session_window_context * 0.7))
+                        material_tokens = _message_tokens(extraction_messages)
+                        summary_material_tokens = (
+                            estimate_text_tokens(latest_archive_overview)
+                            if latest_archive_overview
+                            else 0
                         )
+                        try:
+                            from openviking.prompts import render_prompt
+
+                            material_tokens += estimate_summary_template_tokens(
+                                render_prompt,
+                                latest_archive_overview,
+                                WM_SEVEN_SECTIONS,
+                                self._checkpoint_prompt_instructions(len(checkpoint_requests)),
+                                Session._build_wm_section_reminders,
+                            )
+                        except Exception:
+                            pass
+                        if material_tokens + summary_material_tokens <= material_limit:
+                            filtered_kwargs = self._filter_summary_kwargs(
+                                self._generate_archive_summary_async,
+                                summary_kwargs,
+                            )
+                            generated = await self._generate_archive_summary_async(
+                                extraction_messages,
+                                **filtered_kwargs,
+                            )
+                        else:
+                            filtered_kwargs = self._filter_summary_kwargs(
+                                self._generate_archive_summary_with_batching,
+                                summary_kwargs,
+                            )
+                            generated = await self._generate_archive_summary_with_batching(
+                                extraction_messages,
+                                **filtered_kwargs,
+                            )
                         summary_result = (
                             generated
                             if isinstance(generated, _ArchiveSummaryResult)
@@ -2591,6 +2688,7 @@ class Session:
         first_message_id: str,
         last_message_id: str,
         *,
+        enable_working_memory: Optional[bool] = None,
         working_memory_enabled: Optional[bool] = None,
         coverage_start_archive: Optional[str] = None,
         coverage_end_archive: Optional[str] = None,
@@ -2600,12 +2698,18 @@ class Session:
         """Write .done marker file to the archive directory."""
         if not self._viking_fs:
             return
+        effective_wm = (
+            enable_working_memory
+            if enable_working_memory is not None
+            else working_memory_enabled
+        )
         archive_id = archive_uri.rstrip("/").split("/")[-1]
         content = json.dumps(
             {
                 "starting_message_id": first_message_id,
                 "ending_message_id": last_message_id,
-                "working_memory_enabled": working_memory_enabled,
+                "enable_working_memory": effective_wm,
+                "working_memory_enabled": effective_wm,
                 "coverage_start_archive": coverage_start_archive or archive_id,
                 "coverage_end_archive": coverage_end_archive or archive_id,
                 "covered_failed_archives": list(covered_failed_archives or []),
@@ -2654,10 +2758,15 @@ class Session:
             raise ValueError("token_budget must be greater than or equal to 0")
 
         context = await self._collect_session_context_components()
+        latest_archive = context["latest_archive"]
+        include_latest_overview = bool(
+            latest_archive and latest_archive["overview_tokens"] < token_budget
+        )
+        latest_archive_tokens = latest_archive["overview_tokens"] if include_latest_overview else 0
         merged_messages = context["messages"]
         budgeted = fit_active_messages_to_budget(
             merged_messages,
-            token_budget=token_budget,
+            token_budget=token_budget - latest_archive_tokens,
         )
         merged_messages = budgeted.messages
         message_tokens = budgeted.estimated_tokens
@@ -2676,16 +2785,6 @@ class Session:
             f"[get_session_context] session_id={self.session_id}, "
             f"messages={len(merged_messages)}, tokens={message_tokens}"
         )
-
-        remaining_budget = max(0, token_budget - message_tokens)
-
-        latest_archive = context["latest_archive"]
-        include_latest_overview = bool(
-            latest_archive and latest_archive["overview_tokens"] <= remaining_budget
-        )
-        latest_archive_tokens = latest_archive["overview_tokens"] if include_latest_overview else 0
-        if include_latest_overview:
-            remaining_budget -= latest_archive_tokens
 
         # pre_archive_abstracts: 保留字段返回空数组，保持 API 向下兼容
         included_pre_archive_abstracts: List[Dict[str, str]] = []
@@ -2732,6 +2831,34 @@ class Session:
             "current_messages": current_messages,
         }
 
+    @staticmethod
+    def _filter_summary_kwargs(fn: Any, summary_kwargs: Dict[str, Any]) -> Dict[str, Any]:
+        params = inspect.signature(fn).parameters
+        if any(p.kind == inspect.Parameter.VAR_KEYWORD for p in params.values()):
+            return summary_kwargs
+        return {key: value for key, value in summary_kwargs.items() if key in params}
+
+    @staticmethod
+    def _done_disables_working_memory(done: Optional[Dict[str, Any]]) -> bool:
+        if not isinstance(done, dict) or not done:
+            return False
+        if "enable_working_memory" in done:
+            return done.get("enable_working_memory") is False
+        return done.get("working_memory_enabled") is False
+
+    async def _read_done_marker(self, archive_uri: str) -> Optional[Dict[str, Any]]:
+        if not self._viking_fs:
+            return None
+        try:
+            raw = await self._viking_fs.read_file(f"{archive_uri}/.done", ctx=self.ctx)
+        except Exception:
+            return None
+        try:
+            data = json.loads(raw or "{}")
+            return data if isinstance(data, dict) else {}
+        except Exception:
+            return {}
+
     async def get_session_archive(self, archive_id: str) -> Dict[str, Any]:
         """Get one completed archive by archive ID."""
         from openviking_cli.exceptions import NotFoundError
@@ -2742,9 +2869,15 @@ class Session:
 
             overview = await self._read_archive_overview(archive["archive_uri"])
             if not overview:
-                break
+                done = await self._read_done_marker(archive["archive_uri"])
+                if not self._done_disables_working_memory(done):
+                    break
 
-            abstract = await self._read_archive_abstract(archive["archive_uri"], overview)
+            abstract = (
+                await self._read_archive_abstract(archive["archive_uri"], overview)
+                if overview
+                else ""
+            )
             return {
                 "archive_id": archive_id,
                 "abstract": abstract,
@@ -2798,23 +2931,27 @@ class Session:
         if terminal is not None and terminal_state == "completed":
             overview = (await self._read_archive_overview(terminal["archive_uri"])).strip()
             if overview:
-                latest_archive = {
-                    "archive_id": terminal["archive_id"],
-                    "archive_uri": terminal["archive_uri"],
-                    "overview": overview,
-                    "overview_tokens": await self._read_archive_overview_tokens(
-                        terminal["archive_uri"], overview
-                    ),
-                }
+                done = await self._read_done_marker(terminal["archive_uri"])
+                if not self._done_disables_working_memory(done):
+                    latest_archive = {
+                        "archive_id": terminal["archive_id"],
+                        "archive_uri": terminal["archive_uri"],
+                        "overview": overview,
+                        "overview_tokens": await self._read_archive_overview_tokens(
+                            terminal["archive_uri"], overview
+                        ),
+                    }
             else:
-                # A required overview that is missing or unreadable still keeps
-                # the archive terminal here; the warning is emitted by the full
-                # scan used for Phase 2 bookkeeping.
-                logger.warning(
-                    "Completed archive has no readable overview: %s",
-                    terminal["archive_uri"],
-                )
-                failed_archives = 1
+                done = await self._read_done_marker(terminal["archive_uri"])
+                if not self._done_disables_working_memory(done):
+                    # A required overview that is missing or unreadable still keeps
+                    # the archive terminal here; the warning is emitted by the full
+                    # scan used for Phase 2 bookkeeping.
+                    logger.warning(
+                        "Completed archive has no readable overview: %s",
+                        terminal["archive_uri"],
+                    )
+                    failed_archives = 1
         elif terminal is not None:
             failed_archives = 1
 
@@ -2918,7 +3055,10 @@ class Session:
                 # Otherwise leave overview empty here and let context assembly
                 # lazy-load the newest terminal completed archive's overview.
                 overview = ""
-                if done.get("working_memory_enabled") is True:
+                if (
+                    done.get("enable_working_memory") is True
+                    or done.get("working_memory_enabled") is True
+                ):
                     overview = await self._read_archive_overview(archive["archive_uri"])
                     if not overview.strip():
                         # New markers distinguish an intentionally overview-less
@@ -3895,11 +4035,144 @@ class Session:
             )
         return tuple(raw)
 
+    async def _generate_archive_summary_with_batching(
+        self,
+        messages: List[Message],
+        *,
+        latest_archive_overview: str,
+        session_window_context: int = 128_000,
+        summary_token_ratio: float = 0.25,
+        reasoning_effort: Optional[str] = None,
+        checkpoint_requests: Optional[List[_CheckpointRequest]] = None,
+    ) -> str | _ArchiveSummaryResult:
+        """Roll long archives into bounded Working Memory segments."""
+        vlm = get_openviking_config().vlm
+        if not (vlm and vlm.is_available()):
+            return await self._generate_archive_summary_async(
+                messages,
+                latest_archive_overview=latest_archive_overview,
+                session_window_context=session_window_context,
+                summary_token_ratio=summary_token_ratio,
+                reasoning_effort=reasoning_effort,
+                checkpoint_requests=checkpoint_requests,
+            )
+        try:
+            from openviking.prompts import render_prompt
+        except Exception:
+            return await self._generate_archive_summary_async(
+                messages,
+                latest_archive_overview=latest_archive_overview,
+                session_window_context=session_window_context,
+                summary_token_ratio=summary_token_ratio,
+                reasoning_effort=reasoning_effort,
+                checkpoint_requests=checkpoint_requests,
+            )
+
+        material_limit = max(1, int(session_window_context * 0.7))
+        logger.info(
+            "Processing Phase 2 Working Memory rolling summary for %s estimated "
+            "message tokens with material_limit=%s",
+            _message_tokens(messages),
+            material_limit,
+        )
+        current_overview = latest_archive_overview
+        remaining = deque(messages)
+        if (
+            estimate_text_tokens(current_overview)
+            + estimate_summary_template_tokens(
+                render_prompt,
+                current_overview,
+                WM_SEVEN_SECTIONS,
+                "",
+                Session._build_wm_section_reminders,
+            )
+            >= material_limit
+        ):
+            remaining.appendleft(
+                Message(id="previous-summary", role="assistant", parts=[TextPart(current_overview)])
+            )
+            current_overview = ""
+
+        segment_index = 0
+        while remaining:
+            segment_index += 1
+            summary_tokens = estimate_text_tokens(current_overview) if current_overview else 0
+            template_tokens = estimate_summary_template_tokens(
+                render_prompt,
+                current_overview,
+                WM_SEVEN_SECTIONS,
+                "",
+                Session._build_wm_section_reminders,
+            )
+            chunk_limit = material_limit - summary_tokens - template_tokens
+            batch_messages = pop_rolling_summary_batch(
+                remaining,
+                chunk_limit=chunk_limit,
+                estimate_tokens=_message_tokens,
+                format_single=lambda m: self._format_message_for_wm(m),
+            )
+            batch_tokens = _message_tokens(batch_messages)
+            logger.info(
+                "Processing Phase 2 Working Memory rolling summary segment %s "
+                "messages=%s chunk_tokens=%s summary_tokens=%s material_limit=%s",
+                segment_index,
+                len(batch_messages),
+                batch_tokens,
+                summary_tokens,
+                material_limit,
+            )
+            batch_kwargs = self._filter_summary_kwargs(
+                self._generate_archive_summary_async,
+                {
+                    "latest_archive_overview": current_overview,
+                    "session_window_context": session_window_context,
+                    "summary_token_ratio": summary_token_ratio,
+                    "reasoning_effort": reasoning_effort,
+                },
+            )
+            generated = await self._generate_archive_summary_async(
+                batch_messages,
+                **batch_kwargs,
+            )
+            current_overview = (
+                generated.overview
+                if isinstance(generated, _ArchiveSummaryResult)
+                else str(generated or "")
+            )
+
+        if checkpoint_requests:
+            checkpoint_summaries = []
+            for request in checkpoint_requests:
+                source_ids = set(request.source_message_ids)
+                cp_result = await self._generate_archive_summary_with_batching(
+                    [message for message in messages if message.id in source_ids],
+                    latest_archive_overview=request.previous_checkpoint_abstract,
+                    session_window_context=session_window_context,
+                    summary_token_ratio=min(
+                        summary_token_ratio,
+                        request.retained_message_token_budget / session_window_context,
+                    ),
+                    reasoning_effort=reasoning_effort,
+                )
+                checkpoint_summaries.append(
+                    cp_result.overview
+                    if isinstance(cp_result, _ArchiveSummaryResult)
+                    else str(cp_result or "")
+                )
+            return _ArchiveSummaryResult(
+                overview=current_overview,
+                checkpoint_summaries=tuple(checkpoint_summaries),
+            )
+        return current_overview
+
     async def _generate_archive_summary_async(
         self,
         messages: List[Message],
         latest_archive_overview: str = "",
         checkpoint_requests: Optional[List[_CheckpointRequest]] = None,
+        session_window_context: int = 128_000,
+        summary_token_ratio: float = 0.25,
+        reasoning_effort: Optional[str] = None,
     ) -> str | _ArchiveSummaryResult:
         """Generate Working Memory document for the current archive (async).
 
@@ -3926,7 +4199,8 @@ class Session:
         formatted = self._format_messages_for_wm(messages, checkpoint_requests)
         checkpoint_instructions = self._checkpoint_prompt_instructions(len(checkpoint_requests))
 
-        vlm = get_openviking_config().vlm
+        ov_config = get_openviking_config()
+        vlm = ov_config.vlm
         if not (vlm and vlm.is_available()):
             if checkpoint_requests:
                 raise ValueError("A configured VLM is required to generate checkpoint summaries")
@@ -3934,6 +4208,15 @@ class Session:
             return (
                 f"# Session Summary\n\n**Overview**: {turn_count} turns, {len(messages)} messages"
             )
+
+        session_window_context = max(1, int(session_window_context or 128_000))
+        summary_budget_tokens = max(1, int(session_window_context * float(summary_token_ratio)))
+        retry_enabled = bool(
+            getattr(getattr(ov_config, "memory", None), "summary_budget_retry_enabled", True)
+        )
+        completion_kwargs: Dict[str, Any] = {}
+        if reasoning_effort is not None:
+            completion_kwargs["reasoning_effort"] = reasoning_effort
 
         try:
             from openviking.prompts import render_prompt
@@ -3967,12 +4250,17 @@ class Session:
                     },
                 )
                 if checkpoint_requests:
-                    response = await vlm.get_completion_async(
+                    response = await complete_with_window_budget(
+                        vlm,
+                        session_window_context=session_window_context,
                         prompt=prompt,
                         tools=[WM_CREATE_WITH_CHECKPOINTS_TOOL],
-                        tool_choice={
-                            "type": "function",
-                            "function": {"name": "create_working_memory"},
+                        completion_kwargs={
+                            "tool_choice": {
+                                "type": "function",
+                                "function": {"name": "create_working_memory"},
+                            },
+                            **completion_kwargs,
                         },
                     )
                     if not (
@@ -3990,14 +4278,37 @@ class Session:
                     working_memory = args.get("working_memory")
                     if not isinstance(working_memory, str) or not working_memory.strip():
                         raise ValueError("create_working_memory.working_memory is empty")
+                    fitted_overview = await fit_summary_to_budget(
+                        vlm,
+                        first_overview=working_memory,
+                        input_material=formatted,
+                        summary_budget_tokens=summary_budget_tokens,
+                        session_window_context=session_window_context,
+                        retry_enabled=retry_enabled,
+                        reasoning_effort=reasoning_effort,
+                    )
                     return _ArchiveSummaryResult(
-                        overview=working_memory,
+                        overview=fitted_overview,
                         checkpoint_summaries=self._parse_required_checkpoint_summaries(
                             args,
                             len(checkpoint_requests),
                         ),
                     )
-                return await vlm.get_completion_async(prompt)
+                first_overview = await complete_with_window_budget(
+                    vlm,
+                    session_window_context=session_window_context,
+                    prompt=prompt,
+                    completion_kwargs=completion_kwargs,
+                )
+                return await fit_summary_to_budget(
+                    vlm,
+                    first_overview=str(first_overview or ""),
+                    input_material=formatted,
+                    summary_budget_tokens=summary_budget_tokens,
+                    session_window_context=session_window_context,
+                    retry_enabled=retry_enabled,
+                    reasoning_effort=reasoning_effort,
+                )
             except Exception as e:
                 _wm_debug(f"creation failed: {e}")
                 logger.warning(f"WM creation failed: {e}")
@@ -4024,12 +4335,17 @@ class Session:
                     "checkpoint_instructions": checkpoint_instructions,
                 },
             )
-            resp = await vlm.get_completion_async(
+            resp = await complete_with_window_budget(
+                vlm,
+                session_window_context=session_window_context,
                 prompt=update_prompt,
                 tools=[WM_UPDATE_TOOL],
-                tool_choice={
-                    "type": "function",
-                    "function": {"name": "update_working_memory"},
+                completion_kwargs={
+                    "tool_choice": {
+                        "type": "function",
+                        "function": {"name": "update_working_memory"},
+                    },
+                    **completion_kwargs,
                 },
             )
         except Exception as e:
@@ -4039,8 +4355,21 @@ class Session:
             if checkpoint_requests:
                 raise
             logger.warning("WM update tool_call failed (%s); falling back to creation prompt", e)
-            return await self._fallback_generate_wm_creation(
-                formatted, messages, latest_archive_overview
+            fallback_overview = await self._fallback_generate_wm_creation(
+                formatted,
+                messages,
+                latest_archive_overview,
+                session_window_context=session_window_context,
+                reasoning_effort=reasoning_effort,
+            )
+            return await fit_summary_to_budget(
+                vlm,
+                first_overview=fallback_overview,
+                input_material=formatted,
+                summary_budget_tokens=summary_budget_tokens,
+                session_window_context=session_window_context,
+                retry_enabled=retry_enabled,
+                reasoning_effort=reasoning_effort,
             )
 
         has_tc = bool(getattr(resp, "has_tool_calls", False) and getattr(resp, "tool_calls", None))
@@ -4056,8 +4385,21 @@ class Session:
             if checkpoint_requests:
                 raise ValueError("Working Memory update returned no tool call for checkpoints")
             logger.warning("WM update: LLM returned no tool_call; falling back to creation prompt")
-            return await self._fallback_generate_wm_creation(
-                formatted, messages, latest_archive_overview
+            fallback_overview = await self._fallback_generate_wm_creation(
+                formatted,
+                messages,
+                latest_archive_overview,
+                session_window_context=session_window_context,
+                reasoning_effort=reasoning_effort,
+            )
+            return await fit_summary_to_budget(
+                vlm,
+                first_overview=fallback_overview,
+                input_material=formatted,
+                summary_budget_tokens=summary_budget_tokens,
+                session_window_context=session_window_context,
+                retry_enabled=retry_enabled,
+                reasoning_effort=reasoning_effort,
             )
 
         checkpoint_summaries: tuple[str, ...] = ()
@@ -4150,15 +4492,37 @@ class Session:
                     len(salvaged),
                     len(WM_SEVEN_SECTIONS),
                 )
-                return self._merge_wm_sections(latest_archive_overview, salvaged)
+                merged_salvaged = self._merge_wm_sections(latest_archive_overview, salvaged)
+                return await fit_summary_to_budget(
+                    vlm,
+                    first_overview=merged_salvaged,
+                    input_material=formatted,
+                    summary_budget_tokens=summary_budget_tokens,
+                    session_window_context=session_window_context,
+                    retry_enabled=retry_enabled,
+                    reasoning_effort=reasoning_effort,
+                )
             _wm_debug("regex recovery salvaged 0 sections; falling back to creation prompt")
             logger.warning(
                 "WM update: tool_call arguments parse failed (%s); "
                 "regex recovery found nothing; falling back to creation prompt",
                 e,
             )
-            return await self._fallback_generate_wm_creation(
-                formatted, messages, latest_archive_overview
+            fallback_overview = await self._fallback_generate_wm_creation(
+                formatted,
+                messages,
+                latest_archive_overview,
+                session_window_context=session_window_context,
+                reasoning_effort=reasoning_effort,
+            )
+            return await fit_summary_to_budget(
+                vlm,
+                first_overview=fallback_overview,
+                input_material=formatted,
+                summary_budget_tokens=summary_budget_tokens,
+                session_window_context=session_window_context,
+                retry_enabled=retry_enabled,
+                reasoning_effort=reasoning_effort,
             )
 
         _wm_debug(
@@ -4166,18 +4530,30 @@ class Session:
             f"ops_summary={[(k, v.get('op') if isinstance(v, dict) else type(v).__name__) for k, v in ops.items()][:7]}"
         )
         overview = self._merge_wm_sections(latest_archive_overview, ops)
+        fitted_overview = await fit_summary_to_budget(
+            vlm,
+            first_overview=overview,
+            input_material=formatted,
+            summary_budget_tokens=summary_budget_tokens,
+            session_window_context=session_window_context,
+            retry_enabled=retry_enabled,
+            reasoning_effort=reasoning_effort,
+        )
         if checkpoint_requests:
             return _ArchiveSummaryResult(
-                overview=overview,
+                overview=fitted_overview,
                 checkpoint_summaries=checkpoint_summaries,
             )
-        return overview
+        return fitted_overview
 
     async def _fallback_generate_wm_creation(
         self,
         formatted_messages: str,
         messages: List[Message],
         prior_overview: str = "",
+        *,
+        session_window_context: int = 128_000,
+        reasoning_effort: Optional[str] = None,
     ) -> str:
         """Re-run WM creation prompt when the update tool_call path fails.
 
@@ -4199,7 +4575,19 @@ class Session:
                     "checkpoint_instructions": "",
                 },
             )
-            return await get_openviking_config().vlm.get_completion_async(prompt)
+            vlm = get_openviking_config().vlm
+            output_budget = int(session_window_context or 128_000) - estimate_text_tokens(prompt) - 4
+            if output_budget <= 0:
+                raise ValueError("Working Memory prompt exceeds session_window_context")
+            kwargs: Dict[str, Any] = {
+                "max_tokens": limit_summary_output_tokens(vlm, output_budget),
+            }
+            if reasoning_effort is not None:
+                kwargs["reasoning_effort"] = reasoning_effort
+            try:
+                return await vlm.get_completion_async(prompt, **kwargs)
+            except TypeError:
+                return await vlm.get_completion_async(prompt)
         except Exception as e:
             logger.warning(f"WM creation fallback failed: {e}")
             turn_count = len([m for m in messages if is_user_query(m)])
