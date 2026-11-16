@@ -11,9 +11,11 @@ from typing import TYPE_CHECKING, Any, Optional
 from openviking.server.identity import RequestContext
 from openviking.session.memory.experience_lineage import (
     _EXPERIENCE_SIDECAR_FILENAMES,
+    EVOLUTION_LESSONS_ROOT,
     TRAJECTORY_OUTCOMES,
     canonical_experience_uri,
     experience_source_tag,
+    is_evolution_lesson_uri,
     trajectory_outcome_tag,
 )
 from openviking.storage.expr import And, Eq, PathScope, TimeRange
@@ -303,17 +305,8 @@ class AgentEvolutionService:
         active_24h_task = self._vikingdb.count(filter=active_24h_filter, ctx=ctx)
 
         async def count_experiences() -> int:
-            try:
-                entries = await viking_fs.ls(experience_root, ctx=ctx)
-                return sum(
-                    1
-                    for entry in (entries if isinstance(entries, list) else [])
-                    if isinstance(entry, dict)
-                    and not entry.get("isDir", False)
-                    and entry.get("name", "") not in _EXPERIENCE_SIDECAR_FILENAMES
-                )
-            except Exception:
-                return 0
+            entries = await self._list_merged_experience_entries(viking_fs=viking_fs, ctx=ctx)
+            return len(entries)
 
         total_trajectories, active_24h, total_experiences, *outcome_counts = await asyncio.gather(
             total_trajectories_task,
@@ -340,6 +333,70 @@ class AgentEvolutionService:
             "recent_24h_active_count": active_24h,
         }
 
+    async def _list_merged_experience_entries(
+        self,
+        *,
+        viking_fs: VikingFS,
+        ctx: RequestContext,
+    ) -> list[dict[str, Any]]:
+        """Merge user experiences and Master Memory evolution lessons, deduped by filename."""
+        experience_root = f"viking://user/{ctx.user.user_id}/memories/experiences"
+
+        async def _safe_ls(root: str) -> list[dict[str, Any]]:
+            try:
+                raw = await viking_fs.ls(root, ctx=ctx)
+            except Exception:
+                return []
+            if not isinstance(raw, list):
+                return []
+            return [
+                entry
+                for entry in raw
+                if isinstance(entry, dict)
+                and not entry.get("isDir", False)
+                and entry.get("name", "") not in _EXPERIENCE_SIDECAR_FILENAMES
+            ]
+
+        exp_entries, lesson_entries = await asyncio.gather(
+            _safe_ls(experience_root),
+            _safe_ls(EVOLUTION_LESSONS_ROOT),
+        )
+        seen_names: set[str] = set()
+        merged: list[dict[str, Any]] = []
+        for entry in exp_entries:
+            name = str(entry.get("name") or "").strip()
+            uri = str(entry.get("uri") or f"{experience_root}/{name}").strip()
+            if name:
+                seen_names.add(name)
+            merged.append(
+                {
+                    "uri": uri,
+                    "name": name or uri.rsplit("/", 1)[-1],
+                    "updated_at": entry.get("updated_at") or entry.get("modTime") or entry.get("mtime") or None,
+                    "size": entry.get("size", 0),
+                    "source": "evolution_lesson" if name in {str(e.get("name") or "").strip() for e in lesson_entries} else "experience",
+                }
+            )
+        for entry in lesson_entries:
+            name = str(entry.get("name") or "").strip()
+            if not name or name in seen_names:
+                continue
+            seen_names.add(name)
+            uri = str(entry.get("uri") or f"{EVOLUTION_LESSONS_ROOT}/{name}").strip()
+            if not is_evolution_lesson_uri(uri):
+                continue
+            merged.append(
+                {
+                    "uri": uri,
+                    "name": name,
+                    "updated_at": entry.get("updated_at") or entry.get("modTime") or entry.get("mtime") or None,
+                    "size": entry.get("size", 0),
+                    "source": "evolution_lesson",
+                }
+            )
+        merged.sort(key=lambda item: str(item.get("updated_at") or ""), reverse=True)
+        return merged
+
     async def list_user_experiences(
         self,
         *,
@@ -347,30 +404,17 @@ class AgentEvolutionService:
         limit: int = DEFAULT_TRAJECTORY_PAGE_LIMIT,
         offset: int = 0,
     ) -> dict[str, Any]:
-        """List all Experience files owned by the current user with associated trajectory stats."""
+        """List all Experience & Evolution Lesson files for the user with trajectory stats."""
         viking_fs = self._ensure_initialized()
-        experience_root = f"viking://user/{ctx.user.user_id}/memories/experiences"
-
-        try:
-            entries = await viking_fs.ls(experience_root, ctx=ctx)
-        except Exception:
-            entries = []
-
-        valid_entries = [
-            entry
-            for entry in (entries if isinstance(entries, list) else [])
-            if isinstance(entry, dict)
-            and not entry.get("isDir", False)
-            and entry.get("name", "") not in _EXPERIENCE_SIDECAR_FILENAMES
-        ]
+        valid_entries = await self._list_merged_experience_entries(viking_fs=viking_fs, ctx=ctx)
 
         total = len(valid_entries)
         paged_entries = valid_entries[offset : offset + limit]
 
         items = []
         for entry in paged_entries:
-            uri = entry.get("uri") or f"{experience_root}/{entry.get('name')}"
-            name = entry.get("name") or uri.split("/")[-1]
+            uri = entry["uri"]
+            name = entry["name"]
 
             traj_count = 0
             if self._vikingdb is not None:
@@ -392,8 +436,9 @@ class AgentEvolutionService:
                     "uri": uri,
                     "name": name,
                     "trajectory_count": traj_count,
-                    "updated_at": entry.get("updated_at") or entry.get("mtime") or None,
+                    "updated_at": entry.get("updated_at"),
                     "size": entry.get("size", 0),
+                    "source": entry.get("source", "experience"),
                 }
             )
 

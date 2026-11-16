@@ -30,6 +30,7 @@ describe('i18n configuration and modular dictionary parity', () => {
       'sessions',
       'oauth',
       'playground',
+      'agentExperiencePage',
       'studio',
     ]
 

@@ -8,6 +8,7 @@ import sessions from './sessions'
 import home from './home'
 import playground from './playground'
 import studio from './studio'
+import agentExperience from './agent-experience'
 
 const en = {
   ...common,
@@ -19,6 +20,7 @@ const en = {
   ...sessions,
   ...home,
   ...playground,
+  ...agentExperience,
   studio,
 } as const
 

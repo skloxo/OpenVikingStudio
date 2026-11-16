@@ -30,6 +30,22 @@ _MCP_OPENVIKING_READ_RE = re.compile(
 TRAJECTORY_OUTCOMES = ("success", "failure", "partial", "unknown", "unfinished")
 
 
+EVOLUTION_LESSONS_ROOT = "viking://resources/master_memory/evolution_lessons"
+
+
+def is_evolution_lesson_uri(uri: str) -> bool:
+    """Return whether ``uri`` identifies a Master Memory Evolution Lesson."""
+    if not uri or "?" in uri or "#" in uri:
+        return False
+    parts = uri_parts(uri)
+    if len(parts) < 4 or parts[:3] != ["resources", "master_memory", "evolution_lessons"]:
+        return False
+    relative_parts = parts[3:]
+    if any(not segment or segment in {".", ".."} for segment in relative_parts):
+        return False
+    return relative_parts[-1] not in _EXPERIENCE_SIDECAR_FILENAMES
+
+
 def is_experience_uri_for_user(uri: str, user_id: str) -> bool:
     """Return whether ``uri`` identifies an Experience owned by ``user_id``."""
     if not uri or "?" in uri or "#" in uri:
@@ -44,13 +60,15 @@ def is_experience_uri_for_user(uri: str, user_id: str) -> bool:
 
 
 def canonical_experience_uri(uri: str, ctx: RequestContext) -> str | None:
-    """Enforce canonical Experience URI shape and current-user ownership."""
+    """Enforce canonical Experience / Evolution Lesson URI shape and ownership."""
     canonical_uri = str(uri or "").strip()
     if not canonical_uri.startswith("viking://"):
         return None
-    if not is_experience_uri_for_user(canonical_uri, ctx.user.user_id):
-        return None
-    return canonical_uri
+    if is_experience_uri_for_user(canonical_uri, ctx.user.user_id):
+        return canonical_uri
+    if is_evolution_lesson_uri(canonical_uri):
+        return canonical_uri
+    return None
 
 
 def experience_uri_to_tag_key(experience_uri: str) -> str:

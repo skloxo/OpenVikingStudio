@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AccountsRouteRouteImport } from './routes/accounts/route'
+import { Route as AgentExperienceRouteRouteImport } from './routes/agent-experience/route'
 import { Route as AgentsRouteRouteImport } from './routes/agents/route'
 import { Route as FleetRouteImport } from './routes/fleet'
 import { Route as GraphRouteRouteImport } from './routes/graph/route'
@@ -29,6 +30,8 @@ import { Route as TaskTrackerRouteImport } from './routes/task-tracker'
 import { Route as TasksRouteRouteImport } from './routes/tasks/route'
 import { Route as UsageAuditRouteImport } from './routes/usage-audit'
 import { Route as UsersRouteRouteImport } from './routes/users/route'
+import { Route as AgentExperienceIndexRouteImport } from './routes/agent-experience/index'
+import { Route as AgentExperienceExperienceUriRouteImport } from './routes/agent-experience/$experienceUri'
 import { Route as OauthConsentRouteImport } from './routes/oauth/consent'
 import { Route as OauthVerifyRouteImport } from './routes/oauth/verify'
 import { Route as SessionsIndexRouteImport } from './routes/sessions/index'
@@ -42,6 +45,11 @@ const IndexRoute = IndexRouteImport.update({
 const AccountsRouteRoute = AccountsRouteRouteImport.update({
   id: '/accounts',
   path: '/accounts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AgentExperienceRouteRoute = AgentExperienceRouteRouteImport.update({
+  id: '/agent-experience',
+  path: '/agent-experience',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AgentsRouteRoute = AgentsRouteRouteImport.update({
@@ -134,6 +142,17 @@ const UsersRouteRoute = UsersRouteRouteImport.update({
   path: '/users',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AgentExperienceIndexRoute = AgentExperienceIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AgentExperienceRouteRoute,
+} as any)
+const AgentExperienceExperienceUriRoute =
+  AgentExperienceExperienceUriRouteImport.update({
+    id: '/$experienceUri',
+    path: '/$experienceUri',
+    getParentRoute: () => AgentExperienceRouteRoute,
+  } as any)
 const OauthConsentRoute = OauthConsentRouteImport.update({
   id: '/oauth/consent',
   path: '/oauth/consent',
@@ -158,6 +177,7 @@ const SkillsHarnessLogsRoute = SkillsHarnessLogsRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/accounts': typeof AccountsRouteRoute
+  '/agent-experience': typeof AgentExperienceRouteRouteWithChildren
   '/agents': typeof AgentsRouteRoute
   '/graph': typeof GraphRouteRoute
   '/home': typeof HomeRouteRoute
@@ -176,9 +196,11 @@ export interface FileRoutesByFullPath {
   '/harness-logs': typeof HarnessLogsRoute
   '/task-tracker': typeof TaskTrackerRoute
   '/usage-audit': typeof UsageAuditRoute
+  '/agent-experience/$experienceUri': typeof AgentExperienceExperienceUriRoute
   '/oauth/consent': typeof OauthConsentRoute
   '/oauth/verify': typeof OauthVerifyRoute
   '/skills/harness-logs': typeof SkillsHarnessLogsRoute
+  '/agent-experience/': typeof AgentExperienceIndexRoute
   '/sessions/': typeof SessionsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -201,15 +223,18 @@ export interface FileRoutesByTo {
   '/harness-logs': typeof HarnessLogsRoute
   '/task-tracker': typeof TaskTrackerRoute
   '/usage-audit': typeof UsageAuditRoute
+  '/agent-experience/$experienceUri': typeof AgentExperienceExperienceUriRoute
   '/oauth/consent': typeof OauthConsentRoute
   '/oauth/verify': typeof OauthVerifyRoute
   '/skills/harness-logs': typeof SkillsHarnessLogsRoute
+  '/agent-experience': typeof AgentExperienceIndexRoute
   '/sessions': typeof SessionsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/accounts': typeof AccountsRouteRoute
+  '/agent-experience': typeof AgentExperienceRouteRouteWithChildren
   '/agents': typeof AgentsRouteRoute
   '/graph': typeof GraphRouteRoute
   '/home': typeof HomeRouteRoute
@@ -228,9 +253,11 @@ export interface FileRoutesById {
   '/harness-logs': typeof HarnessLogsRoute
   '/task-tracker': typeof TaskTrackerRoute
   '/usage-audit': typeof UsageAuditRoute
+  '/agent-experience/$experienceUri': typeof AgentExperienceExperienceUriRoute
   '/oauth/consent': typeof OauthConsentRoute
   '/oauth/verify': typeof OauthVerifyRoute
   '/skills/harness-logs': typeof SkillsHarnessLogsRoute
+  '/agent-experience/': typeof AgentExperienceIndexRoute
   '/sessions/': typeof SessionsIndexRoute
 }
 export interface FileRouteTypes {
@@ -238,6 +265,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/accounts'
+    | '/agent-experience'
     | '/agents'
     | '/graph'
     | '/home'
@@ -256,9 +284,11 @@ export interface FileRouteTypes {
     | '/harness-logs'
     | '/task-tracker'
     | '/usage-audit'
+    | '/agent-experience/$experienceUri'
     | '/oauth/consent'
     | '/oauth/verify'
     | '/skills/harness-logs'
+    | '/agent-experience/'
     | '/sessions/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -281,14 +311,17 @@ export interface FileRouteTypes {
     | '/harness-logs'
     | '/task-tracker'
     | '/usage-audit'
+    | '/agent-experience/$experienceUri'
     | '/oauth/consent'
     | '/oauth/verify'
     | '/skills/harness-logs'
+    | '/agent-experience'
     | '/sessions'
   id:
     | '__root__'
     | '/'
     | '/accounts'
+    | '/agent-experience'
     | '/agents'
     | '/graph'
     | '/home'
@@ -307,15 +340,18 @@ export interface FileRouteTypes {
     | '/harness-logs'
     | '/task-tracker'
     | '/usage-audit'
+    | '/agent-experience/$experienceUri'
     | '/oauth/consent'
     | '/oauth/verify'
     | '/skills/harness-logs'
+    | '/agent-experience/'
     | '/sessions/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountsRouteRoute: typeof AccountsRouteRoute
+  AgentExperienceRouteRoute: typeof AgentExperienceRouteRouteWithChildren
   AgentsRouteRoute: typeof AgentsRouteRoute
   GraphRouteRoute: typeof GraphRouteRoute
   HomeRouteRoute: typeof HomeRouteRoute
@@ -352,6 +388,13 @@ declare module '@tanstack/react-router' {
       path: '/accounts'
       fullPath: '/accounts'
       preLoaderRoute: typeof AccountsRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/agent-experience': {
+      id: '/agent-experience'
+      path: '/agent-experience'
+      fullPath: '/agent-experience'
+      preLoaderRoute: typeof AgentExperienceRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/agents': {
@@ -480,6 +523,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UsersRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/agent-experience/': {
+      id: '/agent-experience/'
+      path: '/'
+      fullPath: '/agent-experience/'
+      preLoaderRoute: typeof AgentExperienceIndexRouteImport
+      parentRoute: typeof AgentExperienceRouteRoute
+    }
+    '/agent-experience/$experienceUri': {
+      id: '/agent-experience/$experienceUri'
+      path: '/$experienceUri'
+      fullPath: '/agent-experience/$experienceUri'
+      preLoaderRoute: typeof AgentExperienceExperienceUriRouteImport
+      parentRoute: typeof AgentExperienceRouteRoute
+    }
     '/oauth/consent': {
       id: '/oauth/consent'
       path: '/oauth/consent'
@@ -511,6 +568,19 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AgentExperienceRouteRouteChildren {
+  AgentExperienceExperienceUriRoute: typeof AgentExperienceExperienceUriRoute
+  AgentExperienceIndexRoute: typeof AgentExperienceIndexRoute
+}
+
+const AgentExperienceRouteRouteChildren: AgentExperienceRouteRouteChildren = {
+  AgentExperienceExperienceUriRoute: AgentExperienceExperienceUriRoute,
+  AgentExperienceIndexRoute: AgentExperienceIndexRoute,
+}
+
+const AgentExperienceRouteRouteWithChildren =
+  AgentExperienceRouteRoute._addFileChildren(AgentExperienceRouteRouteChildren)
+
 interface SessionsRouteRouteChildren {
   SessionsIndexRoute: typeof SessionsIndexRoute
 }
@@ -538,6 +608,7 @@ const SkillsRouteRouteWithChildren = SkillsRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountsRouteRoute: AccountsRouteRoute,
+  AgentExperienceRouteRoute: AgentExperienceRouteRouteWithChildren,
   AgentsRouteRoute: AgentsRouteRoute,
   GraphRouteRoute: GraphRouteRoute,
   HomeRouteRoute: HomeRouteRoute,

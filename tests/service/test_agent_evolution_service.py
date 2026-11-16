@@ -271,3 +271,66 @@ async def test_get_experience_outcome_distribution_rejects_other_user_uri():
             experience_uri="viking://user/bob/memories/experiences/exchange.md",
             ctx=_ctx(),
         )
+
+
+@pytest.mark.asyncio
+async def test_list_trajectories_accepts_master_memory_evolution_lesson_uri():
+    lesson_uri = "viking://resources/master_memory/evolution_lessons/20261116_pitfall.md"
+    viking_fs = Mock()
+    viking_fs.stat = AsyncMock(return_value={"isDir": False})
+    vikingdb = Mock()
+    vikingdb.filter = AsyncMock(return_value=[])
+    vikingdb.count = AsyncMock(return_value=0)
+    service = AgentEvolutionService(viking_fs=viking_fs, vikingdb=vikingdb)
+
+    result = await service.list_trajectories_by_experience(
+        experience_uri=lesson_uri,
+        ctx=_ctx(),
+    )
+
+    assert result["experience_uri"] == lesson_uri
+    assert vikingdb.filter.await_args.kwargs["filter"] == And(
+        [
+            PathScope("uri", "viking://user/alice/memories/trajectories", depth=1),
+            Eq("context_type", "memory"),
+            Eq("level", 2),
+            Eq("search_tags", experience_source_tag(lesson_uri)),
+        ]
+    )
+
+
+@pytest.mark.asyncio
+async def test_list_user_experiences_merges_and_dedupes_evolution_lessons():
+    viking_fs = Mock()
+
+    async def fake_ls(root, ctx=None):
+        if root == "viking://user/alice/memories/experiences":
+            return [
+                {"name": "shared.md", "uri": f"{root}/shared.md", "mtime": "2026-11-16T10:00:00Z", "size": 100},
+                {"name": "user_only.md", "uri": f"{root}/user_only.md", "mtime": "2026-11-16T09:00:00Z", "size": 80},
+                {"name": ".abstract.md", "uri": f"{root}/.abstract.md", "size": 10},
+            ]
+        return [
+            {"name": "shared.md", "uri": f"{root}/shared.md", "mtime": "2026-11-16T08:00:00Z", "size": 100},
+            {"name": "lesson_only.md", "uri": f"{root}/lesson_only.md", "mtime": "2026-11-16T11:00:00Z", "size": 220},
+        ]
+
+    viking_fs.ls = AsyncMock(side_effect=fake_ls)
+    vikingdb = Mock()
+    vikingdb.count = AsyncMock(side_effect=[3, 2, 1])
+    service = AgentEvolutionService(viking_fs=viking_fs, vikingdb=vikingdb)
+
+    result = await service.list_user_experiences(ctx=_ctx(), limit=10, offset=0)
+
+    assert result["total"] == 3
+    assert [item["name"] for item in result["items"]] == [
+        "lesson_only.md",
+        "shared.md",
+        "user_only.md",
+    ]
+    assert [item["source"] for item in result["items"]] == [
+        "evolution_lesson",
+        "evolution_lesson",
+        "experience",
+    ]
+    assert [item["trajectory_count"] for item in result["items"]] == [3, 2, 1]

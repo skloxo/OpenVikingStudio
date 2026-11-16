@@ -8,6 +8,7 @@ import sessions from './sessions'
 import home from './home'
 import playground from './playground'
 import studio from './studio'
+import agentExperience from './agent-experience'
 
 const zhCN = {
   ...common,
@@ -19,6 +20,7 @@ const zhCN = {
   ...sessions,
   ...home,
   ...playground,
+  ...agentExperience,
   studio,
 } as const
 

@@ -121,6 +121,21 @@ def register_skills_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Callabl
             except Exception as write_err:
                 mirror_status = f"error: {str(write_err)}"
 
+            user_exp_uri = f"viking://~/memories/experiences/{mirror_filename}"
+            exp_mirror_status = "skipped"
+            try:
+                exp_res = active_http.post("/api/v1/content/write", {
+                    "uri": user_exp_uri,
+                    "content": mirror_content,
+                    "mode": "replace"
+                })
+                if isinstance(exp_res, dict) and (exp_res.get("status") == "ok" or "result" in exp_res):
+                    exp_mirror_status = "synced"
+                else:
+                    exp_mirror_status = f"response: {exp_res}"
+            except Exception as exp_err:
+                exp_mirror_status = f"error: {str(exp_err)}"
+
             HARNESS_METRICS["lessons_count"] = HARNESS_METRICS.get("lessons_count", 0) + 1
             HARNESS_METRICS["most_evolved_skill"] = skill_name
             _record_harness_call("store", actor_peer="antigravity")
@@ -133,6 +148,8 @@ def register_skills_tools(mcp: FastMCP, mcp_tool: Callable) -> Dict[str, Callabl
                 "local_written_file": local_written_file,
                 "master_memory_uri": master_uri,
                 "mirror_status": mirror_status,
+                "user_experience_uri": user_exp_uri,
+                "experience_mirror_status": exp_mirror_status,
             })
         except Exception as e:
             return _format_result({"status": "error", "error": str(e)})

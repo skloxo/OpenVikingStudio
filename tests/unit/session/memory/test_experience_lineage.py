@@ -73,11 +73,71 @@ def test_collect_read_experience_uris_supports_generic_openviking_reads():
                     tool_input={"uri": uri},
                     tool_status="error",
                 ),
+                ToolPart(
+                    tool_id="read-4",
+                    tool_name="read",
+                    tool_input={"uris": "viking://~/memories/experiences/unfinished.md"},
+                    tool_status="running",
+                ),
+                ToolPart(
+                    tool_id="read-5",
+                    tool_name="read",
+                    tool_input={
+                        "uris": [
+                            "file:///tmp/experience.md",
+                            "viking://~/memories/experiences/.abstract.md",
+                            "viking://~/memories/experiences/../other.md",
+                            "viking://~/memories/experiences/example.md?offset=1",
+                            "viking://~/memories/experiences/example.md#section",
+                        ]
+                    },
+                    tool_status="completed",
+                ),
             ],
         ),
     ]
 
     assert collect_read_experience_uris(messages, ctx=_ctx()) == [uri, opencode_uri]
+
+
+@pytest.mark.parametrize(
+    "tool_name",
+    [
+        "mcp__plugin_openviking-memory_openviking__read",
+        "mcp__PLUGIN_openviking-memory_OpenViking__READ",
+    ],
+)
+def test_collect_read_experience_uris_supports_plugin_namespaced_and_lesson_reads(tool_name):
+    user_exp_uri = "viking://user/alice/memories/experiences/plugin-read.md"
+    lesson_uri = "viking://resources/master_memory/evolution_lessons/20261116_pitfall.md"
+    messages = [
+        Message(
+            id="plugin-read",
+            role="user",
+            parts=[
+                ToolPart(
+                    tool_id="plugin-read-1",
+                    tool_name=tool_name,
+                    tool_input={"uri": user_exp_uri},
+                    tool_status="completed",
+                ),
+                ToolPart(
+                    tool_id="plugin-read-2",
+                    tool_name="openviking_read",
+                    tool_input={"uri": lesson_uri},
+                    tool_status="completed",
+                ),
+                ToolPart(
+                    tool_id="plugin-read-sidecar",
+                    tool_name="openviking_read",
+                    tool_input={"uri": "viking://resources/master_memory/evolution_lessons/.abstract.md"},
+                    tool_status="completed",
+                ),
+            ],
+        )
+    ]
+
+    assert collect_read_experience_uris(messages, ctx=_ctx()) == [user_exp_uri, lesson_uri]
 
 
 @pytest.mark.parametrize("tool_name", ["multi_read", "openviking_multi_read"])

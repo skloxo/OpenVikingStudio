@@ -102,6 +102,13 @@ export const NAV_ITEMS: readonly NavItem[] = [
     to: '/plugins',
   },
   {
+    icon: DnaIcon,
+    id: 'agentExperience',
+    section: 'operations',
+    titleKey: 'navigation.agentExperience.title',
+    to: '/agent-experience',
+  },
+  {
     icon: ScrollTextIcon,
     id: 'requestLogs',
     section: 'operations',

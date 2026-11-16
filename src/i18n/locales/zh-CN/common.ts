@@ -118,6 +118,9 @@ export const common = {
       playground: {
         title: '交互沙盘',
       },
+      agentExperience: {
+        title: 'Agent 经验',
+      },
     },
     sidebar: {
       groups: {
