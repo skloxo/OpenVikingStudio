@@ -384,3 +384,41 @@ async def enforce_dream_watchdog(
     return {"status": "ok", "result": res}
 
 
+class DreamRollbackRequest(BaseModel):
+    snapshot_id: str = Field(..., min_length=1, description="Recoverable Layer 5 dream snapshot ID")
+
+
+@router.get("/dream/snapshots")
+async def list_dream_snapshots(
+    limit: int = Query(50, ge=1, le=200),
+    ctx: RequestContext = Depends(get_request_context),
+) -> Dict[str, Any]:
+    """List pre-governance physical snapshots captured before dream consolidation."""
+    from openviking.service.offline_dreamer import OfflineDreamer
+    items = OfflineDreamer.get_instance().list_snapshots(limit=limit)
+    return {"status": "ok", "result": {"total": len(items), "items": items}}
+
+
+@router.post("/dream/rollback")
+async def rollback_dream_snapshot(
+    req: DreamRollbackRequest,
+    ctx: RequestContext = Depends(get_request_context),
+) -> Dict[str, Any]:
+    """Atomically roll back a dream consolidation cycle via Layer 5 physical snapshot."""
+    from openviking.service.offline_dreamer import OfflineDreamer
+    try:
+        result = OfflineDreamer.get_instance().rollback_dream(req.snapshot_id)
+        return {"status": "ok", "result": result}
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.get("/governance/layers")
+async def get_five_layer_governance_layers(
+    ctx: RequestContext = Depends(get_request_context),
+) -> Dict[str, Any]:
+    """Retrieve unified operational metrics across all 5 Anti-Entropy Memory layers."""
+    from openviking.service.memory_governance_snapshot import build_five_layer_governance_overview
+    return {"status": "ok", "result": build_five_layer_governance_overview()}
+
+

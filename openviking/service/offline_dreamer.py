@@ -28,6 +28,7 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 from openviking.service.memory_conflict_resolver import MemoryConflictResolver
+from openviking.service.memory_governance_snapshot import MemoryGovernanceSnapshotStore
 from openviking.service.memory_lifecycle_fsm import MemoryLifecycleStore, MemoryStatus
 from openviking.service.dream_recipe_distiller import DreamRecipeDistiller, DistilledRecipe
 from openviking.service.vector_sync_tracker import VectorSyncTracker
@@ -76,6 +77,7 @@ class OfflineDreamer:
         crystals_dir: Optional[Path] = None,
         ledger_path: Optional[Path] = None,
         source_dir: Optional[Path] = None,
+        snapshot_dir: Optional[Path] = None,
     ) -> None:
         self.crystals_dir = crystals_dir or (
             Path.home() / ".openviking" / "data" / "viking" / "default" / "resources" / "master_memory" / "crystals"
@@ -86,6 +88,12 @@ class OfflineDreamer:
         self.source_dir = source_dir or (
             Path.home() / ".openviking" / "data" / "viking" / "default" / "resources" / "master_memory"
         )
+        resolved_snap_dir = snapshot_dir or (
+            (crystals_dir.parent / "dream_snapshots")
+            if crystals_dir is not None
+            else (Path.home() / ".openviking" / "data" / "snapshots" / "dream")
+        )
+        self.snapshot_store = MemoryGovernanceSnapshotStore(snapshot_dir=resolved_snap_dir)
         self.distiller = DreamRecipeDistiller()
         self._total_dreams: int = 0
         self._fragments_consolidated: int = 0
@@ -100,11 +108,17 @@ class OfflineDreamer:
         crystals_dir: Optional[Path] = None,
         ledger_path: Optional[Path] = None,
         source_dir: Optional[Path] = None,
+        snapshot_dir: Optional[Path] = None,
     ) -> "OfflineDreamer":
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
-                    cls._instance = cls(crystals_dir=crystals_dir, ledger_path=ledger_path, source_dir=source_dir)
+                    cls._instance = cls(
+                        crystals_dir=crystals_dir,
+                        ledger_path=ledger_path,
+                        source_dir=source_dir,
+                        snapshot_dir=snapshot_dir,
+                    )
         return cls._instance
 
     @classmethod
@@ -253,12 +267,28 @@ class OfflineDreamer:
         all_superseded_uris: List[str] = []
         net_reduced = 0
 
+        # Pre-distill recipes so Layer 5 captures a physical backup of all affected fragments & files before mutating.
+        prepared_plans: List[tuple[str, List[Dict[str, Any]], List[str], DistilledRecipe, str, str]] = []
         for c_theme, frags in qualifying_clusters.items():
             frag_uris = [f.get("uri", "") for f in frags if f.get("uri")]
             recipe: DistilledRecipe = self.distiller.distill(fragments=frags, theme=c_theme)
-
             combined_hash = hashlib.sha256("".join(recipe.evidence_hashes).encode("utf-8")).hexdigest()[:8]
             card_uri = f"viking://resources/master_memory/crystals/master_{c_theme}_{combined_hash}.md"
+            prepared_plans.append((c_theme, frags, frag_uris, recipe, card_uri, card_uri.split("/")[-1]))
+
+        if not dry_run:
+            all_target_frags = [u for _, _, f_uris, _, _, _ in prepared_plans for u in f_uris]
+            all_target_files = [fname if fname.endswith(".md") else f"{fname}.md" for _, _, _, _, _, fname in prepared_plans]
+            self.snapshot_store.capture_dream_snapshot(
+                snapshot_id=snapshot_commit,
+                dream_id=dream_id,
+                theme=theme or "multi_cluster",
+                crystals_dir=self.crystals_dir,
+                fragment_uris=all_target_frags,
+                target_filenames=all_target_files,
+            )
+
+        for c_theme, frags, frag_uris, recipe, card_uri, _ in prepared_plans:
 
             master_card = MasterKnowledgeCard(
                 uri=card_uri,
@@ -379,4 +409,15 @@ class OfflineDreamer:
                 1,
             ) if self._fragments_consolidated > 0 else 100.0,
         }
+
+    def list_snapshots(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """List physical pre-dream governance snapshots."""
+        return self.snapshot_store.list_snapshots(limit=limit)
+
+    def rollback_dream(self, snapshot_id: str) -> Dict[str, Any]:
+        """Roll back an offline dreaming cycle using its pre-governance physical snapshot."""
+        return self.snapshot_store.rollback_snapshot(
+            snapshot_id,
+            ledger_path=self.ledger_path,
+        )
 
