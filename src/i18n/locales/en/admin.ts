@@ -20,6 +20,8 @@ export const adminConsole = {
       delete: 'Delete',
       add: 'Add',
       remove: 'Remove',
+      oauthVerify: 'OAuth Verify',
+      doctor: '1933 Health (Doctor)',
     },
     nav: {
       overview: 'Overview',

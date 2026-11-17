@@ -12,7 +12,6 @@ import {
   HomeIcon,
   PlugZapIcon,
   ScrollTextIcon,
-  Share2Icon,
   SparklesIcon,
   WandSparklesIcon,
 } from 'lucide-react'
@@ -82,13 +81,6 @@ export const NAV_ITEMS: readonly NavItem[] = [
     section: 'workspace',
     titleKey: 'navigation.skills.title',
     to: '/skills',
-  },
-  {
-    icon: Share2Icon,
-    id: 'graph',
-    section: 'workspace',
-    titleKey: 'navigation.graph.title',
-    to: '/graph',
   },
   {
     icon: BlocksIcon,

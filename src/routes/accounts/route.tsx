@@ -58,6 +58,7 @@ import {
 import type { AdminAccount, AdminConnection } from '#/lib/admin'
 import { copyTextToClipboard } from '#/lib/clipboard'
 import { resolveStudioManagementCapabilities } from '#/lib/studio-permissions'
+import { AdminConsoleShell } from '#/routes/admin/-components/admin-console-shell'
 
 export const Route = createFileRoute('/accounts')({
   component: AccountsManagementRoute,
@@ -157,22 +158,25 @@ function AccountsManagementRoute() {
 
   if (!canManageAccounts && !isConnectionRoleLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
-        <ShieldAlertIcon className="size-12 text-rose-500 mb-3" />
-        <h2 className="text-lg font-medium text-foreground">无空间管理权限</h2>
-        <p className="text-xs text-muted-foreground max-w-md mt-1 mb-4">
-          空间 (Account) 管理仅对持有系统 Root API Key 的最高管理员开放。
-          如需管理多租户空间，请先在连接设置中配置有效的 Root Key。
-        </p>
-        <Button variant="outline" size="sm" render={<Link to="/settings" />}>
-          前往连接设置
-        </Button>
-      </div>
+      <AdminConsoleShell>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 text-center">
+          <ShieldAlertIcon className="size-12 text-rose-500 mb-3" />
+          <h2 className="text-lg font-medium text-foreground">无空间管理权限</h2>
+          <p className="text-xs text-muted-foreground max-w-md mt-1 mb-4">
+            空间 (Account) 管理仅对持有系统 Root API Key 的最高管理员开放。
+            如需管理多租户空间，请先在连接设置中配置有效的 Root Key。
+          </p>
+          <Button variant="outline" size="sm" render={<Link to="/settings" />}>
+            前往连接设置
+          </Button>
+        </div>
+      </AdminConsoleShell>
     )
   }
 
   return (
-    <div className="flex flex-col gap-5 p-6 max-w-7xl mx-auto">
+    <AdminConsoleShell>
+      <div className="flex flex-col gap-5 p-6 max-w-7xl mx-auto">
       {/* 顶部标题与操作 */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
@@ -464,6 +468,7 @@ function AccountsManagementRoute() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </AdminConsoleShell>
   )
 }

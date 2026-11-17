@@ -127,8 +127,8 @@ export const sessions = {
       integrityOk: 'Hash Intact',
       searchPlaceholder: 'Search draft ID or directory name...',
       filterAll: 'All',
-      filterZombies: 'Zombie Drafts (1,159)',
-      filterStaging: 'Staging Isolation (5)',
+      filterZombies: 'Zombie Drafts ({{count}})',
+      filterStaging: 'Staging Isolation ({{count}})',
       matchedCount: 'Matched {{count}} items',
       rescanTooltip: 'Rescan Archive Manifest',
       dryRunReportTitle: 'Dry-Run Restore Verification Report',
@@ -154,7 +154,7 @@ export const sessions = {
       dryRunSafeTooltip:
         'Read-only dry-run: strictly verifies archive hash and structural integrity without modifying data.',
       navButton: 'Cold Quarantine',
-      emptyViewBtn: 'View Cold Quarantine (1,164 drafts)',
+      emptyViewBtn: 'View Cold Quarantine ({{count}} drafts)',
     },
   },
   skillsPage: {

@@ -41,6 +41,7 @@ import type {
 } from '#/lib/admin'
 import { copyTextToClipboard } from '#/lib/clipboard'
 import { resolveStudioManagementCapabilities } from '#/lib/studio-permissions'
+import { AdminConsoleShell } from '#/routes/admin/-components/admin-console-shell'
 
 import { AddUserDialog } from './-components/add-user-dialog'
 import { UserDetailSheet } from './-components/user-detail-sheet'
@@ -174,45 +175,49 @@ function UserManagementRoute() {
 
   if (isConnectionRoleLoading) {
     return (
-      <div className="flex min-h-64 items-center justify-center gap-2 text-sm text-muted-foreground">
-        <LoaderCircleIcon className="size-4 animate-spin" />
-        {t('loading')}
-      </div>
+      <AdminConsoleShell>
+        <div className="flex min-h-64 items-center justify-center gap-2 text-sm text-muted-foreground">
+          <LoaderCircleIcon className="size-4 animate-spin" />
+          {t('loading')}
+        </div>
+      </AdminConsoleShell>
     )
   }
 
   if (serverMode === 'dev' || usersQuery.isError) {
     return (
-      <Card className="mx-auto mt-8 w-full max-w-xl rounded border border-border/70 p-6 text-center shadow-xs">
-        <CardHeader className="items-center p-0">
-          <div className="mb-3 flex size-12 items-center justify-center rounded-xs border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400">
-            <KeyRoundIcon className="size-5" />
-          </div>
-          <CardTitle className="text-base font-semibold">
-            {t('management.devModeNoticeTitle', {
-              defaultValue: '当前运行于单用户开发模式 (Dev Mode)',
-            })}
-          </CardTitle>
-          <CardDescription className="mt-2 text-xs leading-relaxed text-muted-foreground">
-            {t('management.devModeNoticeDesc', {
-              defaultValue:
-                'OpenViking 服务端目前处于开发模式 (auth_mode = "dev")，开发模式下所有 API 开箱即用无需凭证校验，但不提供多租户 API Key 与用户增删改查。如需体验多用户与密钥管理，请在 ov.conf 中配置 server.auth_mode = "api_key" 并重启后端。',
-            })}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="mt-4 flex justify-center p-0">
-          <Button
-            size="sm"
-            variant="outline"
-            className="rounded-xs text-xs"
-            nativeButton={false}
-            render={<Link to="/settings" />}
-          >
-            <KeyRoundIcon className="size-3.5" />
-            {t('management.openConnection')}
-          </Button>
-        </CardContent>
-      </Card>
+      <AdminConsoleShell>
+        <Card className="mx-auto mt-8 w-full max-w-xl rounded border border-border/70 p-6 text-center shadow-xs">
+          <CardHeader className="items-center p-0">
+            <div className="mb-3 flex size-12 items-center justify-center rounded-xs border border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400">
+              <KeyRoundIcon className="size-5" />
+            </div>
+            <CardTitle className="text-base font-semibold">
+              {t('management.devModeNoticeTitle', {
+                defaultValue: '当前运行于单用户开发模式 (Dev Mode)',
+              })}
+            </CardTitle>
+            <CardDescription className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              {t('management.devModeNoticeDesc', {
+                defaultValue:
+                  'OpenViking 服务端目前处于开发模式 (auth_mode = "dev")，开发模式下所有 API 开箱即用无需凭证校验，但不提供多租户 API Key 与用户增删改查。如需体验多用户与密钥管理，请在 ov.conf 中配置 server.auth_mode = "api_key" 并重启后端。',
+              })}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="mt-4 flex justify-center p-0">
+            <Button
+              size="sm"
+              variant="outline"
+              className="rounded-xs text-xs"
+              nativeButton={false}
+              render={<Link to="/settings" />}
+            >
+              <KeyRoundIcon className="size-3.5" />
+              {t('management.openConnection')}
+            </Button>
+          </CardContent>
+        </Card>
+      </AdminConsoleShell>
     )
   }
 
@@ -225,7 +230,8 @@ function UserManagementRoute() {
   ).length
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-5">
+    <AdminConsoleShell>
+      <div className="flex w-full min-w-0 flex-col gap-5">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex min-w-0 flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -345,6 +351,7 @@ function UserManagementRoute() {
         pendingRemoveUser={pendingRemoveUser}
         pendingRoleChange={pendingRoleChange}
       />
-    </div>
+      </div>
+    </AdminConsoleShell>
   )
 }

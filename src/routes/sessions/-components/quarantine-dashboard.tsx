@@ -16,54 +16,11 @@ import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { ovClient } from '#/lib/ov-client'
-
-export interface QuarantineItem {
-  name: string
-  source: string
-  destination: string
-  size_bytes: number
-  file_count: number
-  batch_id: string
-  category: string
-  created_at: string
-  uri?: string
-}
-
-export interface QuarantineBatch {
-  batch_id: string
-  category: string
-  created_at: string
-  total_targets: number
-  total_files: number
-  total_bytes: number
-  archive_dir: string
-}
-
-export interface QuarantineManifestSnapshot {
-  total_quarantined_targets: number
-  total_quarantined_files: number
-  total_quarantined_bytes: number
-  total_quarantined_mb: number
-  total_batches: number
-  batches: QuarantineBatch[]
-  items: QuarantineItem[]
-  filtered_count: number
-  cache_timestamp: number
-}
-
-export interface RestoreDryRunResult {
-  success: boolean
-  item_name: string
-  batch_id: string
-  destination_exists: boolean
-  destination_files_count: number
-  destination_size_bytes: number
-  target_restore_path: string
-  target_already_exists: boolean
-  safe_to_restore: boolean
-  message: string
-  integrity_checked_at: number
-}
+import {
+  fetchQuarantineManifest,
+  type QuarantineItem,
+  type RestoreDryRunResult,
+} from '../-lib/quarantine-api'
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
@@ -80,16 +37,12 @@ export function QuarantineDashboard({ onBackToActive }: { onBackToActive?: () =>
 
   const manifestQuery = useQuery({
     queryKey: ['quarantine-manifest', searchTerm, selectedCategory],
-    queryFn: async () => {
-      const params = new URLSearchParams()
-      if (searchTerm.trim()) params.append('search', searchTerm.trim())
-      if (selectedCategory !== 'all') params.append('category', selectedCategory)
-      params.append('limit', '100')
-      const res = await ovClient.instance.get<QuarantineManifestSnapshot>(
-        `/api/v1/memory/quarantine_manifest?${params.toString()}`
-      )
-      return res.data
-    },
+    queryFn: () =>
+      fetchQuarantineManifest({
+        search: searchTerm,
+        category: selectedCategory,
+        limit: 100,
+      }),
     staleTime: 15_000,
   })
 
@@ -107,6 +60,20 @@ export function QuarantineDashboard({ onBackToActive }: { onBackToActive?: () =>
   })
 
   const snapshot = manifestQuery.data
+  const zombieCount = React.useMemo(
+    () =>
+      snapshot?.batches
+        .filter((b) => b.category === 'zombie_sessions')
+        .reduce((sum, b) => sum + b.total_targets, 0) ?? 0,
+    [snapshot],
+  )
+  const stagingCount = React.useMemo(
+    () =>
+      snapshot?.batches
+        .filter((b) => b.category === 'cold_staging_sessions')
+        .reduce((sum, b) => sum + b.total_targets, 0) ?? 0,
+    [snapshot],
+  )
 
   const handleTestDryRun = (item: QuarantineItem) => {
     setActiveItem(item)
@@ -246,7 +213,7 @@ export function QuarantineDashboard({ onBackToActive }: { onBackToActive?: () =>
                 onClick={() => setSelectedCategory('zombie_sessions')}
                 className="h-6 px-2 text-xs"
               >
-                {t('quarantine.filterZombies')}
+                {t('quarantine.filterZombies', { count: zombieCount.toLocaleString() })}
               </Button>
               <Button
                 size="sm"
@@ -254,7 +221,7 @@ export function QuarantineDashboard({ onBackToActive }: { onBackToActive?: () =>
                 onClick={() => setSelectedCategory('cold_staging_sessions')}
                 className="h-6 px-2 text-xs"
               >
-                {t('quarantine.filterStaging')}
+                {t('quarantine.filterStaging', { count: stagingCount.toLocaleString() })}
               </Button>
             </div>
           </div>

@@ -10,6 +10,7 @@ import { useSessionTitles } from '#/lib/sessions/use-session-titles'
 import { QuarantineDashboard } from './-components/quarantine-dashboard'
 import { Thread } from './-components/thread'
 import { ThreadList } from './-components/thread-list'
+import { useQuarantineSummary } from './-lib/quarantine-api'
 
 const COMMAND_KEY_LABEL = '⌘'
 const NEW_SESSION_KEY_LABEL = 'N'
@@ -79,6 +80,10 @@ function SessionsPage() {
 
 function SessionsEmpty({ onOpenQuarantine }: { onOpenQuarantine?: () => void }) {
   const { t } = useTranslation('sessions')
+  const { data: quarantineSummary } = useQuarantineSummary()
+  const countLabel = quarantineSummary
+    ? quarantineSummary.total_quarantined_targets.toLocaleString()
+    : '—'
 
   return (
     <div className="flex h-full flex-col items-center justify-center gap-6">
@@ -109,7 +114,7 @@ function SessionsEmpty({ onOpenQuarantine }: { onOpenQuarantine?: () => void }) 
           onClick={onOpenQuarantine}
           className="mt-2 h-7 border-amber-500/30 text-xs font-mono text-amber-400 hover:bg-amber-500/10"
         >
-          {t('quarantine.emptyViewBtn')}
+          {t('quarantine.emptyViewBtn', { count: countLabel })}
         </Button>
       )}
     </div>

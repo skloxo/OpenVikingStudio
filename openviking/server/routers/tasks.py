@@ -19,10 +19,15 @@ logger = logging.getLogger("openviking.server.routers.tasks")
 from openviking.server.auth import get_request_context
 from openviking.server.identity import RequestContext, Role
 from openviking.server.models import Response
+from openviking.server.routers.tasks_pagination import (
+    matches_task_query,
+    paginate_tasks_cursor,
+)
 from openviking.service.task_store import SYSTEM_TASK_ACCOUNT_ID, SYSTEM_TASK_USER_ID
-from openviking.service.task_tracker import TaskRecord, TaskStatus, get_task_tracker
+from openviking.service.task_tracker import TaskRecord, TaskStatus, TaskTracker, get_task_tracker
 from openviking_cli.exceptions import (
     FailedPreconditionError,
+    InvalidArgumentError,
     OpenVikingError,
     PermissionDeniedError,
 )
@@ -348,11 +353,18 @@ async def list_tasks(
         description="Filter by status (pending/running/cancelling/completed/failed/cancelled)",
     ),
     resource_id: Optional[str] = Query(None, description="Filter by resource ID (e.g. session_id)"),
-    limit: int = Query(50, le=200, description="Max results"),
+    q: Optional[str] = Query(None, description="Optional keyword filter"),
+    pagination: Optional[str] = Query(None, description="Optional pagination mode ('cursor')"),
+    cursor: Optional[str] = Query(None, description="Opaque cursor for pagination=cursor"),
+    limit: int = Query(50, ge=1, le=200, description="Max results"),
     _ctx: RequestContext = Depends(get_request_context),
 ):
-    """List background tasks with optional filters."""
+    """List background tasks with optional filters and optional cursor pagination."""
+    if pagination is not None and pagination != "cursor":
+        raise InvalidArgumentError(f"Unsupported pagination mode: {pagination}")
+
     tracker = get_task_tracker()
+    fetch_limit = TaskTracker.MAX_TASKS if (pagination == "cursor" or q) else limit
     tasks_by_id = {}
     if _ctx.role == Role.ROOT:
         all_store_tasks = []
@@ -367,7 +379,7 @@ async def list_tasks(
             task_type=task_type,
             status=status,
             resource_id=resource_id,
-            limit=limit,
+            limit=fetch_limit,
             account_id=SYSTEM_TASK_ACCOUNT_ID,
             user_id=SYSTEM_TASK_USER_ID,
         )
@@ -375,7 +387,7 @@ async def list_tasks(
             task_type=task_type,
             status=status,
             resource_id=resource_id,
-            limit=limit,
+            limit=fetch_limit,
             account_id="default",
             user_id=None,
         )
@@ -383,7 +395,7 @@ async def list_tasks(
             task_type=task_type,
             status=status,
             resource_id=resource_id,
-            limit=limit,
+            limit=fetch_limit,
         )
         for task in cached_tasks:
             tasks_by_id[task.task_id] = task
@@ -396,7 +408,7 @@ async def list_tasks(
             task_type=task_type,
             status=status,
             resource_id=resource_id,
-            limit=limit,
+            limit=fetch_limit,
             account_id=_ctx.account_id,
             user_id=_ctx.user.user_id,
         )
@@ -404,7 +416,7 @@ async def list_tasks(
             task_type=task_type,
             status=status,
             resource_id=resource_id,
-            limit=limit,
+            limit=fetch_limit,
             account_id=SYSTEM_TASK_ACCOUNT_ID,
             user_id=SYSTEM_TASK_USER_ID,
         )
@@ -413,8 +425,20 @@ async def list_tasks(
         for task in system_tasks:
             tasks_by_id.setdefault(task.task_id, task)
 
-    tasks = sorted(tasks_by_id.values(), key=lambda task: task.created_at, reverse=True)[:limit]
-    return Response(status="ok", result=[t.to_dict() for t in tasks])
+    if pagination == "cursor":
+        return Response(
+            status="ok",
+            result=paginate_tasks_cursor(
+                tasks_by_id.values(),
+                limit=limit,
+                cursor=cursor,
+                q=q,
+            ),
+        )
+
+    tasks = [t for t in tasks_by_id.values() if matches_task_query(t, q)]
+    tasks.sort(key=lambda task: task.created_at, reverse=True)
+    return Response(status="ok", result=[t.to_dict() for t in tasks[:limit]])
 
 
 @router.delete("/tasks/{task_id}")

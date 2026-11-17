@@ -30,6 +30,7 @@ import {
 } from '#/lib/sessions/use-sessions'
 import { useSessionTitles } from '#/lib/sessions/use-session-titles'
 import { cn } from '#/lib/utils'
+import { useQuarantineSummary } from '../-lib/quarantine-api'
 
 interface ThreadListProps {
   activeSessionId?: string
@@ -80,6 +81,10 @@ export function ThreadList({ activeSessionId, isQuarantineActive }: ThreadListPr
   const { getTitle, removeTitle, setTitle } = useSessionTitles(identityScopeKey)
   const createSession = useCreateSession()
   const deleteSession = useDeleteSession()
+  const { data: quarantineSummary } = useQuarantineSummary()
+  const quarantineCountLabel = quarantineSummary
+    ? quarantineSummary.total_quarantined_targets.toLocaleString()
+    : '—'
   const [visibleCount, setVisibleCount] = useState(25)
   const [filterMode, setFilterMode] = useState<
     'interactive' | 'all' | 'heartbeat'
@@ -207,7 +212,9 @@ export function ThreadList({ activeSessionId, isQuarantineActive }: ThreadListPr
             <ArchiveIcon className={cn('size-3.5', isQuarantineActive ? 'text-cyan-600 dark:text-cyan-400' : 'text-muted-foreground')} />
             <span>{t('quarantine.navButton')}</span>
           </div>
-          <span className="rounded bg-muted/60 px-1.5 py-0.5 text-xs text-muted-foreground font-semibold">1,164</span>
+          <span className="rounded bg-muted/60 px-1.5 py-0.5 text-xs text-muted-foreground font-semibold">
+            {quarantineCountLabel}
+          </span>
         </Link>
       </div>
 

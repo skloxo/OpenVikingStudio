@@ -20,6 +20,8 @@ export const adminConsole = {
       delete: '删除',
       add: '添加',
       remove: '移除',
+      oauthVerify: 'OAuth 验证',
+      doctor: '1933 核心健康 (Doctor)',
     },
     nav: {
       overview: '控制台概览',

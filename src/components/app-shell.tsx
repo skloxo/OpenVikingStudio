@@ -1,33 +1,27 @@
 import * as React from 'react'
-import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
+import { Link, useRouterState } from '@tanstack/react-router'
 import {
-  ActivityIcon,
   BookOpenIcon,
   BracesIcon,
-  Building2Icon,
   GlobeIcon,
-  KeyRoundIcon,
   LayoutGridIcon,
   MoonIcon,
   PlugZapIcon,
-  SettingsIcon,
   ShieldCheckIcon,
   SunIcon,
-  UsersRoundIcon,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from 'next-themes'
 
 import { AccessRequiredGate } from '#/components/access-required-gate'
 import { AccountSwitcher } from '#/components/account-switcher'
-import { CrossDeviceVerifyDialog } from '#/components/cross-device-verify-dialog'
 import { GeneratedCredentialDialog } from '#/components/generated-credential-dialog'
-import { ServerDoctorDialog } from '#/components/server-doctor-dialog'
 import { ScrollArea } from '#/components/ui/scroll-area'
 
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -44,7 +38,7 @@ import {
   useAppConnection,
 } from '#/hooks/use-app-connection'
 import { useServerVersionDetails } from '#/hooks/use-server-version'
-import { resolveStudioManagementCapabilities } from '#/lib/studio-permissions'
+import { isAdminWorkspacePath } from '#/routes/admin/-components/admin-console-shell'
 import {
   NAV_ITEMS,
   NAV_SECTIONS,
@@ -74,7 +68,6 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const { i18n, t } = useTranslation(['appShell', 'common'])
   const versionDetails = useServerVersionDetails()
   const appVersion = versionDetails.version
-  const navigate = useNavigate()
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   })
@@ -88,38 +81,11 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const sdkApiHref = `https://docs.openviking.ai/${
     currentLanguage === 'zh-CN' ? 'zh' : 'en'
   }/api/01-overview`
-  const [crossDeviceVerifyOpen, setCrossDeviceVerifyOpen] =
-    React.useState(false)
-  const [doctorOpen, setDoctorOpen] = React.useState(false)
-  const { connection, connectionRole, isConnectionRoleLoading, serverMode } =
-    useAppConnection()
+  const { connection, serverMode } = useAppConnection()
   const settingsActive = pathname === '/settings'
-  const usersActive = pathname === '/users'
-  const accountsActive = pathname === '/accounts'
-  const { canManageAccounts, canManageUsers } = resolveStudioManagementCapabilities({
-    hasControlCredential: Boolean(connection.adminApiKey.trim()),
-    isRoleLoading: isConnectionRoleLoading,
-    role: connectionRole,
-    serverMode,
-  })
   const crossDeviceVerifyActive =
     pathname === '/oauth/verify' || pathname.startsWith('/oauth/verify/')
   const visibleNavItems = NAV_ITEMS
-
-  function openCrossDeviceVerify(): void {
-    if (crossDeviceVerifyActive) {
-      return
-    }
-    const useDialog =
-      typeof window !== 'undefined' &&
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia('(min-width: 768px)').matches
-    if (useDialog) {
-      setCrossDeviceVerifyOpen(true)
-    } else {
-      void navigate({ to: '/oauth/verify' })
-    }
-  }
 
   return (
     <SidebarProvider
@@ -214,138 +180,6 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
           <SidebarGroup className="pb-1">
             <SidebarGroupLabel className="h-7 px-2 pt-2 text-xs font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/45">
-              {t('sidebar.groups.settings', { ns: 'appShell' })}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    render={<Link to="/settings" />}
-                    isActive={settingsActive}
-                    tooltip={t('navigation.settings.title', { ns: 'appShell' })}
-                    className="h-9"
-                  >
-                    <SettingsIcon />
-                    <span>{t('navigation.settings.title', { ns: 'appShell' })}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                {canManageAccounts ? (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      render={<Link to="/accounts" />}
-                      isActive={accountsActive}
-                      tooltip={t('navigation.accounts.title', { ns: 'appShell' })}
-                      className="h-9"
-                    >
-                      <Building2Icon />
-                      <span>{t('navigation.accounts.title', { ns: 'appShell' })}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ) : null}
-                {canManageUsers ? (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      render={<Link to="/users" />}
-                      isActive={usersActive}
-                      tooltip={t('footer.users', { ns: 'appShell' })}
-                      className="h-9"
-                    >
-                      <UsersRoundIcon />
-                      <span>{t('footer.users', { ns: 'appShell' })}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ) : null}
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    onClick={openCrossDeviceVerify}
-                    isActive={crossDeviceVerifyActive}
-                    tooltip={t('navigation.crossDeviceVerify.title', {
-                      ns: 'appShell',
-                    })}
-                    className="h-9"
-                  >
-                    <KeyRoundIcon />
-                    <span>
-                      {t('navigation.crossDeviceVerify.title', {
-                        ns: 'appShell',
-                      })}
-                    </span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                {/* 语言切换 原生 侧边栏菜单项 */}
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    onClick={() =>
-                      void i18n.changeLanguage(
-                        currentLanguage === 'zh-CN' ? 'en' : 'zh-CN',
-                      )
-                    }
-                    tooltip={
-                      currentLanguage === 'zh-CN' ? '语言切换' : 'Language'
-                    }
-                    className="h-9"
-                  >
-                    <GlobeIcon />
-                    <span className="flex-1 text-left">
-                      {currentLanguage === 'zh-CN' ? '语言切换' : 'Language'}
-                    </span>
-                    <span className="text-xs font-mono font-semibold px-1.5 py-0.5 rounded bg-muted text-blue-600 dark:text-blue-400 border border-border/60 group-data-[collapsible=icon]:hidden">
-                      {currentLanguage === 'zh-CN' ? '中 / EN' : 'EN / 中'}
-                    </span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                {/* 主题色切换 原生 侧边栏菜单项 */}
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    onClick={() =>
-                      setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')
-                    }
-                    tooltip={
-                      resolvedTheme === 'dark' ? '深色主题' : '浅色主题'
-                    }
-                    className="h-9"
-                  >
-                    <SunIcon className="rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                    <MoonIcon className="absolute rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                    <span className="flex-1 text-left">
-                      {resolvedTheme === 'dark' ? '深色主题' : '浅色主题'}
-                    </span>
-                    <span className="text-xs font-mono font-semibold px-1.5 py-0.5 rounded bg-muted text-foreground border border-border/60 group-data-[collapsible=icon]:hidden">
-                      {resolvedTheme === 'dark' ? '🌙' : '☀️'}
-                    </span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-
-                {/* 🩺 系统健康探针与一键自愈 */}
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    onClick={() => setDoctorOpen(true)}
-                    tooltip={t('sidebar.doctorPillTooltip', {
-                      ns: 'appShell',
-                      defaultValue: '点击打开系统健康探针与自愈面板',
-                    })}
-                    className="h-9 group/doctor cursor-pointer"
-                  >
-                    <ActivityIcon className="size-4 text-cyan-500 shrink-0 animate-pulse" />
-                    <span className="flex-1 text-left truncate">
-                      {t('sidebar.doctorPill', {
-                        ns: 'appShell',
-                        defaultValue: '1933 核心健康',
-                      })}
-                    </span>
-                    <span className="text-xs font-mono font-medium px-1.5 py-0.2 rounded border border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 group-data-[collapsible=icon]:hidden">
-                      Doctor
-                    </span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-
-          <SidebarGroup className="pb-1">
-            <SidebarGroupLabel className="h-7 px-2 pt-2 text-xs font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/45">
               {t('sidebar.groups.resources', { ns: 'appShell' })}
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -402,6 +236,38 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
+
+        <SidebarFooter className="border-t border-sidebar-border/70 p-2">
+          <div className="flex items-center gap-1 group-data-[collapsible=icon]:flex-col">
+            <SidebarMenuButton
+              onClick={() =>
+                void i18n.changeLanguage(
+                  currentLanguage === 'zh-CN' ? 'en' : 'zh-CN',
+                )
+              }
+              tooltip={currentLanguage === 'zh-CN' ? '语言切换' : 'Language'}
+              className="h-8 flex-1 justify-center gap-1.5 text-xs"
+            >
+              <GlobeIcon className="size-3.5 shrink-0" />
+              <span className="font-mono font-medium group-data-[collapsible=icon]:hidden">
+                {currentLanguage === 'zh-CN' ? '中 / EN' : 'EN / 中'}
+              </span>
+            </SidebarMenuButton>
+            <SidebarMenuButton
+              onClick={() =>
+                setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')
+              }
+              tooltip={resolvedTheme === 'dark' ? '浅色主题' : '深色主题'}
+              className="h-8 flex-1 justify-center gap-1.5 text-xs"
+            >
+              <SunIcon className="size-3.5 shrink-0 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+              <MoonIcon className="absolute size-3.5 shrink-0 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+              <span className="group-data-[collapsible=icon]:hidden">
+                {resolvedTheme === 'dark' ? '浅色' : '深色'}
+              </span>
+            </SidebarMenuButton>
+          </div>
+        </SidebarFooter>
       </Sidebar>
 
       <SidebarInset className="min-h-0 flex-1 overflow-hidden rounded-none border-0 bg-background shadow-none ring-0 md:m-0 md:ml-0">
@@ -415,7 +281,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             </span>
           </div>
           <div className="flex items-center gap-2 ml-auto">
-            {pathname === '/admin' || pathname.startsWith('/admin/') ? (
+            {isAdminWorkspacePath(pathname) ? (
               <Link
                 to="/"
                 className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted"
@@ -469,17 +335,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         </ScrollArea>
       </SidebarInset>
 
-      <CrossDeviceVerifyDialog
-        open={crossDeviceVerifyOpen}
-        onOpenChange={setCrossDeviceVerifyOpen}
-      />
-
       <GeneratedCredentialDialog />
-
-      <ServerDoctorDialog
-        open={doctorOpen}
-        onOpenChange={setDoctorOpen}
-      />
     </SidebarProvider>
   )
 }

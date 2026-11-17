@@ -16,6 +16,7 @@ import { toast } from 'sonner'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
 import { Textarea } from '#/components/ui/textarea'
+import { NodeRelationsManager } from '#/routes/graph/-components/node-relations-manager'
 import type { VikingFsEntry } from '#/routes/resources/-types/viking-fm'
 import { readTextDocument, saveText } from '../-lib/api'
 import { hashText } from '../-lib/doc'
@@ -182,11 +183,14 @@ export function NodeInspector({
       </header>
 
       {entry.isDir ? (
-        <div className="space-y-3 p-4 text-xs">
-          <p className="font-medium text-muted-foreground">{t('fields.summary')}</p>
-          <p className="whitespace-pre-wrap leading-relaxed">
-            {entry.abstract || entry.overview || t('emptySummary')}
-          </p>
+        <div className="flex flex-1 flex-col justify-between gap-4 p-4 text-xs">
+          <div className="space-y-3">
+            <p className="font-medium text-muted-foreground">{t('fields.summary')}</p>
+            <p className="whitespace-pre-wrap leading-relaxed">
+              {entry.abstract || entry.overview || t('emptySummary')}
+            </p>
+          </div>
+          <NodeRelationsManager nodeId={entry.uri} onRelationChange={onSaved} />
         </div>
       ) : liveMount ? (
         <LiveContextInspector
@@ -202,15 +206,16 @@ export function NodeInspector({
       ) : docQuery.isError ? (
         <p className="p-4 text-xs text-rose-500">{t('errors.read')}</p>
       ) : (
-        <div className="flex min-h-0 flex-1 flex-col p-4">
+        <div className="flex min-h-0 flex-1 flex-col gap-3 p-4">
           <Textarea
             value={content}
             onChange={(e) => {
               setContent(e.target.value)
               setDirty(true)
             }}
-            className="min-h-[380px] flex-1 font-mono text-xs leading-relaxed"
+            className="min-h-[280px] flex-1 font-mono text-xs leading-relaxed"
           />
+          <NodeRelationsManager nodeId={entry.uri} onRelationChange={onSaved} />
         </div>
       )}
     </section>
