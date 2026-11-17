@@ -22,6 +22,7 @@ from openviking.server.routers.active_notes_history import router as active_note
 from openviking.server.routers.skill_zip import router as skill_zip_router
 from openviking.server.routers.skill_playground import router as skill_playground_router
 from openviking.server.routers.rag_abstention import router as rag_abstention_router
+from openviking.server.routers.knowledge_deficits import router as knowledge_deficits_router
 from openviking.server.routers.hg_compass import router as hg_compass_router
 from openviking.server.routers.mcps import router as mcps_router
 from openviking.server.routers.metrics import router as metrics_router
@@ -112,6 +113,7 @@ __all__ = [
     "skill_zip_router",
     "skill_playground_router",
     "rag_abstention_router",
+    "knowledge_deficits_router",
     "hg_compass_router",
     "debug_router",
     "metrics_router",

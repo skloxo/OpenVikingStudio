@@ -60,6 +60,7 @@ from openviking.server.routers import (
     skill_playground_router,
     wiki_dehydration_router,
     rag_abstention_router,
+    knowledge_deficits_router,
     hg_compass_router,
     mcps_router,
     metrics_router,
@@ -831,6 +832,7 @@ def create_app(
     app.include_router(evolution_cicd_router)
     app.include_router(agent_sensors_router)
     app.include_router(rag_abstention_router)
+    app.include_router(knowledge_deficits_router)
     app.include_router(hg_compass_router)
     app.include_router(relations_router)
     app.include_router(skills_router)

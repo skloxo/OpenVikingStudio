@@ -63,6 +63,48 @@ def _ensure_non_empty_query(
     )
 
 
+def _extract_result_metrics(result: Any) -> tuple[int, float]:
+    count = len(result) if hasattr(result, "__len__") else 0
+    scores: List[float] = []
+    for bucket_name in ("memories", "resources", "skills"):
+        for item in getattr(result, bucket_name, None) or []:
+            sc = getattr(item, "score", None)
+            if sc is not None:
+                try:
+                    scores.append(float(sc))
+                except (TypeError, ValueError):
+                    pass
+    return count, (max(scores) if scores else 0.0)
+
+
+def _record_deficit_if_missed(
+    query: str,
+    result: Any,
+    score_threshold: Optional[float],
+    operation: str,
+    ctx: RequestContext,
+) -> None:
+    """Fail-open observation hook: feed zero-hit / sub-threshold queries to BlindspotLedger."""
+    try:
+        if not query or not query.strip():
+            return
+        count, max_score = _extract_result_metrics(result)
+        low_gate = max(0.35, float(score_threshold)) if score_threshold is not None else 0.35
+        if count == 0 or (max_score > 0.0 and max_score < low_gate):
+            from openviking.service.knowledge_deficit import BlindspotLedger
+            account_id = getattr(ctx, "account_id", None) or "default"
+            user_id = getattr(getattr(ctx, "user", None), "user_id", None) or "default"
+            BlindspotLedger.get_instance().record_miss(
+                query,
+                top_score=max_score,
+                operation=operation,
+                account_id=account_id,
+                user_id=user_id,
+            )
+    except Exception:
+        pass
+
+
 class SearchService:
     """Semantic search service with lightweight L0 query cache."""
 
@@ -252,6 +294,7 @@ class SearchService:
             search_kwargs["events_time_decay_protection"] = events_time_decay_protection
 
         result = await viking_fs.search(**search_kwargs)
+        _record_deficit_if_missed(query, result, score_threshold, "search", ctx)
         try:
             from openviking.observability.events import try_publish_event
             result_count = len(result) if hasattr(result, "__len__") else 0
@@ -335,6 +378,7 @@ class SearchService:
             find_kwargs["events_time_decay_protection"] = events_time_decay_protection
 
         result = await viking_fs.find(**find_kwargs)
+        _record_deficit_if_missed(query, result, score_threshold, "find", ctx)
         self._set_cached(cache_key, result)
 
         try:

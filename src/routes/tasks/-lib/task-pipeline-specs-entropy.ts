@@ -215,4 +215,35 @@ export const ENTROPY_STEP_SPECS: Record<string, AtomicStepSpec> = {
     isActionOnly: true,
     engineKey: 'embedding',
   },
+
+  // 49-51: 知识盲区自愈与反思骨架 (Card-207: Knowledge Deficit Remediation)
+  step_miss_capture: {
+    id: 'step_miss_capture',
+    nameZh: '盲区特征捕获',
+    nameEn: 'Capture Miss',
+    unitZh: '次',
+    unitEn: 'misses',
+    stageKeywords: ['miss', 'capture', 'deficit'],
+    metricKeys: ['miss_count'],
+    engineKey: 'semantic',
+  },
+  step_reflection: {
+    id: 'step_reflection',
+    nameZh: '反思骨架铸造',
+    nameEn: 'Cast Scaffold',
+    unitZh: '卡',
+    unitEn: 'cards',
+    stageKeywords: ['reflect', 'reflection', 'scaffold'],
+    engineKey: 'semantic_nodes',
+  },
+  step_ticket_enqueue: {
+    id: 'step_ticket_enqueue',
+    nameZh: '双轨待办挂牌',
+    nameEn: 'Enqueue Ticket',
+    unitZh: '单',
+    unitEn: 'tickets',
+    stageKeywords: ['enqueue', 'ticket', 'remediation'],
+    isActionOnly: true,
+    engineKey: 'embedding',
+  },
 }

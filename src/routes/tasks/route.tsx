@@ -9,6 +9,7 @@ import { TaskDetailSheet } from '#/routes/tasks/-components/task-detail-sheet'
 import { TasksMetricsCards } from '#/routes/tasks/-components/tasks-metrics-cards'
 import { TasksTableSection } from '#/routes/tasks/-components/tasks-table-section'
 import { IssueTaskCardsCockpit } from '#/routes/tasks/-components/issue-task-cards-cockpit'
+import { KnowledgeDeficitCockpit } from '#/routes/tasks/-components/knowledge-deficit-cockpit'
 import { DEFAULT_PAGE_SIZE } from '#/routes/tasks/-lib/task-api'
 import type { TaskDataScope, TaskStatusFilter, TaskTypeFilter } from '#/routes/tasks/-lib/task-api'
 import { useTasks } from '#/routes/tasks/-lib/use-tasks'
@@ -87,6 +88,8 @@ function TasksRoute() {
       <TasksMetricsCards kpiData={kpiData} queueObserverRows={queueObserverRows} isQueueLoading={queueObserverQuery.isLoading} />
 
       <IssueTaskCardsCockpit />
+
+      <KnowledgeDeficitCockpit />
 
       <TasksTableSection
         filters={{ dataScope, setDataScope, taskType, setTaskType, statusFilter, setStatusFilter, dedupByResource, setDedupByResource }}
