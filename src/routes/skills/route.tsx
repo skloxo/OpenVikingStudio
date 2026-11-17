@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { InboxIcon, LayersIcon, LoaderCircleIcon, SparklesIcon, WorkflowIcon } from 'lucide-react'
+import { CrosshairIcon, InboxIcon, LayersIcon, LoaderCircleIcon, SparklesIcon, WorkflowIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { Badge } from '#/components/ui/badge'
@@ -17,6 +17,7 @@ import { SkillsFilterBar } from './-components/skills-filter-bar'
 import { SkillsMetricsCards } from './-components/skills-metrics-cards'
 import { SkillDetailSheet } from './-components/skill-detail-sheet'
 import { SkillIngestionCockpit } from './-components/skill-ingestion-cockpit'
+import { SkillPlaygroundCockpit } from './-components/skill-playground-cockpit'
 import { SkillRoiCockpitCard } from './-components/skill-roi-cockpit-card'
 import { useSkillEventBus } from './-hooks/use-skill-event-bus'
 import { getErrorMessage } from './-lib/skill-data'
@@ -28,7 +29,7 @@ export const Route = createFileRoute('/skills')({
 
 function SkillsRoute() {
   const { t } = useTranslation('skillsPage')
-  const [centerMode, setCenterMode] = React.useState<'catalog' | 'pipeline'>('catalog')
+  const [centerMode, setCenterMode] = React.useState<'catalog' | 'pipeline' | 'playground'>('catalog')
   const [showIngestionCockpit, setShowIngestionCockpit] = React.useState(false)
   const { isConnected: isEventBusConnected } = useSkillEventBus()
   const data = useSkillsData()
@@ -37,8 +38,8 @@ function SkillsRoute() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
       const modeParam = params.get('mode') || params.get('tab')
-      if (modeParam === 'pipeline') {
-        setCenterMode('pipeline')
+      if (modeParam === 'pipeline' || modeParam === 'playground') {
+        setCenterMode(modeParam)
       }
     }
   }, [])
@@ -91,9 +92,23 @@ function SkillsRoute() {
           <span>⚡ B6 全息演进流水线与运行中枢</span>
           <span className="ml-1.5 size-1.5 rounded-full bg-cyan-500 animate-pulse" />
         </button>
+        <button
+          type="button"
+          onClick={() => setCenterMode('playground')}
+          className={`flex items-center rounded-t-md px-3.5 py-1.5 text-xs font-mono font-medium transition-all cursor-pointer ${
+            centerMode === 'playground'
+              ? 'border-b-2 border-cyan-600 dark:border-cyan-400 bg-card text-foreground font-semibold shadow-2xs'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+          }`}
+        >
+          <CrosshairIcon className="size-3.5 mr-1.5 text-cyan-600 dark:text-cyan-400" />
+          <span>🎯 意图试算与调试沙箱</span>
+        </button>
       </div>
 
-      {centerMode === 'pipeline' ? (
+      {centerMode === 'playground' ? (
+        <SkillPlaygroundCockpit />
+      ) : centerMode === 'pipeline' ? (
         <div className="flex flex-col gap-4">
           <B6EvolutionPipelineCockpit />
           <B6RetinaRegressionCockpit />

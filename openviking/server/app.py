@@ -57,6 +57,7 @@ from openviking.server.routers import (
     entropy_crystallizer_router,
     active_notes_history_router,
     skill_zip_router,
+    skill_playground_router,
     wiki_dehydration_router,
     rag_abstention_router,
     hg_compass_router,
@@ -818,6 +819,7 @@ def create_app(
     app.include_router(entropy_crystallizer_router)
     app.include_router(active_notes_history_router)
     app.include_router(skill_zip_router)
+    app.include_router(skill_playground_router)
     app.include_router(wiki_dehydration_router)
     app.include_router(valet_router)
     app.include_router(skill_eval_router)
