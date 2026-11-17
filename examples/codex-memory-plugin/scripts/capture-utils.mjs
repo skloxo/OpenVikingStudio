@@ -176,3 +176,17 @@ export function extractCaptureTurns(rolloutEntries, cfg = {}) {
   const normalized = normalizeCodexNativeToolEvents(deduplicated);
   return extractSharedCaptureTurns(normalizeCodexMcpToolEvents(normalized), cfg);
 }
+
+/**
+ * Find the latest human user turn that carries text parts. Used by the
+ * post-compact shrink path to find where the current interaction starts.
+ */
+export function findLastHumanTurnIndex(turns) {
+  const list = Array.isArray(turns) ? turns : [];
+  for (let i = list.length - 1; i >= 0; i -= 1) {
+    const turn = list[i];
+    if (turn?.role !== "user") continue;
+    if (turn.parts?.some((part) => part?.type === "text")) return i;
+  }
+  return -1;
+}

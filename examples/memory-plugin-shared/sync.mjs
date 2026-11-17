@@ -44,7 +44,6 @@ const DOCTOR_SHARED_FILES = [
   ...BATCH_SHARED_FILES,
   ...ASYNC_WRITE_SHARED_FILES,
   ...WORKSPACE_CONFIG_SHARED_FILES,
-  "doctor-core.mjs",
 ];
 // opencode is imported in-process by its host, so it has no hook subprocess to
 // detach from: it takes the batch sender without the async write path.

@@ -22,6 +22,7 @@ const DEFAULT_CONFIG = Object.freeze({
   workspacePeer: true,
   peerSource: "",
   recallPeerScope: "all",
+  recallEventsDecayProtection: "",
   recallQueryExpansion: "auto",
   recallQueryExpansionConfigured: false,
   syncTurns: true,
@@ -71,6 +72,9 @@ export function resolveConfig(input = {}, env = process.env, cwd = process.cwd()
   if (env.OPENVIKING_RECALL_PEER_SCOPE) {
     config.recallPeerScope = env.OPENVIKING_RECALL_PEER_SCOPE;
   }
+  if (env.OPENVIKING_RECALL_EVENTS_DECAY_PROTECTION !== undefined) {
+    config.recallEventsDecayProtection = env.OPENVIKING_RECALL_EVENTS_DECAY_PROTECTION;
+  }
   if (env.OPENVIKING_RECALL_QUERY_EXPANSION) {
     config.recallQueryExpansion = env.OPENVIKING_RECALL_QUERY_EXPANSION;
     config.recallQueryExpansionConfigured = true;
@@ -86,6 +90,7 @@ export function resolveConfig(input = {}, env = process.env, cwd = process.cwd()
   config.peerId = effectivePeer.peerId;
   config.legacyPeerId = effectivePeer.legacyPeerId;
   config.recallPeerScope = config.recallPeerScope === "actor" ? "actor" : "all";
+  config.recallEventsDecayProtection = String(config.recallEventsDecayProtection || "").trim();
   config.recallQueryExpansion = config.recallQueryExpansion === "off" ? "off" : "auto";
   config.recallLimit = clampInteger(config.recallLimit, 1, 50, DEFAULT_CONFIG.recallLimit);
   config.recallMaxContentChars = clampInteger(

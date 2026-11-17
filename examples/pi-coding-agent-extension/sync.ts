@@ -25,6 +25,8 @@ export class SyncManager {
   private logger: ReturnType<typeof createLogger>;
   private ovSessionId: string | null = null;
   private syncedEntryCount = 0;
+  /** Entry at the numeric watermark; detects a same-length sibling branch. */
+  private syncedEntryId = "";
 
   constructor(client: OVClient, config: OVConfig) {
     this.client = client;
@@ -38,9 +40,9 @@ export class SyncManager {
   get sessionId(): string | null { return this.ovSessionId; }
   get syncedCount(): number { return this.syncedEntryCount; }
 
-  restoreWatermark(n: number): void {
-    const next = Math.max(0, Math.floor(Number(n) || 0));
-    this.syncedEntryCount = next;
+  restoreWatermark(n: number, branch: any[] = []): void {
+    this.syncedEntryCount = Math.max(0, Math.floor(Number(n) || 0));
+    this.syncedEntryId = branch[this.syncedEntryCount - 1]?.id || "";
   }
 
   async ensureSession(piSessionId: string): Promise<boolean> {
@@ -69,8 +71,16 @@ export class SyncManager {
   async syncBranch(branch: any[]): Promise<SyncBranchResult> {
     if (!this.ovSessionId) return { added: 0, tokens: 0, allDelivered: true };
 
-    const extracted = extractBranchCapturePayloads(branch, this.syncedEntryCount, this.config);
-    if (extracted.resetWatermark) this.syncedEntryCount = 0;
+    const extracted = extractBranchCapturePayloads(
+      branch,
+      this.syncedEntryCount,
+      this.config,
+      this.syncedEntryId,
+    );
+    if (extracted.resetWatermark) {
+      this.syncedEntryCount = 0;
+      this.syncedEntryId = "";
+    }
     let added = 0;
     let tokens = 0;
     let allDelivered = true;
@@ -83,6 +93,7 @@ export class SyncManager {
     }
     if (added === extracted.payloads.length) {
       this.syncedEntryCount = extracted.nextEntryCount;
+      this.syncedEntryId = extracted.nextEntryId;
     }
     if (added > 0 && !this.config.takeoverEnabled) {
       await this.commitIfNeeded();

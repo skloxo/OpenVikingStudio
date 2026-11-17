@@ -119,6 +119,7 @@ const KNOB_MAP = {
   "peer.source": "peerSource",
   "recall.enabled": "autoRecall",
   "recall.peer_scope": "recallPeerScope",
+  "recall.events_decay_protection": "recallEventsDecayProtection",
   "recall.dedup_turns": "recallDedupTurns",
   "recall.max_items": "recallLimit",
   "recall.score_threshold": "scoreThreshold",

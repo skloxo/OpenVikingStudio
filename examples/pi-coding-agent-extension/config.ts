@@ -18,6 +18,7 @@ export interface OVConfig {
   harness: string;
   workspacePeer: boolean;
   recallPeerScope: "actor" | "all";
+  recallEventsDecayProtection: string;
   recallQueryExpansion: "auto" | "off";
   recallQueryExpansionConfigured: boolean;
   syncTurns: boolean;
@@ -60,6 +61,7 @@ const DEFAULT_CONFIG: OVConfig = {
   harness: "pi",
   workspacePeer: true,
   recallPeerScope: "all",
+  recallEventsDecayProtection: "",
   // Server-side query expansion costs a model call before retrieval starts, so
   // it has to be switchable from the client that pays the latency.
   recallQueryExpansion: "auto",
@@ -145,6 +147,9 @@ export function loadConfig(extensionDir: string): OVConfig {
   if (process.env.OPENVIKING_RECALL_PEER_SCOPE) {
     config.recallPeerScope = process.env.OPENVIKING_RECALL_PEER_SCOPE === "actor" ? "actor" : "all";
   }
+  if (process.env.OPENVIKING_RECALL_EVENTS_DECAY_PROTECTION !== undefined) {
+    config.recallEventsDecayProtection = String(process.env.OPENVIKING_RECALL_EVENTS_DECAY_PROTECTION);
+  }
   if (process.env.OPENVIKING_RECALL_LIMIT) {
     config.recallLimit = Number(process.env.OPENVIKING_RECALL_LIMIT);
     config.recallLimitConfigured = true;
@@ -180,6 +185,7 @@ export function loadConfig(extensionDir: string): OVConfig {
   config.captureToolMaxChars = clampInt(config.captureToolMaxChars, 200, 1000000, DEFAULT_CONFIG.captureToolMaxChars);
   config.captureMode = config.captureMode === "keyword" ? "keyword" : "semantic";
   config.recallPeerScope = config.recallPeerScope === "actor" ? "actor" : "all";
+  config.recallEventsDecayProtection = String(config.recallEventsDecayProtection || "").trim();
   config.recallQueryExpansion = config.recallQueryExpansion === "off" ? "off" : "auto";
   config.recallLedger = config.recallLedger !== false;
   if (!Array.isArray(config.bypassPatterns)) config.bypassPatterns = [];

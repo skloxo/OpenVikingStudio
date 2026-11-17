@@ -106,7 +106,7 @@ export default async function (pi: ExtensionAPI) {
         : [];
       if (config.takeoverEnabled) {
         takeover.restore(branch);
-        sync.restoreWatermark(takeover.state.syncedEntryCount);
+        sync.restoreWatermark(takeover.state.syncedEntryCount, branch);
       } else if (sync.sessionId) {
         // Resume rehydration — fetch archive overview if session was previously committed.
         archiveOverview = await fetchArchiveOverview(client, sync.sessionId, config);

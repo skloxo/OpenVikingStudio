@@ -64,6 +64,7 @@ export function loadAgentHookConfig(clientId) {
     scoreThreshold: envNumber("OPENVIKING_SCORE_THRESHOLD", 0.35, 0),
     recallPreferAbstract: envBool("OPENVIKING_RECALL_PREFER_ABSTRACT", true),
     recallPeerScope: process.env.OPENVIKING_RECALL_PEER_SCOPE === "actor" ? "actor" : "all",
+    recallEventsDecayProtection: String(process.env.OPENVIKING_RECALL_EVENTS_DECAY_PROTECTION || "").trim(),
     timeoutMs: envNumber("OPENVIKING_TIMEOUT_MS", 15000, 1000),
     profileTokenBudget: envNumber("OPENVIKING_PROFILE_TOKEN_BUDGET", 6000, 500),
     commitTurnThreshold: envNumber("OPENVIKING_COMMIT_TURN_THRESHOLD", 8, 1),

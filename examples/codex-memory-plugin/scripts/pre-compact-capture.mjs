@@ -136,6 +136,15 @@ async function compact(sessionId, transcriptPath, trigger, cwd, heartbeat) {
   return `OpenViking session ${liveOvSessionId} is committed` + (traceId ? ` (trace_id=${traceId})` : "");
 }
 
+function resolveCanonicalSessionId(input) {
+  const native = input?.session_id;
+  if (native !== undefined && native !== null) {
+    return typeof native === "string" && native.trim() ? native.trim() : "";
+  }
+  const alias = input?.sessionId;
+  return typeof alias === "string" && alias.trim() ? alias.trim() : "";
+}
+
 async function main() {
   if (!cfg.autoCommitOnCompact) {
     log("skip", { stage: "init", reason: "autoCommitOnCompact disabled" });
@@ -154,7 +163,12 @@ async function main() {
     return;
   }
 
-  const sessionId = input.session_id || "unknown";
+  const sessionId = resolveCanonicalSessionId(input);
+  if (!sessionId) {
+    log("skip", { stage: "init", reason: "no session_id" });
+    noop();
+    return;
+  }
   const transcriptPath = input.transcript_path || null;
   const trigger = input.trigger || "auto";
   // The workspace layer belongs to the session's directory, which only the

@@ -215,6 +215,10 @@ export function loadConfig(cwd = process.cwd()) {
     ))),
     logRankingDetails: envBool("OPENVIKING_LOG_RANKING_DETAILS") ?? (cx.logRankingDetails === true),
     recallPeerScope,
+    recallEventsDecayProtection: str(
+      process.env.OPENVIKING_RECALL_EVENTS_DECAY_PROTECTION,
+      str(cx.recallEventsDecayProtection, ""),
+    ),
     recallCompress: envBool("OPENVIKING_RECALL_COMPRESS") ?? configBool(cx.recallCompress, true),
     recallCompressModel,
     recallCompressBaseUrl,

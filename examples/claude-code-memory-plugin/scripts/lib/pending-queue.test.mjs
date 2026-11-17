@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readdir, rm } from "node:fs/promises";
+import { mkdtemp, readdir, rm, stat, utimes } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -256,5 +256,29 @@ test("claimForReplay atomically claims a file only once", async () => {
     assert.match(firstClaim, /\.processing$/);
     assert.equal(secondClaim, null);
     assert.deepEqual(await readdir(dir), [firstClaim]);
+  });
+});
+
+test("claimForReplay refreshes mtime and keeps stale offline backlog claimed across concurrent replayPending", async () => {
+  await withPendingDir(async (dir) => {
+    await enqueue("addMessage", "cc-old-backlog", { role: "user", content: "backlog" });
+    const [{ filename }] = await listPending();
+    const old = new Date(Date.now() - 11 * 60_000);
+    await utimes(join(dir, filename), old, old);
+
+    const claimed = await claimForReplay(filename);
+    assert.match(claimed, /\.processing$/);
+    const claimedStat = await stat(join(dir, claimed));
+    assert.ok(Date.now() - claimedStat.mtimeMs < 60_000, "claimed file mtime must be refreshed");
+
+    // Concurrent replayPending runs recoverStaleProcessing first and must NOT reclaim our active claim.
+    const calls = [];
+    const concurrentResult = await replayPending(async (path, init) => {
+      calls.push({ path, init });
+      return { ok: true };
+    }, () => {});
+    assert.deepEqual(concurrentResult, { replayed: 0, failed: 0, skipped: 0, deferred: 0 });
+    assert.equal(calls.length, 0);
+    assert.deepEqual(await readdir(dir), [claimed]);
   });
 });

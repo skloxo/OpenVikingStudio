@@ -85,9 +85,9 @@ test("vendored skills are byte-identical to examples/skills", async () => {
 const MAX_DESCRIPTION_LENGTH = 1024;
 
 function readDescription(source) {
-  const frontmatter = /^---\n([\s\S]*?)\n---\n/.exec(source);
+  const frontmatter = /^---\r?\n([\s\S]*?)\r?\n---\r?\n/.exec(source);
   if (!frontmatter) return null;
-  const lines = frontmatter[1].split("\n");
+  const lines = frontmatter[1].split(/\r?\n/);
   const start = lines.findIndex((line) => /^description:/.test(line));
   if (start === -1) return null;
   const head = lines[start].slice("description:".length).trim();

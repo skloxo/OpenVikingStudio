@@ -38,10 +38,11 @@ function faithfulDecision(rawText, cfg) {
   return { shouldCapture: true, reason: "faithful", text: capped };
 }
 
-export function extractBranchCapturePayloads(branch, syncedEntryCount = 0, cfg = {}) {
+export function extractBranchCapturePayloads(branch, syncedEntryCount = 0, cfg = {}, syncedEntryId = "") {
   const entries = Array.isArray(branch) ? branch : [];
   const previousCount = Math.max(0, Number(syncedEntryCount) || 0);
-  const resetWatermark = entries.length < previousCount;
+  const resetWatermark = entries.length < previousCount
+    || Boolean(syncedEntryId && entries[previousCount - 1]?.id !== syncedEntryId);
   const start = resetWatermark ? 0 : Math.min(previousCount, entries.length);
   const payloads = [];
 
@@ -82,6 +83,7 @@ export function extractBranchCapturePayloads(branch, syncedEntryCount = 0, cfg =
   return {
     payloads,
     nextEntryCount: entries.length,
+    nextEntryId: entries.at(-1)?.id || "",
     observedEntryCount: entries.length,
     resetWatermark,
   };

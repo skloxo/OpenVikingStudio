@@ -7,6 +7,7 @@ test("behavior environment overrides are applied and normalized", () => {
     OPENVIKING_URL: "http://127.0.0.1:19464/",
     OPENVIKING_WORKSPACE_PEER: "0",
     OPENVIKING_RECALL_PEER_SCOPE: "actor",
+    OPENVIKING_RECALL_EVENTS_DECAY_PROTECTION: "7d",
     OPENVIKING_RECALL_QUERY_EXPANSION: "off",
     OPENVIKING_RECALL_LIMIT: "7",
   }, "/workspace/project");
@@ -15,6 +16,7 @@ test("behavior environment overrides are applied and normalized", () => {
   assert.equal(config.workspacePeer, false);
   assert.equal(config.peerId, "");
   assert.equal(config.recallPeerScope, "actor");
+  assert.equal(config.recallEventsDecayProtection, "7d");
   assert.equal(config.recallQueryExpansion, "off");
   assert.equal(config.recallQueryExpansionConfigured, true);
   assert.equal(config.recallLimit, 7);
