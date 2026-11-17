@@ -210,7 +210,7 @@ def create_ecosystem_plugins(
     fleet_plugin = QuadPluginDefinition(
         plugin_id="fleet-mesh",
         name="卫星集群同频运维",
-        version=resolve_package_version("dsh-plugin-openviking-fleet", "1.0.3"),
+        version=resolve_package_version("dsh-plugin-openviking-fleet", "1.0.6"),
         category="user",
         description="跨物理机节点（MacBook M3 / 宿主 PC / 云端 VPS）健康巡检与配置技能一键同频",
         skill=SkillDefinition(

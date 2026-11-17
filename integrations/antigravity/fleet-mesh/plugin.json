@@ -1,12 +1,12 @@
 {
   "name": "fleet-mesh",
   "displayName": "OpenViking Fleet Mesh",
-  "version": "1.0.5",
-  "description": "OpenViking 卫星集群拓扑同频插件 (Antigravity IDE 官方版)。提供跨机集群巡检 (fleet_check) 与一键规则/代码同频分发 (fleet_sync) 2 大协同工具。",
+  "version": "1.0.6",
+  "description": "[版本: v1.0.6] OpenViking 卫星集群拓扑同频插件 (Antigravity IDE 官方版)。提供跨机集群巡检 (fleet_check) 与多节点配置同频 (fleet_sync) 2 大协同工具，支持自适应中枢路由与自内聚独立运行。",
   "logo": "assets/logo.svg",
   "suggestedPrompts": [
     "执行 OpenViking 卫星集群全节点巡检体检",
-    "向 3070 远程节点与 2080Ti 本地节点一键同频分发规则与服务端脚本"
+    "校验当前节点与主中枢的配置、Peer 身份及插件版本同频状态"
   ],
   "author": {
     "name": "OpenViking Team",
@@ -23,15 +23,23 @@
     "mesh",
     "antigravity"
   ],
+  "gui": {
+    "dashboard_route": "/plugins",
+    "settings_fields": {
+      "clusterDomain": "vk.tide.red",
+      "adaptiveRouting": "127.0.0.1:1933 -> https://vk.tide.red",
+      "nodeIdentity": "antigravity@{hostname}"
+    }
+  },
   "integration": {
     "channels": [
       {
         "id": "antigravity",
         "name": "Google 反重力",
         "install_cmd": "powershell -ExecutionPolicy Bypass -Command \"iwr -Uri '{{ENDPOINT_URL}}/studio/fleet-mesh-{{PLUGIN_VER}}.tgz' -OutFile '$env:TEMP\\fleet-mesh.tgz'; New-Item -ItemType Directory -Force -Path \\\"$env:USERPROFILE\\.gemini\\config\\plugins\\fleet-mesh\\\" | Out-Null; tar -xzf '$env:TEMP\\fleet-mesh.tgz' -C \\\"$env:USERPROFILE\\.gemini\\config\\plugins\\fleet-mesh\\\"; python \\\"$env:USERPROFILE\\.gemini\\config\\plugins\\fleet-mesh\\setup.py\\\" --install --api {{ENDPOINT_URL}} --key {{USER_KEY}}\"",
-        "agent_prompt": "请帮我将当前反重力客户端 (Antigravity IDE / Desktop) 接入 卫星集群组网与节点同频 (fleet-mesh) 插件：\n1. 分发包直链：{{ENDPOINT_URL}}/studio/fleet-mesh-{{PLUGIN_VER}}.tgz\n2. 挂载目录：$env:USERPROFILE\\.gemini\\config\\plugins\\fleet-mesh\n3. 执行：python setup.py --install --api {{ENDPOINT_URL}} --key {{USER_KEY}} 完成自举安装与 FastMCP 挂载。",
-        "config_snippet": "{\n  \"plugins\": {\n    \"fleet-mesh\": {\n      \"installedFrom\": {\n        \"id\": \"antigravity/plugin/fleet-mesh\",\n        \"marketplace\": \"openviking-studio\",\n        \"version\": \"{{PLUGIN_VER}}\"\n      }\n    }\n  }\n}",
-        "docs_markdown": "在 Windows PowerShell 中运行安装命令，自动完成下载解压、宿主注册与 FastMCP 双轨服务配置。亦可复制认主提示词直接在反重力对话框中一键启用。"
+        "agent_prompt": "请帮我将当前反重力客户端 (Antigravity IDE / Desktop) 接入 卫星集群组网与节点同频 (fleet-mesh) 插件：\n1. 分发包直链：{{ENDPOINT_URL}}/studio/fleet-mesh-{{PLUGIN_VER}}.tgz\n2. 挂载目录：$env:USERPROFILE\\.gemini\\config\\plugins\\fleet-mesh\n3. 执行：python setup.py --install --api {{ENDPOINT_URL}} --key {{USER_KEY}} 完成自内聚驱动安装与 FastMCP 挂载。",
+        "config_snippet": "{\n  \"plugins\": {\n    \"fleet-mesh\": {\n      \"enabled\": true,\n      \"installedFrom\": {\n        \"id\": \"antigravity/plugin/fleet-mesh\",\n        \"marketplace\": \"openviking-studio\",\n        \"version\": \"{{PLUGIN_VER}}\"\n      }\n    }\n  }\n}",
+        "docs_markdown": "在 Windows PowerShell 中运行安装命令，自动完成自内聚 server.py 部署、动态节点身份绑定与幽灵别名清理。支持 `--inspect` 巡检与 `--uninstall` 卸载。"
       },
       {
         "id": "dsh",
