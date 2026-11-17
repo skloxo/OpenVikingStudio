@@ -33,7 +33,7 @@ openviking_find    openviking_read    openviking_write /
 - **分层读取**：对于特大文档，可指定分层级别（L0 摘要、L1 骨架、L2 全文），保护工作记忆。
 
 ### 3. 永久沉淀回写 (`openviking_write` / `openviking_record_evolution_lesson`)
-- **架构决策与规范**：写入 `viking://resources/master_memory/...`；
+- **架构决策与规范（防信息孤岛铁律）**：必须写入公共共享域 `viking://resources/master_memory/...`；**严禁**将跨 Agent 通用知识调用 `openviking_store`（会自动创建 `user/<user_id>/sessions/mcp-store-*` 并默认沉淀至按 `user_id` 隔离的 `memories/`）或写入 `viking://~/memories/`，避免同空间其他 Agent 检索不到而形成孤岛；
 - **踩坑与故障反思**：调用 `openviking_record_evolution_lesson`，系统自动写入本地技能与 Master Memory 双写存盘，形成智力复利。
 
 ### 4. 目录级规则检索与外部 MCP 动态路由 (`openviking_rule_search` / `openviking_find_mcp_tools` / `openviking_invoke_mcp_tool`)
