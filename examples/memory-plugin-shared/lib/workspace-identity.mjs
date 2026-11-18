@@ -21,6 +21,7 @@ import { dirname, isAbsolute, join, parse, resolve, sep } from "node:path";
 // someone marked as a workspace, and it must not pull in the config layer to
 // learn them.
 export const CONFIG_DIR_NAME = ".openviking";
+export const TOML_FILE = ".openviking.toml";
 export const TEAM_FILE = "config.json";
 export const LOCAL_FILE = "config.local.json";
 
@@ -194,6 +195,9 @@ function resolveGitDir(root) {
 
 /** A directory the user made a workspace on purpose, by giving it a config file. */
 function hasWorkspaceMarker(dir) {
+  try {
+    if (statSync(join(dir, TOML_FILE)).isFile()) return true;
+  } catch { /* not marked with .openviking.toml */ }
   for (const name of [TEAM_FILE, LOCAL_FILE]) {
     try {
       if (statSync(join(dir, CONFIG_DIR_NAME, name)).isFile()) return true;

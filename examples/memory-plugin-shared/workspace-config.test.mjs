@@ -16,6 +16,8 @@ import {
   normalizeWorkspaceConfig,
   readWorkspaceFile,
 } from "./lib/workspace-config.mjs";
+import { findWorkspaceRoot } from "./lib/workspace-identity.mjs";
+import { resolveConfig as resolveUnifiedPluginConfig } from "../../packages/plugins/openviking-memory/config.mjs";
 
 async function workspace(files = {}) {
   const root = realpathSync(await mkdtemp(join(tmpdir(), "ov-wsconf-")));
@@ -322,4 +324,56 @@ test("checkMinClientVersion compares numerically, not as text", () => {
       `${current} vs ${required}`,
     );
   }
+});
+
+test(".openviking.toml persists workspace settings, blocks secrets and respects layer precedence", async () => {
+  const dir = realpathSync(await mkdtemp(join(tmpdir(), "ov-ws-toml-")));
+  await writeFile(
+    join(dir, ".openviking.toml"),
+    [
+      "version = 1",
+      'notes = "keep ${HOME} literal"',
+      "",
+      "[peer]",
+      'id = "toml-team-peer"',
+      'source = "git"',
+      "",
+      "[recall]",
+      "enabled = true",
+      'peer_scope = "actor"',
+      "max_items = 25",
+      "",
+      "[secrets_leak]",
+      'api_key = "sk-forbidden"',
+      'url = "https://attacker.invalid"',
+    ].join("\n"),
+  );
+  await mkdir(join(dir, CONFIG_DIR_NAME), { recursive: true });
+  await writeFile(
+    join(dir, CONFIG_DIR_NAME, LOCAL_FILE),
+    JSON.stringify({ version: 1, peer: { id: "local-override-peer" } }),
+  );
+
+  const sub = join(dir, "packages", "sub");
+  await mkdir(sub, { recursive: true });
+  const ws = findWorkspaceRoot(sub);
+  assert.equal(ws.root, dir);
+
+  const { layers, warnings } = loadWorkspaceLayers(ws.root);
+  assert.equal(layers.length, 2);
+  const { value, provenance } = mergeConfigLayers(layers, warnings);
+  assert.equal(value.notes, "keep ${HOME} literal", "${VAR} must remain literal in TOML");
+  assert.equal(value.recall.peer_scope, "actor");
+  assert.equal(value.recall.max_items, 25);
+  assert.equal(value.peer.id, "local-override-peer", "config.local.json overrides .openviking.toml");
+  assert.equal(provenance["peer.id"].shadowed[0].value, "toml-team-peer");
+  assert.equal(value.secrets_leak?.api_key, undefined);
+  assert.equal(value.secrets_leak?.url, undefined);
+  assert.ok(warnings.some((w) => w.includes("api_key")));
+  assert.ok(warnings.some((w) => w.includes("url")));
+
+  const dshResolved = resolveUnifiedPluginConfig({}, { OPENVIKING_URL: "http://127.0.0.1:1933" }, sub);
+  assert.equal(dshResolved.peerId, "local-override-peer");
+  assert.equal(dshResolved.recallPeerScope, "actor");
+  assert.equal(dshResolved.recallLimit, 25);
 });

@@ -1,4 +1,5 @@
 import { buildUserAgent, resolveOpenVikingCredentials, readManifestVersion } from "./shared/credentials.mjs";
+import { resolveWorkspaceSettings } from "./shared/plugin-config.mjs";
 import { resolveEffectivePeerId } from "./shared/workspace-peer.mjs";
 import { fileURLToPath } from "node:url";
 
@@ -22,6 +23,7 @@ const DEFAULT_CONFIG = Object.freeze({
   workspacePeer: true,
   peerSource: "",
   recallPeerScope: "all",
+  recallEventsDecayProtection: "",
   recallQueryExpansion: "auto",
   recallQueryExpansionConfigured: false,
   syncTurns: true,
@@ -46,9 +48,12 @@ const DEFAULT_CONFIG = Object.freeze({
 
 export function resolveConfig(input = {}, env = process.env, cwd = process.cwd()) {
   const credentials = resolveOpenVikingCredentials(env);
-  const explicitPeerId = input.peerId || credentials.peerId;
+  const ws = cwd ? resolveWorkspaceSettings(cwd, env) : { settings: {}, root: "", provenance: {}, warnings: [], announced: [] };
+  const wsSettings = ws.settings || {};
+  const explicitPeerId = input.peerId || credentials.peerId || wsSettings.peerId || "";
   const config = {
     ...DEFAULT_CONFIG,
+    ...wsSettings,
     ...input,
     endpoint: input.endpoint || credentials.baseUrl || DEFAULT_CONFIG.endpoint,
     apiKey: input.apiKey || credentials.apiKey,
@@ -56,9 +61,14 @@ export function resolveConfig(input = {}, env = process.env, cwd = process.cwd()
     user: input.user || credentials.user,
     peerId: explicitPeerId,
     explicitPeerId,
+    peerSource: input.peerSource || wsSettings.peerSource || "",
+    workspaceRoot: ws.root || "",
+    workspaceProvenance: ws.provenance || {},
+    workspaceAnnounced: ws.announced || [],
     userAgent: buildUserAgent("dsh", PLUGIN_VERSION),
     harness: "dsh",
-    recallLimitConfigured: Object.prototype.hasOwnProperty.call(input, "recallLimit"),
+    recallLimitConfigured: Object.prototype.hasOwnProperty.call(input, "recallLimit")
+      || Object.prototype.hasOwnProperty.call(wsSettings, "recallLimit"),
     recallQueryExpansionConfigured: Object.prototype.hasOwnProperty.call(input, "recallQueryExpansion"),
   };
 
@@ -68,8 +78,14 @@ export function resolveConfig(input = {}, env = process.env, cwd = process.cwd()
       config.workspacePeer,
     );
   }
+  if (env.OPENVIKING_PEER_SOURCE) {
+    config.peerSource = env.OPENVIKING_PEER_SOURCE;
+  }
   if (env.OPENVIKING_RECALL_PEER_SCOPE) {
     config.recallPeerScope = env.OPENVIKING_RECALL_PEER_SCOPE;
+  }
+  if (env.OPENVIKING_RECALL_EVENTS_DECAY_PROTECTION !== undefined) {
+    config.recallEventsDecayProtection = env.OPENVIKING_RECALL_EVENTS_DECAY_PROTECTION;
   }
   if (env.OPENVIKING_RECALL_QUERY_EXPANSION) {
     config.recallQueryExpansion = env.OPENVIKING_RECALL_QUERY_EXPANSION;
@@ -82,10 +98,12 @@ export function resolveConfig(input = {}, env = process.env, cwd = process.cwd()
 
   config.endpoint = String(config.endpoint || DEFAULT_CONFIG.endpoint).replace(/\/+$/, "");
   config.workspacePeer = config.workspacePeer !== false;
-  const effectivePeer = resolveEffectivePeerId({ cfg: config, cwd });
+  const effectivePeer = resolveEffectivePeerId({ cfg: config, cwd, env });
   config.peerId = effectivePeer.peerId;
   config.legacyPeerId = effectivePeer.legacyPeerId;
+  config.peerSourceResolved = effectivePeer.origin || effectivePeer.source;
   config.recallPeerScope = config.recallPeerScope === "actor" ? "actor" : "all";
+  config.recallEventsDecayProtection = String(config.recallEventsDecayProtection || "").trim();
   config.recallQueryExpansion = config.recallQueryExpansion === "off" ? "off" : "auto";
   config.recallLimit = clampInteger(config.recallLimit, 1, 50, DEFAULT_CONFIG.recallLimit);
   config.recallMaxContentChars = clampInteger(

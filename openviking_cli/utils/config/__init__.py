@@ -93,6 +93,19 @@ from .storage_config import StorageConfig
 from .telemetry_config import TelemetryConfig, TracerConfig
 from .vectordb_config import OpenGaussConfig, VectorDBBackendConfig
 from .vlm_config import VLMConfig
+from .workspace_config import (
+    persist_workspace_peer,
+    read_registry_entry,
+    read_workspace_file,
+    resolve_workspace_settings,
+)
+from .workspace_identity import (
+    find_workspace_root,
+    normalize_git_remote,
+    resolve_workspace_identity,
+    sanitize_peer_id,
+)
+from .workspace_peer import resolve_workspace_peer
 
 __all__ = [
     "AGFSConfig",
@@ -185,4 +198,13 @@ __all__ = [
     "GitConfig",
     "GitLocalConfig",
     "GitS3Config",
+    "find_workspace_root",
+    "normalize_git_remote",
+    "persist_workspace_peer",
+    "read_registry_entry",
+    "read_workspace_file",
+    "resolve_workspace_identity",
+    "resolve_workspace_peer",
+    "resolve_workspace_settings",
+    "sanitize_peer_id",
 ]

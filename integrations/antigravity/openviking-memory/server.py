@@ -77,11 +77,32 @@ PLUGIN_VERSION = _resolve_plugin_version()
 
 
 
-ACTOR_PEER = (
-    os.environ.get("OPENVIKING_ACTOR_PEER")
-    or _LOCAL_CFG.get("actor_peer")
-    or ""
-)
+_SHARED_DIR = _PLUGIN_DIR / "shared"
+if str(_SHARED_DIR) not in sys.path:
+    sys.path.insert(0, str(_SHARED_DIR))
+
+try:
+    from workspace_resolver import resolve_workspace_runtime as _resolve_workspace_runtime
+except Exception:  # pragma: no cover - fail-open
+    _resolve_workspace_runtime = None
+
+
+def _get_workspace_state() -> Dict[str, Any]:
+    if _resolve_workspace_runtime is not None:
+        try:
+            return _resolve_workspace_runtime(
+                cwd=os.environ.get("OPENVIKING_WORKSPACE") or os.getcwd(),
+                plugin_config=_LOCAL_CFG,
+                harness="antigravity",
+            )
+        except Exception:
+            pass
+    fallback_peer = os.environ.get("OPENVIKING_ACTOR_PEER") or _LOCAL_CFG.get("actor_peer") or ""
+    return {"peer_id": fallback_peer, "peer_source": "fallback", "peer_origin": "legacy", "workspace_root": ""}
+
+
+_INITIAL_WS = _get_workspace_state()
+ACTOR_PEER = _INITIAL_WS.get("peer_id", "")
 
 _IS_BOUND_USER_KEY = bool(API_KEY and len(API_KEY.strip().split(".")) == 3)
 VERIFIED_USER = "" if _IS_BOUND_USER_KEY else os.environ.get("OPENVIKING_USER", "").strip()
@@ -92,8 +113,10 @@ DEFAULT_TIMEOUT: float = 120.0
 
 
 def _build_headers() -> Dict[str, str]:
+    ws_state = _get_workspace_state()
+    peer = ws_state.get("peer_id", "")
     headers = {
-        "User-Agent": "Antigravity-OpenViking-Pure-Proxy/2.0.40",
+        "User-Agent": "Antigravity-OpenViking-Pure-Proxy/2.0.45",
         "Content-Type": "application/json; charset=utf-8",
         "Accept": "application/json, text/event-stream",
         "X-OpenViking-Plugin": "openviking-memory",
@@ -104,8 +127,8 @@ def _build_headers() -> Dict[str, str]:
         headers["X-OpenViking-User"] = VERIFIED_USER
     if ACCOUNT:
         headers["X-OpenViking-Account"] = ACCOUNT
-    if ACTOR_PEER:
-        headers["X-OpenViking-Actor-Peer"] = ACTOR_PEER
+    if peer:
+        headers["X-OpenViking-Actor-Peer"] = peer
     return headers
 
 
@@ -222,10 +245,14 @@ def _forward_request(request_obj: Dict[str, Any]) -> list[Dict[str, Any]]:
                                 try:
                                     parsed = json.loads(first.get("text", "{}"))
                                     if isinstance(parsed, dict):
+                                        ws_state = _get_workspace_state()
                                         parsed["api_endpoint"] = API_BASE
                                         parsed["plugin_version"] = PLUGIN_VERSION
-                                        if "peer" not in parsed or parsed["peer"] == "unknown":
-                                            parsed["peer"] = ACTOR_PEER
+                                        if "peer" not in parsed or parsed["peer"] in ("unknown", ""):
+                                            parsed["peer"] = ws_state.get("peer_id", "")
+                                        parsed["peer_source"] = ws_state.get("peer_source", "")
+                                        parsed["peer_origin"] = ws_state.get("peer_origin", "")
+                                        parsed["workspace_root"] = ws_state.get("workspace_root", "")
                                         first["text"] = json.dumps(parsed, ensure_ascii=False, indent=2)
                                 except Exception:
                                     pass
@@ -246,6 +273,7 @@ def _forward_request(request_obj: Dict[str, Any]) -> list[Dict[str, Any]]:
             t_name = params.get("name", "")
             if t_name in ("whoami", "openviking_whoami"):
                 masked_k = f"{API_KEY[:5]}...{API_KEY[-4:]}" if len(API_KEY) > 10 else "***"
+                ws_state = _get_workspace_state()
                 return [{
                     "jsonrpc": "2.0",
                     "id": req_id,
@@ -255,7 +283,10 @@ def _forward_request(request_obj: Dict[str, Any]) -> list[Dict[str, Any]]:
                             "text": json.dumps({
                                 "user": "antigravity",
                                 "account": "default",
-                                "peer": ACTOR_PEER,
+                                "peer": ws_state.get("peer_id", ""),
+                                "peer_source": ws_state.get("peer_source", ""),
+                                "peer_origin": ws_state.get("peer_origin", ""),
+                                "workspace_root": ws_state.get("workspace_root", ""),
                                 "role": "user",
                                 "authenticated": bool(API_KEY),
                                 "masked_user_key": masked_k,
@@ -281,6 +312,7 @@ def _forward_request(request_obj: Dict[str, Any]) -> list[Dict[str, Any]]:
             t_name = params.get("name", "")
             if t_name in ("whoami", "openviking_whoami"):
                 masked_k = f"{API_KEY[:5]}...{API_KEY[-4:]}" if len(API_KEY) > 10 else "***"
+                ws_state = _get_workspace_state()
                 return [{
                     "jsonrpc": "2.0",
                     "id": req_id,
@@ -290,7 +322,10 @@ def _forward_request(request_obj: Dict[str, Any]) -> list[Dict[str, Any]]:
                             "text": json.dumps({
                                 "user": "antigravity",
                                 "account": "default",
-                                "peer": ACTOR_PEER,
+                                "peer": ws_state.get("peer_id", ""),
+                                "peer_source": ws_state.get("peer_source", ""),
+                                "peer_origin": ws_state.get("peer_origin", ""),
+                                "workspace_root": ws_state.get("workspace_root", ""),
                                 "role": "user",
                                 "authenticated": bool(API_KEY),
                                 "masked_user_key": masked_k,

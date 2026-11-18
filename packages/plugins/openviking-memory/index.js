@@ -10,6 +10,7 @@ import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { homedir } from 'node:os'
 import { resolveOpenVikingCredentials } from './shared/credentials.mjs'
+import { resolveConfig } from './config.mjs'
 
 const PKG_NAME = 'dsh-plugin-openviking-memory'
 const TARGET_PLUGIN = 'openviking-memory'
@@ -192,7 +193,13 @@ export function apply(ctx, config = {}) {
   }
   const getPeer = () => {
     const uiCfg = readUiSavedConfig()
-    return getVal(config.peer, '') || (uiCfg.peer || '').trim() || credentials.peerId || TARGET_PLUGIN
+    const explicitCfgPeer = getVal(config.peer, '')
+    const uiPeer = (uiCfg.peer || '').trim()
+    const customPeer = (explicitCfgPeer && explicitCfgPeer !== TARGET_PLUGIN)
+      ? explicitCfgPeer
+      : ((uiPeer && uiPeer !== TARGET_PLUGIN) ? uiPeer : '')
+    const resolved = resolveConfig(customPeer ? { peerId: customPeer } : {}, process.env, process.cwd())
+    return resolved.peerId || credentials.peerId || TARGET_PLUGIN
   }
   const getEnableMcp = () => getVal(config.enableMcp, true) !== false
 

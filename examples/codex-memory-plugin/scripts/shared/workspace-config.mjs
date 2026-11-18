@@ -24,7 +24,8 @@
 import { readFileSync, realpathSync, statSync } from "node:fs";
 import { isAbsolute, join, relative } from "node:path";
 
-import { CONFIG_DIR_NAME, LOCAL_FILE, TEAM_FILE } from "./workspace-identity.mjs";
+import { CONFIG_DIR_NAME, LOCAL_FILE, TEAM_FILE, TOML_FILE } from "./workspace-identity.mjs";
+import { parseWorkspaceToml } from "./workspace-toml.mjs";
 
 /**
  * `JSON.parse` keeps `__proto__` as an own property, and assigning it walks
@@ -241,18 +242,21 @@ export function readWorkspaceFile(path, { root = "", layer = "" } = {}) {
   }
 
   let parsed;
+  const isToml = String(path).toLowerCase().endsWith(".toml");
   try {
     // Deliberately bare: no `${VAR}` expansion reaches a workspace file.
-    parsed = JSON.parse(readFileSync(path, "utf-8"));
+    const text = readFileSync(path, "utf-8");
+    parsed = isToml ? parseWorkspaceToml(text) : JSON.parse(text);
   } catch (err) {
-    warnings.push(`${path} is not valid JSON (${err?.message || err})`);
+    warnings.push(`${path} is not valid ${isToml ? "TOML" : "JSON"} (${err?.message || err})`);
     return empty;
   }
   if (!isPlainObject(parsed)) {
-    warnings.push(`${path} must contain a JSON object`);
+    warnings.push(`${path} must contain a ${isToml ? "TOML table" : "JSON object"}`);
     return empty;
   }
-  if (parsed.version !== CONFIG_VERSION) {
+  const declaredVer = parsed.version === undefined && isToml ? CONFIG_VERSION : parsed.version;
+  if (declaredVer !== CONFIG_VERSION) {
     warnings.push(`${path} declares version ${JSON.stringify(parsed.version)}; this client understands ${CONFIG_VERSION}`);
     return empty;
   }
@@ -415,6 +419,7 @@ export function workspaceConfigPaths(root) {
   if (!root) return [];
   const dir = join(root, CONFIG_DIR_NAME);
   return [
+    { layer: `${TOML_FILE} (workspace)`, path: join(root, TOML_FILE) },
     { layer: `${TEAM_FILE} (workspace)`, path: join(dir, TEAM_FILE) },
     { layer: `${LOCAL_FILE} (workspace)`, path: join(dir, LOCAL_FILE) },
   ];

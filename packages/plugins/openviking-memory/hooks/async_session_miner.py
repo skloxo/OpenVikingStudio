@@ -66,6 +66,27 @@ def load_config() -> Tuple[str, str]:
     return api or "http://127.0.0.1:1933", key
 
 
+def _resolve_workspace_state(cwd: str = "") -> Dict[str, Any]:
+    shared_dir = PLUGIN_DIR / "shared"
+    if str(shared_dir) not in sys.path:
+        sys.path.insert(0, str(shared_dir))
+    local_cfg: Dict[str, Any] = {}
+    if CONFIG_FILE.exists():
+        try:
+            local_cfg = json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    try:
+        from workspace_resolver import resolve_workspace_runtime
+        return resolve_workspace_runtime(
+            cwd=cwd or os.environ.get("OPENVIKING_WORKSPACE", "") or os.getcwd(),
+            plugin_config=local_cfg,
+            harness="antigravity",
+        )
+    except Exception:
+        return {"peer_id": "", "workspace_root": "", "capture_enabled": True}
+
+
 def load_cache() -> Dict[str, Any]:
     if CACHE_FILE.exists():
         try:
@@ -150,6 +171,10 @@ def main():
 
     transcript_path = Path(args.transcript).resolve()
     api, key = load_config()
+    ws_state = _resolve_workspace_state()
+    if not ws_state.get("capture_enabled", True):
+        log(f"跳过处理: Workspace 已关闭 capture.enabled ({ws_state.get('workspace_root')})")
+        return
 
     cache = load_cache()
     cached_session = cache.get(str(transcript_path), {})
@@ -197,6 +222,8 @@ def main():
                     {
                         "session_id": session_id,
                         "transcript_path": str(transcript_path),
+                        "peer_id": ws_state.get("peer_id", ""),
+                        "workspace_root": ws_state.get("workspace_root", ""),
                         "timestamp": datetime.datetime.now().isoformat(),
                         "error_summary": result["error_summary"],
                         "note": "检测到会话成功自愈报错但未显式写入体外大脑，已加入待结晶对账队列",

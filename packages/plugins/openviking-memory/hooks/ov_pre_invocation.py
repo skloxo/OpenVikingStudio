@@ -82,12 +82,17 @@ def is_hook_enabled_in_cloud(api: str, key: str, plugin_dir: Path) -> bool:
         return True
 
 
-def extract_query_from_stdin():
+def extract_hook_context():
+    query = ""
+    hook_cwd = ""
     try:
         if not sys.stdin.isatty():
             line = sys.stdin.readline()
             if line and line.strip():
                 data = json.loads(line.strip())
+                hook_cwd = str(
+                    data.get("cwd") or data.get("workspacePath") or data.get("workspace_path") or ""
+                ).strip()
                 transcript_path = data.get("transcriptPath") or data.get("transcript_path")
                 if transcript_path and os.path.exists(transcript_path):
                     with open(transcript_path, "r", encoding="utf-8", errors="ignore") as f:
@@ -95,13 +100,21 @@ def extract_query_from_stdin():
                         for line_item in reversed(lines[-40:]):
                             try:
                                 entry = json.loads(line_item)
+                                if not hook_cwd and isinstance(entry.get("cwd"), str):
+                                    hook_cwd = entry["cwd"].strip()
                                 if entry.get("type") == "USER_INPUT" and entry.get("content"):
-                                    return entry["content"].strip()
+                                    query = entry["content"].strip()
+                                    break
                             except Exception:
                                 pass
     except Exception:
         pass
-    return ""
+    return query, hook_cwd or os.environ.get("OPENVIKING_WORKSPACE", "") or os.getcwd()
+
+
+def extract_query_from_stdin():
+    query, _ = extract_hook_context()
+    return query
 
 
 def emit_json(payload: dict):
@@ -114,6 +127,24 @@ def emit_json(payload: dict):
         sys.stdout.buffer.flush()
 
 
+def _resolve_workspace_state(plugin_dir: Path, hook_cwd: str) -> dict:
+    shared_dir = plugin_dir / "shared"
+    if str(shared_dir) not in sys.path:
+        sys.path.insert(0, str(shared_dir))
+    local_cfg = {}
+    cfg_file = plugin_dir / "config.json"
+    if cfg_file.exists():
+        try:
+            local_cfg = json.loads(cfg_file.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    try:
+        from workspace_resolver import resolve_workspace_runtime
+        return resolve_workspace_runtime(cwd=hook_cwd, plugin_config=local_cfg, harness="antigravity")
+    except Exception:
+        return {"peer_id": "", "peer_scope": "all", "recall_enabled": True}
+
+
 def main():
     api, key, plugin_dir = load_plugin_config()
     
@@ -123,7 +154,11 @@ def main():
         emit_json({})
         return
 
-    query = extract_query_from_stdin()
+    query, hook_cwd = extract_hook_context()
+    ws_state = _resolve_workspace_state(plugin_dir, hook_cwd)
+    if not ws_state.get("recall_enabled", True):
+        emit_json({})
+        return
     # 核心：剥离 @[Quote] / @[...] 引用标记，提取真实提问文本防误杀
     cleaned_query = re.sub(r"@\[[^\]]*\]", " ", query)
     cleaned_query = re.sub(r"^\s*@[a-zA-Z0-9_-]+\s*", " ", cleaned_query)
@@ -151,13 +186,18 @@ def main():
         return
 
     url = f"{api}/api/v1/search/find"
-    payload = json.dumps({"query": target_query[:300], "limit": 2}).encode("utf-8")
+    find_body = {"query": target_query[:300], "limit": 2}
+    if ws_state.get("peer_scope") == "actor":
+        find_body["peer_scope"] = "actor"
+    payload = json.dumps(find_body).encode("utf-8")
     headers = {
         "Content-Type": "application/json",
-        "User-Agent": "Antigravity-OpenViking-Plugin/2.0.11"
+        "User-Agent": "Antigravity-OpenViking-Plugin/2.0.45"
     }
     if key:
         headers["Authorization"] = f"Bearer {key}"
+    if ws_state.get("peer_id"):
+        headers["X-OpenViking-Actor-Peer"] = str(ws_state["peer_id"])
 
     req = urllib.request.Request(url, data=payload, headers=headers, method="POST")
     try:

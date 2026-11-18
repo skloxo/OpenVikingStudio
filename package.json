@@ -1,7 +1,7 @@
 {
   "name": "openviking-studio",
   "private": true,
-  "version": "1.7.196",
+  "version": "1.7.197",
   "type": "module",
   "imports": {
     "#/*": "./src/*"
@@ -52,6 +52,7 @@
     "axios": "^1.14.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cytoscape": "^3.34.0",
     "echarts": "^6.1.0",
     "echarts-for-react": "^3.0.6",
     "file-type": "^22.0.1",
@@ -59,7 +60,9 @@
     "highlight.js": "^11.11.1",
     "i18next": "^26.0.3",
     "i18next-browser-languagedetector": "^8.2.1",
+    "katex": "^0.16.47",
     "lucide-react": "^0.545.0",
+    "mermaid": "^11.16.0",
     "next-themes": "^0.4.6",
     "postprocessing": "^6.39.0",
     "react": "^19.2.0",
