@@ -336,7 +336,7 @@ class SearchService:
             score_threshold: Score threshold
             filter: Metadata filters
             level: Filter by level (0=abstract, 1=overview, 2=file)
-            mode: Retrieval mode ('fast', 'thinking', 'quick')
+            mode: Retrieval mode ('fast', 'thinking', 'quick', 'bm25_fast', 'zero_embedding')
 
         Returns:
             FindResult

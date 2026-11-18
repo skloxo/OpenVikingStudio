@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import asyncio
 import math
-import os
 import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
@@ -17,12 +16,13 @@ from openviking.core.retrieval_types import SearchType
 from openviking.models.embedder.base import EmbedResult, embed_compat, embedder_supports_multimodal
 from openviking.models.rerank import RerankClient
 from openviking.retrieve.asymmetric_decay import AsymmetricDecayEngine
+from openviking.retrieve.bm25_fast_path import format_bm25_fast_results, is_bm25_fast_mode, search_bm25_candidates
 from openviking.retrieve.rerank_scoring import RerankScores, finite_score, rerank_scores
 from openviking.retrieve.retrieval_stats import get_stats_collector
 from openviking.retrieve.rrf_fusion import rrf_fuse
 from openviking.server.identity import RequestContext
 from openviking.storage.abstract_overview import AbstractOverviewFormatError, body_for_preview
-from openviking.storage.bm25_fts_index import BM25FTSIndex, BM25Match
+from openviking.storage.bm25_fts_index import BM25FTSIndex
 from openviking.storage.expr import FilterExpr
 from openviking.storage.vikingdb_manager import VikingDBManager, VikingDBManagerProxy
 from openviking.telemetry import get_current_telemetry
@@ -56,6 +56,7 @@ class RetrieverMode(str):
     THINKING = "thinking"
     QUICK = "quick"
     FAST = "fast"
+    BM25_FAST = "bm25_fast"
 
 
 class GlobalHybridRetriever:
@@ -66,7 +67,7 @@ class GlobalHybridRetriever:
 
     def __init__(
         self,
-        storage: VikingDBManager,
+        storage: Optional[VikingDBManager],
         embedder: Optional[Any],
         rerank_config: Optional[RerankConfig] = None,
         retrieval_config: Optional[Any] = None,
@@ -116,33 +117,24 @@ class GlobalHybridRetriever:
         t0 = time.monotonic()
         telemetry = get_current_telemetry()
         image_query = query.image_query
+        is_bm25_fast = is_bm25_fast_mode(mode, image_query=image_query)
 
         if mode is None:
             mode = RetrieverMode.THINKING if self._rerank_client else RetrieverMode.QUICK
         elif mode == RetrieverMode.FAST:
             mode = RetrieverMode.QUICK
 
-        use_rerank = mode == RetrieverMode.THINKING and self._rerank_client is not None and not image_query
+        use_rerank = (
+            not is_bm25_fast
+            and mode == RetrieverMode.THINKING
+            and self._rerank_client is not None
+            and not image_query
+        )
         target_dirs = [d for d in (query.target_directories or []) if d]
         if has_explicit_target is None:
             has_explicit_target = bool(target_dirs)
         if image_query and level is None:
             level = [2]
-
-        vector_proxy = self._create_vector_proxy(ctx)
-        if not await vector_proxy.collection_exists_bound():
-            return QueryResult(query=query, matched_contexts=[], searched_directories=[])
-
-        query_vector = None
-        sparse_query_vector = None
-        if search_type == "semantic" and self.embedder:
-            if image_query and not await embedder_supports_multimodal(self.embedder):
-                raise InvalidArgumentError("Image search requires a multimodal embedding model.")
-            with telemetry.measure("search.embed_query"):
-                embedding_input = getattr(query, "embedding_input", None) or query.query
-                res: EmbedResult = await embed_compat(self.embedder, embedding_input, is_query=True)
-                query_vector = res.dense_vector
-                sparse_query_vector = res.sparse_vector
 
         context_type = query.context_type.value if query.context_type else None
         if (
@@ -156,27 +148,55 @@ class GlobalHybridRetriever:
         root_uris = target_dirs if target_dirs else default_target_directories(ctx, context_type=query.context_type)
         search_limit = limit * self.RERANK_CANDIDATE_MULTIPLIER if use_rerank else limit
 
-        dense_task = self._search_dense(
-            vector_proxy, query_vector, sparse_query_vector, query.query,
-            context_type, target_dirs, scope_dsl, level, search_limit, search_type,
-            events_time_decay_protection, request_now
-        )
-
-        async def _safe_bm25() -> tuple[list[dict[str, Any]], bool]:
+        async def _safe_bm25(allow_unbounded: bool = False) -> tuple[list[dict[str, Any]], bool]:
             try:
-                return await self._search_bm25(query.query, search_limit, context_type, target_dirs, level=level)
+                return await self._search_bm25(
+                    query.query, search_limit, context_type, target_dirs,
+                    level=level, allow_unbounded_singleton=allow_unbounded,
+                )
             except Exception as exc:
                 logger.warning(f"[GlobalHybridRetriever] BM25 invocation fail-open degraded: {exc}")
                 return [], False
 
-        dense_res, (sparse_res, is_bm25_ready) = await asyncio.gather(dense_task, _safe_bm25())
+        if is_bm25_fast:
+            with telemetry.measure("search.vector_retrieval"):
+                sparse_res, is_bm25_ready = await _safe_bm25(allow_unbounded=True)
+            telemetry.count("vector.searches", 1)
+            telemetry.count("vector.scored", 0)
+            telemetry.count("vector.scanned", 0)
+            fused = format_bm25_fast_results(sparse_res, search_limit, is_bm25_ready)
+        else:
+            vector_proxy = self._create_vector_proxy(ctx)
+            if not await vector_proxy.collection_exists_bound():
+                return QueryResult(query=query, matched_contexts=[], searched_directories=[])
 
-        fused = self._fuse_and_rescore(
-            dense_candidates=dense_res,
-            sparse_candidates=sparse_res,
-            limit=search_limit,
-            is_bm25_ready=is_bm25_ready,
-        )
+            query_vector = None
+            sparse_query_vector = None
+            if search_type == "semantic" and self.embedder:
+                if image_query and not await embedder_supports_multimodal(self.embedder):
+                    raise InvalidArgumentError("Image search requires a multimodal embedding model.")
+                with telemetry.measure("search.embed_query"):
+                    embedding_input = getattr(query, "embedding_input", None) or query.query
+                    res: EmbedResult = await embed_compat(self.embedder, embedding_input, is_query=True)
+                    query_vector = res.dense_vector
+                    sparse_query_vector = res.sparse_vector
+
+            dense_task = self._search_dense(
+                vector_proxy, query_vector, sparse_query_vector, query.query,
+                context_type, target_dirs, scope_dsl, level, search_limit, search_type,
+                events_time_decay_protection, request_now
+            )
+            with telemetry.measure("search.vector_retrieval"):
+                dense_res, (sparse_res, is_bm25_ready) = await asyncio.gather(
+                    dense_task, _safe_bm25(allow_unbounded=False)
+                )
+            telemetry.count("vector.searches", 1)
+            telemetry.count("vector.scored", len(dense_res))
+            telemetry.count("vector.scanned", len(dense_res))
+            fused = self._fuse_and_rescore(
+                dense_candidates=dense_res, sparse_candidates=sparse_res,
+                limit=search_limit, is_bm25_ready=is_bm25_ready,
+            )
 
         # Apply asymmetric time decay
         eval_now_dt = request_now or datetime.now(timezone.utc)
@@ -221,6 +241,7 @@ class GlobalHybridRetriever:
                 score, self._resolve_threshold(score_threshold, from_model), score_gte
             )
         ]
+        telemetry.count("vector.passed", len(passed_candidates))
 
         matched = await self._convert_to_matched_contexts(passed_candidates, ctx=ctx)
         final = matched[:limit]
@@ -272,39 +293,21 @@ class GlobalHybridRetriever:
         ctx_type: Optional[str],
         target_dirs: Optional[List[str]],
         level: Optional[List[int]] = None,
+        allow_unbounded_singleton: bool = False,
     ) -> tuple[list[dict[str, Any]], bool]:
-        if not self.bm25_index:
-            if not isinstance(self.vector_store, VikingDBManager) or os.environ.get("PYTEST_CURRENT_TEST"):
-                return [], False
-            try:
-                self.bm25_index = BM25FTSIndex.get_instance()
-            except Exception:
-                return [], False
-        try:
-            matches: list[BM25Match] = await asyncio.to_thread(
-                self.bm25_index.search,
-                query=query,
-                limit=limit,
-                context_type=ctx_type,
-                target_directories=target_dirs,
-            )
-            candidates = [
-                {
-                    "uri": m.uri,
-                    "title": m.title,
-                    "level": m.level,
-                    "context_type": m.context_type,
-                    "bm25_score": m.bm25_score,
-                    "snippet": m.snippet,
-                    "abstract": m.snippet or m.title,
-                }
-                for m in matches
-                if level is None or m.level in level
-            ]
-            return candidates, True
-        except Exception as exc:
-            logger.warning(f"[GlobalHybridRetriever] BM25 FTS5 search fail-open degraded: {exc}")
-            return [], False
+        candidates, is_ready, resolved = await search_bm25_candidates(
+            bm25_index=self.bm25_index,
+            vector_store=self.vector_store,
+            query=query,
+            limit=limit,
+            ctx_type=ctx_type,
+            target_dirs=target_dirs,
+            level=level,
+            allow_unbounded_singleton=allow_unbounded_singleton,
+        )
+        if resolved is not None and self.bm25_index is None:
+            self.bm25_index = resolved
+        return candidates, is_ready
 
     def _fuse_and_rescore(
         self,

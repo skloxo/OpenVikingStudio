@@ -247,12 +247,13 @@ class _SemanticMixin:
         for target_dir in retrieval_targets.target_directories:
             await self._ensure_retrieval_scope(target_dir, ctx)
 
+        is_bm25_fast = str(mode or "").strip().lower() in ("bm25_fast", "zero_embedding") and not image_url
         storage = self._get_vector_store()
-        if not storage:
+        if not storage and not is_bm25_fast:
             raise RuntimeError("Vector store not initialized. Call OpenViking.initialize() first.")
 
         embedder = self._get_embedder()
-        if not embedder:
+        if not embedder and not is_bm25_fast:
             raise RuntimeError("Embedder not configured.")
 
         retriever = HierarchicalRetriever(
@@ -260,6 +261,7 @@ class _SemanticMixin:
             embedder=embedder,
             rerank_config=self.rerank_config,
             retrieval_config=self.retrieval_config,
+            bm25_index=getattr(self, "_bm25_index", None),
         )
 
         typed_query = TypedQuery(

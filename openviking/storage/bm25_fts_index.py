@@ -15,8 +15,10 @@ from pathlib import Path
 import re
 import sqlite3
 import threading
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence
 from pydantic import BaseModel, Field
+
+from openviking.storage.bm25_tokenizer import build_cjk_token_field, sanitize_fts_query
 
 
 class BM25Match(BaseModel):
@@ -42,6 +44,7 @@ class BM25IndexStats(BaseModel):
 class BM25FTSIndex:
     """Thread-safe SQLite FTS5 inverted index for fast lexical retrieval."""
 
+    SCHEMA_VERSION = "2"
     _instance: Optional["BM25FTSIndex"] = None
     _lock = threading.Lock()
 
@@ -55,6 +58,7 @@ class BM25FTSIndex:
             self.db_path.parent.mkdir(parents=True, exist_ok=True)
 
         self._db_lock = threading.Lock()
+        self._df_cache: Dict[str, int] = {}
         self._init_db()
 
     @classmethod
@@ -76,15 +80,47 @@ class BM25FTSIndex:
         return conn
 
     def _init_db(self) -> None:
-        """Initialize the FTS5 virtual table and metadata index."""
+        """Initialize schema v2 FTS5 virtual table (with CJK token column) and metadata."""
         with self._db_lock:
             conn = self._get_connection()
             try:
+                conn.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS fts_schema_meta (
+                        key TEXT PRIMARY KEY,
+                        value TEXT NOT NULL
+                    );
+                    """
+                )
+                row = conn.execute(
+                    "SELECT value FROM fts_schema_meta WHERE key = 'schema_version'"
+                ).fetchone()
+                cols = {
+                    r[1]
+                    for r in conn.execute("PRAGMA table_info('fts_documents')").fetchall()
+                }
+                needs_rebuild = (row is None or row[0] != self.SCHEMA_VERSION) or (
+                    bool(cols) and "cjk_tokens" not in cols
+                )
+                migrated_rows: List[tuple[Any, ...]] = []
+                if needs_rebuild and {"uri", "title", "content"}.issubset(cols):
+                    try:
+                        level_expr = "level" if "level" in cols else "2"
+                        ctype_expr = "context_type" if "context_type" in cols else "'resource'"
+                        migrated_rows = conn.execute(
+                            f"SELECT uri, title, content, {level_expr}, {ctype_expr} FROM fts_documents"
+                        ).fetchall()
+                    except Exception:
+                        migrated_rows = []
+                if needs_rebuild:
+                    conn.execute("DROP TABLE IF EXISTS fts_documents;")
+                    conn.execute("DROP TABLE IF EXISTS fts_meta;")
                 conn.execute("""
                     CREATE VIRTUAL TABLE IF NOT EXISTS fts_documents USING fts5(
                         uri UNINDEXED,
                         title,
                         content,
+                        cjk_tokens,
                         level UNINDEXED,
                         context_type UNINDEXED,
                         tokenize="unicode61 tokenchars '_' remove_diacritics 2"
@@ -96,34 +132,58 @@ class BM25FTSIndex:
                         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     );
                 """)
+                if migrated_rows:
+                    prepared = [
+                        r
+                        for u, t, c, lvl, ctype in migrated_rows
+                        if (r := self._prepare_row(u, t, c, int(lvl or 2), str(ctype or "resource"))) is not None
+                    ]
+                    if prepared:
+                        self._upsert_prepared_rows(conn, prepared)
+                conn.execute(
+                    "INSERT OR REPLACE INTO fts_schema_meta(key, value) VALUES ('schema_version', ?)",
+                    (self.SCHEMA_VERSION,),
+                )
                 conn.commit()
             finally:
                 conn.close()
 
     def _sanitize_query(self, query: str) -> str:
-        """Sanitize query string to safe FTS5 query syntax while preserving code symbols."""
-        cleaned = re.sub(r'["\*\^:\(\)\.\/\-,;\{\}\[\]@#\$%\&!=+\?<>]', " ", query).strip()
-        tokens = [t.strip() for t in re.split(r"\s+", cleaned) if t.strip()]
-        if not tokens:
-            return ""
-        safe_terms = []
-        for token in tokens:
-            safe_token = re.sub(r"[^\w_]", "", token)
-            if not safe_token:
-                continue
-            # Exact symbol token prefix match
-            safe_terms.append(f"{safe_token}*")
-            if "_" in safe_token:
-                subparts = [p for p in safe_token.split("_") if p]
-                if len(subparts) > 1:
-                    joined_parts = " ".join(f"{p}*" for p in subparts)
-                    safe_terms.append(f"({joined_parts})")
-            # If purely alphanumeric or port number, also match exact
-            if safe_token.isdigit():
-                safe_terms.append(f'"{safe_token}"')
-        if not safe_terms:
-            return ""
-        return " OR ".join(safe_terms)
+        """Sanitize query string to safe FTS5 syntax covering code symbols and CJK."""
+        return sanitize_fts_query(query)
+
+    @staticmethod
+    def _prepare_row(
+        uri: Optional[str],
+        title: Optional[str],
+        content: Optional[str],
+        level: int,
+        context_type: str,
+    ) -> Optional[tuple[str, str, str, str, int, str]]:
+        if not uri or not content:
+            return None
+        if content.startswith("data:image/") or ";base64," in content[:100]:
+            return None
+        resolved_title = (title or Path(uri).name or uri)[:512]
+        clean_content = content[:65536]
+        cjk_tokens = build_cjk_token_field(resolved_title, clean_content)
+        return (uri, resolved_title, clean_content, cjk_tokens, int(level), context_type or "resource")
+
+    def _upsert_prepared_rows(
+        self,
+        conn: sqlite3.Connection,
+        rows: List[tuple[str, str, str, str, int, str]],
+    ) -> None:
+        uris = [(r[0],) for r in rows]
+        conn.executemany("DELETE FROM fts_documents WHERE uri = ?", uris)
+        conn.executemany(
+            """
+            INSERT INTO fts_documents(uri, title, content, cjk_tokens, level, context_type)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            rows,
+        )
+        conn.executemany("INSERT OR REPLACE INTO fts_meta(uri) VALUES (?)", uris)
 
     def index_document(
         self,
@@ -134,34 +194,16 @@ class BM25FTSIndex:
         context_type: str = "resource",
     ) -> bool:
         """Upsert a single document into FTS5 index with payload guard."""
-        if not uri or not content:
+        row = self._prepare_row(uri, title, content, level, context_type)
+        if row is None:
             return False
-
-        if not title:
-            title = Path(uri).name or uri
-
-        # Guard against write amplification: truncate oversized text and skip raw base64
-        if content.startswith("data:image/") or ";base64," in content[:100]:
-            return False
-        clean_content = content[:65536]  # 64KB ceiling for FTS inverted indexing
 
         with self._db_lock:
             conn = self._get_connection()
             try:
-                # Delete existing by uri
-                conn.execute("DELETE FROM fts_documents WHERE uri = ?", (uri,))
-                conn.execute(
-                    """
-                    INSERT INTO fts_documents(uri, title, content, level, context_type)
-                    VALUES (?, ?, ?, ?, ?)
-                    """,
-                    (uri, (title or "")[:512], clean_content, level, context_type),
-                )
-                conn.execute(
-                    "INSERT OR REPLACE INTO fts_meta(uri) VALUES (?)",
-                    (uri,),
-                )
+                self._upsert_prepared_rows(conn, [row])
                 conn.commit()
+                self._df_cache.clear()
                 return True
             except Exception:
                 conn.rollback()
@@ -174,39 +216,36 @@ class BM25FTSIndex:
         if not items:
             return 0
 
-        indexed = 0
+        deduped: Dict[str, tuple[str, str, str, str, int, str]] = {}
+        for item in items:
+            row = self._prepare_row(
+                item.get("uri"),
+                item.get("title", ""),
+                item.get("content", ""),
+                item.get("level", 2),
+                item.get("context_type", "resource"),
+            )
+            if row is not None:
+                deduped[row[0]] = row
+
+        rows = list(deduped.values())
+        if not rows:
+            return 0
+
         with self._db_lock:
             conn = self._get_connection()
             try:
-                for item in items:
-                    uri = item.get("uri")
-                    content = item.get("content")
-                    if not uri or not content:
-                        continue
-                    # Skip base64 payload and truncate oversized text
-                    if content.startswith("data:image/") or ";base64," in content[:100]:
-                        continue
-                    clean_content = content[:65536]
-                    title = item.get("title", "")
-                    level = item.get("level", 2)
-                    context_type = item.get("context_type", "resource")
-
-                    conn.execute("DELETE FROM fts_documents WHERE uri = ?", (uri,))
-                    conn.execute(
-                        """
-                        INSERT INTO fts_documents(uri, title, content, level, context_type)
-                        VALUES (?, ?, ?, ?, ?)
-                        """,
-                        (uri, (title or "")[:512], clean_content, level, context_type),
-                    )
-                    conn.execute("INSERT OR REPLACE INTO fts_meta(uri) VALUES (?)", (uri,))
-                    indexed += 1
+                self._upsert_prepared_rows(conn, rows)
+                if len(rows) >= 32:
+                    conn.execute("INSERT INTO fts_documents(fts_documents) VALUES('optimize')")
                 conn.commit()
+                self._df_cache.clear()
+                return len(rows)
             except Exception:
                 conn.rollback()
+                return 0
             finally:
                 conn.close()
-        return indexed
 
     def delete_document(self, uri: str) -> bool:
         """Remove a document from FTS5 index."""
@@ -216,6 +255,7 @@ class BM25FTSIndex:
                 conn.execute("DELETE FROM fts_documents WHERE uri = ?", (uri,))
                 conn.execute("DELETE FROM fts_meta WHERE uri = ?", (uri,))
                 conn.commit()
+                self._df_cache.clear()
                 return True
             finally:
                 conn.close()
@@ -248,11 +288,66 @@ class BM25FTSIndex:
                     conn.execute("DELETE FROM fts_meta WHERE uri = ?", (u,))
                     pruned += 1
                 conn.commit()
+                self._df_cache.clear()
             except Exception:
                 conn.rollback()
             finally:
                 conn.close()
         return pruned
+
+    def get_terms_df(self, terms: Sequence[str]) -> Dict[str, int]:
+        """Return cached document frequencies for candidate terms."""
+        cleaned = [t.strip() for t in terms if t and t.strip()]
+        if not cleaned:
+            return {}
+        with self._db_lock:
+            missing = [t for t in dict.fromkeys(cleaned) if t not in self._df_cache]
+            if missing:
+                conn = self._get_connection()
+                try:
+                    for term in missing:
+                        q = '"' + term.replace('"', '""') + '"'
+                        row = conn.execute(
+                            "SELECT COUNT(*) FROM fts_documents WHERE fts_documents MATCH ?",
+                            (q,),
+                        ).fetchone()
+                        self._df_cache[term] = int(row[0]) if row else 0
+                finally:
+                    conn.close()
+            return {t: self._df_cache[t] for t in cleaned}
+
+    def get_term_df(self, term: str) -> int:
+        """Return document frequency for a single term using the in-memory cache."""
+        if not term or not term.strip():
+            return 0
+        return self.get_terms_df([term])[term]
+
+    @staticmethod
+    def _build_target_dir_clause(target_directories: List[str]) -> tuple[str, List[str]]:
+        def _esc(val: str) -> str:
+            return val.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+        clauses: List[str] = []
+        params: List[str] = []
+        is_resource_search = False
+        for raw_dir in target_directories:
+            stripped = raw_dir.strip()
+            if not stripped:
+                continue
+            if stripped.rstrip("/") in ("viking://", "viking:", "viking://resources", "viking://agent"):
+                is_resource_search = True
+            if stripped.endswith("://"):
+                clauses.append("(uri = ? OR uri LIKE ? ESCAPE '\\')")
+                params.extend([stripped, f"{_esc(stripped)}%"])
+            else:
+                d_norm = stripped.rstrip("/")
+                clauses.append("(uri = ? OR uri LIKE ? ESCAPE '\\')")
+                params.extend([d_norm, f"{_esc(d_norm)}/%"])
+        if is_resource_search:
+            clauses.append("(uri LIKE 'code://%' OR uri LIKE 'skill://%' OR uri LIKE '%code/%')")
+        if not clauses:
+            return "", []
+        return f" AND ({' OR '.join(clauses)})", params
 
     def search(
         self,
@@ -271,7 +366,7 @@ class BM25FTSIndex:
 
         sql = """
             SELECT uri, title, level, context_type,
-                   bm25(fts_documents) as raw_score,
+                   bm25(fts_documents, 0.0, 2.0, 1.0, 1.2, 0.0, 0.0) as raw_score,
                    snippet(fts_documents, 2, '<b>', '</b>', '...', 16) as snippet
             FROM fts_documents
             WHERE fts_documents MATCH ?
@@ -282,6 +377,11 @@ class BM25FTSIndex:
             sql += " AND context_type = ?"
             params.append(context_type)
 
+        if target_directories:
+            dir_clause, dir_params = self._build_target_dir_clause(target_directories)
+            sql += dir_clause
+            params.extend(dir_params)
+
         sql += " ORDER BY raw_score ASC LIMIT ?"
         params.append(max(1, limit))
 
@@ -291,19 +391,9 @@ class BM25FTSIndex:
             try:
                 cursor = conn.execute(sql, params)
                 rows = cursor.fetchall()
-                for rank, row in enumerate(rows, start=1):
+                for row in rows:
                     uri, title, level, c_type, raw_score, snippet = row
 
-                    # Filter by target_directories if provided
-                    if target_directories:
-                        is_resource_search = any(d.rstrip("/") in ("viking://", "viking://resources", "viking://agent") for d in target_directories)
-                        matches_target = any(uri.startswith(d.rstrip("/")) for d in target_directories)
-                        matches_code_or_skill = is_resource_search and (uri.startswith("code://") or uri.startswith("skill://") or "code/" in uri)
-                        if not (matches_target or matches_code_or_skill):
-                            continue
-
-                    # SQLite FTS5 bm25 produces negative numbers; more negative == better match
-                    # Normalize to [0.0, 1.0] where 1.0 is the best score
                     norm_score = 1.0 / (1.0 + max(0.0, -float(raw_score)))
                     results.append(
                         BM25Match(
@@ -314,7 +404,7 @@ class BM25FTSIndex:
                             bm25_raw_score=float(raw_score),
                             bm25_score=round(norm_score, 4),
                             snippet=snippet or "",
-                            rank=rank,
+                            rank=len(results) + 1,
                         )
                     )
             finally:
