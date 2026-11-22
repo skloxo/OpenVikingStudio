@@ -9,6 +9,7 @@ scripts/pack_all_plugins.py
 
 import json
 import os
+import re
 import shutil
 import sys
 import tarfile
@@ -26,6 +27,78 @@ DIST_DIR = ROOT_DIR / "dist"
 
 PUBLIC_DIR.mkdir(parents=True, exist_ok=True)
 DIST_DIR.mkdir(parents=True, exist_ok=True)
+
+RETIRED_PACKAGE_PREFIXES = (
+    "dsh-plugin-nubia-operator",
+    "nubia-mobile-operator",
+    "nubia-operator",
+)
+_TARBALL_VERSION_RE = re.compile(r"^(.+)-(\d+(?:\.\d+)+.*?)\.tgz$")
+_NUMERIC_PREFIX_RE = re.compile(r"^(\d+(?:\.\d+)+)(.*)$")
+
+
+def _parse_tarball_version(filename: str) -> tuple[str, tuple[int, ...], str] | None:
+    """Parse `<base>-<semver>.tgz` into `(base, numeric_parts, raw_version)`."""
+    matched = _TARBALL_VERSION_RE.match(filename)
+    if not matched:
+        return None
+    base, raw_ver = matched.group(1), matched.group(2)
+    num_match = _NUMERIC_PREFIX_RE.match(raw_ver)
+    if not num_match:
+        return None
+    numeric_parts = tuple(int(part) for part in num_match.group(1).split("."))
+    return base, numeric_parts, raw_ver
+
+
+def _tarball_sort_key(parsed: tuple[str, tuple[int, ...], str]) -> tuple[tuple[int, ...], int, str]:
+    """Order numeric versions cleanly and prefer final releases over prereleases."""
+    _, numeric_parts, raw_ver = parsed
+    is_release = 1 if re.fullmatch(r"\d+(?:\.\d+)+", raw_ver) else 0
+    return numeric_parts, is_release, raw_ver
+
+
+def prune_stale_tarballs(
+    target_dir: Path,
+    keep_exact: set[str],
+    managed_bases: set[str],
+) -> list[str]:
+    """Remove unversioned shadows, retired plugins, and superseded .tgz archives."""
+    if not target_dir.is_dir():
+        return []
+
+    pruned: list[str] = []
+    unmanaged: dict[str, list[tuple[tuple[str, tuple[int, ...], str], Path]]] = {}
+
+    for tgz in sorted(target_dir.glob("*.tgz")):
+        if not (tgz.is_file() or tgz.is_symlink()):
+            continue
+        parsed = _parse_tarball_version(tgz.name)
+        if parsed is None:
+            tgz.unlink()
+            pruned.append(tgz.name)
+            continue
+
+        base = parsed[0]
+        if base in RETIRED_PACKAGE_PREFIXES:
+            tgz.unlink()
+            pruned.append(tgz.name)
+        elif base in managed_bases:
+            if tgz.name not in keep_exact:
+                tgz.unlink()
+                pruned.append(tgz.name)
+        else:
+            unmanaged.setdefault(base, []).append((parsed, tgz))
+
+    for entries in unmanaged.values():
+        if len(entries) <= 1:
+            continue
+        _, keep_path = max(entries, key=lambda item: (_tarball_sort_key(item[0]), item[1].name))
+        for _, tgz in entries:
+            if tgz != keep_path:
+                tgz.unlink()
+                pruned.append(tgz.name)
+
+    return pruned
 
 TAR_EXCLUDES = {
     "__pycache__",
@@ -273,6 +346,17 @@ def main():
     for name, ver, size, eco in results:
         print(f"  {eco:<24} {name:<32} v{ver:<9} {size:<12}")
 
+    if results:
+        keep_exact = {f"{name}-{ver}.tgz" for name, ver, _, _ in results}
+        managed_bases = {name for name, _, _, _ in results}
+        pruned_public = prune_stale_tarballs(PUBLIC_DIR, keep_exact, managed_bases)
+        pruned_dist = prune_stale_tarballs(DIST_DIR, keep_exact, managed_bases)
+        if pruned_public or pruned_dist:
+            print(
+                f"\n🧹 已清理历史冗余与退役压缩包: "
+                f"public/ -{len(pruned_public)} 份, dist/ -{len(pruned_dist)} 份"
+            )
+
     wsl_svc = Path("/home/skloxo/services/openviking")
     if wsl_svc.is_dir() and wsl_svc != ROOT_DIR:
         print("\n🔄 正在自动同频至生产服务分发目录 (/home/skloxo/services/openviking)...")
@@ -282,6 +366,18 @@ def main():
             shutil.copy2(tgz, wsl_svc / "dist" / tgz.name)
         for tgz in PUBLIC_DIR.glob("*.tgz"):
             shutil.copy2(tgz, wsl_svc / "public" / tgz.name)
+        if results:
+            pruned_svc_public = prune_stale_tarballs(
+                wsl_svc / "public", keep_exact, managed_bases
+            )
+            pruned_svc_dist = prune_stale_tarballs(
+                wsl_svc / "dist", keep_exact, managed_bases
+            )
+            if pruned_svc_public or pruned_svc_dist:
+                print(
+                    f"  🧹 已清理生产分发目录历史压缩包: "
+                    f"public/ -{len(pruned_svc_public)} 份, dist/ -{len(pruned_svc_dist)} 份"
+                )
         print("  ✔ 生产服务静态分发目录同频完毕！")
 
     print("\n✅ 全系插件打包完成，随时可用于生产分发！")
