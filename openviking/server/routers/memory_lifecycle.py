@@ -422,3 +422,29 @@ async def get_five_layer_governance_layers(
     return {"status": "ok", "result": build_five_layer_governance_overview()}
 
 
+class PuritySweepRequest(BaseModel):
+    dry_run: bool = Field(False, description="Preview candidate noise files without moving")
+
+
+@router.get("/purity/sentinel")
+async def get_purity_sentinel_status(
+    ctx: RequestContext = Depends(get_request_context),
+) -> Dict[str, Any]:
+    """Return status and latest patrol report of the MemoryPuritySentinel."""
+    from openviking.service.memory_purity_sentinel import MemoryPuritySentinel
+
+    return {"status": "ok", "result": MemoryPuritySentinel.get_instance().status()}
+
+
+@router.post("/purity/sentinel/sweep")
+async def sweep_memory_purity(
+    req: PuritySweepRequest,
+    ctx: RequestContext = Depends(get_request_context),
+) -> Dict[str, Any]:
+    """Trigger one MemoryPuritySentinel patrol cycle and BM25 hot-prune."""
+    from openviking.service.memory_purity_sentinel import MemoryPuritySentinel
+
+    report = await MemoryPuritySentinel.get_instance().run_once_async(dry_run=req.dry_run)
+    return {"status": "ok", "result": report.model_dump()}
+
+
