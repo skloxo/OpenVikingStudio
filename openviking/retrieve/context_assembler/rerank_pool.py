@@ -7,11 +7,22 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
+from openviking.retrieve.context_assembler.dpp import dpp_rerank_candidates
 from openviking.retrieve.context_assembler.params import RERANK_CANDIDATE_MULTIPLIER
 from openviking.retrieve.rerank_scoring import Reranker, RerankScores
 from openviking_cli.utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+
+def apply_dpp_diversity(
+    candidates: Sequence[Any],
+    *,
+    top_n: int = 10,
+    alpha: float = 0.5,
+) -> List[Any]:
+    """Apply pure-Python TF-IDF DPP diversity re-ranking to top candidates."""
+    return dpp_rerank_candidates(candidates, top_n=top_n, alpha=alpha)
 
 
 def cap_rerank_pool(

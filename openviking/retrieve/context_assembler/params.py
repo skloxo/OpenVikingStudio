@@ -33,6 +33,7 @@ DEFAULT_MAX_TOKENS = 1600
 DEFAULT_LIMIT = 10
 MAX_EXCLUDE_URIS = 200
 MAX_PLANNED_QUERIES = 3
+MAX_EVIDENCE_HOPS = 2
 READ_CONCURRENCY = 8
 OTHER_PEER_OVERFETCH = 4
 # Candidates reranked per served slot, as HierarchicalRetriever.RERANK_CANDIDATE_MULTIPLIER.
@@ -129,6 +130,8 @@ class AssembleParams:
 
     session_id: Optional[str] = None
     query_expansion: Literal["off", "auto"] = "auto"
+    evidence_hops: int = 0
+    dpp_diversity: bool = False
 
     max_tokens: int = DEFAULT_MAX_TOKENS
     quotas: Optional[Mapping[str, int]] = None
@@ -192,6 +195,14 @@ def normalize_penalties(value: Any = None) -> Dict[str, float]:
 
 def normalize_exclude_uris(values: Optional[Sequence[str]]) -> set[str]:
     return {str(uri).strip() for uri in (values or ())[:MAX_EXCLUDE_URIS] if str(uri).strip()}
+
+
+def normalize_evidence_hops(value: Any) -> int:
+    try:
+        hops = int(value or 0)
+    except (TypeError, ValueError):
+        return 0
+    return max(0, min(MAX_EVIDENCE_HOPS, hops))
 
 
 @dataclass(frozen=True)

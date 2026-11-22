@@ -285,6 +285,8 @@ async def _search_context(
         other_peer_penalty=request.other_peer_penalty,
         rewrite=request.rewrite,
         rewrite_max_bullets=request.rewrite_max_bullets,
+        evidence_hops=request.evidence_hops,
+        dpp_diversity=request.dpp_diversity,
     )
     execution = await run_operation(
         operation="search.context",

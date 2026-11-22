@@ -51,6 +51,8 @@ CONTEXT_ONLY_FIELDS = (
     "other_peer_penalty",
     "rewrite",
     "rewrite_max_bullets",
+    "evidence_hops",
+    "dpp_diversity",
 )
 
 
@@ -136,6 +138,8 @@ class SearchRequest(BaseModel):
     other_peer_penalty: Optional[Union[float, Dict[str, float]]] = None
     rewrite: Union[bool, Literal["auto"]] = False
     rewrite_max_bullets: int = Field(default=6, ge=1, le=20)
+    evidence_hops: int = Field(default=0, ge=0, le=2)
+    dpp_diversity: bool = False
 
     @model_validator(mode="after")
     def _validate_mode(self) -> "SearchRequest":
