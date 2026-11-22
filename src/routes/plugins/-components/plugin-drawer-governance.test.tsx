@@ -4,7 +4,7 @@ import * as React from 'react'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { PluginOverviewTab } from './plugin-overview-tab'
+import { PluginDetailDrawer } from './plugin-detail-drawer'
 import { PluginQuickstartSection } from './plugin-quickstart-section'
 import type { QuadPluginItem } from '../-lib/plugin-types'
 
@@ -84,33 +84,31 @@ describe('Card-148 & Card-PLUG-04: Plugin Drawer & Key Governance', () => {
     connectionMock.apiKey = ''
   })
 
-  it('renders overview 4-grid capabilities and triggers tab navigation', () => {
-    const handleNavigate = vi.fn()
+  it('renders detail drawer tabs and navigates between skills, MCP tools, and hooks', () => {
+    const handleClose = vi.fn()
 
-    render(
-      <PluginOverviewTab
-        plugin={mockPlugin}
-        privilege={{ isAllowed: true }}
-        connectionRole="admin"
-        onNavigateTab={handleNavigate}
-      />,
-    )
+    render(<PluginDetailDrawer plugin={mockPlugin} onClose={handleClose} />)
 
-    // 检查 4-Grid 卡片渲染
-    expect(screen.getByText('MCP 工具能力池')).toBeDefined()
-    expect(screen.getByText('3 项')).toBeDefined()
-    expect(screen.getByText('Hook 拦截神经反射')).toBeDefined()
-    expect(screen.getByText('1 处')).toBeDefined()
-    expect(screen.getByText('技能认知导轨规约')).toBeDefined()
-    expect(screen.getByText('客户端接入指南')).toBeDefined()
+    expect(screen.getByRole('dialog')).toBeDefined()
+    expect(screen.getByText('概览')).toBeDefined()
+    expect(screen.getByText('技能')).toBeDefined()
+    expect(screen.getByText('MCP')).toBeDefined()
+    expect(screen.getByText('钩子')).toBeDefined()
 
-    // 点击 MCP 工具卡片
-    fireEvent.click(screen.getByText('MCP 工具能力池'))
-    expect(handleNavigate).toHaveBeenCalledWith('tools')
+    // Switch to Skills tab
+    fireEvent.click(screen.getByText('技能'))
+    expect(screen.getByText('体外大脑操作导轨')).toBeDefined()
+    expect(screen.getByText('查库第一，高熵落盘')).toBeDefined()
 
-    // 点击 Hook 卡片
-    fireEvent.click(screen.getByText('Hook 拦截神经反射'))
-    expect(handleNavigate).toHaveBeenCalledWith('hooks')
+    // Switch to MCP tools tab
+    fireEvent.click(screen.getByText('MCP'))
+    expect(screen.getByText('共 3 项算子')).toBeDefined()
+    expect(screen.getByText('openviking_search')).toBeDefined()
+
+    // Switch to Hooks tab
+    fireEvent.click(screen.getByText('钩子'))
+    expect(screen.getByText('PreInvocation')).toBeDefined()
+    expect(screen.getByText('记忆预取反射')).toBeDefined()
   })
 
   it('never displays fake key placeholder in quickstart snippets', () => {

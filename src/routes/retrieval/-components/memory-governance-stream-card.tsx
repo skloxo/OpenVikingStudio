@@ -1,6 +1,7 @@
 /* eslint-disable i18next/no-literal-string */
 import * as React from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { ovClient } from '#/lib/ov-client'
 import {
   ListFilterIcon,
@@ -54,29 +55,10 @@ export function MemoryGovernanceStreamCard() {
           setDrawerOpen(true)
           return
         }
+        toast.error('该记忆晶体详情尚未完成索引，请稍后重试')
       } catch {
-        // Fallback to synthetic crystal if detail endpoint hasn't indexed it yet
+        toast.error('读取记忆晶体详情失败，后端服务或索引不可用')
       }
-
-      // Synthetic crystal representation fallback
-      setSelectedCrystal({
-        uri: evt.uri,
-        axiom: evt.reason,
-        context_bounds: {
-          version_range: '>= v1.6.0',
-          source_uris: evt.matched_uri ? [evt.matched_uri] : [],
-          evidence_hashes: [],
-          distilled_at: evt.timestamp,
-          distiller_id: 'dream_recipe_distiller',
-        },
-        negative_boundary: {
-          deprecated_patterns: [],
-          forbidden_keywords: [],
-        },
-        status: 'active',
-        created_at: evt.timestamp,
-      })
-      setDrawerOpen(true)
     }
   }
 

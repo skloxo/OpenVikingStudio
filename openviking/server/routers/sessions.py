@@ -558,8 +558,12 @@ async def add_message(
                 if hasattr(session, "_save_meta"):
                     try:
                         await session._save_meta()
-                    except Exception:
-                        pass
+                    except Exception as exc:
+                        logger.warning(
+                            "Failed to save session metadata for %s: %s",
+                            getattr(session, "session_id", ""),
+                            exc,
+                        )
 
         await service.sessions.maybe_schedule_auto_commit(
             session_id,

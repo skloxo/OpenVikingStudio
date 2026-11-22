@@ -203,3 +203,41 @@ def test_client_capabilities_default_no_plugin_id_does_not_leak_54_tools(client)
         assert len(data["plugins"][0]["tools"]) == len(BATTLEFIELD_34_TOOLS)
 
 
+def test_validate_config_rejects_invalid_inputs_and_respects_probe_flag(client):
+    """Card-278: verify real config validation rejects bad URL/plugin/tools and honors probe=none."""
+    headers = {"Authorization": "Bearer test-user-token"}
+
+    bad_url = client.post(
+        "/api/v1/system/client-capabilities/validate",
+        json={"endpointUrl": "ftp://not-http", "pluginId": "openviking-memory"},
+        headers=headers,
+    )
+    assert bad_url.status_code == 422
+
+    bad_plugin = client.post(
+        "/api/v1/system/client-capabilities/validate",
+        json={"endpointUrl": "http://127.0.0.1:1933", "pluginId": "nonexistent-plugin-xyz"},
+        headers=headers,
+    )
+    assert bad_plugin.status_code == 422
+
+    bad_tool = client.post(
+        "/api/v1/system/client-capabilities/validate",
+        json={
+            "endpointUrl": "http://127.0.0.1:1933",
+            "pluginId": "openviking-memory",
+            "enabledTools": ["find", "nonexistent_fake_tool_999"],
+        },
+        headers=headers,
+    )
+    assert bad_tool.status_code == 422
+
+    no_probe = client.get(
+        "/api/v1/system/client-capabilities?plugin_id=openviking-memory&probe=none",
+        headers=headers,
+    )
+    assert no_probe.status_code == 200
+    assert no_probe.json()["probe_mode"] == "none"
+    assert no_probe.json()["probes"] == {}
+
+

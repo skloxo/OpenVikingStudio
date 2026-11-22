@@ -13,18 +13,13 @@ import type {
   QuadPluginItem,
 } from './plugin-types'
 
-async function fetchPluginsList(): Promise<QuadPluginItem[]> {
-  try {
-    const res = await getOvResult<{ plugins: QuadPluginItem[] }>(
-      ovClient.client.get({
-        url: '/api/v1/plugins',
-      }),
-    )
-    return res.plugins ?? []
-  } catch (err) {
-    // 降级回退空数组，保证前端不白屏
-    return []
-  }
+export async function fetchPluginsList(): Promise<QuadPluginItem[]> {
+  const res = await getOvResult<{ plugins: QuadPluginItem[] }>(
+    ovClient.client.get({
+      url: '/api/v1/plugins',
+    }),
+  )
+  return res.plugins ?? []
 }
 
 async function fetchPluginsHealth(): Promise<PluginsHealthSummary | null> {
@@ -63,6 +58,7 @@ export function usePluginsData() {
     refetchIntervalInBackground: false,
     refetchOnReconnect: false,
     refetchOnWindowFocus: false,
+    retry: 1,
     staleTime: 15_000,
   })
 
@@ -97,12 +93,15 @@ export function usePluginsData() {
 
   return {
     categoryFilter,
+    error: pluginsQuery.error,
     filteredPlugins,
     healthQuery,
     healthSummary,
+    isError: pluginsQuery.isError,
     isLoading: pluginsQuery.isLoading,
     plugins,
     pluginsQuery,
+    refetch: pluginsQuery.refetch,
     searchQuery,
     selectedPlugin,
     setCategoryFilter,

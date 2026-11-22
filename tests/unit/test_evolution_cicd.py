@@ -132,3 +132,17 @@ def test_emergency_kill_switch_and_full_reversion():
     success, msg = pipeline.advance_package(pkg.package_id)
     assert not success
     assert "kill-switch is currently active" in msg
+
+
+def test_evolution_cicd_persists_packages_and_level_across_restart(tmp_path):
+    store = RSITrajectoryStore(tmp_path / "persist_cicd.db")
+    p1 = EvolutionCICDPipeline(store=store)
+    p1.set_autonomous_level(AutonomousLevel.LEVEL_3_FULL_EVOLVE)
+    pkg = p1.create_package("persisted-skill", "+- KEEP rule")
+    p1.advance_package(pkg.package_id)
+
+    # Reconstruct pipeline from same store (simulating restart)
+    p2 = EvolutionCICDPipeline(store=store)
+    assert p2.autonomous_level == AutonomousLevel.LEVEL_3_FULL_EVOLVE
+    assert pkg.package_id in p2.packages
+    assert p2.packages[pkg.package_id].current_stage == PipelineStage.CANDIDATE_GENERATION

@@ -32,6 +32,7 @@ import { MemoryPurityGaugeCard } from './-components/memory-purity-gauge-card'
 import { MemoryGovernanceStreamCard } from './-components/memory-governance-stream-card'
 import { ActiveNotesHistoryCockpit } from './-components/active-notes-history-cockpit'
 import { LLMLinguaDehydrationCockpit } from './-components/llmlingua-dehydration-cockpit'
+import { TokenShiftCockpit } from './-components/tokenshift-cockpit'
 import { RetrievalResults } from './-components/retrieval-results'
 import { RetrievalSearchBar } from './-components/search-bar'
 import {
@@ -109,12 +110,13 @@ function RetrievalPage() {
 
   const hasSubmitted = submittedQuery.trim().length > 0
   const sessionId = sessionIdInput.trim() || undefined
+  const fetchLimit = activeOnly ? Math.min(100, resultCount * 3) : resultCount
   const retrievalQuery = useRetrievalQuery({
     enabled: hasSubmitted,
     ignoreCase,
     mode: retrievalMode,
     query: submittedQuery,
-    resultCount,
+    resultCount: fetchLimit,
     sessionId,
     targetUri,
   })
@@ -125,16 +127,18 @@ function RetrievalPage() {
   const hasRetrievableContext = resourceProbeQuery.data?.hasContext ?? false
   const flatItems = useMemo(() => (data ? flattenResults(data) : []), [data])
   const displayFlatItems = useMemo(() => {
-    if (!activeOnly) return flatItems
-    return flatItems.filter((fi) => {
-      const uri = fi.item.uri.toLowerCase()
-      const isStagingOrArchived =
-        uri.includes('/staging/') ||
-        uri.includes('/archive/') ||
-        uri.includes('_sessions')
-      return !isStagingOrArchived
-    })
-  }, [flatItems, activeOnly])
+    if (!activeOnly) return flatItems.slice(0, resultCount)
+    return flatItems
+      .filter((fi) => {
+        const uri = fi.item.uri.toLowerCase()
+        const isStagingOrArchived =
+          uri.includes('/staging/') ||
+          uri.includes('/archive/') ||
+          uri.includes('_sessions')
+        return !isStagingOrArchived
+      })
+      .slice(0, resultCount)
+  }, [flatItems, activeOnly, resultCount])
   const queryPlanItems = data?.query_plan?.queries ?? []
 
   const handleSubmit = useCallback(() => {
@@ -292,8 +296,13 @@ function RetrievalPage() {
       {/* Tab 6: 主动上下文与历史分仓座舱 */}
       {activeTab === 'context' && <ActiveNotesHistoryCockpit />}
 
-      {/* Tab 7: LLMLingua 语义脱水压制座舱 */}
-      {activeTab === 'llmlingua' && <LLMLinguaDehydrationCockpit />}
+      {/* Tab 7: LLMLingua 语义脱水压制与 TokenShift 压缩座舱 */}
+      {activeTab === 'llmlingua' && (
+        <div className="flex flex-col gap-4">
+          <LLMLinguaDehydrationCockpit />
+          <TokenShiftCockpit />
+        </div>
+      )}
     </div>
   )
 }

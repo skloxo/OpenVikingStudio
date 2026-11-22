@@ -8,10 +8,10 @@ endpoints to check completion, results, or errors.
 """
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Body, Depends, Query
 from pydantic import BaseModel
 
 logger = logging.getLogger("openviking.server.routers.tasks")
@@ -482,16 +482,32 @@ async def clear_failed_tasks(
     return Response(status="ok", result={"deleted_count": deleted_count})
 
 
+class QualityGateTriggerRequest(BaseModel):
+    mode: Optional[str] = None
+    resource_id: Optional[str] = None
+    threshold: Optional[float] = None
+    queries: Optional[List[str]] = None
+    reason: Optional[str] = None
+
+
 @router.post("/tasks/trigger-quality-gate")
+@router.post("/tasks/quality_gate")
 async def trigger_quality_gate(
     reason: str = Query("manual_api_trigger", description="Reason for triggering"),
+    body: Optional[QualityGateTriggerRequest] = Body(default=None),
     _ctx: RequestContext = Depends(get_request_context),
 ):
     """Trigger an immediate automated Quality Gate and Remediation cycle."""
     from openviking.service.entropy_watchdog import get_entropy_watchdog
 
+    effective_reason = (
+        (body.reason.strip() if body and body.reason else None)
+        or (f"retry_{body.mode}" if body and body.mode else reason)
+    )
     watchdog = get_entropy_watchdog()
-    res = await watchdog.trigger_cycle(reason=reason)
+    res = await watchdog.trigger_cycle(reason=effective_reason)
+    if isinstance(res, dict) and "task_id" not in res and res.get("quality_gate_task_id"):
+        res = {**res, "task_id": res["quality_gate_task_id"]}
     return Response(status="ok", result=res)
 
 

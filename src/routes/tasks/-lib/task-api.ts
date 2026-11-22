@@ -180,20 +180,17 @@ export async function executeTaskRetry(
   task: TaskRecord,
   isZh: boolean,
 ): Promise<{ res: any; task: TaskRecord; newTaskId?: string; skipped?: boolean; reason?: string }> {
-  if (task.task_id?.startsWith('mock_task_')) {
-    return { res: { ok: true }, task }
-  }
-
   // 质量门禁重新执行 (Retry Quality Gate)
   if (task.task_type === 'quality_gate' || task.task_type === 'benchmark_eval') {
-    const resp = await ovClient.instance.post('/api/v1/tasks/quality_gate', {
+    const resp = await ovClient.instance.post('/api/v1/tasks/trigger-quality-gate', {
       mode: task.meta?.mode || 'smoke',
       resource_id: task.resource_id || undefined,
       threshold: task.meta?.threshold ?? 0.7,
       queries: task.meta?.queries,
+      reason: 'ui_task_retry',
     })
     const json = resp.data
-    return { res: json, task, newTaskId: json?.result?.task_id }
+    return { res: json, task, newTaskId: json?.result?.task_id || json?.result?.quality_gate_task_id }
   }
 
   // 异步托管入库重新执行 (Retry Managed Ingestion)

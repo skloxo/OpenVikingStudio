@@ -14,7 +14,10 @@ from openviking.service.skill_retina_cron import SkillRetinaAuditor
 from openviking.service.skill_sanitizer import SkillSanitizer
 from openviking.service.skill_telemetry import SkillTelemetryStore
 from openviking.utils.skill_processor import validate_skill_name
-from openviking_cli.exceptions import InvalidArgumentError, NotFoundError
+from openviking_cli.exceptions import InvalidArgumentError, NotFoundError, OpenVikingError
+from openviking_cli.utils import get_logger
+
+logger = get_logger(__name__)
 
 
 def _agent_skills_root(ctx: RequestContext, target_uri: Optional[str] = None) -> str:
@@ -90,19 +93,24 @@ async def _entry_looks_like_skill(service, ctx: RequestContext, entry: Dict[str,
                 description = meta.get("description")
                 if isinstance(description, str) and description.strip():
                     return True
-            except Exception:
-                pass
+            except (ValueError, OpenVikingError) as exc:
+                logger.debug("Invalid skill abstract metadata for %s: %s", entry_uri, exc)
+            except Exception as exc:
+                logger.warning("Unexpected error validating skill abstract metadata for %s: %s", entry_uri, exc)
 
     # Abstract is missing or unparsable — fall back to checking that the
     # directory actually contains a SKILL.md file before listing it.
     try:
         validate_skill_name(dir_name)
-    except Exception:
+    except (ValueError, OpenVikingError):
         return False
 
     try:
         skill_md_stat = await service.fs.stat(_skill_md_uri(entry_uri), ctx=ctx)
-    except Exception:
+    except (NotFoundError, FileNotFoundError):
+        return False
+    except Exception as exc:
+        logger.warning("Unexpected error checking SKILL.md for %s: %s", entry_uri, exc)
         return False
     if not skill_md_stat or skill_md_stat.get("isDir", False):
         return False
@@ -149,7 +157,11 @@ def _parse_abstract_meta(abstract: str) -> Dict[str, Any]:
     text_to_parse = m.group(1) if m else abstract
     try:
         parsed = yaml.safe_load(text_to_parse) or {}
-    except Exception:
+    except yaml.YAMLError as exc:
+        logger.debug("Failed to parse skill abstract YAML frontmatter: %s", exc)
+        return {}
+    except Exception as exc:
+        logger.warning("Unexpected error parsing skill abstract frontmatter: %s", exc)
         return {}
     return parsed if isinstance(parsed, dict) else {}
 
@@ -192,8 +204,8 @@ def _skill_summary_from_meta(name: str, root_uri: str, meta: Dict[str, Any]) -> 
                     parent_bundle = entry.get("bundle")
                 elif isinstance(entry, str):
                     parent_bundle = entry
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("Failed to resolve parent bundle alias for skill %s: %s", name, exc)
 
     return {
         "type": "skill",
@@ -230,8 +242,10 @@ def _read_skill_md_meta(skill_name: str) -> Dict[str, Any]:
                     parsed = yaml.safe_load(match.group(1))
                     if isinstance(parsed, dict):
                         return parsed
-            except Exception:
-                pass
+            except (yaml.YAMLError, OSError) as exc:
+                logger.warning("Failed to read or parse %s: %s", p, exc)
+            except Exception as exc:
+                logger.warning("Unexpected error reading skill metadata %s: %s", p, exc)
     return {}
 
 
@@ -298,7 +312,10 @@ async def _require_skill(
             stat = await service.fs.stat(root_uri, ctx=ctx)
             if stat and stat.get("isDir", False):
                 return root_uri
-        except Exception:
+        except (NotFoundError, FileNotFoundError):
+            continue
+        except Exception as exc:
+            logger.warning("Unexpected error inspecting skill directory %s: %s", root_uri, exc)
             continue
 
     raise NotFoundError(candidates[0], "skill")

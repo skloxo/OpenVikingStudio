@@ -20,6 +20,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from openviking.retrieve.abstention_gate import AbstentionGate
 from openviking.retrieve.hybrid_retriever import HybridRetrievalTelemetry
 from openviking.retrieve.rrf_fusion import rrf_fuse
 from openviking.server.auth import get_request_context
@@ -216,6 +217,19 @@ async def run_hybrid_probe(
         sparse_only=sparse_only_cnt,
     )
 
+    evidence_chunks = [
+        snippet
+        for snippet in (
+            [m.snippet or m.title for m in sparse_matches]
+            + [d.get("snippet") or d.get("title", "") for d in dense_results]
+        )
+        if snippet
+    ]
+    abstention_decision = AbstentionGate.get_instance().verify_and_decide(
+        query=req.query,
+        evidence_chunks=evidence_chunks,
+    )
+
     return JSONResponse(
         status_code=200,
         content={
@@ -227,6 +241,7 @@ async def run_hybrid_probe(
             "dense_count": len(dense_results),
             "fused_count": len(fused),
             "latency_ms": round(latency_ms, 2),
+            "abstention_decision": abstention_decision.model_dump(),
             "sparse_results": [m.model_dump() for m in sparse_matches],
             "dense_results": dense_results,
             "fused_results": [f.model_dump() for f in fused],

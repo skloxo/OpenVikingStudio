@@ -1,9 +1,10 @@
 # Copyright (c) 2026 Beijing Volcano Engine Technology Co., Ltd.
 # SPDX-License-Identifier: AGPL-3.0
+import os
 import unittest
 
 
-@unittest.skip("Temporarily skip TestVikingDBProject")
+@unittest.skipUnless(bool(os.environ.get("VIKINGDB_AK")), "Requires VIKINGDB_AK credentials")
 class TestVikingDBProject(unittest.TestCase):
     """
     Unit tests for VikingDB Project and Collection implementation for private deployment.

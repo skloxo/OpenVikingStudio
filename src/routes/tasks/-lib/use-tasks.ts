@@ -53,12 +53,8 @@ export function useTasks({
   const queueObserverQuery = useQuery({
     queryKey: ['queue-observer-status'],
     queryFn: async () => {
-      try {
-        const resp = await ovClient.instance.get('/api/v1/observer/queue')
-        return parseQueueStatus(resp.data?.result?.status || '')
-      } catch {
-        return []
-      }
+      const resp = await ovClient.instance.get('/api/v1/observer/queue')
+      return parseQueueStatus(resp.data?.result?.status || '')
     },
     refetchInterval: () => {
       const hasActive = rawTasks.some((item) => {
@@ -67,6 +63,7 @@ export function useTasks({
       })
       return hasActive ? 2000 : 15000
     },
+    retry: 1,
   })
   const queueObserverRows = queueObserverQuery.data || []
 

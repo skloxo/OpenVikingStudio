@@ -118,40 +118,34 @@ export function useCockpitQueries() {
   const gpuQuery = useQuery({
     enabled: serverMode !== 'offline',
     queryFn: async () => {
-      try {
-        const res = await ovClient.instance.get<{ used_gb: number; total_gb: number; gpu_percent: number }>(
-          '/api/v1/system/gpu',
-        )
-        return res.data
-      } catch {
-        return null
-      }
+      const res = await ovClient.instance.get<{ used_gb: number; total_gb: number; gpu_percent: number }>(
+        '/api/v1/system/gpu',
+      )
+      return res.data
     },
     queryKey: ['system-gpu-telemetry', identityScopeKey],
     refetchInterval: 30_000,
     refetchIntervalInBackground: false,
+    retry: 1,
     staleTime: 15_000,
   })
 
   const hostResourcesQuery = useQuery({
     enabled: serverMode !== 'offline',
     queryFn: async () => {
-      try {
-        const res = await ovClient.instance.get<{
-          status: string
-          cpu_percent: number
-          memory_percent: number
-          memory_used_gb: number
-          memory_total_gb: number
-        }>('/api/v1/system/resources')
-        return res.data
-      } catch {
-        return null
-      }
+      const res = await ovClient.instance.get<{
+        status: string
+        cpu_percent: number
+        memory_percent: number
+        memory_used_gb: number
+        memory_total_gb: number
+      }>('/api/v1/system/resources')
+      return res.data
     },
     queryKey: ['system-host-resources', identityScopeKey],
     refetchInterval: 30_000,
     refetchIntervalInBackground: false,
+    retry: 1,
     staleTime: 15_000,
   })
 

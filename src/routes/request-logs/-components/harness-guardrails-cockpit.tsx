@@ -8,8 +8,10 @@ import { ovClient } from '#/lib/ov-client'
 import {
   ActivityIcon,
   RefreshCwIcon,
+  ScissorsIcon,
   ShieldAlertIcon,
   ShieldCheckIcon,
+  TerminalIcon,
   WorkflowIcon,
   FileCodeIcon,
   DnaIcon,
@@ -20,33 +22,31 @@ import { HarnessGateDashboard } from '#/routes/harness-logs/-components/harness-
 import { HarnessAgentLoopCockpit } from '#/routes/harness-logs/-components/harness-agent-loop-cockpit'
 import { HarnessFailureWhitelistRadar } from '#/routes/harness-logs/-components/harness-failure-whitelist-radar'
 import { HarnessHITLOffloadCenter } from '#/routes/harness-logs/-components/harness-hitl-offload-center'
+import { HarnessBisectionHealCockpit } from '#/routes/harness-logs/-components/harness-bisection-heal-cockpit'
+import { HarnessLivePlayground } from '#/routes/harness-logs/-components/harness-live-playground'
 
 export function HarnessGuardrailsCockpit() {
   const { t } = useTranslation('skillsPage')
-  const [activeSubTab, setActiveSubTab] = React.useState<'gates' | 'fsm' | 'agent-loop' | 'failure-radar' | 'hitl-offload'>('gates')
+  const [activeSubTab, setActiveSubTab] = React.useState<'gates' | 'fsm' | 'agent-loop' | 'failure-radar' | 'hitl-offload' | 'bisection-heal' | 'playground'>('gates')
   const { connection, connectionRole, isConnectionRoleLoading } = useAppConnection()
   const canQuery = !isConnectionRoleLoading && connectionRole !== 'unknown'
 
   const harnessStatusQuery = useQuery({
     enabled: canQuery,
     queryFn: async () => {
-      try {
-        const res = await ovClient.instance.get<{
-          status?: string
-          window?: string
-          total_calls?: number
-          blocked_calls?: number
-          lessons_count?: number
-          fsm?: any
-          gates?: any
-        }>('/api/v1/system/harness_metrics')
-        return res.data
-      } catch (err) {
-        console.warn('Failed to fetch harness metrics:', err)
-        return null
-      }
+      const res = await ovClient.instance.get<{
+        status?: string
+        window?: string
+        total_calls?: number
+        blocked_calls?: number
+        lessons_count?: number
+        fsm?: any
+        gates?: any
+      }>('/api/v1/system/harness_metrics')
+      return res.data
     },
     queryKey: ['harness-guardrails-in-logs', connection.adminApiKey, connection.apiKey],
+    retry: 1,
     staleTime: 15_000,
   })
 
@@ -59,6 +59,23 @@ export function HarnessGuardrailsCockpit() {
 
   return (
     <div className="flex flex-col gap-4">
+      {harnessStatusQuery.isError && (
+        <div className="flex items-center justify-between gap-2 rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-500">
+          <span>
+            获取 Harness 指标失败：
+            {harnessStatusQuery.error instanceof Error ? harnessStatusQuery.error.message : '后端服务不可达'}
+          </span>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => void harnessStatusQuery.refetch()}
+            className="h-6 text-xs border-rose-500/40 text-rose-500 hover:bg-rose-500/15"
+          >
+            重试
+          </Button>
+        </div>
+      )}
       {/* KPI Overview Tiles */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="rounded-md border border-border/70 bg-card p-3 shadow-xs">
@@ -109,6 +126,8 @@ export function HarnessGuardrailsCockpit() {
             { id: 'agent-loop', label: '双层循环与主动刹车', icon: <ActivityIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
             { id: 'failure-radar', label: '失败画像与白名单雷达', icon: <ShieldAlertIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
             { id: 'hitl-offload', label: '读Offload与HITL', icon: <FileCodeIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
+            { id: 'bisection-heal', label: '二分切片自愈', icon: <ScissorsIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
+            { id: 'playground', label: '门禁在线沙箱', icon: <TerminalIcon className="size-3.5 mr-1 text-cyan-600 dark:text-cyan-400" /> },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -146,6 +165,8 @@ export function HarnessGuardrailsCockpit() {
         {activeSubTab === 'agent-loop' && <HarnessAgentLoopCockpit />}
         {activeSubTab === 'failure-radar' && <HarnessFailureWhitelistRadar />}
         {activeSubTab === 'hitl-offload' && <HarnessHITLOffloadCenter />}
+        {activeSubTab === 'bisection-heal' && <HarnessBisectionHealCockpit />}
+        {activeSubTab === 'playground' && <HarnessLivePlayground />}
       </div>
     </div>
   )

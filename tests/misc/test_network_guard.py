@@ -131,9 +131,14 @@ class TestIsPublicIP:
 class TestResolveHostAddresses:
     """Verify DNS resolution wrapper behavior."""
 
-    def test_returns_empty_set_for_unresolvable_host(self) -> None:
+    @patch("openviking.utils.network_guard.socket.getaddrinfo")
+    def test_returns_empty_set_for_unresolvable_host(self, mock_getaddrinfo) -> None:
+        import socket
+
+        mock_getaddrinfo.side_effect = socket.gaierror("Name or service not known")
         result = _resolve_host_addresses("this.host.definitely.does.not.exist.invalid")
         assert result == set()
+        mock_getaddrinfo.assert_called_once()
 
     def test_returns_empty_set_for_unicode_error(self) -> None:
         # A hostname that triggers UnicodeError in getaddrinfo
@@ -165,6 +170,16 @@ class TestResolveHostAddresses:
 
 class TestEnsurePublicRemoteTarget:
     """End-to-end SSRF protection tests."""
+
+    @pytest.fixture(autouse=True)
+    def _enforce_ssrf_guard(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from openviking_cli.utils.config.parser_config import CodeHostingConfig
+
+        monkeypatch.setenv("OPENVIKING_ALLOW_PRIVATE_NETWORKS", "false")
+        monkeypatch.setattr(
+            "openviking.utils.network_guard.get_openviking_config",
+            lambda: SimpleNamespace(allow_private_networks=False, code=CodeHostingConfig()),
+        )
 
     # -- Rejection: no valid host --
 
@@ -243,6 +258,7 @@ class TestEnsurePublicRemoteTarget:
         mock_resolve.return_value = {resolved_ip}
         with pytest.raises(PermissionDeniedError, match="non-public address"):
             ensure_public_remote_target(source)
+        mock_resolve.assert_called_once_with("evil.attacker.com")
 
     # -- Rejection: DNS rebinding with mixed results --
 
@@ -252,34 +268,52 @@ class TestEnsurePublicRemoteTarget:
         mock_resolve.return_value = {"8.8.8.8", "127.0.0.1"}
         with pytest.raises(PermissionDeniedError, match="non-public address"):
             ensure_public_remote_target("http://rebinding.attacker.com/path")
+        mock_resolve.assert_called_once_with("rebinding.attacker.com")
 
     # -- Pass-through: valid public targets --
 
     @patch("openviking.utils.network_guard._resolve_host_addresses")
     def test_allows_public_http_url(self, mock_resolve) -> None:
         mock_resolve.return_value = {"151.101.1.67"}
-        ensure_public_remote_target("https://github.com/repo.git")  # should not raise
+        result = ensure_public_remote_target("https://github.com/repo.git")
+        assert result is None
+        mock_resolve.assert_not_called()
 
     @patch("openviking.utils.network_guard._resolve_host_addresses")
     def test_allows_public_git_ssh(self, mock_resolve) -> None:
         mock_resolve.return_value = {"140.82.121.4"}
-        ensure_public_remote_target("git@github.com:user/repo.git")  # should not raise
+        result = ensure_public_remote_target("git@github.com:user/repo.git")
+        assert result is None
+        mock_resolve.assert_not_called()
 
     @patch("openviking.utils.network_guard._resolve_host_addresses")
     def test_allows_azure_devops_domain_from_platform_specific_config(self, mock_resolve) -> None:
         mock_resolve.return_value = {"127.0.0.1"}
-        ensure_public_remote_target("git@ssh.dev.azure.com:v3/org/project/repo")  # should not raise
+        result = ensure_public_remote_target("git@ssh.dev.azure.com:v3/org/project/repo")
+        assert result is None
+        mock_resolve.assert_not_called()
+
+    @patch("openviking.utils.network_guard._resolve_host_addresses")
+    def test_allows_non_allowlisted_public_http_url(self, mock_resolve) -> None:
+        mock_resolve.return_value = {"151.101.1.67"}
+        result = ensure_public_remote_target("https://public-docs.example.org/guide.md")
+        assert result is None
+        mock_resolve.assert_called_once_with("public-docs.example.org")
 
     @patch("openviking.utils.network_guard._resolve_host_addresses")
     def test_allows_when_dns_returns_empty(self, mock_resolve) -> None:
         """Unresolvable host is allowed through (fail-open for DNS)."""
         mock_resolve.return_value = set()
-        ensure_public_remote_target("http://new-host.example.com/path")  # should not raise
+        result = ensure_public_remote_target("http://new-host.example.com/path")
+        assert result is None
+        mock_resolve.assert_called_once_with("new-host.example.com")
 
     @patch("openviking.utils.network_guard._resolve_host_addresses")
     def test_allows_multiple_public_addresses(self, mock_resolve) -> None:
         mock_resolve.return_value = {"8.8.8.8", "8.8.4.4"}
-        ensure_public_remote_target("http://dns-rr.example.com/path")  # should not raise
+        result = ensure_public_remote_target("http://dns-rr.example.com/path")
+        assert result is None
+        mock_resolve.assert_called_once_with("dns-rr.example.com")
 
 
 # ── build_httpx_request_validation_hooks ─────────────────────────────────────

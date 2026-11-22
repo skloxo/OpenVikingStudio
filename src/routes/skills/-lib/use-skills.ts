@@ -123,22 +123,16 @@ export function useSkillsData() {
   const harnessStatusQuery = useQuery({
     placeholderData: keepPreviousData,
     queryFn: async () => {
-      try {
-        const res = await ovClient.instance.get<Record<string, unknown>>(
-          '/api/v1/system/harness_metrics',
-          { params: { window: '24h' } },
-        )
-        if (res.data && typeof res.data === 'object') {
-          return res.data
-        }
-      } catch {
-        // Fallback to null
-      }
-      return null
+      const res = await ovClient.instance.get<Record<string, unknown>>(
+        '/api/v1/system/harness_metrics',
+        { params: { window: '24h' } },
+      )
+      return res.data && typeof res.data === 'object' ? res.data : null
     },
     queryKey: ['harness-status', '24h', identityScopeKey],
     refetchOnReconnect: false,
     refetchOnWindowFocus: false,
+    retry: 1,
     staleTime: 60_000,
   })
 

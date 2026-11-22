@@ -143,3 +143,18 @@ def test_rag_abstention_rest_api():
     assert not v_data["decision"]["should_abstain"]
     assert v_data["effective_evidence_count"] == 1
     assert v_data["original_evidence_count"] == 2
+
+
+def test_abstention_gate_persists_and_hybrid_probe_drives_metrics(tmp_path, monkeypatch):
+    monkeypatch.setenv("OPENVIKING_TELEMETRY_DB", str(tmp_path / "rag_restart.db"))
+    AbstentionGate.reset_instance()
+    gate1 = AbstentionGate.get_instance()
+    gate1.reset()
+    gate1.verify_and_decide("OpenViking port 1933", ["OpenViking listens on port 1933"])
+
+    AbstentionGate.reset_instance()
+    gate2 = AbstentionGate.get_instance()
+    snap = gate2.get_telemetry()
+    assert snap.total_verifications == 1
+    assert snap.confidence_distribution["high"] == 1
+    gate2.reset()

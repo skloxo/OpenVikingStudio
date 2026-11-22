@@ -37,6 +37,9 @@ from openviking.utils.search_filters import (
 )
 from openviking.utils.tags import build_search_tags_filter
 from openviking_cli.exceptions import InvalidArgumentError, NotFoundError
+from openviking_cli.utils import get_logger
+
+logger = get_logger(__name__)
 
 __all__ = [
     "router",
@@ -155,8 +158,10 @@ async def _inline_read_content(
         async with semaphore:
             try:
                 hit["content"] = await service.fs.read_visible(hit["uri"], ctx=ctx)
-            except Exception:
-                pass
+            except (NotFoundError, AGFSNotFoundError) as exc:
+                logger.debug("search _read hit missing for %s: %s", hit.get("uri"), exc)
+            except Exception as exc:
+                logger.warning("search _read failed for %s: %s", hit.get("uri"), exc)
 
     await asyncio.gather(*(_read(hit) for hit in hits))
     return result
@@ -232,8 +237,8 @@ async def find(
             try:
                 from openviking.service.entropy_watchdog import get_entropy_watchdog
                 get_entropy_watchdog().notify_zero_hit(request.query)
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning("entropy_watchdog notify_zero_hit failed: %s", exc)
     return Response(
         status="ok",
         result=result,

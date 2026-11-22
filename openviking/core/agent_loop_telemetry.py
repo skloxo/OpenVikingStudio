@@ -16,6 +16,13 @@ import threading
 import time
 from typing import Any, Dict, Optional
 
+from openviking.telemetry.kv_state_store import (
+    clear_kv_state,
+    load_kv_state,
+    resolve_default_kv_db_path,
+    save_kv_state,
+)
+
 
 @dataclass
 class AgentLoopTelemetrySnapshot:
@@ -58,10 +65,12 @@ class AgentLoopTelemetryCollector:
 
     _instance: Optional["AgentLoopTelemetryCollector"] = None
     _lock = threading.Lock()
+    _KV_NS = "agent_loop_telemetry"
 
     def __new__(cls) -> "AgentLoopTelemetryCollector":
+        current_db = resolve_default_kv_db_path()
         with cls._lock:
-            if cls._instance is None:
+            if cls._instance is None or getattr(cls._instance, "_db_path", None) != current_db:
                 cls._instance = super().__new__(cls)
                 cls._instance._initialized = False
             return cls._instance
@@ -70,6 +79,7 @@ class AgentLoopTelemetryCollector:
         if getattr(self, "_initialized", False):
             return
         self._data_lock = threading.Lock()
+        self._db_path = resolve_default_kv_db_path()
         self._current_queue_depth = 0
         self._total_queued = 0
         self._total_drained = 0
@@ -90,31 +100,84 @@ class AgentLoopTelemetryCollector:
         self._merkle_version = 0
         self._merkle_last_scan_ts: Optional[float] = None
 
+        self._load_persisted_state()
         self._initialized = True
+
+    def _load_persisted_state(self) -> None:
+        saved = load_kv_state(self._KV_NS, db_path=self._db_path)
+        if not saved:
+            return
+        self._current_queue_depth = int(saved.get("current_queue_depth", 0))
+        self._total_queued = int(saved.get("total_queued", 0))
+        self._total_drained = int(saved.get("total_drained", 0))
+        self._active_brake_count = int(saved.get("active_brake_count", 0))
+        self._turns_completed = int(saved.get("turns_completed", 0))
+        self._turns_aborted = int(saved.get("turns_aborted", 0))
+        self._turns_failed = int(saved.get("turns_failed", 0))
+        self._model_retries_total = int(saved.get("model_retries_total", 0))
+        self._model_exhausted_total = int(saved.get("model_exhausted_total", 0))
+        self._total_inner_steps = int(saved.get("total_inner_steps", 0))
+        self._last_turn_inner_steps = int(saved.get("last_turn_inner_steps", 0))
+        self._merkle_last_diff_ms = saved.get("merkle_last_diff_ms")
+        self._merkle_file_count = int(saved.get("merkle_file_count", 0))
+        self._merkle_version = int(saved.get("merkle_version", 0))
+        self._merkle_last_scan_ts = saved.get("merkle_last_scan_ts")
+
+    def _persist_locked(self) -> None:
+        save_kv_state(
+            self._KV_NS,
+            {
+                "current_queue_depth": self._current_queue_depth,
+                "total_queued": self._total_queued,
+                "total_drained": self._total_drained,
+                "active_brake_count": self._active_brake_count,
+                "turns_completed": self._turns_completed,
+                "turns_aborted": self._turns_aborted,
+                "turns_failed": self._turns_failed,
+                "model_retries_total": self._model_retries_total,
+                "model_exhausted_total": self._model_exhausted_total,
+                "total_inner_steps": self._total_inner_steps,
+                "last_turn_inner_steps": self._last_turn_inner_steps,
+                "merkle_last_diff_ms": self._merkle_last_diff_ms,
+                "merkle_file_count": self._merkle_file_count,
+                "merkle_version": self._merkle_version,
+                "merkle_last_scan_ts": self._merkle_last_scan_ts,
+            },
+            db_path=self._db_path,
+        )
 
     @classmethod
     def get_instance(cls) -> "AgentLoopTelemetryCollector":
         return cls()
 
+    @classmethod
+    def reset_instance(cls) -> None:
+        with cls._lock:
+            cls._instance = None
+
     def record_interjection_queued(self, count: int = 1) -> None:
         with self._data_lock:
             self._current_queue_depth += count
             self._total_queued += count
+            self._persist_locked()
 
     def record_interjection_drained(self, count: int) -> None:
         with self._data_lock:
             self._current_queue_depth = max(0, self._current_queue_depth - count)
             self._total_drained += count
+            self._persist_locked()
 
     def record_active_brake(self, tool_name: str = "") -> None:
         with self._data_lock:
             self._active_brake_count += 1
+            self._persist_locked()
 
     def record_model_retry(self, exhausted: bool = False) -> None:
         with self._data_lock:
             self._model_retries_total += 1
             if exhausted:
                 self._model_exhausted_total += 1
+            self._persist_locked()
 
     def record_turn_finished(
         self,
@@ -134,6 +197,7 @@ class AgentLoopTelemetryCollector:
 
             if terminated_early:
                 self._active_brake_count += 1
+            self._persist_locked()
 
     def record_merkle_diff(self, diff_ms: float, file_count: int, version: int) -> None:
         with self._data_lock:
@@ -141,6 +205,7 @@ class AgentLoopTelemetryCollector:
             self._merkle_file_count = file_count
             self._merkle_version = version
             self._merkle_last_scan_ts = time.time()
+            self._persist_locked()
 
     def get_snapshot(self) -> AgentLoopTelemetrySnapshot:
         with self._data_lock:
@@ -224,6 +289,7 @@ class AgentLoopTelemetryCollector:
     def reset(self) -> None:
         """Reset metrics for test isolation."""
         with self._data_lock:
+            self._db_path = resolve_default_kv_db_path()
             self._current_queue_depth = 0
             self._total_queued = 0
             self._total_drained = 0
@@ -239,6 +305,7 @@ class AgentLoopTelemetryCollector:
             self._merkle_file_count = 0
             self._merkle_version = 0
             self._merkle_last_scan_ts = None
+            clear_kv_state(self._KV_NS, db_path=self._db_path)
 
 
 def get_agent_loop_telemetry_collector() -> AgentLoopTelemetryCollector:

@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 import time
 from typing import Any, Dict, List, Optional
+from urllib.parse import urlparse
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
@@ -168,7 +169,7 @@ async def _run_full_probes(
 
     # 1. 基础网关与身份真实鉴权 (Gateway & Auth)
     t0 = time.perf_counter()
-    gw_latency = round((time.perf_counter() - t0) * 1000 + 0.8, 1)
+    gw_latency = round((time.perf_counter() - t0) * 1000, 1)
     probes["gateway"] = {
         "status": "ok",
         "name": "基础网关与身份鉴权",
@@ -193,28 +194,28 @@ async def _run_full_probes(
                 )
             mem_latency = round((time.perf_counter() - t0) * 1000, 1)
             probes["memory"] = {
-                "status": "ok",
+                "status": "ok" if service else "idle",
                 "name": "核心长程记忆与知识图谱",
                 "latency_ms": mem_latency,
                 "engine": "SQLite FTS5 + VikingFS /queue + VectorDB",
                 "tools_count": mem_count,
                 "message": f"真实检索引擎连通 ({mem_latency}ms) · {mem_count} 项战地记忆与代码工具就绪",
             }
-        except Exception:
+        except Exception as exc:
             mem_latency = round((time.perf_counter() - t0) * 1000, 1)
             probes["memory"] = {
-                "status": "ok",
+                "status": "degraded",
                 "name": "核心长程记忆与知识图谱",
                 "latency_ms": mem_latency,
                 "engine": "SQLite FTS5 + VikingFS /queue + VectorDB",
                 "tools_count": mem_count,
-                "message": f"真实检索引擎就绪 ({mem_latency}ms) · {mem_count} 项战地工具",
+                "message": f"检索引擎探测异常 ({mem_latency}ms): {exc}",
             }
 
     # 3. 运维治理特权探针 (Ops Probe)
     if target_plugin is None or target_plugin in ("openviking-ops", "ops"):
         t0 = time.perf_counter()
-        ops_latency = round((time.perf_counter() - t0) * 1000 + 0.4, 1)
+        ops_latency = round((time.perf_counter() - t0) * 1000, 1)
         is_admin = auth_info["role"] == "admin"
         probes["ops"] = {
             "status": "ok" if is_admin else "warning",
@@ -228,7 +229,7 @@ async def _run_full_probes(
     # 4. 卫星集群跨机同频探针 (Fleet Probe)
     if target_plugin is None or target_plugin in ("fleet-mesh", "openviking-fleet", "fleet"):
         t0 = time.perf_counter()
-        fleet_latency = round((time.perf_counter() - t0) * 1000 + 0.3, 1)
+        fleet_latency = round((time.perf_counter() - t0) * 1000, 1)
         probes["fleet"] = {
             "status": "ok",
             "name": "卫星集群跨机同频中枢",
@@ -240,7 +241,7 @@ async def _run_full_probes(
 
     # 5. FastMCP 协议流通道真实反射探测 (MCP Probe)
     t0 = time.perf_counter()
-    mcp_latency = round((time.perf_counter() - t0) * 1000 + 0.5, 1)
+    mcp_latency = round((time.perf_counter() - t0) * 1000, 1)
     probes["mcp"] = {
         "status": "ok",
         "name": "FastMCP 协议流通道",
@@ -252,7 +253,7 @@ async def _run_full_probes(
 
     # 6. 智能 Hooks 与技能导轨真实链路探测 (Hooks Probe)
     t0 = time.perf_counter()
-    hooks_latency = round((time.perf_counter() - t0) * 1000 + 0.3, 1)
+    hooks_latency = round((time.perf_counter() - t0) * 1000, 1)
     probes["hooks"] = {
         "status": "ok",
         "name": "智能 Hooks 与技能导轨",
@@ -325,6 +326,9 @@ async def get_client_capabilities(
         or "openviking-memory"
     ).strip().lower()
 
+    probe_mode = (probe or "default").strip().lower()
+    skip_probes = probe_mode in ("none", "false", "0", "skip")
+
     if target in ("openviking-ops", "ops", "dsh-plugin-openviking-ops"):
         if auth_info["role"] not in ("admin", "root"):
             raise HTTPException(
@@ -334,11 +338,11 @@ async def get_client_capabilities(
         authed_tools = OPS_17_TOOLS
         authed_hooks = [h for h in OPS_2_HOOKS if hooks_state.get(h["id"], True)]
         ops_ver = get_plugin_manifest_version("openviking-ops", "1.0.6")
-        probes = await _run_full_probes(auth_info, ops_count=len(authed_tools), total_tools=len(authed_tools), active_hooks=len(authed_hooks), target_plugin="openviking-ops")
+        probes = {} if skip_probes else await _run_full_probes(auth_info, ops_count=len(authed_tools), total_tools=len(authed_tools), active_hooks=len(authed_hooks), target_plugin="openviking-ops")
         return {
             "status": "ok", "authenticated": True, "version": __version__, "kernel_version": __version__, "plugin_version": ops_ver, "hot_reload_synced": True,
             "user_id": auth_info["user_id"], "account_id": auth_info["account_id"], "role": auth_info["role"],
-            "plugin_id": "openviking-ops", "total_authorized_tools": len(authed_tools),
+            "plugin_id": "openviking-ops", "total_authorized_tools": len(authed_tools), "probe_mode": probe_mode,
             "plugins": [{
                 "id": "openviking-ops", "name": "OpenViking 系统运维治理插件", "version": ops_ver, "kernel_version": __version__, "status": "active",
                 "total_tools": len(authed_tools), "description": f"后台专属运维治理、死信自愈与哨兵巡检 (v{ops_ver} · 内核 v{__version__})", "tools": authed_tools,
@@ -355,11 +359,11 @@ async def get_client_capabilities(
         authed_tools = FLEET_2_TOOLS
         authed_hooks = [h for h in FLEET_1_HOOKS if hooks_state.get(h["id"], True)]
         fleet_ver = get_plugin_manifest_version("fleet-mesh", "1.0.2")
-        probes = await _run_full_probes(auth_info, fleet_count=len(authed_tools), total_tools=len(authed_tools), active_hooks=len(authed_hooks), target_plugin="fleet-mesh")
+        probes = {} if skip_probes else await _run_full_probes(auth_info, fleet_count=len(authed_tools), total_tools=len(authed_tools), active_hooks=len(authed_hooks), target_plugin="fleet-mesh")
         return {
             "status": "ok", "authenticated": True, "version": __version__, "kernel_version": __version__, "plugin_version": fleet_ver, "hot_reload_synced": True,
             "user_id": auth_info["user_id"], "account_id": auth_info["account_id"], "role": auth_info["role"],
-            "plugin_id": "fleet-mesh", "total_authorized_tools": len(authed_tools),
+            "plugin_id": "fleet-mesh", "total_authorized_tools": len(authed_tools), "probe_mode": probe_mode,
             "plugins": [{
                 "id": "fleet-mesh", "name": "卫星集群同频运维插件", "version": fleet_ver, "kernel_version": __version__, "status": "active",
                 "total_tools": len(authed_tools), "description": f"跨物理节点同频健康体检与一键同频同步 (v{fleet_ver} · 内核 v{__version__})", "tools": authed_tools,
@@ -371,7 +375,7 @@ async def get_client_capabilities(
     authed_tools = [t for t in BATTLEFIELD_34_TOOLS if t["id"] in selected_tools_set] or BATTLEFIELD_34_TOOLS
     authed_hooks = [h for h in MEMORY_3_HOOKS if hooks_state.get(h["id"], True)]
     mem_ver = get_plugin_manifest_version("openviking-memory", "2.0.27")
-    probes = await _run_full_probes(
+    probes = {} if skip_probes else await _run_full_probes(
         auth_info,
         mem_count=len(authed_tools),
         total_tools=len(authed_tools),
@@ -390,6 +394,7 @@ async def get_client_capabilities(
         "role": auth_info["role"],
         "plugin_id": "openviking-memory",
         "total_authorized_tools": len(authed_tools),
+        "probe_mode": probe_mode,
         "plugins": [{
             "id": "openviking-memory",
             "name": "OpenViking 核心记忆与代码战地",
@@ -412,11 +417,53 @@ async def validate_client_configuration(
 ):
     """保存配置时的服务端权威校验端点."""
     auth_info = await _verify_auth(request)
+    if payload.endpointUrl is not None:
+        raw_url = payload.endpointUrl.strip()
+        parsed = urlparse(raw_url)
+        if not raw_url or parsed.scheme not in ("http", "https") or not parsed.netloc:
+            raise HTTPException(status_code=422, detail=f"Invalid endpointUrl: {payload.endpointUrl!r}")
+
+    known_plugins = {"openviking-memory", "openviking-ops", "fleet-mesh"}
+    known_tools = {
+        entry[key]
+        for catalog in (BATTLEFIELD_34_TOOLS, OPS_17_TOOLS, FLEET_2_TOOLS)
+        for entry in catalog
+        for key in ("id", "name")
+        if entry.get(key)
+    }
+    try:
+        from openviking.service.plugin_registry import PluginRegistry
+
+        registry = PluginRegistry.get_instance()
+        for plugin in registry.list_plugins():
+            known_plugins.add(plugin.plugin_id)
+            for t in plugin.tools:
+                known_tools.add(t.name)
+                if t.name.startswith("openviking_"):
+                    known_tools.add(t.name[len("openviking_"):])
+    except Exception:
+        pass
+
+    if payload.pluginId is not None:
+        pid = payload.pluginId.strip()
+        if not pid or pid not in known_plugins:
+            raise HTTPException(status_code=422, detail=f"Unknown pluginId: {payload.pluginId}")
+
+    for pid in payload.enabledPlugins or []:
+        if pid not in known_plugins:
+            raise HTTPException(status_code=422, detail=f"Unknown enabled plugin: {pid}")
+
+    unknown_tools = [t for t in (payload.enabledTools or []) if t not in known_tools]
+    if unknown_tools:
+        raise HTTPException(status_code=422, detail=f"Unknown enabledTools: {', '.join(unknown_tools)}")
+
     return {
         "status": "ok",
         "valid": True,
         "authenticated": True,
         "user_id": auth_info["user_id"],
         "account_id": auth_info["account_id"],
+        "validated_plugin_id": payload.pluginId,
+        "validated_tools_count": len(payload.enabledTools or []),
         "message": f"云端校验通过：用户 {auth_info['user_id']} 配置已核准！",
     }

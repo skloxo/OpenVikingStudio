@@ -354,4 +354,25 @@ class TestExtractLoopBisectionIntegration:
         assert probe_body["zero_thinking_enforced"] is True
         assert "metrics" in probe_body
 
+    def test_bisection_heal_persists_across_module_cache_reset(self, tmp_path, monkeypatch):
+        import openviking.session.memory.bisection_heal as bh
+
+        monkeypatch.setenv("OPENVIKING_TELEMETRY_DB", str(tmp_path / "bisection_restart.db"))
+        reset_heal_metrics()
+        record_heal_event("total_extractions", 3)
+        record_heal_event("bisection_heals_triggered", 2)
+        record_heal_event("bisection_heals_success", 2, {"tokens_saved": 2400})
+
+        # Simulate restart by clearing in-memory cache + loaded sentinel
+        bh._loaded_db_path = None
+        for k in bh._extraction_heal_stats:
+            if isinstance(bh._extraction_heal_stats[k], int):
+                bh._extraction_heal_stats[k] = 0
+        metrics = get_bisection_heal_metrics()
+        assert metrics["total_extractions"] == 3
+        assert metrics["bisection_heals_triggered"] == 2
+        assert metrics["bisection_heals_success"] == 2
+        assert metrics["tokens_saved_estimate"] == 2400
+        reset_heal_metrics()
+
 

@@ -9,7 +9,7 @@ autonomy ladder controls, and emergency rollbacks.
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from openviking.core.evolution_cicd import (
@@ -19,8 +19,33 @@ from openviking.core.evolution_cicd import (
 from openviking.core.dreaming_gate import (
     DreamingDefectMiner,
 )
+from openviking.server.auth import resolve_identity
+from openviking_cli.exceptions import PermissionDeniedError, UnauthenticatedError
 
-router = APIRouter(prefix="/api/v1/evolution", tags=["evolution-cicd"])
+
+async def _require_cicd_auth(request: Request) -> None:
+    """Enforce authentication on Evolution CI/CD routes whenever server auth is active."""
+    if getattr(request.app.state, "auth_plugin", None) is None:
+        return
+    try:
+        await resolve_identity(
+            request,
+            x_api_key=request.headers.get("X-API-Key"),
+            authorization=request.headers.get("Authorization"),
+            x_openviking_account=request.headers.get("X-OpenViking-Account"),
+            x_openviking_user=request.headers.get("X-OpenViking-User"),
+        )
+    except UnauthenticatedError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+    except PermissionDeniedError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+router = APIRouter(
+    prefix="/api/v1/evolution",
+    tags=["evolution-cicd"],
+    dependencies=[Depends(_require_cicd_auth)],
+)
 
 
 class CreatePackageRequest(BaseModel):

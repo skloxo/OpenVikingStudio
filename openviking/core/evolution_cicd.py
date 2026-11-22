@@ -8,7 +8,9 @@ and 2nd-order metrics drift monitoring with instant auto-rollback.
 
 from __future__ import annotations
 
+import dataclasses
 import enum
+import os
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -16,6 +18,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from openviking.core.rsi_trajectory_store import RSITrajectoryStore
+from openviking.telemetry.kv_state_store import clear_kv_state, load_kv_state, save_kv_state
 from openviking.core.skillhone_regression import (
     IsolatedSkillEvaluator,
     OptimizerFailureContext,
@@ -104,6 +107,7 @@ class EvolutionCICDPipeline:
     """Orchestrator for the 7-stage evolution pipeline and safety barriers."""
 
     _instance: Optional[EvolutionCICDPipeline] = None
+    _KV_NS = "evolution_cicd_pipeline"
 
     def __init__(self, store: Optional[RSITrajectoryStore] = None) -> None:
         self.autonomous_level = AutonomousLevel.LEVEL_2_BOUNDED_AUTO
@@ -112,6 +116,93 @@ class EvolutionCICDPipeline:
         self.emergency_kill_switch_tripped = False
         self.auto_downgrade_count = 0
         self._store = store
+        self._load_pipeline_state()
+
+    def _kv_db_path(self) -> Path:
+        if self._store is not None:
+            return Path(self._store.db_path)
+        env_db = os.environ.get("OPENVIKING_TELEMETRY_DB")
+        if env_db:
+            return Path(env_db).expanduser().resolve()
+        return Path(self._get_store().db_path)
+
+    def _serialize_package(self, pkg: EvolutionChangePackage) -> Dict[str, Any]:
+        data = dataclasses.asdict(pkg)
+        data["current_stage"] = pkg.current_stage.value
+        return data
+
+    def _load_pipeline_state(self) -> None:
+        saved = load_kv_state(self._KV_NS, db_path=self._kv_db_path())
+        self.packages.clear()
+        if not saved:
+            self.autonomous_level = AutonomousLevel.LEVEL_2_BOUNDED_AUTO
+            self.emergency_kill_switch_tripped = False
+            self.auto_downgrade_count = 0
+            self.metrics = SecondOrderMetrics()
+            return
+        try:
+            self.autonomous_level = AutonomousLevel(saved.get("autonomous_level", AutonomousLevel.LEVEL_2_BOUNDED_AUTO.value))
+        except ValueError:
+            self.autonomous_level = AutonomousLevel.LEVEL_2_BOUNDED_AUTO
+        self.emergency_kill_switch_tripped = bool(saved.get("emergency_kill_switch_tripped", False))
+        self.auto_downgrade_count = int(saved.get("auto_downgrade_count", 0))
+        m = saved.get("metrics") or {}
+        self.metrics = SecondOrderMetrics(
+            output_length_ratio=float(m.get("output_length_ratio", 1.0)),
+            refusal_rate=float(m.get("refusal_rate", 0.0)),
+            retry_rate=float(m.get("retry_rate", 0.0)),
+            drift_detected=bool(m.get("drift_detected", False)),
+        )
+        for pid, raw in (saved.get("packages") or {}).items():
+            if not isinstance(raw, dict):
+                continue
+            try:
+                stage = PipelineStage(raw.get("current_stage", PipelineStage.SIGNAL_AGGREGATION.value))
+            except ValueError:
+                stage = PipelineStage.SIGNAL_AGGREGATION
+            self.packages[pid] = EvolutionChangePackage(
+                package_id=raw.get("package_id", pid),
+                target_skill=raw.get("target_skill", ""),
+                diff_patch=raw.get("diff_patch", ""),
+                line_count=int(raw.get("line_count", 0)),
+                skill_dir=raw.get("skill_dir"),
+                package_files=dict(raw.get("package_files") or {}),
+                diagnosis=raw.get("diagnosis", ""),
+                regression_commands=list(raw.get("regression_commands") or []),
+                enforce_regression=bool(raw.get("enforce_regression", False)),
+                rejected_history_refs=list(raw.get("rejected_history_refs") or []),
+                patch_fingerprint=raw.get("patch_fingerprint", ""),
+                eval_evidence=dict(raw.get("eval_evidence") or {}),
+                decision=raw.get("decision", ""),
+                rationale=raw.get("rationale", ""),
+                review_manifest=dict(raw.get("review_manifest") or {}),
+                decision_recorded=bool(raw.get("decision_recorded", False)),
+                current_stage=stage,
+                stage_history=list(raw.get("stage_history") or []),
+                canary_traffic_pct=int(raw.get("canary_traffic_pct", 0)),
+                passed_safety_gate=bool(raw.get("passed_safety_gate", False)),
+                rolled_back=bool(raw.get("rolled_back", False)),
+                created_at=float(raw.get("created_at", time.time())),
+                updated_at=float(raw.get("updated_at", time.time())),
+            )
+
+    def _persist_pipeline_state(self) -> None:
+        save_kv_state(
+            self._KV_NS,
+            {
+                "autonomous_level": self.autonomous_level.value,
+                "emergency_kill_switch_tripped": self.emergency_kill_switch_tripped,
+                "auto_downgrade_count": self.auto_downgrade_count,
+                "metrics": {
+                    "output_length_ratio": self.metrics.output_length_ratio,
+                    "refusal_rate": self.metrics.refusal_rate,
+                    "retry_rate": self.metrics.retry_rate,
+                    "drift_detected": self.metrics.drift_detected,
+                },
+                "packages": {pid: self._serialize_package(p) for pid, p in self.packages.items()},
+            },
+            db_path=self._kv_db_path(),
+        )
 
     def _get_store(self) -> RSITrajectoryStore:
         return self._store or RSITrajectoryStore.get_instance()
@@ -119,6 +210,12 @@ class EvolutionCICDPipeline:
     def set_store(self, store: Optional[RSITrajectoryStore]) -> None:
         """Bind an explicit RSITrajectoryStore instance (used for isolated testing/eval)."""
         self._store = store
+        if store is not None:
+            self._load_pipeline_state()
+
+    @classmethod
+    def reset_instance(cls) -> None:
+        cls._instance = None
 
     def prepare_optimizer_context(
         self,
@@ -172,6 +269,7 @@ class EvolutionCICDPipeline:
     def set_autonomous_level(self, level: AutonomousLevel) -> None:
         """Update autonomy ladder respecting human inviolable authority."""
         self.autonomous_level = level
+        self._persist_pipeline_state()
 
     def trigger_emergency_rollback(self, package_id: Optional[str] = None) -> Dict[str, Any]:
         """Trip kill-switch, abort canary rollouts, and downgrade autonomy."""
@@ -189,6 +287,7 @@ class EvolutionCICDPipeline:
         # Auto-downgrade to Level 0 (Observation Only) on emergency
         self.autonomous_level = AutonomousLevel.LEVEL_0_OBSERVE
         self.auto_downgrade_count += 1
+        self._persist_pipeline_state()
         return {
             "status": "emergency_rollback_success",
             "rolled_back_packages": rolled_back_ids,
@@ -250,10 +349,17 @@ class EvolutionCICDPipeline:
             f"Signal received (prior_rejected={len(opt_ctx.avoided_fingerprints)}).",
         )
         self.packages[pkg_id] = pkg
+        self._persist_pipeline_state()
         return pkg
 
     def advance_package(self, package_id: str) -> Tuple[bool, str]:
         """Advance package through the 7 stages with hard gatekeeper checks."""
+        ok, msg = self._advance_package_inner(package_id)
+        if package_id in self.packages:
+            self._persist_pipeline_state()
+        return ok, msg
+
+    def _advance_package_inner(self, package_id: str) -> Tuple[bool, str]:
         pkg = self.packages.get(package_id)
         if not pkg:
             return False, f"Package {package_id} not found."

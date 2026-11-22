@@ -31,6 +31,12 @@ from openviking.core.spec_driven_fs import (
     ProtectedPayload,
     WhitelistType,
 )
+from openviking.telemetry.kv_state_store import (
+    clear_kv_state,
+    load_kv_state,
+    resolve_default_kv_db_path,
+    save_kv_state,
+)
 
 
 @dataclass
@@ -65,10 +71,12 @@ class FailureTaxonomyTelemetry:
 
     _instance: Optional["FailureTaxonomyTelemetry"] = None
     _lock = threading.Lock()
+    _KV_NS = "failure_taxonomy_telemetry"
 
     def __new__(cls) -> "FailureTaxonomyTelemetry":
+        cur_db = resolve_default_kv_db_path()
         with cls._lock:
-            if cls._instance is None:
+            if cls._instance is None or getattr(cls._instance, "_db_path", None) != cur_db:
                 cls._instance = super().__new__(cls)
                 cls._instance._initialized = False
             return cls._instance
@@ -77,6 +85,7 @@ class FailureTaxonomyTelemetry:
         if getattr(self, "_initialized", False):
             return
         self._data_lock = threading.Lock()
+        self._db_path = resolve_default_kv_db_path()
         self._classifier = FailureClassifier(max_transient_retries=3, base_backoff_sec=0.1)
         self._whitelist = CompressionWhitelist()
 
@@ -88,11 +97,46 @@ class FailureTaxonomyTelemetry:
         self._estimated_tokens_saved = 0
 
         self._recent_events: List[Dict[str, Any]] = []
+        self._load_persisted_state()
         self._initialized = True
+
+    def _load_persisted_state(self) -> None:
+        saved = load_kv_state(self._KV_NS, db_path=self._db_path)
+        if not saved:
+            return
+        self._transient_count = int(saved.get("transient_count", 0))
+        self._deterministic_count = int(saved.get("deterministic_count", 0))
+        self._fatal_count = int(saved.get("fatal_count", 0))
+        self._anti_loop_interceptions = int(saved.get("anti_loop_interceptions", 0))
+        self._transient_retries_used = int(saved.get("transient_retries_used", 0))
+        self._estimated_tokens_saved = int(saved.get("estimated_tokens_saved", 0))
+        events = saved.get("recent_events", [])
+        if isinstance(events, list):
+            self._recent_events = events[-20:]
+
+    def _persist_locked(self) -> None:
+        save_kv_state(
+            self._KV_NS,
+            {
+                "transient_count": self._transient_count,
+                "deterministic_count": self._deterministic_count,
+                "fatal_count": self._fatal_count,
+                "anti_loop_interceptions": self._anti_loop_interceptions,
+                "transient_retries_used": self._transient_retries_used,
+                "estimated_tokens_saved": self._estimated_tokens_saved,
+                "recent_events": self._recent_events[-20:],
+            },
+            db_path=self._db_path,
+        )
 
     @classmethod
     def get_instance(cls) -> "FailureTaxonomyTelemetry":
         return cls()
+
+    @classmethod
+    def reset_instance(cls) -> None:
+        with cls._lock:
+            cls._instance = None
 
     def record_evaluation(
         self,
@@ -157,6 +201,7 @@ class FailureTaxonomyTelemetry:
         self._recent_events.append(event)
         if len(self._recent_events) > 20:
             self._recent_events.pop(0)
+        self._persist_locked()
 
     def get_snapshot(self) -> FailureTaxonomySnapshot:
         """Retrieve the current telemetry snapshot."""
@@ -300,6 +345,7 @@ class FailureTaxonomyTelemetry:
                 }
 
             elif action == "reset":
+                self._db_path = resolve_default_kv_db_path()
                 self._classifier.reset()
                 self._whitelist.clear()
                 self._transient_count = 0
@@ -309,6 +355,7 @@ class FailureTaxonomyTelemetry:
                 self._transient_retries_used = 0
                 self._estimated_tokens_saved = 0
                 self._recent_events.clear()
+                clear_kv_state(self._KV_NS, db_path=self._db_path)
                 return {"action": "reset", "status": "reset_completed"}
 
             else:

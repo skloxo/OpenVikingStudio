@@ -166,3 +166,26 @@ def test_simulation_probe():
     assert snap.interjection_total_queued >= 3
     assert snap.active_brake_count >= 1
     assert snap.merkle_tree_file_count == 99
+
+
+def test_agent_loop_telemetry_persists_across_restart(tmp_path, monkeypatch):
+    monkeypatch.setenv("OPENVIKING_TELEMETRY_DB", str(tmp_path / "telemetry_restart.db"))
+    AgentLoopTelemetryCollector.reset_instance()
+    c1 = AgentLoopTelemetryCollector.get_instance()
+    c1.reset()
+    c1.record_interjection_queued(4)
+    c1.record_interjection_drained(2)
+    c1.record_active_brake("gate_x")
+    c1.record_turn_finished("completed", inner_steps=5, terminated_early=True)
+
+    # Simulate process restart by resetting singleton instance
+    AgentLoopTelemetryCollector.reset_instance()
+    c2 = AgentLoopTelemetryCollector.get_instance()
+    snap = c2.get_snapshot()
+    assert snap.interjection_total_queued == 4
+    assert snap.interjection_total_drained == 2
+    assert snap.interjection_queue_depth == 2
+    assert snap.active_brake_count == 2
+    assert snap.turns_completed == 1
+    assert snap.total_inner_steps == 5
+    c2.reset()

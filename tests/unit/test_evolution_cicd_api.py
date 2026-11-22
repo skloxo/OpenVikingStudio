@@ -95,3 +95,18 @@ def test_api_dreaming_trigger_and_status(client):
     data = stat_res.json()
     assert data["status"] == "completed"
     assert len(data["defects"]) >= 1
+
+
+def test_evolution_cicd_requires_auth_when_auth_plugin_configured():
+    from unittest.mock import MagicMock
+    from openviking.server.auth.plugins import ApiKeyAuthPlugin
+    from openviking.server.routers.evolution_cicd import router as cicd_router
+
+    app = FastAPI()
+    app.state.auth_plugin = ApiKeyAuthPlugin()
+    app.state.api_key_manager = MagicMock()
+    app.include_router(cicd_router)
+    secured_client = TestClient(app)
+
+    resp = secured_client.get("/api/v1/evolution/governance")
+    assert resp.status_code == 401

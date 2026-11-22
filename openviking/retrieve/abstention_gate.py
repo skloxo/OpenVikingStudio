@@ -8,8 +8,16 @@ RARG Evidence Grounding Verifier & Zero-Hallucination Abstention Gate.
 import collections
 import re
 import time
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
+
+from openviking.telemetry.kv_state_store import (
+    clear_kv_state,
+    load_kv_state,
+    resolve_default_kv_db_path,
+    save_kv_state,
+)
 
 
 class AbstentionDecision(BaseModel):
@@ -41,10 +49,18 @@ class AbstentionGate:
     """
 
     _instance: Optional["AbstentionGate"] = None
+    _KV_NS = "rag_abstention_gate"
 
-    def __init__(self, confidence_threshold: float = 0.40, min_evidence_length: int = 15):
+    def __init__(
+        self,
+        confidence_threshold: float = 0.40,
+        min_evidence_length: int = 15,
+        persist: bool = False,
+    ):
         self.threshold = confidence_threshold
         self.min_evidence_len = min_evidence_length
+        self._persist = persist
+        self._db_path: Optional[Path] = resolve_default_kv_db_path() if persist else None
         # Telemetry counters
         self._total_verifications = 0
         self._total_abstained = 0
@@ -52,12 +68,62 @@ class AbstentionGate:
         self._sum_latency_ms = 0.0
         self._confidence_brackets: Dict[str, int] = {"low": 0, "medium": 0, "high": 0}
         self._recent_events: collections.deque = collections.deque(maxlen=20)
+        if persist:
+            self._load_persisted_state()
+
+    def _load_persisted_state(self) -> None:
+        saved = load_kv_state(self._KV_NS, db_path=self._db_path)
+        if not saved:
+            return
+        self._total_verifications = int(saved.get("total_verifications", 0))
+        self._total_abstained = int(saved.get("total_abstained", 0))
+        self._sum_confidence = float(saved.get("sum_confidence", 0.0))
+        self._sum_latency_ms = float(saved.get("sum_latency_ms", 0.0))
+        brackets = saved.get("confidence_distribution")
+        if isinstance(brackets, dict):
+            for key in ("low", "medium", "high"):
+                self._confidence_brackets[key] = int(brackets.get(key, 0))
+        events = saved.get("recent_verifications")
+        if isinstance(events, list):
+            self._recent_events = collections.deque(events[-20:], maxlen=20)
+
+    def _persist_state(self) -> None:
+        if not self._persist:
+            return
+        save_kv_state(
+            self._KV_NS,
+            {
+                "total_verifications": self._total_verifications,
+                "total_abstained": self._total_abstained,
+                "sum_confidence": self._sum_confidence,
+                "sum_latency_ms": self._sum_latency_ms,
+                "confidence_distribution": dict(self._confidence_brackets),
+                "recent_verifications": list(self._recent_events),
+            },
+            db_path=self._db_path,
+        )
 
     @classmethod
     def get_instance(cls, threshold: float = 0.40) -> "AbstentionGate":
-        if cls._instance is None:
-            cls._instance = cls(confidence_threshold=threshold)
+        cur_db = resolve_default_kv_db_path()
+        if cls._instance is None or getattr(cls._instance, "_db_path", None) != cur_db:
+            cls._instance = cls(confidence_threshold=threshold, persist=True)
         return cls._instance
+
+    @classmethod
+    def reset_instance(cls) -> None:
+        cls._instance = None
+
+    def reset(self) -> None:
+        self._total_verifications = 0
+        self._total_abstained = 0
+        self._sum_confidence = 0.0
+        self._sum_latency_ms = 0.0
+        self._confidence_brackets = {"low": 0, "medium": 0, "high": 0}
+        self._recent_events.clear()
+        if self._persist:
+            self._db_path = resolve_default_kv_db_path()
+            clear_kv_state(self._KV_NS, db_path=self._db_path)
 
     @staticmethod
     def _extract_keywords(text: str) -> set[str]:
@@ -171,6 +237,7 @@ class AbstentionGate:
             "latency_ms": decision.latency_ms,
             "timestamp": time.time(),
         })
+        self._persist_state()
 
     def get_telemetry(self) -> AbstentionTelemetrySnapshot:
         """Get snapshot of cumulative telemetry."""

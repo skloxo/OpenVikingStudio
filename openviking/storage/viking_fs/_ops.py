@@ -1145,7 +1145,8 @@ class _OpsMixin:
 
         page_size = self._glob_page_size(node_limit)
         continuation_token: Optional[str] = None
-        matches = []
+        matches: List[Any] = []
+        limit_reached = False
         while True:
             page = await self._async_agfs.glob_directory(
                 path,
@@ -1156,7 +1157,7 @@ class _OpsMixin:
                 continuation_token=continuation_token,
             )
 
-            page_matches: List[str] = []
+            page_items: List[tuple[str, Any]] = []
             for entry in page.get("entries", []):
                 if not self._is_path_entry_visible(
                     entry["path"],
@@ -1173,28 +1174,50 @@ class _OpsMixin:
                     entry_path=entry["path"],
                     ctx=ctx,
                 )
+                if extra_fields is not None:
+                    item: Any = {
+                        "name": entry.get("name") or entry["path"].rsplit("/", 1)[-1],
+                        "isDir": bool(
+                            entry["isDir"] if "isDir" in entry else entry.get("is_dir", False)
+                        ),
+                        "rel_path": entry.get("rel_path") or entry_uri,
+                        "uri": entry_uri,
+                    }
+                    for opt_key in ("size", "mode", "modTime"):
+                        if opt_key in entry:
+                            item[opt_key] = entry[opt_key]
+                else:
+                    item = entry_uri
+
                 if self.acl_manager is None:
-                    matches.append(entry_uri)
+                    matches.append(item)
                     if node_limit is not None and node_limit > 0 and len(matches) >= node_limit:
-                        return {"matches": matches, "count": len(matches)}
+                        limit_reached = True
+                        break
                     continue
 
-                page_matches.append(entry_uri)
+                page_items.append((entry_uri, item))
 
-            if self.acl_manager is not None:
-                access = await self._can_access_many(page_matches, real_ctx)
-                for entry_uri in page_matches:
+            if not limit_reached and self.acl_manager is not None and page_items:
+                access = await self._can_access_many([u for u, _ in page_items], real_ctx)
+                for entry_uri, item in page_items:
                     if not access.get(entry_uri, False):
                         continue
-                    matches.append(entry_uri)
+                    matches.append(item)
                     if node_limit is not None and node_limit > 0 and len(matches) >= node_limit:
-                        return {"matches": matches, "count": len(matches)}
+                        limit_reached = True
+                        break
 
-            if node_limit is not None and node_limit > 0 and len(matches) >= node_limit:
-                return {"matches": matches, "count": len(matches)}
+            if limit_reached or (
+                node_limit is not None and node_limit > 0 and len(matches) >= node_limit
+            ):
+                break
             continuation_token = page.get("next_token")
             if not continuation_token:
                 break
+
+        if extra_fields and matches:
+            await self._augment_entries_extra_fields(matches, extra_fields, ctx=ctx)
         return {"matches": matches, "count": len(matches)}
 
     async def _batch_fetch_abstracts(

@@ -3,9 +3,9 @@
 """System endpoints for OpenViking HTTP Server."""
 
 import asyncio
-from typing import Any
+from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 
 from openviking.core.defensive import get_defensive_telemetry
@@ -243,12 +243,16 @@ async def system_status(
 
 @router.post("/api/v1/system/wait", tags=["system"])
 async def wait_processed(
-    request: WaitRequest,
+    request: Optional[WaitRequest] = Body(default=None),
+    timeout: Optional[float] = Query(default=None, description="Optional wait timeout in seconds"),
     _ctx: RequestContext = Depends(get_request_context),
 ):
     """Wait for all processing to complete."""
     service = get_service()
-    result = await service.resources.wait_processed(timeout=request.timeout)
+    effective_timeout = (
+        timeout if timeout is not None else (request.timeout if request is not None else None)
+    )
+    result = await service.resources.wait_processed(timeout=effective_timeout)
     return Response(status="ok", result=result)
 
 

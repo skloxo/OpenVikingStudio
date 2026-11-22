@@ -16,8 +16,15 @@ import json
 import re
 import threading
 import time
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
+from openviking.telemetry.kv_state_store import (
+    clear_kv_state,
+    load_kv_state,
+    resolve_default_kv_db_path,
+    save_kv_state,
+)
 from openviking_cli.utils import get_logger
 
 logger = get_logger(__name__)
@@ -37,7 +44,9 @@ TRUNCATION_TOKEN_THRESHOLD = 1500
 BISECTION_OVERLAP_MESSAGES = 2
 MAX_SAFE_MEMORY_ITEM_CHARS = 3000
 
+_KV_NS = "bisection_heal"
 _telemetry_lock = threading.Lock()
+_loaded_db_path: Optional[Path] = None
 _extraction_heal_stats: Dict[str, Any] = {
     "total_extractions": 0,
     "zero_thinking_enforced_count": 0,
@@ -53,9 +62,23 @@ _extraction_heal_stats: Dict[str, Any] = {
 }
 
 
+def _ensure_heal_loaded_locked() -> Path:
+    global _loaded_db_path
+    cur_db = resolve_default_kv_db_path()
+    if _loaded_db_path != cur_db:
+        _loaded_db_path = cur_db
+        saved = load_kv_state(_KV_NS, db_path=cur_db)
+        if saved:
+            for key in _extraction_heal_stats:
+                if key in saved:
+                    _extraction_heal_stats[key] = saved[key]
+    return cur_db
+
+
 def record_heal_event(event_type: str, count: int = 1, metadata: Optional[Dict[str, Any]] = None) -> None:
     """Record an extraction healing telemetry event thread-safely."""
     with _telemetry_lock:
+        cur_db = _ensure_heal_loaded_locked()
         if event_type in _extraction_heal_stats:
             _extraction_heal_stats[event_type] += count
         if event_type == "bisection_heals_success":
@@ -66,11 +89,13 @@ def record_heal_event(event_type: str, count: int = 1, metadata: Optional[Dict[s
             if speedup is not None:
                 _extraction_heal_stats["avg_speedup_factor"] = float(speedup)
         _extraction_heal_stats["last_updated"] = time.time()
+        save_kv_state(_KV_NS, dict(_extraction_heal_stats), db_path=cur_db)
 
 
 def get_extraction_heal_metrics() -> Dict[str, Any]:
     """Retrieve telemetry metrics for the zero-thinking bisection heal engine."""
     with _telemetry_lock:
+        _ensure_heal_loaded_locked()
         stats = dict(_extraction_heal_stats)
     total = stats["total_extractions"]
     zero_thinking_rate = (stats["zero_thinking_enforced_count"] / total * 100.0) if total > 0 else 0.0
@@ -105,12 +130,18 @@ get_bisection_heal_metrics = get_extraction_heal_metrics
 
 def reset_heal_metrics_for_test() -> None:
     """Reset counters for testing."""
+    global _loaded_db_path
     with _telemetry_lock:
+        cur_db = resolve_default_kv_db_path()
+        _loaded_db_path = cur_db
         for key in _extraction_heal_stats:
             if isinstance(_extraction_heal_stats[key], int):
                 _extraction_heal_stats[key] = 0
+            elif isinstance(_extraction_heal_stats[key], float):
+                _extraction_heal_stats[key] = 0.0
         _extraction_heal_stats["total_extractions"] = 0
         _extraction_heal_stats["last_updated"] = time.time()
+        clear_kv_state(_KV_NS, db_path=cur_db)
 
 
 reset_heal_metrics = reset_heal_metrics_for_test

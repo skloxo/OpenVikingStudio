@@ -25,6 +25,7 @@ from openviking.service.core import OpenVikingService
 from openviking.service.task_tracker import get_task_tracker
 from openviking.storage.queuefs import QueueManager, SessionCommitMsg, get_queue_manager
 from openviking_cli.session.user_id import UserIdentifier
+from openviking_cli.utils.config import RerankConfig
 from openviking_cli.utils.config.embedding_config import EmbeddingConfig
 from openviking_cli.utils.config.vlm_config import VLMConfig
 
@@ -84,6 +85,11 @@ def _install_fake_vlm(monkeypatch):
     monkeypatch.setattr(VLMConfig, "is_available", lambda self: True)
     monkeypatch.setattr(VLMConfig, "get_completion_async", _fake_get_completion)
     monkeypatch.setattr(VLMConfig, "get_vision_completion_async", _fake_get_vision_completion)
+
+
+def _install_fake_rerank(monkeypatch) -> None:
+    """Disable host reranker config so server tests remain hermetic and zero-cost."""
+    monkeypatch.setattr(RerankConfig, "is_available", lambda self: False)
 
 
 def _install_session_commit_queue_fallback(service: OpenVikingService, monkeypatch) -> None:
@@ -190,6 +196,7 @@ async def service(temp_dir: Path, monkeypatch):
     """Create and initialize an OpenVikingService for in-process API tests."""
     fake_embedder_cls = _install_fake_embedder(monkeypatch)
     _install_fake_vlm(monkeypatch)
+    _install_fake_rerank(monkeypatch)
     svc = OpenVikingService(
         path=str(temp_dir / "data"), user=UserIdentifier.the_default_user("test_user")
     )
@@ -252,6 +259,7 @@ async def running_server(temp_dir: Path, monkeypatch):
     """Start a real uvicorn server in a background thread."""
     fake_embedder_cls = _install_fake_embedder(monkeypatch)
     _install_fake_vlm(monkeypatch)
+    _install_fake_rerank(monkeypatch)
 
     @asynccontextmanager
     async def _noop_mcp_lifespan():

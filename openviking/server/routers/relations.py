@@ -18,6 +18,9 @@ from openviking.server.dependencies import get_service, get_service_or_none
 from openviking.server.identity import RequestContext
 from openviking.server.models import Response
 from openviking.storage.relations_store import RelationStore
+from openviking_cli.utils import get_logger
+
+logger = get_logger(__name__)
 
 
 def _resolve_uri_or_uris(uri: Union[str, List[str]]) -> Union[str, List[str]]:
@@ -160,6 +163,7 @@ async def get_topology(
     nodes_map: Dict[str, Dict[str, Any]] = {}
     edges: List[Dict[str, Any]] = []
     seen_edges = set()
+    degraded_sections: List[str] = []
 
     def add_edge(src: str, tgt: str, link_type: str = "related_to", desc: str = "", weight: float = 1.0):
         if not src or not tgt or src == tgt:
@@ -263,8 +267,9 @@ async def get_topology(
                     else:
                         target_peer = master_peer_id
                     add_edge(target_peer, skill_id, link_type="applies")
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("get_topology failed to load skills: %s", exc, exc_info=True)
+        degraded_sections.append("skills")
 
     # 4. 动态加载真实活跃会话
     try:
@@ -280,8 +285,9 @@ async def get_topology(
                         "category": "sessions",
                     }
                     add_edge(master_peer_id, sess_id, link_type="interacts")
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("get_topology failed to load sessions: %s", exc, exc_info=True)
+        degraded_sections.append("sessions")
 
     # 5. 动态加载 VikingFS 真实资源
     try:
@@ -298,8 +304,9 @@ async def get_topology(
                         "category": "resources",
                     }
                     add_edge(master_peer_id, uri, link_type="indexes")
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("get_topology failed to load resources: %s", exc, exc_info=True)
+        degraded_sections.append("resources")
 
     nodes = list(nodes_map.values())
     return Response(
@@ -307,10 +314,12 @@ async def get_topology(
         result={
             "nodes": nodes,
             "edges": edges,
+            "degraded_sections": degraded_sections,
             "stats": {
                 "total_nodes": len(nodes),
                 "total_edges": len(edges),
                 "explicit_relations": len(all_links),
+                "degraded_count": len(degraded_sections),
             },
         },
     )

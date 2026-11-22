@@ -42,8 +42,28 @@ const ovProxyEntry = {
 }
 
 
+const pnpmFallbackAliases = Object.fromEntries(
+  (
+    [
+      ['cytoscape', './node_modules/.pnpm/cytoscape@3.34.0/node_modules/cytoscape'],
+      ['katex', './node_modules/.pnpm/katex@0.16.47/node_modules/katex'],
+      ['mermaid', './node_modules/.pnpm/mermaid@11.16.0/node_modules/mermaid'],
+    ] as const
+  )
+    .filter(
+      ([pkgName, pnpmPath]) =>
+        !fs.existsSync(path.resolve(`./node_modules/${pkgName}`)) &&
+        fs.existsSync(path.resolve(pnpmPath)),
+    )
+    .map(([pkgName, pnpmPath]) => [pkgName, path.resolve(pnpmPath)]),
+)
+
+
 const config = defineConfig(({ command }) => ({
   base: command === 'build' ? '/studio/' : '/',
+  resolve: {
+    alias: pnpmFallbackAliases,
+  },
   server: {
     host: '0.0.0.0',
     allowedHosts: true,

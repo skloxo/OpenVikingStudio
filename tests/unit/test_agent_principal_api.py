@@ -124,11 +124,12 @@ def test_agent_counts_api(client: TestClient):
     assert counts.get("user_b") == 1
 
 
-def test_mcp_middleware_soft_delete_interception(tmp_path: Path):
-    from openviking.server.mcp_endpoint import _IdentityASGIMiddleware
+def test_soft_delete_interception_on_agent_verify(tmp_path: Path):
+    """Verify soft-deleted and nonexistent agents fail fast with 404 on /verify endpoint."""
+    from openviking.server.routers.agents import global_agents_router
 
-    # Setup isolated store
-    db_file = tmp_path / "test_mcp_mw.db"
+    AgentPrincipalStore.reset_instance()
+    db_file = tmp_path / "test_agent_verify_soft_delete.db"
     store = AgentPrincipalStore.get_instance(db_path=db_file)
     created = store.register_agent(
         user_id="default",
@@ -138,36 +139,34 @@ def test_mcp_middleware_soft_delete_interception(tmp_path: Path):
     )
     agent_id = created.agent_id
 
-    from openviking.server.auth.plugins import DevAuthPlugin
-
     app = FastAPI()
-    app.state.auth_plugin = DevAuthPlugin()
-    app.add_middleware(_IdentityASGIMiddleware)
-
-    @app.get("/mcp")
-    def dummy_endpoint():
-        return {"status": "ok"}
-
+    app.include_router(agents_router)
+    app.include_router(global_agents_router)
     test_client = TestClient(app)
 
-    # 1. Valid agent_id passes through
-    res_valid = test_client.get(f"/mcp?agent_id={agent_id}")
-    assert res_valid.status_code == 200
-    assert res_valid.json() == {"status": "ok"}
+    try:
+        # 1. Valid agent_id succeeds on verify
+        res_valid = test_client.post(f"/api/v1/agents/{agent_id}/verify")
+        assert res_valid.status_code == 200
+        assert res_valid.json()["verified"] is True
 
-    # 2. Soft delete the agent
-    store.soft_delete_agent(agent_id)
+        # 2. Soft delete the agent
+        store.soft_delete_agent(agent_id)
 
-    # 3. Soft deleted agent_id gets 401 with not found or credential invalid error
-    res_deleted = test_client.get(f"/mcp?agent_id={agent_id}")
-    assert res_deleted.status_code == 401
-    err_json = res_deleted.json()
-    assert "not found or credential invalid" in err_json["error"]["message"]
+        # 3. Soft deleted agent_id gets 404 fail-fast on verify and PATCH
+        res_deleted = test_client.post(f"/api/v1/agents/{agent_id}/verify")
+        assert res_deleted.status_code == 404
+        res_patch = test_client.patch(
+            f"/api/v1/users/default/agents/{agent_id}",
+            json={"agent_name": "ShouldFail"},
+        )
+        assert res_patch.status_code == 404
 
-    # 4. Completely nonexistent agent_id gets 401
-    res_nonexistent = test_client.get("/mcp?agent_id=ag_nonexistent_xyz")
-    assert res_nonexistent.status_code == 401
-    assert "not found or credential invalid" in res_nonexistent.json()["error"]["message"]
+        # 4. Completely nonexistent agent_id gets 404
+        res_nonexistent = test_client.post("/api/v1/agents/ag_nonexistent_xyz/verify")
+        assert res_nonexistent.status_code == 404
+    finally:
+        AgentPrincipalStore.reset_instance()
 
 
 def test_update_agent_connection_mode_topology(client: TestClient):
@@ -207,5 +206,49 @@ def test_update_agent_connection_mode_topology(client: TestClient):
     target = next((item for item in items if item["agent_id"] == agent_id), None)
     assert target is not None
     assert target["connection_mode"] == "apiClient"
+
+
+def test_cross_user_agent_isolation_enforced(client: TestClient):
+    """Verify PATCH / DELETE / POST activate enforce user_id ownership and header ACL."""
+    create_res = client.post(
+        "/api/v1/users/alice/agents",
+        json={"agent_name": "Alice Agent"},
+    )
+    assert create_res.status_code == 200
+    agent_id = create_res.json()["result"]["agent"]["agent_id"]
+
+    # Cross-user PATCH by bob against alice's agent must be 403
+    bad_patch = client.patch(
+        f"/api/v1/users/bob/agents/{agent_id}",
+        json={"agent_name": "Hijacked"},
+    )
+    assert bad_patch.status_code == 403
+
+    # Cross-user DELETE by bob against alice's agent must be 403
+    bad_del = client.delete(f"/api/v1/users/bob/agents/{agent_id}")
+    assert bad_del.status_code == 403
+
+    # Cross-user header mismatch on alice's route must be 403
+    bad_hdr = client.patch(
+        f"/api/v1/users/alice/agents/{agent_id}",
+        json={"agent_name": "HeaderSpoof"},
+        headers={"X-OpenViking-User": "bob", "X-OpenViking-Role": "user"},
+    )
+    assert bad_hdr.status_code == 403
+
+    # Non-admin header calling cluster-wide /agent-counts or /api/v1/agents must be 403
+    bad_counts = client.get(
+        "/api/v1/users/agent-counts",
+        headers={"X-OpenViking-User": "bob", "X-OpenViking-Role": "user"},
+    )
+    assert bad_counts.status_code == 403
+
+    # Soft delete as owner alice, then block cross-user activate by bob with 403
+    ok_del = client.delete(f"/api/v1/users/alice/agents/{agent_id}")
+    assert ok_del.status_code == 200
+    bad_act = client.post(f"/api/v1/users/bob/agents/{agent_id}/activate")
+    assert bad_act.status_code == 403
+    ok_act = client.post(f"/api/v1/users/alice/agents/{agent_id}/activate")
+    assert ok_act.status_code == 200
 
 

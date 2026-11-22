@@ -24,6 +24,9 @@ from openviking.server.skill_source_metadata import persist_skill_source_metadat
 from openviking.server.telemetry import run_operation
 from openviking.server.temp_upload_store import TempUploadStore
 from openviking_cli.exceptions import InvalidArgumentError
+from openviking_cli.utils import get_logger
+
+logger = get_logger(__name__)
 
 router = APIRouter(prefix="/api/v1", tags=["resources"])
 
@@ -320,8 +323,8 @@ async def add_skill(
                             "parent_bundle": parent_bundle,
                             "is_absorbed": True,
                         }).model_dump(exclude_none=True)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("add_skill alias absorption check failed: %s", exc, exc_info=True)
 
     async def _add() -> dict[str, Any]:
         try:

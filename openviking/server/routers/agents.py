@@ -21,7 +21,10 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
+from openviking.server.auth import _build_request_context, _extract_api_key, resolve_identity
+from openviking.server.identity import Role
 from openviking.service.plugin_registry import PluginRegistry
+from openviking_cli.exceptions import PermissionDeniedError, UnauthenticatedError
 from openviking.storage.agent_principal_store import (
     AgentPrincipal,
     AgentPrincipalStore,
@@ -41,12 +44,67 @@ class VerifyAgentCallRequest(BaseModel):
 
 
 
+async def _enforce_agent_access(
+    request: Request,
+    target_user_id: Optional[str] = None,
+    require_admin: bool = False,
+) -> None:
+    """Enforce authentication and user ownership when auth plugin or identity headers are active."""
+    if getattr(request.app.state, "auth_plugin", None) is not None:
+        try:
+            x_api_key = request.headers.get("X-API-Key")
+            authorization = request.headers.get("Authorization")
+            identity = await resolve_identity(
+                request,
+                x_api_key=x_api_key,
+                authorization=authorization,
+                x_openviking_account=request.headers.get("X-OpenViking-Account"),
+                x_openviking_user=request.headers.get("X-OpenViking-User"),
+            )
+            ctx = _build_request_context(
+                request,
+                identity,
+                api_key=_extract_api_key(x_api_key, authorization),
+            )
+        except UnauthenticatedError as exc:
+            raise HTTPException(status_code=401, detail=str(exc)) from exc
+        except PermissionDeniedError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+        is_privileged = ctx.role in (Role.ROOT, Role.ADMIN)
+        if require_admin and not is_privileged:
+            raise HTTPException(status_code=403, detail="Admin role required")
+        if target_user_id and not is_privileged and ctx.user.user_id != target_user_id.strip():
+            raise HTTPException(
+                status_code=403,
+                detail=f"Cross-user access denied for user '{target_user_id}'",
+            )
+        return
+
+    user_header = request.headers.get("X-OpenViking-User")
+    role_header = request.headers.get("X-OpenViking-Role")
+    if user_header is None and role_header is None:
+        return
+    role = (role_header or "user").strip().lower()
+    is_privileged = role in ("admin", "root")
+    if require_admin and not is_privileged:
+        raise HTTPException(status_code=403, detail="Admin role required")
+    if target_user_id and user_header is not None and not is_privileged:
+        if user_header.strip() != target_user_id.strip():
+            raise HTTPException(
+                status_code=403,
+                detail=f"Cross-user access denied for user '{target_user_id}'",
+            )
+
+
 @global_agents_router.get("", summary="List all cluster agents")
 @global_agents_router.get("/", summary="List all cluster agents")
 async def list_all_cluster_agents(
+    request: Request,
     status: Optional[str] = Query("all", description="active | all | revoked"),
 ) -> Dict[str, Any]:
     """List all agents across the cluster regardless of owning user."""
+    await _enforce_agent_access(request, require_admin=True)
     store = AgentPrincipalStore.get_instance()
     filter_status = None if status == "all" else status
     agents = store.list_agents(user_id=None, status=filter_status, include_deleted=False)
@@ -135,8 +193,9 @@ def _generate_bootstrap_payload(
 
 
 @router.get("/agent-counts")
-async def get_all_user_agent_counts() -> Dict[str, Any]:
+async def get_all_user_agent_counts(request: Request) -> Dict[str, Any]:
     """Get active in-record agent count for all users in O(1)."""
+    await _enforce_agent_access(request, require_admin=True)
     store = AgentPrincipalStore.get_instance()
     counts = store.count_active_agents_by_user()
     return {"status": "ok", "result": counts}
@@ -145,9 +204,11 @@ async def get_all_user_agent_counts() -> Dict[str, Any]:
 @router.get("/{user_id}/agents")
 async def list_user_agents(
     user_id: str,
+    request: Request,
     status: Optional[str] = Query("all", description="active | all | revoked"),
 ) -> Dict[str, Any]:
     """List all authorized agents under a specific user."""
+    await _enforce_agent_access(request, target_user_id=user_id)
     store = AgentPrincipalStore.get_instance()
     filter_status = None if status == "all" else status
     agents = store.list_agents(user_id=user_id, status=filter_status, include_deleted=False)
@@ -164,6 +225,7 @@ async def create_user_agent(
     request: Request,
 ) -> Dict[str, Any]:
     """Create or register an authorized agent with system-generated ID."""
+    await _enforce_agent_access(request, target_user_id=user_id)
     clean_name = req.agent_name.strip()
     if not clean_name:
         raise HTTPException(status_code=400, detail="agent_name cannot be empty")
@@ -206,13 +268,20 @@ async def update_user_agent(
     user_id: str,
     agent_id: str,
     req: UpdateAgentRequest,
+    request: Request,
 ) -> Dict[str, Any]:
     """Update agent display name, role, connection mode, or allowed tools."""
+    await _enforce_agent_access(request, target_user_id=user_id)
     store = AgentPrincipalStore.get_instance()
     clean_id = agent_id.strip()
     existing = store.get_agent(clean_id, include_deleted=False)
     if not existing:
         raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found or invalid credential")
+    if existing.user_id != user_id.strip():
+        raise HTTPException(
+            status_code=403,
+            detail=f"Agent '{agent_id}' does not belong to user '{user_id}' (owner: '{existing.user_id}')",
+        )
 
     updated = store.update_agent(
         agent_id=clean_id,
@@ -233,10 +302,20 @@ async def update_user_agent(
 async def activate_user_agent(
     user_id: str,
     agent_id: str,
+    request: Request,
 ) -> Dict[str, Any]:
     """Restore or reactivate an agent identifier."""
+    await _enforce_agent_access(request, target_user_id=user_id)
     store = AgentPrincipalStore.get_instance()
     clean_id = agent_id.strip()
+    existing = store.get_agent(clean_id, include_deleted=True)
+    if not existing:
+        raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
+    if existing.user_id != user_id.strip():
+        raise HTTPException(
+            status_code=403,
+            detail=f"Agent '{agent_id}' does not belong to user '{user_id}' (owner: '{existing.user_id}')",
+        )
     success = store.restore_agent(clean_id)
     if not success:
         raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
@@ -251,13 +330,20 @@ async def activate_user_agent(
 async def soft_delete_user_agent(
     user_id: str,
     agent_id: str,
+    request: Request,
 ) -> Dict[str, Any]:
     """Soft delete an authorized agent identifier. Record is preserved for audit trail."""
+    await _enforce_agent_access(request, target_user_id=user_id)
     store = AgentPrincipalStore.get_instance()
     clean_id = agent_id.strip()
     existing = store.get_agent(clean_id, include_deleted=False)
     if not existing:
         raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found or invalid credential")
+    if existing.user_id != user_id.strip():
+        raise HTTPException(
+            status_code=403,
+            detail=f"Agent '{agent_id}' does not belong to user '{user_id}' (owner: '{existing.user_id}')",
+        )
 
     success = store.soft_delete_agent(clean_id)
     return {
@@ -270,6 +356,7 @@ async def soft_delete_user_agent(
 @global_agents_router.post("/{agent_id}/verify")
 async def verify_agent_bridge_and_tool_call(
     agent_id: str,
+    request: Request,
     user_id: Optional[str] = None,
     req: Optional[VerifyAgentCallRequest] = None,
 ) -> Dict[str, Any]:
@@ -277,6 +364,7 @@ async def verify_agent_bridge_and_tool_call(
     验证客户端桥梁 (dsh-plugin-openviking) 通过 UserKey + AgentID 握手联通性，
     并真实执行一次已授权插件的 MCP 工具调用，返回物理连通与执行证明。
     """
+    await _enforce_agent_access(request, target_user_id=user_id)
     clean_id = agent_id.strip()
     store = AgentPrincipalStore.get_instance()
     agent = store.get_agent(clean_id, include_deleted=False)

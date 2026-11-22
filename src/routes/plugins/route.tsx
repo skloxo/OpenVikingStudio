@@ -7,11 +7,14 @@
 
 import { createFileRoute } from '@tanstack/react-router'
 import {
+  AlertTriangleIcon,
   BoxesIcon,
   LayersIcon,
+  RefreshCwIcon,
   SearchIcon,
 } from 'lucide-react'
 import { Badge } from '#/components/ui/badge'
+import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { PluginMetricsBar } from './-components/plugin-metrics-bar'
 import { PluginQuadCard } from './-components/plugin-quad-card'
@@ -24,12 +27,17 @@ export const Route = createFileRoute('/plugins')({
 
 function PluginsRoute() {
   const {
+    categoryFilter,
+    error,
     filteredPlugins,
     healthSummary,
+    isError,
     isLoading,
     plugins,
+    refetch,
     searchQuery,
     selectedPlugin,
+    setCategoryFilter,
     setSearchQuery,
     setSelectedPlugin,
   } = usePluginsData()
@@ -60,10 +68,32 @@ function PluginsRoute() {
 
       {/* 筛选与搜索工具条 */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3 pt-1">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Badge variant="outline" className="h-7 px-2.5 text-xs font-mono text-muted-foreground border-border/70">
             全集群可用插件 ({plugins.length})
           </Badge>
+          <div className="flex items-center rounded-md border border-border/60 bg-muted/20 p-0.5 text-xs font-mono">
+            {(
+              [
+                { id: 'all', label: '全部分类' },
+                { id: 'platform', label: '平台内置' },
+                { id: 'user', label: '生态扩展' },
+              ] as const
+            ).map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setCategoryFilter(opt.id)}
+                className={`rounded px-2.5 py-0.5 text-xs transition-colors cursor-pointer ${
+                  categoryFilter === opt.id
+                    ? 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 font-semibold'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="relative w-64">
@@ -86,6 +116,24 @@ function PluginsRoute() {
               className="h-44 animate-pulse rounded-md border border-border/40 bg-muted/20"
             />
           ))}
+        </div>
+      ) : isError && plugins.length === 0 ? (
+        <div className="flex min-h-75 flex-col items-center justify-center rounded-md border border-rose-500/40 bg-rose-500/5 p-8 text-center">
+          <AlertTriangleIcon className="size-8 text-rose-500" />
+          <h3 className="mt-3 text-sm font-semibold text-rose-500">插件中心加载失败</h3>
+          <p className="mt-1 max-w-md text-xs text-muted-foreground font-mono">
+            {error instanceof Error ? error.message : '无法连接后端插件服务或接口返回异常'}
+          </p>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => void refetch()}
+            className="mt-4 h-7 text-xs font-mono border-rose-500/40 text-rose-500 hover:bg-rose-500/10"
+          >
+            <RefreshCwIcon className="mr-1.5 size-3.5" />
+            重新加载
+          </Button>
         </div>
       ) : filteredPlugins.length === 0 ? (
         <div className="flex min-h-75 flex-col items-center justify-center rounded-md border border-dashed border-border/80 p-8 text-center">

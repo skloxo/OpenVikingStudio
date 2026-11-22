@@ -16,6 +16,7 @@ import { SkillCard } from './-components/skill-card'
 import { SkillsFilterBar } from './-components/skills-filter-bar'
 import { SkillsMetricsCards } from './-components/skills-metrics-cards'
 import { SkillDetailSheet } from './-components/skill-detail-sheet'
+import { SkillEvolutionCockpit } from './-components/skill-evolution-cockpit'
 import { SkillIngestionCockpit } from './-components/skill-ingestion-cockpit'
 import { SkillPlaygroundCockpit } from './-components/skill-playground-cockpit'
 import { SkillRoiCockpitCard } from './-components/skill-roi-cockpit-card'
@@ -114,6 +115,7 @@ function SkillsRoute() {
           <B6RetinaRegressionCockpit />
           <B6HermesAheCockpit />
           <B6ProvenanceMultiLedger />
+          <SkillEvolutionCockpit />
         </div>
       ) : (
         <>

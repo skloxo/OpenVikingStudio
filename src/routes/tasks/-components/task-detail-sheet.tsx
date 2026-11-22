@@ -107,15 +107,12 @@ export function TaskDetailSheet({
     enabled: open && (!queueRows || queueRows.length === 0),
     queryKey: ['queue-observer-status'],
     queryFn: async () => {
-      try {
-        const resp = await ovClient.instance.get('/api/v1/observer/queue')
-        const statusText = resp.data?.result?.status || ''
-        return parseQueueStatus(statusText)
-      } catch {
-        return []
-      }
+      const resp = await ovClient.instance.get('/api/v1/observer/queue')
+      const statusText = resp.data?.result?.status || ''
+      return parseQueueStatus(statusText)
     },
     refetchInterval: open ? 2_000 : false,
+    retry: 1,
   })
   const effectiveQueueRows =
     queueRows && queueRows.length > 0

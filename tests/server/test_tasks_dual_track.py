@@ -68,3 +68,47 @@ async def test_dual_track_tasks_categorization():
         assert so["task_id"] == "auto-remed-20260908_120000-abcd12"
         assert "系统周期质检守护" in so["human_title"]
         assert "#abcd12" in so["human_title"]
+
+
+def test_quality_gate_retry_both_routes_and_payload():
+    """Verify both /tasks/trigger-quality-gate and /tasks/quality_gate accept retry payloads and return task_id."""
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from openviking.server.auth import get_request_context
+    from openviking.server.routers.tasks import router as tasks_router
+
+    app = FastAPI()
+    app.include_router(tasks_router)
+    app.dependency_overrides[get_request_context] = lambda: MagicMock()
+
+    mock_watchdog = MagicMock()
+    mock_watchdog.trigger_cycle = AsyncMock(
+        return_value={
+            "quality_gate_task_id": "manual-qg-test-001",
+            "status": "completed",
+            "composite_score": 0.91,
+        }
+    )
+
+    client = TestClient(app)
+    with patch("openviking.service.entropy_watchdog.get_entropy_watchdog", return_value=mock_watchdog):
+        resp1 = client.post(
+            "/api/v1/tasks/trigger-quality-gate",
+            json={"mode": "smoke", "threshold": 0.7, "reason": "ui_task_retry"},
+        )
+        assert resp1.status_code == 200
+        body1 = resp1.json()
+        assert body1["status"] == "ok"
+        assert body1["result"]["task_id"] == "manual-qg-test-001"
+        assert body1["result"]["quality_gate_task_id"] == "manual-qg-test-001"
+
+        resp2 = client.post(
+            "/api/v1/tasks/quality_gate",
+            json={"mode": "full", "threshold": 0.8},
+        )
+        assert resp2.status_code == 200
+        assert resp2.json()["result"]["task_id"] == "manual-qg-test-001"
+
+    assert mock_watchdog.trigger_cycle.await_count == 2
+    assert mock_watchdog.trigger_cycle.await_args_list[0].kwargs["reason"] == "ui_task_retry"
+    assert mock_watchdog.trigger_cycle.await_args_list[1].kwargs["reason"] == "retry_full"
